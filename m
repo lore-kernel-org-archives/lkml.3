@@ -1,98 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714AbaCAC2r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 21:28:47 -0500
-Received: from co9ehsobe002.messaging.microsoft.com ([207.46.163.25]:27892
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752134AbaCAC2n convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 21:28:43 -0500
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(zz98dIc89bh936eI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2fh95h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24d7h2516h2545h255eh906i1155h)
-Date: Fri, 28 Feb 2014 18:28:34 -0800
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Wolfram Sang <wsa@the-dreams.de>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-doc@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-i2c@vger.kernel.org>, Harini Katakam <harinik@xilinx.com>
-Subject: Re: [PATCH 2/2] ARM: zynq: dt: Add I2C nodes to Zynq device tree
-References: <1393632046-20062-1-git-send-email-soren.brinkmann@xilinx.com>
- <1393632046-20062-2-git-send-email-soren.brinkmann@xilinx.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <1393632046-20062-2-git-send-email-soren.brinkmann@xilinx.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <ce5fbea5-de6e-4a29-9807-cccf0f59f654@CO9EHSMHS021.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	id S1752525AbaCACgf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 21:36:35 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:58274 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751915AbaCACgd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 21:36:33 -0500
+X-AuditID: cbfee61a-b7fb26d00000724f-27-531147ac02ab
+From: Chao Yu <chao2.yu@samsung.com>
+To: "'Dave Chinner'" <david@fromorbit.com>
+Cc: "'???'" <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+References: <000001cf342a$95864830$c092d890$@samsung.com>
+ <20140301002643.GL30131@dastard>
+In-reply-to: <20140301002643.GL30131@dastard>
+Subject: RE: [f2fs-dev] [PATCH] f2fs: fix dirty page accounting when redirty
+Date: Sat, 01 Mar 2014 10:35:29 +0800
+Message-id: <000201cf34f7$05e676f0$11b364d0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQIuhz+PxNz8d/X2mivcuF8lRpQeqgKPpGOImfha+vA=
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDLMWRmVeSWpSXmKPExsVy+t9jQd017oLBBg2/jC22HLvHaHF9118m
+	i0uL3C327D3JYnF51xw2B1aPU4skPHYv+Mzk0bdlFaPH501yASxRXDYpqTmZZalF+nYJXBnX
+	ds1kLfjAX3Hw6k6mBsYHPF2MnBwSAiYSP1fsY4WwxSQu3FvPBmILCUxnlLhwxr6LkQvI/sEo
+	MX3NLEaQBJuAisTyjv9MILaIgIbEtL1HmEGKmAW6GCWWHloE1R0j8eN7K1ADBwengK5EZ1MB
+	SFhYwEfi5svpLCA2i4CqxKLHx8FKeAUsJR6sSAcJ8woISvyYfA+shFlAS2L9zuNMELa8xOY1
+	b5kh7lSQ2HH2NViriICVxNIOfogScYmNR26xTGAUmoVk0iwkk2YhmTQLScsCRpZVjKKpBckF
+	xUnpuYZ6xYm5xaV56XrJ+bmbGMFx8ExqB+PKBotDjAIcjEo8vBKLBIKFWBPLiitzDzFKcDAr
+	ifBOuA4U4k1JrKxKLcqPLyrNSS0+xCjNwaIkznug1TpQSCA9sSQ1OzW1ILUIJsvEwSnVwMh2
+	6P020a5wxjVXNxx9W1ihfnPCp5obWSKdSmquy9uuZggYMlt9m3Ntu8Cnn0f9NVatjC2cLfrs
+	ruGq5Nob2nqvM14scDn7bRNTYN3jSxlL5UXXn6w/6pNZ9Ojoprpg+WPTTTy0WT+l9XsXspru
+	961USVV/v+jCdS+5jEliHgZXN6to6z88cEmJpTgj0VCLuag4EQByA2HsfwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-02-28 at 04:00PM -0800, Soren Brinkmann wrote:
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> ---
->  arch/arm/boot/dts/zynq-7000.dtsi | 22 ++++++++++++
->  arch/arm/boot/dts/zynq-zc702.dts | 76 ++++++++++++++++++++++++++++++++++++++++
->  arch/arm/boot/dts/zynq-zc706.dts | 68 +++++++++++++++++++++++++++++++++++
->  3 files changed, 166 insertions(+)
+Hi,
+
+> -----Original Message-----
+> From: Dave Chinner [mailto:david@fromorbit.com]
+> Sent: Saturday, March 01, 2014 8:27 AM
+> To: Chao Yu
+> Cc: ???; linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org;
+> linux-f2fs-devel@lists.sourceforge.net
+> Subject: Re: [f2fs-dev] [PATCH] f2fs: fix dirty page accounting when redirty
 > 
-[...]
-> diff --git a/arch/arm/boot/dts/zynq-zc702.dts b/arch/arm/boot/dts/zynq-zc702.dts
-> index c913f77a21eb..91a3a560f03b 100644
-> --- a/arch/arm/boot/dts/zynq-zc702.dts
-> +++ b/arch/arm/boot/dts/zynq-zc702.dts
-[...]
-> +
-> +		i2c@7 {
-> +			#address-cells = <1>;
-> +			#size-cells = <0>;
-> +			reg = <7>;
-> +			hwmon@52 {
-> +				compatible = "pmbus,ucd9248";
-> +				reg = <52>;
-> +			};
-> +			hwmon@53 {
-> +				compatible = "pmbus,ucd9248";
-> +				reg = <53>;
-> +			};
-> +			hwmon@54 {
-> +				compatible = "pmbus,ucd9248";
-All these occurrences of 'pmbus' should rather be replaced with 'ti'.
-I wasn't aware of how this DT node to I2C probing works - and still
-haven't fully understood it - but the vendor prefix is apparently a
-don't care and we could simply use the correct one here.
-I have no idea how I came up with the description using 'pmbus' (we
-carry this in our vendor tree for quite a while already).
-Is there any document describing how a DT node is matched to an
-appropriate driver? These I2C drivers usually don't have the common
-'struct of_device_id'. Hence my preferred way of simply grepping through
-the kernel for the compatibility string does not work.
+> On Fri, Feb 28, 2014 at 10:12:05AM +0800, Chao Yu wrote:
+> > We should de-account dirty counters for page when redirty in ->writepage().
+> >
+> > Wu Fengguang described in 'commit 971767caf632190f77a40b4011c19948232eed75':
+> > "writeback: fix dirtied pages accounting on redirty
+> > De-account the accumulative dirty counters on page redirty.
+> >
+> > Page redirties (very common in ext4) will introduce mismatch between
+> > counters (a) and (b)
+> >
+> > a) NR_DIRTIED, BDI_DIRTIED, tsk->nr_dirtied
+> > b) NR_WRITTEN, BDI_WRITTEN
+> >
+> > This will introduce systematic errors in balanced_rate and result in
+> > dirty page position errors (ie. the dirty pages are no longer balanced
+> > around the global/bdi setpoints)."
+> >
+> > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> > ---
+> >  fs/f2fs/checkpoint.c |    1 +
+> >  fs/f2fs/data.c       |    1 +
+> >  fs/f2fs/node.c       |    1 +
+> >  3 files changed, 3 insertions(+)
+> >
+> > diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+> > index c8516ee..f069249 100644
+> > --- a/fs/f2fs/checkpoint.c
+> > +++ b/fs/f2fs/checkpoint.c
+> > @@ -178,6 +178,7 @@ no_write:
+> >  redirty_out:
+> >  	dec_page_count(sbi, F2FS_DIRTY_META);
+> >  	wbc->pages_skipped++;
+> > +	account_page_redirty(page);
+> >  	set_page_dirty(page);
+> >  	return AOP_WRITEPAGE_ACTIVATE;
+> 
+> redirty_page_for_writepage()?
 
-[...]
-> diff --git a/arch/arm/boot/dts/zynq-zc706.dts b/arch/arm/boot/dts/zynq-zc706.dts
-> index 88f62c50382e..dab30f80d5b0 100644
-> --- a/arch/arm/boot/dts/zynq-zc706.dts
-> +++ b/arch/arm/boot/dts/zynq-zc706.dts
-[...]
-> +		i2c@7 {
-> +			#address-cells = <1>;
-> +			#size-cells = <0>;
-> +			reg = <7>;
-> +			ucd90120@65 {
-> +				compatible = "pmbus,ucd90120";
-same here
+set_page_dirty() in a_ops of f2fs not only call __set_page_dirty_nobuffers(),
+but also set some private data of page and print trace info.
+So it seems we could not easily replace with redirty_page_for_writepage().
 
-	Sören
+Thanks.
 
+> 
+> Cheers,
+> 
+> Dave.
+> --
+> Dave Chinner
+> david@fromorbit.com
 
