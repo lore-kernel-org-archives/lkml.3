@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752179AbaCAHyc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Mar 2014 02:54:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:65370 "EHLO mx1.redhat.com"
+	id S1752356AbaCAIPf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Mar 2014 03:15:35 -0500
+Received: from mout.gmx.net ([212.227.15.15]:65204 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751468AbaCAHyb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Mar 2014 02:54:31 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20140228211758.GB2517@katana>
-References: <20140228211758.GB2517@katana> <20140218203346.GG18768@katana> <20140109214954.25590.73057.stgit@warthog.procyon.org.uk> <10892.1393506444@warthog.procyon.org.uk>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: dhowells@redhat.com, wolfram@the-dreams.de, khali@linux-fr.org,
-        linux-i2c@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] i2c: Add message transfer tracepoints for I2C
-Date: Sat, 01 Mar 2014 07:54:13 +0000
-Message-ID: <24692.1393660453@warthog.procyon.org.uk>
+	id S1751563AbaCAIPe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Mar 2014 03:15:34 -0500
+From: xypron.glpk@gmx.de
+To: grant.likely@linaro.org, robh+dt@kernel.org
+Cc: devicetree-compiler@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Heinrich Schuchardt <xypron.glpk@gmx.de>
+Subject: [PATCH 1/1] Remove dead code in util.c
+Date: Sat,  1 Mar 2014 09:11:47 +0100
+Message-Id: <1393661507-7197-1-git-send-email-xypron.glpk@gmx.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <CAL_JsqK9Wquv6kgefyPvy0JqXNO7Cx2+iN_ss=CtgXnKEjrF-Q@mail.gmail.com>
+References: <CAL_JsqK9Wquv6kgefyPvy0JqXNO7Cx2+iN_ss=CtgXnKEjrF-Q@mail.gmail.com>
+X-Provags-ID: V03:K0:KyJ7AZaAIrv2YfDv4pPTg/Ln9f1mpnVnByN62EkZVpFIFvlEg6A
+ MBQqxbMl2S3x9qHeto9KIpn1IaPiveCAXtmTwxP/Ya3BCoT0G2CQeO0+FZngcx7am9dnfe/
+ HVwqei1YwBnOCVtTiDd1pYJbBPpjaLyt/Ixkm8CRa3bqW+OoTcGLF4fWcHbfz94GGATnXgu
+ zwQpwmSsAX661WneDTV4Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wolfram Sang <wsa@the-dreams.de> wrote:
+From: Heinrich Schuchardt <xypron.glpk@gmx.de>
 
-> > > And for the buffer: %*phN is difficult to read IMO. What about %*ph? Or
-> > > %*phD at least?
-> > 
-> > My problem with that is that it increases the length of the output by 50%
-> > and there's a hard limit on how much output we may produce.
-> 
-> Is it PAGE_SIZE? How is this handled when the buffer is so big that the
-> limit will be reached anyhow? Note that it is really uncommon to
-> transfer kilobytes in one go via i2c. Usually, big transfers are split
-> up into smaller fragments, say 128-256 byte. So, for readability, I'd
-> still favour %*ph.
+xrealloc never returns null
 
-I was thinking that limited the size of the output field to 64 bytes.  But
-reading vsprintf.c again, it appears it's actually the size of the binary blob
-that it's converting to hex that's limited to 64 bytes.
+Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
+---
+ util.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
-I would prefer shorter lines - 128 bytes of hex still isn't entirely readable,
-even with separators interpolated, but I'll add this.
+diff --git a/util.c b/util.c
+index be67836..1ce8b97 100644
+--- a/util.c
++++ b/util.c
+@@ -219,10 +219,6 @@ int utilfdt_read_err_len(const char *filename, char **buffp, off_t *len)
+ 		if (offset == bufsize) {
+ 			bufsize *= 2;
+ 			buf = xrealloc(buf, bufsize);
+-			if (!buf) {
+-				ret = ENOMEM;
+-				break;
+-			}
+ 		}
+ 
+ 		ret = read(fd, &buf[offset], bufsize - offset);
+-- 
+1.7.10.4
 
-David
