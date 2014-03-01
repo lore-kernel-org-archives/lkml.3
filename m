@@ -1,58 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753216AbaCAQYQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Mar 2014 11:24:16 -0500
-Received: from mga09.intel.com ([134.134.136.24]:3685 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752963AbaCAQYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Mar 2014 11:24:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,568,1389772800"; 
-   d="scan'208";a="492169946"
-From: Andi Kleen <andi@firstfloor.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Vince Weaver <vincent.weaver@maine.edu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: perf_fuzzer compiled for x32 causes reboot
-References: <alpine.DEB.2.10.1402241130080.20170@vincent-weaver-1.um.maine.edu>
-	<20140225094352.73e0e28c@gandalf.local.home>
-	<alpine.DEB.2.10.1402251032230.23234@vincent-weaver-1.um.maine.edu>
-	<alpine.DEB.2.10.1402261003390.18730@vincent-weaver-1.um.maine.edu>
-	<alpine.DEB.2.10.1402271621000.2571@vincent-weaver-1.um.maine.edu>
-	<20140227173150.4e5ed747@gandalf.local.home>
-	<530FC1C6.5040209@zytor.com>
-	<alpine.DEB.2.10.1402272032140.6271@vincent-weaver-1.um.maine.edu>
-	<20140227215726.7018c861@gandalf.local.home>
-	<alpine.DEB.2.10.1402280914550.6727@vincent-weaver-1.um.maine.edu>
-	<20140228092341.12a40f7c@gandalf.local.home>
-	<alpine.DEB.2.10.1402280957470.6727@vincent-weaver-1.um.maine.edu>
-	<40f095f7-605f-4885-951f-31da7d2d637a@email.android.com>
-	<alpine.DEB.2.10.1402281616280.7362@vincent-weaver-1.um.maine.edu>
-	<20140228163039.6eb6a8d6@gandalf.local.home>
-	<alpine.DEB.2.10.1402281829330.7966@vincent-weaver-1.um.maine.edu>
-	<20140228223651.485042cc@gandalf.local.home>
-Date: Sat, 01 Mar 2014 08:24:14 -0800
-In-Reply-To: <20140228223651.485042cc@gandalf.local.home> (Steven Rostedt's
-	message of "Fri, 28 Feb 2014 22:36:51 -0500")
-Message-ID: <87bnxp6g5t.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1753225AbaCAQ0I (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Mar 2014 11:26:08 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43386 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752963AbaCAQ0G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Mar 2014 11:26:06 -0500
+Date: Sat, 1 Mar 2014 17:26:03 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Josh Cartwright <joshc@codeaurora.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] PM: define new ASSIGN_*_PM_OPS macros based on
+ assign_if
+Message-ID: <20140301162603.GA2275@amd.pavel.ucw.cz>
+References: <1393261707-30565-1-git-send-email-joshc@codeaurora.org>
+ <1393261707-30565-3-git-send-email-joshc@codeaurora.org>
+ <20140227190219.GB4421@kroah.com>
+ <20140301110633.GA27749@amd.pavel.ucw.cz>
+ <20140301160231.GA9911@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140301160231.GA9911@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Rostedt <rostedt@goodmis.org> writes:
->
-> BTW, is the perf_fuzzer code posted somewhere? It sounds like it can be
-> really useful for us to do our own testing too.
+Hi!
 
-I believe it's part of trinity.
+> > > > +#define ASSIGN_SYSTEM_SLEEP_PM_OPS(suspend_fn, resume_fn) \
+> > > > +	.suspend = assign_if_pm_sleep(suspend_fn), \
+> > > > +	.resume = assign_if_pm_sleep(resume_fn), \
+> > > > +	.freeze = assign_if_pm_sleep(suspend_fn), \
+> > > > +	.thaw = assign_if_pm_sleep(resume_fn), \
+> > > > +	.poweroff = assign_if_pm_sleep(suspend_fn), \
+> > > > +	.restore = assign_if_pm_sleep(resume_fn),
+> > > 
+> > > Ugh, what a mess, really?  Is it that hard to get the #ifdef right in
+> > > the code?  Why not just always define the functions and then also always
+> > > have them in the structures, and if the feature isn't enabled, just
+> > > don't call/use them?
+> > 
+> > The functions may not compile with CONFIG_PM disabled. (And #ifdefs in
+> > the code are considered ugly).
+> > 
+> > > Yes, it would cause a _very_ tiny increase in code size if the option is
+> > > disabled, but really, does anyone ever disable those options becides on
+> > > the dreaded 'make randconfig' checkers?
+> > 
+> > We don't want CONFIG_PM complexity on some embedded systems...
+> 
+> Really, what embedded systems do not want this?
 
-http://codemonkey.org.uk/projects/trinity/
+Most of them? :-) In last four years, I cooperated on 4 of those, and
+device power management was not requirement on any of those. Just one
+was operated on battery that was "small".
 
-Perhaps it should have a "ftracer fuzzer" too?
+> > and it is useful tostart with simple (!PM) system when introducing new
+> > board.
+> 
+> I'm not saying to disable the option, I'm saying to stop worrying about
+> saving a few hundred bytes in individual drivers with this crazy #ifdef
+> and macro mess that no one understands and always gets wrong.
 
--Andi
+I wrote: 
+
+> > The functions may not compile with CONFIG_PM disabled. (And #ifdefs in
+> > the code are considered ugly).
+
+To reiterate: suspend_fn (etc) is likely to use stuff not avialable in
+!PM case, so it will break your compilation if you don't add some
+#ifdefs.
+
+									Pavel
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
