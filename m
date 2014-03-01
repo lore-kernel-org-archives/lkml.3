@@ -1,114 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753235AbaCAQd0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Mar 2014 11:33:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43947 "EHLO mx1.redhat.com"
+	id S1753175AbaCAQvY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Mar 2014 11:51:24 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33632 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752972AbaCAQdY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Mar 2014 11:33:24 -0500
-Message-ID: <53120BA8.3000508@redhat.com>
-Date: Sat, 01 Mar 2014 17:32:40 +0100
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752005AbaCAQvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Mar 2014 11:51:23 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20140301095042.GA16524@pd.tnic>
+References: <alpine.DEB.2.10.1402280914550.6727@vincent-weaver-1.um.maine.edu> <20140228092341.12a40f7c@gandalf.local.home> <alpine.DEB.2.10.1402280957470.6727@vincent-weaver-1.um.maine.edu> <1c583986-74f8-4829-883b-390dc49ddabb@email.android.com> <20140228154026.GH9987@twins.programming.kicks-ass.net> <5310B60F.30806@zytor.com> <20140228112946.1f194397@gandalf.local.home> <20140228205638.GD14089@laptop.programming.kicks-ass.net> <20140228160638.3b045dbc@gandalf.local.home> <20140301091650.GD5885@gmail.com> <20140301095042.GA16524@pd.tnic>
 MIME-Version: 1.0
-To: linux-sunxi@googlegroups.com, Emilio Lopez <emilio@elopez.com.ar>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>
-CC: Mike Turquette <mturquette@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: Re: [linux-sunxi] [PATCH v2 2/5] clk: sun6i: Reparent AHB clock on
- PLL6
-References: <1393605440-14643-1-git-send-email-maxime.ripard@free-electrons.com> <1393605440-14643-3-git-send-email-maxime.ripard@free-electrons.com>
-In-Reply-To: <1393605440-14643-3-git-send-email-maxime.ripard@free-electrons.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: perf_fuzzer compiled for x32 causes reboot
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sat, 01 Mar 2014 08:50:17 -0800
+To: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>
+CC: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Vince Weaver <vincent.weaver@maine.edu>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Message-ID: <7f55737e-25a2-4cf0-aa07-17102a368ef2@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The bottom line is that if we want hard numbers we probably have to measure.
 
-On 02/28/2014 05:37 PM, Maxime Ripard wrote:
-> In order for the DMA controller to work for SDRAM to devices transfers, the AHB
-> clock should be reparented on the PLL6.
-> 
-> Force that parenting in the clock driver.
-> 
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> ---
->  drivers/clk/sunxi/clk-sunxi.c | 18 +++++++++++++++++-
->  1 file changed, 17 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
-> index f6f61cc..a5c5882 100644
-> --- a/drivers/clk/sunxi/clk-sunxi.c
-> +++ b/drivers/clk/sunxi/clk-sunxi.c
-> @@ -1286,7 +1286,7 @@ static void __init of_sunxi_table_clock_setup(const struct of_device_id *clk_mat
->   */
->  static void __init sunxi_clock_protect(void)
->  {
-> -	struct clk *clk;
-> +	struct clk *clk, *parent;
->  
->  	/* memory bus clock - sun5i+ */
->  	clk = clk_get(NULL, "mbus");
-> @@ -1307,6 +1307,22 @@ static void __init sunxi_clock_protect(void)
->  	if (!IS_ERR(clk))
->  		clk_prepare_enable(clk);
->  
-> +	clk = clk_get(NULL, "ahb1_mux");
-> +	if (IS_ERR(clk)) {
-> +		pr_err("Couldn't get AHB1 Mux\n");
-> +		return;
-> +	}
+Hoisting the cr2 read is a no-brainer, might even help performance...
 
-I think Emilio already made a similar remark for v1, but since this
-is still here in v2, ahb1_mux is only available on sun6i, so
-at a minimum the pr_err should be dropped. Preferably I would like
-to see this changed to something like:
+On March 1, 2014 1:50:42 AM PST, Borislav Petkov <bp@alien8.de> wrote:
+>On Sat, Mar 01, 2014 at 10:16:50AM +0100, Ingo Molnar wrote:
+>> 
+>> * Steven Rostedt <rostedt@goodmis.org> wrote:
+>> 
+>> > > Also, this function is called a _LOT_ under certain workloads, I 
+>> > > don't know how cheap a CR2 read is, but it had better be really 
+>> > > cheap.
+>> > 
+>> > That's a HPA question.
+>> 
+>> We read CR2 in the page fault hot path, so it's on the top of CPU 
+>> architects' minds and it's reasonably optimized. A couple of cycles 
+>> IIRC, but would be nice to hear actual numbers.
+>
+>Yeah, we were discussing this last night on IRC.
+>
+>And hpa actually meant that the optimization potential was there but no
+>one did do it, except maybe Transmeta. :-)
+>
+>So the expensive thing is writing to CR2 because it is a serializing
+>instruction. In fact, all writes to control registers except CR8 are
+>serializing.
+>
+>The reading from CR2 should be cheaper but not as cheap as a normal
+>MOV %reg %reg is. On AMD, MOV %reg, %cr2 is done with microcode so
+>definitely at least a couple of cycles and I'd guess it is not a
+>trivial
+>MOV on Intel too.
+>
+>Maybe a way to hide this cost is the OoO, as hpa suggested, depending
+>on
+>how much parallelism that particular code region can offer (serializing
+>instructions close by).
 
-	clk = clk_get(NULL, "ahb1_mux");
-	parent = clk_get(NULL, "pll6");
-	if (!IS_ERR(clk) && !IS_ERR(parent))
-		clk_set_parent(clk, parent);
-	if (!IS_ERR(parent))
-		clk_put(parent);
-	if (!IS_ERR(clk))
-		clk_put(clk);
-
-> +
-> +	parent = clk_get(NULL, "pll6");
-> +	if (IS_ERR(clk)) {
-
-Copy paste error should be IS_ERR(parent).
-
-> +		pr_err("Couldn't get PLL6\n");
-
-If we keep things this way this error path should do a clk_put(clk);
-
-> +		return;
-> +	}
-> +
-> +	clk_set_parent(clk, parent);
-> +
-> +	clk_put(clk);
-> +	clk_put(parent);
->  }
->  
->  static void __init sunxi_init_clocks(void)
-> 
-
-Regards,
-
-Hans
-
-p.s.
-
-Given Russell's remarks it would also be good to have a
-patch in this set dropping the clk_put calls of the existing
-enables / protections.
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
