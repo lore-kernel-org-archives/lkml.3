@@ -1,90 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816AbaCACRO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 21:17:14 -0500
-Received: from linuxhacker.ru ([217.76.32.60]:42578 "EHLO fiona.linuxhacker.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752750AbaCACRM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 21:17:12 -0500
-From: Oleg Drokin <green@linuxhacker.ru>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Cc: wang di <di.wang@intel.com>, Oleg Drokin <oleg.drokin@intel.com>
-Subject: [PATCH 04/17] lustre/mdc: comments on LOOKUP and PERM lock
-Date: Fri, 28 Feb 2014 21:16:33 -0500
-Message-Id: <1393640206-20286-5-git-send-email-green@linuxhacker.ru>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1393640206-20286-1-git-send-email-green@linuxhacker.ru>
-References: <1393640206-20286-1-git-send-email-green@linuxhacker.ru>
+	id S1752714AbaCAC2r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 21:28:47 -0500
+Received: from co9ehsobe002.messaging.microsoft.com ([207.46.163.25]:27892
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752134AbaCAC2n convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 21:28:43 -0500
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz98dIc89bh936eI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2fh95h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24d7h2516h2545h255eh906i1155h)
+Date: Fri, 28 Feb 2014 18:28:34 -0800
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Wolfram Sang <wsa@the-dreams.de>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-doc@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-i2c@vger.kernel.org>, Harini Katakam <harinik@xilinx.com>
+Subject: Re: [PATCH 2/2] ARM: zynq: dt: Add I2C nodes to Zynq device tree
+References: <1393632046-20062-1-git-send-email-soren.brinkmann@xilinx.com>
+ <1393632046-20062-2-git-send-email-soren.brinkmann@xilinx.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <1393632046-20062-2-git-send-email-soren.brinkmann@xilinx.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <ce5fbea5-de6e-4a29-9807-cccf0f59f654@CO9EHSMHS021.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: wang di <di.wang@intel.com>
+On Fri, 2014-02-28 at 04:00PM -0800, Soren Brinkmann wrote:
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> ---
+>  arch/arm/boot/dts/zynq-7000.dtsi | 22 ++++++++++++
+>  arch/arm/boot/dts/zynq-zc702.dts | 76 ++++++++++++++++++++++++++++++++++++++++
+>  arch/arm/boot/dts/zynq-zc706.dts | 68 +++++++++++++++++++++++++++++++++++
+>  3 files changed, 166 insertions(+)
+> 
+[...]
+> diff --git a/arch/arm/boot/dts/zynq-zc702.dts b/arch/arm/boot/dts/zynq-zc702.dts
+> index c913f77a21eb..91a3a560f03b 100644
+> --- a/arch/arm/boot/dts/zynq-zc702.dts
+> +++ b/arch/arm/boot/dts/zynq-zc702.dts
+[...]
+> +
+> +		i2c@7 {
+> +			#address-cells = <1>;
+> +			#size-cells = <0>;
+> +			reg = <7>;
+> +			hwmon@52 {
+> +				compatible = "pmbus,ucd9248";
+> +				reg = <52>;
+> +			};
+> +			hwmon@53 {
+> +				compatible = "pmbus,ucd9248";
+> +				reg = <53>;
+> +			};
+> +			hwmon@54 {
+> +				compatible = "pmbus,ucd9248";
+All these occurrences of 'pmbus' should rather be replaced with 'ti'.
+I wasn't aware of how this DT node to I2C probing works - and still
+haven't fully understood it - but the vendor prefix is apparently a
+don't care and we could simply use the correct one here.
+I have no idea how I came up with the description using 'pmbus' (we
+carry this in our vendor tree for quite a while already).
+Is there any document describing how a DT node is matched to an
+appropriate driver? These I2C drivers usually don't have the common
+'struct of_device_id'. Hence my preferred way of simply grepping through
+the kernel for the compatibility string does not work.
 
-Add more comments for MDS_INODELOCK_PERM and
-MDS_INODELOCK_LOOKUP
+[...]
+> diff --git a/arch/arm/boot/dts/zynq-zc706.dts b/arch/arm/boot/dts/zynq-zc706.dts
+> index 88f62c50382e..dab30f80d5b0 100644
+> --- a/arch/arm/boot/dts/zynq-zc706.dts
+> +++ b/arch/arm/boot/dts/zynq-zc706.dts
+[...]
+> +		i2c@7 {
+> +			#address-cells = <1>;
+> +			#size-cells = <0>;
+> +			reg = <7>;
+> +			ucd90120@65 {
+> +				compatible = "pmbus,ucd90120";
+same here
 
-Signed-off-by: wang di <di.wang@intel.com>
-Reviewed-on: http://review.whamcloud.com/7937
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3240
-Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
-Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
-Signed-off-by: Oleg Drokin <oleg.drokin@intel.com>
----
- .../lustre/lustre/include/lustre/lustre_idl.h      | 24 ++++++++++++++++------
- drivers/staging/lustre/lustre/mdc/mdc_locks.c      |  3 +++
- 2 files changed, 21 insertions(+), 6 deletions(-)
+	Sören
 
-diff --git a/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h b/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h
-index 4183a35..4c70c06 100644
---- a/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h
-+++ b/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h
-@@ -2116,12 +2116,24 @@ extern void lustre_swab_generic_32s (__u32 *val);
- #define DISP_OPEN_LEASE      0x04000000
- 
- /* INODE LOCK PARTS */
--#define MDS_INODELOCK_LOOKUP 0x000001       /* dentry, mode, owner, group */
--#define MDS_INODELOCK_UPDATE 0x000002       /* size, links, timestamps */
--#define MDS_INODELOCK_OPEN   0x000004       /* For opened files */
--#define MDS_INODELOCK_LAYOUT 0x000008       /* for layout */
--#define MDS_INODELOCK_PERM   0x000010       /* for permission */
--#define MDS_INODELOCK_XATTR  0x000020       /* extended attributes */
-+#define MDS_INODELOCK_LOOKUP 0x000001	/* For namespace, dentry etc, and also
-+					 * was used to protect permission (mode,
-+					 * owner, group etc) before 2.4. */
-+#define MDS_INODELOCK_UPDATE 0x000002	/* size, links, timestamps */
-+#define MDS_INODELOCK_OPEN   0x000004	/* For opened files */
-+#define MDS_INODELOCK_LAYOUT 0x000008	/* for layout */
-+
-+/* The PERM bit is added int 2.4, and it is used to protect permission(mode,
-+ * owner, group, acl etc), so to separate the permission from LOOKUP lock.
-+ * Because for remote directories(in DNE), these locks will be granted by
-+ * different MDTs(different ldlm namespace).
-+ *
-+ * For local directory, MDT will always grant UPDATE_LOCK|PERM_LOCK together.
-+ * For Remote directory, the master MDT, where the remote directory is, will
-+ * grant UPDATE_LOCK|PERM_LOCK, and the remote MDT, where the name entry is,
-+ * will grant LOOKUP_LOCK. */
-+#define MDS_INODELOCK_PERM   0x000010
-+#define MDS_INODELOCK_XATTR  0x000020	/* extended attributes */
- 
- #define MDS_INODELOCK_MAXSHIFT 5
- /* This FULL lock is useful to take on unlink sort of operations */
-diff --git a/drivers/staging/lustre/lustre/mdc/mdc_locks.c b/drivers/staging/lustre/lustre/mdc/mdc_locks.c
-index 1336d47..d9017a5 100644
---- a/drivers/staging/lustre/lustre/mdc/mdc_locks.c
-+++ b/drivers/staging/lustre/lustre/mdc/mdc_locks.c
-@@ -1072,6 +1072,9 @@ int mdc_revalidate_lock(struct obd_export *exp, struct lookup_intent *it,
- 			 * locks, there's no easy way to match all of them here,
- 			 * so an extra RPC would be performed to fetch all
- 			 * of those bits at once for now. */
-+			/* For new MDTs(> 2.4), UPDATE|PERM should be enough,
-+			 * but for old MDTs (< 2.4), permission is covered
-+			 * by LOOKUP lock, so it needs to match all bits here.*/
- 			policy.l_inodebits.bits = MDS_INODELOCK_UPDATE |
- 						  MDS_INODELOCK_LOOKUP |
- 						  MDS_INODELOCK_PERM;
--- 
-1.8.5.3
 
