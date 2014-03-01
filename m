@@ -1,77 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753276AbaCAT1X (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Mar 2014 14:27:23 -0500
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:33492 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753194AbaCAT1V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Mar 2014 14:27:21 -0500
-Message-ID: <53123495.7030902@gmail.com>
-Date: Sat, 01 Mar 2014 14:27:17 -0500
-From: Vlad Yasevich <vyasevich@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Christian Borntraeger <borntraeger@de.ibm.com>, vyasevic@redhat.com
-CC: "David S. Miller" <davem@davemloft.net>, Jason Wang <jasowang@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>, netdev@vger.kernel.org,
-        KVM list <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: macvtap performance regression (bisected) between 3.13 and 3.14-rc1
-References: <530FA586.3010400@de.ibm.com> <53110A62.7070109@redhat.com> <5311C142.6040509@de.ibm.com>
-In-Reply-To: <5311C142.6040509@de.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753255AbaCATdQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Mar 2014 14:33:16 -0500
+Received: from ring0.de ([5.45.105.125]:46379 "EHLO ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753038AbaCATdO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Mar 2014 14:33:14 -0500
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+From: Sebastian Reichel <sre@debian.org>
+To: Sebastian Reichel <sre@ring0.de>, Marek Belisko <marek@goldelico.com>,
+        Jonathan Cameron <jic23@kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-iio@vger.kernel.org,
+        Sebastian Reichel <sre@debian.org>
+Subject: [PATCHv1 0/9] Convert twl4030-madc to IIO API and add DT support
+Date: Sat,  1 Mar 2014 20:32:36 +0100
+Message-Id: <1393702365-26429-1-git-send-email-sre@debian.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1393444990-28140-1-git-send-email-sre@debian.org>
+References: <1393444990-28140-1-git-send-email-sre@debian.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/01/2014 06:15 AM, Christian Borntraeger wrote:
-> On 28/02/14 23:14, Vlad Yasevich wrote:
->> On 02/27/2014 03:52 PM, Christian Borntraeger wrote:
->>> Vlad,
->>>
->>> commit 6acf54f1cf0a6747bac9fea26f34cfc5a9029523
->>>     macvtap: Add support of packet capture on macvtap device.
->>>
->>> causes a performance regression for iperf traffic between two KVM guests
->>> on my s390 system. Both guests are connected via two macvtaps on the same OSA
->>> network card.
->>> Before that patch I get ~20 Gbit/sec between two guests, afterwards I get
->>> ~4Gbit/sec
->>>
->>> Latency seems to be unchanges (uperf 1byte ping pong).
->>>
->>> According to ifconfig in the guest, I have ~ 1500 bytes per packet with this
->>> patch and ~  40000 bytes without. So for some reason this patch causes the
->>> network stack to do segmentation. (the guest kernel stays the same, only host 
->>> kernel is changed).
->>>
->>> Any ideas?
->>
->> I am looking.  It shouldn't cause addition segmentations and when I ran
->> netperf on the code I didn't see any difference in the throughput.
-> 
-> Dont know if the different bytes/packets ratio is really the reason or
-> just a side effect. As a hint: the underlying network device does not support
-> segmentation, but this should not matter for traffic between to guests.
+Hi,
 
-Could you post 'ethtool -k' output for both lower-level device and the
-macvtap device?
+This is PATCHv1 for converting twl4030-madc to the IIO API and
+adding DT support. The plan is to remove the private twl4030-madc
+API once all users have been removed or converted to the IIO API.
+The patchset compiles and has been tested on my Nokia N900.
 
-Thanks
--vlad
+Changes since RFCv4 [0]:
+ * Fixup all stuff found by Lee Jones and Jonathan Cameron
+   in RFCv4.
+   - Fixup kerneldoc comments
+   - Move ARRAY_SIZE() into correct patch. I accidently rebased
+     it into the wrong one.
+   - Use sizeof(*madc) instead of sizeof(struct twl4030_madc_data)
+   - Only call of_property_read_bool() if there is no pdata
+   - I left the brackets in "reg_base + (2 * i)". They have
+     been requested by Lee Jones and I think they make it easier
+     to understand what is going on.
+ * Add a bunch of Acked-By statements from those two
+ * Add new patch, which adds *_mean_raw sysfs ABI documentation
+   as requested by Jonathan Cameron
+ * Add another patch, which provides iio_read_channel_average_raw(),
+   so that drivers using the old API can be converted to the
+   IIO API.
+ * I switched from RFC to PATCH prefix.
 
-> 
-> Maybe you remember, we had a similar situation with commit 3e4f8b787370978733ca6cae452720a4f0c296b8
-> (macvtap: Perform GSO on forwarding path), the setup is basically the same.
-> 
-> 
-> Christian
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+TODO:
+ * Wait for feedback from DT binding maintainers
+ * Wait for feedback from Marek Belisko, who is testing the
+   change with twl4030-madc-battery driver on GTA04
+
+[0] https://lkml.org/lkml/2014/2/26/482
+
+-- Sebastian
+
+Sebastian Reichel (9):
+  mfd: twl4030-madc: Use managed resources
+  mfd: twl4030-madc: Add DT support and convert to IIO framework
+  mfd: twl4030-madc: Cleanup driver
+  mfd: twl-core: Add twl_i2c_read/write_u16
+  mfd: twl4030-madc: Use twl_i2c_read/write_u16 for 16 bit registers
+  Documentation: DT: Document twl4030-madc binding
+  mfd: twl4030-madc: Move driver to drivers/iio/adc
+  iio: documentation: Add ABI documentation for *_mean_raw
+  iio: inkern: add iio_read_channel_average_raw
+
+ Documentation/ABI/testing/sysfs-bus-iio            |   8 +
+ .../devicetree/bindings/iio/adc/twl4030-madc.txt   |  24 ++
+ drivers/iio/adc/Kconfig                            |  10 +
+ drivers/iio/adc/Makefile                           |   1 +
+ drivers/{mfd => iio/adc}/twl4030-madc.c            | 301 +++++++++++++--------
+ drivers/iio/inkern.c                               |  18 ++
+ drivers/mfd/Kconfig                                |  10 -
+ drivers/mfd/Makefile                               |   1 -
+ include/linux/i2c/twl.h                            |  12 +
+ include/linux/i2c/twl4030-madc.h                   |   2 +-
+ include/linux/iio/consumer.h                       |  13 +
+ 11 files changed, 276 insertions(+), 124 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/iio/adc/twl4030-madc.txt
+ rename drivers/{mfd => iio/adc}/twl4030-madc.c (75%)
+
+-- 
+1.9.0
 
