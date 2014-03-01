@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753410AbaCAD4P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 22:56:15 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:11444 "EHLO
+	id S1753479AbaCAD5W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 22:57:22 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:11451 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752907AbaCADwj (ORCPT
+	by vger.kernel.org with ESMTP id S1752843AbaCADwi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 22:52:39 -0500
-Message-Id: <20140301035236.823382489@goodmis.org>
+	Fri, 28 Feb 2014 22:52:38 -0500
+Message-Id: <20140301035235.949219502@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Fri, 28 Feb 2014 22:52:16 -0500
+Date: Fri, 28 Feb 2014 22:52:10 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
@@ -17,13 +17,15 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         John Kacur <jkacur@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
-        <stable-rt@vger.kernel.org>
-Subject: [PATCH RT 07/14] rt: Make cpu_chill() use hrtimer instead of msleep()
+        <stable-rt@vger.kernel.org>, Mike Galbraith <bitbucket@online.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH RT 01/14] rcu: Dont activate RCU core on NO_HZ_FULL CPUs
 References: <20140301035209.031474616@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0007-rt-Make-cpu_chill-use-hrtimer-instead-of-msleep.patch
-X-RR-Connecting-IP: 107.14.168.130:25
+Content-Disposition: inline; filename=0001-rcu-Don-t-activate-RCU-core-on-NO_HZ_FULL-CPUs.patch
+X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,96 +36,99 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Steven Rostedt <rostedt@goodmis.org>
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-Ulrich Obergfell pointed out that cpu_chill() calls msleep() which is woken
-up by the ksoftirqd running the TIMER softirq. But as the cpu_chill() is
-called from softirq context, it may block the ksoftirqd() from running, in
-which case, it may never wake up the msleep() causing the deadlock.
+Whenever a CPU receives a scheduling-clock interrupt, RCU checks to see
+if the RCU core needs anything from this CPU.  If so, RCU raises
+RCU_SOFTIRQ to carry out any needed processing.
 
-I checked the vmcore, and irq/74-qla2xxx is stuck in the msleep() call,
-running on CPU 8. The one ksoftirqd that is stuck, happens to be the one that
-runs on CPU 8, and it is blocked on a lock held by irq/74-qla2xxx. As that
-ksoftirqd is the one that will wake up irq/74-qla2xxx, and it happens to be
-blocked on a lock that irq/74-qla2xxx holds, we have our deadlock.
+This approach has worked well historically, but it is undesirable on
+NO_HZ_FULL CPUs.  Such CPUs are expected to spend almost all of their time
+in userspace, so that scheduling-clock interrupts can be disabled while
+there is only one runnable task on the CPU in question.  Unfortunately,
+raising any softirq has the potential to wake up ksoftirqd, which would
+provide the second runnable task on that CPU, preventing disabling of
+scheduling-clock interrupts.
 
-The solution is not to convert the cpu_chill() back to a cpu_relax() as that
-will re-create a possible live lock that the cpu_chill() fixed earlier, and may
-also leave this bug open on other softirqs. The fix is to remove the
-dependency on ksoftirqd from cpu_chill(). That is, instead of calling
-msleep() that requires ksoftirqd to wake it up, use the
-hrtimer_nanosleep() code that does the wakeup from hard irq context.
+What is needed instead is for RCU to leave NO_HZ_FULL CPUs alone,
+relying on the grace-period kthreads' quiescent-state forcing to
+do any needed RCU work on behalf of those CPUs.
 
-|Looks to be the lock of the block softirq. I don't have the core dump
-|anymore, but from what I could tell the ksoftirqd was blocked on the
-|block softirq lock, where the block softirq handler did a msleep
-|(called by the qla2xxx interrupt handler).
-|
-|Looking at trigger_softirq() in block/blk-softirq.c, it can do a
-|smp_callfunction() to another cpu to run the block softirq. If that
-|happens to be the cpu where the qla2xx irq handler is doing the block
-|softirq and is in a middle of a msleep(), I believe the ksoftirqd will
-|try to run the softirq. If it does that, then BOOM, it's deadlocked
-|because the ksoftirqd will never run the timer softirq either.
-
-|I should have also stated that it was only one lock that was involved.
-|But the lock owner was doing a msleep() that requires a wakeup by
-|ksoftirqd to continue. If ksoftirqd happens to be blocked on a lock
-|held by the msleep() caller, then you have your deadlock.
-|
-|It's best not to have any softirqs going to sleep requiring another
-|softirq to wake it up. Note, if we ever require a timer softirq to do a
-|cpu_chill() it will most definitely hit this deadlock.
+This commit therefore refrains from raising RCU_SOFTIRQ on any
+NO_HZ_FULL CPUs during any grace periods that have been in effect
+for less than one second.  The one-second limit handles the case
+where an inappropriate workload is running on a NO_HZ_FULL CPU
+that features lots of scheduling-clock interrupts, but no idle
+or userspace time.
 
 Cc: stable-rt@vger.kernel.org
-Found-by: Ulrich Obergfell <uobergfe@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-[bigeasy: add the 4 | chapters from email]
+Reported-by: Mike Galbraith <bitbucket@online.de>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Tested-by: Mike Galbraith <bitbucket@online.de>
+Tested-by: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/delay.h |  2 +-
- kernel/hrtimer.c      | 15 +++++++++++++++
- 2 files changed, 16 insertions(+), 1 deletion(-)
+ kernel/rcutree.c        |  4 ++++
+ kernel/rcutree.h        |  1 +
+ kernel/rcutree_plugin.h | 20 ++++++++++++++++++++
+ 3 files changed, 25 insertions(+)
 
-diff --git a/include/linux/delay.h b/include/linux/delay.h
-index e23a7c0..37caab3 100644
---- a/include/linux/delay.h
-+++ b/include/linux/delay.h
-@@ -53,7 +53,7 @@ static inline void ssleep(unsigned int seconds)
- }
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 55915b1..75743cb 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -2749,6 +2749,10 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
+ 	/* Check for CPU stalls, if enabled. */
+ 	check_cpu_stall(rsp, rdp);
  
- #ifdef CONFIG_PREEMPT_RT_FULL
--# define cpu_chill()	msleep(1)
-+extern void cpu_chill(void);
- #else
- # define cpu_chill()	cpu_relax()
- #endif
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index a7e90b2..b569c6d 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1887,6 +1887,21 @@ SYSCALL_DEFINE2(nanosleep, struct timespec __user *, rqtp,
- 	return hrtimer_nanosleep(&tu, rmtp, HRTIMER_MODE_REL, CLOCK_MONOTONIC);
- }
++	/* Is this CPU a NO_HZ_FULL CPU that should ignore RCU? */
++	if (rcu_nohz_full_cpu(rsp))
++		return 0;
++
+ 	/* Is the RCU core waiting for a quiescent state from this CPU? */
+ 	if (rcu_scheduler_fully_active &&
+ 	    rdp->qs_pending && !rdp->passed_quiesce) {
+diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+index 8491f47..7e0b397 100644
+--- a/kernel/rcutree.h
++++ b/kernel/rcutree.h
+@@ -541,6 +541,7 @@ static void rcu_boot_init_nocb_percpu_data(struct rcu_data *rdp);
+ static void rcu_spawn_nocb_kthreads(struct rcu_state *rsp);
+ static void rcu_kick_nohz_cpu(int cpu);
+ static bool init_nocb_callback_list(struct rcu_data *rdp);
++static bool rcu_nohz_full_cpu(struct rcu_state *rsp);
  
-+#ifdef CONFIG_PREEMPT_RT_FULL
+ #endif /* #ifndef RCU_TREE_NONCORE */
+ 
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index dc0c4b2..481a124 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -2356,3 +2356,23 @@ static void rcu_kick_nohz_cpu(int cpu)
+ 		smp_send_reschedule(cpu);
+ #endif /* #ifdef CONFIG_NO_HZ_FULL */
+ }
++
 +/*
-+ * Sleep for 1 ms in hope whoever holds what we want will let it go.
++ * Is this CPU a NO_HZ_FULL CPU that should ignore RCU so that the
++ * grace-period kthread will do force_quiescent_state() processing?
++ * The idea is to avoid waking up RCU core processing on such a
++ * CPU unless the grace period has extended for too long.
++ *
++ * This code relies on the fact that all NO_HZ_FULL CPUs are also
++ * CONFIG_RCU_NOCB_CPUs.
 + */
-+void cpu_chill(void)
++static bool rcu_nohz_full_cpu(struct rcu_state *rsp)
 +{
-+	struct timespec tu = {
-+		.tv_nsec = NSEC_PER_MSEC,
-+	};
-+
-+	hrtimer_nanosleep(&tu, NULL, HRTIMER_MODE_REL, CLOCK_MONOTONIC);
++#ifdef CONFIG_NO_HZ_FULL
++	if (tick_nohz_full_cpu(smp_processor_id()) &&
++	    (!rcu_gp_in_progress(rsp) ||
++	     ULONG_CMP_LT(jiffies, ACCESS_ONCE(rsp->gp_start) + HZ)))
++		return 1;
++#endif /* #ifdef CONFIG_NO_HZ_FULL */
++	return 0;
 +}
-+EXPORT_SYMBOL(cpu_chill);
-+#endif
-+
- /*
-  * Functions related to boot-time initialization:
-  */
 -- 
 1.8.5.3
 
