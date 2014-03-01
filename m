@@ -1,75 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750972AbaCAFcF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Mar 2014 00:32:05 -0500
-Received: from nm27-vm5.bullet.mail.gq1.yahoo.com ([98.136.216.148]:31773 "EHLO
-	nm27-vm5.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750787AbaCAFcC convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Mar 2014 00:32:02 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 24828.42718.bm@omp1088.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=qrdEoNRBqhr+bOLC/vf70Ri0FQPI/Vgu0E7gTgkwomrAD0wGYLuh5UxVo8d0BckovMQPRiIZfJxM08UJc8DGbiStP8y1pO3gtdjMLm/oGiCyCDnUAU/3nDOLYJw98B8QVHXzZGpiTeJMXJmFYxxn6bm2Njn3YhBU8MiHykFH9BU=;
-X-YMail-OSG: fDXqITAVM1nJ1jjp.nIwCDuAA9j51zulTQU5RohdjFXp.Ha
- n_Dvy..jjy8xqcVdsopiyykCr9i2xBs0PwkSRvloOFF.t7KV_6n955KkGaqd
- VVqr3cm8ktbXx1kr2JuS4gY9fQbVse.gi6Z4UeI2Qhpvu7e61zSUSfoTLl.L
- 8wcgtaRyE3ZOpRy8WJpKW3W1LSY2vJ29Flas.J9ub_0AE.WOSgifPS.er2v3
- dL5S0Q0fMQnMieBtsdjy5ma4DgRccUaREOINckgs.YmFTUza.FQ7g3rCJd_X
- eFb6DI3kLygfIFelHq3Ay5pK0ddqTPpB973T8qHpIEfDDPqY9KKAN4tvIQyw
- rHB8db8KNKICepyYglYJoT2zzJfPWcjBmUH6z6YjLvr01guTHZcry.y6eL3X
- Tf4ji.Zafw7MLWcw5SlIpp43sC2mFfWcD.t6PkXFShFFn4EcfBfE9QwiGtUX
- 2c4tmE4zizS3bwNgLqfWNsxcCkVGokrwfP5s2KUx.MTk8h2fdXi965z_jmOB
- FnWUUati6IftW5sivj0zuE_NI
-X-Rocket-MIMEInfo: 002.001,Cgo.T24gRnJpZGF5LCBGZWJydWFyeSAyOCwgMjAxNCA0OjMxIFBNLCBHcmVnIEtIIDxncmVna2hAbGludXhmb3VuZGF0aW9uLm9yZz4gd3JvdGU6Cgo.Pk9uIEZyaSwgRmViIDI4LCAyMDE0IGF0IDAzOjE1OjQ1QU0gLTA2MDAsIENoYXNlIFNvdXRod29vZCB3cm90ZToKPj4KPj4gVGhpcyBwYXRjaCBpbnRyb2R1Y2VzIGEgc2ltcGxlIGhlbHBlciBmdW5jdGlvbiwgb3V0bF8xNTY0X3RpbWVyKCksIHRvCj4.IGFsbG93IHNldmVyYWwgbGluZXMgd2hpY2ggdmlvbGF0ZSB0aGUgY2hhcmFjdGVyIGxpbWl0IHRvIGIBMAEBAQE-
-X-Mailer: YahooMailWebService/0.8.177.636
-References: <1393572680-9521-1-git-send-email-chase.southwood@yahoo.com> <1393578945-20488-1-git-send-email-chase.southwood@yahoo.com> <20140228223228.GA22295@kroah.com>
-Message-ID: <1393651921.19222.YahooMailNeo@web164006.mail.gq1.yahoo.com>
-Date: Fri, 28 Feb 2014 21:32:01 -0800 (PST)
-From: Chase Southwood <chase.southwood@yahoo.com>
-Reply-To: Chase Southwood <chase.southwood@yahoo.com>
-Subject: Re: [PATCH 1/2 v2] Staging: comedi: fix lines that are over 80 characters
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
-        "dan.carpenter@oracle.com" <dan.carpenter@oracle.com>
-In-Reply-To: <20140228223228.GA22295@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1751531AbaCAFcg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Mar 2014 00:32:36 -0500
+Received: from mail-oa0-f74.google.com ([209.85.219.74]:34376 "EHLO
+	mail-oa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349AbaCAFcb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Mar 2014 00:32:31 -0500
+From: Filipe Brandenburger <filbranden@google.com>
+To: Steven Rostedt <rostedt@goodmis.org>, Li Zefan <lizefan@huawei.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        Filipe Brandenburger <filbranden@google.com>
+Subject: [PATCH 3/3] tracing: introduce a trace_data_offset struct to store array size
+Date: Fri, 28 Feb 2014 21:32:18 -0800
+Message-Id: <1393651938-16418-4-git-send-email-filbranden@google.com>
+X-Mailer: git-send-email 1.9.0.279.gdc9e3eb
+In-Reply-To: <1393651938-16418-1-git-send-email-filbranden@google.com>
+References: <1393651938-16418-1-git-send-email-filbranden@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit 7d536cb3f stores the length of the array in the high 16 bits of
+the offset field. Using a struct with two separate 16 bit fields makes
+it cleaner.
 
+Tested: Boot kernel with this change, set a 'filename ~ "/usr/bin/pst*"'
+regex filter on events/sched/sched_process_exec/filter, enabled tracing,
+checked that calling pstree would log the trace event as expected.
 
->On Friday, February 28, 2014 4:31 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+Signed-off-by: Filipe Brandenburger <filbranden@google.com>
+---
+ include/linux/ftrace_event.h       |  5 +++++
+ include/trace/ftrace.h             | 28 ++++++++++++++--------------
+ kernel/trace/trace_events_filter.c | 13 ++++++++++---
+ 3 files changed, 29 insertions(+), 17 deletions(-)
 
->>On Fri, Feb 28, 2014 at 03:15:45AM -0600, Chase Southwood wrote:
->>
->> This patch introduces a simple helper function, outl_1564_timer(), to
->> allow several lines which violate the character limit to be shortened.
->> A handful of other lines that are too long are appropriately split as
->> well.
->> 
->> Cc: Dan Carpenter <dan.carpenter@oracle.com>
->> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
->> ---
->> 2: introduced outl_1564_timer() at the suggestion of Dan.
->>  .../comedi/drivers/addi-data/hwdrv_apci1564.c      | 83 +++++++++++++---------
->>  1 file changed, 49 insertions(+), 34 deletions(-)>
->
->The Subject: doesn't match the patch content :(
-
-Greg,
-You're right and that's totally my bad!  In all honesty, I sent this as v2 of my original cleanup patch (without even
-changing the subject :( ) when really, that was a mistake because it's pretty much a different patch entirely (although with
-the same ultimate end goal).  It needs further changes (based on Dan's comments) anyway, so when I send in the next version,
-the subject will be changed appropriately.  Sorry for my oversight, it won't happen again.
-
-Thanks,
-Chase
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 4e4cc28..67e4122 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -123,6 +123,11 @@ struct trace_event {
+ 	struct trace_event_functions	*funcs;
+ };
+ 
++struct trace_array_offset {
++	u16			offset;
++	u16			length;
++};
++
+ extern int register_ftrace_event(struct trace_event *event);
+ extern int unregister_ftrace_event(struct trace_event *event);
+ 
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index 86a056a..eac4d0a 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -48,7 +48,8 @@
+ #define __array(type, item, len)	type	item[len];
+ 
+ #undef __dynamic_array
+-#define __dynamic_array(type, item, len) u32 __data_loc_##item;
++#define __dynamic_array(type, item, len)				\
++		struct trace_array_offset __data_loc_##item;
+ 
+ #undef __string
+ #define __string(item, src) __dynamic_array(char, item, -1)
+@@ -103,14 +104,14 @@
+  * Include the following:
+  *
+  * struct ftrace_data_offsets_<call> {
+- *	u32				<item1>;
+- *	u32				<item2>;
++ *	struct trace_array_offset	<item1>;
++ *	struct trace_array_offset	<item2>;
+  *	[...]
+  * };
+  *
+- * The __dynamic_array() macro will create each u32 <item>, this is
+- * to keep the offset of each array from the beginning of the event.
+- * The size of an array is also encoded, in the higher 16 bits of <item>.
++ * The __dynamic_array() macro will create each trace_array_offset <item>, this
++ * is to keep the offset and length of each array from the beginning of the
++ * event.
+  */
+ 
+ #undef __field
+@@ -123,7 +124,8 @@
+ #define __array(type, item, len)
+ 
+ #undef __dynamic_array
+-#define __dynamic_array(type, item, len)	u32 item;
++#define __dynamic_array(type, item, len)				\
++		struct trace_array_offset item;
+ 
+ #undef __string
+ #define __string(item, src) __dynamic_array(char, item, -1)
+@@ -195,7 +197,7 @@
+ 
+ #undef __get_dynamic_array
+ #define __get_dynamic_array(field)	\
+-		((void *)__entry + (__entry->__data_loc_##field & 0xffff))
++		((void *)__entry + __entry->__data_loc_##field.offset)
+ 
+ #undef __get_str
+ #define __get_str(field) (char *)__get_dynamic_array(field)
+@@ -373,11 +375,10 @@ ftrace_define_fields_##call(struct ftrace_event_call *event_call)	\
+ 
+ #undef __dynamic_array
+ #define __dynamic_array(type, item, len)				\
+-	__item_length = (len) * sizeof(type);				\
+-	__data_offsets->item = __data_size +				\
++	__data_offsets->item.offset = __data_size +			\
+ 			       offsetof(typeof(*entry), __data);	\
+-	__data_offsets->item |= __item_length << 16;			\
+-	__data_size += __item_length;
++	__data_offsets->item.length = (len) * sizeof(type);		\
++	__data_size += __data_offsets->item.length;
+ 
+ #undef __string
+ #define __string(item, src) __dynamic_array(char, item,			\
+@@ -389,7 +390,6 @@ static inline notrace int ftrace_get_offsets_##call(			\
+ 	struct ftrace_data_offsets_##call *__data_offsets, proto)       \
+ {									\
+ 	int __data_size = 0;						\
+-	int __maybe_unused __item_length;				\
+ 	struct ftrace_raw_##call __maybe_unused *entry;			\
+ 									\
+ 	tstruct;							\
+@@ -658,7 +658,7 @@ __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
+ 
+ #undef __get_dynamic_array
+ #define __get_dynamic_array(field)	\
+-		((void *)__entry + (__entry->__data_loc_##field & 0xffff))
++		((void *)__entry + __entry->__data_loc_##field.offset)
+ 
+ #undef __get_str
+ #define __get_str(field) (char *)__get_dynamic_array(field)
+diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
+index 8a86319..805fc0d 100644
+--- a/kernel/trace/trace_events_filter.c
++++ b/kernel/trace/trace_events_filter.c
+@@ -234,12 +234,19 @@ static int filter_pred_pchar(struct filter_pred *pred, void *event)
+  */
+ static int filter_pred_strloc(struct filter_pred *pred, void *event)
+ {
+-	u32 str_item = *(u32 *)(event + pred->offset);
+-	int str_loc = str_item & 0xffff;
+-	int str_len = str_item >> 16;
++	struct trace_array_offset *array_offset =
++		(struct trace_array_offset *)(event + pred->offset);
++	int str_loc = array_offset->offset;
++	int str_len = array_offset->length;
+ 	char *addr = (char *)(event + str_loc);
+ 	int cmp, match;
+ 
++	/*
++	 * As struct trace_array_offset is replacing an u32,
++	 * ensure they have the same size.
++	 */
++	BUILD_BUG_ON(sizeof(struct trace_array_offset) != sizeof(u32));
++
+ 	cmp = pred->regex.match(addr, &pred->regex, str_len);
+ 
+ 	match = cmp ^ pred->not;
+-- 
+1.9.0.279.gdc9e3eb
 
