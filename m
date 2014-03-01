@@ -1,50 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753413AbaCAU1P (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Mar 2014 15:27:15 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35290 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753201AbaCAU1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Mar 2014 15:27:14 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20140301202139.GA9759@srcf.ucam.org>
-References: <53102AB9.40600@linux.intel.com> <20140228062325.GA3246@srcf.ucam.org> <53102F3C.4020806@linux.intel.com> <20140228064413.GA4900@srcf.ucam.org> <531032A0.8090903@linux.intel.com> <5310CBB7.4030407@linux.intel.com> <53110977.8080907@linux.intel.com> <53121496.8060603@linux.intel.com> <20140301172256.GA29417@srcf.ucam.org> <53123DCF.7040500@zytor.com> <20140301202139.GA9759@srcf.ucam.org>
+	id S1753293AbaCAUeu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Mar 2014 15:34:50 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:35341 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753201AbaCAUes (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Mar 2014 15:34:48 -0500
+Date: Sat, 1 Mar 2014 12:34:36 -0800
+From: "tip-bot for David E. Box" <tipbot@zytor.com>
+Message-ID: <tip-0fd9bdfa3b7698e30d2fbc4a029ded0f3428cf10@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        david.e.box@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        david.e.box@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1393296442-12942-3-git-send-email-david.e.box@linux.intel.com>
+References: <1393296442-12942-3-git-send-email-david.e.box@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/platform] x86, iosf:
+  Change IOSF_MBI Kconfig to default y
+Git-Commit-ID: 0fd9bdfa3b7698e30d2fbc4a029ded0f3428cf10
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [patch] x86: Introduce BOOT_EFI and BOOT_CF9 into the reboot sequence loop
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sat, 01 Mar 2014 12:26:40 -0800
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: "Li, Aubrey" <aubrey.li@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Len.Brown@intel.com,
-        Adam Williamson <awilliam@redhat.com>
-Message-ID: <ec95d575-070f-4c62-8b27-3ce281cb192e@email.android.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-True... trying cf9_cond with low priority probably makes sense.
+Commit-ID:  0fd9bdfa3b7698e30d2fbc4a029ded0f3428cf10
+Gitweb:     http://git.kernel.org/tip/0fd9bdfa3b7698e30d2fbc4a029ded0f3428cf10
+Author:     David E. Box <david.e.box@linux.intel.com>
+AuthorDate: Mon, 24 Feb 2014 18:47:22 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 28 Feb 2014 19:56:13 -0800
 
-On March 1, 2014 12:21:39 PM PST, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
->On Sat, Mar 01, 2014 at 12:06:39PM -0800, H. Peter Anvin wrote:
->
->> Be careful.  This is *exactly* what I tried back in checkin
->> 14d7ca5c575853664d8fe4f225a77b8df1b7de7d.  We had to back that out
->quite
->> quickly.
->
->It's the difference between trying it before the keyboard controller
->and 
->trying it after the keyboard controller and ACPI. It seems that it
->broke 
->some systems where the keyboard controller worked - if we've hit the 
->keyboard controller and ACPI twice, and the system is still alive, and 
->if we have standard PCI ports, it doesn't seem like poking them is 
->likely to make anything actively worse.
+x86, iosf: Change IOSF_MBI Kconfig to default y
 
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+The IOSF Mailbox interface is an access mechanism used by multiple drivers to
+communicate with key configuration registers on new Intel SOC platforms. The
+interface is ubiquitous enough that we need to ensure the availability of the
+driver in non-EXPERT x86 kernels.
+
+[ hpa: I think it makes sense to build these in unless EXPERT is set,
+  in which case it should be optional.  Ideally the IOSF driver should
+  be possible to build as a module on which other modules can depend,
+  but that can be done on top of this work. ]
+
+Signed-off-by: David E. Box <david.e.box@linux.intel.com>
+Link: http://lkml.kernel.org/r/1393296442-12942-3-git-send-email-david.e.box@linux.intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/Kconfig | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 0af5250..1487fdd 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -2413,11 +2413,12 @@ config X86_DMA_REMAP
+ 	depends on STA2X11
+ 
+ config IOSF_MBI
+-	bool
++	bool "IOSF MBI support" if EXPERT
++	default y
+ 	depends on PCI
+ 	---help---
+ 	  To be selected by modules requiring access to the Intel OnChip System
+-	  Fabric (IOSF) Sideband MailBox Interface (MBI). For MBI platforms
++	  Fabric (IOSF) Sideband MailBox Interface (MBI). For IOSF platforms
+ 	  enumerable by PCI.
+ 
+ source "net/Kconfig"
