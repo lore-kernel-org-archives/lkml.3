@@ -1,145 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753204AbaCASSp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Mar 2014 13:18:45 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:55173 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753083AbaCASSn (ORCPT
+	id S1753266AbaCASTz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Mar 2014 13:19:55 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:33370 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753099AbaCASTy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Mar 2014 13:18:43 -0500
-Date: Sat, 1 Mar 2014 19:18:38 +0100
-From: Juri Lelli <juri.lelli@gmail.com>
-To: Kirill Tkhai <ktkhai@parallels.com>
-Cc: <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        <tkhai@yandex.ru>
-Subject: Re: [PATCH]sched/core: Return possibility to set RT and DL classes
- back
-Message-Id: <20140301191838.d15d03112b2598a671dac22c@gmail.com>
-In-Reply-To: <1393584643.3522.5.camel@tkhai>
-References: <1393496657.3522.3.camel@tkhai>
-	<1393584643.3522.5.camel@tkhai>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Sat, 1 Mar 2014 13:19:54 -0500
+Date: Sat, 1 Mar 2014 18:19:51 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: "Li, Aubrey" <aubrey.li@linux.intel.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Len.Brown@intel.com,
+        Adam Williamson <awilliam@redhat.com>
+Subject: Re: [patch] x86: Introduce BOOT_EFI and BOOT_CF9 into the reboot
+ sequence loop
+Message-ID: <20140301181951.GA984@srcf.ucam.org>
+References: <53102AB9.40600@linux.intel.com>
+ <20140228062325.GA3246@srcf.ucam.org>
+ <53102F3C.4020806@linux.intel.com>
+ <20140228064413.GA4900@srcf.ucam.org>
+ <531032A0.8090903@linux.intel.com>
+ <5310CBB7.4030407@linux.intel.com>
+ <53110977.8080907@linux.intel.com>
+ <53121496.8060603@linux.intel.com>
+ <20140301172256.GA29417@srcf.ucam.org>
+ <53121961.2080209@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53121961.2080209@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Feb 2014 14:50:43 +0400
-Kirill Tkhai <ktkhai@parallels.com> wrote:
-
-> Thomas, have you seen this?
+On Sun, Mar 02, 2014 at 01:31:13AM +0800, Li, Aubrey wrote:
+> On 2014/3/2 1:22, Matthew Garrett wrote:
+> > No. The EFI reboot call jumps into the firmware and executes code.
 > 
-> Nothing works at the moment:
->
+> Firmware actually writes CF9.
 
-Noticed the same once rebased on tip/master as of today.
- 
-> now
-> 
->    21 root      20   0     0    0    0 S  0.0  0.0   0:00.00 watchdog/3                                                                                                                                            
->    16 root      20   0     0    0    0 S  0.0  0.0   0:00.00 watchdog/2                                                                                                                                            
->    11 root      20   0     0    0    0 S  0.0  0.0   0:00.00 watchdog/1                                                                                                                                            
->    10 root      20   0     0    0    0 S  0.0  0.0   0:00.00 watchdog/0
-> 
->    22 root      20   0     0    0    0 S  0.0  0.0   0:00.00 migration/3                                                                                                                                           
->    17 root      20   0     0    0    0 S  0.0  0.0   0:00.00 migration/2                                                                                                                                           
->    12 root      20   0     0    0    0 S  0.0  0.0   0:00.04 migration/1                                                                                                                                           
->     9 root      20   0     0    0    0 S  0.0  0.0   0:00.20 migration/0
-> 
-> with fix
-> 
->    21 root      RT   0     0    0    0 S  0.0  0.0   0:00.00 watchdog/3         
->    16 root      RT   0     0    0    0 S  0.0  0.0   0:00.00 watchdog/2         
->    11 root      RT   0     0    0    0 S  0.0  0.0   0:00.00 watchdog/1         
->    10 root      RT   0     0    0    0 S  0.0  0.0   0:00.00 watchdog/0
-> 
->    22 root      RT   0     0    0    0 S  0.0  0.0   0:00.00 migration/3                                                                                                                                           
->    17 root      RT   0     0    0    0 S  0.0  0.0   0:00.03 migration/2                                                                                                                                           
->    12 root      RT   0     0    0    0 S  0.0  0.0   0:00.00 migration/1                                                                                                                                           
->     9 root      RT   0     0    0    0 S  0.0  0.0   0:00.24 migration/0
-> 
-> В Чт, 27/02/2014 в 14:24 +0400, Kirill Tkhai пишет:
-> > [PATCH]sched/core: Return possibility to set RT and DL classes back
-> > 
-> > I found that it's impossible to set RT policy for tasks at the moment.
-> > 
-> > This is regression after commit [sched: Consider pi boosting in setscheduler()]
-> > 				[c365c292d05908c6ea6f32708f331e21033fe71d     ]
-> > Fix that.
-> > 
-> > Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
-> > CC: Thomas Gleixner <tglx@linutronix.de>
-> > CC: Peter Zijlstra <peterz@infradead.org>
-> > CC: Ingo Molnar <mingo@redhat.com>
-> > ---
-> >  kernel/sched/core.c | 4 ++++
-> >  1 file changed, 4 insertions(+)
-> > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> > index 84b23ce..30cf9ad 100644
-> > --- a/kernel/sched/core.c
-> > +++ b/kernel/sched/core.c
-> > @@ -3193,6 +3193,10 @@ static void __setscheduler_params(struct task_struct *p,
-> >  	 * getparam()/getattr() don't report silly values for !rt tasks.
-> >  	 */
-> >  	p->rt_priority = attr->sched_priority;
-> > +
-> > +	p->normal_prio = normal_prio(p);
-> > +	p->prio = rt_mutex_getprio(p);
-> > +
-> >  	set_load_weight(p);
-> >  }
-> >  
-> > 
+Your firmware writes CF9. Other firmware may hit some other addresses. 
+We don't know what the behaviour of that firmware will be if it takes a 
+fault in the process.
 
-I'd propose what follows, so that we can still use
-__setscheduler_params() as it is.
+By and large the rule when it comes to dealing with firmware interaction 
+is "Copy Windows as closely as possible". Older versions of Windows 
+didn't appear to hit the EFI reset vector, but if they're doing it now 
+then we should do the same - but we should only do so once we have an 
+expectation that it'll work rather than dumping an oops all over 
+someone's screen. And, as I keep saying, the code to handle this case is 
+written. Let's just make sure that your code ends up behind it in the 
+queue.
 
-Regards,
-
-- Juri
-
->From 73bae0ad978db6e75f492eea9adff12ec9d6d2a3 Mon Sep 17 00:00:00 2001
-From: Juri Lelli <juri.lelli@gmail.com>
-Date: Sat, 1 Mar 2014 16:43:30 +0100
-Subject: [PATCH] sched/core: restore __setscheduler() behavior
-
-Commit c365c29 introduced __setscheduler_params(), that is now used
-to only store a task's new scheduling parameters in the case it is
-priority boosted.
-
-Before this change, __setscheduler() was in charge of changing tasks
-normal_prio and prio, and the latter is used to actually perform
-sched_class change. Unfortunately, the commit above broke this
-behavior, causing tasks to remain in fair_sched_class.
-
-Restore the old behaviour setting normal_prio and prio to the right
-values after the __setscheduler_params() call.
-
-Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
----
- kernel/sched/core.c |    7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index ee8004c..04ae20d 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3206,6 +3206,13 @@ static void __setscheduler(struct rq *rq, struct task_struct *p,
- {
- 	__setscheduler_params(p, attr);
- 
-+	/*
-+	 * Since we checked before with rt_mutex_check_prio(),
-+	 * we don't have pi waiters or our top waiter has lower
-+	 * priority (user space view) than what we got.
-+	 */
-+	p->prio = p->normal_prio = normal_prio(p);
-+
- 	if (dl_prio(p->prio))
- 		p->sched_class = &dl_sched_class;
- 	else if (rt_prio(p->prio))
 -- 
-1.7.9.5
+Matthew Garrett | mjg59@srcf.ucam.org
