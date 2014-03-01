@@ -1,74 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780AbaCAMvG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Mar 2014 07:51:06 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:47236 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752344AbaCAMvE (ORCPT
+	id S1752879AbaCAMwp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Mar 2014 07:52:45 -0500
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:40196 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752771AbaCAMwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Mar 2014 07:51:04 -0500
-Date: Sat, 1 Mar 2014 15:50:50 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Chase Southwood <chase.southwood@yahoo.com>
-Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org, abbotti@mev.co.uk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Staging: comedi: introduce outl_1564_* and
- inl_1564_* helper functions in hwdrv_apci1564.c
-Message-ID: <20140301125049.GG26722@mwanda>
-References: <1393572680-9521-1-git-send-email-chase.southwood@yahoo.com>
- <1393669707-20107-1-git-send-email-chase.southwood@yahoo.com>
- <20140301124418.GT26776@mwanda>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140301124418.GT26776@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Sat, 1 Mar 2014 07:52:43 -0500
+From: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+To: <linville@tuxdriver.com>
+Cc: will.deacon@arm.com, pali.rohar@gmail.com, pavel@ucw.cz,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+Subject: [PATCH] wl1251: use skb_trim to make skb shorter
+Date: Sat,  1 Mar 2014 14:52:06 +0200
+Message-Id: <1393678326-23535-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <20140225105756.GB22279@mudshark.cambridge.arm.com>
+References: <20140225105756.GB22279@mudshark.cambridge.arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 01, 2014 at 03:44:18PM +0300, Dan Carpenter wrote:
-> On Sat, Mar 01, 2014 at 04:28:27AM -0600, Chase Southwood wrote:
-> > This patch introduces a handful of outl and inl helper functions with the
-> > ultimate goal of improving code readability and allowing several lines
-> > which violate the character limit to be shortened in a sane way.
-> > 
-> > Cc: Dan Carpenter <dan.carpenter@oracle.com>
-> > Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
-> > ---
-> > This patchset serves as a replacement to my previous cleanup patchset for
-> > hwdrv_apci1564.c
-> > 
-> > Dan,
-> > After spending a little bit more time with this and trying out different
-> > ways of cleaning this up, I decided that making helper functions for all
-> > of the most common register sets would look the best, but I haven't made
-> > a helper for a few of the least common inl/outl calls because if I did,
-> > the sheer number of helper functions would get quite ridiculous.
-> > Let me know if you think my selections of what to make into helper
-> > functions seems appropriate.
-> > 
-> 
-> Yeah.  You're right...  It's kind of a lot of helper functions.
-> 
-> I wonder if we could just do something like:
-> 
-> static void outl_amcc(struct addi_private *devpriv, unsigned int cmd,
-> 		      unsigned int reg)
-> {
-> 	outl(cmd, devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP + reg);
-> }
-> 
+the current code is directly setting skb->len, which is not correct and
+brings problems with HAVE_EFFICIENT_UNALIGNED_ACCESS enabled in config
 
-Gar...
+Signed-off-by: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+---
+ drivers/net/wireless/ti/wl1251/rx.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-static void outl_amcc(struct addi_private *devpriv, unsigned int cmd,
-		      unsigned int reg)
-{
-	outl(cmd, devpriv->i_IobaseAmcc + reg);
-}
-
-regards,
-dan carpenter
+diff --git a/drivers/net/wireless/ti/wl1251/rx.c b/drivers/net/wireless/ti/wl1251/rx.c
+index 123c4bb..cde0eaf 100644
+--- a/drivers/net/wireless/ti/wl1251/rx.c
++++ b/drivers/net/wireless/ti/wl1251/rx.c
+@@ -180,7 +180,7 @@ static void wl1251_rx_body(struct wl1251 *wl,
+ 	wl1251_mem_read(wl, rx_packet_ring_addr, rx_buffer, length);
+ 
+ 	/* The actual length doesn't include the target's alignment */
+-	skb->len = desc->length  - PLCP_HEADER_LENGTH;
++	skb_trim(skb, desc->length - PLCP_HEADER_LENGTH);
+ 
+ 	fc = (u16 *)skb->data;
+ 
+-- 
+1.7.9.5
 
