@@ -1,72 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786AbaCAEfZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 23:35:25 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53925 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752585AbaCAEfE (ORCPT
+	id S1752725AbaCAEfW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 23:35:22 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:53009 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752576AbaCAEfD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 23:35:04 -0500
-Date: Sat, 1 Mar 2014 13:34:58 +0900
-From: Mark Brown <broonie@kernel.org>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: lars@metafoo.de, alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Message-ID: <20140301043458.GR29849@sirena.org.uk>
-References: <1393578267-18255-1-git-send-email-Li.Xiubo@freescale.com>
- <1393578267-18255-3-git-send-email-Li.Xiubo@freescale.com>
+	Fri, 28 Feb 2014 23:35:03 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: Eric Paris <eparis@redhat.com>, linux-audit@redhat.com,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+References: <8738j3vzry.fsf@xmission.com>
+	<20140301011142.GK16640@madcap2.tricolour.ca>
+Date: Fri, 28 Feb 2014 20:34:52 -0800
+In-Reply-To: <20140301011142.GK16640@madcap2.tricolour.ca> (Richard Guy
+	Briggs's message of "Fri, 28 Feb 2014 20:11:42 -0500")
+Message-ID: <87fvn2r0yb.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="RpDyejMaDGJhP2PU"
-Content-Disposition: inline
-In-Reply-To: <1393578267-18255-3-git-send-email-Li.Xiubo@freescale.com>
-X-Cookie: You should go home.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 175.126.181.238
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCHv2 2/3] ASoC: io: New signature for
- snd_soc_codec_set_cache_io()
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19QGcL/ahjmDszEOlX33r2xvgV+NQY41pc=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
+	*      [score: 0.1412]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Richard Guy Briggs <rgb@redhat.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] audit: Use struct net not pid_t to remember the network namespce to reply in
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Richard Guy Briggs <rgb@redhat.com> writes:
 
---RpDyejMaDGJhP2PU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On 14/02/28, Eric W. Biederman wrote:
+>> While reading through 3.14-rc1 I found a pretty siginficant mishandling
+>> of network namespaces in the recent audit changes.
+>> 
+>> In struct audit_netlink_list and audit_reply add a reference to the
+>> network namespace of the caller and remove the userspace pid of the
+>> caller.  This cleanly remembers the callers network namespace, and
+>> removes a huge class of races and nasty failure modes that can occur
+>> when attempting to relook up the callers network namespace from a pid_t
+>> (including the caller's network namespace changing, pid wraparound, and
+>> the pid simply not being present).
+>
+> Ok, so I see that avoiding pid_t in struct audit_reply and struct
+> audit_netlink_list is necessary.  Why not switch to struct pid?
+>
+> How does this patch solve a caller's network namespace changing?
 
-On Fri, Feb 28, 2014 at 05:04:26PM +0800, Xiubo Li wrote:
-> Now that all users have been converted to regmap and the config.reg_bits
-> and config.val_bits can be setted by each user through regmap core API.
-> So these two params are redundant here.
+This solves the callers network namespace changing or the caller going
+away entirely (a much more serious concern) because we capture the
+network namespace at the time of the request when the caller is in the
+kernel.  I would have simply captured the socket we want to reply on but
+there did not appear to be a good way to do that.
 
-Actually, I think the way to fix the issue with CODECs doing I/O in
-probe is to provide a way for drivers to specify a regmap when
-registering the CODEC (rather than during probe) and then move the
-initialisation of the regmap before the probe function is called.  That
-would make set_cache_io() go away entirely.
+Reading through it again capturing current->nsproxy->net_ns is striclty
+wrong.  We should be capturing sock_net(NETLINK_CB(skb).sk).  The
+network namespace of the requesting socket.  That handles even weird
+cases of passing file descriptors between processes in different network
+namespaces.  (An incremental patch to change to code to selct the
+network namespace of the requesting socket to follow in a moment).
 
---RpDyejMaDGJhP2PU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Still what my patch implements today at least means we won't oops the
+kernel if the audit process exits early, and causes get_net_ns_by_pid
+to return NULL.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTEWNqAAoJELSic+t+oim9c4QP/jL6yuE+Yh4zOeu80Y46621C
-rd4gXZjXrXpNwYtKILLFQbiaMcRw8+Y4RM8fB2ysyOCYG5nadHOg7Oo81pP5AOVU
-QQS6Z9cbsq6GGxeRfz9XDzGPUyHCEuDstGQBgodYC+fYRpthlvXafCeDWaxIYhqX
-F5d4W7gKqGNWFcE2fmztCg2gLw3945Cn7wTjLzmftvb9yIpFcvJaqNV2sohe5Wo6
-wQ69Ym73FN6fs+uQrjxxaC+lJe79K2xtrk8kzTCVHd1dMkSzp7/Pv18XtCMXBrin
-BWGHUfQcgjzAoz3cx4gTNrllUsMG8jGRtdqx+NHjcE5dvhitD8MMk3JD/hHw/ANM
-7HOcQeG8/h1eq/3nqMy+cP2IB96eKrWeLPi92/5YZpsWvd59vOOAOUNj5bYUW78Y
-D84PbLBAcDUPpioRVLZEtDTLr0kc5Hf2AAGQoOGddjia8k3DEc3hNZCzUiQ2FZv2
-b0cIvYvyU2HuWQenbb+GIjKgcAPFJHVVPVmbm0TjRAqPOkw0Hqd2hzZJCC/d6K4E
-azYuzyptVmRAc4vcwYk5yq3YKxKojxvhh09sIiaCIP3ff2rV3tO2ra4NliHILxDs
-05+sHFaK+IGXQ+3laL4nQI/7ACnitvWVue/L/H9o/vLvo+orNp9oSdsPzbEVqEik
-6woyF/tasx+VsSw7vRms
-=6X7Z
------END PGP SIGNATURE-----
+This whole code path is so crazy because what we really should be doing
+is sending the packets in nonblocking mode and just dropping packets
+if the receiving socket does not have enough socket buvffers.
 
---RpDyejMaDGJhP2PU--
+Eric
