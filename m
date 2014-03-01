@@ -1,105 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725AbaCABjH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 20:39:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53486 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752512AbaCABjF (ORCPT
+	id S1752323AbaCACA5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 21:00:57 -0500
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:34427 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751905AbaCACAz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 20:39:05 -0500
-Date: Fri, 28 Feb 2014 17:41:50 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Ning Qu <quning@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>, Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Chinner <david@fromorbit.com>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ning Qu <quning@google.com>
-Subject: Re: [PATCH 0/1] mm, shmem: map few pages around fault address if
- they are in page cache
-Message-Id: <20140228174150.8ff4edca.akpm@linux-foundation.org>
-In-Reply-To: <CACQD4-5U3P+QiuNKzt5+VdDDi0ocphR+Jh81eHqG6_+KeaHyRw@mail.gmail.com>
-References: <1393625931-2858-1-git-send-email-quning@google.com>
-	<CACQD4-5U3P+QiuNKzt5+VdDDi0ocphR+Jh81eHqG6_+KeaHyRw@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 28 Feb 2014 21:00:55 -0500
+MIME-Version: 1.0
+In-Reply-To: <1393572124.1019.3.camel@wall-e.seibold.net>
+References: <1393443298.1917.5.camel@wall-e.seibold.net> <20140226204524.GA1598@kroah.com>
+ <CALCETrU+u3GMK-GaTk4gbAjyMbpQY15qNC4D9q9h2a26YfsLwA@mail.gmail.com>
+ <CALCETrW_PHbDzn2S3NyGTSk4yqYjnpJbStCuLc_yBGdfspfFCA@mail.gmail.com> <1393572124.1019.3.camel@wall-e.seibold.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 28 Feb 2014 18:00:34 -0800
+Message-ID: <CALCETrUH1tZcu0upkTV0gsXtpnf-BAY4vmWKnN19=ZXsbqWT8A@mail.gmail.com>
+Subject: Re: Final: Add 32 bit VDSO time function support
+To: Stefani Seibold <stefani@seibold.net>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
+        Andreas.Brief@rohde-schwarz.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Feb 2014 16:35:16 -0800 Ning Qu <quning@gmail.com> wrote:
+On Thu, Feb 27, 2014 at 11:22 PM, Stefani Seibold <stefani@seibold.net> wrote:
+> Am Mittwoch, den 26.02.2014, 16:55 -0800 schrieb Andy Lutomirski:
+>>
+>> Once I patch it to work, your 32-bit code is considerably faster than
+>> the 64-bit case.  It's enough faster that I suspect a bug.  Dumping
+>> the in-memory shows some rather suspicious nops before the rdtsc
+>> instruction.  I suspect that you've forgotten to run the 32-bit vdso
+>> through the alternatives code.  The is a nasty bug: it will appear to
+>> work, but you'll see non-monotonic times on some SMP systems.
+>>
+>
+> I didn't know this. My basic test case is a KVM which defaults to 1 cpu.
+> Thanks for discovering the issue.
 
-> Sorry about my fault about the experiments, here is the real one.
-> 
-> Btw, apparently, there are still some questions about the results and
-> I will sync with Kirill about his test command line.
-> 
-> Below is just some simple experiment numbers from this patch, let me know if
-> you would like more:
-> 
-> Tested on Xeon machine with 64GiB of RAM, using the current default fault
-> order 4.
-> 
-> Sequential access 8GiB file
->                         Baseline        with-patch
-> 1 thread
->     minor fault         8,389,052    4,456,530
->     time, seconds    9.55            8.31
+This leads to a potentially interesting question: is rdtsc_barrier()
+actually necessary on UP?  IIRC the point is that, if an
+rdtsc_barrier(); rdtsc in one thread is "before" (in the sense of
+being synchronized by some memory operation) an rdtsc_barrier(); rdtsc
+in another thread, then the first rdtsc needs to return an earlier or
+equal time to the second one.
 
-The numbers still seem wrong.  I'd expect to see almost exactly 2M minor
-faults with this test.
+I assume that no UP CPU is silly enough to execute two rdtsc
+instructions out of order relative to each other in the absence of
+barriers.  So this is a nonissue on UP.
 
-Looky:
+On the other hand, suppose that some code does:
 
-#include <sys/mman.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
+volatile long x = *(something that's not in cache)
+clock_gettime
 
-#define G (1024 * 1024 * 1024)
+I can imagine a modern CPU speculating far enough ahead that the rdtsc
+happens *before* the cache miss.  This won't cause visible
+non-monotonicity as far as I can see, but it might annoy people who
+try to benchmark their code.
 
-int main(int argc, char *argv[])
-{
-	char *p;
-	int fd;
-	unsigned long idx;
-	int sum = 0;
+Note: actually making this change might be a bit tricky.  I don't know
+if the alternatives code is smart enough.
 
-	fd = open("foo", O_RDONLY);
-	if (fd < 0) {
-		perror("open");
-		exit(1);
-	}
-	p = mmap(NULL, 1 * G, PROT_READ, MAP_PRIVATE, fd, 0);
-	if (p == MAP_FAILED) {
-		perror("mmap");
-		exit(1);
-	}
-
-	for (idx = 0; idx < 1 * G; idx += 4096)
-		sum += p[idx];
-	printf("%d\n", sum);
-	exit(0);
-}
-
-z:/home/akpm> /usr/bin/time ./a.out
-0
-0.05user 0.33system 0:00.38elapsed 99%CPU (0avgtext+0avgdata 4195856maxresident)k
-0inputs+0outputs (0major+262264minor)pagefaults 0swaps
-
-z:/home/akpm> dc
-16o
-262264 4 * p
-1001E0
-
-That's close!
+--Andy
