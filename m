@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554AbaCATfY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Mar 2014 14:35:24 -0500
-Received: from ring0.de ([5.45.105.125]:46564 "EHLO ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753343AbaCATdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Mar 2014 14:33:42 -0500
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-From: Sebastian Reichel <sre@debian.org>
-To: Sebastian Reichel <sre@ring0.de>, Marek Belisko <marek@goldelico.com>,
-        Jonathan Cameron <jic23@kernel.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-iio@vger.kernel.org,
-        Sebastian Reichel <sre@debian.org>
-Subject: [PATCHv1 4/9] mfd: twl-core: Add twl_i2c_read/write_u16
-Date: Sat,  1 Mar 2014 20:32:40 +0100
-Message-Id: <1393702365-26429-5-git-send-email-sre@debian.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1393702365-26429-1-git-send-email-sre@debian.org>
-References: <1393444990-28140-1-git-send-email-sre@debian.org>
- <1393702365-26429-1-git-send-email-sre@debian.org>
+	id S1753258AbaCATxv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Mar 2014 14:53:51 -0500
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:34648 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753179AbaCATxu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Mar 2014 14:53:50 -0500
+Message-ID: <53123ACA.5000701@suse.cz>
+Date: Sat, 01 Mar 2014 20:53:46 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: shuah.kh@samsung.com, linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Josh Boyer <jwboyer@fedoraproject.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, David Miller <davem@davemloft.net>
+Subject: Re: 3.12-stable kernel tree being taken over by Jiri Slaby
+References: <20140226231910.GA8789@kroah.com> <5310B238.9070501@samsung.com>
+In-Reply-To: <5310B238.9070501@samsung.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a simple twl_i2c_read/write_u16 wrapper over
-the twl_i2c_read/write, which is similar to the
-twl_i2c_read/write_u8 wrapper.
+On 02/28/2014 04:58 PM, Shuah Khan wrote:
+> On 02/26/2014 04:19 PM, Greg Kroah-Hartman wrote:
+>> As I hinted at in my kernel summit talk about the stable kernel tree, we
+>> have a sucker^Wvolunteer who has stepped up to take over the longterm
+>> maintenance of the 3.12 stable kernel tree.
+>>
+>> Jiri Slaby will be doing this work, for how ever long he wants to do it.
+>> I'll still be doing the final releases to kernel.org, like I do for 3.2,
+>> but Jiri will be doing the collecting of patches and other real work
+>> involved in it, including the announcements for its release.
+>>
+>> The kernel.org page has already been updated with this information:
+>>     https://www.kernel.org/category/releases.html
+>>
+>> If anyone has any questions about this, please let me know.
+>>
+> 
+> Hi Jiri,
+> 
+> I test all stable release candidates Greg KH maintains including 3.12.
+> Would you like me to continue to do that for your 3.12 releases going
+> forward? If yes, could you please include me on your cc list.
 
-Signed-off-by: Sebastian Reichel <sre@debian.org>
-Acked-by: Lee Jones <lee.jones@linaro.org>
-Acked-by: Jonathan Cameron <jic23@kernel.org>
----
- include/linux/i2c/twl.h | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+Sure thing. Thanks in advance.
 
-diff --git a/include/linux/i2c/twl.h b/include/linux/i2c/twl.h
-index ade1c06..d2b1670 100644
---- a/include/linux/i2c/twl.h
-+++ b/include/linux/i2c/twl.h
-@@ -195,6 +195,18 @@ static inline int twl_i2c_read_u8(u8 mod_no, u8 *val, u8 reg) {
- 	return twl_i2c_read(mod_no, val, reg, 1);
- }
- 
-+static inline int twl_i2c_write_u16(u8 mod_no, u16 val, u8 reg) {
-+	val = cpu_to_le16(val);
-+	return twl_i2c_write(mod_no, (u8*) &val, reg, 2);
-+}
-+
-+static inline int twl_i2c_read_u16(u8 mod_no, u16 *val, u8 reg) {
-+	int ret;
-+	ret = twl_i2c_read(mod_no, (u8*) val, reg, 2);
-+	*val = le16_to_cpu(*val);
-+	return ret;
-+}
-+
- int twl_get_type(void);
- int twl_get_version(void);
- int twl_get_hfclk_rate(void);
 -- 
-1.9.0
-
+js
+suse labs
