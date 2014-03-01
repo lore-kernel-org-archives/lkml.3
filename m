@@ -1,52 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751147AbaCAFiq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Mar 2014 00:38:46 -0500
-Received: from mail-qc0-f201.google.com ([209.85.216.201]:62427 "EHLO
-	mail-qc0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750802AbaCAFip (ORCPT
+	id S1751415AbaCAFoG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Mar 2014 00:44:06 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:60117 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750787AbaCAFoE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Mar 2014 00:38:45 -0500
-From: Filipe Brandenburger <filbranden@google.com>
-To: Steven Rostedt <rostedt@goodmis.org>, Li Zefan <lizefan@huawei.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        Filipe Brandenburger <filbranden@google.com>
-Subject: [PATCH 0/3] tracing: fix macro expansion and refactor some of dynamic_array support
-Date: Fri, 28 Feb 2014 21:32:15 -0800
-Message-Id: <1393651938-16418-1-git-send-email-filbranden@google.com>
-X-Mailer: git-send-email 1.9.0.279.gdc9e3eb
+	Sat, 1 Mar 2014 00:44:04 -0500
+From: vinayakm.list@gmail.com
+To: rob@landley.net, linux-doc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Vinayak Menon <vinayakm.list@gmail.com>
+Subject: [PATCH] Documentation/trace/postprocess/trace-pagealloc-postprocess.pl: fix the traceevent regex
+Date: Sat,  1 Mar 2014 11:13:46 +0530
+Message-Id: <1393652626-2927-1-git-send-email-vinayakm.list@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven Rostedt, Li Zefan,
+From: Vinayak Menon <vinayakm.list@gmail.com>
 
-This fixes an issue with macro expansion introduced in commit 7d536cb3f
-(tracing/events: record the size of dynamic arrays).
+The script fails, when irq, preempt and lockdep fields (field 3 below)
+are printed in the trace output.
 
-I split it in 3 patches, the first fixes a bug, the second improves the code to
-evaluate the expression only once and the third refactors an u32 holding two
-pieces of data in lower/higher 16 bits into a struct to make the code cleaner.
+Example entry:
+worker/0:0-4  [000] ...1  1155.972338: mm_page_alloc:
 
-I split them this way since I expect the first two to be more straightforward
-while the third one might generate some discussion. I'd be happy to squash them
-into a single one if you'd prefer that.
+Signed-off-by: Vinayak Menon <vinayakm.list@gmail.com>
+---
+ .../postprocess/trace-pagealloc-postprocess.pl     |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-Cheers,
-Filipe
-
-
-Filipe Brandenburger (3):
-  tracing: correctly expand len expressions from __dynamic_array macro
-  tracing: evaluate len expression only once in __dynamic_array macro
-  tracing: introduce a trace_data_offset struct to store array size
-
- include/linux/ftrace_event.h       |  5 +++++
- include/trace/ftrace.h             | 26 ++++++++++++++------------
- kernel/trace/trace_events_filter.c | 13 ++++++++++---
- 3 files changed, 29 insertions(+), 15 deletions(-)
-
+diff --git a/Documentation/trace/postprocess/trace-pagealloc-postprocess.pl b/Documentation/trace/postprocess/trace-pagealloc-postprocess.pl
+index 0a120aa..94efc7f 100644
+--- a/Documentation/trace/postprocess/trace-pagealloc-postprocess.pl
++++ b/Documentation/trace/postprocess/trace-pagealloc-postprocess.pl
+@@ -84,7 +84,7 @@ my $regex_fragdetails;
+ 
+ # Static regex used. Specified like this for readability and for use with /o
+ #                      (process_pid)     (cpus      )   ( time  )   (tpoint    ) (details)
+-my $regex_traceevent = '\s*([a-zA-Z0-9-]*)\s*(\[[0-9]*\])\s*([0-9.]*):\s*([a-zA-Z_]*):\s*(.*)';
++my $regex_traceevent = '\s*([a-zA-Z0-9-]*)\s*(\[[0-9]*\])(\s*[dX.][Nnp.][Hhs.][0-9a-fA-F.]*|)\s*([0-9.]*):\s*([a-zA-Z_]*):\s*(.*)';
+ my $regex_statname = '[-0-9]*\s\((.*)\).*';
+ my $regex_statppid = '[-0-9]*\s\(.*\)\s[A-Za-z]\s([0-9]*).*';
+ 
+@@ -195,7 +195,7 @@ EVENT_PROCESS:
+ 	while ($traceevent = <STDIN>) {
+ 		if ($traceevent =~ /$regex_traceevent/o) {
+ 			$process_pid = $1;
+-			$tracepoint = $4;
++			$tracepoint = $5;
+ 
+ 			if ($opt_read_procstat || $opt_prepend_parent) {
+ 				$process_pid =~ /(.*)-([0-9]*)$/;
+@@ -215,7 +215,7 @@ EVENT_PROCESS:
+ 
+ 			# Unnecessary in this script. Uncomment if required
+ 			# $cpus = $2;
+-			# $timestamp = $3;
++			# $timestamp = $4;
+ 		} else {
+ 			next;
+ 		}
+@@ -236,7 +236,7 @@ EVENT_PROCESS:
+ 		} elsif ($tracepoint eq "mm_page_alloc_extfrag") {
+ 
+ 			# Extract the details of the event now
+-			$details = $5;
++			$details = $6;
+ 
+ 			my ($page, $pfn);
+ 			my ($alloc_order, $fallback_order, $pageblock_order);
 -- 
-1.9.0.279.gdc9e3eb
+1.7.6
 
