@@ -1,94 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753332AbaCAUFc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Mar 2014 15:05:32 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:31484 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753227AbaCAUFa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Mar 2014 15:05:30 -0500
-Message-ID: <53123D81.6080003@oracle.com>
-Date: Sat, 01 Mar 2014 15:05:21 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
+	id S1753363AbaCAUG7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Mar 2014 15:06:59 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:35149 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753205AbaCAUG6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Mar 2014 15:06:58 -0500
+Message-ID: <53123DCF.7040500@zytor.com>
+Date: Sat, 01 Mar 2014 12:06:39 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: fs: gpf in simple_setattr
-References: <52B23CEA.7090405@oracle.com> <52CD762B.7020600@oracle.com>
-In-Reply-To: <52CD762B.7020600@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Matthew Garrett <mjg59@srcf.ucam.org>,
+        "Li, Aubrey" <aubrey.li@linux.intel.com>
+CC: "H. Peter Anvin" <hpa@linux.intel.com>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Len.Brown@intel.com,
+        Adam Williamson <awilliam@redhat.com>
+Subject: Re: [patch] x86: Introduce BOOT_EFI and BOOT_CF9 into the reboot
+ sequence loop
+References: <531027BE.2010807@linux.intel.com> <20140228061254.GA2226@srcf.ucam.org> <53102AB9.40600@linux.intel.com> <20140228062325.GA3246@srcf.ucam.org> <53102F3C.4020806@linux.intel.com> <20140228064413.GA4900@srcf.ucam.org> <531032A0.8090903@linux.intel.com> <5310CBB7.4030407@linux.intel.com> <53110977.8080907@linux.intel.com> <53121496.8060603@linux.intel.com> <20140301172256.GA29417@srcf.ucam.org>
+In-Reply-To: <20140301172256.GA29417@srcf.ucam.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping again?
+On 03/01/2014 09:22 AM, Matthew Garrett wrote:
+> On Sun, Mar 02, 2014 at 01:10:46AM +0800, Li, Aubrey wrote:
+> 
+>> Peter - Can you please clarify writing to cf9 caused some system hang.
+>> If CF9 is the last way to try, that means ACPI, KBD takes no effect,
+>> then if no CF9, the system hangs there in  infinite for() loop. If CF9
+>> is there, that means CF9 takes no effect as well, CF9 does *NOT* cause
+>> system hang, right? If the answer is no, can you please point me which
+>> system hangs by CF9. I'd like to investigate what the ACPI reboot
+>> vectors look like on these systems.
+> 
+> I think I'm fine with cf9 being in there as long as it comes after the 
+> ACPI calls and as long as we're using either conf1 or conf2 access.
+> 
 
-I've been working on it, but don't see an obvious issue.
+Be careful.  This is *exactly* what I tried back in checkin
+14d7ca5c575853664d8fe4f225a77b8df1b7de7d.  We had to back that out quite
+quickly.
 
-It does look like an access to invalid memory easily doable from userspace, so it should probably 
-get fixed soon...
+This was before we had the Link: tags pointing back to the LKML
+discussion, but the date (2008-11-11) and title of the patch should give
+a good hint for finding the discussion I would think.
 
+    x86: attempt reboot via port CF9 if we have standard PCI ports
 
-Thanks,
-Sasha
+    Impact: Changes reboot behavior.
 
-On 01/08/2014 11:00 AM, Sasha Levin wrote:
-> ping? still happening in -next.
->
-> On 12/18/2013 07:25 PM, Sasha Levin wrote:
->> Hi all,
->>
->> While fuzzing with trinity inside a KVM tools guest running latest -next kernel, I've stumbled on
->> the following spew.
->>
->> This happens when sb is dereferenced in __mark_inode_dirty():
->>
->>                  if (sb->s_op->dirty_inode) <--- HERE
->>                          sb->s_op->dirty_inode(inode, flags);
->>
->> 'sb' is pointing to a memory full of poisoned memory (6b6b6b6b6b6b6b6b).
->>
->> [  590.469520] general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
->> [  590.470737] Dumping ftrace buffer:
->> [  590.471331]    (ftrace buffer empty)
->> [  590.471903] Modules linked in:
->> [  590.472349] CPU: 3 PID: 9685 Comm: trinity-child97 Tainted: G        W
->> 3.13.0-rc4-next-20131218-sasha-00013-g2cebb9b-dirty #4156
->> [  590.472396] task: ffff8800bc520000 ti: ffff8800bc4fa000 task.ti: ffff8800bc4fa000
->> [  590.472396] RIP: 0010:[<ffffffff81302d34>]  [<ffffffff81302d34>] __mark_inode_dirty+0xd4/0x360
->> [  590.475691] RSP: 0018:ffff8800bc4fbda8  EFLAGS: 00010246
->> [  590.475691] RAX: 6b6b6b6b6b6b6b6b RBX: ffff8802f9002530 RCX: 000000006b6b6b6b
->> [  590.475691] RDX: 0000000000000000 RSI: 0000000000000007 RDI: ffff8802f9002530
->> [  590.475691] RBP: ffff8800bc4fbdc8 R08: 0000000000000000 R09: 0000000000000000
->> [  590.475691] R10: 0000000000000001 R11: 0000000000000002 R12: 0000000000000007
->> [  590.475691] R13: 0000000000000000 R14: ffff8802f8795668 R15: ffff8802f9002530
->> [  590.475691] FS:  00007f9bba1b7700(0000) GS:ffff8801c8000000(0000) knlGS:0000000000000000
->> [  590.475691] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
->> [  590.475691] CR2: 00007f9bba17da44 CR3: 00000000bc4e6000 CR4: 00000000000006e0
->> [  590.475691] Stack:
->> [  590.475691]  ffff8802f9002530 ffff8800bc4fbe98 0000000000000000 ffff880161244000
->> [  590.475691]  ffff8800bc4fbdf8 ffffffff8130001b ffff8800bc4fbde8 0000000000001846
->> [  590.475691]  ffff8800bc4fbe98 0000000000000000 ffff8800bc4fbe78 ffffffff812f3016
->> [  590.475691] Call Trace:
->> [  590.475691]  [<ffffffff8130001b>] simple_setattr+0x5b/0x70
->> [  590.475691]  [<ffffffff812f3016>] notify_change+0x216/0x300
->> [  590.475691]  [<ffffffff812d0180>] ? zs_malloc+0x1b0/0x200
->> [  590.475691]  [<ffffffff812d0b15>] chown_common+0x135/0x1c0
->> [  590.475691]  [<ffffffff812d0c20>] SyS_fchown+0x80/0xd0
->> [  590.475691]  [<ffffffff843a6d50>] tracesys+0xdd/0xe2
->> [  590.494436] VFS: Warning: trinity-child15 using old stat() call. Recompile your binary.
->> [  590.475691] Code: c5 10 48 89 de ff d0 49 8b 45 00 48 85 c0 75 e7 65 ff 0c 25 5c da 00 00 0f 94
->> c0 84 c0 74 08 e8 b3 33 d7 ff 0f 1f 00 49 8b 46 30 <48> 8b 40 10 48 85 c0 74 08 44 89 e6 48 89 df ff
->> d0 8b 05 bd 6b
->> [  590.475691] RIP  [<ffffffff81302d34>] __mark_inode_dirty+0xd4/0x360
->> [  590.475691]  RSP <ffff8800bc4fbda8>
->>
->>
->> Thanks,
->> Sasha
->
+    If port CF9 seems to be safe to touch, attempt it before trying the
+    keyboard controller.  Port CF9 is not available on all chipsets (a
+    significant but decreasing number of modern chipsets don't implement
+    it), but port CF9 itself should in general be safe to poke (no ill
+    effects if unimplemented) on any system which has PCI Configuration
+    Method #1 or #2, as it falls inside the PCI configuration port range
+    in both cases.  No chipset without PCI is known to have port CF9,
+    either, although an explicit "pci=bios" would mean we miss this and
+    therefore don't use port CF9.  An explicit "reboot=pci" can be used to
+    force the use of port CF9.
+
+    Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+
+	-hpa
 
