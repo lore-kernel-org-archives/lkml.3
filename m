@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752942AbaCAN71 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Mar 2014 08:59:27 -0500
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:39523 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752566AbaCAN7Z (ORCPT
+	id S1752995AbaCAN7b (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Mar 2014 08:59:31 -0500
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:56488 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752858AbaCAN71 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Mar 2014 08:59:25 -0500
+	Sat, 1 Mar 2014 08:59:27 -0500
 From: Marek Belisko <marek@goldelico.com>
 To: bcousson@baylibre.com, tony@atomide.com, robh+dt@kernel.org,
         pawel.moll@arm.com, mark.rutland@arm.com,
@@ -15,36 +15,57 @@ To: bcousson@baylibre.com, tony@atomide.com, robh+dt@kernel.org,
 Cc: linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         hns@goldelico.com, Marek Belisko <marek@goldelico.com>
-Subject: [PATCH v2 0/7] ARM: dts: omap3-gta04: Various devicetree updates
-Date: Sat,  1 Mar 2014 14:58:47 +0100
-Message-Id: <1393682334-26805-1-git-send-email-marek@goldelico.com>
+Subject: [PATCH v2 1/7] ARM: dts: omap3-gta04: Add ti,omap36xx to compatible property to avoid problems with booting
+Date: Sat,  1 Mar 2014 14:58:48 +0100
+Message-Id: <1393682334-26805-2-git-send-email-marek@goldelico.com>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1393682334-26805-1-git-send-email-marek@goldelico.com>
+References: <1393682334-26805-1-git-send-email-marek@goldelico.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This updated series fix issue with proper gta04 booting in 3.14 kernel
-and add various devices to devicetree.
+Without that change booting leads to crash with more warnings like below:
+[    0.284454] omap_hwmod: uart4: cannot clk_get main_clk uart4_fck
+[    0.284484] omap_hwmod: uart4: cannot _init_clocks
+[    0.284484] ------------[ cut here ]------------
+[    0.284545] WARNING: CPU: 0 PID: 1 at arch/arm/mach-omap2/omap_hwmod.c:2543 _init+0x300/0x3e4()
+[    0.284545] omap_hwmod: uart4: couldn't init clocks
+[    0.284576] Modules linked in:
+[    0.284606] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.13.0-next-20140124-00020-gd2aefec-dirty #26
+[    0.284637] [<c00151c0>] (unwind_backtrace) from [<c0011e20>] (show_stack+0x10/0x14)
+[    0.284667] [<c0011e20>] (show_stack) from [<c0568544>] (dump_stack+0x7c/0x94)
+[    0.284729] [<c0568544>] (dump_stack) from [<c003ff94>] (warn_slowpath_common+0x6c/0x90)
+[    0.284729] [<c003ff94>] (warn_slowpath_common) from [<c003ffe8>] (warn_slowpath_fmt+0x30/0x40)
+[    0.284759] [<c003ffe8>] (warn_slowpath_fmt) from [<c07d1be8>] (_init+0x300/0x3e4)
+[    0.284790] [<c07d1be8>] (_init) from [<c07d217c>] (__omap_hwmod_setup_all+0x40/0x8c)
+[    0.284820] [<c07d217c>] (__omap_hwmod_setup_all) from [<c0008918>] (do_one_initcall+0xe8/0x14c)
+[    0.284851] [<c0008918>] (do_one_initcall) from [<c07c5c18>] (kernel_init_freeable+0x104/0x1c8)
+[    0.284881] [<c07c5c18>] (kernel_init_freeable) from [<c0563524>] (kernel_init+0x8/0x118)
+[    0.284912] [<c0563524>] (kernel_init) from [<c000e368>] (ret_from_fork+0x14/0x2c)
+[    0.285064] ---[ end trace 63de210ad43b627d ]---
 
-Changes from V1: 
-- removed fixes which was merged to 3.14 already
-- add bma180 accelerometer + booting fix
+Reference:
+https://lkml.org/lkml/2013/10/8/553
 
-Marek Belisko (2):
-  ARM: dts: omap3-gta04: Add ti,omap36xx to compatible property to avoid
-    problems with booting
-  ARM: dts: omap3-gta04: Add touchscreen properties
+Signed-off-by: Marek Belisko <marek@goldelico.com>
+---
+ arch/arm/boot/dts/omap3-gta04.dts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-NeilBrown (5):
-  ARM: dts: omap3-gta04: Add support for magnetometer
-  ARM: dts: omap3-gta04: Add twl4030 charger
-  ARM: dts: omap3-gta04: Add basic sound support
-  ARM: dts: omap3-gta04: Enable mmc2 for wifi
-  ARM: dts: omap3-gta04: Add bma180 accelerometer
-
- arch/arm/boot/dts/omap3-gta04.dts | 53 +++++++++++++++++++++++++++++++++++++--
- 1 file changed, 51 insertions(+), 2 deletions(-)
-
+diff --git a/arch/arm/boot/dts/omap3-gta04.dts b/arch/arm/boot/dts/omap3-gta04.dts
+index c551e4a..d3b253b 100644
+--- a/arch/arm/boot/dts/omap3-gta04.dts
++++ b/arch/arm/boot/dts/omap3-gta04.dts
+@@ -13,7 +13,7 @@
+ 
+ / {
+ 	model = "OMAP3 GTA04";
+-	compatible = "ti,omap3-gta04", "ti,omap3";
++	compatible = "ti,omap3-gta04", "ti,omap36xx", "ti,omap3";
+ 
+ 	cpus {
+ 		cpu@0 {
 -- 
 1.8.3.2
 
