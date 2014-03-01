@@ -1,81 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376AbaCAOC2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Mar 2014 09:02:28 -0500
-Received: from www84.your-server.de ([213.133.104.84]:54035 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752676AbaCAOC0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Mar 2014 09:02:26 -0500
-Message-ID: <1393682521.982.26.camel@wall-e.seibold.net>
-Subject: Re: [PATCH v2 0/4] vDSO fixes, on top of tip/x86/vdso
-From: Stefani Seibold <stefani@seibold.net>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: X86 ML <x86@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
-        Andreas.Brief@rohde-schwarz.com
-Date: Sat, 01 Mar 2014 15:02:01 +0100
-In-Reply-To: <CALCETrW5Z07cn+-r2qnyUDaC_XMujYtcT4zV2ztCOwo4qbfj9w@mail.gmail.com>
-References: <CALCETrW_PHbDzn2S3NyGTSk4yqYjnpJbStCuLc_yBGdfspfFCA@mail.gmail.com>
-	 <cover.1393545985.git.luto@amacapital.net>
-	 <1393572804.1019.14.camel@wall-e.seibold.net>
-	 <CALCETrW5Z07cn+-r2qnyUDaC_XMujYtcT4zV2ztCOwo4qbfj9w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
+	id S1753411AbaCAOCg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Mar 2014 09:02:36 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:33366 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753343AbaCAOC1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Mar 2014 09:02:27 -0500
+Date: Sat, 1 Mar 2014 09:02:12 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: akpm@linux-foundation.org, riel@redhat.com, minchan@kernel.org,
+        mgorman@suse.de, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] lib: radix: return correct error code on insertion
+ failure
+Message-ID: <20140301140212.GW6963@cmpxchg.org>
+References: <1393646064-23785-1-git-send-email-sasha.levin@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393646064-23785-1-git-send-email-sasha.levin@oracle.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, den 28.02.2014, 12:15 -0800 schrieb Andy Lutomirski:
-> On Thu, Feb 27, 2014 at 11:33 PM, Stefani Seibold <stefani@seibold.net> wrote:
-> > Am Donnerstag, den 27.02.2014, 16:18 -0800 schrieb Andy Lutomirski:
-> >> I'd still like someone else to confirm that the 32-bit vDSO is working
-> >> on all common configurations before I'm happy with it, but this should
-> >> be a considerable improvement.
-> >>
-> >> Someone who maintains the clock code should review the changes in:
-> >>
-> >>     commit 0fc8a237cbe98a06962f5ea37d24fc2369e23c74
-> >>     Author: Stefani Seibold <stefani@seibold.net>
-> >>     Date:   Wed Feb 19 10:09:10 2014 +0100
-> >>
-> >>         x86, vdso: Add 32-bit VDSO time support for the 64-bit kernel
-> >>
-> >> very carefully.
-> >>
-> >> There's still something extremely questionable about VDSO_PAGES in the
-> >> 32-bit vDSO code.  It appears to be terminally screwed up, and AFAICS it
-> >> only works at all because none of the 32-bit vDSO images ever exceed
-> >> 4096 bytes.
-> >>
-> >
-> > The 4096 bytes limit was not introduced by the patch set. It is still
-> > there for compatibility reason.
+On Fri, Feb 28, 2014 at 10:54:24PM -0500, Sasha Levin wrote:
+> We would never check the return value of __radix_tree_create() on insertion
+> which would cause us to return -EEXIST on all cases of failure, even when
+> such failure would be running out of memory, for example.
 > 
-> Compatibility with what?  And it doesn't look like there's a sane 4k
-> "limit".  It looks like the code with confuse itself and crash if the
-> image exceeds 4k.
+> This would trigger errors in various code that assumed that -EEXIST is
+> a critical failure, as opposed to a "regular" error. For example, it
+> would trigger a VM_BUG_ON in mm's swap handling:
 > 
+> [  469.636769] kernel BUG at mm/swap_state.c:113!
+> [  469.636769] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> [  469.638313] Dumping ftrace buffer:
+> [  469.638526]    (ftrace buffer empty)
+> [  469.640016] Modules linked in:
+> [  469.640110] CPU: 54 PID: 4598 Comm: kswapd6 Tainted: G        W    3.14.0-rc4-next-20140228-sasha-00012-g6bbcf46-dirty #29
+> [  469.640110] task: ffff8802850d3000 ti: ffff8802850cc000 task.ti: ffff8802850cc000
+> [  469.640110] RIP: 0010:[<ffffffff81296a82>]  [<ffffffff81296a82>] __add_to_swap_cache+0x132/0x170
+> [  469.640110] RSP: 0000:ffff8802850cd7a8  EFLAGS: 00010246
+> [  469.640110] RAX: 0000000080000001 RBX: ffffea000a02ca00 RCX: 0000000000000000
+> [  469.640110] RDX: 0000000000000001 RSI: 0000000000000001 RDI: 00000000ffffffff
+> [  469.640110] RBP: ffff8802850cd7c8 R08: 0000000000000000 R09: 0000000000000000
+> [  469.640110] R10: 0000000000000001 R11: 0000000000000001 R12: ffffffff868c2e18
+> [  469.640110] R13: ffffffff868c2e30 R14: 00000000ffffffef R15: 0000000000000000
+> [  469.640110] FS:  0000000000000000(0000) GS:ffff880286800000(0000) knlGS:0000000000000000
+> [  469.640110] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [  469.640110] CR2: 00000000029c23b0 CR3: 00000000824ca000 CR4: 00000000000006e0
+> [  469.640110] Stack:
+> [  469.640110]  ffffea000a02ca00 020000000004c037 ffff8802850cd9c8 ffffea000a02ca00
+> [  469.640110]  ffff8802850cd7f8 ffffffff81296cac ffff8802850cd9c8 ffff8802850cd9c8
+> [  469.640110]  ffffea000a02ca00 020000000004c037 ffff8802850cd828 ffffffff81296d90
+> [  469.640110] Call Trace:
+> [  469.640110]  [<ffffffff81296cac>] add_to_swap_cache+0x2c/0x60
+> [  469.640110]  [<ffffffff81296d90>] add_to_swap+0xb0/0xe0
+> [  469.640110]  [<ffffffff81263d21>] shrink_page_list+0x411/0x7c0
+> [  469.640110]  [<ffffffff812657ac>] shrink_inactive_list+0x31c/0x570
+> [  469.640110]  [<ffffffff81265d0b>] ? shrink_active_list+0x30b/0x320
+> [  469.640110]  [<ffffffff81265e44>] shrink_lruvec+0x124/0x300
+> [  469.640110]  [<ffffffff812660ae>] shrink_zone+0x8e/0x1d0
+> [  469.640110]  [<ffffffff81266771>] kswapd_shrink_zone+0xf1/0x1b0
+> [  469.640110]  [<ffffffff81267783>] balance_pgdat+0x363/0x540
+> [  469.640110]  [<ffffffff81269383>] kswapd+0x2b3/0x310
+> [  469.640110]  [<ffffffff812690d0>] ? ftrace_raw_event_mm_vmscan_writepage+0x180/0x180
+> [  469.640110]  [<ffffffff811678b5>] kthread+0x105/0x110
+> [  469.640110]  [<ffffffff811a3b52>] ? __lock_release+0x1e2/0x200
+> [  469.640110]  [<ffffffff811677b0>] ? set_kthreadd_affinity+0x30/0x30
+> [  469.640110]  [<ffffffff8439f58c>] ret_from_fork+0x7c/0xb0
+> [  469.640110]  [<ffffffff811677b0>] ? set_kthreadd_affinity+0x30/0x30
+> [  469.640110] Code: 00 00 be 0a 00 00 00 e8 0d ae fd ff 48 ff 05 b6 33 d2 06 4c 89 ef e8 1e f6 0f 03 eb 2c 4c 89 ef e8 14 f6 0f 03 41 83 fe ef 75 04 <0f> 0b eb fe 48 c7 43 30 00 00 00 00 f0 80 63 02 fe 48 89 df e8
+> [  469.640110] RIP  [<ffffffff81296a82>] __add_to_swap_cache+0x132/0x170
+> [  469.640110]  RSP <ffff8802850cd7a8>
+> 
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 
-Compatibility with the VDSO compat mode! Since the address is fixed in
-the FIXMAP area and should not changed there is no easy way to extend
-the size of the code.
+Ouch.
 
-One possibility is to move the VDSO code before the VDSO compat fixmap
-area and create a helper VDSO for the VDSO compat fixmap page, which has
-a kind a trampolin code which calls the real VDSO. But this would result
-in a performance regression for the VDSO compat mode.
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
 
-- Stefani
+Andrew, this is a fix for lib-radix_tree-tree-node-interface.patch
 
+Thanks!
