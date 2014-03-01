@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753421AbaCAUW4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Mar 2014 15:22:56 -0500
-Received: from ring0.de ([5.45.105.125]:46933 "EHLO ring0.de"
+	id S1753467AbaCAUXD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Mar 2014 15:23:03 -0500
+Received: from ring0.de ([5.45.105.125]:46964 "EHLO ring0.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753201AbaCAUWy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Mar 2014 15:22:54 -0500
+	id S1753201AbaCAUW7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Mar 2014 15:22:59 -0500
 X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
 	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
 	*      [score: 0.0000]
@@ -23,41 +23,194 @@ Cc: Jonathan Cameron <jic23@kernel.org>, Marek Belisko <marek@goldelico.com>,
         devicetree@vger.kernel.org, linux-iio@vger.kernel.org,
         =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
         Sebastian Reichel <sre@debian.org>
-Subject: [PATCHv2 0/2] Convert rx51-battery to IIO API and add DT support
-Date: Sat,  1 Mar 2014 21:22:43 +0100
-Message-Id: <1393705366-32420-1-git-send-email-sre@debian.org>
+Subject: [PATCHv2 1/2] rx51_battery: convert to iio consumer
+Date: Sat,  1 Mar 2014 21:22:44 +0100
+Message-Id: <1393705366-32420-2-git-send-email-sre@debian.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1393375569-21751-1-git-send-email-sre@debian.org>
+In-Reply-To: <1393705366-32420-1-git-send-email-sre@debian.org>
 References: <1393375569-21751-1-git-send-email-sre@debian.org>
+ <1393705366-32420-1-git-send-email-sre@debian.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Update rx51-battery driver to use the new IIO API of
+twl4030-madc and add DT support.
 
-This is PATCHv2 for converting rx51-battery to the IIO API
-and adding DT support. The patchset compiles and has been
-tested on my Nokia N900. It depends on another patchset
-converting twl4030-madc to the IIO API [0].
+Signed-off-by: Sebastian Reichel <sre@debian.org>
+---
+ drivers/power/rx51_battery.c | 90 ++++++++++++++++++++++++++++++++------------
+ 1 file changed, 66 insertions(+), 24 deletions(-)
 
-Changes since PATCHv1 [1]:
- * Release IIO channels on device removal
- * Release IIO channels when errors occur in device probe
-
-[0] https://lkml.org/lkml/2014/3/1/105
-[1] Convert rx51-battery to IIO API and add DT support
-
--- Sebastian
-
-Sebastian Reichel (2):
-  rx51_battery: convert to iio consumer
-  Documentation: DT: Document rx51-battery binding
-
- .../devicetree/bindings/power/rx51-battery.txt     | 25 ++++++
- drivers/power/rx51_battery.c                       | 90 ++++++++++++++++------
- 2 files changed, 91 insertions(+), 24 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/power/rx51-battery.txt
-
+diff --git a/drivers/power/rx51_battery.c b/drivers/power/rx51_battery.c
+index 1bc5857..d5a2acf 100644
+--- a/drivers/power/rx51_battery.c
++++ b/drivers/power/rx51_battery.c
+@@ -24,34 +24,27 @@
+ #include <linux/power_supply.h>
+ #include <linux/slab.h>
+ #include <linux/i2c/twl4030-madc.h>
+-
+-/* RX51 specific channels */
+-#define TWL4030_MADC_BTEMP_RX51	TWL4030_MADC_ADCIN0
+-#define TWL4030_MADC_BCI_RX51	TWL4030_MADC_ADCIN4
++#include <linux/iio/consumer.h>
++#include <linux/of.h>
+ 
+ struct rx51_device_info {
+ 	struct device *dev;
+ 	struct power_supply bat;
++	struct iio_channel *channel_temp;
++	struct iio_channel *channel_bsi;
++	struct iio_channel *channel_vbat;
+ };
+ 
+ /*
+  * Read ADCIN channel value, code copied from maemo kernel
+  */
+-static int rx51_battery_read_adc(int channel)
++static int rx51_battery_read_adc(struct iio_channel *channel)
+ {
+-	struct twl4030_madc_request req;
+-
+-	req.channels = channel;
+-	req.do_avg = 1;
+-	req.method = TWL4030_MADC_SW1;
+-	req.func_cb = NULL;
+-	req.type = TWL4030_MADC_WAIT;
+-	req.raw = true;
+-
+-	if (twl4030_madc_conversion(&req) <= 0)
+-		return -ENODATA;
+-
+-	return req.rbuf[ffs(channel) - 1];
++	int val, err;
++	err = iio_read_channel_average_raw(channel, &val);
++	if (err < 0)
++		return err;
++	return val;
+ }
+ 
+ /*
+@@ -60,10 +53,12 @@ static int rx51_battery_read_adc(int channel)
+  */
+ static int rx51_battery_read_voltage(struct rx51_device_info *di)
+ {
+-	int voltage = rx51_battery_read_adc(TWL4030_MADC_VBAT);
++	int voltage = rx51_battery_read_adc(di->channel_vbat);
+ 
+-	if (voltage < 0)
++	if (voltage < 0) {
++		dev_err(di->dev, "Could not read ADC: %d\n", voltage);
+ 		return voltage;
++	}
+ 
+ 	return 1000 * (10000 * voltage / 1705);
+ }
+@@ -112,7 +107,10 @@ static int rx51_battery_read_temperature(struct rx51_device_info *di)
+ {
+ 	int min = 0;
+ 	int max = ARRAY_SIZE(rx51_temp_table2) - 1;
+-	int raw = rx51_battery_read_adc(TWL4030_MADC_BTEMP_RX51);
++	int raw = rx51_battery_read_adc(di->channel_temp);
++
++	if (raw < 0)
++		dev_err(di->dev, "Could not read ADC: %d\n", raw);
+ 
+ 	/* Zero and negative values are undefined */
+ 	if (raw <= 0)
+@@ -146,10 +144,12 @@ static int rx51_battery_read_temperature(struct rx51_device_info *di)
+  */
+ static int rx51_battery_read_capacity(struct rx51_device_info *di)
+ {
+-	int capacity = rx51_battery_read_adc(TWL4030_MADC_BCI_RX51);
++	int capacity = rx51_battery_read_adc(di->channel_bsi);
+ 
+-	if (capacity < 0)
++	if (capacity < 0) {
++		dev_err(di->dev, "Could not read ADC: %d\n", capacity);
+ 		return capacity;
++	}
+ 
+ 	return 1280 * (1200 * capacity)/(1024 - capacity);
+ }
+@@ -213,17 +213,46 @@ static int rx51_battery_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, di);
+ 
++	di->dev = &pdev->dev;
+ 	di->bat.name = dev_name(&pdev->dev);
+ 	di->bat.type = POWER_SUPPLY_TYPE_BATTERY;
+ 	di->bat.properties = rx51_battery_props;
+ 	di->bat.num_properties = ARRAY_SIZE(rx51_battery_props);
+ 	di->bat.get_property = rx51_battery_get_property;
+ 
++	di->channel_temp = iio_channel_get(di->dev, "temp");
++	if (IS_ERR(di->channel_temp)) {
++		ret = PTR_ERR(di->channel_temp);
++		goto error;
++	}
++
++	di->channel_bsi  = iio_channel_get(di->dev, "bsi");
++	if (IS_ERR(di->channel_bsi)) {
++		ret = PTR_ERR(di->channel_bsi);
++		goto error_channel_temp;
++	}
++
++	di->channel_vbat = iio_channel_get(di->dev, "vbat");
++	if (IS_ERR(di->channel_vbat)) {
++		ret = PTR_ERR(di->channel_vbat);
++		goto error_channel_bsi;
++	}
++
+ 	ret = power_supply_register(di->dev, &di->bat);
+ 	if (ret)
+-		return ret;
++		goto error_channel_vbat;
+ 
+ 	return 0;
++
++error_channel_vbat:
++	iio_channel_release(di->channel_vbat);
++error_channel_bsi:
++	iio_channel_release(di->channel_bsi);
++error_channel_temp:
++	iio_channel_release(di->channel_temp);
++error:
++
++	return ret;
+ }
+ 
+ static int rx51_battery_remove(struct platform_device *pdev)
+@@ -232,15 +261,28 @@ static int rx51_battery_remove(struct platform_device *pdev)
+ 
+ 	power_supply_unregister(&di->bat);
+ 
++	iio_channel_release(di->channel_vbat);
++	iio_channel_release(di->channel_bsi);
++	iio_channel_release(di->channel_temp);
++
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_OF
++static const struct of_device_id n900_battery_of_match[] = {
++	{.compatible = "nokia,n900-battery", },
++	{ },
++};
++MODULE_DEVICE_TABLE(of, n900_battery_of_match);
++#endif
++
+ static struct platform_driver rx51_battery_driver = {
+ 	.probe = rx51_battery_probe,
+ 	.remove = rx51_battery_remove,
+ 	.driver = {
+ 		.name = "rx51-battery",
+ 		.owner = THIS_MODULE,
++		.of_match_table = of_match_ptr(n900_battery_of_match),
+ 	},
+ };
+ module_platform_driver(rx51_battery_driver);
 -- 
 1.9.0
 
