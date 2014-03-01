@@ -1,135 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752186AbaCAJMB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Mar 2014 04:12:01 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:49327 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750787AbaCAJLz (ORCPT
+	id S1752504AbaCAJNd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Mar 2014 04:13:33 -0500
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:64091 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752326AbaCAJNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Mar 2014 04:11:55 -0500
-Date: Sat, 1 Mar 2014 12:11:44 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Masood Mehmood <ody.guru@gmail.com>
-Cc: Omar Ramirez Luna <omar.ramirez@copitl.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging:tidspbridge: Fixing coding style
-Message-ID: <20140301091144.GD26722@mwanda>
-References: <20140301021552.GB32665@localhost.localdomain>
+	Sat, 1 Mar 2014 04:13:04 -0500
+Date: Sat, 1 Mar 2014 10:12:58 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 2/2] perf tools: Fix strict alias issue for find_first_bit
+Message-ID: <20140301091258.GB5885@gmail.com>
+References: <1393622751-21513-1-git-send-email-acme@infradead.org>
+ <1393622751-21513-3-git-send-email-acme@infradead.org>
+ <20140228212923.GI14089@laptop.programming.kicks-ass.net>
+ <531123D8.6000201@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140301021552.GB32665@localhost.localdomain>
+In-Reply-To: <531123D8.6000201@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces bugs.
 
-On Fri, Feb 28, 2014 at 06:15:52PM -0800, Masood Mehmood wrote:
+* David Ahern <dsahern@gmail.com> wrote:
+
+> On 2/28/14, 2:29 PM, Peter Zijlstra wrote:
+> >Hurm; didn't I suggest using -fno-strict-aliasing just like the kernel
+> >does? Because the C aliasing rules are bonghits heavy?
 > 
+> you, and Ingo in 2009 -- 65014ab3
 
-> 
-> Fixing some basic coding style issues.
-> 
+Yeah, so that's certainly true for the kernel, but for user-space the 
+aggressive optimizations that come with the aliasing rules were pretty 
+good, last I checked.
 
-Changelog sucks.  Doesn't say what the changes are.
+So it would be nice to check the code generation and performance 
+impact of -fno-strict-aliasing on perf (if any). If the impact is 
+restricted to an odd few annotations for weird, low-level methods
+like find_bit(), then we might be able to live with it.
 
-> Signed-off-by: Masood Mehmood <ody.guru@gmail.com>
-> ---
->  drivers/staging/tidspbridge/rmgr/node.c | 23 +++++++++++------------
->  1 file changed, 11 insertions(+), 12 deletions(-)
-> 
-> diff --git a/drivers/staging/tidspbridge/rmgr/node.c b/drivers/staging/tidspbridge/rmgr/node.c
-> index 87dfa92..76f885f 100644
-> --- a/drivers/staging/tidspbridge/rmgr/node.c
-> +++ b/drivers/staging/tidspbridge/rmgr/node.c
-> @@ -246,7 +246,7 @@ static void fill_stream_def(struct node_object *hnode,
->  			    struct node_strmdef *pstrm_def,
->  			    struct dsp_strmattr *pattrs);
->  static void free_stream(struct node_mgr *hnode_mgr, struct stream_chnl stream);
-> -static int get_fxn_address(struct node_object *hnode, u32 * fxn_addr,
-> +static int get_fxn_address(struct node_object *hnode, u32 *fxn_addr,
->  				  u32 phase);
->  static int get_node_props(struct dcd_manager *hdcd_mgr,
->  				 struct node_object *hnode,
-> @@ -406,7 +406,7 @@ int node_allocate(struct proc_object *hprocessor,
->  
->  	/* check for page aligned Heap size */
->  	if (((attr_in->heap_size) & (PG_SIZE4K - 1))) {
-> -		pr_err("%s: node heap size not aligned to 4K, size = 0x%x \n",
-> +		pr_err("%s: node heap size not aligned to 4K, size = 0x%x",
+The aliasing warnings can also find real bugs and uncleanlinesses.
 
-The correct fix here is:
+So I'm really of two minds regarding this.
 
-		pr_err("%s: node heap size not aligned to 4K, size = 0x%x\n",
+Thanks,
 
->  		       __func__, attr_in->heap_size);
->  		status = -EINVAL;
->  	} else {
-> @@ -425,7 +425,7 @@ int node_allocate(struct proc_object *hprocessor,
->  					task_arg_obj.dsp_heap_res_addr),
->  				     pr_ctxt);
->  	if (status) {
-> -		pr_err("%s: Failed to reserve memory for heap: 0x%x\n",
-> +		pr_err("%s: Failed to reserve memory for heap: 0x%x",
-
-What??
-
->  		       __func__, status);
->  		goto func_cont;
->  	}
-> @@ -703,9 +703,9 @@ DBAPI node_alloc_msg_buf(struct node_object *hnode, u32 usize,
->  		pattr = &node_dfltbufattrs;	/* set defaults */
->  
->  	status = proc_get_processor_id(pnode->processor, &proc_id);
-> -	if (proc_id != DSP_UNIT) {
-> +	if (proc_id != DSP_UNIT)
->  		goto func_end;
-> -	}
-> +
->  	/*  If segment ID includes MEM_SETVIRTUALSEGID then pbuffer is a
->  	 *  virt  address, so set this info in this node's translator
->  	 *  object for  future ref. If MEM_GETVIRTUALSEGID then retrieve
-> @@ -886,11 +886,10 @@ int node_connect(struct node_object *node1, u32 stream1,
->  	if (pattrs && pattrs->strm_mode != STRMMODE_PROCCOPY)
->  		return -EPERM;	/* illegal stream mode */
->  
-> -	if (node1_type != NODE_GPP) {
-> +	if (node1_type != NODE_GPP)
->  		hnode_mgr = node1->node_mgr;
-> -	} else {
-> +	else
->  		hnode_mgr = node2->node_mgr;
-> -	}
->  
->  	/* Enter critical section */
->  	mutex_lock(&hnode_mgr->node_mgr_lock);
-> @@ -1576,7 +1575,7 @@ func_end:
->   *  Purpose:
->   *      Frees the message buffer.
->   */
-> -int node_free_msg_buf(struct node_object *hnode, u8 * pbuffer,
-> +int node_free_msg_buf(struct node_object *hnode, u8 *pbuffer,
->  			     struct dsp_bufferattr *pattr)
->  {
->  	struct node_object *pnode = (struct node_object *)hnode;
-> @@ -2322,7 +2321,8 @@ int node_terminate(struct node_object *hnode, int *pstatus)
->  			if (!hdeh_mgr)
->  				goto func_cont;
->  
-> -			bridge_deh_notify(hdeh_mgr, DSP_SYSERROR, DSP_EXCEPTIONABORT);
-> +			bridge_deh_notify(hdeh_mgr, DSP_SYSERROR,
-> +							DSP_EXCEPTIONABORT);
-
-Do it like this:
-
-			bridge_deh_notify(hdeh_mgr, DSP_SYSERROR,
-					  DSP_EXCEPTIONABORT);
-
-
-regards,
-dan carpenter
-
+	Ingo
