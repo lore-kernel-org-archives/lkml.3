@@ -1,25 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753130AbaCAQWM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Mar 2014 11:22:12 -0500
-Received: from mga09.intel.com ([134.134.136.24]:49667 "EHLO mga09.intel.com"
+	id S1753216AbaCAQYQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Mar 2014 11:24:16 -0500
+Received: from mga09.intel.com ([134.134.136.24]:3685 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753025AbaCAQWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Mar 2014 11:22:10 -0500
+	id S1752963AbaCAQYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Mar 2014 11:24:15 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,568,1389772800"; 
-   d="scan'208";a="492169642"
+   d="scan'208";a="492169946"
 From: Andi Kleen <andi@firstfloor.org>
-To: acme@redhat.com
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, eranian@google.com,
-        namhyung@kernel.org, jolsa@redhat.com
-Subject: Re: [PATCH 4/8] perf, tools: Enable printing the srcline in the history v2
-References: <1393561352-23448-1-git-send-email-andi@firstfloor.org>
-	<1393561352-23448-5-git-send-email-andi@firstfloor.org>
-Date: Sat, 01 Mar 2014 08:22:10 -0800
-In-Reply-To: <1393561352-23448-5-git-send-email-andi@firstfloor.org> (Andi
-	Kleen's message of "Thu, 27 Feb 2014 20:22:28 -0800")
-Message-ID: <87fvn16g99.fsf@tassilo.jf.intel.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Vince Weaver <vincent.weaver@maine.edu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: perf_fuzzer compiled for x32 causes reboot
+References: <alpine.DEB.2.10.1402241130080.20170@vincent-weaver-1.um.maine.edu>
+	<20140225094352.73e0e28c@gandalf.local.home>
+	<alpine.DEB.2.10.1402251032230.23234@vincent-weaver-1.um.maine.edu>
+	<alpine.DEB.2.10.1402261003390.18730@vincent-weaver-1.um.maine.edu>
+	<alpine.DEB.2.10.1402271621000.2571@vincent-weaver-1.um.maine.edu>
+	<20140227173150.4e5ed747@gandalf.local.home>
+	<530FC1C6.5040209@zytor.com>
+	<alpine.DEB.2.10.1402272032140.6271@vincent-weaver-1.um.maine.edu>
+	<20140227215726.7018c861@gandalf.local.home>
+	<alpine.DEB.2.10.1402280914550.6727@vincent-weaver-1.um.maine.edu>
+	<20140228092341.12a40f7c@gandalf.local.home>
+	<alpine.DEB.2.10.1402280957470.6727@vincent-weaver-1.um.maine.edu>
+	<40f095f7-605f-4885-951f-31da7d2d637a@email.android.com>
+	<alpine.DEB.2.10.1402281616280.7362@vincent-weaver-1.um.maine.edu>
+	<20140228163039.6eb6a8d6@gandalf.local.home>
+	<alpine.DEB.2.10.1402281829330.7966@vincent-weaver-1.um.maine.edu>
+	<20140228223651.485042cc@gandalf.local.home>
+Date: Sat, 01 Mar 2014 08:24:14 -0800
+In-Reply-To: <20140228223651.485042cc@gandalf.local.home> (Steven Rostedt's
+	message of "Fri, 28 Feb 2014 22:36:51 -0500")
+Message-ID: <87bnxp6g5t.fsf@tassilo.jf.intel.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -27,59 +44,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andi Kleen <andi@firstfloor.org> writes:
-
-> From: Andi Kleen <ak@linux.intel.com>
+Steven Rostedt <rostedt@goodmis.org> writes:
 >
-> For lbr-as-callgraph we need to see the line number in the history,
-> because many LBR entries can be in a single function, and just
-> showing the same function name many times is not useful.
+> BTW, is the perf_fuzzer code posted somewhere? It sounds like it can be
+> really useful for us to do our own testing too.
 
-This patch broke the GTK build, fixed with this followon patch:
+I believe it's part of trinity.
 
->From fd2b85cc85534f3a3b025b36bab6c42d31edc660 Mon Sep 17 00:00:00 2001
-From: Andi Kleen <ak@linux.intel.com>
-Date: Fri, 28 Feb 2014 16:53:40 -0800
-Subject: [PATCH] perf, tools: Fix gtk compilation with src line patch.
+http://codemonkey.org.uk/projects/trinity/
 
-Convert the gtk browser code to the new shared callchain_list__sym_name
-function too.
+Perhaps it should have a "ftracer fuzzer" too?
 
-Should be folded into "perf, tools: Enable printing the srcline in the history"
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-
-diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-index 5b95c44..cafe105 100644
---- a/tools/perf/ui/gtk/hists.c
-+++ b/tools/perf/ui/gtk/hists.c
-@@ -123,15 +123,6 @@ void perf_gtk__init_hpp(void)
- 				perf_gtk__hpp_color_overhead_guest_us;
- }
- 
--static void callchain_list__sym_name(struct callchain_list *cl,
--				     char *bf, size_t bfsize)
--{
--	if (cl->ms.sym)
--		scnprintf(bf, bfsize, "%s", cl->ms.sym->name);
--	else
--		scnprintf(bf, bfsize, "%#" PRIx64, cl->ip);
--}
--
- static void perf_gtk__add_callchain(struct rb_root *root, GtkTreeStore *store,
- 				    GtkTreeIter *parent, int col, u64 total)
- {
-@@ -162,7 +153,7 @@ static void perf_gtk__add_callchain(struct rb_root *root, GtkTreeStore *store,
- 			scnprintf(buf, sizeof(buf), "%5.2f%%", percent);
- 			gtk_tree_store_set(store, &iter, 0, buf, -1);
- 
--			callchain_list__sym_name(chain, buf, sizeof(buf));
-+			callchain_list__sym_name(chain, buf, sizeof(buf), false);
- 			gtk_tree_store_set(store, &iter, col, buf, -1);
- 
- 			if (need_new_parent) {
-
-
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+-Andi
