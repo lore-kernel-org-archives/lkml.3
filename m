@@ -1,125 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752992AbaCAAYd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 19:24:33 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:47756 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752450AbaCAAYc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 19:24:32 -0500
-Message-ID: <531128CA.5040700@gmail.com>
-Date: Sat, 01 Mar 2014 13:24:42 +1300
-From: Michael Schmitz <schmitzmic@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux ppc; en-US; rv:1.8.1.4) Gecko/20070509 Iceape/1.1.2 (Debian-1.1.2-1)
+	id S1753033AbaCAAYj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 19:24:39 -0500
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:25944
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752755AbaCAAYf convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 19:24:35 -0500
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz98dIc89bh936eI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2fh95h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24d7h2516h2545h255eh906i1155h)
+Date: Fri, 28 Feb 2014 16:24:20 -0800
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Michal Simek <michal.simek@xilinx.com>
+Subject: Re: [PATCH v2 1/2] net: macb: Check DMA mappings for error
+References: <1393538285-28297-1-git-send-email-soren.brinkmann@xilinx.com>
+ <1393545459.14067.79.camel@deadeye.wl.decadent.org.uk>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 02/16] scsi: atari_scsi: fix sleep_on race
-References: <1393412516-3762435-1-git-send-email-arnd@arndb.de> <1393412516-3762435-3-git-send-email-arnd@arndb.de> <530EF01D.6000208@gmail.com> <201402272144.50946.arnd@arndb.de>
-In-Reply-To: <201402272144.50946.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <1393545459.14067.79.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <fd021c95-4388-4945-a0b6-fe6acf0c8be6@CH1EHSMHS014.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Arnd,
-> On Thursday 27 February 2014, Michael Schmitz wrote:
->   
->> Arnd Bergmann wrote:
->>     
->>>   
->>>       
->> Nack - the completion condition in the first hunk has its logic 
->> reversed. Try this instead (while() loops while condition true, do {} 
->> until () loops while condition false, no?)
->>     
->
-> Sorry about messing it up again. I though I had fixed it up the
-> way you commented when you said it worked.
->  
->   
->> I'm 99% confident I had tested your current version of the patch before 
->> and found it still attempts to schedule while in interrupt. I can retest 
->> if you prefer, but that'll have to wait a few days.
->>     
->
-> I definitely trust you to have the right version, since you did the
-> testing.
->   
+Hi Ben,
 
-I'm glad I double checked, since there's one other error left in my 
-correction to your patch below:
+On Thu, 2014-02-27 at 11:57PM +0000, Ben Hutchings wrote:
+> On Thu, 2014-02-27 at 13:58 -0800, Soren Brinkmann wrote:
+> [...]
+> > diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+> > index 3190d38e16fb..a9c2ccfc1740 100644
+> > --- a/drivers/net/ethernet/cadence/macb.c
+> > +++ b/drivers/net/ethernet/cadence/macb.c
+> > @@ -632,11 +632,16 @@ static void gem_rx_refill(struct macb *bp)
+> >  					   "Unable to allocate sk_buff\n");
+> >  				break;
+> >  			}
+> > -			bp->rx_skbuff[entry] = skb;
+> >  
+> >  			/* now fill corresponding descriptor entry */
+> >  			paddr = dma_map_single(&bp->pdev->dev, skb->data,
+> >  					       bp->rx_buffer_size, DMA_FROM_DEVICE);
+> > +			if (dma_mapping_error(&bp->pdev->dev, paddr)) {
+> > +				dev_kfree_skb(skb);
+> > +				break;
+> > +			}
+> > +
+> > +			bp->rx_skbuff[entry] = skb;
+> >  
+> >  			if (entry == RX_RING_SIZE - 1)
+> >  				paddr |= MACB_BIT(RX_WRAP);
+> > @@ -1040,6 +1045,10 @@ static int macb_start_xmit(struct sk_buff *skb, struct net_device *dev)
+> 
+> A bit more context:
+> 
+> 	entry = macb_tx_ring_wrap(bp->tx_head);
+> 	bp->tx_head++;
+> 
+> >  	netdev_vdbg(bp->dev, "Allocated ring entry %u\n", entry);
+> >  	mapping = dma_map_single(&bp->pdev->dev, skb->data,
+> >  				 len, DMA_TO_DEVICE);
+> > +	if (dma_mapping_error(&bp->pdev->dev, mapping)) {
+> > +		kfree_skb(skb);
+> > +		goto unlock;
+> > +	}
+> 
+> You need to move the bp->tx_head increment below this error check.
+> Sorry I didn't spot this the first time.
 
-The in_irq() condition is not sufficient, we need in_interrupt() there. 
-This has somehow slipped into a related patch sent to linux-scsi, so 
-I'll have to refactor the lot. Bugger.
+No problem. I'll wait till next week with a re-spin, in case somebody
+else has comments.
 
-I'll resend the correct version via Geert.
+	Sören
 
->   
->> diff --git a/drivers/scsi/atari_scsi.c b/drivers/scsi/atari_scsi.c
->> index a3e6c8a..cc1b013 100644
->> --- a/drivers/scsi/atari_scsi.c
->> +++ b/drivers/scsi/atari_scsi.c
->> @@ -90,6 +90,7 @@
->>  #include <linux/init.h>
->>  #include <linux/nvram.h>
->>  #include <linux/bitops.h>
->> +#include <linux/wait.h>
->>  
->>  #include <asm/setup.h>
->>  #include <asm/atarihw.h>
->> @@ -549,8 +550,10 @@ static void falcon_get_lock(void)
->>  
->>         local_irq_save(flags);
->>  
->> -       while (!in_irq() && falcon_got_lock && stdma_others_waiting())
->> -               sleep_on(&falcon_fairness_wait);
->> +       wait_event_cmd(falcon_fairness_wait,
->> +               in_irq() || !falcon_got_lock || !stdma_others_waiting(),
->> +               local_irq_restore(flags),
->> +               local_irq_save(flags));
->>  
->>         while (!falcon_got_lock) {
->>                 if (in_irq())
->>     
->
-> Yes, by inspection your version looks correct and mine looks wrong.
-> I had figured this out before, just sent the wrong version.
->   
-
-These things happen if you bother fixing other people's weird code :-)
-And as I mentioned above, I missed another detail myself
-
->   
->> @@ -562,7 +565,10 @@ static void falcon_get_lock(void)
->>                         falcon_trying_lock = 0;
->>                         wake_up(&falcon_try_wait);
->>                 } else {
->> -                       sleep_on(&falcon_try_wait);
->> +                       wait_event_cmd(falcon_try_wait,
->> +                               falcon_got_lock && !falcon_trying_lock,
->> +                               local_irq_restore(flags),
->> +                               local_irq_save(flags));
->>                 }
->>     
->
-> I did correct this part compared to my first patch, but forgot
-> to change the other hunk.
->
-> Can you send your version of the patch to Geert for inclusion?
-> That way I don't have the danger of missing another negation.
-> This code is clearly too weird to rely on inspection alone and
-> we know that your version was working when you last tested it.
->   
-
-Will do - I'll CC: you in so you can ACK the patch if Geert needs 
-convincing.
-
-Cheers,
-
-    Michael
 
