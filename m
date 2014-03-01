@@ -1,128 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753401AbaCAUew (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Mar 2014 15:34:52 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35342 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753205AbaCAUes (ORCPT
+	id S1753329AbaCAUmb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Mar 2014 15:42:31 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:57896 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753201AbaCAUma (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Mar 2014 15:34:48 -0500
-Date: Sat, 1 Mar 2014 12:34:25 -0800
-From: "tip-bot for David E. Box" <tipbot@zytor.com>
-Message-ID: <tip-60af5c61f26fffb5f53ce74641606fe2c9a4d903@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        david.e.box@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        david.e.box@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1393641652-7222-2-git-send-email-david.e.box@linux.intel.com>
-References: <1393641652-7222-2-git-send-email-david.e.box@linux.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] x86, iosf:
-  Add dummy functions for loadable modules
-Git-Commit-ID: 60af5c61f26fffb5f53ce74641606fe2c9a4d903
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sat, 1 Mar 2014 15:42:30 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Toshi Kani <toshi.kani@hp.com>
+Subject: [PATCH] ACPI / hotplug: Rework deferred execution of acpi_device_hotplug()
+Date: Sat, 01 Mar 2014 21:57:34 +0100
+Message-ID: <1573287.V189PcUPxA@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  60af5c61f26fffb5f53ce74641606fe2c9a4d903
-Gitweb:     http://git.kernel.org/tip/60af5c61f26fffb5f53ce74641606fe2c9a4d903
-Author:     David E. Box <david.e.box@linux.intel.com>
-AuthorDate: Fri, 28 Feb 2014 18:40:51 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 28 Feb 2014 19:55:00 -0800
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-x86, iosf: Add dummy functions for loadable modules
+Since the only function executed by acpi_hotplug_execute() is
+acpi_device_hotplug() and it only is called by the ACPI core,
+simplify its definition so that it only takes two arguments, the
+ACPI device object pointer and event code, rename it to
+acpi_hotplug_schedule() and move its header from acpi_bus.h to
+the ACPI core's internal header file internal.h.  Modify the
+definition of acpi_device_hotplug() so that its first argument is
+an ACPI device object pointer and modify the definition of
+struct acpi_hp_work accordingly.
 
-Some loadable modules only need IOSF access on the platforms where it exists.
-Provide dummy functions to allow these modules to compile and load on the
-platforms where it doesn't exist.
-
-Signed-off-by: David E. Box <david.e.box@linux.intel.com>
-Link: http://lkml.kernel.org/r/1393641652-7222-2-git-send-email-david.e.box@linux.intel.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- arch/x86/include/asm/iosf_mbi.h | 33 +++++++++++++++++++++++++++++++++
- arch/x86/kernel/iosf_mbi.c      |  6 ++++++
- 2 files changed, 39 insertions(+)
 
-diff --git a/arch/x86/include/asm/iosf_mbi.h b/arch/x86/include/asm/iosf_mbi.h
-index 8e71c79..9fc5402 100644
---- a/arch/x86/include/asm/iosf_mbi.h
-+++ b/arch/x86/include/asm/iosf_mbi.h
-@@ -5,6 +5,8 @@
- #ifndef IOSF_MBI_SYMS_H
- #define IOSF_MBI_SYMS_H
+On top of current linux-next, 3.15 material.
+
+Thanks!
+
+---
+ drivers/acpi/bus.c      |    2 +-
+ drivers/acpi/internal.h |    3 ++-
+ drivers/acpi/osl.c      |   14 ++++++--------
+ drivers/acpi/scan.c     |    6 ++----
+ include/acpi/acpi_bus.h |    4 ----
+ 5 files changed, 11 insertions(+), 18 deletions(-)
+
+Index: linux-pm/drivers/acpi/internal.h
+===================================================================
+--- linux-pm.orig/drivers/acpi/internal.h
++++ linux-pm/drivers/acpi/internal.h
+@@ -78,8 +78,9 @@ void acpi_lpss_init(void);
+ static inline void acpi_lpss_init(void) {}
+ #endif
  
-+#ifdef CONFIG_IOSF_MBI
-+
- #define MBI_MCR_OFFSET		0xD0
- #define MBI_MDR_OFFSET		0xD4
- #define MBI_MCRX_OFFSET		0xD8
-@@ -50,6 +52,8 @@
- #define BT_MBI_PCIE_READ	0x00
- #define BT_MBI_PCIE_WRITE	0x01
++acpi_status acpi_hotplug_schedule(struct acpi_device *adev, u32 src);
+ bool acpi_queue_hotplug_work(struct work_struct *work);
+-void acpi_device_hotplug(void *data, u32 src);
++void acpi_device_hotplug(struct acpi_device *adev, u32 src);
+ bool acpi_scan_is_offline(struct acpi_device *adev, bool uevent);
  
-+bool iosf_mbi_available(void);
-+
- /**
-  * iosf_mbi_read() - MailBox Interface read command
-  * @port:	port indicating subunit being accessed
-@@ -87,4 +91,33 @@ int iosf_mbi_write(u8 port, u8 opcode, u32 offset, u32 mdr);
-  */
- int iosf_mbi_modify(u8 port, u8 opcode, u32 offset, u32 mdr, u32 mask);
+ /* --------------------------------------------------------------------------
+Index: linux-pm/drivers/acpi/osl.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/osl.c
++++ linux-pm/drivers/acpi/osl.c
+@@ -1168,8 +1168,7 @@ void acpi_os_wait_events_complete(void)
  
-+#else /* CONFIG_IOSF_MBI is not enabled */
-+static inline
-+bool iosf_mbi_available(void)
-+{
-+	return false;
-+}
-+
-+static inline
-+int iosf_mbi_read(u8 port, u8 opcode, u32 offset, u32 *mdr)
-+{
-+	WARN();
-+	return -EPERM;
-+}
-+
-+static inline
-+int iosf_mbi_write(u8 port, u8 opcode, u32 offset, u32 mdr)
-+{
-+	WARN();
-+	return -EPERM;
-+}
-+
-+static inline
-+int iosf_mbi_modify(u8 port, u8 opcode, u32 offset, u32 mdr, u32 mask)
-+{
-+	WARN();
-+	return -EPERM;
-+}
-+#endif /* CONFIG_IOSF_MBI */
-+
- #endif /* IOSF_MBI_SYMS_H */
-diff --git a/arch/x86/kernel/iosf_mbi.c b/arch/x86/kernel/iosf_mbi.c
-index c3aae66..d3803c6 100644
---- a/arch/x86/kernel/iosf_mbi.c
-+++ b/arch/x86/kernel/iosf_mbi.c
-@@ -177,6 +177,12 @@ int iosf_mbi_modify(u8 port, u8 opcode, u32 offset, u32 mdr, u32 mask)
+ struct acpi_hp_work {
+ 	struct work_struct work;
+-	acpi_hp_callback func;
+-	void *data;
++	struct acpi_device *adev;
+ 	u32 src;
+ };
+ 
+@@ -1178,25 +1177,24 @@ static void acpi_hotplug_work_fn(struct
+ 	struct acpi_hp_work *hpw = container_of(work, struct acpi_hp_work, work);
+ 
+ 	acpi_os_wait_events_complete();
+-	hpw->func(hpw->data, hpw->src);
++	acpi_device_hotplug(hpw->adev, hpw->src);
+ 	kfree(hpw);
  }
- EXPORT_SYMBOL(iosf_mbi_modify);
  
-+bool iosf_mbi_available(void)
-+{
-+	return mbi_pdev;
-+}
-+EXPORT_SYMBOL(iosf_mbi_available);
-+
- static int iosf_mbi_probe(struct pci_dev *pdev,
- 			  const struct pci_device_id *unused)
+-acpi_status acpi_hotplug_execute(acpi_hp_callback func, void *data, u32 src)
++acpi_status acpi_hotplug_schedule(struct acpi_device *adev, u32 src)
  {
+ 	struct acpi_hp_work *hpw;
+ 
+ 	ACPI_DEBUG_PRINT((ACPI_DB_EXEC,
+-		  "Scheduling function [%p(%p, %u)] for deferred execution.\n",
+-		  func, data, src));
++		  "Scheduling hotplug event (%p, %u) for deferred execution.\n",
++		  adev, src));
+ 
+ 	hpw = kmalloc(sizeof(*hpw), GFP_KERNEL);
+ 	if (!hpw)
+ 		return AE_NO_MEMORY;
+ 
+ 	INIT_WORK(&hpw->work, acpi_hotplug_work_fn);
+-	hpw->func = func;
+-	hpw->data = data;
++	hpw->adev = adev;
+ 	hpw->src = src;
+ 	/*
+ 	 * We can't run hotplug code in kacpid_wq/kacpid_notify_wq etc., because
+Index: linux-pm/include/acpi/acpi_bus.h
+===================================================================
+--- linux-pm.orig/include/acpi/acpi_bus.h
++++ linux-pm/include/acpi/acpi_bus.h
+@@ -457,10 +457,6 @@ static inline bool acpi_device_enumerate
+ 	return adev && adev->flags.initialized && adev->flags.visited;
+ }
+ 
+-typedef void (*acpi_hp_callback)(void *data, u32 src);
+-
+-acpi_status acpi_hotplug_execute(acpi_hp_callback func, void *data, u32 src);
+-
+ /**
+  * module_acpi_driver(acpi_driver) - Helper macro for registering an ACPI driver
+  * @__acpi_driver: acpi_driver struct
+Index: linux-pm/drivers/acpi/scan.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/scan.c
++++ linux-pm/drivers/acpi/scan.c
+@@ -481,10 +481,9 @@ static int acpi_generic_hotplug_event(st
+ 	return -EINVAL;
+ }
+ 
+-void acpi_device_hotplug(void *data, u32 src)
++void acpi_device_hotplug(struct acpi_device *adev, u32 src)
+ {
+ 	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
+-	struct acpi_device *adev = data;
+ 	int error = -ENODEV;
+ 
+ 	lock_device_hotplug();
+@@ -579,8 +578,7 @@ acpi_eject_store(struct device *d, struc
+ 		return -ENODEV;
+ 
+ 	get_device(&acpi_device->dev);
+-	status = acpi_hotplug_execute(acpi_device_hotplug, acpi_device,
+-				      ACPI_OST_EC_OSPM_EJECT);
++	status = acpi_hotplug_schedule(acpi_device, ACPI_OST_EC_OSPM_EJECT);
+ 	if (ACPI_SUCCESS(status))
+ 		return count;
+ 
+Index: linux-pm/drivers/acpi/bus.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/bus.c
++++ linux-pm/drivers/acpi/bus.c
+@@ -398,7 +398,7 @@ static void acpi_bus_notify(acpi_handle
+ 	case ACPI_NOTIFY_BUS_CHECK:
+ 	case ACPI_NOTIFY_DEVICE_CHECK:
+ 	case ACPI_NOTIFY_EJECT_REQUEST:
+-		status = acpi_hotplug_execute(acpi_device_hotplug, adev, type);
++		status = acpi_hotplug_schedule(adev, type);
+ 		if (ACPI_SUCCESS(status))
+ 			return;
+ 	default:
+
