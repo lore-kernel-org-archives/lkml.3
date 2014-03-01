@@ -1,99 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753186AbaCAQ3u (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Mar 2014 11:29:50 -0500
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:41640 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752963AbaCAQ3t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Mar 2014 11:29:49 -0500
-Message-ID: <53120AF9.3070404@vmware.com>
-Date: Sat, 01 Mar 2014 17:29:45 +0100
-From: Thomas Hellstrom <thellstrom@vmware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1753235AbaCAQd0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Mar 2014 11:33:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43947 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752972AbaCAQdY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Mar 2014 11:33:24 -0500
+Message-ID: <53120BA8.3000508@redhat.com>
+Date: Sat, 01 Mar 2014 17:32:40 +0100
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>
-CC: David Airlie <airlied@linux.ie>, Jakob Bornecrant <jakob@vmware.com>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        ldv-project@linuxtesting.org
-Subject: Re: [PATCH] drm/vmwgfx: avoid null pointer dereference at failure
- paths
-References: <1393622418-6515-1-git-send-email-khoroshilov@ispras.ru>
-In-Reply-To: <1393622418-6515-1-git-send-email-khoroshilov@ispras.ru>
-X-Enigmail-Version: 1.5.2
+To: linux-sunxi@googlegroups.com, Emilio Lopez <emilio@elopez.com.ar>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>
+CC: Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
+        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: Re: [linux-sunxi] [PATCH v2 2/5] clk: sun6i: Reparent AHB clock on
+ PLL6
+References: <1393605440-14643-1-git-send-email-maxime.ripard@free-electrons.com> <1393605440-14643-3-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <1393605440-14643-3-git-send-email-maxime.ripard@free-electrons.com>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2014 10:20 PM, Alexey Khoroshilov wrote:
+Hi,
 
-> vmw_takedown_otable_base() and vmw_mob_unbind() check for
-> potential vmw_fifo_reserve() failure and print error message,
-> but then immediately dereference NULL pointer.
->
-> Found by Linux Driver Verification project (linuxtesting.org).
->
-> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+On 02/28/2014 05:37 PM, Maxime Ripard wrote:
+> In order for the DMA controller to work for SDRAM to devices transfers, the AHB
+> clock should be reparented on the PLL6.
+> 
+> Force that parenting in the clock driver.
+> 
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 > ---
->  drivers/gpu/drm/vmwgfx/vmwgfx_mob.c | 35 +++++++++++++++++++----------------
->  1 file changed, 19 insertions(+), 16 deletions(-)
->
-> diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_mob.c b/drivers/gpu/drm/vmwgfx/vmwgfx_mob.c
-> index d4a5a19cb8c3..04a64b8cd3cd 100644
-> --- a/drivers/gpu/drm/vmwgfx/vmwgfx_mob.c
-> +++ b/drivers/gpu/drm/vmwgfx/vmwgfx_mob.c
-> @@ -188,18 +188,20 @@ static void vmw_takedown_otable_base(struct vmw_private *dev_priv,
+>  drivers/clk/sunxi/clk-sunxi.c | 18 +++++++++++++++++-
+>  1 file changed, 17 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
+> index f6f61cc..a5c5882 100644
+> --- a/drivers/clk/sunxi/clk-sunxi.c
+> +++ b/drivers/clk/sunxi/clk-sunxi.c
+> @@ -1286,7 +1286,7 @@ static void __init of_sunxi_table_clock_setup(const struct of_device_id *clk_mat
+>   */
+>  static void __init sunxi_clock_protect(void)
+>  {
+> -	struct clk *clk;
+> +	struct clk *clk, *parent;
 >  
->  	bo = otable->page_table->pt_bo;
->  	cmd = vmw_fifo_reserve(dev_priv, sizeof(*cmd));
-> -	if (unlikely(cmd == NULL))
-> -		DRM_ERROR("Failed reserving FIFO space for OTable setup.\n");
-> -
-> -	memset(cmd, 0, sizeof(*cmd));
-> -	cmd->header.id = SVGA_3D_CMD_SET_OTABLE_BASE;
-> -	cmd->header.size = sizeof(cmd->body);
-> -	cmd->body.type = type;
-> -	cmd->body.baseAddress = 0;
-> -	cmd->body.sizeInBytes = 0;
-> -	cmd->body.validSizeInBytes = 0;
-> -	cmd->body.ptDepth = SVGA3D_MOBFMT_INVALID;
-> -	vmw_fifo_commit(dev_priv, sizeof(*cmd));
-> +	if (unlikely(cmd == NULL)) {
-> +		DRM_ERROR("Failed reserving FIFO space for OTable "
-> +			  "takedown.\n");
-> +	} else {
-> +		memset(cmd, 0, sizeof(*cmd));
-> +		cmd->header.id = SVGA_3D_CMD_SET_OTABLE_BASE;
-> +		cmd->header.size = sizeof(cmd->body);
-> +		cmd->body.type = type;
-> +		cmd->body.baseAddress = 0;
-> +		cmd->body.sizeInBytes = 0;
-> +		cmd->body.validSizeInBytes = 0;
-> +		cmd->body.ptDepth = SVGA3D_MOBFMT_INVALID;
-> +		vmw_fifo_commit(dev_priv, sizeof(*cmd));
+>  	/* memory bus clock - sun5i+ */
+>  	clk = clk_get(NULL, "mbus");
+> @@ -1307,6 +1307,22 @@ static void __init sunxi_clock_protect(void)
+>  	if (!IS_ERR(clk))
+>  		clk_prepare_enable(clk);
+>  
+> +	clk = clk_get(NULL, "ahb1_mux");
+> +	if (IS_ERR(clk)) {
+> +		pr_err("Couldn't get AHB1 Mux\n");
+> +		return;
 > +	}
->  
->  	if (bo) {
->  		int ret;
-> @@ -562,11 +564,12 @@ void vmw_mob_unbind(struct vmw_private *dev_priv,
->  	if (unlikely(cmd == NULL)) {
->  		DRM_ERROR("Failed reserving FIFO space for Memory "
->  			  "Object unbinding.\n");
-> +	} else {
-> +		cmd->header.id = SVGA_3D_CMD_DESTROY_GB_MOB;
-> +		cmd->header.size = sizeof(cmd->body);
-> +		cmd->body.mobid = mob->id;
-> +		vmw_fifo_commit(dev_priv, sizeof(*cmd));
->  	}
-> -	cmd->header.id = SVGA_3D_CMD_DESTROY_GB_MOB;
-> -	cmd->header.size = sizeof(cmd->body);
-> -	cmd->body.mobid = mob->id;
-> -	vmw_fifo_commit(dev_priv, sizeof(*cmd));
->  	if (bo) {
->  		vmw_fence_single_bo(bo, NULL);
->  		ttm_bo_unreserve(bo);
-Thanks. I'll queue this for the next vmwgfx-fixes PULL.
 
-/Thomas
+I think Emilio already made a similar remark for v1, but since this
+is still here in v2, ahb1_mux is only available on sun6i, so
+at a minimum the pr_err should be dropped. Preferably I would like
+to see this changed to something like:
+
+	clk = clk_get(NULL, "ahb1_mux");
+	parent = clk_get(NULL, "pll6");
+	if (!IS_ERR(clk) && !IS_ERR(parent))
+		clk_set_parent(clk, parent);
+	if (!IS_ERR(parent))
+		clk_put(parent);
+	if (!IS_ERR(clk))
+		clk_put(clk);
+
+> +
+> +	parent = clk_get(NULL, "pll6");
+> +	if (IS_ERR(clk)) {
+
+Copy paste error should be IS_ERR(parent).
+
+> +		pr_err("Couldn't get PLL6\n");
+
+If we keep things this way this error path should do a clk_put(clk);
+
+> +		return;
+> +	}
+> +
+> +	clk_set_parent(clk, parent);
+> +
+> +	clk_put(clk);
+> +	clk_put(parent);
+>  }
+>  
+>  static void __init sunxi_init_clocks(void)
+> 
+
+Regards,
+
+Hans
+
+p.s.
+
+Given Russell's remarks it would also be good to have a
+patch in this set dropping the clk_put calls of the existing
+enables / protections.
