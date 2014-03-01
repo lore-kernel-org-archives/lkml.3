@@ -1,150 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676AbaCAAyS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 19:54:18 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:63101 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752345AbaCAAyQ (ORCPT
+	id S1752656AbaCAA6q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 19:58:46 -0500
+Received: from [203.77.177.222] ([203.77.177.222]:52895 "EHLO
+	imssnew.adityabirla.com" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752433AbaCAA6p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 19:54:16 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: skannan@codeaurora.org, linaro-kernel@lists.linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com
-Subject: Re: [PATCH 1/3] cpufreq: move call to __find_governor() to cpufreq_init_policy()
-Date: Sat, 01 Mar 2014 02:09:20 +0100
-Message-ID: <7507031.JAfx7W3apJ@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <9f9546137135103556c69815c72b81ed93cc1ca2.1393318100.git.viresh.kumar@linaro.org>
-References: <9f9546137135103556c69815c72b81ed93cc1ca2.1393318100.git.viresh.kumar@linaro.org>
+	Fri, 28 Feb 2014 19:58:45 -0500
+X-Greylist: delayed 946 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Feb 2014 19:58:44 EST
+X-AuditID: ac10015c-b7f9c6d000004c84-65-53112cfb32f1
+Reply-To: <hctthg-h1@yahoo.com>
+From: "Harley Wang" <bn.jha@adityabirla.com>
+Subject: contact me
+Date: Sat, 1 Mar 2014 01:38:05 +0100
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain;charset="Windows-1251"
+content-transfer-encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1081
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1081
+X-Qmail-Scanner-Message-ID: <139363428868628132@MS8XF>
+Message-Id: <20140301003820.1DA42228001@MS3XF>
+To: undisclosed-recipients:;
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprELsWRmVeSWpSXmKPExsXCxahhoPtPRzDY4O5bY4vLu+awOTB6fN4k
+	F8AY1cBok5iXl1+SWJKqkJJanGyr5JiSWVKZqOCUWZSTqOCSWZyck5iZm1qkpJCZYqtkpKRQ
+	kJOYnJqbmldiq5RYUJCal6Jkx6WAAWyAyjLzFFLzkvNTMvPSbZU8g/11LSxMLXUNlexCMlIV
+	MvPS8otyE0syExZwZTSd2MdcoFex6P1cxgZGlS5GTg4JAROJtU9bWSBsMYkL99azdTFycQgJ
+	7GeUmHr4PSOEc4dR4uiar0wQzgFGiZfnZkI5pxgl5s/dyQ7SLyTgLnGm7Q8rhH2RUeLkK3uI
+	otOMEq9aXzJBJOQlVr2+yAxiswnoSGxcvx5oOQeHsICwRMPMGpAwi4CKxPVTk9hAbF4BQYmT
+	M5+A3ccsoC/RMr+THcKWl9j+dg4zxN28EjPan0L9ICnRvPoRlG0k0bzgDzuEbSHR8LGFFcI2
+	k2i5P4kRYr6exN9zXWC7RARkJObOfsw6gVF8FpLVs5CsnoVk9QJG5lWM4pm5xcV5qeV6ieDo
+	TALFpl5yfu4mRmB6WCPAGLODsWeizSFGAQ5GJR7eg/MFgoVYE8uKK3MPMUpyMCmJ8n7TEgwW
+	4kvKT6nMSCzOiC8qzUktPsQowcGsJMI74TpQOW9KYmVValE+TCoZGD4TmaVEk/OBKS+vJN7Q
+	2MzEyNjSxNLM1MCSNGElcV5WAaAVAunAZJmdmlqQWgSzRZeDQ2BG159wgTerNrxjlGLJy89L
+	VZLgjdUGulawKDU9tSItM6cEoZ6JgxPkah6gq+eC1PAWFyTmFmemQ+RPMRpz3F398xMjx/Rt
+	/z4xCoGNkxLnDQApFQApzSjNg5sGykqa7ps8XzGKA0NNGGIgDzCjwc17BbSKCWhVy35QABUD
+	cxVcSqqBUS5VKeOq7cUVuy6uWqn2Niw0w+rXC+cFSflpKQqqOW21B/x/+Z1vTTq/3Nxv1dvX
+	LB97bY7kH5h989jLOrc6tsZPE3for9pzZXmn+Dxtfy6JCiX7+2wKU/U/nlgq+Uwk8edc18yI
+	XsWZJWz7e/5oPI/8trQ8v9Tg71LRrV5KvOps99pvyF17rMRSnJFoqMVcVJwIAKFD2yElBAAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, February 25, 2014 02:20:09 PM Viresh Kumar wrote:
-> We call __find_governor() during addition of first CPU of every policy to find
-> the last governor used for this CPU before it was hotplugged-out.
-> 
-> After that we call cpufreq_parse_governor() in cpufreq_init_policy() either with
-> this governor or default governor. And right after that policy->governor is set
-> to NULL.
-> 
-> So, instead of doing this move the relevant parts to cpufreq_init_policy()
-> policy only and initialize policy->governor to NULL at the beginning.
-> 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
-> 
-> Hi Saravana,
-> 
-> I hope only the first two patches would fix things for you but probably you can
-> test all three.
-> 
-> @Rafael: We might need to get these in next rc only as these are more or less
-> fixes.
-> 
->  drivers/cpufreq/cpufreq.c | 34 ++++++++++++++++------------------
->  1 file changed, 16 insertions(+), 18 deletions(-)
-> 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index c755b5f..cc4f244 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -879,18 +879,27 @@ err_out_kobj_put:
->  
->  static void cpufreq_init_policy(struct cpufreq_policy *policy)
->  {
-> +	struct cpufreq_governor *gov = NULL;
->  	struct cpufreq_policy new_policy;
->  	int ret = 0;
->  
->  	memcpy(&new_policy, policy, sizeof(*policy));
->  
+contact me for details of $21.4m transfer.
 
-And while I'm at it, can we *please* avoid adding new #ifdef blocks into
-function bodies?
 
-Please introduce a wrapper around __find_governor() returning NULL for
-CONFIG_HOTPLUG_CPU unset.
+The information contained in this electronic communication is intended solely for the individual(s) or entity to which it is addressed. It may contain proprietary, confidential and/or legally privileged information. Any review, retransmission, dissemination, printing, copying or other use of, or taking any action in reliance on the contents of this information by person(s) or entities other than the intended recipient is strictly prohibited and may be unlawful. If you have received this communication in error, please notify us by responding to this email or telephone and immediately and permanently delete all copies of this message and any attachments from your system(s). The contents of this message do not necessarily represent the views or policies of Aditya Birla Group. 
 
-> +	/* Update governor of new_policy to the governor used before hotplug */
-> +#ifdef CONFIG_HOTPLUG_CPU
-> +	gov = __find_governor(per_cpu(cpufreq_cpu_governor, policy->cpu));
-> +#endif
-> +	if (gov)
-> +		pr_debug("Restoring governor %s for cpu %d\n",
-> +				policy->governor->name, policy->cpu);
-> +	else
-> +		gov = CPUFREQ_DEFAULT_GOVERNOR;
-> +
-> +	new_policy.governor = gov;
-> +
->  	/* Use the default policy if its valid. */
->  	if (cpufreq_driver->setpolicy)
-> -		cpufreq_parse_governor(policy->governor->name,
-> -					&new_policy.policy, NULL);
-> -
-> -	/* assure that the starting sequence is run in cpufreq_set_policy */
-> -	policy->governor = NULL;
-> +		cpufreq_parse_governor(gov->name, &new_policy.policy, NULL);
->  
->  	/* set default policy */
->  	ret = cpufreq_set_policy(policy, &new_policy);
-> @@ -944,11 +953,11 @@ static struct cpufreq_policy *cpufreq_policy_restore(unsigned int cpu)
->  	unsigned long flags;
->  
->  	read_lock_irqsave(&cpufreq_driver_lock, flags);
-> -
->  	policy = per_cpu(cpufreq_cpu_data_fallback, cpu);
-> -
-
-Why do these whitespace changes belong to this patch?
-
->  	read_unlock_irqrestore(&cpufreq_driver_lock, flags);
->  
-> +	policy->governor = NULL;
-> +
->  	return policy;
->  }
->  
-> @@ -1036,7 +1045,6 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
->  	unsigned long flags;
->  #ifdef CONFIG_HOTPLUG_CPU
->  	struct cpufreq_policy *tpolicy;
-> -	struct cpufreq_governor *gov;
->  #endif
->  
->  	if (cpu_is_offline(cpu))
-> @@ -1094,7 +1102,6 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
->  	else
->  		policy->cpu = cpu;
->  
-> -	policy->governor = CPUFREQ_DEFAULT_GOVERNOR;
->  	cpumask_copy(policy->cpus, cpumask_of(cpu));
->  
->  	init_completion(&policy->kobj_unregister);
-> @@ -1179,15 +1186,6 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
->  	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
->  				     CPUFREQ_START, policy);
->  
-> -#ifdef CONFIG_HOTPLUG_CPU
-> -	gov = __find_governor(per_cpu(cpufreq_cpu_governor, cpu));
-> -	if (gov) {
-> -		policy->governor = gov;
-> -		pr_debug("Restoring governor %s for cpu %d\n",
-> -		       policy->governor->name, cpu);
-> -	}
-> -#endif
-> -
->  	if (!frozen) {
->  		ret = cpufreq_add_dev_interface(policy, dev);
->  		if (ret)
-> 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Computer viruses can be transmitted via email. Aditya Birla Group Companies attempts to sweep e-mails and attachments for viruses, it does not guarantee that either are virus free. The recipient should check this email and any attachments for the presence of viruses.  Aditya Birla Group does not accept any liability for any damage sustained as a result of viruses.
