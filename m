@@ -1,91 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753264AbaCADyS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 22:54:18 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53883 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753083AbaCADyO (ORCPT
+	id S1752941AbaCADwk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 22:52:40 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:12219 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752134AbaCADwh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 22:54:14 -0500
-Date: Sat, 1 Mar 2014 12:53:39 +0900
-From: Mark Brown <broonie@kernel.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Richard Weinberger <richard@nod.at>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140301035339.GK29849@sirena.org.uk>
-References: <1391971686-9517-1-git-send-email-richard@nod.at>
- <1391971686-9517-15-git-send-email-richard@nod.at>
- <20140210114154.GQ1757@sirena.org.uk>
- <1392039072.3585.15.camel@x220>
- <20140210141255.GI1757@sirena.org.uk>
- <1392046242.3585.41.camel@x220>
- <20140210163621.GA13533@sirena.org.uk>
- <1392070159.27939.34.camel@x220>
- <20140212160431.GB28112@sirena.org.uk>
- <1393623789.4052.17.camel@x220>
+	Fri, 28 Feb 2014 22:52:37 -0500
+Message-Id: <20140301035236.228845249@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Fri, 28 Feb 2014 22:52:12 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        John Kacur <jkacur@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        <stable-rt@vger.kernel.org>
+Subject: [PATCH RT 03/14] timer: Raise softirq if theres irq_work
+References: <20140301035209.031474616@goodmis.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+HmK7y6O+lKZIGkr"
-Content-Disposition: inline
-In-Reply-To: <1393623789.4052.17.camel@x220>
-X-Cookie: You should go home.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 175.126.181.238
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 14/28] Remove MACH_SMDKC210
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=0003-timer-Raise-softirq-if-there-s-irq_work.patch
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.10.32-rt31-rc2 stable review patch.
+If anyone has any objections, please let me know.
 
---+HmK7y6O+lKZIGkr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+------------------
 
-On Fri, Feb 28, 2014 at 10:43:09PM +0100, Paul Bolle wrote:
+From: Steven Rostedt <rostedt@goodmis.org>
 
-> That commit is fine with me, of course. I now see no reason to continue
-> my, rather slowly progressing, search for the problem that you wanted to
-> get properly fixed. I suppose another commit already fixed it.
+[ Talking with Sebastian on IRC, it seems that doing the irq_work_run()
+  from the interrupt in -rt is a bad thing. Here we simply raise the
+  softirq if there's irq work to do. This too boots on my i7 ]
 
-No, but it's someone from Samsung (Sachin works with the Samsung landing
-team at Linaro) not caring about those drivers on these boards any more
-and mentioning the DT conversion which is rather different to someone
-doing mechanical cleanup with no mention of where the symbols went.
+After trying hard to figure out why my i7 box was locking up with the
+new active_timers code, that does not run the timer softirq if there
+are no active timers, I took an extra look at the softirq handler and
+noticed that it doesn't just run timer softirqs, it also runs irq work.
 
-It should be fairly obvious that if the reason symbols are being removed
-due to DT conversion of the platforms then the default thing should be
-that the drivers be being converted to DT and appropriate DT entries
-being added to the board DTS files, but more generally the important
-thing is that some understanding is shown as to why the symbols vanished
-and why the mechanical fix suggested is OK.
+This was the bug that was locking up the system. It wasn't missing a
+timer, it was missing irq work. By always doing the irq work callbacks,
+the system boots fine. The missing irq work callback was the RCU's
+sp_wakeup() function.
 
---+HmK7y6O+lKZIGkr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+No need to check for defined(CONFIG_IRQ_WORK). When that's not set the
+"irq_work_needs_cpu()" is a static inline that returns false.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Cc: stable-rt@vger.kernel.org
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ kernel/timer.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-iQIcBAEBAgAGBQJTEVnAAAoJELSic+t+oim9UeAP/3AbCx0eUSUgyA/4YbVeg6L0
-9YJ9ENAhOqioM6FxchvKxAFRUJ5bbEt3dYl0jzsdjcQMM0DGjunY/MHnAiaEXYaQ
-JYE0ccDRdNSZUf8HWGv1O4rrwfiPQespwImgYT+JSq6GrFCQdHVwbGjX+XCW9kDD
-LP1ywiNn3JdPHPi6N9yX8THDIefu475zc7i0UqBEhnliRIi6I2TfUutXczdKg3wI
-TnyE7eXHIr9lctDTkaIHbfVyntXrUZy2GHgVjBitNObSrmccfG/R2/3e3d/uyblS
-QmkyLpdi/7GdjZI3JrwmdLEf6tUwNon/0j9gaWZbrKGEN77ub5BKUdJN9toj986f
-82/yt922OfnksAQVNlEL8OC/nxrRPXG0pe7b6fn6dUxN829l5upBBX62bBrwHqw1
-MON0nuv5EEsxLAFt60wO+vjI8W+FZnRSry2RjRPhkehTrILsqcp/HNnX0k2mduex
-Rz9aDxF1INXIcwci5lGZgLKzzk9LWS2MVC3Z3GhV/7N5em8yD6uilvPU+gu4mLtF
-y1hcNNTefJ6/Ioy7Nr/yoU2aLdc80aAA15lNQrqgIzD212JRXTBElU5h21OLJeaP
-1q0/ROANqiNDP0yk7pLLQzZLj3TT7rotldRWONk+1zi1o32Pi7YwQKFO1BUgeLkT
-0TzOhwSK4IfG+ULtqc9D
-=TpnJ
------END PGP SIGNATURE-----
+diff --git a/kernel/timer.c b/kernel/timer.c
+index 3d7313c..25a38c4 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -1466,8 +1466,13 @@ void run_local_timers(void)
+ 		return;
+ 	}
+ #endif
+-	if (!base->active_timers)
+-		goto out;
++	if (!base->active_timers) {
++#ifdef CONFIG_PREEMPT_RT_FULL
++		/* On RT, irq work runs from softirq */
++		if (!irq_work_needs_cpu())
++#endif
++			goto out;
++	}
+ 
+ 	/* Check whether the next pending timer has expired */
+ 	if (time_before_eq(base->next_timer, jiffies))
+-- 
+1.8.5.3
 
---+HmK7y6O+lKZIGkr--
+
