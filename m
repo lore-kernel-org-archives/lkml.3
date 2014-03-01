@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126AbaCBJHs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 04:07:48 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:56181 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751930AbaCBJHZ (ORCPT
+	id S1752209AbaCBJIR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 04:08:17 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:37762 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752009AbaCBJHd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 04:07:25 -0500
+	Sun, 2 Mar 2014 04:07:33 -0500
 From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v6 03/11] drivers: of: add initialization code for dynamic reserved memory
+Subject: Re: [PATCH v5 01/11] of: document bindings for reserved-memory nodes
 To: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
         devicetree@vger.kernel.org, linux-doc@vger.kernel.org
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Arnd Bergmann <arnd@arndb.de>, Michal Nazarewicz <mina86@mina86.com>,
         Tomasz Figa <t.figa@samsung.com>,
         Sascha Hauer <s.hauer@pengutronix.de>,
@@ -27,343 +26,120 @@ Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
         Marc <marc.ceeeee@gmail.com>, Josh Cartwright <joshc@codeaurora.org>,
         Catalin Marinas <catalin.marinas@arm.com>,
         Will Deacon <will.deacon@arm.com>, Paul Mackerras <paulus@samba.org>
-In-Reply-To: <1393594976-16728-4-git-send-email-m.szyprowski@samsung.com>
-References: <1393594976-16728-1-git-send-email-m.szyprowski@samsung.com> < 1393594976-16728-4-git-send-email-m.szyprowski@samsung.com>
-Date: Sun, 02 Mar 2014 13:30:51 +0800
-Message-Id: <20140302053051.6FFCAC41038@trevor.secretlab.ca>
+In-Reply-To: <53105CC6.1090902@samsung.com>
+References: <1392985527-6260-1-git-send-email-m.szyprowski@samsung.com> < 1392985527-6260-2-git-send-email-m.szyprowski@samsung.com> <20140226115108. 211D2C40A89@trevor.secretlab.ca> <53105CC6.1090902@samsung.com>
+Date: Sat, 01 Mar 2014 19:58:53 +0000
+Message-Id: <20140301195853.4236DC40B36@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Feb 2014 14:42:48 +0100, Marek Szyprowski <m.szyprowski@samsung.com> wrote:
-> This patch adds support for dynamically allocated reserved memory regions
-> declared in device tree. Such regions are defined by 'size', 'alignment'
-> and 'alloc-ranges' properties.
+On Fri, 28 Feb 2014 10:54:14 +0100, Marek Szyprowski <m.szyprowski@samsung.com> wrote:
+> Hello,
 > 
-> Based on previous code provided by Josh Cartwright <joshc@codeaurora.org>
+> On 2014-02-26 12:51, Grant Likely wrote:
+> > On Fri, 21 Feb 2014 13:25:17 +0100, Marek Szyprowski <m.szyprowski@samsung.com> wrote:
+> > > From: Grant Likely <grant.likely@linaro.org>
+> > >
+> > > Reserved memory nodes allow for the reservation of static (fixed
+> > > address) regions, or dynamically allocated regions for a specific
+> > > purpose.
+> > >
+> > > Signed-off-by: Grant Likely <grant.likely@linaro.org>
+> > > [joshc: Based on binding document proposed (in non-patch form) here:
+> > >  http://lkml.kernel.org/g/20131030134702.19B57C402A0@trevor.secretlab.ca
+> > >  adapted to support #memory-region-cells]
+> > > Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+> > > Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> > > ---
+> > >  .../bindings/reserved-memory/reserved-memory.txt   |  138 ++++++++++++++++++++
+> > >  1 file changed, 138 insertions(+)
+> > >  create mode 100644 Documentation/devicetree/bindings/reserved-memory/reserved-memory.txt
+> > >
+> > > diff --git a/Documentation/devicetree/bindings/reserved-memory/reserved-memory.txt b/Documentation/devicetree/bindings/reserved-memory/reserved-memory.txt
+> > > new file mode 100644
+> > > index 000000000000..a606ce90c9c4
+> > > --- /dev/null
+> > > +++ b/Documentation/devicetree/bindings/reserved-memory/reserved-memory.txt
+> > > @@ -0,0 +1,138 @@
+> > > +*** Reserved memory regions ***
+> > > +
+> > > +Reserved memory is specified as a node under the /reserved-memory node.
+> > > +The operating system shall exclude reserved memory from normal usage
+> > > +one can create child nodes describing particular reserved (excluded from
+> > > +normal use) memory regions. Such memory regions are usually designed for
+> > > +the special usage by various device drivers.
+> > > +
+> > > +Parameters for each memory region can be encoded into the device tree
+> > > +with the following nodes:
+> > > +
+> > > +/reserved-memory node
+> > > +---------------------
+> > > +#address-cells, #size-cells (required) - standard definition
+> > > +    - Should use the same values as the root node
+> > > +#memory-region-cells (required) - dictates number of cells used in the child
+> > > +                                  nodes memory-region specifier
+> >
+> > I still don't like this portion of the binding. I'm not convinced that
+> > it is necessary in the majority of cases and it is going to be very
+> > driver specific. I would rather drop it entirely from the common
+> > binding. If a specific driver needs to do something like the above then
+> > it can have a driver specific binding. Otherwise I think the default
+> > should be a simple phandle with no arguments to a single reserved memory
+> > node.
+> >
+> > Ben, can you weigh in on the current state of this document. I'm mostly
+> > happy with it aside from my comment above. Do you think this is ready to
+> > be merged?
+> >
+> > > +ranges (required) - standard definition
+> > > +    - Should be empty
+> > > +
+> > > +/reserved-memory/ child nodes
+> > > +-----------------------------
+> > > +Each child of the reserved-memory node specifies one or more regions of
+> > > +reserved memory. Each child node may either use a 'reg' property to
+> > > +specify a specific range of reserved memory, or a 'size' property with
+> > > +optional constraints to request a dynamically allocated block of memory.
+> > > +
+> > > +Following the generic-names recommended practice, node names should
+> > > +reflect the purpose of the node (ie. "framebuffer" or "dma-pool"). Unit
+> > > +address (@<address>) should be appended to the name if the node is a
+> > > +static allocation.
+> > > +
+> > > +Properties:
+> > > +Requires either a) or b) below.
+> > > +a) static allocation
+> > > +   reg (required) - standard definition
+> > > +b) dynamic allocation
+> > > +   size (required) - length based on parent's #size-cells
+> > > +                   - Size in bytes of memory to reserve.
+> > > +   alignment (optional) - length based on parent's #size-cells
+> > > +                        - Address boundary for alignment of allocation.
+> > > +   alloc-ranges (optional) - prop-encoded-array (address, length pairs).
+> > > +                           - Specifies regions of memory that are
+> > > +                             acceptable to allocate from.
+> > > +
+> > > +If both reg and size are present, then the reg property takes precedence
+> > > +and size is ignored.
+> > > +
+> > > +Additional properties:
+> > > +compatible (optional) - standard definition
+> > > +    - may contain the following strings:
+> > > +        - shared-dma-pool: This indicates a region of memory meant to be
+> > > +          used as a shared pool of DMA buffers for a set of devices. It can
+> > > +          be used by an operating system to instanciate the necessary pool
+> > > +          management subsystem if necessary.
+> > > +        - vendor specific string in the form <vendor>,[<device>-]<usage>
+> >
+> > Add "Use vendor strings to identify regions dedicates for a specific
+> > vendor device. For example: 'acme,framebuffer'. Platform code can use vendor
+> > strings to identify device specific regions"
 > 
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> Acked-by: Grant Likely <grant.likely@linaro.org>
+> So do you want to completely drop phandle based links between device 
+> nodes and memory regions?
 
-Applied, thanks.
+I meant nothing of the sort. That was merely a comment to clarify the
+documentation. I wrote 'can' not 'must'.
 
 g.
-
-> ---
->  drivers/of/Kconfig              |    6 ++
->  drivers/of/Makefile             |    1 +
->  drivers/of/fdt.c                |   13 ++-
->  drivers/of/of_reserved_mem.c    |  188 +++++++++++++++++++++++++++++++++++++++
->  include/linux/of_reserved_mem.h |   21 +++++
->  5 files changed, 227 insertions(+), 2 deletions(-)
->  create mode 100644 drivers/of/of_reserved_mem.c
->  create mode 100644 include/linux/of_reserved_mem.h
-> 
-> diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
-> index c6973f101a3e..30a7d87a8077 100644
-> --- a/drivers/of/Kconfig
-> +++ b/drivers/of/Kconfig
-> @@ -75,4 +75,10 @@ config OF_MTD
->  	depends on MTD
->  	def_bool y
->  
-> +config OF_RESERVED_MEM
-> +	depends on OF_EARLY_FLATTREE
-> +	bool
-> +	help
-> +	  Helpers to allow for reservation of memory regions
-> +
->  endmenu # OF
-> diff --git a/drivers/of/Makefile b/drivers/of/Makefile
-> index efd05102c405..ed9660adad77 100644
-> --- a/drivers/of/Makefile
-> +++ b/drivers/of/Makefile
-> @@ -9,3 +9,4 @@ obj-$(CONFIG_OF_MDIO)	+= of_mdio.o
->  obj-$(CONFIG_OF_PCI)	+= of_pci.o
->  obj-$(CONFIG_OF_PCI_IRQ)  += of_pci_irq.o
->  obj-$(CONFIG_OF_MTD)	+= of_mtd.o
-> +obj-$(CONFIG_OF_RESERVED_MEM) += of_reserved_mem.o
-> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-> index 819e11209718..510c0d8de8a0 100644
-> --- a/drivers/of/fdt.c
-> +++ b/drivers/of/fdt.c
-> @@ -15,6 +15,7 @@
->  #include <linux/module.h>
->  #include <linux/of.h>
->  #include <linux/of_fdt.h>
-> +#include <linux/of_reserved_mem.h>
->  #include <linux/sizes.h>
->  #include <linux/string.h>
->  #include <linux/errno.h>
-> @@ -450,7 +451,7 @@ static int __init __reserved_mem_reserve_reg(unsigned long node,
->  	phys_addr_t base, size;
->  	unsigned long len;
->  	__be32 *prop;
-> -	int nomap;
-> +	int nomap, first = 1;
->  
->  	prop = of_get_flat_dt_prop(node, "reg", &len);
->  	if (!prop)
-> @@ -477,6 +478,10 @@ static int __init __reserved_mem_reserve_reg(unsigned long node,
->  				uname, &base, (unsigned long)size / SZ_1M);
->  
->  		len -= t_len;
-> +		if (first) {
-> +			fdt_reserved_mem_save_node(node, uname, base, size);
-> +			first = 0;
-> +		}
->  	}
->  	return 0;
->  }
-> @@ -512,6 +517,7 @@ static int __init __fdt_scan_reserved_mem(unsigned long node, const char *uname,
->  {
->  	static int found;
->  	const char *status;
-> +	int err;
->  
->  	if (!found && depth == 1 && strcmp(uname, "reserved-memory") == 0) {
->  		if (__reserved_mem_check_root(node) != 0) {
-> @@ -534,7 +540,9 @@ static int __init __fdt_scan_reserved_mem(unsigned long node, const char *uname,
->  	if (status && strcmp(status, "okay") != 0 && strcmp(status, "ok") != 0)
->  		return 0;
->  
-> -	__reserved_mem_reserve_reg(node, uname);
-> +	err = __reserved_mem_reserve_reg(node, uname);
-> +	if (err == -ENOENT && of_get_flat_dt_prop(node, "size", NULL))
-> +		fdt_reserved_mem_save_node(node, uname, 0, 0);
->  
->  	/* scan next node */
->  	return 0;
-> @@ -550,6 +558,7 @@ static int __init __fdt_scan_reserved_mem(unsigned long node, const char *uname,
->  void __init early_init_fdt_scan_reserved_mem(void)
->  {
->  	of_scan_flat_dt(__fdt_scan_reserved_mem, NULL);
-> +	fdt_init_reserved_mem();
->  }
->  
->  /**
-> diff --git a/drivers/of/of_reserved_mem.c b/drivers/of/of_reserved_mem.c
-> new file mode 100644
-> index 000000000000..69b811779585
-> --- /dev/null
-> +++ b/drivers/of/of_reserved_mem.c
-> @@ -0,0 +1,188 @@
-> +/*
-> + * Device tree based initialization code for reserved memory.
-> + *
-> + * Copyright (c) 2013, The Linux Foundation. All Rights Reserved.
-> + * Copyright (c) 2013,2014 Samsung Electronics Co., Ltd.
-> + *		http://www.samsung.com
-> + * Author: Marek Szyprowski <m.szyprowski@samsung.com>
-> + * Author: Josh Cartwright <joshc@codeaurora.org>
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License as
-> + * published by the Free Software Foundation; either version 2 of the
-> + * License or (at your optional) any later version of the license.
-> + */
-> +
-> +#include <linux/err.h>
-> +#include <linux/of.h>
-> +#include <linux/of_fdt.h>
-> +#include <linux/of_platform.h>
-> +#include <linux/mm.h>
-> +#include <linux/sizes.h>
-> +#include <linux/of_reserved_mem.h>
-> +
-> +#define MAX_RESERVED_REGIONS	16
-> +static struct reserved_mem reserved_mem[MAX_RESERVED_REGIONS];
-> +static int reserved_mem_count;
-> +
-> +#if defined(CONFIG_HAVE_MEMBLOCK)
-> +#include <linux/memblock.h>
-> +int __init __weak early_init_dt_alloc_reserved_memory_arch(phys_addr_t size,
-> +	phys_addr_t align, phys_addr_t start, phys_addr_t end, bool nomap,
-> +	phys_addr_t *res_base)
-> +{
-> +	/*
-> +	 * We use __memblock_alloc_base() because memblock_alloc_base()
-> +	 * panic()s on allocation failure.
-> +	 */
-> +	phys_addr_t base = __memblock_alloc_base(size, align, end);
-> +	if (!base)
-> +		return -ENOMEM;
-> +
-> +	/*
-> +	 * Check if the allocated region fits in to start..end window
-> +	 */
-> +	if (base < start) {
-> +		memblock_free(base, size);
-> +		return -ENOMEM;
-> +	}
-> +
-> +	*res_base = base;
-> +	if (nomap)
-> +		return memblock_remove(base, size);
-> +	return 0;
-> +}
-> +#else
-> +int __init __weak early_init_dt_alloc_reserved_memory_arch(phys_addr_t size,
-> +	phys_addr_t align, phys_addr_t start, phys_addr_t end, bool nomap,
-> +	phys_addr_t *res_base)
-> +{
-> +	pr_err("Reserved memory not supported, ignoring region 0x%llx%s\n",
-> +		  size, nomap ? " (nomap)" : "");
-> +	return -ENOSYS;
-> +}
-> +#endif
-> +
-> +/**
-> + * res_mem_save_node() - save fdt node for second pass initialization
-> + */
-> +void __init fdt_reserved_mem_save_node(unsigned long node, const char *uname,
-> +				      phys_addr_t base, phys_addr_t size)
-> +{
-> +	struct reserved_mem *rmem = &reserved_mem[reserved_mem_count];
-> +
-> +	if (reserved_mem_count == ARRAY_SIZE(reserved_mem)) {
-> +		pr_err("Reserved memory: not enough space all defined regions.\n");
-> +		return;
-> +	}
-> +
-> +	rmem->fdt_node = node;
-> +	rmem->name = uname;
-> +	rmem->base = base;
-> +	rmem->size = size;
-> +
-> +	reserved_mem_count++;
-> +	return;
-> +}
-> +
-> +/**
-> + * res_mem_alloc_size() - allocate reserved memory described by 'size', 'align'
-> + *			  and 'alloc-ranges' properties
-> + */
-> +static int __init __reserved_mem_alloc_size(unsigned long node,
-> +	const char *uname, phys_addr_t *res_base, phys_addr_t *res_size)
-> +{
-> +	int t_len = (dt_root_addr_cells + dt_root_size_cells) * sizeof(__be32);
-> +	phys_addr_t start = 0, end = 0;
-> +	phys_addr_t base = 0, align = 0, size;
-> +	unsigned long len;
-> +	__be32 *prop;
-> +	int nomap;
-> +	int ret;
-> +
-> +	prop = of_get_flat_dt_prop(node, "size", &len);
-> +	if (!prop)
-> +		return -EINVAL;
-> +
-> +	if (len != dt_root_size_cells * sizeof(__be32)) {
-> +		pr_err("Reserved memory: invalid size property in '%s' node.\n",
-> +				uname);
-> +		return -EINVAL;
-> +	}
-> +	size = dt_mem_next_cell(dt_root_size_cells, &prop);
-> +
-> +	nomap = of_get_flat_dt_prop(node, "no-map", NULL) != NULL;
-> +
-> +	prop = of_get_flat_dt_prop(node, "alignment", &len);
-> +	if (prop) {
-> +		if (len != dt_root_addr_cells * sizeof(__be32)) {
-> +			pr_err("Reserved memory: invalid alignment property in '%s' node.\n",
-> +				uname);
-> +			return -EINVAL;
-> +		}
-> +		align = dt_mem_next_cell(dt_root_addr_cells, &prop);
-> +	}
-> +
-> +	prop = of_get_flat_dt_prop(node, "alloc-ranges", &len);
-> +	if (prop) {
-> +
-> +		if (len % t_len != 0) {
-> +			pr_err("Reserved memory: invalid alloc-ranges property in '%s', skipping node.\n",
-> +			       uname);
-> +			return -EINVAL;
-> +		}
-> +
-> +		base = 0;
-> +
-> +		while (len > 0) {
-> +			start = dt_mem_next_cell(dt_root_addr_cells, &prop);
-> +			end = start + dt_mem_next_cell(dt_root_size_cells,
-> +						       &prop);
-> +
-> +			ret = early_init_dt_alloc_reserved_memory_arch(size,
-> +					align, start, end, nomap, &base);
-> +			if (ret == 0) {
-> +				pr_debug("Reserved memory: allocated memory for '%s' node: base %pa, size %ld MiB\n",
-> +					uname, &base,
-> +					(unsigned long)size / SZ_1M);
-> +				break;
-> +			}
-> +			len -= t_len;
-> +		}
-> +
-> +	} else {
-> +		ret = early_init_dt_alloc_reserved_memory_arch(size, align,
-> +							0, 0, nomap, &base);
-> +		if (ret == 0)
-> +			pr_debug("Reserved memory: allocated memory for '%s' node: base %pa, size %ld MiB\n",
-> +				uname, &base, (unsigned long)size / SZ_1M);
-> +	}
-> +
-> +	if (base == 0) {
-> +		pr_info("Reserved memory: failed to allocate memory for node '%s'\n",
-> +			uname);
-> +		return -ENOMEM;
-> +	}
-> +
-> +	*res_base = base;
-> +	*res_size = size;
-> +
-> +	return 0;
-> +}
-> +
-> +/**
-> + * fdt_init_reserved_mem - allocate and init all saved reserved memory regions
-> + */
-> +void __init fdt_init_reserved_mem(void)
-> +{
-> +	int i;
-> +	for (i = 0; i < reserved_mem_count; i++) {
-> +		struct reserved_mem *rmem = &reserved_mem[i];
-> +		unsigned long node = rmem->fdt_node;
-> +		int err = 0;
-> +
-> +		if (rmem->size == 0)
-> +			err = __reserved_mem_alloc_size(node, rmem->name,
-> +						 &rmem->base, &rmem->size);
-> +	}
-> +}
-> diff --git a/include/linux/of_reserved_mem.h b/include/linux/of_reserved_mem.h
-> new file mode 100644
-> index 000000000000..89226ed7d954
-> --- /dev/null
-> +++ b/include/linux/of_reserved_mem.h
-> @@ -0,0 +1,21 @@
-> +#ifndef __OF_RESERVED_MEM_H
-> +#define __OF_RESERVED_MEM_H
-> +
-> +struct reserved_mem {
-> +	const char			*name;
-> +	unsigned long			fdt_node;
-> +	phys_addr_t			base;
-> +	phys_addr_t			size;
-> +};
-> +
-> +#ifdef CONFIG_OF_RESERVED_MEM
-> +void fdt_init_reserved_mem(void);
-> +void fdt_reserved_mem_save_node(unsigned long node, const char *uname,
-> +			       phys_addr_t base, phys_addr_t size);
-> +#else
-> +static inline void fdt_init_reserved_mem(void) { }
-> +static inline void fdt_reserved_mem_save_node(unsigned long node,
-> +		const char *uname, phys_addr_t base, phys_addr_t size) { }
-> +#endif
-> +
-> +#endif /* __OF_RESERVED_MEM_H */
-> -- 
-> 1.7.9.5
-> 
-
