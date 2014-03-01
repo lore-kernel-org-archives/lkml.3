@@ -1,62 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751013AbaCAF5h (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Mar 2014 00:57:37 -0500
-Received: from mail-vc0-f202.google.com ([209.85.220.202]:35290 "EHLO
-	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750914AbaCAF5g (ORCPT
+	id S1751684AbaCAGLK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Mar 2014 01:11:10 -0500
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:38593 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751285AbaCAGLI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Mar 2014 00:57:36 -0500
-From: Filipe Brandenburger <filbranden@google.com>
-To: Steven Rostedt <rostedt@goodmis.org>, Li Zefan <lizefan@huawei.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        Filipe Brandenburger <filbranden@google.com>
-Subject: [PATCH 2/3] tracing: evaluate len expression only once in __dynamic_array macro
-Date: Fri, 28 Feb 2014 21:32:17 -0800
-Message-Id: <1393651938-16418-3-git-send-email-filbranden@google.com>
-X-Mailer: git-send-email 1.9.0.279.gdc9e3eb
-In-Reply-To: <1393651938-16418-1-git-send-email-filbranden@google.com>
-References: <1393651938-16418-1-git-send-email-filbranden@google.com>
+	Sat, 1 Mar 2014 01:11:08 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140228174150.8ff4edca.akpm@linux-foundation.org>
+References: <1393625931-2858-1-git-send-email-quning@google.com>
+ <CACQD4-5U3P+QiuNKzt5+VdDDi0ocphR+Jh81eHqG6_+KeaHyRw@mail.gmail.com> <20140228174150.8ff4edca.akpm@linux-foundation.org>
+From: Ning Qu <quning@gmail.com>
+Date: Fri, 28 Feb 2014 22:10:27 -0800
+Message-ID: <CACQD4-7UUDMeXdR-NaAAXvk-NRYqW7mHJkjDUM=JRvL54b_Xsg@mail.gmail.com>
+Subject: Re: [PATCH 0/1] mm, shmem: map few pages around fault address if they
+ are in page cache
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Chinner <david@fromorbit.com>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use a temporary variable to store the expansion of the len expression.
-If the evaluation is expensive, this commit will ensure it is evaluated
-only once inside ftrace_get_offsets_<call>.
-
-Signed-off-by: Filipe Brandenburger <filbranden@google.com>
----
- include/trace/ftrace.h | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 82e8d89..86a056a 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -373,10 +373,11 @@ ftrace_define_fields_##call(struct ftrace_event_call *event_call)	\
- 
- #undef __dynamic_array
- #define __dynamic_array(type, item, len)				\
-+	__item_length = (len) * sizeof(type);				\
- 	__data_offsets->item = __data_size +				\
- 			       offsetof(typeof(*entry), __data);	\
--	__data_offsets->item |= ((len) * sizeof(type)) << 16;		\
--	__data_size += (len) * sizeof(type);
-+	__data_offsets->item |= __item_length << 16;			\
-+	__data_size += __item_length;
- 
- #undef __string
- #define __string(item, src) __dynamic_array(char, item,			\
-@@ -388,6 +389,7 @@ static inline notrace int ftrace_get_offsets_##call(			\
- 	struct ftrace_data_offsets_##call *__data_offsets, proto)       \
- {									\
- 	int __data_size = 0;						\
-+	int __maybe_unused __item_length;				\
- 	struct ftrace_raw_##call __maybe_unused *entry;			\
- 									\
- 	tstruct;							\
+Yes, I am using the iozone -i 0 -i 1. Let me try the most simple test
+as you mentioned.
+Best wishes,
 -- 
-1.9.0.279.gdc9e3eb
+Ning Qu
 
+
+On Fri, Feb 28, 2014 at 5:41 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Fri, 28 Feb 2014 16:35:16 -0800 Ning Qu <quning@gmail.com> wrote:
+>
+>> Sorry about my fault about the experiments, here is the real one.
+>>
+>> Btw, apparently, there are still some questions about the results and
+>> I will sync with Kirill about his test command line.
+>>
+>> Below is just some simple experiment numbers from this patch, let me know if
+>> you would like more:
+>>
+>> Tested on Xeon machine with 64GiB of RAM, using the current default fault
+>> order 4.
+>>
+>> Sequential access 8GiB file
+>>                         Baseline        with-patch
+>> 1 thread
+>>     minor fault         8,389,052    4,456,530
+>>     time, seconds    9.55            8.31
+>
+> The numbers still seem wrong.  I'd expect to see almost exactly 2M minor
+> faults with this test.
+>
+> Looky:
+>
+> #include <sys/mman.h>
+> #include <stdio.h>
+> #include <unistd.h>
+> #include <stdlib.h>
+> #include <sys/types.h>
+> #include <sys/stat.h>
+> #include <fcntl.h>
+>
+> #define G (1024 * 1024 * 1024)
+>
+> int main(int argc, char *argv[])
+> {
+>         char *p;
+>         int fd;
+>         unsigned long idx;
+>         int sum = 0;
+>
+>         fd = open("foo", O_RDONLY);
+>         if (fd < 0) {
+>                 perror("open");
+>                 exit(1);
+>         }
+>         p = mmap(NULL, 1 * G, PROT_READ, MAP_PRIVATE, fd, 0);
+>         if (p == MAP_FAILED) {
+>                 perror("mmap");
+>                 exit(1);
+>         }
+>
+>         for (idx = 0; idx < 1 * G; idx += 4096)
+>                 sum += p[idx];
+>         printf("%d\n", sum);
+>         exit(0);
+> }
+>
+> z:/home/akpm> /usr/bin/time ./a.out
+> 0
+> 0.05user 0.33system 0:00.38elapsed 99%CPU (0avgtext+0avgdata 4195856maxresident)k
+> 0inputs+0outputs (0major+262264minor)pagefaults 0swaps
+>
+> z:/home/akpm> dc
+> 16o
+> 262264 4 * p
+> 1001E0
+>
+> That's close!
