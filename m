@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753082AbaCAQB1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Mar 2014 11:01:27 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:34485 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752891AbaCAQB0 (ORCPT
+	id S1753164AbaCAQCZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Mar 2014 11:02:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33429 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752963AbaCAQCX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Mar 2014 11:01:26 -0500
-Date: Sat, 1 Mar 2014 16:01:14 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: James Hogan <james.hogan@imgtec.com>, grant.likely@linaro.org,
-        linus.walleij@linaro.org,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] irq: Changed the return type of irq_chip.irq_startup()
-	from unsigned int to int
-Message-ID: <20140301160114.GE21483@n2100.arm.linux.org.uk>
-References: <CACh+v5Nkuct0J65OHcnSd6Dfq4EyfafY8RpTvdwKXUA7A8_+Xw@mail.gmail.com> <1393521679-32331-1-git-send-email-jjhiblot@traphandler.com> <7150036.UpHTd1PK1K@radagast> <alpine.DEB.2.02.1403011629540.18573@ionos.tec.linutronix.de>
+	Sat, 1 Mar 2014 11:02:23 -0500
+Date: Sat, 1 Mar 2014 08:02:31 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Josh Cartwright <joshc@codeaurora.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] PM: define new ASSIGN_*_PM_OPS macros based on
+ assign_if
+Message-ID: <20140301160231.GA9911@kroah.com>
+References: <1393261707-30565-1-git-send-email-joshc@codeaurora.org>
+ <1393261707-30565-3-git-send-email-joshc@codeaurora.org>
+ <20140227190219.GB4421@kroah.com>
+ <20140301110633.GA27749@amd.pavel.ucw.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1403011629540.18573@ionos.tec.linutronix.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20140301110633.GA27749@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 01, 2014 at 04:31:13PM +0100, Thomas Gleixner wrote:
-> On Fri, 28 Feb 2014, James Hogan wrote:
-> > On Thursday 27 February 2014 18:21:19 Jean-Jacques Hiblot wrote:
-> > >  drivers/irqchip/irq-metag.c               | 4 ++--
-> > 
-> > I think you've missed out drivers/irqchip/irq-metag-ext.c
+On Sat, Mar 01, 2014 at 12:06:33PM +0100, Pavel Machek wrote:
+> Hi!
 > 
-> There is a good reason why I asked to do this with coccinelle.
+> > > +#define ASSIGN_SYSTEM_SLEEP_PM_OPS(suspend_fn, resume_fn) \
+> > > +	.suspend = assign_if_pm_sleep(suspend_fn), \
+> > > +	.resume = assign_if_pm_sleep(resume_fn), \
+> > > +	.freeze = assign_if_pm_sleep(suspend_fn), \
+> > > +	.thaw = assign_if_pm_sleep(resume_fn), \
+> > > +	.poweroff = assign_if_pm_sleep(suspend_fn), \
+> > > +	.restore = assign_if_pm_sleep(resume_fn),
+> > 
+> > Ugh, what a mess, really?  Is it that hard to get the #ifdef right in
+> > the code?  Why not just always define the functions and then also always
+> > have them in the structures, and if the feature isn't enabled, just
+> > don't call/use them?
+> 
+> The functions may not compile with CONFIG_PM disabled. (And #ifdefs in
+> the code are considered ugly).
+> 
+> > Yes, it would cause a _very_ tiny increase in code size if the option is
+> > disabled, but really, does anyone ever disable those options becides on
+> > the dreaded 'make randconfig' checkers?
+> 
+> We don't want CONFIG_PM complexity on some embedded systems...
 
-Go easy, not everyone understands that complex tool - I certainly don't.
-I ended up deleting it from my system after several failed attempts, and
-I came to the conclusion that to use it properly, you also needed a Julia
-installed along side you to learn how to write its scripts.
+Really, what embedded systems do not want this?
 
-The big problem is it /doesn't/ do what it advertises to - I ended up
-writing expression after expression to make it detect all the various
-forms of what I wanted it to, which as I understand the tool is precisely
-the opposite of what you're supposed to do with it.
+> and it is useful tostart with simple (!PM) system when introducing new
+> board.
 
-I ended up coming to the conclusion that a well formed sed and/or grep
-expression was far more useful and effective than trying to figure out
-coccinelle.
+I'm not saying to disable the option, I'm saying to stop worrying about
+saving a few hundred bytes in individual drivers with this crazy #ifdef
+and macro mess that no one understands and always gets wrong.
 
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+greg k-h
