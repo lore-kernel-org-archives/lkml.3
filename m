@@ -1,66 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701AbaCALP3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Mar 2014 06:15:29 -0500
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:52096 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752460AbaCALP1 (ORCPT
+	id S1752803AbaCALQs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Mar 2014 06:16:48 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:52049 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752494AbaCALQq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Mar 2014 06:15:27 -0500
-Message-ID: <5311C142.6040509@de.ibm.com>
-Date: Sat, 01 Mar 2014 12:15:14 +0100
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Sat, 1 Mar 2014 06:16:46 -0500
+Message-ID: <5311C1C8.3090809@kernel.org>
+Date: Sat, 01 Mar 2014 11:17:28 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: vyasevic@redhat.com
-CC: "David S. Miller" <davem@davemloft.net>, Jason Wang <jasowang@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>, netdev@vger.kernel.org,
-        KVM list <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: macvtap performance regression (bisected) between 3.13 and 3.14-rc1
-References: <530FA586.3010400@de.ibm.com> <53110A62.7070109@redhat.com>
-In-Reply-To: <53110A62.7070109@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Sebastian Reichel <sre@debian.org>, Sebastian Reichel <sre@ring0.de>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+CC: Marek Belisko <marek@goldelico.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-iio@vger.kernel.org,
+        =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>
+Subject: Re: [PATCHv1 1/2] rx51_battery: convert to iio consumer
+References: <1393375569-21751-1-git-send-email-sre@debian.org> <1393375569-21751-2-git-send-email-sre@debian.org>
+In-Reply-To: <1393375569-21751-2-git-send-email-sre@debian.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14030111-3548-0000-0000-00000841418E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/02/14 23:14, Vlad Yasevich wrote:
-> On 02/27/2014 03:52 PM, Christian Borntraeger wrote:
->> Vlad,
->>
->> commit 6acf54f1cf0a6747bac9fea26f34cfc5a9029523
->>     macvtap: Add support of packet capture on macvtap device.
->>
->> causes a performance regression for iperf traffic between two KVM guests
->> on my s390 system. Both guests are connected via two macvtaps on the same OSA
->> network card.
->> Before that patch I get ~20 Gbit/sec between two guests, afterwards I get
->> ~4Gbit/sec
->>
->> Latency seems to be unchanges (uperf 1byte ping pong).
->>
->> According to ifconfig in the guest, I have ~ 1500 bytes per packet with this
->> patch and ~  40000 bytes without. So for some reason this patch causes the
->> network stack to do segmentation. (the guest kernel stays the same, only host 
->> kernel is changed).
->>
->> Any ideas?
-> 
-> I am looking.  It shouldn't cause addition segmentations and when I ran
-> netperf on the code I didn't see any difference in the throughput.
+On 26/02/14 00:46, Sebastian Reichel wrote:
+> Update rx51-battery driver to use the new IIO API of
+> twl4030-madc and add DT support.
+>
+> Signed-off-by: Sebastian Reichel <sre@debian.org>
+The error handling needs tidying up.
+Otherwise this looks fine to me.  Note that you (really me)
+may get some grief over the DT bindings.  Theoretically we have
+been planning to rewrite those entirely for some time...
+> ---
+>   drivers/power/rx51_battery.c | 68 +++++++++++++++++++++++++++++---------------
+>   1 file changed, 45 insertions(+), 23 deletions(-)
+>
+> diff --git a/drivers/power/rx51_battery.c b/drivers/power/rx51_battery.c
+> index 1bc5857..f7cb58e 100644
+> --- a/drivers/power/rx51_battery.c
+> +++ b/drivers/power/rx51_battery.c
+> @@ -24,34 +24,27 @@
+>   #include <linux/power_supply.h>
+>   #include <linux/slab.h>
+>   #include <linux/i2c/twl4030-madc.h>
+> -
+> -/* RX51 specific channels */
+> -#define TWL4030_MADC_BTEMP_RX51	TWL4030_MADC_ADCIN0
+> -#define TWL4030_MADC_BCI_RX51	TWL4030_MADC_ADCIN4
+> +#include <linux/iio/consumer.h>
+> +#include <linux/of.h>
+>
+>   struct rx51_device_info {
+>   	struct device *dev;
+>   	struct power_supply bat;
+> +	struct iio_channel *channel_temp;
+> +	struct iio_channel *channel_bsi;
+> +	struct iio_channel *channel_vbat;
+>   };
+>
+>   /*
+>    * Read ADCIN channel value, code copied from maemo kernel
+>    */
+> -static int rx51_battery_read_adc(int channel)
+> +static int rx51_battery_read_adc(struct iio_channel *channel)
+>   {
+> -	struct twl4030_madc_request req;
+> -
+> -	req.channels = channel;
+> -	req.do_avg = 1;
+> -	req.method = TWL4030_MADC_SW1;
+> -	req.func_cb = NULL;
+> -	req.type = TWL4030_MADC_WAIT;
+> -	req.raw = true;
+> -
+> -	if (twl4030_madc_conversion(&req) <= 0)
+> -		return -ENODATA;
+> -
+> -	return req.rbuf[ffs(channel) - 1];
+> +	int val, err;
+> +	err = iio_read_channel_average_raw(channel, &val);
+> +	if (err < 0)
+> +		return err;
+> +	return val;
+>   }
+>
+>   /*
+> @@ -60,10 +53,12 @@ static int rx51_battery_read_adc(int channel)
+>    */
+>   static int rx51_battery_read_voltage(struct rx51_device_info *di)
+>   {
+> -	int voltage = rx51_battery_read_adc(TWL4030_MADC_VBAT);
+> +	int voltage = rx51_battery_read_adc(di->channel_vbat);
+>
+> -	if (voltage < 0)
+> +	if (voltage < 0) {
+> +		dev_err(di->dev, "Could not read ADC: %d\n", voltage);
+>   		return voltage;
+> +	}
+>
+>   	return 1000 * (10000 * voltage / 1705);
+>   }
+> @@ -112,7 +107,10 @@ static int rx51_battery_read_temperature(struct rx51_device_info *di)
+>   {
+>   	int min = 0;
+>   	int max = ARRAY_SIZE(rx51_temp_table2) - 1;
+> -	int raw = rx51_battery_read_adc(TWL4030_MADC_BTEMP_RX51);
+> +	int raw = rx51_battery_read_adc(di->channel_temp);
+> +
+> +	if (raw < 0)
+> +		dev_err(di->dev, "Could not read ADC: %d\n", raw);
+>
+>   	/* Zero and negative values are undefined */
+>   	if (raw <= 0)
+> @@ -146,10 +144,12 @@ static int rx51_battery_read_temperature(struct rx51_device_info *di)
+>    */
+>   static int rx51_battery_read_capacity(struct rx51_device_info *di)
+>   {
+> -	int capacity = rx51_battery_read_adc(TWL4030_MADC_BCI_RX51);
+> +	int capacity = rx51_battery_read_adc(di->channel_bsi);
+>
+> -	if (capacity < 0)
+> +	if (capacity < 0) {
+> +		dev_err(di->dev, "Could not read ADC: %d\n", capacity);
+>   		return capacity;
+> +	}
+>
+>   	return 1280 * (1200 * capacity)/(1024 - capacity);
+>   }
+> @@ -213,12 +213,25 @@ static int rx51_battery_probe(struct platform_device *pdev)
+>
+>   	platform_set_drvdata(pdev, di);
+>
+> +	di->dev = &pdev->dev;
+>   	di->bat.name = dev_name(&pdev->dev);
+>   	di->bat.type = POWER_SUPPLY_TYPE_BATTERY;
+>   	di->bat.properties = rx51_battery_props;
+>   	di->bat.num_properties = ARRAY_SIZE(rx51_battery_props);
+>   	di->bat.get_property = rx51_battery_get_property;
+>
+> +	di->channel_temp = iio_channel_get(di->dev, "temp");
+> +	if (IS_ERR(di->channel_temp))
+> +		return PTR_ERR(di->channel_temp);
+> +
+> +	di->channel_bsi  = iio_channel_get(di->dev, "bsi");
+> +	if (IS_ERR(di->channel_bsi))
+> +		return PTR_ERR(di->channel_bsi);
+You need to unwind the iio_channel_get that did succeed if we get here.
+Otherwise references to the iio driver will still be held despite
+this driver failing to probe.
 
-Dont know if the different bytes/packets ratio is really the reason or
-just a side effect. As a hint: the underlying network device does not support
-segmentation, but this should not matter for traffic between to guests.
-
-Maybe you remember, we had a similar situation with commit 3e4f8b787370978733ca6cae452720a4f0c296b8
-(macvtap: Perform GSO on forwarding path), the setup is basically the same.
-
-
-Christian
+> +
+> +	di->channel_vbat = iio_channel_get(di->dev, "vbat");
+> +	if (IS_ERR(di->channel_vbat))
+> +		return PTR_ERR(di->channel_vbat);
+> +
+>   	ret = power_supply_register(di->dev, &di->bat);
+>   	if (ret)
+>   		return ret;
+> @@ -235,12 +248,21 @@ static int rx51_battery_remove(struct platform_device *pdev)
+>   	return 0;
+>   }
+>
+> +#ifdef CONFIG_OF
+> +static const struct of_device_id n900_battery_of_match[] = {
+> +	{.compatible = "nokia,n900-battery", },
+> +	{ },
+> +};
+> +MODULE_DEVICE_TABLE(of, n900_battery_of_match);
+> +#endif
+> +
+>   static struct platform_driver rx51_battery_driver = {
+>   	.probe = rx51_battery_probe,
+>   	.remove = rx51_battery_remove,
+>   	.driver = {
+>   		.name = "rx51-battery",
+>   		.owner = THIS_MODULE,
+> +		.of_match_table = of_match_ptr(n900_battery_of_match),
+>   	},
+>   };
+>   module_platform_driver(rx51_battery_driver);
+>
 
