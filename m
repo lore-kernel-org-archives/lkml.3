@@ -1,103 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753234AbaCASFv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Mar 2014 13:05:51 -0500
-Received: from mail.efficios.com ([78.47.125.74]:57952 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753129AbaCASFt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Mar 2014 13:05:49 -0500
-Date: Sat, 1 Mar 2014 18:05:48 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org,
-        rp@svcs.cs.pdx.edu
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Message-ID: <118155517.32860.1393697148593.JavaMail.zimbra@efficios.com>
-In-Reply-To: <529596190.32848.1393696790299.JavaMail.zimbra@efficios.com>
-Subject: [RELEASE] Userspace RCU 0.7.11 and 0.8.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [206.248.138.119]
-X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF27 (Linux)/8.0.5_GA_5839)
-Thread-Topic: Userspace RCU 0.7.11 and 0.8.3
-Thread-Index: uWF7txO538ntRdFmv1ccRMrD/KLj7g==
+	id S1753204AbaCASSp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Mar 2014 13:18:45 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:55173 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753083AbaCASSn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Mar 2014 13:18:43 -0500
+Date: Sat, 1 Mar 2014 19:18:38 +0100
+From: Juri Lelli <juri.lelli@gmail.com>
+To: Kirill Tkhai <ktkhai@parallels.com>
+Cc: <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        <tkhai@yandex.ru>
+Subject: Re: [PATCH]sched/core: Return possibility to set RT and DL classes
+ back
+Message-Id: <20140301191838.d15d03112b2598a671dac22c@gmail.com>
+In-Reply-To: <1393584643.3522.5.camel@tkhai>
+References: <1393496657.3522.3.camel@tkhai>
+	<1393584643.3522.5.camel@tkhai>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-liburcu is a LGPLv2.1 userspace RCU (read-copy-update) library. This
-data synchronization library provides read-side access which scales
-linearly with the number of cores. It does so by allowing multiples
-copies of a given data structure to live at the same time, and by
-monitoring the data structure accesses to detect grace periods after
-which memory reclamation is possible.
+On Fri, 28 Feb 2014 14:50:43 +0400
+Kirill Tkhai <ktkhai@parallels.com> wrote:
 
-liburcu-cds provides efficient data structures based on RCU and
-lock-free algorithms. Those structures include hash tables, queues,
-stacks, and doubly-linked lists.
+> Thomas, have you seen this?
+> 
+> Nothing works at the moment:
+>
 
-Sorry about the quick releases, but I though I should save our
-packagers some time by releasing this fix, so they can skip over
-yesterday's version. It fixes a higher-than-normal CPU usage in
-presence of long RCU read-side critical sections. It does not affect
-correctness of RCU, just the amount of CPU usage in very specific
-scenarios. Since there is only one new commit, I'm putting the full
-commit changelog (from the stable-0.8 branch) below.
+Noticed the same once rebased on tip/master as of today.
+ 
+> now
+> 
+>    21 root      20   0     0    0    0 S  0.0  0.0   0:00.00 watchdog/3                                                                                                                                            
+>    16 root      20   0     0    0    0 S  0.0  0.0   0:00.00 watchdog/2                                                                                                                                            
+>    11 root      20   0     0    0    0 S  0.0  0.0   0:00.00 watchdog/1                                                                                                                                            
+>    10 root      20   0     0    0    0 S  0.0  0.0   0:00.00 watchdog/0
+> 
+>    22 root      20   0     0    0    0 S  0.0  0.0   0:00.00 migration/3                                                                                                                                           
+>    17 root      20   0     0    0    0 S  0.0  0.0   0:00.00 migration/2                                                                                                                                           
+>    12 root      20   0     0    0    0 S  0.0  0.0   0:00.04 migration/1                                                                                                                                           
+>     9 root      20   0     0    0    0 S  0.0  0.0   0:00.20 migration/0
+> 
+> with fix
+> 
+>    21 root      RT   0     0    0    0 S  0.0  0.0   0:00.00 watchdog/3         
+>    16 root      RT   0     0    0    0 S  0.0  0.0   0:00.00 watchdog/2         
+>    11 root      RT   0     0    0    0 S  0.0  0.0   0:00.00 watchdog/1         
+>    10 root      RT   0     0    0    0 S  0.0  0.0   0:00.00 watchdog/0
+> 
+>    22 root      RT   0     0    0    0 S  0.0  0.0   0:00.00 migration/3                                                                                                                                           
+>    17 root      RT   0     0    0    0 S  0.0  0.0   0:00.03 migration/2                                                                                                                                           
+>    12 root      RT   0     0    0    0 S  0.0  0.0   0:00.00 migration/1                                                                                                                                           
+>     9 root      RT   0     0    0    0 S  0.0  0.0   0:00.24 migration/0
+> 
+> В Чт, 27/02/2014 в 14:24 +0400, Kirill Tkhai пишет:
+> > [PATCH]sched/core: Return possibility to set RT and DL classes back
+> > 
+> > I found that it's impossible to set RT policy for tasks at the moment.
+> > 
+> > This is regression after commit [sched: Consider pi boosting in setscheduler()]
+> > 				[c365c292d05908c6ea6f32708f331e21033fe71d     ]
+> > Fix that.
+> > 
+> > Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+> > CC: Thomas Gleixner <tglx@linutronix.de>
+> > CC: Peter Zijlstra <peterz@infradead.org>
+> > CC: Ingo Molnar <mingo@redhat.com>
+> > ---
+> >  kernel/sched/core.c | 4 ++++
+> >  1 file changed, 4 insertions(+)
+> > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> > index 84b23ce..30cf9ad 100644
+> > --- a/kernel/sched/core.c
+> > +++ b/kernel/sched/core.c
+> > @@ -3193,6 +3193,10 @@ static void __setscheduler_params(struct task_struct *p,
+> >  	 * getparam()/getattr() don't report silly values for !rt tasks.
+> >  	 */
+> >  	p->rt_priority = attr->sched_priority;
+> > +
+> > +	p->normal_prio = normal_prio(p);
+> > +	p->prio = rt_mutex_getprio(p);
+> > +
+> >  	set_load_weight(p);
+> >  }
+> >  
+> > 
 
-Changelog:
-commit e198fb6a2ebc22ceac8b10d953103b59452f24d4
-Author: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Date:   Sat Mar 1 11:33:25 2014 -0500
+I'd propose what follows, so that we can still use
+__setscheduler_params() as it is.
 
-    Fix: high cpu usage in synchronize_rcu with long RCU read-side C.S.
-    
-    We noticed that with this kind of scenario:
-    - application using urcu-mb, urcu-membarrier, urcu-signal, or urcu-bp,
-    - long RCU read-side critical sections, caused by e.g. long network I/O
-      system calls,
-    - other short lived RCU critical sections running in other threads,
-    - very frequent invocation of call_rcu to enqueue callbacks,
-    lead to abnormally high CPU usage within synchronize_rcu() in the
-    call_rcu worker threads.
-    
-    Inspection of the code gives us the answer: in urcu.c, we expect that if
-    we need to wait on a futex (wait_gp()), we expect to be able to end the
-    grace period within the next loop, having been notified by a
-    rcu_read_unlock(). However, this is not always the case: we can very
-    well be awakened by a rcu_read_unlock() executed on a thread running
-    short-lived RCU read-side critical sections, while the long-running RCU
-    read-side C.S. is still active. We end up in a situation where we
-    busy-wait for a very long time, because the counter is !=
-    RCU_QS_ACTIVE_ATTEMPTS until a 32-bit overflow happens (or more likely,
-    until we complete the grace period). We need to change the wait_loops ==
-    RCU_QS_ACTIVE_ATTEMPTS check into an inequality to use wait_gp() for
-    every attempts beyond RCU_QS_ACTIVE_ATTEMPTS loops.
-    
-    urcu-bp.c also has this issue. Moreover, it uses usleep() rather than
-    poll() when dealing with long-running RCU read-side critical sections.
-    Turn the usleep 1000us (1ms) into a poll of 10ms. One of the advantage
-    of using poll() rather than usleep() is that it does not interact with
-    SIGALRM.
-    
-    urcu-qsbr.c already checks for wait_loops >= RCU_QS_ACTIVE_ATTEMPTS, so
-    it is not affected by this issue.
-    
-    Looking into these loops, however, shows that overflow of the loop
-    counter, although unlikely, would bring us back to a situation of high
-    cpu usage (a negative value well below RCU_QS_ACTIVE_ATTEMPTS).
-    Therefore, change the counter behavior so it stops incrementing when it
-    reaches RCU_QS_ACTIVE_ATTEMPTS, to eliminate overflow.
-    
-    Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Regards,
 
-Project website: http://urcu.so
-Download link: http://urcu.so/files/
-Git repository: git://git.urcu.so/urcu.git
+- Juri
 
+>From 73bae0ad978db6e75f492eea9adff12ec9d6d2a3 Mon Sep 17 00:00:00 2001
+From: Juri Lelli <juri.lelli@gmail.com>
+Date: Sat, 1 Mar 2014 16:43:30 +0100
+Subject: [PATCH] sched/core: restore __setscheduler() behavior
+
+Commit c365c29 introduced __setscheduler_params(), that is now used
+to only store a task's new scheduling parameters in the case it is
+priority boosted.
+
+Before this change, __setscheduler() was in charge of changing tasks
+normal_prio and prio, and the latter is used to actually perform
+sched_class change. Unfortunately, the commit above broke this
+behavior, causing tasks to remain in fair_sched_class.
+
+Restore the old behaviour setting normal_prio and prio to the right
+values after the __setscheduler_params() call.
+
+Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
+---
+ kernel/sched/core.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index ee8004c..04ae20d 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3206,6 +3206,13 @@ static void __setscheduler(struct rq *rq, struct task_struct *p,
+ {
+ 	__setscheduler_params(p, attr);
+ 
++	/*
++	 * Since we checked before with rt_mutex_check_prio(),
++	 * we don't have pi waiters or our top waiter has lower
++	 * priority (user space view) than what we got.
++	 */
++	p->prio = p->normal_prio = normal_prio(p);
++
+ 	if (dl_prio(p->prio))
+ 		p->sched_class = &dl_sched_class;
+ 	else if (rt_prio(p->prio))
 -- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+1.7.9.5
