@@ -1,118 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753207AbaCARwT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Mar 2014 12:52:19 -0500
-Received: from mga11.intel.com ([192.55.52.93]:58034 "EHLO mga11.intel.com"
+	id S1753234AbaCASFv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Mar 2014 13:05:51 -0500
+Received: from mail.efficios.com ([78.47.125.74]:57952 "EHLO mail.efficios.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752655AbaCARwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Mar 2014 12:52:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,568,1389772800"; 
-   d="scan'208";a="484182813"
-Date: Sat, 1 Mar 2014 10:52:15 -0700 (MST)
-From: Keith Busch <keith.busch@intel.com>
-X-X-Sender: vmware@localhost.localdom
-To: Kent Overstreet <kmo@daterainc.com>
-cc: Matthew Wilcox <willy@linux.intel.com>, axboe@kernel.dk,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Minchan Kim <minchan@kernel.org>, Neil Brown <neilb@suse.de>,
-        Asai Thambi S P <asamymuthupa@micron.com>,
-        Peng Tao <bergwolf@gmail.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-nvme@lists.infradead.org,
-        Philip Kelleher <pjk1939@linux.vnet.ibm.com>,
-        Geoff Levand <geoff@infradead.org>, dm-devel@redhat.com,
-        drbd-user@lists.linbit.com, Jiri Kosina <jkosina@suse.cz>,
-        linux-fsdevel@vger.kernel.org, Jim Paris <jim@jtan.com>,
-        Nitin Gupta <ngupta@vflare.org>, Sam Bradshaw <sbradshaw@micron.com>,
-        Joshua Morris <josh.h.morris@us.ibm.com>,
-        Alasdair Kergon <agk@redhat.com>,
-        Lars Ellenberg <drbd-dev@lists.linbit.com>
-Subject: Re: [PATCH 1/9] block: Make generic_make_request handle arbitrary
- sized bios
-In-Reply-To: <20140228233039.GA2739@moria.home.lan>
-Message-ID: <alpine.LRH.2.03.1403011038240.2885@AMR>
-References: <1393457997-17618-1-git-send-email-kmo@daterainc.com> <1393457997-17618-2-git-send-email-kmo@daterainc.com> <20140227172254.GI5744@linux.intel.com> <20140228233039.GA2739@moria.home.lan>
-User-Agent: Alpine 2.03 (LRH 1266 2009-07-14)
+	id S1753129AbaCASFt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Mar 2014 13:05:49 -0500
+Date: Sat, 1 Mar 2014 18:05:48 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org,
+        rp@svcs.cs.pdx.edu
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Message-ID: <118155517.32860.1393697148593.JavaMail.zimbra@efficios.com>
+In-Reply-To: <529596190.32848.1393696790299.JavaMail.zimbra@efficios.com>
+Subject: [RELEASE] Userspace RCU 0.7.11 and 0.8.3
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [206.248.138.119]
+X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF27 (Linux)/8.0.5_GA_5839)
+Thread-Topic: Userspace RCU 0.7.11 and 0.8.3
+Thread-Index: uWF7txO538ntRdFmv1ccRMrD/KLj7g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Feb 2014, Kent Overstreet wrote:
-> On Thu, Feb 27, 2014 at 12:22:54PM -0500, Matthew Wilcox wrote:
->> On Wed, Feb 26, 2014 at 03:39:49PM -0800, Kent Overstreet wrote:
->>> We do this by adding calls to blk_queue_split() to the various
->>> make_request functions that need it - a few can already handle arbitrary
->>> size bios. Note that we add the call _after_ any call to blk_queue_bounce();
->>> this means that blk_queue_split() and blk_recalc_rq_segments() don't need to
->>> be concerned with bouncing affecting segment merging.
->>
->>> diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
->>> index 51824d1f23..e4376b9613 100644
->>> --- a/drivers/block/nvme-core.c
->>> +++ b/drivers/block/nvme-core.c
->>> @@ -737,6 +737,8 @@ static void nvme_make_request(struct request_queue *q, struct bio *bio)
->>>  	struct nvme_queue *nvmeq = get_nvmeq(ns->dev);
->>>  	int result = -EBUSY;
->>>
->>> +	blk_queue_split(q, &bio, q->bio_split);
->>> +
->>>  	if (!nvmeq) {
->>>  		put_nvmeq(NULL);
->>>  		bio_endio(bio, -EIO);
->>
->> I'd suggest that we do:
->>
->> -	struct nvme_queue *nvmeq = get_nvmeq(ns->dev);
->> +	struct nvme_queue *nvmeq;
->>  	int result = -EBUSY;
->>
->> +	blk_queue_split(q, &bio, q->bio_split);
->> +
->> +	nvmeq = get_nvmeq(ns->dev);
->>  	if (!nvmeq) {
->>
->> so that we're running the blk_queue_split() code outside the get_cpu()
->> call.
->>
->> Now, the NVMe driver has its own rules about when BIOs have to be split.
->> Right now, that's way down inside the nvme_map_bio() call when we're
->> walking the bio to compose the scatterlist.  Should we instead have an
->> nvme_bio_split() routine that is called instead of blk_queue_split(),
->> and we can simplify nvme_map_bio() since it'll know that it's working
->> with bios that don't have to be split.
->>
->> In fact, I think it would have little NVMe-specific in it at that point,
->> so we could name __blk_bios_map_sg() better, export it to drivers and
->> call it from nvme_map_bio(), which I think would make everybody happier.
->
-> Actually, reading nvme_map_bio() (it's different since last I looked at
-> it) it looks like nvme should already be able to handle arbitrary size
-> bios?
->
-> I do intend to rework the blk_bio_map_sg() (or add a new one?) to
-> incrementally map as much of a bio as will fit in the provided
-> scatterlist, but it looks like nvme has some odd restrictions where it's
-> using BIOVEC_PHYS_MERGABLE()/BIOVEC_NOT_VIRT_MERGABLE() so I dunno if
-> it's worth bothering to try and have it use generic code.
+liburcu is a LGPLv2.1 userspace RCU (read-copy-update) library. This
+data synchronization library provides read-side access which scales
+linearly with the number of cores. It does so by allowing multiples
+copies of a given data structure to live at the same time, and by
+monitoring the data structure accesses to detect grace periods after
+which memory reclamation is possible.
 
-Is nvme the only driver that has these kinds of restrictions on segment
-address offsets? If so, I guess there's no reason to make it generic.
+liburcu-cds provides efficient data structures based on RCU and
+lock-free algorithms. Those structures include hash tables, queues,
+stacks, and doubly-linked lists.
 
-> However we don't need an explicit split here: if the sg fills up (i.e.
-> the places nvme_split_and_submit() is called), we can just mark the bio
-> as partially completed (set bio->bi_iter = iter, i.e. use the iterator
-> you passed to bio_for_each_segment), then increment bi_remaining (which
-> just counts completions, i.e. bio_endio() calls before the bio is really
-> completed) and resubmit the original bio. No need to allocate a split
-> bio, or loop over the bio again in bio_split().
+Sorry about the quick releases, but I though I should save our
+packagers some time by releasing this fix, so they can skip over
+yesterday's version. It fixes a higher-than-normal CPU usage in
+presence of long RCU read-side critical sections. It does not affect
+correctness of RCU, just the amount of CPU usage in very specific
+scenarios. Since there is only one new commit, I'm putting the full
+commit changelog (from the stable-0.8 branch) below.
 
-We used to manipulate the original bio to track partial completions,
-but I changed that for reasons that haven't quite yet materialized. If we
-move the bio's bi_iter, it will make it difficult to retry the original
-request on intermittent failures, and it will break the integrity verify
-if the device format supports protection information. It's also more
-performant to submit all parts at once rather than wait for the previous
-part to complete before sending the next.
+Changelog:
+commit e198fb6a2ebc22ceac8b10d953103b59452f24d4
+Author: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Date:   Sat Mar 1 11:33:25 2014 -0500
+
+    Fix: high cpu usage in synchronize_rcu with long RCU read-side C.S.
+    
+    We noticed that with this kind of scenario:
+    - application using urcu-mb, urcu-membarrier, urcu-signal, or urcu-bp,
+    - long RCU read-side critical sections, caused by e.g. long network I/O
+      system calls,
+    - other short lived RCU critical sections running in other threads,
+    - very frequent invocation of call_rcu to enqueue callbacks,
+    lead to abnormally high CPU usage within synchronize_rcu() in the
+    call_rcu worker threads.
+    
+    Inspection of the code gives us the answer: in urcu.c, we expect that if
+    we need to wait on a futex (wait_gp()), we expect to be able to end the
+    grace period within the next loop, having been notified by a
+    rcu_read_unlock(). However, this is not always the case: we can very
+    well be awakened by a rcu_read_unlock() executed on a thread running
+    short-lived RCU read-side critical sections, while the long-running RCU
+    read-side C.S. is still active. We end up in a situation where we
+    busy-wait for a very long time, because the counter is !=
+    RCU_QS_ACTIVE_ATTEMPTS until a 32-bit overflow happens (or more likely,
+    until we complete the grace period). We need to change the wait_loops ==
+    RCU_QS_ACTIVE_ATTEMPTS check into an inequality to use wait_gp() for
+    every attempts beyond RCU_QS_ACTIVE_ATTEMPTS loops.
+    
+    urcu-bp.c also has this issue. Moreover, it uses usleep() rather than
+    poll() when dealing with long-running RCU read-side critical sections.
+    Turn the usleep 1000us (1ms) into a poll of 10ms. One of the advantage
+    of using poll() rather than usleep() is that it does not interact with
+    SIGALRM.
+    
+    urcu-qsbr.c already checks for wait_loops >= RCU_QS_ACTIVE_ATTEMPTS, so
+    it is not affected by this issue.
+    
+    Looking into these loops, however, shows that overflow of the loop
+    counter, although unlikely, would bring us back to a situation of high
+    cpu usage (a negative value well below RCU_QS_ACTIVE_ATTEMPTS).
+    Therefore, change the counter behavior so it stops incrementing when it
+    reaches RCU_QS_ACTIVE_ATTEMPTS, to eliminate overflow.
+    
+    Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+
+Project website: http://urcu.so
+Download link: http://urcu.so/files/
+Git repository: git://git.urcu.so/urcu.git
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
