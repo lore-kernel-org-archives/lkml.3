@@ -1,167 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752727AbaCADW6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 22:22:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41187 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752134AbaCADW5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 22:22:57 -0500
-Message-ID: <53112A08.5080309@redhat.com>
-Date: Sat, 01 Mar 2014 01:30:00 +0100
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Alexei Starovoitov <ast@plumgrid.com>
-CC: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Hagen Paul Pfeifer <hagen@jauu.net>,
-        Jesse Gross <jesse@nicira.com>
-Subject: Re: [PATCH v3 net-next 1/1] bpf32->bpf64 mapper and bpf64 interpreter
-References: <1393468732-3919-1-git-send-email-ast@plumgrid.com> <1393468732-3919-2-git-send-email-ast@plumgrid.com> <531084E0.5080601@redhat.com> <CAMEtUuw9aQaBQR-CQq8hdk+8WFqadG0u1fz3pDTsedhXSkQzTg@mail.gmail.com>
-In-Reply-To: <CAMEtUuw9aQaBQR-CQq8hdk+8WFqadG0u1fz3pDTsedhXSkQzTg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752840AbaCAD1h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 22:27:37 -0500
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:8560 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752134AbaCAD1g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 22:27:36 -0500
+X-AuditID: cbfec37d-b7f616d0000059df-d3-531153a764e6
+Message-id: <5311539E.10305@samsung.com>
+Date: Fri, 28 Feb 2014 20:27:26 -0700
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.2.0
+MIME-version: 1.0
+To: Devin Heitmueller <dheitmueller@kernellabs.com>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>, shuahkhan@gmail.com,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [PATCH 0/3] media/drx39xyj: fix DJH_DEBUG path null pointer
+ dereferences, and compile errors.
+References: <cover.1393621530.git.shuah.kh@samsung.com>
+ <CAGoCfiyZr2eCCW3ZmAE4_YUZw++NC3o-VY84M+n38tzfLdfBiQ@mail.gmail.com>
+In-reply-to: <CAGoCfiyZr2eCCW3ZmAE4_YUZw++NC3o-VY84M+n38tzfLdfBiQ@mail.gmail.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.34.5]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOLMWRmVeSWpSXmKPExsVy+t9hP93lwYLBBo8Oclrc2r2axeLyrjls
+	Fj0btrJafP3p4MDisXPWXXaPucd6GT0+b5ILYI7isklJzcksSy3St0vgyni97ShLwQneir4p
+	k1kbGDdydTFyckgImEjc6HzBCmGLSVy4t56ti5GLQ0hgGaPEmXd/2SGcXiaJF02fGCGcDYwS
+	u7d2soC08ApoSBx4do8dxGYRUJU4fe41M4jNJqAu8fn1DrC4kICcRNOS1WBxUYEIiVdnJ0L1
+	Ckr8mHwPzBYRMJbYfvE/2GpmgeWMEm2Pl4LdJCyQI3F91XE2iEF1EpfezgKLcwoES3yacR8s
+	zixgLbFy0jZGCFteYvOat8wQ9coSfy6fYoL4TUHixsJlrBMYRWYh2T0LSfssJO0LGJlXMYqV
+	FicXFCelp1aY6BUn5haX5qXrJefnbmKEREbtDsb7X20OMQpwMCrx8EosEggWYk0sK67MPcQo
+	wcGsJML7O1AwWIg3JbGyKrUoP76oNCe1+BAjEwenVANj0aqzizcXh0fZqwkvTOD8JKjfW5jc
+	2qXM336l69CVZRPDznZWbWXYcPNG+BLrZ70G/A/ZWlZe3f/dwyD4E2vzyeR7Qlpsa05MXv+6
+	8Fjz7gD/RU5v/v72VF97QoXbYtEdVsFNv0zbV5s1BR3Kt/8s9OnyjP9bLs5weuT9tKJpar+T
+	p1pOloi0EktxRqKhFnNRcSIATWGX7moCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2014 09:53 PM, Alexei Starovoitov wrote:
-> On Fri, Feb 28, 2014 at 4:45 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
-...
->> Did you also test that seccomp-BPF still works out?
+On 02/28/2014 05:13 PM, Devin Heitmueller wrote:
+> Seems kind of strange that I wasn't on the CC for this, since I was the
+> original author of all that code (in fact, DJH are my initials).
 >
-> yes. Have a prototype, but it needs a bit more cleanup.
-
-Here's [1] actually some code snippet for user space for prctl(). The
-libseccomp [2] actually wraps around that and makes usage easier.
-
-   [1] http://outflux.net/teach-seccomp/
-   [2] http://lwn.net/Articles/491308/
-
-...
->> We should keep naming consistent (so either extended BPF or BPF64),
->> so maybe bpf_ext_enable ? I'd presume rather {bpf,sk_filter}*_ext
+> Mauro, did you strip off my authorship when you pulled the patches from
+> my tree?
 >
-> agree. we need consistent naming for both (old and new).
-> I'll try all-out rename of bpf_*() into sk_filter64_*() and sk_filter_ext_*()
-> to see which one looks better.
-> I'm kinda leaning to sk_filter64, since it's easier to quickly spot
-> the difference
-> and more descriptive.
-
-Just saw your second email regarding sk_filter_ext() et al, yep, I agree.
-
->> as in 'struct bpf_insn' the immediate value is 32 bit, so for 64 bit
->> comparisons, you'd still need to load to immediate values, right?
+> The patches themselves look sane, and I will send a formal Acked-by once
+> I can get in front of a real computer.
 >
-> there is no insn that use 64-bit immediate, since 64-bit immediates
-> are extremely rare. grep x86-64 asm code for movabsq will return very few.
-> llvm or gcc can easily construct any constant by combination of mov,
-> shifts and ors.
-> bpf64 comparisons are all 64-bit right now. So far I didn't see a need to do
-> 32-bit comparison, since old bpf is all unsigned, mapping 32->64 of
-> Jxx is painless.
+> Devin
 
-Hm, fair enough, I was just thinking for comparisons of IPv6 addresses
-when we do socket filtering. On the other hand, old and new insns are
-both 64 bit wide and can be used though the same api then.
+Thanks for the ack. I will include you on the cc for future patches. I 
+am working in Mauro's experimental git and probably that explains why 
+get_maintainer.pl just showed linux-media and Mauro.
 
-> Notice I added signed comparison, since real life programs cannot do
-> without them.
-> I also kept the spirit of old bpf having > and >= only. (no < and <=)
-> that made llvm/gcc backends a bit harder to do, since no real cpu has
-> such limitations.
+-- Shuah
 
-Hehe, I proposed them once, but for low level BPF it was just easier to
-adjust jt/jf offsets differently to achieve the same.
-
-> I'm still contemplating do add < and <= (both signed and unsigned), which is
-> interesting trade-off: number of instructions vs complexity of compiler
 >
->> After all your changes, we will still have the bpf_jit_enable knob
->> in tact, right?
+> On Feb 28, 2014 4:23 PM, "Shuah Khan" <shuah.kh@samsung.com
+> <mailto:shuah.kh@samsung.com>> wrote:
 >
-> Yes.
-> In this diff the workflow is the following:
+>     This patch series fixes null pointer dereference boot failure as well as
+>     compile errors.
 >
-> old filter comes through sk_attach_filter() or sk_unattached_filter_create()
-> if (bpf64) {
->      convert to new
->      sk_chk_filter() - check old bpf
->      use new interpreter
-> } else {
->      sk_chk_filter() - check old bpf
->      if (bpf_jit_enable)
->          use old jit
->      else
->          use old interpreter
-> }
-> soon I'll add bpf64 jit and will reuse the same bpf_jit_enable knob for it.
-> then add new/old inband demux into sk_attach_filter(),
-> so that workflow will become:
+>     Shuah Khan (3):
+>        media/drx39xyj: fix pr_dbg undefined compile errors when DJH_DEBUG is
+>          defined
+>        media/drx39xyj: remove return that prevents DJH_DEBUG code to run
+>        media/drx39xyj: fix boot failure due to null pointer dereference
 >
-> a filter comes through sk_attach_filter() or sk_unattached_filter_create()
-> if (new filter prog) {
->      sk_chk_filter64() - check new bpf
->      if (bpf_jit_enable)
->          use new jit
->      else
->          use new interpreter
-> } else {
->      if (bpf64_enable) {
->         convert to new
->         sk_chk_filter() - check old bpf
->         if (bpf_jit_enable)
->              use new jit
->         else
->              use new interpreter
->      } else {
->         sk_chk_filter()
->         if (bpf_jit_enable)
->             use old jit
->         else
->             use old interpreter
->      }
-> }
-> eventually bpf64_enable can be made default,
-> the last 'else' can be retired and 'bpf64_enable' removed along with
-> old interpreter.
+>       drivers/media/dvb-frontends/drx39xyj/drxj.c | 31
+>     ++++++++++++++++++-----------
+>       1 file changed, 19 insertions(+), 12 deletions(-)
 >
-> bpf_jit_enable knob will stay for foreseeable future.
+>     --
+>     1.8.3.2
+>
+>     --
+>     To unsubscribe from this list: send the line "unsubscribe
+>     linux-media" in
+>     the body of a message to majordomo@vger.kernel.org
+>     <mailto:majordomo@vger.kernel.org>
+>     More majordomo info at http://vger.kernel.org/majordomo-info.html
+>
 
-Okay, cool. I think it seems reasonable to keep this knob around anyway.
-E.g. for seccomp some people might argue speed is important, maybe other
-more security related distros might not want to rely on JIT and therefore
-trade performance.
 
-...
->> Why would that need to be exported as a symbol?
->
-> the performance numbers I mentioned are from bpf_bench that is done
-> as kernel module, so I used this for debugging from it.
-> also to see what execution traces I get while running trinity bpf fuzzer :)
->
->> I would actually like to avoid having this pr_info* inside the kernel.
->> Couldn't this be done e.g. through systemtap script that could e.g. be
->> placed under tools/net/ or inside the documentation file?
->
-> like the idea!
-> Will drop it from the diff and eventually will move it to tools/net.
-
-Sounds great!
-
-Thanks,
-
-Daniel
+-- 
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
