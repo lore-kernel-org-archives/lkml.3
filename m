@@ -1,51 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752656AbaCAA6q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 19:58:46 -0500
-Received: from [203.77.177.222] ([203.77.177.222]:52895 "EHLO
-	imssnew.adityabirla.com" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752433AbaCAA6p (ORCPT
+	id S1752808AbaCAA7d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 19:59:33 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:49202 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752727AbaCAA7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 19:58:45 -0500
-X-Greylist: delayed 946 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Feb 2014 19:58:44 EST
-X-AuditID: ac10015c-b7f9c6d000004c84-65-53112cfb32f1
-Reply-To: <hctthg-h1@yahoo.com>
-From: "Harley Wang" <bn.jha@adityabirla.com>
-Subject: contact me
-Date: Sat, 1 Mar 2014 01:38:05 +0100
+	Fri, 28 Feb 2014 19:59:31 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: skannan@codeaurora.org, linaro-kernel@lists.linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com
+Subject: Re: [PATCH 2/3] cpufreq: Initialize policy before making it available for others to use
+Date: Sat, 01 Mar 2014 02:14:35 +0100
+Message-ID: <278741659.0r4LI3yGJ4@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <57b8ab66ba21f42c91311641319cec16d2c8923d.1393318100.git.viresh.kumar@linaro.org>
+References: <9f9546137135103556c69815c72b81ed93cc1ca2.1393318100.git.viresh.kumar@linaro.org> <57b8ab66ba21f42c91311641319cec16d2c8923d.1393318100.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain;charset="Windows-1251"
-content-transfer-encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1081
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1081
-X-Qmail-Scanner-Message-ID: <139363428868628132@MS8XF>
-Message-Id: <20140301003820.1DA42228001@MS3XF>
-To: undisclosed-recipients:;
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprELsWRmVeSWpSXmKPExsXCxahhoPtPRzDY4O5bY4vLu+awOTB6fN4k
-	F8AY1cBok5iXl1+SWJKqkJJanGyr5JiSWVKZqOCUWZSTqOCSWZyck5iZm1qkpJCZYqtkpKRQ
-	kJOYnJqbmldiq5RYUJCal6Jkx6WAAWyAyjLzFFLzkvNTMvPSbZU8g/11LSxMLXUNlexCMlIV
-	MvPS8otyE0syExZwZTSd2MdcoFex6P1cxgZGlS5GTg4JAROJtU9bWSBsMYkL99azdTFycQgJ
-	7GeUmHr4PSOEc4dR4uiar0wQzgFGiZfnZkI5pxgl5s/dyQ7SLyTgLnGm7Q8rhH2RUeLkK3uI
-	otOMEq9aXzJBJOQlVr2+yAxiswnoSGxcvx5oOQeHsICwRMPMGpAwi4CKxPVTk9hAbF4BQYmT
-	M5+A3ccsoC/RMr+THcKWl9j+dg4zxN28EjPan0L9ICnRvPoRlG0k0bzgDzuEbSHR8LGFFcI2
-	k2i5P4kRYr6exN9zXWC7RARkJObOfsw6gVF8FpLVs5CsnoVk9QJG5lWM4pm5xcV5qeV6ieDo
-	TALFpl5yfu4mRmB6WCPAGLODsWeizSFGAQ5GJR7eg/MFgoVYE8uKK3MPMUpyMCmJ8n7TEgwW
-	4kvKT6nMSCzOiC8qzUktPsQowcGsJMI74TpQOW9KYmVValE+TCoZGD4TmaVEk/OBKS+vJN7Q
-	2MzEyNjSxNLM1MCSNGElcV5WAaAVAunAZJmdmlqQWgSzRZeDQ2BG159wgTerNrxjlGLJy89L
-	VZLgjdUGulawKDU9tSItM6cEoZ6JgxPkah6gq+eC1PAWFyTmFmemQ+RPMRpz3F398xMjx/Rt
-	/z4xCoGNkxLnDQApFQApzSjNg5sGykqa7ps8XzGKA0NNGGIgDzCjwc17BbSKCWhVy35QABUD
-	cxVcSqqBUS5VKeOq7cUVuy6uWqn2Niw0w+rXC+cFSflpKQqqOW21B/x/+Z1vTTq/3Nxv1dvX
-	LB97bY7kH5h989jLOrc6tsZPE3for9pzZXmn+Dxtfy6JCiX7+2wKU/U/nlgq+Uwk8edc18yI
-	XsWZJWz7e/5oPI/8trQ8v9Tg71LRrV5KvOps99pvyF17rMRSnJFoqMVcVJwIAKFD2yElBAAA
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-contact me for details of $21.4m transfer.
+On Tuesday, February 25, 2014 02:20:10 PM Viresh Kumar wrote:
+> Policy must be fully initialized before it is being made available for use by
+> others.
 
+True enough.  And the problem is?
 
-The information contained in this electronic communication is intended solely for the individual(s) or entity to which it is addressed. It may contain proprietary, confidential and/or legally privileged information. Any review, retransmission, dissemination, printing, copying or other use of, or taking any action in reliance on the contents of this information by person(s) or entities other than the intended recipient is strictly prohibited and may be unlawful. If you have received this communication in error, please notify us by responding to this email or telephone and immediately and permanently delete all copies of this message and any attachments from your system(s). The contents of this message do not necessarily represent the views or policies of Aditya Birla Group. 
+> This patch moves some initialization code before making policy available
+> for others.
 
-Computer viruses can be transmitted via email. Aditya Birla Group Companies attempts to sweep e-mails and attachments for viruses, it does not guarantee that either are virus free. The recipient should check this email and any attachments for the presence of viruses.  Aditya Birla Group does not accept any liability for any damage sustained as a result of viruses.
+So why/how exactly does this fix the problem?
+
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  drivers/cpufreq/cpufreq.c | 28 ++++++++++++++--------------
+>  1 file changed, 14 insertions(+), 14 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index cc4f244..110c0cd 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -1116,6 +1116,20 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
+>  		goto err_set_policy_cpu;
+>  	}
+>  
+> +	/* related cpus should atleast have policy->cpus */
+> +	cpumask_or(policy->related_cpus, policy->related_cpus, policy->cpus);
+> +
+> +	/*
+> +	 * affected cpus must always be the one, which are online. We aren't
+> +	 * managing offline cpus here.
+> +	 */
+> +	cpumask_and(policy->cpus, policy->cpus, cpu_online_mask);
+> +
+> +	if (!frozen) {
+> +		policy->user_policy.min = policy->min;
+> +		policy->user_policy.max = policy->max;
+> +	}
+> +
+>  	write_lock_irqsave(&cpufreq_driver_lock, flags);
+>  	for_each_cpu(j, policy->cpus)
+>  		per_cpu(cpufreq_cpu_data, j) = policy;
+> @@ -1169,20 +1183,6 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
+>  		}
+>  	}
+>  
+> -	/* related cpus should atleast have policy->cpus */
+> -	cpumask_or(policy->related_cpus, policy->related_cpus, policy->cpus);
+> -
+> -	/*
+> -	 * affected cpus must always be the one, which are online. We aren't
+> -	 * managing offline cpus here.
+> -	 */
+> -	cpumask_and(policy->cpus, policy->cpus, cpu_online_mask);
+> -
+> -	if (!frozen) {
+> -		policy->user_policy.min = policy->min;
+> -		policy->user_policy.max = policy->max;
+> -	}
+> -
+>  	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
+>  				     CPUFREQ_START, policy);
+>  
+> 
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
