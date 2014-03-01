@@ -1,90 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753492AbaCAD57 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 22:57:59 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:12248 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752761AbaCADwh (ORCPT
+	id S1752916AbaCAEDb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 23:03:31 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53889 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752670AbaCAEDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 22:52:37 -0500
-Message-Id: <20140301035236.516402001@goodmis.org>
-User-Agent: quilt/0.61-1
-Date: Fri, 28 Feb 2014 22:52:14 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        <stable-rt@vger.kernel.org>, Tiejun Chen <tiejun.chen@windriver.com>,
-        Bin Jiang <bin.jiang@windriver.com>
-Subject: [PATCH RT 05/14] rcutree/rcu_bh_qs: disable irq while calling rcu_preempt_qs()
-References: <20140301035209.031474616@goodmis.org>
+	Fri, 28 Feb 2014 23:03:30 -0500
+Date: Sat, 1 Mar 2014 13:03:27 +0900
+From: Mark Brown <broonie@kernel.org>
+To: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
+Message-ID: <20140301040327.GL29849@sirena.org.uk>
+References: <201402271146.s1RBkCGg004925@swsrvapps-02.lan>
+ <20140228033715.GE9383@sirena.org.uk>
+ <24DF37198A1E704D9811D8F72B87EB51BCFDE02F@NB-EX-MBX02.diasemi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0005-rcutree-rcu_bh_qs-disable-irq-while-calling-rcu_pree.patch
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="KIbT1ud6duwZIwNL"
+Content-Disposition: inline
+In-Reply-To: <24DF37198A1E704D9811D8F72B87EB51BCFDE02F@NB-EX-MBX02.diasemi.com>
+X-Cookie: You should go home.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 175.126.181.238
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC V1] drivers/base/regmap: Implementation for
+ regmap_multi_reg_write
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10.32-rt31-rc2 stable review patch.
-If anyone has any objections, please let me know.
 
-------------------
+--KIbT1ud6duwZIwNL
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-From: Tiejun Chen <tiejun.chen@windriver.com>
+On Fri, Feb 28, 2014 at 03:58:34PM +0000, Opensource [Anthony Olech] wrote:
 
-Any callers to the function rcu_preempt_qs() must disable irqs in
-order to protect the assignment to ->rcu_read_unlock_special. In
-RT case, rcu_bh_qs() as the wrapper of rcu_preempt_qs() is called
-in some scenarios where irq is enabled, like this path,
+> The algorithm for splitting up into smaller _multi_reg_writes is easy enough,
+> so if the calling device driver created a set of (reg,val) pairs for a multi reg
+> write operation then surely the intention is for the individual pieces to be
+> handled as multi reg writes.
 
-do_single_softirq()
-    |
-    + local_irq_enable();
-    + handle_softirq()
-    |    |
-    |    + rcu_bh_qs()
-    |        |
-    |        + rcu_preempt_qs()
-    |
-    + local_irq_disable()
+Right, that's what should eventually happen - what I'm saying is it's OK
+to defer the hard parts for later if they're not needed right now (in
+much the same way that the API was added without an actual multi write
+implementation).
 
-So here we'd better disable irq directly inside of rcu_bh_qs() to
-fix this, otherwise the kernel may be freezable sometimes as
-observed. And especially this way is also kind and safe for the
-potential rcu_bh_qs() usage elsewhere in the future.
+> > > +	for (i = 0, n = 0, switched = false, base = regs; i < num_regs;
+> > > +								i++, n++) {
+> > Don't put all this stuff in the for (), just put the iteration in the for ().
 
-Cc: stable-rt@vger.kernel.org
-Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
-Signed-off-by: Bin Jiang <bin.jiang@windriver.com>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/rcutree.c | 5 +++++
- 1 file changed, 5 insertions(+)
+> all those variables are a fundamental part of the loop, but I will change it.
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 75743cb..5439cee 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -187,7 +187,12 @@ static void rcu_preempt_qs(int cpu);
- 
- void rcu_bh_qs(int cpu)
- {
-+	unsigned long flags;
-+
-+	/* Callers to this function, rcu_preempt_qs(), must disable irqs. */
-+	local_irq_save(flags);
- 	rcu_preempt_qs(cpu);
-+	local_irq_restore(flags);
- }
- #else
- void rcu_bh_qs(int cpu)
--- 
-1.8.5.3
+It's still ugly and hard to read, look at the line wrapping...  the
+normal thing is to have preconditions that aren't part of the actual
+iteration process immediately before the loop statement.
 
+--KIbT1ud6duwZIwNL
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTEVwMAAoJELSic+t+oim9Oy8P/0wEzkBCV/COXbXS10uGoHnP
+3R9zIHK4wgQUF0uuqlFT220Pjn6OJaUOV8x7eesd4ed3FJ8nU8u4Zg7c35IAmTnT
+WwZ74FJc1OonVfgpe3s6pNFtjSjJGFdEY2e2dri/jbehE5MxDdWmZLFzepp58P73
+4N8WdQwEmrmrDNgeb/fGJpZLPadJm8Sy0wfF0CIZ039xVbAbbA/6PiFaOaf7bNFk
+Wx+awwNNHQ5qpKAjKOaJx7T7oPxELDUqx+nNumM/pBlfuXGwTBe1vea2umswTvIi
+/+cN49CK5w9XjwX6cXm0GSln3EZtuFSZai+DruUQxUZ8sERXN9W2kSGWOI7VxLWY
+pU0XAnodMB9kR0wsIdRrs6DkQKobyRG2w3Xozy6auuyQ/hDSh/H3X6n3/N/YCghc
+SCYEYCpalFldqqFBweTNXtz7oXDioAR3bgzJw6ZZE92XicGXxYCGk8jFog9HmAP+
+/WaVkspdJUU90dabUsju6pYvtJMGq9eg91ugFREcvGwq4vItmUXKUQeIcBghc4vj
+fR9r+SWkXAugEVE2ywRYNNlo0UQ4IiygBwF1Wn7MI1UjllZwgR4JTaqsFVIbnBHk
+CokLHMWZInJ8DhJ79f+PEzbnQ4LfCtfnut11eSosWkO9WbjrVZJF18kTEfQat8ZK
+Ddift+1w7VcHsw4mrSMv
+=GmEh
+-----END PGP SIGNATURE-----
+
+--KIbT1ud6duwZIwNL--
