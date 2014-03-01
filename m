@@ -1,157 +1,451 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752334AbaCAIXJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Mar 2014 03:23:09 -0500
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:61268 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728AbaCAIXH (ORCPT
+	id S1752522AbaCAIaV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Mar 2014 03:30:21 -0500
+Received: from exprod5og108.obsmtp.com ([64.18.0.186]:54260 "HELO
+	exprod5og108.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751869AbaCAIaS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Mar 2014 03:23:07 -0500
-Date: Sat, 1 Mar 2014 11:19:30 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Minchan Kim <minchan@kernel.org>, Sasha Levin <sasha.levin@oracle.com>,
-        ngupta@vflare.org, LKML <linux-kernel@vger.kernel.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Subject: Re: zram: lockdep spew for zram->init_lock
-Message-ID: <20140301081930.GA2924@swordfish>
-References: <530F5045.1010604@oracle.com>
- <20140227235629.GF31407@bbox>
- <20140228163206.f772a6f4ceb876f2f9a58031@linux-foundation.org>
+	Sat, 1 Mar 2014 03:30:18 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140228163206.f772a6f4ceb876f2f9a58031@linux-foundation.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20140301023905.GB31753@bart.dudau.co.uk>
+References: <1393592902-24750-1-git-send-email-Liviu.Dudau@arm.com>
+	<1393592902-24750-6-git-send-email-Liviu.Dudau@arm.com>
+	<CACoXjck59jA1Ub8mHB0zn16krCxagUgH8BmJVnLQ8KGpFg7WpA@mail.gmail.com>
+	<CACoXjckem9p0uKRBTF67xJ6-_nM2mxcmRyfsb0jue2TiVZiuxQ@mail.gmail.com>
+	<20140301023905.GB31753@bart.dudau.co.uk>
+Date: Sat, 1 Mar 2014 00:30:16 -0800
+Message-ID: <CACoXjcnMe1PV7=p6iK++op_9+Sm-4Umx6Nf6MoX1Se8Y33RVbQ@mail.gmail.com>
+Subject: Re: [PATCH v3 5/5] pci: Add support for creating a generic
+ host_bridge from device tree
+From: Tanmay Inamdar <tinamdar@apm.com>
+To: Tanmay Inamdar <tinamdar@apm.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        patches <patches@apm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (02/28/14 16:32), Andrew Morton wrote:
-> Date: Fri, 28 Feb 2014 16:32:06 -0800
-> From: Andrew Morton <akpm@linux-foundation.org>
-> To: Minchan Kim <minchan@kernel.org>
-> Cc: Sasha Levin <sasha.levin@oracle.com>, ngupta@vflare.org, LKML
->  <linux-kernel@vger.kernel.org>, Sergey Senozhatsky
->  <sergey.senozhatsky@gmail.com>
-> Subject: Re: zram: lockdep spew for zram->init_lock
-> X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-> 
-> On Fri, 28 Feb 2014 08:56:29 +0900 Minchan Kim <minchan@kernel.org> wrote:
-> 
-> > Sasha reported following below lockdep spew of zram.
-> > 
-> > It was introduced by [1] in recent linux-next but it's false positive
-> > because zram_meta_alloc with down_write(init_lock) couldn't be called
-> > during zram is working as swap device so we could annotate the lock.
-> > 
-> > But I don't think it's worthy because it would make greate lockdep
-> > less effective. Instead, move zram_meta_alloc out of the lock as good
-> > old day so we could do unnecessary allocation/free of zram_meta for
-> > initialied device as Sergey claimed in [1] but it wouldn't be common
-> > and be harmful if someone might do it. Rather than, I'd like to respect
-> > lockdep which is great tool to prevent upcoming subtle bugs.
-> > 
-> > [1] zram: delete zram_init_device
-> >
-> > ...
-> >
-> > --- a/drivers/block/zram/zram_drv.c
-> > +++ b/drivers/block/zram/zram_drv.c
-> > @@ -537,26 +537,27 @@ static ssize_t disksize_store(struct device *dev,
-> >  		struct device_attribute *attr, const char *buf, size_t len)
-> >  {
-> >  	u64 disksize;
-> > +	struct zram_meta *meta;
-> >  	struct zram *zram = dev_to_zram(dev);
-> >  
-> >  	disksize = memparse(buf, NULL);
-> >  	if (!disksize)
-> >  		return -EINVAL;
-> >  
-> > +	disksize = PAGE_ALIGN(disksize);
-> > +	meta = zram_meta_alloc(disksize);
-> > +	if (!meta)
-> > +		return -ENOMEM;
-> > +
-> >  	down_write(&zram->init_lock);
-> >  	if (init_done(zram)) {
-> > +		zram_meta_free(meta);
-> >  		up_write(&zram->init_lock);
-> >  		pr_info("Cannot change disksize for initialized device\n");
-> >  		return -EBUSY;
-> >  	}
-> >  
-> > -	disksize = PAGE_ALIGN(disksize);
-> > -	zram->meta = zram_meta_alloc(disksize);
-> > -	if (!zram->meta) {
-> > -		up_write(&zram->init_lock);
-> > -		return -ENOMEM;
-> > -	}
-> > -
-> > +	zram->meta = meta;
-> >  	zram->disksize = disksize;
-> >  	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
-> >  	up_write(&zram->init_lock);
-> 
-> When applying zram-use-zcomp-compressing-backends.patch on top of this
-> we get a bit of a mess, and simple conflict resolution results in a
-> leak.
-> 
-> disksize_store() was one of those nasty functions which does multiple
-> "return" statements after performing locking and resource allocation. 
-> As usual, this led to a resource leak.  Remember folks, "return" is a
-> goto in disguise.
-> 
-> 
-> Here's what I ended up with.  Please review.
-> 
+Hello,
 
-looks good to me.
-Acked-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+On Fri, Feb 28, 2014 at 6:39 PM, Liviu Dudau <liviu@dudau.co.uk> wrote:
+> On Fri, Feb 28, 2014 at 06:07:05PM -0800, Tanmay Inamdar wrote:
+>> Earlier email did not deliver to mailing lists because of plain text
+>> setting problem on my side. Apologies for spamming. Sending it again.
+>>
+>> Hello Liviu,
+>>
+>
+> Hello Tanmay,
+>
+>> While porting X-Gene PCIe driver to v2 series, following problems were observed.
+>
+> Thanks for trying it out.
+>
+>>
+>> 1. In 'of_create_pci_host_bridge' function, bus_range is defined
+>> locally. So, while walking over list of resources in bridge->windows
+>> later, during X-Gene controller related setup, garbage values are
+>> found in the resource. Please allocate it dynamically.
+>
+> Bah, sorry for that. Will fix.
+>
+>>
+>> 2. 'domain_nr' problem is partially solved. There are still some
+>> places where functions are getting invalid domain_nr.  For example,
+>> 'pci_alloc_child_bus' tries to get domain_nr when bridge is not
+>> assigned to bus. You may want to look for all the places where
+>> pci_domain_nr is used. Please see below dump -->
+>>
+>> pci 0001:00:00.0: scanning [bus 00-00] behind bridge, pass 1
+>> ------------[ cut here ]------------
+>> WARNING: CPU: 0 PID: 1 at
+>> /home/tinamdar/work/open-source/linux/fs/sysfs/dir.c:52
+>> sysfs_warn_dup+0x80/0xc0()
+>> sysfs: cannot create duplicate filename '/class/pci_bus/0000:01'
+>> Modules linked in:
+>> CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.14.0-rc4+ #37
+>> Call trace:
+>> [<ffffffc000088140>] dump_backtrace+0x0/0x140
+>> [<ffffffc000088294>] show_stack+0x14/0x20
+>> [<ffffffc0004f64b0>] dump_stack+0x78/0xc4
+>> [<ffffffc000096c88>] warn_slowpath_common+0x88/0xc0
+>> [<ffffffc000096d10>] warn_slowpath_fmt+0x50/0x60
+>> [<ffffffc0001b8260>] sysfs_warn_dup+0x80/0xc0
+>> [<ffffffc0001b8718>] sysfs_do_create_link_sd.isra.2+0xf8/0x100
+>> [<ffffffc0001b8740>] sysfs_create_link+0x20/0x40
+>> [<ffffffc000322f5c>] device_add+0x41c/0x520
+>> [<ffffffc00032307c>] device_register+0x1c/0x40
+>> [<ffffffc0004f1924>] pci_add_new_bus+0x284/0x380
+>> [<ffffffc0002c51a0>] pci_scan_bridge+0x4e0/0x540
+>> [<ffffffc0002c52b4>] pci_scan_child_bus+0xb4/0x140
+>> [<ffffffc0004f1a34>] pci_rescan_bus+0x14/0x40
+>> [<ffffffc0006a12d4>] xgene_pcie_probe_bridge+0x688/0x750
+>> [<ffffffc000327c64>] platform_drv_probe+0x24/0x60
+>> [<ffffffc000325d74>] really_probe+0xf4/0x220
+>> [<ffffffc000325fc4>] __driver_attach+0xa4/0xc0
+>> [<ffffffc000323e18>] bus_for_each_dev+0x58/0xa0
+>> [<ffffffc000325800>] driver_attach+0x20/0x40
+>> [<ffffffc0003253d0>] bus_add_driver+0x150/0x220
+>> [<ffffffc000326780>] driver_register+0x60/0x120
+>> [<ffffffc000327c20>] __platform_driver_register+0x60/0x80
+>> [<ffffffc0006a0c44>] xgene_pcie_driver_init+0x18/0x20
+>> [<ffffffc0000814c4>] do_one_initcall+0xe4/0x160
+>
+> do you have your xgene_pcie_driver_init being called out of some subsys_initcall?
+> If so, remove it and let the generic DT parsing code match your driver. The
 
-> static ssize_t disksize_store(struct device *dev,
-> 		struct device_attribute *attr, const char *buf, size_t len)
-> {
-> 	u64 disksize;
-> 	struct zram_meta *meta;
-> 	struct zram *zram = dev_to_zram(dev);
-> 	int err;
-> 
-> 	disksize = memparse(buf, NULL);
-> 	if (!disksize)
-> 		return -EINVAL;
-> 
-> 	disksize = PAGE_ALIGN(disksize);
-> 	meta = zram_meta_alloc(disksize);
-> 	if (!meta)
-> 		return -ENOMEM;
-> 
-> 	down_write(&zram->init_lock);
-> 	if (init_done(zram)) {
-> 		pr_info("Cannot change disksize for initialized device\n");
-> 		err = -EBUSY;
-> 		goto out_free_meta;
-> 	}
-> 
-> 	zram->comp = zcomp_create(default_compressor);
-> 	if (!zram->comp) {
-> 		pr_info("Cannot initialise %s compressing backend\n",
-> 				default_compressor);
-> 		err = -EINVAL;
-> 		goto out_free_meta;
-> 	}
-> 
-> 	zram->meta = meta;
-> 	zram->disksize = disksize;
-> 	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
-> 	up_write(&zram->init_lock);
-> 
-> 	return len;
-> 
-> out_free_meta:
-> 	up_write(&zram->init_lock);
-> 	zram_meta_free(meta);
-> 	return err;
-> }
-> 
+I am using 'module_platform_driver' which is nothing but module_init.
+
+> bridge should've been associated with the root bus by the time the child busses
+> are scanned and allocated, unless I'm missing something obvious.
+>
+
+If you look at the implementation of 'pci_alloc_child_bus', you will
+find that 'dev_set_name(&child->dev, "%04x:%02x",
+pci_domain_nr(child), busnr);' is done before 'child->bridge =
+get_device(&bridge->dev);' Hence pcie_domain_nr finds NULL bridge and
+returns 0. That might be the problem. Please correct me if I am wrong.
+
+> Also, can you share your version of your driver with me?
+
+Sure. I am in the process of sending out RFC version. I will post it
+in a day or two.
+
+>
+> Best regards,
+> Liviu
+>
+>> [<ffffffc00068c938>] kernel_init_freeable+0x138/0x1d8
+>> [<ffffffc0004f06b0>] kernel_init+0x10/0xe0
+>> ---[ end trace 53db1c3a7fbdeb88 ]---
+>> ------------[ cut here ]------------
+>> WARNING: CPU: 0 PID: 1 at
+>> /home/tinamdar/work/open-source/linux/drivers/pci/probe.c:711
+>> pci_add_new_bus+0x36c/0x380()
+>>
+>> Thanks,
+>> Tanmay
+>>
+>> On Fri, Feb 28, 2014 at 6:01 PM, Tanmay Inamdar <tinamdar@apm.com> wrote:
+>> > Hello Liviu,
+>> >
+>> > While porting X-Gene PCIe driver to v2 series, following problems were
+>> > observed.
+>> >
+>> > 1. In 'of_create_pci_host_bridge' function, bus_range is defined locally.
+>> > So, while walking over list of resources in bridge->windows later, during
+>> > X-Gene controller related setup, garbage values are found in the resource.
+>> > Please allocate it dynamically.
+>> >
+>> > 2. 'domain_nr' problem is partially solved. There are still some places
+>> > where functions are getting invalid domain_nr.  For example,
+>> > 'pci_alloc_child_bus' tries to get domain_nr when bridge is not assigned to
+>> > bus. You may want to look for all the places where pci_domain_nr is used.
+>> > Please see below dump -->
+>> >
+>> > pci 0001:00:00.0: scanning [bus 00-00] behind bridge, pass 1
+>> > ------------[ cut here ]------------
+>> > WARNING: CPU: 0 PID: 1 at
+>> > /home/tinamdar/work/open-source/linux/fs/sysfs/dir.c:52
+>> > sysfs_warn_dup+0x80/0xc0()
+>> > sysfs: cannot create duplicate filename '/class/pci_bus/0000:01'
+>> > Modules linked in:
+>> > CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.14.0-rc4+ #37
+>> > Call trace:
+>> > [<ffffffc000088140>] dump_backtrace+0x0/0x140
+>> > [<ffffffc000088294>] show_stack+0x14/0x20
+>> > [<ffffffc0004f64b0>] dump_stack+0x78/0xc4
+>> > [<ffffffc000096c88>] warn_slowpath_common+0x88/0xc0
+>> > [<ffffffc000096d10>] warn_slowpath_fmt+0x50/0x60
+>> > [<ffffffc0001b8260>] sysfs_warn_dup+0x80/0xc0
+>> > [<ffffffc0001b8718>] sysfs_do_create_link_sd.isra.2+0xf8/0x100
+>> > [<ffffffc0001b8740>] sysfs_create_link+0x20/0x40
+>> > [<ffffffc000322f5c>] device_add+0x41c/0x520
+>> > [<ffffffc00032307c>] device_register+0x1c/0x40
+>> > [<ffffffc0004f1924>] pci_add_new_bus+0x284/0x380
+>> > [<ffffffc0002c51a0>] pci_scan_bridge+0x4e0/0x540
+>> > [<ffffffc0002c52b4>] pci_scan_child_bus+0xb4/0x140
+>> > [<ffffffc0004f1a34>] pci_rescan_bus+0x14/0x40
+>> > [<ffffffc0006a12d4>] xgene_pcie_probe_bridge+0x688/0x750
+>> > [<ffffffc000327c64>] platform_drv_probe+0x24/0x60
+>> > [<ffffffc000325d74>] really_probe+0xf4/0x220
+>> > [<ffffffc000325fc4>] __driver_attach+0xa4/0xc0
+>> > [<ffffffc000323e18>] bus_for_each_dev+0x58/0xa0
+>> > [<ffffffc000325800>] driver_attach+0x20/0x40
+>> > [<ffffffc0003253d0>] bus_add_driver+0x150/0x220
+>> > [<ffffffc000326780>] driver_register+0x60/0x120
+>> > [<ffffffc000327c20>] __platform_driver_register+0x60/0x80
+>> > [<ffffffc0006a0c44>] xgene_pcie_driver_init+0x18/0x20
+>> > [<ffffffc0000814c4>] do_one_initcall+0xe4/0x160
+>> > [<ffffffc00068c938>] kernel_init_freeable+0x138/0x1d8
+>> > [<ffffffc0004f06b0>] kernel_init+0x10/0xe0
+>> > ---[ end trace 53db1c3a7fbdeb88 ]---
+>> > ------------[ cut here ]------------
+>> > WARNING: CPU: 0 PID: 1 at
+>> > /home/tinamdar/work/open-source/linux/drivers/pci/probe.c:711
+>> > pci_add_new_bus+0x36c/0x380()
+>> >
+>> > Thanks,
+>> > Tanmay
+>> >
+>> >
+>> >
+>> > On Fri, Feb 28, 2014 at 5:08 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+>> >>
+>> >> Several platforms use a rather generic version of parsing
+>> >> the device tree to find the host bridge ranges. Move the common code
+>> >> into the generic PCI code and use it to create a pci_host_bridge
+>> >> structure that can be used by arch code.
+>> >>
+>> >> Based on early attempts by Andrew Murray to unify the code.
+>> >> Used powerpc and microblaze PCI code as starting point.
+>> >>
+>> >> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+>> >>
+>> >> diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
+>> >> index 06ace62..feb8436 100644
+>> >> --- a/drivers/pci/host-bridge.c
+>> >> +++ b/drivers/pci/host-bridge.c
+>> >> @@ -6,9 +6,13 @@
+>> >>  #include <linux/init.h>
+>> >>  #include <linux/pci.h>
+>> >>  #include <linux/module.h>
+>> >> +#include <linux/of_address.h>
+>> >> +#include <linux/of_pci.h>
+>> >>
+>> >>  #include "pci.h"
+>> >>
+>> >> +static int domain_nr;
+>> >> +
+>> >>  static struct pci_bus *find_pci_root_bus(struct pci_bus *bus)
+>> >>  {
+>> >>         while (bus->parent)
+>> >> @@ -91,3 +95,133 @@ void pcibios_bus_to_resource(struct pci_bus *bus,
+>> >> struct resource *res,
+>> >>         res->end = region->end + offset;
+>> >>  }
+>> >>  EXPORT_SYMBOL(pcibios_bus_to_resource);
+>> >> +
+>> >> +/**
+>> >> + * pci_host_bridge_of_get_ranges - Parse PCI host bridge resources from
+>> >> DT
+>> >> + * @dev: device node of the host bridge having the range property
+>> >> + * @resources: list where the range of resources will be added after DT
+>> >> parsing
+>> >> + * @io_base: pointer to a variable that will contain the physical address
+>> >> for
+>> >> + * the start of the I/O range.
+>> >> + *
+>> >> + * If this function returns an error then the @resources list will be
+>> >> freed.
+>> >> + *
+>> >> + * This function will parse the "ranges" property of a PCI host bridge
+>> >> device
+>> >> + * node and setup the resource mapping based on its content. It is
+>> >> expected
+>> >> + * that the property conforms with the Power ePAPR document.
+>> >> + *
+>> >> + * Each architecture is then offered the chance of applying their own
+>> >> + * filtering of pci_host_bridge_windows based on their own restrictions
+>> >> by
+>> >> + * calling pcibios_fixup_bridge_ranges(). The filtered list of windows
+>> >> + * can then be used when creating a pci_host_bridge structure.
+>> >> + */
+>> >> +static int pci_host_bridge_of_get_ranges(struct device_node *dev,
+>> >> +               struct list_head *resources, resource_size_t *io_base)
+>> >> +{
+>> >> +       struct resource *res;
+>> >> +       struct of_pci_range range;
+>> >> +       struct of_pci_range_parser parser;
+>> >> +       int err;
+>> >> +
+>> >> +       pr_info("PCI host bridge %s ranges:\n", dev->full_name);
+>> >> +
+>> >> +       /* Check for ranges property */
+>> >> +       err = of_pci_range_parser_init(&parser, dev);
+>> >> +       if (err)
+>> >> +               return err;
+>> >> +
+>> >> +       pr_debug("Parsing ranges property...\n");
+>> >> +       for_each_of_pci_range(&parser, &range) {
+>> >> +               /* Read next ranges element */
+>> >> +               pr_debug("pci_space: 0x%08x pci_addr:0x%016llx ",
+>> >> +                               range.pci_space, range.pci_addr);
+>> >> +               pr_debug("cpu_addr:0x%016llx size:0x%016llx\n",
+>> >> +                                       range.cpu_addr, range.size);
+>> >> +
+>> >> +               /*
+>> >> +                * If we failed translation or got a zero-sized region
+>> >> +                * then skip this range
+>> >> +                */
+>> >> +               if (range.cpu_addr == OF_BAD_ADDR || range.size == 0)
+>> >> +                       continue;
+>> >> +
+>> >> +               res = kzalloc(sizeof(struct resource), GFP_KERNEL);
+>> >> +               if (!res) {
+>> >> +                       err = -ENOMEM;
+>> >> +                       goto bridge_ranges_nomem;
+>> >> +               }
+>> >> +
+>> >> +               of_pci_range_to_resource(&range, dev, res);
+>> >> +
+>> >> +               if (resource_type(res) == IORESOURCE_IO)
+>> >> +                       *io_base = range.cpu_addr;
+>> >> +
+>> >> +               pci_add_resource_offset(resources, res,
+>> >> +                               res->start - range.pci_addr);
+>> >> +       }
+>> >> +
+>> >> +       /* Apply architecture specific fixups for the ranges */
+>> >> +       pcibios_fixup_bridge_ranges(resources);
+>> >> +
+>> >> +       return 0;
+>> >> +
+>> >> +bridge_ranges_nomem:
+>> >> +       pci_free_resource_list(resources);
+>> >> +       return err;
+>> >> +}
+>> >> +
+>> >> +/**
+>> >> + * of_create_pci_host_bridge - Create a PCI host bridge structure using
+>> >> + * information passed in the DT.
+>> >> + * @parent: device owning this host bridge
+>> >> + * @ops: pci_ops associated with the host controller
+>> >> + * @host_data: opaque data structure used by the host controller.
+>> >> + *
+>> >> + * returns a pointer to the newly created pci_host_bridge structure, or
+>> >> + * NULL if the call failed.
+>> >> + *
+>> >> + * This function will try to obtain the host bridge domain number by
+>> >> + * using of_alias_get_id() call with "pci-domain" as a stem. If that
+>> >> + * fails, a local allocator will be used that will put each host bridge
+>> >> + * in a new domain.
+>> >> + */
+>> >> +struct pci_host_bridge *
+>> >> +of_create_pci_host_bridge(struct device *parent, struct pci_ops *ops,
+>> >> void *host_data)
+>> >> +{
+>> >> +       int err, domain, busno;
+>> >> +       struct resource bus_range;
+>> >> +       struct pci_bus *root_bus;
+>> >> +       struct pci_host_bridge *bridge;
+>> >> +       resource_size_t io_base;
+>> >> +       LIST_HEAD(res);
+>> >> +
+>> >> +       domain = of_alias_get_id(parent->of_node, "pci-domain");
+>> >> +       if (domain == -ENODEV)
+>> >> +               domain = domain_nr++;
+>> >> +
+>> >> +       err = of_pci_parse_bus_range(parent->of_node, &bus_range);
+>> >> +       if (err) {
+>> >> +               dev_info(parent, "No bus range for %s, using default
+>> >> [0-255]\n",
+>> >> +                       parent->of_node->full_name);
+>> >> +               bus_range.start = 0;
+>> >> +               bus_range.end = 255;
+>> >> +               bus_range.flags = IORESOURCE_BUS;
+>> >> +       }
+>> >> +       busno = bus_range.start;
+>> >> +       pci_add_resource(&res, &bus_range);
+>> >> +
+>> >> +       /* now parse the rest of host bridge bus ranges */
+>> >> +       if (pci_host_bridge_of_get_ranges(parent->of_node, &res,
+>> >> &io_base))
+>> >> +               return NULL;
+>> >> +
+>> >> +       /* then create the root bus */
+>> >> +       root_bus = pci_create_root_bus_in_domain(parent, domain, busno,
+>> >> +                                               ops, host_data, &res);
+>> >> +       if (!root_bus)
+>> >> +               return NULL;
+>> >> +
+>> >> +       bridge = to_pci_host_bridge(root_bus->bridge);
+>> >> +       bridge->io_base = io_base;
+>> >> +
+>> >> +       return bridge;
+>> >> +}
+>> >> +EXPORT_SYMBOL_GPL(of_create_pci_host_bridge);
+>> >> diff --git a/include/linux/pci.h b/include/linux/pci.h
+>> >> index 1eed009..0c5e269 100644
+>> >> --- a/include/linux/pci.h
+>> >> +++ b/include/linux/pci.h
+>> >> @@ -395,6 +395,7 @@ struct pci_host_bridge {
+>> >>         struct device dev;
+>> >>         struct pci_bus *bus;            /* root bus */
+>> >>         int domain_nr;
+>> >> +       resource_size_t io_base;        /* physical address for the start
+>> >> of I/O area */
+>> >>         struct list_head windows;       /* pci_host_bridge_windows */
+>> >>         void (*release_fn)(struct pci_host_bridge *);
+>> >>         void *release_data;
+>> >> @@ -1786,11 +1787,23 @@ static inline struct device_node
+>> >> *pci_bus_to_OF_node(struct pci_bus *bus)
+>> >>         return bus ? bus->dev.of_node : NULL;
+>> >>  }
+>> >>
+>> >> +struct pci_host_bridge *
+>> >> +of_create_pci_host_bridge(struct device *parent, struct pci_ops *ops,
+>> >> +                       void *host_data);
+>> >> +
+>> >> +void pcibios_fixup_bridge_ranges(struct list_head *resources);
+>> >>  #else /* CONFIG_OF */
+>> >>  static inline void pci_set_of_node(struct pci_dev *dev) { }
+>> >>  static inline void pci_release_of_node(struct pci_dev *dev) { }
+>> >>  static inline void pci_set_bus_of_node(struct pci_bus *bus) { }
+>> >>  static inline void pci_release_bus_of_node(struct pci_bus *bus) { }
+>> >> +
+>> >> +static inline struct pci_host_bridge *
+>> >> +pci_host_bridge_of_init(struct device *parent, struct pci_ops *ops,
+>> >> +                       void *host_data)
+>> >> +{
+>> >> +       return NULL;
+>> >> +}
+>> >>  #endif  /* CONFIG_OF */
+>> >>
+>> >>  #ifdef CONFIG_EEH
+>> >> --
+>> >> 1.9.0
+>> >>
+>> >>
+>> >> _______________________________________________
+>> >> linux-arm-kernel mailing list
+>> >> linux-arm-kernel@lists.infradead.org
+>> >> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>> >
+>> >
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>
+> --
+> -------------------
+>    .oooO
+>    (   )
+>     \ (  Oooo.
+>      \_) (   )
+>           ) /
+>          (_/
+>
+>  One small step
+>    for me ...
+>
+> CONFIDENTIALITY NOTICE: This e-mail message, including any attachments,
+> is for the sole use of the intended recipient(s) and contains information
+> that is confidential and proprietary to Applied Micro Circuits Corporation or its subsidiaries.
+> It is to be used solely for the purpose of furthering the parties' business relationship.
+> All unauthorized review, use, disclosure or distribution is prohibited.
+> If you are not the intended recipient, please contact the sender by reply e-mail
+> and destroy all copies of the original message.
+>
