@@ -1,147 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184AbaCAOEr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Mar 2014 09:04:47 -0500
-Received: from www84.your-server.de ([213.133.104.84]:54166 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752817AbaCAOEq (ORCPT
+	id S1752919AbaCAOT2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Mar 2014 09:19:28 -0500
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:53317 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752566AbaCAOT0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Mar 2014 09:04:46 -0500
-Message-ID: <1393682667.982.28.camel@wall-e.seibold.net>
-Subject: Re: [PATCH v2 3/4] x86: Patch alternatives in the 32-bit vDSO
-From: Stefani Seibold <stefani@seibold.net>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: X86 ML <x86@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
-        Andreas.Brief@rohde-schwarz.com
-Date: Sat, 01 Mar 2014 15:04:27 +0100
-In-Reply-To: <09bf3b51cae30d91b5e8fb05453c1d8d886d3839.1393545985.git.luto@amacapital.net>
-References: <CALCETrW_PHbDzn2S3NyGTSk4yqYjnpJbStCuLc_yBGdfspfFCA@mail.gmail.com>
-	 <cover.1393545985.git.luto@amacapital.net>
-	 <09bf3b51cae30d91b5e8fb05453c1d8d886d3839.1393545985.git.luto@amacapital.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
+	Sat, 1 Mar 2014 09:19:26 -0500
+MIME-Version: 1.0
+X-Originating-IP: [84.208.70.35]
+In-Reply-To: <CAG-2HqWahCVvDLPwoMo7O4kam+W0o7BQGm4cRBvc9=X_p0fF7Q@mail.gmail.com>
+References: <1393512434-1325-1-git-send-email-dh.herrmann@gmail.com> <CAG-2HqWahCVvDLPwoMo7O4kam+W0o7BQGm4cRBvc9=X_p0fF7Q@mail.gmail.com>
+From: Tom Gundersen <teg@jklm.no>
+Date: Sat, 1 Mar 2014 15:19:03 +0100
+Message-ID: <CAG-2HqVQRTdA5NvjirR35qLbAkDUB1dN6oAvU2CLs4dnFS42Nw@mail.gmail.com>
+Subject: Re: [PATCH 0/4] Provide netdev naming-policy via sysfs
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: netdev <netdev@vger.kernel.org>, "David S. Miller" <davem@davemloft.net>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Johannes berg <johannes@sipsolutions.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, den 27.02.2014, 16:18 -0800 schrieb Andy Lutomirski:
-> rdtsc_barrier() needs this.
-> 
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
->  arch/x86/include/asm/vdso.h  |  2 ++
->  arch/x86/vdso/vdso32-setup.c | 25 +++++++++++++------------
->  arch/x86/vdso/vma.c          |  9 ++++++---
->  3 files changed, 21 insertions(+), 15 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/vdso.h b/arch/x86/include/asm/vdso.h
-> index 6db8b23..a844f90 100644
-> --- a/arch/x86/include/asm/vdso.h
-> +++ b/arch/x86/include/asm/vdso.h
-> @@ -40,4 +40,6 @@ extern const char vdso32_int80_start, vdso32_int80_end;
->  extern const char vdso32_syscall_start, vdso32_syscall_end;
->  extern const char vdso32_sysenter_start, vdso32_sysenter_end;
->  
-> +void __init patch_vdso32(void *vdso, size_t len);
-> +
->  #endif /* _ASM_X86_VDSO_H */
-> diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
-> index 6b74a46..b37aa1d 100644
-> --- a/arch/x86/vdso/vdso32-setup.c
-> +++ b/arch/x86/vdso/vdso32-setup.c
-> @@ -273,29 +273,30 @@ static void map_compat_vdso(int map)
->  
->  int __init sysenter_setup(void)
->  {
-> -	void *syscall_page = (void *)get_zeroed_page(GFP_ATOMIC);
-> -	const void *vsyscall;
-> -	size_t vsyscall_len;
-> +	void *vdso_page = (void *)get_zeroed_page(GFP_ATOMIC);
-> +	const void *vdso;
-> +	size_t vdso_len;
->  
-> -	vdso32_pages[0] = virt_to_page(syscall_page);
-> +	vdso32_pages[0] = virt_to_page(vdso_page);
->  
->  #ifdef CONFIG_X86_32
->  	gate_vma_init();
->  #endif
->  
->  	if (vdso32_syscall()) {
-> -		vsyscall = &vdso32_syscall_start;
-> -		vsyscall_len = &vdso32_syscall_end - &vdso32_syscall_start;
-> +		vdso = &vdso32_syscall_start;
-> +		vdso_len = &vdso32_syscall_end - &vdso32_syscall_start;
->  	} else if (vdso32_sysenter()){
-> -		vsyscall = &vdso32_sysenter_start;
-> -		vsyscall_len = &vdso32_sysenter_end - &vdso32_sysenter_start;
-> +		vdso = &vdso32_sysenter_start;
-> +		vdso_len = &vdso32_sysenter_end - &vdso32_sysenter_start;
->  	} else {
-> -		vsyscall = &vdso32_int80_start;
-> -		vsyscall_len = &vdso32_int80_end - &vdso32_int80_start;
-> +		vdso = &vdso32_int80_start;
-> +		vdso_len = &vdso32_int80_end - &vdso32_int80_start;
->  	}
->  
-> -	memcpy(syscall_page, vsyscall, vsyscall_len);
-> -	relocate_vdso(syscall_page);
-> +	memcpy(vdso_page, vdso, vdso_len);
-> +	patch_vdso32(vdso_page, vdso_len);
+On Thu, Feb 27, 2014 at 4:47 PM, Tom Gundersen <teg@jklm.no> wrote:
+> On Thu, Feb 27, 2014 at 3:47 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
+>> This series implements a new sysfs attribute for netdevs called
+>> "name_assign_type". It provides an integer that describes where an interface
+>> name comes from. See Patch #1 for a description of this attribute. It is
+>> modelled after the existing "addr_assign_type" attribute.
+>>
+>> The main use-case is to allow udev to skip applying reliable ifnames to virtual
+>> devices. For instance, if wifi-P2P devices are created, wpas already provides a
+>> suitable naming-policy and udev shouldn't touch these devices. Same is true for
+>> other virtual devices.
+>> The idea is that if a device-name was provided by user-space, we should always
+>> prefer fixing this naming-policy instead of making udev rename the device. For
+>> kernel provided names that's hardly possible, though. Providing the
+>> naming-policy source via sysfs is thus a simple way to see whether renames are
+>> needed.
+>>
+>> Additionally, this field allows to detect whether a netdev has been manually
+>> renamed, which is quite useful for debugging and during crash-recovery.
+>
+> Moreover, it would be useful for udev to reliably know if some other
+> userspace process already renamed a device, so we know not to touch
+> it. This can easily happen for instance if some renaming happens in
+> the initrd or from script called from udev rules.
 
-This will fail with 32 bit kernels since vma.c is only build for 64 bit
-kernel. I have fixed this.
+Incidentally, just after writing this email I ran into precisely this
+problem due to buggy udev rules in a third-party package. The result
+was that the upstream NIC naming rules were unable to detect that a
+given NIC had already been renamed and ended up renaming them a second
+time (hence wrecking havoc).
 
-> +	relocate_vdso(vdso_page);
->  
->  	return 0;
->  }
-> diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
-> index 431e875..149caa1 100644
-> --- a/arch/x86/vdso/vma.c
-> +++ b/arch/x86/vdso/vma.c
-> @@ -28,8 +28,11 @@ static unsigned vdso_size;
->  extern char vdsox32_start[], vdsox32_end[];
->  extern struct page *vdsox32_pages[];
->  static unsigned vdsox32_size;
-> +#endif
->  
-> -static void __init patch_vdsox32(void *vdso, size_t len)
-> +#if defined(CONFIG_X86_32) || defined(CONFIG_X86_X32_ABI) || \
-> +	defined(CONFIG_COMPAT)
-> +void __init patch_vdso32(void *vdso, size_t len)
->  {
->  	Elf32_Ehdr *hdr = vdso;
->  	Elf32_Shdr *sechdrs, *alt_sec = 0;
-> @@ -52,7 +55,7 @@ static void __init patch_vdsox32(void *vdso, size_t len)
->  	}
->  
->  	/* If we get here, it's probably a bug. */
-> -	pr_warning("patch_vdsox32: .altinstructions not found\n");
-> +	pr_warning("patch_vdso32: .altinstructions not found\n");
->  	return;  /* nothing to patch */
->  
->  found:
-> @@ -104,7 +107,7 @@ static int __init init_vdso(void)
->  		vdso_pages[i] = virt_to_page(vdso_start + i*PAGE_SIZE);
->  
->  #ifdef CONFIG_X86_X32_ABI
-> -	patch_vdsox32(vdsox32_start, vdsox32_end - vdsox32_start);
-> +	patch_vdso32(vdsox32_start, vdsox32_end - vdsox32_start);
->  	npages = (vdsox32_end - vdsox32_start + PAGE_SIZE - 1) / PAGE_SIZE;
->  	vdsox32_size = npages << PAGE_SHIFT;
->  	for (i = 0; i < npages; i++)
+The problem was easy enough to fix, but with these patches we would be
+able to avoid the issue altogether, so I'm looking forward to fixing
+up udev to using this interface.
 
-
+> Acked-by: Tom Gundersen <teg@jklm.no>
