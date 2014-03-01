@@ -1,204 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752811AbaCALWK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Mar 2014 06:22:10 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:52125 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752611AbaCALWI (ORCPT
+	id S1752854AbaCALYo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Mar 2014 06:24:44 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:50383 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752721AbaCALYl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Mar 2014 06:22:08 -0500
-Message-ID: <5311C30D.4070808@kernel.org>
-Date: Sat, 01 Mar 2014 11:22:53 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Sat, 1 Mar 2014 06:24:41 -0500
 MIME-Version: 1.0
-To: Sebastian Reichel <sre@debian.org>, Sebastian Reichel <sre@ring0.de>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-CC: Marek Belisko <marek@goldelico.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-iio@vger.kernel.org,
-        =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>
-Subject: Re: [PATCHv1 1/2] rx51_battery: convert to iio consumer
-References: <1393375569-21751-1-git-send-email-sre@debian.org> <1393375569-21751-2-git-send-email-sre@debian.org> <5311C1C8.3090809@kernel.org>
-In-Reply-To: <5311C1C8.3090809@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140228165253.GA19872@kroah.com>
+References: <1393261707-30565-1-git-send-email-joshc@codeaurora.org>
+	<1393261707-30565-4-git-send-email-joshc@codeaurora.org>
+	<20140225183336.GH23275@saruman.home>
+	<20140227190324.GC4421@kroah.com>
+	<20140227234129.GA21032@psi-dev26.jf.intel.com>
+	<20140227234425.GA32426@kroah.com>
+	<CAPDyKFp3R=w6Vx6zCHZQJXgLgh=u5HdwmUcbgkbsGb=pVah9Mw@mail.gmail.com>
+	<20140228165253.GA19872@kroah.com>
+Date: Sat, 1 Mar 2014 12:24:40 +0100
+Message-ID: <CAPDyKFowEvsJdebu2GmSc7U3uiW3SpG_N54O1=XX5hPr+M9Jwg@mail.gmail.com>
+Subject: Re: [PATCH 3/3] usb: phy: msm: use ASSIGN_*_PM_OPS variants
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: David Cohen <david.a.cohen@linux.intel.com>, Felipe Balbi <balbi@ti.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        linux-usb@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/03/14 11:17, Jonathan Cameron wrote:
-> On 26/02/14 00:46, Sebastian Reichel wrote:
->> Update rx51-battery driver to use the new IIO API of
->> twl4030-madc and add DT support.
+On 28 February 2014 17:52, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Fri, Feb 28, 2014 at 09:48:08AM +0100, Ulf Hansson wrote:
+>> On 28 February 2014 00:44, Greg Kroah-Hartman
+>> <gregkh@linuxfoundation.org> wrote:
+>> > On Thu, Feb 27, 2014 at 03:41:31PM -0800, David Cohen wrote:
+>> >> On Thu, Feb 27, 2014 at 11:03:24AM -0800, Greg Kroah-Hartman wrote:
+>> >> > On Tue, Feb 25, 2014 at 12:33:36PM -0600, Felipe Balbi wrote:
+>> >> > > Hi,
+>> >> > >
+>> >> > > On Mon, Feb 24, 2014 at 11:08:27AM -0600, Josh Cartwright wrote:
+>> >> > > > Use ASSIGN_SYSTEM_SLEEP_PM_OPS and ASSIGN_RUNTIME_PM_OPS in the
+>> >> > > > initializer for msm_otg_dev_pm_ops.  Doing so allows us to eliminate
+>> >> > > > preprocessor conditionals around the specified callbacks.
+>> >> > > >
+>> >> > > > Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+>> >> > > > ---
+>> >> > > >  drivers/usb/phy/phy-msm-usb.c | 13 +++----------
+>> >> > > >  1 file changed, 3 insertions(+), 10 deletions(-)
+>> >> > > >
+>> >> > > > diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
+>> >> > > > index 5b37b81..c04f2e3 100644
+>> >> > > > --- a/drivers/usb/phy/phy-msm-usb.c
+>> >> > > > +++ b/drivers/usb/phy/phy-msm-usb.c
+>> >> > > > @@ -414,8 +414,6 @@ static int msm_otg_reset(struct usb_phy *phy)
+>> >> > > >  #define PHY_SUSPEND_TIMEOUT_USEC       (500 * 1000)
+>> >> > > >  #define PHY_RESUME_TIMEOUT_USEC        (100 * 1000)
+>> >> > > >
+>> >> > > > -#ifdef CONFIG_PM
+>> >> > > > -
+>> >> > > >  #define USB_PHY_SUSP_DIG_VOL  500000
+>> >> > > >  static int msm_hsusb_config_vddcx(int high)
+>> >> > > >  {
+>> >> > > > @@ -609,7 +607,6 @@ skip_phy_resume:
+>> >> > > >
+>> >> > > >         return 0;
+>> >> > > >  }
+>> >> > > > -#endif
+>> >> > > >
+>> >> > > >  static void msm_otg_notify_charger(struct msm_otg *motg, unsigned mA)
+>> >> > > >  {
+>> >> > > > @@ -1664,7 +1661,6 @@ static int msm_otg_remove(struct platform_device *pdev)
+>> >> > > >         return 0;
+>> >> > > >  }
+>> >> > > >
+>> >> > > > -#ifdef CONFIG_PM_RUNTIME
+>> >> > > >  static int msm_otg_runtime_idle(struct device *dev)
+>> >> > > >  {
+>> >> > > >         struct msm_otg *motg = dev_get_drvdata(dev);
+>> >> > > > @@ -1699,9 +1695,7 @@ static int msm_otg_runtime_resume(struct device *dev)
+>> >> > > >         dev_dbg(dev, "OTG runtime resume\n");
+>> >> > > >         return msm_otg_resume(motg);
+>> >> > > >  }
+>> >> > > > -#endif
+>> >> > > >
+>> >> > > > -#ifdef CONFIG_PM_SLEEP
+>> >> > > >  static int msm_otg_pm_suspend(struct device *dev)
+>> >> > > >  {
+>> >> > > >         struct msm_otg *motg = dev_get_drvdata(dev);
+>> >> > > > @@ -1731,12 +1725,11 @@ static int msm_otg_pm_resume(struct device *dev)
+>> >> > > >
+>> >> > > >         return 0;
+>> >> > > >  }
+>> >> > > > -#endif
+>> >> > > >
+>> >> > > >  static const struct dev_pm_ops msm_otg_dev_pm_ops = {
+>> >> > > > -       SET_SYSTEM_SLEEP_PM_OPS(msm_otg_pm_suspend, msm_otg_pm_resume)
+>> >> > > > -       SET_RUNTIME_PM_OPS(msm_otg_runtime_suspend, msm_otg_runtime_resume,
+>> >> > > > -                               msm_otg_runtime_idle)
+>> >> > > > +       ASSIGN_SYSTEM_SLEEP_PM_OPS(msm_otg_pm_suspend, msm_otg_pm_resume)
+>> >> > > > +       ASSIGN_RUNTIME_PM_OPS(msm_otg_runtime_suspend, msm_otg_runtime_resume,
+>> >> > > > +                             msm_otg_runtime_idle)
+>> >> > >
+>> >> > > if the patch introducing assign_if() gets accepted, I'm ok with this
+>> >> > > patch.
+>> >> >
+>> >> > I can't take that patch at this point in time, it's just too ugly...
+>> >> >
+>> >> > As are those crazy SET_SYSTEM_SLEEP_PM_OPS() macros, ick, who made those
+>> >> > things?
+>> >> >
+>> >> > What language are we trying to program in here people?
+>> >>
+>> >> Since we're discussing this topic here, I'd like point my RFC which gets
+>> >> rid of same ifdeffery in a different way:
+>> >> http://lkml.org/lkml/2013/12/13/4
+>> >
+>> > Again, why can't we just always define these fields in the structure,
+>> > then we don't need any crazy, complicated mess for assigning the
+>> > function pointers?
+>> >
+>> > Again, the odds that this config option is ever disabled in "real"
+>> > systems is so low these days, I have half a mind just to rip it out
+>> > entirely as the amount of work spent on compiler warnings and the like
+>> > in this area has proably offset any power savings the code was supposed
+>> > to save on systems :(
 >>
->> Signed-off-by: Sebastian Reichel <sre@debian.org>
-> The error handling needs tidying up.
-> Otherwise this looks fine to me.  Note that you (really me)
-> may get some grief over the DT bindings.  Theoretically we have
-> been planning to rewrite those entirely for some time...
-
-It's a longer term point, but it does rather feel like it ought
-to be possible to write a generic battery driver sometime down
-the line where any conversion characteristics would be in the device
-tree.  Definitely a question for the future though!
-
->> ---
->>   drivers/power/rx51_battery.c | 68 +++++++++++++++++++++++++++++---------------
->>   1 file changed, 45 insertions(+), 23 deletions(-)
->>
->> diff --git a/drivers/power/rx51_battery.c b/drivers/power/rx51_battery.c
->> index 1bc5857..f7cb58e 100644
->> --- a/drivers/power/rx51_battery.c
->> +++ b/drivers/power/rx51_battery.c
->> @@ -24,34 +24,27 @@
->>   #include <linux/power_supply.h>
->>   #include <linux/slab.h>
->>   #include <linux/i2c/twl4030-madc.h>
->> -
->> -/* RX51 specific channels */
->> -#define TWL4030_MADC_BTEMP_RX51    TWL4030_MADC_ADCIN0
->> -#define TWL4030_MADC_BCI_RX51    TWL4030_MADC_ADCIN4
->> +#include <linux/iio/consumer.h>
->> +#include <linux/of.h>
->>
->>   struct rx51_device_info {
->>       struct device *dev;
->>       struct power_supply bat;
->> +    struct iio_channel *channel_temp;
->> +    struct iio_channel *channel_bsi;
->> +    struct iio_channel *channel_vbat;
->>   };
->>
->>   /*
->>    * Read ADCIN channel value, code copied from maemo kernel
->>    */
->> -static int rx51_battery_read_adc(int channel)
->> +static int rx51_battery_read_adc(struct iio_channel *channel)
->>   {
->> -    struct twl4030_madc_request req;
->> -
->> -    req.channels = channel;
->> -    req.do_avg = 1;
->> -    req.method = TWL4030_MADC_SW1;
->> -    req.func_cb = NULL;
->> -    req.type = TWL4030_MADC_WAIT;
->> -    req.raw = true;
->> -
->> -    if (twl4030_madc_conversion(&req) <= 0)
->> -        return -ENODATA;
->> -
->> -    return req.rbuf[ffs(channel) - 1];
->> +    int val, err;
->> +    err = iio_read_channel_average_raw(channel, &val);
->> +    if (err < 0)
->> +        return err;
->> +    return val;
->>   }
->>
->>   /*
->> @@ -60,10 +53,12 @@ static int rx51_battery_read_adc(int channel)
->>    */
->>   static int rx51_battery_read_voltage(struct rx51_device_info *di)
->>   {
->> -    int voltage = rx51_battery_read_adc(TWL4030_MADC_VBAT);
->> +    int voltage = rx51_battery_read_adc(di->channel_vbat);
->>
->> -    if (voltage < 0)
->> +    if (voltage < 0) {
->> +        dev_err(di->dev, "Could not read ADC: %d\n", voltage);
->>           return voltage;
->> +    }
->>
->>       return 1000 * (10000 * voltage / 1705);
->>   }
->> @@ -112,7 +107,10 @@ static int rx51_battery_read_temperature(struct rx51_device_info *di)
->>   {
->>       int min = 0;
->>       int max = ARRAY_SIZE(rx51_temp_table2) - 1;
->> -    int raw = rx51_battery_read_adc(TWL4030_MADC_BTEMP_RX51);
->> +    int raw = rx51_battery_read_adc(di->channel_temp);
->> +
->> +    if (raw < 0)
->> +        dev_err(di->dev, "Could not read ADC: %d\n", raw);
->>
->>       /* Zero and negative values are undefined */
->>       if (raw <= 0)
->> @@ -146,10 +144,12 @@ static int rx51_battery_read_temperature(struct rx51_device_info *di)
->>    */
->>   static int rx51_battery_read_capacity(struct rx51_device_info *di)
->>   {
->> -    int capacity = rx51_battery_read_adc(TWL4030_MADC_BCI_RX51);
->> +    int capacity = rx51_battery_read_adc(di->channel_bsi);
->>
->> -    if (capacity < 0)
->> +    if (capacity < 0) {
->> +        dev_err(di->dev, "Could not read ADC: %d\n", capacity);
->>           return capacity;
->> +    }
->>
->>       return 1280 * (1200 * capacity)/(1024 - capacity);
->>   }
->> @@ -213,12 +213,25 @@ static int rx51_battery_probe(struct platform_device *pdev)
->>
->>       platform_set_drvdata(pdev, di);
->>
->> +    di->dev = &pdev->dev;
->>       di->bat.name = dev_name(&pdev->dev);
->>       di->bat.type = POWER_SUPPLY_TYPE_BATTERY;
->>       di->bat.properties = rx51_battery_props;
->>       di->bat.num_properties = ARRAY_SIZE(rx51_battery_props);
->>       di->bat.get_property = rx51_battery_get_property;
->>
->> +    di->channel_temp = iio_channel_get(di->dev, "temp");
->> +    if (IS_ERR(di->channel_temp))
->> +        return PTR_ERR(di->channel_temp);
->> +
->> +    di->channel_bsi  = iio_channel_get(di->dev, "bsi");
->> +    if (IS_ERR(di->channel_bsi))
->> +        return PTR_ERR(di->channel_bsi);
-> You need to unwind the iio_channel_get that did succeed if we get here.
-> Otherwise references to the iio driver will still be held despite
-> this driver failing to probe.
+>> Your point is certainly valid. I suppose the footprint of the kernel
+>> is nothing we should bother about? We have other solutions for that,
+>> right?
 >
->> +
->> +    di->channel_vbat = iio_channel_get(di->dev, "vbat");
->> +    if (IS_ERR(di->channel_vbat))
->> +        return PTR_ERR(di->channel_vbat);
->> +
->>       ret = power_supply_register(di->dev, &di->bat);
->>       if (ret)
->>           return ret;
->> @@ -235,12 +248,21 @@ static int rx51_battery_remove(struct platform_device *pdev)
->>       return 0;
->>   }
->>
->> +#ifdef CONFIG_OF
->> +static const struct of_device_id n900_battery_of_match[] = {
->> +    {.compatible = "nokia,n900-battery", },
->> +    { },
->> +};
->> +MODULE_DEVICE_TABLE(of, n900_battery_of_match);
->> +#endif
->> +
->>   static struct platform_driver rx51_battery_driver = {
->>       .probe = rx51_battery_probe,
->>       .remove = rx51_battery_remove,
->>       .driver = {
->>           .name = "rx51-battery",
->>           .owner = THIS_MODULE,
->> +        .of_match_table = of_match_ptr(n900_battery_of_match),
->>       },
->>   };
->>   module_platform_driver(rx51_battery_driver);
->>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> What does the "footprint of the kernel" have to do with an option that
+> everyone enables as they want/need the functionality?  You are only
+> talking about saving size for systems that do not exist.  Do you know of
+> any commen system that cares about size and yet not power that would be
+> affected by this change?
 
+It was more a hypothetical thought. I can't give you any examples of
+products and I certainly think your suggestion makes sense.
+
+What I had in mind were my experience from flashloaders and
+productiontools. Those often requires a fast boot which don't cares
+about PM. One of many things that helps here, is a "small" footprint
+of the kernel. But I guess this becomes quite hypothetical and I guess
+we shouldn't consider this as a valid argument!?
+
+>
+> And exactly how much "size" are we talking about here?  Did the
+> available memory size for new chips just increase more in me writing
+> this email than the size that this proposed patch would have offset?
+
+I only had the fast boot in mind... :-)
+
+Kind regards
+Ulf Hansson
+
+>
+> greg k-h
