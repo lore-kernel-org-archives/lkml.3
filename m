@@ -1,29 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753065AbaCADwq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 22:52:46 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:12248 "EHLO
+	id S1753110AbaCADww (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 22:52:52 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:12219 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753008AbaCADwm (ORCPT
+	by vger.kernel.org with ESMTP id S1753082AbaCADwt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 22:52:42 -0500
-Message-Id: <20140301035237.280537618@goodmis.org>
+	Fri, 28 Feb 2014 22:52:49 -0500
+Message-Id: <20140301035238.013119073@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Fri, 28 Feb 2014 22:52:19 -0500
+Date: Fri, 28 Feb 2014 22:52:23 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         John Kacur <jkacur@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        <stable-rt@vger.kernel.org>
-Subject: [PATCH RT 10/14] arm/unwind: use a raw_spin_lock
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH RT 14/14] Linux 3.10.32-rt31-rc2
 References: <20140301035209.031474616@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0010-arm-unwind-use-a-raw_spin_lock.patch
-X-RR-Connecting-IP: 107.14.168.118:25
+Content-Disposition: inline; filename=0014-Linux-3.10.32-rt31-rc2.patch
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,90 +33,19 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Mostly unwind is done with irqs enabled however SLUB may call it with
-irqs disabled while creating a new SLUB cache.
-
-I had system freeze while loading a module which called
-kmem_cache_create() on init. That means SLUB's __slab_alloc() disabled
-interrupts and then
-
-->new_slab_objects()
- ->new_slab()
-  ->setup_object()
-   ->setup_object_debug()
-    ->init_tracking()
-     ->set_track()
-      ->save_stack_trace()
-       ->save_stack_trace_tsk()
-        ->walk_stackframe()
-         ->unwind_frame()
-          ->unwind_find_idx()
-           =>spin_lock_irqsave(&unwind_lock);
-
-Cc: stable-rt@vger.kernel.org
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/arm/kernel/unwind.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ localversion-rt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/kernel/unwind.c b/arch/arm/kernel/unwind.c
-index 00df012..bbafc67 100644
---- a/arch/arm/kernel/unwind.c
-+++ b/arch/arm/kernel/unwind.c
-@@ -87,7 +87,7 @@ extern const struct unwind_idx __start_unwind_idx[];
- static const struct unwind_idx *__origin_unwind_idx;
- extern const struct unwind_idx __stop_unwind_idx[];
- 
--static DEFINE_SPINLOCK(unwind_lock);
-+static DEFINE_RAW_SPINLOCK(unwind_lock);
- static LIST_HEAD(unwind_tables);
- 
- /* Convert a prel31 symbol to an absolute address */
-@@ -195,7 +195,7 @@ static const struct unwind_idx *unwind_find_idx(unsigned long addr)
- 		/* module unwind tables */
- 		struct unwind_table *table;
- 
--		spin_lock_irqsave(&unwind_lock, flags);
-+		raw_spin_lock_irqsave(&unwind_lock, flags);
- 		list_for_each_entry(table, &unwind_tables, list) {
- 			if (addr >= table->begin_addr &&
- 			    addr < table->end_addr) {
-@@ -207,7 +207,7 @@ static const struct unwind_idx *unwind_find_idx(unsigned long addr)
- 				break;
- 			}
- 		}
--		spin_unlock_irqrestore(&unwind_lock, flags);
-+		raw_spin_unlock_irqrestore(&unwind_lock, flags);
- 	}
- 
- 	pr_debug("%s: idx = %p\n", __func__, idx);
-@@ -469,9 +469,9 @@ struct unwind_table *unwind_table_add(unsigned long start, unsigned long size,
- 	tab->begin_addr = text_addr;
- 	tab->end_addr = text_addr + text_size;
- 
--	spin_lock_irqsave(&unwind_lock, flags);
-+	raw_spin_lock_irqsave(&unwind_lock, flags);
- 	list_add_tail(&tab->list, &unwind_tables);
--	spin_unlock_irqrestore(&unwind_lock, flags);
-+	raw_spin_unlock_irqrestore(&unwind_lock, flags);
- 
- 	return tab;
- }
-@@ -483,9 +483,9 @@ void unwind_table_del(struct unwind_table *tab)
- 	if (!tab)
- 		return;
- 
--	spin_lock_irqsave(&unwind_lock, flags);
-+	raw_spin_lock_irqsave(&unwind_lock, flags);
- 	list_del(&tab->list);
--	spin_unlock_irqrestore(&unwind_lock, flags);
-+	raw_spin_unlock_irqrestore(&unwind_lock, flags);
- 
- 	kfree(tab);
- }
+diff --git a/localversion-rt b/localversion-rt
+index b72862e..c6273a4 100644
+--- a/localversion-rt
++++ b/localversion-rt
+@@ -1 +1 @@
+--rt30
++-rt31-rc2
 -- 
 1.8.5.3
 
