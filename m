@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753479AbaCAD5W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 22:57:22 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:11451 "EHLO
+	id S1753140AbaCAD5U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 22:57:20 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:12219 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752843AbaCADwi (ORCPT
+	by vger.kernel.org with ESMTP id S1752846AbaCADwi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Feb 2014 22:52:38 -0500
-Message-Id: <20140301035235.949219502@goodmis.org>
+Message-Id: <20140301035236.088867351@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Fri, 28 Feb 2014 22:52:10 -0500
+Date: Fri, 28 Feb 2014 22:52:11 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
@@ -17,15 +17,13 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         John Kacur <jkacur@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
-        <stable-rt@vger.kernel.org>, Mike Galbraith <bitbucket@online.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH RT 01/14] rcu: Dont activate RCU core on NO_HZ_FULL CPUs
+        <stable-rt@vger.kernel.org>
+Subject: [PATCH RT 02/14] timers: do not raise softirq unconditionally
 References: <20140301035209.031474616@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0001-rcu-Don-t-activate-RCU-core-on-NO_HZ_FULL-CPUs.patch
-X-RR-Connecting-IP: 107.14.168.118:25
+Content-Disposition: inline; filename=0002-timers-do-not-raise-softirq-unconditionally.patch
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -36,99 +34,172 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-Whenever a CPU receives a scheduling-clock interrupt, RCU checks to see
-if the RCU core needs anything from this CPU.  If so, RCU raises
-RCU_SOFTIRQ to carry out any needed processing.
+Mike,
 
-This approach has worked well historically, but it is undesirable on
-NO_HZ_FULL CPUs.  Such CPUs are expected to spend almost all of their time
-in userspace, so that scheduling-clock interrupts can be disabled while
-there is only one runnable task on the CPU in question.  Unfortunately,
-raising any softirq has the potential to wake up ksoftirqd, which would
-provide the second runnable task on that CPU, preventing disabling of
-scheduling-clock interrupts.
+On Thu, 7 Nov 2013, Mike Galbraith wrote:
 
-What is needed instead is for RCU to leave NO_HZ_FULL CPUs alone,
-relying on the grace-period kthreads' quiescent-state forcing to
-do any needed RCU work on behalf of those CPUs.
+> On Thu, 2013-11-07 at 04:26 +0100, Mike Galbraith wrote:
+> > On Wed, 2013-11-06 at 18:49 +0100, Thomas Gleixner wrote:
+>
+> > > I bet you are trying to work around some of the side effects of the
+> > > occasional tick which is still necessary despite of full nohz, right?
+> >
+> > Nope, I wanted to check out cost of nohz_full for rt, and found that it
+> > doesn't work at all instead, looked, and found that the sole running
+> > task has just awakened ksoftirqd when it wants to shut the tick down, so
+> > that shutdown never happens.
+>
+> Like so in virgin 3.10-rt.  Box is x3550 M3 booted nowatchdog
+> rcu_nocbs=1-3 nohz_full=1-3, and CPUs1-3 are completely isolated via
+> cpusets as well.
 
-This commit therefore refrains from raising RCU_SOFTIRQ on any
-NO_HZ_FULL CPUs during any grace periods that have been in effect
-for less than one second.  The one-second limit handles the case
-where an inappropriate workload is running on a NO_HZ_FULL CPU
-that features lots of scheduling-clock interrupts, but no idle
-or userspace time.
+well, that very same problem is in mainline if you add "threadirqs" to
+the command line. But we can be smart about this. The untested patch
+below should address that issue. If that works on mainline we can
+adapt it for RT (needs a trylock(&base->lock) there).
 
+Though it's not a full solution. It needs some thought versus the
+softirq code of timers. Assume we have only one timer queued 1000
+ticks into the future. So this change will cause the timer softirq not
+to be called until that timer expires and then the timer softirq is
+going to do 1000 loops until it catches up with jiffies. That's
+anything but pretty ...
+
+What worries me more is this one:
+
+  pert-5229  [003] d..h1..   684.482618: softirq_raise: vec=9 [action=RCU]
+
+The CPU has no callbacks as you shoved them over to cpu 0, so why is
+the RCU softirq raised?
+
+Thanks,
+
+	tglx
+------------------
+Message-id: <alpine.DEB.2.02.1311071158350.23353@ionos.tec.linutronix.de>
+|CONFIG_NO_HZ_FULL + CONFIG_PREEMPT_RT_FULL = nogo
 Cc: stable-rt@vger.kernel.org
-Reported-by: Mike Galbraith <bitbucket@online.de>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Tested-by: Mike Galbraith <bitbucket@online.de>
-Tested-by: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/rcutree.c        |  4 ++++
- kernel/rcutree.h        |  1 +
- kernel/rcutree_plugin.h | 20 ++++++++++++++++++++
- 3 files changed, 25 insertions(+)
+ include/linux/hrtimer.h |  3 +--
+ kernel/hrtimer.c        | 31 +++++++------------------------
+ kernel/timer.c          | 28 +++++++++++++++++++++++++---
+ 3 files changed, 33 insertions(+), 29 deletions(-)
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 55915b1..75743cb 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -2749,6 +2749,10 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
- 	/* Check for CPU stalls, if enabled. */
- 	check_cpu_stall(rsp, rdp);
+diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
+index 79a7a35..bdbf77db 100644
+--- a/include/linux/hrtimer.h
++++ b/include/linux/hrtimer.h
+@@ -461,9 +461,8 @@ extern int schedule_hrtimeout_range_clock(ktime_t *expires,
+ 		unsigned long delta, const enum hrtimer_mode mode, int clock);
+ extern int schedule_hrtimeout(ktime_t *expires, const enum hrtimer_mode mode);
  
-+	/* Is this CPU a NO_HZ_FULL CPU that should ignore RCU? */
-+	if (rcu_nohz_full_cpu(rsp))
-+		return 0;
-+
- 	/* Is the RCU core waiting for a quiescent state from this CPU? */
- 	if (rcu_scheduler_fully_active &&
- 	    rdp->qs_pending && !rdp->passed_quiesce) {
-diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index 8491f47..7e0b397 100644
---- a/kernel/rcutree.h
-+++ b/kernel/rcutree.h
-@@ -541,6 +541,7 @@ static void rcu_boot_init_nocb_percpu_data(struct rcu_data *rdp);
- static void rcu_spawn_nocb_kthreads(struct rcu_state *rsp);
- static void rcu_kick_nohz_cpu(int cpu);
- static bool init_nocb_callback_list(struct rcu_data *rdp);
-+static bool rcu_nohz_full_cpu(struct rcu_state *rsp);
+-/* Soft interrupt function to run the hrtimer queues: */
++/* Called from the periodic timer tick */
+ extern void hrtimer_run_queues(void);
+-extern void hrtimer_run_pending(void);
  
- #endif /* #ifndef RCU_TREE_NONCORE */
- 
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index dc0c4b2..481a124 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -2356,3 +2356,23 @@ static void rcu_kick_nohz_cpu(int cpu)
- 		smp_send_reschedule(cpu);
- #endif /* #ifdef CONFIG_NO_HZ_FULL */
+ /* Bootup initialization: */
+ extern void __init hrtimers_init(void);
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index a63cfaf..a7e90b2 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -1691,30 +1691,6 @@ static void run_hrtimer_softirq(struct softirq_action *h)
  }
+ 
+ /*
+- * Called from timer softirq every jiffy, expire hrtimers:
+- *
+- * For HRT its the fall back code to run the softirq in the timer
+- * softirq context in case the hrtimer initialization failed or has
+- * not been done yet.
+- */
+-void hrtimer_run_pending(void)
+-{
+-	if (hrtimer_hres_active())
+-		return;
+-
+-	/*
+-	 * This _is_ ugly: We have to check in the softirq context,
+-	 * whether we can switch to highres and / or nohz mode. The
+-	 * clocksource switch happens in the timer interrupt with
+-	 * xtime_lock held. Notification from there only sets the
+-	 * check bit in the tick_oneshot code, otherwise we might
+-	 * deadlock vs. xtime_lock.
+-	 */
+-	if (tick_check_oneshot_change(!hrtimer_is_hres_enabled()))
+-		hrtimer_switch_to_hres();
+-}
+-
+-/*
+  * Called from hardirq context every jiffy
+  */
+ void hrtimer_run_queues(void)
+@@ -1727,6 +1703,13 @@ void hrtimer_run_queues(void)
+ 	if (hrtimer_hres_active())
+ 		return;
+ 
++	/*
++	 * Check whether we can switch to highres mode.
++	 */
++	if (tick_check_oneshot_change(!hrtimer_is_hres_enabled())
++	    && hrtimer_switch_to_hres())
++		return;
 +
-+/*
-+ * Is this CPU a NO_HZ_FULL CPU that should ignore RCU so that the
-+ * grace-period kthread will do force_quiescent_state() processing?
-+ * The idea is to avoid waking up RCU core processing on such a
-+ * CPU unless the grace period has extended for too long.
-+ *
-+ * This code relies on the fact that all NO_HZ_FULL CPUs are also
-+ * CONFIG_RCU_NOCB_CPUs.
-+ */
-+static bool rcu_nohz_full_cpu(struct rcu_state *rsp)
-+{
-+#ifdef CONFIG_NO_HZ_FULL
-+	if (tick_nohz_full_cpu(smp_processor_id()) &&
-+	    (!rcu_gp_in_progress(rsp) ||
-+	     ULONG_CMP_LT(jiffies, ACCESS_ONCE(rsp->gp_start) + HZ)))
-+		return 1;
-+#endif /* #ifdef CONFIG_NO_HZ_FULL */
-+	return 0;
-+}
+ 	for (index = 0; index < HRTIMER_MAX_CLOCK_BASES; index++) {
+ 		base = &cpu_base->clock_base[index];
+ 		if (!timerqueue_getnext(&base->active))
+diff --git a/kernel/timer.c b/kernel/timer.c
+index 48652cc..3d7313c 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -1443,8 +1443,6 @@ static void run_timer_softirq(struct softirq_action *h)
+ 	irq_work_run();
+ #endif
+ 
+-	hrtimer_run_pending();
+-
+ 	if (time_after_eq(jiffies, base->timer_jiffies))
+ 		__run_timers(base);
+ }
+@@ -1454,8 +1452,32 @@ static void run_timer_softirq(struct softirq_action *h)
+  */
+ void run_local_timers(void)
+ {
++	struct tvec_base *base = __this_cpu_read(tvec_bases);
++
+ 	hrtimer_run_queues();
+-	raise_softirq(TIMER_SOFTIRQ);
++	/*
++	 * We can access this lockless as we are in the timer
++	 * interrupt. If there are no timers queued, nothing to do in
++	 * the timer softirq.
++	 */
++#ifdef CONFIG_PREEMPT_RT_FULL
++	if (!spin_do_trylock(&base->lock)) {
++		raise_softirq(TIMER_SOFTIRQ);
++		return;
++	}
++#endif
++	if (!base->active_timers)
++		goto out;
++
++	/* Check whether the next pending timer has expired */
++	if (time_before_eq(base->next_timer, jiffies))
++		raise_softirq(TIMER_SOFTIRQ);
++out:
++#ifdef CONFIG_PREEMPT_RT_FULL
++	rt_spin_unlock_after_trylock_in_irq(&base->lock);
++#endif
++	/* The ; ensures that gcc won't complain in the !RT case */
++	;
+ }
+ 
+ #ifdef __ARCH_WANT_SYS_ALARM
 -- 
 1.8.5.3
 
