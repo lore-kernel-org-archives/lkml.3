@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753197AbaCADx3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 22:53:29 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:11451 "EHLO
+	id S1753003AbaCADxr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 22:53:47 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:12219 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753026AbaCADwo (ORCPT
+	by vger.kernel.org with ESMTP id S1752998AbaCADwm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 22:52:44 -0500
-Message-Id: <20140301035237.424335985@goodmis.org>
+	Fri, 28 Feb 2014 22:52:42 -0500
+Message-Id: <20140301035237.569667287@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Fri, 28 Feb 2014 22:52:20 -0500
+Date: Fri, 28 Feb 2014 22:52:21 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
@@ -17,13 +17,13 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         John Kacur <jkacur@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
-        <stable-rt@vger.kernel.org>, Nicholas Mc Guire <der.herr@hofr.at>
-Subject: [PATCH RT 11/14] net: ip_send_unicast_reply: add missing local serialization
+        <stable-rt@vger.kernel.org>
+Subject: [PATCH RT 12/14] leds: trigger: disable CPU trigger on -RT
 References: <20140301035209.031474616@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0011-net-ip_send_unicast_reply-add-missing-local-serializ.patch
-X-RR-Connecting-IP: 107.14.168.118:25
+Content-Disposition: inline; filename=0012-leds-trigger-disable-CPU-trigger-on-RT.patch
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,107 +34,42 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Nicholas Mc Guire <der.herr@hofr.at>
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-in response to the oops in ip_output.c:ip_send_unicast_reply under high
-network load with CONFIG_PREEMPT_RT_FULL=y, reported by Sami Pietikainen
-<Sami.Pietikainen@wapice.com>, this patch adds local serialization in
-ip_send_unicast_reply.
+as it triggers:
+|CPU: 0 PID: 0 Comm: swapper Not tainted 3.12.8-rt10 #141
+|[<c0014aa4>] (unwind_backtrace+0x0/0xf8) from [<c0012788>] (show_stack+0x1c/0x20)
+|[<c0012788>] (show_stack+0x1c/0x20) from [<c043c8dc>] (dump_stack+0x20/0x2c)
+|[<c043c8dc>] (dump_stack+0x20/0x2c) from [<c004c5e8>] (__might_sleep+0x13c/0x170)
+|[<c004c5e8>] (__might_sleep+0x13c/0x170) from [<c043f270>] (__rt_spin_lock+0x28/0x38)
+|[<c043f270>] (__rt_spin_lock+0x28/0x38) from [<c043fa00>] (rt_read_lock+0x68/0x7c)
+|[<c043fa00>] (rt_read_lock+0x68/0x7c) from [<c036cf74>] (led_trigger_event+0x2c/0x5c)
+|[<c036cf74>] (led_trigger_event+0x2c/0x5c) from [<c036e0bc>] (ledtrig_cpu+0x54/0x5c)
+|[<c036e0bc>] (ledtrig_cpu+0x54/0x5c) from [<c000ffd8>] (arch_cpu_idle_exit+0x18/0x1c)
+|[<c000ffd8>] (arch_cpu_idle_exit+0x18/0x1c) from [<c00590b8>] (cpu_startup_entry+0xa8/0x234)
+|[<c00590b8>] (cpu_startup_entry+0xa8/0x234) from [<c043b2cc>] (rest_init+0xb8/0xe0)
+|[<c043b2cc>] (rest_init+0xb8/0xe0) from [<c061ebe0>] (start_kernel+0x2c4/0x380)
 
-from ip_output.c:
-/*
- *      Generic function to send a packet as reply to another packet.
- *      Used to send some TCP resets/acks so far.
- *
- *      Use a fake percpu inet socket to avoid false sharing and contention.
- */
-static DEFINE_PER_CPU(struct inet_sock, unicast_sock) = {
-...
-
-which was added in commit be9f4a44 in linux-stable. The git log, wich
-introduced the PER_CPU unicast_sock, states:
-<snip>
-commit be9f4a44e7d41cee50ddb5f038fc2391cbbb4046
-Author: Eric Dumazet <edumazet@google.com>
-Date:   Thu Jul 19 07:34:03 2012 +0000
-
-    ipv4: tcp: remove per net tcp_sock
-
-    tcp_v4_send_reset() and tcp_v4_send_ack() use a single socket
-    per network namespace.
-
-    This leads to bad behavior on multiqueue NICS, because many cpus
-    contend for the socket lock and once socket lock is acquired, extra
-    false sharing on various socket fields slow down the operations.
-
-    To better resist to attacks, we use a percpu socket. Each cpu can
-    run without contention, using appropriate memory (local node)
-<snip>
-
-The per-cpu here thus is assuming exclusivity serializing per cpu - so
-the use of get_cpu_ligh introduced in
-net-use-cpu-light-in-ip-send-unicast-reply.patch, which droped the
-preempt_disable in favor of a migrate_disable is probably wrong as this
-only handles the referencial consistency but not the serialization. To
-evade a preempt_disable here a local lock would be needed.
-
-Therapie:
- * add local lock:
- * and re-introduce local serialization:
-
-Tested on x86 with high network load using the testcase from Sami Pietikainen
-  while : ; do wget -O - ftp://LOCAL_SERVER/empty_file > /dev/null 2>&1; done
-
-Link: http://www.spinics.net/lists/linux-rt-users/msg11007.html
 Cc: stable-rt@vger.kernel.org
-Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- net/ipv4/ip_output.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/leds/trigger/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
-index 2d69b1b..ab674e8 100644
---- a/net/ipv4/ip_output.c
-+++ b/net/ipv4/ip_output.c
-@@ -79,6 +79,7 @@
- #include <linux/mroute.h>
- #include <linux/netlink.h>
- #include <linux/tcp.h>
-+#include <linux/locallock.h>
+diff --git a/drivers/leds/trigger/Kconfig b/drivers/leds/trigger/Kconfig
+index 49794b4..3d7245d 100644
+--- a/drivers/leds/trigger/Kconfig
++++ b/drivers/leds/trigger/Kconfig
+@@ -61,7 +61,7 @@ config LEDS_TRIGGER_BACKLIGHT
  
- int sysctl_ip_default_ttl __read_mostly = IPDEFTTL;
- EXPORT_SYMBOL(sysctl_ip_default_ttl);
-@@ -1471,6 +1472,9 @@ static DEFINE_PER_CPU(struct inet_sock, unicast_sock) = {
- 	.uc_ttl		= -1,
- };
- 
-+/* serialize concurrent calls on the same CPU to ip_send_unicast_reply */
-+static DEFINE_LOCAL_IRQ_LOCK(unicast_lock);
-+
- void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
- 			   __be32 saddr, const struct ip_reply_arg *arg,
- 			   unsigned int len)
-@@ -1508,8 +1512,7 @@ void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
- 	if (IS_ERR(rt))
- 		return;
- 
--	get_cpu_light();
--	inet = &__get_cpu_var(unicast_sock);
-+	inet = &get_locked_var(unicast_lock, unicast_sock);
- 
- 	inet->tos = arg->tos;
- 	sk = &inet->sk;
-@@ -1533,7 +1536,7 @@ void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
- 		ip_push_pending_frames(sk, &fl4);
- 	}
- 
--	put_cpu_light();
-+	put_locked_var(unicast_lock, unicast_sock);
- 
- 	ip_rt_put(rt);
- }
+ config LEDS_TRIGGER_CPU
+ 	bool "LED CPU Trigger"
+-	depends on LEDS_TRIGGERS
++	depends on LEDS_TRIGGERS && !PREEMPT_RT_BASE
+ 	help
+ 	  This allows LEDs to be controlled by active CPUs. This shows
+ 	  the active CPUs across an array of LEDs so you can see which
 -- 
 1.8.5.3
 
