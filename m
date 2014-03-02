@@ -1,129 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753823AbaCBXac (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 18:30:32 -0500
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:60464 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753803AbaCBXab (ORCPT
+	id S1753796AbaCBXgK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 18:36:10 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:64579 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753511AbaCBXgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 18:30:31 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlNvAJC+E1N5LJYePGdsb2JhbABagwaDQ4UMszaFWYEWFwMBAQEBHxkNKIIlAQEEAScTHBcMEAgDDgoJJQ8FJQMHGhOHcQfMABcWjkMHhDgEmDuUG4FSKA
-Date: Mon, 3 Mar 2014 10:30:27 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Matthew Wilcox <willy@linux.intel.com>
-Cc: Toshi Kani <toshi.kani@hp.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH v6 07/22] Replace the XIP page fault handler with the DAX
- page fault handler
-Message-ID: <20140302233027.GR30131@dastard>
-References: <1393337918-28265-1-git-send-email-matthew.r.wilcox@intel.com>
- <1393337918-28265-8-git-send-email-matthew.r.wilcox@intel.com>
- <1393609771.6784.83.camel@misato.fc.hp.com>
- <20140228202031.GB12820@linux.intel.com>
+	Sun, 2 Mar 2014 18:36:08 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, matthew.garrett@nebula.com,
+        rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com
+Subject: Re: [RFC PATCH 6/8] ACPI: use platform bus as the default bus for _HID enumeration
+Date: Mon, 03 Mar 2014 00:51:15 +0100
+Message-ID: <22144944.rXupLb1rjo@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1393405874-3266-7-git-send-email-rui.zhang@intel.com>
+References: <1393405874-3266-1-git-send-email-rui.zhang@intel.com> <1393405874-3266-7-git-send-email-rui.zhang@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140228202031.GB12820@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 28, 2014 at 03:20:31PM -0500, Matthew Wilcox wrote:
-> On Fri, Feb 28, 2014 at 10:49:31AM -0700, Toshi Kani wrote:
-> > On Tue, 2014-02-25 at 09:18 -0500, Matthew Wilcox wrote:
-> > > Instead of calling aops->get_xip_mem from the fault handler, the
-> > > filesystem passes a get_block_t that is used to find the appropriate
-> > > blocks.
-> >  :
-> > > +static int do_dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
-> > > +			get_block_t get_block)
-> > > +{
-> > > +	struct file *file = vma->vm_file;
-> > > +	struct inode *inode = file_inode(file);
-> > > +	struct address_space *mapping = file->f_mapping;
-> > > +	struct buffer_head bh;
-> > > +	unsigned long vaddr = (unsigned long)vmf->virtual_address;
-> > > +	sector_t block;
-> > > +	pgoff_t size;
-> > > +	unsigned long pfn;
-> > > +	int error;
-> > > +
-> > > +	size = (i_size_read(inode) + PAGE_SIZE - 1) >> PAGE_SHIFT;
-> > > +	if (vmf->pgoff >= size)
-> > > +		return VM_FAULT_SIGBUS;
-> > > +
-> > > +	memset(&bh, 0, sizeof(bh));
-> > > +	block = (sector_t)vmf->pgoff << (PAGE_SHIFT - inode->i_blkbits);
-> > > +	bh.b_size = PAGE_SIZE;
-> > > +	error = get_block(inode, block, &bh, 0);
-> > > +	if (error || bh.b_size < PAGE_SIZE)
-> > > +		return VM_FAULT_SIGBUS;
-> > 
-> > I am learning the code and have some questions.
+On Wednesday, February 26, 2014 05:11:12 PM Zhang Rui wrote:
+> Because of the growing demand for enumerating ACPI devices to platform bus,
+> this patch changes the code to enumerate ACPI devices with _HID/_CID to
+> platform bus by default, unless the device already has a scan handler attached.
 > 
-> Hi Toshi,
+> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+> ---
+>  drivers/acpi/acpi_platform.c |   28 ----------------------------
+>  drivers/acpi/scan.c          |   12 ++++++------
+>  2 files changed, 6 insertions(+), 34 deletions(-)
 > 
-> Glad to see you're looking at it.  Let me try to help ...
-> 
-> > The original code,
-> > xip_file_fault(), jumps to found: and calls vm_insert_mixed() when
-> > get_xip_mem(,,0,,) succeeded.  If get_xip_mem() returns -ENODATA, it
-> > calls either get_xip_mem(,,1,,) or xip_sparse_page().  In this new
-> > function, it looks to me that get_block(,,,0) returns 0 for both cases
-> > (success and -ENODATA previously), which are dealt in the same way.  Is
-> > that right?  If so, is there any reason for the change?
-> 
-> Yes, get_xip_mem() returned -ENODATA for a hole.  That was a suboptimal
-> interface because filesystems are actually capable of returning more
-> information than that, eg how long the hole is (ext4 *doesn't*, but I
-> consider that to be a bug).
-> 
-> I don't get to decide what the get_block() interface looks like.  It's the
-> standard way that the VFS calls back into the filesystem and has been
-> around for probably close to twenty years at this point.  I'm still trying
-> to understand exactly what the contract is for get_blocks() ... I have
-> a document that I'm working on to try to explain it, but it's tough going!
-> 
-> > Also, isn't it
-> > possible to call get_block(,,,1) even if get_block(,,,0) found a block?
-> 
-> The code in question looks like this:
-> 
->         error = get_block(inode, block, &bh, 0);
->         if (error || bh.b_size < PAGE_SIZE)
->                 goto sigbus;
-> 
->         if (!buffer_written(&bh) && !vmf->cow_page) {
->                 if (vmf->flags & FAULT_FLAG_WRITE) {
->                         error = get_block(inode, block, &bh, 1);
-> 
-> where buffer_written is defined as:
->         return buffer_mapped(bh) && !buffer_unwritten(bh);
-> 
-> Doing some boolean algebra, that's:
-> 
-> 	if (!buffer_mapped || buffer_unwritten)
-> 
-> In either case, we want to tell the filesystem that we're writing to
-> this block.  At least, that's my current understanding of the get_block()
-> interface.  I'm open to correction here!
+> diff --git a/drivers/acpi/acpi_platform.c b/drivers/acpi/acpi_platform.c
+> index dbfe49e..33376a9 100644
+> --- a/drivers/acpi/acpi_platform.c
+> +++ b/drivers/acpi/acpi_platform.c
+> @@ -22,24 +22,6 @@
+>  
+>  ACPI_MODULE_NAME("platform");
+>  
+> -/*
+> - * The following ACPI IDs are known to be suitable for representing as
+> - * platform devices.
+> - */
+> -static const struct acpi_device_id acpi_platform_device_ids[] = {
+> -
+> -	{ "PNP0D40" },
+> -	{ "ACPI0003" },
+> -	{ "VPC2004" },
+> -	{ "BCM4752" },
+> -
+> -	/* Intel Smart Sound Technology */
+> -	{ "INT33C8" },
+> -	{ "80860F28" },
+> -
+> -	{ }
+> -};
+> -
+>  /**
+>   * acpi_create_platform_device - Create platform device for ACPI device node
+>   * @adev: ACPI device node to create a platform device for.
+> @@ -125,13 +107,3 @@ int acpi_create_platform_device(struct acpi_device *adev,
+>  	kfree(resources);
+>  	return 1;
+>  }
+> -
+> -static struct acpi_scan_handler platform_handler = {
+> -	.ids = acpi_platform_device_ids,
+> -	.attach = acpi_create_platform_device,
+> -};
+> -
+> -void __init acpi_platform_init(void)
+> -{
+> -	acpi_scan_add_handler(&platform_handler);
+> -}
+> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> index 5967338..61af32e 100644
+> --- a/drivers/acpi/scan.c
+> +++ b/drivers/acpi/scan.c
+> @@ -2022,14 +2022,15 @@ static int acpi_scan_attach_handler(struct acpi_device *device)
+>  		handler = acpi_scan_match_handler(hwid->id, &devid);
+>  		if (handler) {
+>  			ret = handler->attach(device, devid);
+> -			if (ret > 0) {
+> +			if (ret > 0)
+>  				device->handler = handler;
+> -				break;
+> -			} else if (ret < 0) {
+> -				break;
+> -			}
+> +			if (ret)
+> +				goto end;
+>  		}
+>  	}
+> +end:
+> +	if (!list_empty(&device->pnp.ids) && !device->handler)
 
-I've got a rewritten version on this that doesn't require two calls
-to get_block() that I wrote while prototyping the XFS code. It also
-fixes all the misunderstandings about what get_block() actually does
-and returns so it works correctly with XFS.
+I'm a bit concerned that this check will create platform devices for too many
+ACPI device objects.  Shouldn't we require that _HID or at least _CID is
+present for that?
 
-I need to port it forward to your new patch set (hopefully later
-this week), so don't spend too much time trying to work out exactly
-what this code needs to do...
+> +		acpi_create_platform_device(device, NULL);
+>  	return ret;
+>  }
+>  
+> @@ -2185,7 +2186,6 @@ int __init acpi_scan_init(void)
+>  	acpi_pci_root_init();
+>  	acpi_pci_link_init();
+>  	acpi_processor_init();
+> -	acpi_platform_init();
+>  	acpi_lpss_init();
+>  	acpi_cmos_rtc_init();
+>  	acpi_container_init();
+> 
 
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
