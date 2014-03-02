@@ -1,51 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753466AbaCBVC2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 16:02:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50761 "EHLO mx1.redhat.com"
+	id S1753532AbaCBVD7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 16:03:59 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45805 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752043AbaCBVC1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 16:02:27 -0500
-Date: Sun, 2 Mar 2014 16:02:01 -0500
-From: Dave Jones <davej@redhat.com>
-To: Andreas Mohr <andi@lisas.de>
-Cc: Chris Bainbridge <chris.bainbridge@gmail.com>,
-        Dennis Mungai <dmngaie@gmail.com>, Borislav Petkov <bp@alien8.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: set Pentium M as PAE capable
-Message-ID: <20140302210201.GA31948@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Andreas Mohr <andi@lisas.de>,
-	Chris Bainbridge <chris.bainbridge@gmail.com>,
-	Dennis Mungai <dmngaie@gmail.com>, Borislav Petkov <bp@alien8.de>,
-	"H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-	linux-kernel@vger.kernel.org
-References: <20140228140043.GA12157@debian.local>
- <20140302205619.GA8676@rhlx01.hs-esslingen.de>
+	id S1751841AbaCBVD6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Mar 2014 16:03:58 -0500
+Message-ID: <53139C56.9060308@zytor.com>
+Date: Sun, 02 Mar 2014 13:02:14 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140302205619.GA8676@rhlx01.hs-esslingen.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@kernel.org>
+CC: Stefani Seibold <stefani@seibold.net>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
+        Andreas.Brief@rohde-schwarz.com
+Subject: Re: [PATCH v21 00/12] Add 32 bit VDSO time function support
+References: <1393752020-6740-1-git-send-email-stefani@seibold.net> <20140302104744.GB18257@gmail.com> <CALCETrWgtWt8EjQpx0DdDq076gcXfiWAw7NnO6z9Kp3Ongj2RA@mail.gmail.com>
+In-Reply-To: <CALCETrWgtWt8EjQpx0DdDq076gcXfiWAw7NnO6z9Kp3Ongj2RA@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 02, 2014 at 09:56:19PM +0100, Andreas Mohr wrote:
+On 03/02/2014 08:32 AM, Andy Lutomirski wrote:
+> 
+> OTOH, hpa may prefer incremental patches, now that this lives in tip.
+> 
 
- > (BTW, would it be possible to transform Linux's PAE support into
- > boot-config or even fully runtime-detectable boot switching to
- > (non-)PAE, similar to or exceeding what XP offers with its static
- > boot-time flag?
- > Last time I checked PAE support config defines were spread over ~ 40
- > kernel source files though :-((()
+The branch currently in -tip is dead, so it is not an issue either way.
 
-It would be a considerable amount of work to make it a runtime thing.
-Ten years ago, maybe it would be worth the effort perhaps, but I'd
-suggest just letting 32-bit slowly die instead of doing dramatic overhauls
-that will no doubt introduce a bunch of regressions in code that's been
-notoriously awful to debug issues in during the past.
+	-hpa
 
-	Dave
 
