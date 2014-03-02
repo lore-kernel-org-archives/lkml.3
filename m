@@ -1,55 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753723AbaCBXXM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 18:23:12 -0500
-Received: from mga09.intel.com ([134.134.136.24]:35863 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752355AbaCBXXK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 18:23:10 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,574,1389772800"; 
-   d="scan'208";a="492540574"
-Message-ID: <5313BD5A.1040409@linux.intel.com>
-Date: Mon, 03 Mar 2014 07:23:06 +0800
-From: "Li, Aubrey" <aubrey.li@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753789AbaCBXXx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 18:23:53 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:55899 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753503AbaCBXXv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Mar 2014 18:23:51 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: "Li, Aubrey" <aubrey.li@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Len.Brown@intel.com, "alan@linux.intel.com" <alan@linux.intel.com>,
+        "Raj, Ashok" <ashok.raj@intel.com>
+Subject: Re: [PATCH] ACPI/Sleep: pm_power_off need more sanity check to be installed
+Date: Mon, 03 Mar 2014 00:38:58 +0100
+Message-ID: <1519780.354CyqizXu@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <53128125.1080809@linux.intel.com>
+References: <530D558D.6090607@linux.intel.com> <2386234.LOj9mo4PX0@vostro.rjw.lan> <53128125.1080809@linux.intel.com>
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Len.Brown@intel.com,
-        Adam Williamson <awilliam@redhat.com>
-Subject: Re: [patch] x86: Introduce BOOT_EFI and BOOT_CF9 into the reboot
- sequence loop
-References: <53127C4B.1060505@zytor.com> <53128DA0.9060105@linux.intel.com> <53129256.6060704@zytor.com> <20140302022334.GA1131@srcf.ucam.org> <c4f4929e-6bab-45b9-ac6b-cbdea5fd57e8@email.android.com> <53130A46.1010801@linux.intel.com> <cfbdc582-9fc0-4335-9974-d508c2da1c71@email.android.com> <5313AD1B.6050403@linux.intel.com> <20140302222654.GA17838@srcf.ucam.org> <5313B47B.6020402@linux.intel.com> <20140302231154.GA20891@srcf.ucam.org>
-In-Reply-To: <20140302231154.GA20891@srcf.ucam.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/3/3 7:11, Matthew Garrett wrote:
-
->> So, if you are still suggesting we add EFI only, please let me know your
->> plan about adding dmidecode table and if it's acceptable to add new
->> tables, I have three waiting: ASUS-T100, Dell Venue 8 Pro, and Dell
->> Venue 11 Pro.
+On Sunday, March 02, 2014 08:53:57 AM Li, Aubrey wrote:
+> On 2014/3/2 8:39, Rafael J. Wysocki wrote:
+> > On Saturday, March 01, 2014 06:24:23 AM Li, Aubrey wrote:
+> >>>> Do we still want to set this if the check below fails?  If so, then why?
+> >>>
+> >>> We know \_S5_ is valid. The fault is sleep registers, not S5 ACPI object
+> >>
+> >> Hi Rafael, do you still have any concern?
+> > 
+> > Well, I simply don't think we should say that it is "supported" if we aren't
+> > going to do anything with it.
+> > 
 > 
-> I don't think it's acceptable to add DMI entries to the reboot table. I 
-> think you should add the EFI call (since we expect that to work now), 
-> and I have no objection to adding cf9 to the end of the list if we have 
-> standard PCI io ports (Windows doesn't do it, but we can hardly make 
-> things worse).
+> Make sense to me. Patch refined as below:
 > 
-Windows doesn't do because there is no 32/64 mixed windows and EFI on
-the planet. Since the silicon is actually 64 bit, I failed to see a
-reason to refuse the user install 64bit linux on it. So we encountered a
-case windows didn't.
+> Sleep control and status registers need santity check as well before
+> ACPI install acpi_power_off to pm_power_off hook. The checking code in
+> acpi_enter_sleep_state() is too late, we should not allow a not-working
+> pm_power_off function hooked.
+> 
+> Signed-off-by: Aubrey Li <aubrey.li@intel.com>
 
-So, you didn't mention BOOT_BIOS, if you don't want to add BOOT_BIOS,
-and you also don't like DMI entires, how do you want to deal with the
-machines requiring BOOT_BIOS to reboot their machine?
+Queued up for 3.15 (with minor changes), thanks!
 
-Thanks,
--Aubrey
+> 
+> ---
+>  drivers/acpi/sleep.c |    7 ++++++-
+>  1 file changed, 6 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
+> index b718806..0abfbb1 100644
+> --- a/drivers/acpi/sleep.c
+> +++ b/drivers/acpi/sleep.c
+> @@ -807,7 +807,12 @@ int __init acpi_sleep_init(void)
+>  	acpi_sleep_hibernate_setup();
+> 
+>  	status = acpi_get_sleep_type_data(ACPI_STATE_S5, &type_a, &type_b);
+> -	if (ACPI_SUCCESS(status)) {
+> +	/*
+> +	 * Check both ACPI S5 object and ACPI sleep registers to
+> +	 * install pm_power_off_prepare/pm_power_off hook
+> +	 */
+> +	if (ACPI_SUCCESS(status) && acpi_gbl_FADT.sleep_control.address &&
+> +		acpi_gbl_FADT.sleep_status.address) {
+>  		sleep_states[ACPI_STATE_S5] = 1;
+>  		pm_power_off_prepare = acpi_power_off_prepare;
+>  		pm_power_off = acpi_power_off;
+> -- 1.7.10.4
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
