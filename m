@@ -1,87 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751635AbaCBIBr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 03:01:47 -0500
-Received: from www84.your-server.de ([213.133.104.84]:44667 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751564AbaCBIBn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 03:01:43 -0500
-Message-ID: <1393747272.995.11.camel@wall-e.seibold.net>
-Subject: Re: Final: Add 32 bit VDSO time function support
-From: Stefani Seibold <stefani@seibold.net>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
-        Andreas.Brief@rohde-schwarz.com
-Date: Sun, 02 Mar 2014 09:01:12 +0100
-In-Reply-To: <53126581.1090407@zytor.com>
-References: <1393443298.1917.5.camel@wall-e.seibold.net>
-	 <20140226204524.GA1598@kroah.com>
-	 <CALCETrU+u3GMK-GaTk4gbAjyMbpQY15qNC4D9q9h2a26YfsLwA@mail.gmail.com>
-	 <CALCETrW_PHbDzn2S3NyGTSk4yqYjnpJbStCuLc_yBGdfspfFCA@mail.gmail.com>
-	 <1393572124.1019.3.camel@wall-e.seibold.net>
-	 <CALCETrUH1tZcu0upkTV0gsXtpnf-BAY4vmWKnN19=ZXsbqWT8A@mail.gmail.com>
-	 <53126581.1090407@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
+	id S1751810AbaCBICa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 03:02:30 -0500
+Received: from mx0a-0016ce01.pphosted.com ([67.231.148.157]:27936 "EHLO
+	mx0a-0016ce01.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751720AbaCBIC2 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Mar 2014 03:02:28 -0500
+From: Anil Gurumurthy <Anil.Gurumurthy@qlogic.com>
+To: Alexander Gordeev <agordeev@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+CC: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-pci <linux-pci@vger.kernel.org>
+Subject: RE: [PATCH v2 03/23] bfa: Cleanup bfad_setup_intr() function
+Thread-Topic: [PATCH v2 03/23] bfa: Cleanup bfad_setup_intr() function
+Thread-Index: AQHPMTjeWejTxJ3+OUeYmwYz3OvlWprNeO8g
+Date: Sun, 2 Mar 2014 08:02:24 +0000
+Message-ID: <20B1A3CBD98F3845B3F5F56D8597EF59F7A207@avmb2.qlogic.org>
+References: <cover.1393191330.git.agordeev@redhat.com>
+ <c3fb3d552113a7c180741cf9f577081fc690366f.1393191330.git.agordeev@redhat.com>
+In-Reply-To: <c3fb3d552113a7c180741cf9f577081fc690366f.1393191330.git.agordeev@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.1.4.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=nai engine=5600 definitions=7364 signatures=668951
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=0 phishscore=0
+ adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=7.0.1-1305240000 definitions=main-1403010266
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Samstag, den 01.03.2014, 14:56 -0800 schrieb H. Peter Anvin:
-> On 02/28/2014 06:00 PM, Andy Lutomirski wrote:
-> > 
-> > This leads to a potentially interesting question: is rdtsc_barrier()
-> > actually necessary on UP?  IIRC the point is that, if an
-> > rdtsc_barrier(); rdtsc in one thread is "before" (in the sense of
-> > being synchronized by some memory operation) an rdtsc_barrier(); rdtsc
-> > in another thread, then the first rdtsc needs to return an earlier or
-> > equal time to the second one.
-> > 
-> > I assume that no UP CPU is silly enough to execute two rdtsc
-> > instructions out of order relative to each other in the absence of
-> > barriers.  So this is a nonissue on UP.
-> > 
-> > On the other hand, suppose that some code does:
-> > 
-> > volatile long x = *(something that's not in cache)
-> > clock_gettime
-> > 
-> > I can imagine a modern CPU speculating far enough ahead that the rdtsc
-> > happens *before* the cache miss.  This won't cause visible
-> > non-monotonicity as far as I can see, but it might annoy people who
-> > try to benchmark their code.
-> > 
-> > Note: actually making this change might be a bit tricky.  I don't know
-> > if the alternatives code is smart enough.
-> > 
-> 
-> Let's put it this way... this is at best a third-order optimization...
-> let's not worry about it right now.
-> 
+Patch look good.
+Acked-by: Anil Gurumurthy <anil.gurumurthy@qlogic.com>
 
-IMHO it is the behaviour that most developer expect. It would a bad idea
-to get a time value before the previous operations are not finished. In
-some use case this will result in a fail.
+-----Original Message-----
+From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi-owner@vger.kernel.org] On Behalf Of Alexander Gordeev
+Sent: 24 February 2014 13:32
+To: linux-kernel
+Cc: Alexander Gordeev; Anil Gurumurthy; Vijaya Mohan Guvva; linux-scsi; linux-pci
+Subject: [PATCH v2 03/23] bfa: Cleanup bfad_setup_intr() function
 
-Imagine a HW where two designated register can only consecutively
-accessed after a given time period is elapsed. This would be normally
-done by a busy loop for very short periods. It would be okay when the
-time period to wait is exceeded, but will maybe fail when the wait time
-is to short.
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+Cc: Anil Gurumurthy <agurumur@brocade.com>
+Cc: Vijaya Mohan Guvva <vmohan@brocade.com>
+Cc: linux-scsi@vger.kernel.org
+Cc: linux-pci@vger.kernel.org
+---
+ drivers/scsi/bfa/bfad.c |   18 ++++++++----------
+ 1 files changed, 8 insertions(+), 10 deletions(-)
 
-- Stefani
+diff --git a/drivers/scsi/bfa/bfad.c b/drivers/scsi/bfa/bfad.c index 972ff8d..e7e4774 100644
+--- a/drivers/scsi/bfa/bfad.c
++++ b/drivers/scsi/bfa/bfad.c
+@@ -1219,7 +1219,7 @@ bfad_install_msix_handler(struct bfad_s *bfad)  int  bfad_setup_intr(struct bfad_s *bfad)  {
+-       int error = 0;
++       int error;
+        u32 mask = 0, i, num_bit = 0, max_bit = 0;
+        struct msix_entry msix_entries[MAX_MSIX_ENTRY];
+        struct pci_dev *pdev = bfad->pcidev;
+@@ -1279,20 +1279,18 @@ bfad_setup_intr(struct bfad_s *bfad)
 
+                bfad->bfad_flags |= BFAD_MSIX_ON;
 
+-               return error;
++               return 0;
+        }
+
+ line_based:
+-       error = 0;
+-       if (request_irq
+-           (bfad->pcidev->irq, (irq_handler_t) bfad_intx, BFAD_IRQ_FLAGS,
+-            BFAD_DRIVER_NAME, bfad) != 0) {
+-               /* Enable interrupt handler failed */
+-               return 1;
+-       }
++       error = request_irq(bfad->pcidev->irq, (irq_handler_t)bfad_intx,
++                           BFAD_IRQ_FLAGS, BFAD_DRIVER_NAME, bfad);
++       if (error)
++               return error;
++
+        bfad->bfad_flags |= BFAD_INTX_ON;
+
+-       return error;
++       return 0;
+ }
+
+ void
+--
+1.7.7.6
+
+--
+To unsubscribe from this list: send the line "unsubscribe linux-scsi" in the body of a message to majordomo@vger.kernel.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+________________________________
+
+This message and any attached documents contain information from QLogic Corporation or its wholly-owned subsidiaries that may be confidential. If you are not the intended recipient, you may not read, copy, distribute, or use this information. If you have received this transmission in error, please notify the sender immediately by reply e-mail and then delete this message.
