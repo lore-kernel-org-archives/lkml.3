@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753530AbaCBVNa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 16:13:30 -0500
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:59542 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752219AbaCBVN2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 16:13:28 -0500
-Date: Sun, 2 Mar 2014 22:13:28 +0100
-From: Andreas Mohr <andi@lisas.de>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Dave Jones <davej@redhat.com>, Andreas Mohr <andi@lisas.de>,
-        Chris Bainbridge <chris.bainbridge@gmail.com>,
-        Dennis Mungai <dmngaie@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: set Pentium M as PAE capable
-Message-ID: <20140302211328.GA20674@rhlx01.hs-esslingen.de>
-References: <20140228140043.GA12157@debian.local>
- <20140302205619.GA8676@rhlx01.hs-esslingen.de>
- <20140302210201.GA31948@redhat.com>
- <20140302210419.GB25710@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140302210419.GB25710@pd.tnic>
-X-Priority: none
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753621AbaCBVNi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 16:13:38 -0500
+Received: from frisell.zx2c4.com ([192.95.5.64]:39968 "EHLO frisell.zx2c4.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752411AbaCBVNf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Mar 2014 16:13:35 -0500
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Sun, 02 Mar 2014 16:13:34 EST
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=zx2c4.com; h=from:to:cc
+	:subject:date:message-id; q=dns; s=mail; b=iIAE1fBWhhGnWrGwam5h3
+	BKWuf0jA8ft/xiHs+o3xHsyGgLd/a96vKSWicPQ6Wmqsjy0676kIUAW96bw2mw5k
+	q9gayK+dfW3QSVwDiQwAnzpLYdiWlMZ9bl+aUtAkO5RCqz1izaSZKy97UUfvkB/A
+	xH9lRmmAPE0CZkwMlJQJPA=
+From: "Jason A. Donenfeld" <Jason@zx2c4.com>
+To: netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: "Jason A. Donenfeld" <Jason@zx2c4.com>
+Subject: [PATCH] ip_set: remove extraneous log message
+Date: Sun,  2 Mar 2014 22:07:04 +0100
+Message-Id: <1393794424-1887-1-git-send-email-Jason@zx2c4.com>
+X-Mailer: git-send-email 1.8.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 02, 2014 at 10:04:19PM +0100, Borislav Petkov wrote:
-> On Sun, Mar 02, 2014 at 04:02:01PM -0500, Dave Jones wrote:
-> > It would be a considerable amount of work to make it a runtime thing.
-> > Ten years ago, maybe it would be worth the effort perhaps, but I'd
-> > suggest just letting 32-bit slowly die instead of doing dramatic
-> > overhauls that will no doubt introduce a bunch of regressions in code
-> > that's been notoriously awful to debug issues in during the past.
-> 
-> Amen!
+This code path is hit everytime a new network namespace is created,
+which means it runs everytime I start Chromium, resulting in needless
+noise in my logs. This message doesn't add very much at all, and isn't
+triggered at the correct place anyway, so this patch simply removes it.
 
-Did I just smell two or three historically burnt fingers? ;)
+Signed-off-by: Jason A. Donenfeld <Jason@zx2c4.com>
+---
+ net/netfilter/ipset/ip_set_core.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-While that was slightly disheartening, thanks for the very fast clarification,
-Dave et al.!
+diff --git a/net/netfilter/ipset/ip_set_core.c b/net/netfilter/ipset/ip_set_core.c
+index de770ec..283f197 100644
+--- a/net/netfilter/ipset/ip_set_core.c
++++ b/net/netfilter/ipset/ip_set_core.c
+@@ -1945,7 +1945,6 @@ ip_set_net_init(struct net *net)
+ 		return -ENOMEM;
+ 	inst->is_deleted = 0;
+ 	rcu_assign_pointer(inst->ip_set_list, list);
+-	pr_notice("ip_set: protocol %u\n", IPSET_PROTOCOL);
+ 	return 0;
+ }
+ 
+-- 
+1.8.5.4
 
-Andreas Mohr
