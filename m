@@ -1,144 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752090AbaCBMCi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 07:02:38 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:39152 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751674AbaCBMCh (ORCPT
+	id S1752353AbaCBMGu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 07:06:50 -0500
+Received: from smtprelay0041.hostedemail.com ([216.40.44.41]:46844 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751743AbaCBMGs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 07:02:37 -0500
-Message-ID: <53131DBE.7020500@linaro.org>
-Date: Sun, 02 Mar 2014 07:02:06 -0500
-From: David Long <dave.long@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Oleg Nesterov <oleg@redhat.com>
-CC: linux-arm-kernel@lists.infradead.org, Rabin Vincent <rabin@rab.in>,
-        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        davem@davemloft.net, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 00/14] uprobes: Add uprobes support for ARM
-References: <1392017945-4507-1-git-send-email-dave.long@linaro.org> <20140301123026.GD21483@n2100.arm.linux.org.uk>
-In-Reply-To: <20140301123026.GD21483@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Sun, 2 Mar 2014 07:06:48 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3354:3653:3865:3866:3867:3868:3870:3871:3874:4250:4321:5007:7652:7903:10004:10400:10848:11026:11232:11473:11658:11914:12043:12266:12295:12438:12517:12519:12555:12663:12740:21060,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: gun93_f647668a143
+X-Filterd-Recvd-Size: 3342
+Message-ID: <1393762005.13719.13.camel@joe-AO722>
+Subject: Re: [iio:togreg 3/3] WARNING: Reusing the krealloc arg is almost
+ always a bug
+From: Joe Perches <joe@perches.com>
+To: Lars-Peter Clausen <lars@metafoo.de>, Andy Whitcroft <apw@shadowen.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, Jonathan Cameron <jic23@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Sun, 02 Mar 2014 04:06:45 -0800
+In-Reply-To: <5312F5BC.7080607@metafoo.de>
+References: <53124ca5.kw+3caZ7enyrhSmq%fengguang.wu@intel.com>
+	 <20140302022404.GA16141@localhost> <5312F5BC.7080607@metafoo.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg,
+(Adding Andy Whitcroft to cc's)
 
-I've been looking at arch/Kconfig and kernel/trace/Kconfig where they 
-deal with uprobes.  The relevant items are CONFIG_UPROBES and 
-CONFIG_UPROBE_EVENT.  It just doesn't look right to me.  It looks like 
-"select" is used in part maybe just to avoid the recursive dependency 
-error that would be generated if "depends on" were used in both places. 
-However I don't think UPROBES should be dependent on UPROBE_EVENT, only 
-the other way around.  As RK noted in previous email (copied in part 
-below) the select does not pull in the lower level dependencies.  This 
-all works on x86 only because arch/x86/Kconfig defines CONFIG_PERF_EVENT 
-(which feels like a big hammer).  We don't need to do this on ARM, and 
-we don't do it.  The result is that, unless PERF_EVENT is set 
-separately, uprobes tends not to build.  I was lucking-out in my testing 
-due to other default config items turning on PERF_EVENT.
+On Sun, 2014-03-02 at 10:11 +0100, Lars-Peter Clausen wrote:
+> On 03/02/2014 03:24 AM, Fengguang Wu wrote:
+> >
+> > Hi Lars-Peter,
+> >
+> > FYI, there are new warnings show up in
+> >
+> > tree:   git://git.kernel.org/pub/scm/linux/kernel/git/jic23/iio.git togreg
+> > head:   bdc8cda1d010887c06bd8c29564b74cd61ec0a7b
+> > commit: bdc8cda1d010887c06bd8c29564b74cd61ec0a7b [3/3] iio:adc: Add Xilinx XADC driver
+> >
+> > scripts/checkpatch.pl 0001-iio-adc-Add-Xilinx-XADC-driver.patch
+> > # many are suggestions rather than must-fix
+> > WARNING: Reusing the krealloc arg is almost always a bug
+> > #1220: drivers/iio/adc/xilinx-xadc-core.c:1138:
+> > +	indio_dev->channels = krealloc(channels, sizeof(*channels) *
+> >
+> 
+> This is actually a false positive, checkpatch thinks that 
+> 'indio_dev->channels' and 'channels' is the same. Added Joe to Cc.
 
-What do you think about the following patch?:
+Yeah.  perl finds an $Lval match for either
+foo->bar and bar for
 
-> diff --git a/arch/Kconfig b/arch/Kconfig
-> index 80bbb8c..8793066 100644
-> --- a/arch/Kconfig
-> +++ b/arch/Kconfig
-> @@ -87,7 +87,8 @@ config KPROBES_ON_FTRACE
->
->  config UPROBES
->  	bool "Transparent user-space probes (EXPERIMENTAL)"
-> -	depends on UPROBE_EVENT && PERF_EVENTS
-> +	depends on ARCH_SUPPORTS_UPROBES
-> +	depends on PERF_EVENTS
->  	default n
->  	select PERCPU_RWSEM
->  	help
-> diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
-> index 015f85a..7d2647e 100644
-> --- a/kernel/trace/Kconfig
-> +++ b/kernel/trace/Kconfig
-> @@ -422,9 +422,8 @@ config KPROBE_EVENT
->
->  config UPROBE_EVENT
->  	bool "Enable uprobes-based dynamic events"
-> -	depends on ARCH_SUPPORTS_UPROBES
->  	depends on MMU
-> -	select UPROBES
-> +	depends on UPROBES
->  	select PROBE_EVENTS
->  	select TRACING
->  	default n
+	foo->bar = krealloc(bar, 1, GFP_KERNEL);
+	bar = krealloc(bar, 1, GFP_KERNEL);
 
+I can't think of a "pretty" perl way to fix this
+because I'm not much of a perl guy, but maybe this
+patch below works well enough.
 
-This removes the pseudo-recursive dependency.  The downside is that now 
-you have to set PERF_EVENTS to use UPROBES, and UPROBES to use 
-UPROBE_EVENT, whereas before on x86 you only had to set UPROBE_EVENT (as 
-long as PERF_EVENTS stays hardcoded on). I think this could be avoided 
-by making each "depends on" a "selects", since they apply transitively. 
-  I'm sensing this would be an unpopular idea though.
+Find all the lvals when there's a possible krealloc
+reuse.  Check the lvals before and after the krealloc.
+Bleat if they not equal.
 
--dl
+Andy?  Got any better idea?
 
+---
+ scripts/checkpatch.pl | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 91308be..7391e01 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -4275,9 +4275,15 @@ sub process {
+ 
+ # check for krealloc arg reuse
+ 		if ($^V && $^V ge 5.10.0 &&
+-		    $line =~ /\b($Lval)\s*\=\s*(?:$balanced_parens)?\s*krealloc\s*\(\s*\1\s*,/) {
+-			WARN("KREALLOC_ARG_REUSE",
+-			     "Reusing the krealloc arg is almost always a bug\n" . $herecurr);
++		    $line =~ /($Lval)\s*\=\s*(?:$balanced_parens)?\s*krealloc\s*\(\s*\1\s*,/) {
++			my @line_lvals = $line =~ m/$Lval/g;
++			for my $index (1 .. $#line_lvals - 1) {
++				if ($line_lvals[$index] eq "krealloc" &&
++				    $line_lvals[$index - 1] eq $line_lvals[$index + 1]) {
++					WARN("KREALLOC_ARG_REUSE",
++					     "Reusing the krealloc arg is almost always a bug\n" . $herecurr);
++				}
++			}
+ 		}
+ 
+ # check for alloc argument mismatch
 
-On 03/01/14 07:30, Russell King - ARM Linux wrote:
-
-[ ... ]
-
-> Clearly, it doesn't make sense for UPROBES to be enabled with PERF_EVENTS
-> disabled - and indeed the Kconfig ensures that this dependency is properly
-> expressed:
->
-> 	config UPROBES
-> 	        bool "Transparent user-space probes (EXPERIMENTAL)"
-> 	        depends on UPROBE_EVENT && PERF_EVENTS
-> 	        default n
-> 	        select PERCPU_RWSEM
->
-> but where this all falls down is here:
->
-> 	config UPROBE_EVENT
-> 	        bool "Enable uprobes-based dynamic events"
-> 	        depends on ARCH_SUPPORTS_UPROBES
-> 	        depends on MMU
-> 	        select UPROBES
-> 	        select PROBE_EVENTS
-> 	        select TRACING
-> 	        default n
->
-> Which is yet another brilliant example of why this "select" crap is soo
-> evil.  Yes, the failing configuration has:
->
-> 	CONFIG_UPROBE_EVENT=y
->
-> Ineed, there was a Kconfig warning:
->
-> 	warning: (UPROBE_EVENT) selects UPROBES which has unmet direct dependencies (UPROBE_EVENT && PERF_EVENTS)
->
-> This is not your fault.  It's the fault of everyone who passed through
-> commit f3f096cfedf8113380c56fc855275cc75cd8cf55 without properly reviewing
-> it and paying attention to that select crap.  Given how evil "select" is,
-> it's something which should always be thoroughly reviewed - with analysis
-> of the dependencies.  I believe commits which introduce new select
-> statements should document an analysis of why those new select statements
-> are appropriate and how they ensure that any dependencies of the selected
-> symbol are not violated.
->
-> Therefore, I will not take the ARM uprobes code while this kind of
-> select abortion is present - it needs to be fixed first to avoid these
-> build errors.  Sorry.
->
 
