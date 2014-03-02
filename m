@@ -1,108 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752898AbaCBVMf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 16:12:35 -0500
-Received: from frisell.zx2c4.com ([192.95.5.64]:58932 "EHLO frisell.zx2c4.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751732AbaCBVMe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 16:12:34 -0500
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Sun, 02 Mar 2014 16:12:34 EST
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=zx2c4.com; h=from:to:cc
-	:subject:date:message-id; q=dns; s=mail; b=mia0PnMlXZ9uHBuUs7sBZ
-	U92LlKVx+n9vW/AZBk8hR33tajbsksnnlBPy7A+3GbX1iRiz9IXUboj+v6xgvt+Q
-	V9sU6CmNaNsGeExm3TIa73+OwhP07WqOX2fnj2XleUV0CZ67A6/tt5IYvgykp2Q9
-	y5yvQZ+AXVebd/d9yvupe0=
-From: "Jason A. Donenfeld" <Jason@zx2c4.com>
-To: linux-kernel@vger.kernel.org
-Cc: "Jason A. Donenfeld" <Jason@zx2c4.com>
-Subject: [PATCH] Input: atkbd - add LED triggers for keyboard state
-Date: Sun,  2 Mar 2014 22:05:56 +0100
-Message-Id: <1393794356-1754-1-git-send-email-Jason@zx2c4.com>
-X-Mailer: git-send-email 1.8.5.4
+	id S1753530AbaCBVNa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 16:13:30 -0500
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:59542 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752219AbaCBVN2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Mar 2014 16:13:28 -0500
+Date: Sun, 2 Mar 2014 22:13:28 +0100
+From: Andreas Mohr <andi@lisas.de>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Dave Jones <davej@redhat.com>, Andreas Mohr <andi@lisas.de>,
+        Chris Bainbridge <chris.bainbridge@gmail.com>,
+        Dennis Mungai <dmngaie@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: set Pentium M as PAE capable
+Message-ID: <20140302211328.GA20674@rhlx01.hs-esslingen.de>
+References: <20140228140043.GA12157@debian.local>
+ <20140302205619.GA8676@rhlx01.hs-esslingen.de>
+ <20140302210201.GA31948@redhat.com>
+ <20140302210419.GB25710@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140302210419.GB25710@pd.tnic>
+X-Priority: none
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many new laptop keyboards aren't shipping with LEDs in the keys for
-caps lock, num lock, and scroll lock. They do, however, ship with many LEDs
-for specialized functions that mostly go non-utilized by any current
-Linux drivers. Having a caps lock LED is very helpful in early boot full
-disk encryption, where a fancy GUI is not available to show that caps
-lock is activated.
+On Sun, Mar 02, 2014 at 10:04:19PM +0100, Borislav Petkov wrote:
+> On Sun, Mar 02, 2014 at 04:02:01PM -0500, Dave Jones wrote:
+> > It would be a considerable amount of work to make it a runtime thing.
+> > Ten years ago, maybe it would be worth the effort perhaps, but I'd
+> > suggest just letting 32-bit slowly die instead of doing dramatic
+> > overhauls that will no doubt introduce a bunch of regressions in code
+> > that's been notoriously awful to debug issues in during the past.
+> 
+> Amen!
 
-This patch wires in the caps, num, and scroll lock states of the
-keyboard into the generic LED trigger subsystem, so that integrators can
-have different LEDs activated on caps/num/scroll lock state changes.
+Did I just smell two or three historically burnt fingers? ;)
 
-Signed-off-by: Jason A. Donenfeld <Jason@zx2c4.com>
----
- drivers/input/keyboard/atkbd.c | 26 ++++++++++++++++++++++++++
- 1 file changed, 26 insertions(+)
+While that was slightly disheartening, thanks for the very fast clarification,
+Dave et al.!
 
-diff --git a/drivers/input/keyboard/atkbd.c b/drivers/input/keyboard/atkbd.c
-index 2626773..15061bf 100644
---- a/drivers/input/keyboard/atkbd.c
-+++ b/drivers/input/keyboard/atkbd.c
-@@ -28,6 +28,7 @@
- #include <linux/libps2.h>
- #include <linux/mutex.h>
- #include <linux/dmi.h>
-+#include <linux/leds.h>
- 
- #define DRIVER_DESC	"AT and PS/2 keyboard driver"
- 
-@@ -302,6 +303,12 @@ static const unsigned int xl_table[] = {
- 	ATKBD_RET_NAK, ATKBD_RET_HANJA, ATKBD_RET_HANGEUL,
- };
- 
-+#ifdef CONFIG_LEDS_TRIGGERS
-+struct led_trigger *capsl_led_trigger = 0;
-+struct led_trigger *numl_led_trigger = 0;
-+struct led_trigger *scrolll_led_trigger = 0;
-+#endif
-+
- /*
-  * Checks if we should mangle the scancode to extract 'release' bit
-  * in translated mode.
-@@ -559,6 +566,12 @@ static int atkbd_set_leds(struct atkbd *atkbd)
- 	if (ps2_command(&atkbd->ps2dev, param, ATKBD_CMD_SETLEDS))
- 		return -1;
- 
-+#ifdef CONFIG_LEDS_TRIGGERS
-+	led_trigger_event(capsl_led_trigger, test_bit(LED_CAPSL, dev->led) ? LED_FULL : LED_OFF);
-+	led_trigger_event(numl_led_trigger, test_bit(LED_NUML, dev->led) ? LED_FULL : LED_OFF);
-+	led_trigger_event(scrolll_led_trigger, test_bit(LED_SCROLLL, dev->led) ? LED_FULL : LED_OFF);
-+#endif
-+
- 	if (atkbd->extra) {
- 		param[0] = 0;
- 		param[1] = (test_bit(LED_COMPOSE, dev->led) ? 0x01 : 0)
-@@ -1781,12 +1794,25 @@ static const struct dmi_system_id atkbd_dmi_quirk_table[] __initconst = {
- static int __init atkbd_init(void)
- {
- 	dmi_check_system(atkbd_dmi_quirk_table);
-+#ifdef CONFIG_LEDS_TRIGGERS
-+	led_trigger_register_simple("caps-lock", &capsl_led_trigger);
-+	led_trigger_register_simple("num-lock", &numl_led_trigger);
-+	led_trigger_register_simple("scroll-lock", &scrolll_led_trigger);
-+#endif
- 
- 	return serio_register_driver(&atkbd_drv);
- }
- 
- static void __exit atkbd_exit(void)
- {
-+#ifdef CONFIG_LEDS_TRIGGERS
-+	led_trigger_unregister_simple(capsl_led_trigger);
-+	capsl_led_trigger = 0;
-+	led_trigger_unregister_simple(numl_led_trigger);
-+	numl_led_trigger = 0;
-+	led_trigger_unregister_simple(scrolll_led_trigger);
-+	scrolll_led_trigger = 0;
-+#endif
- 	serio_unregister_driver(&atkbd_drv);
- }
- 
--- 
-1.8.5.4
-
+Andreas Mohr
