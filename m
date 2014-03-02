@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752937AbaCBVj0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 16:39:26 -0500
-Received: from mout.gmx.net ([212.227.15.15]:59308 "EHLO mout.gmx.net"
+	id S1753273AbaCBVmg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 16:42:36 -0500
+Received: from mail.wdtv.com ([66.118.69.84]:57369 "EHLO mail.wdtv.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751732AbaCBVjW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 16:39:22 -0500
-From: xypron.glpk@gmx.de
-To: grant.likely@linaro.org, robh+dt@kernel.org
-Cc: devicetree@vger.kernel.org, devicetree-compiler@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Heinrich Schuchardt <xypron.glpk@gmx.de>
-Subject: [PATCH 1/1] Update source code location for dtc in manual.txt
-Date: Sun,  2 Mar 2014 22:39:14 +0100
-Message-Id: <1393796354-29704-1-git-send-email-xypron.glpk@gmx.de>
-X-Mailer: git-send-email 1.7.10.4
-X-Provags-ID: V03:K0:9eaeH34MJfhZaeTTDw0qyc/wkUpJT5uiABJdAPwwpypMbJnQXxL
- +o9U8gO25EVHAP5mpiq+SlLp0G3IPxZsp2zxgfLVC2Tnk0Jce3FkrSckNSmtwBJEsY5vrNX
- qa48ZceNUhDpYV8+JLiUJnhPW2OSpXQ5U3SGxImc96kyFLI08EoQ6XTZrep+YFb+f2OHo2o
- Lh3ySD6+z9Hy3QbnxW5ow==
+	id S1751976AbaCBVme (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Mar 2014 16:42:34 -0500
+From: Gene Heskett <gheskett@wdtv.com>
+To: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: set Pentium M as PAE capable
+Date: Sun, 2 Mar 2014 16:42:32 -0500
+References: <20140228140043.GA12157@debian.local> <20140302205619.GA8676@rhlx01.hs-esslingen.de> <20140302210201.GA31948@redhat.com>
+In-Reply-To: <20140302210201.GA31948@redhat.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="windows-1256"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201403021642.33087.gheskett@wdtv.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heinrich Schuchardt <xypron.glpk@gmx.de>
+On Sunday 02 March 2014, Dave Jones wrote:
+>On Sun, Mar 02, 2014 at 09:56:19PM +0100, Andreas Mohr wrote:
+> > (BTW, would it be possible to transform Linux's PAE support into
+> > boot-config or even fully runtime-detectable boot switching to
+> > (non-)PAE, similar to or exceeding what XP offers with its static
+> > boot-time flag?
+> > Last time I checked PAE support config defines were spread over ~ 40
+> > kernel source files though :-((()
+>
+>It would be a considerable amount of work to make it a runtime thing.
+>Ten years ago, maybe it would be worth the effort perhaps, but I'd
+>suggest just letting 32-bit slowly die instead of doing dramatic
+>overhauls that will no doubt introduce a bunch of regressions in code
+>that's been notoriously awful to debug issues in during the past.
+>
+>	Dave
 
-The information about the location of the source code of the
-device tree compiler was inaccurate.
+There is a fly in that soup Dave, and that is the speed in a truly real 
+time required environment.  IRQ latencies once the 32 bit scene have been 
+left behind, either by PAE or a full 64 bit build are not at all well 
+defined, and are of sufficient magnitudes in terms of the timing jitter, as 
+to nearly destroy our ability to use software step generation to control 
+our machine tools.  A motor being stepped every 200 microseconds (thats 
+actually slow) will lose 50% of its available torque if the timing jitter 
+in the step issuance is 10% of the period.
 
-Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
----
- Documentation/manual.txt |   21 +++++++++------------
- 1 file changed, 9 insertions(+), 12 deletions(-)
+We routinely expect 2 to 3 u-s jitters on an Atom board running a 32 bit, 
+RTAI enhanced build of what is by now a 5 year old kernel.  This is 
+extremely board sensitive, and that same kernel running on this 4 core 
+phenom, cannot stay inside of 40 u-s.  A case of more horsepower not being 
+a good deal at all.
 
-diff --git a/Documentation/manual.txt b/Documentation/manual.txt
-index 65c8540..0a8e6d5 100644
---- a/Documentation/manual.txt
-+++ b/Documentation/manual.txt
-@@ -30,25 +30,22 @@ I - "dtc", the device tree compiler
- 
- 1) Sources
- 
--Source code for the Device Tree Compiler can be found at jdl.com.
--The gitweb interface is:
-+Source code for the Device Tree Compiler can be found at git.kernel.org.
- 
--    http://git.jdl.com/gitweb/
-+The upstream repository is here:
- 
--The repository is here:
-+    git://git.kernel.org/pub/scm/utils/dtc/dtc.git
-+    https://git.kernel.org/pub/scm/utils/dtc/dtc.git
- 
--    git://www.jdl.com/software/dtc.git
--    http://www.jdl.com/software/dtc.git
-+The gitweb interface for the upstream respository is:
- 
--Tarballs of the 1.0.0 and latest releases are here:
--
--    http://www.jdl.com/software/dtc-v1.2.0.tgz
--    http://www.jdl.com/software/dtc-latest.tgz
-+    https://git.kernel.org/cgit/utils/dtc/dtc.git/ 
- 
- 1.1) Submitting Patches
- 
--Patches should be sent to jdl@jdl.com, and CC'ed to
--devicetree-discuss@lists.ozlabs.org.
-+Patches should be sent to the maintainers as determined with
-+scripts/get_maintainer.pl of the Linux Kernel source and CC'ed to
-+devicetree-compiler@vger.kernel.org.
- 
- 2) Description
- 
+OTOH, we (LinuxCNC) are a very small user group. I just want to make you 
+aware that we exist. We do retrofits mostly, because our software can make 
+the part faster, but I would estimate there are 5 to 10k machines out there 
+in the major manufacturing scene running our software, and that they 
+include some of the heaviest hitters in the auto making business.
+
+Cheers, Gene
 -- 
-1.7.10.4
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+Genes Web page <http://geneslinuxbox.net:6309/gene>
+
+NOTICE: Will pay 100 USD for an HP-4815A defective but
+complete probe assembly.
 
