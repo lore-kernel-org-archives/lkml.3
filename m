@@ -1,145 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468AbaCBWNw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 17:13:52 -0500
-Received: from mga02.intel.com ([134.134.136.20]:12498 "EHLO mga02.intel.com"
+	id S1753219AbaCBWW6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 17:22:58 -0500
+Received: from mga09.intel.com ([134.134.136.24]:4295 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752278AbaCBWNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 17:13:51 -0500
+	id S1752103AbaCBWW5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Mar 2014 17:22:57 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,574,1389772800"; 
-   d="scan'208";a="492526462"
-Message-ID: <5313AD1B.6050403@linux.intel.com>
-Date: Mon, 03 Mar 2014 06:13:47 +0800
-From: "Li, Aubrey" <aubrey.li@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>, Matthew Garrett <mjg59@srcf.ucam.org>
-CC: "H. Peter Anvin" <hpa@linux.intel.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Len.Brown@intel.com,
-        Adam Williamson <awilliam@redhat.com>
-Subject: Re: [patch] x86: Introduce BOOT_EFI and BOOT_CF9 into the reboot
- sequence loop
-References: <53110977.8080907@linux.intel.com> <53121496.8060603@linux.intel.com> <20140301172256.GA29417@srcf.ucam.org> <53123DCF.7040500@zytor.com> <20140301202139.GA9759@srcf.ucam.org> <ec95d575-070f-4c62-8b27-3ce281cb192e@email.android.com> <53127AA7.8040700@linux.intel.com> <53127C4B.1060505@zytor.com> <53128DA0.9060105@linux.intel.com> <53129256.6060704@zytor.com> <20140302022334.GA1131@srcf.ucam.org> <c4f4929e-6bab-45b9-ac6b-cbdea5fd57e8@email.android.com> <53130A46.1010801@linux.intel.com> <cfbdc582-9fc0-4335-9974-d508c2da1c71@email.android.com>
-In-Reply-To: <cfbdc582-9fc0-4335-9974-d508c2da1c71@email.android.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+   d="scan'208";a="465186797"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc 3.14] mei: me: do not reset when less than expected data is received
+Date: Mon,  3 Mar 2014 00:21:28 +0200
+Message-Id: <1393798888-2474-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/3/3 0:52, H. Peter Anvin wrote:
-> We are unambiguously dead after BIOS.  There is no retry possible...
+There is a race in ME hardware between data copy for host and interrupt
+delivery. An interrupt can be delivered prior to whole data copied for the
+host to read but rather then going trough the reset we just merely need to
+wait for the next interrupt.
 
-No really. Given that we add all of the known methods into the default
-list, and BIOS is the last method, if your system hits BIOS, that means
-ACPI/KBD/EFI/PCI can't make your system reboot, so BIOS should make it
-work.
+The bug is visible in read/write stress with multiple connections per client
 
-If you have a system can't be rebooted by all of the known methods, we
-have to figure out how to make reboot work and add the new methods.
+This is a regression caused as a side effect of the commit:
+commit 544f94601409653f07ae6e22d4a39e3a90dceead
+mei: do not run reset flow from the interrupt thread
 
-Does this make sense?
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+ drivers/misc/mei/hw-me.c     | 9 +++++++++
+ drivers/misc/mei/interrupt.c | 2 +-
+ 2 files changed, 10 insertions(+), 1 deletion(-)
 
-Thanks,
--Aubrey
-
-
-> 
-> On March 2, 2014 2:39:02 AM PST, "Li, Aubrey" <aubrey.li@linux.intel.com> wrote:
->> Patch refined as below, welcome any comments.
->>
->> Thanks,
->> -Aubrey
->>
->> [PATCH] x86/reboot: Introduce all of the known reboot methods into the
->> default list
->>
->> Reboot is the last service linux OS provides to the end user. We are
->> supposed to make this function more robust than today. This patch adds
->> all of the known reboot methods into the default attempt list. The
->> machines requiring reboot=efi or reboot=p or reboot=bios get a chance
->> to reboot automatically now.
->>
->> If there is a new reboot method emerged, we are supposed to add it to
->> the default list as well, instead of adding the endless dmidecode
->> entry.
->>
->> If one method required is in the default list in this patch but the
->> machine reboot still hangs, that means some methods ahead of the
->> required method cause the system hangs, then reboot the machine by
->> passing reboot= arguments and submit the reboot dmidecode table quirk.
->>
->> We are supposed to remove the reboot dmidecode table from the kernel,
->> but to be safe, we keep it. This patch prevents us from adding more.
->> If you happened to have a machine listed in the reboot dmidecode
->> table and this patch makes reboot work on your machine, please submit
->> a patch to remove the quirk.
->>
->> Signed-off-by: Aubrey Li <aubrey.li@intel.com>
->> ---
->> arch/x86/kernel/reboot.c |   13 ++++++++-----
->> 1 file changed, 8 insertions(+), 5 deletions(-)
->>
->> diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
->> index c752cb4..807007f 100644
->> --- a/arch/x86/kernel/reboot.c
->> +++ b/arch/x86/kernel/reboot.c
->> @@ -464,9 +464,12 @@ void __attribute__((weak))
->> mach_reboot_fixups(void)
->>  * 2) If still alive, write to the keyboard controller
->>  * 3) If still alive, write to the ACPI reboot register again
->>  * 4) If still alive, write to the keyboard controller again
->> + * 5) If still alive, call the EFI runtime service to reboot
->> + * 6) If still alive, write to the PCI IO port 0xCF9 to reboot
->> + * 7) If still alive, inform BIOS to do a proper reboot
->>  *
->> * If the machine is still alive at this stage, it gives up. We default
->> to
->> - * following the same pattern, except that if we're still alive after
->> (4) we'll
->> + * following the same pattern, except that if we're still alive after
->> (7) we'll
->> * try to force a triple fault and then cycle between hitting the
->> keyboard
->>  * controller and doing that
->>  */
->> @@ -502,7 +505,7 @@ static void native_machine_emergency_restart(void)
->> 				attempt = 1;
->> 				reboot_type = BOOT_ACPI;
->> 			} else {
->> -				reboot_type = BOOT_TRIPLE;
->> +				reboot_type = BOOT_EFI;
->> 			}
->> 			break;
->>
->> @@ -516,7 +519,7 @@ static void native_machine_emergency_restart(void)
->> 		case BOOT_BIOS:
->> 			machine_real_restart(MRR_BIOS);
->>
->> -			reboot_type = BOOT_KBD;
->> +			reboot_type = BOOT_TRIPLE;
->> 			break;
->>
->> 		case BOOT_ACPI:
->> @@ -530,7 +533,7 @@ static void native_machine_emergency_restart(void)
->> 						 EFI_RESET_WARM :
->> 						 EFI_RESET_COLD,
->> 						 EFI_SUCCESS, 0, NULL);
->> -			reboot_type = BOOT_KBD;
->> +			reboot_type = BOOT_CF9;
->> 			break;
->>
->> 		case BOOT_CF9:
->> @@ -548,7 +551,7 @@ static void native_machine_emergency_restart(void)
->> 				outb(cf9|reboot_code, 0xcf9);
->> 				udelay(50);
->> 			}
->> -			reboot_type = BOOT_KBD;
->> +			reboot_type = BOOT_BIOS;
->> 			break;
->> 		}
->> 	}
-> 
+diff --git a/drivers/misc/mei/hw-me.c b/drivers/misc/mei/hw-me.c
+index 6f656c0..50d8b53 100644
+--- a/drivers/misc/mei/hw-me.c
++++ b/drivers/misc/mei/hw-me.c
+@@ -510,7 +510,16 @@ irqreturn_t mei_me_irq_thread_handler(int irq, void *dev_id)
+ 			break;
+ 		dev_dbg(&dev->pdev->dev, "slots to read = %08x\n", slots);
+ 		rets = mei_irq_read_handler(dev, &complete_list, &slots);
++		/* There is a race between ME write and interrupt delivery:
++		 * Not all data is always available immediately after the
++		 * interrupt, so try to read again on the next interrupt.
++		 */
++		if (rets == -ENODATA)
++			break;
++
+ 		if (rets && dev->dev_state != MEI_DEV_RESETTING) {
++			dev_err(&dev->pdev->dev, "mei_irq_read_handler ret = %d.\n",
++						rets);
+ 			schedule_work(&dev->reset_work);
+ 			goto end;
+ 		}
+diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
+index f0fbb51..c677438 100644
+--- a/drivers/misc/mei/interrupt.c
++++ b/drivers/misc/mei/interrupt.c
+@@ -323,7 +323,7 @@ int mei_irq_read_handler(struct mei_device *dev,
+ 		dev_err(&dev->pdev->dev, "less data available than length=%08x.\n",
+ 				*slots);
+ 		/* we can't read the message */
+-		ret = -ERANGE;
++		ret = -ENODATA;
+ 		goto end;
+ 	}
+ 
+-- 
+1.8.5.3
 
