@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647AbaCBP5O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 10:57:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5131 "EHLO mx1.redhat.com"
+	id S1753611AbaCBP5N (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 10:57:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26489 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753070AbaCBP5K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752476AbaCBP5K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 2 Mar 2014 10:57:10 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
@@ -14,22 +14,20 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         "H. Peter Anvin" <hpa@zytor.com>,
         Vince Weaver <vincent.weaver@maine.edu>,
         Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 2/3] perf: Disallow user space stack dump for function trace event
-Date: Sun,  2 Mar 2014 16:56:39 +0100
-Message-Id: <1393775800-13524-3-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 1/3] perf: Disallow user space callchains for function trace event
+Date: Sun,  2 Mar 2014 16:56:38 +0100
+Message-Id: <1393775800-13524-2-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1393775800-13524-1-git-send-email-jolsa@redhat.com>
 References: <1393775800-13524-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Disabling user space stack dump for function trace event.
+Disabling user callchains for function trace event.
 
 Recent issues with user space callchains processing within
 page fault handler tracing showed as Peter said 'there's
 just too much fail surface'.
-
-The user space stack dump is just another source of the this issue.
 
 Related list discussions:
   http://marc.info/?t=139302086500001&r=1&w=2
@@ -45,27 +43,35 @@ Cc: H. Peter Anvin <hpa@zytor.com>
 Cc: Vince Weaver <vincent.weaver@maine.edu>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace_event_perf.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ kernel/trace/trace_event_perf.c | 15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
 diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
-index d5e01c3..c894614 100644
+index e854f42..d5e01c3 100644
 --- a/kernel/trace/trace_event_perf.c
 +++ b/kernel/trace/trace_event_perf.c
-@@ -42,6 +42,13 @@ static int perf_trace_event_perm(struct ftrace_event_call *tp_event,
- 		 */
- 		if (!p_event->attr.exclude_callchain_user)
- 			return -EINVAL;
-+
-+		/*
-+		 * Same reason to disable user stack dump as for user space
-+		 * callchains above.
-+		 */
-+		if (p_event->attr.sample_type & PERF_SAMPLE_STACK_USER)
-+			return -EINVAL;
+@@ -31,9 +31,18 @@ static int perf_trace_event_perm(struct ftrace_event_call *tp_event,
  	}
  
+ 	/* The ftrace function trace is allowed only for root. */
+-	if (ftrace_event_is_function(tp_event) &&
+-	    perf_paranoid_tracepoint_raw() && !capable(CAP_SYS_ADMIN))
+-		return -EPERM;
++	if (ftrace_event_is_function(tp_event)) {
++		if (perf_paranoid_tracepoint_raw() && !capable(CAP_SYS_ADMIN))
++			return -EPERM;
++
++		/*
++		 * We don't allow user space callchains for  function trace
++		 * event, due to issues with page faults while tracing page
++		 * fault handler and its overall trickiness nature.
++		 */
++		if (!p_event->attr.exclude_callchain_user)
++			return -EINVAL;
++	}
+ 
  	/* No tracing, just counting, so no obvious leak */
+ 	if (!(p_event->attr.sample_type & PERF_SAMPLE_RAW))
 -- 
 1.8.3.1
 
