@@ -1,100 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752353AbaCBMGu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 07:06:50 -0500
-Received: from smtprelay0041.hostedemail.com ([216.40.44.41]:46844 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751743AbaCBMGs (ORCPT
+	id S1752586AbaCBMJz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 07:09:55 -0500
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:33354 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752035AbaCBMJx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 07:06:48 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3354:3653:3865:3866:3867:3868:3870:3871:3874:4250:4321:5007:7652:7903:10004:10400:10848:11026:11232:11473:11658:11914:12043:12266:12295:12438:12517:12519:12555:12663:12740:21060,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: gun93_f647668a143
-X-Filterd-Recvd-Size: 3342
-Message-ID: <1393762005.13719.13.camel@joe-AO722>
-Subject: Re: [iio:togreg 3/3] WARNING: Reusing the krealloc arg is almost
- always a bug
-From: Joe Perches <joe@perches.com>
-To: Lars-Peter Clausen <lars@metafoo.de>, Andy Whitcroft <apw@shadowen.org>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Jonathan Cameron <jic23@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Sun, 02 Mar 2014 04:06:45 -0800
-In-Reply-To: <5312F5BC.7080607@metafoo.de>
-References: <53124ca5.kw+3caZ7enyrhSmq%fengguang.wu@intel.com>
-	 <20140302022404.GA16141@localhost> <5312F5BC.7080607@metafoo.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 2 Mar 2014 07:09:53 -0500
+Date: Sun, 2 Mar 2014 13:09:47 +0100
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Finn Thain <fthain@telegraphics.com.au>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] futexes: allow architectures to skip
+ futex_atomic_cmpxchg_inatomic() test
+Message-ID: <20140302120947.GA3641@osiris>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14030212-3548-0000-0000-0000084287B4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Adding Andy Whitcroft to cc's)
+If an architecture has futex_atomic_cmpxchg_inatomic() implemented and there
+is no runtime check necessary, allow to skip the test within futex_init().
 
-On Sun, 2014-03-02 at 10:11 +0100, Lars-Peter Clausen wrote:
-> On 03/02/2014 03:24 AM, Fengguang Wu wrote:
-> >
-> > Hi Lars-Peter,
-> >
-> > FYI, there are new warnings show up in
-> >
-> > tree:   git://git.kernel.org/pub/scm/linux/kernel/git/jic23/iio.git togreg
-> > head:   bdc8cda1d010887c06bd8c29564b74cd61ec0a7b
-> > commit: bdc8cda1d010887c06bd8c29564b74cd61ec0a7b [3/3] iio:adc: Add Xilinx XADC driver
-> >
-> > scripts/checkpatch.pl 0001-iio-adc-Add-Xilinx-XADC-driver.patch
-> > # many are suggestions rather than must-fix
-> > WARNING: Reusing the krealloc arg is almost always a bug
-> > #1220: drivers/iio/adc/xilinx-xadc-core.c:1138:
-> > +	indio_dev->channels = krealloc(channels, sizeof(*channels) *
-> >
-> 
-> This is actually a false positive, checkpatch thinks that 
-> 'indio_dev->channels' and 'channels' is the same. Added Joe to Cc.
+This allows to get rid of some code which would always give the same result,
+and also allows the compiler to optimize a couple of if statements away.
 
-Yeah.  perl finds an $Lval match for either
-foo->bar and bar for
-
-	foo->bar = krealloc(bar, 1, GFP_KERNEL);
-	bar = krealloc(bar, 1, GFP_KERNEL);
-
-I can't think of a "pretty" perl way to fix this
-because I'm not much of a perl guy, but maybe this
-patch below works well enough.
-
-Find all the lvals when there's a possible krealloc
-reuse.  Check the lvals before and after the krealloc.
-Bleat if they not equal.
-
-Andy?  Got any better idea?
-
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Finn Thain <fthain@telegraphics.com.au>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
 ---
- scripts/checkpatch.pl | 12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ arch/s390/Kconfig     |  1 +
+ include/linux/futex.h |  4 ++++
+ init/Kconfig          |  7 +++++++
+ kernel/futex.c        | 37 ++++++++++++++++++++++++-------------
+ 4 files changed, 36 insertions(+), 13 deletions(-)
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 91308be..7391e01 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -4275,9 +4275,15 @@ sub process {
+diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
+index 65a07750f4f9..bb74b21f007a 100644
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@ -117,6 +117,7 @@ config S390
+ 	select HAVE_FUNCTION_GRAPH_TRACER
+ 	select HAVE_FUNCTION_TRACER
+ 	select HAVE_FUNCTION_TRACE_MCOUNT_TEST
++	select HAVE_FUTEX_CMPXCHG if FUTEX
+ 	select HAVE_KERNEL_BZIP2
+ 	select HAVE_KERNEL_GZIP
+ 	select HAVE_KERNEL_LZ4
+diff --git a/include/linux/futex.h b/include/linux/futex.h
+index b0d95cac826e..6435f46d6e13 100644
+--- a/include/linux/futex.h
++++ b/include/linux/futex.h
+@@ -55,7 +55,11 @@ union futex_key {
+ #ifdef CONFIG_FUTEX
+ extern void exit_robust_list(struct task_struct *curr);
+ extern void exit_pi_state_list(struct task_struct *curr);
++#ifdef CONFIG_HAVE_FUTEX_CMPXCHG
++#define futex_cmpxchg_enabled 1
++#else
+ extern int futex_cmpxchg_enabled;
++#endif
+ #else
+ static inline void exit_robust_list(struct task_struct *curr)
+ {
+diff --git a/init/Kconfig b/init/Kconfig
+index 009a797dd242..d56cb03c1b49 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1387,6 +1387,13 @@ config FUTEX
+ 	  support for "fast userspace mutexes".  The resulting kernel may not
+ 	  run glibc-based applications correctly.
  
- # check for krealloc arg reuse
- 		if ($^V && $^V ge 5.10.0 &&
--		    $line =~ /\b($Lval)\s*\=\s*(?:$balanced_parens)?\s*krealloc\s*\(\s*\1\s*,/) {
--			WARN("KREALLOC_ARG_REUSE",
--			     "Reusing the krealloc arg is almost always a bug\n" . $herecurr);
-+		    $line =~ /($Lval)\s*\=\s*(?:$balanced_parens)?\s*krealloc\s*\(\s*\1\s*,/) {
-+			my @line_lvals = $line =~ m/$Lval/g;
-+			for my $index (1 .. $#line_lvals - 1) {
-+				if ($line_lvals[$index] eq "krealloc" &&
-+				    $line_lvals[$index - 1] eq $line_lvals[$index + 1]) {
-+					WARN("KREALLOC_ARG_REUSE",
-+					     "Reusing the krealloc arg is almost always a bug\n" . $herecurr);
-+				}
-+			}
- 		}
++config HAVE_FUTEX_CMPXCHG
++	bool
++	help
++	  Architectures should select this if futex_atomic_cmpxchg_inatomic()
++	  is implemented and always working. This removes a couple of runtime
++	  checks.
++
+ config EPOLL
+ 	bool "Enable eventpoll support" if EXPERT
+ 	default y
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 44a1261cb9ff..5d17e3a83f8c 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -157,7 +157,9 @@
+  * enqueue.
+  */
  
- # check for alloc argument mismatch
-
++#ifndef CONFIG_HAVE_FUTEX_CMPXCHG
+ int __read_mostly futex_cmpxchg_enabled;
++#endif
+ 
+ /*
+  * Futex flags used to encode options to functions and preserve them across
+@@ -2843,9 +2845,28 @@ SYSCALL_DEFINE6(futex, u32 __user *, uaddr, int, op, u32, val,
+ 	return do_futex(uaddr, op, val, tp, uaddr2, val2, val3);
+ }
+ 
+-static int __init futex_init(void)
++static void __init futex_detect_cmpxchg(void)
+ {
++#ifndef CONFIG_HAVE_FUTEX_CMPXCHG
+ 	u32 curval;
++
++	/*
++	 * This will fail and we want it. Some arch implementations do
++	 * runtime detection of the futex_atomic_cmpxchg_inatomic()
++	 * functionality. We want to know that before we call in any
++	 * of the complex code paths. Also we want to prevent
++	 * registration of robust lists in that case. NULL is
++	 * guaranteed to fault and we get -EFAULT on functional
++	 * implementation, the non-functional ones will return
++	 * -ENOSYS.
++	 */
++	if (cmpxchg_futex_value_locked(&curval, NULL, 0, 0) == -EFAULT)
++		futex_cmpxchg_enabled = 1;
++#endif
++}
++
++static int __init futex_init(void)
++{
+ 	unsigned int futex_shift;
+ 	unsigned long i;
+ 
+@@ -2861,18 +2882,8 @@ static int __init futex_init(void)
+ 					       &futex_shift, NULL,
+ 					       futex_hashsize, futex_hashsize);
+ 	futex_hashsize = 1UL << futex_shift;
+-	/*
+-	 * This will fail and we want it. Some arch implementations do
+-	 * runtime detection of the futex_atomic_cmpxchg_inatomic()
+-	 * functionality. We want to know that before we call in any
+-	 * of the complex code paths. Also we want to prevent
+-	 * registration of robust lists in that case. NULL is
+-	 * guaranteed to fault and we get -EFAULT on functional
+-	 * implementation, the non-functional ones will return
+-	 * -ENOSYS.
+-	 */
+-	if (cmpxchg_futex_value_locked(&curval, NULL, 0, 0) == -EFAULT)
+-		futex_cmpxchg_enabled = 1;
++
++	futex_detect_cmpxchg();
+ 
+ 	for (i = 0; i < futex_hashsize; i++) {
+ 		plist_head_init(&futex_queues[i].chain);
+-- 
+1.8.4.5
 
