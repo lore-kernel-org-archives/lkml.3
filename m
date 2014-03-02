@@ -1,139 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753043AbaCBN3U (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 08:29:20 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:32732 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752309AbaCBN3S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 08:29:18 -0500
-Date: Sun, 2 Mar 2014 08:29:16 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] ktest: run make mrproper not only for OUTPUT_DIR
- but also for BUILD_DIR to avoid build failure
-Message-ID: <20140302082916.58199d86@gandalf.local.home>
-In-Reply-To: <87txbgokl3.wl%satoru.takeuchi@gmail.com>
-References: <87vbvwokq8.wl%satoru.takeuchi@gmail.com>
-	<87txbgokl3.wl%satoru.takeuchi@gmail.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	id S1753238AbaCBNcd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 08:32:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46090 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751955AbaCBNcc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Mar 2014 08:32:32 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Albert Strasheim <albert@cloudflare.com>
+Subject: [PATCH] perf tools: Fix crash in elf_section_by_name
+Date: Sun,  2 Mar 2014 14:32:07 +0100
+Message-Id: <1393767127-599-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 02 Mar 2014 21:23:36 +0900
-Satoru Takeuchi <satoru.takeuchi@gmail.com> wrote:
+Fixing crash in elf_section_by_name function caused
+by missing section name in elf binary.
 
-> From: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-> 
-> Build failure hapens with the following log if BUILD_DIR is dirty.
+Reported-by: Albert Strasheim <albert@cloudflare.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Albert Strasheim <albert@cloudflare.com>
+---
+ tools/perf/util/symbol-elf.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-If you want to do make mrproper in the BUILD_DIR, add the command to
-PRE_BUILD or something. I have TAGS in my BUILD_DIRs and this will
-remove them for me. I can't accept this change.
-
-I've noticed that there's a bug in the Linux make system that causes
-the O=.. builds to fail because somehow the source directory got dirty.
-We need to figure out what that bug is.
-
-Thanks,
-
--- Steve
-
-
-> 
-> ===============================================================================
-> ...
-> RUNNING TEST 1 of 1 with option build olddefconfig
-> 
-> make O=/home/sat/ktest/output mrproper ...   CLEAN   arch/x86/tools
->   CLEAN   scripts/basic
->   CLEAN   scripts/kconfig
->   CLEAN   include/config include/generated arch/x86/include/generated
->   CLEAN   .config.old include/generated/uapi/linux/version.h
-> SUCCESS
-> ...
-> make O=/home/sat/ktest/output -j8 ...   GEN     /home/sat/ktest/output/Makefile
-> ...
->   Using /home/sat/src/test-linux-stable/linux-stable as source for kernel
->   /home/sat/src/test-linux-stable/linux-stable is not clean, please run 'make mrproper'
->   in the '/home/sat/src/test-linux-stable/linux-stable' directory.
-> make[1]: *** [prepare3] Error 1
-> make[1]: *** Waiting for unfinished jobs....
->   HOSTLD  arch/x86/tools/relocs
-> make[1]: *** wait: No child processes.  Stop.
-> make: *** [sub-make] Error 2
-> FAILED!
-> CRITICAL FAILURE... failed build
-> ===============================================================================
-> 
-> To avoid this problem, it's necessary to run make mrproper not only
-> for OUTPUT_DIR, but also for BUILD_DIR.
-> 
-> Signed-off-by: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> 
-> ---
->  tools/testing/ktest/ktest.pl | 16 +++++++++-------
->  1 file changed, 9 insertions(+), 7 deletions(-)
-> 
-> diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-> index f731ef6..1169b2a 100755
-> --- a/tools/testing/ktest/ktest.pl
-> +++ b/tools/testing/ktest/ktest.pl
-> @@ -120,6 +120,7 @@ my $syslinux;
->  my $syslinux_path;
->  my $syslinux_label;
->  my $target;
-> +my $makecmd;
->  my $make;
->  my $pre_install;
->  my $post_install;
-> @@ -2198,6 +2199,11 @@ sub load_force_config {
->      close IN;
->  }
->  
-> +sub mrproper {
-> +    run_command "$makecmd mrproper" or dodie "make mrproper for $builddir";
-> +    run_command "$make mrproper" or dodie "make mrproper for $outputdir";
-> +}
-> +
->  sub build {
->      my ($type) = @_;
->  
-> @@ -2235,17 +2241,13 @@ sub build {
->  	if (!$noclean) {
->  	    run_command "mv $output_config $outputdir/config_temp" or
->  		dodie "moving .config";
-> -
-> -	    run_command "$make mrproper" or dodie "make mrproper";
-> -
-> +	    mrproper;
->  	    run_command "mv $outputdir/config_temp $output_config" or
->  		dodie "moving config_temp";
->  	}
-> -
->      } elsif (!$noclean) {
->  	unlink "$output_config";
-> -	run_command "$make mrproper" or
-> -	    dodie "make mrproper";
-> +	mrproper;
->      }
->  
->      # add something to distinguish this build
-> @@ -3996,7 +3998,7 @@ for (my $i = 1; $i <= $opt{"NUM_TESTS"}; $i++) {
->  
->      undef %force_config;
->  
-> -    my $makecmd = set_test_option("MAKE_CMD", $i);
-> +    $makecmd = set_test_option("MAKE_CMD", $i);
->  
->      $outputdir = set_test_option("OUTPUT_DIR", $i);
->      $builddir = set_test_option("BUILD_DIR", $i);
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index 8ac4a4f..3b7dbf5 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -151,15 +151,15 @@ Elf_Scn *elf_section_by_name(Elf *elf, GElf_Ehdr *ep,
+ 
+ 		gelf_getshdr(sec, shp);
+ 		str = elf_strptr(elf, ep->e_shstrndx, shp->sh_name);
+-		if (!strcmp(name, str)) {
++		if (str && !strcmp(name, str)) {
+ 			if (idx)
+ 				*idx = cnt;
+-			break;
++			return sec;
+ 		}
+ 		++cnt;
+ 	}
+ 
+-	return sec;
++	return NULL;
+ }
+ 
+ #define elf_section__for_each_rel(reldata, pos, pos_mem, idx, nr_entries) \
+-- 
+1.8.3.1
 
