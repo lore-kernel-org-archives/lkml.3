@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753088AbaCBUjV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 15:39:21 -0500
-Received: from mout.gmx.net ([212.227.15.15]:51996 "EHLO mout.gmx.net"
+	id S1752512AbaCBUqW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 15:46:22 -0500
+Received: from mout.gmx.net ([212.227.17.20]:65281 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752800AbaCBUjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 15:39:19 -0500
+	id S1751954AbaCBUqU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Mar 2014 15:46:20 -0500
 From: xypron.glpk@gmx.de
 To: grant.likely@linaro.org, robh+dt@kernel.org
 Cc: devicetree@vger.kernel.org, devicetree-compiler@vger.kernel.org,
         linux-kernel@vger.kernel.org, Heinrich Schuchardt <xypron.glpk@gmx.de>
-Subject: [PATCH 1/1] Consistently use xrealloc instead of realloc
-Date: Sun,  2 Mar 2014 21:39:01 +0100
-Message-Id: <1393792741-29043-1-git-send-email-xypron.glpk@gmx.de>
+Subject: [PATCH 1/1] Remove duplicate assignment
+Date: Sun,  2 Mar 2014 21:45:57 +0100
+Message-Id: <1393793157-29233-1-git-send-email-xypron.glpk@gmx.de>
 X-Mailer: git-send-email 1.7.10.4
-X-Provags-ID: V03:K0:D+jTB2hfAQIwo3hpJcvFi1miuToJRWLnMRkPDc1S6aEV7+JnYIH
- QMtnjQygrM4dMZl2hQTCIVAgHaOSmE5/+petBcqtUiXhsRf97KhwbtjNIWEfnexq66pKjQU
- nFqGIhHjNkQwIE8nMrgN1T2tVe+vlTTB+bkYwrq8YBwC63MGIdzlgYrTwpzQyTalBnO7uwK
- hME5ZxWLFRxcsLJKq2/6A==
+X-Provags-ID: V03:K0:xSrW+55fKKCkIWb0CgoZ/tNBnjRZRV43AS3wmFtvo2n+qw3g0iJ
+ /pnCwnqHq96r4h1i6CyQ8s2oCqC5CLPHskNfVSFE/cMoVi9lxhgHmJ/CYBSvTvZYlX3U4fD
+ SHjLaYOA0Xb2W93qMEE/T7tY+V30NqmphD1wS1UyljHIBQ6r8grkJe0qgQCDmKBQC+TKzGY
+ A31FEd1TmnALU/0CLbOcg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Heinrich Schuchardt <xypron.glpk@gmx.de>
 
-fdtput.c:
-Replace the remaining call to realloc by xrealloc.
-Some redundant lines in encode_value can be saved.
-
 Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
 ---
- fdtput.c |    7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+ tests/testutils.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/fdtput.c b/fdtput.c
-index 5226a4e..2a8d674 100644
---- a/fdtput.c
-+++ b/fdtput.c
-@@ -96,12 +96,7 @@ static int encode_value(struct display_info *disp, char **arg, int arg_count,
- 		/* enlarge our value buffer by a suitable margin if needed */
- 		if (upto + len > value_size) {
- 			value_size = (upto + len) + 500;
--			value = realloc(value, value_size);
--			if (!value) {
--				fprintf(stderr, "Out of mmory: cannot alloc "
--					"%d bytes\n", value_size);
--				return -1;
--			}
-+			value = xrealloc(value, value_size);
- 		}
+diff --git a/tests/testutils.c b/tests/testutils.c
+index f185133..521f4f1 100644
+--- a/tests/testutils.c
++++ b/tests/testutils.c
+@@ -144,7 +144,6 @@ int nodename_eq(const char *s1, const char *s2)
+ {
+ 	int len = strlen(s2);
  
- 		ptr = value + upto;
+-	len = strlen(s2);
+ 	if (strncmp(s1, s2, len) != 0)
+ 		return 0;
+ 	if (s1[len] == '\0')
 -- 
 1.7.10.4
 
