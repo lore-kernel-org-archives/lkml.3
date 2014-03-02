@@ -1,71 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753520AbaCBNf0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 08:35:26 -0500
-Received: from smtprelay0218.hostedemail.com ([216.40.44.218]:53044 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753232AbaCBNfX (ORCPT
+	id S1753540AbaCBNgo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 08:36:44 -0500
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:58859 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751978AbaCBNgn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 08:35:23 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 64,4,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2197:2198:2199:2200:2332:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3653:3865:3871:3874:4321:5007:7652:7903:10004:10400:10848:11026:11232:11473:11658:11914:12043:12517:12519:12555:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: bike66_2ebbe73a8a008
-X-Filterd-Recvd-Size: 2334
-Message-ID: <1393767319.13719.23.camel@joe-AO722>
-Subject: Re: [iio:togreg 3/3] WARNING: Reusing the krealloc arg is almost
- always a bug
-From: Joe Perches <joe@perches.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Andy Whitcroft <apw@shadowen.org>, Fengguang Wu <fengguang.wu@intel.com>,
-        Jonathan Cameron <jic23@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Sun, 02 Mar 2014 05:35:19 -0800
-In-Reply-To: <1393762005.13719.13.camel@joe-AO722>
-References: <53124ca5.kw+3caZ7enyrhSmq%fengguang.wu@intel.com>
-	 <20140302022404.GA16141@localhost> <5312F5BC.7080607@metafoo.de>
-	 <1393762005.13719.13.camel@joe-AO722>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 2 Mar 2014 08:36:43 -0500
+MIME-Version: 1.0
+In-Reply-To: <1452937.KaXPu2ynQ6@sigyn>
+References: <1393760143-5986-1-git-send-email-felix.rueegg@gmail.com>
+	<CADbOyBSMG_a=2qPmM0EU1LEd7y1ZxrpLuoz4MHroX6ri4-nJ3g@mail.gmail.com>
+	<1452937.KaXPu2ynQ6@sigyn>
+Date: Sun, 2 Mar 2014 14:36:41 +0100
+Message-ID: <CADbOyBRLvK_o5fYOSZ=WgYCBKGbwL7h1Rvj-M+rmvap7qoR+cQ@mail.gmail.com>
+Subject: Fwd: [PATCH] input: ff-memless: don't schedule already playing effect
+ to play again
+From: Elias Vanderstuyft <elias.vds@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Felix Rueegg <felix.rueegg@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        =?ISO-8859-1?Q?Michal_Mal=FD?= <madcatxster@prifuk.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-That last one doesn't work if the krealloc has a cast like
-	foo = (struct bar *)krealloc(foo, 1, GFP_KERNEL)
-Maybe this one is better...
----
- scripts/checkpatch.pl | 17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 91308be..43914c3 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -4275,9 +4275,20 @@ sub process {
- 
- # check for krealloc arg reuse
- 		if ($^V && $^V ge 5.10.0 &&
--		    $line =~ /\b($Lval)\s*\=\s*(?:$balanced_parens)?\s*krealloc\s*\(\s*\1\s*,/) {
--			WARN("KREALLOC_ARG_REUSE",
--			     "Reusing the krealloc arg is almost always a bug\n" . $herecurr);
-+		    $line =~ /($Lval)\s*\=\s*($balanced_parens)?\s*krealloc\s*\(\s*\1\s*,/) {
-+			my $cast = $2;
-+			my $cast_count = 0;
-+			my @line_lvals = $line =~ m/$Lval/g;
-+			if (defined $cast) {
-+				$cast_count++ while ($cast =~ /$Lval/g);
-+			}
-+			for my $index (1 + $cast_count .. $#line_lvals - 1) {
-+				if ($line_lvals[$index] eq "krealloc" &&
-+				    $line_lvals[$index - 1 - $cast_count] eq $line_lvals[$index + 1]) {
-+					WARN("KREALLOC_ARG_REUSE",
-+					     "Reusing the krealloc arg is almost always a bug\n" . $herecurr);
-+				}
-+			}
- 		}
- 
- # check for alloc argument mismatch
+---------- Forwarded message ----------
+From: Michal Malý <madcatxster@prifuk.cz>
+Date: Sun, Mar 2, 2014 at 2:29 PM
+Subject: Re: [PATCH] input: ff-memless: don't schedule already playing
+effect to play again
+To: Elias Vanderstuyft <elias.vds@gmail.com>
 
 
+On Sunday 02 of March 2014 14:17:58 you wrote:
+> On Sun, Mar 2, 2014 at 12:35 PM, Felix Rueegg
+<felix.rueegg@gmail.com> wrote:
+> > When an effect with zero replay length, zero replay delay
+> > and zero envelope attack length is uploaded, it is played and then
+> > scheduled to play again one timer tick later. This triggers a
+warning
+> > (URB submitted while active) in combination with the xpad driver.
+> >
+> > Skipping the rescheduling of this effect fixes the issue.
+> >
+> > Signed-off-by: Felix Rueegg <felix.rueegg@gmail.com>
+> > ---
+> >
+> >  drivers/input/ff-memless.c | 7 +++++--
+> >  1 file changed, 5 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/drivers/input/ff-memless.c b/drivers/input/ff-memless.c
+> > index 74c0d8c..2e06948 100644
+> > --- a/drivers/input/ff-memless.c
+> > +++ b/drivers/input/ff-memless.c
+> > @@ -139,10 +139,13 @@ static void ml_schedule_timer(struct
+ml_device *ml)
+> >
+> >                 if (!test_bit(FF_EFFECT_STARTED, &state->flags))
+> >
+> >                         continue;
+> >
+> > -               if (test_bit(FF_EFFECT_PLAYING, &state->flags))
+> > +               if (test_bit(FF_EFFECT_PLAYING, &state->flags)) {
+> >
+> >                         next_at = calculate_next_time(state);
+> >
+> > -               else
+> > +                       if (next_at == now)
+> > +                               continue;
+> > +               } else {
+> >
+> >                         next_at = state->play_at;
+> >
+> > +               }
+> >
+> >                 if (time_before_eq(now, next_at) &&
+> >
+> >                     (++events == 1 || time_before(next_at, earliest)))
+> >
+> > --
+> > 1.9.0
+> >
+> > --
+>
+> @Michal: Is ff-memless-next also affected by this problem?
+>
+> Elias
+
+I hope it's not, see mlnx_get_envelope_update_time(), this part in
+particular:
+
+        /* Prevent the effect from being started twice */
+        if (mlnxeff->begin_at == now && mlnx_is_playing(mlnxeff))
+                return now - 1;
+
+        return mlnxeff->begin_at;
+
+Michal
