@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752012AbaCBKKR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 05:10:17 -0500
-Received: from mout.gmx.net ([212.227.17.21]:52101 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751734AbaCBKKP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 05:10:15 -0500
-Message-ID: <5313037F.2040000@gmx.de>
-Date: Sun, 02 Mar 2014 11:10:07 +0100
-From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@redhat.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: 3.13 hangs when I tried to start a KVM at a 32 bit stable Gentoo
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V03:K0:gobuPIE7c6zemkInfrLQjmxwD0OHvvE+6s+Rk/VqQM1iBa6znwo
- wI+dPTKOGLYoTccO1ubA0ji2OUzx9ng/8zQjYylfx64jm0SF8PQE7xNsn5x/2Xvuqc57ovr
- UaCN7ck/sflwW7ZGRfHIwetGSx0sVcM4OrcAicerzUHlPxo//b6csOmDU/f1h9+rJcQWd02
- //7CTztdth3nhAzkqOmzw==
+	id S1751960AbaCBKeq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 05:34:46 -0500
+Received: from andre.telenet-ops.be ([195.130.132.53]:58448 "EHLO
+	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751773AbaCBKep (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Mar 2014 05:34:45 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>
+Cc: linux-cris-kernel@axis.com, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH -next] cris: cpuinfo_op should depend on CONFIG_PROC_FS
+Date: Sun,  2 Mar 2014 11:34:39 +0100
+Message-Id: <1393756479-12530-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA256
+Now allnoconfig started disabling CONFIG_PROC_FS:
 
-Hello Ingo,
+    arch/cris/kernel/built-in.o:(.rodata+0xc): undefined reference to `show_cpuinfo'
+    make: *** [vmlinux] Error 1
 
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+http://kisskb.ellerman.id.au/kisskb/buildresult/10665698/
 
-the issue I mentioned in [1] and [2] was bisected now few times in a
-row to this id :
+ arch/cris/kernel/setup.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
+diff --git a/arch/cris/kernel/setup.c b/arch/cris/kernel/setup.c
+index 32c3d248868e..905b70ea9939 100644
+--- a/arch/cris/kernel/setup.c
++++ b/arch/cris/kernel/setup.c
+@@ -165,6 +165,7 @@ void __init setup_arch(char **cmdline_p)
+ 	strcpy(init_utsname()->machine, cris_machine_name);
+ }
+ 
++#ifdef CONFIG_PROC_FS
+ static void *c_start(struct seq_file *m, loff_t *pos)
+ {
+ 	return *pos < nr_cpu_ids ? (void *)(int)(*pos + 1) : NULL;
+@@ -188,6 +189,7 @@ const struct seq_operations cpuinfo_op = {
+ 	.stop  = c_stop,
+ 	.show  = show_cpuinfo,
+ };
++#endif /* CONFIG_PROC_FS */
+ 
+ static int __init topology_init(void)
+ {
+-- 
+1.7.9.5
 
-commit 37bf06375c90a42fe07b9bebdb07bc316ae5a0ce
-Merge: 6bfa687 d0e639c
-Author: Ingo Molnar <mingo@kernel.org>
-Date:   Wed Oct 9 12:36:13 2013 +0200
-
-    Merge tag 'v3.12-rc4' into sched/core
-
-    Merge Linux v3.12-rc4 to fix a conflict and also to refresh the tree
-    before applying more scheduler patches.
-
-    Conflicts:
-        arch/avr32/include/asm/Kbuild
-
-    Signed-off-by: Ingo Molnar <mingo@kernel.org>
-
-
-Unfortunately I cannot blame a single commit of the merged branch for
-the breakage of my system (till now). But with kernels after the merge
-commit I cannot longer start a KVM machine here.
-
-Do you have any idea how I could continue to nail down the problem ?
-
-
-
-[1] http://article.gmane.org/gmane.linux.kernel/1657962
-[2] http://article.gmane.org/gmane.linux.kernel/1633225
-
-
-- -- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print:1A37 6F99 4A9D 026F 13E2 4DCF C4EA CDDE 0076 E94E
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iF4EAREIAAYFAlMTA38ACgkQxOrN3gB26U7AQAD/dE49c4iJVgBDj4zgymDXDkwn
-Sp99EjNBHvvMjk5ynC8A/j185mlJ5n3W9EXAZiiIA0QyMAJ08HfZ/wrpx+Ptrh5t
-=t34l
------END PGP SIGNATURE-----
