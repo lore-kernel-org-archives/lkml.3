@@ -1,70 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766AbaCBPcc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 10:32:32 -0500
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:46236 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751293AbaCBPcb (ORCPT
+	id S1753429AbaCBPec (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 10:34:32 -0500
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:49496 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750948AbaCBPeb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 10:32:31 -0500
-Date: Sun, 2 Mar 2014 10:34:38 -0500 (EST)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Andi Kleen <andi@firstfloor.org>
-cc: Steven Rostedt <rostedt@goodmis.org>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: perf_fuzzer compiled for x32 causes reboot
-In-Reply-To: <87bnxp6g5t.fsf@tassilo.jf.intel.com>
-Message-ID: <alpine.DEB.2.10.1403021028480.9864@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1402241130080.20170@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402251032230.23234@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402261003390.18730@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402271621000.2571@vincent-weaver-1.um.maine.edu>
- <20140227173150.4e5ed747@gandalf.local.home> <530FC1C6.5040209@zytor.com> <alpine.DEB.2.10.1402272032140.6271@vincent-weaver-1.um.maine.edu> <20140227215726.7018c861@gandalf.local.home> <alpine.DEB.2.10.1402280914550.6727@vincent-weaver-1.um.maine.edu>
- <20140228092341.12a40f7c@gandalf.local.home> <alpine.DEB.2.10.1402280957470.6727@vincent-weaver-1.um.maine.edu> <40f095f7-605f-4885-951f-31da7d2d637a@email.android.com> <alpine.DEB.2.10.1402281616280.7362@vincent-weaver-1.um.maine.edu>
- <20140228163039.6eb6a8d6@gandalf.local.home> <alpine.DEB.2.10.1402281829330.7966@vincent-weaver-1.um.maine.edu> <20140228223651.485042cc@gandalf.local.home> <87bnxp6g5t.fsf@tassilo.jf.intel.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Sun, 2 Mar 2014 10:34:31 -0500
+Message-ID: <53134F84.1040906@linux.com>
+Date: Sun, 02 Mar 2014 16:34:28 +0100
+From: Levente Kurusa <levex@linux.com>
+Reply-To: Levente Kurusa <levex@linux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Yogesh Chaudhari <mr.yogesh@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Joe Perches <joe@perches.com>
+Subject: Re: [PATCH 1/1] scripts/checkpatch.pl: to give more detailed warning
+ message in case printk is used in any patch
+References: <CAAOfnZp-KAFo8Q4bBW7oxe8BgUn+bSDAWuHbK6E+SF0X0Ex=Wg@mail.gmail.com> <53134C4D.2090406@linux.com> <CAAOfnZqjVn5_aTU3fQQmOF8MqOb5NqXS5Yg4gb-Sec+Qm_0dEQ@mail.gmail.com>
+In-Reply-To: <CAAOfnZqjVn5_aTU3fQQmOF8MqOb5NqXS5Yg4gb-Sec+Qm_0dEQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 1 Mar 2014, Andi Kleen wrote:
+Hi,
 
-> Steven Rostedt <rostedt@goodmis.org> writes:
-> >
-> > BTW, is the perf_fuzzer code posted somewhere? It sounds like it can be
-> > really useful for us to do our own testing too.
+[+CC LKML, Joe]
+[Leaving full copy for LKML, Joe]
+
+On 03/02/2014 04:29 PM, Yogesh Chaudhari wrote:
+> On 2 March 2014 20:50, Levente Kurusa <levex@linux.com> wrote:
+>> Hi,
+>>
+>> On 03/02/2014 04:01 PM, Yogesh Chaudhari wrote:
+>>> Based on the discussion here:
+>>> https://lkml.org/lkml/2014/3/2/17
+>>>
+>>> I would like to propose this patch to improve the warning message in
+>>> checkpatch.pl.  Comments/Suggestions on possible improvements are
+>>> welcome.
+>>>
+>>>
+>>> =========================================================
+>>>
+>>> This patch modifies scripts/checkpatch.pl to give more detailed
+>>> warning message in case printk is used in any patch.
+>>>
+>>> Signed-off-by: Yogesh Chaudhari <mr.yogesh@gmail.com>
+>>> ---
+>>>  scripts/checkpatch.pl | 5 ++++-
+>>>  1 file changed, 4 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+>>> index 464dcef..526f33aa 100755
+>>> --- a/scripts/checkpatch.pl
+>>> +++ b/scripts/checkpatch.pl
+>>> @@ -2799,7 +2799,10 @@ sub process {
+>>>              my $level2 = $level;
+>>>              $level2 = "dbg" if ($level eq "debug");
+>>>              WARN("PREFER_PR_LEVEL",
+>>> -                 "Prefer netdev_$level2(netdev, ... then
+>>> dev_$level2(dev, ... then pr_$level(...  to printk(KERN_$orig ...\n" .
+>>> $herecurr);
+>>
+>> Whoops, that's a word-wrap!
+>> Try using git-format-patch+git-send-email to send the patch.
+> Ack, my bad, I will make this change.
 > 
-> I believe it's part of trinity.
+>>
+>>> +                 "Order of preference for printing debug messages:
+>>> +                 1. [subsystem]_$level2([subsystem]dev, ... eg
+>>> netdev_$level2(netdev, ... for netdevice object
+>>> +                 2. dev_$level2(dev, ... for drivers with struct device
+>>> +                 3. pr_$level(...  to printk(KERN_$orig ...\n" . $herecurr);
+>>>          }
+>>>
+>>>          if ($line =~ /\bpr_warning\s*\(/) {
+>>>
+>>
+>> IMHO, this message is too big. The one we already have is nice and clean.
+>> I would simply do: s/netdev/[subsystem]/ or something among the lines.
 > 
-> http://codemonkey.org.uk/projects/trinity/
-> 
-> Perhaps it should have a "ftracer fuzzer" too?
+> Seems proper way to go about. I agree that this makes it a bit too
+> long, however, I was wondering, if there is a detailed
+> documentation/information file about checkpatch (or patching in
+> general where a detailed message would be accurate). Particularly,
+> where we can make a note of proper way of using such debug calls.
 
-It's not part of trinity, it's a separate project that re-uses some 
-of trinity's codebase.
+Yes there is. Documentation/CodingStyle#Chapter13 is where you should
+do stuff like that.
 
-http://web.eece.maine.edu/~vweaver/projects/perf_events/fuzzer/
-
-You can get the source as part of the perf_event_tests package
-	https://github.com/deater/perf_event_tests
-
-go into the fuzzer directory, run make, then "./perf_fuzzer".
-You can also run the ./fast_repro.sh script instead, it's what I've
-been using to track this kernel issue, although it tripped over the issue
-a lot faster when compiled with -mx32 than it did when complied as native 
-x86_64.
-
-I think the code as found in the git tree should be working, I made a lot 
-of changes when tracking this problem and I need to make sure I only check 
-in the proper ones and not let any weird debugging patches slip in.
-
-I'm aware of at least two other WARN messages and possibly one or two 
-hard-lockup bugs in addition to the potential system reboot that can be 
-triggered by the fuzzer, it just takes a while to isolate these things.
-
-Vince
-
-
+-- 
+Regards,
+Levente Kurusa
