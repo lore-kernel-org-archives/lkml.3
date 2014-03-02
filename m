@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751570AbaCBIWE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 03:22:04 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:38162 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751426AbaCBIWC (ORCPT
+	id S1751612AbaCBInp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 03:43:45 -0500
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:45110 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751446AbaCBIno (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 03:22:02 -0500
-Date: Sun, 2 Mar 2014 09:22:00 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, willy@linux.intel.com
-Subject: Re: [PATCH v6 00/22] Support ext4 on NV-DIMMs
-Message-ID: <20140302082159.GA27716@amd.pavel.ucw.cz>
-References: <1393337918-28265-1-git-send-email-matthew.r.wilcox@intel.com>
+	Sun, 2 Mar 2014 03:43:44 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393337918-28265-1-git-send-email-matthew.r.wilcox@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: Yogesh Chaudhari <mr.yogesh@gmail.com>
+Date: Sun, 2 Mar 2014 14:13:03 +0530
+Message-ID: <CAAOfnZrRGd0Bdg0c0D1015O5f=BC2=hwfZ5WNv=z5bBf5y6TmQ@mail.gmail.com>
+Subject: scripts/checkpatch.pl
+To: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2014-02-25 09:18:16, Matthew Wilcox wrote:
-> One of the primary uses for NV-DIMMs is to expose them as a block device
-> and use a filesystem to store files on the NV-DIMM.  While that works,
-> it currently wastes memory and CPU time buffering the files in the page
-> cache.  We have support in ext2 for bypassing the page cache, but it
-> has some races which are unfixable in the current design.  This series
-> of patches rewrite the underlying support, and add support for direct
-> access to ext4.
-> 
-> This iteration of the patchset renames the "XIP" support to "DAX".
-> This fixes the confusion between kernel XIP and filesystem XIP.  It's not
-> really about executing in-place; it's about direct access to memory-like
-> storage, bypassing the page cache.  DAX is TLA-compliant, retains the
-> exciting X, is pronouncable ("Dacks") and is not used elsewhere in
-> the kernel.  The only major use of DAX outside the kernel is the German
-> stock exchange, and I think that's pretty unlikely to cause
-> confusion.
+Hello,
 
-It is TLA compliant, but not widely understood, and probably not
-googleable. Could we perhaps use some longer name for a while?
+I recently ran "scripts/checkpatch.pl" after adding the simplest form
+of "hello world" module to the source tree. I used the old "printk"s
+in this module and got this warning message:
 
->  create mode 100644 Documentation/filesystems/dax.txt
+WARNING: Prefer netdev_dbg(netdev, ... then dev_dbg(dev, ... then
+pr_debug(...  to printk(KERN_DEBUG ...
 
-Its not like filename can't be longer than 3.3, you see?
+It has come to my understanding that the dynamic debugging interface
+offered by pr_debug and dev_dbg have obvious advantages to printk and
+therefore they are preferred to printk.
 
-									Pavel
+Even amongst dev_dbg and pr_debug, we prefer dev_dbg if we have a
+struct device to standardize device information output along with our
+debug message. It offers escape from the "edit/rebuild/reboot cycle"
+and also allows to maintain a neat log through dynamic_debug/control
+interface.
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+I was not clear as to why netdev_dbg would be preferred to dev_dbg and
+was given this asnwer on stackoverflow:
+
+http://stackoverflow.com/questions/22077540/order-of-preference-printk-vs-dev-dbg-vs-netdev-dbg
+
+Particularly, in regards to this part:
+"netdev_dbg it is not the absolutly prefered print style. It is
+prefered if you are working with a netdevice."
+
+If this is the case, then I think the WARNING message should be
+modified to mention that [subsystem]_dbg is preferred over dev_dbg. In
+case this is correct and I am not missing something, I would like to
+propose a patch to modify this script to give appropriate error
+message. But in case I am wrong about this I would like
+comments/suggestions/explanations before starting anything.
+
+Thanks
+Yogesh
