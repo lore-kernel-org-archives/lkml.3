@@ -1,83 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753789AbaCBXXx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 18:23:53 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:55899 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753503AbaCBXXv (ORCPT
+	id S1753823AbaCBXac (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 18:30:32 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:60464 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753803AbaCBXab (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 18:23:51 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: "Li, Aubrey" <aubrey.li@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Len.Brown@intel.com, "alan@linux.intel.com" <alan@linux.intel.com>,
-        "Raj, Ashok" <ashok.raj@intel.com>
-Subject: Re: [PATCH] ACPI/Sleep: pm_power_off need more sanity check to be installed
-Date: Mon, 03 Mar 2014 00:38:58 +0100
-Message-ID: <1519780.354CyqizXu@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <53128125.1080809@linux.intel.com>
-References: <530D558D.6090607@linux.intel.com> <2386234.LOj9mo4PX0@vostro.rjw.lan> <53128125.1080809@linux.intel.com>
+	Sun, 2 Mar 2014 18:30:31 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlNvAJC+E1N5LJYePGdsb2JhbABagwaDQ4UMszaFWYEWFwMBAQEBHxkNKIIlAQEEAScTHBcMEAgDDgoJJQ8FJQMHGhOHcQfMABcWjkMHhDgEmDuUG4FSKA
+Date: Mon, 3 Mar 2014 10:30:27 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Matthew Wilcox <willy@linux.intel.com>
+Cc: Toshi Kani <toshi.kani@hp.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v6 07/22] Replace the XIP page fault handler with the DAX
+ page fault handler
+Message-ID: <20140302233027.GR30131@dastard>
+References: <1393337918-28265-1-git-send-email-matthew.r.wilcox@intel.com>
+ <1393337918-28265-8-git-send-email-matthew.r.wilcox@intel.com>
+ <1393609771.6784.83.camel@misato.fc.hp.com>
+ <20140228202031.GB12820@linux.intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140228202031.GB12820@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, March 02, 2014 08:53:57 AM Li, Aubrey wrote:
-> On 2014/3/2 8:39, Rafael J. Wysocki wrote:
-> > On Saturday, March 01, 2014 06:24:23 AM Li, Aubrey wrote:
-> >>>> Do we still want to set this if the check below fails?  If so, then why?
-> >>>
-> >>> We know \_S5_ is valid. The fault is sleep registers, not S5 ACPI object
-> >>
-> >> Hi Rafael, do you still have any concern?
+On Fri, Feb 28, 2014 at 03:20:31PM -0500, Matthew Wilcox wrote:
+> On Fri, Feb 28, 2014 at 10:49:31AM -0700, Toshi Kani wrote:
+> > On Tue, 2014-02-25 at 09:18 -0500, Matthew Wilcox wrote:
+> > > Instead of calling aops->get_xip_mem from the fault handler, the
+> > > filesystem passes a get_block_t that is used to find the appropriate
+> > > blocks.
+> >  :
+> > > +static int do_dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
+> > > +			get_block_t get_block)
+> > > +{
+> > > +	struct file *file = vma->vm_file;
+> > > +	struct inode *inode = file_inode(file);
+> > > +	struct address_space *mapping = file->f_mapping;
+> > > +	struct buffer_head bh;
+> > > +	unsigned long vaddr = (unsigned long)vmf->virtual_address;
+> > > +	sector_t block;
+> > > +	pgoff_t size;
+> > > +	unsigned long pfn;
+> > > +	int error;
+> > > +
+> > > +	size = (i_size_read(inode) + PAGE_SIZE - 1) >> PAGE_SHIFT;
+> > > +	if (vmf->pgoff >= size)
+> > > +		return VM_FAULT_SIGBUS;
+> > > +
+> > > +	memset(&bh, 0, sizeof(bh));
+> > > +	block = (sector_t)vmf->pgoff << (PAGE_SHIFT - inode->i_blkbits);
+> > > +	bh.b_size = PAGE_SIZE;
+> > > +	error = get_block(inode, block, &bh, 0);
+> > > +	if (error || bh.b_size < PAGE_SIZE)
+> > > +		return VM_FAULT_SIGBUS;
 > > 
-> > Well, I simply don't think we should say that it is "supported" if we aren't
-> > going to do anything with it.
-> > 
+> > I am learning the code and have some questions.
 > 
-> Make sense to me. Patch refined as below:
+> Hi Toshi,
 > 
-> Sleep control and status registers need santity check as well before
-> ACPI install acpi_power_off to pm_power_off hook. The checking code in
-> acpi_enter_sleep_state() is too late, we should not allow a not-working
-> pm_power_off function hooked.
+> Glad to see you're looking at it.  Let me try to help ...
 > 
-> Signed-off-by: Aubrey Li <aubrey.li@intel.com>
+> > The original code,
+> > xip_file_fault(), jumps to found: and calls vm_insert_mixed() when
+> > get_xip_mem(,,0,,) succeeded.  If get_xip_mem() returns -ENODATA, it
+> > calls either get_xip_mem(,,1,,) or xip_sparse_page().  In this new
+> > function, it looks to me that get_block(,,,0) returns 0 for both cases
+> > (success and -ENODATA previously), which are dealt in the same way.  Is
+> > that right?  If so, is there any reason for the change?
+> 
+> Yes, get_xip_mem() returned -ENODATA for a hole.  That was a suboptimal
+> interface because filesystems are actually capable of returning more
+> information than that, eg how long the hole is (ext4 *doesn't*, but I
+> consider that to be a bug).
+> 
+> I don't get to decide what the get_block() interface looks like.  It's the
+> standard way that the VFS calls back into the filesystem and has been
+> around for probably close to twenty years at this point.  I'm still trying
+> to understand exactly what the contract is for get_blocks() ... I have
+> a document that I'm working on to try to explain it, but it's tough going!
+> 
+> > Also, isn't it
+> > possible to call get_block(,,,1) even if get_block(,,,0) found a block?
+> 
+> The code in question looks like this:
+> 
+>         error = get_block(inode, block, &bh, 0);
+>         if (error || bh.b_size < PAGE_SIZE)
+>                 goto sigbus;
+> 
+>         if (!buffer_written(&bh) && !vmf->cow_page) {
+>                 if (vmf->flags & FAULT_FLAG_WRITE) {
+>                         error = get_block(inode, block, &bh, 1);
+> 
+> where buffer_written is defined as:
+>         return buffer_mapped(bh) && !buffer_unwritten(bh);
+> 
+> Doing some boolean algebra, that's:
+> 
+> 	if (!buffer_mapped || buffer_unwritten)
+> 
+> In either case, we want to tell the filesystem that we're writing to
+> this block.  At least, that's my current understanding of the get_block()
+> interface.  I'm open to correction here!
 
-Queued up for 3.15 (with minor changes), thanks!
+I've got a rewritten version on this that doesn't require two calls
+to get_block() that I wrote while prototyping the XFS code. It also
+fixes all the misunderstandings about what get_block() actually does
+and returns so it works correctly with XFS.
 
-> 
-> ---
->  drivers/acpi/sleep.c |    7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
-> index b718806..0abfbb1 100644
-> --- a/drivers/acpi/sleep.c
-> +++ b/drivers/acpi/sleep.c
-> @@ -807,7 +807,12 @@ int __init acpi_sleep_init(void)
->  	acpi_sleep_hibernate_setup();
-> 
->  	status = acpi_get_sleep_type_data(ACPI_STATE_S5, &type_a, &type_b);
-> -	if (ACPI_SUCCESS(status)) {
-> +	/*
-> +	 * Check both ACPI S5 object and ACPI sleep registers to
-> +	 * install pm_power_off_prepare/pm_power_off hook
-> +	 */
-> +	if (ACPI_SUCCESS(status) && acpi_gbl_FADT.sleep_control.address &&
-> +		acpi_gbl_FADT.sleep_status.address) {
->  		sleep_states[ACPI_STATE_S5] = 1;
->  		pm_power_off_prepare = acpi_power_off_prepare;
->  		pm_power_off = acpi_power_off;
-> -- 1.7.10.4
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+I need to port it forward to your new patch set (hopefully later
+this week), so don't spend too much time trying to work out exactly
+what this code needs to do...
 
+Cheers,
+
+Dave.
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Dave Chinner
+david@fromorbit.com
