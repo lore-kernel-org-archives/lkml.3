@@ -1,188 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544AbaCBWjc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 17:39:32 -0500
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:34021 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752348AbaCBWjM (ORCPT
+	id S1753635AbaCBWo2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 17:44:28 -0500
+Received: from imta-35.everyone.net ([216.200.145.35]:58227 "EHLO
+	imta-35.everyone.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752348AbaCBWo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 17:39:12 -0500
-From: yaro@marupa.net
-To: usspookslovesystmd@muchomail.com
-Cc: yaro@marupa.net, scott.ferguson.debian.user@gmail.com,
-        debian-devel@lists.debian.org, debian-ctte@lists.debian.org,
-        debian-vote@lists.debian.org, debian-project@lists.debian.org,
-        linux-kernel@vger.kernel.org, pascal@plouf.fr.eu.org,
-        cbannister@slingshot.co.nz, andreimpopescu@gmail.com,
-        ghaverla@materialisations.com, debian-mirrors@lists.debian.org,
-        debian-security@lists.debian.org, debian-user@lists.debian.org
-Subject: Re: Four people decided the fate of debian with systemd. Bad faith likely - SysV is fine
-Date: Sun, 02 Mar 2014 16:39:11 -0600
-Message-ID: <66372183.jmchDdSAh1@twilight>
-User-Agent: KMail/4.12.2 (Linux/3.12.13-1-ck; KDE/4.12.2; x86_64; ; )
-In-Reply-To: <20140302142352.52A6A3E3@m0005309.ppops.net>
-References: <20140302142352.52A6A3E3@m0005309.ppops.net>
+	Sun, 2 Mar 2014 17:44:27 -0500
+X-Eon-Dm: dm23
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset="UTF-8"
+Message-Id: <20140302144316.52A6ACEF@m0005309.ppops.net>
+Date: Sun, 2 Mar 2014 14:43:16 -0800
+From: "NoTo CTTE" <usspookslovesystmd@muchomail.com>
+Reply-To: <usspookslovesystmd@muchomail.com>
+To: "Russ Allbery" <rra@debian.org>, <727708@bugs.debian.org>
+Cc: <tg@mirbsd.de>, <727708@bugs.debian.org>, <debian-users@bugs.debian.org>,
+        <debian-devel@bugs.debian.org>, <debian-project@bugs.debian.org>,
+        <debian-ctte@bugs.debian.org>, <scott.ferguson.debian.user@gmail.com>,
+        <debian-devel@lists.debian.org>, <debian-ctte@lists.debian.org>,
+        <debian-vote@lists.debian.org>, <debian-project@lists.debian.org>,
+        <linux-kernel@vger.kernel.org>, <pascal@plouf.fr.eu.org>,
+        <yaro@marupa.net>, <cbannister@slingshot.co.nz>,
+        <andreimpopescu@gmail.com>, <ghaverla@materialisations.com>,
+        <debian-mirrors@lists.debian.org>, <debian-security@lists.debian.org>
+Subject: Re: Bug#727708: Call for Votes on init system coupling
+X-Eon-Sig: AQO+z1hTE7QEqRGJ5gEAAAAV,da5def20863d0711cd2d50a1c8df1d5e
+X-Originating-Ip: 109.163.234.10
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-03-02_02:2014-02-28,2014-03-02,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=7 phishscore=0
+ adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=7.0.1-1305240000 definitions=main-1403020154
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Why should we believe you or the bullshit excuses given in the article?
 
-Fine, I'll just poke at this reply since it's that asinine. But this is 
-probably my last post in this thread since the idiocy from this poster has 
-gone from "curiously amusing" to "stupidly annoying."
+The fact is, last year none of this crap was needed.
+Now it suddenly is.
+Furthermore gnome stole libgtk from the gimp project recently
+and then they made an incompatable "libgtk" 3.0.
 
-By the way, I noticed you changed your fake email at least once in this 
-thread. I'm guessing you noticed people are starting to block you. Ever think 
-why?
+And now they're requiring all these bullshit daemons, and systemd.
 
-On Sunday, March 02, 2014 02:23:52 PM NoTo CTTE wrote:
-> You say nothing because there is nothing that you can say.
-> 
+This is a political coup. We are being lead by the nose.
+Notice the arguments from the gnome and systemd people are always the same
+across all forums, for years.
 
-I say nothing because you're just insulting my intelligence.
+"It is for your own good"
+"You must join the modern era"
+They know better than us and we must join.
+Over and over again for the past year or two.
 
-> Simplicity is beautiful, and it works.
-> 
+I think these are the same people.
+Fake personas, or directed by their employers.
 
-Initscripts are not simple. At all. Have you even looked at an initscript? I'm 
-thinking no.
+They should be thrown out, we should recongise them for what they are.
 
-> Systemd is a nightmare, 
+Real, traditional linux includes
+sysv or bsd style init (or openrc).
+libgtk2 (not 3). 
+gnome2 (not 3).
 
-Why? What makes it a nightmare? Have you even used systemd or are you just 
-trolling?
+And no systemd.
 
-> but you are using politics and psyops to push it on
-> every single linux user, every distro, everywhere.
-> 
+We should also take heed of Snowden's documents which show that
+the United States government, which is an evil force that 
+blows up and burns alive little girls and boys in afghanistan
+iraq and elsewhere, had and has a program to subvert technology
+and software projects everywhere.
 
-Uh... no, I gave valid technical reasons why systemd is better. Dependency-
-based concurrent boot with cgroups control. And that's just ONE reason.
+Systemd and its shills are likely part of this.
+They should be thrown out of our community distributions.
+Pretty much anything by redhat is harmful nowadays.
+And anyone associated.
 
-You're the one coming on here making paranoid claims about systemd being an 
-attempt to conquer Linux. I didn't make any political claims at any point in 
-this entire thread.
+--- rra@debian.org wrote:
 
-> I showed you code that does your vaunted concurrent boot systemddeeeee in a
-> few lines of shell.
-> 
+From: Russ Allbery <rra@debian.org>
+To: Thorsten Glaser <tg@mirbsd.de>
+Cc: 727708@bugs.debian.org
+Subject: Bug#727708: Call for Votes on init system coupling
+Date: Sun, 02 Mar 2014 12:26:31 -0800
 
-That's not shell, that's C. You don't even know what a shall script is, I'm 
-thinking.
+Thorsten Glaser <tg@mirbsd.de> writes:
+> Russ Allbery dixit:
 
-Also, it doesn't do concurrency at all the same way as systemd does. Do you 
-even know how SysV and systemd work? I'm guessing, again, no.
+>> But when providing project-wide guidance, we have an obligation to
+>> worry about the error conditions as well.  If multiple logind
+>> implementations do *not* materialize, or if they do materialize but
+>> then people lose interest
 
-> That simplicity was the way unix and linux was, before the windows
-> programmers and the govt funded companies sunk their teeth into linux.
-> 
+> I question why logind is needed in the first place.  Current-day systems
+> are getting way too complex and complicated; we did not need something
+> like this a few months ago either.
 
-Hahaha. Initscripts are NOT simple. Please. PLEASE, do yourself a favor and 
-actually look at an initscript. Educate yourself. You're making yourself look 
-like an idiot.
+The link that Colin posted provides a fairly good summary of why logind is
+attractive from the perspective of a GNOME maintainer.
 
-> You know what & does.
-> I guess not, you're too new to gnu.
-> 
+-- 
+Russ Allbery (rra@debian.org)               <http://www.eyrie.org/~eagle/>
 
-Don't presume to know how long I've been using Linux. Judging by your complete 
-and utter lack of technical knowledge I'm willing to bet I've been using Linux 
-and the GNU toolchain a heck of a lot longer than you have.
 
-> --- yaro@marupa.net wrote:
-> 
-> From: yaro@marupa.net
-> To: usspookslovesystmd@muchomail.com
-> Subject: Re: Four people decided the fate of debian with systemd. Bad faith
-> likely - SysV is fine Date: Sun, 02 Mar 2014 16:15:41 -0600
-> 
-> On Sunday, March 02, 2014 02:12:48 PM NoTo CTTE wrote:
-> > System V is NOT hard to "maintain"
+-- 
+To UNSUBSCRIBE, email to debian-ctte-REQUEST@lists.debian.org
+with a subject of "unsubscribe". Trouble? Contact listmaster@lists.debian.org
+Archive: https://lists.debian.org/87vbvwfitk.fsf@windlord.stanford.edu
 
-Clearly you never wrote a shell script or tried to fix one. I have. I've also 
-worked with unit files. It's no contest that systemd unit files are much simpler 
-and easier to work with,
 
-> > The scripts were written YEARS ago. They're fine. They do NOT need to be
-> > changed. Debian SysV has concurrent boot aswell.
-> > 
 
-As concurrent as initscripts can safely get, which isn't that far. And hell 
-yes they need to be changed. Ever administrate a Debian Stable server? I 
-welcome a change to systemd on my server, way less hassle.
 
-> > Systemd is a poison apple. 200k lines of unaudited root privlege code. A
-> > consulting service to go along with this new _operating system_
-> > 
 
-Who says it's unaudited? You? Do you know how much work the DDs put into 
-supporting their packages? I don't think you do.
-
-What new operating system?
-
-Are you aware SysV also runs with root privileges? And it probably exposes the 
-system to more hazards given how many more processes it has to spawn over the 
-courseof just ONE initscript?
-
-> > Here's an under 100 line init with concurrent boot:
-> > 
-> > #include <signal.h>
-> > #include <unistd.h>
-> > 
-> > int main()
-> > {
-> > sigset_t set;
-> > int status;
-> > 
-> > if (getpid() != 1) return 1;
-> > 
-> > sigfillset(&set);
-> > sigprocmask(SIG_BLOCK, &set, 0);
-> > 
-> > if (fork()) for (;;) wait(&status);
-> > 
-> > sigprocmask(SIG_UNBLOCK, &set, 0);
-> > 
-> > setsid();
-> > setpgid(0, 0);
-> > return execve("/etc/rc", (char *[]){ "rc", 0 }, (char *[]){ 0 });
-> > }
-
-The above is not an initscript. I'll concede it's a poorly thought out init 
-with a badly implemented concurrency setup, but your attempt to make systemd's 
-concurrency look like nothing special is laughable.
-
-> > 
-> > >/etc/rc is a shell script
-> > >syslogd && getty ; udev ; network-config ; sshd & cron & nginx
-
-Your point? What's so great about shell scripts? They're overcomplex, hard to 
-maintain, difficult to test and debug, spend more time in boilerplate than 
-system management, and are prone to failure. Nothign I say here is new/
-
-> > 
-> > see how much bullsht systemd is.
-
-I see how much bullshit your claims are.
-
-> > 
-> > 
-> > _____________________________________________________________
-> > The Free Email with so much more!
-> > =====> http://www.MuchoMail.com <=====
-> 
-> It'd be almost too easy to mock a laughable post like this, but I'll let
-> someone else do it. It's just not fun anymore.
-> 
-> Conrad
-> 
-> 
-> 
-> 
-> _____________________________________________________________
-> The Free Email with so much more!
-> =====> http://www.MuchoMail.com <=====
-
+_____________________________________________________________
+The Free Email with so much more!
+=====> http://www.MuchoMail.com <=====
