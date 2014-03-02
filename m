@@ -1,64 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753494AbaCBB0j (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Mar 2014 20:26:39 -0500
-Received: from gate.crashing.org ([63.228.1.57]:57874 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753367AbaCBB0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Mar 2014 20:26:37 -0500
-Message-ID: <1393723559.12039.3.camel@pasglop>
-Subject: Re: [PATCH v2 4/4] pci: Add support for creating a generic
- host_bridge from device tree
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Date: Sun, 02 Mar 2014 12:25:59 +1100
-In-Reply-To: <1393723415.12039.1.camel@pasglop>
-References: <1393506402-11474-1-git-send-email-Liviu.Dudau@arm.com>
-	 <1393506402-11474-5-git-send-email-Liviu.Dudau@arm.com>
-	 <18746655.qWHLpMg2Yy@wuerfel> <1393543924.14012.56.camel@pasglop>
-	 <20140228095559.GU1692@e106497-lin.cambridge.arm.com>
-	 <1393723415.12039.1.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.11.90 
-Mime-Version: 1.0
+	id S1753525AbaCBB2l (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Mar 2014 20:28:41 -0500
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:36067 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753367AbaCBB2j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Mar 2014 20:28:39 -0500
+Message-ID: <531287AE.5080606@gmail.com>
+Date: Sat, 01 Mar 2014 20:21:50 -0500
+From: Vlad Yasevich <vyasevich@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Christian Borntraeger <borntraeger@de.ibm.com>, vyasevic@redhat.com
+CC: "David S. Miller" <davem@davemloft.net>, Jason Wang <jasowang@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>, netdev@vger.kernel.org,
+        KVM list <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: macvtap performance regression (bisected) between 3.13 and 3.14-rc1
+References: <530FA586.3010400@de.ibm.com> <53110A62.7070109@redhat.com> <5311C142.6040509@de.ibm.com> <53123495.7030902@gmail.com>
+In-Reply-To: <53123495.7030902@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-03-02 at 12:23 +1100, Benjamin Herrenschmidt wrote:
-> On Fri, 2014-02-28 at 09:55 +0000, Liviu Dudau wrote:
-> > The next phase will be to see how much of the pci_controller structure can move
-> > into the generic code and reduce its size. I do suffer from not having a PowerPC
-> > platform where I can test the changes, but I can produce some compiled code that
-> > someone can test.
+On 03/01/2014 02:27 PM, Vlad Yasevich wrote:
+> On 03/01/2014 06:15 AM, Christian Borntraeger wrote:
+>> On 28/02/14 23:14, Vlad Yasevich wrote:
+>>> On 02/27/2014 03:52 PM, Christian Borntraeger wrote:
+>>>> Vlad,
+>>>>
+>>>> commit 6acf54f1cf0a6747bac9fea26f34cfc5a9029523
+>>>>     macvtap: Add support of packet capture on macvtap device.
+>>>>
+>>>> causes a performance regression for iperf traffic between two KVM guests
+>>>> on my s390 system. Both guests are connected via two macvtaps on the same OSA
+>>>> network card.
+>>>> Before that patch I get ~20 Gbit/sec between two guests, afterwards I get
+>>>> ~4Gbit/sec
+>>>>
+>>>> Latency seems to be unchanges (uperf 1byte ping pong).
+>>>>
+>>>> According to ifconfig in the guest, I have ~ 1500 bytes per packet with this
+>>>> patch and ~  40000 bytes without. So for some reason this patch causes the
+>>>> network stack to do segmentation. (the guest kernel stays the same, only host 
+>>>> kernel is changed).
+>>>>
+>>>> Any ideas?
+>>>
+>>> I am looking.  It shouldn't cause addition segmentations and when I ran
+>>> netperf on the code I didn't see any difference in the throughput.
+>>
+>> Dont know if the different bytes/packets ratio is really the reason or
+>> just a side effect. As a hint: the underlying network device does not support
+>> segmentation, but this should not matter for traffic between to guests.
 > 
-> Ok, we can probably start from there. I think the right approach is to actually
-> kill pci_controller by merging it with the new host bridge structure.
+> Could you post 'ethtool -k' output for both lower-level device and the
+> macvtap device?
 > 
-> Most of the resources are there now, we need to move the rest. We probably will
-> need a way to attach platform specific bits to it though, and a few hooks to
-> populate them but that isn't terribly hard.
+> Thanks
+> -vlad
+> 
 
-Oh and regarding testing...
+Ok.  I think I see what's happening.  Since you turn off offloads on
+lower device, that's propagated to macvlan device.  As a result, when
+when we call dev_queue_xmit on the vlan->dev, we end up segmenting since
+lower level says it does support segmentation.
 
-qemu should help. For qemu ppc64, try -M pseries, that's fairly well
-maintained since it's the basis for all our new KVM based products,
-and there's still some (hopefully) working 32-bit mac stuff in there.
+One way to fix this is to never disable offloads on macvlan.  macvlan
+will always try to use __dev_queue_xmit() with it's lower device, so any
+segmentation can happen there.
 
-With pseries, I would expect that you can install fedora, debian or
-ubuntu (in fact you can also install SLES11/RHEL6 I believe).
+-vlad
 
-Cheers,
-Ben.
-
+>>
+>> Maybe you remember, we had a similar situation with commit 3e4f8b787370978733ca6cae452720a4f0c296b8
+>> (macvtap: Perform GSO on forwarding path), the setup is basically the same.
+>>
+>>
+>> Christian
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe netdev" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+> 
 
