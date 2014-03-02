@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754424AbaCBX7z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 18:59:55 -0500
-Received: from mail.sigma-star.at ([95.130.255.111]:62418 "EHLO
+	id S1754395AbaCBX7u (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 18:59:50 -0500
+Received: from mail.sigma-star.at ([95.130.255.111]:62416 "EHLO
 	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754398AbaCBX7w (ORCPT
+	with ESMTP id S1754350AbaCBX7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 18:59:52 -0500
+	Sun, 2 Mar 2014 18:59:48 -0500
 From: Richard Weinberger <richard@nod.at>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arch@vger.kernel.org, viro@zeniv.linux.org.uk, vgupta@synopsys.com,
@@ -24,9 +24,9 @@ Cc: linux-arch@vger.kernel.org, viro@zeniv.linux.org.uk, vgupta@synopsys.com,
         linux-xtensa@linux-xtensa.org, akpm@linux-foundation.org,
         oleg@redhat.com, tj@kernel.org, hch@infradead.org,
         Richard Weinberger <richard@nod.at>
-Subject: [PATCH 33/44] frv: Use translate_signal()
-Date: Mon,  3 Mar 2014 00:59:16 +0100
-Message-Id: <1393804758-7916-11-git-send-email-richard@nod.at>
+Subject: [PATCH 31/44] arm64: Use translate_signal()
+Date: Mon,  3 Mar 2014 00:59:14 +0100
+Message-Id: <1393804758-7916-9-git-send-email-richard@nod.at>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1393804758-7916-1-git-send-email-richard@nod.at>
 References: <1393804758-7916-1-git-send-email-richard@nod.at>
@@ -38,96 +38,39 @@ Use the common helper instead of it's own open coded variant.
 
 Signed-off-by: Richard Weinberger <richard@nod.at>
 ---
- arch/frv/kernel/signal.c | 27 ++++++---------------------
- 1 file changed, 6 insertions(+), 21 deletions(-)
+ arch/arm64/kernel/signal.c | 9 +--------
+ 1 file changed, 1 insertion(+), 8 deletions(-)
 
-diff --git a/arch/frv/kernel/signal.c b/arch/frv/kernel/signal.c
-index 8e37cf2..108a74e 100644
---- a/arch/frv/kernel/signal.c
-+++ b/arch/frv/kernel/signal.c
+diff --git a/arch/arm64/kernel/signal.c b/arch/arm64/kernel/signal.c
+index f6f23dd..165a72a 100644
+--- a/arch/arm64/kernel/signal.c
++++ b/arch/arm64/kernel/signal.c
 @@ -19,7 +19,6 @@
- #include <linux/wait.h>
- #include <linux/ptrace.h>
- #include <linux/unistd.h>
+ 
+ #include <linux/errno.h>
+ #include <linux/signal.h>
 -#include <linux/personality.h>
+ #include <linux/freezer.h>
+ #include <linux/uaccess.h>
  #include <linux/tracehook.h>
- #include <asm/ucontext.h>
- #include <asm/uaccess.h>
-@@ -183,7 +182,6 @@ static inline void __user *get_sigframe(struct k_sigaction *ka,
- static int setup_frame(struct ksignal *ksig, sigset_t *set)
- {
- 	struct sigframe __user *frame;
--	int rsig, sig = ksig->sig;
+@@ -282,16 +281,10 @@ static void handle_signal(struct ksignal *ksig, struct pt_regs *regs)
+ 	struct thread_info *thread = current_thread_info();
+ 	struct task_struct *tsk = current;
+ 	sigset_t *oldset = sigmask_to_save();
+-	int usig = ksig->sig;
++	int usig = translate_signal(ksig->sig);
+ 	int ret;
  
- 	set_fs(USER_DS);
- 
-@@ -192,13 +190,7 @@ static int setup_frame(struct ksignal *ksig, sigset_t *set)
- 	if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame)))
- 		return -EFAULT;
- 
--	rsig = sig;
--	if (sig < 32 &&
--	    __current_thread_info->exec_domain &&
--	    __current_thread_info->exec_domain->signal_invmap)
--		rsig = __current_thread_info->exec_domain->signal_invmap[sig];
+ 	/*
+-	 * translate the signal
+-	 */
+-	if (usig < 32 && thread->exec_domain && thread->exec_domain->signal_invmap)
+-		usig = thread->exec_domain->signal_invmap[usig];
 -
--	if (__put_user(rsig, &frame->sig) < 0)
-+	if (__put_user(translate_signal(ksig->sig), &frame->sig) < 0)
- 		return -EFAULT;
- 
- 	if (setup_sigcontext(&frame->sc, set->sig[0]))
-@@ -246,11 +238,11 @@ static int setup_frame(struct ksignal *ksig, sigset_t *set)
- 
- 	__frame->sp   = (unsigned long) frame;
- 	__frame->lr   = (unsigned long) &frame->retcode;
--	__frame->gr8  = sig;
-+	__frame->gr8  = ksig->sig;
- 
- #if DEBUG_SIG
- 	printk("SIG deliver %d (%s:%d): sp=%p pc=%lx ra=%p\n",
--	       sig, current->comm, current->pid, frame, __frame->pc,
-+	       ksig->sig, current->comm, current->pid, frame, __frame->pc,
- 	       frame->pretcode);
- #endif
- 
-@@ -264,7 +256,6 @@ static int setup_frame(struct ksignal *ksig, sigset_t *set)
- static int setup_rt_frame(struct ksignal *ksig, sigset_t *set)
- {
- 	struct rt_sigframe __user *frame;
--	int rsig, sig = ksig->sig;
- 
- 	set_fs(USER_DS);
- 
-@@ -273,13 +264,7 @@ static int setup_rt_frame(struct ksignal *ksig, sigset_t *set)
- 	if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame)))
- 		return -EFAULT;
- 
--	rsig = sig;
--	if (sig < 32 &&
--	    __current_thread_info->exec_domain &&
--	    __current_thread_info->exec_domain->signal_invmap)
--		rsig = __current_thread_info->exec_domain->signal_invmap[sig];
--
--	if (__put_user(rsig,		&frame->sig) ||
-+	if (__put_user(translate_signal(ksig->sig), &frame->sig) ||
- 	    __put_user(&frame->info,	&frame->pinfo) ||
- 	    __put_user(&frame->uc,	&frame->puc))
- 		return -EFAULT;
-@@ -335,12 +320,12 @@ static int setup_rt_frame(struct ksignal *ksig, sigset_t *set)
- 
- 	__frame->sp  = (unsigned long) frame;
- 	__frame->lr  = (unsigned long) &frame->retcode;
--	__frame->gr8 = sig;
-+	__frame->gr8 = ksig->sig;
- 	__frame->gr9 = (unsigned long) &frame->info;
- 
- #if DEBUG_SIG
- 	printk("SIG deliver %d (%s:%d): sp=%p pc=%lx ra=%p\n",
--	       sig, current->comm, current->pid, frame, __frame->pc,
-+	       ksig->sig, current->comm, current->pid, frame, __frame->pc,
- 	       frame->pretcode);
- #endif
- 	return 0;
+-	/*
+ 	 * Set up the stack frame
+ 	 */
+ 	if (is_compat_task()) {
 -- 
 1.8.4.2
 
