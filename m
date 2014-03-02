@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753273AbaCBVmg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 16:42:36 -0500
-Received: from mail.wdtv.com ([66.118.69.84]:57369 "EHLO mail.wdtv.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751976AbaCBVme (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 16:42:34 -0500
-From: Gene Heskett <gheskett@wdtv.com>
-To: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: set Pentium M as PAE capable
-Date: Sun, 2 Mar 2014 16:42:32 -0500
-References: <20140228140043.GA12157@debian.local> <20140302205619.GA8676@rhlx01.hs-esslingen.de> <20140302210201.GA31948@redhat.com>
-In-Reply-To: <20140302210201.GA31948@redhat.com>
+	id S1753096AbaCBWIa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 17:08:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42935 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751505AbaCBWI3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Mar 2014 17:08:29 -0500
+Date: Sun, 2 Mar 2014 14:08:40 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
+Subject: [GIT PULL] Staging driver fixes for 3.14-rc5
+Message-ID: <20140302220840.GA12720@kroah.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1256"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201403021642.33087.gheskett@wdtv.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 02 March 2014, Dave Jones wrote:
->On Sun, Mar 02, 2014 at 09:56:19PM +0100, Andreas Mohr wrote:
-> > (BTW, would it be possible to transform Linux's PAE support into
-> > boot-config or even fully runtime-detectable boot switching to
-> > (non-)PAE, similar to or exceeding what XP offers with its static
-> > boot-time flag?
-> > Last time I checked PAE support config defines were spread over ~ 40
-> > kernel source files though :-((()
->
->It would be a considerable amount of work to make it a runtime thing.
->Ten years ago, maybe it would be worth the effort perhaps, but I'd
->suggest just letting 32-bit slowly die instead of doing dramatic
->overhauls that will no doubt introduce a bunch of regressions in code
->that's been notoriously awful to debug issues in during the past.
->
->	Dave
+The following changes since commit cfbf8d4857c26a8a307fb7cd258074c9dcd8c691:
 
-There is a fly in that soup Dave, and that is the speed in a truly real 
-time required environment.  IRQ latencies once the 32 bit scene have been 
-left behind, either by PAE or a full 64 bit build are not at all well 
-defined, and are of sufficient magnitudes in terms of the timing jitter, as 
-to nearly destroy our ability to use software step generation to control 
-our machine tools.  A motor being stepped every 200 microseconds (thats 
-actually slow) will lose 50% of its available torque if the timing jitter 
-in the step issuance is 10% of the period.
+  Linux 3.14-rc4 (2014-02-23 17:40:03 -0800)
 
-We routinely expect 2 to 3 u-s jitters on an Atom board running a 32 bit, 
-RTAI enhanced build of what is by now a 5 year old kernel.  This is 
-extremely board sensitive, and that same kernel running on this 4 core 
-phenom, cannot stay inside of 40 u-s.  A case of more horsepower not being 
-a good deal at all.
+are available in the git repository at:
 
-OTOH, we (LinuxCNC) are a very small user group. I just want to make you 
-aware that we exist. We do retrofits mostly, because our software can make 
-the part faster, but I would estimate there are 5 to 10k machines out there 
-in the major manufacturing scene running our software, and that they 
-include some of the heaviest hitters in the auto making business.
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git/ tags/staging-3.14-rc5
 
-Cheers, Gene
--- 
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-Genes Web page <http://geneslinuxbox.net:6309/gene>
+for you to fetch changes up to 9f4a9b83f13544df61efd3645308f64205dc8db9:
 
-NOTICE: Will pay 100 USD for an HP-4815A defective but
-complete probe assembly.
+  Merge iio fixes into staging-linus (2014-03-02 14:04:01 -0800)
 
+----------------------------------------------------------------
+
+Staging tree fixes for 3.14-rc5
+
+Here are a few IIO fixes, and a new device id for a staging driver for
+3.14-rc5.  All have been in linux-next for a while, I did a final merge
+to get the IIO fixes into this tree, they were incorrectly in the
+char-misc tree for a few weeks, and I forgot to tell you to pull them
+from there.  This makes it a single pull request for you.
+
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+----------------------------------------------------------------
+Beomho Seo (2):
+      iio: cm36651: Fix read/write integration time function.
+      iio: cm32181: Change cm32181 ambient light sensor driver
+
+Denis CIOCCA (1):
+      iio:gyro: bug on L3GD20H gyroscope support
+
+Greg Kroah-Hartman (4):
+      Merge tag 'iio-fixes-for-3.14c' of git://git.kernel.org/.../jic23/iio into char-misc-linus
+      Merge 3.14-rc4 into char-misc-linus
+      Merge tag 'fixes-for-3.14d' of git://git.kernel.org/.../jic23/iio into staging-linus
+      Merge iio fixes into staging-linus
+
+Juergen Beisert (1):
+      staging:iio:adc:MXS:LRADC: fix touchscreen statemachine
+
+Manu Gupta (1):
+      staging: r8188eu: Add new device ID
+
+ drivers/iio/gyro/Kconfig                    |  2 +-
+ drivers/iio/gyro/st_gyro.h                  |  1 -
+ drivers/iio/gyro/st_gyro_core.c             |  9 +++---
+ drivers/iio/gyro/st_gyro_i2c.c              |  1 -
+ drivers/iio/gyro/st_gyro_spi.c              |  1 -
+ drivers/iio/light/cm32181.c                 | 16 +++++-----
+ drivers/iio/light/cm36651.c                 | 45 +++++++++++++++--------------
+ drivers/staging/iio/adc/mxs-lradc.c         |  1 +
+ drivers/staging/rtl8188eu/os_dep/usb_intf.c |  1 +
+ 9 files changed, 38 insertions(+), 39 deletions(-)
