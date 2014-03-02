@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754202AbaCBX6i (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 18:58:38 -0500
-Received: from mail.sigma-star.at ([95.130.255.111]:62429 "EHLO
+	id S1754220AbaCBX7H (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 18:59:07 -0500
+Received: from mail.sigma-star.at ([95.130.255.111]:62427 "EHLO
 	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754154AbaCBX6D (ORCPT
+	with ESMTP id S1754103AbaCBX54 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 18:58:03 -0500
+	Sun, 2 Mar 2014 18:57:56 -0500
 From: Richard Weinberger <richard@nod.at>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arch@vger.kernel.org, viro@zeniv.linux.org.uk, vgupta@synopsys.com,
@@ -24,9 +24,9 @@ Cc: linux-arch@vger.kernel.org, viro@zeniv.linux.org.uk, vgupta@synopsys.com,
         linux-xtensa@linux-xtensa.org, akpm@linux-foundation.org,
         oleg@redhat.com, tj@kernel.org, hch@infradead.org,
         Richard Weinberger <richard@nod.at>
-Subject: [PATCH 21/44] tile: Use get_signal() signal_setup_done()
-Date: Mon,  3 Mar 2014 00:57:25 +0100
-Message-Id: <1393804646-7797-11-git-send-email-richard@nod.at>
+Subject: [PATCH 19/44] score: Use get_signal() signal_setup_done()
+Date: Mon,  3 Mar 2014 00:57:23 +0100
+Message-Id: <1393804646-7797-9-git-send-email-richard@nod.at>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1393804646-7797-1-git-send-email-richard@nod.at>
 References: <1393804646-7797-1-git-send-email-richard@nod.at>
@@ -37,247 +37,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Use the more generic functions get_signal() signal_setup_done()
 for signal delivery.
 
+Acked-by: Lennox Wu <lennox.wu@gmail.com>
 Signed-off-by: Richard Weinberger <richard@nod.at>
 ---
- arch/tile/include/asm/compat.h   |  3 +--
- arch/tile/kernel/compat_signal.c | 29 ++++++++++-----------
- arch/tile/kernel/signal.c        | 54 ++++++++++++++++++----------------------
- 3 files changed, 40 insertions(+), 46 deletions(-)
+ arch/score/kernel/signal.c | 43 ++++++++++++++++++-------------------------
+ 1 file changed, 18 insertions(+), 25 deletions(-)
 
-diff --git a/arch/tile/include/asm/compat.h b/arch/tile/include/asm/compat.h
-index ffd4493..c14e36f 100644
---- a/arch/tile/include/asm/compat.h
-+++ b/arch/tile/include/asm/compat.h
-@@ -267,8 +267,7 @@ static inline int is_compat_task(void)
- 	return current_thread_info()->status & TS_COMPAT;
- }
- 
--extern int compat_setup_rt_frame(int sig, struct k_sigaction *ka,
--				 siginfo_t *info, sigset_t *set,
-+extern int compat_setup_rt_frame(struct ksignal *ksig, sigset_t *set,
- 				 struct pt_regs *regs);
- 
- /* Compat syscalls. */
-diff --git a/arch/tile/kernel/compat_signal.c b/arch/tile/kernel/compat_signal.c
-index 19c04b5..8c5abf2 100644
---- a/arch/tile/kernel/compat_signal.c
-+++ b/arch/tile/kernel/compat_signal.c
-@@ -190,18 +190,18 @@ static inline void __user *compat_get_sigframe(struct k_sigaction *ka,
- 	return (void __user *) sp;
- }
- 
--int compat_setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
--			  sigset_t *set, struct pt_regs *regs)
-+int compat_setup_rt_frame(struct ksignal *ksig, sigset_t *set,
-+			  struct pt_regs *regs)
- {
- 	unsigned long restorer;
- 	struct compat_rt_sigframe __user *frame;
--	int err = 0;
-+	int err = 0, sig = ksig->sig;
- 	int usig;
- 
--	frame = compat_get_sigframe(ka, regs, sizeof(*frame));
-+	frame = compat_get_sigframe(&ksig->ka, regs, sizeof(*frame));
- 
- 	if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame)))
--		goto give_sigsegv;
-+		goto err;
- 
- 	usig = current_thread_info()->exec_domain
- 		&& current_thread_info()->exec_domain->signal_invmap
-@@ -210,12 +210,12 @@ int compat_setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- 		: sig;
- 
- 	/* Always write at least the signal number for the stack backtracer. */
--	if (ka->sa.sa_flags & SA_SIGINFO) {
-+	if (ksig->ka.sa.sa_flags & SA_SIGINFO) {
- 		/* At sigreturn time, restore the callee-save registers too. */
--		err |= copy_siginfo_to_user32(&frame->info, info);
-+		err |= copy_siginfo_to_user32(&frame->info, &ksig->info);
- 		regs->flags |= PT_FLAGS_RESTORE_REGS;
- 	} else {
--		err |= __put_user(info->si_signo, &frame->info.si_signo);
-+		err |= __put_user(ksig->info.si_signo, &frame->info.si_signo);
- 	}
- 
- 	/* Create the ucontext.  */
-@@ -226,11 +226,11 @@ int compat_setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- 	err |= setup_sigcontext(&frame->uc.uc_mcontext, regs);
- 	err |= __copy_to_user(&frame->uc.uc_sigmask, set, sizeof(*set));
- 	if (err)
--		goto give_sigsegv;
-+		goto err;
- 
- 	restorer = VDSO_SYM(&__vdso_rt_sigreturn);
--	if (ka->sa.sa_flags & SA_RESTORER)
--		restorer = ptr_to_compat_reg(ka->sa.sa_restorer);
-+	if (ksig->ka.sa.sa_flags & SA_RESTORER)
-+		restorer = ptr_to_compat_reg(ksig->ka.sa.sa_restorer);
- 
- 	/*
- 	 * Set up registers for signal handler.
-@@ -239,7 +239,7 @@ int compat_setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- 	 * We always pass siginfo and mcontext, regardless of SA_SIGINFO,
- 	 * since some things rely on this (e.g. glibc's debug/segfault.c).
- 	 */
--	regs->pc = ptr_to_compat_reg(ka->sa.sa_handler);
-+	regs->pc = ptr_to_compat_reg(ksig->ka.sa.sa_handler);
- 	regs->ex1 = PL_ICS_EX1(USER_PL, 1); /* set crit sec in handler */
- 	regs->sp = ptr_to_compat_reg(frame);
- 	regs->lr = restorer;
-@@ -249,7 +249,8 @@ int compat_setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- 	regs->flags |= PT_FLAGS_CALLER_SAVES;
+diff --git a/arch/score/kernel/signal.c b/arch/score/kernel/signal.c
+index a00fba3..1651807 100644
+--- a/arch/score/kernel/signal.c
++++ b/arch/score/kernel/signal.c
+@@ -173,15 +173,15 @@ badframe:
  	return 0;
- 
--give_sigsegv:
--	signal_fault("bad setup frame", regs, frame, sig);
-+err:
-+	trace_unhandled_signal("bad sigreturn frame", regs,
-+			      (unsigned long)frame, SIGSEGV);
- 	return -EFAULT;
- }
-diff --git a/arch/tile/kernel/signal.c b/arch/tile/kernel/signal.c
-index 2d1dbf3..27aba86 100644
---- a/arch/tile/kernel/signal.c
-+++ b/arch/tile/kernel/signal.c
-@@ -153,18 +153,18 @@ static inline void __user *get_sigframe(struct k_sigaction *ka,
- 	return (void __user *) sp;
  }
  
--static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
--			   sigset_t *set, struct pt_regs *regs)
-+static int setup_rt_frame(struct ksignal *ksig, sigset_t *set,
-+			  struct pt_regs *regs)
+-static int setup_rt_frame(struct k_sigaction *ka, struct pt_regs *regs,
+-		int signr, sigset_t *set, siginfo_t *info)
++static int setup_rt_frame(struct ksignal *ksig, struct pt_regs *regs,
++			  sigset_t *set)
  {
- 	unsigned long restorer;
  	struct rt_sigframe __user *frame;
--	int err = 0;
-+	int err = 0, sig = ksig->sig;
- 	int usig;
+ 	int err = 0;
  
 -	frame = get_sigframe(ka, regs, sizeof(*frame));
 +	frame = get_sigframe(&ksig->ka, regs, sizeof(*frame));
- 
  	if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame)))
 -		goto give_sigsegv;
-+		goto err;
- 
- 	usig = current_thread_info()->exec_domain
- 		&& current_thread_info()->exec_domain->signal_invmap
-@@ -173,12 +173,12 @@ static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- 		: sig;
- 
- 	/* Always write at least the signal number for the stack backtracer. */
--	if (ka->sa.sa_flags & SA_SIGINFO) {
-+	if (ksig->ka.sa.sa_flags & SA_SIGINFO) {
- 		/* At sigreturn time, restore the callee-save registers too. */
--		err |= copy_siginfo_to_user(&frame->info, info);
-+		err |= copy_siginfo_to_user(&frame->info, &ksig->info);
- 		regs->flags |= PT_FLAGS_RESTORE_REGS;
- 	} else {
--		err |= __put_user(info->si_signo, &frame->info.si_signo);
-+		err |= __put_user(ksig->info.si_signo, &frame->info.si_signo);
- 	}
- 
- 	/* Create the ucontext.  */
-@@ -189,11 +189,11 @@ static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- 	err |= setup_sigcontext(&frame->uc.uc_mcontext, regs);
- 	err |= __copy_to_user(&frame->uc.uc_sigmask, set, sizeof(*set));
- 	if (err)
--		goto give_sigsegv;
-+		goto err;
- 
- 	restorer = VDSO_SYM(&__vdso_rt_sigreturn);
--	if (ka->sa.sa_flags & SA_RESTORER)
--		restorer = (unsigned long) ka->sa.sa_restorer;
-+	if (ksig->ka.sa.sa_flags & SA_RESTORER)
-+		restorer = (unsigned long) ksig->ka.sa.sa_restorer;
++		return -EFAULT;
  
  	/*
- 	 * Set up registers for signal handler.
-@@ -202,7 +202,7 @@ static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- 	 * We always pass siginfo and mcontext, regardless of SA_SIGINFO,
- 	 * since some things rely on this (e.g. glibc's debug/segfault.c).
- 	 */
--	regs->pc = (unsigned long) ka->sa.sa_handler;
-+	regs->pc = (unsigned long) ksig->ka.sa.sa_handler;
- 	regs->ex1 = PL_ICS_EX1(USER_PL, 1); /* set crit sec in handler */
- 	regs->sp = (unsigned long) frame;
- 	regs->lr = restorer;
-@@ -212,8 +212,9 @@ static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- 	regs->flags |= PT_FLAGS_CALLER_SAVES;
+ 	 * Set up the return code ...
+@@ -194,7 +194,7 @@ static int setup_rt_frame(struct k_sigaction *ka, struct pt_regs *regs,
+ 	err |= __put_user(0x80008002, frame->rs_code + 1);
+ 	flush_cache_sigtramp((unsigned long) frame->rs_code);
+ 
+-	err |= copy_siginfo_to_user(&frame->rs_info, info);
++	err |= copy_siginfo_to_user(&frame->rs_info, &ksig->info);
+ 	err |= __put_user(0, &frame->rs_uc.uc_flags);
+ 	err |= __put_user(NULL, &frame->rs_uc.uc_link);
+ 	err |= __save_altstack(&frame->rs_uc.uc_stack, regs->regs[0]);
+@@ -202,26 +202,23 @@ static int setup_rt_frame(struct k_sigaction *ka, struct pt_regs *regs,
+ 	err |= __copy_to_user(&frame->rs_uc.uc_sigmask, set, sizeof(*set));
+ 
+ 	if (err)
+-		goto give_sigsegv;
++		return -EFAULT;
+ 
+ 	regs->regs[0] = (unsigned long) frame;
+ 	regs->regs[3] = (unsigned long) frame->rs_code;
+-	regs->regs[4] = signr;
++	regs->regs[4] = ksig->sig;
+ 	regs->regs[5] = (unsigned long) &frame->rs_info;
+ 	regs->regs[6] = (unsigned long) &frame->rs_uc;
+-	regs->regs[29] = (unsigned long) ka->sa.sa_handler;
+-	regs->cp0_epc = (unsigned long) ka->sa.sa_handler;
++	regs->regs[29] = (unsigned long) ksig->ka.sa.sa_handler;
++	regs->cp0_epc = (unsigned long) ksig->ka.sa.sa_handler;
+ 
  	return 0;
- 
+-
 -give_sigsegv:
--	signal_fault("bad setup frame", regs, frame, sig);
-+err:
-+	trace_unhandled_signal("bad sigreturn frame", regs,
-+			      (unsigned long)frame, SIGSEGV);
- 	return -EFAULT;
+-	force_sigsegv(signr, current);
+-	return -EFAULT;
  }
- 
-@@ -221,9 +222,7 @@ give_sigsegv:
-  * OK, we're invoking a handler
-  */
  
 -static void handle_signal(unsigned long sig, siginfo_t *info,
--			 struct k_sigaction *ka,
--			 struct pt_regs *regs)
+-	struct k_sigaction *ka, struct pt_regs *regs)
 +static void handle_signal(struct ksignal *ksig, struct pt_regs *regs)
  {
- 	sigset_t *oldset = sigmask_to_save();
- 	int ret;
-@@ -238,7 +237,7 @@ static void handle_signal(unsigned long sig, siginfo_t *info,
++	int ret;
++
+ 	if (regs->is_syscall) {
+ 		switch (regs->regs[4]) {
+ 		case ERESTART_RESTARTBLOCK:
+@@ -229,7 +226,7 @@ static void handle_signal(unsigned long sig, siginfo_t *info,
+ 			regs->regs[4] = EINTR;
  			break;
- 
- 		case -ERESTARTSYS:
+ 		case ERESTARTSYS:
 -			if (!(ka->sa.sa_flags & SA_RESTART)) {
 +			if (!(ksig->ka.sa.sa_flags & SA_RESTART)) {
- 				regs->regs[0] = -EINTR;
+ 				regs->regs[4] = EINTR;
  				break;
  			}
-@@ -254,14 +253,12 @@ static void handle_signal(unsigned long sig, siginfo_t *info,
- 	/* Set up the stack frame */
- #ifdef CONFIG_COMPAT
- 	if (is_compat_task())
--		ret = compat_setup_rt_frame(sig, ka, info, oldset, regs);
-+		ret = compat_setup_rt_frame(ksig, oldset, regs);
- 	else
- #endif
--		ret = setup_rt_frame(sig, ka, info, oldset, regs);
--	if (ret)
+@@ -245,17 +242,14 @@ static void handle_signal(unsigned long sig, siginfo_t *info,
+ 	/*
+ 	 * Set up the stack frame
+ 	 */
+-	if (setup_rt_frame(ka, regs, sig, sigmask_to_save(), info) < 0)
 -		return;
--	signal_delivered(sig, info, ka, regs,
--			test_thread_flag(TIF_SINGLESTEP));
-+		ret = setup_rt_frame(ksig, oldset, regs);
-+
-+	signal_setup_done(ret, ksig, test_thread_flag(TIF_SINGLESTEP));
++	ret = setup_rt_frame(ksig, regs, sigmask_to_save());
+ 
+-	signal_delivered(sig, info, ka, regs, 0);
++	signal_setup_done(ret, ksig, 0);
  }
  
- /*
-@@ -271,9 +268,7 @@ static void handle_signal(unsigned long sig, siginfo_t *info,
-  */
- void do_signal(struct pt_regs *regs)
+ static void do_signal(struct pt_regs *regs)
  {
+-	struct k_sigaction ka;
 -	siginfo_t info;
 -	int signr;
--	struct k_sigaction ka;
 +	struct ksignal ksig;
  
  	/*
- 	 * i386 will check if we're coming from kernel mode and bail out
-@@ -282,10 +277,9 @@ void do_signal(struct pt_regs *regs)
- 	 * helpful, we can reinstate the check on "!user_mode(regs)".
- 	 */
+ 	 * We want the common case to go fast, which is why we may in certain
+@@ -265,10 +259,9 @@ static void do_signal(struct pt_regs *regs)
+ 	if (!user_mode(regs))
+ 		return;
  
 -	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
 -	if (signr > 0) {
 +	if (get_signal(&ksig)) {
- 		/* Whee! Actually deliver the signal.  */
+ 		/* Actually deliver the signal.  */
 -		handle_signal(signr, &info, &ka, regs);
 +		handle_signal(&ksig, regs);
- 		goto done;
+ 		return;
  	}
  
 -- 
