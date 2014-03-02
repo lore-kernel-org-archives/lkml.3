@@ -1,74 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679AbaCCAFt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 19:05:49 -0500
-Received: from ozlabs.org ([203.10.76.45]:57716 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754255AbaCCAFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 19:05:46 -0500
-Date: Mon, 3 Mar 2014 11:07:15 +1100
-From: David Gibson <david@gibson.dropbear.id.au>
-To: xypron.glpk@gmx.de
-Cc: grant.likely@linaro.org, robh+dt@kernel.org, devicetree@vger.kernel.org,
-        devicetree-compiler@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] Update source code location for dtc in manual.txt
-Message-ID: <20140303000715.GG12916@voom.fritz.box>
-References: <1393796354-29704-1-git-send-email-xypron.glpk@gmx.de>
- <20140302234212.GF12916@voom.fritz.box>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xQmOcGOVkeO43v2v"
-Content-Disposition: inline
-In-Reply-To: <20140302234212.GF12916@voom.fritz.box>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754705AbaCCAGr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 19:06:47 -0500
+Received: from mail.sigma-star.at ([95.130.255.111]:62414 "EHLO
+	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754334AbaCBX7n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Mar 2014 18:59:43 -0500
+From: Richard Weinberger <richard@nod.at>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arch@vger.kernel.org, viro@zeniv.linux.org.uk, vgupta@synopsys.com,
+        catalin.marinas@arm.com, will.deacon@arm.com, hskinnemoen@gmail.com,
+        egtvedt@samfundet.no, vapier@gentoo.org, msalter@redhat.com,
+        a-jacquiot@ti.com, starvik@axis.com, jesper.nilsson@axis.com,
+        dhowells@redhat.com, rkuo@codeaurora.org, tony.luck@intel.com,
+        fenghua.yu@intel.com, takata@linux-m32r.org, geert@linux-m68k.org,
+        james.hogan@imgtec.com, monstr@monstr.eu,
+        yasutake.koichi@jp.panasonic.com, ralf@linux-mips.org,
+        jonas@southpole.se, jejb@parisc-linux.org, deller@gmx.de,
+        benh@kernel.crashing.org, paulus@samba.org, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, liqin.linux@gmail.com, lennox.wu@gmail.com,
+        cmetcalf@tilera.com, gxt@mprc.pku.edu.cn,
+        linux-xtensa@linux-xtensa.org, akpm@linux-foundation.org,
+        oleg@redhat.com, tj@kernel.org, hch@infradead.org,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH 29/44] arc: Use translate_signal()
+Date: Mon,  3 Mar 2014 00:59:12 +0100
+Message-Id: <1393804758-7916-7-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1393804758-7916-1-git-send-email-richard@nod.at>
+References: <1393804758-7916-1-git-send-email-richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Use the common helper instead of it's own variant.
 
---xQmOcGOVkeO43v2v
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ arch/arc/kernel/signal.c | 15 +--------------
+ 1 file changed, 1 insertion(+), 14 deletions(-)
 
-On Mon, Mar 03, 2014 at 10:42:12AM +1100, David Gibson wrote:
-> On Sun, Mar 02, 2014 at 10:39:14PM +0100, xypron.glpk@gmx.de wrote:
-> > From: Heinrich Schuchardt <xypron.glpk@gmx.de>
-> >=20
-> > The information about the location of the source code of the
-> > device tree compiler was inaccurate.
-> >=20
-> > Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
->=20
-> Trailing whitespace removed, then applied.  Thanks.
+diff --git a/arch/arc/kernel/signal.c b/arch/arc/kernel/signal.c
+index c2031e2..bf11c8d 100644
+--- a/arch/arc/kernel/signal.c
++++ b/arch/arc/kernel/signal.c
+@@ -49,7 +49,6 @@
+ 
+ #include <linux/signal.h>
+ #include <linux/ptrace.h>
+-#include <linux/personality.h>
+ #include <linux/uaccess.h>
+ #include <linux/syscalls.h>
+ #include <linux/tracehook.h>
+@@ -166,18 +165,6 @@ static inline void __user *get_sigframe(struct k_sigaction *ka,
+ 	return frame;
+ }
+ 
+-/*
+- * translate the signal
+- */
+-static inline int map_sig(int sig)
+-{
+-	struct thread_info *thread = current_thread_info();
+-	if (thread->exec_domain && thread->exec_domain->signal_invmap
+-	    && sig < 32)
+-		sig = thread->exec_domain->signal_invmap[sig];
+-	return sig;
+-}
+-
+ static int
+ setup_rt_frame(struct ksignal *ksig, sigset_t *set, struct pt_regs *regs)
+ {
+@@ -226,7 +213,7 @@ setup_rt_frame(struct ksignal *ksig, sigset_t *set, struct pt_regs *regs)
+ 		return err;
+ 
+ 	/* #1 arg to the user Signal handler */
+-	regs->r0 = map_sig(ksig->sig);
++	regs->r0 = translate_signal(ksig->sig);
+ 
+ 	/* setup PC of user space signal handler */
+ 	regs->ret = (unsigned long)ksig->ka.sa.sa_handler;
+-- 
+1.8.4.2
 
-Uh, actually, corrected some of the submission details as well.
-
---=20
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
-
---xQmOcGOVkeO43v2v
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTE8ezAAoJEGw4ysog2bOSmGUP/3O8QvQYgpyuQctrPBmwqcUJ
-vs6/bXnsyd4LU2nR7W1WlFbO2bNAiboHik69OyYdSuWcdwLJ+J1LlJBlhOAEzrxx
-RMV8T4epPnMFe+aG3rkFaB5U/xdcRmD993N3pNCB84h4HSUVGjkcUaOr1FfpV4wU
-KPV7ZhQKF6lRDh45YAvVhqRlTCrzcxFT+MYQn3LqcYi03ka8J4XinHBXkrcqFb1j
-OGkV9Y1nhwLHqW4kWA9CMtMDh395jruY7Z52ZPVoGbZLtBR9hukflGZQjtrsnXT9
-OgrkKXuUWKWE3aLgnJOAyuLxkdht0gTlWoH8m5/eRY3NfrFm6RMD6p9utWtXf8GH
-hcrmY0X3UVDtS9D5KkvRoGjPygGOUiVJcjG3FGYt54zTUtG7IJtAA9Y6BL3Cvg4t
-DKGElvWfVmYotNTP35lUCY3Wha6BmdavnLgfqeakFGitDiwGL0yLqlNdnxGjGnpm
-OHFLr1OdKr9d28BqwpZEr3FB9UxXywgiMyojYs6gQV1KN5NfaHO0ArmE6/xV2l/G
-AEgzYDNDgm17fBxm6nLN6fplAdw2OvnVRksCDL0VXG7ncqFoK2G+JD8FdmoftLjo
-NJasA4mptjrM7s0QzZrZltqeobba1xog5uwnzlGbp6jia/np785/PrsZNWNPckVT
-YiK9vhcjtpEBTF9yNo+P
-=DzSZ
------END PGP SIGNATURE-----
-
---xQmOcGOVkeO43v2v--
