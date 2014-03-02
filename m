@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753516AbaCBOJS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 09:09:18 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:36648 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752969AbaCBOJH (ORCPT
+	id S1753472AbaCBOJP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 09:09:15 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:51259 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752821AbaCBOIy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 09:09:07 -0500
+	Sun, 2 Mar 2014 09:08:54 -0500
 From: Namjae Jeon <linkinjeon@gmail.com>
 To: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         Namjae Jeon <linkinjeon@gmail.com>,
         Namjae Jeon <namjae.jeon@samsung.com>,
         Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: [PATCH v4 2/6] fat: add fat_fallocate operation
-Date: Sun,  2 Mar 2014 23:08:57 +0900
-Message-Id: <1393769338-3506-1-git-send-email-linkinjeon@gmail.com>
+Subject: [PATCH v4 1/6] fat: add i_disksize to represent uninitialized size
+Date: Sun,  2 Mar 2014 23:08:47 +0900
+Message-Id: <1393769327-3472-1-git-send-email-linkinjeon@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,183 +23,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namjae Jeon <namjae.jeon@samsung.com>
 
-Implement preallocation via the fallocate syscall on VFAT partitions.
-This patch is based on an earlier patch of the same name which had some
-issues detailed below and did not get accepted.  Refer
-https://lkml.org/lkml/2007/12/22/130.
-
-a) The preallocated space was not persistent when the
-FALLOC_FL_KEEP_SIZE flag was set. It will deallocate cluster at evict time.
-
-b) There was no need to zero out the clusters when the flag was set
-Instead of doing an expanding truncate, just allocate clusters and add
-them to the fat chain. This reduces preallocation time.
-
-Compatibility with windows:
-
-There are no issues when FALLOC_FL_KEEP_SIZE is not set because it just
-does an expanding truncate.  Thus reading from the preallocated area on
-windows returns null until data is written to it.
-
-When a file with preallocated area using the FALLOC_FL_KEEP_SIZE was
-written to on windows, the windows driver freed-up the preallocated
-clusters and allocated new clusters for the new data.  The freed up
-clusters gets reflected in the free space available for the partition
-which can be seen from the Volume properties.
-
-The windows chkdsk tool also does not report any errors on a disk
-containing files with preallocated space.
-
-And there is also no issue using linux fat fsck.  because discard
-preallocated clusters at repair time.
+Add i_disksize to represent uninitialized allocated size.
+And mmu_private represent initialized allocated size.
 
 Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
 Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
 ---
- fs/fat/file.c  | 74 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- fs/fat/inode.c | 22 +++++++++++++++++
- 2 files changed, 96 insertions(+)
+ fs/fat/cache.c | 6 +++---
+ fs/fat/fat.h   | 3 ++-
+ fs/fat/file.c  | 4 +++-
+ fs/fat/inode.c | 9 +++++++--
+ 4 files changed, 15 insertions(+), 7 deletions(-)
 
+diff --git a/fs/fat/cache.c b/fs/fat/cache.c
+index 91ad9e1..a132666 100644
+--- a/fs/fat/cache.c
++++ b/fs/fat/cache.c
+@@ -329,10 +329,10 @@ int fat_bmap(struct inode *inode, sector_t sector, sector_t *phys,
+ 			return 0;
+ 
+ 		/*
+-		 * ->mmu_private can access on only allocation path.
+-		 * (caller must hold ->i_mutex)
++		 * Both ->mmu_private and ->i_disksize can access
++		 * on only allocation path. (caller must hold ->i_mutex)
+ 		 */
+-		last_block = (MSDOS_I(inode)->mmu_private + (blocksize - 1))
++		last_block = (MSDOS_I(inode)->i_disksize + (blocksize - 1))
+ 			>> blocksize_bits;
+ 		if (sector >= last_block)
+ 			return 0;
+diff --git a/fs/fat/fat.h b/fs/fat/fat.h
+index 7c31f4b..7b5851f 100644
+--- a/fs/fat/fat.h
++++ b/fs/fat/fat.h
+@@ -118,7 +118,8 @@ struct msdos_inode_info {
+ 	unsigned int cache_valid_id;
+ 
+ 	/* NOTE: mmu_private is 64bits, so must hold ->i_mutex to access */
+-	loff_t mmu_private;	/* physically allocated size */
++	loff_t mmu_private;	/* physically allocated size (initialized) */
++	loff_t i_disksize;	/* physically allocated size (uninitialized) */
+ 
+ 	int i_start;		/* first cluster or 0 */
+ 	int i_logstart;		/* logical first cluster */
 diff --git a/fs/fat/file.c b/fs/fat/file.c
-index 0bf0d28..e33c8a2 100644
+index 9b104f5..0bf0d28 100644
 --- a/fs/fat/file.c
 +++ b/fs/fat/file.c
-@@ -17,8 +17,12 @@
- #include <linux/blkdev.h>
- #include <linux/fsnotify.h>
- #include <linux/security.h>
-+#include <linux/falloc.h>
- #include "fat.h"
- 
-+static long fat_fallocate(struct file *file, int mode,
-+			  loff_t offset, loff_t len);
-+
- static int fat_ioctl_get_attributes(struct inode *inode, u32 __user *user_attr)
- {
- 	u32 attr;
-@@ -182,6 +186,7 @@ const struct file_operations fat_file_operations = {
- #endif
- 	.fsync		= fat_file_fsync,
- 	.splice_read	= generic_file_splice_read,
-+	.fallocate	= fat_fallocate,
- };
- 
- static int fat_cont_expand(struct inode *inode, loff_t size)
-@@ -220,6 +225,75 @@ out:
- 	return err;
- }
- 
-+/*
-+ * Preallocate space for a file. This implements fat's fallocate file
-+ * operation, which gets called from sys_fallocate system call. User
-+ * space requests len bytes at offset. If FALLOC_FL_KEEP_SIZE is set
-+ * we just allocate clusters without zeroing them out. Otherwise we
-+ * allocate and zero out clusters via an expanding truncate.
-+ */
-+static long fat_fallocate(struct file *file, int mode,
-+			  loff_t offset, loff_t len)
-+{
-+	int cluster;
-+	int nr_cluster; /* Number of clusters to be allocated */
-+	loff_t mm_bytes; /* Number of bytes to be allocated for file */
-+	struct inode *inode = file->f_mapping->host;
-+	struct super_block *sb = inode->i_sb;
-+	struct msdos_sb_info *sbi = MSDOS_SB(sb);
-+	int err = 0;
-+
-+	/* No support for hole punch or other fallocate flags. */
-+	if (mode & ~FALLOC_FL_KEEP_SIZE)
-+		return -EOPNOTSUPP;
-+
-+	/* No support for dir */
-+	if (!S_ISREG(inode->i_mode))
-+		return -EOPNOTSUPP;
-+
-+	mutex_lock(&inode->i_mutex);
-+	if ((offset + len) <= MSDOS_I(inode)->i_disksize)
-+		goto error;
-+
-+	err = inode_newsize_ok(inode, (len + offset));
-+	if (err)
-+		goto error;
-+
-+	if (mode & FALLOC_FL_KEEP_SIZE) {
-+		/* First compute the number of clusters to be allocated */
-+		mm_bytes = offset + len - round_up(MSDOS_I(inode)->i_disksize,
-+			sbi->cluster_size);
-+		nr_cluster = (mm_bytes + (sbi->cluster_size - 1)) >>
-+			sbi->cluster_bits;
-+
-+		/* Start the allocation.We are not zeroing out the clusters */
-+		while (nr_cluster-- > 0) {
-+			err = fat_alloc_clusters(inode, &cluster, 1);
-+			if (err) {
-+				fat_msg(sb, KERN_ERR,
-+					"fat_fallocate(): fat_alloc_clusters() error");
-+				goto error;
-+			}
-+			err = fat_chain_add(inode, cluster, 1);
-+			if (err) {
-+				fat_free_clusters(inode, cluster);
-+				goto error;
-+			}
-+			MSDOS_I(inode)->i_disksize += sbi->cluster_size;
-+		}
-+	} else {
-+		/* This is just an expanding truncate */
-+		err = fat_cont_expand(inode, (offset + len));
-+		if (err)
-+			fat_msg(sb, KERN_ERR,
-+				"fat_fallocate(): fat_cont_expand() error");
+@@ -300,8 +300,10 @@ void fat_truncate_blocks(struct inode *inode, loff_t offset)
+ 	 * This protects against truncating a file bigger than it was then
+ 	 * trying to write into the hole.
+ 	 */
+-	if (MSDOS_I(inode)->mmu_private > offset)
++	if (MSDOS_I(inode)->i_disksize > offset) {
+ 		MSDOS_I(inode)->mmu_private = offset;
++		MSDOS_I(inode)->i_disksize = offset;
 +	}
-+
-+error:
-+	mutex_unlock(&inode->i_mutex);
-+	return err;
-+}
-+
- /* Free all clusters after the skip'th cluster. */
- static int fat_free(struct inode *inode, int skip)
- {
+ 
+ 	nr_clusters = (offset + (cluster_size - 1)) >> sbi->cluster_bits;
+ 
 diff --git a/fs/fat/inode.c b/fs/fat/inode.c
-index a3b9fe8..ca222ef 100644
+index c68d9f2..a3b9fe8 100644
 --- a/fs/fat/inode.c
 +++ b/fs/fat/inode.c
-@@ -492,12 +492,34 @@ out:
+@@ -93,6 +93,7 @@ static inline int __fat_get_block(struct inode *inode, sector_t iblock,
  
- EXPORT_SYMBOL_GPL(fat_build_inode);
+ 	*max_blocks = min(mapped_blocks, *max_blocks);
+ 	MSDOS_I(inode)->mmu_private += *max_blocks << sb->s_blocksize_bits;
++	MSDOS_I(inode)->i_disksize = MSDOS_I(inode)->mmu_private;
  
-+static int __fat_write_inode(struct inode *inode, int wait);
- static void fat_evict_inode(struct inode *inode)
- {
- 	truncate_inode_pages_final(&inode->i_data);
- 	if (!inode->i_nlink) {
- 		inode->i_size = 0;
- 		fat_truncate_blocks(inode, 0);
-+	} else {
-+		/* Release unwritten fallocated blocks on inode eviction. */
-+		if (MSDOS_I(inode)->i_disksize >
-+		    round_up(MSDOS_I(inode)->mmu_private,
-+				inode->i_sb->s_blocksize)) {
-+			int err;
-+			fat_truncate_blocks(inode, MSDOS_I(inode)->mmu_private);
-+			/* Fallocate results in updating the i_start/iogstart
-+			 * for the zero byte file. So, make it return to
-+			 * original state during evict and commit it to avoid
-+			 * any corruption on the next access to the cluster
-+			 * chain for the file.
-+			 */
-+			err = __fat_write_inode(inode, inode_needs_sync(inode));
-+			if (err) {
-+				fat_msg(inode->i_sb, KERN_WARNING, "Failed to "
-+				"update on disk inode for unused fallocated "
-+				"blocks, inode could be corrupted. Please run "
-+				"fsck");
-+			}
-+		}
+ 	err = fat_bmap(inode, iblock, &phys, &mapped_blocks, create);
+ 	if (err)
+@@ -407,7 +408,6 @@ int fat_fill_inode(struct inode *inode, struct msdos_dir_entry *de)
+ 		error = fat_calc_dir_size(inode);
+ 		if (error < 0)
+ 			return error;
+-		MSDOS_I(inode)->mmu_private = inode->i_size;
+ 
+ 		set_nlink(inode, fat_subdirs(inode));
+ 	} else { /* not a directory */
+@@ -422,8 +422,12 @@ int fat_fill_inode(struct inode *inode, struct msdos_dir_entry *de)
+ 		inode->i_op = &fat_file_inode_operations;
+ 		inode->i_fop = &fat_file_operations;
+ 		inode->i_mapping->a_ops = &fat_aops;
+-		MSDOS_I(inode)->mmu_private = inode->i_size;
  	}
- 	invalidate_inode_buffers(inode);
- 	clear_inode(inode);
++
++	MSDOS_I(inode)->mmu_private = inode->i_size;
++	MSDOS_I(inode)->i_disksize = round_up(inode->i_size,
++		inode->i_sb->s_blocksize);
++
+ 	if (de->attr & ATTR_SYS) {
+ 		if (sbi->options.sys_immutable)
+ 			inode->i_flags |= S_IMMUTABLE;
+@@ -1223,6 +1227,7 @@ static int fat_read_root(struct inode *inode)
+ 			   & ~((loff_t)sbi->cluster_size - 1)) >> 9;
+ 	MSDOS_I(inode)->i_logstart = 0;
+ 	MSDOS_I(inode)->mmu_private = inode->i_size;
++	MSDOS_I(inode)->i_disksize = inode->i_size;
+ 
+ 	fat_save_attrs(inode, ATTR_DIR);
+ 	inode->i_mtime.tv_sec = inode->i_atime.tv_sec = inode->i_ctime.tv_sec = 0;
 -- 
 1.7.11-rc0
 
