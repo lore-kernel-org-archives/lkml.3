@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752745AbaCBU4V (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 15:56:21 -0500
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:58861 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751841AbaCBU4U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 15:56:20 -0500
-Date: Sun, 2 Mar 2014 21:56:19 +0100
-From: Andreas Mohr <andi@lisas.de>
-To: Chris Bainbridge <chris.bainbridge@gmail.com>
-Cc: Dennis Mungai <dmngaie@gmail.com>, Borislav Petkov <bp@alien8.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: Re: [PATCH] x86: set Pentium M as PAE capable
-Message-ID: <20140302205619.GA8676@rhlx01.hs-esslingen.de>
+	id S1753200AbaCBU7q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 15:59:46 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45765 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751925AbaCBU7p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Mar 2014 15:59:45 -0500
+Message-ID: <53139BA3.5050701@zytor.com>
+Date: Sun, 02 Mar 2014 12:59:15 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140228140043.GA12157@debian.local>
-X-Priority: none
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andreas Mohr <andi@lisas.de>,
+        Chris Bainbridge <chris.bainbridge@gmail.com>
+CC: Dennis Mungai <dmngaie@gmail.com>, Borislav Petkov <bp@alien8.de>,
+        x86@kernel.org, Dave Jones <davej@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: set Pentium M as PAE capable
+References: <20140302205619.GA8676@rhlx01.hs-esslingen.de>
+In-Reply-To: <20140302205619.GA8676@rhlx01.hs-esslingen.de>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 03/02/2014 12:56 PM, Andreas Mohr wrote:
+> 
+> (BTW, would it be possible to transform Linux's PAE support into
+> boot-config or even fully runtime-detectable boot switching to
+> (non-)PAE, similar to or exceeding what XP offers with its static
+> boot-time flag?
+> Last time I checked PAE support config defines were spread over ~ 40
+> kernel source files though :-((()
+> 
 
->  	/*
-> +	 * PAE CPUID bug: Pentium M reports no PAE but has PAE
-> +	 */
+As far as I know the "static boottime flag" in Windows simply loads one
+of several possible kernels.
 
-Ain't that a tad strongly/incorrectly worded?
+	-hpa
 
-It's probably not certain whether that's a "bug".
-Prior content in this discussion suggested that the flag might have been
-intentionally not advertised, due to not being of sufficient quality
-yet in these revisions.
-Also, it's not definite that it has "PAE" in a usable form.
 
-So what about rewording it into an "issue", e.g. something like:
-
-"PAE CPUID issue: most Pentium M report no PAE but may have PAE
-implemented at a potentially usable quality level.
-
-Thank you very much for this important deescalation work of the quite annoying
-PAE compat issue! (Pentium M, AMD Geode, VIA C7, <(=?) Pentium II, ...)
-
-(BTW, would it be possible to transform Linux's PAE support into
-boot-config or even fully runtime-detectable boot switching to
-(non-)PAE, similar to or exceeding what XP offers with its static
-boot-time flag?
-Last time I checked PAE support config defines were spread over ~ 40
-kernel source files though :-((()
-
-Andreas Mohr
