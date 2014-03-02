@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751763AbaCBFYB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 00:24:01 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:59768 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751167AbaCBFXH (ORCPT
+	id S1751683AbaCBFX6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 00:23:58 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:38372 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153AbaCBFXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 00:23:07 -0500
+	Sun, 2 Mar 2014 00:23:06 -0500
 From: Axel Rasmussen <axel.rasmussen1@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: [PATCH 7/9] drivers: staging: rtl8187se: fixed checkpatch.pl errors
-Date: Sat,  1 Mar 2014 22:22:51 -0700
-Message-Id: <1393737773-13937-8-git-send-email-axel.rasmussen1@gmail.com>
+Subject: [PATCH 6/9] drivers: staging: rtl8187se: fixed broken indentation
+Date: Sat,  1 Mar 2014 22:22:50 -0700
+Message-Id: <1393737773-13937-7-git-send-email-axel.rasmussen1@gmail.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1393737773-13937-1-git-send-email-axel.rasmussen1@gmail.com>
 References: <1393737773-13937-1-git-send-email-axel.rasmussen1@gmail.com>
@@ -20,75 +20,163 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The definition of the driver's ChannelPlan array produced a large number
-of checkpatch.pl errors. This patch fixes all of them by adding spaces
-and wrapping the resulting overly-long lines.
+A section of code in the function rtl8180_tx was indented for no reason,
+causing numerous checkpatch.pl warnings.
 
 Signed-off-by: Axel Rasmussen <axel.rasmussen1@gmail.com>
 ---
- drivers/staging/rtl8187se/r8180_core.c | 49 ++++++++++++++++++++++++++--------
- 1 file changed, 38 insertions(+), 11 deletions(-)
+ drivers/staging/rtl8187se/r8180_core.c | 133 +++++++++++++++++----------------
+ 1 file changed, 70 insertions(+), 63 deletions(-)
 
 diff --git a/drivers/staging/rtl8187se/r8180_core.c b/drivers/staging/rtl8187se/r8180_core.c
-index 0630259..9e1642f 100644
+index a0ca4f2..0630259 100644
 --- a/drivers/staging/rtl8187se/r8180_core.c
 +++ b/drivers/staging/rtl8187se/r8180_core.c
-@@ -2242,17 +2242,44 @@ static void watch_dog_adaptive(unsigned long data)
- }
+@@ -1750,74 +1750,81 @@ short rtl8180_tx(struct net_device *dev, u8 *txbuf, int len, int priority,
+ 		break;
+ 	}
  
- static struct rtl8187se_channel_list channel_plan_list[] = {
--	{{1,2,3,4,5,6,7,8,9,10,11,36,40,44,48,52,56,60,64},19},		/* FCC */
--	{{1,2,3,4,5,6,7,8,9,10,11},11},					/* IC */
--	{{1,2,3,4,5,6,7,8,9,10,11,12,13,36,40,44,48,52,56,60,64},21},	/* ETSI */
--	{{1,2,3,4,5,6,7,8,9,10,11,12,13,36,40,44,48,52,56,60,64},21},	/* Spain. Change to ETSI. */
--	{{1,2,3,4,5,6,7,8,9,10,11,12,13,36,40,44,48,52,56,60,64},21},	/* France. Change to ETSI. */
--	{{14,36,40,44,48,52,56,60,64},9},				/* MKK */
--	{{1,2,3,4,5,6,7,8,9,10,11,12,13,14, 36,40,44,48,52,56,60,64},22},/* MKK1 */
--	{{1,2,3,4,5,6,7,8,9,10,11,12,13,36,40,44,48,52,56,60,64},21},	/* Israel. */
--	{{1,2,3,4,5,6,7,8,9,10,11,12,13,34,38,42,46},17},		/* For 11a , TELEC */
--	{{1,2,3,4,5,6,7,8,9,10,11,12,13,14},14},  /* For Global Domain. 1-11:active scan, 12-14 passive scan. //+YJ, 080626 */
--	{{1,2,3,4,5,6,7,8,9,10,11,12,13},13} /* world wide 13: ch1~ch11 active scan, ch12~13 passive //lzm add 080826 */
-+	/* FCC */
-+	{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 36, 40,
-+		44, 48, 52, 56, 60, 64}, 19},
+-		memcpy(&dest, frag_hdr->addr1, ETH_ALEN);
+-		if (is_multicast_ether_addr(dest)) {
+-			Duration = 0;
+-			RtsDur = 0;
+-			bRTSEnable = 0;
++	memcpy(&dest, frag_hdr->addr1, ETH_ALEN);
++	if (is_multicast_ether_addr(dest)) {
++		Duration = 0;
++		RtsDur = 0;
++		bRTSEnable = 0;
++		bCTSEnable = 0;
 +
-+	/* IC */
-+	{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}, 11},
++		ThisFrameTime = ComputeTxTime(len + sCrcLng,
++			rtl8180_rate2rate(rate), 0, bUseShortPreamble);
++		TxDescDuration = ThisFrameTime;
++	} else { /* Unicast packet */
++		u16 AckTime;
 +
-+	/* ETSI */
-+	{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 36, 40,
-+		44, 48, 52, 56, 60, 64}, 21},
++		/* YJ,add,080828,for Keep alive */
++		priv->NumTxUnicast++;
 +
-+	/* Spain. Change to ETSI. */
-+	{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 36, 40,
-+		44, 48, 52, 56, 60, 64}, 21},
++		/* Figure out ACK rate according to BSS basic rate
++		 * and Tx rate.
++		 * AckCTSLng = 14 use 1M bps send
++		 */
++		AckTime = ComputeTxTime(14, 10, 0, 0);
 +
-+	/* France. Change to ETSI. */
-+	{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 36, 40,
-+		44, 48, 52, 56, 60, 64}, 21},
-+
-+	/* MKK */
-+	{{14, 36, 40, 44, 48, 52, 56, 60, 64}, 9},
-+
-+	/* MKK1 */
-+	{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 36,
-+		40, 44, 48, 52, 56, 60, 64}, 22},
-+
-+	/* Israel. */
-+	{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 36, 40,
-+		44, 48, 52, 56, 60, 64}, 21},
-+
-+	/* For 11a , TELEC */
-+	{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 34, 38, 42, 46}, 17},
-+
-+	/* For Global Domain. 1-11 active, 12-14 passive. //+YJ, 080626 */
-+	{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14}, 14},
-+
-+	/* world wide 13: ch1~ch11 active, ch12~13 passive //lzm add 080826 */
-+	{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}, 13}
- };
++		if (((len + sCrcLng) > priv->rts) && priv->rts) { /* RTS/CTS. */
++			u16 RtsTime, CtsTime;
++			/* u16 CtsRate; */
++			bRTSEnable = 1;
+ 			bCTSEnable = 0;
  
- static void rtl8180_set_channel_map(u8 channel_plan,
+-			ThisFrameTime = ComputeTxTime(len + sCrcLng, rtl8180_rate2rate(rate),
+-						      0, bUseShortPreamble);
+-			TxDescDuration = ThisFrameTime;
+-		} else { /* Unicast packet */
+-			u16 AckTime;
+-
+-			/* YJ,add,080828,for Keep alive */
+-			priv->NumTxUnicast++;
+-
+-			/* Figure out ACK rate according to BSS basic rate
+-			 * and Tx rate. */
+-			AckTime = ComputeTxTime(14, 10, 0, 0);	/* AckCTSLng = 14 use 1M bps send */
+-
+-			if (((len + sCrcLng) > priv->rts) && priv->rts) { /* RTS/CTS. */
+-				u16 RtsTime, CtsTime;
+-				/* u16 CtsRate; */
+-				bRTSEnable = 1;
+-				bCTSEnable = 0;
+-
+-				/* Rate and time required for RTS. */
+-				RtsTime = ComputeTxTime(sAckCtsLng/8, priv->ieee80211->basic_rate, 0, 0);
+-				/* Rate and time required for CTS. */
+-				CtsTime = ComputeTxTime(14, 10, 0, 0);	/* AckCTSLng = 14 use 1M bps send */
+-
+-				/* Figure out time required to transmit this frame. */
+-				ThisFrameTime = ComputeTxTime(len + sCrcLng,
+-						rtl8180_rate2rate(rate),
+-						0,
+-						bUseShortPreamble);
+-
+-				/* RTS-CTS-ThisFrame-ACK. */
+-				RtsDur = CtsTime + ThisFrameTime + AckTime + 3*aSifsTime;
+-
+-				TxDescDuration = RtsTime + RtsDur;
+-			} else { /* Normal case. */
+-				bCTSEnable = 0;
+-				bRTSEnable = 0;
+-				RtsDur = 0;
+-
+-				ThisFrameTime = ComputeTxTime(len + sCrcLng, rtl8180_rate2rate(rate),
+-							      0, bUseShortPreamble);
+-				TxDescDuration = ThisFrameTime + aSifsTime + AckTime;
+-			}
++			/* Rate and time required for RTS. */
++			RtsTime = ComputeTxTime(sAckCtsLng / 8,
++				priv->ieee80211->basic_rate, 0, 0);
+ 
+-			if (!(frag_hdr->frame_control & IEEE80211_FCTL_MOREFRAGS)) {
+-				/* ThisFrame-ACK. */
+-				Duration = aSifsTime + AckTime;
+-			} else { /* One or more fragments remained. */
+-				u16 NextFragTime;
+-				NextFragTime = ComputeTxTime(len + sCrcLng, /* pretend following packet length equal current packet */
+-						rtl8180_rate2rate(rate),
+-						0,
+-						bUseShortPreamble);
+-
+-				/* ThisFrag-ACk-NextFrag-ACK. */
+-				Duration = NextFragTime + 3*aSifsTime + 2*AckTime;
+-			}
++			/* Rate and time required for CTS.
++			 * AckCTSLng = 14 use 1M bps send
++			 */
++			CtsTime = ComputeTxTime(14, 10, 0, 0);
++
++			/* Figure out time required to transmit this frame. */
++			ThisFrameTime = ComputeTxTime(len + sCrcLng,
++					rtl8180_rate2rate(rate),
++					0,
++					bUseShortPreamble);
++
++			/* RTS-CTS-ThisFrame-ACK. */
++			RtsDur = CtsTime + ThisFrameTime +
++				AckTime + 3 * aSifsTime;
++
++			TxDescDuration = RtsTime + RtsDur;
++		} else { /* Normal case. */
++			bCTSEnable = 0;
++			bRTSEnable = 0;
++			RtsDur = 0;
++
++			ThisFrameTime = ComputeTxTime(len + sCrcLng,
++				rtl8180_rate2rate(rate), 0, bUseShortPreamble);
++			TxDescDuration = ThisFrameTime + aSifsTime + AckTime;
++		}
++
++		if (!(frag_hdr->frame_control & IEEE80211_FCTL_MOREFRAGS)) {
++			/* ThisFrame-ACK. */
++			Duration = aSifsTime + AckTime;
++		} else { /* One or more fragments remained. */
++			u16 NextFragTime;
++
++			/* pretend following packet length = current packet */
++			NextFragTime = ComputeTxTime(len + sCrcLng,
++				rtl8180_rate2rate(rate), 0, bUseShortPreamble);
++
++			/* ThisFrag-ACk-NextFrag-ACK. */
++			Duration = NextFragTime + 3*aSifsTime + 2*AckTime;
++		}
+ 
+-		} /* End of Unicast packet */
++	} /* End of Unicast packet */
+ 
+-		frag_hdr->duration_id = Duration;
++	frag_hdr->duration_id = Duration;
+ 
+ 	buflen = priv->txbuffsize;
+ 	remain = len;
 -- 
 1.8.3.2
 
