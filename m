@@ -1,216 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753469AbaCBAZe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Mar 2014 19:25:34 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:63493 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753445AbaCBAZP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Mar 2014 19:25:15 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Kieran Clancy <clancy.kieran@gmail.com>
-Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Li Guang <lig.fnst@cn.fujitsu.com>,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        Juan Manuel Cabo <juanmanuel.cabo@gmail.com>,
-        Dennis Jansen <dennis.jansen@web.de>
-Subject: Re: [PATCH v2] ACPI / EC: Clear stale EC events on Samsung systems
-Date: Sun, 02 Mar 2014 01:40:18 +0100
-Message-ID: <46477345.qa7vICjmDi@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1393596748-3656-1-git-send-email-clancy.kieran@gmail.com>
-References: <1393429360-4344-1-git-send-email-clancy.kieran@gmail.com> <1393596748-3656-1-git-send-email-clancy.kieran@gmail.com>
+	id S1753490AbaCBA0S (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Mar 2014 19:26:18 -0500
+Received: from mga02.intel.com ([134.134.136.20]:32304 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753328AbaCBA0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Mar 2014 19:26:17 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,569,1389772800"; 
+   d="scan'208";a="492258344"
+Message-ID: <53127AA7.8040700@linux.intel.com>
+Date: Sun, 02 Mar 2014 08:26:15 +0800
+From: "Li, Aubrey" <aubrey.li@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: "H. Peter Anvin" <hpa@zytor.com>, Matthew Garrett <mjg59@srcf.ucam.org>
+CC: "H. Peter Anvin" <hpa@linux.intel.com>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Len.Brown@intel.com,
+        Adam Williamson <awilliam@redhat.com>
+Subject: Re: [patch] x86: Introduce BOOT_EFI and BOOT_CF9 into the reboot
+ sequence loop
+References: <53102AB9.40600@linux.intel.com> <20140228062325.GA3246@srcf.ucam.org> <53102F3C.4020806@linux.intel.com> <20140228064413.GA4900@srcf.ucam.org> <531032A0.8090903@linux.intel.com> <5310CBB7.4030407@linux.intel.com> <53110977.8080907@linux.intel.com> <53121496.8060603@linux.intel.com> <20140301172256.GA29417@srcf.ucam.org> <53123DCF.7040500@zytor.com> <20140301202139.GA9759@srcf.ucam.org> <ec95d575-070f-4c62-8b27-3ce281cb192e@email.android.com>
+In-Reply-To: <ec95d575-070f-4c62-8b27-3ce281cb192e@email.android.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, March 01, 2014 12:42:28 AM Kieran Clancy wrote:
-> A number of Samsung notebooks (530Uxx/535Uxx/540Uxx/550Pxx/900Xxx/etc)
-> continue to log events during sleep (lid open/close, AC plug/unplug,
-> battery level change), which accumulate in the EC until a buffer fills.
-> After the buffer is full (tests suggest it holds 8 events), GPEs stop
-> being triggered for new events. This state persists on wake or even on
-> power cycle, and prevents new events from being registered until the EC
-> is manually polled.
 > 
-> This is the root cause of a number of bugs, including AC not being
-> detected properly, lid close not triggering suspend, and low ambient
-> light not triggering the keyboard backlight. The bug also seemed to be
-> responsible for performance issues on at least one user's machine.
-> 
-> Juan Manuel Cabo found the cause of bug and the workaround of polling
-> the EC manually on wake.
-> 
-> The loop which clears the stale events is based on an earlier patch by
-> Lan Tianyu (see referenced attachment).
-> 
-> This patch:
->  - Adds a function acpi_ec_clear() which polls the EC for stale _Q
->    events at most ACPI_EC_CLEAR_MAX (currently 100) times. A warning is
->    logged if this limit is reached.
->  - Adds a flag EC_FLAGS_CLEAR_ON_RESUME which is set to 1 if the DMI
->    system vendor is Samsung. This check could be replaced by several
->    more specific DMI vendor/product pairs, but it's likely that the bug
->    affects more Samsung products than just the five series mentioned
->    above. Further, it should not be harmful to run acpi_ec_clear() on
->    systems without the bug; it will return immediately after finding no
->    data waiting.
->  - Runs acpi_ec_clear() on initialisation (boot), from acpi_ec_add()
->  - Runs acpi_ec_clear() on wake, from acpi_ec_unblock_transactions()
-> 
-> References: https://bugzilla.kernel.org/show_bug.cgi?id=44161
-> References: https://bugzilla.kernel.org/show_bug.cgi?id=45461
-> References: https://bugzilla.kernel.org/show_bug.cgi?id=57271
-> References: https://bugzilla.kernel.org/attachment.cgi?id=126801
-> Signed-off-by: Kieran Clancy <clancy.kieran@gmail.com>
-> Suggested-by: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>
-> Reviewed-by: Lan Tianyu <tianyu.lan@intel.com>
-> Reviewed-by: Dennis Jansen <dennis.jansen@web.de>
-> Tested-by: Kieran Clancy <clancy.kieran@gmail.com>
-> Tested-by: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>
-> Tested-by: Dennis Jansen <dennis.jansen@web.de>
-> Tested-by: Maurizio D'Addona <mauritiusdadd@gmail.com>
-> Tested-by: San Zamoyski <san@plusnet.pl>
+> On March 1, 2014 12:21:39 PM PST, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+>> if we've hit the keyboard controller and ACPI twice, and the system is still alive, and 
+>> if we have standard PCI ports, 
 
-Queued up for 3.15, thanks!
+>> it doesn't seem like poking them is likely to make anything actively
+worse.
+> 
+This is exactly what I'm trying to express. thanks Matt. It doesn't make
+anything worse, it makes reboot working on some systems.
 
-> ---
-> 
-> Changes in PATCH v2:
->  - Changed some of the 'Signed-off-by' lines to better reflect contributions,
->    as suggested by Rafael J. Wysocki <rjw@rjwysocki.net>.
->  - Directly reference prior work by Lan Tianyu.
->  - Increase ACPI_EC_CLEAR_MAX to 100, after discussion with
->    Li Guang <lig.fnst@cn.fujitsu.com> and Juan Manuel Cabo.
->  - Made source comments more explicit, thanks to suggestions by Li Guang.
->  - Marked warning for hitting ACPI_EC_CLEAR_MAX as unlikely(), as suggested by
->    Dennis Jansen.
-> 
->  drivers/acpi/ec.c | 64 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 64 insertions(+)
-> 
-> diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-> index 959d41a..d7d32c2 100644
-> --- a/drivers/acpi/ec.c
-> +++ b/drivers/acpi/ec.c
-> @@ -67,6 +67,8 @@ enum ec_command {
->  #define ACPI_EC_DELAY		500	/* Wait 500ms max. during EC ops */
->  #define ACPI_EC_UDELAY_GLK	1000	/* Wait 1ms max. to get global lock */
->  #define ACPI_EC_MSI_UDELAY	550	/* Wait 550us for MSI EC */
-> +#define ACPI_EC_CLEAR_MAX	100	/* Maximum number of events to query
-> +					 * when trying to clear the EC */
->  
->  enum {
->  	EC_FLAGS_QUERY_PENDING,		/* Query is pending */
-> @@ -116,6 +118,7 @@ EXPORT_SYMBOL(first_ec);
->  static int EC_FLAGS_MSI; /* Out-of-spec MSI controller */
->  static int EC_FLAGS_VALIDATE_ECDT; /* ASUStec ECDTs need to be validated */
->  static int EC_FLAGS_SKIP_DSDT_SCAN; /* Not all BIOS survive early DSDT scan */
-> +static int EC_FLAGS_CLEAR_ON_RESUME; /* Needs acpi_ec_clear() on boot/resume */
->  
->  /* --------------------------------------------------------------------------
->                               Transaction Management
-> @@ -440,6 +443,29 @@ acpi_handle ec_get_handle(void)
->  
->  EXPORT_SYMBOL(ec_get_handle);
->  
-> +static int acpi_ec_query_unlocked(struct acpi_ec *ec, u8 *data);
-> +
-> +/*
-> + * Clears stale _Q events that might have accumulated in the EC.
-> + * Run with locked ec mutex.
-> + */
-> +static void acpi_ec_clear(struct acpi_ec *ec)
-> +{
-> +	int i, status;
-> +	u8 value = 0;
-> +
-> +	for (i = 0; i < ACPI_EC_CLEAR_MAX; i++) {
-> +		status = acpi_ec_query_unlocked(ec, &value);
-> +		if (status || !value)
-> +			break;
-> +	}
-> +
-> +	if (unlikely(i == ACPI_EC_CLEAR_MAX))
-> +		pr_warn("Warning: Maximum of %d stale EC events cleared\n", i);
-> +	else
-> +		pr_info("%d stale EC events cleared\n", i);
-> +}
-> +
->  void acpi_ec_block_transactions(void)
->  {
->  	struct acpi_ec *ec = first_ec;
-> @@ -463,6 +489,10 @@ void acpi_ec_unblock_transactions(void)
->  	mutex_lock(&ec->mutex);
->  	/* Allow transactions to be carried out again */
->  	clear_bit(EC_FLAGS_BLOCKED, &ec->flags);
-> +
-> +	if (EC_FLAGS_CLEAR_ON_RESUME)
-> +		acpi_ec_clear(ec);
-> +
->  	mutex_unlock(&ec->mutex);
->  }
->  
-> @@ -821,6 +851,13 @@ static int acpi_ec_add(struct acpi_device *device)
->  
->  	/* EC is fully operational, allow queries */
->  	clear_bit(EC_FLAGS_QUERY_PENDING, &ec->flags);
-> +
-> +	/* Clear stale _Q events if hardware might require that */
-> +	if (EC_FLAGS_CLEAR_ON_RESUME) {
-> +		mutex_lock(&ec->mutex);
-> +		acpi_ec_clear(ec);
-> +		mutex_unlock(&ec->mutex);
-> +	}
->  	return ret;
->  }
->  
-> @@ -922,6 +959,30 @@ static int ec_enlarge_storm_threshold(const struct dmi_system_id *id)
->  	return 0;
->  }
->  
-> +/*
-> + * On some hardware it is necessary to clear events accumulated by the EC during
-> + * sleep. These ECs stop reporting GPEs until they are manually polled, if too
-> + * many events are accumulated. (e.g. Samsung Series 5/9 notebooks)
-> + *
-> + * https://bugzilla.kernel.org/show_bug.cgi?id=44161
-> + *
-> + * Ideally, the EC should also be instructed NOT to accumulate events during
-> + * sleep (which Windows seems to do somehow), but the interface to control this
-> + * behaviour is not known at this time.
-> + *
-> + * Models known to be affected are Samsung 530Uxx/535Uxx/540Uxx/550Pxx/900Xxx,
-> + * however it is very likely that other Samsung models are affected.
-> + *
-> + * On systems which don't accumulate _Q events during sleep, this extra check
-> + * should be harmless.
-> + */
-> +static int ec_clear_on_resume(const struct dmi_system_id *id)
-> +{
-> +	pr_debug("Detected system needing EC poll on resume.\n");
-> +	EC_FLAGS_CLEAR_ON_RESUME = 1;
-> +	return 0;
-> +}
-> +
->  static struct dmi_system_id ec_dmi_table[] __initdata = {
->  	{
->  	ec_skip_dsdt_scan, "Compal JFL92", {
-> @@ -965,6 +1026,9 @@ static struct dmi_system_id ec_dmi_table[] __initdata = {
->  	ec_validate_ecdt, "ASUS hardware", {
->  	DMI_MATCH(DMI_SYS_VENDOR, "ASUSTek Computer Inc."),
->  	DMI_MATCH(DMI_PRODUCT_NAME, "L4R"),}, NULL},
-> +	{
-> +	ec_clear_on_resume, "Samsung hardware", {
-> +	DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD.")}, NULL},
->  	{},
->  };
->  
-> 
+On 2014/3/2 4:26, H. Peter Anvin wrote:
+> True... trying cf9_cond with low priority probably makes sense.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+I'm not asking CF9 only, I'm asking all of the known method in reboot.c.
+So, BIOS is appliable as well with the same logic and with low priority,
+isn't it?
+
+Thanks,
+-Aubrey
+
