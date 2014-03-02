@@ -1,71 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753288AbaCBNVc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 08:21:32 -0500
-Received: from ozlabs.org ([203.10.76.45]:49019 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751995AbaCBNVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 08:21:30 -0500
-Date: Mon, 3 Mar 2014 00:11:25 +1100
-From: David Gibson <david@gibson.dropbear.id.au>
-To: xypron.glpk@gmx.de
-Cc: grant.likely@linaro.org, robh+dt@kernel.org,
-        devicetree-compiler@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] Remove dead code in util.c
-Message-ID: <20140302131125.GB12916@voom.fritz.box>
-References: <CAL_JsqK9Wquv6kgefyPvy0JqXNO7Cx2+iN_ss=CtgXnKEjrF-Q@mail.gmail.com>
- <1393661507-7197-1-git-send-email-xypron.glpk@gmx.de>
+	id S1753043AbaCBN3U (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 08:29:20 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:32732 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752309AbaCBN3S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Mar 2014 08:29:18 -0500
+Date: Sun, 2 Mar 2014 08:29:16 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Satoru Takeuchi <satoru.takeuchi@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] ktest: run make mrproper not only for OUTPUT_DIR
+ but also for BUILD_DIR to avoid build failure
+Message-ID: <20140302082916.58199d86@gandalf.local.home>
+In-Reply-To: <87txbgokl3.wl%satoru.takeuchi@gmail.com>
+References: <87vbvwokq8.wl%satoru.takeuchi@gmail.com>
+	<87txbgokl3.wl%satoru.takeuchi@gmail.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lEGEL1/lMxI0MVQ2"
-Content-Disposition: inline
-In-Reply-To: <1393661507-7197-1-git-send-email-xypron.glpk@gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 02 Mar 2014 21:23:36 +0900
+Satoru Takeuchi <satoru.takeuchi@gmail.com> wrote:
 
---lEGEL1/lMxI0MVQ2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> From: Satoru Takeuchi <satoru.takeuchi@gmail.com>
+> 
+> Build failure hapens with the following log if BUILD_DIR is dirty.
 
-On Sat, Mar 01, 2014 at 09:11:47AM +0100, xypron.glpk@gmx.de wrote:
-> From: Heinrich Schuchardt <xypron.glpk@gmx.de>
->=20
-> xrealloc never returns null
->=20
-> Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
+If you want to do make mrproper in the BUILD_DIR, add the command to
+PRE_BUILD or something. I have TAGS in my BUILD_DIRs and this will
+remove them for me. I can't accept this change.
 
-Applied, thanks.
+I've noticed that there's a bug in the Linux make system that causes
+the O=.. builds to fail because somehow the source directory got dirty.
+We need to figure out what that bug is.
 
---=20
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
+Thanks,
 
---lEGEL1/lMxI0MVQ2
-Content-Type: application/pgp-signature
+-- Steve
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
 
-iQIcBAEBAgAGBQJTEy39AAoJEGw4ysog2bOS7NQP/01WNPmmsaOS9OCN8P1n9Xvv
-4QkAzzsX7kCd6sfJkgDZdhsQN72AFnDb11iCeU10STlZz+PPnJ8LQEfZBSrAH5tL
-7Iz3FMwpinQ1NYsuGDVA5gwzMD1wEl/9Qq8Qmt1OmNhE5A4canioSpmn0Qmut2us
-oCVLPXct1Ix9VB/t+0aXaq8LYG1SgeFQcLYv8y8ZewcHqVdKwYWx1c8gmL2M5Kup
-1zlTOGU7ZYwH3QnvMzbUFZrpBxHFSymwnqU+vrqcNfwT3xAlLzqRQ0ye6bYRxOo2
-JjMOzikvfBekt1CT16PP0mpDFtHOVa52qthp6xLNyRXoyG7R2/i/Du/A3y91Tz3H
-ycTbhvnPkZgaV686K+IdfbFiln9XGbPKoGR9rgCDUU+Dyvw13lBywXQFtLerIxMa
-ajqWzVygPe1GL4/usfzGM6uAly0+krQu5brpyAM+cdo9p0HNknHYUppgtvphXAN5
-YbTcQkhwFy+aagjsUsICVwMIjSk96rEV4yBsmqO9Ap2TQjTPU+UU3eI7Aq/vZPti
-gKWlXisNhtKPImeNKqt+SxDVjoku6H8rjKNsE3iWF3meTPWQYSKTVCPShJvD1tQk
-BQBhqim3kfYqcqaAa3avSf+GSWdwBKy9qTQMzkWOZmfHvsUf23JTktbZdgf4oQ3y
-FxY39GpJ+9527QYp2Lup
-=OVEe
------END PGP SIGNATURE-----
+> 
+> ===============================================================================
+> ...
+> RUNNING TEST 1 of 1 with option build olddefconfig
+> 
+> make O=/home/sat/ktest/output mrproper ...   CLEAN   arch/x86/tools
+>   CLEAN   scripts/basic
+>   CLEAN   scripts/kconfig
+>   CLEAN   include/config include/generated arch/x86/include/generated
+>   CLEAN   .config.old include/generated/uapi/linux/version.h
+> SUCCESS
+> ...
+> make O=/home/sat/ktest/output -j8 ...   GEN     /home/sat/ktest/output/Makefile
+> ...
+>   Using /home/sat/src/test-linux-stable/linux-stable as source for kernel
+>   /home/sat/src/test-linux-stable/linux-stable is not clean, please run 'make mrproper'
+>   in the '/home/sat/src/test-linux-stable/linux-stable' directory.
+> make[1]: *** [prepare3] Error 1
+> make[1]: *** Waiting for unfinished jobs....
+>   HOSTLD  arch/x86/tools/relocs
+> make[1]: *** wait: No child processes.  Stop.
+> make: *** [sub-make] Error 2
+> FAILED!
+> CRITICAL FAILURE... failed build
+> ===============================================================================
+> 
+> To avoid this problem, it's necessary to run make mrproper not only
+> for OUTPUT_DIR, but also for BUILD_DIR.
+> 
+> Signed-off-by: Satoru Takeuchi <satoru.takeuchi@gmail.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> 
+> ---
+>  tools/testing/ktest/ktest.pl | 16 +++++++++-------
+>  1 file changed, 9 insertions(+), 7 deletions(-)
+> 
+> diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
+> index f731ef6..1169b2a 100755
+> --- a/tools/testing/ktest/ktest.pl
+> +++ b/tools/testing/ktest/ktest.pl
+> @@ -120,6 +120,7 @@ my $syslinux;
+>  my $syslinux_path;
+>  my $syslinux_label;
+>  my $target;
+> +my $makecmd;
+>  my $make;
+>  my $pre_install;
+>  my $post_install;
+> @@ -2198,6 +2199,11 @@ sub load_force_config {
+>      close IN;
+>  }
+>  
+> +sub mrproper {
+> +    run_command "$makecmd mrproper" or dodie "make mrproper for $builddir";
+> +    run_command "$make mrproper" or dodie "make mrproper for $outputdir";
+> +}
+> +
+>  sub build {
+>      my ($type) = @_;
+>  
+> @@ -2235,17 +2241,13 @@ sub build {
+>  	if (!$noclean) {
+>  	    run_command "mv $output_config $outputdir/config_temp" or
+>  		dodie "moving .config";
+> -
+> -	    run_command "$make mrproper" or dodie "make mrproper";
+> -
+> +	    mrproper;
+>  	    run_command "mv $outputdir/config_temp $output_config" or
+>  		dodie "moving config_temp";
+>  	}
+> -
+>      } elsif (!$noclean) {
+>  	unlink "$output_config";
+> -	run_command "$make mrproper" or
+> -	    dodie "make mrproper";
+> +	mrproper;
+>      }
+>  
+>      # add something to distinguish this build
+> @@ -3996,7 +3998,7 @@ for (my $i = 1; $i <= $opt{"NUM_TESTS"}; $i++) {
+>  
+>      undef %force_config;
+>  
+> -    my $makecmd = set_test_option("MAKE_CMD", $i);
+> +    $makecmd = set_test_option("MAKE_CMD", $i);
+>  
+>      $outputdir = set_test_option("OUTPUT_DIR", $i);
+>      $builddir = set_test_option("BUILD_DIR", $i);
 
---lEGEL1/lMxI0MVQ2--
