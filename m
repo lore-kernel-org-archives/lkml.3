@@ -1,62 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753685AbaCBWpT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 17:45:19 -0500
-Received: from mga09.intel.com ([134.134.136.24]:18879 "EHLO mga09.intel.com"
+	id S1753600AbaCBXLE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 18:11:04 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:57036 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751505AbaCBWpS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 17:45:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,574,1389772800"; 
-   d="scan'208";a="492532453"
-Message-ID: <5313B47B.6020402@linux.intel.com>
-Date: Mon, 03 Mar 2014 06:45:15 +0800
-From: "Li, Aubrey" <aubrey.li@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752278AbaCBXLD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Mar 2014 18:11:03 -0500
+Date: Sun, 2 Mar 2014 23:11:00 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1403022309530.12835@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Len.Brown@intel.com,
-        Adam Williamson <awilliam@redhat.com>
-Subject: Re: [patch] x86: Introduce BOOT_EFI and BOOT_CF9 into the reboot
- sequence loop
-References: <ec95d575-070f-4c62-8b27-3ce281cb192e@email.android.com> <53127AA7.8040700@linux.intel.com> <53127C4B.1060505@zytor.com> <53128DA0.9060105@linux.intel.com> <53129256.6060704@zytor.com> <20140302022334.GA1131@srcf.ucam.org> <c4f4929e-6bab-45b9-ac6b-cbdea5fd57e8@email.android.com> <53130A46.1010801@linux.intel.com> <cfbdc582-9fc0-4335-9974-d508c2da1c71@email.android.com> <5313AD1B.6050403@linux.intel.com> <20140302222654.GA17838@srcf.ucam.org>
-In-Reply-To: <20140302222654.GA17838@srcf.ucam.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-46800098-1393801860=:12835"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/3/3 6:26, Matthew Garrett wrote:
-> On Mon, Mar 03, 2014 at 06:13:47AM +0800, Li, Aubrey wrote:
-> 
->> If you have a system can't be rebooted by all of the known methods, we
->> have to figure out how to make reboot work and add the new methods.
-> 
-> The only methods used by Windows are the keyboard controller, the ACPI 
-> registers and (according to your results) the EFI reboot mechanism. If 
-> none of those work under Linux but Windows is able to reboot 
-> successfully then we don't need to add new methods, we need to find out 
-> why the existing methods don't work.
-> 
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-One example in my hand is, 32bit windows calls 32bit EFI firware, so
-reboot works. However, I installed 64bit linux on this 32bit EFI
-machine, so none of ACPI/KBD/EFI works.
+--29444707-46800098-1393801860=:12835
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 
-Other cases even if we figured out why ACPI/KBD/EFI don't work, we still
-have to make our change in the linux kernel, because we can't change
-firmware.
 
-So, if you are still suggesting we add EFI only, please let me know your
-plan about adding dmidecode table and if it's acceptable to add new
-tables, I have three waiting: ASUS-T100, Dell Venue 8 Pro, and Dell
-Venue 11 Pro.
+Hi Linus,
 
-Or if you don't want to keep adding the dmidecode, please let me know
-your plan so that I don't want to keep driving this patch.
+Not a huge amount happening, some MAINTAINERS updates, radeon, vmwgfx and 
+tegra fixes,
 
-Thanks,
--Aubrey
+Dave.
+
+The following changes since commit 75936c65dda54a08d9124f24f8725f86a4adc286:
+
+  Merge tag 'ttm-fixes-3.14-2014-02-18' of git://people.freedesktop.org/~thomash/linux into drm-fixes (2014-02-19 08:21:26 +1000)
+
+are available in the git repository at:
+
+
+  git://people.freedesktop.org/~airlied/linux drm-fixes
+
+for you to fetch changes up to d668ca1cc6b9b6d2f1ce2f7b158cbe919cc782dc:
+
+  Merge branch 'drm-fixes-3.14' of git://people.freedesktop.org/~agd5f/linux into drm-fixes (2014-03-03 09:04:41 +1000)
+
+----------------------------------------------------------------
+
+Alex Deucher (7):
+      MAINTAINERS: add entry for drm radeon driver
+      MAINTAINERS: update drm git tree entry
+      drm/radeon: print the supported atpx function mask
+      drm/radeon: disable pll sharing for DP on DCE4.1
+      drm/radeon: fix audio disable on dce6+
+      drm/radeon: change audio enable logic
+      drm/radeon: enable speaker allocation setup on dce3.2
+
+Alexey Khoroshilov (1):
+      drm/vmwgfx: avoid null pointer dereference at failure paths
+
+Christian König (1):
+      drm/radeon: fix missing bo reservation
+
+Dave Airlie (3):
+      Merge tag 'drm/for-3.14-rc3' of git://anongit.freedesktop.org/tegra/linux into drm-fixes
+      Merge tag 'vmwgfx-fixes-3.14-2014-03-02' of git://people.freedesktop.org/~thomash/linux into drm-fixes
+      Merge branch 'drm-fixes-3.14' of git://people.freedesktop.org/~agd5f/linux into drm-fixes
+
+Dmitry Osipenko (1):
+      drm/tegra: Add guard to avoid double disable/enable of RGB outputs
+
+Erik Faye-Lund (1):
+      gpu: host1x: do not check previously handled gathers
+
+Jerome Glisse (1):
+      drm/radeon: free uvd ring on unload
+
+Paul Bolle (1):
+      drm/tegra: fix typo 'CONFIG_TEGRA_DRM_FBDEV'
+
+Thomas Hellstrom (2):
+      drm/vmwgfx: Remove some unused surface formats
+      drm/vmwgfx: Make sure backing mobs are cleared when allocated. Update driver date.
+
+ MAINTAINERS                                  | 12 +++++++++-
+ drivers/gpu/drm/radeon/atombios_crtc.c       | 16 ++++++++++++-
+ drivers/gpu/drm/radeon/dce6_afmt.c           | 15 +++++++-----
+ drivers/gpu/drm/radeon/evergreen.c           |  2 +-
+ drivers/gpu/drm/radeon/evergreen_hdmi.c      | 26 ++++++++++++---------
+ drivers/gpu/drm/radeon/r600_audio.c          | 14 ++++++-----
+ drivers/gpu/drm/radeon/r600_hdmi.c           | 15 ++++++------
+ drivers/gpu/drm/radeon/radeon.h              |  6 +++++
+ drivers/gpu/drm/radeon/radeon_atpx_handler.c |  3 ++-
+ drivers/gpu/drm/radeon/radeon_kms.c          |  6 +++++
+ drivers/gpu/drm/radeon/radeon_uvd.c          |  2 ++
+ drivers/gpu/drm/radeon/rv770.c               |  2 +-
+ drivers/gpu/drm/tegra/drm.c                  |  2 +-
+ drivers/gpu/drm/tegra/rgb.c                  | 11 +++++++++
+ drivers/gpu/drm/vmwgfx/svga3d_reg.h          |  7 +-----
+ drivers/gpu/drm/vmwgfx/vmwgfx_drv.h          |  2 +-
+ drivers/gpu/drm/vmwgfx/vmwgfx_mob.c          | 35 +++++++++++++++-------------
+ drivers/gpu/drm/vmwgfx/vmwgfx_resource.c     |  3 +--
+ drivers/gpu/host1x/job.c                     |  2 +-
+ 19 files changed, 118 insertions(+), 63 deletions(-)
+--29444707-46800098-1393801860=:12835--
