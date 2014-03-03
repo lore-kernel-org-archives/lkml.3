@@ -1,239 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753608AbaCCHtT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 02:49:19 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:65235 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753199AbaCCHtK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 02:49:10 -0500
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-To: peterz@infradead.org, mingo@kernel.org, tglx@linutronix.de,
-        rjw@rjwysocki.net
-Cc: nicolas.pitre@linaro.org, preeti@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
-Subject: [PATCH V4 1/5] idle/cpuidle: Split cpuidle_idle_call main function into smaller functions
-Date: Mon,  3 Mar 2014 08:48:50 +0100
-Message-Id: <1393832934-11625-1-git-send-email-daniel.lezcano@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <20140228125604.GN27965@twins.programming.kicks-ass.net>
-References: <20140228125604.GN27965@twins.programming.kicks-ass.net>
+	id S1753630AbaCCH5J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 02:57:09 -0500
+Received: from ozlabs.org ([203.10.76.45]:58210 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751218AbaCCH5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 02:57:06 -0500
+Date: Mon, 3 Mar 2014 18:56:57 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?B?IlV3ZSBLbGVpbmUtS8O2bmlnIg==?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Rob Herring <robh@kernel.org>
+Subject: linux-next: manual merge of the akpm-current tree with the arm-soc
+ tree
+Message-Id: <20140303185657.64cf0ef850f86ec92ffd240d@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__3_Mar_2014_18_56_57_+1100__BRQSrsTEW_n/2/X"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to allow better integration between the cpuidle framework and the
-scheduler, reducing the distance between these two sub-components will
-facilitate this integration by moving part of the cpuidle code in the idle
-task file and, because idle.c is in the sched directory, we have access to
-the scheduler's private structures.
+--Signature=_Mon__3_Mar_2014_18_56_57_+1100__BRQSrsTEW_n/2/X
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This patch splits the cpuidle_idle_call main entry function into 3 calls
-to a newly added API:
- 1. select the idle state
- 2. enter the idle state
- 3. reflect the idle state
+Hi Andrew,
 
-The cpuidle_idle_call calls these three functions to implement the main
-idle entry function.
+Today's linux-next merge of the akpm-current tree got a conflict in
+arch/arm/mach-picoxcell/Kconfig between commit ddb902cc3459 ("ARM:
+centralize common multi-platform kconfig options") from the arm-soc tree
+and commit b096b0b50c4b ("Kconfig: rename HAS_IOPORT to HAS_IOPORT_MAP")
+from the akpm-current tree.
 
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-Acked-by: Nicolas Pitre <nico@linaro.org>
----
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-ChangeLog:
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-V4:
- * rebased on top of tip/master
-V3:
- * moved broadcast timer outside of cpuidle_enter() as suggested by
-   Preeti U Murthy : https://lkml.org/lkml/2014/2/24/601
-V2: 
- * splitted cpuidle_select error check into 'cpuidle_enabled' function
+diff --cc arch/arm/mach-picoxcell/Kconfig
+index eca9eb1c5931,c03cd6ffb429..000000000000
+--- a/arch/arm/mach-picoxcell/Kconfig
++++ b/arch/arm/mach-picoxcell/Kconfig
+@@@ -1,7 -1,12 +1,7 @@@
+  config ARCH_PICOXCELL
+  	bool "Picochip PicoXcell" if ARCH_MULTI_V6
+  	select ARCH_REQUIRE_GPIOLIB
+ -	select ARM_PATCH_PHYS_VIRT
+  	select ARM_VIC
+ -	select CPU_V6K
+  	select DW_APB_TIMER_OF
+ -	select GENERIC_CLOCKEVENTS
+  	select HAVE_TCM
+- 	select NO_IOPORT
++ 	select NO_IOPORT_MAP
+ -	select SPARSE_IRQ
+ -	select USE_OF
 
----
- drivers/cpuidle/cpuidle.c |   96 +++++++++++++++++++++++++++++++++++-----------
- include/linux/cpuidle.h   |   19 +++++++++
- 2 files changed, 94 insertions(+), 21 deletions(-)
+--Signature=_Mon__3_Mar_2014_18_56_57_+1100__BRQSrsTEW_n/2/X
+Content-Type: application/pgp-signature
 
-Index: cpuidle-next/drivers/cpuidle/cpuidle.c
-===================================================================
---- cpuidle-next.orig/drivers/cpuidle/cpuidle.c
-+++ cpuidle-next/drivers/cpuidle/cpuidle.c
-@@ -65,6 +65,26 @@ int cpuidle_play_dead(void)
- }
- 
- /**
-+ * cpuidle_enabled - check if the cpuidle framework is ready
-+ * @dev: cpuidle device for this cpu
-+ * @drv: cpuidle driver for this cpu
-+ *
-+ * Return 0 on success, otherwise:
-+ * -NODEV : the cpuidle framework is not available
-+ * -EBUSY : the cpuidle framework is not initialized
-+ */
-+int cpuidle_enabled(struct cpuidle_driver *drv, struct cpuidle_device *dev)
-+{
-+	if (off || !initialized)
-+		return -ENODEV;
-+
-+	if (!drv || !dev || !dev->enabled)
-+		return -EBUSY;
-+
-+	return 0;
-+}
-+
-+/**
-  * cpuidle_enter_state - enter the state and update stats
-  * @dev: cpuidle device for this cpu
-  * @drv: cpuidle driver for this cpu
-@@ -108,6 +128,51 @@ int cpuidle_enter_state(struct cpuidle_d
- }
- 
- /**
-+ * cpuidle_select - ask the cpuidle framework to choose an idle state
-+ *
-+ * @drv: the cpuidle driver
-+ * @dev: the cpuidle device
-+ *
-+ * Returns the index of the idle state.
-+ */
-+int cpuidle_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
-+{
-+	return cpuidle_curr_governor->select(drv, dev);
-+}
-+
-+/**
-+ * cpuidle_enter - enter into the specified idle state
-+ *
-+ * @drv:   the cpuidle driver tied with the cpu
-+ * @dev:   the cpuidle device
-+ * @index: the index in the idle state table
-+ *
-+ * Returns the index in the idle state, < 0 in case of error.
-+ * The error code depends on the backend driver
-+ */
-+int cpuidle_enter(struct cpuidle_driver *drv, struct cpuidle_device *dev,
-+		  int index)
-+{
-+	if (cpuidle_state_is_coupled(dev, drv, index))
-+		return cpuidle_enter_state_coupled(dev, drv, index);
-+	return cpuidle_enter_state(dev, drv, index);
-+}
-+
-+/**
-+ * cpuidle_reflect - tell the underlying governor what was the state
-+ * we were in
-+ *
-+ * @dev  : the cpuidle device
-+ * @index: the index in the idle state table
-+ *
-+ */
-+void cpuidle_reflect(struct cpuidle_device *dev, int index)
-+{
-+	if (cpuidle_curr_governor->reflect)
-+		cpuidle_curr_governor->reflect(dev, index);
-+}
-+
-+/**
-  * cpuidle_idle_call - the main idle loop
-  *
-  * NOTE: no locks or semaphores should be used here
-@@ -116,26 +181,21 @@ int cpuidle_enter_state(struct cpuidle_d
- int cpuidle_idle_call(void)
- {
- 	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
--	struct cpuidle_driver *drv;
--	int next_state, entered_state;
-+	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
-+	int next_state, entered_state, ret;
- 	bool broadcast;
- 
--	if (off || !initialized)
--		return -ENODEV;
--
--	/* check if the device is ready */
--	if (!dev || !dev->enabled)
--		return -EBUSY;
--
--	drv = cpuidle_get_cpu_driver(dev);
-+	ret = cpuidle_enabled(drv, dev);
-+	if (ret < 0)
-+		return ret;
- 
- 	/* ask the governor for the next state */
--	next_state = cpuidle_curr_governor->select(drv, dev);
-+	next_state = cpuidle_select(drv, dev);
-+
- 	if (need_resched()) {
- 		dev->last_residency = 0;
- 		/* give the governor an opportunity to reflect on the outcome */
--		if (cpuidle_curr_governor->reflect)
--			cpuidle_curr_governor->reflect(dev, next_state);
-+		cpuidle_reflect(dev, next_state);
- 		local_irq_enable();
- 		return 0;
- 	}
-@@ -146,14 +206,9 @@ int cpuidle_idle_call(void)
- 	    clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &dev->cpu))
- 		return -EBUSY;
- 
--
- 	trace_cpu_idle_rcuidle(next_state, dev->cpu);
- 
--	if (cpuidle_state_is_coupled(dev, drv, next_state))
--		entered_state = cpuidle_enter_state_coupled(dev, drv,
--							    next_state);
--	else
--		entered_state = cpuidle_enter_state(dev, drv, next_state);
-+	entered_state = cpuidle_enter(drv, dev, next_state);
- 
- 	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
- 
-@@ -161,8 +216,7 @@ int cpuidle_idle_call(void)
- 		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &dev->cpu);
- 
- 	/* give the governor an opportunity to reflect on the outcome */
--	if (cpuidle_curr_governor->reflect)
--		cpuidle_curr_governor->reflect(dev, entered_state);
-+	cpuidle_reflect(dev, entered_state);
- 
- 	return 0;
- }
-Index: cpuidle-next/include/linux/cpuidle.h
-===================================================================
---- cpuidle-next.orig/include/linux/cpuidle.h
-+++ cpuidle-next/include/linux/cpuidle.h
-@@ -119,6 +119,15 @@ struct cpuidle_driver {
- 
- #ifdef CONFIG_CPU_IDLE
- extern void disable_cpuidle(void);
-+
-+extern int cpuidle_enabled(struct cpuidle_driver *drv,
-+			  struct cpuidle_device *dev);
-+extern int cpuidle_select(struct cpuidle_driver *drv,
-+			  struct cpuidle_device *dev);
-+extern int cpuidle_enter(struct cpuidle_driver *drv,
-+			 struct cpuidle_device *dev, int index);
-+extern void cpuidle_reflect(struct cpuidle_device *dev, int index);
-+
- extern int cpuidle_idle_call(void);
- extern int cpuidle_register_driver(struct cpuidle_driver *drv);
- extern struct cpuidle_driver *cpuidle_get_driver(void);
-@@ -141,6 +150,16 @@ extern int cpuidle_play_dead(void);
- extern struct cpuidle_driver *cpuidle_get_cpu_driver(struct cpuidle_device *dev);
- #else
- static inline void disable_cpuidle(void) { }
-+static inline int cpuidle_enabled(struct cpuidle_driver *drv,
-+				  struct cpuidle_device *dev)
-+{return -ENODEV; }
-+static inline int cpuidle_select(struct cpuidle_driver *drv,
-+				 struct cpuidle_device *dev)
-+{return -ENODEV; }
-+static inline int cpuidle_enter(struct cpuidle_driver *drv,
-+				struct cpuidle_device *dev, int index)
-+{return -ENODEV; }
-+static inline void cpuidle_reflect(struct cpuidle_device *dev, int index) { }
- static inline int cpuidle_idle_call(void) { return -ENODEV; }
- static inline int cpuidle_register_driver(struct cpuidle_driver *drv)
- {return -ENODEV; }
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTFDXOAAoJEMDTa8Ir7ZwVWkAP/Ry/Wikj2976AnfQXaIspxtz
+biwWOHQR85rc9FuSETujkWM9aHa/uNRA70WhzYmUZiYDe07j24a6vCKkY6yWRVhf
+ABg4Rj8t9P5iZfApDsh+TRaukHjq5TFz4w/TGK4mEItlX0FfAFF+qtlth0bO0sAD
+v9nlHiwaQf00GfEki5dOUIWLRtApMfbeeZxaNepV05L7MC5TmW3cQGO2i53M3g14
+X4GTHGYpFSS6sKgDB6p3DG439O2Acwte9Z7XYfK6qB5QH8loT/PqTqRqt9ao8UAg
+uWytGRT3sfBkAMfrWStHI9IA4Thwhx5sMBZ09QDW8PM7rO0quyapJjy9lqH1/CvM
+wOiEpadjH1OPZiur17e/CzttbczDM7T680y44biN6kg++GH1JzBFYaQlZfeQnw1M
+trRvX48Yy3snxrqyo3F2hgRtI3JfAAd1TruHiVrG24rEatfPYLiV9BpbUNT9zeYs
+0JegsVkKzLSZXbpoi25/kwXCDQ6hoE35oZ3BV6Id2J1T75ByQzddU4xKrKZ3eFs6
+tFXC42aVU91qgU/WVjBXyAUzc3DRXrV7EM8H5+vxyylVX4NSKM9Qktn7WhUi+lr6
+cgdntXi5syzw/f354toToMq/m4fPAslUf+CcN+QEXraMeNAVOWSZQI8ZgwgGQlld
+i1qx4QAeNNUUlQ50bSjh
+=FDW0
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__3_Mar_2014_18_56_57_+1100__BRQSrsTEW_n/2/X--
