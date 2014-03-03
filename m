@@ -1,72 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754412AbaCCNnt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 08:43:49 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:53240 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754358AbaCCNnr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 08:43:47 -0500
-Message-ID: <1393854222.32410.16.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [PATCH 1/8] ima: fix erronous removal of security.ima xattr
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Cc: linux-security-module@vger.kernel.org, jmorris@namei.org,
-        linux-kernel@vger.kernel.org, casey.schaufler@intel.com,
-        dmitry.kasatkin@gmail.com
-Date: Mon, 03 Mar 2014 08:43:42 -0500
-In-Reply-To: <26fce2ad8be7c65be3bfe972f91c7a1dbe8ae668.1393599538.git.d.kasatkin@samsung.com>
-References: <cover.1393599538.git.d.kasatkin@samsung.com>
-	 <26fce2ad8be7c65be3bfe972f91c7a1dbe8ae668.1393599538.git.d.kasatkin@samsung.com>
+	id S1754548AbaCCNoq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 08:44:46 -0500
+Received: from mga01.intel.com ([192.55.52.88]:61045 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753881AbaCCNoo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 08:44:44 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,577,1389772800"; 
+   d="scan'208";a="484819379"
+Message-ID: <1393854256.2193.2.camel@rzhang1-mobl4>
+Subject: Re: [PATCHv5 01/10] Thermal: Do kfree in _unregister functions
+From: Zhang Rui <rui.zhang@intel.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Durgadoss R <durgadoss.r@intel.com>, eduardo.valentin@ti.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hongbo.zhang@freescale.com, wni@nvidia.com
+Date: Mon, 03 Mar 2014 21:44:16 +0800
+In-Reply-To: <20140121194624.GA29615@core.coreip.homeip.net>
+References: <1389916587-2541-1-git-send-email-durgadoss.r@intel.com>
+	 <1389916587-2541-2-git-send-email-durgadoss.r@intel.com>
+	 <20140121194624.GA29615@core.coreip.homeip.net>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14030313-0928-0000-0000-000000177C30
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-02-28 at 16:59 +0200, Dmitry Kasatkin wrote: 
-> ima_inode_post_setattr() calls ima_must_appraise() to check if
-> file needs to be appraised. If it is not then it removes security.ima
-> xattr. With original policy matching code it might happen that even
-> file needs to be appraised with FILE_CHECK hook, it might not be
-> for POST_SETATTR hook. 'security.ima' might be erronously removed.
+On Tue, 2014-01-21 at 11:46 -0800, Dmitry Torokhov wrote:
+> Hi Durgadoss,
 > 
-> This patch treats POST_SETATTR as special wildcard function and will
-> cause ima_must_appraise() to be true if any of the hooks rules matches.
-> security.ima will not be removed if any of the hooks would require
-> appraisal.
+> On Fri, Jan 17, 2014 at 05:26:18AM +0530, Durgadoss R wrote:
+> > Currently the thermal_release function does
+> > kfree for all devices when they call device_unregister.
+> > This makes code scattering i.e whenever we add new
+> > devices (to thermal class) we need to add its
+> > corresponding kfree in thermal_release function.
+> > And the if-else is also growing lengthy.
+> > 
+> > Instead, do all kfree() of devices in their own
+> > _unregister functions. This makes the code look
+> > clean and easy to maintain.
+> > 
+> > Signed-off-by: Durgadoss R <durgadoss.r@intel.com>
+> > ---
+> >  drivers/thermal/thermal_core.c |   17 +++++------------
+> >  1 file changed, 5 insertions(+), 12 deletions(-)
+> > 
+> > diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
+> > index 338a88b..165afc6 100644
+> > --- a/drivers/thermal/thermal_core.c
+> > +++ b/drivers/thermal/thermal_core.c
+> > @@ -1042,18 +1042,7 @@ EXPORT_SYMBOL_GPL(thermal_zone_unbind_cooling_device);
+> >  
+> >  static void thermal_release(struct device *dev)
+> >  {
+> > -	struct thermal_zone_device *tz;
+> > -	struct thermal_cooling_device *cdev;
+> > -
+> > -	if (!strncmp(dev_name(dev), "thermal_zone",
+> > -		     sizeof("thermal_zone") - 1)) {
+> > -		tz = to_thermal_zone(dev);
+> > -		kfree(tz);
+> > -	} else if(!strncmp(dev_name(dev), "cooling_device",
+> > -			sizeof("cooling_device") - 1)){
+> > -		cdev = to_cooling_device(dev);
+> > -		kfree(cdev);
+> > -	}
+> > +	/* No-op since kfree(dev) is done in _unregister functions */
+> >  }
+> >  
+> >  static struct class thermal_class = {
+> > @@ -1146,6 +1135,7 @@ __thermal_cooling_device_register(struct device_node *np,
+> >  unregister:
+> >  	release_idr(&thermal_cdev_idr, &thermal_idr_lock, cdev->id);
+> >  	device_unregister(&cdev->device);
+> > +	kfree(cdev);
 > 
-> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+> This is broken, you can not assume that you are holding the last
+> reference. Please observe help text of DEBUG_KOBJECT_RELEASE config
+> option, activate said option and try unregistering thermal device.
+> 
+agreed.
+If you think it is too complicated to support the different thermal
+components in thermal_release(), we can introduce per device .release()
+callback as well.
 
-Thanks!
-
-Mimi 
-> ---
->  security/integrity/ima/ima_policy.c | 6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
+thanks,
+rui
+> Thanks.
 > 
-> diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-> index d7c97a4..947cdbe 100644
-> --- a/security/integrity/ima/ima_policy.c
-> +++ b/security/integrity/ima/ima_policy.c
-> @@ -167,9 +167,11 @@ static bool ima_match_rules(struct ima_rule_entry *rule,
->  	const struct cred *cred = current_cred();
->  	int i;
-> 
-> -	if ((rule->flags & IMA_FUNC) && rule->func != func)
-> +	if ((rule->flags & IMA_FUNC) &&
-> +		    (rule->func != func && func != POST_SETATTR))
->  		return false;
-> -	if ((rule->flags & IMA_MASK) && rule->mask != mask)
-> +	if ((rule->flags & IMA_MASK) &&
-> +		    (rule->mask != mask && func != POST_SETATTR))
->  		return false;
->  	if ((rule->flags & IMA_FSMAGIC)
->  	    && rule->fsmagic != inode->i_sb->s_magic)
 
 
