@@ -1,54 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754640AbaCCQCX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 11:02:23 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:47763 "EHLO
+	id S1754556AbaCCQOH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 11:14:07 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:49405 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754101AbaCCQCV convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754172AbaCCQOD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 11:02:21 -0500
+	Mon, 3 Mar 2014 11:14:03 -0500
 Content-Type: text/plain; charset=windows-1252
 Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: [PATCH V9 2/2] ARM: dts: Enable ahci sata and sata phy
+Subject: Re: [PATCH 1/3] soc: Introduce drivers/soc place-holder for SOC specific drivers
 From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <53146E84.7060508@ti.com>
-Date: Mon, 3 Mar 2014 10:02:13 -0600
-Cc: Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>, kgene.kim@samsung.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        mark.rutland@arm.com, Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>,
-        sander@humilis.net, swarren@wwwdotorg.org, b.zolnierkie@samsung.com,
-        ks.giri@samsung.com, t.figa@samsung.com, jg1.han@samsung.com,
-        joshi@samsung.com, grant.likely@linaro.org,
-        christoffer.dall@linaro.com
+In-Reply-To: <20140302204822.GA16158@quad.lixom.net>
+Date: Mon, 3 Mar 2014 10:13:57 -0600
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        devicetree <devicetree@vger.kernel.org>,
+        Paul Walmsley <paul@pwsan.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Sandeep Nair <sandeep_n@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        linux-arm-kernel@lists.infradead.org
 Content-Transfer-Encoding: 8BIT
-Message-Id: <C12D2EA6-2766-4C9A-8746-9B8E1A5844CD@codeaurora.org>
-References: <1393824160-27040-1-git-send-email-yuvaraj.cd@samsung.com> <1393824160-27040-3-git-send-email-yuvaraj.cd@samsung.com> <53146E84.7060508@ti.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
+Message-Id: <2DD4A0BB-509F-4F76-AA03-0CAFC9CEFE97@codeaurora.org>
+References: <1393629520-12713-1-git-send-email-santosh.shilimkar@ti.com> <1393629520-12713-2-git-send-email-santosh.shilimkar@ti.com> <20140302171206.6adbea6f@alan.etchedpixels.co.uk> <20140302204822.GA16158@quad.lixom.net>
+To: Olof Johansson <olof@lixom.net>
 X-Mailer: Apple Mail (2.1874)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On Mar 3, 2014, at 5:59 AM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+On Mar 2, 2014, at 2:48 PM, Olof Johansson <olof@lixom.net> wrote:
 
-> 
-> 
-> On Monday 03 March 2014 10:52 AM, Yuvaraj Kumar C D wrote:
->> This patch adds dt entry for ahci sata controller and its
->> corresponding phy controller.phy node has been added w.r.t
->> new generic phy framework.
+> On Sun, Mar 02, 2014 at 05:12:06PM +0000, One Thousand Gnomes wrote:
+>> On Fri, 28 Feb 2014 18:18:38 -0500
+>> Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
 >> 
->> Signed-off-by: Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
+>>> Based on earlier thread "https://lkml.org/lkml/2013/10/7/662" and
+>>> further discussion at Kernel Summit'2013, it was agreed to create
+>>> 'driver/soc' for drivers which are quite SOC specific.
+>>> 
+>>> Lets take the discussion forward with this patch.
+>> 
+>> So what happens if you put something in say soc/banana and 3 months later
+>> the same IP block shows up in two other devices both of which have their
+>> own soc/ directory already ?
 > 
-> This should go via exynos dt tree.
+> This isn't so much about IP blocks as about all the other glue logic and
+> management functions that vendors so far seem to implement in their own ways.
 > 
-> FWIW
-> Acked-by: Kishon Vijay Abraham I <kishon@ti.com>
->> —
+> I don't remember the name we agreed on, I don't think it was drivers/soc --
+> partly because naming it that brings up the kinds of questions you have.
+> Paul took it upon himself to start sorting this out (and merge through us on
+> arm-soc), so he hopefully remembers better than me. :)
 
-Its a nit, but the subject really should have ‘exynos’ or some related qualifier.  We aren’t enabling ahci sata & phy for all of ARM
+I think it was drivers/soc for the case that Paul was going to look at.  I’d expect we’d go with drivers/soc/<VENDOR> to reduce churn between newer SoC families from a company sharing something with an older one, etc.
+
+> 
+>> What happens when the same blocks shows up on both a SoC and
+>> later externally ?
+>> 
+>> Where does a soc specifc gpio driver go ?
+> 
+> drivers/gpio, of course. This isn't changing that.
+> 
+>> It seems to me we've got a lot of confusion here because drivers/ is
+>> split by type, and we've also got arch/* machine specific drivers and
+>> we've got drivers/platform which is intended as far as I can see for
+>> everything you'd put in drivers/soc except for that which goes in arch/*
+>> anyway.
+>> 
+>> If QMSS is arm specific why isn't it in arch/arm, if it's not why isn't
+>> it in drivers/platform ?
+> 
+> drivers/platform are for specific vendor platforms. I.e. various laptop
+> vendors, a few server vendors, etc. Code for a whole silicon vendor's driver
+> does not belong there.
+>> 
+>> Just trying to understand the point of drivers/soc. 
+> 
+> Shortcutting most of the discussion by focusing on this question. ;)
+> 
+> We've been struggling to find a home for some of the code that we want to keep
+> in the kernel tree, and we sat down to talk with (among others) Greg at KS to
+> try to figure out how to move forward.
+
+We talked about drivers/lib and drivers/soc back at KS.  Greg was going to start of drivers/lib and Paul was going to look at drivers/soc.
+
+> The code isn't the pure drivers. Those we find homes for. GPIO, for example, is
+> a clear choice: they go under drivers/gpio. IRQ controllers under
+> drivers/irqchip, etc. We've been good at finding the places for these,
+> including making new homes for them where none was before (pinctrl and clk
+> subsystems come to mind).
+> 
+> The type of code we were still looking for a home for is the glue code that
+> tends to be shared between drivers. For example, on a communication chip it
+> might be queue managers that are shared between SATA, DMA engine, Ethernet
+> controllers, crypto engines, etc. There's no obvious place for us to locate
+> that today. Most of this code is handled like a library with the drivers
+> calling into it.
+> 
+> So, again, it's not for drivers as much as for shared management code. It will
+> not be used for drivers (the Keystone patch adds an actual driver, so we need
+> to talk about that as well :).
+> 
+> And as with all other code in the kernel: If we find that more than one
+> vendor has something compatible, we make them refactor and share the
+> code when we discover it. It's a method we use now and it's working pretty
+> well.
+> 
+> Finally, your question on why we're not locating this under arch/*? It's not
+> architecture-dependent code, some vendors have several SoCs that are very
+> similar but with different cores of different architectures (MIPS, ARM,
+> PowerPC, ARM64, etc). So a location outside of arch/ is needed.
+> 
+> 
+> -Olof
 
 - k
 
