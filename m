@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754969AbaCCTwC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 14:52:02 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:33313 "EHLO
+	id S1754859AbaCCTwo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 14:52:44 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:51017 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754892AbaCCTvz (ORCPT
+	with ESMTP id S1754874AbaCCTwA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 14:51:55 -0500
+	Mon, 3 Mar 2014 14:52:00 -0500
 From: Stephen Warren <swarren@wwwdotorg.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Samuel Ortiz <sameo@linux.intel.com>,
         Lee Jones <lee.jones@linaro.org>, Rob Herring <robh+dt@kernel.org>,
@@ -16,9 +16,9 @@ To: Thomas Gleixner <tglx@linutronix.de>, Samuel Ortiz <sameo@linux.intel.com>,
 Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
         Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH V3 3/5] irqchip: gic: parse IRQ specifier flag src/dst inversion
-Date: Mon,  3 Mar 2014 12:51:38 -0700
-Message-Id: <1393876300-3061-3-git-send-email-swarren@wwwdotorg.org>
+Subject: [PATCH V3 5/5] ARM: tegra: fix Dalmore PMIC IRQ polarity
+Date: Mon,  3 Mar 2014 12:51:40 -0700
+Message-Id: <1393876300-3061-5-git-send-email-swarren@wwwdotorg.org>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1393876300-3061-1-git-send-email-swarren@wwwdotorg.org>
 References: <1393876300-3061-1-git-send-email-swarren@wwwdotorg.org>
@@ -29,30 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephen Warren <swarren@nvidia.com>
 
-Modify the GIC driver to parse IRQ specifier flag bit 4 (src/dst
-inverted) in the xlate function.
+The Tegra PMC's resume-from-sleep logic wants an active-low IRQ input
+from the PMIC. However, the PMIC IRQ is also routed to the GIC, which
+only supports active high IRQs (or rising edge). Hence, the signal must
+be inverted in the PMC before being routed to the GIC. This implies that
+the PMC DT property nvidia,invert-interrupt must be set, and it is.
 
+The PMIC's DT interrupts property must represent the IRQ level at the
+GIC, since that is the PMIC's parent IRQ controller. Fix the PMIC's
+interrupts property to correctly describe the GIC input polarity.
+
+However, the PMIC IRQ output's polarity is programmable in HW, and by
+default follows the parent IRQ controller's input polarity. We need to
+have an active-low output due to the inversion inside the Tegra PMC.
+Hence, add the IRQ specifier flag which request that to the PMIC.
+
+Reported-by: Stefan Agner <stefan@agner.ch>
 Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
-v3: New patch.
+v3: Update to match changes to IRQ specifier DT binding.
+v2: No change.
 ---
- drivers/irqchip/irq-gic.c | 3 +++
- 1 file changed, 3 insertions(+)
+ arch/arm/boot/dts/tegra114-dalmore.dts | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index 500e533b9648..97800b349f54 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -847,6 +847,9 @@ static int gic_irq_domain_xlate(struct irq_domain *d,
- 		*out_hwirq += 16;
+diff --git a/arch/arm/boot/dts/tegra114-dalmore.dts b/arch/arm/boot/dts/tegra114-dalmore.dts
+index 8de543777882..f4319ac1a401 100644
+--- a/arch/arm/boot/dts/tegra114-dalmore.dts
++++ b/arch/arm/boot/dts/tegra114-dalmore.dts
+@@ -893,7 +893,8 @@
+ 		palmas: tps65913@58 {
+ 			compatible = "ti,palmas";
+ 			reg = <0x58>;
+-			interrupts = <0 86 IRQ_TYPE_LEVEL_LOW>;
++			interrupts = <0 86
++				(IRQ_TYPE_LEVEL_HIGH | IRQ_SRC_DST_INVERTED)>;
  
- 	*out_type = intspec[2] & IRQ_TYPE_SENSE_MASK;
-+	if (intspec[2] & BIT(4))
-+		*out_type |= IRQ_SRC_DST_INVERTED;
-+
- 	return 0;
- }
- 
+ 			#interrupt-cells = <2>;
+ 			interrupt-controller;
 -- 
 1.8.1.5
 
