@@ -1,55 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754494AbaCCAAt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 19:00:49 -0500
-Received: from mout.gmx.net ([212.227.15.18]:62889 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753811AbaCCAAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 19:00:46 -0500
-Message-ID: <5313C616.9010104@gmx.de>
-Date: Mon, 03 Mar 2014 01:00:22 +0100
-From: Heinrich Schuchardt <xypron.glpk@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	id S1754506AbaCCABE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 19:01:04 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:61592 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753863AbaCCABB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Mar 2014 19:01:01 -0500
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: sachin.kamat@linaro.org, shaun@xresource.ca,
+        dulshani.gunawardhana89@gmail.com, dan.carpenter@oracle.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 5/5 v2] staging: cxt1e1: fix checkpatch errors with open brace '{'
+Date: Mon, 03 Mar 2014 09:00:57 +0900
+Message-ID: <1997886.JHGKgWyC1A@daeseok-laptop.cloud.net>
+User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
 MIME-Version: 1.0
-To: David Gibson <david@gibson.dropbear.id.au>
-CC: grant.likely@linaro.org, robh+dt@kernel.org, devicetree@vger.kernel.org,
-        jdl@jdl.com, devicetree-compiler@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] Consistently use xrealloc instead of realloc
-References: <1393792741-29043-1-git-send-email-xypron.glpk@gmx.de> <20140302234140.GD12916@voom.fritz.box>
-In-Reply-To: <20140302234140.GD12916@voom.fritz.box>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:vpRAq8TrOXWPE6qPJjFVWjxtNlzKagkp0JoOctlJbHJduKvJr/v
- v5PvDWwpReIBNkTfqE/arqil4Rulerj2Q9sfIh2XvlYvS87KIKOFSEm6QHZx8ReiywDNUjj
- fSLFuxQId8huQX3L+boAZBkzpylETbKGaJKKYbaMG6scH4emfrwzb3nW9zuirs7QL6GMjsS
- Pso9ZoqzNlygMvwSdw0qA==
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Note that in general dtc patches should be CCed to myself and Jon
-> Loeliger <jdl@jdl.com>, the dtc maintainers.
->
 
-This is the relevant section in file MAINTAINERS of Torvald's git.
-https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/MAINTAINERS
+clean up checkpatch.pl error:
+ ERROR: that open brace { should be on the previous line
 
-OPEN FIRMWARE AND FLATTENED DEVICE TREE
-M:  Grant Likely <grant.likely@linaro.org>
-M:  Rob Herring <robh+dt@kernel.org>
-L:  devicetree@vger.kernel.org
-W:  http://fdt.secretlab.ca
-T:  git git://git.secretlab.ca/git/linux-2.6.git
-S:  Maintained
-F:  drivers/of/
-F:  include/linux/of*.h
-F:  scripts/dtc/
-K:  of_get_property
-K:  of_match_table
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+---
+ drivers/staging/cxt1e1/hwprobe.c |   62 +++++++++++++++-----------------------
+ 1 file changed, 25 insertions(+), 37 deletions(-)
 
-If the information is not accurate, please, have it updated.
+diff --git a/drivers/staging/cxt1e1/hwprobe.c b/drivers/staging/cxt1e1/hwprobe.c
+index 5f0e05d..d87a011 100644
+--- a/drivers/staging/cxt1e1/hwprobe.c
++++ b/drivers/staging/cxt1e1/hwprobe.c
+@@ -58,8 +58,7 @@ show_two(hdw_info_t *hi, int brdno)
+ 
+ 	ci = (ci_t *)(netdev_priv(hi->ndev));
+ 	bid = sbeid_get_bdname(ci);
+-	switch (hi->promfmt)
+-	{
++	switch (hi->promfmt) {
+ 	case PROM_FORMAT_TYPE1:
+ 		memcpy(sn, (FLD_TYPE1 *)(hi->mfg_info.pft1.Serial), 6);
+ 		break;
+@@ -159,8 +158,7 @@ prep_hdw_info(void)
+ 	hdw_info_t *hi;
+ 	int         i;
+ 
+-	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++)
+-	{
++	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++) {
+ 		hi->pci_busno = 0xff;
+ 		hi->pci_slot = 0xff;
+ 		hi->pci_pin[0] = 0;
+@@ -179,18 +177,15 @@ cleanup_ioremap(void)
+ 	hdw_info_t *hi;
+ 	int         i;
+ 
+-	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++)
+-	{
++	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++) {
+ 		if (hi->pci_slot == 0xff)
+ 			break;
+-		if (hi->addr_mapped[0])
+-		{
++		if (hi->addr_mapped[0]) {
+ 			iounmap((void *)(hi->addr_mapped[0]));
+ 			release_mem_region((long) hi->addr[0], hi->len[0]);
+ 			hi->addr_mapped[0] = 0;
+ 		}
+-		if (hi->addr_mapped[1])
+-		{
++		if (hi->addr_mapped[1]) {
+ 			iounmap((void *)(hi->addr_mapped[1]));
+ 			release_mem_region((long) hi->addr[1], hi->len[1]);
+ 			hi->addr_mapped[1] = 0;
+@@ -205,8 +200,7 @@ cleanup_devs(void)
+ 	hdw_info_t *hi;
+ 	int         i;
+ 
+-	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++)
+-	{
++	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++) {
+ 		if (hi->pci_slot == 0xff || !hi->ndev)
+ 			break;
+ 		c4_stopwd(netdev_priv(hi->ndev));
+@@ -252,8 +246,7 @@ c4_hdw_init(struct pci_dev *pdev, int found)
+ 	 * element, identified by "slot==(0xff)".  The second part of a board's
+ 	 * functionality will match the previously loaded slot/busno.
+ 	 */
+-	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++)
+-	{
++	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++) {
+ 		/*
+ 		 * match with board's first found interface, otherwise this is
+ 		 * fisrt found
+@@ -262,17 +255,19 @@ c4_hdw_init(struct pci_dev *pdev, int found)
+ 		    ((hi->pci_slot == slot) && (hi->bus == pdev->bus)))
+ 			break;                  /* found for-loop exit */
+ 	}
+-	if (i == MAX_BOARDS)            /* no match in above loop means MAX
+-					 * exceeded */
+-	{
++
++	/* no match in above loop means MAX exceeded */
++	if (i == MAX_BOARDS) {
+ 		pr_warning("exceeded number of allowed devices (>%d)?\n",
+ 			   MAX_BOARDS);
+ 		return 0;
+ 	}
++
+ 	if (pdev->bus)
+ 		hi->pci_busno = pdev->bus->number;
+ 	else
+ 		hi->pci_busno = 0; /* default for system PCI inconsistency */
++
+ 	hi->pci_slot = slot;
+ 	pci_read_config_byte(pdev, PCI_INTERRUPT_PIN, &hi->pci_pin[fun]);
+ 	pci_read_config_byte(pdev, PCI_REVISION_ID, &hi->revid[fun]);
+@@ -311,43 +306,38 @@ c4hw_attach_all(void)
+ 	/*** scan PCI bus for all possible boards */
+ 	while ((pdev = pci_get_device(PCI_VENDOR_ID_CONEXANT,
+ 				      PCI_DEVICE_ID_CN8474,
+-				      pdev)))
+-	{
++				      pdev))) {
+ 		if (c4_hdw_init(pdev, found))
+ 			found++;
+ 	}
+-	if (!found)
+-	{
++
++	if (!found) {
+ 		pr_warning("No boards found\n");
+ 		return -ENODEV;
+ 	}
++
+ 	/* sanity check for consistent hardware found */
+-	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++)
+-	{
+-		if (hi->pci_slot != 0xff && (!hi->addr[0] || !hi->addr[1]))
+-		{
++	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++) {
++		if (hi->pci_slot != 0xff && (!hi->addr[0] || !hi->addr[1])) {
+ 			pr_warning("%s: something very wrong with pci_get_device\n",
+ 				   hi->devname);
+ 			return -EIO;
+ 		}
+ 	}
+ 	/* bring board's memory regions on/line */
+-	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++)
+-	{
++	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++) {
+ 		if (hi->pci_slot == 0xff)
+ 			break;
+-		for (j = 0; j < 2; j++)
+-		{
+-			if (!request_mem_region(hi->addr[j], hi->len[j], hi->devname))
+-			{
++		for (j = 0; j < 2; j++) {
++			if (!request_mem_region(hi->addr[j], hi->len[j], hi->devname)) {
+ 				pr_warning("%s: memory in use, addr=0x%lx, len=0x%lx ?\n",
+ 					   hi->devname, hi->addr[j], hi->len[j]);
+ 				cleanup_ioremap();
+ 				return -ENOMEM;
+ 			}
++
+ 			hi->addr_mapped[j] = (unsigned long)ioremap(hi->addr[j], hi->len[j]);
+-			if (!hi->addr_mapped[j])
+-			{
++			if (!hi->addr_mapped[j]) {
+ 				pr_warning("%s: ioremap fails, addr=0x%lx, len=0x%lx ?\n",
+ 					   hi->devname, hi->addr[j], hi->len[j]);
+ 				cleanup_ioremap();
+@@ -364,13 +354,11 @@ c4hw_attach_all(void)
+ 	drvr_state = SBE_DRVR_AVAILABLE;
+ 
+ 	/* Have now memory mapped all boards.  Now allow board's access to system */
+-	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++)
+-	{
++	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++) {
+ 		if (hi->pci_slot == 0xff)
+ 			break;
+ 		if (pci_enable_device(hi->pdev[0]) ||
+-		    pci_enable_device(hi->pdev[1]))
+-		{
++		    pci_enable_device(hi->pdev[1])) {
+ 			drvr_state = SBE_DRVR_DOWN;
+ 			pr_warning("%s: failed to enable card %d slot %d\n",
+ 				   hi->devname, i, hi->pci_slot);
+-- 
+1.7.9.5
 
-Best regards
 
-Heinrich Schuchardt
