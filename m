@@ -1,173 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755719AbaCCXIb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 18:08:31 -0500
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:47677 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755674AbaCCXI2 (ORCPT
+	id S1755527AbaCCXOw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 18:14:52 -0500
+Received: from exprod5og101.obsmtp.com ([64.18.0.141]:45871 "HELO
+	exprod5og101.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755282AbaCCXOs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 18:08:28 -0500
+	Mon, 3 Mar 2014 18:14:48 -0500
 MIME-Version: 1.0
-In-Reply-To: <20140303143834.90ebe8ec5c6a369e54a599ec@linux-foundation.org>
-References: <1393625931-2858-1-git-send-email-quning@google.com>
- <CACQD4-5U3P+QiuNKzt5+VdDDi0ocphR+Jh81eHqG6_+KeaHyRw@mail.gmail.com>
- <20140228174150.8ff4edca.akpm@linux-foundation.org> <CACQD4-7UUDMeXdR-NaAAXvk-NRYqW7mHJkjDUM=JRvL54b_Xsg@mail.gmail.com>
- <CACQD4-5SmUf+krLbef9Yg9HhJ-ipT2QKKq-NW=2C6G=XwXcMcQ@mail.gmail.com> <20140303143834.90ebe8ec5c6a369e54a599ec@linux-foundation.org>
-From: Ning Qu <quning@gmail.com>
-Date: Mon, 3 Mar 2014 15:07:47 -0800
-Message-ID: <CACQD4-4M9PkJ7cg24fLZ6ow=5hjhpHzymmfO1LU5x9ZBK-AsJA@mail.gmail.com>
-Subject: Re: [PATCH 0/1] mm, shmem: map few pages around fault address if they
- are in page cache
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>, Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Chinner <david@fromorbit.com>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1393867996-32299-6-git-send-email-Liviu.Dudau@arm.com>
+References: <1393867996-32299-1-git-send-email-Liviu.Dudau@arm.com>
+	<1393867996-32299-6-git-send-email-Liviu.Dudau@arm.com>
+Date: Mon, 3 Mar 2014 15:14:47 -0800
+Message-ID: <CACoXjcnP80rSaYqy2EK8SBh8Q=5E8kh_GQ84Y_0hg3WrQ=fy+A@mail.gmail.com>
+Subject: Re: [PATCH v4 5/6] pci: Use parent domain number when allocating
+ child busses.
+From: Tanmay Inamdar <tinamdar@apm.com>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Actually this one is just using the generic functions provided in
-Kirill's patch.
+Hello Liviu,
 
-And Kirill just sent another email earlier with two fixes reported by
-Hugh and I.
+Thanks for fixing up domain_nr. Now I have moved on further to a new
+domain_nr related warning dump :-)
 
-So it doesn't change anything in this patch. I will update the log and
-work on the
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+xgene-pcie 1f500000.pcie: (rc) x8 gen-3 link up
+pci_bus 0001:00: scanning bus
+pci_setup_device:1101 domain_nr = 1
+pci 0001:00:00.0: [e008:e004] type 01 class 0x060400
+pci 0001:00:00.0: reg 0x10: [mem 0x4000000000-0x7fffffffff 64bit]
+pci 0001:00:00.0: calling xgene_pcie_fixup_bridge+0x0/0x80
+pci 0001:00:00.0: Hiding X-Gene pci host bridge resources 0001:00:00.0
+pci 0001:00:00.0: supports D1 D2
+pci_bus 0001:00: fixups for bus
+pci 0001:00:00.0: scanning [bus 03-03] behind bridge, pass 0
+pci 0001:00:00.0: bridge configuration invalid ([bus 03-03]), reconfiguring
+pci 0001:00:00.0: scanning [bus 00-00] behind bridge, pass 1
+** pci_scan_bridge:855  pci_domain_nr(bus) = 1
+** pci_alloc_child_bus:681  pci_domain_nr(bus) = 1
+pci_bus 0001:01: scanning bus
+pci_setup_device:1101 domain_nr = 0
+pci 0000:01:00.0: [15b3:1003] type 00 class 0x020000
+pci 0000:01:00.0: reg 0x10: [mem 0x00100000-0x001fffff 64bit]
+pci 0000:01:00.0: reg 0x18: [mem 0x00800000-0x00ffffff 64bit pref]
+pci 0000:01:00.0: reg 0x30: [mem 0x01000000-0x010fffff pref]
+------------[ cut here ]------------
+WARNING: CPU: 0 PID: 1 at
+/home/tinamdar/work/open-source/linux/fs/sysfs/dir.c:52
+sysfs_warn_dup+0x80/0xc0()
+sysfs: cannot create duplicate filename '/bus/pci/devices/0000:01:00.0'
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.14.0-rc5+ #40
+Call trace:
+[<ffffffc000088180>] dump_backtrace+0x0/0x140
+[<ffffffc0000882d0>] show_stack+0x10/0x20
+[<ffffffc0004f65ac>] dump_stack+0x74/0xc4
+[<ffffffc000096e04>] warn_slowpath_common+0x84/0xc0
+[<ffffffc000096e8c>] warn_slowpath_fmt+0x4c/0x60
+[<ffffffc0001b83dc>] sysfs_warn_dup+0x7c/0xc0
+[<ffffffc0001b8894>] sysfs_do_create_link_sd.isra.2+0xf4/0x100
+[<ffffffc0001b88bc>] sysfs_create_link+0x1c/0x40
+[<ffffffc0003250b0>] bus_add_device+0x110/0x1c0
+[<ffffffc000322f1c>] device_add+0x31c/0x520
+[<ffffffc0002c444c>] pci_device_add+0xec/0x140
+[<ffffffc0004f1758>] pci_scan_single_device+0x98/0xe0
+[<ffffffc0002c44e8>] pci_scan_slot+0x48/0x120
+[<ffffffc0002c5368>] pci_scan_child_bus+0x48/0x140
+[<ffffffc0002c522c>] pci_scan_bridge+0x4ec/0x5e0
+[<ffffffc0002c53c8>] pci_scan_child_bus+0xa8/0x140
+[<ffffffc0004f1b30>] pci_rescan_bus+0x10/0x40
+[<ffffffc0006a12ac>] xgene_pcie_probe_bridge+0x660/0x72c
+[<ffffffc000327d20>] platform_drv_probe+0x20/0x60
+[<ffffffc000325e30>] really_probe+0xf0/0x220
+[<ffffffc000326080>] __driver_attach+0xa0/0xc0
+[<ffffffc000323ed4>] bus_for_each_dev+0x54/0xa0
+[<ffffffc0003258bc>] driver_attach+0x1c/0x40
+[<ffffffc00032548c>] bus_add_driver+0x14c/0x220
+[<ffffffc00032683c>] driver_register+0x5c/0x120
+[<ffffffc000327cdc>] __platform_driver_register+0x5c/0x80
+[<ffffffc0006a0c40>] xgene_pcie_driver_init+0x14/0x20
+[<ffffffc0000814c0>] do_one_initcall+0xe0/0x160
+[<ffffffc00068c934>] kernel_init_freeable+0x134/0x1d8
+[<ffffffc0004f07ac>] kernel_init+0xc/0xe0
+---[ end trace 3ee052d463aab7f3 ]---
+------------[ cut here ]------------
+WARNING: CPU: 0 PID: 1 at
+/home/tinamdar/work/open-source/linux/drivers/pci/probe.c:1380
+pci_device_add+0x128/0x140()
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-experiment results. I already asked Kirill command line, so I can have a
+I have made a small fix above your patch. After the fix is applied,
+dumps are gone and the enumeration finishes up smoothly for all the
+ports.
+Since the change is small, just pasting it here. Please review and
+apply if it's clean.
 
-apple-to-apple comparison then. I will update the patch with new results soon.
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index a12cda5..aac8366 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -693,7 +693,7 @@ static struct pci_bus *pci_alloc_child_bus(struct
+pci_bus *parent,
+        }
 
-Sorry about the mess-up previously. I should have asked Kirill about the test
+        child->self = bridge;
+-       child->bridge = get_device(&bridge->dev);
++       child->bridge = get_device(parent->bridge);
+        child->dev.parent = child->bridge;
+        pci_set_bus_of_node(child);
+        pci_set_bus_speed(child);
 
-in the first place.
+Thanks,
+Tanmay
 
-
-Best wishes,
--- 
-Ning Qu
-
-
-On Mon, Mar 3, 2014 at 2:38 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Fri, 28 Feb 2014 22:27:04 -0800 Ning Qu <quning@gmail.com> wrote:
+On Mon, Mar 3, 2014 at 9:33 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+> pci_alloc_child_bus() uses the newly allocated child bus to figure
+> out the domain number that is going to use for setting the device
+> name. A better option is to use the parent bus domain number.
 >
->> On Fri, Feb 28, 2014 at 10:10 PM, Ning Qu <quning@gmail.com> wrote:
->> > Yes, I am using the iozone -i 0 -i 1. Let me try the most simple test
->> > as you mentioned.
->> > Best wishes,
->> > --
->> > Ning Qu
->> >
->> >
->> > On Fri, Feb 28, 2014 at 5:41 PM, Andrew Morton
->> > <akpm@linux-foundation.org> wrote:
->> >> On Fri, 28 Feb 2014 16:35:16 -0800 Ning Qu <quning@gmail.com> wrote:
->> >>
->> >>
->> >> int main(int argc, char *argv[])
->> >> {
->> >>         char *p;
->> >>         int fd;
->> >>         unsigned long idx;
->> >>         int sum = 0;
->> >>
->> >>         fd = open("foo", O_RDONLY);
->> >>         if (fd < 0) {
->> >>                 perror("open");
->> >>                 exit(1);
->> >>         }
->> >>         p = mmap(NULL, 1 * G, PROT_READ, MAP_PRIVATE, fd, 0);
->> >>         if (p == MAP_FAILED) {
->> >>                 perror("mmap");
->> >>                 exit(1);
->> >>         }
->> >>
->> >>         for (idx = 0; idx < 1 * G; idx += 4096)
->> >>                 sum += p[idx];
->> >>         printf("%d\n", sum);
->> >>         exit(0);
->> >> }
->> >>
->> >> z:/home/akpm> /usr/bin/time ./a.out
->> >> 0
->> >> 0.05user 0.33system 0:00.38elapsed 99%CPU (0avgtext+0avgdata 4195856maxresident)k
->> >> 0inputs+0outputs (0major+262264minor)pagefaults 0swaps
->> >>
->> >> z:/home/akpm> dc
->> >> 16o
->> >> 262264 4 * p
->> >> 1001E0
->> >>
->> >> That's close!
+> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
 >
-> OK, I'm repairing your top-posting here.  It makes it unnecessarily
-> hard to conduct a conversation - please just don't do it.
+> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> index 26237a0..a12cda5 100644
+> --- a/drivers/pci/probe.c
+> +++ b/drivers/pci/probe.c
+> @@ -677,7 +677,7 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
+>          * now as the parent is not properly set up yet.
+>          */
+>         child->dev.class = &pcibus_class;
+> -       dev_set_name(&child->dev, "%04x:%02x", pci_domain_nr(child), busnr);
+> +       dev_set_name(&child->dev, "%04x:%02x", pci_domain_nr(parent), busnr);
 >
->> Yes, the simple test does verify that the page fault number are
->> correct with the patch. So my previous results are from those command
->> lines, which also show some performance improvement with this change
->> in tmpfs.
->>
->> sequential access
->> /usr/bin/time -a ./iozone -B s 8g -i 0 -i 1
->>
->> random access
->> /usr/bin/time -a ./iozone -B s 8g -i 0 -i 2
+>         /*
+>          * Set up the primary, secondary and subordinate
+> --
+> 1.9.0
 >
-> I don't understand your point here.
->
-> Running my simple test app with and without Kirill's
-> mm-introduce-vm_ops-map_pages and
-> mm-implement-map_pages-for-page-cache, minor faults are reduced 16x
-> when the file is cached, as expected:
->
-> 0.02user 0.22system 0:00.24elapsed 97%CPU (0avgtext+0avgdata 4198080maxresident)k
-> 0inputs+0outputs (0major+16433minor)pagefaults 0swaps
->
->
-> When the file is uncached, results are peculiar:
->
-> 0.00user 2.84system 0:50.90elapsed 5%CPU (0avgtext+0avgdata 4198096maxresident)k
-> 0inputs+0outputs (1major+49666minor)pagefaults 0swaps
->
-> That's approximately 3x more minor faults.  I thought it might be due
-> to the fact that userspace pagefaults and disk IO completions are both
-> working in the same order through the same pages, so the pagefaults
-> keep stumbling across not-yet-completed pages.  So I attempted to
-> complete the pages in reverse order:
->
-> --- a/fs/mpage.c~a
-> +++ a/fs/mpage.c
-> @@ -41,12 +41,16 @@
->   * status of that page is hard.  See end_buffer_async_read() for the details.
->   * There is no point in duplicating all that complexity.
->   */
-> +#define bio_for_each_segment_all_reverse(bvl, bio, i)                  \
-> +       for (i = 0, bvl = (bio)->bi_io_vec + (bio)->bi_vcnt - 1;        \
-> +       i < (bio)->bi_vcnt; i++, bvl--)
-> +
->  static void mpage_end_io(struct bio *bio, int err)
->  {
->         struct bio_vec *bv;
->         int i;
->
-> -       bio_for_each_segment_all(bv, bio, i) {
-> +       bio_for_each_segment_all_reverse(bv, bio, i) {
->                 struct page *page = bv->bv_page;
->
->                 if (bio_data_dir(bio) == READ) {
->
-> But that made no difference.  Maybe I got the wrong BIO completion
-> routine, but I don't think so (it's ext3).  Probably my theory is
-> wrong.
->
-> Anyway, could you please resend your patch with Hugh's fix and with a
-> more carefully written and more accurate changelog?
