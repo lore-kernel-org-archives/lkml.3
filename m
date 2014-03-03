@@ -1,97 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754713AbaCCNzo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 08:55:44 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:53734 "EHLO bear.ext.ti.com"
+	id S1754780AbaCCN4j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 08:56:39 -0500
+Received: from mga11.intel.com ([192.55.52.93]:27432 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754139AbaCCNzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 08:55:37 -0500
-From: George Cherian <george.cherian@ti.com>
-To: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <devicetree@vger.kernel.org>
-CC: <anatol.pomozov@gmail.com>, <gregkh@linuxfoundation.org>, <balbi@ti.com>,
-        <rogerq@ti.com>, <kishon@ti.com>, <rob@landley.net>,
-        <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
-        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>,
-        <bcousson@baylibre.com>, <tony@atomide.com>,
-        George Cherian <george.cherian@ti.com>
-Subject: [PATCH 3/5] ARM: dts: am437x-gp-evm: Enable USB
-Date: Mon, 3 Mar 2014 19:23:52 +0530
-Message-ID: <1393854834-23810-4-git-send-email-george.cherian@ti.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1393854834-23810-1-git-send-email-george.cherian@ti.com>
-References: <1393854834-23810-1-git-send-email-george.cherian@ti.com>
+	id S1754112AbaCCN4g convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 08:56:36 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,577,1389772800"; 
+   d="scan'208";a="491273897"
+From: "Dorau, Lukasz" <lukasz.dorau@intel.com>
+To: Alexander Gordeev <agordeev@redhat.com>
+CC: "Patelczyk, Maciej" <maciej.patelczyk@intel.com>,
+        "Jiang, Dave" <dave.jiang@intel.com>,
+        intel-linux-scu <intel-linux-scu@intel.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Paszkiewicz, Artur" <artur.paszkiewicz@intel.com>
+Subject: RE: [PATCH v2 10/23] isci: Use pci_enable_msix_exact() instead of
+ pci_enable_msix()
+Thread-Topic: [PATCH v2 10/23] isci: Use pci_enable_msix_exact() instead of
+ pci_enable_msix()
+Thread-Index: AQHPMTawK2WuyGcxc0e3/iGBmCa5+JrPbfXQ
+Date: Mon, 3 Mar 2014 13:56:30 +0000
+Message-ID: <D9FFE20C522965449E182ACE73889AEB1A6F3E19@IRSMSX105.ger.corp.intel.com>
+References: <cover.1393191330.git.agordeev@redhat.com>
+ <b6c5934fa5e2f17f49a48a38f036bcd5149455c6.1393191330.git.agordeev@redhat.com>
+In-Reply-To: <b6c5934fa5e2f17f49a48a38f036bcd5149455c6.1393191330.git.agordeev@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [163.33.239.182]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable
-	- ocp2scp
-	- USB PHY control module
-	- USB PHY
-	- dwc3_omap
-	- USB
-for am437x-gp-evm
+On Monday, February 24, 2014 9:02 AM Alexander Gordeev <agordeev@redhat.com> wrote:
+> As result of deprecation of MSI-X/MSI enablement functions
+> pci_enable_msix() and pci_enable_msi_block() all drivers
+> using these two interfaces need to be updated to use the
+> new pci_enable_msi_range()  or pci_enable_msi_exact()
+> and pci_enable_msix_range() or pci_enable_msix_exact()
+> interfaces.
+> 
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> Cc: Lukasz Dorau <lukasz.dorau@intel.com>
+> Cc: Maciej Patelczyk <maciej.patelczyk@intel.com>
+> Cc: Dave Jiang <dave.jiang@intel.com>
+> Cc: intel-linux-scu@intel.com
+> Cc: linux-scsi@vger.kernel.org
+> Cc: linux-pci@vger.kernel.org
+> ---
+>  drivers/scsi/isci/init.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/scsi/isci/init.c b/drivers/scsi/isci/init.c
+> index d25d0d8..ce40538 100644
+> --- a/drivers/scsi/isci/init.c
+> +++ b/drivers/scsi/isci/init.c
+> @@ -356,7 +356,7 @@ static int isci_setup_interrupts(struct pci_dev *pdev)
+>  	for (i = 0; i < num_msix; i++)
+>  		pci_info->msix_entries[i].entry = i;
+> 
+> -	err = pci_enable_msix(pdev, pci_info->msix_entries, num_msix);
+> +	err = pci_enable_msix_exact(pdev, pci_info->msix_entries, num_msix);
+>  	if (err)
+>  		goto intx;
+> 
+> --
+> 1.7.7.6
 
-Signed-off-by: George Cherian <george.cherian@ti.com>
----
- arch/arm/boot/dts/am437x-gp-evm.dts | 44 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 44 insertions(+)
+Looks fine.
 
-diff --git a/arch/arm/boot/dts/am437x-gp-evm.dts b/arch/arm/boot/dts/am437x-gp-evm.dts
-index 4eb72b8..89e08cd 100644
---- a/arch/arm/boot/dts/am437x-gp-evm.dts
-+++ b/arch/arm/boot/dts/am437x-gp-evm.dts
-@@ -98,3 +98,47 @@
- &gpio4 {
- 	status = "okay";
- };
-+
-+&am43xx_control_usb2phy1 {
-+	status = "okay";
-+};
-+
-+&ocp2scp0 {
-+	status = "okay";
-+};
-+
-+&usb2_phy1 {
-+	status = "okay";
-+};
-+
-+&dwc3_1 {
-+	status = "okay";
-+};
-+
-+&usb1 {
-+	dr_mode = "peripheral";
-+	maximum-speed = "high-speed";
-+	status = "okay";
-+};
-+
-+&am43xx_control_usb2phy2 {
-+	status = "okay";
-+};
-+
-+&ocp2scp1 {
-+	status = "okay";
-+};
-+
-+&usb2_phy2 {
-+	status = "okay";
-+};
-+
-+&dwc3_2 {
-+	status = "okay";
-+};
-+
-+&usb2 {
-+	dr_mode = "host";
-+	maximum-speed = "high-speed";
-+	status = "okay";
-+};
--- 
-1.8.3.1
+Acked-by: Lukasz Dorau <lukasz.dorau@intel.com>
+
+Thanks,
+Lukasz
 
