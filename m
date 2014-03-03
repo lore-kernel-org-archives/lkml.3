@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754372AbaCCOFR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 09:05:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39815 "EHLO mx1.redhat.com"
+	id S1754604AbaCCOG0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 09:06:26 -0500
+Received: from mail.mev.co.uk ([62.49.15.74]:38250 "EHLO mail.mev.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753751AbaCCOFP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 09:05:15 -0500
-Date: Mon, 3 Mar 2014 09:04:50 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
-        jolsa@redhat.com, jmario@redhat.com, fowles@inreach.com,
-        eranian@google.com
-Subject: Re: [PATCH 00/19 V2] perf, c2c: Add new tool to analyze cacheline
- contention on NUMA systems
-Message-ID: <20140303140450.GU25953@redhat.com>
-References: <1393609388-40489-1-git-send-email-dzickus@redhat.com>
- <87wqgfawur.fsf@tassilo.jf.intel.com>
- <20140228194233.GK25953@redhat.com>
- <20140228215442.GV22728@two.firstfloor.org>
+	id S1754510AbaCCOGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 09:06:25 -0500
+Message-ID: <53148C2A.9000305@mev.co.uk>
+Date: Mon, 3 Mar 2014 14:05:30 +0000
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140228215442.GV22728@two.firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Chase Southwood <chase.southwood@yahoo.com>,
+        Ian Abbott <ian.abbott@mev.co.uk>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "hsweeten@visionengravers.com" <hsweeten@visionengravers.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Staging: comedi: add timeouts to while loops in s626.c
+References: <1393572936-9676-1-git-send-email-chase.southwood@yahoo.com> <5310C4CB.2060201@mev.co.uk> <1393652927.45628.YahooMailNeo@web164006.mail.gq1.yahoo.com>
+In-Reply-To: <1393652927.45628.YahooMailNeo@web164006.mail.gq1.yahoo.com>
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 28, 2014 at 10:54:42PM +0100, Andi Kleen wrote:
-> > It's there. :-)
-> > 
-> > perf c2c -r -x, report
-> > 
-> > will spit out raw records in CSV format.
-> 
-> But most of the cooked data seems not? I saw
-> lots of printfs without separator support.
-> 
-> Sorry I meant data mining the cooked data,
-> e.g. plotting it.
+On 2014-03-01 05:48, Chase Southwood wrote:
+> On Friday, February 28, 2014 11:26 AM, Ian Abbott <abbotti@mev.co.uk> wrote:
+>> On 2014-02-28 07:35, Chase Southwood wrote:
+>>> And finally, are timeouts here even necessary or helpful, or are there
+>>> any better ways to do it?
+>>
+>> In the case of s626_send_dac(), it doesn't seem to be used in any
+>> critical sections, so it could make use of Hartley's comedi_timeout().
+>>
+>> Some of the timeout errors could be propagated, especially for
+>> s626_send_dac() which is only reachable from very few paths.
+>>
+>
+> Awesome, I'll swap all of my timeouts out for comedi_timeout() in s626_send_dac().
+> As for propagating the timeout errors, could you please clarify that a bit further?  Both of the functions
+> which I add timeouts inside of in this patch return void, and so in their current state they cannot return any error
+> values.  Would you like them (or at least s626_send_dac()) to instead return an error upon timeout/or success on success,
+> or am I just totally misunderstanding your meaning of propagate here?
 
-Ah. Ok. I will look into that.
+s626_send_dac() could be changed to return an int value 0 on success or 
+-ETIMEDOUT on timeout.  s626_set_dac() and s626_write_trim_dac() could 
+be changed to return an int - just return the result of s626_send_dac(). 
+  Similarly, the result of those functions could be either propagated 
+upwards.  This could all be done in a separate patch (or patches).
 
-Cheers,
-Don
+>> There are other infinite loops involving calls to the s626_mc_test()
+>> function, but those could be dealt with by other patches.
+>
+> Yeah, I saw those...I'll whip up a patch for them, just wanted to verify that everything looks pretty good here
+> before I started on that.  I'll have that right out!
+
+Yes, anything is an improvement on an infinite loop waiting for the 
+hardware to do something!
+
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
