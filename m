@@ -1,124 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665AbaCCPrU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 10:47:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9878 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753980AbaCCPrS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 10:47:18 -0500
-Message-ID: <1393861630.2895.41.camel@ul30vt.home>
-Subject: Re: [RFC PATCH] vfio-pci: avoid deadlock between unbind and
- VFIO_DEVICE_RESET
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-Cc: kvm@vger.kernel.org, aik@ozlabs.ru, linux-kernel@vger.kernel.org,
-        kvm-ppc@vger.kernel.org, bhelgaas@google.com,
-        linuxppc-dev@lists.ozlabs.org
-Date: Mon, 03 Mar 2014 08:47:10 -0700
-In-Reply-To: <20140303152851.GA20894@oc0268524204.ibm.com>
-References: <1393857192-28360-1-git-send-email-cascardo@linux.vnet.ibm.com>
-	 <1393859362.2895.34.camel@ul30vt.home>
-	 <20140303152851.GA20894@oc0268524204.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754769AbaCCPyv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 10:54:51 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:36667 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754510AbaCCPyu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 10:54:50 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-48-5314a5c5b930
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org
+Cc: Yadwinder Singh Brar <yadi.brar01@gmail.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH] regulator: s2mps11: Fix section mismatch
+Date: Mon, 03 Mar 2014 16:53:51 +0100
+Message-id: <1393862031-4896-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrIJMWRmVeSWpSXmKPExsVy+t/xa7pHl4oEG6w6I2exccZ6VoupD5+w
+	Wbx/vp7Z4vULQ4uzTW/YLb5d6WCyuLxrDpvF2iN32S0urvjCZLF+xmsWi7m/G1kduD12zrrL
+	7rF4z0smj02rOtk8+rasYvT4vEkugDWKyyYlNSezLLVI3y6BK+PZzemsBdcUKlZ1v2FuYPwr
+	1cXIySEhYCIx5fl5JghbTOLCvfVsXYxcHEICSxkl1j7/DeX0MUn87/rJCFLFJmAssXn5ErCE
+	iEAPo8TLrZ+ZQRxmgQNMEndbVrN3MXJwCAtYShw5rAnSwCKgKjGpaQs7iM0r4CaxaOJuNpAS
+	CQEFiTmTbCYwci9gZFjFKJpamlxQnJSea6RXnJhbXJqXrpecn7uJERJMX3cwLj1mdYhRgINR
+	iYfXYYpIsBBrYllxZe4hRgkOZiUR3ogaoBBvSmJlVWpRfnxRaU5q8SFGJg5OqQbGG1e2bp7J
+	vlogZ/UEnua4rFlmoUtaOqTsHvsLHY2fyr5dnctUfpJCsryzdP7O9XwzbHs3vr/k6FDv4Sub
+	o+tdP73mQZ0732bjlIxrf7UfrSi7yqH+Vbxg1V73NTOdv76WWTVHV8Wp+lZv14lrSnl8xbEt
+	mnuKujybtPdJ/Q3Y8yl+S04Bl5oSS3FGoqEWc1FxIgBNEOcpBAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-03-03 at 12:28 -0300, Thadeu Lima de Souza Cascardo wrote:
-> On Mon, Mar 03, 2014 at 08:09:22AM -0700, Alex Williamson wrote:
-> > On Mon, 2014-03-03 at 11:33 -0300, Thadeu Lima de Souza Cascardo wrote:
-> > > When we unbind vfio-pci from a device, while running a guest, we might
-> > > have a deadlock when such a guest reboots.
-> > > 
-> > > Unbind takes device_lock at device_release_driver, and waits for
-> > > release_q at vfio_del_group_dev.
-> > > 
-> > > release_q will only be woken up when all references to vfio_device are
-> > > gone, and that includes open file descriptors, like the ones a guest
-> > > on qemu will hold.
-> > > 
-> > > If you try to reboot the guest, it will call VFIO_DEVICE_RESET, which
-> > > calls pci_reset_function, which now grabs the device_lock, and we are
-> > > deadlocked.
-> > > 
-> > > Using device_trylock allow us to handle the case when the lock is
-> > > already taken, and avoid this situation.
-> > > 
-> > > Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-> > > ---
-> > > 
-> > > Not tested yet, but I would like some comments now, like would it be
-> > > better to have a pci_try_reset_function, or do trylock on
-> > > pci_reset_function itself?
-> > 
-> > 
-> > We already have it:
-> > 
-> > http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=61cf16d8bd38c3dc52033ea75d5b1f8368514a17
-> > http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=890ed578df82f5b7b5a874f9f2fa4f117305df5f
-> > 
-> > Is there something insufficient about these or are you testing on and
-> > older kernel?  Thanks,
-> > 
-> > Alex
-> 
-> Sorry I missed it. On the rush to report and fix it, I looked only on my
-> local branch. Should we backport those two patches to long term stable
-> 3.10? I can reproduce the issue there.
+Remove __initconst from regulator_desc array because this array is used
+during probe and s2mps11_pmic_probe() is not in __init section. However
+still select the number of supported regulators according to device ID
+so the driver will be ready for adding support for S2MPS14 device.
 
-Sure, if you're trying to exercise this path, it's easy to reproduce.
-It's also relatively easy to avoid once you know it's there.  It's not
-obvious to me that this fix meets the stable patch rules though, it's
-bigger than suggested, I'm not sure it really bothers people outside of
-QA testing, it does cause a hang, but not a system hang.  I'd certainly
-suggest any downstream based on 3.10 that cares about vfio to pick it
-up, does that make it sufficient for upstream stable?  Thanks,
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ drivers/regulator/s2mps11.c |   63 ++++++++++++-------------------------------
+ 1 file changed, 17 insertions(+), 46 deletions(-)
 
-Alex
+diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
+index ca66fc56fa58..ca876de72eae 100644
+--- a/drivers/regulator/s2mps11.c
++++ b/drivers/regulator/s2mps11.c
+@@ -342,7 +342,7 @@ static struct regulator_ops s2mps11_buck_ops = {
+ 	.enable_mask	= S2MPS11_ENABLE_MASK			\
+ }
  
-> > > ---
-> > >  drivers/vfio/pci/vfio_pci.c |   14 ++++++++++++--
-> > >  1 files changed, 12 insertions(+), 2 deletions(-)
-> > > 
-> > > diff --git a/drivers/vfio/pci/vfio_pci.c b/drivers/vfio/pci/vfio_pci.c
-> > > index 3b76dc8..d1d2242 100644
-> > > --- a/drivers/vfio/pci/vfio_pci.c
-> > > +++ b/drivers/vfio/pci/vfio_pci.c
-> > > @@ -513,8 +513,18 @@ static long vfio_pci_ioctl(void *device_data,
-> > >  		return ret;
-> > >  
-> > >  	} else if (cmd == VFIO_DEVICE_RESET) {
-> > > -		return vdev->reset_works ?
-> > > -			pci_reset_function(vdev->pdev) : -EINVAL;
-> > > +		struct pci_dev *pdev = vdev->pdev;
-> > > +		int ret = -EBUSY;
-> > > +		if (!vdev->reset_works)
-> > > +			return -EINVAL;
-> > > +		if (pci_cfg_access_trylock(pdev)) {
-> > > +			if (device_trylock(&pdev->dev)) {
-> > > +				ret = __pci_reset_function_locked(pdev);
-> > > +				device_unlock(&pdev->dev);
-> > > +			}
-> > > +			pci_cfg_access_unlock(pdev);
-> > > +		}
-> > > +		return ret;
-> > >  
-> > >  	} else if (cmd == VFIO_DEVICE_GET_PCI_HOT_RESET_INFO) {
-> > >  		struct vfio_pci_hot_reset_info hdr;
-> > 
-> > 
-> > 
-> > _______________________________________________
-> > Linuxppc-dev mailing list
-> > Linuxppc-dev@lists.ozlabs.org
-> > https://lists.ozlabs.org/listinfo/linuxppc-dev
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
+-static const struct regulator_desc s2mps11_regulators[] __initconst = {
++static const struct regulator_desc s2mps11_regulators[] = {
+ 	regulator_desc_ldo2(1),
+ 	regulator_desc_ldo1(2),
+ 	regulator_desc_ldo1(3),
+@@ -393,41 +393,6 @@ static const struct regulator_desc s2mps11_regulators[] __initconst = {
+ 	regulator_desc_buck10,
+ };
+ 
+-/*
+- * Allocates memory under 'regulators' pointer and copies there array
+- * of regulator_desc for given device.
+- *
+- * Returns number of regulators or negative ERRNO on error.
+- */
+-static int __init
+-s2mps11_pmic_init_regulators_desc(struct platform_device *pdev,
+-		struct regulator_desc **regulators)
+-{
+-	const struct regulator_desc *regulators_init;
+-	enum sec_device_type dev_type;
+-	int rdev_num;
+-
+-	dev_type = platform_get_device_id(pdev)->driver_data;
+-	switch (dev_type) {
+-	case S2MPS11X:
+-		rdev_num = ARRAY_SIZE(s2mps11_regulators);
+-		regulators_init = s2mps11_regulators;
+-		break;
+-	default:
+-		dev_err(&pdev->dev, "Invalid device type: %u\n", dev_type);
+-		return -EINVAL;
+-	};
+-
+-	*regulators = devm_kzalloc(&pdev->dev,
+-			sizeof(**regulators) * rdev_num, GFP_KERNEL);
+-	if (!*regulators)
+-		return -ENOMEM;
+-
+-	memcpy(*regulators, regulators_init, sizeof(**regulators) * rdev_num);
+-
+-	return rdev_num;
+-}
+-
+ static int s2mps11_pmic_probe(struct platform_device *pdev)
+ {
+ 	struct sec_pmic_dev *iodev = dev_get_drvdata(pdev->dev.parent);
+@@ -437,17 +402,24 @@ static int s2mps11_pmic_probe(struct platform_device *pdev)
+ 	struct regulator_config config = { };
+ 	struct s2mps11_info *s2mps11;
+ 	int i, ret = 0;
+-	struct regulator_desc *regulators = NULL;
+-	int rdev_num;
++	const struct regulator_desc *regulators;
++	enum sec_device_type dev_type;
+ 
+ 	s2mps11 = devm_kzalloc(&pdev->dev, sizeof(struct s2mps11_info),
+ 				GFP_KERNEL);
+ 	if (!s2mps11)
+ 		return -ENOMEM;
+ 
+-	rdev_num = s2mps11_pmic_init_regulators_desc(pdev, &regulators);
+-	if (rdev_num < 0)
+-		return rdev_num;
++	dev_type = platform_get_device_id(pdev)->driver_data;
++	switch (dev_type) {
++	case S2MPS11X:
++		s2mps11->rdev_num = ARRAY_SIZE(s2mps11_regulators);
++		regulators = s2mps11_regulators;
++		break;
++	default:
++		dev_err(&pdev->dev, "Invalid device type: %u\n", dev_type);
++		return -EINVAL;
++	};
+ 
+ 	if (!iodev->dev->of_node) {
+ 		if (pdata) {
+@@ -459,11 +431,11 @@ static int s2mps11_pmic_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
+-	rdata = kzalloc(sizeof(*rdata) * rdev_num, GFP_KERNEL);
++	rdata = kzalloc(sizeof(*rdata) * s2mps11->rdev_num, GFP_KERNEL);
+ 	if (!rdata)
+ 		return -ENOMEM;
+ 
+-	for (i = 0; i < rdev_num; i++)
++	for (i = 0; i < s2mps11->rdev_num; i++)
+ 		rdata[i].name = regulators[i].name;
+ 
+ 	reg_np = of_find_node_by_name(iodev->dev->of_node, "regulators");
+@@ -473,16 +445,15 @@ static int s2mps11_pmic_probe(struct platform_device *pdev)
+ 		goto out;
+ 	}
+ 
+-	of_regulator_match(&pdev->dev, reg_np, rdata, rdev_num);
++	of_regulator_match(&pdev->dev, reg_np, rdata, s2mps11->rdev_num);
+ 
+ common_reg:
+ 	platform_set_drvdata(pdev, s2mps11);
+-	s2mps11->rdev_num = rdev_num;
+ 
+ 	config.dev = &pdev->dev;
+ 	config.regmap = iodev->regmap_pmic;
+ 	config.driver_data = s2mps11;
+-	for (i = 0; i < rdev_num; i++) {
++	for (i = 0; i < s2mps11->rdev_num; i++) {
+ 		struct regulator_dev *regulator;
+ 
+ 		if (!reg_np) {
+-- 
+1.7.9.5
 
