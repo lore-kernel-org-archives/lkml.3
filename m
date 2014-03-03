@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755359AbaCCWny (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 17:43:54 -0500
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:49333 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754951AbaCCWnw (ORCPT
+	id S1755411AbaCCWo7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 17:44:59 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:31256 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755005AbaCCWo6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 17:43:52 -0500
-Date: Mon, 3 Mar 2014 17:43:45 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Eric Biederman <ebiederm@xmission.com>
-Subject: Re: Bug in fs/kernfs/dir.c comment or code?
-Message-ID: <20140303224345.GD26523@mtj.dyndns.org>
-References: <20140302201656.GA5659@netboy>
+	Mon, 3 Mar 2014 17:44:58 -0500
+Message-ID: <531505E4.8020802@oracle.com>
+Date: Mon, 03 Mar 2014 17:44:52 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140302201656.GA5659@netboy>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: kernfs: possible deadlock between of->mutex and mmap_sem
+References: <53113485.2090407@oracle.com> <20140303223933.GC26523@mtj.dyndns.org>
+In-Reply-To: <20140303223933.GC26523@mtj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc'ing Greg and Eric)
+On 03/03/2014 05:39 PM, Tejun Heo wrote:
+> On Fri, Feb 28, 2014 at 08:14:45PM -0500, Sasha Levin wrote:
+>> Hi all,
+>>
+>> I've stumbled on the following while fuzzing with trinity inside a
+>> KVM tools running the latest -next kernel.
+>>
+>> We deal with files that have an mmap op by giving them a different
+>> locking class than the files which don't due to mmap_sem nesting
+>> being different for those files.
+>>
+>> We assume that for mmap supporting files, of->mutex will be nested
+>> inside mm->mmap_sem. However, this is not always the case. Consider
+>> the following:
+>>
+>> 	kernfs_fop_write()
+>> 		copy_from_user()
+>> 			might_fault()
+>>
+>> might_fault() suggests that we may lock mm->mmap_sem, which causes a
+>> reverse lock nesting of mm->mmap_sem inside of of->mutex.
+>>
+>> I'll send a patch to fix it some time next week unless someone beats me to it :)
+>
+> How are you planning to fix it?  Prolly the right thing to do would be
+> caching atomic_write_len in open_file and copy data before grabbing
+> any locks.
 
-On Sun, Mar 02, 2014 at 09:16:58PM +0100, Richard Cochran wrote:
-> I stumbled across this in fs/kernfs/dir.c:39.
-> 
-> 	/* Reserve hash numbers 0, 1 and INT_MAX for magic directory entries */
-> 	if (hash < 1)
-> 		hash += 2;
-> 	if (hash >= INT_MAX)
-> 		hash = INT_MAX - 1;
-> 
-> Shouldn't that be (hash < 2), or is 1 not reserved?
+I've actually didn't have a plan when I wrote that, was just planning on putting effort into it.
 
-Looks like the code is wrong and the condition should be hash < 2.
-Difficult to trigger but an actual bug.  The fix should probably be
-propagated to sysfs through -stable.  Can you write up a patch?
 
-Thanks.
+Thanks,
+Sasha
 
--- 
-tejun
