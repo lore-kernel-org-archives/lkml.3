@@ -1,161 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754565AbaCCRfu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 12:35:50 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53901 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753925AbaCCRe0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 12:34:26 -0500
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Tanmay Inamdar <tinamdar@apm.com>
-Subject: [PATCH v4 0/6] [RFC] Support for creating generic host_bridge from device tree
-Date: Mon,  3 Mar 2014 17:33:10 +0000
-Message-Id: <1393867996-32299-1-git-send-email-Liviu.Dudau@arm.com>
-X-Mailer: git-send-email 1.9.0
+	id S1754607AbaCCRgF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 12:36:05 -0500
+Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:57546
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753925AbaCCRgC convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 12:36:02 -0500
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VPS-1(z551biz98dIc89bh936eI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2fh95h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24d7h2516h2545h255eh906i1155h)
+Date: Mon, 3 Mar 2014 09:35:43 -0800
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Gerhard Sittig <gsi@denx.de>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Michal Simek <michal.simek@xilinx.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC 0/3] clk: CCF clock primitives + custom IO accessors
+References: <1393630495-29689-1-git-send-email-soren.brinkmann@xilinx.com>
+ <20140302202940.GQ3327@book.gsilab.sittig.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <20140302202940.GQ3327@book.gsilab.sittig.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <19206d89-cd0d-4fea-9170-3fd0a8482bf5@VA3EHSMHS045.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is v4 of my attempt to add support for a generic pci_host_bridge controller created
-from a description passed in the device tree.
+On Sun, 2014-03-02 at 09:29PM +0100, Gerhard Sittig wrote:
+> On Fri, Feb 28, 2014 at 15:34 -0800, Soren Brinkmann wrote:
+> > 
+> > [ MMIO registers assumed for clock control modules, but I2C
+> > communication may be involved in other hardware, individual for
+> > a (set of) clock(s) and not for an architecture or platform ]
+> > 
+> > Does anybody have a good idea how we could avoid all this code
+> > duplication while enabling usage of the clock primitives with different
+> > IO accessors?
+> > Especially the divider and mux primitive have a lot of code that would
+> > be painful to maintain twice.
+> 
+> Hasn't past discussion already reached the point where code
+> duplication of the clock control logic was considered
+> undesirable, and "low level ops" were outlined?  I.e. extending
+> the compile time decision for a specific clk_{read,write}l()
+> implementation by another potential redirection that is specific
+> to a clock item?
+> 
+> Re-submitting a series which duplicates complete clock types,
+> while the difference is only in how registers get accessed, is
+> quite saddening.
+I'm not really planning to submit this as is. I'm hoping to get some
+input on how to resolve this properly. I know this is a big mess, but I
+also don't see the way out (yet).
 
-Changes from v3:
-  - Dynamically allocate bus_range resource in of_create_pci_host_bridge()
-  - Fix the domain number used when creating child busses.
-  - Changed domain number allocator to use atomic operations.
-  - Use ERR_PTR() to propagate the error out of pci_create_root_bus_in_domain()
-    and of_create_pci_host_bridge().
+> 
+> 
+> > In the next step, I encountered a divider clock whose divider is stored
+> > in 2 I2C registers. So now, the simple IO access replacement doesn't
+> > work anymore either since this clock needs 2 registers to be read and
+> > then shifting around the bitfields accordingly.
+> 
+> Are the registers adjacent and contain only bit fields for one
+> clock?  Or do registers share parameters for several clocks, or
+> are not adjacent?
+> 
+> In the former case you may use a table from "divider value" to
+> "bit pattern to read/write".  In the latter case, the clock
+> control module is rather special, and may not be easily get
+> mapped to the common primitives.  Unless the ll_ops can implement
+> the required special handling.
+It would be nice if we could use the logic provided in the mux, div etc
+primitives independently of how the HW is accessed and what is
+necessary to shift and mask those register values around, right? I
+mean, at then end we want to model a clk-(div|mux) and not a
+clk-(div|mux) which has only a single, memory-mapped control register,
+that does not overlap with other things, ...
 
-Changes from v2:
-  - Use range->cpu_addr when calling pci_address_to_pio()
-  - Introduce pci_register_io_range() helper function in order to register
-    io ranges ahead of their conversion to PIO values. This is needed as no
-    information is being stored yet regarding the range mapping, making
-    pci_address_to_pio() fail. Default weak implementation does nothing,
-    to cover the default weak implementation of pci_address_to_pio() that
-    expects direct mapping of physical addresses into PIO values (x86 view).
+	Sören
 
-Changes from v1:
-  - Add patch to fix conversion of IO ranges into IO resources.
-  - Added a domain_nr member to pci_host_bridge structure, and a new function
-    to create a root bus in a given domain number. In order to facilitate that
-    I propose changing the order of initialisation between pci_host_bridge and
-    it's related bus in pci_create_root_bus() as sort of a rever of 7b5436635800.
-    This is done in patch 1/4 and 2/4.
-  - Added a simple allocator of domain numbers in drivers/pci/host-bridge.c. The
-    code will first try to get a domain id from of_alias_get_id(..., "pci-domain")
-    and if that fails assign the next unallocated domain id.
-  - Changed the name of the function that creates the generic host bridge from
-    pci_host_bridge_of_init to of_create_pci_host_bridge and exported as GPL symbol.
-
-v1 thread here: https://lkml.org/lkml/2014/2/3/380
-
-The following is an edit of the original blurb:
-
-Following the discussion started here [1], I now have a proposal for tackling
-generic support for host bridges described via device tree. It is an initial
-stab at it, to try to get feedback and suggestions, but it is functional enough
-that I have PCI Express for arm64 working on an FPGA using the patch that I am
-also publishing that adds support for PCI for that platform.
-
-Looking at the existing architectures that fit the requirements (use of device
-tree and PCI) yields the powerpc and microblaze as generic enough to make them
-candidates for conversion. I have a tentative patch for microblaze that I can
-only compile test it, unfortunately using qemu-microblaze leads to an early
-crash in the kernel.
-
-As Bjorn has mentioned in the previous discussion, the idea is to add to
-struct pci_host_bridge enough data to be able to reduce the size or remove the
-architecture specific pci_controller structure. arm64 support actually manages
-to get rid of all the architecture static data and has no pci_controller structure
-defined. For host bridge drivers that means a change of API unless architectures
-decide to provide a compatibility layer (comments here please).
-
-In order to initialise a host bridge with the new API, the following example
-code is sufficient for a _probe() function:
-
-static int myhostbridge_probe(struct platform_device *pdev)
-{
-	int err;
-	struct device_node *dev;
-	struct pci_host_bridge *bridge;
-	struct myhostbridge_port *pp;
-	resource_size_t lastbus;
-
-	dev = pdev->dev.of_node;
-
-	if (!of_device_is_available(dev)) {
-		pr_warn("%s: disabled\n", dev->full_name);
-		return -ENODEV;
-	}
-
-	pp = kzalloc(sizeof(struct myhostbridge_port), GFP_KERNEL);
-	if (!pp)
-		return -ENOMEM;
-
-	bridge = of_create_pci_host_bridge(&pdev->dev, &myhostbridge_ops, pp);
-	if (IS_ERR(bridge)) {
-		err = PTR_ERR(bridge);
-		goto bridge_create_fail;
-	}
-
-	err = myhostbridge_setup(bridge->bus);
-	if (err)
-		goto bridge_setup_fail;
-
-	/* We always enable PCI domains and we keep domain 0 backward
-	 * compatible in /proc for video cards
-	 */
-	pci_add_flags(PCI_ENABLE_PROC_DOMAINS);
-	pci_add_flags(PCI_REASSIGN_ALL_BUS | PCI_REASSIGN_ALL_RSRC);
-
-	lastbus = pci_scan_child_bus(bridge->bus);
-	pci_bus_update_busn_res_end(bridge->bus, lastbus);
-
-	pci_assign_unassigned_bus_resources(bridge->bus);
-
-	pci_bus_add_devices(bridge->bus);
-
-	return 0;
-
-bridge_setup_fail:
-	put_device(&bridge->dev);
-	device_unregister(&bridge->dev);
-bridge_create_fail:
-	kfree(pp);
-	return err;
-}
-
-[1] http://thread.gmane.org/gmane.linux.kernel.pci/25946
-
-Best regards,
-Liviu
-
-
-Liviu Dudau (6):
-  pci: Introduce pci_register_io_range() helper function.
-  pci: OF: Fix the conversion of IO ranges into IO resources.
-  pci: Create pci_host_bridge before its associated bus in pci_create_root_bus.
-  pci: Introduce a domain number for pci_host_bridge.
-  pci: Use parent domain number when allocating child busses.
-  pci: Add support for creating a generic host_bridge from device tree
-
- drivers/of/address.c       |  39 +++++++++++++
- drivers/pci/host-bridge.c  | 139 +++++++++++++++++++++++++++++++++++++++++++++
- drivers/pci/probe.c        |  72 +++++++++++++++--------
- include/linux/of_address.h |  14 +----
- include/linux/pci.h        |  17 ++++++
- 5 files changed, 246 insertions(+), 35 deletions(-)
-
--- 
-1.9.0
 
