@@ -1,137 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753781AbaCCIVy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 03:21:54 -0500
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:63352 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752988AbaCCIVw (ORCPT
+	id S1753957AbaCCIY0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 03:24:26 -0500
+Received: from mga01.intel.com ([192.55.52.88]:25752 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752085AbaCCIYZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 03:21:52 -0500
-X-Original-SENDERIP: 10.177.220.200
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Mon, 3 Mar 2014 17:22:27 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan@kernel.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: [PATCH 2/6] mm: add get_pageblock_migratetype_nolock() for cases
- where locking is undesirable
-Message-ID: <20140303082227.GA28899@lge.com>
-References: <1393596904-16537-1-git-send-email-vbabka@suse.cz>
- <1393596904-16537-3-git-send-email-vbabka@suse.cz>
+	Mon, 3 Mar 2014 03:24:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,576,1389772800"; 
+   d="scan'208";a="491139655"
+From: "He, Bo" <bo.he@intel.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        "rientjes@google.com" <rientjes@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        "oleg@redhat.com" <oleg@redhat.com>,
+        "kirill.shutemov@linux.intel.com" <kirill.shutemov@linux.intel.com>,
+        "Zhang, Yanmin" <yanmin.zhang@intel.com>
+CC: "yanmin_zhang@intel.linux.com" <yanmin_zhang@intel.linux.com>,
+        "Wang, Biao" <biao.wang@intel.com>
+Subject: [PATCH]  mm, oom: normalize the adj to ensure oom_badness return
+ one 
+Thread-Topic: [PATCH]  mm, oom: normalize the adj to ensure oom_badness
+ return one 
+Thread-Index: Ac82uK1kETMgg4H6SHafPa3vfSroJw==
+Date: Mon, 3 Mar 2014 08:24:22 +0000
+Message-ID: <CD6925E8781EFD4D8E11882D20FC406D01AEDC58@SHSMSX103.ccr.corp.intel.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393596904-16537-3-git-send-email-vbabka@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 28, 2014 at 03:15:00PM +0100, Vlastimil Babka wrote:
-> In order to prevent race with set_pageblock_migratetype, most of calls to
-> get_pageblock_migratetype have been moved under zone->lock. For the remaining
-> call sites, the extra locking is undesirable, notably in free_hot_cold_page().
-> 
-> This patch introduces a _nolock version to be used on these call sites, where
-> a wrong value does not affect correctness. The function makes sure that the
-> value does not exceed valid migratetype numbers. Such too-high values are
-> assumed to be a result of race and caller-supplied fallback value is returned
-> instead.
-> 
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-> ---
->  include/linux/mmzone.h | 24 ++++++++++++++++++++++++
->  mm/compaction.c        | 14 +++++++++++---
->  mm/memory-failure.c    |  3 ++-
->  mm/page_alloc.c        | 22 +++++++++++++++++-----
->  mm/vmstat.c            |  2 +-
->  5 files changed, 55 insertions(+), 10 deletions(-)
-> 
-> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> index fac5509..7c3f678 100644
-> --- a/include/linux/mmzone.h
-> +++ b/include/linux/mmzone.h
-> @@ -75,6 +75,30 @@ enum {
->  
->  extern int page_group_by_mobility_disabled;
->  
-> +/*
-> + * When called without zone->lock held, a race with set_pageblock_migratetype
-> + * may result in bogus values. Use this variant only when this does not affect
-> + * correctness, and taking zone->lock would be costly. Values >= MIGRATE_TYPES
-> + * are considered to be a result of this race and the value of race_fallback
-> + * argument is returned instead.
-> + */
-> +static inline int get_pageblock_migratetype_nolock(struct page *page,
-> +	int race_fallback)
-> +{
-> +	int ret = get_pageblock_flags_group(page, PB_migrate, PB_migrate_end);
-> +
-> +	if (unlikely(ret >= MIGRATE_TYPES))
-> +		ret = race_fallback;
-> +
-> +	return ret;
-> +}
+if oom_score_adj is a big negative number, such as -941,
+adj *= totalpages / 1000 will be a big negative number, 
+finally the oom_badness will get 0 points, here normalize 
+the oom_score_adj to ensure oom_badness return the
+positive number.
 
-Hello, Vlastimil.
+Change-Id: I1c56a948ce48b65a1bb63b56ffef07d5d76d7ec8
+Signed-off-by: he, bo <bo.he@intel.com>
+Signed-off-by: wang, biao <biao.wang@intel.com>
+Reviewed-by: Yanmin Zhang <yanmin_zhang@intel.com>
+---
+ mm/oom_kill.c |    3 +++ 
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-First of all, thanks for nice work!
-I have another opinion about this implementation. It can be wrong, so if it
-is wrong, please let me know.
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 3291e82..5a93986 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -181,6 +181,9 @@ unsigned long oom_badness(struct task_struct *p, struct mem_cgroup *memcg,
+        points -= (points * 3) / 100;
+ 
+    /* Normalize to oom_score_adj units */
++   if(OOM_SCORE_ADJ_MIN < 0)
++       adj -= OOM_SCORE_ADJ_MIN;
++
+    adj *= totalpages / 1000;
+    points += adj;
+ 
+-- 
+1.7.6
 
-Although this implementation would close the race which triggers NULL dereference,
-I think that this isn't enough if you have a plan to add more
-{start,undo}_isolate_page_range().
-
-Consider that there are lots of {start,undo}_isolate_page_range() calls
-on the system without CMA.
-
-bit representation of migratetype is like as following.
-
-MIGRATE_MOVABLE = 010
-MIGRATE_ISOLATE = 100
-
-We could read following values as migratetype of the page on movable pageblock
-if race occurs.
-
-start_isolate_page_range() case: 010 -> 100
-010, 000, 100
-
-undo_isolate_page_range() case: 100 -> 010
-100, 110, 010
-
-Above implementation prevents us from getting 110, but, it can't prevent us from
-getting 000, that is, MIGRATE_UNMOVABLE. If this race occurs in free_hot_cold_page(),
-this page would go into unmovable pcp and then allocated for that migratetype.
-It results in more fragmented memory.
-
-
-Consider another case that system enables CONFIG_CMA,
-
-MIGRATE_MOVABLE = 010
-MIGRATE_ISOLATE = 101
-
-start_isolate_page_range() case: 010 -> 101
-010, 011, 001, 101
-
-undo_isolate_page_range() case: 101 -> 010
-101, 100, 110, 010
-
-This can results in totally different values and this also makes the problem
-mentioned above. And, although this doesn't cause any problem on CMA for now,
-if another migratetype is introduced or some migratetype is removed, it can cause
-CMA typed page to go into other migratetype and makes CMA permanently failed.
-
-To close this kind of races without dependency how many pageblock isolation occurs,
-I recommend that you use separate pageblock bits for MIGRATE_CMA, MIGRATE_ISOLATE
-and use accessor function whenver we need to check migratetype. IMHO, it may not
-impose much overhead.
-
-How about it?
-
-Thanks.
 
