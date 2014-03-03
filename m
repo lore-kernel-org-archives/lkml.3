@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755692AbaCCTDn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 14:03:43 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:56179 "EHLO
+	id S1755477AbaCCTAR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 14:00:17 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:56160 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755480AbaCCTAS (ORCPT
+	with ESMTP id S1753942AbaCCTAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 14:00:18 -0500
+	Mon, 3 Mar 2014 14:00:10 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 43/67] time: Fix overflow when HZ is smaller than 60
-Date: Mon,  3 Mar 2014 10:55:31 -0800
-Message-Id: <1393872955-28810-44-git-send-email-kamal@canonical.com>
+Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 44/67] ALSA: hda - Fix mic capture on Sony VAIO Pro 11
+Date: Mon,  3 Mar 2014 10:55:32 -0800
+Message-Id: <1393872955-28810-45-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1393872955-28810-1-git-send-email-kamal@canonical.com>
 References: <1393872955-28810-1-git-send-email-kamal@canonical.com>
@@ -28,48 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 80d767d770fd9c697e434fd080c2db7b5c60c6dd upstream.
+commit f88abaa0d0dc0d1f1a9ae21f8e822918e5aadfdf upstream.
 
-When compiling for the IA-64 ski emulator, HZ is set to 32 because the
-emulation is slow and we don't want to waste too many cycles processing
-timers. Alpha also has an option to set HZ to 32.
+The very same fixup is needed to make the mic on Sony VAIO Pro 11
+working as well as VAIO Pro 13 model.
 
-This causes integer underflow in
-kernel/time/jiffies.c:
-kernel/time/jiffies.c:66:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
-  .mult  = NSEC_PER_JIFFY << JIFFIES_SHIFT, /* details above */
-  ^
-
-This patch reduces the JIFFIES_SHIFT value to avoid the overflow.
-
-Signed-off-by: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-Link: http://lkml.kernel.org/r/alpine.LRH.2.02.1401241639100.23871@file01.intranet.prod.int.rdu2.redhat.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reported-and-tested-by: Hendrik-Jan Heins <hjheins@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/time/jiffies.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ sound/pci/hda/patch_realtek.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/kernel/time/jiffies.c b/kernel/time/jiffies.c
-index 7a925ba..a6a5bf5 100644
---- a/kernel/time/jiffies.c
-+++ b/kernel/time/jiffies.c
-@@ -51,7 +51,13 @@
-  * HZ shrinks, so values greater than 8 overflow 32bits when
-  * HZ=100.
-  */
-+#if HZ < 34
-+#define JIFFIES_SHIFT	6
-+#elif HZ < 67
-+#define JIFFIES_SHIFT	7
-+#else
- #define JIFFIES_SHIFT	8
-+#endif
- 
- static cycle_t jiffies_read(struct clocksource *cs)
- {
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index cab561b..e2e7868 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -6337,6 +6337,7 @@ static const struct snd_pci_quirk alc269_fixup_tbl[] = {
+ 	SND_PCI_QUIRK(0x1043, 0x834a, "ASUS S101", ALC269_FIXUP_STEREO_DMIC),
+ 	SND_PCI_QUIRK(0x1043, 0x8398, "ASUS P1005", ALC269_FIXUP_STEREO_DMIC),
+ 	SND_PCI_QUIRK(0x1043, 0x83ce, "ASUS P1005", ALC269_FIXUP_STEREO_DMIC),
++	SND_PCI_QUIRK(0x104d, 0x90b5, "Sony VAIO Pro 11", ALC286_FIXUP_SONY_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x104d, 0x90b6, "Sony VAIO Pro 13", ALC286_FIXUP_SONY_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x104d, 0x9073, "Sony VAIO", ALC275_FIXUP_SONY_VAIO_GPIO2),
+ 	SND_PCI_QUIRK(0x104d, 0x907b, "Sony VAIO", ALC275_FIXUP_SONY_HWEQ),
 -- 
 1.8.3.2
 
