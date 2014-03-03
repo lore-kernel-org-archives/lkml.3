@@ -1,84 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470AbaCCGfa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 01:35:30 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:34880 "EHLO
+	id S1752838AbaCCGf1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 01:35:27 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:34872 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751462AbaCCGfU (ORCPT
+	with ESMTP id S1751111AbaCCGfS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 01:35:20 -0500
+	Mon, 3 Mar 2014 01:35:18 -0500
 From: Andy Gross <agross@codeaurora.org>
 To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
         dmaengine@vger.kernel.org
 Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
         Andy Gross <agross@codeaurora.org>
-Subject: [Patch v8 1/2] dmaengine: qcom_bam_dma: Add device tree binding
-Date: Mon,  3 Mar 2014 00:30:44 -0600
-Message-Id: <1393828245-18766-2-git-send-email-agross@codeaurora.org>
+Subject: [Patch v8 0/2] Add Qualcomm BAM dmaengine driver
+Date: Mon,  3 Mar 2014 00:30:43 -0600
+Message-Id: <1393828245-18766-1-git-send-email-agross@codeaurora.org>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1393828245-18766-1-git-send-email-agross@codeaurora.org>
-References: <1393828245-18766-1-git-send-email-agross@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device tree binding support for the QCOM BAM DMA driver.
+This patch set introduces the dmaengine driver for the Qualcomm Bus Access
+Manager (BAM) DMA controller present on MSM 8x74 devices.  A number of the
+on-chip devices have their own BAM DMA controller and use it to move data
+between system memory and peripherals or between two peripherals.
 
-Acked-by: Kumar Gala <galak@codeaurora.org>
-Signed-off-by: Andy Gross <agross@codeaurora.org>
----
- .../devicetree/bindings/dma/qcom_bam_dma.txt       |   41 ++++++++++++++++++++
- 1 file changed, 41 insertions(+)
+The initial version of this driver will only support slave DMA operations
+between system memory and peripherals.
+
+Changes from v7:
+	- Fix shift issue when reading NUM_EEs field.
+	- Unmask global BAM interrupt during BAM initialization.
+
+Changes from v6:
+        - Changed KConfig dependency from ARCH_MSM_DT to ARCH_QCOM.
+        - Incorporated comments on DT binding.
+        - Changed driver source file to accomodate DT changes.
+
+Changes from v5:
+        - Separated copyright from BAM description
+        - Removed usage of slave dma direction
+        - Reworked slave config interface
+        - Removed max segment size restriction in slave_sg
+        - Added acked-by on DT patch
+        - Fixed nit comments
+
+Changes from v4:
+        - Add devm_free_irq() to .remove to avoid race condition
+        - Free FIFO memory in .remove
+
+Changes from v3:
+        - Remove unused bam_channel_dir.
+        - Remove incorrect write to BAM_IRQ_SRCS_EE (read only).
+        - Remove dma direction from DT binding and revise driver to use
+          direction from prep_slave_sg.
+        - Remove unnecessary channel reset from channel_init.  This could affect
+          channels controlled from other execution environments.
+        - Change terminate_all to also take care of the current active
+          descriptor.
+        - Rework .remove function to correctly mask interrupts and clean up
+          resources and tasklets.
+
+Changes from v2:
+        - Corrected Kconfig dependencies
+        - Moved execution environment ID to controller DT binding.  The EE is
+          a global setting across all of the channels on the controller.
+        - Combined header into source file.
+        - Corrected copyright date.
+        - Moved channel hardware initialization to occur when channel is used
+          for the first time.
+        - Converted dma_alloc_coherent to dma_alloc_writecombine
+        - Removed unecessary reset of channel from the dma terminate_all
+        - Corrected usage of EE in irq handler and channel configuration
+          functions.
+        - Changed resource functions inside probe to use correct APIs.
+        - Removed dma filter function and modified dma_xlate to use
+          dma_get_slave_channel API
+        - Fixed various nit comments
+
+Changes from v1:
+        - Converted driver to use virt-dma
+        - Reworked probe function per review comments
+        - tx_status function now computes and returns residuals
+        - Removed proprietary slave config.  Removed associated include file.
+        - Renamed files to reflect vendor name instead of specific device
+        - Converted to use (readl|writel)_relaxed w/ appropriate barriers
+        - Removed unions in favor of standard types.
+
+Andy Gross (2):
+  dmaengine: qcom_bam_dma: Add device tree binding
+  dmaengine: add Qualcomm BAM dma driver
+
+ .../devicetree/bindings/dma/qcom_bam_dma.txt       |   41 +
+ drivers/dma/Kconfig                                |    9 +
+ drivers/dma/Makefile                               |    1 +
+ drivers/dma/qcom_bam_dma.c                         | 1110 ++++++++++++++++++++
+ 4 files changed, 1161 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/dma/qcom_bam_dma.txt
+ create mode 100644 drivers/dma/qcom_bam_dma.c
 
-diff --git a/Documentation/devicetree/bindings/dma/qcom_bam_dma.txt b/Documentation/devicetree/bindings/dma/qcom_bam_dma.txt
-new file mode 100644
-index 0000000..d75a9d7
---- /dev/null
-+++ b/Documentation/devicetree/bindings/dma/qcom_bam_dma.txt
-@@ -0,0 +1,41 @@
-+QCOM BAM DMA controller
-+
-+Required properties:
-+- compatible: must contain "qcom,bam-v1.4.0" for MSM8974
-+- reg: Address range for DMA registers
-+- interrupts: Should contain the one interrupt shared by all channels
-+- #dma-cells: must be <1>, the cell in the dmas property of the client device
-+  represents the channel number
-+- clocks: required clock
-+- clock-names: must contain "bam_clk" entry
-+- qcom,ee : indicates the active Execution Environment identifier (0-7) used in
-+  the secure world.
-+
-+Example:
-+
-+	uart-bam: dma@f9984000 = {
-+		compatible = "qcom,bam-v1.4.0";
-+		reg = <0xf9984000 0x15000>;
-+		interrupts = <0 94 0>;
-+		clocks = <&gcc GCC_BAM_DMA_AHB_CLK>;
-+		clock-names = "bam_clk";
-+		#dma-cells = <1>;
-+		qcom,ee = <0>;
-+	};
-+
-+DMA clients must use the format described in the dma.txt file, using a two cell
-+specifier for each channel.
-+
-+Example:
-+	serial@f991e000 {
-+		compatible = "qcom,msm-uart";
-+		reg = <0xf991e000 0x1000>
-+			<0xf9944000 0x19000>;
-+		interrupts = <0 108 0>;
-+		clocks = <&gcc GCC_BLSP1_UART2_APPS_CLK>,
-+			<&gcc GCC_BLSP1_AHB_CLK>;
-+		clock-names = "core", "iface";
-+
-+		dmas = <&uart-bam 0>, <&uart-bam 1>;
-+		dma-names = "rx", "tx";
-+	};
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
