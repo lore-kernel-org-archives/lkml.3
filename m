@@ -1,84 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751469AbaCCFJK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 00:09:10 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:45415 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751012AbaCCFJI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 00:09:08 -0500
-X-AuditID: cbfee690-b7f266d00000287c-d5-53140e725580
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-To: hbx7d@yandex.com
-Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH] f2fs: fix to write node pages with WRITE_SYNC
-Date: Mon, 03 Mar 2014 14:07:18 +0900
-Message-id: <1393823238-31989-1-git-send-email-jaegeuk.kim@samsung.com>
-X-Mailer: git-send-email 1.8.4.474.g128a96c
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHLMWRmVeSWpSXmKPExsVy+t8zQ90iPpFgg3uPOSyW3zjDanF9118m
-	i0uL3C327D3JYnF51xw2B1aP3Qs+M3n0bVnF6PF5k5zHhyvHGANYorhsUlJzMstSi/TtErgy
-	2te9ZC14xVHx9PEdlgbGPvYuRk4OCQETicPbrjFC2GISF+6tZwOxhQSWMUo83WgEUzNp2nag
-	OBdQfBGjxJpz+1kgnE4miZZTM4EmcXCwCWhLbN5vANIgIiAi8XzNDmaQGmaBCYwS/xe9ZwFJ
-	CAvYSZxfu4oJxGYRUJX41PACLM4r4C5xdMs1Joht2hLbnk9kBGmWEHjNJrFo3SFmiAYBiW+T
-	D7GALJMQkJXYdIAZol5S4uCKGywTGAUXMDKsYhRNLUguKE5KLzLRK07MLS7NS9dLzs/dxAgJ
-	ywk7GO8dsD7EmAw0biKzlGhyPjCs80riDY3NjCxMTUyNjcwtzUgTVhLnVXuUFCQkkJ5Ykpqd
-	mlqQWhRfVJqTWnyIkYmDU6qB0dK2a/ESFu3S73ebl+o6PI48ceVmxYKoxTmx+a+Xbe6+5/RO
-	sEJo5ZXi4GM7S8rO3JwVySuy1vfo29Wls+etyfVs21Adwbtso+7GI8wP8nxbvVkj0xb2nuy0
-	cpTivCcacCnjYff9+qBmx0W9Da2NzZUp1xl570kJdvEuuyA9+/DL148+3Cg6qMRSnJFoqMVc
-	VJwIALPlncBhAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDIsWRmVeSWpSXmKPExsVy+t9jAd0iPpFgg1m3WCyW3zjDanF9118m
-	i0uL3C327D3JYnF51xw2B1aP3Qs+M3n0bVnF6PF5k5zHhyvHGANYohoYbTJSE1NSixRS85Lz
-	UzLz0m2VvIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOA9ioplCXmlAKFAhKLi5X07TBN
-	CA1x07WAaYzQ9Q0JgusxMkADCesYM9rXvWQteMVR8fTxHZYGxj72LkZODgkBE4lJ07azQdhi
-	EhfurQeyuTiEBBYxSqw5t58Fwulkkmg5NROog4ODTUBbYvN+A5AGEQERiedrdjCD1DALTGCU
-	+L/oPQtIQljATuL82lVMIDaLgKrEp4YXYHFeAXeJo1uuMUFs05bY9nwi4wRG7gWMDKsYRVML
-	kguKk9JzDfWKE3OLS/PS9ZLzczcxgsP+mdQOxpUNFocYBTgYlXh4O5YLBwuxJpYVV+YeYpTg
-	YFYS4c1fBhTiTUmsrEotyo8vKs1JLT7EmAy0fSKzlGhyPjAm80riDY1NzIwsjcwsjEzMzUkT
-	VhLnPdBqHSgkkJ5YkpqdmlqQWgSzhYmDU6qB0THDJqgnc/FG79gGw9WrA2Pevjpl6SLg6s4W
-	v/n+Re+OdP192Xt8M52bb6ldkcm0CO3/MKc51XmGfInu9KSlTFeeXfi6Y3/9lez5L4O2HL8y
-	45qT24YJHzduta97ePJf+U72jZ/lDbSq/32TeTvnwZ9O55TDExc2MR4o3/ftcuRWttKX1YYG
-	5kosxRmJhlrMRcWJAK5qQpC/AgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1751444AbaCCFSM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 00:18:12 -0500
+Received: from ozlabs.org ([203.10.76.45]:59107 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750809AbaCCFSL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 00:18:11 -0500
+Date: Mon, 3 Mar 2014 16:18:03 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the mfd-lj tree
+Message-Id: <20140303161803.ecbd9b124b5f2cdf79b8cf51@canb.auug.org.au>
+In-Reply-To: <20140225143246.914c9732966764234bc51de2@canb.auug.org.au>
+References: <20140214134217.aa7e1994b4cab7ee563c8307@canb.auug.org.au>
+	<20140217141446.454ab86eb19621fd397be6ed@canb.auug.org.au>
+	<20140220150508.79bfff95fb5d93c651801ffd@canb.auug.org.au>
+	<20140225143246.914c9732966764234bc51de2@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__3_Mar_2014_16_18_03_+1100_GdqpDeYVT4xhCHqg"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes performance regression of dbench reported by
-Alex <hbx7d@yandex.com>.
+--Signature=_Mon__3_Mar_2014_16_18_03_+1100_GdqpDeYVT4xhCHqg
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This issue was revealed by Phoronix tests results:
-http://www.phoronix.com/scan.php?page=article&item=linux_314_ssdfs&num=2
+Hi Lee,
 
-It turns out that we need to assign WRITE_SYNC to the node writes, if
-fsync is triggered.
+On Tue, 25 Feb 2014 14:32:46 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> On Thu, 20 Feb 2014 15:05:08 +1100 Stephen Rothwell <sfr@canb.auug.org.au=
+> wrote:
+> >
+> > On Mon, 17 Feb 2014 14:14:46 +1100 Stephen Rothwell <sfr@canb.auug.org.=
+au> wrote:
+> > >
+> > > On Fri, 14 Feb 2014 13:42:17 +1100 Stephen Rothwell <sfr@canb.auug.or=
+g.au> wrote:
+> > > >
+> > > > After merging the mfd-lj tree, today's linux-next build (x86_64
+> > > > allmodconfig) failed like this:
+> > > >=20
+> > > > In file included from drivers/mfd/max665x.c:19:0:
+> > > > include/linux/mfd/max665x-private.h:31:1: error: expected ';', iden=
+tifier or '(' before 'struct'
+> > > >  struct max665x_dev {
+> > > >  ^
+> > > >=20
+> > > > Caused by commit e77bb5297293 ("mfd: max665x: Differentiate between
+> > > > MAX665X devices").  Clearly never built by anyone :-(
+> > > >=20
+> > > > I have used the mfd-lj tree from next-20140210 again for today (sin=
+ce the
+> > > > other version had other problems).
+> > >=20
+> > > Still seeing this error.
+> >=20
+> > Still ...
+>=20
+> Ping ...
 
-The performance numbers are like below, which is measured by Alex.
-1. 355MB/s       ext4
-2. 225MB/s       f2fs : WRITE for node writes
-3. 525MB/s       f2fs : WRITE_SYNC for node writes
+I am still seeing this error which means that I am still using the
+version of your tree from next-20140210 i.e. Feb 10.  It is a bit
+disappointing that his has not been fixed in such a long time even though
+there have been other updates to your tree which means that those other
+changes have received no exposure in linux-next.  It is a trivial error,
+but it does indicate that noone ever build tested that particular commit.
 
-Reported-And-Tested-by: Alex <hbx7d@yandex.com>.
-Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
----
- fs/f2fs/file.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+(this is now commit 2fc7e7d25bee in your tree since it was rewritten but
+not fixed on Feb 14.)
 
-diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
-index 00f937e..a4cc1d6 100644
---- a/fs/f2fs/file.c
-+++ b/fs/f2fs/file.c
-@@ -115,7 +115,7 @@ int f2fs_sync_file(struct file *file, loff_t start, loff_t end, int datasync)
- 	int ret = 0;
- 	bool need_cp = false;
- 	struct writeback_control wbc = {
--		.sync_mode = WB_SYNC_NONE,
-+		.sync_mode = WB_SYNC_ALL,
- 		.nr_to_write = LONG_MAX,
- 		.for_reclaim = 0,
- 	};
--- 
-1.8.4.474.g128a96c
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Mon__3_Mar_2014_16_18_03_+1100_GdqpDeYVT4xhCHqg
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTFBCPAAoJEMDTa8Ir7ZwVj6IP/iq1rx6Cs4vVI5ZJHiU5TgZ2
+lENe5DoA684Wwhx2UzxdgL4Y0QCuXBePG7jIk1X3urN3p0rago5SZQT5m41FKZ4y
+i/XSQxVpaNgbei6b4fdscbVTDt47s57/k8IiGc/bGHKsQGCr/6z/JG8Qp1nBRta3
+PzOuPlWxH7t1qkSgZqRnm9n90sPqCcdhEVhWo1O32ptj59EL4OF9941zyd+ZxwLQ
+NH+OJBDYJ8nULE0sR9gKMCxLYvjjMqQ2rU4dZTiL5NeOWE9Twu0uVTcRqbyigNDs
+t06YB/79OR4DZAau+EXkoyPHC/gJDYfgC3nXdfgT3ArLcYKYNztqec+6ol9yvznP
+24Ac6blC30DlrT++WRE+ct8ePVB7K5lWnXQLe0wpC9E0A+3UwkfYJINxmsX7DsMJ
+mGxuXva3aABUvH6L7BSa2UydZiqC+nvjnUhUdBm42hY7OspfnKyvX3aSvOWhcbrR
+kjqkzVxz8HHtEC0uYQyqxJLhsvGrFePp1DQ4T3bpRndBzQvCrGkKuEh0UTHATp4p
+UHEoeF7UybhMfOmmZFRitMwIRNchO7ol8IMCNmFfDukYPPPtmnatihs+2RBtQxoF
+1dLW18jbXRURN30E69Zl+XjOXRUW8pOPCRjYKTvtlRXX2vngPwRtTFm+JmW7OM3H
+64wLCi9mnnD6G4nR1qPW
+=YcD1
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__3_Mar_2014_16_18_03_+1100_GdqpDeYVT4xhCHqg--
