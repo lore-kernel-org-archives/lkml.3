@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755495AbaCCTAT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 14:00:19 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:56170 "EHLO
+	id S1755692AbaCCTDn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 14:03:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:56179 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755443AbaCCTAO (ORCPT
+	with ESMTP id S1755480AbaCCTAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 14:00:14 -0500
+	Mon, 3 Mar 2014 14:00:18 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Raymond Wanyoike <raymond.wanyoike@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 56/67] usb: option: blacklist ZTE MF667 net interface
-Date: Mon,  3 Mar 2014 10:55:44 -0800
-Message-Id: <1393872955-28810-57-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 43/67] time: Fix overflow when HZ is smaller than 60
+Date: Mon,  3 Mar 2014 10:55:31 -0800
+Message-Id: <1393872955-28810-44-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1393872955-28810-1-git-send-email-kamal@canonical.com>
 References: <1393872955-28810-1-git-send-email-kamal@canonical.com>
@@ -28,34 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Raymond Wanyoike <raymond.wanyoike@gmail.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 3635c7e2d59f7861afa6fa5e87e2a58860ff514d upstream.
+commit 80d767d770fd9c697e434fd080c2db7b5c60c6dd upstream.
 
-Interface #5 of 19d2:1270 is a net interface which has been submitted to the
-qmi_wwan driver so consequently remove it from the option driver.
+When compiling for the IA-64 ski emulator, HZ is set to 32 because the
+emulation is slow and we don't want to waste too many cycles processing
+timers. Alpha also has an option to set HZ to 32.
 
-Signed-off-by: Raymond Wanyoike <raymond.wanyoike@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+This causes integer underflow in
+kernel/time/jiffies.c:
+kernel/time/jiffies.c:66:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+  .mult  = NSEC_PER_JIFFY << JIFFIES_SHIFT, /* details above */
+  ^
+
+This patch reduces the JIFFIES_SHIFT value to avoid the overflow.
+
+Signed-off-by: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+Link: http://lkml.kernel.org/r/alpine.LRH.2.02.1401241639100.23871@file01.intranet.prod.int.rdu2.redhat.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/option.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ kernel/time/jiffies.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index 26ed554..8a898aa 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -1362,7 +1362,8 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1267, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1268, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1269, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1270, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1270, 0xff, 0xff, 0xff),
-+	  .driver_info = (kernel_ulong_t)&net_intf5_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1271, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1272, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1273, 0xff, 0xff, 0xff) },
+diff --git a/kernel/time/jiffies.c b/kernel/time/jiffies.c
+index 7a925ba..a6a5bf5 100644
+--- a/kernel/time/jiffies.c
++++ b/kernel/time/jiffies.c
+@@ -51,7 +51,13 @@
+  * HZ shrinks, so values greater than 8 overflow 32bits when
+  * HZ=100.
+  */
++#if HZ < 34
++#define JIFFIES_SHIFT	6
++#elif HZ < 67
++#define JIFFIES_SHIFT	7
++#else
+ #define JIFFIES_SHIFT	8
++#endif
+ 
+ static cycle_t jiffies_read(struct clocksource *cs)
+ {
 -- 
 1.8.3.2
 
