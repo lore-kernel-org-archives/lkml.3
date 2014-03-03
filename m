@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754660AbaCCTAu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 14:00:50 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:56200 "EHLO
+	id S1755577AbaCCTBm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 14:01:42 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:56204 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754192AbaCCTAr (ORCPT
+	with ESMTP id S1754128AbaCCTAs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 14:00:47 -0500
+	Mon, 3 Mar 2014 14:00:48 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 49/67] staging: comedi: adv_pci1710: fix analog output readback value
-Date: Mon,  3 Mar 2014 10:55:37 -0800
-Message-Id: <1393872955-28810-50-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 61/67] x86, smap: Don't enable SMAP if CONFIG_X86_SMAP is disabled
+Date: Mon,  3 Mar 2014 10:55:49 -0800
+Message-Id: <1393872955-28810-62-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1393872955-28810-1-git-send-email-kamal@canonical.com>
 References: <1393872955-28810-1-git-send-email-kamal@canonical.com>
@@ -28,88 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: H Hartley Sweeten <hsweeten@visionengravers.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit 1e85c1ea1ff2a60659e790ef8ec76c7339445841 upstream.
+commit 03bbd596ac04fef47ce93a730b8f086d797c3021 upstream.
 
-The last value written to a analog output channel is cached in the
-private data of this driver for readback.
+If SMAP support is not compiled into the kernel, don't enable SMAP in
+CR4 -- in fact, we should clear it, because the kernel doesn't contain
+the proper STAC/CLAC instructions for SMAP support.
 
-Currently, the wrong value is cached in the (*insn_write) functions.
-The current code stores the data[n] value for readback afer the loop
-has written all the values. At this time 'n' points past the end of
-the data array.
+Found by Fengguang Wu's test system.
 
-Fix the functions by using a local variable to hold the data being
-written to the analog output channel. This variable is then used
-after the loop is complete to store the readback value. The current
-value is retrieved before the loop in case no values are actually
-written..
-
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Link: http://lkml.kernel.org/r/20140213124550.GA30497@localhost
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/staging/comedi/drivers/adv_pci1710.c | 17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+ arch/x86/kernel/cpu/common.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/staging/comedi/drivers/adv_pci1710.c b/drivers/staging/comedi/drivers/adv_pci1710.c
-index a6fd8c2..3235f5b 100644
---- a/drivers/staging/comedi/drivers/adv_pci1710.c
-+++ b/drivers/staging/comedi/drivers/adv_pci1710.c
-@@ -491,6 +491,7 @@ static int pci171x_insn_write_ao(struct comedi_device *dev,
- 				 struct comedi_insn *insn, unsigned int *data)
- {
- 	struct pci1710_private *devpriv = dev->private;
-+	unsigned int val;
- 	int n, chan, range, ofs;
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 9c3ab43..a93d20b 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -287,8 +287,13 @@ static __always_inline void setup_smap(struct cpuinfo_x86 *c)
+ 	raw_local_save_flags(eflags);
+ 	BUG_ON(eflags & X86_EFLAGS_AC);
  
- 	chan = CR_CHAN(insn->chanspec);
-@@ -506,11 +507,14 @@ static int pci171x_insn_write_ao(struct comedi_device *dev,
- 		outw(devpriv->da_ranges, dev->iobase + PCI171x_DAREF);
- 		ofs = PCI171x_DA1;
- 	}
-+	val = devpriv->ao_data[chan];
- 
--	for (n = 0; n < insn->n; n++)
--		outw(data[n], dev->iobase + ofs);
-+	for (n = 0; n < insn->n; n++) {
-+		val = data[n];
-+		outw(val, dev->iobase + ofs);
+-	if (cpu_has(c, X86_FEATURE_SMAP))
++	if (cpu_has(c, X86_FEATURE_SMAP)) {
++#ifdef CONFIG_X86_SMAP
+ 		set_in_cr4(X86_CR4_SMAP);
++#else
++		clear_in_cr4(X86_CR4_SMAP);
++#endif
 +	}
- 
--	devpriv->ao_data[chan] = data[n];
-+	devpriv->ao_data[chan] = val;
- 
- 	return n;
- 
-@@ -680,6 +684,7 @@ static int pci1720_insn_write_ao(struct comedi_device *dev,
- 				 struct comedi_insn *insn, unsigned int *data)
- {
- 	struct pci1710_private *devpriv = dev->private;
-+	unsigned int val;
- 	int n, rangereg, chan;
- 
- 	chan = CR_CHAN(insn->chanspec);
-@@ -689,13 +694,15 @@ static int pci1720_insn_write_ao(struct comedi_device *dev,
- 		outb(rangereg, dev->iobase + PCI1720_RANGE);
- 		devpriv->da_ranges = rangereg;
- 	}
-+	val = devpriv->ao_data[chan];
- 
- 	for (n = 0; n < insn->n; n++) {
--		outw(data[n], dev->iobase + PCI1720_DA0 + (chan << 1));
-+		val = data[n];
-+		outw(val, dev->iobase + PCI1720_DA0 + (chan << 1));
- 		outb(0, dev->iobase + PCI1720_SYNCOUT);	/*  update outputs */
- 	}
- 
--	devpriv->ao_data[chan] = data[n];
-+	devpriv->ao_data[chan] = val;
- 
- 	return n;
  }
+ 
+ /*
 -- 
 1.8.3.2
 
