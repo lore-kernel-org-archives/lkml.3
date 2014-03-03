@@ -1,83 +1,666 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156AbaCCJN3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 04:13:29 -0500
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:36460 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754062AbaCCJN1 (ORCPT
+	id S1754171AbaCCJPQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 04:15:16 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:39013 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754019AbaCCJPL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 04:13:27 -0500
-Message-ID: <531447B2.7040008@de.ibm.com>
-Date: Mon, 03 Mar 2014 10:13:22 +0100
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Vlad Yasevich <vyasevich@gmail.com>, vyasevic@redhat.com
-CC: "David S. Miller" <davem@davemloft.net>, Jason Wang <jasowang@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>, netdev@vger.kernel.org,
-        KVM list <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: macvtap performance regression (bisected) between 3.13 and 3.14-rc1
-References: <530FA586.3010400@de.ibm.com> <53110A62.7070109@redhat.com> <5311C142.6040509@de.ibm.com> <53123495.7030902@gmail.com> <531287AE.5080606@gmail.com>
-In-Reply-To: <531287AE.5080606@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14030309-2966-0000-0000-00000A74F8FE
+	Mon, 3 Mar 2014 04:15:11 -0500
+From: Daniel Jeong <gshark.jeong@gmail.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: Daniel Jeong <gshark.jeong@gmail.com>, <linux-fbdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: [PATCH] backlight: add new LP8860 backlight driver
+Date: Mon,  3 Mar 2014 18:14:36 +0900
+Message-Id: <1393838076-4559-1-git-send-email-gshark.jeong@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/03/14 02:21, Vlad Yasevich wrote:
-> On 03/01/2014 02:27 PM, Vlad Yasevich wrote:
->> On 03/01/2014 06:15 AM, Christian Borntraeger wrote:
->>> On 28/02/14 23:14, Vlad Yasevich wrote:
->>>> On 02/27/2014 03:52 PM, Christian Borntraeger wrote:
->>>>> Vlad,
->>>>>
->>>>> commit 6acf54f1cf0a6747bac9fea26f34cfc5a9029523
->>>>>     macvtap: Add support of packet capture on macvtap device.
->>>>>
->>>>> causes a performance regression for iperf traffic between two KVM guests
->>>>> on my s390 system. Both guests are connected via two macvtaps on the same OSA
->>>>> network card.
->>>>> Before that patch I get ~20 Gbit/sec between two guests, afterwards I get
->>>>> ~4Gbit/sec
->>>>>
->>>>> Latency seems to be unchanges (uperf 1byte ping pong).
->>>>>
->>>>> According to ifconfig in the guest, I have ~ 1500 bytes per packet with this
->>>>> patch and ~  40000 bytes without. So for some reason this patch causes the
->>>>> network stack to do segmentation. (the guest kernel stays the same, only host 
->>>>> kernel is changed).
->>>>>
->>>>> Any ideas?
->>>>
->>>> I am looking.  It shouldn't cause addition segmentations and when I ran
->>>> netperf on the code I didn't see any difference in the throughput.
->>>
->>> Dont know if the different bytes/packets ratio is really the reason or
->>> just a side effect. As a hint: the underlying network device does not support
->>> segmentation, but this should not matter for traffic between to guests.
->>
->> Could you post 'ethtool -k' output for both lower-level device and the
->> macvtap device?
->>
->> Thanks
->> -vlad
->>
-> 
-> Ok.  I think I see what's happening.  Since you turn off offloads on
-> lower device, that's propagated to macvlan device.  As a result, when
-> when we call dev_queue_xmit on the vlan->dev, we end up segmenting since
-> lower level says it does support segmentation.
-> 
-> One way to fix this is to never disable offloads on macvlan.  macvlan
-> will always try to use __dev_queue_xmit() with it's lower device, so any
-> segmentation can happen there.
+ This patch adds LP8860 backlight device driver.
+LP8860 is a low EMI and High performance 4 channel LED Driver of TI.
+This device driver provide the way to control brightness and currnet
+of each channel and provide the way to write eeprom.
+To support dt structure, another patch file will be sent.
 
-If you have anything that I should test, let me know.
+Signed-off-by: Daniel Jeong <gshark.jeong@gmail.com>
+---
+ drivers/video/backlight/Kconfig         |    7 +
+ drivers/video/backlight/Makefile        |    1 +
+ drivers/video/backlight/lp8860_bl.c     |  528 +++++++++++++++++++++++++++++++
+ include/linux/platform_data/lp8860_bl.h |   54 ++++
+ 4 files changed, 590 insertions(+)
+ create mode 100644 drivers/video/backlight/lp8860_bl.c
+ create mode 100644 include/linux/platform_data/lp8860_bl.h
 
-Christian
+diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
+index 5a3eb2e..908048f 100644
+--- a/drivers/video/backlight/Kconfig
++++ b/drivers/video/backlight/Kconfig
+@@ -397,6 +397,13 @@ config BACKLIGHT_LP8788
+ 	help
+ 	  This supports TI LP8788 backlight driver.
+ 
++config BACKLIGHT_LP8860
++	tristate "Backlight Driver for LP8860"
++	depends on BACKLIGHT_CLASS_DEVICE && I2C
++	select REGMAP_I2C
++	help
++	  This supports TI LP8860 Backlight Driver
++
+ config BACKLIGHT_OT200
+ 	tristate "Backlight driver for ot200 visualisation device"
+ 	depends on BACKLIGHT_CLASS_DEVICE && CS5535_MFGPT && GPIO_CS5535
+diff --git a/drivers/video/backlight/Makefile b/drivers/video/backlight/Makefile
+index bb82002..cbc5ac3 100644
+--- a/drivers/video/backlight/Makefile
++++ b/drivers/video/backlight/Makefile
+@@ -42,6 +42,7 @@ obj-$(CONFIG_BACKLIGHT_LM3639)		+= lm3639_bl.o
+ obj-$(CONFIG_BACKLIGHT_LOCOMO)		+= locomolcd.o
+ obj-$(CONFIG_BACKLIGHT_LP855X)		+= lp855x_bl.o
+ obj-$(CONFIG_BACKLIGHT_LP8788)		+= lp8788_bl.o
++obj-$(CONFIG_BACKLIGHT_LP8860)		+= lp8860_bl.o
+ obj-$(CONFIG_BACKLIGHT_LV5207LP)	+= lv5207lp.o
+ obj-$(CONFIG_BACKLIGHT_MAX8925)		+= max8925_bl.o
+ obj-$(CONFIG_BACKLIGHT_OMAP1)		+= omap1_bl.o
+diff --git a/drivers/video/backlight/lp8860_bl.c b/drivers/video/backlight/lp8860_bl.c
+new file mode 100644
+index 0000000..4712e84
+--- /dev/null
++++ b/drivers/video/backlight/lp8860_bl.c
+@@ -0,0 +1,528 @@
++/*
++* Simple driver for Texas Instruments lp8860 Backlight driver chip
++*
++* Copyright (C) 2014 Texas Instruments
++* Author: Daniel Jeong  <gshark.jeong@gmail.com>
++*		  Ldd Mlp <ldd-mlp@list.ti.com>
++*
++* This program is free software; you can redistribute it and/or modify
++* it under the terms of the GNU General Public License version 2 as
++* published by the Free Software Foundation.
++*
++*/
++#include <linux/module.h>
++#include <linux/backlight.h>
++#include <linux/delay.h>
++#include <linux/err.h>
++#include <linux/i2c.h>
++#include <linux/platform_data/lp8860_bl.h>
++#include <linux/regmap.h>
++#include <linux/slab.h>
++#include <linux/uaccess.h>
++
++#define REG_CL0_BRT_H	0x00
++#define REG_CL0_BRT_L	0x01
++#define REG_CL0_I_H		0x02
++#define REG_CL0_I_L		0x03
++
++#define REG_CL1_BRT_H	0x04
++#define REG_CL1_BRT_L	0x05
++#define REG_CL1_I		0x06
++
++#define REG_CL2_BRT_H	0x07
++#define REG_CL2_BRT_L	0x08
++#define REG_CL2_I		0x09
++
++#define REG_CL3_BRT_H	0x0a
++#define REG_CL3_BRT_L	0x0b
++#define REG_CL3_I		0x0c
++
++#define REG_CONF	0x0d
++#define REG_STATUS	0x0e
++#define REG_ID		0x12
++
++#define REG_ROM_CTRL	0x19
++#define REG_ROM_UNLOCK	0x1a
++#define REG_ROM_START	0x60
++#define REG_ROM_END		0x78
++
++#define REG_EEPROM_START	0x60
++#define REG_EEPROM_END		0x78
++#define REG_MAX	0xFF
++
++struct lp8860_chip {
++	struct device *dev;
++	struct lp8860_platform_data *pdata;
++	struct backlight_device *bled[LP8860_LED_MAX];
++	struct regmap *regmap;
++};
++
++/* brightness control */
++static int lp8860_bled_update_status(struct backlight_device *bl,
++				     enum lp8860_leds nsr)
++{
++	int ret = -EINVAL;
++	struct lp8860_chip *pchip = bl_get_data(bl);
++
++	if (pchip->pdata->mode)
++		return 0;
++
++	if (bl->props.state & (BL_CORE_SUSPENDED | BL_CORE_FBBLANK))
++		bl->props.brightness = 0;
++
++	switch (nsr) {
++	case LP8860_LED0:
++		ret = regmap_write(pchip->regmap,
++				   REG_CL0_BRT_H, bl->props.brightness >> 8);
++		ret |= regmap_write(pchip->regmap,
++				    REG_CL0_BRT_L, bl->props.brightness & 0xff);
++		break;
++	case LP8860_LED1:
++		ret = regmap_write(pchip->regmap,
++				   REG_CL1_BRT_H,
++				   (bl->props.brightness >> 8) & 0x1f);
++		ret |=
++		    regmap_write(pchip->regmap, REG_CL1_BRT_L,
++				 bl->props.brightness & 0xff);
++		break;
++	case LP8860_LED2:
++		ret = regmap_write(pchip->regmap,
++				   REG_CL2_BRT_H,
++				   (bl->props.brightness >> 8) & 0x1f);
++		ret |=
++		    regmap_write(pchip->regmap, REG_CL2_BRT_L,
++				 bl->props.brightness & 0xff);
++		break;
++	case LP8860_LED3:
++		ret = regmap_write(pchip->regmap,
++				   REG_CL3_BRT_H,
++				   (bl->props.brightness >> 8) & 0x1f);
++		ret |=
++		    regmap_write(pchip->regmap, REG_CL3_BRT_L,
++				 bl->props.brightness & 0xff);
++		break;
++	default:
++		BUG();
++	}
++	if (ret < 0)
++		dev_err(pchip->dev, "fail : i2c access to register.\n");
++	else
++		ret = bl->props.brightness;
++
++	return ret;
++}
++
++static int lp8860_bled_get_brightness(struct backlight_device *bl,
++				      enum lp8860_leds nsr)
++{
++	struct lp8860_chip *pchip = bl_get_data(bl);
++	unsigned int rval_h, rval_l;
++	int ret = -EINVAL;
++
++	switch (nsr) {
++	case LP8860_LED0:
++		ret = regmap_read(pchip->regmap, REG_CL0_BRT_H, &rval_h);
++		ret |= regmap_read(pchip->regmap, REG_CL0_BRT_L, &rval_l);
++		break;
++	case LP8860_LED1:
++		ret = regmap_read(pchip->regmap, REG_CL1_BRT_H, &rval_h);
++		ret |= regmap_read(pchip->regmap, REG_CL1_BRT_L, &rval_l);
++		break;
++	case LP8860_LED2:
++		ret = regmap_read(pchip->regmap, REG_CL2_BRT_H, &rval_h);
++		ret |= regmap_read(pchip->regmap, REG_CL2_BRT_L, &rval_l);
++		break;
++	case LP8860_LED3:
++		ret = regmap_read(pchip->regmap, REG_CL3_BRT_H, &rval_h);
++		ret |= regmap_read(pchip->regmap, REG_CL3_BRT_L, &rval_l);
++		break;
++	default:
++		BUG();
++	}
++	if (ret < 0) {
++		dev_err(pchip->dev, "fail : i2c access to register.\n");
++		return ret;
++	}
++	bl->props.brightness = (rval_h << 8) | rval_l;
++	return bl->props.brightness;
++}
++
++static int lp8860_update_status_bled0(struct backlight_device *bl)
++{
++	return lp8860_bled_update_status(bl, LP8860_LED0);
++}
++
++static int lp8860_get_brightness_bled0(struct backlight_device *bl)
++{
++	return lp8860_bled_get_brightness(bl, LP8860_LED0);
++}
++
++static int lp8860_update_status_bled1(struct backlight_device *bl)
++{
++	return lp8860_bled_update_status(bl, LP8860_LED1);
++}
++
++static int lp8860_get_brightness_bled1(struct backlight_device *bl)
++{
++	return lp8860_bled_get_brightness(bl, LP8860_LED1);
++}
++
++static int lp8860_update_status_bled2(struct backlight_device *bl)
++{
++	return lp8860_bled_update_status(bl, LP8860_LED2);
++}
++
++static int lp8860_get_brightness_bled2(struct backlight_device *bl)
++{
++	return lp8860_bled_get_brightness(bl, LP8860_LED2);
++}
++
++static int lp8860_update_status_bled3(struct backlight_device *bl)
++{
++	return lp8860_bled_update_status(bl, LP8860_LED3);
++}
++
++static int lp8860_get_brightness_bled3(struct backlight_device *bl)
++{
++	return lp8860_bled_get_brightness(bl, LP8860_LED3);
++}
++
++#define lp8860_bled_ops(_id)\
++{\
++	.options = BL_CORE_SUSPENDRESUME,\
++	.update_status = lp8860_update_status_bled##_id,\
++	.get_brightness = lp8860_get_brightness_bled##_id,\
++}
++
++static const struct backlight_ops lp8860_bled_ops[LP8860_LED_MAX] = {
++	[LP8860_LED0] = lp8860_bled_ops(0),
++	[LP8860_LED1] = lp8860_bled_ops(1),
++	[LP8860_LED2] = lp8860_bled_ops(2),
++	[LP8860_LED3] = lp8860_bled_ops(3),
++};
++
++/* current control */
++static int lp8860_set_current(struct device *dev,
++			      const char *buf, enum lp8860_leds nsr)
++{
++	struct lp8860_chip *pchip = dev_get_drvdata(dev);
++	unsigned int ival;
++	ssize_t ret;
++
++	ret = kstrtouint(buf, 10, &ival);
++	if (ret)
++		return ret;
++
++	switch (nsr) {
++	case LP8860_LED0:
++		ival = min_t(unsigned int, ival, LP8860_LED0_BR_MAX);
++		ret = regmap_write(pchip->regmap, REG_CL0_I_H, ival >> 8);
++		ret |= regmap_write(pchip->regmap, REG_CL0_I_L, ival & 0xff);
++		break;
++	case LP8860_LED1:
++		ival = min_t(unsigned int, ival, LP8860_LED1_BR_MAX);
++		ret = regmap_write(pchip->regmap, REG_CL1_I, ival & 0xff);
++		break;
++	case LP8860_LED2:
++		ival = min_t(unsigned int, ival, LP8860_LED2_BR_MAX);
++		ret = regmap_write(pchip->regmap, REG_CL2_I, ival & 0xff);
++		break;
++	case LP8860_LED3:
++		ival = min_t(unsigned int, ival, LP8860_LED3_BR_MAX);
++		ret = regmap_write(pchip->regmap, REG_CL3_I, ival & 0xff);
++		break;
++	default:
++		BUG();
++	}
++	if (ret < 0)
++		dev_err(pchip->dev, "fail : i2c access error.\n");
++
++	return ret;
++}
++
++static ssize_t lp8860_current_store_bled0(struct device *dev,
++					  struct device_attribute *devAttr,
++					  const char *buf, size_t size)
++{
++	int ret;
++
++	ret = lp8860_set_current(dev, buf, LP8860_LED0);
++	if (ret < 0)
++		return ret;
++	return size;
++}
++
++static ssize_t lp8860_current_store_bled1(struct device *dev,
++					  struct device_attribute *devAttr,
++					  const char *buf, size_t size)
++{
++	int ret;
++
++	ret = lp8860_set_current(dev, buf, LP8860_LED1);
++	if (ret < 0)
++		return ret;
++	return size;
++}
++
++static ssize_t lp8860_current_store_bled2(struct device *dev,
++					  struct device_attribute *devAttr,
++					  const char *buf, size_t size)
++{
++	int ret;
++
++	ret = lp8860_set_current(dev, buf, LP8860_LED2);
++	if (ret < 0)
++		return ret;
++	return size;
++}
++
++static ssize_t lp8860_current_store_bled3(struct device *dev,
++					  struct device_attribute *devAttr,
++					  const char *buf, size_t size)
++{
++	int ret;
++
++	ret = lp8860_set_current(dev, buf, LP8860_LED3);
++	if (ret < 0)
++		return ret;
++	return size;
++}
++
++#define lp8860_attr(_name, _show, _store)\
++{\
++	.attr = {\
++		.name = _name,\
++		.mode = S_IWUSR,\
++	},\
++	.show = _show,\
++	.store = _store,\
++}
++
++static struct device_attribute lp8860_dev_attr[LP8860_LED_MAX] = {
++	[LP8860_LED0] = lp8860_attr("current", NULL,
++				    lp8860_current_store_bled0),
++	[LP8860_LED1] = lp8860_attr("current", NULL,
++				    lp8860_current_store_bled1),
++	[LP8860_LED2] = lp8860_attr("current", NULL,
++				    lp8860_current_store_bled2),
++	[LP8860_LED3] = lp8860_attr("current", NULL,
++				    lp8860_current_store_bled3),
++};
++
++/*
++ * eeprom write and readback to check.
++ * eeprom register range is from 60h to 78h
++ * buffer value to write data [reg] [data]
++ * e.g) to change the register 0x60 value to 0xff
++ *      buffer value should be 60 ff
++ */
++static ssize_t lp8860_eeprom_store(struct device *dev,
++				   struct device_attribute *devAttr,
++				   const char *buf, size_t size)
++{
++	struct lp8860_chip *pchip = dev_get_drvdata(dev);
++	unsigned int reg, data, rval;
++	char *tok;
++	int ret;
++
++	/* register no. */
++	tok = strsep((char **)&buf, " ,\n");
++	if (tok == NULL)
++		goto err_input;
++	ret = kstrtouint(tok, 16, &reg);
++	if (ret)
++		goto err_input;
++
++	/* register value */
++	tok = strsep((char **)&buf, " ,\n");
++	if (tok == NULL)
++		goto err_input;
++	ret = kstrtouint(tok, 16, &data);
++	if (ret)
++		goto err_input;
++	/*
++	 * EEPROM Programming sequence
++	 *    (program data permanently from registers to NVM)
++	 * 1. Unlock EEPROM by writing
++	 *    the unlock codes to register 1Ah(08, BA, EF)
++	 * 2. Write data to EEPROM registers (address 60h...78h)
++	 * 3. Write EE_PROG to 1 in address 19h. (02h to address 19h)
++	 * 4. Wait 100ms
++	 * 5. Write EE_PROG to 0 in address 19h. (00h to address 19h)
++	 */
++	if (reg < REG_EEPROM_START || reg > REG_EEPROM_END || data > 0xff)
++		goto err_input;
++	ret = regmap_write(pchip->regmap, REG_ROM_UNLOCK, 0x08);
++	ret |= regmap_write(pchip->regmap, REG_ROM_UNLOCK, 0xba);
++	ret |= regmap_write(pchip->regmap, REG_ROM_UNLOCK, 0xef);
++	ret |= regmap_write(pchip->regmap, reg, data);
++	ret |= regmap_write(pchip->regmap, REG_ROM_CTRL, 0x02);
++	msleep(100);
++	ret |= regmap_write(pchip->regmap, REG_ROM_CTRL, 0x00);
++	if (ret < 0)
++		goto err_i2c;
++
++	/* read back */
++	ret = regmap_write(pchip->regmap, REG_ROM_UNLOCK, 0x08);
++	ret |= regmap_write(pchip->regmap, REG_ROM_UNLOCK, 0xba);
++	ret |= regmap_write(pchip->regmap, REG_ROM_UNLOCK, 0xef);
++	ret |= regmap_write(pchip->regmap, REG_ROM_CTRL, 0x01);
++	msleep(100);
++	ret |= regmap_write(pchip->regmap, REG_ROM_CTRL, 0x00);
++	ret |= regmap_read(pchip->regmap, reg, &rval);
++	if (ret < 0)
++		goto err_i2c;
++	if (rval != data)
++		dev_err(pchip->dev, "fail : eeprom did not change.\n");
++
++	return size;
++
++err_i2c:
++	dev_err(pchip->dev, "fail : i2c access error.\n");
++	return ret;
++
++err_input:
++	dev_err(pchip->dev, "fail : input fail.\n");
++	return -EINVAL;
++}
++
++static DEVICE_ATTR(eeprom, S_IWUSR, NULL, lp8860_eeprom_store);
++
++/* backlight register and remove */
++static char *lp8860_bled_name[LP8860_LED_MAX] = {
++	[LP8860_LED0] = "bled0",
++	[LP8860_LED1] = "bled1",
++	[LP8860_LED2] = "bled2",
++	[LP8860_LED3] = "bled3",
++};
++
++static int lp8860_backlight_remove(struct lp8860_chip *pchip)
++{
++	int icnt;
++
++	device_remove_file(&(pchip->bled[0]->dev), &dev_attr_eeprom);
++	for (icnt = LP8860_LED0; icnt < LP8860_LED_MAX; icnt++) {
++		if (pchip->bled[icnt]) {
++			backlight_device_unregister(pchip->bled[icnt]);
++			device_remove_file(&(pchip->bled[icnt]->dev),
++					   &lp8860_dev_attr[icnt]);
++		}
++	}
++	return 0;
++}
++
++static int lp8860_backlight_registers(struct lp8860_chip *pchip)
++{
++	struct backlight_properties props;
++	struct lp8860_platform_data *pdata = pchip->pdata;
++	int icnt, ret;
++
++	props.type = BACKLIGHT_RAW;
++	for (icnt = LP8860_LED0; icnt < LP8860_LED_MAX; icnt++) {
++		props.max_brightness = pdata->max_brt[icnt];
++		pchip->bled[icnt] =
++		    backlight_device_register(lp8860_bled_name[icnt],
++					      pchip->dev, pchip,
++					      &lp8860_bled_ops[icnt], &props);
++		if (IS_ERR(pchip->bled[icnt])) {
++			dev_err(pchip->dev, "fail : backlight register.\n");
++			ret = PTR_ERR(pchip->bled[icnt]);
++			goto err_out;
++		}
++
++		ret = device_create_file(&(pchip->bled[icnt]->dev),
++					 &lp8860_dev_attr[icnt]);
++		if (ret < 0) {
++			dev_err(pchip->dev, "fail : to add sysfs entries.\n");
++			goto err_out;
++		}
++	}
++	/* access eeprom */
++	ret = device_create_file(&(pchip->bled[LP8860_LED0]->dev),
++				 &dev_attr_eeprom);
++	if (ret < 0) {
++		dev_err(pchip->dev, "fail : to add sysfs entries.\n");
++		goto err_out;
++	}
++	return 0;
++
++err_out:
++	lp8860_backlight_remove(pchip);
++	return ret;
++}
++
++static const struct regmap_config lp8860_regmap = {
++	.reg_bits = 8,
++	.val_bits = 8,
++	.max_register = REG_MAX,
++};
++
++static int lp8860_probe(struct i2c_client *client,
++			const struct i2c_device_id *id)
++{
++	struct lp8860_chip *pchip;
++	struct lp8860_platform_data *pdata = dev_get_platdata(&client->dev);
++	int ret, icnt;
++
++	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
++		dev_err(&client->dev, "fail : i2c functionality check.\n");
++		return -EOPNOTSUPP;
++	}
++
++	pchip = devm_kzalloc(&client->dev,
++			     sizeof(struct lp8860_chip), GFP_KERNEL);
++	if (!pchip)
++		return -ENOMEM;
++	pchip->dev = &client->dev;
++
++	pchip->regmap = devm_regmap_init_i2c(client, &lp8860_regmap);
++	if (IS_ERR(pchip->regmap)) {
++		ret = PTR_ERR(pchip->regmap);
++		dev_err(pchip->dev, "fail : allocate i2c register map.\n");
++		return ret;
++	}
++
++	if (pdata == NULL) {
++		pdata = devm_kzalloc(pchip->dev,
++				     sizeof(struct lp8860_platform_data),
++				     GFP_KERNEL);
++		if (pdata == NULL)
++			return -ENOMEM;
++		pdata->max_brt[LP8860_LED0] = 65535;
++		for (icnt = LP8860_LED1; icnt < LP8860_LED_MAX; icnt++)
++			pdata->max_brt[icnt] = 8191;
++		pchip->pdata = pdata;
++	} else {
++		pchip->pdata = pdata;
++	}
++	i2c_set_clientdata(client, pchip);
++	ret = lp8860_backlight_registers(pchip);
++	return ret;
++}
++
++static int lp8860_remove(struct i2c_client *client)
++{
++	return lp8860_backlight_remove(i2c_get_clientdata(client));
++}
++
++static const struct i2c_device_id lp8860_id[] = {
++	{LP8860_NAME, 0},
++	{}
++};
++
++MODULE_DEVICE_TABLE(i2c, lp8860_id);
++static struct i2c_driver lp8860_i2c_driver = {
++	.driver = {
++		   .name = LP8860_NAME,
++		   },
++	.probe = lp8860_probe,
++	.remove = lp8860_remove,
++	.id_table = lp8860_id,
++};
++
++module_i2c_driver(lp8860_i2c_driver);
++
++MODULE_DESCRIPTION("Texas Instruments LP8860 Backlight Driver");
++MODULE_AUTHOR("Daniel Jeong <gshark.jeong@gmail.com>");
++MODULE_AUTHOR("Ldd Mlp <ldd-mlp@list.ti.com>");
++MODULE_LICENSE("GPL v2");
+diff --git a/include/linux/platform_data/lp8860_bl.h b/include/linux/platform_data/lp8860_bl.h
+new file mode 100644
+index 0000000..61bd0f5
+--- /dev/null
++++ b/include/linux/platform_data/lp8860_bl.h
+@@ -0,0 +1,54 @@
++/*
++ * Simple driver for Texas Instruments LM3642 LED Flash driver chip
++ * Copyright (C) 2014 Texas Instruments
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#ifndef __LINUX_LP8860_H
++#define __LINUX_LP8860_H
++
++#define LP8860_NAME "lp8860"
++#define LP8860_ADDR 0x2d
++
++#define LP8860_LED0_BR_MAX 65535
++#define LP8860_LED1_BR_MAX 8191
++#define LP8860_LED2_BR_MAX 8191
++#define LP8860_LED3_BR_MAX 8191
++
++#define LP8860_LED0_I_MAX 4095
++#define LP8860_LED1_I_MAX 255
++#define LP8860_LED2_I_MAX 255
++#define LP8860_LED3_I_MAX 255
++
++enum lp8860_leds {
++	LP8860_LED0 = 0,
++	LP8860_LED1,
++	LP8860_LED2,
++	LP8860_LED3,
++	LP8860_LED_MAX
++};
++
++enum lp8860_ctrl_mode {
++	LP8860_CTRL_I2C = 0,
++	LP8860_CTRL_I2C_PWM,
++};
++
++/* struct lp8860 platform data
++ * @mode : control mode
++ * @max_brt : maximum brightness.
++ *		LED0 0 ~ 65535
++ *		LED1 0 ~ 8191
++ *		LED2 0 ~ 8191
++ *		LED3 0 ~ 8191
++ */
++struct lp8860_platform_data {
++
++	enum lp8860_ctrl_mode mode;
++	int max_brt[LP8860_LED_MAX];
++};
++
++#endif /* __LINUX_LP8860_H */
+-- 
+1.7.9.5
 
