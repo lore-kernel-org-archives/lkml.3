@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755002AbaCCTwE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 14:52:04 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:49908 "EHLO
+	id S1754969AbaCCTwC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 14:52:02 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:33313 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754893AbaCCTv5 (ORCPT
+	with ESMTP id S1754892AbaCCTvz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 14:51:57 -0500
+	Mon, 3 Mar 2014 14:51:55 -0500
 From: Stephen Warren <swarren@wwwdotorg.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Samuel Ortiz <sameo@linux.intel.com>,
         Lee Jones <lee.jones@linaro.org>, Rob Herring <robh+dt@kernel.org>,
@@ -16,9 +16,9 @@ To: Thomas Gleixner <tglx@linutronix.de>, Samuel Ortiz <sameo@linux.intel.com>,
 Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
         Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH V3 4/5] mfd: palmas: support IRQ inversion at the board level
-Date: Mon,  3 Mar 2014 12:51:39 -0700
-Message-Id: <1393876300-3061-4-git-send-email-swarren@wwwdotorg.org>
+Subject: [PATCH V3 3/5] irqchip: gic: parse IRQ specifier flag src/dst inversion
+Date: Mon,  3 Mar 2014 12:51:38 -0700
+Message-Id: <1393876300-3061-3-git-send-email-swarren@wwwdotorg.org>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1393876300-3061-1-git-send-email-swarren@wwwdotorg.org>
 References: <1393876300-3061-1-git-send-email-swarren@wwwdotorg.org>
@@ -29,45 +29,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephen Warren <swarren@nvidia.com>
 
-Implement the new DT property ti,irq-externally-inverted, and add an
-equivalent platform data field to match. This allows the driver to
-correctly automatically configure the IRQ output polarity when the board
-or SoC contains an inverter between the Palmas IRQ output and IRQ
-controller input.
+Modify the GIC driver to parse IRQ specifier flag bit 4 (src/dst
+inverted) in the xlate function.
 
 Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
-v3:
-* Use an IRQD flag to represent the data, rather than a custom DT property.
-v2:
-* Split V1's patch 1/2 into separate patches 1/3 and 2/3.
+v3: New patch.
 ---
- drivers/mfd/palmas.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/irqchip/irq-gic.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
-index d280d789e55a..3281d4103e9d 100644
---- a/drivers/mfd/palmas.c
-+++ b/drivers/mfd/palmas.c
-@@ -292,7 +292,8 @@ static int palmas_set_pdata_irq_flag(struct i2c_client *i2c,
- 		return -EINVAL;
- 	}
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index 500e533b9648..97800b349f54 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -847,6 +847,9 @@ static int gic_irq_domain_xlate(struct irq_domain *d,
+ 		*out_hwirq += 16;
  
--	pdata->irq_flags = irqd_get_trigger_type(irq_data);
-+	pdata->irq_flags = irqd_get_trigger_type(irq_data) |
-+			   irqd_get_src_dst_inverted(irq_data);
- 	dev_info(&i2c->dev, "Irq flag is 0x%08x\n", pdata->irq_flags);
+ 	*out_type = intspec[2] & IRQ_TYPE_SENSE_MASK;
++	if (intspec[2] & BIT(4))
++		*out_type |= IRQ_SRC_DST_INVERTED;
++
  	return 0;
  }
-@@ -447,6 +448,8 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
- 		reg = PALMAS_POLARITY_CTRL_INT_POLARITY;
- 	else
- 		reg = 0;
-+	if (pdata->irq_flags & IRQ_SRC_DST_INVERTED)
-+		reg ^= PALMAS_POLARITY_CTRL_INT_POLARITY;
- 	ret = palmas_update_bits(palmas, PALMAS_PU_PD_OD_BASE,
- 			PALMAS_POLARITY_CTRL, PALMAS_POLARITY_CTRL_INT_POLARITY,
- 			reg);
+ 
 -- 
 1.8.1.5
 
