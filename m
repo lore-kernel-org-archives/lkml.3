@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755541AbaCCXeq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 18:34:46 -0500
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:49739 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755005AbaCCXeo (ORCPT
+	id S1755594AbaCCXiv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 18:38:51 -0500
+Received: from qmta13.emeryville.ca.mail.comcast.net ([76.96.27.243]:60638
+	"EHLO qmta13.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755254AbaCCXit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 18:34:44 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140303232858.GO18016@ZenIV.linux.org.uk>
-References: <20140303210359.26624.qmail@science.horizon.com>
-	<20140303212642.GJ18016@ZenIV.linux.org.uk>
-	<CA+55aFwdEbMMTPyCEKop0Fukhxi90OCdvDieX7iB-dX9Ziovdg@mail.gmail.com>
-	<20140303220106.GL18016@ZenIV.linux.org.uk>
-	<CA+55aFyRJqb1HkVESdZDOcQ+20t-s-JWxZa15SHJpGU+k=6www@mail.gmail.com>
-	<20140303232858.GO18016@ZenIV.linux.org.uk>
-Date: Mon, 3 Mar 2014 15:34:43 -0800
-X-Google-Sender-Auth: pVhcU1aG4fnaxuDRBCwncqDNg60
-Message-ID: <CA+55aFyEXgMh61P3cmjZzw3RxitiL0oymWSyUsiMp96iJ+98Og@mail.gmail.com>
-Subject: Re: Update of file offset on write() etc. is non-atomic with I/O
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: George Spelvin <linux@horizon.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 3 Mar 2014 18:38:49 -0500
+From: Shuah Khan <shuah.kh@samsung.com>
+To: gregkh@linuxfoundation.org, ly80toro@cip.cs.fau.de, andy.grover@gmail.com,
+        valentina.manea.m@gmail.com
+Cc: Shuah Khan <shuah.kh@samsung.com>, linux-usb@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        shuahkhan@gmail.com
+Subject: [PATCH v2 0/3] staging/usbip: add new uapi header usbip.h
+Date: Mon,  3 Mar 2014 16:38:42 -0700
+Message-Id: <cover.1393882836.git.shuah.kh@samsung.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 3, 2014 at 3:28 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->
-> Umm...   I would be very surprised if that worked well.  You have just
-> forced fdget() to comply to the ABI.  And unless that has such structs
-> returned in register pairs, there's no way for compiler to do about
-> that.
+usbip userspace has duplicated enum definition to report usbip device
+status maintained by the kernel. Adding an usbip uapi header file will
+define the kernel - userspace interface for this device status. This
+new uapi file is added under usbip/uapi to keep the staging tree code
+self-contained. When usbip moves to mainline drivers, this file should
+be moved under uapi/linux
 
-Register pairs are very much a common return model.
+usbip kernel and userspace are changed to use this new header file.
 
-And we've relied on that before. For example, 64-bit pte's on x86-32
-very much does that whole thing with the "pte_t" union.
+Shuah Khan (3):
+  staging/usbip: add uapi header to export usbip kernel interfaces
+  staging/usbip: change usbip to include new uapi usbip.h
+  staging/usbip: change usbip userspace to include new uapi usbip.h
 
-So you can now commence being surprised.
+ drivers/staging/usbip/uapi/usbip.h                 |   26 ++++++++++++++++++++
+ drivers/staging/usbip/usbip_common.h               |   19 ++------------
+ .../staging/usbip/userspace/libsrc/usbip_common.h  |   18 +-------------
+ 3 files changed, 29 insertions(+), 34 deletions(-)
+ create mode 100644 drivers/staging/usbip/uapi/usbip.h
 
-(Side note: I think sparc or something doesn't support it, and may
-return things in memory. I can't really seem to find it in myself to
-care)
+-- 
+1.7.10.4
 
-              Linus
