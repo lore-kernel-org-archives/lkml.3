@@ -1,80 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754513AbaCCLJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 06:09:56 -0500
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:50351 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754483AbaCCLJz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 06:09:55 -0500
-MIME-Version: 1.0
-In-Reply-To: <53145D42.9080806@ti.com>
-References: <1390486503-1504-1-git-send-email-dh.herrmann@gmail.com>
-	<53145591.4070004@ti.com>
-	<CANq1E4QJqB0CSNeSh2jsp90ZtcLwFwfSG=qjodSLdV_aGbL3BQ@mail.gmail.com>
-	<53145D42.9080806@ti.com>
-Date: Mon, 3 Mar 2014 12:09:54 +0100
-Message-ID: <CANq1E4QYuMsj3W80jiyOfeYr+Xm=J096idyvgCUpFhADWR1ZvA@mail.gmail.com>
-Subject: Re: [PATCH 00/11] SimpleDRM & Sysfb
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        Dave Airlie <airlied@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Tom Gundersen <teg@jklm.no>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754613AbaCCLMj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 06:12:39 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43679 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754353AbaCCLMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 06:12:35 -0500
+From: Jan Kara <jack@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        Eric Paris <eparis@parisplace.org>, Jan Kara <jack@suse.cz>
+Subject: [PATCH 1/5] fanotify: Remove useless bypass_perm check
+Date: Mon,  3 Mar 2014 12:12:19 +0100
+Message-Id: <1393845143-28007-2-git-send-email-jack@suse.cz>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1393845143-28007-1-git-send-email-jack@suse.cz>
+References: <1393845143-28007-1-git-send-email-jack@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+prepare_for_access_response() checks whether
+group->fanotify_data.bypass_perm is set. However this test can never be
+true because prepare_for_access_response() is called only from
+fanotify_read() which means fanotify group is alive with an active fd
+while bypass_perm is set from fanotify_release() when all file
+descriptors pointing to the group are closed and the group is going
+away.
 
-On Mon, Mar 3, 2014 at 11:45 AM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
-> On 03/03/14 12:29, David Herrmann wrote:
->
->>> What's the status with this one? Headed for 3.15?
->>>
->>> Are the SimpleDRM and sysfb linked somehow? (I.e. do they need to be in
->>> the same series?)
->>>
->>> And jfyi, the drivers/video/ changes will conflict with the
->>> drivers/video/ directory reorganization series, which may be merged for
->>> 3.15.
->>
->> If simpledrm is included, then the series needs to be applied as a
->> whole. As Dave considered merging this for 3.15, I'd appreciate it if
->> you could ACK the fbdev related patches (they're really small!):
->>   fbdev: efifb: add dev->remove() callback
->>   fbdev: vesafb: add dev->remove() callback
->
-> Those look fine.
->
-> I'm not familiar with x86 fb, so I can't comment much to the series, but
-> what worries me more is the "[PATCH 06/11] video: sysfb: add generic
-> firmware-fb interface", which adds new stuff into drivers/video/. No
-> problem as such, but as said, it'll conflict with the fbdev reorg patches.
->
-> So, presuming nobody shoots down the fbdev reorg series, I'd like to
-> have all fbdev patches going through the fbdev tree for 3.15, so that I
-> can handle the (possibly messy) conflicts.
->
-> What do you think, would it be possible to keep the sysfb stuff in
-> arch/x86, and still be able to do the rest of the stuff here? And then
-> move the sysfs from arch/x86 to drivers/video later?
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ fs/notify/fanotify/fanotify_user.c | 8 --------
+ 1 file changed, 8 deletions(-)
 
-I don't think there's any need for that. Linus does conflict
-resolution all day long, so a short hint in Dave's pull-request (plus
-an example merge) should be enough. Same is true for -next, I think.
-And this is really just a mechanical thing, nothing hard to do. But of
-course, it's your decision. However, keeping the code in x86 is the
-wrong thing to do. As discussed with Ingo, the patch that extends
-x86/sysfb is only provided for easier backporting. The followup patch
-immediately removes it again and adds proper video/sysfb. I'd dislike
-splitting these just to avoid merge conflicts. I can also maintain a
-merge-fixup branch in my tree, if anyone wants that.
+diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+index 287a22c04149..70fe65437d21 100644
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -211,14 +211,6 @@ static int prepare_for_access_response(struct fsnotify_group *group,
+ 	re->fd = fd;
+ 
+ 	mutex_lock(&group->fanotify_data.access_mutex);
+-
+-	if (atomic_read(&group->fanotify_data.bypass_perm)) {
+-		mutex_unlock(&group->fanotify_data.access_mutex);
+-		kmem_cache_free(fanotify_response_event_cache, re);
+-		FANOTIFY_E(event)->response = FAN_ALLOW;
+-		return 0;
+-	}
+-		
+ 	list_add_tail(&re->list, &group->fanotify_data.access_list);
+ 	mutex_unlock(&group->fanotify_data.access_mutex);
+ 
+-- 
+1.8.1.4
 
-Thanks for your reviews of the fbdev stuff!
-David
