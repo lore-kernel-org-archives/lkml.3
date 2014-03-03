@@ -1,124 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755309AbaCCWR6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 17:17:58 -0500
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:53508 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753236AbaCCWR4 (ORCPT
+	id S1755381AbaCCWSV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 17:18:21 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:18560 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755326AbaCCWST (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 17:17:56 -0500
+	Mon, 3 Mar 2014 17:18:19 -0500
+Date: Mon, 3 Mar 2014 17:18:16 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Petr Mladek <pmladek@suse.cz>, stable@vger.kernel.org
+Subject: Re: [RFA][PATCH 1/5] ftrace/x86: Run a sync after fixup on failure
+Message-ID: <20140303171816.176ca337@gandalf.local.home>
+In-Reply-To: <5314FE46.3060003@zytor.com>
+References: <20140227154616.703252665@goodmis.org>
+	<20140227154922.957070805@goodmis.org>
+	<5314FE46.3060003@zytor.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20140303220106.GL18016@ZenIV.linux.org.uk>
-References: <20140303210359.26624.qmail@science.horizon.com>
-	<20140303212642.GJ18016@ZenIV.linux.org.uk>
-	<CA+55aFwdEbMMTPyCEKop0Fukhxi90OCdvDieX7iB-dX9Ziovdg@mail.gmail.com>
-	<20140303220106.GL18016@ZenIV.linux.org.uk>
-Date: Mon, 3 Mar 2014 14:17:55 -0800
-X-Google-Sender-Auth: l3QsHg-Clb77GrI7g1BQKaUkj6Y
-Message-ID: <CA+55aFyRJqb1HkVESdZDOcQ+20t-s-JWxZa15SHJpGU+k=6www@mail.gmail.com>
-Subject: Re: Update of file offset on write() etc. is non-atomic with I/O
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: George Spelvin <linux@horizon.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=001a11339e2ecd31cb04f3bb28d3
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001a11339e2ecd31cb04f3bb28d3
-Content-Type: text/plain; charset=UTF-8
+On Mon, 03 Mar 2014 14:12:22 -0800
+"H. Peter Anvin" <hpa@zytor.com> wrote:
 
-On Mon, Mar 3, 2014 at 2:01 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->
-> The thing is, the callers in there do *not* keep struct file * at all -
-> they keep struct socket * and use sock->file to get struct file * back
-> when they need it.
+> On 02/27/2014 07:46 AM, Steven Rostedt wrote:
+> > The second bug was that the removal of the breakpoints required the
+> > "within()" logic updates instead of accessing the ip address directly.
+> 
+> Please update this bit to clarify, as we discussed on IRC.
 
-Not a problem. Just make sockfd_lookup_light() use the broken
-inefficient calling convention.
+How's this sound:
 
-So then the networking code can continue to use the old bad interface,
-without it impacting the normal users.
+The second bug was that the removal of the breakpoints required the
+"within()" logic updates instead of accessing the ip address directly.
+As kernel text is mapped read-only when CONFIG_DEBUG_RODATA is set, and
+the removal of the breakpoint is a modification of kernel text.
 
-Something like the attached untested patch. This gets rid of
-"fget_light()", and instead makes "fdget()" the native interface (same
-for the "raw" version).
 
-Totally untested patch (on top of my previous one)
+> 
+> Otherwise:
+> 
+> Acked-by: H. Peter Anvin <hpa@linux.intel.com>
 
-               Linus
+Thanks!
 
---001a11339e2ecd31cb04f3bb28d3
-Content-Type: text/plain; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hscb6ksu0
-
-IGZzL2ZpbGUuYyAgICAgICAgICAgIHwgMzAgKysrKysrKysrKysrKysrLS0tLS0tLS0tLS0tLS0t
-CiBpbmNsdWRlL2xpbnV4L2ZpbGUuaCB8IDI0ICsrLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQogbmV0
-L3NvY2tldC5jICAgICAgICAgfCAxNyArKysrKysrKysrKystLS0tLQogMyBmaWxlcyBjaGFuZ2Vk
-LCAyOSBpbnNlcnRpb25zKCspLCA0MiBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9mcy9maWxl
-LmMgYi9mcy9maWxlLmMKaW5kZXggZGIyNWMyYmRmZTQ2Li5jZDBjMWMzMjliYWYgMTAwNjQ0Ci0t
-LSBhL2ZzL2ZpbGUuYworKysgYi9mcy9maWxlLmMKQEAgLTY4MywzMyArNjgzLDMzIEBAIEVYUE9S
-VF9TWU1CT0woZmdldF9yYXcpOwogICogVGhlIGZwdXRfbmVlZGVkIGZsYWcgcmV0dXJuZWQgYnkg
-ZmdldF9saWdodCBzaG91bGQgYmUgcGFzc2VkIHRvIHRoZQogICogY29ycmVzcG9uZGluZyBmcHV0
-X2xpZ2h0LgogICovCi1zdHJ1Y3QgZmlsZSAqX19mZ2V0X2xpZ2h0KHVuc2lnbmVkIGludCBmZCwg
-Zm1vZGVfdCBtYXNrLCBpbnQgKmZwdXRfbmVlZGVkKQorc3RhdGljIHN0cnVjdCBmZCBfX2ZkZ2V0
-KHVuc2lnbmVkIGludCBmZCwgZm1vZGVfdCBtYXNrKQogewogCXN0cnVjdCBmaWxlc19zdHJ1Y3Qg
-KmZpbGVzID0gY3VycmVudC0+ZmlsZXM7Ci0Jc3RydWN0IGZpbGUgKmZpbGU7CisJc3RydWN0IGZk
-IGYgPSB7IE5VTEwsIH07CiAKLQkqZnB1dF9uZWVkZWQgPSAwOwogCWlmIChhdG9taWNfcmVhZCgm
-ZmlsZXMtPmNvdW50KSA9PSAxKSB7Ci0JCWZpbGUgPSBfX2ZjaGVja19maWxlcyhmaWxlcywgZmQp
-OwotCQlpZiAoZmlsZSAmJiAoZmlsZS0+Zl9tb2RlICYgbWFzaykpCi0JCQlmaWxlID0gTlVMTDsK
-KwkJZi5maWxlID0gX19mY2hlY2tfZmlsZXMoZmlsZXMsIGZkKTsKKwkJaWYgKGYuZmlsZSAmJiAo
-Zi5maWxlLT5mX21vZGUgJiBtYXNrKSkKKwkJCWYuZmlsZSA9IE5VTEw7CiAJfSBlbHNlIHsKLQkJ
-ZmlsZSA9IF9fZmdldChmZCwgbWFzayk7Ci0JCWlmIChmaWxlKQotCQkJKmZwdXRfbmVlZGVkID0g
-MTsKKwkJZi5maWxlID0gX19mZ2V0KGZkLCBtYXNrKTsKKwkJaWYgKGYuZmlsZSkKKwkJCWYubmVl
-ZF9wdXQgPSAxOwogCX0KIAotCXJldHVybiBmaWxlOworCXJldHVybiBmOwogfQotc3RydWN0IGZp
-bGUgKmZnZXRfbGlnaHQodW5zaWduZWQgaW50IGZkLCBpbnQgKmZwdXRfbmVlZGVkKQorCitzdHJ1
-Y3QgZmQgZmRnZXQodW5zaWduZWQgaW50IGZkKQogewotCXJldHVybiBfX2ZnZXRfbGlnaHQoZmQs
-IEZNT0RFX1BBVEgsIGZwdXRfbmVlZGVkKTsKKwlyZXR1cm4gX19mZGdldChmZCwgRk1PREVfUEFU
-SCk7CiB9Ci1FWFBPUlRfU1lNQk9MKGZnZXRfbGlnaHQpOworRVhQT1JUX1NZTUJPTChmZGdldCk7
-CiAKLXN0cnVjdCBmaWxlICpmZ2V0X3Jhd19saWdodCh1bnNpZ25lZCBpbnQgZmQsIGludCAqZnB1
-dF9uZWVkZWQpCitzdHJ1Y3QgZmQgZmRnZXRfcmF3KHVuc2lnbmVkIGludCBmZCkKIHsKLQlyZXR1
-cm4gX19mZ2V0X2xpZ2h0KGZkLCAwLCBmcHV0X25lZWRlZCk7CisJcmV0dXJuIF9fZmRnZXQoZmQs
-IDApOwogfQogCiB2b2lkIHNldF9jbG9zZV9vbl9leGVjKHVuc2lnbmVkIGludCBmZCwgaW50IGZs
-YWcpCmRpZmYgLS1naXQgYS9pbmNsdWRlL2xpbnV4L2ZpbGUuaCBiL2luY2x1ZGUvbGludXgvZmls
-ZS5oCmluZGV4IDYzNjYzNGEwOWM5Mi4uMjUzNDAyZTZmM2RhIDEwMDY0NAotLS0gYS9pbmNsdWRl
-L2xpbnV4L2ZpbGUuaAorKysgYi9pbmNsdWRlL2xpbnV4L2ZpbGUuaApAQCAtMjAsMTIgKzIwLDYg
-QEAgc3RydWN0IHBhdGg7CiBleHRlcm4gc3RydWN0IGZpbGUgKmFsbG9jX2ZpbGUoc3RydWN0IHBh
-dGggKiwgZm1vZGVfdCBtb2RlLAogCWNvbnN0IHN0cnVjdCBmaWxlX29wZXJhdGlvbnMgKmZvcCk7
-CiAKLXN0YXRpYyBpbmxpbmUgdm9pZCBmcHV0X2xpZ2h0KHN0cnVjdCBmaWxlICpmaWxlLCBpbnQg
-ZnB1dF9uZWVkZWQpCi17Ci0JaWYgKGZwdXRfbmVlZGVkKQotCQlmcHV0KGZpbGUpOwotfQotCiBz
-dHJ1Y3QgZmQgewogCXN0cnVjdCBmaWxlICpmaWxlOwogCXVuc2lnbmVkIG5lZWRfcHV0OjEsIG5l
-ZWRfcG9zX3VubG9jazoxOwpAQCAtMzgsMjQgKzMyLDEwIEBAIHN0YXRpYyBpbmxpbmUgdm9pZCBm
-ZHB1dChzdHJ1Y3QgZmQgZmQpCiB9CiAKIGV4dGVybiBzdHJ1Y3QgZmlsZSAqZmdldCh1bnNpZ25l
-ZCBpbnQgZmQpOwotZXh0ZXJuIHN0cnVjdCBmaWxlICpmZ2V0X2xpZ2h0KHVuc2lnbmVkIGludCBm
-ZCwgaW50ICpmcHV0X25lZWRlZCk7Ci0KLXN0YXRpYyBpbmxpbmUgc3RydWN0IGZkIGZkZ2V0KHVu
-c2lnbmVkIGludCBmZCkKLXsKLQlpbnQgYjsKLQlzdHJ1Y3QgZmlsZSAqZiA9IGZnZXRfbGlnaHQo
-ZmQsICZiKTsKLQlyZXR1cm4gKHN0cnVjdCBmZCl7ZixiLDB9OwotfQotCiBleHRlcm4gc3RydWN0
-IGZpbGUgKmZnZXRfcmF3KHVuc2lnbmVkIGludCBmZCk7Ci1leHRlcm4gc3RydWN0IGZpbGUgKmZn
-ZXRfcmF3X2xpZ2h0KHVuc2lnbmVkIGludCBmZCwgaW50ICpmcHV0X25lZWRlZCk7CiAKLXN0YXRp
-YyBpbmxpbmUgc3RydWN0IGZkIGZkZ2V0X3Jhdyh1bnNpZ25lZCBpbnQgZmQpCi17Ci0JaW50IGI7
-Ci0Jc3RydWN0IGZpbGUgKmYgPSBmZ2V0X3Jhd19saWdodChmZCwgJmIpOwotCXJldHVybiAoc3Ry
-dWN0IGZkKXtmLGIsMH07Ci19CitleHRlcm4gc3RydWN0IGZkIGZkZ2V0KHVuc2lnbmVkIGludCBm
-ZCk7CitleHRlcm4gc3RydWN0IGZkIGZkZ2V0X3Jhdyh1bnNpZ25lZCBpbnQgZmQpOwogCiBleHRl
-cm4gaW50IGZfZHVwZmQodW5zaWduZWQgaW50IGZyb20sIHN0cnVjdCBmaWxlICpmaWxlLCB1bnNp
-Z25lZCBmbGFncyk7CiBleHRlcm4gaW50IHJlcGxhY2VfZmQodW5zaWduZWQgZmQsIHN0cnVjdCBm
-aWxlICpmaWxlLCB1bnNpZ25lZCBmbGFncyk7CmRpZmYgLS1naXQgYS9uZXQvc29ja2V0LmMgYi9u
-ZXQvc29ja2V0LmMKaW5kZXggODc5OTMzYWFlZDRjLi40YzlkYzA1ZjNiNGIgMTAwNjQ0Ci0tLSBh
-L25ldC9zb2NrZXQuYworKysgYi9uZXQvc29ja2V0LmMKQEAgLTQ0OCwxOCArNDQ4LDI1IEBAIHN0
-cnVjdCBzb2NrZXQgKnNvY2tmZF9sb29rdXAoaW50IGZkLCBpbnQgKmVycikKIH0KIEVYUE9SVF9T
-WU1CT0woc29ja2ZkX2xvb2t1cCk7CiAKK3N0YXRpYyB2b2lkIGZwdXRfbGlnaHQoc3RydWN0IGZp
-bGUgKmZpbGUsIGludCBmcHV0X25lZWRlZCkKK3sKKwlzdHJ1Y3QgZmQgZiA9IHsgZmlsZSwgZnB1
-dF9uZWVkZWQsIDB9OworCWZkcHV0KGYpOworfQorCiBzdGF0aWMgc3RydWN0IHNvY2tldCAqc29j
-a2ZkX2xvb2t1cF9saWdodChpbnQgZmQsIGludCAqZXJyLCBpbnQgKmZwdXRfbmVlZGVkKQogewot
-CXN0cnVjdCBmaWxlICpmaWxlOworCXN0cnVjdCBmZCBmOwogCXN0cnVjdCBzb2NrZXQgKnNvY2s7
-CiAKIAkqZXJyID0gLUVCQURGOwotCWZpbGUgPSBmZ2V0X2xpZ2h0KGZkLCBmcHV0X25lZWRlZCk7
-Ci0JaWYgKGZpbGUpIHsKLQkJc29jayA9IHNvY2tfZnJvbV9maWxlKGZpbGUsIGVycik7CisJZiA9
-IGZkZ2V0KGZkKTsKKwkqZnB1dF9uZWVkZWQgPSBmLm5lZWRfcHV0OworCWlmIChmLmZpbGUpIHsK
-KwkJc29jayA9IHNvY2tfZnJvbV9maWxlKGYuZmlsZSwgZXJyKTsKIAkJaWYgKHNvY2spCiAJCQly
-ZXR1cm4gc29jazsKLQkJZnB1dF9saWdodChmaWxlLCAqZnB1dF9uZWVkZWQpOworCQlmZHB1dChm
-KTsKIAl9CiAJcmV0dXJuIE5VTEw7CiB9Cg==
---001a11339e2ecd31cb04f3bb28d3--
+-- Steve
