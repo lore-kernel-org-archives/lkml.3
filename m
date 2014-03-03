@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108AbaCCJb0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 04:31:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22805 "EHLO mx1.redhat.com"
+	id S1754166AbaCCJbe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 04:31:34 -0500
+Received: from mga11.intel.com ([192.55.52.93]:6615 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753114AbaCCJbZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 04:31:25 -0500
-Date: Mon, 3 Mar 2014 10:33:19 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH v2] timberdale: Use pci_enable_msix_exact() instead of
- pci_enable_msix()
-Message-ID: <20140303093318.GB25705@dhcp-26-207.brq.redhat.com>
-References: <1392804931-30671-3-git-send-email-agordeev@redhat.com>
- <20140219114424.GD10504@lee--X1>
- <20140221165606.GH17353@dhcp-26-207.brq.redhat.com>
- <20140221165809.GI17353@dhcp-26-207.brq.redhat.com>
- <20140224162902.GI15847@lee--X1>
- <20140303072551.GC4674@lee--X1>
- <20140303081023.GA25705@dhcp-26-207.brq.redhat.com>
- <20140303092600.GB8282@lee--X1>
+	id S1753114AbaCCJbc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 04:31:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,576,1389772800"; 
+   d="scan'208";a="491168978"
+From: Jani Nikula <jani.nikula@linux.intel.com>
+To: prometheanfire@gentoo.org, daniel.vetter@ffwll.ch, airlied@linux.ie,
+        intel-gfx@lists.freedesktop.org,
+        "kernel\@gentoo.org" <kernel@gentoo.org>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: i915 - Corruption on boot for 3.13.x
+In-Reply-To: <5310BE23.3060204@gentoo.org>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+References: <5310BE23.3060204@gentoo.org>
+User-Agent: Notmuch/0.17+103~g5359c707b23e (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Mon, 03 Mar 2014 11:31:25 +0200
+Message-ID: <87y50rpr0y.fsf@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140303092600.GB8282@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 03, 2014 at 05:26:00PM +0800, Lee Jones wrote:
-> > > > Applied, thanks.
-> > > 
-> > > I've reverted this patch, as it doesn't build othognally.
-> > > 
-> > > drivers/mfd/timberdale.c:718:2:
-> > >   error: implicit declaration of function ‘pci_enable_msix_exact’
-> > >      [-Werror=implicit-function-declaration]
-> > 
-> > I should have to clarify it I think. Do you build on top of 3.14-rc4?
-> 
-> Not yet. Is the required patch in there?
+On Fri, 28 Feb 2014, Matthew Thode <prometheanfire@gentoo.org> wrote:
+> Hardware is a T520 with a i5-2520M (intel only).
+>
+> Booting via uefi stub, kernel config is attached.
+>
+> This is broken on 3.13.x the video shows hardened kernel being booted,
+> but I've tested kernel.org sources as well with the same effect.
+>
+> I can boot, login and shutdown, etc; just graphics is broken.
+>
+> https://www.youtube.com/watch?v=yxDyvyJTrXs
+>
+> Think that's it, let me know if there's more info I can get you.
 
-Yep - commit 302a252 ("PCI/MSI: Add pci_enable_msi_range() and
-pci_enable_msix_range()").
+Hi Matthew, thanks for the report.
+
+Please file a bug on DRM/Intel component at [1]. Just because my gut
+feeling says this will be better tracked there than by cluttering the
+list...
+
+On the bug, please indicate:
+
+Did this use to work? Which kernel version?
+
+Please disable i915.ko and see if there's still corruption in the
+fb. It's hard to see from the video whether the corruption starts before
+i915 gets loaded.
+
+Please attach dmesg from early boot with drm.debug=0xe module parameter
+set.
+
+
+BR,
+Jani.
+
+
+[1] https://bugs.freedesktop.org/enter_bug.cgi?product=DRI
 
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Jani Nikula, Intel Open Source Technology Center
