@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755859AbaCCTSV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 14:18:21 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:55939 "EHLO
+	id S1755927AbaCCTTv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 14:19:51 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:55907 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754537AbaCCS4R (ORCPT
+	with ESMTP id S1754387AbaCCS4Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 13:56:17 -0500
+	Mon, 3 Mar 2014 13:56:16 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Borkmann <dborkman@redhat.com>, Harald Welte <laforge@gnumonks.org>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 01/67] netfilter: nf_nat: fix access to uninitialized buffer in IRC NAT helper
-Date: Mon,  3 Mar 2014 10:54:49 -0800
-Message-Id: <1393872955-28810-2-git-send-email-kamal@canonical.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Peter Oberparleiter <oberpar@linux.vnet.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 17/67] x86, hweight: Fix BUG when booting with CONFIG_GCOV_PROFILE_ALL=y
+Date: Mon,  3 Mar 2014 10:55:05 -0800
+Message-Id: <1393872955-28810-18-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1393872955-28810-1-git-send-email-kamal@canonical.com>
 References: <1393872955-28810-1-git-send-email-kamal@canonical.com>
@@ -28,99 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
 
-commit 2690d97ade05c5325cbf7c72b94b90d265659886 upstream.
+commit 6583327c4dd55acbbf2a6f25e775b28b3abf9a42 upstream.
 
-Commit 5901b6be885e attempted to introduce IPv6 support into
-IRC NAT helper. By doing so, the following code seemed to be removed
-by accident:
+Commit d61931d89b, "x86: Add optimized popcnt variants" introduced
+compile flag -fcall-saved-rdi for lib/hweight.c. When combined with
+options -fprofile-arcs and -O2, this flag causes gcc to generate
+broken constructor code. As a result, a 64 bit x86 kernel compiled
+with CONFIG_GCOV_PROFILE_ALL=y prints message "gcov: could not create
+file" and runs into sproadic BUGs during boot.
 
-  ip = ntohl(exp->master->tuplehash[IP_CT_DIR_REPLY].tuple.dst.u3.ip);
-  sprintf(buffer, "%u %u", ip, port);
-  pr_debug("nf_nat_irc: inserting '%s' == %pI4, port %u\n", buffer, &ip, port);
+The gcc people indicate that these kinds of problems are endemic when
+using ad hoc calling conventions.  It is therefore best to treat any
+file compiled with ad hoc calling conventions as an isolated
+environment and avoid things like profiling or coverage analysis,
+since those subsystems assume a "normal" calling conventions.
 
-This leads to the fact that buffer[] was left uninitialized and
-contained some stack value. When we call nf_nat_mangle_tcp_packet(),
-we call strlen(buffer) on excatly this uninitialized buffer. If we
-are unlucky and the skb has enough tailroom, we overwrite resp. leak
-contents with values that sit on our stack into the packet and send
-that out to the receiver.
+This patch avoids the bug by excluding lib/hweight.o from coverage
+profiling.
 
-Since the rather informal DCC spec [1] does not seem to specify
-IPv6 support right now, we log such occurences so that admins can
-act accordingly, and drop the packet. I've looked into XChat source,
-and IPv6 is not supported there: addresses are in u32 and print
-via %u format string.
-
-Therefore, restore old behaviour as in IPv4, use snprintf(). The
-IRC helper does not support IPv6 by now. By this, we can safely use
-strlen(buffer) in nf_nat_mangle_tcp_packet() and prevent a buffer
-overflow. Also simplify some code as we now have ct variable anyway.
-
-  [1] http://www.irchelp.org/irchelp/rfc/ctcpspec.html
-
-Fixes: 5901b6be885e ("netfilter: nf_nat: support IPv6 in IRC NAT helper")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Harald Welte <laforge@gnumonks.org>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
-[ kamal: backport to 3.8 for CVE-2014-1690 (context) ]
+Reported-by: Meelis Roos <mroos@linux.ee>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/52F3A30C.7050205@linux.vnet.ibm.com
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/netfilter/nf_nat_irc.c | 28 +++++++++++++++++++++++++---
- 1 file changed, 25 insertions(+), 3 deletions(-)
+ lib/Makefile | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/net/netfilter/nf_nat_irc.c b/net/netfilter/nf_nat_irc.c
-index 1fedee6..915be4f 100644
---- a/net/netfilter/nf_nat_irc.c
-+++ b/net/netfilter/nf_nat_irc.c
-@@ -34,10 +34,14 @@ static unsigned int help(struct sk_buff *skb,
- 			 struct nf_conntrack_expect *exp)
- {
- 	char buffer[sizeof("4294967296 65635")];
-+	struct nf_conn *ct = exp->master;
-+	union nf_inet_addr newaddr;
- 	u_int16_t port;
- 	unsigned int ret;
+diff --git a/lib/Makefile b/lib/Makefile
+index 02ed6c0..3aeb736 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -42,6 +42,7 @@ lib-$(CONFIG_RWSEM_GENERIC_SPINLOCK) += rwsem-spinlock.o
+ lib-$(CONFIG_RWSEM_XCHGADD_ALGORITHM) += rwsem.o
+ lib-$(CONFIG_PERCPU_RWSEM) += percpu-rwsem.o
  
- 	/* Reply comes from server. */
-+	newaddr = ct->tuplehash[IP_CT_DIR_REPLY].tuple.dst.u3;
-+
- 	exp->saved_proto.tcp.port = exp->tuple.dst.u.tcp.port;
- 	exp->dir = IP_CT_DIR_REPLY;
- 	exp->expectfn = nf_nat_follow_master;
-@@ -59,11 +63,29 @@ static unsigned int help(struct sk_buff *skb,
- 	if (port == 0)
- 		return NF_DROP;
- 
--	ret = nf_nat_mangle_tcp_packet(skb, exp->master, ctinfo,
--				       protoff, matchoff, matchlen, buffer,
--				       strlen(buffer));
-+	/* strlen("\1DCC CHAT chat AAAAAAAA P\1\n")=27
-+	 * strlen("\1DCC SCHAT chat AAAAAAAA P\1\n")=28
-+	 * strlen("\1DCC SEND F AAAAAAAA P S\1\n")=26
-+	 * strlen("\1DCC MOVE F AAAAAAAA P S\1\n")=26
-+	 * strlen("\1DCC TSEND F AAAAAAAA P S\1\n")=27
-+	 *
-+	 * AAAAAAAAA: bound addr (1.0.0.0==16777216, min 8 digits,
-+	 *                        255.255.255.255==4294967296, 10 digits)
-+	 * P:         bound port (min 1 d, max 5d (65635))
-+	 * F:         filename   (min 1 d )
-+	 * S:         size       (min 1 d )
-+	 * 0x01, \n:  terminators
-+	 */
-+	/* AAA = "us", ie. where server normally talks to. */
-+	snprintf(buffer, sizeof(buffer), "%u %u", ntohl(newaddr.ip), port);
-+	pr_debug("nf_nat_irc: inserting '%s' == %pI4, port %u\n",
-+		 buffer, &newaddr.ip, port);
-+
-+	ret = nf_nat_mangle_tcp_packet(skb, ct, ctinfo, protoff, matchoff,
-+				       matchlen, buffer, strlen(buffer));
- 	if (ret != NF_ACCEPT)
- 		nf_ct_unexpect_related(exp);
-+
- 	return ret;
- }
++GCOV_PROFILE_hweight.o := n
+ CFLAGS_hweight.o = $(subst $(quote),,$(CONFIG_ARCH_HWEIGHT_CFLAGS))
+ obj-$(CONFIG_GENERIC_HWEIGHT) += hweight.o
  
 -- 
 1.8.3.2
