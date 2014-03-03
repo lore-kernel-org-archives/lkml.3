@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458AbaCCTKe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 14:10:34 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:44538 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754388AbaCCTKc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 14:10:32 -0500
+	id S1755656AbaCCTKm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 14:10:42 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45086 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754490AbaCCTKh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 14:10:37 -0500
 From: Felipe Balbi <balbi@ti.com>
 To: <airlied@linux.ie>
 CC: <airlied@redhat.com>, <robdclark@gmail.com>, <bparrot@ti.com>,
         <dri-devel@lists.freedesktop.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Darren Etheridge <detheridge@ti.com>
-Subject: [PATCH] drm/tilcdc: restore correct display mode and contents on pm resume
-Date: Mon, 3 Mar 2014 13:08:56 -0600
-Message-ID: <1393873736-26867-1-git-send-email-balbi@ti.com>
+Subject: [PATCH] drm/tilcdc increase allowable supported resolution
+Date: Mon, 3 Mar 2014 13:08:58 -0600
+Message-ID: <1393873738-27327-1-git-send-email-balbi@ti.com>
 X-Mailer: git-send-email 1.9.0
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -25,33 +24,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Darren Etheridge <detheridge@ti.com>
 
-On resume the screen contents were not being restored properly.  Looking at
-other DRM drivers it seems a call to drm_helper_resume_force_mode() is needed
-in the resume handler to force restoration of the mode and framebuffer data.
+1680x1050 appears to also be within the bandwidth capabilities
+of the device and memory infrastructure.
 
 Signed-off-by: Darren Etheridge <detheridge@ti.com>
 ---
- drivers/gpu/drm/tilcdc/tilcdc_drv.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/gpu/drm/tilcdc/tilcdc_drv.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/tilcdc/tilcdc_drv.c b/drivers/gpu/drm/tilcdc/tilcdc_drv.c
-index 171a820..1a5ddfa 100644
---- a/drivers/gpu/drm/tilcdc/tilcdc_drv.c
-+++ b/drivers/gpu/drm/tilcdc/tilcdc_drv.c
-@@ -563,6 +563,13 @@ static int tilcdc_pm_resume(struct device *dev)
- 		if (registers[i].save && (priv->rev >= registers[i].rev))
- 			tilcdc_write(ddev, registers[i].reg, priv->saved_register[n++]);
+diff --git a/drivers/gpu/drm/tilcdc/tilcdc_drv.h b/drivers/gpu/drm/tilcdc/tilcdc_drv.h
+index 5bb64e3..b47ec24 100644
+--- a/drivers/gpu/drm/tilcdc/tilcdc_drv.h
++++ b/drivers/gpu/drm/tilcdc/tilcdc_drv.h
+@@ -43,7 +43,7 @@
+  * with optimized DDR & EMIF settings tweaked 1920x1080@24 appears to
+  * be supportable
+  */
+-#define TILCDC_DEFAULT_MAX_BANDWIDTH  (1280*1024*60)
++#define TILCDC_DEFAULT_MAX_BANDWIDTH  (1680*1050*60)
  
-+	/*
-+	 * if this call isn't here, the display is blank on return from
-+	 * suspend.  With this call here the contents of the framebuffer
-+	 * during suspend are restored correctly.
-+	 */
-+	drm_helper_resume_force_mode(ddev);
-+
- 	drm_kms_helper_poll_enable(ddev);
  
- 	return 0;
+ struct tilcdc_drm_private {
 -- 
 1.9.0
 
