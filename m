@@ -1,87 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754663AbaCCUGs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 15:06:48 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:40591 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754465AbaCCUGr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 15:06:47 -0500
-Message-ID: <5314E0CD.6070308@oracle.com>
-Date: Mon, 03 Mar 2014 15:06:37 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754817AbaCCUJe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 15:09:34 -0500
+Received: from mail1.bemta14.messagelabs.com ([193.109.254.109]:25421 "EHLO
+	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754255AbaCCUJc convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 15:09:32 -0500
+X-Env-Sender: Johannes.Thumshirn@men.de
+X-Msg-Ref: server-3.tower-193.messagelabs.com!1393877369!15932678!1
+X-Originating-IP: [80.255.6.145]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.16; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Mon, 03 Mar 2014 21:09:30 +0100
+From: "Thumshirn, Johannes Tobias" <Johannes.Thumshirn@men.de>
+To: Olof Johansson <olof@lixom.net>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jonathan Cameron <jic23@kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v3 1/3] drivers: Introduce MEN Chameleon Bus
+Thread-Topic: [PATCH v3 1/3] drivers: Introduce MEN Chameleon Bus
+Thread-Index: AQHPMw/qr9ine4LXsEWzi9b5F2MWMprPtMmAgAAa9BU=
+Date: Mon, 3 Mar 2014 20:09:28 +0000
+Message-ID: <42A09AAC7DAAF64ABE4E4C1AD5F5E295475D66E7@MEN-EX1.intra.men.de>
+References: <1393432147-31355-1-git-send-email-johannes.thumshirn@men.de>
+	<1393432147-31355-2-git-send-email-johannes.thumshirn@men.de>,<CAOesGMjmdfRWddG+NWBg29mPik_s21fMQerCqUbEWUz8vP3KfQ@mail.gmail.com>
+In-Reply-To: <CAOesGMjmdfRWddG+NWBg29mPik_s21fMQerCqUbEWUz8vP3KfQ@mail.gmail.com>
+Accept-Language: en-US, de-DE
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.168.1.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH] mm: add pte_present() check on existing hugetlb_entry
- callbacks
-References: <53126861.7040107@oracle.com> <1393822946-26871-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1393822946-26871-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/03/2014 12:02 AM, Naoya Horiguchi wrote:
-> Hi Sasha,
+
+________________________________________
+From: Olof Johansson [olof@lixom.net]
+Sent: Monday, March 03, 2014 8:21 PM
+To: Thumshirn, Johannes Tobias
+Cc: Greg Kroah-Hartman; Jonathan Cameron; linux-iio@vger.kernel.org; linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/3] drivers: Introduce MEN Chameleon Bus
+
+On Wed, Feb 26, 2014 at 8:29 AM, Johannes Thumshirn
+<johannes.thumshirn@men.de> wrote:
+> The MCB (MEN Chameleon Bus) is a Bus specific to MEN Mikroelektronik
+> FPGA based devices. It is used to identify MCB based IP-Cores within
+> an FPGA and provide the necessary framework for instantiating drivers
+> for these devices.
 >
->> >I can confirm that with this patch the lockdep issue is gone. However, the NULL deref in
->> >walk_pte_range() and the BUG at mm/hugemem.c:3580 still appear.
-> I spotted the cause of this problem.
-> Could you try testing if this patch fixes it?
+> Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
+> ---
+>  MAINTAINERS                     |   6 +
+>  drivers/Kconfig                 |   2 +
+>  drivers/Makefile                |   1 +
+>  drivers/mcb/Kconfig             |  15 ++
+>  drivers/mcb/Makefile            |   5 +
+>  drivers/mcb/mcb-core.c          | 414 ++++++++++++++++++++++++++++++++++++++++
+>  drivers/mcb/mcb-internal.h      | 116 +++++++++++
+>  drivers/mcb/mcb-parse.c         | 159 +++++++++++++++
+>  include/linux/mcb.h             | 119 ++++++++++++
+>  include/linux/mod_devicetable.h |   5 +
+>  10 files changed, 842 insertions(+)
+>  create mode 100644 drivers/mcb/Kconfig
+>  create mode 100644 drivers/mcb/Makefile
+>  create mode 100644 drivers/mcb/mcb-core.c
+>  create mode 100644 drivers/mcb/mcb-internal.h
+>  create mode 100644 drivers/mcb/mcb-parse.c
+>  create mode 100644 include/linux/mcb.h
+>
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 85b3dd8..5d35f6c 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -5667,6 +5667,12 @@ L:       linux-watchdog@vger.kernel.org
+>  S:     Supported
+>  F:     drivers/watchdog/mena21_wdt.c
+>
+> +MEN CHAMELEON BUS (mcb)
+> +M:     Johannes Thumshirn <johannes.thumshirn@men.de>
+> +S:     Supported
+> +F:     drivers/mcb/
+> +F:     include/linux/mcb.h
+> +
+>  METAG ARCHITECTURE
+>  M:     James Hogan <james.hogan@imgtec.com>
+>  L:     linux-metag@vger.kernel.org
+> diff --git a/drivers/Kconfig b/drivers/Kconfig
+> index b3138fb..df2ac52 100644
+> --- a/drivers/Kconfig
+> +++ b/drivers/Kconfig
+> @@ -170,4 +170,6 @@ source "drivers/phy/Kconfig"
+>
+>  source "drivers/powercap/Kconfig"
+>
+> +source "drivers/mcb/Kconfig"
+> +
+>  endmenu
+> diff --git a/drivers/Makefile b/drivers/Makefile
+> index 8e3b8b0..c5bf50c 100644
+> --- a/drivers/Makefile
+> +++ b/drivers/Makefile
+> @@ -155,3 +155,4 @@ obj-$(CONFIG_IPACK_BUS)             += ipack/
+>  obj-$(CONFIG_NTB)              += ntb/
+>  obj-$(CONFIG_FMC)              += fmc/
+>  obj-$(CONFIG_POWERCAP)         += powercap/
+> +obj-$(CONFIG_MCB)              += mcb/
 
-I'm seeing a different failure with this patch:
+No single-driver directories like these. This needs to go somewhere else.
 
-[ 1860.669114] BUG: unable to handle kernel NULL pointer dereference at 0000000000000050
-[ 1860.670498] IP: [<ffffffff8129c0bf>] vm_normal_page+0x3f/0x90
-[ 1860.672795] PGD 6c1c84067 PUD 6e0a3d067 PMD 0
-[ 1860.672795] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[ 1860.672795] Dumping ftrace buffer:
-[ 1860.672795]    (ftrace buffer empty)
-[ 1860.672795] Modules linked in:
-[ 1860.672795] CPU: 4 PID: 34914 Comm: trinity-c184 Tainted: G        W    3.14.0-rc4-ne
-[ 1860.672795] task: ffff880717d90000 ti: ffff88070b3da000 task.ti: ffff88070b3da000
-[ 1860.672795] RIP: 0010:[<ffffffff8129c0bf>]  [<ffffffff8129c0bf>] vm_normal_page+0x3f/
-[ 1860.672795] RSP: 0018:ffff88070b3dbba8  EFLAGS: 00010202
-[ 1860.672795] RAX: 000000000000767f RBX: ffff88070b3dbdd8 RCX: ffff88070b3dbd78
-[ 1860.672795] RDX: 800000000767f225 RSI: 0100000000699000 RDI: 800000000767f225
-[ 1860.672795] RBP: ffff88070b3dbba8 R08: 0000000000000000 R09: 0000000000000000
-[ 1860.672795] R10: 0000000000000001 R11: 0000000000000000 R12: ffff880717df24c8
-[ 1860.672795] R13: 0000000000000020 R14: 0100000000699000 R15: 0100000000800000
-[ 1860.672795] FS:  00007f20a3584700(0000) GS:ffff88052b800000(0000) knlGS:0000000000000
-[ 1860.672795] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[ 1860.672795] CR2: 0000000000000050 CR3: 00000006d73cf000 CR4: 00000000000006e0
-[ 1860.672795] Stack:
-[ 1860.672795]  ffff88070b3dbbd8 ffffffff812c2f3d ffffffff812b2dc0 010000000069a000
-[ 1860.672795]  ffff880717df24c8 ffff88070b3dbd78 ffff88070b3dbc28 ffffffff812b2e00
-[ 1860.672795]  0000000000000000 ffff88072956bcf0 ffff88070b3dbc28 ffff8806e0a3d018
-[ 1860.672795] Call Trace:
-[ 1860.672795]  [<ffffffff812c2f3d>] queue_pages_pte+0x3d/0xd0
-[ 1860.672795]  [<ffffffff812b2dc0>] ? walk_pte_range+0xc0/0x180
-[ 1860.672795]  [<ffffffff812b2e00>] walk_pte_range+0x100/0x180
-[ 1860.672795]  [<ffffffff812b3091>] walk_pmd_range+0x211/0x240
-[ 1860.672795]  [<ffffffff812b31eb>] walk_pud_range+0x12b/0x160
-[ 1860.672795]  [<ffffffff812d2ee4>] ? __slab_free+0x384/0x5e0
-[ 1860.672795]  [<ffffffff812b3329>] walk_pgd_range+0x109/0x140
-[ 1860.672795]  [<ffffffff812b3395>] __walk_page_range+0x35/0x40
-[ 1860.672795]  [<ffffffff812b3552>] walk_page_range+0xf2/0x130
-[ 1860.672795]  [<ffffffff812c2e41>] queue_pages_range+0x71/0x90
-[ 1860.672795]  [<ffffffff812c2f00>] ? queue_pages_hugetlb+0xa0/0xa0
-[ 1860.672795]  [<ffffffff812c2e60>] ? queue_pages_range+0x90/0x90
-[ 1860.672795]  [<ffffffff812c30d0>] ? change_prot_numa+0x30/0x30
-[ 1860.672795]  [<ffffffff812c6c61>] do_mbind+0x321/0x340
-[ 1860.672795]  [<ffffffff8129af2f>] ? might_fault+0x9f/0xb0
-[ 1860.672795]  [<ffffffff8129aee6>] ? might_fault+0x56/0xb0
-[ 1860.672795]  [<ffffffff812c6d09>] SYSC_mbind+0x89/0xb0
-[ 1860.672795]  [<ffffffff81268db5>] ? context_tracking_user_exit+0x195/0x1d0
-[ 1860.672795]  [<ffffffff812c6d3e>] SyS_mbind+0xe/0x10
-[ 1860.672795]  [<ffffffff8447d890>] tracesys+0xdd/0xe2
+There are two drivers in this directory, so I guess it's O.K, isn't it?
+
+> diff --git a/drivers/mcb/Kconfig b/drivers/mcb/Kconfig
+> new file mode 100644
+> index 0000000..44c82d6
+> --- /dev/null
+> +++ b/drivers/mcb/Kconfig
+> @@ -0,0 +1,15 @@
+> +#
+> +# MEN Chameleon Bus (MCB) support
+> +#
+> +
+> +menuconfig MCB
+> +          tristate "MCB support"
+> +          default m
+
+Don't default to 'm' for new drivers. Just leave out the default (so
+it will default to 'n').
+
+ OK
+
+> +          help
+> +
+> +          The MCB (MEN Chameleon Bus) is a Bus specific to MEN Mikroelektronik
+> +          FPGA based devices. It is used to identify MCB based IP-Cores within
+> +          an FPGA and provide the necessary framework for instantiating drivers
+> +          for these devices.
+> +
+> +          If build as a module, the module is called mcb.ko
 
 
-Thanks,
-Sasha
+Not reviewing the rest of the driver, came across the patch due to
+causing build breakage on last night's next ebsa110_defconfig for ARM:
+
+drivers/mcb/mcb-parse.c:105:2: error: implicit declaration of function
+'memcpy_fromio' [-Werror=implicit-function-declaration]
+
+
+Yes I saw it as well. Currently taking care of it.
+
+Johannes
