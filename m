@@ -1,158 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754382AbaCCQOF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 11:14:05 -0500
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:50670 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754125AbaCCQOD (ORCPT
+	id S1754766AbaCCQQG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 11:16:06 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:49705 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754082AbaCCQQE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 11:14:03 -0500
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.11.1403031429080.1476@denkbrett>
-References: <20140226233541.18970.83328.stgit@bhelgaas-glaptop.roam.corp.google.com>
- <20140226234215.18970.1743.stgit@bhelgaas-glaptop.roam.corp.google.com> <alpine.LFD.2.11.1403031429080.1476@denkbrett>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 3 Mar 2014 09:13:42 -0700
-Message-ID: <CAErSpo7dg0-W7Dxn0wismfsOD-ZWCBXggFvcFXCUxkBUkia5sA@mail.gmail.com>
-Subject: Re: [PATCH 7/7] s390/PCI: Use generic pci_enable_resources()
-To: Sebastian Ott <sebott@linux.vnet.ibm.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Jan Glauber <jang@linux.vnet.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com
-Content-Type: text/plain; charset=UTF-8
+	Mon, 3 Mar 2014 11:16:04 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
+Subject: Re: [PATCH 1/3] soc: Introduce drivers/soc place-holder for SOC specific drivers
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <1393629520-12713-2-git-send-email-santosh.shilimkar@ti.com>
+Date: Mon, 3 Mar 2014 10:16:00 -0600
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Paul Walmsley <paul@pwsan.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sandeep Nair <sandeep_n@ti.com>, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <15AC514D-6D59-4209-9365-BACDD388ABA1@codeaurora.org>
+References: <1393629520-12713-1-git-send-email-santosh.shilimkar@ti.com> <1393629520-12713-2-git-send-email-santosh.shilimkar@ti.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+X-Mailer: Apple Mail (2.1874)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 3, 2014 at 6:35 AM, Sebastian Ott <sebott@linux.vnet.ibm.com> wrote:
-> Hello Bjorn,
->
-> On Wed, 26 Feb 2014, Bjorn Helgaas wrote:
->
->> The generic pci_enable_resources() does essentially the same thing as the
->> code in the s390 version of pcibios_enable_device().
->>
->> There are differences, but I don't think any of them are a problem.  The
->> generic code:
->>
->>   - Checks everything up to PCI_NUM_RESOURCES, not PCI_BAR_COUNT (6), so
->>     we'll now check the ROM resource, IOV resources, and bridge windows.
->>
->>   - Checks for res->flags & IORESOURCE_UNSET.  The s390 code never sets
->>     IORESOURCE_UNSET, so this isn't a problem.
->>
->>   - Checks res->parent.  The s390 pcibios_add_device() calls
->>     pci_claim_resource() on all BARs (except ROM, IOV, and bridge windows)
->>     so this isn't a problem either.
->>
->> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
->> CC: Martin Schwidefsky <schwidefsky@de.ibm.com>
->> CC: Heiko Carstens <heiko.carstens@de.ibm.com>
->> CC: Sebastian Ott <sebott@linux.vnet.ibm.com>
->> CC: Jan Glauber <jang@linux.vnet.ibm.com>
->> CC: linux390@de.ibm.com
->> ---
->>  arch/s390/pci/pci.c |   13 +------------
->>  1 file changed, 1 insertion(+), 12 deletions(-)
->>
->> diff --git a/arch/s390/pci/pci.c b/arch/s390/pci/pci.c
->> index 66670ff262a0..7d5fcaed3361 100644
->> --- a/arch/s390/pci/pci.c
->> +++ b/arch/s390/pci/pci.c
->> @@ -695,18 +695,7 @@ int pcibios_enable_device(struct pci_dev *pdev, int mask)
->>       zpci_fmb_enable_device(zdev);
->>       zpci_map_resources(zdev);
->>
->> -     pci_read_config_word(pdev, PCI_COMMAND, &cmd);
->> -     for (i = 0; i < PCI_BAR_COUNT; i++) {
->> -             res = &pdev->resource[i];
->> -
->> -             if (res->flags & IORESOURCE_IO)
->> -                     return -EINVAL;
->> -
->> -             if (res->flags & IORESOURCE_MEM)
->> -                     cmd |= PCI_COMMAND_MEMORY;
->> -     }
->> -     pci_write_config_word(pdev, PCI_COMMAND, cmd);
->> -     return 0;
->> +     return pci_enable_resources(pdev, mask);
->>  }
->>
->>  void pcibios_disable_device(struct pci_dev *pdev)
->>
->
-> Let's also remove some now unused variables (updated patch below). Other
-> than that:
->
-> Acked-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
 
-Hi Sebastian,
+On Feb 28, 2014, at 5:18 PM, Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
 
-Sorry, that was sloppy of me to leave those unused variables.  I
-updated the patch and added your ack.  Thanks!
-
-Bjorn
-
+> Based on earlier thread "https://lkml.org/lkml/2013/10/7/662" and
+> further discussion at Kernel Summit'2013, it was agreed to create
+> 'driver/soc' for drivers which are quite SOC specific.
+> 
+> Lets take the discussion forward with this patch.
+> 
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Kumar Gala <galak@codeaurora.org>
+> Cc: Paul Walmsley <paul@pwsan.com>
+> Cc: Olof Johansson <olof@lixom.net>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Sandeep Nair <sandeep_n@ti.com>
+> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 > ---
-> s390/PCI: Use generic pci_enable_resources()
->
-> The generic pci_enable_resources() does essentially the same thing as the
-> code in the s390 version of pcibios_enable_device().
->
-> There are differences, but I don't think any of them are a problem.  The
-> generic code:
->
->   - Checks everything up to PCI_NUM_RESOURCES, not PCI_BAR_COUNT (6), so
->     we'll now check the ROM resource, IOV resources, and bridge windows.
->
->   - Checks for res->flags & IORESOURCE_UNSET.  The s390 code never sets
->     IORESOURCE_UNSET, so this isn't a problem.
->
->   - Checks res->parent.  The s390 pcibios_add_device() calls
->     pci_claim_resource() on all BARs (except ROM, IOV, and bridge windows)
->     so this isn't a problem either.
->
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-> CC: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> CC: Heiko Carstens <heiko.carstens@de.ibm.com>
-> CC: Sebastian Ott <sebott@linux.vnet.ibm.com>
-> CC: Jan Glauber <jang@linux.vnet.ibm.com>
-> CC: linux390@de.ibm.com
-> ---
->  arch/s390/pci/pci.c |   16 +---------------
->  1 file changed, 1 insertion(+), 15 deletions(-)
->
-> --- a/arch/s390/pci/pci.c
-> +++ b/arch/s390/pci/pci.c
-> @@ -686,27 +686,13 @@ int pcibios_add_device(struct pci_dev *p
->  int pcibios_enable_device(struct pci_dev *pdev, int mask)
->  {
->         struct zpci_dev *zdev = get_zdev(pdev);
-> -       struct resource *res;
-> -       u16 cmd;
-> -       int i;
->
->         zdev->pdev = pdev;
->         zpci_debug_init_device(zdev);
->         zpci_fmb_enable_device(zdev);
->         zpci_map_resources(zdev);
->
-> -       pci_read_config_word(pdev, PCI_COMMAND, &cmd);
-> -       for (i = 0; i < PCI_BAR_COUNT; i++) {
-> -               res = &pdev->resource[i];
-> -
-> -               if (res->flags & IORESOURCE_IO)
-> -                       return -EINVAL;
-> -
-> -               if (res->flags & IORESOURCE_MEM)
-> -                       cmd |= PCI_COMMAND_MEMORY;
-> -       }
-> -       pci_write_config_word(pdev, PCI_COMMAND, cmd);
-> -       return 0;
-> +       return pci_enable_resources(pdev, mask);
->  }
->
->  void pcibios_disable_device(struct pci_dev *pdev)
->
+> drivers/Kconfig     |    2 ++
+> drivers/Makefile    |    4 ++++
+> drivers/soc/Kconfig |    3 +++
+> 3 files changed, 9 insertions(+)
+> create mode 100644 drivers/soc/Kconfig
+> 
+> diff --git a/drivers/Kconfig b/drivers/Kconfig
+> index b3138fb..37f955f 100644
+> --- a/drivers/Kconfig
+> +++ b/drivers/Kconfig
+> @@ -130,6 +130,8 @@ source "drivers/staging/Kconfig"
+> 
+> source "drivers/platform/Kconfig"
+> 
+> +source "drivers/soc/Kconfig"
+> +
+> source "drivers/clk/Kconfig"
+> 
+> source "drivers/hwspinlock/Kconfig"
+> diff --git a/drivers/Makefile b/drivers/Makefile
+> index 8e3b8b0..0d8e2a4 100644
+> --- a/drivers/Makefile
+> +++ b/drivers/Makefile
+> @@ -132,6 +132,10 @@ obj-$(CONFIG_VHOST_RING)	+= vhost/
+> obj-$(CONFIG_VLYNQ)		+= vlynq/
+> obj-$(CONFIG_STAGING)		+= staging/
+> obj-y				+= platform/
+> +
+> +# SOC specific drivers
+> +obj-y				+= soc/
+> +
+> #common clk code
+> obj-y				+= clk/
+> 
+> diff --git a/drivers/soc/Kconfig b/drivers/soc/Kconfig
+> new file mode 100644
+> index 0000000..2f9d7d0
+> --- /dev/null
+> +++ b/drivers/soc/Kconfig
+> @@ -0,0 +1,3 @@
+> +menu "SOC specific Drivers"
+> +
+> +endmenu
+> -- 
+> 1.7.9.5
+
+Is there a follow up patch that populates this with something real?
+
+- k
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+
