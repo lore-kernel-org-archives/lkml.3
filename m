@@ -1,97 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754471AbaCCQVF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 11:21:05 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:43761 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754024AbaCCQVC (ORCPT
+	id S1754417AbaCCQ0d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 11:26:33 -0500
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:48751 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753758AbaCCQ0b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 11:21:02 -0500
-X-AuditID: cbfec7f5-b7fc96d000004885-ca-5314abeb2538
-Message-id: <1393863657.4267.17.camel@AMDC1943>
-Subject: Re: [PATCH 3/3] regulator: s2mps11: Copy supported regulators from
- initconst
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar01@gmail.com>
-Date: Mon, 03 Mar 2014 17:20:57 +0100
-In-reply-to: <1393847621.4267.8.camel@AMDC1943>
-References: <1393581710-17754-1-git-send-email-k.kozlowski@samsung.com>
- <1393581710-17754-4-git-send-email-k.kozlowski@samsung.com>
- <20140303020933.GA2411@sirena.org.uk> <1393847621.4267.8.camel@AMDC1943>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Content-transfer-encoding: 7bit
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t/xy7qvV4sEG9y9yW6xccZ6VoupD5+w
-	WVz/8pzV4mzTG3aLb1c6mCwu75rDZjHj/D4mi7VH7rJbXFzxhcli/YzXLBZzfzeyWsyZ/o7J
-	gcdj56y77B6bVnWyefRtWcXo8XmTXABLFJdNSmpOZllqkb5dAlfG/MNqBaf4K3p2HmBvYDzO
-	08XIySEhYCLRNamREcIWk7hwbz1bFyMXh5DAUkaJbxN2sEA4nxklfnw9D1bFK6AvcX7bVBYQ
-	W1ggXOLg/DtMIDabgLHE5uVL2EBsEQFliavf94I1MwucY5Z4MaUbLMEioCpxectWsAZOoEGv
-	FnQyg9hCAhcYJdZ81AKxmQXUJSbNW8QMcZKSxO72TnaIuLzE5jVvmSGOEJT4MfkeywRGgVlI
-	WmYhKZuFpGwBI/MqRtHU0uSC4qT0XCO94sTc4tK8dL3k/NxNjJB4+LqDcekxq0OMAhyMSjy8
-	DlNEgoVYE8uKK3MPMUpwMCuJ8EbUAIV4UxIrq1KL8uOLSnNSiw8xMnFwSjUwiqy9wPJjRfyB
-	zAk584zjFho+zv1+lu9yjjPr/69lepNy3Q8FXHwpnhVx+tKJkoPWJu5qdW03c26xtes8FDzC
-	VFK6buNyzYsX1s5s43IQ/c19e7Yah9e0vCnG/vMecv/9yfGX8fmUrL1nJ+6SfjJ31ZSQOD/p
-	99e+lS/cwFovZPB939xYvmvy/UosxRmJhlrMRcWJAMcrgfBlAgAA
+	Mon, 3 Mar 2014 11:26:31 -0500
+Date: Mon, 3 Mar 2014 17:26:28 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] tools/lib/lockdep fixes
+Message-ID: <20140303162628.GA17135@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Linus,
 
-> 
-> Hi,
-> 
-> On Mon, 2014-03-03 at 10:09 +0800, Mark Brown wrote:
-> > On Fri, Feb 28, 2014 at 11:01:50AM +0100, Krzysztof Kozlowski wrote:
-> > > Add __initconst to 'regulator_desc' array with supported regulators.
-> > > During probe choose how many and which regulators will be supported
-> > > according to device ID. Then copy the 'regulator_desc' array to
-> > > allocated memory so the regulator core can use it.
-> > 
-> > Applied, thanks.
-> 
-> Thanks! Unfortunately I wonder now whether it was a good idea to mark
-> the regulator_desc array as __initconst. I've seen the warning from
-> kbuild test robot:
-> --------
-> >> WARNING: vmlinux.o(.text+0xf0faab): Section mismatch in reference
-> from the function s2mps11_pmic_probe() to the
-> variable .init.rodata:s2mps11_regulators
->    The function s2mps11_pmic_probe() references
->    the variable __initconst s2mps11_regulators.
->    This is often because s2mps11_pmic_probe lacks a __initconst
->    annotation or the annotation of s2mps11_regulators is wrong.
-> --------
-> 
-> I have two ideas for fixing this:
-> 1. The s2mps11_pmic_probe() could be marked with __init and 
-> platform_driver_probe() should be used. Unfortunately this does not work
-> because the driver is registered and probed a little later after
-> s2mps11_pmic_init() when I2C bus driver is probed. During that time the
-> drv->probe() is actually NULL.
-> 
-> 2. The s2mps11_pmic_probe() won't be marked as __init and could copy the
-> regulator_desc (__initconst) array to local static variable. This way if
-> it would be called twice the mentioned array __initconst won't be
-> dereferenced. Unfortunately this won't remove the warning.
-> 
-> Any ideas for solving this?
+Please pull the latest core-urgent-for-linus git tree from:
 
-I sent a patch removing the __initconst. From my point of view these two
-patches can be squashed, so effectively only choosing number of
-supported regulators is introduced (as it was in my original patch from
-11th of February).
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-urgent-for-linus
+
+   # HEAD: 9b158f53a8da5394cb48310da9fda80b34c72bbc Merge branch 'liblockdep-fixes' of https://github.com/sashalevin/liblockdep into core/urgent
+
+A handful of build fixes for liblockdep.
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Ira W. Snyder (3):
+      tools/liblockdep: Fix initialization code path
+      tools/liblockdep: Fix include of asm/hash.h
+      tools/liblockdep: Add include directory to allow tests to compile
+
+Sasha Levin (2):
+      tools/liblockdep: Mark runtests.sh as executable
+      tools/liblockdep: Add a stub for new rcu_is_watching
+
+Wang Nan (1):
+      tools/liblockdep: Use realpath for srctree and objtree
 
 
-Best regards,
-Krzysztof
+ tools/lib/lockdep/Makefile             | 6 +++---
+ tools/lib/lockdep/preload.c            | 2 +-
+ tools/lib/lockdep/run_tests.sh         | 0
+ tools/lib/lockdep/uinclude/asm/hash.h  | 6 ++++++
+ tools/lib/lockdep/uinclude/linux/rcu.h | 5 +++++
+ 5 files changed, 15 insertions(+), 4 deletions(-)
+ mode change 100644 => 100755 tools/lib/lockdep/run_tests.sh
+ create mode 100644 tools/lib/lockdep/uinclude/asm/hash.h
 
+diff --git a/tools/lib/lockdep/Makefile b/tools/lib/lockdep/Makefile
+index da8b7aa..07b0b75 100644
+--- a/tools/lib/lockdep/Makefile
++++ b/tools/lib/lockdep/Makefile
+@@ -87,8 +87,8 @@ endif # BUILD_SRC
+ # We process the rest of the Makefile if this is the final invocation of make
+ ifeq ($(skip-makefile),)
+ 
+-srctree		:= $(if $(BUILD_SRC),$(BUILD_SRC),$(CURDIR))
+-objtree		:= $(CURDIR)
++srctree		:= $(realpath $(if $(BUILD_SRC),$(BUILD_SRC),$(CURDIR)))
++objtree		:= $(realpath $(CURDIR))
+ src		:= $(srctree)
+ obj		:= $(objtree)
+ 
+@@ -112,7 +112,7 @@ export Q VERBOSE
+ 
+ LIBLOCKDEP_VERSION = $(LL_VERSION).$(LL_PATCHLEVEL).$(LL_EXTRAVERSION)
+ 
+-INCLUDES = -I. -I/usr/local/include -I./uinclude $(CONFIG_INCLUDES)
++INCLUDES = -I. -I/usr/local/include -I./uinclude -I./include $(CONFIG_INCLUDES)
+ 
+ # Set compile option CFLAGS if not set elsewhere
+ CFLAGS ?= -g -DCONFIG_LOCKDEP -DCONFIG_STACKTRACE -DCONFIG_PROVE_LOCKING -DBITS_PER_LONG=__WORDSIZE -DLIBLOCKDEP_VERSION='"$(LIBLOCKDEP_VERSION)"' -rdynamic -O0 -g
+diff --git a/tools/lib/lockdep/preload.c b/tools/lib/lockdep/preload.c
+index f8465a8..23bd69c 100644
+--- a/tools/lib/lockdep/preload.c
++++ b/tools/lib/lockdep/preload.c
+@@ -418,7 +418,7 @@ int pthread_rwlock_unlock(pthread_rwlock_t *rwlock)
+ 
+ __attribute__((constructor)) static void init_preload(void)
+ {
+-	if (__init_state != done)
++	if (__init_state == done)
+ 		return;
+ 
+ #ifndef __GLIBC__
+diff --git a/tools/lib/lockdep/run_tests.sh b/tools/lib/lockdep/run_tests.sh
+old mode 100644
+new mode 100755
+diff --git a/tools/lib/lockdep/uinclude/asm/hash.h b/tools/lib/lockdep/uinclude/asm/hash.h
+new file mode 100644
+index 0000000..d82b170b
+--- /dev/null
++++ b/tools/lib/lockdep/uinclude/asm/hash.h
+@@ -0,0 +1,6 @@
++#ifndef __ASM_GENERIC_HASH_H
++#define __ASM_GENERIC_HASH_H
++
++/* Stub */
++
++#endif /* __ASM_GENERIC_HASH_H */
+diff --git a/tools/lib/lockdep/uinclude/linux/rcu.h b/tools/lib/lockdep/uinclude/linux/rcu.h
+index 4c99fcb..042ee8e 100644
+--- a/tools/lib/lockdep/uinclude/linux/rcu.h
++++ b/tools/lib/lockdep/uinclude/linux/rcu.h
+@@ -13,4 +13,9 @@ static inline int rcu_is_cpu_idle(void)
+ 	return 1;
+ }
+ 
++static inline bool rcu_is_watching(void)
++{
++	return false;
++}
++
+ #endif
