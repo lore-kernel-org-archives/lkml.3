@@ -1,151 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755610AbaCCXHU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 18:07:20 -0500
-Received: from mga09.intel.com ([134.134.136.24]:25540 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755282AbaCCXHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 18:07:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,581,1389772800"; 
-   d="scan'208";a="493449509"
-Date: Mon, 3 Mar 2014 16:07:35 -0700 (MST)
-From: Ross Zwisler <ross.zwisler@linux.intel.com>
-X-X-Sender: rzwisler@scrumpy
-To: Dave Chinner <david@fromorbit.com>
-cc: Matthew Wilcox <willy@linux.intel.com>, Toshi Kani <toshi.kani@hp.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH v6 07/22] Replace the XIP page fault handler with the
- DAX page fault handler
-In-Reply-To: <20140302233027.GR30131@dastard>
-Message-ID: <alpine.OSX.2.00.1403031549110.34680@scrumpy>
-References: <1393337918-28265-1-git-send-email-matthew.r.wilcox@intel.com> <1393337918-28265-8-git-send-email-matthew.r.wilcox@intel.com> <1393609771.6784.83.camel@misato.fc.hp.com> <20140228202031.GB12820@linux.intel.com> <20140302233027.GR30131@dastard>
-User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
+	id S1755652AbaCCXIS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 18:08:18 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:64982 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755204AbaCCXIP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 18:08:15 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, matthew.garrett@nebula.com,
+        rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com
+Subject: Re: [RFC PATCH 6/8] ACPI: use platform bus as the default bus for _HID enumeration
+Date: Tue, 04 Mar 2014 00:23:24 +0100
+Message-ID: <1440720.MRPxuLKXmI@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1393855908.2193.16.camel@rzhang1-mobl4>
+References: <1393405874-3266-1-git-send-email-rui.zhang@intel.com> <22144944.rXupLb1rjo@vostro.rjw.lan> <1393855908.2193.16.camel@rzhang1-mobl4>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 Mar 2014, Dave Chinner wrote:
-> On Fri, Feb 28, 2014 at 03:20:31PM -0500, Matthew Wilcox wrote:
-> > On Fri, Feb 28, 2014 at 10:49:31AM -0700, Toshi Kani wrote:
-> > > The original code,
-> > > xip_file_fault(), jumps to found: and calls vm_insert_mixed() when
-> > > get_xip_mem(,,0,,) succeeded.  If get_xip_mem() returns -ENODATA, it
-> > > calls either get_xip_mem(,,1,,) or xip_sparse_page().  In this new
-> > > function, it looks to me that get_block(,,,0) returns 0 for both cases
-> > > (success and -ENODATA previously), which are dealt in the same way.  Is
-> > > that right?  If so, is there any reason for the change?
+On Monday, March 03, 2014 10:11:48 PM Zhang Rui wrote:
+> On Mon, 2014-03-03 at 00:51 +0100, Rafael J. Wysocki wrote:
+> > On Wednesday, February 26, 2014 05:11:12 PM Zhang Rui wrote:
+> > > Because of the growing demand for enumerating ACPI devices to platform bus,
+> > > this patch changes the code to enumerate ACPI devices with _HID/_CID to
+> > > platform bus by default, unless the device already has a scan handler attached.
+> > > 
+> > > Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+> > > ---
+> > >  drivers/acpi/acpi_platform.c |   28 ----------------------------
+> > >  drivers/acpi/scan.c          |   12 ++++++------
+> > >  2 files changed, 6 insertions(+), 34 deletions(-)
+> > > 
+> > > diff --git a/drivers/acpi/acpi_platform.c b/drivers/acpi/acpi_platform.c
+> > > index dbfe49e..33376a9 100644
+> > > --- a/drivers/acpi/acpi_platform.c
+> > > +++ b/drivers/acpi/acpi_platform.c
+> > > @@ -22,24 +22,6 @@
+> > >  
+> > >  ACPI_MODULE_NAME("platform");
+> > >  
+> > > -/*
+> > > - * The following ACPI IDs are known to be suitable for representing as
+> > > - * platform devices.
+> > > - */
+> > > -static const struct acpi_device_id acpi_platform_device_ids[] = {
+> > > -
+> > > -	{ "PNP0D40" },
+> > > -	{ "ACPI0003" },
+> > > -	{ "VPC2004" },
+> > > -	{ "BCM4752" },
+> > > -
+> > > -	/* Intel Smart Sound Technology */
+> > > -	{ "INT33C8" },
+> > > -	{ "80860F28" },
+> > > -
+> > > -	{ }
+> > > -};
+> > > -
+> > >  /**
+> > >   * acpi_create_platform_device - Create platform device for ACPI device node
+> > >   * @adev: ACPI device node to create a platform device for.
+> > > @@ -125,13 +107,3 @@ int acpi_create_platform_device(struct acpi_device *adev,
+> > >  	kfree(resources);
+> > >  	return 1;
+> > >  }
+> > > -
+> > > -static struct acpi_scan_handler platform_handler = {
+> > > -	.ids = acpi_platform_device_ids,
+> > > -	.attach = acpi_create_platform_device,
+> > > -};
+> > > -
+> > > -void __init acpi_platform_init(void)
+> > > -{
+> > > -	acpi_scan_add_handler(&platform_handler);
+> > > -}
+> > > diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> > > index 5967338..61af32e 100644
+> > > --- a/drivers/acpi/scan.c
+> > > +++ b/drivers/acpi/scan.c
+> > > @@ -2022,14 +2022,15 @@ static int acpi_scan_attach_handler(struct acpi_device *device)
+> > >  		handler = acpi_scan_match_handler(hwid->id, &devid);
+> > >  		if (handler) {
+> > >  			ret = handler->attach(device, devid);
+> > > -			if (ret > 0) {
+> > > +			if (ret > 0)
+> > >  				device->handler = handler;
+> > > -				break;
+> > > -			} else if (ret < 0) {
+> > > -				break;
+> > > -			}
+> > > +			if (ret)
+> > > +				goto end;
+> > >  		}
+> > >  	}
+> > > +end:
+> > > +	if (!list_empty(&device->pnp.ids) && !device->handler)
 > > 
-> > Yes, get_xip_mem() returned -ENODATA for a hole.  That was a suboptimal
-> > interface because filesystems are actually capable of returning more
-> > information than that, eg how long the hole is (ext4 *doesn't*, but I
-> > consider that to be a bug).
-> > 
-> > I don't get to decide what the get_block() interface looks like.  It's the
-> > standard way that the VFS calls back into the filesystem and has been
-> > around for probably close to twenty years at this point.  I'm still trying
-> > to understand exactly what the contract is for get_blocks() ... I have
-> > a document that I'm working on to try to explain it, but it's tough going!
-> > 
-> > > Also, isn't it
-> > > possible to call get_block(,,,1) even if get_block(,,,0) found a block?
-> > 
-> > The code in question looks like this:
-> > 
-> >         error = get_block(inode, block, &bh, 0);
-> >         if (error || bh.b_size < PAGE_SIZE)
-> >                 goto sigbus;
-> > 
-> >         if (!buffer_written(&bh) && !vmf->cow_page) {
-> >                 if (vmf->flags & FAULT_FLAG_WRITE) {
-> >                         error = get_block(inode, block, &bh, 1);
-> > 
-> > where buffer_written is defined as:
-> >         return buffer_mapped(bh) && !buffer_unwritten(bh);
-> > 
-> > Doing some boolean algebra, that's:
-> > 
-> > 	if (!buffer_mapped || buffer_unwritten)
-> > 
-> > In either case, we want to tell the filesystem that we're writing to
-> > this block.  At least, that's my current understanding of the get_block()
-> > interface.  I'm open to correction here!
+> > I'm a bit concerned that this check will create platform devices for too many
+> > ACPI device objects.
 > 
-> I've got a rewritten version on this that doesn't require two calls
-> to get_block() that I wrote while prototyping the XFS code. It also
-> fixes all the misunderstandings about what get_block() actually does
-> and returns so it works correctly with XFS.
+> agreed. there are some devices created unexpected by this patch, e.g. on
+> my test machine, I can see
+>  
+> /sys/bus/platform/devices/LNXSYSTM:00 (ACPI system bus/root node)
+> /sys/bus/platform/devices/PNP0000:00  (PIC)
+> /sys/bus/platform/devices/PNP0100:00  (system timer?)
 > 
-> I need to port it forward to your new patch set (hopefully later
-> this week), so don't spend too much time trying to work out exactly
-> what this code needs to do...
+> >   Shouldn't we require that _HID or at least _CID is
+> > present for that?
+> > 
+> I do not think so.
+> only devices that invoke acpi_add_ids() may have pnp.ids but no
+> _HID/_CID, right?
+> I did a check in the code, those devices include:
 
-Here is a writeup from Matthew Wilcox describing the get_block() interface.
+Well, I did that too.
 
-He sent this to me before Dave sent out the latest mail in this thread. :)
+> ACPI root node
+> ACPI video
+> ACPI bay
+> ACPI dock
+> IBM SMBus
+> ACPI Power resource
+> ACPI processor
+> ACPI thermal
+> ACPI fixed power/sleep button
+> 
+> IMO, only the ACPI root node, ACPI power resource, possibly ACPI
+> processor are the ones that we do not want to see in platform bus.
 
-Corrections and updates are very welcome.
+No, we don't want any of them.  So pretty much as I said, only if _HID/_CID
+is present, please?
 
-- Ross
+Rafael
 
-================
-
-get_block_t is used by the VFS to ask filesystem to translate logical
-blocks within a file to sectors on a block device.
-
-typedef int (get_block_t)(struct inode *inode, sector_t iblock,
-                        struct buffer_head *bh_result, int create);
-
-get_block() must not be called simultaneously with the create flag set
-for overlapping extents *** or is/was this a bug in ext2? ***
-
-Despite the iblock argument having type sector_t, iblock is actually
-in units of the file block size, not in units of 512-byte sectors.
-iblock must not extend beyond i_size. *** um, looks like xfs permits
-this ... ? ***
-
-If there is no current mapping from the block to the media, one will be
-created if 'create' is set to 1.  'create' should not be set to a value
-other than '0' or '1'.
-
-On entry, bh_result should have b_size set to the number of bytes that the
-caller is interested in and b_state initialised to zero.  b_size should
-be a multiple of the file block size.  On exit, bh_result describes a
-physically contiguous extent starting at iblock.  b_size will not be
-increased by get_block, but it may be decreased if the filesystem extent
-is shorter than the extent requested.
-
-If bh_result describes an extent that is allocated, then BH_Mapped will
-be set, and b_bdev and b_blocknr will be set to indicate the physical
-location on the media.  The filesystem may wish to use map_bh() in order
-to set BH_Mapped and initialise b_bdev, b_blocknr and b_size.  If the
-filesystem knows that the extent is read into memory (eg because it
-decided to populate the page cache as part of its get_block operation),
-it should set BH_Uptodate.
-
-If bh_result describes a hole, the filesystem should clear BH_Mapped and
-set BH_Uptodate.  It will not set b_bdev or b_blocknr, but it should set
-b_size to indicate the length of the hole.  It may also opt to leave
-bh_result untouched as described above.  If the block corresponds to
-a hole, bh_result *may* be unmodified, but the VFS can optimise some
-operations if the filesystem reports the length of the hole as described
-below. *** or is this a bug in ext4? ***
-
-If bh_result describes an extent which has data in the pagecache, but
-that data has not yet had space allocated on the media (due to delayed
-allocation), BH_Mapped, BH_Uptodate and BH_Delay will be set.  b_blocknr
-is not set.
-
-If bh_result describes an extent which is reserved for data which has not
-yet been written, BH_Unwritten is set, b_bdev and b_blocknr are set.
-
-Other flags that may be set include BH_New (to indicate that the buffer
-was newly allocated and may need to be initialised), and BH_Boundary (to
-indicate a physical discontinuity after this extent).
-
-The filesystem may choose to set b_private.  Other fields in buffer_head
-are legacy buffer-cache uses and will not be modified by get_block.
