@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754659AbaCCLjo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 06:39:44 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:51463 "EHLO
+	id S1754700AbaCCLjz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 06:39:55 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:51479 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753825AbaCCLji (ORCPT
+	with ESMTP id S1753825AbaCCLjv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 06:39:38 -0500
+	Mon, 3 Mar 2014 06:39:51 -0500
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <bcousson@baylibre.com>, <balbi@ti.com>, <devicetree@vger.kernel.org>,
         <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
@@ -19,69 +19,57 @@ CC: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
         <kishon@ti.com>, <gregkh@linuxfoundation.org>,
         <grant.likely@linaro.org>, <s.nawrocki@samsung.com>,
         <galak@codeaurora.org>
-Subject: [PATCH v5 0/6] Make dwc3 use Generic PHY Framework
-Date: Mon, 3 Mar 2014 17:08:09 +0530
-Message-ID: <1393846695-14644-1-git-send-email-kishon@ti.com>
+Subject: [PATCH v5 6/6] arm/dts: added dt properties to adapt to the new phy framwork
+Date: Mon, 3 Mar 2014 17:08:15 +0530
+Message-ID: <1393846695-14644-7-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1393846695-14644-1-git-send-email-kishon@ti.com>
+References: <1393846695-14644-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added support for optional PHY in dwc3 as not all SoCs having PHYs for DWC3
-should be programmed. While this can be considered as a temporary fix,
-a long term solution would be to add 'nop' PHY for platforms that does
-not have programmable PHY.
-Adapted DWC3 and USB3 PHY to use Generic PHY framework. Also changed the
-name of USB3 PHY driver to PIPE3 PHY driver since the same driver has to
-be used for SATA and PCIE too.
+Added device tree bindings for dwc3, usb2 and usb3 PHYs. The documentation
+of these can be found at Documentation/devicetree/bindings/phy/phy-bindings.txt
+and Documentation/devicetree/bindings/phy/ti-phy.txt.
 
-Changes from v4: (sending the entire patch series again)
-* check the return values of phy_init and phy_power_on
-* print errors if power_on or power_off of PHY fails.
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ arch/arm/boot/dts/omap5.dtsi |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-Changes from v3: (Sent only adapt dwc3 core to use Generic PHY Framework) 
-* avoided using quirks and rely on the return values of PHY APIs to find the
-presence of PHY.
-
-Changes from v2:
-* added a couple of fixes. One is invoking phy_resume after phy_init and the
-other is power off phy in error patch
-* used quirks to identify if a particular platform does not have PHYs
-* removed using separate header for pipe3 driver and also removed all referencs
-to SATA and PCIe in pipe3 driver since it's not yet adapted for those drivers.
-
-Changes from v1:
-* The logic in which the driver detects the presence of PHYs has changed.
-* patch ordering has changed
-* udelay is replaced with usleep_range
-* A patch to remove set_suspend callback which was deferred from Generic
-PHY Framework series has been included.
-
-Kishon Vijay Abraham I (6):
-  usb: dwc3: core: support optional PHYs
-  usb: dwc3: adapt dwc3 core to use Generic PHY Framework
-  drivers: phy: usb3/pipe3: Adapt pipe3 driver to Generic PHY Framework
-  usb: phy: omap-usb2: remove *set_suspend* callback from omap-usb2
-  phy: omap-usb2: move omap_usb.h from linux/usb/ to linux/phy/
-  arm/dts: added dt properties to adapt to the new phy framwork
-
- Documentation/devicetree/bindings/usb/dwc3.txt     |    6 +-
- arch/arm/boot/dts/omap5.dtsi                       |    5 +-
- drivers/phy/Kconfig                                |   11 +
- drivers/phy/Makefile                               |    1 +
- drivers/phy/phy-omap-usb2.c                        |   27 +--
- .../phy/phy-omap-usb3.c => phy/phy-ti-pipe3.c}     |  240 ++++++++++++--------
- drivers/usb/dwc3/core.c                            |  116 +++++++---
- drivers/usb/dwc3/core.h                            |    7 +
- drivers/usb/phy/Kconfig                            |   11 -
- drivers/usb/phy/Makefile                           |    1 -
- include/linux/{usb => phy}/omap_usb.h              |    3 -
- 11 files changed, 264 insertions(+), 164 deletions(-)
- rename drivers/{usb/phy/phy-omap-usb3.c => phy/phy-ti-pipe3.c} (54%)
- rename include/linux/{usb => phy}/omap_usb.h (95%)
-
+diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
+index a72813a..1c68558 100644
+--- a/arch/arm/boot/dts/omap5.dtsi
++++ b/arch/arm/boot/dts/omap5.dtsi
+@@ -732,7 +732,8 @@
+ 				compatible = "snps,dwc3";
+ 				reg = <0x4a030000 0x10000>;
+ 				interrupts = <GIC_SPI 92 IRQ_TYPE_LEVEL_HIGH>;
+-				usb-phy = <&usb2_phy>, <&usb3_phy>;
++				phys = <&usb2_phy>, <&usb3_phy>;
++				phy-names = "usb2-phy", "usb3-phy";
+ 				dr_mode = "peripheral";
+ 				tx-fifo-resize;
+ 			};
+@@ -749,6 +750,7 @@
+ 				compatible = "ti,omap-usb2";
+ 				reg = <0x4a084000 0x7c>;
+ 				ctrl-module = <&omap_control_usb2phy>;
++				#phy-cells = <0>;
+ 			};
+ 
+ 			usb3_phy: usb3phy@4a084400 {
+@@ -758,6 +760,7 @@
+ 				      <0x4a084c00 0x40>;
+ 				reg-names = "phy_rx", "phy_tx", "pll_ctrl";
+ 				ctrl-module = <&omap_control_usb3phy>;
++				#phy-cells = <0>;
+ 			};
+ 		};
+ 
 -- 
 1.7.9.5
 
