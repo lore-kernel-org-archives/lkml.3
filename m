@@ -1,71 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755066AbaCCOx5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 09:53:57 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:41341 "EHLO comal.ext.ti.com"
+	id S1754773AbaCCOvL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 09:51:11 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:56216 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754556AbaCCOvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 09:51:21 -0500
+	id S1754290AbaCCOvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 09:51:07 -0500
 From: Mugunthan V N <mugunthanvnm@ti.com>
 To: <bcousson@baylibre.com>, <tony@atomide.com>
 CC: <linux@arm.linux.org.uk>, <akpm@linux-foundation.org>, <nm@ti.com>,
         <balajitk@ti.com>, <r.sricharan@ti.com>, <devicetree@vger.kernel.org>,
         <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [RESEND Patch 7/9] ARM: DTS: DRA7: Add crossbar device binding
-Date: Mon, 3 Mar 2014 20:20:24 +0530
-Message-ID: <1393858226-32595-9-git-send-email-mugunthanvnm@ti.com>
+Subject: [RESEND Patch 0/9] dts pending patches for TI omap
+Date: Mon, 3 Mar 2014 20:20:16 +0530
+Message-ID: <1393858226-32595-1-git-send-email-mugunthanvnm@ti.com>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1393858226-32595-1-git-send-email-mugunthanvnm@ti.com>
-References: <1393858226-32595-1-git-send-email-mugunthanvnm@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sricharan R <r.sricharan@ti.com>
+Benoit/Tony
 
-This adds the irq crossbar device node.
+Here I am send all the pending dt patches that can go into 3.15 merge window,
+all the patches were already posted to mailing list and has beed reviewed.
 
-There is a IRQ crossbar device in the soc, which
-maps the irq requests from the peripherals to the
-mpu interrupt controller's inputs. The Peripheral irq
-requests are connected to only one crossbar
-input and the output of the crossbar is connected to only one
-controller's input line. The crossbar device is used to map
-a peripheral input to a free mpu's interrupt controller line.
+I have rebased the patches on top of
+git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap.git omap-for-v3.15/dt
+and fixed all the merge conflicts.
 
-Cc: Benoit Cousson <bcousson@baylibre.com>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Rajendra Nayak <rnayak@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Sricharan R <r.sricharan@ti.com>
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
----
- arch/arm/boot/dts/dra7.dtsi | 8 ++++++++
- 1 file changed, 8 insertions(+)
+Pasting the mail archive for the patches series
 
-diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
-index 9e3caf3..88fc2eb 100644
---- a/arch/arm/boot/dts/dra7.dtsi
-+++ b/arch/arm/boot/dts/dra7.dtsi
-@@ -773,6 +773,14 @@
- 			status = "disabled";
- 		};
- 	};
-+
-+	crossbar_mpu: crossbar@4a020000 {
-+		compatible = "ti,irq-crossbar";
-+		reg = <0x4a002a48 0x130>;
-+		ti,max-irqs = <160>;
-+		ti,reg-size = <2>;
-+		ti,irqs-reserved = <0 1 2 3 5 6 131 132 139 140>;
-+	};
- };
- 
- /include/ "dra7xx-clocks.dtsi"
+* Add ABB device nodes
+http://linux-kernel.2935.n7.nabble.com/PATCH-0-4-ARM-dts-OMAP3630-Add-ABB-device-nodes-td794852.html
+
+* MMC hot plug support
+http://mail.blameitonlove.com/lists/linux-omap/msg101933.html
+Dropped [PATCH 2/3] ARM: dts: am335x-evmsk: add SD card hotplug support as this
+is already merged with commit id 29ea5efb0bb612d352aa360de26e2095cb230e4a
+
+* DRA7 Cross bar DTS patches
+Cross bar driver has been pulled for next merge, so the dts patches can also
+be pulled for next merge window.
+
+Here is the pull request for the same patch series.
+
+The following changes since commit f777ba1780584b100ab9664cc06d04f3bb273a84:
+
+  Merge tag 'for_3.15/dts_signed' of git://git.kernel.org/pub/scm/linux/kernel/git/bcousson/linux-omap-dt into omap-for-v3.15/dt (2014-03-02 14:22:03 -0800)
+
+are available in the git repository at:
+
+
+  git://git.ti.com/~mugunthanvnm/ti-linux-kernel/linux.git omapdt-for-3.15
+
+for you to fetch changes up to 5f78b45aa45c5b2c4de895c3b0740fda4684dae4:
+
+  ARM: DTS: DRA7: Add routable-irqs property for gic node (2014-03-03 19:53:25 +0530)
+
+----------------------------------------------------------------
+Andrii.Tseglytskyi (2):
+      ARM: dts: OMAP36xx: Add device node for ABB
+      ARM: dts: OMAP4: Add device nodes for ABB
+
+Balaji T K (3):
+      ARM: dts: am437x gp-evm: add sd card dt nodes
+      ARM: dts: am335x-evm: add SD card hotplug support
+      ARM: dts: am43x-epos-evm: add SD card hotplug support
+
+Nishanth Menon (1):
+      ARM: dts: DRA7: Add device nodes for ABB
+
+Sricharan R (3):
+      ARM: DTS: DRA7: Add crossbar device binding
+      ARM: DTS: DRA7: Replace peripheral interrupt numbers with crossbar inputs
+      ARM: DTS: DRA7: Add routable-irqs property for gic node
+
+ arch/arm/boot/dts/am335x-evm.dts     |   9 ++
+ arch/arm/boot/dts/am4372.dtsi        |   1 +
+ arch/arm/boot/dts/am437x-gp-evm.dts  |  27 +++++
+ arch/arm/boot/dts/am43x-epos-evm.dts |   9 ++
+ arch/arm/boot/dts/dra7.dtsi          | 227 ++++++++++++++++++++++++++++-------
+ arch/arm/boot/dts/omap36xx.dtsi      |  20 +++
+ arch/arm/boot/dts/omap4.dtsi         |  26 ++++
+ arch/arm/boot/dts/omap443x.dtsi      |  26 ++++
+ arch/arm/boot/dts/omap4460.dtsi      |  37 ++++++
+ 9 files changed, 339 insertions(+), 43 deletions(-)
+
 -- 
 1.9.0
-
