@@ -1,59 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755416AbaCCXAf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 18:00:35 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:46912 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755005AbaCCXAd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 18:00:33 -0500
-Message-ID: <53150989.70307@oracle.com>
-Date: Mon, 03 Mar 2014 18:00:25 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: lizefan@huawei.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cgroup: missing rcu read lock around task_css_set
-References: <1393729211-937-1-git-send-email-sasha.levin@oracle.com> <20140303223327.GB26523@mtj.dyndns.org> <5315057F.3030602@oracle.com> <20140303224505.GE26523@mtj.dyndns.org>
-In-Reply-To: <20140303224505.GE26523@mtj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	id S1755459AbaCCXC2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 18:02:28 -0500
+Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:38359
+	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755005AbaCCXC0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 18:02:26 -0500
+x-originating-ip: 72.167.245.219
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: davem@davemloft.net, netdev@vger.kernel.org
+Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org
+Subject: [PATCH net-next] hyperv: Move state setting for link query
+Date: Mon,  3 Mar 2014 15:54:35 -0800
+Message-Id: <1393890875-1420-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/03/2014 05:45 PM, Tejun Heo wrote:
-> On Mon, Mar 03, 2014 at 05:43:11PM -0500, Sasha Levin wrote:
->> On 03/03/2014 05:33 PM, Tejun Heo wrote:
->>> On Sat, Mar 01, 2014 at 10:00:11PM -0500, Sasha Levin wrote:
->>>> rcu read lock should be held when calling and working with task_css_set.
->>>>
->>>> This patch also fixes a related lockdep warning.
->>>
->>> Hmmm... PF_EXITING should be visible at that point and cset can't
->>> change anymore.  We prolly need to update lockdep annotation rather
->>> than adding spurious rcu locking around it.  Against which branch is
->>> it?  Can you please post the lockdep warning?
->>
->> I see it on -next.
->
-> I think the right thing to do is using task_css_set_check() with
-> PF_EXITING check and add comment explaining that cset can no longer
-> change.  Can you please write up a patch?
+It moves the state setting for query into rndis_filter_receive_response().
+All callbacks including query-complete and status-callback are synchronized
+by channel->inbound_lock. This prevents pentential race between them.
 
-Hrm... there is a PF_EXITING check there already:
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+---
+ drivers/net/hyperv/rndis_filter.c |   21 ++++++++++++++++++++-
+ 1 files changed, 20 insertions(+), 1 deletions(-)
 
-	#define task_css_set_check(task, __c)			\
-		rcu_dereference_check((task)->cgroups,		\
-		lockdep_is_held(&cgroup_mutex) ||		\
-		lockdep_is_held(&css_set_rwsem) ||		\
-		((task)->flags & PF_EXITING) || (__c))
+diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
+index f0cc8ef..6a9f602 100644
+--- a/drivers/net/hyperv/rndis_filter.c
++++ b/drivers/net/hyperv/rndis_filter.c
+@@ -240,6 +240,22 @@ static int rndis_filter_send_request(struct rndis_device *dev,
+ 	return ret;
+ }
+ 
++static void rndis_set_link_state(struct rndis_device *rdev,
++				 struct rndis_request *request)
++{
++	u32 link_status;
++	struct rndis_query_complete *query_complete;
++
++	query_complete = &request->response_msg.msg.query_complete;
++
++	if (query_complete->status == RNDIS_STATUS_SUCCESS &&
++	    query_complete->info_buflen == sizeof(u32)) {
++		memcpy(&link_status, (void *)((unsigned long)query_complete +
++		       query_complete->info_buf_offset), sizeof(u32));
++		rdev->link_state = link_status != 0;
++	}
++}
++
+ static void rndis_filter_receive_response(struct rndis_device *dev,
+ 				       struct rndis_message *resp)
+ {
+@@ -269,6 +285,10 @@ static void rndis_filter_receive_response(struct rndis_device *dev,
+ 		    sizeof(struct rndis_message) + RNDIS_EXT_LEN) {
+ 			memcpy(&request->response_msg, resp,
+ 			       resp->msg_len);
++			if (request->request_msg.ndis_msg_type ==
++			    RNDIS_MSG_QUERY && request->request_msg.msg.
++			    query_req.oid == RNDIS_OID_GEN_MEDIA_CONNECT_STATUS)
++				rndis_set_link_state(dev, request);
+ 		} else {
+ 			netdev_err(ndev,
+ 				"rndis response buffer overflow "
+@@ -617,7 +637,6 @@ static int rndis_filter_query_device_link_status(struct rndis_device *dev)
+ 	ret = rndis_filter_query_device(dev,
+ 				      RNDIS_OID_GEN_MEDIA_CONNECT_STATUS,
+ 				      &link_status, &size);
+-	dev->link_state = (link_status != 0) ? true : false;
+ 
+ 	return ret;
+ }
+-- 
+1.7.4.1
 
-I see it's not happening on Linus's master so I'll run a bisection to figure out what broke it.
-
-
-Thanks,
-Sasha
