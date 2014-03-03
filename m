@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755477AbaCCTAR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 14:00:17 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:56160 "EHLO
+	id S1755462AbaCCTAQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 14:00:16 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:56165 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753942AbaCCTAK (ORCPT
+	with ESMTP id S1754685AbaCCTAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 14:00:10 -0500
+	Mon, 3 Mar 2014 14:00:12 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 44/67] ALSA: hda - Fix mic capture on Sony VAIO Pro 11
-Date: Mon,  3 Mar 2014 10:55:32 -0800
-Message-Id: <1393872955-28810-45-git-send-email-kamal@canonical.com>
+Cc: Lars Poeschel <poeschel@lemonage.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 48/67] tty: n_gsm: Fix for modems with brk in modem status control
+Date: Mon,  3 Mar 2014 10:55:36 -0800
+Message-Id: <1393872955-28810-49-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1393872955-28810-1-git-send-email-kamal@canonical.com>
 References: <1393872955-28810-1-git-send-email-kamal@canonical.com>
@@ -26,32 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Lars Poeschel <poeschel@lemonage.de>
 
-commit f88abaa0d0dc0d1f1a9ae21f8e822918e5aadfdf upstream.
+commit 3ac06b905655b3ef2fd2196bab36e4587e1e4e4f upstream.
 
-The very same fixup is needed to make the mic on Sony VAIO Pro 11
-working as well as VAIO Pro 13 model.
+3GPP TS 07.10 states in section 5.4.6.3.7:
+"The length byte contains the value 2 or 3 ... depending on the break
+signal." The break byte is optional and if it is sent, the length is
+3. In fact the driver was not able to work with modems that send this
+break byte in their modem status control message. If the modem just
+sends the break byte if it is really set, then weird things might
+happen.
+The code for deconding the modem status to the internal linux
+presentation in gsm_process_modem has already a big comment about
+this 2 or 3 byte length thing and it is already able to decode the
+brk, but the code calling the gsm_process_modem function in
+gsm_control_modem does not encode it and hand it over the right way.
+This patch fixes this.
+Without this fix if the modem sends the brk byte in it's modem status
+control message the driver will hang when opening a muxed channel.
 
-Reported-and-tested-by: Hendrik-Jan Heins <hjheins@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/pci/hda/patch_realtek.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/tty/n_gsm.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index cab561b..e2e7868 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -6337,6 +6337,7 @@ static const struct snd_pci_quirk alc269_fixup_tbl[] = {
- 	SND_PCI_QUIRK(0x1043, 0x834a, "ASUS S101", ALC269_FIXUP_STEREO_DMIC),
- 	SND_PCI_QUIRK(0x1043, 0x8398, "ASUS P1005", ALC269_FIXUP_STEREO_DMIC),
- 	SND_PCI_QUIRK(0x1043, 0x83ce, "ASUS P1005", ALC269_FIXUP_STEREO_DMIC),
-+	SND_PCI_QUIRK(0x104d, 0x90b5, "Sony VAIO Pro 11", ALC286_FIXUP_SONY_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x104d, 0x90b6, "Sony VAIO Pro 13", ALC286_FIXUP_SONY_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x104d, 0x9073, "Sony VAIO", ALC275_FIXUP_SONY_VAIO_GPIO2),
- 	SND_PCI_QUIRK(0x104d, 0x907b, "Sony VAIO", ALC275_FIXUP_SONY_HWEQ),
+diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
+index bfd6771..72438dd 100644
+--- a/drivers/tty/n_gsm.c
++++ b/drivers/tty/n_gsm.c
+@@ -1089,6 +1089,7 @@ static void gsm_control_modem(struct gsm_mux *gsm, u8 *data, int clen)
+ {
+ 	unsigned int addr = 0;
+ 	unsigned int modem = 0;
++	unsigned int brk = 0;
+ 	struct gsm_dlci *dlci;
+ 	int len = clen;
+ 	u8 *dp = data;
+@@ -1115,6 +1116,16 @@ static void gsm_control_modem(struct gsm_mux *gsm, u8 *data, int clen)
+ 		if (len == 0)
+ 			return;
+ 	}
++	len--;
++	if (len > 0) {
++		while (gsm_read_ea(&brk, *dp++) == 0) {
++			len--;
++			if (len == 0)
++				return;
++		}
++		modem <<= 7;
++		modem |= (brk & 0x7f);
++	}
+ 	tty = tty_port_tty_get(&dlci->port);
+ 	gsm_process_modem(tty, dlci, modem, clen);
+ 	if (tty) {
 -- 
 1.8.3.2
 
