@@ -1,233 +1,315 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757AbaCCO2e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 09:28:34 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:33374 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754352AbaCCO2b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 09:28:31 -0500
+	id S1754837AbaCCO33 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 09:29:29 -0500
+Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:3165 "EHLO
+	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754063AbaCCO3Z convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 09:29:25 -0500
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'Lars-Peter Clausen'" <lars@metafoo.de>
+CC: "'Takashi Iwai'" <tiwai@suse.de>,
+        "'alsa-devel@alsa-project.org'" <alsa-devel@alsa-project.org>,
+        Mark Brown <broonie@kernel.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <liam.r.girdwood@intel.com>
+Date: Mon, 3 Mar 2014 22:29:19 +0800
+Subject: RE: [alsa-devel] change kmalloc into vmalloc for large memory
+ allocations
+Thread-Topic: [alsa-devel] change kmalloc into vmalloc for large memory
+ allocations
+Thread-Index: Ac826/23IloddbpAQcWBRV/6x6Ld/AAAL8OA
+Message-ID: <35FD53F367049845BC99AC72306C23D102844605F395@CNBJMBX05.corpusers.net>
+References: <35FD53F367049845BC99AC72306C23D102844605F38C@CNBJMBX05.corpusers.net>
+ <s5hlhwvb9q8.wl%tiwai@suse.de>
+ <35FD53F367049845BC99AC72306C23D102844605F38E@CNBJMBX05.corpusers.net>
+ <s5hob1nabb5.wl%tiwai@suse.de> <s5hmwh7ab5w.wl%tiwai@suse.de>
+ <35FD53F367049845BC99AC72306C23D102844605F392@CNBJMBX05.corpusers.net>
+ <531468CA.6040302@metafoo.de>
+ <35FD53F367049845BC99AC72306C23D102844605F393@CNBJMBX05.corpusers.net>
+ <53146B6F.4000601@metafoo.de>
+ <35FD53F367049845BC99AC72306C23D102844605F394@CNBJMBX05.corpusers.net>
+ <53149037.20305@metafoo.de>
+In-Reply-To: <53149037.20305@metafoo.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20140301131658.2168c54b91ade7a0a63d9fb6@ao2.it>
-References: <1393633237-26496-1-git-send-email-benjamin.tissoires@redhat.com>
-	<1393633237-26496-4-git-send-email-benjamin.tissoires@redhat.com>
-	<20140301131658.2168c54b91ade7a0a63d9fb6@ao2.it>
-Date: Mon, 3 Mar 2014 09:28:30 -0500
-Message-ID: <CAN+gG=Eap-S4K5rGhjHmnkxy=3kQ43aUBJJDwVcamgxJOjeLKg@mail.gmail.com>
-Subject: Re: [PATCH 3/4] HID: sony: do not rely on hid_output_raw_report
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Antonio Ospite <ao2@ao2.it>
-Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, David Herrmann <dh.herrmann@gmail.com>,
-        David Barksdale <dbarksdale@uplogix.com>,
-        linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 1, 2014 at 7:16 AM, Antonio Ospite <ao2@ao2.it> wrote:
-> Hi Benjamin,
->
-> On Fri, 28 Feb 2014 19:20:36 -0500
-> Benjamin Tissoires <benjamin.tissoires@redhat.com> wrote:
->
->> hid_out_raw_report is going to be obsoleted as it is not part of the
->> unified HID low level transport documentation
->> (Documentation/hid/hid-transport.txt)
->>
->> To do so, we need to introduce two new quirks:
->> * HID_QUIRK_NO_OUTPUT_REPORTS: this quirks prevents the transport
->>   driver to use the interrupt channel to send output report (and thus
->>   force to use HID_REQ_SET_REPORT command)
->
-> Maybe a little more informative name? Like:
->         HID_QUIRK_NON_STD_OUTPUT_REPORTS
-> or
->         HID_QUIRK_NO_OUTPUT_REPORTS_ON_INTR_EP
-> or expansions of the above.
->
-> The rationale being that, from outside, these are still output reports
-> (kind of), it's the channel they are sent over to which changes.
+Hi  
 
-Sorry, putting names on things has always been my weakness. I like
-more the second proposition, so I will pick it in the v2 unless
-someone else complains.
+I see,
+Is it possible to change this part:
+https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tree/sound/soc/soc-core.c?h=master#n3772
 
+
+so that it use vmalloc if it need allocate large memory for
+struct snd_soc_pcm_runtime ?
+
+Thanks 
+
+-----Original Message-----
+From: Lars-Peter Clausen [mailto:lars@metafoo.de] 
+Sent: Monday, March 03, 2014 10:23 PM
+To: Wang, Yalin
+Cc: 'Takashi Iwai'; 'alsa-devel@alsa-project.org'; Mark Brown; 'linux-kernel@vger.kernel.org'; Liam Girdwood
+Subject: Re: [alsa-devel] change kmalloc into vmalloc for large memory allocations
+
+On 03/03/2014 02:29 PM, Wang, Yalin wrote:
+> Hi
 >
-> Another comment about a typo is inlined below.
 >
-> Thanks,
->    Antonio
+> I find the num_links are defined here:
+> https://www.codeaurora.org/cgit/quic/la/kernel/msm-3.10/tree/sound/soc
+> /msm/msm8226.c?h=msm-3.10&id=d681c8e79c597a5e1ae79803dc0215d02df8fe34#
+> n1812
 >
->> * HID_QUIRK_SKIP_OUTPUT_REPORT_ID: this one forces usbhid to not
->>   include the report ID in the buffer it sends to the device through
->>   HID_REQ_SET_REPORT in case of an output report
->>
->> This also fixes a regression introduced in commit 3a75b24949a8
->> (HID: hidraw: replace hid_output_raw_report() calls by appropriates ones).
->> The hidraw API was not able to communicate with the PS3 SixAxis
->> controllers in USB mode.
->>
->> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
->> ---
->>  drivers/hid/hid-sony.c        | 59 ++++++++++---------------------------------
->>  drivers/hid/hidraw.c          |  3 ++-
->>  drivers/hid/usbhid/hid-core.c |  7 ++++-
->>  include/linux/hid.h           |  2 ++
->>  4 files changed, 24 insertions(+), 47 deletions(-)
->>
->> diff --git a/drivers/hid/hid-sony.c b/drivers/hid/hid-sony.c
->> index b5fe65e..08eac71 100644
->> --- a/drivers/hid/hid-sony.c
->> +++ b/drivers/hid/hid-sony.c
->> @@ -1007,45 +1007,6 @@ static int sony_mapping(struct hid_device *hdev, struct hid_input *hi,
->>  }
->>
->>  /*
->> - * The Sony Sixaxis does not handle HID Output Reports on the Interrupt EP
->> - * like it should according to usbhid/hid-core.c::usbhid_output_raw_report()
->> - * so we need to override that forcing HID Output Reports on the Control EP.
->> - *
->> - * There is also another issue about HID Output Reports via USB, the Sixaxis
->> - * does not want the report_id as part of the data packet, so we have to
->> - * discard buf[0] when sending the actual control message, even for numbered
->> - * reports, humpf!
->> - */
->> -static int sixaxis_usb_output_raw_report(struct hid_device *hid, __u8 *buf,
->> -             size_t count, unsigned char report_type)
->> -{
->> -     struct usb_interface *intf = to_usb_interface(hid->dev.parent);
->> -     struct usb_device *dev = interface_to_usbdev(intf);
->> -     struct usb_host_interface *interface = intf->cur_altsetting;
->> -     int report_id = buf[0];
->> -     int ret;
->> -
->> -     if (report_type == HID_OUTPUT_REPORT) {
->> -             /* Don't send the Report ID */
->> -             buf++;
->> -             count--;
->> -     }
->> -
->> -     ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
->> -             HID_REQ_SET_REPORT,
->> -             USB_DIR_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
->> -             ((report_type + 1) << 8) | report_id,
->> -             interface->desc.bInterfaceNumber, buf, count,
->> -             USB_CTRL_SET_TIMEOUT);
->> -
->> -     /* Count also the Report ID, in case of an Output report. */
->> -     if (ret > 0 && report_type == HID_OUTPUT_REPORT)
->> -             ret++;
->> -
->> -     return ret;
->> -}
->> -
->> -/*
->>   * Sending HID_REQ_GET_REPORT changes the operation mode of the ps3 controller
->>   * to "operational".  Without this, the ps3 controller will not report any
->>   * events.
->> @@ -1305,11 +1266,8 @@ static void sixaxis_state_worker(struct work_struct *work)
->>       buf[10] |= sc->led_state[2] << 3;
->>       buf[10] |= sc->led_state[3] << 4;
->>
->> -     if (sc->quirks & SIXAXIS_CONTROLLER_USB)
->> -             hid_output_raw_report(sc->hdev, buf, sizeof(buf), HID_OUTPUT_REPORT);
->> -     else
->> -             hid_hw_raw_request(sc->hdev, 0x01, buf, sizeof(buf),
->> -                             HID_OUTPUT_REPORT, HID_REQ_SET_REPORT);
->> +     hid_hw_raw_request(sc->hdev, 0x01, buf, sizeof(buf), HID_OUTPUT_REPORT,
->> +                     HID_REQ_SET_REPORT);
->>  }
->>
->>  static void dualshock4_state_worker(struct work_struct *work)
->> @@ -1659,7 +1617,18 @@ static int sony_probe(struct hid_device *hdev, const struct hid_device_id *id)
->>       }
->>
->>       if (sc->quirks & SIXAXIS_CONTROLLER_USB) {
->> -             hdev->hid_output_raw_report = sixaxis_usb_output_raw_report;
->> +             /*
->> +              * The Sony Sixaxis does not handle HID Output Reports on the
->> +              * Interrupt EP like it could, so we need to forcing HID Output
->                                                              ^^^^
-> typo: "we need to force".
+>
+> the ARRAY_SIZE is 42 , you mean the driver can't define so many elements ?
+> how to implement it if we can't do like this ?
 >
 
-k, will fix in v2.
+Looks like your platform is a bit special in this regard and requires quite a few more links than usual.
 
-Thanks,
-Benjamin
+> Thanks
+>
+> -----Original Message-----
+> From: Lars-Peter Clausen [mailto:lars@metafoo.de]
+> Sent: Monday, March 03, 2014 7:46 PM
+> To: Wang, Yalin
+> Cc: 'Takashi Iwai'; 'alsa-devel@alsa-project.org'; Mark Brown; 
+> 'linux-kernel@vger.kernel.org'; Liam Girdwood
+> Subject: Re: [alsa-devel] change kmalloc into vmalloc for large memory 
+> allocations
+>
+> On 03/03/2014 12:36 PM, Wang, Yalin wrote:
+>> Hi
+>>
+>> I am curious what number range is correct here for card->num_links ?
+>
+> It depends on your board. But typically I'd say <= 5, for most boards it's either 1 or 2.
+>
+>>
+>>
+>> Thanks
+>>
+>> -----Original Message-----
+>> From: Lars-Peter Clausen [mailto:lars@metafoo.de]
+>> Sent: Monday, March 03, 2014 7:35 PM
+>> To: Wang, Yalin
+>> Cc: 'Takashi Iwai'; 'alsa-devel@alsa-project.org'; Mark Brown; 
+>> 'linux-kernel@vger.kernel.org'; Liam Girdwood
+>> Subject: Re: [alsa-devel] change kmalloc into vmalloc for large 
+>> memory allocations
+>>
+>> On 03/03/2014 12:13 PM, Wang, Yalin wrote:
+>>> Hi
+>>>
+>>>
+>>> I add logs in kernel , the result is :
+>>>
+>>> 532 <4>[    5.690094] @@ sizeof(struct snd_soc_pcm_runtime)=1488 card->num_links=42 card->num_aux_devs=0
+>>>
+>>> card->num_links=42 , is it correct ?
+>>
+>> Very unlikely. Make sure that it is properly initialized in your machine driver.
+>>
+>>>
+>>> our hardware is qcom msm8x26 platform .
+>>
+>> This one doesn't seem to be in upstream.
+>>
+>>>
+>>> Thanks
+>>>
+>>> -----Original Message-----
+>>> From: Takashi Iwai [mailto:tiwai@suse.de]
+>>> Sent: Monday, March 03, 2014 5:23 PM
+>>> To: Wang, Yalin
+>>> Cc: 'linux-kernel@vger.kernel.org'; Mark Brown; 'perex@perex.cz'; 
+>>> 'alsa-devel@alsa-project.org'; Liam Girdwood
+>>> Subject: Re: change kmalloc into vmalloc for large memory 
+>>> allocations
+>>>
+>>> At Mon, 03 Mar 2014 10:19:58 +0100,
+>>> Takashi Iwai wrote:
+>>>>
+>>>> [Dropped unrelated subsystem MLs, and corrected Liam's address]
+>>>
+>>> Grrr, even Mark's address was obsoleted.  Here corrected.
+>>>
+>>>
+>>> Takashi
+>>>
+>>>>
+>>>> At Mon, 3 Mar 2014 09:55:15 +0800,
+>>>> Wang, Yalin wrote:
+>>>>>
+>>>>> Hi  Takashi,
+>>>>>
+>>>>> For this one:
+>>>>> https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tree/s
+>>>>> o
+>>>>> u
+>>>>> nd/soc/soc-core.c?h=master#n3772
+>>>>>
+>>>>> in my kernel log,
+>>>>> the allocation size 62496,
+>>>>> about 62KB,
+>>>>
+>>>> This looks way too much than expected.  I thought each struct 
+>>>> snd_soc_pcm_runtime should be 1 or 2kB.  The code allocating an 
+>>>> arary of snd_soc_pcm_runtime, so this might be due to some invalid 
+>>>> values there.
+>>>>
+>>>>> I think need to  change to vmalloc .
+>>>>> How do you think of it ?
+>>>>
+>>>> This looks rather like a bug somewhere around it.
+>>>>
+>>>> Could you check the values there, sizeof(struct 
+>>>> snd_soc_pcm_runtime),
+>>>> card->num_links and card->num_aux_devs?
+>>>>
+>>>> And, with which hardware is the issue examined?
+>>>>
+>>>>
+>>>> thanks,
+>>>>
+>>>> Takashi
+>>>>
+>>>>>
+>>>>> Logs:
+>>>>> <4>[   11.469789] ------------[ cut here ]------------
+>>>>> <4>[   11.469803] WARNING: at /media/00DE7FE2DE7FCE82/jb-mr2-yukon/kernel/include/linux/slub_def.h:265 __kmalloc+0x38/0x29c()
+>>>>> <4>[   11.469811] size=62496 flags=80d0
+>>>>> <4>[   11.469815] Modules linked in:
+>>>>> <4>[   11.469835] [<c010c534>] (unwind_backtrace+0x0/0x11c) from [<c018ab04>] (warn_slowpath_common+0x4c/0x64)
+>>>>> <4>[   11.469850] [<c018ab04>] (warn_slowpath_common+0x4c/0x64) from [<c018ab9c>] (warn_slowpath_fmt+0x2c/0x3c)
+>>>>> <4>[   11.469864] [<c018ab9c>] (warn_slowpath_fmt+0x2c/0x3c) from [<c0249ab4>] (__kmalloc+0x38/0x29c)
+>>>>> <4>[   11.469879] [<c0249ab4>] (__kmalloc+0x38/0x29c) from [<c06a0124>] (snd_soc_register_card+0x184/0x104c)
+>>>>> <4>[   11.469896] [<c06a0124>] (snd_soc_register_card+0x184/0x104c) from [<c088183c>] (msm8226_asoc_machine_probe+0x298/0x7f0)
+>>>>> <4>[   11.469913] [<c088183c>] (msm8226_asoc_machine_probe+0x298/0x7f0) from [<c044b1fc>] (platform_drv_probe+0x14/0x18)
+>>>>> <4>[   11.469927] [<c044b1fc>] (platform_drv_probe+0x14/0x18) from [<c0449f2c>] (driver_probe_device+0x134/0x334)
+>>>>> <4>[   11.469940] [<c0449f2c>] (driver_probe_device+0x134/0x334) from [<c044a194>] (__driver_attach+0x68/0x8c)
+>>>>> <4>[   11.469953] [<c044a194>] (__driver_attach+0x68/0x8c) from [<c044849c>] (bus_for_each_dev+0x48/0x80)
+>>>>> <4>[   11.469965] [<c044849c>] (bus_for_each_dev+0x48/0x80) from [<c0449528>] (bus_add_driver+0x100/0x26c)
+>>>>> <4>[   11.469978] [<c0449528>] (bus_add_driver+0x100/0x26c) from [<c044a66c>] (driver_register+0x9c/0x120)
+>>>>> <4>[   11.469992] [<c044a66c>] (driver_register+0x9c/0x120) from [<c010052c>] (do_one_initcall+0x90/0x160)
+>>>>> <4>[   11.470007] [<c010052c>] (do_one_initcall+0x90/0x160) from [<c0d00b74>] (kernel_init+0xec/0x1a8)
+>>>>> <4>[   11.470022] [<c0d00b74>] (kernel_init+0xec/0x1a8) from [<c0106aec>] (kernel_thread_exit+0x0/0x8)
+>>>>> <4>[   11.470030] ---[ end trace 1b75b31a2719ed4d ]---
+>>>>>
+>>>>> BRs/ Yalin
+>>>>> -----Original Message-----
+>>>>> From: Takashi Iwai [mailto:tiwai@suse.de]
+>>>>> Sent: Friday, February 28, 2014 10:20 PM
+>>>>> To: Wang, Yalin
+>>>>> Cc: 'linux-kernel@vger.kernel.org'; 'linux-arm-msm@vger.kernel.org'; 'linux-arm-kernel@lists.infradead.org'; 'linux-input@vger.kernel.org'; 'balbi@ti.com'; 'gregkh@linuxfoundation.org'; 'lrg@ti.com'; 'broonie@opensource.wolfsonmicro.com'; 'perex@perex.cz'; 'pablo@netfilter.org'; 'kaber@trash.net'; 'davem@davemloft.net'; 'rostedt@goodmis.org'; 'fweisbec@gmail.com'; 'mingo@redhat.com'; 'dmitry.torokhov@gmail.com'; 'rydberg@euromail.se'; 'linux-usb@vger.kernel.org'; 'alsa-devel@alsa-project.org'; 'netfilter-devel@vger.kernel.org'; 'netfilter@vger.kernel.org'; 'coreteam@netfilter.org'; 'netdev@vger.kernel.org'
+>>>>> Subject: Re: change kmalloc into vmalloc for large memory 
+>>>>> allocations
+>>>>>
+>>>>> At Fri, 28 Feb 2014 16:15:23 +0800, Wang, Yalin wrote:
+>>>>>>
+>>>>>> Hi
+>>>>>>
+>>>>>>
+>>>>>> I find there is some drivers use kmalloc to allocate large 
+>>>>>> Memorys during module_init,  some can be changed to use vmalloc 
+>>>>>> To save some low mem, I add log in kernel to track , And list them here:
+>>>>>>
+>>>>>> https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tree/
+>>>>>> d
+>>>>>> rive
+>>>>>> rs/usb/gadget/f_mass_storage.c?h=master#n2724
+>>>>>>
+>>>>>> https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tree/
+>>>>>> s
+>>>>>> ound
+>>>>>> /soc/soc-core.c?h=master#n3772
+>>>>>
+>>>>> At least the ASoC runtime case doesn't use the allocated memory as buffer, and they are allocated only once per device, thus it shouldn't be the problem you stated.  If it really consumes so much memory, we need to rethink, instead of allocating an array but allocate each object, for example.
+>>>>>
+>>>>>
+>>>>> thanks,
+>>>>>
+>>>>> Takashi
+>>>>>
+>>>>>
+>>>>>> https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tree/
+>>>>>> n
+>>>>>> et/n
+>>>>>> etfilter/nf_conntrack_ftp.c?h=master#n603
+>>>>>> https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tree/
+>>>>>> n
+>>>>>> et/n
+>>>>>> etfilter/nf_conntrack_h323_main.c?h=master#n1849
+>>>>>> https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tree/
+>>>>>> n
+>>>>>> et/n
+>>>>>> etfilter/nf_conntrack_irc.c?h=master#n247
+>>>>>> https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tree/
+>>>>>> n
+>>>>>> et/n
+>>>>>> etfilter/nf_conntrack_sane.c?h=master#n195
+>>>>>>
+>>>>>> https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tree/
+>>>>>> d
+>>>>>> rive
+>>>>>> rs/input/evdev.c?h=master#n403
+>>>>>>
+>>>>>>
+>>>>>> they allocate large memory from 10k~64K , this will use lots of 
+>>>>>> low mem, instead if we use vmalloc for these drivers , it will be 
+>>>>>> good for some devices like smart phone, we often encounter some 
+>>>>>> errors like kmalloc failed because there is not enough low mem , 
+>>>>>> especially when the device has physical memory less than 1GB .
+>>>>>>
+>>>>>>
+>>>>>> could this module change the memory allocation into vmalloc ?
+>>>>>>
+>>>>>> I was thinking that if we can introduce a helper function in kmalloc.h like this :
+>>>>>>
+>>>>>> Kmalloc(size, flags)
+>>>>>> {
+>>>>>> 	If (size > PAGE_SIZE && flags&CAN_USE_VMALLOC_FLAG)
+>>>>>> 		return vmalloc(size);
+>>>>>> 	Else
+>>>>>> 		return real_kmalloc(size);
+>>>>>> }
+>>>>>>
+>>>>>> Kfree(ptr)
+>>>>>> {
+>>>>>> 	If (is_vmalloc_addr(ptr))
+>>>>>> 		Vfree(ptr);
+>>>>>> 	Else
+>>>>>> 		Kfree(ptr);
+>>>>>> }
+>>>>>>
+>>>>>>
+>>>>>> But we need add some flags to ensure always use kmalloc for Some 
+>>>>>> special use (dma etc..)
+>>>>>>
+>>>>>> How do you think of it ?
+>>>>>>
+>>>>>> Thanks
+>>>>>>
+>>>>>>
+>>>>>>
+>>>>>
+>>> _______________________________________________
+>>> Alsa-devel mailing list
+>>> Alsa-devel@alsa-project.org
+>>> http://mailman.alsa-project.org/mailman/listinfo/alsa-devel
+>>>
+>>
+>
 
->> +              * Reports to use HID_REQ_SET_REPORT on the Control EP.
->> +              *
->> +              * There is also another issue about HID Output Reports via USB,
->> +              * the Sixaxis does not want the report_id as part of the data
->> +              * packet, so we have to discard buf[0] when sending the actual
->> +              * control message, even for numbered reports, humpf!
->> +              */
->> +             hdev->quirks |= HID_QUIRK_NO_OUTPUT_REPORTS;
->> +             hdev->quirks |= HID_QUIRK_SKIP_OUTPUT_REPORT_ID;
->>               ret = sixaxis_set_operational_usb(hdev);
->>               sc->worker_initialized = 1;
->>               INIT_WORK(&sc->state_worker, sixaxis_state_worker);
->> diff --git a/drivers/hid/hidraw.c b/drivers/hid/hidraw.c
->> index 2cc484c..6537e58 100644
->> --- a/drivers/hid/hidraw.c
->> +++ b/drivers/hid/hidraw.c
->> @@ -149,7 +149,8 @@ static ssize_t hidraw_send_report(struct file *file, const char __user *buffer,
->>               goto out_free;
->>       }
->>
->> -     if (report_type == HID_OUTPUT_REPORT) {
->> +     if ((report_type == HID_OUTPUT_REPORT) &&
->> +         !(dev->quirks & HID_QUIRK_NO_OUTPUT_REPORTS)) {
->>               ret = hid_hw_output_report(dev, buf, count);
->>               /*
->>                * compatibility with old implementation of USB-HID and I2C-HID:
->> diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
->> index 0d1d875..3bc7cad 100644
->> --- a/drivers/hid/usbhid/hid-core.c
->> +++ b/drivers/hid/usbhid/hid-core.c
->> @@ -894,7 +894,12 @@ static int usbhid_set_raw_report(struct hid_device *hid, unsigned int reportnum,
->>       int ret, skipped_report_id = 0;
->>
->>       /* Byte 0 is the report number. Report data starts at byte 1.*/
->> -     buf[0] = reportnum;
->> +     if ((rtype == HID_OUTPUT_REPORT) &&
->> +         (hid->quirks & HID_QUIRK_SKIP_OUTPUT_REPORT_ID))
->> +             buf[0] = 0;
->> +     else
->> +             buf[0] = reportnum;
->> +
->>       if (buf[0] == 0x0) {
->>               /* Don't send the Report ID */
->>               buf++;
->> diff --git a/include/linux/hid.h b/include/linux/hid.h
->> index 5eb282e..2baf834 100644
->> --- a/include/linux/hid.h
->> +++ b/include/linux/hid.h
->> @@ -287,6 +287,8 @@ struct hid_item {
->>  #define HID_QUIRK_NO_EMPTY_INPUT             0x00000100
->>  #define HID_QUIRK_NO_INIT_INPUT_REPORTS              0x00000200
->>  #define HID_QUIRK_SKIP_OUTPUT_REPORTS                0x00010000
->> +#define HID_QUIRK_SKIP_OUTPUT_REPORT_ID              0x00020000
->> +#define HID_QUIRK_NO_OUTPUT_REPORTS          0x00040000
->>  #define HID_QUIRK_FULLSPEED_INTERVAL         0x10000000
->>  #define HID_QUIRK_NO_INIT_REPORTS            0x20000000
->>  #define HID_QUIRK_NO_IGNORE                  0x40000000
->> --
->> 1.8.5.3
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-input" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-> --
-> Antonio Ospite
-> http://ao2.it
->
-> A: Because it messes up the order in which people normally read text.
->    See http://en.wikipedia.org/wiki/Posting_style
-> Q: Why is top-posting such a bad thing?
