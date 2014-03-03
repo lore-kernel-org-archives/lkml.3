@@ -1,290 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754016AbaCCSiG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 13:38:06 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:36412 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752755AbaCCSiD (ORCPT
+	id S1754141AbaCCSjX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 13:39:23 -0500
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:46073 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754076AbaCCSjV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 13:38:03 -0500
-Date: Mon, 3 Mar 2014 19:38:00 +0100
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Cc: nicolas.ferre@atmel.com, plagnioj@jcrosoft.com, b.brezillon@overkiz.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        gregory.clement@free-electrons.com, devicetree@vger.kernel.org,
-        thomas.petazzoni@free-electrons.com
-Subject: Re: [PATCH v5 6/9] at91: dt: sam9261: Device Tree support for the
- at91sam9261ek
-Message-ID: <20140303183800.GF3155@piout.net>
-References: <1393841162-25339-1-git-send-email-jjhiblot@traphandler.com>
- <1393841162-25339-7-git-send-email-jjhiblot@traphandler.com>
+	Mon, 3 Mar 2014 13:39:21 -0500
+Date: Mon, 3 Mar 2014 13:41:32 -0500 (EST)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: linux-kernel@vger.kernel.org
+cc: Frederic Weisbecker <fweisbec@gmail.com>
+Subject: WARNING: Can't find any breakpoint slot
+Message-ID: <alpine.DEB.2.10.1403031341260.11945@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393841162-25339-7-git-send-email-jjhiblot@traphandler.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/03/2014 at 11:05:59 +0100, Jean-Jacques Hiblot wrote :
-> This patch implements a DTS to boot a at91sam9261ek with a dt-enabled
-> kernel (at91_dt_defconfig).
-> supported features are:
-> * dbgu
-> * lcdc
-> * usb host
-> * usb gadget,
-> * spi dataflash
-> * nand flash
-> * touchscreen
-> * leds
-> * user buttons
-> 
-> In the TODO list:
-> * dm9000 (ethernet)
-> * audio
-> * mmc
-> 
-> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-> ---
->  arch/arm/boot/dts/Makefile          |   2 +
->  arch/arm/boot/dts/at91sam9261ek.dts | 204 ++++++++++++++++++++++++++++++++++++
->  2 files changed, 206 insertions(+)
->  create mode 100644 arch/arm/boot/dts/at91sam9261ek.dts
-> 
-> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-> index 0320303..f496473 100644
-> --- a/arch/arm/boot/dts/Makefile
-> +++ b/arch/arm/boot/dts/Makefile
-> @@ -12,6 +12,8 @@ dtb-$(CONFIG_ARCH_AT91) += ethernut5.dtb
->  dtb-$(CONFIG_ARCH_AT91) += evk-pro3.dtb
->  dtb-$(CONFIG_ARCH_AT91) += tny_a9260.dtb
->  dtb-$(CONFIG_ARCH_AT91) += usb_a9260.dtb
-> +# sam9261
-> +dtb-$(CONFIG_ARCH_AT91) += at91sam9261ek.dtb
->  # sam9263
->  dtb-$(CONFIG_ARCH_AT91) += at91sam9263ek.dtb
->  dtb-$(CONFIG_ARCH_AT91) += tny_a9263.dtb
-> diff --git a/arch/arm/boot/dts/at91sam9261ek.dts b/arch/arm/boot/dts/at91sam9261ek.dts
-> new file mode 100644
-> index 0000000..03adb7f
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/at91sam9261ek.dts
-> @@ -0,0 +1,204 @@
-> +/*
-> + * at91sam9261ek.dts - Device Tree file for Atmel at91sam9261 reference board
-> + *
-> + *  Copyright (C) 2013 Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-> + *
-> + * Licensed under GPLv2 only.
-> + */
-> +/dts-v1/;
-> +#include "at91sam9261.dtsi"
-> +
-> +/ {
-> +	model = "Atmel at91sam9261ek";
-> +	compatible = "atmel,at91sam9261ek", "atmel,at91sam9261", "atmel,at91sam9";
-> +
-> +	chosen {
-> +		bootargs = "console=ttyS0,115200 rootfstype=ubifs ubi.mtd=5 root=ubi0:rootfs rw";
-> +	};
-> +
-> +	memory {
-> +		reg = <0x20000000 0x4000000>;
-> +	};
-> +
-> +	clocks {
-> +		#address-cells = <1>;
-> +		#size-cells = <1>;
-> +		ranges;
-> +
-> +		main_clock: clock@0 {
-> +			compatible = "atmel,osc", "fixed-clock";
-> +			clock-frequency = <18432000>;
-> +		};
-> +	};
-> +
-> +	ahb {
-> +		usb0: ohci@00500000 {
-> +			status = "okay";
-> +		};
-> +
-> +		fb0: fb@0x00600000 {
-> +			display = <&display0>;
-> +			atmel,power-control-gpio = <&pioA 12 GPIO_ACTIVE_LOW>;
-> +			status = "okay";
-> +
-> +			display0: display {
-> +				bits-per-pixel = <16>;
-> +				atmel,lcdcon-backlight;
-> +				atmel,dmacon = <0x1>;
-> +				atmel,lcdcon2 = <0x80008002>;
-> +				atmel,guard-time = <1>;
-> +				atmel,lcd-wiring-mode = "BRG";
-> +
-> +				display-timings {
-> +					native-mode = <&timing0>;
-> +					timing0: timing0 {
-> +						clock-frequency = <4965000>;
-> +						hactive = <240>;
-> +						vactive = <320>;
-> +						hback-porch = <1>;
-> +						hfront-porch = <33>;
-> +						vback-porch = <1>;
-> +						vfront-porch = <0>;
-> +						hsync-len = <5>;
-> +						vsync-len = <1>;
-> +						hsync-active = <1>;
-> +						vsync-active = <1>;
-> +					};
-> +				};
-> +			};
-> +		};
-> +
-> +		nand0: nand@40000000 {
-> +			nand-bus-width = <8>;
-> +			nand-ecc-mode = "soft";
-> +			nand-on-flash-bbt;
-> +			status = "okay";
-> +
-> +			at91bootstrap@0 {
-> +				label = "at91bootstrap";
-> +				reg = <0x0 0x40000>;
-> +			};
-> +
-> +			bootloader@40000 {
-> +				label = "bootloader";
-> +				reg = <0x40000 0x80000>;
-> +			};
-> +
-> +			bootloaderenv@c0000 {
-> +				label = "bootloader env";
-> +				reg = <0xc0000 0xc0000>;
-> +			};
-> +
-> +			dtb@180000 {
-> +				label = "device tree";
-> +				reg = <0x180000 0x80000>;
-> +			};
-> +
-> +			kernel@200000 {
-> +				label = "kernel";
-> +				reg = <0x200000 0x600000>;
-> +			};
-> +
-> +			rootfs@800000 {
-> +				label = "rootfs";
-> +				reg = <0x800000 0x0f800000>;
-> +			};
-> +		};
-> +
-> +		apb {
-> +			usb1: gadget@fffa4000 {
-> +				atmel,vbus-gpio = <&pioB 29 GPIO_ACTIVE_HIGH>;
-> +				status = "okay";
-> +			};
 
-Nit: add a white line between nodes please, same for a few nodes below.
+The perf_fuzzer triggered this on a core2 machine running 3.14-rc5.
 
-> +			spi0: spi@fffc8000 {
-> +				cs-gpios = <&pioA 3 0>, <0>, <&pioA 28 0>, <0>;
-> +				status = "okay";
-> +
-> +				mtd_dataflash@0 {
-> +					compatible = "atmel,at45", "atmel,dataflash";
-> +					reg = <0>;
-> +					spi-max-frequency = <15000000>;
-> +				};
-> +				tsc2046@0 {
-> +					reg = <2>;
-> +					compatible = "ti,ads7843";
-> +					interrupts-extended = <&pioC 2 IRQ_TYPE_EDGE_BOTH>;
-> +					spi-max-frequency = <3000000>;
-> +					pendown-gpio = <&pioC 2 GPIO_ACTIVE_HIGH>;
-> +
-> +					ti,x-min = /bits/ 16 <150>;
-> +					ti,x-max = /bits/ 16 <3830>;
-> +					ti,y-min = /bits/ 16 <190>;
-> +					ti,y-max = /bits/ 16 <3830>;
-> +					ti,vref-delay-usecs = /bits/ 16 <450>;
-> +					ti,x-plate-ohms = /bits/ 16 <450>;
-> +					ti,y-plate-ohms = /bits/ 16 <250>;
-> +					ti,pressure-max = /bits/ 16 <15000>;
-> +					ti,debounce-rep = /bits/ 16 <0>;
-> +					ti,debounce-tol = /bits/ 16 <65535>;
-> +					ti,debounce-max = /bits/ 16 <1>;
-> +
-> +					linux,wakeup;
-> +				};
-> +			};
-> +
-> +			dbgu: serial@fffff200 {
-> +				status = "okay";
-> +			};
-> +
-> +			watchdog@fffffd40 {
-> +				status = "okay";
-> +			};
-> +
-> +		};
-> +	};
-> +
-> +	leds {
-> +		compatible = "gpio-leds";
-> +
-> +		ds8 {
-> +			label = "ds8";
-> +			gpios = <&pioA 13 GPIO_ACTIVE_LOW>;
-> +			linux,default-trigger = "none";
-> +		};
-> +		ds7 {
-> +			label = "ds7";
-> +			gpios = <&pioA 14 GPIO_ACTIVE_LOW>;
-> +			linux,default-trigger = "nand-disk";
-> +		};
-> +		ds1 {
-> +			label = "ds1";
-> +			gpios = <&pioA 23 GPIO_ACTIVE_LOW>;
-> +			linux,default-trigger = "heartbeat";
-> +		};
-> +	};
-> +
-> +	gpio_keys {
-> +		compatible = "gpio-keys";
-> +
-> +		button_0 {
-> +			label = "button_0";
-> +			gpios = <&pioA 27 GPIO_ACTIVE_LOW>;
-> +			linux,code = <256>;
-> +			gpio-key,wakeup;
-> +		};
-> +		button_1 {
-> +			label = "button_1";
-> +			gpios = <&pioA 26 GPIO_ACTIVE_LOW>;
-> +			linux,code = <257>;
-> +			gpio-key,wakeup;
-> +		};
-> +		button_2 {
-> +			label = "button_2";
-> +			gpios = <&pioA 25 GPIO_ACTIVE_LOW>;
-> +			linux,code = <258>;
-> +			gpio-key,wakeup;
-> +		};
-> +		button_3 {
-> +			label = "button_3";
-> +			gpios = <&pioA 24 GPIO_ACTIVE_LOW>;
-> +			linux,code = <259>;
-> +			gpio-key,wakeup;
-> +		};
-> +	};
-> +};
-> -- 
-> 1.9.0
-> 
+Mar  3 13:35:18 core2 kernel: [ 4100.124001] WARNING: CPU: 0 PID: 25900 at arch/x86/kernel/hw_breakpoint.c:120 arch_install_hw_breakpoint+0x6b/0xf8()
+Mar  3 13:35:18 core2 kernel: [ 4100.124001] Can't find any breakpoint slot
+Mar  3 13:35:18 core2 kernel: [ 4100.124001] Modules linked in: cpufreq_userspace cpufreq_stats cpufreq_powersave cpufreq_conservative f71882fg mcs7830 ohci_pci usbnet evdev pcspkr psmouse serio_raw coretemp ohci_hcd i2c_nforce2 video wmi button acpi_cpufreq processor thermal_sys sg ehci_pci ehci_hcd sd_mod usbcore usb_common
+Mar  3 13:35:18 core2 kernel: [ 4100.124001] CPU: 0 PID: 25900 Comm: perf_fuzzer Not tainted 3.14.0-rc5 #32
+Mar  3 13:35:18 core2 kernel: [ 4100.124001] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BIOS 080015  10/19/2012
+Mar  3 13:35:18 core2 kernel: [ 4100.124001]  0000000000000078 ffff880071189b18 ffffffff81531e61 0000000000000078
+Mar  3 13:35:18 core2 kernel: [ 4100.124001]  ffff880071189b68 ffff880071189b58 ffffffff8103fce4 ffff880071189b48
+Mar  3 13:35:18 core2 kernel: [ 4100.124001]  ffffffff81008e38 0000000000000004 ffff8800cb0e4800 ffff8800cad04680
+Mar  3 13:35:18 core2 kernel: [ 4100.124001] Call Trace:
+Mar  3 13:35:18 core2 kernel: [ 4100.124001]  [<ffffffff81531e61>] dump_stack+0x49/0x60
+Mar  3 13:35:18 core2 kernel: [ 4100.124001]  [<ffffffff8103fce4>] warn_slowpath_common+0x81/0x9b
+Mar  3 13:35:18 core2 kernel: [ 4100.124001]  [<ffffffff81008e38>] ? arch_install_hw_breakpoint+0x6b/0xf8
+Mar  3 13:35:18 core2 kernel: [ 4100.124001]  [<ffffffff8103fda1>] warn_slowpath_fmt+0x46/0x48
+Mar  3 13:35:18 core2 kernel: [ 4100.124001]  [<ffffffff81008e38>] arch_install_hw_breakpoint+0x6b/0xf8
+Mar  3 13:35:18 core2 kernel: [ 4100.124001]  [<ffffffff810d35a5>] hw_breakpoint_add+0x49/0x4d
+Mar  3 13:35:18 core2 kernel: [ 4100.124001]  [<ffffffff810ccfe8>] event_sched_in+0x8c/0x12d
+Mar  3 13:35:18 core2 kernel: [ 4100.124001]  [<ffffffff810cd0d3>] group_sched_in+0x4a/0x147
+Mar  3 13:35:18 core2 kernel: [ 4100.124001]  [<ffffffff810cd32e>] ctx_sched_in+0x15e/0x185
+Mar  3 13:35:18 core2 kernel: [ 4100.124001]  [<ffffffff810cd3be>] perf_event_sched_in+0x69/0x72
+Mar  3 13:35:18 core2 kernel: [ 4100.124001]  [<ffffffff810cd48f>] __perf_install_in_context+0xc8/0xf1
+Mar  3 13:35:18 core2 kernel: [ 4100.124001]  [<ffffffff810cdcc2>] ? perf_event_task_output+0x13d/0x13d
+Mar  3 13:35:18 core2 kernel: [ 4100.124001]  [<ffffffff810cdcfe>] remote_function+0x3c/0x43
+Mar  3 13:35:18 core2 kernel: [ 4100.124001]  [<ffffffff81095451>] smp_call_function_single+0x8a/0x101
+Mar  3 13:35:18 core2 kernel: [ 4100.124001]  [<ffffffff810cdd49>] task_function_call+0x44/0x4e
+Mar  3 13:35:18 core2 kernel: [ 4100.124001]  [<ffffffff810cd3c7>] ? perf_event_sched_in+0x72/0x72
+Mar  3 13:35:18 core2 kernel: [ 4100.124001]  [<ffffffff810cde7e>] perf_install_in_context+0x81/0xbc
+Mar  3 13:35:18 core2 kernel: [ 4100.124001]  [<ffffffff815332fb>] ? mutex_lock+0x16/0x37
+Mar  3 13:35:18 core2 kernel: [ 4100.124001]  [<ffffffff810d214d>] SYSC_perf_event_open+0x647/0x7f5
+Mar  3 13:35:18 core2 kernel: [ 4100.124001]  [<ffffffff810cb607>] ? perf_event_for_each_child+0x82/0x8b
+Mar  3 13:35:18 core2 kernel: [ 4100.124001]  [<ffffffff810cdeb9>] ? perf_install_in_context+0xbc/0xbc
+Mar  3 13:35:18 core2 kernel: [ 4100.124001]  [<ffffffff810d2304>] SyS_perf_event_open+0x9/0xb
+Mar  3 13:35:18 core2 kernel: [ 4100.124001]  [<ffffffff8153bf26>] system_call_fastpath+0x1a/0x1f
+Mar  3 13:35:18 core2 kernel: [ 4100.124001] ---[ end trace e316e2bd7d603a09 ]---
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
