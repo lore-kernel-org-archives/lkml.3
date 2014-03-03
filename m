@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018AbaCCS6B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 13:58:01 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:56015 "EHLO
+	id S1755211AbaCCS6l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 13:58:41 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:56063 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754976AbaCCS5w (ORCPT
+	with ESMTP id S1755196AbaCCS6h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 13:57:52 -0500
+	Mon, 3 Mar 2014 13:58:37 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 25/67] s390/dump: Fix dump memory detection
-Date: Mon,  3 Mar 2014 10:55:13 -0800
-Message-Id: <1393872955-28810-26-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 26/67] ath9k_htc: make ->sta_rc_update atomic for most calls
+Date: Mon,  3 Mar 2014 10:55:14 -0800
+Message-Id: <1393872955-28810-27-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1393872955-28810-1-git-send-email-kamal@canonical.com>
 References: <1393872955-28810-1-git-send-email-kamal@canonical.com>
@@ -28,64 +28,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit d7736ff5be31edaa4fe5ab62810c64529a24b149 upstream.
+commit 2fa4cb905605c863bf570027233af7afd8149ae4 upstream.
 
-Dumps created by kdump or zfcpdump can contain invalid memory holes when
-dumping z/VM systems that have memory pressure.
+sta_rc_update() callback must be atomic, hence we can not take mutexes
+or do other operations, which can sleep in ath9k_htc_sta_rc_update().
 
-For example:
+I think we can just return from ath9k_htc_sta_rc_update(), if it is
+called without IEEE80211_RC_SUPP_RATES_CHANGED bit. That will help
+with scheduling while atomic bug for most cases (except mesh and IBSS
+modes).
 
-   # zgetdump -i /proc/vmcore.
-   Memory map:
-   0000000000000000 - 0000000000bfffff (12 MB)
-   0000000000e00000 - 00000000014fffff (7 MB)
-   000000000bd00000 - 00000000f3bfffff (3711 MB)
+For mesh and IBSS I do not see other solution like creating additional
+workqueue, because sending firmware command require us to sleep, but
+this can be done in additional patch.
 
-The memory detection function find_memory_chunks() issues tprot to
-find valid memory chunks. In case of CMM it can happen that pages are
-marked as unstable via set_page_unstable() in arch_free_page().
-If z/VM has released that pages, tprot returns -EFAULT and indicates
-a memory hole.
+Patch partially fixes bug:
+https://bugzilla.redhat.com/show_bug.cgi?id=990955
 
-So fix this and switch off CMM in case of kdump or zfcpdump.
-
-Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/s390/mm/page-states.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/net/wireless/ath/ath9k/htc_drv_main.c | 25 +++++++++++++------------
+ 1 file changed, 13 insertions(+), 12 deletions(-)
 
-diff --git a/arch/s390/mm/page-states.c b/arch/s390/mm/page-states.c
-index a90d45e..27c50f4 100644
---- a/arch/s390/mm/page-states.c
-+++ b/arch/s390/mm/page-states.c
-@@ -12,6 +12,8 @@
- #include <linux/mm.h>
- #include <linux/gfp.h>
- #include <linux/init.h>
-+#include <asm/setup.h>
-+#include <asm/ipl.h>
+diff --git a/drivers/net/wireless/ath/ath9k/htc_drv_main.c b/drivers/net/wireless/ath/ath9k/htc_drv_main.c
+index 112116b..07f8817 100644
+--- a/drivers/net/wireless/ath/ath9k/htc_drv_main.c
++++ b/drivers/net/wireless/ath/ath9k/htc_drv_main.c
+@@ -1329,21 +1329,22 @@ static void ath9k_htc_sta_rc_update(struct ieee80211_hw *hw,
+ 	struct ath_common *common = ath9k_hw_common(priv->ah);
+ 	struct ath9k_htc_target_rate trate;
  
- #define ESSA_SET_STABLE		1
- #define ESSA_SET_UNUSED		2
-@@ -41,6 +43,14 @@ void __init cmma_init(void)
- 
- 	if (!cmma_flag)
- 		return;
-+	/*
-+	 * Disable CMM for dump, otherwise  the tprot based memory
-+	 * detection can fail because of unstable pages.
-+	 */
-+	if (OLDMEM_BASE || ipl_info.type == IPL_TYPE_FCP_DUMP) {
-+		cmma_flag = 0;
++	if (!(changed & IEEE80211_RC_SUPP_RATES_CHANGED))
 +		return;
-+	}
- 	asm volatile(
- 		"       .insn rrf,0xb9ab0000,%1,%1,0,0\n"
- 		"0:     la      %0,0\n"
++
+ 	mutex_lock(&priv->mutex);
+ 	ath9k_htc_ps_wakeup(priv);
+ 
+-	if (changed & IEEE80211_RC_SUPP_RATES_CHANGED) {
+-		memset(&trate, 0, sizeof(struct ath9k_htc_target_rate));
+-		ath9k_htc_setup_rate(priv, sta, &trate);
+-		if (!ath9k_htc_send_rate_cmd(priv, &trate))
+-			ath_dbg(common, CONFIG,
+-				"Supported rates for sta: %pM updated, rate caps: 0x%X\n",
+-				sta->addr, be32_to_cpu(trate.capflags));
+-		else
+-			ath_dbg(common, CONFIG,
+-				"Unable to update supported rates for sta: %pM\n",
+-				sta->addr);
+-	}
++	memset(&trate, 0, sizeof(struct ath9k_htc_target_rate));
++	ath9k_htc_setup_rate(priv, sta, &trate);
++	if (!ath9k_htc_send_rate_cmd(priv, &trate))
++		ath_dbg(common, CONFIG,
++			"Supported rates for sta: %pM updated, rate caps: 0x%X\n",
++			sta->addr, be32_to_cpu(trate.capflags));
++	else
++		ath_dbg(common, CONFIG,
++			"Unable to update supported rates for sta: %pM\n",
++			sta->addr);
+ 
+ 	ath9k_htc_ps_restore(priv);
+ 	mutex_unlock(&priv->mutex);
 -- 
 1.8.3.2
 
