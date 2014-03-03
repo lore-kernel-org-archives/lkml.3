@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755172AbaCCS6d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 13:58:33 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:56051 "EHLO
+	id S1755153AbaCCS63 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 13:58:29 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:56046 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755155AbaCCS6a (ORCPT
+	with ESMTP id S1755038AbaCCS61 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 13:58:30 -0500
+	Mon, 3 Mar 2014 13:58:27 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Grant Likely <grant.likely@linaro.org>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 35/67] of: Fix address decoding on Bimini and js2x machines
-Date: Mon,  3 Mar 2014 10:55:23 -0800
-Message-Id: <1393872955-28810-36-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 22/67] KVM: return an error code in kvm_vm_ioctl_register_coalesced_mmio()
+Date: Mon,  3 Mar 2014 10:55:10 -0800
+Message-Id: <1393872955-28810-23-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1393872955-28810-1-git-send-email-kamal@canonical.com>
 References: <1393872955-28810-1-git-send-email-kamal@canonical.com>
@@ -28,49 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 6dd18e4684f3d188277bbbc27545248487472108 upstream.
+commit aac5c4226e7136c331ed384c25d5560204da10a0 upstream.
 
- Commit:
+If kvm_io_bus_register_dev() fails then it returns success but it should
+return an error code.
 
-  e38c0a1fbc5803cbacdaac0557c70ac8ca5152e7
-  of/address: Handle #address-cells > 2 specially
+I also did a little cleanup like removing an impossible NULL test.
 
-broke real time clock access on Bimini, js2x, and similar powerpc
-machines using the "maple" platform. That code was indirectly relying
-on the old (broken) behaviour of the translation for the hypertransport
-to ISA bridge.
-
-This fixes it by treating hypertransport as a PCI bus
-
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Acked-by: Rob Herring <rob.herring@calxeda.com>
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
+Fixes: 2b3c246a682c ('KVM: Make coalesced mmio use a device per zone')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/of/address.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ virt/kvm/coalesced_mmio.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/of/address.c b/drivers/of/address.c
-index fb2a4e8..d61fdae 100644
---- a/drivers/of/address.c
-+++ b/drivers/of/address.c
-@@ -98,8 +98,12 @@ static unsigned int of_bus_default_get_flags(const __be32 *addr)
+diff --git a/virt/kvm/coalesced_mmio.c b/virt/kvm/coalesced_mmio.c
+index 88b2fe3..00d8642 100644
+--- a/virt/kvm/coalesced_mmio.c
++++ b/virt/kvm/coalesced_mmio.c
+@@ -154,17 +154,13 @@ int kvm_vm_ioctl_register_coalesced_mmio(struct kvm *kvm,
+ 	list_add_tail(&dev->list, &kvm->coalesced_zones);
+ 	mutex_unlock(&kvm->slots_lock);
  
- static int of_bus_pci_match(struct device_node *np)
- {
--	/* "vci" is for the /chaos bridge on 1st-gen PCI powermacs */
--	return !strcmp(np->type, "pci") || !strcmp(np->type, "vci");
-+	/*
-+	 * "vci" is for the /chaos bridge on 1st-gen PCI powermacs
-+	 * "ht" is hypertransport
-+	 */
-+	return !strcmp(np->type, "pci") || !strcmp(np->type, "vci") ||
-+		!strcmp(np->type, "ht");
+-	return ret;
++	return 0;
+ 
+ out_free_dev:
+ 	mutex_unlock(&kvm->slots_lock);
+-
+ 	kfree(dev);
+ 
+-	if (dev == NULL)
+-		return -ENXIO;
+-
+-	return 0;
++	return ret;
  }
  
- static void of_bus_pci_count_cells(struct device_node *np,
+ int kvm_vm_ioctl_unregister_coalesced_mmio(struct kvm *kvm,
 -- 
 1.8.3.2
 
