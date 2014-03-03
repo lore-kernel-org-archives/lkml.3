@@ -1,84 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754124AbaCCKXe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 05:23:34 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:58817 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752263AbaCCKX3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 05:23:29 -0500
-From: George Cherian <george.cherian@ti.com>
-To: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <devicetree@vger.kernel.org>
-CC: <s.nawrocki@samsung.com>, <tony@atomide.com>, <george.cherian@ti.com>,
-        <gregkh@linuxfoundation.org>, <kishon@ti.com>, <rob@landley.net>,
-        <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
-        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>
-Subject: [PATCH 3/3] phy: omap-usb2: Add different compatible for OMAP5
-Date: Mon, 3 Mar 2014 15:52:54 +0530
-Message-ID: <1393842174-29868-2-git-send-email-george.cherian@ti.com>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1393842174-29868-1-git-send-email-george.cherian@ti.com>
-References: <1393841424-27656-1-git-send-email-george.cherian@ti.com>
- <1393842174-29868-1-git-send-email-george.cherian@ti.com>
+	id S1754187AbaCCKXp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 05:23:45 -0500
+Received: from mail-by2lp0236.outbound.protection.outlook.com ([207.46.163.236]:1090
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754149AbaCCKXh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 05:23:37 -0500
+From: Yao Yuan <yao.yuan@freescale.com>
+To: Marek Vasut <marex@denx.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: "wsa@the-dreams.de" <wsa@the-dreams.de>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
+Subject: RE: [PATCH 1/3] i2c: add DMA support for freescale i2c driver
+Thread-Topic: [PATCH 1/3] i2c: add DMA support for freescale i2c driver
+Thread-Index: AQHPM4sizgrOvCG4PUOY3HGRfTyOT5rJkPaAgAV1QJA=
+Date: Mon, 3 Mar 2014 10:23:33 +0000
+Message-ID: <3bbad0af0bc74f04bc386b141dadedb3@BL2PR03MB338.namprd03.prod.outlook.com>
+References: <1393481115-22136-1-git-send-email-yao.yuan@freescale.com>
+ <1393481115-22136-2-git-send-email-yao.yuan@freescale.com>
+ <201402272139.36076.marex@denx.de>
+In-Reply-To: <201402272139.36076.marex@denx.de>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.50]
+x-forefront-prvs: 0139052FDB
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(24454002)(189002)(199002)(84964002)(377454003)(51704005)(76482001)(54356001)(81816001)(94946001)(53806001)(47446002)(74502001)(51856001)(83322001)(31966008)(94316002)(74706001)(33646001)(79102001)(74662001)(2656002)(81342001)(85306002)(81542001)(87266001)(69226001)(80976001)(74316001)(54316002)(56776001)(74366001)(95416001)(87936001)(81686001)(77982001)(59766001)(76796001)(76786001)(80022001)(4396001)(66066001)(83072002)(76576001)(90146001)(65816001)(93136001)(56816005)(95666003)(92566001)(74876001)(86362001)(93516002)(46102001)(47736001)(47976001)(50986001)(49866001)(63696002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB404;H:BL2PR03MB338.namprd03.prod.outlook.com;CLIP:123.151.195.50;FPR:4CF7D70E.C325C05.A1EFADBB.84E9D13C.201CC;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s23AO1T6027525
 
-Add a new compatible for OMAP5 since it does not use any of the
-OTG operations as of now.
-HAS_SRP and SET_VBUS functionalities are used only for OMAP4.
+Hi, Marek
 
-Update the Documentation also to add new comaptible.
+Marek Vasut wrote:
+> On Thursday, February 27, 2014 at 07:05:14 AM, Yuan Yao wrote:
+> 
+> [...]
+> 
+> > +static void i2c_imx_dma_free(struct imx_i2c_struct *i2c_imx) {
+> > +	struct imx_i2c_dma *dma = i2c_imx->dma;
+> > +	struct dma_chan *dma_chan;
+> > +
+> > +	dma_chan = dma->chan_tx;
+> > +	dma->chan_tx = NULL;
+> > +	dma->buf_tx = 0;
+> > +	dma->len_tx = 0;
+> > +	dma_release_channel(dma_chan);
+> > +
+> > +	dma_chan = dma->chan_rx;
+> > +	dma->chan_tx = NULL;
+> > +	dma->buf_rx = 0;
+> > +	dma->len_rx = 0;
+> > +	dma_release_channel(dma_chan);
+> 
+> You must make _DEAD_ _SURE_ this function is not ever called while the
+> DMA is still active. In your case, I have a feeling that's not handled.
+>
 
-Signed-off-by: George Cherian <george.cherian@ti.com>
----
- Documentation/devicetree/bindings/usb/usb-phy.txt | 3 ++-
- drivers/phy/phy-omap-usb2.c                       | 9 +++++++++
- 2 files changed, 11 insertions(+), 1 deletion(-)
+Thanks for your attention.
+This few days I look up the code for the realization of dma_release_channel(). 
+I found that it will disable the dma request first. So it's may safe. 
+And drivers hadn't check whether dma is still active before dma_release_channel() as a usually usage.
+Because it will be disabled automatic.
 
-diff --git a/Documentation/devicetree/bindings/usb/usb-phy.txt b/Documentation/devicetree/bindings/usb/usb-phy.txt
-index 03de61a5..ec199a5 100644
---- a/Documentation/devicetree/bindings/usb/usb-phy.txt
-+++ b/Documentation/devicetree/bindings/usb/usb-phy.txt
-@@ -4,7 +4,8 @@ OMAP USB2 PHY
- 
- Required properties:
-  - compatible: Should be either of
--	* "ti,omap-usb2" for OMAP4 and OMAP5
-+	* "ti,omap-usb2" for OMAP4
-+	* "ti,omap5-usb2" for OMAP5
- 	* "ti,dra7x-usb2" for DRA7
- 	* "ti,am437x-usb2" for AM437x
-  - reg : Address and length of the register set for the device.
-diff --git a/drivers/phy/phy-omap-usb2.c b/drivers/phy/phy-omap-usb2.c
-index 80ba7f0..4af778f 100644
---- a/drivers/phy/phy-omap-usb2.c
-+++ b/drivers/phy/phy-omap-usb2.c
-@@ -176,6 +176,11 @@ static const struct usb_phy_data omap_usb2_data = {
- 	.flags = OMAP_USB2_HAS_START_SRP | OMAP_USB2_HAS_SET_VBUS,
- };
- 
-+static const struct usb_phy_data omap5_usb2_data = {
-+	.label = "omap5_usb2",
-+	.flags = 0,
-+};
-+
- static const struct usb_phy_data dra7x_usb2_data = {
- 	.label = "dra7x_usb2",
- 	.flags = OMAP_USB2_CALIBRATE_FALSE_DISCONNECT,
-@@ -192,6 +197,10 @@ static const struct of_device_id omap_usb2_id_table[] = {
- 		.data = &omap_usb2_data,
- 	},
- 	{
-+		.compatible = "ti,omap5-usb2",
-+		.data = &omap5_usb2_data,
-+	},
-+	{
- 		.compatible = "ti,dra7x-usb2",
- 		.data = &dra7x_usb2_data,
- 	},
--- 
-1.8.3.1
+The only problem is that, it will be forced to cancel the transfer which was not yet completed.
+Looking forward to hearing from you.
 
+Best regards,
+Yuan Yao
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
