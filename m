@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753733AbaCCQo2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 11:44:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17398 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753091AbaCCQo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 11:44:27 -0500
-Date: Mon, 3 Mar 2014 17:43:56 +0100
-From: Igor Mammedov <imammedo@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: prarit@redhat.com, riel@redhat.com, mgorman@suse.de, peterz@infradead.org,
-        alex.shi@intel.com, Igor Mammedov <imammedo@redhat.com>, hpa@zytor.com
-Subject: deadlock between cpu_stopper &
- native_flush_tlb_others()->smp_call_function_many()
-Message-ID: <20140303174356.082ec348@nial.usersys.redhat.com>
+	id S1753646AbaCCQqh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 11:46:37 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:35891 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751812AbaCCQqg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 11:46:36 -0500
+Date: Mon, 3 Mar 2014 17:46:34 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>
+Subject: Re: [PATCH] usb: gadget: atmel_usba: fix crash when no endpoint are
+ specified
+Message-ID: <20140303164633.GB3155@piout.net>
+References: <1393515733-15764-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <53109EBE.4020900@atmel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53109EBE.4020900@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It looks like I hit a deadlock between smp_call_function_many() and
-cpu_stopper threads.
+Hi Felipe,
 
-Where smp_call_function_many() on CPU1 called from
-native_flush_tlb_others() waits on call to be complete on
-CPU2 while CPU2 waits on state synchronization in
-multi_cpu_stop() which can't be completed until stop work
-queued on CPU1 is completed, which can't be done since  CPU1
-is busy looping in smp_call_function_many().
+On 28/02/2014 at 15:35:42 +0100, Nicolas Ferre wrote :
+> On 27/02/2014 16:42, Alexandre Belloni :
+> > If no endpoints are present in the device tree, the kernel will cras hwith the
+> 
+> s/cras hwith/crash with/
+> 
+
+Do you want me to send a v2 with that typo corrected or could you
+correct it when applying ?
 
 
-CPU1                                       CPU2
-stop_machine()
- queue stop work on cpu 1&2
-
-native_flush_tlb_others()
-   smp_call_function_many()
-      ...
----------------------------------------------------------
-                                    cpu_stopper_thread()
-                                       multi_cpu_stop()
-                                          do {
-                                             ...
-                                             msdata->state == MULTI_STOP_PREPARE
-                                             msdata->active_cpus == 0110
-                                             msdata->thread_ack == 1
-                                          } while (curstate != MULTI_STOP_EXIT)
-                                    waiting until CPU1 ACKs state, i.e. thread_ack == 0
----------------------------------------------------------                                    
-      ...
-      if (wait) {
-         for_cpu(0110) {
-           csd_lock_wait(csd);
-waiting until call on CPU2 is completed
-
-Are there any suggestions on how to fix this nicely?
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
