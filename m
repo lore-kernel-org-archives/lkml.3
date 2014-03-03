@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755108AbaCCWBK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 17:01:10 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:36148 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754255AbaCCWBI (ORCPT
+	id S1755266AbaCCWBf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 17:01:35 -0500
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:38053 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755165AbaCCWBd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 17:01:08 -0500
-Date: Mon, 3 Mar 2014 22:01:06 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: George Spelvin <linux@horizon.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Update of file offset on write() etc. is non-atomic with I/O
-Message-ID: <20140303220106.GL18016@ZenIV.linux.org.uk>
-References: <20140303210359.26624.qmail@science.horizon.com>
- <20140303212642.GJ18016@ZenIV.linux.org.uk>
- <CA+55aFwdEbMMTPyCEKop0Fukhxi90OCdvDieX7iB-dX9Ziovdg@mail.gmail.com>
+	Mon, 3 Mar 2014 17:01:33 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwdEbMMTPyCEKop0Fukhxi90OCdvDieX7iB-dX9Ziovdg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140303214536.GK18016@ZenIV.linux.org.uk>
+References: <53022DB1.4070805@gmail.com>
+	<CA+55aFxjAp23=ySEe8e8bTPbVw8Uh8d03zirg4TdHXGYiyjmwA@mail.gmail.com>
+	<CA+55aFy4GvpFcboBiKdreU_Zh1RzynPoLxhvC9hijn60hkEZ3g@mail.gmail.com>
+	<20140303214536.GK18016@ZenIV.linux.org.uk>
+Date: Mon, 3 Mar 2014 14:01:33 -0800
+X-Google-Sender-Auth: g9phA11zeJIL-PuZ3bn2jc9nL4M
+Message-ID: <CA+55aFwZ_tcK+G2SZynDzv6w=y3UNobVE5SOH9+Y6x2QQCW7tA@mail.gmail.com>
+Subject: Re: Update of file offset on write() etc. is non-atomic with I/O
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <miklos@szeredi.hu>, "Theodore T'so" <tytso@mit.edu>,
+        Christoph Hellwig <hch@lst.de>, Chris Mason <clm@fb.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        "J. Bruce Fields" <bfields@citi.umich.edu>,
+        Yongzhi Pan <panyongzhi@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 03, 2014 at 01:52:13PM -0800, Linus Torvalds wrote:
-> On Mon, Mar 3, 2014 at 1:26 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> > On Mon, Mar 03, 2014 at 04:03:59PM -0500, George Spelvin wrote:
-> >>
-> >> (If you want to use bits, why not use the two lsbits of the file pointer
-> >> for the purpose?  That would save a lot of space.)
-> >
-> > Most of the cases have it kept separately in registers, actually - there's
-> > a reason why fdget() and friends are inlined.
-> 
-> Yes. And bit test and set ops on registers are actually cheaper than
-> playing around with bytes.
-> 
-> That said, the "fget_light()" interface sucks - exactly because it
-> doesn't do the "return structure in two registers" thing. We should
-> get rid of it - there's just one remaining user in networking code,
-> and it should be rewritten in terms of fdget().
-> 
-> That's a separate issue, though.
+On Mon, Mar 3, 2014 at 1:45 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> And it looks like you've missed compat counterparts.
 
-The thing is, the callers in there do *not* keep struct file * at all -
-they keep struct socket * and use sock->file to get struct file * back
-when they need it.
+Grr. Yes, I missed them for compat_readv/writev - even though I
+grepped for various users, but I grepped for all the *other* cases (ie
+vfs_{read|write|llseek}). That means that the locker helper can't be
+static to fs/read_write.c. Oh well.
 
-So struct fd is the wrong thing to use there - it only adds to register
-pressure.  A similar pair of struct socket * and "need to fput that"
-flag would probably be needed, with sockfd_lookup_light() returning
-that.
+                  Linus
