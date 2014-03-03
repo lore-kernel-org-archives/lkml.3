@@ -1,64 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755877AbaCCX3V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 18:29:21 -0500
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:60812 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755629AbaCCX3C (ORCPT
+	id S1755889AbaCCXao (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 18:30:44 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:48847 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755375AbaCCXan (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 18:29:02 -0500
+	Mon, 3 Mar 2014 18:30:43 -0500
+Message-ID: <53151077.5090905@oracle.com>
+Date: Mon, 03 Mar 2014 16:29:59 -0700
+From: Khalid Aziz <khalid.aziz@oracle.com>
+Organization: Oracle Corp
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <20140303143834.90ebe8ec5c6a369e54a599ec@linux-foundation.org>
-References: <1393625931-2858-1-git-send-email-quning@google.com>
-	<CACQD4-5U3P+QiuNKzt5+VdDDi0ocphR+Jh81eHqG6_+KeaHyRw@mail.gmail.com>
-	<20140228174150.8ff4edca.akpm@linux-foundation.org>
-	<CACQD4-7UUDMeXdR-NaAAXvk-NRYqW7mHJkjDUM=JRvL54b_Xsg@mail.gmail.com>
-	<CACQD4-5SmUf+krLbef9Yg9HhJ-ipT2QKKq-NW=2C6G=XwXcMcQ@mail.gmail.com>
-	<20140303143834.90ebe8ec5c6a369e54a599ec@linux-foundation.org>
-Date: Mon, 3 Mar 2014 15:29:00 -0800
-X-Google-Sender-Auth: EDPsqQvVOQtb_efq2axIkwUyqZI
-Message-ID: <CA+55aFzvCF-tWg7qx2_Om+Y64uJy6ujEyWgcq87UkzSkfbVGqw@mail.gmail.com>
-Subject: Re: [PATCH 0/1] mm, shmem: map few pages around fault address if they
- are in page cache
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ning Qu <quning@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>, Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Chinner <david@fromorbit.com>, linux-mm <linux-mm@kvack.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Davidlohr Bueso <davidlohr@hp.com>
+CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, peterz@infradead.org,
+        akpm@linux-foundation.org, andi.kleen@intel.com, rob@landley.net,
+        viro@zeniv.linux.org.uk, oleg@redhat.com, venki@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] [PATCH] Pre-emption control for userspace
+References: <1393870033-31076-1-git-send-email-khalid.aziz@oracle.com> <1393883493.30648.5.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1393883493.30648.5.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 3, 2014 at 2:38 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+On 03/03/2014 02:51 PM, Davidlohr Bueso wrote:
+> On Mon, 2014-03-03 at 11:07 -0700, Khalid Aziz wrote:
+>> I am working on a feature that has been requested by database folks that
+>> helps with performance. Some of the oft executed database code uses
+>> mutexes to lock other threads out of a critical section. They often see
+>> a situation where a thread grabs the mutex, runs out of its timeslice
+>> and gets switched out which then causes another thread to run which
+>> tries to grab the same mutex, spins for a while and finally gives up.
 >
-> When the file is uncached, results are peculiar:
+> This strikes me more of a feature for a real-time kernel. It is
+> definitely an interesting concept but wonder about it being abused.
+> Also, what about just using a voluntary preemption model instead? I'd
+> think that systems where this is really a problem would opt for that.
+
+That was my first thought as well when I was asked to implement this 
+feature :) Designing a system as a real-time system indeed gives the 
+designer good control over pre-emption but the database folks do not 
+really want or need a full real-time system espcially since they may 
+have to run on the same server as other database related services. JVM 
+certainly can not expect to be run as a realtime process. Database folks 
+are perfectly happy running with CFS scheduler all the time except 
+during this kind of critical section. This approach gives them some 
+control to get extra timeslice when they need it. As for the abuse, it 
+is no different from a realtime process that can lock up a processor 
+much worse than this approach. As is the case when using realtime 
+schedulers, one must use the tools wisely. I have thought about allowing 
+sysadmins to lock this functionality down some but that does add more 
+complexity. I am open to doing that if most people feel it is necessary.
+
 >
-> 0.00user 2.84system 0:50.90elapsed 5%CPU (0avgtext+0avgdata 4198096maxresident)k
-> 0inputs+0outputs (1major+49666minor)pagefaults 0swaps
+>> This can happen with multiple threads until original lock owner gets the
+>> CPU again and can complete executing its critical section. This queueing
+>> and subsequent CPU cycle wastage can be avoided if the locking thread
+>> could request to be granted an additional timeslice if its current
+>> timeslice runs out before it gives up the lock. Other operating systems
+>> have implemented this functionality and is used by databases as well as
+>> JVM. This functionality has been shown to improve performance by 3%-5%.
 >
-> That's approximately 3x more minor faults.
+> Could you elaborate more on those performance numbers? What
+> benchmark/workload?
+>
+> Thanks,
+> Davidlohr
+>
 
-This is not peculiar.
+This was with tpc-c.
 
-When the file is uncached, some pages will obviously be under IO due
-to readahead etc. And the fault-around code very much on purpose will
-*not* try to wait for those pages, so any busy pages will just simply
-not be faulted-around.
+Thanks,
+Khalid
 
-So you should still have fewer minor faults than faulting on *every*
-page (ie the non-fault-around case), but I would very much expect that
-fault-around will not see the full "one sixteenth" reduction in minor
-faults.
-
-And the order of IO will not matter, since the read-ahead is
-asynchronous wrt the page-faults.
-
-             Linus
