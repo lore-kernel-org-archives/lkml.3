@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754930AbaCCQC4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 11:02:56 -0500
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:48860 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754525AbaCCQCt (ORCPT
+	id S1754985AbaCCQDY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 11:03:24 -0500
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:45733 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754908AbaCCQC4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 11:02:49 -0500
+	Mon, 3 Mar 2014 11:02:56 -0500
 From: Tomasz Figa <tomasz.figa@gmail.com>
 To: linux-pm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
@@ -26,9 +26,9 @@ Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
         Ulf Hansson <ulf.hansson@linaro.org>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Tomasz Figa <tomasz.figa@gmail.com>
-Subject: [PATCH v2 08/11] ARM: s3c64xx: dt: Enable SoC-level power management
-Date: Mon,  3 Mar 2014 17:02:13 +0100
-Message-Id: <1393862536-9842-9-git-send-email-tomasz.figa@gmail.com>
+Subject: [PATCH v2 11/11] ARM: dts: s3c6410-mini6410: Add support for LCD screen
+Date: Mon,  3 Mar 2014 17:02:16 +0100
+Message-Id: <1393862536-9842-12-git-send-email-tomasz.figa@gmail.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1393862536-9842-1-git-send-email-tomasz.figa@gmail.com>
 References: <1393862536-9842-1-git-send-email-tomasz.figa@gmail.com>
@@ -36,50 +36,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds call to s3c64xx_pm_init() from init_machine() callback
-of mach-s3c64xx-dt to enable SoC-level power management features, such
-as power domain management and sleep support.
+This patch adds necessary device tree nodes and properties to enable LCD
+screen on mini6410 board.
 
 Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
 ---
- arch/arm/mach-s3c64xx/mach-s3c64xx-dt.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ arch/arm/boot/dts/s3c6410-mini6410.dts | 33 +++++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
 
-diff --git a/arch/arm/mach-s3c64xx/mach-s3c64xx-dt.c b/arch/arm/mach-s3c64xx/mach-s3c64xx-dt.c
-index 2fddf38..45a4ddc 100644
---- a/arch/arm/mach-s3c64xx/mach-s3c64xx-dt.c
-+++ b/arch/arm/mach-s3c64xx/mach-s3c64xx-dt.c
-@@ -15,6 +15,7 @@
- #include <asm/system_misc.h>
+diff --git a/arch/arm/boot/dts/s3c6410-mini6410.dts b/arch/arm/boot/dts/s3c6410-mini6410.dts
+index 57e00f9..97f6353 100644
+--- a/arch/arm/boot/dts/s3c6410-mini6410.dts
++++ b/arch/arm/boot/dts/s3c6410-mini6410.dts
+@@ -167,6 +167,33 @@
+ 	};
+ };
  
- #include <plat/cpu.h>
-+#include <plat/pm.h>
- #include <plat/watchdog-reset.h>
- 
- #include <mach/map.h>
-@@ -49,9 +50,15 @@ static void __init s3c64xx_dt_map_io(void)
- static void __init s3c64xx_dt_init_machine(void)
- {
- 	samsung_wdt_reset_of_init();
-+	s3c64xx_pm_init();
- 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
- }
- 
-+static void __init s3c64xx_dt_init_late(void)
-+{
-+	s3c64xx_pm_late_initcall();
-+}
++&fimd {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&lcd_data24>, <&lcd_power>;
 +
- static void s3c64xx_dt_restart(enum reboot_mode mode, const char *cmd)
- {
- 	if (mode != REBOOT_SOFT)
-@@ -72,5 +79,6 @@ DT_MACHINE_START(S3C6400_DT, "Samsung S3C64xx (Flattened Device Tree)")
- 	.dt_compat	= s3c64xx_dt_compat,
- 	.map_io		= s3c64xx_dt_map_io,
- 	.init_machine	= s3c64xx_dt_init_machine,
-+	.init_late	= s3c64xx_dt_init_late,
- 	.restart        = s3c64xx_dt_restart,
- MACHINE_END
++	display-timings {
++		native-mode = <&timing0>;
++
++		timing0: timing@0 {
++			/* 480x272@60Hz */
++			clock-frequency = <10000000>;
++			hactive = <480>;
++			vactive = <272>;
++			hfront-porch = <4>;
++			hback-porch = <45>;
++			hsync-len = <40>;
++			vback-porch = <3>;
++			vfront-porch = <2>;
++			vsync-len = <6>;
++			vsync-active = <1>;
++			hsync-active = <1>;
++			de-active = <1>;
++			pixelclk-active = <0>;
++		};
++	};
++};
++
+ &sdhci0 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&sd0_clk>, <&sd0_cmd>, <&sd0_cd>, <&sd0_bus4>;
+@@ -213,6 +240,12 @@
+ 				"gpn-4", "gpn-5", "gpl-11", "gpl-12";
+ 		samsung,pin-pud = <PIN_PULL_NONE>;
+ 	};
++
++	lcd_power: lcd-power {
++		samsung,pins = "gpe-0";
++		samsung,pin-function = <0>;
++		samsung,pin-pud = <PIN_PULL_UP>;
++	};
+ };
+ 
+ &i2c0 {
 -- 
 1.9.0
 
