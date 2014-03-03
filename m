@@ -1,77 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579AbaCCXEc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 18:04:32 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:45215 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755184AbaCCXE3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 18:04:29 -0500
+	id S1755610AbaCCXHU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 18:07:20 -0500
+Received: from mga09.intel.com ([134.134.136.24]:25540 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755282AbaCCXHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 18:07:18 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,581,1389772800"; 
+   d="scan'208";a="493449509"
+Date: Mon, 3 Mar 2014 16:07:35 -0700 (MST)
+From: Ross Zwisler <ross.zwisler@linux.intel.com>
+X-X-Sender: rzwisler@scrumpy
+To: Dave Chinner <david@fromorbit.com>
+cc: Matthew Wilcox <willy@linux.intel.com>, Toshi Kani <toshi.kani@hp.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v6 07/22] Replace the XIP page fault handler with the
+ DAX page fault handler
+In-Reply-To: <20140302233027.GR30131@dastard>
+Message-ID: <alpine.OSX.2.00.1403031549110.34680@scrumpy>
+References: <1393337918-28265-1-git-send-email-matthew.r.wilcox@intel.com> <1393337918-28265-8-git-send-email-matthew.r.wilcox@intel.com> <1393609771.6784.83.camel@misato.fc.hp.com> <20140228202031.GB12820@linux.intel.com> <20140302233027.GR30131@dastard>
+User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20140303100501.GB1108@localhost.localdomain>
-References: <1393468732-3919-1-git-send-email-ast@plumgrid.com>
-	<1393468732-3919-2-git-send-email-ast@plumgrid.com>
-	<531084E0.5080601@redhat.com>
-	<CAMEtUuw9aQaBQR-CQq8hdk+8WFqadG0u1fz3pDTsedhXSkQzTg@mail.gmail.com>
-	<53112A08.5080309@redhat.com>
-	<20140303100501.GB1108@localhost.localdomain>
-Date: Mon, 3 Mar 2014 15:04:28 -0800
-Message-ID: <CAMEtUuxNTB3SKbTeF_JJBMUeWnzfzPphL_cwLXTyxwasEkFe6A@mail.gmail.com>
-Subject: Re: [PATCH v3 net-next 1/1] bpf32->bpf64 mapper and bpf64 interpreter
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Hagen Paul Pfeifer <hagen@jauu.net>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Jesse Gross <jesse@nicira.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 3, 2014 at 2:05 AM, Hagen Paul Pfeifer <hagen@jauu.net> wrote:
-> * Daniel Borkmann | 2014-03-01 01:30:00 [+0100]:
->
->>>>as in 'struct bpf_insn' the immediate value is 32 bit, so for 64 bit
->>>>comparisons, you'd still need to load to immediate values, right?
->>>
->>>there is no insn that use 64-bit immediate, since 64-bit immediates
->>>are extremely rare. grep x86-64 asm code for movabsq will return very few.
->>>llvm or gcc can easily construct any constant by combination of mov,
->>>shifts and ors.
->>>bpf64 comparisons are all 64-bit right now. So far I didn't see a need to do
->>>32-bit comparison, since old bpf is all unsigned, mapping 32->64 of
->>>Jxx is painless.
->>
->>Hm, fair enough, I was just thinking for comparisons of IPv6 addresses
->>when we do socket filtering. On the other hand, old and new insns are
->>both 64 bit wide and can be used though the same api then.
->
-> What about the long term idea to support JITed nftables? A 128 bit immediate
-> is required - maybe the biggest requirement for nftable support.
+On Mon, 3 Mar 2014, Dave Chinner wrote:
+> On Fri, Feb 28, 2014 at 03:20:31PM -0500, Matthew Wilcox wrote:
+> > On Fri, Feb 28, 2014 at 10:49:31AM -0700, Toshi Kani wrote:
+> > > The original code,
+> > > xip_file_fault(), jumps to found: and calls vm_insert_mixed() when
+> > > get_xip_mem(,,0,,) succeeded.  If get_xip_mem() returns -ENODATA, it
+> > > calls either get_xip_mem(,,1,,) or xip_sparse_page().  In this new
+> > > function, it looks to me that get_block(,,,0) returns 0 for both cases
+> > > (success and -ENODATA previously), which are dealt in the same way.  Is
+> > > that right?  If so, is there any reason for the change?
+> > 
+> > Yes, get_xip_mem() returned -ENODATA for a hole.  That was a suboptimal
+> > interface because filesystems are actually capable of returning more
+> > information than that, eg how long the hole is (ext4 *doesn't*, but I
+> > consider that to be a bug).
+> > 
+> > I don't get to decide what the get_block() interface looks like.  It's the
+> > standard way that the VFS calls back into the filesystem and has been
+> > around for probably close to twenty years at this point.  I'm still trying
+> > to understand exactly what the contract is for get_blocks() ... I have
+> > a document that I'm working on to try to explain it, but it's tough going!
+> > 
+> > > Also, isn't it
+> > > possible to call get_block(,,,1) even if get_block(,,,0) found a block?
+> > 
+> > The code in question looks like this:
+> > 
+> >         error = get_block(inode, block, &bh, 0);
+> >         if (error || bh.b_size < PAGE_SIZE)
+> >                 goto sigbus;
+> > 
+> >         if (!buffer_written(&bh) && !vmf->cow_page) {
+> >                 if (vmf->flags & FAULT_FLAG_WRITE) {
+> >                         error = get_block(inode, block, &bh, 1);
+> > 
+> > where buffer_written is defined as:
+> >         return buffer_mapped(bh) && !buffer_unwritten(bh);
+> > 
+> > Doing some boolean algebra, that's:
+> > 
+> > 	if (!buffer_mapped || buffer_unwritten)
+> > 
+> > In either case, we want to tell the filesystem that we're writing to
+> > this block.  At least, that's my current understanding of the get_block()
+> > interface.  I'm open to correction here!
+> 
+> I've got a rewritten version on this that doesn't require two calls
+> to get_block() that I wrote while prototyping the XFS code. It also
+> fixes all the misunderstandings about what get_block() actually does
+> and returns so it works correctly with XFS.
+> 
+> I need to port it forward to your new patch set (hopefully later
+> this week), so don't spend too much time trying to work out exactly
+> what this code needs to do...
 
-I'm still planning to bring benefits of ebpf-JIT to nft.
-There are different ways to approach it. I'm not ready to debate
-details, since I
-don't have a working code for nft+bpf yet and code speaks better than words.
-But I'm confident that ebpf instruction set will not need 128-bit extensions.
-If something unforeseen is needed, we can always add it.
+Here is a writeup from Matthew Wilcox describing the get_block() interface.
 
-Right now I'm testing ebpf+seccomp.
-As a micro benchmark I took a test from libseccomp and added dummy
-syscall loop. There is a nice speedup. will post a patch soon.
+He sent this to me before Dave sent out the latest mail in this thread. :)
 
-Thanks
-Alexei
+Corrections and updates are very welcome.
+
+- Ross
+
+================
+
+get_block_t is used by the VFS to ask filesystem to translate logical
+blocks within a file to sectors on a block device.
+
+typedef int (get_block_t)(struct inode *inode, sector_t iblock,
+                        struct buffer_head *bh_result, int create);
+
+get_block() must not be called simultaneously with the create flag set
+for overlapping extents *** or is/was this a bug in ext2? ***
+
+Despite the iblock argument having type sector_t, iblock is actually
+in units of the file block size, not in units of 512-byte sectors.
+iblock must not extend beyond i_size. *** um, looks like xfs permits
+this ... ? ***
+
+If there is no current mapping from the block to the media, one will be
+created if 'create' is set to 1.  'create' should not be set to a value
+other than '0' or '1'.
+
+On entry, bh_result should have b_size set to the number of bytes that the
+caller is interested in and b_state initialised to zero.  b_size should
+be a multiple of the file block size.  On exit, bh_result describes a
+physically contiguous extent starting at iblock.  b_size will not be
+increased by get_block, but it may be decreased if the filesystem extent
+is shorter than the extent requested.
+
+If bh_result describes an extent that is allocated, then BH_Mapped will
+be set, and b_bdev and b_blocknr will be set to indicate the physical
+location on the media.  The filesystem may wish to use map_bh() in order
+to set BH_Mapped and initialise b_bdev, b_blocknr and b_size.  If the
+filesystem knows that the extent is read into memory (eg because it
+decided to populate the page cache as part of its get_block operation),
+it should set BH_Uptodate.
+
+If bh_result describes a hole, the filesystem should clear BH_Mapped and
+set BH_Uptodate.  It will not set b_bdev or b_blocknr, but it should set
+b_size to indicate the length of the hole.  It may also opt to leave
+bh_result untouched as described above.  If the block corresponds to
+a hole, bh_result *may* be unmodified, but the VFS can optimise some
+operations if the filesystem reports the length of the hole as described
+below. *** or is this a bug in ext4? ***
+
+If bh_result describes an extent which has data in the pagecache, but
+that data has not yet had space allocated on the media (due to delayed
+allocation), BH_Mapped, BH_Uptodate and BH_Delay will be set.  b_blocknr
+is not set.
+
+If bh_result describes an extent which is reserved for data which has not
+yet been written, BH_Unwritten is set, b_bdev and b_blocknr are set.
+
+Other flags that may be set include BH_New (to indicate that the buffer
+was newly allocated and may need to be initialised), and BH_Boundary (to
+indicate a physical discontinuity after this extent).
+
+The filesystem may choose to set b_private.  Other fields in buffer_head
+are legacy buffer-cache uses and will not be modified by get_block.
