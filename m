@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755280AbaCCS6z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 13:58:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:56088 "EHLO
+	id S1755508AbaCCTHV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 14:07:21 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:56093 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755255AbaCCS6v (ORCPT
+	with ESMTP id S1755259AbaCCS6x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 13:58:51 -0500
+	Mon, 3 Mar 2014 13:58:53 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jan Moskyto Matejka <mq@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 51/67] Modpost: fixed USB alias generation for ranges including 0x9 and 0xA
-Date: Mon,  3 Mar 2014 10:55:39 -0800
-Message-Id: <1393872955-28810-52-git-send-email-kamal@canonical.com>
+Cc: Jens Axboe <axboe@fb.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 58/67] block: add cond_resched() to potentially long running ioctl discard loop
+Date: Mon,  3 Mar 2014 10:55:46 -0800
+Message-Id: <1393872955-28810-59-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1393872955-28810-1-git-send-email-kamal@canonical.com>
 References: <1393872955-28810-1-git-send-email-kamal@canonical.com>
@@ -28,50 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Moskyto Matejka <mq@suse.cz>
+From: Jens Axboe <axboe@fb.com>
 
-commit 03b56329f9bb5a1cb73d7dc659d529a9a9bf3acc upstream.
+commit c8123f8c9cb517403b51aa41c3c46ff5e10b2c17 upstream.
 
-Commit afe2dab4f6 ("USB: add hex/bcd detection to usb modalias generation")
-changed the routine that generates alias ranges. Before that change, only
-digits 0-9 were supported; the commit tried to fix the case when the range
-includes higher values than 0x9.
+When mkfs issues a full device discard and the device only
+supports discards of a smallish size, we can loop in
+blkdev_issue_discard() for a long time. If preempt isn't enabled,
+this can turn into a softlock situation and the kernel will
+start complaining.
 
-Unfortunately, the commit didn't fix the case when the range includes both
-0x9 and 0xA, meaning that the final range must look like [x-9A-y] where
-x <= 0x9 and y >= 0xA -- instead the [x-9A-x] range was produced.
+Add an explicit cond_resched() at the end of the loop to avoid
+that.
 
-Modprobe doesn't complain as it sees no difference between no-match and
-bad-pattern results of fnmatch().
-
-Fixing this simple bug to fix the aliases.
-Also changing the hardcoded beginning of the range to uppercase as all the
-other letters are also uppercase in the device version numbers.
-
-Fortunately, this affects only the dvb-usb-dib0700 module, AFAIK.
-
-Signed-off-by: Jan Moskyto Matejka <mq@suse.cz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- scripts/mod/file2alias.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ block/blk-lib.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
-index df4fc23..cb23474 100644
---- a/scripts/mod/file2alias.c
-+++ b/scripts/mod/file2alias.c
-@@ -186,8 +186,8 @@ static void do_usb_entry(struct usb_device_id *id,
- 				range_lo < 0x9 ? "[%X-9" : "[%X",
- 				range_lo);
- 			sprintf(alias + strlen(alias),
--				range_hi > 0xA ? "a-%X]" : "%X]",
--				range_lo);
-+				range_hi > 0xA ? "A-%X]" : "%X]",
-+				range_hi);
- 		}
+diff --git a/block/blk-lib.c b/block/blk-lib.c
+index b3a1f2b7..016833c 100644
+--- a/block/blk-lib.c
++++ b/block/blk-lib.c
+@@ -121,6 +121,14 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+ 
+ 		atomic_inc(&bb.done);
+ 		submit_bio(type, bio);
++
++		/*
++		 * We can loop for a long time in here, if someone does
++		 * full device discards (like mkfs). Be nice and allow
++		 * us to schedule out to avoid softlocking if preempt
++		 * is disabled.
++		 */
++		cond_resched();
  	}
- 	if (bcdDevice_initial_digits < (sizeof(id->bcdDevice_lo) * 2 - 1))
+ 	blk_finish_plug(&plug);
+ 
 -- 
 1.8.3.2
 
