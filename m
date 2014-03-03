@@ -1,56 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754273AbaCCJgc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 04:36:32 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:47861 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753825AbaCCJg3 (ORCPT
+	id S1754256AbaCCJgb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 04:36:31 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:33480 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753512AbaCCJg3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 Mar 2014 04:36:29 -0500
-From: SeongJae Park <sj38.park@gmail.com>
-To: sjenning@linux.vnet.ibm.com
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        SeongJae Park <sj38.park@gmail.com>
-Subject: [PATCH] mm: zswap: remove unnecessary parentheses
-Date: Mon,  3 Mar 2014 18:37:56 +0900
-Message-Id: <1393839476-24989-1-git-send-email-sj38.park@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+Date: Mon, 3 Mar 2014 10:35:58 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Juri Lelli <juri.lelli@gmail.com>
+Cc: Kirill Tkhai <ktkhai@parallels.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        tkhai@yandex.ru
+Subject: Re: [PATCH]sched/core: Return possibility to set RT and DL classes
+ back
+Message-ID: <20140303093558.GP27965@twins.programming.kicks-ass.net>
+References: <1393496657.3522.3.camel@tkhai>
+ <1393584643.3522.5.camel@tkhai>
+ <20140301191838.d15d03112b2598a671dac22c@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140301191838.d15d03112b2598a671dac22c@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix following trivial checkpatch error:
-	ERROR: return is not a function, parentheses are not required
+On Sat, Mar 01, 2014 at 07:18:38PM +0100, Juri Lelli wrote:
+> From 73bae0ad978db6e75f492eea9adff12ec9d6d2a3 Mon Sep 17 00:00:00 2001
+> From: Juri Lelli <juri.lelli@gmail.com>
+> Date: Sat, 1 Mar 2014 16:43:30 +0100
+> Subject: [PATCH] sched/core: restore __setscheduler() behavior
+> 
+> Commit c365c29 introduced __setscheduler_params(), that is now used
+> to only store a task's new scheduling parameters in the case it is
+> priority boosted.
+> 
+> Before this change, __setscheduler() was in charge of changing tasks
+> normal_prio and prio, and the latter is used to actually perform
+> sched_class change. Unfortunately, the commit above broke this
+> behavior, causing tasks to remain in fair_sched_class.
+> 
+> Restore the old behaviour setting normal_prio and prio to the right
+> values after the __setscheduler_params() call.
 
-Signed-off-by: SeongJae Park <sj38.park@gmail.com>
----
- mm/zswap.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Please also add a Fixes: tag when appropriate, and add to Cc all those
+two were involved with the original patch.
 
-diff --git a/mm/zswap.c b/mm/zswap.c
-index c0c9b7c..34b75cc 100644
---- a/mm/zswap.c
-+++ b/mm/zswap.c
-@@ -204,7 +204,7 @@ static struct kmem_cache *zswap_entry_cache;
- static int zswap_entry_cache_create(void)
- {
- 	zswap_entry_cache = KMEM_CACHE(zswap_entry, 0);
--	return (zswap_entry_cache == NULL);
-+	return zswap_entry_cache == NULL;
- }
- 
- static void zswap_entry_cache_destory(void)
-@@ -408,8 +408,8 @@ cleanup:
- **********************************/
- static bool zswap_is_full(void)
- {
--	return (totalram_pages * zswap_max_pool_percent / 100 <
--		zswap_pool_pages);
-+	return totalram_pages * zswap_max_pool_percent / 100 <
-+		zswap_pool_pages;
- }
- 
- /*********************************
--- 
-1.8.3.2
+Fixes: c365c292d059 ("sched: Consider pi boosting in setscheduler()")
+> Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
+> ---
+>  kernel/sched/core.c |    7 +++++++
+>  1 file changed, 7 insertions(+)
+> 
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index ee8004c..04ae20d 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -3206,6 +3206,13 @@ static void __setscheduler(struct rq *rq, struct task_struct *p,
+>  {
+>  	__setscheduler_params(p, attr);
+>  
+> +	/*
+> +	 * Since we checked before with rt_mutex_check_prio(),
+> +	 * we don't have pi waiters or our top waiter has lower
+> +	 * priority (user space view) than what we got.
+> +	 */
+> +	p->prio = p->normal_prio = normal_prio(p);
+> +
+>  	if (dl_prio(p->prio))
+>  		p->sched_class = &dl_sched_class;
+>  	else if (rt_prio(p->prio))
 
+So there is one more caller of this: normalize_task() but since that is
+only used to force set all tasks to SCHED_NORMAL ignoring the PI stuff
+seems perfectly fine.
