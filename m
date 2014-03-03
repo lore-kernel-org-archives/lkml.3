@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754147AbaCCReO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 12:34:14 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53737 "EHLO
+	id S1754205AbaCCRe1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 12:34:27 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53870 "EHLO
 	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753925AbaCCReI (ORCPT
+	by vger.kernel.org with ESMTP id S1754165AbaCCReW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 12:34:08 -0500
+	Mon, 3 Mar 2014 12:34:22 -0500
 From: Liviu Dudau <Liviu.Dudau@arm.com>
 To: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
         Catalin Marinas <Catalin.Marinas@arm.com>,
@@ -17,121 +17,219 @@ Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         LAKML <linux-arm-kernel@lists.infradead.org>,
         Tanmay Inamdar <tinamdar@apm.com>
-Subject: [PATCH v4 0/3] [RFC] Add support for PCI in AArch64
-Date: Mon,  3 Mar 2014 17:33:30 +0000
-Message-Id: <1393868013-32345-1-git-send-email-Liviu.Dudau@arm.com>
+Subject: [PATCH v4 6/6] pci: Add support for creating a generic host_bridge from device tree
+Date: Mon,  3 Mar 2014 17:33:16 +0000
+Message-Id: <1393867996-32299-7-git-send-email-Liviu.Dudau@arm.com>
 X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1393867996-32299-1-git-send-email-Liviu.Dudau@arm.com>
+References: <1393867996-32299-1-git-send-email-Liviu.Dudau@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Several platforms use a rather generic version of parsing
+the device tree to find the host bridge ranges. Move the common code
+into the generic PCI code and use it to create a pci_host_bridge
+structure that can be used by arch code.
 
-This patch adds support for PCI to AArch64. It is based on my v4 patch
-that adds support for creating generic host bridge structure from
-device tree. With that in place, I was able to boot a platform that
-has PCIe host bridge support and use a PCIe network card.
+Based on early attempts by Andrew Murray to unify the code.
+Used powerpc and microblaze PCI code as starting point.
 
-Changes from v3:
-  - Added Acks accumulated so far ;)
-  - Still carrying Catalin's patch for moving the PCI_IO_BASE until it
-    lands in linux-next or mainline, in order to ease applying the series
+Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
 
-Changes from v2:
-  - Implement an arch specific version of pci_register_io_range() and
-    pci_address_to_pio().
-  - Return 1 from pci_proc_domain().
-
-Changes from v1:
-  - Added Catalin's patch for moving the PCI_IO_BASE location and extend
-    its size to 16MB
-  - Integrated Arnd's version of pci_ioremap_io that uses a bitmap for
-    keeping track of assigned IO space and returns an io_offset. At the
-    moment the code is added in arch/arm64 but it can be moved in drivers/pci.
-  - Added a fix for the generic ioport_map() function when !CONFIG_GENERIC_IOMAP
-    as suggested by Arnd.
-
-The API used is different from the one used by ARM architecture. There is
-no pci_common_init_dev() function and no hw_pci structure, as that is no
-longer needed. Once the last signature is added to the legal agreement, I
-will post the host bridge driver code that I am using. Meanwhile, here
-is an example of what the probe function looks like, posted as an example:
-
-static int myhostbridge_probe(struct platform_device *pdev)
-{
-	int err;
-	struct device_node *dev;
-	struct pci_host_bridge *bridge;
-	struct myhostbridge_port *pp;
-	resource_size_t lastbus;
-
-	dev = pdev->dev.of_node;
-
-	if (!of_device_is_available(dev)) {
-		pr_warn("%s: disabled\n", dev->full_name);
-		return -ENODEV;
-	}
-
-	pp = kzalloc(sizeof(struct myhostbridge_port), GFP_KERNEL);
-	if (!pp)
-		return -ENOMEM;
-
-	bridge = of_create_pci_host_bridge(&pdev->dev, &myhostbridge_ops, pp);
-	if (IS_ERR(bridge)) {
-		err = PTR_ERR(bridge);
-		goto bridge_create_fail;
-	}
-
-	err = myhostbridge_setup(bridge->bus);
-	if (err)
-		goto bridge_setup_fail;
-
-	/* We always enable PCI domains and we keep domain 0 backward
-	 * compatible in /proc for video cards
-	 */
-	pci_add_flags(PCI_ENABLE_PROC_DOMAINS);
-	pci_add_flags(PCI_REASSIGN_ALL_BUS | PCI_REASSIGN_ALL_RSRC);
-
-	lastbus = pci_scan_child_bus(bridge->bus);
-	pci_bus_update_busn_res_end(bridge->bus, lastbus);
-
-	pci_assign_unassigned_bus_resources(bridge->bus);
-
-	pci_bus_add_devices(bridge->bus);
-
-	return 0;
-
-bridge_setup_fail:
-	put_device(&bridge->dev);
-	device_unregister(&bridge->dev);
-bridge_create_fail:
-	kfree(pp);
-	return err;
-}
-
-Best regards,
-Liviu
-
-
-Catalin Marinas (1):
-  arm64: Extend the PCI I/O space to 16MB
-
-Liviu Dudau (2):
-  Fix ioport_map() for !CONFIG_GENERIC_IOMAP cases.
-  arm64: Add architecture support for PCI
-
- Documentation/arm64/memory.txt |  16 ++--
- arch/arm64/Kconfig             |  19 ++++-
- arch/arm64/include/asm/Kbuild  |   1 +
- arch/arm64/include/asm/io.h    |   5 +-
- arch/arm64/include/asm/pci.h   |  47 +++++++++++
- arch/arm64/kernel/Makefile     |   1 +
- arch/arm64/kernel/pci.c        | 178 +++++++++++++++++++++++++++++++++++++++++
- include/asm-generic/io.h       |   2 +-
- 8 files changed, 259 insertions(+), 10 deletions(-)
- create mode 100644 arch/arm64/include/asm/pci.h
- create mode 100644 arch/arm64/kernel/pci.c
-
+diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
+index 06ace62..3c6cbd3 100644
+--- a/drivers/pci/host-bridge.c
++++ b/drivers/pci/host-bridge.c
+@@ -6,9 +6,13 @@
+ #include <linux/init.h>
+ #include <linux/pci.h>
+ #include <linux/module.h>
++#include <linux/of_address.h>
++#include <linux/of_pci.h>
+ 
+ #include "pci.h"
+ 
++static atomic_t domain_nr = ATOMIC_INIT(-1);
++
+ static struct pci_bus *find_pci_root_bus(struct pci_bus *bus)
+ {
+ 	while (bus->parent)
+@@ -91,3 +95,138 @@ void pcibios_bus_to_resource(struct pci_bus *bus, struct resource *res,
+ 	res->end = region->end + offset;
+ }
+ EXPORT_SYMBOL(pcibios_bus_to_resource);
++
++/**
++ * pci_host_bridge_of_get_ranges - Parse PCI host bridge resources from DT
++ * @dev: device node of the host bridge having the range property
++ * @resources: list where the range of resources will be added after DT parsing
++ * @io_base: pointer to a variable that will contain the physical address for
++ * the start of the I/O range.
++ *
++ * If this function returns an error then the @resources list will be freed.
++ *
++ * This function will parse the "ranges" property of a PCI host bridge device
++ * node and setup the resource mapping based on its content. It is expected
++ * that the property conforms with the Power ePAPR document.
++ *
++ * Each architecture is then offered the chance of applying their own
++ * filtering of pci_host_bridge_windows based on their own restrictions by
++ * calling pcibios_fixup_bridge_ranges(). The filtered list of windows
++ * can then be used when creating a pci_host_bridge structure.
++ */
++static int pci_host_bridge_of_get_ranges(struct device_node *dev,
++		struct list_head *resources, resource_size_t *io_base)
++{
++	struct resource *res;
++	struct of_pci_range range;
++	struct of_pci_range_parser parser;
++	int err;
++
++	pr_info("PCI host bridge %s ranges:\n", dev->full_name);
++
++	/* Check for ranges property */
++	err = of_pci_range_parser_init(&parser, dev);
++	if (err)
++		return err;
++
++	pr_debug("Parsing ranges property...\n");
++	for_each_of_pci_range(&parser, &range) {
++		/* Read next ranges element */
++		pr_debug("pci_space: 0x%08x pci_addr:0x%016llx ",
++				range.pci_space, range.pci_addr);
++		pr_debug("cpu_addr:0x%016llx size:0x%016llx\n",
++					range.cpu_addr, range.size);
++
++		/*
++		 * If we failed translation or got a zero-sized region
++		 * then skip this range
++		 */
++		if (range.cpu_addr == OF_BAD_ADDR || range.size == 0)
++			continue;
++
++		res = kzalloc(sizeof(struct resource), GFP_KERNEL);
++		if (!res) {
++			err = -ENOMEM;
++			goto bridge_ranges_nomem;
++		}
++
++		of_pci_range_to_resource(&range, dev, res);
++
++		if (resource_type(res) == IORESOURCE_IO)
++			*io_base = range.cpu_addr;
++
++		pci_add_resource_offset(resources, res,
++				res->start - range.pci_addr);
++	}
++
++	/* Apply architecture specific fixups for the ranges */
++	pcibios_fixup_bridge_ranges(resources);
++
++	return 0;
++
++bridge_ranges_nomem:
++	pci_free_resource_list(resources);
++	return err;
++}
++
++/**
++ * of_create_pci_host_bridge - Create a PCI host bridge structure using
++ * information passed in the DT.
++ * @parent: device owning this host bridge
++ * @ops: pci_ops associated with the host controller
++ * @host_data: opaque data structure used by the host controller.
++ *
++ * returns a pointer to the newly created pci_host_bridge structure, or
++ * NULL if the call failed.
++ *
++ * This function will try to obtain the host bridge domain number by
++ * using of_alias_get_id() call with "pci-domain" as a stem. If that
++ * fails, a local allocator will be used that will put each host bridge
++ * in a new domain.
++ */
++struct pci_host_bridge *
++of_create_pci_host_bridge(struct device *parent, struct pci_ops *ops, void *host_data)
++{
++	int err, domain, busno;
++	struct resource *bus_range;
++	struct pci_bus *root_bus;
++	struct pci_host_bridge *bridge;
++	resource_size_t io_base;
++	LIST_HEAD(res);
++
++	bus_range = kzalloc(sizeof(*bus_range), GFP_KERNEL);
++	if (!bus_range)
++		return ERR_PTR(-ENOMEM);
++
++	domain = of_alias_get_id(parent->of_node, "pci-domain");
++	if (domain == -ENODEV)
++		domain = atomic_inc_return(&domain_nr);
++
++	err = of_pci_parse_bus_range(parent->of_node, bus_range);
++	if (err) {
++		dev_info(parent, "No bus range for %s, using default [0-255]\n",
++			parent->of_node->full_name);
++		bus_range->start = 0;
++		bus_range->end = 255;
++		bus_range->flags = IORESOURCE_BUS;
++	}
++	busno = bus_range->start;
++	pci_add_resource(&res, bus_range);
++
++	/* now parse the rest of host bridge bus ranges */
++	err = pci_host_bridge_of_get_ranges(parent->of_node, &res, &io_base);
++	if (err)
++		return ERR_PTR(err);
++
++	/* then create the root bus */
++	root_bus = pci_create_root_bus_in_domain(parent, domain, busno,
++						ops, host_data, &res);
++	if (!root_bus)
++		return NULL;
++
++	bridge = to_pci_host_bridge(root_bus->bridge);
++	bridge->io_base = io_base;
++
++	return bridge;
++}
++EXPORT_SYMBOL_GPL(of_create_pci_host_bridge);
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 1eed009..0c5e269 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -395,6 +395,7 @@ struct pci_host_bridge {
+ 	struct device dev;
+ 	struct pci_bus *bus;		/* root bus */
+ 	int domain_nr;
++	resource_size_t io_base;	/* physical address for the start of I/O area */
+ 	struct list_head windows;	/* pci_host_bridge_windows */
+ 	void (*release_fn)(struct pci_host_bridge *);
+ 	void *release_data;
+@@ -1786,11 +1787,23 @@ static inline struct device_node *pci_bus_to_OF_node(struct pci_bus *bus)
+ 	return bus ? bus->dev.of_node : NULL;
+ }
+ 
++struct pci_host_bridge *
++of_create_pci_host_bridge(struct device *parent, struct pci_ops *ops,
++			void *host_data);
++
++void pcibios_fixup_bridge_ranges(struct list_head *resources);
+ #else /* CONFIG_OF */
+ static inline void pci_set_of_node(struct pci_dev *dev) { }
+ static inline void pci_release_of_node(struct pci_dev *dev) { }
+ static inline void pci_set_bus_of_node(struct pci_bus *bus) { }
+ static inline void pci_release_bus_of_node(struct pci_bus *bus) { }
++
++static inline struct pci_host_bridge *
++pci_host_bridge_of_init(struct device *parent, struct pci_ops *ops,
++			void *host_data)
++{
++	return NULL;
++}
+ #endif  /* CONFIG_OF */
+ 
+ #ifdef CONFIG_EEH
 -- 
 1.9.0
 
