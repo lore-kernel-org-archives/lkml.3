@@ -1,166 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754611AbaCCT3r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 14:29:47 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:53070 "EHLO mail.skyhub.de"
+	id S1754692AbaCCTga (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 14:36:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7795 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753741AbaCCT3p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 14:29:45 -0500
-Date: Mon, 3 Mar 2014 20:29:39 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Chris Bainbridge <chris.bainbridge@gmail.com>
-Cc: Andreas Mohr <andi@lisas.de>, Dennis Mungai <dmngaie@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
-        devzero@web.de
-Subject: Re: Re: [PATCH] x86: set Pentium M as PAE capable
-Message-ID: <20140303192939.GD31265@pd.tnic>
-References: <20140228140043.GA12157@debian.local>
- <20140302205619.GA8676@rhlx01.hs-esslingen.de>
- <20140303080432.GA25489@localhost>
+	id S1753780AbaCCTg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 14:36:27 -0500
+Message-ID: <5314D9B2.6050006@redhat.com>
+Date: Mon, 03 Mar 2014 14:36:18 -0500
+From: Vlad Yasevich <vyasevic@redhat.com>
+Reply-To: vyasevic@redhat.com
+Organization: Red Hat
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140303080432.GA25489@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Christian Borntraeger <borntraeger@de.ibm.com>,
+        Vlad Yasevich <vyasevich@gmail.com>
+CC: "David S. Miller" <davem@davemloft.net>, Jason Wang <jasowang@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>, netdev@vger.kernel.org,
+        KVM list <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: macvtap performance regression (bisected) between 3.13 and 3.14-rc1
+References: <530FA586.3010400@de.ibm.com> <53110A62.7070109@redhat.com> <5311C142.6040509@de.ibm.com> <53123495.7030902@gmail.com> <531287AE.5080606@gmail.com> <531447B2.7040008@de.ibm.com>
+In-Reply-To: <531447B2.7040008@de.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 03, 2014 at 03:04:35PM +0700, Chris Bainbridge wrote:
-> On 3 March 2014 02:05, Roland Kletzing <devzero@web.de> wrote:
-> > i would recommend adding the newly introduced param to
-> > Documentation/kernel-
-> > parameters.txt , though.
+On 03/03/2014 04:13 AM, Christian Borntraeger wrote:
+> On 02/03/14 02:21, Vlad Yasevich wrote:
+>> On 03/01/2014 02:27 PM, Vlad Yasevich wrote:
+>>> On 03/01/2014 06:15 AM, Christian Borntraeger wrote:
+>>>> On 28/02/14 23:14, Vlad Yasevich wrote:
+>>>>> On 02/27/2014 03:52 PM, Christian Borntraeger wrote:
+>>>>>> Vlad,
+>>>>>>
+>>>>>> commit 6acf54f1cf0a6747bac9fea26f34cfc5a9029523
+>>>>>>     macvtap: Add support of packet capture on macvtap device.
+>>>>>>
+>>>>>> causes a performance regression for iperf traffic between two KVM guests
+>>>>>> on my s390 system. Both guests are connected via two macvtaps on the same OSA
+>>>>>> network card.
+>>>>>> Before that patch I get ~20 Gbit/sec between two guests, afterwards I get
+>>>>>> ~4Gbit/sec
+>>>>>>
+>>>>>> Latency seems to be unchanges (uperf 1byte ping pong).
+>>>>>>
+>>>>>> According to ifconfig in the guest, I have ~ 1500 bytes per packet with this
+>>>>>> patch and ~  40000 bytes without. So for some reason this patch causes the
+>>>>>> network stack to do segmentation. (the guest kernel stays the same, only host 
+>>>>>> kernel is changed).
+>>>>>>
+>>>>>> Any ideas?
+>>>>>
+>>>>> I am looking.  It shouldn't cause addition segmentations and when I ran
+>>>>> netperf on the code I didn't see any difference in the throughput.
+>>>>
+>>>> Dont know if the different bytes/packets ratio is really the reason or
+>>>> just a side effect. As a hint: the underlying network device does not support
+>>>> segmentation, but this should not matter for traffic between to guests.
+>>>
+>>> Could you post 'ethtool -k' output for both lower-level device and the
+>>> macvtap device?
+>>>
+>>> Thanks
+>>> -vlad
+>>>
+>>
+>> Ok.  I think I see what's happening.  Since you turn off offloads on
+>> lower device, that's propagated to macvlan device.  As a result, when
+>> when we call dev_queue_xmit on the vlan->dev, we end up segmenting since
+>> lower level says it does support segmentation.
+>>
+>> One way to fix this is to never disable offloads on macvlan.  macvlan
+>> will always try to use __dev_queue_xmit() with it's lower device, so any
+>> segmentation can happen there.
 > 
-> Done.
+> If you have anything that I should test, let me know.
+
+Hi Christian
+
+Just sent out a patch to fix this.  I tried it with namespaces and
+kvm guests and it seems to restore performance for me.
+
+Please give it a try.
+
+Thanks
+-vlad
 > 
-> Signed-off-by: Chris Bainbridge <chris.bainbridge@gmail.com>
-> ---
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index b9e9bd8..388b5e9 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -962,6 +962,13 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->  			parameter will force ia64_sal_cache_flush to call
->  			ia64_pal_cache_flush instead of SAL_CACHE_FLUSH.
->  
-> +	forcepae [X86-32]
-> +			Forcefully enable Physical Address Extension (PAE).
-> +			Many Pentium M systems disable PAE but may have a
-> +			functionally usable PAE implementation.
-> +			Note: This parameter is unsupported, may cause unknown
+> Christian
+> 
 
-What does "unsupported" mean here exactly?
-
-> +			problems, and will taint the kernel.
-> +
->  	ftrace=[tracer]
->  			[FTRACE] will set and start the specified tracer
->  			as early as possible in order to facilitate early
-> diff --git a/arch/x86/boot/cpucheck.c b/arch/x86/boot/cpucheck.c
-> index 4d3ff03..93ba160 100644
-> --- a/arch/x86/boot/cpucheck.c
-> +++ b/arch/x86/boot/cpucheck.c
-> @@ -69,6 +69,13 @@ static int is_transmeta(void)
->  	       cpu_vendor[2] == A32('M', 'x', '8', '6');
->  }
->  
-> +static int is_intel(void)
-> +{
-> +	return cpu_vendor[0] == A32('G', 'e', 'n', 'u') &&
-> +	       cpu_vendor[1] == A32('i', 'n', 'e', 'I') &&
-> +	       cpu_vendor[2] == A32('n', 't', 'e', 'l');
-> +}
-> +
->  static int has_fpu(void)
->  {
->  	u16 fcw = -1, fsw = -1;
-> @@ -239,6 +246,24 @@ int check_cpu(int *cpu_level_ptr, int *req_level_ptr, u32 **err_flags_ptr)
->  		asm("wrmsr" : : "a" (eax), "d" (edx), "c" (ecx));
->  
->  		err = check_flags();
-> +	} else if (err == 0x01 &&
-> +		   !(err_flags[0] & ~(1 << X86_FEATURE_PAE)) &&
-> +		   is_intel() && cpu.level == 6 &&
-> +		   (cpu.model == 9 || cpu.model == 13)) {
-> +		/* PAE is disabled on this Pentium M but can be forced */
-> +		if (cmdline_find_option_bool("forcepae")) {
-> +			puts("WARNING: Forcing PAE in CPU flags\n");
-> +			set_bit(X86_FEATURE_PAE, cpu.flags);
-> +			err = check_flags();
-
-This function is called check_cpuflags() now. You probably want to redo
-your patch against tip/master, i.e.:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git#master
-
-> +		}
-> +		else {
-> +			puts("ERROR: PAE is disabled on this Pentium M\n"
-> +				"(PAE can potentially be enabled with "
-> +				"kernel parameter\n"
-> +				"\"forcepae\" - this is unsupported, may "
-> +				"cause unknown\n"
-> +				"problems, and will taint the kernel)\n");
-
-This string could definitely violate the 80 cols rule so that it is much
-more readable:
-
-		}
-		else
-			puts("WARNING: PAE disabled. Use \"forcepae\" to enable at your own risk!\n");
-
-I've shortened it to the most relevant info only. No need to say we're
-tainting the kernel because LOCKDEP_NOW_UNRELIABLE will cause that
-anyway below.
-
-> +		}
->  	}
->  
->  	if (err_flags_ptr)
-> diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-> index bbe1b8b..271686d 100644
-> --- a/arch/x86/kernel/cpu/intel.c
-> +++ b/arch/x86/kernel/cpu/intel.c
-> @@ -196,6 +196,14 @@ static void intel_smp_check(struct cpuinfo_x86 *c)
->  	}
->  }
->  
-> +static int forcepae;
-> +static int __init forcepae_setup(char *__unused)
-> +{
-> +	forcepae = 1;
-> +	return 1;
-> +}
-> +__setup("forcepae", forcepae_setup);
-
-Yeah, why not simply call it "pae"? It is smaller and the letter
-combination is not used yet and it means the same.
-
-> +
->  static void intel_workarounds(struct cpuinfo_x86 *c)
->  {
->  	unsigned long lo, hi;
-> @@ -226,6 +234,17 @@ static void intel_workarounds(struct cpuinfo_x86 *c)
->  		clear_cpu_cap(c, X86_FEATURE_SEP);
->  
->  	/*
-> +	 * PAE CPUID issue: many Pentium M report no PAE but may have a
-> +	 * functionally usable PAE implementation.
-> +	 * Forcefully enable PAE if kernel parameter "forcepae" is present.
-> +	 */
-> +	if (forcepae) {
-> +		printk(KERN_WARNING "PAE forced!\n");
-> +		set_cpu_cap(c, X86_FEATURE_PAE);
-> +		add_taint(TAINT_CPU_OUT_OF_SPEC, LOCKDEP_NOW_UNRELIABLE);
-
-Right, this implies Dave's patch is preceding yours. I guess hpa can
-fish it out from the thread when applying.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
