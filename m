@@ -1,113 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744AbaCCPRH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 10:17:07 -0500
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:44238 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753980AbaCCPRD (ORCPT
+	id S1754620AbaCCP3E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 10:29:04 -0500
+Received: from e24smtp03.br.ibm.com ([32.104.18.24]:53846 "EHLO
+	e24smtp03.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754290AbaCCP3B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 10:17:03 -0500
-From: David Herrmann <dh.herrmann@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, David Howells <dhowells@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>, <stable@vger.kernel.org>
-Subject: [PATCH] fs: fix i_writecount on shmem and friends
-Date: Mon,  3 Mar 2014 16:16:38 +0100
-Message-Id: <1393859798-1407-1-git-send-email-dh.herrmann@gmail.com>
-X-Mailer: git-send-email 1.9.0
+	Mon, 3 Mar 2014 10:29:01 -0500
+Date: Mon, 3 Mar 2014 12:28:51 -0300
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: kvm@vger.kernel.org, aik@ozlabs.ru, linux-kernel@vger.kernel.org,
+        kvm-ppc@vger.kernel.org, bhelgaas@google.com,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [RFC PATCH] vfio-pci: avoid deadlock between unbind and
+ VFIO_DEVICE_RESET
+Message-ID: <20140303152851.GA20894@oc0268524204.ibm.com>
+References: <1393857192-28360-1-git-send-email-cascardo@linux.vnet.ibm.com>
+ <1393859362.2895.34.camel@ul30vt.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393859362.2895.34.camel@ul30vt.home>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14030315-9564-0000-0000-000000398C4B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-VM_DENYWRITE currently relies on i_writecount. Unless there's an active
-writable reference to an inode, VM_DENYWRITE is not allowed.
-Unfortunately, alloc_file() does not increase i_writecount, therefore,
-does not prevent a following VM_DENYWRITE even though the new file might
-have been opened with FMODE_WRITE. However, callers of alloc_file() expect
-the file object to be fully instantiated so they can call fput() on it. We
-could now either fix all callers to do an get_write_access() if opened
-with FMODE_WRITE, or simply fix alloc_file() to do that. I chose the
-latter.
+On Mon, Mar 03, 2014 at 08:09:22AM -0700, Alex Williamson wrote:
+> On Mon, 2014-03-03 at 11:33 -0300, Thadeu Lima de Souza Cascardo wrote:
+> > When we unbind vfio-pci from a device, while running a guest, we might
+> > have a deadlock when such a guest reboots.
+> > 
+> > Unbind takes device_lock at device_release_driver, and waits for
+> > release_q at vfio_del_group_dev.
+> > 
+> > release_q will only be woken up when all references to vfio_device are
+> > gone, and that includes open file descriptors, like the ones a guest
+> > on qemu will hold.
+> > 
+> > If you try to reboot the guest, it will call VFIO_DEVICE_RESET, which
+> > calls pci_reset_function, which now grabs the device_lock, and we are
+> > deadlocked.
+> > 
+> > Using device_trylock allow us to handle the case when the lock is
+> > already taken, and avoid this situation.
+> > 
+> > Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+> > ---
+> > 
+> > Not tested yet, but I would like some comments now, like would it be
+> > better to have a pci_try_reset_function, or do trylock on
+> > pci_reset_function itself?
+> 
+> 
+> We already have it:
+> 
+> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=61cf16d8bd38c3dc52033ea75d5b1f8368514a17
+> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=890ed578df82f5b7b5a874f9f2fa4f117305df5f
+> 
+> Is there something insufficient about these or are you testing on and
+> older kernel?  Thanks,
+> 
+> Alex
 
-Note that this bug allows some rather subtle misbehavior. The following
-sequence of calls should work just fine, but currently fails:
-    int p[2], orig, ro, rw;
-    char buf[128];
+Sorry I missed it. On the rush to report and fix it, I looked only on my
+local branch. Should we backport those two patches to long term stable
+3.10? I can reproduce the issue there.
 
-    pipe(p);
-    sprintf(buf, "/proc/self/fd/%d", p[1]);
-    ro = open("/proc/self/fd/$orig", O_RDONLY);
-    close(p[1]);
-    rw = open("/proc/self/fd/$ro", O_RDWR);
+Thanks.
+Cascardo.
 
-The final open() cannot succeed as close(p[1]) caused an integer underflow
-on i_writecount, effectively causing VM_DENYWRITE on the inode. The open
-will fail with -ETXTBUSY.
-
-It's a rather odd sequence of calls and given that open() doesn't use
-alloc_file() (and thus not affected by this bug), it's rather unlikely
-that this is a serious issue. But stuff like anon_inode shares a *single*
-inode across a huge set of interfaces. If any of these is broken like
-pipe(), it will affect all of these (ranging from dma-buf to epoll).
-
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
----
- fs/file_table.c | 27 ++++++++++++++++++---------
- 1 file changed, 18 insertions(+), 9 deletions(-)
-
-diff --git a/fs/file_table.c b/fs/file_table.c
-index 5fff903..e3c8dd0 100644
---- a/fs/file_table.c
-+++ b/fs/file_table.c
-@@ -167,6 +167,7 @@ struct file *alloc_file(struct path *path, fmode_t mode,
- 		const struct file_operations *fop)
- {
- 	struct file *file;
-+	int error;
- 
- 	file = get_empty_filp();
- 	if (IS_ERR(file))
-@@ -178,15 +179,23 @@ struct file *alloc_file(struct path *path, fmode_t mode,
- 	file->f_mode = mode;
- 	file->f_op = fop;
- 
--	/*
--	 * These mounts don't really matter in practice
--	 * for r/o bind mounts.  They aren't userspace-
--	 * visible.  We do this for consistency, and so
--	 * that we can do debugging checks at __fput()
--	 */
--	if ((mode & FMODE_WRITE) && !special_file(path->dentry->d_inode->i_mode)) {
--		file_take_write(file);
--		WARN_ON(mnt_clone_write(path->mnt));
-+	if (mode & FMODE_WRITE) {
-+		error = get_write_access(path->dentry->d_inode);
-+		if (error) {
-+			put_filp(file);
-+			return ERR_PTR(error);
-+		}
-+
-+		/*
-+		 * These mounts don't really matter in practice
-+		 * for r/o bind mounts.  They aren't userspace-
-+		 * visible.  We do this for consistency, and so
-+		 * that we can do debugging checks at __fput()
-+		 */
-+		if (!special_file(path->dentry->d_inode->i_mode)) {
-+			file_take_write(file);
-+			WARN_ON(mnt_clone_write(path->mnt));
-+		}
- 	}
- 	if ((mode & (FMODE_READ | FMODE_WRITE)) == FMODE_READ)
- 		i_readcount_inc(path->dentry->d_inode);
--- 
-1.9.0
+> 
+> 
+> > ---
+> >  drivers/vfio/pci/vfio_pci.c |   14 ++++++++++++--
+> >  1 files changed, 12 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/vfio/pci/vfio_pci.c b/drivers/vfio/pci/vfio_pci.c
+> > index 3b76dc8..d1d2242 100644
+> > --- a/drivers/vfio/pci/vfio_pci.c
+> > +++ b/drivers/vfio/pci/vfio_pci.c
+> > @@ -513,8 +513,18 @@ static long vfio_pci_ioctl(void *device_data,
+> >  		return ret;
+> >  
+> >  	} else if (cmd == VFIO_DEVICE_RESET) {
+> > -		return vdev->reset_works ?
+> > -			pci_reset_function(vdev->pdev) : -EINVAL;
+> > +		struct pci_dev *pdev = vdev->pdev;
+> > +		int ret = -EBUSY;
+> > +		if (!vdev->reset_works)
+> > +			return -EINVAL;
+> > +		if (pci_cfg_access_trylock(pdev)) {
+> > +			if (device_trylock(&pdev->dev)) {
+> > +				ret = __pci_reset_function_locked(pdev);
+> > +				device_unlock(&pdev->dev);
+> > +			}
+> > +			pci_cfg_access_unlock(pdev);
+> > +		}
+> > +		return ret;
+> >  
+> >  	} else if (cmd == VFIO_DEVICE_GET_PCI_HOT_RESET_INFO) {
+> >  		struct vfio_pci_hot_reset_info hdr;
+> 
+> 
+> 
+> _______________________________________________
+> Linuxppc-dev mailing list
+> Linuxppc-dev@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/linuxppc-dev
 
