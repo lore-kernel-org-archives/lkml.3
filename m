@@ -1,68 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754254AbaCCKm1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 05:42:27 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47654 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753889AbaCCKmZ (ORCPT
+	id S1754378AbaCCKof (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 05:44:35 -0500
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:62250 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754330AbaCCKoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 05:42:25 -0500
-Date: Mon, 3 Mar 2014 11:42:22 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Jenny Tc <jenny.tc@intel.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Kim Milo <Milo.Kim@ti.com>, Lee Jones <lee.jones@linaro.org>,
-        Jingoo Han <jg1.han@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Rhyland Klein <rklein@nvidia.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sebastian Reichel <sre@ring0.de>, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        Linux-OMAP <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 3/4] power_supply: Introduce PSE compliant algorithm
-Message-ID: <20140303104222.GA26675@amd.pavel.ucw.cz>
-References: <1391490780-6141-1-git-send-email-jenny.tc@intel.com>
- <1391490780-6141-4-git-send-email-jenny.tc@intel.com>
- <CACRpkdbppewuSSJu=Y=1T7oOCxz_ynhNspyPT=S894KoUB6H6g@mail.gmail.com>
- <20140228030727.GB27921@jenny-desktop>
- <20140228100816.GA13406@amd.pavel.ucw.cz>
- <20140303031137.GA1132@jenny-desktop>
+	Mon, 3 Mar 2014 05:44:34 -0500
+Message-ID: <53145D05.60207@marvell.com>
+Date: Mon, 3 Mar 2014 18:44:21 +0800
+From: Nenghua Cao <nhcao@marvell.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140303031137.GA1132@jenny-desktop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mark Brown <broonie@kernel.org>
+CC: Liam Girdwood <liam.r.girdwood@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] driver: regmap: add regmap_parse_val api
+References: <1392806653-29604-1-git-send-email-nhcao@marvell.com> <5305BBA6.3070105@marvell.com> <20140220085500.GX2669@sirena.org.uk> <5305F08F.8040008@marvell.com> <20140220134203.GA12197@sirena.org.uk>
+In-Reply-To: <20140220134203.GA12197@sirena.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-03-03_01:2014-03-03,2014-03-02,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1403030013
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> > > Just to convey that is_battery_full is a local function and not generic. You
-> > > can find similar usage in power_supply_core.c (__power_supply_changed_work)
-> > > and in other drivers. Isn't it advised to have __ prefixes?
-> > 
-> > It is static; everybody sees it is local. __ prefix usually means
-> > something else.
+On 02/20/2014 09:42 PM, Mark Brown wrote:
+> On Thu, Feb 20, 2014 at 08:09:51PM +0800, Nenghua Cao wrote:
 > 
-> Agreed, I will remove the __ prefix in next patchset. Meanwhile I would
-> appreciate if anyone could help me to understand what __ prefix
-> really means.
+>>      My intention is not chasing you. I am just afraid if there is any
+>> other mistake when submitting this patch to open source. Please do what
+>> you want to do. Thanks!
+> 
+> It's certainly fine in terms of submission, no problems there!
+> 
+Hi, Mark
 
-If you have __foo() and foo(), the __foo() is typically worker
-function, where foo() provides locking around it etc. 
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+      Do you have any comments about these two patches? Thanks!
+
+BR
+Nenghua
