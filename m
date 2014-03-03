@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754550AbaCCTs7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 14:48:59 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:50238 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753241AbaCCTs6 (ORCPT
+	id S1754793AbaCCTv3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 14:51:29 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:29255 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754082AbaCCTv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 14:48:58 -0500
-Date: Mon, 3 Mar 2014 20:48:39 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Joe Mario <jmario@redhat.com>, Don Zickus <dzickus@redhat.com>,
-        Davidlohr Bueso <davidlohr@hp.com>, acme@ghostprotocols.net,
-        LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com,
-        fowles@inreach.com, eranian@google.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Richard Fowles <rfowles@redhat.com>
-Subject: Re: [PATCH 08/19] perf c2c: Shared data analyser
-Message-ID: <20140303194839.GD6835@laptop.programming.kicks-ass.net>
-References: <1393609388-40489-1-git-send-email-dzickus@redhat.com>
- <1393609388-40489-9-git-send-email-dzickus@redhat.com>
- <87lhwvawc4.fsf@tassilo.jf.intel.com>
- <20140228194642.GM25953@redhat.com>
- <1393621411.2899.39.camel@buesod1.americas.hpqcorp.net>
- <20140303150531.GZ25953@redhat.com>
- <20140303172316.GA22728@two.firstfloor.org>
- <5314C4C4.1020304@redhat.com>
- <20140303184117.GL9987@twins.programming.kicks-ass.net>
- <20140303185819.GB22728@two.firstfloor.org>
+	Mon, 3 Mar 2014 14:51:27 -0500
+Date: Mon, 3 Mar 2014 14:51:10 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Filipe Brandenburger <filbranden@google.com>
+Cc: Li Zefan <lizefan@huawei.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] tracing: correctly expand len expressions from
+ __dynamic_array macro
+Message-ID: <20140303145110.0c09709c@gandalf.local.home>
+In-Reply-To: <1393651938-16418-2-git-send-email-filbranden@google.com>
+References: <1393651938-16418-1-git-send-email-filbranden@google.com>
+	<1393651938-16418-2-git-send-email-filbranden@google.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140303185819.GB22728@two.firstfloor.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 03, 2014 at 07:58:19PM +0100, Andi Kleen wrote:
-> Haswell is best however because it can report addresses on far more
-> events.
+On Fri, 28 Feb 2014 21:32:16 -0800
+Filipe Brandenburger <filbranden@google.com> wrote:
 
-Sure; however I think the code to data structure mapping might be more
-useful still. Its very hard to map a random address into a heap and find
-a fitting data structure. You'd need some allocator with a reverse map,
-which to me seems like too much overhead for normal runtime use.
+> This fixes expansion of the len argument in __dynamic_array macros.
+> The previous code from commit 7d536cb3f would not fully evaluate the
+> expression before multiplying its result by the size of the type.
+> 
+> This went unnoticed because the length stored in the high 16 bits of the
+> offset (which is the one that was broken here) is only used by
+> filter_pred_strloc which only acts on strings for which the size of the
+> type is 1.
+> 
+
+Was this visible in any of the tracepoints? Should this be marked for
+stable? It's been in the kernel for a long time (2009). Or is a new
+tracepoint showing a problem?
+
+-- Steve
+
+> Signed-off-by: Filipe Brandenburger <filbranden@google.com>
+> ---
+>  include/trace/ftrace.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+> index 1a8b28d..82e8d89 100644
+> --- a/include/trace/ftrace.h
+> +++ b/include/trace/ftrace.h
+> @@ -375,7 +375,7 @@ ftrace_define_fields_##call(struct ftrace_event_call *event_call)	\
+>  #define __dynamic_array(type, item, len)				\
+>  	__data_offsets->item = __data_size +				\
+>  			       offsetof(typeof(*entry), __data);	\
+> -	__data_offsets->item |= (len * sizeof(type)) << 16;		\
+> +	__data_offsets->item |= ((len) * sizeof(type)) << 16;		\
+>  	__data_size += (len) * sizeof(type);
+>  
+>  #undef __string
+
