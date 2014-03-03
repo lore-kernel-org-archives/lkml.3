@@ -1,84 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755760AbaCCTNK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 14:13:10 -0500
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:33271 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755324AbaCCTNG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 14:13:06 -0500
-Message-ID: <5314D43C.8030203@gmail.com>
-Date: Mon, 03 Mar 2014 20:13:00 +0100
-From: poma <pomidorabelisima@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1755766AbaCCTN0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 14:13:26 -0500
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:28135
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754709AbaCCTNX convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 14:13:23 -0500
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(z551biz98dIc89bh936eI1432I4015Izz1f42h2148h208ch1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz17326ah8275dh1de097h186068hz2fh95h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24ach24d7h2516h2545h255eh906i1155h)
+Date: Mon, 3 Mar 2014 11:13:11 -0800
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Gerhard Sittig <gsi@denx.de>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Michal Simek <michal.simek@xilinx.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC 0/3] clk: CCF clock primitives + custom IO accessors
+References: <1393630495-29689-1-git-send-email-soren.brinkmann@xilinx.com>
+ <20140302202940.GQ3327@book.gsilab.sittig.org>
+ <19206d89-cd0d-4fea-9170-3fd0a8482bf5@VA3EHSMHS045.ehs.local>
+ <20140303190736.GU3327@book.gsilab.sittig.org>
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>, Richard Weinberger <richard.weinberger@gmail.com>
-CC: Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Josh Boyer <jwboyer@redhat.com>,
-        "Justin M. Forbes" <jforbes@redhat.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Dave Jones <davej@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        eparis@parisplace.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: BUG: unable to handle kernel paging request at 0000000100000003
- - Oops: 0000 [#1] SMP
-References: <53073B1A.3040709@gmail.com> <CAFLxGvygOyXrMt=UBnMUziVFG40sEQvRquGKV8kyrhdp-_NrgQ@mail.gmail.com> <20140221154823.GA21405@quack.suse.cz>
-In-Reply-To: <20140221154823.GA21405@quack.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <20140303190736.GU3327@book.gsilab.sittig.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <87e0d582-77a2-4645-a52a-c303b7cd8b84@VA3EHSMHS007.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21.02.2014 16:48, Jan Kara wrote:
-> On Fri 21-02-14 14:08:03, Richard Weinberger wrote:
->> On Fri, Feb 21, 2014 at 12:40 PM, poma <pomidorabelisima@gmail.com> wrote:
->>>
->>> Affected kernels - 3.14.0-0.rc3*:
->>>
->>> - 3.14.0-0.rc3.git0.1
->>>   http://koji.fedoraproject.org/koji/buildinfo?buildID=498711
->>>
->>> - 3.14.0-0.rc3.git0.7 based on 3.14.0-0.rc3.git0.1
->>>
->>> - 3.14.0-0.rc3.git2.1
->>>   http://koji.fedoraproject.org/koji/buildinfo?buildID=499061
->>>
->>> - 3.14.0-0.rc3.git5.1
->>>   http://koji.fedoraproject.org/koji/buildinfo?buildID=499636
->>>
->>> Memtest86+ 4.20 - OK
->>> http://goo.gl/1nm1nV
->>>
->>> RHBZ
->>> https://bugzilla.redhat.com/show_bug.cgi?id=1067919
->>>
->>> messages-Oops-es-3.14.0-0.rc3
->>> https://bugzilla.redhat.com/attachment.cgi?id=865926
->>
->> Maybe commits 7053aee26a3548ebaba046ae2e52396ccf56ac6c (fsnotify: do
->> not share events between notification groups)
->> and 85816794240b9659e66e4d9b0df7c6e814e5f603 (fanotify: Fix use after
->> free for permission events) introduced this regression.
->   So the immediate problem seems to be that event->tgid is 0xffffffff
-> instead of a pointer. I don't see how this could be use after free and we
-> unconditionally initialize event->tgid to something sensible. Hum, but if
-> it is an overflow event, we are in a trouble since that doesn't have ->tgid
-> field at all so we read random crap that happens to be beyond the event
-> structure. Actually there seem to be more problems in the handling of
-> overflow event so I better add that to my testing (both for fanotify and
-> inotify). I'll work on the fix. Thanks for report!
+On Mon, 2014-03-03 at 08:07PM +0100, Gerhard Sittig wrote:
+> On Mon, Mar 03, 2014 at 09:35 -0800, Sören Brinkmann wrote:
+> > 
+> > It would be nice if we could use the logic provided in the mux, div etc
+> > primitives independently of how the HW is accessed and what is
+> > necessary to shift and mask those register values around, right? I
+> > mean, at then end we want to model a clk-(div|mux) and not a
+> > clk-(div|mux) which has only a single, memory-mapped control register,
+> > that does not overlap with other things, ...
 > 
-> 								Honza
+> Did you lookup the ll_ops discussion in the thread that
+> originated from
+> http://article.gmane.org/gmane.linux.ports.arm.kernel/289895 and
+> did you see the outlined logic in
+> http://article.gmane.org/gmane.linux.ports.arm.omap/109233 and
+> http://article.gmane.org/gmane.linux.ports.arm.omap/109381 ?
 > 
+> Support for regmap access instead of mere MMIO was one of the
+> things you could do with this approach.  You appear to be in the
+> situation where you need such an extension (or something similar,
+> but you really should look into the ll_ops thing).
 
-The test was successfully completed with the '3.14-rc5'.
-Thanks guys, Jan for the patchwork!
+Thanks for those pointer, I have some reading to do. That seems to
+go into the right direction.  What is the status of those patches?
+Are they already merged or actively worked on?
 
-
-poma
+	Thanks,
+	Sören
 
 
