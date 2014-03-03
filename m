@@ -1,39 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754734AbaCCTo3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 14:44:29 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:36278 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754239AbaCCTo2 (ORCPT
+	id S1754761AbaCCTqC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 14:46:02 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:50383 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753590AbaCCTqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 14:44:28 -0500
-Date: Mon, 3 Mar 2014 11:44:23 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: mst@redhat.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Question on vhost_has_feature()
-Message-ID: <20140303194422.GA17107@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
+	Mon, 3 Mar 2014 14:46:00 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14030319-7164-0000-0000-000006919A25
+In-Reply-To: <1393569464-14904-1-git-send-email-shuox.liu@intel.com>
+References: <1393569464-14904-1-git-send-email-shuox.liu@intel.com>
+Date: Mon, 3 Mar 2014 11:45:59 -0800
+X-Google-Sender-Auth: T4B6KEB0rgMOHKbEt3RRkpYxC-c
+Message-ID: <CAGXu5jLFq-FqXsw4SWuhE-JPzCCecvMdUHbF0_B=S-GODFU1pg@mail.gmail.com>
+Subject: Re: [PATCH] pstore: reset ftrace_read_cnt at ramoops_pstore_open
+From: Kees Cook <keescook@chromium.org>
+To: shuox.liu@intel.com
+Cc: LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Colin Cross <ccross@android.com>, Anton Vorontsov <anton@enomsg.org>,
+        yanmin_zhang@linux.intel.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Michael,
+On Thu, Feb 27, 2014 at 10:37 PM,  <shuox.liu@intel.com> wrote:
+> From: Liu ShuoX <shuox.liu@intel.com>
+>
+> ftrace_read_cnt need to be reset in open to support mutli times
+> getting the records.
+>
+> Signed-off-by: Liu ShuoX <shuox.liu@intel.com>
+> ---
+>  fs/pstore/ram.c | 1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+> index fa8cef2..a5d0cab 100644
+> --- a/fs/pstore/ram.c
+> +++ b/fs/pstore/ram.c
+> @@ -101,6 +101,7 @@ static int ramoops_pstore_open(struct pstore_info *psi)
+>
+>         cxt->dump_read_cnt = 0;
+>         cxt->console_read_cnt = 0;
+> +       cxt->ftrace_read_cnt = 0;
+>         return 0;
+>  }
 
-Just curious about the purpose of the rcu_dereference_index_check() in
-vhost_has_feature().  I don't see how it fits in.  The closest thing
-I see if the use in handle_rx(), where it selects vq->log or NULL.  But
-in that case, I would expect the usual RCU usage pattern to wrap an
-rcu_dereference() around the vq->log.
+I think we need a separate function for "clear" for the
+ramoops_context struct. IIUC, we're missing a similar initialization
+in ramoops_probe, which lacks both console_read_cnt=0 and
+ftrace_read_cnt=0. Then both places could call this?
 
-Enlightenment?
+-Kees
 
-							Thanx, Paul
-
+-- 
+Kees Cook
+Chrome OS Security
