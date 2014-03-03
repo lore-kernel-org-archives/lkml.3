@@ -1,99 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754272AbaCCStp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 13:49:45 -0500
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:61399 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754005AbaCCStn convert rfc822-to-8bit (ORCPT
+	id S1754343AbaCCSv7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 13:51:59 -0500
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:65090 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753775AbaCCSv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 13:49:43 -0500
+	Mon, 3 Mar 2014 13:51:57 -0500
 MIME-Version: 1.0
-In-Reply-To: <20140303110747.01F2DE0098@blue.fi.intel.com>
-References: <1393625931-2858-1-git-send-email-quning@google.com>
- <1393625931-2858-2-git-send-email-quning@google.com> <alpine.LSU.2.11.1402281657520.976@eggly.anvils>
- <CACQD4-4bbwk_LOUVamTyB6V+Fg_F+Q4q2g8DxroTM7YiA=eJzQ@mail.gmail.com> <20140303110747.01F2DE0098@blue.fi.intel.com>
-From: Ning Qu <quning@google.com>
-Date: Mon, 3 Mar 2014 10:49:02 -0800
-X-Google-Sender-Auth: g2lLTeqlHWZRoD8Tj_w3sqtvMxA
-Message-ID: <CACQD4-5FhMZ5c1+rFdSLHusK4gT4uE8D06FPUHJ9Exqw8KVYYQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] mm: implement ->map_pages for shmem/tmpfs
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Hugh Dickins <hughd@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Chinner <david@fromorbit.com>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20140303174325.GB31062@obsidianresearch.com>
+References: <1393854036-5244-1-git-send-email-sthokal@xilinx.com>
+	<20140303174325.GB31062@obsidianresearch.com>
+Date: Tue, 4 Mar 2014 00:21:55 +0530
+X-Google-Sender-Auth: b9WALfIlhfVh72i7YR2foa7Ui9Y
+Message-ID: <CA+mB=1JmRVzpz=32AbdN8W+2RrsxkPUb+s0zLUQXBrsj2Cdiwg@mail.gmail.com>
+Subject: Re: [PATCH v2] pcie: Add Xilinx PCIe Host Bridge IP driver
+From: Srikanth Thokala <sthokal@xilinx.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Srikanth Thokala <sthokal@xilinx.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        devicetree@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the updates!
-Best wishes,
--- 
-Ning Qu (曲宁) | Software Engineer | quning@google.com | +1-408-418-6066
+On Mon, Mar 3, 2014 at 11:13 PM, Jason Gunthorpe
+<jgunthorpe@obsidianresearch.com> wrote:
+> On Mon, Mar 03, 2014 at 07:10:36PM +0530, Srikanth Thokala wrote:
+>
+>> +Required properties:
+>> +- #address-cells: Address representation for root ports, set to <3>
+>> +- #size-cells: Size representation for root ports, set to <2>
+>> +- compatible: Should contain "xlnx,axi-pcie-host-1.00.a"
+>> +- reg: Should contain AXI PCIe registers location and length
+>> +- interrupts: Should contain AXI PCIe interrupt
+>> +- ranges: ranges for the PCI memory regions
+>> +     Please refer to the standard PCI bus binding document for a more
+>> +     detailed explanation
+>> +
+>> +Example:
+>> +++++++++
+>> +
+>> +     pci_express: axi-pcie@50000000 {
+>> +             #address-cells = <3>;
+>> +             #size-cells = <2>;
+>> +             compatible = "xlnx,axi-pcie-host-1.00.a";
+>> +             reg = < 0x50000000 0x10000000 >;
+>> +             interrupts = < 0 52 4 >;
+>> +             ranges = < 0x02000000 0 0x60000000 0x60000000 0 0x10000000 >;
+>> +     };
+>
+> That is much shorter, more notes:
+>  - It looks like the driver (HW?) has no support for IO space?
 
+It doesnt support IO space, I will add notes.
 
-On Mon, Mar 3, 2014 at 3:07 AM, Kirill A. Shutemov
-<kirill.shutemov@linux.intel.com> wrote:
-> Ning Qu wrote:
->> Btw, should we first check if page returned by radix_tree_deref_slot is NULL?
+>  - How are INTA/B/C/D handled? Typically I'd like to see an
+>    interrupt-mapping block describing them.
 >
-> Yes, we should. I don't know how I missed that. :(
+>    There are a few options here, if the HW can decode A/B/C/D then
+>    it probably needs another irq_domain for INTx, and have the IRQ
+>    handler decode like it does for MSI.
+
+The core provides a single interrupt for both INTx/MSI messages.  The
+core decodes the TLP messages and accordingly assert the INTx/MSI
+bits.  It provides two registers Interrupt FIFO Read 1 and Read 2 to get
+more information of these.
+
+    -------                -----------
+   | CPU |  <------  | PCIe IP |   <--  MSI/INTx Message (INTA, INTB,
+INTC, INTD)
+    -------       IRQ   -----------
+
+   Reading Interrupt Status Reg -> MSI/INTx bit set/not set
+   Reading Root Port FIFO Read Register1 -> Mentions which interrupt
+(INTx) is received
+   Reading Root Port FIFO Read Register2 -> MSI Data
+
+I will add this information to DT notes.
+
+> - The stanza needs a
+>     device_type = "pci";
+
+Ok.
+
 >
-> The patch below should address both issues.
+>> +     for (i = 0; i < port->mem_resno; i++)
+>> +             pci_add_resource_offset(&sys->resources, &port->mem[i],
+>> +                                     sys->mem_offset);
 >
-> From dca24c9a1f31ee1599fe81e9a60d4f87a4eaf0ea Mon Sep 17 00:00:00 2001
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> Date: Mon, 3 Mar 2014 12:07:03 +0200
-> Subject: [PATCH] mm: filemap_map_pages() avoid dereference NULL/exception
->  slots
+> The sys->mem_offset is probably wrong, please review Arnd's comments
+> on the recent threads with Will and Liviu regarding how this is
+> supposed to work with DT.
 >
-> radix_tree_deref_slot() can return NULL: add missed check.
+> You may want to work with Liviu to use his patch set which provides
+> more generic support. Also, the driver needs to put every one of these
+> ports in a PCI domain, Liviu is working on generic support for that
+> too.
+
+I will check and come back to you.
+
 >
-> Do no dereference 'page': we can get there as result of
-> radix_tree_exception(page) check.
+>> +static struct pci_bus __init *xilinx_pcie_scan_bus(int nr,
+>> +                             struct pci_sys_data *sys)
+>> +{
+>> +     struct xilinx_pcie_port *port = sys_to_pcie(sys);
+>> +     struct pci_bus *bus;
+>> +
+>> +     if (port) {
+>> +             port->root_busno = sys->busnr;
+>> +             bus = pci_scan_root_bus(NULL, sys->busnr, &xilinx_pcie_ops,
+>> +                                     sys, &sys->resources);
 >
-> Reported-by: Hugh Dickins <hughd@google.com>
-> Reported-by: Ning Qu <quning@google.com>
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> ---
->  mm/filemap.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
+> The NULL is probably wrong, please review the recent thread with Lucas
+> and Jingoo 'PCI irq mapping fixes and cleanups'
+
+Ok.
+
 >
-> diff --git a/mm/filemap.c b/mm/filemap.c
-> index 5f4fe7f0c258..e48624634927 100644
-> --- a/mm/filemap.c
-> +++ b/mm/filemap.c
-> @@ -1745,6 +1745,8 @@ void filemap_map_pages(struct vm_area_struct *vma, struct vm_fault *vmf)
->                         break;
->  repeat:
->                 page = radix_tree_deref_slot(slot);
-> +               if (unlikely(!page))
-> +                       goto next;
->                 if (radix_tree_exception(page)) {
->                         if (radix_tree_deref_retry(page))
->                                 break;
-> @@ -1790,7 +1792,7 @@ unlock:
->  skip:
->                 page_cache_release(page);
->  next:
-> -               if (page->index == vmf->max_pgoff)
-> +               if (iter.index == vmf->max_pgoff)
->                         break;
->         }
->         rcu_read_unlock();
+>> +static int xilinx_pcie_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
+>> +{
+>> +     struct xilinx_pcie_port *port = sys_to_pcie(dev->bus->sysdata);
+>> +
+>> +     if (!port)
+>> +             return -EINVAL;
+>> +
+>> +     return port->irq;
+>> +}
+>
+> It is preferred to use DT mechanisms via of_irq_parse_and_map_pci
+> (interrupt-mapping, etc) to define the slot IRQ, drivers should not
+> provide a map_irq unless absolutely necessary.
+
+Ok.
+
+>
+>> +     /* make sure it is root port before touching header */
+>> +     pcie_write(port, PCI_COMMAND_MASTER, PCI_COMMAND);
+>
+> Bit of a confusing comment
+
+I will correct it, Thanks.
+
+>
+>> +     /* Check if PCIe link is up? */
+>> +     port->link_up = xilinx_pcie_is_link_up(port);
+>> +     if (!port->link_up)
+>> +             dev_info(port->dev, "PCIe Link is DOWN\n");
+>> +     else
+>> +             dev_info(port->dev, "PCIe Link is UP\n");
+>
+> Don't forget to think about hot plug
+
+Did you mean using 'rescan' (from sysfs), correct?
+
+>
+>> +     /* Register Interrupt Handler */
+>> +     err = request_irq(port->irq, xilinx_pcie_intr_handler,
+>> +                             IRQF_SHARED, "xilinx-pcie", port);
+>
+> Use devm? This is leaking on error cases.
+>
+> Review other resources too...
+
+Ok.
+
+>
+>> +     /* Request and map I/O memory */
+>> +     io = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> +     port->phys_reg_base = io->start;
+>> +     port->reg_size = resource_size(io);
+>
+> Here it uses the platform resource..
+>
+>> +     /* Map the IRQ */
+>> +     port->irq = irq_of_parse_and_map(node, 0);
+>
+> .. And here it doesn't, probably should be consistent and just use the
+> platform resources.
+
+I will correct.
+
+Thanks
+Srikanth
+
+>
+> Jason
 > --
->  Kirill A. Shutemov
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
