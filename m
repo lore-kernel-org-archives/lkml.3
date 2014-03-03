@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755136AbaCCS60 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 13:58:26 -0500
-Received: from one.firstfloor.org ([193.170.194.197]:53741 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755038AbaCCS6V (ORCPT
+	id S1755676AbaCCTLr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 14:11:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:56040 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755091AbaCCS6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 13:58:21 -0500
-Date: Mon, 3 Mar 2014 19:58:19 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Joe Mario <jmario@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Don Zickus <dzickus@redhat.com>, Davidlohr Bueso <davidlohr@hp.com>,
-        acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
-        jolsa@redhat.com, fowles@inreach.com, eranian@google.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Richard Fowles <rfowles@redhat.com>
-Subject: Re: [PATCH 08/19] perf c2c: Shared data analyser
-Message-ID: <20140303185819.GB22728@two.firstfloor.org>
-References: <1393609388-40489-1-git-send-email-dzickus@redhat.com>
- <1393609388-40489-9-git-send-email-dzickus@redhat.com>
- <87lhwvawc4.fsf@tassilo.jf.intel.com>
- <20140228194642.GM25953@redhat.com>
- <1393621411.2899.39.camel@buesod1.americas.hpqcorp.net>
- <20140303150531.GZ25953@redhat.com>
- <20140303172316.GA22728@two.firstfloor.org>
- <5314C4C4.1020304@redhat.com>
- <20140303184117.GL9987@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140303184117.GL9987@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 3 Mar 2014 13:58:25 -0500
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 32/67] usb-storage: restrict bcdDevice range for Super Top in Cypress ATACB
+Date: Mon,  3 Mar 2014 10:55:20 -0800
+Message-Id: <1393872955-28810-33-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1393872955-28810-1-git-send-email-kamal@canonical.com>
+References: <1393872955-28810-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 03, 2014 at 07:41:17PM +0100, Peter Zijlstra wrote:
-> On Mon, Mar 03, 2014 at 01:07:00PM -0500, Joe Mario wrote:
-> > If you only sample on the HITMs then you don't get the store misses.
-> > That means you'll not be able to detect who is simultaneously tugging
-> > on the same cache lines.  That gives up much of the value of "perf
-> > c2c".
-> 
-> As long as you know which lines are hurting bringing in (loads) you can
-> often figure out who is doing the stores on them.
+3.8.13.19 -stable review patch.  If anyone has any objections, please let me know.
 
-Yes, especially since every store is a load too (unless you're talking
-WC)
+------------------
 
-The method c2c uses is more exact, but keep in mind it's a sampling
-heuristic in any cases, with some potential bias. load-latency tags
-the loads randomly and there's no guarantee that tagging is fully
-uniform. Also you only see a subset in any case.
+From: Alan Stern <stern@rowland.harvard.edu>
 
-> 
-> > As we developed this, we ended up settling on Ivy Bridge to get the
-> > behavior we wanted.
-> 
-> Wouldn't SNB also work?
+commit a9c143c82608bee2a36410caa56d82cd86bdc7fa upstream.
 
-Yes.
+The Cypress ATACB unusual-devs entry for the Super Top SATA bridge
+causes problems.  Although it was originally reported only for
+bcdDevice = 0x160, its range was much larger.  This resulted in a bug
+report for bcdDevice 0x220, so the range was capped at 0x219.  Now
+Milan reports errors with bcdDevice 0x150.
 
-Haswell is best however because it can report addresses on far more
-events.
+Therefore this patch restricts the range to just 0x160.
 
--Andi
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-and-tested-by: Milan Svoboda <milan.svoboda@centrum.cz>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/usb/storage/unusual_cypress.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/drivers/usb/storage/unusual_cypress.h b/drivers/usb/storage/unusual_cypress.h
+index 65a6a75..82e8ed0 100644
+--- a/drivers/usb/storage/unusual_cypress.h
++++ b/drivers/usb/storage/unusual_cypress.h
+@@ -31,7 +31,7 @@ UNUSUAL_DEV(  0x04b4, 0x6831, 0x0000, 0x9999,
+ 		"Cypress ISD-300LP",
+ 		USB_SC_CYP_ATACB, USB_PR_DEVICE, NULL, 0),
+ 
+-UNUSUAL_DEV( 0x14cd, 0x6116, 0x0000, 0x0219,
++UNUSUAL_DEV( 0x14cd, 0x6116, 0x0160, 0x0160,
+ 		"Super Top",
+ 		"USB 2.0  SATA BRIDGE",
+ 		USB_SC_CYP_ATACB, USB_PR_DEVICE, NULL, 0),
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+1.8.3.2
+
