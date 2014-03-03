@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755678AbaCCTRg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 14:17:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:55943 "EHLO
+	id S1754591AbaCCS4U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 13:56:20 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:55887 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754568AbaCCS4T (ORCPT
+	with ESMTP id S1754375AbaCCS4P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 13:56:19 -0500
+	Mon, 3 Mar 2014 13:56:15 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Harald Freudenberger <freude@linux.vnet.ibm.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
+Cc: Weijie Yang <weijie.yang@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 04/67] crypto: s390 - fix concurrency issue in aes-ctr mode
-Date: Mon,  3 Mar 2014 10:54:52 -0800
-Message-Id: <1393872955-28810-5-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 18/67] mm/swap: fix race on swap_info reuse between swapoff and swapon
+Date: Mon,  3 Mar 2014 10:55:06 -0800
+Message-Id: <1393872955-28810-19-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1393872955-28810-1-git-send-email-kamal@canonical.com>
 References: <1393872955-28810-1-git-send-email-kamal@canonical.com>
@@ -28,147 +30,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Harald Freudenberger <freude@linux.vnet.ibm.com>
+From: Weijie Yang <weijie.yang@samsung.com>
 
-commit 0519e9ad89e5cd6e6b08398f57c6a71d9580564c upstream.
+commit f893ab41e4dae2fe8991faf5d86d029068d1ef3a upstream.
 
-The aes-ctr mode uses one preallocated page without any concurrency
-protection. When multiple threads run aes-ctr encryption or decryption
-this can lead to data corruption.
+swapoff clear swap_info's SWP_USED flag prematurely and free its
+resources after that.  A concurrent swapon will reuse this swap_info
+while its previous resources are not cleared completely.
 
-The patch introduces locking for the page and a fallback solution with
-slower en/decryption performance in concurrency situations.
+These late freed resources are:
+ - p->percpu_cluster
+ - swap_cgroup_ctrl[type]
+ - block_device setting
+ - inode->i_flags &= ~S_SWAPFILE
 
-Signed-off-by: Harald Freudenberger <freude@linux.vnet.ibm.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+This patch clears the SWP_USED flag after all its resources are freed,
+so that swapon can reuse this swap_info by alloc_swap_info() safely.
+
+[akpm@linux-foundation.org: tidy up code comment]
+Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/s390/crypto/aes_s390.c | 65 ++++++++++++++++++++++++++++++++-------------
- 1 file changed, 46 insertions(+), 19 deletions(-)
+ mm/swapfile.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
-diff --git a/arch/s390/crypto/aes_s390.c b/arch/s390/crypto/aes_s390.c
-index 94e20dd..2a245b5 100644
---- a/arch/s390/crypto/aes_s390.c
-+++ b/arch/s390/crypto/aes_s390.c
-@@ -25,6 +25,7 @@
- #include <linux/err.h>
- #include <linux/module.h>
- #include <linux/init.h>
-+#include <linux/spinlock.h>
- #include "crypt_s390.h"
- 
- #define AES_KEYLEN_128		1
-@@ -32,6 +33,7 @@
- #define AES_KEYLEN_256		4
- 
- static u8 *ctrblk;
-+static DEFINE_SPINLOCK(ctrblk_lock);
- static char keylen_flag;
- 
- struct s390_aes_ctx {
-@@ -756,43 +758,67 @@ static int ctr_aes_set_key(struct crypto_tfm *tfm, const u8 *in_key,
- 	return aes_set_key(tfm, in_key, key_len);
- }
- 
-+static unsigned int __ctrblk_init(u8 *ctrptr, unsigned int nbytes)
-+{
-+	unsigned int i, n;
-+
-+	/* only use complete blocks, max. PAGE_SIZE */
-+	n = (nbytes > PAGE_SIZE) ? PAGE_SIZE : nbytes & ~(AES_BLOCK_SIZE - 1);
-+	for (i = AES_BLOCK_SIZE; i < n; i += AES_BLOCK_SIZE) {
-+		memcpy(ctrptr + i, ctrptr + i - AES_BLOCK_SIZE,
-+		       AES_BLOCK_SIZE);
-+		crypto_inc(ctrptr + i, AES_BLOCK_SIZE);
-+	}
-+	return n;
-+}
-+
- static int ctr_aes_crypt(struct blkcipher_desc *desc, long func,
- 			 struct s390_aes_ctx *sctx, struct blkcipher_walk *walk)
- {
- 	int ret = blkcipher_walk_virt_block(desc, walk, AES_BLOCK_SIZE);
--	unsigned int i, n, nbytes;
--	u8 buf[AES_BLOCK_SIZE];
--	u8 *out, *in;
-+	unsigned int n, nbytes;
-+	u8 buf[AES_BLOCK_SIZE], ctrbuf[AES_BLOCK_SIZE];
-+	u8 *out, *in, *ctrptr = ctrbuf;
- 
- 	if (!walk->nbytes)
- 		return ret;
- 
--	memcpy(ctrblk, walk->iv, AES_BLOCK_SIZE);
-+	if (spin_trylock(&ctrblk_lock))
-+		ctrptr = ctrblk;
-+
-+	memcpy(ctrptr, walk->iv, AES_BLOCK_SIZE);
- 	while ((nbytes = walk->nbytes) >= AES_BLOCK_SIZE) {
- 		out = walk->dst.virt.addr;
- 		in = walk->src.virt.addr;
- 		while (nbytes >= AES_BLOCK_SIZE) {
--			/* only use complete blocks, max. PAGE_SIZE */
--			n = (nbytes > PAGE_SIZE) ? PAGE_SIZE :
--						 nbytes & ~(AES_BLOCK_SIZE - 1);
--			for (i = AES_BLOCK_SIZE; i < n; i += AES_BLOCK_SIZE) {
--				memcpy(ctrblk + i, ctrblk + i - AES_BLOCK_SIZE,
--				       AES_BLOCK_SIZE);
--				crypto_inc(ctrblk + i, AES_BLOCK_SIZE);
--			}
--			ret = crypt_s390_kmctr(func, sctx->key, out, in, n, ctrblk);
--			if (ret < 0 || ret != n)
-+			if (ctrptr == ctrblk)
-+				n = __ctrblk_init(ctrptr, nbytes);
-+			else
-+				n = AES_BLOCK_SIZE;
-+			ret = crypt_s390_kmctr(func, sctx->key, out, in,
-+					       n, ctrptr);
-+			if (ret < 0 || ret != n) {
-+				if (ctrptr == ctrblk)
-+					spin_unlock(&ctrblk_lock);
- 				return -EIO;
-+			}
- 			if (n > AES_BLOCK_SIZE)
--				memcpy(ctrblk, ctrblk + n - AES_BLOCK_SIZE,
-+				memcpy(ctrptr, ctrptr + n - AES_BLOCK_SIZE,
- 				       AES_BLOCK_SIZE);
--			crypto_inc(ctrblk, AES_BLOCK_SIZE);
-+			crypto_inc(ctrptr, AES_BLOCK_SIZE);
- 			out += n;
- 			in += n;
- 			nbytes -= n;
- 		}
- 		ret = blkcipher_walk_done(desc, walk, nbytes);
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index e97a0e5..85c5777 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -1587,7 +1587,6 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
+ 	p->max = 0;
+ 	swap_map = p->swap_map;
+ 	p->swap_map = NULL;
+-	p->flags = 0;
+ 	frontswap_invalidate_area(type);
+ 	spin_unlock(&swap_lock);
+ 	mutex_unlock(&swapon_mutex);
+@@ -1607,6 +1606,16 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
+ 		mutex_unlock(&inode->i_mutex);
  	}
-+	if (ctrptr == ctrblk) {
-+		if (nbytes)
-+			memcpy(ctrbuf, ctrptr, AES_BLOCK_SIZE);
-+		else
-+			memcpy(walk->iv, ctrptr, AES_BLOCK_SIZE);
-+		spin_unlock(&ctrblk_lock);
-+	}
- 	/*
- 	 * final block may be < AES_BLOCK_SIZE, copy only nbytes
- 	 */
-@@ -800,14 +826,15 @@ static int ctr_aes_crypt(struct blkcipher_desc *desc, long func,
- 		out = walk->dst.virt.addr;
- 		in = walk->src.virt.addr;
- 		ret = crypt_s390_kmctr(func, sctx->key, buf, in,
--				       AES_BLOCK_SIZE, ctrblk);
-+				       AES_BLOCK_SIZE, ctrbuf);
- 		if (ret < 0 || ret != AES_BLOCK_SIZE)
- 			return -EIO;
- 		memcpy(out, buf, nbytes);
--		crypto_inc(ctrblk, AES_BLOCK_SIZE);
-+		crypto_inc(ctrbuf, AES_BLOCK_SIZE);
- 		ret = blkcipher_walk_done(desc, walk, 0);
-+		memcpy(walk->iv, ctrbuf, AES_BLOCK_SIZE);
- 	}
--	memcpy(walk->iv, ctrblk, AES_BLOCK_SIZE);
+ 	filp_close(swap_file, NULL);
 +
- 	return ret;
- }
- 
++	/*
++	 * Clear the SWP_USED flag after all resources are freed so that swapon
++	 * can reuse this swap_info in alloc_swap_info() safely.  It is ok to
++	 * not hold p->lock after we cleared its SWP_WRITEOK.
++	 */
++	spin_lock(&swap_lock);
++	p->flags = 0;
++	spin_unlock(&swap_lock);
++
+ 	err = 0;
+ 	atomic_inc(&proc_poll_event);
+ 	wake_up_interruptible(&proc_poll_wait);
 -- 
 1.8.3.2
 
