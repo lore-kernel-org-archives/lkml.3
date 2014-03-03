@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754390AbaCCLJa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 06:09:30 -0500
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:55039 "EHLO
-	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753693AbaCCLJ3 (ORCPT
+	id S1754440AbaCCLJj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 06:09:39 -0500
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:56108 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753964AbaCCLJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 06:09:29 -0500
-From: Nenghua Cao <nhcao@marvell.com>
-To: Liam Girdwood <liam.r.girdwood@linux.intel.com>,
-        Mark Brown <broonie@kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Nenghua Cao <nhcao@marvell.com>
-Subject: [PATCH] asoc: soc-core: fix coccinelle warnings
-Date: Mon, 3 Mar 2014 19:08:23 +0800
-Message-ID: <1393844903-1295-1-git-send-email-nhcao@marvell.com>
-X-Mailer: git-send-email 1.7.0.4
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-03-03_01:2014-03-03,2014-03-02,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1403030018
+	Mon, 3 Mar 2014 06:09:37 -0500
+From: Juri Lelli <juri.lelli@gmail.com>
+To: mingo@redhat.com, peterz@infradead.org
+Cc: linux-kernel@vger.kernel.org, Juri Lelli <juri.lelli@gmail.com>
+Subject: [PATCH] sched/deadline: Normal users can't set/change SCHED_DEADLINE policy
+Date: Mon,  3 Mar 2014 12:09:21 +0100
+Message-Id: <1393844961-18097-1-git-send-email-juri.lelli@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nenghua Cao <nhcao@marvell.com>
+Deny the use of SCHED_DEADLINE policy to unprivileged users.
+Even if root users can set the policy for normal users, we
+don't want the latter to be able to change their parameters
+(safest behavior).
 
-sound/soc/soc-core.c:2708:6-13: WARNING: Assignment of
-bool to 0/1
-sound/soc/soc-core.c:2726:3-10: WARNING: Assignment of
-bool to 0/1
-
-    More information about semantic patching is available at
-http://coccinelle.lip6.fr/
-
-Signed-off-by: Nenghua Cao <nhcao@marvell.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
 ---
- sound/soc/soc-core.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ kernel/sched/core.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
-index fb598cb..d92eb93 100644
---- a/sound/soc/soc-core.c
-+++ b/sound/soc/soc-core.c
-@@ -2818,7 +2818,7 @@ int snd_soc_put_volsw(struct snd_kcontrol *kcontrol,
- 	unsigned int mask = (1 << fls(max)) - 1;
- 	unsigned int invert = mc->invert;
- 	int err;
--	bool type_2r = 0;
-+	bool type_2r = false;
- 	unsigned int val2 = 0;
- 	unsigned int val, val_mask;
- 
-@@ -2836,7 +2836,7 @@ int snd_soc_put_volsw(struct snd_kcontrol *kcontrol,
- 			val |= val2 << rshift;
- 		} else {
- 			val2 = val2 << shift;
--			type_2r = 1;
-+			type_2r = true;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 6edbef2..dbed360 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3338,6 +3338,15 @@ recheck:
+ 				return -EPERM;
  		}
- 	}
- 	err = snd_soc_update_bits_locked(codec, reg, val_mask, val);
+ 
++		 /*
++		  * can't set/change SCHED_DEADLINE policy at all for now
++		  * (safest behavior); in the future we would like to allow
++		  * unprivileged DL tasks to increase their relative deadline
++		  * or reduce their runtime (both ways reducing utilization)
++		  */
++		if (dl_policy(policy))
++			return -EPERM;
++
+ 		/*
+ 		 * Treat SCHED_IDLE as nice 20. Only allow a switch to
+ 		 * SCHED_NORMAL if the RLIMIT_NICE would normally permit it.
 -- 
-1.7.0.4
+1.7.9.5
 
