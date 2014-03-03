@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754720AbaCCTlF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 14:41:05 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:54326 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753241AbaCCTlD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 14:41:03 -0500
+	id S1754373AbaCCTnl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 14:43:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13086 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753269AbaCCTnk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 14:43:40 -0500
+Date: Mon, 3 Mar 2014 14:43:27 -0500
+From: Dave Jones <davej@redhat.com>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        akpm <akpm@linux-foundation.org>, Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH 1/1] affs: AFFS_NO_TRUNCATE added to Kconfig
+Message-ID: <20140303194327.GA22359@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Fabian Frederick <fabf@skynet.be>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	akpm <akpm@linux-foundation.org>, Viro <viro@zeniv.linux.org.uk>
+References: <20140303182218.bc1de22e2c404dd1e07553b4@skynet.be>
 MIME-Version: 1.0
-Date: Mon, 3 Mar 2014 14:41:01 -0500
-X-Google-Sender-Auth: 4NiDwYcSx9psMKSBJ3VZf3jP0vY
-Message-ID: <CAMwGMjwjyZkj3_bKUcx4GXNP764UaUG=d6V1us8GgMKj=HoXVw@mail.gmail.com>
-Subject: Ethernet controller not starting
-From: Jon Ringle <jon@ringle.org>
-To: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: rafael.j.wysocki@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140303182218.bc1de22e2c404dd1e07553b4@skynet.be>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm working on porting an ARM board from linux-3.10 to linux-3.12 (now
-the latest LTS kernel).
-I found that Ethernet controller on the board no longer comes up on linux-3.12.
-I was able to bisect the issue I'm having to the following commit:
+On Mon, Mar 03, 2014 at 06:22:18PM +0800, Fabian Frederick wrote:
+ > Filename truncate process is defined in affs.h.
+ > 
+ > This patch exports current define to Kconfig and removes
+ > AFFS_MAX_PREALLOC which is never used.
+ > +
+ > +config AFFS_NO_TRUNCATE
+ > +	bool "Amiga FFS no filename truncate"
+ > +	depends on AFFS_FS
+ > +	default n
+ > +	help
+ > +	  If you say Y here, creating filesystem objects with longer names than
+ > +	  30 characters (standard limit) will result in an error (ENAMETOOLONG).
+ > +
+ > +	  By default this option is disabled and filenames are automatically
+ > +	  truncated.
 
->   45f0a85c8258741d11bda25c0a5669c06267204a is the first bad commit
->   commit 45f0a85c8258741d11bda25c0a5669c06267204a
->   Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->   Date:   Mon Jun 3 21:49:52 2013 +0200
->
->       PM / Runtime: Rework the "runtime idle" helper routine
->
->       The "runtime idle" helper routine, rpm_idle(), currently ignores
->       return values from .runtime_idle() callbacks executed by it.
->       However, it turns out that many subsystems use
->       pm_generic_runtime_idle() which checks the return value of the
->       driver's callback and executes pm_runtime_suspend() for the device
->       unless that value is not 0.  If that logic is moved to rpm_idle()
->       instead, pm_generic_runtime_idle() can be dropped and its users
->       will not need any .runtime_idle() callbacks any more.
->
->       Moreover, the PCI, SCSI, and SATA subsystems' .runtime_idle()
->       routines, pci_pm_runtime_idle(), scsi_runtime_idle(), and
->       ata_port_runtime_idle(), respectively, as well as a few drivers'
->       ones may be simplified if rpm_idle() calls rpm_suspend() after 0 has
->       been returned by the .runtime_idle() callback executed by it.
->
->       To reduce overall code bloat, make the changes described above.
->
->       Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
->       Tested-by: Kevin Hilman <khilman@linaro.org>
->       Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->       Acked-by: Kevin Hilman <khilman@linaro.org>
->       Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
->       Acked-by: Alan Stern <stern@rowland.harvard.edu>
+I get the feeling this would be better as a mount option than a config option.
+Then again, the number of people still caring about AFFS is probably in
+single digits these days, so I doubt anyone would complain if this was set
+one way or the other in a distribution kernel.
 
-Can anyone offer any suggestions on what I should be looking for to
-fix this on my board?
+	Dave
 
-Thanks,
-Jon
