@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708AbaCCFY2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 00:24:28 -0500
-Received: from mga09.intel.com ([134.134.136.24]:37272 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753646AbaCCFYZ convert rfc822-to-8bit (ORCPT
+	id S1751571AbaCCFfR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 00:35:17 -0500
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:53506 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889AbaCCFfP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 00:24:25 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,575,1389772800"; 
-   d="scan'208,223";a="492644427"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Paolo Bonzini <pbonzini@redhat.com>,
-        "'qemu-devel@nongnu.org'" <qemu-devel@nongnu.org>,
-        "'kvm@vger.kernel.org'" <kvm@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-CC: "'hpa@zytor.com'" <hpa@zytor.com>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        "'gleb@redhat.com'" <gleb@redhat.com>
-Subject: [PATCH] target-i386: bugfix of Intel MPX
-Thread-Topic: [PATCH] target-i386: bugfix of Intel MPX
-Thread-Index: Ac82oNCIFQFsH9+FTXuk6EyHE47FPg==
-Date: Mon, 3 Mar 2014 05:24:14 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC82923350152FC71@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 3 Mar 2014 00:35:15 -0500
 MIME-Version: 1.0
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <5314113E.1030106@wwwdotorg.org>
+References: <20140303120241.11066f951d53c50fb14faf47@canb.auug.org.au>
+	<5314113E.1030106@wwwdotorg.org>
+Date: Sun, 2 Mar 2014 21:35:14 -0800
+Message-ID: <CAOesGMjYtD3xmpLphWO4HV2=RdAN=JaSz5hRZFbsmTP721X+PQ@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the bcm2835 tree with the arm-soc tree
+From: Olof Johansson <olof@lixom.net>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Markus Mayer <markus.mayer@linaro.org>, Rob Herring <robh@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 3a7783cd9a0556787809d3d5ecb5f2b85dd9fc02 Mon Sep 17 00:00:00 2001
-From: Liu Jinsong <jinsong.liu@intel.com>
-Date: Mon, 3 Mar 2014 18:56:39 +0800
-Subject: [PATCH] target-i386: bugfix of Intel MPX
+On Sun, Mar 2, 2014 at 9:21 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 03/02/2014 06:02 PM, Stephen Rothwell wrote:
+>> Hi Stephen,
+>>
+>> Today's linux-next merge of the bcm2835 tree got a conflict in
+>> arch/arm/mach-bcm2835/Kconfig between commits ddb902cc3459 ("ARM:
+>> centralize common multi-platform kconfig options") and
+>> 0676b21fffd1 ("ARM: bcm2835: enable V6K instead of plain V6") from
+>> the arm-soc tree and commit d30fe6272183 ("ARM: bcm2835: Move to
+>> mach-bcm directory") from the bcm2835 tree.
+>
+> Olof, Arnd, Kevin,
+>
+> Do you want me to rebase the patch that moves
+> arch/arm/mach-bcm2835/Kconfig into arch/arm/mach-bcm/Kconfig, or even
+> drop it and take it through arm-soc directly? Or, will you just handle
+> this when you merge the pull request?
 
-The correct size of cpuid 0x0d sub-leaf 4 is 0x40, not 0x10.
-This is confirmed by Anvin H Peter and Mallick Asit K.
+We should be fine handling it when we merge. Conflicts when we merge
+in are just fine unless they are excessive, what we want to avoid for
+most silly cases is when it'll be exposed all the way up to Linus.
+Even then, some of them are ok since it's just how development works.
 
-Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Asit K Mallick <asit.k.mallick@intel.com>
----
- target-i386/cpu.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/target-i386/cpu.c b/target-i386/cpu.c
-index 0e8812a..9f69d7e 100644
---- a/target-i386/cpu.c
-+++ b/target-i386/cpu.c
-@@ -339,7 +339,7 @@ static const ExtSaveArea ext_save_areas[] = {
-     [3] = { .feature = FEAT_7_0_EBX, .bits = CPUID_7_0_EBX_MPX,
-             .offset = 0x3c0, .size = 0x40  },
-     [4] = { .feature = FEAT_7_0_EBX, .bits = CPUID_7_0_EBX_MPX,
--            .offset = 0x400, .size = 0x10  },
-+            .offset = 0x400, .size = 0x40  },
- };
- 
- const char *get_register_name_32(unsigned int reg)
--- 
-1.7.1
+-Olof
