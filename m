@@ -1,100 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932AbaCCTv7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 14:51:59 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:34337 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754874AbaCCTvx (ORCPT
+	id S1754737AbaCCTzd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 14:55:33 -0500
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:57338 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754255AbaCCTzb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 14:51:53 -0500
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH V3 2/5] dt: define IRQ flags bit 4 as src/dst inversion
-Date: Mon,  3 Mar 2014 12:51:37 -0700
-Message-Id: <1393876300-3061-2-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1393876300-3061-1-git-send-email-swarren@wwwdotorg.org>
-References: <1393876300-3061-1-git-send-email-swarren@wwwdotorg.org>
-X-NVConfidentiality: public
+	Mon, 3 Mar 2014 14:55:31 -0500
+Date: Mon, 3 Mar 2014 22:51:50 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>, ngupta@vflare.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Subject: Re: zram: lockdep spew for zram->init_lock
+Message-ID: <20140303195149.GA2223@swordfish.minsk.epam.com>
+References: <530F5045.1010604@oracle.com>
+ <20140227235629.GF31407@bbox>
+ <20140228163206.f772a6f4ceb876f2f9a58031@linux-foundation.org>
+ <20140303073056.GB3704@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140303073056.GB3704@gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+Hello,
 
-Some devices have configurable IRQ output polarities. Software might
-use IRQ specifier flag bits[3:0] to determine how to configure such a
-device's IRQ output polarity in order to match how the IRQ controller
-input is configured. If the board or SoC inverts the signal between the
-device's IRQ output and controller's IRQ output, software must be
-aware of this fact, in order to program the IRQ output to the correct
-(i.e. opposite) polarity. This flag provides that information.
+On (03/03/14 07:30), Minchan Kim wrote:
+> Hello Andrew,
+> 
+> I'm not in office now and I would be off in this week, maybe
+> so I don't have source code on top of Sergey's recent change
+> but it seems below code has same problem.
+> 
+> Pz, Sergey or Jerome Could you confirm it instead of me?
+> 
+> On Fri, Feb 28, 2014 at 04:32:06PM -0800, Andrew Morton wrote:
+> > On Fri, 28 Feb 2014 08:56:29 +0900 Minchan Kim <minchan@kernel.org> wrote:
+> > 
+> > > Sasha reported following below lockdep spew of zram.
+> > > 
+> > > It was introduced by [1] in recent linux-next but it's false positive
+> > > because zram_meta_alloc with down_write(init_lock) couldn't be called
+> > > during zram is working as swap device so we could annotate the lock.
+> > > 
+> > > But I don't think it's worthy because it would make greate lockdep
+> > > less effective. Instead, move zram_meta_alloc out of the lock as good
+> > > old day so we could do unnecessary allocation/free of zram_meta for
+> > > initialied device as Sergey claimed in [1] but it wouldn't be common
+> > > and be harmful if someone might do it. Rather than, I'd like to respect
+> > > lockdep which is great tool to prevent upcoming subtle bugs.
+> > > 
+> > > [1] zram: delete zram_init_device
+> > >
+> > > ...
+> > >
+> > > --- a/drivers/block/zram/zram_drv.c
+> > > +++ b/drivers/block/zram/zram_drv.c
+> > > @@ -537,26 +537,27 @@ static ssize_t disksize_store(struct device *dev,
+> > >  		struct device_attribute *attr, const char *buf, size_t len)
+> > >  {
+> > >  	u64 disksize;
+> > > +	struct zram_meta *meta;
+> > >  	struct zram *zram = dev_to_zram(dev);
+> > >  
+> > >  	disksize = memparse(buf, NULL);
+> > >  	if (!disksize)
+> > >  		return -EINVAL;
+> > >  
+> > > +	disksize = PAGE_ALIGN(disksize);
+> > > +	meta = zram_meta_alloc(disksize);
+> > > +	if (!meta)
+> > > +		return -ENOMEM;
+> > > +
+> > >  	down_write(&zram->init_lock);
+> > >  	if (init_done(zram)) {
+> > > +		zram_meta_free(meta);
+> > >  		up_write(&zram->init_lock);
+> > >  		pr_info("Cannot change disksize for initialized device\n");
+> > >  		return -EBUSY;
+> > >  	}
+> > >  
+> > > -	disksize = PAGE_ALIGN(disksize);
+> > > -	zram->meta = zram_meta_alloc(disksize);
+> > > -	if (!zram->meta) {
+> > > -		up_write(&zram->init_lock);
+> > > -		return -ENOMEM;
+> > > -	}
+> > > -
+> > > +	zram->meta = meta;
+> > >  	zram->disksize = disksize;
+> > >  	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
+> > >  	up_write(&zram->init_lock);
+> > 
+> > When applying zram-use-zcomp-compressing-backends.patch on top of this
+> > we get a bit of a mess, and simple conflict resolution results in a
+> > leak.
+> > 
+> > disksize_store() was one of those nasty functions which does multiple
+> > "return" statements after performing locking and resource allocation. 
+> > As usual, this led to a resource leak.  Remember folks, "return" is a
+> > goto in disguise.
+> > 
+> > 
+> > Here's what I ended up with.  Please review.
+> > 
+> > static ssize_t disksize_store(struct device *dev,
+> > 		struct device_attribute *attr, const char *buf, size_t len)
+> > {
+> > 	u64 disksize;
+> > 	struct zram_meta *meta;
+> > 	struct zram *zram = dev_to_zram(dev);
+> > 	int err;
+> > 
+> > 	disksize = memparse(buf, NULL);
+> > 	if (!disksize)
+> > 		return -EINVAL;
+> > 
+> > 	disksize = PAGE_ALIGN(disksize);
+> > 	meta = zram_meta_alloc(disksize);
+> > 	if (!meta)
+> > 		return -ENOMEM;
+> > 
+> > 	down_write(&zram->init_lock);
+> > 	if (init_done(zram)) {
+> > 		pr_info("Cannot change disksize for initialized device\n");
+> > 		err = -EBUSY;
+> > 		goto out_free_meta;
+> > 	}
+> > 
+> > 	zram->comp = zcomp_create(default_compressor);
+> 
+> AFAIR, zcomp_create try to allocate memory with GFP_KERNEL so it could
+> make a same problem. If so, let's allocate it out of the lock.
+> 
+> Please check it.
+> 
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
-v3: New patch.
----
- Documentation/devicetree/bindings/arm/gic.txt                     | 8 ++++++++
- .../devicetree/bindings/interrupt-controller/interrupts.txt       | 8 ++++++++
- include/dt-bindings/interrupt-controller/irq.h                    | 1 +
- 3 files changed, 17 insertions(+)
+good catch. you're right, zcomp allocation use GPF_KERNEL.
+since Minchan is out of the office this week should I send
+out a patch (combined Minchan's original patch + Andrew's
+rework) or, Andrew, you will handle it?
 
-diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
-index bae0d87a38b2..b0b65a440239 100644
---- a/Documentation/devicetree/bindings/arm/gic.txt
-+++ b/Documentation/devicetree/bindings/arm/gic.txt
-@@ -33,6 +33,14 @@ Main node required properties:
- 		2 = high-to-low edge triggered
- 		4 = active high level-sensitive
- 		8 = active low level-sensitive
-+	bit[4] IRQ is inverted between source and sink.
-+	Some devices have configurable IRQ output polarities. Software might
-+	use flag bits[3:0] to determine how to configure such a device's IRQ
-+	output polarity in order to match how the IRQ controller input is
-+	configured. If the board or SoC inverts the signal between the
-+	device's IRQ output and controller's IRQ output, software must be
-+	aware of this fact, in order to program the IRQ output to the correct
-+	(i.e. opposite) polarity. This flag provides that information.
- 	bits[15:8] PPI interrupt cpu mask.  Each bit corresponds to each of
- 	the 8 possible cpus attached to the GIC.  A bit set to '1' indicated
- 	the interrupt is wired to that CPU.  Only valid for PPI interrupts.
-diff --git a/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt b/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
-index 1486497a24c1..636eb0f478bf 100644
---- a/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
-+++ b/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
-@@ -76,6 +76,14 @@ commonly used:
-         2 = high-to-low edge triggered
-         4 = active high level-sensitive
-         8 = active low level-sensitive
-+    - bit[4] IRQ is inverted between source and sink
-+        Some devices have configurable IRQ output polarities. Software might
-+        use flag bits[3:0] to determine how to configure such a device's IRQ
-+        output polarity in order to match how the IRQ controller input is
-+        configured. If the board or SoC inverts the signal between the
-+        device's IRQ output and controller's IRQ output, software must be
-+        aware of this fact, in order to program the IRQ output to the correct
-+        (i.e. opposite) polarity. This flag provides that information.
- 
-   Example:
- 
-diff --git a/include/dt-bindings/interrupt-controller/irq.h b/include/dt-bindings/interrupt-controller/irq.h
-index 33a1003c55aa..5b04918c5c72 100644
---- a/include/dt-bindings/interrupt-controller/irq.h
-+++ b/include/dt-bindings/interrupt-controller/irq.h
-@@ -15,5 +15,6 @@
- #define IRQ_TYPE_EDGE_BOTH	(IRQ_TYPE_EDGE_FALLING | IRQ_TYPE_EDGE_RISING)
- #define IRQ_TYPE_LEVEL_HIGH	4
- #define IRQ_TYPE_LEVEL_LOW	8
-+#define IRQ_SRC_DST_INVERTED	16
- 
- #endif
--- 
-1.8.1.5
+	-ss
 
+> > 	if (!zram->comp) {
+> > 		pr_info("Cannot initialise %s compressing backend\n",
+> > 				default_compressor);
+> > 		err = -EINVAL;
+> > 		goto out_free_meta;
+> > 	}
+> > 
+> > 	zram->meta = meta;
+> > 	zram->disksize = disksize;
+> > 	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
+> > 	up_write(&zram->init_lock);
+> > 
+> > 	return len;
+> > 
+> > out_free_meta:
+> > 	up_write(&zram->init_lock);
+> > 	zram_meta_free(meta);
+> > 	return err;
+> > }
+> > 
+> 
