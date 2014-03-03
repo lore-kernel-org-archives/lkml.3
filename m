@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755251AbaCCWrb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 17:47:31 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:44963 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755642AbaCCWr2 (ORCPT
+	id S1755716AbaCCWrg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 17:47:36 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:58151 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755679AbaCCWrd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 17:47:28 -0500
+	Mon, 3 Mar 2014 17:47:33 -0500
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 To: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
         xen-devel@lists.xenproject.org, mcgrof@suse.com,
         Stephen Hemminger <stephen@networkplumber.org>,
         bridge@lists.linux-foundation.org
-Subject: [RFC v3 3/6] bridge: fix bridge root block on designated port
-Date: Mon,  3 Mar 2014 14:47:02 -0800
-Message-Id: <1393886825-24323-4-git-send-email-mcgrof@do-not-panic.com>
+Subject: [RFC v3 4/6] bridge: enable root block during device registration
+Date: Mon,  3 Mar 2014 14:47:03 -0800
+Message-Id: <1393886825-24323-5-git-send-email-mcgrof@do-not-panic.com>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1393886825-24323-1-git-send-email-mcgrof@do-not-panic.com>
 References: <1393886825-24323-1-git-send-email-mcgrof@do-not-panic.com>
@@ -25,60 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Luis R. Rodriguez" <mcgrof@suse.com>
 
-Root port blocking was designed so that a bridge port can opt
-out of becoming the designated root port for a bridge. If a port
-however first becomes the designated root port and we then toggle
-the root port block on it we currently don't kick that port out of
-the designated root port. This fixes that. This is particularly
-important for net_devices that would wish to never become a root
-port from the start, currently toggling that off will enable root
-port flag but it won't really kick the bridge and do what you'd
-expect, the MAC address is kept on the bridge of the toggled port
-for root_block if it was the designated port.
+root block support was added via 1007dd1a on v3.8 but toggling
+this flag is only allowed after a device has been registered and
+added to a bridge as its a bridge *port* primitive, not a *net_device*
+feature. There are work arounds possible to account for the lack
+of netlink tools to toggle root_block, such as using the root_block
+syfs attribute [0] or using udev / the driver to set the MAC address
+to something high such as FE:FF:FF:FF:FF:FF, but neither of these
+ensure root block is respected _from_the_start_ through device
+initialization.
 
-In order to catch if a port with root port block preference is set
-we need to move our check for root block prior to the root selection
-so check for root blocked ports upon eveyr br_configuration_update().
-We also simply just prevent the root-blocked ports from consideration
-as root port candidates on br_should_become_root_port() and
-br_stp_recalculate_bridge_id().
+In order to support the root_block feature from the start since device
+initialization and in order to avoid having to require userspace
+work arounds to existing deployments this exposes a private
+net_device flag which enables drivers that know they want to
+start with the root_block feature enabled form the start. The
+only caveat with this is topologies that require STP or non-root
+will either have to use sysfs [0] or netlink tools like the
+iproute2 bridge util to toggle the flag off after initialization.
+This is an accepted compromise.
 
-The issue that this patch is trying to address and fix can be tested
-easily before and after this patch is applied using 2 TAP net_devices
-and then toggling at will with the root_block knob.
+This flag is required given that ndo_add_slave() currently does not
+allow specifying any other parameters other than the net_device. We
+could extend this but in order to do that properly we'd need to
+evaluate all other types of master device implementations.
 
-ip tuntap add dev tap0 mode tap
-ip tuntap add dev tap1 mode tap
-ip link add dev br0 type bridge
-ip link show br0
-echo -------------------------------------------
-ip link set dev tap0 master br0
-ip link
-echo -------------------------------------------
-ip link set dev tap1 master br0
-ip link
-echo -------------------------------------------
-
-Upon review at the above results you can toggle root_block
-on each port to see if you see the results you expect.
-
-bridge link set dev tap0 root_block on
-ip link
-bridge link set dev tap1 root_block on
-ip link
-
-Toggling off root_block on any port should will bring back the
-port to be a candidate for designated root port:
-
-bridge link set dev tap1 root_block off
-ip link
-bridge link set dev tap0 root_block off
-ip link
-
-To nuke:
-
-ip tuntap del tap0 mode tap
-ip tuntap del tap0 mode tap
+[0] echo 1 > /sys/devices/vif-2-0/net/vif2.0/brport/root_block
 
 Cc: Stephen Hemminger <stephen@networkplumber.org>
 Cc: bridge@lists.linux-foundation.org
@@ -88,186 +60,55 @@ Cc: xen-devel@lists.xenproject.org
 Cc: kvm@vger.kernel.org
 Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
 ---
- net/bridge/br_netlink.c | 18 ++++++++++++
- net/bridge/br_private.h |  1 +
- net/bridge/br_stp.c     | 73 +++++++++++++++++++++++++++++++++++++++++++++----
- net/bridge/br_stp_if.c  |  3 +-
- 4 files changed, 88 insertions(+), 7 deletions(-)
+ include/linux/netdevice.h | 7 +++++++
+ net/bridge/br_if.c        | 2 ++
+ 2 files changed, 9 insertions(+)
 
-diff --git a/net/bridge/br_netlink.c b/net/bridge/br_netlink.c
-index 6f1b26d..fbec354 100644
---- a/net/bridge/br_netlink.c
-+++ b/net/bridge/br_netlink.c
-@@ -324,6 +324,21 @@ static void br_set_port_flag(struct net_bridge_port *p, struct nlattr *tb[],
- 	}
- }
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index 1a86948..b17643a 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -1181,6 +1181,11 @@ struct net_device_ops {
+  * @IFF_LIVE_ADDR_CHANGE: device supports hardware address
+  *	change when it's running
+  * @IFF_MACVLAN: Macvlan device
++ * @IFF_BRIDGE_ROOT_BLOCK: don't consider this net_device for root port
++ *	when this interface is added to a bridge. This makes use of the
++ *	root_block mechanism but since its a bridge port primitive this
++ *	flag can be used to instantiate the preference to have root block
++ *	enabled from the start since initialization.
+  */
+ enum netdev_priv_flags {
+ 	IFF_802_1Q_VLAN			= 1<<0,
+@@ -1205,6 +1210,7 @@ enum netdev_priv_flags {
+ 	IFF_SUPP_NOFCS			= 1<<19,
+ 	IFF_LIVE_ADDR_CHANGE		= 1<<20,
+ 	IFF_MACVLAN			= 1<<21,
++	IFF_BRIDGE_ROOT_BLOCK		= 1<<22,
+ };
  
-+static void br_kick_bridge_port(struct net_bridge_port *p)
-+{
-+	struct net_bridge *br = p->br;
-+	bool wasroot;
-+
-+	wasroot = br_is_root_bridge(br);
-+	br_become_designated_port(p);
-+
-+	br_configuration_update(br);
-+	br_port_state_selection(br);
-+
-+	if (br_is_root_bridge(br) && !wasroot)
-+		br_become_root_bridge(br);
-+}
-+
- /* Process bridge protocol info on port */
- static int br_setport(struct net_bridge_port *p, struct nlattr *tb[])
- {
-@@ -353,6 +368,9 @@ static int br_setport(struct net_bridge_port *p, struct nlattr *tb[])
- 		if (err)
- 			return err;
- 	}
-+
-+	br_kick_bridge_port(p);
-+
- 	return 0;
- }
+ #define IFF_802_1Q_VLAN			IFF_802_1Q_VLAN
+@@ -1229,6 +1235,7 @@ enum netdev_priv_flags {
+ #define IFF_SUPP_NOFCS			IFF_SUPP_NOFCS
+ #define IFF_LIVE_ADDR_CHANGE		IFF_LIVE_ADDR_CHANGE
+ #define IFF_MACVLAN			IFF_MACVLAN
++#define IFF_BRIDGE_ROOT_BLOCK		IFF_BRIDGE_ROOT_BLOCK
  
-diff --git a/net/bridge/br_private.h b/net/bridge/br_private.h
-index 32a06da..45d7917 100644
---- a/net/bridge/br_private.h
-+++ b/net/bridge/br_private.h
-@@ -150,6 +150,7 @@ struct net_bridge_port
- 	u8				priority;
- 	u8				state;
- 	u16				port_no;
-+	bool				root_block_enabled;
- 	unsigned char			topology_change_ack;
- 	unsigned char			config_pending;
- 	port_id				port_id;
-diff --git a/net/bridge/br_stp.c b/net/bridge/br_stp.c
-index 3c86f05..f5741f3 100644
---- a/net/bridge/br_stp.c
-+++ b/net/bridge/br_stp.c
-@@ -59,6 +59,7 @@ static int br_should_become_root_port(const struct net_bridge_port *p,
+ /*
+  *	The DEVICE structure.
+diff --git a/net/bridge/br_if.c b/net/bridge/br_if.c
+index 54d207d..4bee748 100644
+--- a/net/bridge/br_if.c
++++ b/net/bridge/br_if.c
+@@ -228,6 +228,8 @@ static struct net_bridge_port *new_nbp(struct net_bridge *br,
+ 	br_init_port(p);
+ 	p->state = BR_STATE_DISABLED;
+ 	br_stp_port_timer_init(p);
++	if (dev->priv_flags & IFF_BRIDGE_ROOT_BLOCK)
++		p->flags |= BR_ROOT_BLOCK;
+ 	br_multicast_add_port(p);
  
- 	br = p->br;
- 	if (p->state == BR_STATE_DISABLED ||
-+	   (p->flags & BR_ROOT_BLOCK) ||
- 	    br_is_designated_port(p))
- 		return 0;
- 
-@@ -104,7 +105,7 @@ static void br_root_port_block(const struct net_bridge *br,
- 			       struct net_bridge_port *p)
- {
- 
--	br_notice(br, "port %u(%s) tried to become root port (blocked)",
-+	br_notice(br, "port %u (%s) is now root blocked",
- 		  (unsigned int) p->port_no, p->dev->name);
- 
- 	p->state = BR_STATE_LISTENING;
-@@ -124,11 +125,7 @@ static void br_root_selection(struct net_bridge *br)
- 	list_for_each_entry(p, &br->port_list, list) {
- 		if (!br_should_become_root_port(p, root_port))
- 			continue;
--
--		if (p->flags & BR_ROOT_BLOCK)
--			br_root_port_block(br, p);
--		else
--			root_port = p->port_no;
-+		root_port = p->port_no;
- 	}
- 
- 	br->root_port = root_port;
-@@ -358,10 +355,74 @@ static void br_reply(struct net_bridge_port *p)
- 	br_transmit_config(p);
- }
- 
-+static bool br_root_port_block_check(struct net_bridge_port *p)
-+{
-+	bool designated = false;
-+
-+	if (p->root_block_enabled &&
-+	    !(p->flags & BR_ROOT_BLOCK)) {
-+		br_notice(p->br, "port %u (%s) is root block toggled off",
-+			  (unsigned int) p->port_no, p->dev->name);
-+		return false;
-+	}
-+
-+	if (p->flags & BR_ROOT_BLOCK &&
-+	    (p->root_block_enabled))
-+		return false;
-+
-+	if (!(p->flags & BR_ROOT_BLOCK))
-+		return false;
-+
-+	if (br_is_designated_port(p)) {
-+		designated = true;
-+		p->flags = BR_ROOT_BLOCK |
-+			   BR_LEARNING |
-+			   BR_FLOOD;
-+		p->priority = 0x8000 >> BR_PORT_BITS;
-+		br_init_port(p);
-+	}
-+
-+	br_root_port_block(p->br, p);
-+	p->root_block_enabled = true;
-+
-+	return designated;
-+}
-+
-+/* Updates block ports as required and returns true if one was designated */
-+static bool br_update_block_ports(struct net_bridge *br)
-+{
-+	struct net_bridge_port *p;
-+	bool designated = false;
-+
-+	list_for_each_entry(p, &br->port_list, list) {
-+		designated = br_root_port_block_check(p);
-+		if (designated)
-+			return designated;
-+	}
-+
-+	return false;
-+}
-+
-+static void br_update_designated_port(struct net_bridge *br)
-+{
-+	struct net_bridge_port *p;
-+
-+	list_for_each_entry(p, &br->port_list, list)
-+		br_become_designated_port(p);
-+}
-+
- /* called under bridge lock */
- void br_configuration_update(struct net_bridge *br)
- {
-+	bool designated_was_blocked = false;
-+
-+	designated_was_blocked = br_update_block_ports(br);
-+
- 	br_root_selection(br);
-+
-+	if (designated_was_blocked)
-+		br_update_designated_port(br);
-+
- 	br_designated_port_selection(br);
- }
- 
-diff --git a/net/bridge/br_stp_if.c b/net/bridge/br_stp_if.c
-index 4c9ad45..62b84af 100644
---- a/net/bridge/br_stp_if.c
-+++ b/net/bridge/br_stp_if.c
-@@ -230,10 +230,11 @@ bool br_stp_recalculate_bridge_id(struct net_bridge *br)
- 		return false;
- 
- 	list_for_each_entry(p, &br->port_list, list) {
-+		if (p->flags & BR_ROOT_BLOCK)
-+			continue;
- 		if (addr == br_mac_zero ||
- 		    memcmp(p->dev->dev_addr, addr, ETH_ALEN) < 0)
- 			addr = p->dev->dev_addr;
--
- 	}
- 
- 	if (ether_addr_equal(br->bridge_id.addr, addr))
+ 	return p;
 -- 
 1.9.0
 
