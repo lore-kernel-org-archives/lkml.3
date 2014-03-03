@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753763AbaCCRd4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 12:33:56 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53595 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753149AbaCCRdy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 12:33:54 -0500
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Tanmay Inamdar <tinamdar@apm.com>
-Subject: [PATCH v4 1/6] pci: Introduce pci_register_io_range() helper function.
-Date: Mon,  3 Mar 2014 17:33:11 +0000
-Message-Id: <1393867996-32299-2-git-send-email-Liviu.Dudau@arm.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1393867996-32299-1-git-send-email-Liviu.Dudau@arm.com>
-References: <1393867996-32299-1-git-send-email-Liviu.Dudau@arm.com>
+	id S1754439AbaCCRix (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 12:38:53 -0500
+Received: from vps0.lunn.ch ([178.209.37.122]:37987 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753990AbaCCRio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 12:38:44 -0500
+Date: Mon, 3 Mar 2014 18:37:40 +0100
+From: Andrew Lunn <andrew@lunn.ch>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
+        linux-kernel@vger.kernel.org,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH V2] ARM: dove: dt: revert PMU interrupt controller node
+Message-ID: <20140303173740.GC16655@lunn.ch>
+References: <20140207180836.GE8533@titan.lakedaemon.net>
+ <1392667236-19126-1-git-send-email-jason@lakedaemon.net>
+ <20140303150215.GI21483@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140303150215.GI21483@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some architectures do not share x86 simple view of the I/O space and
-instead use a range of addresses that map to external devices. For PCI,
-these ranges can be expressed by OF bindings in a device tree file.
+On Mon, Mar 03, 2014 at 03:02:15PM +0000, Russell King - ARM Linux wrote:
+> On Mon, Feb 17, 2014 at 08:00:36PM +0000, Jason Cooper wrote:
+> > The corresponding driver didn't make it into v3.14, so we need to remove
+> > the node.  Dove systems fail to boot with the node present and no
+> > driver.
+> > 
+> > This node will be re-added when the driver makes it to mainline.
+> 
+> I'm going to stick my oar in on this and ask what is a very fundamental
+> question.
+> 
+> If we're adding the PMU interrupt controller as a separate "device"
+> aren't we describing our implementation rather than the hardware?  It
+> isn't a separate device as far as the description of it in the reference
+> manuals.
+> 
+> Moreover, should the PMU interrupt controller be something which is
+> handled by a separate chunk of code to a driver for the PMU as a whole,
+> or are we storing up problems with resource clashes?  I can quite see
+> a PMU driver coming along in the future offering a pair of generic
+> power domains for the GPU and VPU, and such a driver would need to map
+> all the PMU registers so it can access the power control, reset and
+> isolator registers.
 
-Introduce a pci_register_io_range() helper function that can be used
-by the architecture code to keep track of the io ranges described by the
-PCI bindings.
+Hi Russell
 
-Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+I suspect you are right, we are storing up problems.
 
-diff --git a/drivers/of/address.c b/drivers/of/address.c
-index 1a54f1f..d1bb30f 100644
---- a/drivers/of/address.c
-+++ b/drivers/of/address.c
-@@ -619,6 +619,11 @@ const __be32 *of_get_address(struct device_node *dev, int index, u64 *size,
- }
- EXPORT_SYMBOL(of_get_address);
- 
-+int __weak pci_register_io_range(phys_addr_t addr, resource_size_t size)
-+{
-+	return 0;
-+}
-+
- unsigned long __weak pci_address_to_pio(phys_addr_t address)
- {
- 	if (address > IO_SPACE_LIMIT)
-diff --git a/include/linux/of_address.h b/include/linux/of_address.h
-index 5f6ed6b..40c418d 100644
---- a/include/linux/of_address.h
-+++ b/include/linux/of_address.h
-@@ -56,6 +56,7 @@ extern void __iomem *of_iomap(struct device_node *device, int index);
- extern const __be32 *of_get_address(struct device_node *dev, int index,
- 			   u64 *size, unsigned int *flags);
- 
-+extern int pci_register_io_range(phys_addr_t addr, resource_size_t size);
- extern unsigned long pci_address_to_pio(phys_addr_t addr);
- 
- extern int of_pci_range_parser_init(struct of_pci_range_parser *parser,
--- 
-1.9.0
+During the 4 months between submitting this driver and actually
+getting it accepted, i've learned quite a bit. I tried to implement
+cpufreq for Dove and ran into the problems you mention. The registers
+in the PMU are interleaved so that you cannot cleanly separate out the
+range needed for cpufreq. We probably need a PMU device, which exports
+a register syscon and have the interrupt controller make use of it.
 
+	Andrew
