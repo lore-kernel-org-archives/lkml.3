@@ -1,77 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754104AbaCCSqj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 13:46:39 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:43351 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753741AbaCCSqh (ORCPT
+	id S1754272AbaCCStp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 13:49:45 -0500
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:61399 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754005AbaCCStn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 13:46:37 -0500
-Message-ID: <5314CDE9.9040207@ti.com>
-Date: Mon, 3 Mar 2014 12:46:01 -0600
-From: Suman Anna <s-anna@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Mon, 3 Mar 2014 13:49:43 -0500
 MIME-Version: 1.0
-To: Bjorn Andersson <bjorn@kryo.se>, Ohad Ben-Cohen <ohad@wizery.com>
-CC: Mark Rutland <mark.rutland@arm.com>, Tony Lindgren <tony@atomide.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCHv4 4/7] hwspinlock/core: add common OF helpers
-References: <1389658764-39199-1-git-send-email-s-anna@ti.com>	<1389658764-39199-5-git-send-email-s-anna@ti.com>	<CAJAp7Oi7wD+VsMAd37gT04yZ4TH4ygXFmheDhvmWuanUjpBmVQ@mail.gmail.com>	<52F92524.3080402@ti.com>	<CAK=WgbY0wDtGCm71E8VXi2g5+VcGogHEy8jdekTRg8xtp6-3rQ@mail.gmail.com> <CAJAp7Ohf43hbKatCwS5Y1+OfEkJYWOkuhZhW-E_=t_9mfM+UaA@mail.gmail.com>
-In-Reply-To: <CAJAp7Ohf43hbKatCwS5Y1+OfEkJYWOkuhZhW-E_=t_9mfM+UaA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140303110747.01F2DE0098@blue.fi.intel.com>
+References: <1393625931-2858-1-git-send-email-quning@google.com>
+ <1393625931-2858-2-git-send-email-quning@google.com> <alpine.LSU.2.11.1402281657520.976@eggly.anvils>
+ <CACQD4-4bbwk_LOUVamTyB6V+Fg_F+Q4q2g8DxroTM7YiA=eJzQ@mail.gmail.com> <20140303110747.01F2DE0098@blue.fi.intel.com>
+From: Ning Qu <quning@google.com>
+Date: Mon, 3 Mar 2014 10:49:02 -0800
+X-Google-Sender-Auth: g2lLTeqlHWZRoD8Tj_w3sqtvMxA
+Message-ID: <CACQD4-5FhMZ5c1+rFdSLHusK4gT4uE8D06FPUHJ9Exqw8KVYYQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] mm: implement ->map_pages for shmem/tmpfs
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Chinner <david@fromorbit.com>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ohad,
+Thanks for the updates!
+Best wishes,
+-- 
+Ning Qu (曲宁) | Software Engineer | quning@google.com | +1-408-418-6066
 
-On 03/02/2014 02:19 PM, Bjorn Andersson wrote:
-> On Sat, Mar 1, 2014 at 9:14 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
->> On Mon, Feb 10, 2014 at 9:14 PM, Suman Anna <s-anna@ti.com> wrote:
->>> On 02/07/2014 04:49 PM, Bjorn Andersson wrote:
->>>> It seems to be standard practice to pass the error value back to the
->>>> consumer, so you should
->>>> return ERR_PTR(ret); here instead of the NULL...
->>>
->>>
->>> I have modelled the return values in this function based on the return
->>> values in the existing hwspin_lock_request interfaces. I would need to
->>> change those functions as well.
->>>
->>> Ohad,
->>> Do you have any objections to the return code convention change?
->>
->> Unless strictly needed, I prefer we don't switch to the ERR_PTR code
->> convention, as it reduces code readability and increases chances of
->> user bugs.
->>
 
- From a current user/client perspectives, I didn't find any clients of 
-hwspinlock within the kernel. So, this is probably the right time to 
-change the return code convention.
-
->> In our case, switching to ERR_PTR and friends seems only to optimize a
->> few error paths, and I'm not sure it's a big win over simplicity.
-
-The usage on the clients will also not become too complicated. The only 
-change on the clients is mostly the base error check change from if 
-(!hwlock) to if (IS_ERR(hwlock)).
-
-regards
-Suman
-
-> When introducing the ability to reference a hwspin lock via a phandle
-> in device tree it makes a big difference to be able to differ between
-> the case of "initialization failed" or "device not yet probed"; so
-> that the client knows if it should fail or retry later.
+On Mon, Mar 3, 2014 at 3:07 AM, Kirill A. Shutemov
+<kirill.shutemov@linux.intel.com> wrote:
+> Ning Qu wrote:
+>> Btw, should we first check if page returned by radix_tree_deref_slot is NULL?
 >
-> Regards,
-> Bjorn
+> Yes, we should. I don't know how I missed that. :(
 >
+> The patch below should address both issues.
+>
+> From dca24c9a1f31ee1599fe81e9a60d4f87a4eaf0ea Mon Sep 17 00:00:00 2001
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> Date: Mon, 3 Mar 2014 12:07:03 +0200
+> Subject: [PATCH] mm: filemap_map_pages() avoid dereference NULL/exception
+>  slots
+>
+> radix_tree_deref_slot() can return NULL: add missed check.
+>
+> Do no dereference 'page': we can get there as result of
+> radix_tree_exception(page) check.
+>
+> Reported-by: Hugh Dickins <hughd@google.com>
+> Reported-by: Ning Qu <quning@google.com>
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> ---
+>  mm/filemap.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+>
+> diff --git a/mm/filemap.c b/mm/filemap.c
+> index 5f4fe7f0c258..e48624634927 100644
+> --- a/mm/filemap.c
+> +++ b/mm/filemap.c
+> @@ -1745,6 +1745,8 @@ void filemap_map_pages(struct vm_area_struct *vma, struct vm_fault *vmf)
+>                         break;
+>  repeat:
+>                 page = radix_tree_deref_slot(slot);
+> +               if (unlikely(!page))
+> +                       goto next;
+>                 if (radix_tree_exception(page)) {
+>                         if (radix_tree_deref_retry(page))
+>                                 break;
+> @@ -1790,7 +1792,7 @@ unlock:
+>  skip:
+>                 page_cache_release(page);
+>  next:
+> -               if (page->index == vmf->max_pgoff)
+> +               if (iter.index == vmf->max_pgoff)
+>                         break;
+>         }
+>         rcu_read_unlock();
+> --
+>  Kirill A. Shutemov
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
