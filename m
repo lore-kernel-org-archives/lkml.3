@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755338AbaCCS7O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 13:59:14 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:56125 "EHLO
+	id S1755412AbaCCTGK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 14:06:10 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:56108 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755196AbaCCS7I (ORCPT
+	with ESMTP id S1755302AbaCCS7B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 13:59:08 -0500
+	Mon, 3 Mar 2014 13:59:01 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Cong Wang <cwang@twopensource.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 52/67] fs/file.c:fdtable: avoid triggering OOMs from alloc_fdmem
-Date: Mon,  3 Mar 2014 10:55:40 -0800
-Message-Id: <1393872955-28810-53-git-send-email-kamal@canonical.com>
+Cc: linux-raid@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        NeilBrown <neilb@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 59/67] md/raid5: Fix CPU hotplug callback registration
+Date: Mon,  3 Mar 2014 10:55:47 -0800
+Message-Id: <1393872955-28810-60-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1393872955-28810-1-git-send-email-kamal@canonical.com>
 References: <1393872955-28810-1-git-send-email-kamal@canonical.com>
@@ -31,66 +28,198 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 96c7a2ff21501691587e1ae969b83cbec8b78e08 upstream.
+commit 789b5e0315284463617e106baad360cb9e8db3ac upstream.
 
-Recently due to a spike in connections per second memcached on 3
-separate boxes triggered the OOM killer from accept.  At the time the
-OOM killer was triggered there was 4GB out of 36GB free in zone 1.  The
-problem was that alloc_fdtable was allocating an order 3 page (32KiB) to
-hold a bitmap, and there was sufficient fragmentation that the largest
-page available was 8KiB.
+Subsystems that want to register CPU hotplug callbacks, as well as perform
+initialization for the CPUs that are already online, often do it as shown
+below:
 
-I find the logic that PAGE_ALLOC_COSTLY_ORDER can't fail pretty dubious
-but I do agree that order 3 allocations are very likely to succeed.
+	get_online_cpus();
 
-There are always pathologies where order > 0 allocations can fail when
-there are copious amounts of free memory available.  Using the pigeon
-hole principle it is easy to show that it requires 1 page more than 50%
-of the pages being free to guarantee an order 1 (8KiB) allocation will
-succeed, 1 page more than 75% of the pages being free to guarantee an
-order 2 (16KiB) allocation will succeed and 1 page more than 87.5% of
-the pages being free to guarantee an order 3 allocate will succeed.
+	for_each_online_cpu(cpu)
+		init_cpu(cpu);
 
-A server churning memory with a lot of small requests and replies like
-memcached is a common case that if anything can will skew the odds
-against large pages being available.
+	register_cpu_notifier(&foobar_cpu_notifier);
 
-Therefore let's not give external applications a practical way to kill
-linux server applications, and specify __GFP_NORETRY to the kmalloc in
-alloc_fdmem.  Unless I am misreading the code and by the time the code
-reaches should_alloc_retry in __alloc_pages_slowpath (where
-__GFP_NORETRY becomes signification).  We have already tried everything
-reasonable to allocate a page and the only thing left to do is wait.  So
-not waiting and falling back to vmalloc immediately seems like the
-reasonable thing to do even if there wasn't a chance of triggering the
-OOM killer.
+	put_online_cpus();
 
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Cc: Cong Wang <cwang@twopensource.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+This is wrong, since it is prone to ABBA deadlocks involving the
+cpu_add_remove_lock and the cpu_hotplug.lock (when running concurrently
+with CPU hotplug operations).
+
+Interestingly, the raid5 code can actually prevent double initialization and
+hence can use the following simplified form of callback registration:
+
+	register_cpu_notifier(&foobar_cpu_notifier);
+
+	get_online_cpus();
+
+	for_each_online_cpu(cpu)
+		init_cpu(cpu);
+
+	put_online_cpus();
+
+A hotplug operation that occurs between registering the notifier and calling
+get_online_cpus(), won't disrupt anything, because the code takes care to
+perform the memory allocations only once.
+
+So reorganize the code in raid5 this way to fix the deadlock with callback
+registration.
+
+Cc: linux-raid@vger.kernel.org
+Fixes: 36d1c6476be51101778882897b315bd928c8c7b5
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+[Srivatsa: Fixed the unregister_cpu_notifier() deadlock, added the
+free_scratch_buffer() helper to condense code further and wrote the changelog.]
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/file.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/raid5.c | 90 ++++++++++++++++++++++++++----------------------------
+ 1 file changed, 44 insertions(+), 46 deletions(-)
 
-diff --git a/fs/file.c b/fs/file.c
-index 2b3570b..d00c463 100644
---- a/fs/file.c
-+++ b/fs/file.c
-@@ -48,7 +48,7 @@ static void *alloc_fdmem(size_t size)
- 	 * vmalloc() if the allocation size will be considered "large" by the VM.
- 	 */
- 	if (size <= (PAGE_SIZE << PAGE_ALLOC_COSTLY_ORDER)) {
--		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN);
-+		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN|__GFP_NORETRY);
- 		if (data != NULL)
- 			return data;
+diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
+index 5cffbd3..f992f4a 100644
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -5065,23 +5065,43 @@ raid5_size(struct mddev *mddev, sector_t sectors, int raid_disks)
+ 	return sectors * (raid_disks - conf->max_degraded);
+ }
+ 
++static void free_scratch_buffer(struct r5conf *conf, struct raid5_percpu *percpu)
++{
++	safe_put_page(percpu->spare_page);
++	kfree(percpu->scribble);
++	percpu->spare_page = NULL;
++	percpu->scribble = NULL;
++}
++
++static int alloc_scratch_buffer(struct r5conf *conf, struct raid5_percpu *percpu)
++{
++	if (conf->level == 6 && !percpu->spare_page)
++		percpu->spare_page = alloc_page(GFP_KERNEL);
++	if (!percpu->scribble)
++		percpu->scribble = kmalloc(conf->scribble_len, GFP_KERNEL);
++
++	if (!percpu->scribble || (conf->level == 6 && !percpu->spare_page)) {
++		free_scratch_buffer(conf, percpu);
++		return -ENOMEM;
++	}
++
++	return 0;
++}
++
+ static void raid5_free_percpu(struct r5conf *conf)
+ {
+-	struct raid5_percpu *percpu;
+ 	unsigned long cpu;
+ 
+ 	if (!conf->percpu)
+ 		return;
+ 
+-	get_online_cpus();
+-	for_each_possible_cpu(cpu) {
+-		percpu = per_cpu_ptr(conf->percpu, cpu);
+-		safe_put_page(percpu->spare_page);
+-		kfree(percpu->scribble);
+-	}
+ #ifdef CONFIG_HOTPLUG_CPU
+ 	unregister_cpu_notifier(&conf->cpu_notify);
+ #endif
++
++	get_online_cpus();
++	for_each_possible_cpu(cpu)
++		free_scratch_buffer(conf, per_cpu_ptr(conf->percpu, cpu));
+ 	put_online_cpus();
+ 
+ 	free_percpu(conf->percpu);
+@@ -5107,15 +5127,7 @@ static int raid456_cpu_notify(struct notifier_block *nfb, unsigned long action,
+ 	switch (action) {
+ 	case CPU_UP_PREPARE:
+ 	case CPU_UP_PREPARE_FROZEN:
+-		if (conf->level == 6 && !percpu->spare_page)
+-			percpu->spare_page = alloc_page(GFP_KERNEL);
+-		if (!percpu->scribble)
+-			percpu->scribble = kmalloc(conf->scribble_len, GFP_KERNEL);
+-
+-		if (!percpu->scribble ||
+-		    (conf->level == 6 && !percpu->spare_page)) {
+-			safe_put_page(percpu->spare_page);
+-			kfree(percpu->scribble);
++		if (alloc_scratch_buffer(conf, percpu)) {
+ 			pr_err("%s: failed memory allocation for cpu%ld\n",
+ 			       __func__, cpu);
+ 			return notifier_from_errno(-ENOMEM);
+@@ -5123,10 +5135,7 @@ static int raid456_cpu_notify(struct notifier_block *nfb, unsigned long action,
+ 		break;
+ 	case CPU_DEAD:
+ 	case CPU_DEAD_FROZEN:
+-		safe_put_page(percpu->spare_page);
+-		kfree(percpu->scribble);
+-		percpu->spare_page = NULL;
+-		percpu->scribble = NULL;
++		free_scratch_buffer(conf, per_cpu_ptr(conf->percpu, cpu));
+ 		break;
+ 	default:
+ 		break;
+@@ -5138,40 +5147,29 @@ static int raid456_cpu_notify(struct notifier_block *nfb, unsigned long action,
+ static int raid5_alloc_percpu(struct r5conf *conf)
+ {
+ 	unsigned long cpu;
+-	struct page *spare_page;
+-	struct raid5_percpu __percpu *allcpus;
+-	void *scribble;
+-	int err;
++	int err = 0;
+ 
+-	allcpus = alloc_percpu(struct raid5_percpu);
+-	if (!allcpus)
++	conf->percpu = alloc_percpu(struct raid5_percpu);
++	if (!conf->percpu)
+ 		return -ENOMEM;
+-	conf->percpu = allcpus;
++
++#ifdef CONFIG_HOTPLUG_CPU
++	conf->cpu_notify.notifier_call = raid456_cpu_notify;
++	conf->cpu_notify.priority = 0;
++	err = register_cpu_notifier(&conf->cpu_notify);
++	if (err)
++		return err;
++#endif
+ 
+ 	get_online_cpus();
+-	err = 0;
+ 	for_each_present_cpu(cpu) {
+-		if (conf->level == 6) {
+-			spare_page = alloc_page(GFP_KERNEL);
+-			if (!spare_page) {
+-				err = -ENOMEM;
+-				break;
+-			}
+-			per_cpu_ptr(conf->percpu, cpu)->spare_page = spare_page;
+-		}
+-		scribble = kmalloc(conf->scribble_len, GFP_KERNEL);
+-		if (!scribble) {
+-			err = -ENOMEM;
++		err = alloc_scratch_buffer(conf, per_cpu_ptr(conf->percpu, cpu));
++		if (err) {
++			pr_err("%s: failed memory allocation for cpu%ld\n",
++			       __func__, cpu);
+ 			break;
+ 		}
+-		per_cpu_ptr(conf->percpu, cpu)->scribble = scribble;
  	}
+-#ifdef CONFIG_HOTPLUG_CPU
+-	conf->cpu_notify.notifier_call = raid456_cpu_notify;
+-	conf->cpu_notify.priority = 0;
+-	if (err == 0)
+-		err = register_cpu_notifier(&conf->cpu_notify);
+-#endif
+ 	put_online_cpus();
+ 
+ 	return err;
 -- 
 1.8.3.2
 
