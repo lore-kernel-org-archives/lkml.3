@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627AbaCCKRB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 05:17:01 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:58528 "EHLO comal.ext.ti.com"
+	id S1753951AbaCCKX2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 05:23:28 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:45507 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753678AbaCCKQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 05:16:58 -0500
+	id S1751620AbaCCKX0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 05:23:26 -0500
 From: George Cherian <george.cherian@ti.com>
 To: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>, <devicetree@vger.kernel.org>
@@ -14,11 +14,11 @@ CC: <s.nawrocki@samsung.com>, <tony@atomide.com>, <george.cherian@ti.com>,
         <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
         <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>
 Subject: [PATCH 2/3] phy: omap-usb2: Provide workaround for USB2PHY false disconnect
-Date: Mon, 3 Mar 2014 15:46:24 +0530
-Message-ID: <1393841784-29554-2-git-send-email-george.cherian@ti.com>
+Date: Mon, 3 Mar 2014 15:52:53 +0530
+Message-ID: <1393842174-29868-1-git-send-email-george.cherian@ti.com>
 X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1393841784-29554-1-git-send-email-george.cherian@ti.com>
-References: <1393841784-29554-1-git-send-email-george.cherian@ti.com>
+In-Reply-To: <1393841424-27656-1-git-send-email-george.cherian@ti.com>
+References: <1393841424-27656-1-git-send-email-george.cherian@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
