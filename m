@@ -1,64 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754693AbaCCAFu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 19:05:50 -0500
-Received: from ozlabs.org ([203.10.76.45]:38092 "EHLO ozlabs.org"
+	id S1754679AbaCCAFt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 19:05:49 -0500
+Received: from ozlabs.org ([203.10.76.45]:57716 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754182AbaCCAFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754255AbaCCAFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 2 Mar 2014 19:05:46 -0500
-Date: Mon, 3 Mar 2014 11:08:09 +1100
+Date: Mon, 3 Mar 2014 11:07:15 +1100
 From: David Gibson <david@gibson.dropbear.id.au>
-To: Heinrich Schuchardt <xypron.glpk@gmx.de>
+To: xypron.glpk@gmx.de
 Cc: grant.likely@linaro.org, robh+dt@kernel.org, devicetree@vger.kernel.org,
-        jdl@jdl.com, devicetree-compiler@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] Consistently use xrealloc instead of realloc
-Message-ID: <20140303000809.GH12916@voom.fritz.box>
-References: <1393792741-29043-1-git-send-email-xypron.glpk@gmx.de>
- <20140302234140.GD12916@voom.fritz.box>
- <5313C616.9010104@gmx.de>
+        devicetree-compiler@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] Update source code location for dtc in manual.txt
+Message-ID: <20140303000715.GG12916@voom.fritz.box>
+References: <1393796354-29704-1-git-send-email-xypron.glpk@gmx.de>
+ <20140302234212.GF12916@voom.fritz.box>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7IgncvKP0CVPV/ZZ"
+	protocol="application/pgp-signature"; boundary="xQmOcGOVkeO43v2v"
 Content-Disposition: inline
-In-Reply-To: <5313C616.9010104@gmx.de>
+In-Reply-To: <20140302234212.GF12916@voom.fritz.box>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---7IgncvKP0CVPV/ZZ
+--xQmOcGOVkeO43v2v
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, Mar 03, 2014 at 01:00:22AM +0100, Heinrich Schuchardt wrote:
-> >Note that in general dtc patches should be CCed to myself and Jon
-> >Loeliger <jdl@jdl.com>, the dtc maintainers.
-> >
+On Mon, Mar 03, 2014 at 10:42:12AM +1100, David Gibson wrote:
+> On Sun, Mar 02, 2014 at 10:39:14PM +0100, xypron.glpk@gmx.de wrote:
+> > From: Heinrich Schuchardt <xypron.glpk@gmx.de>
+> >=20
+> > The information about the location of the source code of the
+> > device tree compiler was inaccurate.
+> >=20
+> > Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
 >=20
-> This is the relevant section in file MAINTAINERS of Torvald's git.
-> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/MAIN=
-TAINERS
->=20
-> OPEN FIRMWARE AND FLATTENED DEVICE TREE
-> M:  Grant Likely <grant.likely@linaro.org>
-> M:  Rob Herring <robh+dt@kernel.org>
-> L:  devicetree@vger.kernel.org
-> W:  http://fdt.secretlab.ca
-> T:  git git://git.secretlab.ca/git/linux-2.6.git
-> S:  Maintained
-> F:  drivers/of/
-> F:  include/linux/of*.h
-> F:  scripts/dtc/
-> K:  of_get_property
-> K:  of_match_table
->=20
-> If the information is not accurate, please, have it updated.
+> Trailing whitespace removed, then applied.  Thanks.
 
-That's the maintainers information for the devicetree stuff included
-in the Linux kernel tree, not for dtc as an upstream project.
+Uh, actually, corrected some of the submission details as well.
 
 --=20
 David Gibson			| I'll have my music baroque, and my code
@@ -66,25 +50,25 @@ david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
 				| _way_ _around_!
 http://www.ozlabs.org/~dgibson
 
---7IgncvKP0CVPV/ZZ
+--xQmOcGOVkeO43v2v
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJTE8fpAAoJEGw4ysog2bOSDwEP/RicZWpvB3qAZcxGZ/gggUUR
-N53NDdBXDJ5y8dpNh2enAVZk6W28Q4ZDgSsoYs8C0v4TISoJUmpAvrpAFtcMLRou
-sLu5QnaLMucn8bbrPpWFZfqSk0kUzt21HHq0p5rwWYA+TFVoPeZGTqFSiV1dBpPU
-MtNTYQ8UZwGiwLjyNoKL8J6DUrAj5S5j6MEg5esy7J3oJ7znAcuUZ6sw/QzPSVSl
-9XShHzf7AgPUq6jACoAIajlG6ngQmLAK6vI3UZ/41Ocbc/txl41iac1Y5zM/e+Ym
-RdEUTdsU1X5y7w6Ht3R3DJbQgdTVqLJbLSRGHj3//wy2BuTWN9LNbxOhK+vtplUe
-+GzIfyDZBaPTFFDYjcSos+C5EZoAEH8dGg1siSdGBd75u3c2HmioR+T4j2HEKNzA
-aVTKmuPpr6MRBVFh1ha3Dyuj6Yj9Owz3rzziQUVfyXr/SOE4UNEzQp8EjervjPuG
-hOmNSr2F4tGK3g/uboL6ODiK0gEL1lvon7QVGgNH56RRY1lO8SXVxV5WvLKzbyK9
-Z8Gn7pr6r6JAaOMH9Fbj8GC8qacLplZq/cB0rFbGWjkGCMcC0Gm3jX0HRtp+BupT
-Zu5KSMvfd3CgqSVpv/NhmR0REh56AB12E+sSq1fVEvYy228o/oSQgzn5y07RnQNV
-ZOeVn6/JIH9Shb5/BnD9
-=8MZ6
+iQIcBAEBAgAGBQJTE8ezAAoJEGw4ysog2bOSmGUP/3O8QvQYgpyuQctrPBmwqcUJ
+vs6/bXnsyd4LU2nR7W1WlFbO2bNAiboHik69OyYdSuWcdwLJ+J1LlJBlhOAEzrxx
+RMV8T4epPnMFe+aG3rkFaB5U/xdcRmD993N3pNCB84h4HSUVGjkcUaOr1FfpV4wU
+KPV7ZhQKF6lRDh45YAvVhqRlTCrzcxFT+MYQn3LqcYi03ka8J4XinHBXkrcqFb1j
+OGkV9Y1nhwLHqW4kWA9CMtMDh395jruY7Z52ZPVoGbZLtBR9hukflGZQjtrsnXT9
+OgrkKXuUWKWE3aLgnJOAyuLxkdht0gTlWoH8m5/eRY3NfrFm6RMD6p9utWtXf8GH
+hcrmY0X3UVDtS9D5KkvRoGjPygGOUiVJcjG3FGYt54zTUtG7IJtAA9Y6BL3Cvg4t
+DKGElvWfVmYotNTP35lUCY3Wha6BmdavnLgfqeakFGitDiwGL0yLqlNdnxGjGnpm
+OHFLr1OdKr9d28BqwpZEr3FB9UxXywgiMyojYs6gQV1KN5NfaHO0ArmE6/xV2l/G
+AEgzYDNDgm17fBxm6nLN6fplAdw2OvnVRksCDL0VXG7ncqFoK2G+JD8FdmoftLjo
+NJasA4mptjrM7s0QzZrZltqeobba1xog5uwnzlGbp6jia/np785/PrsZNWNPckVT
+YiK9vhcjtpEBTF9yNo+P
+=DzSZ
 -----END PGP SIGNATURE-----
 
---7IgncvKP0CVPV/ZZ--
+--xQmOcGOVkeO43v2v--
