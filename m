@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754979AbaCCPIe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 10:08:34 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:42225 "EHLO comal.ext.ti.com"
+	id S1754835AbaCCPIk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 10:08:40 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:57041 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754943AbaCCPI3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 10:08:29 -0500
+	id S1754969AbaCCPIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 10:08:34 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <kishon@ti.com>, <balbi@ti.com>, <tony@atomide.com>
 CC: <george.cherian@ti.com>, <balajitk@ti.com>, <hdegoede@redhat.com>,
         <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>,
         <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>, <linux-ide@vger.kernel.org>,
-        <rogerq@ti.com>, Benoit Cousson <bcousson@baylibre.com>,
-        Paul Walmsley <paul@pwsan.com>
-Subject: [PATCH 07/12] ARM: OMAP5: hwmod: Add ocp2scp3 and sata hwmods
-Date: Mon, 3 Mar 2014 17:07:29 +0200
-Message-ID: <1393859254-10937-8-git-send-email-rogerq@ti.com>
+        <rogerq@ti.com>, Benoit Cousson <bcousson@baylibre.com>
+Subject: [PATCH 08/12] ARM: dts: omap5: add sata node
+Date: Mon, 3 Mar 2014 17:07:30 +0200
+Message-ID: <1393859254-10937-9-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1393859254-10937-1-git-send-email-rogerq@ti.com>
 References: <1393859254-10937-1-git-send-email-rogerq@ti.com>
@@ -26,110 +25,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Keshava Munegowda <keshava_mgowda@ti.com>
+From: Balaji T K <balajitk@ti.com>
 
-Create hwmods for ocp2scp3 and sata modules.
+Add support for sata.
 
 [Roger Q] Clean up.
 
 CC: Benoit Cousson <bcousson@baylibre.com>
-CC: Paul Walmsley <paul@pwsan.com>
 CC: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Balaji T K <balajitk@ti.com>
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- arch/arm/mach-omap2/omap_hwmod_54xx_data.c | 73 ++++++++++++++++++++++++++++++
- 1 file changed, 73 insertions(+)
+ arch/arm/boot/dts/omap5.dtsi | 40 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 40 insertions(+)
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod_54xx_data.c b/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
-index e297d62..227a69f 100644
---- a/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
-@@ -1726,6 +1726,77 @@ static struct omap_hwmod omap54xx_wd_timer2_hwmod = {
- 	},
- };
+diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
+index a7f5930..8e55e97 100644
+--- a/arch/arm/boot/dts/omap5.dtsi
++++ b/arch/arm/boot/dts/omap5.dtsi
+@@ -806,6 +806,46 @@
  
-+/*
-+ * 'ocp2scp' class
-+ * bridge to transform ocp interface protocol to scp (serial control port)
-+ * protocol
-+ */
-+/* ocp2scp3 */
-+static struct omap_hwmod omap54xx_ocp2scp3_hwmod;
-+/* l4_cfg -> ocp2scp3 */
-+static struct omap_hwmod_ocp_if omap54xx_l4_cfg__ocp2scp3 = {
-+	.master		= &omap54xx_l4_cfg_hwmod,
-+	.slave		= &omap54xx_ocp2scp3_hwmod,
-+	.clk		= "l4_root_clk_div",
-+	.user		= OCP_USER_MPU | OCP_USER_SDMA,
-+};
+ 			#thermal-sensor-cells = <1>;
+ 		};
 +
-+static struct omap_hwmod omap54xx_ocp2scp3_hwmod = {
-+	.name		= "ocp2scp3",
-+	.class		= &omap54xx_ocp2scp_hwmod_class,
-+	.clkdm_name	= "l3init_clkdm",
-+	.prcm = {
-+		.omap4 = {
-+			.clkctrl_offs = OMAP54XX_CM_L3INIT_OCP2SCP3_CLKCTRL_OFFSET,
-+			.context_offs = OMAP54XX_RM_L3INIT_OCP2SCP3_CONTEXT_OFFSET,
-+			.modulemode   = MODULEMODE_HWCTRL,
-+		},
-+	},
-+};
++		omap_control_sata: control-phy@4a002374 {
++			compatible = "ti,control-phy-pipe3";
++			reg = <0x4a002374 0x4>;
++			reg-names = "power";
++			clocks = <&sys_clkin>;
++			clock-names = "sysclk";
++		};
 +
-+/*
-+ * 'sata' class
-+ * sata:  serial ata interface  gen2 compliant   ( 1 rx/ 1 tx)
-+ */
++		/* OCP2SCP3 */
++		ocp2scp@4a090000 {
++			compatible = "ti,omap-ocp2scp";
++			#address-cells = <1>;
++			#size-cells = <1>;
++			reg = <0x4a090000 0x20>;
++			ranges;
++			ti,hwmods = "ocp2scp3";
++			sata_phy: phy@4a096000 {
++				compatible = "ti,phy-pipe3-sata";
++				reg = <0x4A096000 0x80>, /* phy_rx */
++				      <0x4A096400 0x64>, /* phy_tx */
++				      <0x4A096800 0x40>; /* pll_ctrl */
++				reg-names = "phy_rx", "phy_tx", "pll_ctrl";
++				ctrl-module = <&omap_control_sata>;
++				clocks = <&sys_clkin>;
++				clock-names = "sysclk";
++				#phy-cells = <0>;
++			};
++		};
 +
-+static struct omap_hwmod_class_sysconfig omap54xx_sata_sysc = {
-+	.sysc_offs	= 0x0000,
-+	.sysc_flags	= (SYSC_HAS_MIDLEMODE | SYSC_HAS_SIDLEMODE),
-+	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
-+			   SIDLE_SMART_WKUP | MSTANDBY_FORCE | MSTANDBY_NO |
-+			   MSTANDBY_SMART | MSTANDBY_SMART_WKUP),
-+	.sysc_fields	= &omap_hwmod_sysc_type2,
-+};
++		sata: sata@4a141100 {
++			compatible = "snps,dwc-ahci";
++			reg = <0x4a140000 0x1100>, <0x4a141100 0x7>;
++			interrupts = <GIC_SPI 54 IRQ_TYPE_LEVEL_HIGH>;
++			phys = <&sata_phy>;
++			phy-names = "sata-phy";
++			clocks = <&sata_ref_clk>;
++			ti,hwmods = "sata";
++		};
 +
-+static struct omap_hwmod_class omap54xx_sata_hwmod_class = {
-+	.name	= "sata",
-+	.sysc	= &omap54xx_sata_sysc,
-+};
-+
-+/* sata */
-+static struct omap_hwmod omap54xx_sata_hwmod = {
-+	.name		= "sata",
-+	.class		= &omap54xx_sata_hwmod_class,
-+	.clkdm_name	= "l3init_clkdm",
-+	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
-+	.main_clk	= "func_48m_fclk",
-+	.mpu_rt_idx	= 1,
-+	.prcm = {
-+		.omap4 = {
-+			.clkctrl_offs = OMAP54XX_CM_L3INIT_SATA_CLKCTRL_OFFSET,
-+			.context_offs = OMAP54XX_RM_L3INIT_SATA_CONTEXT_OFFSET,
-+			.modulemode   = MODULEMODE_SWCTRL,
-+		},
-+	},
-+};
-+
-+/* l4_cfg -> sata */
-+static struct omap_hwmod_ocp_if omap54xx_l4_cfg__sata = {
-+	.master		= &omap54xx_l4_cfg_hwmod,
-+	.slave		= &omap54xx_sata_hwmod,
-+	.clk		= "l3_iclk_div",
-+	.user		= OCP_USER_MPU | OCP_USER_SDMA,
-+};
- 
- /*
-  * Interfaces
-@@ -2399,6 +2470,8 @@ static struct omap_hwmod_ocp_if *omap54xx_hwmod_ocp_ifs[] __initdata = {
- 	&omap54xx_l4_cfg__usb_tll_hs,
- 	&omap54xx_l4_cfg__usb_otg_ss,
- 	&omap54xx_l4_wkup__wd_timer2,
-+	&omap54xx_l4_cfg__ocp2scp3,
-+	&omap54xx_l4_cfg__sata,
- 	NULL,
+ 	};
  };
  
 -- 
