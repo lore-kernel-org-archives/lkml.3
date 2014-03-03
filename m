@@ -1,169 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754629AbaCCKLl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 05:11:41 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:45003 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753567AbaCCKLi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 05:11:38 -0500
-From: George Cherian <george.cherian@ti.com>
-To: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <devicetree@vger.kernel.org>
-CC: <s.nawrocki@samsung.com>, <tony@atomide.com>, <george.cherian@ti.com>,
-        <gregkh@linuxfoundation.org>, <kishon@ti.com>, <rob@landley.net>,
-        <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
-        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>
-Subject: [PATCH 1/3] phy: omap-usb2: Adapt phy-omap-usb2 for AM437x
-Date: Mon, 3 Mar 2014 15:40:22 +0530
-Message-ID: <1393841424-27656-2-git-send-email-george.cherian@ti.com>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1393841424-27656-1-git-send-email-george.cherian@ti.com>
-References: <1393841424-27656-1-git-send-email-george.cherian@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1754538AbaCCKK0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 05:10:26 -0500
+Received: from mail-we0-f179.google.com ([74.125.82.179]:36657 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754521AbaCCKKW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 05:10:22 -0500
+From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+To: nicolas.ferre@atmel.com
+Cc: plagnioj@jcrosoft.com, b.brezillon@overkiz.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        gregory.clement@free-electrons.com, devicetree@vger.kernel.org,
+        thomas.petazzoni@free-electrons.com,
+        alexandre.belloni@free-electrons.com,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Subject: [PATCH v5 7/9] at91: updated the at91_dt_defconfig with support for the ADS7846
+Date: Mon,  3 Mar 2014 11:06:00 +0100
+Message-Id: <1393841162-25339-8-git-send-email-jjhiblot@traphandler.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1393841162-25339-1-git-send-email-jjhiblot@traphandler.com>
+References: <1393841162-25339-1-git-send-email-jjhiblot@traphandler.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adapt phy-omap-usb2 driver for AM437x.
-	- Add new comaptible "ti,am437x-usb2" for AM437x
-	- Pass proper data to differentiate AM437x and others.
-	- AM437x doesnot support  set_vbus and start_srp.
-	- Also update the Documentation to add new compatible.
+This provides touchscreen support to the at91sam9261ek
 
-Signed-off-by: George Cherian <george.cherian@ti.com>
+Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
 ---
- Documentation/devicetree/bindings/usb/usb-phy.txt |  4 +-
- drivers/phy/phy-omap-usb2.c                       | 49 +++++++++++++++++------
- include/linux/usb/omap_usb.h                      |  9 +++++
- 3 files changed, 49 insertions(+), 13 deletions(-)
+ arch/arm/configs/at91_dt_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/Documentation/devicetree/bindings/usb/usb-phy.txt b/Documentation/devicetree/bindings/usb/usb-phy.txt
-index c0245c8..b3fa409 100644
---- a/Documentation/devicetree/bindings/usb/usb-phy.txt
-+++ b/Documentation/devicetree/bindings/usb/usb-phy.txt
-@@ -3,7 +3,9 @@ USB PHY
- OMAP USB2 PHY
- 
- Required properties:
-- - compatible: Should be "ti,omap-usb2"
-+ - compatible: Should be either of
-+	* "ti,omap-usb2" for OMAP4, OMAP5, DRA7
-+	* "ti,am437x-usb2" for AM437x
-  - reg : Address and length of the register set for the device.
-  - #phy-cells: determine the number of cells that should be given in the
-    phandle while referencing this phy.
-diff --git a/drivers/phy/phy-omap-usb2.c b/drivers/phy/phy-omap-usb2.c
-index 7699752..d54f24b 100644
---- a/drivers/phy/phy-omap-usb2.c
-+++ b/drivers/phy/phy-omap-usb2.c
-@@ -144,6 +144,31 @@ static struct phy_ops ops = {
- 	.owner		= THIS_MODULE,
- };
- 
-+#ifdef CONFIG_OF
-+static const struct usb_phy_data omap_usb2_data = {
-+	.label = "omap_usb2",
-+	.flags = OMAP_USB2_HAS_START_SRP | OMAP_USB2_HAS_SET_VBUS,
-+};
-+
-+static const struct usb_phy_data am437x_usb2_data = {
-+	.label = "am437x_usb2",
-+	.flags =  0,
-+};
-+
-+static const struct of_device_id omap_usb2_id_table[] = {
-+	{
-+		.compatible = "ti,omap-usb2",
-+		.data = &omap_usb2_data,
-+	},
-+	{
-+		.compatible = "ti,am437x-usb2",
-+		.data = &am437x_usb2_data,
-+	},
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, omap_usb2_id_table);
-+#endif
-+
- static int omap_usb2_probe(struct platform_device *pdev)
- {
- 	struct omap_usb	*phy;
-@@ -153,10 +178,16 @@ static int omap_usb2_probe(struct platform_device *pdev)
- 	struct device_node *node = pdev->dev.of_node;
- 	struct device_node *control_node;
- 	struct platform_device *control_pdev;
-+	const struct of_device_id *of_id;
-+	struct usb_phy_data *phy_data;
-+
-+	of_id = of_match_device(of_match_ptr(omap_usb2_id_table), &pdev->dev);
- 
--	if (!node)
-+	if (!of_id)
- 		return -EINVAL;
- 
-+	phy_data = (struct usb_phy_data *)of_id->data;
-+
- 	phy = devm_kzalloc(&pdev->dev, sizeof(*phy), GFP_KERNEL);
- 	if (!phy) {
- 		dev_err(&pdev->dev, "unable to allocate memory for USB2 PHY\n");
-@@ -172,7 +203,7 @@ static int omap_usb2_probe(struct platform_device *pdev)
- 	phy->dev		= &pdev->dev;
- 
- 	phy->phy.dev		= phy->dev;
--	phy->phy.label		= "omap-usb2";
-+	phy->phy.label		= phy_data->label;
- 	phy->phy.set_suspend	= omap_usb2_suspend;
- 	phy->phy.otg		= otg;
- 	phy->phy.type		= USB_PHY_TYPE_USB2;
-@@ -196,8 +227,10 @@ static int omap_usb2_probe(struct platform_device *pdev)
- 
- 	otg->set_host		= omap_usb_set_host;
- 	otg->set_peripheral	= omap_usb_set_peripheral;
--	otg->set_vbus		= omap_usb_set_vbus;
--	otg->start_srp		= omap_usb_start_srp;
-+	if (phy_data->flags & OMAP_USB2_HAS_SET_VBUS)
-+		otg->set_vbus		= omap_usb_set_vbus;
-+	if (phy_data->flags & OMAP_USB2_HAS_START_SRP)
-+		otg->start_srp		= omap_usb_start_srp;
- 	otg->phy		= &phy->phy;
- 
- 	platform_set_drvdata(pdev, phy);
-@@ -297,14 +330,6 @@ static const struct dev_pm_ops omap_usb2_pm_ops = {
- #define DEV_PM_OPS     NULL
- #endif
- 
--#ifdef CONFIG_OF
--static const struct of_device_id omap_usb2_id_table[] = {
--	{ .compatible = "ti,omap-usb2" },
--	{}
--};
--MODULE_DEVICE_TABLE(of, omap_usb2_id_table);
--#endif
--
- static struct platform_driver omap_usb2_driver = {
- 	.probe		= omap_usb2_probe,
- 	.remove		= omap_usb2_remove,
-diff --git a/include/linux/usb/omap_usb.h b/include/linux/usb/omap_usb.h
-index 6ae2936..034161d 100644
---- a/include/linux/usb/omap_usb.h
-+++ b/include/linux/usb/omap_usb.h
-@@ -42,6 +42,15 @@ struct omap_usb {
- 	u8			is_suspended:1;
- };
- 
-+struct usb_phy_data {
-+	const char *label;
-+	u32 flags;
-+};
-+
-+/* Driver Flags */
-+#define OMAP_USB2_HAS_START_SRP (1 << 0)
-+#define OMAP_USB2_HAS_SET_VBUS (1 << 1)
-+
- #define	phy_to_omapusb(x)	container_of((x), struct omap_usb, phy)
- 
- #if defined(CONFIG_OMAP_USB2) || defined(CONFIG_OMAP_USB2_MODULE)
+diff --git a/arch/arm/configs/at91_dt_defconfig b/arch/arm/configs/at91_dt_defconfig
+index 3c6905d..aaa322d 100644
+--- a/arch/arm/configs/at91_dt_defconfig
++++ b/arch/arm/configs/at91_dt_defconfig
+@@ -120,6 +120,7 @@ CONFIG_INPUT_EVDEV=y
+ CONFIG_KEYBOARD_GPIO=y
+ # CONFIG_INPUT_MOUSE is not set
+ CONFIG_INPUT_TOUCHSCREEN=y
++CONFIG_TOUCHSCREEN_ADS7846=y
+ # CONFIG_SERIO is not set
+ CONFIG_LEGACY_PTY_COUNT=4
+ CONFIG_SERIAL_ATMEL=y
 -- 
-1.8.3.1
+1.9.0
 
