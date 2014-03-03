@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754153AbaCCKkH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 05:40:07 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:35976 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752263AbaCCKkF (ORCPT
+	id S1754254AbaCCKm1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 05:42:27 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47654 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753889AbaCCKmZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 05:40:05 -0500
-Date: Mon, 3 Mar 2014 10:39:02 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: David Long <dave.long@linaro.org>, Oleg Nesterov <oleg@redhat.com>,
-        linux-arm-kernel@lists.infradead.org, Rabin Vincent <rabin@rab.in>,
-        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        davem@davemloft.net, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 00/14] uprobes: Add uprobes support for ARM
-Message-ID: <20140303103902.GG21483@n2100.arm.linux.org.uk>
-References: <1392017945-4507-1-git-send-email-dave.long@linaro.org> <20140301123026.GD21483@n2100.arm.linux.org.uk> <53131DBE.7020500@linaro.org> <20140303062324.GB20583@linux.vnet.ibm.com>
+	Mon, 3 Mar 2014 05:42:25 -0500
+Date: Mon, 3 Mar 2014 11:42:22 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Jenny Tc <jenny.tc@intel.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Kim Milo <Milo.Kim@ti.com>, Lee Jones <lee.jones@linaro.org>,
+        Jingoo Han <jg1.han@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Rhyland Klein <rklein@nvidia.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sebastian Reichel <sre@ring0.de>, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        Linux-OMAP <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH 3/4] power_supply: Introduce PSE compliant algorithm
+Message-ID: <20140303104222.GA26675@amd.pavel.ucw.cz>
+References: <1391490780-6141-1-git-send-email-jenny.tc@intel.com>
+ <1391490780-6141-4-git-send-email-jenny.tc@intel.com>
+ <CACRpkdbppewuSSJu=Y=1T7oOCxz_ynhNspyPT=S894KoUB6H6g@mail.gmail.com>
+ <20140228030727.GB27921@jenny-desktop>
+ <20140228100816.GA13406@amd.pavel.ucw.cz>
+ <20140303031137.GA1132@jenny-desktop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140303062324.GB20583@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20140303031137.GA1132@jenny-desktop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 03, 2014 at 11:53:24AM +0530, Srikar Dronamraju wrote:
-> I know there were more discussions on this, but I cant dig them out at
-> this time.  Finally it was decided that
-> 1. Users shouldnt have to select more than one config to select Uprobes.
-> 2. There was no point in selecting Uprobes and not having Uprobe_event
-> and vice versa.
+Hi!
+
+> > > Just to convey that is_battery_full is a local function and not generic. You
+> > > can find similar usage in power_supply_core.c (__power_supply_changed_work)
+> > > and in other drivers. Isn't it advised to have __ prefixes?
+> > 
+> > It is static; everybody sees it is local. __ prefix usually means
+> > something else.
 > 
-> >From the above, If a user chose UPROBE_EVENT, (which is the interface
-> for uprobes), we would automatically assume that he wants to use Uprobes
-> framework.
+> Agreed, I will remove the __ prefix in next patchset. Meanwhile I would
+> appreciate if anyone could help me to understand what __ prefix
+> really means.
 
-That much is fine - however, UPROBES itself is effectively not a user
-selectable symbol, even today.  As I've already pointed it, it's
-impossible for the user to select because it depends on UPROBE_EVENT,
-but when UPROBE_EVENT is enabled, it's forced to be set to "y" meaning
-that the user can't turn UPROBES off.
-
-So, the UPROBES symbol has two states:
-1. hidden, because its dependencies aren't satisfied.
-2. force-y, because UPROBE_EVENT is enabled.
-
-Hence, UPROBES itself serves no purpose.
-
-Now, the solution you mentioned in:
-
-	http://article.gmane.org/gmane.linux.kernel/1017186
-
-looks entirely reasonable to me if there is the desire to keep the two
-separate - but from what Frederic said in that post, it seems that there
-isn't.
-
-So I'd suggest just getting rid of this UPROBES symbol, moving the
-dependency of PERF_EVENTS to UPROBE_EVENTS.  If another interface to
-uprobes comes along, it can always be reintroduced in the manner you
-suggested in the above.
-
-Either solution should resolve the issue we're seeing on ARM with
-David's patches.
-
+If you have __foo() and foo(), the __foo() is typically worker
+function, where foo() provides locking around it etc. 
+									Pavel
 -- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
