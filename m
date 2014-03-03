@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994AbaCCI1D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 03:27:03 -0500
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:65117 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753154AbaCCI1B (ORCPT
+	id S1754043AbaCCI2O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 03:28:14 -0500
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:43467 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752318AbaCCI2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 03:27:01 -0500
-Date: Mon, 3 Mar 2014 09:26:58 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Atsushi Nemoto <anemo@mba.ocn.ne.jp>
-Cc: Mark Brown <broonie@kernel.org>, iivanov@mm-sol.com, gsi@denx.de,
-        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] spi: core: make zero length transfer valid again
-Message-ID: <20140303082657.GA3372@ulmo.nvidia.com>
-References: <1393596196-8652-1-git-send-email-anemo@mba.ocn.ne.jp>
+	Mon, 3 Mar 2014 03:28:12 -0500
+X-Original-SENDERIP: 10.177.220.200
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Mon, 3 Mar 2014 17:28:46 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan@kernel.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: Re: [PATCH 6/6] mm: use atomic bit operations in
+ set_pageblock_flags_group()
+Message-ID: <20140303082846.GB28899@lge.com>
+References: <1393596904-16537-1-git-send-email-vbabka@suse.cz>
+ <1393596904-16537-7-git-send-email-vbabka@suse.cz>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="17pEHd4RhPHOinZp"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1393596196-8652-1-git-send-email-anemo@mba.ocn.ne.jp>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1393596904-16537-7-git-send-email-vbabka@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Feb 28, 2014 at 03:15:04PM +0100, Vlastimil Babka wrote:
+> set_pageblock_flags_group() is used to set either migratetype or skip bit of a
+> pageblock. Setting migratetype is done under zone->lock (except from __init
+> code), however changing the skip bits is not protected and the pageblock flags
+> bitmap packs migratetype and skip bits together and uses non-atomic bit ops.
+> Therefore, races between setting migratetype and skip bit are possible and the
+> non-atomic read-modify-update of the skip bit may cause lost updates to
+> migratetype bits, resulting in invalid migratetype values, which are in turn
+> used to e.g. index free_list array.
+> 
+> The race has been observed to happen and cause panics, albeit during
+> development of series that increases frequency of migratetype changes through
+> {start,undo}_isolate_page_range() calls.
+> 
+> Two possible solutions were investigated: 1) using zone->lock for changing
+> pageblock_skip bit and 2) changing the bitmap operations to be atomic. The
+> problem of 1) is that zone->lock is already contended and almost never held in
+> the compaction code that updates pageblock_skip bits. Solution 2) should scale
+> better, but adds atomic operations also to migratype changes which are already
+> protected by zone->lock.
 
---17pEHd4RhPHOinZp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+How about 3) introduce new bitmap for pageblock_skip?
+I guess that migratetype bitmap is read-intensive and set/clear pageblock_skip
+could make performance degradation.
 
-On Fri, Feb 28, 2014 at 11:03:16PM +0900, Atsushi Nemoto wrote:
-> Zero length transfer becomes invalid since
-> "spi: core: Validate length of the transfers in message" commit,
-> but it should be valid to support an odd device, for example, which
-> requires long delay between chipselect and the first transfer, etc.
->=20
-> Signed-off-by: Atsushi Nemoto <anemo@mba.ocn.ne.jp>
-> ---
->  drivers/spi/spi.c |    5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
+> 
+> Using mmtests' stress-highalloc benchmark, little difference was found between
+> the two solutions. The base is 3.13 with recent compaction series by myself and
+> Joonsoo Kim applied.
+> 
+>                 3.13        3.13        3.13
+>                 base     2)atomic     1)lock
+> User         6103.92     6072.09     6178.79
+> System       1039.68     1033.96     1042.92
+> Elapsed      2114.27     2090.20     2110.23
+> 
 
-This fixes a regression on Venice2, where the keyboard controller relied
-on similar behaviour, so even if this is already applied,
+I really wonder how 2) is better than base although there is a little difference.
+Is it the avg result of 10 runs? Do you have any idea what happens?
 
-Tested-by: Thierry Reding <treding@nvidia.com>
+Thanks.
 
-Thanks,
-Thierry
-
---17pEHd4RhPHOinZp
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTFDzRAAoJEN0jrNd/PrOhXRAQALzffvNggGCqfoE1w1AU0HNt
-fA7Jd4GZgGr8jFMBuE9eSWaWG2znyDUDeGasfXWgy/PAzIlCYtElLuwm1qyca9f9
-NMjuiGDzIJdyMY0NIFwKCzsxu1LbrnytYvIBsnTuDrhwx740jZuLYFzbY4iJmZ5U
-Vw6nzZZwLB/lUkQTLkGAW4qJMYSy9tcBlp/DfZ/eShwAL0NwgBJkVwyRkshIBrF7
-t8jXEcs2OFeIYuLZEzxNd0bB5l0TDyxqiC/nKWu0e0UaNe+CctpfDjB4w0p36+yO
-0vyCmhjM6tyWu6yasTgN05IesvU4JgHaIPbv/ZTaPVQhn0TSPRsG4DeFYLDJIINZ
-E73K9JUaGY4flUFt5c/QcL4sxG+t7dl0xG4OMJzL+nnh2RiHW/QipBN+BHf2ZJdn
-xtSUCZvh3gFbv2X4oiDuUOCaTZqWU4MnJum7e35JZKIzoouera7o7PboKKt4f7Ik
-P2ED+ehL8sHK4HxRg8CpG1pRk4utSL9tWuWteQi2Isj/jsQNAOWVMEPfy7F9xAUU
-y4GP51DMlTjPnquGFfIvymr/ShoH7HqCtH7AADSnntPJON26s4x70RGv7HAS0RLt
-JrtukyAO2Gy5UMQtTnBhPhzIaoC4ZcY8dNMhwoo1DYavM9TYqs9tcSwETzVKqx05
-xgrZVYmEb+jpHgsWyCc0
-=WJjo
------END PGP SIGNATURE-----
-
---17pEHd4RhPHOinZp--
