@@ -1,95 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754099AbaCCRWP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 12:22:15 -0500
-Received: from mga02.intel.com ([134.134.136.20]:59879 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752717AbaCCRWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 12:22:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,578,1389772800"; 
-   d="scan'208";a="465620122"
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-To: <gregkh@linuxfoundation.org>
-Cc: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <sarah.a.sharp@linux.intel.com>, <dan.j.williams@intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>, stable@vger.kernel.org
-Subject: [PATCH v3 1/1] xhci: Prevent runtime pm from autosuspending during initialization
-Date: Mon,  3 Mar 2014 19:30:17 +0200
-Message-Id: <1393867817-10389-2-git-send-email-mathias.nyman@linux.intel.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1393867817-10389-1-git-send-email-mathias.nyman@linux.intel.com>
-References: <1393867817-10389-1-git-send-email-mathias.nyman@linux.intel.com>
+	id S1754142AbaCCRXS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 12:23:18 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:53290 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752844AbaCCRXR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 12:23:17 -0500
+Date: Mon, 3 Mar 2014 18:23:16 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Davidlohr Bueso <davidlohr@hp.com>, Andi Kleen <andi@firstfloor.org>,
+        acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
+        jolsa@redhat.com, jmario@redhat.com, fowles@inreach.com,
+        eranian@google.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Richard Fowles <rfowles@redhat.com>
+Subject: Re: [PATCH 08/19] perf c2c: Shared data analyser
+Message-ID: <20140303172316.GA22728@two.firstfloor.org>
+References: <1393609388-40489-1-git-send-email-dzickus@redhat.com>
+ <1393609388-40489-9-git-send-email-dzickus@redhat.com>
+ <87lhwvawc4.fsf@tassilo.jf.intel.com>
+ <20140228194642.GM25953@redhat.com>
+ <1393621411.2899.39.camel@buesod1.americas.hpqcorp.net>
+ <20140303150531.GZ25953@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140303150531.GZ25953@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-xHCI driver has its own pci probe function that will call usb_hcd_pci_probe
-to register its usb-2 bus, and then continue to manually register the
-usb-3 bus. usb_hcd_pci_probe does a pm_runtime_put_noidle at the end and
-might thus trigger a runtime suspend before the usb-3 bus is ready.
+> Hmm, so based on Andi's reply, I am assuming you are running on a Westmere
+> (or Nehalem) due to the lack of mem-stores.
+> 
+> If you don't have mem-stores, this tool isn't going to work.  The tool can
+> only detect contention when sampling reads _and_ writes to the same
+> addresses.
 
-Prevent the runtime suspend by increasing the usage count in the
-beginning of xhci_pci_probe, and decrease it once the usb-3 bus is
-ready.
+On these CPUs you could simply sample on HITM. You won't get addresses,
+but at least IPs and call stacks.
 
-xhci-platform driver is not using usb_hcd_pci_probe to set up
-busses and should not need to have it's usage count increased during probe.
-
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Acked-by: Dan Williams <dan.j.williams@intel.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: stable@vger.kernel.org
----
- drivers/usb/host/xhci-pci.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
-index 04f986d..753857f 100644
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -190,6 +190,10 @@ static int xhci_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 	struct usb_hcd *hcd;
- 
- 	driver = (struct hc_driver *)id->driver_data;
-+
-+	/* Prevent runtime suspending between USB-2 and USB-3 initialization */
-+	pm_runtime_get_noresume(&dev->dev);
-+
- 	/* Register the USB 2.0 roothub.
- 	 * FIXME: USB core must know to register the USB 2.0 roothub first.
- 	 * This is sort of silly, because we could just set the HCD driver flags
-@@ -199,7 +203,7 @@ static int xhci_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 	retval = usb_hcd_pci_probe(dev, id);
- 
- 	if (retval)
--		return retval;
-+		goto put_runtime_pm;
- 
- 	/* USB 2.0 roothub is stored in the PCI device now. */
- 	hcd = dev_get_drvdata(&dev->dev);
-@@ -228,12 +232,17 @@ static int xhci_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 	if (xhci->quirks & XHCI_LPM_SUPPORT)
- 		hcd_to_bus(xhci->shared_hcd)->root_hub->lpm_capable = 1;
- 
-+	/* USB-2 and USB-3 roothubs initialized, allow runtime pm suspend */
-+	pm_runtime_put_noidle(&dev->dev);
-+
- 	return 0;
- 
- put_usb3_hcd:
- 	usb_put_hcd(xhci->shared_hcd);
- dealloc_usb2_hcd:
- 	usb_hcd_pci_remove(dev);
-+put_runtime_pm:
-+	pm_runtime_put_noidle(&dev->dev);
- 	return retval;
- }
- 
--- 
-1.8.1.2
-
+-Andi
