@@ -1,47 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754378AbaCCKof (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 05:44:35 -0500
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:62250 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754330AbaCCKoe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 05:44:34 -0500
-Message-ID: <53145D05.60207@marvell.com>
-Date: Mon, 3 Mar 2014 18:44:21 +0800
-From: Nenghua Cao <nhcao@marvell.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1754461AbaCCKo4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 05:44:56 -0500
+Received: from smtp5.epfl.ch ([128.178.224.8]:44448 "EHLO smtp5.epfl.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754422AbaCCKox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 05:44:53 -0500
+Message-ID: <53145D21.4080101@epfl.ch>
+Date: Mon, 03 Mar 2014 11:44:49 +0100
+From: Florian Vaussard <florian.vaussard@epfl.ch>
+Reply-To: florian.vaussard@epfl.ch
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Liam Girdwood <liam.r.girdwood@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] driver: regmap: add regmap_parse_val api
-References: <1392806653-29604-1-git-send-email-nhcao@marvell.com> <5305BBA6.3070105@marvell.com> <20140220085500.GX2669@sirena.org.uk> <5305F08F.8040008@marvell.com> <20140220134203.GA12197@sirena.org.uk>
-In-Reply-To: <20140220134203.GA12197@sirena.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Joe Perches <joe@perches.com>
+CC: Andy Whitcroft <apw@canonical.com>, Rob Herring <robh@kernel.org>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] checkpatch: fix spurious vendor compatible warnings
+References: <1393604742-14317-1-git-send-email-florian.vaussard@epfl.ch>	 <1393604742-14317-3-git-send-email-florian.vaussard@epfl.ch> <1393621571.10280.49.camel@joe-AO722>
+In-Reply-To: <1393621571.10280.49.camel@joe-AO722>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-03-03_01:2014-03-03,2014-03-02,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1403030013
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2014 09:42 PM, Mark Brown wrote:
-> On Thu, Feb 20, 2014 at 08:09:51PM +0800, Nenghua Cao wrote:
-> 
->>      My intention is not chasing you. I am just afraid if there is any
->> other mistake when submitting this patch to open source. Please do what
->> you want to do. Thanks!
-> 
-> It's certainly fine in terms of submission, no problems there!
-> 
-Hi, Mark
+Hi,
 
-      Do you have any comments about these two patches? Thanks!
+On 02/28/2014 10:06 PM, Joe Perches wrote:
+> Hi.
+> 
+> A couple of suggestions and a couple of questions.
+> 
+> I made the patch below against your patches to.
+> 
+> o Look for ".compatible = "foo" strings in .c and .h files too
+> o Improve the vendor name match in vendor-prefix.txt by only
+>   matching the exact vendor name at the beginning of lines.
+> 
+> I then produced a file of all the compatible uses in dts
+> and used checkpatch on it.  It's a long list and a longer
+> checkpatch warning list.
+> 
+> $ git ls-files | grep -E "\.dtsi?$" | \
+>   xargs grep -hE "^\s*compatible\s*="| \
+>   sed -r -e 's/^\s*//' -e 's/\s*=\s*/ = /'| sort | uniq > tmp.dts
+> $ .scripts/checkpatch.pl -f tmp.dts
+> 
+> A couple of questions:
+> 
+> How does the $compat2 variable actually work?
+> What is it supposed to do?
+> 
+> 				my $compat2 = $compat;
+> 				$compat2 =~ s/\,[a-z]*\-/\,<\.\*>\-/;
+> 
+> For instance:
+> WARNING: DT compatible string "marvell,tauros2-cache" appears un-documented -- check ./Documentation/devicetree/bindings/
+> 
+> The prefix "tauros2-" doesn't match '=~ s/[a-z]*-/
+> 
 
-BR
-Nenghua
+This is my best guess, but correct me if I am wrong.
+Some bindings are documented in a more generic way. For instance,
+
+$ git grep ',<.*>-' Documentation/devicetree/bindings/
+
+gives examples like
+
+Documentation/devicetree/bindings/serial/fsl-imx-uart.txt:
+	compatible : Should be "fsl,<soc>-uart"
+
+Here <soc> is a generic placeholder for any Freescale SoC
+(imx23, imx27, imx51, ...).
+
+> Should it?  Should the '[a-z]*' be '[a-zA-Z0-9-]+'
+> like the other test?
+> 
+
+Looking at the current documentation, the list of these generic
+placeholders is pretty short:
+
+$ git grep ',<.*>-' Documentation/devicetree/bindings/ | \
+  grep -P -o ',<.*?>-' | grep -P -o '<.*>' | sort | uniq
+
+<board>
+<chip>
+<chip name>
+<mcu-chip>
+<processor>
+<soc>
+<SOC>
+<soc-family>
+
+so '[a-zA-Z0-9-]+' seems more reasonable indeed.
+
+> Also the grep used when $compat2 is different than $compat
+> has <.*>
+> 
+> There aren't any descriptions I see in binding/ that have
+> any <foo> like uses with the angle brackets.
+> 
+> Are the angle brackets "<" and ">" necessary?
+> 
+
+I guess that they are necessary, as we are dealing with placeholders.
+
+> I think the code block should look more like:
+> 
+> 				my $compat2 = $compat;
+> 				$compat2 =~ s/\,[a-zA-Z0-9]*\-/\,\.\*\-/g;
+
+$compat2 =~ s/\,[a-zA-Z0-9]*\-/<\.\*>\-/g;
+
+?
+
+> 				my $grepfor = "\Q$compat\E";
+> 				$grepfor .= "|\Q$compat2\E" if ($compat2 ne $compat);
+> 				`grep -Erq "$grepfor" $dt_path`;
+> 
+> so that there's only 1 grep pattern when
+> $compat2 is the same as $compat and the
+> strings are escape quoted.
+> 
+
+Looks better.
+
+> There are a _lot_ of missing entries:
+> 
+> o 164 vendor names
+> o 2408 device names (maybe due to bad compat2 greps?)
+> 
+
+This is why Rob implemented this check. This should force people to
+properly document bindings when submitting patches.
+
+> What, if anything, should be done about them?
+
+Ideally, this should be fixed over time. Fixing vendor names is pretty
+easy. Fixing device bindings implies a deeper knowledge of the binding
+and will take longer IMHO.
+
+Regards,
+Florian
+
+> 
+> ---
+>  scripts/checkpatch.pl | 22 +++++++++++-----------
+>  1 file changed, 11 insertions(+), 11 deletions(-)
+> 
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index 4b5e7b3..7a9eed9 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -2051,29 +2051,29 @@ sub process {
+>  		}
+>  
+>  # check for DT compatible documentation
+> -		if (defined $root && $realfile =~ /\.dts/ &&
+> -		    $rawline =~ /^\+\s*compatible\s*=/) {
+> +		if (defined $root &&
+> +		    (($realfile =~ /\.dtsi?$/ && $line =~ /^\+\s*compatible\s*=\s*\"/) ||
+> +		     ($realfile =~ /\.[ch]$/ && $line =~ /^\+.*\.compatible\s*=\s*\"/))) {
+> +
+>  			my @compats = $rawline =~ /\"([a-zA-Z0-9\-\,\.\+_]+)\"/g;
+>  
+> +			my $dt_path = $root . "/Documentation/devicetree/bindings/";
+> +			my $vp_file = $root . "/Documentation/devicetree/bindings/vendor-prefixes.txt";
+> +
+>  			foreach my $compat (@compats) {
+>  				my $compat2 = $compat;
+> -				my $dt_path =  $root . "/Documentation/devicetree/bindings/";
+>  				$compat2 =~ s/\,[a-z]*\-/\,<\.\*>\-/;
+>  				`grep -Erq "$compat|$compat2" $dt_path`;
+>  				if ( $? >> 8 ) {
+>  					WARN("UNDOCUMENTED_DT_STRING",
+>  					     "DT compatible string \"$compat\" appears un-documented -- check $dt_path\n" . $herecurr);
+>  				}
+> -
+> -				my $vendor = $compat;
+> -				my $vendor_path = $dt_path . "vendor-prefixes.txt";
+> -				next if (! -f $vendor_path);
+> -				next if not $vendor =~ /^[a-zA-Z0-9\-]+\,.*/;
+> -				$vendor =~ s/^([a-zA-Z0-9\-]+)\,.*/$1/;
+> -				`grep -Eq "$vendor" $vendor_path`;
+> +				next if $compat !~ /^([a-zA-Z0-9\-]+)\,/;
+> +				my $vendor = $1;
+> +				`grep -Eq "^$vendor\\b" $vp_file`;
+>  				if ( $? >> 8 ) {
+>  					WARN("UNDOCUMENTED_DT_STRING",
+> -					     "DT compatible string vendor \"$vendor\" appears un-documented -- check $vendor_path\n" . $herecurr);
+> +					     "DT compatible string vendor \"$vendor\" appears un-documented -- check $vp_file\n" . $herecurr);
+>  				}
+>  			}
+>  		}
+> ---
+> 
+> 
