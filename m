@@ -1,49 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753930AbaCCIIc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 03:08:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31726 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753114AbaCCIIa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 03:08:30 -0500
-Date: Mon, 3 Mar 2014 09:10:24 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH v2] timberdale: Use pci_enable_msix_exact() instead of
- pci_enable_msix()
-Message-ID: <20140303081023.GA25705@dhcp-26-207.brq.redhat.com>
-References: <1392804931-30671-3-git-send-email-agordeev@redhat.com>
- <20140219114424.GD10504@lee--X1>
- <20140221165606.GH17353@dhcp-26-207.brq.redhat.com>
- <20140221165809.GI17353@dhcp-26-207.brq.redhat.com>
- <20140224162902.GI15847@lee--X1>
- <20140303072551.GC4674@lee--X1>
+	id S1753781AbaCCIVy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 03:21:54 -0500
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:63352 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752988AbaCCIVw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 03:21:52 -0500
+X-Original-SENDERIP: 10.177.220.200
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Mon, 3 Mar 2014 17:22:27 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan@kernel.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: Re: [PATCH 2/6] mm: add get_pageblock_migratetype_nolock() for cases
+ where locking is undesirable
+Message-ID: <20140303082227.GA28899@lge.com>
+References: <1393596904-16537-1-git-send-email-vbabka@suse.cz>
+ <1393596904-16537-3-git-send-email-vbabka@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140303072551.GC4674@lee--X1>
+In-Reply-To: <1393596904-16537-3-git-send-email-vbabka@suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 03, 2014 at 03:25:51PM +0800, Lee Jones wrote:
-> > Applied, thanks.
+On Fri, Feb 28, 2014 at 03:15:00PM +0100, Vlastimil Babka wrote:
+> In order to prevent race with set_pageblock_migratetype, most of calls to
+> get_pageblock_migratetype have been moved under zone->lock. For the remaining
+> call sites, the extra locking is undesirable, notably in free_hot_cold_page().
 > 
-> I've reverted this patch, as it doesn't build othognally.
+> This patch introduces a _nolock version to be used on these call sites, where
+> a wrong value does not affect correctness. The function makes sure that the
+> value does not exceed valid migratetype numbers. Such too-high values are
+> assumed to be a result of race and caller-supplied fallback value is returned
+> instead.
 > 
-> drivers/mfd/timberdale.c:718:2:
->   error: implicit declaration of function ‘pci_enable_msix_exact’
->      [-Werror=implicit-function-declaration]
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> ---
+>  include/linux/mmzone.h | 24 ++++++++++++++++++++++++
+>  mm/compaction.c        | 14 +++++++++++---
+>  mm/memory-failure.c    |  3 ++-
+>  mm/page_alloc.c        | 22 +++++++++++++++++-----
+>  mm/vmstat.c            |  2 +-
+>  5 files changed, 55 insertions(+), 10 deletions(-)
+> 
+> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> index fac5509..7c3f678 100644
+> --- a/include/linux/mmzone.h
+> +++ b/include/linux/mmzone.h
+> @@ -75,6 +75,30 @@ enum {
+>  
+>  extern int page_group_by_mobility_disabled;
+>  
+> +/*
+> + * When called without zone->lock held, a race with set_pageblock_migratetype
+> + * may result in bogus values. Use this variant only when this does not affect
+> + * correctness, and taking zone->lock would be costly. Values >= MIGRATE_TYPES
+> + * are considered to be a result of this race and the value of race_fallback
+> + * argument is returned instead.
+> + */
+> +static inline int get_pageblock_migratetype_nolock(struct page *page,
+> +	int race_fallback)
+> +{
+> +	int ret = get_pageblock_flags_group(page, PB_migrate, PB_migrate_end);
+> +
+> +	if (unlikely(ret >= MIGRATE_TYPES))
+> +		ret = race_fallback;
+> +
+> +	return ret;
+> +}
 
-I should have to clarify it I think. Do you build on top of 3.14-rc4?
+Hello, Vlastimil.
 
-Thanks!
+First of all, thanks for nice work!
+I have another opinion about this implementation. It can be wrong, so if it
+is wrong, please let me know.
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Although this implementation would close the race which triggers NULL dereference,
+I think that this isn't enough if you have a plan to add more
+{start,undo}_isolate_page_range().
+
+Consider that there are lots of {start,undo}_isolate_page_range() calls
+on the system without CMA.
+
+bit representation of migratetype is like as following.
+
+MIGRATE_MOVABLE = 010
+MIGRATE_ISOLATE = 100
+
+We could read following values as migratetype of the page on movable pageblock
+if race occurs.
+
+start_isolate_page_range() case: 010 -> 100
+010, 000, 100
+
+undo_isolate_page_range() case: 100 -> 010
+100, 110, 010
+
+Above implementation prevents us from getting 110, but, it can't prevent us from
+getting 000, that is, MIGRATE_UNMOVABLE. If this race occurs in free_hot_cold_page(),
+this page would go into unmovable pcp and then allocated for that migratetype.
+It results in more fragmented memory.
+
+
+Consider another case that system enables CONFIG_CMA,
+
+MIGRATE_MOVABLE = 010
+MIGRATE_ISOLATE = 101
+
+start_isolate_page_range() case: 010 -> 101
+010, 011, 001, 101
+
+undo_isolate_page_range() case: 101 -> 010
+101, 100, 110, 010
+
+This can results in totally different values and this also makes the problem
+mentioned above. And, although this doesn't cause any problem on CMA for now,
+if another migratetype is introduced or some migratetype is removed, it can cause
+CMA typed page to go into other migratetype and makes CMA permanently failed.
+
+To close this kind of races without dependency how many pageblock isolation occurs,
+I recommend that you use separate pageblock bits for MIGRATE_CMA, MIGRATE_ISOLATE
+and use accessor function whenver we need to check migratetype. IMHO, it may not
+impose much overhead.
+
+How about it?
+
+Thanks.
+
