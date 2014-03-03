@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755869AbaCCWsd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 17:48:33 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:41948 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755841AbaCCWsb (ORCPT
+	id S1755925AbaCCWti (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 17:49:38 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:28108 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755905AbaCCWtg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 17:48:31 -0500
-Message-ID: <531506B3.5030004@oracle.com>
-Date: Mon, 03 Mar 2014 17:48:19 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 3 Mar 2014 17:49:36 -0500
+Date: Mon, 3 Mar 2014 17:49:34 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Question about -rc and stable patches
+Message-ID: <20140303174934.7e5971d8@gandalf.local.home>
+In-Reply-To: <20140303174532.7cb8f31e@gandalf.local.home>
+References: <20140303172806.4486f65a@gandalf.local.home>
+	<20140303224104.GA26031@kroah.com>
+	<20140303174532.7cb8f31e@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: lizefan@huawei.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cgroup: missing rcu read lock around task_css_set
-References: <1393729211-937-1-git-send-email-sasha.levin@oracle.com> <20140303223327.GB26523@mtj.dyndns.org> <5315057F.3030602@oracle.com> <20140303224505.GE26523@mtj.dyndns.org>
-In-Reply-To: <20140303224505.GE26523@mtj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/03/2014 05:45 PM, Tejun Heo wrote:
-> On Mon, Mar 03, 2014 at 05:43:11PM -0500, Sasha Levin wrote:
->> On 03/03/2014 05:33 PM, Tejun Heo wrote:
->>> On Sat, Mar 01, 2014 at 10:00:11PM -0500, Sasha Levin wrote:
->>>> rcu read lock should be held when calling and working with task_css_set.
->>>>
->>>> This patch also fixes a related lockdep warning.
->>>
->>> Hmmm... PF_EXITING should be visible at that point and cset can't
->>> change anymore.  We prolly need to update lockdep annotation rather
->>> than adding spurious rcu locking around it.  Against which branch is
->>> it?  Can you please post the lockdep warning?
->>
->> I see it on -next.
->
-> I think the right thing to do is using task_css_set_check() with
-> PF_EXITING check and add comment explaining that cset can no longer
-> change.  Can you please write up a patch?
-
-Sure!
+On Mon, 3 Mar 2014 17:45:32 -0500
+Steven Rostedt <rostedt@goodmis.org> wrote:
 
 
-Thanks,
-Sasha
+> diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
+> index 8cabf63..9f354e5 100644
+> --- a/arch/x86/kernel/ftrace.c
+> +++ b/arch/x86/kernel/ftrace.c
+> @@ -586,6 +586,9 @@ void ftrace_replace_code(int enable)
+>  	for_ftrace_rec_iter(iter) {
+>  		rec = ftrace_rec_iter_record(iter);
+>  
+> +		if (count == 1000)
+> +			ret = -EPERM;
+> +		else
+>  		ret = add_breakpoints(rec, enable);
+>  		if (ret)
+>  			goto remove_breakpoints;
+> 
+> 
+> Not something that can be done from normal operations.
+> 
 
+I'll also add that one reason that this hasn't been an issue before, is
+that the code that converts calls to mcount to nops, is done at kernel
+boot up. If the above code were to fail, it is highly likely that the
+code that converted mcount to nops would fail too. And if that happens,
+it completely disables function tracing, preventing this code from
+running.
+
+The code that converts mcount to nops, handles the above error properly.
+
+-- Steve
