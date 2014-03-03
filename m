@@ -1,119 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753452AbaCCG72 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 01:59:28 -0500
-Received: from exprod5og115.obsmtp.com ([64.18.0.246]:49392 "HELO
-	exprod5og115.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751611AbaCCG7X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 01:59:23 -0500
+	id S1753749AbaCCHBv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 02:01:51 -0500
+Received: from mga09.intel.com ([134.134.136.24]:48439 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751878AbaCCHBs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 02:01:48 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,576,1389772800"; 
+   d="scan'208";a="492676968"
+Message-ID: <531428D9.1060101@linux.intel.com>
+Date: Mon, 03 Mar 2014 15:01:45 +0800
+From: "Li, Aubrey" <aubrey.li@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <CAPw-ZT=6cF77FjVZhXkR4thvkoxDH=aEikoDQjcpskMXE+F8OA@mail.gmail.com>
-References: <1393524848-8207-1-git-send-email-lho@apm.com>
-	<1393524848-8207-2-git-send-email-lho@apm.com>
-	<20140227190102.GB4862@saruman.home>
-	<CAPw-ZT=F07=T0=z=iT=hxJ0+609RBDYRL=MXF5dQoEowLjsRjQ@mail.gmail.com>
-	<20140227205039.GE5375@saruman.home>
-	<CAPw-ZT=7cu1NoxrBL48RUJV04ofrnNkF=p=23VFfu8ZZWmkQWQ@mail.gmail.com>
-	<20140227213427.GG5375@saruman.home>
-	<CAPw-ZT=6cF77FjVZhXkR4thvkoxDH=aEikoDQjcpskMXE+F8OA@mail.gmail.com>
-Date: Sun, 2 Mar 2014 22:59:22 -0800
-Message-ID: <CAPw-ZTmPqfkm=kkN6tY3N3mAWoC0MosJLrHOw=at_tir7rV3sw@mail.gmail.com>
-Subject: Re: [PATCH v12 1/4] PHY: Add function set_speed to generic PHY framework
-From: Loc Ho <lho@apm.com>
-To: balbi@ti.com
-Cc: Kishon Vijay Abraham I <kishon@ti.com>, Tejun Heo <tj@kernel.org>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Don Dutile <ddutile@redhat.com>, Jon Masters <jcm@redhat.com>,
-        "patches@apm.com" <patches@apm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "David E. Box" <david.e.box@linux.intel.com>, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com
+CC: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V5 0/2] x86: IOSF: Add loadable module support
+References: <1393609674-2999-1-git-send-email-david.e.box@linux.intel.com> <1393641652-7222-1-git-send-email-david.e.box@linux.intel.com>
+In-Reply-To: <1393641652-7222-1-git-send-email-david.e.box@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe and Kishon,
+Hi David,
 
->>> >> >> This patch adds function set_speed to the generic PHY framework operation
->>> >> >> structure. This function can be called to instruct the PHY underlying layer
->>> >> >> at specified lane to configure for specified speed in hertz.
->>> >> >
->>> >> > why ? looks like clk_set_rate() is your friend here. Can you be more
->>> >> > descriptive of the use case ? When will this be used ?
->>> >> >
->>> >>
->>> >> The phy_set_speed is used to configure the operation speed of the PHY
->>> >> at run-time. The clock interface in general is used to configure the
->>> >> clock input to the IP. I don't believe they are the same thing. Maybe
->>> >> it will be clear in my response to your second email
->>> >
->>> > The problem with this is that you end up adding SATA-specific details to
->>> > something which is supposed to be generic.
->>>
->>> Setting the operation speed is pretty generic from an interface point
->>> of view. An generic multi-purpose PHY can support multiple speed. If
->>
->> no it's not. Specially when you consider that your "speed" argument can
->> be just about anything and depending on the underlying bus, it *will* be
->> treated differently. Note that e.g. in OMAP devices the exact *same* PHY
->> IP is used for PCIe, SATA and USB... now, let's assume for the sake of
->> argument that we were to implement ->set_speed() in that environment,
->> how do you plan to do that ? a 6MHz arguments isn't valid from USB stand
->> point and could mean different things in PCIe or SATA.
->>
->
-> Correct me if I am wrong here. If the same PHY is used for PCIe, SATA,
-> and USB, would you not need to indicate what speed the PHY should be
-> operated at - unless the underlying IP magically negotiate and
-> configured automatically? If so, what about PHY isn't so intelligent?
-> How should you suggest that we handle these?
->
->>> the upper layer wish to operate at an specified speed (say for testing
->>> purpose and etc), it can be allowed.
->>
->> anything for testing purposes, should be limited to test scenarios.
->
-> Testing purpose is only one use case. Another use case is to limit the
-> speed so that I can confirm the driver actually works with various
-> speed of the device and handle correctly.
->
->>
->>> > After negoatiation, don't you
->>> > get any interrupt from your PHY indicating that link speed negotiation
->>> > is done ? Or is that IRQ only on AHCI IP ?
->>>
->>> There is NO interrupt from the PHY. The IRQ is assoicated with the
->>> AHCI IP. With SATA host flow, it starts off with an COMRESET to start
->>> the link negotiation. At that point, it will poll for completion.
->>>
->>> Any other concerns?
->>
->> hey, calm down... just trying to prevent us from applying something
->> which isn't truly generic and I don't think "->set_speed" is generic
->> enough. The semantics of the "speed" argument won't be valid for all use
->> cases.
->>
->> I can already see people using that to pass
->> USB_SPEED_{LOW,FULL,HIGH,SUPER}, instead of actual speed numbers. We wil
->> end up with a mess to handle from a PHY driver, specially in cases such
->> as OMAP where, as mentioned above, the same IP is used for SATA, PCIe
->> and USB3.
->>
->
-> This PHY isn't as "intelligent" as other PHY's. What would you suggest
-> as I need an method to indicate to the underlying PHY that I want to
-> operate at an specified speed?
+I'm probably too late to catch this thread. Just one question, what's
+the relationship between
+	arch/x86/kernel/iosf_mbi.c
+and
+	drivers/platform/x86/intel_baytrail.c
 
-Sorry if I am pinging you guys too fast here. I am look from an
-solution and open to any solution in which it is acceptable for your
-original intent of the generic PHY framework. I understand that you
-don't believe set_speed is generic enough and may not apply to omap.
-Or if you prefer we can try changing the init function to take an
-initial MAX speed?
+Thanks,
+-Aubrey
 
--Loc
+On 2014/3/1 10:40, David E. Box wrote:
+> From: "David E. Box" <david.e.box@linux.intel.com>
+> 
+> This patch series adds missing functionalty that mostly affected loadable
+> modules.
+> 
+> The first patch adds dummy functions to allow drivers not completely
+> dependant on the IOSF MBI driver to compile on systems that don't have it.
+> 
+> The second makes MBI driver built in.
+> 
+> Changes from V4:
+> 
+> 	- Put back Kconfig prompt for IOSF_MBI.
+> 
+> Changes from V3:
+> 
+> 	- Code is agreed to be small enough to not warrant forcing for
+> 	  non-EXPERT only
+> 
+> Changes from V2:
+> 
+> 	- Remove non linux style externs from iosf_mbi.h
+> 
+> Changes from V1:
+> 
+> 	- Force default y for non-EXPERT to allow easier custom configuration
+> 	  as suggested by hpa <hpa@zytor.com>
+> 	- Add WARN() to dummy functions, other than iosf_mbi_available(), to
+> 	  signal incorrect use as suggested by Alan <gnomes@lxorguk.ukuu.org.uk>
+> 	  Also return EPERM in these functions
+> 	- Splits single patch into two patch series
+> 
+> David E. Box (2):
+>   x86: IOSF: add dummy functions for loadable modules
+>   x86: IOSF: Change IOSF_MBI Kconfig to default y
+> 
+>  arch/x86/Kconfig                |    7 ++-----
+>  arch/x86/include/asm/iosf_mbi.h |   33 +++++++++++++++++++++++++++++++++
+>  arch/x86/kernel/iosf_mbi.c      |    6 ++++++
+>  3 files changed, 41 insertions(+), 5 deletions(-)
+> 
+
