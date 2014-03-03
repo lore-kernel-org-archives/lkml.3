@@ -1,178 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754211AbaCCNaG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 08:30:06 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:34843 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753751AbaCCNaE (ORCPT
+	id S1754274AbaCCNfN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 08:35:13 -0500
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:50234 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753545AbaCCNfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 08:30:04 -0500
-Date: Mon, 3 Mar 2014 14:26:22 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Hans de Goede <hdegoede@redhat.com>
-Cc: linux-sunxi@googlegroups.com, Emilio Lopez <emilio@elopez.com.ar>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com
-Subject: Re: [linux-sunxi] [PATCH v2 2/5] clk: sun6i: Reparent AHB clock on
- PLL6
-Message-ID: <20140303132622.GY607@lukather>
-References: <1393605440-14643-1-git-send-email-maxime.ripard@free-electrons.com>
- <1393605440-14643-3-git-send-email-maxime.ripard@free-electrons.com>
- <53120BA8.3000508@redhat.com>
+	Mon, 3 Mar 2014 08:35:10 -0500
+Date: Mon, 3 Mar 2014 14:35:04 +0100 (CET)
+From: Sebastian Ott <sebott@linux.vnet.ibm.com>
+X-X-Sender: sebott@denkbrett
+To: Bjorn Helgaas <bhelgaas@google.com>
+cc: linux-pci@vger.kernel.org, Jan Glauber <jang@linux.vnet.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com
+Subject: Re: [PATCH 7/7] s390/PCI: Use generic pci_enable_resources()
+In-Reply-To: <20140226234215.18970.1743.stgit@bhelgaas-glaptop.roam.corp.google.com>
+Message-ID: <alpine.LFD.2.11.1403031429080.1476@denkbrett>
+References: <20140226233541.18970.83328.stgit@bhelgaas-glaptop.roam.corp.google.com>  <20140226234215.18970.1743.stgit@bhelgaas-glaptop.roam.corp.google.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+Organization: =?ISO-8859-15?Q?=22IBM_Deutschland_Research_&_Development_GmbH_=2F_Vorsitzende_des_Aufsichtsrats=3A_Martina_Koederitz_Gesch=E4ftsf=FChrung=3A_Dirk_Wittkopp_Sitz_der_Gesellschaft=3A_B=F6blingen_=2F_Registergericht?=
+ =?ISO-8859-15?Q?=3A_Amtsgericht_Stuttgart=2C_HRB_243294=22?=
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UXMJB0aDqGdn9A0V"
-Content-Disposition: inline
-In-Reply-To: <53120BA8.3000508@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14030313-1948-0000-0000-0000080061AE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Bjorn,
 
---UXMJB0aDqGdn9A0V
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 26 Feb 2014, Bjorn Helgaas wrote:
 
-Hi Hans,
+> The generic pci_enable_resources() does essentially the same thing as the
+> code in the s390 version of pcibios_enable_device().
+> 
+> There are differences, but I don't think any of them are a problem.  The
+> generic code:
+> 
+>   - Checks everything up to PCI_NUM_RESOURCES, not PCI_BAR_COUNT (6), so
+>     we'll now check the ROM resource, IOV resources, and bridge windows.
+> 
+>   - Checks for res->flags & IORESOURCE_UNSET.  The s390 code never sets
+>     IORESOURCE_UNSET, so this isn't a problem.
+> 
+>   - Checks res->parent.  The s390 pcibios_add_device() calls
+>     pci_claim_resource() on all BARs (except ROM, IOV, and bridge windows)
+>     so this isn't a problem either.
+> 
+> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> CC: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> CC: Heiko Carstens <heiko.carstens@de.ibm.com>
+> CC: Sebastian Ott <sebott@linux.vnet.ibm.com>
+> CC: Jan Glauber <jang@linux.vnet.ibm.com>
+> CC: linux390@de.ibm.com
+> ---
+>  arch/s390/pci/pci.c |   13 +------------
+>  1 file changed, 1 insertion(+), 12 deletions(-)
+> 
+> diff --git a/arch/s390/pci/pci.c b/arch/s390/pci/pci.c
+> index 66670ff262a0..7d5fcaed3361 100644
+> --- a/arch/s390/pci/pci.c
+> +++ b/arch/s390/pci/pci.c
+> @@ -695,18 +695,7 @@ int pcibios_enable_device(struct pci_dev *pdev, int mask)
+>  	zpci_fmb_enable_device(zdev);
+>  	zpci_map_resources(zdev);
+> 
+> -	pci_read_config_word(pdev, PCI_COMMAND, &cmd);
+> -	for (i = 0; i < PCI_BAR_COUNT; i++) {
+> -		res = &pdev->resource[i];
+> -
+> -		if (res->flags & IORESOURCE_IO)
+> -			return -EINVAL;
+> -
+> -		if (res->flags & IORESOURCE_MEM)
+> -			cmd |= PCI_COMMAND_MEMORY;
+> -	}
+> -	pci_write_config_word(pdev, PCI_COMMAND, cmd);
+> -	return 0;
+> +	return pci_enable_resources(pdev, mask);
+>  }
+> 
+>  void pcibios_disable_device(struct pci_dev *pdev)
+> 
 
-On Sat, Mar 01, 2014 at 05:32:40PM +0100, Hans de Goede wrote:
-> On 02/28/2014 05:37 PM, Maxime Ripard wrote:
-> > In order for the DMA controller to work for SDRAM to devices transfers,=
- the AHB
-> > clock should be reparented on the PLL6.
-> >=20
-> > Force that parenting in the clock driver.
-> >=20
-> > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> > ---
-> >  drivers/clk/sunxi/clk-sunxi.c | 18 +++++++++++++++++-
-> >  1 file changed, 17 insertions(+), 1 deletion(-)
-> >=20
-> > diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunx=
-i.c
-> > index f6f61cc..a5c5882 100644
-> > --- a/drivers/clk/sunxi/clk-sunxi.c
-> > +++ b/drivers/clk/sunxi/clk-sunxi.c
-> > @@ -1286,7 +1286,7 @@ static void __init of_sunxi_table_clock_setup(con=
-st struct of_device_id *clk_mat
-> >   */
-> >  static void __init sunxi_clock_protect(void)
-> >  {
-> > -	struct clk *clk;
-> > +	struct clk *clk, *parent;
-> > =20
-> >  	/* memory bus clock - sun5i+ */
-> >  	clk =3D clk_get(NULL, "mbus");
-> > @@ -1307,6 +1307,22 @@ static void __init sunxi_clock_protect(void)
-> >  	if (!IS_ERR(clk))
-> >  		clk_prepare_enable(clk);
-> > =20
-> > +	clk =3D clk_get(NULL, "ahb1_mux");
-> > +	if (IS_ERR(clk)) {
-> > +		pr_err("Couldn't get AHB1 Mux\n");
-> > +		return;
-> > +	}
->=20
-> I think Emilio already made a similar remark for v1, but since this
-> is still here in v2, ahb1_mux is only available on sun6i, so
-> at a minimum the pr_err should be dropped. Preferably I would like
-> to see this changed to something like:
->=20
-> 	clk =3D clk_get(NULL, "ahb1_mux");
-> 	parent =3D clk_get(NULL, "pll6");
-> 	if (!IS_ERR(clk) && !IS_ERR(parent))
-> 		clk_set_parent(clk, parent);
-> 	if (!IS_ERR(parent))
-> 		clk_put(parent);
-> 	if (!IS_ERR(clk))
-> 		clk_put(clk);
+Let's also remove some now unused variables (updated patch below). Other
+than that:
 
-Still. The DMA doesn't work at all if the parenting is not set, so
-having an error if it fails is mandatory.
+Acked-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
 
-And the statement that you made can also apply to any clock we enable
-here, that might or might not be present in all the SoCs.
+Regards,
+Sebastian
+---
+s390/PCI: Use generic pci_enable_resources()
 
-I guess we can solve this in two steps:
-  - split out the reparenting, and move this into the DMA driver. That
-    would isolate things in the driver itself, and prevent a
-    reparenting attempt on every SoCs.
-  - Split this function into several functions, one for each SoC. That
-    would allow to do pretty much anything we want without having to
-    care about wether it applies to other platforms.
+The generic pci_enable_resources() does essentially the same thing as the
+code in the s390 version of pcibios_enable_device().
 
-> > +	parent =3D clk_get(NULL, "pll6");
-> > +	if (IS_ERR(clk)) {
->=20
-> Copy paste error should be IS_ERR(parent).
+There are differences, but I don't think any of them are a problem.  The
+generic code:
 
-Ah, yep, thanks!
+  - Checks everything up to PCI_NUM_RESOURCES, not PCI_BAR_COUNT (6), so
+    we'll now check the ROM resource, IOV resources, and bridge windows.
 
->=20
-> > +		pr_err("Couldn't get PLL6\n");
->=20
-> If we keep things this way this error path should do a clk_put(clk);
+  - Checks for res->flags & IORESOURCE_UNSET.  The s390 code never sets
+    IORESOURCE_UNSET, so this isn't a problem.
 
-Good catch too.
+  - Checks res->parent.  The s390 pcibios_add_device() calls
+    pci_claim_resource() on all BARs (except ROM, IOV, and bridge windows)
+    so this isn't a problem either.
 
-> > +		return;
-> > +	}
-> > +
-> > +	clk_set_parent(clk, parent);
-> > +
-> > +	clk_put(clk);
-> > +	clk_put(parent);
-> >  }
-> > =20
-> >  static void __init sunxi_init_clocks(void)
-> >=20
->=20
-> Regards,
->=20
-> Hans
->=20
-> p.s.
->=20
-> Given Russell's remarks it would also be good to have a
-> patch in this set dropping the clk_put calls of the existing
-> enables / protections.
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+CC: Martin Schwidefsky <schwidefsky@de.ibm.com>
+CC: Heiko Carstens <heiko.carstens@de.ibm.com>
+CC: Sebastian Ott <sebott@linux.vnet.ibm.com>
+CC: Jan Glauber <jang@linux.vnet.ibm.com>
+CC: linux390@de.ibm.com
+---
+ arch/s390/pci/pci.c |   16 +---------------
+ 1 file changed, 1 insertion(+), 15 deletions(-)
 
-Yes, I'll do it in the v3.
+--- a/arch/s390/pci/pci.c
++++ b/arch/s390/pci/pci.c
+@@ -686,27 +686,13 @@ int pcibios_add_device(struct pci_dev *p
+ int pcibios_enable_device(struct pci_dev *pdev, int mask)
+ {
+ 	struct zpci_dev *zdev = get_zdev(pdev);
+-	struct resource *res;
+-	u16 cmd;
+-	int i;
+ 
+ 	zdev->pdev = pdev;
+ 	zpci_debug_init_device(zdev);
+ 	zpci_fmb_enable_device(zdev);
+ 	zpci_map_resources(zdev);
+ 
+-	pci_read_config_word(pdev, PCI_COMMAND, &cmd);
+-	for (i = 0; i < PCI_BAR_COUNT; i++) {
+-		res = &pdev->resource[i];
+-
+-		if (res->flags & IORESOURCE_IO)
+-			return -EINVAL;
+-
+-		if (res->flags & IORESOURCE_MEM)
+-			cmd |= PCI_COMMAND_MEMORY;
+-	}
+-	pci_write_config_word(pdev, PCI_COMMAND, cmd);
+-	return 0;
++	return pci_enable_resources(pdev, mask);
+ }
+ 
+ void pcibios_disable_device(struct pci_dev *pdev)
 
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---UXMJB0aDqGdn9A0V
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTFIL+AAoJEBx+YmzsjxAgFQoP+wXYWaStAg1Z2odMb7qu4otz
-STjlcqLqwGIV4JtuQiqfp5IONVRi3cPZVOBEsf6gWXAuOwv1idKGY0bqpltXvN5v
-Evbi1/w3PIxgxpJVu2gKa9JfMRP6VOYcwAMIEIQUfd8m3A1CFtuilBm/WU3uOiga
-IS5SYgIlToq0PCkGdUyI4VlO795m1zz1aVadfW+BVvhQ4AfxDcDE0e3mGmDcS4ci
-CwlSsNvUHrgECL95nb/B7HgiEGtkqkTAkmhVprc+fJoRNeXU8R3d+t5QCSWLjiD4
-V9otne9uIu7PbdkUIABfLtjGebRe9KN2TIqmTLM9iXUU+naEBuCK3l03EULtx6Ze
-ef4oxYrx36HzxKIkIMLRl+8FA6zEXSA/iLLG+nYO6Q3CJCQc4mtySdRc6pnkopH/
-l3X77WYJxKW8sDn0RH5fmIu5/TM/XLzxIc6+im+/EspJQ/CPvPS+NYsPbz2HgbE2
-kIbRDSPkVbj02Dnhh3wGEDqUY8QrApub6bSQ23mkAQohAuSaVOUzua18zHduKvuv
-sJtLwdSzLUuAWyWyzHdok8twx4tnf0lLW1A0AoYdctwB4/yq8jQAxEhrAxUDx8uh
-vWHgHFDR3KgUk0C1JS/WbVKXyovgx6ShLJxi4pAxG8e4t5lvH0Jxw01Rqe7ZmT9d
-6YrJOuVTxlFdMudEmtG1
-=ZBeB
------END PGP SIGNATURE-----
-
---UXMJB0aDqGdn9A0V--
