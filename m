@@ -1,84 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754198AbaCCADv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 19:03:51 -0500
-Received: from mail.sigma-star.at ([95.130.255.111]:62422 "EHLO
-	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753662AbaCCABY (ORCPT
+	id S1754634AbaCCAEV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 19:04:21 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:58779 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754146AbaCCAET (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 19:01:24 -0500
-From: Richard Weinberger <richard@nod.at>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arch@vger.kernel.org, viro@zeniv.linux.org.uk, vgupta@synopsys.com,
-        catalin.marinas@arm.com, will.deacon@arm.com, hskinnemoen@gmail.com,
-        egtvedt@samfundet.no, vapier@gentoo.org, msalter@redhat.com,
-        a-jacquiot@ti.com, starvik@axis.com, jesper.nilsson@axis.com,
-        dhowells@redhat.com, rkuo@codeaurora.org, tony.luck@intel.com,
-        fenghua.yu@intel.com, takata@linux-m32r.org, geert@linux-m68k.org,
-        james.hogan@imgtec.com, monstr@monstr.eu,
-        yasutake.koichi@jp.panasonic.com, ralf@linux-mips.org,
-        jonas@southpole.se, jejb@parisc-linux.org, deller@gmx.de,
-        benh@kernel.crashing.org, paulus@samba.org, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, liqin.linux@gmail.com, lennox.wu@gmail.com,
-        cmetcalf@tilera.com, gxt@mprc.pku.edu.cn,
-        linux-xtensa@linux-xtensa.org, akpm@linux-foundation.org,
-        oleg@redhat.com, tj@kernel.org, hch@infradead.org,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH 35/44] m68k: Use translate_signal()
-Date: Mon,  3 Mar 2014 01:00:35 +0100
-Message-Id: <1393804844-8008-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.8.4.2
+	Sun, 2 Mar 2014 19:04:19 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Linux PCI <linux-pci@vger.kernel.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH] ACPI / hotplug / PCI: Use pci_device_is_present()
+Date: Mon, 03 Mar 2014 01:19:25 +0100
+Message-ID: <1505390.MlpMqG8COu@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the common helper instead of it's own open coded variant.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
+Make the ACPI-based PCI hotplug (ACPIPHP) code use
+pci_device_is_present() for checking if devices are present instead
+of open coding the same thing.
+
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- arch/m68k/kernel/signal.c | 15 ++-------------
- 1 file changed, 2 insertions(+), 13 deletions(-)
 
-diff --git a/arch/m68k/kernel/signal.c b/arch/m68k/kernel/signal.c
-index c8e6fa8..b8a428b 100644
---- a/arch/m68k/kernel/signal.c
-+++ b/arch/m68k/kernel/signal.c
-@@ -39,7 +39,6 @@
- #include <linux/unistd.h>
- #include <linux/stddef.h>
- #include <linux/highuid.h>
--#include <linux/personality.h>
- #include <linux/tty.h>
- #include <linux/binfmts.h>
- #include <linux/module.h>
-@@ -871,12 +870,7 @@ static int setup_frame(struct ksignal *ksig, sigset_t *set,
- 	if (fsize)
- 		err |= copy_to_user (frame + 1, regs + 1, fsize);
+On top of current linux-next.
+
+Thanks!
+
+---
+ drivers/pci/hotplug/acpiphp_glue.c |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
+
+Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+===================================================================
+--- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
++++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+@@ -668,12 +668,9 @@ static void trim_stale_devices(struct pc
+ 		alive = (ACPI_SUCCESS(status) && device_status_valid(sta))
+ 			|| acpiphp_no_hotplug(adev);
+ 	}
+-	if (!alive) {
+-		u32 v;
++	if (!alive)
++		alive = pci_device_is_present(dev);
  
--	err |= __put_user((current_thread_info()->exec_domain
--			   && current_thread_info()->exec_domain->signal_invmap
--			   && sig < 32
--			   ? current_thread_info()->exec_domain->signal_invmap[sig]
--			   : sig),
--			  &frame->sig);
-+	err |= __put_user(translate_signal(sig), &frame->sig);
- 
- 	err |= __put_user(regs->vector, &frame->code);
- 	err |= __put_user(&frame->sc, &frame->psc);
-@@ -956,12 +950,7 @@ static int setup_rt_frame(struct ksignal *ksig, sigset_t *set,
- 	if (fsize)
- 		err |= copy_to_user (&frame->uc.uc_extra, regs + 1, fsize);
- 
--	err |= __put_user((current_thread_info()->exec_domain
--			   && current_thread_info()->exec_domain->signal_invmap
--			   && sig < 32
--			   ? current_thread_info()->exec_domain->signal_invmap[sig]
--			   : sig),
--			  &frame->sig);
-+	err |= __put_user(translate_signal(sig), &frame->sig);
- 	err |= __put_user(&frame->info, &frame->pinfo);
- 	err |= __put_user(&frame->uc, &frame->puc);
- 	err |= copy_siginfo_to_user(&frame->info, &ksig->info);
--- 
-1.8.4.2
+-		/* Check if the device responds. */
+-		alive = pci_bus_read_dev_vendor_id(dev->bus, dev->devfn, &v, 0);
+-	}
+ 	if (!alive) {
+ 		pci_stop_and_remove_bus_device(dev);
+ 		if (adev)
 
