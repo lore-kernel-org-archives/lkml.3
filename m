@@ -1,95 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753681AbaCCBCw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 20:02:52 -0500
-Received: from ozlabs.org ([203.10.76.45]:41783 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752748AbaCCBCv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 20:02:51 -0500
-Date: Mon, 3 Mar 2014 12:02:41 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Stephen Warren <swarren@wwwdotorg.org>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Markus Mayer <markus.mayer@linaro.org>, Rob Herring <robh@kernel.org>
-Subject: linux-next: manual merge of the bcm2835 tree with the arm-soc tree
-Message-Id: <20140303120241.11066f951d53c50fb14faf47@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__3_Mar_2014_12_02_41_+1100_BTnTkOK6hVEZ00=I"
+	id S1751897AbaCCBOT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 20:14:19 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:61734 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751638AbaCCBOS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Mar 2014 20:14:18 -0500
+X-AuditID: 9c93017d-b7c89ae000006ae1-a6-5313d7673f28
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: [PATCH 02/13] perf ui/gtk: Reuse generic __hpp__fmt() code
+Date: Mon,  3 Mar 2014 10:14:03 +0900
+Message-Id: <1393809254-4480-3-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1393809254-4480-1-git-send-email-namhyung@kernel.org>
+References: <1393809254-4480-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__3_Mar_2014_12_02_41_+1100_BTnTkOK6hVEZ00=I
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The __hpp__color_fmt used in the gtk code can be replace by the
+generic code with small change in print_fn callback.
 
-Hi Stephen,
+This is a preparation to upcoming changes and no functional changes
+intended.
 
-Today's linux-next merge of the bcm2835 tree got a conflict in
-arch/arm/mach-bcm2835/Kconfig between commits ddb902cc3459 ("ARM:
-centralize common multi-platform kconfig options") and 0676b21fffd1
-("ARM: bcm2835: enable V6K instead of plain V6") from the arm-soc tree
-and commit d30fe6272183 ("ARM: bcm2835: Move to mach-bcm directory") from
-the bcm2835 tree.
-
-I fixed it up (I applied the below merge fix patch) and can carry the fix
-as necessary (no action is required).
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 3 Mar 2014 12:00:40 +1100
-Subject: [PATCH] ARM: bcm2835: merge fix for movement to mach-bcm directory
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- arch/arm/mach-bcm/Kconfig | 4 ----
- 1 file changed, 4 deletions(-)
+ tools/perf/ui/gtk/hists.c | 73 +++++++----------------------------------------
+ tools/perf/ui/hist.c      |  9 ++----
+ tools/perf/util/hist.h    |  6 ++++
+ 3 files changed, 19 insertions(+), 69 deletions(-)
 
-diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
-index 396d05c8b570..7de3282a8613 100644
---- a/arch/arm/mach-bcm/Kconfig
-+++ b/arch/arm/mach-bcm/Kconfig
-@@ -33,10 +33,6 @@ config ARCH_BCM2835
- 	select ARM_AMBA
- 	select ARM_ERRATA_411920
- 	select ARM_TIMER_SP804
--	select CLKDEV_LOOKUP
--	select CLKSRC_OF
--	select CPU_V6
--	select GENERIC_CLOCKEVENTS
- 	select PINCTRL
- 	select PINCTRL_BCM2835
- 	help
---=20
-1.9.0
+diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
+index 5b95c44f3435..3dab00e748f2 100644
+--- a/tools/perf/ui/gtk/hists.c
++++ b/tools/perf/ui/gtk/hists.c
+@@ -8,16 +8,22 @@
+ 
+ #define MAX_COLUMNS			32
+ 
+-static int __percent_color_snprintf(char *buf, size_t size, double percent)
++static int __percent_color_snprintf(char *buf, size_t size, const char *fmt, ...)
+ {
+ 	int ret = 0;
++	va_list args;
++	double percent;
+ 	const char *markup;
+ 
++	va_start(args, fmt);
++	percent = va_arg(args, double);
++	va_end(args);
++
+ 	markup = perf_gtk__get_percent_color(percent);
+ 	if (markup)
+ 		ret += scnprintf(buf, size, markup);
+ 
+-	ret += scnprintf(buf + ret, size - ret, " %6.2f%%", percent);
++	ret += scnprintf(buf + ret, size - ret, fmt, percent);
+ 
+ 	if (markup)
+ 		ret += scnprintf(buf + ret, size - ret, "</span>");
+@@ -25,66 +31,6 @@ static int __percent_color_snprintf(char *buf, size_t size, double percent)
+ 	return ret;
+ }
+ 
+-
+-static int __hpp__color_fmt(struct perf_hpp *hpp, struct hist_entry *he,
+-			    u64 (*get_field)(struct hist_entry *))
+-{
+-	int ret;
+-	double percent = 0.0;
+-	struct hists *hists = he->hists;
+-	struct perf_evsel *evsel = hists_to_evsel(hists);
+-
+-	if (hists->stats.total_period)
+-		percent = 100.0 * get_field(he) / hists->stats.total_period;
+-
+-	ret = __percent_color_snprintf(hpp->buf, hpp->size, percent);
+-
+-	if (perf_evsel__is_group_event(evsel)) {
+-		int prev_idx, idx_delta;
+-		struct hist_entry *pair;
+-		int nr_members = evsel->nr_members;
+-
+-		prev_idx = perf_evsel__group_idx(evsel);
+-
+-		list_for_each_entry(pair, &he->pairs.head, pairs.node) {
+-			u64 period = get_field(pair);
+-			u64 total = pair->hists->stats.total_period;
+-
+-			evsel = hists_to_evsel(pair->hists);
+-			idx_delta = perf_evsel__group_idx(evsel) - prev_idx - 1;
+-
+-			while (idx_delta--) {
+-				/*
+-				 * zero-fill group members in the middle which
+-				 * have no sample
+-				 */
+-				ret += __percent_color_snprintf(hpp->buf + ret,
+-								hpp->size - ret,
+-								0.0);
+-			}
+-
+-			percent = 100.0 * period / total;
+-			ret += __percent_color_snprintf(hpp->buf + ret,
+-							hpp->size - ret,
+-							percent);
+-
+-			prev_idx = perf_evsel__group_idx(evsel);
+-		}
+-
+-		idx_delta = nr_members - prev_idx - 1;
+-
+-		while (idx_delta--) {
+-			/*
+-			 * zero-fill group members at last which have no sample
+-			 */
+-			ret += __percent_color_snprintf(hpp->buf + ret,
+-							hpp->size - ret,
+-							0.0);
+-		}
+-	}
+-	return ret;
+-}
+-
+ #define __HPP_COLOR_PERCENT_FN(_type, _field)					\
+ static u64 he_get_##_field(struct hist_entry *he)				\
+ {										\
+@@ -95,7 +41,8 @@ static int perf_gtk__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,
+ 				       struct perf_hpp *hpp,			\
+ 				       struct hist_entry *he)			\
+ {										\
+-	return __hpp__color_fmt(hpp, he, he_get_##_field);			\
++	return __hpp__fmt(hpp, he, he_get_##_field, " %6.2f%%",			\
++			  __percent_color_snprintf, true);			\
+ }
+ 
+ __HPP_COLOR_PERCENT_FN(overhead, period)
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index 6094562c9523..085353435f07 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -8,12 +8,9 @@
+ 
+ /* hist period print (hpp) functions */
+ 
+-typedef int (*hpp_snprint_fn)(char *buf, size_t size, const char *fmt, ...);
+-
+-static int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
+-		      u64 (*get_field)(struct hist_entry *),
+-		      const char *fmt, hpp_snprint_fn print_fn,
+-		      bool fmt_percent)
++int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
++	       u64 (*get_field)(struct hist_entry *),
++	       const char *fmt, hpp_snprint_fn print_fn, bool fmt_percent)
+ {
+ 	int ret;
+ 	struct hists *hists = he->hists;
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index a59743fa3ef7..97f924ec6af9 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -166,6 +166,12 @@ void perf_hpp__init(void);
+ void perf_hpp__column_register(struct perf_hpp_fmt *format);
+ void perf_hpp__column_enable(unsigned col);
+ 
++typedef int (*hpp_snprint_fn)(char *buf, size_t size, const char *fmt, ...);
++
++int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
++	       u64 (*get_field)(struct hist_entry *),
++	       const char *fmt, hpp_snprint_fn print_fn, bool fmt_percent);
++
+ static inline size_t perf_hpp__use_color(void)
+ {
+ 	return !symbol_conf.field_sep;
+-- 
+1.7.11.7
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__3_Mar_2014_12_02_41_+1100_BTnTkOK6hVEZ00=I
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTE9S1AAoJEMDTa8Ir7ZwV5+EP/jiIx7GxfDikB0SjyLPnyIOI
-asoLdYfb8zFKW22za0GAhaz6xEOulTsoRdapMjZJUUpiG1Bgxulas62+jV0S90oD
-MjFktWyxVDMxk8P8YcvhaIRc4/g1rzfAHwRCjzZ/iL6AKAZztBWC7lSrUG+uE6ld
-0RmENZNyICVFwxBxKFkKJes7z5V667ztmLC3Pxt/eQriWCGXqatkrAc8gvv5czxh
-yMtlQhrwmyeSSjXap5wXOEBHfmf6XmVFizj2OmnjEDtqog9eqY08p1/1EeF6BYY2
-WzD8iZ6Y82Z1ZqNX6EyrCD7jvoYMEDRhNhyyYDzLB37PQAabt48iHVQzcMjWjiuM
-eBqCVFBAWIQA/GbVMLGJHPdrO2pR5KkCaDsuIPBiPvhMHRGdyDC739oKMZhQpIhZ
-VpmW53UDEl/qtHMoll2XfCnBUMR+MiBaCBJs7VAv3aPUtD2glzapJYjNLlmhVtd9
-s6oRVAWIp48D/uu60usxRFbV5iXCDnz6rJ48g27Maa6m8yKCVOG+TpqDw7RmuB+K
-o7mVEO1QEyhQGRRUbotaDzVDiB8X2YQQx3hQmnw9hkmAMTwaqzXg4ijLRIYnqe9q
-HSyFPjgyH0/1MyswoLZEcnGEH3u6bWY7vArHa4eRgkc3LAflPLarYbSnaT8dkdwG
-TxQyEdv1Bfb4aAu8Mnya
-=S7gk
------END PGP SIGNATURE-----
-
---Signature=_Mon__3_Mar_2014_12_02_41_+1100_BTnTkOK6hVEZ00=I--
