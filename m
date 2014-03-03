@@ -1,63 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753673AbaCCRGH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 12:06:07 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:54650 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751661AbaCCRGF convert rfc822-to-8bit (ORCPT
+	id S1753949AbaCCRKS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 12:10:18 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:36001 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751386AbaCCRKQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 12:06:05 -0500
+	Mon, 3 Mar 2014 12:10:16 -0500
+Date: Mon, 3 Mar 2014 18:10:14 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH v2] usb: gadget: atmel_usba: Fix crashed during stopping
+ when DEBUG is enabled
+Message-ID: <20140303171014.GC3155@piout.net>
+References: <1393865324-27309-1-git-send-email-gregory.clement@free-electrons.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: [PATCH 1/2] spmi: pmic_arb: make selectable on ARCH_QCOM
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <1393865384-28145-1-git-send-email-joshc@codeaurora.org>
-Date: Mon, 3 Mar 2014 11:06:00 -0600
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <383D34BB-AA5E-4FD7-9E71-E26787937642@codeaurora.org>
-References: <1393865384-28145-1-git-send-email-joshc@codeaurora.org>
-To: Josh Cartwright <joshc@codeaurora.org>
-X-Mailer: Apple Mail (2.1874)
+Content-Disposition: inline
+In-Reply-To: <1393865324-27309-1-git-send-email-gregory.clement@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Mar 3, 2014, at 10:49 AM, Josh Cartwright <joshc@codeaurora.org> wrote:
-
-> With the split of Qualcomm MSM support into legacy and multiplatform,
-> the SPMI PMIC arb driver is only relevant on the multiplatform supported
-> SoCs. Switch the Kconfig depends to ARCH_QCOM.
+On 03/03/2014 at 17:48:34 +0100, Gregory CLEMENT wrote :
+> The debug trace in the atmel_usba_stop function made the assumption
+> that the driver pointer passed in parameter was not NULL. Since the
+> commit "usb: gadget: udc-core: fix a regression during gadget driver
+> unbinding", it was no more always true. This lead to a kernel crash.
 > 
-> Cc: Kumar Gala <galak@codeaurora.org>
-> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+> This commit now use the driver pointer stored in udc which fixes this
+> issue.
+> 
+> Since the commit which have triggered this issue was backported to the
+> 3.2 stable branch, then this one should also be backported to the same
+> kernel.
+> 
+> Fixes: 511f3c5326ea (usb: gadget: udc-core: fix a regression during gadget driver unbinding)
+> Cc: stable@vger.kernel.org # v3.2+
+> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+
 > ---
-> drivers/spmi/Kconfig | 4 ++--
-> 1 file changed, 2 insertions(+), 2 deletions(-)
+> Changelog:
+> v1 -> v2
+> Fixed the signature block in the commit log
 > 
-> diff --git a/drivers/spmi/Kconfig b/drivers/spmi/Kconfig
-> index 075bd79..bf1295e 100644
-> --- a/drivers/spmi/Kconfig
-> +++ b/drivers/spmi/Kconfig
-> @@ -14,8 +14,8 @@ config SPMI_MSM_PMIC_ARB
-> 	tristate "Qualcomm MSM SPMI Controller (PMIC Arbiter)"
-> 	depends on ARM
-> 	depends on IRQ_DOMAIN
-> -	depends on ARCH_MSM || COMPILE_TEST
-> -	default ARCH_MSM
-> +	depends on ARCH_QCOM || COMPILE_TEST
-> +	default ARCH_QCOM
-> 	help
-> 	  If you say yes to this option, support will be included for the
-> 	  built-in SPMI PMIC Arbiter interface on Qualcomm MSM family
-
-Acked-by: Kumar Gala <galak@codeaurora.org>
-
-- k
+>  drivers/usb/gadget/atmel_usba_udc.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/usb/gadget/atmel_usba_udc.c b/drivers/usb/gadget/atmel_usba_udc.c
+> index 52771d4c44bc..167843de2d8a 100644
+> --- a/drivers/usb/gadget/atmel_usba_udc.c
+> +++ b/drivers/usb/gadget/atmel_usba_udc.c
+> @@ -1827,12 +1827,12 @@ static int atmel_usba_stop(struct usb_gadget *gadget,
+>  	toggle_bias(0);
+>  	usba_writel(udc, CTRL, USBA_DISABLE_MASK);
+>  
+> -	udc->driver = NULL;
+> -
+>  	clk_disable_unprepare(udc->hclk);
+>  	clk_disable_unprepare(udc->pclk);
+>  
+> -	DBG(DBG_GADGET, "unregistered driver `%s'\n", driver->driver.name);
+> +	DBG(DBG_GADGET, "unregistered driver `%s'\n", udc->driver->driver.name);
+> +
+> +	udc->driver = NULL;
+>  
+>  	return 0;
+>  }
+> -- 
+> 1.8.1.2
+> 
 
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
