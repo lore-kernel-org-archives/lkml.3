@@ -1,94 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023AbaCCIpq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 03:45:46 -0500
-Received: from ozlabs.org ([203.10.76.45]:46772 "EHLO ozlabs.org"
+	id S1754056AbaCCIqP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 03:46:15 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:41185 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753541AbaCCIpp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 03:45:45 -0500
-Date: Mon, 3 Mar 2014 19:45:36 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>, Arnd Bergmann <arnd@arndb.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Johannes Thumshirn <johannes.thumshirn@men.de>
-Subject: linux-next: build failure after merge of the final tree (char-misc
- tree related)
-Message-Id: <20140303194536.a9ce403f8e86df43160bfc3e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__3_Mar_2014_19_45_36_+1100_kSJdA+mzafEX8hMX"
+	id S1753541AbaCCIqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 03:46:12 -0500
+Message-ID: <5314412B.6060502@ti.com>
+Date: Mon, 3 Mar 2014 10:45:31 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: <linux-fbdev@vger.kernel.org>, <dri-devel@lists.freedesktop.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        David Airlie <airlied@linux.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Randy Dunlap <rdunlap@infradead.org>
+Subject: Re: [PATCH 0/3] Reorder drivers/video directory
+References: <1393502086-9433-1-git-send-email-tomi.valkeinen@ti.com>
+In-Reply-To: <1393502086-9433-1-git-send-email-tomi.valkeinen@ti.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="1aFiO4jTbmCkgm22nURIn6eAU01ROLBcX"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__3_Mar_2014_19_45_36_+1100_kSJdA+mzafEX8hMX
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
+--1aFiO4jTbmCkgm22nURIn6eAU01ROLBcX
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: quoted-printable
 
-Hi all,
+On 27/02/14 13:54, Tomi Valkeinen wrote:
+> Hi,
+>=20
+> This is a re-send of the series, with RFC removed from the subject, and=
+ a bunch
+> of acks added.
+>=20
+> I'm cc'ing more people, to make sure this doesn't come as a surprise, a=
+nd to
+> make sure this is not a bad idea, doomed to fail horribly.
+>=20
+> So this series creates a new directory, drivers/video/fbdev/, to which =
+all
+> fbdev related files are moved. Also, a new directory, drivers/video/fbd=
+ev/core/
+> is created, to which the core fbdev framework files are moved. This mak=
+es the
+> drivers/video hierarchy much more clear.
+>=20
+> Presuming no one has objections to this as such, I wonder what's the le=
+ast
+> painful way to merge this? Normally, like any other fbdev change? As a =
+separate
+> pull request, maybe at -rc2 time frame, based on -rc1? Something else?
+>=20
+>  Tomi
+>=20
+> Tomi Valkeinen (3):
+>   video: move fbdev to drivers/video/fbdev
+>   fbdev: move fbdev core files to separate directory
+>   video: Kconfig: move drm and fb into separate menus
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+I have pushed this to my for-next branch. Let's see what happens... At
+least I'm able to merge the current linux-next without any conflicts.
 
-drivers/iio/adc/men_z188_adc.c: In function 'z188_iio_read_raw':
-drivers/iio/adc/men_z188_adc.c:61:3: error: implicit declaration of functio=
-n 'readw' [-Werror=3Dimplicit-function-declaration]
-   tmp =3D readw(adc->base + chan->channel * 4);
-   ^
-drivers/iio/adc/men_z188_adc.c: In function 'men_z188_config_channels':
-drivers/iio/adc/men_z188_adc.c:91:2: error: implicit declaration of functio=
-n 'readl' [-Werror=3Dimplicit-function-declaration]
-  ctl =3D readl(addr + Z188_CTRL_REG);
-  ^
-drivers/iio/adc/men_z188_adc.c:93:2: error: implicit declaration of functio=
-n 'writel' [-Werror=3Dimplicit-function-declaration]
-  writel(ctl, addr + Z188_CTRL_REG);
-  ^
-drivers/iio/adc/men_z188_adc.c: In function 'men_z188_probe':
-drivers/iio/adc/men_z188_adc.c:126:2: error: implicit declaration of functi=
-on 'ioremap' [-Werror=3Dimplicit-function-declaration]
-  adc->base =3D ioremap(mem->start, resource_size(mem));
-  ^
-drivers/iio/adc/men_z188_adc.c:126:12: warning: assignment makes pointer fr=
-om integer without a cast [enabled by default]
-  adc->base =3D ioremap(mem->start, resource_size(mem));
-            ^
-drivers/iio/adc/men_z188_adc.c: In function 'men_z188_remove':
-drivers/iio/adc/men_z188_adc.c:148:2: error: implicit declaration of functi=
-on 'iounmap' [-Werror=3Dimplicit-function-declaration]
-  iounmap(adc->base);
-  ^
+ Tomi
 
-Caused by commit 74aeac4da66f ("iio: adc: Add MEN 16z188 ADC driver")
-from the char-misc tree.  Need to include linux/io.h, I think.
 
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Mon__3_Mar_2014_19_45_36_+1100_kSJdA+mzafEX8hMX
-Content-Type: application/pgp-signature
+--1aFiO4jTbmCkgm22nURIn6eAU01ROLBcX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-iQIcBAEBCAAGBQJTFEE2AAoJEMDTa8Ir7ZwVCfsP/3w9Kv0Th2GcheyKaAi6mZwo
-RuiqVnrgVKjOW+23j1jOB81aTbUaMXpDCsQ+F8FKyuiufuLLWNhXElebKFKTobwB
-8dDSL3GTzu8vIqbPEhD3Mwv55dvMMjwanUD4bWKqyRM+mmeh1Z5InHbOMDvDMr15
-WH0IaAMRcavnR3PDALvyA3M3xsEn1w5G90mdgaF8AC8zHw5cC65h3ewwyp6cUJxq
-mPU4Ak3wng75e0SKs6tZTTLgojPRqT36NDpnLjrEg9pCTo5A2Q7clA5a7aaYOYdS
-t7o2FF3QG96XmFtCdSjY+UAI+e/U0BmRMi5cvs33oNPQX53SkwUQ5DzHoKEccc0c
-QJU6KolBIxLXLtSmorxj82cx52e41jVJswUf+k9S5j4eWOCb/6ctM1EXJ34zfmNL
-l7Qkl2gn8YDZ+IBcxClRze0/h7armwY/wP/dXcajF+Jt4lX0Fl/VQG/3iVnpVX/j
-hv6SvBOF18nzLW27F7BhVQxtzDAJIECGC9n1m7NZ6ZNuSY6dLuXsst0MxyezjHjZ
-0F7mQRJEX85PMgV3gRC+9tzmMlv4Sm8+AlQzCXFqrBQBMO8+Q8ls1R2HjzsnSvxX
-4uetF7pwVtFNjC6rI4guluLc4ZJrVqvFyLKgRai9i7adu8+WXF8uk4uoucYgd9+s
-96ZTyuKs5e+ovP5rN3pl
-=igmB
+iQIcBAEBAgAGBQJTFEErAAoJEPo9qoy8lh711sUQAKbKxrgYYGjMvBkiHVpn6//g
+9A+lWHWRsvSrzyLlayvR96xEsUwxszoIB6xwZH+UiR/IAwpnXJvwXoKEhSicSku+
+22SUJVYtRqorhexgZ/eAF9g0XGBtNHPaMhWaUm1qW6d4aqN+in28ncgCIdmcafl2
+mTLs2YJYxy3Kq33CVK01fedQtE55Jrio7t9aYNY+x6I3iFIoTG3eDJ6oM2iKpJb9
+LNx2WhpO3Vam1qqbpmzVCKuMU78gcHyzKtm9w5YtlfkDn9GlZPzwf2MKRKdUL4Qj
+H8L75QPo6Dnt514MDX2ELiuvbFzct4qeYviEiaTAEQOqvmF4y4/lvh4Ml3hOD3cp
+9X48Bg1TQ6vz5OrcXc5OD0uHGvPtm4xlR1WvWazWZrwiVGbnUUutd4bcPaOjAQ6I
+LDO4BNCDiNe9mhBNX8iebBo0reXRM2fCW6BmAwmWTvoA10ChuFSy7ukl6Wr/vG35
+XNg0+W3g5F6P+t/+Hghx3NCHvLLTE/ZCDkgL0hUVfXBt+diFWq+5jmDMEBM7LzLT
+esbAXqmXtABfU3je7RM3r8WDT+WZDZS8ZnmAmYaiT21ISpE07hjsnBQdu7YOq8QR
+ARHfNsTPP/rYcxTlPeTN8dOnE6eiuc1D4RPftWAxm9Wj0PCIz1x8dv7xmtZDHykf
+hZAiUdK31Ewfj0yYJp6g
+=CqFR
 -----END PGP SIGNATURE-----
 
---Signature=_Mon__3_Mar_2014_19_45_36_+1100_kSJdA+mzafEX8hMX--
+--1aFiO4jTbmCkgm22nURIn6eAU01ROLBcX--
