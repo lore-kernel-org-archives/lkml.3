@@ -1,57 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755641AbaCCXmL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 18:42:11 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:36734 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755005AbaCCXmJ (ORCPT
+	id S1755742AbaCCXnh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 18:43:37 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:35881 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755150AbaCCXnf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 18:42:09 -0500
-Date: Mon, 3 Mar 2014 23:42:07 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: George Spelvin <linux@horizon.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Update of file offset on write() etc. is non-atomic with I/O
-Message-ID: <20140303234207.GQ18016@ZenIV.linux.org.uk>
-References: <20140303210359.26624.qmail@science.horizon.com>
- <20140303212642.GJ18016@ZenIV.linux.org.uk>
- <CA+55aFwdEbMMTPyCEKop0Fukhxi90OCdvDieX7iB-dX9Ziovdg@mail.gmail.com>
- <20140303220106.GL18016@ZenIV.linux.org.uk>
- <CA+55aFyRJqb1HkVESdZDOcQ+20t-s-JWxZa15SHJpGU+k=6www@mail.gmail.com>
- <20140303232858.GO18016@ZenIV.linux.org.uk>
- <CA+55aFyEXgMh61P3cmjZzw3RxitiL0oymWSyUsiMp96iJ+98Og@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyEXgMh61P3cmjZzw3RxitiL0oymWSyUsiMp96iJ+98Og@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 3 Mar 2014 18:43:35 -0500
+Date: Mon, 3 Mar 2014 15:43:30 -0800
+From: Stephen Hemminger <stephen@networkplumber.org>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        xen-devel@lists.xenproject.org, mcgrof@suse.com,
+        bridge@lists.linux-foundation.org
+Subject: Re: [RFC v3 4/6] bridge: enable root block during device
+ registration
+Message-ID: <20140303154330.238a20bc@nehalam.linuxnetplumber.net>
+In-Reply-To: <1393886825-24323-5-git-send-email-mcgrof@do-not-panic.com>
+References: <1393886825-24323-1-git-send-email-mcgrof@do-not-panic.com>
+	<1393886825-24323-5-git-send-email-mcgrof@do-not-panic.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 03, 2014 at 03:34:43PM -0800, Linus Torvalds wrote:
-> On Mon, Mar 3, 2014 at 3:28 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> >
-> > Umm...   I would be very surprised if that worked well.  You have just
-> > forced fdget() to comply to the ABI.  And unless that has such structs
-> > returned in register pairs, there's no way for compiler to do about
-> > that.
-> 
-> Register pairs are very much a common return model.
-> 
-> And we've relied on that before. For example, 64-bit pte's on x86-32
-> very much does that whole thing with the "pte_t" union.
-> 
-> So you can now commence being surprised.
-> 
-> (Side note: I think sparc or something doesn't support it, and may
-> return things in memory. I can't really seem to find it in myself to
-> care)
+On Mon,  3 Mar 2014 14:47:03 -0800
+"Luis R. Rodriguez" <mcgrof@do-not-panic.com> wrote:
 
-sparc64 actually does support that.  So does amd64, and, with explicit
-flag, i386.  No other more or less general purpose architecture does.
+> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+> 
+> root block support was added via 1007dd1a on v3.8 but toggling
+> this flag is only allowed after a device has been registered and
+> added to a bridge as its a bridge *port* primitive, not a *net_device*
+> feature. There are work arounds possible to account for the lack
+> of netlink tools to toggle root_block, such as using the root_block
+> syfs attribute [0] or using udev / the driver to set the MAC address
+> to something high such as FE:FF:FF:FF:FF:FF, but neither of these
+> ensure root block is respected _from_the_start_ through device
+> initialization.
+> 
+> In order to support the root_block feature from the start since device
+> initialization and in order to avoid having to require userspace
+> work arounds to existing deployments this exposes a private
+> net_device flag which enables drivers that know they want to
+> start with the root_block feature enabled form the start. The
+> only caveat with this is topologies that require STP or non-root
+> will either have to use sysfs [0] or netlink tools like the
+> iproute2 bridge util to toggle the flag off after initialization.
+> This is an accepted compromise.
+> 
+> This flag is required given that ndo_add_slave() currently does not
+> allow specifying any other parameters other than the net_device. We
+> could extend this but in order to do that properly we'd need to
+> evaluate all other types of master device implementations.
+> 
+> [0] echo 1 > /sys/devices/vif-2-0/net/vif2.0/brport/root_block
+> 
+> Cc: Stephen Hemminger <stephen@networkplumber.org>
+> Cc: bridge@lists.linux-foundation.org
+> Cc: netdev@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: xen-devel@lists.xenproject.org
+> Cc: kvm@vger.kernel.org
+> Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+> ---
+>  include/linux/netdevice.h | 7 +++++++
+>  net/bridge/br_if.c        | 2 ++
+>  2 files changed, 9 insertions(+)
+> 
+> diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+> index 1a86948..b17643a 100644
+> --- a/include/linux/netdevice.h
+> +++ b/include/linux/netdevice.h
+> @@ -1181,6 +1181,11 @@ struct net_device_ops {
+>   * @IFF_LIVE_ADDR_CHANGE: device supports hardware address
+>   *	change when it's running
+>   * @IFF_MACVLAN: Macvlan device
+> + * @IFF_BRIDGE_ROOT_BLOCK: don't consider this net_device for root port
+> + *	when this interface is added to a bridge. This makes use of the
+> + *	root_block mechanism but since its a bridge port primitive this
+> + *	flag can be used to instantiate the preference to have root block
+> + *	enabled from the start since initialization.
+>   */
 
-Not ppc.  Not mips.  Not arm.  I think that some of those are worth
-caring about...
+Doing this in priv flags bloats what is a limited resource (# of bits).
+Plus there are issues (what if this is changed after adding to bridge)?
+
+Maybe better to enhance existing netlink infrastructure to allow passing
+flags on adding port to bridge.
+
+Also, unless device is up, nothing will happen right away when added to bridge.
+Root port status can be changed since device is disabled.
+
+
