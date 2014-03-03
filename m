@@ -1,128 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753923AbaCCHVp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 02:21:45 -0500
-Received: from mga09.intel.com ([134.134.136.24]:43125 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751620AbaCCHVn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 02:21:43 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,576,1389772800"; 
-   d="scan'208";a="492684603"
-Message-ID: <53142D84.8010506@linux.intel.com>
-Date: Mon, 03 Mar 2014 15:21:40 +0800
-From: "Li, Aubrey" <aubrey.li@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753950AbaCCHXn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 02:23:43 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:44934 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753638AbaCCHXm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 02:23:42 -0500
+Date: Mon, 3 Mar 2014 15:23:31 +0800
+From: Lee Jones <lee.jones@linaro.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the mfd-lj tree
+Message-ID: <20140303072331.GB4674@lee--X1>
+References: <20140214134217.aa7e1994b4cab7ee563c8307@canb.auug.org.au>
+ <20140217141446.454ab86eb19621fd397be6ed@canb.auug.org.au>
+ <20140220150508.79bfff95fb5d93c651801ffd@canb.auug.org.au>
+ <20140225143246.914c9732966764234bc51de2@canb.auug.org.au>
+ <20140303161803.ecbd9b124b5f2cdf79b8cf51@canb.auug.org.au>
 MIME-Version: 1.0
-To: "David E. Box" <david.e.box@linux.intel.com>, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com
-CC: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V5 1/2] x86: IOSF: add dummy functions for loadable modules
-References: <1393641652-7222-1-git-send-email-david.e.box@linux.intel.com> <1393641652-7222-2-git-send-email-david.e.box@linux.intel.com>
-In-Reply-To: <1393641652-7222-2-git-send-email-david.e.box@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140303161803.ecbd9b124b5f2cdf79b8cf51@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/3/1 10:40, David E. Box wrote:
-> From: "David E. Box" <david.e.box@linux.intel.com>
+Hi Stephen,
+
+> > > > > After merging the mfd-lj tree, today's linux-next build (x86_64
+> > > > > allmodconfig) failed like this:
+> > > > > 
+> > > > > In file included from drivers/mfd/max665x.c:19:0:
+> > > > > include/linux/mfd/max665x-private.h:31:1: error: expected ';', identifier or '(' before 'struct'
+> > > > >  struct max665x_dev {
+> > > > >  ^
+> > > > > 
+> > > > > Caused by commit e77bb5297293 ("mfd: max665x: Differentiate between
+> > > > > MAX665X devices").  Clearly never built by anyone :-(
+> > > > > 
+> > > > > I have used the mfd-lj tree from next-20140210 again for today (since the
+> > > > > other version had other problems).
+> > > > 
+> > > > Still seeing this error.
+> > > 
+> > > Still ...
+> > 
+> > Ping ...
 > 
-> Some loadable modules only need IOSF access on the platforms where it exists.
-> Provide dummy functions to allow these modules to compile and load on the
-> platforms where it doesn't exist.
-
-This is not the right way, I think.
-
-We can either default built-in this IOSF component, so that the
-interface is always here, Or we can register the interfaces to the
-global hooks, so that the consumers are able to check the hook to see if
-it's available and make the calls if it is.
-
-In the long turn, this could be a bus driver and framework needed.
-
-Thanks,
--Aubrey
+> I am still seeing this error which means that I am still using the
+> version of your tree from next-20140210 i.e. Feb 10.  It is a bit
+> disappointing that his has not been fixed in such a long time even though
+> there have been other updates to your tree which means that those other
+> changes have received no exposure in linux-next.  It is a trivial error,
+> but it does indicate that noone ever build tested that particular commit.
 > 
-> Signed-off-by: David E. Box <david.e.box@linux.intel.com>
-> ---
->  arch/x86/include/asm/iosf_mbi.h |   33 +++++++++++++++++++++++++++++++++
->  arch/x86/kernel/iosf_mbi.c      |    6 ++++++
->  2 files changed, 39 insertions(+)
-> 
-> diff --git a/arch/x86/include/asm/iosf_mbi.h b/arch/x86/include/asm/iosf_mbi.h
-> index 8e71c79..9fc5402 100644
-> --- a/arch/x86/include/asm/iosf_mbi.h
-> +++ b/arch/x86/include/asm/iosf_mbi.h
-> @@ -5,6 +5,8 @@
->  #ifndef IOSF_MBI_SYMS_H
->  #define IOSF_MBI_SYMS_H
->  
-> +#ifdef CONFIG_IOSF_MBI
-> +
->  #define MBI_MCR_OFFSET		0xD0
->  #define MBI_MDR_OFFSET		0xD4
->  #define MBI_MCRX_OFFSET		0xD8
-> @@ -50,6 +52,8 @@
->  #define BT_MBI_PCIE_READ	0x00
->  #define BT_MBI_PCIE_WRITE	0x01
->  
-> +bool iosf_mbi_available(void);
-> +
->  /**
->   * iosf_mbi_read() - MailBox Interface read command
->   * @port:	port indicating subunit being accessed
-> @@ -87,4 +91,33 @@ int iosf_mbi_write(u8 port, u8 opcode, u32 offset, u32 mdr);
->   */
->  int iosf_mbi_modify(u8 port, u8 opcode, u32 offset, u32 mdr, u32 mask);
->  
-> +#else /* CONFIG_IOSF_MBI is not enabled */
-> +static inline
-> +bool iosf_mbi_available(void)
-> +{
-> +	return false;
-> +}
-> +
-> +static inline
-> +int iosf_mbi_read(u8 port, u8 opcode, u32 offset, u32 *mdr)
-> +{
-> +	WARN();
-> +	return -EPERM;
-> +}
-> +
-> +static inline
-> +int iosf_mbi_write(u8 port, u8 opcode, u32 offset, u32 mdr)
-> +{
-> +	WARN();
-> +	return -EPERM;
-> +}
-> +
-> +static inline
-> +int iosf_mbi_modify(u8 port, u8 opcode, u32 offset, u32 mdr, u32 mask)
-> +{
-> +	WARN();
-> +	return -EPERM;
-> +}
-> +#endif /* CONFIG_IOSF_MBI */
-> +
->  #endif /* IOSF_MBI_SYMS_H */
-> diff --git a/arch/x86/kernel/iosf_mbi.c b/arch/x86/kernel/iosf_mbi.c
-> index c3aae66..d3803c6 100644
-> --- a/arch/x86/kernel/iosf_mbi.c
-> +++ b/arch/x86/kernel/iosf_mbi.c
-> @@ -177,6 +177,12 @@ int iosf_mbi_modify(u8 port, u8 opcode, u32 offset, u32 mdr, u32 mask)
->  }
->  EXPORT_SYMBOL(iosf_mbi_modify);
->  
-> +bool iosf_mbi_available(void)
-> +{
-> +	return mbi_pdev;
-> +}
-> +EXPORT_SYMBOL(iosf_mbi_available);
-> +
->  static int iosf_mbi_probe(struct pci_dev *pdev,
->  			  const struct pci_device_id *unused)
->  {
-> 
+> (this is now commit 2fc7e7d25bee in your tree since it was rewritten but
+> not fixed on Feb 14.)
 
+Sorry about all this. Your mails are being filtered into an unused
+mailbox for a currently unknown reason. I will investigate this
+immediately. It was a mistake to push this patch, I will rectify right
+away.
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
