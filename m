@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755577AbaCCTBm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 14:01:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:56204 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754128AbaCCTAs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 14:00:48 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 61/67] x86, smap: Don't enable SMAP if CONFIG_X86_SMAP is disabled
-Date: Mon,  3 Mar 2014 10:55:49 -0800
-Message-Id: <1393872955-28810-62-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1393872955-28810-1-git-send-email-kamal@canonical.com>
-References: <1393872955-28810-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	id S1755599AbaCCTBz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 14:01:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16792 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754777AbaCCTBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 14:01:53 -0500
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Torvald Riegel <triegel@redhat.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+In-Reply-To: <20140227175021.GT8264@linux.vnet.ibm.com>
+References: <20140223003933.GQ4250@linux.vnet.ibm.com>
+	 <CA+55aFyjzR_Ga_HOKnBXpKYbuesqovj1-sFTVisD9UwA6JuJtw@mail.gmail.com>
+	 <20140223063426.GT4250@linux.vnet.ibm.com>
+	 <CA+55aFxMJvaQhoEwqgN=XA6gDOdZwoZQHdcAnB-FhAri_hK-6Q@mail.gmail.com>
+	 <CA+55aFw5tdjmNyHCdcyZ8NPpd1wCgOjLRzstRhp0Njs9azpi8Q@mail.gmail.com>
+	 <20140224172110.GO8264@linux.vnet.ibm.com>
+	 <CA+55aFyi45f7oaG4MYP41TOc=E8Ze8Om88dV2Lq4F=qebhxt4A@mail.gmail.com>
+	 <20140224185341.GU8264@linux.vnet.ibm.com>
+	 <CA+55aFzXyob0aKnv1u7Stbu0rH5Aq2jaA1rHb=TvQe9c1KY0oQ@mail.gmail.com>
+	 <1393515453.28840.9961.camel@triegel.csb>
+	 <20140227175021.GT8264@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 03 Mar 2014 20:01:10 +0100
+Message-ID: <1393873270.28840.11671.camel@triegel.csb>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.19 -stable review patch.  If anyone has any objections, please let me know.
+On Thu, 2014-02-27 at 09:50 -0800, Paul E. McKenney wrote:
+> Your proposal looks quite promising at first glance.  But rather than
+> try and comment on it immediately, I am going to take a number of uses of
+> RCU from the Linux kernel and apply your proposal to them, then respond
+> with the results
+> 
+> Fair enough?
 
-------------------
-
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-
-commit 03bbd596ac04fef47ce93a730b8f086d797c3021 upstream.
-
-If SMAP support is not compiled into the kernel, don't enable SMAP in
-CR4 -- in fact, we should clear it, because the kernel doesn't contain
-the proper STAC/CLAC instructions for SMAP support.
-
-Found by Fengguang Wu's test system.
-
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Link: http://lkml.kernel.org/r/20140213124550.GA30497@localhost
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- arch/x86/kernel/cpu/common.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 9c3ab43..a93d20b 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -287,8 +287,13 @@ static __always_inline void setup_smap(struct cpuinfo_x86 *c)
- 	raw_local_save_flags(eflags);
- 	BUG_ON(eflags & X86_EFLAGS_AC);
- 
--	if (cpu_has(c, X86_FEATURE_SMAP))
-+	if (cpu_has(c, X86_FEATURE_SMAP)) {
-+#ifdef CONFIG_X86_SMAP
- 		set_in_cr4(X86_CR4_SMAP);
-+#else
-+		clear_in_cr4(X86_CR4_SMAP);
-+#endif
-+	}
- }
- 
- /*
--- 
-1.8.3.2
+Sure.  Thanks for doing the cross-check!
 
