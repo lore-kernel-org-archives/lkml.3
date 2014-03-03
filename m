@@ -1,1184 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216AbaCCNUK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 08:20:10 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:34805 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753982AbaCCNUH (ORCPT
+	id S1754269AbaCCNVO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 08:21:14 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:50192 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753980AbaCCNVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 08:20:07 -0500
-Date: Mon, 3 Mar 2014 14:18:02 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
-Cc: Emilio Lopez <emilio@elopez.com.ar>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        "Koul, Vinod" <vinod.koul@intel.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-sunxi@googlegroups.com" <linux-sunxi@googlegroups.com>,
-        "kevin.z.m.zh@gmail.com" <kevin.z.m.zh@gmail.com>,
-        "sunny@allwinnertech.com" <sunny@allwinnertech.com>,
-        "shuge@allwinnertech.com" <shuge@allwinnertech.com>,
-        "zhuzhenhua@allwinnertech.com" <zhuzhenhua@allwinnertech.com>
-Subject: Re: [PATCH v2 4/5] DMA: sun6i: Add driver for the Allwinner A31 DMA
- controller
-Message-ID: <20140303131802.GX607@lukather>
-References: <1393605440-14643-1-git-send-email-maxime.ripard@free-electrons.com>
- <1393605440-14643-5-git-send-email-maxime.ripard@free-electrons.com>
- <1393608646.28803.103.camel@smile.fi.intel.com>
+	Mon, 3 Mar 2014 08:21:13 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="P6d3k5Edf9pZm0D3"
-Content-Disposition: inline
-In-Reply-To: <1393608646.28803.103.camel@smile.fi.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53145F3A.2010203@broadcom.com>
+References: <53110a73.fVHl0nWfqeLuOaob%fengguang.wu@intel.com>
+	<53110C1A.60804@broadcom.com>
+	<CAGVrzcY85PTeQnSf3ptQyC94A3b7FdX9QPxDcSq+UYhgKfWbUg@mail.gmail.com>
+	<53110EA5.8070503@broadcom.com>
+	<CAGVrzcaPsaDiBbnbopQTjT_-3ohYWs9HFn-4Y9DL1WJy_A7mzg@mail.gmail.com>
+	<53145F3A.2010203@broadcom.com>
+Date: Mon, 3 Mar 2014 14:21:12 +0100
+X-Google-Sender-Auth: uYIzY0jqrZT8R8qo9r77hRmdQVg
+Message-ID: <CAMuHMdUjKrsgqJjuD1UF5gPVd3JT=Z425Yw96aa8FKz8HijtsA@mail.gmail.com>
+Subject: Re: [wireless-next:master 169/199] drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c:2469:3:
+ error: implicit declaration of function 'atomic_set_mask'
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Arend van Spriel <arend@broadcom.com>, Arnd Bergmann <arnd@arndb.de>
+Cc: Florian Fainelli <f.fainelli@gmail.com>,
+        kbuild test robot <fengguang.wu@intel.com>,
+        Hante Meuleman <meuleman@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>, kbuild-all@01.org,
+        Tony Luck <tony.luck@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 3, 2014 at 11:53 AM, Arend van Spriel <arend@broadcom.com> wrote:
+> On 02/28/14 23:44, Florian Fainelli wrote:
+>> 2014-02-28 14:33 GMT-08:00 Arend van Spriel<arend@broadcom.com>:
+>>> On 02/28/2014 11:26 PM, Florian Fainelli wrote:
+>>>> 2014-02-28 14:22 GMT-08:00 Arend van Spriel<arend@broadcom.com>:
+>>>>> On 02/28/2014 11:15 PM, kbuild test robot wrote:
+>>>>>> tree:
+>>>>>> git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-next.git
+>>>>>> master
+>>>>>> head:   3e3831c4fdc53aabf3a56419ef6d96a841c52435
+>>>>>> commit: c98db0bec72ac7ef127119c1ed962d6f56802b12 [169/199] brcmfmac:
+>>>>>> Use atomic functions for intstatus update.
+>>>>>> config: make ARCH=ia64 allmodconfig
+>>>>>>
+>>>>>> All error/warnings:
+>>>>>>
+>>>>>>     drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c: In function
+>>>>>> 'brcmf_sdio_intr_rstatus':
+>>>>>>>>
+>>>>>>>> drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c:2469:3: error:
+>>>>>>>> implicit declaration of function 'atomic_set_mask'
+>>>>>>>> [-Werror=implicit-function-declaration]
+>>>>>>
+>>>>>>     cc1: some warnings being treated as errors
+>>>>>
+>>>>>
+>>>>> Hi Fengguang,
+>>>>>
+>>>>> So atomic_set_mask() is not a generally available function. I thought
+>>>>> that if the arch does not provide it, the asm-generic implementation is
+>>>>> used.
+>>>>
+>>>>
+>>>> Though so as well.
+>>>>
+>>>>> Also it seems the function prototype is not the same for all
+>>>>> archs. :-(
+>>>>
+>>>>
+>>>> This does not sound like it is expected, and this might need fixing,
+>>>> do you want to tackle this?
+>>>
+>>>
+>>> I got email m68k and ia64 failing. Some implementations are in assembly.
+>>> It has been (counting...) over 20 years since I did some baby steps in
+>>> m68k assembly and do not really feel a strong pull to that dark side.
+>>
+>>
+>> This is supposed to be a generic function that everyone should be able
+>> to use without knowing the underlying details. Not quite sure why
+>> those two architectures are different, maybe we should ask Geert and
+>> Tony about this?
+>
+>
+> I was about to when I decided to do some more digging. So taking a closer
+> look at include/asm-generic/atomic.h revealed this:
+>
+> /*
+>  * Generic C implementation of atomic counter operations. Usable on
+>  * UP systems only. Do not include in machine independent code.
+>
+> And further down:
+>
+> #ifdef CONFIG_SMP
+> /* Force people to define core atomics */
+> # if !defined(atomic_add_return) || !defined(atomic_sub_return) || \
+>      !defined(atomic_clear_mask) || !defined(atomic_set_mask)
+> #  error "SMP requires a little arch-specific magic"
+> # endif
+> #endif
+>
+> So in these SMP era architecture specific implementations seem required.
+> IA64 does not provide it (so CONFIG_SMP not supported?) and m68k has
+> different prototype. Apparently, the comment /* Force people to define core
+> atomics */ did not fly for all archs (yet) :-p.
 
---P6d3k5Edf9pZm0D3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+It's not just m68k, but other UP-only architectures like frv and mn10300
+(these probably got derived from m68k).
 
-Hi Andy,
+Furthermore, in addition to the above, m32r uses "unsigned long" instead of
+"unsigned int" for the mask.
+Even asm-generic uses different mask types for atomic_clear_mask() and
+atomic_set_mask().
 
-On Fri, Feb 28, 2014 at 05:30:47PM +0000, Shevchenko, Andriy wrote:
-> On Fri, 2014-02-28 at 17:37 +0100, Maxime Ripard wrote:
-> > The Allwinner A31 has a 16 channels DMA controller that it shares with =
-the
-> > newer A23. Although sharing some similarities with the DMA controller o=
-f the
-> > older Allwinner SoCs, it's significantly different, I don't expect it t=
-o be
-> > possible to share the driver for these two.
-> >=20
-> > The A31 Controller is able to memory-to-memory or memory-to-device tran=
-sfers on
-> > the 16 channels in parallel.
->=20
-> Thanks for update.
-> Few more small comments.
->=20
-> >=20
-> > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> > ---
-> >  .../devicetree/bindings/dma/sun6i-dma.txt          |  45 +
-> >  drivers/dma/Kconfig                                |   8 +
-> >  drivers/dma/Makefile                               |   1 +
-> >  drivers/dma/sun6i-dma.c                            | 959 +++++++++++++=
-++++++++
-> >  4 files changed, 1013 insertions(+)
-> >  create mode 100644 Documentation/devicetree/bindings/dma/sun6i-dma.txt
-> >  create mode 100644 drivers/dma/sun6i-dma.c
-> >=20
-> > diff --git a/Documentation/devicetree/bindings/dma/sun6i-dma.txt b/Docu=
-mentation/devicetree/bindings/dma/sun6i-dma.txt
-> > new file mode 100644
-> > index 0000000..5d7c86d
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/dma/sun6i-dma.txt
-> > @@ -0,0 +1,45 @@
-> > +Allwinner A31 DMA Controller
-> > +
-> > +This driver follows the generic DMA bindings defined in dma.txt.
-> > +
-> > +Required properties:
-> > +
-> > +- compatible:	Must be "allwinner,sun6i-a31-dma"
-> > +- reg:		Should contain the registers base address and length
-> > +- interrupts:	Should contain a reference to the interrupt used by this=
- device
-> > +- clocks:	Should contain a reference to the parent AHB clock
-> > +- resets:	Should contain a reference to the reset controller asserting
-> > +	  	this device in reset
-> > +- #dma-cells :	Should be 1, a single cell holding a line request number
-> > +
-> > +Example:
-> > +	dma: dma-controller@01c02000 {
-> > +		compatible =3D "allwinner,sun6i-a31-dma";
-> > +		reg =3D <0x01c02000 0x1000>;
-> > +		interrupts =3D <0 50 4>;
-> > +		clocks =3D <&ahb1_gates 6>;
-> > +		resets =3D <&ahb1_rst 6>;
-> > +		#dma-cells =3D <1>;
-> > +	};
-> > +
-> > +Clients:
-> > +
-> > +DMA clients connected to the A31 DMA controller must use the format
-> > +described in the dma.txt file, using a two-cell specifier for each
-> > +channel: a phandle plus one integer cells.
-> > +The two cells in order are:
-> > +
-> > +1. A phandle pointing to the DMA controller.
-> > +2. The port ID as specified in the datasheet
-> > +
-> > +Example:
-> > +spi2: spi@01c6a000 {
-> > +	compatible =3D "allwinner,sun6i-a31-spi";
-> > +	reg =3D <0x01c6a000 0x1000>;
-> > +	interrupts =3D <0 67 4>;
-> > +	clocks =3D <&ahb1_gates 22>, <&spi2_clk>;
-> > +	clock-names =3D "ahb", "mod";
-> > +	dmas =3D <&dma 25>, <&dma 25>;
-> > +	dma-names =3D "rx", "tx";
-> > +	resets =3D <&ahb1_rst 22>;
-> > +};
-> > diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-> > index 605b016..7923697 100644
-> > --- a/drivers/dma/Kconfig
-> > +++ b/drivers/dma/Kconfig
-> > @@ -351,6 +351,14 @@ config MOXART_DMA
-> >  	help
-> >  	  Enable support for the MOXA ART SoC DMA controller.
-> > =20
-> > +config DMA_SUN6I
-> > +	tristate "Allwinner A31 SoCs DMA support"
-> > +	depends on ARCH_SUNXI
-> > +	select DMA_ENGINE
-> > +	select DMA_VIRTUAL_CHANNELS
-> > +	help
-> > +	  Support for the DMA engine for Allwinner A31 SoCs.
-> > +
-> >  config DMA_ENGINE
-> >  	bool
-> > =20
-> > diff --git a/drivers/dma/Makefile b/drivers/dma/Makefile
-> > index a029d0f4..18cdbad 100644
-> > --- a/drivers/dma/Makefile
-> > +++ b/drivers/dma/Makefile
-> > @@ -44,3 +44,4 @@ obj-$(CONFIG_DMA_JZ4740) +=3D dma-jz4740.o
-> >  obj-$(CONFIG_TI_CPPI41) +=3D cppi41.o
-> >  obj-$(CONFIG_K3_DMA) +=3D k3dma.o
-> >  obj-$(CONFIG_MOXART_DMA) +=3D moxart-dma.o
-> > +obj-$(CONFIG_DMA_SUN6I) +=3D sun6i-dma.o
-> > diff --git a/drivers/dma/sun6i-dma.c b/drivers/dma/sun6i-dma.c
-> > new file mode 100644
-> > index 0000000..ba852f0
-> > --- /dev/null
-> > +++ b/drivers/dma/sun6i-dma.c
-> > @@ -0,0 +1,959 @@
-> > +/*
-> > + * Copyright (C) 2013-2014 Allwinner Tech Co., Ltd
-> > + * Author: Sugar <shuge@allwinnertech.com>
-> > + *
-> > + * Copyright (C) 2014 Maxime Ripard
-> > + * Maxime Ripard <maxime.ripard@free-electrons.com>
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify
-> > + * it under the terms of the GNU General Public License as published by
-> > + * the Free Software Foundation; either version 2 of the License, or
-> > + * (at your option) any later version.
-> > + */
-> > +
-> > +#include <linux/clk.h>
-> > +#include <linux/delay.h>
-> > +#include <linux/dmaengine.h>
-> > +#include <linux/dmapool.h>
-> > +#include <linux/interrupt.h>
-> > +#include <linux/module.h>
-> > +#include <linux/of_dma.h>
-> > +#include <linux/platform_device.h>
-> > +#include <linux/reset.h>
-> > +#include <linux/slab.h>
-> > +#include <linux/types.h>
-> > +
-> > +#include "virt-dma.h"
-> > +
-> > +/*
-> > + * There's 16 physical channels that can work in parallel.
-> > + *
-> > + * However we have 30 different endpoints for our requests.
-> > + *
-> > + * Since the channels are able to handle only an unidirectional
-> > + * transfer, we need to allocate more virtual channels so that
-> > + * everyone can grab one channel.
-> > + *
-> > + * Some devices can't work in both direction (mostly because it
-> > + * wouldn't make sense), so we have a bit fewer virtual channels than
-> > + * 2 channels per endpoints.
-> > + */
-> > +
-> > +#define NR_MAX_CHANNELS		16
-> > +#define NR_MAX_REQUESTS		30
-> > +#define NR_MAX_VCHANS		53
-> > +
-> > +/*
-> > + * Common registers
-> > + */
-> > +#define DMA_IRQ_EN(x)		((x) * 0x04)
-> > +#define DMA_IRQ_HALF			BIT(0)
-> > +#define DMA_IRQ_PKG			BIT(1)
-> > +#define DMA_IRQ_QUEUE			BIT(2)
-> > +
-> > +#define DMA_IRQ_CHAN_NR			8
-> > +#define DMA_IRQ_CHAN_WIDTH		4
-> > +
-> > +
-> > +#define DMA_IRQ_STAT(x)		((x) * 0x04 + 0x10)
-> > +
-> > +#define DMA_STAT		0x30
-> > +
-> > +/*
-> > + * Channels specific registers
-> > + */
-> > +#define DMA_CHAN_ENABLE		0x00
-> > +#define DMA_CHAN_ENABLE_START		BIT(0)
-> > +#define DMA_CHAN_ENABLE_STOP		0
-> > +
-> > +#define DMA_CHAN_PAUSE		0x04
-> > +#define DMA_CHAN_PAUSE_PAUSE		BIT(1)
-> > +#define DMA_CHAN_PAUSE_RESUME		0
-> > +
-> > +#define DMA_CHAN_LLI_ADDR	0x08
-> > +
-> > +#define DMA_CHAN_CUR_CFG	0x0c
-> > +#define DMA_CHAN_CFG_SRC_DRQ(x)		((x) & 0x1f)
-> > +#define DMA_CHAN_CFG_SRC_IO_MODE	BIT(5)
-> > +#define DMA_CHAN_CFG_SRC_LINEAR_MODE	(0 << 5)
-> > +#define DMA_CHAN_CFG_SRC_BURST(x)	(((x) & 0x3) << 7)
-> > +#define DMA_CHAN_CFG_SRC_WIDTH(x)	(((x) & 0x3) << 9)
-> > +
-> > +#define DMA_CHAN_CFG_DST_DRQ(x)		(DMA_CHAN_CFG_SRC_DRQ(x) << 16)
-> > +#define DMA_CHAN_CFG_DST_IO_MODE	(DMA_CHAN_CFG_SRC_IO_MODE << 16)
-> > +#define DMA_CHAN_CFG_DST_LINEAR_MODE	(DMA_CHAN_CFG_SRC_LINEAR_MODE << =
-16)
-> > +#define DMA_CHAN_CFG_DST_BURST(x)	(DMA_CHAN_CFG_SRC_BURST(x) << 16)
-> > +#define DMA_CHAN_CFG_DST_WIDTH(x)	(DMA_CHAN_CFG_SRC_WIDTH(x) << 16)
-> > +
-> > +#define DMA_CHAN_CUR_SRC	0x10
-> > +
-> > +#define DMA_CHAN_CUR_DST	0x14
-> > +
-> > +#define DMA_CHAN_CUR_CNT	0x18
-> > +
-> > +#define DMA_CHAN_CUR_PARA	0x1c
-> > +
-> > +
-> > +/*
-> > + * Various hardware related defines
-> > + */
-> > +#define LLI_LAST_ITEM	0xfffff800
-> > +#define NORMAL_WAIT	8
-> > +#define DRQ_SDRAM	1
-> > +
-> > +/*
-> > + * Hardware representation of the LLI
-> > + *
-> > + * The hardware will be fed the physical address of this structure,
-> > + * and read its content in order to start the transfer.
-> > + */
-> > +struct sun6i_dma_lli {
-> > +	u32			cfg;
-> > +	u32			src;
-> > +	u32			dst;
-> > +	u32			len;
-> > +	u32			para;
-> > +	u32			p_lli_next;
-> > +	struct sun6i_dma_lli	*v_lli_next;
-> > +} __packed;
-> > +
-> > +
-> > +struct sun6i_desc {
-> > +	struct virt_dma_desc	vd;
-> > +	dma_addr_t		p_lli;
-> > +	struct sun6i_dma_lli	*v_lli;
-> > +};
-> > +
-> > +struct sun6i_pchan {
-> > +	u32			idx;
-> > +	void __iomem		*base;
-> > +	struct sun6i_vchan	*vchan;
-> > +	struct sun6i_desc	*desc;
-> > +	struct sun6i_desc	*done;
-> > +};
-> > +
-> > +struct sun6i_vchan {
-> > +	struct virt_dma_chan	vc;
-> > +	struct list_head	node;
-> > +	struct dma_slave_config	cfg;
-> > +	struct sun6i_pchan	*phy;
-> > +	u8			port;
-> > +};
-> > +
-> > +struct sun6i_dma_dev {
-> > +	struct dma_device	slave;
-> > +	void __iomem		*base;
-> > +	struct clk		*clk;
-> > +	struct reset_control	*rstc;
-> > +	spinlock_t		lock;
-> > +	struct tasklet_struct	task;
-> > +	struct list_head	pending;
-> > +	struct dma_pool		*pool;
-> > +	struct sun6i_pchan	*pchans;
-> > +	struct sun6i_vchan	*vchans;
-> > +};
-> > +
-> > +static struct device *chan2dev(struct dma_chan *chan)
-> > +{
-> > +	return &chan->dev->device;
-> > +}
-> > +
-> > +static inline struct sun6i_dma_dev *to_sun6i_dma_dev(struct dma_device=
- *d)
-> > +{
-> > +	return container_of(d, struct sun6i_dma_dev, slave);
-> > +}
-> > +
-> > +static inline struct sun6i_vchan *to_sun6i_vchan(struct dma_chan *chan)
-> > +{
-> > +	return container_of(chan, struct sun6i_vchan, vc.chan);
-> > +}
-> > +
-> > +static inline struct sun6i_desc *
-> > +to_sun6i_desc(struct dma_async_tx_descriptor *tx)
-> > +{
-> > +	return container_of(tx, struct sun6i_desc, vd.tx);
-> > +}
-> > +
-> > +static inline void sun6i_dma_dump_com_regs(struct sun6i_dma_dev *sdev)
-> > +{
-> > +	dev_dbg(sdev->slave.dev, "Common register:\n"
-> > +		"\tmask0(%04x): 0x%08x\n"
-> > +		"\tmask1(%04x): 0x%08x\n"
-> > +		"\tpend0(%04x): 0x%08x\n"
-> > +		"\tpend1(%04x): 0x%08x\n"
-> > +		"\tstats(%04x): 0x%08x\n",
-> > +		DMA_IRQ_EN(0), readl(sdev->base + DMA_IRQ_EN(0)),
-> > +		DMA_IRQ_EN(1), readl(sdev->base + DMA_IRQ_EN(1)),
-> > +		DMA_IRQ_STAT(0), readl(sdev->base + DMA_IRQ_STAT(0)),
-> > +		DMA_IRQ_STAT(1), readl(sdev->base + DMA_IRQ_STAT(1)),
-> > +		DMA_STAT, readl(sdev->base + DMA_STAT));
-> > +}
-> > +
-> > +static inline void sun6i_dma_dump_chan_regs(struct sun6i_dma_dev *sdev,
-> > +					    struct sun6i_pchan *pchan)
-> > +{
-> > +	dev_dbg(sdev->slave.dev, "Chan %d reg: 0x%x\n"
->=20
-> I'm not sure this is right specifier. For phys_addr_t and dma_addr_t
-> consider to use %pa[d]. Please, check entire code for that.
+Gr{oetje,eeting}s,
 
-I wasn't aware of these formats, thanks for pointing this out.
+                        Geert
 
->=20
-> > +		"\t___en(%04x): \t0x%08x\n"
-> > +		"\tpause(%04x): \t0x%08x\n"
-> > +		"\tstart(%04x): \t0x%08x\n"
-> > +		"\t__cfg(%04x): \t0x%08x\n"
-> > +		"\t__src(%04x): \t0x%08x\n"
-> > +		"\t__dst(%04x): \t0x%08x\n"
-> > +		"\tcount(%04x): \t0x%08x\n"
-> > +		"\t_para(%04x): \t0x%08x\n\n",
-> > +		pchan->idx, __virt_to_phys((unsigned long)pchan->base),
-> > +		DMA_CHAN_ENABLE,
-> > +		readl(pchan->base + DMA_CHAN_ENABLE),
-> > +		DMA_CHAN_PAUSE,
-> > +		readl(pchan->base + DMA_CHAN_PAUSE),
-> > +		DMA_CHAN_LLI_ADDR,
-> > +		readl(pchan->base + DMA_CHAN_LLI_ADDR),
-> > +		DMA_CHAN_CUR_CFG,
-> > +		readl(pchan->base + DMA_CHAN_CUR_CFG),
-> > +		DMA_CHAN_CUR_SRC,
-> > +		readl(pchan->base + DMA_CHAN_CUR_SRC),
-> > +		DMA_CHAN_CUR_DST,
-> > +		readl(pchan->base + DMA_CHAN_CUR_DST),
-> > +		DMA_CHAN_CUR_CNT,
-> > +		readl(pchan->base + DMA_CHAN_CUR_CNT),
-> > +		DMA_CHAN_CUR_PARA,
-> > +		readl(pchan->base + DMA_CHAN_CUR_PARA));
-> > +}
-> > +
-> > +static inline u8 convert_burst(u8 maxburst)
-> > +{
-> > +	if (maxburst =3D=3D 1 || maxburst > 16)
-> > +		return 0;
-> > +
-> > +	return fls(maxburst) - 1;
-> > +}
-> > +
-> > +static inline u8 convert_buswidth(enum dma_slave_buswidth addr_width)
-> > +{
-> > +	switch (addr_width) {
-> > +	case DMA_SLAVE_BUSWIDTH_2_BYTES:
-> > +		return 1;
-> > +	case DMA_SLAVE_BUSWIDTH_4_BYTES:
-> > +		return 2;
-> > +	default:
-> > +		return 0;
-> > +	}
-> > +}
-> > +
-> > +static void *sun6i_dma_lli_add(struct sun6i_dma_lli *prev,
-> > +			       struct sun6i_dma_lli *next,
-> > +			       dma_addr_t next_phy,
-> > +			       struct sun6i_desc *txd)
-> > +{
-> > +	if ((!prev && !txd) || !next)
-> > +		return NULL;
-> > +
-> > +	if (!prev) {
-> > +		txd->p_lli =3D next_phy;
-> > +		txd->v_lli =3D next;
-> > +	} else {
-> > +		prev->p_lli_next =3D next_phy;
-> > +		prev->v_lli_next =3D next;
-> > +	}
-> > +
-> > +	next->p_lli_next =3D LLI_LAST_ITEM;
-> > +	next->v_lli_next =3D NULL;
-> > +
-> > +	return next;
-> > +}
-> > +
-> > +static inline void sun6i_dma_cfg_lli(struct sun6i_dma_lli *lli,
-> > +				     dma_addr_t src,
-> > +				     dma_addr_t dst, u32 len,
-> > +				     struct dma_slave_config *config)
-> > +{
-> > +	u32 src_width, dst_width, src_burst, dst_burst;
-> > +
-> > +	if (!config)
-> > +		return;
-> > +
-> > +	src_burst =3D convert_burst(config->src_maxburst);
-> > +	dst_burst =3D convert_burst(config->dst_maxburst);
-> > +
-> > +	src_width =3D convert_buswidth(config->src_addr_width);
-> > +	dst_width =3D convert_buswidth(config->dst_addr_width);
-> > +
-> > +	lli->cfg =3D DMA_CHAN_CFG_SRC_BURST(src_burst) |
-> > +		DMA_CHAN_CFG_SRC_WIDTH(src_width) |
-> > +		DMA_CHAN_CFG_DST_BURST(dst_burst) |
-> > +		DMA_CHAN_CFG_DST_WIDTH(dst_width);
-> > +
-> > +	lli->src =3D src;
-> > +	lli->dst =3D dst;
-> > +	lli->len =3D len;
-> > +	lli->para =3D NORMAL_WAIT;
-> > +
-> > +}
-> > +
-> > +static inline void sun6i_dma_dump_lli(struct sun6i_vchan *vchan,
-> > +				      struct sun6i_dma_lli *lli)
-> > +{
-> > +	dev_dbg(chan2dev(&vchan->vc.chan),
-> > +		"\n\tdesc:   p - 0x%08x v - 0x%08x\n"
-> > +		"\t\tc - 0x%08x s - 0x%08x d - 0x%08x\n"
-> > +		"\t\tl - 0x%08x p - 0x%08x n - 0x%08x\n",
-> > +		__virt_to_phys((unsigned long)lli), (u32)lli,
-> > +		lli->cfg, lli->src, lli->dst,
-> > +		lli->len, lli->para, lli->p_lli_next);
-> > +}
-> > +
-> > +static void sun6i_dma_free_desc(struct virt_dma_desc *vd)
-> > +{
-> > +	struct sun6i_desc *txd =3D to_sun6i_desc(&vd->tx);
-> > +	struct sun6i_dma_dev *sdev =3D to_sun6i_dma_dev(vd->tx.chan->device);
-> > +	struct sun6i_dma_lli *v_lli, *v_next;
-> > +	dma_addr_t p_lli, p_next;
-> > +
-> > +	if (unlikely(!txd))
-> > +		return;
-> > +
-> > +	p_lli =3D txd->p_lli;
-> > +	v_lli =3D txd->v_lli;
-> > +
-> > +	while (v_lli) {
-> > +		v_next =3D v_lli->v_lli_next;
-> > +		p_next =3D v_lli->p_lli_next;
-> > +
-> > +		dma_pool_free(sdev->pool, v_lli, p_lli);
-> > +
-> > +		v_lli =3D v_next;
-> > +		p_lli =3D p_next;
-> > +	}
-> > +
-> > +	kfree(txd);
-> > +}
-> > +
-> > +static int sun6i_dma_terminate_all(struct sun6i_vchan *vchan)
-> > +{
-> > +	struct sun6i_dma_dev *sdev =3D to_sun6i_dma_dev(vchan->vc.chan.device=
-);
-> > +	struct sun6i_pchan *pchan =3D vchan->phy;
-> > +	unsigned long flags;
-> > +	LIST_HEAD(head);
-> > +
-> > +	spin_lock(&sdev->lock);
-> > +	list_del_init(&vchan->node);
-> > +	spin_unlock(&sdev->lock);
-> > +
-> > +	spin_lock_irqsave(&vchan->vc.lock, flags);
-> > +
-> > +	vchan_get_all_descriptors(&vchan->vc, &head);
-> > +
-> > +	if (pchan) {
-> > +		writel(DMA_CHAN_ENABLE_STOP, pchan->base + DMA_CHAN_ENABLE);
-> > +		writel(DMA_CHAN_PAUSE_RESUME, pchan->base + DMA_CHAN_PAUSE);
-> > +
-> > +		vchan->phy =3D NULL;
-> > +		pchan->vchan =3D NULL;
-> > +		pchan->desc =3D NULL;
-> > +		pchan->done =3D NULL;
-> > +	}
-> > +
-> > +	spin_unlock_irqrestore(&vchan->vc.lock, flags);
-> > +
-> > +	vchan_dma_desc_free_list(&vchan->vc, &head);
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static int sun6i_dma_start_desc(struct sun6i_vchan *vchan)
-> > +{
-> > +	struct sun6i_dma_dev *sdev =3D to_sun6i_dma_dev(vchan->vc.chan.device=
-);
-> > +	struct virt_dma_desc *desc =3D vchan_next_desc(&vchan->vc);
-> > +	struct sun6i_pchan *pchan =3D vchan->phy;
-> > +	u32 irq_val, irq_reg, irq_offset;
-> > +
-> > +	if (!pchan)
-> > +		return -EAGAIN;
-> > +
-> > +	if (!desc) {
-> > +		pchan->desc =3D NULL;
-> > +		pchan->done =3D NULL;
-> > +		return -EAGAIN;
-> > +	}
-> > +
-> > +	list_del(&desc->node);
-> > +
-> > +	pchan->desc =3D to_sun6i_desc(&desc->tx);
-> > +	pchan->done =3D NULL;
-> > +
-> > +	sun6i_dma_dump_lli(vchan, pchan->desc->v_lli);
-> > +
-> > +	irq_reg =3D pchan->idx / DMA_IRQ_CHAN_NR;
-> > +	irq_offset =3D pchan->idx % DMA_IRQ_CHAN_NR;
-> > +
-> > +	irq_val =3D readl(sdev->base + DMA_IRQ_EN(irq_offset));
-> > +	irq_val |=3D DMA_IRQ_QUEUE << (irq_offset * DMA_IRQ_CHAN_WIDTH);
-> > +	writel(irq_val, sdev->base + DMA_IRQ_EN(irq_offset));
-> > +
-> > +	writel(pchan->desc->p_lli, pchan->base + DMA_CHAN_LLI_ADDR);
-> > +	writel(DMA_CHAN_ENABLE_START, pchan->base + DMA_CHAN_ENABLE);
-> > +
-> > +	sun6i_dma_dump_com_regs(sdev);
-> > +	sun6i_dma_dump_chan_regs(sdev, pchan);
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static void sun6i_dma_tasklet(unsigned long data)
-> > +{
-> > +	struct sun6i_dma_dev *sdev =3D (struct sun6i_dma_dev *)data;
-> > +	struct sun6i_vchan *vchan;
-> > +	struct sun6i_pchan *pchan;
-> > +	unsigned int pchan_alloc =3D 0;
-> > +	unsigned int pchan_idx;
-> > +
-> > +	list_for_each_entry(vchan, &sdev->slave.channels, vc.chan.device_node=
-) {
-> > +		spin_lock_irq(&vchan->vc.lock);
-> > +
-> > +		pchan =3D vchan->phy;
-> > +
-> > +		if (pchan && pchan->done) {
-> > +			if (sun6i_dma_start_desc(vchan)) {
-> > +				/*
-> > +				 * No current txd associated with this channel
-> > +				 */
-> > +				dev_dbg(sdev->slave.dev, "pchan %u: free\n",
-> > +					pchan->idx);
-> > +
-> > +				/* Mark this channel free */
-> > +				vchan->phy =3D NULL;
-> > +				pchan->vchan =3D NULL;
-> > +			}
-> > +		}
-> > +		spin_unlock_irq(&vchan->vc.lock);
-> > +	}
-> > +
-> > +	spin_lock_irq(&sdev->lock);
-> > +	for (pchan_idx =3D 0; pchan_idx < NR_MAX_CHANNELS; pchan_idx++) {
-> > +		pchan =3D &sdev->pchans[pchan_idx];
-> > +
-> > +		if (pchan->vchan =3D=3D NULL && !list_empty(&sdev->pending)) {
-> > +			vchan =3D list_first_entry(&sdev->pending,
-> > +						 struct sun6i_vchan, node);
-> > +
-> > +			/* Remove from pending channels */
-> > +			list_del_init(&vchan->node);
-> > +			pchan_alloc |=3D BIT(pchan_idx);
-> > +
-> > +			/* Mark this channel allocated */
-> > +			pchan->vchan =3D vchan;
-> > +			vchan->phy =3D pchan;
-> > +			dev_dbg(sdev->slave.dev, "pchan %u: alloc vchan %p\n",
-> > +				pchan->idx, &vchan->vc);
-> > +		}
-> > +	}
-> > +	spin_unlock_irq(&sdev->lock);
-> > +
-> > +	for (pchan_idx =3D 0; pchan_idx < NR_MAX_CHANNELS; pchan_idx++) {
-> > +		if (pchan_alloc & BIT(pchan_idx)) {
-> > +			pchan =3D sdev->pchans + pchan_idx;
-> > +			vchan =3D pchan->vchan;
-> > +			if (vchan) {
-> > +				spin_lock_irq(&vchan->vc.lock);
-> > +				sun6i_dma_start_desc(vchan);
-> > +				spin_unlock_irq(&vchan->vc.lock);
-> > +			}
-> > +		}
-> > +	}
-> > +}
-> > +
-> > +static irqreturn_t sun6i_dma_interrupt(int irq, void *dev_id)
-> > +{
-> > +	struct sun6i_dma_dev *sdev =3D (struct sun6i_dma_dev *)dev_id;
-> > +	struct sun6i_vchan *vchan;
-> > +	struct sun6i_pchan *pchan;
-> > +	int i, j, ret =3D IRQ_NONE;
-> > +	u32 status;
-> > +
-> > +	for (i =3D 0; i < 2; i++) {
-> > +		status =3D readl(sdev->base + DMA_IRQ_STAT(i));
-> > +		if (!status)
-> > +			continue;
-> > +
-> > +		dev_dbg(sdev->slave.dev, "DMA irq status %s: 0x%x\n",
-> > +			i ? "high" : "low", status);
-> > +
-> > +		writel(status, sdev->base + DMA_IRQ_STAT(i));
-> > +
-> > +		for (j =3D 0; (j < 8) && status; j++) {
-> > +			if (status & DMA_IRQ_QUEUE) {
-> > +				pchan =3D sdev->pchans + j;
-> > +				vchan =3D pchan->vchan;
-> > +
-> > +				if (vchan) {
-> > +					unsigned long flags;
-> > +
-> > +					spin_lock_irqsave(&vchan->vc.lock,
-> > +							  flags);
-> > +					vchan_cookie_complete(&pchan->desc->vd);
-> > +					pchan->done =3D pchan->desc;
-> > +					spin_unlock_irqrestore(&vchan->vc.lock,
-> > +							       flags);
-> > +				}
-> > +			}
-> > +
-> > +			status =3D status >> 4;
-> > +		}
-> > +
-> > +		tasklet_schedule(&sdev->task);
-> > +		ret =3D IRQ_HANDLED;
-> > +	}
-> > +
-> > +	return ret;
-> > +}
-> > +
-> > +static struct dma_async_tx_descriptor *sun6i_dma_prep_dma_memcpy(
-> > +		struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
-> > +		size_t len, unsigned long flags)
-> > +{
-> > +	struct sun6i_dma_dev *sdev =3D to_sun6i_dma_dev(chan->device);
-> > +	struct sun6i_vchan *vchan =3D to_sun6i_vchan(chan);
-> > +	struct dma_slave_config *sconfig =3D &vchan->cfg;
-> > +	struct sun6i_dma_lli *v_lli;
-> > +	struct sun6i_desc *txd;
-> > +	dma_addr_t p_lli;
-> > +
-> > +	dev_dbg(chan2dev(chan),
-> > +		"%s; chan: %d, dest: 0x%08x, src: 0x%08x, len: 0x%08x. flags: 0x%08l=
-x\n",
-> > +		__func__, vchan->vc.chan.chan_id, dest, src, len, flags);
-> > +
-> > +	if (!len)
-> > +		return NULL;
-> > +
-> > +	txd =3D kzalloc(sizeof(*txd), GFP_NOWAIT);
-> > +	if (!txd)
-> > +		return NULL;
-> > +
-> > +	v_lli =3D dma_pool_alloc(sdev->pool, GFP_NOWAIT, &p_lli);
-> > +	if (!v_lli) {
-> > +		dev_err(sdev->slave.dev, "Failed to alloc lli memory\n");
-> > +		kfree(txd);
-> > +		return NULL;
-> > +	}
-> > +
-> > +	sun6i_dma_cfg_lli(v_lli, src, dest, len, sconfig);
-> > +	v_lli->cfg |=3D DMA_CHAN_CFG_SRC_DRQ(DRQ_SDRAM) |
-> > +		DMA_CHAN_CFG_DST_DRQ(DRQ_SDRAM) |
-> > +		DMA_CHAN_CFG_DST_LINEAR_MODE |
-> > +		DMA_CHAN_CFG_SRC_LINEAR_MODE;
-> > +
-> > +	sun6i_dma_lli_add(NULL, v_lli, p_lli, txd);
-> > +
-> > +	sun6i_dma_dump_lli(vchan, v_lli);
-> > +
-> > +	return vchan_tx_prep(&vchan->vc, &txd->vd, flags);
-> > +}
-> > +
-> > +static struct dma_async_tx_descriptor *sun6i_dma_prep_slave_sg(
-> > +		struct dma_chan *chan, struct scatterlist *sgl,
-> > +		unsigned int sg_len, enum dma_transfer_direction dir,
-> > +		unsigned long flags, void *context)
-> > +{
-> > +	struct sun6i_dma_dev *sdev =3D to_sun6i_dma_dev(chan->device);
-> > +	struct sun6i_vchan *vchan =3D to_sun6i_vchan(chan);
-> > +	struct dma_slave_config *sconfig =3D &vchan->cfg;
-> > +	struct sun6i_dma_lli *v_lli, *prev =3D NULL;
-> > +	struct sun6i_desc *txd;
-> > +	struct scatterlist *sg;
-> > +	dma_addr_t p_lli;
-> > +	int i;
-> > +
-> > +	if (!sgl)
-> > +		return NULL;
-> > +
-> > +	txd =3D kzalloc(sizeof(*txd), GFP_NOWAIT);
-> > +	if (!txd)
-> > +		return NULL;
-> > +
-> > +	for_each_sg(sgl, sg, sg_len, i) {
-> > +		v_lli =3D dma_pool_alloc(sdev->pool, GFP_NOWAIT, &p_lli);
-> > +		if (!v_lli) {
-> > +			kfree(txd);
-> > +			return NULL;
-> > +		}
-> > +
-> > +		if (dir =3D=3D DMA_MEM_TO_DEV) {
-> > +			sun6i_dma_cfg_lli(v_lli, sg_dma_address(sg),
-> > +					  sconfig->dst_addr, sg_dma_len(sg),
-> > +					  sconfig);
-> > +			v_lli->cfg |=3D DMA_CHAN_CFG_DST_IO_MODE |
-> > +				DMA_CHAN_CFG_SRC_LINEAR_MODE |
-> > +				DMA_CHAN_CFG_SRC_DRQ(DRQ_SDRAM) |
-> > +				DMA_CHAN_CFG_DST_DRQ(vchan->port);
-> > +
-> > +			dev_dbg(chan2dev(chan), "%s; chan: %d, dest: 0x%08x, "
-> > +				"src: 0x%08x, len: 0x%08x. flags: 0x%08lx\n",
-> > +				__func__, vchan->vc.chan.chan_id,
-> > +				sconfig->dst_addr, sg_dma_address(sg),
-> > +				sg_dma_len(sg), flags);
-> > +
-> > +		} else if (dir =3D=3D DMA_DEV_TO_MEM) {
-> > +			sun6i_dma_cfg_lli(v_lli, sconfig->src_addr,
-> > +					  sg_dma_address(sg), sg_dma_len(sg),
-> > +					  sconfig);
-> > +			v_lli->cfg |=3D DMA_CHAN_CFG_DST_LINEAR_MODE |
-> > +				DMA_CHAN_CFG_SRC_IO_MODE |
-> > +				DMA_CHAN_CFG_DST_DRQ(DRQ_SDRAM) |
-> > +				DMA_CHAN_CFG_SRC_DRQ(vchan->port);
-> > +
-> > +			dev_dbg(chan2dev(chan), "%s; chan: %d, dest: 0x%08x, "
-> > +				"src: 0x%08x, len: 0x%08x. flags: 0x%08lx\n",
-> > +				__func__, vchan->vc.chan.chan_id,
-> > +				sg_dma_address(sg), sconfig->src_addr,
-> > +				sg_dma_len(sg), flags);
-> > +		}
-> > +
-> > +		prev =3D sun6i_dma_lli_add(prev, v_lli, p_lli, txd);
-> > +	}
-> > +
-> > +#ifdef DEBUG
-> > +	dev_dbg(chan2dev(chan), "First: 0x%08x\n", txd->p_lli);
-> > +	for (prev =3D txd->v_lli; prev !=3D NULL; prev =3D prev->v_lli_next)
-> > +		sun6i_dma_dump_lli(vchan, prev);
-> > +#endif
-> > +
-> > +	return vchan_tx_prep(&vchan->vc, &txd->vd, flags);
-> > +}
-> > +
-> > +static int sun6i_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd =
-cmd,
-> > +		       unsigned long arg)
-> > +{
-> > +	struct sun6i_dma_dev *sdev =3D to_sun6i_dma_dev(chan->device);
-> > +	struct sun6i_vchan *vchan =3D to_sun6i_vchan(chan);
-> > +	struct sun6i_pchan *pchan =3D vchan->phy;
-> > +	unsigned long flags;
-> > +	int ret =3D 0;
-> > +
-> > +	switch (cmd) {
-> > +	case DMA_RESUME:
-> > +		dev_dbg(chan2dev(chan), "vchan %p: resume\n", &vchan->vc);
-> > +
-> > +		spin_lock_irqsave(&vchan->vc.lock, flags);
-> > +
-> > +		if (pchan) {
-> > +			writel(DMA_CHAN_PAUSE_RESUME,
-> > +			       pchan->base + DMA_CHAN_PAUSE);
-> > +		} else if (!list_empty(&vchan->vc.desc_issued)) {
-> > +			spin_lock(&sdev->lock);
-> > +			list_add_tail(&vchan->node, &sdev->pending);
-> > +			spin_unlock(&sdev->lock);
-> > +		}
-> > +
-> > +		spin_unlock_irqrestore(&vchan->vc.lock, flags);
-> > +		break;
-> > +
-> > +	case DMA_PAUSE:
-> > +		dev_dbg(chan2dev(chan), "vchan %p: pause\n", &vchan->vc);
-> > +
-> > +		if (pchan) {
-> > +			writel(DMA_CHAN_PAUSE_PAUSE,
-> > +			       pchan->base + DMA_CHAN_PAUSE);
-> > +		} else {
-> > +			spin_lock(&sdev->lock);
-> > +			list_del_init(&vchan->node);
-> > +			spin_unlock(&sdev->lock);
-> > +		}
-> > +		break;
-> > +
-> > +	case DMA_TERMINATE_ALL:
-> > +		ret =3D sun6i_dma_terminate_all(vchan);
-> > +		break;
-> > +	case DMA_SLAVE_CONFIG:
-> > +		memcpy(&vchan->cfg, (struct dma_slave_config *)arg,
-> > +		       sizeof(struct dma_slave_config));
-> > +		break;
-> > +	default:
-> > +		ret =3D -ENXIO;
-> > +		break;
-> > +	}
-> > +	return ret;
-> > +}
-> > +
-> > +static enum dma_status sun6i_dma_tx_status(struct dma_chan *chan,
-> > +					   dma_cookie_t cookie,
-> > +					   struct dma_tx_state *state)
-> > +{
-> > +	struct sun6i_vchan *vchan =3D to_sun6i_vchan(chan);
-> > +	struct sun6i_pchan *pchan =3D vchan->phy;
-> > +	struct sun6i_dma_lli *lli;
-> > +	struct virt_dma_desc *vd;
-> > +	struct sun6i_desc *txd;
-> > +	enum dma_status ret;
-> > +	unsigned long flags;
-> > +	size_t bytes =3D 0;
-> > +
-> > +	ret =3D dma_cookie_status(chan, cookie, state);
-> > +	if (ret =3D=3D DMA_COMPLETE)
-> > +		return ret;
-> > +
-> > +	spin_lock_irqsave(&vchan->vc.lock, flags);
-> > +
-> > +	vd =3D vchan_find_desc(&vchan->vc, cookie);
-> > +	txd =3D to_sun6i_desc(&vd->tx);
-> > +
-> > +	if (vd) {
-> > +		for (lli =3D txd->v_lli; lli !=3D NULL; lli =3D lli->v_lli_next)
-> > +			bytes +=3D lli->len;
-> > +	} else if (!pchan || !pchan->desc) {
-> > +		bytes =3D 0;
-> > +	} else {
-> > +		bytes =3D readl(pchan->base + DMA_CHAN_CUR_CNT);
-> > +	}
-> > +
-> > +	spin_unlock_irqrestore(&vchan->vc.lock, flags);
-> > +
-> > +	dma_set_residue(state, bytes);
-> > +
-> > +	return ret;
-> > +}
-> > +
-> > +static void sun6i_dma_issue_pending(struct dma_chan *chan)
-> > +{
-> > +	struct sun6i_dma_dev *sdev =3D to_sun6i_dma_dev(chan->device);
-> > +	struct sun6i_vchan *vchan =3D to_sun6i_vchan(chan);
-> > +	unsigned long flags;
-> > +
-> > +	spin_lock_irqsave(&vchan->vc.lock, flags);
-> > +
-> > +	if (vchan_issue_pending(&vchan->vc)) {
-> > +		spin_lock(&sdev->lock);
-> > +
-> > +		if (!vchan->phy) {
-> > +			if (list_empty(&vchan->node)) {
-> > +				list_add_tail(&vchan->node, &sdev->pending);
-> > +				tasklet_schedule(&sdev->task);
-> > +				dev_dbg(chan2dev(chan), "vchan %p: issued\n",
-> > +					&vchan->vc);
-> > +			}
-> > +		}
-> > +
-> > +		spin_unlock(&sdev->lock);
-> > +	} else {
-> > +		dev_dbg(chan2dev(chan), "vchan %p: nothing to issue\n",
-> > +			&vchan->vc);
-> > +	}
-> > +
-> > +	spin_unlock_irqrestore(&vchan->vc.lock, flags);
-> > +}
-> > +
-> > +static int sun6i_dma_alloc_chan_resources(struct dma_chan *chan)
-> > +{
-> > +	return 0;
-> > +}
-> > +
-> > +static void sun6i_dma_free_chan_resources(struct dma_chan *chan)
-> > +{
-> > +	struct sun6i_dma_dev *sdev =3D to_sun6i_dma_dev(chan->device);
-> > +	struct sun6i_vchan *vchan =3D to_sun6i_vchan(chan);
-> > +	unsigned long flags;
-> > +
-> > +	spin_lock_irqsave(&sdev->lock, flags);
-> > +	list_del_init(&vchan->node);
-> > +	spin_unlock_irqrestore(&sdev->lock, flags);
-> > +
-> > +	vchan_free_chan_resources(&vchan->vc);
-> > +}
-> > +
-> > +static inline void sun6i_dma_free(struct sun6i_dma_dev *sdc)
-> > +{
-> > +	int i;
-> > +
-> > +	for (i =3D 0; i < NR_MAX_VCHANS; i++) {
-> > +		struct sun6i_vchan *vchan =3D &sdc->vchans[i];
-> > +
-> > +		list_del(&vchan->vc.chan.device_node);
-> > +		tasklet_kill(&vchan->vc.task);
-> > +	}
-> > +
-> > +	tasklet_kill(&sdc->task);
-> > +}
-> > +
-> > +static struct dma_chan *sun6i_dma_of_xlate(struct of_phandle_args *dma=
-_spec,
-> > +					   struct of_dma *ofdma)
-> > +{
-> > +	struct sun6i_dma_dev *sdev =3D ofdma->of_dma_data;
-> > +	struct sun6i_vchan *vchan;
-> > +	struct dma_chan *chan;
-> > +	u8 port =3D dma_spec->args[0];
-> > +
-> > +	if (port > NR_MAX_REQUESTS)
-> > +		return NULL;
-> > +
-> > +	chan =3D dma_get_any_slave_channel(&sdev->slave);
-> > +	if (!chan)
-> > +		return NULL;
-> > +
-> > +	vchan =3D to_sun6i_vchan(chan);
-> > +	vchan->port =3D port;
-> > +
-> > +	return chan;
-> > +}
-> > +
-> > +static int sun6i_dma_probe(struct platform_device *pdev)
-> > +{
-> > +	struct sun6i_dma_dev *sdc;
-> > +	struct resource *res;
-> > +	int irq;
-> > +	int ret, i;
-> > +
-> > +	sdc =3D devm_kzalloc(&pdev->dev, sizeof(*sdc), GFP_KERNEL);
-> > +	if (!sdc)
-> > +		return -ENOMEM;
-> > +
-> > +	res =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> > +	sdc->base =3D devm_ioremap_resource(&pdev->dev, res);
-> > +	if (IS_ERR(sdc->base))
-> > +		return PTR_ERR(sdc->base);
-> > +
-> > +	irq =3D platform_get_irq(pdev, 0);
-> > +	ret =3D devm_request_irq(&pdev->dev, irq, sun6i_dma_interrupt, 0,
-> > +			       dev_name(&pdev->dev), sdc);
-> > +	if (ret) {
-> > +		dev_err(&pdev->dev, "Cannot request IRQ\n");
-> > +		return ret;
-> > +	}
-> > +
-> > +	sdc->clk =3D devm_clk_get(&pdev->dev, NULL);
-> > +	if (IS_ERR(sdc->clk)) {
-> > +		dev_err(&pdev->dev, "No clock specified\n");
-> > +		return PTR_ERR(sdc->clk);
-> > +	}
-> > +
-> > +	sdc->rstc =3D devm_reset_control_get(&pdev->dev, NULL);
-> > +	if (IS_ERR(sdc->rstc)) {
-> > +		dev_err(&pdev->dev, "No reset controller specified\n");
-> > +		return PTR_ERR(sdc->rstc);
-> > +	}
-> > +
-> > +	sdc->pool =3D dmam_pool_create(dev_name(&pdev->dev), &pdev->dev,
-> > +				     sizeof(struct sun6i_dma_lli), 4, 0);
-> > +	if (!sdc->pool) {
-> > +		dev_err(&pdev->dev, "No memory for descriptors dma pool\n");
-> > +		return -ENOMEM;
-> > +	}
-> > +
-> > +	platform_set_drvdata(pdev, sdc);
-> > +	INIT_LIST_HEAD(&sdc->pending);
-> > +	spin_lock_init(&sdc->lock);
-> > +
-> > +	dma_cap_set(DMA_PRIVATE, sdc->slave.cap_mask);
-> > +	dma_cap_set(DMA_MEMCPY, sdc->slave.cap_mask);
-> > +	dma_cap_set(DMA_SLAVE, sdc->slave.cap_mask);
-> > +
-> > +	INIT_LIST_HEAD(&sdc->slave.channels);
-> > +	sdc->slave.device_alloc_chan_resources	=3D sun6i_dma_alloc_chan_resou=
-rces;
-> > +	sdc->slave.device_free_chan_resources	=3D sun6i_dma_free_chan_resourc=
-es;
-> > +	sdc->slave.device_tx_status		=3D sun6i_dma_tx_status;
-> > +	sdc->slave.device_issue_pending		=3D sun6i_dma_issue_pending;
-> > +	sdc->slave.device_prep_slave_sg		=3D sun6i_dma_prep_slave_sg;
-> > +	sdc->slave.device_prep_dma_memcpy	=3D sun6i_dma_prep_dma_memcpy;
-> > +	sdc->slave.device_control		=3D sun6i_dma_control;
-> > +	sdc->slave.chancnt			=3D NR_MAX_VCHANS;
-> > +
-> > +	sdc->slave.dev =3D &pdev->dev;
-> > +
-> > +	sdc->pchans =3D devm_kzalloc(&pdev->dev,
-> > +				   NR_MAX_CHANNELS * sizeof(struct sun6i_pchan),
-> > +				   GFP_KERNEL);
->=20
-> Sorry, forgot to mention devm_kcalloc. It suits better here.
->=20
-> > +	if (!sdc->pchans)
-> > +		return -ENOMEM;
-> > +
-> > +	sdc->vchans =3D devm_kzalloc(&pdev->dev,
-> > +				   NR_MAX_VCHANS * sizeof(struct sun6i_vchan),
-> > +				   GFP_KERNEL);
->=20
-> And here.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Right. Will fix.
-
->=20
-> > +	if (!sdc->vchans)
-> > +		return -ENOMEM;
-> > +
-> > +	tasklet_init(&sdc->task, sun6i_dma_tasklet, (unsigned long)sdc);
-> > +
-> > +	for (i =3D 0; i < NR_MAX_CHANNELS; i++) {
-> > +		struct sun6i_pchan *pchan =3D &sdc->pchans[i];
-> > +
-> > +		pchan->idx =3D i;
-> > +		pchan->base =3D sdc->base + 0x100 + i * 0x40;
-> > +	}
-> > +
-> > +	for (i =3D 0; i < NR_MAX_VCHANS; i++) {
-> > +		struct sun6i_vchan *vchan =3D &sdc->vchans[i];
-> > +
-> > +		INIT_LIST_HEAD(&vchan->node);
-> > +		vchan->vc.desc_free =3D sun6i_dma_free_desc;
-> > +		vchan_init(&vchan->vc, &sdc->slave);
-> > +	}
-> > +
-> > +	ret =3D reset_control_deassert(sdc->rstc);
-> > +	if (ret) {
-> > +		dev_err(&pdev->dev, "Couldn't deassert the device from reset\n");
-> > +		goto err_chan_free;
-> > +	}
-> > +
-> > +	ret =3D clk_prepare_enable(sdc->clk);
-> > +	if (ret) {
-> > +		dev_err(&pdev->dev, "Couldn't enable the clock\n");
-> > +		goto err_reset_assert;
-> > +	}
-> > +
-> > +	ret =3D dma_async_device_register(&sdc->slave);
-> > +	if (ret) {
-> > +		dev_warn(&pdev->dev, "Failed to register DMA engine device\n");
-> > +		goto err_clk_disable;
-> > +	}
-> > +
-> > +	ret =3D of_dma_controller_register(pdev->dev.of_node, sun6i_dma_of_xl=
-ate,
-> > +					 sdc);
-> > +	if (ret) {
-> > +		dev_err(&pdev->dev, "of_dma_controller_register failed\n");
-> > +		goto err_dma_unregister;
-> > +	}
-> > +
-> > +	return 0;
-> > +
-> > +err_dma_unregister:
-> > +	dma_async_device_unregister(&sdc->slave);
-> > +err_clk_disable:
-> > +	clk_disable_unprepare(sdc->clk);
-> > +err_reset_assert:
-> > +	reset_control_assert(sdc->rstc);
-> > +err_chan_free:
-> > +	sun6i_dma_free(sdc);
-> > +	return ret;
-> > +}
-> > +
-> > +static int sun6i_dma_remove(struct platform_device *pdev)
-> > +{
-> > +	struct sun6i_dma_dev *sdc =3D platform_get_drvdata(pdev);
-> > +
-> > +	of_dma_controller_free(pdev->dev.of_node);
-> > +	dma_async_device_unregister(&sdc->slave);
-> > +
-> > +	clk_disable_unprepare(sdc->clk);
-> > +	reset_control_assert(sdc->rstc);
-> > +
-> > +	sun6i_dma_free(sdc);
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static struct of_device_id sun6i_dma_match[] =3D {
-> > +	{ .compatible =3D "allwinner,sun6i-a31-dma" }
-> > +};
-> > +
-> > +static struct platform_driver sun6i_dma_driver =3D {
-> > +	.probe		=3D sun6i_dma_probe,
-> > +	.remove		=3D sun6i_dma_remove,
-> > +	.driver =3D {
-> > +		.name		=3D "sun6i-dma",
-> > +		.of_match_table	=3D sun6i_dma_match,
-> > +	},
-> > +};
-> > +module_platform_driver(sun6i_dma_driver);
-> > +
-> > +MODULE_DESCRIPTION("Allwinner A31 DMA Controller Driver");
-> > +MODULE_AUTHOR("Sugar <shuge@allwinnertech.com>");
-> > +MODULE_AUTHOR("Maxime Ripard <maxime.ripard@free-electrons.com>");
-> > +MODULE_LICENSE("GPL");
-
-Thanks!
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---P6d3k5Edf9pZm0D3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTFIEKAAoJEBx+YmzsjxAg6GsP/2/xQJR6O7BewUQqavO3wBy/
-CipwkGvItRPWxScouZkYvljjMp5dRNebBTshdeFDkoqQXXTtpg6RUw1E0FjuKQEV
-zyhrOC0j226WEaGrkFNKJNbMpfatIF7dlyUk1PSC9SOe2TVDsc4fJduXZ3sEhr/W
-oD9u2Bart0kZBqFCe16aFXExg7hISTzIp5Q/LER1D6bRHFaiQoW8jQI9vuB35j/B
-Ih24SqQNEhisN1we1Zck1/bfSrkfABA8ih5UiXPUP7IG8yG4E+kiF0iVGWjSA2+9
-j4knIGPBv8VYvTsBcMsDBKr2Ir+ydFNvzfibDZ0YhFNN59LL6nQWyQT7KA6KmxPJ
-adqViC7nHdUVTp9JQe1QIzkPHZKMA585503QJncqjwqa/MGq55mba87vOmB4wh0W
-O5qaqUB9S45rGP3fQ8IszpvPo0TvcijbLI9U0sRbtflxuKoCOLoSCMEf7VsoE9GN
-JWqKToVWqQOgchRR/5v+BvuS904iIiG9iAcdr/+AQYZimaPKUY0wsepJvMlyLRGO
-2sQ52k8AMbtxCdPjYoy8a0WV9r862CsaOiTWCyWNBFx3QQnO4E+CWGMuzus+DC+M
-zR5rKuuEcdzEPF1a6WN3TbekdabFg/eechdmd3vy0LL3nVhTMp8r4qe9y2FVb3uB
-nZXCz0hzj/+IDyFms3Az
-=6C7B
------END PGP SIGNATURE-----
-
---P6d3k5Edf9pZm0D3--
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
