@@ -1,81 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755459AbaCCXC2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 18:02:28 -0500
-Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:38359
-	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
+	id S1755533AbaCCXED (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 18:04:03 -0500
+Received: from mga09.intel.com ([134.134.136.24]:4179 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755005AbaCCXC0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 18:02:26 -0500
-x-originating-ip: 72.167.245.219
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: davem@davemloft.net, netdev@vger.kernel.org
-Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
-        jasowang@redhat.com, linux-kernel@vger.kernel.org,
-        driverdev-devel@linuxdriverproject.org
-Subject: [PATCH net-next] hyperv: Move state setting for link query
-Date: Mon,  3 Mar 2014 15:54:35 -0800
-Message-Id: <1393890875-1420-1-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1755016AbaCCXD6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 18:03:58 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,581,1389772800"; 
+   d="scan'208";a="493447477"
+Date: Mon, 3 Mar 2014 15:01:48 -0800
+From: "David E. Box" <david.e.box@linux.intel.com>
+To: "Li, Aubrey" <aubrey.li@linux.intel.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V5 0/2] x86: IOSF: Add loadable module support
+Message-ID: <20140303230148.GA29215@linux.intel.com>
+References: <1393609674-2999-1-git-send-email-david.e.box@linux.intel.com>
+ <1393641652-7222-1-git-send-email-david.e.box@linux.intel.com>
+ <531428D9.1060101@linux.intel.com>
+ <20140303155850.GA2879@linux.intel.com>
+ <5314FEF3.70908@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5314FEF3.70908@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It moves the state setting for query into rndis_filter_receive_response().
-All callbacks including query-complete and status-callback are synchronized
-by channel->inbound_lock. This prevents pentential race between them.
+On Tue, Mar 04, 2014 at 06:15:15AM +0800, Li, Aubrey wrote:
+> On 2014/3/3 23:58, David E. Box wrote:
+> > On Mon, Mar 03, 2014 at 03:01:45PM +0800, Li, Aubrey wrote:
+> >> Hi David,
+> >>
+> >> I'm probably too late to catch this thread. Just one question, what's
+> >> the relationship between
+> >> 	arch/x86/kernel/iosf_mbi.c
+> >> and
+> >> 	drivers/platform/x86/intel_baytrail.c
+> >>
+> > iosf_mbi.c is the version that went upstream, no longer specific to baytrail.
+> 
+> Then should we remove the latter?
+> 
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/net/hyperv/rndis_filter.c |   21 ++++++++++++++++++++-
- 1 files changed, 20 insertions(+), 1 deletions(-)
+Absolutely. I wasn't aware until now that this version went upstream. I didn't
+see a tip for it. I'll send a patch to revert it.
 
-diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
-index f0cc8ef..6a9f602 100644
---- a/drivers/net/hyperv/rndis_filter.c
-+++ b/drivers/net/hyperv/rndis_filter.c
-@@ -240,6 +240,22 @@ static int rndis_filter_send_request(struct rndis_device *dev,
- 	return ret;
- }
- 
-+static void rndis_set_link_state(struct rndis_device *rdev,
-+				 struct rndis_request *request)
-+{
-+	u32 link_status;
-+	struct rndis_query_complete *query_complete;
-+
-+	query_complete = &request->response_msg.msg.query_complete;
-+
-+	if (query_complete->status == RNDIS_STATUS_SUCCESS &&
-+	    query_complete->info_buflen == sizeof(u32)) {
-+		memcpy(&link_status, (void *)((unsigned long)query_complete +
-+		       query_complete->info_buf_offset), sizeof(u32));
-+		rdev->link_state = link_status != 0;
-+	}
-+}
-+
- static void rndis_filter_receive_response(struct rndis_device *dev,
- 				       struct rndis_message *resp)
- {
-@@ -269,6 +285,10 @@ static void rndis_filter_receive_response(struct rndis_device *dev,
- 		    sizeof(struct rndis_message) + RNDIS_EXT_LEN) {
- 			memcpy(&request->response_msg, resp,
- 			       resp->msg_len);
-+			if (request->request_msg.ndis_msg_type ==
-+			    RNDIS_MSG_QUERY && request->request_msg.msg.
-+			    query_req.oid == RNDIS_OID_GEN_MEDIA_CONNECT_STATUS)
-+				rndis_set_link_state(dev, request);
- 		} else {
- 			netdev_err(ndev,
- 				"rndis response buffer overflow "
-@@ -617,7 +637,6 @@ static int rndis_filter_query_device_link_status(struct rndis_device *dev)
- 	ret = rndis_filter_query_device(dev,
- 				      RNDIS_OID_GEN_MEDIA_CONNECT_STATUS,
- 				      &link_status, &size);
--	dev->link_state = (link_status != 0) ? true : false;
- 
- 	return ret;
- }
--- 
-1.7.4.1
-
+david box
