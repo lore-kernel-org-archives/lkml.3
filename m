@@ -1,148 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339AbaCCMW0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 07:22:26 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53544 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753697AbaCCMWY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 07:22:24 -0500
-Date: Mon, 3 Mar 2014 12:22:21 +0000
-From: =?iso-8859-1?Q?Lu=EDs?= Henriques <luis.henriques@canonical.com>
-To: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Kernel Fedora <kernel@lists.fedoraproject.org>
-Subject: Re: Feb. Fedora Kernel Patch Report
-Message-ID: <20140303122221.GA2922@hercules>
-References: <CA+5PVA6dz2ixLfHOHytkis6XmxdLKXZp9x8rEjB=pedrg7sXJQ@mail.gmail.com>
+	id S1754480AbaCCMWh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 07:22:37 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:50188 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754387AbaCCMWd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 07:22:33 -0500
+Message-ID: <531473D0.6050601@ti.com>
+Date: Mon, 3 Mar 2014 14:21:36 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+5PVA6dz2ixLfHOHytkis6XmxdLKXZp9x8rEjB=pedrg7sXJQ@mail.gmail.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>, <bcousson@baylibre.com>,
+        <balbi@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>, <george.cherian@ti.com>,
+        <heikki.krogerus@linux.intel.com>
+CC: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
+        <rob@landley.net>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
+        <gregkh@linuxfoundation.org>, <grant.likely@linaro.org>,
+        <s.nawrocki@samsung.com>, <galak@codeaurora.org>
+Subject: Re: [PATCH v5 0/6] Make dwc3 use Generic PHY Framework
+References: <1393846695-14644-1-git-send-email-kishon@ti.com>
+In-Reply-To: <1393846695-14644-1-git-send-email-kishon@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Josh,
+Hi Kishon,
 
-On Fri, Feb 28, 2014 at 10:13:29AM -0500, Josh Boyer wrote:
-> It's been a while since I sent one of these.  Mostly that's due to the
-> overlap between which upstream stable version we're using in Fedora
-> across the releases, and how fast those have been happening upstream.
-> We're settled on 3.13.y now, and with 3.14-rc4 out there things have
-> calmed down enough to take stock again.
+Which tree are these patches based on?
+
+cheers,
+-roger
+
+On 03/03/2014 01:38 PM, Kishon Vijay Abraham I wrote:
+> Added support for optional PHY in dwc3 as not all SoCs having PHYs for DWC3
+> should be programmed. While this can be considered as a temporary fix,
+> a long term solution would be to add 'nop' PHY for platforms that does
+> not have programmable PHY.
+> Adapted DWC3 and USB3 PHY to use Generic PHY framework. Also changed the
+> name of USB3 PHY driver to PIPE3 PHY driver since the same driver has to
+> be used for SATA and PCIE too.
 > 
-> Here's the patches we have on top of 3.13.5.
+> Changes from v4: (sending the entire patch series again)
+> * check the return values of phy_init and phy_power_on
+> * print errors if power_on or power_off of PHY fails.
 > 
-> josh
-
-Thanks a lot for sending this list, Josh!  I'm queuing a few of these for
-the kernels I'm currently maintaining (3.5 and 3.11).
-
-> fs-proc-devtree-remove_proc_entry.patch
-> - Upstream commit c1d867a54d426b45da017fbe8e585f8a3064ce8d
-
-I'm queuing this for the 3.5 and 3.11 kernels.
-
-> drm-radeon-Disable-writeback-by-default-on-ppc.patch
-> - This is superseded by upstream commit
-> ea31bf697d27270188a93cd78cf9de4bc968aca3 but that seems to be a bit
-> big for a stable backport
+> Changes from v3: (Sent only adapt dwc3 core to use Generic PHY Framework) 
+> * avoided using quirks and rely on the return values of PHY APIs to find the
+> presence of PHY.
 > 
-> dm-cache-policy-mq_fix-large-scale-table-allocation-bug.patch (rhbz 993744)
-> - Still pending upstream (no idea why...)
+> Changes from v2:
+> * added a couple of fixes. One is invoking phy_resume after phy_init and the
+> other is power off phy in error patch
+> * used quirks to identify if a particular platform does not have PHYs
+> * removed using separate header for pipe3 driver and also removed all referencs
+> to SATA and PCIe in pipe3 driver since it's not yet adapted for those drivers.
 > 
-> sunrpc-create-a-new-dummy-pipe-for-gssd-to-hold-open.patch
-> sunrpc-replace-gssd_running-with-more-reliable-check.patch
-> nfs-check-gssd-running-before-krb5i-auth.patch
-> - Added to fix a 15sec mount delay
-> - Upstream commits 4b9a445e3eeb8bd9278b1ae51c1b3a651e370cd6
->   89f842435c630f8426f414e6030bc2ffea0d6f81
->   6aa23d76a7b549521a03b63b6d5b7880ea87eab7 respectively
+> Changes from v1:
+> * The logic in which the driver detects the presence of PHYs has changed.
+> * patch ordering has changed
+> * udelay is replaced with usleep_range
+> * A patch to remove set_suspend callback which was deferred from Generic
+> PHY Framework series has been included.
 > 
-> rpc_pipe-remove-the-clntXX-dir-if-creating-the-pipe-fails.patch
-> sunrpc-add-an-info-file-for-the-dummy-gssd-pipe.patch
-> rpc_pipe-fix-cleanup-of-dummy-gssd-directory-when-notification-fails.patch
-> - Fixes for some of the patches above (rhbz 1037793)
-> - Upstream commits 3396f92f8be606ea485b0a82d4e7749a448b013b
->   e2f0c83a9de331d9352185ca3642616c13127539
->   23e66ba97127ff3b064d4c6c5138aa34eafc492f respectively
+> Kishon Vijay Abraham I (6):
+>   usb: dwc3: core: support optional PHYs
+>   usb: dwc3: adapt dwc3 core to use Generic PHY Framework
+>   drivers: phy: usb3/pipe3: Adapt pipe3 driver to Generic PHY Framework
+>   usb: phy: omap-usb2: remove *set_suspend* callback from omap-usb2
+>   phy: omap-usb2: move omap_usb.h from linux/usb/ to linux/phy/
+>   arm/dts: added dt properties to adapt to the new phy framwork
 > 
-> elantech-Properly-differentiate-between-clickpads-an.patch (rhbz 1030802)
-> - Upstream commit c15bdfd5b9831e4cab8cfc118243956e267dd30e
-
-Again, queuing this one for 3.5 and 3.11.
-
-> KVM-MMU-handle-invalid-root_hpa-at-__direct_map.patch (rhbz 924916)
-> - Upstream commit 989c6b34f6a9480e397b170cc62237e89bf4fdb9
-> - Probably should grab 37f6a4e237303549c8676dfe1fd1991ceab512eb too
-
-Queuing only 989c6b34f6a9480e397b170cc62237e89bf4fdb9 for the 3.5 and
-3.11.
-
-> KVM-VMX-fix-use-after-free-of-vmx-loaded_vmcs.patch (rhbz 1047892)
-> - Upstream commit 26a865f4aa8e66a6d94958de7656f7f1b03c6c56
-
-3.5 and 3.11.
-
-> 0001-Input-wacom-make-sure-touch_max-is-set-for-touch-dev.patch
-> 0002-Input-wacom-add-support-for-three-new-Intuos-devices.patch
-> 0003-Input-wacom-add-reporting-of-SW_MUTE_DEVICE-events.patch
-> - rhbz 1003167 1046238
-> - Upstream commits 1d0d6df02750b4a6f466768cbfbf860e24f4c8d4
->   b5fd2a3e92ca5c8c1f3c20d31ac5daed3ec4d604
->   961794a00eab03f4344b7d5e825e8e789e55da87
-
-Queuing 1d0d6df02750b4a6f466768cbfbf860e24f4c8d4, only for the 3.11
-kernel.
-
-> Input-ALPS-add-support-for-Dolphin-devices.patch (rhbz 953211)
-> - Upstream commit ee65d4b36de8ddf4467f788faa5d8ddd1bfcdaa2
+>  Documentation/devicetree/bindings/usb/dwc3.txt     |    6 +-
+>  arch/arm/boot/dts/omap5.dtsi                       |    5 +-
+>  drivers/phy/Kconfig                                |   11 +
+>  drivers/phy/Makefile                               |    1 +
+>  drivers/phy/phy-omap-usb2.c                        |   27 +--
+>  .../phy/phy-omap-usb3.c => phy/phy-ti-pipe3.c}     |  240 ++++++++++++--------
+>  drivers/usb/dwc3/core.c                            |  116 +++++++---
+>  drivers/usb/dwc3/core.h                            |    7 +
+>  drivers/usb/phy/Kconfig                            |   11 -
+>  drivers/usb/phy/Makefile                           |    1 -
+>  include/linux/{usb => phy}/omap_usb.h              |    3 -
+>  11 files changed, 264 insertions(+), 164 deletions(-)
+>  rename drivers/{usb/phy/phy-omap-usb3.c => phy/phy-ti-pipe3.c} (54%)
+>  rename include/linux/{usb => phy}/omap_usb.h (95%)
 > 
-> xhci-fix-resume-issues-on-renesas-chips-in-samsung-laptops.patch (rhbz 950630)
-> - Upstream commit 1aa9578c1a9450fb21501c4f549f5b1edb557e6d
-> - Oddly not queued for stable?
 
-Already on 3.5 and 3.11.
-
-> cgroup-fixes.patch (rhbz 1045755)
-> - Upstream commits 0ab02ca8f887908152d1a96db5130fc661d36a1e
-> - There was a 3.12 version of this patch sent to stable list from
-> Michal Hocko.  I don't remember why it wasn't applied, or why it
-> wasn't applied for 3.13.y...
->
-> ipv6-introduce-IFA_F_NOPREFIXROUTE-and-IFA_F_MANAGETEMPADDR-flags.patch
-> ipv6-addrconf-revert-if_inet6ifa_flag-format.patch
-> - rhbz 1064430 1056711
-> - Backports of commits to add this stuff in 3.14.  Not suitable for stable.
-> 
-> cifs-ensure-that-uncached-writes-handle-unmapped-areas-correctly.patch
-> cifs-sanity-check-length-of-data-to-send-before-sending.patch
-> cifs-mask-off-top-byte-in-get_rfc1002_length.patch
-> - rhbz 1064253 CVE-2014-0069 rhbz 1068862
-> - Upstream commit 5d81de8e8667da7135d3a32a964087c0faf5483f and two
-> additional fixes
-
-5d81de8e8667da7135d3a32a964087c0faf5483f is already queued for 3.5 and
-3.11.
-
-> cpufreq-powernow-k8-Initialize-per-cpu-data-structures-properly.patch
-> (rhbz 1054408)
-> - Upstream commit c3274763bfc3bf1ececa269ed6e6c4d7ec1c3e5e
-> - CC'd to stable but not queued
-
-Already in 3.5 and 3.11.
-
-> e100-Fix-disabling-already-disabled-device-warning.patch (rhbz 994438)
-> - Upstream commit 2b6e0ca175fe4a20f21ba82b1e7ccc71029c4dd4
-
-Queuing for 3.5 and 3.11.
-
-> usb-ehci-fix-deadlock-when-threadirqs-option-is-used.patch
-> - Still pending upstream
-
-Cheers,
---
-Luís
