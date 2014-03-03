@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755820AbaCCTOK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 14:14:10 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:55994 "EHLO
+	id S1754876AbaCCS5c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 13:57:32 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:55976 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754903AbaCCS5j (ORCPT
+	with ESMTP id S1754465AbaCCS5a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 13:57:39 -0500
+	Mon, 3 Mar 2014 13:57:30 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jens Axboe <axboe@kernel.dk>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 23/67] block: __elv_next_request() shouldn't call into the elevator if bypassing
-Date: Mon,  3 Mar 2014 10:55:11 -0800
-Message-Id: <1393872955-28810-24-git-send-email-kamal@canonical.com>
+Cc: Borislav Petkov <bp@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 66/67] EDAC: Correct workqueue setup path
+Date: Mon,  3 Mar 2014 10:55:54 -0800
+Message-Id: <1393872955-28810-67-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1393872955-28810-1-git-send-email-kamal@canonical.com>
 References: <1393872955-28810-1-git-send-email-kamal@canonical.com>
@@ -26,68 +26,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Borislav Petkov <bp@suse.de>
 
-commit 556ee818c06f37b2e583af0363e6b16d0e0270de upstream.
+commit cb6ef42e516cb8948f15e4b70dc03af8020050a2 upstream.
 
-request_queue bypassing is used to suppress higher-level function of a
-request_queue so that they can be switched, reconfigured and shut
-down.  A request_queue does the followings while bypassing.
+We're using edac_mc_workq_setup() both on the init path, when
+we load an edac driver and when we change the polling period
+(edac_mc_reset_delay_period) through /sys/.../edac_mc_poll_msec.
 
-* bypasses elevator and io_cq association and queues requests directly
-  to the FIFO dispatch queue.
+On that second path we don't need to init the workqueue which has been
+initialized already.
 
-* bypasses block cgroup request_list lookup and always uses the root
-  request_list.
+Thanks to Tejun for workqueue insights.
 
-Once confirmed to be bypassing, specific elevator and block cgroup
-policy implementations can assume that nothing is in flight for them
-and perform various operations which would be dangerous otherwise.
-
-Such confirmation is acheived by short-circuiting all new requests
-directly to the dispatch queue and waiting for all the requests which
-were issued before to finish.  Unfortunately, while the request
-allocating and draining sides were properly handled, we forgot to
-actually plug the request dispatch path.  Even after bypassing mode is
-confirmed, if the attached driver tries to fetch a request and the
-dispatch queue is empty, __elv_next_request() would invoke the current
-elevator's elevator_dispatch_fn() callback.  As all in-flight requests
-were drained, the elevator wouldn't contain any request but once
-bypass is confirmed we don't even know whether the elevator is even
-there.  It might be in the process of being switched and half torn
-down.
-
-Frank Mayhar reports that this actually happened while switching
-elevators, leading to an oops.
-
-Let's fix it by making __elv_next_request() avoid invoking the
-elevator_dispatch_fn() callback if the queue is bypassing.  It already
-avoids invoking the callback if the queue is dying.  As a dying queue
-is guaranteed to be bypassing, we can simply replace blk_queue_dying()
-check with blk_queue_bypass().
-
-Reported-by: Frank Mayhar <fmayhar@google.com>
-References: http://lkml.kernel.org/g/1390319905.20232.38.camel@bobble.lax.corp.google.com
-Tested-by: Frank Mayhar <fmayhar@google.com>
-
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/1391457913-881-1-git-send-email-prarit@redhat.com
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- block/blk.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/edac/edac_mc.c | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-diff --git a/block/blk.h b/block/blk.h
-index 47fdfdd..f0bef84 100644
---- a/block/blk.h
-+++ b/block/blk.h
-@@ -96,7 +96,7 @@ static inline struct request *__elv_next_request(struct request_queue *q)
- 			q->flush_queue_delayed = 1;
- 			return NULL;
- 		}
--		if (unlikely(blk_queue_dying(q)) ||
-+		if (unlikely(blk_queue_bypass(q)) ||
- 		    !q->elevator->type->ops.elevator_dispatch_fn(q, 0))
- 			return NULL;
+diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
+index ab5341c..858945e 100644
+--- a/drivers/edac/edac_mc.c
++++ b/drivers/edac/edac_mc.c
+@@ -558,7 +558,8 @@ static void edac_mc_workq_function(struct work_struct *work_req)
+  *
+  *		called with the mem_ctls_mutex held
+  */
+-static void edac_mc_workq_setup(struct mem_ctl_info *mci, unsigned msec)
++static void edac_mc_workq_setup(struct mem_ctl_info *mci, unsigned msec,
++				bool init)
+ {
+ 	edac_dbg(0, "\n");
+ 
+@@ -566,7 +567,9 @@ static void edac_mc_workq_setup(struct mem_ctl_info *mci, unsigned msec)
+ 	if (mci->op_state != OP_RUNNING_POLL)
+ 		return;
+ 
+-	INIT_DELAYED_WORK(&mci->work, edac_mc_workq_function);
++	if (init)
++		INIT_DELAYED_WORK(&mci->work, edac_mc_workq_function);
++
+ 	mod_delayed_work(edac_workqueue, &mci->work, msecs_to_jiffies(msec));
+ }
+ 
+@@ -610,7 +613,7 @@ void edac_mc_reset_delay_period(unsigned long value)
+ 	list_for_each(item, &mc_devices) {
+ 		mci = list_entry(item, struct mem_ctl_info, link);
+ 
+-		edac_mc_workq_setup(mci, value);
++		edac_mc_workq_setup(mci, value, false);
+ 	}
+ 
+ 	mutex_unlock(&mem_ctls_mutex);
+@@ -766,7 +769,7 @@ int edac_mc_add_mc(struct mem_ctl_info *mci)
+ 		/* This instance is NOW RUNNING */
+ 		mci->op_state = OP_RUNNING_POLL;
+ 
+-		edac_mc_workq_setup(mci, edac_mc_get_poll_msec());
++		edac_mc_workq_setup(mci, edac_mc_get_poll_msec(), true);
+ 	} else {
+ 		mci->op_state = OP_RUNNING_INTERRUPT;
  	}
 -- 
 1.8.3.2
