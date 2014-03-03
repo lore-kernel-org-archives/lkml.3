@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755508AbaCCTHV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 14:07:21 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:56093 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755259AbaCCS6x (ORCPT
+	id S1755558AbaCCTH2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 14:07:28 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:44362 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755259AbaCCTHY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 13:58:53 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Jens Axboe <axboe@fb.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 58/67] block: add cond_resched() to potentially long running ioctl discard loop
-Date: Mon,  3 Mar 2014 10:55:46 -0800
-Message-Id: <1393872955-28810-59-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1393872955-28810-1-git-send-email-kamal@canonical.com>
-References: <1393872955-28810-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Mon, 3 Mar 2014 14:07:24 -0500
+Date: Mon, 3 Mar 2014 13:05:41 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Chris Ball <chris@printf.net>
+CC: <balbi@ti.com>, Jaehoon Chung <jh80.chung@samsung.com>,
+        <tgih.jun@samsung.com>, <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [PATCH] mmc: host: dw: fix possible build error
+Message-ID: <20140303190541.GA27953@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1393340264-22687-1-git-send-email-balbi@ti.com>
+ <530D134F.5090403@samsung.com>
+ <20140303180614.GA31301@saruman.home>
+ <86vbvvqf6m.fsf@void.printf.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="y0ulUmNC+osPPQO6"
+Content-Disposition: inline
+In-Reply-To: <86vbvvqf6m.fsf@void.printf.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.19 -stable review patch.  If anyone has any objections, please let me know.
+--y0ulUmNC+osPPQO6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+On Mon, Mar 03, 2014 at 07:01:53PM +0000, Chris Ball wrote:
+> Hi,
+>=20
+> On Mon, Mar 03 2014, Felipe Balbi wrote:
+> >> When you send the patch related with dw_mmc controller, could you use
+> >> the prefix "mmc: dw_mmc:"?  "mmc: dw_mmc: fix possible build error"
+> >
+> > sure, no problem. Do I *really* need to resend though ? It's already
+> > -rc5 and I still don't see this patch merged.
+>=20
+> No need to resend, I can fix this up -- pushed to mmc-next, thanks.
 
-From: Jens Axboe <axboe@fb.com>
+Thanks Chris.
 
-commit c8123f8c9cb517403b51aa41c3c46ff5e10b2c17 upstream.
+--=20
+balbi
 
-When mkfs issues a full device discard and the device only
-supports discards of a smallish size, we can loop in
-blkdev_issue_discard() for a long time. If preempt isn't enabled,
-this can turn into a softlock situation and the kernel will
-start complaining.
+--y0ulUmNC+osPPQO6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Add an explicit cond_resched() at the end of the loop to avoid
-that.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-Signed-off-by: Jens Axboe <axboe@fb.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- block/blk-lib.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+iQIcBAEBAgAGBQJTFNKFAAoJEIaOsuA1yqRE8qwP/217LyoidzHj0zWRdzQA4+T8
+gnK2BWNeM6X8RCaZ07CXr3sA4Vm/m+aHMdKjPS9opAbG65npgLTS29r2tgbNvSsp
+9Zn2mUnZHsS46P7jafJdeKne9V0dwQOcSK9RJxMvHKQa1cIVkMzpLLmZbEqnVeCu
+bjRdDbJQ35FArg8ZWvrU7n4/MBbHX4zuIBuEqrQNiuIx15YCBmvBIhTC/yY8qvcg
+QVzR5YIXfBcAokvwchlNWSW6WqNRAN/bQO0YKjyQL6Cwo0nGjf3Dh1r0EGhuEcOe
+D+ToVcls8wvB44CGnTjARRglAvYuvlUlX9YeXdfWbn/r7bmjSpsc5Cl+flSIZx/y
+SR4mqFIJ9Ku+Kle5eCO2UTeeXRjvz31MKF+GWw3iL9wTSM0NLMZZVdHVpm8DUMMO
+EXr2w0naFm+5vkDE2wpKcWUpj6jE8D+syospzJQOz/Xou7p2IcVW1E6GgGgM6ISr
+GGFN9FFKuCUJ1zMNGJNWoZMOK6z+udIemskLcyp7IL8IRhFzvyRfkUPPxUHTppJn
+mbknJB/nkZOfU67Kii1GXtGGsMUifpjIXTcmmwdyve+7VtrsyY0SVQvW0b020Dfj
+5bNOCrUfc5XXfqqQkHHyodWOXCY+zic9N1GrsoiFzRJJE0K0Z97YJRrM4xdygQY0
+0jydMRpyrZNaU2vt9O+9
+=Lcar
+-----END PGP SIGNATURE-----
 
-diff --git a/block/blk-lib.c b/block/blk-lib.c
-index b3a1f2b7..016833c 100644
---- a/block/blk-lib.c
-+++ b/block/blk-lib.c
-@@ -121,6 +121,14 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
- 
- 		atomic_inc(&bb.done);
- 		submit_bio(type, bio);
-+
-+		/*
-+		 * We can loop for a long time in here, if someone does
-+		 * full device discards (like mkfs). Be nice and allow
-+		 * us to schedule out to avoid softlocking if preempt
-+		 * is disabled.
-+		 */
-+		cond_resched();
- 	}
- 	blk_finish_plug(&plug);
- 
--- 
-1.8.3.2
-
+--y0ulUmNC+osPPQO6--
