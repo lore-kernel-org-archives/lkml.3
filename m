@@ -1,129 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755966AbaCCTV7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 14:21:59 -0500
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:61162 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755145AbaCCTV4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 14:21:56 -0500
+	id S1754611AbaCCT3r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 14:29:47 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:53070 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753741AbaCCT3p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 14:29:45 -0500
+Date: Mon, 3 Mar 2014 20:29:39 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Chris Bainbridge <chris.bainbridge@gmail.com>
+Cc: Andreas Mohr <andi@lisas.de>, Dennis Mungai <dmngaie@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
+        devzero@web.de
+Subject: Re: Re: [PATCH] x86: set Pentium M as PAE capable
+Message-ID: <20140303192939.GD31265@pd.tnic>
+References: <20140228140043.GA12157@debian.local>
+ <20140302205619.GA8676@rhlx01.hs-esslingen.de>
+ <20140303080432.GA25489@localhost>
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:fd11:e931:9870:b4c4:1877]
-In-Reply-To: <1393432147-31355-2-git-send-email-johannes.thumshirn@men.de>
-References: <1393432147-31355-1-git-send-email-johannes.thumshirn@men.de>
-	<1393432147-31355-2-git-send-email-johannes.thumshirn@men.de>
-Date: Mon, 3 Mar 2014 11:21:55 -0800
-Message-ID: <CAOesGMjmdfRWddG+NWBg29mPik_s21fMQerCqUbEWUz8vP3KfQ@mail.gmail.com>
-Subject: Re: [PATCH v3 1/3] drivers: Introduce MEN Chameleon Bus
-From: Olof Johansson <olof@lixom.net>
-To: Johannes Thumshirn <johannes.thumshirn@men.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140303080432.GA25489@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 26, 2014 at 8:29 AM, Johannes Thumshirn
-<johannes.thumshirn@men.de> wrote:
-> The MCB (MEN Chameleon Bus) is a Bus specific to MEN Mikroelektronik
-> FPGA based devices. It is used to identify MCB based IP-Cores within
-> an FPGA and provide the necessary framework for instantiating drivers
-> for these devices.
->
-> Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
+On Mon, Mar 03, 2014 at 03:04:35PM +0700, Chris Bainbridge wrote:
+> On 3 March 2014 02:05, Roland Kletzing <devzero@web.de> wrote:
+> > i would recommend adding the newly introduced param to
+> > Documentation/kernel-
+> > parameters.txt , though.
+> 
+> Done.
+> 
+> Signed-off-by: Chris Bainbridge <chris.bainbridge@gmail.com>
 > ---
->  MAINTAINERS                     |   6 +
->  drivers/Kconfig                 |   2 +
->  drivers/Makefile                |   1 +
->  drivers/mcb/Kconfig             |  15 ++
->  drivers/mcb/Makefile            |   5 +
->  drivers/mcb/mcb-core.c          | 414 ++++++++++++++++++++++++++++++++++++++++
->  drivers/mcb/mcb-internal.h      | 116 +++++++++++
->  drivers/mcb/mcb-parse.c         | 159 +++++++++++++++
->  include/linux/mcb.h             | 119 ++++++++++++
->  include/linux/mod_devicetable.h |   5 +
->  10 files changed, 842 insertions(+)
->  create mode 100644 drivers/mcb/Kconfig
->  create mode 100644 drivers/mcb/Makefile
->  create mode 100644 drivers/mcb/mcb-core.c
->  create mode 100644 drivers/mcb/mcb-internal.h
->  create mode 100644 drivers/mcb/mcb-parse.c
->  create mode 100644 include/linux/mcb.h
->
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 85b3dd8..5d35f6c 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -5667,6 +5667,12 @@ L:       linux-watchdog@vger.kernel.org
->  S:     Supported
->  F:     drivers/watchdog/mena21_wdt.c
->
-> +MEN CHAMELEON BUS (mcb)
-> +M:     Johannes Thumshirn <johannes.thumshirn@men.de>
-> +S:     Supported
-> +F:     drivers/mcb/
-> +F:     include/linux/mcb.h
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index b9e9bd8..388b5e9 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -962,6 +962,13 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  			parameter will force ia64_sal_cache_flush to call
+>  			ia64_pal_cache_flush instead of SAL_CACHE_FLUSH.
+>  
+> +	forcepae [X86-32]
+> +			Forcefully enable Physical Address Extension (PAE).
+> +			Many Pentium M systems disable PAE but may have a
+> +			functionally usable PAE implementation.
+> +			Note: This parameter is unsupported, may cause unknown
+
+What does "unsupported" mean here exactly?
+
+> +			problems, and will taint the kernel.
 > +
->  METAG ARCHITECTURE
->  M:     James Hogan <james.hogan@imgtec.com>
->  L:     linux-metag@vger.kernel.org
-> diff --git a/drivers/Kconfig b/drivers/Kconfig
-> index b3138fb..df2ac52 100644
-> --- a/drivers/Kconfig
-> +++ b/drivers/Kconfig
-> @@ -170,4 +170,6 @@ source "drivers/phy/Kconfig"
->
->  source "drivers/powercap/Kconfig"
->
-> +source "drivers/mcb/Kconfig"
+>  	ftrace=[tracer]
+>  			[FTRACE] will set and start the specified tracer
+>  			as early as possible in order to facilitate early
+> diff --git a/arch/x86/boot/cpucheck.c b/arch/x86/boot/cpucheck.c
+> index 4d3ff03..93ba160 100644
+> --- a/arch/x86/boot/cpucheck.c
+> +++ b/arch/x86/boot/cpucheck.c
+> @@ -69,6 +69,13 @@ static int is_transmeta(void)
+>  	       cpu_vendor[2] == A32('M', 'x', '8', '6');
+>  }
+>  
+> +static int is_intel(void)
+> +{
+> +	return cpu_vendor[0] == A32('G', 'e', 'n', 'u') &&
+> +	       cpu_vendor[1] == A32('i', 'n', 'e', 'I') &&
+> +	       cpu_vendor[2] == A32('n', 't', 'e', 'l');
+> +}
 > +
->  endmenu
-> diff --git a/drivers/Makefile b/drivers/Makefile
-> index 8e3b8b0..c5bf50c 100644
-> --- a/drivers/Makefile
-> +++ b/drivers/Makefile
-> @@ -155,3 +155,4 @@ obj-$(CONFIG_IPACK_BUS)             += ipack/
->  obj-$(CONFIG_NTB)              += ntb/
->  obj-$(CONFIG_FMC)              += fmc/
->  obj-$(CONFIG_POWERCAP)         += powercap/
-> +obj-$(CONFIG_MCB)              += mcb/
+>  static int has_fpu(void)
+>  {
+>  	u16 fcw = -1, fsw = -1;
+> @@ -239,6 +246,24 @@ int check_cpu(int *cpu_level_ptr, int *req_level_ptr, u32 **err_flags_ptr)
+>  		asm("wrmsr" : : "a" (eax), "d" (edx), "c" (ecx));
+>  
+>  		err = check_flags();
+> +	} else if (err == 0x01 &&
+> +		   !(err_flags[0] & ~(1 << X86_FEATURE_PAE)) &&
+> +		   is_intel() && cpu.level == 6 &&
+> +		   (cpu.model == 9 || cpu.model == 13)) {
+> +		/* PAE is disabled on this Pentium M but can be forced */
+> +		if (cmdline_find_option_bool("forcepae")) {
+> +			puts("WARNING: Forcing PAE in CPU flags\n");
+> +			set_bit(X86_FEATURE_PAE, cpu.flags);
+> +			err = check_flags();
 
-No single-driver directories like these. This needs to go somewhere else.
+This function is called check_cpuflags() now. You probably want to redo
+your patch against tip/master, i.e.:
 
-> diff --git a/drivers/mcb/Kconfig b/drivers/mcb/Kconfig
-> new file mode 100644
-> index 0000000..44c82d6
-> --- /dev/null
-> +++ b/drivers/mcb/Kconfig
-> @@ -0,0 +1,15 @@
-> +#
-> +# MEN Chameleon Bus (MCB) support
-> +#
+git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git#master
+
+> +		}
+> +		else {
+> +			puts("ERROR: PAE is disabled on this Pentium M\n"
+> +				"(PAE can potentially be enabled with "
+> +				"kernel parameter\n"
+> +				"\"forcepae\" - this is unsupported, may "
+> +				"cause unknown\n"
+> +				"problems, and will taint the kernel)\n");
+
+This string could definitely violate the 80 cols rule so that it is much
+more readable:
+
+		}
+		else
+			puts("WARNING: PAE disabled. Use \"forcepae\" to enable at your own risk!\n");
+
+I've shortened it to the most relevant info only. No need to say we're
+tainting the kernel because LOCKDEP_NOW_UNRELIABLE will cause that
+anyway below.
+
+> +		}
+>  	}
+>  
+>  	if (err_flags_ptr)
+> diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+> index bbe1b8b..271686d 100644
+> --- a/arch/x86/kernel/cpu/intel.c
+> +++ b/arch/x86/kernel/cpu/intel.c
+> @@ -196,6 +196,14 @@ static void intel_smp_check(struct cpuinfo_x86 *c)
+>  	}
+>  }
+>  
+> +static int forcepae;
+> +static int __init forcepae_setup(char *__unused)
+> +{
+> +	forcepae = 1;
+> +	return 1;
+> +}
+> +__setup("forcepae", forcepae_setup);
+
+Yeah, why not simply call it "pae"? It is smaller and the letter
+combination is not used yet and it means the same.
+
 > +
-> +menuconfig MCB
-> +          tristate "MCB support"
-> +          default m
+>  static void intel_workarounds(struct cpuinfo_x86 *c)
+>  {
+>  	unsigned long lo, hi;
+> @@ -226,6 +234,17 @@ static void intel_workarounds(struct cpuinfo_x86 *c)
+>  		clear_cpu_cap(c, X86_FEATURE_SEP);
+>  
+>  	/*
+> +	 * PAE CPUID issue: many Pentium M report no PAE but may have a
+> +	 * functionally usable PAE implementation.
+> +	 * Forcefully enable PAE if kernel parameter "forcepae" is present.
+> +	 */
+> +	if (forcepae) {
+> +		printk(KERN_WARNING "PAE forced!\n");
+> +		set_cpu_cap(c, X86_FEATURE_PAE);
+> +		add_taint(TAINT_CPU_OUT_OF_SPEC, LOCKDEP_NOW_UNRELIABLE);
 
-Don't default to 'm' for new drivers. Just leave out the default (so
-it will default to 'n').
+Right, this implies Dave's patch is preceding yours. I guess hpa can
+fish it out from the thread when applying.
 
-> +          help
-> +
-> +          The MCB (MEN Chameleon Bus) is a Bus specific to MEN Mikroelektronik
-> +          FPGA based devices. It is used to identify MCB based IP-Cores within
-> +          an FPGA and provide the necessary framework for instantiating drivers
-> +          for these devices.
-> +
-> +          If build as a module, the module is called mcb.ko
+-- 
+Regards/Gruss,
+    Boris.
 
-
-Not reviewing the rest of the driver, came across the patch due to
-causing build breakage on last night's next ebsa110_defconfig for ARM:
-
-drivers/mcb/mcb-parse.c:105:2: error: implicit declaration of function
-'memcpy_fromio' [-Werror=implicit-function-declaration]
-
-
--Olof
+Sent from a fat crate under my desk. Formatting is fine.
+--
