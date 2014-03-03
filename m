@@ -1,91 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752469AbaCCGXm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 01:23:42 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:48104 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750987AbaCCGXk (ORCPT
+	id S1753470AbaCCGfa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 01:35:30 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:34880 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751462AbaCCGfU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 01:23:40 -0500
-Date: Mon, 3 Mar 2014 11:53:24 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: David Long <dave.long@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Oleg Nesterov <oleg@redhat.com>, linux-arm-kernel@lists.infradead.org,
-        Rabin Vincent <rabin@rab.in>, "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        davem@davemloft.net, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 00/14] uprobes: Add uprobes support for ARM
-Message-ID: <20140303062324.GB20583@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <1392017945-4507-1-git-send-email-dave.long@linaro.org>
- <20140301123026.GD21483@n2100.arm.linux.org.uk>
- <53131DBE.7020500@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <53131DBE.7020500@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14030306-0260-0000-0000-000004761E3A
+	Mon, 3 Mar 2014 01:35:20 -0500
+From: Andy Gross <agross@codeaurora.org>
+To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+        dmaengine@vger.kernel.org
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        Andy Gross <agross@codeaurora.org>
+Subject: [Patch v8 1/2] dmaengine: qcom_bam_dma: Add device tree binding
+Date: Mon,  3 Mar 2014 00:30:44 -0600
+Message-Id: <1393828245-18766-2-git-send-email-agross@codeaurora.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1393828245-18766-1-git-send-email-agross@codeaurora.org>
+References: <1393828245-18766-1-git-send-email-agross@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Oleg,
->
+Add device tree binding support for the QCOM BAM DMA driver.
 
-> I've been looking at arch/Kconfig and kernel/trace/Kconfig where
-> they deal with uprobes.  The relevant items are CONFIG_UPROBES and
-> CONFIG_UPROBE_EVENT.  It just doesn't look right to me.  It looks
+Acked-by: Kumar Gala <galak@codeaurora.org>
+Signed-off-by: Andy Gross <agross@codeaurora.org>
+---
+ .../devicetree/bindings/dma/qcom_bam_dma.txt       |   41 ++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/dma/qcom_bam_dma.txt
 
-It should be me who should take the blame for this and not Oleg.  This
-was discussed more than couple of times.  I can recollect couple of
-discussions here.
-http://article.gmane.org/gmane.linux.kernel/1017186
-http://article.gmane.org/gmane.linux.kernel/1001605
-
-I know there were more discussions on this, but I cant dig them out at
-this time.  Finally it was decided that
-1. Users shouldnt have to select more than one config to select Uprobes.
-2. There was no point in selecting Uprobes and not having Uprobe_event
-and vice versa.
-
->From the above, If a user chose UPROBE_EVENT, (which is the interface
-for uprobes), we would automatically assume that he wants to use Uprobes
-framework.
-
-> like "select" is used in part maybe just to avoid the recursive
-> dependency error that would be generated if "depends on" were used
-> in both places.
-
-We did "Select Uprobes" not because of avoiding recursive dependency but
-as told above, to select the framework, given that user has chosen the
-framework. We dont want to give a choice to user to choose uprobe_event
-but not choose Uprobes or vice versa.
-
-> However I don't think UPROBES should be dependent on
-> UPROBE_EVENT, only the other way around.  As RK noted in previous
-
-Whats the point of having the framework(Uprobes) without an interface?
-
-> email (copied in part below) the select does not pull in the lower
-> level dependencies.  This all works on x86 only because
-> arch/x86/Kconfig defines CONFIG_PERF_EVENT (which feels like a big
-> hammer).  We don't need to do this on ARM, and we don't do it.  The
-> result is that, unless PERF_EVENT is set separately, uprobes tends
-> not to build.  I was lucking-out in my testing due to other default
-> config items turning on PERF_EVENT.
->
-
---
-Thanks and Regards
-Srikar Dronamraju
+diff --git a/Documentation/devicetree/bindings/dma/qcom_bam_dma.txt b/Documentation/devicetree/bindings/dma/qcom_bam_dma.txt
+new file mode 100644
+index 0000000..d75a9d7
+--- /dev/null
++++ b/Documentation/devicetree/bindings/dma/qcom_bam_dma.txt
+@@ -0,0 +1,41 @@
++QCOM BAM DMA controller
++
++Required properties:
++- compatible: must contain "qcom,bam-v1.4.0" for MSM8974
++- reg: Address range for DMA registers
++- interrupts: Should contain the one interrupt shared by all channels
++- #dma-cells: must be <1>, the cell in the dmas property of the client device
++  represents the channel number
++- clocks: required clock
++- clock-names: must contain "bam_clk" entry
++- qcom,ee : indicates the active Execution Environment identifier (0-7) used in
++  the secure world.
++
++Example:
++
++	uart-bam: dma@f9984000 = {
++		compatible = "qcom,bam-v1.4.0";
++		reg = <0xf9984000 0x15000>;
++		interrupts = <0 94 0>;
++		clocks = <&gcc GCC_BAM_DMA_AHB_CLK>;
++		clock-names = "bam_clk";
++		#dma-cells = <1>;
++		qcom,ee = <0>;
++	};
++
++DMA clients must use the format described in the dma.txt file, using a two cell
++specifier for each channel.
++
++Example:
++	serial@f991e000 {
++		compatible = "qcom,msm-uart";
++		reg = <0xf991e000 0x1000>
++			<0xf9944000 0x19000>;
++		interrupts = <0 108 0>;
++		clocks = <&gcc GCC_BLSP1_UART2_APPS_CLK>,
++			<&gcc GCC_BLSP1_AHB_CLK>;
++		clock-names = "core", "iface";
++
++		dmas = <&uart-bam 0>, <&uart-bam 1>;
++		dma-names = "rx", "tx";
++	};
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
