@@ -1,87 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753362AbaCCDzQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 22:55:16 -0500
-Received: from mga14.intel.com ([143.182.124.37]:29925 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752050AbaCCDzO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 22:55:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,575,1389772800"; 
-   d="asc'?scan'208";a="345017289"
-Date: Sun, 2 Mar 2014 22:32:50 -0500
-From: "Chen, Gong" <gong.chen@linux.intel.com>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Michel Lespinasse <walken@google.com>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        Yang Zhang <yang.z.zhang@Intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Janet Morgan <janet.morgan@Intel.com>, Tony Luck <tony.luck@Intel.com>,
-        Ruiv Wang <ruiv.wang@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [PATCH] x86, make check_irq_vectors_for_cpu_disable() aware of
- numa node irqs
-Message-ID: <20140303033250.GA22677@gchen.bj.intel.com>
-References: <1393337061-1315-1-git-send-email-prarit@redhat.com>
+	id S1753777AbaCCDz0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 22:55:26 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54621 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753484AbaCCDzT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Mar 2014 22:55:19 -0500
+Date: Mon, 3 Mar 2014 11:54:26 +0800
+From: Mark Brown <broonie@kernel.org>
+To: Nishanth Menon <nm@ti.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Mike Turquette <mturquette@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org
+Message-ID: <20140303035426.GC2411@sirena.org.uk>
+References: <1392755543-28335-1-git-send-email-nm@ti.com>
+ <1392755543-28335-4-git-send-email-nm@ti.com>
+ <20140224015826.GU25940@sirena.org.uk>
+ <530B594F.2030500@ti.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wac7ysb48OaltWcw"
+	protocol="application/pgp-signature"; boundary="r6fxLKBTHCmC166Z"
 Content-Disposition: inline
-In-Reply-To: <1393337061-1315-1-git-send-email-prarit@redhat.com>
-X-PGP-Key-ID: A43922C7
+In-Reply-To: <530B594F.2030500@ti.com>
+X-Cookie: You too can wear a nose mitten.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 202.175.88.218
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC PATCH 3/6] PM / Voltagedomain: introduce voltage domain
+ driver support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---wac7ysb48OaltWcw
-Content-Type: text/plain; charset=utf-8
+--r6fxLKBTHCmC166Z
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Tue, Feb 25, 2014 at 09:04:21AM -0500, Prarit Bhargava wrote:
-> This patch explicitly depends on Yinghai's patch, [PATCH v3] x86, irq: get
-> correct available vectors for cpu disable, which was last posted here:
->=20
-> http://marc.info/?l=3Dlinux-kernel&m=3D139094603622814&w=3D2
->=20
-> and is not yet in any tree AFAICT.
->=20
-> P.
->=20
-Sounds reasonable to me. Just a nitpick.
+On Mon, Feb 24, 2014 at 08:38:07AM -0600, Nishanth Menon wrote:
 
-Acked-by: Gong Chen <gong.chen@linux.intel.com>
+> Intent here is to allow drivers such as cpufreq-cpu0 to be reused on
+> platforms such as TI's OMAP derivatives, and other SoCs which differ
+> only by the sequence involved in voltage scale operations. So, this
+> patch provides a framework for registering the underlying
+> implementation of the SoC specific voltage change methodology.
 
-[...]
-> +		if (cpumask_empty(&affinity_new)) {
-> +			pr_warn("CPU %d disable failed: IRQ %u has no availble CPUS to transi=
-tion IRQ.\n",
-These words looks not fluent to native speaker. (but I'm not native
-speaker, too ;-))
+That bit is clear, what's very opaque from the code is how this is going
+to be accomplished.
 
---wac7ysb48OaltWcw
+> Overall the sequence takes place after this patch is as follows:
+> a) voltage domain drivers such as those of TI or others register with
+> voltage domain with devm_voltdm_register.
+> b) cpufreq-cpu0/devfreq drivers:
+> of_pm_voltdm_notifier_register(introduced as part of patch #1) to
+> register notifiers around clk of interest. This request is linked to
+> the specific voltage domain using phandle in device tree.
+> c) when cpufreq-cpu0/devfreq does a clk_set_rate, the common clock
+> framework triggers notifiers in voltage domain core which in turn,
+> invokes the corresponding handlers for the voltage domain driver
+> ensuring the right dvfs sequence specific to the SoC is triggered.
+
+So the first question I have here is what happens if multiple clocks
+need to be updated in lock step - if we're only triggering off clock
+notifiers that seems tricky.  The other thing here is that the fact that
+your API is "of_" suggests that it is in fact linked very srongly to DT
+- it'd be good to split out the layers to make sure things make sense
+standalone, the DT helpers are obviously good but the API should be able
+to stand separately.
+
+--r6fxLKBTHCmC166Z
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTE/fhAAoJEI01n1+kOSLHnyIQAIUXW4VPlJRF0iWCNhwZfUpB
-FFWz8A/jT9FJ4II5mNrENcBCsAyQfOQMk/VOxF+BGubOnoxf+kkpBhZx8FrMtX7C
-7zS7ZmHwFicEaNRGBxs+nuLLcyxWYnjR79O9MFwI/Pb9WxKYfo8yq+gMZxubRJFK
-8x/R6bvK3Amyf4GmvvXYk2naxmDk6nY8v78G7sKAjT/xCJ8ru4ta65s+EaOwrGND
-ClNa3+Xd65odOT3u0ADQkC3ZmT6hbiOiDXR2im7QZdLGdiDaHARUczSPvqjbVL6K
-x43QbkI1ivVcAR29IChZ2HqtLPJYZcqPDElNz8sBcoTzvzuW4GflDYTzyUZMeLGA
-BeUop0tgM+er0/qTKE0LNVSdDXHEIRfMjU+4+GU3J9y7yoD7RHwlCuVZn7M+8Rq0
-R8MulGsWWz9BmNUH3ZgJ7lbd9P5uMAc2Q7g0r1T2XMnYEKTKKbxQJo9hT5lobRyN
-RM6sAdxxRe243ubyGR+Q+gJj0H7Rb9F9S1MpjPHb+0POTRJcxqVvIxZP0iyRkKQ5
-BL2yUzFNdV+5PNR3nFgZQ+XP/Z28L9wvU12q+mc8V8IY42U3/mwZykXfG5ff20fb
-HpEh2MEZY+CsweZdjEe7snmm1w9nm0yc51c5G6ZigOFqqhLCbwA7vTL40uKzFB99
-NhzXsXoxIHjnyc2HRXCb
-=frS1
+iQIcBAEBAgAGBQJTE/zvAAoJELSic+t+oim9cMcP/i0JAKgjHEbGVsgjUDypV9q1
+iF7cDi5/DSCxirm9mNtVG6UbR5iy8XuYJznaHcNct5K5CGc5Eydan5+NZr556M2E
+RG5G/KjNIukhvVT1eBhBm7S81uoF5wSJAsJnu/xUM9WCpJenbI7FqEEscYIMfU9o
+mZJ8uHn4t9VvEnmhEwTZcg2Qyq+6vP5eooRtb0BbO7t7COPcSFAdCji6XZJ2alAk
+PilOoP2Gh/ip3A7+mmMWiDvbRrfJUUkELruhDScvRwt6jY1y0HD8x5iUu1gIqRRJ
+Qifu2etbCcejsSEa6DfnyjbRhRRTeL6FnJR9dHnv0qs9tzryW+DEVXYT5DvYa5oi
+KkJoQaLsb2tJ1HlMmBSxtavqBz6yx2VD4t4PREWfTx+ZH6FRZOVifanSJUhggtKG
+RtQduD1GAkHZwu6yRrXND1YoPz0Ihrldb08tgqxQYVBqZaN/fX6ncX3/Jpl38Cih
+3EoAnm2UOSkZ1NjkeMT6ZB/ap5j6hwu4i7QJgcbrvf68J+RJAposA/5mj4OwVg3e
++thB2kaTtV1jOxi7T9mOtAff/1oOkEB+Xc1Q3E7q7t1vcV/VNmCS2St0BMffzQeS
+pAiAe8OCQjHQ5TQIblrIf9SsvEmE+Du9TmpG6DwniCzAJvjL6aUr7mObanihfeeA
+IMTO0jrdB42Sh6/55OMI
+=PhJi
 -----END PGP SIGNATURE-----
 
---wac7ysb48OaltWcw--
+--r6fxLKBTHCmC166Z--
