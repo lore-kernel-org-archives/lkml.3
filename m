@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755511AbaCCTAV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 14:00:21 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:56183 "EHLO
+	id S1755524AbaCCTAj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 14:00:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:56195 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755492AbaCCTAT (ORCPT
+	with ESMTP id S1754192AbaCCTAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 14:00:19 -0500
+	Mon, 3 Mar 2014 14:00:35 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>,
+Cc: Steven Noonan <steven@uplinklabs.net>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Jakub Jelinek <jakub@redhat.com>,
+        Richard Henderson <rth@twiddle.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 40/67] mac80211: release the channel in error path in start_ap
-Date: Mon,  3 Mar 2014 10:55:28 -0800
-Message-Id: <1393872955-28810-41-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 60/67] compiler/gcc4: Make quirk for asm_volatile_goto() unconditional
+Date: Mon,  3 Mar 2014 10:55:48 -0800
+Message-Id: <1393872955-28810-61-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1393872955-28810-1-git-send-email-kamal@canonical.com>
 References: <1393872955-28810-1-git-send-email-kamal@canonical.com>
@@ -28,44 +32,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Steven Noonan <steven@uplinklabs.net>
 
-commit 0297ea17bf7879fb5846fafd1be4c0471e72848d upstream.
+commit a9f180345f5378ac87d80ed0bea55ba421d83859 upstream.
 
-When the driver cannot start the AP or when the assignement
-of the beacon goes wrong, we need to unassign the vif.
+I started noticing problems with KVM guest destruction on Linux
+3.12+, where guest memory wasn't being cleaned up. I bisected it
+down to the commit introducing the new 'asm goto'-based atomics,
+and found this quirk was later applied to those.
 
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Unfortunately, even with GCC 4.8.2 (which ostensibly fixed the
+known 'asm goto' bug) I am still getting some kind of
+miscompilation. If I enable the asm_volatile_goto quirk for my
+compiler, KVM guests are destroyed correctly and the memory is
+cleaned up.
+
+So make the quirk unconditional for now, until bug is found
+and fixed.
+
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Steven Noonan <steven@uplinklabs.net>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Jakub Jelinek <jakub@redhat.com>
+Cc: Richard Henderson <rth@twiddle.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Link: http://lkml.kernel.org/r/1392274867-15236-1-git-send-email-steven@uplinklabs.net
+Link: http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58670
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/mac80211/cfg.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ include/linux/compiler-gcc4.h | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
-diff --git a/net/mac80211/cfg.c b/net/mac80211/cfg.c
-index 795aea6..f2a171a 100644
---- a/net/mac80211/cfg.c
-+++ b/net/mac80211/cfg.c
-@@ -954,8 +954,10 @@ static int ieee80211_start_ap(struct wiphy *wiphy, struct net_device *dev,
- 	sdata->vif.bss_conf.p2p_oppps = params->p2p_opp_ps;
+diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
+index e8f0bf9..a11c184 100644
+--- a/include/linux/compiler-gcc4.h
++++ b/include/linux/compiler-gcc4.h
+@@ -77,11 +77,7 @@
+  *
+  * (asm goto is automatically volatile - the naming reflects this.)
+  */
+-#if GCC_VERSION <= 40801
+-# define asm_volatile_goto(x...)	do { asm goto(x); asm (""); } while (0)
+-#else
+-# define asm_volatile_goto(x...)	do { asm goto(x); } while (0)
+-#endif
++#define asm_volatile_goto(x...)	do { asm goto(x); asm (""); } while (0)
  
- 	err = ieee80211_assign_beacon(sdata, &params->beacon);
--	if (err < 0)
-+	if (err < 0) {
-+		ieee80211_vif_release_channel(sdata);
- 		return err;
-+	}
- 	changed |= err;
- 
- 	err = drv_start_ap(sdata->local, sdata);
-@@ -964,6 +966,7 @@ static int ieee80211_start_ap(struct wiphy *wiphy, struct net_device *dev,
- 		if (old)
- 			kfree_rcu(old, rcu_head);
- 		RCU_INIT_POINTER(sdata->u.ap.beacon, NULL);
-+		ieee80211_vif_release_channel(sdata);
- 		return err;
- 	}
- 
+ #ifdef CONFIG_ARCH_USE_BUILTIN_BSWAP
+ #if __GNUC_MINOR__ >= 4
 -- 
 1.8.3.2
 
