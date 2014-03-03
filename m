@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755140AbaCCQFW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 11:05:22 -0500
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:48567 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754766AbaCCQCg (ORCPT
+	id S1755118AbaCCQFT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 11:05:19 -0500
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:59786 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754821AbaCCQCl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 11:02:36 -0500
+	Mon, 3 Mar 2014 11:02:41 -0500
 From: Tomasz Figa <tomasz.figa@gmail.com>
 To: linux-pm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
@@ -26,9 +26,9 @@ Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
         Ulf Hansson <ulf.hansson@linaro.org>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Tomasz Figa <tomasz.figa@gmail.com>
-Subject: [PATCH v2 02/11] drivercore: Bind/unbind power domain on probe/remove
-Date: Mon,  3 Mar 2014 17:02:07 +0100
-Message-Id: <1393862536-9842-3-git-send-email-tomasz.figa@gmail.com>
+Subject: [PATCH v2 04/11] ARM: s3c64xx: pm: Use name field of generic_pm_domain
+Date: Mon,  3 Mar 2014 17:02:09 +0100
+Message-Id: <1393862536-9842-5-git-send-email-tomasz.figa@gmail.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1393862536-9842-1-git-send-email-tomasz.figa@gmail.com>
 References: <1393862536-9842-1-git-send-email-tomasz.figa@gmail.com>
@@ -36,68 +36,122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On a number of platforms, devices are part of controllable power
-domains, which need to be enabled before such devices can be accessed
-and may be powered down when the device is idle to save some power.
-This means that on systems that support power domain control using
-generic power domains subsystem, it is necessary to add device to its
-power domain before binding a driver to it and remove it from its power
-domain after its driver is unbound to make sure that an unused device
-does not affect power domain state.
-
-Since this is not limited to particular busses and specific
-archs/platforms, it is more convenient to do the above directly in
-driver core, just as done with pinctrl default configuration. This patch
-adds necessary code to really_probe() and __device_release_driver() to
-achieve this and maintain consistent stack-like ordering of operations
-happening when binding and unbinding a driver.
+This patch removes name field from private s3c64xx_pm_domain struct and
+moves domain name to dedicated field of generic_pm_domain struct.
 
 Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
 ---
- drivers/base/dd.c | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ arch/arm/mach-s3c64xx/pm.c | 19 +++++++++----------
+ 1 file changed, 9 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/base/dd.c b/drivers/base/dd.c
-index 0605176..78e5b36 100644
---- a/drivers/base/dd.c
-+++ b/drivers/base/dd.c
-@@ -23,6 +23,7 @@
- #include <linux/kthread.h>
- #include <linux/wait.h>
- #include <linux/async.h>
-+#include <linux/pm_domain.h>
- #include <linux/pm_runtime.h>
- #include <linux/pinctrl/devinfo.h>
+diff --git a/arch/arm/mach-s3c64xx/pm.c b/arch/arm/mach-s3c64xx/pm.c
+index b5a6698..df4b7b2 100644
+--- a/arch/arm/mach-s3c64xx/pm.c
++++ b/arch/arm/mach-s3c64xx/pm.c
+@@ -36,7 +36,6 @@
+ #include "regs-syscon-power.h"
  
-@@ -273,6 +274,11 @@ static int really_probe(struct device *dev, struct device_driver *drv)
+ struct s3c64xx_pm_domain {
+-	char *const name;
+ 	u32 ena;
+ 	u32 pwr_stat;
+ 	struct generic_pm_domain pd;
+@@ -77,7 +76,7 @@ static int s3c64xx_pd_on(struct generic_pm_domain *domain)
+ 		} while (retry--);
  
- 	dev->driver = drv;
- 
-+	/* If using genpd, bind power domain now before probing */
-+	ret = genpd_bind_domain(dev);
-+	if (ret)
-+		goto probe_failed;
-+
- 	/* If using pinctrl, bind pins now before probing */
- 	ret = pinctrl_bind_pins(dev);
- 	if (ret)
-@@ -303,6 +309,7 @@ static int really_probe(struct device *dev, struct device_driver *drv)
- probe_failed:
- 	devres_release_all(dev);
- 	driver_sysfs_remove(dev);
-+	genpd_unbind_domain(dev);
- 	dev->driver = NULL;
- 	dev_set_drvdata(dev, NULL);
- 
-@@ -513,7 +520,7 @@ static void __device_release_driver(struct device *dev)
- 			blocking_notifier_call_chain(&dev->bus->p->bus_notifier,
- 						     BUS_NOTIFY_UNBOUND_DRIVER,
- 						     dev);
--
-+		genpd_unbind_domain(dev);
+ 		if (!retry) {
+-			pr_err("Failed to start domain %s\n", pd->name);
++			pr_err("Failed to start domain %s\n", pd->pd.name);
+ 			return -EBUSY;
+ 		}
  	}
+@@ -86,78 +85,78 @@ static int s3c64xx_pd_on(struct generic_pm_domain *domain)
  }
  
+ static struct s3c64xx_pm_domain s3c64xx_pm_irom = {
+-	.name = "IROM",
+ 	.ena = S3C64XX_NORMALCFG_IROM_ON,
+ 	.pd = {
++		.name = "IROM",
+ 		.power_off = s3c64xx_pd_off,
+ 		.power_on = s3c64xx_pd_on,
+ 	},
+ };
+ 
+ static struct s3c64xx_pm_domain s3c64xx_pm_etm = {
+-	.name = "ETM",
+ 	.ena = S3C64XX_NORMALCFG_DOMAIN_ETM_ON,
+ 	.pwr_stat = S3C64XX_BLKPWRSTAT_ETM,
+ 	.pd = {
++		.name = "ETM",
+ 		.power_off = s3c64xx_pd_off,
+ 		.power_on = s3c64xx_pd_on,
+ 	},
+ };
+ 
+ static struct s3c64xx_pm_domain s3c64xx_pm_s = {
+-	.name = "S",
+ 	.ena = S3C64XX_NORMALCFG_DOMAIN_S_ON,
+ 	.pwr_stat = S3C64XX_BLKPWRSTAT_S,
+ 	.pd = {
++		.name = "S",
+ 		.power_off = s3c64xx_pd_off,
+ 		.power_on = s3c64xx_pd_on,
+ 	},
+ };
+ 
+ static struct s3c64xx_pm_domain s3c64xx_pm_f = {
+-	.name = "F",
+ 	.ena = S3C64XX_NORMALCFG_DOMAIN_F_ON,
+ 	.pwr_stat = S3C64XX_BLKPWRSTAT_F,
+ 	.pd = {
++		.name = "F",
+ 		.power_off = s3c64xx_pd_off,
+ 		.power_on = s3c64xx_pd_on,
+ 	},
+ };
+ 
+ static struct s3c64xx_pm_domain s3c64xx_pm_p = {
+-	.name = "P",
+ 	.ena = S3C64XX_NORMALCFG_DOMAIN_P_ON,
+ 	.pwr_stat = S3C64XX_BLKPWRSTAT_P,
+ 	.pd = {
++		.name = "P",
+ 		.power_off = s3c64xx_pd_off,
+ 		.power_on = s3c64xx_pd_on,
+ 	},
+ };
+ 
+ static struct s3c64xx_pm_domain s3c64xx_pm_i = {
+-	.name = "I",
+ 	.ena = S3C64XX_NORMALCFG_DOMAIN_I_ON,
+ 	.pwr_stat = S3C64XX_BLKPWRSTAT_I,
+ 	.pd = {
++		.name = "I",
+ 		.power_off = s3c64xx_pd_off,
+ 		.power_on = s3c64xx_pd_on,
+ 	},
+ };
+ 
+ static struct s3c64xx_pm_domain s3c64xx_pm_g = {
+-	.name = "G",
+ 	.ena = S3C64XX_NORMALCFG_DOMAIN_G_ON,
+ 	.pd = {
++		.name = "G",
+ 		.power_off = s3c64xx_pd_off,
+ 		.power_on = s3c64xx_pd_on,
+ 	},
+ };
+ 
+ static struct s3c64xx_pm_domain s3c64xx_pm_v = {
+-	.name = "V",
+ 	.ena = S3C64XX_NORMALCFG_DOMAIN_V_ON,
+ 	.pwr_stat = S3C64XX_BLKPWRSTAT_V,
+ 	.pd = {
++		.name = "V",
+ 		.power_off = s3c64xx_pd_off,
+ 		.power_on = s3c64xx_pd_on,
+ 	},
 -- 
 1.9.0
 
