@@ -1,93 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754353AbaCCMrF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 07:47:05 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45245 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753881AbaCCMqt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 07:46:49 -0500
-Message-ID: <531479B7.3070606@suse.cz>
-Date: Mon, 03 Mar 2014 13:46:47 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1754566AbaCCNAH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 08:00:07 -0500
+Received: from mailscanner02.zoner.fi ([84.34.166.11]:53410 "EHLO
+	mailscanner02.zoner.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753881AbaCCNAF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 08:00:05 -0500
+X-Greylist: delayed 447 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Mar 2014 08:00:04 EST
+Date: Mon, 3 Mar 2014 14:51:37 +0200
+From: Lasse Collin <lasse.collin@tukaani.org>
+To: Kyle McMartin <kyle@infradead.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, Florian Fainelli <florian@openwrt.org>
+Subject: Re: [PATCH] xz: make XZ_DEC_BCJ filters non-optional
+Message-ID: <20140303145137.70819698@tukaani.org>
+In-Reply-To: <20140228230017.GE14970@merlin.infradead.org>
+References: <20140228230017.GE14970@merlin.infradead.org>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-unknown-linux-gnu)
 MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan@kernel.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: [PATCH 6/6] mm: use atomic bit operations in set_pageblock_flags_group()
-References: <1393596904-16537-1-git-send-email-vbabka@suse.cz> <1393596904-16537-7-git-send-email-vbabka@suse.cz> <20140303082846.GB28899@lge.com>
-In-Reply-To: <20140303082846.GB28899@lge.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Antivirus-Scanner: Clean mail though you should still use an Antivirus
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/03/2014 09:28 AM, Joonsoo Kim wrote:
-> On Fri, Feb 28, 2014 at 03:15:04PM +0100, Vlastimil Babka wrote:
->> set_pageblock_flags_group() is used to set either migratetype or skip bit of a
->> pageblock. Setting migratetype is done under zone->lock (except from __init
->> code), however changing the skip bits is not protected and the pageblock flags
->> bitmap packs migratetype and skip bits together and uses non-atomic bit ops.
->> Therefore, races between setting migratetype and skip bit are possible and the
->> non-atomic read-modify-update of the skip bit may cause lost updates to
->> migratetype bits, resulting in invalid migratetype values, which are in turn
->> used to e.g. index free_list array.
->>
->> The race has been observed to happen and cause panics, albeit during
->> development of series that increases frequency of migratetype changes through
->> {start,undo}_isolate_page_range() calls.
->>
->> Two possible solutions were investigated: 1) using zone->lock for changing
->> pageblock_skip bit and 2) changing the bitmap operations to be atomic. The
->> problem of 1) is that zone->lock is already contended and almost never held in
->> the compaction code that updates pageblock_skip bits. Solution 2) should scale
->> better, but adds atomic operations also to migratype changes which are already
->> protected by zone->lock.
->
-> How about 3) introduce new bitmap for pageblock_skip?
-> I guess that migratetype bitmap is read-intensive and set/clear pageblock_skip
-> could make performance degradation.
+On 2014-02-28 Kyle McMartin wrote:
+> Having these optional is more trouble than is justified by the
+> negligible increase in code size to lib/xz/ if they're all compiled
+> in. Their optional status ends up necessitating rebuilds of the kernel
+> in order to be able to decompress XZ-compressed squashfs images which
+> use non-native BCJ filters (ie: you need to enable XZ_DEC_POWERPC on
+> x86_64 in order to loop-mount a ppc64 squashfs that uses it.)
 
-Yes that would be also possible, but was deemed too ugly and maybe even 
-uglier in case some new pageblock bits are introduced. But it seems no 
-performance degradation was observed for 1) and 2).
+Originally all BCJ filters were enabled by default and CONFIG_EXPERT
+allowed disabling them one by one. It was changed a year ago to the
+current state because I wasn't against it when it was suggested:
 
-I guess if we left the whole idea of packed bitmap we could also make 
-atomic the update of the whole migratetype instead of processing each 
-bit separately. But that would mean at least 8 bits per pageblock for 
-migratetype (and I have no idea about specifics for other archs than x86 
-here). Maybe 4 bits if it's even more ugly and distinguishes odd and 
-even pageblocks...
+    http://lkml.org/lkml/2013/1/15/449
 
->>
->> Using mmtests' stress-highalloc benchmark, little difference was found between
->> the two solutions. The base is 3.13 with recent compaction series by myself and
->> Joonsoo Kim applied.
->>
->>                  3.13        3.13        3.13
->>                  base     2)atomic     1)lock
->> User         6103.92     6072.09     6178.79
->> System       1039.68     1033.96     1042.92
->> Elapsed      2114.27     2090.20     2110.23
->>
->
-> I really wonder how 2) is better than base although there is a little difference.
-> Is it the avg result of 10 runs? Do you have any idea what happens?
+It seems that I should have been against it. I suggest things are
+rolled back like they were: all BCJ filters enabled by default and
+CONFIG_EXPERT makes them deselectable. This time I have a somewhat
+strong opinion that this is the best way to go, even if it means that
+the embedded people must remember to deselect the unnneeded filters.
 
-It is avg of 10 runs but I guess this just means 10 runs are not enough 
-to get results precise enough. One difference is that atomic version 
-does not clear/set bits that don't need it, but the profiles show the 
-whole operation is pretty negligible. And if at least one bit is changed 
-(I guess it is, unless migratetypes are somewhere set to the same value 
-as they already are), cache line becomes dirty anyway. And again, 
-profiles suggest that very little cache is dirtied here.
+An alternative could be that with CONFIG_EXPERT only the BCJ filter for
+the current arch would be selected by default. Without CONFIG_EXPERT
+all filters would be forced on. I guess this could be confusing since
+the level of XZ support they get by default when they enable Squashfs'
+XZ support would depend on CONFIG_EXPERT. So I think my first suggestion
+is better.
 
-Vlastimil
+> So save ourselves the trouble and build them all into xz_dec_bcj.o to
+> begin with. (I could conceivably see a case where CONFIG_EXPERT made
+> these selectable, but again, even on embedded platforms, the .text
+> increase we're talking about is noise...)
+> 
+> text	data	bss	dec	hex	filename
+> 1239	0	0	1239	4d7	xz_dec_bcj.o
+> 2263	0	0	2263	8d7	xz_dec_bcj.o.2
 
-> Thanks.
->
+No, let's not unconditionally build them all:
 
+  - 1 KiB might be noise, but since on embedded systems that 1 KiB
+    really is completely useless code and it's very easy to omit it,
+    the option to omit such code should be kept.
+
+  - If the kernel image is compressed with XZ, a separate copy of
+    the decompressor is built for the pre-boot environment.
+    Conditional compilation of the BCJ filters is also used for
+    pre-boot environments which your patch doesn't touch. The
+    1 KiB increase would affect the copy in the pre-boot code too.
+
+  - This XZ decompressor was written with the Linux kernel in mind,
+    but it's used elsewhere too. It would be nice to minimize the
+    differences between the code in Linux and the out-of-kernel tree.
+    Outside Linux I will keep the BCJ filters optional anyway.
+
+Below are two alternative patches matching my two suggestions. I prefer
+the first patch and I will submit it in a day or two unless people
+have better ideas.
+
+diff -Nru linux-3.14-rc5.orig/lib/xz/Kconfig linux-3.14-rc5/lib/xz/Kconfig
+--- linux-3.14-rc5.orig/lib/xz/Kconfig	2014-03-03 04:56:16.000000000 +0200
++++ linux-3.14-rc5/lib/xz/Kconfig	2014-03-03 13:26:58.402872951 +0200
+@@ -9,33 +9,33 @@
+ if XZ_DEC
+ 
+ config XZ_DEC_X86
+-	bool "x86 BCJ filter decoder"
+-	default y if X86
++	bool "x86 BCJ filter decoder" if EXPERT
++	default y
+ 	select XZ_DEC_BCJ
+ 
+ config XZ_DEC_POWERPC
+-	bool "PowerPC BCJ filter decoder"
+-	default y if PPC
++	bool "PowerPC BCJ filter decoder" if EXPERT
++	default y
+ 	select XZ_DEC_BCJ
+ 
+ config XZ_DEC_IA64
+-	bool "IA-64 BCJ filter decoder"
+-	default y if IA64
++	bool "IA-64 BCJ filter decoder" if EXPERT
++	default y
+ 	select XZ_DEC_BCJ
+ 
+ config XZ_DEC_ARM
+-	bool "ARM BCJ filter decoder"
+-	default y if ARM
++	bool "ARM BCJ filter decoder" if EXPERT
++	default y
+ 	select XZ_DEC_BCJ
+ 
+ config XZ_DEC_ARMTHUMB
+-	bool "ARM-Thumb BCJ filter decoder"
+-	default y if (ARM && ARM_THUMB)
++	bool "ARM-Thumb BCJ filter decoder" if EXPERT
++	default y
+ 	select XZ_DEC_BCJ
+ 
+ config XZ_DEC_SPARC
+-	bool "SPARC BCJ filter decoder"
+-	default y if SPARC
++	bool "SPARC BCJ filter decoder" if EXPERT
++	default y
+ 	select XZ_DEC_BCJ
+ 
+ endif
+
+The second version enables the BCJ filter only for the current arch by
+default if CONFIG_EXPERT; without CONFIG_EXPERT all filters are forced
+on:
+
+diff -Nru linux-3.14-rc5.orig/lib/xz/Kconfig linux-3.14-rc5/lib/xz/Kconfig
+--- linux-3.14-rc5.orig/lib/xz/Kconfig	2014-03-03 04:56:16.000000000 +0200
++++ linux-3.14-rc5/lib/xz/Kconfig	2014-03-03 14:15:42.196209325 +0200
+@@ -9,33 +9,33 @@
+ if XZ_DEC
+ 
+ config XZ_DEC_X86
+-	bool "x86 BCJ filter decoder"
+-	default y if X86
++	bool "x86 BCJ filter decoder" if EXPERT
++	default y if !EXPERT || X86
+ 	select XZ_DEC_BCJ
+ 
+ config XZ_DEC_POWERPC
+-	bool "PowerPC BCJ filter decoder"
+-	default y if PPC
++	bool "PowerPC BCJ filter decoder" if EXPERT
++	default y if !EXPERT || PPC
+ 	select XZ_DEC_BCJ
+ 
+ config XZ_DEC_IA64
+-	bool "IA-64 BCJ filter decoder"
+-	default y if IA64
++	bool "IA-64 BCJ filter decoder" if EXPERT
++	default y if !EXPERT || IA64
+ 	select XZ_DEC_BCJ
+ 
+ config XZ_DEC_ARM
+-	bool "ARM BCJ filter decoder"
+-	default y if ARM
++	bool "ARM BCJ filter decoder" if EXPERT
++	default y if !EXPERT || ARM
+ 	select XZ_DEC_BCJ
+ 
+ config XZ_DEC_ARMTHUMB
+-	bool "ARM-Thumb BCJ filter decoder"
+-	default y if (ARM && ARM_THUMB)
++	bool "ARM-Thumb BCJ filter decoder" if EXPERT
++	default y if !EXPERT || (ARM && ARM_THUMB)
+ 	select XZ_DEC_BCJ
+ 
+ config XZ_DEC_SPARC
+-	bool "SPARC BCJ filter decoder"
+-	default y if SPARC
++	bool "SPARC BCJ filter decoder" if EXPERT
++	default y if !EXPERT || SPARC
+ 	select XZ_DEC_BCJ
+ 
+ endif
+
+-- 
+Lasse Collin  |  IRC: Larhzu @ IRCnet & Freenode
