@@ -1,101 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754270AbaCCK3R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 05:29:17 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:36771 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753575AbaCCK3P (ORCPT
+	id S1754081AbaCCKew (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 05:34:52 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:53064 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752318AbaCCKeu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 05:29:15 -0500
+	Mon, 3 Mar 2014 05:34:50 -0500
+Date: Mon, 3 Mar 2014 02:34:19 -0800
+From: tip-bot for Heiko Carstens <tipbot@zytor.com>
+Message-ID: <tip-03b8c7b623c80af264c4c8d6111e5c6289933666@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        geert@linux-m68k.org, fthain@telegraphics.com.au,
+        heiko.carstens@de.ibm.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        geert@linux-m68k.org, heiko.carstens@de.ibm.com,
+        fthain@telegraphics.com.au, tglx@linutronix.de
+In-Reply-To: <20140302120947.GA3641@osiris>
+References: <20140302120947.GA3641@osiris>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/locking] futex:
+  Allow architectures to skip futex_atomic_cmpxchg_inatomic() test
+Git-Commit-ID: 03b8c7b623c80af264c4c8d6111e5c6289933666
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <53145591.4070004@ti.com>
-References: <1390486503-1504-1-git-send-email-dh.herrmann@gmail.com>
-	<53145591.4070004@ti.com>
-Date: Mon, 3 Mar 2014 11:29:14 +0100
-Message-ID: <CANq1E4QJqB0CSNeSh2jsp90ZtcLwFwfSG=qjodSLdV_aGbL3BQ@mail.gmail.com>
-Subject: Re: [PATCH 00/11] SimpleDRM & Sysfb
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        Dave Airlie <airlied@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Tom Gundersen <teg@jklm.no>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Commit-ID:  03b8c7b623c80af264c4c8d6111e5c6289933666
+Gitweb:     http://git.kernel.org/tip/03b8c7b623c80af264c4c8d6111e5c6289933666
+Author:     Heiko Carstens <heiko.carstens@de.ibm.com>
+AuthorDate: Sun, 2 Mar 2014 13:09:47 +0100
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Mon, 3 Mar 2014 11:32:08 +0100
 
-On Mon, Mar 3, 2014 at 11:12 AM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
-> Hi,
->
-> On 23/01/14 16:14, David Herrmann wrote:
->> Hi
->>
->> Another round of SimpleDRM patches. I somehow lost track of the last ones and as
->> this is a major rewrite, I'll just start at v1 again.
->>
->> Some comments up-front:
->>
->>  - @Ingo: Patch #1 and #2 are unchanged from the previous ML discussions. I
->>    included them in this series as the other patches depend on them. Could you
->>    pick them up for the x86 tree? The other 9 patches won't make it in 3.14 so
->>    no reason to put them through the DRM tree.
->>    All mentioned issues should be addressed. If there's still sth missing,
->>    please let me know.
->>
->>  - The DRM patches depend on my "DRM Anonymous Inode" patches. But it should be
->>    trivial to apply them on drm-next (I think only one line needs to be changed:
->>    i_mapping => dev_mapping).
->>
->>  - I tested the SimpleDRM fbdev fallback with linux-console+Xorg and it works
->>    fine. The DRM backend is only tested with some DRM tests I have locally. I
->>    have no idea how to make Xorg pick up a specific /dev/dri/card0 card. It
->>    always tells me "no screens found" (as the underlying device is not marked as
->>    boot_vga..). If someone knows how to tell Xorg to use card0, I'd gladly test
->>    this. But I'm no longer used to writing xorg.confs..
->>
->>
->> This series introduces two new concepts: sysfb and SimpleDRM
->> Sysfb is just a generalization of the x86-sysfb concept. It allows to register
->> firmware-framebuffers with the system as platform-devices. This way, drivers can
->> properly bind to these devices and we prevent multiple drivers from accessing
->> the same firmware-framebuffer.
->> Sysfb also provides hooks to get a safe handover to real hw-drivers (like i915).
->> Please see the "video: sysfb: add generic firmware-fb interface" patch for a
->> thorough description of the API. This patch also adds a rather verbose
->> documentation of all known firmware-fb facilities.
->>
->> As second part, this series introduces SimpleDRM. It's a very basic DRM driver
->> that can replace efifb, vesafb, simplefb and friends. It's 100% compatible to
->> the "udl" DRM driver, so user-space like xf86-video-modesetting can pick them up
->> just fine. User-space that cannot deal with drmModeDirtyFB() (like weston and
->> friends) currently cannot use SimpleDRM. However, that's also true for all other
->> DRM drivers which provide shadow framebuffers. We could provide something like
->> FB-DEFIO, but that's just useless overhead to paper of lazy user-space.
->>
->> I have tested this with all hardware that I have at home, with a lot hand-over
->> combinations (with/without SYSFB, with efifb/vesafb/simplefb, with SimpleDRM,
->> ...) and all worked great so far.
->
-> What's the status with this one? Headed for 3.15?
->
-> Are the SimpleDRM and sysfb linked somehow? (I.e. do they need to be in
-> the same series?)
->
-> And jfyi, the drivers/video/ changes will conflict with the
-> drivers/video/ directory reorganization series, which may be merged for
-> 3.15.
+futex: Allow architectures to skip futex_atomic_cmpxchg_inatomic() test
 
-If simpledrm is included, then the series needs to be applied as a
-whole. As Dave considered merging this for 3.15, I'd appreciate it if
-you could ACK the fbdev related patches (they're really small!):
-  fbdev: efifb: add dev->remove() callback
-  fbdev: vesafb: add dev->remove() callback
+If an architecture has futex_atomic_cmpxchg_inatomic() implemented and there
+is no runtime check necessary, allow to skip the test within futex_init().
 
-Thanks
-David
+This allows to get rid of some code which would always give the same result,
+and also allows the compiler to optimize a couple of if statements away.
+
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Finn Thain <fthain@telegraphics.com.au>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Link: http://lkml.kernel.org/r/20140302120947.GA3641@osiris
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/s390/Kconfig     |  1 +
+ include/linux/futex.h |  4 ++++
+ init/Kconfig          |  7 +++++++
+ kernel/futex.c        | 37 ++++++++++++++++++++++++-------------
+ 4 files changed, 36 insertions(+), 13 deletions(-)
+
+diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
+index 65a0775..bb74b21 100644
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@ -117,6 +117,7 @@ config S390
+ 	select HAVE_FUNCTION_GRAPH_TRACER
+ 	select HAVE_FUNCTION_TRACER
+ 	select HAVE_FUNCTION_TRACE_MCOUNT_TEST
++	select HAVE_FUTEX_CMPXCHG if FUTEX
+ 	select HAVE_KERNEL_BZIP2
+ 	select HAVE_KERNEL_GZIP
+ 	select HAVE_KERNEL_LZ4
+diff --git a/include/linux/futex.h b/include/linux/futex.h
+index b0d95ca..6435f46 100644
+--- a/include/linux/futex.h
++++ b/include/linux/futex.h
+@@ -55,7 +55,11 @@ union futex_key {
+ #ifdef CONFIG_FUTEX
+ extern void exit_robust_list(struct task_struct *curr);
+ extern void exit_pi_state_list(struct task_struct *curr);
++#ifdef CONFIG_HAVE_FUTEX_CMPXCHG
++#define futex_cmpxchg_enabled 1
++#else
+ extern int futex_cmpxchg_enabled;
++#endif
+ #else
+ static inline void exit_robust_list(struct task_struct *curr)
+ {
+diff --git a/init/Kconfig b/init/Kconfig
+index 009a797..d56cb03 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1387,6 +1387,13 @@ config FUTEX
+ 	  support for "fast userspace mutexes".  The resulting kernel may not
+ 	  run glibc-based applications correctly.
+ 
++config HAVE_FUTEX_CMPXCHG
++	bool
++	help
++	  Architectures should select this if futex_atomic_cmpxchg_inatomic()
++	  is implemented and always working. This removes a couple of runtime
++	  checks.
++
+ config EPOLL
+ 	bool "Enable eventpoll support" if EXPERT
+ 	default y
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 44a1261..5d17e3a 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -157,7 +157,9 @@
+  * enqueue.
+  */
+ 
++#ifndef CONFIG_HAVE_FUTEX_CMPXCHG
+ int __read_mostly futex_cmpxchg_enabled;
++#endif
+ 
+ /*
+  * Futex flags used to encode options to functions and preserve them across
+@@ -2843,9 +2845,28 @@ SYSCALL_DEFINE6(futex, u32 __user *, uaddr, int, op, u32, val,
+ 	return do_futex(uaddr, op, val, tp, uaddr2, val2, val3);
+ }
+ 
+-static int __init futex_init(void)
++static void __init futex_detect_cmpxchg(void)
+ {
++#ifndef CONFIG_HAVE_FUTEX_CMPXCHG
+ 	u32 curval;
++
++	/*
++	 * This will fail and we want it. Some arch implementations do
++	 * runtime detection of the futex_atomic_cmpxchg_inatomic()
++	 * functionality. We want to know that before we call in any
++	 * of the complex code paths. Also we want to prevent
++	 * registration of robust lists in that case. NULL is
++	 * guaranteed to fault and we get -EFAULT on functional
++	 * implementation, the non-functional ones will return
++	 * -ENOSYS.
++	 */
++	if (cmpxchg_futex_value_locked(&curval, NULL, 0, 0) == -EFAULT)
++		futex_cmpxchg_enabled = 1;
++#endif
++}
++
++static int __init futex_init(void)
++{
+ 	unsigned int futex_shift;
+ 	unsigned long i;
+ 
+@@ -2861,18 +2882,8 @@ static int __init futex_init(void)
+ 					       &futex_shift, NULL,
+ 					       futex_hashsize, futex_hashsize);
+ 	futex_hashsize = 1UL << futex_shift;
+-	/*
+-	 * This will fail and we want it. Some arch implementations do
+-	 * runtime detection of the futex_atomic_cmpxchg_inatomic()
+-	 * functionality. We want to know that before we call in any
+-	 * of the complex code paths. Also we want to prevent
+-	 * registration of robust lists in that case. NULL is
+-	 * guaranteed to fault and we get -EFAULT on functional
+-	 * implementation, the non-functional ones will return
+-	 * -ENOSYS.
+-	 */
+-	if (cmpxchg_futex_value_locked(&curval, NULL, 0, 0) == -EFAULT)
+-		futex_cmpxchg_enabled = 1;
++
++	futex_detect_cmpxchg();
+ 
+ 	for (i = 0; i < futex_hashsize; i++) {
+ 		plist_head_init(&futex_queues[i].chain);
