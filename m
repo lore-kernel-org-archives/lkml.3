@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755503AbaCCTQY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 14:16:24 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:55925 "EHLO
+	id S1755345AbaCCTQW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 14:16:22 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:55926 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754590AbaCCS4U (ORCPT
+	with ESMTP id S1754597AbaCCS4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 Mar 2014 13:56:20 -0500
 From: Kamal Mostafa <kamal@canonical.com>
@@ -13,9 +13,9 @@ To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
 Cc: Harald Freudenberger <freude@linux.vnet.ibm.com>,
         Herbert Xu <herbert@gondor.apana.org.au>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 05/67] crypto: s390 - fix des and des3_ede cbc concurrency issue
-Date: Mon,  3 Mar 2014 10:54:53 -0800
-Message-Id: <1393872955-28810-6-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 06/67] crypto: s390 - fix des and des3_ede ctr concurrency issue
+Date: Mon,  3 Mar 2014 10:54:54 -0800
+Message-Id: <1393872955-28810-7-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1393872955-28810-1-git-send-email-kamal@canonical.com>
 References: <1393872955-28810-1-git-send-email-kamal@canonical.com>
@@ -30,115 +30,137 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Harald Freudenberger <freude@linux.vnet.ibm.com>
 
-commit adc3fcf1552b6e406d172fd9690bbd1395053d13 upstream.
+commit ee97dc7db4cbda33e4241c2d85b42d1835bc8a35 upstream.
 
-In s390 des and des3_ede cbc mode the iv value is not protected
-against concurrency access and modifications from another running
-en/decrypt operation which is using the very same tfm struct
-instance. This fix copies the iv to the local stack before
-the crypto operation and stores the value back when done.
+In s390 des and 3des ctr mode there is one preallocated page
+used to speed up the en/decryption. This page is not protected
+against concurrent usage and thus there is a potential of data
+corruption with multiple threads.
+
+The fix introduces locking/unlocking the ctr page and a slower
+fallback solution at concurrency situations.
 
 Signed-off-by: Harald Freudenberger <freude@linux.vnet.ibm.com>
 Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/s390/crypto/des_s390.c | 26 ++++++++++++++------------
- 1 file changed, 14 insertions(+), 12 deletions(-)
+ arch/s390/crypto/des_s390.c | 69 +++++++++++++++++++++++++++++++--------------
+ 1 file changed, 48 insertions(+), 21 deletions(-)
 
 diff --git a/arch/s390/crypto/des_s390.c b/arch/s390/crypto/des_s390.c
-index bcca01c..4b28089 100644
+index 4b28089..2d96e68 100644
 --- a/arch/s390/crypto/des_s390.c
 +++ b/arch/s390/crypto/des_s390.c
-@@ -105,29 +105,35 @@ static int ecb_desall_crypt(struct blkcipher_desc *desc, long func,
- }
+@@ -25,6 +25,7 @@
+ #define DES3_KEY_SIZE	(3 * DES_KEY_SIZE)
  
- static int cbc_desall_crypt(struct blkcipher_desc *desc, long func,
--			    u8 *iv, struct blkcipher_walk *walk)
+ static u8 *ctrblk;
++static DEFINE_SPINLOCK(ctrblk_lock);
+ 
+ struct s390_des_ctx {
+ 	u8 iv[DES_BLOCK_SIZE];
+@@ -368,54 +369,80 @@ static struct crypto_alg cbc_des3_alg = {
+ 	}
+ };
+ 
++static unsigned int __ctrblk_init(u8 *ctrptr, unsigned int nbytes)
++{
++	unsigned int i, n;
++
++	/* align to block size, max. PAGE_SIZE */
++	n = (nbytes > PAGE_SIZE) ? PAGE_SIZE : nbytes & ~(DES_BLOCK_SIZE - 1);
++	for (i = DES_BLOCK_SIZE; i < n; i += DES_BLOCK_SIZE) {
++		memcpy(ctrptr + i, ctrptr + i - DES_BLOCK_SIZE, DES_BLOCK_SIZE);
++		crypto_inc(ctrptr + i, DES_BLOCK_SIZE);
++	}
++	return n;
++}
++
+ static int ctr_desall_crypt(struct blkcipher_desc *desc, long func,
+-			    struct s390_des_ctx *ctx, struct blkcipher_walk *walk)
++			    struct s390_des_ctx *ctx,
 +			    struct blkcipher_walk *walk)
  {
-+	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
- 	int ret = blkcipher_walk_virt(desc, walk);
- 	unsigned int nbytes = walk->nbytes;
-+	struct {
-+		u8 iv[DES_BLOCK_SIZE];
-+		u8 key[DES3_KEY_SIZE];
-+	} param;
+ 	int ret = blkcipher_walk_virt_block(desc, walk, DES_BLOCK_SIZE);
+-	unsigned int i, n, nbytes;
+-	u8 buf[DES_BLOCK_SIZE];
+-	u8 *out, *in;
++	unsigned int n, nbytes;
++	u8 buf[DES_BLOCK_SIZE], ctrbuf[DES_BLOCK_SIZE];
++	u8 *out, *in, *ctrptr = ctrbuf;
++
++	if (!walk->nbytes)
++		return ret;
  
- 	if (!nbytes)
- 		goto out;
- 
--	memcpy(iv, walk->iv, DES_BLOCK_SIZE);
-+	memcpy(param.iv, walk->iv, DES_BLOCK_SIZE);
-+	memcpy(param.key, ctx->key, DES3_KEY_SIZE);
- 	do {
- 		/* only use complete blocks */
- 		unsigned int n = nbytes & ~(DES_BLOCK_SIZE - 1);
- 		u8 *out = walk->dst.virt.addr;
- 		u8 *in = walk->src.virt.addr;
- 
--		ret = crypt_s390_kmc(func, iv, out, in, n);
-+		ret = crypt_s390_kmc(func, &param, out, in, n);
- 		if (ret < 0 || ret != n)
- 			return -EIO;
- 
- 		nbytes &= DES_BLOCK_SIZE - 1;
+-	memcpy(ctrblk, walk->iv, DES_BLOCK_SIZE);
++	if (spin_trylock(&ctrblk_lock))
++		ctrptr = ctrblk;
++
++	memcpy(ctrptr, walk->iv, DES_BLOCK_SIZE);
+ 	while ((nbytes = walk->nbytes) >= DES_BLOCK_SIZE) {
+ 		out = walk->dst.virt.addr;
+ 		in = walk->src.virt.addr;
+ 		while (nbytes >= DES_BLOCK_SIZE) {
+-			/* align to block size, max. PAGE_SIZE */
+-			n = (nbytes > PAGE_SIZE) ? PAGE_SIZE :
+-				nbytes & ~(DES_BLOCK_SIZE - 1);
+-			for (i = DES_BLOCK_SIZE; i < n; i += DES_BLOCK_SIZE) {
+-				memcpy(ctrblk + i, ctrblk + i - DES_BLOCK_SIZE,
+-				       DES_BLOCK_SIZE);
+-				crypto_inc(ctrblk + i, DES_BLOCK_SIZE);
+-			}
+-			ret = crypt_s390_kmctr(func, ctx->key, out, in, n, ctrblk);
+-			if (ret < 0 || ret != n)
++			if (ctrptr == ctrblk)
++				n = __ctrblk_init(ctrptr, nbytes);
++			else
++				n = DES_BLOCK_SIZE;
++			ret = crypt_s390_kmctr(func, ctx->key, out, in,
++					       n, ctrptr);
++			if (ret < 0 || ret != n) {
++				if (ctrptr == ctrblk)
++					spin_unlock(&ctrblk_lock);
+ 				return -EIO;
++			}
+ 			if (n > DES_BLOCK_SIZE)
+-				memcpy(ctrblk, ctrblk + n - DES_BLOCK_SIZE,
++				memcpy(ctrptr, ctrptr + n - DES_BLOCK_SIZE,
+ 				       DES_BLOCK_SIZE);
+-			crypto_inc(ctrblk, DES_BLOCK_SIZE);
++			crypto_inc(ctrptr, DES_BLOCK_SIZE);
+ 			out += n;
+ 			in += n;
+ 			nbytes -= n;
+ 		}
  		ret = blkcipher_walk_done(desc, walk, nbytes);
- 	} while ((nbytes = walk->nbytes));
--	memcpy(walk->iv, iv, DES_BLOCK_SIZE);
-+	memcpy(walk->iv, param.iv, DES_BLOCK_SIZE);
- 
- out:
+ 	}
+-
++	if (ctrptr == ctrblk) {
++		if (nbytes)
++			memcpy(ctrbuf, ctrptr, DES_BLOCK_SIZE);
++		else
++			memcpy(walk->iv, ctrptr, DES_BLOCK_SIZE);
++		spin_unlock(&ctrblk_lock);
++	}
+ 	/* final block may be < DES_BLOCK_SIZE, copy only nbytes */
+ 	if (nbytes) {
+ 		out = walk->dst.virt.addr;
+ 		in = walk->src.virt.addr;
+ 		ret = crypt_s390_kmctr(func, ctx->key, buf, in,
+-				       DES_BLOCK_SIZE, ctrblk);
++				       DES_BLOCK_SIZE, ctrbuf);
+ 		if (ret < 0 || ret != DES_BLOCK_SIZE)
+ 			return -EIO;
+ 		memcpy(out, buf, nbytes);
+-		crypto_inc(ctrblk, DES_BLOCK_SIZE);
++		crypto_inc(ctrbuf, DES_BLOCK_SIZE);
+ 		ret = blkcipher_walk_done(desc, walk, 0);
++		memcpy(walk->iv, ctrbuf, DES_BLOCK_SIZE);
+ 	}
+-	memcpy(walk->iv, ctrblk, DES_BLOCK_SIZE);
  	return ret;
-@@ -179,22 +185,20 @@ static int cbc_des_encrypt(struct blkcipher_desc *desc,
- 			   struct scatterlist *dst, struct scatterlist *src,
- 			   unsigned int nbytes)
- {
--	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
- 	struct blkcipher_walk walk;
- 
- 	blkcipher_walk_init(&walk, dst, src, nbytes);
--	return cbc_desall_crypt(desc, KMC_DEA_ENCRYPT, ctx->iv, &walk);
-+	return cbc_desall_crypt(desc, KMC_DEA_ENCRYPT, &walk);
  }
  
- static int cbc_des_decrypt(struct blkcipher_desc *desc,
- 			   struct scatterlist *dst, struct scatterlist *src,
- 			   unsigned int nbytes)
- {
--	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
- 	struct blkcipher_walk walk;
- 
- 	blkcipher_walk_init(&walk, dst, src, nbytes);
--	return cbc_desall_crypt(desc, KMC_DEA_DECRYPT, ctx->iv, &walk);
-+	return cbc_desall_crypt(desc, KMC_DEA_DECRYPT, &walk);
- }
- 
- static struct crypto_alg cbc_des_alg = {
-@@ -327,22 +331,20 @@ static int cbc_des3_encrypt(struct blkcipher_desc *desc,
- 			    struct scatterlist *dst, struct scatterlist *src,
- 			    unsigned int nbytes)
- {
--	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
- 	struct blkcipher_walk walk;
- 
- 	blkcipher_walk_init(&walk, dst, src, nbytes);
--	return cbc_desall_crypt(desc, KMC_TDEA_192_ENCRYPT, ctx->iv, &walk);
-+	return cbc_desall_crypt(desc, KMC_TDEA_192_ENCRYPT, &walk);
- }
- 
- static int cbc_des3_decrypt(struct blkcipher_desc *desc,
- 			    struct scatterlist *dst, struct scatterlist *src,
- 			    unsigned int nbytes)
- {
--	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
- 	struct blkcipher_walk walk;
- 
- 	blkcipher_walk_init(&walk, dst, src, nbytes);
--	return cbc_desall_crypt(desc, KMC_TDEA_192_DECRYPT, ctx->iv, &walk);
-+	return cbc_desall_crypt(desc, KMC_TDEA_192_DECRYPT, &walk);
- }
- 
- static struct crypto_alg cbc_des3_alg = {
 -- 
 1.8.3.2
 
