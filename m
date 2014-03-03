@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755213AbaCCV4d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 16:56:33 -0500
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:40109 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754568AbaCCV4c (ORCPT
+	id S1755108AbaCCWBK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 17:01:10 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:36148 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754255AbaCCWBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 16:56:32 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140303214536.GK18016@ZenIV.linux.org.uk>
-References: <53022DB1.4070805@gmail.com>
-	<CA+55aFxjAp23=ySEe8e8bTPbVw8Uh8d03zirg4TdHXGYiyjmwA@mail.gmail.com>
-	<CA+55aFy4GvpFcboBiKdreU_Zh1RzynPoLxhvC9hijn60hkEZ3g@mail.gmail.com>
-	<20140303214536.GK18016@ZenIV.linux.org.uk>
-Date: Mon, 3 Mar 2014 13:56:31 -0800
-X-Google-Sender-Auth: fSDggB6GSoCgxtTiaDrDUfBWl9Y
-Message-ID: <CA+55aFwGzNdCfENDr0A7EqwkqQ7W8Oc5UzBrZ5Wr_V9LRVcwew@mail.gmail.com>
+	Mon, 3 Mar 2014 17:01:08 -0500
+Date: Mon, 3 Mar 2014 22:01:06 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: George Spelvin <linux@horizon.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Subject: Re: Update of file offset on write() etc. is non-atomic with I/O
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <miklos@szeredi.hu>, "Theodore T'so" <tytso@mit.edu>,
-        Christoph Hellwig <hch@lst.de>, Chris Mason <clm@fb.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        "J. Bruce Fields" <bfields@citi.umich.edu>,
-        Yongzhi Pan <panyongzhi@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Message-ID: <20140303220106.GL18016@ZenIV.linux.org.uk>
+References: <20140303210359.26624.qmail@science.horizon.com>
+ <20140303212642.GJ18016@ZenIV.linux.org.uk>
+ <CA+55aFwdEbMMTPyCEKop0Fukhxi90OCdvDieX7iB-dX9Ziovdg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwdEbMMTPyCEKop0Fukhxi90OCdvDieX7iB-dX9Ziovdg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 3, 2014 at 1:45 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->
-> Um...  That's odd - we *could* get there with f.need_put and
-> file_count(file) equal to 1, but why would we want to take
-> f_pos_lock in that case?
+On Mon, Mar 03, 2014 at 01:52:13PM -0800, Linus Torvalds wrote:
+> On Mon, Mar 3, 2014 at 1:26 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> > On Mon, Mar 03, 2014 at 04:03:59PM -0500, George Spelvin wrote:
+> >>
+> >> (If you want to use bits, why not use the two lsbits of the file pointer
+> >> for the purpose?  That would save a lot of space.)
+> >
+> > Most of the cases have it kept separately in registers, actually - there's
+> > a reason why fdget() and friends are inlined.
+> 
+> Yes. And bit test and set ops on registers are actually cheaper than
+> playing around with bytes.
+> 
+> That said, the "fget_light()" interface sucks - exactly because it
+> doesn't do the "return structure in two registers" thing. We should
+> get rid of it - there's just one remaining user in networking code,
+> and it should be rewritten in terms of fdget().
+> 
+> That's a separate issue, though.
 
-Because that means that the file table is shared among threads. So
-another thread can access the struct file pointer and do a concurrent
-read() or write() on it, and so we need to lock f_pos.
+The thing is, the callers in there do *not* keep struct file * at all -
+they keep struct socket * and use sock->file to get struct file * back
+when they need it.
 
-Basically, there are two cases:
-
- - duplicated file pointers due to fork(). That's the "file_count()" test.
-
-   Yes, this will trigger even if they didn't fork, just dup'ed the
-file descriptor. We have no way of telling the difference, though.
-
- - concurrent access due to duplicated "struct file_table" pointers.
-This is the "need_put" test, since __fget_light() will have tested the
-proper files->count already.
-
-Both need f_pos_lock.
-
-               Linus
+So struct fd is the wrong thing to use there - it only adds to register
+pressure.  A similar pair of struct socket * and "need to fput that"
+flag would probably be needed, with sockfd_lookup_light() returning
+that.
