@@ -1,44 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755266AbaCCWBf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 17:01:35 -0500
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:38053 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755165AbaCCWBd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 17:01:33 -0500
+	id S1755276AbaCCWIX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 17:08:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55472 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755009AbaCCWIS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 17:08:18 -0500
+Date: Mon, 3 Mar 2014 23:08:16 +0100
+From: Jan Kara <jack@suse.cz>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel@vger.kernel.org, rdunlap <rdunlap@infradead.org>
+Subject: Re: [RFC 1/1] fs: Quota: Refresh Kconfig
+Message-ID: <20140303220816.GB15265@quack.suse.cz>
+References: <20140221181531.cc488ebae498cd20124a4c32@skynet.be>
 MIME-Version: 1.0
-In-Reply-To: <20140303214536.GK18016@ZenIV.linux.org.uk>
-References: <53022DB1.4070805@gmail.com>
-	<CA+55aFxjAp23=ySEe8e8bTPbVw8Uh8d03zirg4TdHXGYiyjmwA@mail.gmail.com>
-	<CA+55aFy4GvpFcboBiKdreU_Zh1RzynPoLxhvC9hijn60hkEZ3g@mail.gmail.com>
-	<20140303214536.GK18016@ZenIV.linux.org.uk>
-Date: Mon, 3 Mar 2014 14:01:33 -0800
-X-Google-Sender-Auth: g9phA11zeJIL-PuZ3bn2jc9nL4M
-Message-ID: <CA+55aFwZ_tcK+G2SZynDzv6w=y3UNobVE5SOH9+Y6x2QQCW7tA@mail.gmail.com>
-Subject: Re: Update of file offset on write() etc. is non-atomic with I/O
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <miklos@szeredi.hu>, "Theodore T'so" <tytso@mit.edu>,
-        Christoph Hellwig <hch@lst.de>, Chris Mason <clm@fb.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        "J. Bruce Fields" <bfields@citi.umich.edu>,
-        Yongzhi Pan <panyongzhi@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140221181531.cc488ebae498cd20124a4c32@skynet.be>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 3, 2014 at 1:45 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->
-> And it looks like you've missed compat counterparts.
+On Fri 21-02-14 18:15:31, Fabian Frederick wrote:
+> Update Kconfig with a complete list of supported filesystems.
+> 
+> (Other local filesystems concerned by quota and/or journaled quotas ?)
+  reiserfs also supports journaled quotas. Otherwise the update looks OK.
 
-Grr. Yes, I missed them for compat_readv/writev - even though I
-grepped for various users, but I grepped for all the *other* cases (ie
-vfs_{read|write|llseek}). That means that the locker helper can't be
-static to fs/read_write.c. Oh well.
+								Honza
 
-                  Linus
+> ---
+>  fs/quota/Kconfig | 7 ++++---
+>  1 file changed, 4 insertions(+), 3 deletions(-)
+> 
+> diff --git a/fs/quota/Kconfig b/fs/quota/Kconfig
+> index 880fd98..7339003 100644
+> --- a/fs/quota/Kconfig
+> +++ b/fs/quota/Kconfig
+> @@ -8,9 +8,10 @@ config QUOTA
+>  	help
+>  	  If you say Y here, you will be able to set per user limits for disk
+>  	  usage (also called disk quotas). Currently, it works for the
+> -	  ext2, ext3, and reiserfs file system. ext3 also supports journalled
+> -	  quotas for which you don't need to run quotacheck(8) after an unclean
+> -	  shutdown.
+> +	  ext2, ext3, ext4, jfs, ocfs2 and reiserfs file systems.
+> +	  Note that gfs2 and xfs use their own quota system.
+> +	  Both ext3 and ext4 also support journaled quotas for which you don't
+> +	  need to run quotacheck(8) after an unclean shutdown.
+>  	  For further details, read the Quota mini-HOWTO, available from
+>  	  <http://www.tldp.org/docs.html#howto>, or the documentation provided
+>  	  with the quota tools. Probably the quota support is only useful for
+> -- 
+> 1.8.1.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
