@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754742AbaCCTiw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 14:38:52 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:40999 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753590AbaCCTiv (ORCPT
+	id S1754800AbaCCTjD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 14:39:03 -0500
+Received: from vserver.eikelenboom.it ([84.200.39.61]:56790 "EHLO
+	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754183AbaCCTi7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 14:38:51 -0500
-Message-ID: <5314DA49.9060001@codeaurora.org>
-Date: Mon, 03 Mar 2014 11:38:49 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Mon, 3 Mar 2014 14:38:59 -0500
+Date: Mon, 3 Mar 2014 20:38:53 +0100
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <1335661753.20140303203853@eikelenboom.it>
+To: Marcel Holtmann <marcel@holtmann.org>
+CC: Peter Hurley <peter@hurleysoftware.com>,
+        "Gustavo F. Padovan" <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        Gianluca Anzolin <gianluca@sottospazio.it>,
+        Alexander Holler <holler@ahsoftware.de>,
+        Andrey Vihrov <andrey.vihrov@gmail.com>,
+        "bluez mailin list (linux-bluetooth@vger.kernel.org)" 
+	<linux-bluetooth@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/24] rfcomm fixes
+In-Reply-To: <1259174563.20140212120644@eikelenboom.it>
+References: <1391997564-1805-1-git-send-email-peter@hurleysoftware.com> <3E0F3723-029F-4B12-8D77-9790FDBD3227@holtmann.org> <1259174563.20140212120644@eikelenboom.it>
 MIME-Version: 1.0
-To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
-CC: Gerhard Sittig <gsi@denx.de>, Mike Turquette <mturquette@linaro.org>,
-        Michal Simek <michal.simek@xilinx.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC 0/3] clk: CCF clock primitives + custom IO accessors
-References: <1393630495-29689-1-git-send-email-soren.brinkmann@xilinx.com> <20140302202940.GQ3327@book.gsilab.sittig.org> <19206d89-cd0d-4fea-9170-3fd0a8482bf5@VA3EHSMHS045.ehs.local> <20140303190736.GU3327@book.gsilab.sittig.org> <87e0d582-77a2-4645-a52a-c303b7cd8b84@VA3EHSMHS007.ehs.local>
-In-Reply-To: <87e0d582-77a2-4645-a52a-c303b7cd8b84@VA3EHSMHS007.ehs.local>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/03/14 11:13, Sören Brinkmann wrote:
-> On Mon, 2014-03-03 at 08:07PM +0100, Gerhard Sittig wrote:
->> On Mon, Mar 03, 2014 at 09:35 -0800, Sören Brinkmann wrote:
->>> It would be nice if we could use the logic provided in the mux, div etc
->>> primitives independently of how the HW is accessed and what is
->>> necessary to shift and mask those register values around, right? I
->>> mean, at then end we want to model a clk-(div|mux) and not a
->>> clk-(div|mux) which has only a single, memory-mapped control register,
->>> that does not overlap with other things, ...
->> Did you lookup the ll_ops discussion in the thread that
->> originated from
->> http://article.gmane.org/gmane.linux.ports.arm.kernel/289895 and
->> did you see the outlined logic in
->> http://article.gmane.org/gmane.linux.ports.arm.omap/109233 and
->> http://article.gmane.org/gmane.linux.ports.arm.omap/109381 ?
->>
->> Support for regmap access instead of mere MMIO was one of the
->> things you could do with this approach.  You appear to be in the
->> situation where you need such an extension (or something similar,
->> but you really should look into the ll_ops thing).
-> Thanks for those pointer, I have some reading to do. That seems to
-> go into the right direction.  What is the status of those patches?
-> Are they already merged or actively worked on?
->
 
-Ugh. The ll_ops design is a simplified form of regmap. Why not just use
-regmap? It seems like it would be possible to make a regmap per
-clk_register_{basic_type}() call via regmap_init_mmio() while still
-allowing those functions to take a void __iomem pointer. Then we could
-remove clk_readl/clk_writel (after providing *_be variants of the
-registration functions for PPC) and just use a regmap throughout the
-basic clock type code. Finally we can introduce *_regmap() registration
-functions that allow drivers to register basic clock types with regmaps.
+Wednesday, February 12, 2014, 12:06:44 PM, you wrote:
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+> Monday, February 10, 2014, 11:09:38 PM, you wrote:
+
+>> Hi Peter,
+
+>>> This patch series addresses a number of previously unknown issues
+>>> with the RFCOMM tty device implementation, in addition to
+>>> addressing the locking regression recently reported [1].
+>>> 
+>>> As Gianluca suggested and I agree, this series first reverts
+>>> 3 of the 4 patches of 3.14-rc1 for bluetooth/rfcomm/tty.c.
+
+>> so for 3.14 we should revert 3 patches. And then the other 21 are intended for 3.15 merge window.
+
+>> I realize that we still have to deal with some breakage, but we do not want regressions and I clearly not going to take 24 patches for 3.14 at this point in time.
+
+>> What I can do is take all 24 patches into bluetooth-next and let them sit for 1 week and have people test them. And then we go ahead with reverting 3 patches from 3.14. Does that make sense?
+
+> Reverting those 3 patches works for me.
+
+> --
+> Sander
+
+>> Regards
+
+>> Marcel
+
+Hi Marcel,
+
+Ping... it seems these 3 reverts are still not in 3.14-rc5 to fix the regressions ?
+
+--
+Sander
 
