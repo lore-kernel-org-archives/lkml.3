@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753800AbaCCBQw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 20:16:52 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:61734 "EHLO
+	id S1753776AbaCCBQu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 20:16:50 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:60797 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750963AbaCCBOW (ORCPT
+	with ESMTP id S1751661AbaCCBOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 20:14:22 -0500
-X-AuditID: 9c93017d-b7c89ae000006ae1-bd-5313d769f740
+	Sun, 2 Mar 2014 20:14:23 -0500
+X-AuditID: 9c93017d-b7c89ae000006ae1-c5-5313d7698311
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
@@ -15,9 +15,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Namhyung Kim <namhyung@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH 05/13] perf tools: Pass evsel to hpp->header/width functions explicitly
-Date: Mon,  3 Mar 2014 10:14:06 +0900
-Message-Id: <1393809254-4480-6-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 06/13] perf tools: Count periods of filtered entries separately
+Date: Mon,  3 Mar 2014 10:14:07 +0900
+Message-Id: <1393809254-4480-7-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1393809254-4480-1-git-send-email-namhyung@kernel.org>
 References: <1393809254-4480-1-git-send-email-namhyung@kernel.org>
@@ -26,181 +26,192 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Those functions need evsel to investigate event group and it's passed
-via hpp->ptr.  However as it can be missed easily so it's better to
-pass it via an argument IMHO.
+Currently if a sample was filtered by command line option, it just
+dropped.  But this affects final output in that the percentage can be
+different since the filtered entries were not included to the total.
 
-Cc: Jiri Olsa <jolsa@redhat.com>
+But user might want to see the original percentages when filter
+applied so add new total_filtered_period filed to hists->stats in
+order to be controlled by user later.  It doesn't change the current
+behavior yet.
+
+Acked-by: Jiri Olsa <jolsa@redhat.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-diff.c  |  7 ++++---
- tools/perf/ui/gtk/hists.c  |  3 +--
- tools/perf/ui/hist.c       | 37 ++++++++++++++++---------------------
- tools/perf/ui/stdio/hist.c |  5 ++---
- tools/perf/util/hist.h     |  6 ++++--
- 5 files changed, 27 insertions(+), 31 deletions(-)
+ tools/perf/builtin-report.c |  2 +-
+ tools/perf/util/event.c     | 22 ++++++++++------------
+ tools/perf/util/hist.c      | 10 ++--------
+ tools/perf/util/hist.h      | 10 ++++++++++
+ tools/perf/util/symbol.h    |  2 +-
+ 5 files changed, 24 insertions(+), 22 deletions(-)
 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index a77e31246c00..204fffe22532 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -952,8 +952,8 @@ static int hpp__entry_global(struct perf_hpp_fmt *_fmt, struct perf_hpp *hpp,
- 				 dfmt->header_width, buf);
- }
- 
--static int hpp__header(struct perf_hpp_fmt *fmt,
--		       struct perf_hpp *hpp)
-+static int hpp__header(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
-+		       struct perf_evsel *evsel __maybe_unused)
- {
- 	struct diff_hpp_fmt *dfmt =
- 		container_of(fmt, struct diff_hpp_fmt, fmt);
-@@ -963,7 +963,8 @@ static int hpp__header(struct perf_hpp_fmt *fmt,
- }
- 
- static int hpp__width(struct perf_hpp_fmt *fmt,
--		      struct perf_hpp *hpp __maybe_unused)
-+		      struct perf_hpp *hpp __maybe_unused,
-+		      struct perf_evsel *evsel __maybe_unused)
- {
- 	struct diff_hpp_fmt *dfmt =
- 		container_of(fmt, struct diff_hpp_fmt, fmt);
-diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-index 7912dab6e5fb..e395ef9b0ae0 100644
---- a/tools/perf/ui/gtk/hists.c
-+++ b/tools/perf/ui/gtk/hists.c
-@@ -165,7 +165,6 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
- 	struct perf_hpp hpp = {
- 		.buf		= s,
- 		.size		= sizeof(s),
--		.ptr		= hists_to_evsel(hists),
- 	};
- 
- 	nr_cols = 0;
-@@ -192,7 +191,7 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
- 	col_idx = 0;
- 
- 	perf_hpp__for_each_format(fmt) {
--		fmt->header(fmt, &hpp);
-+		fmt->header(fmt, &hpp, hists_to_evsel(hists));
- 
- 		gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(view),
- 							    -1, ltrim(s),
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index ac39313a3f0c..765e3918368f 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -116,31 +116,28 @@ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
- 	return ret;
- }
- 
--#define __HPP_HEADER_FN(_type, _str, _min_width, _unit_width) 		\
--static int hpp__header_##_type(struct perf_hpp_fmt *fmt __maybe_unused,	\
--			       struct perf_hpp *hpp)			\
--{									\
--	int len = _min_width;						\
--									\
--	if (symbol_conf.event_group) {					\
--		struct perf_evsel *evsel = hpp->ptr;			\
--									\
--		len = max(len, evsel->nr_members * _unit_width);	\
--	}								\
--	return scnprintf(hpp->buf, hpp->size, "%*s", len, _str);	\
-+#define __HPP_HEADER_FN(_type, _str, _min_width, _unit_width) 			\
-+static int hpp__header_##_type(struct perf_hpp_fmt *fmt __maybe_unused,		\
-+			       struct perf_hpp *hpp, struct perf_evsel *evsel)	\
-+{										\
-+	int len = _min_width;							\
-+										\
-+	if (symbol_conf.event_group)						\
-+		len = max(len, evsel->nr_members * _unit_width);		\
-+										\
-+	return scnprintf(hpp->buf, hpp->size, "%*s", len, _str);		\
- }
- 
- #define __HPP_WIDTH_FN(_type, _min_width, _unit_width) 			\
- static int hpp__width_##_type(struct perf_hpp_fmt *fmt __maybe_unused,	\
--			      struct perf_hpp *hpp __maybe_unused)	\
-+			      struct perf_hpp *hpp __maybe_unused,	\
-+			      struct perf_evsel *evsel)			\
- {									\
- 	int len = _min_width;						\
- 									\
--	if (symbol_conf.event_group) {					\
--		struct perf_evsel *evsel = hpp->ptr;			\
--									\
-+	if (symbol_conf.event_group)					\
- 		len = max(len, evsel->nr_members * _unit_width);	\
--	}								\
-+									\
- 	return len;							\
- }
- 
-@@ -329,15 +326,13 @@ unsigned int hists__sort_list_width(struct hists *hists)
- 	struct perf_hpp_fmt *fmt;
- 	struct sort_entry *se;
- 	int i = 0, ret = 0;
--	struct perf_hpp dummy_hpp = {
--		.ptr	= hists_to_evsel(hists),
--	};
-+	struct perf_hpp dummy_hpp;
- 
- 	perf_hpp__for_each_format(fmt) {
- 		if (i)
- 			ret += 2;
- 
--		ret += fmt->width(fmt, &dummy_hpp);
-+		ret += fmt->width(fmt, &dummy_hpp, hists_to_evsel(hists));
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index d882b6f96411..5f7f1a332186 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -223,7 +223,7 @@ static int process_sample_event(struct perf_tool *tool,
+ 		return -1;
  	}
  
- 	list_for_each_entry(se, &hist_entry__sort_list, list)
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index 9bad89228472..d59893edf031 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -379,7 +379,6 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
- 	struct perf_hpp dummy_hpp = {
- 		.buf	= bf,
- 		.size	= sizeof(bf),
--		.ptr	= hists_to_evsel(hists),
- 	};
- 	bool first = true;
- 	size_t linesz;
-@@ -398,7 +397,7 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
- 		else
- 			first = false;
+-	if (al.filtered || (rep->hide_unresolved && al.sym == NULL))
++	if (rep->hide_unresolved && al.sym == NULL)
+ 		return 0;
  
--		fmt->header(fmt, &dummy_hpp);
-+		fmt->header(fmt, &dummy_hpp, hists_to_evsel(hists));
- 		fprintf(fp, "%s", bf);
+ 	if (rep->cpu_list && !test_bit(sample->cpu, rep->cpu_bitmap))
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index b0f3ca850e9e..21aa8c6248ee 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -3,6 +3,7 @@
+ #include "debug.h"
+ #include "machine.h"
+ #include "sort.h"
++#include "hist.h"
+ #include "string.h"
+ #include "strlist.h"
+ #include "thread.h"
+@@ -661,7 +662,7 @@ void thread__find_addr_map(struct thread *thread,
+ 	al->thread = thread;
+ 	al->addr = addr;
+ 	al->cpumode = cpumode;
+-	al->filtered = false;
++	al->filtered = 0;
+ 
+ 	if (machine == NULL) {
+ 		al->map = NULL;
+@@ -687,11 +688,11 @@ void thread__find_addr_map(struct thread *thread,
+ 		if ((cpumode == PERF_RECORD_MISC_GUEST_USER ||
+ 			cpumode == PERF_RECORD_MISC_GUEST_KERNEL) &&
+ 			!perf_guest)
+-			al->filtered = true;
++			al->filtered |= (1 << HIST_FILTER__GUEST);
+ 		if ((cpumode == PERF_RECORD_MISC_USER ||
+ 			cpumode == PERF_RECORD_MISC_KERNEL) &&
+ 			!perf_host)
+-			al->filtered = true;
++			al->filtered |= (1 << HIST_FILTER__HOST);
+ 
+ 		return;
  	}
+@@ -748,9 +749,6 @@ int perf_event__preprocess_sample(const union perf_event *event,
+ 	if (thread == NULL)
+ 		return -1;
  
-@@ -443,7 +442,7 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
- 		else
- 			first = false;
+-	if (thread__is_filtered(thread))
+-		goto out_filtered;
+-
+ 	dump_printf(" ... thread: %s:%d\n", thread__comm_str(thread), thread->tid);
+ 	/*
+ 	 * Have we already created the kernel maps for this machine?
+@@ -765,6 +763,10 @@ int perf_event__preprocess_sample(const union perf_event *event,
  
--		width = fmt->width(fmt, &dummy_hpp);
-+		width = fmt->width(fmt, &dummy_hpp, hists_to_evsel(hists));
- 		for (i = 0; i < width; i++)
- 			fprintf(fp, ".");
+ 	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
+ 			      sample->ip, al);
++
++	if (thread__is_filtered(thread))
++		al->filtered |= (1 << HIST_FILTER__THREAD);
++
+ 	dump_printf(" ...... dso: %s\n",
+ 		    al->map ? al->map->dso->long_name :
+ 			al->level == 'H' ? "[hypervisor]" : "<not found>");
+@@ -780,7 +782,7 @@ int perf_event__preprocess_sample(const union perf_event *event,
+ 			       (dso->short_name != dso->long_name &&
+ 				strlist__has_entry(symbol_conf.dso_list,
+ 						   dso->long_name)))))
+-			goto out_filtered;
++			al->filtered |= (1 << HIST_FILTER__DSO);
+ 
+ 		al->sym = map__find_symbol(al->map, al->addr,
+ 					   machine->symbol_filter);
+@@ -789,11 +791,7 @@ int perf_event__preprocess_sample(const union perf_event *event,
+ 	if (symbol_conf.sym_list &&
+ 		(!al->sym || !strlist__has_entry(symbol_conf.sym_list,
+ 						al->sym->name)))
+-		goto out_filtered;
+-
+-	return 0;
++		al->filtered |= (1 << HIST_FILTER__SYMBOL);
+ 
+-out_filtered:
+-	al->filtered = true;
+ 	return 0;
+ }
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 0466efa71140..d0c40897c955 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -13,13 +13,6 @@ static bool hists__filter_entry_by_thread(struct hists *hists,
+ static bool hists__filter_entry_by_symbol(struct hists *hists,
+ 					  struct hist_entry *he);
+ 
+-enum hist_filter {
+-	HIST_FILTER__DSO,
+-	HIST_FILTER__THREAD,
+-	HIST_FILTER__PARENT,
+-	HIST_FILTER__SYMBOL,
+-};
+-
+ struct callchain_param	callchain_param = {
+ 	.mode	= CHAIN_GRAPH_REL,
+ 	.min_percent = 0.5,
+@@ -330,6 +323,7 @@ void hists__inc_nr_entries(struct hists *hists, struct hist_entry *h)
+ 		hists__calc_col_len(hists, h);
+ 		++hists->nr_entries;
+ 		hists->stats.total_period += h->stat.period;
++		hists->stats.total_filtered_period += h->stat.period;
  	}
+ }
+ 
+@@ -429,7 +423,7 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
+ 			.weight = weight,
+ 		},
+ 		.parent = sym_parent,
+-		.filtered = symbol__parent_filter(sym_parent),
++		.filtered = symbol__parent_filter(sym_parent) | al->filtered,
+ 		.hists	= hists,
+ 		.branch_info = bi,
+ 		.mem_info = mi,
 diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 9e1cada45bb8..0c76bf972736 100644
+index 0c76bf972736..5ccc70057934 100644
 --- a/tools/perf/util/hist.h
 +++ b/tools/perf/util/hist.h
-@@ -132,8 +132,10 @@ struct perf_hpp {
- };
+@@ -14,6 +14,15 @@ struct hist_entry;
+ struct addr_location;
+ struct symbol;
  
- struct perf_hpp_fmt {
--	int (*header)(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp);
--	int (*width)(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp);
-+	int (*header)(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
-+		      struct perf_evsel *evsel);
-+	int (*width)(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
-+		     struct perf_evsel *evsel);
- 	int (*color)(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
- 		     struct hist_entry *he);
- 	int (*entry)(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
++enum hist_filter {
++	HIST_FILTER__DSO,
++	HIST_FILTER__THREAD,
++	HIST_FILTER__PARENT,
++	HIST_FILTER__SYMBOL,
++	HIST_FILTER__GUEST,
++	HIST_FILTER__HOST,
++};
++
+ /*
+  * The kernel collects the number of events it couldn't send in a stretch and
+  * when possible sends this number in a PERF_RECORD_LOST event. The number of
+@@ -28,6 +37,7 @@ struct symbol;
+  */
+ struct events_stats {
+ 	u64 total_period;
++	u64 total_filtered_period;
+ 	u64 total_lost;
+ 	u64 total_invalid_chains;
+ 	u32 nr_events[PERF_RECORD_HEADER_MAX];
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 2553ae04b788..501e4e722e8e 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -186,7 +186,7 @@ struct addr_location {
+ 	struct symbol *sym;
+ 	u64	      addr;
+ 	char	      level;
+-	bool	      filtered;
++	u8	      filtered;
+ 	u8	      cpumode;
+ 	s32	      cpu;
+ };
 -- 
 1.7.11.7
 
