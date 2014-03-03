@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755153AbaCCS63 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 13:58:29 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:56046 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755038AbaCCS61 (ORCPT
+	id S1755136AbaCCS60 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 13:58:26 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:53741 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755038AbaCCS6V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 13:58:27 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 22/67] KVM: return an error code in kvm_vm_ioctl_register_coalesced_mmio()
-Date: Mon,  3 Mar 2014 10:55:10 -0800
-Message-Id: <1393872955-28810-23-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1393872955-28810-1-git-send-email-kamal@canonical.com>
-References: <1393872955-28810-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Mon, 3 Mar 2014 13:58:21 -0500
+Date: Mon, 3 Mar 2014 19:58:19 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Joe Mario <jmario@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Don Zickus <dzickus@redhat.com>, Davidlohr Bueso <davidlohr@hp.com>,
+        acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
+        jolsa@redhat.com, fowles@inreach.com, eranian@google.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Richard Fowles <rfowles@redhat.com>
+Subject: Re: [PATCH 08/19] perf c2c: Shared data analyser
+Message-ID: <20140303185819.GB22728@two.firstfloor.org>
+References: <1393609388-40489-1-git-send-email-dzickus@redhat.com>
+ <1393609388-40489-9-git-send-email-dzickus@redhat.com>
+ <87lhwvawc4.fsf@tassilo.jf.intel.com>
+ <20140228194642.GM25953@redhat.com>
+ <1393621411.2899.39.camel@buesod1.americas.hpqcorp.net>
+ <20140303150531.GZ25953@redhat.com>
+ <20140303172316.GA22728@two.firstfloor.org>
+ <5314C4C4.1020304@redhat.com>
+ <20140303184117.GL9987@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140303184117.GL9987@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.19 -stable review patch.  If anyone has any objections, please let me know.
+On Mon, Mar 03, 2014 at 07:41:17PM +0100, Peter Zijlstra wrote:
+> On Mon, Mar 03, 2014 at 01:07:00PM -0500, Joe Mario wrote:
+> > If you only sample on the HITMs then you don't get the store misses.
+> > That means you'll not be able to detect who is simultaneously tugging
+> > on the same cache lines.  That gives up much of the value of "perf
+> > c2c".
+> 
+> As long as you know which lines are hurting bringing in (loads) you can
+> often figure out who is doing the stores on them.
 
-------------------
+Yes, especially since every store is a load too (unless you're talking
+WC)
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+The method c2c uses is more exact, but keep in mind it's a sampling
+heuristic in any cases, with some potential bias. load-latency tags
+the loads randomly and there's no guarantee that tagging is fully
+uniform. Also you only see a subset in any case.
 
-commit aac5c4226e7136c331ed384c25d5560204da10a0 upstream.
+> 
+> > As we developed this, we ended up settling on Ivy Bridge to get the
+> > behavior we wanted.
+> 
+> Wouldn't SNB also work?
 
-If kvm_io_bus_register_dev() fails then it returns success but it should
-return an error code.
+Yes.
 
-I also did a little cleanup like removing an impossible NULL test.
+Haswell is best however because it can report addresses on far more
+events.
 
-Fixes: 2b3c246a682c ('KVM: Make coalesced mmio use a device per zone')
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- virt/kvm/coalesced_mmio.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+-Andi
 
-diff --git a/virt/kvm/coalesced_mmio.c b/virt/kvm/coalesced_mmio.c
-index 88b2fe3..00d8642 100644
---- a/virt/kvm/coalesced_mmio.c
-+++ b/virt/kvm/coalesced_mmio.c
-@@ -154,17 +154,13 @@ int kvm_vm_ioctl_register_coalesced_mmio(struct kvm *kvm,
- 	list_add_tail(&dev->list, &kvm->coalesced_zones);
- 	mutex_unlock(&kvm->slots_lock);
- 
--	return ret;
-+	return 0;
- 
- out_free_dev:
- 	mutex_unlock(&kvm->slots_lock);
--
- 	kfree(dev);
- 
--	if (dev == NULL)
--		return -ENXIO;
--
--	return 0;
-+	return ret;
- }
- 
- int kvm_vm_ioctl_unregister_coalesced_mmio(struct kvm *kvm,
 -- 
-1.8.3.2
-
+ak@linux.intel.com -- Speaking for myself only.
