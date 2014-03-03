@@ -1,140 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090AbaCCRne (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 12:43:34 -0500
-Received: from quartz.orcorp.ca ([184.70.90.242]:38527 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751661AbaCCRnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 12:43:31 -0500
-Date: Mon, 3 Mar 2014 10:43:25 -0700
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Srikanth Thokala <sthokal@xilinx.com>
-Cc: bhelgaas@google.com, michal.simek@xilinx.com, grant.likely@linaro.org,
-        robh+dt@kernel.org, linux-pci@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v2] pcie: Add Xilinx PCIe Host Bridge IP driver
-Message-ID: <20140303174325.GB31062@obsidianresearch.com>
-References: <1393854036-5244-1-git-send-email-sthokal@xilinx.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393854036-5244-1-git-send-email-sthokal@xilinx.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+	id S1752398AbaCCRvo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 12:51:44 -0500
+Received: from smtprelay0228.hostedemail.com ([216.40.44.228]:59397 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751012AbaCCRvm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 12:51:42 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1981:2194:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3653:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:4384:5007:6119:7652:7903:9010:10004:10400:10848:11232:11658:11914:12043:12517:12519:12663:12740:13069:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: plot84_e648bffce818
+X-Filterd-Recvd-Size: 2165
+Message-ID: <1393869097.13719.88.camel@joe-AO722>
+Subject: Re: [PATCH v2 2/2] checkpatch: fix spurious vendor compatible
+ warnings
+From: Joe Perches <joe@perches.com>
+To: florian.vaussard@epfl.ch
+Cc: Andy Whitcroft <apw@canonical.com>, Rob Herring <robh@kernel.org>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 03 Mar 2014 09:51:37 -0800
+In-Reply-To: <53145D21.4080101@epfl.ch>
+References: <1393604742-14317-1-git-send-email-florian.vaussard@epfl.ch>
+	 <1393604742-14317-3-git-send-email-florian.vaussard@epfl.ch>
+	 <1393621571.10280.49.camel@joe-AO722> <53145D21.4080101@epfl.ch>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 03, 2014 at 07:10:36PM +0530, Srikanth Thokala wrote:
+On Mon, 2014-03-03 at 11:44 +0100, Florian Vaussard wrote:
+> Looking at the current documentation, the list of these generic
+> placeholders is pretty short:
+> 
+> $ git grep ',<.*>-' Documentation/devicetree/bindings/ | \
+>   grep -P -o ',<.*?>-' | grep -P -o '<.*>' | sort | uniq
+> 
+> <board>
+> <chip>
+> <chip name>
+> <mcu-chip>
+> <processor>
+> <soc>
+> <SOC>
+> <soc-family>
+> 
+> so '[a-zA-Z0-9-]+' seems more reasonable indeed.
 
-> +Required properties:
-> +- #address-cells: Address representation for root ports, set to <3>
-> +- #size-cells: Size representation for root ports, set to <2>
-> +- compatible: Should contain "xlnx,axi-pcie-host-1.00.a"
-> +- reg: Should contain AXI PCIe registers location and length
-> +- interrupts: Should contain AXI PCIe interrupt
-> +- ranges: ranges for the PCI memory regions
-> +	Please refer to the standard PCI bus binding document for a more
-> +	detailed explanation
-> +
-> +Example:
-> +++++++++
-> +
-> +	pci_express: axi-pcie@50000000 {
-> +		#address-cells = <3>;
-> +		#size-cells = <2>;
-> +		compatible = "xlnx,axi-pcie-host-1.00.a";
-> +		reg = < 0x50000000 0x10000000 >;
-> +		interrupts = < 0 52 4 >;
-> +		ranges = < 0x02000000 0 0x60000000 0x60000000 0 0x10000000 >;
-> +	};
+The <mcu-chip> use seems as if it's 2 wildcards
 
-That is much shorter, more notes:
- - It looks like the driver (HW?) has no support for IO space?
- - How are INTA/B/C/D handled? Typically I'd like to see an
-   interrupt-mapping block describing them.
+	fsl,<mcu-chip>-<board>
 
-   There are a few options here, if the HW can decode A/B/C/D then
-   it probably needs another irq_domain for INTx, and have the IRQ
-   handler decode like it does for MSI.
-- The stanza needs a
-    device_type = "pci";
+I'm not sure that could work with the current
+checkpatch code.
 
-> +	for (i = 0; i < port->mem_resno; i++)
-> +		pci_add_resource_offset(&sys->resources, &port->mem[i],
-> +					sys->mem_offset);
+There's a space in "<chip name>" that should
+probably be replaced by "<chip-name>" or just
+"<chip>" for consistency.
 
-The sys->mem_offset is probably wrong, please review Arnd's comments
-on the recent threads with Will and Liviu regarding how this is
-supposed to work with DT.
+> $compat2 =~ s/\,[a-zA-Z0-9]*\-/<\.\*>\-/g;
 
-You may want to work with Liviu to use his patch set which provides
-more generic support. Also, the driver needs to put every one of these
-ports in a PCI domain, Liviu is working on generic support for that
-too.
+hand-escaped, not necessary if using "\Q$compat2\E"
 
-> +static struct pci_bus __init *xilinx_pcie_scan_bus(int nr,
-> +				struct pci_sys_data *sys)
-> +{
-> +	struct xilinx_pcie_port *port = sys_to_pcie(sys);
-> +	struct pci_bus *bus;
-> +
-> +	if (port) {
-> +		port->root_busno = sys->busnr;
-> +		bus = pci_scan_root_bus(NULL, sys->busnr, &xilinx_pcie_ops,
-> +					sys, &sys->resources);
+Anyway, if either you or Rob think it appropriate to
+submit a patch for either of the things I mentioned
+in the first place:
 
-The NULL is probably wrong, please review the recent thread with Lucas
-and Jingoo 'PCI irq mapping fixes and cleanups'
+> o Look for ".compatible = "foo" strings in .c and .h files
+> o Improve the vendor name match in vendor-prefix.txt by only
+>   matching the exact vendor name at the beginning of lines.
 
-> +static int xilinx_pcie_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
-> +{
-> +	struct xilinx_pcie_port *port = sys_to_pcie(dev->bus->sysdata);
-> +
-> +	if (!port)
-> +		return -EINVAL;
-> +
-> +	return port->irq;
-> +}
+or any of the stuff above here, please do.
 
-It is preferred to use DT mechanisms via of_irq_parse_and_map_pci
-(interrupt-mapping, etc) to define the slot IRQ, drivers should not
-provide a map_irq unless absolutely necessary.
-
-> +	/* make sure it is root port before touching header */
-> +	pcie_write(port, PCI_COMMAND_MASTER, PCI_COMMAND);
-
-Bit of a confusing comment
-
-> +	/* Check if PCIe link is up? */
-> +	port->link_up = xilinx_pcie_is_link_up(port);
-> +	if (!port->link_up)
-> +		dev_info(port->dev, "PCIe Link is DOWN\n");
-> +	else
-> +		dev_info(port->dev, "PCIe Link is UP\n");
-
-Don't forget to think about hot plug
-
-> +	/* Register Interrupt Handler */
-> +	err = request_irq(port->irq, xilinx_pcie_intr_handler,
-> +				IRQF_SHARED, "xilinx-pcie", port);
-
-Use devm? This is leaking on error cases.
-
-Review other resources too...
-
-> +	/* Request and map I/O memory */
-> +	io = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	port->phys_reg_base = io->start;
-> +	port->reg_size = resource_size(io);
-
-Here it uses the platform resource..
-
-> +	/* Map the IRQ */
-> +	port->irq = irq_of_parse_and_map(node, 0);
-
-.. And here it doesn't, probably should be consistent and just use the
-platform resources.
-
-Jason
