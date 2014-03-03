@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753871AbaCCH5e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 02:57:34 -0500
-Received: from mail-pa0-f65.google.com ([209.85.220.65]:47964 "EHLO
-	mail-pa0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753801AbaCCH50 (ORCPT
+	id S1753919AbaCCH6q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 02:58:46 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53946 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753760AbaCCH6o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 02:57:26 -0500
-Message-ID: <531435e5.06a6420a.5465.ffffb3ab@mx.google.com>
-From: carolyn89877@googlemail.com
-To: linux-kernel@vger.kernel.org
-Reply-To: ADA65709@gmail.com
-Subject: RE: LOCAL MAP OPTIMIZATION FOR : mail-archive.com (Less Than
- $99/Month)
-Date: Mon, 3 Mar 2014 13:27:24 +0530
+	Mon, 3 Mar 2014 02:58:44 -0500
+Date: Mon, 3 Mar 2014 15:58:38 +0800
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>
+Subject: Re: [PATCH 0/5] rtc: s5m: Add support for S2MPS14
+Message-ID: <20140303075838.GG4674@lee--X1>
+References: <1393592408-27181-1-git-send-email-k.kozlowski@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1393592408-27181-1-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good Morning Sir / Mam
+> Few days ago I sent patches adding support for S2MPS14 device to the
+> sec-core/s2mps11 drivers. These patches were rather large as they covered
+> multiple subsystems so I decided to split everything into smaller, separate
+> patches.
+> 
+> The original patchset (version 3) can be found here:
+> http://thread.gmane.org/gmane.linux.kernel.samsung-soc/27194/focus=1649217
+> 
+> This patchset is a small subset of above related to the S5M RTC driver.
+> It adds support for the S2MPS14 device.
+> 
+> These patches are rebased against Lee's "for-mfd-next" tree because they require
+> changes in main MFD sec-core driver ("Add support for S2MPS14 for-mfd-next",
+> which is already in Lee's "for-mfd-next" tree).
 
-Is your business ranking in local maps shown on PAGE 1 of google ? With new
-google policies they have specifically asked local business owners to
-optimize their website for local maps rather than JUST organics. Do you know
-the reason why you are not ranked well on google MAPs or why there is drop
-in your website rankings? Prime reason for bad rankings for a busniess is
-lack of local presence and local citations ie getting your business listed
-on directories like YELP, MANTA & Many more. These websites not just give
-your business a push but also help you Maintain a good Online Reputation.
+I'm happy to take this patch-set though the MFD tree and provide a
+immutable branch for the RTC guys to pull from.
 
-Why you need to optimize your website for local MAP Listings ?
-
-- MAP listings get 10 times more clicks than organic listings
-- Increased conversions because of real reviews posted on your Google Plus
-Page
-- Every year there is 30% increase in searches for local keywords
-- Increases legitimacy of a Business
-
-We will help you get your website ranked well on google for the related
-keywords in your niche. We specialize in LOCAL SEARCH ENGINE OPTIMIZATION
-increasing visibility for small businesses by ranking them for
-geographically-related keywords. Say for eg-: you want to search a plumber
-in your city, You will be typing in keywords like Plumbers + City Or
-Plumbers + IN + City. We make sure your website comes in google MAP listings
-shown on page 1 for each such keyword.
-
-Now Google believes in - BE ORIGINAL, HAVE ORIGINAL AND GIVE ORIGINAL which
-means that google wants to end up that frustrating experience of users who
-are searching for Service Or Product and seeing the results that are not
-even close to what they are looking for. Google only wants to give their
-user original and relevant results. This makes it even more important that
-we showcase our business in the best possible way and make sure our website
-in valued high by google.
-
-We at TheLOCALIST will make google feel the importance of your business by
-following their guidelines thus ranking your website higher in serach
-results. We are presently offering LOCAL OPTIMIZATION to more than 400
-websites and they all rank page 1 for all possible keywords !!! Each month
-your website is submitted to more than 50 citations and social presence is
-controlled by posting videos and blogs all over the web.
-
-Email us back with your website & phone number so we can discuss this
-further with you. Our Packages start from as low as 99$/month.
-
-
-Thanks For Taking Time To Read Our Email
-
-Polly Martin
-Local SEO Manager ( THE Localist )
-Address : 24 ST Suite 32 Downtown Provo Utah
-
--------------------
-NOT INTERESTED ? REPLY WITH NOT INTERESTED IN THE SUBJECT LINE 
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
