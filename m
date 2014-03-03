@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755423AbaCCS7l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 13:59:41 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:56148 "EHLO
+	id S1755440AbaCCS75 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 13:59:57 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:56153 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755375AbaCCS7f (ORCPT
+	with ESMTP id S1753942AbaCCS7j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 13:59:35 -0500
+	Mon, 3 Mar 2014 13:59:39 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steven Rostedt <rostedt@goodmis.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 55/67] ring-buffer: Fix first commit on sub-buffer having non-zero delta
-Date: Mon,  3 Mar 2014 10:55:43 -0800
-Message-Id: <1393872955-28810-56-git-send-email-kamal@canonical.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 57/67] ftrace/x86: Use breakpoints for converting function graph caller
+Date: Mon,  3 Mar 2014 10:55:45 -0800
+Message-Id: <1393872955-28810-58-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1393872955-28810-1-git-send-email-kamal@canonical.com>
 References: <1393872955-28810-1-git-send-email-kamal@canonical.com>
@@ -28,47 +29,189 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit d651aa1d68a2f0a7ee65697b04c6a92f8c0a12f2 upstream.
+commit 87fbb2ac6073a7039303517546a76074feb14c84 upstream.
 
-Each sub-buffer (buffer page) has a full 64 bit timestamp. The events on
-that page use a 27 bit delta against that timestamp in order to save on
-bits written to the ring buffer. If the time between events is larger than
-what the 27 bits can hold, a "time extend" event is added to hold the
-entire 64 bit timestamp again and the events after that hold a delta from
-that timestamp.
+When the conversion was made to remove stop machine and use the breakpoint
+logic instead, the modification of the function graph caller is still
+done directly as though it was being done under stop machine.
 
-As a "time extend" is always paired with an event, it is logical to just
-allocate the event with the time extend, to make things a bit more efficient.
+As it is not converted via stop machine anymore, there is a possibility
+that the code could be layed across cache lines and if another CPU is
+accessing that function graph call when it is being updated, it could
+cause a General Protection Fault.
 
-Unfortunately, when the pairing code was written, it removed the "delta = 0"
-from the first commit on a page, causing the events on the page to be
-slightly skewed.
+Convert the update of the function graph caller to use the breakpoint
+method as well.
 
-Fixes: 69d1b839f7ee "ring-buffer: Bind time extend and data events together"
+Cc: H. Peter Anvin <hpa@zytor.com>
+Fixes: 08d636b6d4fb "ftrace/x86: Have arch x86_64 use breakpoints instead of stop machine"
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/trace/ring_buffer.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ arch/x86/kernel/ftrace.c | 83 +++++++++++++++++++++++++++---------------------
+ 1 file changed, 47 insertions(+), 36 deletions(-)
 
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index ce8514fe..8588689 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -2239,6 +2239,13 @@ __rb_reserve_next(struct ring_buffer_per_cpu *cpu_buffer,
- 	write &= RB_WRITE_MASK;
- 	tail = write - length;
+diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
+index 8d5d9e5..0c67559 100644
+--- a/arch/x86/kernel/ftrace.c
++++ b/arch/x86/kernel/ftrace.c
+@@ -77,8 +77,7 @@ within(unsigned long addr, unsigned long start, unsigned long end)
+ 	return addr >= start && addr < end;
+ }
  
-+	/*
-+	 * If this is the first commit on the page, then it has the same
-+	 * timestamp as the page itself.
-+	 */
-+	if (!tail)
-+		delta = 0;
+-static int
+-do_ftrace_mod_code(unsigned long ip, const void *new_code)
++static unsigned long text_ip_addr(unsigned long ip)
+ {
+ 	/*
+ 	 * On x86_64, kernel text mappings are mapped read-only with
+@@ -91,7 +90,7 @@ do_ftrace_mod_code(unsigned long ip, const void *new_code)
+ 	if (within(ip, (unsigned long)_text, (unsigned long)_etext))
+ 		ip = (unsigned long)__va(__pa(ip));
+ 
+-	return probe_kernel_write((void *)ip, new_code, MCOUNT_INSN_SIZE);
++	return ip;
+ }
+ 
+ static const unsigned char *ftrace_nop_replace(void)
+@@ -123,8 +122,10 @@ ftrace_modify_code_direct(unsigned long ip, unsigned const char *old_code,
+ 	if (memcmp(replaced, old_code, MCOUNT_INSN_SIZE) != 0)
+ 		return -EINVAL;
+ 
++	ip = text_ip_addr(ip);
 +
- 	/* See if we shot pass the end of this buffer page */
- 	if (unlikely(write > BUF_PAGE_SIZE))
- 		return rb_move_tail(cpu_buffer, length, tail,
+ 	/* replace the text with the new text */
+-	if (do_ftrace_mod_code(ip, new_code))
++	if (probe_kernel_write((void *)ip, new_code, MCOUNT_INSN_SIZE))
+ 		return -EPERM;
+ 
+ 	sync_core();
+@@ -221,37 +222,51 @@ int ftrace_modify_call(struct dyn_ftrace *rec, unsigned long old_addr,
+ 	return -EINVAL;
+ }
+ 
+-int ftrace_update_ftrace_func(ftrace_func_t func)
++static unsigned long ftrace_update_func;
++
++static int update_ftrace_func(unsigned long ip, void *new)
+ {
+-	unsigned long ip = (unsigned long)(&ftrace_call);
+-	unsigned char old[MCOUNT_INSN_SIZE], *new;
++	unsigned char old[MCOUNT_INSN_SIZE];
+ 	int ret;
+ 
+-	memcpy(old, &ftrace_call, MCOUNT_INSN_SIZE);
+-	new = ftrace_call_replace(ip, (unsigned long)func);
++	memcpy(old, (void *)ip, MCOUNT_INSN_SIZE);
++
++	ftrace_update_func = ip;
++	/* Make sure the breakpoints see the ftrace_update_func update */
++	smp_wmb();
+ 
+ 	/* See comment above by declaration of modifying_ftrace_code */
+ 	atomic_inc(&modifying_ftrace_code);
+ 
+ 	ret = ftrace_modify_code(ip, old, new);
+ 
++	atomic_dec(&modifying_ftrace_code);
++
++	return ret;
++}
++
++int ftrace_update_ftrace_func(ftrace_func_t func)
++{
++	unsigned long ip = (unsigned long)(&ftrace_call);
++	unsigned char *new;
++	int ret;
++
++	new = ftrace_call_replace(ip, (unsigned long)func);
++	ret = update_ftrace_func(ip, new);
++
+ 	/* Also update the regs callback function */
+ 	if (!ret) {
+ 		ip = (unsigned long)(&ftrace_regs_call);
+-		memcpy(old, &ftrace_regs_call, MCOUNT_INSN_SIZE);
+ 		new = ftrace_call_replace(ip, (unsigned long)func);
+-		ret = ftrace_modify_code(ip, old, new);
++		ret = update_ftrace_func(ip, new);
+ 	}
+ 
+-	atomic_dec(&modifying_ftrace_code);
+-
+ 	return ret;
+ }
+ 
+ static int is_ftrace_caller(unsigned long ip)
+ {
+-	if (ip == (unsigned long)(&ftrace_call) ||
+-		ip == (unsigned long)(&ftrace_regs_call))
++	if (ip == ftrace_update_func)
+ 		return 1;
+ 
+ 	return 0;
+@@ -677,45 +692,41 @@ int __init ftrace_dyn_arch_init(void *data)
+ #ifdef CONFIG_DYNAMIC_FTRACE
+ extern void ftrace_graph_call(void);
+ 
+-static int ftrace_mod_jmp(unsigned long ip,
+-			  int old_offset, int new_offset)
++static unsigned char *ftrace_jmp_replace(unsigned long ip, unsigned long addr)
+ {
+-	unsigned char code[MCOUNT_INSN_SIZE];
++	static union ftrace_code_union calc;
+ 
+-	if (probe_kernel_read(code, (void *)ip, MCOUNT_INSN_SIZE))
+-		return -EFAULT;
++	/* Jmp not a call (ignore the .e8) */
++	calc.e8		= 0xe9;
++	calc.offset	= ftrace_calc_offset(ip + MCOUNT_INSN_SIZE, addr);
+ 
+-	if (code[0] != 0xe9 || old_offset != *(int *)(&code[1]))
+-		return -EINVAL;
++	/*
++	 * ftrace external locks synchronize the access to the static variable.
++	 */
++	return calc.code;
++}
+ 
+-	*(int *)(&code[1]) = new_offset;
++static int ftrace_mod_jmp(unsigned long ip, void *func)
++{
++	unsigned char *new;
+ 
+-	if (do_ftrace_mod_code(ip, &code))
+-		return -EPERM;
++	new = ftrace_jmp_replace(ip, (unsigned long)func);
+ 
+-	return 0;
++	return update_ftrace_func(ip, new);
+ }
+ 
+ int ftrace_enable_ftrace_graph_caller(void)
+ {
+ 	unsigned long ip = (unsigned long)(&ftrace_graph_call);
+-	int old_offset, new_offset;
+ 
+-	old_offset = (unsigned long)(&ftrace_stub) - (ip + MCOUNT_INSN_SIZE);
+-	new_offset = (unsigned long)(&ftrace_graph_caller) - (ip + MCOUNT_INSN_SIZE);
+-
+-	return ftrace_mod_jmp(ip, old_offset, new_offset);
++	return ftrace_mod_jmp(ip, &ftrace_graph_caller);
+ }
+ 
+ int ftrace_disable_ftrace_graph_caller(void)
+ {
+ 	unsigned long ip = (unsigned long)(&ftrace_graph_call);
+-	int old_offset, new_offset;
+-
+-	old_offset = (unsigned long)(&ftrace_graph_caller) - (ip + MCOUNT_INSN_SIZE);
+-	new_offset = (unsigned long)(&ftrace_stub) - (ip + MCOUNT_INSN_SIZE);
+ 
+-	return ftrace_mod_jmp(ip, old_offset, new_offset);
++	return ftrace_mod_jmp(ip, &ftrace_stub);
+ }
+ 
+ #endif /* !CONFIG_DYNAMIC_FTRACE */
 -- 
 1.8.3.2
 
