@@ -1,44 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755805AbaCCXjG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 18:39:06 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:36714 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755326AbaCCXjE (ORCPT
+	id S1755689AbaCCXi4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 18:38:56 -0500
+Received: from qmta11.emeryville.ca.mail.comcast.net ([76.96.27.211]:46316
+	"EHLO qmta11.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755623AbaCCXix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 18:39:04 -0500
-Date: Mon, 3 Mar 2014 23:39:02 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: George Spelvin <linux@horizon.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Update of file offset on write() etc. is non-atomic with I/O
-Message-ID: <20140303233902.GP18016@ZenIV.linux.org.uk>
-References: <20140303210359.26624.qmail@science.horizon.com>
- <20140303212642.GJ18016@ZenIV.linux.org.uk>
- <CA+55aFwdEbMMTPyCEKop0Fukhxi90OCdvDieX7iB-dX9Ziovdg@mail.gmail.com>
- <CA+55aFxszctXek3QCXPeDScdSQZvuzp+EXHdA5cZnG3CLeJ1XA@mail.gmail.com>
- <CA+55aFwjSAPx=6x6r9hN_1hH406=TCnAyb=6s0BLt9=YsKy_wA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwjSAPx=6x6r9hN_1hH406=TCnAyb=6s0BLt9=YsKy_wA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 3 Mar 2014 18:38:53 -0500
+From: Shuah Khan <shuah.kh@samsung.com>
+To: gregkh@linuxfoundation.org, ly80toro@cip.cs.fau.de, andy.grover@gmail.com,
+        valentina.manea.m@gmail.com
+Cc: Shuah Khan <shuah.kh@samsung.com>, linux-usb@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        shuahkhan@gmail.com
+Subject: [PATCH v2 1/3] staging/usbip: add uapi header to export usbip kernel interfaces
+Date: Mon,  3 Mar 2014 16:38:43 -0700
+Message-Id: <da4a9ceaff47761ff0bec4ad5750709dae8528de.1393882836.git.shuah.kh@samsung.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <cover.1393882836.git.shuah.kh@samsung.com>
+References: <cover.1393882836.git.shuah.kh@samsung.com>
+In-Reply-To: <cover.1393882836.git.shuah.kh@samsung.com>
+References: <cover.1393882836.git.shuah.kh@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 03, 2014 at 03:23:55PM -0800, Linus Torvalds wrote:
+usbip userspace has duplicated enum definition to report usbip device
+status maintained by the kernel. Adding an usbip uapi header file will
+define the kernel - userspace interface for this device status. This
+new uapi file is added under usbip/uapi to keep the staging tree code
+self-contained. When usbip moves to mainline drivers, this file should
+be moved under uapi/linux
 
-> This just uses a "flags" field, and we currently only have two bits
-> that we use: FDPUT_FPUT and FDPUT_POS_UNLOCK. The first patch knows
-> that "fget_light()" writes 0/1 for that, which is the same as the
-> FDPUT_FPUT bit. I didn't bother to comment on it or clean it up, since
-> the second patch just removes that whole fget_light() mess.
-> 
-> Comments?
+Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+---
+ drivers/staging/usbip/uapi/usbip.h |   26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
+ create mode 100644 drivers/staging/usbip/uapi/usbip.h
 
-do_sendfile() is also there and this one is even more unpleasant ;-/
-We probably can ignore that one (until POSIX learns of its existence),
-thouhg...
+diff --git a/drivers/staging/usbip/uapi/usbip.h b/drivers/staging/usbip/uapi/usbip.h
+new file mode 100644
+index 0000000..fa5db30
+--- /dev/null
++++ b/drivers/staging/usbip/uapi/usbip.h
+@@ -0,0 +1,26 @@
++/*
++ *	usbip.h
++ *
++ *	USBIP uapi defines and function prototypes etc.
++*/
++
++#ifndef _UAPI_LINUX_USBIP_H
++#define _UAPI_LINUX_USBIP_H
++
++/* usbip device status - exported in usbip device sysfs status */
++enum usbip_device_status {
++	/* sdev is available. */
++	SDEV_ST_AVAILABLE = 0x01,
++	/* sdev is now used. */
++	SDEV_ST_USED,
++	/* sdev is unusable because of a fatal error. */
++	SDEV_ST_ERROR,
++
++	/* vdev does not connect a remote device. */
++	VDEV_ST_NULL,
++	/* vdev is used, but the USB address is not assigned yet */
++	VDEV_ST_NOTASSIGNED,
++	VDEV_ST_USED,
++	VDEV_ST_ERROR
++};
++#endif /* _UAPI_LINUX_USBIP_H */
+-- 
+1.7.10.4
+
