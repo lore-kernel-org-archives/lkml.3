@@ -1,83 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754641AbaCCT56 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 14:57:58 -0500
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:41208 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753999AbaCCT54 (ORCPT
+	id S1754663AbaCCUGs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 15:06:48 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:40591 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754465AbaCCUGr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 14:57:56 -0500
+	Mon, 3 Mar 2014 15:06:47 -0500
+Message-ID: <5314E0CD.6070308@oracle.com>
+Date: Mon, 03 Mar 2014 15:06:37 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20140303145110.0c09709c@gandalf.local.home>
-References: <1393651938-16418-1-git-send-email-filbranden@google.com>
-	<1393651938-16418-2-git-send-email-filbranden@google.com>
-	<20140303145110.0c09709c@gandalf.local.home>
-Date: Mon, 3 Mar 2014 11:57:55 -0800
-Message-ID: <CADU+-uCP96f-B=c2Cy+Po2qNYnhTTROw5kDgJP3dZENjkxZUiQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] tracing: correctly expand len expressions from
- __dynamic_array macro
-From: Filipe Brandenburger <filbranden@google.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Li Zefan <lizefan@huawei.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH] mm: add pte_present() check on existing hugetlb_entry
+ callbacks
+References: <53126861.7040107@oracle.com> <1393822946-26871-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1393822946-26871-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steve,
+On 03/03/2014 12:02 AM, Naoya Horiguchi wrote:
+> Hi Sasha,
+>
+>> >I can confirm that with this patch the lockdep issue is gone. However, the NULL deref in
+>> >walk_pte_range() and the BUG at mm/hugemem.c:3580 still appear.
+> I spotted the cause of this problem.
+> Could you try testing if this patch fixes it?
 
-I don't think this needs to be backported to stable, since the only
-place that uses the high 16 bits of the offset field as the length is
-filter_pred_strloc which only works for strings and sizeof(char) == 1
-so that essentially whenever the bug is triggered, the actual stored
-value is not used.
+I'm seeing a different failure with this patch:
 
-I have a follow up patch to expose that field to TP_fast_assign (as
-something like __get_dynamic_array_length) in which case it's
-important that this is fixed, otherwise for __dynamic_array of
-something other than char we'll have a bug.
+[ 1860.669114] BUG: unable to handle kernel NULL pointer dereference at 0000000000000050
+[ 1860.670498] IP: [<ffffffff8129c0bf>] vm_normal_page+0x3f/0x90
+[ 1860.672795] PGD 6c1c84067 PUD 6e0a3d067 PMD 0
+[ 1860.672795] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[ 1860.672795] Dumping ftrace buffer:
+[ 1860.672795]    (ftrace buffer empty)
+[ 1860.672795] Modules linked in:
+[ 1860.672795] CPU: 4 PID: 34914 Comm: trinity-c184 Tainted: G        W    3.14.0-rc4-ne
+[ 1860.672795] task: ffff880717d90000 ti: ffff88070b3da000 task.ti: ffff88070b3da000
+[ 1860.672795] RIP: 0010:[<ffffffff8129c0bf>]  [<ffffffff8129c0bf>] vm_normal_page+0x3f/
+[ 1860.672795] RSP: 0018:ffff88070b3dbba8  EFLAGS: 00010202
+[ 1860.672795] RAX: 000000000000767f RBX: ffff88070b3dbdd8 RCX: ffff88070b3dbd78
+[ 1860.672795] RDX: 800000000767f225 RSI: 0100000000699000 RDI: 800000000767f225
+[ 1860.672795] RBP: ffff88070b3dbba8 R08: 0000000000000000 R09: 0000000000000000
+[ 1860.672795] R10: 0000000000000001 R11: 0000000000000000 R12: ffff880717df24c8
+[ 1860.672795] R13: 0000000000000020 R14: 0100000000699000 R15: 0100000000800000
+[ 1860.672795] FS:  00007f20a3584700(0000) GS:ffff88052b800000(0000) knlGS:0000000000000
+[ 1860.672795] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[ 1860.672795] CR2: 0000000000000050 CR3: 00000006d73cf000 CR4: 00000000000006e0
+[ 1860.672795] Stack:
+[ 1860.672795]  ffff88070b3dbbd8 ffffffff812c2f3d ffffffff812b2dc0 010000000069a000
+[ 1860.672795]  ffff880717df24c8 ffff88070b3dbd78 ffff88070b3dbc28 ffffffff812b2e00
+[ 1860.672795]  0000000000000000 ffff88072956bcf0 ffff88070b3dbc28 ffff8806e0a3d018
+[ 1860.672795] Call Trace:
+[ 1860.672795]  [<ffffffff812c2f3d>] queue_pages_pte+0x3d/0xd0
+[ 1860.672795]  [<ffffffff812b2dc0>] ? walk_pte_range+0xc0/0x180
+[ 1860.672795]  [<ffffffff812b2e00>] walk_pte_range+0x100/0x180
+[ 1860.672795]  [<ffffffff812b3091>] walk_pmd_range+0x211/0x240
+[ 1860.672795]  [<ffffffff812b31eb>] walk_pud_range+0x12b/0x160
+[ 1860.672795]  [<ffffffff812d2ee4>] ? __slab_free+0x384/0x5e0
+[ 1860.672795]  [<ffffffff812b3329>] walk_pgd_range+0x109/0x140
+[ 1860.672795]  [<ffffffff812b3395>] __walk_page_range+0x35/0x40
+[ 1860.672795]  [<ffffffff812b3552>] walk_page_range+0xf2/0x130
+[ 1860.672795]  [<ffffffff812c2e41>] queue_pages_range+0x71/0x90
+[ 1860.672795]  [<ffffffff812c2f00>] ? queue_pages_hugetlb+0xa0/0xa0
+[ 1860.672795]  [<ffffffff812c2e60>] ? queue_pages_range+0x90/0x90
+[ 1860.672795]  [<ffffffff812c30d0>] ? change_prot_numa+0x30/0x30
+[ 1860.672795]  [<ffffffff812c6c61>] do_mbind+0x321/0x340
+[ 1860.672795]  [<ffffffff8129af2f>] ? might_fault+0x9f/0xb0
+[ 1860.672795]  [<ffffffff8129aee6>] ? might_fault+0x56/0xb0
+[ 1860.672795]  [<ffffffff812c6d09>] SYSC_mbind+0x89/0xb0
+[ 1860.672795]  [<ffffffff81268db5>] ? context_tracking_user_exit+0x195/0x1d0
+[ 1860.672795]  [<ffffffff812c6d3e>] SyS_mbind+0xe/0x10
+[ 1860.672795]  [<ffffffff8447d890>] tracesys+0xdd/0xe2
+
 
 Thanks,
-Filipe
-
-
-On Mon, Mar 3, 2014 at 11:51 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Fri, 28 Feb 2014 21:32:16 -0800
-> Filipe Brandenburger <filbranden@google.com> wrote:
->
->> This fixes expansion of the len argument in __dynamic_array macros.
->> The previous code from commit 7d536cb3f would not fully evaluate the
->> expression before multiplying its result by the size of the type.
->>
->> This went unnoticed because the length stored in the high 16 bits of the
->> offset (which is the one that was broken here) is only used by
->> filter_pred_strloc which only acts on strings for which the size of the
->> type is 1.
->>
->
-> Was this visible in any of the tracepoints? Should this be marked for
-> stable? It's been in the kernel for a long time (2009). Or is a new
-> tracepoint showing a problem?
->
-> -- Steve
->
->> Signed-off-by: Filipe Brandenburger <filbranden@google.com>
->> ---
->>  include/trace/ftrace.h | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
->> index 1a8b28d..82e8d89 100644
->> --- a/include/trace/ftrace.h
->> +++ b/include/trace/ftrace.h
->> @@ -375,7 +375,7 @@ ftrace_define_fields_##call(struct ftrace_event_call *event_call) \
->>  #define __dynamic_array(type, item, len)                             \
->>       __data_offsets->item = __data_size +                            \
->>                              offsetof(typeof(*entry), __data);        \
->> -     __data_offsets->item |= (len * sizeof(type)) << 16;             \
->> +     __data_offsets->item |= ((len) * sizeof(type)) << 16;           \
->>       __data_size += (len) * sizeof(type);
->>
->>  #undef __string
->
+Sasha
