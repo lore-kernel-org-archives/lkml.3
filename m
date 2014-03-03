@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754876AbaCCS5c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 13:57:32 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:55976 "EHLO
+	id S1755839AbaCCTO4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 14:14:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:55980 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754465AbaCCS5a (ORCPT
+	with ESMTP id S1754869AbaCCS5b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 13:57:30 -0500
+	Mon, 3 Mar 2014 13:57:31 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Borislav Petkov <bp@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 66/67] EDAC: Correct workqueue setup path
-Date: Mon,  3 Mar 2014 10:55:54 -0800
-Message-Id: <1393872955-28810-67-git-send-email-kamal@canonical.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 62/67] x86, smap: smap_violation() is bogus if CONFIG_X86_SMAP is off
+Date: Mon,  3 Mar 2014 10:55:50 -0800
+Message-Id: <1393872955-28810-63-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1393872955-28810-1-git-send-email-kamal@canonical.com>
 References: <1393872955-28810-1-git-send-email-kamal@canonical.com>
@@ -26,69 +27,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Borislav Petkov <bp@suse.de>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit cb6ef42e516cb8948f15e4b70dc03af8020050a2 upstream.
+commit 4640c7ee9b8953237d05a61ea3ea93981d1bc961 upstream.
 
-We're using edac_mc_workq_setup() both on the init path, when
-we load an edac driver and when we change the polling period
-(edac_mc_reset_delay_period) through /sys/.../edac_mc_poll_msec.
+If CONFIG_X86_SMAP is disabled, smap_violation() tests for conditions
+which are incorrect (as the AC flag doesn't matter), causing spurious
+faults.
 
-On that second path we don't need to init the workqueue which has been
-initialized already.
+The dynamic disabling of SMAP (nosmap on the command line) is fine
+because it disables X86_FEATURE_SMAP, therefore causing the
+static_cpu_has() to return false.
 
-Thanks to Tejun for workqueue insights.
+Found by Fengguang Wu's test system.
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/1391457913-881-1-git-send-email-prarit@redhat.com
+[ v3: move all predicates into smap_violation() ]
+[ v2: use IS_ENABLED() instead of #ifdef ]
+
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Link: http://lkml.kernel.org/r/20140213124550.GA30497@localhost
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/edac/edac_mc.c | 11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ arch/x86/mm/fault.c | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-index ab5341c..858945e 100644
---- a/drivers/edac/edac_mc.c
-+++ b/drivers/edac/edac_mc.c
-@@ -558,7 +558,8 @@ static void edac_mc_workq_function(struct work_struct *work_req)
-  *
-  *		called with the mem_ctls_mutex held
-  */
--static void edac_mc_workq_setup(struct mem_ctl_info *mci, unsigned msec)
-+static void edac_mc_workq_setup(struct mem_ctl_info *mci, unsigned msec,
-+				bool init)
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 4f7d793..c3462d3 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -995,6 +995,12 @@ static int fault_in_kernel_space(unsigned long address)
+ 
+ static inline bool smap_violation(int error_code, struct pt_regs *regs)
  {
- 	edac_dbg(0, "\n");
- 
-@@ -566,7 +567,9 @@ static void edac_mc_workq_setup(struct mem_ctl_info *mci, unsigned msec)
- 	if (mci->op_state != OP_RUNNING_POLL)
- 		return;
- 
--	INIT_DELAYED_WORK(&mci->work, edac_mc_workq_function);
-+	if (init)
-+		INIT_DELAYED_WORK(&mci->work, edac_mc_workq_function);
++	if (!IS_ENABLED(CONFIG_X86_SMAP))
++		return false;
 +
- 	mod_delayed_work(edac_workqueue, &mci->work, msecs_to_jiffies(msec));
- }
++	if (!static_cpu_has(X86_FEATURE_SMAP))
++		return false;
++
+ 	if (error_code & PF_USER)
+ 		return false;
  
-@@ -610,7 +613,7 @@ void edac_mc_reset_delay_period(unsigned long value)
- 	list_for_each(item, &mc_devices) {
- 		mci = list_entry(item, struct mem_ctl_info, link);
+@@ -1097,11 +1103,9 @@ __do_page_fault(struct pt_regs *regs, unsigned long error_code)
+ 	if (unlikely(error_code & PF_RSVD))
+ 		pgtable_bad(regs, error_code, address);
  
--		edac_mc_workq_setup(mci, value);
-+		edac_mc_workq_setup(mci, value, false);
+-	if (static_cpu_has(X86_FEATURE_SMAP)) {
+-		if (unlikely(smap_violation(error_code, regs))) {
+-			bad_area_nosemaphore(regs, error_code, address);
+-			return;
+-		}
++	if (unlikely(smap_violation(error_code, regs))) {
++		bad_area_nosemaphore(regs, error_code, address);
++		return;
  	}
  
- 	mutex_unlock(&mem_ctls_mutex);
-@@ -766,7 +769,7 @@ int edac_mc_add_mc(struct mem_ctl_info *mci)
- 		/* This instance is NOW RUNNING */
- 		mci->op_state = OP_RUNNING_POLL;
- 
--		edac_mc_workq_setup(mci, edac_mc_get_poll_msec());
-+		edac_mc_workq_setup(mci, edac_mc_get_poll_msec(), true);
- 	} else {
- 		mci->op_state = OP_RUNNING_INTERRUPT;
- 	}
+ 	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
 -- 
 1.8.3.2
 
