@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754591AbaCCS4U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 13:56:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:55887 "EHLO
+	id S1755848AbaCCTRz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 14:17:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:55941 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754375AbaCCS4P (ORCPT
+	with ESMTP id S1754550AbaCCS4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 13:56:15 -0500
+	Mon, 3 Mar 2014 13:56:18 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Weijie Yang <weijie.yang@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 18/67] mm/swap: fix race on swap_info reuse between swapoff and swapon
-Date: Mon,  3 Mar 2014 10:55:06 -0800
-Message-Id: <1393872955-28810-19-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 19/67] mm: __set_page_dirty_nobuffers() uses spin_lock_irqsave() instead of spin_lock_irq()
+Date: Mon,  3 Mar 2014 10:55:07 -0800
+Message-Id: <1393872955-28810-20-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1393872955-28810-1-git-send-email-kamal@canonical.com>
 References: <1393872955-28810-1-git-send-email-kamal@canonical.com>
@@ -30,63 +31,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Weijie Yang <weijie.yang@samsung.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-commit f893ab41e4dae2fe8991faf5d86d029068d1ef3a upstream.
+commit a85d9df1ea1d23682a0ed1e100e6965006595d06 upstream.
 
-swapoff clear swap_info's SWP_USED flag prematurely and free its
-resources after that.  A concurrent swapon will reuse this swap_info
-while its previous resources are not cleared completely.
+During aio stress test, we observed the following lockdep warning.  This
+mean AIO+numa_balancing is currently deadlockable.
 
-These late freed resources are:
- - p->percpu_cluster
- - swap_cgroup_ctrl[type]
- - block_device setting
- - inode->i_flags &= ~S_SWAPFILE
+The problem is, aio_migratepage disable interrupt, but
+__set_page_dirty_nobuffers unintentionally enable it again.
 
-This patch clears the SWP_USED flag after all its resources are freed,
-so that swapon can reuse this swap_info by alloc_swap_info() safely.
+Generally, all helper function should use spin_lock_irqsave() instead of
+spin_lock_irq() because they don't know caller at all.
 
-[akpm@linux-foundation.org: tidy up code comment]
-Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
-Acked-by: Hugh Dickins <hughd@google.com>
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+   other info that might help us debug this:
+    Possible unsafe locking scenario:
+
+          CPU0
+          ----
+     lock(&(&ctx->completion_lock)->rlock);
+     <Interrupt>
+       lock(&(&ctx->completion_lock)->rlock);
+
+    *** DEADLOCK ***
+
+      dump_stack+0x19/0x1b
+      print_usage_bug+0x1f7/0x208
+      mark_lock+0x21d/0x2a0
+      mark_held_locks+0xb9/0x140
+      trace_hardirqs_on_caller+0x105/0x1d0
+      trace_hardirqs_on+0xd/0x10
+      _raw_spin_unlock_irq+0x2c/0x50
+      __set_page_dirty_nobuffers+0x8c/0xf0
+      migrate_page_copy+0x434/0x540
+      aio_migratepage+0xb1/0x140
+      move_to_new_page+0x7d/0x230
+      migrate_pages+0x5e5/0x700
+      migrate_misplaced_page+0xbc/0xf0
+      do_numa_page+0x102/0x190
+      handle_pte_fault+0x241/0x970
+      handle_mm_fault+0x265/0x370
+      __do_page_fault+0x172/0x5a0
+      do_page_fault+0x1a/0x70
+      page_fault+0x28/0x30
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Larry Woodman <lwoodman@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Johannes Weiner <jweiner@redhat.com>
+Acked-by: David Rientjes <rientjes@google.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/swapfile.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ mm/page-writeback.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index e97a0e5..85c5777 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -1587,7 +1587,6 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
- 	p->max = 0;
- 	swap_map = p->swap_map;
- 	p->swap_map = NULL;
--	p->flags = 0;
- 	frontswap_invalidate_area(type);
- 	spin_unlock(&swap_lock);
- 	mutex_unlock(&swapon_mutex);
-@@ -1607,6 +1606,16 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
- 		mutex_unlock(&inode->i_mutex);
- 	}
- 	filp_close(swap_file, NULL);
-+
-+	/*
-+	 * Clear the SWP_USED flag after all resources are freed so that swapon
-+	 * can reuse this swap_info in alloc_swap_info() safely.  It is ok to
-+	 * not hold p->lock after we cleared its SWP_WRITEOK.
-+	 */
-+	spin_lock(&swap_lock);
-+	p->flags = 0;
-+	spin_unlock(&swap_lock);
-+
- 	err = 0;
- 	atomic_inc(&proc_poll_event);
- 	wake_up_interruptible(&proc_poll_wait);
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 68fe53b..9fa8f25 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -2020,11 +2020,12 @@ int __set_page_dirty_nobuffers(struct page *page)
+ 	if (!TestSetPageDirty(page)) {
+ 		struct address_space *mapping = page_mapping(page);
+ 		struct address_space *mapping2;
++		unsigned long flags;
+ 
+ 		if (!mapping)
+ 			return 1;
+ 
+-		spin_lock_irq(&mapping->tree_lock);
++		spin_lock_irqsave(&mapping->tree_lock, flags);
+ 		mapping2 = page_mapping(page);
+ 		if (mapping2) { /* Race with truncate? */
+ 			BUG_ON(mapping2 != mapping);
+@@ -2033,7 +2034,7 @@ int __set_page_dirty_nobuffers(struct page *page)
+ 			radix_tree_tag_set(&mapping->page_tree,
+ 				page_index(page), PAGECACHE_TAG_DIRTY);
+ 		}
+-		spin_unlock_irq(&mapping->tree_lock);
++		spin_unlock_irqrestore(&mapping->tree_lock, flags);
+ 		if (mapping->host) {
+ 			/* !PageAnon && !swapper_space */
+ 			__mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
 -- 
 1.8.3.2
 
