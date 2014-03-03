@@ -1,79 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752523AbaCCDB4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 22:01:56 -0500
-Received: from mail-by2lp0242.outbound.protection.outlook.com ([207.46.163.242]:23411
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751883AbaCCDBz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 22:01:55 -0500
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Mark Brown <broonie@kernel.org>
-CC: "lars@metafoo.de" <lars@metafoo.de>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCHv2 1/3] ASoC: codec: Simplify ASoC probe code.
-Thread-Topic: [PATCHv2 1/3] ASoC: codec: Simplify ASoC probe code.
-Thread-Index: AQHPNG1ZE66RA7TcJUK0BpBMQvyaLprLpHwAgAMIdAA=
-Date: Mon, 3 Mar 2014 03:01:52 +0000
-Message-ID: <ea3da7fbf6564020b12bcd8b4878ae4a@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1393578267-18255-1-git-send-email-Li.Xiubo@freescale.com>
- <1393578267-18255-2-git-send-email-Li.Xiubo@freescale.com>
- <20140301042818.GP29849@sirena.org.uk>
-In-Reply-To: <20140301042818.GP29849@sirena.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 0139052FDB
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(51704005)(164054003)(189002)(199002)(2656002)(87266001)(74662001)(47976001)(50986001)(83322001)(74366001)(81686001)(81816001)(94946001)(80976001)(85306002)(4396001)(92566001)(31966008)(74502001)(87936001)(49866001)(93136001)(47736001)(47446002)(94316002)(83072002)(95416001)(56816005)(86362001)(90146001)(76576001)(76786001)(76796001)(59766001)(54316002)(56776001)(77982001)(74876001)(76482001)(95666003)(46102001)(69226001)(66066001)(51856001)(81342001)(93516002)(80022001)(65816001)(81542001)(79102001)(53806001)(33646001)(54356001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB427;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752699AbaCCDLq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 22:11:46 -0500
+Received: from mga09.intel.com ([134.134.136.24]:27971 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751896AbaCCDLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Mar 2014 22:11:44 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,575,1389772800"; 
+   d="scan'208";a="484583456"
+Date: Mon, 3 Mar 2014 08:41:37 +0530
+From: Jenny Tc <jenny.tc@intel.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Kim Milo <Milo.Kim@ti.com>, Lee Jones <lee.jones@linaro.org>,
+        Jingoo Han <jg1.han@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Rhyland Klein <rklein@nvidia.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sebastian Reichel <sre@ring0.de>, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        Linux-OMAP <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH 3/4] power_supply: Introduce PSE compliant algorithm
+Message-ID: <20140303031137.GA1132@jenny-desktop>
+References: <1391490780-6141-1-git-send-email-jenny.tc@intel.com>
+ <1391490780-6141-4-git-send-email-jenny.tc@intel.com>
+ <CACRpkdbppewuSSJu=Y=1T7oOCxz_ynhNspyPT=S894KoUB6H6g@mail.gmail.com>
+ <20140228030727.GB27921@jenny-desktop>
+ <20140228100816.GA13406@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140228100816.GA13406@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > "Just removing the set_cache_io() call will not work for all
-> > drivers. There are some MFD child devices which use regmap from the parent
-> > device. So dev_get_regmap() will return NULL for those."
+On Fri, Feb 28, 2014 at 11:08:16AM +0100, Pavel Machek wrote:
+> On Fri 2014-02-28 08:37:27, Jenny Tc wrote:
+> > On Thu, Feb 27, 2014 at 09:18:57PM +0100, Linus Walleij wrote:
+> > > On Tue, Feb 4, 2014 at 6:12 AM, Jenny TC <jenny.tc@intel.com> wrote:
+> > > 
+> > > > +static inline bool __is_battery_full
+> > > > +       (long volt, long cur, long iterm, unsigned long cv)
+> > > 
+> > > Overall I wonder if you've run checkpatch on these patches, but why
+> > > are you naming this one function with a double __underscore?
+> > > Just is_battery_full_check() or something would work fine I guess?
+> > 
+> > Just to convey that is_battery_full is a local function and not generic. You
+> > can find similar usage in power_supply_core.c (__power_supply_changed_work)
+> > and in other drivers. Isn't it advised to have __ prefixes?
 > 
-> This is the sort of thing that I was referring to when talking about
-> doing the non-boring drivers separately.  As well as the warnings Lars
-> mentioned there's a bisection issue here:
+> It is static; everybody sees it is local. __ prefix usually means
+> something else.
+
+Agreed, I will remove the __ prefix in next patchset. Meanwhile I would
+appreciate if anyone could help me to understand what __ prefix really means.
+
+> > > > +       u16 capacity;   /* mAh */
+> > > > +       u16 voltage_max; /* mV */
+> > > > +       /* charge termination current */
+> > > > +       u16 chrg_term_mA;
+> > > > +       /* Low battery level voltage */
+> > > > +       u16 low_batt_mV;
+> > > > +       /* upper and lower temperature limits on discharging */
+> > > > +       s8 disch_temp_ul; /* Degree Celsius */
+> > > > +       s8 disch_temp_ll; /* Degree Celsius */
+> > > > +       /* number of temperature monitoring ranges */
+> > > > +       u16 temp_mon_ranges;
+> > > > +       struct psy_ps_temp_chg_table temp_mon_range[BATT_TEMP_NR_RNG];
+> > > > +       /* lowest temperature supported */
+> > > > +       s8 temp_low_lim;
+> > > > +} __packed;
+> > > 
+> > > Why packed, and convert to kerneldoc for this struct.
+> > 
+> > Battery charging profile, may come from EEPROM/emmc which would be packed.
 > 
-> > -	codec->control_data = da7213->regmap;
-> > -	ret = snd_soc_codec_set_cache_io(codec, 8, 8, SND_SOC_REGMAP);
-> > -	if (ret < 0) {
-> > -		dev_err(codec->dev, "Failed to set cache I/O: %d\n", ret);
-> > -		return ret;
-> > -	}
-> > -
-> >  	/* Default to using ALC auto offset calibration mode. */
-> >  	snd_soc_update_bits(codec, DA7213_ALC_CTRL1,
-> >  			    DA7213_ALC_CALIB_MODE_MAN, 0);
-> 
-> Unless the core sets up the I/O before calling probe() the above is
-> going to mean that the snd_soc_update_bits() call fails since the I/O
-> operations won't have been set up.  There is a defualt call to set a
-> regmap up but it's only done after the probe.
+> Do you need to do endianness conversion, too?
 
-Yes, like the SGTL5000 CODEC driver, which needs to read the chip information
-in main probe. And then it must use the regmap core APIs directly.
-
-And I have do another research early, all the CODEC drivers who are calling
-set_cache_io() in ASoC probes, and before that they all are using the regmap core
-APIs instead of ASoC ones if needed. 
-
-I think we should move the set_cache_io() calling more earlier as we discussed
-before, but need much more research and testing. Splitting them into another
-separate patch later will be much better and easier to be reviewed.
-
-Thanks,
-
---
-Best Regards,
-Xiubo
+May/may not depending on the stored format. If needed, the endianess conversion
+should be done at driver level where the EEPROM/emmc reading happens.
