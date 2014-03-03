@@ -1,52 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755533AbaCCXED (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 18:04:03 -0500
-Received: from mga09.intel.com ([134.134.136.24]:4179 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755016AbaCCXD6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 18:03:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,581,1389772800"; 
-   d="scan'208";a="493447477"
-Date: Mon, 3 Mar 2014 15:01:48 -0800
-From: "David E. Box" <david.e.box@linux.intel.com>
-To: "Li, Aubrey" <aubrey.li@linux.intel.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V5 0/2] x86: IOSF: Add loadable module support
-Message-ID: <20140303230148.GA29215@linux.intel.com>
-References: <1393609674-2999-1-git-send-email-david.e.box@linux.intel.com>
- <1393641652-7222-1-git-send-email-david.e.box@linux.intel.com>
- <531428D9.1060101@linux.intel.com>
- <20140303155850.GA2879@linux.intel.com>
- <5314FEF3.70908@linux.intel.com>
+	id S1755579AbaCCXEc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 18:04:32 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:45215 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755184AbaCCXE3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 18:04:29 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5314FEF3.70908@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140303100501.GB1108@localhost.localdomain>
+References: <1393468732-3919-1-git-send-email-ast@plumgrid.com>
+	<1393468732-3919-2-git-send-email-ast@plumgrid.com>
+	<531084E0.5080601@redhat.com>
+	<CAMEtUuw9aQaBQR-CQq8hdk+8WFqadG0u1fz3pDTsedhXSkQzTg@mail.gmail.com>
+	<53112A08.5080309@redhat.com>
+	<20140303100501.GB1108@localhost.localdomain>
+Date: Mon, 3 Mar 2014 15:04:28 -0800
+Message-ID: <CAMEtUuxNTB3SKbTeF_JJBMUeWnzfzPphL_cwLXTyxwasEkFe6A@mail.gmail.com>
+Subject: Re: [PATCH v3 net-next 1/1] bpf32->bpf64 mapper and bpf64 interpreter
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Hagen Paul Pfeifer <hagen@jauu.net>
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Gross <jesse@nicira.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 04, 2014 at 06:15:15AM +0800, Li, Aubrey wrote:
-> On 2014/3/3 23:58, David E. Box wrote:
-> > On Mon, Mar 03, 2014 at 03:01:45PM +0800, Li, Aubrey wrote:
-> >> Hi David,
-> >>
-> >> I'm probably too late to catch this thread. Just one question, what's
-> >> the relationship between
-> >> 	arch/x86/kernel/iosf_mbi.c
-> >> and
-> >> 	drivers/platform/x86/intel_baytrail.c
-> >>
-> > iosf_mbi.c is the version that went upstream, no longer specific to baytrail.
-> 
-> Then should we remove the latter?
-> 
+On Mon, Mar 3, 2014 at 2:05 AM, Hagen Paul Pfeifer <hagen@jauu.net> wrote:
+> * Daniel Borkmann | 2014-03-01 01:30:00 [+0100]:
+>
+>>>>as in 'struct bpf_insn' the immediate value is 32 bit, so for 64 bit
+>>>>comparisons, you'd still need to load to immediate values, right?
+>>>
+>>>there is no insn that use 64-bit immediate, since 64-bit immediates
+>>>are extremely rare. grep x86-64 asm code for movabsq will return very few.
+>>>llvm or gcc can easily construct any constant by combination of mov,
+>>>shifts and ors.
+>>>bpf64 comparisons are all 64-bit right now. So far I didn't see a need to do
+>>>32-bit comparison, since old bpf is all unsigned, mapping 32->64 of
+>>>Jxx is painless.
+>>
+>>Hm, fair enough, I was just thinking for comparisons of IPv6 addresses
+>>when we do socket filtering. On the other hand, old and new insns are
+>>both 64 bit wide and can be used though the same api then.
+>
+> What about the long term idea to support JITed nftables? A 128 bit immediate
+> is required - maybe the biggest requirement for nftable support.
 
-Absolutely. I wasn't aware until now that this version went upstream. I didn't
-see a tip for it. I'll send a patch to revert it.
+I'm still planning to bring benefits of ebpf-JIT to nft.
+There are different ways to approach it. I'm not ready to debate
+details, since I
+don't have a working code for nft+bpf yet and code speaks better than words.
+But I'm confident that ebpf instruction set will not need 128-bit extensions.
+If something unforeseen is needed, we can always add it.
 
-david box
+Right now I'm testing ebpf+seccomp.
+As a micro benchmark I took a test from libseccomp and added dummy
+syscall loop. There is a nice speedup. will post a patch soon.
+
+Thanks
+Alexei
