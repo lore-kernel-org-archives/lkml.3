@@ -1,101 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754333AbaCCLaf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 06:30:35 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:53157 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752263AbaCCLae (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 06:30:34 -0500
-Message-ID: <531467D3.2030307@ti.com>
-Date: Mon, 3 Mar 2014 13:30:27 +0200
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1754458AbaCCLeU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 06:34:20 -0500
+Received: from smtp-out-144.synserver.de ([212.40.185.144]:1040 "EHLO
+	smtp-out-014.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754102AbaCCLeT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 06:34:19 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 17280
+Message-ID: <531468CA.6040302@metafoo.de>
+Date: Mon, 03 Mar 2014 12:34:34 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>, Lee Jones <lee.jones@linaro.org>
-CC: <florian.vaussard@epfl.ch>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH 1/3] mfd: twl6040: Select i2c fast mode as default with
- regmap patch
-References: <1393509410-1640-1-git-send-email-peter.ujfalusi@ti.com> <1393509410-1640-2-git-send-email-peter.ujfalusi@ti.com> <530F4A84.9070906@ti.com> <530F4CA5.6030502@ti.com> <530F5323.1020305@ti.com> <53103D34.8050101@ti.com> <53108F90.7070608@ti.com> <53109C92.10104@ti.com> <5310A61C.5000105@ti.com>
-In-Reply-To: <5310A61C.5000105@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+CC: "'Takashi Iwai'" <tiwai@suse.de>,
+        "'alsa-devel@alsa-project.org'" <alsa-devel@alsa-project.org>,
+        Mark Brown <broonie@kernel.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <liam.r.girdwood@intel.com>
+Subject: Re: [alsa-devel] change kmalloc into vmalloc for large memory allocations
+References: <35FD53F367049845BC99AC72306C23D102844605F38C@CNBJMBX05.corpusers.net> <s5hlhwvb9q8.wl%tiwai@suse.de> <35FD53F367049845BC99AC72306C23D102844605F38E@CNBJMBX05.corpusers.net> <s5hob1nabb5.wl%tiwai@suse.de> <s5hmwh7ab5w.wl%tiwai@suse.de> <35FD53F367049845BC99AC72306C23D102844605F392@CNBJMBX05.corpusers.net>
+In-Reply-To: <35FD53F367049845BC99AC72306C23D102844605F392@CNBJMBX05.corpusers.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2014 05:07 PM, Nishanth Menon wrote:
-> On 02/28/2014 08:26 AM, Peter Ujfalusi wrote:
->> On 02/28/2014 03:30 PM, Nishanth Menon wrote:
->>> TWL6030 can do 3.3MHz by default and there are no speed registers to
->>> configure.
+On 03/03/2014 12:13 PM, Wang, Yalin wrote:
+> Hi
+>
+>
+> I add logs in kernel , the result is :
+>
+> 532 <4>[    5.690094] @@ sizeof(struct snd_soc_pcm_runtime)=1488 card->num_links=42 card->num_aux_devs=0
+>
+> card->num_links=42 , is it correct ?
+
+Very unlikely. Make sure that it is properly initialized in your machine driver.
+
+>
+> our hardware is qcom msm8x26 platform .
+
+This one doesn't seem to be in upstream.
+
+>
+> Thanks
+>
+> -----Original Message-----
+> From: Takashi Iwai [mailto:tiwai@suse.de]
+> Sent: Monday, March 03, 2014 5:23 PM
+> To: Wang, Yalin
+> Cc: 'linux-kernel@vger.kernel.org'; Mark Brown; 'perex@perex.cz'; 'alsa-devel@alsa-project.org'; Liam Girdwood
+> Subject: Re: change kmalloc into vmalloc for large memory allocations
+>
+> At Mon, 03 Mar 2014 10:19:58 +0100,
+> Takashi Iwai wrote:
 >>
->> According to the datasheet the speed of twl6030 is limited to 2.4MHz. I have
->> not seen registers or pins to select the speed. As the documentation puts
->> this: High-speed mode (limited to 2.4Mbit/s maximum)
-> 
-> Aye, you are correct, the latest data sheet does show this - i made
-> the mistake of opening an older spec doc :(..
-
-As a note: I tried first with 3.4MHz bus speed (who reads documentation?)
-twl6030 was working fine as far as I can tell. But the TRM is really
-expressing that 2.4MHz is the limit for twl6030.
-
-> I do however suggest that you put one of those i2c analyser on the
-> rail to see what is happening. else, we'd be doing a lot of guessing here.
-
-If I would have access to one...
-
-
->> If I have fast mode configured to the controller, I can still communicate with
->> twl6040 even if it is set to normal mode.
-> 
+>> [Dropped unrelated subsystem MLs, and corrected Liam's address]
+>
+> Grrr, even Mark's address was obsoleted.  Here corrected.
+>
+>
+> Takashi
+>
 >>
->> I still think that this patch is safe for now. We could try to figure out how
->> to increase the i2c speed on the bus for twl6030 and twl6040. This has to be
->> done in the same series.
-> 
-> ?? you mean set i2c bus speed to full speed on PandaBoard? it is
-> already full speed[1]!
+>> At Mon, 3 Mar 2014 09:55:15 +0800,
+>> Wang, Yalin wrote:
+>>>
+>>> Hi  Takashi,
+>>>
+>>> For this one:
+>>> https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tree/sou
+>>> nd/soc/soc-core.c?h=master#n3772
+>>>
+>>> in my kernel log,
+>>> the allocation size 62496,
+>>> about 62KB,
+>>
+>> This looks way too much than expected.  I thought each struct
+>> snd_soc_pcm_runtime should be 1 or 2kB.  The code allocating an arary
+>> of snd_soc_pcm_runtime, so this might be due to some invalid values
+>> there.
+>>
+>>> I think need to  change to vmalloc .
+>>> How do you think of it ?
+>>
+>> This looks rather like a bug somewhere around it.
+>>
+>> Could you check the values there, sizeof(struct snd_soc_pcm_runtime),
+>> card->num_links and card->num_aux_devs?
+>>
+>> And, with which hardware is the issue examined?
+>>
+>>
+>> thanks,
+>>
+>> Takashi
+>>
+>>>
+>>> Logs:
+>>> <4>[   11.469789] ------------[ cut here ]------------
+>>> <4>[   11.469803] WARNING: at /media/00DE7FE2DE7FCE82/jb-mr2-yukon/kernel/include/linux/slub_def.h:265 __kmalloc+0x38/0x29c()
+>>> <4>[   11.469811] size=62496 flags=80d0
+>>> <4>[   11.469815] Modules linked in:
+>>> <4>[   11.469835] [<c010c534>] (unwind_backtrace+0x0/0x11c) from [<c018ab04>] (warn_slowpath_common+0x4c/0x64)
+>>> <4>[   11.469850] [<c018ab04>] (warn_slowpath_common+0x4c/0x64) from [<c018ab9c>] (warn_slowpath_fmt+0x2c/0x3c)
+>>> <4>[   11.469864] [<c018ab9c>] (warn_slowpath_fmt+0x2c/0x3c) from [<c0249ab4>] (__kmalloc+0x38/0x29c)
+>>> <4>[   11.469879] [<c0249ab4>] (__kmalloc+0x38/0x29c) from [<c06a0124>] (snd_soc_register_card+0x184/0x104c)
+>>> <4>[   11.469896] [<c06a0124>] (snd_soc_register_card+0x184/0x104c) from [<c088183c>] (msm8226_asoc_machine_probe+0x298/0x7f0)
+>>> <4>[   11.469913] [<c088183c>] (msm8226_asoc_machine_probe+0x298/0x7f0) from [<c044b1fc>] (platform_drv_probe+0x14/0x18)
+>>> <4>[   11.469927] [<c044b1fc>] (platform_drv_probe+0x14/0x18) from [<c0449f2c>] (driver_probe_device+0x134/0x334)
+>>> <4>[   11.469940] [<c0449f2c>] (driver_probe_device+0x134/0x334) from [<c044a194>] (__driver_attach+0x68/0x8c)
+>>> <4>[   11.469953] [<c044a194>] (__driver_attach+0x68/0x8c) from [<c044849c>] (bus_for_each_dev+0x48/0x80)
+>>> <4>[   11.469965] [<c044849c>] (bus_for_each_dev+0x48/0x80) from [<c0449528>] (bus_add_driver+0x100/0x26c)
+>>> <4>[   11.469978] [<c0449528>] (bus_add_driver+0x100/0x26c) from [<c044a66c>] (driver_register+0x9c/0x120)
+>>> <4>[   11.469992] [<c044a66c>] (driver_register+0x9c/0x120) from [<c010052c>] (do_one_initcall+0x90/0x160)
+>>> <4>[   11.470007] [<c010052c>] (do_one_initcall+0x90/0x160) from [<c0d00b74>] (kernel_init+0xec/0x1a8)
+>>> <4>[   11.470022] [<c0d00b74>] (kernel_init+0xec/0x1a8) from [<c0106aec>] (kernel_thread_exit+0x0/0x8)
+>>> <4>[   11.470030] ---[ end trace 1b75b31a2719ed4d ]---
+>>>
+>>> BRs/ Yalin
+>>> -----Original Message-----
+>>> From: Takashi Iwai [mailto:tiwai@suse.de]
+>>> Sent: Friday, February 28, 2014 10:20 PM
+>>> To: Wang, Yalin
+>>> Cc: 'linux-kernel@vger.kernel.org'; 'linux-arm-msm@vger.kernel.org'; 'linux-arm-kernel@lists.infradead.org'; 'linux-input@vger.kernel.org'; 'balbi@ti.com'; 'gregkh@linuxfoundation.org'; 'lrg@ti.com'; 'broonie@opensource.wolfsonmicro.com'; 'perex@perex.cz'; 'pablo@netfilter.org'; 'kaber@trash.net'; 'davem@davemloft.net'; 'rostedt@goodmis.org'; 'fweisbec@gmail.com'; 'mingo@redhat.com'; 'dmitry.torokhov@gmail.com'; 'rydberg@euromail.se'; 'linux-usb@vger.kernel.org'; 'alsa-devel@alsa-project.org'; 'netfilter-devel@vger.kernel.org'; 'netfilter@vger.kernel.org'; 'coreteam@netfilter.org'; 'netdev@vger.kernel.org'
+>>> Subject: Re: change kmalloc into vmalloc for large memory
+>>> allocations
+>>>
+>>> At Fri, 28 Feb 2014 16:15:23 +0800,
+>>> Wang, Yalin wrote:
+>>>>
+>>>> Hi
+>>>>
+>>>>
+>>>> I find there is some drivers use kmalloc to allocate large Memorys
+>>>> during module_init,  some can be changed to use vmalloc To save
+>>>> some low mem, I add log in kernel to track , And list them here:
+>>>>
+>>>> https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tree/d
+>>>> rive
+>>>> rs/usb/gadget/f_mass_storage.c?h=master#n2724
+>>>>
+>>>> https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tree/s
+>>>> ound
+>>>> /soc/soc-core.c?h=master#n3772
+>>>
+>>> At least the ASoC runtime case doesn't use the allocated memory as buffer, and they are allocated only once per device, thus it shouldn't be the problem you stated.  If it really consumes so much memory, we need to rethink, instead of allocating an array but allocate each object, for example.
+>>>
+>>>
+>>> thanks,
+>>>
+>>> Takashi
+>>>
+>>>
+>>>> https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tree/n
+>>>> et/n
+>>>> etfilter/nf_conntrack_ftp.c?h=master#n603
+>>>> https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tree/n
+>>>> et/n
+>>>> etfilter/nf_conntrack_h323_main.c?h=master#n1849
+>>>> https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tree/n
+>>>> et/n
+>>>> etfilter/nf_conntrack_irc.c?h=master#n247
+>>>> https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tree/n
+>>>> et/n
+>>>> etfilter/nf_conntrack_sane.c?h=master#n195
+>>>>
+>>>> https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tree/d
+>>>> rive
+>>>> rs/input/evdev.c?h=master#n403
+>>>>
+>>>>
+>>>> they allocate large memory from 10k~64K , this will use lots of
+>>>> low mem, instead if we use vmalloc for these drivers , it will be
+>>>> good for some devices like smart phone, we often encounter some
+>>>> errors like kmalloc failed because there is not enough low mem ,
+>>>> especially when the device has physical memory less than 1GB .
+>>>>
+>>>>
+>>>> could this module change the memory allocation into vmalloc ?
+>>>>
+>>>> I was thinking that if we can introduce a helper function in kmalloc.h like this :
+>>>>
+>>>> Kmalloc(size, flags)
+>>>> {
+>>>> 	If (size > PAGE_SIZE && flags&CAN_USE_VMALLOC_FLAG)
+>>>> 		return vmalloc(size);
+>>>> 	Else
+>>>> 		return real_kmalloc(size);
+>>>> }
+>>>>
+>>>> Kfree(ptr)
+>>>> {
+>>>> 	If (is_vmalloc_addr(ptr))
+>>>> 		Vfree(ptr);
+>>>> 	Else
+>>>> 		Kfree(ptr);
+>>>> }
+>>>>
+>>>>
+>>>> But we need add some flags to ensure always use kmalloc for Some
+>>>> special use (dma etc..)
+>>>>
+>>>> How do you think of it ?
+>>>>
+>>>> Thanks
+>>>>
+>>>>
+>>>>
+>>>
+> _______________________________________________
+> Alsa-devel mailing list
+> Alsa-devel@alsa-project.org
+> http://mailman.alsa-project.org/mailman/listinfo/alsa-devel
+>
 
-No, I was thinking of Fast+ or HighSpeed but I have doubts that it can be done.
-
->> Now after several boots:
->> It seams if I set the i2c to 2.4MHz and I can not communicate with twl6040
->> right after cold power on.
->> So if the i2c bus is already set to 2.4GHz I can not set the twl6040 ACCCTL
->> register. But the content of ACCCTL register seams to be preserved between
->> reboots and this is why I saw that the 2.4MHz bus speed might be even possible.
-> 
-> This observation is the key.
-> 
-> Are you power cycling the regulators for TWL6040 as part of your
-> shutdown handler?
-
-When the mfd driver is removed, yes powers are asked to be turned off but in
-reality at least vio is always on in all of the boards I have seen.
-
-> Did you read the ACCTL register after a reboot to
-> see if the register contents are still the same as before?
-
-Yes I did. after reboot the ACCCTL register is the same in u-boot as I set
-previously, before the reboot.
-Disconnect power + Power the board the ACCCTL is as it has been specified in
-the datasheet.
-
-> Based on this observation, I suggest switching [1] to 100KHz.
-
-After several power cycle, reboot, cold boot etc. I think we can leave the i2c
-speed at 400KHz and configure the twl6040 to Fast mode as the first thing when
-the driver probes or the chip is powering on (regmap patch functionality).
-I have not seen a single case when this failed on me and the the 4x bandwidth
-does matter for twl6030 IMHO.
-
-> 
-> [1]
-> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/arch/arm/boot/dts/omap4-panda-common.dtsi#n291
-> 
-
-
--- 
-Péter
