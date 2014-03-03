@@ -1,56 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755439AbaCCWbn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 17:31:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13212 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754919AbaCCWbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 17:31:40 -0500
-From: Richard Guy Briggs <rgb@redhat.com>
-To: stable@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-audit@redhat.com
-Cc: Gao feng <gaofeng@cn.fujitsu.com>, eparis@redhat.com, sgrubb@redhat.com,
-        Richard Guy Briggs <rgb@redhat.com>
-Subject: [PATCH] audit: don't generate loginuid log when audit disabled
-Date: Mon,  3 Mar 2014 17:30:50 -0500
-Message-Id: <4c215d4514933983db3f162c0f6bf6a2a25221e7.1393353030.git.rgb@redhat.com>
+	id S1755534AbaCCWde (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 17:33:34 -0500
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:57600 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755241AbaCCWdc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 17:33:32 -0500
+Date: Mon, 3 Mar 2014 17:33:27 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cgroup: missing rcu read lock around task_css_set
+Message-ID: <20140303223327.GB26523@mtj.dyndns.org>
+References: <1393729211-937-1-git-send-email-sasha.levin@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393729211-937-1-git-send-email-sasha.levin@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gao feng <gaofeng@cn.fujitsu.com>
+On Sat, Mar 01, 2014 at 10:00:11PM -0500, Sasha Levin wrote:
+> rcu read lock should be held when calling and working with task_css_set.
+> 
+> This patch also fixes a related lockdep warning.
 
-If audit is disabled, we shouldn't generate loginuid audit
-log.
+Hmmm... PF_EXITING should be visible at that point and cset can't
+change anymore.  We prolly need to update lockdep annotation rather
+than adding spurious rcu locking around it.  Against which branch is
+it?  Can you please post the lockdep warning?
 
-Cc: stable@vger.kernel.org # v3.13-rc1
-Acked-by: Eric Paris <eparis@redhat.com>
-Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-Signed-off-by: Eric Paris <eparis@redhat.com>
----
+Thanks.
 
-Already upstream in 3.14-rc1.  This fixes a bug introduced by:
-	da0a6104 audit: loginuid functions coding style
-
-
- kernel/auditsc.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index df1e685..9ab02fa 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -1971,6 +1971,9 @@ static void audit_log_set_loginuid(kuid_t koldloginuid, kuid_t kloginuid,
- 	struct audit_buffer *ab;
- 	uid_t uid, ologinuid, nloginuid;
- 
-+	if (!audit_enabled)
-+		return;
-+
- 	uid = from_kuid(&init_user_ns, task_uid(current));
- 	ologinuid = from_kuid(&init_user_ns, koldloginuid);
- 	nloginuid = from_kuid(&init_user_ns, kloginuid),
 -- 
-1.7.1
-
+tejun
