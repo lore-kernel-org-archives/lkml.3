@@ -1,73 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753496AbaCCEuY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 23:50:24 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54686 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752263AbaCCEuW (ORCPT
+	id S1753522AbaCCE5a (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 23:57:30 -0500
+Received: from moutng.kundenserver.de ([212.227.17.13]:50640 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752469AbaCCE52 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 23:50:22 -0500
-Date: Mon, 3 Mar 2014 12:50:08 +0800
-From: Mark Brown <broonie@kernel.org>
-To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-Cc: "lars@metafoo.de" <lars@metafoo.de>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <20140303045008.GN2411@sirena.org.uk>
-References: <1393578267-18255-1-git-send-email-Li.Xiubo@freescale.com>
- <1393578267-18255-2-git-send-email-Li.Xiubo@freescale.com>
- <20140301042818.GP29849@sirena.org.uk>
- <ea3da7fbf6564020b12bcd8b4878ae4a@BY2PR03MB505.namprd03.prod.outlook.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="CoNbBaeZcnNUO34V"
-Content-Disposition: inline
-In-Reply-To: <ea3da7fbf6564020b12bcd8b4878ae4a@BY2PR03MB505.namprd03.prod.outlook.com>
-X-Cookie: You too can wear a nose mitten.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 202.175.88.218
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCHv2 1/3] ASoC: codec: Simplify ASoC probe code.
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Sun, 2 Mar 2014 23:57:28 -0500
+Message-ID: <1393822646.5816.4.camel@marge.simpson.net>
+Subject: [patch] rt,blk,mq: Make blk_mq_cpu_notify_lock a raw spinlock
+From: Mike Galbraith <bitbucket@online.de>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Date: Mon, 03 Mar 2014 05:57:26 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:x7QJLgZ0pZik4aSB9FJ1/z/urvzg8Uyb+AyxFTrXNF/
+ wMJ272/YCoJ+QpgeCaJ6rbaLGPMDm7DX/APH4gORTbcaXp6Www
+ 2qsBoNf+ygiLa+4uC5vb87R3tbaNkwbXo91qVqAbiHSOUxJ1t+
+ H3YGJ63DV56uD2QHONguobNHQfGCrYGRsGh7kHHKjbqscpMy/N
+ 50JbwVFwo1LWchZ12u7KjvZ41MdJKUQpl5tFYA35zrqVj1nKCt
+ nf89QCeGraCoUoSA/YgQyy3wi0tln0XkfbXaGxj0WznQzhrrvM
+ 6KgH9v+3Y+cyxqeDQNqlSrScG5CWObPooSdJqrzmoLkTOxXfLA
+ dPj823+Wq2zn1bKOIU3Y9J4idzbdAPALsbwH8clU+
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---CoNbBaeZcnNUO34V
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+[  365.164040] BUG: sleeping function called from invalid context at kernel/rtmutex.c:674
+[  365.164041] in_atomic(): 1, irqs_disabled(): 1, pid: 26, name: migration/1
+[  365.164043] no locks held by migration/1/26.
+[  365.164044] irq event stamp: 6648
+[  365.164056] hardirqs last  enabled at (6647): [<ffffffff8153d377>] restore_args+0x0/0x30
+[  365.164062] hardirqs last disabled at (6648): [<ffffffff810ed98d>] multi_cpu_stop+0x9d/0x120
+[  365.164070] softirqs last  enabled at (0): [<ffffffff810543bc>] copy_process.part.28+0x6fc/0x1920
+[  365.164072] softirqs last disabled at (0): [<          (null)>]           (null)
+[  365.164076] CPU: 1 PID: 26 Comm: migration/1 Tainted: GF           N  3.12.12-rt19-0.gcb6c4a2-rt #3
+[  365.164078] Hardware name: QCI QSSC-S4R/QSSC-S4R, BIOS QSSC-S4R.QCI.01.00.S013.032920111005 03/29/2011
+[  365.164091]  0000000000000001 ffff880a42ea7c30 ffffffff815367e6 ffffffff81a086c0
+[  365.164099]  ffff880a42ea7c40 ffffffff8108919c ffff880a42ea7c60 ffffffff8153c24f
+[  365.164107]  ffff880a42ea91f0 00000000ffffffe1 ffff880a42ea7c88 ffffffff81297ec0
+[  365.164108] Call Trace:
+[  365.164119]  [<ffffffff810060b1>] try_stack_unwind+0x191/0x1a0
+[  365.164127]  [<ffffffff81004872>] dump_trace+0x92/0x360
+[  365.164133]  [<ffffffff81006108>] show_trace_log_lvl+0x48/0x60
+[  365.164138]  [<ffffffff81004c18>] show_stack_log_lvl+0xd8/0x1d0
+[  365.164143]  [<ffffffff81006160>] show_stack+0x20/0x50
+[  365.164153]  [<ffffffff815367e6>] dump_stack+0x54/0x9a
+[  365.164163]  [<ffffffff8108919c>] __might_sleep+0xfc/0x140
+[  365.164173]  [<ffffffff8153c24f>] rt_spin_lock+0x1f/0x70
+[  365.164182]  [<ffffffff81297ec0>] blk_mq_main_cpu_notify+0x20/0x70
+[  365.164191]  [<ffffffff81540a1c>] notifier_call_chain+0x4c/0x70
+[  365.164201]  [<ffffffff81083499>] __raw_notifier_call_chain+0x9/0x10
+[  365.164207]  [<ffffffff810567be>] cpu_notify+0x1e/0x40
+[  365.164217]  [<ffffffff81525da2>] take_cpu_down+0x22/0x40
+[  365.164223]  [<ffffffff810ed9c6>] multi_cpu_stop+0xd6/0x120
+[  365.164229]  [<ffffffff810edd97>] cpu_stopper_thread+0xd7/0x1e0
+[  365.164235]  [<ffffffff810863a3>] smpboot_thread_fn+0x203/0x380
+[  365.164241]  [<ffffffff8107cbf8>] kthread+0xc8/0xd0
+[  365.164250]  [<ffffffff8154440c>] ret_from_fork+0x7c/0xb0
+[  365.164429] smpboot: CPU 1 is now offline
 
-On Mon, Mar 03, 2014 at 03:01:52AM +0000, Li.Xiubo@freescale.com wrote:
+Signed-off-by: Mike Galbraith <bitbucket@online.de>
+---
+ block/blk-mq-cpu.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-> I think we should move the set_cache_io() calling more earlier as we discussed
-> before, but need much more research and testing. Splitting them into another
-> separate patch later will be much better and easier to be reviewed.
+--- a/block/blk-mq-cpu.c
++++ b/block/blk-mq-cpu.c
+@@ -11,7 +11,7 @@
+ #include "blk-mq.h"
+ 
+ static LIST_HEAD(blk_mq_cpu_notify_list);
+-static DEFINE_SPINLOCK(blk_mq_cpu_notify_lock);
++static DEFINE_RAW_SPINLOCK(blk_mq_cpu_notify_lock);
+ 
+ static int blk_mq_main_cpu_notify(struct notifier_block *self,
+ 				  unsigned long action, void *hcpu)
+@@ -19,12 +19,12 @@ static int blk_mq_main_cpu_notify(struct
+ 	unsigned int cpu = (unsigned long) hcpu;
+ 	struct blk_mq_cpu_notifier *notify;
+ 
+-	spin_lock(&blk_mq_cpu_notify_lock);
++	raw_spin_lock(&blk_mq_cpu_notify_lock);
+ 
+ 	list_for_each_entry(notify, &blk_mq_cpu_notify_list, list)
+ 		notify->notify(notify->data, action, cpu);
+ 
+-	spin_unlock(&blk_mq_cpu_notify_lock);
++	raw_spin_unlock(&blk_mq_cpu_notify_lock);
+ 	return NOTIFY_OK;
+ }
+ 
+@@ -32,16 +32,16 @@ void blk_mq_register_cpu_notifier(struct
+ {
+ 	BUG_ON(!notifier->notify);
+ 
+-	spin_lock(&blk_mq_cpu_notify_lock);
++	raw_spin_lock(&blk_mq_cpu_notify_lock);
+ 	list_add_tail(&notifier->list, &blk_mq_cpu_notify_list);
+-	spin_unlock(&blk_mq_cpu_notify_lock);
++	raw_spin_unlock(&blk_mq_cpu_notify_lock);
+ }
+ 
+ void blk_mq_unregister_cpu_notifier(struct blk_mq_cpu_notifier *notifier)
+ {
+-	spin_lock(&blk_mq_cpu_notify_lock);
++	raw_spin_lock(&blk_mq_cpu_notify_lock);
+ 	list_del(&notifier->list);
+-	spin_unlock(&blk_mq_cpu_notify_lock);
++	raw_spin_unlock(&blk_mq_cpu_notify_lock);
+ }
+ 
+ void blk_mq_init_cpu_notifier(struct blk_mq_cpu_notifier *notifier,
 
-Yes, exactly - do the simple, boring cases first and then anything that
-needs thought separately.
 
---CoNbBaeZcnNUO34V
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTFAn9AAoJELSic+t+oim9bFwP/ji60dMU2memahwVPL+cBXil
-zkVgCoDPl2JXUSHW6Xs1tp3SeJHUfe0rvFk0eJZq6PMD1h2wvL/8usPhWNnWSX2I
-7Xxz6/f5k0siX9eFuBBTxYlhSH3csn6cvhrTlNMsA7cH0l5Ccd+Zr2YRBUVTpB+p
-frBojoCymruTs0RgZveuHrAwLiIyDoFhkUHjtLwZbV+ZFBt5EhRSTJKdswLhA841
-bbDeTrRbGxBSyPmwvw5M2Yc83wtldGh09NBzVPeoCxWSvoUvUDJUaO63KeRYlibA
-Y/4Yku+585Bz4qMfGqe2+u+PpPY81ckh4RkMIul5DpWNW+NGJWK5o5P18IJwzY5t
-2QWAs5Dm0m2j1J0B8EH3SWvZ1NG5YS4GklY9pTbnctaZ9Po3Qo1dRJzmMIoI+k8E
-jwP6DkuCc+19lyRHW1Ryuux7AdpTQhY6ljdM7VQAxdbTr8Y2XyY/eZORHkVWnrDm
-ewR0ITRX1Vqduatx0dWuwLIVlDtFc3KhRpsoATHU3F3SbviBha5H9joU9HO1SFAx
-uhsYFGxMdX8fBWyETgDJGuFig8YgP0R6dfdhuGTfD/Z5fhtFg0lwdQ5xI+BPOH2g
-8eN0+fMQYqsjhCITP3G5bxrLwq8NLtDKEAP3vqjPGMJgVEfOB3O3sChwoU1pcopN
-PvxnNPyY9ESx2k5B7LKf
-=ZChx
------END PGP SIGNATURE-----
-
---CoNbBaeZcnNUO34V--
