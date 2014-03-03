@@ -1,109 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648AbaCCLNs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 06:13:48 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43680 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754342AbaCCLMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 06:12:35 -0500
-From: Jan Kara <jack@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        Eric Paris <eparis@parisplace.org>, Jan Kara <jack@suse.cz>
-Subject: [PATCH 3/5] fanotify: Convert access_mutex to spinlock
-Date: Mon,  3 Mar 2014 12:12:21 +0100
-Message-Id: <1393845143-28007-4-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1393845143-28007-1-git-send-email-jack@suse.cz>
-References: <1393845143-28007-1-git-send-email-jack@suse.cz>
+	id S1754695AbaCCLOI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 06:14:08 -0500
+Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:18437 "EHLO
+	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754044AbaCCLOE convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 06:14:04 -0500
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'Takashi Iwai'" <tiwai@suse.de>
+CC: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>, "'perex@perex.cz'" <perex@perex.cz>,
+        "'alsa-devel@alsa-project.org'" <alsa-devel@alsa-project.org>,
+        Liam Girdwood <liam.r.girdwood@intel.com>
+Date: Mon, 3 Mar 2014 19:13:59 +0800
+Subject: RE: change kmalloc into vmalloc for large memory allocations
+Thread-Topic: change kmalloc into vmalloc for large memory allocations
+Thread-Index: Ac82wjVPPsYXPtT0QL2cT748M4+X6gAD1Ugg
+Message-ID: <35FD53F367049845BC99AC72306C23D102844605F392@CNBJMBX05.corpusers.net>
+References: <35FD53F367049845BC99AC72306C23D102844605F38C@CNBJMBX05.corpusers.net>
+	<s5hlhwvb9q8.wl%tiwai@suse.de>
+	<35FD53F367049845BC99AC72306C23D102844605F38E@CNBJMBX05.corpusers.net>
+	<s5hob1nabb5.wl%tiwai@suse.de> <s5hmwh7ab5w.wl%tiwai@suse.de>
+In-Reply-To: <s5hmwh7ab5w.wl%tiwai@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-access_mutex is used only to guard operations on access_list. There's no
-need for sleeping within this lock so just make a spinlock out of it.
+Hi 
 
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- fs/notify/fanotify/fanotify_user.c | 14 +++++++-------
- include/linux/fsnotify_backend.h   |  2 +-
- 2 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
-index 517732dedee2..e0379d725cd9 100644
---- a/fs/notify/fanotify/fanotify_user.c
-+++ b/fs/notify/fanotify/fanotify_user.c
-@@ -134,7 +134,7 @@ static struct fanotify_perm_event_info *dequeue_event(
- {
- 	struct fanotify_perm_event_info *event, *return_e = NULL;
- 
--	mutex_lock(&group->fanotify_data.access_mutex);
-+	spin_lock(&group->fanotify_data.access_lock);
- 	list_for_each_entry(event, &group->fanotify_data.access_list,
- 			    fae.fse.list) {
- 		if (event->fd != fd)
-@@ -144,7 +144,7 @@ static struct fanotify_perm_event_info *dequeue_event(
- 		return_e = event;
- 		break;
- 	}
--	mutex_unlock(&group->fanotify_data.access_mutex);
-+	spin_unlock(&group->fanotify_data.access_lock);
- 
- 	pr_debug("%s: found return_re=%p\n", __func__, return_e);
- 
-@@ -210,10 +210,10 @@ static ssize_t copy_event_to_user(struct fsnotify_group *group,
- #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
- 	if (event->mask & FAN_ALL_PERM_EVENTS) {
- 		FANOTIFY_PE(event)->fd = fd;
--		mutex_lock(&group->fanotify_data.access_mutex);
-+		spin_lock(&group->fanotify_data.access_lock);
- 		list_add_tail(&event->fae.fse.list,
- 			      &group->fanotify_data.access_list);
--		mutex_unlock(&group->fanotify_data.access_mutex);
-+		spin_unlock(&group->fanotify_data.access_lock);
- 	}
- #endif
- 
-@@ -343,7 +343,7 @@ static int fanotify_release(struct inode *ignored, struct file *file)
- #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
- 	struct fanotify_perm_event_info *event, *next;
- 
--	mutex_lock(&group->fanotify_data.access_mutex);
-+	spin_lock(&group->fanotify_data.access_lock);
- 
- 	atomic_inc(&group->fanotify_data.bypass_perm);
- 
-@@ -355,7 +355,7 @@ static int fanotify_release(struct inode *ignored, struct file *file)
- 		list_del_init(&event->fae.fse.list);
- 		event->response = FAN_ALLOW;
- 	}
--	mutex_unlock(&group->fanotify_data.access_mutex);
-+	spin_unlock(&group->fanotify_data.access_lock);
- 
- 	wake_up(&group->fanotify_data.access_waitq);
- #endif
-@@ -697,7 +697,7 @@ SYSCALL_DEFINE2(fanotify_init, unsigned int, flags, unsigned int, event_f_flags)
- 
- 	group->fanotify_data.f_flags = event_f_flags;
- #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
--	mutex_init(&group->fanotify_data.access_mutex);
-+	spin_lock_init(&group->fanotify_data.access_lock);
- 	init_waitqueue_head(&group->fanotify_data.access_waitq);
- 	INIT_LIST_HEAD(&group->fanotify_data.access_list);
- 	atomic_set(&group->fanotify_data.bypass_perm, 0);
-diff --git a/include/linux/fsnotify_backend.h b/include/linux/fsnotify_backend.h
-index 64cf3ef50696..fc7718c6bd3e 100644
---- a/include/linux/fsnotify_backend.h
-+++ b/include/linux/fsnotify_backend.h
-@@ -178,7 +178,7 @@ struct fsnotify_group {
- 		struct fanotify_group_private_data {
- #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
- 			/* allows a group to block waiting for a userspace response */
--			struct mutex access_mutex;
-+			spinlock_t access_lock;
- 			struct list_head access_list;
- 			wait_queue_head_t access_waitq;
- 			atomic_t bypass_perm;
--- 
-1.8.1.4
+I add logs in kernel , the result is :
 
+532 <4>[    5.690094] @@ sizeof(struct snd_soc_pcm_runtime)=1488 card->num_links=42 card->num_aux_devs=0
+
+card->num_links=42 , is it correct ?
+
+our hardware is qcom msm8x26 platform .
+
+Thanks 
+
+-----Original Message-----
+From: Takashi Iwai [mailto:tiwai@suse.de] 
+Sent: Monday, March 03, 2014 5:23 PM
+To: Wang, Yalin
+Cc: 'linux-kernel@vger.kernel.org'; Mark Brown; 'perex@perex.cz'; 'alsa-devel@alsa-project.org'; Liam Girdwood
+Subject: Re: change kmalloc into vmalloc for large memory allocations
+
+At Mon, 03 Mar 2014 10:19:58 +0100,
+Takashi Iwai wrote:
+> 
+> [Dropped unrelated subsystem MLs, and corrected Liam's address]
+
+Grrr, even Mark's address was obsoleted.  Here corrected.
+
+
+Takashi
+
+> 
+> At Mon, 3 Mar 2014 09:55:15 +0800,
+> Wang, Yalin wrote:
+> > 
+> > Hi  Takashi,
+> > 
+> > For this one:
+> > https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tree/sou
+> > nd/soc/soc-core.c?h=master#n3772
+> > 
+> > in my kernel log,
+> > the allocation size 62496,
+> > about 62KB,
+> 
+> This looks way too much than expected.  I thought each struct 
+> snd_soc_pcm_runtime should be 1 or 2kB.  The code allocating an arary 
+> of snd_soc_pcm_runtime, so this might be due to some invalid values 
+> there.
+> 
+> > I think need to  change to vmalloc .
+> > How do you think of it ?
+> 
+> This looks rather like a bug somewhere around it.
+> 
+> Could you check the values there, sizeof(struct snd_soc_pcm_runtime),
+> card->num_links and card->num_aux_devs?
+> 
+> And, with which hardware is the issue examined?
+> 
+> 
+> thanks,
+> 
+> Takashi
+> 
+> > 
+> > Logs:
+> > <4>[   11.469789] ------------[ cut here ]------------
+> > <4>[   11.469803] WARNING: at /media/00DE7FE2DE7FCE82/jb-mr2-yukon/kernel/include/linux/slub_def.h:265 __kmalloc+0x38/0x29c()
+> > <4>[   11.469811] size=62496 flags=80d0
+> > <4>[   11.469815] Modules linked in:
+> > <4>[   11.469835] [<c010c534>] (unwind_backtrace+0x0/0x11c) from [<c018ab04>] (warn_slowpath_common+0x4c/0x64)
+> > <4>[   11.469850] [<c018ab04>] (warn_slowpath_common+0x4c/0x64) from [<c018ab9c>] (warn_slowpath_fmt+0x2c/0x3c)
+> > <4>[   11.469864] [<c018ab9c>] (warn_slowpath_fmt+0x2c/0x3c) from [<c0249ab4>] (__kmalloc+0x38/0x29c)
+> > <4>[   11.469879] [<c0249ab4>] (__kmalloc+0x38/0x29c) from [<c06a0124>] (snd_soc_register_card+0x184/0x104c)
+> > <4>[   11.469896] [<c06a0124>] (snd_soc_register_card+0x184/0x104c) from [<c088183c>] (msm8226_asoc_machine_probe+0x298/0x7f0)
+> > <4>[   11.469913] [<c088183c>] (msm8226_asoc_machine_probe+0x298/0x7f0) from [<c044b1fc>] (platform_drv_probe+0x14/0x18)
+> > <4>[   11.469927] [<c044b1fc>] (platform_drv_probe+0x14/0x18) from [<c0449f2c>] (driver_probe_device+0x134/0x334)
+> > <4>[   11.469940] [<c0449f2c>] (driver_probe_device+0x134/0x334) from [<c044a194>] (__driver_attach+0x68/0x8c)
+> > <4>[   11.469953] [<c044a194>] (__driver_attach+0x68/0x8c) from [<c044849c>] (bus_for_each_dev+0x48/0x80)
+> > <4>[   11.469965] [<c044849c>] (bus_for_each_dev+0x48/0x80) from [<c0449528>] (bus_add_driver+0x100/0x26c)
+> > <4>[   11.469978] [<c0449528>] (bus_add_driver+0x100/0x26c) from [<c044a66c>] (driver_register+0x9c/0x120)
+> > <4>[   11.469992] [<c044a66c>] (driver_register+0x9c/0x120) from [<c010052c>] (do_one_initcall+0x90/0x160)
+> > <4>[   11.470007] [<c010052c>] (do_one_initcall+0x90/0x160) from [<c0d00b74>] (kernel_init+0xec/0x1a8)
+> > <4>[   11.470022] [<c0d00b74>] (kernel_init+0xec/0x1a8) from [<c0106aec>] (kernel_thread_exit+0x0/0x8)
+> > <4>[   11.470030] ---[ end trace 1b75b31a2719ed4d ]---
+> > 
+> > BRs/ Yalin
+> > -----Original Message-----
+> > From: Takashi Iwai [mailto:tiwai@suse.de]
+> > Sent: Friday, February 28, 2014 10:20 PM
+> > To: Wang, Yalin
+> > Cc: 'linux-kernel@vger.kernel.org'; 'linux-arm-msm@vger.kernel.org'; 'linux-arm-kernel@lists.infradead.org'; 'linux-input@vger.kernel.org'; 'balbi@ti.com'; 'gregkh@linuxfoundation.org'; 'lrg@ti.com'; 'broonie@opensource.wolfsonmicro.com'; 'perex@perex.cz'; 'pablo@netfilter.org'; 'kaber@trash.net'; 'davem@davemloft.net'; 'rostedt@goodmis.org'; 'fweisbec@gmail.com'; 'mingo@redhat.com'; 'dmitry.torokhov@gmail.com'; 'rydberg@euromail.se'; 'linux-usb@vger.kernel.org'; 'alsa-devel@alsa-project.org'; 'netfilter-devel@vger.kernel.org'; 'netfilter@vger.kernel.org'; 'coreteam@netfilter.org'; 'netdev@vger.kernel.org'
+> > Subject: Re: change kmalloc into vmalloc for large memory 
+> > allocations
+> > 
+> > At Fri, 28 Feb 2014 16:15:23 +0800,
+> > Wang, Yalin wrote:
+> > > 
+> > > Hi
+> > > 
+> > > 
+> > > I find there is some drivers use kmalloc to allocate large Memorys 
+> > > during module_init,  some can be changed to use vmalloc To save 
+> > > some low mem, I add log in kernel to track , And list them here:
+> > > 
+> > > https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tree/d
+> > > rive
+> > > rs/usb/gadget/f_mass_storage.c?h=master#n2724
+> > > 
+> > > https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tree/s
+> > > ound
+> > > /soc/soc-core.c?h=master#n3772
+> > 
+> > At least the ASoC runtime case doesn't use the allocated memory as buffer, and they are allocated only once per device, thus it shouldn't be the problem you stated.  If it really consumes so much memory, we need to rethink, instead of allocating an array but allocate each object, for example.
+> > 
+> > 
+> > thanks,
+> > 
+> > Takashi
+> > 
+> > 
+> > > https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tree/n
+> > > et/n
+> > > etfilter/nf_conntrack_ftp.c?h=master#n603
+> > > https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tree/n
+> > > et/n
+> > > etfilter/nf_conntrack_h323_main.c?h=master#n1849
+> > > https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tree/n
+> > > et/n
+> > > etfilter/nf_conntrack_irc.c?h=master#n247
+> > > https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tree/n
+> > > et/n
+> > > etfilter/nf_conntrack_sane.c?h=master#n195
+> > > 
+> > > https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tree/d
+> > > rive
+> > > rs/input/evdev.c?h=master#n403
+> > > 
+> > > 
+> > > they allocate large memory from 10k~64K , this will use lots of 
+> > > low mem, instead if we use vmalloc for these drivers , it will be 
+> > > good for some devices like smart phone, we often encounter some 
+> > > errors like kmalloc failed because there is not enough low mem , 
+> > > especially when the device has physical memory less than 1GB .
+> > > 
+> > > 
+> > > could this module change the memory allocation into vmalloc ?
+> > > 
+> > > I was thinking that if we can introduce a helper function in kmalloc.h like this :
+> > > 
+> > > Kmalloc(size, flags)
+> > > {
+> > > 	If (size > PAGE_SIZE && flags&CAN_USE_VMALLOC_FLAG)
+> > > 		return vmalloc(size);
+> > > 	Else
+> > > 		return real_kmalloc(size);
+> > > }
+> > > 
+> > > Kfree(ptr)
+> > > {
+> > > 	If (is_vmalloc_addr(ptr))
+> > > 		Vfree(ptr);
+> > > 	Else
+> > > 		Kfree(ptr);
+> > > }
+> > > 
+> > > 
+> > > But we need add some flags to ensure always use kmalloc for Some 
+> > > special use (dma etc..)
+> > > 
+> > > How do you think of it ?
+> > > 
+> > > Thanks
+> > > 
+> > > 
+> > > 
+> > 
