@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753756AbaCCBQt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 20:16:49 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:61734 "EHLO
+	id S1753852AbaCCBRt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 20:17:49 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:60797 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752105AbaCCBOX (ORCPT
+	with ESMTP id S1751646AbaCCBOU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 20:14:23 -0500
-X-AuditID: 9c93017d-b7c89ae000006ae1-d9-5313d76c7932
+	Sun, 2 Mar 2014 20:14:20 -0500
+X-AuditID: 9c93017d-b7c89ae000006ae1-9d-5313d76632ce
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
@@ -15,9 +15,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Namhyung Kim <namhyung@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH 07/13] perf hists: Add support for showing relative percentage
-Date: Mon,  3 Mar 2014 10:14:08 +0900
-Message-Id: <1393809254-4480-8-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 01/13] perf ui/stdio: Fix invalid output on event group report
+Date: Mon,  3 Mar 2014 10:14:02 +0900
+Message-Id: <1393809254-4480-2-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1393809254-4480-1-git-send-email-namhyung@kernel.org>
 References: <1393809254-4480-1-git-send-email-namhyung@kernel.org>
@@ -26,138 +26,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When filtering by thread, dso or symbol on TUI it also update total
-period so that the output shows different result than no filter - the
-percentage changed to relative to filtered entries only.  Sometimes
-this is not desired since users might expect same results with filter.
+When some of group member has 0 overhead, it printed previous
+percentage instead of 0.00%.  It's because passing integer 0 as a
+percent rather than double 0.0 so the remaining bits came from
+garbage.  The TUI and GTK don't have this problem since they pass 0.0.
 
-So new filtered_* fields to hists->stats to count them separately.
-They'll be controlled/used by user later.
+Before:
 
-Acked-by: Jiri Olsa <jolsa@redhat.com>
+  # Samples: 845  of event 'anon group { cycles, cache-references, cache-misses }'
+  # Event count (approx.): 174775051
+  #
+  #                 Overhead                               Samples
+  # ........................  ....................................
+  #
+      20.32%   8.58%  73.51%            45          30         138
+       6.87%   6.87%   6.87%            21           0           0
+       5.29%   0.31%   0.31%            10           1           0
+       1.89%   1.89%   1.89%             6           0           0
+       1.76%   1.76%   1.76%             2           0           0
+
+After:
+
+  #                 Overhead                               Samples
+  # ........................  ....................................
+  #
+      20.32%   8.58%  73.51%            45          30         138
+       6.87%   0.00%   0.00%            21           0           0
+       5.29%   0.31%   0.00%            10           1           0
+       1.89%   0.00%   0.00%             6           0           0
+       1.76%   0.00%   0.00%             2           0           0
+
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-report.c |  6 ++++++
- tools/perf/util/hist.c      | 19 +++++++++++++++----
- tools/perf/util/hist.h      |  2 ++
- 3 files changed, 23 insertions(+), 4 deletions(-)
+ tools/perf/ui/hist.c | 20 ++++++++++++++++----
+ 1 file changed, 16 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 5f7f1a332186..3f8478603d51 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -121,6 +121,8 @@ static int report__add_mem_hist_entry(struct report *rep, struct addr_location *
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index 78f4c92e9b73..6094562c9523 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -52,8 +52,15 @@ static int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
+ 				 * zero-fill group members in the middle which
+ 				 * have no sample
+ 				 */
+-				ret += print_fn(hpp->buf + ret, hpp->size - ret,
+-						fmt, 0);
++				if (fmt_percent) {
++					ret += print_fn(hpp->buf + ret,
++							hpp->size - ret,
++							fmt, 0.0);
++				} else {
++					ret += print_fn(hpp->buf + ret,
++							hpp->size - ret,
++							fmt, 0ULL);
++				}
+ 			}
  
- 	evsel->hists.stats.total_period += cost;
- 	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
-+	if (!he->filtered)
-+		evsel->hists.stats.nr_filtered_samples++;
- 	err = hist_entry__append_callchain(he, sample);
- out:
- 	return err;
-@@ -170,6 +172,8 @@ static int report__add_branch_hist_entry(struct report *rep, struct addr_locatio
- 
- 			evsel->hists.stats.total_period += 1;
- 			hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
-+			if (!he->filtered)
-+				evsel->hists.stats.nr_filtered_samples++;
- 		} else
- 			goto out;
+ 			if (fmt_percent)
+@@ -72,8 +79,13 @@ static int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
+ 			/*
+ 			 * zero-fill group members at last which have no sample
+ 			 */
+-			ret += print_fn(hpp->buf + ret, hpp->size - ret,
+-					fmt, 0);
++			if (fmt_percent) {
++				ret += print_fn(hpp->buf + ret, hpp->size - ret,
++						fmt, 0.0);
++			} else {
++				ret += print_fn(hpp->buf + ret, hpp->size - ret,
++						fmt, 0ULL);
++			}
+ 		}
  	}
-@@ -201,6 +205,8 @@ static int report__add_hist_entry(struct report *rep, struct perf_evsel *evsel,
- 
- 	err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
- 	evsel->hists.stats.total_period += sample->period;
-+	if (!he->filtered)
-+		evsel->hists.stats.nr_filtered_samples++;
- 	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
- out:
- 	return err;
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index d0c40897c955..743947d891bd 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -675,8 +675,8 @@ void hists__output_resort(struct hists *hists)
- 	next = rb_first(root);
- 	hists->entries = RB_ROOT;
- 
--	hists->nr_entries = 0;
--	hists->stats.total_period = 0;
-+	hists->nr_entries = hists->nr_filtered_entries = 0;
-+	hists->stats.total_period = hists->stats.total_filtered_period = 0;
- 	hists__reset_col_len(hists);
- 
- 	while (next) {
-@@ -695,12 +695,17 @@ static void hists__remove_entry_filter(struct hists *hists, struct hist_entry *h
- 	if (h->filtered)
- 		return;
- 
--	++hists->nr_entries;
--	if (h->ms.unfolded)
-+	hists->nr_entries++;
-+	hists->nr_filtered_entries++;
-+	if (h->ms.unfolded) {
- 		hists->nr_entries += h->nr_rows;
-+		hists->nr_filtered_entries += h->nr_rows;
-+	}
- 	h->row_offset = 0;
- 	hists->stats.total_period += h->stat.period;
-+	hists->stats.total_filtered_period += h->stat.period;
- 	hists->stats.nr_events[PERF_RECORD_SAMPLE] += h->stat.nr_events;
-+	hists->stats.nr_filtered_samples += h->stat.nr_events;
- 
- 	hists__calc_col_len(hists, h);
- }
-@@ -723,7 +728,9 @@ void hists__filter_by_dso(struct hists *hists)
- 	struct rb_node *nd;
- 
- 	hists->nr_entries = hists->stats.total_period = 0;
-+	hists->nr_filtered_entries = hists->stats.total_filtered_period = 0;
- 	hists->stats.nr_events[PERF_RECORD_SAMPLE] = 0;
-+	hists->stats.nr_filtered_samples = 0;
- 	hists__reset_col_len(hists);
- 
- 	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
-@@ -756,7 +763,9 @@ void hists__filter_by_thread(struct hists *hists)
- 	struct rb_node *nd;
- 
- 	hists->nr_entries = hists->stats.total_period = 0;
-+	hists->nr_filtered_entries = hists->stats.total_filtered_period = 0;
- 	hists->stats.nr_events[PERF_RECORD_SAMPLE] = 0;
-+	hists->stats.nr_filtered_samples = 0;
- 	hists__reset_col_len(hists);
- 
- 	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
-@@ -787,7 +796,9 @@ void hists__filter_by_symbol(struct hists *hists)
- 	struct rb_node *nd;
- 
- 	hists->nr_entries = hists->stats.total_period = 0;
-+	hists->nr_filtered_entries = hists->stats.total_filtered_period = 0;
- 	hists->stats.nr_events[PERF_RECORD_SAMPLE] = 0;
-+	hists->stats.nr_filtered_samples = 0;
- 	hists__reset_col_len(hists);
- 
- 	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 5ccc70057934..115d2e7f0a15 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -41,6 +41,7 @@ struct events_stats {
- 	u64 total_lost;
- 	u64 total_invalid_chains;
- 	u32 nr_events[PERF_RECORD_HEADER_MAX];
-+	u32 nr_filtered_samples;
- 	u32 nr_lost_warned;
- 	u32 nr_unknown_events;
- 	u32 nr_invalid_chains;
-@@ -84,6 +85,7 @@ struct hists {
- 	struct rb_root		entries;
- 	struct rb_root		entries_collapsed;
- 	u64			nr_entries;
-+	u64			nr_filtered_entries;
- 	const struct thread	*thread_filter;
- 	const struct dso	*dso_filter;
- 	const char		*uid_filter_str;
+ 	return ret;
 -- 
 1.7.11.7
 
