@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755318AbaCCS7E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 13:59:04 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:56105 "EHLO
+	id S1755353AbaCCS7R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 13:59:17 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:56118 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755196AbaCCS7A (ORCPT
+	with ESMTP id S1755320AbaCCS7F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 13:59:00 -0500
+	Mon, 3 Mar 2014 13:59:05 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        Johannes Berg <johannes.berg@intel.com>,
+Cc: Paul Bolle <pebolle@tiscali.nl>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 41/67] mac80211: Fix IBSS disconnect
-Date: Mon,  3 Mar 2014 10:55:29 -0800
-Message-Id: <1393872955-28810-42-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 47/67] raw: test against runtime value of max_raw_minors
+Date: Mon,  3 Mar 2014 10:55:35 -0800
+Message-Id: <1393872955-28810-48-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1393872955-28810-1-git-send-email-kamal@canonical.com>
 References: <1393872955-28810-1-git-send-email-kamal@canonical.com>
@@ -28,54 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+From: Paul Bolle <pebolle@tiscali.nl>
 
-commit d4c80d9df6d1e4473b1409e4d220ca3d1612125c upstream.
+commit 5bbb2ae3d6f896f8d2082d1eceb6131c2420b7cf upstream.
 
-Currently, when a station leaves an IBSS network, the
-corresponding BSS is not dropped from cfg80211 if there are
-other active stations in the network. But, the small
-window that is present when trying to determine a station's
-status based on IEEE80211_IBSS_MERGE_INTERVAL introduces
-a race.
+bind_get() checks the device number it is called with. It uses
+MAX_RAW_MINORS for the upper bound. But MAX_RAW_MINORS is set at compile
+time while the actual number of raw devices can be set at runtime. This
+means the test can either be too strict or too lenient. And if the test
+ends up being too lenient bind_get() might try to access memory beyond
+what was allocated for "raw_devices".
 
-Instead of trying to keep the BSS, always remove it when
-leaving an IBSS network. There is not much benefit to retain
-the BSS entry since it will be added with a subsequent join
-operation.
+So check against the runtime value (max_raw_minors) in this function.
 
-This fixes an issue where a dangling BSS entry causes ath9k
-to wait for a beacon indefinitely.
-
-Reported-by: Simon Wunderlich <sw@simonwunderlich.de>
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-[ kamal: backport to 3.8 (applied to ieee80211_ibss_leave) ]
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Acked-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/mac80211/ibss.c | 5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ drivers/char/raw.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/mac80211/ibss.c b/net/mac80211/ibss.c
-index 34741ee..217064a 100644
---- a/net/mac80211/ibss.c
-+++ b/net/mac80211/ibss.c
-@@ -1153,14 +1153,11 @@ int ieee80211_ibss_leave(struct ieee80211_sub_if_data *sdata)
- 	struct ieee80211_local *local = sdata->local;
- 	struct cfg80211_bss *cbss;
- 	u16 capability;
--	int active_ibss;
- 	struct sta_info *sta;
+diff --git a/drivers/char/raw.c b/drivers/char/raw.c
+index 54a3a6d..5959669 100644
+--- a/drivers/char/raw.c
++++ b/drivers/char/raw.c
+@@ -190,7 +190,7 @@ static int bind_get(int number, dev_t *dev)
+ 	struct raw_device_data *rawdev;
+ 	struct block_device *bdev;
  
- 	mutex_lock(&sdata->u.ibss.mtx);
+-	if (number <= 0 || number >= MAX_RAW_MINORS)
++	if (number <= 0 || number >= max_raw_minors)
+ 		return -EINVAL;
  
--	active_ibss = ieee80211_sta_active_ibss(sdata);
--
--	if (!active_ibss && !is_zero_ether_addr(ifibss->bssid)) {
-+	if (!is_zero_ether_addr(ifibss->bssid)) {
- 		capability = WLAN_CAPABILITY_IBSS;
- 
- 		if (ifibss->privacy)
+ 	rawdev = &raw_devices[number];
 -- 
 1.8.3.2
 
