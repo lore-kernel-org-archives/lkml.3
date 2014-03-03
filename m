@@ -1,146 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753876AbaCCDxo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 22:53:44 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38340 "EHLO mx2.suse.de"
+	id S1753362AbaCCDzQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 22:55:16 -0500
+Received: from mga14.intel.com ([143.182.124.37]:29925 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753452AbaCCDxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 22:53:42 -0500
-Date: Mon, 3 Mar 2014 14:53:33 +1100
-From: NeilBrown <neilb@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux RAID <linux-raid@vger.kernel.org>,
-        "majianpeng" <majianpeng@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] md / procfs: avoid Oops if md-mod removed while
- /proc/mdstat is being polled.
-Message-ID: <20140303145333.05ce4315@notabene.brown>
-In-Reply-To: <20140227153242.42cb9b9ef83dacc895017d44@linux-foundation.org>
-References: <20140227172445.13644477@notabene.brown>
-	<20140227125807.d034c50c7fe2e1a9f3c38ec1@linux-foundation.org>
-	<20140228083443.64c92382@notabene.brown>
-	<20140227135125.92a56ff656b3ca8d0b5d9029@linux-foundation.org>
-	<20140228100757.7dbd3dae@notabene.brown>
-	<20140227153242.42cb9b9ef83dacc895017d44@linux-foundation.org>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/DF7.Cd93fkarzoWZ3flQizO"; protocol="application/pgp-signature"
+	id S1752050AbaCCDzO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Mar 2014 22:55:14 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,575,1389772800"; 
+   d="asc'?scan'208";a="345017289"
+Date: Sun, 2 Mar 2014 22:32:50 -0500
+From: "Chen, Gong" <gong.chen@linux.intel.com>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Michel Lespinasse <walken@google.com>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        Yang Zhang <yang.z.zhang@Intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Janet Morgan <janet.morgan@Intel.com>, Tony Luck <tony.luck@Intel.com>,
+        Ruiv Wang <ruiv.wang@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH] x86, make check_irq_vectors_for_cpu_disable() aware of
+ numa node irqs
+Message-ID: <20140303033250.GA22677@gchen.bj.intel.com>
+References: <1393337061-1315-1-git-send-email-prarit@redhat.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wac7ysb48OaltWcw"
+Content-Disposition: inline
+In-Reply-To: <1393337061-1315-1-git-send-email-prarit@redhat.com>
+X-PGP-Key-ID: A43922C7
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/DF7.Cd93fkarzoWZ3flQizO
-Content-Type: text/plain; charset=US-ASCII
+
+--wac7ysb48OaltWcw
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Thu, 27 Feb 2014 15:32:42 -0800 Andrew Morton <akpm@linux-foundation.org>
-wrote:
-
-> On Fri, 28 Feb 2014 10:07:57 +1100 NeilBrown <neilb@suse.de> wrote:
+On Tue, Feb 25, 2014 at 09:04:21AM -0500, Prarit Bhargava wrote:
+> This patch explicitly depends on Yinghai's patch, [PATCH v3] x86, irq: get
+> correct available vectors for cpu disable, which was last posted here:
 >=20
-> > On Thu, 27 Feb 2014 13:51:25 -0800 Andrew Morton <akpm@linux-foundation=
-.org>
-> > wrote:
-> >=20
-> > > On Fri, 28 Feb 2014 08:34:43 +1100 NeilBrown <neilb@suse.de> wrote:
-> > >=20
-> > > > On Thu, 27 Feb 2014 12:58:07 -0800 Andrew Morton <akpm@linux-founda=
-tion.org>
-> > > > wrote:
-> > > >=20
-> > > > > On Thu, 27 Feb 2014 17:24:45 +1100 NeilBrown <neilb@suse.de> wrot=
-e:
-> > > > >=20
-> > > > > > If poll or select is waiting on /proc/mdstat when md-mod is unl=
-oaded
-> > > > > > an oops will ensure when the poll/select completes.
-> > > > > >=20
-> > > > > > This is because the wait_queue_head which is registered with po=
-ll_wait()
-> > > > > > is local to the module and no longer exists when the poll compl=
-etes and
-> > > > > > detaches that wait_queue_head (in poll_free_wait -> remove_wait=
-_queue).
-> > > > > >=20
-> > > > > > To fix this we need the wait_queue_head to have (at least) the =
-same life
-> > > > > > time as the proc_dir_entry.  So this patch places it in that st=
-ructure.
-> > > > > >=20
-> > > > > > We:
-> > > > > >   - add pde_poll_wait to struct proc_dir_entry
-> > > > > >   - call poll_wait() passing this when poll() is called on the =
-proc file
-> > > > > >   - export a function proc_wake_up which will call wake_up() on=
- pde_poll_wait
-> > > > > >=20
-> > > > > > and make use of all that in md.c
-> > > > >=20
-> > > > > This sounds wrong.  If a userspace process is waiting on
-> > > > > md_event_waiters then the md module is "busy" and the rmmod attem=
-pt
-> > > > > should fail?
-> > > >=20
-> > > > Al Viro says "no" quite firmly.
-> > > >=20
-> > > > I think the core argument is that
-> > > >=20
-> > > >   rmmod md-mod < /proc/mdstat
-> > > >=20
-> > > > would deadlock.
-> > >=20
-> > > Well, only if the rmmod hangs around waiting for the module to go idl=
-e.
-> > > I'm thinking rmmod should fail.  EBUSY.
+> http://marc.info/?l=3Dlinux-kernel&m=3D139094603622814&w=3D2
 >=20
-> This?  What happens if we just fail the rmmod when the module is busy
-> (which it is).
+> and is not yet in any tree AFAICT.
+>=20
+> P.
+>=20
+Sounds reasonable to me. Just a nitpick.
 
-I was hoping that Al would step in with an answer, but I got impatient had
-had a look around myself.
+Acked-by: Gong Chen <gong.chen@linux.intel.com>
 
-I found
+[...]
+> +		if (cpumask_empty(&affinity_new)) {
+> +			pr_warn("CPU %d disable failed: IRQ %u has no availble CPUS to transi=
+tion IRQ.\n",
+These words looks not fluent to native speaker. (but I'm not native
+speaker, too ;-))
 
-commit 99b76233803beab302123d243eea9e41149804f3
-Author: Alexey Dobriyan <adobriyan@gmail.com>
-Date:   Wed Mar 25 22:48:06 2009 +0300
-
-    proc 2/2: remove struct proc_dir_entry::owner
-   =20
-
-
-which references
-
-https://bugzilla.kernel.org/show_bug.cgi?id=3D12454
-
-which seems to suggest that we used to try to do as you suggest but it was
-racy and would be a lot of work to "fix". The chosen solution was to only
-'get' the module during read/write, not just while the /proc file is open.
-
-NeilBrown
-
---Sig_/DF7.Cd93fkarzoWZ3flQizO
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+--wac7ysb48OaltWcw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Version: GnuPG v1
 
-iQIVAwUBUxP8vTnsnt1WYoG5AQIhNBAAuXj8ipTGw4UuB0uvnqz93wPfxX5Y2cMt
-ll9Iozyod/SjCfBfuupZpYg3gl4LQHuBXeJpqO30DBOsSsYgqsoBzqHgzk1y50/T
-+gsMTrb252qDDrvh7FrpMmGXULVKwqynYKTzaCRX5BrFWq8sKx2pboeEelvnPOfA
-B0dBOzOQ1lo4DJqAtTvPTborlxOWag/Hz36a02MWNkh6LrY+ZZSlx/h3youODdeh
-QuzTNv+MCeMNYs6/oAXLYuRktPJdc4Gx9Ofw8pR2nIh0JUS/X7YF0F4lJMskBRY1
-XPbbmryL7Kby8qRQ0+LNuLFlz4m5K/mhfdFJHJfnJA5JZGu6h+veKuN5xyxOUI9y
-O+8F8qsXNU5XQPWc7tdWerZ5CdxK8nL92852Sq/8LWNDYI2UEPivrrU5Ew58djRS
-ftpCmG+Fcoz8ESQfpaqGHW/wFaHRFbtkQYF/a9NxwlSo0WSd8h9KL9J0xL9BZhps
-ODTuP+a5Irs8htMERQudAnWKvyiO3qY04TrI+cgXn92sHA9XM4OpmXhAH2LQ2DZW
-FcH+dhyavLzutkdG/im5N7ips4lgPwXV2smREWIyt93DDBTm/Wd5wLNPp528/f71
-GnKmYl1P2neBNSYC+tEdByw3bDGfLcIAuiXwRImryctOXRHlDWKJ/JzxlhaCEN5e
-tLcFoQGLqFI=
-=BdgV
+iQIcBAEBAgAGBQJTE/fhAAoJEI01n1+kOSLHnyIQAIUXW4VPlJRF0iWCNhwZfUpB
+FFWz8A/jT9FJ4II5mNrENcBCsAyQfOQMk/VOxF+BGubOnoxf+kkpBhZx8FrMtX7C
+7zS7ZmHwFicEaNRGBxs+nuLLcyxWYnjR79O9MFwI/Pb9WxKYfo8yq+gMZxubRJFK
+8x/R6bvK3Amyf4GmvvXYk2naxmDk6nY8v78G7sKAjT/xCJ8ru4ta65s+EaOwrGND
+ClNa3+Xd65odOT3u0ADQkC3ZmT6hbiOiDXR2im7QZdLGdiDaHARUczSPvqjbVL6K
+x43QbkI1ivVcAR29IChZ2HqtLPJYZcqPDElNz8sBcoTzvzuW4GflDYTzyUZMeLGA
+BeUop0tgM+er0/qTKE0LNVSdDXHEIRfMjU+4+GU3J9y7yoD7RHwlCuVZn7M+8Rq0
+R8MulGsWWz9BmNUH3ZgJ7lbd9P5uMAc2Q7g0r1T2XMnYEKTKKbxQJo9hT5lobRyN
+RM6sAdxxRe243ubyGR+Q+gJj0H7Rb9F9S1MpjPHb+0POTRJcxqVvIxZP0iyRkKQ5
+BL2yUzFNdV+5PNR3nFgZQ+XP/Z28L9wvU12q+mc8V8IY42U3/mwZykXfG5ff20fb
+HpEh2MEZY+CsweZdjEe7snmm1w9nm0yc51c5G6ZigOFqqhLCbwA7vTL40uKzFB99
+NhzXsXoxIHjnyc2HRXCb
+=frS1
 -----END PGP SIGNATURE-----
 
---Sig_/DF7.Cd93fkarzoWZ3flQizO--
+--wac7ysb48OaltWcw--
