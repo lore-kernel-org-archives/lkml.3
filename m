@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754993AbaCCS5x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 13:57:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:56009 "EHLO
+	id S1755018AbaCCS6B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 13:58:01 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:56015 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754965AbaCCS5t (ORCPT
+	with ESMTP id S1754976AbaCCS5w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 13:57:49 -0500
+	Mon, 3 Mar 2014 13:57:52 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>,
-        Rob Herring <robh@kernel.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 36/67] of: fix PCI bus match for PCIe slots
-Date: Mon,  3 Mar 2014 10:55:24 -0800
-Message-Id: <1393872955-28810-37-git-send-email-kamal@canonical.com>
+Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 25/67] s390/dump: Fix dump memory detection
+Date: Mon,  3 Mar 2014 10:55:13 -0800
+Message-Id: <1393872955-28810-26-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1393872955-28810-1-git-send-email-kamal@canonical.com>
 References: <1393872955-28810-1-git-send-email-kamal@canonical.com>
@@ -27,47 +28,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 
-commit 14e2abb732e485ee57d9d5b2cb8884652238e5c1 upstream.
+commit d7736ff5be31edaa4fe5ab62810c64529a24b149 upstream.
 
-On IBM pseries systems the device_type device-tree property of a PCIe
-bridge contains the string "pciex". The of_bus_pci_match() function was
-looking only for "pci" on this property, so in such cases the bus
-matching code was falling back to the default bus, causing problems on
-functions that should be using "assigned-addresses" for region address
-translation. This patch fixes the problem by also looking for "pciex" on
-the PCI bus match function.
+Dumps created by kdump or zfcpdump can contain invalid memory holes when
+dumping z/VM systems that have memory pressure.
 
-v2: added comment
+For example:
 
-Signed-off-by: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
-Acked-by: Grant Likely <grant.likely@linaro.org>
-Signed-off-by: Rob Herring <robh@kernel.org>
+   # zgetdump -i /proc/vmcore.
+   Memory map:
+   0000000000000000 - 0000000000bfffff (12 MB)
+   0000000000e00000 - 00000000014fffff (7 MB)
+   000000000bd00000 - 00000000f3bfffff (3711 MB)
+
+The memory detection function find_memory_chunks() issues tprot to
+find valid memory chunks. In case of CMM it can happen that pages are
+marked as unstable via set_page_unstable() in arch_free_page().
+If z/VM has released that pages, tprot returns -EFAULT and indicates
+a memory hole.
+
+So fix this and switch off CMM in case of kdump or zfcpdump.
+
+Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/of/address.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/s390/mm/page-states.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/drivers/of/address.c b/drivers/of/address.c
-index d61fdae..6b330a5 100644
---- a/drivers/of/address.c
-+++ b/drivers/of/address.c
-@@ -99,11 +99,12 @@ static unsigned int of_bus_default_get_flags(const __be32 *addr)
- static int of_bus_pci_match(struct device_node *np)
- {
- 	/*
-+ 	 * "pciex" is PCI Express
- 	 * "vci" is for the /chaos bridge on 1st-gen PCI powermacs
- 	 * "ht" is hypertransport
- 	 */
--	return !strcmp(np->type, "pci") || !strcmp(np->type, "vci") ||
--		!strcmp(np->type, "ht");
-+	return !strcmp(np->type, "pci") || !strcmp(np->type, "pciex") ||
-+		!strcmp(np->type, "vci") || !strcmp(np->type, "ht");
- }
+diff --git a/arch/s390/mm/page-states.c b/arch/s390/mm/page-states.c
+index a90d45e..27c50f4 100644
+--- a/arch/s390/mm/page-states.c
++++ b/arch/s390/mm/page-states.c
+@@ -12,6 +12,8 @@
+ #include <linux/mm.h>
+ #include <linux/gfp.h>
+ #include <linux/init.h>
++#include <asm/setup.h>
++#include <asm/ipl.h>
  
- static void of_bus_pci_count_cells(struct device_node *np,
+ #define ESSA_SET_STABLE		1
+ #define ESSA_SET_UNUSED		2
+@@ -41,6 +43,14 @@ void __init cmma_init(void)
+ 
+ 	if (!cmma_flag)
+ 		return;
++	/*
++	 * Disable CMM for dump, otherwise  the tprot based memory
++	 * detection can fail because of unstable pages.
++	 */
++	if (OLDMEM_BASE || ipl_info.type == IPL_TYPE_FCP_DUMP) {
++		cmma_flag = 0;
++		return;
++	}
+ 	asm volatile(
+ 		"       .insn rrf,0xb9ab0000,%1,%1,0,0\n"
+ 		"0:     la      %0,0\n"
 -- 
 1.8.3.2
 
