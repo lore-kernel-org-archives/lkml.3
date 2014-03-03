@@ -1,188 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033AbaCCSO2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 13:14:28 -0500
-Received: from mail-la0-f51.google.com ([209.85.215.51]:45539 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753590AbaCCSO0 (ORCPT
+	id S1754067AbaCCSPp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 13:15:45 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:36464 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751780AbaCCSPo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 13:14:26 -0500
+	Mon, 3 Mar 2014 13:15:44 -0500
+Date: Mon, 3 Mar 2014 18:15:30 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Andrew Lunn <andrew@lunn.ch>
+Cc: Jason Cooper <jason@lakedaemon.net>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
+        linux-kernel@vger.kernel.org,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH V2] ARM: dove: dt: revert PMU interrupt controller node
+Message-ID: <20140303181529.GM21483@n2100.arm.linux.org.uk>
+References: <20140207180836.GE8533@titan.lakedaemon.net> <1392667236-19126-1-git-send-email-jason@lakedaemon.net> <20140303150215.GI21483@n2100.arm.linux.org.uk> <20140303173740.GC16655@lunn.ch>
 MIME-Version: 1.0
-In-Reply-To: <CA+mB=1Lz6Wux-fZ-tECpn3QnwXa4pAZxpSbNng9KHbs_ACnzXQ@mail.gmail.com>
-References: <1393854036-5244-1-git-send-email-sthokal@xilinx.com>
-	<20140303174325.GB31062@obsidianresearch.com>
-	<CA+mB=1Lz6Wux-fZ-tECpn3QnwXa4pAZxpSbNng9KHbs_ACnzXQ@mail.gmail.com>
-Date: Mon, 3 Mar 2014 23:44:24 +0530
-X-Google-Sender-Auth: ifGi_pTcKlV-fX68g-KnIX2eUoo
-Message-ID: <CA+mB=1LY7=7CTf==L=Ohe0Wai5jHsma7FV3F-m=c=6kJXsDCUw@mail.gmail.com>
-Subject: Re: [PATCH v2] pcie: Add Xilinx PCIe Host Bridge IP driver
-From: Srikanth Thokala <sthokal@xilinx.com>
-To: Srikanth Thokala <sthokal@xilinx.com>
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140303173740.GC16655@lunn.ch>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please ignore the last message,  accidentally it was sent.  Apologies.
+On Mon, Mar 03, 2014 at 06:37:40PM +0100, Andrew Lunn wrote:
+> On Mon, Mar 03, 2014 at 03:02:15PM +0000, Russell King - ARM Linux wrote:
+> > On Mon, Feb 17, 2014 at 08:00:36PM +0000, Jason Cooper wrote:
+> > > The corresponding driver didn't make it into v3.14, so we need to remove
+> > > the node.  Dove systems fail to boot with the node present and no
+> > > driver.
+> > > 
+> > > This node will be re-added when the driver makes it to mainline.
+> > 
+> > I'm going to stick my oar in on this and ask what is a very fundamental
+> > question.
+> > 
+> > If we're adding the PMU interrupt controller as a separate "device"
+> > aren't we describing our implementation rather than the hardware?  It
+> > isn't a separate device as far as the description of it in the reference
+> > manuals.
+> > 
+> > Moreover, should the PMU interrupt controller be something which is
+> > handled by a separate chunk of code to a driver for the PMU as a whole,
+> > or are we storing up problems with resource clashes?  I can quite see
+> > a PMU driver coming along in the future offering a pair of generic
+> > power domains for the GPU and VPU, and such a driver would need to map
+> > all the PMU registers so it can access the power control, reset and
+> > isolator registers.
+> 
+> Hi Russell
+> 
+> I suspect you are right, we are storing up problems.
+> 
+> During the 4 months between submitting this driver and actually
+> getting it accepted, i've learned quite a bit. I tried to implement
+> cpufreq for Dove and ran into the problems you mention. The registers
+> in the PMU are interleaved so that you cannot cleanly separate out the
+> range needed for cpufreq. We probably need a PMU device, which exports
+> a register syscon and have the interrupt controller make use of it.
 
-Srikanth
+I know it's a pain to say this, but maybe we should hold off with the
+PMU IRQ controller patch for a while longer until we get a proper idea
+of what we're doing with the PMU?
 
-On Mon, Mar 3, 2014 at 11:43 PM, Srikanth Thokala <sthokal@xilinx.com> wrote:
-> On Mon, Mar 3, 2014 at 11:13 PM, Jason Gunthorpe
-> <jgunthorpe@obsidianresearch.com> wrote:
->> On Mon, Mar 03, 2014 at 07:10:36PM +0530, Srikanth Thokala wrote:
->>
->>> +Required properties:
->>> +- #address-cells: Address representation for root ports, set to <3>
->>> +- #size-cells: Size representation for root ports, set to <2>
->>> +- compatible: Should contain "xlnx,axi-pcie-host-1.00.a"
->>> +- reg: Should contain AXI PCIe registers location and length
->>> +- interrupts: Should contain AXI PCIe interrupt
->>> +- ranges: ranges for the PCI memory regions
->>> +     Please refer to the standard PCI bus binding document for a more
->>> +     detailed explanation
->>> +
->>> +Example:
->>> +++++++++
->>> +
->>> +     pci_express: axi-pcie@50000000 {
->>> +             #address-cells = <3>;
->>> +             #size-cells = <2>;
->>> +             compatible = "xlnx,axi-pcie-host-1.00.a";
->>> +             reg = < 0x50000000 0x10000000 >;
->>> +             interrupts = < 0 52 4 >;
->>> +             ranges = < 0x02000000 0 0x60000000 0x60000000 0 0x10000000 >;
->>> +     };
->>
->> That is much shorter, more notes:
->>  - It looks like the driver (HW?) has no support for IO space?
->
-> Yes, there is no support for IO space.
->
->>  - How are INTA/B/C/D handled? Typically I'd like to see an
->>    interrupt-mapping block describing them.
->
->                                   /
->                                  /
-> CPU   <--- PCIe IP  <---
->
->
->
->>
->>    There are a few options here, if the HW can decode A/B/C/D then
->>    it probably needs another irq_domain for INTx, and have the IRQ
->>    handler decode like it does for MSI.
->> - The stanza needs a
->>     device_type = "pci";
->>
->>> +     for (i = 0; i < port->mem_resno; i++)
->>> +             pci_add_resource_offset(&sys->resources, &port->mem[i],
->>> +                                     sys->mem_offset);
->>
->> The sys->mem_offset is probably wrong, please review Arnd's comments
->> on the recent threads with Will and Liviu regarding how this is
->> supposed to work with DT.
->>
->> You may want to work with Liviu to use his patch set which provides
->> more generic support. Also, the driver needs to put every one of these
->> ports in a PCI domain, Liviu is working on generic support for that
->> too.
->
-> Sure, I will check and come back to you.
->
->>
->>> +static struct pci_bus __init *xilinx_pcie_scan_bus(int nr,
->>> +                             struct pci_sys_data *sys)
->>> +{
->>> +     struct xilinx_pcie_port *port = sys_to_pcie(sys);
->>> +     struct pci_bus *bus;
->>> +
->>> +     if (port) {
->>> +             port->root_busno = sys->busnr;
->>> +             bus = pci_scan_root_bus(NULL, sys->busnr, &xilinx_pcie_ops,
->>> +                                     sys, &sys->resources);
->>
->> The NULL is probably wrong, please review the recent thread with Lucas
->> and Jingoo 'PCI irq mapping fixes and cleanups'
->
-> Ok.
->
->>
->>> +static int xilinx_pcie_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
->>> +{
->>> +     struct xilinx_pcie_port *port = sys_to_pcie(dev->bus->sysdata);
->>> +
->>> +     if (!port)
->>> +             return -EINVAL;
->>> +
->>> +     return port->irq;
->>> +}
->>
->> It is preferred to use DT mechanisms via of_irq_parse_and_map_pci
->> (interrupt-mapping, etc) to define the slot IRQ, drivers should not
->> provide a map_irq unless absolutely necessary.
->
-> Ok.
->
->>
->>> +     /* make sure it is root port before touching header */
->>> +     pcie_write(port, PCI_COMMAND_MASTER, PCI_COMMAND);
->>
->> Bit of a confusing comment
->
-> I will correct it.
->
->>
->>> +     /* Check if PCIe link is up? */
->>> +     port->link_up = xilinx_pcie_is_link_up(port);
->>> +     if (!port->link_up)
->>> +             dev_info(port->dev, "PCIe Link is DOWN\n");
->>> +     else
->>> +             dev_info(port->dev, "PCIe Link is UP\n");
->>
->> Don't forget to think about hot plug
->
-> Ok, you mean using the 'rescan' correct?
->
->>
->>> +     /* Register Interrupt Handler */
->>> +     err = request_irq(port->irq, xilinx_pcie_intr_handler,
->>> +                             IRQF_SHARED, "xilinx-pcie", port);
->>
->> Use devm? This is leaking on error cases.
->>
->> Review other resources too...
->>
->>> +     /* Request and map I/O memory */
->>> +     io = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->>> +     port->phys_reg_base = io->start;
->>> +     port->reg_size = resource_size(io);
->>
->> Here it uses the platform resource..
->>
->>> +     /* Map the IRQ */
->>> +     port->irq = irq_of_parse_and_map(node, 0);
->>
->> .. And here it doesn't, probably should be consistent and just use the
->> platform resources.
->
-> Ok, I will correct it.
->
-> Srikanth
->
->>
->> Jason
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+If you have a look at my "Generic PM domains - too noisy?" email earlier
+today on LAKML, you can see some of the code I'm talking about above - I
+have that running at the moment on my CuBox.  I'm going to be doing some
+power measurements soon with various different autosuspend delays to see
+what effect it has.
+
+If we do end up with a PMU driver, then I think that unless there's a
+real need, it should just integrate things like the PM domains, IRQ
+controller and maybe (depending on how complex it is) the cpufreq bits.
+MFD is all very well, but I feel that sometimes it brings along
+additional complexity at times when that complexity isn't needed.
+
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
