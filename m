@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138AbaCCJLu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 04:11:50 -0500
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:59420 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753997AbaCCJLr (ORCPT
+	id S1754156AbaCCJN3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 04:13:29 -0500
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:36460 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754062AbaCCJN1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 04:11:47 -0500
-Message-ID: <53144747.2070605@de.ibm.com>
-Date: Mon, 03 Mar 2014 10:11:35 +0100
+	Mon, 3 Mar 2014 04:13:27 -0500
+Message-ID: <531447B2.7040008@de.ibm.com>
+Date: Mon, 03 Mar 2014 10:13:22 +0100
 From: Christian Borntraeger <borntraeger@de.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
@@ -18,142 +18,66 @@ CC: "David S. Miller" <davem@davemloft.net>, Jason Wang <jasowang@redhat.com>,
         KVM list <kvm@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Subject: Re: macvtap performance regression (bisected) between 3.13 and 3.14-rc1
-References: <530FA586.3010400@de.ibm.com> <53110A62.7070109@redhat.com> <5311C142.6040509@de.ibm.com> <53123495.7030902@gmail.com>
-In-Reply-To: <53123495.7030902@gmail.com>
+References: <530FA586.3010400@de.ibm.com> <53110A62.7070109@redhat.com> <5311C142.6040509@de.ibm.com> <53123495.7030902@gmail.com> <531287AE.5080606@gmail.com>
+In-Reply-To: <531287AE.5080606@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14030309-8372-0000-0000-000008DA85DA
+x-cbid: 14030309-2966-0000-0000-00000A74F8FE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/03/14 20:27, Vlad Yasevich wrote:
-> On 03/01/2014 06:15 AM, Christian Borntraeger wrote:
->> On 28/02/14 23:14, Vlad Yasevich wrote:
->>> On 02/27/2014 03:52 PM, Christian Borntraeger wrote:
->>>> Vlad,
+On 02/03/14 02:21, Vlad Yasevich wrote:
+> On 03/01/2014 02:27 PM, Vlad Yasevich wrote:
+>> On 03/01/2014 06:15 AM, Christian Borntraeger wrote:
+>>> On 28/02/14 23:14, Vlad Yasevich wrote:
+>>>> On 02/27/2014 03:52 PM, Christian Borntraeger wrote:
+>>>>> Vlad,
+>>>>>
+>>>>> commit 6acf54f1cf0a6747bac9fea26f34cfc5a9029523
+>>>>>     macvtap: Add support of packet capture on macvtap device.
+>>>>>
+>>>>> causes a performance regression for iperf traffic between two KVM guests
+>>>>> on my s390 system. Both guests are connected via two macvtaps on the same OSA
+>>>>> network card.
+>>>>> Before that patch I get ~20 Gbit/sec between two guests, afterwards I get
+>>>>> ~4Gbit/sec
+>>>>>
+>>>>> Latency seems to be unchanges (uperf 1byte ping pong).
+>>>>>
+>>>>> According to ifconfig in the guest, I have ~ 1500 bytes per packet with this
+>>>>> patch and ~  40000 bytes without. So for some reason this patch causes the
+>>>>> network stack to do segmentation. (the guest kernel stays the same, only host 
+>>>>> kernel is changed).
+>>>>>
+>>>>> Any ideas?
 >>>>
->>>> commit 6acf54f1cf0a6747bac9fea26f34cfc5a9029523
->>>>     macvtap: Add support of packet capture on macvtap device.
->>>>
->>>> causes a performance regression for iperf traffic between two KVM guests
->>>> on my s390 system. Both guests are connected via two macvtaps on the same OSA
->>>> network card.
->>>> Before that patch I get ~20 Gbit/sec between two guests, afterwards I get
->>>> ~4Gbit/sec
->>>>
->>>> Latency seems to be unchanges (uperf 1byte ping pong).
->>>>
->>>> According to ifconfig in the guest, I have ~ 1500 bytes per packet with this
->>>> patch and ~  40000 bytes without. So for some reason this patch causes the
->>>> network stack to do segmentation. (the guest kernel stays the same, only host 
->>>> kernel is changed).
->>>>
->>>> Any ideas?
+>>>> I am looking.  It shouldn't cause addition segmentations and when I ran
+>>>> netperf on the code I didn't see any difference in the throughput.
 >>>
->>> I am looking.  It shouldn't cause addition segmentations and when I ran
->>> netperf on the code I didn't see any difference in the throughput.
+>>> Dont know if the different bytes/packets ratio is really the reason or
+>>> just a side effect. As a hint: the underlying network device does not support
+>>> segmentation, but this should not matter for traffic between to guests.
 >>
->> Dont know if the different bytes/packets ratio is really the reason or
->> just a side effect. As a hint: the underlying network device does not support
->> segmentation, but this should not matter for traffic between to guests.
+>> Could you post 'ethtool -k' output for both lower-level device and the
+>> macvtap device?
+>>
+>> Thanks
+>> -vlad
+>>
 > 
-> Could you post 'ethtool -k' output for both lower-level device and the
-> macvtap device?
+> Ok.  I think I see what's happening.  Since you turn off offloads on
+> lower device, that's propagated to macvlan device.  As a result, when
+> when we call dev_queue_xmit on the vlan->dev, we end up segmenting since
+> lower level says it does support segmentation.
+> 
+> One way to fix this is to never disable offloads on macvlan.  macvlan
+> will always try to use __dev_queue_xmit() with it's lower device, so any
+> segmentation can happen there.
 
+If you have anything that I should test, let me know.
 
-
-
-Features for eth0:
-rx-checksumming: off [fixed]
-tx-checksumming: off
-	tx-checksum-ipv4: off [fixed]
-	tx-checksum-ip-generic: off [fixed]
-	tx-checksum-ipv6: off [fixed]
-	tx-checksum-fcoe-crc: off [fixed]
-	tx-checksum-sctp: off [fixed]
-scatter-gather: off
-	tx-scatter-gather: off [fixed]
-	tx-scatter-gather-fraglist: off [fixed]
-tcp-segmentation-offload: off
-	tx-tcp-segmentation: off [fixed]
-	tx-tcp-ecn-segmentation: off [fixed]
-	tx-tcp6-segmentation: off [fixed]
-udp-fragmentation-offload: off [fixed]
-generic-segmentation-offload: off [requested on]
-generic-receive-offload: on
-large-receive-offload: off [fixed]
-rx-vlan-offload: off [fixed]
-tx-vlan-offload: off [fixed]
-ntuple-filters: off [fixed]
-receive-hashing: off [fixed]
-highdma: off [fixed]
-rx-vlan-filter: on [fixed]
-vlan-challenged: off [fixed]
-tx-lockless: off [fixed]
-netns-local: off [fixed]
-tx-gso-robust: off [fixed]
-tx-fcoe-segmentation: off [fixed]
-tx-gre-segmentation: off [fixed]
-tx-ipip-segmentation: off [fixed]
-tx-sit-segmentation: off [fixed]
-tx-udp_tnl-segmentation: off [fixed]
-tx-mpls-segmentation: off [fixed]
-fcoe-mtu: off [fixed]
-tx-nocache-copy: off
-loopback: off [fixed]
-rx-fcs: off [fixed]
-rx-all: off [fixed]
-tx-vlan-stag-hw-insert: off [fixed]
-rx-vlan-stag-hw-parse: off [fixed]
-rx-vlan-stag-filter: off [fixed]
-l2-fwd-offload: off [fixed]
-
-
-Features for macvtap1:
-rx-checksumming: off [fixed]
-tx-checksumming: off
-	tx-checksum-ipv4: off [fixed]
-	tx-checksum-ip-generic: off [fixed]
-	tx-checksum-ipv6: off [fixed]
-	tx-checksum-fcoe-crc: off [fixed]
-	tx-checksum-sctp: off [fixed]
-scatter-gather: off
-	tx-scatter-gather: off [fixed]
-	tx-scatter-gather-fraglist: off [fixed]
-tcp-segmentation-offload: off
-	tx-tcp-segmentation: off [fixed]
-	tx-tcp-ecn-segmentation: off [fixed]
-	tx-tcp6-segmentation: off [fixed]
-udp-fragmentation-offload: off [fixed]
-generic-segmentation-offload: off [requested on]
-generic-receive-offload: on
-large-receive-offload: off [fixed]
-rx-vlan-offload: off [fixed]
-tx-vlan-offload: off [fixed]
-ntuple-filters: off [fixed]
-receive-hashing: off [fixed]
-highdma: off [fixed]
-rx-vlan-filter: on [fixed]
-vlan-challenged: off [fixed]
-tx-lockless: on [fixed]
-netns-local: off [fixed]
-tx-gso-robust: off [fixed]
-tx-fcoe-segmentation: off [fixed]
-tx-gre-segmentation: off [fixed]
-tx-ipip-segmentation: off [fixed]
-tx-sit-segmentation: off [fixed]
-tx-udp_tnl-segmentation: off [fixed]
-tx-mpls-segmentation: off [fixed]
-fcoe-mtu: off [fixed]
-tx-nocache-copy: off
-loopback: off [fixed]
-rx-fcs: off [fixed]
-rx-all: off [fixed]
-tx-vlan-stag-hw-insert: off [fixed]
-rx-vlan-stag-hw-parse: off [fixed]
-rx-vlan-stag-filter: off [fixed]
-l2-fwd-offload: off [fixed]
+Christian
 
