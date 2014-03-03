@@ -1,123 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754411AbaCCKJv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 05:09:51 -0500
-Received: from mail-we0-f181.google.com ([74.125.82.181]:65143 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753873AbaCCKJs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 05:09:48 -0500
-From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-To: nicolas.ferre@atmel.com
-Cc: plagnioj@jcrosoft.com, b.brezillon@overkiz.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        gregory.clement@free-electrons.com, devicetree@vger.kernel.org,
-        thomas.petazzoni@free-electrons.com,
-        alexandre.belloni@free-electrons.com,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Subject: [PATCH v5 0/9] Device Tree support for the at91sam9261ek
-Date: Mon,  3 Mar 2014 11:05:53 +0100
-Message-Id: <1393841162-25339-1-git-send-email-jjhiblot@traphandler.com>
-X-Mailer: git-send-email 1.9.0
+	id S1754595AbaCCKQx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 05:16:53 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:45206 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751620AbaCCKQv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 05:16:51 -0500
+From: George Cherian <george.cherian@ti.com>
+To: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <devicetree@vger.kernel.org>
+CC: <s.nawrocki@samsung.com>, <tony@atomide.com>, <george.cherian@ti.com>,
+        <gregkh@linuxfoundation.org>, <kishon@ti.com>, <rob@landley.net>,
+        <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
+        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>
+Subject: [PATCH 2/3] phy: omap-usb2: Provide workaround for USB2PHY false disconnect
+Date: Mon, 3 Mar 2014 15:46:23 +0530
+Message-ID: <1393841784-29554-1-git-send-email-george.cherian@ti.com>
+X-Mailer: git-send-email 1.8.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set aims at bringing a device tree support for the sam9261.
-It's mostly based on the sam9263 and sam9x5 stuff.
+From: Austin Beam <austinbeam@ti.com>
 
-Changes since V4:
-* change the compatibilty string for the bus matrix to
-  'atmel,at91sam9260-bus-matrix'
-* add a documentation for the bus matrix DT binding
-* panic if the DT description of the bus matrix is not found
-* Fixed the GPIO banks' address range
+Enable the dra7x errata workaround for false disconnect problem
+with USB2PHY. False disconnects were detected with some of the devices.
+Reduce the sensitivity of the disconnect logic within the USB2PHY subsystem
+to enusre these false disconnects are not registered.
 
-Changes since V3:
-* Added support for the touchscreen
-* Added support for the spi dataflash
-* Activated the TCB by default
-* Reworked the patch organization to reduce the number of patchs
-* changed the default bootargs (no mem description, UBI on mtdpart 5)
-* Changed the xlate implementation of the at91 pinctrl driver to lock the GPIOs
-  for IRQs instead of requesting them (needed for the touchscreen driver)
-* some stylistic changes
+[george.cherian@ti.com]
+While at that, pass proper flags for each SoC's. This is a common driver
+used across OMAP4,OMAP5,DRA7xx and AM437x USB2PHY.
 
-Changes since V2:
-* removed the smc driver from the serie. It'll be posted in an independent
-  serie later.
-* removed the DM9000 support (it'll come with the smc driver)
-* the sam9261 now supports the Common Clock Framework (CCF). Note: to enable
-  the CCF you must remove from the kernel config the platforms that don't
-  support it.
-* Added basic DT binding for the bus matrix
-* Added support for USB host
-* Added support for USB gadget
-* in dts(i), replaced interrupt-parent with interrupts-extended
-* changed the nand partition plan (same as for the sama5d3)
-* removed 'mem' parameter in command line
-* re-ordered dt-nodes in ascending address order.
-* split the lcd support patch in 2 parts (SOC and board)
+False disconnect workaround is currently applicable for only DRA7x.
 
+Update the Documentation also to add new comaptible.
 
-Change since V1:
-* changed the DT representation to use address translation and separate the
-  timings' configuration from the device properties by adding a "simple-bus"
-  inetrmediate node.
-* moved the smc driver from drivers/bus to drivers/memmory
-* smc driver now accepts timings in nanoseconds as well as raw register values
-* smc driver can clip the timings if they're out of bound and dump them to the
-  console
-* DM9000 timings are now described in nanosecs (for the virtue of example)
+Signed-off-by: Austin Beam <austinbeam@ti.com>
+Signed-off-by: George Cherian <george.cherian@ti.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ Documentation/devicetree/bindings/usb/usb-phy.txt |  3 +-
+ drivers/phy/phy-omap-usb2.c                       | 48 +++++++++++++++++++++++
+ include/linux/usb/omap_usb.h                      |  3 ++
+ 3 files changed, 53 insertions(+), 1 deletion(-)
 
-supported features are:
-* working with the Common Clock Framework and the old at91 clock implementation
-* dbgu
-* lcdc
-* usb host
-* usb gadget,
-* spi dataflash
-* nand flash
-* touchscreen
-* leds
-* user buttons
-
-In the TODO list:
-* dm9000 (ethernet)
-* audio
-* mmc
-
-This serie relies on the following patchs:
-usb: at91-udc: fix irq and iomem resource retrieval
-ARM: at91: prepare sam9 dt boards transition to common
-
-Jean-Jacques
-
-Jean-Jacques Hiblot (9):
-  at91: dt: Adds support for the bus matrix declaration in the DT
-  dt: bindings: at91: Add a new binding for the bus matrix
-  at91: pinctrl: don't request GPIOs used for interrupts but lock them
-    as IRQ
-  at91: dt: Add at91sam9261 dt SoC support
-  at91: dt: defconfig: Added the sam9261 to the list of DT-enabled SOCs
-  at91: dt: sam9261: Device Tree support for the at91sam9261ek
-  at91: updated the at91_dt_defconfig with support for the ADS7846
-  ARM: at91: prepare common clk transition for sam9261 SoC
-  ARM: at91: move sam9261 SoC to common clk
-
- .../devicetree/bindings/arm/atmel-at91.txt         |  14 +
- arch/arm/boot/dts/Makefile                         |   2 +
- arch/arm/boot/dts/at91sam9261.dtsi                 | 740 +++++++++++++++++++++
- arch/arm/boot/dts/at91sam9261ek.dts                | 204 ++++++
- arch/arm/configs/at91_dt_defconfig                 |   2 +
- arch/arm/mach-at91/Kconfig                         |   1 -
- arch/arm/mach-at91/at91sam9261.c                   |  25 +-
- arch/arm/mach-at91/setup.c                         |  21 +
- drivers/pinctrl/pinctrl-at91.c                     |   5 +-
- 9 files changed, 1008 insertions(+), 6 deletions(-)
- create mode 100644 arch/arm/boot/dts/at91sam9261.dtsi
- create mode 100644 arch/arm/boot/dts/at91sam9261ek.dts
-
+diff --git a/Documentation/devicetree/bindings/usb/usb-phy.txt b/Documentation/devicetree/bindings/usb/usb-phy.txt
+index b3fa409..03de61a5 100644
+--- a/Documentation/devicetree/bindings/usb/usb-phy.txt
++++ b/Documentation/devicetree/bindings/usb/usb-phy.txt
+@@ -4,7 +4,8 @@ OMAP USB2 PHY
+ 
+ Required properties:
+  - compatible: Should be either of
+-	* "ti,omap-usb2" for OMAP4, OMAP5, DRA7
++	* "ti,omap-usb2" for OMAP4 and OMAP5
++	* "ti,dra7x-usb2" for DRA7
+ 	* "ti,am437x-usb2" for AM437x
+  - reg : Address and length of the register set for the device.
+  - #phy-cells: determine the number of cells that should be given in the
+diff --git a/drivers/phy/phy-omap-usb2.c b/drivers/phy/phy-omap-usb2.c
+index d54f24b..80ba7f0 100644
+--- a/drivers/phy/phy-omap-usb2.c
++++ b/drivers/phy/phy-omap-usb2.c
+@@ -31,6 +31,9 @@
+ #include <linux/phy/phy.h>
+ #include <linux/of_platform.h>
+ 
++#define USB2PHY_DISCON_BYP_LATCH (1 << 31)
++#define USB2PHY_ANA_CONFIG1 0x4c
++
+ /**
+  * omap_usb2_set_comparator - links the comparator present in the sytem with
+  *	this phy
+@@ -138,7 +141,30 @@ static int omap_usb_power_on(struct phy *x)
+ 	return 0;
+ }
+ 
++static int omap_usb_init(struct phy *x)
++{
++	struct omap_usb *phy = phy_get_drvdata(x);
++	u32 val;
++
++	if (phy->flags & OMAP_USB2_CALIBRATE_FALSE_DISCONNECT) {
++		/*
++		 *
++		 * Reduce the sensitivity of internal PHY by enabling the
++		 * DISCON_BYP_LATCH of the USB2PHY_ANA_CONFIG1 register. This
++		 * resolves issues with certain devices which can otherwise
++		 * be prone to false disconnects.
++		 *
++		 */
++		val = omap_usb_readl(phy->phy_base, USB2PHY_ANA_CONFIG1);
++		val |= USB2PHY_DISCON_BYP_LATCH;
++		omap_usb_writel(phy->phy_base, USB2PHY_ANA_CONFIG1, val);
++	}
++
++	return 0;
++}
++
+ static struct phy_ops ops = {
++	.init		= omap_usb_init,
+ 	.power_on	= omap_usb_power_on,
+ 	.power_off	= omap_usb_power_off,
+ 	.owner		= THIS_MODULE,
+@@ -150,6 +176,11 @@ static const struct usb_phy_data omap_usb2_data = {
+ 	.flags = OMAP_USB2_HAS_START_SRP | OMAP_USB2_HAS_SET_VBUS,
+ };
+ 
++static const struct usb_phy_data dra7x_usb2_data = {
++	.label = "dra7x_usb2",
++	.flags = OMAP_USB2_CALIBRATE_FALSE_DISCONNECT,
++};
++
+ static const struct usb_phy_data am437x_usb2_data = {
+ 	.label = "am437x_usb2",
+ 	.flags =  0,
+@@ -161,6 +192,10 @@ static const struct of_device_id omap_usb2_id_table[] = {
+ 		.data = &omap_usb2_data,
+ 	},
+ 	{
++		.compatible = "ti,dra7x-usb2",
++		.data = &dra7x_usb2_data,
++	},
++	{
+ 		.compatible = "ti,am437x-usb2",
+ 		.data = &am437x_usb2_data,
+ 	},
+@@ -173,6 +208,7 @@ static int omap_usb2_probe(struct platform_device *pdev)
+ {
+ 	struct omap_usb	*phy;
+ 	struct phy *generic_phy;
++	struct resource *res;
+ 	struct phy_provider *phy_provider;
+ 	struct usb_otg *otg;
+ 	struct device_node *node = pdev->dev.of_node;
+@@ -208,6 +244,18 @@ static int omap_usb2_probe(struct platform_device *pdev)
+ 	phy->phy.otg		= otg;
+ 	phy->phy.type		= USB_PHY_TYPE_USB2;
+ 
++	if (phy_data->flags & OMAP_USB2_CALIBRATE_FALSE_DISCONNECT) {
++		res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++		if (!res) {
++			dev_err(&pdev->dev, "memory resource not available\n");
++			return -ENODEV;
++		}
++		phy->phy_base = devm_request_and_ioremap(&pdev->dev, res);
++		if (!phy->phy_base)
++			return -ENOMEM;
++		phy->flags |= OMAP_USB2_CALIBRATE_FALSE_DISCONNECT;
++	}
++
+ 	control_node = of_parse_phandle(node, "ctrl-module", 0);
+ 	if (!control_node) {
+ 		dev_err(&pdev->dev, "Failed to get control device phandle\n");
+diff --git a/include/linux/usb/omap_usb.h b/include/linux/usb/omap_usb.h
+index 034161d..248a603 100644
+--- a/include/linux/usb/omap_usb.h
++++ b/include/linux/usb/omap_usb.h
+@@ -34,11 +34,13 @@ struct omap_usb {
+ 	struct usb_phy		phy;
+ 	struct phy_companion	*comparator;
+ 	void __iomem		*pll_ctrl_base;
++	void __iomem		*phy_base;
+ 	struct device		*dev;
+ 	struct device		*control_dev;
+ 	struct clk		*wkupclk;
+ 	struct clk		*sys_clk;
+ 	struct clk		*optclk;
++	u8			flags;
+ 	u8			is_suspended:1;
+ };
+ 
+@@ -50,6 +52,7 @@ struct usb_phy_data {
+ /* Driver Flags */
+ #define OMAP_USB2_HAS_START_SRP (1 << 0)
+ #define OMAP_USB2_HAS_SET_VBUS (1 << 1)
++#define OMAP_USB2_CALIBRATE_FALSE_DISCONNECT (1 << 2)
+ 
+ #define	phy_to_omapusb(x)	container_of((x), struct omap_usb, phy)
+ 
 -- 
-1.9.0
+1.8.3.1
 
