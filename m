@@ -1,81 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753909AbaCCH23 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 02:28:29 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:46151 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752263AbaCCH22 (ORCPT
+	id S1754002AbaCCH2f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 02:28:35 -0500
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:47471 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752988AbaCCH2c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 02:28:28 -0500
+	Mon, 3 Mar 2014 02:28:32 -0500
 MIME-Version: 1.0
-In-Reply-To: <20140301004237.GB30634@kroah.com>
-References: <1392825976-17633-1-git-send-email-sudeep.holla@arm.com>
-	<1392825976-17633-2-git-send-email-sudeep.holla@arm.com>
-	<20140301004237.GB30634@kroah.com>
-Date: Mon, 3 Mar 2014 07:28:28 +0000
-X-Google-Sender-Auth: UbMugx0SOQqhTQxfvzFo1PPDyy0
-Message-ID: <CAPKp9ub3aLWWaY5A98Q97YuN-Rn4U0Fg9eBmZr3OTczDUdA05A@mail.gmail.com>
-Subject: Re: [PATCH RFC/RFT v3 1/9] drivers: base: add new class "cpu" to
- group cpu devices
-From: Sudeep Holla <sudeep.holla@arm.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <294021ae4578d627ac56704dab7caee5bca2db86.1393493277.git.rashika.kheria@gmail.com>
+References: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
+	<294021ae4578d627ac56704dab7caee5bca2db86.1393493277.git.rashika.kheria@gmail.com>
+Date: Mon, 3 Mar 2014 15:28:31 +0800
+Message-ID: <CALAqxLWRS9eS4dQCd0zNv7E=LJe_JK4GdyTyEB681OaJqb3jfw@mail.gmail.com>
+Subject: Re: [PATCH 22/46] kernel: Include appropriate header file in time/timekeeping_debug.c
+From: John Stultz <john.stultz@linaro.org>
+To: Rashika Kheria <rashika.kheria@gmail.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        josh@joshtriplett.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-
-On Sat, Mar 1, 2014 at 12:42 AM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Wed, Feb 19, 2014 at 04:06:08PM +0000, Sudeep Holla wrote:
->> From: Sudeep Holla <sudeep.holla@arm.com>
->>
->> This patch creates a new class called "cpu" and assigns it to all the
->> cpu devices. This helps in grouping all the cpu devices and associated
->> child devices under the same class.
->>
->> This patch also:
->> 1. modifies the get_parent_device to return the legacy path
->>    (/sys/devices/system/cpu/..) for the cpu class devices to support
->>    existing sysfs ABI
->> 2. avoids creating link in the class directory pointing to the device as
->>    there would be per-cpu instance of these devices with the same name
->> 3. makes sure subsystem symlink continues pointing to cpu bus instead of
->>    cpu class for cpu devices
->>
->> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
->> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+On Thu, Feb 27, 2014 at 7:55 PM, Rashika Kheria
+<rashika.kheria@gmail.com> wrote:
+> Include appropriate header file kernel/time/timekeeping_internal.h in
+> kernel/time/timekeeping_debug.c because it has prototype declaration of
+> function defined in kernel/time/timekeeping_debug.c.
 >
-> Does the sysfs layout change at all with this patch applied?
+> This eliminates the following warning in
+> kernel/time/timekeeping_debug.c:
+> kernel/time/timekeeping_debug.c:68:6: warning: no previous prototype for 'tk_debug_account_sleep_time' [-Wmissing-prototypes]
 >
+> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-No change to the existing layout, it just adds new entries, e.g. device symlink.
 
-Before this patch:
-/ # ls /sys/devices/system/cpu/cpu0/ -l
-total 0
-drwxr-xr-x    5 root     0                0 Jan  1 00:02 cpuidle
--rw-r--r--    1 root     0             4096 Jan  1 00:02 online
-drwxr-xr-x    2 root     0                0 Jan  1 00:02 power
-lrwxrwxrwx    1 root     0                0 Jan  1 00:02 subsystem ->
-../../../../bus/cpu
-drwxr-xr-x    2 root     0                0 Jan  1 00:02 topology
--rw-r--r--    1 root     0             4096 Jan  1 00:02 uevent
+Thanks for sending this in.. I've queued this for 3.15.
 
-After this patch:
-/sys/class/cpu # ls /sys/devices/system/cpu/cpu0 -l
-total 0
-drwxr-xr-x    6 root     0                0 Jan  1 00:00 cache
-drwxr-xr-x    5 root     0                0 Jan  1 00:00 cpuidle
-lrwxrwxrwx    1 root     0                0 Jan  1 00:00 device -> ../../cpu
--rw-r--r--    1 root     0             4096 Jan  1 00:00 online
-drwxr-xr-x    2 root     0                0 Jan  1 00:00 power
-lrwxrwxrwx    1 root     0                0 Jan  1 00:00 subsystem ->
-../../../../bus/cpu
-drwxr-xr-x    2 root     0                0 Jan  1 00:00 topology
--rw-r--r--    1 root     0             4096 Jan  1 00:00 uevent
-
-Regards,
-Sudeep
+thanks
+-john
