@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753937AbaCCIFo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 03:05:44 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:38892 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751366AbaCCIFm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 03:05:42 -0500
-Date: Mon, 3 Mar 2014 11:05:27 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Surendra Patil <surendra.tux@gmail.com>
-Cc: rupesh.gujare@atmel.com, gregkh@linuxfoundation.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Drivers:staging:ozwpan Replaced wrapper functions with
- actual spin lock function calls
-Message-ID: <20140303080527.GH26722@mwanda>
-References: <1393729160-23931-1-git-send-email-surendra.tux@gmail.com>
+	id S1753930AbaCCIIc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 03:08:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31726 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753114AbaCCIIa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 03:08:30 -0500
+Date: Mon, 3 Mar 2014 09:10:24 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH v2] timberdale: Use pci_enable_msix_exact() instead of
+ pci_enable_msix()
+Message-ID: <20140303081023.GA25705@dhcp-26-207.brq.redhat.com>
+References: <1392804931-30671-3-git-send-email-agordeev@redhat.com>
+ <20140219114424.GD10504@lee--X1>
+ <20140221165606.GH17353@dhcp-26-207.brq.redhat.com>
+ <20140221165809.GI17353@dhcp-26-207.brq.redhat.com>
+ <20140224162902.GI15847@lee--X1>
+ <20140303072551.GC4674@lee--X1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1393729160-23931-1-git-send-email-surendra.tux@gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140303072551.GC4674@lee--X1>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces a bug.
-
-On Sat, Mar 01, 2014 at 06:59:20PM -0800, Surendra Patil wrote:
-> Replaced all the spin lock/unlock wrappers from oz_polling_lock_bh()
-> and oz_polllin_unlock_bh() with spin_lock_bh(&g_polling_lock) and
-> spin_unlock_bh(&g_polling_lock).Completely erased the wrappers defination
-> and declaration.
-> Module builded successfully with sparse without warnings.
+On Mon, Mar 03, 2014 at 03:25:51PM +0800, Lee Jones wrote:
+> > Applied, thanks.
 > 
-> Signed-off-by: Surendra Patil <surendra.tux@gmail.com>
-> ---
->  drivers/staging/ozwpan/ozpd.c    | 29 +++++++++++++++--------------
->  drivers/staging/ozwpan/ozproto.c |  9 ---------
->  drivers/staging/ozwpan/ozproto.h |  2 --
->  3 files changed, 15 insertions(+), 25 deletions(-)
+> I've reverted this patch, as it doesn't build othognally.
 > 
-> diff --git a/drivers/staging/ozwpan/ozpd.c b/drivers/staging/ozwpan/ozpd.c
-> index 7436950..66c3a2c 100644
-> --- a/drivers/staging/ozwpan/ozpd.c
-> +++ b/drivers/staging/ozwpan/ozpd.c
-> @@ -22,6 +22,7 @@
->  
->  #define OZ_MAX_TX_POOL_SIZE	6
->  
-> +static DEFINE_SPINLOCK(g_polling_lock);
+> drivers/mfd/timberdale.c:718:2:
+>   error: implicit declaration of function ‘pci_enable_msix_exact’
+>      [-Werror=implicit-function-declaration]
 
-This doesn't work.  Now you have two lock variables which just happen to
-have the same name.
+I should have to clarify it I think. Do you build on top of 3.14-rc4?
 
-You need to make the original g_polling_lock not static and add a
-declaration to the header file.
+Thanks!
 
-regards,
-dan carpenter
-
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
