@@ -1,108 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754226AbaCCNuY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 08:50:24 -0500
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:44671 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753545AbaCCNuV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 08:50:21 -0500
+	id S1754230AbaCCNyO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 08:54:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46603 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753545AbaCCNyN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 08:54:13 -0500
+Message-ID: <53148981.90709@suse.cz>
+Date: Mon, 03 Mar 2014 14:54:09 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <1393621571.10280.49.camel@joe-AO722>
-References: <1393604742-14317-1-git-send-email-florian.vaussard@epfl.ch>
-	<1393604742-14317-3-git-send-email-florian.vaussard@epfl.ch>
-	<1393621571.10280.49.camel@joe-AO722>
-Date: Mon, 3 Mar 2014 07:50:20 -0600
-X-Google-Sender-Auth: s8puAai-lLhUVQ6YSXP-xoD6Rqg
-Message-ID: <CAL_JsqJfSpanHTCsshQKvbSziQyONC=zzSSunxFoaJytciozCw@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] checkpatch: fix spurious vendor compatible warnings
-From: Rob Herring <robh@kernel.org>
-To: Joe Perches <joe@perches.com>
-Cc: Florian Vaussard <florian.vaussard@epfl.ch>,
-        Andy Whitcroft <apw@canonical.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan@kernel.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: Re: [PATCH 2/6] mm: add get_pageblock_migratetype_nolock() for cases
+ where locking is undesirable
+References: <1393596904-16537-1-git-send-email-vbabka@suse.cz> <1393596904-16537-3-git-send-email-vbabka@suse.cz> <20140303082227.GA28899@lge.com>
+In-Reply-To: <20140303082227.GA28899@lge.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 28, 2014 at 3:06 PM, Joe Perches <joe@perches.com> wrote:
-> Hi.
+On 03/03/2014 09:22 AM, Joonsoo Kim wrote:
+> On Fri, Feb 28, 2014 at 03:15:00PM +0100, Vlastimil Babka wrote:
+>> In order to prevent race with set_pageblock_migratetype, most of calls to
+>> get_pageblock_migratetype have been moved under zone->lock. For the remaining
+>> call sites, the extra locking is undesirable, notably in free_hot_cold_page().
+>>
+>> This patch introduces a _nolock version to be used on these call sites, where
+>> a wrong value does not affect correctness. The function makes sure that the
+>> value does not exceed valid migratetype numbers. Such too-high values are
+>> assumed to be a result of race and caller-supplied fallback value is returned
+>> instead.
+>>
+>> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+>> ---
+>>   include/linux/mmzone.h | 24 ++++++++++++++++++++++++
+>>   mm/compaction.c        | 14 +++++++++++---
+>>   mm/memory-failure.c    |  3 ++-
+>>   mm/page_alloc.c        | 22 +++++++++++++++++-----
+>>   mm/vmstat.c            |  2 +-
+>>   5 files changed, 55 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+>> index fac5509..7c3f678 100644
+>> --- a/include/linux/mmzone.h
+>> +++ b/include/linux/mmzone.h
+>> @@ -75,6 +75,30 @@ enum {
+>>
+>>   extern int page_group_by_mobility_disabled;
+>>
+>> +/*
+>> + * When called without zone->lock held, a race with set_pageblock_migratetype
+>> + * may result in bogus values. Use this variant only when this does not affect
+>> + * correctness, and taking zone->lock would be costly. Values >= MIGRATE_TYPES
+>> + * are considered to be a result of this race and the value of race_fallback
+>> + * argument is returned instead.
+>> + */
+>> +static inline int get_pageblock_migratetype_nolock(struct page *page,
+>> +	int race_fallback)
+>> +{
+>> +	int ret = get_pageblock_flags_group(page, PB_migrate, PB_migrate_end);
+>> +
+>> +	if (unlikely(ret >= MIGRATE_TYPES))
+>> +		ret = race_fallback;
+>> +
+>> +	return ret;
+>> +}
 >
-> A couple of suggestions and a couple of questions.
+> Hello, Vlastimil.
 >
-> I made the patch below against your patches to.
->
-> o Look for ".compatible = "foo" strings in .c and .h files too
-> o Improve the vendor name match in vendor-prefix.txt by only
->   matching the exact vendor name at the beginning of lines.
->
-> I then produced a file of all the compatible uses in dts
-> and used checkpatch on it.  It's a long list and a longer
-> checkpatch warning list.
->
-> $ git ls-files | grep -E "\.dtsi?$" | \
->   xargs grep -hE "^\s*compatible\s*="| \
->   sed -r -e 's/^\s*//' -e 's/\s*=\s*/ = /'| sort | uniq > tmp.dts
-> $ .scripts/checkpatch.pl -f tmp.dts
->
-> A couple of questions:
->
-> How does the $compat2 variable actually work?
-> What is it supposed to do?
->
->                                 my $compat2 = $compat;
->                                 $compat2 =~ s/\,[a-z]*\-/\,<\.\*>\-/;
->
-> For instance:
-> WARNING: DT compatible string "marvell,tauros2-cache" appears un-documented -- check ./Documentation/devicetree/bindings/
->
-> The prefix "tauros2-" doesn't match '=~ s/[a-z]*-/
->
-> Should it?  Should the '[a-z]*' be '[a-zA-Z0-9-]+'
-> like the other test?
+> First of all, thanks for nice work!
+> I have another opinion about this implementation. It can be wrong, so if it
+> is wrong, please let me know.
 
-What Florian said is exactly right.
+Thanks, all opinions/reviewing is welcome :)
 
-> Also the grep used when $compat2 is different than $compat
-> has <.*>
+> Although this implementation would close the race which triggers NULL dereference,
+> I think that this isn't enough if you have a plan to add more
+> {start,undo}_isolate_page_range().
 >
-> There aren't any descriptions I see in binding/ that have
-> any <foo> like uses with the angle brackets.
+> Consider that there are lots of {start,undo}_isolate_page_range() calls
+> on the system without CMA.
 >
-> Are the angle brackets "<" and ">" necessary?
+> bit representation of migratetype is like as following.
 >
-> I think the code block should look more like:
+> MIGRATE_MOVABLE = 010
+> MIGRATE_ISOLATE = 100
 >
->                                 my $compat2 = $compat;
->                                 $compat2 =~ s/\,[a-zA-Z0-9]*\-/\,\.\*\-/g;
->                                 my $grepfor = "\Q$compat\E";
->                                 $grepfor .= "|\Q$compat2\E" if ($compat2 ne $compat);
->                                 `grep -Erq "$grepfor" $dt_path`;
+> We could read following values as migratetype of the page on movable pageblock
+> if race occurs.
 >
-> so that there's only 1 grep pattern when
-> $compat2 is the same as $compat and the
-> strings are escape quoted.
+> start_isolate_page_range() case: 010 -> 100
+> 010, 000, 100
 >
-> There are a _lot_ of missing entries:
+> undo_isolate_page_range() case: 100 -> 010
+> 100, 110, 010
 >
-> o 164 vendor names
-> o 2408 device names (maybe due to bad compat2 greps?)
->
-> What, if anything, should be done about them?
+> Above implementation prevents us from getting 110, but, it can't prevent us from
+> getting 000, that is, MIGRATE_UNMOVABLE. If this race occurs in free_hot_cold_page(),
+> this page would go into unmovable pcp and then allocated for that migratetype.
+> It results in more fragmented memory.
 
-Documenting DT bindings is somewhat new, so there are lots of older
-sparc and powerpc bindings that don't have documentation and are
-basically grandfathered in. I had thought about adding documentation
-in an undocumented binding list, but that would only help making
-checks on files pass. For any new bindings, documentation is required,
-but we are only hitting like 50-60% in each kernel version. Those are
-the ones I hope to catch.
+Yes, that can happen. But I would expect it to be negligible to other 
+causes of fragmentation. But I'm not at this moment sure how often 
+{start,undo}_isolate_page_range() would be called in the end. Certainly
+not as often as in the development patch which is just to see if that 
+can improve anything. Because it will have its own overhead (mostly for 
+zone->lock) that might be too large. But good point, I will try to 
+quantify this.
 
-I've written a script that finds the commit adding the undocumented
-property and can email the authors, but I've been reluctant to start
-spamming people with this. I want to see if checkpatch helps improve
-the rate.
+>
+> Consider another case that system enables CONFIG_CMA,
+>
+> MIGRATE_MOVABLE = 010
+> MIGRATE_ISOLATE = 101
+>
+> start_isolate_page_range() case: 010 -> 101
+> 010, 011, 001, 101
+>
+> undo_isolate_page_range() case: 101 -> 010
+> 101, 100, 110, 010
+>
+> This can results in totally different values and this also makes the problem
+> mentioned above. And, although this doesn't cause any problem on CMA for now,
+> if another migratetype is introduced or some migratetype is removed, it can cause
+> CMA typed page to go into other migratetype and makes CMA permanently failed.
 
-Rob
+This should actually be no problem for free_hot_cold_page() as any 
+migratetype >= MIGRATE_PCPTYPES will defer to free_one_page() which will 
+reread migratetype under zone->lock. So as long as MIGRATE_PCPTYPES does 
+not include a migratetype with such dangerous "permanently failed" 
+properties, it should be good. And I doubt such migratetype would be 
+added to pcptypes. But of course, anyone adding new migratetype would 
+have to reconsider each get_pageblock_migratetype_nolock() call for such 
+potential problems.
+
+> To close this kind of races without dependency how many pageblock isolation occurs,
+> I recommend that you use separate pageblock bits for MIGRATE_CMA, MIGRATE_ISOLATE
+> and use accessor function whenver we need to check migratetype. IMHO, it may not
+> impose much overhead.
+
+That could work in case the fragmentation is confirmed to be a problem.
+
+Thanks,
+Vlastimil
+
+> How about it?
+>
+> Thanks.
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
+
