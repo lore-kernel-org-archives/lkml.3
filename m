@@ -1,59 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754367AbaCCNuZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 08:50:25 -0500
-Received: from mga02.intel.com ([134.134.136.20]:43043 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753881AbaCCNuW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 08:50:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,577,1389772800"; 
-   d="scan'208";a="465499695"
-Message-ID: <1393854614.2193.4.camel@rzhang1-mobl4>
-Subject: Re: [RFC PATCH 0/8] ACPI: change the way of enumerating
- PNPACPI/Platform devices
-From: Zhang Rui <rui.zhang@intel.com>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>
-Date: Mon, 03 Mar 2014 21:50:14 +0800
-In-Reply-To: <1393433267.14900.3.camel@x230>
-References: <1393405874-3266-1-git-send-email-rui.zhang@intel.com>
-	 <1393433267.14900.3.camel@x230>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754226AbaCCNuY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 08:50:24 -0500
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:44671 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753545AbaCCNuV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 08:50:21 -0500
+MIME-Version: 1.0
+In-Reply-To: <1393621571.10280.49.camel@joe-AO722>
+References: <1393604742-14317-1-git-send-email-florian.vaussard@epfl.ch>
+	<1393604742-14317-3-git-send-email-florian.vaussard@epfl.ch>
+	<1393621571.10280.49.camel@joe-AO722>
+Date: Mon, 3 Mar 2014 07:50:20 -0600
+X-Google-Sender-Auth: s8puAai-lLhUVQ6YSXP-xoD6Rqg
+Message-ID: <CAL_JsqJfSpanHTCsshQKvbSziQyONC=zzSSunxFoaJytciozCw@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] checkpatch: fix spurious vendor compatible warnings
+From: Rob Herring <robh@kernel.org>
+To: Joe Perches <joe@perches.com>
+Cc: Florian Vaussard <florian.vaussard@epfl.ch>,
+        Andy Whitcroft <apw@canonical.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-02-26 at 16:47 +0000, Matthew Garrett wrote:
-> On Wed, 2014-02-26 at 17:11 +0800, Zhang Rui wrote:
-> 
-> > 1. without the patch, the acpi_platform scan handler white list is
-> >    continuously growing.
-> > 2. with the patch set, the PNPACPI scan handler white list will become
-> >    smaller and smaller by
-> >    a) remove the ids from the PNPACPI white list, for the devices
-> >       that are never enumerated via ACPI
-> >    b) remove the ids from the PNPACPI whilte list and convert the drivers to
-> >       platform bus drivers, for the devices that are not PNP devices in nature.
-> >    which will be done later.
-> 
-> I agree that this is the right direction to go in. The number of acpipnp
-> devices that are also pnpbios or (even worse) isapnp is (a) unlikely to
-> increase, and (b) *very* small, and pretty much limited to superio and a
-> small number of sound cards on old laptops. We may come up with a better
-> solution for them later, but right now shifting away from requiring that
-> every new ACPI device driver also bump a whitelist is an improvement.
-> 
-thanks for your comments, Matthew.
+On Fri, Feb 28, 2014 at 3:06 PM, Joe Perches <joe@perches.com> wrote:
+> Hi.
+>
+> A couple of suggestions and a couple of questions.
+>
+> I made the patch below against your patches to.
+>
+> o Look for ".compatible = "foo" strings in .c and .h files too
+> o Improve the vendor name match in vendor-prefix.txt by only
+>   matching the exact vendor name at the beginning of lines.
+>
+> I then produced a file of all the compatible uses in dts
+> and used checkpatch on it.  It's a long list and a longer
+> checkpatch warning list.
+>
+> $ git ls-files | grep -E "\.dtsi?$" | \
+>   xargs grep -hE "^\s*compatible\s*="| \
+>   sed -r -e 's/^\s*//' -e 's/\s*=\s*/ = /'| sort | uniq > tmp.dts
+> $ .scripts/checkpatch.pl -f tmp.dts
+>
+> A couple of questions:
+>
+> How does the $compat2 variable actually work?
+> What is it supposed to do?
+>
+>                                 my $compat2 = $compat;
+>                                 $compat2 =~ s/\,[a-z]*\-/\,<\.\*>\-/;
+>
+> For instance:
+> WARNING: DT compatible string "marvell,tauros2-cache" appears un-documented -- check ./Documentation/devicetree/bindings/
+>
+> The prefix "tauros2-" doesn't match '=~ s/[a-z]*-/
+>
+> Should it?  Should the '[a-z]*' be '[a-zA-Z0-9-]+'
+> like the other test?
 
-thanks,
-rui
+What Florian said is exactly right.
 
+> Also the grep used when $compat2 is different than $compat
+> has <.*>
+>
+> There aren't any descriptions I see in binding/ that have
+> any <foo> like uses with the angle brackets.
+>
+> Are the angle brackets "<" and ">" necessary?
+>
+> I think the code block should look more like:
+>
+>                                 my $compat2 = $compat;
+>                                 $compat2 =~ s/\,[a-zA-Z0-9]*\-/\,\.\*\-/g;
+>                                 my $grepfor = "\Q$compat\E";
+>                                 $grepfor .= "|\Q$compat2\E" if ($compat2 ne $compat);
+>                                 `grep -Erq "$grepfor" $dt_path`;
+>
+> so that there's only 1 grep pattern when
+> $compat2 is the same as $compat and the
+> strings are escape quoted.
+>
+> There are a _lot_ of missing entries:
+>
+> o 164 vendor names
+> o 2408 device names (maybe due to bad compat2 greps?)
+>
+> What, if anything, should be done about them?
 
+Documenting DT bindings is somewhat new, so there are lots of older
+sparc and powerpc bindings that don't have documentation and are
+basically grandfathered in. I had thought about adding documentation
+in an undocumented binding list, but that would only help making
+checks on files pass. For any new bindings, documentation is required,
+but we are only hitting like 50-60% in each kernel version. Those are
+the ones I hope to catch.
+
+I've written a script that finds the commit adding the undocumented
+property and can email the authors, but I've been reluctant to start
+spamming people with this. I want to see if checkpatch helps improve
+the rate.
+
+Rob
