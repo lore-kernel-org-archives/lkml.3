@@ -1,195 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754747AbaCCRhE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 12:37:04 -0500
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:39006 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889AbaCCRhA (ORCPT
+	id S1754775AbaCCRhq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 12:37:46 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53675 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753976AbaCCReB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 12:37:00 -0500
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFxjAp23=ySEe8e8bTPbVw8Uh8d03zirg4TdHXGYiyjmwA@mail.gmail.com>
-References: <53022DB1.4070805@gmail.com>
-	<CA+55aFxjAp23=ySEe8e8bTPbVw8Uh8d03zirg4TdHXGYiyjmwA@mail.gmail.com>
-Date: Mon, 3 Mar 2014 09:36:58 -0800
-X-Google-Sender-Auth: 7gEbM_1KnEWcJilBR6ep6syi8ys
-Message-ID: <CA+55aFy4GvpFcboBiKdreU_Zh1RzynPoLxhvC9hijn60hkEZ3g@mail.gmail.com>
-Subject: Re: Update of file offset on write() etc. is non-atomic with I/O
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Miklos Szeredi <miklos@szeredi.hu>,
-        "Theodore T'so" <tytso@mit.edu>, Christoph Hellwig <hch@lst.de>,
-        Chris Mason <clm@fb.com>, Dave Chinner <david@fromorbit.com>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "J. Bruce Fields" <bfields@citi.umich.edu>,
-        Yongzhi Pan <panyongzhi@gmail.com>
-Content-Type: multipart/mixed; boundary=001a1133a1c00e9f4e04f3b73c1c
+	Mon, 3 Mar 2014 12:34:01 -0500
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>
+Subject: [PATCH v4 3/6] pci: Create pci_host_bridge before its associated bus in pci_create_root_bus.
+Date: Mon,  3 Mar 2014 17:33:13 +0000
+Message-Id: <1393867996-32299-4-git-send-email-Liviu.Dudau@arm.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1393867996-32299-1-git-send-email-Liviu.Dudau@arm.com>
+References: <1393867996-32299-1-git-send-email-Liviu.Dudau@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001a1133a1c00e9f4e04f3b73c1c
-Content-Type: text/plain; charset=UTF-8
+Before commit 7b5436635800 the pci_host_bridge was created before the root bus.
+As that commit has added a needless dependency on the bus for pci_alloc_host_bridge()
+the creation order has been changed for no good reason. Revert the order of
+creation as we are going to depend on the pci_host_bridge structure to retrieve the
+domain number of the root bus.
 
-Ok, sorry for the long delay, I was distracted (and hoping that Al
-would come up with a patch).
+Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
 
-Anyway, attached is the patch I think we should do for this issue. It
-is fairly simple:
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 6e34498..78ccba0 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -505,7 +505,7 @@ static void pci_release_host_bridge_dev(struct device *dev)
+ 	kfree(bridge);
+ }
+ 
+-static struct pci_host_bridge *pci_alloc_host_bridge(struct pci_bus *b)
++static struct pci_host_bridge *pci_alloc_host_bridge(void)
+ {
+ 	struct pci_host_bridge *bridge;
+ 
+@@ -514,7 +514,6 @@ static struct pci_host_bridge *pci_alloc_host_bridge(struct pci_bus *b)
+ 		return NULL;
+ 
+ 	INIT_LIST_HEAD(&bridge->windows);
+-	bridge->bus = b;
+ 	return bridge;
+ }
+ 
+@@ -1727,9 +1726,21 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 	char bus_addr[64];
+ 	char *fmt;
+ 
++	bridge = pci_alloc_host_bridge();
++	if (!bridge)
++		return NULL;
++
++	bridge->dev.parent = parent;
++	bridge->dev.release = pci_release_host_bridge_dev;
++	error = pcibios_root_bridge_prepare(bridge);
++	if (error) {
++		kfree(bridge);
++		return NULL;
++	}
++
+ 	b = pci_alloc_bus();
+ 	if (!b)
+-		return NULL;
++		goto err_out;
+ 
+ 	b->sysdata = sysdata;
+ 	b->ops = ops;
+@@ -1738,26 +1749,15 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 	if (b2) {
+ 		/* If we already got to this bus through a different bridge, ignore it */
+ 		dev_dbg(&b2->dev, "bus already known\n");
+-		goto err_out;
++		goto err_bus_out;
+ 	}
+ 
+-	bridge = pci_alloc_host_bridge(b);
+-	if (!bridge)
+-		goto err_out;
+-
+-	bridge->dev.parent = parent;
+-	bridge->dev.release = pci_release_host_bridge_dev;
++	bridge->bus = b;
+ 	dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
+-	error = pcibios_root_bridge_prepare(bridge);
+-	if (error) {
+-		kfree(bridge);
+-		goto err_out;
+-	}
+-
+ 	error = device_register(&bridge->dev);
+ 	if (error) {
+ 		put_device(&bridge->dev);
+-		goto err_out;
++		goto err_bus_out;
+ 	}
+ 	b->bridge = get_device(&bridge->dev);
+ 	device_enable_async_suspend(b->bridge);
+@@ -1814,8 +1814,10 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ class_dev_reg_err:
+ 	put_device(&bridge->dev);
+ 	device_unregister(&bridge->dev);
+-err_out:
++err_bus_out:
+ 	kfree(b);
++err_out:
++	kfree(bridge);
+ 	return NULL;
+ }
+ 
+-- 
+1.9.0
 
- - it adds a "f_pos_mutex" to the "struct file".
-
- - it adds a new FMODE_ATOMIC_POS flag to the file mode flags to mark
-things that need atomic f_pos updates
-
- - it makes the "struct fd" flags be two flags rather than one: the
-second flag is for "unlock f_pos_mutex when done"
-
- - it introduces "fd[get,put]_pos()" which gets the f_pos_mutex when required
-
- - it makes read/write/lseek use that.
-
-It's pretty damn straightforward, I think, and is minimally serializing.
-
-Al, comments? Yongzhi Pan, this is pretty much untested, but it's
-pretty simple and it does fix your test-case.
-
-                       Linus
-
-On Thu, Feb 20, 2014 at 9:14 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> Yes, I do think we violate POSIX here because of how we handle f_pos
-> (the earlier thread from 2006 you point to talks about the "thread
-> safe" part, the point here about the actual wording of "atomic" is a
-> separate issue).
->
-> Long long ago we used to just pass in the pointer to f_pos directly,
-> and then the low-level write would update it all under the inode
-> semaphore, and all was good.
->
-> And then we ended up having tons of problems with non-regular files
-> and drivers accessing f_pos and having nasty races with it because
-> they did *not* have any locking (and very fundamentally didn't want
-> any), and we broke the serialization of f_pos. We still do the *IO*
-> atomically, but yes, the f_pos access itself is outside the lock.
->
-> Ho humm.. Al, any ideas of how to fix this?
-
---001a1133a1c00e9f4e04f3b73c1c
-Content-Type: text/plain; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hsc155yj0
-
-IGZzL2ZpbGVfdGFibGUuYyAgICAgIHwgIDEgKwogZnMvb3Blbi5jICAgICAgICAgICAgfCAgNCAr
-KysrCiBmcy9yZWFkX3dyaXRlLmMgICAgICB8IDQ2ICsrKysrKysrKysrKysrKysrKysrKysrKysr
-KysrKysrKysrKy0tLS0tLS0tLS0KIGluY2x1ZGUvbGludXgvZmlsZS5oIHwgIDYgKysrLS0tCiBp
-bmNsdWRlL2xpbnV4L2ZzLmggICB8ICA2ICsrKysrLQogNSBmaWxlcyBjaGFuZ2VkLCA0OSBpbnNl
-cnRpb25zKCspLCAxNCBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9mcy9maWxlX3RhYmxlLmMg
-Yi9mcy9maWxlX3RhYmxlLmMKaW5kZXggNWZmZjkwMzBiZTM0Li41YjI0MDA4ZWE0ZjYgMTAwNjQ0
-Ci0tLSBhL2ZzL2ZpbGVfdGFibGUuYworKysgYi9mcy9maWxlX3RhYmxlLmMKQEAgLTEzNSw2ICsx
-MzUsNyBAQCBzdHJ1Y3QgZmlsZSAqZ2V0X2VtcHR5X2ZpbHAodm9pZCkKIAlhdG9taWNfbG9uZ19z
-ZXQoJmYtPmZfY291bnQsIDEpOwogCXJ3bG9ja19pbml0KCZmLT5mX293bmVyLmxvY2spOwogCXNw
-aW5fbG9ja19pbml0KCZmLT5mX2xvY2spOworCW11dGV4X2luaXQoJmYtPmZfcG9zX2xvY2spOwog
-CWV2ZW50cG9sbF9pbml0X2ZpbGUoZik7CiAJLyogZi0+Zl92ZXJzaW9uOiAwICovCiAJcmV0dXJu
-IGY7CmRpZmYgLS1naXQgYS9mcy9vcGVuLmMgYi9mcy9vcGVuLmMKaW5kZXggNGIzZTFlZGYyZmU0
-Li5iOWVkOGIyNWMxMDggMTAwNjQ0Ci0tLSBhL2ZzL29wZW4uYworKysgYi9mcy9vcGVuLmMKQEAg
-LTcwNSw2ICs3MDUsMTAgQEAgc3RhdGljIGludCBkb19kZW50cnlfb3BlbihzdHJ1Y3QgZmlsZSAq
-ZiwKIAkJcmV0dXJuIDA7CiAJfQogCisJLyogUE9TSVguMS0yMDA4L1NVU3Y0IFNlY3Rpb24gWFNJ
-IDIuOS43ICovCisJaWYgKFNfSVNSRUcoaW5vZGUtPmlfbW9kZSkpCisJCWYtPmZfbW9kZSB8PSBG
-TU9ERV9BVE9NSUNfUE9TOworCiAJZi0+Zl9vcCA9IGZvcHNfZ2V0KGlub2RlLT5pX2ZvcCk7CiAJ
-aWYgKHVubGlrZWx5KFdBUk5fT04oIWYtPmZfb3ApKSkgewogCQllcnJvciA9IC1FTk9ERVY7CmRp
-ZmYgLS1naXQgYS9mcy9yZWFkX3dyaXRlLmMgYi9mcy9yZWFkX3dyaXRlLmMKaW5kZXggZWRjNTc0
-NmE5MDJhLi45MjczZWM5MmYwN2UgMTAwNjQ0Ci0tLSBhL2ZzL3JlYWRfd3JpdGUuYworKysgYi9m
-cy9yZWFkX3dyaXRlLmMKQEAgLTI2NCwxMCArMjY0LDM2IEBAIGxvZmZfdCB2ZnNfbGxzZWVrKHN0
-cnVjdCBmaWxlICpmaWxlLCBsb2ZmX3Qgb2Zmc2V0LCBpbnQgd2hlbmNlKQogfQogRVhQT1JUX1NZ
-TUJPTCh2ZnNfbGxzZWVrKTsKIAorLyoKKyAqIFdlIG9ubHkgbG9jayBmX3BvcyBpZiB3ZSBoYXZl
-IHRocmVhZHMgKGluIHdoaWNoIGNhc2UgIm5lZWRfcHV0IgorICogd2lsbCBiZSBzZXQpIG9yIGlm
-IHRoZSBmaWxlIG1pZ2h0IGJlIHNoYXJlZCB3aXRoIGFub3RoZXIgcHJvY2VzcworICogKGluIHdo
-aWNoIGNhc2UgdGhlIGZpbGUgY291bnQgaXMgZWxldmF0ZWQpLgorICovCitzdGF0aWMgc3RydWN0
-IGZkIGZkZ2V0X3BvcyhpbnQgZmQpCit7CisJc3RydWN0IGZkIGYgPSBmZGdldChmZCk7CisJc3Ry
-dWN0IGZpbGUgKmZpbGUgPSBmLmZpbGU7CisKKwlpZiAoZmlsZSAmJiAoZmlsZS0+Zl9tb2RlICYg
-Rk1PREVfQVRPTUlDX1BPUykpIHsKKwkJaWYgKGYubmVlZF9wdXQgfHwgZmlsZV9jb3VudChmaWxl
-KSA+IDEpIHsKKwkJCWYubmVlZF9wb3NfdW5sb2NrID0gMTsKKwkJCW11dGV4X2xvY2soJmZpbGUt
-PmZfcG9zX2xvY2spOworCQl9CisJfQorCXJldHVybiBmOworfQorCitzdGF0aWMgdm9pZCBmZHB1
-dF9wb3Moc3RydWN0IGZkIGYpCit7CisJaWYgKGYubmVlZF9wb3NfdW5sb2NrKQorCQltdXRleF91
-bmxvY2soJmYuZmlsZS0+Zl9wb3NfbG9jayk7CisJZmRwdXQoZik7Cit9CisKIFNZU0NBTExfREVG
-SU5FMyhsc2VlaywgdW5zaWduZWQgaW50LCBmZCwgb2ZmX3QsIG9mZnNldCwgdW5zaWduZWQgaW50
-LCB3aGVuY2UpCiB7CiAJb2ZmX3QgcmV0dmFsOwotCXN0cnVjdCBmZCBmID0gZmRnZXQoZmQpOwor
-CXN0cnVjdCBmZCBmID0gZmRnZXRfcG9zKGZkKTsKIAlpZiAoIWYuZmlsZSkKIAkJcmV0dXJuIC1F
-QkFERjsKIApAQCAtMjc4LDcgKzMwNCw3IEBAIFNZU0NBTExfREVGSU5FMyhsc2VlaywgdW5zaWdu
-ZWQgaW50LCBmZCwgb2ZmX3QsIG9mZnNldCwgdW5zaWduZWQgaW50LCB3aGVuY2UpCiAJCWlmIChy
-ZXMgIT0gKGxvZmZfdClyZXR2YWwpCiAJCQlyZXR2YWwgPSAtRU9WRVJGTE9XOwkvKiBMRlM6IHNo
-b3VsZCBvbmx5IGhhcHBlbiBvbiAzMiBiaXQgcGxhdGZvcm1zICovCiAJfQotCWZkcHV0KGYpOwor
-CWZkcHV0X3BvcyhmKTsKIAlyZXR1cm4gcmV0dmFsOwogfQogCkBAIC00OTgsNyArNTI0LDcgQEAg
-c3RhdGljIGlubGluZSB2b2lkIGZpbGVfcG9zX3dyaXRlKHN0cnVjdCBmaWxlICpmaWxlLCBsb2Zm
-X3QgcG9zKQogCiBTWVNDQUxMX0RFRklORTMocmVhZCwgdW5zaWduZWQgaW50LCBmZCwgY2hhciBf
-X3VzZXIgKiwgYnVmLCBzaXplX3QsIGNvdW50KQogewotCXN0cnVjdCBmZCBmID0gZmRnZXQoZmQp
-OworCXN0cnVjdCBmZCBmID0gZmRnZXRfcG9zKGZkKTsKIAlzc2l6ZV90IHJldCA9IC1FQkFERjsK
-IAogCWlmIChmLmZpbGUpIHsKQEAgLTUwNiw3ICs1MzIsNyBAQCBTWVNDQUxMX0RFRklORTMocmVh
-ZCwgdW5zaWduZWQgaW50LCBmZCwgY2hhciBfX3VzZXIgKiwgYnVmLCBzaXplX3QsIGNvdW50KQog
-CQlyZXQgPSB2ZnNfcmVhZChmLmZpbGUsIGJ1ZiwgY291bnQsICZwb3MpOwogCQlpZiAocmV0ID49
-IDApCiAJCQlmaWxlX3Bvc193cml0ZShmLmZpbGUsIHBvcyk7Ci0JCWZkcHV0KGYpOworCQlmZHB1
-dF9wb3MoZik7CiAJfQogCXJldHVybiByZXQ7CiB9CkBAIC01MTQsNyArNTQwLDcgQEAgU1lTQ0FM
-TF9ERUZJTkUzKHJlYWQsIHVuc2lnbmVkIGludCwgZmQsIGNoYXIgX191c2VyICosIGJ1Ziwgc2l6
-ZV90LCBjb3VudCkKIFNZU0NBTExfREVGSU5FMyh3cml0ZSwgdW5zaWduZWQgaW50LCBmZCwgY29u
-c3QgY2hhciBfX3VzZXIgKiwgYnVmLAogCQlzaXplX3QsIGNvdW50KQogewotCXN0cnVjdCBmZCBm
-ID0gZmRnZXQoZmQpOworCXN0cnVjdCBmZCBmID0gZmRnZXRfcG9zKGZkKTsKIAlzc2l6ZV90IHJl
-dCA9IC1FQkFERjsKIAogCWlmIChmLmZpbGUpIHsKQEAgLTUyMiw3ICs1NDgsNyBAQCBTWVNDQUxM
-X0RFRklORTMod3JpdGUsIHVuc2lnbmVkIGludCwgZmQsIGNvbnN0IGNoYXIgX191c2VyICosIGJ1
-ZiwKIAkJcmV0ID0gdmZzX3dyaXRlKGYuZmlsZSwgYnVmLCBjb3VudCwgJnBvcyk7CiAJCWlmIChy
-ZXQgPj0gMCkKIAkJCWZpbGVfcG9zX3dyaXRlKGYuZmlsZSwgcG9zKTsKLQkJZmRwdXQoZik7CisJ
-CWZkcHV0X3BvcyhmKTsKIAl9CiAKIAlyZXR1cm4gcmV0OwpAQCAtNzk3LDcgKzgyMyw3IEBAIEVY
-UE9SVF9TWU1CT0wodmZzX3dyaXRldik7CiBTWVNDQUxMX0RFRklORTMocmVhZHYsIHVuc2lnbmVk
-IGxvbmcsIGZkLCBjb25zdCBzdHJ1Y3QgaW92ZWMgX191c2VyICosIHZlYywKIAkJdW5zaWduZWQg
-bG9uZywgdmxlbikKIHsKLQlzdHJ1Y3QgZmQgZiA9IGZkZ2V0KGZkKTsKKwlzdHJ1Y3QgZmQgZiA9
-IGZkZ2V0X3BvcyhmZCk7CiAJc3NpemVfdCByZXQgPSAtRUJBREY7CiAKIAlpZiAoZi5maWxlKSB7
-CkBAIC04MDUsNyArODMxLDcgQEAgU1lTQ0FMTF9ERUZJTkUzKHJlYWR2LCB1bnNpZ25lZCBsb25n
-LCBmZCwgY29uc3Qgc3RydWN0IGlvdmVjIF9fdXNlciAqLCB2ZWMsCiAJCXJldCA9IHZmc19yZWFk
-dihmLmZpbGUsIHZlYywgdmxlbiwgJnBvcyk7CiAJCWlmIChyZXQgPj0gMCkKIAkJCWZpbGVfcG9z
-X3dyaXRlKGYuZmlsZSwgcG9zKTsKLQkJZmRwdXQoZik7CisJCWZkcHV0X3BvcyhmKTsKIAl9CiAK
-IAlpZiAocmV0ID4gMCkKQEAgLTgxNyw3ICs4NDMsNyBAQCBTWVNDQUxMX0RFRklORTMocmVhZHYs
-IHVuc2lnbmVkIGxvbmcsIGZkLCBjb25zdCBzdHJ1Y3QgaW92ZWMgX191c2VyICosIHZlYywKIFNZ
-U0NBTExfREVGSU5FMyh3cml0ZXYsIHVuc2lnbmVkIGxvbmcsIGZkLCBjb25zdCBzdHJ1Y3QgaW92
-ZWMgX191c2VyICosIHZlYywKIAkJdW5zaWduZWQgbG9uZywgdmxlbikKIHsKLQlzdHJ1Y3QgZmQg
-ZiA9IGZkZ2V0KGZkKTsKKwlzdHJ1Y3QgZmQgZiA9IGZkZ2V0X3BvcyhmZCk7CiAJc3NpemVfdCBy
-ZXQgPSAtRUJBREY7CiAKIAlpZiAoZi5maWxlKSB7CkBAIC04MjUsNyArODUxLDcgQEAgU1lTQ0FM
-TF9ERUZJTkUzKHdyaXRldiwgdW5zaWduZWQgbG9uZywgZmQsIGNvbnN0IHN0cnVjdCBpb3ZlYyBf
-X3VzZXIgKiwgdmVjLAogCQlyZXQgPSB2ZnNfd3JpdGV2KGYuZmlsZSwgdmVjLCB2bGVuLCAmcG9z
-KTsKIAkJaWYgKHJldCA+PSAwKQogCQkJZmlsZV9wb3Nfd3JpdGUoZi5maWxlLCBwb3MpOwotCQlm
-ZHB1dChmKTsKKwkJZmRwdXRfcG9zKGYpOwogCX0KIAogCWlmIChyZXQgPiAwKQpkaWZmIC0tZ2l0
-IGEvaW5jbHVkZS9saW51eC9maWxlLmggYi9pbmNsdWRlL2xpbnV4L2ZpbGUuaAppbmRleCBjYmFj
-ZjRmYWY0NDcuLjYzNjYzNGEwOWM5MiAxMDA2NDQKLS0tIGEvaW5jbHVkZS9saW51eC9maWxlLmgK
-KysrIGIvaW5jbHVkZS9saW51eC9maWxlLmgKQEAgLTI4LDcgKzI4LDcgQEAgc3RhdGljIGlubGlu
-ZSB2b2lkIGZwdXRfbGlnaHQoc3RydWN0IGZpbGUgKmZpbGUsIGludCBmcHV0X25lZWRlZCkKIAog
-c3RydWN0IGZkIHsKIAlzdHJ1Y3QgZmlsZSAqZmlsZTsKLQlpbnQgbmVlZF9wdXQ7CisJdW5zaWdu
-ZWQgbmVlZF9wdXQ6MSwgbmVlZF9wb3NfdW5sb2NrOjE7CiB9OwogCiBzdGF0aWMgaW5saW5lIHZv
-aWQgZmRwdXQoc3RydWN0IGZkIGZkKQpAQCAtNDQsNyArNDQsNyBAQCBzdGF0aWMgaW5saW5lIHN0
-cnVjdCBmZCBmZGdldCh1bnNpZ25lZCBpbnQgZmQpCiB7CiAJaW50IGI7CiAJc3RydWN0IGZpbGUg
-KmYgPSBmZ2V0X2xpZ2h0KGZkLCAmYik7Ci0JcmV0dXJuIChzdHJ1Y3QgZmQpe2YsYn07CisJcmV0
-dXJuIChzdHJ1Y3QgZmQpe2YsYiwwfTsKIH0KIAogZXh0ZXJuIHN0cnVjdCBmaWxlICpmZ2V0X3Jh
-dyh1bnNpZ25lZCBpbnQgZmQpOwpAQCAtNTQsNyArNTQsNyBAQCBzdGF0aWMgaW5saW5lIHN0cnVj
-dCBmZCBmZGdldF9yYXcodW5zaWduZWQgaW50IGZkKQogewogCWludCBiOwogCXN0cnVjdCBmaWxl
-ICpmID0gZmdldF9yYXdfbGlnaHQoZmQsICZiKTsKLQlyZXR1cm4gKHN0cnVjdCBmZCl7ZixifTsK
-KwlyZXR1cm4gKHN0cnVjdCBmZCl7ZixiLDB9OwogfQogCiBleHRlcm4gaW50IGZfZHVwZmQodW5z
-aWduZWQgaW50IGZyb20sIHN0cnVjdCBmaWxlICpmaWxlLCB1bnNpZ25lZCBmbGFncyk7CmRpZmYg
-LS1naXQgYS9pbmNsdWRlL2xpbnV4L2ZzLmggYi9pbmNsdWRlL2xpbnV4L2ZzLmgKaW5kZXggNjA4
-Mjk1NjVlNTUyLi5lYmZkZTA0YmNhMDYgMTAwNjQ0Ci0tLSBhL2luY2x1ZGUvbGludXgvZnMuaAor
-KysgYi9pbmNsdWRlL2xpbnV4L2ZzLmgKQEAgLTEyMyw2ICsxMjMsOSBAQCB0eXBlZGVmIHZvaWQg
-KGRpb19pb2RvbmVfdCkoc3RydWN0IGtpb2NiICppb2NiLCBsb2ZmX3Qgb2Zmc2V0LAogLyogRmls
-ZSBpcyBvcGVuZWQgd2l0aCBPX1BBVEg7IGFsbW9zdCBub3RoaW5nIGNhbiBiZSBkb25lIHdpdGgg
-aXQgKi8KICNkZWZpbmUgRk1PREVfUEFUSAkJKChfX2ZvcmNlIGZtb2RlX3QpMHg0MDAwKQogCisv
-KiBGaWxlIG5lZWRzIGF0b21pYyBhY2Nlc3NlcyB0byBmX3BvcyAqLworI2RlZmluZSBGTU9ERV9B
-VE9NSUNfUE9TCSgoX19mb3JjZSBmbW9kZV90KTB4ODAwMCkKKwogLyogRmlsZSB3YXMgb3BlbmVk
-IGJ5IGZhbm90aWZ5IGFuZCBzaG91bGRuJ3QgZ2VuZXJhdGUgZmFub3RpZnkgZXZlbnRzICovCiAj
-ZGVmaW5lIEZNT0RFX05PTk9USUZZCQkoKF9fZm9yY2UgZm1vZGVfdCkweDEwMDAwMDApCiAKQEAg
-LTc4MCwxMyArNzgzLDE0IEBAIHN0cnVjdCBmaWxlIHsKIAljb25zdCBzdHJ1Y3QgZmlsZV9vcGVy
-YXRpb25zCSpmX29wOwogCiAJLyoKLQkgKiBQcm90ZWN0cyBmX2VwX2xpbmtzLCBmX2ZsYWdzLCBm
-X3BvcyB2cyBpX3NpemUgaW4gbHNlZWsgU0VFS19DVVIuCisJICogUHJvdGVjdHMgZl9lcF9saW5r
-cywgZl9mbGFncy4KIAkgKiBNdXN0IG5vdCBiZSB0YWtlbiBmcm9tIElSUSBjb250ZXh0LgogCSAq
-LwogCXNwaW5sb2NrX3QJCWZfbG9jazsKIAlhdG9taWNfbG9uZ190CQlmX2NvdW50OwogCXVuc2ln
-bmVkIGludCAJCWZfZmxhZ3M7CiAJZm1vZGVfdAkJCWZfbW9kZTsKKwlzdHJ1Y3QgbXV0ZXgJCWZf
-cG9zX2xvY2s7CiAJbG9mZl90CQkJZl9wb3M7CiAJc3RydWN0IGZvd25fc3RydWN0CWZfb3duZXI7
-CiAJY29uc3Qgc3RydWN0IGNyZWQJKmZfY3JlZDsK
---001a1133a1c00e9f4e04f3b73c1c--
