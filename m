@@ -1,100 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882AbaCCQbv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 11:31:51 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:36606 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754684AbaCCQbu (ORCPT
+	id S1754894AbaCCQe2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 11:34:28 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:36099 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754379AbaCCQe0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 11:31:50 -0500
-Date: Mon, 3 Mar 2014 10:30:13 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Chuansheng Liu <chuansheng.liu@intel.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <mina86@mina86.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <david.a.cohen@intel.com>, <jin.can.zhuang@intel.com>,
-        <yu.y.wang@intel.com>
-Subject: Re: [PATCH] usb: gadget: return the right length in ffs_epfile_io()
-Message-ID: <20140303163013.GC2759@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <n>
- <1393483771-24623-1-git-send-email-chuansheng.liu@intel.com>
+	Mon, 3 Mar 2014 11:34:26 -0500
+Message-ID: <5314AF0E.3040703@kernel.dk>
+Date: Mon, 03 Mar 2014 09:34:22 -0700
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="V88s5gaDVPzZ0KCq"
-Content-Disposition: inline
-In-Reply-To: <1393483771-24623-1-git-send-email-chuansheng.liu@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mike Galbraith <bitbucket@online.de>
+CC: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Subject: Re: [patch] rt,blk,mq: Make blk_mq_cpu_notify_lock a raw spinlock
+References: <1393822646.5816.4.camel@marge.simpson.net>
+In-Reply-To: <1393822646.5816.4.camel@marge.simpson.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---V88s5gaDVPzZ0KCq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 03/02/2014 09:57 PM, Mike Galbraith wrote:
+>
+> [  365.164040] BUG: sleeping function called from invalid context at kernel/rtmutex.c:674
+> [  365.164041] in_atomic(): 1, irqs_disabled(): 1, pid: 26, name: migration/1
+> [  365.164043] no locks held by migration/1/26.
+> [  365.164044] irq event stamp: 6648
+> [  365.164056] hardirqs last  enabled at (6647): [<ffffffff8153d377>] restore_args+0x0/0x30
+> [  365.164062] hardirqs last disabled at (6648): [<ffffffff810ed98d>] multi_cpu_stop+0x9d/0x120
+> [  365.164070] softirqs last  enabled at (0): [<ffffffff810543bc>] copy_process.part.28+0x6fc/0x1920
+> [  365.164072] softirqs last disabled at (0): [<          (null)>]           (null)
+> [  365.164076] CPU: 1 PID: 26 Comm: migration/1 Tainted: GF           N  3.12.12-rt19-0.gcb6c4a2-rt #3
+> [  365.164078] Hardware name: QCI QSSC-S4R/QSSC-S4R, BIOS QSSC-S4R.QCI.01.00.S013.032920111005 03/29/2011
+> [  365.164091]  0000000000000001 ffff880a42ea7c30 ffffffff815367e6 ffffffff81a086c0
+> [  365.164099]  ffff880a42ea7c40 ffffffff8108919c ffff880a42ea7c60 ffffffff8153c24f
+> [  365.164107]  ffff880a42ea91f0 00000000ffffffe1 ffff880a42ea7c88 ffffffff81297ec0
+> [  365.164108] Call Trace:
+> [  365.164119]  [<ffffffff810060b1>] try_stack_unwind+0x191/0x1a0
+> [  365.164127]  [<ffffffff81004872>] dump_trace+0x92/0x360
+> [  365.164133]  [<ffffffff81006108>] show_trace_log_lvl+0x48/0x60
+> [  365.164138]  [<ffffffff81004c18>] show_stack_log_lvl+0xd8/0x1d0
+> [  365.164143]  [<ffffffff81006160>] show_stack+0x20/0x50
+> [  365.164153]  [<ffffffff815367e6>] dump_stack+0x54/0x9a
+> [  365.164163]  [<ffffffff8108919c>] __might_sleep+0xfc/0x140
+> [  365.164173]  [<ffffffff8153c24f>] rt_spin_lock+0x1f/0x70
+> [  365.164182]  [<ffffffff81297ec0>] blk_mq_main_cpu_notify+0x20/0x70
+> [  365.164191]  [<ffffffff81540a1c>] notifier_call_chain+0x4c/0x70
+> [  365.164201]  [<ffffffff81083499>] __raw_notifier_call_chain+0x9/0x10
+> [  365.164207]  [<ffffffff810567be>] cpu_notify+0x1e/0x40
+> [  365.164217]  [<ffffffff81525da2>] take_cpu_down+0x22/0x40
+> [  365.164223]  [<ffffffff810ed9c6>] multi_cpu_stop+0xd6/0x120
+> [  365.164229]  [<ffffffff810edd97>] cpu_stopper_thread+0xd7/0x1e0
+> [  365.164235]  [<ffffffff810863a3>] smpboot_thread_fn+0x203/0x380
+> [  365.164241]  [<ffffffff8107cbf8>] kthread+0xc8/0xd0
+> [  365.164250]  [<ffffffff8154440c>] ret_from_fork+0x7c/0xb0
+> [  365.164429] smpboot: CPU 1 is now offline
+>
+> Signed-off-by: Mike Galbraith <bitbucket@online.de>
 
-Hi,
+Dirty! Applied, thanks :)
 
-On Thu, Feb 27, 2014 at 02:49:31PM +0800, Chuansheng Liu wrote:
-> When the request length is aligned to maxpacketsize, sometimes
-> the return length ret > the user space requested len.
->=20
-> At that time, we will use min_t(size_t, ret, len) to limit the
-> size in case of user data buffer overflow.
->=20
-> But we need return the min_t(size_t, ret, len) to tell the user
-> space rightly also.
->=20
-> Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
-> ---
->  drivers/usb/gadget/f_fs.c | 10 ++++++----
->  1 file changed, 6 insertions(+), 4 deletions(-)
->=20
-> diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
-> index 2b43343..31ee7af 100644
-> --- a/drivers/usb/gadget/f_fs.c
-> +++ b/drivers/usb/gadget/f_fs.c
-> @@ -687,10 +687,12 @@ static ssize_t ffs_epfile_io(struct file *file,
->  			 * space for.
->  			 */
->  			ret =3D ep->status;
-> -			if (read && ret > 0 &&
-> -			    unlikely(copy_to_user(buf, data,
-> -						  min_t(size_t, ret, len))))
-> -				ret =3D -EFAULT;
-> +			if (read && ret > 0) {
-> +				ret =3D min_t(size_t, ret, len);
-> +
-> +				if (unlikely(copy_to_user(buf, data, ret)))
-> +					ret =3D -EFAULT;
-> +			}
+-- 
+Jens Axboe
 
-please rebase on my "testing/next" branch
-
---=20
-balbi
-
---V88s5gaDVPzZ0KCq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTFK4VAAoJEIaOsuA1yqRE0Q0QAJ09W+PMrs+R6PvnnBEdIxSN
-m33QObaiX/7UJMGur61J3wqgkdaVNMbhfCBcQxXF2yqgYppBp4usf3vzopWWVLUO
-qSrATBDPxEv96w9rjvKdEFW4HPmPlBFJfUCJyhqPweKWfWfNPFOODCjUls0L+SLo
-VUsoPdaF5pdMqNh9yUPnXFdAIZmAuuFYIK0Kg//y+UlqTk8ii6jhWR0L+33c6vBI
-l3P99C3Itbw53WfF4E4LaeAj/hGSoaPIYI01yIsSGxtoz0JCI52zAQLanXWosJNe
-76AlQAp8V9qenNnvolbrHvnp8E0ol/CuY/wgiD4USQ76n0uTUYrBQ1zpJPsTj4Hh
-yDxGaW9caq27FGuIhsXl22aE49/gJZZRdqPkAl8GP76q6fM0AhLO9oZyIO9/5YYx
-yKvWqK6HPS2UO30zMigSZB4uQ49qnOpwNY/DxivaK4k7aoD0Q02ZWHZ/b9o8fZgX
-+gStwXjidBW0wVuQIBrWx2IL42KUEimPsFPPj+CxmGtBzIbUBVDLt6BaEMDqix2y
-Dp+qanQfWNUUiv1XgETlKmF5fojUzCtAc7+rYl5jLOI4P1jeoix2QCIdIEM0COAi
-IbRZxY9Zy3gg5/camxBt/w2YPr3qv+qZhKdPvLMya0PhmYmwsiKnW+wl6LA4/Xax
-xvpGMamJBb6ZALGjfmDK
-=6+2z
------END PGP SIGNATURE-----
-
---V88s5gaDVPzZ0KCq--
