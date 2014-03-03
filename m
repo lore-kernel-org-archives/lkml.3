@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753776AbaCCBQu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 20:16:50 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:60797 "EHLO
+	id S1753756AbaCCBQt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 20:16:49 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:61734 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751661AbaCCBOX (ORCPT
+	with ESMTP id S1752105AbaCCBOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 2 Mar 2014 20:14:23 -0500
-X-AuditID: 9c93017d-b7c89ae000006ae1-c5-5313d7698311
+X-AuditID: 9c93017d-b7c89ae000006ae1-d9-5313d76c7932
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
@@ -15,9 +15,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Namhyung Kim <namhyung@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH 06/13] perf tools: Count periods of filtered entries separately
-Date: Mon,  3 Mar 2014 10:14:07 +0900
-Message-Id: <1393809254-4480-7-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 07/13] perf hists: Add support for showing relative percentage
+Date: Mon,  3 Mar 2014 10:14:08 +0900
+Message-Id: <1393809254-4480-8-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1393809254-4480-1-git-send-email-namhyung@kernel.org>
 References: <1393809254-4480-1-git-send-email-namhyung@kernel.org>
@@ -26,192 +26,138 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently if a sample was filtered by command line option, it just
-dropped.  But this affects final output in that the percentage can be
-different since the filtered entries were not included to the total.
+When filtering by thread, dso or symbol on TUI it also update total
+period so that the output shows different result than no filter - the
+percentage changed to relative to filtered entries only.  Sometimes
+this is not desired since users might expect same results with filter.
 
-But user might want to see the original percentages when filter
-applied so add new total_filtered_period filed to hists->stats in
-order to be controlled by user later.  It doesn't change the current
-behavior yet.
+So new filtered_* fields to hists->stats to count them separately.
+They'll be controlled/used by user later.
 
 Acked-by: Jiri Olsa <jolsa@redhat.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-report.c |  2 +-
- tools/perf/util/event.c     | 22 ++++++++++------------
- tools/perf/util/hist.c      | 10 ++--------
- tools/perf/util/hist.h      | 10 ++++++++++
- tools/perf/util/symbol.h    |  2 +-
- 5 files changed, 24 insertions(+), 22 deletions(-)
+ tools/perf/builtin-report.c |  6 ++++++
+ tools/perf/util/hist.c      | 19 +++++++++++++++----
+ tools/perf/util/hist.h      |  2 ++
+ 3 files changed, 23 insertions(+), 4 deletions(-)
 
 diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index d882b6f96411..5f7f1a332186 100644
+index 5f7f1a332186..3f8478603d51 100644
 --- a/tools/perf/builtin-report.c
 +++ b/tools/perf/builtin-report.c
-@@ -223,7 +223,7 @@ static int process_sample_event(struct perf_tool *tool,
- 		return -1;
+@@ -121,6 +121,8 @@ static int report__add_mem_hist_entry(struct report *rep, struct addr_location *
+ 
+ 	evsel->hists.stats.total_period += cost;
+ 	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
++	if (!he->filtered)
++		evsel->hists.stats.nr_filtered_samples++;
+ 	err = hist_entry__append_callchain(he, sample);
+ out:
+ 	return err;
+@@ -170,6 +172,8 @@ static int report__add_branch_hist_entry(struct report *rep, struct addr_locatio
+ 
+ 			evsel->hists.stats.total_period += 1;
+ 			hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
++			if (!he->filtered)
++				evsel->hists.stats.nr_filtered_samples++;
+ 		} else
+ 			goto out;
  	}
+@@ -201,6 +205,8 @@ static int report__add_hist_entry(struct report *rep, struct perf_evsel *evsel,
  
--	if (al.filtered || (rep->hide_unresolved && al.sym == NULL))
-+	if (rep->hide_unresolved && al.sym == NULL)
- 		return 0;
- 
- 	if (rep->cpu_list && !test_bit(sample->cpu, rep->cpu_bitmap))
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index b0f3ca850e9e..21aa8c6248ee 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -3,6 +3,7 @@
- #include "debug.h"
- #include "machine.h"
- #include "sort.h"
-+#include "hist.h"
- #include "string.h"
- #include "strlist.h"
- #include "thread.h"
-@@ -661,7 +662,7 @@ void thread__find_addr_map(struct thread *thread,
- 	al->thread = thread;
- 	al->addr = addr;
- 	al->cpumode = cpumode;
--	al->filtered = false;
-+	al->filtered = 0;
- 
- 	if (machine == NULL) {
- 		al->map = NULL;
-@@ -687,11 +688,11 @@ void thread__find_addr_map(struct thread *thread,
- 		if ((cpumode == PERF_RECORD_MISC_GUEST_USER ||
- 			cpumode == PERF_RECORD_MISC_GUEST_KERNEL) &&
- 			!perf_guest)
--			al->filtered = true;
-+			al->filtered |= (1 << HIST_FILTER__GUEST);
- 		if ((cpumode == PERF_RECORD_MISC_USER ||
- 			cpumode == PERF_RECORD_MISC_KERNEL) &&
- 			!perf_host)
--			al->filtered = true;
-+			al->filtered |= (1 << HIST_FILTER__HOST);
- 
- 		return;
- 	}
-@@ -748,9 +749,6 @@ int perf_event__preprocess_sample(const union perf_event *event,
- 	if (thread == NULL)
- 		return -1;
- 
--	if (thread__is_filtered(thread))
--		goto out_filtered;
--
- 	dump_printf(" ... thread: %s:%d\n", thread__comm_str(thread), thread->tid);
- 	/*
- 	 * Have we already created the kernel maps for this machine?
-@@ -765,6 +763,10 @@ int perf_event__preprocess_sample(const union perf_event *event,
- 
- 	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
- 			      sample->ip, al);
-+
-+	if (thread__is_filtered(thread))
-+		al->filtered |= (1 << HIST_FILTER__THREAD);
-+
- 	dump_printf(" ...... dso: %s\n",
- 		    al->map ? al->map->dso->long_name :
- 			al->level == 'H' ? "[hypervisor]" : "<not found>");
-@@ -780,7 +782,7 @@ int perf_event__preprocess_sample(const union perf_event *event,
- 			       (dso->short_name != dso->long_name &&
- 				strlist__has_entry(symbol_conf.dso_list,
- 						   dso->long_name)))))
--			goto out_filtered;
-+			al->filtered |= (1 << HIST_FILTER__DSO);
- 
- 		al->sym = map__find_symbol(al->map, al->addr,
- 					   machine->symbol_filter);
-@@ -789,11 +791,7 @@ int perf_event__preprocess_sample(const union perf_event *event,
- 	if (symbol_conf.sym_list &&
- 		(!al->sym || !strlist__has_entry(symbol_conf.sym_list,
- 						al->sym->name)))
--		goto out_filtered;
--
--	return 0;
-+		al->filtered |= (1 << HIST_FILTER__SYMBOL);
- 
--out_filtered:
--	al->filtered = true;
- 	return 0;
- }
+ 	err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
+ 	evsel->hists.stats.total_period += sample->period;
++	if (!he->filtered)
++		evsel->hists.stats.nr_filtered_samples++;
+ 	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
+ out:
+ 	return err;
 diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 0466efa71140..d0c40897c955 100644
+index d0c40897c955..743947d891bd 100644
 --- a/tools/perf/util/hist.c
 +++ b/tools/perf/util/hist.c
-@@ -13,13 +13,6 @@ static bool hists__filter_entry_by_thread(struct hists *hists,
- static bool hists__filter_entry_by_symbol(struct hists *hists,
- 					  struct hist_entry *he);
+@@ -675,8 +675,8 @@ void hists__output_resort(struct hists *hists)
+ 	next = rb_first(root);
+ 	hists->entries = RB_ROOT;
  
--enum hist_filter {
--	HIST_FILTER__DSO,
--	HIST_FILTER__THREAD,
--	HIST_FILTER__PARENT,
--	HIST_FILTER__SYMBOL,
--};
--
- struct callchain_param	callchain_param = {
- 	.mode	= CHAIN_GRAPH_REL,
- 	.min_percent = 0.5,
-@@ -330,6 +323,7 @@ void hists__inc_nr_entries(struct hists *hists, struct hist_entry *h)
- 		hists__calc_col_len(hists, h);
- 		++hists->nr_entries;
- 		hists->stats.total_period += h->stat.period;
-+		hists->stats.total_filtered_period += h->stat.period;
- 	}
+-	hists->nr_entries = 0;
+-	hists->stats.total_period = 0;
++	hists->nr_entries = hists->nr_filtered_entries = 0;
++	hists->stats.total_period = hists->stats.total_filtered_period = 0;
+ 	hists__reset_col_len(hists);
+ 
+ 	while (next) {
+@@ -695,12 +695,17 @@ static void hists__remove_entry_filter(struct hists *hists, struct hist_entry *h
+ 	if (h->filtered)
+ 		return;
+ 
+-	++hists->nr_entries;
+-	if (h->ms.unfolded)
++	hists->nr_entries++;
++	hists->nr_filtered_entries++;
++	if (h->ms.unfolded) {
+ 		hists->nr_entries += h->nr_rows;
++		hists->nr_filtered_entries += h->nr_rows;
++	}
+ 	h->row_offset = 0;
+ 	hists->stats.total_period += h->stat.period;
++	hists->stats.total_filtered_period += h->stat.period;
+ 	hists->stats.nr_events[PERF_RECORD_SAMPLE] += h->stat.nr_events;
++	hists->stats.nr_filtered_samples += h->stat.nr_events;
+ 
+ 	hists__calc_col_len(hists, h);
  }
+@@ -723,7 +728,9 @@ void hists__filter_by_dso(struct hists *hists)
+ 	struct rb_node *nd;
  
-@@ -429,7 +423,7 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
- 			.weight = weight,
- 		},
- 		.parent = sym_parent,
--		.filtered = symbol__parent_filter(sym_parent),
-+		.filtered = symbol__parent_filter(sym_parent) | al->filtered,
- 		.hists	= hists,
- 		.branch_info = bi,
- 		.mem_info = mi,
+ 	hists->nr_entries = hists->stats.total_period = 0;
++	hists->nr_filtered_entries = hists->stats.total_filtered_period = 0;
+ 	hists->stats.nr_events[PERF_RECORD_SAMPLE] = 0;
++	hists->stats.nr_filtered_samples = 0;
+ 	hists__reset_col_len(hists);
+ 
+ 	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
+@@ -756,7 +763,9 @@ void hists__filter_by_thread(struct hists *hists)
+ 	struct rb_node *nd;
+ 
+ 	hists->nr_entries = hists->stats.total_period = 0;
++	hists->nr_filtered_entries = hists->stats.total_filtered_period = 0;
+ 	hists->stats.nr_events[PERF_RECORD_SAMPLE] = 0;
++	hists->stats.nr_filtered_samples = 0;
+ 	hists__reset_col_len(hists);
+ 
+ 	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
+@@ -787,7 +796,9 @@ void hists__filter_by_symbol(struct hists *hists)
+ 	struct rb_node *nd;
+ 
+ 	hists->nr_entries = hists->stats.total_period = 0;
++	hists->nr_filtered_entries = hists->stats.total_filtered_period = 0;
+ 	hists->stats.nr_events[PERF_RECORD_SAMPLE] = 0;
++	hists->stats.nr_filtered_samples = 0;
+ 	hists__reset_col_len(hists);
+ 
+ 	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
 diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 0c76bf972736..5ccc70057934 100644
+index 5ccc70057934..115d2e7f0a15 100644
 --- a/tools/perf/util/hist.h
 +++ b/tools/perf/util/hist.h
-@@ -14,6 +14,15 @@ struct hist_entry;
- struct addr_location;
- struct symbol;
- 
-+enum hist_filter {
-+	HIST_FILTER__DSO,
-+	HIST_FILTER__THREAD,
-+	HIST_FILTER__PARENT,
-+	HIST_FILTER__SYMBOL,
-+	HIST_FILTER__GUEST,
-+	HIST_FILTER__HOST,
-+};
-+
- /*
-  * The kernel collects the number of events it couldn't send in a stretch and
-  * when possible sends this number in a PERF_RECORD_LOST event. The number of
-@@ -28,6 +37,7 @@ struct symbol;
-  */
- struct events_stats {
- 	u64 total_period;
-+	u64 total_filtered_period;
+@@ -41,6 +41,7 @@ struct events_stats {
  	u64 total_lost;
  	u64 total_invalid_chains;
  	u32 nr_events[PERF_RECORD_HEADER_MAX];
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 2553ae04b788..501e4e722e8e 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -186,7 +186,7 @@ struct addr_location {
- 	struct symbol *sym;
- 	u64	      addr;
- 	char	      level;
--	bool	      filtered;
-+	u8	      filtered;
- 	u8	      cpumode;
- 	s32	      cpu;
- };
++	u32 nr_filtered_samples;
+ 	u32 nr_lost_warned;
+ 	u32 nr_unknown_events;
+ 	u32 nr_invalid_chains;
+@@ -84,6 +85,7 @@ struct hists {
+ 	struct rb_root		entries;
+ 	struct rb_root		entries_collapsed;
+ 	u64			nr_entries;
++	u64			nr_filtered_entries;
+ 	const struct thread	*thread_filter;
+ 	const struct dso	*dso_filter;
+ 	const char		*uid_filter_str;
 -- 
 1.7.11.7
 
