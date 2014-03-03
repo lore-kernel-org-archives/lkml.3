@@ -1,101 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755751AbaCCWrk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 17:47:40 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:44869 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755721AbaCCWrh (ORCPT
+	id S1755869AbaCCWsd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 17:48:33 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:41948 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755841AbaCCWsb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 17:47:37 -0500
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        xen-devel@lists.xenproject.org, mcgrof@suse.com,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        bridge@lists.linux-foundation.org
-Subject: [RFC v3 5/6] xen-netback: use a random MAC address and force bridge root block
-Date: Mon,  3 Mar 2014 14:47:04 -0800
-Message-Id: <1393886825-24323-6-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1393886825-24323-1-git-send-email-mcgrof@do-not-panic.com>
-References: <1393886825-24323-1-git-send-email-mcgrof@do-not-panic.com>
+	Mon, 3 Mar 2014 17:48:31 -0500
+Message-ID: <531506B3.5030004@oracle.com>
+Date: Mon, 03 Mar 2014 17:48:19 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: lizefan@huawei.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cgroup: missing rcu read lock around task_css_set
+References: <1393729211-937-1-git-send-email-sasha.levin@oracle.com> <20140303223327.GB26523@mtj.dyndns.org> <5315057F.3030602@oracle.com> <20140303224505.GE26523@mtj.dyndns.org>
+In-Reply-To: <20140303224505.GE26523@mtj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
+On 03/03/2014 05:45 PM, Tejun Heo wrote:
+> On Mon, Mar 03, 2014 at 05:43:11PM -0500, Sasha Levin wrote:
+>> On 03/03/2014 05:33 PM, Tejun Heo wrote:
+>>> On Sat, Mar 01, 2014 at 10:00:11PM -0500, Sasha Levin wrote:
+>>>> rcu read lock should be held when calling and working with task_css_set.
+>>>>
+>>>> This patch also fixes a related lockdep warning.
+>>>
+>>> Hmmm... PF_EXITING should be visible at that point and cset can't
+>>> change anymore.  We prolly need to update lockdep annotation rather
+>>> than adding spurious rcu locking around it.  Against which branch is
+>>> it?  Can you please post the lockdep warning?
+>>
+>> I see it on -next.
+>
+> I think the right thing to do is using task_css_set_check() with
+> PF_EXITING check and add comment explaining that cset can no longer
+> change.  Can you please write up a patch?
 
-The purpose of using a static MAC address of FE:FF:FF:FF:FF:FF
-was to prevent our backend interfaces from being used by the
-bridge and nominating our interface as a root port on the bridge.
-This was possible given that the bridge code will use the lowest MAC
-address for a port once a new interface gets added to the bridge.
+Sure!
 
-Sticking to a static MAC address is undesirable for a few reasons:
 
-  a) using a static MAC address by default on all interfaces can
-     lead to possible conflicts with IPv6 SLAAC and DAD
-
-  b) The bridge code has a generic bridge port 'root block' feature
-     to allow interfaces to opt out from root bridge port nominations.
-     We want to help stop spreading the use of a high MAC address
-     as a hack to do root port block, and instead get folks to
-     use the proper APIs for this.
-
-This modifies xen-netback to use a random MAC address with the xen OUI
-prefix and enables the bridge root block feature since initialization.
-Although toggling the root block feature requires the iproute2 bridge
-tool [0] or sysfs [1] xen-netback users would only need to toggle this
-off in the case that the net_device is required to be a candidate for
-root port nomination on the bridge. This is an acceptable compromise
-in order to avoid the possible conflicts with IPv6 SLAAC and DAD.
-
-[0] bridge link set dev vif2.0 root_block off
-[1] echo 1 > /sys/devices/vif-2-0/net/vif2.0/brport/root_block
-
-Cc: Stephen Hemminger <stephen@networkplumber.org>
-Cc: bridge@lists.linux-foundation.org
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xenproject.org
-Cc: kvm@vger.kernel.org
-Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
----
- drivers/net/xen-netback/interface.c | 14 +++++---------
- 1 file changed, 5 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
-index 7669d49..79d71ec 100644
---- a/drivers/net/xen-netback/interface.c
-+++ b/drivers/net/xen-netback/interface.c
-@@ -42,6 +42,8 @@
- #define XENVIF_QUEUE_LENGTH 32
- #define XENVIF_NAPI_WEIGHT  64
- 
-+static const u8 xen_oui[3] = { 0x00, 0x16, 0x3e };
-+
- int xenvif_schedulable(struct xenvif *vif)
- {
- 	return netif_running(vif->dev) && netif_carrier_ok(vif->dev);
-@@ -346,15 +348,9 @@ struct xenvif *xenvif_alloc(struct device *parent, domid_t domid,
- 	for (i = 0; i < MAX_PENDING_REQS; i++)
- 		vif->mmap_pages[i] = NULL;
- 
--	/*
--	 * Initialise a dummy MAC address. We choose the numerically
--	 * largest non-broadcast address to prevent the address getting
--	 * stolen by an Ethernet bridge for STP purposes.
--	 * (FE:FF:FF:FF:FF:FF)
--	 */
--	memset(dev->dev_addr, 0xFF, ETH_ALEN);
--	dev->dev_addr[0] &= ~0x01;
--
-+	eth_hw_addr_random(dev);
-+	memcpy(dev->dev_addr, xen_oui, 3);
-+	dev->priv_flags |= IFF_BRIDGE_ROOT_BLOCK;
- 	netif_napi_add(dev, &vif->napi, xenvif_poll, XENVIF_NAPI_WEIGHT);
- 
- 	netif_carrier_off(dev);
--- 
-1.9.0
+Thanks,
+Sasha
 
