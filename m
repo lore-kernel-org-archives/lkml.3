@@ -1,68 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754894AbaCCQe2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 11:34:28 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:36099 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754379AbaCCQe0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 11:34:26 -0500
-Message-ID: <5314AF0E.3040703@kernel.dk>
-Date: Mon, 03 Mar 2014 09:34:22 -0700
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1754914AbaCCQfK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 11:35:10 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:33202 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754135AbaCCQfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 11:35:07 -0500
+Date: Mon, 3 Mar 2014 10:33:08 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>, Felipe Balbi <balbi@ti.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
+Subject: Re: [PATCH] usb: gadget: atmel_usba: Fix crashed during stopping
+ when DEBUG is enabled
+Message-ID: <20140303163308.GA10987@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1393598066-4016-1-git-send-email-gregory.clement@free-electrons.com>
 MIME-Version: 1.0
-To: Mike Galbraith <bitbucket@online.de>
-CC: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Subject: Re: [patch] rt,blk,mq: Make blk_mq_cpu_notify_lock a raw spinlock
-References: <1393822646.5816.4.camel@marge.simpson.net>
-In-Reply-To: <1393822646.5816.4.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="KsGdsel6WgEHnImy"
+Content-Disposition: inline
+In-Reply-To: <1393598066-4016-1-git-send-email-gregory.clement@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/02/2014 09:57 PM, Mike Galbraith wrote:
->
-> [  365.164040] BUG: sleeping function called from invalid context at kernel/rtmutex.c:674
-> [  365.164041] in_atomic(): 1, irqs_disabled(): 1, pid: 26, name: migration/1
-> [  365.164043] no locks held by migration/1/26.
-> [  365.164044] irq event stamp: 6648
-> [  365.164056] hardirqs last  enabled at (6647): [<ffffffff8153d377>] restore_args+0x0/0x30
-> [  365.164062] hardirqs last disabled at (6648): [<ffffffff810ed98d>] multi_cpu_stop+0x9d/0x120
-> [  365.164070] softirqs last  enabled at (0): [<ffffffff810543bc>] copy_process.part.28+0x6fc/0x1920
-> [  365.164072] softirqs last disabled at (0): [<          (null)>]           (null)
-> [  365.164076] CPU: 1 PID: 26 Comm: migration/1 Tainted: GF           N  3.12.12-rt19-0.gcb6c4a2-rt #3
-> [  365.164078] Hardware name: QCI QSSC-S4R/QSSC-S4R, BIOS QSSC-S4R.QCI.01.00.S013.032920111005 03/29/2011
-> [  365.164091]  0000000000000001 ffff880a42ea7c30 ffffffff815367e6 ffffffff81a086c0
-> [  365.164099]  ffff880a42ea7c40 ffffffff8108919c ffff880a42ea7c60 ffffffff8153c24f
-> [  365.164107]  ffff880a42ea91f0 00000000ffffffe1 ffff880a42ea7c88 ffffffff81297ec0
-> [  365.164108] Call Trace:
-> [  365.164119]  [<ffffffff810060b1>] try_stack_unwind+0x191/0x1a0
-> [  365.164127]  [<ffffffff81004872>] dump_trace+0x92/0x360
-> [  365.164133]  [<ffffffff81006108>] show_trace_log_lvl+0x48/0x60
-> [  365.164138]  [<ffffffff81004c18>] show_stack_log_lvl+0xd8/0x1d0
-> [  365.164143]  [<ffffffff81006160>] show_stack+0x20/0x50
-> [  365.164153]  [<ffffffff815367e6>] dump_stack+0x54/0x9a
-> [  365.164163]  [<ffffffff8108919c>] __might_sleep+0xfc/0x140
-> [  365.164173]  [<ffffffff8153c24f>] rt_spin_lock+0x1f/0x70
-> [  365.164182]  [<ffffffff81297ec0>] blk_mq_main_cpu_notify+0x20/0x70
-> [  365.164191]  [<ffffffff81540a1c>] notifier_call_chain+0x4c/0x70
-> [  365.164201]  [<ffffffff81083499>] __raw_notifier_call_chain+0x9/0x10
-> [  365.164207]  [<ffffffff810567be>] cpu_notify+0x1e/0x40
-> [  365.164217]  [<ffffffff81525da2>] take_cpu_down+0x22/0x40
-> [  365.164223]  [<ffffffff810ed9c6>] multi_cpu_stop+0xd6/0x120
-> [  365.164229]  [<ffffffff810edd97>] cpu_stopper_thread+0xd7/0x1e0
-> [  365.164235]  [<ffffffff810863a3>] smpboot_thread_fn+0x203/0x380
-> [  365.164241]  [<ffffffff8107cbf8>] kthread+0xc8/0xd0
-> [  365.164250]  [<ffffffff8154440c>] ret_from_fork+0x7c/0xb0
-> [  365.164429] smpboot: CPU 1 is now offline
->
-> Signed-off-by: Mike Galbraith <bitbucket@online.de>
+--KsGdsel6WgEHnImy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Dirty! Applied, thanks :)
+On Fri, Feb 28, 2014 at 03:34:01PM +0100, Gregory CLEMENT wrote:
+> The debug trace in the atmel_usba_stop function made the assumption
+> that the driver pointer passed in parameter was not NULL. Since the
+> commit "usb: gadget: udc-core: fix a regression during gadget driver
+> unbinding", it was no more always true. This lead to a kernel crash.
+>=20
+> This commit now use the driver pointer stored in udc which fixes this
+> issue.
+>=20
+> Since the commit which have triggered this issue was backported to the
+> 3.2 stable branch, then this one should also be backported to the same
+> kernel.
+>=20
+> Cc: stable@vger.kernel.org # v3.2+
+> Fixes: 511f3c5326ea (usb: gadget: udc-core: fix a regression during gadge=
+t driver unbinding)
 
--- 
-Jens Axboe
+this line shouldn't be here and you're missing a SoB line, can't take
+this patch, sorry.
 
+--=20
+balbi
+
+--KsGdsel6WgEHnImy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTFK7EAAoJEIaOsuA1yqRE5ZgP/1KyTFAzGuSZP8m5OhfHzvhy
+qRoSuDENU1bZa/VMaob12zQh7AFiytjZMmsUUIokUKUuI+mz5KudDjV6r3ghAZic
+6I8fjEZBf33STGRybwOosVH2ugCezfy2nNjjPWFF0fZjS/tx/EENZZ2RjyqbVY8s
+19lDzTP1HVRDhS8tpsbnbrnApq6DDvs5N5PqN+rJyCmj5NW1vvYdp2I7qCBOBF5m
+7GQN4F1mFTFd0CGcQmZJA4w3woWwQkcQ/OWLJCxwis9gNWzzG73SAUkgkAnC2GiT
+vbtmPY6YNvEg+vtw6EXWwXHYZxVcOu2rihyc7uio4LOcCfWjqicWUqIsH55EEV8W
+ebsAKZHc+/AZLTUOmBIzVzRTMttqWPDkGCBsmva4sgbi0okRo2+Z5Wh0EgXVPIv6
+dl9kaiH+73EE7/0k/AG2kqXX8Ktd9H2R7+ftB5Jc76tFwNFhJyXvfmAWUg3pNROo
+xrogSQbUzHpoy+iCGexDDOkBkePvtoCSThWGEk7k0JOO7MjgvueI0GN1Uu8pfgai
+QvHayIpFY9piGH+E2mf00BAyNkrIcXmO+GmuPusf2zaVgNzGUC7QI9/9xc2XOwYC
+OZ69FEDMIyrYf9SVgzm6RfRR1acUldXAc/Ifq0qDM8e0OkwClGpVAkqqElA8BC3l
+7OXeoVVH45oiAL0VopKW
+=XKTs
+-----END PGP SIGNATURE-----
+
+--KsGdsel6WgEHnImy--
