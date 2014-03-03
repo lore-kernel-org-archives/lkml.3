@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868AbaCCGjr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 01:39:47 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54738 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751008AbaCCGjq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 01:39:46 -0500
-Date: Mon, 3 Mar 2014 14:38:58 +0800
-From: Mark Brown <broonie@kernel.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Sekhar Nori <nsekhar@ti.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        davinci-linux-open-source@linux.davincidsp.com,
-        Cyril Chemparathy <cyril@ti.com>, linux-spi@vger.kernel.org
-Message-ID: <20140303063858.GT2411@sirena.org.uk>
-References: <1393418614-3968549-1-git-send-email-arnd@arndb.de>
- <1393418614-3968549-4-git-send-email-arnd@arndb.de>
+	id S1753974AbaCCGqH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 01:46:07 -0500
+Received: from ni.piap.pl ([195.187.100.4]:56497 "EHLO ni.piap.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751482AbaCCGqG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 01:46:06 -0500
+From: khalasa@piap.pl (Krzysztof =?utf-8?Q?Ha=C5=82asa?=)
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: gregkh@linuxfoundation.org, sachin.kamat@linaro.org, shaun@xresource.ca,
+        dulshani.gunawardhana89@gmail.com, dan.carpenter@oracle.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+References: <3980699.cFzmTHesZE@daeseok-laptop.cloud.net>
+Date: Mon, 03 Mar 2014 07:46:03 +0100
+In-Reply-To: <3980699.cFzmTHesZE@daeseok-laptop.cloud.net> (Daeseok Youn's
+	message of "Fri, 28 Feb 2014 16:36:03 +0900")
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hdoY8pikdvrkIRAT"
-Content-Disposition: inline
-In-Reply-To: <1393418614-3968549-4-git-send-email-arnd@arndb.de>
-X-Cookie: You too can wear a nose mitten.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 202.175.88.218
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 3/5] spi: remove obsolete spi-ti-ssp driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Message-ID: <m3bnxnpyok.fsf@t19.piap.pl>
+Content-Type: text/plain
+Subject: Re: [PATCH 3/5 v2] Staging: cxt1e1: Fix line length over 80 characters in hwprobe.c
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE,
+	 bases: 20140302 #7382666, check: 20140303 clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Daeseok Youn <daeseok.youn@gmail.com> writes:
 
---hdoY8pikdvrkIRAT
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> clean up checkpatch.pl warnings:
+>  WARNING: Line length over 80 characters
 
-On Wed, Feb 26, 2014 at 01:43:32PM +0100, Arnd Bergmann wrote:
-> The tnetv107x platform is getting removed, so this driver
-> will not be needed any more.
+This warning should be long gone IMHO. It does more harm than good.
 
-If you get the acks you're looking for can you please resend with them?
+>  		unsigned char *ucp = (unsigned char *) &hi->mfg_info.data;
+>  
+>  		pr_info("eeprom[00]:  %02x %02x %02x %02x  %02x %02x %02x %02x\n",
+> -				*(ucp + 0), *(ucp + 1), *(ucp + 2), *(ucp + 3), *(ucp + 4), *(ucp + 5), *(ucp + 6), *(ucp + 7));
+> +			*(ucp + 0), *(ucp + 1), *(ucp + 2), *(ucp + 3),
+> +			*(ucp + 4), *(ucp + 5), *(ucp + 6), *(ucp + 7));
+>  		pr_info("eeprom[08]:  %02x %02x %02x %02x  %02x %02x %02x %02x\n",
+> -				*(ucp + 8), *(ucp + 9), *(ucp + 10), *(ucp + 11), *(ucp + 12), *(ucp + 13), *(ucp + 14), *(ucp + 15));
+> +			*(ucp + 8), *(ucp + 9), *(ucp + 10), *(ucp + 11),
+> +			*(ucp + 12), *(ucp + 13), *(ucp + 14), *(ucp + 15));
+>  		pr_info("eeprom[16]:  %02x %02x %02x %02x  %02x %02x %02x %02x\n",
+> -				*(ucp + 16), *(ucp + 17), *(ucp + 18), *(ucp + 19), *(ucp + 20), *(ucp + 21), *(ucp + 22), *(ucp + 23));
+> +			*(ucp + 16), *(ucp + 17), *(ucp + 18), *(ucp + 19),
+> +			*(ucp + 20), *(ucp + 21), *(ucp + 22), *(ucp + 23));
+>  		pr_info("eeprom[24]:  %02x %02x %02x %02x  %02x %02x %02x %02x\n",
+> -				*(ucp + 24), *(ucp + 25), *(ucp + 26), *(ucp + 27), *(ucp + 28), *(ucp + 29), *(ucp + 30), *(ucp + 31));
+> +			*(ucp + 24), *(ucp + 25), *(ucp + 26), *(ucp + 27),
+> +			*(ucp + 28), *(ucp + 29), *(ucp + 30), *(ucp + 31));
+>  		pr_info("eeprom[32]:  %02x %02x %02x %02x  %02x %02x %02x %02x\n",
+> -				*(ucp + 32), *(ucp + 33), *(ucp + 34), *(ucp + 35), *(ucp + 36), *(ucp + 37), *(ucp + 38), *(ucp + 39));
+> +			*(ucp + 32), *(ucp + 33), *(ucp + 34), *(ucp + 35),
+> +			*(ucp + 36), *(ucp + 37), *(ucp + 38), *(ucp + 39));
+>  		pr_info("eeprom[40]:  %02x %02x %02x %02x  %02x %02x %02x %02x\n",
+> -				*(ucp + 40), *(ucp + 41), *(ucp + 42), *(ucp + 43), *(ucp + 44), *(ucp + 45), *(ucp + 46), *(ucp + 47));
+> +			*(ucp + 40), *(ucp + 41), *(ucp + 42), *(ucp + 43),
+> +			*(ucp + 44), *(ucp + 45), *(ucp + 46), *(ucp + 47));
+>  	}
 
---hdoY8pikdvrkIRAT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+This one is probably an improvement, though... why not use some existing
+*hex_dump*() instead?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+> -		 * match with board's first found interface, otherwise this is first
+> -		 * found
+> +		 * match with board's first found interface, otherwise this is
+> +		 * fisrt found
+                   ^^^^^
+I wonder what's your exact procedure for doing such changes :-)
 
-iQIcBAEBAgAGBQJTFCN+AAoJELSic+t+oim9cYoP/j+u6ql/XwqS1q+bUJF6n0mb
-jQXPmPeGmF7BZNRqd/P5AQAxoDdLmL9m7q8wle2VtQ6SsesxvWSXZyKDLX3D8+R/
-ExXdo4ysQfeteO51jD4NsgobYOyRx/qE9xnj9FKdILv30FLE9qR73eXNM++nK5y3
-fh6rRQ6SgXxuRETv7Yr78oTPduScyQkCuOgSoW/G6Xm4feEu7LoaxvVzcS3qVWUS
-oUvu2rVU3kQsPfDWdEIoKpNXHll3XZuyf6bkiqwImiFq5rfIeQBzNMyxvZbFMcBa
-SJWDTdNKMvflzA6L0GHJVZ/Emw1VAUsSRxyp8eGSz2qVcULBAp72CxfA0yTXvox7
-lUpq75/tJe31ZFTt2f8qJzxRInJy5+l7otu2CvktziwiZCg6xykb9L19MgIrDiGD
-MNqe7beEbIIz3C66/ILhVgzwBLKwzCwbaab8iaPK9CrEzesi1CgpESyHf31oZiOZ
-TpYOl8rDwwVa6ewKqFkVVb1nM0P10lgwGIXmCx8+ofvLp4W9JsWVeo1A4wPWpD/u
-LZVPqK3s4uvdHh6CoI63kqS4poJDy8yzXQhz0bMOAJnN7qWBs//krvxkY8S1BleX
-2YOeXVeZQBIQbLXWJEOWUggUA1SjHYELt6enQxqUXfRQpd71/CPpXJ2oteG8VT/O
-YHlIKsd4k/WBaW8DrJZX
-=1MR/
------END PGP SIGNATURE-----
+>  #ifdef SBE_MAP_DEBUG
+>  			pr_warning("%s: io remapped from phys %x to virt %x\n",
+> -				   hi->devname, (u_int32_t) hi->addr[j], (u_int32_t) hi->addr_mapped[j]);
+> +				   hi->devname, (u_int32_t) hi->addr[j],
+> +				   (u_int32_t) hi->addr_mapped[j]);
 
---hdoY8pikdvrkIRAT--
+This one is fine, too. The others, I wouldn't touch them.
+-- 
+Krzysztof Halasa
+
+Research Institute for Automation and Measurements PIAP
+Al. Jerozolimskie 202, 02-486 Warsaw, Poland
