@@ -1,96 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754548AbaCCNoq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 08:44:46 -0500
-Received: from mga01.intel.com ([192.55.52.88]:61045 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753881AbaCCNoo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 08:44:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,577,1389772800"; 
-   d="scan'208";a="484819379"
-Message-ID: <1393854256.2193.2.camel@rzhang1-mobl4>
-Subject: Re: [PATCHv5 01/10] Thermal: Do kfree in _unregister functions
-From: Zhang Rui <rui.zhang@intel.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Durgadoss R <durgadoss.r@intel.com>, eduardo.valentin@ti.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hongbo.zhang@freescale.com, wni@nvidia.com
-Date: Mon, 03 Mar 2014 21:44:16 +0800
-In-Reply-To: <20140121194624.GA29615@core.coreip.homeip.net>
-References: <1389916587-2541-1-git-send-email-durgadoss.r@intel.com>
-	 <1389916587-2541-2-git-send-email-durgadoss.r@intel.com>
-	 <20140121194624.GA29615@core.coreip.homeip.net>
+	id S1754603AbaCCNpv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 08:45:51 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:51201 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754102AbaCCNps (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 08:45:48 -0500
+Message-ID: <1393854343.32410.18.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [PATCH 3/8] ima: return d_name.name if d_path fails
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Cc: linux-security-module@vger.kernel.org, jmorris@namei.org,
+        linux-kernel@vger.kernel.org, casey.schaufler@intel.com,
+        dmitry.kasatkin@gmail.com
+Date: Mon, 03 Mar 2014 08:45:43 -0500
+In-Reply-To: <16a69bfbb1b120e0f9520fdbc5422bc6e2f811c3.1393599538.git.d.kasatkin@samsung.com>
+References: <cover.1393599538.git.d.kasatkin@samsung.com>
+	 <16a69bfbb1b120e0f9520fdbc5422bc6e2f811c3.1393599538.git.d.kasatkin@samsung.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14030313-7164-0000-0000-0000068E7A69
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-01-21 at 11:46 -0800, Dmitry Torokhov wrote:
-> Hi Durgadoss,
-> 
-> On Fri, Jan 17, 2014 at 05:26:18AM +0530, Durgadoss R wrote:
-> > Currently the thermal_release function does
-> > kfree for all devices when they call device_unregister.
-> > This makes code scattering i.e whenever we add new
-> > devices (to thermal class) we need to add its
-> > corresponding kfree in thermal_release function.
-> > And the if-else is also growing lengthy.
-> > 
-> > Instead, do all kfree() of devices in their own
-> > _unregister functions. This makes the code look
-> > clean and easy to maintain.
-> > 
-> > Signed-off-by: Durgadoss R <durgadoss.r@intel.com>
-> > ---
-> >  drivers/thermal/thermal_core.c |   17 +++++------------
-> >  1 file changed, 5 insertions(+), 12 deletions(-)
-> > 
-> > diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
-> > index 338a88b..165afc6 100644
-> > --- a/drivers/thermal/thermal_core.c
-> > +++ b/drivers/thermal/thermal_core.c
-> > @@ -1042,18 +1042,7 @@ EXPORT_SYMBOL_GPL(thermal_zone_unbind_cooling_device);
-> >  
-> >  static void thermal_release(struct device *dev)
-> >  {
-> > -	struct thermal_zone_device *tz;
-> > -	struct thermal_cooling_device *cdev;
-> > -
-> > -	if (!strncmp(dev_name(dev), "thermal_zone",
-> > -		     sizeof("thermal_zone") - 1)) {
-> > -		tz = to_thermal_zone(dev);
-> > -		kfree(tz);
-> > -	} else if(!strncmp(dev_name(dev), "cooling_device",
-> > -			sizeof("cooling_device") - 1)){
-> > -		cdev = to_cooling_device(dev);
-> > -		kfree(cdev);
-> > -	}
-> > +	/* No-op since kfree(dev) is done in _unregister functions */
-> >  }
-> >  
-> >  static struct class thermal_class = {
-> > @@ -1146,6 +1135,7 @@ __thermal_cooling_device_register(struct device_node *np,
-> >  unregister:
-> >  	release_idr(&thermal_cdev_idr, &thermal_idr_lock, cdev->id);
-> >  	device_unregister(&cdev->device);
-> > +	kfree(cdev);
-> 
-> This is broken, you can not assume that you are holding the last
-> reference. Please observe help text of DEBUG_KOBJECT_RELEASE config
-> option, activate said option and try unregistering thermal device.
-> 
-agreed.
-If you think it is too complicated to support the different thermal
-components in thermal_release(), we can introduce per device .release()
-callback as well.
+On Fri, 2014-02-28 at 16:59 +0200, Dmitry Kasatkin wrote: 
+> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
 
-thanks,
-rui
-> Thanks.
+Nice refactoring.  Please add a patch description.
+
+Mimi 
+> ---
+>  security/integrity/ima/ima_api.c  | 2 +-
+>  security/integrity/ima/ima_main.c | 7 +------
+>  2 files changed, 2 insertions(+), 7 deletions(-)
 > 
+> diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
+> index c6b4a73..ba9e4d7 100644
+> --- a/security/integrity/ima/ima_api.c
+> +++ b/security/integrity/ima/ima_api.c
+> @@ -332,5 +332,5 @@ const char *ima_d_path(struct path *path, char **pathbuf)
+>  			pathname = NULL;
+>  		}
+>  	}
+> -	return pathname;
+> +	return pathname ?: (const char *)path->dentry->d_name.name;
+>  }
+> diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+> index 50413d0..52ac6cf 100644
+> --- a/security/integrity/ima/ima_main.c
+> +++ b/security/integrity/ima/ima_main.c
+> @@ -79,7 +79,6 @@ __setup("ima_hash=", hash_setup);
+>   */
+>  static void ima_rdwr_violation_check(struct file *file)
+>  {
+> -	struct dentry *dentry = file->f_path.dentry;
+>  	struct inode *inode = file_inode(file);
+>  	fmode_t mode = file->f_mode;
+>  	int must_measure;
+> @@ -111,8 +110,6 @@ out:
+>  		return;
+> 
+>  	pathname = ima_d_path(&file->f_path, &pathbuf);
+> -	if (!pathname || strlen(pathname) > IMA_EVENT_NAME_LEN_MAX)
+> -		pathname = dentry->d_name.name;
+> 
+>  	if (send_tomtou)
+>  		ima_add_violation(file, pathname, "invalid_pcr", "ToMToU");
+> @@ -220,9 +217,7 @@ static int process_measurement(struct file *file, const char *filename,
+>  	if (rc != 0)
+>  		goto out_digsig;
+> 
+> -	pathname = !filename ? ima_d_path(&file->f_path, &pathbuf) : filename;
+> -	if (!pathname)
+> -		pathname = (const char *)file->f_dentry->d_name.name;
+> +	pathname = filename ?: ima_d_path(&file->f_path, &pathbuf);
+> 
+>  	if (action & IMA_MEASURE)
+>  		ima_store_measurement(iint, file, pathname,
 
 
