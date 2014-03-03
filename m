@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870AbaCCHt1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 02:49:27 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:64323 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753798AbaCCHtY (ORCPT
+	id S1753916AbaCCHtd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 02:49:33 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:39485 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753873AbaCCHt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 02:49:24 -0500
+	Mon, 3 Mar 2014 02:49:28 -0500
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 To: peterz@infradead.org, mingo@kernel.org, tglx@linutronix.de,
         rjw@rjwysocki.net
 Cc: nicolas.pitre@linaro.org, preeti@linux.vnet.ibm.com,
         linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
-Subject: [PATCH V4 3/5] idle: Reorganize the idle loop
-Date: Mon,  3 Mar 2014 08:48:52 +0100
-Message-Id: <1393832934-11625-3-git-send-email-daniel.lezcano@linaro.org>
+Subject: [PATCH V4 4/5] idle: Move idle conditions in cpuidle_idle main function
+Date: Mon,  3 Mar 2014 08:48:53 +0100
+Message-Id: <1393832934-11625-4-git-send-email-daniel.lezcano@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1393832934-11625-1-git-send-email-daniel.lezcano@linaro.org>
 References: <20140228125604.GN27965@twins.programming.kicks-ass.net>
@@ -23,116 +23,138 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we have the main cpuidle function in idle.c, move some code from
-the idle mainloop to this function for the sake of clarity.
+This patch moves the condition before entering idle into the cpuidle main
+function located in idle.c. That simplify the idle mainloop functions and
+increase the readibility of the conditions to enter truly idle.
 
-That removes if then else indentation difficult to follow when looking at the
-code. This patch does not change the current behavior.
+This patch is code reorganization and does not change the behavior of the
+function.
 
 Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-Acked-by: Nicolas Pitre <nico@linaro.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
 ---
-
-Changelog:
 
 V4:
- * no changes
+    * took into account clockevents_notify(ENTER) could fail
+    * removed an extra current_clr_polling_and_test added in V3
 V3:
- * no changes
-V2:
- * fixed type in patch's description
+    * reorganized cpuidle_idle_call function as Suggested by Peter Zijlstra
+	https://lkml.org/lkml/2014/2/24/492
 
 ---
- include/linux/cpuidle.h |    2 ++
- kernel/sched/idle.c     |   33 +++++++++++++++------------------
- 2 files changed, 17 insertions(+), 18 deletions(-)
+ kernel/sched/idle.c |   84 +++++++++++++++++++++++++++++-----------------------
+ 1 file changed, 47 insertions(+), 37 deletions(-)
 
-Index: cpuidle-next/include/linux/cpuidle.h
-===================================================================
---- cpuidle-next.orig/include/linux/cpuidle.h
-+++ cpuidle-next/include/linux/cpuidle.h
-@@ -180,6 +180,8 @@ static inline int cpuidle_enable_device(
- {return -ENODEV; }
- static inline void cpuidle_disable_device(struct cpuidle_device *dev) { }
- static inline int cpuidle_play_dead(void) {return -ENODEV; }
-+static inline struct cpuidle_driver *cpuidle_get_cpu_driver(
-+	struct cpuidle_device *dev) {return NULL; }
- #endif
- 
- #ifdef CONFIG_ARCH_NEEDS_CPU_IDLE_COUPLED
 Index: cpuidle-next/kernel/sched/idle.c
 ===================================================================
 --- cpuidle-next.orig/kernel/sched/idle.c
 +++ cpuidle-next/kernel/sched/idle.c
-@@ -63,7 +63,6 @@ void __weak arch_cpu_idle(void)
- 	local_irq_enable();
- }
- 
--#ifdef CONFIG_CPU_IDLE
- /**
-  * cpuidle_idle_call - the main idle function
-  *
-@@ -77,9 +76,14 @@ static int cpuidle_idle_call(void)
+@@ -76,44 +76,59 @@ static int cpuidle_idle_call(void)
  	int next_state, entered_state, ret;
  	bool broadcast;
  
-+	stop_critical_timings();
-+	rcu_idle_enter();
-+
- 	ret = cpuidle_enabled(drv, dev);
--	if (ret < 0)
--		return ret;
-+	if (ret < 0) {
-+		arch_cpu_idle();
-+		goto out;
++	if (current_clr_polling_and_test()) {
++		local_irq_enable();
++		__current_set_polling();
++		return 0;
 +	}
++
+ 	stop_critical_timings();
+ 	rcu_idle_enter();
  
- 	/* ask the governor for the next state */
- 	next_state = cpuidle_select(drv, dev);
-@@ -89,7 +93,7 @@ static int cpuidle_idle_call(void)
- 		/* give the governor an opportunity to reflect on the outcome */
- 		cpuidle_reflect(dev, next_state);
- 		local_irq_enable();
--		return 0;
-+		goto out;
+ 	ret = cpuidle_enabled(drv, dev);
+-	if (ret < 0) {
+-		arch_cpu_idle();
+-		goto out;
+-	}
+ 
+-	/* ask the governor for the next state */
+-	next_state = cpuidle_select(drv, dev);
++	if (!ret) {
++		/* ask the governor for the next state */
++		next_state = cpuidle_select(drv, dev);
++
++		if (current_clr_polling_and_test()) {
++			dev->last_residency = 0;
++			entered_state = next_state;
++			local_irq_enable();
++		} else {
++			broadcast = !!(drv->states[next_state].flags &
++				       CPUIDLE_FLAG_TIMER_STOP);
++
++			if (broadcast)
++				ret = clockevents_notify(
++					CLOCK_EVT_NOTIFY_BROADCAST_ENTER,
++					&dev->cpu);
++
++			if (!ret) {
++				trace_cpu_idle_rcuidle(next_state, dev->cpu);
++
++				entered_state = cpuidle_enter(drv, dev,
++							      next_state);
++
++				trace_cpu_idle_rcuidle(PWR_EVENT_EXIT,
++						       dev->cpu);
++
++				if (broadcast)
++					clockevents_notify(
++						CLOCK_EVT_NOTIFY_BROADCAST_EXIT,
++						&dev->cpu);
+ 
+-	if (need_resched()) {
+-		dev->last_residency = 0;
+-		/* give the governor an opportunity to reflect on the outcome */
+-		cpuidle_reflect(dev, next_state);
+-		local_irq_enable();
+-		goto out;
++				/* give the governor an opportunity to reflect on the outcome */
++				cpuidle_reflect(dev, entered_state);
++			}
++		}
  	}
  
- 	broadcast = !!(drv->states[next_state].flags & CPUIDLE_FLAG_TIMER_STOP);
-@@ -109,15 +113,15 @@ static int cpuidle_idle_call(void)
+-	broadcast = !!(drv->states[next_state].flags & CPUIDLE_FLAG_TIMER_STOP);
+-
+-	if (broadcast &&
+-	    clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &dev->cpu))
+-		return -EBUSY;
+-
+-	trace_cpu_idle_rcuidle(next_state, dev->cpu);
+-
+-	entered_state = cpuidle_enter(drv, dev, next_state);
+-
+-	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
++	if (ret)
++		arch_cpu_idle();
  
- 	/* give the governor an opportunity to reflect on the outcome */
- 	cpuidle_reflect(dev, entered_state);
-+out:
-+	if (WARN_ON_ONCE(irqs_disabled()))
-+		local_irq_enable();
-+
-+	rcu_idle_exit();
-+	start_critical_timings();
+-	if (broadcast)
+-		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &dev->cpu);
++	__current_set_polling();
  
- 	return 0;
- }
--#else
--static inline int cpuidle_idle_call(void)
--{
--	return -ENODEV;
--}
--#endif
+-	/* give the governor an opportunity to reflect on the outcome */
+-	cpuidle_reflect(dev, entered_state);
+-out:
+ 	if (WARN_ON_ONCE(irqs_disabled()))
+ 		local_irq_enable();
  
- /*
-  * Generic idle loop implementation
-@@ -150,14 +154,7 @@ static void cpu_idle_loop(void)
+@@ -150,16 +165,11 @@ static void cpu_idle_loop(void)
+ 			 * know that the IPI is going to arrive right
+ 			 * away
+ 			 */
+-			if (cpu_idle_force_poll || tick_check_broadcast_expired()) {
++			if (cpu_idle_force_poll || tick_check_broadcast_expired())
  				cpu_idle_poll();
- 			} else {
- 				if (!current_clr_polling_and_test()) {
--					stop_critical_timings();
--					rcu_idle_enter();
--					if (cpuidle_idle_call())
--						arch_cpu_idle();
--					if (WARN_ON_ONCE(irqs_disabled()))
--						local_irq_enable();
--					rcu_idle_exit();
--					start_critical_timings();
-+					cpuidle_idle_call();
- 				} else {
- 					local_irq_enable();
- 				}
+-			} else {
+-				if (!current_clr_polling_and_test()) {
+-					cpuidle_idle_call();
+-				} else {
+-					local_irq_enable();
+-				}
+-				__current_set_polling();
+-			}
++			else
++				cpuidle_idle_call();
++
+ 			arch_cpu_idle_exit();
+ 		}
+ 
