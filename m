@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754613AbaCCLMj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 06:12:39 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43679 "EHLO mx2.suse.de"
+	id S1754587AbaCCLMh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 06:12:37 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43676 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754353AbaCCLMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754317AbaCCLMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 Mar 2014 06:12:35 -0500
 From: Jan Kara <jack@suse.cz>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
         Eric Paris <eparis@parisplace.org>, Jan Kara <jack@suse.cz>
-Subject: [PATCH 1/5] fanotify: Remove useless bypass_perm check
-Date: Mon,  3 Mar 2014 12:12:19 +0100
-Message-Id: <1393845143-28007-2-git-send-email-jack@suse.cz>
+Subject: [PATCH 4/5] fanotify: Reorganize loop in fanotify_read()
+Date: Mon,  3 Mar 2014 12:12:22 +0100
+Message-Id: <1393845143-28007-5-git-send-email-jack@suse.cz>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1393845143-28007-1-git-send-email-jack@suse.cz>
 References: <1393845143-28007-1-git-send-email-jack@suse.cz>
@@ -20,38 +20,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-prepare_for_access_response() checks whether
-group->fanotify_data.bypass_perm is set. However this test can never be
-true because prepare_for_access_response() is called only from
-fanotify_read() which means fanotify group is alive with an active fd
-while bypass_perm is set from fanotify_release() when all file
-descriptors pointing to the group are closed and the group is going
-away.
+Swap the error / "read ok" branches in the main loop of fanotify_read().
+We will grow the "read ok" part in the next patch and this makes the
+indentation easier. Also it is more common to have error conditions
+inside an 'if' instead of the fast path.
 
 Signed-off-by: Jan Kara <jack@suse.cz>
 ---
- fs/notify/fanotify/fanotify_user.c | 8 --------
- 1 file changed, 8 deletions(-)
+ fs/notify/fanotify/fanotify_user.c | 46 ++++++++++++++++++++------------------
+ 1 file changed, 24 insertions(+), 22 deletions(-)
 
 diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
-index 287a22c04149..70fe65437d21 100644
+index e0379d725cd9..68a06a7b5659 100644
 --- a/fs/notify/fanotify/fanotify_user.c
 +++ b/fs/notify/fanotify/fanotify_user.c
-@@ -211,14 +211,6 @@ static int prepare_for_access_response(struct fsnotify_group *group,
- 	re->fd = fd;
+@@ -272,35 +272,37 @@ static ssize_t fanotify_read(struct file *file, char __user *buf,
+ 		kevent = get_one_event(group, count);
+ 		mutex_unlock(&group->notification_mutex);
  
- 	mutex_lock(&group->fanotify_data.access_mutex);
+-		if (kevent) {
++		if (IS_ERR(kevent)) {
+ 			ret = PTR_ERR(kevent);
+-			if (IS_ERR(kevent))
++			break;
++		}
++
++		if (!kevent) {
++			ret = -EAGAIN;
++			if (file->f_flags & O_NONBLOCK)
+ 				break;
+-			ret = copy_event_to_user(group, kevent, buf);
+-			/*
+-			 * Permission events get queued to wait for response.
+-			 * Other events can be destroyed now.
+-			 */
+-			if (!(kevent->mask & FAN_ALL_PERM_EVENTS))
+-				fsnotify_destroy_event(group, kevent);
+-			if (ret < 0)
++
++			ret = -ERESTARTSYS;
++			if (signal_pending(current))
++				break;
++
++			if (start != buf)
+ 				break;
+-			buf += ret;
+-			count -= ret;
++			schedule();
+ 			continue;
+ 		}
+ 
+-		ret = -EAGAIN;
+-		if (file->f_flags & O_NONBLOCK)
+-			break;
+-		ret = -ERESTARTSYS;
+-		if (signal_pending(current))
+-			break;
 -
--	if (atomic_read(&group->fanotify_data.bypass_perm)) {
--		mutex_unlock(&group->fanotify_data.access_mutex);
--		kmem_cache_free(fanotify_response_event_cache, re);
--		FANOTIFY_E(event)->response = FAN_ALLOW;
--		return 0;
--	}
--		
- 	list_add_tail(&re->list, &group->fanotify_data.access_list);
- 	mutex_unlock(&group->fanotify_data.access_mutex);
+-		if (start != buf)
++		ret = copy_event_to_user(group, kevent, buf);
++		/*
++		 * Permission events get queued to wait for response.  Other
++		 * events can be destroyed now.
++		 */
++		if (!(kevent->mask & FAN_ALL_PERM_EVENTS))
++			fsnotify_destroy_event(group, kevent);
++		if (ret < 0)
+ 			break;
+-
+-		schedule();
++		buf += ret;
++		count -= ret;
+ 	}
  
+ 	finish_wait(&group->notification_waitq, &wait);
 -- 
 1.8.1.4
 
