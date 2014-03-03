@@ -1,75 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753987AbaCCIAN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 03:00:13 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:52431 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753638AbaCCIAK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 03:00:10 -0500
-Date: Mon, 3 Mar 2014 16:00:01 +0800
-From: Lee Jones <lee.jones@linaro.org>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: Sebastian Reichel <sre@debian.org>, Sebastian Reichel <sre@ring0.de>,
-        Marek Belisko <marek@goldelico.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-iio@vger.kernel.org
-Subject: Re: [RFCv4 0/7] Convert twl4030-madc to IIO API and add DT support
-Message-ID: <20140303080001.GH4674@lee--X1>
-References: <1393374270-20079-1-git-send-email-sre@debian.org>
- <1393444990-28140-1-git-send-email-sre@debian.org>
- <5311CA14.6080009@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5311CA14.6080009@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753790AbaCCICD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 03:02:03 -0500
+Received: from ozlabs.org ([203.10.76.45]:41047 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751218AbaCCICB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 03:02:01 -0500
+Date: Mon, 3 Mar 2014 19:01:52 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rob Herring <robh@kernel.org>,
+        =?UTF-8?B?IlV3ZSBLbGVpbmUtS8O2bmlnIg==?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: linux-next: manual merge of the akpm-current tree with the arm-soc
+ tree
+Message-Id: <20140303190152.8b87330c0d83679b10c5ca5a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__3_Mar_2014_19_01_52_+1100_uPQEYNs00PxyQYUP"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 01 Mar 2014, Jonathan Cameron wrote:
+--Signature=_Mon__3_Mar_2014_19_01_52_+1100_uPQEYNs00PxyQYUP
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On 26/02/14 20:03, Sebastian Reichel wrote:
-> >Hi,
-> >
-> >This is RFCv4 for converting twl4030-madc to the IIO API and
-> >adding DT support. The patchset compiles and has been tested
-> >on my Nokia N900.
-> >
-> >Changes since RFCv3 [0]:
-> >  * Added Acked-by from Lee Jones (MFD subsystem maintainer)
-> >    to twl_i2c_read/write_u16 patches
-> >  * Fixed style issues found by Lee Jones
-> >    This readded the temp variable Jonathan Cameron wanted to
-> >    be removed, but makes the code cleaner - especially once
-> >    the brackets for math for clarity are added.
-> >  * Tested with converted rx51-battery driver on Nokia N900,
-> >    which can be found at [1].
-> >
-> >[0] https://lkml.org/lkml/2014/2/25/627
-> >[1] https://lkml.org/lkml/2014/2/25/639
-> 
-> Hi All,
-> 
-> Obviously there are a few outstanding bits and pieces to be addressed.
-> 
-> To get this lined up for a merge...
-> 
-> Lee, do you want to take this through mfd or shall I take it through
-> IIO?  I don't mind either way.  It stands pretty separate in IIO so
-> shouldn't cause any merge issues beyond minor fuzz.
+Hi Andrew,
 
-I'm happy to take it through MFD with your Ack.
+Today's linux-next merge of the akpm-current tree got a conflict in
+arch/arm/mach-vexpress/Kconfig between commit 9352b05b6e4e ("ARM: select
+MIGHT_HAVE_CACHE_L2X0 for V6 and V7 multi-platform") from the arm-soc
+tree and commit b096b0b50c4b ("Kconfig: rename HAS_IOPORT to
+HAS_IOPORT_MAP") from the akpm-current tree.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/arm/mach-vexpress/Kconfig
+index 80b4be36f10a,02930d69f381..000000000000
+--- a/arch/arm/mach-vexpress/Kconfig
++++ b/arch/arm/mach-vexpress/Kconfig
+@@@ -9,8 -10,12 +9,8 @@@ config ARCH_VEXPRES
+  	select HAVE_ARM_SCU if SMP
+  	select HAVE_ARM_TWD if SMP
+  	select HAVE_PATA_PLATFORM
+ -	select HAVE_SMP
+  	select ICST
+- 	select NO_IOPORT
+ -	select MIGHT_HAVE_CACHE_L2X0
++ 	select NO_IOPORT_MAP
+  	select PLAT_VERSATILE
+  	select PLAT_VERSATILE_CLCD
+  	select POWER_RESET
+
+--Signature=_Mon__3_Mar_2014_19_01_52_+1100_uPQEYNs00PxyQYUP
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTFDb1AAoJEMDTa8Ir7ZwVhx8P/RgFcusiq+UUnWTe+Re/X/gh
+R1Itw5hNRF2uysidXcoq0NOTPcEV2VQiGrVh0RPEYy5L4WUJHet43ZZt4kT8puwy
+GNSdv/llPT8K2J3ebGeDeD45ia1sHwcfm4HCrDyHLrAMfFRusZxlsq22+1RM9cEv
+DkRDEI6CrttX6ykYZCYncjLxqsrwch5KhYlWMxV8DuUPm8fimSzwzdRzi5zbR59O
+FcptlRjYg4sfpg+lljRJejT2S+rRhZZfLHTXyceUmpyrbJyu+UsrpBX6w4Y4q26c
+2Gu+0ai7VLQeCs8mDvHCXQO9JTpoRlK/aPr3PyzF9911Ny7OOg9emBBcu0IFoDOy
+64KndWxISU9etpuCeA6Bn3xYVCXk0urrzLaZVpG0ExkUT+G1glOY1F+9UfNqSyX/
+k5c0ubb+90WAOKU1qanfofBn2TQyylWjQnrCbE18yLdX6wt7SMR9a4EDG0ny0Tqu
+VMVWWEG1IAxNikRXW3CNNb6TCxxWVVIuc/Lqn+VfLYon/MKoj1/THZ6v6CCqB/HC
+z8rxGhAni3S8jX6s4K2Zy/DOGEedcae00zGC9jqlT5zbLHTbLoGdInNCE0pWqdzd
+foxBx0gRcv5B92rXTBO2omHo/lshnqGsOcJFpD5JmyK4urcAfRJxHly9GsxF2yps
+ZetU+i4ATOIavT+33MM0
+=CNyM
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__3_Mar_2014_19_01_52_+1100_uPQEYNs00PxyQYUP--
