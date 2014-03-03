@@ -1,51 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754154AbaCCMVE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 07:21:04 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:48690 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753541AbaCCMVD (ORCPT
+	id S1754339AbaCCMW0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 07:22:26 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53544 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753697AbaCCMWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 07:21:03 -0500
-Date: Mon, 3 Mar 2014 12:20:29 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: "Li, Aubrey" <aubrey.li@linux.intel.com>
-Cc: "David E. Box" <david.e.box@linux.intel.com>, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V5 1/2] x86: IOSF: add dummy functions for loadable
- modules
-Message-ID: <20140303122029.2c4e767c@alan.etchedpixels.co.uk>
-In-Reply-To: <53142D84.8010506@linux.intel.com>
-References: <1393641652-7222-1-git-send-email-david.e.box@linux.intel.com>
-	<1393641652-7222-2-git-send-email-david.e.box@linux.intel.com>
-	<53142D84.8010506@linux.intel.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 3 Mar 2014 07:22:24 -0500
+Date: Mon, 3 Mar 2014 12:22:21 +0000
+From: =?iso-8859-1?Q?Lu=EDs?= Henriques <luis.henriques@canonical.com>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Kernel Fedora <kernel@lists.fedoraproject.org>
+Subject: Re: Feb. Fedora Kernel Patch Report
+Message-ID: <20140303122221.GA2922@hercules>
+References: <CA+5PVA6dz2ixLfHOHytkis6XmxdLKXZp9x8rEjB=pedrg7sXJQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+5PVA6dz2ixLfHOHytkis6XmxdLKXZp9x8rEjB=pedrg7sXJQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 03 Mar 2014 15:21:40 +0800
-"Li, Aubrey" <aubrey.li@linux.intel.com> wrote:
+Hi Josh,
 
-> On 2014/3/1 10:40, David E. Box wrote:
-> > From: "David E. Box" <david.e.box@linux.intel.com>
-> > 
-> > Some loadable modules only need IOSF access on the platforms where it exists.
-> > Provide dummy functions to allow these modules to compile and load on the
-> > platforms where it doesn't exist.
+On Fri, Feb 28, 2014 at 10:13:29AM -0500, Josh Boyer wrote:
+> It's been a while since I sent one of these.  Mostly that's due to the
+> overlap between which upstream stable version we're using in Fedora
+> across the releases, and how fast those have been happening upstream.
+> We're settled on 3.13.y now, and with 3.14-rc4 out there things have
+> calmed down enough to take stock again.
 > 
-> This is not the right way, I think.
+> Here's the patches we have on top of 3.13.5.
+> 
+> josh
 
-Disagree. There are various drivers that can use the IOSF interface but
-do not need it, and need to also build and run on platforms without it.
+Thanks a lot for sending this list, Josh!  I'm queuing a few of these for
+the kernels I'm currently maintaining (3.5 and 3.11).
 
-The current code IMHO is correct. We want to make sure it builds without
-IOSF, but that any attempt to use IOSF in such a runtime errors - that's
-what this code does.
+> fs-proc-devtree-remove_proc_entry.patch
+> - Upstream commit c1d867a54d426b45da017fbe8e585f8a3064ce8d
 
-Alan
+I'm queuing this for the 3.5 and 3.11 kernels.
+
+> drm-radeon-Disable-writeback-by-default-on-ppc.patch
+> - This is superseded by upstream commit
+> ea31bf697d27270188a93cd78cf9de4bc968aca3 but that seems to be a bit
+> big for a stable backport
+> 
+> dm-cache-policy-mq_fix-large-scale-table-allocation-bug.patch (rhbz 993744)
+> - Still pending upstream (no idea why...)
+> 
+> sunrpc-create-a-new-dummy-pipe-for-gssd-to-hold-open.patch
+> sunrpc-replace-gssd_running-with-more-reliable-check.patch
+> nfs-check-gssd-running-before-krb5i-auth.patch
+> - Added to fix a 15sec mount delay
+> - Upstream commits 4b9a445e3eeb8bd9278b1ae51c1b3a651e370cd6
+>   89f842435c630f8426f414e6030bc2ffea0d6f81
+>   6aa23d76a7b549521a03b63b6d5b7880ea87eab7 respectively
+> 
+> rpc_pipe-remove-the-clntXX-dir-if-creating-the-pipe-fails.patch
+> sunrpc-add-an-info-file-for-the-dummy-gssd-pipe.patch
+> rpc_pipe-fix-cleanup-of-dummy-gssd-directory-when-notification-fails.patch
+> - Fixes for some of the patches above (rhbz 1037793)
+> - Upstream commits 3396f92f8be606ea485b0a82d4e7749a448b013b
+>   e2f0c83a9de331d9352185ca3642616c13127539
+>   23e66ba97127ff3b064d4c6c5138aa34eafc492f respectively
+> 
+> elantech-Properly-differentiate-between-clickpads-an.patch (rhbz 1030802)
+> - Upstream commit c15bdfd5b9831e4cab8cfc118243956e267dd30e
+
+Again, queuing this one for 3.5 and 3.11.
+
+> KVM-MMU-handle-invalid-root_hpa-at-__direct_map.patch (rhbz 924916)
+> - Upstream commit 989c6b34f6a9480e397b170cc62237e89bf4fdb9
+> - Probably should grab 37f6a4e237303549c8676dfe1fd1991ceab512eb too
+
+Queuing only 989c6b34f6a9480e397b170cc62237e89bf4fdb9 for the 3.5 and
+3.11.
+
+> KVM-VMX-fix-use-after-free-of-vmx-loaded_vmcs.patch (rhbz 1047892)
+> - Upstream commit 26a865f4aa8e66a6d94958de7656f7f1b03c6c56
+
+3.5 and 3.11.
+
+> 0001-Input-wacom-make-sure-touch_max-is-set-for-touch-dev.patch
+> 0002-Input-wacom-add-support-for-three-new-Intuos-devices.patch
+> 0003-Input-wacom-add-reporting-of-SW_MUTE_DEVICE-events.patch
+> - rhbz 1003167 1046238
+> - Upstream commits 1d0d6df02750b4a6f466768cbfbf860e24f4c8d4
+>   b5fd2a3e92ca5c8c1f3c20d31ac5daed3ec4d604
+>   961794a00eab03f4344b7d5e825e8e789e55da87
+
+Queuing 1d0d6df02750b4a6f466768cbfbf860e24f4c8d4, only for the 3.11
+kernel.
+
+> Input-ALPS-add-support-for-Dolphin-devices.patch (rhbz 953211)
+> - Upstream commit ee65d4b36de8ddf4467f788faa5d8ddd1bfcdaa2
+> 
+> xhci-fix-resume-issues-on-renesas-chips-in-samsung-laptops.patch (rhbz 950630)
+> - Upstream commit 1aa9578c1a9450fb21501c4f549f5b1edb557e6d
+> - Oddly not queued for stable?
+
+Already on 3.5 and 3.11.
+
+> cgroup-fixes.patch (rhbz 1045755)
+> - Upstream commits 0ab02ca8f887908152d1a96db5130fc661d36a1e
+> - There was a 3.12 version of this patch sent to stable list from
+> Michal Hocko.  I don't remember why it wasn't applied, or why it
+> wasn't applied for 3.13.y...
+>
+> ipv6-introduce-IFA_F_NOPREFIXROUTE-and-IFA_F_MANAGETEMPADDR-flags.patch
+> ipv6-addrconf-revert-if_inet6ifa_flag-format.patch
+> - rhbz 1064430 1056711
+> - Backports of commits to add this stuff in 3.14.  Not suitable for stable.
+> 
+> cifs-ensure-that-uncached-writes-handle-unmapped-areas-correctly.patch
+> cifs-sanity-check-length-of-data-to-send-before-sending.patch
+> cifs-mask-off-top-byte-in-get_rfc1002_length.patch
+> - rhbz 1064253 CVE-2014-0069 rhbz 1068862
+> - Upstream commit 5d81de8e8667da7135d3a32a964087c0faf5483f and two
+> additional fixes
+
+5d81de8e8667da7135d3a32a964087c0faf5483f is already queued for 3.5 and
+3.11.
+
+> cpufreq-powernow-k8-Initialize-per-cpu-data-structures-properly.patch
+> (rhbz 1054408)
+> - Upstream commit c3274763bfc3bf1ececa269ed6e6c4d7ec1c3e5e
+> - CC'd to stable but not queued
+
+Already in 3.5 and 3.11.
+
+> e100-Fix-disabling-already-disabled-device-warning.patch (rhbz 994438)
+> - Upstream commit 2b6e0ca175fe4a20f21ba82b1e7ccc71029c4dd4
+
+Queuing for 3.5 and 3.11.
+
+> usb-ehci-fix-deadlock-when-threadirqs-option-is-used.patch
+> - Still pending upstream
+
+Cheers,
+--
+Luís
