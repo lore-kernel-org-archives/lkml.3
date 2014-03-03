@@ -1,53 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754373AbaCCTnl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 14:43:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13086 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753269AbaCCTnk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 14:43:40 -0500
-Date: Mon, 3 Mar 2014 14:43:27 -0500
-From: Dave Jones <davej@redhat.com>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        akpm <akpm@linux-foundation.org>, Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH 1/1] affs: AFFS_NO_TRUNCATE added to Kconfig
-Message-ID: <20140303194327.GA22359@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Fabian Frederick <fabf@skynet.be>,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	akpm <akpm@linux-foundation.org>, Viro <viro@zeniv.linux.org.uk>
-References: <20140303182218.bc1de22e2c404dd1e07553b4@skynet.be>
+	id S1754734AbaCCTo3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 14:44:29 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:36278 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754239AbaCCTo2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 14:44:28 -0500
+Date: Mon, 3 Mar 2014 11:44:23 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: mst@redhat.com
+Cc: linux-kernel@vger.kernel.org
+Subject: Question on vhost_has_feature()
+Message-ID: <20140303194422.GA17107@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140303182218.bc1de22e2c404dd1e07553b4@skynet.be>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14030319-7164-0000-0000-000006919A25
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 03, 2014 at 06:22:18PM +0800, Fabian Frederick wrote:
- > Filename truncate process is defined in affs.h.
- > 
- > This patch exports current define to Kconfig and removes
- > AFFS_MAX_PREALLOC which is never used.
- > +
- > +config AFFS_NO_TRUNCATE
- > +	bool "Amiga FFS no filename truncate"
- > +	depends on AFFS_FS
- > +	default n
- > +	help
- > +	  If you say Y here, creating filesystem objects with longer names than
- > +	  30 characters (standard limit) will result in an error (ENAMETOOLONG).
- > +
- > +	  By default this option is disabled and filenames are automatically
- > +	  truncated.
+Hello, Michael,
 
-I get the feeling this would be better as a mount option than a config option.
-Then again, the number of people still caring about AFFS is probably in
-single digits these days, so I doubt anyone would complain if this was set
-one way or the other in a distribution kernel.
+Just curious about the purpose of the rcu_dereference_index_check() in
+vhost_has_feature().  I don't see how it fits in.  The closest thing
+I see if the use in handle_rx(), where it selects vq->log or NULL.  But
+in that case, I would expect the usual RCU usage pattern to wrap an
+rcu_dereference() around the vq->log.
 
-	Dave
+Enlightenment?
+
+							Thanx, Paul
 
