@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754475AbaCCAAL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Mar 2014 19:00:11 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:56913 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754432AbaCCAAG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Mar 2014 19:00:06 -0500
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: shaun@xresource.ca, sachin.kamat@linaro.org,
-        dulshani.gunawardhana89@gmail.com, dan.carpenter@oracle.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/5 v2] staging: cxt1e1: fix checkpatch error 'assignment in if condition'
-Date: Mon, 03 Mar 2014 09:00:02 +0900
-Message-ID: <4091292.138vlEnagH@daeseok-laptop.cloud.net>
-User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
+	id S1754494AbaCCAAt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Mar 2014 19:00:49 -0500
+Received: from mout.gmx.net ([212.227.15.18]:62889 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753811AbaCCAAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Mar 2014 19:00:46 -0500
+Message-ID: <5313C616.9010104@gmx.de>
+Date: Mon, 03 Mar 2014 01:00:22 +0100
+From: Heinrich Schuchardt <xypron.glpk@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: David Gibson <david@gibson.dropbear.id.au>
+CC: grant.likely@linaro.org, robh+dt@kernel.org, devicetree@vger.kernel.org,
+        jdl@jdl.com, devicetree-compiler@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] Consistently use xrealloc instead of realloc
+References: <1393792741-29043-1-git-send-email-xypron.glpk@gmx.de> <20140302234140.GD12916@voom.fritz.box>
+In-Reply-To: <20140302234140.GD12916@voom.fritz.box>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:vpRAq8TrOXWPE6qPJjFVWjxtNlzKagkp0JoOctlJbHJduKvJr/v
+ v5PvDWwpReIBNkTfqE/arqil4Rulerj2Q9sfIh2XvlYvS87KIKOFSEm6QHZx8ReiywDNUjj
+ fSLFuxQId8huQX3L+boAZBkzpylETbKGaJKKYbaMG6scH4emfrwzb3nW9zuirs7QL6GMjsS
+ Pso9ZoqzNlygMvwSdw0qA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> Note that in general dtc patches should be CCed to myself and Jon
+> Loeliger <jdl@jdl.com>, the dtc maintainers.
+>
 
-checkpatch.pl error:
- ERROR: do not use assignment in if condition
+This is the relevant section in file MAINTAINERS of Torvald's git.
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/MAINTAINERS
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
----
- drivers/staging/cxt1e1/hwprobe.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+OPEN FIRMWARE AND FLATTENED DEVICE TREE
+M:  Grant Likely <grant.likely@linaro.org>
+M:  Rob Herring <robh+dt@kernel.org>
+L:  devicetree@vger.kernel.org
+W:  http://fdt.secretlab.ca
+T:  git git://git.secretlab.ca/git/linux-2.6.git
+S:  Maintained
+F:  drivers/of/
+F:  include/linux/of*.h
+F:  scripts/dtc/
+K:  of_get_property
+K:  of_match_table
 
-diff --git a/drivers/staging/cxt1e1/hwprobe.c b/drivers/staging/cxt1e1/hwprobe.c
-index d6ccbd9..5f0e05d 100644
---- a/drivers/staging/cxt1e1/hwprobe.c
-+++ b/drivers/staging/cxt1e1/hwprobe.c
-@@ -142,8 +142,8 @@ hdw_sn_get(hdw_info_t *hi, int brdno)
- 			hi->mfg_info.Serial[5]);
- #endif
- 
--	if ((hi->promfmt = pmc_verify_cksum(&hi->mfg_info.data)) == PROM_FORMAT_Unk)
--	{
-+	hi->promfmt = pmc_verify_cksum(&hi->mfg_info.data);
-+	if (hi->promfmt == PROM_FORMAT_Unk) {
- 		/* bad crc, data is suspect */
- 		if (cxt1e1_log_level >= LOG_WARN)
- 			pr_info("%s: EEPROM cksum error\n", hi->devname);
-@@ -232,8 +232,8 @@ c4_hdw_init(struct pci_dev *pdev, int found)
- 	unsigned char busno = 0xff;
- 
- 	/* our MUSYCC chip supports two functions, 0 & 1 */
--	if ((fun = PCI_FUNC(pdev->devfn)) > 1)
--	{
-+	fun = PCI_FUNC(pdev->devfn);
-+	if (fun > 1) {
- 		pr_warning("unexpected devfun: 0x%x\n", pdev->devfn);
- 		return 0;
- 	}
-@@ -380,11 +380,11 @@ c4hw_attach_all(void)
- 		}
- 		pci_set_master(hi->pdev[0]);
- 		pci_set_master(hi->pdev[1]);
--		if (!(hi->ndev = c4_add_dev(hi, i, (long) hi->addr_mapped[0],
--					    (long) hi->addr_mapped[1],
--					    hi->pdev[0]->irq,
--					    hi->pdev[1]->irq)))
--		{
-+		hi->ndev = c4_add_dev(hi, i, (long) hi->addr_mapped[0],
-+				      (long) hi->addr_mapped[1],
-+				      hi->pdev[0]->irq,
-+				      hi->pdev[1]->irq);
-+		if (!hi->ndev) {
- 			drvr_state = SBE_DRVR_DOWN;
- 			cleanup_ioremap();
- 			/* NOTE: c4_add_dev() does its own device cleanup */
--- 
-1.7.9.5
+If the information is not accurate, please, have it updated.
 
+Best regards
 
+Heinrich Schuchardt
