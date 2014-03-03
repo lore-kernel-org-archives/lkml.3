@@ -1,191 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754566AbaCCNAH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 08:00:07 -0500
-Received: from mailscanner02.zoner.fi ([84.34.166.11]:53410 "EHLO
-	mailscanner02.zoner.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753881AbaCCNAF (ORCPT
+	id S1754051AbaCCNGh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 08:06:37 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:62594 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753360AbaCCNGf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 08:00:05 -0500
-X-Greylist: delayed 447 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Mar 2014 08:00:04 EST
-Date: Mon, 3 Mar 2014 14:51:37 +0200
-From: Lasse Collin <lasse.collin@tukaani.org>
-To: Kyle McMartin <kyle@infradead.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, Florian Fainelli <florian@openwrt.org>
-Subject: Re: [PATCH] xz: make XZ_DEC_BCJ filters non-optional
-Message-ID: <20140303145137.70819698@tukaani.org>
-In-Reply-To: <20140228230017.GE14970@merlin.infradead.org>
-References: <20140228230017.GE14970@merlin.infradead.org>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-unknown-linux-gnu)
+	Mon, 3 Mar 2014 08:06:35 -0500
+Message-ID: <53147E55.4060103@canonical.com>
+Date: Mon, 03 Mar 2014 21:06:29 +0800
+From: Shuduo Sang <shuduo.sang@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Antivirus-Scanner: Clean mail though you should still use an Antivirus
+To: =?UTF-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>
+CC: ibm-acpi-devel@lists.sourceforge.net, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ibm-acpi@hmh.eng.br,
+        matthew.garrett@nebula.com, platform-driver-x86@vger.kernel.org,
+        bruce.ma@canonical.com
+Subject: Re: [RFC PATCH] support Thinkpad X1 Carbon's adaptive keyboard
+References: <53142D51.3010403@canonical.com> <87mwh71r2y.fsf@nemi.mork.no>
+In-Reply-To: <87mwh71r2y.fsf@nemi.mork.no>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-02-28 Kyle McMartin wrote:
-> Having these optional is more trouble than is justified by the
-> negligible increase in code size to lib/xz/ if they're all compiled
-> in. Their optional status ends up necessitating rebuilds of the kernel
-> in order to be able to decompress XZ-compressed squashfs images which
-> use non-native BCJ filters (ie: you need to enable XZ_DEC_POWERPC on
-> x86_64 in order to loop-mount a ppc64 squashfs that uses it.)
 
-Originally all BCJ filters were enabled by default and CONFIG_EXPERT
-allowed disabling them one by one. It was changed a year ago to the
-current state because I wasn't against it when it was suggested:
+hi Bjørn,
 
-    http://lkml.org/lkml/2013/1/15/449
+Thanks for your comment. I will send V2 later.
 
-It seems that I should have been against it. I suggest things are
-rolled back like they were: all BCJ filters enabled by default and
-CONFIG_EXPERT makes them deselectable. This time I have a somewhat
-strong opinion that this is the best way to go, even if it means that
-the embedded people must remember to deselect the unnneeded filters.
 
-An alternative could be that with CONFIG_EXPERT only the BCJ filter for
-the current arch would be selected by default. Without CONFIG_EXPERT
-all filters would be forced on. I guess this could be confusing since
-the level of XZ support they get by default when they enable Squashfs'
-XZ support would depend on CONFIG_EXPERT. So I think my first suggestion
-is better.
-
-> So save ourselves the trouble and build them all into xz_dec_bcj.o to
-> begin with. (I could conceivably see a case where CONFIG_EXPERT made
-> these selectable, but again, even on embedded platforms, the .text
-> increase we're talking about is noise...)
+On 03/03/2014 07:04 PM, Bjørn Mork wrote:
+> Shuduo Sang <shuduo.sang@canonical.com> writes:
 > 
-> text	data	bss	dec	hex	filename
-> 1239	0	0	1239	4d7	xz_dec_bcj.o
-> 2263	0	0	2263	8d7	xz_dec_bcj.o.2
+>> Hi all,
+>>
+>> We are working together with Lenovo to enable thinkpad X1 Carbon's
+>> fancy feature, Adaptive Keyboard[1] for Linux. Adaptive keyboard has
+>> five modes on Windows including Home mode, Web browser mode, Web
+>> conference mode, Function mode and Lay-flat mode. We enabled Home
+>> mode and Function mode currently. Will try to find out how to enable
+>> other modes later. Please review and comment attached patch.
+>>
+>> Thanks,
+>> Shuduo
+>>
+>> [1]:http://shop.lenovo.com/us/en/laptops/thinkpad/x-series/x1-carbon/#features
+>>
+>>
+>> From da9d43beaa23071558a8031950cc21cc93946ec6 Mon Sep 17 00:00:00 2001
+>> From: Shuduo Sang <sangshuduo@gmail.com>
+>> Date: Mon, 3 Mar 2014 14:29:32 +0800
+>> Subject: [PATCH] support thinkpad X1 Carbon's adaptive keyboard
+>>
+>> Thinkpad X1 Carbon's adaptive keyboard has five modes including Home
+>> mode, Web browser mode, Web conference mode, Function mode and Lay-flat
+>> mode. We support Home mode and Function mode currently.
+>>
+>> Signed-off-by: Bruce Ma <bruce.ma@canonical.com>
+>> Signed-off-by: Shuduo Sang <shuduo.sang@canonical.com>
+>> ---
+>>  drivers/platform/x86/thinkpad_acpi.c | 97
+>> ++++++++++++++++++++++++++++++++++++
+>>  1 file changed, 97 insertions(+)
+>>
+>> diff --git a/drivers/platform/x86/thinkpad_acpi.c
+>> b/drivers/platform/x86/thinkpad_acpi.c
+>> index defb6af..fcb738e 100644
+>> --- a/drivers/platform/x86/thinkpad_acpi.c
+>> +++ b/drivers/platform/x86/thinkpad_acpi.c
+>> @@ -3437,6 +3437,101 @@ err_exit:
+>>  	return (res < 0)? res : 1;
+>>  }
+>>
+>> +/* Thinkpad X1 Carbon support 5 modes including Home mode, Web browser
+>> + * mode, Web conference mode, Function mode and Lay-flat mode.
+>> + * We support Home mode and Function mode currently.
+>> + *
+>> + * Will consider support rest of modes in future.
+>> + *
+>> + */
+>> +enum ADAPTIVE_KEY_MODE {
+>> +	HOME_MODE,
+>> +	WEB_BROWSER_MODE,
+>> +	WEB_CONFERENCE_MODE,
+>> +	FUNCTION_MODE,
+>> +	LAYFLAT_MODE
+>> +};
+>> +
+>> +int adaptive_keyboard_modes[] = {
+>> +	HOME_MODE,
+>> +/*	WEB_BROWSER_MODE = 2,
+>> +	WEB_CONFERENCE_MODE = 3, */
+>> +	FUNCTION_MODE
+>> +};
+>> +
+>> +#define DFR_CHANGE_ROW			0x101
+>> +#define DFR_SHOW_QUICKVIEW_ROW		0x102
+>> +
+>> +/* press Fn key a while second, it will switch to Function Mode. Then
+>> + * release Fn key, previous mode be restored.
+>> + */
+>> +bool adaptive_keyboard_mode_is_saved;
+>> +int adaptive_keybarod_prev_mode;
+> 
+> speling:  s/keybarod/keyboard/
+> 
+> You need to change it where this variable is used below as well.
+> 
+>> +static int adaptive_keyboard_get_next_mode(int mode)
+>> +{
+>> +	int i;
+>> +	int max_mode = sizeof(adaptive_keyboard_modes)/sizeof(int) - 1;
+> 
+> ARRAY_SIZE
+> 
+> 
+>> +	for (i = 0; i <= max_mode; i++) {
+>> +		if (adaptive_keyboard_modes[i] == mode)
+>> +			break;
+>> +	}
+>> +
+>> +	if (i >= max_mode)
+>> +		i = 0;
+>> +	else
+>> +		i++;
+>> +
+>> +	return adaptive_keyboard_modes[i];
+>> +}
+>> +
+>> +static bool adaptive_keyboard_hotkey_notify_hotkey(unsigned int scancode)
+>> +{
+>> +	u32 current_mode = 0;
+>> +	int new_mode = 0;
+>> +
+>> +	switch (scancode) {
+>> +	case DFR_CHANGE_ROW:
+>> +		if (adaptive_keyboard_mode_is_saved) {
+>> +			new_mode = adaptive_keybarod_prev_mode;
+>> +			adaptive_keyboard_mode_is_saved = false;
+>> +		} else {
+>> +			if (!acpi_evalf(
+>> +					hkey_handle, &current_mode,
+>> +					"GTRW", "dd", 0)) {
+>> +				pr_err("Cannot read adaptive keyboard mode\n");
+>> +				return false;
+> 
+> Not sure about this return value (resulting in an "unhandled HKEY event"
+> message).  See below.
+> 
+>> +			} else {
+>> +				new_mode = adaptive_keyboard_get_next_mode(
+>> +						current_mode);
+>> +			}
+>> +		}
+>> +
+>> +		if (!acpi_evalf(hkey_handle, NULL, "STRW", "vd", new_mode))
+>> +			pr_err("Cannot set adaptive keyboard mode\n");
+>> +
+>> +		return true;
+>> +
+>> +	case DFR_SHOW_QUICKVIEW_ROW:
+>> +		if (!acpi_evalf(hkey_handle,
+>> +				&adaptive_keybarod_prev_mode,
+>> +				"GTRW", "dd", 0)) {
+>> +			pr_err("Cannot read adaptive keyboard mode\n");
+> 
+> You should at least return a consistent result for this error.  Either
+> return true above or false here.
+> 
+>> +		} else {
+>> +			adaptive_keyboard_mode_is_saved = true;
+>> +
+>> +			if (!acpi_evalf(hkey_handle,
+>> +					NULL, "STRW", "vd", FUNCTION_MODE))
+>> +				pr_err("Cannot set adaptive keyboard mode\n");
+>> +		}
+>> +		return true;
+>> +
+>> +	default:
+>> +		return false;
+>> +	}
+>> +}
+>> +
+>>  static bool hotkey_notify_hotkey(const u32 hkey,
+>>  				 bool *send_acpi_ev,
+>>  				 bool *ignore_acpi_ev)
+>> @@ -3456,6 +3551,8 @@ static bool hotkey_notify_hotkey(const u32 hkey,
+>>  			*ignore_acpi_ev = true;
+>>  		}
+>>  		return true;
+>> +	} else {
+>> +		return adaptive_keyboard_hotkey_notify_hotkey(scancode);
+>>  	}
+>>  	return false;
+> 
+> This isn't reached anymore...
+> 
+> 
+>>  }
+> 
+> 
+> I also think you should consider how this UI will look if you ever
+> decide to enable all the modes.  AFAICS, you will then have inconsistent
+> behaviour for the DFR_CHANGE_ROW scancode in FUNCTION_MODE:
+> 
+>  a) if FUNCTION_MODE was enabled by DFR_SHOW_QUICKVIEW_ROW then next
+>       mode is x, where x can be any mode active before the
+>       DFR_SHOW_QUICKVIEW_ROW event _including_ FUNCTION_MODE
+>  b) if FUNCTION_MODE was enabled by DFR_CHANGE_ROW then next
+>       mode is LAYFLAT_MODE
+> 
 
-No, let's not unconditionally build them all:
+Press Fn key and don't release will switch Adaptive Keyboard to Function
+mode whatever current mode is. And release Fn key will restore it to old
+mode including Function mode. So current logic should not confuse end
+user here. :)
 
-  - 1 KiB might be noise, but since on embedded systems that 1 KiB
-    really is completely useless code and it's very easy to omit it,
-    the option to omit such code should be kept.
+LAYFLAT_MODE can be triged by putting screen to flat only, not by Fn
+key. Maybe list LAYFLAT_MODE with other modes will confuse others and
+make program need special logic to switch mode. I'm thinking over this
+too. Since unsupported modes still not clear, I wish following patch can
+handle them good.
 
-  - If the kernel image is compressed with XZ, a separate copy of
-    the decompressor is built for the pre-boot environment.
-    Conditional compilation of the BCJ filters is also used for
-    pre-boot environments which your patch doesn't touch. The
-    1 KiB increase would affect the copy in the pre-boot code too.
+> So the user won't really know the effect of a DFR_CHANGE_ROW event in
+> FUNCTION_MODE.
+> 
 
-  - This XZ decompressor was written with the Linux kernel in mind,
-    but it's used elsewhere too. It would be nice to minimize the
-    differences between the code in Linux and the out-of-kernel tree.
-    Outside Linux I will keep the BCJ filters optional anyway.
+DRF_CHANGE_ROW event in FUNCTION_MODE should always change keyboard to
+Home mode.
 
-Below are two alternative patches matching my two suggestions. I prefer
-the first patch and I will submit it in a day or two unless people
-have better ideas.
+> Wouldn't it make more sense if DFR_SHOW_QUICKVIEW_ROW always toggled
+> between FUNCTION_MODE and some other mode, and DFR_CHANGE_ROW always
+> cycled through the modes?  
+> 
+> Or is the UI locked by whatever the Windows driver does? (I don't have
+> any X1 Carbon, so I don't know how the users expect this to work)
+> 
 
-diff -Nru linux-3.14-rc5.orig/lib/xz/Kconfig linux-3.14-rc5/lib/xz/Kconfig
---- linux-3.14-rc5.orig/lib/xz/Kconfig	2014-03-03 04:56:16.000000000 +0200
-+++ linux-3.14-rc5/lib/xz/Kconfig	2014-03-03 13:26:58.402872951 +0200
-@@ -9,33 +9,33 @@
- if XZ_DEC
- 
- config XZ_DEC_X86
--	bool "x86 BCJ filter decoder"
--	default y if X86
-+	bool "x86 BCJ filter decoder" if EXPERT
-+	default y
- 	select XZ_DEC_BCJ
- 
- config XZ_DEC_POWERPC
--	bool "PowerPC BCJ filter decoder"
--	default y if PPC
-+	bool "PowerPC BCJ filter decoder" if EXPERT
-+	default y
- 	select XZ_DEC_BCJ
- 
- config XZ_DEC_IA64
--	bool "IA-64 BCJ filter decoder"
--	default y if IA64
-+	bool "IA-64 BCJ filter decoder" if EXPERT
-+	default y
- 	select XZ_DEC_BCJ
- 
- config XZ_DEC_ARM
--	bool "ARM BCJ filter decoder"
--	default y if ARM
-+	bool "ARM BCJ filter decoder" if EXPERT
-+	default y
- 	select XZ_DEC_BCJ
- 
- config XZ_DEC_ARMTHUMB
--	bool "ARM-Thumb BCJ filter decoder"
--	default y if (ARM && ARM_THUMB)
-+	bool "ARM-Thumb BCJ filter decoder" if EXPERT
-+	default y
- 	select XZ_DEC_BCJ
- 
- config XZ_DEC_SPARC
--	bool "SPARC BCJ filter decoder"
--	default y if SPARC
-+	bool "SPARC BCJ filter decoder" if EXPERT
-+	default y
- 	select XZ_DEC_BCJ
- 
- endif
+On Windows, DFR_CHANGE_ROW will switch keyboard among four modes. On
+Linux, currently switch between Home mode and Function mode. Since not
+all Windows function can be mapped to Linux like Web conference, so
+Linux user don't expect those modes appear too. I think it makes sense
+too. :)
 
-The second version enables the BCJ filter only for the current arch by
-default if CONFIG_EXPERT; without CONFIG_EXPERT all filters are forced
-on:
 
-diff -Nru linux-3.14-rc5.orig/lib/xz/Kconfig linux-3.14-rc5/lib/xz/Kconfig
---- linux-3.14-rc5.orig/lib/xz/Kconfig	2014-03-03 04:56:16.000000000 +0200
-+++ linux-3.14-rc5/lib/xz/Kconfig	2014-03-03 14:15:42.196209325 +0200
-@@ -9,33 +9,33 @@
- if XZ_DEC
- 
- config XZ_DEC_X86
--	bool "x86 BCJ filter decoder"
--	default y if X86
-+	bool "x86 BCJ filter decoder" if EXPERT
-+	default y if !EXPERT || X86
- 	select XZ_DEC_BCJ
- 
- config XZ_DEC_POWERPC
--	bool "PowerPC BCJ filter decoder"
--	default y if PPC
-+	bool "PowerPC BCJ filter decoder" if EXPERT
-+	default y if !EXPERT || PPC
- 	select XZ_DEC_BCJ
- 
- config XZ_DEC_IA64
--	bool "IA-64 BCJ filter decoder"
--	default y if IA64
-+	bool "IA-64 BCJ filter decoder" if EXPERT
-+	default y if !EXPERT || IA64
- 	select XZ_DEC_BCJ
- 
- config XZ_DEC_ARM
--	bool "ARM BCJ filter decoder"
--	default y if ARM
-+	bool "ARM BCJ filter decoder" if EXPERT
-+	default y if !EXPERT || ARM
- 	select XZ_DEC_BCJ
- 
- config XZ_DEC_ARMTHUMB
--	bool "ARM-Thumb BCJ filter decoder"
--	default y if (ARM && ARM_THUMB)
-+	bool "ARM-Thumb BCJ filter decoder" if EXPERT
-+	default y if !EXPERT || (ARM && ARM_THUMB)
- 	select XZ_DEC_BCJ
- 
- config XZ_DEC_SPARC
--	bool "SPARC BCJ filter decoder"
--	default y if SPARC
-+	bool "SPARC BCJ filter decoder" if EXPERT
-+	default y if !EXPERT || SPARC
- 	select XZ_DEC_BCJ
- 
- endif
-
--- 
-Lasse Collin  |  IRC: Larhzu @ IRCnet & Freenode
+> 
+> Bjørn
+> 
