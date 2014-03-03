@@ -1,182 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750AbaCCQlS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 11:41:18 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:52413 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752339AbaCCQlR convert rfc822-to-8bit (ORCPT
+	id S1753143AbaCCQnP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 11:43:15 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:37469 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889AbaCCQnN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 11:41:17 -0500
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: [PATCH 2/3] soc: keystone: add QMSS driver
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <1393629520-12713-3-git-send-email-santosh.shilimkar@ti.com>
-Date: Mon, 3 Mar 2014 10:41:10 -0600
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, Sandeep Nair <sandeep_n@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <1568CFCC-C778-4116-95F6-4EB407F096D6@codeaurora.org>
-References: <1393629520-12713-1-git-send-email-santosh.shilimkar@ti.com> <1393629520-12713-3-git-send-email-santosh.shilimkar@ti.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-X-Mailer: Apple Mail (2.1874)
+	Mon, 3 Mar 2014 11:43:13 -0500
+Date: Mon, 3 Mar 2014 10:40:51 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: <bcousson@baylibre.com>, <balbi@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>, <george.cherian@ti.com>,
+        <heikki.krogerus@linux.intel.com>, <rogerq@ti.com>,
+        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <ijc+devicetree@hellion.org.uk>, <rob@landley.net>, <tony@atomide.com>,
+        <linux@arm.linux.org.uk>, <gregkh@linuxfoundation.org>,
+        <grant.likely@linaro.org>, <s.nawrocki@samsung.com>,
+        <galak@codeaurora.org>
+Subject: Re: [PATCH v5 0/6] Make dwc3 use Generic PHY Framework
+Message-ID: <20140303164051.GB10987@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1393846695-14644-1-git-send-email-kishon@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ftEhullJWpWg/VHq"
+Content-Disposition: inline
+In-Reply-To: <1393846695-14644-1-git-send-email-kishon@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--ftEhullJWpWg/VHq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Feb 28, 2014, at 5:18 PM, Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
+Hi,
 
-> From: Sandeep Nair <sandeep_n@ti.com>
-> 
-> The QMSS (Queue Manager Sub System) found on Keystone SOCs is one of
-> the main hardware sub system which forms the backbone of the Keystone
-> Multi-core Navigator. QMSS consist of queue managers, packed-data structure
-> processors(PDSP), linking RAM, descriptor pools and infrastructure
-> Packet DMA.
-> 
-> The Queue Manager is a hardware module that is responsible for accelerating
-> management of the packet queues. Packets are queued/de-queued by writing or
-> reading descriptor address to a particular memory mapped location. The PDSPs
-> perform QMSS related functions like accumulation, QoS, or event management.
-> Linking RAM registers are used to link the descriptors which are stored in
-> descriptor RAM. Descriptor RAM is configurable as internal or external memory.
-> 
-> The QMSS driver manages the PDSP setups, linking RAM regions,
-> queue pool management (allocation, push, pop and notify) and descriptor
-> pool management. The specifics on the device tree bindings for
-> QMSS can be found in:
->        Documentation/devicetree/bindings/soc/keystone-qmss.txt
-> 
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Kumar Gala <galak@codeaurora.org>
-> Cc: Olof Johansson <olof@lixom.net>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Signed-off-by: Sandeep Nair <sandeep_n@ti.com>
-> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> ---
-> .../devicetree/bindings/soc/keystone-qmss.txt      |  209 +++
-> drivers/Kconfig                                    |    2 +
-> drivers/Makefile                                   |    3 +
-> drivers/soc/Kconfig                                |    2 +
-> drivers/soc/Makefile                               |    5 +
-> drivers/soc/keystone/Kconfig                       |   15 +
-> drivers/soc/keystone/Makefile                      |    5 +
-> drivers/soc/keystone/qmss_acc.c                    |  591 ++++++++
-> drivers/soc/keystone/qmss_queue.c                  | 1533 ++++++++++++++++++++
-> drivers/soc/keystone/qmss_queue.h                  |  236 +++
+On Mon, Mar 03, 2014 at 05:08:09PM +0530, Kishon Vijay Abraham I wrote:
+> Added support for optional PHY in dwc3 as not all SoCs having PHYs for DW=
+C3
+> should be programmed. While this can be considered as a temporary fix,
+> a long term solution would be to add 'nop' PHY for platforms that does
+> not have programmable PHY.
+> Adapted DWC3 and USB3 PHY to use Generic PHY framework. Also changed the
+> name of USB3 PHY driver to PIPE3 PHY driver since the same driver has to
+> be used for SATA and PCIE too.
+>=20
+> Changes from v4: (sending the entire patch series again)
+> * check the return values of phy_init and phy_power_on
+> * print errors if power_on or power_off of PHY fails.
+>=20
+> Changes from v3: (Sent only adapt dwc3 core to use Generic PHY Framework)=
+=20
+> * avoided using quirks and rely on the return values of PHY APIs to find =
+the
+> presence of PHY.
+>=20
+> Changes from v2:
+> * added a couple of fixes. One is invoking phy_resume after phy_init and =
+the
+> other is power off phy in error patch
+> * used quirks to identify if a particular platform does not have PHYs
+> * removed using separate header for pipe3 driver and also removed all ref=
+erencs
+> to SATA and PCIe in pipe3 driver since it's not yet adapted for those dri=
+vers.
+>=20
+> Changes from v1:
+> * The logic in which the driver detects the presence of PHYs has changed.
+> * patch ordering has changed
+> * udelay is replaced with usleep_range
+> * A patch to remove set_suspend callback which was deferred from Generic
+> PHY Framework series has been included.
+>=20
+> Kishon Vijay Abraham I (6):
+>   usb: dwc3: core: support optional PHYs
+>   usb: dwc3: adapt dwc3 core to use Generic PHY Framework
+>   drivers: phy: usb3/pipe3: Adapt pipe3 driver to Generic PHY Framework
+>   usb: phy: omap-usb2: remove *set_suspend* callback from omap-usb2
+>   phy: omap-usb2: move omap_usb.h from linux/usb/ to linux/phy/
+>   arm/dts: added dt properties to adapt to the new phy framwork
 
-So this should be drivers/soc/ti, much like we use vendor in drivers/net/ethernet
+patches 1 and 2 are in my testing/next, I guess 3,4,5 and 6 have no
+direct dependency on those, right ?
 
-> include/linux/soc/keystone_qmss.h                  |  390 +++++
+--=20
+balbi
 
-include/linux/soc/ti/
+--ftEhullJWpWg/VHq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> 11 files changed, 2991 insertions(+)
-> create mode 100644 Documentation/devicetree/bindings/soc/keystone-qmss.txt
-> create mode 100644 drivers/soc/Makefile
-> create mode 100644 drivers/soc/keystone/Kconfig
-> create mode 100644 drivers/soc/keystone/Makefile
-> create mode 100644 drivers/soc/keystone/qmss_acc.c
-> create mode 100644 drivers/soc/keystone/qmss_queue.c
-> create mode 100644 drivers/soc/keystone/qmss_queue.h
-> create mode 100644 include/linux/soc/keystone_qmss.h
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-[snip]
+iQIcBAEBAgAGBQJTFLCTAAoJEIaOsuA1yqREt1kP+wX6Shd/dZdsubpGv+I+fEVl
+sMInbt/HfO8bKjFlZ/NMYs27WGU0FRmzlVA9jFHtRg+cZCVVKKyXyEegnveS/kTV
+MkG1UpwV2Ml3/emMDvIjV+opdtnVvy5FPqfc39GT8P+4VukWHfJW41k7eifZV5R6
+/GF03OB8qcCR3kv2fsKr4MFTvIqMkoCMBo2szjAk/qZixQKAwmXZR5+6VpPrQtt2
+k7YF0M4kzs/hQ0RllqsHB6wK8YacorpL1I+xlQ67zhcIqyL6Qq+p2TmZpguMFlU3
+iFGdx7QUeclawz7Xuq4WicYUW4Ouw7J6b4LGjAoGmUVO69jEex0gVRxas5yvf8xH
+x67qdZtTPgyMDbbSjbO1cMU9o9Fb8HpYZUo/CyDSE675m+V1eMNo+01y4bBCkywb
+7TNGWvm/mWlTNqaPQQ/DIrStDijSShLhLllc+xJggTk7UdES2s8YqT4jfyicA86W
+PAuusq+bXZP6eOGEke5hNOJHG7Bxbv7wAbDMd+CCi+r5ZbeCW0TDVEK7o8Y3Ohmq
+i0owImJeT2UMBaNc9/55G5S9C2wdoA0csLX1/Hye5LFkarB9xXdfmxPi/+rBtUdl
+/HH/juGyi+VLs58VumIKlplfDkttgZpBLvCUQTBgPB9PNwEesua1MhRw1EmTI9u0
+ccgCmoUXNXMAQcA6Hz1Q
+=fYr0
+-----END PGP SIGNATURE-----
 
-> diff --git a/drivers/Kconfig b/drivers/Kconfig
-> index 37f955f..3220516 100644
-> --- a/drivers/Kconfig
-> +++ b/drivers/Kconfig
-> @@ -146,6 +146,8 @@ source "drivers/remoteproc/Kconfig"
-> 
-> source "drivers/rpmsg/Kconfig"
-> 
-> +source "drivers/soc/Kconfig"
-> +
-> source "drivers/devfreq/Kconfig"
-> 
-> source "drivers/extcon/Kconfig"
-> diff --git a/drivers/Makefile b/drivers/Makefile
-> index 0d8e2a4..0c22db8 100644
-> --- a/drivers/Makefile
-> +++ b/drivers/Makefile
-> @@ -146,6 +146,9 @@ obj-$(CONFIG_IOMMU_SUPPORT)	+= iommu/
-> obj-$(CONFIG_REMOTEPROC)	+= remoteproc/
-> obj-$(CONFIG_RPMSG)		+= rpmsg/
-> 
-> +# SOC specific drivers
-> +obj-y				+= soc/
-> +
-> # Virtualization drivers
-> obj-$(CONFIG_VIRT_DRIVERS)	+= virt/
-> obj-$(CONFIG_HYPERV)		+= hv/
-> diff --git a/drivers/soc/Kconfig b/drivers/soc/Kconfig
-> index 2f9d7d0..59980bd 100644
-> --- a/drivers/soc/Kconfig
-> +++ b/drivers/soc/Kconfig
-> @@ -1,3 +1,5 @@
-> menu "SOC specific Drivers"
-> 
-> +source "drivers/soc/keystone/Kconfig"
-> +
-> endmenu
-> diff --git a/drivers/soc/Makefile b/drivers/soc/Makefile
-> new file mode 100644
-> index 0000000..c5d141e
-> --- /dev/null
-> +++ b/drivers/soc/Makefile
-> @@ -0,0 +1,5 @@
-> +#
-> +# Makefile for the Linux kernel SOC specific device drivers.
-> +#
-> +
-> +obj-$(CONFIG_ARCH_KEYSTONE)		+= keystone/
-> diff --git a/drivers/soc/keystone/Kconfig b/drivers/soc/keystone/Kconfig
-> new file mode 100644
-> index 0000000..0b3131b
-> --- /dev/null
-> +++ b/drivers/soc/keystone/Kconfig
-> @@ -0,0 +1,15 @@
-> +#
-> +# TI Keystone Soc drivers
-> +#
-> +
-
-We should have this be something like:
-
-menuconfig SOC_TI
-	bool “TI SoC support”
-	
-
-if SOC_TI
-
-> +config KEYSTONE_QMSS
-> +	tristate "Keystone Queue Manager Sub System"
-> +	depends on ARCH_KEYSTONE
-> +	help
-> +	  Say y here to support the Keystone Hardware Queue Manager support.
-> +	  The Queue Manager is a hardware module that is responsible for
-> +	  accelerating management of the packet queues. Packets are queued/
-> +	  de-queued by writing/reading descriptor address to a particular
-> +	  memory mapped location in the Queue Manager module.
-> +
-> +	  If unsure, say N.
-
-endif # SOC_TI
-
-[snip]
-
-- k
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+--ftEhullJWpWg/VHq--
