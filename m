@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754604AbaCCOG0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 09:06:26 -0500
-Received: from mail.mev.co.uk ([62.49.15.74]:38250 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754510AbaCCOGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 09:06:25 -0500
-Message-ID: <53148C2A.9000305@mev.co.uk>
-Date: Mon, 3 Mar 2014 14:05:30 +0000
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1754645AbaCCOIh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 09:08:37 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:37716 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753980AbaCCOIg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 09:08:36 -0500
+Date: Mon, 3 Mar 2014 14:08:11 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Roy Franz <roy.franz@linaro.org>
+Cc: Leif Lindholm <leif.lindholm@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Patch Tracking <patches@linaro.org>
+Subject: Re: [PATCH 06/22] Add helper functions used by arm/arm64
+Message-ID: <20140303140811.GA18828@console-pimps.org>
+References: <1391619853-10601-1-git-send-email-leif.lindholm@linaro.org>
+ <1391619853-10601-7-git-send-email-leif.lindholm@linaro.org>
+ <20140213112606.GF20717@console-pimps.org>
+ <CAFECyb_wUphr4XOyW9tC-Rw5Py3m39e6GQorCtFGtSXTUTBnFQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Chase Southwood <chase.southwood@yahoo.com>,
-        Ian Abbott <ian.abbott@mev.co.uk>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "hsweeten@visionengravers.com" <hsweeten@visionengravers.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Staging: comedi: add timeouts to while loops in s626.c
-References: <1393572936-9676-1-git-send-email-chase.southwood@yahoo.com> <5310C4CB.2060201@mev.co.uk> <1393652927.45628.YahooMailNeo@web164006.mail.gq1.yahoo.com>
-In-Reply-To: <1393652927.45628.YahooMailNeo@web164006.mail.gq1.yahoo.com>
-Content-Type: text/plain; charset="us-ascii"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFECyb_wUphr4XOyW9tC-Rw5Py3m39e6GQorCtFGtSXTUTBnFQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-03-01 05:48, Chase Southwood wrote:
-> On Friday, February 28, 2014 11:26 AM, Ian Abbott <abbotti@mev.co.uk> wrote:
->> On 2014-02-28 07:35, Chase Southwood wrote:
->>> And finally, are timeouts here even necessary or helpful, or are there
->>> any better ways to do it?
->>
->> In the case of s626_send_dac(), it doesn't seem to be used in any
->> critical sections, so it could make use of Hartley's comedi_timeout().
->>
->> Some of the timeout errors could be propagated, especially for
->> s626_send_dac() which is only reachable from very few paths.
->>
->
-> Awesome, I'll swap all of my timeouts out for comedi_timeout() in s626_send_dac().
-> As for propagating the timeout errors, could you please clarify that a bit further?  Both of the functions
-> which I add timeouts inside of in this patch return void, and so in their current state they cannot return any error
-> values.  Would you like them (or at least s626_send_dac()) to instead return an error upon timeout/or success on success,
-> or am I just totally misunderstanding your meaning of propagate here?
+On Fri, 14 Feb, at 11:02:49AM, Roy Franz wrote:
+> 
+> The get_dram_base() function is only used by arm/arm64, but
+> there is nothing architecture specific about it, which is why I put it
+> here to begin with.  I don't feel strongly about this either way.
 
-s626_send_dac() could be changed to return an int value 0 on success or 
--ETIMEDOUT on timeout.  s626_set_dac() and s626_write_trim_dac() could 
-be changed to return an int - just return the result of s626_send_dac(). 
-  Similarly, the result of those functions could be either propagated 
-upwards.  This could all be done in a separate patch (or patches).
+Sorry Roy, I just realised that you probably wanted a response from me
+about this last point.
 
->> There are other infinite loops involving calls to the s626_mc_test()
->> function, but those could be dealt with by other patches.
->
-> Yeah, I saw those...I'll whip up a patch for them, just wanted to verify that everything looks pretty good here
-> before I started on that.  I'll have that right out!
+OK, leaving get_dram_base() in efi-stub-helper.c is fine.
 
-Yes, anything is an improvement on an infinite loop waiting for the 
-hardware to do something!
+FYI, "NUL" isn't a typo,
+
+> -	options_size++;  /* NUL termination */
+[...]
+> +	options_size++;  /* NULL termination */
+
+http://en.wikipedia.org/wiki/Null_character
 
 -- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+Matt Fleming, Intel Open Source Technology Center
