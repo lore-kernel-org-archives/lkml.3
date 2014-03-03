@@ -1,47 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755311AbaCCW1u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 17:27:50 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59986 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754951AbaCCW1s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 17:27:48 -0500
-Message-ID: <531501BD.4070300@zytor.com>
-Date: Mon, 03 Mar 2014 14:27:09 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1755376AbaCCW2K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 17:28:10 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:23977 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754951AbaCCW2I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 17:28:08 -0500
+Date: Mon, 3 Mar 2014 17:28:06 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Question about -rc and stable patches
+Message-ID: <20140303172806.4486f65a@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Petr Mladek <pmladek@suse.cz>, stable@vger.kernel.org
-Subject: Re: [RFA][PATCH 1/5] ftrace/x86: Run a sync after fixup on failure
-References: <20140227154616.703252665@goodmis.org>	<20140227154922.957070805@goodmis.org>	<5314FE46.3060003@zytor.com> <20140303171816.176ca337@gandalf.local.home>
-In-Reply-To: <20140303171816.176ca337@gandalf.local.home>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/03/2014 02:18 PM, Steven Rostedt wrote:
-> 
-> How's this sound:
-> 
-> The second bug was that the removal of the breakpoints required the
-> "within()" logic updates instead of accessing the ip address directly.
-> As kernel text is mapped read-only when CONFIG_DEBUG_RODATA is set, and
-> the removal of the breakpoint is a modification of kernel text.
-> 
+Hi Linus and Greg,
 
-I'd add:
+Recently I have been sent patches that fix a bug in the enabling of
+ftrace function tracer, where if something goes wrong with the
+enabling (or disabling), it can cause a crash of the computer.
 
-"ftrace_write() includes this, but probe_kernel_write() does not."
+Now, my question is, the bug requires something to go wrong at a point
+where I've never seen it go wrong before. But if you inject a problem
+(code that makes it fail on the 1000th iteration), sure enough, the
+recovery is not correct and the machine crashes.
 
-	-hpa
+Is this fix something that I should push to -rc as well as to stable?
+Or should I just add this to my 3.15 queue, as I have never heard of
+someone triggering it. The only report is from someone that was testing
+the failure cases.
 
+Thanks,
 
+-- Steve
