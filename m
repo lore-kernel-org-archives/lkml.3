@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754945AbaCCUrB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 15:47:01 -0500
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:52041 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753787AbaCCUq7 (ORCPT
+	id S1755080AbaCCUrG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 15:47:06 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:43333 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753787AbaCCUrD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 15:46:59 -0500
+	Mon, 3 Mar 2014 15:47:03 -0500
 From: Johannes Thumshirn <johannes.thumshirn@men.de>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, Johannes Thumshirn <morbidrsa@gmail.com>,
         Johannes Thumshirn <johannes.thumshirn@men.de>
-Subject: [PATCH 1/2] drivers: mcb: Fix build error discovered by 0-day bot
-Date: Mon,  3 Mar 2014 21:46:48 +0100
-Message-Id: <1393879609-3284-1-git-send-email-johannes.thumshirn@men.de>
+Subject: [PATCH 2/2] iio: adc: Fix build error discovered by 0-day build bot
+Date: Mon,  3 Mar 2014 21:46:49 +0100
+Message-Id: <1393879609-3284-2-git-send-email-johannes.thumshirn@men.de>
 X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1393879609-3284-1-git-send-email-johannes.thumshirn@men.de>
+References: <1393879609-3284-1-git-send-email-johannes.thumshirn@men.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johannes Thumshirn <morbidrsa@gmail.com>
 
-Make mcb depend on HAS_IOMEM and mcb-pci depend on PCI. This fixes build errors
-discovered by the 0-day kernel build testing system.
+men_z188_adc needs to include linux/io.h. This fixes a build error
+discovered by 0-day buid bot
 
 Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
 ---
- drivers/mcb/Kconfig | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/iio/adc/men_z188_adc.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/mcb/Kconfig b/drivers/mcb/Kconfig
-index b8f5d46..87d5a46 100644
---- a/drivers/mcb/Kconfig
-+++ b/drivers/mcb/Kconfig
-@@ -4,7 +4,7 @@
+diff --git a/drivers/iio/adc/men_z188_adc.c b/drivers/iio/adc/men_z188_adc.c
+index 7036503..6989c16 100644
+--- a/drivers/iio/adc/men_z188_adc.c
++++ b/drivers/iio/adc/men_z188_adc.c
+@@ -12,6 +12,7 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/mcb.h>
++#include <linux/io.h>
+ #include <linux/iio/iio.h>
  
- menuconfig MCB
- 	   tristate "MCB support"
--	   default m
-+	   depends on HAS_IOMEM
- 	   help
- 
- 	   The MCB (MEN Chameleon Bus) is a Bus specific to MEN Mikroelektronik
-@@ -18,6 +18,7 @@ if MCB
- config MCB_PCI
- 	   tristate "PCI based MCB carrier"
- 	   default m
-+	   depends on PCI
- 	   help
- 
- 	   This is a MCB carrier on a PCI device. Both PCI attached on-board
+ #define Z188_ADC_MAX_CHAN	8
 -- 
 1.8.5.3
 
