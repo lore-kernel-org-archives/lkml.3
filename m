@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438AbaCCTGo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 14:06:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:56099 "EHLO
+	id S1755280AbaCCS6z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 13:58:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:56088 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755283AbaCCS64 (ORCPT
+	with ESMTP id S1755255AbaCCS6v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 13:58:56 -0500
+	Mon, 3 Mar 2014 13:58:51 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+Cc: Jan Moskyto Matejka <mq@suse.cz>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 46/67] Drivers: hv: vmbus: Don't timeout during the initial connection with host
-Date: Mon,  3 Mar 2014 10:55:34 -0800
-Message-Id: <1393872955-28810-47-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 51/67] Modpost: fixed USB alias generation for ranges including 0x9 and 0xA
+Date: Mon,  3 Mar 2014 10:55:39 -0800
+Message-Id: <1393872955-28810-52-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1393872955-28810-1-git-send-email-kamal@canonical.com>
 References: <1393872955-28810-1-git-send-email-kamal@canonical.com>
@@ -28,58 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Jan Moskyto Matejka <mq@suse.cz>
 
-commit 269f979467cf49f2ea8132316c1f00f8c9678f7c upstream.
+commit 03b56329f9bb5a1cb73d7dc659d529a9a9bf3acc upstream.
 
-When the guest attempts to connect with the host when there may already be a
-connection with the host (as would be the case during the kdump/kexec path),
-it is difficult to guarantee timely response from the host. Starting with
-WS2012 R2, the host supports this ability to re-connect with the host
-(explicitly to support kexec). Prior to responding to the guest, the host
-needs to ensure that device states based on the previous connection to
-the host have been properly torn down. This may introduce unbounded delays.
-To deal with this issue, don't do a timed wait during the initial connect
-with the host.
+Commit afe2dab4f6 ("USB: add hex/bcd detection to usb modalias generation")
+changed the routine that generates alias ranges. Before that change, only
+digits 0-9 were supported; the commit tried to fix the case when the range
+includes higher values than 0x9.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Unfortunately, the commit didn't fix the case when the range includes both
+0x9 and 0xA, meaning that the final range must look like [x-9A-y] where
+x <= 0x9 and y >= 0xA -- instead the [x-9A-x] range was produced.
+
+Modprobe doesn't complain as it sees no difference between no-match and
+bad-pattern results of fnmatch().
+
+Fixing this simple bug to fix the aliases.
+Also changing the hardcoded beginning of the range to uppercase as all the
+other letters are also uppercase in the device version numbers.
+
+Fortunately, this affects only the dvb-usb-dib0700 module, AFAIK.
+
+Signed-off-by: Jan Moskyto Matejka <mq@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ kamal: backport to 3.8 (applied to vmbus_connect) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/hv/connection.c | 12 +-----------
- 1 file changed, 1 insertion(+), 11 deletions(-)
+ scripts/mod/file2alias.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/hv/connection.c b/drivers/hv/connection.c
-index 650c9f0..d7f3df9 100644
---- a/drivers/hv/connection.c
-+++ b/drivers/hv/connection.c
-@@ -45,7 +45,6 @@ struct vmbus_connection vmbus_connection = {
- int vmbus_connect(void)
- {
- 	int ret = 0;
--	int t;
- 	struct vmbus_channel_msginfo *msginfo = NULL;
- 	struct vmbus_channel_initiate_contact *msg;
- 	unsigned long flags;
-@@ -132,16 +131,7 @@ int vmbus_connect(void)
+diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
+index df4fc23..cb23474 100644
+--- a/scripts/mod/file2alias.c
++++ b/scripts/mod/file2alias.c
+@@ -186,8 +186,8 @@ static void do_usb_entry(struct usb_device_id *id,
+ 				range_lo < 0x9 ? "[%X-9" : "[%X",
+ 				range_lo);
+ 			sprintf(alias + strlen(alias),
+-				range_hi > 0xA ? "a-%X]" : "%X]",
+-				range_lo);
++				range_hi > 0xA ? "A-%X]" : "%X]",
++				range_hi);
+ 		}
  	}
- 
- 	/* Wait for the connection response */
--	t =  wait_for_completion_timeout(&msginfo->waitevent, 5*HZ);
--	if (t == 0) {
--		spin_lock_irqsave(&vmbus_connection.channelmsg_lock,
--				flags);
--		list_del(&msginfo->msglistentry);
--		spin_unlock_irqrestore(&vmbus_connection.channelmsg_lock,
--					flags);
--		ret = -ETIMEDOUT;
--		goto cleanup;
--	}
-+	wait_for_completion(&msginfo->waitevent);
- 
- 	spin_lock_irqsave(&vmbus_connection.channelmsg_lock, flags);
- 	list_del(&msginfo->msglistentry);
+ 	if (bcdDevice_initial_digits < (sizeof(id->bcdDevice_lo) * 2 - 1))
 -- 
 1.8.3.2
 
