@@ -1,221 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754197AbaCCLaD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 06:30:03 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51309 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753566AbaCCLaB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 06:30:01 -0500
-Message-ID: <1393846187.3369.0.camel@paszta.hi.pengutronix.de>
-Subject: Re: [PATCH v8 2/6] misc: sram: implement reserved sram areas
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        arm@kernel.org, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robherring2@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>
-Date: Mon, 03 Mar 2014 12:29:47 +0100
-In-Reply-To: <8769537.NUv9SMRkyo@phil>
-References: <21117503.1c6iOkvYSr@phil> <8769537.NUv9SMRkyo@phil>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
+	id S1754333AbaCCLaf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 06:30:35 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:53157 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752263AbaCCLae (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 06:30:34 -0500
+Message-ID: <531467D3.2030307@ti.com>
+Date: Mon, 3 Mar 2014 13:30:27 +0200
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Nishanth Menon <nm@ti.com>, Lee Jones <lee.jones@linaro.org>
+CC: <florian.vaussard@epfl.ch>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 1/3] mfd: twl6040: Select i2c fast mode as default with
+ regmap patch
+References: <1393509410-1640-1-git-send-email-peter.ujfalusi@ti.com> <1393509410-1640-2-git-send-email-peter.ujfalusi@ti.com> <530F4A84.9070906@ti.com> <530F4CA5.6030502@ti.com> <530F5323.1020305@ti.com> <53103D34.8050101@ti.com> <53108F90.7070608@ti.com> <53109C92.10104@ti.com> <5310A61C.5000105@ti.com>
+In-Reply-To: <5310A61C.5000105@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Heiko,
-
-Am Dienstag, den 25.02.2014, 12:46 +0100 schrieb Heiko StÃ¼bner:
-> This implements support for defining reserved areas as subnodes,
-> to keep the genpool from using these.
+On 02/28/2014 05:07 PM, Nishanth Menon wrote:
+> On 02/28/2014 08:26 AM, Peter Ujfalusi wrote:
+>> On 02/28/2014 03:30 PM, Nishanth Menon wrote:
+>>> TWL6030 can do 3.3MHz by default and there are no speed registers to
+>>> configure.
+>>
+>> According to the datasheet the speed of twl6030 is limited to 2.4MHz. I have
+>> not seen registers or pins to select the speed. As the documentation puts
+>> this: High-speed mode (limited to 2.4Mbit/s maximum)
 > 
-> Suggested-by: Rob Herring <robherring2@gmail.com>
-> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-> Tested-by: Ulrich Prinz <ulrich.prinz@googlemail.com>
+> Aye, you are correct, the latest data sheet does show this - i made
+> the mistake of opening an older spec doc :(..
 
-Acked-by: Philipp Zabel <p.zabel@pengutronix.de>
+As a note: I tried first with 3.4MHz bus speed (who reads documentation?)
+twl6030 was working fine as far as I can tell. But the TRM is really
+expressing that 2.4MHz is the limit for twl6030.
 
-> ---
->  drivers/misc/sram.c | 125 +++++++++++++++++++++++++++++++++++++++++++++++++---
->  1 file changed, 118 insertions(+), 7 deletions(-)
+> I do however suggest that you put one of those i2c analyser on the
+> rail to see what is happening. else, we'd be doing a lot of guessing here.
+
+If I would have access to one...
+
+
+>> If I have fast mode configured to the controller, I can still communicate with
+>> twl6040 even if it is set to normal mode.
 > 
-> diff --git a/drivers/misc/sram.c b/drivers/misc/sram.c
-> index afe66571..674b0cd 100644
-> --- a/drivers/misc/sram.c
-> +++ b/drivers/misc/sram.c
-> @@ -24,6 +24,9 @@
->  #include <linux/err.h>
->  #include <linux/io.h>
->  #include <linux/of.h>
-> +#include <linux/of_address.h>
-> +#include <linux/list.h>
-> +#include <linux/list_sort.h>
->  #include <linux/platform_device.h>
->  #include <linux/slab.h>
->  #include <linux/spinlock.h>
-> @@ -36,14 +39,35 @@ struct sram_dev {
->  	struct clk *clk;
->  };
->  
-> +struct sram_reserve {
-> +	struct list_head list;
-> +	u32 start;
-> +	u32 size;
-> +};
-> +
-> +static int sram_reserve_cmp(void *priv, struct list_head *a,
-> +					struct list_head *b)
-> +{
-> +	struct sram_reserve *ra = list_entry(a, struct sram_reserve, list);
-> +	struct sram_reserve *rb = list_entry(b, struct sram_reserve, list);
-> +
-> +	return ra->start - rb->start;
-> +}
-> +
->  static int sram_probe(struct platform_device *pdev)
->  {
->  	void __iomem *virt_base;
->  	struct sram_dev *sram;
->  	struct resource *res;
-> -	unsigned long size;
-> +	struct device_node *np = pdev->dev.of_node, *child;
-> +	unsigned long size, cur_start, cur_size;
-> +	struct sram_reserve *rblocks, *block;
-> +	struct list_head reserve_list;
-> +	unsigned int nblocks;
->  	int ret;
->  
-> +	INIT_LIST_HEAD(&reserve_list);
-> +
->  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	virt_base = devm_ioremap_resource(&pdev->dev, res);
->  	if (IS_ERR(virt_base))
-> @@ -65,19 +89,106 @@ static int sram_probe(struct platform_device *pdev)
->  	if (!sram->pool)
->  		return -ENOMEM;
->  
-> -	ret = gen_pool_add_virt(sram->pool, (unsigned long)virt_base,
-> -				res->start, size, -1);
-> -	if (ret < 0) {
-> -		if (sram->clk)
-> -			clk_disable_unprepare(sram->clk);
-> -		return ret;
-> +	/*
-> +	 * We need an additional block to mark the end of the memory region
-> +	 * after the reserved blocks from the dt are processed.
-> +	 */
-> +	nblocks = (np) ? of_get_available_child_count(np) + 1 : 1;
-> +	rblocks = kmalloc((nblocks) * sizeof(*rblocks), GFP_KERNEL);
-> +	if (!rblocks) {
-> +		ret = -ENOMEM;
-> +		goto err_alloc;
->  	}
->  
-> +	block = &rblocks[0];
-> +	for_each_available_child_of_node(np, child) {
-> +		struct resource child_res;
-> +
-> +		ret = of_address_to_resource(child, 0, &child_res);
-> +		if (ret < 0) {
-> +			dev_err(&pdev->dev,
-> +				"could not get address for node %s\n",
-> +				child->full_name);
-> +			goto err_chunks;
-> +		}
-> +
-> +		if (child_res.start < res->start || child_res.end > res->end) {
-> +			dev_err(&pdev->dev,
-> +				"reserved block %s outside the sram area\n",
-> +				child->full_name);
-> +			ret = -EINVAL;
-> +			goto err_chunks;
-> +		}
-> +
-> +		block->start = child_res.start - res->start;
-> +		block->size = resource_size(&child_res);
-> +		list_add_tail(&block->list, &reserve_list);
-> +
-> +		dev_dbg(&pdev->dev, "found reserved block 0x%x-0x%x\n",
-> +			block->start,
-> +			block->start + block->size);
-> +
-> +		block++;
-> +	}
-> +
-> +	/* the last chunk marks the end of the region */
-> +	rblocks[nblocks - 1].start = size;
-> +	rblocks[nblocks - 1].size = 0;
-> +	list_add_tail(&rblocks[nblocks - 1].list, &reserve_list);
-> +
-> +	list_sort(NULL, &reserve_list, sram_reserve_cmp);
-> +
-> +	cur_start = 0;
-> +
-> +	list_for_each_entry(block, &reserve_list, list) {
-> +		/* can only happen if sections overlap */
-> +		if (block->start < cur_start) {
-> +			dev_err(&pdev->dev,
-> +				"block at 0x%x starts after current offset 0x%lx\n",
-> +				block->start, cur_start);
-> +			ret = -EINVAL;
-> +			goto err_chunks;
-> +		}
-> +
-> +		/* current start is in a reserved block, so continue after it */
-> +		if (block->start == cur_start) {
-> +			cur_start = block->start + block->size;
-> +			continue;
-> +		}
-> +
-> +		/*
-> +		 * allocate the space between the current starting
-> +		 * address and the following reserved block, or the
-> +		 * end of the region.
-> +		 */
-> +		cur_size = block->start - cur_start;
-> +
-> +		dev_dbg(&pdev->dev, "adding chunk 0x%lx-0x%lx\n",
-> +			cur_start, cur_start + cur_size);
-> +		ret = gen_pool_add_virt(sram->pool,
-> +				(unsigned long)virt_base + cur_start,
-> +				res->start + cur_start, cur_size, -1);
-> +		if (ret < 0)
-> +			goto err_chunks;
-> +
-> +		/* next allocation after this reserved block */
-> +		cur_start = block->start + block->size;
-> +	}
-> +
-> +	kfree(rblocks);
-> +
->  	platform_set_drvdata(pdev, sram);
->  
->  	dev_dbg(&pdev->dev, "SRAM pool: %ld KiB @ 0x%p\n", size / 1024, virt_base);
->  
->  	return 0;
-> +
-> +err_chunks:
-> +	kfree(rblocks);
-> +err_alloc:
-> +	if (sram->clk)
-> +		clk_disable_unprepare(sram->clk);
-> +	return ret;
->  }
->  
->  static int sram_remove(struct platform_device *pdev)
+>>
+>> I still think that this patch is safe for now. We could try to figure out how
+>> to increase the i2c speed on the bus for twl6030 and twl6040. This has to be
+>> done in the same series.
+> 
+> ?? you mean set i2c bus speed to full speed on PandaBoard? it is
+> already full speed[1]!
 
-regards
-Philipp
+No, I was thinking of Fast+ or HighSpeed but I have doubts that it can be done.
 
+>> Now after several boots:
+>> It seams if I set the i2c to 2.4MHz and I can not communicate with twl6040
+>> right after cold power on.
+>> So if the i2c bus is already set to 2.4GHz I can not set the twl6040 ACCCTL
+>> register. But the content of ACCCTL register seams to be preserved between
+>> reboots and this is why I saw that the 2.4MHz bus speed might be even possible.
+> 
+> This observation is the key.
+> 
+> Are you power cycling the regulators for TWL6040 as part of your
+> shutdown handler?
+
+When the mfd driver is removed, yes powers are asked to be turned off but in
+reality at least vio is always on in all of the boards I have seen.
+
+> Did you read the ACCTL register after a reboot to
+> see if the register contents are still the same as before?
+
+Yes I did. after reboot the ACCCTL register is the same in u-boot as I set
+previously, before the reboot.
+Disconnect power + Power the board the ACCCTL is as it has been specified in
+the datasheet.
+
+> Based on this observation, I suggest switching [1] to 100KHz.
+
+After several power cycle, reboot, cold boot etc. I think we can leave the i2c
+speed at 400KHz and configure the twl6040 to Fast mode as the first thing when
+the driver probes or the chip is powering on (regmap patch functionality).
+I have not seen a single case when this failed on me and the the 4x bandwidth
+does matter for twl6030 IMHO.
+
+> 
+> [1]
+> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/arch/arm/boot/dts/omap4-panda-common.dtsi#n291
+> 
+
+
+-- 
+Péter
