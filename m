@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752018AbaCCFVJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 00:21:09 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:59705 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750800AbaCCFVG (ORCPT
+	id S1752716AbaCCFXm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 00:23:42 -0500
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:49074 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809AbaCCFXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 00:21:06 -0500
-Message-ID: <5314113E.1030106@wwwdotorg.org>
-Date: Sun, 02 Mar 2014 22:21:02 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Kevin Hilman <khilman@linaro.org>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Markus Mayer <markus.mayer@linaro.org>,
-        Rob Herring <robh@kernel.org>
-Subject: Re: linux-next: manual merge of the bcm2835 tree with the arm-soc
- tree
-References: <20140303120241.11066f951d53c50fb14faf47@canb.auug.org.au>
-In-Reply-To: <20140303120241.11066f951d53c50fb14faf47@canb.auug.org.au>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 3 Mar 2014 00:23:39 -0500
+From: Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>
+To: kishon@ti.com, kgene.kim@samsung.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Cc: grant.likely@linaro.org, t.figa@samsung.com, b.zolnierkie@samsung.com,
+        jg1.han@samsung.com, christoffer.dall@linaro.com, sander@humilis.net,
+        swarren@wwwdotorg.org, mark.rutland@arm.com, joshi@samsung.com,
+        ks.giri@samsung.com, Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
+Subject: [PATCH V9 0/2] Exynos5250 SATA Support
+Date: Mon,  3 Mar 2014 10:52:38 +0530
+Message-Id: <1393824160-27040-1-git-send-email-yuvaraj.cd@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/02/2014 06:02 PM, Stephen Rothwell wrote:
-> Hi Stephen,
-> 
-> Today's linux-next merge of the bcm2835 tree got a conflict in 
-> arch/arm/mach-bcm2835/Kconfig between commits ddb902cc3459 ("ARM: 
-> centralize common multi-platform kconfig options") and
-> 0676b21fffd1 ("ARM: bcm2835: enable V6K instead of plain V6") from
-> the arm-soc tree and commit d30fe6272183 ("ARM: bcm2835: Move to
-> mach-bcm directory") from the bcm2835 tree.
+This patch series enable the SATA support on Exynos5250 based boards.
+It incorporates the generic phy framework to deal with sata phy.
 
-Olof, Arnd, Kevin,
+Yuvaraj Kumar C D (2):
+  PHY: Exynos: Add Exynos5250 SATA PHY driver
+  ARM: dts: Enable ahci sata and sata phy
 
-Do you want me to rebase the patch that moves
-arch/arm/mach-bcm2835/Kconfig into arch/arm/mach-bcm/Kconfig, or even
-drop it and take it through arm-soc directly? Or, will you just handle
-this when you merge the pull request?
+ .../devicetree/bindings/ata/exynos-sata-phy.txt    |   14 --
+ .../devicetree/bindings/ata/exynos-sata.txt        |   25 +-
+ .../devicetree/bindings/phy/samsung-phy.txt        |   36 +++
+ arch/arm/boot/dts/exynos5250-arndale.dts           |   21 ++
+ arch/arm/boot/dts/exynos5250-smdk5250.dts          |   17 +-
+ arch/arm/boot/dts/exynos5250.dtsi                  |   18 +-
+ drivers/phy/Kconfig                                |   15 ++
+ drivers/phy/Makefile                               |    1 +
+ drivers/phy/phy-exynos5250-sata.c                  |  251 ++++++++++++++++++++
+ 9 files changed, 365 insertions(+), 33 deletions(-)
+ delete mode 100644 Documentation/devicetree/bindings/ata/exynos-sata-phy.txt
+ create mode 100644 drivers/phy/phy-exynos5250-sata.c
+
+-- 
+1.7.10.4
+
