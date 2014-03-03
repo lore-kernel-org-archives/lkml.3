@@ -1,359 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754844AbaCCPdh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 10:33:37 -0500
-Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:4341 "EHLO
-	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754529AbaCCPdc convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 10:33:32 -0500
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'Takashi Iwai'" <tiwai@suse.de>
-CC: "'Lars-Peter Clausen'" <lars@metafoo.de>,
-        "'alsa-devel@alsa-project.org'" <alsa-devel@alsa-project.org>,
-        Mark Brown <broonie@kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <liam.r.girdwood@intel.com>
-Date: Mon, 3 Mar 2014 23:33:24 +0800
-Subject: RE: [alsa-devel] change kmalloc into vmalloc for large memory
- allocations
-Thread-Topic: [alsa-devel] change kmalloc into vmalloc for large memory
- allocations
-Thread-Index: Ac827v68Yj4EoYqLR+aoBFRWM2vo2gABjO2Q
-Message-ID: <35FD53F367049845BC99AC72306C23D102844605F396@CNBJMBX05.corpusers.net>
-References: <35FD53F367049845BC99AC72306C23D102844605F38C@CNBJMBX05.corpusers.net>
-	<s5hlhwvb9q8.wl%tiwai@suse.de>
-	<35FD53F367049845BC99AC72306C23D102844605F38E@CNBJMBX05.corpusers.net>
-	<s5hob1nabb5.wl%tiwai@suse.de>	<s5hmwh7ab5w.wl%tiwai@suse.de>
-	<35FD53F367049845BC99AC72306C23D102844605F392@CNBJMBX05.corpusers.net>
-	<531468CA.6040302@metafoo.de>
-	<35FD53F367049845BC99AC72306C23D102844605F393@CNBJMBX05.corpusers.net>
-	<53146B6F.4000601@metafoo.de>
-	<35FD53F367049845BC99AC72306C23D102844605F394@CNBJMBX05.corpusers.net>
-	<53149037.20305@metafoo.de>
-	<35FD53F367049845BC99AC72306C23D102844605F395@CNBJMBX05.corpusers.net>
- <s5hvbvv8hr1.wl%tiwai@suse.de>
-In-Reply-To: <s5hvbvv8hr1.wl%tiwai@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1754707AbaCCPgy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 10:36:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40542 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754103AbaCCPgt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 10:36:49 -0500
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Torvald Riegel <triegel@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>,
+        Peter Sewell <Peter.Sewell@cl.cam.ac.uk>
+In-Reply-To: <CA+55aFyE58NokYdoU+-feHTXv+5snByu+vCyMtg2fNc7npMbDg@mail.gmail.com>
+References: <CA+55aFwos2Gwd2LEvht4ymVxHb6GRVjtZ9wwJSaj1p--FqNUWw@mail.gmail.com>
+	 <1393095223.28840.4914.camel@triegel.csb>
+	 <CA+55aFz9=RQoMO2ipyZgNPNzWGVXi_R9Ar5=o9VBWwXzDDz6jg@mail.gmail.com>
+	 <20140223003933.GQ4250@linux.vnet.ibm.com>
+	 <CA+55aFyjzR_Ga_HOKnBXpKYbuesqovj1-sFTVisD9UwA6JuJtw@mail.gmail.com>
+	 <20140223063426.GT4250@linux.vnet.ibm.com>
+	 <CA+55aFxMJvaQhoEwqgN=XA6gDOdZwoZQHdcAnB-FhAri_hK-6Q@mail.gmail.com>
+	 <CA+55aFw5tdjmNyHCdcyZ8NPpd1wCgOjLRzstRhp0Njs9azpi8Q@mail.gmail.com>
+	 <20140224172110.GO8264@linux.vnet.ibm.com>
+	 <CA+55aFyi45f7oaG4MYP41TOc=E8Ze8Om88dV2Lq4F=qebhxt4A@mail.gmail.com>
+	 <20140224185341.GU8264@linux.vnet.ibm.com>
+	 <CA+55aFzXyob0aKnv1u7Stbu0rH5Aq2jaA1rHb=TvQe9c1KY0oQ@mail.gmail.com>
+	 <1393515453.28840.9961.camel@triegel.csb>
+	 <CA+55aFyE58NokYdoU+-feHTXv+5snByu+vCyMtg2fNc7npMbDg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 03 Mar 2014 16:36:01 +0100
+Message-ID: <1393860961.28840.11426.camel@triegel.csb>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Takashi,
-
-I see,
-
-I just want to save low memory for kmalloc use,
-So I want to filter out large memory allocations
-To use vmalloc instead ,
-
-It will be preferable, if there is a better solution :)
-
-Thank you for your clarification.
-
------Original Message-----
-From: Takashi Iwai [mailto:tiwai@suse.de] 
-Sent: Monday, March 03, 2014 10:44 PM
-To: Wang, Yalin
-Cc: 'Lars-Peter Clausen'; 'alsa-devel@alsa-project.org'; Mark Brown; 'linux-kernel@vger.kernel.org'; Liam Girdwood
-Subject: Re: [alsa-devel] change kmalloc into vmalloc for large memory allocations
-
-At Mon, 3 Mar 2014 22:29:19 +0800,
-Wang, Yalin wrote:
-> 
-> Hi
-> 
-> I see,
-> Is it possible to change this part:
-> https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tree/sound
-> /soc/soc-core.c?h=master#n3772
-> 
-> 
-> so that it use vmalloc if it need allocate large memory for struct 
-> snd_soc_pcm_runtime ?
-
-As I mentioned, this won't help much for your problem, unless this allocation really failed.  This is performed only once at boot.
-Allocating this size via kmalloc once shouldn't be a big problem for a system with 1GB RAM.  The other places allocate large buffers at each open or such frequent operation, thus they might influence more, though.
-
-IMO, a cleaner solution would to rewrite the code to allocate each RTD dynamically at binding.  But this would need lots of fundamental code changes.
-
-
-Takashi
-
-> 
-> Thanks
-> 
-> -----Original Message-----
-> From: Lars-Peter Clausen [mailto:lars@metafoo.de]
-> Sent: Monday, March 03, 2014 10:23 PM
-> To: Wang, Yalin
-> Cc: 'Takashi Iwai'; 'alsa-devel@alsa-project.org'; Mark Brown; 
-> 'linux-kernel@vger.kernel.org'; Liam Girdwood
-> Subject: Re: [alsa-devel] change kmalloc into vmalloc for large memory 
-> allocations
-> 
-> On 03/03/2014 02:29 PM, Wang, Yalin wrote:
-> > Hi
+On Thu, 2014-02-27 at 09:01 -0800, Linus Torvalds wrote:
+> On Thu, Feb 27, 2014 at 7:37 AM, Torvald Riegel <triegel@redhat.com> wrote:
+> > Regarding the latter, we make a fresh start at each mo_consume load (ie,
+> > we assume we know nothing -- L could have returned any possible value);
+> > I believe this is easier to reason about than other scopes like function
+> > granularities (what happens on inlining?), or translation units.  It
+> > should also be simple to implement for compilers, and would hopefully
+> > not constrain optimization too much.
 > >
+> > [...]
 > >
-> > I find the num_links are defined here:
-> > https://www.codeaurora.org/cgit/quic/la/kernel/msm-3.10/tree/sound/s
-> > oc 
-> > /msm/msm8226.c?h=msm-3.10&id=d681c8e79c597a5e1ae79803dc0215d02df8fe3
-> > 4#
-> > n1812
-> >
-> >
-> > the ARRAY_SIZE is 42 , you mean the driver can't define so many elements ?
-> > how to implement it if we can't do like this ?
-> >
+> > Paul's litmus test would work, because we guarantee to the programmer
+> > that it can assume that the mo_consume load would return any value
+> > allowed by the type; effectively, this forbids the compiler analysis
+> > Paul thought about:
 > 
-> Looks like your platform is a bit special in this regard and requires quite a few more links than usual.
+> So realistically, since with the new wording we can ignore the silly
+> cases (ie "p-p") and we can ignore the trivial-to-optimize compiler
+> cases ("if (p == &variable) .. use p"), and you would forbid the
+> "global value range optimization case" that Paul bright up, what
+> remains would seem to be just really subtle compiler transformations
+> of data dependencies to control dependencies.
 > 
-> > Thanks
-> >
-> > -----Original Message-----
-> > From: Lars-Peter Clausen [mailto:lars@metafoo.de]
-> > Sent: Monday, March 03, 2014 7:46 PM
-> > To: Wang, Yalin
-> > Cc: 'Takashi Iwai'; 'alsa-devel@alsa-project.org'; Mark Brown; 
-> > 'linux-kernel@vger.kernel.org'; Liam Girdwood
-> > Subject: Re: [alsa-devel] change kmalloc into vmalloc for large 
-> > memory allocations
-> >
-> > On 03/03/2014 12:36 PM, Wang, Yalin wrote:
-> >> Hi
-> >>
-> >> I am curious what number range is correct here for card->num_links ?
-> >
-> > It depends on your board. But typically I'd say <= 5, for most boards it's either 1 or 2.
-> >
-> >>
-> >>
-> >> Thanks
-> >>
-> >> -----Original Message-----
-> >> From: Lars-Peter Clausen [mailto:lars@metafoo.de]
-> >> Sent: Monday, March 03, 2014 7:35 PM
-> >> To: Wang, Yalin
-> >> Cc: 'Takashi Iwai'; 'alsa-devel@alsa-project.org'; Mark Brown; 
-> >> 'linux-kernel@vger.kernel.org'; Liam Girdwood
-> >> Subject: Re: [alsa-devel] change kmalloc into vmalloc for large 
-> >> memory allocations
-> >>
-> >> On 03/03/2014 12:13 PM, Wang, Yalin wrote:
-> >>> Hi
-> >>>
-> >>>
-> >>> I add logs in kernel , the result is :
-> >>>
-> >>> 532 <4>[    5.690094] @@ sizeof(struct snd_soc_pcm_runtime)=1488 card->num_links=42 card->num_aux_devs=0
-> >>>
-> >>> card->num_links=42 , is it correct ?
-> >>
-> >> Very unlikely. Make sure that it is properly initialized in your machine driver.
-> >>
-> >>>
-> >>> our hardware is qcom msm8x26 platform .
-> >>
-> >> This one doesn't seem to be in upstream.
-> >>
-> >>>
-> >>> Thanks
-> >>>
-> >>> -----Original Message-----
-> >>> From: Takashi Iwai [mailto:tiwai@suse.de]
-> >>> Sent: Monday, March 03, 2014 5:23 PM
-> >>> To: Wang, Yalin
-> >>> Cc: 'linux-kernel@vger.kernel.org'; Mark Brown; 'perex@perex.cz'; 
-> >>> 'alsa-devel@alsa-project.org'; Liam Girdwood
-> >>> Subject: Re: change kmalloc into vmalloc for large memory 
-> >>> allocations
-> >>>
-> >>> At Mon, 03 Mar 2014 10:19:58 +0100, Takashi Iwai wrote:
-> >>>>
-> >>>> [Dropped unrelated subsystem MLs, and corrected Liam's address]
-> >>>
-> >>> Grrr, even Mark's address was obsoleted.  Here corrected.
-> >>>
-> >>>
-> >>> Takashi
-> >>>
-> >>>>
-> >>>> At Mon, 3 Mar 2014 09:55:15 +0800, Wang, Yalin wrote:
-> >>>>>
-> >>>>> Hi  Takashi,
-> >>>>>
-> >>>>> For this one:
-> >>>>> https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tree
-> >>>>> /s
-> >>>>> o
-> >>>>> u
-> >>>>> nd/soc/soc-core.c?h=master#n3772
-> >>>>>
-> >>>>> in my kernel log,
-> >>>>> the allocation size 62496,
-> >>>>> about 62KB,
-> >>>>
-> >>>> This looks way too much than expected.  I thought each struct 
-> >>>> snd_soc_pcm_runtime should be 1 or 2kB.  The code allocating an 
-> >>>> arary of snd_soc_pcm_runtime, so this might be due to some 
-> >>>> invalid values there.
-> >>>>
-> >>>>> I think need to  change to vmalloc .
-> >>>>> How do you think of it ?
-> >>>>
-> >>>> This looks rather like a bug somewhere around it.
-> >>>>
-> >>>> Could you check the values there, sizeof(struct 
-> >>>> snd_soc_pcm_runtime),
-> >>>> card->num_links and card->num_aux_devs?
-> >>>>
-> >>>> And, with which hardware is the issue examined?
-> >>>>
-> >>>>
-> >>>> thanks,
-> >>>>
-> >>>> Takashi
-> >>>>
-> >>>>>
-> >>>>> Logs:
-> >>>>> <4>[   11.469789] ------------[ cut here ]------------
-> >>>>> <4>[   11.469803] WARNING: at /media/00DE7FE2DE7FCE82/jb-mr2-yukon/kernel/include/linux/slub_def.h:265 __kmalloc+0x38/0x29c()
-> >>>>> <4>[   11.469811] size=62496 flags=80d0
-> >>>>> <4>[   11.469815] Modules linked in:
-> >>>>> <4>[   11.469835] [<c010c534>] (unwind_backtrace+0x0/0x11c) from [<c018ab04>] (warn_slowpath_common+0x4c/0x64)
-> >>>>> <4>[   11.469850] [<c018ab04>] (warn_slowpath_common+0x4c/0x64) from [<c018ab9c>] (warn_slowpath_fmt+0x2c/0x3c)
-> >>>>> <4>[   11.469864] [<c018ab9c>] (warn_slowpath_fmt+0x2c/0x3c) from [<c0249ab4>] (__kmalloc+0x38/0x29c)
-> >>>>> <4>[   11.469879] [<c0249ab4>] (__kmalloc+0x38/0x29c) from [<c06a0124>] (snd_soc_register_card+0x184/0x104c)
-> >>>>> <4>[   11.469896] [<c06a0124>] (snd_soc_register_card+0x184/0x104c) from [<c088183c>] (msm8226_asoc_machine_probe+0x298/0x7f0)
-> >>>>> <4>[   11.469913] [<c088183c>] (msm8226_asoc_machine_probe+0x298/0x7f0) from [<c044b1fc>] (platform_drv_probe+0x14/0x18)
-> >>>>> <4>[   11.469927] [<c044b1fc>] (platform_drv_probe+0x14/0x18) from [<c0449f2c>] (driver_probe_device+0x134/0x334)
-> >>>>> <4>[   11.469940] [<c0449f2c>] (driver_probe_device+0x134/0x334) from [<c044a194>] (__driver_attach+0x68/0x8c)
-> >>>>> <4>[   11.469953] [<c044a194>] (__driver_attach+0x68/0x8c) from [<c044849c>] (bus_for_each_dev+0x48/0x80)
-> >>>>> <4>[   11.469965] [<c044849c>] (bus_for_each_dev+0x48/0x80) from [<c0449528>] (bus_add_driver+0x100/0x26c)
-> >>>>> <4>[   11.469978] [<c0449528>] (bus_add_driver+0x100/0x26c) from [<c044a66c>] (driver_register+0x9c/0x120)
-> >>>>> <4>[   11.469992] [<c044a66c>] (driver_register+0x9c/0x120) from [<c010052c>] (do_one_initcall+0x90/0x160)
-> >>>>> <4>[   11.470007] [<c010052c>] (do_one_initcall+0x90/0x160) from [<c0d00b74>] (kernel_init+0xec/0x1a8)
-> >>>>> <4>[   11.470022] [<c0d00b74>] (kernel_init+0xec/0x1a8) from [<c0106aec>] (kernel_thread_exit+0x0/0x8)
-> >>>>> <4>[   11.470030] ---[ end trace 1b75b31a2719ed4d ]---
-> >>>>>
-> >>>>> BRs/ Yalin
-> >>>>> -----Original Message-----
-> >>>>> From: Takashi Iwai [mailto:tiwai@suse.de]
-> >>>>> Sent: Friday, February 28, 2014 10:20 PM
-> >>>>> To: Wang, Yalin
-> >>>>> Cc: 'linux-kernel@vger.kernel.org'; 'linux-arm-msm@vger.kernel.org'; 'linux-arm-kernel@lists.infradead.org'; 'linux-input@vger.kernel.org'; 'balbi@ti.com'; 'gregkh@linuxfoundation.org'; 'lrg@ti.com'; 'broonie@opensource.wolfsonmicro.com'; 'perex@perex.cz'; 'pablo@netfilter.org'; 'kaber@trash.net'; 'davem@davemloft.net'; 'rostedt@goodmis.org'; 'fweisbec@gmail.com'; 'mingo@redhat.com'; 'dmitry.torokhov@gmail.com'; 'rydberg@euromail.se'; 'linux-usb@vger.kernel.org'; 'alsa-devel@alsa-project.org'; 'netfilter-devel@vger.kernel.org'; 'netfilter@vger.kernel.org'; 'coreteam@netfilter.org'; 'netdev@vger.kernel.org'
-> >>>>> Subject: Re: change kmalloc into vmalloc for large memory 
-> >>>>> allocations
-> >>>>>
-> >>>>> At Fri, 28 Feb 2014 16:15:23 +0800, Wang, Yalin wrote:
-> >>>>>>
-> >>>>>> Hi
-> >>>>>>
-> >>>>>>
-> >>>>>> I find there is some drivers use kmalloc to allocate large 
-> >>>>>> Memorys during module_init,  some can be changed to use vmalloc 
-> >>>>>> To save some low mem, I add log in kernel to track , And list them here:
-> >>>>>>
-> >>>>>> https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tre
-> >>>>>> e/
-> >>>>>> d
-> >>>>>> rive
-> >>>>>> rs/usb/gadget/f_mass_storage.c?h=master#n2724
-> >>>>>>
-> >>>>>> https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tre
-> >>>>>> e/
-> >>>>>> s
-> >>>>>> ound
-> >>>>>> /soc/soc-core.c?h=master#n3772
-> >>>>>
-> >>>>> At least the ASoC runtime case doesn't use the allocated memory as buffer, and they are allocated only once per device, thus it shouldn't be the problem you stated.  If it really consumes so much memory, we need to rethink, instead of allocating an array but allocate each object, for example.
-> >>>>>
-> >>>>>
-> >>>>> thanks,
-> >>>>>
-> >>>>> Takashi
-> >>>>>
-> >>>>>
-> >>>>>> https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tre
-> >>>>>> e/
-> >>>>>> n
-> >>>>>> et/n
-> >>>>>> etfilter/nf_conntrack_ftp.c?h=master#n603
-> >>>>>> https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tre
-> >>>>>> e/
-> >>>>>> n
-> >>>>>> et/n
-> >>>>>> etfilter/nf_conntrack_h323_main.c?h=master#n1849
-> >>>>>> https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tre
-> >>>>>> e/
-> >>>>>> n
-> >>>>>> et/n
-> >>>>>> etfilter/nf_conntrack_irc.c?h=master#n247
-> >>>>>> https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tre
-> >>>>>> e/
-> >>>>>> n
-> >>>>>> et/n
-> >>>>>> etfilter/nf_conntrack_sane.c?h=master#n195
-> >>>>>>
-> >>>>>> https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tre
-> >>>>>> e/
-> >>>>>> d
-> >>>>>> rive
-> >>>>>> rs/input/evdev.c?h=master#n403
-> >>>>>>
-> >>>>>>
-> >>>>>> they allocate large memory from 10k~64K , this will use lots of 
-> >>>>>> low mem, instead if we use vmalloc for these drivers , it will 
-> >>>>>> be good for some devices like smart phone, we often encounter 
-> >>>>>> some errors like kmalloc failed because there is not enough low 
-> >>>>>> mem , especially when the device has physical memory less than 1GB .
-> >>>>>>
-> >>>>>>
-> >>>>>> could this module change the memory allocation into vmalloc ?
-> >>>>>>
-> >>>>>> I was thinking that if we can introduce a helper function in kmalloc.h like this :
-> >>>>>>
-> >>>>>> Kmalloc(size, flags)
-> >>>>>> {
-> >>>>>> 	If (size > PAGE_SIZE && flags&CAN_USE_VMALLOC_FLAG)
-> >>>>>> 		return vmalloc(size);
-> >>>>>> 	Else
-> >>>>>> 		return real_kmalloc(size);
-> >>>>>> }
-> >>>>>>
-> >>>>>> Kfree(ptr)
-> >>>>>> {
-> >>>>>> 	If (is_vmalloc_addr(ptr))
-> >>>>>> 		Vfree(ptr);
-> >>>>>> 	Else
-> >>>>>> 		Kfree(ptr);
-> >>>>>> }
-> >>>>>>
-> >>>>>>
-> >>>>>> But we need add some flags to ensure always use kmalloc for 
-> >>>>>> Some special use (dma etc..)
-> >>>>>>
-> >>>>>> How do you think of it ?
-> >>>>>>
-> >>>>>> Thanks
-> >>>>>>
-> >>>>>>
-> >>>>>>
-> >>>>>
-> >>> _______________________________________________
-> >>> Alsa-devel mailing list
-> >>> Alsa-devel@alsa-project.org
-> >>> http://mailman.alsa-project.org/mailman/listinfo/alsa-devel
-> >>>
-> >>
-> >
+> And the only such thing I can think of is basically compiler-initiated
+> value-prediction, presumably directed by PGO (since now if the value
+> prediction is in the source code, it's considered to break the value
+> chain).
+
+The other example that comes to mind would be feedback-directed JIT
+compilation.  I don't think that's widely used today, and it might never
+be for the kernel -- but *in the standard*, we at least have to consider
+what the future might bring.
+
+> The good thing is that afaik, value-prediction is largely not used in
+> real life, afaik. There are lots of papers on it, but I don't think
+> anybody actually does it (although I can easily see some
+> specint-specific optimization pattern that is build up around it).
 > 
+> And even value prediction is actually fine, as long as the compiler
+> can see the memory *source* of the value prediction (and it isn't a
+> mo_consume). So it really ends up limiting your value prediction in
+> very simple ways: you cannot do it to function arguments if they are
+> registers. But you can still do value prediction on values you loaded
+> from memory, if you can actually *see* that memory op.
+
+I think one would need to show that the source is *not even indirectly*
+a mo_consume load.  With the wording I proposed, value dependencies
+don't break when storing to / loading from memory locations.
+
+Thus, if a compiler ends up at a memory load after waling SSA, it needs
+to prove that the load cannot read a value that (1) was produced by a
+store sequenced-before the load and (2) might carry a value dependency
+(e.g., by being a mo_consume load) that the value prediction in question
+would break.  This, in general, requires alias analysis.
+Deciding whether a prediction would break a value dependency has to
+consider what later stages in a compiler would be doing, including LTO
+or further rounds of inlining/optimizations.  OTOH, if the compiler can
+treat an mo_consume load as returning all possible values (eg, by
+ignoring all knowledge about it), then it can certainly do so with other
+memory loads too.
+
+So, I think that the constraints due to value dependencies can matter in
+practice.  However, the impact on optimizations on
+non-mo_consume-related code are hard to estimate -- I don't see a huge
+amount of impact right now, but I also wouldn't want to predict that
+this can't change in the future.
+
+> Of course, on more strongly ordered CPU's, even that "register
+> argument" limitation goes away.
+> 
+> So I agree that there is basically no real optimization constraint.
+> Value-prediction is of dubious value to begin with, and the actual
+> constraint on its use if some compiler writer really wants to is not
+> onerous.
+> 
+> > What I have in mind is roughly the following (totally made-up syntax --
+> > suggestions for how to do this properly are very welcome):
+> > * Have a type modifier (eg, like restrict), that specifies that
+> > operations on data of this type are preserving value dependencies:
+> 
+> So I'm not violently opposed, but I think the upsides are not great.
+> Note that my earlier suggestion to use "restrict" wasn't because I
+> believed the annotation itself would be visible, but basically just as
+> a legalistic promise to the compiler that *if* it found an alias, then
+> it didn't need to worry about ordering. So to me, that type modifier
+> was about conceptual guarantees, not about actual value chains.
+> 
+> Anyway, the reason I don't believe any type modifier (and
+> "[[carries_dependency]]" is basically just that) is worth it is simply
+> that it adds a real burden on the programmer, without actually giving
+> the programmer any real upside:
+> 
+> Within a single function, the compiler already sees that mo_consume
+> source, and so doing a type-based restriction doesn't really help. The
+> information is already there, without any burden on the programmer.
+
+I think it's not just a question of whether we're talking a single
+function or across functions, but to which extent other code can detect
+whether it might have to consider value dependencies.  The store/load
+case above is an example that complicates the detection for a compiler.
+
+In cases in which the mo_consume load is used directly, we don't need to
+use any annotations on the type:
+  int val = atomic_load_explicit(ptr, mo_consume)->value;
+
+However, if we need to use the load's result more than once (which I
+think will happen often), then we do need the type annotation:
+  s value_dep_preserving *ptr = atomic_load_explicit(ptr, mo_consume);
+  if (ptr != 0)
+    int val = ptr->value;
+
+If we want to avoid the annotation in this case, and still want to avoid
+the store/load vs. alias analysis problem mentioned above, we'd need to
+require that ptr isn't a variable that's visible to other code not
+related to this mo_consume load.  But I believe that such a requirement
+would be awkward, and also hard to specify.
+
+I hope that Paul's look at rcu_derefence() usage could provide some
+indication of how much annotation overhead there actually would be for a
+programmer.
+
+> 
+> And across functions, the compiler has already - by definition -
+> mostly lost sight of all the things it could use to reduce the value
+> space.
+
+I don't think that I agree here.  
+
+Assume we have two separate functions bar and foo, and one temporary
+variable t of a type int012 that holds values 0,1,2 (excuse the somewhat
+artificial example):
+
+int012 t;
+int arr[20];
+
+int bar(int a)
+{
+  bar_stuff(a);  // compiler knows this is noop with arguments 0 or 1
+                 // and this will *never* touch t nor arr
+  return a;
+}
+
+int foo(int a)
+{
+  foo_stuff(a); // compiler knows this is noop with arguments 1 or 2
+                // and this will *never* touch t nor arr
+  return a;
+}
+
+void main() {
+  t = atomic_load_explicit(&source, mo_consume);
+  x = arr[bar(foo(t))];  // value-dependent?
+}
+
+If a compiler looks at foo() and bar() separately, I think it might want
+to optimize bar() to the following:
+
+int bar_opt(int a)
+{
+  if (a != 2) return a;
+  bar_stuff(a);
+  return a;
+}
+
+int foo_opt(int a)
+{
+  if (a != 0) return a;
+  foo_stuff(a);
+  return a;
+}
+
+I think that those could be valuable optimizations for general-purpose
+code.
+
+What happens if the compiler does LTO afterwards and combines the foo
+and bar calls?:
+
+int bar_opt_foo_opt(int a)
+{
+  if (a == 1) return a;
+  if (a == 0) foo_stuff(a);
+  else bar_stuff(a);
+  return a;
+}
+
+This still looks like a good thing to do for general-purpose code, and
+it doesn't do any value prediction.
+
+If we inline this into main, it becomes kind of difficult for the
+compiler because it cannot just weave in bar_opt_foo_opt, or it might
+get:
+
+  t = atomic_load_explicit(&source, mo_consume);
+  if (t == 1) goto next;
+  if (t == 0) foo_stuff(t);
+  else bar_stuff(t);
+access:
+  x = arr[t];  // value-dependent?
+
+Would this be still value-dependent for the hardware, or would the
+branch prediction interfere?
+
+Even if this would still be okay from the hardware POV, other compiler
+transformations now need to pay attention to where the value comes from.
+In particular, we can't specialize this into the following (which
+doesn't predict any values):
+
+  t = atomic_load_explicit(&source, mo_consume);
+  if (t == 1) x = arr[1];
+  else {
+    if (t == 0) foo_stuff(t);
+    else bar_stuff(t);
+    x = arr[t];
+  }
+
+We could argue that this wouldn't be allowed because t is coming from an
+mo_consume load, but then we also need to say that this can in fact
+affect compiler transformations other than just value prediction.
+
+At least in this example, introducing the value_dep_preserving type
+modifier would have made this easier because it would have allowed the
+compiler to avoid the initial value prediction.
+
+However, I think that we might get a few interesting issues even with
+value_dep_preserving, so this needs further investigation.  Nonetheless,
+my gut feeling is that having value_dep_preserving makes this all a lot
+easier because if unsure, the compiler can just use a bigger hammer for
+value_dep_preserving without having to worry about preventing
+optimizations on unrelated code.
+
+> Even Paul's example doesn't really work if the use of the
+> "mo_consume" value has been passed to another function, because inside
+> a separate function, the compiler couldn't see that the value it uses
+> comes from only two possible values.
+> 
+> And as mentioned, even *if* the compiler wants to do value prediction
+> that turns a data dependency into a control dependency, the limitation
+> to say "no, you can't do it unless you saw where the value got loaded"
+> really isn't that onerous.
+> 
+> I bet that if you ask actual production compiler people (as opposed to
+> perhaps academia), none of them actually really believe in value
+> prediction to begin with.
+
+What about keeping whether we really need value_dep_preserving as an
+open question for now, and try to get more feeback by compiler
+implementers on what the consequences of not having it would be?  This
+should help us assess the current implementation perspective.  We would
+still need to extrapolate what future compilers might want to do,
+though; thus, deciding to not use it will remain somewhat risky for
+future optimizations.
+
+
