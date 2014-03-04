@@ -1,74 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755976AbaCDXsA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 18:48:00 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:54142 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754716AbaCDXr5 (ORCPT
+	id S1755349AbaCDXt4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 18:49:56 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:36948 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753299AbaCDXty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 18:47:57 -0500
-X-Sasl-enc: NrVtLU4se69UZfXnTVGA1C9aCiZxbaVvu8sdZUV+2kcl 1393976876
-Date: Tue, 4 Mar 2014 15:49:39 -0800
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: "John W. Linville" <linville@tuxdriver.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the wireless-next tree
-Message-ID: <20140304234939.GB25144@kroah.com>
-References: <20140225133537.55ce6935e55faa6aeae53d89@canb.auug.org.au>
- <20140225190715.GA4384@tuxdriver.com>
- <20140226074738.0b530aebe4cde54216698d91@canb.auug.org.au>
- <20140305101627.1d9e3a0941dbadbc6f0a7733@canb.auug.org.au>
- <20140305102109.948255688bc31a030fdd49d7@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140305102109.948255688bc31a030fdd49d7@canb.auug.org.au>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Tue, 4 Mar 2014 18:49:54 -0500
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+To: linux-rt-users@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        kernel@pengutronix.de, Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [PATCH] net: sched: dev_deactivate_many(): use msleep(1) instead of yield() to wait for outstanding qdisc_run calls
+Date: Wed,  5 Mar 2014 00:49:47 +0100
+Message-Id: <1393976987-23555-1-git-send-email-mkl@pengutronix.de>
+X-Mailer: git-send-email 1.9.0
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 05, 2014 at 10:21:09AM +1100, Stephen Rothwell wrote:
-> Hi John,
-> 
-> On Wed, 5 Mar 2014 10:16:27 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> >
-> > If I revert commit 161d78555435 "Revert "Staging: rtl8812ae: remove
-> > modules field of rate_control_ops"", it fails differently:
-> > 
-> > In file included from drivers/staging/wlan-ng/p80211netdev.c:91:0:
-> > drivers/staging/wlan-ng/cfg80211.c: In function 'prism2_scan':
-> > drivers/staging/wlan-ng/cfg80211.c:419:10: error: implicit declaration of function 'ieee80211_dsss_chan_to_freq' [-Werror=implicit-function-declaration]
-> >           ieee80211_dsss_chan_to_freq(msg2.dschannel.data)),
-> >           ^
-> > drivers/staging/rtl8821ae/rtl8821ae/trx.c: In function 'rtl8821ae_rx_query_desc':
-> > drivers/staging/rtl8821ae/rtl8821ae/trx.c:619:3: warning: passing argument 1 of 'ieee80211_is_robust_mgmt_frame' from incompatible pointer type [enabled by default]
-> >    if ((ieee80211_is_robust_mgmt_frame(hdr)) &&
-> >    ^
-> > In file included from include/net/mac80211.h:20:0,
-> >                  from drivers/staging/rtl8821ae/rtl8821ae/../wifi.h:38,
-> >                  from drivers/staging/rtl8821ae/rtl8821ae/trx.c:30:
-> > include/linux/ieee80211.h:2286:20: note: expected 'struct sk_buff *' but argument is of type 'struct ieee80211_hdr *'
-> >  static inline bool ieee80211_is_robust_mgmt_frame(struct sk_buff *skb)
-> >                     ^
-> > drivers/staging/rtl8821ae/rtl8821ae/dm.c: In function 'rtl8821ae_dm_clear_txpower_tracking_state':
-> > drivers/staging/rtl8821ae/rtl8821ae/dm.c:487:31: warning: iteration 2u invokes undefined behavior [-Waggressive-loop-optimizations]
-> >    rtldm->bb_swing_idx_ofdm[p] = rtldm->default_ofdm_index;
-> >                                ^
-> > drivers/staging/rtl8821ae/rtl8821ae/dm.c:485:2: note: containing loop
-> >   for (p = RF90_PATH_A; p < MAX_RF_PATH; ++p) {
-> >   ^
-> > 
-> > So please revert 161d78555435, and then fix this other error.
-> 
-> That fix could be a simple as just disabling the affected staging tree
-> driver and letting Greg know.  Or you could actually fix it.
+On PREEMPT_RT enabled systems the interrupt handler run as threads at prio 50
+(by default). If a high priority userspace process tries to shut down a busy
+network interface it might spin in a yield loop waiting for the device to
+become idle. With the interrupt thread having a lower priority than the
+looping process it might never be scheduled and so result in a deadlock on UP
+systems.
 
-John and Larry and I have been talking about how to handle some
-cross-tree issues, and I should be merging with his tree soon to handle
-them, hopefully this will get resolved at that point in time as well.
+With Magic SysRq the following backtrace can be produced:
 
-thanks,
+> test_app R running      0   174    168 0x00000000
+> [<c02c7070>] (__schedule+0x220/0x3fc) from [<c02c7870>] (preempt_schedule_irq+0x48/0x80)
+> [<c02c7870>] (preempt_schedule_irq+0x48/0x80) from [<c0008fa8>] (svc_preempt+0x8/0x20)
+> [<c0008fa8>] (svc_preempt+0x8/0x20) from [<c001a984>] (local_bh_enable+0x18/0x88)
+> [<c001a984>] (local_bh_enable+0x18/0x88) from [<c025316c>] (dev_deactivate_many+0x220/0x264)
+> [<c025316c>] (dev_deactivate_many+0x220/0x264) from [<c023be04>] (__dev_close_many+0x64/0xd4)
+> [<c023be04>] (__dev_close_many+0x64/0xd4) from [<c023be9c>] (__dev_close+0x28/0x3c)
+> [<c023be9c>] (__dev_close+0x28/0x3c) from [<c023f7f0>] (__dev_change_flags+0x88/0x130)
+> [<c023f7f0>] (__dev_change_flags+0x88/0x130) from [<c023f904>] (dev_change_flags+0x10/0x48)
+> [<c023f904>] (dev_change_flags+0x10/0x48) from [<c024c140>] (do_setlink+0x370/0x7ec)
+> [<c024c140>] (do_setlink+0x370/0x7ec) from [<c024d2f0>] (rtnl_newlink+0x2b4/0x450)
+> [<c024d2f0>] (rtnl_newlink+0x2b4/0x450) from [<c024cfa0>] (rtnetlink_rcv_msg+0x158/0x1f4)
+> [<c024cfa0>] (rtnetlink_rcv_msg+0x158/0x1f4) from [<c0256740>] (netlink_rcv_skb+0xac/0xc0)
+> [<c0256740>] (netlink_rcv_skb+0xac/0xc0) from [<c024bbd8>] (rtnetlink_rcv+0x18/0x24)
+> [<c024bbd8>] (rtnetlink_rcv+0x18/0x24) from [<c02561b8>] (netlink_unicast+0x13c/0x198)
+> [<c02561b8>] (netlink_unicast+0x13c/0x198) from [<c025651c>] (netlink_sendmsg+0x264/0x2e0)
+> [<c025651c>] (netlink_sendmsg+0x264/0x2e0) from [<c022af98>] (sock_sendmsg+0x78/0x98)
+> [<c022af98>] (sock_sendmsg+0x78/0x98) from [<c022bb50>] (___sys_sendmsg.part.25+0x268/0x278)
+> [<c022bb50>] (___sys_sendmsg.part.25+0x268/0x278) from [<c022cf08>] (__sys_sendmsg+0x48/0x78)
+> [<c022cf08>] (__sys_sendmsg+0x48/0x78) from [<c0009320>] (ret_fast_syscall+0x0/0x2c)
 
-greg k-h
+This patch works around the problem by replacing yield() by msleep(1), giving
+the interrupt thread time to finish, similar to other changes contained in the
+rt patch set. Using wait_for_completion() instead would probably be a better
+solution.
+
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+---
+Hello,
+
+this patch is intended for -rt, as the problem probably doesn't occur on non rt
+systems. However, I put netdev on Cc, as they probably can come up with a
+proper solution.
+
+regards,
+Marc
+
+ net/sched/sch_generic.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/net/sched/sch_generic.c b/net/sched/sch_generic.c
+index a7f838b..d5b00ad 100644
+--- a/net/sched/sch_generic.c
++++ b/net/sched/sch_generic.c
+@@ -839,7 +839,7 @@ void dev_deactivate_many(struct list_head *head)
+ 	/* Wait for outstanding qdisc_run calls. */
+ 	list_for_each_entry(dev, head, unreg_list)
+ 		while (some_qdisc_is_busy(dev))
+-			yield();
++			msleep(1)
+ }
+ 
+ void dev_deactivate(struct net_device *dev)
+-- 
+1.9.0
+
