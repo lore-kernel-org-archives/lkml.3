@@ -1,43 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756855AbaCDJe2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 04:34:28 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:44967 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756410AbaCDJeY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 04:34:24 -0500
-Message-ID: <53159E03.6010203@ti.com>
-Date: Tue, 4 Mar 2014 11:33:55 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: <balbi@ti.com>, <tony@atomide.com>, <george.cherian@ti.com>,
-        <balajitk@ti.com>, <hdegoede@redhat.com>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-ide@vger.kernel.org>
-Subject: Re: [PATCH 03/12] phy: ti-pipe3: cleanup clock handling
-References: <1393859254-10937-1-git-send-email-rogerq@ti.com> <1393859254-10937-4-git-send-email-rogerq@ti.com> <53159D0D.2040009@ti.com>
-In-Reply-To: <53159D0D.2040009@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1756866AbaCDJe4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 04:34:56 -0500
+Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:53862 "EHLO
+	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756410AbaCDJex (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 04:34:53 -0500
+Message-ID: <1393925688.3038.22.camel@x220>
+Subject: [PATCH v2] drm/radeon: silence GCC warning on 32 bit
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Alex Deucher <alexander.deucher@amd.com>,
+        Christian =?ISO-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>,
+        David Airlie <airlied@linux.ie>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Ilia Mirkin <imirkin@alum.mit.edu>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 04 Mar 2014 10:34:48 +0100
+In-Reply-To: <20140221082021.GG22574@ulmo.nvidia.com>
+References: <alpine.DEB.2.00.1401300249130.13810@skynet.skynet.ie>
+	 <1391085212.5170.9.camel@x41> <1392930177.15264.5.camel@x220>
+	 <CAKb7Uvg=U+b0d2uBM3rrXzotdCM=VZsJ0ArPU82Nzy95S=WZRw@mail.gmail.com>
+	 <1392931493.15264.17.camel@x220> <20140221082021.GG22574@ulmo.nvidia.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-1.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 04 Mar 2014 09:34:50.0941 (UTC) FILETIME=[FDC32ED0:01CF378C]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/2014 11:29 AM, Kishon Vijay Abraham I wrote:
-> Hi,
-> 
-> On Monday 03 March 2014 08:37 PM, Roger Quadros wrote:
->> As this driver is no longer USB specific, use generic clock names.
->> - Fix PLL_SD_SHIFT from 9 to 10
->> - As optclk and wkupclk may not be always required, don't bail out
->> if they aren't available.
-> 
-> I think here too we face the same problem as for PHY. What if a particular platform needs a clock but is not available. I don't want this to be blocking though.
+Building radeon_ttm.o on 32 bit x86 triggers a warning:
+    In file included from include/asm-generic/bug.h:13:0,
+                     from [...]/arch/x86/include/asm/bug.h:38,
+                     from include/linux/bug.h:4,
+                     from include/drm/drm_mm.h:39,
+                     from include/drm/drm_vma_manager.h:26,
+                     from include/drm/ttm/ttm_bo_api.h:35,
+                     from drivers/gpu/drm/radeon/radeon_ttm.c:32:
+    drivers/gpu/drm/radeon/radeon_ttm.c: In function 'radeon_ttm_gtt_read':
+    include/linux/kernel.h:712:17: warning: comparison of distinct pointer types lacks a cast [enabled by default]
+      (void) (&_min1 == &_min2);  \
+                     ^
+    drivers/gpu/drm/radeon/radeon_ttm.c:938:22: note: in expansion of macro 'min'
+       ssize_t cur_size = min(size, PAGE_SIZE - off);
+                          ^
 
-Since we know for sure what clocks the different TI PHYs need, we could do the checks based on compatible id and always fail on clock error.
+Silence this warning by using min_t(). Since cur_size will never be
+negative and its upper bound is PAGE_SIZE, we can change its type to
+size_t and use min_t(size_t, [...]) here.
 
-cheers,
--roger
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+v2: use min_t() as Ilia suggested, and convert cur_size to size_t, as
+Thierry suggested.
+
+Still compile tested only (on 32 and 64 bit x86).
+
+ drivers/gpu/drm/radeon/radeon_ttm.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/radeon/radeon_ttm.c b/drivers/gpu/drm/radeon/radeon_ttm.c
+index 77f5b0c..1ce6ba6 100644
+--- a/drivers/gpu/drm/radeon/radeon_ttm.c
++++ b/drivers/gpu/drm/radeon/radeon_ttm.c
+@@ -935,7 +935,7 @@ static ssize_t radeon_ttm_gtt_read(struct file *f, char __user *buf,
+ 	while (size) {
+ 		loff_t p = *pos / PAGE_SIZE;
+ 		unsigned off = *pos & ~PAGE_MASK;
+-		ssize_t cur_size = min(size, PAGE_SIZE - off);
++		size_t cur_size = min_t(size_t, size, PAGE_SIZE - off);
+ 		struct page *page;
+ 		void *ptr;
+ 
+-- 
+1.8.5.3
+
