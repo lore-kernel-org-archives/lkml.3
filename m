@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756434AbaCDIZX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 03:25:23 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:50147 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756295AbaCDIZV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 03:25:21 -0500
-Date: Tue, 4 Mar 2014 16:25:12 +0800
-From: Lee Jones <lee.jones@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Samuel Ortiz <sameo@linux.intel.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH V3 4/5] mfd: palmas: support IRQ inversion at the board
- level
-Message-ID: <20140304082512.GF10579@lee--X1>
-References: <1393876300-3061-1-git-send-email-swarren@wwwdotorg.org>
- <1393876300-3061-4-git-send-email-swarren@wwwdotorg.org>
+	id S1756513AbaCDI3W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 03:29:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33272 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756216AbaCDI3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 03:29:21 -0500
+Date: Tue, 4 Mar 2014 09:29:17 +0100
+From: Jan Kara <jack@suse.cz>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, jack <jack@suse.cz>,
+        akpm <akpm@linux-foundation.org>, rdunlap <rdunlap@infradead.org>
+Subject: Re: [PATCH 1/1] fs/quota/Kconfig: Update filesystems
+Message-ID: <20140304082917.GB22966@quack.suse.cz>
+References: <20140304081107.da00303af01803f0f894728a@skynet.be>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1393876300-3061-4-git-send-email-swarren@wwwdotorg.org>
+In-Reply-To: <20140304081107.da00303af01803f0f894728a@skynet.be>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Stephen Warren <swarren@nvidia.com>
+On Tue 04-03-14 08:11:07, Fabian Frederick wrote:
+> Update Kconfig with a complete list of supported filesystems.
+  Thanks. I have added the patch to my tree.
+
+								Honza
+
 > 
-> Implement the new DT property ti,irq-externally-inverted, and add an
-> equivalent platform data field to match. This allows the driver to
-> correctly automatically configure the IRQ output polarity when the board
-> or SoC contains an inverter between the Palmas IRQ output and IRQ
-> controller input.
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> ---
+>  fs/quota/Kconfig | 7 ++++---
+>  1 file changed, 4 insertions(+), 3 deletions(-)
 > 
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> ---
-> v3:
-> * Use an IRQD flag to represent the data, rather than a custom DT property.
-> v2:
-> * Split V1's patch 1/2 into separate patches 1/3 and 2/3.
-> ---
->  drivers/mfd/palmas.c | 5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
-
-Looks good to me. Let me know how you want to deal with this. I'm
-happy to create an immutable branch for everyone to pull from.
-
-Acked-by: Lee Jones <lee.jones@linaro.org>
-
+> diff --git a/fs/quota/Kconfig b/fs/quota/Kconfig
+> index 880fd98..c51df1d 100644
+> --- a/fs/quota/Kconfig
+> +++ b/fs/quota/Kconfig
+> @@ -8,9 +8,10 @@ config QUOTA
+>  	help
+>  	  If you say Y here, you will be able to set per user limits for disk
+>  	  usage (also called disk quotas). Currently, it works for the
+> -	  ext2, ext3, and reiserfs file system. ext3 also supports journalled
+> -	  quotas for which you don't need to run quotacheck(8) after an unclean
+> -	  shutdown.
+> +	  ext2, ext3, ext4, jfs, ocfs2 and reiserfs file systems.
+> +	  Note that gfs2 and xfs use their own quota system.
+> +	  Ext3, ext4 and reiserfs also support journaled quotas for which
+> +	  you don't need to run quotacheck(8) after an unclean shutdown.
+>  	  For further details, read the Quota mini-HOWTO, available from
+>  	  <http://www.tldp.org/docs.html#howto>, or the documentation provided
+>  	  with the quota tools. Probably the quota support is only useful for
+> -- 
+> 1.8.1.4
+> 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
