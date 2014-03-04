@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932880AbaCDUq5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:46:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41396 "EHLO
+	id S1757375AbaCDUrY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:47:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41384 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755214AbaCDUEe (ORCPT
+	with ESMTP id S1752622AbaCDUEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:04:34 -0500
+	Tue, 4 Mar 2014 15:04:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.13 145/172] irqchip: orion: use handle_edge_irq on bridge irqs
-Date: Tue,  4 Mar 2014 12:03:49 -0800
-Message-Id: <20140304200304.359637774@linuxfoundation.org>
+        Davidlohr Bueso <davidlohr@hp.com>, Madars Vitolins <m@silodev.com>,
+        Doug Ledford <dledford@redhat.com>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.13 153/172] ipc,mqueue: remove limits for the amount of system-wide queues
+Date: Tue,  4 Mar 2014 12:03:57 -0800
+Message-Id: <20140304200304.612185901@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -30,33 +32,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+From: Davidlohr Bueso <davidlohr@hp.com>
 
-commit 5f40067fc86f0e49329ad4a852c278998ff4394e upstream.
+commit f3713fd9cff733d9df83116422d8e4af6e86b2bb upstream.
 
-Bridge irqs are edge-triggered, i.e. they get asserted on low-to-high
-transitions and not on the level of the downstream interrupt line.
-This replaces handle_level_irq by the more appropriate handle_edge_irq.
+Commit 93e6f119c0ce ("ipc/mqueue: cleanup definition names and
+locations") added global hardcoded limits to the amount of message
+queues that can be created.  While these limits are per-namespace,
+reality is that it ends up breaking userspace applications.
+Historically users have, at least in theory, been able to create up to
+INT_MAX queues, and limiting it to just 1024 is way too low and dramatic
+for some workloads and use cases.  For instance, Madars reports:
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Tested-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+ "This update imposes bad limits on our multi-process application.  As
+  our app uses approaches that each process opens its own set of queues
+  (usually something about 3-5 queues per process).  In some scenarios
+  we might run up to 3000 processes or more (which of-course for linux
+  is not a problem).  Thus we might need up to 9000 queues or more.  All
+  processes run under one user."
+
+Other affected users can be found in launchpad bug #1155695:
+  https://bugs.launchpad.net/ubuntu/+source/manpages/+bug/1155695
+
+Instead of increasing this limit, revert it entirely and fallback to the
+original way of dealing queue limits -- where once a user's resource
+limit is reached, and all memory is used, new queues cannot be created.
+
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+Reported-by: Madars Vitolins <m@silodev.com>
+Acked-by: Doug Ledford <dledford@redhat.com>
+Cc: Manfred Spraul <manfred@colorfullife.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/irqchip/irq-orion.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/ipc_namespace.h |    2 --
+ ipc/mq_sysctl.c               |   18 ++++++++++++------
+ ipc/mqueue.c                  |    6 +++---
+ 3 files changed, 15 insertions(+), 11 deletions(-)
 
---- a/drivers/irqchip/irq-orion.c
-+++ b/drivers/irqchip/irq-orion.c
-@@ -143,7 +143,7 @@ static int __init orion_bridge_irq_init(
- 	}
+--- a/include/linux/ipc_namespace.h
++++ b/include/linux/ipc_namespace.h
+@@ -119,9 +119,7 @@ extern int mq_init_ns(struct ipc_namespa
+  *     the new maximum will handle anyone else.  I may have to revisit this
+  *     in the future.
+  */
+-#define MIN_QUEUESMAX			1
+ #define DFLT_QUEUESMAX		      256
+-#define HARD_QUEUESMAX		     1024
+ #define MIN_MSGMAX			1
+ #define DFLT_MSG		       10U
+ #define DFLT_MSGMAX		       10
+--- a/ipc/mq_sysctl.c
++++ b/ipc/mq_sysctl.c
+@@ -22,6 +22,16 @@ static void *get_mq(ctl_table *table)
+ 	return which;
+ }
  
- 	ret = irq_alloc_domain_generic_chips(domain, nrirqs, 1, np->name,
--			     handle_level_irq, clr, 0, IRQ_GC_INIT_MASK_CACHE);
-+			     handle_edge_irq, clr, 0, IRQ_GC_INIT_MASK_CACHE);
- 	if (ret) {
- 		pr_err("%s: unable to alloc irq domain gc\n", np->name);
- 		return ret;
++static int proc_mq_dointvec(ctl_table *table, int write,
++			    void __user *buffer, size_t *lenp, loff_t *ppos)
++{
++	struct ctl_table mq_table;
++	memcpy(&mq_table, table, sizeof(mq_table));
++	mq_table.data = get_mq(table);
++
++	return proc_dointvec(&mq_table, write, buffer, lenp, ppos);
++}
++
+ static int proc_mq_dointvec_minmax(ctl_table *table, int write,
+ 	void __user *buffer, size_t *lenp, loff_t *ppos)
+ {
+@@ -33,12 +43,10 @@ static int proc_mq_dointvec_minmax(ctl_t
+ 					lenp, ppos);
+ }
+ #else
++#define proc_mq_dointvec NULL
+ #define proc_mq_dointvec_minmax NULL
+ #endif
+ 
+-static int msg_queues_limit_min = MIN_QUEUESMAX;
+-static int msg_queues_limit_max = HARD_QUEUESMAX;
+-
+ static int msg_max_limit_min = MIN_MSGMAX;
+ static int msg_max_limit_max = HARD_MSGMAX;
+ 
+@@ -51,9 +59,7 @@ static ctl_table mq_sysctls[] = {
+ 		.data		= &init_ipc_ns.mq_queues_max,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_mq_dointvec_minmax,
+-		.extra1		= &msg_queues_limit_min,
+-		.extra2		= &msg_queues_limit_max,
++		.proc_handler	= proc_mq_dointvec,
+ 	},
+ 	{
+ 		.procname	= "msg_max",
+--- a/ipc/mqueue.c
++++ b/ipc/mqueue.c
+@@ -433,9 +433,9 @@ static int mqueue_create(struct inode *d
+ 		error = -EACCES;
+ 		goto out_unlock;
+ 	}
+-	if (ipc_ns->mq_queues_count >= HARD_QUEUESMAX ||
+-	    (ipc_ns->mq_queues_count >= ipc_ns->mq_queues_max &&
+-	     !capable(CAP_SYS_RESOURCE))) {
++
++	if (ipc_ns->mq_queues_count >= ipc_ns->mq_queues_max &&
++	    !capable(CAP_SYS_RESOURCE)) {
+ 		error = -ENOSPC;
+ 		goto out_unlock;
+ 	}
 
 
