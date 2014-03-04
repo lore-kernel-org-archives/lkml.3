@@ -1,93 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712AbaCDT5Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 14:57:25 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:46966 "EHLO comal.ext.ti.com"
+	id S1754941AbaCDT7j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 14:59:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31474 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751780AbaCDT5Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 14:57:24 -0500
-Date: Tue, 4 Mar 2014 13:55:41 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Michal Nazarewicz <mina86@mina86.com>
-CC: Robert Baldyga <r.baldyga@samsung.com>, Felipe Balbi <balbi@ti.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Chuansheng Liu <chuansheng.liu@intel.com>,
-        <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <david.a.cohen@linux.intel.com>
-Subject: Re: [PATCH v2] usb: gadget: return the right length in
- ffs_epfile_io()
-Message-ID: <20140304195541.GB24463@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1393918497-30916-1-git-send-email-chuansheng.liu@intel.com>
- <531606DB.4010601@cogentembedded.com>
- <20140304160620.GH15233@saruman.home>
- <xa1td2i14u63.fsf@mina86.com>
+	id S1754555AbaCDT7i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 14:59:38 -0500
+Date: Tue, 4 Mar 2014 20:03:48 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Khalid Aziz <khalid.aziz@oracle.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, peterz@infradead.org,
+        akpm@linux-foundation.org, andi.kleen@intel.com, rob@landley.net,
+        viro@zeniv.linux.org.uk, venki@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] [PATCH] Pre-emption control for userspace
+Message-ID: <20140304190348.GA22075@redhat.com>
+References: <1393870033-31076-1-git-send-email-khalid.aziz@oracle.com> <20140304135624.GA6846@redhat.com> <53161116.9050109@oracle.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bAmEntskrkuBymla"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <xa1td2i14u63.fsf@mina86.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53161116.9050109@oracle.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---bAmEntskrkuBymla
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 03/04, Khalid Aziz wrote:
+>
+> On 03/04/2014 06:56 AM, Oleg Nesterov wrote:
+>> Hmm. In fact I think do_exit() should crash after munmap? ->mmap_state
+>> should be NULL ?? Perhaps I misread this patch completely...
+>
+> do_exit() unmaps mmap_state->uaddr, and frees up mmap_state->kaddr and
+> mmap_state. mmap_state should not be NULL after unmap.
 
-On Tue, Mar 04, 2014 at 08:53:40PM +0100, Michal Nazarewicz wrote:
-> >> On 03/04/2014 10:34 AM, Chuansheng Liu wrote:
-> >> >@@ -845,12 +845,14 @@ static ssize_t ffs_epfile_io(struct file *file,=
- struct ffs_io_data *io_data)
-> >> >  			 * we may end up with more data then user space has
-> >> >  			 * space for.
-> >> >  			 */
-> >> >-			ret =3D ep->status;
-> >> >-			if (io_data->read && ret > 0 &&
-> >> >-			    unlikely(copy_to_user(io_data->buf, data,
-> >> >-						  min_t(size_t, ret,
-> >> >-						  io_data->len))))
-> >> >-				ret =3D -EFAULT;
-> >> >+				ret =3D ep->status;
->=20
-> On Tue, Mar 04 2014, Felipe Balbi wrote:
-> >>    Why the indentation jumped suddenly to the right?
->=20
-> > On Tue, Mar 04, 2014 at 08:01:15PM +0300, Sergei Shtylyov wrote:
-> > because it was wrong before ;-)
->=20
-> Yep.  It looks like Robert's [2e4c7553: add aio support] introduced an
-> if-else-if-else flow but did not indent the code and I didn't caught it
-> when reviewing that patch.
+Can't understand... do_exit() does:
 
-it's in my testing/next now, I also fixed the comment indentation which
-was also wrong.
+	+#if CONFIG_SCHED_PREEMPT_DELAY
+	+       if (tsk->sched_preempt_delay.mmap_state) {
+	+               sys_munmap((unsigned long)
+	+                       tsk->sched_preempt_delay.mmap_state->uaddr, PAGE_SIZE);
+	+               vfree(tsk->sched_preempt_delay.mmap_state->kaddr);
+	+               kfree(tsk->sched_preempt_delay.mmap_state);
+	
+sys_munmap() (which btw should not be used) obviously unmaps that
+vma and vma_ops()->close() should be called.
 
---=20
-balbi
+close_preempt_delay_vmops() does:
 
---bAmEntskrkuBymla
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+	state->task->sched_preempt_delay.mmap_state = NULL;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+vfree(tsk->sched_preempt_delay.mmap_state->kaddr) above will try to
+dereference .mmap_state == NULL.
 
-iQIcBAEBAgAGBQJTFi+9AAoJEIaOsuA1yqREOMwP/0YkXH6+LdVwHU3LnAwCtG8U
-vAXVdqWGioJ1EEUAXgiSTeMLJ/67RF2Lr8AQQpFqvB+ePR5YgYYWaGDUoE9zFe1K
-TKAD8Xf9ziH48O3xIi0Ip3pHWl6DIJ4DmAPc+YHVi9nWUxyAZUNOsEXIp6xAOgN3
-8sENnXjJiGEhq/Jg8y80EYffk99J84FsCJ3hqmdoFgS5gTaiW2jprJnX7ufFez+U
-qKPG97DkSUgdmjKqT28Y0GpoTpf2PvOUtdH2abB7zeMoPPyZekmy0JMDFbTeSMWF
-Z42FPPN9hyXXbmsYcYxDX5KOs2SrNX4zvISDEdcbcCvxng64RcDBEJ/XmPxC4/Lc
-ox9FAj8unDrBDBvVtfgr/TXR4tQ8OMGC84UcH63imgcfmJNJdTi5I9viZ0hIVzeO
-Np8wVvQ8bbyjWap++8XwyKj0DF1xts00KNPN9CnCUjWznBTu3Hilr5LYbwamQG0C
-oBWFzybVq5ApONnh+mgHj3vYBpXIyWOZnXjNrHwKE3hopO2A6vyFGxJf56GpJC+Z
-SW922JBw/BecsXu8IKHYLZt5faxOZckdfpF4YBYsKU1l+UcSmCt1sMwLea5J60IH
-hxWhbRkUDJzB4NiycPsisbvk4+1G9hA+YuO7YjXWox/+9RUrg9FdfsBxOd94uiUW
-l6awklRPBu+gXpgnDuLA
-=K3Sx
------END PGP SIGNATURE-----
+IOW, I think that with this patch this trivial program
 
---bAmEntskrkuBymla--
+	int main(void)
+	{
+		fd = open("/proc/self/task/$TID/sched_preempt_delay", O_RDWR);
+		mmap(NULL, 4096, PROT_READ,MAP_SHARED, fd, 0);
+		return 0;
+	}
+
+should crash the kernel.
+
+>>> +	if (current->sched_preempt_delay.mmap_state != NULL) {
+>>> +		retval = -EEXIST;
+>>> +		goto error;
+>>
+>> This assumes that we are going to setup current->sched_preempt_delay.mmap_state,
+>> but what if the task opens /proc/random_tid/sched_preempt_delay ?
+>
+> Good point. A thread should not be allowed to request preemption delay
+> for another thread. I would recommend leaving this code alone and adding
+> following code before this:
+>
+> if (get_proc_task(inode) != current) {
+> 	retval = -EPERM;
+> 	goto error;
+> }
+>
+> Sounds reasonable?
+
+Yes, we should check == current, but this interface looks strange anyway, imho.
+
+>>> +	state->page = page;
+>>> +	state->kaddr = kaddr;
+>>> +	state->uaddr = (void *)vma->vm_start;
+>>
+>> This is used by do_exit(). But ->vm_start can be changed by mremap() ?
+>>
+>>
+>> Hmm. And mremap() can do vm_ops->close() too. But the new vma will
+>> have the same vm_ops/vm_private_data, so exit_mmap() will try to do
+>> this again... Perhaps I missed something, but I bet this all can't be
+>> right.
+>
+> Would you say sys_munmap() of mmap_state->uaddr is not even needed since
+> exit_mm() will do this any way further down in do_exit()?
+
+No.
+
+I meant:
+
+	1. mremap() can move this vma, so do_exit() can't trust ->uaddr
+
+	2. Even worse, mremap() itself is not safe. It can do ->close()
+	   too and create the new vma with the same vm_ops. Another
+	   unmap from (say) exit_mm() won't be happy.
+
+>>> +	vma->vm_flags |= VM_DONTCOPY | VM_DONTEXPAND | VM_SHARED | VM_WRITE;
+>>
+>> This probably also needs VM_IO, to protect from madvise(MADV_DOFORK).
+>
+> Yes, you are right. I will add that.
+>
+>> VM_SHARED/VM_WRITE doesn't look right.
+>
+> VM_SHARED is wrong but VM_WRITE is needed I think since the thread will
+> write to the mmap'd page to signal to request preemption delay.
+
+But ->mmap() should not set VM_WRITE if application does mmap(PROT_READ) ?
+VM_WRITE-or-not should be decided by do_mmap_pgoff/mprotect, ->mmap()
+should not play with this bit.
+
+Oleg.
+
