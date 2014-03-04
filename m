@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755053AbaCDUEY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:04:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41309 "EHLO
+	id S932909AbaCDUt5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:49:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41343 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753625AbaCDUEU (ORCPT
+	with ESMTP id S1752144AbaCDUEZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:04:20 -0500
+	Tue, 4 Mar 2014 15:04:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Manu Gupta <manugupt1@gmail.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: [PATCH 3.13 135/172] staging: r8188eu: Add new device ID
-Date: Tue,  4 Mar 2014 12:03:39 -0800
-Message-Id: <20140304200304.030914489@linuxfoundation.org>
+        "Dr. Greg Wettstein" <greg@enjellic.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.13 158/172] qla2xxx: Fix kernel panic on selective retransmission request
+Date: Tue,  4 Mar 2014 12:04:02 -0800
+Message-Id: <20140304200304.766841677@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -29,29 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Manu Gupta <manugupt1@gmail.com>
+From: "Dr. Greg Wettstein" <greg@enjellic.com>
 
-commit 260ea9c2e2d330303163e286ab01b66dbcfe3a6f upstream.
+commit 6f58c780e5a5b43a6d2121e0d43cdcba1d3cc5fc upstream.
 
-The D-Link DWA-123 REV D1 with USB ID 2001:3310 uses this driver.
+A selective retransmission request (SRR) is a fibre-channel
+protocol control request which provides support for requesting
+retransmission of a data sequence in response to an issue such as
+frame loss or corruption.  These events are experienced
+infrequently in fibre-channel based networks which makes
+it difficult to test and assess codepaths which handle these
+events.
 
-Signed-off-by: Manu Gupta <manugupt1@gmail.com>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+We were fortunate enough, for some definition of fortunate, to
+have a metro-area single-mode SAN link which, at 10 GBPS
+sustained load levels, would consistently generate SRR's in
+a SCST based target implementation using our SCST/in-kernel
+Qlogic target interface driver.  In response to an SRR the
+in-kernel Qlogic target driver immediately panics resulting
+in a catastrophic storage failure for serviced initiators.
+
+The culprit was a debug statement in the qla_target.c file which
+does not verify that a pointer to the SCSI CDB is not null.
+The unchecked pointer dereference results in the kernel panic
+and resultant system failure.
+
+The other two references to the SCSI CDB by the SRR handling code
+use a ternary operator to verify a non-null pointer is being
+acted on.  This patch simply adds a similar test to the implicated
+debug statement.
+
+This patch is a candidate for any stable kernel being maintained
+since it addresses a potentially catastrophic event with
+minimal downside.
+
+Signed-off-by: Dr. Greg Wettstein <greg@enjellic.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/rtl8188eu/os_dep/usb_intf.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/scsi/qla2xxx/qla_target.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-+++ b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-@@ -55,6 +55,7 @@ static struct usb_device_id rtw_usb_id_t
- 	/****** 8188EUS ********/
- 	{USB_DEVICE(0x07b8, 0x8179)}, /* Abocom - Abocom */
- 	{USB_DEVICE(0x2001, 0x330F)}, /* DLink DWA-125 REV D1 */
-+	{USB_DEVICE(0x2001, 0x3310)}, /* Dlink DWA-123 REV D1 */
- 	{}	/* Terminating entry */
- };
+--- a/drivers/scsi/qla2xxx/qla_target.c
++++ b/drivers/scsi/qla2xxx/qla_target.c
+@@ -3186,7 +3186,8 @@ restart:
+ 		ql_dbg(ql_dbg_tgt_mgt, vha, 0xf02c,
+ 		    "SRR cmd %p (se_cmd %p, tag %d, op %x), "
+ 		    "sg_cnt=%d, offset=%d", cmd, &cmd->se_cmd, cmd->tag,
+-		    se_cmd->t_task_cdb[0], cmd->sg_cnt, cmd->offset);
++		    se_cmd->t_task_cdb ? se_cmd->t_task_cdb[0] : 0,
++		    cmd->sg_cnt, cmd->offset);
+ 
+ 		qlt_handle_srr(vha, sctio, imm);
  
 
 
