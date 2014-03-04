@@ -1,169 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758045AbaCDWgv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 17:36:51 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:46434 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755781AbaCDWdK (ORCPT
+	id S1757014AbaCDWhy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 17:37:54 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:62750 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754195AbaCDWhw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 17:33:10 -0500
-X-IronPort-AV: E=Sophos;i="4.97,588,1389744000"; 
-   d="scan'208";a="106598809"
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
-        <xen-devel@lists.xenproject.org>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jonathan.davies@citrix.com>, Zoltan Kiss <zoltan.kiss@citrix.com>
-Subject: [PATCH net-next v6 2/10] xen-netback: Minor refactoring of netback code
-Date: Tue, 4 Mar 2014 22:32:13 +0000
-Message-ID: <1393972341-21135-3-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1393972341-21135-1-git-send-email-zoltan.kiss@citrix.com>
-References: <1393972341-21135-1-git-send-email-zoltan.kiss@citrix.com>
+	Tue, 4 Mar 2014 17:37:52 -0500
+Date: Tue, 4 Mar 2014 14:37:50 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Prarit Bhargava <prarit@redhat.com>
+cc: linux-kernel@vger.kernel.org, Rui Wang <rui.y.wang@intel.com>,
+        Michel Lespinasse <walken@google.com>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        Yang Zhang <yang.z.zhang@intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>, janet.morgan@intel.com,
+        tony.luck@intel.com, ruiv.wang@gmail.com
+Subject: Re: [PATCH] x86, apic, Fix missing replacement for
+ VECTOR_UNDEFINED
+In-Reply-To: <1393943271-17447-1-git-send-email-prarit@redhat.com>
+Message-ID: <alpine.DEB.2.02.1403041436050.5421@chino.kir.corp.google.com>
+References: <1393943271-17447-1-git-send-email-prarit@redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch contains a few bits of refactoring before introducing the grant
-mapping changes:
-- introducing xenvif_tx_pending_slots_available(), as this is used several
-  times, and will be used more often
-- rename the thread to vifX.Y-guest-rx, to signify it does RX work from the
-  guest point of view
+On Tue, 4 Mar 2014, Prarit Bhargava wrote:
 
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
----
- drivers/net/xen-netback/common.h    |   24 +++++++++++++++++++++++-
- drivers/net/xen-netback/interface.c |    4 ++--
- drivers/net/xen-netback/netback.c   |   22 +++-------------------
- 3 files changed, 28 insertions(+), 22 deletions(-)
+> linux.git commit 9345005f4eed805308193658d12e4e7e9c261e74 added
+> a definition for VECTOR_UNDEFINED = -1.  There is a missing replacement in
+> the io_apic.c file.  Found during debugging of another issue.
+> 
+> Cc: Rui Wang <rui.y.wang@intel.com>
+> Cc: Michel Lespinasse <walken@google.com>
+> Cc: Seiji Aguchi <seiji.aguchi@hds.com>
+> Cc: Yang Zhang <yang.z.zhang@Intel.com>
+> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+> Cc: janet.morgan@Intel.com
+> Cc: tony.luck@Intel.com
+> Cc: ruiv.wang@gmail.com
+> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
 
-diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
-index ae413a2..f514818 100644
---- a/drivers/net/xen-netback/common.h
-+++ b/drivers/net/xen-netback/common.h
-@@ -108,6 +108,16 @@ struct xenvif_rx_meta {
-  */
- #define MAX_GRANT_COPY_OPS (MAX_SKB_FRAGS * XEN_NETIF_RX_RING_SIZE)
- 
-+#define NETBACK_INVALID_HANDLE -1
-+
-+/*
-+ * To avoid confusion, we define XEN_NETBK_LEGACY_SLOTS_MAX indicating
-+ * the maximum slots a valid packet can use. Now this value is defined
-+ * to be XEN_NETIF_NR_SLOTS_MIN, which is supposed to be supported by
-+ * all backend.
-+ */
-+#define XEN_NETBK_LEGACY_SLOTS_MAX XEN_NETIF_NR_SLOTS_MIN
-+
- struct xenvif {
- 	/* Unique identifier for this interface. */
- 	domid_t          domid;
-@@ -216,7 +226,7 @@ void xenvif_carrier_off(struct xenvif *vif);
- 
- int xenvif_tx_action(struct xenvif *vif, int budget);
- 
--int xenvif_kthread(void *data);
-+int xenvif_kthread_guest_rx(void *data);
- void xenvif_kick_thread(struct xenvif *vif);
- 
- /* Determine whether the needed number of slots (req) are available,
-@@ -226,6 +236,18 @@ bool xenvif_rx_ring_slots_available(struct xenvif *vif, int needed);
- 
- void xenvif_stop_queue(struct xenvif *vif);
- 
-+static inline pending_ring_idx_t nr_pending_reqs(struct xenvif *vif)
-+{
-+	return MAX_PENDING_REQS -
-+		vif->pending_prod + vif->pending_cons;
-+}
-+
-+static inline bool xenvif_tx_pending_slots_available(struct xenvif *vif)
-+{
-+	return (nr_pending_reqs(vif) + XEN_NETBK_LEGACY_SLOTS_MAX
-+		< MAX_PENDING_REQS);
-+}
-+
- extern bool separate_tx_rx_irq;
- 
- #endif /* __XEN_NETBACK__COMMON_H__ */
-diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
-index 7669d49..bc32627 100644
---- a/drivers/net/xen-netback/interface.c
-+++ b/drivers/net/xen-netback/interface.c
-@@ -421,8 +421,8 @@ int xenvif_connect(struct xenvif *vif, unsigned long tx_ring_ref,
- 		disable_irq(vif->rx_irq);
- 	}
- 
--	task = kthread_create(xenvif_kthread,
--			      (void *)vif, "%s", vif->dev->name);
-+	task = kthread_create(xenvif_kthread_guest_rx,
-+			      (void *)vif, "%s-guest-rx", vif->dev->name);
- 	if (IS_ERR(task)) {
- 		pr_warn("Could not allocate kthread for %s\n", vif->dev->name);
- 		err = PTR_ERR(task);
-diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index 5944f87..e600119 100644
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -63,14 +63,6 @@ static unsigned int fatal_skb_slots = FATAL_SKB_SLOTS_DEFAULT;
- module_param(fatal_skb_slots, uint, 0444);
- 
- /*
-- * To avoid confusion, we define XEN_NETBK_LEGACY_SLOTS_MAX indicating
-- * the maximum slots a valid packet can use. Now this value is defined
-- * to be XEN_NETIF_NR_SLOTS_MIN, which is supposed to be supported by
-- * all backend.
-- */
--#define XEN_NETBK_LEGACY_SLOTS_MAX XEN_NETIF_NR_SLOTS_MIN
--
--/*
-  * If head != INVALID_PENDING_RING_IDX, it means this tx request is head of
-  * one or more merged tx requests, otherwise it is the continuation of
-  * previous tx request.
-@@ -131,12 +123,6 @@ static inline pending_ring_idx_t pending_index(unsigned i)
- 	return i & (MAX_PENDING_REQS-1);
- }
- 
--static inline pending_ring_idx_t nr_pending_reqs(struct xenvif *vif)
--{
--	return MAX_PENDING_REQS -
--		vif->pending_prod + vif->pending_cons;
--}
--
- bool xenvif_rx_ring_slots_available(struct xenvif *vif, int needed)
- {
- 	RING_IDX prod, cons;
-@@ -1108,8 +1094,7 @@ static unsigned xenvif_tx_build_gops(struct xenvif *vif, int budget)
- 	struct sk_buff *skb;
- 	int ret;
- 
--	while ((nr_pending_reqs(vif) + XEN_NETBK_LEGACY_SLOTS_MAX
--		< MAX_PENDING_REQS) &&
-+	while (xenvif_tx_pending_slots_available(vif) &&
- 	       (skb_queue_len(&vif->tx_queue) < budget)) {
- 		struct xen_netif_tx_request txreq;
- 		struct xen_netif_tx_request txfrags[XEN_NETBK_LEGACY_SLOTS_MAX];
-@@ -1479,8 +1464,7 @@ static inline int tx_work_todo(struct xenvif *vif)
- {
- 
- 	if (likely(RING_HAS_UNCONSUMED_REQUESTS(&vif->tx)) &&
--	    (nr_pending_reqs(vif) + XEN_NETBK_LEGACY_SLOTS_MAX
--	     < MAX_PENDING_REQS))
-+	    xenvif_tx_pending_slots_available(vif))
- 		return 1;
- 
- 	return 0;
-@@ -1543,7 +1527,7 @@ static void xenvif_start_queue(struct xenvif *vif)
- 		netif_wake_queue(vif->dev);
- }
- 
--int xenvif_kthread(void *data)
-+int xenvif_kthread_guest_rx(void *data)
- {
- 	struct xenvif *vif = data;
- 	struct sk_buff *skb;
+Acked-by: David Rientjes <rientjes@google.com>
+
+I think it would have been better to define VECTOR_UNDEFINED to be (-1) 
+rather than -1, though, to ensure it can't be used erroneously as an 
+arithmetic operation.
