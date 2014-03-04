@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932583AbaCDVeL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:34:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40834 "EHLO
+	id S932547AbaCDVeJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:34:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40841 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755761AbaCDUC6 (ORCPT
+	with ESMTP id S1755767AbaCDUC7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:02:58 -0500
+	Tue, 4 Mar 2014 15:02:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chen Gang <gang.chen.5i5j@gmail.com>,
-        Hans-Christian Egtvedt <hegtvedt@cisco.com>
-Subject: [PATCH 3.13 028/172] avr32: Makefile: add -D__linux__ flag for gcc-4.4.7 use
-Date: Tue,  4 Mar 2014 12:01:52 -0800
-Message-Id: <20140304200300.628910914@linuxfoundation.org>
+        Pavel Shilovsky <piastry@etersoft.ru>,
+        Al Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
+        Steve French <smfrench@gmail.com>
+Subject: [PATCH 3.13 029/172] cifs: ensure that uncached writes handle unmapped areas correctly
+Date: Tue,  4 Mar 2014 12:01:53 -0800
+Message-Id: <20140304200300.656895045@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -29,49 +30,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chen Gang <gang.chen.5i5j@gmail.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 8d80390cfc9434d5aa4fb9e5f9768a66b30cb8a6 upstream.
+commit 5d81de8e8667da7135d3a32a964087c0faf5483f upstream.
 
-For avr32 cross compiler, do not define '__linux__' internally, so it
-will cause issue with allmodconfig.
+It's possible for userland to pass down an iovec via writev() that has a
+bogus user pointer in it. If that happens and we're doing an uncached
+write, then we can end up getting less bytes than we expect from the
+call to iov_iter_copy_from_user. This is CVE-2014-0069
 
-The related error:
+cifs_iovec_write isn't set up to handle that situation however. It'll
+blindly keep chugging through the page array and not filling those pages
+with anything useful. Worse yet, we'll later end up with a negative
+number in wdata->tailsz, which will confuse the sending routines and
+cause an oops at the very least.
 
-    CC [M]  fs/coda/psdev.o
-  In file included from include/linux/coda.h:64,
-                   from fs/coda/psdev.c:45:
-  include/uapi/linux/coda.h:221: error: expected specifier-qualifier-list before 'u_quad_t'
+Fix this by having the copy phase of cifs_iovec_write stop copying data
+in this situation and send the last write as a short one. At the same
+time, we want to avoid sending a zero-length write to the server, so
+break out of the loop and set rc to -EFAULT if that happens. This also
+allows us to handle the case where no address in the iovec is valid.
 
-The related toolchain version (which only download, not re-compile):
+[Note: Marking this for stable on v3.4+ kernels, but kernels as old as
+       v2.6.38 may have a similar problem and may need similar fix]
 
-  [root@gchen linux-next]# /upstream/toolchain/download/avr32-gnu-toolchain-linux_x86/bin/avr32-gcc -v
-  Using built-in specs.
-  Target: avr32
-  Configured with: /data2/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/src/gcc/configure --target=avr32 --host=i686-pc-linux-gnu --build=x86_64-pc-linux-gnu --prefix=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --enable-languages=c,c++ --disable-nls --disable-libssp --disable-libstdcxx-pch --with-dwarf2 --enable-version-specific-runtime-libs --disable-shared --enable-doc --with-mpfr-lib=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86/lib --with-mpfr-include=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86/include
---with-gmp=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --with-mpc=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --enable-__cxa_atexit --disable-shared --with-newlib --with-pkgversion=AVR_32_bit_GNU_Toolchain_3.4.2_435 --with-bugurl=http://www
-.atmel.com/avr
-  Thread model: single
-  gcc version 4.4.7 (AVR_32_bit_GNU_Toolchain_3.4.2_435)
-
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-Acked-by: Hans-Christian Egtvedt <hegtvedt@cisco.com>
+Reviewed-by: Pavel Shilovsky <piastry@etersoft.ru>
+Reported-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/avr32/Makefile |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/cifs/file.c |   37 ++++++++++++++++++++++++++++++++++---
+ 1 file changed, 34 insertions(+), 3 deletions(-)
 
---- a/arch/avr32/Makefile
-+++ b/arch/avr32/Makefile
-@@ -11,7 +11,7 @@ all: uImage vmlinux.elf
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -2381,7 +2381,7 @@ cifs_iovec_write(struct file *file, cons
+ 		 unsigned long nr_segs, loff_t *poffset)
+ {
+ 	unsigned long nr_pages, i;
+-	size_t copied, len, cur_len;
++	size_t bytes, copied, len, cur_len;
+ 	ssize_t total_written = 0;
+ 	loff_t offset;
+ 	struct iov_iter it;
+@@ -2436,14 +2436,45 @@ cifs_iovec_write(struct file *file, cons
  
- KBUILD_DEFCONFIG	:= atstk1002_defconfig
+ 		save_len = cur_len;
+ 		for (i = 0; i < nr_pages; i++) {
+-			copied = min_t(const size_t, cur_len, PAGE_SIZE);
++			bytes = min_t(const size_t, cur_len, PAGE_SIZE);
+ 			copied = iov_iter_copy_from_user(wdata->pages[i], &it,
+-							 0, copied);
++							 0, bytes);
+ 			cur_len -= copied;
+ 			iov_iter_advance(&it, copied);
++			/*
++			 * If we didn't copy as much as we expected, then that
++			 * may mean we trod into an unmapped area. Stop copying
++			 * at that point. On the next pass through the big
++			 * loop, we'll likely end up getting a zero-length
++			 * write and bailing out of it.
++			 */
++			if (copied < bytes)
++				break;
+ 		}
+ 		cur_len = save_len - cur_len;
  
--KBUILD_CFLAGS	+= -pipe -fno-builtin -mno-pic
-+KBUILD_CFLAGS	+= -pipe -fno-builtin -mno-pic -D__linux__
- KBUILD_AFLAGS	+= -mrelax -mno-pic
- KBUILD_CFLAGS_MODULE += -mno-relax
- LDFLAGS_vmlinux	+= --relax
++		/*
++		 * If we have no data to send, then that probably means that
++		 * the copy above failed altogether. That's most likely because
++		 * the address in the iovec was bogus. Set the rc to -EFAULT,
++		 * free anything we allocated and bail out.
++		 */
++		if (!cur_len) {
++			for (i = 0; i < nr_pages; i++)
++				put_page(wdata->pages[i]);
++			kfree(wdata);
++			rc = -EFAULT;
++			break;
++		}
++
++		/*
++		 * i + 1 now represents the number of pages we actually used in
++		 * the copy phase above. Bring nr_pages down to that, and free
++		 * any pages that we didn't use.
++		 */
++		for ( ; nr_pages > i + 1; nr_pages--)
++			put_page(wdata->pages[nr_pages - 1]);
++
+ 		wdata->sync_mode = WB_SYNC_ALL;
+ 		wdata->nr_pages = nr_pages;
+ 		wdata->offset = (__u64)offset;
 
 
