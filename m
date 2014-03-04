@@ -1,81 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756248AbaCDDDd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 22:03:33 -0500
-Received: from ozlabs.org ([203.10.76.45]:59404 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755935AbaCDDDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 22:03:32 -0500
-Date: Tue, 4 Mar 2014 14:03:18 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Keerthy <j-keerthy@ti.com>
-Subject: Re: linux-next: build failure after merge of the mfd-lj tree
-Message-Id: <20140304140318.06e7a535ed06e9432e5df7d9@canb.auug.org.au>
-In-Reply-To: <20140211132552.68b0802fd8742c6d72dfa738@canb.auug.org.au>
-References: <20140211132552.68b0802fd8742c6d72dfa738@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__4_Mar_2014_14_03_18_+1100_q/tY3wteNzZ.8xcL"
+	id S1756128AbaCDDI7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 22:08:59 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:61137 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756057AbaCDDI4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 22:08:56 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19XVUQymILn791d1aQ5KprYu0U5I6jpku4=
+X-DKIM: OpenDKIM Filter v2.0.1 titan D63E353910F
+Date: Mon, 3 Mar 2014 22:08:38 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
+        linux-kernel@vger.kernel.org,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH V2] ARM: dove: dt: revert PMU interrupt controller node
+Message-ID: <20140304030838.GA1872@titan.lakedaemon.net>
+References: <20140207180836.GE8533@titan.lakedaemon.net>
+ <1392667236-19126-1-git-send-email-jason@lakedaemon.net>
+ <20140303150215.GI21483@n2100.arm.linux.org.uk>
+ <20140303173740.GC16655@lunn.ch>
+ <20140303181529.GM21483@n2100.arm.linux.org.uk>
+ <20140303222406.GW1872@titan.lakedaemon.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140303222406.GW1872@titan.lakedaemon.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__4_Mar_2014_14_03_18_+1100_q/tY3wteNzZ.8xcL
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Mar 03, 2014 at 05:24:06PM -0500, Jason Cooper wrote:
+> I've no issue with reverting this driver.  I'll ask arm-soc to hold off
+> on pulling the latest mvebu DT pull request which contains the DT node.
+> I _really_ don't want to do a revert of a revert of a revert. :-/
 
-Hi Lee,
+Done.  I'll work on reverting the driver tomorrow.  It's currently in
+tip/irq/core queued for v3.15.
 
-On Tue, 11 Feb 2014 13:25:52 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->=20
-> After merging the mfd-lj tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
->=20
-> drivers/mfd/tps65218: struct i2c_device_id is 32 bytes.  The last of 1 is:
-> 0x74 0x70 0x73 0x36 0x35 0x32 0x31 0x38 0x00 0x00 0x00 0x00 0x00 0x00 0x0=
-0 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0xf0 0x00 0x00 0x00 0x00 0x0=
-0 0x00 0x00=20
-> FATAL: drivers/mfd/tps65218: struct i2c_device_id is not terminated with =
-a NULL entry!
->=20
-> Caused by commit cc493e30e3a1 ("mfd: tps65218: Add driver for the
-> TPS65218 PMIC").
+thx,
 
-Now that the otherproblem is fixed, I am getting this one again :-(
-
-> I have used the mfd-lj tree from next-20140210 for today.
-
-Again.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__4_Mar_2014_14_03_18_+1100_q/tY3wteNzZ.8xcL
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTFUJ7AAoJEMDTa8Ir7ZwV4t0P/0O+PrA83PRezbk4AXPzR0Ii
-CHeBdAwAp3RfwuZEWMbhyCIYPKWeOP0fp821Gtve3cKcatY43L7PchjzAJzHFgUh
-YCSVOwHMUQbWIytLiBq+PyxJTnd83b5WBsOeMW89rjMHhvpeCHwU9RX7wAYfYcIx
-eX2Ekk6QqEn6bXNdGpK0UN1Fwn3EZlCw9WMCMaY67AuHMZhzVUhjKovKPIO3vUqZ
-qnzgDFzvkFVOrp8twPE0b/RjK2OibtsKTs70yfrZHR8rdx70b+COd91gXN0jyyGf
-IeGSCBxLudHHt33PkFMN5k8nl4urQjpP0envY+u9T9Pc0DcHXjmV3LMNYAA9UDVT
-EFSyXpZbhYVIGkmijJnurS1n8YMx2bCYpzsyOJmokLhgDKQC6Rgj0NCfimxmU6ii
-BhDklt0fOCnpVzYKR/OHHcu5YoYmMFlTDFT25r+SVuS8Xjld1yrXiJF/y9J0SoXI
-0BWqabQhF8ISmSsz6BAr69HCYEveZcPLKqVnd8L7Pq10amgJpuM85CEUiLITPe2F
-ZhbVaFBDf8MniyMtdwRU8OAdt9ES6h+RbXzt4DAYpe+2deOtwqmoBwOqvJVtrL5W
-GaPo5MDdwtqdM9MKBdGuMERvEPatLx7JSOeQQ69RqWZNNwoUh5pD8q9UwWKe8DMx
-CP+3zJK8TBFfE8yEp9L2
-=AJty
------END PGP SIGNATURE-----
-
---Signature=_Tue__4_Mar_2014_14_03_18_+1100_q/tY3wteNzZ.8xcL--
+Jason.
