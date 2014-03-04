@@ -1,125 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756005AbaCDB0j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 20:26:39 -0500
-Received: from mta-out.inet.fi ([195.156.147.13]:52700 "EHLO jenni1.inet.fi"
+	id S1755375AbaCDBdt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 20:33:49 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33203 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753241AbaCDB0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 20:26:37 -0500
-Date: Tue, 4 Mar 2014 03:26:13 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Chinner <david@fromorbit.com>, Ning Qu <quning@gmail.com>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCHv3 1/2] mm: introduce vm_ops->map_pages()
-Message-ID: <20140304012613.GB21508@node.dhcp.inet.fi>
-References: <1393530827-25450-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1393530827-25450-2-git-send-email-kirill.shutemov@linux.intel.com>
- <20140303151611.5671eebb74cedb99aa5396c8@linux-foundation.org>
+	id S1753241AbaCDBds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 20:33:48 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1393885748.5094.14.camel@deneb.redhat.com>
+References: <1392238575-10000-1-git-send-email-msalter@redhat.com> <1393337404.7307.51.camel@deneb.redhat.com> <20140225183012.GA27164@mudshark.cambridge.arm.com> <1393353942.26583.10.camel@deneb.redhat.com> <530CF21E.1020603@zytor.com> <1393885748.5094.14.camel@deneb.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140303151611.5671eebb74cedb99aa5396c8@linux-foundation.org>
-User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH v4 0/6] generic early_ioremap support
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Mon, 03 Mar 2014 17:30:16 -0800
+To: Mark Salter <msalter@redhat.com>
+CC: Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Dave Young <dyoung@redhat.com>, Rob Herring <robherring2@gmail.com>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        "patches@linaro.org" <patches@linaro.org>
+Message-ID: <2d10d2d3-02e3-42b6-9b81-464f56e4cf01@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 03, 2014 at 03:16:11PM -0800, Andrew Morton wrote:
-> On Thu, 27 Feb 2014 21:53:46 +0200 "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
-> 
-> > The patch introduces new vm_ops callback ->map_pages() and uses it for
-> > mapping easy accessible pages around fault address.
-> > 
-> > On read page fault, if filesystem provides ->map_pages(), we try to map
-> > up to FAULT_AROUND_PAGES pages around page fault address in hope to
-> > reduce number of minor page faults.
-> > 
-> > We call ->map_pages first and use ->fault() as fallback if page by the
-> > offset is not ready to be mapped (cold page cache or something).
-> >
-> > ...
-> >
-> > --- a/include/linux/mm.h
-> > +++ b/include/linux/mm.h
-> >
-> > ...
-> >
-> > @@ -571,6 +576,9 @@ static inline pte_t maybe_mkwrite(pte_t pte, struct vm_area_struct *vma)
-> >  		pte = pte_mkwrite(pte);
-> >  	return pte;
-> >  }
-> > +
-> > +void do_set_pte(struct vm_area_struct *vma, unsigned long address,
-> > +		struct page *page, pte_t *pte, bool write, bool anon);
-> >  #endif
-> >  
-> >  /*
-> 
-> lguest made a dubious naming decision:
-> 
-> drivers/lguest/page_tables.c:890: error: conflicting types for 'do_set_pte'
-> include/linux/mm.h:593: note: previous declaration of 'do_set_pte' was here
-> 
-> I'll rename lguest's do_set_pte() to do_guest_set_pte() as a
-> preparatory patch.
+All three .
 
-Thanks.
+On March 3, 2014 2:29:08 PM PST, Mark Salter <msalter@redhat.com> wrote:
+>On Tue, 2014-02-25 at 11:42 -0800, H. Peter Anvin wrote:
+>> On 02/25/2014 10:45 AM, Mark Salter wrote:
+>> > On Tue, 2014-02-25 at 18:30 +0000, Will Deacon wrote:
+>> >> I'd suggest spitting the core part out from the arch-specific
+>parts. That
+>> >> way, the core part can merged independently and architectures can
+>move over
+>> >> as they see fit. It also signals (at least to me) that, "hey, I
+>should
+>> >> probably review this" whilst my current stance is "there's a whole
+>load of
+>> >> stuff under mm/ that needs to be acked first".
+>> >>
+>> >> If you put the whole thing into next, you just run the risk of
+>conflicts
+>> >> with all the arch trees.
+>> > 
+>> > I've been thinking of breaking out the common bits and x86 bits and
+>just
+>> > going with that for now. There's no point in just doing the common
+>bits
+>> > because it won't get tested without at least one architecture using
+>it.
+>> > 
+>> 
+>> If you think it makes sense we could take the common bits + x86 and
+>put
+>> them through the -tip tree.  The other option would be to put the
+>whole
+>> thread in linux-next with Acks.
+>> 
+>> As far as x86 is concerned it looks like it is mostly just code
+>> movement, so I'm happy giving my:
+>> 
+>> Acked-by: H. Peter Anvin <hpa@linux.intel.com>
+>> 
+>
+>I going to send out a v5 with the arm bits dropped and Ack-bys added.
+>There is still some work left there, so I think I'll redo the arm bits
+>separately after once the common bits are in the kernel.
+>
+>Peter, is your Acked-by only for "[3/6] x86: use generic
+>early_ioremap"?
+>Or did you intend "[1/6] x86/mm: sparse warning fix for early_memremap"
+>and/or "[2/6] mm: create generic early_ioremap() support" also?
 
-> btw, do_set_pte() could really do with some documentation.  It's not a
-> trivial function and it does a lot of stuff.  It's exported to other
-> compilation units and we should explain the what, the why and
-> particularly the locking preconditions.
-
-Like this?
-
->From f9be5307ed59ab65645377c1da03eaf4167bfcf2 Mon Sep 17 00:00:00 2001
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Tue, 4 Mar 2014 03:15:43 +0200
-Subject: [PATCH] mm: documentaton for do_set_pte()
-
-do_set_pte() now exported to other compilation unit. Let's document
-interface.
-
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- mm/memory.c | 16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
-
-diff --git a/mm/memory.c b/mm/memory.c
-index e2d54e818c5b..6dc622b06915 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3319,7 +3319,21 @@ static int __do_fault(struct vm_area_struct *vma, unsigned long address,
- 	return ret;
- }
- 
--
-+/**
-+ * do_set_pte - setup new PTE entry for given page and add reverse page mapping.
-+ *
-+ * @vma: virtual memory area
-+ * @address: user virtual address
-+ * @page: page to map
-+ * @pte: pointer to target page table entry
-+ * @write: true, if new entry is writable
-+ * @anon: true, if it's anonymous page
-+ *
-+ * Caller must hold page table lock relevant for @pte.
-+ *
-+ * Target users are page handler itself and implementations of
-+ * vm_ops->map_pages.
-+ */
- void do_set_pte(struct vm_area_struct *vma, unsigned long address,
- 		struct page *page, pte_t *pte, bool write, bool anon)
- {
 -- 
- Kirill A. Shutemov
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
