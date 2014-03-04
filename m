@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758178AbaCDV2z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:28:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40907 "EHLO
+	id S1758193AbaCDV3U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:29:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40897 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755973AbaCDUDM (ORCPT
+	with ESMTP id S1755951AbaCDUDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:03:12 -0500
+	Tue, 4 Mar 2014 15:03:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Qin Chuanyu <qinchuanyu@huawei.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jason Wang <jasowang@redhat.com>,
+        John Ogness <john.ogness@linutronix.de>,
+        Eric Dumazet <edumazet@google.com>,
+        Thomas Glanzmann <thomas@glanzmann.de>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 046/172] vhost: fix ref cnt checking deadlock
-Date: Tue,  4 Mar 2014 12:02:10 -0800
-Message-Id: <20140304200301.207014967@linuxfoundation.org>
+Subject: [PATCH 3.13 044/172] tcp: tsq: fix nonagle handling
+Date: Tue,  4 Mar 2014 12:02:08 -0800
+Message-Id: <20140304200301.144107395@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -31,141 +31,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
+From: John Ogness <john.ogness@linutronix.de>
 
-[ Upstream commit 0ad8b480d6ee916aa84324f69acf690142aecd0e ]
+[ Upstream commit bf06200e732de613a1277984bf34d1a21c2de03d ]
 
-vhost checked the counter within the refcnt before decrementing.  It
-really wanted to know that it is the one that has the last reference, as
-a way to batch freeing resources a bit more efficiently.
+Commit 46d3ceabd8d9 ("tcp: TCP Small Queues") introduced a possible
+regression for applications using TCP_NODELAY.
 
-Note: we only let refcount go to 0 on device release.
+If TCP session is throttled because of tsq, we should consult
+tp->nonagle when TX completion is done and allow us to send additional
+segment, especially if this segment is not a full MSS.
+Otherwise this segment is sent after an RTO.
 
-This works well but we now access the ref counter twice so there's a
-race: all users might see a high count and decide to defer freeing
-resources.
-In the end no one initiates freeing resources until the last reference
-is gone (which is on VM shotdown so might happen after a looooong time).
+[edumazet] : Cooked the changelog, added another fix about testing
+sk_wmem_alloc twice because TX completion can happen right before
+setting TSQ_THROTTLED bit.
 
-Let's do what we probably should have done straight away:
-switch from kref to plain atomic, documenting the
-semantics, return the refcount value atomically after decrement,
-then use that to avoid the deadlock.
+This problem is particularly visible with recent auto corking,
+but might also be triggered with low tcp_limit_output_bytes
+values or NIC drivers delaying TX completion by hundred of usec,
+and very low rtt.
 
-Reported-by: Qin Chuanyu <qinchuanyu@huawei.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Jason Wang <jasowang@redhat.com>
+Thomas Glanzmann for example reported an iscsi regression, caused
+by tcp auto corking making this bug quite visible.
+
+Fixes: 46d3ceabd8d9 ("tcp: TCP Small Queues")
+Signed-off-by: John Ogness <john.ogness@linutronix.de>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Thomas Glanzmann <thomas@glanzmann.de>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/vhost/net.c |   41 ++++++++++++++++++++---------------------
- 1 file changed, 20 insertions(+), 21 deletions(-)
+ net/ipv4/tcp_output.c |   13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -70,7 +70,12 @@ enum {
- };
- 
- struct vhost_net_ubuf_ref {
--	struct kref kref;
-+	/* refcount follows semantics similar to kref:
-+	 *  0: object is released
-+	 *  1: no outstanding ubufs
-+	 * >1: outstanding ubufs
-+	 */
-+	atomic_t refcount;
- 	wait_queue_head_t wait;
- 	struct vhost_virtqueue *vq;
- };
-@@ -116,14 +121,6 @@ static void vhost_net_enable_zcopy(int v
- 	vhost_net_zcopy_mask |= 0x1 << vq;
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -696,7 +696,8 @@ static void tcp_tsq_handler(struct sock
+ 	if ((1 << sk->sk_state) &
+ 	    (TCPF_ESTABLISHED | TCPF_FIN_WAIT1 | TCPF_CLOSING |
+ 	     TCPF_CLOSE_WAIT  | TCPF_LAST_ACK))
+-		tcp_write_xmit(sk, tcp_current_mss(sk), 0, 0, GFP_ATOMIC);
++		tcp_write_xmit(sk, tcp_current_mss(sk), tcp_sk(sk)->nonagle,
++			       0, GFP_ATOMIC);
  }
+ /*
+  * One tasklest per cpu tries to send more skbs.
+@@ -1884,7 +1885,15 @@ static bool tcp_write_xmit(struct sock *
  
--static void vhost_net_zerocopy_done_signal(struct kref *kref)
--{
--	struct vhost_net_ubuf_ref *ubufs;
--
--	ubufs = container_of(kref, struct vhost_net_ubuf_ref, kref);
--	wake_up(&ubufs->wait);
--}
--
- static struct vhost_net_ubuf_ref *
- vhost_net_ubuf_alloc(struct vhost_virtqueue *vq, bool zcopy)
- {
-@@ -134,21 +131,24 @@ vhost_net_ubuf_alloc(struct vhost_virtqu
- 	ubufs = kmalloc(sizeof(*ubufs), GFP_KERNEL);
- 	if (!ubufs)
- 		return ERR_PTR(-ENOMEM);
--	kref_init(&ubufs->kref);
-+	atomic_set(&ubufs->refcount, 1);
- 	init_waitqueue_head(&ubufs->wait);
- 	ubufs->vq = vq;
- 	return ubufs;
- }
+ 		if (atomic_read(&sk->sk_wmem_alloc) > limit) {
+ 			set_bit(TSQ_THROTTLED, &tp->tsq_flags);
+-			break;
++			/* It is possible TX completion already happened
++			 * before we set TSQ_THROTTLED, so we must
++			 * test again the condition.
++			 * We abuse smp_mb__after_clear_bit() because
++			 * there is no smp_mb__after_set_bit() yet
++			 */
++			smp_mb__after_clear_bit();
++			if (atomic_read(&sk->sk_wmem_alloc) > limit)
++				break;
+ 		}
  
--static void vhost_net_ubuf_put(struct vhost_net_ubuf_ref *ubufs)
-+static int vhost_net_ubuf_put(struct vhost_net_ubuf_ref *ubufs)
- {
--	kref_put(&ubufs->kref, vhost_net_zerocopy_done_signal);
-+	int r = atomic_sub_return(1, &ubufs->refcount);
-+	if (unlikely(!r))
-+		wake_up(&ubufs->wait);
-+	return r;
- }
- 
- static void vhost_net_ubuf_put_and_wait(struct vhost_net_ubuf_ref *ubufs)
- {
--	kref_put(&ubufs->kref, vhost_net_zerocopy_done_signal);
--	wait_event(ubufs->wait, !atomic_read(&ubufs->kref.refcount));
-+	vhost_net_ubuf_put(ubufs);
-+	wait_event(ubufs->wait, !atomic_read(&ubufs->refcount));
- }
- 
- static void vhost_net_ubuf_put_wait_and_free(struct vhost_net_ubuf_ref *ubufs)
-@@ -306,22 +306,21 @@ static void vhost_zerocopy_callback(stru
- {
- 	struct vhost_net_ubuf_ref *ubufs = ubuf->ctx;
- 	struct vhost_virtqueue *vq = ubufs->vq;
--	int cnt = atomic_read(&ubufs->kref.refcount);
-+	int cnt;
- 
- 	/* set len to mark this desc buffers done DMA */
- 	vq->heads[ubuf->desc].len = success ?
- 		VHOST_DMA_DONE_LEN : VHOST_DMA_FAILED_LEN;
--	vhost_net_ubuf_put(ubufs);
-+	cnt = vhost_net_ubuf_put(ubufs);
- 
- 	/*
- 	 * Trigger polling thread if guest stopped submitting new buffers:
--	 * in this case, the refcount after decrement will eventually reach 1
--	 * so here it is 2.
-+	 * in this case, the refcount after decrement will eventually reach 1.
- 	 * We also trigger polling periodically after each 16 packets
- 	 * (the value 16 here is more or less arbitrary, it's tuned to trigger
- 	 * less than 10% of times).
- 	 */
--	if (cnt <= 2 || !(cnt % 16))
-+	if (cnt <= 1 || !(cnt % 16))
- 		vhost_poll_queue(&vq->poll);
- }
- 
-@@ -420,7 +419,7 @@ static void handle_tx(struct vhost_net *
- 			msg.msg_control = ubuf;
- 			msg.msg_controllen = sizeof(ubuf);
- 			ubufs = nvq->ubufs;
--			kref_get(&ubufs->kref);
-+			atomic_inc(&ubufs->refcount);
- 			nvq->upend_idx = (nvq->upend_idx + 1) % UIO_MAXIOV;
- 		} else {
- 			msg.msg_control = NULL;
-@@ -785,7 +784,7 @@ static void vhost_net_flush(struct vhost
- 		vhost_net_ubuf_put_and_wait(n->vqs[VHOST_NET_VQ_TX].ubufs);
- 		mutex_lock(&n->vqs[VHOST_NET_VQ_TX].vq.mutex);
- 		n->tx_flush = false;
--		kref_init(&n->vqs[VHOST_NET_VQ_TX].ubufs->kref);
-+		atomic_set(&n->vqs[VHOST_NET_VQ_TX].ubufs->refcount, 1);
- 		mutex_unlock(&n->vqs[VHOST_NET_VQ_TX].vq.mutex);
- 	}
- }
+ 		limit = mss_now;
 
 
