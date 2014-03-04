@@ -1,103 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932190AbaCDOSo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 09:18:44 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:50898 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932090AbaCDOSn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 09:18:43 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX190N479DbmyaTC++YuCXSbSq+iDdozLZsc=
-X-DKIM: OpenDKIM Filter v2.0.1 titan A9641539972
-Date: Tue, 4 Mar 2014 09:18:23 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
-        linux-kernel@vger.kernel.org,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH V2] ARM: dove: dt: revert PMU interrupt controller node
-Message-ID: <20140304141823.GM1872@titan.lakedaemon.net>
-References: <1392667236-19126-1-git-send-email-jason@lakedaemon.net>
- <20140303150215.GI21483@n2100.arm.linux.org.uk>
- <20140303173740.GC16655@lunn.ch>
- <20140303181529.GM21483@n2100.arm.linux.org.uk>
- <20140303222406.GW1872@titan.lakedaemon.net>
- <20140304092616.GH16655@lunn.ch>
- <5315AD6F.1070804@gmail.com>
- <20140304121136.GR21483@n2100.arm.linux.org.uk>
- <20140304135306.GL1872@titan.lakedaemon.net>
- <5315DCF1.90608@gmail.com>
+	id S932228AbaCDOS4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 09:18:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56427 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932090AbaCDOSv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 09:18:51 -0500
+Date: Tue, 4 Mar 2014 09:18:38 -0500
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        David Barksdale <dbarksdale@uplogix.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] HID: cp2112: remove the last hid_output_raw_report()
+ call
+Message-ID: <20140304141838.GD24154@mail.corp.redhat.com>
+References: <1393633237-26496-1-git-send-email-benjamin.tissoires@redhat.com>
+ <1393633237-26496-3-git-send-email-benjamin.tissoires@redhat.com>
+ <alpine.LNX.2.00.1403041445080.30402@pobox.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <5315DCF1.90608@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LNX.2.00.1403041445080.30402@pobox.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 04, 2014 at 03:02:25PM +0100, Sebastian Hesselbarth wrote:
-> On 03/04/2014 02:53 PM, Jason Cooper wrote:
-> >On Tue, Mar 04, 2014 at 12:11:36PM +0000, Russell King - ARM Linux wrote:
-> >>On Tue, Mar 04, 2014 at 11:39:43AM +0100, Sebastian Hesselbarth wrote:
-> >>>On 03/04/2014 10:26 AM, Andrew Lunn wrote:
-> >>>>>I could have sworn this was discussed with this particular patchset, but
-> >>>>>I'm unable to find the conversation in my archives.  Neither during the
-> >>>>>patch submission process, nor the (long) pull request thread.
-> >>>>>
-> >>>>>Perhaps it was an irc conversation?  Andrew, Sebastian, can you find a
-> >>>>>link?  iirc, one of the DT maintainers (Mark Rutland?) raised the same
-> >>>>>concern and I thought we answered that sufficiently...
-> >>>>
-> >>>>It was the cpufreq driver which caused the discussion. I looked at it
-> >>>>for a while, and then task swapped onto the kirkwood move into
-> >>>>mach-mvebu.
-> >>>
-> >>>I guess you are looking for this discussion
-> >>>
-> >>>http://comments.gmane.org/gmane.linux.power-management.general/41053
-> >>>
-> >>>and specifically Mark's remarks on PMU and DT in here
-> >>>
-> >>>http://permalink.gmane.org/gmane.linux.ports.arm.kernel/285384
-> >>>
-> >>>BTW, +1 for a single PMU node that either serves an mfd (or type
-> >>>of) driver or that subsystem drivers derive their resources from.
-> >>>Looking at Dove FS, that would also include clock gating, which
-> >>>could be a mess to sort out.. anyway, let's get it on.
-> >>
-> >>So we have cpufreq, pm domains and an irq controller.  What's the plan
-> >>for this, who's going to look at sorting this out?
-> >
-> >Andrew, Sebastian?  I'm currently task-saturated...
+On Mar 04 2014 or thereabouts, Jiri Kosina wrote:
+> On Fri, 28 Feb 2014, Benjamin Tissoires wrote:
 > 
-> Phew, looks like I'll have to take it?
+> > I don't have access to the device, so I copied/pasted the code
+> > from hidraw.
+> > 
+> > Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> > ---
+> >  drivers/hid/hid-cp2112.c | 16 +++++++++++++++-
+> >  1 file changed, 15 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/hid/hid-cp2112.c b/drivers/hid/hid-cp2112.c
+> > index 860db694..c4f87bd 100644
+> > --- a/drivers/hid/hid-cp2112.c
+> > +++ b/drivers/hid/hid-cp2112.c
+> > @@ -290,7 +290,21 @@ static int cp2112_hid_output(struct hid_device *hdev, u8 *data, size_t count,
+> >  	if (!buf)
+> >  		return -ENOMEM;
+> >  
+> > -	ret = hdev->hid_output_raw_report(hdev, buf, count, report_type);
+> > +	/* Fixme: test which function is actually called for output reports */
 > 
-> Are you guys ok with having a single PMU node with syscon provided
-> regmap and make all drivers depend on it? I'd like to get a go from
-> Russell here, as he has clearly something in mind.
+> I don't completely understand this Fixme (oh, and please spell it as 
+> 'FIXME:' so that we are consistent with all the other instances), could 
+> you please elaborate?
+
+Well, sorry:
+As I said, this part is a copy/paste of what is in hidraw. However, this
+just reflect that we don't know how the device actually behave, which is
+not very elegant. I have currently no clues of which function will be
+actually called for output reports: hid_hw_output_report() or
+hid_hw_raw_request(). Once we got the confirmation of which function is
+called, we could make the path more straightforward.
+
+I bought one of these (it may help debugging some Synaptics devices),
+and I'll receive it by the end of the week. So by next week, we should
+get the actual code path and remove this FIXME.
+
+I need to send a v2 of hid-sony in any cases, so I guess you should not
+pull these 4 patches right away. If you prefer having this in linux-next,
+the sooner, I can also send the v2 right away, and we will fix this
+cp2112 driver next week.
+
+Cheers,
+Benjamin
+
 > 
-> We can consolidate drivers later if required. If we start that now,
-> we definitely risk running out of time for v3.15.
-
-Honestly, mvebu has enough going on atm.  I would target v3.16 and take
-our time.  At least with the binding.  If the driver comes together
-easily, we could always do like we did for mbus.  Do a legacy init from
-the board (soc) file, then switch to the dt binding once everyone is
-happy with it.
-
-v3.14-rc6 is less than a week away, so I'll be sending final mvebu pull
-requests late Wednesday/Thursday...
-
-v3.14-rcX has been awful quiet, there might not be an -rc7.
-
-thx,
-
-Jason.
+> Thanks,
+> 
+> -- 
+> Jiri Kosina
+> SUSE Labs
