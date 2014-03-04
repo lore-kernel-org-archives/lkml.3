@@ -1,73 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338AbaCDQ2G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 11:28:06 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:47395 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145AbaCDQ2F (ORCPT
+	id S1754369AbaCDQ3H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 11:29:07 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:33087 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065AbaCDQ3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 11:28:05 -0500
-Message-ID: <5315FF0F.9000207@infradead.org>
-Date: Tue, 04 Mar 2014 08:27:59 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 4 Mar 2014 11:29:04 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+YIWysqhFwOwa3IjOPUHUa
+Date: Tue, 4 Mar 2014 08:28:56 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: kishon@ti.com, balbi@ti.com, george.cherian@ti.com, balajitk@ti.com,
+        hdegoede@redhat.com, linux-omap@vger.kernel.org,
+        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org
+Subject: Re: [PATCH 02/12] phy: omap-control: Update DT binding information
+Message-ID: <20140304162855.GB3376@atomide.com>
+References: <1393859254-10937-1-git-send-email-rogerq@ti.com>
+ <1393859254-10937-3-git-send-email-rogerq@ti.com>
+ <20140303190247.GD25804@atomide.com>
+ <5315995F.5050206@ti.com>
 MIME-Version: 1.0
-To: yogesh <mr.yogesh@gmail.com>, Levente Kurusa <levex@linux.com>,
-        LKML <linux-kernel@vger.kernel.org>
-CC: Joe Perches <joe@perches.com>
-Subject: Re: [PATCH 1/1] Add documentation for proper usage and order of preference
- of calls to print diagnostic messages.
-References: <20140304114814.GA28031@yogesh-Dell-System-XPS-L502X> <CAAsK9AF-jbJZHOT+4gY0QmZFMhj84_DuSD9jDgddDH03vodcYw@mail.gmail.com> <20140304143111.GA4074@yogesh-Dell-System-XPS-L502X>
-In-Reply-To: <20140304143111.GA4074@yogesh-Dell-System-XPS-L502X>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5315995F.5050206@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/2014 06:31 AM, yogesh wrote:
-> This patch adds documentation that clarifies the use of various
-> diagnostic printing messages. It shows the preference of subsystem_dbg
-> calls to dev_dbg (whenever possible), as they first preferred format of
-> logging debug messages.
-> Signed-off-by: Yogesh Chaudhari <mr.yogesh@gmail.com>
-> ---
->  Documentation/CodingStyle | 17 +++++++++++++++++
->  1 file changed, 17 insertions(+)
+* Roger Quadros <rogerq@ti.com> [140304 01:17]:
+> Hi Tony,
 > 
-> diff --git a/Documentation/CodingStyle b/Documentation/CodingStyle
-> index 7fe0546..083f738 100644
-> --- a/Documentation/CodingStyle
-> +++ b/Documentation/CodingStyle
-> @@ -662,6 +662,23 @@ and driver, and are tagged with the right level:  dev_err(), dev_warn(),
->  dev_info(), and so forth.  For messages that aren't associated with a
->  particular device, <linux/printk.h> defines pr_debug() and pr_info().
->  
-> +If the subsystem has its own diagnostic macros then they should be used
-> +instead of dev_dbg calls.
-> +e.g. If you are using network subsystem, use netdev_dbg;
+> On 03/03/2014 09:02 PM, Tony Lindgren wrote:
+> > * Roger Quadros <rogerq@ti.com> [140303 07:10]:
+> >> Move omap-control binding information to the right location.
+> >>
+> >> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> >> ---
+> >>  Documentation/devicetree/bindings/phy/ti-phy.txt   | 25 ++++++++++++++++++++++
+> >>  Documentation/devicetree/bindings/usb/omap-usb.txt | 24 ---------------------
+> >>  2 files changed, 25 insertions(+), 24 deletions(-)
+> >>
+> >> diff --git a/Documentation/devicetree/bindings/phy/ti-phy.txt b/Documentation/devicetree/bindings/phy/ti-phy.txt
+> >> index 207e14c..41dc132 100644
+> >> --- a/Documentation/devicetree/bindings/phy/ti-phy.txt
+> >> +++ b/Documentation/devicetree/bindings/phy/ti-phy.txt
+> >> @@ -1,5 +1,30 @@
+> >>  TI PHY: DT DOCUMENTATION FOR PHYs in TI PLATFORMs
+> >>  
+> >> +OMAP CONTROL PHY
+> >> +
+> >> +Required properties:
+> >> + - compatible: Should be one of
+> >> + "ti,control-phy-otghs" - if it has otghs_control mailbox register as on OMAP4.
+> >> + "ti,control-phy-usb2" - if it has Power down bit in control_dev_conf register
+> >> +                        e.g. USB2_PHY on OMAP5.
+> >> + "ti,control-phy-pipe3" - if it has DPLL and individual Rx & Tx power control
+> >> +                        e.g. USB3 PHY and SATA PHY on OMAP5.
+> >> + "ti,control-phy-dra7usb2" - if it has power down register like USB2 PHY on
+> >> +                        DRA7 platform.
+> >> + "ti,control-phy-am437usb2" - if it has power down register like USB2 PHY on
+> >> +                        AM437 platform.
+> > 
+> > To me it seems that you can leave out all the above. You can set these falgs
+> > flags directly in the driver based on the compatible flag. Then just initialize
+> > the .data in the driver based on the compatible flag.
+> 
+> I'm not sure if I got you. A single platform can have different type of phys.
+> 
+> e.g. OMAP5 has both usb2 and pipe3 PHYs,
+> DRA7 has both pipe3 and usb2 PHYs, but this usb2 PHY is not compatible with OMAP5 one
+> so we need a new compatible id for that.
+> 
+> To add to the woes, the designers were creative enough to make another mutation to
+> the USB2 PHY for AM437x, :(
 
-   E.g., if you are
+Oh OK, in that case the compatible flag may not be enough for configuring the
+various instances.
+ 
+> What do you suggest the compatible ids should look like for these 5 types of PHY control?
+> OTGHS	(OMAP4 & 5)
+> USB2	(OMAP5)
+> PIPE3	(OMAP5 & DRA7)
+> USB2x	(DRA7)
+> USB2y	(AM437)
 
-> +if you are using V4L, use v4l_dbg etc.
-> +This standardises the output format in every subsystem.
-> +
-> +Depending on your changes, the following order of precedence
-> +applies to printing messages:
-> +1. [subsystem]_dbg() is preferred when the subsystem has its own
-> +diagnostic macros.
-> +2. dev_dbg() is preferred when you have a generic struct device object.
-> +3. pr_debug() should be used when 1 and 2 above are not applicable.
-> +4. printk() should be avoided.
-> +
-> +Note: The above order applies to diagnostic calls of all log levels viz:
-> +*_emerg, *_alert, *_crit, *_err, *_warn, *_notice, *_info and *_dbg.
-> +
->  Coming up with good debugging messages can be quite a challenge; and once
->  you have them, they can be a huge help for remote troubleshooting.  Such
->  messages should be compiled out when the DEBUG symbol is not defined (that
-> --
+I think in that case having the various instances fully configurable from
+device tree is OK if you prefer that. But if you wanted to use the
+compatible flag, then you could do something like this:
 
+ti,control-phy-omap4-otghs	(assuming same on omap4 & 5)
+ti,control-phy-omap5-usb2
+ti,control-phy-omap5-pipe3	(assuming same on omap5 & dra7)
+ti,control-phy-dra7-usb2x
+ti,control-phy-am437-usb2y
+...
 
--- 
-~Randy
+Regards,
+
+Tony
