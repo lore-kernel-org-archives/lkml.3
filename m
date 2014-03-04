@@ -1,47 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755899AbaCDAcI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 19:32:08 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:52950 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755343AbaCDAcG (ORCPT
+	id S1755942AbaCDAcV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 19:32:21 -0500
+Received: from mga11.intel.com ([192.55.52.93]:24104 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755343AbaCDAcQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 19:32:06 -0500
-Date: Mon, 3 Mar 2014 16:31:59 -0800
-From: Stephen Hemminger <stephen@networkplumber.org>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+	Mon, 3 Mar 2014 19:32:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,581,1389772800"; 
+   d="scan'208";a="491774550"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: Thomas Renninger <trenn@suse.de>
+CC: "Moore, Robert" <robert.moore@intel.com>,
+        "Box, David E" <david.e.box@intel.com>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "ck@conrad-kostecki.de" <ck@conrad-kostecki.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kvm@vger.kernel.org, xen-devel@lists.xenproject.org,
-        bridge@lists.linux-foundation.org
-Subject: Re: [RFC v3 4/6] bridge: enable root block during device
- registration
-Message-ID: <20140303163159.365d763b@nehalam.linuxnetplumber.net>
-In-Reply-To: <CAB=NE6VpjebGrqFe7Q4L-uM0rrKitY3fB2kq5qGko+C1Fivm0w@mail.gmail.com>
-References: <1393886825-24323-1-git-send-email-mcgrof@do-not-panic.com>
-	<1393886825-24323-5-git-send-email-mcgrof@do-not-panic.com>
-	<20140303154330.238a20bc@nehalam.linuxnetplumber.net>
-	<CAB=NE6VpjebGrqFe7Q4L-uM0rrKitY3fB2kq5qGko+C1Fivm0w@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+        "x86@kernel.org" <x86@kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "devel@acpica.org" <devel@acpica.org>
+Subject: RE: [PATCH 2/4] ACPICA: Introduce new acpi_os_physical_table_add OS
+ callback
+Thread-Topic: [PATCH 2/4] ACPICA: Introduce new acpi_os_physical_table_add
+ OS callback
+Thread-Index: AQHPNn7ETOONm9s0vUeg3rV5HSj6rprOyM0AgAFK6gA=
+Date: Tue, 4 Mar 2014 00:31:57 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E88024BD46F@SHSMSX101.ccr.corp.intel.com>
+References: <1393608241-31037-1-git-send-email-trenn@suse.de>
+ <1393608241-31037-3-git-send-email-trenn@suse.de>
+ <1AE640813FDE7649BE1B193DEA596E88024BB021@SHSMSX101.ccr.corp.intel.com>
+ <2330411.KHkNc5Vvtq@skinner>
+In-Reply-To: <2330411.KHkNc5Vvtq@skinner>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 Mar 2014 15:58:50 -0800
-"Luis R. Rodriguez" <mcgrof@do-not-panic.com> wrote:
+Hi,  Thomas
 
-> On Mon, Mar 3, 2014 at 3:43 PM, Stephen Hemminger
-> <stephen@networkplumber.org> wrote:
-> > Doing this in priv flags bloats what is a limited resource (# of bits).  
+> From: Thomas Renninger [mailto:trenn@suse.de]
+> Sent: Monday, March 03, 2014 8:42 PM
 > 
-> Agreed. I tried to avoid it but saw no other option for addressing
-> this during initialization properly without requirng a userspace
-> upgrade.
+> Hi Lv,
+> 
+> On Monday, March 03, 2014 01:20:31 AM Zheng, Lv wrote:
+> > Hi, Thomas
+> >
+> > I have a patch series that can cleanup the ACPICA table manager, and change
+> > the acpi_load_table into the following style:
+> 
+> Ok. I suggest that:
+> 1) If Thomas (Gleixner) or whoever wants to try out or needs it urgently, he
+>    can (must) use a recent kernel with my patches applied.
+> 2) You continue to get your changes into ACPICA.
+>    Eventually or best would be if you add whatever is needed to
+>    allow adding of tables as well (which will be there automatically if
+>    I understood the description of your changes correctly).
+> 3) Either you give it a try yourself or give me short description for
+>    what I have to look out for and I can re-post the Linux patches
+>    based on your ACPICA changes, once they show up in the Linux kernel.
+>    Best give me a ping as soon as I should look at it.
 
-Replacing one Xen hack for another doesn't seem like great progress.
-I would rather see an API change as needed because there are other
-things like setting STP parameters which might also want to be part
-of initial device add.
+That sounds good.
+
+Or it can be more efficient for productions:
+Linux can merge your patches and ACPICA just stop to take them.
+This will leave us divergences.
+After the table manager cleanups are tested and shipped in the ACPICA repo, the new facilities will automatically be rolled into Linux branches.
+Then I can help to reduce the divergences using the new ACPICA facilities.
+At that time I may ask whoever that can test to offer help to review the cleanup patch.
+
+Thanks and best regards
+-Lv
