@@ -1,98 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932825AbaCDUwL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:52:11 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44611 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757274AbaCDUwI (ORCPT
+	id S1758215AbaCDUws (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:52:48 -0500
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:50110 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758120AbaCDUwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:52:08 -0500
-Date: Tue, 4 Mar 2014 12:51:56 -0800
-From: tip-bot for Michael Opdenacker <tipbot@zytor.com>
-Message-ID: <tip-d20d2efbf227042920d386b8eda878815f63c987@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        michael.opdenacker@free-electrons.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        michael.opdenacker@free-electrons.com, tglx@linutronix.de
-In-Reply-To: <1393965305-17248-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1393965305-17248-1-git-send-email-michael.opdenacker@free-electrons.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] x86: Remove deprecated IRQF_DISABLED
-Git-Commit-ID: d20d2efbf227042920d386b8eda878815f63c987
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 4 Mar 2014 15:52:46 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140226190306.9616.30567.stgit@bhelgaas-glaptop.roam.corp.google.com>
+References: <20140226190306.9616.30567.stgit@bhelgaas-glaptop.roam.corp.google.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 4 Mar 2014 13:52:25 -0700
+Message-ID: <CAErSpo7LOQevxDdSqiTPVJEVHLGNYSs4bC_g20Ak6ZizTdjtYg@mail.gmail.com>
+Subject: Re: [PATCH 0/4] i2o: Use pci_bus_alloc_resource()
+To: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Cc: Markus Lidel <Markus.Lidel@shadowconnect.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d20d2efbf227042920d386b8eda878815f63c987
-Gitweb:     http://git.kernel.org/tip/d20d2efbf227042920d386b8eda878815f63c987
-Author:     Michael Opdenacker <michael.opdenacker@free-electrons.com>
-AuthorDate: Tue, 4 Mar 2014 21:35:05 +0100
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Tue, 4 Mar 2014 21:47:51 +0100
+On Wed, Feb 26, 2014 at 12:08 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> i20 currently uses pci_find_parent_resource() followed by
+> allocate_resource() to allocate PCI space.  The problem is that this won't
+> work reliably because before we allocate the space, we don't know its
+> address, and therefore we can't find the parent resource.  Even if we know
+> the *type* of space we want, in some cases there are multiple possibilities
+> (root buses with multiple apertures to them, prefetchable or
+> non-prefetchable apertures, etc.)
+>
+> This changes it to use pci_bus_alloc_resource(), which takes care of those
+> details.
+>
+> This also fixes some things that look like copy/paste errors, e.g., trying
+> to allocate an I/O space with 1MB alignment.
+>
+> I don't have hardware to test these changes, but I don't think these
+> allocation paths actually worked before, this shouldn't be any worse than
+> what we have today.
+>
+> ---
+>
+> Bjorn Helgaas (4):
+>       i2o: Fix I/O space allocation copy/paste error
+>       i2o: Fix I/O space alignment requirement
+>       i2o: Refactor i2o_iop_systab_set() PCI space allocation
+>       i2o: Use pci_bus_alloc_resource(), not allocate_resource() directly
+>
+>
+>  drivers/message/i2o/iop.c |   85 ++++++++++++++++++++++-----------------------
+>  1 file changed, 42 insertions(+), 43 deletions(-)
 
-x86: Remove deprecated IRQF_DISABLED
-
-This patch removes the IRQF_DISABLED flag from x86 architecture
-code. It's a NOOP since 2.6.35 and it will be removed one day.
-
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Cc: venki@google.com
-Link: http://lkml.kernel.org/r/1393965305-17248-1-git-send-email-michael.opdenacker@free-electrons.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/include/asm/floppy.h | 4 ++--
- arch/x86/kernel/hpet.c        | 2 +-
- arch/x86/kernel/time.c        | 2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/include/asm/floppy.h b/arch/x86/include/asm/floppy.h
-index d3d7469..1c7eefe 100644
---- a/arch/x86/include/asm/floppy.h
-+++ b/arch/x86/include/asm/floppy.h
-@@ -145,10 +145,10 @@ static int fd_request_irq(void)
- {
- 	if (can_use_virtual_dma)
- 		return request_irq(FLOPPY_IRQ, floppy_hardint,
--				   IRQF_DISABLED, "floppy", NULL);
-+				   0, "floppy", NULL);
- 	else
- 		return request_irq(FLOPPY_IRQ, floppy_interrupt,
--				   IRQF_DISABLED, "floppy", NULL);
-+				   0, "floppy", NULL);
- }
- 
- static unsigned long dma_mem_alloc(unsigned long size)
-diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
-index da85a8e..45d2ded 100644
---- a/arch/x86/kernel/hpet.c
-+++ b/arch/x86/kernel/hpet.c
-@@ -521,7 +521,7 @@ static int hpet_setup_irq(struct hpet_dev *dev)
- {
- 
- 	if (request_irq(dev->irq, hpet_interrupt_handler,
--			IRQF_TIMER | IRQF_DISABLED | IRQF_NOBALANCING,
-+			IRQF_TIMER | IRQF_NOBALANCING,
- 			dev->name, dev))
- 		return -1;
- 
-diff --git a/arch/x86/kernel/time.c b/arch/x86/kernel/time.c
-index 24d3c91..36b2cee 100644
---- a/arch/x86/kernel/time.c
-+++ b/arch/x86/kernel/time.c
-@@ -62,7 +62,7 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
- 
- static struct irqaction irq0  = {
- 	.handler = timer_interrupt,
--	.flags = IRQF_DISABLED | IRQF_NOBALANCING | IRQF_IRQPOLL | IRQF_TIMER,
-+	.flags = IRQF_NOBALANCING | IRQF_IRQPOLL | IRQF_TIMER,
- 	.name = "timer"
- };
- 
+I applied these to pci/resource for v3.15.
