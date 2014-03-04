@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756850AbaCDKUY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 05:20:24 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:57711 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756666AbaCDKUW (ORCPT
+	id S1756878AbaCDKXe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 05:23:34 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:50249 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756721AbaCDKXd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 05:20:22 -0500
-Message-ID: <1393928414.9669.1.camel@phoenix>
-Subject: [PATCH] regulator: pfuze100: Add terminate entry for
- [i2c|of]_device_id tables
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Robin Gong <b38343@freescale.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 04 Mar 2014 18:20:14 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 4 Mar 2014 05:23:33 -0500
+Date: Tue, 4 Mar 2014 10:23:16 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Graeme Gregory <graeme.gregory@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>, "lenb@kernel.org" <lenb@kernel.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>
+Subject: Re: [PATCH] MAINTAINERS: add maintainers for arm64 acpi
+Message-ID: <20140304102316.GG30596@arm.com>
+References: <1393899345-7397-1-git-send-email-graeme.gregory@linaro.org>
+ <1393899345-7397-2-git-send-email-graeme.gregory@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393899345-7397-2-git-send-email-graeme.gregory@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also remove PFUZE_NUM to avoid below build warnings:
+On Tue, Mar 04, 2014 at 02:15:45AM +0000, Graeme Gregory wrote:
+> +ACPI ARM64
 
-  CC [M]  drivers/regulator/pfuze100-regulator.o
-drivers/regulator/pfuze100-regulator.c:86:2: warning: excess elements in array initializer [enabled by default]
-drivers/regulator/pfuze100-regulator.c:86:2: warning: (near initialization for 'pfuze_device_id') [enabled by default]
-drivers/regulator/pfuze100-regulator.c:93:2: warning: excess elements in array initializer [enabled by default]
-drivers/regulator/pfuze100-regulator.c:93:2: warning: (near initialization for 'pfuze_dt_ids') [enabled by default]
+That's a pretty broad statement for a single file. Is it core support,
+architected peripherals, SoC?
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/pfuze100-regulator.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+> +M:	Hanjun Guo <hanjun.guo@linaro.org>
+> +M:	Graeme Gregory <graeme.gregory@linaro.org>
+> +S:	Supported
+> +L:	linux-acpi@vger.kernel.org
+> +F:	drivers/acpi/plat/arm-core.c
 
-diff --git a/drivers/regulator/pfuze100-regulator.c b/drivers/regulator/pfuze100-regulator.c
-index 44075f8..f87ec70 100644
---- a/drivers/regulator/pfuze100-regulator.c
-+++ b/drivers/regulator/pfuze100-regulator.c
-@@ -56,7 +56,7 @@
- #define PFUZE100_VGEN5VOL	0x70
- #define PFUZE100_VGEN6VOL	0x71
- 
--enum chips {PFUZE100, PFUZE200, PFUZE_NUM};
-+enum chips { PFUZE100, PFUZE200 };
- 
- struct pfuze_regulator {
- 	struct regulator_desc desc;
-@@ -80,15 +80,17 @@ static const int pfuze100_vsnvs[] = {
- 	1000000, 1100000, 1200000, 1300000, 1500000, 1800000, 3000000,
- };
- 
--static const struct i2c_device_id pfuze_device_id[PFUZE_NUM] = {
-+static const struct i2c_device_id pfuze_device_id[] = {
- 	{.name = "pfuze100", .driver_data = PFUZE100},
- 	{.name = "pfuze200", .driver_data = PFUZE200},
-+	{ }
- };
- MODULE_DEVICE_TABLE(i2c, pfuze_device_id);
- 
--static const struct of_device_id pfuze_dt_ids[PFUZE_NUM] = {
-+static const struct of_device_id pfuze_dt_ids[] = {
- 	{ .compatible = "fsl,pfuze100", .data = (void *)PFUZE100},
- 	{ .compatible = "fsl,pfuze200", .data = (void *)PFUZE200},
-+	{ }
- };
- MODULE_DEVICE_TABLE(of, pfuze_dt_ids);
- 
+This patch should be part of the series introducing the arm-core.c file
+and it will be ACKed (or NAKed) following review. We can't really commit
+maintainers to a file which does not exist in mainline and while there is
+still feedback to be addressed. It's like a blank cheque.
+
 -- 
-1.8.1.2
-
-
-
+Catalin
