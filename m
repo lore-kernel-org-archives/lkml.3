@@ -1,67 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756506AbaCDVv1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:51:27 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:37436 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755390AbaCDVvZ (ORCPT
+	id S1756644AbaCDVwa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:52:30 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:65209 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754284AbaCDVw2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 16:51:25 -0500
-Date: Tue, 04 Mar 2014 16:51:22 -0500 (EST)
-Message-Id: <20140304.165122.445822929490466603.davem@davemloft.net>
-To: akpm@linux-foundation.org
-Cc: ebiederm@xmission.com, rgb@redhat.com, eparis@redhat.com,
-        linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [RFC][PATCH] audit: Simplify by assuming the callers socket
- buffer is large enough
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140304133004.b565820f60f595a48e621e58@linux-foundation.org>
-References: <874n3ir0uw.fsf_-_@xmission.com>
-	<87mwhaplo4.fsf_-_@xmission.com>
-	<20140304133004.b565820f60f595a48e621e58@linux-foundation.org>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 04 Mar 2014 13:51:25 -0800 (PST)
+	Tue, 4 Mar 2014 16:52:28 -0500
+Date: Tue, 4 Mar 2014 13:52:25 -0800
+From: Kent Overstreet <kmo@daterainc.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [blk-lib] 6a0608544e5: fileio -77.4% max latency, -5.7%
+ throughput
+Message-ID: <20140304215225.GH11655@kmo>
+References: <20140304132130.GB28854@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140304132130.GB28854@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Morton <akpm@linux-foundation.org>
-Date: Tue, 4 Mar 2014 13:30:04 -0800
-
-> On Fri, 28 Feb 2014 20:50:19 -0800 ebiederm@xmission.com (Eric W. Biederman) wrote:
+On Tue, Mar 04, 2014 at 09:21:30PM +0800, Fengguang Wu wrote:
+> Hi Kent,
 > 
->> 
->> Modify audit_send_reply to directly use a non-blocking send and
->> to return an error on failure (if anyone cares).
->> 
->> Modify audit_list_rules_send to use audit_send_reply and give up
->> if we can not send a packet.
->> 
->> Merge audit_list_rules into iaudit_list_rules_send as the code
->> is now sufficiently simple to not justify to callers.
->> 
->> Kill audit_send_list, audit_send_reply_thread because using
->> a separate thread for replies is not needed when sending
->> packets syncrhonously.
+> FYI, we noticed the below changes on
 > 
-> Nothing much seems to be happening here?
+> git://evilpiepirate.org/~kent/linux-bcache.git for-jens
+> commit 6a0608544e5672bd9a044c285119547eae41abe5 ("blk-lib.c: generic_make_request() handles large bios now")
 > 
-> In an earlier email you said "While reading through 3.14-rc1 I found a
-> pretty siginficant mishandling of network namespaces in the recent
-> audit changes." Were those recent audit changes a post-3.14 thing?  And
-> what is the user-visible effect of the mishandling?
+> test case: snb-drag/sysbench/fileio/600s-100%-1HDD-ext4-64G-1024-seqrewr-sync
 
-I took a quick look at this patch yesterday, and my only suspicion is
-that threads are created currently by this code purely to cons up a
-blockable context for the netlink code.
+I'm trying to figure out how to parse this and the graphs - where do I find the
+test? And is there anything you can point me to for the graphs, or is that
+output from that test?
 
-Perhaps it wants to avoid any netlink packet drops from being possible.
-
-I'm not so sure.
-
-Anyways, some investigation into perhaps figuring out the intentions of
-the original implementation would be nice.
+> 
+> 11541d5f5b7002b  6a0608544e5672bd9a044c285  
+> ---------------  -------------------------  
+>       1885 ~60%     -77.4%        426 ~ 7%  TOTAL fileio.request_latency_max_ms
+>       6258 ~ 0%      -5.7%       5904 ~ 0%  TOTAL fileio.requests_per_sec
+>         26 ~ 1%    +702.3%        211 ~ 8%  TOTAL slabinfo.kmalloc-4096.num_slabs
+>        217 ~ 1%    +682.3%       1697 ~ 8%  TOTAL slabinfo.kmalloc-4096.num_objs
+>         26 ~ 1%    +702.3%        211 ~ 8%  TOTAL slabinfo.kmalloc-4096.active_slabs
+>        211 ~ 2%    +701.5%       1697 ~ 8%  TOTAL slabinfo.kmalloc-4096.active_objs
+>          2 ~ 0%     -50.0%          1 ~ 0%  TOTAL vmstat.procs.b
+>       2236 ~ 0%     +63.6%       3659 ~ 3%  TOTAL slabinfo.kmalloc-256.num_objs
+>       2217 ~ 0%     +63.4%       3623 ~ 3%  TOTAL slabinfo.kmalloc-256.active_objs
+>       3274 ~ 1%     +47.8%       4837 ~ 2%  TOTAL proc-vmstat.nr_slab_unreclaimable
+>      13096 ~ 1%     +47.7%      19350 ~ 2%  TOTAL meminfo.SUnreclaim
+>   62558204 ~ 5%     -30.7%   43379766 ~ 1%  TOTAL cpuidle.C3-SNB.time
+>      91031 ~ 4%     -29.4%      64253 ~ 2%  TOTAL cpuidle.C1E-SNB.usage
+>      34092 ~ 2%     -17.6%      28085 ~ 1%  TOTAL cpuidle.C3-SNB.usage
+>       2656 ~ 2%     -15.0%       2258 ~ 2%  TOTAL proc-vmstat.kswapd_high_wmark_hit_quickly
+>     266339 ~ 2%     +14.2%     304129 ~ 0%  TOTAL cpuidle.C6-SNB.usage
+>      21899 ~ 2%      +9.6%      23992 ~ 2%  TOTAL interrupts.RES
+>         20 ~ 0%      -8.0%         18 ~ 2%  TOTAL time.percent_of_cpu_this_job_got
+>    3430189 ~ 0%      -5.9%    3226430 ~ 0%  TOTAL time.voluntary_context_switches
+>        117 ~ 0%      -6.0%        110 ~ 0%  TOTAL time.system_time
+>      11691 ~ 0%      -5.6%      11042 ~ 0%  TOTAL vmstat.system.cs
+>        711 ~ 0%      +4.4%        742 ~ 0%  TOTAL iostat.sda.await
+>        712 ~ 0%      +4.4%        743 ~ 0%  TOTAL iostat.sda.w_await
+>      99142 ~ 0%      -2.2%      96963 ~ 0%  TOTAL iostat.sda.wkB/s
+>      99257 ~ 0%      -2.2%      97110 ~ 0%  TOTAL vmstat.io.bo
+>        139 ~ 0%      +1.7%        141 ~ 0%  TOTAL iostat.sda.avgqu-sz
+> 
+> 
+> 
+>                                fileio.requests_per_sec
+> 
+>    6300 ++----------------------------------------------------------*-------+
+>    6250 *+.*..  .*.*..*..*..*..*..*.*..*..*..*..*..*.*..*..*..*..*.   *..*..*
+>         |     *.                                                            |
+>    6200 ++                                                                  |
+>    6150 ++                                                                  |
+>         |                                                                   |
+>    6100 ++                                                                  |
+>    6050 ++                                                                  |
+>    6000 ++                        O                                         |
+>         |     O                                            O                |
+>    5950 O+ O                                         O                      |
+>    5900 ++       O    O  O     O                              O             |
+>         |          O        O       O  O     O     O                        |
+>    5850 ++                                O     O       O                   |
+>    5800 ++------------------------------------------------------------------+
+> 
+> 
+>                             fileio.request_latency_max_ms
+> 
+>    4500 ++------------------------------------------------------------------+
+>         |                                                             *     |
+>    4000 ++                                                            :     |
+>    3500 ++                                                            ::    |
+>         |                                                            : :    |
+>    3000 ++                                   *                       : :    |
+>    2500 ++                             *..  + :    *                 :  :   |
+>         |                             +    +   :  + :                :  :   |
+>    2000 ++        .*..               +    *    : +  :                :  :   |
+>    1500 ++       *    *..   *..    .*           *    : .*..*..*..*..:    : .*
+>         *..    ..         ..     .*                  *.             :    *. |
+>    1000 ++   .*          *     *.                                   *       |
+>     500 ++ *.         O                                                     |
+>         O  O  O  O O     O  O  O  O O  O  O  O  O  O O  O  O  O             |
+>       0 ++------------------------------------------------------------------+
+> 
+> 
+> 
+> Thanks,
+> Fengguang
