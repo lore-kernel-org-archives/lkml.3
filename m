@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933365AbaCDVUl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:20:41 -0500
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:56682 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932941AbaCDVUc (ORCPT
+	id S933379AbaCDVUy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:20:54 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:44506 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932175AbaCDVUw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 16:20:32 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140228232223.GB23878@earth.universe>
-References: <1393375569-21751-1-git-send-email-sre@debian.org>
-	<1393375569-21751-2-git-send-email-sre@debian.org>
-	<CAAfyv37B=xn3AktnUxPDpuey+5S73vW0PJnuUZtorP4rajPKiw@mail.gmail.com>
-	<20140226215452.GA11468@earth.universe>
-	<CAAfyv340pA2ihUAoFytBgevLtedvtj5Z0aw_=G9Rbx5occtyqw@mail.gmail.com>
-	<20140228020536.GB5427@earth.universe>
-	<CAAfyv36jJoMxZQ5e43pEC2rzNBHHW9Jt_4dg5O-fS8e+Aim7jA@mail.gmail.com>
-	<20140228210857.GA17467@earth.universe>
-	<CAAfyv34UB52FCDQGMWWgsdHH8ksTLmTg0iWQcC+dUbhk5nwuoQ@mail.gmail.com>
-	<CAAfyv36RPCkUKLOC6yHRwaNjA16EeG_niyfZoaJ15LZ5_HdR7g@mail.gmail.com>
-	<20140228232223.GB23878@earth.universe>
-Date: Tue, 4 Mar 2014 22:20:32 +0100
-Message-ID: <CAAfyv36LD_JmPfBFCkQo9pLbgM4vwqk_P0M_XOAnPTUppQ1Zug@mail.gmail.com>
-Subject: Re: [PATCHv1 1/2] rx51_battery: convert to iio consumer
-From: Belisko Marek <marek.belisko@gmail.com>
-To: Sebastian Reichel <sre@debian.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 4 Mar 2014 16:20:52 -0500
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: linux-kernel@vger.kernel.org
+Cc: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH] [RESEND] block: hd: remove deprecated IRQF_DISABLED
+Date: Tue,  4 Mar 2014 22:20:37 +0100
+Message-Id: <1393968037-18042-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1386580662-4265-1-git-send-email-michael.opdenacker@free-electrons.com>
+References: <1386580662-4265-1-git-send-email-michael.opdenacker@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
+This patch removes the use of the IRQF_DISABLED flag
+from drivers/block/hd.c
 
-On Sat, Mar 1, 2014 at 12:22 AM, Sebastian Reichel <sre@debian.org> wrote:
-> Hi Marek,
->
-> On Fri, Feb 28, 2014 at 11:32:22PM +0100, Belisko Marek wrote:
->> Seems I found issue. I have missing property ti,system-uses-second-madc-irq
->> as original twl4030_madc_battery used SW2 but this change doesn't fix completely
->> the problem.
->
-> I remember adding this property because you requested it :) Good to
-> know, that its really needed.
->
->> What it fixed completely is change:
->> -       req.raw = !(mask == IIO_CHAN_INFO_PROCESSED);
->> +       req.raw = 0;//!(mask == IIO_CHAN_INFO_PROCESSED);
->
-> ok, that figures it. Instead of changing the twl4030-madc driver
-> you should change the twl4030-madc-battery driver. You currently
-> call iio_read_channel_raw(), which gives you raw values. Your
-> driver wants processed data from twl4030-madc, so you should use
-> iio_read_channel_processed() instead.
-Yes this helps but also not completely :(. twl4030_madc_battery using
-chanel 1, 10, 12. Channel 1 and 10 have flag IIO_CHAN_INFO_PROCESSED
-set but channel 12 not and values from channel 12 are read as raw which is not
-what I want. Can I simply add IIO_CHAN_INFO_PROCESSED also to channel 12?
->
-> -- Sebastian
+It's a NOOP since 2.6.35 and it will be removed one day.
 
-BR,
+This also removes a related comment which is obsolete too.
 
-marek
+Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+---
+ drivers/block/hd.c | 12 +-----------
+ 1 file changed, 1 insertion(+), 11 deletions(-)
 
+diff --git a/drivers/block/hd.c b/drivers/block/hd.c
+index bf397bf108b7..e16985fc5639 100644
+--- a/drivers/block/hd.c
++++ b/drivers/block/hd.c
+@@ -694,16 +694,6 @@ static const struct block_device_operations hd_fops = {
+ 	.getgeo =	hd_getgeo,
+ };
+ 
+-/*
+- * This is the hard disk IRQ description. The IRQF_DISABLED in sa_flags
+- * means we run the IRQ-handler with interrupts disabled:  this is bad for
+- * interrupt latency, but anything else has led to problems on some
+- * machines.
+- *
+- * We enable interrupts in some of the routines after making sure it's
+- * safe.
+- */
+-
+ static int __init hd_init(void)
+ {
+ 	int drive;
+@@ -761,7 +751,7 @@ static int __init hd_init(void)
+ 			p->cyl, p->head, p->sect);
+ 	}
+ 
+-	if (request_irq(HD_IRQ, hd_interrupt, IRQF_DISABLED, "hd", NULL)) {
++	if (request_irq(HD_IRQ, hd_interrupt, 0, "hd", NULL)) {
+ 		printk("hd: unable to get IRQ%d for the hard disk driver\n",
+ 			HD_IRQ);
+ 		goto out1;
 -- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
+1.8.3.2
 
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-twitter: #opennandra
-web: http://open-nandra.com
