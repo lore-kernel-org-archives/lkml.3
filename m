@@ -1,245 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932667AbaCDUi6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:38:58 -0500
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:37125 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932639AbaCDUiv (ORCPT
+	id S1757041AbaCDUEr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:04:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41417 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756964AbaCDUEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:38:51 -0500
-Date: Tue, 4 Mar 2014 15:38:46 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH driver-core-next] kernfs: cache atomic_write_len in
- kernfs_open_file
-Message-ID: <20140304203846.GB2204@htj.dyndns.org>
-References: <53113485.2090407@oracle.com>
- <20140303223933.GC26523@mtj.dyndns.org>
- <531505E4.8020802@oracle.com>
- <20140303224609.GF26523@mtj.dyndns.org>
+	Tue, 4 Mar 2014 15:04:38 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Alexander Larsson <alexl@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>, Joe Thornber <ejt@redhat.com>
+Subject: [PATCH 3.13 164/172] dm thin: avoid metadata commit if a pools thin devices havent changed
+Date: Tue,  4 Mar 2014 12:04:08 -0800
+Message-Id: <20140304200304.950307485@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
+References: <20140304200259.626667112@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140303224609.GF26523@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While implementing atomic_write_len, 4d3773c4bb41 ("kernfs: implement
-kernfs_ops->atomic_write_len") moved data copy from userland inside
-kernfs_get_active() and kernfs_open_file->mutex so that
-kernfs_ops->atomic_write_len can be accessed before copying buffer
-from userland; unfortunately, this could lead to locking order
-inversion involving mmap_sem if copy_from_user() takes a page fault.
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-  ======================================================
-  [ INFO: possible circular locking dependency detected ]
-  3.14.0-rc4-next-20140228-sasha-00011-g4077c67-dirty #26 Tainted: G        W
-  -------------------------------------------------------
-  trinity-c236/10658 is trying to acquire lock:
-   (&of->mutex#2){+.+.+.}, at: [<fs/kernfs/file.c:487>] kernfs_fop_mmap+0x54/0x120
+------------------
 
-  but task is already holding lock:
-   (&mm->mmap_sem){++++++}, at: [<mm/util.c:397>] vm_mmap_pgoff+0x6e/0xe0
+From: Mike Snitzer <snitzer@redhat.com>
 
-  which lock already depends on the new lock.
+commit 4d1662a30dde6e545086fe0e8fd7e474c4e0b639 upstream.
 
+Commit 905e51b ("dm thin: commit outstanding data every second")
+introduced a periodic commit.  This commit occurs regardless of whether
+any thin devices have made changes.
 
-  the existing dependency chain (in reverse order) is:
+Fix the periodic commit to check if any of a pool's thin devices have
+changed using dm_pool_changed_this_transaction().
 
- -> #1 (&mm->mmap_sem){++++++}:
-	 [<kernel/locking/lockdep.c:1945 kernel/locking/lockdep.c:2131>] validate_chain+0x6c5/0x7b0
-	 [<kernel/locking/lockdep.c:3182>] __lock_acquire+0x4cd/0x5a0
-	 [<arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602>] lock_acquire+0x182/0x1d0
-	 [<mm/memory.c:4188>] might_fault+0x7e/0xb0
-	 [<arch/x86/include/asm/uaccess.h:713 fs/kernfs/file.c:291>] kernfs_fop_write+0xd8/0x190
-	 [<fs/read_write.c:473>] vfs_write+0xe3/0x1d0
-	 [<fs/read_write.c:523 fs/read_write.c:515>] SyS_write+0x5d/0xa0
-	 [<arch/x86/kernel/entry_64.S:749>] tracesys+0xdd/0xe2
+Reported-by: Alexander Larsson <alexl@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Acked-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
- -> #0 (&of->mutex#2){+.+.+.}:
-	 [<kernel/locking/lockdep.c:1840>] check_prev_add+0x13f/0x560
-	 [<kernel/locking/lockdep.c:1945 kernel/locking/lockdep.c:2131>] validate_chain+0x6c5/0x7b0
-	 [<kernel/locking/lockdep.c:3182>] __lock_acquire+0x4cd/0x5a0
-	 [<arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602>] lock_acquire+0x182/0x1d0
-	 [<kernel/locking/mutex.c:470 kernel/locking/mutex.c:571>] mutex_lock_nested+0x6a/0x510
-	 [<fs/kernfs/file.c:487>] kernfs_fop_mmap+0x54/0x120
-	 [<mm/mmap.c:1573>] mmap_region+0x310/0x5c0
-	 [<mm/mmap.c:1365>] do_mmap_pgoff+0x385/0x430
-	 [<mm/util.c:399>] vm_mmap_pgoff+0x8f/0xe0
-	 [<mm/mmap.c:1416 mm/mmap.c:1374>] SyS_mmap_pgoff+0x1b0/0x210
-	 [<arch/x86/kernel/sys_x86_64.c:72>] SyS_mmap+0x1d/0x20
-	 [<arch/x86/kernel/entry_64.S:749>] tracesys+0xdd/0xe2
-
-  other info that might help us debug this:
-
-   Possible unsafe locking scenario:
-
-	 CPU0                    CPU1
-	 ----                    ----
-    lock(&mm->mmap_sem);
-				 lock(&of->mutex#2);
-				 lock(&mm->mmap_sem);
-    lock(&of->mutex#2);
-
-   *** DEADLOCK ***
-
-  1 lock held by trinity-c236/10658:
-   #0:  (&mm->mmap_sem){++++++}, at: [<mm/util.c:397>] vm_mmap_pgoff+0x6e/0xe0
-
-  stack backtrace:
-  CPU: 2 PID: 10658 Comm: trinity-c236 Tainted: G        W 3.14.0-rc4-next-20140228-sasha-00011-g4077c67-dirty #26
-   0000000000000000 ffff88011911fa48 ffffffff8438e945 0000000000000000
-   0000000000000000 ffff88011911fa98 ffffffff811a0109 ffff88011911fab8
-   ffff88011911fab8 ffff88011911fa98 ffff880119128cc0 ffff880119128cf8
-  Call Trace:
-   [<lib/dump_stack.c:52>] dump_stack+0x52/0x7f
-   [<kernel/locking/lockdep.c:1213>] print_circular_bug+0x129/0x160
-   [<kernel/locking/lockdep.c:1840>] check_prev_add+0x13f/0x560
-   [<include/linux/spinlock.h:343 mm/slub.c:1933>] ? deactivate_slab+0x511/0x550
-   [<kernel/locking/lockdep.c:1945 kernel/locking/lockdep.c:2131>] validate_chain+0x6c5/0x7b0
-   [<kernel/locking/lockdep.c:3182>] __lock_acquire+0x4cd/0x5a0
-   [<mm/mmap.c:1552>] ? mmap_region+0x24a/0x5c0
-   [<arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602>] lock_acquire+0x182/0x1d0
-   [<fs/kernfs/file.c:487>] ? kernfs_fop_mmap+0x54/0x120
-   [<kernel/locking/mutex.c:470 kernel/locking/mutex.c:571>] mutex_lock_nested+0x6a/0x510
-   [<fs/kernfs/file.c:487>] ? kernfs_fop_mmap+0x54/0x120
-   [<kernel/sched/core.c:2477>] ? get_parent_ip+0x11/0x50
-   [<fs/kernfs/file.c:487>] ? kernfs_fop_mmap+0x54/0x120
-   [<fs/kernfs/file.c:487>] kernfs_fop_mmap+0x54/0x120
-   [<mm/mmap.c:1573>] mmap_region+0x310/0x5c0
-   [<mm/mmap.c:1365>] do_mmap_pgoff+0x385/0x430
-   [<mm/util.c:397>] ? vm_mmap_pgoff+0x6e/0xe0
-   [<mm/util.c:399>] vm_mmap_pgoff+0x8f/0xe0
-   [<kernel/rcu/update.c:97>] ? __rcu_read_unlock+0x44/0xb0
-   [<fs/file.c:641>] ? dup_fd+0x3c0/0x3c0
-   [<mm/mmap.c:1416 mm/mmap.c:1374>] SyS_mmap_pgoff+0x1b0/0x210
-   [<arch/x86/kernel/sys_x86_64.c:72>] SyS_mmap+0x1d/0x20
-   [<arch/x86/kernel/entry_64.S:749>] tracesys+0xdd/0xe2
-
-Fix it by caching atomic_write_len in kernfs_open_file during open so
-that it can be determined without accessing kernfs_ops in
-kernfs_fop_write().  This restores the structure of kernfs_fop_write()
-before 4d3773c4bb41 with updated @len determination logic.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-References: http://lkml.kernel.org/g/53113485.2090407@oracle.com
 ---
- fs/kernfs/file.c       |   63 ++++++++++++++++++++++++-------------------------
- include/linux/kernfs.h |    1 
- 2 files changed, 33 insertions(+), 31 deletions(-)
+ drivers/md/dm-thin-metadata.c |   17 +++++++++++++++++
+ drivers/md/dm-thin-metadata.h |    2 ++
+ drivers/md/dm-thin.c          |    3 ++-
+ 3 files changed, 21 insertions(+), 1 deletion(-)
 
-diff --git a/fs/kernfs/file.c b/fs/kernfs/file.c
-index ddcb471..8034706 100644
---- a/fs/kernfs/file.c
-+++ b/fs/kernfs/file.c
-@@ -253,55 +253,50 @@ static ssize_t kernfs_fop_write(struct file *file, const char __user *user_buf,
- {
- 	struct kernfs_open_file *of = kernfs_of(file);
- 	const struct kernfs_ops *ops;
--	char *buf = NULL;
--	ssize_t len;
--
--	/*
--	 * @of->mutex nests outside active ref and is just to ensure that
--	 * the ops aren't called concurrently for the same open file.
--	 */
--	mutex_lock(&of->mutex);
--	if (!kernfs_get_active(of->kn)) {
--		mutex_unlock(&of->mutex);
--		return -ENODEV;
--	}
--
--	ops = kernfs_ops(of->kn);
--	if (!ops->write) {
--		len = -EINVAL;
--		goto out_unlock;
--	}
-+	size_t len;
-+	char *buf;
- 
--	if (ops->atomic_write_len) {
-+	if (of->atomic_write_len) {
- 		len = count;
--		if (len > ops->atomic_write_len) {
--			len = -E2BIG;
--			goto out_unlock;
--		}
-+		if (len > of->atomic_write_len)
-+			return -E2BIG;
- 	} else {
- 		len = min_t(size_t, count, PAGE_SIZE);
- 	}
- 
- 	buf = kmalloc(len + 1, GFP_KERNEL);
--	if (!buf) {
--		len = -ENOMEM;
--		goto out_unlock;
--	}
-+	if (!buf)
-+		return -ENOMEM;
- 
- 	if (copy_from_user(buf, user_buf, len)) {
- 		len = -EFAULT;
--		goto out_unlock;
-+		goto out_free;
- 	}
- 	buf[len] = '\0';	/* guarantee string termination */
- 
--	len = ops->write(of, buf, len, *ppos);
--out_unlock:
-+	/*
-+	 * @of->mutex nests outside active ref and is just to ensure that
-+	 * the ops aren't called concurrently for the same open file.
-+	 */
-+	mutex_lock(&of->mutex);
-+	if (!kernfs_get_active(of->kn)) {
-+		mutex_unlock(&of->mutex);
-+		len = -ENODEV;
-+		goto out_free;
-+	}
-+
-+	ops = kernfs_ops(of->kn);
-+	if (ops->write)
-+		len = ops->write(of, buf, len, *ppos);
-+	else
-+		len = -EINVAL;
-+
- 	kernfs_put_active(of->kn);
- 	mutex_unlock(&of->mutex);
- 
- 	if (len > 0)
- 		*ppos += len;
--
-+out_free:
- 	kfree(buf);
- 	return len;
+--- a/drivers/md/dm-thin-metadata.c
++++ b/drivers/md/dm-thin-metadata.c
+@@ -1489,6 +1489,23 @@ bool dm_thin_changed_this_transaction(st
+ 	return r;
  }
-@@ -666,6 +661,12 @@ static int kernfs_fop_open(struct inode *inode, struct file *file)
- 	of->file = file;
  
- 	/*
-+	 * Write path needs to atomic_write_len outside active reference.
-+	 * Cache it in open_file.  See kernfs_fop_write() for details.
-+	 */
-+	of->atomic_write_len = ops->atomic_write_len;
++bool dm_pool_changed_this_transaction(struct dm_pool_metadata *pmd)
++{
++	bool r = false;
++	struct dm_thin_device *td, *tmp;
 +
-+	/*
- 	 * Always instantiate seq_file even if read access doesn't use
- 	 * seq_file or is not requested.  This unifies private data access
- 	 * and readable regular files are the vast majority anyway.
-diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
-index 649497a..65a3e5a 100644
---- a/include/linux/kernfs.h
-+++ b/include/linux/kernfs.h
-@@ -158,6 +158,7 @@ struct kernfs_open_file {
- 	int			event;
- 	struct list_head	list;
++	down_read(&pmd->root_lock);
++	list_for_each_entry_safe(td, tmp, &pmd->thin_devices, list) {
++		if (td->changed) {
++			r = td->changed;
++			break;
++		}
++	}
++	up_read(&pmd->root_lock);
++
++	return r;
++}
++
+ bool dm_thin_aborted_changes(struct dm_thin_device *td)
+ {
+ 	bool r;
+--- a/drivers/md/dm-thin-metadata.h
++++ b/drivers/md/dm-thin-metadata.h
+@@ -161,6 +161,8 @@ int dm_thin_remove_block(struct dm_thin_
+  */
+ bool dm_thin_changed_this_transaction(struct dm_thin_device *td);
  
-+	size_t			atomic_write_len;
- 	bool			mmapped;
- 	const struct vm_operations_struct *vm_ops;
- };
++bool dm_pool_changed_this_transaction(struct dm_pool_metadata *pmd);
++
+ bool dm_thin_aborted_changes(struct dm_thin_device *td);
+ 
+ int dm_thin_get_highest_mapped_block(struct dm_thin_device *td,
+--- a/drivers/md/dm-thin.c
++++ b/drivers/md/dm-thin.c
+@@ -1354,7 +1354,8 @@ static void process_deferred_bios(struct
+ 	bio_list_init(&pool->deferred_flush_bios);
+ 	spin_unlock_irqrestore(&pool->lock, flags);
+ 
+-	if (bio_list_empty(&bios) && !need_commit_due_to_time(pool))
++	if (bio_list_empty(&bios) &&
++	    !(dm_pool_changed_this_transaction(pool->pmd) && need_commit_due_to_time(pool)))
+ 		return;
+ 
+ 	if (commit(pool)) {
+
+
