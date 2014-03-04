@@ -1,84 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932284AbaCDPUb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 10:20:31 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:44972 "EHLO bear.ext.ti.com"
+	id S932334AbaCDPUq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 10:20:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51968 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757259AbaCDPU3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 10:20:29 -0500
-Date: Tue, 4 Mar 2014 09:18:50 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Jim Davis <jim.epost@gmail.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        linux-usb <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>
-Subject: Re: randconfig build error with next-20140304, in
- drivers/usb/dwc3/core.c
-Message-ID: <20140304151850.GF15233@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <CA+r1Zhg3iv4RxC=bWenE+bX=9He6DhfFBXM3L=GOc-Uv=Mxf=g@mail.gmail.com>
+	id S932301AbaCDPUn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 10:20:43 -0500
+Date: Tue, 4 Mar 2014 16:22:00 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jens Axboe <axboe@kernel.dk>, Keith Busch <keith.busch@intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>, linux-nvme@lists.infradead.org,
+        linux-pci@vger.kernel.org
+Subject: [PATCH v2 3/2] nvme: Use pci_enable_msi_range() and
+ pci_enable_msix_range()
+Message-ID: <20140304152200.GA18364@dhcp-26-207.brq.redhat.com>
+References: <cover.1393404496.git.agordeev@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OzxllxdKGCiKxUZM"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+r1Zhg3iv4RxC=bWenE+bX=9He6DhfFBXM3L=GOc-Uv=Mxf=g@mail.gmail.com>
+In-Reply-To: <cover.1393404496.git.agordeev@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---OzxllxdKGCiKxUZM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+As result of deprecation of MSI-X/MSI enablement functions
+pci_enable_msix() and pci_enable_msi_block() all drivers
+using these two interfaces need to be updated to use the
+new pci_enable_msi_range()  or pci_enable_msi_exact()
+and pci_enable_msix_range() or pci_enable_msix_exact()
+interfaces.
 
-Hi,
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+Cc: Keith Busch <keith.busch@intel.com>
+Cc: Matthew Wilcox <willy@linux.intel.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: linux-nvme@lists.infradead.org
+Cc: linux-pci@vger.kernel.org
+Reviewed-by: Keith Busch <keith.busch@intel.com>
+---
+ drivers/block/nvme-core.c |   33 +++++++++------------------------
+ 1 files changed, 9 insertions(+), 24 deletions(-)
 
-On Tue, Mar 04, 2014 at 07:30:20AM -0700, Jim Davis wrote:
-> Building with the attached random configuration file,
->=20
-> warning: (USB_OTG_FSM && FSL_USB2_OTG && USB_MV_OTG) selects USB_OTG
-> which has unmet direct dependencies (USB_SUPPORT && USB && PM_RUNTIME)
-> warning: (USB_OTG_FSM && FSL_USB2_OTG && USB_MV_OTG) selects USB_OTG
-> which has unmet direct dependencies (USB_SUPPORT && USB && PM_RUNTIME)
->=20
->   LD      init/built-in.o
-> drivers/built-in.o: In function `dwc3_setup_scratch_buffers':
-> /home/jim/linux/drivers/usb/dwc3/core.c:280: undefined reference to
-> `dwc3_send_gadget_generic_command'
-> /home/jim/linux/drivers/usb/dwc3/core.c:287: undefined reference to
-> `dwc3_send_gadget_generic_command'
-> make: *** [vmlinux] Error 1
+diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
+index 51824d1..eca2b3e 100644
+--- a/drivers/block/nvme-core.c
++++ b/drivers/block/nvme-core.c
+@@ -1837,31 +1837,16 @@ static int nvme_setup_io_queues(struct nvme_dev *dev)
+ 	/* Deregister the admin queue's interrupt */
+ 	free_irq(dev->entry[0].vector, adminq);
+ 
+-	vecs = nr_io_queues;
+-	for (i = 0; i < vecs; i++)
++	for (i = 0; i < nr_io_queues; i++)
+ 		dev->entry[i].entry = i;
+-	for (;;) {
+-		result = pci_enable_msix(pdev, dev->entry, vecs);
+-		if (result <= 0)
+-			break;
+-		vecs = result;
+-	}
+-
+-	if (result < 0) {
+-		vecs = nr_io_queues;
+-		if (vecs > 32)
+-			vecs = 32;
+-		for (;;) {
+-			result = pci_enable_msi_block(pdev, vecs);
+-			if (result == 0) {
+-				for (i = 0; i < vecs; i++)
+-					dev->entry[i].vector = i + pdev->irq;
+-				break;
+-			} else if (result < 0) {
+-				vecs = 1;
+-				break;
+-			}
+-			vecs = result;
++	vecs = pci_enable_msix_range(pdev, dev->entry, 1, nr_io_queues);
++	if (vecs < 0) {
++		vecs = pci_enable_msi_range(pdev, 1, min(nr_io_queues, 32));
++		if (vecs < 0) {
++			vecs = 1;
++		} else {
++			for (i = 0; i < vecs; i++)
++				dev->entry[i].vector = i + pdev->irq;
+ 		}
+ 	}
+ 
+-- 
+1.7.7.6
 
-will fix it now. Damn, I do 200 randconfigs every week and never caught
-that, good job ;-)
-
---=20
-balbi
-
---OzxllxdKGCiKxUZM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTFe7aAAoJEIaOsuA1yqREKqIP/A4rI8ke0DNp3bpDmVXueQza
-BSqakRpmuiawAFbR7twmiyxbWSq1r2VeV8x8d8Z25okxYYlvHmvvsf/xzVq5IQSD
-mYpQaI3Yo75QWtlRq17p9I8udzBEAAkKeTmemZUrRMwLVPeBGSk+eTnMQWONPdqS
-NZedeyvIQe0Wewcu6rX66ESjfKyXr1ARnNDgI3hI7qio4ZwBq7QGNFrZp8Z5PwUQ
-cvG8+qZJxDiK9fxoarJ0xdZQ2oBN/TOXufxpxWqP0lp26YLDsV6NOJbQjJsrhLZP
-rz6T1oBTlWFZFgHYTJUYsS6/41dzoHslmnWt+rWHY0KmzcUlanDGo8Y1NTtH9E4N
-0831uRFEymYY/+P6brmbmPmR8D/6rkwwncw/mu4iLdpgM0V3XFq/dMWi534h9Ukj
-wEVdfoJz/sSnlCME8BVW+Tr6HQLc/ymO9XeMvqOO1a1fXksZurttSfewr1pa9PRG
-NT1AggAK0Q04Z6uhJzbxgK9Rr/r6So3JXL+Nj/nYDDO1JVPfnpAY5Enm0NcOw70/
-92aUtYqSQd+wik9Xh2F4DzAEmijEbXIO9GGLj1ZROckepG9n2Z3hahKq87jIP/qG
-O6sckd6znRtZ4CovcUBP12l/kpnbddcE2zwbhkl/AQKAW/1d4Zwo5HtxF7cFIgKl
-BXZRo5yirJYYrpkEiWuv
-=Bi0O
------END PGP SIGNATURE-----
-
---OzxllxdKGCiKxUZM--
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
