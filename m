@@ -1,145 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932164AbaCDMFd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 07:05:33 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:36552 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757228AbaCDMBx (ORCPT
+	id S932182AbaCDMFz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 07:05:55 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:64781 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932167AbaCDMFw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 07:01:53 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s24C1oet025509, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next 04/12] r8152: replace spin_lock_irqsave and spin_unlock_irqrestore
-Date: Tue, 4 Mar 2014 20:00:56 +0800
-Message-ID: <1393934464-23675-5-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1393934464-23675-1-git-send-email-hayeswang@realtek.com>
-References: <1393934464-23675-1-git-send-email-hayeswang@realtek.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.77]
+	Tue, 4 Mar 2014 07:05:52 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-30-5315c19dec07
+Message-id: <1393934748.1222.10.camel@AMDC1943>
+Subject: Re: [PATCH v2 1/3] power_supply: modelgauge_battery: Maxim ModelGauge
+ ICs gauge
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Vladimir Barinov <vladimir.barinov@cogentembedded.com>
+Cc: anton@enomsg.org, dwmw2@infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, mk7.kang@samsung.com, mark.rutland@arm.com
+Date: Tue, 04 Mar 2014 13:05:48 +0100
+In-reply-to: <1391293385-27539-2-git-send-email-vladimir.barinov@cogentembedded.com>
+References: <1391293385-27539-1-git-send-email-vladimir.barinov@cogentembedded.com>
+ <1391293385-27539-2-git-send-email-vladimir.barinov@cogentembedded.com>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.2.3-0ubuntu6
+Content-transfer-encoding: 7bit
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrILMWRmVeSWpSXmKPExsVy+t/xK7pzD4oGG9zcaWFxcKumxfwj51gt
+	Jq6czGxxedccNoul1y8yWXQcaWG06Ou6yO7A7rFm3hpGjwdT/zN5TOj/xOixeYWWR9+WVYwe
+	nzfJBbBFcdmkpOZklqUW6dslcGXcuuZUsIC/YuIMqQbG39xdjJwcEgImEn1vXjFB2GISF+6t
+	Z+ti5OIQEljKKHF3Sy8zhPOZUeLGpFYWkCpeAX2JvstrwWxhgSiJhVc3gXWzCRhLbF6+hA3E
+	FhGwktj1dhIrSDOzwERGiZtPboIlWARUJc5MeswOYnMKhEm0zv7DCrFhPqPErr0drCAJZgF1
+	iUnzFjFD3KQksbu9kx0iLi+xec1bZogrBCV+TL7HMoFRYBaSlllIymYhKVvAyLyKUTS1NLmg
+	OCk911CvODG3uDQvXS85P3cTIyTYv+xgXHzM6hCjAAejEg+vwxSRYCHWxLLiytxDjBIczEoi
+	vIoLRYOFeFMSK6tSi/Lji0pzUosPMTJxcALDsnPJhk+b9seK9FTxOppae13epy2xbm7eo3Mf
+	tBZXCs37Yjf9vetzB/3HoU3z/t48wJ+ZvtPt2sQJP22PvOnpzY61vb17wdIF3HzTfu5fkPVB
+	zOFcD2vctFPsq/iDvX+VzL/YNLX8W6OS937fiezF1YfjyybuqTttcOu26Kqv86a0Gt82+V6/
+	ZoISS3FGoqEWc1FxIgAZDGmTVAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use spin_lock and spin_unlock in interrupt context.
+And one more comment:
 
-The ndo_start_xmit would not be called in interrupt context, so
-replace the relative spin_lock_irqsave and spin_unlock_irqrestore
-with spin_lock_bh and spin_unlock_bh.
+On Sun, 2014-02-02 at 02:23 +0400, Vladimir Barinov wrote:
+> +static int modelgauge_get_property(struct power_supply *psy,
+> +				   enum power_supply_property psp,
+> +				   union power_supply_propval *val)
+> +{
+> +	struct modelgauge_priv *priv = container_of(psy,
+> +						    struct modelgauge_priv,
+> +						    battery);
+> +	struct regmap *regmap = priv->regmap;
+> +	struct modelgauge_platform_data *pdata = priv->pdata;
+> +	int reg;
+> +	int ret;
+> +
+> +	switch (psp) {
+> +	case POWER_SUPPLY_PROP_STATUS:
+> +		if (pdata && pdata->get_charging_status)
+> +			val->intval = pdata->get_charging_status();
+> +		else
+> +			val->intval = POWER_SUPPLY_STATUS_UNKNOWN;
+> +		break;
+> +	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
+> +		ret = regmap_read(regmap, MODELGAUGE_VCELL_REG, &reg);
+> +		if (ret < 0)
+> +			return ret;
+> +
+> +		val->intval = modelgauge_lsb_to_uvolts(priv, reg);
+> +		break;
+> +	case POWER_SUPPLY_PROP_VOLTAGE_OCV:
+> +		/* Unlock model access */
+> +		regmap_write(regmap, MODELGAUGE_UNLOCK_REG,
+> +			     MODELGAUGE_UNLOCK_VALUE);
+> +		ret = regmap_read(regmap, MODELGAUGE_OCV_REG, &reg);
+> +		/* Lock model access */
+> +		regmap_write(regmap, MODELGAUGE_UNLOCK_REG, 0);
+> +		if (ret < 0)
+> +			return ret;
+> +
+> +		val->intval = modelgauge_lsb_to_uvolts(priv, reg);
+> +		break;
+> +	case POWER_SUPPLY_PROP_CAPACITY:
+> +		ret = regmap_read(regmap, MODELGAUGE_SOC_REG, &reg);
+> +		if (ret < 0)
+> +			return ret;
+> +
+> +		val->intval = reg / (1 << priv->soc_shift);
+> +		break;
+> +	case POWER_SUPPLY_PROP_TEMP:
+> +		if (pdata && pdata->get_temperature)
+> +			val->intval = pdata->get_temperature();
+> +		else
+> +			val->intval = 25;
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 28 ++++++++++++----------------
- 1 file changed, 12 insertions(+), 16 deletions(-)
+If pdata->get_temperature() is not supplied then probably the driver
+should not support POWER_SUPPLY_PROP_TEMP at all. I think it is better
+not to report any temperature than to report a wrong one.
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index b8eee36..8ecb41b 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -963,7 +963,6 @@ static int rtl8152_set_mac_address(struct net_device *netdev, void *p)
- static void read_bulk_callback(struct urb *urb)
- {
- 	struct net_device *netdev;
--	unsigned long flags;
- 	int status = urb->status;
- 	struct rx_agg *agg;
- 	struct r8152 *tp;
-@@ -997,9 +996,9 @@ static void read_bulk_callback(struct urb *urb)
- 		if (urb->actual_length < ETH_ZLEN)
- 			break;
- 
--		spin_lock_irqsave(&tp->rx_lock, flags);
-+		spin_lock(&tp->rx_lock);
- 		list_add_tail(&agg->list, &tp->rx_done);
--		spin_unlock_irqrestore(&tp->rx_lock, flags);
-+		spin_unlock(&tp->rx_lock);
- 		tasklet_schedule(&tp->tl);
- 		return;
- 	case -ESHUTDOWN:
-@@ -1022,9 +1021,9 @@ static void read_bulk_callback(struct urb *urb)
- 	if (result == -ENODEV) {
- 		netif_device_detach(tp->netdev);
- 	} else if (result) {
--		spin_lock_irqsave(&tp->rx_lock, flags);
-+		spin_lock(&tp->rx_lock);
- 		list_add_tail(&agg->list, &tp->rx_done);
--		spin_unlock_irqrestore(&tp->rx_lock, flags);
-+		spin_unlock(&tp->rx_lock);
- 		tasklet_schedule(&tp->tl);
- 	}
- }
-@@ -1033,7 +1032,6 @@ static void write_bulk_callback(struct urb *urb)
- {
- 	struct net_device_stats *stats;
- 	struct net_device *netdev;
--	unsigned long flags;
- 	struct tx_agg *agg;
- 	struct r8152 *tp;
- 	int status = urb->status;
-@@ -1057,9 +1055,9 @@ static void write_bulk_callback(struct urb *urb)
- 		stats->tx_bytes += agg->skb_len;
- 	}
- 
--	spin_lock_irqsave(&tp->tx_lock, flags);
-+	spin_lock(&tp->tx_lock);
- 	list_add_tail(&agg->list, &tp->tx_free);
--	spin_unlock_irqrestore(&tp->tx_lock, flags);
-+	spin_unlock(&tp->tx_lock);
- 
- 	usb_autopm_put_interface_async(tp->intf);
- 
-@@ -1330,14 +1328,13 @@ r8152_tx_csum(struct r8152 *tp, struct tx_desc *desc, struct sk_buff *skb)
- static int r8152_tx_agg_fill(struct r8152 *tp, struct tx_agg *agg)
- {
- 	struct sk_buff_head skb_head, *tx_queue = &tp->tx_queue;
--	unsigned long flags;
- 	int remain, ret;
- 	u8 *tx_data;
- 
- 	__skb_queue_head_init(&skb_head);
--	spin_lock_irqsave(&tx_queue->lock, flags);
-+	spin_lock_bh(&tx_queue->lock);
- 	skb_queue_splice_init(tx_queue, &skb_head);
--	spin_unlock_irqrestore(&tx_queue->lock, flags);
-+	spin_unlock_bh(&tx_queue->lock);
- 
- 	tx_data = agg->head;
- 	agg->skb_num = agg->skb_len = 0;
-@@ -1374,9 +1371,9 @@ static int r8152_tx_agg_fill(struct r8152 *tp, struct tx_agg *agg)
- 	}
- 
- 	if (!skb_queue_empty(&skb_head)) {
--		spin_lock_irqsave(&tx_queue->lock, flags);
-+		spin_lock_bh(&tx_queue->lock);
- 		skb_queue_splice(&skb_head, tx_queue);
--		spin_unlock_irqrestore(&tx_queue->lock, flags);
-+		spin_unlock_bh(&tx_queue->lock);
- 	}
- 
- 	netif_tx_lock_bh(tp->netdev);
-@@ -1551,16 +1548,15 @@ static void rtl_drop_queued_tx(struct r8152 *tp)
- {
- 	struct net_device_stats *stats = &tp->netdev->stats;
- 	struct sk_buff_head skb_head, *tx_queue = &tp->tx_queue;
--	unsigned long flags;
- 	struct sk_buff *skb;
- 
- 	if (skb_queue_empty(tx_queue))
- 		return;
- 
- 	__skb_queue_head_init(&skb_head);
--	spin_lock_irqsave(&tx_queue->lock, flags);
-+	spin_lock_bh(&tx_queue->lock);
- 	skb_queue_splice_init(tx_queue, &skb_head);
--	spin_unlock_irqrestore(&tx_queue->lock, flags);
-+	spin_unlock_bh(&tx_queue->lock);
- 
- 	while ((skb = __skb_dequeue(&skb_head))) {
- 		dev_kfree_skb(skb);
--- 
-1.8.4.2
+
+Best regards,
+Krzysztof
 
