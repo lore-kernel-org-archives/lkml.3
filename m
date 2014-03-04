@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756588AbaCDHQE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 02:16:04 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55176 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756574AbaCDHQC (ORCPT
+	id S1756604AbaCDHQL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 02:16:11 -0500
+Received: from mail-bl2lp0203.outbound.protection.outlook.com ([207.46.163.203]:50920
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756574AbaCDHQI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 02:16:02 -0500
-Date: Tue, 4 Mar 2014 15:15:55 +0800
-From: Mark Brown <broonie@kernel.org>
-To: Yibin Gong <yibin.gong@freescale.com>
-Cc: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+	Tue, 4 Mar 2014 02:16:08 -0500
+X-Greylist: delayed 939 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Mar 2014 02:16:08 EST
+From: Yibin Gong <yibin.gong@freescale.com>
+To: Mark Brown <broonie@kernel.org>
+CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <20140304071555.GB13126@sirena.org.uk>
+Subject: RE: [PATCH v2] regulator: pfuze100: add pfuze200 support
+Thread-Topic: [PATCH v2] regulator: pfuze100: add pfuze200 support
+Thread-Index: AQHPN3WQRWmYe9faREydUZiu7y1B45rQfTvw
+Date: Tue, 4 Mar 2014 07:00:26 +0000
+Message-ID: <346e4e7976cf41f79c32484d93aaf06c@BLUPR03MB036.namprd03.prod.outlook.com>
 References: <1393911933-25149-1-git-send-email-b38343@freescale.com>
  <20140304064642.GA13126@sirena.org.uk>
- <346e4e7976cf41f79c32484d93aaf06c@BLUPR03MB036.namprd03.prod.outlook.com>
+In-Reply-To: <20140304064642.GA13126@sirena.org.uk>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.49]
+x-forefront-prvs: 01401330D1
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(189002)(199002)(377454003)(13464003)(24454002)(76482001)(81816001)(46102001)(51856001)(54356001)(77096001)(53806001)(76576001)(56776001)(76786001)(93516002)(81686001)(54316002)(74876001)(69226001)(80022001)(92566001)(66066001)(83072002)(93136001)(65816001)(63696002)(85852003)(74502001)(81542001)(83322001)(81342001)(76796001)(19580395003)(47446002)(74706001)(74316001)(87266001)(77982001)(74366001)(59766001)(79102001)(87936001)(74662001)(56816005)(47976001)(95666003)(19580405001)(50986001)(95416001)(2656002)(94316002)(80976001)(47736001)(90146001)(86362001)(49866001)(31966008)(94946001)(4396001)(85306002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR03MB408;H:BLUPR03MB036.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:E8DC6492.2E039C2E.41E3334F.14E66A8D.201B9;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GRPZ8SYKNexpdSJ7"
-Content-Disposition: inline
-In-Reply-To: <346e4e7976cf41f79c32484d93aaf06c@BLUPR03MB036.namprd03.prod.outlook.com>
-X-Cookie: You are always busy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 202.175.88.218
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2] regulator: pfuze100: add pfuze200 support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Mark,
+	Thanks for your reminding, PFUZE200 is currently validated on the same board(i.MX6Q Sabresd) which mounted with PFUZE100 before. So the patch only adding driver level support to let others can easily add PFUZE200 support once they have the PFUZE200 board. 
 
---GRPZ8SYKNexpdSJ7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+-----Original Message-----
+From: Mark Brown [mailto:broonie@kernel.org] 
+Sent: Tuesday, March 04, 2014 2:47 PM
+To: Gong Yibin-B38343
+Cc: lgirdwood@gmail.com; linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] regulator: pfuze100: add pfuze200 support
 
-On Tue, Mar 04, 2014 at 07:00:26AM +0000, Yibin Gong wrote:
+On Tue, Mar 04, 2014 at 01:45:33PM +0800, Robin Gong wrote:
+> support pfuze200 chip which remove SW1C and SW4 based on pfuze100.
 
-> 	Thanks for your reminding, PFUZE200 is currently validated on
-> 	the same board(i.MX6Q Sabresd) which mounted with PFUZE100
-> 	before. So the patch only adding driver level support to let
-> 	others can easily add PFUZE200 support once they have the
-> 	PFUZE200 board.=20
-
-You've added a new compatible string to the driver, it's very important
-that this is reflected in the binding document.
-
---GRPZ8SYKNexpdSJ7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTFX2oAAoJELSic+t+oim9sGwQAJg1JtKhMLDlX1lPqbiopnxx
-87WgPJO8Dmqc2Gnoiwn8p+Uq07I/3eYPYmY09CAMHdvThAGoXj6dEixxl3t/Ia7D
-PWGaljo1Ly7rtzBY9/DFxdsKMBFqGhEkTS/oT4g1b0+/zoCzaXD0jwMsmnGGRlDB
-h/Uj5N3Tc9I63a32qYMvjz3N+/6e7AqLhWZn8QW0dx9RKOnsKGZY6hnzIcaXhB1U
-t+eRf0ArBHWZw7b3AwrsHqmLuDqkbO/CItrZLW2D7at0FjmeWRaXMxEzDZ+cnxhV
-GbRHBvdwnHrUy2Kq048OESh0Ww/fBDcttz4IueMmdjWVFMkIqqIbqQZcurf1wutf
-en4f6xBdq/KGURsAuHurMlpK2SF+YDCc/4PLnhEFwhftSZ4Bd6RjxCxMNcRISZWK
-NQYfAQbN9vVrX/BqhvsjjIrm5sR6PFEpxV4/Ad4NhYESbfMUL9oOZ1s5IXatAa2c
-ZyOyiTtfOLWpCTZOpaw16m+mCamEBRMZHDb55zDVAdvT0vsDARgcbnzNZ4F119O2
-eDu4KY7KDrNmmVGGW2w5YJYm8utax/mvr1mQE7LYzd6EuU6jowtxDlUZM4hKH/cv
-aTv8Okd48envhbx6KPsmXj+bu1i1hGXwBl9uM5Zdp0naMFOG7HgoN2rflk0RhFK7
-APWpn6Pq3banliViunCj
-=ATak
------END PGP SIGNATURE-----
-
---GRPZ8SYKNexpdSJ7--
+Applied, thanks - however I just noticed that you forgot to add the compatible string for the new part to the DT binding, please send a followup doing that.
