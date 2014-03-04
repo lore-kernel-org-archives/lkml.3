@@ -1,136 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756515AbaCDH5w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 02:57:52 -0500
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:41671 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752195AbaCDH5v (ORCPT
+	id S1756567AbaCDH6H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 02:58:07 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:38332 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756519AbaCDH6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 02:57:51 -0500
-From: Jean Pihet <jean.pihet@linaro.org>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnaldo <acme@ghostprotocols.net>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Steve Capper <steve.capper@linaro.org>
-Cc: Will Deacon <will.deacon@arm.com>, patches@linaro.org,
-        Jean Pihet <jean.pihet@linaro.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        David Ahern <dsahern@gmail.com>
-Subject: [PATCH 1/3] perf tests: Introduce perf_regs_load function on ARM
-Date: Tue,  4 Mar 2014 08:57:13 +0100
-Message-Id: <1393919833-15154-1-git-send-email-jean.pihet@linaro.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <CAFrcx1nBhu6jkcdpOu8POOk95MtDH5vjtFy92=9MGdVgEknzLg@mail.gmail.com>
-References: <CAFrcx1nBhu6jkcdpOu8POOk95MtDH5vjtFy92=9MGdVgEknzLg@mail.gmail.com>
+	Tue, 4 Mar 2014 02:58:03 -0500
+From: Surendra Patil <surendra.tux@gmail.com>
+To: gregkh@linuxfoundation.org, rupesh.gujare@atmel.com
+Cc: dan.carpenter@oracle.com, surendra.tux@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers:staging:ozwpan Replaced wrapper functions with actual spin lock function
+Date: Mon,  3 Mar 2014 23:57:47 -0800
+Message-Id: <1393919867-15049-1-git-send-email-surendra.tux@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introducing perf_regs_load function, which is going
-to be used for dwarf unwind test in following patches.
+* Replaced all the spin lock/unlock wrappers from oz_polling_lock_bh()
+and oz_polllin_unlock_bh() with spin_lock_bh(&g_polling_lock) and
+spin_unlock_bh(&g_polling_lock).Completely erased the wrappers defination
+and declaration.
+* declared g_polling_lock as global variable in header file and added comments to it.
+Module builded successfully with sparse without warnings.
 
-It takes single argument as a pointer to the regs dump
-buffer and populates it with current registers values.
-
-Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
-Cc: Steve Capper <steve.capper@linaro.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Surendra Patil <surendra.tux@gmail.com>
 ---
- tools/perf/arch/arm/Makefile            |  1 +
- tools/perf/arch/arm/include/perf_regs.h |  2 ++
- tools/perf/arch/arm/tests/regs_load.S   | 47 +++++++++++++++++++++++++++++++++
- 3 files changed, 50 insertions(+)
- create mode 100644 tools/perf/arch/arm/tests/regs_load.S
+ drivers/staging/ozwpan/ozpd.c    | 28 ++++++++++++++--------------
+ drivers/staging/ozwpan/ozpd.h    |  5 +++++
+ drivers/staging/ozwpan/ozproto.c | 15 +++++----------
+ drivers/staging/ozwpan/ozproto.h |  2 --
+ 4 files changed, 24 insertions(+), 26 deletions(-)
 
-diff --git a/tools/perf/arch/arm/Makefile b/tools/perf/arch/arm/Makefile
-index 67e9b3d..9b8f87e 100644
---- a/tools/perf/arch/arm/Makefile
-+++ b/tools/perf/arch/arm/Makefile
-@@ -4,4 +4,5 @@ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
- endif
- ifndef NO_LIBUNWIND
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/unwind-libunwind.o
-+LIB_OBJS += $(OUTPUT)arch/$(ARCH)/tests/regs_load.o
- endif
-diff --git a/tools/perf/arch/arm/include/perf_regs.h b/tools/perf/arch/arm/include/perf_regs.h
-index 2a1cfde..1476ae7 100644
---- a/tools/perf/arch/arm/include/perf_regs.h
-+++ b/tools/perf/arch/arm/include/perf_regs.h
-@@ -5,6 +5,8 @@
- #include "../../util/types.h"
- #include <asm/perf_regs.h>
+diff --git a/drivers/staging/ozwpan/ozpd.c b/drivers/staging/ozwpan/ozpd.c
+index 7436950..29a23a3 100644
+--- a/drivers/staging/ozwpan/ozpd.c
++++ b/drivers/staging/ozwpan/ozpd.c
+@@ -284,11 +284,11 @@ int oz_services_start(struct oz_pd *pd, u16 apps, int resume)
+ 					  ai->app_id);
+ 				break;
+ 			}
+-			oz_polling_lock_bh();
++			spin_lock_bh(&g_polling_lock);
+ 			pd->total_apps |= (1<<ai->app_id);
+ 			if (resume)
+ 				pd->paused_apps &= ~(1<<ai->app_id);
+-			oz_polling_unlock_bh();
++			spin_unlock_bh(&g_polling_lock);
+ 		}
+ 	}
+ 	return rc;
+@@ -304,14 +304,14 @@ void oz_services_stop(struct oz_pd *pd, u16 apps, int pause)
+ 	oz_pd_dbg(pd, ON, "%s: (0x%x) pause(%d)\n", __func__, apps, pause);
+ 	for (ai = g_app_if; ai < &g_app_if[OZ_APPID_MAX]; ai++) {
+ 		if (apps & (1<<ai->app_id)) {
+-			oz_polling_lock_bh();
++			spin_lock_bh(&g_polling_lock);
+ 			if (pause) {
+ 				pd->paused_apps |= (1<<ai->app_id);
+ 			} else {
+ 				pd->total_apps &= ~(1<<ai->app_id);
+ 				pd->paused_apps &= ~(1<<ai->app_id);
+ 			}
+-			oz_polling_unlock_bh();
++			spin_unlock_bh(&g_polling_lock);
+ 			ai->stop(pd, pause);
+ 		}
+ 	}
+@@ -349,17 +349,17 @@ void oz_pd_stop(struct oz_pd *pd)
  
-+void perf_regs_load(u64 *regs);
+ 	oz_dbg(ON, "oz_pd_stop() State = 0x%x\n", pd->state);
+ 	oz_pd_indicate_farewells(pd);
+-	oz_polling_lock_bh();
++	spin_lock_bh(&g_polling_lock);
+ 	stop_apps = pd->total_apps;
+ 	pd->total_apps = 0;
+ 	pd->paused_apps = 0;
+-	oz_polling_unlock_bh();
++	spin_unlock_bh(&g_polling_lock);
+ 	oz_services_stop(pd, stop_apps, 0);
+-	oz_polling_lock_bh();
++	spin_lock_bh(&g_polling_lock);
+ 	oz_pd_set_state(pd, OZ_PD_S_STOPPED);
+ 	/* Remove from PD list.*/
+ 	list_del(&pd->link);
+-	oz_polling_unlock_bh();
++	spin_unlock_bh(&g_polling_lock);
+ 	oz_dbg(ON, "pd ref count = %d\n", atomic_read(&pd->ref_count));
+ 	oz_pd_put(pd);
+ }
+@@ -372,9 +372,9 @@ int oz_pd_sleep(struct oz_pd *pd)
+ 	int do_stop = 0;
+ 	u16 stop_apps;
+ 
+-	oz_polling_lock_bh();
++	spin_lock_bh(&g_polling_lock);
+ 	if (pd->state & (OZ_PD_S_SLEEP | OZ_PD_S_STOPPED)) {
+-		oz_polling_unlock_bh();
++		spin_unlock_bh(&g_polling_lock);
+ 		return 0;
+ 	}
+ 	if (pd->keep_alive && pd->session_id)
+@@ -383,7 +383,7 @@ int oz_pd_sleep(struct oz_pd *pd)
+ 		do_stop = 1;
+ 
+ 	stop_apps = pd->total_apps;
+-	oz_polling_unlock_bh();
++	spin_unlock_bh(&g_polling_lock);
+ 	if (do_stop) {
+ 		oz_pd_stop(pd);
+ 	} else {
+@@ -999,15 +999,15 @@ void oz_pd_indicate_farewells(struct oz_pd *pd)
+ 	const struct oz_app_if *ai = &g_app_if[OZ_APPID_USB-1];
+ 
+ 	while (1) {
+-		oz_polling_lock_bh();
++		spin_lock_bh(&g_polling_lock);
+ 		if (list_empty(&pd->farewell_list)) {
+-			oz_polling_unlock_bh();
++			spin_unlock_bh(&g_polling_lock);
+ 			break;
+ 		}
+ 		f = list_first_entry(&pd->farewell_list,
+ 				struct oz_farewell, link);
+ 		list_del(&f->link);
+-		oz_polling_unlock_bh();
++		spin_unlock_bh(&g_polling_lock);
+ 		if (ai->farewell)
+ 			ai->farewell(pd, f->ep_num, f->report, f->len);
+ 		kfree(f);
+diff --git a/drivers/staging/ozwpan/ozpd.h b/drivers/staging/ozwpan/ozpd.h
+index 12c7129..56e6fdf 100644
+--- a/drivers/staging/ozwpan/ozpd.h
++++ b/drivers/staging/ozwpan/ozpd.h
+@@ -22,6 +22,11 @@
+ #define OZ_TIMER_HEARTBEAT	2
+ #define OZ_TIMER_STOP		3
+ 
++/* 
++ *External spinlock variable
++ */
++extern spinlock_t g_polling_lock;
 +
- #define PERF_REGS_MASK	((1ULL << PERF_REG_ARM_MAX) - 1)
- #define PERF_REG_IP	PERF_REG_ARM_PC
- #define PERF_REG_SP	PERF_REG_ARM_SP
-diff --git a/tools/perf/arch/arm/tests/regs_load.S b/tools/perf/arch/arm/tests/regs_load.S
-new file mode 100644
-index 0000000..916d268
---- /dev/null
-+++ b/tools/perf/arch/arm/tests/regs_load.S
-@@ -0,0 +1,47 @@
-+#include <linux/linkage.h>
+ /* Data structure that hold information on a frame for transmisson. This is
+  * built when the frame is first transmitted and is used to rebuild the frame
+  * if a re-transmission is required.
+diff --git a/drivers/staging/ozwpan/ozproto.c b/drivers/staging/ozwpan/ozproto.c
+index e7138ed..c1325a6 100644
+--- a/drivers/staging/ozwpan/ozproto.c
++++ b/drivers/staging/ozwpan/ozproto.c
+@@ -38,9 +38,13 @@ struct oz_binding {
+ };
+ 
+ /*
++ * External variable
++ */
 +
-+#define R0 0x00
-+#define R1 0x08
-+#define R2 0x10
-+#define R3 0x18
-+#define R4 0x20
-+#define R5 0x28
-+#define R6 0x30
-+#define R7 0x38
-+#define R8 0x40
-+#define R9 0x48
-+#define SL 0x50
-+#define FP 0x58
-+#define IP 0x60
-+#define SP 0x68
-+#define LR 0x70
-+#define PC 0x78
-+
-+@ Implementation of void perf_regs_load(u64 *regs);
-+@
-+@ This functions fills in the 'regs' buffer from the actual registers values.
-+@ Note that the return value (i.e. caller values) of pc is retrieved
-+@ and stored, in order to skip the call to this function.
-+
-+.text
-+.type perf_regs_load,%function
-+ENTRY(perf_regs_load)
-+	str r0, [r0, #R0]
-+	str r1, [r0, #R1]
-+	str r2, [r0, #R2]
-+	str r3, [r0, #R3]
-+	str r4, [r0, #R4]
-+	str r5, [r0, #R5]
-+	str r6, [r0, #R6]
-+	str r7, [r0, #R7]
-+	str r8, [r0, #R8]
-+	str r9, [r0, #R9]
-+	str sl, [r0, #SL]
-+	str fp, [r0, #FP]
-+	str ip, [r0, #IP]
-+	str sp, [r0, #SP]
-+	str lr, [r0, #LR]
-+	str lr, [r0, #PC]	@ Save caller PC
-+
-+	bx lr
-+ENDPROC(perf_regs_load)
++DEFINE_SPINLOCK(g_polling_lock);
++/*
+  * Static external variables.
+  */
+-static DEFINE_SPINLOCK(g_polling_lock);
+ static LIST_HEAD(g_pd_list);
+ static LIST_HEAD(g_binding);
+ static DEFINE_SPINLOCK(g_binding_lock);
+@@ -794,12 +798,3 @@ int oz_get_pd_list(struct oz_mac_addr *addr, int max_count)
+ 	return count;
+ }
+ 
+-void oz_polling_lock_bh(void)
+-{
+-	spin_lock_bh(&g_polling_lock);
+-}
+-
+-void oz_polling_unlock_bh(void)
+-{
+-	spin_unlock_bh(&g_polling_lock);
+-}
+diff --git a/drivers/staging/ozwpan/ozproto.h b/drivers/staging/ozwpan/ozproto.h
+index 0c49c8a..cb38e02 100644
+--- a/drivers/staging/ozwpan/ozproto.h
++++ b/drivers/staging/ozwpan/ozproto.h
+@@ -59,8 +59,6 @@ void oz_binding_remove(const char *net_dev);
+ void oz_timer_add(struct oz_pd *pd, int type, unsigned long due_time);
+ void oz_timer_delete(struct oz_pd *pd, int type);
+ void oz_pd_request_heartbeat(struct oz_pd *pd);
+-void oz_polling_lock_bh(void);
+-void oz_polling_unlock_bh(void);
+ void oz_pd_heartbeat_handler(unsigned long data);
+ void oz_pd_timeout_handler(unsigned long data);
+ enum hrtimer_restart oz_pd_heartbeat_event(struct hrtimer *timer);
 -- 
-1.8.1.2
+1.8.3.2
 
