@@ -1,104 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754360AbaCDQCW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 11:02:22 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:40409 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752971AbaCDQCV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 11:02:21 -0500
-From: Borislav Petkov <bp@alien8.de>
-To: Russ Anderson <rja@sgi.com>, Alex Thorlton <athorlton@sgi.com>
-Cc: Matt Fleming <matt@console-pimps.org>,
-        Linux EFI <linux-efi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
-Subject: [PATCH] efi: Quirk out SGI UV
-Date: Tue,  4 Mar 2014 17:02:17 +0100
-Message-Id: <1393948937-21840-1-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.9.0
+	id S1754489AbaCDQIC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 11:08:02 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:47688 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754331AbaCDQIA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 11:08:00 -0500
+Date: Tue, 4 Mar 2014 10:06:20 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+CC: Chuansheng Liu <chuansheng.liu@intel.com>, <balbi@ti.com>,
+        <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <mina86@mina86.com>,
+        <david.a.cohen@linux.intel.com>
+Subject: Re: [PATCH v2] usb: gadget: return the right length in
+ ffs_epfile_io()
+Message-ID: <20140304160620.GH15233@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <n>
+ <1393918497-30916-1-git-send-email-chuansheng.liu@intel.com>
+ <531606DB.4010601@cogentembedded.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7SrMUQONj8Rl9QNG"
+Content-Disposition: inline
+In-Reply-To: <531606DB.4010601@cogentembedded.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+--7SrMUQONj8Rl9QNG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Getting this thing to work with the new mapping scheme would need more
-work.
+On Tue, Mar 04, 2014 at 08:01:15PM +0300, Sergei Shtylyov wrote:
+> Hello.
+>=20
+> On 03/04/2014 10:34 AM, Chuansheng Liu wrote:
+>=20
+> >When the request length is aligned to maxpacketsize, sometimes
+> >the return length ret > the user space requested len.
+>=20
+> >At that time, we will use min_t(size_t, ret, len) to limit the
+> >size in case of user data buffer overflow.
+>=20
+> >But we need return the min_t(size_t, ret, len) to tell the user
+> >space rightly also.
+>=20
+> >Acked-by: Michal Nazarewicz <mina86@mina86.com>
+> >Reviewed-by: David Cohen <david.a.cohen@linux.intel.com>
+> >Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
+> >---
+> >  drivers/usb/gadget/f_fs.c | 14 ++++++++------
+> >  1 file changed, 8 insertions(+), 6 deletions(-)
+>=20
+> >diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
+> >index 42f7a0e..780f877 100644
+> >--- a/drivers/usb/gadget/f_fs.c
+> >+++ b/drivers/usb/gadget/f_fs.c
+> >@@ -845,12 +845,14 @@ static ssize_t ffs_epfile_io(struct file *file, st=
+ruct ffs_io_data *io_data)
+> >  			 * we may end up with more data then user space has
+> >  			 * space for.
+> >  			 */
+> >-			ret =3D ep->status;
+> >-			if (io_data->read && ret > 0 &&
+> >-			    unlikely(copy_to_user(io_data->buf, data,
+> >-						  min_t(size_t, ret,
+> >-						  io_data->len))))
+> >-				ret =3D -EFAULT;
+> >+				ret =3D ep->status;
+>=20
+>    Why the indentation jumped suddenly to the right?
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- arch/x86/include/asm/efi.h  |  1 +
- arch/x86/kernel/setup.c     | 10 ++--------
- arch/x86/platform/efi/efi.c | 20 ++++++++++++++++++++
- 3 files changed, 23 insertions(+), 8 deletions(-)
+because it was wrong before ;-)
 
-diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
-index e985d6bf7d3a..86d1fd4bf24c 100644
---- a/arch/x86/include/asm/efi.h
-+++ b/arch/x86/include/asm/efi.h
-@@ -135,6 +135,7 @@ extern void __init old_map_region(efi_memory_desc_t *md);
- extern void __init runtime_code_page_mkexec(void);
- extern void __init efi_runtime_mkexec(void);
- extern void __init efi_dump_pagetable(void);
-+extern void __init efi_apply_memmap_quirks(void);
- 
- struct efi_setup_data {
- 	u64 fw_vendor;
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 830ae2d95450..09c76d265550 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -1238,14 +1238,8 @@ void __init setup_arch(char **cmdline_p)
- 	register_refined_jiffies(CLOCK_TICK_RATE);
- 
- #ifdef CONFIG_EFI
--	/* Once setup is done above, unmap the EFI memory map on
--	 * mismatched firmware/kernel archtectures since there is no
--	 * support for runtime services.
--	 */
--	if (efi_enabled(EFI_BOOT) && !efi_is_native()) {
--		pr_info("efi: Setup done, disabling due to 32/64-bit mismatch\n");
--		efi_unmap_memmap();
--	}
-+	if (efi_enabled(EFI_BOOT))
-+		efi_apply_memmap_quirks();
- #endif
- }
- 
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 482986c3afc5..518aa8540a6d 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -52,6 +52,7 @@
- #include <asm/tlbflush.h>
- #include <asm/x86_init.h>
- #include <asm/rtc.h>
-+#include <asm/uv/uv.h>
- 
- #define EFI_DEBUG
- 
-@@ -1298,3 +1299,22 @@ static int __init parse_efi_cmdline(char *str)
- 	return 0;
- }
- early_param("efi", parse_efi_cmdline);
-+
-+void __init efi_apply_memmap_quirks(void)
-+{
-+	/*
-+	 * Once setup is done earlier, unmap the EFI memory map on mismatched
-+	 * firmware/kernel architectures since there is no support for runtime
-+	 * services.
-+	 */
-+	if (!efi_is_native()) {
-+		pr_info("efi: Setup done, disabling due to 32/64-bit mismatch\n");
-+		efi_unmap_memmap();
-+	}
-+
-+	/*
-+	 * UV doesn't support the new EFI pagetable mapping yet.
-+	 */
-+	if (is_uv_system())
-+		set_bit(EFI_OLD_MEMMAP, &efi.flags);
-+}
--- 
-1.9.0
+--=20
+balbi
 
+--7SrMUQONj8Rl9QNG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTFfn8AAoJEIaOsuA1yqRE8fUP/ileq+YFz6TkcGK6Iy3AYgQx
+LzWAUK/R7FTurf28Hp4a9O23Z/4Lqyde/WtzjTpX25UzZ0V4dwRLXxAc2lkU/LFk
+U0qgjC3Z5LPUB1+hId7aHI8X5WCP4xsoM/2U4QR5H58VT4gYYfF+QpebGQGcSzhj
+E0YlC+vOE6yq/cTLUdcSiNAfjTjb1rWHYZUznqlZjU/AH2hPKaHE/bLHaI17GLKX
+WF3eRkXKetPPYkv36MrFN9r1yJF7lv7jRo/gVUSzHMyl92mRbzSwgn7nwEqNnxjm
+22x1/9U19gOsDNInZW+81aoDugDoFJ33/Mo8xHKTW/pccjq9SPA28qPLZfworNPF
+NSikEg1BjyxyRrRCX6BuBMS+voP8b34XxoX+HrnHY1FVhL3WdbuQaCpPrfBqjgOL
+sy3j1Fp4kgEk3cY2e9aJ9ei5VMpPgONWxwdfuOjhAMJxOrDzQ7dhkL7cATM+vQdm
+tnglx4uBhH10ULns3Bw8W1UjZaWDk+BGDM4HW2ApR08cpHuIi0FFEjemThAMKcdd
+b2oZCbRG+ZVrerLa3KauUiKB5DxzC8KxAR9hBPoOP4j59ctT2/3f5BHbebFw3PQx
+QglGBrgHANEJVO7cXVErX96M1RF9hHGj/ga5zSUJurbDI6a7K0LqWhK0S0oZ8diX
+9i9lJXrttZlyXRs7UPyJ
+=ucSG
+-----END PGP SIGNATURE-----
+
+--7SrMUQONj8Rl9QNG--
