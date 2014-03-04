@@ -1,75 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754807AbaCDRyR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 12:54:17 -0500
-Received: from fallback5.mail.ru ([94.100.176.59]:35621 "EHLO
-	fallback5.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753801AbaCDRyP (ORCPT
+	id S1753648AbaCDR7m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 12:59:42 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:51589 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750990AbaCDR7k convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 12:54:15 -0500
-From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-To: =?UTF-8?B?VGhvbWFzIEdsZWl4bmVy?= <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org,
-        =?UTF-8?B?TWFyayBCcm93bg==?= <broonie@kernel.org>,
-        =?UTF-8?B?QXJuZCBCZXJnbWFubg==?= <arnd@arndb.de>
-Subject: =?UTF-8?B?UmU6IFtQQVRDSF0gaXJxOiBFeHBvcnQgc3ltYm9sIG5vX2FjdGlvbigp?=
-Mime-Version: 1.0
-X-Mailer: Mail.Ru Mailer 1.0
-X-Originating-IP: [188.134.40.128]
-Date: Tue, 04 Mar 2014 21:53:59 +0400
-Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-X-Priority: 3 (Normal)
-Message-ID: <1393955639.661016045@f378.i.mail.ru>
-Content-Type: text/plain; charset=utf-8
-X-Mras: Ok
-X-Spam: undefined
-In-Reply-To: <alpine.DEB.2.02.1403041645060.18573@ionos.tec.linutronix.de>
-References: <1393656316-26757-1-git-send-email-shc_work@mail.ru>
- <1393931733.877810306@f371.i.mail.ru>
- <alpine.DEB.2.02.1403041645060.18573@ionos.tec.linutronix.de>
+	Tue, 4 Mar 2014 12:59:40 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
+Subject: Re: [PATCH 2/3] soc: keystone: add QMSS driver
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <1393629520-12713-3-git-send-email-santosh.shilimkar@ti.com>
+Date: Tue, 4 Mar 2014 11:59:34 -0600
+Cc: linux-kernel@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
+        devicetree@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sandeep Nair <sandeep_n@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <AAE2808F-A2C8-4031-BFA4-1A20B182EA69@codeaurora.org>
+References: <1393629520-12713-1-git-send-email-santosh.shilimkar@ti.com> <1393629520-12713-3-git-send-email-santosh.shilimkar@ti.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+X-Mailer: Apple Mail (2.1874)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s24HsLcG005736
 
-+ÑÑ Arnd Bergmann
 
-Ğ’Ñ‚Ğ¾Ñ€Ğ½Ğ¸Ğº,  4 Ğ¼Ğ°Ñ€Ñ‚Ğ° 2014, 16:46 +01:00 Ğ¾Ñ‚ Thomas Gleixner <tglx@linutronix.de>:
-> On Tue, 4 Mar 2014, Alexander Shiyan wrote:
+On Feb 28, 2014, at 5:18 PM, Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
+
+> From: Sandeep Nair <sandeep_n@ti.com>
 > 
-> > Ğ’Ñ‚Ğ¾Ñ€Ğ½Ğ¸Ğº,  4 Ğ¼Ğ°Ñ€Ñ‚Ğ° 2014, 12:05 +01:00 Ğ¾Ñ‚ Thomas Gleixner <tglx@linutronix.de>:
-> > > On Sat, 1 Mar 2014, Alexander Shiyan wrote:
-> > > 
-> > > > This will allow to use dummy IRQ handler no_action() from
-> > > > drivers compiled as module. For example, dummy handler is could
-> > > > be used for drivers that use ARM FIQ interrupts.
-> > > 
-> > > And why exactly requires a driver which uses ARM FIQ interrupts the
-> > > no_action implementation?
-> >
->  
-> > FIQ Interrupt handler is not used in this function. In FIQ case this
-> > is just a dummy declaration. Real handler is assigned by using the
-> > set_fiq_handler().
+> The QMSS (Queue Manager Sub System) found on Keystone SOCs is one of
+> the main hardware sub system which forms the backbone of the Keystone
+> Multi-core Navigator. QMSS consist of queue managers, packed-data structure
+> processors(PDSP), linking RAM, descriptor pools and infrastructure
+> Packet DMA.
 > 
-> Why do you need a dummy declaration at all?
+> The Queue Manager is a hardware module that is responsible for accelerating
+> management of the packet queues. Packets are queued/de-queued by writing or
+> reading descriptor address to a particular memory mapped location. The PDSPs
+> perform QMSS related functions like accumulation, QoS, or event management.
+> Linking RAM registers are used to link the descriptors which are stored in
+> descriptor RAM. Descriptor RAM is configurable as internal or external memory.
 > 
-> set_fiq_handler() is completely detached from the generic interrupt
-> subsystem.
+> The QMSS driver manages the PDSP setups, linking RAM regions,
+> queue pool management (allocation, push, pop and notify) and descriptor
+> pool management. The specifics on the device tree bindings for
+> QMSS can be found in:
+>        Documentation/devicetree/bindings/soc/keystone-qmss.txt
+> 
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Kumar Gala <galak@codeaurora.org>
+> Cc: Olof Johansson <olof@lixom.net>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Rob Herring <robh+dt@kernel.org>
+> Cc: Mark Rutland <mark.rutland@arm.com>
+> Signed-off-by: Sandeep Nair <sandeep_n@ti.com>
+> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> ---
+> .../devicetree/bindings/soc/keystone-qmss.txt      |  209 +++
+> drivers/Kconfig                                    |    2 +
+> drivers/Makefile                                   |    3 +
+> drivers/soc/Kconfig                                |    2 +
+> drivers/soc/Makefile                               |    5 +
+> drivers/soc/keystone/Kconfig                       |   15 +
+> drivers/soc/keystone/Makefile                      |    5 +
+> drivers/soc/keystone/qmss_acc.c                    |  591 ++++++++
+> drivers/soc/keystone/qmss_queue.c                  | 1533 ++++++++++++++++++++
+> drivers/soc/keystone/qmss_queue.h                  |  236 +++
+> include/linux/soc/keystone_qmss.h                  |  390 +++++
+> 11 files changed, 2991 insertions(+)
+> create mode 100644 Documentation/devicetree/bindings/soc/keystone-qmss.txt
+> create mode 100644 drivers/soc/Makefile
+> create mode 100644 drivers/soc/keystone/Kconfig
+> create mode 100644 drivers/soc/keystone/Makefile
+> create mode 100644 drivers/soc/keystone/qmss_acc.c
+> create mode 100644 drivers/soc/keystone/qmss_queue.c
+> create mode 100644 drivers/soc/keystone/qmss_queue.h
+> create mode 100644 include/linux/soc/keystone_qmss.h
 
-Some limitations of hardware, such as bit interleaving for normal and
-FIQ interrupts for mask/status registers, led to the implement single
-driver for interrupt handling.
-As a result, all interrupts can be described equally, and single mechanism
-is used for the request/free and enable/disable.
-Correct me if I'm wrong. Driver that implements it, resent several times
-and expect comments within 3 months [1], you are the only one person,
-Thomas, specified as maintainer for this subsystem.
-I repeat, if I'm wrong in the implementation, let's fix this.
+Do you see qmss being able to provide HW support for a qdisc or doing processor to processor communication over something like rpmsg?
 
-[1]: http://marc.info/?l=linux-arm-kernel&m=139132855024699
+I ask because I do wondering if we should be looking at a drivers/hwqueue as other vendors have similar hardware.
 
-Thanks.
----
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+- k
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+
