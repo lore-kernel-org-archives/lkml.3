@@ -1,89 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351AbaCDSfu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 13:35:50 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:54987 "EHLO
+	id S1755218AbaCDSez (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 13:34:55 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:54961 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753236AbaCDSe4 (ORCPT
+	with ESMTP id S1753269AbaCDSex (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 13:34:56 -0500
+	Tue, 4 Mar 2014 13:34:53 -0500
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
-        Josh Cartwright <joshc@codeaurora.org>, linux-input@vger.kernel.org,
-        <devicetree@vger.kernel.org>
-Subject: [PATCH v5 8/9] devicetree: bindings: Document PM8921/8058 power keys
-Date: Tue,  4 Mar 2014 10:34:47 -0800
-Message-Id: <1393958088-1456-9-git-send-email-sboyd@codeaurora.org>
+        Josh Cartwright <joshc@codeaurora.org>,
+        "linux-input@vger.kernel.orgdevicetree"@vger.kernel.org
+Subject: [PATCH v5 0/9] Use regmap+devm+DT in pm8xxx input drivers
+Date: Tue,  4 Mar 2014 10:34:39 -0800
+Message-Id: <1393958088-1456-1-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
-In-Reply-To: <1393958088-1456-1-git-send-email-sboyd@codeaurora.org>
-References: <1393958088-1456-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the power key found on PM8921 and PM8058 PMICs.
+These patches move the pm8xxx input drivers over to use devm_* APIs
+and regmap. This breaks the dependency of these drivers on the pm8xxx
+specific read/write calls and also simplifies the probe code a bit.
+Finally we add devicetree support to these drivers so they can be probed
+on the platforms that are supported upstream.
 
-Cc: <devicetree@vger.kernel.org>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- .../bindings/input/qcom,pm8xxx-pwrkey.txt          | 46 ++++++++++++++++++++++
- 1 file changed, 46 insertions(+)
+Changes since v4:
+ * Added reg property to bindings
+ * Added linux,* properties to keypad binding
+
+Changes since v3:
+ * Dropped devm conversion patch for pwrkey
+ * Fixed compilation of keypad
+
+Changes since v2:
+ * Rebased to v3.14-rc3
+
+Changes since v1:
+ * Picked up Dmitry's version of devm for pwrkey
+ * Added DT bindings and parsing patches
+ * Dropped patches picked up by Dmitry
+
+Stephen Boyd (9):
+  Input: pmic8xxx-keypad - Fix build by removing gpio configuration
+  Input: pmic8xxx-keypad - Migrate to devm_* APIs
+  Input: pmic8xxx-keypad - Migrate to regmap APIs
+  Input: pmic8xxx-keypad - Migrate to DT
+  Input: pmic8xxx-pwrkey - Migrate to DT
+  Input: pm8xxx-vibrator - Add DT match table
+  devicetree: bindings: Document PM8921/8058 keypads
+  devicetree: bindings: Document PM8921/8058 power keys
+  devicetree: bindings: Document PM8921/8058 vibrators
+
+ .../bindings/input/qcom,pm8xxx-keypad.txt          |  89 ++++++
+ .../bindings/input/qcom,pm8xxx-pwrkey.txt          |  46 +++
+ .../devicetree/bindings/input/qcom,pm8xxx-vib.txt  |  22 ++
+ drivers/input/keyboard/pmic8xxx-keypad.c           | 348 ++++++++-------------
+ drivers/input/misc/pm8xxx-vibrator.c               |   8 +
+ drivers/input/misc/pmic8xxx-pwrkey.c               |  33 +-
+ include/linux/input/pmic8xxx-keypad.h              |  52 ---
+ include/linux/input/pmic8xxx-pwrkey.h              |  31 --
+ 8 files changed, 316 insertions(+), 313 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/input/qcom,pm8xxx-keypad.txt
  create mode 100644 Documentation/devicetree/bindings/input/qcom,pm8xxx-pwrkey.txt
+ create mode 100644 Documentation/devicetree/bindings/input/qcom,pm8xxx-vib.txt
+ delete mode 100644 include/linux/input/pmic8xxx-keypad.h
+ delete mode 100644 include/linux/input/pmic8xxx-pwrkey.h
 
-diff --git a/Documentation/devicetree/bindings/input/qcom,pm8xxx-pwrkey.txt b/Documentation/devicetree/bindings/input/qcom,pm8xxx-pwrkey.txt
-new file mode 100644
-index 000000000000..588536cc96ed
---- /dev/null
-+++ b/Documentation/devicetree/bindings/input/qcom,pm8xxx-pwrkey.txt
-@@ -0,0 +1,46 @@
-+Qualcomm PM8xxx PMIC Power Key
-+
-+PROPERTIES
-+
-+- compatible:
-+	Usage: required
-+	Value type: <string>
-+	Definition: must be one of:
-+		    "qcom,pm8058-pwrkey"
-+		    "qcom,pm8921-pwrkey"
-+
-+- reg:
-+	Usage: required
-+	Value type: <prop-encoded-array>
-+	Definition: address of power key control register
-+
-+- interrupts:
-+	Usage: required
-+	Value type: <prop-encoded-array>
-+	Definition: the first interrupt specifies the key release interrupt
-+		    and the second interrupt specifies the key press interrupt.
-+		    The format of the specifier is defined by the binding
-+		    document describing the node's interrupt parent.
-+
-+- debounce:
-+	Usage: optional
-+	Value type: <u32>
-+	Definition: time in microseconds that key must be pressed or release
-+		    for state change interrupt to trigger.
-+
-+- pull-up:
-+	Usage: optional
-+	Value type: <empty>
-+	Definition: presence of this property indicates that the KPDPWR_N pin
-+		    should be configured for pull up.
-+
-+EXAMPLE
-+
-+	pwrkey@1c {
-+		compatible = "qcom,pm8921-pwrkey";
-+		reg = <0x1c>;
-+		interrupt-parent = <&pmicintc>;
-+		interrupts = <50 1>, <51 1>;
-+		debounce = <15625>;
-+		pull-up;
-+	};
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
