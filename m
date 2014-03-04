@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756933AbaCDJMi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 04:12:38 -0500
-Received: from extern.plris.com ([212.199.10.23]:54504 "EHLO plris.com"
+	id S1756950AbaCDJMu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 04:12:50 -0500
+Received: from f148.i.mail.ru ([94.100.178.199]:39536 "EHLO f148.i.mail.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756667AbaCDJMa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 04:12:30 -0500
-X-Greylist: delayed 1103 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Mar 2014 04:12:30 EST
-From: Leon Pollak <leonp@plris.com>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: Richard Weinberger <richard@nod.at>, linux-mtd@lists.infradead.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Artem Bityutskiy <dedekind1@gmail.com>
-Subject: Re: What is wrong?
-Date: Tue, 04 Mar 2014 10:54:04 +0200
-Message-ID: <20500571.Fgyz0I6ATm@leonp.plris.com>
-Organization: PLR Information Systems
-User-Agent: KMail/4.11.5 (Linux/3.12.9-201.fc19.x86_64; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140304083325.GJ13420@norris-Latitude-E6410>
-References: <4315632.KkRm7kzq26@leonp.plris.com> <20140303211336.GA7369@gmail.com> <20140304083325.GJ13420@norris-Latitude-E6410>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1756733AbaCDJMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 04:12:45 -0500
+From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+To: =?UTF-8?B?UGV0ZXIgVWpmYWx1c2k=?= <peter.ujfalusi@ti.com>
+Cc: =?UTF-8?B?U2FudG9zaCBTaGlsaW1rYXI=?= <santosh.shilimkar@ti.com>,
+        =?UTF-8?B?VG9ueSBMaW5kZ3Jlbg==?= <tony@atomide.com>,
+        =?UTF-8?B?T2xvZiBKb2hhbnNzb24=?= <olof@lixom.net>,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?B?QXJuZCBCZXJnbWFubg==?= <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: =?UTF-8?B?UmU6IFtQQVRDSCAyLzVdIGRyaXZlcnM6IGJ1czogb21hcF9sMzogQ29udmVy?=
+ =?UTF-8?B?dCB0byB1c2UgZGV2bV9yZXF1ZXN0X2FuZF9pb3JlbWFwKCk=?=
+Mime-Version: 1.0
+X-Mailer: Mail.Ru Mailer 1.0
+X-Originating-IP: [217.119.30.118]
+Date: Tue, 04 Mar 2014 13:12:39 +0400
+Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+X-Priority: 3 (Normal)
+Message-ID: <1393924359.866301359@f148.i.mail.ru>
+Content-Type: text/plain; charset=utf-8
+X-Mras: Ok
+X-Spam: undefined
+In-Reply-To: <1393923710-10377-3-git-send-email-peter.ujfalusi@ti.com>
+References: <1393923710-10377-1-git-send-email-peter.ujfalusi@ti.com>
+ <1393923710-10377-3-git-send-email-peter.ujfalusi@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s249CwIQ002234
 
-Hello, all.
-
-I am really sorry for the silence - I was on the business trip and 
-returned today.
-
-I will recheck everything and try. Meanwhile, the news are not good: our 
-guys say that it appears that the additional sync DOES NOT SOLVE the 
-issue.
-I ask for excuse, but as I did not know the exact processing, I was 
-mistaken and, probably, used already gc-ted unit for tests.
-
-Sorry, again.
-
-BR
-
-On Tuesday 04 March 2014 00:33:25 Brian Norris wrote:
-> On Mon, Mar 03, 2014 at 03:13:36PM -0600, Andrew Ruder wrote:
-> > On Thu, Feb 27, 2014 at 01:22:08PM -0800, Brian Norris wrote:
-> > > Perhaps Richard or Andrew can comment on whether this patch should
-> > > help you. But I think JFFS2 on NAND uses write-buffered support
-> > > which can be affected by this bug.
-> > 
-> > Definitely sounds like the same issue and I'm kind of glad to see it
-> > crop up in another filesystem.
+Ğ’Ñ‚Ğ¾Ñ€Ğ½Ğ¸Ğº,  4 Ğ¼Ğ°Ñ€Ñ‚Ğ° 2014, 11:01 +02:00 Ğ¾Ñ‚ Peter Ujfalusi <peter.ujfalusi@ti.com>:
+> We can then remove the iounmap() calls from probe and remove.
+> Since the driver requests the resources via index we can do the mem resource
+> request within a for loop.
 > 
-> We haven't confirmed that the *patch* actually affects Leon's problem;
-> just that if he runs an additional 'sync' it solves his problem.
-> Leon, did you get to try the patch?
-> 
-> Anyway, should commit 807612db2f9940b9fa6deaef054eb16d51bd3e00 be
-> marked for -stable?
-> 
-> Brian
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti>
+> ---
 
--- 
-Leon
+> +	/* Get mem resources */
+> +	for (i = 0; i < 3; i++) {
+> +		struct resource	*res = platform_get_resource(pdev,
+> +							     IORESOURCE_MEM, i);
+> +		if (!res) {
+> +			dev_err(&pdev->dev, "couldn't find resource %d\n", i);
+> +			return -ENODEV;
+> +		}
+
+No need to check "res". devm_request_and_ioremap() do all for us.
+
+> -	l3->l3_base[2] = ioremap(res->start, resource_size(res));
+> -	if (!l3->l3_base[2]) {
+> -		dev_err(&pdev->dev, "ioremap failed\n");
+> -		ret = -ENOMEM;
+> -		goto err2;
+> +		l3->l3_base[i] = devm_request_and_ioremap(&pdev->dev, res);
+> +		if (!l3->l3_base[i]) {
+
+if (IS_ERR(l3->l3_base[i]))
+
+> +			dev_err(&pdev->dev, "ioremap %d failed\n", i);
+
+Unnecessary.
+
+> +			return -ENOMEM;
+
+return PTR_ERR(l3->l3_base[i]);
+
+---
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
