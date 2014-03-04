@@ -1,384 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757606AbaCDULD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:11:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3293 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752482AbaCDUJa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:09:30 -0500
-From: Mark Salter <msalter@redhat.com>
-To: x86@kernel.org
-Cc: Mark Salter <msalter@redhat.com>, linux-kernel@vger.kernel.org,
+	id S1757528AbaCDUJU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:09:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41823 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932368AbaCDUFr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 15:05:47 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Davidlohr Bueso <davidlohr@hp.com>, Madars Vitolins <m@silodev.com>,
+        Doug Ledford <dledford@redhat.com>,
+        Manfred Spraul <manfred@colorfullife.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        patches@linaro.org
-Subject: [PATCH 3/5] x86: use generic early_ioremap
-Date: Tue,  4 Mar 2014 15:08:56 -0500
-Message-Id: <1393963738-9210-4-git-send-email-msalter@redhat.com>
-In-Reply-To: <1393963738-9210-1-git-send-email-msalter@redhat.com>
-References: <1393963738-9210-1-git-send-email-msalter@redhat.com>
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 82/97] ipc,mqueue: remove limits for the amount of system-wide queues
+Date: Tue,  4 Mar 2014 12:04:35 -0800
+Message-Id: <20140304200348.712141751@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
+References: <20140304200345.895517495@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move x86 over to the generic early ioremap implementation.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Mark Salter <msalter@redhat.com>
-Acked-by: H. Peter Anvin <hpa@zytor.com>
+------------------
+
+From: Davidlohr Bueso <davidlohr@hp.com>
+
+commit f3713fd9cff733d9df83116422d8e4af6e86b2bb upstream.
+
+Commit 93e6f119c0ce ("ipc/mqueue: cleanup definition names and
+locations") added global hardcoded limits to the amount of message
+queues that can be created.  While these limits are per-namespace,
+reality is that it ends up breaking userspace applications.
+Historically users have, at least in theory, been able to create up to
+INT_MAX queues, and limiting it to just 1024 is way too low and dramatic
+for some workloads and use cases.  For instance, Madars reports:
+
+ "This update imposes bad limits on our multi-process application.  As
+  our app uses approaches that each process opens its own set of queues
+  (usually something about 3-5 queues per process).  In some scenarios
+  we might run up to 3000 processes or more (which of-course for linux
+  is not a problem).  Thus we might need up to 9000 queues or more.  All
+  processes run under one user."
+
+Other affected users can be found in launchpad bug #1155695:
+  https://bugs.launchpad.net/ubuntu/+source/manpages/+bug/1155695
+
+Instead of increasing this limit, revert it entirely and fallback to the
+original way of dealing queue limits -- where once a user's resource
+limit is reached, and all memory is used, new queues cannot be created.
+
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+Reported-by: Madars Vitolins <m@silodev.com>
+Acked-by: Doug Ledford <dledford@redhat.com>
+Cc: Manfred Spraul <manfred@colorfullife.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- arch/x86/Kconfig              |   1 +
- arch/x86/include/asm/Kbuild   |   1 +
- arch/x86/include/asm/fixmap.h |   6 ++
- arch/x86/include/asm/io.h     |  15 +--
- arch/x86/mm/ioremap.c         | 228 +-----------------------------------------
- arch/x86/mm/pgtable_32.c      |   2 +-
- 6 files changed, 13 insertions(+), 240 deletions(-)
+ include/linux/ipc_namespace.h |    2 --
+ ipc/mq_sysctl.c               |   18 ++++++++++++------
+ ipc/mqueue.c                  |    6 +++---
+ 3 files changed, 15 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 0af5250..fb479bc 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -127,6 +127,7 @@ config X86
- 	select HAVE_DEBUG_STACKOVERFLOW
- 	select HAVE_IRQ_EXIT_ON_IRQ_STACK if X86_64
- 	select HAVE_CC_STACKPROTECTOR
-+	select GENERIC_EARLY_IOREMAP
- 
- config INSTRUCTION_DECODER
- 	def_bool y
-diff --git a/arch/x86/include/asm/Kbuild b/arch/x86/include/asm/Kbuild
-index 7f66985..203f5f9 100644
---- a/arch/x86/include/asm/Kbuild
-+++ b/arch/x86/include/asm/Kbuild
-@@ -5,3 +5,4 @@ genhdr-y += unistd_64.h
- genhdr-y += unistd_x32.h
- 
- generic-y += clkdev.h
-+generic-y += early_ioremap.h
-diff --git a/arch/x86/include/asm/fixmap.h b/arch/x86/include/asm/fixmap.h
-index 7252cd3..e5f236d 100644
---- a/arch/x86/include/asm/fixmap.h
-+++ b/arch/x86/include/asm/fixmap.h
-@@ -177,5 +177,11 @@ static inline void __set_fixmap(enum fixed_addresses idx,
- 
- #include <asm-generic/fixmap.h>
- 
-+#define __late_set_fixmap(idx, phys, flags) __set_fixmap(idx, phys, flags)
-+#define __late_clear_fixmap(idx) __set_fixmap(idx, 0, __pgprot(0))
-+
-+void __early_set_fixmap(enum fixed_addresses idx,
-+			phys_addr_t phys, pgprot_t flags);
-+
- #endif /* !__ASSEMBLY__ */
- #endif /* _ASM_X86_FIXMAP_H */
-diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
-index 1db414f..aae7010 100644
---- a/arch/x86/include/asm/io.h
-+++ b/arch/x86/include/asm/io.h
-@@ -39,6 +39,7 @@
- #include <linux/string.h>
- #include <linux/compiler.h>
- #include <asm/page.h>
-+#include <asm/early_ioremap.h>
- 
- #define build_mmio_read(name, size, type, reg, barrier) \
- static inline type name(const volatile void __iomem *addr) \
-@@ -316,20 +317,6 @@ extern int ioremap_change_attr(unsigned long vaddr, unsigned long size,
- 				unsigned long prot_val);
- extern void __iomem *ioremap_wc(resource_size_t offset, unsigned long size);
- 
--/*
-- * early_ioremap() and early_iounmap() are for temporary early boot-time
-- * mappings, before the real ioremap() is functional.
-- * A boot-time mapping is currently limited to at most 16 pages.
-- */
--extern void early_ioremap_init(void);
--extern void early_ioremap_reset(void);
--extern void __iomem *early_ioremap(resource_size_t phys_addr,
--				   unsigned long size);
--extern void *early_memremap(resource_size_t phys_addr,
--				    unsigned long size);
--extern void early_iounmap(void __iomem *addr, unsigned long size);
--extern void early_memunmap(void *addr, unsigned long size);
--extern void fixup_early_ioremap(void);
- extern bool is_early_ioremap_ptep(pte_t *ptep);
- 
- #ifdef CONFIG_XEN
-diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
-index bbb4504..597ac15 100644
---- a/arch/x86/mm/ioremap.c
-+++ b/arch/x86/mm/ioremap.c
-@@ -328,17 +328,6 @@ void unxlate_dev_mem_ptr(unsigned long phys, void *addr)
- 	return;
+--- a/include/linux/ipc_namespace.h
++++ b/include/linux/ipc_namespace.h
+@@ -119,9 +119,7 @@ extern int mq_init_ns(struct ipc_namespa
+  *     the new maximum will handle anyone else.  I may have to revisit this
+  *     in the future.
+  */
+-#define MIN_QUEUESMAX			1
+ #define DFLT_QUEUESMAX		      256
+-#define HARD_QUEUESMAX		     1024
+ #define MIN_MSGMAX			1
+ #define DFLT_MSG		       10U
+ #define DFLT_MSGMAX		       10
+--- a/ipc/mq_sysctl.c
++++ b/ipc/mq_sysctl.c
+@@ -22,6 +22,16 @@ static void *get_mq(ctl_table *table)
+ 	return which;
  }
  
--static int __initdata early_ioremap_debug;
--
--static int __init early_ioremap_debug_setup(char *str)
--{
--	early_ioremap_debug = 1;
--
--	return 0;
--}
--early_param("early_ioremap_debug", early_ioremap_debug_setup);
--
--static __initdata int after_paging_init;
- static pte_t bm_pte[PAGE_SIZE/sizeof(pte_t)] __page_aligned_bss;
- 
- static inline pmd_t * __init early_ioremap_pmd(unsigned long addr)
-@@ -362,18 +351,11 @@ bool __init is_early_ioremap_ptep(pte_t *ptep)
- 	return ptep >= &bm_pte[0] && ptep < &bm_pte[PAGE_SIZE/sizeof(pte_t)];
- }
- 
--static unsigned long slot_virt[FIX_BTMAPS_SLOTS] __initdata;
--
- void __init early_ioremap_init(void)
++static int proc_mq_dointvec(ctl_table *table, int write,
++			    void __user *buffer, size_t *lenp, loff_t *ppos)
++{
++	struct ctl_table mq_table;
++	memcpy(&mq_table, table, sizeof(mq_table));
++	mq_table.data = get_mq(table);
++
++	return proc_dointvec(&mq_table, write, buffer, lenp, ppos);
++}
++
+ static int proc_mq_dointvec_minmax(ctl_table *table, int write,
+ 	void __user *buffer, size_t *lenp, loff_t *ppos)
  {
- 	pmd_t *pmd;
--	int i;
+@@ -33,12 +43,10 @@ static int proc_mq_dointvec_minmax(ctl_t
+ 					lenp, ppos);
+ }
+ #else
++#define proc_mq_dointvec NULL
+ #define proc_mq_dointvec_minmax NULL
+ #endif
  
--	if (early_ioremap_debug)
--		printk(KERN_INFO "early_ioremap_init()\n");
+-static int msg_queues_limit_min = MIN_QUEUESMAX;
+-static int msg_queues_limit_max = HARD_QUEUESMAX;
 -
--	for (i = 0; i < FIX_BTMAPS_SLOTS; i++)
--		slot_virt[i] = __fix_to_virt(FIX_BTMAP_BEGIN - NR_FIX_BTMAPS*i);
-+	early_ioremap_setup();
+ static int msg_max_limit_min = MIN_MSGMAX;
+ static int msg_max_limit_max = HARD_MSGMAX;
  
- 	pmd = early_ioremap_pmd(fix_to_virt(FIX_BTMAP_BEGIN));
- 	memset(bm_pte, 0, sizeof(bm_pte));
-@@ -402,13 +384,8 @@ void __init early_ioremap_init(void)
+@@ -51,9 +59,7 @@ static ctl_table mq_sysctls[] = {
+ 		.data		= &init_ipc_ns.mq_queues_max,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_mq_dointvec_minmax,
+-		.extra1		= &msg_queues_limit_min,
+-		.extra2		= &msg_queues_limit_max,
++		.proc_handler	= proc_mq_dointvec,
+ 	},
+ 	{
+ 		.procname	= "msg_max",
+--- a/ipc/mqueue.c
++++ b/ipc/mqueue.c
+@@ -433,9 +433,9 @@ static int mqueue_create(struct inode *d
+ 		error = -EACCES;
+ 		goto out_unlock;
  	}
- }
- 
--void __init early_ioremap_reset(void)
--{
--	after_paging_init = 1;
--}
--
--static void __init __early_set_fixmap(enum fixed_addresses idx,
--				      phys_addr_t phys, pgprot_t flags)
-+void __init __early_set_fixmap(enum fixed_addresses idx,
-+			       phys_addr_t phys, pgprot_t flags)
- {
- 	unsigned long addr = __fix_to_virt(idx);
- 	pte_t *pte;
-@@ -425,202 +402,3 @@ static void __init __early_set_fixmap(enum fixed_addresses idx,
- 		pte_clear(&init_mm, addr, pte);
- 	__flush_tlb_one(addr);
- }
--
--static inline void __init early_set_fixmap(enum fixed_addresses idx,
--					   phys_addr_t phys, pgprot_t prot)
--{
--	if (after_paging_init)
--		__set_fixmap(idx, phys, prot);
--	else
--		__early_set_fixmap(idx, phys, prot);
--}
--
--static inline void __init early_clear_fixmap(enum fixed_addresses idx)
--{
--	if (after_paging_init)
--		clear_fixmap(idx);
--	else
--		__early_set_fixmap(idx, 0, __pgprot(0));
--}
--
--static void __iomem *prev_map[FIX_BTMAPS_SLOTS] __initdata;
--static unsigned long prev_size[FIX_BTMAPS_SLOTS] __initdata;
--
--void __init fixup_early_ioremap(void)
--{
--	int i;
--
--	for (i = 0; i < FIX_BTMAPS_SLOTS; i++) {
--		if (prev_map[i]) {
--			WARN_ON(1);
--			break;
--		}
--	}
--
--	early_ioremap_init();
--}
--
--static int __init check_early_ioremap_leak(void)
--{
--	int count = 0;
--	int i;
--
--	for (i = 0; i < FIX_BTMAPS_SLOTS; i++)
--		if (prev_map[i])
--			count++;
--
--	if (!count)
--		return 0;
--	WARN(1, KERN_WARNING
--	       "Debug warning: early ioremap leak of %d areas detected.\n",
--		count);
--	printk(KERN_WARNING
--		"please boot with early_ioremap_debug and report the dmesg.\n");
--
--	return 1;
--}
--late_initcall(check_early_ioremap_leak);
--
--static void __init __iomem *
--__early_ioremap(resource_size_t phys_addr, unsigned long size, pgprot_t prot)
--{
--	unsigned long offset;
--	resource_size_t last_addr;
--	unsigned int nrpages;
--	enum fixed_addresses idx;
--	int i, slot;
--
--	WARN_ON(system_state != SYSTEM_BOOTING);
--
--	slot = -1;
--	for (i = 0; i < FIX_BTMAPS_SLOTS; i++) {
--		if (!prev_map[i]) {
--			slot = i;
--			break;
--		}
--	}
--
--	if (slot < 0) {
--		printk(KERN_INFO "%s(%08llx, %08lx) not found slot\n",
--		       __func__, (u64)phys_addr, size);
--		WARN_ON(1);
--		return NULL;
--	}
--
--	if (early_ioremap_debug) {
--		printk(KERN_INFO "%s(%08llx, %08lx) [%d] => ",
--		       __func__, (u64)phys_addr, size, slot);
--		dump_stack();
--	}
--
--	/* Don't allow wraparound or zero size */
--	last_addr = phys_addr + size - 1;
--	if (!size || last_addr < phys_addr) {
--		WARN_ON(1);
--		return NULL;
--	}
--
--	prev_size[slot] = size;
--	/*
--	 * Mappings have to be page-aligned
--	 */
--	offset = phys_addr & ~PAGE_MASK;
--	phys_addr &= PAGE_MASK;
--	size = PAGE_ALIGN(last_addr + 1) - phys_addr;
--
--	/*
--	 * Mappings have to fit in the FIX_BTMAP area.
--	 */
--	nrpages = size >> PAGE_SHIFT;
--	if (nrpages > NR_FIX_BTMAPS) {
--		WARN_ON(1);
--		return NULL;
--	}
--
--	/*
--	 * Ok, go for it..
--	 */
--	idx = FIX_BTMAP_BEGIN - NR_FIX_BTMAPS*slot;
--	while (nrpages > 0) {
--		early_set_fixmap(idx, phys_addr, prot);
--		phys_addr += PAGE_SIZE;
--		--idx;
--		--nrpages;
--	}
--	if (early_ioremap_debug)
--		printk(KERN_CONT "%08lx + %08lx\n", offset, slot_virt[slot]);
--
--	prev_map[slot] = (void __iomem *)(offset + slot_virt[slot]);
--	return prev_map[slot];
--}
--
--/* Remap an IO device */
--void __init __iomem *
--early_ioremap(resource_size_t phys_addr, unsigned long size)
--{
--	return __early_ioremap(phys_addr, size, PAGE_KERNEL_IO);
--}
--
--/* Remap memory */
--void __init *early_memremap(resource_size_t phys_addr, unsigned long size)
--{
--	return (__force void *)__early_ioremap(phys_addr, size, PAGE_KERNEL);
--}
--
--void __init early_iounmap(void __iomem *addr, unsigned long size)
--{
--	unsigned long virt_addr;
--	unsigned long offset;
--	unsigned int nrpages;
--	enum fixed_addresses idx;
--	int i, slot;
--
--	slot = -1;
--	for (i = 0; i < FIX_BTMAPS_SLOTS; i++) {
--		if (prev_map[i] == addr) {
--			slot = i;
--			break;
--		}
--	}
--
--	if (slot < 0) {
--		printk(KERN_INFO "early_iounmap(%p, %08lx) not found slot\n",
--			 addr, size);
--		WARN_ON(1);
--		return;
--	}
--
--	if (prev_size[slot] != size) {
--		printk(KERN_INFO "early_iounmap(%p, %08lx) [%d] size not consistent %08lx\n",
--			 addr, size, slot, prev_size[slot]);
--		WARN_ON(1);
--		return;
--	}
--
--	if (early_ioremap_debug) {
--		printk(KERN_INFO "early_iounmap(%p, %08lx) [%d]\n", addr,
--		       size, slot);
--		dump_stack();
--	}
--
--	virt_addr = (unsigned long)addr;
--	if (virt_addr < fix_to_virt(FIX_BTMAP_BEGIN)) {
--		WARN_ON(1);
--		return;
--	}
--	offset = virt_addr & ~PAGE_MASK;
--	nrpages = PAGE_ALIGN(offset + size) >> PAGE_SHIFT;
--
--	idx = FIX_BTMAP_BEGIN - NR_FIX_BTMAPS*slot;
--	while (nrpages > 0) {
--		early_clear_fixmap(idx);
--		--idx;
--		--nrpages;
--	}
--	prev_map[slot] = NULL;
--}
--
--void __init early_memunmap(void *addr, unsigned long size)
--{
--	early_iounmap((__force void __iomem *)addr, size);
--}
-diff --git a/arch/x86/mm/pgtable_32.c b/arch/x86/mm/pgtable_32.c
-index a69bcb8..4dd8cf6 100644
---- a/arch/x86/mm/pgtable_32.c
-+++ b/arch/x86/mm/pgtable_32.c
-@@ -127,7 +127,7 @@ static int __init parse_reservetop(char *arg)
- 
- 	address = memparse(arg, &arg);
- 	reserve_top_address(address);
--	fixup_early_ioremap();
-+	early_ioremap_init();
- 	return 0;
- }
- early_param("reservetop", parse_reservetop);
--- 
-1.8.5.3
+-	if (ipc_ns->mq_queues_count >= HARD_QUEUESMAX ||
+-	    (ipc_ns->mq_queues_count >= ipc_ns->mq_queues_max &&
+-	     !capable(CAP_SYS_RESOURCE))) {
++
++	if (ipc_ns->mq_queues_count >= ipc_ns->mq_queues_max &&
++	    !capable(CAP_SYS_RESOURCE)) {
+ 		error = -ENOSPC;
+ 		goto out_unlock;
+ 	}
+
 
