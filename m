@@ -1,183 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756808AbaCDKAs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 05:00:48 -0500
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:44463 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756697AbaCDKAl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 05:00:41 -0500
-Date: Tue, 4 Mar 2014 11:00:36 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: Ian Lister <ian.lister@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arch@vger.kernel.org, Colin Cross <ccross@google.com>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        "Clark, Rob" <robdclark@gmail.com>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
-Subject: Re: [PATCH 4/6] android: convert sync to fence api, v4
-Message-ID: <20140304100036.GX17001@phenom.ffwll.local>
-Mail-Followup-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-	Ian Lister <ian.lister@intel.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	linux-arch@vger.kernel.org, Colin Cross <ccross@google.com>,
-	"linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-	"Clark, Rob" <robdclark@gmail.com>,
-	dri-devel <dri-devel@lists.freedesktop.org>,
-	Sumit Semwal <sumit.semwal@linaro.org>,
-	"linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
-References: <20140217155056.20337.25254.stgit@patser>
- <20140217155640.20337.13331.stgit@patser>
- <CAKMK7uESOhk_i8ui1pVknA=6s8oQsBOCTULYszxe5fodcBwTGw@mail.gmail.com>
- <531585CE.9020509@canonical.com>
- <20140304081411.GK17001@phenom.ffwll.local>
- <53158CEA.30004@canonical.com>
+	id S1756834AbaCDKBU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 05:01:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22182 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756511AbaCDKBL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 05:01:11 -0500
+Message-ID: <5315A40E.6010209@redhat.com>
+Date: Tue, 04 Mar 2014 10:59:42 +0100
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53158CEA.30004@canonical.com>
-X-Operating-System: Linux phenom 3.12.0+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexei Starovoitov <ast@plumgrid.com>
+CC: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Hagen Paul Pfeifer <hagen@jauu.net>,
+        Jesse Gross <jesse@nicira.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v4 net-next 1/3] Extended BPF interpreter and converter
+References: <1393910304-4004-1-git-send-email-ast@plumgrid.com> <1393910304-4004-2-git-send-email-ast@plumgrid.com>
+In-Reply-To: <1393910304-4004-2-git-send-email-ast@plumgrid.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 04, 2014 at 09:20:58AM +0100, Maarten Lankhorst wrote:
-> op 04-03-14 09:14, Daniel Vetter schreef:
-> >On Tue, Mar 04, 2014 at 08:50:38AM +0100, Maarten Lankhorst wrote:
-> >>op 03-03-14 22:11, Daniel Vetter schreef:
-> >>>On Mon, Feb 17, 2014 at 04:57:19PM +0100, Maarten Lankhorst wrote:
-> >>>>Android syncpoints can be mapped to a timeline. This removes the need
-> >>>>to maintain a separate api for synchronization. I've left the android
-> >>>>trace events in place, but the core fence events should already be
-> >>>>sufficient for debugging.
-> >>>>
-> >>>>v2:
-> >>>>- Call fence_remove_callback in sync_fence_free if not all fences have fired.
-> >>>>v3:
-> >>>>- Merge Colin Cross' bugfixes, and the android fence merge optimization.
-> >>>>v4:
-> >>>>- Merge with the upstream fixes.
-> >>>>
-> >>>>Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-> >>>>---
-> >>>Snipped everything but headers - Ian Lister from our android team is
-> >>>signed up to have a more in-depth look at proper integration with android
-> >>>syncpoints. Adding him to cc.
-> >>>
-> >>>>diff --git a/drivers/staging/android/sync.h b/drivers/staging/android/sync.h
-> >>>>index 62e2255b1c1e..6036dbdc8e6f 100644
-> >>>>--- a/drivers/staging/android/sync.h
-> >>>>+++ b/drivers/staging/android/sync.h
-> >>>>@@ -21,6 +21,7 @@
-> >>>>  #include <linux/list.h>
-> >>>>  #include <linux/spinlock.h>
-> >>>>  #include <linux/wait.h>
-> >>>>+#include <linux/fence.h>
-> >>>>
-> >>>>  struct sync_timeline;
-> >>>>  struct sync_pt;
-> >>>>@@ -40,8 +41,6 @@ struct sync_fence;
-> >>>>   * -1 if a will signal before b
-> >>>>   * @free_pt: called before sync_pt is freed
-> >>>>   * @release_obj: called before sync_timeline is freed
-> >>>>- * @print_obj: deprecated
-> >>>>- * @print_pt: deprecated
-> >>>>   * @fill_driver_data: write implementation specific driver data to data.
-> >>>>   *  should return an error if there is not enough room
-> >>>>   *  as specified by size.  This information is returned
-> >>>>@@ -67,13 +66,6 @@ struct sync_timeline_ops {
-> >>>>   /* optional */
-> >>>>   void (*release_obj)(struct sync_timeline *sync_timeline);
-> >>>>
-> >>>>- /* deprecated */
-> >>>>- void (*print_obj)(struct seq_file *s,
-> >>>>-  struct sync_timeline *sync_timeline);
-> >>>>-
-> >>>>- /* deprecated */
-> >>>>- void (*print_pt)(struct seq_file *s, struct sync_pt *sync_pt);
-> >>>>-
-> >>>>   /* optional */
-> >>>>   int (*fill_driver_data)(struct sync_pt *syncpt, void *data, int size);
-> >>>>
-> >>>>@@ -104,42 +96,48 @@ struct sync_timeline {
-> >>>>
-> >>>>   /* protected by child_list_lock */
-> >>>>   bool destroyed;
-> >>>>+ int context, value;
-> >>>>
-> >>>>   struct list_head child_list_head;
-> >>>>   spinlock_t child_list_lock;
-> >>>>
-> >>>>   struct list_head active_list_head;
-> >>>>- spinlock_t active_list_lock;
-> >>>>
-> >>>>+#ifdef CONFIG_DEBUG_FS
-> >>>>   struct list_head sync_timeline_list;
-> >>>>+#endif
-> >>>>  };
-> >>>>
-> >>>>  /**
-> >>>>   * struct sync_pt - sync point
-> >>>>- * @parent: sync_timeline to which this sync_pt belongs
-> >>>>+ * @fence: base fence class
-> >>>>   * @child_list: membership in sync_timeline.child_list_head
-> >>>>   * @active_list: membership in sync_timeline.active_list_head
-> >>>>+<<<<<<< current
-> >>>>   * @signaled_list: membership in temporary signaled_list on stack
-> >>>>   * @fence: sync_fence to which the sync_pt belongs
-> >>>>   * @pt_list: membership in sync_fence.pt_list_head
-> >>>>   * @status: 1: signaled, 0:active, <0: error
-> >>>>   * @timestamp: time which sync_pt status transitioned from active to
-> >>>>   *  signaled or error.
-> >>>>+=======
-> >>>>+>>>>>>> patched
-> >>>Conflict markers ...
-> >>Oops.
-> >>>>   */
-> >>>>  struct sync_pt {
-> >>>>- struct sync_timeline *parent;
-> >>>>- struct list_head child_list;
-> >>>>+ struct fence base;
-> >>>Hm, embedding feels wrong, since that still means that I'll need to
-> >>>implement two kinds of fences in i915 - one using the seqno fence to make
-> >>>dma-buf sync work, and one to implmenent sync_pt to make the android folks
-> >>>happy.
-> >>>
-> >>>If I can dream I think we should have a pointer to an underlying fence
-> >>>here, i.e. a struct sync_pt would just be a userspace interface wrapper to
-> >>>do explicit syncing using native fences, instead of implicit syncing like
-> >>>with dma-bufs. But this is all drive-by comments from a very cursory
-> >>>high-level look. I might be full of myself again ;-)
-> >>>-Daniel
-> >>>
-> >>No, the idea is that because android syncpoint is simply another type of
-> >>dma-fence, that if you deal with normal fences then android can
-> >>automatically be handled too. The userspace fence api android exposes
-> >>could be very easily made to work for dma-fence, just pass a dma-fence
-> >>to sync_fence_create.
-> >>So exposing dma-fence would probably work for android too.
-> >Hm, then why do we still have struct sync_pt around? Since it's just the
-> >internal bit, with the userspace facing object being struct sync_fence,
-> >I'd opt to shuffle any useful features into the core struct fence.
-> >-Daniel
-> To keep compatibility with the android api. I think that gradually converting them is going to be
-> more useful than to force all drivers to use a new api all at once. They could keep android
-> syncpoint api for exporting, as long as they accept dma-fence for importing/waiting.
+On 03/04/2014 06:18 AM, Alexei Starovoitov wrote:
+> Extended BPF extends old BPF in the following ways:
+> - from 2 to 10 registers
+>    Original BPF has two registers (A and X) and hidden frame pointer.
+>    Extended BPF has ten registers and read-only frame pointer.
+> - from 32-bit registers to 64-bit registers
+>    semantics of old 32-bit ALU operations are preserved via 32-bit
+>    subregisters
+> - if (cond) jump_true; else jump_false;
+>    old BPF insns are replaced with:
+>    if (cond) jump_true; /* else fallthrough */
+> - adds signed > and >= insns
+> - 16 4-byte stack slots for register spill-fill replaced with
+>    up to 512 bytes of multi-use stack space
+> - introduces bpf_call insn and register passing convention for zero
+>    overhead calls from/to other kernel functions (not part of this patch)
+> - adds arithmetic right shift insn
+> - adds swab32/swab64 insns
+> - adds atomic_add insn
+> - old tax/txa insns are replaced with 'mov dst,src' insn
+>
+> Extended BPF is designed to be JITed with one to one mapping, which
+> allows GCC/LLVM backends to generate optimized BPF code that performs
+> almost as fast as natively compiled code
+>
+> sk_convert_filter() remaps old style insns into extended:
+> 'sock_filter' instructions are remapped on the fly to
+> 'sock_filter_ext' extended instructions when
+> sysctl net.core.bpf_ext_enable=1
+>
+> Old filter comes through sk_attach_filter() or sk_unattached_filter_create()
+>   if (bpf_ext_enable) {
+>      convert to new
+>      sk_chk_filter() - check old bpf
+>      use sk_run_filter_ext() - new interpreter
+>   } else {
+>      sk_chk_filter() - check old bpf
+>      if (bpf_jit_enable)
+>          use old jit
+>      else
+>          use sk_run_filter() - old interpreter
+>   }
+>
+> sk_run_filter_ext() interpreter is noticeably faster
+> than sk_run_filter() for two reasons:
+>
+> 1.fall-through jumps
+>    Old BPF jump instructions are forced to go either 'true' or 'false'
+>    branch which causes branch-miss penalty.
+>    Extended BPF jump instructions have one branch and fall-through,
+>    which fit CPU branch predictor logic better.
+>    'perf stat' shows drastic difference for branch-misses.
+>
+> 2.jump-threaded implementation of interpreter vs switch statement
+>    Instead of single tablejump at the top of 'switch' statement, GCC will
+>    generate multiple tablejump instructions, which helps CPU branch predictor
+>
+> Performance of two BPF filters generated by libpcap was measured
+> on x86_64, i386 and arm32.
+>
+> fprog #1 is taken from Documentation/networking/filter.txt:
+> tcpdump -i eth0 port 22 -dd
+>
+> fprog #2 is taken from 'man tcpdump':
+> tcpdump -i eth0 'tcp port 22 and (((ip[2:2] - ((ip[0]&0xf)<<2)) -
+>     ((tcp[12]&0xf0)>>2)) != 0)' -dd
+>
+> Other libpcap programs have similar performance differences.
+>
+> Raw performance data from BPF micro-benchmark:
+> SK_RUN_FILTER on same SKB (cache-hit) or 10k SKBs (cache-miss)
+> time in nsec per call, smaller is better
+> --x86_64--
+>           fprog #1  fprog #1   fprog #2  fprog #2
+>           cache-hit cache-miss cache-hit cache-miss
+> old BPF     90       101       192       202
+> ext BPF     31        71       47         97
+> old BPF jit 12        34       17         44
+> ext BPF jit TBD
+>
+> --i386--
+>           fprog #1  fprog #1   fprog #2  fprog #2
+>           cache-hit cache-miss cache-hit cache-miss
+> old BPF    107        136      227       252
+> ext BPF     40        119       69       172
+>
+> --arm32--
+>           fprog #1  fprog #1   fprog #2  fprog #2
+>           cache-hit cache-miss cache-hit cache-miss
+> old BPF    202        300      475       540
+> ext BPF    139        270      296       470
+> old BPF jit 26        182       37       202
+> new BPF jit TBD
+>
+> Tested with trinify BPF fuzzer
+>
+> Future work:
+>
+> 0. seccomp
+>
+> 1. add extended BPF JIT for x86_64
+>
+> 2. add inband old/new demux and extended BPF verifier, so that new programs
+>     can be loaded through old sk_attach_filter() and sk_unattached_filter_create()
+>     interfaces
+>
+> 3. tracing filters systemtap-like with extended BPF
+>
+> 4. OVS with extended BPF
+>
+> 5. nftables with extended BPF
+>
+> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 
-We don't have any users of the android sync_pt stuff (outside of the
-framework itself). So any considerations for existing drivers for
-upstreaming are imo moot. At least for the in-kernel interfaces used. For
-the actual userspace interface I guess keeping the android syncpt ioctls
-as-is has value, at least if we conclude that their not badly broken. In
-which case we need to fix that before moving it out of staging.
+Looks great, imho, some comments/questions inline:
 
-Or are we just talking past each another here?
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Nit: subject line of your patches should be, e.g.
+
+  "filter: add Extended BPF interpreter and converter"
+  "doc: filter: add Extended BPF documentation"
+  ...
+
+so first "<subsystem>: <summary phrase>".
+
+> ---
+>   include/linux/filter.h      |    8 +-
+>   include/linux/netdevice.h   |    1 +
+>   include/uapi/linux/filter.h |   34 +-
+>   net/core/filter.c           |  802 ++++++++++++++++++++++++++++++++++++++++++-
+>   net/core/sysctl_net_core.c  |    7 +
+>   5 files changed, 830 insertions(+), 22 deletions(-)
+>
+> diff --git a/include/linux/filter.h b/include/linux/filter.h
+> index e568c8ef896b..0e84ff6e991b 100644
+> --- a/include/linux/filter.h
+> +++ b/include/linux/filter.h
+> @@ -52,7 +52,13 @@ extern int sk_detach_filter(struct sock *sk);
+>   extern int sk_chk_filter(struct sock_filter *filter, unsigned int flen);
+>   extern int sk_get_filter(struct sock *sk, struct sock_filter __user *filter, unsigned len);
+>   extern void sk_decode_filter(struct sock_filter *filt, struct sock_filter *to);
+> +/* function remaps 'sock_filter' insns to 'sock_filter_ext' insns */
+> +int sk_convert_filter(struct sock_filter *old_prog, int len,
+> +		      struct sock_filter_ext *new_prog,	int *p_new_len);
+> +/* execute extended bpf program */
+
+I think this and the above comment can be omitted, as both have a kernel doc
+in its implementation in net/core/filter.c that is more precise.
+
+...
+> +struct sock_filter_ext {
+> +	__u8	code;    /* opcode */
+> +	__u8    a_reg:4; /* dest register */
+> +	__u8    x_reg:4; /* source register */
+> +	__s16	off;     /* signed offset */
+> +	__s32	imm;     /* signed immediate constant */
+> +};
+> +
+>   struct sock_fprog {	/* Required for SO_ATTACH_FILTER. */
+>   	unsigned short		len;	/* Number of filter blocks */
+>   	struct sock_filter __user *filter;
+> @@ -45,12 +54,15 @@ struct sock_fprog {	/* Required for SO_ATTACH_FILTER. */
+>   #define         BPF_JMP         0x05
+>   #define         BPF_RET         0x06
+>   #define         BPF_MISC        0x07
+> +#define         BPF_ALU64       0x07
+> +
+>
+
+Please do not add empty newline above.
+
+>   /* ld/ldx fields */
+>   #define BPF_SIZE(code)  ((code) & 0x18)
+>   #define         BPF_W           0x00
+>   #define         BPF_H           0x08
+>   #define         BPF_B           0x10
+...
+> diff --git a/net/core/filter.c b/net/core/filter.c
+> index ad30d626a5bd..1494421486b7 100644
+> --- a/net/core/filter.c
+> +++ b/net/core/filter.c
+> @@ -1,5 +1,6 @@
+>   /*
+>    * Linux Socket Filter - Kernel level socket filtering
+> + * Extended BPF is Copyright (c) 2011-2014 PLUMgrid, http://plumgrid.com
+>    *
+>    * Author:
+>    *     Jay Schulist <jschlst@samba.org>
+> @@ -40,6 +41,8 @@
+>   #include <linux/seccomp.h>
+>   #include <linux/if_vlan.h>
+>
+> +int bpf_ext_enable __read_mostly;
+> +
+>   /* No hurry in this branch
+>    *
+>    * Exported for the bpf jit load helper.
+> @@ -399,6 +402,7 @@ load_b:
+>   	}
+>
+>   	return 0;
+> +#undef K
+>   }
+>   EXPORT_SYMBOL(sk_run_filter);
+...
+> +		/* RET_K, RET_A are remaped into 2 insns */
+> +		case BPF_RET | BPF_A:
+> +		case BPF_RET | BPF_K:
+> +			insn->code = BPF_ALU | BPF_MOV |
+> +				(BPF_SRC(fp->code) == BPF_K ? BPF_K : BPF_X);
+
+Hmm, so the case statement is about BPF_RET | BPF_A and BPF_RET | BPF_K
+but BPF_RET | BPF_X is not mentioned. However, in BPF_SRC(fp->code)
+selection you fall back to BPF_X if it doesn't equal BPF_K? Is that
+correct? And, you probably also need to handle BPF_RET | BPF_X ?
+
+> +			insn->a_reg = 0;
+> +			insn->x_reg = 6;
+> +			insn->imm = fp->k;
+> +
+> +			insn++;
+> +			insn->code = BPF_RET | BPF_K;
+> +			break;
+...
+> +	/* RET */
+> +BPF_RET_BPF_K_0:
+> +	return regs[0/* R0 */];
