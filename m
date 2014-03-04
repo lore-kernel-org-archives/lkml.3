@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756746AbaCDUEP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:04:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41213 "EHLO
+	id S1758265AbaCDUz7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:55:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41285 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756600AbaCDUED (ORCPT
+	with ESMTP id S1756742AbaCDUEP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:04:03 -0500
+	Tue, 4 Mar 2014 15:04:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chao Bi <chao.bi@intel.com>, Tomas Winkler <tomas.winkler@intel.com>
-Subject: [PATCH 3.13 126/172] mei: set clients read_cb to NULL when flow control fails
-Date: Tue,  4 Mar 2014 12:03:30 -0800
-Message-Id: <20140304200303.749090953@linuxfoundation.org>
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.13 144/172] irqchip: orion: clear bridge cause register on init
+Date: Tue,  4 Mar 2014 12:03:48 -0800
+Message-Id: <20140304200304.314947235@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -28,70 +30,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chao Bi <chao.bi@intel.com>
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 
-commit accb884b32e82f943340688c9cd30290531e73e0 upstream.
+commit 7b119fd1bdc59a8060df5b659b9f7a70e0169fd6 upstream.
 
-In mei_cl_read_start(), if it fails to send flow control request, it
-will release "cl->read_cb" but forget to set pointer to NULL, leaving
-"cl->read_cb" still pointing to random memory, next time this client is
-operated like mei_release(), it has chance to refer to this wrong pointer.
+It is good practice to mask and clear pending irqs on init. We already
+mask all irqs, so also clear the bridge irq cause register.
 
-Fixes:  PANIC at kfree in mei_release()
-
-[228781.826904] Call Trace:
-[228781.829737]  [<c16249b8>] ? mei_cl_unlink+0x48/0xa0
-[228781.835283]  [<c1624487>] mei_io_cb_free+0x17/0x30
-[228781.840733]  [<c16265d8>] mei_release+0xa8/0x180
-[228781.845989]  [<c135c610>] ? __fsnotify_parent+0xa0/0xf0
-[228781.851925]  [<c1325a69>] __fput+0xd9/0x200
-[228781.856696]  [<c1325b9d>] ____fput+0xd/0x10
-[228781.861467]  [<c125cae1>] task_work_run+0x81/0xb0
-[228781.866821]  [<c1242e53>] do_exit+0x283/0xa00
-[228781.871786]  [<c1a82b36>] ? kprobe_flush_task+0x66/0xc0
-[228781.877722]  [<c124eeb8>] ? __dequeue_signal+0x18/0x1a0
-[228781.883657]  [<c124f072>] ? dequeue_signal+0x32/0x190
-[228781.889397]  [<c1243744>] do_group_exit+0x34/0xa0
-[228781.894750]  [<c12517b6>] get_signal_to_deliver+0x206/0x610
-[228781.901075]  [<c12018d8>] do_signal+0x38/0x100
-[228781.906136]  [<c1626d1c>] ? mei_read+0x42c/0x4e0
-[228781.911393]  [<c12600a0>] ? wake_up_bit+0x30/0x30
-[228781.916745]  [<c16268f0>] ? mei_poll+0x120/0x120
-[228781.922001]  [<c1324be9>] ? vfs_read+0x89/0x160
-[228781.927158]  [<c16268f0>] ? mei_poll+0x120/0x120
-[228781.932414]  [<c133ca34>] ? fget_light+0x44/0xe0
-[228781.937670]  [<c1324e58>] ? SyS_read+0x68/0x80
-[228781.942730]  [<c12019f5>] do_notify_resume+0x55/0x70
-[228781.948376]  [<c1a7de5d>] work_notifysig+0x29/0x30
-[228781.953827]  [<c1a70000>] ? bad_area+0x5/0x3e
-
-Signed-off-by: Chao Bi <chao.bi@intel.com>
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Tested-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/mei/client.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/irqchip/irq-orion.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/misc/mei/client.c
-+++ b/drivers/misc/mei/client.c
-@@ -667,7 +667,6 @@ int mei_cl_read_start(struct mei_cl *cl,
- 		goto err;
+--- a/drivers/irqchip/irq-orion.c
++++ b/drivers/irqchip/irq-orion.c
+@@ -180,8 +180,9 @@ static int __init orion_bridge_irq_init(
+ 	gc->chip_types[0].chip.irq_mask = irq_gc_mask_clr_bit;
+ 	gc->chip_types[0].chip.irq_unmask = irq_gc_mask_set_bit;
  
- 	cb->fop_type = MEI_FOP_READ;
--	cl->read_cb = cb;
- 	if (dev->hbuf_is_ready) {
- 		dev->hbuf_is_ready = false;
- 		if (mei_hbm_cl_flow_control_req(dev, cl)) {
-@@ -679,6 +678,9 @@ int mei_cl_read_start(struct mei_cl *cl,
- 	} else {
- 		list_add_tail(&cb->list, &dev->ctrl_wr_list.list);
- 	}
-+
-+	cl->read_cb = cb;
-+
- 	return rets;
- err:
- 	mei_io_cb_free(cb);
+-	/* mask all interrupts */
++	/* mask and clear all interrupts */
+ 	writel(0, gc->reg_base + ORION_BRIDGE_IRQ_MASK);
++	writel(0, gc->reg_base + ORION_BRIDGE_IRQ_CAUSE);
+ 
+ 	irq_set_handler_data(irq, domain);
+ 	irq_set_chained_handler(irq, orion_bridge_irq_handler);
 
 
