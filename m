@@ -1,57 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758002AbaCDUZa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:25:30 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:38291 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757411AbaCDUZ0 (ORCPT
+	id S1758030AbaCDUZm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:25:42 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:44081 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758008AbaCDUZj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:25:26 -0500
-Message-ID: <531636B4.1060202@codeaurora.org>
-Date: Tue, 04 Mar 2014 12:25:24 -0800
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: myungjoo.ham@samsung.com
-CC: =?EUC-KR?B?udqw5rnO?= <kyungmin.park@samsung.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] PM / devfreq: Rewrite devfreq_update_status() to fix
- multiple bugs
-References: <8984550.302431393927576253.JavaMail.weblogic@epv6ml05>
-In-Reply-To: <8984550.302431393927576253.JavaMail.weblogic@epv6ml05>
-Content-Type: text/plain; charset=EUC-KR
-Content-Transfer-Encoding: 7bit
+	Tue, 4 Mar 2014 15:25:39 -0500
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: dhowells@redhat.com
+Cc: linux-kernel@vger.kernel.org,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH] [RESEND] frv: remove deprecated IRQF_DISABLED
+Date: Tue,  4 Mar 2014 21:25:24 +0100
+Message-Id: <1393964724-16925-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1386396925-12199-1-git-send-email-michael.opdenacker@free-electrons.com>
+References: <1386396925-12199-1-git-send-email-michael.opdenacker@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/2014 02:06 AM, MyungJoo Ham wrote:
->> The current devfreq_update_status() has the following bugs:
->> - If previous frequency doesn't have a valid level, it does an out of bounds
->>    access into the trans_table and causes memory corruption.
->> - When the new frequency doesn't have a valid level, the time spent in the
->>    new frequency is counted towards the next valid frequency switch instead of
->>    being ignored.
->> - The time spent on the previous frequency is added to the new frequency's
->>    stats instead of the previous frequency's stats.
->>
->> This patch fixes all of this.
->>
->> Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
-> 
-> Merged.
-> 
-> It appears to be Greg's LTS material as well.
-> 
+This patch removes the IRQF_DISABLED flag from FRV architecture
+code. It's a NOOP since 2.6.35 and it will be removed one day.
 
-Thanks!
+Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+---
+ arch/frv/kernel/irq-mb93091.c | 8 ++++----
+ arch/frv/kernel/irq-mb93093.c | 1 -
+ arch/frv/kernel/irq-mb93493.c | 4 ++--
+ arch/frv/kernel/time.c        | 1 -
+ 4 files changed, 6 insertions(+), 8 deletions(-)
 
--Saravana
-
+diff --git a/arch/frv/kernel/irq-mb93091.c b/arch/frv/kernel/irq-mb93091.c
+index 2cc327a1ca44..091b2839be90 100644
+--- a/arch/frv/kernel/irq-mb93091.c
++++ b/arch/frv/kernel/irq-mb93091.c
+@@ -107,25 +107,25 @@ static irqreturn_t fpga_interrupt(int irq, void *_mask)
+ static struct irqaction fpga_irq[4]  = {
+ 	[0] = {
+ 		.handler	= fpga_interrupt,
+-		.flags		= IRQF_DISABLED | IRQF_SHARED,
++		.flags		= IRQF_SHARED,
+ 		.name		= "fpga.0",
+ 		.dev_id		= (void *) 0x0028UL,
+ 	},
+ 	[1] = {
+ 		.handler	= fpga_interrupt,
+-		.flags		= IRQF_DISABLED | IRQF_SHARED,
++		.flags		= IRQF_SHARED,
+ 		.name		= "fpga.1",
+ 		.dev_id		= (void *) 0x0050UL,
+ 	},
+ 	[2] = {
+ 		.handler	= fpga_interrupt,
+-		.flags		= IRQF_DISABLED | IRQF_SHARED,
++		.flags		= IRQF_SHARED,
+ 		.name		= "fpga.2",
+ 		.dev_id		= (void *) 0x1c00UL,
+ 	},
+ 	[3] = {
+ 		.handler	= fpga_interrupt,
+-		.flags		= IRQF_DISABLED | IRQF_SHARED,
++		.flags		= IRQF_SHARED,
+ 		.name		= "fpga.3",
+ 		.dev_id		= (void *) 0x6386UL,
+ 	}
+diff --git a/arch/frv/kernel/irq-mb93093.c b/arch/frv/kernel/irq-mb93093.c
+index 95e4eb4f1f38..1f3015cf80f5 100644
+--- a/arch/frv/kernel/irq-mb93093.c
++++ b/arch/frv/kernel/irq-mb93093.c
+@@ -105,7 +105,6 @@ static irqreturn_t fpga_interrupt(int irq, void *_mask)
+ static struct irqaction fpga_irq[1]  = {
+ 	[0] = {
+ 		.handler	= fpga_interrupt,
+-		.flags		= IRQF_DISABLED,
+ 		.name		= "fpga.0",
+ 		.dev_id		= (void *) 0x0700UL,
+ 	}
+diff --git a/arch/frv/kernel/irq-mb93493.c b/arch/frv/kernel/irq-mb93493.c
+index ba648da0932d..8ca5aa4ff595 100644
+--- a/arch/frv/kernel/irq-mb93493.c
++++ b/arch/frv/kernel/irq-mb93493.c
+@@ -118,13 +118,13 @@ static irqreturn_t mb93493_interrupt(int irq, void *_piqsr)
+ static struct irqaction mb93493_irq[2]  = {
+ 	[0] = {
+ 		.handler	= mb93493_interrupt,
+-		.flags		= IRQF_DISABLED | IRQF_SHARED,
++		.flags		= IRQF_SHARED,
+ 		.name		= "mb93493.0",
+ 		.dev_id		= (void *) __addr_MB93493_IQSR(0),
+ 	},
+ 	[1] = {
+ 		.handler	= mb93493_interrupt,
+-		.flags		= IRQF_DISABLED | IRQF_SHARED,
++		.flags		= IRQF_SHARED,
+ 		.name		= "mb93493.1",
+ 		.dev_id		= (void *) __addr_MB93493_IQSR(1),
+ 	}
+diff --git a/arch/frv/kernel/time.c b/arch/frv/kernel/time.c
+index b457de496b70..332e00bf9d06 100644
+--- a/arch/frv/kernel/time.c
++++ b/arch/frv/kernel/time.c
+@@ -44,7 +44,6 @@ static irqreturn_t timer_interrupt(int irq, void *dummy);
+ 
+ static struct irqaction timer_irq  = {
+ 	.handler = timer_interrupt,
+-	.flags = IRQF_DISABLED,
+ 	.name = "timer",
+ };
+ 
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+1.8.3.2
+
