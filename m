@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756820AbaCDWoG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 17:44:06 -0500
-Received: from mga09.intel.com ([134.134.136.24]:53321 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755122AbaCDWoC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 17:44:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,588,1389772800"; 
-   d="scan'208";a="494108685"
-Date: Tue, 4 Mar 2014 14:44:01 -0800
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Mathias Nyman <mathias.nyman@linux.intel.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dan.j.williams@intel.com,
-        stable@vger.kernel.org, David Cohen <david.a.cohen@linux.intel.com>
-Subject: Re: [PATCH v3 1/1] xhci: Prevent runtime pm from autosuspending
- during initialization
-Message-ID: <20140304224401.GB14620@xanatos>
-References: <1393867817-10389-1-git-send-email-mathias.nyman@linux.intel.com>
- <1393867817-10389-2-git-send-email-mathias.nyman@linux.intel.com>
- <20140303183733.GA13926@kroah.com>
- <5315BE1F.8020100@linux.intel.com>
- <20140304170458.GA10789@kroah.com>
+	id S1756558AbaCDWpY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 17:45:24 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:41238 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753797AbaCDWpX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 17:45:23 -0500
+Message-ID: <5316574F.6040105@oracle.com>
+Date: Tue, 04 Mar 2014 15:44:31 -0700
+From: Khalid Aziz <khalid.aziz@oracle.com>
+Organization: Oracle Corp
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140304170458.GA10789@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+CC: "H. Peter Anvin" <hpa@zytor.com>, tglx@linutronix.de,
+        Ingo Molnar <mingo@kernel.org>, peterz@infradead.org,
+        akpm@linux-foundation.org, andi.kleen@intel.com, rob@landley.net,
+        viro@zeniv.linux.org.uk, oleg@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] [PATCH] Pre-emption control for userspace
+References: <1393870033-31076-1-git-send-email-khalid.aziz@oracle.com>	<531641A8.40306@zytor.com>	<53164824.3000704@oracle.com> <20140304222356.41c55bbc@alan.etchedpixels.co.uk>
+In-Reply-To: <20140304222356.41c55bbc@alan.etchedpixels.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 04, 2014 at 09:04:58AM -0800, Greg KH wrote:
-> On Tue, Mar 04, 2014 at 01:50:55PM +0200, Mathias Nyman wrote:
-> > On 03/03/2014 08:37 PM, Greg KH wrote:
-> > >On Mon, Mar 03, 2014 at 07:30:17PM +0200, Mathias Nyman wrote:
-> > >>xHCI driver has its own pci probe function that will call usb_hcd_pci_probe
-> > >>to register its usb-2 bus, and then continue to manually register the
-> > >>usb-3 bus. usb_hcd_pci_probe does a pm_runtime_put_noidle at the end and
-> > >>might thus trigger a runtime suspend before the usb-3 bus is ready.
-> > >
-> > >What is the result if that happens?
-> > 
-> > Crashes. Null pointer dereference in xhci_suspend() when touching
-> > xhci->shared_hcd before it's initialized. More info here:
-> > 
-> > http://marc.info/?l=linux-usb&m=138914518219334&w=2
-> > 
-> > >
-> > >Is this a regression from 3.13?  Or something new for 3.14?
-> > >
-> > 
-> > According to reporter its been around since 3.7
-> > 
-> > commit 596d789a211d134dc5f94d1e5957248c204ef850
-> > USB: set hub's default autosuspend delay as 0
-> > 
-> > But nobody else than the reporter is able to trigger it.
-> 
-> Then it can wait for 3.15-rc1, and then go back to the stable trees at
-> that time, right?  I'd prefer that as it's not a regression and not
-> common.
+On 03/04/2014 03:23 PM, One Thousand Gnomes wrote:
+> Obvious bug
+>
+> | Usage model is a thread mmaps this file during initialization. It then
+> | writes a 1 to the mmap'd file after it grabs the lock in its critical
+> | section where it wants immunity from pre-emption.
+>
+> You need to write it first or you can be pre-empted taking the lock
+> before asking for immunity.
 
-Ok, I'll queue it with the other features for 3.15.
+Ah, yes. Thanks, Alan!
 
-Sarah Sharp
+>
+> Presumably you could equally use something to group tasks (say a control
+> group of some form) and implement voluntary pre-emption within the group
+> only when in user space. Ie they only pre-empt each other by yielding but
+> they can be pre-empted by other tasks outside the group ?
+>
+
+I had suggested that to database folks initially, but they use mutexes 
+that are shared across processes and they do not believe they can 
+control the environment in customer scenario where they can ensure right 
+tasks will always be in the right control group. Besides they want to 
+use a common mechanism across multiple OSs and pre-emption delay is 
+already in use on other OSs. Good idea though.
+
+Thanks,
+Khalid
