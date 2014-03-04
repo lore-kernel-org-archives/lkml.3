@@ -1,92 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757195AbaCDMBv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 07:01:51 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:36549 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756931AbaCDMBs (ORCPT
+	id S932154AbaCDMLq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 07:11:46 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:37357 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932066AbaCDMLo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 07:01:48 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s24C1k3a025488, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next 01/12] r8152: deal with the empty line and space
-Date: Tue, 4 Mar 2014 20:00:53 +0800
-Message-ID: <1393934464-23675-2-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1393934464-23675-1-git-send-email-hayeswang@realtek.com>
-References: <1393934464-23675-1-git-send-email-hayeswang@realtek.com>
+	Tue, 4 Mar 2014 07:11:44 -0500
+Date: Tue, 4 Mar 2014 12:11:36 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
+        linux-kernel@vger.kernel.org,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH V2] ARM: dove: dt: revert PMU interrupt controller node
+Message-ID: <20140304121136.GR21483@n2100.arm.linux.org.uk>
+References: <20140207180836.GE8533@titan.lakedaemon.net> <1392667236-19126-1-git-send-email-jason@lakedaemon.net> <20140303150215.GI21483@n2100.arm.linux.org.uk> <20140303173740.GC16655@lunn.ch> <20140303181529.GM21483@n2100.arm.linux.org.uk> <20140303222406.GW1872@titan.lakedaemon.net> <20140304092616.GH16655@lunn.ch> <5315AD6F.1070804@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.77]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5315AD6F.1070804@gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add or remove some empty lines. Replace the spaces with the tabs.
+On Tue, Mar 04, 2014 at 11:39:43AM +0100, Sebastian Hesselbarth wrote:
+> On 03/04/2014 10:26 AM, Andrew Lunn wrote:
+>>> I could have sworn this was discussed with this particular patchset, but
+>>> I'm unable to find the conversation in my archives.  Neither during the
+>>> patch submission process, nor the (long) pull request thread.
+>>>
+>>> Perhaps it was an irc conversation?  Andrew, Sebastian, can you find a
+>>> link?  iirc, one of the DT maintainers (Mark Rutland?) raised the same
+>>> concern and I thought we answered that sufficiently...
+>>
+>> It was the cpufreq driver which caused the discussion. I looked at it
+>> for a while, and then task swapped onto the kirkwood move into
+>> mach-mvebu.
+>
+> I guess you are looking for this discussion
+>
+> http://comments.gmane.org/gmane.linux.power-management.general/41053
+>
+> and specifically Mark's remarks on PMU and DT in here
+>
+> http://permalink.gmane.org/gmane.linux.ports.arm.kernel/285384
+>
+> BTW, +1 for a single PMU node that either serves an mfd (or type
+> of) driver or that subsystem drivers derive their resources from.
+> Looking at Dove FS, that would also include clock gating, which
+> could be a mess to sort out.. anyway, let's get it on.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+So we have cpufreq, pm domains and an irq controller.  What's the plan
+for this, who's going to look at sorting this out?
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index 0654bd3..c8bad62 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -593,6 +593,7 @@ int set_registers(struct r8152 *tp, u16 value, u16 index, u16 size, void *data)
- 			       value, index, tmp, size, 500);
- 
- 	kfree(tmp);
-+
- 	return ret;
- }
- 
-@@ -1514,6 +1515,7 @@ static void tx_bottom(struct r8152 *tp)
- 				netif_warn(tp, tx_err, netdev,
- 					   "failed tx_urb %d\n", res);
- 				stats->tx_dropped += agg->skb_num;
-+
- 				spin_lock_irqsave(&tp->tx_lock, flags);
- 				list_add_tail(&agg->list, &tp->tx_free);
- 				spin_unlock_irqrestore(&tp->tx_lock, flags);
-@@ -1833,7 +1835,6 @@ static void r8152_power_cut_en(struct r8152 *tp, bool enable)
- 	ocp_data = ocp_read_word(tp, MCU_TYPE_USB, USB_PM_CTRL_STATUS);
- 	ocp_data &= ~RESUME_INDICATE;
- 	ocp_write_word(tp, MCU_TYPE_USB, USB_PM_CTRL_STATUS, ocp_data);
--
- }
- 
- #define WAKE_ANY (WAKE_PHY | WAKE_MAGIC | WAKE_UCAST | WAKE_BCAST | WAKE_MCAST)
-@@ -2013,8 +2014,8 @@ static void r8152b_hw_phy_cfg(struct r8152 *tp)
- 
- static void r8152b_exit_oob(struct r8152 *tp)
- {
--	u32	ocp_data;
--	int	i;
-+	u32 ocp_data;
-+	int i;
- 
- 	ocp_data = ocp_read_dword(tp, MCU_TYPE_PLA, PLA_RCR);
- 	ocp_data &= ~RCR_ACPT_ALL;
-@@ -2573,6 +2574,7 @@ static int rtl8152_open(struct net_device *netdev)
- 	netif_carrier_off(netdev);
- 	netif_start_queue(netdev);
- 	set_bit(WORK_ENABLE, &tp->flags);
-+
- 	res = usb_submit_urb(tp->intr_urb, GFP_KERNEL);
- 	if (res) {
- 		if (res == -ENODEV)
-@@ -3101,6 +3103,7 @@ static int rtl8152_probe(struct usb_interface *intf,
- 
- 	netdev->features |= NETIF_F_IP_CSUM;
- 	netdev->hw_features = NETIF_F_IP_CSUM;
-+
- 	SET_ETHTOOL_OPS(netdev, &ops);
- 
- 	tp->mii.dev = netdev;
 -- 
-1.8.4.2
-
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
