@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932918AbaCDUux (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:50:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41328 "EHLO
+	id S1758119AbaCDUvR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:51:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41322 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756813AbaCDUEX (ORCPT
+	with ESMTP id S1756755AbaCDUEW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:04:23 -0500
+	Tue, 4 Mar 2014 15:04:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.13 155/172] mm, thp: fix infinite loop on memcg OOM
-Date: Tue,  4 Mar 2014 12:03:59 -0800
-Message-Id: <20140304200304.677351959@linuxfoundation.org>
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.13 146/172] irqchip: orion: clear stale interrupts in irq_startup
+Date: Tue,  4 Mar 2014 12:03:50 -0800
+Message-Id: <20140304200304.401256428@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -34,103 +30,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 
-commit 9845cbbd113fbb5b769a45d8e88dc47bc12df4e0 upstream.
+commit e0318ec3bf3f1502cd11b21b1eb00aa355b40b67 upstream.
 
-Masayoshi Mizuma reported a bug with the hang of an application under
-the memcg limit.  It happens on write-protection fault to huge zero page
+Bridge IRQ_CAUSE bits are asserted regardless of the corresponding bit in
+IRQ_MASK register. To avoid interrupt events on stale irqs, we have to clear
+them before unmask. This installs an .irq_startup callback to ensure stale
+irqs are cleared before initial unmask.
 
-If we successfully allocate a huge page to replace zero page but hit the
-memcg limit we need to split the zero page with split_huge_page_pmd()
-and fallback to small pages.
-
-The other part of the problem is that VM_FAULT_OOM has special meaning
-in do_huge_pmd_wp_page() context.  __handle_mm_fault() expects the page
-to be split if it sees VM_FAULT_OOM and it will will retry page fault
-handling.  This causes an infinite loop if the page was not split.
-
-do_huge_pmd_wp_zero_page_fallback() can return VM_FAULT_OOM if it failed
-to allocate one small page, so fallback to small pages will not help.
-
-The solution for this part is to replace VM_FAULT_OOM with
-VM_FAULT_FALLBACK is fallback required.
-
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Reported-by: Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Tested-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/huge_memory.c |    9 ++++++---
- mm/memory.c      |   14 +++-----------
- 2 files changed, 9 insertions(+), 14 deletions(-)
+ drivers/irqchip/irq-orion.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1160,8 +1160,10 @@ alloc:
- 		} else {
- 			ret = do_huge_pmd_wp_page_fallback(mm, vma, address,
- 					pmd, orig_pmd, page, haddr);
--			if (ret & VM_FAULT_OOM)
-+			if (ret & VM_FAULT_OOM) {
- 				split_huge_page(page);
-+				ret |= VM_FAULT_FALLBACK;
-+			}
- 			put_page(page);
- 		}
- 		count_vm_event(THP_FAULT_FALLBACK);
-@@ -1173,9 +1175,10 @@ alloc:
- 		if (page) {
- 			split_huge_page(page);
- 			put_page(page);
--		}
-+		} else
-+			split_huge_page_pmd(vma, address, pmd);
-+		ret |= VM_FAULT_FALLBACK;
- 		count_vm_event(THP_FAULT_FALLBACK);
--		ret |= VM_FAULT_OOM;
- 		goto out;
+--- a/drivers/irqchip/irq-orion.c
++++ b/drivers/irqchip/irq-orion.c
+@@ -123,6 +123,19 @@ static void orion_bridge_irq_handler(uns
  	}
+ }
  
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3700,7 +3700,6 @@ static int __handle_mm_fault(struct mm_s
- 	if (unlikely(is_vm_hugetlb_page(vma)))
- 		return hugetlb_fault(mm, vma, address, flags);
++/*
++ * Bridge IRQ_CAUSE is asserted regardless of IRQ_MASK register.
++ * To avoid interrupt events on stale irqs, we clear them before unmask.
++ */
++static unsigned int orion_bridge_irq_startup(struct irq_data *d)
++{
++	struct irq_chip_type *ct = irq_data_get_chip_type(d);
++
++	ct->chip.irq_ack(d);
++	ct->chip.irq_unmask(d);
++	return 0;
++}
++
+ static int __init orion_bridge_irq_init(struct device_node *np,
+ 					struct device_node *parent)
+ {
+@@ -176,6 +189,7 @@ static int __init orion_bridge_irq_init(
  
--retry:
- 	pgd = pgd_offset(mm, address);
- 	pud = pud_alloc(mm, pgd, address);
- 	if (!pud)
-@@ -3738,20 +3737,13 @@ retry:
- 			if (dirty && !pmd_write(orig_pmd)) {
- 				ret = do_huge_pmd_wp_page(mm, vma, address, pmd,
- 							  orig_pmd);
--				/*
--				 * If COW results in an oom, the huge pmd will
--				 * have been split, so retry the fault on the
--				 * pte for a smaller charge.
--				 */
--				if (unlikely(ret & VM_FAULT_OOM))
--					goto retry;
--				return ret;
-+				if (!(ret & VM_FAULT_FALLBACK))
-+					return ret;
- 			} else {
- 				huge_pmd_set_accessed(mm, vma, address, pmd,
- 						      orig_pmd, dirty);
-+				return 0;
- 			}
--
--			return 0;
- 		}
- 	}
- 
+ 	gc->chip_types[0].regs.ack = ORION_BRIDGE_IRQ_CAUSE;
+ 	gc->chip_types[0].regs.mask = ORION_BRIDGE_IRQ_MASK;
++	gc->chip_types[0].chip.irq_startup = orion_bridge_irq_startup;
+ 	gc->chip_types[0].chip.irq_ack = irq_gc_ack_clr_bit;
+ 	gc->chip_types[0].chip.irq_mask = irq_gc_mask_clr_bit;
+ 	gc->chip_types[0].chip.irq_unmask = irq_gc_mask_set_bit;
 
 
