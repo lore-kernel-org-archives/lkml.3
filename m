@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757798AbaCDUu2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:50:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41335 "EHLO
+	id S932918AbaCDUux (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:50:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41328 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756821AbaCDUEY (ORCPT
+	with ESMTP id S1756813AbaCDUEX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:04:24 -0500
+	Tue, 4 Mar 2014 15:04:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        James Hogan <james.hogan@imgtec.com>, linux-metag@vger.kernel.org
-Subject: [PATCH 3.13 156/172] irq-metag*: stop set_affinity vectoring to offline cpus
-Date: Tue,  4 Mar 2014 12:04:00 -0800
-Message-Id: <20140304200304.708576766@linuxfoundation.org>
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.13 155/172] mm, thp: fix infinite loop on memcg OOM
+Date: Tue,  4 Mar 2014 12:03:59 -0800
+Message-Id: <20140304200304.677351959@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -29,51 +34,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Hogan <james.hogan@imgtec.com>
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-commit f229006ec6beabf7b844653d92fa61f025fe3dcf upstream.
+commit 9845cbbd113fbb5b769a45d8e88dc47bc12df4e0 upstream.
 
-Fix irq_set_affinity callbacks in the Meta IRQ chip drivers to AND
-cpu_online_mask into the cpumask when picking a CPU to vector the
-interrupt to.
+Masayoshi Mizuma reported a bug with the hang of an application under
+the memcg limit.  It happens on write-protection fault to huge zero page
 
-As Thomas pointed out, the /proc/irq/$N/smp_affinity interface doesn't
-filter out offline CPUs, so without this patch if you offline CPU0 and
-set an IRQ affinity to 0x3 it vectors the interrupt onto CPU0 even
-though it is offline.
+If we successfully allocate a huge page to replace zero page but hit the
+memcg limit we need to split the zero page with split_huge_page_pmd()
+and fallback to small pages.
 
-Reported-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-metag@vger.kernel.org
+The other part of the problem is that VM_FAULT_OOM has special meaning
+in do_huge_pmd_wp_page() context.  __handle_mm_fault() expects the page
+to be split if it sees VM_FAULT_OOM and it will will retry page fault
+handling.  This causes an infinite loop if the page was not split.
+
+do_huge_pmd_wp_zero_page_fallback() can return VM_FAULT_OOM if it failed
+to allocate one small page, so fallback to small pages will not help.
+
+The solution for this part is to replace VM_FAULT_OOM with
+VM_FAULT_FALLBACK is fallback required.
+
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Reported-by: Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/irqchip/irq-metag-ext.c |    2 +-
- drivers/irqchip/irq-metag.c     |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ mm/huge_memory.c |    9 ++++++---
+ mm/memory.c      |   14 +++-----------
+ 2 files changed, 9 insertions(+), 14 deletions(-)
 
---- a/drivers/irqchip/irq-metag-ext.c
-+++ b/drivers/irqchip/irq-metag-ext.c
-@@ -515,7 +515,7 @@ static int meta_intc_set_affinity(struct
- 	 * one cpu (the interrupt code doesn't support it), so we just
- 	 * pick the first cpu we find in 'cpumask'.
- 	 */
--	cpu = cpumask_any(cpumask);
-+	cpu = cpumask_any_and(cpumask, cpu_online_mask);
- 	thread = cpu_2_hwthread_id[cpu];
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1160,8 +1160,10 @@ alloc:
+ 		} else {
+ 			ret = do_huge_pmd_wp_page_fallback(mm, vma, address,
+ 					pmd, orig_pmd, page, haddr);
+-			if (ret & VM_FAULT_OOM)
++			if (ret & VM_FAULT_OOM) {
+ 				split_huge_page(page);
++				ret |= VM_FAULT_FALLBACK;
++			}
+ 			put_page(page);
+ 		}
+ 		count_vm_event(THP_FAULT_FALLBACK);
+@@ -1173,9 +1175,10 @@ alloc:
+ 		if (page) {
+ 			split_huge_page(page);
+ 			put_page(page);
+-		}
++		} else
++			split_huge_page_pmd(vma, address, pmd);
++		ret |= VM_FAULT_FALLBACK;
+ 		count_vm_event(THP_FAULT_FALLBACK);
+-		ret |= VM_FAULT_OOM;
+ 		goto out;
+ 	}
  
- 	metag_out32(TBI_TRIG_VEC(TBID_SIGNUM_TR2(thread)), vec_addr);
---- a/drivers/irqchip/irq-metag.c
-+++ b/drivers/irqchip/irq-metag.c
-@@ -201,7 +201,7 @@ static int metag_internal_irq_set_affini
- 	 * one cpu (the interrupt code doesn't support it), so we just
- 	 * pick the first cpu we find in 'cpumask'.
- 	 */
--	cpu = cpumask_any(cpumask);
-+	cpu = cpumask_any_and(cpumask, cpu_online_mask);
- 	thread = cpu_2_hwthread_id[cpu];
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3700,7 +3700,6 @@ static int __handle_mm_fault(struct mm_s
+ 	if (unlikely(is_vm_hugetlb_page(vma)))
+ 		return hugetlb_fault(mm, vma, address, flags);
  
- 	metag_out32(TBI_TRIG_VEC(TBID_SIGNUM_TR1(thread)),
+-retry:
+ 	pgd = pgd_offset(mm, address);
+ 	pud = pud_alloc(mm, pgd, address);
+ 	if (!pud)
+@@ -3738,20 +3737,13 @@ retry:
+ 			if (dirty && !pmd_write(orig_pmd)) {
+ 				ret = do_huge_pmd_wp_page(mm, vma, address, pmd,
+ 							  orig_pmd);
+-				/*
+-				 * If COW results in an oom, the huge pmd will
+-				 * have been split, so retry the fault on the
+-				 * pte for a smaller charge.
+-				 */
+-				if (unlikely(ret & VM_FAULT_OOM))
+-					goto retry;
+-				return ret;
++				if (!(ret & VM_FAULT_FALLBACK))
++					return ret;
+ 			} else {
+ 				huge_pmd_set_accessed(mm, vma, address, pmd,
+ 						      orig_pmd, dirty);
++				return 0;
+ 			}
+-
+-			return 0;
+ 		}
+ 	}
+ 
 
 
