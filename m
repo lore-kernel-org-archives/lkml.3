@@ -1,72 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757484AbaCDOhy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 09:37:54 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:39438 "EHLO arroyo.ext.ti.com"
+	id S1757407AbaCDOmj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 09:42:39 -0500
+Received: from vps0.lunn.ch ([178.209.37.122]:38443 "EHLO vps0.lunn.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757188AbaCDOhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 09:37:52 -0500
-Message-ID: <5315E522.9090606@ti.com>
-Date: Tue, 4 Mar 2014 22:37:22 +0800
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1757168AbaCDOmh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 09:42:37 -0500
+Date: Tue, 4 Mar 2014 15:41:29 +0100
+From: Andrew Lunn <andrew@lunn.ch>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
+        linux-kernel@vger.kernel.org,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH V2] ARM: dove: dt: revert PMU interrupt controller node
+Message-ID: <20140304144129.GM16655@lunn.ch>
+References: <20140303150215.GI21483@n2100.arm.linux.org.uk>
+ <20140303173740.GC16655@lunn.ch>
+ <20140303181529.GM21483@n2100.arm.linux.org.uk>
+ <20140303222406.GW1872@titan.lakedaemon.net>
+ <20140304092616.GH16655@lunn.ch>
+ <5315AD6F.1070804@gmail.com>
+ <20140304121136.GR21483@n2100.arm.linux.org.uk>
+ <20140304135306.GL1872@titan.lakedaemon.net>
+ <20140304135452.GK16655@lunn.ch>
+ <20140304140135.GS21483@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>, Tony Lindgren <tony@atomide.com>
-CC: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 5/5] drivers: bus: omap_l3: Change pr_crit() to dev_err()
- when IRQ request fails
-References: <1393937293-6036-1-git-send-email-peter.ujfalusi@ti.com> <1393937293-6036-6-git-send-email-peter.ujfalusi@ti.com>
-In-Reply-To: <1393937293-6036-6-git-send-email-peter.ujfalusi@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140304140135.GS21483@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 04 March 2014 08:48 PM, Peter Ujfalusi wrote:
-> Use dev_err() which will going to print the driver's name as well and the
-> KERN_ERR level is sufficient in this case (we also print via dev_err when
-> there is an error with the mem resources)
+On Tue, Mar 04, 2014 at 02:01:36PM +0000, Russell King - ARM Linux wrote:
+> On Tue, Mar 04, 2014 at 02:54:52PM +0100, Andrew Lunn wrote:
+> > > > So we have cpufreq, pm domains and an irq controller.  What's the plan
+> > > > for this, who's going to look at sorting this out?
+> > > 
+> > > Andrew, Sebastian?  I'm currently task-saturated...
+> > 
+> > I doubt i will be doing anything with it for the remainder of this
+> > cycle. I would like to finish converting kirkwood to DT before
+> > starting on anything new.
 > 
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> ---
->  drivers/bus/omap_l3_noc.c | 7 +++----
->  1 file changed, 3 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
-> index 0eff48585ae3..972691a668a3 100644
-> --- a/drivers/bus/omap_l3_noc.c
-> +++ b/drivers/bus/omap_l3_noc.c
-> @@ -158,8 +158,8 @@ static int omap4_l3_probe(struct platform_device *pdev)
->  	ret = devm_request_irq(&pdev->dev, l3->debug_irq, l3_interrupt_handler,
->  			       IRQF_DISABLED, "l3-dbg-irq", l3);
->  	if (ret) {
-> -		pr_crit("L3: request_irq failed to register for 0x%x\n",
-> -						l3->debug_irq);
-> +		dev_err(&pdev->dev, "request_irq failed for %d\n",
-> +			l3->debug_irq);
->  		return ret;
->  	}
->  
-> @@ -167,8 +167,7 @@ static int omap4_l3_probe(struct platform_device *pdev)
->  	ret = devm_request_irq(&pdev->dev, l3->app_irq, l3_interrupt_handler,
->  			       IRQF_DISABLED, "l3-app-irq", l3);
->  	if (ret)
-> -		pr_crit("L3: request_irq failed to register for 0x%x\n",
-> -						l3->app_irq);
-> +		dev_err(&pdev->dev, "request_irq failed for %d\n", l3->app_irq);
->  
->  	return ret;
->  }
-> 
-So this one change in the log level. If I look at now, may be dev_err
-is fine but the change is not same.
+> Okay, can someone send me the cpufreq code then please?
 
-Apart from above comment, rest of the series looks fine to me.
-Feel free to add my ack...
+Hi Russell
 
-Regards,
-Santosh
+Take a look at:
+
+https://github.com/lunn/linux.git v3.13-rc2-rafael-next-dove-cpufreq
+
+The cpufreq drivers/framework have been going through quite a bit of
+refactoring recently, so maybe some work will be needed on it.
+
+	    Andrew
