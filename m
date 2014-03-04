@@ -1,61 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755983AbaCDWFq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 17:05:46 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:60007 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754559AbaCDWFp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 17:05:45 -0500
-Date: Tue, 4 Mar 2014 14:05:42 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "He, Bo" <bo.he@intel.com>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        "oleg@redhat.com" <oleg@redhat.com>,
-        "kirill.shutemov@linux.intel.com" <kirill.shutemov@linux.intel.com>,
-        "Zhang, Yanmin" <yanmin.zhang@intel.com>,
-        "yanmin_zhang@intel.linux.com" <yanmin_zhang@intel.linux.com>,
-        "Wang, Biao" <biao.wang@intel.com>
-Subject: RE: [PATCH]  mm, oom: normalize the adj to ensure oom_badness return
- a positive number
-In-Reply-To: <CD6925E8781EFD4D8E11882D20FC406D01AEE4A8@SHSMSX103.ccr.corp.intel.com>
-Message-ID: <alpine.DEB.2.02.1403041400020.5421@chino.kir.corp.google.com>
-References: <CD6925E8781EFD4D8E11882D20FC406D01AEE4A8@SHSMSX103.ccr.corp.intel.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756328AbaCDWGJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 17:06:09 -0500
+Received: from ring0.de ([5.45.105.125]:38677 "EHLO ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755215AbaCDWGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 17:06:07 -0500
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+From: Sebastian Reichel <sre@debian.org>
+To: Sebastian Reichel <sre@ring0.de>, Marek Belisko <marek@goldelico.com>,
+        Jonathan Cameron <jic23@kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-iio@vger.kernel.org,
+        Sebastian Reichel <sre@debian.org>
+Subject: [PATCHv2 1/9] mfd: twl4030-madc: Use managed resources
+Date: Tue,  4 Mar 2014 23:05:43 +0100
+Message-Id: <1393970751-18157-2-git-send-email-sre@debian.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1393970751-18157-1-git-send-email-sre@debian.org>
+References: <1393702365-26429-1-git-send-email-sre@debian.org>
+ <1393970751-18157-1-git-send-email-sre@debian.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 Mar 2014, He, Bo wrote:
+Update twl4030-madc driver to use managed resources.
 
-> Sorry, the title is confusing. Change it to: mm, oom: normalize the adj to ensure oom_badness returns a positive number
+Signed-off-by: Sebastian Reichel <sre@debian.org>
+Acked-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/mfd/twl4030-madc.c | 15 ++++++---------
+ 1 file changed, 6 insertions(+), 9 deletions(-)
 
-There's something seriously wrong with your email client, it's not 
-replying correctly to threads so this appears as a completely new thread.  
-Meanwhile, your patch was completely whitespace damaged.  Please read 
-Documentation/email-clients.txt.
+diff --git a/drivers/mfd/twl4030-madc.c b/drivers/mfd/twl4030-madc.c
+index 4c583e4..5458561 100644
+--- a/drivers/mfd/twl4030-madc.c
++++ b/drivers/mfd/twl4030-madc.c
+@@ -702,14 +702,14 @@ static int twl4030_madc_probe(struct platform_device *pdev)
+ {
+ 	struct twl4030_madc_data *madc;
+ 	struct twl4030_madc_platform_data *pdata = dev_get_platdata(&pdev->dev);
+-	int ret;
++	int irq, ret;
+ 	u8 regval;
+ 
+ 	if (!pdata) {
+ 		dev_err(&pdev->dev, "platform_data not available\n");
+ 		return -EINVAL;
+ 	}
+-	madc = kzalloc(sizeof(*madc), GFP_KERNEL);
++	madc = devm_kzalloc(&pdev->dev, sizeof(*madc), GFP_KERNEL);
+ 	if (!madc)
+ 		return -ENOMEM;
+ 
+@@ -726,7 +726,7 @@ static int twl4030_madc_probe(struct platform_device *pdev)
+ 	    TWL4030_MADC_ISR1 : TWL4030_MADC_ISR2;
+ 	ret = twl4030_madc_set_power(madc, 1);
+ 	if (ret < 0)
+-		goto err_power;
++		return ret;
+ 	ret = twl4030_madc_set_current_generator(madc, 0, 1);
+ 	if (ret < 0)
+ 		goto err_current_generator;
+@@ -770,7 +770,9 @@ static int twl4030_madc_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, madc);
+ 	mutex_init(&madc->lock);
+-	ret = request_threaded_irq(platform_get_irq(pdev, 0), NULL,
++
++	irq = platform_get_irq(pdev, 0);
++	ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
+ 				   twl4030_madc_threaded_irq_handler,
+ 				   IRQF_TRIGGER_RISING, "twl4030_madc", madc);
+ 	if (ret) {
+@@ -783,9 +785,6 @@ err_i2c:
+ 	twl4030_madc_set_current_generator(madc, 0, 0);
+ err_current_generator:
+ 	twl4030_madc_set_power(madc, 0);
+-err_power:
+-	kfree(madc);
+-
+ 	return ret;
+ }
+ 
+@@ -793,10 +792,8 @@ static int twl4030_madc_remove(struct platform_device *pdev)
+ {
+ 	struct twl4030_madc_data *madc = platform_get_drvdata(pdev);
+ 
+-	free_irq(platform_get_irq(pdev, 0), madc);
+ 	twl4030_madc_set_current_generator(madc, 0, 0);
+ 	twl4030_madc_set_power(madc, 0);
+-	kfree(madc);
+ 
+ 	return 0;
+ }
+-- 
+1.9.0
 
-> We are enabling android mobiles. When running stress memory test, there is a bad issue. Some critical processes such as Healthd and watchdogd are killed, while some other processes are still alive.
-> OOM should kill the tasks whose oom_score are biggest. Many processes use a minus oom_score_adj. oom_badness returns 1 for all of them and their oom_score are all 0.
-> 
-
-No, you're confusing two different things.  A negative 
-/proc/pid/oom_score_adj discounts a process's memory usage in comparison 
-to other processes.  If this value discounts all memory usage for every 
-process, then your setting of /proc/pid/oom_score_adj is wrong.
-
-oom_badness() returns 1 so that the oom killer may still kill these 
-processes, the /proc/pid/oom_score is irrelevant to this (and the only 
-reason it appears as 0 is because it already normalizes by multiplying by 
-1000 / totalpages).
-
-> The patch tries to convert the minus oom_score_adj to a positive number when calculating oom_score. oom_score can keep right process priority sequence.
-> 
-
-Nack, this patch is completely disregarding the value specified by the 
-user for /proc/pid/oom_score_adj.  Your userspace should be using 
-/proc/pid/oom_score_adj, not /proc/pid/oom_adj. 
