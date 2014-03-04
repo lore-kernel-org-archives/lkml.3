@@ -1,56 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757308AbaCDVXv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:23:51 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:44516 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756767AbaCDVXt (ORCPT
+	id S1757523AbaCDVYW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:24:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40947 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756070AbaCDUDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 16:23:49 -0500
-Message-ID: <53164463.5080502@free-electrons.com>
-Date: Tue, 04 Mar 2014 22:23:47 +0100
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 4 Mar 2014 15:03:18 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Antonio Quartulli <antonio@open-mesh.com>,
+        Marek Lindner <mareklindner@neomailbox.ch>
+Subject: [PATCH 3.13 067/172] batman-adv: avoid potential race condition when adding a new neighbour
+Date: Tue,  4 Mar 2014 12:02:31 -0800
+Message-Id: <20140304200301.883957342@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
+References: <20140304200259.626667112@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-To: "Miller, Mike (OS Dev)" <Mike.Miller@hp.com>,
-        "chirag.kantharia@hp.com" <chirag.kantharia@hp.com>
-CC: ISS StorageDev <iss_storagedev@hp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] cpqarray: remove deprecated IRQF_DISABLED
-References: <1381551329-6098-1-git-send-email-michael.opdenacker@free-electrons.com> <48275AD710FCA34184C2B6186B4016B32D14B4D5@G6W2491.americas.hpqcorp.net>
-In-Reply-To: <48275AD710FCA34184C2B6186B4016B32D14B4D5@G6W2491.americas.hpqcorp.net>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Mike,
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-On 10/15/2013 12:17 AM, Miller, Mike (OS Dev) wrote:
->
->> -----Original Message-----
->> From: Michael Opdenacker [mailto:michael.opdenacker@free-
->> electrons.com]
->> Sent: Friday, October 11, 2013 11:15 PM
->> To: chirag.kantharia@hp.com
->> Cc: ISS StorageDev; linux-kernel@vger.kernel.org; Michael Opdenacker
->> Subject: [PATCH] cpqarray: remove deprecated IRQF_DISABLED
->>
->> This patch proposes to remove the use of the IRQF_DISABLED flag
->>
->> It's a NOOP since 2.6.35 and it will be removed one day.
-> I plan to send a patch soon to remove cpqarray completely.
-Any news from this removal? I would like to get rid of my patch for good...
+------------------
 
-Thank you in advance,
+From: Antonio Quartulli <antonio@open-mesh.com>
 
-Michael.
+[ Upstream commit 08bf0ed29c7ded45c477d08618220dd200c3524a ]
 
--- 
-Michael Opdenacker, CEO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-+33 484 258 098
+When adding a new neighbour it is important to atomically
+perform the following:
+- check if the neighbour already exists
+- append the neighbour to the proper list
+
+If the two operations are not performed in an atomic context
+it is possible that two concurrent insertions add the same
+neighbour twice.
+
+Signed-off-by: Antonio Quartulli <antonio@open-mesh.com>
+Signed-off-by: Marek Lindner <mareklindner@neomailbox.ch>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/batman-adv/bat_iv_ogm.c |   22 ++++++++++++++++------
+ net/batman-adv/originator.c |   36 ++++++++++++++++++++++++++++++++++++
+ net/batman-adv/originator.h |    4 ++++
+ 3 files changed, 56 insertions(+), 6 deletions(-)
+
+--- a/net/batman-adv/bat_iv_ogm.c
++++ b/net/batman-adv/bat_iv_ogm.c
+@@ -268,7 +268,7 @@ batadv_iv_ogm_neigh_new(struct batadv_ha
+ 			struct batadv_orig_node *orig_neigh)
+ {
+ 	struct batadv_priv *bat_priv = netdev_priv(hard_iface->soft_iface);
+-	struct batadv_neigh_node *neigh_node;
++	struct batadv_neigh_node *neigh_node, *tmp_neigh_node;
+ 
+ 	neigh_node = batadv_neigh_node_new(hard_iface, neigh_addr, orig_node);
+ 	if (!neigh_node)
+@@ -276,14 +276,24 @@ batadv_iv_ogm_neigh_new(struct batadv_ha
+ 
+ 	spin_lock_init(&neigh_node->bat_iv.lq_update_lock);
+ 
+-	batadv_dbg(BATADV_DBG_BATMAN, bat_priv,
+-		   "Creating new neighbor %pM for orig_node %pM on interface %s\n",
+-		   neigh_addr, orig_node->orig, hard_iface->net_dev->name);
+-
+ 	spin_lock_bh(&orig_node->neigh_list_lock);
+-	hlist_add_head_rcu(&neigh_node->list, &orig_node->neigh_list);
++	tmp_neigh_node = batadv_neigh_node_get(orig_node, hard_iface,
++					       neigh_addr);
++	if (!tmp_neigh_node) {
++		hlist_add_head_rcu(&neigh_node->list, &orig_node->neigh_list);
++	} else {
++		kfree(neigh_node);
++		batadv_hardif_free_ref(hard_iface);
++		neigh_node = tmp_neigh_node;
++	}
+ 	spin_unlock_bh(&orig_node->neigh_list_lock);
+ 
++	if (!tmp_neigh_node)
++		batadv_dbg(BATADV_DBG_BATMAN, bat_priv,
++			   "Creating new neighbor %pM for orig_node %pM on interface %s\n",
++			   neigh_addr, orig_node->orig,
++			   hard_iface->net_dev->name);
++
+ out:
+ 	return neigh_node;
+ }
+--- a/net/batman-adv/originator.c
++++ b/net/batman-adv/originator.c
+@@ -511,6 +511,42 @@ void batadv_purge_orig_ref(struct batadv
+ 	_batadv_purge_orig(bat_priv);
+ }
+ 
++/**
++ * batadv_neigh_node_get - retrieve a neighbour from the list
++ * @orig_node: originator which the neighbour belongs to
++ * @hard_iface: the interface where this neighbour is connected to
++ * @addr: the address of the neighbour
++ *
++ * Looks for and possibly returns a neighbour belonging to this originator list
++ * which is connected through the provided hard interface.
++ * Returns NULL if the neighbour is not found.
++ */
++struct batadv_neigh_node *
++batadv_neigh_node_get(const struct batadv_orig_node *orig_node,
++		      const struct batadv_hard_iface *hard_iface,
++		      const uint8_t *addr)
++{
++	struct batadv_neigh_node *tmp_neigh_node, *res = NULL;
++
++	rcu_read_lock();
++	hlist_for_each_entry_rcu(tmp_neigh_node, &orig_node->neigh_list, list) {
++		if (!batadv_compare_eth(tmp_neigh_node->addr, addr))
++			continue;
++
++		if (tmp_neigh_node->if_incoming != hard_iface)
++			continue;
++
++		if (!atomic_inc_not_zero(&tmp_neigh_node->refcount))
++			continue;
++
++		res = tmp_neigh_node;
++		break;
++	}
++	rcu_read_unlock();
++
++	return res;
++}
++
+ int batadv_orig_seq_print_text(struct seq_file *seq, void *offset)
+ {
+ 	struct net_device *net_dev = (struct net_device *)seq->private;
+--- a/net/batman-adv/originator.h
++++ b/net/batman-adv/originator.h
+@@ -31,6 +31,10 @@ void batadv_orig_node_free_ref_now(struc
+ struct batadv_orig_node *batadv_orig_node_new(struct batadv_priv *bat_priv,
+ 					      const uint8_t *addr);
+ struct batadv_neigh_node *
++batadv_neigh_node_get(const struct batadv_orig_node *orig_node,
++		      const struct batadv_hard_iface *hard_iface,
++		      const uint8_t *addr);
++struct batadv_neigh_node *
+ batadv_neigh_node_new(struct batadv_hard_iface *hard_iface,
+ 		      const uint8_t *neigh_addr,
+ 		      struct batadv_orig_node *orig_node);
+
 
