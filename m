@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932575AbaCDVCE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:02:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41224 "EHLO
+	id S1758605AbaCDVCB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:02:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41206 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754396AbaCDUED (ORCPT
+	with ESMTP id S1756663AbaCDUEE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:04:03 -0500
+	Tue, 4 Mar 2014 15:04:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jean Delvare <jdelvare@suse.de>, Alan Cox <alan@linux.intel.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Doug Thompson <dougthompson@xmission.com>,
-        Borislav Petkov <bp@suse.de>
-Subject: [PATCH 3.13 115/172] i7core_edac: Fix PCI device reference count
-Date: Tue,  4 Mar 2014 12:03:19 -0800
-Message-Id: <20140304200303.391482532@linuxfoundation.org>
+        Hans de Goede <hdegoede@redhat.com>, Aaron Lu <aaron.lu@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.13 116/172] ACPI / video: Filter the _BCL table for duplicate brightness values
+Date: Tue,  4 Mar 2014 12:03:20 -0800
+Message-Id: <20140304200303.420069797@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -31,60 +29,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <jdelvare@suse.de>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit c0f5eeed0f4cef4f05b74883a7160e7edde58b6a upstream.
+commit bd8ba20597f0cfef3ef65c3fd2aa92ab23d4c8e1 upstream.
 
-The reference count changes done by pci_get_device can be a little
-misleading when the usage diverges from the most common scheme. The
-reference count of the device passed as the last parameter is always
-decreased, even if the function returns no new device. So if we are
-going to try alternative device IDs, we must manually increment the
-device reference count before each retry. If we don't, we end up
-decreasing the reference count, and after a few modprobe/rmmod cycles
-the PCI devices will vanish.
+Some devices have duplicate entries in there brightness levels table, ie
+on my Dell Latitude E6430 the table looks like this:
 
-In other words and as Alan put it: without this fix the EDAC code
-corrupts the PCI device list.
+[    3.686060] acpi backlight index   0, val 80
+[    3.686095] acpi backlight index   1, val 50
+[    3.686122] acpi backlight index   2, val 5
+[    3.686147] acpi backlight index   3, val 5
+[    3.686172] acpi backlight index   4, val 5
+[    3.686197] acpi backlight index   5, val 5
+[    3.686223] acpi backlight index   6, val 5
+[    3.686248] acpi backlight index   7, val 5
+[    3.686273] acpi backlight index   8, val 6
+[    3.686332] acpi backlight index   9, val 7
+[    3.686356] acpi backlight index  10, val 8
+[    3.686380] acpi backlight index  11, val 9
+etc.
 
-This fixes kernel bug #50491:
-https://bugzilla.kernel.org/show_bug.cgi?id=50491
+Notice that brightness values 0-5 are all mapped to 5. This means that
+if userspace writes any value between 0 and 5 to the brightness sysfs attribute
+and then reads it, it will always return 0, which is somewhat unexpected.
 
-Signed-off-by: Jean Delvare <jdelvare@suse.de>
-Link: http://lkml.kernel.org/r/20140224093927.7659dd9d@endymion.delvare
-Reviewed-by: Alan Cox <alan@linux.intel.com>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Doug Thompson <dougthompson@xmission.com>
-Signed-off-by: Borislav Petkov <bp@suse.de>
+This is a problem for ie gnome-settings-daemon, which uses read-modify-write
+logic when the users presses the brightness up or down keys. This is done
+this way to take brightness changes from other sources into account.
+
+On this specific laptop what happens once the brightness has been set to 0,
+is that gsd reads 0, adds 5, writes 5, and on the next brightness up key press
+again reads 0, so things get stuck at the lowest brightness setting.
+
+Filtering out the duplicate table entries, makes any write to brightness
+read back as the written value as one would expect, fixing this.
+
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Reviewed-by: Aaron Lu <aaron.lu@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/edac/i7core_edac.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/acpi/video.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/edac/i7core_edac.c
-+++ b/drivers/edac/i7core_edac.c
-@@ -1334,14 +1334,19 @@ static int i7core_get_onedevice(struct p
- 	 * is at addr 8086:2c40, instead of 8086:2c41. So, we need
- 	 * to probe for the alternate address in case of failure
- 	 */
--	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_I7_NONCORE && !pdev)
-+	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_I7_NONCORE && !pdev) {
-+		pci_dev_get(*prev);	/* pci_get_device will put it */
- 		pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
- 				      PCI_DEVICE_ID_INTEL_I7_NONCORE_ALT, *prev);
-+	}
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -686,6 +686,7 @@ acpi_video_init_brightness(struct acpi_v
+ 	union acpi_object *o;
+ 	struct acpi_video_device_brightness *br = NULL;
+ 	int result = -EINVAL;
++	u32 value;
  
--	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE && !pdev)
-+	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE &&
-+	    !pdev) {
-+		pci_dev_get(*prev);	/* pci_get_device will put it */
- 		pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
- 				      PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE_ALT,
- 				      *prev);
-+	}
+ 	if (!ACPI_SUCCESS(acpi_video_device_lcd_query_levels(device, &obj))) {
+ 		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Could not query available "
+@@ -716,7 +717,12 @@ acpi_video_init_brightness(struct acpi_v
+ 			printk(KERN_ERR PREFIX "Invalid data\n");
+ 			continue;
+ 		}
+-		br->levels[count] = (u32) o->integer.value;
++		value = (u32) o->integer.value;
++		/* Skip duplicate entries */
++		if (count > 2 && br->levels[count - 1] == value)
++			continue;
++
++		br->levels[count] = value;
  
- 	if (!pdev) {
- 		if (*prev) {
+ 		if (br->levels[count] > max_level)
+ 			max_level = br->levels[count];
 
 
