@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755368AbaCDStM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 13:49:12 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:56822 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755142AbaCDSsz (ORCPT
+	id S1755191AbaCDSxB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 13:53:01 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:38674 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753999AbaCDSw7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 13:48:55 -0500
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Josh Cartwright <joshc@codeaurora.org>
-Subject: [PATCH 2/2] mfd: pm8921: Use IRQCHIP_SKIP_SET_WAKE
-Date: Tue,  4 Mar 2014 10:48:52 -0800
-Message-Id: <1393958932-3585-3-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
-In-Reply-To: <1393958932-3585-1-git-send-email-sboyd@codeaurora.org>
-References: <1393958932-3585-1-git-send-email-sboyd@codeaurora.org>
+	Tue, 4 Mar 2014 13:52:59 -0500
+From: Julius Werner <jwerner@chromium.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Oliver Neukum <oneukum@suse.de>, Luigi Semenzato <semenzato@chromium.org>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Julius Werner <jwerner@chromium.org>
+Subject: [PATCH 1/2] usb: Add device quirk for Logitech HD Pro Webcams C920 and C930e
+Date: Tue,  4 Mar 2014 10:52:39 -0800
+Message-Id: <1393959159-32693-1-git-send-email-jwerner@chromium.org>
+X-Mailer: git-send-email 1.9.0.279.gdc9e3eb
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't need to implement a dummy irq_set_wake op if we just set
-IRQCHIP_SKIP_SET_WAKE.
+We've encountered a rare issue when enumerating two Logitech webcams
+after a reboot that doesn't power cycle the USB ports. They are spewing
+random data (possibly some leftover UVC buffers) on the second
+(full-sized) Get Configuration request of the enumeration phase. Since
+the data is random this can potentially cause all kinds of odd behavior,
+and since it occasionally happens multiple times (after the kernel
+issues another reset due to the garbled configuration descriptor), it is
+not always recoverable. Set the USB_DELAY_INIT quirk that seems to work
+around the issue.
 
-Suggested-by: Josh Cartwright <joshc@codeaurora.org>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Julius Werner <jwerner@chromium.org>
 ---
- drivers/mfd/pm8921-core.c | 8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
+ drivers/usb/core/quirks.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/mfd/pm8921-core.c b/drivers/mfd/pm8921-core.c
-index 3ebbdf6c61db..3493cd6e973b 100644
---- a/drivers/mfd/pm8921-core.c
-+++ b/drivers/mfd/pm8921-core.c
-@@ -240,18 +240,12 @@ static int pm8xxx_irq_set_type(struct irq_data *d, unsigned int flow_type)
- 	return pm8xxx_config_irq(chip, block, config);
- }
+diff --git a/drivers/usb/core/quirks.c b/drivers/usb/core/quirks.c
+index 8f37063..739ee8e 100644
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -47,6 +47,10 @@ static const struct usb_device_id usb_quirk_list[] = {
+ 	/* Microsoft LifeCam-VX700 v2.0 */
+ 	{ USB_DEVICE(0x045e, 0x0770), .driver_info = USB_QUIRK_RESET_RESUME },
  
--static int pm8xxx_irq_set_wake(struct irq_data *d, unsigned int on)
--{
--	return 0;
--}
--
- static struct irq_chip pm8xxx_irq_chip = {
- 	.name		= "pm8xxx",
- 	.irq_mask_ack	= pm8xxx_irq_mask_ack,
- 	.irq_unmask	= pm8xxx_irq_unmask,
- 	.irq_set_type	= pm8xxx_irq_set_type,
--	.irq_set_wake	= pm8xxx_irq_set_wake,
--	.flags		= IRQCHIP_MASK_ON_SUSPEND,
-+	.flags		= IRQCHIP_MASK_ON_SUSPEND | IRQCHIP_SKIP_SET_WAKE,
- };
++	/* Logitech HD Pro Webcams C920 and C930e */
++	{ USB_DEVICE(0x046d, 0x082d), .driver_info = USB_QUIRK_DELAY_INIT },
++	{ USB_DEVICE(0x046d, 0x0843), .driver_info = USB_QUIRK_DELAY_INIT },
++
+ 	/* Logitech Quickcam Fusion */
+ 	{ USB_DEVICE(0x046d, 0x08c1), .driver_info = USB_QUIRK_RESET_RESUME },
  
- static int pm8xxx_irq_domain_map(struct irq_domain *d, unsigned int irq,
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+1.8.3.2
 
