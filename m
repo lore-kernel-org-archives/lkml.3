@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758097AbaCDUbA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:31:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41568 "EHLO
+	id S1758107AbaCDUb0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:31:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41562 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757094AbaCDUFD (ORCPT
+	with ESMTP id S1755840AbaCDUFC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:05:03 -0500
+	Tue, 4 Mar 2014 15:05:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        John Ogness <john.ogness@linutronix.de>,
-        Eric Dumazet <edumazet@google.com>,
-        Thomas Glanzmann <thomas@glanzmann.de>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 27/97] tcp: tsq: fix nonagle handling
-Date: Tue,  4 Mar 2014 12:03:40 -0800
-Message-Id: <20140304200346.949639667@linuxfoundation.org>
+        Pekon Gupta <pekon@ti.com>, Tony Lindgren <tony@atomide.com>
+Subject: [PATCH 3.10 11/97] ARM: OMAP2+: gpmc: fix: DT NAND child nodes not probed when MTD_NAND is built as module
+Date: Tue,  4 Mar 2014 12:03:24 -0800
+Message-Id: <20140304200346.474028660@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -31,68 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Ogness <john.ogness@linutronix.de>
+From: Pekon Gupta <pekon@ti.com>
 
-[ Upstream commit bf06200e732de613a1277984bf34d1a21c2de03d ]
+commit 6b187b21c92b6e2c7e8ef0b450181c37a3f31681 upstream.
 
-Commit 46d3ceabd8d9 ("tcp: TCP Small Queues") introduced a possible
-regression for applications using TCP_NODELAY.
+Fixes: commit bc6b1e7b86f5d8e4a6fc1c0189e64bba4077efe0
+       ARM: OMAP: gpmc: add DT bindings for GPMC timings and NAND
 
-If TCP session is throttled because of tsq, we should consult
-tp->nonagle when TX completion is done and allow us to send additional
-segment, especially if this segment is not a full MSS.
-Otherwise this segment is sent after an RTO.
+OMAP SoC(s) depend on GPMC controller driver to parse GPMC DT child nodes and
+register them platform_device for NAND driver to probe later. However this does
+not happen if generic MTD_NAND framework is built as module (CONFIG_MTD_NAND=m).
 
-[edumazet] : Cooked the changelog, added another fix about testing
-sk_wmem_alloc twice because TX completion can happen right before
-setting TSQ_THROTTLED bit.
+Therefore, when MTD/NAND and MTD/NAND/OMAP2 modules are loaded, they are unable
+to find any matching platform_device and remain un-binded. This causes on board
+NAND flash to remain un-detected.
 
-This problem is particularly visible with recent auto corking,
-but might also be triggered with low tcp_limit_output_bytes
-values or NIC drivers delaying TX completion by hundred of usec,
-and very low rtt.
+This patch causes GPMC controller to parse DT nodes when
+CONFIG_MTD_NAND=y || CONFIG_MTD_NAND=m
 
-Thomas Glanzmann for example reported an iscsi regression, caused
-by tcp auto corking making this bug quite visible.
-
-Fixes: 46d3ceabd8d9 ("tcp: TCP Small Queues")
-Signed-off-by: John Ogness <john.ogness@linutronix.de>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Reported-by: Thomas Glanzmann <thomas@glanzmann.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Pekon Gupta <pekon@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/tcp_output.c |   13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
 
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -686,7 +686,8 @@ static void tcp_tsq_handler(struct sock
- 	if ((1 << sk->sk_state) &
- 	    (TCPF_ESTABLISHED | TCPF_FIN_WAIT1 | TCPF_CLOSING |
- 	     TCPF_CLOSE_WAIT  | TCPF_LAST_ACK))
--		tcp_write_xmit(sk, tcp_current_mss(sk), 0, 0, GFP_ATOMIC);
-+		tcp_write_xmit(sk, tcp_current_mss(sk), tcp_sk(sk)->nonagle,
-+			       0, GFP_ATOMIC);
+---
+ arch/arm/mach-omap2/gpmc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/arch/arm/mach-omap2/gpmc.c
++++ b/arch/arm/mach-omap2/gpmc.c
+@@ -1335,7 +1335,7 @@ static void __maybe_unused gpmc_read_tim
+ 		of_property_read_bool(np, "gpmc,time-para-granularity");
  }
- /*
-  * One tasklest per cpu tries to send more skbs.
-@@ -1875,7 +1876,15 @@ static bool tcp_write_xmit(struct sock *
  
- 		if (atomic_read(&sk->sk_wmem_alloc) > limit) {
- 			set_bit(TSQ_THROTTLED, &tp->tsq_flags);
--			break;
-+			/* It is possible TX completion already happened
-+			 * before we set TSQ_THROTTLED, so we must
-+			 * test again the condition.
-+			 * We abuse smp_mb__after_clear_bit() because
-+			 * there is no smp_mb__after_set_bit() yet
-+			 */
-+			smp_mb__after_clear_bit();
-+			if (atomic_read(&sk->sk_wmem_alloc) > limit)
-+				break;
- 		}
+-#ifdef CONFIG_MTD_NAND
++#if IS_ENABLED(CONFIG_MTD_NAND)
  
- 		limit = mss_now;
+ static const char * const nand_ecc_opts[] = {
+ 	[OMAP_ECC_HAMMING_CODE_DEFAULT]		= "sw",
 
 
