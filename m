@@ -1,107 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754369AbaCDQ3H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 11:29:07 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:33087 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065AbaCDQ3E (ORCPT
+	id S1754682AbaCDQci (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 11:32:38 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:42135 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751630AbaCDQch (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 11:29:04 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+YIWysqhFwOwa3IjOPUHUa
-Date: Tue, 4 Mar 2014 08:28:56 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: kishon@ti.com, balbi@ti.com, george.cherian@ti.com, balajitk@ti.com,
-        hdegoede@redhat.com, linux-omap@vger.kernel.org,
-        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org
-Subject: Re: [PATCH 02/12] phy: omap-control: Update DT binding information
-Message-ID: <20140304162855.GB3376@atomide.com>
-References: <1393859254-10937-1-git-send-email-rogerq@ti.com>
- <1393859254-10937-3-git-send-email-rogerq@ti.com>
- <20140303190247.GD25804@atomide.com>
- <5315995F.5050206@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5315995F.5050206@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 4 Mar 2014 11:32:37 -0500
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
+        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
+        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH v3 1/5] i2c: mv64xxx: Add reset deassert call
+Date: Tue,  4 Mar 2014 17:28:37 +0100
+Message-Id: <1393950521-4173-2-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1393950521-4173-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1393950521-4173-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Roger Quadros <rogerq@ti.com> [140304 01:17]:
-> Hi Tony,
-> 
-> On 03/03/2014 09:02 PM, Tony Lindgren wrote:
-> > * Roger Quadros <rogerq@ti.com> [140303 07:10]:
-> >> Move omap-control binding information to the right location.
-> >>
-> >> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> >> ---
-> >>  Documentation/devicetree/bindings/phy/ti-phy.txt   | 25 ++++++++++++++++++++++
-> >>  Documentation/devicetree/bindings/usb/omap-usb.txt | 24 ---------------------
-> >>  2 files changed, 25 insertions(+), 24 deletions(-)
-> >>
-> >> diff --git a/Documentation/devicetree/bindings/phy/ti-phy.txt b/Documentation/devicetree/bindings/phy/ti-phy.txt
-> >> index 207e14c..41dc132 100644
-> >> --- a/Documentation/devicetree/bindings/phy/ti-phy.txt
-> >> +++ b/Documentation/devicetree/bindings/phy/ti-phy.txt
-> >> @@ -1,5 +1,30 @@
-> >>  TI PHY: DT DOCUMENTATION FOR PHYs in TI PLATFORMs
-> >>  
-> >> +OMAP CONTROL PHY
-> >> +
-> >> +Required properties:
-> >> + - compatible: Should be one of
-> >> + "ti,control-phy-otghs" - if it has otghs_control mailbox register as on OMAP4.
-> >> + "ti,control-phy-usb2" - if it has Power down bit in control_dev_conf register
-> >> +                        e.g. USB2_PHY on OMAP5.
-> >> + "ti,control-phy-pipe3" - if it has DPLL and individual Rx & Tx power control
-> >> +                        e.g. USB3 PHY and SATA PHY on OMAP5.
-> >> + "ti,control-phy-dra7usb2" - if it has power down register like USB2 PHY on
-> >> +                        DRA7 platform.
-> >> + "ti,control-phy-am437usb2" - if it has power down register like USB2 PHY on
-> >> +                        AM437 platform.
-> > 
-> > To me it seems that you can leave out all the above. You can set these falgs
-> > flags directly in the driver based on the compatible flag. Then just initialize
-> > the .data in the driver based on the compatible flag.
-> 
-> I'm not sure if I got you. A single platform can have different type of phys.
-> 
-> e.g. OMAP5 has both usb2 and pipe3 PHYs,
-> DRA7 has both pipe3 and usb2 PHYs, but this usb2 PHY is not compatible with OMAP5 one
-> so we need a new compatible id for that.
-> 
-> To add to the woes, the designers were creative enough to make another mutation to
-> the USB2 PHY for AM437x, :(
+The Allwinner A31 SoC using that IP has a reset controller maintaining
+it reset unless told otherwise.
 
-Oh OK, in that case the compatible flag may not be enough for configuring the
-various instances.
+Add some optional reset support to the driver.
+
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Reviewed-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Tested-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+---
+ .../devicetree/bindings/i2c/i2c-mv64xxx.txt         |  1 +
+ drivers/i2c/busses/Kconfig                          |  1 +
+ drivers/i2c/busses/i2c-mv64xxx.c                    | 21 +++++++++++++++++++--
+ 3 files changed, 21 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/i2c/i2c-mv64xxx.txt b/Documentation/devicetree/bindings/i2c/i2c-mv64xxx.txt
+index 582b465..21062bc 100644
+--- a/Documentation/devicetree/bindings/i2c/i2c-mv64xxx.txt
++++ b/Documentation/devicetree/bindings/i2c/i2c-mv64xxx.txt
+@@ -16,6 +16,7 @@ Optional properties :
  
-> What do you suggest the compatible ids should look like for these 5 types of PHY control?
-> OTGHS	(OMAP4 & 5)
-> USB2	(OMAP5)
-> PIPE3	(OMAP5 & DRA7)
-> USB2x	(DRA7)
-> USB2y	(AM437)
+  - clock-frequency : Desired I2C bus clock frequency in Hz. If not set the
+ default frequency is 100kHz
++ - resets          : phandle to the parent reset controller
+ 
+ Examples:
+ 
+diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+index f5ed031..70bcad9 100644
+--- a/drivers/i2c/busses/Kconfig
++++ b/drivers/i2c/busses/Kconfig
+@@ -528,6 +528,7 @@ config I2C_MPC
+ config I2C_MV64XXX
+ 	tristate "Marvell mv64xxx I2C Controller"
+ 	depends on (MV64X60 || PLAT_ORION || ARCH_SUNXI)
++	select RESET_CONTROLLER
+ 	help
+ 	  If you say yes to this option, support will be included for the
+ 	  built-in I2C interface on the Marvell 64xxx line of host bridges.
+diff --git a/drivers/i2c/busses/i2c-mv64xxx.c b/drivers/i2c/busses/i2c-mv64xxx.c
+index d52d849..1bb69b6 100644
+--- a/drivers/i2c/busses/i2c-mv64xxx.c
++++ b/drivers/i2c/busses/i2c-mv64xxx.c
+@@ -17,6 +17,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/mv643xx_i2c.h>
+ #include <linux/platform_device.h>
++#include <linux/reset.h>
+ #include <linux/io.h>
+ #include <linux/of.h>
+ #include <linux/of_device.h>
+@@ -148,6 +149,7 @@ struct mv64xxx_i2c_data {
+ 	bool			offload_enabled;
+ /* 5us delay in order to avoid repeated start timing violation */
+ 	bool			errata_delay;
++	struct reset_control	*rstc;
+ };
+ 
+ static struct mv64xxx_i2c_regs mv64xxx_i2c_regs_mv64xxx = {
+@@ -759,6 +761,16 @@ mv64xxx_of_config(struct mv64xxx_i2c_data *drv_data,
+ 	}
+ 	drv_data->irq = irq_of_parse_and_map(np, 0);
+ 
++	drv_data->rstc = devm_reset_control_get(dev, NULL);
++	if (IS_ERR(drv_data->rstc)) {
++		if (PTR_ERR(drv_data->rstc) == -EPROBE_DEFER) {
++			rc = -EPROBE_DEFER;
++			goto out;
++		}
++	} else {
++		reset_control_deassert(drv_data->rstc);
++	}
++
+ 	/* Its not yet defined how timeouts will be specified in device tree.
+ 	 * So hard code the value to 1 second.
+ 	 */
+@@ -845,7 +857,7 @@ mv64xxx_i2c_probe(struct platform_device *pd)
+ 	}
+ 	if (drv_data->irq < 0) {
+ 		rc = -ENXIO;
+-		goto exit_clk;
++		goto exit_reset;
+ 	}
+ 
+ 	drv_data->adapter.dev.parent = &pd->dev;
+@@ -865,7 +877,7 @@ mv64xxx_i2c_probe(struct platform_device *pd)
+ 		dev_err(&drv_data->adapter.dev,
+ 			"mv64xxx: Can't register intr handler irq%d: %d\n",
+ 			drv_data->irq, rc);
+-		goto exit_clk;
++		goto exit_reset;
+ 	} else if ((rc = i2c_add_numbered_adapter(&drv_data->adapter)) != 0) {
+ 		dev_err(&drv_data->adapter.dev,
+ 			"mv64xxx: Can't add i2c adapter, rc: %d\n", -rc);
+@@ -876,6 +888,9 @@ mv64xxx_i2c_probe(struct platform_device *pd)
+ 
+ exit_free_irq:
+ 	free_irq(drv_data->irq, drv_data);
++exit_reset:
++	if (pd->dev.of_node && !IS_ERR(drv_data->rstc))
++		reset_control_assert(drv_data->rstc);
+ exit_clk:
+ #if defined(CONFIG_HAVE_CLK)
+ 	/* Not all platforms have a clk */
+@@ -894,6 +909,8 @@ mv64xxx_i2c_remove(struct platform_device *dev)
+ 
+ 	i2c_del_adapter(&drv_data->adapter);
+ 	free_irq(drv_data->irq, drv_data);
++	if (dev->dev.of_node && !IS_ERR(drv_data->rstc))
++		reset_control_assert(drv_data->rstc);
+ #if defined(CONFIG_HAVE_CLK)
+ 	/* Not all platforms have a clk */
+ 	if (!IS_ERR(drv_data->clk)) {
+-- 
+1.9.0
 
-I think in that case having the various instances fully configurable from
-device tree is OK if you prefer that. But if you wanted to use the
-compatible flag, then you could do something like this:
-
-ti,control-phy-omap4-otghs	(assuming same on omap4 & 5)
-ti,control-phy-omap5-usb2
-ti,control-phy-omap5-pipe3	(assuming same on omap5 & dra7)
-ti,control-phy-dra7-usb2x
-ti,control-phy-am437-usb2y
-...
-
-Regards,
-
-Tony
