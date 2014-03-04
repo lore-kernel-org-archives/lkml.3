@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758265AbaCDUz7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:55:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41285 "EHLO
+	id S1758284AbaCDU4T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:56:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41282 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756742AbaCDUEP (ORCPT
+	with ESMTP id S1756733AbaCDUEO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:04:15 -0500
+	Tue, 4 Mar 2014 15:04:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.13 144/172] irqchip: orion: clear bridge cause register on init
-Date: Tue,  4 Mar 2014 12:03:48 -0800
-Message-Id: <20140304200304.314947235@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.13 143/172] ALSA: hda - Add a fixup for HP Folio 13 mute LED
+Date: Tue,  4 Mar 2014 12:03:47 -0800
+Message-Id: <20140304200304.278911447@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -30,34 +28,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 7b119fd1bdc59a8060df5b659b9f7a70e0169fd6 upstream.
+commit 37c367ecdb9a01c9acc980e6e17913570a1788a7 upstream.
 
-It is good practice to mask and clear pending irqs on init. We already
-mask all irqs, so also clear the bridge irq cause register.
+HP Folio 13 may have a broken BIOS that doesn't set up the mute LED
+GPIO properly, and the driver guesses it wrongly, too.  Add a new
+fixup entry for setting the GPIO pin statically for this laptop.
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Tested-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=70991
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/irqchip/irq-orion.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ sound/pci/hda/patch_sigmatel.c |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
---- a/drivers/irqchip/irq-orion.c
-+++ b/drivers/irqchip/irq-orion.c
-@@ -180,8 +180,9 @@ static int __init orion_bridge_irq_init(
- 	gc->chip_types[0].chip.irq_mask = irq_gc_mask_clr_bit;
- 	gc->chip_types[0].chip.irq_unmask = irq_gc_mask_set_bit;
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -98,6 +98,7 @@ enum {
+ 	STAC_92HD83XXX_HP_LED,
+ 	STAC_92HD83XXX_HP_INV_LED,
+ 	STAC_92HD83XXX_HP_MIC_LED,
++	STAC_HP_LED_GPIO10,
+ 	STAC_92HD83XXX_HEADSET_JACK,
+ 	STAC_92HD83XXX_HP,
+ 	STAC_HP_ENVY_BASS,
+@@ -2112,6 +2113,17 @@ static void stac92hd83xxx_fixup_hp_mic_l
+ 	}
+ }
  
--	/* mask all interrupts */
-+	/* mask and clear all interrupts */
- 	writel(0, gc->reg_base + ORION_BRIDGE_IRQ_MASK);
-+	writel(0, gc->reg_base + ORION_BRIDGE_IRQ_CAUSE);
- 
- 	irq_set_handler_data(irq, domain);
- 	irq_set_chained_handler(irq, orion_bridge_irq_handler);
++static void stac92hd83xxx_fixup_hp_led_gpio10(struct hda_codec *codec,
++				   const struct hda_fixup *fix, int action)
++{
++	struct sigmatel_spec *spec = codec->spec;
++
++	if (action == HDA_FIXUP_ACT_PRE_PROBE) {
++		spec->gpio_led = 0x10; /* GPIO4 */
++		spec->default_polarity = 0;
++	}
++}
++
+ static void stac92hd83xxx_fixup_headset_jack(struct hda_codec *codec,
+ 				   const struct hda_fixup *fix, int action)
+ {
+@@ -2606,6 +2618,12 @@ static const struct hda_fixup stac92hd83
+ 		.chained = true,
+ 		.chain_id = STAC_92HD83XXX_HP,
+ 	},
++	[STAC_HP_LED_GPIO10] = {
++		.type = HDA_FIXUP_FUNC,
++		.v.func = stac92hd83xxx_fixup_hp_led_gpio10,
++		.chained = true,
++		.chain_id = STAC_92HD83XXX_HP,
++	},
+ 	[STAC_92HD83XXX_HEADSET_JACK] = {
+ 		.type = HDA_FIXUP_FUNC,
+ 		.v.func = stac92hd83xxx_fixup_headset_jack,
+@@ -2684,6 +2702,8 @@ static const struct snd_pci_quirk stac92
+ 			  "HP", STAC_92HD83XXX_HP_cNB11_INTQUAD),
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x1888,
+ 			  "HP Envy Spectre", STAC_HP_ENVY_BASS),
++	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x1899,
++			  "HP Folio 13", STAC_HP_LED_GPIO10),
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x18df,
+ 			  "HP Folio", STAC_HP_BNB13_EQ),
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x18F8,
 
 
