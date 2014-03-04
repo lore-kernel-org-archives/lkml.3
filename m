@@ -1,104 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933302AbaCDVS6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:18:58 -0500
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:37616
-	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933284AbaCDVS4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 16:18:56 -0500
-x-originating-ip: 72.167.245.219
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: davem@davemloft.net, netdev@vger.kernel.org
-Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
-        jasowang@redhat.com, linux-kernel@vger.kernel.org,
-        driverdev-devel@linuxdriverproject.org
-Subject: [PATCH net-next,v2] hyperv: Move state setting for link query
-Date: Tue,  4 Mar 2014 14:11:06 -0800
-Message-Id: <1393971066-6491-1-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S933310AbaCDVTc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:19:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40999 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756216AbaCDUD1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 15:03:27 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: [PATCH 3.13 079/172] cgroup: fix error return from cgroup_create()
+Date: Tue,  4 Mar 2014 12:02:43 -0800
+Message-Id: <20140304200302.266514611@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
+References: <20140304200259.626667112@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It moves the state setting for query into rndis_filter_receive_response().
-All callbacks including query-complete and status-callback are synchronized
-by channel->inbound_lock. This prevents pentential race between them.
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+------------------
+
+From: Tejun Heo <tj@kernel.org>
+
+commit b58c89986a77a23658682a100eb15d8edb571ebb upstream.
+
+cgroup_create() was returning 0 after allocation failures.  Fix it.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- drivers/net/hyperv/netvsc_drv.c   |    4 ++++
- drivers/net/hyperv/rndis_filter.c |   21 ++++++++++++++++++++-
- 2 files changed, 24 insertions(+), 1 deletions(-)
+ kernel/cgroup.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-index 9ef6be9..bb27b3e 100644
---- a/drivers/net/hyperv/netvsc_drv.c
-+++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -442,6 +442,8 @@ static int netvsc_probe(struct hv_device *dev,
- 	if (!net)
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -4348,7 +4348,7 @@ static long cgroup_create(struct cgroup
+ 	struct cgroup *cgrp;
+ 	struct cgroup_name *name;
+ 	struct cgroupfs_root *root = parent->root;
+-	int err = 0;
++	int err;
+ 	struct cgroup_subsys *ss;
+ 	struct super_block *sb = root->sb;
+ 
+@@ -4358,8 +4358,10 @@ static long cgroup_create(struct cgroup
  		return -ENOMEM;
  
-+	netif_carrier_off(net);
-+
- 	net_device_ctx = netdev_priv(net);
- 	net_device_ctx->device_ctx = dev;
- 	hv_set_drvdata(dev, net);
-@@ -473,6 +475,8 @@ static int netvsc_probe(struct hv_device *dev,
- 		pr_err("Unable to register netdev.\n");
- 		rndis_filter_device_remove(dev);
- 		free_netdev(net);
-+	} else {
-+		schedule_delayed_work(&net_device_ctx->dwork, 0);
- 	}
- 
- 	return ret;
-diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
-index f0cc8ef..6a9f602 100644
---- a/drivers/net/hyperv/rndis_filter.c
-+++ b/drivers/net/hyperv/rndis_filter.c
-@@ -240,6 +240,22 @@ static int rndis_filter_send_request(struct rndis_device *dev,
- 	return ret;
- }
- 
-+static void rndis_set_link_state(struct rndis_device *rdev,
-+				 struct rndis_request *request)
-+{
-+	u32 link_status;
-+	struct rndis_query_complete *query_complete;
-+
-+	query_complete = &request->response_msg.msg.query_complete;
-+
-+	if (query_complete->status == RNDIS_STATUS_SUCCESS &&
-+	    query_complete->info_buflen == sizeof(u32)) {
-+		memcpy(&link_status, (void *)((unsigned long)query_complete +
-+		       query_complete->info_buf_offset), sizeof(u32));
-+		rdev->link_state = link_status != 0;
+ 	name = cgroup_alloc_name(dentry);
+-	if (!name)
++	if (!name) {
++		err = -ENOMEM;
+ 		goto err_free_cgrp;
 +	}
-+}
-+
- static void rndis_filter_receive_response(struct rndis_device *dev,
- 				       struct rndis_message *resp)
- {
-@@ -269,6 +285,10 @@ static void rndis_filter_receive_response(struct rndis_device *dev,
- 		    sizeof(struct rndis_message) + RNDIS_EXT_LEN) {
- 			memcpy(&request->response_msg, resp,
- 			       resp->msg_len);
-+			if (request->request_msg.ndis_msg_type ==
-+			    RNDIS_MSG_QUERY && request->request_msg.msg.
-+			    query_req.oid == RNDIS_OID_GEN_MEDIA_CONNECT_STATUS)
-+				rndis_set_link_state(dev, request);
- 		} else {
- 			netdev_err(ndev,
- 				"rndis response buffer overflow "
-@@ -617,7 +637,6 @@ static int rndis_filter_query_device_link_status(struct rndis_device *dev)
- 	ret = rndis_filter_query_device(dev,
- 				      RNDIS_OID_GEN_MEDIA_CONNECT_STATUS,
- 				      &link_status, &size);
--	dev->link_state = (link_status != 0) ? true : false;
+ 	rcu_assign_pointer(cgrp->name, name);
  
- 	return ret;
- }
--- 
-1.7.4.1
+ 	/*
+@@ -4367,8 +4369,10 @@ static long cgroup_create(struct cgroup
+ 	 * a half-baked cgroup.
+ 	 */
+ 	cgrp->id = idr_alloc(&root->cgroup_idr, NULL, 1, 0, GFP_KERNEL);
+-	if (cgrp->id < 0)
++	if (cgrp->id < 0) {
++		err = -ENOMEM;
+ 		goto err_free_name;
++	}
+ 
+ 	/*
+ 	 * Only live parents can have children.  Note that the liveliness
+
 
