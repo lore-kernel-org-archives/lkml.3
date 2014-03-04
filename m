@@ -1,62 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933233AbaCDVPg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:15:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41050 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756320AbaCDUDh (ORCPT
+	id S933249AbaCDVPo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:15:44 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:36648 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933221AbaCDVPf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:03:37 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.13 093/172] ASoC: sta32x: Fix cache sync
-Date: Tue,  4 Mar 2014 12:02:57 -0800
-Message-Id: <20140304200302.685844478@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
-References: <20140304200259.626667112@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 4 Mar 2014 16:15:35 -0500
+Message-ID: <531642E2.4020308@oracle.com>
+Date: Tue, 04 Mar 2014 16:17:22 -0500
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: David Vrabel <david.vrabel@citrix.com>
+CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        konrad.wilk@oracle.com, xen-devel@lists.xenproject.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86/xen: Disable APIC PM for Xen PV guests
+References: <1393900821-6182-1-git-send-email-boris.ostrovsky@oracle.com> <5315AA31.7090907@citrix.com>
+In-Reply-To: <5315AA31.7090907@citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+On 03/04/2014 05:25 AM, David Vrabel wrote:
+> On 04/03/14 02:40, Boris Ostrovsky wrote:
+>> Xen PV guests support only few APIC registers and writes to
+>> unsupported registers result in WARN_ONs. Most APIC accesses in these
+>> guests  have been eliminated; however, lapic_suspend/resume are still
+>> called (on 32-bit kernels).
+>>
+>> We can disable APIC power management in xen_smp_prepare_boot_cpu()
+>> (which is called after APIC has been initialized).
+> Having looked at another APIC related problem recently, I wonder if Xen
+> would be better served by having its own APIC driver instead of trying
+> to piggy-back of some hardware one which doesn't do what we want.
 
-------------------
+Possibly, although I don't think it will help with this particular issue 
+since this patch is trying to address a problem in non-privileged 
+guests. Such guests don't have ACPI enabled and so no APIC probing is 
+done for them.
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+-boris
 
-commit 70ff00f82a6af0ff68f8f7b411738634ce2f20d0 upstream.
-
-codec->control_data contains a pointer to the regmap struct of the device, not
-to the device private data. Use snd_soc_codec_get_drvdata() instead.
-
-The issue was introduced in commit 29fdf4fbbe ("ASoC: sta32x: Convert to
-regmap").
-
-Fixes: 29fdf4fbbe (ASoC: sta32x: Convert to regmap)
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- sound/soc/codecs/sta32x.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/sound/soc/codecs/sta32x.c
-+++ b/sound/soc/codecs/sta32x.c
-@@ -331,7 +331,7 @@ static int sta32x_sync_coef_shadow(struc
- 
- static int sta32x_cache_sync(struct snd_soc_codec *codec)
- {
--	struct sta32x_priv *sta32x = codec->control_data;
-+	struct sta32x_priv *sta32x = snd_soc_codec_get_drvdata(codec);
- 	unsigned int mute;
- 	int rc;
- 
-
+>
+> David
+>
+>> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+>> ---
+>>   arch/x86/include/asm/apic.h |    2 ++
+>>   arch/x86/kernel/apic/apic.c |    6 ++++++
+>>   arch/x86/xen/smp.c          |    4 ++++
+>>   3 files changed, 12 insertions(+)
+>>
+>>
+>> An alternative could be to add another op to stuct apic. The advantage would be
+>> the fact that we never have a window of time when APIC PM is enabled. The downside
+>> is having yet another op (of which there are already plenty).
+>>
+>> We could also avoid loading lapic_syscore_ops but I couldn't think of a good way
+>> to figure out when not to do it.
+>>
+>>
+>>
+>> diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
+>> index 1d2091a..1f100f2 100644
+>> --- a/arch/x86/include/asm/apic.h
+>> +++ b/arch/x86/include/asm/apic.h
+>> @@ -687,6 +687,8 @@ extern int default_cpu_present_to_apicid(int mps_cpu);
+>>   extern int default_check_phys_apicid_present(int phys_apicid);
+>>   #endif
+>>   
+>> +extern void apic_pm_deactivate(void);
+>> +
+>>   #endif /* CONFIG_X86_LOCAL_APIC */
+>>   extern void irq_enter(void);
+>>   extern void irq_exit(void);
+>> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+>> index 7f26c9a..60607b3 100644
+>> --- a/arch/x86/kernel/apic/apic.c
+>> +++ b/arch/x86/kernel/apic/apic.c
+>> @@ -2424,6 +2424,11 @@ static void apic_pm_activate(void)
+>>   	apic_pm_state.active = 1;
+>>   }
+>>   
+>> +void apic_pm_deactivate(void)
+>> +{
+>> +	apic_pm_state.active = 0;
+>> +}
+>> +
+>>   static int __init init_lapic_sysfs(void)
+>>   {
+>>   	/* XXX: remove suspend/resume procs if !apic_pm_state.active? */
+>> @@ -2439,6 +2444,7 @@ core_initcall(init_lapic_sysfs);
+>>   #else	/* CONFIG_PM */
+>>   
+>>   static void apic_pm_activate(void) { }
+>> +void apic_pm_deactivate(void) { }
+>>   
+>>   #endif	/* CONFIG_PM */
+>>   
+>> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+>> index a18eadd..33115d8 100644
+>> --- a/arch/x86/xen/smp.c
+>> +++ b/arch/x86/xen/smp.c
+>> @@ -298,6 +298,10 @@ static void __init xen_smp_prepare_boot_cpu(void)
+>>   
+>>   		xen_filter_cpu_maps();
+>>   		xen_setup_vcpu_info_placement();
+>> +
+>> +#ifdef CONFIG_X86_LOCAL_APIC
+>> +		apic_pm_deactivate();
+>> +#endif
+>>   	}
+>>   	/*
+>>   	 * The alternative logic (which patches the unlock/lock) runs before
 
