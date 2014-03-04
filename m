@@ -1,176 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816AbaCDTyH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 14:54:07 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:60270 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754228AbaCDTyE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 14:54:04 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18hToW7Rxd02/3hRrDwm3zsgdS7nrKqG9s=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 36A4D539E74
-Date: Tue, 4 Mar 2014 14:53:56 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Kees Cook <keescook@chromium.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
-        linux-crypto <linux-crypto@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH][RESEND 3] hwrng: add randomness to system from rng
- sources
-Message-ID: <20140304195356.GS1872@titan.lakedaemon.net>
-References: <20140303235148.GA7601@www.outflux.net>
- <20140304153841.GN1872@titan.lakedaemon.net>
- <CAGXu5jKqB62ZaD0HEG=vJoROOqvdSYeHYB2h61Kw1-ov5phFww@mail.gmail.com>
+	id S1754712AbaCDT5Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 14:57:25 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:46966 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751780AbaCDT5Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 14:57:24 -0500
+Date: Tue, 4 Mar 2014 13:55:41 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Michal Nazarewicz <mina86@mina86.com>
+CC: Robert Baldyga <r.baldyga@samsung.com>, Felipe Balbi <balbi@ti.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Chuansheng Liu <chuansheng.liu@intel.com>,
+        <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <david.a.cohen@linux.intel.com>
+Subject: Re: [PATCH v2] usb: gadget: return the right length in
+ ffs_epfile_io()
+Message-ID: <20140304195541.GB24463@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1393918497-30916-1-git-send-email-chuansheng.liu@intel.com>
+ <531606DB.4010601@cogentembedded.com>
+ <20140304160620.GH15233@saruman.home>
+ <xa1td2i14u63.fsf@mina86.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bAmEntskrkuBymla"
 Content-Disposition: inline
-In-Reply-To: <CAGXu5jKqB62ZaD0HEG=vJoROOqvdSYeHYB2h61Kw1-ov5phFww@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <xa1td2i14u63.fsf@mina86.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 04, 2014 at 11:01:49AM -0800, Kees Cook wrote:
-> On Tue, Mar 4, 2014 at 7:38 AM, Jason Cooper <jason@lakedaemon.net> wrote:
-> > Kees, Ted,
-> >
-> > On Mon, Mar 03, 2014 at 03:51:48PM -0800, Kees Cook wrote:
-> >> When bringing a new RNG source online, it seems like it would make sense
-> >> to use some of its bytes to make the system entropy pool more random,
-> >> as done with all sorts of other devices that contain per-device or
-> >> per-boot differences.
-> >
-> > Why is this necessary?  init_std_data() already calls
-> > arch_get_random_long() while stirring each of the pools.
-> 
-> I may be misunderstanding something here, but hwrng isn't going to get
-> hit by a arch_get_random_long(). 
+--bAmEntskrkuBymla
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-ahh, you are correct.  It appears it's only used on x86 and powerpc.
-Bad assumption on my part.
+On Tue, Mar 04, 2014 at 08:53:40PM +0100, Michal Nazarewicz wrote:
+> >> On 03/04/2014 10:34 AM, Chuansheng Liu wrote:
+> >> >@@ -845,12 +845,14 @@ static ssize_t ffs_epfile_io(struct file *file,=
+ struct ffs_io_data *io_data)
+> >> >  			 * we may end up with more data then user space has
+> >> >  			 * space for.
+> >> >  			 */
+> >> >-			ret =3D ep->status;
+> >> >-			if (io_data->read && ret > 0 &&
+> >> >-			    unlikely(copy_to_user(io_data->buf, data,
+> >> >-						  min_t(size_t, ret,
+> >> >-						  io_data->len))))
+> >> >-				ret =3D -EFAULT;
+> >> >+				ret =3D ep->status;
+>=20
+> On Tue, Mar 04 2014, Felipe Balbi wrote:
+> >>    Why the indentation jumped suddenly to the right?
+>=20
+> > On Tue, Mar 04, 2014 at 08:01:15PM +0300, Sergei Shtylyov wrote:
+> > because it was wrong before ;-)
+>=20
+> Yep.  It looks like Robert's [2e4c7553: add aio support] introduced an
+> if-else-if-else flow but did not indent the code and I didn't caught it
+> when reviewing that patch.
 
-> That's just for arch-specific RNGs (e.g. RDRAND), where as hwrng is
-> for, effectively, add-on devices (e.g. TPMs).
-> 
-> > I'm a little concerned here because this gives potentially untrusted
-> > hwrngs more influence over the entropy pools initial state than most
-> > users of random.c expect.  Many of the drivers in hw_random/ are
-> > platform drivers and are initialized before random.c.
-> >
-> > I'm comfortable with the design decisions Ted has made wrt random.c and
-> > hwrngs.  However, I think that this changes that trust relationship in a
-> > fundamental way.  I'm ok with building support into my kernels for
-> > hwrngs as long as random.c's internal use of them is limited to the
-> > mixing in extract_buf() and init_std_data().
-> >
-> > By adding this patch, even without crediting entropy to the pool, a
-> > rogue hwrng now has significantly more influence over the initial state
-> > of the entropy pools.  Or, am I missing something?
-> 
-> I wasn't viewing this as dealing with rouge hwrngs (though shouldn't
-> that state still be covered due to the existing mixing), but more as a
-> "hey this thing has some randomness associated with it", similar to
-> the mixing done for things like NIC MAC, etc. (Better, actually, since
-> NIC MAC is going to be the same every boot.) It seemed silly to ignore
-> an actual entropy source when seeding.
+it's in my testing/next now, I also fixed the comment indentation which
+was also wrong.
 
-Agreed, but I think we need to be careful about how random.c interacts
-with any hwrng.  Ideally, the drivers in hw_random/ could provide
-arch_get_random_long().  This way, random.c still determines when and
-how to use the hwrng.
+--=20
+balbi
 
-Ultimately, the user (person compiling the kernel) will decide to trust
-or not trust the hwrng by enabling support for it or not.  My concern
-with this patch is that it changes the magnitude of that trust decision.
-And only the most diligent user would discover the change.
+--bAmEntskrkuBymla
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-To date, all discussion wrt random.c and hwrngs are that the output of
-the hwrng (in particular, RDRAND) is XORd with the output of the mixer.
-Now, we're saying it can provide input as well.  
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-Please understand, my point-of-view is as someone who installs Linux on
-equipment *after* purchase (hobbyist, tinkers).  If I control the part
-selection and sourcing of the board components, of course I have more
-trust in the hwrng.
+iQIcBAEBAgAGBQJTFi+9AAoJEIaOsuA1yqREOMwP/0YkXH6+LdVwHU3LnAwCtG8U
+vAXVdqWGioJ1EEUAXgiSTeMLJ/67RF2Lr8AQQpFqvB+ePR5YgYYWaGDUoE9zFe1K
+TKAD8Xf9ziH48O3xIi0Ip3pHWl6DIJ4DmAPc+YHVi9nWUxyAZUNOsEXIp6xAOgN3
+8sENnXjJiGEhq/Jg8y80EYffk99J84FsCJ3hqmdoFgS5gTaiW2jprJnX7ufFez+U
+qKPG97DkSUgdmjKqT28Y0GpoTpf2PvOUtdH2abB7zeMoPPyZekmy0JMDFbTeSMWF
+Z42FPPN9hyXXbmsYcYxDX5KOs2SrNX4zvISDEdcbcCvxng64RcDBEJ/XmPxC4/Lc
+ox9FAj8unDrBDBvVtfgr/TXR4tQ8OMGC84UcH63imgcfmJNJdTi5I9viZ0hIVzeO
+Np8wVvQ8bbyjWap++8XwyKj0DF1xts00KNPN9CnCUjWznBTu3Hilr5LYbwamQG0C
+oBWFzybVq5ApONnh+mgHj3vYBpXIyWOZnXjNrHwKE3hopO2A6vyFGxJf56GpJC+Z
+SW922JBw/BecsXu8IKHYLZt5faxOZckdfpF4YBYsKU1l+UcSmCt1sMwLea5J60IH
+hxWhbRkUDJzB4NiycPsisbvk4+1G9hA+YuO7YjXWox/+9RUrg9FdfsBxOd94uiUW
+l6awklRPBu+gXpgnDuLA
+=K3Sx
+-----END PGP SIGNATURE-----
 
-So my situation is similar to buying an Intel based laptop.  I can't do
-a special order at Bestbuy and ask for a system without the RDRAND
-instruction.  Same with the hobbyist market.  We buy the gear, but we
-have no control over what's inside it.
-
-In that situation, without this patch, I would enable the hwrng for the
-board.  With the patch in it's current form, I would start looking for
-research papers and discussions regarding using the hwrng for input.  If
-the patch provided arch_get_random_long(), I would feel comfortable
-enabling the hwrng.
-
-Perhaps I'm being too conservative, but I'd rather have the discussion
-now and have concerns proven unfounded than have someone say "How the
-hell did this happen?" three releases down the road.
-
-thx,
-
-Jason.
-
-
-> >> Signed-off-by: Kees Cook <keescook@chromium.org>
-> >> ---
-> >>  drivers/char/hw_random/core.c |    7 +++++++
-> >>  1 file changed, 7 insertions(+)
-> >>
-> >> diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
-> >> index a0f7724852eb..6e5bb68a708c 100644
-> >> --- a/drivers/char/hw_random/core.c
-> >> +++ b/drivers/char/hw_random/core.c
-> >> @@ -41,6 +41,7 @@
-> >>  #include <linux/miscdevice.h>
-> >>  #include <linux/delay.h>
-> >>  #include <linux/slab.h>
-> >> +#include <linux/random.h>
-> >>  #include <asm/uaccess.h>
-> >>
-> >>
-> >> @@ -305,6 +306,8 @@ int hwrng_register(struct hwrng *rng)
-> >>       int must_register_misc;
-> >>       int err = -EINVAL;
-> >>       struct hwrng *old_rng, *tmp;
-> >> +     unsigned char bytes[16];
-> >> +     int bytes_read;
-> >>
-> >>       if (rng->name == NULL ||
-> >>           (rng->data_read == NULL && rng->read == NULL))
-> >> @@ -348,6 +351,10 @@ int hwrng_register(struct hwrng *rng)
-> >>       }
-> >>       INIT_LIST_HEAD(&rng->list);
-> >>       list_add_tail(&rng->list, &rng_list);
-> >> +
-> >> +     bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
-> >> +     if (bytes_read > 0)
-> >> +             add_device_randomness(bytes, bytes_read);
-> >>  out_unlock:
-> >>       mutex_unlock(&rng_mutex);
-> >>  out:
-> >> --
-> >> 1.7.9.5
-> >>
-> >>
-> >> --
-> >> Kees Cook
-> >> Chrome OS Security
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe linux-crypto" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
-> 
-> -- 
-> Kees Cook
-> Chrome OS Security
+--bAmEntskrkuBymla--
