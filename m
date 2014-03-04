@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757994AbaCDUY5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:24:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41645 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757138AbaCDUFQ (ORCPT
+	id S1758002AbaCDUZa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:25:30 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:38291 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757411AbaCDUZ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:05:16 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrew Honig <ahonig@google.com>, Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.10 44/97] kvm: x86: fix emulator buffer overflow (CVE-2014-0049)
-Date: Tue,  4 Mar 2014 12:03:57 -0800
-Message-Id: <20140304200347.484903499@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
-References: <20140304200345.895517495@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 4 Mar 2014 15:25:26 -0500
+Message-ID: <531636B4.1060202@codeaurora.org>
+Date: Tue, 04 Mar 2014 12:25:24 -0800
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: myungjoo.ham@samsung.com
+CC: =?EUC-KR?B?udqw5rnO?= <kyungmin.park@samsung.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] PM / devfreq: Rewrite devfreq_update_status() to fix
+ multiple bugs
+References: <8984550.302431393927576253.JavaMail.weblogic@epv6ml05>
+In-Reply-To: <8984550.302431393927576253.JavaMail.weblogic@epv6ml05>
+Content-Type: text/plain; charset=EUC-KR
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On 03/04/2014 02:06 AM, MyungJoo Ham wrote:
+>> The current devfreq_update_status() has the following bugs:
+>> - If previous frequency doesn't have a valid level, it does an out of bounds
+>>    access into the trans_table and causes memory corruption.
+>> - When the new frequency doesn't have a valid level, the time spent in the
+>>    new frequency is counted towards the next valid frequency switch instead of
+>>    being ignored.
+>> - The time spent on the previous frequency is added to the new frequency's
+>>    stats instead of the previous frequency's stats.
+>>
+>> This patch fixes all of this.
+>>
+>> Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
+> 
+> Merged.
+> 
+> It appears to be Greg's LTS material as well.
+> 
 
-------------------
+Thanks!
 
-From: Andrew Honig <ahonig@google.com>
+-Saravana
 
-commit a08d3b3b99efd509133946056531cdf8f3a0c09b upstream.
-
-The problem occurs when the guest performs a pusha with the stack
-address pointing to an mmio address (or an invalid guest physical
-address) to start with, but then extending into an ordinary guest
-physical address.  When doing repeated emulated pushes
-emulator_read_write sets mmio_needed to 1 on the first one.  On a
-later push when the stack points to regular memory,
-mmio_nr_fragments is set to 0, but mmio_is_needed is not set to 0.
-
-As a result, KVM exits to userspace, and then returns to
-complete_emulated_mmio.  In complete_emulated_mmio
-vcpu->mmio_cur_fragment is incremented.  The termination condition of
-vcpu->mmio_cur_fragment == vcpu->mmio_nr_fragments is never achieved.
-The code bounces back and fourth to userspace incrementing
-mmio_cur_fragment past it's buffer.  If the guest does nothing else it
-eventually leads to a a crash on a memcpy from invalid memory address.
-
-However if a guest code can cause the vm to be destroyed in another
-vcpu with excellent timing, then kvm_clear_async_pf_completion_queue
-can be used by the guest to control the data that's pointed to by the
-call to cancel_work_item, which can be used to gain execution.
-
-Fixes: f78146b0f9230765c6315b2e14f56112513389ad
-Signed-off-by: Andrew Honig <ahonig@google.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/x86/kvm/x86.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -5982,7 +5982,7 @@ static int complete_emulated_mmio(struct
- 		frag->len -= len;
- 	}
- 
--	if (vcpu->mmio_cur_fragment == vcpu->mmio_nr_fragments) {
-+	if (vcpu->mmio_cur_fragment >= vcpu->mmio_nr_fragments) {
- 		vcpu->mmio_needed = 0;
- 		if (vcpu->mmio_is_write)
- 			return 1;
-
-
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
