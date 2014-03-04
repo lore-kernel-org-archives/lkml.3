@@ -1,151 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932757AbaCDVfO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:35:14 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:39486 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754973AbaCDVfJ (ORCPT
+	id S932824AbaCDVfk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:35:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40821 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755715AbaCDUC4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 16:35:09 -0500
-Date: Tue, 4 Mar 2014 13:35:04 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Torvald Riegel <triegel@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-Message-ID: <20140304213504.GA9809@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1393515453.28840.9961.camel@triegel.csb>
- <CA+55aFyE58NokYdoU+-feHTXv+5snByu+vCyMtg2fNc7npMbDg@mail.gmail.com>
- <20140227190611.GU8264@linux.vnet.ibm.com>
- <CA+55aFzav_2ayvEgbgeAzQohJ7EQH0tgUU0WcSyvUA6hgOo_Ow@mail.gmail.com>
- <20140227205312.GX8264@linux.vnet.ibm.com>
- <20140301005047.GA14777@linux.vnet.ibm.com>
- <1393872908.28840.11660.camel@triegel.csb>
- <20140303192026.GO11910@linux.vnet.ibm.com>
- <1393879579.28840.11949.camel@triegel.csb>
- <20140304190032.GY11910@linux.vnet.ibm.com>
+	Tue, 4 Mar 2014 15:02:56 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.13 025/172] powerpc/powernv: Rework EEH reset
+Date: Tue,  4 Mar 2014 12:01:49 -0800
+Message-Id: <20140304200300.533147254@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
+References: <20140304200259.626667112@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140304190032.GY11910@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14030421-7164-0000-0000-00000007EDE3
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 04, 2014 at 11:00:32AM -0800, Paul E. McKenney wrote:
-> On Mon, Mar 03, 2014 at 09:46:19PM +0100, Torvald Riegel wrote:
-> > xagsmtp2.20140303204700.3556@vmsdvma.vnet.ibm.com
-> > X-Xagent-Gateway: vmsdvma.vnet.ibm.com (XAGSMTP2 at VMSDVMA)
-> > 
-> > On Mon, 2014-03-03 at 11:20 -0800, Paul E. McKenney wrote:
-> > > On Mon, Mar 03, 2014 at 07:55:08PM +0100, Torvald Riegel wrote:
-> > > > xagsmtp2.20140303190831.9500@uk1vsc.vnet.ibm.com
-> > > > X-Xagent-Gateway: uk1vsc.vnet.ibm.com (XAGSMTP2 at UK1VSC)
-> > > > 
-> > > > On Fri, 2014-02-28 at 16:50 -0800, Paul E. McKenney wrote:
-> > > > > +o	Do not use the results from the boolean "&&" and "||" when
-> > > > > +	dereferencing.	For example, the following (rather improbable)
-> > > > > +	code is buggy:
-> > > > > +
-> > > > > +		int a[2];
-> > > > > +		int index;
-> > > > > +		int force_zero_index = 1;
-> > > > > +
-> > > > > +		...
-> > > > > +
-> > > > > +		r1 = rcu_dereference(i1)
-> > > > > +		r2 = a[r1 && force_zero_index];  /* BUGGY!!! */
-> > > > > +
-> > > > > +	The reason this is buggy is that "&&" and "||" are often compiled
-> > > > > +	using branches.  While weak-memory machines such as ARM or PowerPC
-> > > > > +	do order stores after such branches, they can speculate loads,
-> > > > > +	which can result in misordering bugs.
-> > > > > +
-> > > > > +o	Do not use the results from relational operators ("==", "!=",
-> > > > > +	">", ">=", "<", or "<=") when dereferencing.  For example,
-> > > > > +	the following (quite strange) code is buggy:
-> > > > > +
-> > > > > +		int a[2];
-> > > > > +		int index;
-> > > > > +		int flip_index = 0;
-> > > > > +
-> > > > > +		...
-> > > > > +
-> > > > > +		r1 = rcu_dereference(i1)
-> > > > > +		r2 = a[r1 != flip_index];  /* BUGGY!!! */
-> > > > > +
-> > > > > +	As before, the reason this is buggy is that relational operators
-> > > > > +	are often compiled using branches.  And as before, although
-> > > > > +	weak-memory machines such as ARM or PowerPC do order stores
-> > > > > +	after such branches, but can speculate loads, which can again
-> > > > > +	result in misordering bugs.
-> > > > 
-> > > > Those two would be allowed by the wording I have recently proposed,
-> > > > AFAICS.  r1 != flip_index would result in two possible values (unless
-> > > > there are further constraints due to the type of r1 and the values that
-> > > > flip_index can have).
-> > > 
-> > > And I am OK with the value_dep_preserving type providing more/better
-> > > guarantees than we get by default from current compilers.
-> > > 
-> > > One question, though.  Suppose that the code did not want a value
-> > > dependency to be tracked through a comparison operator.  What does
-> > > the developer do in that case?  (The reason I ask is that I have
-> > > not yet found a use case in the Linux kernel that expects a value
-> > > dependency to be tracked through a comparison.)
-> > 
-> > Hmm.  I suppose use an explicit cast to non-vdp before or after the
-> > comparison?
-> 
-> That should work well assuming that things like "if", "while", and "?:"
-> conditions are happy to take a vdp.  This assumes that p->a only returns
-> vdp if field "a" is declared vdp, otherwise we have vdps running wild
-> through the program.  ;-)
-> 
-> The other thing that can happen is that a vdp can get handed off to
-> another synchronization mechanism, for example, to reference counting:
-> 
-> 	p = atomic_load_explicit(&gp, memory_order_consume);
-> 	if (do_something_with(p->a)) {
-> 		/* fast path protected by RCU. */
-> 		return 0;
-> 	}
-> 	if (atomic_inc_not_zero(&p->refcnt) {
-> 		/* slow path protected by reference counting. */
-> 		return do_something_else_with((struct foo *)p);  /* CHANGE */
-> 	}
-> 	/* Needed slow path, but raced with deletion. */
-> 	return -EAGAIN;
-> 
-> I am guessing that the cast ends the vdp.  Is that the case?
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-And here is a more elaborate example from the Linux kernel:
+------------------
 
-	struct md_rdev value_dep_preserving *rdev;  /* CHANGE */
+From: Gavin Shan <shangw@linux.vnet.ibm.com>
 
-	rdev = rcu_dereference(conf->mirrors[disk].rdev);
-	if (r1_bio->bios[disk] == IO_BLOCKED
-	    || rdev == NULL
-	    || test_bit(Unmerged, &rdev->flags)
-	    || test_bit(Faulty, &rdev->flags))
-		continue;
+commit 5b2e198e50f6ba57081586b853163ea1bb95f1a8 upstream.
 
-The fact that the "rdev == NULL" returns vdp does not force the "||"
-operators to be evaluated arithmetically because the entire function
-is an "if" condition, correct?
+When doing reset in order to recover the affected PE, we issue
+hot reset on PE primary bus if it's not root bus. Otherwise, we
+issue hot or fundamental reset on root port or PHB accordingly.
+For the later case, we didn't cover the situation where PE only
+includes root port and it potentially causes kernel crash upon
+EEH error to the PE.
 
-							Thanx, Paul
+The patch reworks the logic of EEH reset to improve the code
+readability and also avoid the kernel crash.
+
+Reported-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/powerpc/platforms/powernv/eeh-ioda.c |   29 ++++-------------------------
+ 1 file changed, 4 insertions(+), 25 deletions(-)
+
+--- a/arch/powerpc/platforms/powernv/eeh-ioda.c
++++ b/arch/powerpc/platforms/powernv/eeh-ioda.c
+@@ -490,8 +490,7 @@ static int ioda_eeh_bridge_reset(struct
+ static int ioda_eeh_reset(struct eeh_pe *pe, int option)
+ {
+ 	struct pci_controller *hose = pe->phb;
+-	struct eeh_dev *edev;
+-	struct pci_dev *dev;
++	struct pci_bus *bus;
+ 	int ret;
+ 
+ 	/*
+@@ -520,31 +519,11 @@ static int ioda_eeh_reset(struct eeh_pe
+ 	if (pe->type & EEH_PE_PHB) {
+ 		ret = ioda_eeh_phb_reset(hose, option);
+ 	} else {
+-		if (pe->type & EEH_PE_DEVICE) {
+-			/*
+-			 * If it's device PE, we didn't refer to the parent
+-			 * PCI bus yet. So we have to figure it out indirectly.
+-			 */
+-			edev = list_first_entry(&pe->edevs,
+-					struct eeh_dev, list);
+-			dev = eeh_dev_to_pci_dev(edev);
+-			dev = dev->bus->self;
+-		} else {
+-			/*
+-			 * If it's bus PE, the parent PCI bus is already there
+-			 * and just pick it up.
+-			 */
+-			dev = pe->bus->self;
+-		}
+-
+-		/*
+-		 * Do reset based on the fact that the direct upstream bridge
+-		 * is root bridge (port) or not.
+-		 */
+-		if (dev->bus->number == 0)
++		bus = eeh_pe_bus_get(pe);
++		if (pci_is_root_bus(bus))
+ 			ret = ioda_eeh_root_reset(hose, option);
+ 		else
+-			ret = ioda_eeh_bridge_reset(hose, dev, option);
++			ret = ioda_eeh_bridge_reset(hose, bus->self, option);
+ 	}
+ 
+ 	return ret;
+
 
