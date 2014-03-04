@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754682AbaCDQci (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 11:32:38 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:42135 "EHLO
+	id S1754875AbaCDQcr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 11:32:47 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:42148 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751630AbaCDQch (ORCPT
+	with ESMTP id S1751676AbaCDQco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 11:32:37 -0500
+	Tue, 4 Mar 2014 11:32:44 -0500
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Wolfram Sang <wsa@the-dreams.de>
 Cc: linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -14,9 +14,9 @@ Cc: linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
         shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v3 1/5] i2c: mv64xxx: Add reset deassert call
-Date: Tue,  4 Mar 2014 17:28:37 +0100
-Message-Id: <1393950521-4173-2-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v3 3/5] ARM: sun6i: Enable the I2C controllers
+Date: Tue,  4 Mar 2014 17:28:39 +0100
+Message-Id: <1393950521-4173-4-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1393950521-4173-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1393950521-4173-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,118 +24,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Allwinner A31 SoC using that IP has a reset controller maintaining
-it reset unless told otherwise.
+The A31 has 4 I2C controllers that are the same than the one in the
+other Allwinner SoCs, except for the fact that they are asserted in
+reset by the reset unit.
 
-Add some optional reset support to the driver.
+Add these i2c controllers to the DTSI.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Reviewed-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Tested-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 ---
- .../devicetree/bindings/i2c/i2c-mv64xxx.txt         |  1 +
- drivers/i2c/busses/Kconfig                          |  1 +
- drivers/i2c/busses/i2c-mv64xxx.c                    | 21 +++++++++++++++++++--
- 3 files changed, 21 insertions(+), 2 deletions(-)
+ arch/arm/boot/dts/sun6i-a31.dtsi | 40 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 40 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/i2c/i2c-mv64xxx.txt b/Documentation/devicetree/bindings/i2c/i2c-mv64xxx.txt
-index 582b465..21062bc 100644
---- a/Documentation/devicetree/bindings/i2c/i2c-mv64xxx.txt
-+++ b/Documentation/devicetree/bindings/i2c/i2c-mv64xxx.txt
-@@ -16,6 +16,7 @@ Optional properties :
+diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i-a31.dtsi
+index af6f87c..22d3eae 100644
+--- a/arch/arm/boot/dts/sun6i-a31.dtsi
++++ b/arch/arm/boot/dts/sun6i-a31.dtsi
+@@ -359,6 +359,46 @@
+ 			status = "disabled";
+ 		};
  
-  - clock-frequency : Desired I2C bus clock frequency in Hz. If not set the
- default frequency is 100kHz
-+ - resets          : phandle to the parent reset controller
- 
- Examples:
- 
-diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-index f5ed031..70bcad9 100644
---- a/drivers/i2c/busses/Kconfig
-+++ b/drivers/i2c/busses/Kconfig
-@@ -528,6 +528,7 @@ config I2C_MPC
- config I2C_MV64XXX
- 	tristate "Marvell mv64xxx I2C Controller"
- 	depends on (MV64X60 || PLAT_ORION || ARCH_SUNXI)
-+	select RESET_CONTROLLER
- 	help
- 	  If you say yes to this option, support will be included for the
- 	  built-in I2C interface on the Marvell 64xxx line of host bridges.
-diff --git a/drivers/i2c/busses/i2c-mv64xxx.c b/drivers/i2c/busses/i2c-mv64xxx.c
-index d52d849..1bb69b6 100644
---- a/drivers/i2c/busses/i2c-mv64xxx.c
-+++ b/drivers/i2c/busses/i2c-mv64xxx.c
-@@ -17,6 +17,7 @@
- #include <linux/interrupt.h>
- #include <linux/mv643xx_i2c.h>
- #include <linux/platform_device.h>
-+#include <linux/reset.h>
- #include <linux/io.h>
- #include <linux/of.h>
- #include <linux/of_device.h>
-@@ -148,6 +149,7 @@ struct mv64xxx_i2c_data {
- 	bool			offload_enabled;
- /* 5us delay in order to avoid repeated start timing violation */
- 	bool			errata_delay;
-+	struct reset_control	*rstc;
- };
- 
- static struct mv64xxx_i2c_regs mv64xxx_i2c_regs_mv64xxx = {
-@@ -759,6 +761,16 @@ mv64xxx_of_config(struct mv64xxx_i2c_data *drv_data,
- 	}
- 	drv_data->irq = irq_of_parse_and_map(np, 0);
- 
-+	drv_data->rstc = devm_reset_control_get(dev, NULL);
-+	if (IS_ERR(drv_data->rstc)) {
-+		if (PTR_ERR(drv_data->rstc) == -EPROBE_DEFER) {
-+			rc = -EPROBE_DEFER;
-+			goto out;
-+		}
-+	} else {
-+		reset_control_deassert(drv_data->rstc);
-+	}
++		i2c0: i2c@01c2ac00 {
++			compatible = "allwinner,sun6i-a31-i2c";
++			reg = <0x01c2ac00 0x400>;
++			interrupts = <0 6 4>;
++			clocks = <&apb2_gates 0>;
++			clock-frequency = <100000>;
++			resets = <&apb2_rst 0>;
++			status = "disabled";
++		};
 +
- 	/* Its not yet defined how timeouts will be specified in device tree.
- 	 * So hard code the value to 1 second.
- 	 */
-@@ -845,7 +857,7 @@ mv64xxx_i2c_probe(struct platform_device *pd)
- 	}
- 	if (drv_data->irq < 0) {
- 		rc = -ENXIO;
--		goto exit_clk;
-+		goto exit_reset;
- 	}
- 
- 	drv_data->adapter.dev.parent = &pd->dev;
-@@ -865,7 +877,7 @@ mv64xxx_i2c_probe(struct platform_device *pd)
- 		dev_err(&drv_data->adapter.dev,
- 			"mv64xxx: Can't register intr handler irq%d: %d\n",
- 			drv_data->irq, rc);
--		goto exit_clk;
-+		goto exit_reset;
- 	} else if ((rc = i2c_add_numbered_adapter(&drv_data->adapter)) != 0) {
- 		dev_err(&drv_data->adapter.dev,
- 			"mv64xxx: Can't add i2c adapter, rc: %d\n", -rc);
-@@ -876,6 +888,9 @@ mv64xxx_i2c_probe(struct platform_device *pd)
- 
- exit_free_irq:
- 	free_irq(drv_data->irq, drv_data);
-+exit_reset:
-+	if (pd->dev.of_node && !IS_ERR(drv_data->rstc))
-+		reset_control_assert(drv_data->rstc);
- exit_clk:
- #if defined(CONFIG_HAVE_CLK)
- 	/* Not all platforms have a clk */
-@@ -894,6 +909,8 @@ mv64xxx_i2c_remove(struct platform_device *dev)
- 
- 	i2c_del_adapter(&drv_data->adapter);
- 	free_irq(drv_data->irq, drv_data);
-+	if (dev->dev.of_node && !IS_ERR(drv_data->rstc))
-+		reset_control_assert(drv_data->rstc);
- #if defined(CONFIG_HAVE_CLK)
- 	/* Not all platforms have a clk */
- 	if (!IS_ERR(drv_data->clk)) {
++		i2c1: i2c@01c2b000 {
++			compatible = "allwinner,sun6i-a31-i2c";
++			reg = <0x01c2b000 0x400>;
++			interrupts = <0 7 4>;
++			clocks = <&apb2_gates 1>;
++			clock-frequency = <100000>;
++			resets = <&apb2_rst 1>;
++			status = "disabled";
++		};
++
++		i2c2: i2c@01c2b400 {
++			compatible = "allwinner,sun6i-a31-i2c";
++			reg = <0x01c2b400 0x400>;
++			interrupts = <0 8 4>;
++			clocks = <&apb2_gates 2>;
++			clock-frequency = <100000>;
++			resets = <&apb2_rst 2>;
++			status = "disabled";
++		};
++
++		i2c3: i2c@01c2b800 {
++			compatible = "allwinner,sun6i-a31-i2c";
++			reg = <0x01c2b800 0x400>;
++			interrupts = <0 9 4>;
++			clocks = <&apb2_gates 3>;
++			clock-frequency = <100000>;
++			resets = <&apb2_rst 3>;
++			status = "disabled";
++		};
++
+ 		spi0: spi@01c68000 {
+ 			compatible = "allwinner,sun6i-a31-spi";
+ 			reg = <0x01c68000 0x1000>;
 -- 
 1.9.0
 
