@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754355AbaCDQlk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 11:41:40 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41525 "EHLO
+	id S1755023AbaCDQk6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 11:40:58 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41492 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282AbaCDQlh (ORCPT
+	with ESMTP id S1751582AbaCDQk5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 11:41:37 -0500
-Date: Tue, 4 Mar 2014 08:40:51 -0800
+	Tue, 4 Mar 2014 11:40:57 -0500
+Date: Tue, 4 Mar 2014 08:39:53 -0800
 From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-589d03e93f6cd595f68891e48f0804f2c8f38aae@git.kernel.org>
+Message-ID: <tip-a4e04c9f219d2c00764ffa7ba45500411815879d@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        konrad.wilk@oracle.com, peterz@infradead.org,
-        xen-devel@lists.xenproject.org, tglx@linutronix.de,
-        david.vrabel@citrix.com
+        benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
+        peterz@infradead.org, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        konrad.wilk@oracle.com, peterz@infradead.org,
-        xen-devel@lists.xenproject.org, tglx@linutronix.de,
-        david.vrabel@citrix.com
-In-Reply-To: <20140223212738.222412125@linutronix.de>
-References: <20140223212738.222412125@linutronix.de>
+        benh@kernel.crashing.org, peterz@infradead.org,
+        linuxppc-dev@lists.ozlabs.org, tglx@linutronix.de
+In-Reply-To: <20140223212736.333718121@linutronix.de>
+References: <20140223212736.333718121@linutronix.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] xen: Use the proper irq functions
-Git-Commit-ID: 589d03e93f6cd595f68891e48f0804f2c8f38aae
+Subject: [tip:irq/core] powerpc: Irq: Use generic_handle_irq
+Git-Commit-ID: a4e04c9f219d2c00764ffa7ba45500411815879d
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,118 +33,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  589d03e93f6cd595f68891e48f0804f2c8f38aae
-Gitweb:     http://git.kernel.org/tip/589d03e93f6cd595f68891e48f0804f2c8f38aae
+Commit-ID:  a4e04c9f219d2c00764ffa7ba45500411815879d
+Gitweb:     http://git.kernel.org/tip/a4e04c9f219d2c00764ffa7ba45500411815879d
 Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Sun, 23 Feb 2014 21:40:18 +0000
+AuthorDate: Sun, 23 Feb 2014 21:40:08 +0000
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Tue, 4 Mar 2014 17:37:52 +0100
 
-xen: Use the proper irq functions
+powerpc: Irq: Use generic_handle_irq
 
-generic_handler_irq() already tests for !desc so use this instead of
-generic_handle_irq_desc().
-
-Use irq_get_irq_data() instead of desc->irq_data.
+No functional change
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Xen <xen-devel@lists.xenproject.org>
-Link: http://lkml.kernel.org/r/20140223212738.222412125@linutronix.de
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: ppc <linuxppc-dev@lists.ozlabs.org>
+Link: http://lkml.kernel.org/r/20140223212736.333718121@linutronix.de
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/xen/events/events_2l.c   | 15 ++++-----------
- drivers/xen/events/events_base.c |  7 ++-----
- drivers/xen/events/events_fifo.c |  8 ++------
- 3 files changed, 8 insertions(+), 22 deletions(-)
+ arch/powerpc/kernel/irq.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/xen/events/events_2l.c b/drivers/xen/events/events_2l.c
-index d7ff917..5db43fc 100644
---- a/drivers/xen/events/events_2l.c
-+++ b/drivers/xen/events/events_2l.c
-@@ -166,7 +166,6 @@ static void evtchn_2l_handle_events(unsigned cpu)
- 	int start_word_idx, start_bit_idx;
- 	int word_idx, bit_idx;
- 	int i;
--	struct irq_desc *desc;
- 	struct shared_info *s = HYPERVISOR_shared_info;
- 	struct vcpu_info *vcpu_info = __this_cpu_read(xen_vcpu);
+diff --git a/arch/powerpc/kernel/irq.c b/arch/powerpc/kernel/irq.c
+index 1d0848b..ca1cd74 100644
+--- a/arch/powerpc/kernel/irq.c
++++ b/arch/powerpc/kernel/irq.c
+@@ -465,7 +465,6 @@ static inline void check_stack_overflow(void)
  
-@@ -176,11 +175,8 @@ static void evtchn_2l_handle_events(unsigned cpu)
- 		unsigned int evtchn = evtchn_from_irq(irq);
- 		word_idx = evtchn / BITS_PER_LONG;
- 		bit_idx = evtchn % BITS_PER_LONG;
--		if (active_evtchns(cpu, s, word_idx) & (1ULL << bit_idx)) {
--			desc = irq_to_desc(irq);
--			if (desc)
--				generic_handle_irq_desc(irq, desc);
--		}
-+		if (active_evtchns(cpu, s, word_idx) & (1ULL << bit_idx))
-+			generic_handle_irq(irq);
- 	}
- 
- 	/*
-@@ -245,11 +241,8 @@ static void evtchn_2l_handle_events(unsigned cpu)
- 			port = (word_idx * BITS_PER_EVTCHN_WORD) + bit_idx;
- 			irq = get_evtchn_to_irq(port);
- 
--			if (irq != -1) {
--				desc = irq_to_desc(irq);
--				if (desc)
--					generic_handle_irq_desc(irq, desc);
--			}
-+			if (irq != -1)
-+				generic_handle_irq(irq);
- 
- 			bit_idx = (bit_idx + 1) % BITS_PER_EVTCHN_WORD;
- 
-diff --git a/drivers/xen/events/events_base.c b/drivers/xen/events/events_base.c
-index f4a9e33..7fea02c 100644
---- a/drivers/xen/events/events_base.c
-+++ b/drivers/xen/events/events_base.c
-@@ -336,9 +336,8 @@ static void bind_evtchn_to_cpu(unsigned int chn, unsigned int cpu)
- 
- 	BUG_ON(irq == -1);
- #ifdef CONFIG_SMP
--	cpumask_copy(irq_to_desc(irq)->irq_data.affinity, cpumask_of(cpu));
-+	cpumask_copy(irq_get_irq_data(irq)->affinity, cpumask_of(cpu));
- #endif
--
- 	xen_evtchn_port_bind_to_cpu(info, cpu);
- 
- 	info->cpu = cpu;
-@@ -373,10 +372,8 @@ static void xen_irq_init(unsigned irq)
+ void __do_irq(struct pt_regs *regs)
  {
- 	struct irq_info *info;
- #ifdef CONFIG_SMP
--	struct irq_desc *desc = irq_to_desc(irq);
--
- 	/* By default all event channels notify CPU#0. */
--	cpumask_copy(desc->irq_data.affinity, cpumask_of(0));
-+	cpumask_copy(irq_get_irq_data(irq)->affinity, cpumask_of(0));
- #endif
- 
- 	info = kzalloc(sizeof(*info), GFP_KERNEL);
-diff --git a/drivers/xen/events/events_fifo.c b/drivers/xen/events/events_fifo.c
-index 1de2a19..96109a9 100644
---- a/drivers/xen/events/events_fifo.c
-+++ b/drivers/xen/events/events_fifo.c
-@@ -235,14 +235,10 @@ static uint32_t clear_linked(volatile event_word_t *word)
- static void handle_irq_for_port(unsigned port)
- {
- 	int irq;
 -	struct irq_desc *desc;
+ 	unsigned int irq;
  
- 	irq = get_evtchn_to_irq(port);
--	if (irq != -1) {
+ 	irq_enter();
+@@ -487,11 +486,8 @@ void __do_irq(struct pt_regs *regs)
+ 	/* And finally process it */
+ 	if (unlikely(irq == NO_IRQ))
+ 		__get_cpu_var(irq_stat).spurious_irqs++;
+-	else {
 -		desc = irq_to_desc(irq);
--		if (desc)
--			generic_handle_irq_desc(irq, desc);
+-		if (likely(desc))
+-			desc->handle_irq(irq, desc);
 -	}
-+	if (irq != -1)
++	else
 +		generic_handle_irq(irq);
- }
  
- static void consume_one_event(unsigned cpu,
+ 	trace_irq_exit(regs);
+ 
