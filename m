@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756511AbaCDUDs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:03:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41008 "EHLO
+	id S933069AbaCDVJi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:09:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41123 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756132AbaCDUD2 (ORCPT
+	with ESMTP id S1756504AbaCDUDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:03:28 -0500
+	Tue, 4 Mar 2014 15:03:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>
-Subject: [PATCH 3.13 081/172] cgroup: update cgroup_enable_task_cg_lists() to grab siglock
-Date: Tue,  4 Mar 2014 12:02:45 -0800
-Message-Id: <20140304200302.327641428@linuxfoundation.org>
+        Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.13 099/172] powerpc: Increase stack redzone for 64-bit userspace to 512 bytes
+Date: Tue,  4 Mar 2014 12:03:03 -0800
+Message-Id: <20140304200302.874636448@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -28,48 +29,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Paul Mackerras <paulus@samba.org>
 
-commit 532de3fc72adc2a6525c4d53c07bf81e1732083d upstream.
+commit 573ebfa6601fa58b439e7f15828762839ccd306a upstream.
 
-Currently, there's nothing preventing cgroup_enable_task_cg_lists()
-from missing set PF_EXITING and race against cgroup_exit().  Depending
-on the timing, cgroup_exit() may finish with the task still linked on
-css_set leading to list corruption.  Fix it by grabbing siglock in
-cgroup_enable_task_cg_lists() so that PF_EXITING is guaranteed to be
-visible.
+The new ELFv2 little-endian ABI increases the stack redzone -- the
+area below the stack pointer that can be used for storing data --
+from 288 bytes to 512 bytes.  This means that we need to allow more
+space on the user stack when delivering a signal to a 64-bit process.
 
-This whole on-demand cg_list optimization is extremely fragile and has
-ample possibility to lead to bugs which can cause things like
-once-a-year oops during boot.  I'm wondering whether the better
-approach would be just adding "cgroup_disable=all" handling which
-disables the whole cgroup rather than tempting fate with this
-on-demand craziness.
+To make the code a bit clearer, we define new USER_REDZONE_SIZE and
+KERNEL_REDZONE_SIZE symbols in ptrace.h.  For now, we leave the
+kernel redzone size at 288 bytes, since increasing it to 512 bytes
+would increase the size of interrupt stack frames correspondingly.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Li Zefan <lizefan@huawei.com>
+Gcc currently only makes use of 288 bytes of redzone even when
+compiling for the new little-endian ABI, and the kernel cannot
+currently be compiled with the new ABI anyway.
+
+In the future, hopefully gcc will provide an option to control the
+amount of redzone used, and then we could reduce it even more.
+
+This also changes the code in arch_compat_alloc_user_space() to
+preserve the expanded redzone.  It is not clear why this function would
+ever be used on a 64-bit process, though.
+
+Signed-off-by: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/cgroup.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ arch/powerpc/include/asm/compat.h |    5 +++--
+ arch/powerpc/include/asm/ptrace.h |   16 +++++++++++++++-
+ arch/powerpc/kernel/signal_64.c   |    4 ++--
+ 3 files changed, 20 insertions(+), 5 deletions(-)
 
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -2985,9 +2985,14 @@ static void cgroup_enable_task_cg_lists(
- 		 * We should check if the process is exiting, otherwise
- 		 * it will race with cgroup_exit() in that the list
- 		 * entry won't be deleted though the process has exited.
-+		 * Do it while holding siglock so that we don't end up
-+		 * racing against cgroup_exit().
- 		 */
-+		spin_lock_irq(&p->sighand->siglock);
- 		if (!(p->flags & PF_EXITING) && list_empty(&p->cg_list))
- 			list_add(&p->cg_list, &task_css_set(p)->tasks);
-+		spin_unlock_irq(&p->sighand->siglock);
+--- a/arch/powerpc/include/asm/compat.h
++++ b/arch/powerpc/include/asm/compat.h
+@@ -200,10 +200,11 @@ static inline void __user *arch_compat_a
+ 
+ 	/*
+ 	 * We can't access below the stack pointer in the 32bit ABI and
+-	 * can access 288 bytes in the 64bit ABI
++	 * can access 288 bytes in the 64bit big-endian ABI,
++	 * or 512 bytes with the new ELFv2 little-endian ABI.
+ 	 */
+ 	if (!is_32bit_task())
+-		usp -= 288;
++		usp -= USER_REDZONE_SIZE;
+ 
+ 	return (void __user *) (usp - len);
+ }
+--- a/arch/powerpc/include/asm/ptrace.h
++++ b/arch/powerpc/include/asm/ptrace.h
+@@ -28,11 +28,23 @@
+ 
+ #ifdef __powerpc64__
+ 
++/*
++ * Size of redzone that userspace is allowed to use below the stack
++ * pointer.  This is 288 in the 64-bit big-endian ELF ABI, and 512 in
++ * the new ELFv2 little-endian ABI, so we allow the larger amount.
++ *
++ * For kernel code we allow a 288-byte redzone, in order to conserve
++ * kernel stack space; gcc currently only uses 288 bytes, and will
++ * hopefully allow explicit control of the redzone size in future.
++ */
++#define USER_REDZONE_SIZE	512
++#define KERNEL_REDZONE_SIZE	288
 +
- 		task_unlock(p);
- 	} while_each_thread(g, p);
- 	read_unlock(&tasklist_lock);
+ #define STACK_FRAME_OVERHEAD	112	/* size of minimum stack frame */
+ #define STACK_FRAME_LR_SAVE	2	/* Location of LR in stack frame */
+ #define STACK_FRAME_REGS_MARKER	ASM_CONST(0x7265677368657265)
+ #define STACK_INT_FRAME_SIZE	(sizeof(struct pt_regs) + \
+-					STACK_FRAME_OVERHEAD + 288)
++				 STACK_FRAME_OVERHEAD + KERNEL_REDZONE_SIZE)
+ #define STACK_FRAME_MARKER	12
+ 
+ /* Size of dummy stack frame allocated when calling signal handler. */
+@@ -41,6 +53,8 @@
+ 
+ #else /* __powerpc64__ */
+ 
++#define USER_REDZONE_SIZE	0
++#define KERNEL_REDZONE_SIZE	0
+ #define STACK_FRAME_OVERHEAD	16	/* size of minimum stack frame */
+ #define STACK_FRAME_LR_SAVE	1	/* Location of LR in stack frame */
+ #define STACK_FRAME_REGS_MARKER	ASM_CONST(0x72656773)
+--- a/arch/powerpc/kernel/signal_64.c
++++ b/arch/powerpc/kernel/signal_64.c
+@@ -65,8 +65,8 @@ struct rt_sigframe {
+ 	struct siginfo __user *pinfo;
+ 	void __user *puc;
+ 	struct siginfo info;
+-	/* 64 bit ABI allows for 288 bytes below sp before decrementing it. */
+-	char abigap[288];
++	/* New 64 bit little-endian ABI allows redzone of 512 bytes below sp */
++	char abigap[USER_REDZONE_SIZE];
+ } __attribute__ ((aligned (16)));
+ 
+ static const char fmt32[] = KERN_INFO \
 
 
