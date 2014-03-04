@@ -1,291 +1,276 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756143AbaCDDAs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 22:00:48 -0500
-Received: from smtp105.biz.mail.ne1.yahoo.com ([98.138.207.12]:28975 "HELO
-	smtp105.biz.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756083AbaCDDAo (ORCPT
+	id S1756118AbaCDDAn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 22:00:43 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:54834 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756083AbaCDDAl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 22:00:44 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: E.PIiNMVM1lIGd_n09_s7IdqWjOEGFTD_hrVp.s8mmpxszq
- XH0q9BYOjCZm9CGuXwu2pqiNkHmT1uhNmvC2h1B_l6JhNxuH8AIrOqjLMXNL
- f6AxozEl0oZ6AVO_yZHqFHQ3Z7dw8VPcn7dAhqkhPb54d2814t7e.mjzxOnJ
- UDTOrvYDTEMiCIGJSG6JLKfIzCinvH9OSwRVrrNHVsC6kcvzzkWhkeXmWgVt
- GNgJ1TQzliMlsbJronHJXNxoGH_8XW1q6QbciRonAxJgMDeECgouEUfqpil4
- XgdLQ6U1CKx6dadabNLLgz_iMRXkgG2kEcRqUlugsvrZfdWAUO9XVn5QeB9_
- uFcLRis9SQtG.UWVKUaq2rIe_.n2DWI0kGfQm_C3eh3qhFjuk_Qi72fgyvq3
- duVxma2kTxZxSLEetmIXnT_KgyWkQQFuG4.37misIMuRR2tMuX8oXs.uDi3i
- 33ftRBiT6r9lbmjMjuaprrM.9ZENDer4N0LZPAQYYytkT.nX3bl6JeqS.6JH
- F9O3mbhlQrfAJ58AOW9lZQjzj.DxU4CPJxs3dDNpQPKqYDteZOuABr.D2DRN
- pAY.9NVi2eRW7efmYbaNRU0j4IaDlzR3McckgXJ6goKhRx5pZQDXVongX
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-X-Rocket-Received: from [192.168.0.105] (casey@67.180.103.242 with plain [98.138.105.25])
-        by smtp105.biz.mail.ne1.yahoo.com with SMTP; 03 Mar 2014 19:00:43 -0800 PST
-Message-ID: <531541DB.7000406@schaufler-ca.com>
-Date: Mon, 03 Mar 2014 19:00:43 -0800
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>
-CC: linux-security-module@vger.kernel.org, jmorris@namei.org,
-        linux-kernel@vger.kernel.org, Casey Schaufler <casey@schaufler-ca.com>,
-        dmitry.kasatkin@gmail.com
-Subject: Re: [PATCH 8/8] evm: introduce EVM hmac xattr list
-References: <cover.1393599538.git.d.kasatkin@samsung.com>	 <20312cf18c698d0e918bde022a76edf2705f1e17.1393599538.git.d.kasatkin@samsung.com> <1393900797.10148.41.camel@dhcp-9-2-203-236.watson.ibm.com>
-In-Reply-To: <1393900797.10148.41.camel@dhcp-9-2-203-236.watson.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Mon, 3 Mar 2014 22:00:41 -0500
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@rjwysocki.net
+Cc: linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org, nm@ti.com,
+        swarren@wwwdotorg.org, kgene.kim@samsung.com, jinchoi@broadcom.com,
+        tianyu.lan@intel.com, sebastian.capella@linaro.org,
+        jhbird.choi@samsung.com, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V6 Resend 1/5] cpufreq: suspend governors on system suspend/hibernate
+Date: Tue,  4 Mar 2014 11:00:26 +0800
+Message-Id: <b37f304efa4a007c0c53d9e8a33e11b7977cb0a4.1393901906.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/3/2014 6:39 PM, Mimi Zohar wrote:
-> On Fri, 2014-02-28 at 16:59 +0200, Dmitry Kasatkin wrote: 
->> EVM currently uses source hard coded list of xattrs which needs to be
->> included into the HMAC calculation. This is very unflexible.
->> Adding new attributes requires modifcation of the source code and
->> prevents building the kernel which works with previously labeled
->> filesystems.
->>
->> Early versions of Smack used only one xattr security.SMACK64,
->> which is protected by EVM. Now Smack has a few more attributes and
->> they are not protected. Adding support to the source code makes it
->> impossible to use new kernel with previousely labeled filesystems.
-> I think this patch will break any existing filesystems labeled with
-> 'security.smack64'.  Details inline.
->
->> This patch replaces hardcoded xattr array with dynamic list which is
->> initialized from CONFIG_EVM_HMAC_XATTRS variable. It allows to build
->> kernel with with support of older and newer EVM HMAC formats.
->>
->> Possible future extension will be to read xattr list from the kernel
->> command line or from securityfs entry.
->>
->> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
->> ---
->>  security/integrity/evm/Kconfig      | 10 ++++++
->>  security/integrity/evm/evm.h        |  7 +++-
->>  security/integrity/evm/evm_crypto.c |  8 ++---
->>  security/integrity/evm/evm_main.c   | 69 +++++++++++++++++++------------------
->>  4 files changed, 55 insertions(+), 39 deletions(-)
->>
->> diff --git a/security/integrity/evm/Kconfig b/security/integrity/evm/Kconfig
->> index 2be51fa..06237b8 100644
->> --- a/security/integrity/evm/Kconfig
->> +++ b/security/integrity/evm/Kconfig
->> @@ -25,3 +25,13 @@ config EVM_HMAC_ATTRS
->>  	  WARNING: changing the HMAC calculation method or adding 
->>  	  additional info to the calculation, requires existing EVM
->>  	  labeled file systems to be relabeled.
->> +
->> +config EVM_HMAC_XATTRS
->> +	string "HMAC xattrs"
->> +	default "security.selinux security.SMACK64 security.ima security.capability"
->> +	help
->> +	  This options allows to specify list of extended attributes included into HMAC
->> +	  calculation. It makes it possible easily upgrade to newer kernels.
->> +
->> +	  Default value:
->> +	    security.selinux, security.SMACK64, security.ima, security.capability
->> diff --git a/security/integrity/evm/evm.h b/security/integrity/evm/evm.h
->> index c8fa0aa..4d1c51e 100644
->> --- a/security/integrity/evm/evm.h
->> +++ b/security/integrity/evm/evm.h
->> @@ -31,8 +31,13 @@ extern struct crypto_shash *hash_tfm;
->>
->>  #define EVM_HMAC_ATTR_FSUUID		0x0001
->>
->> +struct evm_hmac_xattr {
->> +	struct list_head list;
->> +	char *xattr;
->> +};
->> +
->>  /* List of EVM protected security xattrs */
->> -extern char *evm_config_xattrnames[];
->> +extern struct list_head evm_hmac_xattrs;
->>
->>  int evm_init_key(void);
->>  int evm_update_evmxattr(struct dentry *dentry,
->> diff --git a/security/integrity/evm/evm_crypto.c b/security/integrity/evm/evm_crypto.c
->> index ab034e5..7e5bfb7 100644
->> --- a/security/integrity/evm/evm_crypto.c
->> +++ b/security/integrity/evm/evm_crypto.c
->> @@ -133,7 +133,7 @@ static int evm_calc_hmac_or_hash(struct dentry *dentry,
->>  {
->>  	struct inode *inode = dentry->d_inode;
->>  	struct shash_desc *desc;
->> -	char **xattrname;
->> +	struct evm_hmac_xattr *entry;
->>  	size_t xattr_size = 0;
->>  	char *xattr_value = NULL;
->>  	int error;
->> @@ -146,15 +146,15 @@ static int evm_calc_hmac_or_hash(struct dentry *dentry,
->>  		return PTR_ERR(desc);
->>
->>  	error = -ENODATA;
->> -	for (xattrname = evm_config_xattrnames; *xattrname != NULL; xattrname++) {
->> +	list_for_each_entry(entry, &evm_hmac_xattrs, list) {
->>  		if ((req_xattr_name && req_xattr_value)
->> -		    && !strcmp(*xattrname, req_xattr_name)) {
->> +		    && !strcmp(entry->xattr, req_xattr_name)) {
->>  			error = 0;
->>  			crypto_shash_update(desc, (const u8 *)req_xattr_value,
->>  					     req_xattr_value_len);
->>  			continue;
->>  		}
->> -		size = vfs_getxattr_alloc(dentry, *xattrname,
->> +		size = vfs_getxattr_alloc(dentry, entry->xattr,
->>  					  &xattr_value, xattr_size, GFP_NOFS);
->>  		if (size == -ENOMEM) {
->>  			error = -ENOMEM;
->> diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
->> index 9c05929..13e03ad 100644
->> --- a/security/integrity/evm/evm_main.c
->> +++ b/security/integrity/evm/evm_main.c
->> @@ -34,19 +34,7 @@ char *evm_hmac = "hmac(sha1)";
->>  char *evm_hash = "sha1";
->>  int evm_hmac_attrs;
->>
->> -char *evm_config_xattrnames[] = {
->> -#ifdef CONFIG_SECURITY_SELINUX
->> -	XATTR_NAME_SELINUX,
->> -#endif
->> -#ifdef CONFIG_SECURITY_SMACK
->> -	XATTR_NAME_SMACK,
->> -#endif
->> -#ifdef CONFIG_IMA_APPRAISE
->> -	XATTR_NAME_IMA,
->> -#endif
->> -	XATTR_NAME_CAPS,
->> -	NULL
->> -};
->> +LIST_HEAD(evm_hmac_xattrs);
->>
->>  static int evm_fixmode;
->>  static int __init evm_set_fixmode(char *str)
->> @@ -61,27 +49,53 @@ static int __init evm_init_config(void)
->>  {
->>  	char *attrs = CONFIG_EVM_HMAC_ATTRS;
->>  	char *p;
->> +	char *xattrs = CONFIG_EVM_HMAC_XATTRS;
->> +	struct evm_hmac_xattr *entry;
->>
->>  	while ((p = strsep(&attrs, ", \t"))) {
->>  		if (!strcmp(p, "fsuuid"))
->>  			evm_hmac_attrs |= EVM_HMAC_ATTR_FSUUID;
->>  	}
->>  	pr_info("HMAC attrs: 0x%x\n", evm_hmac_attrs);
->> +	while ((p = strsep(&xattrs, ", \t"))) {
->> +#ifndef CONFIG_SECURITY_SELINUX
->> +		if (!strcmp(p, XATTR_NAME_SELINUX))
->> +			continue;
->> +#endif
->> +#ifndef CONFIG_SECURITY_SMACK
->> +		if (strstr(p, "SMACK64"))
->> +			continue;
->> +#endif
-> As you mentioned, filesystems previously only included
-> 'security.smack64' in the HMAC calculation.  This patch includes all
-> xattrs prefixed with smack64.  All previously labeled filesystems would
-> need to be relabeled.
->
-> Mimi
+This patch adds cpufreq suspend/resume calls to dpm_{suspend|resume}() for
+handling suspend/resume of cpufreq governors.
 
-Only the SMACK64 attribute is assigned to all files. The SMACK64EXEC
-and SMACK64TRANSMUTE attributes are optional. You do not want these
-attributes in most cases. Few files should actually have them. They
-should only be used if they are there, and ignored otherwise. If that
-is not possible it is better to ignore them completely. 
+Lan Tianyu (Intel) & Jinhyuk Choi (Broadcom) found an issue where tunables
+configuration for clusters/sockets with non-boot CPUs was getting lost after
+suspend/resume, as we were notifying governors with CPUFREQ_GOV_POLICY_EXIT on
+removal of the last cpu for that policy and so deallocating memory for tunables.
+This is fixed by this patch as we don't allow any operation on governors after
+device suspend and before device resume now.
 
->
->> +#ifndef CONFIG_IMA_APPRAISE
->> +		if (!strcmp(p, XATTR_NAME_IMA))
->> +			continue;
->> +#endif
->> +		entry = kmalloc(sizeof(*entry), GFP_KERNEL);
->> +		if (!entry)
->> +			return -ENOMEM;
->> +		INIT_LIST_HEAD(&entry->list);
->> +		entry->xattr = kstrdup(p, GFP_KERNEL);
->> +		if (!entry->xattr)
->> +			return -ENOMEM;
->> +		list_add_tail(&entry->list, &evm_hmac_xattrs);
->> +	}
->> +	list_for_each_entry(entry, &evm_hmac_xattrs, list)
->> +		pr_info("%s\n", entry->xattr);
->>  	return 0;
->>  }
->>
->>  static int evm_find_protected_xattrs(struct dentry *dentry)
->>  {
->>  	struct inode *inode = dentry->d_inode;
->> -	char **xattr;
->> +	struct evm_hmac_xattr *entry;
->>  	int error;
->>  	int count = 0;
->>
->>  	if (!inode->i_op || !inode->i_op->getxattr)
->>  		return -EOPNOTSUPP;
->>
->> -	for (xattr = evm_config_xattrnames; *xattr != NULL; xattr++) {
->> -		error = inode->i_op->getxattr(dentry, *xattr, NULL, 0);
->> +	list_for_each_entry(entry, &evm_hmac_xattrs, list) {
->> +		error = inode->i_op->getxattr(dentry, entry->xattr, NULL, 0);
->>  		if (error < 0) {
->>  			if (error == -ENODATA)
->>  				continue;
->> @@ -183,19 +197,19 @@ out:
->>
->>  static int evm_protected_xattr(const char *req_xattr_name)
->>  {
->> -	char **xattrname;
->> +	struct evm_hmac_xattr *entry;
->>  	int namelen;
->>  	int found = 0;
->>
->>  	namelen = strlen(req_xattr_name);
->> -	for (xattrname = evm_config_xattrnames; *xattrname != NULL; xattrname++) {
->> -		if ((strlen(*xattrname) == namelen)
->> -		    && (strncmp(req_xattr_name, *xattrname, namelen) == 0)) {
->> +	list_for_each_entry(entry, &evm_hmac_xattrs, list) {
->> +		if ((strlen(entry->xattr) == namelen)
->> +		    && (strncmp(req_xattr_name, entry->xattr, namelen) == 0)) {
->>  			found = 1;
->>  			break;
->>  		}
->>  		if (strncmp(req_xattr_name,
->> -			    *xattrname + XATTR_SECURITY_PREFIX_LEN,
->> +			    entry->xattr + XATTR_SECURITY_PREFIX_LEN,
->>  			    strlen(req_xattr_name)) == 0) {
->>  			found = 1;
->>  			break;
->> @@ -462,19 +476,6 @@ err:
->>  	return error;
->>  }
->>
->> -/*
->> - * evm_display_config - list the EVM protected security extended attributes
->> - */
->> -static int __init evm_display_config(void)
->> -{
->> -	char **xattrname;
->> -
->> -	for (xattrname = evm_config_xattrnames; *xattrname != NULL; xattrname++)
->> -		pr_info("%s\n", *xattrname);
->> -	return 0;
->> -}
->> -
->> -pure_initcall(evm_display_config);
->>  late_initcall(init_evm);
->>
->>  MODULE_DESCRIPTION("Extended Verification Module");
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+We could have added these callbacks at dpm_{suspend|resume}_noirq() level but
+the problem here is that most of the devices (i.e. devices with ->suspend()
+callbacks) have already been suspended by now and so if drivers want to change
+frequency before suspending, then it might not be possible for many platforms
+(which depend on other peripherals like i2c, regulators, etc).
+
+Reported-and-tested-by: Lan Tianyu <tianyu.lan@intel.com>
+Reported-by: Jinhyuk Choi <jinchoi@broadcom.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+V5->V6: 1-2-3/7 merged into 1/5
+
+ drivers/base/power/main.c |   5 +++
+ drivers/cpufreq/cpufreq.c | 111 +++++++++++++++++++++++-----------------------
+ include/linux/cpufreq.h   |   8 ++++
+ 3 files changed, 69 insertions(+), 55 deletions(-)
+
+diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+index 42355e4..86d5e4f 100644
+--- a/drivers/base/power/main.c
++++ b/drivers/base/power/main.c
+@@ -29,6 +29,7 @@
+ #include <linux/async.h>
+ #include <linux/suspend.h>
+ #include <trace/events/power.h>
++#include <linux/cpufreq.h>
+ #include <linux/cpuidle.h>
+ #include <linux/timer.h>
+ 
+@@ -866,6 +867,8 @@ void dpm_resume(pm_message_t state)
+ 	mutex_unlock(&dpm_list_mtx);
+ 	async_synchronize_full();
+ 	dpm_show_time(starttime, state, NULL);
++
++	cpufreq_resume();
+ }
+ 
+ /**
+@@ -1434,6 +1437,8 @@ int dpm_suspend(pm_message_t state)
+ 
+ 	might_sleep();
+ 
++	cpufreq_suspend();
++
+ 	mutex_lock(&dpm_list_mtx);
+ 	pm_transition = state;
+ 	async_error = 0;
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 56b7b1b..2e43c08 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -26,7 +26,7 @@
+ #include <linux/module.h>
+ #include <linux/mutex.h>
+ #include <linux/slab.h>
+-#include <linux/syscore_ops.h>
++#include <linux/suspend.h>
+ #include <linux/tick.h>
+ #include <trace/events/power.h>
+ 
+@@ -47,6 +47,9 @@ static LIST_HEAD(cpufreq_policy_list);
+ static DEFINE_PER_CPU(char[CPUFREQ_NAME_LEN], cpufreq_cpu_governor);
+ #endif
+ 
++/* Flag to suspend/resume CPUFreq governors */
++static bool cpufreq_suspended;
++
+ static inline bool has_target(void)
+ {
+ 	return cpufreq_driver->target_index || cpufreq_driver->target;
+@@ -1576,82 +1579,77 @@ static struct subsys_interface cpufreq_interface = {
+ };
+ 
+ /**
+- * cpufreq_bp_suspend - Prepare the boot CPU for system suspend.
++ * cpufreq_suspend() - Suspend CPUFreq governors
+  *
+- * This function is only executed for the boot processor.  The other CPUs
+- * have been put offline by means of CPU hotplug.
++ * Called during system wide Suspend/Hibernate cycles for suspending governors
++ * as some platforms can't change frequency after this point in suspend cycle.
++ * Because some of the devices (like: i2c, regulators, etc) they use for
++ * changing frequency are suspended quickly after this point.
+  */
+-static int cpufreq_bp_suspend(void)
++void cpufreq_suspend(void)
+ {
+-	int ret = 0;
+-
+-	int cpu = smp_processor_id();
+ 	struct cpufreq_policy *policy;
+ 
+-	pr_debug("suspending cpu %u\n", cpu);
++	if (!cpufreq_driver)
++		return;
+ 
+-	/* If there's no policy for the boot CPU, we have nothing to do. */
+-	policy = cpufreq_cpu_get(cpu);
+-	if (!policy)
+-		return 0;
++	if (!has_target())
++		return;
+ 
+-	if (cpufreq_driver->suspend) {
+-		ret = cpufreq_driver->suspend(policy);
+-		if (ret)
+-			printk(KERN_ERR "cpufreq: suspend failed in ->suspend "
+-					"step on CPU %u\n", policy->cpu);
++	pr_debug("%s: Suspending Governors\n", __func__);
++
++	list_for_each_entry(policy, &cpufreq_policy_list, policy_list) {
++		if (__cpufreq_governor(policy, CPUFREQ_GOV_STOP))
++			pr_err("%s: Failed to stop governor for policy: %p\n",
++				__func__, policy);
++		else if (cpufreq_driver->suspend
++		    && cpufreq_driver->suspend(policy))
++			pr_err("%s: Failed to suspend driver: %p\n", __func__,
++				policy);
+ 	}
+ 
+-	cpufreq_cpu_put(policy);
+-	return ret;
++	cpufreq_suspended = true;
+ }
+ 
+ /**
+- * cpufreq_bp_resume - Restore proper frequency handling of the boot CPU.
++ * cpufreq_resume() - Resume CPUFreq governors
+  *
+- *	1.) resume CPUfreq hardware support (cpufreq_driver->resume())
+- *	2.) schedule call cpufreq_update_policy() ASAP as interrupts are
+- *	    restored. It will verify that the current freq is in sync with
+- *	    what we believe it to be. This is a bit later than when it
+- *	    should be, but nonethteless it's better than calling
+- *	    cpufreq_driver->get() here which might re-enable interrupts...
+- *
+- * This function is only executed for the boot CPU.  The other CPUs have not
+- * been turned on yet.
++ * Called during system wide Suspend/Hibernate cycle for resuming governors that
++ * are suspended with cpufreq_suspend().
+  */
+-static void cpufreq_bp_resume(void)
++void cpufreq_resume(void)
+ {
+-	int ret = 0;
+-
+-	int cpu = smp_processor_id();
+ 	struct cpufreq_policy *policy;
+ 
+-	pr_debug("resuming cpu %u\n", cpu);
++	if (!cpufreq_driver)
++		return;
+ 
+-	/* If there's no policy for the boot CPU, we have nothing to do. */
+-	policy = cpufreq_cpu_get(cpu);
+-	if (!policy)
++	if (!has_target())
+ 		return;
+ 
+-	if (cpufreq_driver->resume) {
+-		ret = cpufreq_driver->resume(policy);
+-		if (ret) {
+-			printk(KERN_ERR "cpufreq: resume failed in ->resume "
+-					"step on CPU %u\n", policy->cpu);
+-			goto fail;
+-		}
+-	}
++	pr_debug("%s: Resuming Governors\n", __func__);
+ 
+-	schedule_work(&policy->update);
++	cpufreq_suspended = false;
+ 
+-fail:
+-	cpufreq_cpu_put(policy);
+-}
++	list_for_each_entry(policy, &cpufreq_policy_list, policy_list) {
++		if (__cpufreq_governor(policy, CPUFREQ_GOV_START)
++		    || __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS))
++			pr_err("%s: Failed to start governor for policy: %p\n",
++				__func__, policy);
++		else if (cpufreq_driver->resume
++		    && cpufreq_driver->resume(policy))
++			pr_err("%s: Failed to resume driver: %p\n", __func__,
++				policy);
+ 
+-static struct syscore_ops cpufreq_syscore_ops = {
+-	.suspend	= cpufreq_bp_suspend,
+-	.resume		= cpufreq_bp_resume,
+-};
++		/*
++		 * schedule call cpufreq_update_policy() for boot CPU, i.e. last
++		 * policy in list. It will verify that the current freq is in
++		 * sync with what we believe it to be.
++		 */
++		if (list_is_last(&policy->policy_list, &cpufreq_policy_list))
++			schedule_work(&policy->update);
++	}
++}
+ 
+ /**
+  *	cpufreq_get_current_driver - return current driver's name
+@@ -1868,6 +1866,10 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+ 	struct cpufreq_governor *gov = NULL;
+ #endif
+ 
++	/* Don't start any governor operations if we are entering suspend */
++	if (cpufreq_suspended)
++		return 0;
++
+ 	if (policy->governor->max_transition_latency &&
+ 	    policy->cpuinfo.transition_latency >
+ 	    policy->governor->max_transition_latency) {
+@@ -2407,7 +2409,6 @@ static int __init cpufreq_core_init(void)
+ 
+ 	cpufreq_global_kobject = kobject_create();
+ 	BUG_ON(!cpufreq_global_kobject);
+-	register_syscore_ops(&cpufreq_syscore_ops);
+ 
+ 	return 0;
+ }
+diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+index 4d89e0e..94ed907 100644
+--- a/include/linux/cpufreq.h
++++ b/include/linux/cpufreq.h
+@@ -296,6 +296,14 @@ cpufreq_verify_within_cpu_limits(struct cpufreq_policy *policy)
+ 			policy->cpuinfo.max_freq);
+ }
+ 
++#ifdef CONFIG_CPU_FREQ
++void cpufreq_suspend(void);
++void cpufreq_resume(void);
++#else
++static inline void cpufreq_suspend(void) {}
++static inline void cpufreq_resume(void) {}
++#endif
++
+ /*********************************************************************
+  *                     CPUFREQ NOTIFIER INTERFACE                    *
+  *********************************************************************/
+-- 
+1.7.12.rc2.18.g61b472e
 
