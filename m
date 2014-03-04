@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933069AbaCDVJi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:09:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41123 "EHLO
+	id S933082AbaCDVKS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:10:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41118 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756504AbaCDUDs (ORCPT
+	with ESMTP id S1756487AbaCDUDr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:03:48 -0500
+	Tue, 4 Mar 2014 15:03:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.13 099/172] powerpc: Increase stack redzone for 64-bit userspace to 512 bytes
-Date: Tue,  4 Mar 2014 12:03:03 -0800
-Message-Id: <20140304200302.874636448@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>,
+        Andi Kleen <ak@linux.intel.com>, Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH 3.13 083/172] export: declare ksymtab symbols
+Date: Tue,  4 Mar 2014 12:02:47 -0800
+Message-Id: <20140304200302.390996626@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -29,105 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Mackerras <paulus@samba.org>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 573ebfa6601fa58b439e7f15828762839ccd306a upstream.
+commit 7b4ec8dd7d4ac467e9eee4d49f2c9574d773efbb upstream.
 
-The new ELFv2 little-endian ABI increases the stack redzone -- the
-area below the stack pointer that can be used for storing data --
-from 288 bytes to 512 bytes.  This means that we need to allow more
-space on the user stack when delivering a signal to a 64-bit process.
+sparse complains about any __ksymtab symbols with the following:
 
-To make the code a bit clearer, we define new USER_REDZONE_SIZE and
-KERNEL_REDZONE_SIZE symbols in ptrace.h.  For now, we leave the
-kernel redzone size at 288 bytes, since increasing it to 512 bytes
-would increase the size of interrupt stack frames correspondingly.
+ warning: symbol '__ksymtab_...' was not declared. Should it be static?
 
-Gcc currently only makes use of 288 bytes of redzone even when
-compiling for the new little-endian ABI, and the kernel cannot
-currently be compiled with the new ABI anyway.
+due to Andi's patch making it non-static.
 
-In the future, hopefully gcc will provide an option to control the
-amount of redzone used, and then we could reduce it even more.
+Mollify sparse by declaring the symbol extern, otherwise we get
+drowned in sparse warnings for anything that uses EXPORT_SYMBOL
+in the sources, making it easy to miss real warnings.
 
-This also changes the code in arch_compat_alloc_user_space() to
-preserve the expanded redzone.  It is not clear why this function would
-ever be used on a 64-bit process, though.
-
-Signed-off-by: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Fixes: e0f244c63fc9 ("asmlinkage, module: Make ksymtab [...] __visible")
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Acked-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/asm/compat.h |    5 +++--
- arch/powerpc/include/asm/ptrace.h |   16 +++++++++++++++-
- arch/powerpc/kernel/signal_64.c   |    4 ++--
- 3 files changed, 20 insertions(+), 5 deletions(-)
+ include/linux/export.h |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/powerpc/include/asm/compat.h
-+++ b/arch/powerpc/include/asm/compat.h
-@@ -200,10 +200,11 @@ static inline void __user *arch_compat_a
- 
- 	/*
- 	 * We can't access below the stack pointer in the 32bit ABI and
--	 * can access 288 bytes in the 64bit ABI
-+	 * can access 288 bytes in the 64bit big-endian ABI,
-+	 * or 512 bytes with the new ELFv2 little-endian ABI.
- 	 */
- 	if (!is_32bit_task())
--		usp -= 288;
-+		usp -= USER_REDZONE_SIZE;
- 
- 	return (void __user *) (usp - len);
- }
---- a/arch/powerpc/include/asm/ptrace.h
-+++ b/arch/powerpc/include/asm/ptrace.h
-@@ -28,11 +28,23 @@
- 
- #ifdef __powerpc64__
- 
-+/*
-+ * Size of redzone that userspace is allowed to use below the stack
-+ * pointer.  This is 288 in the 64-bit big-endian ELF ABI, and 512 in
-+ * the new ELFv2 little-endian ABI, so we allow the larger amount.
-+ *
-+ * For kernel code we allow a 288-byte redzone, in order to conserve
-+ * kernel stack space; gcc currently only uses 288 bytes, and will
-+ * hopefully allow explicit control of the redzone size in future.
-+ */
-+#define USER_REDZONE_SIZE	512
-+#define KERNEL_REDZONE_SIZE	288
-+
- #define STACK_FRAME_OVERHEAD	112	/* size of minimum stack frame */
- #define STACK_FRAME_LR_SAVE	2	/* Location of LR in stack frame */
- #define STACK_FRAME_REGS_MARKER	ASM_CONST(0x7265677368657265)
- #define STACK_INT_FRAME_SIZE	(sizeof(struct pt_regs) + \
--					STACK_FRAME_OVERHEAD + 288)
-+				 STACK_FRAME_OVERHEAD + KERNEL_REDZONE_SIZE)
- #define STACK_FRAME_MARKER	12
- 
- /* Size of dummy stack frame allocated when calling signal handler. */
-@@ -41,6 +53,8 @@
- 
- #else /* __powerpc64__ */
- 
-+#define USER_REDZONE_SIZE	0
-+#define KERNEL_REDZONE_SIZE	0
- #define STACK_FRAME_OVERHEAD	16	/* size of minimum stack frame */
- #define STACK_FRAME_LR_SAVE	1	/* Location of LR in stack frame */
- #define STACK_FRAME_REGS_MARKER	ASM_CONST(0x72656773)
---- a/arch/powerpc/kernel/signal_64.c
-+++ b/arch/powerpc/kernel/signal_64.c
-@@ -65,8 +65,8 @@ struct rt_sigframe {
- 	struct siginfo __user *pinfo;
- 	void __user *puc;
- 	struct siginfo info;
--	/* 64 bit ABI allows for 288 bytes below sp before decrementing it. */
--	char abigap[288];
-+	/* New 64 bit little-endian ABI allows redzone of 512 bytes below sp */
-+	char abigap[USER_REDZONE_SIZE];
- } __attribute__ ((aligned (16)));
- 
- static const char fmt32[] = KERN_INFO \
+--- a/include/linux/export.h
++++ b/include/linux/export.h
+@@ -59,6 +59,7 @@ extern struct module __this_module;
+ 	static const char __kstrtab_##sym[]			\
+ 	__attribute__((section("__ksymtab_strings"), aligned(1))) \
+ 	= VMLINUX_SYMBOL_STR(sym);				\
++	extern const struct kernel_symbol __ksymtab_##sym;	\
+ 	__visible const struct kernel_symbol __ksymtab_##sym	\
+ 	__used							\
+ 	__attribute__((section("___ksymtab" sec "+" #sym), unused))	\
 
 
