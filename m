@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932377AbaCDUP7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:15:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41762 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932309AbaCDUFh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932304AbaCDUFh (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 4 Mar 2014 15:05:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41708 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755141AbaCDUF2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 15:05:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Denis V. Lunev" <den@openvz.org>, Tejun Heo <tj@kernel.org>,
-        linux-ide@vger.kernel.org
-Subject: [PATCH 3.10 58/97] ata: enable quirk from jmicron JMB350 for JMB394
-Date: Tue,  4 Mar 2014 12:04:11 -0800
-Message-Id: <20140304200347.927620120@linuxfoundation.org>
+        Kevin Cernekee <cernekee@gmail.com>, Jonas Gorski <jogo@openwrt.org>,
+        Florian Fainelli <florian@openwrt.org>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.10 68/97] usb: gadget: bcm63xx_udc: fix build failure on DMA channel code
+Date: Tue,  4 Mar 2014 12:04:21 -0800
+Message-Id: <20140304200348.242986938@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -29,44 +29,166 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Denis V. Lunev" <den@openvz.org>
+From: Florian Fainelli <florian@openwrt.org>
 
-commit efb9e0f4f43780f0ae0c6428d66bd03e805c7539 upstream.
+commit 2d1f7af3d60dd09794e0738a915d272c6c27abc5 upstream.
 
-Without the patch the kernel generates the following error.
+Commit 3dc6475 ("bcm63xx_enet: add support Broadcom BCM6345 Ethernet")
+changed the ENETDMA[CS] macros such that they are no longer macros, but
+actual register offset definitions. The bcm63xx_udc driver was not
+updated, and as a result, causes the following build error to pop up:
 
- ata11.15: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
- ata11.15: Port Multiplier vendor mismatch '0x197b' != '0x123'
- ata11.15: PMP revalidation failed (errno=-19)
- ata11.15: failed to recover PMP after 5 tries, giving up
+ CC      drivers/usb/gadget/u_ether.o
+drivers/usb/gadget/bcm63xx_udc.c: In function 'iudma_write':
+drivers/usb/gadget/bcm63xx_udc.c:642:24: error: called object '0' is not
+a function
+drivers/usb/gadget/bcm63xx_udc.c: In function 'iudma_reset_channel':
+drivers/usb/gadget/bcm63xx_udc.c:698:46: error: called object '0' is not
+a function
+drivers/usb/gadget/bcm63xx_udc.c:700:49: error: called object '0' is not
+a function
 
-This patch helps to bypass this error and the device becomes
-functional.
+Fix this by updating usb_dmac_{read,write}l and usb_dmas_{read,write}l to
+take an extra channel argument, and use the channel width
+(ENETDMA_CHAN_WIDTH) to offset the register we want to access, hence
+doing again what the macro implicitely did for us.
 
-Signed-off-by: Denis V. Lunev <den@openvz.org>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: <linux-ide@vger.kernel.org>
+Cc: Kevin Cernekee <cernekee@gmail.com>
+Cc: Jonas Gorski <jogo@openwrt.org>
+Signed-off-by: Florian Fainelli <florian@openwrt.org>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libata-pmp.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/usb/gadget/bcm63xx_udc.c |   58 +++++++++++++++++++++------------------
+ 1 file changed, 32 insertions(+), 26 deletions(-)
 
---- a/drivers/ata/libata-pmp.c
-+++ b/drivers/ata/libata-pmp.c
-@@ -447,8 +447,11 @@ static void sata_pmp_quirks(struct ata_p
- 		 * otherwise.  Don't try hard to recover it.
- 		 */
- 		ap->pmp_link[ap->nr_pmp_links - 1].flags |= ATA_LFLAG_NO_RETRY;
--	} else if (vendor == 0x197b && devid == 0x2352) {
--		/* chip found in Thermaltake BlackX Duet, jmicron JMB350? */
-+	} else if (vendor == 0x197b && (devid == 0x2352 || devid == 0x0325)) {
-+		/*
-+		 * 0x2352: found in Thermaltake BlackX Duet, jmicron JMB350?
-+		 * 0x0325: jmicron JMB394.
-+		 */
- 		ata_for_each_link(link, ap, EDGE) {
- 			/* SRST breaks detection and disks get misclassified
- 			 * LPM disabled to avoid potential problems
+--- a/drivers/usb/gadget/bcm63xx_udc.c
++++ b/drivers/usb/gadget/bcm63xx_udc.c
+@@ -361,24 +361,30 @@ static inline void usb_dma_writel(struct
+ 	bcm_writel(val, udc->iudma_regs + off);
+ }
+ 
+-static inline u32 usb_dmac_readl(struct bcm63xx_udc *udc, u32 off)
++static inline u32 usb_dmac_readl(struct bcm63xx_udc *udc, u32 off, int chan)
+ {
+-	return bcm_readl(udc->iudma_regs + IUDMA_DMAC_OFFSET + off);
++	return bcm_readl(udc->iudma_regs + IUDMA_DMAC_OFFSET + off +
++			(ENETDMA_CHAN_WIDTH * chan));
+ }
+ 
+-static inline void usb_dmac_writel(struct bcm63xx_udc *udc, u32 val, u32 off)
++static inline void usb_dmac_writel(struct bcm63xx_udc *udc, u32 val, u32 off,
++					int chan)
+ {
+-	bcm_writel(val, udc->iudma_regs + IUDMA_DMAC_OFFSET + off);
++	bcm_writel(val, udc->iudma_regs + IUDMA_DMAC_OFFSET + off +
++			(ENETDMA_CHAN_WIDTH * chan));
+ }
+ 
+-static inline u32 usb_dmas_readl(struct bcm63xx_udc *udc, u32 off)
++static inline u32 usb_dmas_readl(struct bcm63xx_udc *udc, u32 off, int chan)
+ {
+-	return bcm_readl(udc->iudma_regs + IUDMA_DMAS_OFFSET + off);
++	return bcm_readl(udc->iudma_regs + IUDMA_DMAS_OFFSET + off +
++			(ENETDMA_CHAN_WIDTH * chan));
+ }
+ 
+-static inline void usb_dmas_writel(struct bcm63xx_udc *udc, u32 val, u32 off)
++static inline void usb_dmas_writel(struct bcm63xx_udc *udc, u32 val, u32 off,
++					int chan)
+ {
+-	bcm_writel(val, udc->iudma_regs + IUDMA_DMAS_OFFSET + off);
++	bcm_writel(val, udc->iudma_regs + IUDMA_DMAS_OFFSET + off +
++			(ENETDMA_CHAN_WIDTH * chan));
+ }
+ 
+ static inline void set_clocks(struct bcm63xx_udc *udc, bool is_enabled)
+@@ -639,7 +645,7 @@ static void iudma_write(struct bcm63xx_u
+ 	} while (!last_bd);
+ 
+ 	usb_dmac_writel(udc, ENETDMAC_CHANCFG_EN_MASK,
+-			ENETDMAC_CHANCFG_REG(iudma->ch_idx));
++			ENETDMAC_CHANCFG_REG, iudma->ch_idx);
+ }
+ 
+ /**
+@@ -695,9 +701,9 @@ static void iudma_reset_channel(struct b
+ 		bcm63xx_fifo_reset_ep(udc, max(0, iudma->ep_num));
+ 
+ 	/* stop DMA, then wait for the hardware to wrap up */
+-	usb_dmac_writel(udc, 0, ENETDMAC_CHANCFG_REG(ch_idx));
++	usb_dmac_writel(udc, 0, ENETDMAC_CHANCFG_REG, ch_idx);
+ 
+-	while (usb_dmac_readl(udc, ENETDMAC_CHANCFG_REG(ch_idx)) &
++	while (usb_dmac_readl(udc, ENETDMAC_CHANCFG_REG, ch_idx) &
+ 				   ENETDMAC_CHANCFG_EN_MASK) {
+ 		udelay(1);
+ 
+@@ -714,10 +720,10 @@ static void iudma_reset_channel(struct b
+ 			dev_warn(udc->dev, "forcibly halting IUDMA channel %d\n",
+ 				 ch_idx);
+ 			usb_dmac_writel(udc, ENETDMAC_CHANCFG_BUFHALT_MASK,
+-					ENETDMAC_CHANCFG_REG(ch_idx));
++					ENETDMAC_CHANCFG_REG, ch_idx);
+ 		}
+ 	}
+-	usb_dmac_writel(udc, ~0, ENETDMAC_IR_REG(ch_idx));
++	usb_dmac_writel(udc, ~0, ENETDMAC_IR_REG, ch_idx);
+ 
+ 	/* don't leave "live" HW-owned entries for the next guy to step on */
+ 	for (d = iudma->bd_ring; d <= iudma->end_bd; d++)
+@@ -729,11 +735,11 @@ static void iudma_reset_channel(struct b
+ 
+ 	/* set up IRQs, UBUS burst size, and BD base for this channel */
+ 	usb_dmac_writel(udc, ENETDMAC_IR_BUFDONE_MASK,
+-			ENETDMAC_IRMASK_REG(ch_idx));
+-	usb_dmac_writel(udc, 8, ENETDMAC_MAXBURST_REG(ch_idx));
++			ENETDMAC_IRMASK_REG, ch_idx);
++	usb_dmac_writel(udc, 8, ENETDMAC_MAXBURST_REG, ch_idx);
+ 
+-	usb_dmas_writel(udc, iudma->bd_ring_dma, ENETDMAS_RSTART_REG(ch_idx));
+-	usb_dmas_writel(udc, 0, ENETDMAS_SRAM2_REG(ch_idx));
++	usb_dmas_writel(udc, iudma->bd_ring_dma, ENETDMAS_RSTART_REG, ch_idx);
++	usb_dmas_writel(udc, 0, ENETDMAS_SRAM2_REG, ch_idx);
+ }
+ 
+ /**
+@@ -2036,7 +2042,7 @@ static irqreturn_t bcm63xx_udc_data_isr(
+ 	spin_lock(&udc->lock);
+ 
+ 	usb_dmac_writel(udc, ENETDMAC_IR_BUFDONE_MASK,
+-			ENETDMAC_IR_REG(iudma->ch_idx));
++			ENETDMAC_IR_REG, iudma->ch_idx);
+ 	bep = iudma->bep;
+ 	rc = iudma_read(udc, iudma);
+ 
+@@ -2176,18 +2182,18 @@ static int bcm63xx_iudma_dbg_show(struct
+ 		seq_printf(s, " [ep%d]:\n",
+ 			   max_t(int, iudma_defaults[ch_idx].ep_num, 0));
+ 		seq_printf(s, "  cfg: %08x; irqstat: %08x; irqmask: %08x; maxburst: %08x\n",
+-			   usb_dmac_readl(udc, ENETDMAC_CHANCFG_REG(ch_idx)),
+-			   usb_dmac_readl(udc, ENETDMAC_IR_REG(ch_idx)),
+-			   usb_dmac_readl(udc, ENETDMAC_IRMASK_REG(ch_idx)),
+-			   usb_dmac_readl(udc, ENETDMAC_MAXBURST_REG(ch_idx)));
++			   usb_dmac_readl(udc, ENETDMAC_CHANCFG_REG, ch_idx),
++			   usb_dmac_readl(udc, ENETDMAC_IR_REG, ch_idx),
++			   usb_dmac_readl(udc, ENETDMAC_IRMASK_REG, ch_idx),
++			   usb_dmac_readl(udc, ENETDMAC_MAXBURST_REG, ch_idx));
+ 
+-		sram2 = usb_dmas_readl(udc, ENETDMAS_SRAM2_REG(ch_idx));
+-		sram3 = usb_dmas_readl(udc, ENETDMAS_SRAM3_REG(ch_idx));
++		sram2 = usb_dmas_readl(udc, ENETDMAS_SRAM2_REG, ch_idx);
++		sram3 = usb_dmas_readl(udc, ENETDMAS_SRAM3_REG, ch_idx);
+ 		seq_printf(s, "  base: %08x; index: %04x_%04x; desc: %04x_%04x %08x\n",
+-			   usb_dmas_readl(udc, ENETDMAS_RSTART_REG(ch_idx)),
++			   usb_dmas_readl(udc, ENETDMAS_RSTART_REG, ch_idx),
+ 			   sram2 >> 16, sram2 & 0xffff,
+ 			   sram3 >> 16, sram3 & 0xffff,
+-			   usb_dmas_readl(udc, ENETDMAS_SRAM4_REG(ch_idx)));
++			   usb_dmas_readl(udc, ENETDMAS_SRAM4_REG, ch_idx));
+ 		seq_printf(s, "  desc: %d/%d used", iudma->n_bds_used,
+ 			   iudma->n_bds);
+ 
 
 
