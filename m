@@ -1,42 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932540AbaCDVsN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:48:13 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:37406 "EHLO
+	id S1756506AbaCDVv1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:51:27 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:37436 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755583AbaCDVsJ (ORCPT
+	with ESMTP id S1755390AbaCDVvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 16:48:09 -0500
-Date: Tue, 04 Mar 2014 16:48:06 -0500 (EST)
-Message-Id: <20140304.164806.1723542180554308406.davem@davemloft.net>
-To: bhelgaas@google.com
-Cc: peterz@infradead.org, mingo@redhat.com, linux-mips@linux-mips.org,
-        linux-ia64@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/2] sparc64: Remove unused sparc64_multi_core
+	Tue, 4 Mar 2014 16:51:25 -0500
+Date: Tue, 04 Mar 2014 16:51:22 -0500 (EST)
+Message-Id: <20140304.165122.445822929490466603.davem@davemloft.net>
+To: akpm@linux-foundation.org
+Cc: ebiederm@xmission.com, rgb@redhat.com, eparis@redhat.com,
+        linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [RFC][PATCH] audit: Simplify by assuming the callers socket
+ buffer is large enough
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140304210744.16893.75929.stgit@bhelgaas-glaptop.roam.corp.google.com>
-References: <20140304210621.16893.8772.stgit@bhelgaas-glaptop.roam.corp.google.com>
-	<20140304210744.16893.75929.stgit@bhelgaas-glaptop.roam.corp.google.com>
+In-Reply-To: <20140304133004.b565820f60f595a48e621e58@linux-foundation.org>
+References: <874n3ir0uw.fsf_-_@xmission.com>
+	<87mwhaplo4.fsf_-_@xmission.com>
+	<20140304133004.b565820f60f595a48e621e58@linux-foundation.org>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 04 Mar 2014 13:48:09 -0800 (PST)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 04 Mar 2014 13:51:25 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 04 Mar 2014 14:07:44 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+Date: Tue, 4 Mar 2014 13:30:04 -0800
 
-> Remove sparc64_multi_core because it's not used any more.
+> On Fri, 28 Feb 2014 20:50:19 -0800 ebiederm@xmission.com (Eric W. Biederman) wrote:
 > 
-> It was added by a2f9f6bbb30e ("Fix {mc,smt}_capable()"), and the last uses
-> were removed by e637d96bf462 ("sched: Remove unused mc_capable() and
-> smt_capable()").
+>> 
+>> Modify audit_send_reply to directly use a non-blocking send and
+>> to return an error on failure (if anyone cares).
+>> 
+>> Modify audit_list_rules_send to use audit_send_reply and give up
+>> if we can not send a packet.
+>> 
+>> Merge audit_list_rules into iaudit_list_rules_send as the code
+>> is now sufficiently simple to not justify to callers.
+>> 
+>> Kill audit_send_list, audit_send_reply_thread because using
+>> a separate thread for replies is not needed when sending
+>> packets syncrhonously.
 > 
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> Nothing much seems to be happening here?
+> 
+> In an earlier email you said "While reading through 3.14-rc1 I found a
+> pretty siginficant mishandling of network namespaces in the recent
+> audit changes." Were those recent audit changes a post-3.14 thing?  And
+> what is the user-visible effect of the mishandling?
 
-Acked-by: David S. Miller <davem@davemloft.net>
+I took a quick look at this patch yesterday, and my only suspicion is
+that threads are created currently by this code purely to cons up a
+blockable context for the netlink code.
+
+Perhaps it wants to avoid any netlink packet drops from being possible.
+
+I'm not so sure.
+
+Anyways, some investigation into perhaps figuring out the intentions of
+the original implementation would be nice.
