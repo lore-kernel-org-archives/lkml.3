@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932767AbaCDUm0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:42:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41407 "EHLO
+	id S1756931AbaCDUEf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:04:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41358 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756941AbaCDUEg (ORCPT
+	with ESMTP id S1756862AbaCDUE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:04:36 -0500
+	Tue, 4 Mar 2014 15:04:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Martin <consume.noise@gmail.com>,
-        Jani Nikula <jani.nikula@intel.com>, Theodore Tso <tytso@mit.edu>,
-        Sree Harsha Totakura <freedesktop@h.totakura.in>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH 3.13 172/172] drm/i915/dp: add native aux defer retry limit
-Date: Tue,  4 Mar 2014 12:04:16 -0800
-Message-Id: <20140304200305.192273420@linuxfoundation.org>
+        Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.13 147/172] irqchip: orion: Fix getting generic chip pointer.
+Date: Tue,  4 Mar 2014 12:03:51 -0800
+Message-Id: <20140304200304.431593795@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -31,85 +30,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: Andrew Lunn <andrew@lunn.ch>
 
-commit f51a44b9a6c4982cc25bfb3727de9bb893621ebc upstream.
+commit d86e9af6336c0ad586a5dbd70064253d40bbb5ff upstream.
 
-Retrying indefinitely places too much trust on the aux implementation of
-the sink devices.
+Enabling SPARSE_IRQ shows up a bug in the irq-orion bridge interrupt
+handler. The bridge interrupt is implemented using a single generic
+chip. Thus the parameter passed to irq_get_domain_generic_chip()
+should always be zero.
 
-Reported-by: Daniel Martin <consume.noise@gmail.com>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=71267
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Tested-by: Theodore Ts'o <tytso@mit.edu>
-Tested-by: Sree Harsha Totakura <freedesktop@h.totakura.in>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Andrew Lunn <andrew@lunn.ch>
+Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Fixes: 9dbd90f17e4f ("irqchip: Add support for Marvell Orion SoCs")
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_dp.c |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ drivers/irqchip/irq-orion.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_dp.c
-+++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -537,6 +537,7 @@ intel_dp_aux_native_write(struct intel_d
- 	uint8_t	msg[20];
- 	int msg_bytes;
- 	uint8_t	ack;
-+	int retry;
- 
- 	if (WARN_ON(send_bytes > 16))
- 		return -E2BIG;
-@@ -548,18 +549,20 @@ intel_dp_aux_native_write(struct intel_d
- 	msg[3] = send_bytes - 1;
- 	memcpy(&msg[4], send, send_bytes);
- 	msg_bytes = send_bytes + 4;
--	for (;;) {
-+	for (retry = 0; retry < 7; retry++) {
- 		ret = intel_dp_aux_ch(intel_dp, msg, msg_bytes, &ack, 1);
- 		if (ret < 0)
- 			return ret;
- 		if ((ack & AUX_NATIVE_REPLY_MASK) == AUX_NATIVE_REPLY_ACK)
--			break;
-+			return send_bytes;
- 		else if ((ack & AUX_NATIVE_REPLY_MASK) == AUX_NATIVE_REPLY_DEFER)
- 			usleep_range(400, 500);
- 		else
- 			return -EIO;
- 	}
--	return send_bytes;
+--- a/drivers/irqchip/irq-orion.c
++++ b/drivers/irqchip/irq-orion.c
+@@ -111,7 +111,8 @@ IRQCHIP_DECLARE(orion_intc, "marvell,ori
+ static void orion_bridge_irq_handler(unsigned int irq, struct irq_desc *desc)
+ {
+ 	struct irq_domain *d = irq_get_handler_data(irq);
+-	struct irq_chip_generic *gc = irq_get_domain_generic_chip(d, irq);
 +
-+	DRM_ERROR("too many retries, giving up\n");
-+	return -EIO;
- }
++	struct irq_chip_generic *gc = irq_get_domain_generic_chip(d, 0);
+ 	u32 stat = readl_relaxed(gc->reg_base + ORION_BRIDGE_IRQ_CAUSE) &
+ 		   gc->mask_cache;
  
- /* Write a single byte to the aux channel in native mode */
-@@ -581,6 +584,7 @@ intel_dp_aux_native_read(struct intel_dp
- 	int reply_bytes;
- 	uint8_t ack;
- 	int ret;
-+	int retry;
- 
- 	if (WARN_ON(recv_bytes > 19))
- 		return -E2BIG;
-@@ -594,7 +598,7 @@ intel_dp_aux_native_read(struct intel_dp
- 	msg_bytes = 4;
- 	reply_bytes = recv_bytes + 1;
- 
--	for (;;) {
-+	for (retry = 0; retry < 7; retry++) {
- 		ret = intel_dp_aux_ch(intel_dp, msg, msg_bytes,
- 				      reply, reply_bytes);
- 		if (ret == 0)
-@@ -611,6 +615,9 @@ intel_dp_aux_native_read(struct intel_dp
- 		else
- 			return -EIO;
- 	}
-+
-+	DRM_ERROR("too many retries, giving up\n");
-+	return -EIO;
- }
- 
- static int
 
 
