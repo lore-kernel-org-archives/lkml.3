@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757801AbaCDUQq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:16:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41753 "EHLO
+	id S932273AbaCDUFf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:05:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41702 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932293AbaCDUFg (ORCPT
+	with ESMTP id S1757259AbaCDUF1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:05:36 -0500
+	Tue, 4 Mar 2014 15:05:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Olivier Sobrie <olivier@sobrie.be>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH 3.10 66/97] can: kvaser_usb: check number of channels returned by HW
-Date: Tue,  4 Mar 2014 12:04:19 -0800
-Message-Id: <20140304200348.184872880@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, matson <lists-matsonpa@luxsci.me>
+Subject: [PATCH 3.10 59/97] sata_sil: apply MOD15WRITE quirk to TOSHIBA MK2561GSYN
+Date: Tue,  4 Mar 2014 12:04:12 -0800
+Message-Id: <20140304200347.958176069@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -29,31 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olivier Sobrie <olivier@sobrie.be>
+From: Tejun Heo <tj@kernel.org>
 
-commit 862474f8b46f6c1e600d4934e40ba40646c696ec upstream.
+commit 9f9c47f00ce99329b1a82e2ac4f70f0fe3db549c upstream.
 
-It is needed to check the number of channels returned by the HW because it
-cannot be greater than MAX_NET_DEVICES otherwise it will crash.
+It's a bit odd to see a newer device showing mod15write; however, the
+reported behavior is highly consistent and other factors which could
+contribute seem to have been verified well enough.  Also, both
+sata_sil itself and the drive are fairly outdated at this point making
+the risk of this change fairly low.  It is possible, probably likely,
+that other drive models in the same family have the same problem;
+however, for now, let's just add the specific model which was tested.
 
-Signed-off-by: Olivier Sobrie <olivier@sobrie.be>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: matson <lists-matsonpa@luxsci.me>
+References: http://lkml.kernel.org/g/201401211912.s0LJCk7F015058@rs103.luxsci.com
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/usb/kvaser_usb.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/ata/sata_sil.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/can/usb/kvaser_usb.c
-+++ b/drivers/net/can/usb/kvaser_usb.c
-@@ -474,6 +474,8 @@ static int kvaser_usb_get_card_info(stru
- 		return err;
- 
- 	dev->nchannels = msg.u.cardinfo.nchannels;
-+	if (dev->nchannels > MAX_NET_DEVICES)
-+		return -EINVAL;
- 
- 	return 0;
- }
+--- a/drivers/ata/sata_sil.c
++++ b/drivers/ata/sata_sil.c
+@@ -157,6 +157,7 @@ static const struct sil_drivelist {
+ 	{ "ST380011ASL",	SIL_QUIRK_MOD15WRITE },
+ 	{ "ST3120022ASL",	SIL_QUIRK_MOD15WRITE },
+ 	{ "ST3160021ASL",	SIL_QUIRK_MOD15WRITE },
++	{ "TOSHIBA MK2561GSYN",	SIL_QUIRK_MOD15WRITE },
+ 	{ "Maxtor 4D060H3",	SIL_QUIRK_UDMA5MAX },
+ 	{ }
+ };
 
 
