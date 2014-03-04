@@ -1,113 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757969AbaCDWez (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 17:34:55 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:45989 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757395AbaCDWdX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 17:33:23 -0500
-X-IronPort-AV: E=Sophos;i="4.97,588,1389744000"; 
-   d="scan'208";a="106598862"
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
-        <xen-devel@lists.xenproject.org>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jonathan.davies@citrix.com>, Zoltan Kiss <zoltan.kiss@citrix.com>
-Subject: [PATCH net-next v6 6/10] xen-netback: Add stat counters for zerocopy
-Date: Tue, 4 Mar 2014 22:32:17 +0000
-Message-ID: <1393972341-21135-7-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1393972341-21135-1-git-send-email-zoltan.kiss@citrix.com>
-References: <1393972341-21135-1-git-send-email-zoltan.kiss@citrix.com>
+	id S1757992AbaCDWfM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 17:35:12 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:46296 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755077AbaCDWfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 17:35:09 -0500
+Message-ID: <531654D8.5040409@zytor.com>
+Date: Tue, 04 Mar 2014 14:34:00 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
+To: Vince Weaver <vincent.weaver@maine.edu>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Seiji Aguchi <seiji.aguchi@hds.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Closing on the CR2 leak bug
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These counters help determine how often the buffers had to be copied. Also
-they help find out if packets are leaked, as if "sent != success + fail",
-there are probably packets never freed up properly.
+So we need to get something into x86/urgent for the CR2 bug.
 
-NOTE: if bisect brought you here, you should apply the series up until #9,
-otherwise Windows guests can't work properly and malicious guests can block
-other guests by not releasing their sent packets.
+It seems like a no-brainer to do the hoisting patch, for which I prefer
+the version proposed by Jiri Olsa which reads %cr2 and then passes it to
+__do_page_fault() in a GPR:
 
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
----
- drivers/net/xen-netback/common.h    |    3 +++
- drivers/net/xen-netback/interface.c |   15 +++++++++++++++
- drivers/net/xen-netback/netback.c   |    9 ++++++++-
- 3 files changed, 26 insertions(+), 1 deletion(-)
+http://lkml.kernel.org/r/20140228160526.GD1133@krava.brq.redhat.com
 
-diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
-index 79ba456..eac171e 100644
---- a/drivers/net/xen-netback/common.h
-+++ b/drivers/net/xen-netback/common.h
-@@ -167,6 +167,9 @@ struct xenvif {
- 
- 	/* Statistics */
- 	unsigned long rx_gso_checksum_fixup;
-+	unsigned long tx_zerocopy_sent;
-+	unsigned long tx_zerocopy_success;
-+	unsigned long tx_zerocopy_fail;
- 
- 	/* Miscellaneous private stuff. */
- 	struct net_device *dev;
-diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
-index 408ab57..adfed30 100644
---- a/drivers/net/xen-netback/interface.c
-+++ b/drivers/net/xen-netback/interface.c
-@@ -237,6 +237,21 @@ static const struct xenvif_stat {
- 		"rx_gso_checksum_fixup",
- 		offsetof(struct xenvif, rx_gso_checksum_fixup)
- 	},
-+	/* If (sent != success + fail), there are probably packets never
-+	 * freed up properly!
-+	 */
-+	{
-+		"tx_zerocopy_sent",
-+		offsetof(struct xenvif, tx_zerocopy_sent),
-+	},
-+	{
-+		"tx_zerocopy_success",
-+		offsetof(struct xenvif, tx_zerocopy_success),
-+	},
-+	{
-+		"tx_zerocopy_fail",
-+		offsetof(struct xenvif, tx_zerocopy_fail)
-+	},
- };
- 
- static int xenvif_get_sset_count(struct net_device *dev, int string_set)
-diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index bc91965..44e6988 100644
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -1554,8 +1554,10 @@ static int xenvif_tx_submit(struct xenvif *vif)
- 		 * do a skb_copy_ubufs while we are still in control of the
- 		 * skb. E.g. the __pskb_pull_tail earlier can do such thing.
- 		 */
--		if (skb_shinfo(skb)->destructor_arg)
-+		if (skb_shinfo(skb)->destructor_arg) {
- 			skb_shinfo(skb)->tx_flags |= SKBTX_DEV_ZEROCOPY;
-+			vif->tx_zerocopy_sent++;
-+		}
- 
- 		netif_receive_skb(skb);
- 	}
-@@ -1595,6 +1597,11 @@ void xenvif_zerocopy_callback(struct ubuf_info *ubuf, bool zerocopy_success)
- 		napi_schedule(&vif->napi);
- 		local_bh_enable();
- 	}
-+
-+	if (likely(zerocopy_success))
-+		vif->tx_zerocopy_success++;
-+	else
-+		vif->tx_zerocopy_fail++;
- }
- 
- static inline void xenvif_tx_dealloc_action(struct xenvif *vif)
+As fart as I can tell this should fix Vince's problem as well.
+
+Anyone who objects to this?  Otherwise I will put it in tip:x86/urgent
+tomorrow.
+
+Do we need any more refinements this late in the -rc cycle?
+
+	-hpa
+
