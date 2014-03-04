@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932389AbaCDUFu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:05:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41814 "EHLO
+	id S932417AbaCDUIP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:08:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41840 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932365AbaCDUFq (ORCPT
+	with ESMTP id S932388AbaCDUFu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:05:46 -0500
+	Tue, 4 Mar 2014 15:05:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>, Stephen Smalley <sds@tycho.nsa.gov>,
-        Paul Moore <pmoore@redhat.com>
-Subject: [PATCH 3.10 80/97] SELinux: bigendian problems with filename trans rules
-Date: Tue,  4 Mar 2014 12:04:33 -0800
-Message-Id: <20140304200348.624354666@linuxfoundation.org>
+        Jean Delvare <jdelvare@suse.de>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Doug Thompson <dougthompson@xmission.com>,
+        Borislav Petkov <bp@suse.de>
+Subject: [PATCH 3.10 90/97] i7300_edac: Fix device reference count
+Date: Tue,  4 Mar 2014 12:04:43 -0800
+Message-Id: <20140304200348.967599298@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -29,42 +31,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Paris <eparis@redhat.com>
+From: Jean Delvare <jdelvare@suse.de>
 
-commit 9085a6422900092886da8c404e1c5340c4ff1cbf upstream.
+commit 75135da0d68419ef8a925f4c1d5f63d8046e314d upstream.
 
-When writing policy via /sys/fs/selinux/policy I wrote the type and class
-of filename trans rules in CPU endian instead of little endian.  On
-x86_64 this works just fine, but it means that on big endian arch's like
-ppc64 and s390 userspace reads the policy and converts it from
-le32_to_cpu.  So the values are all screwed up.  Write the values in le
-format like it should have been to start.
+pci_get_device() decrements the reference count of "from" (last
+argument) so when we break off the loop successfully we have only one
+device reference - and we don't know which device we have. If we want
+a reference to each device, we must take them explicitly and let
+the pci_get_device() walk complete to avoid duplicate references.
 
-Signed-off-by: Eric Paris <eparis@redhat.com>
-Acked-by:  Stephen Smalley <sds@tycho.nsa.gov>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+This is serious, as over-putting device references will cause
+the device to eventually disappear. Without this fix, the kernel
+crashes after a few insmod/rmmod cycles.
+
+Tested on an Intel S7000FC4UR system with a 7300 chipset.
+
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Link: http://lkml.kernel.org/r/20140224111656.09bbb7ed@endymion.delvare
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Doug Thompson <dougthompson@xmission.com>
+Signed-off-by: Borislav Petkov <bp@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- security/selinux/ss/policydb.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/edac/i7300_edac.c |   38 ++++++++++++++++++++------------------
+ 1 file changed, 20 insertions(+), 18 deletions(-)
 
---- a/security/selinux/ss/policydb.c
-+++ b/security/selinux/ss/policydb.c
-@@ -3258,10 +3258,10 @@ static int filename_write_helper(void *k
- 	if (rc)
- 		return rc;
+--- a/drivers/edac/i7300_edac.c
++++ b/drivers/edac/i7300_edac.c
+@@ -943,33 +943,35 @@ static int i7300_get_devices(struct mem_
  
--	buf[0] = ft->stype;
--	buf[1] = ft->ttype;
--	buf[2] = ft->tclass;
--	buf[3] = otype->otype;
-+	buf[0] = cpu_to_le32(ft->stype);
-+	buf[1] = cpu_to_le32(ft->ttype);
-+	buf[2] = cpu_to_le32(ft->tclass);
-+	buf[3] = cpu_to_le32(otype->otype);
+ 	/* Attempt to 'get' the MCH register we want */
+ 	pdev = NULL;
+-	while (!pvt->pci_dev_16_1_fsb_addr_map ||
+-	       !pvt->pci_dev_16_2_fsb_err_regs) {
+-		pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
+-				      PCI_DEVICE_ID_INTEL_I7300_MCH_ERR, pdev);
+-		if (!pdev) {
+-			/* End of list, leave */
+-			i7300_printk(KERN_ERR,
+-				"'system address,Process Bus' "
+-				"device not found:"
+-				"vendor 0x%x device 0x%x ERR funcs "
+-				"(broken BIOS?)\n",
+-				PCI_VENDOR_ID_INTEL,
+-				PCI_DEVICE_ID_INTEL_I7300_MCH_ERR);
+-			goto error;
+-		}
+-
++	while ((pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
++				      PCI_DEVICE_ID_INTEL_I7300_MCH_ERR,
++				      pdev))) {
+ 		/* Store device 16 funcs 1 and 2 */
+ 		switch (PCI_FUNC(pdev->devfn)) {
+ 		case 1:
+-			pvt->pci_dev_16_1_fsb_addr_map = pdev;
++			if (!pvt->pci_dev_16_1_fsb_addr_map)
++				pvt->pci_dev_16_1_fsb_addr_map =
++							pci_dev_get(pdev);
+ 			break;
+ 		case 2:
+-			pvt->pci_dev_16_2_fsb_err_regs = pdev;
++			if (!pvt->pci_dev_16_2_fsb_err_regs)
++				pvt->pci_dev_16_2_fsb_err_regs =
++							pci_dev_get(pdev);
+ 			break;
+ 		}
+ 	}
  
- 	rc = put_entry(buf, sizeof(u32), 4, fp);
- 	if (rc)
++	if (!pvt->pci_dev_16_1_fsb_addr_map ||
++	    !pvt->pci_dev_16_2_fsb_err_regs) {
++		/* At least one device was not found */
++		i7300_printk(KERN_ERR,
++			"'system address,Process Bus' device not found:"
++			"vendor 0x%x device 0x%x ERR funcs (broken BIOS?)\n",
++			PCI_VENDOR_ID_INTEL,
++			PCI_DEVICE_ID_INTEL_I7300_MCH_ERR);
++		goto error;
++	}
++
+ 	edac_dbg(1, "System Address, processor bus- PCI Bus ID: %s  %x:%x\n",
+ 		 pci_name(pvt->pci_dev_16_0_fsb_ctlr),
+ 		 pvt->pci_dev_16_0_fsb_ctlr->vendor,
 
 
