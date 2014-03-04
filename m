@@ -1,97 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756156AbaCDDKd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 22:10:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35538 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756021AbaCDDKc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 22:10:32 -0500
-Message-ID: <531543FD.7090907@redhat.com>
-Date: Tue, 04 Mar 2014 11:09:49 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Haiyang Zhang <haiyangz@microsoft.com>, davem@davemloft.net,
-        netdev@vger.kernel.org
-CC: kys@microsoft.com, olaf@aepfle.de, linux-kernel@vger.kernel.org,
-        driverdev-devel@linuxdriverproject.org
-Subject: Re: [PATCH net-next] hyperv: Move state setting for link query
-References: <1393890875-1420-1-git-send-email-haiyangz@microsoft.com>
-In-Reply-To: <1393890875-1420-1-git-send-email-haiyangz@microsoft.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756126AbaCDDNe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 22:13:34 -0500
+Received: from g2t2352.austin.hp.com ([15.217.128.51]:28053 "EHLO
+	g2t2352.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756014AbaCDDNd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 22:13:33 -0500
+Message-ID: <1393902810.30648.36.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH v4] mm: per-thread vma caching
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, aswin@hp.com,
+        scott.norton@hp.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Date: Mon, 03 Mar 2014 19:13:30 -0800
+In-Reply-To: <20140303191224.96f93142.akpm@linux-foundation.org>
+References: <1393537704.2899.3.camel@buesod1.americas.hpqcorp.net>
+	 <20140303164002.02df915e12d05bb98762407f@linux-foundation.org>
+	 <1393894778.30648.29.camel@buesod1.americas.hpqcorp.net>
+	 <20140303172348.3f00c9df.akpm@linux-foundation.org>
+	 <1393900953.30648.32.camel@buesod1.americas.hpqcorp.net>
+	 <20140303191224.96f93142.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/2014 07:54 AM, Haiyang Zhang wrote:
-> It moves the state setting for query into rndis_filter_receive_response().
-> All callbacks including query-complete and status-callback are synchronized
-> by channel->inbound_lock. This prevents pentential race between them.
+On Mon, 2014-03-03 at 19:12 -0800, Andrew Morton wrote:
+> On Mon, 03 Mar 2014 18:42:33 -0800 Davidlohr Bueso <davidlohr@hp.com> wrote:
+> 
+> > On Mon, 2014-03-03 at 17:23 -0800, Andrew Morton wrote:
+> > > On Mon, 03 Mar 2014 16:59:38 -0800 Davidlohr Bueso <davidlohr@hp.com> wrote:
+> > > 
+> > > > > >...
+> > > > > >
+> > > > > > +static bool vmacache_valid(struct mm_struct *mm)
+> > > > > > +{
+> > > > > > +	struct task_struct *curr = current;
+> > > > > > +
+> > > > > > +	if (mm != curr->mm)
+> > > > > > +		return false;
+> > > > > 
+> > > > > What's going on here?  Handling a task poking around in someone else's
+> > > > > mm?  I'm thinking "__access_remote_vm", but I don't know what you were
+> > > > > thinking ;) An explanatory comment would be revealing.
+> > > > 
+> > > > I don't understand the doubt here. Seems like a pretty obvious thing to
+> > > > check -- yes it's probably unlikely but we certainly don't want to be
+> > > > validating the cache on an mm that's not ours... or are you saying it's
+> > > > redundant??
+> > > 
+> > > Well it has to be here for a reason and I'm wondering that that reason
+> > > is.  If nobody comes here with a foreign mm then let's remove it.
+> > 
+> > find_vma() can be called by concurrent threads sharing the mm->mmap_sem
+> > for reading, thus this check needs to be there.
+> 
+> Confused.  If the threads share mm->mmap_sem then they share mm and the
+> test will always be false?
 
-This still looks racy to me. The problem is workqueue is not
-synchronized with those here.
-
-Consider the following case in netvsc_link_change():
-
-    if (rdev->link_state) {
-    ... receive interrupt ...
-    rndis_filter_receice_response() which changes rdev->link_state
-    ...
-        netif_carrier_off()
-    }
-
-And also it need to schedule a work otherwise the link status is out of
-sync.
-> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> ---
->  drivers/net/hyperv/rndis_filter.c |   21 ++++++++++++++++++++-
->  1 files changed, 20 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
-> index f0cc8ef..6a9f602 100644
-> --- a/drivers/net/hyperv/rndis_filter.c
-> +++ b/drivers/net/hyperv/rndis_filter.c
-> @@ -240,6 +240,22 @@ static int rndis_filter_send_request(struct rndis_device *dev,
->  	return ret;
->  }
->  
-> +static void rndis_set_link_state(struct rndis_device *rdev,
-> +				 struct rndis_request *request)
-> +{
-> +	u32 link_status;
-> +	struct rndis_query_complete *query_complete;
-> +
-> +	query_complete = &request->response_msg.msg.query_complete;
-> +
-> +	if (query_complete->status == RNDIS_STATUS_SUCCESS &&
-> +	    query_complete->info_buflen == sizeof(u32)) {
-> +		memcpy(&link_status, (void *)((unsigned long)query_complete +
-> +		       query_complete->info_buf_offset), sizeof(u32));
-> +		rdev->link_state = link_status != 0;
-> +	}
-> +}
-> +
->  static void rndis_filter_receive_response(struct rndis_device *dev,
->  				       struct rndis_message *resp)
->  {
-> @@ -269,6 +285,10 @@ static void rndis_filter_receive_response(struct rndis_device *dev,
->  		    sizeof(struct rndis_message) + RNDIS_EXT_LEN) {
->  			memcpy(&request->response_msg, resp,
->  			       resp->msg_len);
-> +			if (request->request_msg.ndis_msg_type ==
-> +			    RNDIS_MSG_QUERY && request->request_msg.msg.
-> +			    query_req.oid == RNDIS_OID_GEN_MEDIA_CONNECT_STATUS)
-> +				rndis_set_link_state(dev, request);
->  		} else {
->  			netdev_err(ndev,
->  				"rndis response buffer overflow "
-> @@ -617,7 +637,6 @@ static int rndis_filter_query_device_link_status(struct rndis_device *dev)
->  	ret = rndis_filter_query_device(dev,
->  				      RNDIS_OID_GEN_MEDIA_CONNECT_STATUS,
->  				      &link_status, &size);
-> -	dev->link_state = (link_status != 0) ? true : false;
->  
->  	return ret;
->  }
+Yes, I shortly realized that was silly... but I can say for sure it can
+happen and a quick qemu run confirms it. So I see your point as to
+asking why we need it, so now I'm looking for an explanation in the
+code.
 
