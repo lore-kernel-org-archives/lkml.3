@@ -1,265 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756834AbaCDKBU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 05:01:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22182 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756511AbaCDKBL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 05:01:11 -0500
-Message-ID: <5315A40E.6010209@redhat.com>
-Date: Tue, 04 Mar 2014 10:59:42 +0100
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Alexei Starovoitov <ast@plumgrid.com>
-CC: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Hagen Paul Pfeifer <hagen@jauu.net>,
-        Jesse Gross <jesse@nicira.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH v4 net-next 1/3] Extended BPF interpreter and converter
-References: <1393910304-4004-1-git-send-email-ast@plumgrid.com> <1393910304-4004-2-git-send-email-ast@plumgrid.com>
-In-Reply-To: <1393910304-4004-2-git-send-email-ast@plumgrid.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1756898AbaCDKEn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 05:04:43 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:41292 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756640AbaCDKEk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 05:04:40 -0500
+Message-ID: <1393927459.3917.2.camel@paszta.hi.pengutronix.de>
+Subject: Re: [PATCH v5 6/7] of: Implement simplified graph binding for
+ single port devices
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        devicetree@vger.kernel.org
+Date: Tue, 04 Mar 2014 11:04:19 +0100
+In-Reply-To: <53159791.5080205@ti.com>
+References: <1393522540-22887-1-git-send-email-p.zabel@pengutronix.de>
+	 <1393522540-22887-7-git-send-email-p.zabel@pengutronix.de>
+	 <53159791.5080205@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/2014 06:18 AM, Alexei Starovoitov wrote:
-> Extended BPF extends old BPF in the following ways:
-> - from 2 to 10 registers
->    Original BPF has two registers (A and X) and hidden frame pointer.
->    Extended BPF has ten registers and read-only frame pointer.
-> - from 32-bit registers to 64-bit registers
->    semantics of old 32-bit ALU operations are preserved via 32-bit
->    subregisters
-> - if (cond) jump_true; else jump_false;
->    old BPF insns are replaced with:
->    if (cond) jump_true; /* else fallthrough */
-> - adds signed > and >= insns
-> - 16 4-byte stack slots for register spill-fill replaced with
->    up to 512 bytes of multi-use stack space
-> - introduces bpf_call insn and register passing convention for zero
->    overhead calls from/to other kernel functions (not part of this patch)
-> - adds arithmetic right shift insn
-> - adds swab32/swab64 insns
-> - adds atomic_add insn
-> - old tax/txa insns are replaced with 'mov dst,src' insn
->
-> Extended BPF is designed to be JITed with one to one mapping, which
-> allows GCC/LLVM backends to generate optimized BPF code that performs
-> almost as fast as natively compiled code
->
-> sk_convert_filter() remaps old style insns into extended:
-> 'sock_filter' instructions are remapped on the fly to
-> 'sock_filter_ext' extended instructions when
-> sysctl net.core.bpf_ext_enable=1
->
-> Old filter comes through sk_attach_filter() or sk_unattached_filter_create()
->   if (bpf_ext_enable) {
->      convert to new
->      sk_chk_filter() - check old bpf
->      use sk_run_filter_ext() - new interpreter
->   } else {
->      sk_chk_filter() - check old bpf
->      if (bpf_jit_enable)
->          use old jit
->      else
->          use sk_run_filter() - old interpreter
->   }
->
-> sk_run_filter_ext() interpreter is noticeably faster
-> than sk_run_filter() for two reasons:
->
-> 1.fall-through jumps
->    Old BPF jump instructions are forced to go either 'true' or 'false'
->    branch which causes branch-miss penalty.
->    Extended BPF jump instructions have one branch and fall-through,
->    which fit CPU branch predictor logic better.
->    'perf stat' shows drastic difference for branch-misses.
->
-> 2.jump-threaded implementation of interpreter vs switch statement
->    Instead of single tablejump at the top of 'switch' statement, GCC will
->    generate multiple tablejump instructions, which helps CPU branch predictor
->
-> Performance of two BPF filters generated by libpcap was measured
-> on x86_64, i386 and arm32.
->
-> fprog #1 is taken from Documentation/networking/filter.txt:
-> tcpdump -i eth0 port 22 -dd
->
-> fprog #2 is taken from 'man tcpdump':
-> tcpdump -i eth0 'tcp port 22 and (((ip[2:2] - ((ip[0]&0xf)<<2)) -
->     ((tcp[12]&0xf0)>>2)) != 0)' -dd
->
-> Other libpcap programs have similar performance differences.
->
-> Raw performance data from BPF micro-benchmark:
-> SK_RUN_FILTER on same SKB (cache-hit) or 10k SKBs (cache-miss)
-> time in nsec per call, smaller is better
-> --x86_64--
->           fprog #1  fprog #1   fprog #2  fprog #2
->           cache-hit cache-miss cache-hit cache-miss
-> old BPF     90       101       192       202
-> ext BPF     31        71       47         97
-> old BPF jit 12        34       17         44
-> ext BPF jit TBD
->
-> --i386--
->           fprog #1  fprog #1   fprog #2  fprog #2
->           cache-hit cache-miss cache-hit cache-miss
-> old BPF    107        136      227       252
-> ext BPF     40        119       69       172
->
-> --arm32--
->           fprog #1  fprog #1   fprog #2  fprog #2
->           cache-hit cache-miss cache-hit cache-miss
-> old BPF    202        300      475       540
-> ext BPF    139        270      296       470
-> old BPF jit 26        182       37       202
-> new BPF jit TBD
->
-> Tested with trinify BPF fuzzer
->
-> Future work:
->
-> 0. seccomp
->
-> 1. add extended BPF JIT for x86_64
->
-> 2. add inband old/new demux and extended BPF verifier, so that new programs
->     can be loaded through old sk_attach_filter() and sk_unattached_filter_create()
->     interfaces
->
-> 3. tracing filters systemtap-like with extended BPF
->
-> 4. OVS with extended BPF
->
-> 5. nftables with extended BPF
->
-> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+Am Dienstag, den 04.03.2014, 11:06 +0200 schrieb Tomi Valkeinen:
+> On 27/02/14 19:35, Philipp Zabel wrote:
+> > For simple devices with only one port, it can be made implicit.
+> > The endpoint node can be a direct child of the device node.
+> 
+> <snip>
+> 
+> > @@ -2105,9 +2112,11 @@ struct device_node *of_graph_get_remote_port_parent(
+> >  	/* Get remote endpoint node. */
+> >  	np = of_parse_phandle(node, "remote-endpoint", 0);
+> >  
+> > -	/* Walk 3 levels up only if there is 'ports' node. */
+> > +	/* Walk 3 levels up only if there is 'ports' node */
+> >  	for (depth = 3; depth && np; depth--) {
+> >  		np = of_get_next_parent(np);
+> > +		if (depth == 3 && of_node_cmp(np->name, "port"))
+> > +			break;
+> >  		if (depth == 2 && of_node_cmp(np->name, "ports"))
+> >  			break;
+> >  	}
+> 
+> This function becomes a bit funny. Would it be clearer just to do
+> something like:
+> 
+> 	np = of_parse_phandle(node, "remote-endpoint", 0);
+> 
+> 	np = of_get_next_parent(np);
+> 	if (of_node_cmp(np->name, "port") != 0)
+> 		return np;
+> 
+> 	np = of_get_next_parent(np);
+> 	if (of_node_cmp(np->name, "ports") != 0)
+> 		return np;
+> 
+> 	np = of_get_next_parent(np);
+> 	return np;
 
-Looks great, imho, some comments/questions inline:
+I'm not sure if this was initially crafted to reduce the number of
+function calls, but rolled out it certainly is easier to read. I'll
+change this as you suggest.
 
-Nit: subject line of your patches should be, e.g.
+thanks
+Philipp
 
-  "filter: add Extended BPF interpreter and converter"
-  "doc: filter: add Extended BPF documentation"
-  ...
-
-so first "<subsystem>: <summary phrase>".
-
-> ---
->   include/linux/filter.h      |    8 +-
->   include/linux/netdevice.h   |    1 +
->   include/uapi/linux/filter.h |   34 +-
->   net/core/filter.c           |  802 ++++++++++++++++++++++++++++++++++++++++++-
->   net/core/sysctl_net_core.c  |    7 +
->   5 files changed, 830 insertions(+), 22 deletions(-)
->
-> diff --git a/include/linux/filter.h b/include/linux/filter.h
-> index e568c8ef896b..0e84ff6e991b 100644
-> --- a/include/linux/filter.h
-> +++ b/include/linux/filter.h
-> @@ -52,7 +52,13 @@ extern int sk_detach_filter(struct sock *sk);
->   extern int sk_chk_filter(struct sock_filter *filter, unsigned int flen);
->   extern int sk_get_filter(struct sock *sk, struct sock_filter __user *filter, unsigned len);
->   extern void sk_decode_filter(struct sock_filter *filt, struct sock_filter *to);
-> +/* function remaps 'sock_filter' insns to 'sock_filter_ext' insns */
-> +int sk_convert_filter(struct sock_filter *old_prog, int len,
-> +		      struct sock_filter_ext *new_prog,	int *p_new_len);
-> +/* execute extended bpf program */
-
-I think this and the above comment can be omitted, as both have a kernel doc
-in its implementation in net/core/filter.c that is more precise.
-
-...
-> +struct sock_filter_ext {
-> +	__u8	code;    /* opcode */
-> +	__u8    a_reg:4; /* dest register */
-> +	__u8    x_reg:4; /* source register */
-> +	__s16	off;     /* signed offset */
-> +	__s32	imm;     /* signed immediate constant */
-> +};
-> +
->   struct sock_fprog {	/* Required for SO_ATTACH_FILTER. */
->   	unsigned short		len;	/* Number of filter blocks */
->   	struct sock_filter __user *filter;
-> @@ -45,12 +54,15 @@ struct sock_fprog {	/* Required for SO_ATTACH_FILTER. */
->   #define         BPF_JMP         0x05
->   #define         BPF_RET         0x06
->   #define         BPF_MISC        0x07
-> +#define         BPF_ALU64       0x07
-> +
->
-
-Please do not add empty newline above.
-
->   /* ld/ldx fields */
->   #define BPF_SIZE(code)  ((code) & 0x18)
->   #define         BPF_W           0x00
->   #define         BPF_H           0x08
->   #define         BPF_B           0x10
-...
-> diff --git a/net/core/filter.c b/net/core/filter.c
-> index ad30d626a5bd..1494421486b7 100644
-> --- a/net/core/filter.c
-> +++ b/net/core/filter.c
-> @@ -1,5 +1,6 @@
->   /*
->    * Linux Socket Filter - Kernel level socket filtering
-> + * Extended BPF is Copyright (c) 2011-2014 PLUMgrid, http://plumgrid.com
->    *
->    * Author:
->    *     Jay Schulist <jschlst@samba.org>
-> @@ -40,6 +41,8 @@
->   #include <linux/seccomp.h>
->   #include <linux/if_vlan.h>
->
-> +int bpf_ext_enable __read_mostly;
-> +
->   /* No hurry in this branch
->    *
->    * Exported for the bpf jit load helper.
-> @@ -399,6 +402,7 @@ load_b:
->   	}
->
->   	return 0;
-> +#undef K
->   }
->   EXPORT_SYMBOL(sk_run_filter);
-...
-> +		/* RET_K, RET_A are remaped into 2 insns */
-> +		case BPF_RET | BPF_A:
-> +		case BPF_RET | BPF_K:
-> +			insn->code = BPF_ALU | BPF_MOV |
-> +				(BPF_SRC(fp->code) == BPF_K ? BPF_K : BPF_X);
-
-Hmm, so the case statement is about BPF_RET | BPF_A and BPF_RET | BPF_K
-but BPF_RET | BPF_X is not mentioned. However, in BPF_SRC(fp->code)
-selection you fall back to BPF_X if it doesn't equal BPF_K? Is that
-correct? And, you probably also need to handle BPF_RET | BPF_X ?
-
-> +			insn->a_reg = 0;
-> +			insn->x_reg = 6;
-> +			insn->imm = fp->k;
-> +
-> +			insn++;
-> +			insn->code = BPF_RET | BPF_K;
-> +			break;
-...
-> +	/* RET */
-> +BPF_RET_BPF_K_0:
-> +	return regs[0/* R0 */];
