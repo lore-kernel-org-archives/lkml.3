@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757257AbaCDUF1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:05:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41660 "EHLO
+	id S1757901AbaCDUUT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:20:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41684 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757150AbaCDUFT (ORCPT
+	with ESMTP id S1757249AbaCDUF0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:05:19 -0500
+	Tue, 4 Mar 2014 15:05:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCH 3.10 56/97] x86: dma-mapping: fix GFP_ATOMIC macro usage
-Date: Tue,  4 Mar 2014 12:04:09 -0800
-Message-Id: <20140304200347.868094322@linuxfoundation.org>
+        David Henningsson <david.henningsson@canonical.com>,
+        Gerald Yang <gerald.yang@canonical.com>,
+        Hui Wang <hui.wang@canonical.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 43/97] ALSA: hda - Enable front audio jacks on one HP desktop model
+Date: Tue,  4 Mar 2014 12:03:56 -0800
+Message-Id: <20140304200347.457321008@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -28,35 +30,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marek Szyprowski <m.szyprowski@samsung.com>
+From: Hui Wang <hui.wang@canonical.com>
 
-commit c091c71ad2218fc50a07b3d1dab85783f3b77efd upstream.
+commit 1de7ca5e844866f56bebb2fc47fa18e090677e88 upstream.
 
-GFP_ATOMIC is not a single gfp flag, but a macro which expands to the other
-flags, where meaningful is the LACK of __GFP_WAIT flag. To check if caller
-wants to perform an atomic allocation, the code must test for a lack of the
-__GFP_WAIT flag. This patch fixes the issue introduced in v3.5-rc1.
+The front headphone and mic jackes on a HP desktop model (Vendor Id:
+0x111d76c7 Subsystem Id: 0x103c2b17) can not work, the codec on this
+machine has 8 physical ports, 6 of them are routed to rear jackes
+and all of them work very well, while the remaining 2 ports are
+routed to front headphone and mic jackes, but the corresponding
+pin complex node are not defined correctly.
 
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+After apply this fix, the front audio jackes can work very well.
+
+[trivial fix of enum definition by tiwai]
+
+BugLink: https://bugs.launchpad.net/bugs/1282369
+Cc: David Henningsson <david.henningsson@canonical.com>
+Tested-by: Gerald Yang <gerald.yang@canonical.com>
+Signed-off-by: Hui Wang <hui.wang@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/pci-dma.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ sound/pci/hda/patch_sigmatel.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
---- a/arch/x86/kernel/pci-dma.c
-+++ b/arch/x86/kernel/pci-dma.c
-@@ -100,8 +100,10 @@ void *dma_generic_alloc_coherent(struct
- 	flag |= __GFP_ZERO;
- again:
- 	page = NULL;
--	if (!(flag & GFP_ATOMIC))
-+	/* CMA can be used only in the context which permits sleeping */
-+	if (flag & __GFP_WAIT)
- 		page = dma_alloc_from_contiguous(dev, count, get_order(size));
-+	/* fallback */
- 	if (!page)
- 		page = alloc_pages_node(dev_to_node(dev), flag, get_order(size));
- 	if (!page)
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -83,6 +83,7 @@ enum {
+ 	STAC_DELL_M6_BOTH,
+ 	STAC_DELL_EQ,
+ 	STAC_ALIENWARE_M17X,
++	STAC_92HD89XX_HP_FRONT_JACK,
+ 	STAC_92HD73XX_MODELS
+ };
+ 
+@@ -1775,6 +1776,12 @@ static const struct hda_pintbl intel_dg4
+ 	{}
+ };
+ 
++static const struct hda_pintbl stac92hd89xx_hp_front_jack_pin_configs[] = {
++	{ 0x0a, 0x02214030 },
++	{ 0x0b, 0x02A19010 },
++	{}
++};
++
+ static void stac92hd73xx_fixup_ref(struct hda_codec *codec,
+ 				   const struct hda_fixup *fix, int action)
+ {
+@@ -1893,6 +1900,10 @@ static const struct hda_fixup stac92hd73
+ 	[STAC_92HD73XX_NO_JD] = {
+ 		.type = HDA_FIXUP_FUNC,
+ 		.v.func = stac92hd73xx_fixup_no_jd,
++	},
++	[STAC_92HD89XX_HP_FRONT_JACK] = {
++		.type = HDA_FIXUP_PINS,
++		.v.pins = stac92hd89xx_hp_front_jack_pin_configs,
+ 	}
+ };
+ 
+@@ -1953,6 +1964,8 @@ static const struct snd_pci_quirk stac92
+ 		      "Alienware M17x", STAC_ALIENWARE_M17X),
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x0490,
+ 		      "Alienware M17x R3", STAC_DELL_EQ),
++	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x2b17,
++				"unknown HP", STAC_92HD89XX_HP_FRONT_JACK),
+ 	{} /* terminator */
+ };
+ 
 
 
