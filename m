@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757386AbaCDUNZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:13:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41782 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757259AbaCDUFl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757312AbaCDUFl (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 4 Mar 2014 15:05:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41719 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751494AbaCDUFa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 15:05:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>, Olof Johansson <olof@lixom.net>
-Subject: [PATCH 3.10 86/97] ARM: tegra: only run PL310 init on systems with one
-Date: Tue,  4 Mar 2014 12:04:39 -0800
-Message-Id: <20140304200348.843900335@linuxfoundation.org>
+        Joerg Dorchain <joerg@dorchain.net>
+Subject: [PATCH 3.10 71/97] USB: ftdi_sio: add Cressi Leonardo PID
+Date: Tue,  4 Mar 2014 12:04:24 -0800
+Message-Id: <20140304200348.333545774@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -28,55 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Warren <swarren@nvidia.com>
+From: Joerg Dorchain <joerg@dorchain.net>
 
-commit 8859685785bfafadf9bc922dd3a2278e59886947 upstream.
+commit 6dbd46c849e071e6afc1e0cad489b0175bca9318 upstream.
 
-Fix tegra_init_cache() to check whether the system has a PL310 cache
-before touching the PL310 registers. This prevents access to non-existent
-registers on Tegra114 and later.
+Hello,
 
-Note for stable kernels:
-In <= v3.12, the file to patch is arch/arm/mach-tegra/common.c.
+the following patch adds an entry for the PID of a Cressi Leonardo
+diving computer interface to kernel 3.13.0.
+It is detected as FT232RL.
+Works with subsurface.
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
-Signed-off-by: Olof Johansson <olof@lixom.net>
+Signed-off-by: Joerg Dorchain <joerg@dorchain.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-tegra/common.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     |    2 ++
+ drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
+ 2 files changed, 8 insertions(+)
 
---- a/arch/arm/mach-tegra/common.c
-+++ b/arch/arm/mach-tegra/common.c
-@@ -22,6 +22,7 @@
- #include <linux/io.h>
- #include <linux/clk.h>
- #include <linux/delay.h>
-+#include <linux/of.h>
- #include <linux/irqchip.h>
- #include <linux/clk/tegra.h>
- 
-@@ -80,10 +81,20 @@ void tegra_assert_system_reset(char mode
- static void __init tegra_init_cache(void)
- {
- #ifdef CONFIG_CACHE_L2X0
-+	static const struct of_device_id pl310_ids[] __initconst = {
-+		{ .compatible = "arm,pl310-cache",  },
-+		{}
-+	};
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -910,6 +910,8 @@ static struct usb_device_id id_table_com
+ 	/* Crucible Devices */
+ 	{ USB_DEVICE(FTDI_VID, FTDI_CT_COMET_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_Z3X_PID) },
++	/* Cressi Devices */
++	{ USB_DEVICE(FTDI_VID, FTDI_CRESSI_PID) },
+ 	{ },					/* Optional parameter entry */
+ 	{ }					/* Terminating entry */
+ };
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -1320,3 +1320,9 @@
+  * Manufacturer: Smart GSM Team
+  */
+ #define FTDI_Z3X_PID		0x0011
 +
-+	struct device_node *np;
- 	int ret;
- 	void __iomem *p = IO_ADDRESS(TEGRA_ARM_PERIF_BASE) + 0x3000;
- 	u32 aux_ctrl, cache_type;
- 
-+	np = of_find_matching_node(NULL, pl310_ids);
-+	if (!np)
-+		return;
-+
- 	cache_type = readl(p + L2X0_CACHE_TYPE);
- 	aux_ctrl = (cache_type & 0x700) << (17-8);
- 	aux_ctrl |= 0x7C400001;
++/*
++ * Product: Cressi PC Interface
++ * Manufacturer: Cressi
++ */
++#define FTDI_CRESSI_PID		0x87d0
 
 
