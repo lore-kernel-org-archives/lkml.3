@@ -1,66 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754672AbaCDS30 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 13:29:26 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:54304 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753603AbaCDS3Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 13:29:24 -0500
-Date: Tue, 4 Mar 2014 10:29:22 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>, Russell King <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Tomasz Figa <t.figa@samsung.com>, Mark Brown <broonie@kernel.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH v2 02/11] drivercore: Bind/unbind power domain on
- probe/remove
-Message-ID: <20140304182922.GB9985@codeaurora.org>
-References: <1393862536-9842-1-git-send-email-tomasz.figa@gmail.com>
- <1393862536-9842-3-git-send-email-tomasz.figa@gmail.com>
+	id S1755058AbaCDScN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 13:32:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47024 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752144AbaCDScL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 13:32:11 -0500
+Message-ID: <53161BEF.1050200@redhat.com>
+Date: Tue, 04 Mar 2014 19:31:11 +0100
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393862536-9842-3-git-send-email-tomasz.figa@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexei Starovoitov <ast@plumgrid.com>
+CC: Hagen Paul Pfeifer <hagen@jauu.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ingo Molnar <mingo@kernel.org>, Will Drewry <wad@chromium.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jesse Gross <jesse@nicira.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v4 net-next 1/3] Extended BPF interpreter and converter
+References: <1393910304-4004-1-git-send-email-ast@plumgrid.com> <1393910304-4004-2-git-send-email-ast@plumgrid.com> <20140304142824.GA1083@localhost.localdomain> <CAMEtUuxHgcroQBPLFa9U=df6KznwkjARin8a3RfH4MdbB2rc7g@mail.gmail.com>
+In-Reply-To: <CAMEtUuxHgcroQBPLFa9U=df6KznwkjARin8a3RfH4MdbB2rc7g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/03, Tomasz Figa wrote:
-> On a number of platforms, devices are part of controllable power
-> domains, which need to be enabled before such devices can be accessed
-> and may be powered down when the device is idle to save some power.
-> This means that on systems that support power domain control using
-> generic power domains subsystem, it is necessary to add device to its
-> power domain before binding a driver to it and remove it from its power
-> domain after its driver is unbound to make sure that an unused device
-> does not affect power domain state.
-> 
-> Since this is not limited to particular busses and specific
-> archs/platforms, it is more convenient to do the above directly in
-> driver core, just as done with pinctrl default configuration. This patch
-> adds necessary code to really_probe() and __device_release_driver() to
-> achieve this and maintain consistent stack-like ordering of operations
-> happening when binding and unbinding a driver.
-> 
-> Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
+On 03/04/2014 06:53 PM, Alexei Starovoitov wrote:
+> On Tue, Mar 4, 2014 at 6:28 AM, Hagen Paul Pfeifer <hagen@jauu.net> wrote:
+>> If all issues raised by Daniel are addresed:
+>>
+>> Acked-by: Hagen Paul Pfeifer <hagen@jauu.net>
+>
+> Thanks!
+>
+>> But ...
+>>
+>>> Future work:
+>>>
+>>> 0. seccomp
+>>>
+>>> 1. add extended BPF JIT for x86_64
+>>>
+>>> 2. add inband old/new demux and extended BPF verifier, so that new programs
+>>>    can be loaded through old sk_attach_filter() and sk_unattached_filter_create()
+>>>    interfaces
+>>>
+>>> 3. tracing filters systemtap-like with extended BPF
+>>>
+>>> 4. OVS with extended BPF
+>>>
+>>> 5. nftables with extended BPF
+>>
+>> ... this is shit (not your fault). (Jitted) BPF envolved into a direction
+>> which is just not the right way to do it. You try to fix things, bypass
+>> architectural shortcomings of BPF, perf issues because and so on.
+>>
+>> The right direction is to write a new general purpose in-kernel interpreter
+>> from scratch. Capability layers should provide an compatible API for BPF and
 
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+I think ebpf would have the potential to be *the* general purpose
+in-kernel interpreter actually (if we undertake all this effort of
+migration) as its already designed to be in a more generic context
+than the traditional interpreter which is restricted to skb (or NULL).
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+>> seccomp. You have the knowledge to do exactly this, you nearly already did
+>> this - you should start this undertake!
+>
+> this insn set evolved over few years.
+> Initially we had nft-like high level state machine, but it wasn't fast,
+> then kprobe-like pure x86_64 which was fast, but very hard to analyze
+> from safety point of view. Then reduced x86-64 insn set and finally ebpf.
+> I think any brand new instruction set will have steep learning curve,
+> just because
+> it's all new. ebpf tries to reuse as much as possible. opcode encoding
+> is the same,
+> instruction size is fixed at 8 bytes and so on. Yeah, these
+> restrictions make few
+> things not 100% optimal, but imo common look and feel is more important.
+> What ebpf has already should be enough to do all of the above 'future work'.
+> Built-in JIT-ability of ebpf is the key to performance.
+> Ability to call some kernel functions from ebpf make it ultimately extensible.
+> socket filters and seccomp don't use this feature yet, but tracing filters will.
+>
+> Regards,
+> Alexei
