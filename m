@@ -1,71 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755978AbaCDAxn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 19:53:43 -0500
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:46138 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755838AbaCDAxl (ORCPT
+	id S1756000AbaCDAxz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 19:53:55 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:36652 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755838AbaCDAxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 19:53:41 -0500
+	Mon, 3 Mar 2014 19:53:52 -0500
+Date: Tue, 4 Mar 2014 00:53:06 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: David Long <dave.long@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        Rabin Vincent <rabin@rab.in>, "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        davem@davemloft.net, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 00/14] uprobes: Add uprobes support for ARM
+Message-ID: <20140304005306.GO21483@n2100.arm.linux.org.uk>
+References: <1392017945-4507-1-git-send-email-dave.long@linaro.org> <20140301123026.GD21483@n2100.arm.linux.org.uk> <53131DBE.7020500@linaro.org> <20140303205039.GA8949@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20140303163159.365d763b@nehalam.linuxnetplumber.net>
-References: <1393886825-24323-1-git-send-email-mcgrof@do-not-panic.com>
- <1393886825-24323-5-git-send-email-mcgrof@do-not-panic.com>
- <20140303154330.238a20bc@nehalam.linuxnetplumber.net> <CAB=NE6VpjebGrqFe7Q4L-uM0rrKitY3fB2kq5qGko+C1Fivm0w@mail.gmail.com>
- <20140303163159.365d763b@nehalam.linuxnetplumber.net>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Mon, 3 Mar 2014 16:53:19 -0800
-X-Google-Sender-Auth: YAoH8HYMg0WhzfjXNb99PJDxilM
-Message-ID: <CAB=NE6W0YwRb_CoTaNNoa=OMu_BVecjh7frBPJ_Ci3AwqboCSQ@mail.gmail.com>
-Subject: Re: [RFC v3 4/6] bridge: enable root block during device registration
-To: Stephen Hemminger <stephen@networkplumber.org>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kvm@vger.kernel.org, xen-devel@lists.xenproject.org,
-        bridge@lists.linux-foundation.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140303205039.GA8949@redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 3, 2014 at 4:31 PM, Stephen Hemminger
-<stephen@networkplumber.org> wrote:
-> On Mon, 3 Mar 2014 15:58:50 -0800
-> "Luis R. Rodriguez" <mcgrof@do-not-panic.com> wrote:
->
->> On Mon, Mar 3, 2014 at 3:43 PM, Stephen Hemminger
->> <stephen@networkplumber.org> wrote:
->> > Doing this in priv flags bloats what is a limited resource (# of bits).
->>
->> Agreed. I tried to avoid it but saw no other option for addressing
->> this during initialization properly without requirng a userspace
->> upgrade.
->
-> Replacing one Xen hack for another doesn't seem like great progress.
+On Mon, Mar 03, 2014 at 09:50:39PM +0100, Oleg Nesterov wrote:
+> On 03/02, David Long wrote:
+> >
+> > Oleg,
+> >
+> > I've been looking at arch/Kconfig and kernel/trace/Kconfig where they
+> > deal with uprobes.  The relevant items are CONFIG_UPROBES and
+> > CONFIG_UPROBE_EVENT.  It just doesn't look right to me.
+> 
+> Yes, this looks strange. I never understood these dependencies. In fact
+> I even never tried. And I do not really understand kbuild, unfortunately...
+> 
+> >> --- a/arch/Kconfig
+> >> +++ b/arch/Kconfig
+> >> @@ -87,7 +87,8 @@ config KPROBES_ON_FTRACE
+> >>
+> >>  config UPROBES
+> >>  	bool "Transparent user-space probes (EXPERIMENTAL)"
+> >> -	depends on UPROBE_EVENT && PERF_EVENTS
+> >> +	depends on ARCH_SUPPORTS_UPROBES
+> >> +	depends on PERF_EVENTS
+> 
+> And why CONFIG_UPROBES should depend on PERF_EVENTS? uprobes can be
+> used by (say) systemtap without UPROBE_EVENT/PERF_EVENTS.
+> 
+> But as Russell pointed out the events directory is only built if
+> CONFIG_PERF_EVENTS=y, so it should depend on it or select...
+> 
+> 
+> I dunno. Personally I vote for the patch from Srikar in
+> 
+> 	http://article.gmane.org/gmane.linux.kernel/1017186
+> 
+> This is what we currently have, currently CONFIG_UPROBES is not
+> user-selectable anyway.
 
-I'm the last person that wants to see any internal driver hack
-propagate, the goal was to kill one here.
+Yes, me too, but with the proviso that UPROBE_EVENT also sorts itself
+out with PERF_EVENTS in some way too (either by selecting it, which
+IMHO isn't nice, or by depending on it, or the build dependency itself
+gets sorted.)
 
-> I would rather see an API change as needed because there are other
-> things like setting STP parameters which might also want to be part
-> of initial device add.
+Maybe a simpler answer would be to change the build stuff (hand-crafted):
 
-As it stands right now ndo_add_slave() currently only allows us to
-pass the net_device, that's it, so we're confined there. One way I can
-think of to properly extend this interface is to allow extra
-parameters to be passed. We may even be able to move some old
-priv_flags for bonding onto this new interface but before I moved down
-this more invasive approach I wanted to review this other approach.
-Does extending ndo_add_slave() seems reasonable, or do you have any
-other preferred alternatives?
+kernel/Makefile
+-obj-$(CONFIG_PERF_EVENTS) += events/
++obj-y += events/
 
-Even though the high MAC address was a xen hack it is a hack put in
-place prior to the root block feature being added, so I would like at
-the very least a bit of consideration on userspace here. Its really
-the only reason why I've been stubborn on looking for a compromise. In
-the KVM case that doesn't use the root_block feature yet I would have
-considered just extending the ndo_add_slave() from the start but
-because xen-netback *does* have in place a hack removing it requires
-userspace considerations.
+and kernel/events/Makefile:
 
-  Luis
+-obj-y := core.o ring_buffer.o callchain.o
++perf-y := core.o ring_buffer.o callchain.o
+
+-obj-$(CONFIG_HAVE_HW_BREAKPOINT) += hw_breakpoint.o
++perf-$(CONFIG_HAVE_HW_BREAKPOINT) += hw_breakpoint.o
++
++obj-${CONFIG_PERF_EVENTS) += $(perf-y)
+
+?
+
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
