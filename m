@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932407AbaCDUFw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:05:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41810 "EHLO
+	id S1757349AbaCDUF7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:05:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41854 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932363AbaCDUFp (ORCPT
+	with ESMTP id S932363AbaCDUFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:05:45 -0500
+	Tue, 4 Mar 2014 15:05:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>
-Subject: [PATCH 3.10 79/97] xtensa: introduce spill_registers_kernel macro
-Date: Tue,  4 Mar 2014 12:04:32 -0800
-Message-Id: <20140304200348.594906021@linuxfoundation.org>
+        Mike Snitzer <snitzer@redhat.com>, Joe Thornber <ejt@redhat.com>
+Subject: [PATCH 3.10 94/97] dm thin: fix the error path for the thin device constructor
+Date: Tue,  4 Mar 2014 12:04:47 -0800
+Message-Id: <20140304200349.094647320@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -28,180 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Max Filippov <jcmvbkbc@gmail.com>
+From: Mike Snitzer <snitzer@redhat.com>
 
-commit e2fd1374c705abe4661df3fb6fadb3879c7c1846 upstream.
+commit 1acacc0784aab45627b6009e0e9224886279ac0b upstream.
 
-Most in-kernel users want registers spilled on the kernel stack and
-don't require PS.EXCM to be set. That means that they don't need fixup
-routine and could reuse regular window overflow mechanism for that,
-which makes spill routine very simple.
+dm_pool_close_thin_device() must be called if dm_set_target_max_io_len()
+fails in thin_ctr().  Otherwise __pool_destroy() will fail because the
+pool will still have an open thin device:
 
-Suggested-by: Chris Zankel <chris@zankel.net>
-Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+ device-mapper: thin metadata: attempt to close pmd when 1 device(s) are still open
+ device-mapper: thin: __pool_destroy: dm_pool_metadata_close() failed.
+
+Also, must establish error code if failing thin_ctr() because the pool
+is in fail_io mode.
+
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Acked-by: Joe Thornber <ejt@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/xtensa/include/asm/traps.h |   44 ++++++++++++++++++-----------
- arch/xtensa/kernel/entry.S      |   60 ++++++++++++++++++++++++++++++++--------
- 2 files changed, 76 insertions(+), 28 deletions(-)
+ drivers/md/dm-thin.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/arch/xtensa/include/asm/traps.h
-+++ b/arch/xtensa/include/asm/traps.h
-@@ -22,25 +22,37 @@ extern void do_unhandled(struct pt_regs
+--- a/drivers/md/dm-thin.c
++++ b/drivers/md/dm-thin.c
+@@ -2784,6 +2784,7 @@ static int thin_ctr(struct dm_target *ti
  
- static inline void spill_registers(void)
- {
--
-+#if XCHAL_NUM_AREGS > 16
- 	__asm__ __volatile__ (
--		"movi	a14, "__stringify((1 << PS_EXCM_BIT) | LOCKLEVEL)"\n\t"
--		"mov	a12, a0\n\t"
--		"rsr	a13, sar\n\t"
--		"xsr	a14, ps\n\t"
--		"movi	a0, _spill_registers\n\t"
--		"rsync\n\t"
--		"callx0 a0\n\t"
--		"mov	a0, a12\n\t"
--		"wsr	a13, sar\n\t"
--		"wsr	a14, ps\n\t"
--		: :
--#if defined(CONFIG_FRAME_POINTER)
--		: "a2", "a3", "a4",       "a11", "a12", "a13", "a14", "a15",
-+		"	call12	1f\n"
-+		"	_j	2f\n"
-+		"	retw\n"
-+		"	.align	4\n"
-+		"1:\n"
-+		"	_entry	a1, 48\n"
-+		"	addi	a12, a0, 3\n"
-+#if XCHAL_NUM_AREGS > 32
-+		"	.rept	(" __stringify(XCHAL_NUM_AREGS) " - 32) / 12\n"
-+		"	_entry	a1, 48\n"
-+		"	mov	a12, a0\n"
-+		"	.endr\n"
-+#endif
-+		"	_entry	a1, 48\n"
-+#if XCHAL_NUM_AREGS % 12 == 0
-+		"	mov	a8, a8\n"
-+#elif XCHAL_NUM_AREGS % 12 == 4
-+		"	mov	a12, a12\n"
-+#elif XCHAL_NUM_AREGS % 12 == 8
-+		"	mov	a4, a4\n"
-+#endif
-+		"	retw\n"
-+		"2:\n"
-+		: : : "a12", "a13", "memory");
- #else
--		: "a2", "a3", "a4", "a7", "a11", "a12", "a13", "a14", "a15",
-+	__asm__ __volatile__ (
-+		"	mov	a12, a12\n"
-+		: : : "memory");
- #endif
--		  "memory");
- }
+ 	if (get_pool_mode(tc->pool) == PM_FAIL) {
+ 		ti->error = "Couldn't open thin device, Pool is in fail mode";
++		r = -EINVAL;
+ 		goto bad_thin_open;
+ 	}
  
- #endif /* _XTENSA_TRAPS_H */
---- a/arch/xtensa/kernel/entry.S
-+++ b/arch/xtensa/kernel/entry.S
-@@ -1912,6 +1912,43 @@ ENTRY(system_call)
+@@ -2795,7 +2796,7 @@ static int thin_ctr(struct dm_target *ti
  
- ENDPROC(system_call)
+ 	r = dm_set_target_max_io_len(ti, tc->pool->sectors_per_block);
+ 	if (r)
+-		goto bad_thin_open;
++		goto bad_target_max_io_len;
  
-+/*
-+ * Spill live registers on the kernel stack macro.
-+ *
-+ * Entry condition: ps.woe is set, ps.excm is cleared
-+ * Exit condition: windowstart has single bit set
-+ * May clobber: a12, a13
-+ */
-+	.macro	spill_registers_kernel
-+
-+#if XCHAL_NUM_AREGS > 16
-+	call12	1f
-+	_j	2f
-+	retw
-+	.align	4
-+1:
-+	_entry	a1, 48
-+	addi	a12, a0, 3
-+#if XCHAL_NUM_AREGS > 32
-+	.rept	(XCHAL_NUM_AREGS - 32) / 12
-+	_entry	a1, 48
-+	mov	a12, a0
-+	.endr
-+#endif
-+	_entry	a1, 48
-+#if XCHAL_NUM_AREGS % 12 == 0
-+	mov	a8, a8
-+#elif XCHAL_NUM_AREGS % 12 == 4
-+	mov	a12, a12
-+#elif XCHAL_NUM_AREGS % 12 == 8
-+	mov	a4, a4
-+#endif
-+	retw
-+2:
-+#else
-+	mov	a12, a12
-+#endif
-+	.endm
+ 	ti->num_flush_bios = 1;
+ 	ti->flush_supported = true;
+@@ -2816,6 +2817,8 @@ static int thin_ctr(struct dm_target *ti
  
- /*
-  * Task switch.
-@@ -1924,21 +1961,20 @@ ENTRY(_switch_to)
+ 	return 0;
  
- 	entry	a1, 16
- 
--	mov	a12, a2			# preserve 'prev' (a2)
--	mov	a13, a3			# and 'next' (a3)
-+	mov	a10, a2			# preserve 'prev' (a2)
-+	mov	a11, a3			# and 'next' (a3)
- 
- 	l32i	a4, a2, TASK_THREAD_INFO
- 	l32i	a5, a3, TASK_THREAD_INFO
- 
--	save_xtregs_user a4 a6 a8 a9 a10 a11 THREAD_XTREGS_USER
-+	save_xtregs_user a4 a6 a8 a9 a12 a13 THREAD_XTREGS_USER
- 
--	s32i	a0, a12, THREAD_RA	# save return address
--	s32i	a1, a12, THREAD_SP	# save stack pointer
-+	s32i	a0, a10, THREAD_RA	# save return address
-+	s32i	a1, a10, THREAD_SP	# save stack pointer
- 
- 	/* Disable ints while we manipulate the stack pointer. */
- 
--	movi	a14, (1 << PS_EXCM_BIT) | LOCKLEVEL
--	xsr	a14, ps
-+	rsil	a14, LOCKLEVEL
- 	rsr	a3, excsave1
- 	rsync
- 	s32i	a3, a3, EXC_TABLE_FIXUP	/* enter critical section */
-@@ -1953,7 +1989,7 @@ ENTRY(_switch_to)
- 
- 	/* Flush register file. */
- 
--	call0	_spill_registers	# destroys a3, a4, and SAR
-+	spill_registers_kernel
- 
- 	/* Set kernel stack (and leave critical section)
- 	 * Note: It's save to set it here. The stack will not be overwritten
-@@ -1969,13 +2005,13 @@ ENTRY(_switch_to)
- 
- 	/* restore context of the task 'next' */
- 
--	l32i	a0, a13, THREAD_RA	# restore return address
--	l32i	a1, a13, THREAD_SP	# restore stack pointer
-+	l32i	a0, a11, THREAD_RA	# restore return address
-+	l32i	a1, a11, THREAD_SP	# restore stack pointer
- 
--	load_xtregs_user a5 a6 a8 a9 a10 a11 THREAD_XTREGS_USER
-+	load_xtregs_user a5 a6 a8 a9 a12 a13 THREAD_XTREGS_USER
- 
- 	wsr	a14, ps
--	mov	a2, a12			# return 'prev'
-+	mov	a2, a10			# return 'prev'
- 	rsync
- 
- 	retw
++bad_target_max_io_len:
++	dm_pool_close_thin_device(tc->td);
+ bad_thin_open:
+ 	__pool_dec(tc->pool);
+ bad_pool_lookup:
 
 
