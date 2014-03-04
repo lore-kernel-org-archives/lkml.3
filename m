@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757977AbaCDUYi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:24:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41665 "EHLO
+	id S1757143AbaCDUFQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:05:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41588 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757163AbaCDUFT (ORCPT
+	with ESMTP id S1757112AbaCDUFG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:05:19 -0500
+	Tue, 4 Mar 2014 15:05:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Stephane Eranian <eranian@google.com>, Dave Jones <davej@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.10 57/97] perf/x86: Fix event scheduling
-Date: Tue,  4 Mar 2014 12:04:10 -0800
-Message-Id: <20140304200347.897009364@linuxfoundation.org>
+        Christoph Hellwig <hch@lst.de>, Andreas Dilger <adilger@dilger.ca>,
+        Jan Kara <jack@suse.cz>, Dave Chinner <dchinner@redhat.com>,
+        Chris Mason <clm@fb.com>, Ben Myers <bpm@sgi.com>
+Subject: [PATCH 3.10 39/97] fs: fix iversion handling
+Date: Tue,  4 Mar 2014 12:03:52 -0800
+Message-Id: <20140304200347.340856645@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -32,116 +30,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Christoph Hellwig <hch@infradead.org>
 
-commit 26e61e8939b1fe8729572dabe9a9e97d930dd4f6 upstream.
+commit dff6efc326a4d5f305797d4a6bba14f374fdd633 upstream.
 
-Vince "Super Tester" Weaver reported a new round of syscall fuzzing (Trinity) failures,
-with perf WARN_ON()s triggering. He also provided traces of the failures.
+Currently notify_change directly updates i_version for size updates,
+which not only is counter to how all other fields are updated through
+struct iattr, but also breaks XFS, which need inode updates to happen
+under its own lock, and synchronized to the structure that gets written
+to the log.
 
-This is I think the relevant bit:
+Remove the update in the common code, and it to btrfs and ext4,
+XFS already does a proper updaste internally and currently gets a
+double update with the existing code.
 
-	>    pec_1076_warn-2804  [000] d...   147.926153: x86_pmu_disable: x86_pmu_disable
-	>    pec_1076_warn-2804  [000] d...   147.926153: x86_pmu_state: Events: {
-	>    pec_1076_warn-2804  [000] d...   147.926156: x86_pmu_state:   0: state: .R config: ffffffffffffffff (          (null))
-	>    pec_1076_warn-2804  [000] d...   147.926158: x86_pmu_state:   33: state: AR config: 0 (ffff88011ac99800)
-	>    pec_1076_warn-2804  [000] d...   147.926159: x86_pmu_state: }
-	>    pec_1076_warn-2804  [000] d...   147.926160: x86_pmu_state: n_events: 1, n_added: 0, n_txn: 1
-	>    pec_1076_warn-2804  [000] d...   147.926161: x86_pmu_state: Assignment: {
-	>    pec_1076_warn-2804  [000] d...   147.926162: x86_pmu_state:   0->33 tag: 1 config: 0 (ffff88011ac99800)
-	>    pec_1076_warn-2804  [000] d...   147.926163: x86_pmu_state: }
-	>    pec_1076_warn-2804  [000] d...   147.926166: collect_events: Adding event: 1 (ffff880119ec8800)
+IMHO this is 3.13 and -stable material and should go in through the XFS
+tree.
 
-So we add the insn:p event (fd[23]).
-
-At this point we should have:
-
-  n_events = 2, n_added = 1, n_txn = 1
-
-	>    pec_1076_warn-2804  [000] d...   147.926170: collect_events: Adding event: 0 (ffff8800c9e01800)
-	>    pec_1076_warn-2804  [000] d...   147.926172: collect_events: Adding event: 4 (ffff8800cbab2c00)
-
-We try and add the {BP,cycles,br_insn} group (fd[3], fd[4], fd[15]).
-These events are 0:cycles and 4:br_insn, the BP event isn't x86_pmu so
-that's not visible.
-
-	group_sched_in()
-	  pmu->start_txn() /* nop - BP pmu */
-	  event_sched_in()
-	     event->pmu->add()
-
-So here we should end up with:
-
-  0: n_events = 3, n_added = 2, n_txn = 2
-  4: n_events = 4, n_added = 3, n_txn = 3
-
-But seeing the below state on x86_pmu_enable(), the must have failed,
-because the 0 and 4 events aren't there anymore.
-
-Looking at group_sched_in(), since the BP is the leader, its
-event_sched_in() must have succeeded, for otherwise we would not have
-seen the sibling adds.
-
-But since neither 0 or 4 are in the below state; their event_sched_in()
-must have failed; but I don't see why, the complete state: 0,0,1:p,4
-fits perfectly fine on a core2.
-
-However, since we try and schedule 4 it means the 0 event must have
-succeeded!  Therefore the 4 event must have failed, its failure will
-have put group_sched_in() into the fail path, which will call:
-
-	event_sched_out()
-	  event->pmu->del()
-
-on 0 and the BP event.
-
-Now x86_pmu_del() will reduce n_events; but it will not reduce n_added;
-giving what we see below:
-
- n_event = 2, n_added = 2, n_txn = 2
-
-	>    pec_1076_warn-2804  [000] d...   147.926177: x86_pmu_enable: x86_pmu_enable
-	>    pec_1076_warn-2804  [000] d...   147.926177: x86_pmu_state: Events: {
-	>    pec_1076_warn-2804  [000] d...   147.926179: x86_pmu_state:   0: state: .R config: ffffffffffffffff (          (null))
-	>    pec_1076_warn-2804  [000] d...   147.926181: x86_pmu_state:   33: state: AR config: 0 (ffff88011ac99800)
-	>    pec_1076_warn-2804  [000] d...   147.926182: x86_pmu_state: }
-	>    pec_1076_warn-2804  [000] d...   147.926184: x86_pmu_state: n_events: 2, n_added: 2, n_txn: 2
-	>    pec_1076_warn-2804  [000] d...   147.926184: x86_pmu_state: Assignment: {
-	>    pec_1076_warn-2804  [000] d...   147.926186: x86_pmu_state:   0->33 tag: 1 config: 0 (ffff88011ac99800)
-	>    pec_1076_warn-2804  [000] d...   147.926188: x86_pmu_state:   1->0 tag: 1 config: 1 (ffff880119ec8800)
-	>    pec_1076_warn-2804  [000] d...   147.926188: x86_pmu_state: }
-	>    pec_1076_warn-2804  [000] d...   147.926190: x86_pmu_enable: S0: hwc->idx: 33, hwc->last_cpu: 0, hwc->last_tag: 1 hwc->state: 0
-
-So the problem is that x86_pmu_del(), when called from a
-group_sched_in() that fails (for whatever reason), and without x86_pmu
-TXN support (because the leader is !x86_pmu), will corrupt the n_added
-state.
-
-Reported-and-Tested-by: Vince Weaver <vincent.weaver@maine.edu>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Dave Jones <davej@redhat.com>
-Link: http://lkml.kernel.org/r/20140221150312.GF3104@twins.programming.kicks-ass.net
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Reviewed-by: Andreas Dilger <adilger@dilger.ca>
+Acked-by: Jan Kara <jack@suse.cz>
+Reviewed-by: Dave Chinner <dchinner@redhat.com>
+Signed-off-by: Chris Mason <clm@fb.com>
+Signed-off-by: Ben Myers <bpm@sgi.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/perf_event.c |    3 +++
- 1 file changed, 3 insertions(+)
+ fs/attr.c        |    5 -----
+ fs/btrfs/inode.c |    8 ++++++--
+ fs/ext4/inode.c  |    4 ++++
+ 3 files changed, 10 insertions(+), 7 deletions(-)
 
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1165,6 +1165,9 @@ static void x86_pmu_del(struct perf_even
- 	for (i = 0; i < cpuc->n_events; i++) {
- 		if (event == cpuc->event_list[i]) {
+--- a/fs/attr.c
++++ b/fs/attr.c
+@@ -182,11 +182,6 @@ int notify_change(struct dentry * dentry
+ 			return -EPERM;
+ 	}
  
-+			if (i >= cpuc->n_events - cpuc->n_added)
-+				--cpuc->n_added;
+-	if ((ia_valid & ATTR_SIZE) && IS_I_VERSION(inode)) {
+-		if (attr->ia_size != inode->i_size)
+-			inode_inc_iversion(inode);
+-	}
+-
+ 	if ((ia_valid & ATTR_MODE)) {
+ 		umode_t amode = attr->ia_mode;
+ 		/* Flag setting protected by i_mutex */
+--- a/fs/btrfs/inode.c
++++ b/fs/btrfs/inode.c
+@@ -4527,8 +4527,12 @@ static int btrfs_setsize(struct inode *i
+ 	 * these flags set.  For all other operations the VFS set these flags
+ 	 * explicitly if it wants a timestamp update.
+ 	 */
+-	if (newsize != oldsize && (!(mask & (ATTR_CTIME | ATTR_MTIME))))
+-		inode->i_ctime = inode->i_mtime = current_fs_time(inode->i_sb);
++	if (newsize != oldsize) {
++		inode_inc_iversion(inode);
++		if (!(mask & (ATTR_CTIME | ATTR_MTIME)))
++			inode->i_ctime = inode->i_mtime =
++				current_fs_time(inode->i_sb);
++	}
+ 
+ 	if (newsize > oldsize) {
+ 		truncate_pagecache(inode, oldsize, newsize);
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -4704,6 +4704,10 @@ int ext4_setattr(struct dentry *dentry,
+ 			if (attr->ia_size > sbi->s_bitmap_maxbytes)
+ 				return -EFBIG;
+ 		}
 +
- 			if (x86_pmu.put_event_constraints)
- 				x86_pmu.put_event_constraints(cpuc, event);
- 
++		if (IS_I_VERSION(inode) && attr->ia_size != inode->i_size)
++			inode_inc_iversion(inode);
++
+ 		if (S_ISREG(inode->i_mode) &&
+ 		    (attr->ia_size < inode->i_size)) {
+ 			if (ext4_should_order_data(inode)) {
 
 
