@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756438AbaCDHsD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 02:48:03 -0500
-Received: from mga11.intel.com ([192.55.52.93]:27142 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751968AbaCDHsA convert rfc822-to-8bit (ORCPT
+	id S1756476AbaCDHsl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 02:48:41 -0500
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:44014 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756457AbaCDHsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 02:48:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,583,1389772800"; 
-   d="scan'208";a="485633131"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: "balbi@ti.com" <balbi@ti.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "mina86@mina86.com" <mina86@mina86.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Cohen, David A" <david.a.cohen@intel.com>,
-        "Zhuang, Jin Can" <jin.can.zhuang@intel.com>,
-        "Wang, Yu Y" <yu.y.wang@intel.com>
-Subject: RE: [PATCH] usb: gadget: return the right length in ffs_epfile_io()
-Thread-Topic: [PATCH] usb: gadget: return the right length in ffs_epfile_io()
-Thread-Index: AQHPNv4mVrVke8DJV02JJGdbJDJZXprQjaZQ
-Date: Tue, 4 Mar 2014 07:47:58 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A01C3D5AF@SHSMSX101.ccr.corp.intel.com>
-References: <n> <1393483771-24623-1-git-send-email-chuansheng.liu@intel.com>
- <20140303163013.GC2759@saruman.home>
-In-Reply-To: <20140303163013.GC2759@saruman.home>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 4 Mar 2014 02:48:39 -0500
 MIME-Version: 1.0
+In-Reply-To: <20140303140811.GA18828@console-pimps.org>
+References: <1391619853-10601-1-git-send-email-leif.lindholm@linaro.org>
+	<1391619853-10601-7-git-send-email-leif.lindholm@linaro.org>
+	<20140213112606.GF20717@console-pimps.org>
+	<CAFECyb_wUphr4XOyW9tC-Rw5Py3m39e6GQorCtFGtSXTUTBnFQ@mail.gmail.com>
+	<20140303140811.GA18828@console-pimps.org>
+Date: Mon, 3 Mar 2014 23:48:39 -0800
+Message-ID: <CAFECyb9eXYCFTQ7G35EEsx0P2vRwm7qNtwT46ZteTGbycbcEBg@mail.gmail.com>
+Subject: Re: [PATCH 06/22] Add helper functions used by arm/arm64
+From: Roy Franz <roy.franz@linaro.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Leif Lindholm <leif.lindholm@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Patch Tracking <patches@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Balbi,
+On Mon, Mar 3, 2014 at 6:08 AM, Matt Fleming <matt@console-pimps.org> wrote:
+> On Fri, 14 Feb, at 11:02:49AM, Roy Franz wrote:
+>>
+>> The get_dram_base() function is only used by arm/arm64, but
+>> there is nothing architecture specific about it, which is why I put it
+>> here to begin with.  I don't feel strongly about this either way.
+>
+> Sorry Roy, I just realised that you probably wanted a response from me
+> about this last point.
+>
+> OK, leaving get_dram_base() in efi-stub-helper.c is fine.
+>
+> FYI, "NUL" isn't a typo,
+>
+>> -     options_size++;  /* NUL termination */
+> [...]
+>> +     options_size++;  /* NULL termination */
+>
+> http://en.wikipedia.org/wiki/Null_character
+>
+> --
+> Matt Fleming, Intel Open Source Technology Center
 
-> -----Original Message-----
-> From: Felipe Balbi [mailto:balbi@ti.com]
-> Sent: Tuesday, March 04, 2014 12:30 AM
-> To: Liu, Chuansheng
-> Cc: balbi@ti.com; gregkh@linuxfoundation.org; mina86@mina86.com;
-> linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; Cohen, David A;
-> Zhuang, Jin Can; Wang, Yu Y
-> Subject: Re: [PATCH] usb: gadget: return the right length in ffs_epfile_io()
-> 
-> Hi,
-> 
-> On Thu, Feb 27, 2014 at 02:49:31PM +0800, Chuansheng Liu wrote:
-> > When the request length is aligned to maxpacketsize, sometimes
-> > the return length ret > the user space requested len.
-> >
-> > At that time, we will use min_t(size_t, ret, len) to limit the
-> > size in case of user data buffer overflow.
-> >
-> > But we need return the min_t(size_t, ret, len) to tell the user
-> > space rightly also.
-> >
-> > Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
+Thanks - I'll take care of this in the next revision.
 
-> please rebase on my "testing/next" branch
-
-Based on your branch "testing/next", I have sent patch v2 with some ack
-and reviewing, thanks.
-
-[PATCH v2] usb: gadget: return the right length in ffs_epfile_io()
-
-
-Best Regards
-Chuansheng
-
+Roy
