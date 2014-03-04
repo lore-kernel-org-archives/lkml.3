@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758174AbaCDUsA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:48:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41374 "EHLO
+	id S1758077AbaCDUr7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:47:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41381 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756884AbaCDUEb (ORCPT
+	with ESMTP id S1756900AbaCDUEb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Mar 2014 15:04:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Mike Galbraith <bitbucket@online.de>,
-        Stanislav Fomichev <stfomichev@yandex-team.ru>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH 3.13 151/172] ioat: fix tasklet tear down
-Date: Tue,  4 Mar 2014 12:03:55 -0800
-Message-Id: <20140304200304.556399474@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>
+Subject: [PATCH 3.13 152/172] quota: Fix race between dqput() and dquot_scan_active()
+Date: Tue,  4 Mar 2014 12:03:56 -0800
+Message-Id: <20140304200304.584614029@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -32,228 +28,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dan.j.williams@intel.com>
+From: Jan Kara <jack@suse.cz>
 
-commit da87ca4d4ca101f177fffd84f1f0a5e4c0343557 upstream.
+commit 1362f4ea20fa63688ba6026e586d9746ff13a846 upstream.
 
-Since commit 77873803363c "net_dma: mark broken" we no longer pin dma
-engines active for the network-receive-offload use case.  As a result
-the ->free_chan_resources() that occurs after the driver self test no
-longer has a NET_DMA induced ->alloc_chan_resources() to back it up.  A
-late firing irq can lead to ksoftirqd spinning indefinitely due to the
-tasklet_disable() performed by ->free_chan_resources().  Only
-->alloc_chan_resources() can clear this condition in affected kernels.
+Currently last dqput() can race with dquot_scan_active() causing it to
+call callback for an already deactivated dquot. The race is as follows:
 
-This problem has been present since commit 3e037454bcfa "I/OAT: Add
-support for MSI and MSI-X" in 2.6.24, but is now exposed. Given the
-NET_DMA use case is deprecated we can revisit moving the driver to use
-threaded irqs.  For now, just tear down the irq and tasklet properly by:
+CPU1					CPU2
+  dqput()
+    spin_lock(&dq_list_lock);
+    if (atomic_read(&dquot->dq_count) > 1) {
+     - not taken
+    if (test_bit(DQ_ACTIVE_B, &dquot->dq_flags)) {
+      spin_unlock(&dq_list_lock);
+      ->release_dquot(dquot);
+        if (atomic_read(&dquot->dq_count) > 1)
+         - not taken
+					  dquot_scan_active()
+					    spin_lock(&dq_list_lock);
+					    if (!test_bit(DQ_ACTIVE_B, &dquot->dq_flags))
+					     - not taken
+					    atomic_inc(&dquot->dq_count);
+					    spin_unlock(&dq_list_lock);
+        - proceeds to release dquot
+					    ret = fn(dquot, priv);
+					     - called for inactive dquot
 
-1/ Disable the irq from triggering the tasklet
+Fix the problem by making sure possible ->release_dquot() is finished by
+the time we call the callback and new calls to it will notice reference
+dquot_scan_active() has taken and bail out.
 
-2/ Disable the irq from re-arming
-
-3/ Flush inflight interrupts
-
-4/ Flush the timer
-
-5/ Flush inflight tasklets
-
-References:
-https://lkml.org/lkml/2014/1/27/282
-https://lkml.org/lkml/2014/2/19/672
-
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Reported-by: Mike Galbraith <bitbucket@online.de>
-Reported-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
-Tested-by: Mike Galbraith <bitbucket@online.de>
-Tested-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/dma/ioat/dma.c    |   52 +++++++++++++++++++++++++++++++++++++++-------
- drivers/dma/ioat/dma.h    |    1 
- drivers/dma/ioat/dma_v2.c |   11 ++++-----
- drivers/dma/ioat/dma_v3.c |    3 ++
- 4 files changed, 54 insertions(+), 13 deletions(-)
+ fs/quota/dquot.c |   14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
---- a/drivers/dma/ioat/dma.c
-+++ b/drivers/dma/ioat/dma.c
-@@ -77,7 +77,8 @@ static irqreturn_t ioat_dma_do_interrupt
- 	attnstatus = readl(instance->reg_base + IOAT_ATTNSTATUS_OFFSET);
- 	for_each_set_bit(bit, &attnstatus, BITS_PER_LONG) {
- 		chan = ioat_chan_by_index(instance, bit);
--		tasklet_schedule(&chan->cleanup_task);
-+		if (test_bit(IOAT_RUN, &chan->state))
-+			tasklet_schedule(&chan->cleanup_task);
- 	}
- 
- 	writeb(intrctrl, instance->reg_base + IOAT_INTRCTRL_OFFSET);
-@@ -93,7 +94,8 @@ static irqreturn_t ioat_dma_do_interrupt
- {
- 	struct ioat_chan_common *chan = data;
- 
--	tasklet_schedule(&chan->cleanup_task);
-+	if (test_bit(IOAT_RUN, &chan->state))
-+		tasklet_schedule(&chan->cleanup_task);
- 
- 	return IRQ_HANDLED;
- }
-@@ -116,7 +118,6 @@ void ioat_init_channel(struct ioatdma_de
- 	chan->timer.function = device->timer_fn;
- 	chan->timer.data = data;
- 	tasklet_init(&chan->cleanup_task, device->cleanup_fn, data);
--	tasklet_disable(&chan->cleanup_task);
- }
- 
- /**
-@@ -354,13 +355,49 @@ static int ioat1_dma_alloc_chan_resource
- 	writel(((u64) chan->completion_dma) >> 32,
- 	       chan->reg_base + IOAT_CHANCMP_OFFSET_HIGH);
- 
--	tasklet_enable(&chan->cleanup_task);
-+	set_bit(IOAT_RUN, &chan->state);
- 	ioat1_dma_start_null_desc(ioat);  /* give chain to dma device */
- 	dev_dbg(to_dev(chan), "%s: allocated %d descriptors\n",
- 		__func__, ioat->desccount);
- 	return ioat->desccount;
- }
- 
-+void ioat_stop(struct ioat_chan_common *chan)
-+{
-+	struct ioatdma_device *device = chan->device;
-+	struct pci_dev *pdev = device->pdev;
-+	int chan_id = chan_num(chan);
-+	struct msix_entry *msix;
-+
-+	/* 1/ stop irq from firing tasklets
-+	 * 2/ stop the tasklet from re-arming irqs
-+	 */
-+	clear_bit(IOAT_RUN, &chan->state);
-+
-+	/* flush inflight interrupts */
-+	switch (device->irq_mode) {
-+	case IOAT_MSIX:
-+		msix = &device->msix_entries[chan_id];
-+		synchronize_irq(msix->vector);
-+		break;
-+	case IOAT_MSI:
-+	case IOAT_INTX:
-+		synchronize_irq(pdev->irq);
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	/* flush inflight timers */
-+	del_timer_sync(&chan->timer);
-+
-+	/* flush inflight tasklet runs */
-+	tasklet_kill(&chan->cleanup_task);
-+
-+	/* final cleanup now that everything is quiesced and can't re-arm */
-+	device->cleanup_fn((unsigned long) &chan->common);
-+}
-+
- /**
-  * ioat1_dma_free_chan_resources - release all the descriptors
-  * @chan: the channel to be cleaned
-@@ -379,9 +416,7 @@ static void ioat1_dma_free_chan_resource
- 	if (ioat->desccount == 0)
- 		return;
- 
--	tasklet_disable(&chan->cleanup_task);
--	del_timer_sync(&chan->timer);
--	ioat1_cleanup(ioat);
-+	ioat_stop(chan);
- 
- 	/* Delay 100ms after reset to allow internal DMA logic to quiesce
- 	 * before removing DMA descriptor resources.
-@@ -526,8 +561,11 @@ ioat1_dma_prep_memcpy(struct dma_chan *c
- static void ioat1_cleanup_event(unsigned long data)
- {
- 	struct ioat_dma_chan *ioat = to_ioat_chan((void *) data);
-+	struct ioat_chan_common *chan = &ioat->base;
- 
- 	ioat1_cleanup(ioat);
-+	if (!test_bit(IOAT_RUN, &chan->state))
-+		return;
- 	writew(IOAT_CHANCTRL_RUN, ioat->base.reg_base + IOAT_CHANCTRL_OFFSET);
- }
- 
---- a/drivers/dma/ioat/dma.h
-+++ b/drivers/dma/ioat/dma.h
-@@ -356,6 +356,7 @@ bool ioat_cleanup_preamble(struct ioat_c
- void ioat_kobject_add(struct ioatdma_device *device, struct kobj_type *type);
- void ioat_kobject_del(struct ioatdma_device *device);
- int ioat_dma_setup_interrupts(struct ioatdma_device *device);
-+void ioat_stop(struct ioat_chan_common *chan);
- extern const struct sysfs_ops ioat_sysfs_ops;
- extern struct ioat_sysfs_entry ioat_version_attr;
- extern struct ioat_sysfs_entry ioat_cap_attr;
---- a/drivers/dma/ioat/dma_v2.c
-+++ b/drivers/dma/ioat/dma_v2.c
-@@ -190,8 +190,11 @@ static void ioat2_cleanup(struct ioat2_d
- void ioat2_cleanup_event(unsigned long data)
- {
- 	struct ioat2_dma_chan *ioat = to_ioat2_chan((void *) data);
-+	struct ioat_chan_common *chan = &ioat->base;
- 
- 	ioat2_cleanup(ioat);
-+	if (!test_bit(IOAT_RUN, &chan->state))
-+		return;
- 	writew(IOAT_CHANCTRL_RUN, ioat->base.reg_base + IOAT_CHANCTRL_OFFSET);
- }
- 
-@@ -553,10 +556,10 @@ int ioat2_alloc_chan_resources(struct dm
- 	ioat->issued = 0;
- 	ioat->tail = 0;
- 	ioat->alloc_order = order;
-+	set_bit(IOAT_RUN, &chan->state);
- 	spin_unlock_bh(&ioat->prep_lock);
- 	spin_unlock_bh(&chan->cleanup_lock);
- 
--	tasklet_enable(&chan->cleanup_task);
- 	ioat2_start_null_desc(ioat);
- 
- 	/* check that we got off the ground */
-@@ -566,7 +569,6 @@ int ioat2_alloc_chan_resources(struct dm
- 	} while (i++ < 20 && !is_ioat_active(status) && !is_ioat_idle(status));
- 
- 	if (is_ioat_active(status) || is_ioat_idle(status)) {
--		set_bit(IOAT_RUN, &chan->state);
- 		return 1 << ioat->alloc_order;
- 	} else {
- 		u32 chanerr = readl(chan->reg_base + IOAT_CHANERR_OFFSET);
-@@ -809,11 +811,8 @@ void ioat2_free_chan_resources(struct dm
- 	if (!ioat->ring)
- 		return;
- 
--	tasklet_disable(&chan->cleanup_task);
--	del_timer_sync(&chan->timer);
--	device->cleanup_fn((unsigned long) c);
-+	ioat_stop(chan);
- 	device->reset_hw(chan);
--	clear_bit(IOAT_RUN, &chan->state);
- 
- 	spin_lock_bh(&chan->cleanup_lock);
- 	spin_lock_bh(&ioat->prep_lock);
---- a/drivers/dma/ioat/dma_v3.c
-+++ b/drivers/dma/ioat/dma_v3.c
-@@ -464,8 +464,11 @@ static void ioat3_cleanup(struct ioat2_d
- static void ioat3_cleanup_event(unsigned long data)
- {
- 	struct ioat2_dma_chan *ioat = to_ioat2_chan((void *) data);
-+	struct ioat_chan_common *chan = &ioat->base;
- 
- 	ioat3_cleanup(ioat);
-+	if (!test_bit(IOAT_RUN, &chan->state))
-+		return;
- 	writew(IOAT_CHANCTRL_RUN, ioat->base.reg_base + IOAT_CHANCTRL_OFFSET);
- }
- 
+--- a/fs/quota/dquot.c
++++ b/fs/quota/dquot.c
+@@ -581,9 +581,17 @@ int dquot_scan_active(struct super_block
+ 		dqstats_inc(DQST_LOOKUPS);
+ 		dqput(old_dquot);
+ 		old_dquot = dquot;
+-		ret = fn(dquot, priv);
+-		if (ret < 0)
+-			goto out;
++		/*
++		 * ->release_dquot() can be racing with us. Our reference
++		 * protects us from new calls to it so just wait for any
++		 * outstanding call and recheck the DQ_ACTIVE_B after that.
++		 */
++		wait_on_dquot(dquot);
++		if (test_bit(DQ_ACTIVE_B, &dquot->dq_flags)) {
++			ret = fn(dquot, priv);
++			if (ret < 0)
++				goto out;
++		}
+ 		spin_lock(&dq_list_lock);
+ 		/* We are safe to continue now because our dquot could not
+ 		 * be moved out of the inuse list while we hold the reference */
 
 
