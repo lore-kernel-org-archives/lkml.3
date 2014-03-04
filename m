@@ -1,82 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755307AbaCDTLM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 14:11:12 -0500
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:52121 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752482AbaCDTLK (ORCPT
+	id S1756079AbaCDTQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 14:16:26 -0500
+Received: from www.xora.org.uk ([80.68.91.202]:37224 "EHLO
+	xora.vm.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754537AbaCDTQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 14:11:10 -0500
-From: Valentina Manea <valentina.manea.m@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: tobias.polzer@fau.de, dominik.paulus@fau.de, ly80toro@cip.cs.fau.de,
-        shuah.kh@samsung.com, ihadzic@research.bell-labs.com,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        devel@driverdev.osuosl.org, firefly@lists.rosedu.org,
-        Valentina Manea <valentina.manea.m@gmail.com>
-Subject: [PATCH 00/12] Migrate usbip-utils to libudev
-Date: Tue,  4 Mar 2014 21:10:40 +0200
-Message-Id: <1393960252-21247-1-git-send-email-valentina.manea.m@gmail.com>
-X-Mailer: git-send-email 1.7.2.5
+	Tue, 4 Mar 2014 14:16:22 -0500
+Date: Wed, 5 Mar 2014 03:16:13 +0800
+From: Graeme Gregory <graeme@xora.org.uk>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Joe Perches <joe@perches.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Len Brown <lenb@kernel.org>
+Subject: Re: [PATCH] MAINTAINERS: add maintainers for arm64 acpi
+Message-ID: <20140304191613.GF28736@xora-yoga13>
+References: <1393899345-7397-1-git-send-email-graeme.gregory@linaro.org>
+ <1393899345-7397-2-git-send-email-graeme.gregory@linaro.org>
+ <1393899715.20435.8.camel@joe-AO722>
+ <53153A4C.9050602@infradead.org>
+ <CACxGe6tD3mQshDSoEQaPXAnXG_siUdiFoAWhjmO2gDY7ZzkjUw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACxGe6tD3mQshDSoEQaPXAnXG_siUdiFoAWhjmO2gDY7ZzkjUw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series modifies the USB/IP userspace side (usbip-utils)
-to use libudev instead of libsysfs. This change was necessary as
-libsysfs is no longer maintained and we have discovered a bug that
-affected USB/IP.
-On the other hand, libudev is actively maintained and recommended
-for interacting with sysfs.
+On Tue, Mar 04, 2014 at 06:59:46PM +0800, Grant Likely wrote:
+> On Tue, Mar 4, 2014 at 10:28 AM, Randy Dunlap <rdunlap@infradead.org> wrote:
+> > On 03/03/2014 06:21 PM, Joe Perches wrote:
+> >> On Tue, 2014-03-04 at 10:15 +0800, Graeme Gregory wrote:
+> >>> Add maintainers for the arm-core file for arm64 ACPI support
+> >>
+> >> Shouldn't something have to be in the kernel
+> >> tree before there's a MAINTAINERS entry?
+> >
+> > or in linux-next and the patch can be added to linux-next (some git tree).
+> 
+> Sure, it makes sense to merge this file along with the rest of the
+> series, but I certainly appreciate that Graeme and Hanjun are willing
+> to volunteer to do this work.
+> 
+> On Tue, Mar 4, 2014 at 6:23 PM, Catalin Marinas <catalin.marinas@arm.com> wrote:
+> > On Tue, Mar 04, 2014 at 02:15:45AM +0000, Graeme Gregory wrote:
+> >> +ACPI ARM64
+> >
+> > That's a pretty broad statement for a single file. Is it core support,
+> > architected peripherals, SoC?
+> 
+> That's a good point. Graeme, it would be good if you could put some
+> text in the patch describing how you propose the maintainership to
+> work. Unfortunately the maintainers file doesn't have any kind of
+> comments field, otherwise I'd suggest you make those comments directly
+> there.
+> 
+> Given that ACPI can touch a lot of subsystems I would expect you and
+> Hanjun not to be merging much code directly, but being listed in
+> maintainers means that you will be kept in the loop when it comes to
+> merging ARM ACPI changes. I would also expect that anything that does
+> go through you (instead of merely acked) would be merged via Rafael
+> and Len's tree.
+> 
 
-Valentina Manea (12):
-  staging: usbip: userspace: migrate usbip_bind to libudev
-  staging: usbip: userspace: remove useless libsysfs includes
-  staging: usbip: userspace: migrate usbip_unbind to libudev
-  staging: usbip: userspace: migrate usbip_list to libudev
-  staging: usbip: userspace: re-add interface information listing
-  staging: usbip: userspace: add new list API
-  staging: usbip: userspace: move sysfs_utils to libsrc
-  staging: usbip: userspace: migrate usbip_host_driver to libudev
-  staging: usbip: userspace: remove class device infrastructure in
-    vhci_driver
-  staging: usbip: userspace: migrate vhci_driver to libudev
-  staging: usbip: userspace: remove libsysfs flag and autoconf check
-  staging: usbip: userspace: update dependencies in README
+Ok, I will update the commit decision when we add this patch to the
+current upstreaming series.
 
- drivers/staging/usbip/userspace/README             |   4 +-
- drivers/staging/usbip/userspace/configure.ac       |  10 +-
- drivers/staging/usbip/userspace/libsrc/Makefile.am |   4 +-
- .../staging/usbip/userspace/libsrc/build_assert.h  |  40 ++
- .../staging/usbip/userspace/libsrc/check_type.h    |  64 +++
- .../staging/usbip/userspace/libsrc/container_of.h  | 109 ++++
- drivers/staging/usbip/userspace/libsrc/list.c      |  43 ++
- drivers/staging/usbip/userspace/libsrc/list.h      | 613 +++++++++++++++++++++
- .../staging/usbip/userspace/libsrc/sysfs_utils.c   |  36 ++
- .../staging/usbip/userspace/libsrc/sysfs_utils.h   |   8 +
- .../staging/usbip/userspace/libsrc/usbip_common.c  |  74 +--
- .../staging/usbip/userspace/libsrc/usbip_common.h  |  15 +-
- .../usbip/userspace/libsrc/usbip_host_driver.c     | 282 +++-------
- .../usbip/userspace/libsrc/usbip_host_driver.h     |   7 +-
- .../staging/usbip/userspace/libsrc/vhci_driver.c   | 346 ++----------
- .../staging/usbip/userspace/libsrc/vhci_driver.h   |   9 +-
- drivers/staging/usbip/userspace/src/usbip_attach.c |   1 -
- drivers/staging/usbip/userspace/src/usbip_bind.c   | 149 ++---
- drivers/staging/usbip/userspace/src/usbip_detach.c |   2 -
- drivers/staging/usbip/userspace/src/usbip_list.c   | 157 +++---
- .../staging/usbip/userspace/src/usbip_network.h    |   1 -
- drivers/staging/usbip/userspace/src/usbip_unbind.c |  92 +---
- drivers/staging/usbip/userspace/src/usbipd.c       |  26 +-
- drivers/staging/usbip/userspace/src/utils.c        |  51 +-
- 24 files changed, 1299 insertions(+), 844 deletions(-)
- create mode 100644 drivers/staging/usbip/userspace/libsrc/build_assert.h
- create mode 100644 drivers/staging/usbip/userspace/libsrc/check_type.h
- create mode 100644 drivers/staging/usbip/userspace/libsrc/container_of.h
- create mode 100644 drivers/staging/usbip/userspace/libsrc/list.c
- create mode 100644 drivers/staging/usbip/userspace/libsrc/list.h
- create mode 100644 drivers/staging/usbip/userspace/libsrc/sysfs_utils.c
- create mode 100644 drivers/staging/usbip/userspace/libsrc/sysfs_utils.h
+I would like if Rafael/Len are happy with the that the plat/arm-core.c file
+is handled via their linux-pm tree.
 
--- 
-1.8.1.2
+Catalini/Will would obviously still maintain control over changes in
+arch/arm64 and I think it would be good if they were willing to also Ack
+changes to plat/arm-core.c
+
+The individual driver changes would be like they are for DT be pushed
+through the appropriate subsystem, or with appropriate Acks if this is
+not possible in combined patchsets.
+
+> >
+> >> +M:   Hanjun Guo <hanjun.guo@linaro.org>
+> >> +M:   Graeme Gregory <graeme.gregory@linaro.org>
+> >> +S:   Supported
+> >> +L:   linux-acpi@vger.kernel.org
+> >> +F:   drivers/acpi/plat/arm-core.c
+> >
+> > This patch should be part of the series introducing the arm-core.c file
+> > and it will be ACKed (or NAKed) following review. We can't really commit
+> > maintainers to a file which does not exist in mainline and while there is
+> > still feedback to be addressed. It's like a blank cheque.
+> 
+> I agree with merging it with the rest of the series, but comparing it
+> to a blank cheque is not appropriate. Merely having an entry in
+> MAINTAINERS doesn't immediately confer trust or ability to merge code,
+> but it does tell people who to talk to when looking at ACPI on ARM.
+> You can bet that neither Linus, Len or Rafael will merge ARM ACPI
+> trees from them if you disagree. (And even if they did, you would
+> yell, and Linus would revert it).
+> 
+We have absolutely no intention of pushing patches that arm64
+maintainers are unhappy with. As Grant says this is purely to indicate
+who people should come and talk to. We really appreciate the feedback
+given on patches so far and wish to continue with this process.
+
+Graeme
 
