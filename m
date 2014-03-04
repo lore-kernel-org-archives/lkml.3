@@ -1,141 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756912AbaCDKFH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 05:05:07 -0500
-Received: from www.linutronix.de ([62.245.132.108]:59934 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756410AbaCDKFA (ORCPT
+	id S1756823AbaCDKGX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 05:06:23 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:38999 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756618AbaCDKGS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 05:05:00 -0500
-Date: Tue, 4 Mar 2014 11:04:55 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH V3 1/5] genirq: define flag IRQ_SRC_DST_INVERTED, and
- accessors
-In-Reply-To: <1393876300-3061-1-git-send-email-swarren@wwwdotorg.org>
-Message-ID: <alpine.DEB.2.02.1403041018370.18573@ionos.tec.linutronix.de>
-References: <1393876300-3061-1-git-send-email-swarren@wwwdotorg.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 4 Mar 2014 05:06:18 -0500
+X-AuditID: cbfee690-b7f266d00000287c-ef-5315a59980be
+Date: Tue, 04 Mar 2014 10:06:17 +0000 (GMT)
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH] PM / devfreq: Rewrite devfreq_update_status() to fix
+ multiple bugs
+To: Saravana Kannan <skannan@codeaurora.org>,
+        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Reply-to: myungjoo.ham@samsung.com
+MIME-version: 1.0
+X-MTR: 20140304095513568@myungjoo.ham
+Msgkey: 20140304095513568@myungjoo.ham
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20140304095513568@myungjoo.ham
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <8984550.302431393927576253.JavaMail.weblogic@epv6ml05>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42JZI2JSpDtzqWiwwbO3GhaXd81hc2D0+LxJ
+	LoAxissmJTUnsyy1SN8ugSujY9tT5oJj7BUvfkg0MK5g72Lk5BASUJdYtOQkG4gtIWAisffC
+	FnYIW0ziwr31QHEuoJqljBIXtk6FK3p2fwYLRGI+o8T5J6+ZQRIsAioSS8+0ANkcHGwCehIz
+	PyeDhIUFwiVeXlnJAmKLCORL9O68yQTSyyzQxySxcv4jNogrlCTW7HsFVsQrIChxcuYTFpA5
+	EgKqEpdusUGE1STunbsPdYOExKzpF1ghbF6JGe1PWSBsOYlpX9cwQ9jSEudnbWCEeWbx98dQ
+	cX6JY7d3MEGM55V4cj8YZszuzV+gxgtITD1zEKpVS+Lxv2tQNp/EmoVvWWDG7Dq1nBmm9/6W
+	uUwgNrOAosSU7ofsELaWxJcf+9hQfQViO0tMePiOZQKj8iwkqVlI2mchaUdWs4CRZRWjaGpB
+	ckFxUnqRiV5xYm5xaV66XnJ+7iZGYFI4/e/ZhB2M9w5YH2JMBsbIRGYp0eR8YFLJK4k3NDYz
+	sjA1MTU2Mrc0I01YSZxX7VFSkJBAemJJanZqakFqUXxRaU5q8SFGJg5OqQbGzkLF1pUTw5Xd
+	Mirjt5ecX1QtwSOU6d7e8T111w2JSE/u9YsUNj46u++KgjanQ7zNU4NDIY9Cph4U9hIxYf95
+	783eGeJGOt7X1ucniarmzl/OUKIuqrAhW+rL5zvq1ju2xPqYv8p98/KpxJ+21TvKH+u6ri+Z
+	84jl/DSvFzsfLCtudHuQdJhXiaU4I9FQi7moOBEAYHZhrCADAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHKsWRmVeSWpSXmKPExsVy+t/t6bozl4oGG7QcU7K4vGsOmwOjx+dN
+	cgGMUWk2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUBD
+	lRTKEnNKgUIBicXFSvp2NkX5pSWpChn5xSW2StGG5kZ6RgZ6pkZ6hsaxVoYGBkamQDUJaRkd
+	254yFxxjr3jxQ6KBcQV7FyMnh5CAusSiJSfZQGwJAROJZ/dnsEDYYhIX7q0HinMB1cxnlDj/
+	5DUzSIJFQEVi6ZkWIJuDg01AT2Lm52SQsLBAuMTLKyvBekUE8iV6d95kAullFuhjklg5/xEb
+	xDIliTX7XoEV8QoISpyc+YQFZI6EgKrEpVtsEGE1iXvn7kPdIyExa/oFVgibV2JG+1Oo2+Qk
+	pn1dwwxhS0ucn7WBEebmxd8fQ8X5JY7d3sEEMZ5X4sn9YJgxuzd/gRovIDH1zEGoVi2Jx/+u
+	Qdl8EmsWvmWBGbPr1HJmmN77W+YygdjMAooSU7ofskPYWhJffuxjQ/UViO0sMeHhO5YJjHKz
+	kKRmIWmfhaQdWc0CRpZVjKKpBckFxUnpFSZ6xYm5xaV56XrJ+bmbGMGp6dmSHYwNF6wPMQpw
+	MCrx8DpMEQkWYk0sK67MPcQowcGsJMKruFA0WIg3JbGyKrUoP76oNCe1+BBjMjD+JjJLiSbn
+	A9NmXkm8obGxiZmJqaWJhYGpOWnCSuK8C24lBQkJpCeWpGanphakFsFsYeLglGpgnPxS3Gy1
+	+cuUSXovGBtCj6/UtFY/0idR+mm595OqvfWK314cSl1RtZKFsc8iLu52ZvaK8yHP66P0hRb/
+	KlhrbZngtuVFn5etqrpGX6bOrXANxf6Z7YbbnSbtPqYh6p84q+T1mnknl/nvkuZLObl5V/7D
+	Sfc9NpizR95X/T7bcZmTDc+mW/42SizFGYmGWsxFxYkAU7boeJEDAAA=
+DLP-Filter: Pass
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s24A6Xve002639
 
-On Mon, 3 Mar 2014, Stephen Warren wrote:
-
-> From: Stephen Warren <swarren@nvidia.com>
+> The current devfreq_update_status() has the following bugs:
+> - If previous frequency doesn't have a valid level, it does an out of bounds
+>   access into the trans_table and causes memory corruption.
+> - When the new frequency doesn't have a valid level, the time spent in the
+>   new frequency is counted towards the next valid frequency switch instead of
+>   being ignored.
+> - The time spent on the previous frequency is added to the new frequency's
+>   stats instead of the previous frequency's stats.
 > 
-> Some devices have configurable IRQ output polarities. Software might
-> use IRQ_TYPE_* to determine how to configure such a device's IRQ
-> output polarity in order to match how the IRQ controller input is
-> configured. If the board or SoC inverts the signal between the
-> device's IRQ output and controller's IRQ output, software must be
-> aware of this fact, in order to program the IRQ output to the correct
-> (i.e. opposite) polarity. This flag provides that information.
+> This patch fixes all of this.
+> 
+> Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
 
-So what you're saying is:
+Merged.
 
-Device IRQ output --> [Optional Inverter Logic] --> IRQ controller input.
+It appears to be Greg's LTS material as well.
 
-And you're storing the information about the presence of the inverter
-logic in the irq itself, but the core does not make any use of it and
-you let the device driver deal with the outcome.
 
-This sucks as all affected drivers have to implement the same sanity
-logic for this.
+Cheers,
+MyungJoo
 
-Why don't you implement a core function which tells the driver which
-polarity to select? That requires a few more changes, but I think it's
-worth it for other reasons.
-
-Right now the set_type logic requires the irq chip drivers to
-implement sanity checking and default selections for TYPE_NONE. We can
-be more clever about that and add this information to the irq chip
-flags.
-
-enum {
-     IRQ_CHIP_TYPES_MASK	= 0x0f,
-     IRQ_CHIP_DEFAULT_MASK	= 0xf0,
-     IRQ_CHIP_EXISTING_FLAGS	....
-}
-
-Now the irq_chip setup tells the core which types are available and
-which one is the default fallback for TYPE_NONE.
-
-So the core can do the sanity checks and we can kill quite some
-repeated stuff from the irq chip implementations. For the inverted
-logic case you can handle the inversion in the core as well, i.e. if a
-driver requests IRQ_TYPE_LEVEL_HIGH you select IRQ_TYPE_LEVEL_LOW for
-the chip, if possible.
-
-For the case where the irq chip can only handle a single polarity you
-can provide a core function to figure out to which polarity the driver
-should set the device IRQ output line.
-
-int irq_get_device_irq_polarity(int irq, int device_types)
-{
-	/*
-	 * Handle the inversion logic and select a proper
-	 * device irq polarity from irq_chip(@irq)->flags and
-	 * @device_types.
-	 *
-	 * Return a proper error code if no match.
-	 */
-}
-
-Let's look at an example:
-
-      irq_chip.flags = IRQ_TYPE_LEVEL_HIGH;
-      device_types = IRQ_TYPE_LEVEL_HIGH | IRQ_TYPE_LEVEL_LOW;
-
-Now for the non inverted case, this returns IRQ_TYPE_LEVEL_HIGH, for
-the inverted case it returns IRQ_TYPE_LEVEL_LOW.
-
-In both cases the irq_set_type() logic handles this correctly:
-
-Non-Inverted case:
-  	     irq_set_type(irq, IRQ_TYPE_LEVEL_HIGH);
-	     -> Success
-
-Inverted case:
-  	     irq_set_type(irq, IRQ_TYPE_LEVEL_LOW);
-	     invert -> IRQ_TYPE_LEVEL_HIGH
-	     -> Success
-
-To make this work for interrupt chips which have no set_type callback
-we can do the following in irq_set_type():
-
-       if (irq_is_inverted(irq))
-	  type = invert(type);
-
-       ret = irq_check_type(chip, &type);
-       if (ret < 0 || !chip->irq_settype)
-	  return ret;
-
-       return chip->irq_settype();
-
-And irq_check_type() does:
-
-       if (!(chip->flags & IRQ_CHIP_TYPES_MASK))
-       	  return chip->irq_settype ? 0 : -ENOTSUP;
-
-       if (*type == IRQ_TYPE_NONE)
-       	  *type == (chip->flags & IRQ_CHIP_DEFAULT_MASK) >> 4;
-	
-       return type_supported(chip->flags, *type);
-
-Thanks,
-
-	tglx
-       	  
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
