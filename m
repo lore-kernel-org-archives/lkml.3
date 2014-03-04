@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755239AbaCDQlJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 11:41:09 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41497 "EHLO
+	id S1754618AbaCDQll (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 11:41:41 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41527 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752989AbaCDQlD (ORCPT
+	with ESMTP id S1751405AbaCDQli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 11:41:03 -0500
-Date: Tue, 4 Mar 2014 08:40:17 -0800
+	Tue, 4 Mar 2014 11:41:38 -0500
+Date: Tue, 4 Mar 2014 08:41:03 -0800
 From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-f7bfca6db60a6ca0a73126918b2fb6f851065947@git.kernel.org>
+Message-ID: <tip-02893afdd310fab8f41f6afbe5233c6609ec19ed@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, jg1.han@samsung.com, bhelgaas@google.com,
-        mohit.kumar@st.com, tglx@linutronix.de, linux-pci@vger.kernel.org
+        konrad.wilk@oracle.com, peterz@infradead.org,
+        xen-devel@lists.xenproject.org, tglx@linutronix.de,
+        david.vrabel@citrix.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, jg1.han@samsung.com, bhelgaas@google.com,
-        mohit.kumar@st.com, tglx@linutronix.de, linux-pci@vger.kernel.org
-In-Reply-To: <20140223212736.987803648@linutronix.de>
-References: <20140223212736.987803648@linutronix.de>
+        konrad.wilk@oracle.com, peterz@infradead.org,
+        xen-devel@lists.xenproject.org, tglx@linutronix.de,
+        david.vrabel@citrix.com
+In-Reply-To: <20140223212738.579581220@linutronix.de>
+References: <20140223212738.579581220@linutronix.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] pci: pcie-designware: Remove irq_desc abuse
-Git-Commit-ID: f7bfca6db60a6ca0a73126918b2fb6f851065947
+Subject: [tip:irq/core] xen: Get rid of the last irq_desc abuse
+Git-Commit-ID: 02893afdd310fab8f41f6afbe5233c6609ec19ed
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,49 +35,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f7bfca6db60a6ca0a73126918b2fb6f851065947
-Gitweb:     http://git.kernel.org/tip/f7bfca6db60a6ca0a73126918b2fb6f851065947
+Commit-ID:  02893afdd310fab8f41f6afbe5233c6609ec19ed
+Gitweb:     http://git.kernel.org/tip/02893afdd310fab8f41f6afbe5233c6609ec19ed
 Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Sun, 23 Feb 2014 21:40:11 +0000
+AuthorDate: Sun, 23 Feb 2014 21:40:20 +0000
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Tue, 4 Mar 2014 17:37:52 +0100
+CommitDate: Tue, 4 Mar 2014 17:37:53 +0100
 
-pci: pcie-designware: Remove irq_desc abuse
+xen: Get rid of the last irq_desc abuse
 
-There is no reason to care about irq_desc in that context, escpecially
-as irq_data for that interrupt is retrieved as well.
+Warn if any PIRQ cannot be bound to an event channel. Remove the check
+for irq_desc->action. This hypercall never fails in practice so we can
+emit a warning unconditionally.
 
-Use the proper accessor for the msi descriptor
+Remove a check for a valid irq desc. The only caller of
+xen_destroy_irq() will only do so if the irq was previously fully
+setup, which means the descriptor has been allocated as well.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Acked-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Jingoo Han <jg1.han@samsung.com>
-Cc: Mohit Kumar <mohit.kumar@st.com>
-Cc: pci <linux-pci@vger.kernel.org>
-Link: http://lkml.kernel.org/r/20140223212736.987803648@linutronix.de
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Xen <xen-devel@lists.xenproject.org>
+Cc: David Vrabel <david.vrabel@citrix.com>
+Link: http://lkml.kernel.org/r/20140223212738.579581220@linutronix.de
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/pci/host/pcie-designware.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/xen/events/events_base.c | 15 +--------------
+ 1 file changed, 1 insertion(+), 14 deletions(-)
 
-diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
-index 17ce88f..2e48ecf 100644
---- a/drivers/pci/host/pcie-designware.c
-+++ b/drivers/pci/host/pcie-designware.c
-@@ -294,14 +294,12 @@ no_valid_irq:
- static void clear_irq(unsigned int irq)
- {
- 	unsigned int pos, nvec;
--	struct irq_desc *desc;
- 	struct msi_desc *msi;
- 	struct pcie_port *pp;
- 	struct irq_data *data = irq_get_irq_data(irq);
+diff --git a/drivers/xen/events/events_base.c b/drivers/xen/events/events_base.c
+index 7fea02c..5dd2ddf 100644
+--- a/drivers/xen/events/events_base.c
++++ b/drivers/xen/events/events_base.c
+@@ -487,13 +487,6 @@ static void pirq_query_unmask(int irq)
+ 		info->u.pirq.flags |= PIRQ_NEEDS_EOI;
+ }
  
- 	/* get the port structure */
+-static bool probing_irq(int irq)
+-{
+-	struct irq_desc *desc = irq_to_desc(irq);
+-
+-	return desc && desc->action == NULL;
+-}
+-
+ static void eoi_pirq(struct irq_data *data)
+ {
+ 	int evtchn = evtchn_from_irq(data->irq);
+@@ -535,8 +528,7 @@ static unsigned int __startup_pirq(unsigned int irq)
+ 					BIND_PIRQ__WILL_SHARE : 0;
+ 	rc = HYPERVISOR_event_channel_op(EVTCHNOP_bind_pirq, &bind_pirq);
+ 	if (rc != 0) {
+-		if (!probing_irq(irq))
+-			pr_info("Failed to obtain physical IRQ %d\n", irq);
++		pr_warn("Failed to obtain physical IRQ %d\n", irq);
+ 		return 0;
+ 	}
+ 	evtchn = bind_pirq.port;
+@@ -769,17 +761,12 @@ error_irq:
+ 
+ int xen_destroy_irq(int irq)
+ {
+-	struct irq_desc *desc;
+ 	struct physdev_unmap_pirq unmap_irq;
+ 	struct irq_info *info = info_for_irq(irq);
+ 	int rc = -ENOENT;
+ 
+ 	mutex_lock(&irq_mapping_update_lock);
+ 
 -	desc = irq_to_desc(irq);
--	msi = irq_desc_get_msi_desc(desc);
-+	msi = irq_data_get_msi(data);
- 	pp = sys_to_pcie(msi->dev->bus->sysdata);
- 	if (!pp) {
- 		BUG();
+-	if (!desc)
+-		goto out;
+-
+ 	if (xen_initial_domain()) {
+ 		unmap_irq.pirq = info->u.pirq.pirq;
+ 		unmap_irq.domid = info->u.pirq.domid;
