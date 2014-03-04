@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758224AbaCDUyn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:54:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41298 "EHLO
+	id S1756746AbaCDUEP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:04:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41213 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755166AbaCDUES (ORCPT
+	with ESMTP id S1756600AbaCDUED (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:04:18 -0500
+	Tue, 4 Mar 2014 15:04:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pekon Gupta <pekon@ti.com>, Brian Norris <computersforpeace@gmail.com>
-Subject: [PATCH 3.13 132/172] mtd: nand: omap: fix ecclayout->oobfree->length
-Date: Tue,  4 Mar 2014 12:03:36 -0800
-Message-Id: <20140304200303.929007201@linuxfoundation.org>
+        Chao Bi <chao.bi@intel.com>, Tomas Winkler <tomas.winkler@intel.com>
+Subject: [PATCH 3.13 126/172] mei: set clients read_cb to NULL when flow control fails
+Date: Tue,  4 Mar 2014 12:03:30 -0800
+Message-Id: <20140304200303.749090953@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -28,34 +28,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pekon Gupta <pekon@ti.com>
+From: Chao Bi <chao.bi@intel.com>
 
-commit bb38eefb6858ce16b34716145b9597a5680aa54c upstream.
+commit accb884b32e82f943340688c9cd30290531e73e0 upstream.
 
-This patch excludes reserved-marker byte-position from oobfree->length
-calculation. Thus all bytes from oobfree->offset till end of OOB are free.
+In mei_cl_read_start(), if it fails to send flow control request, it
+will release "cl->read_cb" but forget to set pointer to NULL, leaving
+"cl->read_cb" still pointing to random memory, next time this client is
+operated like mei_release(), it has chance to refer to this wrong pointer.
 
-Signed-off-by: Pekon Gupta <pekon@ti.com>
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Fixes:  PANIC at kfree in mei_release()
+
+[228781.826904] Call Trace:
+[228781.829737]  [<c16249b8>] ? mei_cl_unlink+0x48/0xa0
+[228781.835283]  [<c1624487>] mei_io_cb_free+0x17/0x30
+[228781.840733]  [<c16265d8>] mei_release+0xa8/0x180
+[228781.845989]  [<c135c610>] ? __fsnotify_parent+0xa0/0xf0
+[228781.851925]  [<c1325a69>] __fput+0xd9/0x200
+[228781.856696]  [<c1325b9d>] ____fput+0xd/0x10
+[228781.861467]  [<c125cae1>] task_work_run+0x81/0xb0
+[228781.866821]  [<c1242e53>] do_exit+0x283/0xa00
+[228781.871786]  [<c1a82b36>] ? kprobe_flush_task+0x66/0xc0
+[228781.877722]  [<c124eeb8>] ? __dequeue_signal+0x18/0x1a0
+[228781.883657]  [<c124f072>] ? dequeue_signal+0x32/0x190
+[228781.889397]  [<c1243744>] do_group_exit+0x34/0xa0
+[228781.894750]  [<c12517b6>] get_signal_to_deliver+0x206/0x610
+[228781.901075]  [<c12018d8>] do_signal+0x38/0x100
+[228781.906136]  [<c1626d1c>] ? mei_read+0x42c/0x4e0
+[228781.911393]  [<c12600a0>] ? wake_up_bit+0x30/0x30
+[228781.916745]  [<c16268f0>] ? mei_poll+0x120/0x120
+[228781.922001]  [<c1324be9>] ? vfs_read+0x89/0x160
+[228781.927158]  [<c16268f0>] ? mei_poll+0x120/0x120
+[228781.932414]  [<c133ca34>] ? fget_light+0x44/0xe0
+[228781.937670]  [<c1324e58>] ? SyS_read+0x68/0x80
+[228781.942730]  [<c12019f5>] do_notify_resume+0x55/0x70
+[228781.948376]  [<c1a7de5d>] work_notifysig+0x29/0x30
+[228781.953827]  [<c1a70000>] ? bad_area+0x5/0x3e
+
+Signed-off-by: Chao Bi <chao.bi@intel.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/nand/omap2.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/misc/mei/client.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/mtd/nand/omap2.c
-+++ b/drivers/mtd/nand/omap2.c
-@@ -2000,9 +2000,8 @@ static int omap_nand_probe(struct platfo
- 		goto return_error;
- 	}
+--- a/drivers/misc/mei/client.c
++++ b/drivers/misc/mei/client.c
+@@ -667,7 +667,6 @@ int mei_cl_read_start(struct mei_cl *cl,
+ 		goto err;
  
--	/* populate remaining ECC layout data */
--	ecclayout->oobfree->length = mtd->oobsize - (BADBLOCK_MARKER_LENGTH +
--							ecclayout->eccbytes);
-+	/* all OOB bytes from oobfree->offset till end off OOB are free */
-+	ecclayout->oobfree->length = mtd->oobsize - ecclayout->oobfree->offset;
- 	/* check if NAND device's OOB is enough to store ECC signatures */
- 	if (mtd->oobsize < (ecclayout->eccbytes + BADBLOCK_MARKER_LENGTH)) {
- 		pr_err("not enough OOB bytes required = %d, available=%d\n",
+ 	cb->fop_type = MEI_FOP_READ;
+-	cl->read_cb = cb;
+ 	if (dev->hbuf_is_ready) {
+ 		dev->hbuf_is_ready = false;
+ 		if (mei_hbm_cl_flow_control_req(dev, cl)) {
+@@ -679,6 +678,9 @@ int mei_cl_read_start(struct mei_cl *cl,
+ 	} else {
+ 		list_add_tail(&cb->list, &dev->ctrl_wr_list.list);
+ 	}
++
++	cl->read_cb = cb;
++
+ 	return rets;
+ err:
+ 	mei_io_cb_free(cb);
 
 
