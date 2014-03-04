@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755547AbaCDUCp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:02:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40712 "EHLO
+	id S1758488AbaCDVis (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:38:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40773 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754758AbaCDUCi (ORCPT
+	with ESMTP id S1754483AbaCDUCs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:02:38 -0500
+	Tue, 4 Mar 2014 15:02:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Torsten Wagner <torsten.wagner@gmail.com>,
-        Michael Gulick <mgulick@mathworks.com>,
-        Ilia Mirkin <imirkin@alum.mit.edu>, Ben Skeggs <bskeggs@redhat.com>
-Subject: [PATCH 3.13 006/172] drm/nv50/disp: use correct register to determine DP display bpp
-Date: Tue,  4 Mar 2014 12:01:30 -0800
-Message-Id: <20140304200259.910397774@linuxfoundation.org>
+        Pekon Gupta <pekon@ti.com>, Tony Lindgren <tony@atomide.com>
+Subject: [PATCH 3.13 021/172] ARM: OMAP2+: gpmc: fix: DT ONENAND child nodes not probed when MTD_ONENAND is built as module
+Date: Tue,  4 Mar 2014 12:01:45 -0800
+Message-Id: <20140304200300.404412322@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -30,36 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ilia Mirkin <imirkin@alum.mit.edu>
+From: Pekon Gupta <pekon@ti.com>
 
-commit a7f1c1e65b68e1e1ab70898528d5977ed68a0a7d upstream.
+commit 980386d2d6d49e0b42f48550853ef1ad6aa5d79a upstream.
 
-Commit 0a0afd282f ("drm/nv50-/disp: move DP link training to core and
-train from supervisor") added code that uses the wrong register for
-computing the display bpp, used for bandwidth calculation. Adjust to use
-the same register as used by exec_clkcmp and nv50_disp_intr_unk20_2_dp.
+Fixes: commit 75d3625e0e86b2d8d77b4e9c6f685fd7ea0d5a96
+       ARM: OMAP2+: gpmc: add DT bindings for OneNAND
 
-Reported-by: Torsten Wagner <torsten.wagner@gmail.com>
-Reported-by: Michael Gulick <mgulick@mathworks.com>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=67628
-Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+OMAP SoC(s) depend on GPMC controller driver to parse GPMC DT child nodes and
+register them platform_device for ONENAND driver to probe later. However this does
+not happen if generic MTD_ONENAND framework is built as module (CONFIG_MTD_ONENAND=m).
+
+Therefore, when MTD/ONENAND and MTD/ONENAND/OMAP2 modules are loaded, they are unable
+to find any matching platform_device and remain un-binded. This causes on board
+ONENAND flash to remain un-detected.
+
+This patch causes GPMC controller to parse DT nodes when
+CONFIG_MTD_ONENAND=y || CONFIG_MTD_ONENAND=m
+
+Signed-off-by: Pekon Gupta <pekon@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/core/engine/disp/nv50.c |    2 +-
+ arch/arm/mach-omap2/gpmc.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/nouveau/core/engine/disp/nv50.c
-+++ b/drivers/gpu/drm/nouveau/core/engine/disp/nv50.c
-@@ -1112,7 +1112,7 @@ nv50_disp_intr_unk20_2(struct nv50_disp_
- 	if (conf != ~0) {
- 		if (outp.location == 0 && outp.type == DCB_OUTPUT_DP) {
- 			u32 soff = (ffs(outp.or) - 1) * 0x08;
--			u32 ctrl = nv_rd32(priv, 0x610798 + soff);
-+			u32 ctrl = nv_rd32(priv, 0x610794 + soff);
- 			u32 datarate;
+--- a/arch/arm/mach-omap2/gpmc.c
++++ b/arch/arm/mach-omap2/gpmc.c
+@@ -1429,7 +1429,7 @@ static int gpmc_probe_nand_child(struct
+ }
+ #endif
  
- 			switch ((ctrl & 0x000f0000) >> 16) {
+-#ifdef CONFIG_MTD_ONENAND
++#if IS_ENABLED(CONFIG_MTD_ONENAND)
+ static int gpmc_probe_onenand_child(struct platform_device *pdev,
+ 				 struct device_node *child)
+ {
 
 
