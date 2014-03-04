@@ -1,42 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470AbaCDTEJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 14:04:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39861 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752482AbaCDTEH (ORCPT
+	id S1755180AbaCDTJa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 14:09:30 -0500
+Received: from hapkido.dreamhost.com ([66.33.216.122]:37932 "EHLO
+	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754683AbaCDTJ2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 14:04:07 -0500
-Date: Tue, 4 Mar 2014 11:05:50 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Julius Werner <jwerner@chromium.org>
-Cc: Oliver Neukum <oneukum@suse.de>, Luigi Semenzato <semenzato@chromium.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH 2/2] usb: Make DELAY_INIT quirk wait 100ms between Get
- Configuration requests
-Message-ID: <20140304190550.GB4695@kroah.com>
-References: <1393959186-331-1-git-send-email-jwerner@chromium.org>
+	Tue, 4 Mar 2014 14:09:28 -0500
+Message-ID: <daed65ee080e4cc417c87f34af8447f2.squirrel@webmail.novalis.org>
+Date: Tue, 4 Mar 2014 14:09:18 -0500
+Subject: PROBLEM: Inotify leaks file descriptors.
+From: "David Turner" <novalis@novalis.org>
+To: "John McCutchan" <john@johnmccutchan.com>, "Robert Love" <rlove@rlove.org>,
+        "Eric Paris" <eparis@parisplace.org>, linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393959186-331-1-git-send-email-jwerner@chromium.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 04, 2014 at 10:53:06AM -0800, Julius Werner wrote:
-> The DELAY_INIT quirk only reduces the frequency of enumeration failures
-> with the Logitech HD Pro C920 and C930e webcams, but does not quite
-> eliminate them. We have found that adding a delay of 100ms between the
-> first and second Get Configuration request makes the device enumerate
-> perfectly reliable even after several weeks of extensive testing. The
-> reasons for that are anyone's guess, but since the DELAY_INIT quirk
-> already delays enumeration by a whole second, wating for another 10th of
-> that isn't really a big deal for the one other device that uses it, and
-> it will resolve the problems with these webcams.
-> 
-> Change-Id: Ibf738426307fe8ef362768db2decc9bc2b30a930
+I apologize for the slightly convoluted reproduction steps here,
+but I was not easily able to find a simpler test case in the
+time that I had available.
 
-What am I supposed to do with this line?  :)
+First, you'll need Facebook's watchman:
+https://github.com/facebook/watchman
+
+Build and install it.  Then run the attached Python script.
+After a few hundred lines, you'll start to see errors of the form
+inotify_init error: Too many open files.  That could just
+indicate that watchman is leaking, but I think that's not what's
+going on, because killing watchman does not fix the problem.
+
+To demonstrate, kill the python script, then kill watchman.
+Then run tail -f /etc/hosts.  You'll get "tail: inotify cannot be
+used, reverting to polling: Too many open files" (you may need to
+run a few tails to see the error).  In fact, the only way I have
+found to get back to normal is to reboot.
+
+I tried increasing the ulimit to 10000 (from the default 1024).
+The error still happens, but it seems to take a bit longer.
+
+I have tried on a couple of Ubuntu kernels:
+
+Linux version 3.11.0-17-generic (buildd@toyol) (gcc version 4.6.3
+(Ubuntu/Linaro 4.6.3-1ubuntu5) ) #31~precise1-Ubuntu SMP Tue Feb 4
+21:25:43 UTC 2014
+
+And Ubuntu's 3.8.0-36-generic (it's not running right now so I can't give
+the full version).
+
+I've also tried a stock kernel built from source (in a virtualbox):
+
+Linux version 3.13.5 (dturner@dturner-virtualbox) (gcc version 4.8.1
+(Ubuntu/Linaro 4.8.1-10ubuntu8) ) #1 SMP Mon Mar 3 20:41:51 EST 2014
+
+I get the error on all of these.
+There is no output in dmesg.
+
+I was running these tests on ext4 filesystems:
+(for the Ubuntu kernels)
+/dev/mapper/stross--vg-root on / type ext4 (rw,errors=remount-ro)
+(for the stock kernel, in the virtualbox)
+/dev/sda1 on / type ext4 (rw,errors=remount-ro)
+
+Please let me know if you need any more information.
+
+FWIW, I did find this bug while googling, but it was on older kernels and
+was allegedly fixed:
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1101666
+
+
 
