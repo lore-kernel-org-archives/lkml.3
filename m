@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756679AbaCDJCo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 04:02:44 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:43220 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756462AbaCDJCk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 04:02:40 -0500
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-CC: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH 4/5] drivers: bus: omap_l3: Remove the platform driver's remove function
-Date: Tue, 4 Mar 2014 11:01:49 +0200
-Message-ID: <1393923710-10377-5-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1393923710-10377-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1393923710-10377-1-git-send-email-peter.ujfalusi@ti.com>
+	id S1756735AbaCDJEz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 04:04:55 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:34348 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756718AbaCDJEi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 04:04:38 -0500
+Date: Tue, 4 Mar 2014 12:04:19 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org, shaun@xresource.ca,
+        sachin.kamat@linaro.org, linux-kernel@vger.kernel.org,
+        ying.xue@windriver.com, davem@davemloft.net
+Subject: Re: [PATCH 4/7] staging: cxt1e1: fix checkpatch error 'assignment in
+ if condition'
+Message-ID: <20140304090419.GT26722@mwanda>
+References: <1905523.1xUMUtkBrU@daeseok-laptop.cloud.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1905523.1xUMUtkBrU@daeseok-laptop.cloud.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is NOP after the devm_* conversion.
+On Tue, Mar 04, 2014 at 11:09:39AM +0900, Daeseok Youn wrote:
+> @@ -1174,7 +1179,8 @@ cleanup_hdlc(void)
+>  			ci = (ci_t *)(netdev_priv(hi->ndev));
+>  			for (j = 0; j < ci->max_port; j++)
+>  				for (k = 0; k < MUSYCC_NCHANS; k++)
+> -					if ((ndev = ci->port[j].chan[k]->user))
+> +					ndev = ci->port[j].chan[k]->user;
+> +					if (ndev)
+>  					{
+>  						do_deluser(ndev, 0);
+>  					}
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti>
----
- drivers/bus/omap_l3_noc.c | 6 ------
- 1 file changed, 6 deletions(-)
 
-diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
-index 2bbc87bdea2b..ed428ada44f7 100644
---- a/drivers/bus/omap_l3_noc.c
-+++ b/drivers/bus/omap_l3_noc.c
-@@ -177,11 +177,6 @@ static int omap4_l3_probe(struct platform_device *pdev)
- 	return ret;
- }
- 
--static int omap4_l3_remove(struct platform_device *pdev)
--{
--	return 0;
--}
--
- #if defined(CONFIG_OF)
- static const struct of_device_id l3_noc_match[] = {
- 	{.compatible = "ti,omap4-l3-noc", },
-@@ -194,7 +189,6 @@ MODULE_DEVICE_TABLE(of, l3_noc_match);
- 
- static struct platform_driver omap4_l3_driver = {
- 	.probe		= omap4_l3_probe,
--	.remove		= omap4_l3_remove,
- 	.driver		= {
- 		.name		= "omap_l3_noc",
- 		.owner		= THIS_MODULE,
--- 
-1.9.0
+This patch introduces a bug here because the inner for loop now has two
+statement but no curly braces.
 
+regards,
+dan carpenter
