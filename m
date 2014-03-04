@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932824AbaCDVfk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:35:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40821 "EHLO
+	id S1755702AbaCDUCy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:02:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40758 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755715AbaCDUC4 (ORCPT
+	with ESMTP id S1755538AbaCDUCp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:02:56 -0500
+	Tue, 4 Mar 2014 15:02:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.13 025/172] powerpc/powernv: Rework EEH reset
-Date: Tue,  4 Mar 2014 12:01:49 -0800
-Message-Id: <20140304200300.533147254@linuxfoundation.org>
+        Mark Rutland <mark.rutland@arm.com>, Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.13 018/172] ARM: 7955/1: spinlock: ensure we have a compiler barrier before sev
+Date: Tue,  4 Mar 2014 12:01:42 -0800
+Message-Id: <20140304200300.307057494@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -30,75 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gavin Shan <shangw@linux.vnet.ibm.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 5b2e198e50f6ba57081586b853163ea1bb95f1a8 upstream.
+commit 7c8746a9eb287642deaad0e7c2cdf482dce5e4be upstream.
 
-When doing reset in order to recover the affected PE, we issue
-hot reset on PE primary bus if it's not root bus. Otherwise, we
-issue hot or fundamental reset on root port or PHB accordingly.
-For the later case, we didn't cover the situation where PE only
-includes root port and it potentially causes kernel crash upon
-EEH error to the PE.
+When unlocking a spinlock, we require the following, strictly ordered
+sequence of events:
 
-The patch reworks the logic of EEH reset to improve the code
-readability and also avoid the kernel crash.
+	<barrier>	/* dmb */
+	<unlock>
+	<barrier>	/* dsb */
+	<sev>
 
-Reported-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Whilst the code does indeed reflect this in terms of the architecture,
+the final <barrier> + <sev> have been contracted into a single inline
+asm without a "memory" clobber, therefore the compiler is at liberty to
+reorder the unlock to the end of the above sequence. In such a case,
+a waiting CPU may be woken up before the lock has been unlocked, leading
+to extremely poor performance.
+
+This patch reworks the dsb_sev() function to make use of the dsb()
+macro and ensure ordering against the unlock.
+
+Reported-by: Mark Rutland <mark.rutland@arm.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/platforms/powernv/eeh-ioda.c |   29 ++++-------------------------
- 1 file changed, 4 insertions(+), 25 deletions(-)
+ arch/arm/include/asm/spinlock.h |   15 +++------------
+ 1 file changed, 3 insertions(+), 12 deletions(-)
 
---- a/arch/powerpc/platforms/powernv/eeh-ioda.c
-+++ b/arch/powerpc/platforms/powernv/eeh-ioda.c
-@@ -490,8 +490,7 @@ static int ioda_eeh_bridge_reset(struct
- static int ioda_eeh_reset(struct eeh_pe *pe, int option)
+--- a/arch/arm/include/asm/spinlock.h
++++ b/arch/arm/include/asm/spinlock.h
+@@ -37,18 +37,9 @@
+ 
+ static inline void dsb_sev(void)
  {
- 	struct pci_controller *hose = pe->phb;
--	struct eeh_dev *edev;
--	struct pci_dev *dev;
-+	struct pci_bus *bus;
- 	int ret;
+-#if __LINUX_ARM_ARCH__ >= 7
+-	__asm__ __volatile__ (
+-		"dsb ishst\n"
+-		SEV
+-	);
+-#else
+-	__asm__ __volatile__ (
+-		"mcr p15, 0, %0, c7, c10, 4\n"
+-		SEV
+-		: : "r" (0)
+-	);
+-#endif
++
++	dsb(ishst);
++	__asm__(SEV);
+ }
  
- 	/*
-@@ -520,31 +519,11 @@ static int ioda_eeh_reset(struct eeh_pe
- 	if (pe->type & EEH_PE_PHB) {
- 		ret = ioda_eeh_phb_reset(hose, option);
- 	} else {
--		if (pe->type & EEH_PE_DEVICE) {
--			/*
--			 * If it's device PE, we didn't refer to the parent
--			 * PCI bus yet. So we have to figure it out indirectly.
--			 */
--			edev = list_first_entry(&pe->edevs,
--					struct eeh_dev, list);
--			dev = eeh_dev_to_pci_dev(edev);
--			dev = dev->bus->self;
--		} else {
--			/*
--			 * If it's bus PE, the parent PCI bus is already there
--			 * and just pick it up.
--			 */
--			dev = pe->bus->self;
--		}
--
--		/*
--		 * Do reset based on the fact that the direct upstream bridge
--		 * is root bridge (port) or not.
--		 */
--		if (dev->bus->number == 0)
-+		bus = eeh_pe_bus_get(pe);
-+		if (pci_is_root_bus(bus))
- 			ret = ioda_eeh_root_reset(hose, option);
- 		else
--			ret = ioda_eeh_bridge_reset(hose, dev, option);
-+			ret = ioda_eeh_bridge_reset(hose, bus->self, option);
- 	}
- 
- 	return ret;
+ /*
 
 
