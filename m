@@ -1,51 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755490AbaCDSgp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 13:36:45 -0500
-Received: from mail.sajoktv.hu ([78.108.16.46]:38605 "EHLO mail.sajoktv.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751908AbaCDSgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 13:36:43 -0500
-To: undisclosed-recipients:;
-Subject: --  www.facebook.com Herzlichen =?UTF-8?Q?Gl=C3=BCckwunsch=2C?=
-X-PHP-Originating-Script: 501:rcmail.php
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 8bit
-Date: Tue, 04 Mar 2014 19:25:23 +0100
-From: face book <updateservice.facebook@yahoo.ca>
-Organization: Face Book
-Reply-To: edanos_greendot_america@hotmail.co.uk
-Mail-Reply-To: edanos_greendot_america@hotmail.co.uk
-Message-ID: <33a14fcd447fdc5d62f8eca185770f52@sajoktv.hu>
-User-Agent: Roundcube Webmail/RCMAIL_VERSION
+	id S1755351AbaCDSfu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 13:35:50 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:54987 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753236AbaCDSe4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 13:34:56 -0500
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Josh Cartwright <joshc@codeaurora.org>, linux-input@vger.kernel.org,
+        <devicetree@vger.kernel.org>
+Subject: [PATCH v5 8/9] devicetree: bindings: Document PM8921/8058 power keys
+Date: Tue,  4 Mar 2014 10:34:47 -0800
+Message-Id: <1393958088-1456-9-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
+In-Reply-To: <1393958088-1456-1-git-send-email-sboyd@codeaurora.org>
+References: <1393958088-1456-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Document the power key found on PM8921 and PM8058 PMICs.
 
+Cc: <devicetree@vger.kernel.org>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ .../bindings/input/qcom,pm8xxx-pwrkey.txt          | 46 ++++++++++++++++++++++
+ 1 file changed, 46 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/input/qcom,pm8xxx-pwrkey.txt
 
+diff --git a/Documentation/devicetree/bindings/input/qcom,pm8xxx-pwrkey.txt b/Documentation/devicetree/bindings/input/qcom,pm8xxx-pwrkey.txt
+new file mode 100644
+index 000000000000..588536cc96ed
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/qcom,pm8xxx-pwrkey.txt
+@@ -0,0 +1,46 @@
++Qualcomm PM8xxx PMIC Power Key
++
++PROPERTIES
++
++- compatible:
++	Usage: required
++	Value type: <string>
++	Definition: must be one of:
++		    "qcom,pm8058-pwrkey"
++		    "qcom,pm8921-pwrkey"
++
++- reg:
++	Usage: required
++	Value type: <prop-encoded-array>
++	Definition: address of power key control register
++
++- interrupts:
++	Usage: required
++	Value type: <prop-encoded-array>
++	Definition: the first interrupt specifies the key release interrupt
++		    and the second interrupt specifies the key press interrupt.
++		    The format of the specifier is defined by the binding
++		    document describing the node's interrupt parent.
++
++- debounce:
++	Usage: optional
++	Value type: <u32>
++	Definition: time in microseconds that key must be pressed or release
++		    for state change interrupt to trigger.
++
++- pull-up:
++	Usage: optional
++	Value type: <empty>
++	Definition: presence of this property indicates that the KPDPWR_N pin
++		    should be configured for pull up.
++
++EXAMPLE
++
++	pwrkey@1c {
++		compatible = "qcom,pm8921-pwrkey";
++		reg = <0x1c>;
++		interrupt-parent = <&pmicintc>;
++		interrupts = <50 1>, <51 1>;
++		debounce = <15625>;
++		pull-up;
++	};
 -- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
-www.facebook.com
-Herzlichen Glückwunsch,
-
-Wie wir feiern unser 10 Jahre der Internet-Reise-und Global 
-Communication wir sind froh, Ihnen mitzuteilen, dass Ihre 
-Facebook-Account haben, nach dem Zufallsprinzip als Begünstigter von $ 
-1.000.000,00 usd in 2013 Facebook-Konto des Jahres {} 
-Grand-Rewards-Sieger ausgewählt.
-
-Mailen Sie uns, die unterhalb der Details: lawsuit_davidmark@outlook.com
-1) Facebook-Benutzername:
-2) Vorlage von Land:
-3) Anzahl Won: $ 1.000.000,00 usd
-
-
-Eduardo Saverin
-Programm-Koordinator,
-Facebook-Prämienprogramm,
-+1-209-300-9000
-www.facebook.com
-Alle Rechte vorbehalten 2014.
