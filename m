@@ -1,89 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932308AbaCDPPR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 10:15:17 -0500
-Received: from [207.46.163.210] ([207.46.163.210]:43580 "EHLO
-	na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932111AbaCDPPP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 10:15:15 -0500
-From: Jason Zhu <jzhu@xceedium.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Kernel Panic on Kernel 2.6.36.1
-Thread-Topic: Kernel Panic on Kernel 2.6.36.1
-Thread-Index: AQHPN7x0SBHz83ysvEabvwaFbRO1Uw==
-Date: Tue, 4 Mar 2014 15:14:35 +0000
-Message-ID: <7a37f54158514d80971d22947a74341c@BY2PR08MB347.namprd08.prod.outlook.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [108.35.96.194]
-x-forefront-prvs: 01401330D1
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(189002)(199002)(5423002)(81342001)(76482001)(76176001)(77982001)(74706001)(74366001)(95666003)(54356001)(50986001)(53806001)(59766001)(66066001)(51856001)(63696002)(74876001)(74316001)(80022001)(46102001)(76576001)(76786001)(76796001)(4396001)(47976001)(79102001)(49866001)(56776001)(47736001)(77096001)(65816001)(54316002)(81542001)(94946001)(86362001)(95416001)(94316002)(93136001)(85306002)(83072002)(2656002)(87266001)(85852003)(87936001)(92566001)(33646001)(93516002)(69226001)(31966008)(74502001)(90146001)(56816005)(74662001)(83322001)(81816001)(80976001)(81686001)(47446002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR08MB314;H:BY2PR08MB347.namprd08.prod.outlook.com;CLIP:108.35.96.194;FPR:C02BEA7C.2F325009.A2D75288.40027E8D.202E5;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
+	id S932284AbaCDPUb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 10:20:31 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:44972 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757259AbaCDPU3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 10:20:29 -0500
+Date: Tue, 4 Mar 2014 09:18:50 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Jim Davis <jim.epost@gmail.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>
+Subject: Re: randconfig build error with next-20140304, in
+ drivers/usb/dwc3/core.c
+Message-ID: <20140304151850.GF15233@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <CA+r1Zhg3iv4RxC=bWenE+bX=9He6DhfFBXM3L=GOc-Uv=Mxf=g@mail.gmail.com>
 MIME-Version: 1.0
-X-OriginatorOrg: xceedium.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="OzxllxdKGCiKxUZM"
+Content-Disposition: inline
+In-Reply-To: <CA+r1Zhg3iv4RxC=bWenE+bX=9He6DhfFBXM3L=GOc-Uv=Mxf=g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s24FFPmH004469
 
-Hello,
+--OzxllxdKGCiKxUZM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I have had two separate instances of kernel panics on the 2.6.36.1 kernel. I do not have the expertise necessary to interpret the traces and I would like to see if there is anyone who can explain what the traces are saying so that I may get some insight as to the cause of the issue.Â 
+Hi,
 
-Â [<ffffffff8104866c>] ? wake_bit_function+0x0/0x23Â 
-Â [<ffffffff8104855f>] ? bit_waitqueue+0x10/0xa0Â 
-Â [<ffffffff8104862d>] ? wake_up_bit+0x11/0x22Â 
-Â [<ffffffff810eeb38>] ? ext3_handle_error+0xb3/0xb7Â 
-Â [<ffffffff810eeb99>] ? __ext3_std_error+0x5d/0x64Â 
-Â [<ffffffff810ec550>] ? ext3_orphan_add+0x165/0x176Â 
-Â [<ffffffff810e5b63>] ? walk_page_buffers+0x67/0x8dÂ 
-Â [<ffffffff810e74b9>] ? journal_dirty_data_fn+0x0/0x16Â 
-Â [<ffffffff810e8fea>] ? ext3_ordered_write_end+0xc5/0x10fÂ 
-Â [<ffffffff8106a08d>] ? generic_file_buffered_write+0x16f/0x22cÂ 
-Â [<ffffffff8106b9af>] ? __generic_file_aio_write+0x33b/0x36fÂ 
-Â [<ffffffff8106bf9a>] ? generic_file_aio_read+0x51e/0x5b7Â 
-Â [<ffffffff8108770e>] ? page_add_new_anon_rmap+0x65/0x86Â 
-Â [<ffffffff8106ba36>] ? generic_file_aio_write+0x53/0x99Â 
-Â [<ffffffff81099b44>] ? do_sync_write+0xb0/0xf2Â 
-Â [<ffffffff81006df0>] ? __switch_to+0x1dd/0x2a4Â 
-Â [<ffffffff81008a8e>] ? apic_timer_interrupt+0xe/0x20Â 
-Â [<ffffffff8100e929>] ? read_tsc+0xa/0x20Â 
-Â [<ffffffff8109a3c9>] ? vfs_write+0xad/0x134Â 
-Â [<ffffffff8109a50c>] ? sys_write+0x45/0x6eÂ 
-Â [<ffffffff81026bac>] ? sysenter_dispatch+0x7/0x32
+On Tue, Mar 04, 2014 at 07:30:20AM -0700, Jim Davis wrote:
+> Building with the attached random configuration file,
+>=20
+> warning: (USB_OTG_FSM && FSL_USB2_OTG && USB_MV_OTG) selects USB_OTG
+> which has unmet direct dependencies (USB_SUPPORT && USB && PM_RUNTIME)
+> warning: (USB_OTG_FSM && FSL_USB2_OTG && USB_MV_OTG) selects USB_OTG
+> which has unmet direct dependencies (USB_SUPPORT && USB && PM_RUNTIME)
+>=20
+>   LD      init/built-in.o
+> drivers/built-in.o: In function `dwc3_setup_scratch_buffers':
+> /home/jim/linux/drivers/usb/dwc3/core.c:280: undefined reference to
+> `dwc3_send_gadget_generic_command'
+> /home/jim/linux/drivers/usb/dwc3/core.c:287: undefined reference to
+> `dwc3_send_gadget_generic_command'
+> make: *** [vmlinux] Error 1
 
-Â [<ffffffff813c6336>] ? panic+0x9d/0x1a4Â 
-Â [<ffffffff813c648b>] ? printk+0x4e/0x56Â 
-Â [<ffffffff810ee546>] ? ext3_abort+0x95/0xffÂ 
-Â [<ffffffff812c7787>] ? __sk_free+0xd7/0xedÂ 
-Â [<ffffffff81357208>] ? unix_destruct_scm+0xb2/0xb9Â 
-Â [<ffffffff812ccedb>] ? memcpy_toiovec+0x34/0x62Â 
-Â [<ffffffff810f0230>] ? ext3_journal_start_sb+0x32/0x4aÂ 
-Â [<ffffffff810e6610>] ? ext3_dirty_inode+0x28/0x7bÂ 
-Â [<ffffffff810b376a>] ? __mark_inode_dirty+0x27/0x1adÂ 
-Â [<ffffffff810aac50>] ? file_update_time+0x100/0x12fÂ 
-Â [<ffffffff8106b8cf>] ? __generic_file_aio_write+0x25b/0x36fÂ 
-Â [<ffffffff810a88e6>] ? dput+0x37/0x152Â 
-Â [<ffffffff8106ba36>] ? generic_file_aio_write+0x53/0x99Â 
-Â [<ffffffff8106b9e3>] ? generic_file_aio_write+0x0/0x99Â 
-Â [<ffffffff81099a50>] ? do_sync_readv_writev+0x9a/0xdeÂ 
-Â [<ffffffff810a47b3>] ? user_path_at+0x59/0x7fÂ 
-Â [<ffffffff81006df0>] ? __switch_to+0x1dd/0x2a4Â 
-Â [<ffffffff810cb4ae>] ? compat_do_readv_writev+0xe9/0x1b1Â 
-Â [<ffffffff810279fe>] ? sys32_stat64+0x20/0x29Â 
-Â [<ffffffff810cb682>] ? compat_sys_writev+0x64/0x8dÂ 
-Â [<ffffffff81026bac>] ? sysenter_dispatch+0x7/0x32â€‹
+will fix it now. Damn, I do 200 randconfigs every week and never caught
+that, good job ;-)
 
-Let me know if you need any additional details.
+--=20
+balbi
 
-Please C.C. me in any further answers/discussions for this question.Â 
+--OzxllxdKGCiKxUZM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Regards,
-Jasonâ€‹
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
+iQIcBAEBAgAGBQJTFe7aAAoJEIaOsuA1yqREKqIP/A4rI8ke0DNp3bpDmVXueQza
+BSqakRpmuiawAFbR7twmiyxbWSq1r2VeV8x8d8Z25okxYYlvHmvvsf/xzVq5IQSD
+mYpQaI3Yo75QWtlRq17p9I8udzBEAAkKeTmemZUrRMwLVPeBGSk+eTnMQWONPdqS
+NZedeyvIQe0Wewcu6rX66ESjfKyXr1ARnNDgI3hI7qio4ZwBq7QGNFrZp8Z5PwUQ
+cvG8+qZJxDiK9fxoarJ0xdZQ2oBN/TOXufxpxWqP0lp26YLDsV6NOJbQjJsrhLZP
+rz6T1oBTlWFZFgHYTJUYsS6/41dzoHslmnWt+rWHY0KmzcUlanDGo8Y1NTtH9E4N
+0831uRFEymYY/+P6brmbmPmR8D/6rkwwncw/mu4iLdpgM0V3XFq/dMWi534h9Ukj
+wEVdfoJz/sSnlCME8BVW+Tr6HQLc/ymO9XeMvqOO1a1fXksZurttSfewr1pa9PRG
+NT1AggAK0Q04Z6uhJzbxgK9Rr/r6So3JXL+Nj/nYDDO1JVPfnpAY5Enm0NcOw70/
+92aUtYqSQd+wik9Xh2F4DzAEmijEbXIO9GGLj1ZROckepG9n2Z3hahKq87jIP/qG
+O6sckd6znRtZ4CovcUBP12l/kpnbddcE2zwbhkl/AQKAW/1d4Zwo5HtxF7cFIgKl
+BXZRo5yirJYYrpkEiWuv
+=Bi0O
+-----END PGP SIGNATURE-----
 
- ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+--OzxllxdKGCiKxUZM--
