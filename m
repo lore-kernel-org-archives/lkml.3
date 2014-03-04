@@ -1,128 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755648AbaCDQsn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 11:48:43 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41494 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754902AbaCDQk6 (ORCPT
+	id S1754527AbaCDQur (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 11:50:47 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:39431 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752971AbaCDQuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 11:40:58 -0500
-Date: Tue, 4 Mar 2014 08:40:05 -0800
-From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-b8a9a11b976810ba12a43c4fe699a14892c97e52@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        linuxppc-dev@lists.ozlabs.org, peterz@infradead.org,
-        benh@kernel.crashing.org, tglx@linutronix.de,
-        shangw@linux.vnet.ibm.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, linuxppc-dev@lists.ozlabs.org,
-        benh@kernel.crashing.org, tglx@linutronix.de,
-        shangw@linux.vnet.ibm.com
-In-Reply-To: <20140223212736.562906212@linutronix.de>
-References: <20140223212736.562906212@linutronix.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] powerpc: Eeh: Kill another abuse of irq_desc
-Git-Commit-ID: b8a9a11b976810ba12a43c4fe699a14892c97e52
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Tue, 4 Mar 2014 11:50:46 -0500
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
+        Mark Brown <broonie@linaro.org>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Vince Hsu <vinceh@nvidia.com>
+Subject: [PATCH] mfd: as3722: make FUSE7_REG readable
+Date: Tue,  4 Mar 2014 09:50:32 -0700
+Message-Id: <1393951832-2638-1-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.8.1.5
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b8a9a11b976810ba12a43c4fe699a14892c97e52
-Gitweb:     http://git.kernel.org/tip/b8a9a11b976810ba12a43c4fe699a14892c97e52
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Sun, 23 Feb 2014 21:40:09 +0000
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Tue, 4 Mar 2014 17:37:52 +0100
+From: Stephen Warren <swarren@nvidia.com>
 
-powerpc: Eeh: Kill another abuse of irq_desc
+The FUSE7_REG register is not currently marked readable. This causes
+as3722_sd0_is_low_voltage() to emit an error during boot, and assume
+the range of the SD0 regulator:
 
-commit 91150af3a (powerpc/eeh: Fix unbalanced enable for IRQ) is
-another brilliant example of trainwreck engineering.
+as3722-regulator as3722-regulator: Reg 0xa7 read failed: -5
 
-The patch "fixes" the issue of an unbalanced call to irq_enable()
-which causes a prominent warning by checking the disabled state of the
-interrupt line and call conditionally into the core code.
-
-This is wrong in two aspects:
-
-1) The warning is there to tell users, that they need to fix their
-   asymetric enable/disable patterns by finding the root cause and
-   solving it there.
-
-   It's definitely not meant to work around it by conditionally
-   calling into the core code depending on the random state of the irq
-   line.
-
-   Asymetric irq_disable/enable calls are a clear sign of wrong usage
-   of the interfaces which have to be cured at the root and not by
-   somehow hacking around it.
-
-2) The abuse of core internal data structure instead of using the
-   proper interfaces for retrieving the information for the 'hack
-   around'
-
-   irq_desc is core internal and it's clear enough stated.
-
-Replace at least the irq_desc abuse with the proper functions and add
-a big fat comment why this is absurd and completely wrong.
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Gavin Shan <shangw@linux.vnet.ibm.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: ppc <linuxppc-dev@lists.ozlabs.org>
-Link: http://lkml.kernel.org/r/20140223212736.562906212@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Fixes: d4807ad2c4c0 ("regmap: Check readable regs in _regmap_read")
+[exposed the bug, by checking for readability]
+Fixes: 762a8ee80897 ("regulator: as3722: detect SD0 low-voltage mode")
+[left out this register from the readable list]
+Cc: Mark Brown <broonie@linaro.org>
+Cc: Michal Simek <michal.simek@xilinx.com>
+Cc: Andrew Bresticker <abrestic@chromium.org>
+Cc: Vince Hsu <vinceh@nvidia.com>
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
- arch/powerpc/kernel/eeh_driver.c | 26 +++++++++++++++++++++-----
- 1 file changed, 21 insertions(+), 5 deletions(-)
+Note: I believe the regmap commit mentioned above is for 3.15, whereas
+the as3722 commit is in at least 3.14. So, this only needs to be applied
+for 3.15, but might make sense to go into earlier kernels, at your
+discretion.
+---
+ drivers/mfd/as3722.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/powerpc/kernel/eeh_driver.c b/arch/powerpc/kernel/eeh_driver.c
-index fdc679d..3e1d7de 100644
---- a/arch/powerpc/kernel/eeh_driver.c
-+++ b/arch/powerpc/kernel/eeh_driver.c
-@@ -143,15 +143,31 @@ static void eeh_disable_irq(struct pci_dev *dev)
- static void eeh_enable_irq(struct pci_dev *dev)
- {
- 	struct eeh_dev *edev = pci_dev_to_eeh_dev(dev);
--	struct irq_desc *desc;
+diff --git a/drivers/mfd/as3722.c b/drivers/mfd/as3722.c
+index c71ff0af1547..39fa554f13bb 100644
+--- a/drivers/mfd/as3722.c
++++ b/drivers/mfd/as3722.c
+@@ -277,6 +277,7 @@ static const struct regmap_range as3722_readable_ranges[] = {
+ 	regmap_reg_range(AS3722_ADC0_CONTROL_REG, AS3722_ADC_CONFIGURATION_REG),
+ 	regmap_reg_range(AS3722_ASIC_ID1_REG, AS3722_ASIC_ID2_REG),
+ 	regmap_reg_range(AS3722_LOCK_REG, AS3722_LOCK_REG),
++	regmap_reg_range(AS3722_FUSE7_REG, AS3722_FUSE7_REG),
+ };
  
- 	if ((edev->mode) & EEH_DEV_IRQ_DISABLED) {
- 		edev->mode &= ~EEH_DEV_IRQ_DISABLED;
--
--		desc = irq_to_desc(dev->irq);
--		if (desc && desc->depth > 0)
-+		/*
-+		 * FIXME !!!!!
-+		 *
-+		 * This is just ass backwards. This maze has
-+		 * unbalanced irq_enable/disable calls. So instead of
-+		 * finding the root cause it works around the warning
-+		 * in the irq_enable code by conditionally calling
-+		 * into it.
-+		 *
-+		 * That's just wrong.The warning in the core code is
-+		 * there to tell people to fix their assymetries in
-+		 * their own code, not by abusing the core information
-+		 * to avoid it.
-+		 *
-+		 * I so wish that the assymetry would be the other way
-+		 * round and a few more irq_disable calls render that
-+		 * shit unusable forever.
-+		 *
-+		 *	tglx
-+		 */
-+		if (irqd_irq_disabled(irq_get_irq_data(dev->irq))
- 			enable_irq(dev->irq);
--	}
- }
- 
- /**
+ static const struct regmap_access_table as3722_readable_table = {
+-- 
+1.8.1.5
+
