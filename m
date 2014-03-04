@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758344AbaCDU5m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:57:42 -0500
+	id S1758354AbaCDU6V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:58:21 -0500
 Received: from mail.linuxfoundation.org ([140.211.169.12]:41257 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756722AbaCDUEL (ORCPT
+	with ESMTP id S1756710AbaCDUEK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:04:11 -0500
+	Tue, 4 Mar 2014 15:04:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 3.13 139/172] iommu/arm-smmu: fix table flushing during initial allocations
-Date: Tue,  4 Mar 2014 12:03:43 -0800
-Message-Id: <20140304200304.153510853@linuxfoundation.org>
+        Yifan Zhang <zhangyf@marvell.com>, Will Deacon <will.deacon@arm.com>
+Subject: [PATCH 3.13 137/172] iommu/arm-smmu: fix pud/pmd entry fill sequence
+Date: Tue,  4 Mar 2014 12:03:41 -0800
+Message-Id: <20140304200304.092688629@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -28,134 +28,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Yifan Zhang <zhangyf@marvell.com>
 
-commit 6dd35f45b8dac827b6f9dd86f5aca6436cdd2410 upstream.
+commit 97a644208d1a08b7104d1fe2ace8cef011222711 upstream.
 
-Now that we populate page tables as we traverse them ("iommu/arm-smmu:
-fix pud/pmd entry fill sequence"), we need to ensure that we flush out
-our zeroed tables after initial allocation, to prevent speculative TLB
-fills using bogus data.
+The ARM SMMU driver's population of puds and pmds is broken, since we
+iterate over the next level of table repeatedly setting the current
+level descriptor to point at the pmd being initialised. This is clearly
+wrong when dealing with multiple pmds/puds.
 
-This patch adds additional calls to arm_smmu_flush_pgtable during
-initial table allocation, and moves the dsb required by coherent table
-walkers into the helper.
+This patch fixes the problem by moving the pud/pmd population out of the
+loop and instead performing it when we allocate the next level (like we
+correctly do for ptes already). The starting address for the next level
+is then calculated prior to entering the loop.
 
+Signed-off-by: Yifan Zhang <zhangyf@marvell.com>
 Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iommu/arm-smmu.c |   51 ++++++++++++++++++++++++-----------------------
- 1 file changed, 27 insertions(+), 24 deletions(-)
+ drivers/iommu/arm-smmu.c |   14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
 --- a/drivers/iommu/arm-smmu.c
 +++ b/drivers/iommu/arm-smmu.c
-@@ -78,7 +78,6 @@
- 
- #define ARM_SMMU_PTE_CONT_SIZE		(PAGE_SIZE * ARM_SMMU_PTE_CONT_ENTRIES)
- #define ARM_SMMU_PTE_CONT_MASK		(~(ARM_SMMU_PTE_CONT_SIZE - 1))
--#define ARM_SMMU_PTE_HWTABLE_SIZE	(PTRS_PER_PTE * sizeof(pte_t))
- 
- /* Stage-1 PTE */
- #define ARM_SMMU_PTE_AP_UNPRIV		(((pteval_t)1) << 6)
-@@ -631,6 +630,28 @@ static irqreturn_t arm_smmu_global_fault
- 	return IRQ_HANDLED;
- }
- 
-+static void arm_smmu_flush_pgtable(struct arm_smmu_device *smmu, void *addr,
-+				   size_t size)
-+{
-+	unsigned long offset = (unsigned long)addr & ~PAGE_MASK;
-+
-+
-+	/* Ensure new page tables are visible to the hardware walker */
-+	if (smmu->features & ARM_SMMU_FEAT_COHERENT_WALK) {
-+		dsb();
-+	} else {
-+		/*
-+		 * If the SMMU can't walk tables in the CPU caches, treat them
-+		 * like non-coherent DMA since we need to flush the new entries
-+		 * all the way out to memory. There's no possibility of
-+		 * recursion here as the SMMU table walker will not be wired
-+		 * through another SMMU.
-+		 */
-+		dma_map_page(smmu->dev, virt_to_page(addr), offset, size,
-+				DMA_TO_DEVICE);
-+	}
-+}
-+
- static void arm_smmu_init_context_bank(struct arm_smmu_domain *smmu_domain)
- {
- 	u32 reg;
-@@ -714,6 +735,8 @@ static void arm_smmu_init_context_bank(s
- 	}
- 
- 	/* TTBR0 */
-+	arm_smmu_flush_pgtable(smmu, root_cfg->pgd,
-+			       PTRS_PER_PGD * sizeof(pgd_t));
- 	reg = __pa(root_cfg->pgd);
- 	writel_relaxed(reg, cb_base + ARM_SMMU_CB_TTBR0_LO);
- 	reg = (phys_addr_t)__pa(root_cfg->pgd) >> 32;
-@@ -1176,23 +1199,6 @@ static void arm_smmu_detach_dev(struct i
- 		arm_smmu_domain_remove_master(smmu_domain, master);
- }
- 
--static void arm_smmu_flush_pgtable(struct arm_smmu_device *smmu, void *addr,
--				   size_t size)
--{
--	unsigned long offset = (unsigned long)addr & ~PAGE_MASK;
--
--	/*
--	 * If the SMMU can't walk tables in the CPU caches, treat them
--	 * like non-coherent DMA since we need to flush the new entries
--	 * all the way out to memory. There's no possibility of recursion
--	 * here as the SMMU table walker will not be wired through another
--	 * SMMU.
--	 */
--	if (!(smmu->features & ARM_SMMU_FEAT_COHERENT_WALK))
--		dma_map_page(smmu->dev, virt_to_page(addr), offset, size,
--			     DMA_TO_DEVICE);
--}
--
- static bool arm_smmu_pte_is_contiguous_range(unsigned long addr,
- 					     unsigned long end)
- {
-@@ -1213,8 +1219,7 @@ static int arm_smmu_alloc_init_pte(struc
- 		if (!table)
- 			return -ENOMEM;
- 
--		arm_smmu_flush_pgtable(smmu, page_address(table),
--				       ARM_SMMU_PTE_HWTABLE_SIZE);
-+		arm_smmu_flush_pgtable(smmu, page_address(table), PAGE_SIZE);
- 		if (!pgtable_page_ctor(table)) {
- 			__free_page(table);
- 			return -ENOMEM;
-@@ -1318,6 +1323,7 @@ static int arm_smmu_alloc_init_pmd(struc
+@@ -1317,6 +1317,11 @@ static int arm_smmu_alloc_init_pmd(struc
+ 		pmd = pmd_alloc_one(NULL, addr);
  		if (!pmd)
  			return -ENOMEM;
++
++		pud_populate(NULL, pud, pmd);
++		arm_smmu_flush_pgtable(smmu, pud, sizeof(*pud));
++
++		pmd += pmd_index(addr);
+ 	} else
+ #endif
+ 		pmd = pmd_offset(pud, addr);
+@@ -1325,8 +1330,6 @@ static int arm_smmu_alloc_init_pmd(struc
+ 		next = pmd_addr_end(addr, end);
+ 		ret = arm_smmu_alloc_init_pte(smmu, pmd, addr, end, pfn,
+ 					      flags, stage);
+-		pud_populate(NULL, pud, pmd);
+-		arm_smmu_flush_pgtable(smmu, pud, sizeof(*pud));
+ 		phys += next - addr;
+ 	} while (pmd++, addr = next, addr < end);
  
-+		arm_smmu_flush_pgtable(smmu, pmd, PAGE_SIZE);
- 		pud_populate(NULL, pud, pmd);
- 		arm_smmu_flush_pgtable(smmu, pud, sizeof(*pud));
- 
-@@ -1350,6 +1356,7 @@ static int arm_smmu_alloc_init_pud(struc
+@@ -1346,6 +1349,11 @@ static int arm_smmu_alloc_init_pud(struc
+ 		pud = pud_alloc_one(NULL, addr);
  		if (!pud)
  			return -ENOMEM;
- 
-+		arm_smmu_flush_pgtable(smmu, pud, PAGE_SIZE);
- 		pgd_populate(NULL, pgd, pud);
- 		arm_smmu_flush_pgtable(smmu, pgd, sizeof(*pgd));
- 
-@@ -1418,10 +1425,6 @@ static int arm_smmu_handle_mapping(struc
- out_unlock:
- 	spin_unlock(&smmu_domain->lock);
- 
--	/* Ensure new page tables are visible to the hardware walker */
--	if (smmu->features & ARM_SMMU_FEAT_COHERENT_WALK)
--		dsb();
--
- 	return ret;
- }
++
++		pgd_populate(NULL, pgd, pud);
++		arm_smmu_flush_pgtable(smmu, pgd, sizeof(*pgd));
++
++		pud += pud_index(addr);
+ 	} else
+ #endif
+ 		pud = pud_offset(pgd, addr);
+@@ -1354,8 +1362,6 @@ static int arm_smmu_alloc_init_pud(struc
+ 		next = pud_addr_end(addr, end);
+ 		ret = arm_smmu_alloc_init_pmd(smmu, pud, addr, next, phys,
+ 					      flags, stage);
+-		pgd_populate(NULL, pud, pgd);
+-		arm_smmu_flush_pgtable(smmu, pgd, sizeof(*pgd));
+ 		phys += next - addr;
+ 	} while (pud++, addr = next, addr < end);
  
 
 
