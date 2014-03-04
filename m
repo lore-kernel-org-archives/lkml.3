@@ -1,121 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933249AbaCDVPo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:15:44 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:36648 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933221AbaCDVPf (ORCPT
+	id S933217AbaCDVPd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:15:33 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:44475 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932906AbaCDVP2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 16:15:35 -0500
-Message-ID: <531642E2.4020308@oracle.com>
-Date: Tue, 04 Mar 2014 16:17:22 -0500
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>
-CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        konrad.wilk@oracle.com, xen-devel@lists.xenproject.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86/xen: Disable APIC PM for Xen PV guests
-References: <1393900821-6182-1-git-send-email-boris.ostrovsky@oracle.com> <5315AA31.7090907@citrix.com>
-In-Reply-To: <5315AA31.7090907@citrix.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Tue, 4 Mar 2014 16:15:28 -0500
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: takata@linux-m32r.org
+Cc: linux-m32r@ml.linux-m32r.org, linux-m32r-ja@ml.linux-m32r.org,
+        linux-kernel@vger.kernel.org,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH] [RESEND] m32r: remove deprecated IRQF_DISABLED
+Date: Tue,  4 Mar 2014 22:15:20 +0100
+Message-Id: <1393967720-17875-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1386566651-19681-1-git-send-email-michael.opdenacker@free-electrons.com>
+References: <1386566651-19681-1-git-send-email-michael.opdenacker@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/2014 05:25 AM, David Vrabel wrote:
-> On 04/03/14 02:40, Boris Ostrovsky wrote:
->> Xen PV guests support only few APIC registers and writes to
->> unsupported registers result in WARN_ONs. Most APIC accesses in these
->> guests  have been eliminated; however, lapic_suspend/resume are still
->> called (on 32-bit kernels).
->>
->> We can disable APIC power management in xen_smp_prepare_boot_cpu()
->> (which is called after APIC has been initialized).
-> Having looked at another APIC related problem recently, I wonder if Xen
-> would be better served by having its own APIC driver instead of trying
-> to piggy-back of some hardware one which doesn't do what we want.
+This patch removes the use of the IRQF_DISABLED flag
+from arch/m32r/kernel/time.c
 
-Possibly, although I don't think it will help with this particular issue 
-since this patch is trying to address a problem in non-privileged 
-guests. Such guests don't have ACPI enabled and so no APIC probing is 
-done for them.
+It's a NOOP since 2.6.35 and it will be removed one day.
 
--boris
+Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+---
+ arch/m32r/kernel/time.c | 1 -
+ 1 file changed, 1 deletion(-)
 
->
-> David
->
->> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
->> ---
->>   arch/x86/include/asm/apic.h |    2 ++
->>   arch/x86/kernel/apic/apic.c |    6 ++++++
->>   arch/x86/xen/smp.c          |    4 ++++
->>   3 files changed, 12 insertions(+)
->>
->>
->> An alternative could be to add another op to stuct apic. The advantage would be
->> the fact that we never have a window of time when APIC PM is enabled. The downside
->> is having yet another op (of which there are already plenty).
->>
->> We could also avoid loading lapic_syscore_ops but I couldn't think of a good way
->> to figure out when not to do it.
->>
->>
->>
->> diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
->> index 1d2091a..1f100f2 100644
->> --- a/arch/x86/include/asm/apic.h
->> +++ b/arch/x86/include/asm/apic.h
->> @@ -687,6 +687,8 @@ extern int default_cpu_present_to_apicid(int mps_cpu);
->>   extern int default_check_phys_apicid_present(int phys_apicid);
->>   #endif
->>   
->> +extern void apic_pm_deactivate(void);
->> +
->>   #endif /* CONFIG_X86_LOCAL_APIC */
->>   extern void irq_enter(void);
->>   extern void irq_exit(void);
->> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
->> index 7f26c9a..60607b3 100644
->> --- a/arch/x86/kernel/apic/apic.c
->> +++ b/arch/x86/kernel/apic/apic.c
->> @@ -2424,6 +2424,11 @@ static void apic_pm_activate(void)
->>   	apic_pm_state.active = 1;
->>   }
->>   
->> +void apic_pm_deactivate(void)
->> +{
->> +	apic_pm_state.active = 0;
->> +}
->> +
->>   static int __init init_lapic_sysfs(void)
->>   {
->>   	/* XXX: remove suspend/resume procs if !apic_pm_state.active? */
->> @@ -2439,6 +2444,7 @@ core_initcall(init_lapic_sysfs);
->>   #else	/* CONFIG_PM */
->>   
->>   static void apic_pm_activate(void) { }
->> +void apic_pm_deactivate(void) { }
->>   
->>   #endif	/* CONFIG_PM */
->>   
->> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
->> index a18eadd..33115d8 100644
->> --- a/arch/x86/xen/smp.c
->> +++ b/arch/x86/xen/smp.c
->> @@ -298,6 +298,10 @@ static void __init xen_smp_prepare_boot_cpu(void)
->>   
->>   		xen_filter_cpu_maps();
->>   		xen_setup_vcpu_info_placement();
->> +
->> +#ifdef CONFIG_X86_LOCAL_APIC
->> +		apic_pm_deactivate();
->> +#endif
->>   	}
->>   	/*
->>   	 * The alternative logic (which patches the unlock/lock) runs before
+diff --git a/arch/m32r/kernel/time.c b/arch/m32r/kernel/time.c
+index 1a15f81ea1bd..093f2761aa51 100644
+--- a/arch/m32r/kernel/time.c
++++ b/arch/m32r/kernel/time.c
+@@ -134,7 +134,6 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
+ 
+ static struct irqaction irq0 = {
+ 	.handler = timer_interrupt,
+-	.flags = IRQF_DISABLED,
+ 	.name = "MFT2",
+ };
+ 
+-- 
+1.8.3.2
 
