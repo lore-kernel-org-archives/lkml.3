@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932562AbaCDUdv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:33:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41517 "EHLO
+	id S932548AbaCDUdt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:33:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41508 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932130AbaCDUE5 (ORCPT
+	with ESMTP id S932132AbaCDUE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Mar 2014 15:04:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chen Gang <gang.chen.5i5j@gmail.com>,
-        Hans-Christian Egtvedt <hegtvedt@cisco.com>
-Subject: [PATCH 3.10 14/97] avr32: Makefile: add -D__linux__ flag for gcc-4.4.7 use
-Date: Tue,  4 Mar 2014 12:03:27 -0800
-Message-Id: <20140304200346.568066584@linuxfoundation.org>
+        Cong Wang <cwang@twopensource.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 23/97] ipv4: Fix runtime WARNING in rtmsg_ifa()
+Date: Tue,  4 Mar 2014 12:03:36 -0800
+Message-Id: <20140304200346.826934402@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -29,49 +30,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chen Gang <gang.chen.5i5j@gmail.com>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
 
-commit 8d80390cfc9434d5aa4fb9e5f9768a66b30cb8a6 upstream.
+[ Upstream commit 63b5f152eb4a5bb79b9caf7ec37b4201d12f6e66 ]
 
-For avr32 cross compiler, do not define '__linux__' internally, so it
-will cause issue with allmodconfig.
+On m68k/ARAnyM:
 
-The related error:
+WARNING: CPU: 0 PID: 407 at net/ipv4/devinet.c:1599 0x316a99()
+Modules linked in:
+CPU: 0 PID: 407 Comm: ifconfig Not tainted
+3.13.0-atari-09263-g0c71d68014d1 #1378
+Stack from 10c4fdf0:
+        10c4fdf0 002ffabb 000243e8 00000000 008ced6c 00024416 00316a99 0000063f
+        00316a99 00000009 00000000 002501b4 00316a99 0000063f c0a86117 00000080
+        c0a86117 00ad0c90 00250a5a 00000014 00ad0c90 00000000 00000000 00000001
+        00b02dd0 00356594 00000000 00356594 c0a86117 eff6c9e4 008ced6c 00000002
+        008ced60 0024f9b4 00250b52 00ad0c90 00000000 00000000 00252390 00ad0c90
+        eff6c9e4 0000004f 00000000 00000000 eff6c9e4 8000e25c eff6c9e4 80001020
+Call Trace: [<000243e8>] warn_slowpath_common+0x52/0x6c
+ [<00024416>] warn_slowpath_null+0x14/0x1a
+ [<002501b4>] rtmsg_ifa+0xdc/0xf0
+ [<00250a5a>] __inet_insert_ifa+0xd6/0x1c2
+ [<0024f9b4>] inet_abc_len+0x0/0x42
+ [<00250b52>] inet_insert_ifa+0xc/0x12
+ [<00252390>] devinet_ioctl+0x2ae/0x5d6
 
-    CC [M]  fs/coda/psdev.o
-  In file included from include/linux/coda.h:64,
-                   from fs/coda/psdev.c:45:
-  include/uapi/linux/coda.h:221: error: expected specifier-qualifier-list before 'u_quad_t'
+Adding some debugging code reveals that net_fill_ifaddr() fails in
 
-The related toolchain version (which only download, not re-compile):
+    put_cacheinfo(skb, ifa->ifa_cstamp, ifa->ifa_tstamp,
+                              preferred, valid))
 
-  [root@gchen linux-next]# /upstream/toolchain/download/avr32-gnu-toolchain-linux_x86/bin/avr32-gcc -v
-  Using built-in specs.
-  Target: avr32
-  Configured with: /data2/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/src/gcc/configure --target=avr32 --host=i686-pc-linux-gnu --build=x86_64-pc-linux-gnu --prefix=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --enable-languages=c,c++ --disable-nls --disable-libssp --disable-libstdcxx-pch --with-dwarf2 --enable-version-specific-runtime-libs --disable-shared --enable-doc --with-mpfr-lib=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86/lib --with-mpfr-include=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86/include
---with-gmp=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --with-mpc=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --enable-__cxa_atexit --disable-shared --with-newlib --with-pkgversion=AVR_32_bit_GNU_Toolchain_3.4.2_435 --with-bugurl=http://www
-.atmel.com/avr
-  Thread model: single
-  gcc version 4.4.7 (AVR_32_bit_GNU_Toolchain_3.4.2_435)
+nla_put complains:
 
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-Acked-by: Hans-Christian Egtvedt <hegtvedt@cisco.com>
+    lib/nlattr.c:454: skb_tailroom(skb) = 12, nla_total_size(attrlen) = 20
+
+Apparently commit 5c766d642bcaffd0c2a5b354db2068515b3846cf ("ipv4:
+introduce address lifetime") forgot to take into account the addition of
+struct ifa_cacheinfo in inet_nlmsg_size(). Hence add it, like is already
+done for ipv6.
+
+Suggested-by: Cong Wang <cwang@twopensource.com>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Cong Wang <cwang@twopensource.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/avr32/Makefile |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv4/devinet.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/arch/avr32/Makefile
-+++ b/arch/avr32/Makefile
-@@ -11,7 +11,7 @@ all: uImage vmlinux.elf
+--- a/net/ipv4/devinet.c
++++ b/net/ipv4/devinet.c
+@@ -1433,7 +1433,8 @@ static size_t inet_nlmsg_size(void)
+ 	       + nla_total_size(4) /* IFA_ADDRESS */
+ 	       + nla_total_size(4) /* IFA_LOCAL */
+ 	       + nla_total_size(4) /* IFA_BROADCAST */
+-	       + nla_total_size(IFNAMSIZ); /* IFA_LABEL */
++	       + nla_total_size(IFNAMSIZ) /* IFA_LABEL */
++	       + nla_total_size(sizeof(struct ifa_cacheinfo)); /* IFA_CACHEINFO */
+ }
  
- KBUILD_DEFCONFIG	:= atstk1002_defconfig
- 
--KBUILD_CFLAGS	+= -pipe -fno-builtin -mno-pic
-+KBUILD_CFLAGS	+= -pipe -fno-builtin -mno-pic -D__linux__
- KBUILD_AFLAGS	+= -mrelax -mno-pic
- KBUILD_CFLAGS_MODULE += -mno-relax
- LDFLAGS_vmlinux	+= --relax
+ static inline u32 cstamp_delta(unsigned long cstamp)
 
 
