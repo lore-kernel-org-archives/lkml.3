@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932163AbaCDNQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 08:16:59 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:58483 "EHLO
+	id S932213AbaCDNRj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 08:17:39 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:58416 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757375AbaCDNOl (ORCPT
+	by vger.kernel.org with ESMTP id S1757321AbaCDNOg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 08:14:41 -0500
+	Tue, 4 Mar 2014 08:14:36 -0500
 From: Matt Fleming <matt@console-pimps.org>
 To: linux-efi@vger.kernel.org
 Cc: "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
         Alan Cox <alan@lxorguk.ukuu.org.uk>,
         Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org,
         Matt Fleming <matt.fleming@intel.com>
-Subject: [PATCH 08/13] x86/efi: Split the boot stub into 32/64 code paths
-Date: Tue,  4 Mar 2014 13:14:16 +0000
-Message-Id: <1393938861-16797-9-git-send-email-matt@console-pimps.org>
+Subject: [PATCH 05/13] efi: Add separate 32-bit/64-bit definitions
+Date: Tue,  4 Mar 2014 13:14:13 +0000
+Message-Id: <1393938861-16797-6-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1393938861-16797-1-git-send-email-matt@console-pimps.org>
 References: <1393938861-16797-1-git-send-email-matt@console-pimps.org>
@@ -25,1006 +25,394 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Fleming <matt.fleming@intel.com>
 
-Make the decision which code path to take at runtime based on
-efi_early->is64.
+The traditional approach of using machine-specific types such as
+'unsigned long' does not allow the kernel to interact with firmware
+running in a different CPU mode, e.g. 64-bit kernel with 32-bit EFI.
 
+Add distinct EFI structure definitions for both 32-bit and 64-bit so
+that we can use them in the 32-bit and 64-bit code paths.
+
+Acked-by: Borislav Petkov <bp@suse.de>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
- arch/x86/boot/compressed/eboot.c | 818 ++++++++++++++++++++++++++++++---------
- 1 file changed, 639 insertions(+), 179 deletions(-)
+ arch/x86/boot/compressed/eboot.h |  44 +++++++
+ include/linux/efi.h              | 252 +++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 296 insertions(+)
 
-diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-index 42548168bdc3..ab1f3a2f1e1e 100644
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -49,10 +49,63 @@ static void efi_printk(efi_system_table_t *, char *);
- static void efi_char16_printk(efi_system_table_t *, efi_char16_t *);
+diff --git a/arch/x86/boot/compressed/eboot.h b/arch/x86/boot/compressed/eboot.h
+index 81b6b652b46a..d487e727f1ec 100644
+--- a/arch/x86/boot/compressed/eboot.h
++++ b/arch/x86/boot/compressed/eboot.h
+@@ -37,6 +37,24 @@ struct efi_graphics_output_mode_info {
+ 	u32 pixels_per_scan_line;
+ } __packed;
  
- static efi_status_t
--efi_file_size(efi_system_table_t *sys_table, void *__fh,
--	      efi_char16_t *filename_16, void **handle, u64 *file_sz)
-+__file_size32(void *__fh, efi_char16_t *filename_16,
-+	      void **handle, u64 *file_sz)
-+{
-+	efi_file_handle_32_t *h, *fh = __fh;
-+	efi_file_info_t *info;
-+	efi_status_t status;
-+	efi_guid_t info_guid = EFI_FILE_INFO_ID;
-+	u32 info_sz;
++struct efi_graphics_output_protocol_mode_32 {
++	u32 max_mode;
++	u32 mode;
++	u32 info;
++	u32 size_of_info;
++	u64 frame_buffer_base;
++	u32 frame_buffer_size;
++} __packed;
 +
-+	status = efi_early->call((unsigned long)fh->open, fh, &h, filename_16,
-+				 EFI_FILE_MODE_READ, (u64)0);
-+	if (status != EFI_SUCCESS) {
-+		efi_printk(sys_table, "Failed to open file: ");
-+		efi_char16_printk(sys_table, filename_16);
-+		efi_printk(sys_table, "\n");
-+		return status;
-+	}
++struct efi_graphics_output_protocol_mode_64 {
++	u32 max_mode;
++	u32 mode;
++	u64 info;
++	u64 size_of_info;
++	u64 frame_buffer_base;
++	u64 frame_buffer_size;
++} __packed;
 +
-+	*handle = h;
-+
-+	info_sz = 0;
-+	status = efi_early->call((unsigned long)h->get_info, h, &info_guid,
-+				 &info_sz, NULL);
-+	if (status != EFI_BUFFER_TOO_SMALL) {
-+		efi_printk(sys_table, "Failed to get file info size\n");
-+		return status;
-+	}
-+
-+grow:
-+	status = efi_early->call(efi_early->allocate_pool, EFI_LOADER_DATA,
-+				 info_sz, (void **)&info);
-+	if (status != EFI_SUCCESS) {
-+		efi_printk(sys_table, "Failed to alloc mem for file info\n");
-+		return status;
-+	}
-+
-+	status = efi_early->call((unsigned long)h->get_info, h, &info_guid,
-+				 &info_sz, info);
-+	if (status == EFI_BUFFER_TOO_SMALL) {
-+		efi_early->call(efi_early->free_pool, info);
-+		goto grow;
-+	}
-+
-+	*file_sz = info->file_size;
-+	efi_early->call(efi_early->free_pool, info);
-+
-+	if (status != EFI_SUCCESS)
-+		efi_printk(sys_table, "Failed to get initrd info\n");
-+
-+	return status;
-+}
-+
-+static efi_status_t
-+__file_size64(void *__fh, efi_char16_t *filename_16,
-+	      void **handle, u64 *file_sz)
- {
--	efi_file_handle_t *h, *fh = __fh;
-+	efi_file_handle_64_t *h, *fh = __fh;
- 	efi_file_info_t *info;
- 	efi_status_t status;
- 	efi_guid_t info_guid = EFI_FILE_INFO_ID;
-@@ -100,31 +153,82 @@ grow:
+ struct efi_graphics_output_protocol_mode {
+ 	u32 max_mode;
+ 	u32 mode;
+@@ -46,6 +64,20 @@ struct efi_graphics_output_protocol_mode {
+ 	unsigned long frame_buffer_size;
+ } __packed;
  
- 	return status;
- }
-+static efi_status_t
-+efi_file_size(efi_system_table_t *sys_table, void *__fh,
-+	      efi_char16_t *filename_16, void **handle, u64 *file_sz)
-+{
-+	if (efi_early->is64)
-+		return __file_size64(__fh, filename_16, handle, file_sz);
++struct efi_graphics_output_protocol_32 {
++	u32 query_mode;
++	u32 set_mode;
++	u32 blt;
++	u32 mode;
++};
 +
-+	return __file_size32(__fh, filename_16, handle, file_sz);
-+}
++struct efi_graphics_output_protocol_64 {
++	u64 query_mode;
++	u64 set_mode;
++	u64 blt;
++	u64 mode;
++};
++
+ struct efi_graphics_output_protocol {
+ 	void *query_mode;
+ 	unsigned long set_mode;
+@@ -53,6 +85,18 @@ struct efi_graphics_output_protocol {
+ 	struct efi_graphics_output_protocol_mode *mode;
+ };
  
- static inline efi_status_t
- efi_file_read(void *__fh, void *handle, unsigned long *size, void *addr)
- {
--	efi_file_handle_t *fh = __fh;
--	return efi_early->call((unsigned long)fh->read, handle, size, addr);
-+	unsigned long func;
++struct efi_uga_draw_protocol_32 {
++	u32 get_mode;
++	u32 set_mode;
++	u32 blt;
++};
 +
-+	if (efi_early->is64) {
-+		efi_file_handle_64_t *fh = __fh;
++struct efi_uga_draw_protocol_64 {
++	u64 get_mode;
++	u64 set_mode;
++	u64 blt;
++};
 +
-+		func = (unsigned long)fh->read;
-+		return efi_early->call(func, handle, size, addr);
-+	} else {
-+		efi_file_handle_32_t *fh = __fh;
-+
-+		func = (unsigned long)fh->read;
-+		return efi_early->call(func, handle, size, addr);
-+	}
- }
+ struct efi_uga_draw_protocol {
+ 	void *get_mode;
+ 	void *set_mode;
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index 64d532ca890a..6c100ff0cae4 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -153,6 +153,102 @@ typedef struct {
+ 	u8 sets_to_zero;
+ } efi_time_cap_t;
  
- static inline efi_status_t efi_file_close(void *__fh, void *handle)
- {
--	efi_file_handle_t *fh = __fh;
-+	if (efi_early->is64) {
-+		efi_file_handle_64_t *fh = __fh;
- 
--	return efi_early->call((unsigned long)fh->close, handle);
-+		return efi_early->call((unsigned long)fh->close, handle);
-+	} else {
-+		efi_file_handle_32_t *fh = __fh;
++typedef struct {
++	efi_table_hdr_t hdr;
++	u32 raise_tpl;
++	u32 restore_tpl;
++	u32 allocate_pages;
++	u32 free_pages;
++	u32 get_memory_map;
++	u32 allocate_pool;
++	u32 free_pool;
++	u32 create_event;
++	u32 set_timer;
++	u32 wait_for_event;
++	u32 signal_event;
++	u32 close_event;
++	u32 check_event;
++	u32 install_protocol_interface;
++	u32 reinstall_protocol_interface;
++	u32 uninstall_protocol_interface;
++	u32 handle_protocol;
++	u32 __reserved;
++	u32 register_protocol_notify;
++	u32 locate_handle;
++	u32 locate_device_path;
++	u32 install_configuration_table;
++	u32 load_image;
++	u32 start_image;
++	u32 exit;
++	u32 unload_image;
++	u32 exit_boot_services;
++	u32 get_next_monotonic_count;
++	u32 stall;
++	u32 set_watchdog_timer;
++	u32 connect_controller;
++	u32 disconnect_controller;
++	u32 open_protocol;
++	u32 close_protocol;
++	u32 open_protocol_information;
++	u32 protocols_per_handle;
++	u32 locate_handle_buffer;
++	u32 locate_protocol;
++	u32 install_multiple_protocol_interfaces;
++	u32 uninstall_multiple_protocol_interfaces;
++	u32 calculate_crc32;
++	u32 copy_mem;
++	u32 set_mem;
++	u32 create_event_ex;
++} __packed efi_boot_services_32_t;
++
++typedef struct {
++	efi_table_hdr_t hdr;
++	u64 raise_tpl;
++	u64 restore_tpl;
++	u64 allocate_pages;
++	u64 free_pages;
++	u64 get_memory_map;
++	u64 allocate_pool;
++	u64 free_pool;
++	u64 create_event;
++	u64 set_timer;
++	u64 wait_for_event;
++	u64 signal_event;
++	u64 close_event;
++	u64 check_event;
++	u64 install_protocol_interface;
++	u64 reinstall_protocol_interface;
++	u64 uninstall_protocol_interface;
++	u64 handle_protocol;
++	u64 __reserved;
++	u64 register_protocol_notify;
++	u64 locate_handle;
++	u64 locate_device_path;
++	u64 install_configuration_table;
++	u64 load_image;
++	u64 start_image;
++	u64 exit;
++	u64 unload_image;
++	u64 exit_boot_services;
++	u64 get_next_monotonic_count;
++	u64 stall;
++	u64 set_watchdog_timer;
++	u64 connect_controller;
++	u64 disconnect_controller;
++	u64 open_protocol;
++	u64 close_protocol;
++	u64 open_protocol_information;
++	u64 protocols_per_handle;
++	u64 locate_handle_buffer;
++	u64 locate_protocol;
++	u64 install_multiple_protocol_interfaces;
++	u64 uninstall_multiple_protocol_interfaces;
++	u64 calculate_crc32;
++	u64 copy_mem;
++	u64 set_mem;
++	u64 create_event_ex;
++} __packed efi_boot_services_64_t;
 +
-+		return efi_early->call((unsigned long)fh->close, handle);
-+	}
- }
- 
--static inline efi_status_t
--efi_open_volume(efi_system_table_t *sys_table, void *__image, void **__fh)
-+static inline efi_status_t __open_volume32(void *__image, void **__fh)
-+{
-+	efi_file_io_interface_t *io;
-+	efi_loaded_image_32_t *image = __image;
-+	efi_file_handle_32_t *fh;
-+	efi_guid_t fs_proto = EFI_FILE_SYSTEM_GUID;
-+	efi_status_t status;
-+	void *handle = (void *)(unsigned long)image->device_handle;
-+	unsigned long func;
-+
-+	status = efi_early->call(efi_early->handle_protocol, handle,
-+				 &fs_proto, (void **)&io);
-+	if (status != EFI_SUCCESS) {
-+		efi_printk(sys_table, "Failed to handle fs_proto\n");
-+		return status;
-+	}
-+
-+	func = (unsigned long)io->open_volume;
-+	status = efi_early->call(func, io, &fh);
-+	if (status != EFI_SUCCESS)
-+		efi_printk(sys_table, "Failed to open volume\n");
-+
-+	*__fh = fh;
-+	return status;
-+}
-+
-+static inline efi_status_t __open_volume64(void *__image, void **__fh)
- {
- 	efi_file_io_interface_t *io;
--	efi_loaded_image_t *image = __image;
--	efi_file_handle_t *fh;
-+	efi_loaded_image_64_t *image = __image;
-+	efi_file_handle_64_t *fh;
- 	efi_guid_t fs_proto = EFI_FILE_SYSTEM_GUID;
- 	efi_status_t status;
- 	void *handle = (void *)(unsigned long)image->device_handle;
--	u32 func;
-+	unsigned long func;
- 
- 	status = efi_early->call(efi_early->handle_protocol, handle,
- 				 &fs_proto, (void **)&io);
-@@ -142,19 +246,39 @@ efi_open_volume(efi_system_table_t *sys_table, void *__image, void **__fh)
- 	return status;
- }
- 
--static inline void
--efi_char16_printk(efi_system_table_t *table, efi_char16_t *str)
-+static inline efi_status_t
-+efi_open_volume(efi_system_table_t *sys_table, void *__image, void **__fh)
-+{
-+	if (efi_early->is64)
-+		return __open_volume64(__image, __fh);
-+
-+	return __open_volume32(__image, __fh);
-+}
-+
-+static void efi_char16_printk(efi_system_table_t *table, efi_char16_t *str)
- {
--	struct efi_simple_text_output_protocol *out;
- 	unsigned long output_string;
- 	size_t offset;
--	unsigned long *func;
- 
--	offset = offsetof(typeof(*out), output_string);
--	output_string = efi_early->text_output + offset;
--	func = (unsigned long *)output_string;
-+	if (efi_early->is64) {
-+		struct efi_simple_text_output_protocol_64 *out;
-+		u64 *func;
-+
-+		offset = offsetof(typeof(*out), output_string);
-+		output_string = efi_early->text_output + offset;
-+		func = (u64 *)output_string;
-+
-+		efi_early->call(*func, efi_early->text_output, str);
-+	} else {
-+		struct efi_simple_text_output_protocol_32 *out;
-+		u32 *func;
-+
-+		offset = offsetof(typeof(*out), output_string);
-+		output_string = efi_early->text_output + offset;
-+		func = (u32 *)output_string;
- 
--	efi_early->call(*func, efi_early->text_output, str);
-+		efi_early->call(*func, efi_early->text_output, str);
-+	}
- }
- 
- #include "../../../../drivers/firmware/efi/efi-stub-helper.c"
-@@ -182,46 +306,86 @@ static void find_bits(unsigned long mask, u8 *pos, u8 *size)
- 	*size = len;
- }
- 
--static efi_status_t setup_efi_pci(struct boot_params *params)
-+static efi_status_t
-+__setup_efi_pci32(efi_pci_io_protocol_32 *pci, struct pci_setup_rom **__rom)
- {
--	efi_pci_io_protocol *pci;
-+	struct pci_setup_rom *rom = NULL;
- 	efi_status_t status;
--	void **pci_handle = NULL;
--	efi_guid_t pci_proto = EFI_PCI_IO_PROTOCOL_GUID;
--	unsigned long nr_pci, size = 0;
--	int i;
--	struct setup_data *data;
-+	unsigned long size;
-+	uint64_t attributes;
- 
--	data = (struct setup_data *)(unsigned long)params->hdr.setup_data;
-+	status = efi_early->call(pci->attributes, pci,
-+				 EfiPciIoAttributeOperationGet, 0, 0,
-+				 &attributes);
-+	if (status != EFI_SUCCESS)
-+		return status;
- 
--	while (data && data->next)
--		data = (struct setup_data *)(unsigned long)data->next;
-+	if (!pci->romimage || !pci->romsize)
-+		return EFI_INVALID_PARAMETER;
- 
--	status = efi_early->call(efi_early->locate_handle,
--				 EFI_LOCATE_BY_PROTOCOL,
--				 &pci_proto, NULL, &size, pci_handle);
-+	size = pci->romsize + sizeof(*rom);
- 
--	if (status == EFI_BUFFER_TOO_SMALL) {
--		status = efi_early->call(efi_early->allocate_pool,
--					 EFI_LOADER_DATA,
--					 size, (void **)&pci_handle);
-+	status = efi_early->call(efi_early->allocate_pool,
-+				 EFI_LOADER_DATA, size, &rom);
- 
--		if (status != EFI_SUCCESS)
--			return status;
-+	if (status != EFI_SUCCESS)
-+		return status;
- 
--		status = efi_early->call(efi_early->locate_handle,
--					 EFI_LOCATE_BY_PROTOCOL, &pci_proto,
--					 NULL, &size, pci_handle);
--	}
-+	memset(rom, 0, sizeof(*rom));
-+
-+	rom->data.type = SETUP_PCI;
-+	rom->data.len = size - sizeof(struct setup_data);
-+	rom->data.next = 0;
-+	rom->pcilen = pci->romsize;
-+	*__rom = rom;
-+
-+	status = efi_early->call(pci->pci.read, pci, EfiPciIoWidthUint16,
-+				 PCI_VENDOR_ID, 1, &(rom->vendor));
- 
- 	if (status != EFI_SUCCESS)
--		goto free_handle;
-+		goto free_struct;
-+
-+	status = efi_early->call(pci->pci.read, pci, EfiPciIoWidthUint16,
-+				 PCI_DEVICE_ID, 1, &(rom->devid));
-+
-+	if (status != EFI_SUCCESS)
-+		goto free_struct;
-+
-+	status = efi_early->call(pci->get_location, pci, &(rom->segment),
-+				 &(rom->bus), &(rom->device), &(rom->function));
-+
-+	if (status != EFI_SUCCESS)
-+		goto free_struct;
-+
-+	memcpy(rom->romdata, pci->romimage, pci->romsize);
-+	return status;
-+
-+free_struct:
-+	efi_early->call(efi_early->free_pool, rom);
-+	return status;
-+}
- 
--	nr_pci = size / sizeof(void *);
-+static efi_status_t
-+setup_efi_pci32(struct boot_params *params, void **pci_handle,
-+		unsigned long size)
-+{
-+	efi_pci_io_protocol_32 *pci = NULL;
-+	efi_guid_t pci_proto = EFI_PCI_IO_PROTOCOL_GUID;
-+	u32 *handles = (u32 *)(unsigned long)pci_handle;
-+	efi_status_t status;
-+	unsigned long nr_pci;
-+	struct setup_data *data;
-+	int i;
-+
-+	data = (struct setup_data *)(unsigned long)params->hdr.setup_data;
-+
-+	while (data && data->next)
-+		data = (struct setup_data *)(unsigned long)data->next;
-+
-+	nr_pci = size / sizeof(u32);
- 	for (i = 0; i < nr_pci; i++) {
--		void *h = pci_handle[i];
--		uint64_t attributes;
--		struct pci_setup_rom *rom;
-+		struct pci_setup_rom *rom = NULL;
-+		u32 h = handles[i];
- 
- 		status = efi_early->call(efi_early->handle_protocol, h,
- 					 &pci_proto, (void **)&pci);
-@@ -232,56 +396,114 @@ static efi_status_t setup_efi_pci(struct boot_params *params)
- 		if (!pci)
- 			continue;
- 
--#ifdef CONFIG_X86_64
--		status = efi_early->call((unsigned long)pci->attributes, pci,
--					 EfiPciIoAttributeOperationGet, 0,
--					 &attributes);
--#else
--		status = efi_early->call((unsigned long)pci->attributes, pci,
--					 EfiPciIoAttributeOperationGet, 0, 0,
--					 &attributes);
--#endif
-+		status = __setup_efi_pci32(pci, &rom);
- 		if (status != EFI_SUCCESS)
- 			continue;
- 
--		if (!pci->romimage || !pci->romsize)
--			continue;
-+		if (data)
-+			data->next = (unsigned long)rom;
-+		else
-+			params->hdr.setup_data = (unsigned long)rom;
- 
--		size = pci->romsize + sizeof(*rom);
-+		data = (struct setup_data *)rom;
- 
--		status = efi_early->call(efi_early->allocate_pool,
--					 EFI_LOADER_DATA, size, &rom);
-+	}
- 
--		if (status != EFI_SUCCESS)
--			continue;
-+	return status;
-+}
-+
-+static efi_status_t
-+__setup_efi_pci64(efi_pci_io_protocol_64 *pci, struct pci_setup_rom **__rom)
-+{
-+	struct pci_setup_rom *rom;
-+	efi_status_t status;
-+	unsigned long size;
-+	uint64_t attributes;
-+
-+	status = efi_early->call(pci->attributes, pci,
-+				 EfiPciIoAttributeOperationGet, 0,
-+				 &attributes);
-+	if (status != EFI_SUCCESS)
-+		return status;
- 
--		rom->data.type = SETUP_PCI;
--		rom->data.len = size - sizeof(struct setup_data);
--		rom->data.next = 0;
--		rom->pcilen = pci->romsize;
-+	if (!pci->romimage || !pci->romsize)
-+		return EFI_INVALID_PARAMETER;
- 
--		status = efi_early->call((unsigned long)pci->pci.read, pci,
--					 EfiPciIoWidthUint16, PCI_VENDOR_ID,
--					 1, &(rom->vendor));
-+	size = pci->romsize + sizeof(*rom);
- 
--		if (status != EFI_SUCCESS)
--			goto free_struct;
-+	status = efi_early->call(efi_early->allocate_pool,
-+				 EFI_LOADER_DATA, size, &rom);
-+
-+	if (status != EFI_SUCCESS)
-+		return status;
- 
--		status = efi_early->call((unsigned long)pci->pci.read, pci,
--					 EfiPciIoWidthUint16, PCI_DEVICE_ID,
--					 1, &(rom->devid));
-+	rom->data.type = SETUP_PCI;
-+	rom->data.len = size - sizeof(struct setup_data);
-+	rom->data.next = 0;
-+	rom->pcilen = pci->romsize;
-+	*__rom = rom;
- 
--		if (status != EFI_SUCCESS)
--			goto free_struct;
-+	status = efi_early->call(pci->pci.read, pci, EfiPciIoWidthUint16,
-+				 PCI_VENDOR_ID, 1, &(rom->vendor));
-+
-+	if (status != EFI_SUCCESS)
-+		goto free_struct;
-+
-+	status = efi_early->call(pci->pci.read, pci, EfiPciIoWidthUint16,
-+				 PCI_DEVICE_ID, 1, &(rom->devid));
-+
-+	if (status != EFI_SUCCESS)
-+		goto free_struct;
-+
-+	status = efi_early->call(pci->get_location, pci, &(rom->segment),
-+				 &(rom->bus), &(rom->device), &(rom->function));
-+
-+	if (status != EFI_SUCCESS)
-+		goto free_struct;
-+
-+	memcpy(rom->romdata, pci->romimage, pci->romsize);
-+	return status;
-+
-+free_struct:
-+	efi_early->call(efi_early->free_pool, rom);
-+	return status;
-+
-+}
-+
-+static efi_status_t
-+setup_efi_pci64(struct boot_params *params, void **pci_handle,
-+		unsigned long size)
-+{
-+	efi_pci_io_protocol_64 *pci = NULL;
-+	efi_guid_t pci_proto = EFI_PCI_IO_PROTOCOL_GUID;
-+	u64 *handles = (u64 *)(unsigned long)pci_handle;
-+	efi_status_t status;
-+	unsigned long nr_pci;
-+	struct setup_data *data;
-+	int i;
-+
-+	data = (struct setup_data *)(unsigned long)params->hdr.setup_data;
-+
-+	while (data && data->next)
-+		data = (struct setup_data *)(unsigned long)data->next;
-+
-+	nr_pci = size / sizeof(u64);
-+	for (i = 0; i < nr_pci; i++) {
-+		struct pci_setup_rom *rom = NULL;
-+		u64 h = handles[i];
- 
--		status = efi_early->call((unsigned long)pci->get_location, pci,
--					 &(rom->segment), &(rom->bus),
--					 &(rom->device), &(rom->function));
-+		status = efi_early->call(efi_early->handle_protocol, h,
-+					 &pci_proto, (void **)&pci);
- 
- 		if (status != EFI_SUCCESS)
--			goto free_struct;
-+			continue;
-+
-+		if (!pci)
-+			continue;
- 
--		memcpy(rom->romdata, pci->romimage, pci->romsize);
-+		status = __setup_efi_pci64(pci, &rom);
-+		if (status != EFI_SUCCESS)
-+			continue;
- 
- 		if (data)
- 			data->next = (unsigned long)rom;
-@@ -290,104 +512,52 @@ static efi_status_t setup_efi_pci(struct boot_params *params)
- 
- 		data = (struct setup_data *)rom;
- 
--		continue;
--	free_struct:
--		efi_early->call(efi_early->free_pool, rom);
- 	}
- 
--free_handle:
--	efi_early->call(efi_early->free_pool, pci_handle);
- 	return status;
- }
- 
--/*
-- * See if we have Graphics Output Protocol
-- */
--static efi_status_t setup_gop(struct screen_info *si, efi_guid_t *proto,
--			      unsigned long size)
-+static efi_status_t setup_efi_pci(struct boot_params *params)
- {
--	struct efi_graphics_output_protocol *gop, *first_gop;
--	struct efi_pixel_bitmask pixel_info;
--	unsigned long nr_gops;
- 	efi_status_t status;
--	void **gop_handle = NULL;
--	u16 width, height;
--	u32 fb_base, fb_size;
--	u32 pixels_per_scan_line;
--	int pixel_format;
--	int i;
--
--	status = efi_early->call(efi_early->allocate_pool, EFI_LOADER_DATA,
--				 size, (void **)&gop_handle);
--	if (status != EFI_SUCCESS)
--		return status;
-+	void **pci_handle = NULL;
-+	efi_guid_t pci_proto = EFI_PCI_IO_PROTOCOL_GUID;
-+	unsigned long size = 0;
- 
- 	status = efi_early->call(efi_early->locate_handle,
- 				 EFI_LOCATE_BY_PROTOCOL,
--				 proto, NULL, &size, gop_handle);
--	if (status != EFI_SUCCESS)
--		goto free_handle;
--
--	first_gop = NULL;
-+				 &pci_proto, NULL, &size, pci_handle);
- 
--	nr_gops = size / sizeof(void *);
--	for (i = 0; i < nr_gops; i++) {
--		struct efi_graphics_output_mode_info *info;
--		efi_guid_t conout_proto = EFI_CONSOLE_OUT_DEVICE_GUID;
--		bool conout_found = false;
--		void *dummy;
--		void *h = gop_handle[i];
-+	if (status == EFI_BUFFER_TOO_SMALL) {
-+		status = efi_early->call(efi_early->allocate_pool,
-+					 EFI_LOADER_DATA,
-+					 size, (void **)&pci_handle);
- 
--		status = efi_early->call(efi_early->handle_protocol, h,
--					 proto, (void **)&gop);
- 		if (status != EFI_SUCCESS)
--			continue;
--
--		status = efi_early->call(efi_early->handle_protocol, h,
--					 &conout_proto, &dummy);
--		if (status == EFI_SUCCESS)
--			conout_found = true;
--
--		status = efi_early->call((unsigned long)gop->query_mode, gop,
--					 gop->mode->mode, &size, &info);
--		if (status == EFI_SUCCESS && (!first_gop || conout_found)) {
--			/*
--			 * Systems that use the UEFI Console Splitter may
--			 * provide multiple GOP devices, not all of which are
--			 * backed by real hardware. The workaround is to search
--			 * for a GOP implementing the ConOut protocol, and if
--			 * one isn't found, to just fall back to the first GOP.
--			 */
--			width = info->horizontal_resolution;
--			height = info->vertical_resolution;
--			fb_base = gop->mode->frame_buffer_base;
--			fb_size = gop->mode->frame_buffer_size;
--			pixel_format = info->pixel_format;
--			pixel_info = info->pixel_information;
--			pixels_per_scan_line = info->pixels_per_scan_line;
-+			return status;
- 
--			/*
--			 * Once we've found a GOP supporting ConOut,
--			 * don't bother looking any further.
--			 */
--			first_gop = gop;
--			if (conout_found)
--				break;
--		}
-+		status = efi_early->call(efi_early->locate_handle,
-+					 EFI_LOCATE_BY_PROTOCOL, &pci_proto,
-+					 NULL, &size, pci_handle);
- 	}
- 
--	/* Did we find any GOPs? */
--	if (!first_gop)
-+	if (status != EFI_SUCCESS)
- 		goto free_handle;
- 
--	/* EFI framebuffer */
--	si->orig_video_isVGA = VIDEO_TYPE_EFI;
-+	if (efi_early->is64)
-+		status = setup_efi_pci64(params, pci_handle, size);
-+	else
-+		status = setup_efi_pci32(params, pci_handle, size);
- 
--	si->lfb_width = width;
--	si->lfb_height = height;
--	si->lfb_base = fb_base;
--	si->pages = 1;
-+free_handle:
-+	efi_early->call(efi_early->free_pool, pci_handle);
-+	return status;
-+}
- 
-+static void
-+setup_pixel_info(struct screen_info *si, u32 pixels_per_scan_line,
-+		 struct efi_pixel_bitmask pixel_info, int pixel_format)
-+{
- 	if (pixel_format == PIXEL_RGB_RESERVED_8BIT_PER_COLOR) {
- 		si->lfb_depth = 32;
- 		si->lfb_linelength = pixels_per_scan_line * 4;
-@@ -432,51 +602,310 @@ static efi_status_t setup_gop(struct screen_info *si, efi_guid_t *proto,
- 		si->rsvd_size = 0;
- 		si->rsvd_pos = 0;
- 	}
-+}
-+
-+static efi_status_t
-+__gop_query32(struct efi_graphics_output_protocol_32 *gop32,
-+	      struct efi_graphics_output_mode_info **info,
-+	      unsigned long *size, u32 *fb_base)
-+{
-+	struct efi_graphics_output_protocol_mode_32 *mode;
-+	efi_status_t status;
-+	unsigned long m;
-+
-+	m = gop32->mode;
-+	mode = (struct efi_graphics_output_protocol_mode_32 *)m;
-+
-+	status = efi_early->call(gop32->query_mode, gop32,
-+				 mode->mode, size, info);
-+	if (status != EFI_SUCCESS)
-+		return status;
-+
-+	*fb_base = mode->frame_buffer_base;
-+	return status;
-+}
-+
-+static efi_status_t
-+setup_gop32(struct screen_info *si, efi_guid_t *proto,
-+	    unsigned long size, void **gop_handle)
-+{
-+	struct efi_graphics_output_protocol_32 *gop32, *first_gop;
-+	unsigned long nr_gops;
-+	u16 width, height;
-+	u32 pixels_per_scan_line;
-+	u32 fb_base;
-+	struct efi_pixel_bitmask pixel_info;
-+	int pixel_format;
-+	efi_status_t status;
-+	u32 *handles = (u32 *)(unsigned long)gop_handle;
-+	int i;
-+
-+	first_gop = NULL;
-+	gop32 = NULL;
-+
-+	nr_gops = size / sizeof(u32);
-+	for (i = 0; i < nr_gops; i++) {
-+		struct efi_graphics_output_mode_info *info = NULL;
-+		efi_guid_t conout_proto = EFI_CONSOLE_OUT_DEVICE_GUID;
-+		bool conout_found = false;
-+		void *dummy = NULL;
-+		u32 h = handles[i];
-+
-+		status = efi_early->call(efi_early->handle_protocol, h,
-+					 proto, (void **)&gop32);
-+		if (status != EFI_SUCCESS)
-+			continue;
-+
-+		status = efi_early->call(efi_early->handle_protocol, h,
-+					 &conout_proto, &dummy);
-+		if (status == EFI_SUCCESS)
-+			conout_found = true;
-+
-+		status = __gop_query32(gop32, &info, &size, &fb_base);
-+		if (status == EFI_SUCCESS && (!first_gop || conout_found)) {
-+			/*
-+			 * Systems that use the UEFI Console Splitter may
-+			 * provide multiple GOP devices, not all of which are
-+			 * backed by real hardware. The workaround is to search
-+			 * for a GOP implementing the ConOut protocol, and if
-+			 * one isn't found, to just fall back to the first GOP.
-+			 */
-+			width = info->horizontal_resolution;
-+			height = info->vertical_resolution;
-+			pixel_format = info->pixel_format;
-+			pixel_info = info->pixel_information;
-+			pixels_per_scan_line = info->pixels_per_scan_line;
-+
-+			/*
-+			 * Once we've found a GOP supporting ConOut,
-+			 * don't bother looking any further.
-+			 */
-+			first_gop = gop32;
-+			if (conout_found)
-+				break;
-+		}
-+	}
-+
-+	/* Did we find any GOPs? */
-+	if (!first_gop)
-+		goto out;
-+
-+	/* EFI framebuffer */
-+	si->orig_video_isVGA = VIDEO_TYPE_EFI;
-+
-+	si->lfb_width = width;
-+	si->lfb_height = height;
-+	si->lfb_base = fb_base;
-+	si->pages = 1;
-+
-+	setup_pixel_info(si, pixels_per_scan_line, pixel_info, pixel_format);
- 
- 	si->lfb_size = si->lfb_linelength * si->lfb_height;
- 
- 	si->capabilities |= VIDEO_CAPABILITY_SKIP_QUIRKS;
-+out:
-+	return status;
-+}
- 
--free_handle:
--	efi_early->call(efi_early->free_pool, gop_handle);
-+static efi_status_t
-+__gop_query64(struct efi_graphics_output_protocol_64 *gop64,
-+	      struct efi_graphics_output_mode_info **info,
-+	      unsigned long *size, u32 *fb_base)
-+{
-+	struct efi_graphics_output_protocol_mode_64 *mode;
-+	efi_status_t status;
-+	unsigned long m;
-+
-+	m = gop64->mode;
-+	mode = (struct efi_graphics_output_protocol_mode_64 *)m;
-+
-+	status = efi_early->call(gop64->query_mode, gop64,
-+				 mode->mode, size, info);
-+	if (status != EFI_SUCCESS)
-+		return status;
-+
-+	*fb_base = mode->frame_buffer_base;
-+	return status;
-+}
-+
-+static efi_status_t
-+setup_gop64(struct screen_info *si, efi_guid_t *proto,
-+	    unsigned long size, void **gop_handle)
-+{
-+	struct efi_graphics_output_protocol_64 *gop64, *first_gop;
-+	unsigned long nr_gops;
-+	u16 width, height;
-+	u32 pixels_per_scan_line;
-+	u32 fb_base;
-+	struct efi_pixel_bitmask pixel_info;
-+	int pixel_format;
-+	efi_status_t status;
-+	u64 *handles = (u64 *)(unsigned long)gop_handle;
-+	int i;
-+
-+	first_gop = NULL;
-+	gop64 = NULL;
-+
-+	nr_gops = size / sizeof(u64);
-+	for (i = 0; i < nr_gops; i++) {
-+		struct efi_graphics_output_mode_info *info = NULL;
-+		efi_guid_t conout_proto = EFI_CONSOLE_OUT_DEVICE_GUID;
-+		bool conout_found = false;
-+		void *dummy = NULL;
-+		u64 h = handles[i];
-+
-+		status = efi_early->call(efi_early->handle_protocol, h,
-+					 proto, (void **)&gop64);
-+		if (status != EFI_SUCCESS)
-+			continue;
-+
-+		status = efi_early->call(efi_early->handle_protocol, h,
-+					 &conout_proto, &dummy);
-+		if (status == EFI_SUCCESS)
-+			conout_found = true;
-+
-+		status = __gop_query64(gop64, &info, &size, &fb_base);
-+		if (status == EFI_SUCCESS && (!first_gop || conout_found)) {
-+			/*
-+			 * Systems that use the UEFI Console Splitter may
-+			 * provide multiple GOP devices, not all of which are
-+			 * backed by real hardware. The workaround is to search
-+			 * for a GOP implementing the ConOut protocol, and if
-+			 * one isn't found, to just fall back to the first GOP.
-+			 */
-+			width = info->horizontal_resolution;
-+			height = info->vertical_resolution;
-+			pixel_format = info->pixel_format;
-+			pixel_info = info->pixel_information;
-+			pixels_per_scan_line = info->pixels_per_scan_line;
-+
-+			/*
-+			 * Once we've found a GOP supporting ConOut,
-+			 * don't bother looking any further.
-+			 */
-+			first_gop = gop64;
-+			if (conout_found)
-+				break;
-+		}
-+	}
-+
-+	/* Did we find any GOPs? */
-+	if (!first_gop)
-+		goto out;
-+
-+	/* EFI framebuffer */
-+	si->orig_video_isVGA = VIDEO_TYPE_EFI;
-+
-+	si->lfb_width = width;
-+	si->lfb_height = height;
-+	si->lfb_base = fb_base;
-+	si->pages = 1;
-+
-+	setup_pixel_info(si, pixels_per_scan_line, pixel_info, pixel_format);
-+
-+	si->lfb_size = si->lfb_linelength * si->lfb_height;
-+
-+	si->capabilities |= VIDEO_CAPABILITY_SKIP_QUIRKS;
-+out:
- 	return status;
- }
- 
  /*
-- * See if we have Universal Graphics Adapter (UGA) protocol
-+ * See if we have Graphics Output Protocol
+  * EFI Boot Services table
   */
--static efi_status_t setup_uga(struct screen_info *si, efi_guid_t *uga_proto,
-+static efi_status_t setup_gop(struct screen_info *si, efi_guid_t *proto,
- 			      unsigned long size)
- {
--	struct efi_uga_draw_protocol *uga, *first_uga;
--	unsigned long nr_ugas;
- 	efi_status_t status;
--	u32 width, height;
--	void **uga_handle = NULL;
--	int i;
-+	void **gop_handle = NULL;
+@@ -231,6 +327,15 @@ typedef enum {
+     EfiPciIoAttributeOperationMaximum
+ } EFI_PCI_IO_PROTOCOL_ATTRIBUTE_OPERATION;
  
- 	status = efi_early->call(efi_early->allocate_pool, EFI_LOADER_DATA,
--				 size, (void **)&uga_handle);
-+				 size, (void **)&gop_handle);
- 	if (status != EFI_SUCCESS)
- 		return status;
++typedef struct {
++	u32 read;
++	u32 write;
++} efi_pci_io_protocol_access_32_t;
++
++typedef struct {
++	u64 read;
++	u64 write;
++} efi_pci_io_protocol_access_64_t;
  
- 	status = efi_early->call(efi_early->locate_handle,
- 				 EFI_LOCATE_BY_PROTOCOL,
--				 uga_proto, NULL, &size, uga_handle);
-+				 proto, NULL, &size, gop_handle);
- 	if (status != EFI_SUCCESS)
- 		goto free_handle;
+ typedef struct {
+ 	void *read;
+@@ -238,6 +343,46 @@ typedef struct {
+ } efi_pci_io_protocol_access_t;
  
-+	if (efi_early->is64)
-+		status = setup_gop64(si, proto, size, gop_handle);
-+	else
-+		status = setup_gop32(si, proto, size, gop_handle);
+ typedef struct {
++	u32 poll_mem;
++	u32 poll_io;
++	efi_pci_io_protocol_access_32_t mem;
++	efi_pci_io_protocol_access_32_t io;
++	efi_pci_io_protocol_access_32_t pci;
++	u32 copy_mem;
++	u32 map;
++	u32 unmap;
++	u32 allocate_buffer;
++	u32 free_buffer;
++	u32 flush;
++	u32 get_location;
++	u32 attributes;
++	u32 get_bar_attributes;
++	u32 set_bar_attributes;
++	uint64_t romsize;
++	void *romimage;
++} efi_pci_io_protocol_32;
 +
-+free_handle:
-+	efi_early->call(efi_early->free_pool, gop_handle);
-+	return status;
-+}
++typedef struct {
++	u64 poll_mem;
++	u64 poll_io;
++	efi_pci_io_protocol_access_64_t mem;
++	efi_pci_io_protocol_access_64_t io;
++	efi_pci_io_protocol_access_64_t pci;
++	u64 copy_mem;
++	u64 map;
++	u64 unmap;
++	u64 allocate_buffer;
++	u64 free_buffer;
++	u64 flush;
++	u64 get_location;
++	u64 attributes;
++	u64 get_bar_attributes;
++	u64 set_bar_attributes;
++	uint64_t romsize;
++	void *romimage;
++} efi_pci_io_protocol_64;
 +
-+static efi_status_t
-+setup_uga32(void **uga_handle, unsigned long size, u32 *width, u32 *height)
-+{
-+	struct efi_uga_draw_protocol *uga = NULL, *first_uga;
-+	efi_guid_t uga_proto = EFI_UGA_PROTOCOL_GUID;
-+	unsigned long nr_ugas;
-+	u32 *handles = (u32 *)uga_handle;;
-+	efi_status_t status;
-+	int i;
-+
- 	first_uga = NULL;
-+	nr_ugas = size / sizeof(u32);
-+	for (i = 0; i < nr_ugas; i++) {
-+		efi_guid_t pciio_proto = EFI_PCI_IO_PROTOCOL_GUID;
-+		u32 w, h, depth, refresh;
-+		void *pciio;
-+		u32 handle = handles[i];
-+
-+		status = efi_early->call(efi_early->handle_protocol, handle,
-+					 &uga_proto, (void **)&uga);
-+		if (status != EFI_SUCCESS)
-+			continue;
-+
-+		efi_early->call(efi_early->handle_protocol, handle,
-+				&pciio_proto, &pciio);
-+
-+		status = efi_early->call((unsigned long)uga->get_mode, uga,
-+					 &w, &h, &depth, &refresh);
-+		if (status == EFI_SUCCESS && (!first_uga || pciio)) {
-+			*width = w;
-+			*height = h;
-+
-+			/*
-+			 * Once we've found a UGA supporting PCIIO,
-+			 * don't bother looking any further.
-+			 */
-+			if (pciio)
-+				break;
-+
-+			first_uga = uga;
-+		}
-+	}
-+
-+	return status;
-+}
-+
-+static efi_status_t
-+setup_uga64(void **uga_handle, unsigned long size, u32 *width, u32 *height)
-+{
-+	struct efi_uga_draw_protocol *uga = NULL, *first_uga;
-+	efi_guid_t uga_proto = EFI_UGA_PROTOCOL_GUID;
-+	unsigned long nr_ugas;
-+	u64 *handles = (u64 *)uga_handle;;
-+	efi_status_t status;
-+	int i;
++typedef struct {
+ 	void *poll_mem;
+ 	void *poll_io;
+ 	efi_pci_io_protocol_access_t mem;
+@@ -292,6 +437,42 @@ typedef struct {
  
--	nr_ugas = size / sizeof(void *);
-+	first_uga = NULL;
-+	nr_ugas = size / sizeof(u64);
- 	for (i = 0; i < nr_ugas; i++) {
- 		efi_guid_t pciio_proto = EFI_PCI_IO_PROTOCOL_GUID;
--		void *handle = uga_handle[i];
- 		u32 w, h, depth, refresh;
- 		void *pciio;
-+		u64 handle = handles[i];
- 
- 		status = efi_early->call(efi_early->handle_protocol, handle,
--					 uga_proto, (void **)&uga);
-+					 &uga_proto, (void **)&uga);
- 		if (status != EFI_SUCCESS)
- 			continue;
- 
-@@ -486,8 +915,8 @@ static efi_status_t setup_uga(struct screen_info *si, efi_guid_t *uga_proto,
- 		status = efi_early->call((unsigned long)uga->get_mode, uga,
- 					 &w, &h, &depth, &refresh);
- 		if (status == EFI_SUCCESS && (!first_uga || pciio)) {
--			width = w;
--			height = h;
-+			*width = w;
-+			*height = h;
- 
- 			/*
- 			 * Once we've found a UGA supporting PCIIO,
-@@ -500,7 +929,39 @@ static efi_status_t setup_uga(struct screen_info *si, efi_guid_t *uga_proto,
- 		}
- 	}
- 
--	if (!first_uga)
-+	return status;
-+}
+ typedef struct {
+ 	efi_table_hdr_t hdr;
++	u32 get_time;
++	u32 set_time;
++	u32 get_wakeup_time;
++	u32 set_wakeup_time;
++	u32 set_virtual_address_map;
++	u32 convert_pointer;
++	u32 get_variable;
++	u32 get_next_variable;
++	u32 set_variable;
++	u32 get_next_high_mono_count;
++	u32 reset_system;
++	u32 update_capsule;
++	u32 query_capsule_caps;
++	u32 query_variable_info;
++} efi_runtime_services_32_t;
 +
-+/*
-+ * See if we have Universal Graphics Adapter (UGA) protocol
-+ */
-+static efi_status_t setup_uga(struct screen_info *si, efi_guid_t *uga_proto,
-+			      unsigned long size)
-+{
-+	efi_status_t status;
-+	u32 width, height;
-+	void **uga_handle = NULL;
++typedef struct {
++	efi_table_hdr_t hdr;
++	u64 get_time;
++	u64 set_time;
++	u64 get_wakeup_time;
++	u64 set_wakeup_time;
++	u64 set_virtual_address_map;
++	u64 convert_pointer;
++	u64 get_variable;
++	u64 get_next_variable;
++	u64 set_variable;
++	u64 get_next_high_mono_count;
++	u64 reset_system;
++	u64 update_capsule;
++	u64 query_capsule_caps;
++	u64 query_variable_info;
++} efi_runtime_services_64_t;
 +
-+	status = efi_early->call(efi_early->allocate_pool, EFI_LOADER_DATA,
-+				 size, (void **)&uga_handle);
-+	if (status != EFI_SUCCESS)
-+		return status;
-+
-+	status = efi_early->call(efi_early->locate_handle,
-+				 EFI_LOCATE_BY_PROTOCOL,
-+				 uga_proto, NULL, &size, uga_handle);
-+	if (status != EFI_SUCCESS)
-+		goto free_handle;
-+
-+	height = 0;
-+	width = 0;
-+
-+	if (efi_early->is64)
-+		status = setup_uga64(uga_handle, size, &width, &height);
-+	else
-+		status = setup_uga32(uga_handle, size, &width, &height);
-+
-+	if (!width && !height)
- 		goto free_handle;
++typedef struct {
++	efi_table_hdr_t hdr;
+ 	void *get_time;
+ 	void *set_time;
+ 	void *get_wakeup_time;
+@@ -485,6 +666,38 @@ struct efi_memory_map {
  
- 	/* EFI framebuffer */
-@@ -519,7 +980,6 @@ static efi_status_t setup_uga(struct screen_info *si, efi_guid_t *uga_proto,
- 	si->rsvd_size = 8;
- 	si->rsvd_pos = 24;
+ typedef struct {
+ 	u32 revision;
++	u32 parent_handle;
++	u32 system_table;
++	u32 device_handle;
++	u32 file_path;
++	u32 reserved;
++	u32 load_options_size;
++	u32 load_options;
++	u32 image_base;
++	__aligned_u64 image_size;
++	unsigned int image_code_type;
++	unsigned int image_data_type;
++	unsigned long unload;
++} efi_loaded_image_32_t;
++
++typedef struct {
++	u32 revision;
++	u64 parent_handle;
++	u64 system_table;
++	u64 device_handle;
++	u64 file_path;
++	u64 reserved;
++	u32 load_options_size;
++	u64 load_options;
++	u64 image_base;
++	__aligned_u64 image_size;
++	unsigned int image_code_type;
++	unsigned int image_data_type;
++	unsigned long unload;
++} efi_loaded_image_64_t;
++
++typedef struct {
++	u32 revision;
+ 	void *parent_handle;
+ 	efi_system_table_t *system_table;
+ 	void *device_handle;
+@@ -511,6 +724,34 @@ typedef struct {
+ 	efi_char16_t filename[1];
+ } efi_file_info_t;
  
--
- free_handle:
- 	efi_early->call(efi_early->free_pool, uga_handle);
- 	return status;
++typedef struct {
++	u64 revision;
++	u32 open;
++	u32 close;
++	u32 delete;
++	u32 read;
++	u32 write;
++	u32 get_position;
++	u32 set_position;
++	u32 get_info;
++	u32 set_info;
++	u32 flush;
++} efi_file_handle_32_t;
++
++typedef struct {
++	u64 revision;
++	u64 open;
++	u64 close;
++	u64 delete;
++	u64 read;
++	u64 write;
++	u64 get_position;
++	u64 set_position;
++	u64 get_info;
++	u64 set_info;
++	u64 flush;
++} efi_file_handle_64_t;
++
+ typedef struct _efi_file_handle {
+ 	u64 revision;
+ 	efi_status_t (*open)(struct _efi_file_handle *,
+@@ -809,6 +1050,17 @@ struct efivar_entry {
+ 	bool deleting;
+ };
+ 
++struct efi_simple_text_output_protocol_32 {
++	u32 reset;
++	u32 output_string;
++	u32 test_string;
++};
++
++struct efi_simple_text_output_protocol_64 {
++	u64 reset;
++	u64 output_string;
++	u64 test_string;
++};
+ 
+ struct efi_simple_text_output_protocol {
+ 	void *reset;
 -- 
 1.8.5.3
 
