@@ -1,97 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756823AbaCDKGX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 05:06:23 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:38999 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756618AbaCDKGS (ORCPT
+	id S932074AbaCDKKL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 05:10:11 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:43189 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756661AbaCDKKI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 05:06:18 -0500
-X-AuditID: cbfee690-b7f266d00000287c-ef-5315a59980be
-Date: Tue, 04 Mar 2014 10:06:17 +0000 (GMT)
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH] PM / devfreq: Rewrite devfreq_update_status() to fix
- multiple bugs
-To: Saravana Kannan <skannan@codeaurora.org>,
-        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20140304095513568@myungjoo.ham
-Msgkey: 20140304095513568@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20140304095513568@myungjoo.ham
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <8984550.302431393927576253.JavaMail.weblogic@epv6ml05>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42JZI2JSpDtzqWiwwbO3GhaXd81hc2D0+LxJ
-	LoAxissmJTUnsyy1SN8ugSujY9tT5oJj7BUvfkg0MK5g72Lk5BASUJdYtOQkG4gtIWAisffC
-	FnYIW0ziwr31QHEuoJqljBIXtk6FK3p2fwYLRGI+o8T5J6+ZQRIsAioSS8+0ANkcHGwCehIz
-	PyeDhIUFwiVeXlnJAmKLCORL9O68yQTSyyzQxySxcv4jNogrlCTW7HsFVsQrIChxcuYTFpA5
-	EgKqEpdusUGE1STunbsPdYOExKzpF1ghbF6JGe1PWSBsOYlpX9cwQ9jSEudnbWCEeWbx98dQ
-	cX6JY7d3MEGM55V4cj8YZszuzV+gxgtITD1zEKpVS+Lxv2tQNp/EmoVvWWDG7Dq1nBmm9/6W
-	uUwgNrOAosSU7ofsELaWxJcf+9hQfQViO0tMePiOZQKj8iwkqVlI2mchaUdWs4CRZRWjaGpB
-	ckFxUnqRiV5xYm5xaV66XnJ+7iZGYFI4/e/ZhB2M9w5YH2JMBsbIRGYp0eR8YFLJK4k3NDYz
-	sjA1MTU2Mrc0I01YSZxX7VFSkJBAemJJanZqakFqUXxRaU5q8SFGJg5OqQbGzkLF1pUTw5Xd
-	Mirjt5ecX1QtwSOU6d7e8T111w2JSE/u9YsUNj46u++KgjanQ7zNU4NDIY9Cph4U9hIxYf95
-	783eGeJGOt7X1ucniarmzl/OUKIuqrAhW+rL5zvq1ju2xPqYv8p98/KpxJ+21TvKH+u6ri+Z
-	84jl/DSvFzsfLCtudHuQdJhXiaU4I9FQi7moOBEAYHZhrCADAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHKsWRmVeSWpSXmKPExsVy+t/t6bozl4oGG7QcU7K4vGsOmwOjx+dN
-	cgGMUWk2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUBD
-	lRTKEnNKgUIBicXFSvp2NkX5pSWpChn5xSW2StGG5kZ6RgZ6pkZ6hsaxVoYGBkamQDUJaRkd
-	254yFxxjr3jxQ6KBcQV7FyMnh5CAusSiJSfZQGwJAROJZ/dnsEDYYhIX7q0HinMB1cxnlDj/
-	5DUzSIJFQEVi6ZkWIJuDg01AT2Lm52SQsLBAuMTLKyvBekUE8iV6d95kAullFuhjklg5/xEb
-	xDIliTX7XoEV8QoISpyc+YQFZI6EgKrEpVtsEGE1iXvn7kPdIyExa/oFVgibV2JG+1Oo2+Qk
-	pn1dwwxhS0ucn7WBEebmxd8fQ8X5JY7d3sEEMZ5X4sn9YJgxuzd/gRovIDH1zEGoVi2Jx/+u
-	Qdl8EmsWvmWBGbPr1HJmmN77W+YygdjMAooSU7ofskPYWhJffuxjQ/UViO0sMeHhO5YJjHKz
-	kKRmIWmfhaQdWc0CRpZVjKKpBckFxUnpFSZ6xYm5xaV56XrJ+bmbGMGp6dmSHYwNF6wPMQpw
-	MCrx8DpMEQkWYk0sK67MPcQowcGsJMKruFA0WIg3JbGyKrUoP76oNCe1+BBjMjD+JjJLiSbn
-	A9NmXkm8obGxiZmJqaWJhYGpOWnCSuK8C24lBQkJpCeWpGanphakFsFsYeLglGpgnPxS3Gy1
-	+cuUSXovGBtCj6/UtFY/0idR+mm595OqvfWK314cSl1RtZKFsc8iLu52ZvaK8yHP66P0hRb/
-	KlhrbZngtuVFn5etqrpGX6bOrXANxf6Z7YbbnSbtPqYh6p84q+T1mnknl/nvkuZLObl5V/7D
-	Sfc9NpizR95X/T7bcZmTDc+mW/42SizFGYmGWsxFxYkAU7boeJEDAAA=
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+	Tue, 4 Mar 2014 05:10:08 -0500
+Message-ID: <1393927791.3917.3.camel@paszta.hi.pengutronix.de>
+Subject: Re: [PATCH v5 5/7] [media] of: move common endpoint parsing to
+ drivers/of
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Sylwester Nawrocki <snjw23@gmail.com>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        devicetree@vger.kernel.org
+Date: Tue, 04 Mar 2014 11:09:51 +0100
+In-Reply-To: <5310FB23.5040203@gmail.com>
+References: <1393522540-22887-1-git-send-email-p.zabel@pengutronix.de>
+	 <1393522540-22887-6-git-send-email-p.zabel@pengutronix.de>
+	 <5310FB23.5040203@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s24A6Xve002639
 
-> The current devfreq_update_status() has the following bugs:
-> - If previous frequency doesn't have a valid level, it does an out of bounds
->   access into the trans_table and causes memory corruption.
-> - When the new frequency doesn't have a valid level, the time spent in the
->   new frequency is counted towards the next valid frequency switch instead of
->   being ignored.
-> - The time spent on the previous frequency is added to the new frequency's
->   stats instead of the previous frequency's stats.
+Am Freitag, den 28.02.2014, 22:09 +0100 schrieb Sylwester Nawrocki:
+[...]
+> > --- a/drivers/of/base.c
+> > +++ b/drivers/of/base.c
+> > @@ -1985,6 +1985,37 @@ struct device_node *of_find_next_cache_node(const struct device_node *np)
+> >   }
+> >
+> >   /**
+> > + * of_graph_parse_endpoint() - parse common endpoint node properties
+> > + * @node: pointer to endpoint device_node
+> > + * @endpoint: pointer to the OF endpoint data structure
+> > + *
+> > + * All properties are optional. If none are found, we don't set any flags.
+> > + * This means the port has a static configuration and no properties have
+> > + * to be specified explicitly.
 > 
-> This patch fixes all of this.
-> 
-> Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
+> I don't think these two sentences are needed, it's all described in the
+> DT binding documentation. And struct of_endpoint doesn't contain any
+> "flags" field.
 
-Merged.
+Thanks, I'll remove them.
 
-It appears to be Greg's LTS material as well.
+regards
+Philipp
 
-
-Cheers,
-MyungJoo
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
