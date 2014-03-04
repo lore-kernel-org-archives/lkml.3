@@ -1,67 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754018AbaCDSUq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 13:20:46 -0500
-Received: from mailscanner02.zoner.fi ([84.34.166.11]:47115 "EHLO
-	mailscanner02.zoner.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751494AbaCDSUp (ORCPT
+	id S1755003AbaCDSXP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 13:23:15 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:53670 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751988AbaCDSXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 13:20:45 -0500
-Date: Tue, 4 Mar 2014 20:20:38 +0200
-From: Lasse Collin <lasse.collin@tukaani.org>
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: Kyle McMartin <kyle@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] xz: make XZ_DEC_BCJ filters non-optional
-Message-ID: <20140304202038.03b36109@tukaani.org>
-In-Reply-To: <CAGVrzcZ7KU-m9s9KgoigK+WdSqeqwEmm=_pY6qF=ep2vFp6WUg@mail.gmail.com>
-References: <20140228230017.GE14970@merlin.infradead.org>
-	<20140303145137.70819698@tukaani.org>
-	<CAGVrzcZ7KU-m9s9KgoigK+WdSqeqwEmm=_pY6qF=ep2vFp6WUg@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-unknown-linux-gnu)
+	Tue, 4 Mar 2014 13:23:12 -0500
+Date: Tue, 4 Mar 2014 10:23:10 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>, Russell King <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tomasz Figa <t.figa@samsung.com>, Mark Brown <broonie@kernel.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH v2 01/11] base: power: Add generic OF-based power domain
+ look-up
+Message-ID: <20140304182310.GA9985@codeaurora.org>
+References: <1393862536-9842-1-git-send-email-tomasz.figa@gmail.com>
+ <1393862536-9842-2-git-send-email-tomasz.figa@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Antivirus-Scanner: Clean mail though you should still use an Antivirus
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393862536-9842-2-git-send-email-tomasz.figa@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-03-03 Florian Fainelli wrote:
-> 2014-03-03 4:51 GMT-08:00 Lasse Collin <lasse.collin@tukaani.org>:
-> > The second version enables the BCJ filter only for the current arch
-> > by default if CONFIG_EXPERT; without CONFIG_EXPERT all filters are
-> > forced on:
-> 
-> I like this version better because it still provides you with accurate
-> defaults (i.e: enable only th X86 BCJ filter decoder where it makes
-> sense by default) and still provides enough flexibility.
+On 03/03, Tomasz Figa wrote:
+> diff --git a/drivers/base/power/domain.c b/drivers/base/power/domain.c
+> index dc127e5..006b455 100644
+> --- a/drivers/base/power/domain.c
+> +++ b/drivers/base/power/domain.c
+> @@ -3,12 +3,16 @@
+>   *
+>   * Copyright (C) 2011 Rafael J. Wysocki <rjw@sisk.pl>, Renesas Electronics Corp.
+>   *
+> + * Support for Device Tree based power domain providers:
+> + * Copyright (C) 2014 Tomasz Figa <tomasz.figa@gmail.com>
+> + *
+>   * This file is released under the GPLv2.
+>   */
+>  
+>  #include <linux/init.h>
+>  #include <linux/kernel.h>
+>  #include <linux/io.h>
+> +#include <linux/platform_device.h>
 
-I understand your viewpoint, but different people probably consider
-different options as "accurate defaults". The current behavior certainly
-isn't very accurate; otherwise Kyle McMartin wouldn't have had a reason
-to send a patch. The patch you prefer would give both of you the
-defaults you want *if* embedded devs always use CONFIG_EXPERT and
-non-embedded people never do. If a non-embedded dev uses CONFIG_EXPERT,
-then Kyle's problem can reappear.
+Is this still needed?
 
-I still think it is clearest to enable all by default and allow
-deselecting filters if CONFIG_EXPERT. That way the default selection
-doesn't change behind anyone's back when CONFIG_EXPERT is selected.
-I guess embedded devs go through the config carefully looking for
-things to deselect anyway, but maybe it was easy to miss these options
-just like some desktop users have missed them now.
+>  #include <linux/pm_runtime.h>
+>  #include <linux/pm_domain.h>
+>  #include <linux/pm_qos.h>
+[...]
+> +
+> +/*
+> + * DEVICE<->DOMAIN BINDING USING DEVICE TREE LOOK-UP
+> + *
+> + * The code below registers a notifier for platform bus devices'
+> + * BUS_NOTIFY_BIND_DRIVER events and tries to attach devices to their power
+> + * domains by looking them up using Device Tree.
+> + *
+> + * Similarly in BUS_NOTIFY_UNBOUND_DRIVER the device is detached from its
+> + * domain, since it no longer supports runtime PM without any driver bound
+> + * to it.
 
-I'd like to make the defaults such that minimum number of people get
-annoyed in the long term. There will always be people who will need to
-change the options (otherwise options wouldn't be needed). At the same
-time this is so very tiny issue that I don't expect many people to care
-at all.
+This looks outdated.
 
-I'll submit some patch this week but I'll wait for more opinions for a
-day or two. Thanks.
-
+> + *
+> + * Both generic and legacy Samsung-specific DT bindings are supported to
+> + * keep backwards compatibility with existing DTBs.
+> + */
 -- 
-Lasse Collin  |  IRC: Larhzu @ IRCnet & Freenode
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
