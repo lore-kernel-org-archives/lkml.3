@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757453AbaCDUHy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:07:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41842 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932365AbaCDUFu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932389AbaCDUFu (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 4 Mar 2014 15:05:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41814 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932365AbaCDUFq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 15:05:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Vinod Koul <vinod.koul@intel.com>
-Subject: [PATCH 3.10 91/97] dma: ste_dma40: dont dereference free:d descriptor
-Date: Tue,  4 Mar 2014 12:04:44 -0800
-Message-Id: <20140304200348.998982794@linuxfoundation.org>
+        Eric Paris <eparis@redhat.com>, Stephen Smalley <sds@tycho.nsa.gov>,
+        Paul Moore <pmoore@redhat.com>
+Subject: [PATCH 3.10 80/97] SELinux: bigendian problems with filename trans rules
+Date: Tue,  4 Mar 2014 12:04:33 -0800
+Message-Id: <20140304200348.624354666@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -30,52 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Walleij <linus.walleij@linaro.org>
+From: Eric Paris <eparis@redhat.com>
 
-commit e9baa9d9d520fb0e24cca671e430689de2d4a4b2 upstream.
+commit 9085a6422900092886da8c404e1c5340c4ff1cbf upstream.
 
-It appears that in the DMA40 driver the DMA tasklet will very
-often dereference memory for a descriptor just free:d from the
-DMA40 slab. Nothing happens because no other part of the driver
-has yet had a chance to claim this memory, but it's really
-nasty to dereference free:d memory, so let's check the flag
-before the descriptor is free and store it in a bool variable.
+When writing policy via /sys/fs/selinux/policy I wrote the type and class
+of filename trans rules in CPU endian instead of little endian.  On
+x86_64 this works just fine, but it means that on big endian arch's like
+ppc64 and s390 userspace reads the policy and converts it from
+le32_to_cpu.  So the values are all screwed up.  Write the values in le
+format like it should have been to start.
 
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Acked-by:  Stephen Smalley <sds@tycho.nsa.gov>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/dma/ste_dma40.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ security/selinux/ss/policydb.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/dma/ste_dma40.c
-+++ b/drivers/dma/ste_dma40.c
-@@ -1587,6 +1587,7 @@ static void dma_tasklet(unsigned long da
- 	struct d40_chan *d40c = (struct d40_chan *) data;
- 	struct d40_desc *d40d;
- 	unsigned long flags;
-+	bool callback_active;
- 	dma_async_tx_callback callback;
- 	void *callback_param;
+--- a/security/selinux/ss/policydb.c
++++ b/security/selinux/ss/policydb.c
+@@ -3258,10 +3258,10 @@ static int filename_write_helper(void *k
+ 	if (rc)
+ 		return rc;
  
-@@ -1614,6 +1615,7 @@ static void dma_tasklet(unsigned long da
- 	}
+-	buf[0] = ft->stype;
+-	buf[1] = ft->ttype;
+-	buf[2] = ft->tclass;
+-	buf[3] = otype->otype;
++	buf[0] = cpu_to_le32(ft->stype);
++	buf[1] = cpu_to_le32(ft->ttype);
++	buf[2] = cpu_to_le32(ft->tclass);
++	buf[3] = cpu_to_le32(otype->otype);
  
- 	/* Callback to client */
-+	callback_active = !!(d40d->txd.flags & DMA_PREP_INTERRUPT);
- 	callback = d40d->txd.callback;
- 	callback_param = d40d->txd.callback_param;
- 
-@@ -1636,7 +1638,7 @@ static void dma_tasklet(unsigned long da
- 
- 	spin_unlock_irqrestore(&d40c->lock, flags);
- 
--	if (callback && (d40d->txd.flags & DMA_PREP_INTERRUPT))
-+	if (callback_active && callback)
- 		callback(callback_param);
- 
- 	return;
+ 	rc = put_entry(buf, sizeof(u32), 4, fp);
+ 	if (rc)
 
 
