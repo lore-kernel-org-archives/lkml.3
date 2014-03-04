@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755277AbaCDQls (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 11:41:48 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41531 "EHLO
+	id S1755292AbaCDQmH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 11:42:07 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41549 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754018AbaCDQln (ORCPT
+	with ESMTP id S1754018AbaCDQmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 11:41:43 -0500
-Date: Tue, 4 Mar 2014 08:41:14 -0800
+	Tue, 4 Mar 2014 11:42:03 -0500
+Date: Tue, 4 Mar 2014 08:41:25 -0800
 From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-792d0018a5fe31ef8ef9d07a7a02081d4abdf6b7@git.kernel.org>
+Message-ID: <tip-310ff2c87e72208e4f04f33687abe9d208ffefe3@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, tglx@linutronix.de
+        inux-mips@linux-mips.org, ralf@linux-mips.org, peterz@infradead.org,
+        tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <20140223212737.422068876@linutronix.de>
-References: <20140223212737.422068876@linutronix.de>
+        ralf@linux-mips.org, inux-mips@linux-mips.org, peterz@infradead.org,
+        tglx@linutronix.de
+In-Reply-To: <20140223212737.517340416@linutronix.de>
+References: <20140223212737.517340416@linutronix.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] genirq: Add a kstat helper to increment irq stats
-Git-Commit-ID: 792d0018a5fe31ef8ef9d07a7a02081d4abdf6b7
+Subject: [tip:irq/core] mips: Use the core irq stats function
+Git-Commit-ID: 310ff2c87e72208e4f04f33687abe9d208ffefe3
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,69 +33,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  792d0018a5fe31ef8ef9d07a7a02081d4abdf6b7
-Gitweb:     http://git.kernel.org/tip/792d0018a5fe31ef8ef9d07a7a02081d4abdf6b7
+Commit-ID:  310ff2c87e72208e4f04f33687abe9d208ffefe3
+Gitweb:     http://git.kernel.org/tip/310ff2c87e72208e4f04f33687abe9d208ffefe3
 Author:     Thomas Gleixner <tglx@linutronix.de>
 AuthorDate: Sun, 23 Feb 2014 21:40:14 +0000
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Tue, 4 Mar 2014 17:37:53 +0100
 
-genirq: Add a kstat helper to increment irq stats
+mips: Use the core irq stats function
 
-There is a common pattern all over the place:
+Let the core do the irq_desc resolution.
 
-      kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
-
-This results in a call to core code anyway. So provide a function
-which does the same thing in core.
-
-While at it, replace the butt ugly macro with an inline.
+No functional change.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20140223212737.422068876@linutronix.de
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: mips <inux-mips@linux-mips.org>
+Link: http://lkml.kernel.org/r/20140223212737.517340416@linutronix.de
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/kernel_stat.h | 12 +++++++-----
- kernel/irq/irqdesc.c        |  5 +++++
- 2 files changed, 12 insertions(+), 5 deletions(-)
+ arch/mips/kernel/smtc.c        | 2 +-
+ arch/mips/sgi-ip22/ip22-int.c  | 2 +-
+ arch/mips/sgi-ip22/ip22-time.c | 2 +-
+ arch/mips/sibyte/bcm1480/smp.c | 2 +-
+ arch/mips/sibyte/sb1250/smp.c  | 2 +-
+ 5 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/kernel_stat.h b/include/linux/kernel_stat.h
-index 51c72be..54ec7e0 100644
---- a/include/linux/kernel_stat.h
-+++ b/include/linux/kernel_stat.h
-@@ -54,11 +54,13 @@ extern unsigned long long nr_context_switches(void);
- #include <linux/irq.h>
- extern unsigned int kstat_irqs_cpu(unsigned int irq, int cpu);
+diff --git a/arch/mips/kernel/smtc.c b/arch/mips/kernel/smtc.c
+index dfc1b91..c1681d6 100644
+--- a/arch/mips/kernel/smtc.c
++++ b/arch/mips/kernel/smtc.c
+@@ -1007,7 +1007,7 @@ static void __irq_entry smtc_clock_tick_interrupt(void)
+ 	int irq = MIPS_CPU_IRQ_BASE + 1;
  
--#define kstat_incr_irqs_this_cpu(irqno, DESC)		\
--do {							\
--	__this_cpu_inc(*(DESC)->kstat_irqs);		\
--	__this_cpu_inc(kstat.irqs_sum);			\
--} while (0)
-+static inline void kstat_incr_irqs_this_cpu(unsigned int irq, struct irq_desc *desc)
-+{
-+	__this_cpu_inc(*desc->kstat_irqs);
-+	__this_cpu_inc(kstat.irqs_sum);
-+}
-+
-+extern void kstat_incr_irq_this_cpu(unsigned int irq);
+ 	irq_enter();
+-	kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
++	kstat_incr_irq_this_cpu(irq);
+ 	cd = &per_cpu(mips_clockevent_device, cpu);
+ 	cd->event_handler(cd);
+ 	irq_exit();
+diff --git a/arch/mips/sgi-ip22/ip22-int.c b/arch/mips/sgi-ip22/ip22-int.c
+index 3db64d5..58b40ae 100644
+--- a/arch/mips/sgi-ip22/ip22-int.c
++++ b/arch/mips/sgi-ip22/ip22-int.c
+@@ -148,7 +148,7 @@ static void __irq_entry indy_buserror_irq(void)
+ 	int irq = SGI_BUSERR_IRQ;
  
- static inline void kstat_incr_softirqs_this_cpu(unsigned int irq)
- {
-diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-index 8ab8e93..a7174617 100644
---- a/kernel/irq/irqdesc.c
-+++ b/kernel/irq/irqdesc.c
-@@ -489,6 +489,11 @@ void dynamic_irq_cleanup(unsigned int irq)
- 	raw_spin_unlock_irqrestore(&desc->lock, flags);
+ 	irq_enter();
+-	kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
++	kstat_incr_irq_this_cpu(irq);
+ 	ip22_be_interrupt(irq);
+ 	irq_exit();
  }
+diff --git a/arch/mips/sgi-ip22/ip22-time.c b/arch/mips/sgi-ip22/ip22-time.c
+index 6071924..045aa89 100644
+--- a/arch/mips/sgi-ip22/ip22-time.c
++++ b/arch/mips/sgi-ip22/ip22-time.c
+@@ -123,7 +123,7 @@ void __irq_entry indy_8254timer_irq(void)
+ 	char c;
  
-+void kstat_incr_irq_this_cpu(unsigned int irq)
-+{
-+	kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
-+}
-+
- unsigned int kstat_irqs_cpu(unsigned int irq, int cpu)
- {
- 	struct irq_desc *desc = irq_to_desc(irq);
+ 	irq_enter();
+-	kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
++	kstat_incr_irq_this_cpu(irq);
+ 	printk(KERN_ALERT "Oops, got 8254 interrupt.\n");
+ 	ArcRead(0, &c, 1, &cnt);
+ 	ArcEnterInteractiveMode();
+diff --git a/arch/mips/sibyte/bcm1480/smp.c b/arch/mips/sibyte/bcm1480/smp.c
+index 54e2c4d..70d9182 100644
+--- a/arch/mips/sibyte/bcm1480/smp.c
++++ b/arch/mips/sibyte/bcm1480/smp.c
+@@ -182,7 +182,7 @@ void bcm1480_mailbox_interrupt(void)
+ 	int irq = K_BCM1480_INT_MBOX_0_0;
+ 	unsigned int action;
+ 
+-	kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
++	kstat_incr_irq_this_cpu(irq);
+ 	/* Load the mailbox register to figure out what we're supposed to do */
+ 	action = (__raw_readq(mailbox_0_regs[cpu]) >> 48) & 0xffff;
+ 
+diff --git a/arch/mips/sibyte/sb1250/smp.c b/arch/mips/sibyte/sb1250/smp.c
+index d7b942d..db97611 100644
+--- a/arch/mips/sibyte/sb1250/smp.c
++++ b/arch/mips/sibyte/sb1250/smp.c
+@@ -170,7 +170,7 @@ void sb1250_mailbox_interrupt(void)
+ 	int irq = K_INT_MBOX_0;
+ 	unsigned int action;
+ 
+-	kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
++	kstat_incr_irq_this_cpu(irq);
+ 	/* Load the mailbox register to figure out what we're supposed to do */
+ 	action = (____raw_readq(mailbox_regs[cpu]) >> 48) & 0xffff;
+ 
