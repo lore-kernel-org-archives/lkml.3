@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932681AbaCDVF2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:05:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41154 "EHLO
+	id S932748AbaCDVFy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:05:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41144 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756577AbaCDUDx (ORCPT
+	with ESMTP id S1756564AbaCDUDv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:03:53 -0500
+	Tue, 4 Mar 2014 15:03:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Tony Breeds <tony@bakeyournoodle.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.13 102/172] powerpc/powernv: Fix opal_xscom_{read,write} prototype
-Date: Tue,  4 Mar 2014 12:03:06 -0800
-Message-Id: <20140304200302.981286696@linuxfoundation.org>
+Subject: [PATCH 3.13 100/172] powerpc/le: Ensure that the stop-self RTAS token is handled correctly
+Date: Tue,  4 Mar 2014 12:03:04 -0800
+Message-Id: <20140304200302.903643396@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -28,33 +29,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: Tony Breeds <tony@bakeyournoodle.com>
 
-commit 2f3f38e4d3d03dd4125cc9a1f49ab3cc91d8d670 upstream.
+commit 41dd03a94c7d408d2ef32530545097f7d1befe5c upstream.
 
-The OPAL firmware functions opal_xscom_read and opal_xscom_write
-take a 64-bit argument for the XSCOM (PCB) address in order to
-support the indirect mode on P8.
+Currently we're storing a host endian RTAS token in
+rtas_stop_self_args.token.  We then pass that directly to rtas.  This is
+fine on big endian however on little endian the token is not what we
+expect.
 
+This will typically result in hitting:
+	panic("Alas, I survived.\n");
+
+To fix this we always use the stop-self token in host order and always
+convert it to be32 before passing this to rtas.
+
+Signed-off-by: Tony Breeds <tony@bakeyournoodle.com>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/asm/opal.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/powerpc/platforms/pseries/hotplug-cpu.c |   22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
---- a/arch/powerpc/include/asm/opal.h
-+++ b/arch/powerpc/include/asm/opal.h
-@@ -720,8 +720,8 @@ int64_t opal_pci_next_error(uint64_t phb
- int64_t opal_pci_poll(uint64_t phb_id);
- int64_t opal_return_cpu(void);
+--- a/arch/powerpc/platforms/pseries/hotplug-cpu.c
++++ b/arch/powerpc/platforms/pseries/hotplug-cpu.c
+@@ -35,12 +35,7 @@
+ #include "offline_states.h"
  
--int64_t opal_xscom_read(uint32_t gcid, uint32_t pcb_addr, __be64 *val);
--int64_t opal_xscom_write(uint32_t gcid, uint32_t pcb_addr, uint64_t val);
-+int64_t opal_xscom_read(uint32_t gcid, uint64_t pcb_addr, __be64 *val);
-+int64_t opal_xscom_write(uint32_t gcid, uint64_t pcb_addr, uint64_t val);
+ /* This version can't take the spinlock, because it never returns */
+-static struct rtas_args rtas_stop_self_args = {
+-	.token = RTAS_UNKNOWN_SERVICE,
+-	.nargs = 0,
+-	.nret = 1,
+-	.rets = &rtas_stop_self_args.args[0],
+-};
++static int rtas_stop_self_token = RTAS_UNKNOWN_SERVICE;
  
- int64_t opal_lpc_write(uint32_t chip_id, enum OpalLPCAddressType addr_type,
- 		       uint32_t addr, uint32_t data, uint32_t sz);
+ static DEFINE_PER_CPU(enum cpu_state_vals, preferred_offline_state) =
+ 							CPU_STATE_OFFLINE;
+@@ -93,15 +88,20 @@ void set_default_offline_state(int cpu)
+ 
+ static void rtas_stop_self(void)
+ {
+-	struct rtas_args *args = &rtas_stop_self_args;
++	struct rtas_args args = {
++		.token = cpu_to_be32(rtas_stop_self_token),
++		.nargs = 0,
++		.nret = 1,
++		.rets = &args.args[0],
++	};
+ 
+ 	local_irq_disable();
+ 
+-	BUG_ON(args->token == RTAS_UNKNOWN_SERVICE);
++	BUG_ON(rtas_stop_self_token == RTAS_UNKNOWN_SERVICE);
+ 
+ 	printk("cpu %u (hwid %u) Ready to die...\n",
+ 	       smp_processor_id(), hard_smp_processor_id());
+-	enter_rtas(__pa(args));
++	enter_rtas(__pa(&args));
+ 
+ 	panic("Alas, I survived.\n");
+ }
+@@ -392,10 +392,10 @@ static int __init pseries_cpu_hotplug_in
+ 		}
+ 	}
+ 
+-	rtas_stop_self_args.token = rtas_token("stop-self");
++	rtas_stop_self_token = rtas_token("stop-self");
+ 	qcss_tok = rtas_token("query-cpu-stopped-state");
+ 
+-	if (rtas_stop_self_args.token == RTAS_UNKNOWN_SERVICE ||
++	if (rtas_stop_self_token == RTAS_UNKNOWN_SERVICE ||
+ 			qcss_tok == RTAS_UNKNOWN_SERVICE) {
+ 		printk(KERN_INFO "CPU Hotplug not supported by firmware "
+ 				"- disabling.\n");
 
 
