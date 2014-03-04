@@ -1,55 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932329AbaCDVcr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:32:47 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:37252 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758244AbaCDVcp (ORCPT
+	id S1755809AbaCDUDA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:03:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40829 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755757AbaCDUC5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 16:32:45 -0500
-Date: Tue, 04 Mar 2014 16:32:42 -0500 (EST)
-Message-Id: <20140304.163242.1756502150027525045.davem@davemloft.net>
-To: hayeswang@realtek.com
-Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH net-next 07/12] r8152: support rx checksum
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1393934464-23675-8-git-send-email-hayeswang@realtek.com>
-References: <1393934464-23675-1-git-send-email-hayeswang@realtek.com>
-	<1393934464-23675-8-git-send-email-hayeswang@realtek.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 04 Mar 2014 13:32:44 -0800 (PST)
+	Tue, 4 Mar 2014 15:02:57 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Sergei Trofimovich <slyfox@gentoo.org>
+Subject: [PATCH 3.13 027/172] avr32: fix missing module.h causing build failure in mimc200/fram.c
+Date: Tue,  4 Mar 2014 12:01:51 -0800
+Message-Id: <20140304200300.598244174@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
+References: <20140304200259.626667112@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hayes Wang <hayeswang@realtek.com>
-Date: Tue, 4 Mar 2014 20:00:59 +0800
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-> @@ -1453,11 +1491,19 @@ static void rx_bottom(struct r8152 *tp)
->  			pkt_len -= CRC_SIZE;
->  			rx_data += sizeof(struct rx_desc);
->  
-> +			checksum = r8152_rx_csum(tp, rx_desc);
-> +			if (checksum == RTL_CHECKSUM_FAIL) {
-> +				stats->rx_errors++;
-> +				goto find_next_rx;
-> +			}
-> +
+------------------
 
-It is not for the driver to make this policy decision and drop the
-packet.  It is not a device RX error event.
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-In fact you do not know what corrupted the checksum, or even if
-the device verified it correctly.  Anything is possible.
+commit 5745d6a41a4f4aec29e2ccd591c6fb09ed73a955 upstream.
 
-You must therefore still pass the packet up into the networking
-stack using CHECKSUM_NONE, and let the protocols double-check
-the checksum(s) in software and bump the appropriate statistic
-counter if the checksum is really bad.
+Causing this:
 
-This allows allows network taps to see the packet, so that the
-administrator can analyze the situation.
+In file included from arch/avr32/boards/mimc200/fram.c:13:
+include/linux/miscdevice.h:51: error: field 'list' has incomplete type
+include/linux/miscdevice.h:55: error: expected specifier-qualifier-list before 'mode_t'
+arch/avr32/boards/mimc200/fram.c:42: error: 'THIS_MODULE' undeclared here (not in a function)
+
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
+Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
+Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/avr32/boards/mimc200/fram.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/arch/avr32/boards/mimc200/fram.c
++++ b/arch/avr32/boards/mimc200/fram.c
+@@ -11,6 +11,7 @@
+ #define FRAM_VERSION	"1.0"
+ 
+ #include <linux/miscdevice.h>
++#include <linux/module.h>
+ #include <linux/proc_fs.h>
+ #include <linux/mm.h>
+ #include <linux/io.h>
+
+
