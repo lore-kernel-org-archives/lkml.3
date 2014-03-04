@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757344AbaCDOCc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 09:02:32 -0500
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:51610 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757141AbaCDOCb (ORCPT
+	id S1757422AbaCDOEQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 09:04:16 -0500
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:58076 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757387AbaCDOEO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 09:02:31 -0500
-Message-ID: <5315DCF1.90608@gmail.com>
-Date: Tue, 04 Mar 2014 15:02:25 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-To: Jason Cooper <jason@lakedaemon.net>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
-        linux-kernel@vger.kernel.org,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH V2] ARM: dove: dt: revert PMU interrupt controller node
-References: <20140207180836.GE8533@titan.lakedaemon.net> <1392667236-19126-1-git-send-email-jason@lakedaemon.net> <20140303150215.GI21483@n2100.arm.linux.org.uk> <20140303173740.GC16655@lunn.ch> <20140303181529.GM21483@n2100.arm.linux.org.uk> <20140303222406.GW1872@titan.lakedaemon.net> <20140304092616.GH16655@lunn.ch> <5315AD6F.1070804@gmail.com> <20140304121136.GR21483@n2100.arm.linux.org.uk> <20140304135306.GL1872@titan.lakedaemon.net>
-In-Reply-To: <20140304135306.GL1872@titan.lakedaemon.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 4 Mar 2014 09:04:14 -0500
+Date: Tue, 4 Mar 2014 09:04:09 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, DCG_UPD_stlinux_kernel@list.st.com,
+        linux-ide@vger.kernel.org
+Subject: Re: [PATCH v3 3/3] ahci: st: Add support for ST's SATA IP
+Message-ID: <20140304140409.GA30338@htj.dyndns.org>
+References: <1393328481-7251-1-git-send-email-lee.jones@linaro.org>
+ <1393328481-7251-3-git-send-email-lee.jones@linaro.org>
+ <20140226144721.GP9195@lee--X1>
+ <4575362.nxyAcPCJSW@amdc1032>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4575362.nxyAcPCJSW@amdc1032>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/2014 02:53 PM, Jason Cooper wrote:
-> On Tue, Mar 04, 2014 at 12:11:36PM +0000, Russell King - ARM Linux wrote:
->> On Tue, Mar 04, 2014 at 11:39:43AM +0100, Sebastian Hesselbarth wrote:
->>> On 03/04/2014 10:26 AM, Andrew Lunn wrote:
->>>>> I could have sworn this was discussed with this particular patchset, but
->>>>> I'm unable to find the conversation in my archives.  Neither during the
->>>>> patch submission process, nor the (long) pull request thread.
->>>>>
->>>>> Perhaps it was an irc conversation?  Andrew, Sebastian, can you find a
->>>>> link?  iirc, one of the DT maintainers (Mark Rutland?) raised the same
->>>>> concern and I thought we answered that sufficiently...
->>>>
->>>> It was the cpufreq driver which caused the discussion. I looked at it
->>>> for a while, and then task swapped onto the kirkwood move into
->>>> mach-mvebu.
->>>
->>> I guess you are looking for this discussion
->>>
->>> http://comments.gmane.org/gmane.linux.power-management.general/41053
->>>
->>> and specifically Mark's remarks on PMU and DT in here
->>>
->>> http://permalink.gmane.org/gmane.linux.ports.arm.kernel/285384
->>>
->>> BTW, +1 for a single PMU node that either serves an mfd (or type
->>> of) driver or that subsystem drivers derive their resources from.
->>> Looking at Dove FS, that would also include clock gating, which
->>> could be a mess to sort out.. anyway, let's get it on.
->>
->> So we have cpufreq, pm domains and an irq controller.  What's the plan
->> for this, who's going to look at sorting this out?
->
-> Andrew, Sebastian?  I'm currently task-saturated...
+On Tue, Mar 04, 2014 at 02:48:54PM +0100, Bartlomiej Zolnierkiewicz wrote:
+> 
+> Hi,
+> 
+> On Wednesday, February 26, 2014 02:47:21 PM Lee Jones wrote:
+> > ahci: st: Add support for ST's SATA IP
+> > 
+> > Acked-by: Alexandre Torgue <alexandre.torgue@st.com>
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > 
+> > diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
+> > index b4a9262..ee7a3dc 100644
+> > --- a/drivers/ata/Kconfig
+> > +++ b/drivers/ata/Kconfig
+> > @@ -97,6 +97,15 @@ config SATA_AHCI_PLATFORM
+> >  
+> >  	  If unsure, say N.
+> >  
+> > +config SATA_AHCI_ST
+> 
+> It would be better to name it just ACHI_ST for consistency with
+> existing config options (AHCI_IMX and AHCI_SUNXI).
 
-Phew, looks like I'll have to take it?
+The patch is already in for-3.15 branch.  Lee, can you please post an
+incremental patch addressing Bart's review points?
 
-Are you guys ok with having a single PMU node with syscon provided
-regmap and make all drivers depend on it? I'd like to get a go from
-Russell here, as he has clearly something in mind.
+Thanks.
 
-We can consolidate drivers later if required. If we start that now,
-we definitely risk running out of time for v3.15.
-
-Sebastian
-
+-- 
+tejun
