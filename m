@@ -1,41 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756508AbaCDIQw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 03:16:52 -0500
-Received: from mga09.intel.com ([134.134.136.24]:31311 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756305AbaCDIQu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 03:16:50 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,583,1389772800"; 
-   d="scan'208";a="485645511"
-Date: Tue, 4 Mar 2014 10:23:58 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Linux PCI <linux-pci@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ACPI / hotplug / PCI: Use pci_device_is_present()
-Message-ID: <20140304082358.GV5018@intel.com>
-References: <1505390.MlpMqG8COu@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1505390.MlpMqG8COu@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756531AbaCDITK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 03:19:10 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:39642 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752195AbaCDITI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 03:19:08 -0500
+From: Surendra Patil <surendra.tux@gmail.com>
+To: linville@tuxdriver.com
+Cc: pavel@ucw.cz, pali.rohar@gmail.com, david.gnedt@davizone.at,
+        surendra.tux@gmail.com, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Drivers:net:wireless:ti:wl1251: Fixed Sparse invalid assignment warning
+Date: Tue,  4 Mar 2014 00:18:52 -0800
+Message-Id: <1393921132-15950-1-git-send-email-surendra.tux@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 03, 2014 at 01:19:25AM +0100, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> Make the ACPI-based PCI hotplug (ACPIPHP) code use
-> pci_device_is_present() for checking if devices are present instead
-> of open coding the same thing.
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Sparse warns about invalid assignment in
+drivers/net/wireless/ti/wl1251/cmd.c:451:42: warning: invalid assignment: |=
+drivers/net/wireless/ti/wl1251/cmd.c:451:42:    left side has type restricted __le16
+drivers/net/wireless/ti/wl1251/cmd.c:451:42:    right side has type int
+Hence type converted right side to __le16.
 
-Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Surendra Patil <surendra.tux@gmail.com>
+---
+ drivers/net/wireless/ti/wl1251/cmd.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/wireless/ti/wl1251/cmd.c b/drivers/net/wireless/ti/wl1251/cmd.c
+index 223649b..bf1fa18 100644
+--- a/drivers/net/wireless/ti/wl1251/cmd.c
++++ b/drivers/net/wireless/ti/wl1251/cmd.c
+@@ -448,7 +448,7 @@ int wl1251_cmd_scan(struct wl1251 *wl, u8 *ssid, size_t ssid_len,
+ 	 * Note: This bug may be caused by the fw's DTIM handling.
+ 	 */
+ 	if (is_zero_ether_addr(wl->bssid))
+-		cmd->params.scan_options |= WL1251_SCAN_OPT_PRIORITY_HIGH;
++		cmd->params.scan_options |= cpu_to_le16(WL1251_SCAN_OPT_PRIORITY_HIGH);
+ 	cmd->params.num_channels = n_channels;
+ 	cmd->params.num_probe_requests = n_probes;
+ 	cmd->params.tx_rate = cpu_to_le16(1 << 1); /* 2 Mbps */
+-- 
+1.8.3.2
+
