@@ -1,61 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757059AbaCDVkl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:40:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40748 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753078AbaCDUCn (ORCPT
+	id S932209AbaCDVlN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:41:13 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:22321 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756981AbaCDVkj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:02:43 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vegard Nossum <vegard.nossum@oracle.com>,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [PATCH 3.13 014/172] ext4: dont leave i_crtime.tv_sec uninitialized
-Date: Tue,  4 Mar 2014 12:01:38 -0800
-Message-Id: <20140304200300.191959243@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
-References: <20140304200259.626667112@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 4 Mar 2014 16:40:39 -0500
+Message-ID: <53164824.3000704@oracle.com>
+Date: Tue, 04 Mar 2014 14:39:48 -0700
+From: Khalid Aziz <khalid.aziz@oracle.com>
+Organization: Oracle Corp
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: "H. Peter Anvin" <hpa@zytor.com>, tglx@linutronix.de,
+        Ingo Molnar <mingo@kernel.org>, peterz@infradead.org,
+        akpm@linux-foundation.org, andi.kleen@intel.com, rob@landley.net,
+        viro@zeniv.linux.org.uk, oleg@redhat.com
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [RFC] [PATCH] Pre-emption control for userspace
+References: <1393870033-31076-1-git-send-email-khalid.aziz@oracle.com> <531641A8.40306@zytor.com>
+In-Reply-To: <531641A8.40306@zytor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+On 03/04/2014 02:12 PM, H. Peter Anvin wrote:
+>
+> Shades of the Android wakelocks, no?
+>
+> This seems to effectively give userspace an option to turn preemptive
+> multitasking into cooperative multitasking, which of course is
+> unacceptable for a privileged process (the same reason why unprivileged
+> processes aren't allowed to run at above-normal priority, including RT
+> priority.)
+>
+> I have several issues with this interface:
+>
+> 1. First, a process needs to know if it *should* have been preempted
+> before it calls sched_yield().  So there needs to be a second flag set
+> by the scheduler when granting amnesty.
 
-------------------
+Good idea. I like it. I will add it.
 
-From: Theodore Ts'o <tytso@mit.edu>
+>
+> 2. A process which fails to call sched_yield() after being granted
+> amnesty must be penalized.
 
-commit 19ea80603715d473600cd993b9987bc97d042e02 upstream.
+I agree. Is it fair to say that such a process sees the penalty by being 
+charged that extra timeslice and being pushed to the right side of RB 
+tree since its p->se.vruntime would have gone up, which then delays the 
+time when it can get CPU again? I am open to adding a more explicit 
+penalty - maybe deny its next preemption delay request if it failed to 
+call sched_yield() the last time when it should have?
 
-If the i_crtime field is not present in the inode, don't leave the
-field uninitialized.
+>
+> 3. I'm not keen on occupying a full page for this.  I'm wondering if
+> doing a pointer into user space, futex-style, might make more sense.
+> The downside, of course, is what happens if the page being pointed to is
+> swapped out.
 
-Fixes: ef7f38359 ("ext4: Add nanosecond timestamps")
-Reported-by: Vegard Nossum <vegard.nossum@oracle.com>
-Tested-by: Vegard Nossum <vegard.nossum@oracle.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Using a full page for what is effectively a single bit flag does not sit 
+well with me either. Doing it through proc forces minimum size of a page 
+(please correct me there if I am wrong). I will explore your idea some 
+more to see if that can be made to work.
 
----
- fs/ext4/ext4.h |    2 ++
- 1 file changed, 2 insertions(+)
+>
+> Keep in mind this HAS to be per thread.
+>
 
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -771,6 +771,8 @@ do {									       \
- 	if (EXT4_FITS_IN_INODE(raw_inode, einode, xtime))		       \
- 		(einode)->xtime.tv_sec = 				       \
- 			(signed)le32_to_cpu((raw_inode)->xtime);	       \
-+	else								       \
-+		(einode)->xtime.tv_sec = 0;				       \
- 	if (EXT4_FITS_IN_INODE(raw_inode, einode, xtime ## _extra))	       \
- 		ext4_decode_extra_time(&(einode)->xtime,		       \
- 				       raw_inode->xtime ## _extra);	       \
+Thanks, hpa!
 
+--
+Khalid
 
