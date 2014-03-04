@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933042AbaCDVIv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:08:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41128 "EHLO
+	id S933055AbaCDVJQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:09:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41125 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756517AbaCDUDt (ORCPT
+	with ESMTP id S1754916AbaCDUDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:03:49 -0500
+	Tue, 4 Mar 2014 15:03:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, matson <lists-matsonpa@luxsci.me>
-Subject: [PATCH 3.13 109/172] sata_sil: apply MOD15WRITE quirk to TOSHIBA MK2561GSYN
-Date: Tue,  4 Mar 2014 12:03:13 -0800
-Message-Id: <20140304200303.201546567@linuxfoundation.org>
+        "Denis V. Lunev" <den@openvz.org>, Tejun Heo <tj@kernel.org>,
+        linux-ide@vger.kernel.org
+Subject: [PATCH 3.13 108/172] ata: enable quirk from jmicron JMB350 for JMB394
+Date: Tue,  4 Mar 2014 12:03:12 -0800
+Message-Id: <20140304200303.163907148@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -28,36 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: "Denis V. Lunev" <den@openvz.org>
 
-commit 9f9c47f00ce99329b1a82e2ac4f70f0fe3db549c upstream.
+commit efb9e0f4f43780f0ae0c6428d66bd03e805c7539 upstream.
 
-It's a bit odd to see a newer device showing mod15write; however, the
-reported behavior is highly consistent and other factors which could
-contribute seem to have been verified well enough.  Also, both
-sata_sil itself and the drive are fairly outdated at this point making
-the risk of this change fairly low.  It is possible, probably likely,
-that other drive models in the same family have the same problem;
-however, for now, let's just add the specific model which was tested.
+Without the patch the kernel generates the following error.
 
+ ata11.15: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ ata11.15: Port Multiplier vendor mismatch '0x197b' != '0x123'
+ ata11.15: PMP revalidation failed (errno=-19)
+ ata11.15: failed to recover PMP after 5 tries, giving up
+
+This patch helps to bypass this error and the device becomes
+functional.
+
+Signed-off-by: Denis V. Lunev <den@openvz.org>
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: matson <lists-matsonpa@luxsci.me>
-References: http://lkml.kernel.org/g/201401211912.s0LJCk7F015058@rs103.luxsci.com
+Cc: <linux-ide@vger.kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/sata_sil.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/ata/libata-pmp.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/ata/sata_sil.c
-+++ b/drivers/ata/sata_sil.c
-@@ -157,6 +157,7 @@ static const struct sil_drivelist {
- 	{ "ST380011ASL",	SIL_QUIRK_MOD15WRITE },
- 	{ "ST3120022ASL",	SIL_QUIRK_MOD15WRITE },
- 	{ "ST3160021ASL",	SIL_QUIRK_MOD15WRITE },
-+	{ "TOSHIBA MK2561GSYN",	SIL_QUIRK_MOD15WRITE },
- 	{ "Maxtor 4D060H3",	SIL_QUIRK_UDMA5MAX },
- 	{ }
- };
+--- a/drivers/ata/libata-pmp.c
++++ b/drivers/ata/libata-pmp.c
+@@ -447,8 +447,11 @@ static void sata_pmp_quirks(struct ata_p
+ 		 * otherwise.  Don't try hard to recover it.
+ 		 */
+ 		ap->pmp_link[ap->nr_pmp_links - 1].flags |= ATA_LFLAG_NO_RETRY;
+-	} else if (vendor == 0x197b && devid == 0x2352) {
+-		/* chip found in Thermaltake BlackX Duet, jmicron JMB350? */
++	} else if (vendor == 0x197b && (devid == 0x2352 || devid == 0x0325)) {
++		/*
++		 * 0x2352: found in Thermaltake BlackX Duet, jmicron JMB350?
++		 * 0x0325: jmicron JMB394.
++		 */
+ 		ata_for_each_link(link, ap, EDGE) {
+ 			/* SRST breaks detection and disks get misclassified
+ 			 * LPM disabled to avoid potential problems
 
 
