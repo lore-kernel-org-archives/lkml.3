@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932154AbaCDMLq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 07:11:46 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:37357 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932066AbaCDMLo (ORCPT
+	id S932215AbaCDMML (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 07:12:11 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:45820 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S932066AbaCDMMJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 07:11:44 -0500
-Date: Tue, 4 Mar 2014 12:11:36 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
-        linux-kernel@vger.kernel.org,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH V2] ARM: dove: dt: revert PMU interrupt controller node
-Message-ID: <20140304121136.GR21483@n2100.arm.linux.org.uk>
-References: <20140207180836.GE8533@titan.lakedaemon.net> <1392667236-19126-1-git-send-email-jason@lakedaemon.net> <20140303150215.GI21483@n2100.arm.linux.org.uk> <20140303173740.GC16655@lunn.ch> <20140303181529.GM21483@n2100.arm.linux.org.uk> <20140303222406.GW1872@titan.lakedaemon.net> <20140304092616.GH16655@lunn.ch> <5315AD6F.1070804@gmail.com>
+	Tue, 4 Mar 2014 07:12:09 -0500
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Hayes Wang'" <hayeswang@realtek.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: "nic_swsd@realtek.com" <nic_swsd@realtek.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: RE: [PATCH net-next 08/12] r8152: support TSO
+Thread-Topic: [PATCH net-next 08/12] r8152: support TSO
+Thread-Index: AQHPN6ICLRomJZLUN0ak16x5aFoKeJrQ1RDA
+Date: Tue, 4 Mar 2014 12:11:44 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F6CFFE0@AcuExch.aculab.com>
+References: <1393934464-23675-1-git-send-email-hayeswang@realtek.com>
+ <1393934464-23675-9-git-send-email-hayeswang@realtek.com>
+In-Reply-To: <1393934464-23675-9-git-send-email-hayeswang@realtek.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5315AD6F.1070804@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 04, 2014 at 11:39:43AM +0100, Sebastian Hesselbarth wrote:
-> On 03/04/2014 10:26 AM, Andrew Lunn wrote:
->>> I could have sworn this was discussed with this particular patchset, but
->>> I'm unable to find the conversation in my archives.  Neither during the
->>> patch submission process, nor the (long) pull request thread.
->>>
->>> Perhaps it was an irc conversation?  Andrew, Sebastian, can you find a
->>> link?  iirc, one of the DT maintainers (Mark Rutland?) raised the same
->>> concern and I thought we answered that sufficiently...
->>
->> It was the cpufreq driver which caused the discussion. I looked at it
->> for a while, and then task swapped onto the kirkwood move into
->> mach-mvebu.
->
-> I guess you are looking for this discussion
->
-> http://comments.gmane.org/gmane.linux.power-management.general/41053
->
-> and specifically Mark's remarks on PMU and DT in here
->
-> http://permalink.gmane.org/gmane.linux.ports.arm.kernel/285384
->
-> BTW, +1 for a single PMU node that either serves an mfd (or type
-> of) driver or that subsystem drivers derive their resources from.
-> Looking at Dove FS, that would also include clock gating, which
-> could be a mess to sort out.. anyway, let's get it on.
+From: Hayes Wang
+> Support scatter gather and TSO.
+> 
+> Adjust the tx checksum function and set the max gso size to fix the
+> size of the tx aggregation buffer.
 
-So we have cpufreq, pm domains and an irq controller.  What's the plan
-for this, who's going to look at sorting this out?
+There is little point supporting TSO unless the usb host controller
+supports arbitrary aligned scatter-gather.
+All you do is require that a large skb be allocated (that may well
+fail), and add it another data copy.
 
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+The xhci controller is almost capable of arbitrary scatter-gather,
+but it is currently disabled because the data must be aligned at
+the end of the transfer ring (the hardware designers have made it
+almost impossible to write efficient software).
+
+Note that the various xhci controllers behave subtly differently.
+
+	David
+
+
+
