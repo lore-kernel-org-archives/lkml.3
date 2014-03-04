@@ -1,114 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756644AbaCDVwa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:52:30 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:65209 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754284AbaCDVw2 (ORCPT
+	id S1756754AbaCDVxZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:53:25 -0500
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:46954 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756072AbaCDVxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 16:52:28 -0500
-Date: Tue, 4 Mar 2014 13:52:25 -0800
-From: Kent Overstreet <kmo@daterainc.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [blk-lib] 6a0608544e5: fileio -77.4% max latency, -5.7%
- throughput
-Message-ID: <20140304215225.GH11655@kmo>
-References: <20140304132130.GB28854@localhost>
+	Tue, 4 Mar 2014 16:53:24 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140304132130.GB28854@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.02.1403042153520.18573@ionos.tec.linutronix.de>
+References: <1392913425-29369-1-git-send-email-a.perevalov@samsung.com>
+ <1392913425-29369-6-git-send-email-a.perevalov@samsung.com>
+ <530D5715.1050901@mit.edu> <alpine.DEB.2.02.1403042153520.18573@ionos.tec.linutronix.de>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 4 Mar 2014 13:53:03 -0800
+Message-ID: <CALCETrVsmXjkC28pTSCfywTZCeHVcfvyFvHAXubEJ7=TRoEmPQ@mail.gmail.com>
+Subject: Re: [PATCH v4 5/6] timerfd: Add support for deferrable timers
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Alexey Perevalov <a.perevalov@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Anton Vorontsov <anton@enomsg.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>, cw00.choi@samsung.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 04, 2014 at 09:21:30PM +0800, Fengguang Wu wrote:
-> Hi Kent,
-> 
-> FYI, we noticed the below changes on
-> 
-> git://evilpiepirate.org/~kent/linux-bcache.git for-jens
-> commit 6a0608544e5672bd9a044c285119547eae41abe5 ("blk-lib.c: generic_make_request() handles large bios now")
-> 
-> test case: snb-drag/sysbench/fileio/600s-100%-1HDD-ext4-64G-1024-seqrewr-sync
+On Tue, Mar 4, 2014 at 12:58 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Tue, 25 Feb 2014, Andy Lutomirski wrote:
+>> On the other hand, if you added a fancier version of timerfd_settime
+>> that could explicitly set the slack value (or, equivalently, the
+>> earliest and latest allowable times), that could be quite useful.
+>>
+>> It's often bugged me that timer slack is per-process.
+>
+> That's a totally different issue. There is a world aside of timerfd
+> timers.
 
-I'm trying to figure out how to parse this and the graphs - where do I find the
-test? And is there anything you can point me to for the graphs, or is that
-output from that test?
+This is a patch to add deferrable support *to timerfd*.  I'm asking
+why this is a useful feature to add.  Some day (maybe soon -- systemd
+is doing something awful here) people will want choices of slack
+values other than the per-process value and infinity.  Why not just do
+that and skip this intermediate API that will have to be supported
+forever?
 
-> 
-> 11541d5f5b7002b  6a0608544e5672bd9a044c285  
-> ---------------  -------------------------  
->       1885 ~60%     -77.4%        426 ~ 7%  TOTAL fileio.request_latency_max_ms
->       6258 ~ 0%      -5.7%       5904 ~ 0%  TOTAL fileio.requests_per_sec
->         26 ~ 1%    +702.3%        211 ~ 8%  TOTAL slabinfo.kmalloc-4096.num_slabs
->        217 ~ 1%    +682.3%       1697 ~ 8%  TOTAL slabinfo.kmalloc-4096.num_objs
->         26 ~ 1%    +702.3%        211 ~ 8%  TOTAL slabinfo.kmalloc-4096.active_slabs
->        211 ~ 2%    +701.5%       1697 ~ 8%  TOTAL slabinfo.kmalloc-4096.active_objs
->          2 ~ 0%     -50.0%          1 ~ 0%  TOTAL vmstat.procs.b
->       2236 ~ 0%     +63.6%       3659 ~ 3%  TOTAL slabinfo.kmalloc-256.num_objs
->       2217 ~ 0%     +63.4%       3623 ~ 3%  TOTAL slabinfo.kmalloc-256.active_objs
->       3274 ~ 1%     +47.8%       4837 ~ 2%  TOTAL proc-vmstat.nr_slab_unreclaimable
->      13096 ~ 1%     +47.7%      19350 ~ 2%  TOTAL meminfo.SUnreclaim
->   62558204 ~ 5%     -30.7%   43379766 ~ 1%  TOTAL cpuidle.C3-SNB.time
->      91031 ~ 4%     -29.4%      64253 ~ 2%  TOTAL cpuidle.C1E-SNB.usage
->      34092 ~ 2%     -17.6%      28085 ~ 1%  TOTAL cpuidle.C3-SNB.usage
->       2656 ~ 2%     -15.0%       2258 ~ 2%  TOTAL proc-vmstat.kswapd_high_wmark_hit_quickly
->     266339 ~ 2%     +14.2%     304129 ~ 0%  TOTAL cpuidle.C6-SNB.usage
->      21899 ~ 2%      +9.6%      23992 ~ 2%  TOTAL interrupts.RES
->         20 ~ 0%      -8.0%         18 ~ 2%  TOTAL time.percent_of_cpu_this_job_got
->    3430189 ~ 0%      -5.9%    3226430 ~ 0%  TOTAL time.voluntary_context_switches
->        117 ~ 0%      -6.0%        110 ~ 0%  TOTAL time.system_time
->      11691 ~ 0%      -5.6%      11042 ~ 0%  TOTAL vmstat.system.cs
->        711 ~ 0%      +4.4%        742 ~ 0%  TOTAL iostat.sda.await
->        712 ~ 0%      +4.4%        743 ~ 0%  TOTAL iostat.sda.w_await
->      99142 ~ 0%      -2.2%      96963 ~ 0%  TOTAL iostat.sda.wkB/s
->      99257 ~ 0%      -2.2%      97110 ~ 0%  TOTAL vmstat.io.bo
->        139 ~ 0%      +1.7%        141 ~ 0%  TOTAL iostat.sda.avgqu-sz
-> 
-> 
-> 
->                                fileio.requests_per_sec
-> 
->    6300 ++----------------------------------------------------------*-------+
->    6250 *+.*..  .*.*..*..*..*..*..*.*..*..*..*..*..*.*..*..*..*..*.   *..*..*
->         |     *.                                                            |
->    6200 ++                                                                  |
->    6150 ++                                                                  |
->         |                                                                   |
->    6100 ++                                                                  |
->    6050 ++                                                                  |
->    6000 ++                        O                                         |
->         |     O                                            O                |
->    5950 O+ O                                         O                      |
->    5900 ++       O    O  O     O                              O             |
->         |          O        O       O  O     O     O                        |
->    5850 ++                                O     O       O                   |
->    5800 ++------------------------------------------------------------------+
-> 
-> 
->                             fileio.request_latency_max_ms
-> 
->    4500 ++------------------------------------------------------------------+
->         |                                                             *     |
->    4000 ++                                                            :     |
->    3500 ++                                                            ::    |
->         |                                                            : :    |
->    3000 ++                                   *                       : :    |
->    2500 ++                             *..  + :    *                 :  :   |
->         |                             +    +   :  + :                :  :   |
->    2000 ++        .*..               +    *    : +  :                :  :   |
->    1500 ++       *    *..   *..    .*           *    : .*..*..*..*..:    : .*
->         *..    ..         ..     .*                  *.             :    *. |
->    1000 ++   .*          *     *.                                   *       |
->     500 ++ *.         O                                                     |
->         O  O  O  O O     O  O  O  O O  O  O  O  O  O O  O  O  O             |
->       0 ++------------------------------------------------------------------+
-> 
-> 
-> 
-> Thanks,
-> Fengguang
+I admit that I don't really understand the difference between hrtimers
+and the other kind of timer internally, but I don't see why this
+should have any effect at all of the userspace API.  The kernel
+supports slack, slack is strictly more useful than "deferrable", so
+let's just expose it properly to userspace.
+
+--Andy
