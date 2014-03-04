@@ -1,81 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753264AbaCFPma (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 10:42:30 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:59011 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752201AbaCFPm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 10:42:28 -0500
-Message-ID: <53189742.3060705@ti.com>
-Date: Thu, 6 Mar 2014 21:11:54 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753284AbaCFPnm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 10:43:42 -0500
+Received: from moutng.kundenserver.de ([212.227.126.131]:51742 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752368AbaCFPnk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 10:43:40 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Subject: Re: [PATCH v5 3/3] arm64: Add architecture support for PCI
+Date: Tue, 4 Mar 2014 23:28:51 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: "linux-pci" <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linaro-kernel" <linaro-kernel@lists.linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>
+References: <1393948216-11599-1-git-send-email-Liviu.Dudau@arm.com> <1393948216-11599-4-git-send-email-Liviu.Dudau@arm.com>
+In-Reply-To: <1393948216-11599-4-git-send-email-Liviu.Dudau@arm.com>
 MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>, <tony@atomide.com>, <balbi@ti.com>
-CC: <george.cherian@ti.com>, <balajitk@ti.com>, <hdegoede@redhat.com>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-ide@vger.kernel.org>
-Subject: Re: [PATCH v2 03/13] phy: omap-control: update dra7 and am437 usb2
- bindings
-References: <1394116729-28811-1-git-send-email-rogerq@ti.com> <1394116729-28811-4-git-send-email-rogerq@ti.com>
-In-Reply-To: <1394116729-28811-4-git-send-email-rogerq@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201403042328.51361.arnd@arndb.de>
+X-Provags-ID: V02:K0:sF7g/UX4jt1DztSJSxVk2JuQztgPvnVSKJBrCjhOguz
+ LnqsQrYaZk1avpZdhxdKfPnHLhUZ8SzOykveFwyGJGpwe5SXeN
+ 0ah/ta76VH4tGOr51cDY00Nk7E9xx5mqx2ubbq7G+xYhnrzo2J
+ OZjU4ZTdWP7gzl5CRfrv7ZMffv8Dt7U7to4Rl4ZdM4Q8c6iI2s
+ qMV29FUEQ0W558TFee9D15q083V3q8ct3GDqvEfJa8RXOcBJ7y
+ kIv4u77lSgmbY88cjNinl+kxLr01G3n7c7C7V1Kd3G3zI7OhKQ
+ 7198KWLgqrOtQWq9AX9NjZJOUT5Zubz01BJe73QaB/jpCJgZ3K
+ rOpNt/r/VZzwgPEsh4e8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Felipe,
+On Tuesday 04 March 2014, Liviu Dudau wrote:
 
-On Thursday 06 March 2014 08:08 PM, Roger Quadros wrote:
-> The dra7-usb2 and am437-usb2 bindings have not yet been used.
-> Change them to be more elegant.
->
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> ---
->   Documentation/devicetree/bindings/phy/ti-phy.txt | 4 ++--
+> +extern int isa_dma_bridge_buggy;
 
-Here too..
-Acked-by: Kishon Vijay Abraham I <kishon@ti.com>
+As commented before, I still think we can hardcode this to off
 
-Regards
-Kishon
->   drivers/phy/phy-omap-control.c                   | 4 ++--
->   2 files changed, 4 insertions(+), 4 deletions(-)
->
-> diff --git a/Documentation/devicetree/bindings/phy/ti-phy.txt b/Documentation/devicetree/bindings/phy/ti-phy.txt
-> index 5c5b1b0..28e674b 100644
-> --- a/Documentation/devicetree/bindings/phy/ti-phy.txt
-> +++ b/Documentation/devicetree/bindings/phy/ti-phy.txt
-> @@ -9,9 +9,9 @@ Required properties:
->                           e.g. USB2_PHY on OMAP5.
->    "ti,control-phy-pipe3" - if it has DPLL and individual Rx & Tx power control
->                           e.g. USB3 PHY and SATA PHY on OMAP5.
-> - "ti,control-phy-dra7usb2" - if it has power down register like USB2 PHY on
-> + "ti,control-phy-dra7-usb2" - if it has power down register like USB2 PHY on
->                           DRA7 platform.
-> - "ti,control-phy-am437usb2" - if it has power down register like USB2 PHY on
-> + "ti,control-phy-am437-usb2" - if it has power down register like USB2 PHY on
->                           AM437 platform.
->    - reg : Address and length of the register set for the device. It contains
->      the address of "otghs_control" for control-phy-otghs or "power" register
-> diff --git a/drivers/phy/phy-omap-control.c b/drivers/phy/phy-omap-control.c
-> index 17fc200..a7e2d7f 100644
-> --- a/drivers/phy/phy-omap-control.c
-> +++ b/drivers/phy/phy-omap-control.c
-> @@ -228,11 +228,11 @@ static const struct of_device_id omap_control_phy_id_table[] = {
->   		.data = &pipe3_data,
->   	},
->   	{
-> -		.compatible = "ti,control-phy-dra7usb2",
-> +		.compatible = "ti,control-phy-dra7-usb2",
->   		.data = &dra7usb2_data,
->   	},
->   	{
-> -		.compatible = "ti,control-phy-am437usb2",
-> +		.compatible = "ti,control-phy-am437-usb2",
->   		.data = &am437usb2_data,
->   	},
->   	{},
->
+> +unsigned long pci_address_to_pio(phys_addr_t address)
+> +{
+> +	struct ioresource *res;
+> +
+> +	list_for_each_entry(res, &io_list, list) {
+> +		if (address >= res->start &&
+> +			address < res->start + res->size) {
+> +			return res->start - address;
+> +		}
+> +	}
+> +
+> +	return (unsigned long)-1;
+> +}
+> +EXPORT_SYMBOL_GPL(pci_address_to_pio);
+
+This has two problems:
+
+- You return the address in bus space not the logical Linux
+  port number as powerpc and microblaze do.
+- You imply that the window starts at bus address zero, which
+  might not be the case.
+
+> +EXPORT_SYMBOL(pcibios_fixup_bus);
+
+no need for this export.
+
+> +/*
+> + * We don't have to worry about legacy ISA devices, so nothing to do here
+> + */
+> +resource_size_t pcibios_align_resource(void *data, const struct resource *res,
+> +				resource_size_t size, resource_size_t align)
+> +{
+> +	return ALIGN(res->start, align);
+> +}
+> +EXPORT_SYMBOL(pcibios_align_resource);
+
+or this one. Also, the ALIGN() is already done by the PCI core.
+
+	Arnd
