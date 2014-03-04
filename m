@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933055AbaCDVJQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:09:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41125 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754916AbaCDUDs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756511AbaCDUDs (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 4 Mar 2014 15:03:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41008 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756132AbaCDUD2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 15:03:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Denis V. Lunev" <den@openvz.org>, Tejun Heo <tj@kernel.org>,
-        linux-ide@vger.kernel.org
-Subject: [PATCH 3.13 108/172] ata: enable quirk from jmicron JMB350 for JMB394
-Date: Tue,  4 Mar 2014 12:03:12 -0800
-Message-Id: <20140304200303.163907148@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: [PATCH 3.13 081/172] cgroup: update cgroup_enable_task_cg_lists() to grab siglock
+Date: Tue,  4 Mar 2014 12:02:45 -0800
+Message-Id: <20140304200302.327641428@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -29,44 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Denis V. Lunev" <den@openvz.org>
+From: Tejun Heo <tj@kernel.org>
 
-commit efb9e0f4f43780f0ae0c6428d66bd03e805c7539 upstream.
+commit 532de3fc72adc2a6525c4d53c07bf81e1732083d upstream.
 
-Without the patch the kernel generates the following error.
+Currently, there's nothing preventing cgroup_enable_task_cg_lists()
+from missing set PF_EXITING and race against cgroup_exit().  Depending
+on the timing, cgroup_exit() may finish with the task still linked on
+css_set leading to list corruption.  Fix it by grabbing siglock in
+cgroup_enable_task_cg_lists() so that PF_EXITING is guaranteed to be
+visible.
 
- ata11.15: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
- ata11.15: Port Multiplier vendor mismatch '0x197b' != '0x123'
- ata11.15: PMP revalidation failed (errno=-19)
- ata11.15: failed to recover PMP after 5 tries, giving up
+This whole on-demand cg_list optimization is extremely fragile and has
+ample possibility to lead to bugs which can cause things like
+once-a-year oops during boot.  I'm wondering whether the better
+approach would be just adding "cgroup_disable=all" handling which
+disables the whole cgroup rather than tempting fate with this
+on-demand craziness.
 
-This patch helps to bypass this error and the device becomes
-functional.
-
-Signed-off-by: Denis V. Lunev <den@openvz.org>
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: <linux-ide@vger.kernel.org>
+Acked-by: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libata-pmp.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ kernel/cgroup.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/ata/libata-pmp.c
-+++ b/drivers/ata/libata-pmp.c
-@@ -447,8 +447,11 @@ static void sata_pmp_quirks(struct ata_p
- 		 * otherwise.  Don't try hard to recover it.
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -2985,9 +2985,14 @@ static void cgroup_enable_task_cg_lists(
+ 		 * We should check if the process is exiting, otherwise
+ 		 * it will race with cgroup_exit() in that the list
+ 		 * entry won't be deleted though the process has exited.
++		 * Do it while holding siglock so that we don't end up
++		 * racing against cgroup_exit().
  		 */
- 		ap->pmp_link[ap->nr_pmp_links - 1].flags |= ATA_LFLAG_NO_RETRY;
--	} else if (vendor == 0x197b && devid == 0x2352) {
--		/* chip found in Thermaltake BlackX Duet, jmicron JMB350? */
-+	} else if (vendor == 0x197b && (devid == 0x2352 || devid == 0x0325)) {
-+		/*
-+		 * 0x2352: found in Thermaltake BlackX Duet, jmicron JMB350?
-+		 * 0x0325: jmicron JMB394.
-+		 */
- 		ata_for_each_link(link, ap, EDGE) {
- 			/* SRST breaks detection and disks get misclassified
- 			 * LPM disabled to avoid potential problems
++		spin_lock_irq(&p->sighand->siglock);
+ 		if (!(p->flags & PF_EXITING) && list_empty(&p->cg_list))
+ 			list_add(&p->cg_list, &task_css_set(p)->tasks);
++		spin_unlock_irq(&p->sighand->siglock);
++
+ 		task_unlock(p);
+ 	} while_each_thread(g, p);
+ 	read_unlock(&tasklist_lock);
 
 
