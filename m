@@ -1,140 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756495AbaCDHup (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 02:50:45 -0500
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:42052 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756208AbaCDHun (ORCPT
+	id S1756524AbaCDHu7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 02:50:59 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:60132 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756305AbaCDHuo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 02:50:43 -0500
+	Tue, 4 Mar 2014 02:50:44 -0500
+Message-ID: <531585CE.9020509@canonical.com>
+Date: Tue, 04 Mar 2014 08:50:38 +0100
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <1393840403-26639-2-git-send-email-jean.pihet@linaro.org>
-References: <1393840403-26639-1-git-send-email-jean.pihet@linaro.org>
-	<1393840403-26639-2-git-send-email-jean.pihet@linaro.org>
-Date: Tue, 4 Mar 2014 08:50:43 +0100
-Message-ID: <CAFrcx1nBhu6jkcdpOu8POOk95MtDH5vjtFy92=9MGdVgEknzLg@mail.gmail.com>
-Subject: Re: [PATCH 1/3] perf tests: Introduce perf_regs_load function on ARM
-From: Jean Pihet <jean.pihet@linaro.org>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnaldo <acme@ghostprotocols.net>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Steve Capper <steve.capper@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Daniel Vetter <daniel@ffwll.ch>, Ian Lister <ian.lister@intel.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arch@vger.kernel.org, Colin Cross <ccross@google.com>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        "Clark, Rob" <robdclark@gmail.com>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
+Subject: Re: [PATCH 4/6] android: convert sync to fence api, v4
+References: <20140217155056.20337.25254.stgit@patser>	<20140217155640.20337.13331.stgit@patser> <CAKMK7uESOhk_i8ui1pVknA=6s8oQsBOCTULYszxe5fodcBwTGw@mail.gmail.com>
+In-Reply-To: <CAKMK7uESOhk_i8ui1pVknA=6s8oQsBOCTULYszxe5fodcBwTGw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A new version is coming asap after a review of the code with Steve.
+op 03-03-14 22:11, Daniel Vetter schreef:
+> On Mon, Feb 17, 2014 at 04:57:19PM +0100, Maarten Lankhorst wrote:
+>> Android syncpoints can be mapped to a timeline. This removes the need
+>> to maintain a separate api for synchronization. I've left the android
+>> trace events in place, but the core fence events should already be
+>> sufficient for debugging.
+>>
+>> v2:
+>> - Call fence_remove_callback in sync_fence_free if not all fences have fired.
+>> v3:
+>> - Merge Colin Cross' bugfixes, and the android fence merge optimization.
+>> v4:
+>> - Merge with the upstream fixes.
+>>
+>> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+>> ---
+> Snipped everything but headers - Ian Lister from our android team is
+> signed up to have a more in-depth look at proper integration with android
+> syncpoints. Adding him to cc.
+>
+>> diff --git a/drivers/staging/android/sync.h b/drivers/staging/android/sync.h
+>> index 62e2255b1c1e..6036dbdc8e6f 100644
+>> --- a/drivers/staging/android/sync.h
+>> +++ b/drivers/staging/android/sync.h
+>> @@ -21,6 +21,7 @@
+>>   #include <linux/list.h>
+>>   #include <linux/spinlock.h>
+>>   #include <linux/wait.h>
+>> +#include <linux/fence.h>
+>>
+>>   struct sync_timeline;
+>>   struct sync_pt;
+>> @@ -40,8 +41,6 @@ struct sync_fence;
+>>    * -1 if a will signal before b
+>>    * @free_pt: called before sync_pt is freed
+>>    * @release_obj: called before sync_timeline is freed
+>> - * @print_obj: deprecated
+>> - * @print_pt: deprecated
+>>    * @fill_driver_data: write implementation specific driver data to data.
+>>    *  should return an error if there is not enough room
+>>    *  as specified by size.  This information is returned
+>> @@ -67,13 +66,6 @@ struct sync_timeline_ops {
+>>    /* optional */
+>>    void (*release_obj)(struct sync_timeline *sync_timeline);
+>>
+>> - /* deprecated */
+>> - void (*print_obj)(struct seq_file *s,
+>> -  struct sync_timeline *sync_timeline);
+>> -
+>> - /* deprecated */
+>> - void (*print_pt)(struct seq_file *s, struct sync_pt *sync_pt);
+>> -
+>>    /* optional */
+>>    int (*fill_driver_data)(struct sync_pt *syncpt, void *data, int size);
+>>
+>> @@ -104,42 +96,48 @@ struct sync_timeline {
+>>
+>>    /* protected by child_list_lock */
+>>    bool destroyed;
+>> + int context, value;
+>>
+>>    struct list_head child_list_head;
+>>    spinlock_t child_list_lock;
+>>
+>>    struct list_head active_list_head;
+>> - spinlock_t active_list_lock;
+>>
+>> +#ifdef CONFIG_DEBUG_FS
+>>    struct list_head sync_timeline_list;
+>> +#endif
+>>   };
+>>
+>>   /**
+>>    * struct sync_pt - sync point
+>> - * @parent: sync_timeline to which this sync_pt belongs
+>> + * @fence: base fence class
+>>    * @child_list: membership in sync_timeline.child_list_head
+>>    * @active_list: membership in sync_timeline.active_list_head
+>> +<<<<<<< current
+>>    * @signaled_list: membership in temporary signaled_list on stack
+>>    * @fence: sync_fence to which the sync_pt belongs
+>>    * @pt_list: membership in sync_fence.pt_list_head
+>>    * @status: 1: signaled, 0:active, <0: error
+>>    * @timestamp: time which sync_pt status transitioned from active to
+>>    *  signaled or error.
+>> +=======
+>> +>>>>>>> patched
+> Conflict markers ...
+Oops.
+>>    */
+>>   struct sync_pt {
+>> - struct sync_timeline *parent;
+>> - struct list_head child_list;
+>> + struct fence base;
+> Hm, embedding feels wrong, since that still means that I'll need to
+> implement two kinds of fences in i915 - one using the seqno fence to make
+> dma-buf sync work, and one to implmenent sync_pt to make the android folks
+> happy.
+>
+> If I can dream I think we should have a pointer to an underlying fence
+> here, i.e. a struct sync_pt would just be a userspace interface wrapper to
+> do explicit syncing using native fences, instead of implicit syncing like
+> with dma-bufs. But this is all drive-by comments from a very cursory
+> high-level look. I might be full of myself again ;-)
+> -Daniel
+>
+No, the idea is that because android syncpoint is simply another type of dma-fence, that if you deal with normal fences then android can automatically
+be handled too. The userspace fence api android exposes could be very easily made to work for dma-fence, just pass a dma-fence to sync_fence_create.
+So exposing dma-fence would probably work for android too.
 
-Thx,
-Jean
-
-On 3 March 2014 10:53, Jean Pihet <jean.pihet@linaro.org> wrote:
-> Introducing perf_regs_load function, which is going
-> to be used for dwarf unwind test in following patches.
->
-> It takes single argument as a pointer to the regs dump
-> buffer and populates it with current registers values.
->
-> Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> ---
->  tools/perf/arch/arm/Makefile            |  1 +
->  tools/perf/arch/arm/include/perf_regs.h |  2 ++
->  tools/perf/arch/arm/tests/regs_load.S   | 51 +++++++++++++++++++++++++++++++++
->  3 files changed, 54 insertions(+)
->  create mode 100644 tools/perf/arch/arm/tests/regs_load.S
->
-> diff --git a/tools/perf/arch/arm/Makefile b/tools/perf/arch/arm/Makefile
-> index 67e9b3d..9b8f87e 100644
-> --- a/tools/perf/arch/arm/Makefile
-> +++ b/tools/perf/arch/arm/Makefile
-> @@ -4,4 +4,5 @@ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
->  endif
->  ifndef NO_LIBUNWIND
->  LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/unwind-libunwind.o
-> +LIB_OBJS += $(OUTPUT)arch/$(ARCH)/tests/regs_load.o
->  endif
-> diff --git a/tools/perf/arch/arm/include/perf_regs.h b/tools/perf/arch/arm/include/perf_regs.h
-> index 2a1cfde..1476ae7 100644
-> --- a/tools/perf/arch/arm/include/perf_regs.h
-> +++ b/tools/perf/arch/arm/include/perf_regs.h
-> @@ -5,6 +5,8 @@
->  #include "../../util/types.h"
->  #include <asm/perf_regs.h>
->
-> +void perf_regs_load(u64 *regs);
-> +
->  #define PERF_REGS_MASK ((1ULL << PERF_REG_ARM_MAX) - 1)
->  #define PERF_REG_IP    PERF_REG_ARM_PC
->  #define PERF_REG_SP    PERF_REG_ARM_SP
-> diff --git a/tools/perf/arch/arm/tests/regs_load.S b/tools/perf/arch/arm/tests/regs_load.S
-> new file mode 100644
-> index 0000000..241c6df
-> --- /dev/null
-> +++ b/tools/perf/arch/arm/tests/regs_load.S
-> @@ -0,0 +1,51 @@
-> +#include <linux/linkage.h>
-> +
-> +#define R0 0x00
-> +#define R1 0x08
-> +#define R2 0x10
-> +#define R3 0x18
-> +#define R4 0x20
-> +#define R5 0x28
-> +#define R6 0x30
-> +#define R7 0x38
-> +#define R8 0x40
-> +#define R9 0x48
-> +#define SL 0x50
-> +#define FP 0x58
-> +#define IP 0x60
-> +#define SP 0x68
-> +#define LR 0x70
-> +#define PC 0x78
-> +
-> +@ Implementation of void perf_regs_load(u64 *regs);
-> +@
-> +@ This functions fills in the 'regs' buffer from the actual registers values.
-> +@ Note that the return values (i.e. caller values) of sp and lr
-> +@ are retrieved and stored, in order to skip the call to this function.
-> +
-> +.text
-> +.type perf_regs_load,%function
-> +ENTRY(perf_regs_load)
-> +       push {r1}
-> +
-> +       str r0, [r0, #R0]
-> +       str r1, [r0, #R1]
-> +       str r2, [r0, #R2]
-> +       str r3, [r0, #R3]
-> +       str r4, [r0, #R4]
-> +       str r5, [r0, #R5]
-> +       str r6, [r0, #R6]
-> +       str r7, [r0, #R7]
-> +       str r8, [r0, #R8]
-> +       str r9, [r0, #R9]
-> +       str sl, [r0, #SL]
-> +       str fp, [r0, #FP]
-> +       str ip, [r0, #IP]
-> +       add r1, sp, #4          @ Retrieve and save sp at entry time
-> +       str r1, [r0, #SP]
-> +       str lr, [r0, #LR]
-> +       str lr, [r0, #PC]       @ Save caller PC
-> +
-> +       pop {r1}
-> +       bx lr
-> +ENDPROC(perf_regs_load)
-> --
-> 1.7.11.7
->
+~Maarten
