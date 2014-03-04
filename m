@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932134AbaCDVaK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:30:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42332 "EHLO
+	id S932175AbaCDVay (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:30:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40882 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757072AbaCDVaG (ORCPT
+	with ESMTP id S1755895AbaCDUDG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 16:30:06 -0500
-Date: Tue, 4 Mar 2014 13:30:04 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: ebiederm@xmission.com (Eric W. Biederman)
-Cc: Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
-        linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        <netdev@vger.kernel.org>
-Subject: Re: [RFC][PATCH] audit: Simplify by assuming the callers socket
- buffer is large enough
-Message-Id: <20140304133004.b565820f60f595a48e621e58@linux-foundation.org>
-In-Reply-To: <87mwhaplo4.fsf_-_@xmission.com>
-References: <8738j3vzry.fsf@xmission.com>
-	<20140301011142.GK16640@madcap2.tricolour.ca>
-	<87fvn2r0yb.fsf@xmission.com>
-	<874n3ir0uw.fsf_-_@xmission.com>
-	<87mwhaplo4.fsf_-_@xmission.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 4 Mar 2014 15:03:06 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Duan Jiong <duanj.fnst@cn.fujitsu.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.13 052/172] ipv4: fix counter in_slow_tot
+Date: Tue,  4 Mar 2014 12:02:16 -0800
+Message-Id: <20140304200301.401798206@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
+References: <20140304200259.626667112@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Feb 2014 20:50:19 -0800 ebiederm@xmission.com (Eric W. Biederman) wrote:
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-> 
-> Modify audit_send_reply to directly use a non-blocking send and
-> to return an error on failure (if anyone cares).
-> 
-> Modify audit_list_rules_send to use audit_send_reply and give up
-> if we can not send a packet.
-> 
-> Merge audit_list_rules into iaudit_list_rules_send as the code
-> is now sufficiently simple to not justify to callers.
-> 
-> Kill audit_send_list, audit_send_reply_thread because using
-> a separate thread for replies is not needed when sending
-> packets syncrhonously.
+------------------
 
-Nothing much seems to be happening here?
+From: Duan Jiong <duanj.fnst@cn.fujitsu.com>
 
-In an earlier email you said "While reading through 3.14-rc1 I found a
-pretty siginficant mishandling of network namespaces in the recent
-audit changes." Were those recent audit changes a post-3.14 thing?  And
-what is the user-visible effect of the mishandling?
+[ Upstream commit a6254864c08109c66a194612585afc0439005286 ]
 
-Thanks.
+since commit 89aef8921bf("ipv4: Delete routing cache."), the counter
+in_slow_tot can't work correctly.
+
+The counter in_slow_tot increase by one when fib_lookup() return successfully
+in ip_route_input_slow(), but actually the dst struct maybe not be created and
+cached, so we can increase in_slow_tot after the dst struct is created.
+
+Signed-off-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/ipv4/route.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -1600,6 +1600,7 @@ static int __mkroute_input(struct sk_buf
+ 	rth->rt_gateway	= 0;
+ 	rth->rt_uses_gateway = 0;
+ 	INIT_LIST_HEAD(&rth->rt_uncached);
++	RT_CACHE_STAT_INC(in_slow_tot);
+ 
+ 	rth->dst.input = ip_forward;
+ 	rth->dst.output = ip_output;
+@@ -1701,8 +1702,6 @@ static int ip_route_input_slow(struct sk
+ 	if (err != 0)
+ 		goto no_route;
+ 
+-	RT_CACHE_STAT_INC(in_slow_tot);
+-
+ 	if (res.type == RTN_BROADCAST)
+ 		goto brd_input;
+ 
+@@ -1771,6 +1770,7 @@ local_input:
+ 	rth->rt_gateway	= 0;
+ 	rth->rt_uses_gateway = 0;
+ 	INIT_LIST_HEAD(&rth->rt_uncached);
++	RT_CACHE_STAT_INC(in_slow_tot);
+ 	if (res.type == RTN_UNREACHABLE) {
+ 		rth->dst.input= ip_error;
+ 		rth->dst.error= -err;
+
+
