@@ -1,97 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756000AbaCDAxz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 19:53:55 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:36652 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755838AbaCDAxw (ORCPT
+	id S1756011AbaCDAyh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 19:54:37 -0500
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:53595 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755286AbaCDAyg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 19:53:52 -0500
-Date: Tue, 4 Mar 2014 00:53:06 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: David Long <dave.long@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        Rabin Vincent <rabin@rab.in>, "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        davem@davemloft.net, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 00/14] uprobes: Add uprobes support for ARM
-Message-ID: <20140304005306.GO21483@n2100.arm.linux.org.uk>
-References: <1392017945-4507-1-git-send-email-dave.long@linaro.org> <20140301123026.GD21483@n2100.arm.linux.org.uk> <53131DBE.7020500@linaro.org> <20140303205039.GA8949@redhat.com>
+	Mon, 3 Mar 2014 19:54:36 -0500
+X-Original-SENDERIP: 10.177.220.200
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Tue, 4 Mar 2014 09:55:13 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan@kernel.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: Re: [PATCH 2/6] mm: add get_pageblock_migratetype_nolock() for cases
+ where locking is undesirable
+Message-ID: <20140304005513.GB32172@lge.com>
+References: <1393596904-16537-1-git-send-email-vbabka@suse.cz>
+ <1393596904-16537-3-git-send-email-vbabka@suse.cz>
+ <20140303082227.GA28899@lge.com>
+ <53148981.90709@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140303205039.GA8949@redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <53148981.90709@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 03, 2014 at 09:50:39PM +0100, Oleg Nesterov wrote:
-> On 03/02, David Long wrote:
-> >
-> > Oleg,
-> >
-> > I've been looking at arch/Kconfig and kernel/trace/Kconfig where they
-> > deal with uprobes.  The relevant items are CONFIG_UPROBES and
-> > CONFIG_UPROBE_EVENT.  It just doesn't look right to me.
-> 
-> Yes, this looks strange. I never understood these dependencies. In fact
-> I even never tried. And I do not really understand kbuild, unfortunately...
-> 
-> >> --- a/arch/Kconfig
-> >> +++ b/arch/Kconfig
-> >> @@ -87,7 +87,8 @@ config KPROBES_ON_FTRACE
+On Mon, Mar 03, 2014 at 02:54:09PM +0100, Vlastimil Babka wrote:
+> On 03/03/2014 09:22 AM, Joonsoo Kim wrote:
+> >On Fri, Feb 28, 2014 at 03:15:00PM +0100, Vlastimil Babka wrote:
+> >>In order to prevent race with set_pageblock_migratetype, most of calls to
+> >>get_pageblock_migratetype have been moved under zone->lock. For the remaining
+> >>call sites, the extra locking is undesirable, notably in free_hot_cold_page().
 > >>
-> >>  config UPROBES
-> >>  	bool "Transparent user-space probes (EXPERIMENTAL)"
-> >> -	depends on UPROBE_EVENT && PERF_EVENTS
-> >> +	depends on ARCH_SUPPORTS_UPROBES
-> >> +	depends on PERF_EVENTS
+> >>This patch introduces a _nolock version to be used on these call sites, where
+> >>a wrong value does not affect correctness. The function makes sure that the
+> >>value does not exceed valid migratetype numbers. Such too-high values are
+> >>assumed to be a result of race and caller-supplied fallback value is returned
+> >>instead.
+> >>
+> >>Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> >>---
+> >>  include/linux/mmzone.h | 24 ++++++++++++++++++++++++
+> >>  mm/compaction.c        | 14 +++++++++++---
+> >>  mm/memory-failure.c    |  3 ++-
+> >>  mm/page_alloc.c        | 22 +++++++++++++++++-----
+> >>  mm/vmstat.c            |  2 +-
+> >>  5 files changed, 55 insertions(+), 10 deletions(-)
+> >>
+> >>diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> >>index fac5509..7c3f678 100644
+> >>--- a/include/linux/mmzone.h
+> >>+++ b/include/linux/mmzone.h
+> >>@@ -75,6 +75,30 @@ enum {
+> >>
+> >>  extern int page_group_by_mobility_disabled;
+> >>
+> >>+/*
+> >>+ * When called without zone->lock held, a race with set_pageblock_migratetype
+> >>+ * may result in bogus values. Use this variant only when this does not affect
+> >>+ * correctness, and taking zone->lock would be costly. Values >= MIGRATE_TYPES
+> >>+ * are considered to be a result of this race and the value of race_fallback
+> >>+ * argument is returned instead.
+> >>+ */
+> >>+static inline int get_pageblock_migratetype_nolock(struct page *page,
+> >>+	int race_fallback)
+> >>+{
+> >>+	int ret = get_pageblock_flags_group(page, PB_migrate, PB_migrate_end);
+> >>+
+> >>+	if (unlikely(ret >= MIGRATE_TYPES))
+> >>+		ret = race_fallback;
+> >>+
+> >>+	return ret;
+> >>+}
+> >
+> >Hello, Vlastimil.
+> >
+> >First of all, thanks for nice work!
+> >I have another opinion about this implementation. It can be wrong, so if it
+> >is wrong, please let me know.
 > 
-> And why CONFIG_UPROBES should depend on PERF_EVENTS? uprobes can be
-> used by (say) systemtap without UPROBE_EVENT/PERF_EVENTS.
+> Thanks, all opinions/reviewing is welcome :)
 > 
-> But as Russell pointed out the events directory is only built if
-> CONFIG_PERF_EVENTS=y, so it should depend on it or select...
+> >Although this implementation would close the race which triggers NULL dereference,
+> >I think that this isn't enough if you have a plan to add more
+> >{start,undo}_isolate_page_range().
+> >
+> >Consider that there are lots of {start,undo}_isolate_page_range() calls
+> >on the system without CMA.
+> >
+> >bit representation of migratetype is like as following.
+> >
+> >MIGRATE_MOVABLE = 010
+> >MIGRATE_ISOLATE = 100
+> >
+> >We could read following values as migratetype of the page on movable pageblock
+> >if race occurs.
+> >
+> >start_isolate_page_range() case: 010 -> 100
+> >010, 000, 100
+> >
+> >undo_isolate_page_range() case: 100 -> 010
+> >100, 110, 010
+> >
+> >Above implementation prevents us from getting 110, but, it can't prevent us from
+> >getting 000, that is, MIGRATE_UNMOVABLE. If this race occurs in free_hot_cold_page(),
+> >this page would go into unmovable pcp and then allocated for that migratetype.
+> >It results in more fragmented memory.
 > 
+> Yes, that can happen. But I would expect it to be negligible to
+> other causes of fragmentation. But I'm not at this moment sure how
+> often {start,undo}_isolate_page_range() would be called in the end.
+> Certainly
+> not as often as in the development patch which is just to see if
+> that can improve anything. Because it will have its own overhead
+> (mostly for zone->lock) that might be too large. But good point, I
+> will try to quantify this.
 > 
-> I dunno. Personally I vote for the patch from Srikar in
+> >
+> >Consider another case that system enables CONFIG_CMA,
+> >
+> >MIGRATE_MOVABLE = 010
+> >MIGRATE_ISOLATE = 101
+> >
+> >start_isolate_page_range() case: 010 -> 101
+> >010, 011, 001, 101
+> >
+> >undo_isolate_page_range() case: 101 -> 010
+> >101, 100, 110, 010
+> >
+> >This can results in totally different values and this also makes the problem
+> >mentioned above. And, although this doesn't cause any problem on CMA for now,
+> >if another migratetype is introduced or some migratetype is removed, it can cause
+> >CMA typed page to go into other migratetype and makes CMA permanently failed.
 > 
-> 	http://article.gmane.org/gmane.linux.kernel/1017186
+> This should actually be no problem for free_hot_cold_page() as any
+> migratetype >= MIGRATE_PCPTYPES will defer to free_one_page() which
+> will reread migratetype under zone->lock. So as long as
+> MIGRATE_PCPTYPES does not include a migratetype with such dangerous
+> "permanently failed" properties, it should be good. And I doubt such
+> migratetype would be added to pcptypes. But of course, anyone adding
+> new migratetype would have to reconsider each
+> get_pageblock_migratetype_nolock() call for such potential problems.
+
+Please let me explain more.
+Now CMA page can have following race values.
+
+MIGRATE_CMA = 100
+MIGRATE_ISOLATE = 101
+
+start_isolate_page_range(): 100 -> 101
+100, 101
+undo_isolate_page_range(): 101 -> 100
+101, 100
+
+So, race doesn't cause any big problem.
+
+But, as you mentioned in earlier patch, it could get worse if MIGRATE_RESERVE
+is removed. It doesn't happen until now, but, it can be possible.
+
+In that case,
+
+MIGRATE_CMA = 011
+MIGRATE_ISOLATE = 100
+
+start_isolate_page_range(): 011 -> 100
+011, 010, 000, 100
+undo_isolate_page_range(): 100 -> 011
+100, 101, 111, 011
+
+If this race happens, CMA page can go into MIGRATE_UNMOVABLE list, because
+"migratetpye >= MIGRATE_PCPTYPES" can't prevent it, and this could make
+CMA permanently failed.
+
+I think that to dump the responsibility on developer who want to add/remove migratetype
+is not reasonable and doesn't work well, because they may not have enough background
+knowledge. I hope to close the possible race more in this time.
+
+Thanks.
+
 > 
-> This is what we currently have, currently CONFIG_UPROBES is not
-> user-selectable anyway.
-
-Yes, me too, but with the proviso that UPROBE_EVENT also sorts itself
-out with PERF_EVENTS in some way too (either by selecting it, which
-IMHO isn't nice, or by depending on it, or the build dependency itself
-gets sorted.)
-
-Maybe a simpler answer would be to change the build stuff (hand-crafted):
-
-kernel/Makefile
--obj-$(CONFIG_PERF_EVENTS) += events/
-+obj-y += events/
-
-and kernel/events/Makefile:
-
--obj-y := core.o ring_buffer.o callchain.o
-+perf-y := core.o ring_buffer.o callchain.o
-
--obj-$(CONFIG_HAVE_HW_BREAKPOINT) += hw_breakpoint.o
-+perf-$(CONFIG_HAVE_HW_BREAKPOINT) += hw_breakpoint.o
-+
-+obj-${CONFIG_PERF_EVENTS) += $(perf-y)
-
-?
-
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+> >To close this kind of races without dependency how many pageblock isolation occurs,
+> >I recommend that you use separate pageblock bits for MIGRATE_CMA, MIGRATE_ISOLATE
+> >and use accessor function whenver we need to check migratetype. IMHO, it may not
+> >impose much overhead.
+> 
+> That could work in case the fragmentation is confirmed to be a problem.
+> 
+> Thanks,
+> Vlastimil
+> 
+> >How about it?
+> >
+> >Thanks.
+> >
+> >--
+> >To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> >the body to majordomo@kvack.org.  For more info on Linux MM,
+> >see: http://www.linux-mm.org/ .
+> >Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> >
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
