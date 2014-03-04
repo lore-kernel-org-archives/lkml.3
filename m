@@ -1,66 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754934AbaCDTkm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 14:40:42 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:50670 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752123AbaCDTkk (ORCPT
+	id S1754900AbaCDTmL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 14:42:11 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:42772 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751908AbaCDTmJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 14:40:40 -0500
-Date: Tue, 4 Mar 2014 19:39:13 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Michal Simek <michal.simek@xilinx.com>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-serial@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>
-Subject: Re: [PATCH RFC 3/6] tty: Rename xilinx_uart -> cadence_uart
-Message-ID: <20140304193913.71c6f307@alan.etchedpixels.co.uk>
-In-Reply-To: <1393953449-28551-4-git-send-email-soren.brinkmann@xilinx.com>
-References: <1393953449-28551-1-git-send-email-soren.brinkmann@xilinx.com>
-	<1393953449-28551-4-git-send-email-soren.brinkmann@xilinx.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 4 Mar 2014 14:42:09 -0500
+Date: Tue, 4 Mar 2014 14:42:08 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Valentina Manea <valentina.manea.m@gmail.com>
+cc: gregkh@linuxfoundation.org, <ly80toro@cip.cs.fau.de>,
+        <ke42caxa@cip.cs.fau.de>, <eladwexler77@yahoo.com>,
+        <oat.elena@gmail.com>, <josh@joshtriplett.org>, <himangi774@gmail.com>,
+        <linux-usb@vger.kernel.org>, <devel@driverdev.osuosl.org>,
+        <linux-kernel@vger.kernel.org>, <andy.grover@gmail.com>,
+        <firefly@lists.rosedu.org>
+Subject: Re: [PATCH] staging: usbip: claim ports used by shared devices
+In-Reply-To: <1393961104-21856-1-git-send-email-valentina.manea.m@gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1403041440320.1328-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  4 Mar 2014 09:17:26 -0800
-Soren Brinkmann <soren.brinkmann@xilinx.com> wrote:
+On Tue, 4 Mar 2014, Valentina Manea wrote:
 
-> The UART controller in Zynq is Cadence IP. Rename the driver
-> accordingly.
-> Furthermore, this affects the DT bindings:
->  - the compatibility string changes to 'cdns,uart-r1p8'
->  - clock inputs are named according to Cadence documentation - 'pclk'
->    and 'uart_clk'
-> 
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> Acked-by: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
+> diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
+> index 90e18f6..a91dc1f 100644
+> --- a/drivers/usb/core/devio.c
+> +++ b/drivers/usb/core/devio.c
+> @@ -62,23 +62,6 @@
+>  /* Mutual exclusion for removal, open, and release */
+>  DEFINE_MUTEX(usbfs_mutex);
+>  
+> -struct dev_state {
+> -	struct list_head list;      /* state list */
+> -	struct usb_device *dev;
+> -	struct file *file;
+> -	spinlock_t lock;            /* protects the async urb lists */
+> -	struct list_head async_pending;
+> -	struct list_head async_completed;
+> -	wait_queue_head_t wait;     /* wake up if a request completed */
+> -	unsigned int discsignr;
+> -	struct pid *disc_pid;
+> -	const struct cred *cred;
+> -	void __user *disccontext;
+> -	unsigned long ifclaimed;
+> -	u32 secid;
+> -	u32 disabled_bulk_eps;
+> -};
+> -
 
-NAK. This breaks existing userspace builds, it breaks modules, it messes
-with the history and it breaks third prty DT files. It's an absolute
-no-no.
+Don't remove this definition.
 
-Yes this happens - it's happened before and will happen again. She who
-merges first wins. If Cadence had submitted a driver first they'd have
-won 8)
+> diff --git a/include/linux/usb.h b/include/linux/usb.h
+> index 22de4af..e0843a4 100644
+> --- a/include/linux/usb.h
+> +++ b/include/linux/usb.h
+> @@ -366,6 +366,24 @@ struct usb_bus {
+>  #endif
+>  };
+>  
+> +struct dev_state {
+> +	struct list_head list;      /* state list */
+> +	struct usb_device *dev;
+> +	struct file *file;
+> +	spinlock_t lock;            /* protects the async urb lists */
+> +	struct list_head async_pending;
+> +	struct list_head async_completed;
+> +	wait_queue_head_t wait;     /* wake up if a request completed */
+> +	unsigned int discsignr;
+> +	struct pid *disc_pid;
+> +	const struct cred *cred;
+> +	void __user *disccontext;
+> +	unsigned long ifclaimed;
+> +	u32 secid;
+> +	u32 disabled_bulk_eps;
+> +};
 
-The following aspects of the change set are IMHO acceptable
+And don't put this here.  Instead, just put
 
-- Cleaning up all the code formatting
-- Update the driver comments and header to explain the Cadence/Xilinx
-  thing
-- change "Xilinx PS UART Support" text to "Cadence (Xilinx PS) Support"
-  or similar wording in Kconfig
-- Adding the cadence devicetree compatibility strings and inputs *in
-  addition* to the existing ones.
-- Documentation for the new options
+struct dev_state;
 
-Alan
+Alan Stern
+
