@@ -1,106 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756704AbaCDJHH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 04:07:07 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:53575 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756582AbaCDJGx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 04:06:53 -0500
-Message-ID: <53159791.5080205@ti.com>
-Date: Tue, 4 Mar 2014 11:06:25 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1756784AbaCDJHa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 04:07:30 -0500
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:59615 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756756AbaCDJHD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 04:07:03 -0500
+Date: Tue, 04 Mar 2014 10:06:50 +0100
+From: Christian Riesch <christian.riesch@omicron.at>
+To: Jon Ringle <jon@ringle.org>
+cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rafael.j.wysocki@intel.com, netdev@vger.kernel.org,
+        davinci-linux-open-source@linux.davincidsp.com
+Subject: Re: Ethernet controller not starting
+Message-ID: <71F7AD3B89A7BF1E126CB3B1@C9882B18C00BA04428877CD4>
+X-Mailer: Mulberry/4.0.8 (Win32)
 MIME-Version: 1.0
-To: Philipp Zabel <p.zabel@pengutronix.de>
-CC: Grant Likely <grant.likely@linaro.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v5 6/7] of: Implement simplified graph binding for single
- port devices
-References: <1393522540-22887-1-git-send-email-p.zabel@pengutronix.de> <1393522540-22887-7-git-send-email-p.zabel@pengutronix.de>
-In-Reply-To: <1393522540-22887-7-git-send-email-p.zabel@pengutronix.de>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="B16kFDpUQI20mJFiGkPvPK6AL8dL5J5xT"
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---B16kFDpUQI20mJFiGkPvPK6AL8dL5J5xT
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+[cc'ed netdev and davinci-linux-open-source]
 
-On 27/02/14 19:35, Philipp Zabel wrote:
-> For simple devices with only one port, it can be made implicit.
-> The endpoint node can be a direct child of the device node.
+--On March 03, 2014 19:39 -0500 Jon Ringle <jon@ringle.org> wrote:
 
-<snip>
+> On Mon, Mar 3, 2014 at 6:43 PM, Rafael J. Wysocki <rjw@rjwysocki.net>
+> wrote:
+>> On Monday, March 03, 2014 02:41:01 PM Jon Ringle wrote:
+>>> I'm working on porting an ARM board from linux-3.10 to linux-3.12 (now
+>>> the latest LTS kernel).
+>>> I found that Ethernet controller on the board no longer comes up on
+>>> linux-3.12. I was able to bisect the issue I'm having to the following
+>>> commit:
+>>>
+>>> >   45f0a85c8258741d11bda25c0a5669c06267204a is the first bad commit
+>>> >   commit 45f0a85c8258741d11bda25c0a5669c06267204a
+>>> >   Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>>> >   Date:   Mon Jun 3 21:49:52 2013 +0200
+>>> >
+>>> >       PM / Runtime: Rework the "runtime idle" helper routine
+>>> >
+>>> >       The "runtime idle" helper routine, rpm_idle(), currently ignores
+>>> >       return values from .runtime_idle() callbacks executed by it.
+>>> >       However, it turns out that many subsystems use
+>>> >       pm_generic_runtime_idle() which checks the return value of the
+>>> >       driver's callback and executes pm_runtime_suspend() for the
+>>> >       device unless that value is not 0.  If that logic is moved to
+>>> >       rpm_idle() instead, pm_generic_runtime_idle() can be dropped
+>>> >       and its users will not need any .runtime_idle() callbacks any
+>>> >       more.
+>>> >
+>>> >       Moreover, the PCI, SCSI, and SATA subsystems' .runtime_idle()
+>>> >       routines, pci_pm_runtime_idle(), scsi_runtime_idle(), and
+>>> >       ata_port_runtime_idle(), respectively, as well as a few drivers'
+>>> >       ones may be simplified if rpm_idle() calls rpm_suspend() after
+>>> >       0 has been returned by the .runtime_idle() callback executed by
+>>> >       it.
+>>> >
+>>> >       To reduce overall code bloat, make the changes described above.
+>>> >
+>>> >       Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+>>> >       Tested-by: Kevin Hilman <khilman@linaro.org>
+>>> >       Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>>> >       Acked-by: Kevin Hilman <khilman@linaro.org>
+>>> >       Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
+>>> >       Acked-by: Alan Stern <stern@rowland.harvard.edu>
+>>>
+>>> Can anyone offer any suggestions on what I should be looking for to
+>>> fix this on my board?
+>>
+>> Any pointers to the driver in question?
+>
+> drivers/net/ethernet/ti/davinci_emac.c
+>
 
-> @@ -2105,9 +2112,11 @@ struct device_node *of_graph_get_remote_port_par=
-ent(
->  	/* Get remote endpoint node. */
->  	np =3D of_parse_phandle(node, "remote-endpoint", 0);
-> =20
-> -	/* Walk 3 levels up only if there is 'ports' node. */
-> +	/* Walk 3 levels up only if there is 'ports' node */
->  	for (depth =3D 3; depth && np; depth--) {
->  		np =3D of_get_next_parent(np);
-> +		if (depth =3D=3D 3 && of_node_cmp(np->name, "port"))
-> +			break;
->  		if (depth =3D=3D 2 && of_node_cmp(np->name, "ports"))
->  			break;
->  	}
+Hi Jon,
+I have successfully used the davinci_emac driver on a custom board with an 
+AM1808 SoC with Kernel 3.13 a few weeks ago. So at least 3.13 should work. 
+Did you try more recent kernel versions than 3.12?
 
-This function becomes a bit funny. Would it be clearer just to do
-something like:
+> I also get the following output:
+>
+>          Starting Network Manager Wait Online...
+> [   30.946509] davinci_mdio davinci_mdio.0: resetting idled controller
+> [   30.953220] net net0: attached PHY driver [Generic PHY]
+> (mii_bus:phy_addr=davinci_mdio-0:00, id=7c0f1)
+> [   30.962938] IPv6: ADDRCONF(NETDEV_UP): net0: link is not ready
+> [   31.082087] genirq: Flags mismatch irq 33. 00000000 (net0) vs.
+> 00000000 (net0)
 
-	np =3D of_parse_phandle(node, "remote-endpoint", 0);
+Is it correct that this warning can only appear in case of shared 
+interrupts? See kernel/irq/manage.c. Since we don't use shared interrupts 
+here: Are you sure your board configuration is correct with regard to emac 
+interrupts? Is your configuration using device tree or not (my 
+configuration is a none-devicetree one)? I also wonder why your network 
+device is net0, on my board it's eth0, maybe this triggers some bug?
 
-	np =3D of_get_next_parent(np);
-	if (of_node_cmp(np->name, "port") !=3D 0)
-		return np;
-
-	np =3D of_get_next_parent(np);
-	if (of_node_cmp(np->name, "ports") !=3D 0)
-		return np;
-
-	np =3D of_get_next_parent(np);
-	return np;
-
- Tomi
+Christian
 
 
 
---B16kFDpUQI20mJFiGkPvPK6AL8dL5J5xT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJTFZeRAAoJEPo9qoy8lh71T28QAK4N+uuEXW2aa2QA8W0r8A23
-LrKYuswYS70LIpa7Hu3+cbU6WJEtG3tRMGLwiiQ4O6iB64XASbkqKWRY9S20Rg3d
-q6eyIg8dKfRDVcGUPWg4hFPNQuU956eC1jryyRR4kmkppreaJ+hftIn9+QggDwex
-pjY3CVZmUDtvjRuN5Jooxnl1Q00rYNzHA9fuUIRs9uvdzVmlIC0X30N4heaoL8vL
-t6v83Iz2+PoMj6jIc68iL+esb0WHI2z3tlxaYHjAfR/1bM15j5W9LjIhByG3YuBO
-HCXwQA+ByUvL4vdH6Ghs0XtmLYuiKnciFVCv60a+SZ2jg4RYUa6axEOsdWm+iHiY
-QRkKYm3iGPlf8lCrXOt6vitQFvixKVn6Kt7cqdIgq5GKwUp4zNQjfZ8LiDutavFD
-WfqSRNuh8MCoFNFhNpu6itRiEn0rSR3Lz1//6+yprDQjFor4yTL2wP43mo7mdhwH
-cZmHJ2YhFDZ0Bl6Yg5NGjC1Dz6ErpVr8KfKYQaBBdrZeb5jjQJJeo94EzkylqJJc
-L38uhl/xPEXuPcFDSpQj32GJRkjYVkHRQ4OQ9x+Nn4GVJj65nj94pdo1Aa2b150n
-nMLTFuWM9fPNFP4YVmbZ8Gf+gtf08fZP0W/sbeB7SaYYofBLY2zEj+Ba+dfcUSAa
-MuIDLuJKjOrIFi4BiBc/
-=70wJ
------END PGP SIGNATURE-----
-
---B16kFDpUQI20mJFiGkPvPK6AL8dL5J5xT--
