@@ -1,27 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758642AbaCDVEi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:04:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41172 "EHLO
+	id S932659AbaCDVE6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:04:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41157 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756605AbaCDUD4 (ORCPT
+	with ESMTP id S1756585AbaCDUDx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:03:56 -0500
+	Tue, 4 Mar 2014 15:03:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 3.13 106/172] perf trace: Fix ioctl request beautifier build problems on !(i386 || x86_64) arches
-Date: Tue,  4 Mar 2014 12:03:10 -0800
-Message-Id: <20140304200303.102444372@linuxfoundation.org>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.13 103/172] powerpc/powernv: Fix indirect XSCOM unmangling
+Date: Tue,  4 Mar 2014 12:03:07 -0800
+Message-Id: <20140304200303.010624424@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -36,95 +28,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit 844ae5b46c08dbc7ba695b543c023f9cf3bbf9ff upstream.
+commit e0cf957614976896111e676e5134ac98ee227d3d upstream.
 
-Supporting decoding the ioctl 'request' parameter needs more work to
-properly support more architectures, the current approach doesn't work
-on at least powerpc and sparc, as reported by Ben Hutchings in
-http://lkml.kernel.org/r/1391593985.3003.48.camel@deadeye.wl.decadent.org.uk .
+We need to unmangle the full address, not just the register
+number, and we also need to support the real indirect bit
+being set for in-kernel uses.
 
-Work around that by making it to be ifdefed for the architectures known
-to work with the current, limited approach, i386 and x86_64 till better
-code is written.
-
-Reported-by: Ben Hutchings <ben@decadent.org.uk>
-Acked-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-ss04k11insqlu329xh5g02q0@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/perf/builtin-trace.c |   18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+ arch/powerpc/platforms/powernv/opal-xscom.c |   21 ++++++++++++---------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
 
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -275,6 +275,11 @@ static size_t syscall_arg__scnprintf_str
- 
- #define SCA_STRARRAY syscall_arg__scnprintf_strarray
- 
-+#if defined(__i386__) || defined(__x86_64__)
-+/*
-+ * FIXME: Make this available to all arches as soon as the ioctl beautifier
-+ * 	  gets rewritten to support all arches.
-+ */
- static size_t syscall_arg__scnprintf_strhexarray(char *bf, size_t size,
- 						 struct syscall_arg *arg)
- {
-@@ -282,6 +287,7 @@ static size_t syscall_arg__scnprintf_str
+--- a/arch/powerpc/platforms/powernv/opal-xscom.c
++++ b/arch/powerpc/platforms/powernv/opal-xscom.c
+@@ -71,11 +71,11 @@ static int opal_xscom_err_xlate(int64_t
+ 	}
  }
  
- #define SCA_STRHEXARRAY syscall_arg__scnprintf_strhexarray
-+#endif /* defined(__i386__) || defined(__x86_64__) */
+-static u64 opal_scom_unmangle(u64 reg)
++static u64 opal_scom_unmangle(u64 addr)
+ {
+ 	/*
+ 	 * XSCOM indirect addresses have the top bit set. Additionally
+-	 * the reset of the top 3 nibbles is always 0.
++	 * the rest of the top 3 nibbles is always 0.
+ 	 *
+ 	 * Because the debugfs interface uses signed offsets and shifts
+ 	 * the address left by 3, we basically cannot use the top 4 bits
+@@ -86,10 +86,13 @@ static u64 opal_scom_unmangle(u64 reg)
+ 	 * conversion here. To leave room for further xscom address
+ 	 * expansion, we only clear out the top byte
+ 	 *
++	 * For in-kernel use, we also support the real indirect bit, so
++	 * we test for any of the top 5 bits
++	 *
+ 	 */
+-	if (reg & (1ull << 59))
+-		reg = (reg & ~(0xffull << 56)) | (1ull << 63);
+-	return reg;
++	if (addr & (0x1full << 59))
++		addr = (addr & ~(0xffull << 56)) | (1ull << 63);
++	return addr;
+ }
  
- static size_t syscall_arg__scnprintf_fd(char *bf, size_t size,
- 					struct syscall_arg *arg);
-@@ -835,6 +841,10 @@ static size_t syscall_arg__scnprintf_sig
+ static int opal_scom_read(scom_map_t map, u64 reg, u64 *value)
+@@ -98,8 +101,8 @@ static int opal_scom_read(scom_map_t map
+ 	int64_t rc;
+ 	__be64 v;
  
- #define SCA_SIGNUM syscall_arg__scnprintf_signum
+-	reg = opal_scom_unmangle(reg);
+-	rc = opal_xscom_read(m->chip, m->addr + reg, (__be64 *)__pa(&v));
++	reg = opal_scom_unmangle(m->addr + reg);
++	rc = opal_xscom_read(m->chip, reg, (__be64 *)__pa(&v));
+ 	*value = be64_to_cpu(v);
+ 	return opal_xscom_err_xlate(rc);
+ }
+@@ -109,8 +112,8 @@ static int opal_scom_write(scom_map_t ma
+ 	struct opal_scom_map *m = map;
+ 	int64_t rc;
  
-+#if defined(__i386__) || defined(__x86_64__)
-+/*
-+ * FIXME: Make this available to all arches.
-+ */
- #define TCGETS		0x5401
+-	reg = opal_scom_unmangle(reg);
+-	rc = opal_xscom_write(m->chip, m->addr + reg, value);
++	reg = opal_scom_unmangle(m->addr + reg);
++	rc = opal_xscom_write(m->chip, reg, value);
+ 	return opal_xscom_err_xlate(rc);
+ }
  
- static const char *tioctls[] = {
-@@ -856,6 +866,7 @@ static const char *tioctls[] = {
- };
- 
- static DEFINE_STRARRAY_OFFSET(tioctls, 0x5401);
-+#endif /* defined(__i386__) || defined(__x86_64__) */
- 
- #define STRARRAY(arg, name, array) \
- 	  .arg_scnprintf = { [arg] = SCA_STRARRAY, }, \
-@@ -937,9 +948,16 @@ static struct syscall_fmt {
- 	{ .name	    = "getrlimit",  .errmsg = true, STRARRAY(0, resource, rlimit_resources), },
- 	{ .name	    = "ioctl",	    .errmsg = true,
- 	  .arg_scnprintf = { [0] = SCA_FD, /* fd */ 
-+#if defined(__i386__) || defined(__x86_64__)
-+/*
-+ * FIXME: Make this available to all arches.
-+ */
- 			     [1] = SCA_STRHEXARRAY, /* cmd */
- 			     [2] = SCA_HEX, /* arg */ },
- 	  .arg_parm	 = { [1] = &strarray__tioctls, /* cmd */ }, },
-+#else
-+			     [2] = SCA_HEX, /* arg */ }, },
-+#endif
- 	{ .name	    = "kill",	    .errmsg = true,
- 	  .arg_scnprintf = { [1] = SCA_SIGNUM, /* sig */ }, },
- 	{ .name	    = "linkat",	    .errmsg = true,
 
 
