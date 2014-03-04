@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757423AbaCDVlr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:41:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40740 "EHLO
+	id S1755466AbaCDUCl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:02:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40693 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753642AbaCDUCm (ORCPT
+	with ESMTP id S1751908AbaCDUCe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:02:42 -0500
+	Tue, 4 Mar 2014 15:02:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [PATCH 3.13 012/172] ext4: fix online resize with very large inode tables
-Date: Tue,  4 Mar 2014 12:01:36 -0800
-Message-Id: <20140304200300.113795813@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.13 001/172] drm/radeon/ni: fix typo in dpm sq ramping setup
+Date: Tue,  4 Mar 2014 12:01:25 -0800
+Message-Id: <20140304200259.766901619@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -28,133 +28,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit b93c95353413041a8cebad915a8109619f66bcc6 upstream.
+commit 21ed4947fdfe19b60a27b84162622e56439c7937 upstream.
 
-If a file system has a large number of inodes per block group, all of
-the metadata blocks in a flex_bg may be larger than what can fit in a
-single block group.  Unfortunately, ext4_alloc_group_tables() in
-resize.c was never tested to see if it would handle this case
-correctly, and there were a large number of bugs which caused the
-following sequence to result in a BUG_ON:
+inverted logic.
 
-kernel bug at fs/ext4/resize.c:409!
-   ...
-call trace:
- [<ffffffff81256768>] ext4_flex_group_add+0x1448/0x1830
- [<ffffffff81257de2>] ext4_resize_fs+0x7b2/0xe80
- [<ffffffff8123ac50>] ext4_ioctl+0xbf0/0xf00
- [<ffffffff811c111d>] do_vfs_ioctl+0x2dd/0x4b0
- [<ffffffff811b9df2>] ? final_putname+0x22/0x50
- [<ffffffff811c1371>] sys_ioctl+0x81/0xa0
- [<ffffffff81676aa9>] system_call_fastpath+0x16/0x1b
-code: c8 4c 89 df e8 41 96 f8 ff 44 89 e8 49 01 c4 44 29 6d d4 0
-rip  [<ffffffff81254fa1>] set_flexbg_block_bitmap+0x171/0x180
-
-
-This can be reproduced with the following command sequence:
-
-   mke2fs -t ext4 -i 4096 /dev/vdd 1G
-   mount -t ext4 /dev/vdd /vdd
-   resize2fs /dev/vdd 8G
-
-To fix this, we need to make sure the right thing happens when a block
-group's inode table straddles two block groups, which means the
-following bugs had to be fixed:
-
-1) Not clearing the BLOCK_UNINIT flag in the second block group in
-   ext4_alloc_group_tables --- the was proximate cause of the BUG_ON.
-
-2) Incorrectly determining how many block groups contained contiguous
-   free blocks in ext4_alloc_group_tables().
-
-3) Incorrectly setting the start of the next block range to be marked
-   in use after a discontinuity in setup_new_flex_group_blocks().
-
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/resize.c |   32 ++++++++++++++++++++------------
- 1 file changed, 20 insertions(+), 12 deletions(-)
+ drivers/gpu/drm/radeon/ni_dpm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -243,6 +243,7 @@ static int ext4_alloc_group_tables(struc
- 	ext4_group_t group;
- 	ext4_group_t last_group;
- 	unsigned overhead;
-+	__u16 uninit_mask = (flexbg_size > 1) ? ~EXT4_BG_BLOCK_UNINIT : ~0;
+--- a/drivers/gpu/drm/radeon/ni_dpm.c
++++ b/drivers/gpu/drm/radeon/ni_dpm.c
+@@ -2586,7 +2586,7 @@ static int ni_populate_sq_ramping_values
+ 	if (NISLANDS_DPM2_SQ_RAMP_STI_SIZE > (STI_SIZE_MASK >> STI_SIZE_SHIFT))
+ 		enable_sq_ramping = false;
  
- 	BUG_ON(flex_gd->count == 0 || group_data == NULL);
+-	if (NISLANDS_DPM2_SQ_RAMP_LTI_RATIO <= (LTI_RATIO_MASK >> LTI_RATIO_SHIFT))
++	if (NISLANDS_DPM2_SQ_RAMP_LTI_RATIO > (LTI_RATIO_MASK >> LTI_RATIO_SHIFT))
+ 		enable_sq_ramping = false;
  
-@@ -266,7 +267,7 @@ next_group:
- 	src_group++;
- 	for (; src_group <= last_group; src_group++) {
- 		overhead = ext4_group_overhead_blocks(sb, src_group);
--		if (overhead != 0)
-+		if (overhead == 0)
- 			last_blk += group_data[src_group - group].blocks_count;
- 		else
- 			break;
-@@ -280,8 +281,7 @@ next_group:
- 		group = ext4_get_group_number(sb, start_blk - 1);
- 		group -= group_data[0].group;
- 		group_data[group].free_blocks_count--;
--		if (flexbg_size > 1)
--			flex_gd->bg_flags[group] &= ~EXT4_BG_BLOCK_UNINIT;
-+		flex_gd->bg_flags[group] &= uninit_mask;
- 	}
- 
- 	/* Allocate inode bitmaps */
-@@ -292,22 +292,30 @@ next_group:
- 		group = ext4_get_group_number(sb, start_blk - 1);
- 		group -= group_data[0].group;
- 		group_data[group].free_blocks_count--;
--		if (flexbg_size > 1)
--			flex_gd->bg_flags[group] &= ~EXT4_BG_BLOCK_UNINIT;
-+		flex_gd->bg_flags[group] &= uninit_mask;
- 	}
- 
- 	/* Allocate inode tables */
- 	for (; it_index < flex_gd->count; it_index++) {
--		if (start_blk + EXT4_SB(sb)->s_itb_per_group > last_blk)
-+		unsigned int itb = EXT4_SB(sb)->s_itb_per_group;
-+		ext4_fsblk_t next_group_start;
-+
-+		if (start_blk + itb > last_blk)
- 			goto next_group;
- 		group_data[it_index].inode_table = start_blk;
--		group = ext4_get_group_number(sb, start_blk - 1);
-+		group = ext4_get_group_number(sb, start_blk);
-+		next_group_start = ext4_group_first_block_no(sb, group + 1);
- 		group -= group_data[0].group;
--		group_data[group].free_blocks_count -=
--					EXT4_SB(sb)->s_itb_per_group;
--		if (flexbg_size > 1)
--			flex_gd->bg_flags[group] &= ~EXT4_BG_BLOCK_UNINIT;
- 
-+		if (start_blk + itb > next_group_start) {
-+			flex_gd->bg_flags[group + 1] &= uninit_mask;
-+			overhead = start_blk + itb - next_group_start;
-+			group_data[group + 1].free_blocks_count -= overhead;
-+			itb -= overhead;
-+		}
-+
-+		group_data[group].free_blocks_count -= itb;
-+		flex_gd->bg_flags[group] &= uninit_mask;
- 		start_blk += EXT4_SB(sb)->s_itb_per_group;
- 	}
- 
-@@ -620,7 +628,7 @@ handle_ib:
- 			if (err)
- 				goto out;
- 			count = group_table_count[j];
--			start = group_data[i].block_bitmap;
-+			start = (&group_data[i].block_bitmap)[j];
- 			block = start;
- 		}
- 
+ 	for (i = 0; i < state->performance_level_count; i++) {
 
 
