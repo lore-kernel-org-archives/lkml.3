@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757039AbaCDLYm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 06:24:42 -0500
-Received: from fallback3.mail.ru ([94.100.176.58]:44850 "EHLO
-	fallback3.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756998AbaCDLYl (ORCPT
+	id S1757131AbaCDL32 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 06:29:28 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55424 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756997AbaCDL30 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 06:24:41 -0500
-From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-To: =?UTF-8?B?VGhvbWFzIEdsZWl4bmVy?= <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org,
-        =?UTF-8?B?TWFyayBCcm93bg==?= <broonie@kernel.org>
-Subject: =?UTF-8?B?UmU6IFtQQVRDSF0gaXJxOiBFeHBvcnQgc3ltYm9sIG5vX2FjdGlvbigp?=
-Mime-Version: 1.0
-X-Mailer: Mail.Ru Mailer 1.0
-X-Originating-IP: [217.119.30.118]
-Date: Tue, 04 Mar 2014 15:15:33 +0400
-Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-X-Priority: 3 (Normal)
-Message-ID: <1393931733.877810306@f371.i.mail.ru>
-Content-Type: text/plain; charset=utf-8
-X-Mras: Ok
-X-Spam: undefined
-In-Reply-To: <alpine.DEB.2.02.1403041203540.18573@ionos.tec.linutronix.de>
-References: <1393656316-26757-1-git-send-email-shc_work@mail.ru>
- <alpine.DEB.2.02.1403041203540.18573@ionos.tec.linutronix.de>
+	Tue, 4 Mar 2014 06:29:26 -0500
+Date: Tue, 4 Mar 2014 18:50:51 +0800
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Robin Gong <b38343@freescale.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org
+Message-ID: <20140304105051.GL13126@sirena.org.uk>
+References: <1393928414.9669.1.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="TnYVF1hk1c8rpHiF"
+Content-Disposition: inline
+In-Reply-To: <1393928414.9669.1.camel@phoenix>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 182.93.4.226
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: pfuze100: Add terminate entry for
+ [i2c|of]_device_id tables
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s24BOlqM003171
 
-–í—Ç–æ—Ä–Ω–∏–∫,  4 –º–∞—Ä—Ç–∞ 2014, 12:05 +01:00 –æ—Ç Thomas Gleixner <tglx@linutronix.de>:
-> On Sat, 1 Mar 2014, Alexander Shiyan wrote:
-> 
-> > This will allow to use dummy IRQ handler no_action() from
-> > drivers compiled as module. For example, dummy handler is could
-> > be used for drivers that use ARM FIQ interrupts.
-> 
-> And why exactly requires a driver which uses ARM FIQ interrupts the
-> no_action implementation?
 
-FIQ Interrupt handler is not used in this function. In FIQ case this is just a
-dummy declaration. Real handler is assigned by using the set_fiq_handler().
+--TnYVF1hk1c8rpHiF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> > @@ -41,6 +41,7 @@ irqreturn_t no_action(int cpl, void *dev_id)
-> >  {
-> >  	return IRQ_NONE;
-> >  }
-> > +EXPORT_SYMBOL(no_action);
-> 
-> EXPORT_SYMBOL_GPL if at all.
+On Tue, Mar 04, 2014 at 06:20:14PM +0800, Axel Lin wrote:
+> Also remove PFUZE_NUM to avoid below build warnings:
 
-v2?
+Applied, thanks.
 
----
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+--TnYVF1hk1c8rpHiF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTFbAFAAoJELSic+t+oim9ssYP/2AsU8aphSZCLNprZELBvjVC
+4NCa9Ocgyr6qcUuM5aF+tsBmg1oc6EeJbClmIAhJ42igq9uXtGiNJhmIt0JYploC
+NykQVYLoVwaZBaAxpmCGp4hoymVAttS/cJb/+EiZbjfkNIQsHFO/5MQH5MDGJdl3
+c0TzNBN36T95pjmtongmqMN3FrIuPePvl6t5grLJawTPq7UkBJWoe20aaITP3dK2
+knGIzgqwZxxcKpU7Vo/ljvFispDpETAyxHAiiarxi3/gX5oEKBKQAH/ix56RK2Dq
+AgP+WfNA6jkrRzh3MlwZcK8ZBEi3o00PN6y07GSZ04X7FxM0O3d7DjMnltoSOGg4
+KdWLBIaA8ND7DFbyzevJXon8k8LrZwCNZzoVeqgnvLvNqnb2tFaSwJFr+zKBupC/
+hyAiybNkM+/aKgNVfT3XJ30iATE7fQ5WTtwpIej6o145DoFm0HGSi3FyQuO02Z1r
+Uziu3Tm9ziokcALZO4Yt6BbEgC3QpUHIYIvox55hYnLNdPncOqTzYjU7c5UV5YK9
+Ba+bDrCkI3OyDgW0AHmm6Cv6OeavWZjySwmivMQxREfjzo8TScuT4IkcgTTlHT4P
+kw0zD6IKUJcYov0pmvUhI0mndv1u4RUjOyH5HYt3hckwMN5URa40Q7g6nIhFPJ96
+zDUyspqs0OIc5i9x7pzq
+=qNQn
+-----END PGP SIGNATURE-----
+
+--TnYVF1hk1c8rpHiF--
