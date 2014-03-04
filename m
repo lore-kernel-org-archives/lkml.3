@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758105AbaCDV1s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:27:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40924 "EHLO
+	id S1756009AbaCDUDN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:03:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40890 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756019AbaCDUDO (ORCPT
+	with ESMTP id S1755791AbaCDUDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:03:14 -0500
+	Tue, 4 Mar 2014 15:03:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Russell Senior <russell@personaltelco.net>,
-        Antonio Quartulli <antonio@meshcoding.com>,
-        Marek Lindner <mareklindner@neomailbox.ch>
-Subject: [PATCH 3.13 063/172] batman-adv: fix soft-interface MTU computation
-Date: Tue,  4 Mar 2014 12:02:27 -0800
-Message-Id: <20140304200301.757288975@linuxfoundation.org>
+        Sabrina Dubroca <sd@queasysnail.net>,
+        Cong Wang <cwang@twopensource.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.13 042/172] netpoll: fix netconsole IPv6 setup
+Date: Tue,  4 Mar 2014 12:02:06 -0800
+Message-Id: <20140304200301.074543305@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -30,75 +30,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Antonio Quartulli <antonio@meshcoding.com>
+From: Sabrina Dubroca <sd@queasysnail.net>
 
-[ Upstream commit 930cd6e46eadce8b8ed2a232ee536e5fd286c152 ]
+[ Upstream commit 00fe11b3c67dc670fe6391d22f1fe64e7c99a8ec ]
 
-The current MTU computation always returns a value
-smaller than 1500bytes even if the real interfaces
-have an MTU large enough to compensate the batman-adv
-overhead.
+Currently, to make netconsole start over IPv6, the source address
+needs to be specified. Without a source address, netpoll_parse_options
+assumes we're setting up over IPv4 and the destination IPv6 address is
+rejected.
 
-Fix the computation by properly returning the highest
-admitted value.
+Check if the IP version has been forced by a source address before
+checking for a version mismatch when parsing the destination address.
 
-Introduced by a19d3d85e1b854e4a483a55d740a42458085560d
-("batman-adv: limit local translation table max size")
-
-Reported-by: Russell Senior <russell@personaltelco.net>
-Signed-off-by: Antonio Quartulli <antonio@meshcoding.com>
-Signed-off-by: Marek Lindner <mareklindner@neomailbox.ch>
+Signed-off-by: Sabrina Dubroca <sd@queasysnail.net>
+Acked-by: Cong Wang <cwang@twopensource.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/batman-adv/hard-interface.c |   22 ++++++++++++++--------
- 1 file changed, 14 insertions(+), 8 deletions(-)
+ net/core/netpoll.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/net/batman-adv/hard-interface.c
-+++ b/net/batman-adv/hard-interface.c
-@@ -244,7 +244,7 @@ int batadv_hardif_min_mtu(struct net_dev
+--- a/net/core/netpoll.c
++++ b/net/core/netpoll.c
+@@ -948,6 +948,7 @@ int netpoll_parse_options(struct netpoll
  {
- 	struct batadv_priv *bat_priv = netdev_priv(soft_iface);
- 	const struct batadv_hard_iface *hard_iface;
--	int min_mtu = ETH_DATA_LEN;
-+	int min_mtu = INT_MAX;
+ 	char *cur=opt, *delim;
+ 	int ipv6;
++	bool ipversion_set = false;
  
- 	rcu_read_lock();
- 	list_for_each_entry_rcu(hard_iface, &batadv_hardif_list, list) {
-@@ -259,8 +259,6 @@ int batadv_hardif_min_mtu(struct net_dev
- 	}
- 	rcu_read_unlock();
+ 	if (*cur != '@') {
+ 		if ((delim = strchr(cur, '@')) == NULL)
+@@ -960,6 +961,7 @@ int netpoll_parse_options(struct netpoll
+ 	cur++;
  
--	atomic_set(&bat_priv->packet_size_max, min_mtu);
--
- 	if (atomic_read(&bat_priv->fragmentation) == 0)
- 		goto out;
- 
-@@ -271,13 +269,21 @@ int batadv_hardif_min_mtu(struct net_dev
- 	min_mtu = min_t(int, min_mtu, BATADV_FRAG_MAX_FRAG_SIZE);
- 	min_mtu -= sizeof(struct batadv_frag_packet);
- 	min_mtu *= BATADV_FRAG_MAX_FRAGMENTS;
--	atomic_set(&bat_priv->packet_size_max, min_mtu);
--
--	/* with fragmentation enabled we can fragment external packets easily */
--	min_mtu = min_t(int, min_mtu, ETH_DATA_LEN);
- 
- out:
--	return min_mtu - batadv_max_header_len();
-+	/* report to the other components the maximum amount of bytes that
-+	 * batman-adv can send over the wire (without considering the payload
-+	 * overhead). For example, this value is used by TT to compute the
-+	 * maximum local table table size
-+	 */
-+	atomic_set(&bat_priv->packet_size_max, min_mtu);
-+
-+	/* the real soft-interface MTU is computed by removing the payload
-+	 * overhead from the maximum amount of bytes that was just computed.
-+	 *
-+	 * However batman-adv does not support MTUs bigger than ETH_DATA_LEN
-+	 */
-+	return min_t(int, min_mtu - batadv_max_header_len(), ETH_DATA_LEN);
- }
- 
- /* adjusts the MTU if a new interface with a smaller MTU appeared. */
+ 	if (*cur != '/') {
++		ipversion_set = true;
+ 		if ((delim = strchr(cur, '/')) == NULL)
+ 			goto parse_failed;
+ 		*delim = 0;
+@@ -1002,7 +1004,7 @@ int netpoll_parse_options(struct netpoll
+ 	ipv6 = netpoll_parse_ip_addr(cur, &np->remote_ip);
+ 	if (ipv6 < 0)
+ 		goto parse_failed;
+-	else if (np->ipv6 != (bool)ipv6)
++	else if (ipversion_set && np->ipv6 != (bool)ipv6)
+ 		goto parse_failed;
+ 	else
+ 		np->ipv6 = (bool)ipv6;
 
 
