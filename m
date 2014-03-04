@@ -1,81 +1,318 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932228AbaCDOS4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 09:18:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56427 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932090AbaCDOSv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 09:18:51 -0500
-Date: Tue, 4 Mar 2014 09:18:38 -0500
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        David Barksdale <dbarksdale@uplogix.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] HID: cp2112: remove the last hid_output_raw_report()
- call
-Message-ID: <20140304141838.GD24154@mail.corp.redhat.com>
-References: <1393633237-26496-1-git-send-email-benjamin.tissoires@redhat.com>
- <1393633237-26496-3-git-send-email-benjamin.tissoires@redhat.com>
- <alpine.LNX.2.00.1403041445080.30402@pobox.suse.cz>
+	id S932260AbaCDOTN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 09:19:13 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:61392 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932090AbaCDOTI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 09:19:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1403041445080.30402@pobox.suse.cz>
+In-Reply-To: <1393903276.10148.51.camel@dhcp-9-2-203-236.watson.ibm.com>
+References: <cover.1393599538.git.d.kasatkin@samsung.com>
+	<20312cf18c698d0e918bde022a76edf2705f1e17.1393599538.git.d.kasatkin@samsung.com>
+	<1393900797.10148.41.camel@dhcp-9-2-203-236.watson.ibm.com>
+	<531541DB.7000406@schaufler-ca.com>
+	<1393903276.10148.51.camel@dhcp-9-2-203-236.watson.ibm.com>
+Date: Tue, 4 Mar 2014 16:18:51 +0200
+Message-ID: <CACE9dm8qTb1vWS-1KFrYpOkX1RoQPe0oKyyGtTw7c+4PJCJKLA@mail.gmail.com>
+Subject: Re: [PATCH 8/8] evm: introduce EVM hmac xattr list
+From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Casey Schaufler <casey@schaufler-ca.com>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        linux-security-module@vger.kernel.org,
+        James Morris <jmorris@namei.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mar 04 2014 or thereabouts, Jiri Kosina wrote:
-> On Fri, 28 Feb 2014, Benjamin Tissoires wrote:
-> 
-> > I don't have access to the device, so I copied/pasted the code
-> > from hidraw.
-> > 
-> > Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> > ---
-> >  drivers/hid/hid-cp2112.c | 16 +++++++++++++++-
-> >  1 file changed, 15 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/hid/hid-cp2112.c b/drivers/hid/hid-cp2112.c
-> > index 860db694..c4f87bd 100644
-> > --- a/drivers/hid/hid-cp2112.c
-> > +++ b/drivers/hid/hid-cp2112.c
-> > @@ -290,7 +290,21 @@ static int cp2112_hid_output(struct hid_device *hdev, u8 *data, size_t count,
-> >  	if (!buf)
-> >  		return -ENOMEM;
-> >  
-> > -	ret = hdev->hid_output_raw_report(hdev, buf, count, report_type);
-> > +	/* Fixme: test which function is actually called for output reports */
-> 
-> I don't completely understand this Fixme (oh, and please spell it as 
-> 'FIXME:' so that we are consistent with all the other instances), could 
-> you please elaborate?
+On Tue, Mar 4, 2014 at 5:21 AM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> On Mon, 2014-03-03 at 19:00 -0800, Casey Schaufler wrote:
+>> On 3/3/2014 6:39 PM, Mimi Zohar wrote:
+>> > On Fri, 2014-02-28 at 16:59 +0200, Dmitry Kasatkin wrote:
+>> >> EVM currently uses source hard coded list of xattrs which needs to be
+>> >> included into the HMAC calculation. This is very unflexible.
+>> >> Adding new attributes requires modifcation of the source code and
+>> >> prevents building the kernel which works with previously labeled
+>> >> filesystems.
+>> >>
+>> >> Early versions of Smack used only one xattr security.SMACK64,
+>> >> which is protected by EVM. Now Smack has a few more attributes and
+>> >> they are not protected. Adding support to the source code makes it
+>> >> impossible to use new kernel with previousely labeled filesystems.
+>> > I think this patch will break any existing filesystems labeled with
+>> > 'security.smack64'.  Details inline.
+>> >
+>> >> This patch replaces hardcoded xattr array with dynamic list which is
+>> >> initialized from CONFIG_EVM_HMAC_XATTRS variable. It allows to build
+>> >> kernel with with support of older and newer EVM HMAC formats.
+>> >>
+>> >> Possible future extension will be to read xattr list from the kernel
+>> >> command line or from securityfs entry.
+>> >>
+>> >> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+>> >> ---
+>> >>  security/integrity/evm/Kconfig      | 10 ++++++
+>> >>  security/integrity/evm/evm.h        |  7 +++-
+>> >>  security/integrity/evm/evm_crypto.c |  8 ++---
+>> >>  security/integrity/evm/evm_main.c   | 69 +++++++++++++++++++------------------
+>> >>  4 files changed, 55 insertions(+), 39 deletions(-)
+>> >>
+>> >> diff --git a/security/integrity/evm/Kconfig b/security/integrity/evm/Kconfig
+>> >> index 2be51fa..06237b8 100644
+>> >> --- a/security/integrity/evm/Kconfig
+>> >> +++ b/security/integrity/evm/Kconfig
+>> >> @@ -25,3 +25,13 @@ config EVM_HMAC_ATTRS
+>> >>      WARNING: changing the HMAC calculation method or adding
+>> >>      additional info to the calculation, requires existing EVM
+>> >>      labeled file systems to be relabeled.
+>> >> +
+>> >> +config EVM_HMAC_XATTRS
+>> >> +  string "HMAC xattrs"
+>> >> +  default "security.selinux security.SMACK64 security.ima security.capability"
+>> >> +  help
+>> >> +    This options allows to specify list of extended attributes included into HMAC
+>> >> +    calculation. It makes it possible easily upgrade to newer kernels.
+>> >> +
+>> >> +    Default value:
+>> >> +      security.selinux, security.SMACK64, security.ima, security.capability
+>> >> diff --git a/security/integrity/evm/evm.h b/security/integrity/evm/evm.h
+>> >> index c8fa0aa..4d1c51e 100644
+>> >> --- a/security/integrity/evm/evm.h
+>> >> +++ b/security/integrity/evm/evm.h
+>> >> @@ -31,8 +31,13 @@ extern struct crypto_shash *hash_tfm;
+>> >>
+>> >>  #define EVM_HMAC_ATTR_FSUUID              0x0001
+>> >>
+>> >> +struct evm_hmac_xattr {
+>> >> +  struct list_head list;
+>> >> +  char *xattr;
+>> >> +};
+>> >> +
+>> >>  /* List of EVM protected security xattrs */
+>> >> -extern char *evm_config_xattrnames[];
+>> >> +extern struct list_head evm_hmac_xattrs;
+>> >>
+>> >>  int evm_init_key(void);
+>> >>  int evm_update_evmxattr(struct dentry *dentry,
+>> >> diff --git a/security/integrity/evm/evm_crypto.c b/security/integrity/evm/evm_crypto.c
+>> >> index ab034e5..7e5bfb7 100644
+>> >> --- a/security/integrity/evm/evm_crypto.c
+>> >> +++ b/security/integrity/evm/evm_crypto.c
+>> >> @@ -133,7 +133,7 @@ static int evm_calc_hmac_or_hash(struct dentry *dentry,
+>> >>  {
+>> >>    struct inode *inode = dentry->d_inode;
+>> >>    struct shash_desc *desc;
+>> >> -  char **xattrname;
+>> >> +  struct evm_hmac_xattr *entry;
+>> >>    size_t xattr_size = 0;
+>> >>    char *xattr_value = NULL;
+>> >>    int error;
+>> >> @@ -146,15 +146,15 @@ static int evm_calc_hmac_or_hash(struct dentry *dentry,
+>> >>            return PTR_ERR(desc);
+>> >>
+>> >>    error = -ENODATA;
+>> >> -  for (xattrname = evm_config_xattrnames; *xattrname != NULL; xattrname++) {
+>> >> +  list_for_each_entry(entry, &evm_hmac_xattrs, list) {
+>> >>            if ((req_xattr_name && req_xattr_value)
+>> >> -              && !strcmp(*xattrname, req_xattr_name)) {
+>> >> +              && !strcmp(entry->xattr, req_xattr_name)) {
+>> >>                    error = 0;
+>> >>                    crypto_shash_update(desc, (const u8 *)req_xattr_value,
+>> >>                                         req_xattr_value_len);
+>> >>                    continue;
+>> >>            }
+>> >> -          size = vfs_getxattr_alloc(dentry, *xattrname,
+>> >> +          size = vfs_getxattr_alloc(dentry, entry->xattr,
+>> >>                                      &xattr_value, xattr_size, GFP_NOFS);
+>> >>            if (size == -ENOMEM) {
+>> >>                    error = -ENOMEM;
+>> >> diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
+>> >> index 9c05929..13e03ad 100644
+>> >> --- a/security/integrity/evm/evm_main.c
+>> >> +++ b/security/integrity/evm/evm_main.c
+>> >> @@ -34,19 +34,7 @@ char *evm_hmac = "hmac(sha1)";
+>> >>  char *evm_hash = "sha1";
+>> >>  int evm_hmac_attrs;
+>> >>
+>> >> -char *evm_config_xattrnames[] = {
+>> >> -#ifdef CONFIG_SECURITY_SELINUX
+>> >> -  XATTR_NAME_SELINUX,
+>> >> -#endif
+>> >> -#ifdef CONFIG_SECURITY_SMACK
+>> >> -  XATTR_NAME_SMACK,
+>> >> -#endif
+>> >> -#ifdef CONFIG_IMA_APPRAISE
+>> >> -  XATTR_NAME_IMA,
+>> >> -#endif
+>> >> -  XATTR_NAME_CAPS,
+>> >> -  NULL
+>> >> -};
+>> >> +LIST_HEAD(evm_hmac_xattrs);
+>> >>
+>> >>  static int evm_fixmode;
+>> >>  static int __init evm_set_fixmode(char *str)
+>> >> @@ -61,27 +49,53 @@ static int __init evm_init_config(void)
+>> >>  {
+>> >>    char *attrs = CONFIG_EVM_HMAC_ATTRS;
+>> >>    char *p;
+>> >> +  char *xattrs = CONFIG_EVM_HMAC_XATTRS;
+>> >> +  struct evm_hmac_xattr *entry;
+>> >>
+>> >>    while ((p = strsep(&attrs, ", \t"))) {
+>> >>            if (!strcmp(p, "fsuuid"))
+>> >>                    evm_hmac_attrs |= EVM_HMAC_ATTR_FSUUID;
+>> >>    }
+>> >>    pr_info("HMAC attrs: 0x%x\n", evm_hmac_attrs);
+>> >> +  while ((p = strsep(&xattrs, ", \t"))) {
+>> >> +#ifndef CONFIG_SECURITY_SELINUX
+>> >> +          if (!strcmp(p, XATTR_NAME_SELINUX))
+>> >> +                  continue;
+>> >> +#endif
+>> >> +#ifndef CONFIG_SECURITY_SMACK
+>> >> +          if (strstr(p, "SMACK64"))
+>> >> +                  continue;
+>> >> +#endif
+>> > As you mentioned, filesystems previously only included
+>> > 'security.smack64' in the HMAC calculation.  This patch includes all
+>> > xattrs prefixed with smack64.  All previously labeled filesystems would
+>> > need to be relabeled.
+>> >
+>> > Mimi
+>>
+>> Only the SMACK64 attribute is assigned to all files. The SMACK64EXEC
+>> and SMACK64TRANSMUTE attributes are optional. You do not want these
+>> attributes in most cases. Few files should actually have them. They
+>> should only be used if they are there, and ignored otherwise. If that
+>> is not possible it is better to ignore them completely.
+>
+> Going forward the code would work just fine.  All smack64 prefixed
+> labels would be included in the HMAC calculation.  My concern is for
+> existing labeled filesystems, which only included the SMACK64 label in
+> the HMAC calculation, but have other SMACK64 labels.  The HMAC
+> verification would fail for these files.
+>
 
-Well, sorry:
-As I said, this part is a copy/paste of what is in hidraw. However, this
-just reflect that we don't know how the device actually behave, which is
-not very elegant. I have currently no clues of which function will be
-actually called for output reports: hid_hw_output_report() or
-hid_hw_raw_request(). Once we got the confirmation of which function is
-called, we could make the path more straightforward.
+Hello,
 
-I bought one of these (it may help debugging some Synaptics devices),
-and I'll receive it by the end of the week. So by next week, we should
-get the actual code path and remove this FIXME.
+There is no problem for existing labeled filesystems.
 
-I need to send a v2 of hid-sony in any cases, so I guess you should not
-pull these 4 patches right away. If you prefer having this in linux-next,
-the sooner, I can also send the v2 right away, and we will fix this
-cp2112 driver next week.
+Patch does not work with SMACK64 prefix, but with exact name.
 
-Cheers,
-Benjamin
+Only xattrs listed in the configuration options are included
+By default "security.selinux, security.SMACK64, security.ima,
+security.capability"
+which correspond to EVM current functionality...
 
-> 
-> Thanks,
-> 
-> -- 
-> Jiri Kosina
-> SUSE Labs
+Existing systems using new kernel may stick to original EVM xattr set.
+
+But new systems might prefer to add "more" xattrs..
+
+This patch makes it flexible...
+
+- Dmitry
+
+
+> Mimi
+>
+>> >
+>> >> +#ifndef CONFIG_IMA_APPRAISE
+>> >> +          if (!strcmp(p, XATTR_NAME_IMA))
+>> >> +                  continue;
+>> >> +#endif
+>> >> +          entry = kmalloc(sizeof(*entry), GFP_KERNEL);
+>> >> +          if (!entry)
+>> >> +                  return -ENOMEM;
+>> >> +          INIT_LIST_HEAD(&entry->list);
+>> >> +          entry->xattr = kstrdup(p, GFP_KERNEL);
+>> >> +          if (!entry->xattr)
+>> >> +                  return -ENOMEM;
+>> >> +          list_add_tail(&entry->list, &evm_hmac_xattrs);
+>> >> +  }
+>> >> +  list_for_each_entry(entry, &evm_hmac_xattrs, list)
+>> >> +          pr_info("%s\n", entry->xattr);
+>> >>    return 0;
+>> >>  }
+>> >>
+>> >>  static int evm_find_protected_xattrs(struct dentry *dentry)
+>> >>  {
+>> >>    struct inode *inode = dentry->d_inode;
+>> >> -  char **xattr;
+>> >> +  struct evm_hmac_xattr *entry;
+>> >>    int error;
+>> >>    int count = 0;
+>> >>
+>> >>    if (!inode->i_op || !inode->i_op->getxattr)
+>> >>            return -EOPNOTSUPP;
+>> >>
+>> >> -  for (xattr = evm_config_xattrnames; *xattr != NULL; xattr++) {
+>> >> -          error = inode->i_op->getxattr(dentry, *xattr, NULL, 0);
+>> >> +  list_for_each_entry(entry, &evm_hmac_xattrs, list) {
+>> >> +          error = inode->i_op->getxattr(dentry, entry->xattr, NULL, 0);
+>> >>            if (error < 0) {
+>> >>                    if (error == -ENODATA)
+>> >>                            continue;
+>> >> @@ -183,19 +197,19 @@ out:
+>> >>
+>> >>  static int evm_protected_xattr(const char *req_xattr_name)
+>> >>  {
+>> >> -  char **xattrname;
+>> >> +  struct evm_hmac_xattr *entry;
+>> >>    int namelen;
+>> >>    int found = 0;
+>> >>
+>> >>    namelen = strlen(req_xattr_name);
+>> >> -  for (xattrname = evm_config_xattrnames; *xattrname != NULL; xattrname++) {
+>> >> -          if ((strlen(*xattrname) == namelen)
+>> >> -              && (strncmp(req_xattr_name, *xattrname, namelen) == 0)) {
+>> >> +  list_for_each_entry(entry, &evm_hmac_xattrs, list) {
+>> >> +          if ((strlen(entry->xattr) == namelen)
+>> >> +              && (strncmp(req_xattr_name, entry->xattr, namelen) == 0)) {
+>> >>                    found = 1;
+>> >>                    break;
+>> >>            }
+>> >>            if (strncmp(req_xattr_name,
+>> >> -                      *xattrname + XATTR_SECURITY_PREFIX_LEN,
+>> >> +                      entry->xattr + XATTR_SECURITY_PREFIX_LEN,
+>> >>                        strlen(req_xattr_name)) == 0) {
+>> >>                    found = 1;
+>> >>                    break;
+>> >> @@ -462,19 +476,6 @@ err:
+>> >>    return error;
+>> >>  }
+>> >>
+>> >> -/*
+>> >> - * evm_display_config - list the EVM protected security extended attributes
+>> >> - */
+>> >> -static int __init evm_display_config(void)
+>> >> -{
+>> >> -  char **xattrname;
+>> >> -
+>> >> -  for (xattrname = evm_config_xattrnames; *xattrname != NULL; xattrname++)
+>> >> -          pr_info("%s\n", *xattrname);
+>> >> -  return 0;
+>> >> -}
+>> >> -
+>> >> -pure_initcall(evm_display_config);
+>> >>  late_initcall(init_evm);
+>> >>
+>> >>  MODULE_DESCRIPTION("Extended Verification Module");
+>> >
+>> > --
+>> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> > the body of a message to majordomo@vger.kernel.org
+>> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> > Please read the FAQ at  http://www.tux.org/lkml/
+>> >
+>>
+>
+>
+
+
+
+-- 
+Thanks,
+Dmitry
