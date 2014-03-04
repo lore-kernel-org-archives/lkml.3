@@ -1,91 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756867AbaCDWsv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 17:48:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49491 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756670AbaCDWsu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 17:48:50 -0500
-Date: Tue, 4 Mar 2014 23:48:43 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Or Gerlitz <ogerlitz@mellanox.com>
-cc: Or Gerlitz <or.gerlitz@gmail.com>, Roland Dreier <roland@kernel.org>,
-        Amir Vadai <amirv@mellanox.com>, Eli Cohen <eli@dev.mellanox.co.il>,
-        Eugenia Emantayev <eugenia@mellanox.com>,
-        "David S. Miller" <davem@davemloft.net>, Mel Gorman <mgorman@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mlx4: Use GFP_NOFS calls during the ipoib TX path when
- creating the QP
-In-Reply-To: <alpine.LNX.2.00.1402271123410.21399@pobox.suse.cz>
-Message-ID: <alpine.LNX.2.00.1403042348050.30402@pobox.suse.cz>
-References: <CAJZOPZKLcFC5Wqv7VS7AyovaeHw3PYSWEz9t9sZ4AMhG+dS1+A@mail.gmail.com> <alpine.LNX.2.00.1402271042240.21399@pobox.suse.cz> <530F0C4F.9030200@mellanox.com> <alpine.LNX.2.00.1402271123410.21399@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756270AbaCDWuk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 17:50:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43270 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751625AbaCDWui (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 17:50:38 -0500
+Date: Tue, 4 Mar 2014 14:50:37 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: ebiederm@xmission.com (Eric W. Biederman)
+Cc: David Miller <davem@davemloft.net>, rgb@redhat.com, eparis@redhat.com,
+        linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [RFC][PATCH] audit: Simplify by assuming the callers socket
+ buffer is large enough
+Message-Id: <20140304145037.d46ee775d293dd1ad60aa8e3@linux-foundation.org>
+In-Reply-To: <87mwh5d1tf.fsf@xmission.com>
+References: <874n3ir0uw.fsf_-_@xmission.com>
+	<87mwhaplo4.fsf_-_@xmission.com>
+	<20140304133004.b565820f60f595a48e621e58@linux-foundation.org>
+	<20140304.165122.445822929490466603.davem@davemloft.net>
+	<87mwh5d1tf.fsf@xmission.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Feb 2014, Jiri Kosina wrote:
+On Tue, 04 Mar 2014 14:41:16 -0800 ebiederm@xmission.com (Eric W. Biederman) wrote:
 
-> On Thu, 27 Feb 2014, Or Gerlitz wrote:
+> David Miller <davem@davemloft.net> writes:
 > 
-> > ipoib is coded over the verbs API (include/rdma/ib_verbs.h)  --- so tracking
-> > the path from ipoib through the verbs api into mlx4 should be similar exercise
-> > as doing so for mlx5, but let's 1st treat the higher level elements involved
-> > with this patch.
-> > 
-> > Can you shed some light why the problem happens only for NFS, and not for
-> > example with other IP/TCP storage protocols?
+> > From: Andrew Morton <akpm@linux-foundation.org>
+> > Date: Tue, 4 Mar 2014 13:30:04 -0800
 > >
-> > For example, do you expect it to happen with iSCSI/TCP too? the Linux 
-> > iSCSI initiator 1st open a TCP socket from user space to the target, 
-> > next they do login exchange over this socket and later provide the 
-> > socket to the kernel iscsi code to use as the back-end of a SCSI block 
-> > device registered with the SCSI midlayer
+> >> On Fri, 28 Feb 2014 20:50:19 -0800 ebiederm@xmission.com (Eric W. Biederman) wrote:
+> >> 
+> >>> 
+> >>> Modify audit_send_reply to directly use a non-blocking send and
+> >>> to return an error on failure (if anyone cares).
+> >>> 
+> >>> Modify audit_list_rules_send to use audit_send_reply and give up
+> >>> if we can not send a packet.
+> >>> 
+> >>> Merge audit_list_rules into iaudit_list_rules_send as the code
+> >>> is now sufficiently simple to not justify to callers.
+> >>> 
+> >>> Kill audit_send_list, audit_send_reply_thread because using
+> >>> a separate thread for replies is not needed when sending
+> >>> packets syncrhonously.
+> >> 
+> >> Nothing much seems to be happening here?
 > 
-> Frankly, no idea. There was a problem with swapping over NFS, as writeback 
-> was deadlocked with memory reclaim (memory needs to be allocated so that 
-> swap could be accessed to reclaim memory). That's fixed by allocating the 
-> buffers from PF_MEMALLOC reserve, introduced by Mel's and Peter's patchset 
-> back in 3.9 or so. Oh, and the same has been done for swapping over NBD, 
-> btw. Maybe iSCSI needs similar treatment, maybe it has it already, I 
-> haven't checked. We haven't seen a bugreport for that though.
-> 
-> > > I don't think we have, and it indeed should be rather easy to add. The 
-> > > more challenging part of the problem is where (and based on which 
-> > > data) the flag would actually be set up on the netdevice so that it's 
-> > > not horrible layering violation.
-> > 
-> > I assume that in the same manner netdevices advertize features to the 
-> > networking core, the core can provide them operating directives after 
-> > they register themselves.
-> 
-> Whatever suits you best. To sum it up:
-> 
-> - mlx4 is confirmed to have this problem, and we know how that problem 
->   happens -- see the paragraph in the changelog explaining the dependency 
->   between memory reclaim and allocation of TX ring
-> 
-> - we have a work around which requires human interaction in order 
->   to provide the information whether GFP_NOFS should be used or not
-> 
-> - I can very well understand why Mellanox would see that as a hack, but if 
->   more comprehensive fix is necessary, I'd expect those who understand 
->   the code the best to come up with a solution/proposal. I'd assume that 
->   you don't  want to keep the code with known and easily triggerable 
->   deadlock out there unfixed.
-> 
-> - where I see the potential for layering violation in any 'general' 
->   solution is that it's the filesystem that has to be "talking" to the 
->   underlying netdevice, i.e. you'll have to make filesystem 
->   netdevice-aware, right?
+> Well you picked up the patch that fixes the worst of the bugs that I was
+> complaining about.  Beyond that I don't know what makes sense.
 
-Mellanox folks, do you have any plan how to proceed here please?
+Oh, so I did.  I wasn't planning on merging it myself, hoping that
+someone who hasaclue will step in.  Help.
 
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
