@@ -1,90 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755349AbaCDXt4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 18:49:56 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:36948 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753299AbaCDXty (ORCPT
+	id S1755850AbaCDXvA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 18:51:00 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:59563 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754105AbaCDXu6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 18:49:54 -0500
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-To: linux-rt-users@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        kernel@pengutronix.de, Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH] net: sched: dev_deactivate_many(): use msleep(1) instead of yield() to wait for outstanding qdisc_run calls
-Date: Wed,  5 Mar 2014 00:49:47 +0100
-Message-Id: <1393976987-23555-1-git-send-email-mkl@pengutronix.de>
-X-Mailer: git-send-email 1.9.0
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 4 Mar 2014 18:50:58 -0500
+Date: Tue, 4 Mar 2014 23:50:44 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Graeme Gregory <graeme@xora.org.uk>
+Cc: "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "lenb@kernel.org" <lenb@kernel.org>
+Subject: Re: [PATCH] MAINTAINERS: add maintainers for arm64 acpi
+Message-ID: <20140304235044.GB11418@arm.com>
+References: <1393899345-7397-1-git-send-email-graeme.gregory@linaro.org>
+ <1393899345-7397-2-git-send-email-graeme.gregory@linaro.org>
+ <20140304102316.GG30596@arm.com>
+ <20140304190318.GE28736@xora-yoga13>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140304190318.GE28736@xora-yoga13>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On PREEMPT_RT enabled systems the interrupt handler run as threads at prio 50
-(by default). If a high priority userspace process tries to shut down a busy
-network interface it might spin in a yield loop waiting for the device to
-become idle. With the interrupt thread having a lower priority than the
-looping process it might never be scheduled and so result in a deadlock on UP
-systems.
+On Tue, Mar 04, 2014 at 07:03:18PM +0000, Graeme Gregory wrote:
+> On Tue, Mar 04, 2014 at 10:23:16AM +0000, Catalin Marinas wrote:
+> > On Tue, Mar 04, 2014 at 02:15:45AM +0000, Graeme Gregory wrote:
+> > > +ACPI ARM64
+> > 
+> > That's a pretty broad statement for a single file. Is it core support,
+> > architected peripherals, SoC?
+> > 
+> Hi Catalin would changing the title to ACPI ARM64 Core Support be better
+> in your mind. I do intend for the maintainership to cover just the
+> plat/arm-core.c file.
 
-With Magic SysRq the following backtrace can be produced:
+See my reply to Grant. If that's the only thing you guys are aiming for,
+who's in charge of the other bits? Face-to-face meeting in 3 hours
+anyway, so we can get back here with the conclusion.
 
-> test_app R running      0   174    168 0x00000000
-> [<c02c7070>] (__schedule+0x220/0x3fc) from [<c02c7870>] (preempt_schedule_irq+0x48/0x80)
-> [<c02c7870>] (preempt_schedule_irq+0x48/0x80) from [<c0008fa8>] (svc_preempt+0x8/0x20)
-> [<c0008fa8>] (svc_preempt+0x8/0x20) from [<c001a984>] (local_bh_enable+0x18/0x88)
-> [<c001a984>] (local_bh_enable+0x18/0x88) from [<c025316c>] (dev_deactivate_many+0x220/0x264)
-> [<c025316c>] (dev_deactivate_many+0x220/0x264) from [<c023be04>] (__dev_close_many+0x64/0xd4)
-> [<c023be04>] (__dev_close_many+0x64/0xd4) from [<c023be9c>] (__dev_close+0x28/0x3c)
-> [<c023be9c>] (__dev_close+0x28/0x3c) from [<c023f7f0>] (__dev_change_flags+0x88/0x130)
-> [<c023f7f0>] (__dev_change_flags+0x88/0x130) from [<c023f904>] (dev_change_flags+0x10/0x48)
-> [<c023f904>] (dev_change_flags+0x10/0x48) from [<c024c140>] (do_setlink+0x370/0x7ec)
-> [<c024c140>] (do_setlink+0x370/0x7ec) from [<c024d2f0>] (rtnl_newlink+0x2b4/0x450)
-> [<c024d2f0>] (rtnl_newlink+0x2b4/0x450) from [<c024cfa0>] (rtnetlink_rcv_msg+0x158/0x1f4)
-> [<c024cfa0>] (rtnetlink_rcv_msg+0x158/0x1f4) from [<c0256740>] (netlink_rcv_skb+0xac/0xc0)
-> [<c0256740>] (netlink_rcv_skb+0xac/0xc0) from [<c024bbd8>] (rtnetlink_rcv+0x18/0x24)
-> [<c024bbd8>] (rtnetlink_rcv+0x18/0x24) from [<c02561b8>] (netlink_unicast+0x13c/0x198)
-> [<c02561b8>] (netlink_unicast+0x13c/0x198) from [<c025651c>] (netlink_sendmsg+0x264/0x2e0)
-> [<c025651c>] (netlink_sendmsg+0x264/0x2e0) from [<c022af98>] (sock_sendmsg+0x78/0x98)
-> [<c022af98>] (sock_sendmsg+0x78/0x98) from [<c022bb50>] (___sys_sendmsg.part.25+0x268/0x278)
-> [<c022bb50>] (___sys_sendmsg.part.25+0x268/0x278) from [<c022cf08>] (__sys_sendmsg+0x48/0x78)
-> [<c022cf08>] (__sys_sendmsg+0x48/0x78) from [<c0009320>] (ret_fast_syscall+0x0/0x2c)
-
-This patch works around the problem by replacing yield() by msleep(1), giving
-the interrupt thread time to finish, similar to other changes contained in the
-rt patch set. Using wait_for_completion() instead would probably be a better
-solution.
-
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
----
-Hello,
-
-this patch is intended for -rt, as the problem probably doesn't occur on non rt
-systems. However, I put netdev on Cc, as they probably can come up with a
-proper solution.
-
-regards,
-Marc
-
- net/sched/sch_generic.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/net/sched/sch_generic.c b/net/sched/sch_generic.c
-index a7f838b..d5b00ad 100644
---- a/net/sched/sch_generic.c
-+++ b/net/sched/sch_generic.c
-@@ -839,7 +839,7 @@ void dev_deactivate_many(struct list_head *head)
- 	/* Wait for outstanding qdisc_run calls. */
- 	list_for_each_entry(dev, head, unreg_list)
- 		while (some_qdisc_is_busy(dev))
--			yield();
-+			msleep(1)
- }
- 
- void dev_deactivate(struct net_device *dev)
 -- 
-1.9.0
-
+Catalin
