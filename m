@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756604AbaCDHQL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 02:16:11 -0500
-Received: from mail-bl2lp0203.outbound.protection.outlook.com ([207.46.163.203]:50920
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756574AbaCDHQI convert rfc822-to-8bit (ORCPT
+	id S1756302AbaCDHTj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 02:19:39 -0500
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:37505 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752195AbaCDHTi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 02:16:08 -0500
-X-Greylist: delayed 939 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Mar 2014 02:16:08 EST
-From: Yibin Gong <yibin.gong@freescale.com>
-To: Mark Brown <broonie@kernel.org>
-CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v2] regulator: pfuze100: add pfuze200 support
-Thread-Topic: [PATCH v2] regulator: pfuze100: add pfuze200 support
-Thread-Index: AQHPN3WQRWmYe9faREydUZiu7y1B45rQfTvw
-Date: Tue, 4 Mar 2014 07:00:26 +0000
-Message-ID: <346e4e7976cf41f79c32484d93aaf06c@BLUPR03MB036.namprd03.prod.outlook.com>
-References: <1393911933-25149-1-git-send-email-b38343@freescale.com>
- <20140304064642.GA13126@sirena.org.uk>
-In-Reply-To: <20140304064642.GA13126@sirena.org.uk>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 01401330D1
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(189002)(199002)(377454003)(13464003)(24454002)(76482001)(81816001)(46102001)(51856001)(54356001)(77096001)(53806001)(76576001)(56776001)(76786001)(93516002)(81686001)(54316002)(74876001)(69226001)(80022001)(92566001)(66066001)(83072002)(93136001)(65816001)(63696002)(85852003)(74502001)(81542001)(83322001)(81342001)(76796001)(19580395003)(47446002)(74706001)(74316001)(87266001)(77982001)(74366001)(59766001)(79102001)(87936001)(74662001)(56816005)(47976001)(95666003)(19580405001)(50986001)(95416001)(2656002)(94316002)(80976001)(47736001)(90146001)(86362001)(49866001)(31966008)(94946001)(4396001)(85306002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR03MB408;H:BLUPR03MB036.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:E8DC6492.2E039C2E.41E3334F.14E66A8D.201B9;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 4 Mar 2014 02:19:38 -0500
+Date: Tue, 4 Mar 2014 08:19:34 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [RFC 00/10] perf report: Add -F option for specifying output
+ fields
+Message-ID: <20140304071934.GA23148@gmail.com>
+References: <1393900936-22977-1-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393900936-22977-1-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
-	Thanks for your reminding, PFUZE200 is currently validated on the same board(i.MX6Q Sabresd) which mounted with PFUZE100 before. So the patch only adding driver level support to let others can easily add PFUZE200 support once they have the PFUZE200 board. 
 
------Original Message-----
-From: Mark Brown [mailto:broonie@kernel.org] 
-Sent: Tuesday, March 04, 2014 2:47 PM
-To: Gong Yibin-B38343
-Cc: lgirdwood@gmail.com; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] regulator: pfuze100: add pfuze200 support
+* Namhyung Kim <namhyung@kernel.org> wrote:
 
-On Tue, Mar 04, 2014 at 01:45:33PM +0800, Robin Gong wrote:
-> support pfuze200 chip which remove SW1C and SW4 based on pfuze100.
+> Hello,
+> 
+> This is a patchset implementing -F/--field option to setup output
+> field/column as Ingo requested.
+> 
+> The -F option can receive any sort keys that -s option recognize, plus
+> following fields (name can be changed):
+> 
+>   overhead, overhead_sys, overhead_us, sample, period
+> 
+> The overhead_guest_sys and overhead_guest_us might be avaiable when
+> you profile guest machines.
+> 
+> Output will be sorted by in order of fields and sort keys passed by 
+> -s option will be added to the output field list automatically.  If 
+> you want to change the order of sorting you can give -s option in 
+> addition to -F option.  To support old behavior, it'll also prepend 
+> 'overhead' field to the sort keys unless you give -F option 
+> explicitly.
 
-Applied, thanks - however I just noticed that you forgot to add the compatible string for the new part to the DT binding, please send a followup doing that.
+Very nice!
+
+For the concept:
+
+  Acked-by: Ingo Molnar <mingo@kernel.org>
+
+Thanks,
+
+	Ingo
