@@ -1,75 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755287AbaCDSpR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 13:45:17 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:44728 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753959AbaCDSpQ (ORCPT
+	id S1755095AbaCDSsH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 13:48:07 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:16164 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753797AbaCDSsE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 13:45:16 -0500
-Date: Tue, 4 Mar 2014 13:33:48 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        "pali.rohar@gmail.com" <pali.rohar@gmail.com>,
-        "pavel@ucw.cz" <pavel@ucw.cz>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] wl1251: use skb_trim to make skb shorter
-Message-ID: <20140304183348.GB7317@tuxdriver.com>
-References: <20140225105756.GB22279@mudshark.cambridge.arm.com>
- <1393678326-23535-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
- <20140304142658.GK8766@mudshark.cambridge.arm.com>
+	Tue, 4 Mar 2014 13:48:04 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19FR0v6srJmhcOAtPI8JjgW
+Date: Tue, 4 Mar 2014 10:47:51 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: lee.jones@linaro.org, bcousson@baylibre.com, balbi@ti.com,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH v9 0/9] USB Host support for OMAP5 uEVM
+Message-ID: <20140304184750.GB8771@atomide.com>
+References: <1393510711-4697-1-git-send-email-rogerq@ti.com>
+ <20140228225627.GU13624@atomide.com>
+ <53144CBC.2050607@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140304142658.GK8766@mudshark.cambridge.arm.com>
+In-Reply-To: <53144CBC.2050607@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OK, I'll queue it as a fix...
+* Roger Quadros <rogerq@ti.com> [140303 01:38]:
+> Hi Tony,
+> 
+> On 03/01/2014 12:56 AM, Tony Lindgren wrote:
+> > * Roger Quadros <rogerq@ti.com> [140227 06:21]:
+> >> Hi,
+> >>
+> >> This patchset brings up USB Host ports and Ethernet port on
+> >> the OMAP5 uEVM board.
+> >>
+> >> It also does some cleanup with respect to DT clock binding
+> >> for the mfd/omap-usb-host driver.
+> >>
+> >> Please queue these for -next.
+> >>
+> >> Lee,
+> >>
+> >> I've folded some platform data dependent patches with mfd patches
+> >> so that they don't break functionality when applied individually.
+> >> You can safely pull in all MFD patches (1 to 6).
+> >>
+> >> Tony & Benoit,
+> >>
+> >> Can you please accept patches 7, 8 and 9?
+> > 
+> > Are 7, 8 and 9 safe to queue separately from the MFD changes
+> > or do they need to wait for the MFD changes to get merged
+> > first?
+> > 
+> 
+> They are safe to queue separately.
 
-On Tue, Mar 04, 2014 at 02:26:58PM +0000, Will Deacon wrote:
-> Hi Jonn,
-> 
-> On Sat, Mar 01, 2014 at 12:52:06PM +0000, Ivaylo Dimitrov wrote:
-> > the current code is directly setting skb->len, which is not correct and
-> > brings problems with HAVE_EFFICIENT_UNALIGNED_ACCESS enabled in config
-> > 
-> > Signed-off-by: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
-> > ---
-> 
-> Can you pick this patch up please? It addresses a regression introduced in
-> the merge window (ARM started selecting HAVE_EFFICIENT_UNALIGNED_ACCESS).
-> 
-> Cheers,
-> 
-> Will
-> 
-> >  drivers/net/wireless/ti/wl1251/rx.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/net/wireless/ti/wl1251/rx.c b/drivers/net/wireless/ti/wl1251/rx.c
-> > index 123c4bb..cde0eaf 100644
-> > --- a/drivers/net/wireless/ti/wl1251/rx.c
-> > +++ b/drivers/net/wireless/ti/wl1251/rx.c
-> > @@ -180,7 +180,7 @@ static void wl1251_rx_body(struct wl1251 *wl,
-> >  	wl1251_mem_read(wl, rx_packet_ring_addr, rx_buffer, length);
-> >  
-> >  	/* The actual length doesn't include the target's alignment */
-> > -	skb->len = desc->length  - PLCP_HEADER_LENGTH;
-> > +	skb_trim(skb, desc->length - PLCP_HEADER_LENGTH);
-> >  
-> >  	fc = (u16 *)skb->data;
-> >  
-> > -- 
-> > 1.7.9.5
-> > 
-> > 
-> 
+OK thanks applying 7, 8 and 9 into omap-for-v3.15/dt.
 
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+Regards,
+
+Tony
