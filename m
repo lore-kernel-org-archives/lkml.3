@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932720AbaCDUkd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:40:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41459 "EHLO
+	id S1757175AbaCDUlA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:41:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41446 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757004AbaCDUEo (ORCPT
+	with ESMTP id S1756990AbaCDUEn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:04:44 -0500
+	Tue, 4 Mar 2014 15:04:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vinayak Kale <vkale@apm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.10 10/97] ARM: 7957/1: add DSB after icache flush in __flush_icache_all()
-Date: Tue,  4 Mar 2014 12:03:23 -0800
-Message-Id: <20140304200346.444999934@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Vinod Koul <vinod.koul@intel.com>
+Subject: [PATCH 3.13 161/172] dma: ste_dma40: dont dereference free:d descriptor
+Date: Tue,  4 Mar 2014 12:04:05 -0800
+Message-Id: <20140304200304.863169939@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
-References: <20140304200345.895517495@linuxfoundation.org>
+In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
+References: <20140304200259.626667112@linuxfoundation.org>
 User-Agent: quilt/0.61-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,34 +26,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Vinayak Kale <vkale@apm.com>
+From: Linus Walleij <linus.walleij@linaro.org>
 
-commit 39544ac9df20f73e49fc6b9ac19ff533388c82c0 upstream.
+commit e9baa9d9d520fb0e24cca671e430689de2d4a4b2 upstream.
 
-Add DSB after icache flush to complete the cache maintenance operation.
+It appears that in the DMA40 driver the DMA tasklet will very
+often dereference memory for a descriptor just free:d from the
+DMA40 slab. Nothing happens because no other part of the driver
+has yet had a chance to claim this memory, but it's really
+nasty to dereference free:d memory, so let's check the flag
+before the descriptor is free and store it in a bool variable.
 
-Signed-off-by: Vinayak Kale <vkale@apm.com>
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/cacheflush.h |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/dma/ste_dma40.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/arch/arm/include/asm/cacheflush.h
-+++ b/arch/arm/include/asm/cacheflush.h
-@@ -212,6 +212,7 @@ extern void copy_to_user_page(struct vm_
- static inline void __flush_icache_all(void)
- {
- 	__flush_icache_preferred();
-+	dsb();
- }
+--- a/drivers/dma/ste_dma40.c
++++ b/drivers/dma/ste_dma40.c
+@@ -1641,6 +1641,7 @@ static void dma_tasklet(unsigned long da
+ 	struct d40_chan *d40c = (struct d40_chan *) data;
+ 	struct d40_desc *d40d;
+ 	unsigned long flags;
++	bool callback_active;
+ 	dma_async_tx_callback callback;
+ 	void *callback_param;
  
- /*
+@@ -1668,6 +1669,7 @@ static void dma_tasklet(unsigned long da
+ 	}
+ 
+ 	/* Callback to client */
++	callback_active = !!(d40d->txd.flags & DMA_PREP_INTERRUPT);
+ 	callback = d40d->txd.callback;
+ 	callback_param = d40d->txd.callback_param;
+ 
+@@ -1690,7 +1692,7 @@ static void dma_tasklet(unsigned long da
+ 
+ 	spin_unlock_irqrestore(&d40c->lock, flags);
+ 
+-	if (callback && (d40d->txd.flags & DMA_PREP_INTERRUPT))
++	if (callback_active && callback)
+ 		callback(callback_param);
+ 
+ 	return;
 
 
