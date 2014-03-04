@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756431AbaCDUDm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:03:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41013 "EHLO
+	id S1757679AbaCDVMX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:12:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41084 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756236AbaCDUD3 (ORCPT
+	with ESMTP id S1756408AbaCDUDm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:03:29 -0500
+	Tue, 4 Mar 2014 15:03:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>, Andreas Dilger <adilger@dilger.ca>,
-        Jan Kara <jack@suse.cz>, Dave Chinner <dchinner@redhat.com>,
-        Chris Mason <clm@fb.com>, Ben Myers <bpm@sgi.com>
-Subject: [PATCH 3.13 082/172] fs: fix iversion handling
-Date: Tue,  4 Mar 2014 12:02:46 -0800
-Message-Id: <20140304200302.357628872@linuxfoundation.org>
+        Adam Thomson <Adam.Thomson.Opensource@diasemi.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.13 086/172] ASoC: da9055: Fix device registration of PMIC and CODEC devices
+Date: Tue,  4 Mar 2014 12:02:50 -0800
+Message-Id: <20140304200302.480530845@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -30,80 +29,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Hellwig <hch@infradead.org>
+From: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
 
-commit dff6efc326a4d5f305797d4a6bba14f374fdd633 upstream.
+commit 07b0e5b10258b48e5edfb6c8ac156f05510eb775 upstream.
 
-Currently notify_change directly updates i_version for size updates,
-which not only is counter to how all other fields are updated through
-struct iattr, but also breaks XFS, which need inode updates to happen
-under its own lock, and synchronized to the structure that gets written
-to the log.
+Currently the I2C device Ids conflict for the MFD and CODEC so
+cannot be both instantiated on one platform. This patch updates
+the Ids and names to make them unique from each other.
 
-Remove the update in the common code, and it to btrfs and ext4,
-XFS already does a proper updaste internally and currently gets a
-double update with the existing code.
+It should be noted that the I2C addresses for both PMIC and CODEC
+are modifiable so instantiation of the two are kept as separate
+devices, rather than instantiating the CODEC from the MFD code.
 
-IMHO this is 3.13 and -stable material and should go in through the XFS
-tree.
-
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Reviewed-by: Andreas Dilger <adilger@dilger.ca>
-Acked-by: Jan Kara <jack@suse.cz>
-Reviewed-by: Dave Chinner <dchinner@redhat.com>
-Signed-off-by: Chris Mason <clm@fb.com>
-Signed-off-by: Ben Myers <bpm@sgi.com>
+Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+Acked-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/attr.c        |    5 -----
- fs/btrfs/inode.c |    8 ++++++--
- fs/ext4/inode.c  |    4 ++++
- 3 files changed, 10 insertions(+), 7 deletions(-)
+ drivers/mfd/da9055-i2c.c  |   12 ++++++++++--
+ sound/soc/codecs/da9055.c |   11 +++++++++--
+ 2 files changed, 19 insertions(+), 4 deletions(-)
 
---- a/fs/attr.c
-+++ b/fs/attr.c
-@@ -202,11 +202,6 @@ int notify_change(struct dentry * dentry
- 			return -EPERM;
- 	}
+--- a/drivers/mfd/da9055-i2c.c
++++ b/drivers/mfd/da9055-i2c.c
+@@ -53,17 +53,25 @@ static int da9055_i2c_remove(struct i2c_
+ 	return 0;
+ }
  
--	if ((ia_valid & ATTR_SIZE) && IS_I_VERSION(inode)) {
--		if (attr->ia_size != inode->i_size)
--			inode_inc_iversion(inode);
--	}
--
- 	if ((ia_valid & ATTR_MODE)) {
- 		umode_t amode = attr->ia_mode;
- 		/* Flag setting protected by i_mutex */
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -4354,8 +4354,12 @@ static int btrfs_setsize(struct inode *i
- 	 * these flags set.  For all other operations the VFS set these flags
- 	 * explicitly if it wants a timestamp update.
- 	 */
--	if (newsize != oldsize && (!(mask & (ATTR_CTIME | ATTR_MTIME))))
--		inode->i_ctime = inode->i_mtime = current_fs_time(inode->i_sb);
-+	if (newsize != oldsize) {
-+		inode_inc_iversion(inode);
-+		if (!(mask & (ATTR_CTIME | ATTR_MTIME)))
-+			inode->i_ctime = inode->i_mtime =
-+				current_fs_time(inode->i_sb);
-+	}
++/*
++ * DO NOT change the device Ids. The naming is intentionally specific as both
++ * the PMIC and CODEC parts of this chip are instantiated separately as I2C
++ * devices (both have configurable I2C addresses, and are to all intents and
++ * purposes separate). As a result there are specific DA9055 ids for PMIC
++ * and CODEC, which must be different to operate together.
++ */
+ static struct i2c_device_id da9055_i2c_id[] = {
+-	{"da9055", 0},
++	{"da9055-pmic", 0},
+ 	{ }
+ };
++MODULE_DEVICE_TABLE(i2c, da9055_i2c_id);
  
- 	if (newsize > oldsize) {
- 		truncate_pagecache(inode, newsize);
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -4586,6 +4586,10 @@ int ext4_setattr(struct dentry *dentry,
- 			if (attr->ia_size > sbi->s_bitmap_maxbytes)
- 				return -EFBIG;
- 		}
-+
-+		if (IS_I_VERSION(inode) && attr->ia_size != inode->i_size)
-+			inode_inc_iversion(inode);
-+
- 		if (S_ISREG(inode->i_mode) &&
- 		    (attr->ia_size < inode->i_size)) {
- 			if (ext4_should_order_data(inode)) {
+ static struct i2c_driver da9055_i2c_driver = {
+ 	.probe = da9055_i2c_probe,
+ 	.remove = da9055_i2c_remove,
+ 	.id_table = da9055_i2c_id,
+ 	.driver = {
+-		.name = "da9055",
++		.name = "da9055-pmic",
+ 		.owner = THIS_MODULE,
+ 	},
+ };
+--- a/sound/soc/codecs/da9055.c
++++ b/sound/soc/codecs/da9055.c
+@@ -1523,8 +1523,15 @@ static int da9055_remove(struct i2c_clie
+ 	return 0;
+ }
+ 
++/*
++ * DO NOT change the device Ids. The naming is intentionally specific as both
++ * the CODEC and PMIC parts of this chip are instantiated separately as I2C
++ * devices (both have configurable I2C addresses, and are to all intents and
++ * purposes separate). As a result there are specific DA9055 Ids for CODEC
++ * and PMIC, which must be different to operate together.
++ */
+ static const struct i2c_device_id da9055_i2c_id[] = {
+-	{ "da9055", 0 },
++	{ "da9055-codec", 0 },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(i2c, da9055_i2c_id);
+@@ -1532,7 +1539,7 @@ MODULE_DEVICE_TABLE(i2c, da9055_i2c_id);
+ /* I2C codec control layer */
+ static struct i2c_driver da9055_i2c_driver = {
+ 	.driver = {
+-		.name = "da9055",
++		.name = "da9055-codec",
+ 		.owner = THIS_MODULE,
+ 	},
+ 	.probe		= da9055_i2c_probe,
 
 
