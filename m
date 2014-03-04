@@ -1,74 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756170AbaCDDWK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 22:22:10 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55015 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756049AbaCDDWI (ORCPT
+	id S1756202AbaCDDY7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 22:24:59 -0500
+Received: from smtprelay0206.hostedemail.com ([216.40.44.206]:54620 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756049AbaCDDY6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 22:22:08 -0500
-Date: Tue, 4 Mar 2014 11:02:30 +0800
-From: Mark Brown <broonie@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>
-Message-ID: <20140304030230.GV2411@sirena.org.uk>
-References: <1393862031-4896-1-git-send-email-k.kozlowski@samsung.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="69FgzCUgmxT1EUzs"
-Content-Disposition: inline
-In-Reply-To: <1393862031-4896-1-git-send-email-k.kozlowski@samsung.com>
-X-Cookie: You too can wear a nose mitten.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 202.175.88.218
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: s2mps11: Fix section mismatch
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Mon, 3 Mar 2014 22:24:58 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3867:4321:4605:5007:7652:7807:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12517:12519:12740:13101:21060,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: ducks53_482d411b4165c
+X-Filterd-Recvd-Size: 3044
+Message-ID: <1393903494.20435.13.camel@joe-AO722>
+Subject: Re: [PATCH 3/7] staging: cxt1e1: Fix line length over 80 characters
+ in linux.c
+From: Joe Perches <joe@perches.com>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: gregkh@linuxfoundation.org, sachin.kamat@linaro.org, shaun@xresource.ca,
+        dulshani.gunawardhana89@gmail.com, ying.xue@windriver.com,
+        davem@davemloft.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 03 Mar 2014 19:24:54 -0800
+In-Reply-To: <2825545.2YpN0JuVSn@daeseok-laptop.cloud.net>
+References: <2825545.2YpN0JuVSn@daeseok-laptop.cloud.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2014-03-04 at 11:08 +0900, Daeseok Youn wrote:
+> clean up checkpatch.pl warnings:
+>  WARNING: Line length over 80 characters
 
---69FgzCUgmxT1EUzs
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Please run your patches through checkpatch.
 
-On Mon, Mar 03, 2014 at 04:53:51PM +0100, Krzysztof Kozlowski wrote:
-> Remove __initconst from regulator_desc array because this array is used
-> during probe and s2mps11_pmic_probe() is not in __init section. However
-> still select the number of supported regulators according to device ID
-> so the driver will be ready for adding support for S2MPS14 device.
+> diff --git a/drivers/staging/cxt1e1/linux.c b/drivers/staging/cxt1e1/linux.c
 
-Applied, thanks.
+> @@ -431,13 +432,15 @@ create_chan(struct net_device *ndev, ci_t *ci,
+>  		priv = OS_kmalloc(sizeof(struct c4_priv));
+>  		if (!priv)
+>  		{
+> -			pr_warning("%s: no memory for net_device !\n", ci->devname);
+> +			pr_warning("%s: no memory for net_device !\n",
+> +				   ci->devname);
 
---69FgzCUgmxT1EUzs
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+pr_warn would be nice
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+> @@ -458,10 +461,12 @@ create_chan(struct net_device *ndev, ci_t *ci,
+>  		switch (hi->promfmt)
+>  		{
+>  		case PROM_FORMAT_TYPE1:
+> -			memcpy(dev->dev_addr, (FLD_TYPE1 *) (hi->mfg_info.pft1.Serial), 6);
+> +			memcpy(dev->dev_addr,
+> +			       (FLD_TYPE1 *) (hi->mfg_info.pft1.Serial), 6);
 
-iQIcBAEBAgAGBQJTFUI8AAoJELSic+t+oim91OAP/0ZCPh66vWuGtfDwFub/9bGZ
-gKISFicToH4nZSXCkJJ2VGKpK9S1jQfic8QNY727WoC95Jk2PNOiIE1ExIiVIVLF
-6844uLgDwc65Vj76wn0kL2x8OhnMZxxlr7RjGxyiJPTKceR1QsAz8GZjKvf+rkOA
-zcYSFGPBRZCLudOOoa4D0VQZ8m1J+dBSQNjXpI5MABcWvS2f55moGd7BVtlw1pQY
-uvKEG8ooFOaHzfxcltx0oKwWtxuGzaWo8oiRK6RmtzHpbY6F4QHCx0QdPrDSqg+9
-ZvS8SGe14DnVZJZNWXHBrfHd6jUduzb9um3xyhvrFAUcHnIhnTUUlh764c49sf4O
-uoX0pVPQf+hA7LWF07oTO5isDXYnYJLJv5ydvMrEAyyd3LZp8RHYEKILlbHcpWrv
-+Mb3kzlbRI8I+1kZy0Y00Doo+RCZaYArWlvEj9+lf4GVtFMWQhf6Yu6ptX3UIzN/
-kuFjj382BLxca3ucoZMKbZjCLKICF/OXJ9W+XSFEoiMZ5xQLyphax5Ol2AaiHHZN
-3AtOGS0dk64/qZAKILWi1WqhfRPsP3sDcql8D83NgN856gPTRRN6z85fxZuWUYH4
-YNwSZbkyXYPWR7jdnWQGc+JzjlKiv1oBaCU3bThE3iM7051T6Ktqv97kYpeY7khw
-YZuVJnhjSJwcVOcCXN3U
-=60lb
------END PGP SIGNATURE-----
+Likely better to remove the (FLD_TYPE1 *) altogether.
 
---69FgzCUgmxT1EUzs--
+>  			break;
+>  		case PROM_FORMAT_TYPE2:
+> -			memcpy(dev->dev_addr, (FLD_TYPE2 *) (hi->mfg_info.pft2.Serial), 6);
+> +			memcpy(dev->dev_addr,
+> +			       (FLD_TYPE2 *) (hi->mfg_info.pft2.Serial), 6);
+
+Likely better to remove the (FLD_TYPE2 *) too.
+Maybe consolidate the blocks too.
+
+
+> @@ -1053,13 +1065,15 @@ c4_add_dev(hdw_info_t *hi, int brdno, unsigned long f0, unsigned long f1,
+>  		switch (hi->promfmt)
+>  		{
+>  		case PROM_FORMAT_TYPE1:
+> -			memcpy(ndev->dev_addr, (FLD_TYPE1 *) (hi->mfg_info.pft1.Serial), 6);
+> +			memcpy(ndev->dev_addr,
+> +			       (FLD_TYPE1 *) (hi->mfg_info.pft1.Serial), 6);
+
+unnecessary casts?
+
+>  			/* unaligned data acquisition */
+>  			memcpy(&tmp, (FLD_TYPE1 *) (hi->mfg_info.pft1.Id), 4);
+
+here too.
+
+>  			ci->brd_id = cpu_to_be32(tmp);
+>  			break;
+>  		case PROM_FORMAT_TYPE2:
+> -			memcpy(ndev->dev_addr, (FLD_TYPE2 *) (hi->mfg_info.pft2.Serial), 6);
+> +			memcpy(ndev->dev_addr,
+> +			       (FLD_TYPE2 *) (hi->mfg_info.pft2.Serial), 6);
+>  			/* unaligned data acquisition */
+>  			memcpy(&tmp, (FLD_TYPE2 *) (hi->mfg_info.pft2.Id), 4);
+
+etc.
+
+
