@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758590AbaCDVB7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:01:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41210 "EHLO
+	id S1758618AbaCDVCy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:02:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41201 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756665AbaCDUEE (ORCPT
+	with ESMTP id S1756645AbaCDUD7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:04:04 -0500
+	Tue, 4 Mar 2014 15:03:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.13 117/172] ACPI / processor: Rework processor throttling with work_on_cpu()
-Date: Tue,  4 Mar 2014 12:03:21 -0800
-Message-Id: <20140304200303.458953270@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Peter Chen <Peter.Chen@freescale.com>
+Subject: [PATCH 3.13 123/172] USB: EHCI: add delay during suspend to prevent erroneous wakeups
+Date: Tue,  4 Mar 2014 12:03:27 -0800
+Message-Id: <20140304200303.663012546@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -29,173 +29,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit f3ca4164529b875374c410193bbbac0ee960895f upstream.
+commit 3e8d6d85adedc59115a564c0a54b36e42087c4d9 upstream.
 
-acpi_processor_set_throttling() uses set_cpus_allowed_ptr() to make
-sure that the (struct acpi_processor)->acpi_processor_set_throttling()
-callback will run on the right CPU.  However, the function may be
-called from a worker thread already bound to a different CPU in which
-case that won't work.
+High-speed USB connections revert back to full-speed signalling when
+the device goes into suspend.  This takes several milliseconds, and
+during that time it's not possible to tell reliably whether the device
+has been disconnected.
 
-Make acpi_processor_set_throttling() use work_on_cpu() as appropriate
-instead of abusing set_cpus_allowed_ptr().
+On some platforms, the Wake-On-Disconnect circuitry gets confused
+during this intermediate state.  It generates a false wakeup signal,
+which can prevent the controller from going to sleep.
 
-Reported-and-tested-by: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-[rjw: Changelog]
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+To avoid this problem, this patch adds a 5-ms delay to the
+ehci_bus_suspend() routine if any ports have to switch over to
+full-speed signalling.  (Actually, the delay was already present for
+devices using a particular kind of PHY power management; the patch
+merely causes the delay to be used more widely.)
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reviewed-by: Peter Chen <Peter.Chen@freescale.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/processor_throttling.c |   69 ++++++++++++++++--------------------
- 1 file changed, 32 insertions(+), 37 deletions(-)
+ drivers/usb/host/ehci-hub.c |   26 ++++++++++++++++++++++----
+ 1 file changed, 22 insertions(+), 4 deletions(-)
 
---- a/drivers/acpi/processor_throttling.c
-+++ b/drivers/acpi/processor_throttling.c
-@@ -59,6 +59,12 @@ struct throttling_tstate {
- 	int target_state;		/* target T-state */
- };
+--- a/drivers/usb/host/ehci-hub.c
++++ b/drivers/usb/host/ehci-hub.c
+@@ -238,6 +238,7 @@ static int ehci_bus_suspend (struct usb_
+ 	int			port;
+ 	int			mask;
+ 	int			changed;
++	bool			fs_idle_delay;
  
-+struct acpi_processor_throttling_arg {
-+	struct acpi_processor *pr;
-+	int target_state;
-+	bool force;
-+};
-+
- #define THROTTLING_PRECHANGE       (1)
- #define THROTTLING_POSTCHANGE      (2)
+ 	ehci_dbg(ehci, "suspend root hub\n");
  
-@@ -1063,16 +1069,24 @@ static int acpi_processor_set_throttling
- 	return 0;
- }
+@@ -272,6 +273,7 @@ static int ehci_bus_suspend (struct usb_
+ 	ehci->bus_suspended = 0;
+ 	ehci->owned_ports = 0;
+ 	changed = 0;
++	fs_idle_delay = false;
+ 	port = HCS_N_PORTS(ehci->hcs_params);
+ 	while (port--) {
+ 		u32 __iomem	*reg = &ehci->regs->port_status [port];
+@@ -300,16 +302,32 @@ static int ehci_bus_suspend (struct usb_
+ 		}
  
-+static long acpi_processor_throttling_fn(void *data)
-+{
-+	struct acpi_processor_throttling_arg *arg = data;
-+	struct acpi_processor *pr = arg->pr;
-+
-+	return pr->throttling.acpi_processor_set_throttling(pr,
-+			arg->target_state, arg->force);
-+}
-+
- int acpi_processor_set_throttling(struct acpi_processor *pr,
- 						int state, bool force)
- {
--	cpumask_var_t saved_mask;
- 	int ret = 0;
- 	unsigned int i;
- 	struct acpi_processor *match_pr;
- 	struct acpi_processor_throttling *p_throttling;
-+	struct acpi_processor_throttling_arg arg;
- 	struct throttling_tstate t_state;
--	cpumask_var_t online_throttling_cpus;
- 
- 	if (!pr)
- 		return -EINVAL;
-@@ -1083,14 +1097,6 @@ int acpi_processor_set_throttling(struct
- 	if ((state < 0) || (state > (pr->throttling.state_count - 1)))
- 		return -EINVAL;
- 
--	if (!alloc_cpumask_var(&saved_mask, GFP_KERNEL))
--		return -ENOMEM;
--
--	if (!alloc_cpumask_var(&online_throttling_cpus, GFP_KERNEL)) {
--		free_cpumask_var(saved_mask);
--		return -ENOMEM;
--	}
--
- 	if (cpu_is_offline(pr->id)) {
- 		/*
- 		 * the cpu pointed by pr->id is offline. Unnecessary to change
-@@ -1099,17 +1105,15 @@ int acpi_processor_set_throttling(struct
- 		return -ENODEV;
- 	}
- 
--	cpumask_copy(saved_mask, &current->cpus_allowed);
- 	t_state.target_state = state;
- 	p_throttling = &(pr->throttling);
--	cpumask_and(online_throttling_cpus, cpu_online_mask,
--		    p_throttling->shared_cpu_map);
-+
- 	/*
- 	 * The throttling notifier will be called for every
- 	 * affected cpu in order to get one proper T-state.
- 	 * The notifier event is THROTTLING_PRECHANGE.
- 	 */
--	for_each_cpu(i, online_throttling_cpus) {
-+	for_each_cpu_and(i, cpu_online_mask, p_throttling->shared_cpu_map) {
- 		t_state.cpu = i;
- 		acpi_processor_throttling_notifier(THROTTLING_PRECHANGE,
- 							&t_state);
-@@ -1121,21 +1125,18 @@ int acpi_processor_set_throttling(struct
- 	 * it can be called only for the cpu pointed by pr.
- 	 */
- 	if (p_throttling->shared_type == DOMAIN_COORD_TYPE_SW_ANY) {
--		/* FIXME: use work_on_cpu() */
--		if (set_cpus_allowed_ptr(current, cpumask_of(pr->id))) {
--			/* Can't migrate to the pr->id CPU. Exit */
--			ret = -ENODEV;
--			goto exit;
--		}
--		ret = p_throttling->acpi_processor_set_throttling(pr,
--						t_state.target_state, force);
-+		arg.pr = pr;
-+		arg.target_state = state;
-+		arg.force = force;
-+		ret = work_on_cpu(pr->id, acpi_processor_throttling_fn, &arg);
- 	} else {
- 		/*
- 		 * When the T-state coordination is SW_ALL or HW_ALL,
- 		 * it is necessary to set T-state for every affected
- 		 * cpus.
- 		 */
--		for_each_cpu(i, online_throttling_cpus) {
-+		for_each_cpu_and(i, cpu_online_mask,
-+		    p_throttling->shared_cpu_map) {
- 			match_pr = per_cpu(processors, i);
- 			/*
- 			 * If the pointer is invalid, we will report the
-@@ -1156,13 +1157,12 @@ int acpi_processor_set_throttling(struct
- 					"on CPU %d\n", i));
- 				continue;
- 			}
--			t_state.cpu = i;
--			/* FIXME: use work_on_cpu() */
--			if (set_cpus_allowed_ptr(current, cpumask_of(i)))
--				continue;
--			ret = match_pr->throttling.
--				acpi_processor_set_throttling(
--				match_pr, t_state.target_state, force);
-+
-+			arg.pr = match_pr;
-+			arg.target_state = state;
-+			arg.force = force;
-+			ret = work_on_cpu(pr->id, acpi_processor_throttling_fn,
-+				&arg);
+ 		if (t1 != t2) {
++			/*
++			 * On some controllers, Wake-On-Disconnect will
++			 * generate false wakeup signals until the bus
++			 * switches over to full-speed idle.  For their
++			 * sake, add a delay if we need one.
++			 */
++			if ((t2 & PORT_WKDISC_E) &&
++					ehci_port_speed(ehci, t2) ==
++						USB_PORT_STAT_HIGH_SPEED)
++				fs_idle_delay = true;
+ 			ehci_writel(ehci, t2, reg);
+ 			changed = 1;
  		}
  	}
- 	/*
-@@ -1171,17 +1171,12 @@ int acpi_processor_set_throttling(struct
- 	 * affected cpu to update the T-states.
- 	 * The notifier event is THROTTLING_POSTCHANGE
- 	 */
--	for_each_cpu(i, online_throttling_cpus) {
-+	for_each_cpu_and(i, cpu_online_mask, p_throttling->shared_cpu_map) {
- 		t_state.cpu = i;
- 		acpi_processor_throttling_notifier(THROTTLING_POSTCHANGE,
- 							&t_state);
- 	}
--	/* restore the previous state */
--	/* FIXME: use work_on_cpu() */
--	set_cpus_allowed_ptr(current, saved_mask);
--exit:
--	free_cpumask_var(online_throttling_cpus);
--	free_cpumask_var(saved_mask);
++	spin_unlock_irq(&ehci->lock);
 +
- 	return ret;
- }
++	if ((changed && ehci->has_tdi_phy_lpm) || fs_idle_delay) {
++		/*
++		 * Wait for HCD to enter low-power mode or for the bus
++		 * to switch to full-speed idle.
++		 */
++		usleep_range(5000, 5500);
++	}
  
+ 	if (changed && ehci->has_tdi_phy_lpm) {
+-		spin_unlock_irq(&ehci->lock);
+-		msleep(5);	/* 5 ms for HCD to enter low-power mode */
+ 		spin_lock_irq(&ehci->lock);
+-
+ 		port = HCS_N_PORTS(ehci->hcs_params);
+ 		while (port--) {
+ 			u32 __iomem	*hostpc_reg = &ehci->regs->hostpc[port];
+@@ -322,8 +340,8 @@ static int ehci_bus_suspend (struct usb_
+ 					port, (t3 & HOSTPC_PHCD) ?
+ 					"succeeded" : "failed");
+ 		}
++		spin_unlock_irq(&ehci->lock);
+ 	}
+-	spin_unlock_irq(&ehci->lock);
+ 
+ 	/* Apparently some devices need a >= 1-uframe delay here */
+ 	if (ehci->bus_suspended)
 
 
