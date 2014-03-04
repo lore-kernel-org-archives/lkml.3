@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756601AbaCDIYY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 03:24:24 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55264 "EHLO
+	id S1756622AbaCDIYb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 03:24:31 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55266 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756434AbaCDIYW (ORCPT
+	with ESMTP id S1756434AbaCDIY2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 03:24:22 -0500
-Date: Tue, 4 Mar 2014 15:46:47 +0800
+	Tue, 4 Mar 2014 03:24:28 -0500
+Date: Tue, 4 Mar 2014 15:37:10 +0800
 From: Mark Brown <broonie@kernel.org>
-To: Robin Gong <b38343@freescale.com>
-Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org
-Message-ID: <20140304074647.GE13126@sirena.org.uk>
-References: <1393911933-25149-1-git-send-email-b38343@freescale.com>
- <20140304064642.GA13126@sirena.org.uk>
+To: Linus Torvalds <torvalds@linux-foundaton.org>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>
+Message-ID: <20140304073710.GD13126@sirena.org.uk>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sfyO1m2EN8ZOtJL6"
+	protocol="application/pgp-signature"; boundary="d01dLTUuW90fS44H"
 Content-Disposition: inline
-In-Reply-To: <20140304064642.GA13126@sirena.org.uk>
 X-Cookie: You are always busy.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 202.175.88.218
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2] regulator: pfuze100: add pfuze200 support
+Subject: [GIT PULL] regulator fixes for v3.14
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -31,42 +28,58 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---sfyO1m2EN8ZOtJL6
+--d01dLTUuW90fS44H
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Tue, Mar 04, 2014 at 02:46:42PM +0800, Mark Brown wrote:
-> On Tue, Mar 04, 2014 at 01:45:33PM +0800, Robin Gong wrote:
-> > support pfuze200 chip which remove SW1C and SW4 based on pfuze100.
->=20
-> Applied, thanks - however I just noticed that you forgot to add the
-> compatible string for the new part to the DT binding, please send a
-> followup doing that.
+The following changes since commit acc3d5cec84f82ebea535fa0bd9500ac3df2aee9:
 
-I've dropped this patch since it fails to build.  Please fix and resend
-(along with adding the compatible string to the DT binding).
+  regulator: core: Change dummy supplies error message to a warning (2014-02-21 08:35:31 +0900)
 
---sfyO1m2EN8ZOtJL6
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git tags/regulator-v3.14-rc5
+
+for you to fetch changes up to 66fda75f47dc583f1c187556e9a2c082dd64f8c6:
+
+  regulator: core: Replace direct ops->disable usage (2014-02-25 10:31:45 +0900)
+
+----------------------------------------------------------------
+regulator: Fixes for v3.14-rc5
+
+A couple of fixes here which ensure that regulators using the core
+support for GPIO enables work in all cases by ensuring that helpers are
+used consistently rather than open coding in places and hence not having
+GPIO support in some of them.
+
+----------------------------------------------------------------
+Markus Pargmann (2):
+      regulator: core: Replace direct ops->enable usage
+      regulator: core: Replace direct ops->disable usage
+
+ drivers/regulator/core.c | 48 ++++++++++++++++++++----------------------------
+ 1 file changed, 20 insertions(+), 28 deletions(-)
+
+--d01dLTUuW90fS44H
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTFYTkAAoJELSic+t+oim9seQP/1lWitac+ezfvv4rbN41yjA0
-pUwQS3LBxumfXMqmRVPAcH1nel4JISw3sS3dKZP53QM8Ni3+HEGZoFsNOdnfh4ie
-I0hgDPLMwrf01urK6hz/QzNcAg55ro5/oar06Xz9cQMiKykN1YQret0/L5eerOeh
-TX9qjLuBHSZ/RqYpVnQSAgX3T0GsV2xgon+kHAVIgho0fts9Uxq9N3oHNRoMPOSp
-a0LNerwMuy3AfXloZwfs1EJ6jX2Y73o/nXy1dm1lvo0rZ0VsIbc8fmWfku4o4aZe
-nUiLA57h8mgauGsgoKF6SpWMJcNno9KpT4vlZ+zkLMJgYCg+zcijG2n81+shtPzl
-mJvJYfSCswG2/uUucqgqs7Jc6uUW6N6lgycPIIj9bHTO/DXWu5vgoWD96v7ZufdU
-Gd6WY/L5c8hgZpA2hqne79I4J6vNFD4Yucw7AmJ9plz2vpNm8cDTaR5kXbsqNHEf
-9Snj1X/xmJornW6Q6ybwLnOAel4Eip4bOZamtDXRwss9ajcR02MDuePhVyB7iYGA
-WNlrCsZ21MFnqvycZQHXhaPpQULTz0zqwIi2MPU/qOcVXV1FvXttfW/SG201sA/2
-GmbVxqLnLkvLOv+LNkIAmjUbMfGt1IjCHvi+pjjhmXKUP4jBID6CVlrSLND23jTI
-ZeVetA+f6n8b+IQTIGQ3
-=8Ktl
+iQIcBAEBAgAGBQJTFYKeAAoJELSic+t+oim9AH0P+gISAb06A8zCbW3fdOHITcVw
+/gvDCHIhwok9ZhL8+HJN3FJSP0gJ7zl0i8qakZoLNw+lwy4e7F+AXo2hlAn22BcQ
+1o/p5c6Czuq7ZESV4CuOTPnigiH3P46HXEHAmluK/+fnmJPvay6X9SERvzvZGqGc
+aBEcD11IYqknAFznju893KaznX4gqHIKeTZsAP9KGHdF1H/MgtKH7EnYkypU1t8W
+KDj26LURYK3k/zxDQ11JEcH8veeftvkidZ7JhvP7IO5UOEfrzI4+fx4EQ/eyvxzU
+tcsQMtsOSU7vZdEVsFvC78gvKlbkYqdc/GRi1hVnnMtSohKdm5RgldSnZX4RqrSF
+Z3o0zfQVFuWBUkwUSlw3vEj53JnXzyf2KvB1X8ouqp/xPFS4eXVn8YUjkbU+6sCW
+yieBmlF1TuGjdwfpoO7LF30P8ggZytsOKRP7sFJrvAom9/vHBtVH5Lt/UvG3udMk
+K+EmTCvzdDFfnsL2LlE24mAISPF7bfKhBL05ARzozH9nUKMoKUWhDwsVVH95sqWt
+cMH4xg/WcbGZ3p9B8M9AwL4HfVHpCI3/Y0wXJWPA/BWnLEisFXPmEq6fAYUwixnd
+2Ft6iRZBvUJ5JBvCoPgYP6Rvgxp5l2xKNENEgQf+yYgFn8gP5wA+N3Nb2t9+jZKd
+KciyElco/PATX4PfL0NZ
+=KRQl
 -----END PGP SIGNATURE-----
 
---sfyO1m2EN8ZOtJL6--
+--d01dLTUuW90fS44H--
