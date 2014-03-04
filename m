@@ -1,112 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757017AbaCDK22 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 05:28:28 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:34056 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756869AbaCDK2T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 05:28:19 -0500
-X-AuditID: cbfee61a-b7fb26d00000724f-d1-5315aabaf4a7
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Lukasz Majewski <l.majewski@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>, Thomas Abraham <ta.omasab@gmail.com>,
-        thomas.ab@samsung.com,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc@vger.kernel.org
-Subject: [RFC v3 4/5] cpufreq:LAB:Kconfig Add LAB definitions to Kconfig
-Date: Tue, 04 Mar 2014 11:27:31 +0100
-Message-id: <1393928852-22725-5-git-send-email-l.majewski@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-reply-to: <1393928852-22725-1-git-send-email-l.majewski@samsung.com>
-References: <1367590072-10496-1-git-send-email-jonghwa3.lee@samsung.com>
- <1393928852-22725-1-git-send-email-l.majewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t9jAd1dq0SDDb7OFbbYOGM9q8XTph/s
-	Fp1nnzBbvHnEbfHm4WZGi02Pr7FaXN41h83ic+8RRosZ5/cxWdxuXMFmceb0JVaL9TNes1hs
-	nrCRzaJjGaPFxq8eDvweO2fdZfe4c20Pm8fmJfUe66a9ZfbYcrWdxaNvyypGj8+b5ALYo7hs
-	UlJzMstSi/TtErgyDs46z14wT6hi65djbA2MV/m6GDk5JARMJBZtu88GYYtJXLi3Hsjm4hAS
-	WMQocePUdUYIp4tJ4tHzZWBVbAJ6Ep/vPmUCsUUEQiWOTv3KDlLELHCGReLti92sIAlhAQ+J
-	kw9fgzWwCKhKHLu6GCzOK+AmceXrHVaIdYoS3c8mgNVwCrhLHF/RzAyxrZVR4vLOG0wTGHkX
-	MDKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAgO22dSOxhXNlgcYhTgYFTi4Z0xTSRYiDWx
-	rLgy9xCjBAezkgiv4kLRYCHelMTKqtSi/Pii0pzU4kOM0hwsSuK8B1qtA4UE0hNLUrNTUwtS
-	i2CyTBycUg2Mra0vU8PWX/EufeXZOb99T+OB63En8i3Zhfg8k6+/2Je6pivdbJ75pdt1Ij7c
-	eS4zUj7WOdetb7H1vnZdeLXcsc/7a8/mtM/eFqWXFnn4j51A1dtH/xc+eH/skmHPIp/PZi+8
-	r2hsaZhyd4LFRMFqw7s8lwNDfYzeFK8pnhV+Zo9a3bMAUxEWJZbijERDLeai4kQANDmICVcC	AAA=
+	id S1757049AbaCDK2p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 05:28:45 -0500
+Received: from mail-bn1blp0183.outbound.protection.outlook.com ([207.46.163.183]:47213
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757032AbaCDK2n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 05:28:43 -0500
+From: Yibin Gong <yibin.gong@freescale.com>
+To: Axel Lin <axel.lin@ingics.com>, Mark Brown <broonie@kernel.org>
+CC: Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] regulator: pfuze100: Add terminate entry for
+ [i2c|of]_device_id tables
+Thread-Topic: [PATCH] regulator: pfuze100: Add terminate entry for
+ [i2c|of]_device_id tables
+Thread-Index: AQHPN5NflDGVuwL+CUafcPjWSkijsZrQuYAg
+Date: Tue, 4 Mar 2014 10:28:40 +0000
+Message-ID: <a271fdb788164d8196a49e4e0b696d86@BLUPR03MB036.namprd03.prod.outlook.com>
+References: <1393928414.9669.1.camel@phoenix>
+In-Reply-To: <1393928414.9669.1.camel@phoenix>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.49]
+x-forefront-prvs: 01401330D1
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(377454003)(13464003)(199002)(189002)(83322001)(19580395003)(56816005)(76576001)(92566001)(19580405001)(93136001)(81816001)(74706001)(76786001)(80976001)(53806001)(77096001)(74316001)(80022001)(77982001)(81686001)(74876001)(59766001)(85306002)(79102001)(54356001)(76796001)(66066001)(69226001)(94316002)(56776001)(47736001)(74662001)(65816001)(76482001)(50986001)(54316002)(95666003)(4396001)(47976001)(87936001)(49866001)(81542001)(86362001)(575784001)(87266001)(63696002)(2656002)(95416001)(90146001)(74366001)(74502001)(31966008)(83072002)(85852003)(33646001)(51856001)(93516002)(46102001)(81342001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR03MB421;H:BLUPR03MB036.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:F8BF3D53.B2B9EEB.A3C1B36F.9FD65A01.20235;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s24ASrId002787
 
-Provide support for LAB governor for the Kbuild.
+Acked-by: Robin Gong <b38343@freescale.com>
 
-It is important to note, that LAB is not possible to be compiled in as
-a module since we cannot assure (in the kernel) that backing ondemand
-module will not be removed without notice to LAB.
+-----Original Message-----
+From: Axel Lin [mailto:axel.lin@ingics.com] 
+Sent: Tuesday, March 04, 2014 6:20 PM
+To: Mark Brown
+Cc: Gong Yibin-B38343; Liam Girdwood; linux-kernel@vger.kernel.org
+Subject: [PATCH] regulator: pfuze100: Add terminate entry for [i2c|of]_device_id tables
 
-For this reason the LAB can be only compiled into the kernel without
-possibility to be compiled as a module.
+Also remove PFUZE_NUM to avoid below build warnings:
 
-Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+  CC [M]  drivers/regulator/pfuze100-regulator.o
+drivers/regulator/pfuze100-regulator.c:86:2: warning: excess elements in array initializer [enabled by default]
+drivers/regulator/pfuze100-regulator.c:86:2: warning: (near initialization for 'pfuze_device_id') [enabled by default]
+drivers/regulator/pfuze100-regulator.c:93:2: warning: excess elements in array initializer [enabled by default]
+drivers/regulator/pfuze100-regulator.c:93:2: warning: (near initialization for 'pfuze_dt_ids') [enabled by default]
+
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
 ---
- drivers/cpufreq/Kconfig |   28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
+ drivers/regulator/pfuze100-regulator.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
-index 4b029c0..3a870ea 100644
---- a/drivers/cpufreq/Kconfig
-+++ b/drivers/cpufreq/Kconfig
-@@ -102,6 +102,18 @@ config CPU_FREQ_DEFAULT_GOV_CONSERVATIVE
- 	  Be aware that not all cpufreq drivers support the conservative
- 	  governor. If unsure have a look at the help section of the
- 	  driver. Fallback governor will be the performance governor.
-+
-+config CPU_FREQ_DEFAULT_GOV_LAB
-+	bool "lab"
-+	select CPU_FREQ_GOV_LAB
-+	select CPU_FREQ_GOV_PERFORMANCE
-+	help
-+	  Use the CPUFreq governor 'lab' as default. This allows
-+	  you to get a full dynamic frequency capable system by simply
-+	  loading your cpufreq low-level hardware driver.
-+	  Be aware that not all cpufreq drivers support the lab governor.
-+	  If unsure have a look at the help section of the driver.
-+	  Fallback governor will be the performance governor.
- endchoice
+diff --git a/drivers/regulator/pfuze100-regulator.c b/drivers/regulator/pfuze100-regulator.c
+index 44075f8..f87ec70 100644
+--- a/drivers/regulator/pfuze100-regulator.c
++++ b/drivers/regulator/pfuze100-regulator.c
+@@ -56,7 +56,7 @@
+ #define PFUZE100_VGEN5VOL	0x70
+ #define PFUZE100_VGEN6VOL	0x71
  
- config CPU_FREQ_GOV_PERFORMANCE
-@@ -183,6 +195,22 @@ config CPU_FREQ_GOV_CONSERVATIVE
+-enum chips {PFUZE100, PFUZE200, PFUZE_NUM};
++enum chips { PFUZE100, PFUZE200 };
  
- 	  If in doubt, say N.
+ struct pfuze_regulator {
+ 	struct regulator_desc desc;
+@@ -80,15 +80,17 @@ static const int pfuze100_vsnvs[] = {
+ 	1000000, 1100000, 1200000, 1300000, 1500000, 1800000, 3000000,  };
  
-+config CPU_FREQ_GOV_LAB
-+	bool "'lab' cpufreq policy governor - ONDEMAND extension"
-+	select CPU_FREQ_TABLE
-+	select CPU_FREQ_GOV_COMMON
-+	select CPU_FREQ_GOV_ONDEMAND
-+	help
-+	  'lab' - This driver adds a dynamic cpufreq policy governor.
-+
-+	  LAB governor shall be regarded as an extension of the ONDEMAND on
-+	  platforms with very weak HW support for power management.
-+
-+	  LAB governor can be either compiled in or not. It is not possible to
-+	  compile it as module because of explicit ONDEMAND dependency.
-+
-+	  If in doubt, say N.
-+
- config GENERIC_CPUFREQ_CPU0
- 	tristate "Generic CPU0 cpufreq driver"
- 	depends on HAVE_CLK && REGULATOR && OF && THERMAL && CPU_THERMAL
--- 
-1.7.10.4
+-static const struct i2c_device_id pfuze_device_id[PFUZE_NUM] = {
++static const struct i2c_device_id pfuze_device_id[] = {
+ 	{.name = "pfuze100", .driver_data = PFUZE100},
+ 	{.name = "pfuze200", .driver_data = PFUZE200},
++	{ }
+ };
+ MODULE_DEVICE_TABLE(i2c, pfuze_device_id);
+ 
+-static const struct of_device_id pfuze_dt_ids[PFUZE_NUM] = {
++static const struct of_device_id pfuze_dt_ids[] = {
+ 	{ .compatible = "fsl,pfuze100", .data = (void *)PFUZE100},
+ 	{ .compatible = "fsl,pfuze200", .data = (void *)PFUZE200},
++	{ }
+ };
+ MODULE_DEVICE_TABLE(of, pfuze_dt_ids);
+ 
+--
+1.8.1.2
 
+
+
+
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
