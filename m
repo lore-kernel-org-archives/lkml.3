@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932249AbaCDUFN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:05:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41578 "EHLO
+	id S1757688AbaCDU1V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:27:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41625 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752428AbaCDUFF (ORCPT
+	with ESMTP id S932243AbaCDUFM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:05:05 -0500
+	Tue, 4 Mar 2014 15:05:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        David Rientjes <rientjes@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Duan Jiong <duanj.fnst@cn.fujitsu.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 37/97] net: use __GFP_NORETRY for high order allocations
-Date: Tue,  4 Mar 2014 12:03:50 -0800
-Message-Id: <20140304200347.272040905@linuxfoundation.org>
+Subject: [PATCH 3.10 32/97] ipv4: fix counter in_slow_tot
+Date: Tue,  4 Mar 2014 12:03:45 -0800
+Message-Id: <20140304200347.109950362@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -31,64 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Duan Jiong <duanj.fnst@cn.fujitsu.com>
 
-[ Upstream commit ed98df3361f059db42786c830ea96e2d18b8d4db ]
+[ Upstream commit a6254864c08109c66a194612585afc0439005286 ]
 
-sock_alloc_send_pskb() & sk_page_frag_refill()
-have a loop trying high order allocations to prepare
-skb with low number of fragments as this increases performance.
+since commit 89aef8921bf("ipv4: Delete routing cache."), the counter
+in_slow_tot can't work correctly.
 
-Problem is that under memory pressure/fragmentation, this can
-trigger OOM while the intent was only to try the high order
-allocations, then fallback to order-0 allocations.
+The counter in_slow_tot increase by one when fib_lookup() return successfully
+in ip_route_input_slow(), but actually the dst struct maybe not be created and
+cached, so we can increase in_slow_tot after the dst struct is created.
 
-We had various reports from unexpected regressions.
-
-According to David, setting __GFP_NORETRY should be fine,
-as the asynchronous compaction is still enabled, and this
-will prevent OOM from kicking as in :
-
-CFSClientEventm invoked oom-killer: gfp_mask=0x42d0, order=3, oom_adj=0,
-oom_score_adj=0, oom_score_badness=2 (enabled),memcg_scoring=disabled
-CFSClientEventm
-
-Call Trace:
- [<ffffffff8043766c>] dump_header+0xe1/0x23e
- [<ffffffff80437a02>] oom_kill_process+0x6a/0x323
- [<ffffffff80438443>] out_of_memory+0x4b3/0x50d
- [<ffffffff8043a4a6>] __alloc_pages_may_oom+0xa2/0xc7
- [<ffffffff80236f42>] __alloc_pages_nodemask+0x1002/0x17f0
- [<ffffffff8024bd23>] alloc_pages_current+0x103/0x2b0
- [<ffffffff8028567f>] sk_page_frag_refill+0x8f/0x160
- [<ffffffff80295fa0>] tcp_sendmsg+0x560/0xee0
- [<ffffffff802a5037>] inet_sendmsg+0x67/0x100
- [<ffffffff80283c9c>] __sock_sendmsg_nosec+0x6c/0x90
- [<ffffffff80283e85>] sock_sendmsg+0xc5/0xf0
- [<ffffffff802847b6>] __sys_sendmsg+0x136/0x430
- [<ffffffff80284ec8>] sys_sendmsg+0x88/0x110
- [<ffffffff80711472>] system_call_fastpath+0x16/0x1b
-Out of Memory: Kill process 2856 (bash) score 9999 or sacrifice child
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/sock.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv4/route.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -1814,7 +1814,7 @@ bool sk_page_frag_refill(struct sock *sk
- 		gfp_t gfp = sk->sk_allocation;
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -1544,6 +1544,7 @@ static int __mkroute_input(struct sk_buf
+ 	rth->rt_gateway	= 0;
+ 	rth->rt_uses_gateway = 0;
+ 	INIT_LIST_HEAD(&rth->rt_uncached);
++	RT_CACHE_STAT_INC(in_slow_tot);
  
- 		if (order)
--			gfp |= __GFP_COMP | __GFP_NOWARN;
-+			gfp |= __GFP_COMP | __GFP_NOWARN | __GFP_NORETRY;
- 		pfrag->page = alloc_pages(gfp, order);
- 		if (likely(pfrag->page)) {
- 			pfrag->offset = 0;
+ 	rth->dst.input = ip_forward;
+ 	rth->dst.output = ip_output;
+@@ -1645,8 +1646,6 @@ static int ip_route_input_slow(struct sk
+ 	if (err != 0)
+ 		goto no_route;
+ 
+-	RT_CACHE_STAT_INC(in_slow_tot);
+-
+ 	if (res.type == RTN_BROADCAST)
+ 		goto brd_input;
+ 
+@@ -1715,6 +1714,7 @@ local_input:
+ 	rth->rt_gateway	= 0;
+ 	rth->rt_uses_gateway = 0;
+ 	INIT_LIST_HEAD(&rth->rt_uncached);
++	RT_CACHE_STAT_INC(in_slow_tot);
+ 	if (res.type == RTN_UNREACHABLE) {
+ 		rth->dst.input= ip_error;
+ 		rth->dst.error= -err;
 
 
