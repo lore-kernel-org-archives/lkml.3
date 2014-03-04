@@ -1,55 +1,309 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755285AbaCDRH4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 12:07:56 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:41113 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065AbaCDRHy (ORCPT
+	id S1754994AbaCDRJn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 12:09:43 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:40858 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752221AbaCDRJk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 12:07:54 -0500
+	Tue, 4 Mar 2014 12:09:40 -0500
 MIME-Version: 1.0
-In-Reply-To: <20140304111520.GE8766@mudshark.cambridge.arm.com>
-References: <1393899345-7397-1-git-send-email-graeme.gregory@linaro.org>
- <1393899345-7397-2-git-send-email-graeme.gregory@linaro.org>
- <1393899715.20435.8.camel@joe-AO722> <53153A4C.9050602@infradead.org>
- <CACxGe6tD3mQshDSoEQaPXAnXG_siUdiFoAWhjmO2gDY7ZzkjUw@mail.gmail.com> <20140304111520.GE8766@mudshark.cambridge.arm.com>
-From: Grant Likely <grant.likely@linaro.org>
-Date: Wed, 5 Mar 2014 01:07:34 +0800
-X-Google-Sender-Auth: CvoL3pSDqXl9jhCm8WbR8MMG4pM
-Message-ID: <CACxGe6svyLHZO8k6qVs+hhyAWxeg3tzh1wUfbRB_z-sxRMv4qw@mail.gmail.com>
-Subject: Re: [PATCH] MAINTAINERS: add maintainers for arm64 acpi
-To: Will Deacon <will.deacon@arm.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>, Joe Perches <joe@perches.com>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+In-Reply-To: <5315A40E.6010209@redhat.com>
+References: <1393910304-4004-1-git-send-email-ast@plumgrid.com>
+	<1393910304-4004-2-git-send-email-ast@plumgrid.com>
+	<5315A40E.6010209@redhat.com>
+Date: Tue, 4 Mar 2014 09:09:38 -0800
+Message-ID: <CAMEtUuwzo9JdcHdUvSOecmK5QD=5vcRLEE3DsLth=mxXnPOocw@mail.gmail.com>
+Subject: Re: [PATCH v4 net-next 1/3] Extended BPF interpreter and converter
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Hagen Paul Pfeifer <hagen@jauu.net>,
+        Jesse Gross <jesse@nicira.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 4, 2014 at 7:15 PM, Will Deacon <will.deacon@arm.com> wrote:
-> On Tue, Mar 04, 2014 at 10:59:46AM +0000, Grant Likely wrote:
->> I agree with merging it with the rest of the series, but comparing it
->> to a blank cheque is not appropriate. Merely having an entry in
->> MAINTAINERS doesn't immediately confer trust or ability to merge code,
->> but it does tell people who to talk to when looking at ACPI on ARM.
->> You can bet that neither Linus, Len or Rafael will merge ARM ACPI
->> trees from them if you disagree. (And even if they did, you would
->> yell, and Linus would revert it).
+On Tue, Mar 4, 2014 at 1:59 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
+> On 03/04/2014 06:18 AM, Alexei Starovoitov wrote:
+>>
+>> Extended BPF extends old BPF in the following ways:
+>> - from 2 to 10 registers
+>>    Original BPF has two registers (A and X) and hidden frame pointer.
+>>    Extended BPF has ten registers and read-only frame pointer.
+>> - from 32-bit registers to 64-bit registers
+>>    semantics of old 32-bit ALU operations are preserved via 32-bit
+>>    subregisters
+>> - if (cond) jump_true; else jump_false;
+>>    old BPF insns are replaced with:
+>>    if (cond) jump_true; /* else fallthrough */
+>> - adds signed > and >= insns
+>> - 16 4-byte stack slots for register spill-fill replaced with
+>>    up to 512 bytes of multi-use stack space
+>> - introduces bpf_call insn and register passing convention for zero
+>>    overhead calls from/to other kernel functions (not part of this patch)
+>> - adds arithmetic right shift insn
+>> - adds swab32/swab64 insns
+>> - adds atomic_add insn
+>> - old tax/txa insns are replaced with 'mov dst,src' insn
+>>
+>> Extended BPF is designed to be JITed with one to one mapping, which
+>> allows GCC/LLVM backends to generate optimized BPF code that performs
+>> almost as fast as natively compiled code
+>>
+>> sk_convert_filter() remaps old style insns into extended:
+>> 'sock_filter' instructions are remapped on the fly to
+>> 'sock_filter_ext' extended instructions when
+>> sysctl net.core.bpf_ext_enable=1
+>>
+>> Old filter comes through sk_attach_filter() or
+>> sk_unattached_filter_create()
+>>   if (bpf_ext_enable) {
+>>      convert to new
+>>      sk_chk_filter() - check old bpf
+>>      use sk_run_filter_ext() - new interpreter
+>>   } else {
+>>      sk_chk_filter() - check old bpf
+>>      if (bpf_jit_enable)
+>>          use old jit
+>>      else
+>>          use sk_run_filter() - old interpreter
+>>   }
+>>
+>> sk_run_filter_ext() interpreter is noticeably faster
+>> than sk_run_filter() for two reasons:
+>>
+>> 1.fall-through jumps
+>>    Old BPF jump instructions are forced to go either 'true' or 'false'
+>>    branch which causes branch-miss penalty.
+>>    Extended BPF jump instructions have one branch and fall-through,
+>>    which fit CPU branch predictor logic better.
+>>    'perf stat' shows drastic difference for branch-misses.
+>>
+>> 2.jump-threaded implementation of interpreter vs switch statement
+>>    Instead of single tablejump at the top of 'switch' statement, GCC will
+>>    generate multiple tablejump instructions, which helps CPU branch
+>> predictor
+>>
+>> Performance of two BPF filters generated by libpcap was measured
+>> on x86_64, i386 and arm32.
+>>
+>> fprog #1 is taken from Documentation/networking/filter.txt:
+>> tcpdump -i eth0 port 22 -dd
+>>
+>> fprog #2 is taken from 'man tcpdump':
+>> tcpdump -i eth0 'tcp port 22 and (((ip[2:2] - ((ip[0]&0xf)<<2)) -
+>>     ((tcp[12]&0xf0)>>2)) != 0)' -dd
+>>
+>> Other libpcap programs have similar performance differences.
+>>
+>> Raw performance data from BPF micro-benchmark:
+>> SK_RUN_FILTER on same SKB (cache-hit) or 10k SKBs (cache-miss)
+>> time in nsec per call, smaller is better
+>> --x86_64--
+>>           fprog #1  fprog #1   fprog #2  fprog #2
+>>           cache-hit cache-miss cache-hit cache-miss
+>> old BPF     90       101       192       202
+>> ext BPF     31        71       47         97
+>> old BPF jit 12        34       17         44
+>> ext BPF jit TBD
+>>
+>> --i386--
+>>           fprog #1  fprog #1   fprog #2  fprog #2
+>>           cache-hit cache-miss cache-hit cache-miss
+>> old BPF    107        136      227       252
+>> ext BPF     40        119       69       172
+>>
+>> --arm32--
+>>           fprog #1  fprog #1   fprog #2  fprog #2
+>>           cache-hit cache-miss cache-hit cache-miss
+>> old BPF    202        300      475       540
+>> ext BPF    139        270      296       470
+>> old BPF jit 26        182       37       202
+>> new BPF jit TBD
+>>
+>> Tested with trinify BPF fuzzer
+>>
+>> Future work:
+>>
+>> 0. seccomp
+>>
+>> 1. add extended BPF JIT for x86_64
+>>
+>> 2. add inband old/new demux and extended BPF verifier, so that new
+>> programs
+>>     can be loaded through old sk_attach_filter() and
+>> sk_unattached_filter_create()
+>>     interfaces
+>>
+>> 3. tracing filters systemtap-like with extended BPF
+>>
+>> 4. OVS with extended BPF
+>>
+>> 5. nftables with extended BPF
+>>
+>> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 >
-> If you want to know who to talk to regarding a subsystem then you use
-> get_maintainer.pl and/or git blame. Regardless of this patch, neither of
-> those tools will identify Graeme or Hanjun as the contacts for ACPI on ARM.
 >
-> I think we're in agreement, but just to spell it out: this patch should be
-> included at the end of a series adding the files which will be maintained.
+> Looks great, imho, some comments/questions inline:
+>
+> Nit: subject line of your patches should be, e.g.
+>
+>  "filter: add Extended BPF interpreter and converter"
+>  "doc: filter: add Extended BPF documentation"
+>  ...
+>
+> so first "<subsystem>: <summary phrase>".
 
-Yes, agreed.
+sure. Will send v5 :)
 
-g.
+>> ---
+>>   include/linux/filter.h      |    8 +-
+>>   include/linux/netdevice.h   |    1 +
+>>   include/uapi/linux/filter.h |   34 +-
+>>   net/core/filter.c           |  802
+>> ++++++++++++++++++++++++++++++++++++++++++-
+>>   net/core/sysctl_net_core.c  |    7 +
+>>   5 files changed, 830 insertions(+), 22 deletions(-)
+>>
+>> diff --git a/include/linux/filter.h b/include/linux/filter.h
+>> index e568c8ef896b..0e84ff6e991b 100644
+>> --- a/include/linux/filter.h
+>> +++ b/include/linux/filter.h
+>> @@ -52,7 +52,13 @@ extern int sk_detach_filter(struct sock *sk);
+>>   extern int sk_chk_filter(struct sock_filter *filter, unsigned int flen);
+>>   extern int sk_get_filter(struct sock *sk, struct sock_filter __user
+>> *filter, unsigned len);
+>>   extern void sk_decode_filter(struct sock_filter *filt, struct
+>> sock_filter *to);
+>> +/* function remaps 'sock_filter' insns to 'sock_filter_ext' insns */
+>> +int sk_convert_filter(struct sock_filter *old_prog, int len,
+>> +                     struct sock_filter_ext *new_prog, int *p_new_len);
+>> +/* execute extended bpf program */
+>
+>
+> I think this and the above comment can be omitted, as both have a kernel doc
+> in its implementation in net/core/filter.c that is more precise.
+
+ok.
+I like comments in .h, because this is how 'make tags' orders them
+and 'vim -t sk_convert_filter' jumps there instead of .c
+but ok, will remove them, since they indeed look out of place there.
+
+> ...
+>
+>> +struct sock_filter_ext {
+>> +       __u8    code;    /* opcode */
+>> +       __u8    a_reg:4; /* dest register */
+>> +       __u8    x_reg:4; /* source register */
+>> +       __s16   off;     /* signed offset */
+>> +       __s32   imm;     /* signed immediate constant */
+>> +};
+>> +
+>>   struct sock_fprog {   /* Required for SO_ATTACH_FILTER. */
+>>         unsigned short          len;    /* Number of filter blocks */
+>>         struct sock_filter __user *filter;
+>> @@ -45,12 +54,15 @@ struct sock_fprog { /* Required for SO_ATTACH_FILTER.
+>> */
+>>   #define         BPF_JMP         0x05
+>>   #define         BPF_RET         0x06
+>>   #define         BPF_MISC        0x07
+>> +#define         BPF_ALU64       0x07
+>> +
+>>
+>
+> Please do not add empty newline above.
+
+ohh. yes. good catch.
+Right below this line in my temp_filter.h I have few macros
+(similar to BPF_STMT and BPF_JUMP) that makes manual coding of
+ebpf easier, but I sed them out of this diff just to include in the
+future diffs.
+will double check for empty lines.
+
+>
+>>   /* ld/ldx fields */
+>>   #define BPF_SIZE(code)  ((code) & 0x18)
+>>   #define         BPF_W           0x00
+>>   #define         BPF_H           0x08
+>>   #define         BPF_B           0x10
+>
+> ...
+>
+>> diff --git a/net/core/filter.c b/net/core/filter.c
+>> index ad30d626a5bd..1494421486b7 100644
+>> --- a/net/core/filter.c
+>> +++ b/net/core/filter.c
+>> @@ -1,5 +1,6 @@
+>>   /*
+>>    * Linux Socket Filter - Kernel level socket filtering
+>> + * Extended BPF is Copyright (c) 2011-2014 PLUMgrid, http://plumgrid.com
+>>    *
+>>    * Author:
+>>    *     Jay Schulist <jschlst@samba.org>
+>> @@ -40,6 +41,8 @@
+>>   #include <linux/seccomp.h>
+>>   #include <linux/if_vlan.h>
+>>
+>> +int bpf_ext_enable __read_mostly;
+>> +
+>>   /* No hurry in this branch
+>>    *
+>>    * Exported for the bpf jit load helper.
+>> @@ -399,6 +402,7 @@ load_b:
+>>         }
+>>
+>>         return 0;
+>> +#undef K
+>>   }
+>>   EXPORT_SYMBOL(sk_run_filter);
+>
+> ...
+>
+>> +               /* RET_K, RET_A are remaped into 2 insns */
+>> +               case BPF_RET | BPF_A:
+>> +               case BPF_RET | BPF_K:
+>> +                       insn->code = BPF_ALU | BPF_MOV |
+>> +                               (BPF_SRC(fp->code) == BPF_K ? BPF_K :
+>> BPF_X);
+>
+>
+> Hmm, so the case statement is about BPF_RET | BPF_A and BPF_RET | BPF_K
+> but BPF_RET | BPF_X is not mentioned. However, in BPF_SRC(fp->code)
+> selection you fall back to BPF_X if it doesn't equal BPF_K? Is that
+> correct? And, you probably also need to handle BPF_RET | BPF_X ?
+
+:) that design choice of original BPF always puzzled me.
+BPF_A macro only used in one insn: BPF_RET + BPF_A
+and all other insns use BPF_K and BPF_X
+and though comment in uapi/filter.h says "ret - BPF_K and BPF_X also apply"
+this is not true, since sk_chk_filter() only allows ret+a and ret+k
+libpcap is equally confused. It never generates ret+x, but has few
+places in the code
+that can recognize it. I guess that's an artifact of distant past.
+
+epbf has only one RET insn that takes register R0 and returns it.
+That is similar to real CPU 'ret' insn and done to make epbf easier
+to generate from gcc/llvm point of view.
+ebpf jit converts 'ret' into 'leave; ret' on x86_64.
+
+so original bpf+k and bpf+a are converted into 'mov r0, [a or k]; ret r0'
+
+btw, if there is interest I can put ebpf testsuite into tools/net/
+
+Thanks!
+Alexei
