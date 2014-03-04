@@ -1,169 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756272AbaCDWsc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 17:48:32 -0500
-Received: from waste.org ([173.11.57.241]:47133 "EHLO waste.org"
+	id S1756867AbaCDWsv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 17:48:51 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49491 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752144AbaCDWs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 17:48:28 -0500
-X-Greylist: delayed 505 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Mar 2014 17:48:28 EST
-Message-ID: <1393972797.8344.190.camel@calx>
-Subject: Re: [PATCH][RESEND 3] hwrng: add randomness to system from rng
- sources
-From: Matt Mackall <mpm@selenic.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Jason Cooper <jason@lakedaemon.net>, "Theodore Ts'o" <tytso@mit.edu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
-        linux-crypto <linux-crypto@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Tue, 04 Mar 2014 16:39:57 -0600
-In-Reply-To: <CAGXu5jL5JBHL0tqZzA03LY67HZU4jEQ0_V=bJs9TV3g0Bfwr_w@mail.gmail.com>
-References: <20140303235148.GA7601@www.outflux.net>
-	 <20140304153841.GN1872@titan.lakedaemon.net>
-	 <CAGXu5jKqB62ZaD0HEG=vJoROOqvdSYeHYB2h61Kw1-ov5phFww@mail.gmail.com>
-	 <20140304195356.GS1872@titan.lakedaemon.net>
-	 <CAGXu5jL5JBHL0tqZzA03LY67HZU4jEQ0_V=bJs9TV3g0Bfwr_w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756670AbaCDWsu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 17:48:50 -0500
+Date: Tue, 4 Mar 2014 23:48:43 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Or Gerlitz <ogerlitz@mellanox.com>
+cc: Or Gerlitz <or.gerlitz@gmail.com>, Roland Dreier <roland@kernel.org>,
+        Amir Vadai <amirv@mellanox.com>, Eli Cohen <eli@dev.mellanox.co.il>,
+        Eugenia Emantayev <eugenia@mellanox.com>,
+        "David S. Miller" <davem@davemloft.net>, Mel Gorman <mgorman@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mlx4: Use GFP_NOFS calls during the ipoib TX path when
+ creating the QP
+In-Reply-To: <alpine.LNX.2.00.1402271123410.21399@pobox.suse.cz>
+Message-ID: <alpine.LNX.2.00.1403042348050.30402@pobox.suse.cz>
+References: <CAJZOPZKLcFC5Wqv7VS7AyovaeHw3PYSWEz9t9sZ4AMhG+dS1+A@mail.gmail.com> <alpine.LNX.2.00.1402271042240.21399@pobox.suse.cz> <530F0C4F.9030200@mellanox.com> <alpine.LNX.2.00.1402271123410.21399@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-03-04 at 11:59 -0800, Kees Cook wrote:
-> On Tue, Mar 4, 2014 at 11:53 AM, Jason Cooper <jason@lakedaemon.net> wrote:
-> > On Tue, Mar 04, 2014 at 11:01:49AM -0800, Kees Cook wrote:
-> >> On Tue, Mar 4, 2014 at 7:38 AM, Jason Cooper <jason@lakedaemon.net> wrote:
-> >> > Kees, Ted,
-> >> >
-> >> > On Mon, Mar 03, 2014 at 03:51:48PM -0800, Kees Cook wrote:
-> >> >> When bringing a new RNG source online, it seems like it would make sense
-> >> >> to use some of its bytes to make the system entropy pool more random,
-> >> >> as done with all sorts of other devices that contain per-device or
-> >> >> per-boot differences.
-> >> >
-> >> > Why is this necessary?  init_std_data() already calls
-> >> > arch_get_random_long() while stirring each of the pools.
-> >>
-> >> I may be misunderstanding something here, but hwrng isn't going to get
-> >> hit by a arch_get_random_long().
-> >
-> > ahh, you are correct.  It appears it's only used on x86 and powerpc.
-> > Bad assumption on my part.
-> >
-> >> That's just for arch-specific RNGs (e.g. RDRAND), where as hwrng is
-> >> for, effectively, add-on devices (e.g. TPMs).
-> >>
-> >> > I'm a little concerned here because this gives potentially untrusted
-> >> > hwrngs more influence over the entropy pools initial state than most
-> >> > users of random.c expect.  Many of the drivers in hw_random/ are
-> >> > platform drivers and are initialized before random.c.
-> >> >
-> >> > I'm comfortable with the design decisions Ted has made wrt random.c and
-> >> > hwrngs.  However, I think that this changes that trust relationship in a
-> >> > fundamental way.  I'm ok with building support into my kernels for
-> >> > hwrngs as long as random.c's internal use of them is limited to the
-> >> > mixing in extract_buf() and init_std_data().
-> >> >
-> >> > By adding this patch, even without crediting entropy to the pool, a
-> >> > rogue hwrng now has significantly more influence over the initial state
-> >> > of the entropy pools.  Or, am I missing something?
-> >>
-> >> I wasn't viewing this as dealing with rouge hwrngs (though shouldn't
-> >> that state still be covered due to the existing mixing), but more as a
-> >> "hey this thing has some randomness associated with it", similar to
-> >> the mixing done for things like NIC MAC, etc. (Better, actually, since
-> >> NIC MAC is going to be the same every boot.) It seemed silly to ignore
-> >> an actual entropy source when seeding.
-> >
-> > Agreed, but I think we need to be careful about how random.c interacts
-> > with any hwrng.  Ideally, the drivers in hw_random/ could provide
-> > arch_get_random_long().  This way, random.c still determines when and
-> > how to use the hwrng.
-> >
-> > Ultimately, the user (person compiling the kernel) will decide to trust
-> > or not trust the hwrng by enabling support for it or not.  My concern
-> > with this patch is that it changes the magnitude of that trust decision.
-> > And only the most diligent user would discover the change.
-> >
-> > To date, all discussion wrt random.c and hwrngs are that the output of
-> > the hwrng (in particular, RDRAND) is XORd with the output of the mixer.
-> > Now, we're saying it can provide input as well.
+On Thu, 27 Feb 2014, Jiri Kosina wrote:
+
+> On Thu, 27 Feb 2014, Or Gerlitz wrote:
 > 
-> Well, I think there's confusion here over "the" hwrng and "a" hwrng. I
-> have devices with multiple entropy sources, and all my hwrngs are
-> built as modules, so I choose when to load them into my kernel. "The"
-> arch-specific entropy source (e.g. RDRAND) is very different.
+> > ipoib is coded over the verbs API (include/rdma/ib_verbs.h)  --- so tracking
+> > the path from ipoib through the verbs api into mlx4 should be similar exercise
+> > as doing so for mlx5, but let's 1st treat the higher level elements involved
+> > with this patch.
+> > 
+> > Can you shed some light why the problem happens only for NFS, and not for
+> > example with other IP/TCP storage protocols?
+> >
+> > For example, do you expect it to happen with iSCSI/TCP too? the Linux 
+> > iSCSI initiator 1st open a TCP socket from user space to the target, 
+> > next they do login exchange over this socket and later provide the 
+> > socket to the kernel iscsi code to use as the back-end of a SCSI block 
+> > device registered with the SCSI midlayer
 > 
-> >
-> > Please understand, my point-of-view is as someone who installs Linux on
-> > equipment *after* purchase (hobbyist, tinkers).  If I control the part
-> > selection and sourcing of the board components, of course I have more
-> > trust in the hwrng.
-> >
-> > So my situation is similar to buying an Intel based laptop.  I can't do
-> > a special order at Bestbuy and ask for a system without the RDRAND
-> > instruction.  Same with the hobbyist market.  We buy the gear, but we
-> > have no control over what's inside it.
-> >
-> > In that situation, without this patch, I would enable the hwrng for the
-> > board.  With the patch in it's current form, I would start looking for
-> > research papers and discussions regarding using the hwrng for input.  If
-> > the patch provided arch_get_random_long(), I would feel comfortable
-> > enabling the hwrng.
-> >
-> > Perhaps I'm being too conservative, but I'd rather have the discussion
-> > now and have concerns proven unfounded than have someone say "How the
-> > hell did this happen?" three releases down the road.
+> Frankly, no idea. There was a problem with swapping over NFS, as writeback 
+> was deadlocked with memory reclaim (memory needs to be allocated so that 
+> swap could be accessed to reclaim memory). That's fixed by allocating the 
+> buffers from PF_MEMALLOC reserve, introduced by Mel's and Peter's patchset 
+> back in 3.9 or so. Oh, and the same has been done for swapping over NBD, 
+> btw. Maybe iSCSI needs similar treatment, maybe it has it already, I 
+> haven't checked. We haven't seen a bugreport for that though.
 > 
-> Sure, and I don't want to be the one weakening the entropy pool.
+> > > I don't think we have, and it indeed should be rather easy to add. The 
+> > > more challenging part of the problem is where (and based on which 
+> > > data) the flag would actually be set up on the netdevice so that it's 
+> > > not horrible layering violation.
+> > 
+> > I assume that in the same manner netdevices advertize features to the 
+> > networking core, the core can provide them operating directives after 
+> > they register themselves.
+> 
+> Whatever suits you best. To sum it up:
+> 
+> - mlx4 is confirmed to have this problem, and we know how that problem 
+>   happens -- see the paragraph in the changelog explaining the dependency 
+>   between memory reclaim and allocation of TX ring
+> 
+> - we have a work around which requires human interaction in order 
+>   to provide the information whether GFP_NOFS should be used or not
+> 
+> - I can very well understand why Mellanox would see that as a hack, but if 
+>   more comprehensive fix is necessary, I'd expect those who understand 
+>   the code the best to come up with a solution/proposal. I'd assume that 
+>   you don't  want to keep the code with known and easily triggerable 
+>   deadlock out there unfixed.
+> 
+> - where I see the potential for layering violation in any 'general' 
+>   solution is that it's the filesystem that has to be "talking" to the 
+>   underlying netdevice, i.e. you'll have to make filesystem 
+>   netdevice-aware, right?
 
-[temporarily coming out of retirement to provide a clue]
+Mellanox folks, do you have any plan how to proceed here please?
 
-The pool mixing function is intentionally _reversible_. This is a
-crucial security property.
-
-That means, if I have an initial secret pool state X, and hostile
-attacker controlled data Y, then we can do:
-
-X' = mix(X, Y)
-
- and 
-
-X = unmix(X', Y)
-
-We can see from this that the combination of (X' and Y) still contain
-the information that was originally in X. Since it's clearly not in Y..
-it must all remain in X'.
-
-In other words, if there are 4096 bits of "unknownness" in X to start
-with, and I can get those same 4096 bits of "unknownness" back by
-unmixing X' and Y, then there must still be 4096 bits of "unknownness"
-in X'. If X' is 4096 bits long, then we've just proven that
-reversibility means the attacker can know nothing about the contents of
-X' by his choice of Y.
-
-Consider the case of a single bit: the quarter in my pocket. I let you
-tell me how many times to flip it, but this reversible function gives
-you no way to force it to be heads when I reveal it.
-
-So as long as the mixing function remains reversible, it is perfectly
-safe to mix in arbitrary amounts of potentially attacker-controlled
-data. In fact:
-
-$ ls -l /dev/random
-crw-rw-rw- 1 root root 1, 8 Feb 15 16:24 /dev/random
-
-..that's exactly what the 'w' bits here lets you do.
-
-On the other hand, you should continue to be vigilant against anything
-that bypasses the pool mixing.
+Thanks,
 
 -- 
-Mathematics is the supreme nostalgia of our time.
-
-
+Jiri Kosina
+SUSE Labs
