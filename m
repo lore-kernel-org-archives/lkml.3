@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756009AbaCDUDN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:03:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40890 "EHLO
+	id S1758128AbaCDV2J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:28:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40913 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755791AbaCDUDI (ORCPT
+	with ESMTP id S1756002AbaCDUDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:03:08 -0500
+	Tue, 4 Mar 2014 15:03:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sabrina Dubroca <sd@queasysnail.net>,
+        Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        "David S. Miller" <davem@davemloft.net>,
         Cong Wang <cwang@twopensource.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 042/172] netpoll: fix netconsole IPv6 setup
-Date: Tue,  4 Mar 2014 12:02:06 -0800
-Message-Id: <20140304200301.074543305@linuxfoundation.org>
+        Cong Wang <xiyou.wangcong@gmail.com>
+Subject: [PATCH 3.13 038/172] bridge: fix netconsole setup over bridge
+Date: Tue,  4 Mar 2014 12:02:02 -0800
+Message-Id: <20140304200300.947380194@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -30,52 +32,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sabrina Dubroca <sd@queasysnail.net>
+From: Cong Wang <cwang@twopensource.com>
 
-[ Upstream commit 00fe11b3c67dc670fe6391d22f1fe64e7c99a8ec ]
+[ Upstream commit dbe173079ab58a444e12dbebe96f5aec1e0bed1a ]
 
-Currently, to make netconsole start over IPv6, the source address
-needs to be specified. Without a source address, netpoll_parse_options
-assumes we're setting up over IPv4 and the destination IPv6 address is
-rejected.
+Commit 93d8bf9fb8f3 ("bridge: cleanup netpoll code") introduced
+a check in br_netpoll_enable(), but this check is incorrect for
+br_netpoll_setup(). This patch moves the code after the check
+into __br_netpoll_enable() and calls it in br_netpoll_setup().
+For br_add_if(), the check is still needed.
 
-Check if the IP version has been forced by a source address before
-checking for a version mismatch when parsing the destination address.
-
-Signed-off-by: Sabrina Dubroca <sd@queasysnail.net>
-Acked-by: Cong Wang <cwang@twopensource.com>
+Fixes: 93d8bf9fb8f3 ("bridge: cleanup netpoll code")
+Cc: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
+Cc: Stephen Hemminger <stephen@networkplumber.org>
+Cc: David S. Miller <davem@davemloft.net>
+Signed-off-by: Cong Wang <cwang@twopensource.com>
+Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+Acked-by: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
+Tested-by: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/netpoll.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ net/bridge/br_device.c |   51 ++++++++++++++++++++++++++-----------------------
+ 1 file changed, 28 insertions(+), 23 deletions(-)
 
---- a/net/core/netpoll.c
-+++ b/net/core/netpoll.c
-@@ -948,6 +948,7 @@ int netpoll_parse_options(struct netpoll
+--- a/net/bridge/br_device.c
++++ b/net/bridge/br_device.c
+@@ -226,6 +226,33 @@ static void br_netpoll_cleanup(struct ne
+ 		br_netpoll_disable(p);
+ }
+ 
++static int __br_netpoll_enable(struct net_bridge_port *p, gfp_t gfp)
++{
++	struct netpoll *np;
++	int err;
++
++	np = kzalloc(sizeof(*p->np), gfp);
++	if (!np)
++		return -ENOMEM;
++
++	err = __netpoll_setup(np, p->dev, gfp);
++	if (err) {
++		kfree(np);
++		return err;
++	}
++
++	p->np = np;
++	return err;
++}
++
++int br_netpoll_enable(struct net_bridge_port *p, gfp_t gfp)
++{
++	if (!p->br->dev->npinfo)
++		return 0;
++
++	return __br_netpoll_enable(p, gfp);
++}
++
+ static int br_netpoll_setup(struct net_device *dev, struct netpoll_info *ni,
+ 			    gfp_t gfp)
  {
- 	char *cur=opt, *delim;
- 	int ipv6;
-+	bool ipversion_set = false;
+@@ -236,7 +263,7 @@ static int br_netpoll_setup(struct net_d
+ 	list_for_each_entry(p, &br->port_list, list) {
+ 		if (!p->dev)
+ 			continue;
+-		err = br_netpoll_enable(p, gfp);
++		err = __br_netpoll_enable(p, gfp);
+ 		if (err)
+ 			goto fail;
+ 	}
+@@ -249,28 +276,6 @@ fail:
+ 	goto out;
+ }
  
- 	if (*cur != '@') {
- 		if ((delim = strchr(cur, '@')) == NULL)
-@@ -960,6 +961,7 @@ int netpoll_parse_options(struct netpoll
- 	cur++;
- 
- 	if (*cur != '/') {
-+		ipversion_set = true;
- 		if ((delim = strchr(cur, '/')) == NULL)
- 			goto parse_failed;
- 		*delim = 0;
-@@ -1002,7 +1004,7 @@ int netpoll_parse_options(struct netpoll
- 	ipv6 = netpoll_parse_ip_addr(cur, &np->remote_ip);
- 	if (ipv6 < 0)
- 		goto parse_failed;
--	else if (np->ipv6 != (bool)ipv6)
-+	else if (ipversion_set && np->ipv6 != (bool)ipv6)
- 		goto parse_failed;
- 	else
- 		np->ipv6 = (bool)ipv6;
+-int br_netpoll_enable(struct net_bridge_port *p, gfp_t gfp)
+-{
+-	struct netpoll *np;
+-	int err;
+-
+-	if (!p->br->dev->npinfo)
+-		return 0;
+-
+-	np = kzalloc(sizeof(*p->np), gfp);
+-	if (!np)
+-		return -ENOMEM;
+-
+-	err = __netpoll_setup(np, p->dev, gfp);
+-	if (err) {
+-		kfree(np);
+-		return err;
+-	}
+-
+-	p->np = np;
+-	return err;
+-}
+-
+ void br_netpoll_disable(struct net_bridge_port *p)
+ {
+ 	struct netpoll *np = p->np;
 
 
