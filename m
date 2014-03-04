@@ -1,72 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755463AbaCDT2F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 14:28:05 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:43638 "EHLO mail.zytor.com"
+	id S1755896AbaCDT33 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 14:29:29 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:60267 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754598AbaCDT1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 14:27:54 -0500
-Message-ID: <53162927.4040401@zytor.com>
-Date: Tue, 04 Mar 2014 11:27:35 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        libseccomp-discuss@lists.sourceforge.net
-Subject: Re: Making a universal list of syscalls?
-References: <CALCETrWbjazg_kAY1uAB+cMTdaJqtyGrTwQWNFCSzZ56B0KEkw@mail.gmail.com>
-In-Reply-To: <CALCETrWbjazg_kAY1uAB+cMTdaJqtyGrTwQWNFCSzZ56B0KEkw@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1755379AbaCDT2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 14:28:04 -0500
+From: Georgi Djakov <gdjakov@mm-sol.com>
+To: linux-mmc@vger.kernel.org, cjb@laptop.org, ulf.hansson@linaro.org,
+        devicetree@vger.kernel.org, grant.likely@linaro.org,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        swarren@wwwdotorg.org, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, rob@landley.net
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, Georgi Djakov <gdjakov@mm-sol.com>
+Subject: [PATCH v10 0/3] mmc: sdhci-msm: Add support for Qualcomm chipsets
+Date: Tue,  4 Mar 2014 21:27:03 +0200
+Message-Id: <1393961226-25618-1-git-send-email-gdjakov@mm-sol.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/2014 12:40 PM, Andy Lutomirski wrote:
-> Currently, dealing with Linux syscalls in an architecture-independent
-> way is a mess.  Here are some issues:
-> 
->  1. There's no clean way to map between syscall names and numbers on
-> different architectures.  The kernel contains a number of tables (that
-> work differently for different architectures).  strace has some arcane
-> mechanism.  libseccomp has another.
-> 
->  2. There's no clean way to map between syscall argument registers and
-> logical syscall arguments.  Each architecture knows how to do it, as
-> do strace and glibc, but I suspect that *everyone* else gets it wrong.
->  Especially on ARM.
-> 
->  3. Determining which architectures have which syscalls is a mess.
-> Recent kernel builds love to warn me that finit_module is missing on
-> x86_64.  This is simply not true.  I have no idea why.
-> 
->  4. Actually issuing a nontrivial syscall is annoying.  syscall(2) can
-> do it for the native architecture (only).
-> 
->  5. Decoding ucontext from SIGSYS is a mess.  I have prototype code
-> for libseccomp that can do it, but it gets the arguments wrong due to
-> ABI issues.  See (2).
-> 
-> I'd like to see a master list in the kernel that lists, for every
-> syscall, the name, the number for each architecture that implements it
-> (using the AUDIT_ARCH semantics, probably), and the signature.  The
-> build process could parse this table to replace the current per-arch
-> mess.
-> 
+This patchset adds basic support of the Secure Digital Host Controller
+Interface compliant controller found in Qualcomm SoCs.
 
-Hi Andy,
+Tested with eMMC and various micro SD cards on APQ8074 Dragonboard.
+Applies to linux-next.
 
-I have brought that up a lot of times, originally dating back from my
-work on klibc.  I have tried to keep the klibc syscall list in a sane
-format with architecture annotations, but it doesn't contain all the
-syscalls in the system.
+Changes from v9:
+- Make platform_execute_tuning() static (suggested by Josh Cartwright) 
+- Fix buffer size in platform_execute_tuning() (suggested by Josh Cartwright)
+- Fix typo in patch subject (suggested by Kumar Gala)
+- Move voltage ranges from DT to the driver (suggested by Bjorn Andersson)
+- Simplify sdhci_msm_setup_vreg and irq handler (suggested by Bjorn Andersson)
+- Disable prw irq in sdhci_msm_remove (suggested by Bjorn Andersson)
+- Fail on peripheral clock errors (suggested by Bjorn Andersson)
+- Remove unnecessary core_memres assignment (suggested by Bjorn Andersson)
+- Fixes on freeing resources in probe() (suggested by Bjorn Andersson)
 
-Extending that work and making it encompass everything the kernel
-exports would be highly useful, but it would take a lot of work.
+Changes from v8:
+- Added controller version suffix to the DT compatible string.
+- Switched Kconfig dependency from ARCH_MSM to the new ARCH_QCOM multiplatform.
+- Addressed comments from Stephen Boyd on the 3rd patch (execute tunning).
+- Added signed-off-by lines of the initial driver authors.
+- Picked up tested-by. https://lkml.org/lkml/2013/11/14/85
+- Minor changes on comments, prints and formatting.
 
-	-hpa
+Changes from v7:
+- Added call to sdhci_get_of_property().
+- Refactored sdhci_msm_dt_parse_vreg_info().
+- Fixed possible ERR_PTR() dereferencing.
+- Updated DT binding documentation.
+- Removed lpm and currents from DT.
+- Removed bus-speed-mode from DT.
+- Updated and moved the sanity checks.
+- Various typo and coding style fixes.
+- Added platform_execute_tunning implementation.
 
+Changes from v6:
+- Fixed wrong pointer in sdhci_msm_pwr_irq().
+- Added platform_execute_tuning() callback as the MSM SDHC does not
+  support tuning as in SDHC 3.0 spec and will need custom implementation
+  in order to support SDR104, HS200 and HS400.
+- Removed the always-on devicetree property - if the regulator is
+  configured as always-on, it will not be disabled anyway.
+- Removed devm_pinctrl_get_select_default() - the default pins are 
+  already set from the device core.
+- Removed wrapper function sdhci_msm_set_vdd_io_vol() and enum
+  vdd_io_level and now calling regulator_set_voltage() directly.
+- Converted #defines to use BIT() macro.
+- Added IS_ERR(vreg->reg) check at the beginning of sdhci_msm_vreg
+  functions.
+- Do not print errors when regulators init return -EPROBE_DEFER as the
+  deffered init is not an actual error.
+- Handle each power irq status bit separately in sdhci_msm_pwr_irq().
+- Ensure that any pending power irq is acknowledged before enabling it,
+  otherwise the irq handler will be fired prematurely.
+- Minor changes.
+
+Changes from v5:
+- Driver is split into multiple patches
+- Do not initialize variables that are assigned later in code
+- Remove some useless comments
+- Use shorter variable names
+- Change pr_err() to dev_err()
+- Optimized sdhci_msm_setup_vreg()
+- Some code alignment fixes
+- Improved DT values sanity check
+- Added dev_dbg print for sdhci controller version in probe()
+- Added usleep_range() after SW reset - it can take some time
+- Added SDHCI_QUIRK_SINGLE_POWER_WRITE - power handled by PMIC
+- Renamed DT property vdd-io to vddio
+
+Changes from v4:
+- Simplified sdhci_msm_vreg_disable() and sdhci_msm_set_vdd_io_vol()
+- Use devm_ioremap_resource() instead of devm_ioremap()
+- Converted IS_ERR_OR_NULL to IS_ERR
+- Disable regulators in sdhci_msm_remove()
+- Check for DT node at the beginning in sdhci_msm_probe()
+- Removed more redundant code
+- Changes in some error messages
+- Minor fixes
+
+Changes from v3:
+- Allocate memory for all required structs at once
+- Added termination entry in sdhci_msm_dt_match[]
+- Fixed a missing sdhci_pltfm_free() in probe()
+- Removed redundant of_match_ptr
+- Removed the unneeded function sdhci_msm_vreg_reset()
+
+Changes from v2:
+- Added DT bindings for clocks
+- Moved voltage regulators data to platform data
+- Removed unneeded includes
+- Removed obsolete and wrapper functions
+- Removed error checking where unnecessary
+- Removed redundant _clk suffix from clock names
+- Just return instead of goto where possible
+- Minor fixes
+
+Georgi Djakov (3):
+  mmc: sdhci-msm: Qualcomm SDHCI binding documentation
+  mmc: sdhci-msm: Initial support for Qualcomm chipsets
+  mmc: sdhci-msm: Add platform_execute_tuning implementation
+
+ .../devicetree/bindings/mmc/sdhci-msm.txt          |   63 ++
+ drivers/mmc/host/Kconfig                           |   13 +
+ drivers/mmc/host/Makefile                          |    1 +
+ drivers/mmc/host/sdhci-msm.c                       |  838 ++++++++++++++++++++
+ 4 files changed, 915 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mmc/sdhci-msm.txt
+ create mode 100644 drivers/mmc/host/sdhci-msm.c
+
+-- 
+1.7.9.5
 
