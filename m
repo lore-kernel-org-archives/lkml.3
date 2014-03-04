@@ -1,135 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754328AbaCDPrw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 10:47:52 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:32785 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753599AbaCDPru (ORCPT
+	id S1754459AbaCDPup (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 10:50:45 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51412 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754109AbaCDPun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 10:47:50 -0500
-Message-ID: <1393948056.3917.120.camel@paszta.hi.pengutronix.de>
-Subject: Re: [PATCH v5 5/7] [media] of: move common endpoint parsing to
- drivers/of
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        devicetree@vger.kernel.org
-Date: Tue, 04 Mar 2014 16:47:36 +0100
-In-Reply-To: <5315C535.2070303@ti.com>
-References: <1393522540-22887-1-git-send-email-p.zabel@pengutronix.de>
-		 <1393522540-22887-6-git-send-email-p.zabel@pengutronix.de>
-		 <531595AB.4000001@ti.com>
-	 <1393932989.3917.62.camel@paszta.hi.pengutronix.de>
-	 <5315C535.2070303@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 4 Mar 2014 10:50:43 -0500
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH v5 2/7] pci: OF: Fix the conversion of IO ranges into IO resources.
+Date: Tue,  4 Mar 2014 15:49:59 +0000
+Message-Id: <1393948204-11555-3-git-send-email-Liviu.Dudau@arm.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1393948204-11555-1-git-send-email-Liviu.Dudau@arm.com>
+References: <1393948204-11555-1-git-send-email-Liviu.Dudau@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, den 04.03.2014, 14:21 +0200 schrieb Tomi Valkeinen:
-> On 04/03/14 13:36, Philipp Zabel wrote:
-[...]
-> >> Can port_node be NULL? Probably only if something is quite wrong, but
-> >> maybe it's safer to return error in that case.
-> > 
-> > both of_property_read_u32 and of_node_put can handle port_node == NULL.
-> > I'll add a WARN_ONCE here as for of_graph_get_next_endpoint and continue
-> > on.
-> 
-> Isn't it better to return an error?
+The ranges property for a host bridge controller in DT describes
+the mapping between the PCI bus address and the CPU physical address.
+The resources framework however expects that the IO resources start
+at a pseudo "port" address 0 (zero) and have a maximum size of IO_SPACE_LIMIT.
+The conversion from pci ranges to resources failed to take that into account.
 
-I am not sure. We can still correctly parse the endpoint properties of a
-parentless node. All current users ignore the return value anyway. So as
-long as we still do the memset and and set local_node and id, returning
-an error effectively won't change the current behaviour.
+In the process move the function into drivers/of/address.c as it
+now depends on pci_address_to_pio() code.
 
-[...]
-> > It depends a bit on whether you are actually iterating over individual
-> > ports, or if you are just walking the whole endpoint graph to find
-> > remote devices that have to be added to the component master's waiting
-> > list, for example.
-> 
-> True, but the latter is easily implemented using the separate
-> port/endpoint iteration. So I see it as a more powerful API.
+Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
 
-Indeed. I see no problem in adding an of_graph_get_next_port function.
-But I'd like to keep the current of_graph_get_next_endpoint function
-iterating over all endpoints of the device.
-
-> >> Both of those are possible with the API in the series, but not very cleanly.
-> >>
-> >> Also, if you just want to iterate the endpoints, it's easy to implement
-> >> a helper using the separate port and endpoint iterations.
-> > 
-> > I started out to move an existing (albeit lightly used) API to a common
-> > place so others can use it and improve upon it, too. I'm happy to pile
-> > on fixes directly in this series, but could we separate the improvement
-> > step from the move, for the bigger modifications?
-> 
-> Yes, I understand that. What I wonder is that which is easier: make it a
-> public API now, more or less as it was in v4l2, or make it a public API
-> only when all the improvements we can think of have been made.
-> 
-> So my fear is that the API is now made public, and you and others start
-> to use it.
-
-And I fear that this series might outgrow maintainer attention spans if
-I keep adding to it.
-
-> But I can't use it, as I need things like separate
-> port/endpoint iteration. I need to add those, which also means that I
-> need to change all the users of the API, making the task more difficult
-> than I'd like.
->
-> However, this is more of "thinking out loud" than "I don't like the
-> series". It's a good series =).
-
-Thanks. How about I follow this up with a split port/endpoint parsing
-helpers after I get some acks?
-
-> > I had no immediate use for the port iteration, so I have taken no steps
-> > to add a function for this. I see no problem to add this later when
-> > somebody needs it, or even rewrite of_graph_get_next_endpoint to use it
-> > if it is feasible. Iterating over endpoints on a given port needs no
-> > helper, as you can just use for_each_child_of_node.
-> 
-> I would have a helper, which should do some sanity checks, like that the
-> node names are "endpoint".
-
-I'd prefer this to be a generic function of_get_next_child_by_name and
-possibly a macro for_each_named_child_of_node wrapping that.
-
-[...]
-> In omapdss each driver handles only the ports and endpoints defined for
-> its device, and they can be considered private to that device. The only
-> reason to look for the remote endpoint is to find the remote device. To
-> me the omapdss model makes sense, and feels logical and sane =). So I
-> have to say I'm not really familiar with the model you're using.
-
-The main difference I see is that a single IPU device will have two port
-nodes handled by the DRM driver and two port nodes handled by the V4L2
-driver, so we can't go back up to the IPU device tree node and iterate
-over all its ports in either the DRM or V4L2 drivers.
-You could argue that all the device tree parsing should be done from the
-IPU drivers, and the DRM and V4L2 drivers should use preparsed internal
-graph structures. But then we are getting into using struct media_entity
-in DRM drivers territory, and rather not go there right now.
-
-regards
-Philipp
+diff --git a/drivers/of/address.c b/drivers/of/address.c
+index d1bb30f..d595d98 100644
+--- a/drivers/of/address.c
++++ b/drivers/of/address.c
+@@ -724,3 +724,37 @@ void __iomem *of_iomap(struct device_node *np, int index)
+ 	return ioremap(res.start, resource_size(&res));
+ }
+ EXPORT_SYMBOL(of_iomap);
++
++/**
++ * of_pci_range_to_resource - Create a resource from an of_pci_range
++ * @range:	the PCI range that describes the resource
++ * @np:		device node where the range belongs to
++ * @res:	pointer to a valid resource that will be updated to
++ *              reflect the values contained in the range.
++ * Note that if the range is an IO range, the resource will be converted
++ * using pci_address_to_pio() which can fail if it is called too early or
++ * if the range cannot be matched to any host bridge IO space (our case here).
++ * To guard against that we try to register the IO range first.
++ * If that fails we know that pci_address_to_pio() will do too.
++ */
++void of_pci_range_to_resource(struct of_pci_range *range,
++	struct device_node *np, struct resource *res)
++{
++	res->flags = range->flags;
++	if (res->flags & IORESOURCE_IO) {
++		unsigned long port = -1;
++		if (!pci_register_io_range(range->cpu_addr, range->size))
++			port = pci_address_to_pio(range->cpu_addr);
++		if (port == (unsigned long)-1) {
++			res->start = (resource_size_t)OF_BAD_ADDR;
++			res->end = (resource_size_t)OF_BAD_ADDR;
++			return;
++		}
++		res->start = port;
++	} else {
++		res->start = range->cpu_addr;
++	}
++	res->end = res->start + range->size - 1;
++	res->parent = res->child = res->sibling = NULL;
++	res->name = np->full_name;
++}
+diff --git a/include/linux/of_address.h b/include/linux/of_address.h
+index 40c418d..3fe500a 100644
+--- a/include/linux/of_address.h
++++ b/include/linux/of_address.h
+@@ -23,17 +23,8 @@ struct of_pci_range {
+ #define for_each_of_pci_range(parser, range) \
+ 	for (; of_pci_range_parser_one(parser, range);)
+ 
+-static inline void of_pci_range_to_resource(struct of_pci_range *range,
+-					    struct device_node *np,
+-					    struct resource *res)
+-{
+-	res->flags = range->flags;
+-	res->start = range->cpu_addr;
+-	res->end = range->cpu_addr + range->size - 1;
+-	res->parent = res->child = res->sibling = NULL;
+-	res->name = np->full_name;
+-}
+-
++extern void of_pci_range_to_resource(struct of_pci_range *range,
++		struct device_node *np, struct resource *res);
+ /* Translate a DMA address from device space to CPU space */
+ extern u64 of_translate_dma_address(struct device_node *dev,
+ 				    const __be32 *in_addr);
+-- 
+1.9.0
 
