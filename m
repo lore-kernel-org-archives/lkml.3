@@ -1,128 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754354AbaCDR2g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 12:28:36 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:23493 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751065AbaCDR2e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 12:28:34 -0500
-Date: Tue, 4 Mar 2014 12:28:32 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Clark Williams <williams@redhat.com>, John Kacur <jkacur@redhat.com>,
-        uobergfe@redhat.com
-Subject: [PATCH RT] cpu_chill: Add a UNINTERRUPTIBLE hrtimer_nanosleep
-Message-ID: <20140304122832.0979c5dc@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S1754225AbaCDRco (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 12:32:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44194 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751275AbaCDRcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 12:32:42 -0500
+Date: Tue, 4 Mar 2014 18:31:34 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: David Long <dave.long@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        Rabin Vincent <rabin@rab.in>, "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        davem@davemloft.net, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 00/14] uprobes: Add uprobes support for ARM
+Message-ID: <20140304173134.GA18830@redhat.com>
+References: <1392017945-4507-1-git-send-email-dave.long@linaro.org> <20140301123026.GD21483@n2100.arm.linux.org.uk> <53131DBE.7020500@linaro.org> <20140303205039.GA8949@redhat.com> <20140304005306.GO21483@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140304005306.GO21483@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We hit another bug that was caused by switching cpu_chill() from
-msleep() to hrtimer_nanosleep().
+On 03/04, Russell King - ARM Linux wrote:
+>
+> On Mon, Mar 03, 2014 at 09:50:39PM +0100, Oleg Nesterov wrote:
+> >
+> > And why CONFIG_UPROBES should depend on PERF_EVENTS? uprobes can be
+> > used by (say) systemtap without UPROBE_EVENT/PERF_EVENTS.
+> >
+> > But as Russell pointed out the events directory is only built if
+> > CONFIG_PERF_EVENTS=y, so it should depend on it or select...
+> >
+> >
+> > I dunno. Personally I vote for the patch from Srikar in
+> >
+> > 	http://article.gmane.org/gmane.linux.kernel/1017186
+> >
+> > This is what we currently have, currently CONFIG_UPROBES is not
+> > user-selectable anyway.
+>
+> Yes, me too, but with the proviso that UPROBE_EVENT also sorts itself
+> out with PERF_EVENTS in some way too (either by selecting it, which
+> IMHO isn't nice, or by depending on it, or the build dependency itself
+> gets sorted.)
 
-This time it is a livelock. The problem is that hrtimer_nanosleep()
-calls schedule with the state == TASK_INTERRUPTIBLE. But these means
-that if a signal is pending, the scheduler wont schedule, and will
-simply change the current task state back to TASK_RUNNING. This
-nullifies the whole point of cpu_chill() in the first place. That is,
-if a task is spinning on a try_lock() and it preempted the owner of the
-lock, if it has a signal pending, it will never give up the CPU to let
-the owner of the lock run.
+OK... what do you think about the patch below for now?
 
-I made a static function __hrtimer_nanosleep() that takes a fifth
-parameter "state", which determines the task state of that the
-nanosleep() will be in. The normal hrtimer_nanosleep() will act the
-same, but cpu_chill() will call the __hrtimer_nanosleep() directly with
-the TASK_UNINTERRUPTIBLE state.
+> Maybe a simpler answer would be to change the build stuff (hand-crafted):
+>
+> kernel/Makefile
+> -obj-$(CONFIG_PERF_EVENTS) += events/
+> +obj-y += events/
+>
+> and kernel/events/Makefile:
+>
+> -obj-y := core.o ring_buffer.o callchain.o
+> +perf-y := core.o ring_buffer.o callchain.o
+>
+> -obj-$(CONFIG_HAVE_HW_BREAKPOINT) += hw_breakpoint.o
+> +perf-$(CONFIG_HAVE_HW_BREAKPOINT) += hw_breakpoint.o
+> +
+> +obj-${CONFIG_PERF_EVENTS) += $(perf-y)
 
-cpu_chill() only cares that the first sleep happens, and does not care
-about the state of the restart schedule (in hrtimer_nanosleep_restart).
+I fully agree. Except I can't review this change ;) But hopefully I
+can understand what it should do.
 
-Reported-by: Ulrich Obergfell <uobergfe@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+But personally I'd prefer to start with the simple/safe change which
+allows us to merge this series. If nothing else, even if I think that
+kernel/events/uprobes.c doesn't need CONFIG_PERF_EVENTS, this should
+be verified and discussed with perf maintainers.
+
+If you agree with the patch below, how should we route it? I won't
+argue if you push it along with other patches from David.
+
+BTW... why UPROBE_EVENT depends on MMU? I think that ARCH_SUPPORTS_UPROBES
+should not be true if !CONFIG_MMU.
+
+Oleg.
 ---
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 083815d..c19183d 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1769,12 +1769,13 @@ void hrtimer_init_sleeper(struct hrtimer_sleeper *sl, struct task_struct *task)
- }
- EXPORT_SYMBOL_GPL(hrtimer_init_sleeper);
+
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 80bbb8c..97ff872 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -86,9 +86,7 @@ config KPROBES_ON_FTRACE
+ 	 optimize on top of function tracing.
  
--static int __sched do_nanosleep(struct hrtimer_sleeper *t, enum hrtimer_mode mode)
-+static int __sched do_nanosleep(struct hrtimer_sleeper *t, enum hrtimer_mode mode,
-+				unsigned long state)
- {
- 	hrtimer_init_sleeper(t, current);
+ config UPROBES
+-	bool "Transparent user-space probes (EXPERIMENTAL)"
+-	depends on UPROBE_EVENT && PERF_EVENTS
+-	default n
++	def_bool n
+ 	select PERCPU_RWSEM
+ 	help
+ 	  Uprobes is the user-space counterpart to kprobes: they
+@@ -101,8 +99,6 @@ config UPROBES
+ 	    managed by the kernel and kept transparent to the probed
+ 	    application. )
  
- 	do {
--		set_current_state(TASK_INTERRUPTIBLE);
-+		set_current_state(state);
- 		hrtimer_start_expires(&t->timer, mode);
- 		if (!hrtimer_active(&t->timer))
- 			t->task = NULL;
-@@ -1818,7 +1819,8 @@ long __sched hrtimer_nanosleep_restart(struct restart_block *restart)
- 				HRTIMER_MODE_ABS);
- 	hrtimer_set_expires_tv64(&t.timer, restart->nanosleep.expires);
- 
--	if (do_nanosleep(&t, HRTIMER_MODE_ABS))
-+	/* cpu_chill() does not care about restart state. */
-+	if (do_nanosleep(&t, HRTIMER_MODE_ABS, TASK_INTERRUPTIBLE))
- 		goto out;
- 
- 	rmtp = restart->nanosleep.rmtp;
-@@ -1835,8 +1837,10 @@ out:
- 	return ret;
- }
- 
--long hrtimer_nanosleep(struct timespec *rqtp, struct timespec __user *rmtp,
--		       const enum hrtimer_mode mode, const clockid_t clockid)
-+static long
-+__hrtimer_nanosleep(struct timespec *rqtp, struct timespec __user *rmtp,
-+		    const enum hrtimer_mode mode, const clockid_t clockid,
-+		    unsigned long state)
- {
- 	struct restart_block *restart;
- 	struct hrtimer_sleeper t;
-@@ -1849,7 +1853,7 @@ long hrtimer_nanosleep(struct timespec *rqtp, struct timespec __user *rmtp,
- 
- 	hrtimer_init_on_stack(&t.timer, clockid, mode);
- 	hrtimer_set_expires_range_ns(&t.timer, timespec_to_ktime(*rqtp), slack);
--	if (do_nanosleep(&t, mode))
-+	if (do_nanosleep(&t, mode, state))
- 		goto out;
- 
- 	/* Absolute timers do not update the rmtp value and restart: */
-@@ -1876,6 +1880,12 @@ out:
- 	return ret;
- }
- 
-+long hrtimer_nanosleep(struct timespec *rqtp, struct timespec __user *rmtp,
-+		       const enum hrtimer_mode mode, const clockid_t clockid)
-+{
-+	return __hrtimer_nanosleep(rqtp, rmtp, mode, clockid, TASK_INTERRUPTIBLE);
-+}
-+
- SYSCALL_DEFINE2(nanosleep, struct timespec __user *, rqtp,
- 		struct timespec __user *, rmtp)
- {
-@@ -1902,7 +1912,8 @@ void cpu_chill(void)
- 	unsigned int freeze_flag = current->flags & PF_NOFREEZE;
- 
- 	current->flags |= PF_NOFREEZE;
--	hrtimer_nanosleep(&tu, NULL, HRTIMER_MODE_REL, CLOCK_MONOTONIC);
-+	__hrtimer_nanosleep(&tu, NULL, HRTIMER_MODE_REL, CLOCK_MONOTONIC,
-+			    TASK_UNINTERRUPTIBLE);
- 	if (!freeze_flag)
- 		current->flags &= ~PF_NOFREEZE;
- }
+-	  If in doubt, say "N".
+-
+ config HAVE_64BIT_ALIGNED_ACCESS
+ 	def_bool 64BIT && !HAVE_EFFICIENT_UNALIGNED_ACCESS
+ 	help
+diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
+index 015f85a..8639819 100644
+--- a/kernel/trace/Kconfig
++++ b/kernel/trace/Kconfig
+@@ -424,6 +424,7 @@ config UPROBE_EVENT
+ 	bool "Enable uprobes-based dynamic events"
+ 	depends on ARCH_SUPPORTS_UPROBES
+ 	depends on MMU
++	depends on PERF_EVENTS
+ 	select UPROBES
+ 	select PROBE_EVENTS
+ 	select TRACING
+
