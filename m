@@ -1,175 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757037AbaCDLOE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 06:14:04 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:57195 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756755AbaCDLOB (ORCPT
+	id S932092AbaCDLOj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 06:14:39 -0500
+Received: from mailapp01.imgtec.com ([195.89.28.114]:45342 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756757AbaCDLOi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 06:14:01 -0500
-Message-ID: <5315B572.1000403@canonical.com>
-Date: Tue, 04 Mar 2014 19:13:54 +0800
-From: Shuduo Sang <shuduo.sang@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 4 Mar 2014 06:14:38 -0500
+Message-ID: <5315B598.5020207@imgtec.com>
+Date: Tue, 4 Mar 2014 11:14:32 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Tobias Klauser <tklauser@distanz.ch>, bjorn@mork.no,
-        ibm-acpi-devel@lists.sourceforge.net, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ibm-acpi@hmh.eng.br,
-        matthew.garrett@nebula.net, platform-driver-x86@vger.kernel.org,
-        bruce.ma@canonical.com
-Subject: [PATCH V3] support Thinkpad X1 Carbon 2nd generation's adaptive keyboard
-References: <5314AE4C.4090502@canonical.com> <20140304091916.GE1883@distanz.ch>
-In-Reply-To: <20140304091916.GE1883@distanz.ch>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        <grant.likely@linaro.org>, <linus.walleij@linaro.org>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] irq: Changed the return type of irq_chip.irq_startup()
+ from unsigned int to int
+References: <CACh+v5Nkuct0J65OHcnSd6Dfq4EyfafY8RpTvdwKXUA7A8_+Xw@mail.gmail.com> <1393521679-32331-1-git-send-email-jjhiblot@traphandler.com> <7150036.UpHTd1PK1K@radagast> <alpine.DEB.2.02.1403011629540.18573@ionos.tec.linutronix.de> <20140301160114.GE21483@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1403041134410.18573@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1403041134410.18573@ionos.tec.linutronix.de>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/03/14 10:57, Thomas Gleixner wrote:
+> The reason is the usage of commata instead of semicolons. You can work
+> around that with cocci, but that gets ugly ....
+> 
+> Thanks,
+> 
+> 	tglx
+> 
+> --- a/drivers/gpio/gpio-tz1090.c
+> +++ b/drivers/gpio/gpio-tz1090.c
+> @@ -488,26 +488,26 @@ static int tz1090_gpio_bank_probe(struct tz1090_gpio_bank_info *info)
+>  	gc->chip_types[0].handler		= handle_level_irq;
+>  	gc->chip_types[0].regs.ack		= REG_GPIO_IRQ_STS;
+>  	gc->chip_types[0].regs.mask		= REG_GPIO_IRQ_EN;
+> -	gc->chip_types[0].chip.irq_startup	= gpio_startup_irq,
+> -	gc->chip_types[0].chip.irq_ack		= irq_gc_ack_clr_bit,
+> -	gc->chip_types[0].chip.irq_mask		= irq_gc_mask_clr_bit,
+> -	gc->chip_types[0].chip.irq_unmask	= irq_gc_mask_set_bit,
+> -	gc->chip_types[0].chip.irq_set_type	= gpio_set_irq_type,
+> -	gc->chip_types[0].chip.irq_set_wake	= gpio_set_irq_wake,
+> -	gc->chip_types[0].chip.flags		= IRQCHIP_MASK_ON_SUSPEND,
+> +	gc->chip_types[0].chip.irq_startup	= gpio_startup_irq;
+> +	gc->chip_types[0].chip.irq_ack		= irq_gc_ack_clr_bit;
+> +	gc->chip_types[0].chip.irq_mask		= irq_gc_mask_clr_bit;
+> +	gc->chip_types[0].chip.irq_unmask	= irq_gc_mask_set_bit;
+> +	gc->chip_types[0].chip.irq_set_type	= gpio_set_irq_type;
+> +	gc->chip_types[0].chip.irq_set_wake	= gpio_set_irq_wake;
+> +	gc->chip_types[0].chip.flags		= IRQCHIP_MASK_ON_SUSPEND;
+>  
+>  	/* edge chip type */
+>  	gc->chip_types[1].type			= IRQ_TYPE_EDGE_BOTH;
+>  	gc->chip_types[1].handler		= handle_edge_irq;
+>  	gc->chip_types[1].regs.ack		= REG_GPIO_IRQ_STS;
+>  	gc->chip_types[1].regs.mask		= REG_GPIO_IRQ_EN;
+> -	gc->chip_types[1].chip.irq_startup	= gpio_startup_irq,
+> -	gc->chip_types[1].chip.irq_ack		= irq_gc_ack_clr_bit,
+> -	gc->chip_types[1].chip.irq_mask		= irq_gc_mask_clr_bit,
+> -	gc->chip_types[1].chip.irq_unmask	= irq_gc_mask_set_bit,
+> -	gc->chip_types[1].chip.irq_set_type	= gpio_set_irq_type,
+> -	gc->chip_types[1].chip.irq_set_wake	= gpio_set_irq_wake,
+> -	gc->chip_types[1].chip.flags		= IRQCHIP_MASK_ON_SUSPEND,
+> +	gc->chip_types[1].chip.irq_startup	= gpio_startup_irq;
+> +	gc->chip_types[1].chip.irq_ack		= irq_gc_ack_clr_bit;
+> +	gc->chip_types[1].chip.irq_mask		= irq_gc_mask_clr_bit;
+> +	gc->chip_types[1].chip.irq_unmask	= irq_gc_mask_set_bit;
+> +	gc->chip_types[1].chip.irq_set_type	= gpio_set_irq_type;
+> +	gc->chip_types[1].chip.irq_set_wake	= gpio_set_irq_wake;
+> +	gc->chip_types[1].chip.flags		= IRQCHIP_MASK_ON_SUSPEND;
+>  
+>  	/* Setup chained handler for this GPIO bank */
+>  	irq_set_handler_data(bank->irq, bank);
+> 
 
-Submit patch V3 to support Adaptive Keyboard on Thinkpad X1 Carbon 2nd
-generation according to Tobias's comments.
+Whoops, that was a subtle mistake from when I converted it from static
+irqchips to using the generic irqchip stuff. Thanks for the patch, I'll
+add a commit message and resubmit.
 
-Thanks,
-Shuduo
-
->From 2b8175e69deee661d97d371b2422a9c192fefd52 Mon Sep 17 00:00:00 2001
-From: Shuduo Sang <sangshuduo@gmail.com>
-Date: Mon, 3 Mar 2014 14:29:32 +0800
-Subject: [PATCH] support thinkpad X1 Carbon's adaptive keyboard
-
-Thinkpad X1 Carbon's adaptive keyboard has five modes including Home
-mode, Web browser mode, Web conference mode, Function mode and Lay-flat
-mode. We support Home mode and Function mode currently.
-
-Signed-off-by: Bruce Ma <bruce.ma@canonical.com>
-Signed-off-by: Shuduo Sang <shuduo.sang@canonical.com>
----
- drivers/platform/x86/thinkpad_acpi.c | 102
-+++++++++++++++++++++++++++++++++++
- 1 file changed, 102 insertions(+)
-
-diff --git a/drivers/platform/x86/thinkpad_acpi.c
-b/drivers/platform/x86/thinkpad_acpi.c
-index defb6af..6664dcd 100644
---- a/drivers/platform/x86/thinkpad_acpi.c
-+++ b/drivers/platform/x86/thinkpad_acpi.c
-@@ -3437,6 +3437,106 @@ err_exit:
- 	return (res < 0)? res : 1;
- }
-
-+/* Thinkpad X1 Carbon support 5 modes including Home mode, Web browser
-+ * mode, Web conference mode, Function mode and Lay-flat mode.
-+ * We support Home mode and Function mode currently.
-+ *
-+ * Will consider support rest of modes in future.
-+ *
-+ */
-+enum ADAPTIVE_KEY_MODE {
-+	HOME_MODE,
-+	WEB_BROWSER_MODE,
-+	WEB_CONFERENCE_MODE,
-+	FUNCTION_MODE,
-+	LAYFLAT_MODE
-+};
-+
-+int adaptive_keyboard_modes[] = {
-+	HOME_MODE,
-+/*	WEB_BROWSER_MODE = 2,
-+	WEB_CONFERENCE_MODE = 3, */
-+	FUNCTION_MODE
-+};
-+
-+#define DFR_CHANGE_ROW			0x101
-+#define DFR_SHOW_QUICKVIEW_ROW		0x102
-+
-+/* press Fn key a while second, it will switch to Function Mode. Then
-+ * release Fn key, previous mode be restored.
-+ */
-+static bool adaptive_keyboard_mode_is_saved;
-+static int adaptive_keyboard_prev_mode;
-+
-+static int adaptive_keyboard_get_next_mode(int mode)
-+{
-+	int i;
-+	size_t max_mode = ARRAY_SIZE(adaptive_keyboard_modes) - 1;
-+
-+	for (i = 0; i <= max_mode; i++) {
-+		if (adaptive_keyboard_modes[i] == mode)
-+			break;
-+	}
-+
-+	if (i >= max_mode)
-+		i = 0;
-+	else
-+		i++;
-+
-+	return adaptive_keyboard_modes[i];
-+}
-+
-+static bool adaptive_keyboard_hotkey_notify_hotkey(unsigned int scancode)
-+{
-+	u32 current_mode = 0;
-+	int new_mode = 0;
-+
-+	switch (scancode) {
-+	case DFR_CHANGE_ROW:
-+		if (adaptive_keyboard_mode_is_saved) {
-+			new_mode = adaptive_keyboard_prev_mode;
-+			adaptive_keyboard_mode_is_saved = false;
-+		} else {
-+			if (!acpi_evalf(
-+					hkey_handle, &current_mode,
-+					"GTRW", "dd", 0)) {
-+				pr_err("Cannot read adaptive keyboard mode\n");
-+				return false;
-+			} else {
-+				new_mode = adaptive_keyboard_get_next_mode(
-+						current_mode);
-+			}
-+		}
-+
-+		if (!acpi_evalf(hkey_handle, NULL, "STRW", "vd", new_mode)) {
-+			pr_err("Cannot set adaptive keyboard mode\n");
-+			return false;
-+		}
-+
-+		return true;
-+
-+	case DFR_SHOW_QUICKVIEW_ROW:
-+		if (!acpi_evalf(hkey_handle,
-+				&adaptive_keyboard_prev_mode,
-+				"GTRW", "dd", 0)) {
-+			pr_err("Cannot read adaptive keyboard mode\n");
-+			return false;
-+		} else {
-+			adaptive_keyboard_mode_is_saved = true;
-+
-+			if (!acpi_evalf(hkey_handle,
-+					NULL, "STRW", "vd", FUNCTION_MODE)) {
-+				pr_err("Cannot set adaptive keyboard mode\n");
-+				return false;
-+			}
-+		}
-+		return true;
-+
-+	default:
-+		return false;
-+	}
-+}
-+
- static bool hotkey_notify_hotkey(const u32 hkey,
- 				 bool *send_acpi_ev,
- 				 bool *ignore_acpi_ev)
-@@ -3456,6 +3556,8 @@ static bool hotkey_notify_hotkey(const u32 hkey,
- 			*ignore_acpi_ev = true;
- 		}
- 		return true;
-+	} else {
-+		return adaptive_keyboard_hotkey_notify_hotkey(scancode);
- 	}
- 	return false;
- }
--- 
-1.9.0
-
+Cheers
+James
