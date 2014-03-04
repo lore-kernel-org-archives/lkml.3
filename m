@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756131AbaCDUDV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:03:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40921 "EHLO
+	id S1756440AbaCDVWr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:22:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40981 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755791AbaCDUDO (ORCPT
+	with ESMTP id S1756140AbaCDUDW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:03:14 -0500
+	Tue, 4 Mar 2014 15:03:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Florian Westphal <fw@strlen.de>, Eric Dumazet <edumazet@google.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Arnaud Ebalard <arno@natisbad.org>, Willy Tarreau <w@1wt.eu>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 054/172] net: add and use skb_gso_transport_seglen()
-Date: Tue,  4 Mar 2014 12:02:18 -0800
-Message-Id: <20140304200301.468007381@linuxfoundation.org>
+Subject: [PATCH 3.13 060/172] net: mvneta: add missing bit descriptions for interrupt masks and causes
+Date: Tue,  4 Mar 2014 12:02:24 -0800
+Message-Id: <20140304200301.652836698@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -29,108 +31,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Westphal <fw@strlen.de>
+From: willy tarreau <w@1wt.eu>
 
-commit de960aa9ab4decc3304959f69533eef64d05d8e8 upstream.
+[ Upstream commit 40ba35e74fa56866918d2f3bc0528b5b92725d5e ]
 
-This moves part of Eric Dumazets skb_gso_seglen helper from tbf sched to
-skbuff core so it may be reused by upcoming ip forwarding path patch.
+Marvell has not published the chip's datasheet yet, so it's very hard
+to find the relevant bits to manipulate to change the IRQ behaviour.
+Fortunately, these bits are described in the proprietary LSP patch set
+which is publicly available here :
 
-Signed-off-by: Florian Westphal <fw@strlen.de>
-Acked-by: Eric Dumazet <edumazet@google.com>
+    http://www.plugcomputer.org/downloads/mirabox/
+
+So let's put them back in the driver in order to reduce the burden of
+current and future maintenance.
+
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Tested-by: Arnaud Ebalard <arno@natisbad.org>
+Signed-off-by: Willy Tarreau <w@1wt.eu>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/linux/skbuff.h |    1 +
- net/core/skbuff.c      |   25 +++++++++++++++++++++++++
- net/sched/sch_tbf.c    |   13 +++----------
- 3 files changed, 29 insertions(+), 10 deletions(-)
+ drivers/net/ethernet/marvell/mvneta.c |   44 ++++++++++++++++++++++++++++++++--
+ 1 file changed, 42 insertions(+), 2 deletions(-)
 
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -2371,6 +2371,7 @@ void skb_copy_and_csum_dev(const struct
- void skb_split(struct sk_buff *skb, struct sk_buff *skb1, const u32 len);
- int skb_shift(struct sk_buff *tgt, struct sk_buff *skb, int shiftlen);
- void skb_scrub_packet(struct sk_buff *skb, bool xnet);
-+unsigned int skb_gso_transport_seglen(const struct sk_buff *skb);
- struct sk_buff *skb_segment(struct sk_buff *skb, netdev_features_t features);
- 
- struct skb_checksum_ops {
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -47,6 +47,8 @@
- #include <linux/in.h>
- #include <linux/inet.h>
- #include <linux/slab.h>
-+#include <linux/tcp.h>
-+#include <linux/udp.h>
- #include <linux/netdevice.h>
- #ifdef CONFIG_NET_CLS_ACT
- #include <net/pkt_sched.h>
-@@ -3562,3 +3564,26 @@ void skb_scrub_packet(struct sk_buff *sk
- 	nf_reset_trace(skb);
- }
- EXPORT_SYMBOL_GPL(skb_scrub_packet);
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -101,16 +101,56 @@
+ #define      MVNETA_CPU_RXQ_ACCESS_ALL_MASK      0x000000ff
+ #define      MVNETA_CPU_TXQ_ACCESS_ALL_MASK      0x0000ff00
+ #define MVNETA_RXQ_TIME_COAL_REG(q)              (0x2580 + ((q) << 2))
 +
-+/**
-+ * skb_gso_transport_seglen - Return length of individual segments of a gso packet
-+ *
-+ * @skb: GSO skb
-+ *
-+ * skb_gso_transport_seglen is used to determine the real size of the
-+ * individual segments, including Layer4 headers (TCP/UDP).
-+ *
-+ * The MAC/L2 or network (IP, IPv6) headers are not accounted for.
++/* Exception Interrupt Port/Queue Cause register */
++
+ #define MVNETA_INTR_NEW_CAUSE                    0x25a0
+-#define      MVNETA_RX_INTR_MASK(nr_rxqs)        (((1 << nr_rxqs) - 1) << 8)
+ #define MVNETA_INTR_NEW_MASK                     0x25a4
++
++/* bits  0..7  = TXQ SENT, one bit per queue.
++ * bits  8..15 = RXQ OCCUP, one bit per queue.
++ * bits 16..23 = RXQ FREE, one bit per queue.
++ * bit  29 = OLD_REG_SUM, see old reg ?
++ * bit  30 = TX_ERR_SUM, one bit for 4 ports
++ * bit  31 = MISC_SUM,   one bit for 4 ports
 + */
-+unsigned int skb_gso_transport_seglen(const struct sk_buff *skb)
-+{
-+	const struct skb_shared_info *shinfo = skb_shinfo(skb);
-+	unsigned int hdr_len;
++#define      MVNETA_TX_INTR_MASK(nr_txqs)        (((1 << nr_txqs) - 1) << 0)
++#define      MVNETA_TX_INTR_MASK_ALL             (0xff << 0)
++#define      MVNETA_RX_INTR_MASK(nr_rxqs)        (((1 << nr_rxqs) - 1) << 8)
++#define      MVNETA_RX_INTR_MASK_ALL             (0xff << 8)
 +
-+	if (likely(shinfo->gso_type & (SKB_GSO_TCPV4 | SKB_GSO_TCPV6)))
-+		hdr_len = tcp_hdrlen(skb);
-+	else
-+		hdr_len = sizeof(struct udphdr);
-+	return hdr_len + shinfo->gso_size;
-+}
-+EXPORT_SYMBOL_GPL(skb_gso_transport_seglen);
---- a/net/sched/sch_tbf.c
-+++ b/net/sched/sch_tbf.c
-@@ -21,7 +21,6 @@
- #include <net/netlink.h>
- #include <net/sch_generic.h>
- #include <net/pkt_sched.h>
--#include <net/tcp.h>
- 
- 
- /*	Simple Token Bucket Filter.
-@@ -148,16 +147,10 @@ static u64 psched_ns_t2l(const struct ps
-  * Return length of individual segments of a gso packet,
-  * including all headers (MAC, IP, TCP/UDP)
-  */
--static unsigned int skb_gso_seglen(const struct sk_buff *skb)
-+static unsigned int skb_gso_mac_seglen(const struct sk_buff *skb)
- {
- 	unsigned int hdr_len = skb_transport_header(skb) - skb_mac_header(skb);
--	const struct skb_shared_info *shinfo = skb_shinfo(skb);
--
--	if (likely(shinfo->gso_type & (SKB_GSO_TCPV4 | SKB_GSO_TCPV6)))
--		hdr_len += tcp_hdrlen(skb);
--	else
--		hdr_len += sizeof(struct udphdr);
--	return hdr_len + shinfo->gso_size;
-+	return hdr_len + skb_gso_transport_seglen(skb);
- }
- 
- /* GSO packet is too big, segment it so that tbf can transmit
-@@ -202,7 +195,7 @@ static int tbf_enqueue(struct sk_buff *s
- 	int ret;
- 
- 	if (qdisc_pkt_len(skb) > q->max_size) {
--		if (skb_is_gso(skb) && skb_gso_seglen(skb) <= q->max_size)
-+		if (skb_is_gso(skb) && skb_gso_mac_seglen(skb) <= q->max_size)
- 			return tbf_segment(skb, sch);
- 		return qdisc_reshape_fail(skb, sch);
- 	}
+ #define MVNETA_INTR_OLD_CAUSE                    0x25a8
+ #define MVNETA_INTR_OLD_MASK                     0x25ac
++
++/* Data Path Port/Queue Cause Register */
+ #define MVNETA_INTR_MISC_CAUSE                   0x25b0
+ #define MVNETA_INTR_MISC_MASK                    0x25b4
++
++#define      MVNETA_CAUSE_PHY_STATUS_CHANGE      BIT(0)
++#define      MVNETA_CAUSE_LINK_CHANGE            BIT(1)
++#define      MVNETA_CAUSE_PTP                    BIT(4)
++
++#define      MVNETA_CAUSE_INTERNAL_ADDR_ERR      BIT(7)
++#define      MVNETA_CAUSE_RX_OVERRUN             BIT(8)
++#define      MVNETA_CAUSE_RX_CRC_ERROR           BIT(9)
++#define      MVNETA_CAUSE_RX_LARGE_PKT           BIT(10)
++#define      MVNETA_CAUSE_TX_UNDERUN             BIT(11)
++#define      MVNETA_CAUSE_PRBS_ERR               BIT(12)
++#define      MVNETA_CAUSE_PSC_SYNC_CHANGE        BIT(13)
++#define      MVNETA_CAUSE_SERDES_SYNC_ERR        BIT(14)
++
++#define      MVNETA_CAUSE_BMU_ALLOC_ERR_SHIFT    16
++#define      MVNETA_CAUSE_BMU_ALLOC_ERR_ALL_MASK   (0xF << MVNETA_CAUSE_BMU_ALLOC_ERR_SHIFT)
++#define      MVNETA_CAUSE_BMU_ALLOC_ERR_MASK(pool) (1 << (MVNETA_CAUSE_BMU_ALLOC_ERR_SHIFT + (pool)))
++
++#define      MVNETA_CAUSE_TXQ_ERROR_SHIFT        24
++#define      MVNETA_CAUSE_TXQ_ERROR_ALL_MASK     (0xFF << MVNETA_CAUSE_TXQ_ERROR_SHIFT)
++#define      MVNETA_CAUSE_TXQ_ERROR_MASK(q)      (1 << (MVNETA_CAUSE_TXQ_ERROR_SHIFT + (q)))
++
+ #define MVNETA_INTR_ENABLE                       0x25b8
+ #define      MVNETA_TXQ_INTR_ENABLE_ALL_MASK     0x0000ff00
+-#define      MVNETA_RXQ_INTR_ENABLE_ALL_MASK     0xff000000
++#define      MVNETA_RXQ_INTR_ENABLE_ALL_MASK     0xff000000  // note: neta says it's 0x000000FF
++
+ #define MVNETA_RXQ_CMD                           0x2680
+ #define      MVNETA_RXQ_DISABLE_SHIFT            8
+ #define      MVNETA_RXQ_ENABLE_MASK              0x000000ff
 
 
