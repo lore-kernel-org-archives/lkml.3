@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932394AbaCDUSU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:18:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41727 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757286AbaCDUFc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757288AbaCDUFc (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 4 Mar 2014 15:05:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41713 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755281AbaCDUF2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 15:05:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pierre Ossman <pierre@ossman.eu>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.10 60/97] cpufreq: powernow-k8: Initialize per-cpu data-structures properly
-Date: Tue,  4 Mar 2014 12:04:13 -0800
-Message-Id: <20140304200347.999238193@linuxfoundation.org>
+        Hans-Christoph Schemmel <hans-christoph.schemmel@gemalto.com>,
+        Christian Schmiedl <christian.schmiedl@gemalto.com>,
+        Nicolaus Colberg <nicolaus.colberg@gemalto.com>,
+        David McCullough <david.mccullough@accelecon.com>,
+        Aleksander Morgado <aleksander@aleksander.es>
+Subject: [PATCH 3.10 69/97] USB: serial: option: blacklist interface 4 for Cinterion PHS8 and PXS8
+Date: Tue,  4 Mar 2014 12:04:22 -0800
+Message-Id: <20140304200348.274588821@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -31,78 +32,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+From: Aleksander Morgado <aleksander@aleksander.es>
 
-commit c3274763bfc3bf1ececa269ed6e6c4d7ec1c3e5e upstream.
+commit 12df84d4a80278a5b1abfec3206795291da52fc9 upstream.
 
-The powernow-k8 driver maintains a per-cpu data-structure called
-powernow_data that is used to perform the frequency transitions.
-It initializes this data structure only for the policy->cpu. So,
-accesses to this data structure by other CPUs results in various
-problems because they would have been uninitialized.
+This interface is to be handled by the qmi_wwan driver.
 
-Specifically, if a cpu (!= policy->cpu) invokes the drivers' ->get()
-function, it returns 0 as the KHz value, since its per-cpu memory
-doesn't point to anything valid. This causes problems during
-suspend/resume since cpufreq_update_policy() tries to enforce this
-(0 KHz) as the current frequency of the CPU, and this madness gets
-propagated to adjust_jiffies() as well. Eventually, lots of things
-start breaking down, including the r8169 ethernet card, in one
-particularly interesting case reported by Pierre Ossman.
-
-Fix this by initializing the per-cpu data-structures of all the CPUs
-in the policy appropriately.
-
-References: https://bugzilla.kernel.org/show_bug.cgi?id=70311
-Reported-by: Pierre Ossman <pierre@ossman.eu>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+CC: Hans-Christoph Schemmel <hans-christoph.schemmel@gemalto.com>
+CC: Christian Schmiedl <christian.schmiedl@gemalto.com>
+CC: Nicolaus Colberg <nicolaus.colberg@gemalto.com>
+CC: David McCullough <david.mccullough@accelecon.com>
+Signed-off-by: Aleksander Morgado <aleksander@aleksander.es>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/powernow-k8.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ drivers/usb/serial/option.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/cpufreq/powernow-k8.c
-+++ b/drivers/cpufreq/powernow-k8.c
-@@ -1100,7 +1100,7 @@ static int __cpuinit powernowk8_cpu_init
- {
- 	struct powernow_k8_data *data;
- 	struct init_on_cpu init_on_cpu;
--	int rc;
-+	int rc, cpu;
- 
- 	smp_call_function_single(pol->cpu, check_supported_cpu, &rc, 1);
- 	if (rc)
-@@ -1169,7 +1169,9 @@ static int __cpuinit powernowk8_cpu_init
- 	pr_debug("cpu_init done, current fid 0x%x, vid 0x%x\n",
- 		 data->currfid, data->currvid);
- 
--	per_cpu(powernow_data, pol->cpu) = data;
-+	/* Point all the CPUs in this policy to the same data */
-+	for_each_cpu(cpu, pol->cpus)
-+		per_cpu(powernow_data, cpu) = data;
- 
- 	return 0;
- 
-@@ -1184,6 +1186,7 @@ err_out:
- static int powernowk8_cpu_exit(struct cpufreq_policy *pol)
- {
- 	struct powernow_k8_data *data = per_cpu(powernow_data, pol->cpu);
-+	int cpu;
- 
- 	if (!data)
- 		return -EINVAL;
-@@ -1194,7 +1197,8 @@ static int powernowk8_cpu_exit(struct cp
- 
- 	kfree(data->powernow_table);
- 	kfree(data);
--	per_cpu(powernow_data, pol->cpu) = NULL;
-+	for_each_cpu(cpu, pol->cpus)
-+		per_cpu(powernow_data, cpu) = NULL;
- 
- 	return 0;
- }
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -1526,7 +1526,8 @@ static const struct usb_device_id option
+ 	/* Cinterion */
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_E) },
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_P) },
+-	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PH8) },
++	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PH8),
++		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_AHXX) },
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PLXX),
+ 		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
 
 
