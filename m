@@ -1,102 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932397AbaCDUcK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:32:10 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:44134 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757852AbaCDUcF (ORCPT
+	id S932539AbaCDUcl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:32:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41540 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932176AbaCDUE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:32:05 -0500
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: dhowells@redhat.com, yasutake.koichi@jp.panasonic.com
-Cc: tglx@linutronix.de, srivatsa.bhat@linux.vnet.ibm.com,
-        linux-am33-list@redhat.com, linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] [RESEND] mn10300: remove deprecated IRQF_DISABLED
-Date: Tue,  4 Mar 2014 21:31:51 +0100
-Message-Id: <1393965111-17092-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1386403120-12927-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1386403120-12927-1-git-send-email-michael.opdenacker@free-electrons.com>
+	Tue, 4 Mar 2014 15:04:59 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Petr Pisar <petr.pisar@atlas.cz>, Stanislaw Gruszka <stf_xl@wp.pl>,
+        Larry Finger <Larry.Finger@lwfinger.next>,
+        Hin-Tak Leung <htl10@users.sourceforge.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.10 17/97] rtl8187: fix regression on MIPS without coherent DMA
+Date: Tue,  4 Mar 2014 12:03:30 -0800
+Message-Id: <20140304200346.652870868@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
+References: <20140304200345.895517495@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the IRQF_DISABLED flag from mn10300 architecture
-code. It's a NOOP since 2.6.35 and it will be removed one day.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+------------------
+
+From: Stanislaw Gruszka <stf_xl@wp.pl>
+
+commit b6213e413a4e0c66548153516b074df14f9d08e0 upstream.
+
+This patch fixes regression caused by commit a16dad77634 "MIPS: Fix
+potencial corruption". That commit fixes one corruption scenario in
+cost of adding another one, which actually start to cause crashes
+on Yeeloong laptop when rtl8187 driver is used.
+
+For correct DMA read operation on machines without DMA coherence, kernel
+have to invalidate cache, such it will refill later with new data that
+device wrote to memory, when that data is needed to process. We can only
+invalidate full cache line. Hence when cache line includes both dma
+buffer and some other data (written in cache, but not yet in main
+memory), the other data can not hit memory due to invalidation. That
+happen on rtl8187 where struct rtl8187_priv fields are located just
+before and after small buffers that are passed to USB layer and DMA
+is performed on them.
+
+To fix the problem we align buffers and reserve space after them to make
+them match cache line.
+
+This patch does not resolve all possible MIPS problems entirely, for
+that we have to assure that we always map cache aligned buffers for DMA,
+what can be complex or even not possible. But patch fixes visible and
+reproducible regression and seems other possible corruptions do not
+happen in practice, since Yeeloong laptop works stable without rtl8187
+driver.
+
+Bug report:
+https://bugzilla.kernel.org/show_bug.cgi?id=54391
+
+Reported-by: Petr Pisar <petr.pisar@atlas.cz>
+Bisected-by: Tom Li <biergaizi2009@gmail.com>
+Reported-and-tested-by: Tom Li <biergaizi2009@gmail.com>
+Signed-off-by: Stanislaw Gruszka <stf_xl@wp.pl>
+Acked-by: Larry Finger <Larry.Finger@lwfinger.next>
+Acked-by: Hin-Tak Leung <htl10@users.sourceforge.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- arch/mn10300/kernel/cevt-mn10300.c   | 2 +-
- arch/mn10300/kernel/mn10300-serial.c | 6 +++---
- arch/mn10300/kernel/smp.c            | 2 +-
- arch/mn10300/unit-asb2364/irq-fpga.c | 2 +-
- 4 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/net/wireless/rtl818x/rtl8187/rtl8187.h |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/arch/mn10300/kernel/cevt-mn10300.c b/arch/mn10300/kernel/cevt-mn10300.c
-index ccce35e3e179..60f64ca1752a 100644
---- a/arch/mn10300/kernel/cevt-mn10300.c
-+++ b/arch/mn10300/kernel/cevt-mn10300.c
-@@ -113,7 +113,7 @@ int __init init_clockevents(void)
- 	cd->set_next_event	= next_event;
+--- a/drivers/net/wireless/rtl818x/rtl8187/rtl8187.h
++++ b/drivers/net/wireless/rtl818x/rtl8187/rtl8187.h
+@@ -15,6 +15,8 @@
+ #ifndef RTL8187_H
+ #define RTL8187_H
  
- 	iact = &per_cpu(timer_irq, cpu);
--	iact->flags = IRQF_DISABLED | IRQF_SHARED | IRQF_TIMER;
-+	iact->flags = IRQF_SHARED | IRQF_TIMER;
- 	iact->handler = timer_interrupt;
++#include <linux/cache.h>
++
+ #include "rtl818x.h"
+ #include "leds.h"
  
- 	clockevents_register_device(cd);
-diff --git a/arch/mn10300/kernel/mn10300-serial.c b/arch/mn10300/kernel/mn10300-serial.c
-index bf6e949a2f87..7ecf69879e2d 100644
---- a/arch/mn10300/kernel/mn10300-serial.c
-+++ b/arch/mn10300/kernel/mn10300-serial.c
-@@ -985,17 +985,17 @@ static int mn10300_serial_startup(struct uart_port *_port)
- 	irq_set_chip(port->tm_irq, &mn10300_serial_pic);
- 
- 	if (request_irq(port->rx_irq, mn10300_serial_interrupt,
--			IRQF_DISABLED | IRQF_NOBALANCING,
-+			IRQF_NOBALANCING,
- 			port->rx_name, port) < 0)
- 		goto error;
- 
- 	if (request_irq(port->tx_irq, mn10300_serial_interrupt,
--			IRQF_DISABLED | IRQF_NOBALANCING,
-+			IRQF_NOBALANCING,
- 			port->tx_name, port) < 0)
- 		goto error2;
- 
- 	if (request_irq(port->tm_irq, mn10300_serial_interrupt,
--			IRQF_DISABLED | IRQF_NOBALANCING,
-+			IRQF_NOBALANCING,
- 			port->tm_name, port) < 0)
- 		goto error3;
- 	mn10300_serial_mask_ack(port->tm_irq);
-diff --git a/arch/mn10300/kernel/smp.c b/arch/mn10300/kernel/smp.c
-index a17f9c9c14c9..f984193718b1 100644
---- a/arch/mn10300/kernel/smp.c
-+++ b/arch/mn10300/kernel/smp.c
-@@ -143,7 +143,7 @@ static struct irqaction call_function_ipi = {
- static irqreturn_t smp_ipi_timer_interrupt(int irq, void *dev_id);
- static struct irqaction local_timer_ipi = {
- 	.handler	= smp_ipi_timer_interrupt,
--	.flags		= IRQF_DISABLED | IRQF_NOBALANCING,
-+	.flags		= IRQF_NOBALANCING,
- 	.name		= "smp local timer IPI"
+@@ -139,7 +141,10 @@ struct rtl8187_priv {
+ 	u8 aifsn[4];
+ 	u8 rfkill_mask;
+ 	struct {
+-		__le64 buf;
++		union {
++			__le64 buf;
++			u8 dummy1[L1_CACHE_BYTES];
++		} ____cacheline_aligned;
+ 		struct sk_buff_head queue;
+ 	} b_tx_status; /* This queue is used by both -b and non-b devices */
+ 	struct mutex io_mutex;
+@@ -147,7 +152,8 @@ struct rtl8187_priv {
+ 		u8 bits8;
+ 		__le16 bits16;
+ 		__le32 bits32;
+-	} *io_dmabuf;
++		u8 dummy2[L1_CACHE_BYTES];
++	} *io_dmabuf ____cacheline_aligned;
+ 	bool rfkill_off;
+ 	u16 seqno;
  };
- #endif
-diff --git a/arch/mn10300/unit-asb2364/irq-fpga.c b/arch/mn10300/unit-asb2364/irq-fpga.c
-index e16c216f31dc..073e2ccc4a44 100644
---- a/arch/mn10300/unit-asb2364/irq-fpga.c
-+++ b/arch/mn10300/unit-asb2364/irq-fpga.c
-@@ -76,7 +76,7 @@ static irqreturn_t fpga_interrupt(int irq, void *_mask)
- static struct irqaction fpga_irq[]  = {
- 	[0] = {
- 		.handler	= fpga_interrupt,
--		.flags		= IRQF_DISABLED | IRQF_SHARED,
-+		.flags		= IRQF_SHARED,
- 		.name		= "fpga",
- 	},
- };
--- 
-1.8.3.2
+
 
