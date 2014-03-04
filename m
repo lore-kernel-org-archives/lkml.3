@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932593AbaCDU5o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:57:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41261 "EHLO
+	id S1758344AbaCDU5m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:57:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41257 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756719AbaCDUEK (ORCPT
+	with ESMTP id S1756722AbaCDUEL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:04:10 -0500
+	Tue, 4 Mar 2014 15:04:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andreas Herrmann <andreas.herrmann@calxeda.com>,
         Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 3.13 138/172] iommu/arm-smmu: really fix page table locking
-Date: Tue,  4 Mar 2014 12:03:42 -0800
-Message-Id: <20140304200304.122780867@linuxfoundation.org>
+Subject: [PATCH 3.13 139/172] iommu/arm-smmu: fix table flushing during initial allocations
+Date: Tue,  4 Mar 2014 12:03:43 -0800
+Message-Id: <20140304200304.153510853@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -31,120 +30,132 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Will Deacon <will.deacon@arm.com>
 
-commit c9d09e2748eaa55cac2af274574baa6368189bc1 upstream.
+commit 6dd35f45b8dac827b6f9dd86f5aca6436cdd2410 upstream.
 
-Commit a44a9791e778 ("iommu/arm-smmu: use mutex instead of spinlock for
-locking page tables") replaced the page table spinlock with a mutex, to
-allow blocking allocations to satisfy lazy mapping requests.
+Now that we populate page tables as we traverse them ("iommu/arm-smmu:
+fix pud/pmd entry fill sequence"), we need to ensure that we flush out
+our zeroed tables after initial allocation, to prevent speculative TLB
+fills using bogus data.
 
-Unfortunately, it turns out that IOMMU mappings are created from atomic
-context (e.g. spinlock held during a dma_map), so this change doesn't
-really help us in practice.
+This patch adds additional calls to arm_smmu_flush_pgtable during
+initial table allocation, and moves the dsb required by coherent table
+walkers into the helper.
 
-This patch is a partial revert of the offending commit, bringing back
-the original spinlock but replacing our page table allocations for any
-levels below the pgd (which is allocated during domain init) with
-GFP_ATOMIC instead of GFP_KERNEL.
-
-Reported-by: Andreas Herrmann <andreas.herrmann@calxeda.com>
 Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iommu/arm-smmu.c |   20 ++++++++++----------
- 1 file changed, 10 insertions(+), 10 deletions(-)
+ drivers/iommu/arm-smmu.c |   51 ++++++++++++++++++++++++-----------------------
+ 1 file changed, 27 insertions(+), 24 deletions(-)
 
 --- a/drivers/iommu/arm-smmu.c
 +++ b/drivers/iommu/arm-smmu.c
-@@ -392,7 +392,7 @@ struct arm_smmu_domain {
- 	struct arm_smmu_cfg		root_cfg;
- 	phys_addr_t			output_mask;
+@@ -78,7 +78,6 @@
  
--	struct mutex			lock;
-+	spinlock_t			lock;
- };
+ #define ARM_SMMU_PTE_CONT_SIZE		(PAGE_SIZE * ARM_SMMU_PTE_CONT_ENTRIES)
+ #define ARM_SMMU_PTE_CONT_MASK		(~(ARM_SMMU_PTE_CONT_SIZE - 1))
+-#define ARM_SMMU_PTE_HWTABLE_SIZE	(PTRS_PER_PTE * sizeof(pte_t))
  
- static DEFINE_SPINLOCK(arm_smmu_devices_lock);
-@@ -900,7 +900,7 @@ static int arm_smmu_domain_init(struct i
- 		goto out_free_domain;
- 	smmu_domain->root_cfg.pgd = pgd;
- 
--	mutex_init(&smmu_domain->lock);
-+	spin_lock_init(&smmu_domain->lock);
- 	domain->priv = smmu_domain;
- 	return 0;
- 
-@@ -1137,7 +1137,7 @@ static int arm_smmu_attach_dev(struct io
- 	 * Sanity check the domain. We don't currently support domains
- 	 * that cross between different SMMU chains.
- 	 */
--	mutex_lock(&smmu_domain->lock);
-+	spin_lock(&smmu_domain->lock);
- 	if (!smmu_domain->leaf_smmu) {
- 		/* Now that we have a master, we can finalise the domain */
- 		ret = arm_smmu_init_domain_context(domain, dev);
-@@ -1152,7 +1152,7 @@ static int arm_smmu_attach_dev(struct io
- 			dev_name(device_smmu->dev));
- 		goto err_unlock;
- 	}
--	mutex_unlock(&smmu_domain->lock);
-+	spin_unlock(&smmu_domain->lock);
- 
- 	/* Looks ok, so add the device to the domain */
- 	master = find_smmu_master(smmu_domain->leaf_smmu, dev->of_node);
-@@ -1162,7 +1162,7 @@ static int arm_smmu_attach_dev(struct io
- 	return arm_smmu_domain_add_master(smmu_domain, master);
- 
- err_unlock:
--	mutex_unlock(&smmu_domain->lock);
-+	spin_unlock(&smmu_domain->lock);
- 	return ret;
+ /* Stage-1 PTE */
+ #define ARM_SMMU_PTE_AP_UNPRIV		(((pteval_t)1) << 6)
+@@ -631,6 +630,28 @@ static irqreturn_t arm_smmu_global_fault
+ 	return IRQ_HANDLED;
  }
  
-@@ -1209,7 +1209,7 @@ static int arm_smmu_alloc_init_pte(struc
++static void arm_smmu_flush_pgtable(struct arm_smmu_device *smmu, void *addr,
++				   size_t size)
++{
++	unsigned long offset = (unsigned long)addr & ~PAGE_MASK;
++
++
++	/* Ensure new page tables are visible to the hardware walker */
++	if (smmu->features & ARM_SMMU_FEAT_COHERENT_WALK) {
++		dsb();
++	} else {
++		/*
++		 * If the SMMU can't walk tables in the CPU caches, treat them
++		 * like non-coherent DMA since we need to flush the new entries
++		 * all the way out to memory. There's no possibility of
++		 * recursion here as the SMMU table walker will not be wired
++		 * through another SMMU.
++		 */
++		dma_map_page(smmu->dev, virt_to_page(addr), offset, size,
++				DMA_TO_DEVICE);
++	}
++}
++
+ static void arm_smmu_init_context_bank(struct arm_smmu_domain *smmu_domain)
+ {
+ 	u32 reg;
+@@ -714,6 +735,8 @@ static void arm_smmu_init_context_bank(s
+ 	}
  
- 	if (pmd_none(*pmd)) {
- 		/* Allocate a new set of tables */
--		pgtable_t table = alloc_page(PGALLOC_GFP);
-+		pgtable_t table = alloc_page(GFP_ATOMIC|__GFP_ZERO);
+ 	/* TTBR0 */
++	arm_smmu_flush_pgtable(smmu, root_cfg->pgd,
++			       PTRS_PER_PGD * sizeof(pgd_t));
+ 	reg = __pa(root_cfg->pgd);
+ 	writel_relaxed(reg, cb_base + ARM_SMMU_CB_TTBR0_LO);
+ 	reg = (phys_addr_t)__pa(root_cfg->pgd) >> 32;
+@@ -1176,23 +1199,6 @@ static void arm_smmu_detach_dev(struct i
+ 		arm_smmu_domain_remove_master(smmu_domain, master);
+ }
+ 
+-static void arm_smmu_flush_pgtable(struct arm_smmu_device *smmu, void *addr,
+-				   size_t size)
+-{
+-	unsigned long offset = (unsigned long)addr & ~PAGE_MASK;
+-
+-	/*
+-	 * If the SMMU can't walk tables in the CPU caches, treat them
+-	 * like non-coherent DMA since we need to flush the new entries
+-	 * all the way out to memory. There's no possibility of recursion
+-	 * here as the SMMU table walker will not be wired through another
+-	 * SMMU.
+-	 */
+-	if (!(smmu->features & ARM_SMMU_FEAT_COHERENT_WALK))
+-		dma_map_page(smmu->dev, virt_to_page(addr), offset, size,
+-			     DMA_TO_DEVICE);
+-}
+-
+ static bool arm_smmu_pte_is_contiguous_range(unsigned long addr,
+ 					     unsigned long end)
+ {
+@@ -1213,8 +1219,7 @@ static int arm_smmu_alloc_init_pte(struc
  		if (!table)
  			return -ENOMEM;
  
-@@ -1314,7 +1314,7 @@ static int arm_smmu_alloc_init_pmd(struc
- 
- #ifndef __PAGETABLE_PMD_FOLDED
- 	if (pud_none(*pud)) {
--		pmd = pmd_alloc_one(NULL, addr);
-+		pmd = (pmd_t *)get_zeroed_page(GFP_ATOMIC);
+-		arm_smmu_flush_pgtable(smmu, page_address(table),
+-				       ARM_SMMU_PTE_HWTABLE_SIZE);
++		arm_smmu_flush_pgtable(smmu, page_address(table), PAGE_SIZE);
+ 		if (!pgtable_page_ctor(table)) {
+ 			__free_page(table);
+ 			return -ENOMEM;
+@@ -1318,6 +1323,7 @@ static int arm_smmu_alloc_init_pmd(struc
  		if (!pmd)
  			return -ENOMEM;
  
-@@ -1346,7 +1346,7 @@ static int arm_smmu_alloc_init_pud(struc
++		arm_smmu_flush_pgtable(smmu, pmd, PAGE_SIZE);
+ 		pud_populate(NULL, pud, pmd);
+ 		arm_smmu_flush_pgtable(smmu, pud, sizeof(*pud));
  
- #ifndef __PAGETABLE_PUD_FOLDED
- 	if (pgd_none(*pgd)) {
--		pud = pud_alloc_one(NULL, addr);
-+		pud = (pud_t *)get_zeroed_page(GFP_ATOMIC);
+@@ -1350,6 +1356,7 @@ static int arm_smmu_alloc_init_pud(struc
  		if (!pud)
  			return -ENOMEM;
  
-@@ -1400,7 +1400,7 @@ static int arm_smmu_handle_mapping(struc
- 	if (paddr & ~output_mask)
- 		return -ERANGE;
++		arm_smmu_flush_pgtable(smmu, pud, PAGE_SIZE);
+ 		pgd_populate(NULL, pgd, pud);
+ 		arm_smmu_flush_pgtable(smmu, pgd, sizeof(*pgd));
  
--	mutex_lock(&smmu_domain->lock);
-+	spin_lock(&smmu_domain->lock);
- 	pgd += pgd_index(iova);
- 	end = iova + size;
- 	do {
-@@ -1416,7 +1416,7 @@ static int arm_smmu_handle_mapping(struc
- 	} while (pgd++, iova != end);
- 
+@@ -1418,10 +1425,6 @@ static int arm_smmu_handle_mapping(struc
  out_unlock:
--	mutex_unlock(&smmu_domain->lock);
-+	spin_unlock(&smmu_domain->lock);
+ 	spin_unlock(&smmu_domain->lock);
  
- 	/* Ensure new page tables are visible to the hardware walker */
- 	if (smmu->features & ARM_SMMU_FEAT_COHERENT_WALK)
+-	/* Ensure new page tables are visible to the hardware walker */
+-	if (smmu->features & ARM_SMMU_FEAT_COHERENT_WALK)
+-		dsb();
+-
+ 	return ret;
+ }
+ 
 
 
