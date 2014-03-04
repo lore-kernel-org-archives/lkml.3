@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755881AbaCDUDF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:03:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40849 "EHLO
+	id S1758238AbaCDVcZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:32:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40871 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755757AbaCDUDA (ORCPT
+	with ESMTP id S1755866AbaCDUDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:03:00 -0500
+	Tue, 4 Mar 2014 15:03:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Petr Pisar <petr.pisar@atlas.cz>, Stanislaw Gruszka <stf_xl@wp.pl>,
-        Larry Finger <Larry.Finger@lwfinger.next>,
-        Hin-Tak Leung <htl10@users.sourceforge.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.13 031/172] rtl8187: fix regression on MIPS without coherent DMA
-Date: Tue,  4 Mar 2014 12:01:55 -0800
-Message-Id: <20140304200300.721148213@linuxfoundation.org>
+        "Steinar H. Gunderson" <sesse@samfundet.no>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.13 049/172] gre: add link local route when local addr is any
+Date: Tue,  4 Mar 2014 12:02:13 -0800
+Message-Id: <20140304200301.302930455@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -31,83 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <stf_xl@wp.pl>
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 
-commit b6213e413a4e0c66548153516b074df14f9d08e0 upstream.
+[ Upstream commit 08b44656c08c8c2f73cdac2a058be2880e3361f2 ]
 
-This patch fixes regression caused by commit a16dad77634 "MIPS: Fix
-potencial corruption". That commit fixes one corruption scenario in
-cost of adding another one, which actually start to cause crashes
-on Yeeloong laptop when rtl8187 driver is used.
+This bug was reported by Steinar H. Gunderson and was introduced by commit
+f7cb8886335d ("sit/gre6: don't try to add the same route two times").
 
-For correct DMA read operation on machines without DMA coherence, kernel
-have to invalidate cache, such it will refill later with new data that
-device wrote to memory, when that data is needed to process. We can only
-invalidate full cache line. Hence when cache line includes both dma
-buffer and some other data (written in cache, but not yet in main
-memory), the other data can not hit memory due to invalidation. That
-happen on rtl8187 where struct rtl8187_priv fields are located just
-before and after small buffers that are passed to USB layer and DMA
-is performed on them.
+root@morgental:~# ip tunnel add foo mode gre remote 1.2.3.4 ttl 64
+root@morgental:~# ip link set foo up mtu 1468
+root@morgental:~# ip -6 route show dev foo
+fe80::/64  proto kernel  metric 256
 
-To fix the problem we align buffers and reserve space after them to make
-them match cache line.
+but after the above commit, no such route shows up.
 
-This patch does not resolve all possible MIPS problems entirely, for
-that we have to assure that we always map cache aligned buffers for DMA,
-what can be complex or even not possible. But patch fixes visible and
-reproducible regression and seems other possible corruptions do not
-happen in practice, since Yeeloong laptop works stable without rtl8187
-driver.
+There is no link local route because dev->dev_addr is 0 (because local ipv4
+address is 0), hence no link local address is configured.
 
-Bug report:
-https://bugzilla.kernel.org/show_bug.cgi?id=54391
+In this scenario, the link local address is added manually: 'ip -6 addr add
+fe80::1 dev foo' and because prefix is /128, no link local route is added by the
+kernel.
 
-Reported-by: Petr Pisar <petr.pisar@atlas.cz>
-Bisected-by: Tom Li <biergaizi2009@gmail.com>
-Reported-and-tested-by: Tom Li <biergaizi2009@gmail.com>
-Signed-off-by: Stanislaw Gruszka <stf_xl@wp.pl>
-Acked-by: Larry Finger <Larry.Finger@lwfinger.next>
-Acked-by: Hin-Tak Leung <htl10@users.sourceforge.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Even if the right things to do is to add the link local address with a /64
+prefix, we need to restore the previous behavior to avoid breaking userpace.
+
+Reported-by: Steinar H. Gunderson <sesse@samfundet.no>
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/net/wireless/rtl818x/rtl8187/rtl8187.h |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ net/ipv6/addrconf.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/net/wireless/rtl818x/rtl8187/rtl8187.h
-+++ b/drivers/net/wireless/rtl818x/rtl8187/rtl8187.h
-@@ -15,6 +15,8 @@
- #ifndef RTL8187_H
- #define RTL8187_H
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -2726,6 +2726,8 @@ static void addrconf_gre_config(struct n
+ 	ipv6_addr_set(&addr,  htonl(0xFE800000), 0, 0, 0);
+ 	if (!ipv6_generate_eui64(addr.s6_addr + 8, dev))
+ 		addrconf_add_linklocal(idev, &addr);
++	else
++		addrconf_prefix_route(&addr, 64, dev, 0, 0);
+ }
+ #endif
  
-+#include <linux/cache.h>
-+
- #include "rtl818x.h"
- #include "leds.h"
- 
-@@ -139,7 +141,10 @@ struct rtl8187_priv {
- 	u8 aifsn[4];
- 	u8 rfkill_mask;
- 	struct {
--		__le64 buf;
-+		union {
-+			__le64 buf;
-+			u8 dummy1[L1_CACHE_BYTES];
-+		} ____cacheline_aligned;
- 		struct sk_buff_head queue;
- 	} b_tx_status; /* This queue is used by both -b and non-b devices */
- 	struct mutex io_mutex;
-@@ -147,7 +152,8 @@ struct rtl8187_priv {
- 		u8 bits8;
- 		__le16 bits16;
- 		__le32 bits32;
--	} *io_dmabuf;
-+		u8 dummy2[L1_CACHE_BYTES];
-+	} *io_dmabuf ____cacheline_aligned;
- 	bool rfkill_off;
- 	u16 seqno;
- };
 
 
