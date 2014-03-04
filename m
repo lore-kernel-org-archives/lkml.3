@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758193AbaCDV3U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:29:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40897 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755951AbaCDUDK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755967AbaCDUDK (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 4 Mar 2014 15:03:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40855 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755763AbaCDUDB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 15:03:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        John Ogness <john.ogness@linutronix.de>,
-        Eric Dumazet <edumazet@google.com>,
-        Thomas Glanzmann <thomas@glanzmann.de>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 044/172] tcp: tsq: fix nonagle handling
-Date: Tue,  4 Mar 2014 12:02:08 -0800
-Message-Id: <20140304200301.144107395@linuxfoundation.org>
+        Olivier Langlois <olivier@trillion01.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.13 032/172] rtlwifi: Fix incorrect return from rtl_ps_enable_nic()
+Date: Tue,  4 Mar 2014 12:01:56 -0800
+Message-Id: <20140304200300.749837513@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -31,68 +30,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Ogness <john.ogness@linutronix.de>
+From: Olivier Langlois <olivier@trillion01.com>
 
-[ Upstream commit bf06200e732de613a1277984bf34d1a21c2de03d ]
+commit 2e8c5e56b307271c2dab6f8bfd1d8a3822ca2390 upstream.
 
-Commit 46d3ceabd8d9 ("tcp: TCP Small Queues") introduced a possible
-regression for applications using TCP_NODELAY.
+rtl_ps_enable_nic() is called from loops that will loop until this function returns true or a
+maximum number of retries is performed.
 
-If TCP session is throttled because of tsq, we should consult
-tp->nonagle when TX completion is done and allow us to send additional
-segment, especially if this segment is not a full MSS.
-Otherwise this segment is sent after an RTO.
+hw_init() returns non-zero on error. In that situation return false to
+restore the original design intent to retry hw init when it fails.
 
-[edumazet] : Cooked the changelog, added another fix about testing
-sk_wmem_alloc twice because TX completion can happen right before
-setting TSQ_THROTTLED bit.
-
-This problem is particularly visible with recent auto corking,
-but might also be triggered with low tcp_limit_output_bytes
-values or NIC drivers delaying TX completion by hundred of usec,
-and very low rtt.
-
-Thomas Glanzmann for example reported an iscsi regression, caused
-by tcp auto corking making this bug quite visible.
-
-Fixes: 46d3ceabd8d9 ("tcp: TCP Small Queues")
-Signed-off-by: John Ogness <john.ogness@linutronix.de>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Reported-by: Thomas Glanzmann <thomas@glanzmann.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Olivier Langlois <olivier@trillion01.com>
+Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/tcp_output.c |   13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
 
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -696,7 +696,8 @@ static void tcp_tsq_handler(struct sock
- 	if ((1 << sk->sk_state) &
- 	    (TCPF_ESTABLISHED | TCPF_FIN_WAIT1 | TCPF_CLOSING |
- 	     TCPF_CLOSE_WAIT  | TCPF_LAST_ACK))
--		tcp_write_xmit(sk, tcp_current_mss(sk), 0, 0, GFP_ATOMIC);
-+		tcp_write_xmit(sk, tcp_current_mss(sk), tcp_sk(sk)->nonagle,
-+			       0, GFP_ATOMIC);
- }
- /*
-  * One tasklest per cpu tries to send more skbs.
-@@ -1884,7 +1885,15 @@ static bool tcp_write_xmit(struct sock *
+---
+ drivers/net/wireless/rtlwifi/ps.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/net/wireless/rtlwifi/ps.c
++++ b/drivers/net/wireless/rtlwifi/ps.c
+@@ -48,7 +48,7 @@ bool rtl_ps_enable_nic(struct ieee80211_
  
- 		if (atomic_read(&sk->sk_wmem_alloc) > limit) {
- 			set_bit(TSQ_THROTTLED, &tp->tsq_flags);
--			break;
-+			/* It is possible TX completion already happened
-+			 * before we set TSQ_THROTTLED, so we must
-+			 * test again the condition.
-+			 * We abuse smp_mb__after_clear_bit() because
-+			 * there is no smp_mb__after_set_bit() yet
-+			 */
-+			smp_mb__after_clear_bit();
-+			if (atomic_read(&sk->sk_wmem_alloc) > limit)
-+				break;
- 		}
+ 	/*<2> Enable Adapter */
+ 	if (rtlpriv->cfg->ops->hw_init(hw))
+-		return 1;
++		return false;
+ 	RT_CLEAR_PS_LEVEL(ppsc, RT_RF_OFF_LEVL_HALT_NIC);
  
- 		limit = mss_now;
+ 	/*<3> Enable Interrupt */
 
 
