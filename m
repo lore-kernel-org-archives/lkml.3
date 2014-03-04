@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756647AbaCDIqV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 03:46:21 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:51602 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752195AbaCDIqU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 03:46:20 -0500
-Date: Tue, 4 Mar 2014 11:45:56 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Daeseok Youn <daeseok.youn@gmail.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org, shaun@xresource.ca,
-        sachin.kamat@linaro.org, linux-kernel@vger.kernel.org,
-        dulshani.gunawardhana89@gmail.com, ying.xue@windriver.com,
-        davem@davemloft.net
-Subject: Re: [PATCH 3/7] staging: cxt1e1: Fix line length over 80 characters
- in linux.c
-Message-ID: <20140304084555.GS26722@mwanda>
-References: <2825545.2YpN0JuVSn@daeseok-laptop.cloud.net>
+	id S1756634AbaCDIyq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 03:54:46 -0500
+Received: from mga11.intel.com ([192.55.52.93]:41497 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752195AbaCDIyo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 03:54:44 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,583,1389772800"; 
+   d="scan'208";a="491960358"
+From: Jani Nikula <jani.nikula@linux.intel.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        intel-gfx@lists.freedesktop.org,
+        "Linux-Kernel\@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Subject: Re: 3.13 i915 brightness settings broken when going from docked -> undocked
+In-Reply-To: <1393921876.3038.3.camel@x220>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+References: <CA+5PVA4zC1+TPWWdANnm7RuBDduwNetdTknfzSkVTpFcPSGZww@mail.gmail.com> <1392882819.5070.15.camel@x220> <878usz8vmi.fsf@intel.com> <1393921876.3038.3.camel@x220>
+User-Agent: Notmuch/0.17+107~g88c86a63b991 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Tue, 04 Mar 2014 10:54:38 +0200
+Message-ID: <87zjl64a41.fsf@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2825545.2YpN0JuVSn@daeseok-laptop.cloud.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 04, 2014 at 11:08:46AM +0900, Daeseok Youn wrote:
-> 
-> clean up checkpatch.pl warnings:
->  WARNING: Line length over 80 characters
-> 
-> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
-> ---
->  drivers/staging/cxt1e1/linux.c |   48 +++++++++++++++++++++++++--------------
->  1 files changed, 31 insertions(+), 17 deletions(-)
-> 
-> diff --git a/drivers/staging/cxt1e1/linux.c b/drivers/staging/cxt1e1/linux.c
-> index 17d73f4..579e68e 100644
-> --- a/drivers/staging/cxt1e1/linux.c
-> +++ b/drivers/staging/cxt1e1/linux.c
-> @@ -31,7 +31,7 @@
->  #include "pmcc4_private.h"
->  #include "sbeproc.h"
->  
-> -/*****************************************************************************************
-> +/*******************************************************************************
+On Tue, 04 Mar 2014, Paul Bolle <pebolle@tiscali.nl> wrote:
+> On Tue, 2014-02-25 at 10:05 +0200, Jani Nikula wrote:
+>> On Thu, 20 Feb 2014, Paul Bolle <pebolle@tiscali.nl> wrote:
+>> > On an (rather old) ThinkPad X41, which also uses i915, brightness
+>> > adjustments stopped working altogether in v3.14-rc1 (I haven't used its
+>> > docking station in the v3.14 release cycle). In v3.13.y things behave as
+>> > expected. So perhaps there's actually a more general problem here.
+>> 
+>> I presume different problems. Does the ThinkPad X41 have gen3 graphics?
+>> (See e.g. /sys/kernel/debug/dri/0/i915_capabilities) If yes, it might be
+>> https://bugs.freedesktop.org/show_bug.cgi?id=75001
+>
+> Yes, it has "gen3" graphics (a 915GM). And applying your patch
+> "drm/i915: use backlight legacy combination mode also for
+> i915gm/i945/gm" on top of v3.14-rc5 fixes the issue on that ThinkPad
+> X41.
 
-This should just be:
+Thanks for confirming this on i915gm too.
 
-/*
- *
- *
-
-Not ************************************************** etc.
-
-Fix in a later patch if you want.
-
-regards,
-dan carpenter
+BR,
+Jani.
 
 
+-- 
+Jani Nikula, Intel Open Source Technology Center
