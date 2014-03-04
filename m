@@ -1,79 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932813AbaCDUor (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:44:47 -0500
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757156AbaCDUne (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:43:34 -0500
-Message-ID: <53163ADE.8080905@nod.at>
-Date: Tue, 04 Mar 2014 21:43:10 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        viro@zeniv.linux.org.uk, vgupta@synopsys.com, catalin.marinas@arm.com,
-        will.deacon@arm.com, hskinnemoen@gmail.com, egtvedt@samfundet.no,
-        vapier@gentoo.org, msalter@redhat.com, a-jacquiot@ti.com,
-        starvik@axis.com, jesper.nilsson@axis.com, dhowells@redhat.com,
-        rkuo@codeaurora.org, tony.luck@intel.com, fenghua.yu@intel.com,
-        takata@linux-m32r.org, geert@linux-m68k.org, james.hogan@imgtec.com,
-        monstr@monstr.eu, yasutake.koichi@jp.panasonic.com,
-        ralf@linux-mips.org, jonas@southpole.se, jejb@parisc-linux.org,
-        deller@gmx.de, benh@kernel.crashing.org, paulus@samba.org,
-        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        liqin.linux@gmail.com, lennox.wu@gmail.com, cmetcalf@tilera.com,
-        gxt@mprc.pku.edu.cn, linux-xtensa@linux-xtensa.org,
-        akpm@linux-foundation.org, tj@kernel.org, hch@infradead.org
-Subject: Re: [PATCH 28/44] Add translate_signal() helper
-References: <1393804758-7916-1-git-send-email-richard@nod.at> <1393804758-7916-6-git-send-email-richard@nod.at> <20140304184109.GB19393@redhat.com>
-In-Reply-To: <20140304184109.GB19393@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1758148AbaCDUnd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:43:33 -0500
+Received: from www.linutronix.de ([62.245.132.108]:36882 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757156AbaCDUna (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 15:43:30 -0500
+Message-Id: <20140304202425.102779779@linutronix.de>
+User-Agent: quilt/0.60-1
+Date: Tue, 04 Mar 2014 20:43:38 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Subject: [patch 0/5] genirq: Sanitize irq_set_affinity callbacks
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 04.03.2014 19:41, schrieb Oleg Nesterov:
-> On 03/03, Richard Weinberger wrote:
->>
->> +static inline int translate_signal(int sig)
->> +{
->> +	struct thread_info *info = current_thread_info();
->> +
->> +	if (info->exec_domain
-> 
-> Afaics it can't be NULL.
+In my last tree wide sweep of irq controller related oddities I
+discovered that some controllers have an broken implementation versus
+selecting a single target cpu from the given cpu mask.
 
-Good point. Will change.
+The core merily guarantees that at least one of the cpus in the mask
+is online.
 
->> && info->exec_domain->signal_invmap && sig < 32)
->> +		return info->exec_domain->signal_invmap[sig];
->> +
-> 
-> And why default_exec_domain has .signal_invmap = ident_map ?
-> translate_signal-like code should check ->signal_invmap != NULL
-> anyway.
-> 
-> Off topic, but can't we kill exec_domain->signal_map ? it seems that
-> it is unused.
-> 
-> Hmm. And who actually uses exec_domain->handler() ?? asm-offsets.c,
-> but I do not see any usage of TI_EXEC_DOMAIN.
-> 
-> In short: I agree with this change but I am totally confused. To the
-> point, I am not sure I even understand ->signal_invmap. I mean, it
-> seems that only arthur_exec_domain has a non-ident map. Why, say,
-> x86 does signr_convert() ? and only if CONFIG_X86_32? Is there any
-> external module which does register_exec_domain(strange_invmap) ?
+If the controller callback does not restrict the search for a single
+target to the online cpus it might run into the following situation:
 
-I remember a discussion with Al where he noted that register_exec_domain()
-is currently only used by out of tree horrors. B-)
+     Assume 4 cores online: online mask = 0x0f
 
-I'm sure we can rip it out of most archs. They seem to have it only because
-they've copy&pasted it from i386.
+     Offline Core 1 	    online mask = 0x0d
+
+     Set affinity to 0xe    is valid due to online mask 0xd
+
+     cpumask_first(0xe)     picks core 1, which is offline
+
+The following series takes care of this. The patches should be tagged
+stable if there are no objections.
+
+I'm pondering to extend the core functionality to select a target cpu
+before calling into irq_set_affinity() to prevent future copy and
+paste failures and get rid of all the duplicated code.
 
 Thanks,
-//richard
+
+	tglx
+
+
+
+
+
