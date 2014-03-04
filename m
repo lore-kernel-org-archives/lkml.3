@@ -1,76 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756904AbaCDKMk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 05:12:40 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45161 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756682AbaCDKMh (ORCPT
+	id S1756882AbaCDKOk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 05:14:40 -0500
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:33825 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756618AbaCDKOi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 05:12:37 -0500
-Message-ID: <1393927933.3917.4.camel@paszta.hi.pengutronix.de>
-Subject: Re: [PATCH v5 3/7] of: Warn if of_graph_get_next_endpoint is called
- with the root node
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Sylwester Nawrocki <snjw23@gmail.com>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        devicetree@vger.kernel.org
-Date: Tue, 04 Mar 2014 11:12:13 +0100
-In-Reply-To: <5310FB05.4000307@gmail.com>
-References: <1393522540-22887-1-git-send-email-p.zabel@pengutronix.de>
-	 <1393522540-22887-4-git-send-email-p.zabel@pengutronix.de>
-	 <5310FB05.4000307@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 4 Mar 2014 05:14:38 -0500
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Minchan Kim <minchan@kernel.org>, Jerome Marchand <jmarchan@redhat.com>,
+        Nitin Gupta <ngupta@vflare.org>, linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH] zram: move comp allocation out of init_lock
+Date: Tue,  4 Mar 2014 13:10:56 +0300
+Message-Id: <1393927856-23434-1-git-send-email-sergey.senozhatsky@gmail.com>
+X-Mailer: git-send-email 1.9.0.382.g7f3562c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, den 28.02.2014, 22:09 +0100 schrieb Sylwester Nawrocki:
-> On 02/27/2014 06:35 PM, Philipp Zabel wrote:
-> > If of_graph_get_next_endpoint is given a parentless node instead of an
-> > endpoint node, it is clearly a bug.
-> >
-> > Signed-off-by: Philipp Zabel<p.zabel@pengutronix.de>
-> > ---
-> >   drivers/of/base.c | 4 ++--
-> >   1 file changed, 2 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/drivers/of/base.c b/drivers/of/base.c
-> > index b2f223f..6e650cf 100644
-> > --- a/drivers/of/base.c
-> > +++ b/drivers/of/base.c
-> > @@ -2028,8 +2028,8 @@ struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
-> >   		of_node_put(node);
-> >   	} else {
-> >   		port = of_get_parent(prev);
-> > -		if (!port)
-> > -			/* Hm, has someone given us the root node ?... */
-> > +		if (WARN_ONCE(!port, "%s(): endpoint has no parent node\n",
-> > +			      __func__))
-> 
-> Perhaps we can add more information to this error log, e.g.
->
-> 		if (WARN_ONCE(!port, "%s(): endpoint %s has no parent node\n",
-> 			      __func__, prev->full_name))
-> ?
+While fixing lockdep spew of ->init_lock reported by Sasha Levin [1], Minchan
+Kim noted [2] that it's better to move compression backend allocation (using
+GPF_KERNEL) out of the ->init_lock lock, same way as with zram_meta_alloc(),
+in order to prevent the same lockdep spew.
 
-Yes, I'll include this change next time.
+[1] https://lkml.org/lkml/2014/2/27/337
+[2] https://lkml.org/lkml/2014/3/3/32
 
-thanks
-Philipp
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Reported-by: Minchan Kim <minchan@kernel.org>
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+---
+ drivers/block/zram/zram_drv.c | 27 +++++++++++++++------------
+ 1 file changed, 15 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index 15d46f2..e4d536b 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -580,9 +580,10 @@ static ssize_t disksize_store(struct device *dev,
+ 		struct device_attribute *attr, const char *buf, size_t len)
+ {
+ 	u64 disksize;
++	struct zcomp *comp;
+ 	struct zram_meta *meta;
+ 	struct zram *zram = dev_to_zram(dev);
+-	int err;
++	int err = -EINVAL;
+ 
+ 	disksize = memparse(buf, NULL);
+ 	if (!disksize)
+@@ -593,30 +594,32 @@ static ssize_t disksize_store(struct device *dev,
+ 	if (!meta)
+ 		return -ENOMEM;
+ 
++	comp = zcomp_create(zram->compressor, zram->max_comp_streams);
++	if (!comp) {
++		pr_info("Cannot initialise %s compressing backend\n",
++				zram->compressor);
++		goto out_cleanup;
++	}
++
+ 	down_write(&zram->init_lock);
+ 	if (init_done(zram)) {
++		up_write(&zram->init_lock);
+ 		pr_info("Cannot change disksize for initialized device\n");
+ 		err = -EBUSY;
+-		goto out_free_meta;
+-	}
+-
+-	zram->comp = zcomp_create(zram->compressor, zram->max_comp_streams);
+-	if (!zram->comp) {
+-		pr_info("Cannot initialise %s compressing backend\n",
+-				zram->compressor);
+-		err = -EINVAL;
+-		goto out_free_meta;
++		goto out_cleanup;
+ 	}
+ 
+ 	zram->meta = meta;
++	zram->comp = comp;
+ 	zram->disksize = disksize;
+ 	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
+ 	up_write(&zram->init_lock);
+ 
+ 	return len;
+ 
+-out_free_meta:
+-	up_write(&zram->init_lock);
++out_cleanup:
++	if (comp)
++		zcomp_destroy(comp);
+ 	zram_meta_free(meta);
+ 	return err;
+ }
+-- 
+1.9.0.382.g7f3562c
 
