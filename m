@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755208AbaCDQ6x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 11:58:53 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:38399 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065AbaCDQ6v (ORCPT
+	id S1754725AbaCDRCT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 12:02:19 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:49861 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751582AbaCDRCR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 11:58:51 -0500
-Message-ID: <1393952328.26794.123.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH net-next 09/12] r8152: support IPv6
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Hayes Wang <hayeswang@realtek.com>
-Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Date: Tue, 04 Mar 2014 08:58:48 -0800
-In-Reply-To: <1393934464-23675-10-git-send-email-hayeswang@realtek.com>
-References: <1393934464-23675-1-git-send-email-hayeswang@realtek.com>
-	 <1393934464-23675-10-git-send-email-hayeswang@realtek.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 4 Mar 2014 12:02:17 -0500
+Date: Tue, 4 Mar 2014 22:31:53 +0530
+From: yogesh <mr.yogesh@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Levente Kurusa <levex@linux.com>, Joe Perches <joe@perches.com>,
+        rdunlap@infradead.org
+Subject: Subject: [PATCH v2 1/1] Add documentation for proper usage and order
+ of preference of calls to print diagnostic messages.
+Message-ID: <20140304170153.GA11780@yogesh-Dell-System-XPS-L502X>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-03-04 at 20:01 +0800, Hayes Wang wrote:
-> Support hw IPv6 checksum for TCP and UDP packets.
+This patch adds documentation that clarifies the use of various
+diagnostic printing messages. It shows the preference of subsystem_dbg
+calls to dev_dbg (whenever possible), as the first preferred format of
+logging debug messages.
+Signed-off-by: Yogesh Chaudhari <mr.yogesh@gmail.com>
+---
+ Documentation/CodingStyle | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
-
-> +/*
-> + * r8152_csum_workaround()
-> + * The hw limites the value the transport offset. When the offset is out of the
-> + * range, calculate the checksum by sw.
-> + */
-> +static void r8152_csum_workaround(struct r8152 *tp, struct sk_buff *skb,
-> +				  struct sk_buff_head *list)
-> +{
-> +	if (skb_shinfo(skb)->gso_size) {
-> +		netdev_features_t features = tp->netdev->features;
-> +		struct sk_buff *segs, *nskb;
-> +
-> +		features &= ~(NETIF_F_IP_CSUM | NETIF_F_SG | NETIF_F_TSO);
-> +		segs = skb_gso_segment(skb, features);
-> +		if (IS_ERR(segs) || !segs)
-> +			goto drop;
-> +
-> +		do {
-> +			nskb = segs;
-> +			segs = segs->next;
-> +			nskb->next = NULL;
-> +			__skb_queue_head(list, nskb);
-
-This introduces TCP reordering.
-
-You should use some kind of skb_queue_splice()
-
-
-
+diff --git a/Documentation/CodingStyle b/Documentation/CodingStyle
+index 7fe0546..cd14cc8 100644
+--- a/Documentation/CodingStyle
++++ b/Documentation/CodingStyle
+@@ -662,6 +662,23 @@ and driver, and are tagged with the right level:  dev_err(), dev_warn(),
+ dev_info(), and so forth.  For messages that aren't associated with a
+ particular device, <linux/printk.h> defines pr_debug() and pr_info().
+ 
++If the subsystem has its own diagnostic macros then they should be used
++instead of dev_dbg calls.
++E.g. If you are using network subsystem, use netdev_dbg;
++if you are using V4L, use v4l_dbg etc.
++This standardises the output format in every subsystem.
++
++Depending on your changes, the following order of precedence
++applies to printing messages:
++1. [subsystem]_dbg() is preferred when the subsystem has its own
++diagnostic macros.
++2. dev_dbg() is preferred when you have a generic struct device object.
++3. pr_debug() should be used when 1 and 2 above are not applicable.
++4. printk() should be avoided.
++
++Note: The above order applies to diagnostic calls of all log levels viz:
++*_emerg, *_alert, *_crit, *_err, *_warn, *_notice, *_info and *_dbg.
++
+ Coming up with good debugging messages can be quite a challenge; and once
+ you have them, they can be a huge help for remote troubleshooting.  Such
+ messages should be compiled out when the DEBUG symbol is not defined (that
