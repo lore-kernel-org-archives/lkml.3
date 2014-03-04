@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932451AbaCDU4k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:56:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41276 "EHLO
+	id S1758313AbaCDU5E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:57:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41261 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756654AbaCDUEN (ORCPT
+	with ESMTP id S1755203AbaCDUEM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:04:13 -0500
+	Tue, 4 Mar 2014 15:04:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Drew Richardson <drew.richardson@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Will Deacon <will.deacon@arm.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.13 142/172] perf: Fix hotplug splat
-Date: Tue,  4 Mar 2014 12:03:46 -0800
-Message-Id: <20140304200304.249605791@linuxfoundation.org>
+        Will Deacon <will.deacon@arm.com>
+Subject: [PATCH 3.13 140/172] iommu/arm-smmu: set CBARn.BPSHCFG to NSH for s1-s2-bypass contexts
+Date: Tue,  4 Mar 2014 12:03:44 -0800
+Message-Id: <20140304200304.185240260@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -30,66 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Will Deacon <will.deacon@arm.com>
 
-commit e3703f8cdfcf39c25c4338c3ad8e68891cca3731 upstream.
+commit 57ca90f6800987ac274d7ba065ae6692cdf9bcd7 upstream.
 
-Drew Richardson reported that he could make the kernel go *boom* when hotplugging
-while having perf events active.
+Whilst trying to bring-up an SMMUv2 implementation with the table
+walker plumbed into a coherent interconnect, I noticed that the memory
+transactions targetting the CPU caches from the SMMU were marked as
+outer-shareable instead of inner-shareable.
 
-It turned out that when you have a group event, the code in
-__perf_event_exit_context() fails to remove the group siblings from
-the context.
+After a bunch of digging, it seems that we actually need to program
+CBARn.BPSHCFG for s1-s2-bypass contexts to act as non-shareable in order
+for the shareability configured in the corresponding TTBCR not to be
+overridden with an outer-shareable attribute.
 
-We then proceed with destroying and freeing the event, and when you
-re-plug the CPU and try and add another event to that CPU, things go
-*boom* because you've still got dead entries there.
-
-Reported-by: Drew Richardson <drew.richardson@arm.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Will Deacon <will.deacon@arm.com>
-Link: http://lkml.kernel.org/n/tip-k6v5wundvusvcseqj1si0oz0@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/events/core.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/iommu/arm-smmu.c |   16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -7833,14 +7833,14 @@ static void perf_pmu_rotate_stop(struct
- static void __perf_event_exit_context(void *__info)
- {
- 	struct perf_event_context *ctx = __info;
--	struct perf_event *event, *tmp;
-+	struct perf_event *event;
+--- a/drivers/iommu/arm-smmu.c
++++ b/drivers/iommu/arm-smmu.c
+@@ -189,6 +189,9 @@
+ #define ARM_SMMU_GR1_CBAR(n)		(0x0 + ((n) << 2))
+ #define CBAR_VMID_SHIFT			0
+ #define CBAR_VMID_MASK			0xff
++#define CBAR_S1_BPSHCFG_SHIFT		8
++#define CBAR_S1_BPSHCFG_MASK		3
++#define CBAR_S1_BPSHCFG_NSH		3
+ #define CBAR_S1_MEMATTR_SHIFT		12
+ #define CBAR_S1_MEMATTR_MASK		0xf
+ #define CBAR_S1_MEMATTR_WB		0xf
+@@ -670,11 +673,16 @@ static void arm_smmu_init_context_bank(s
+ 	if (smmu->version == 1)
+ 	      reg |= root_cfg->irptndx << CBAR_IRPTNDX_SHIFT;
  
- 	perf_pmu_rotate_stop(ctx->pmu);
+-	/* Use the weakest memory type, so it is overridden by the pte */
+-	if (stage1)
+-		reg |= (CBAR_S1_MEMATTR_WB << CBAR_S1_MEMATTR_SHIFT);
+-	else
++	/*
++	 * Use the weakest shareability/memory types, so they are
++	 * overridden by the ttbcr/pte.
++	 */
++	if (stage1) {
++		reg |= (CBAR_S1_BPSHCFG_NSH << CBAR_S1_BPSHCFG_SHIFT) |
++			(CBAR_S1_MEMATTR_WB << CBAR_S1_MEMATTR_SHIFT);
++	} else {
+ 		reg |= ARM_SMMU_CB_VMID(root_cfg) << CBAR_VMID_SHIFT;
++	}
+ 	writel_relaxed(reg, gr1_base + ARM_SMMU_GR1_CBAR(root_cfg->cbndx));
  
--	list_for_each_entry_safe(event, tmp, &ctx->pinned_groups, group_entry)
--		__perf_remove_from_context(event);
--	list_for_each_entry_safe(event, tmp, &ctx->flexible_groups, group_entry)
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(event, &ctx->event_list, event_entry)
- 		__perf_remove_from_context(event);
-+	rcu_read_unlock();
- }
- 
- static void perf_event_exit_cpu_context(int cpu)
-@@ -7864,11 +7864,11 @@ static void perf_event_exit_cpu(int cpu)
- {
- 	struct swevent_htable *swhash = &per_cpu(swevent_htable, cpu);
- 
-+	perf_event_exit_cpu_context(cpu);
-+
- 	mutex_lock(&swhash->hlist_mutex);
- 	swevent_hlist_release(swhash);
- 	mutex_unlock(&swhash->hlist_mutex);
--
--	perf_event_exit_cpu_context(cpu);
- }
- #else
- static inline void perf_event_exit_cpu(int cpu) { }
+ 	if (smmu->version > 1) {
 
 
