@@ -1,110 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933345AbaCDVU0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:20:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40999 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756192AbaCDUDZ (ORCPT
+	id S933365AbaCDVUl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:20:41 -0500
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:56682 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932941AbaCDVUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:03:25 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Russel Senior <russell@personaltelco.net>,
-        Antonio Quartulli <antonio@open-mesh.com>,
-        Marek Lindner <mareklindner@neomailbox.ch>
-Subject: [PATCH 3.13 069/172] batman-adv: fix TT CRC computation by ensuring byte order
-Date: Tue,  4 Mar 2014 12:02:33 -0800
-Message-Id: <20140304200301.951360567@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
-References: <20140304200259.626667112@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 4 Mar 2014 16:20:32 -0500
 MIME-Version: 1.0
+In-Reply-To: <20140228232223.GB23878@earth.universe>
+References: <1393375569-21751-1-git-send-email-sre@debian.org>
+	<1393375569-21751-2-git-send-email-sre@debian.org>
+	<CAAfyv37B=xn3AktnUxPDpuey+5S73vW0PJnuUZtorP4rajPKiw@mail.gmail.com>
+	<20140226215452.GA11468@earth.universe>
+	<CAAfyv340pA2ihUAoFytBgevLtedvtj5Z0aw_=G9Rbx5occtyqw@mail.gmail.com>
+	<20140228020536.GB5427@earth.universe>
+	<CAAfyv36jJoMxZQ5e43pEC2rzNBHHW9Jt_4dg5O-fS8e+Aim7jA@mail.gmail.com>
+	<20140228210857.GA17467@earth.universe>
+	<CAAfyv34UB52FCDQGMWWgsdHH8ksTLmTg0iWQcC+dUbhk5nwuoQ@mail.gmail.com>
+	<CAAfyv36RPCkUKLOC6yHRwaNjA16EeG_niyfZoaJ15LZ5_HdR7g@mail.gmail.com>
+	<20140228232223.GB23878@earth.universe>
+Date: Tue, 4 Mar 2014 22:20:32 +0100
+Message-ID: <CAAfyv36LD_JmPfBFCkQo9pLbgM4vwqk_P0M_XOAnPTUppQ1Zug@mail.gmail.com>
+Subject: Re: [PATCHv1 1/2] rx51_battery: convert to iio consumer
+From: Belisko Marek <marek.belisko@gmail.com>
+To: Sebastian Reichel <sre@debian.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+Hi Sebastian,
 
-------------------
+On Sat, Mar 1, 2014 at 12:22 AM, Sebastian Reichel <sre@debian.org> wrote:
+> Hi Marek,
+>
+> On Fri, Feb 28, 2014 at 11:32:22PM +0100, Belisko Marek wrote:
+>> Seems I found issue. I have missing property ti,system-uses-second-madc-irq
+>> as original twl4030_madc_battery used SW2 but this change doesn't fix completely
+>> the problem.
+>
+> I remember adding this property because you requested it :) Good to
+> know, that its really needed.
+>
+>> What it fixed completely is change:
+>> -       req.raw = !(mask == IIO_CHAN_INFO_PROCESSED);
+>> +       req.raw = 0;//!(mask == IIO_CHAN_INFO_PROCESSED);
+>
+> ok, that figures it. Instead of changing the twl4030-madc driver
+> you should change the twl4030-madc-battery driver. You currently
+> call iio_read_channel_raw(), which gives you raw values. Your
+> driver wants processed data from twl4030-madc, so you should use
+> iio_read_channel_processed() instead.
+Yes this helps but also not completely :(. twl4030_madc_battery using
+chanel 1, 10, 12. Channel 1 and 10 have flag IIO_CHAN_INFO_PROCESSED
+set but channel 12 not and values from channel 12 are read as raw which is not
+what I want. Can I simply add IIO_CHAN_INFO_PROCESSED also to channel 12?
+>
+> -- Sebastian
 
-From: Antonio Quartulli <antonio@open-mesh.com>
+BR,
 
-[ Upstream commit a30e22ca8464c2dc573e0144a972221c2f06c2cd ]
+marek
 
-When computing the CRC on a 2byte variable the order of
-the bytes obviously alters the final result. This means
-that computing the CRC over the same value on two archs
-having different endianess leads to different numbers.
+-- 
+as simple and primitive as possible
+-------------------------------------------------
+Marek Belisko - OPEN-NANDRA
+Freelance Developer
 
-The global and local translation table CRC computation
-routine makes this mistake while processing the clients
-VIDs. The result is a continuous CRC mismatching between
-nodes having different endianess.
-
-Fix this by converting the VID to Network Order before
-processing it. This guarantees that every node uses the same
-byte order.
-
-Introduced by 7ea7b4a142758deaf46c1af0ca9ceca6dd55138b
-("batman-adv: make the TT CRC logic VLAN specific")
-
-Reported-by: Russel Senior <russell@personaltelco.net>
-Signed-off-by: Antonio Quartulli <antonio@open-mesh.com>
-Tested-by: Russell Senior <russell@personaltelco.net>
-Signed-off-by: Marek Lindner <mareklindner@neomailbox.ch>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/batman-adv/translation-table.c |   16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
-
---- a/net/batman-adv/translation-table.c
-+++ b/net/batman-adv/translation-table.c
-@@ -1961,6 +1961,7 @@ static uint32_t batadv_tt_global_crc(str
- 	struct hlist_head *head;
- 	uint32_t i, crc_tmp, crc = 0;
- 	uint8_t flags;
-+	__be16 tmp_vid;
- 
- 	for (i = 0; i < hash->size; i++) {
- 		head = &hash->table[i];
-@@ -1997,8 +1998,11 @@ static uint32_t batadv_tt_global_crc(str
- 							     orig_node))
- 				continue;
- 
--			crc_tmp = crc32c(0, &tt_common->vid,
--					 sizeof(tt_common->vid));
-+			/* use network order to read the VID: this ensures that
-+			 * every node reads the bytes in the same order.
-+			 */
-+			tmp_vid = htons(tt_common->vid);
-+			crc_tmp = crc32c(0, &tmp_vid, sizeof(tmp_vid));
- 
- 			/* compute the CRC on flags that have to be kept in sync
- 			 * among nodes
-@@ -2032,6 +2036,7 @@ static uint32_t batadv_tt_local_crc(stru
- 	struct hlist_head *head;
- 	uint32_t i, crc_tmp, crc = 0;
- 	uint8_t flags;
-+	__be16 tmp_vid;
- 
- 	for (i = 0; i < hash->size; i++) {
- 		head = &hash->table[i];
-@@ -2050,8 +2055,11 @@ static uint32_t batadv_tt_local_crc(stru
- 			if (tt_common->flags & BATADV_TT_CLIENT_NEW)
- 				continue;
- 
--			crc_tmp = crc32c(0, &tt_common->vid,
--					 sizeof(tt_common->vid));
-+			/* use network order to read the VID: this ensures that
-+			 * every node reads the bytes in the same order.
-+			 */
-+			tmp_vid = htons(tt_common->vid);
-+			crc_tmp = crc32c(0, &tmp_vid, sizeof(tmp_vid));
- 
- 			/* compute the CRC on flags that have to be kept in sync
- 			 * among nodes
-
-
+Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+Tel: +421 915 052 184
+skype: marekwhite
+twitter: #opennandra
+web: http://open-nandra.com
