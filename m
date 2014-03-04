@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757923AbaCDUVY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:21:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41684 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757241AbaCDUFY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757239AbaCDUFY (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 4 Mar 2014 15:05:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41657 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755413AbaCDUFS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 15:05:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.10 51/97] ASoC: wm8958-dsp: Fix firmware block loading
-Date: Tue,  4 Mar 2014 12:04:04 -0800
-Message-Id: <20140304200347.708895371@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.10 55/97] ahci: disable NCQ on Samsung pci-e SSDs on macbooks
+Date: Tue,  4 Mar 2014 12:04:08 -0800
+Message-Id: <20140304200347.836672198@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -28,35 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Levente Kurusa <levex@linux.com>
 
-commit 548da08fc1e245faf9b0d7c41ecd8e07984fc332 upstream.
+commit 67809f85d31eac600f6b28defa5386c9d2a13b1d upstream.
 
-The codec->control_data contains a pointer to the device's regmap struct. But
-wm8994_bulk_write() expects a pointer to the parent wm8998 device.
+Samsung's pci-e SSDs with device ID 0x1600 which are found on some
+macbooks time out on NCQ commands.  Blacklist NCQ on the device so
+that the affected machines can at least boot.
 
-The issue was introduced in commit d9a7666f ("ASoC: Remove ASoC-specific
-WM8994 I/O code").
-
-Fixes: d9a7666f ("ASoC: Remove ASoC-specific WM8994 I/O code")
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Original-patch-by: Levente Kurusa <levex@linux.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=60731
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm8958-dsp2.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/ata/ahci.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/sound/soc/codecs/wm8958-dsp2.c
-+++ b/sound/soc/codecs/wm8958-dsp2.c
-@@ -153,7 +153,7 @@ static int wm8958_dsp2_fw(struct snd_soc
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -61,6 +61,7 @@ enum board_ids {
+ 	/* board IDs by feature in alphabetical order */
+ 	board_ahci,
+ 	board_ahci_ign_iferr,
++	board_ahci_noncq,
+ 	board_ahci_nosntf,
+ 	board_ahci_yes_fbs,
  
- 			data32 &= 0xffffff;
+@@ -119,6 +120,13 @@ static const struct ata_port_info ahci_p
+ 		.udma_mask	= ATA_UDMA6,
+ 		.port_ops	= &ahci_ops,
+ 	},
++	[board_ahci_noncq] = {
++		AHCI_HFLAGS	(AHCI_HFLAG_NO_NCQ),
++		.flags		= AHCI_FLAG_COMMON,
++		.pio_mask	= ATA_PIO4,
++		.udma_mask	= ATA_UDMA6,
++		.port_ops	= &ahci_ops,
++	},
+ 	[board_ahci_nosntf] = {
+ 		AHCI_HFLAGS	(AHCI_HFLAG_NO_SNTF),
+ 		.flags		= AHCI_FLAG_COMMON,
+@@ -450,6 +458,12 @@ static const struct pci_device_id ahci_p
+ 	{ PCI_VDEVICE(ASMEDIA, 0x0611), board_ahci },	/* ASM1061 */
+ 	{ PCI_VDEVICE(ASMEDIA, 0x0612), board_ahci },	/* ASM1062 */
  
--			wm8994_bulk_write(codec->control_data,
-+			wm8994_bulk_write(wm8994->wm8994,
- 					  data32 & 0xffffff,
- 					  block_len / 2,
- 					  (void *)(data + 8));
++	/*
++	 * Samsung SSDs found on some macbooks.  NCQ times out.
++	 * https://bugzilla.kernel.org/show_bug.cgi?id=60731
++	 */
++	{ PCI_VDEVICE(SAMSUNG, 0x1600), board_ahci_noncq },
++
+ 	/* Enmotus */
+ 	{ PCI_DEVICE(0x1c44, 0x8000), board_ahci },
+ 
 
 
