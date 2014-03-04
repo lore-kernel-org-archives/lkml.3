@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757068AbaCDUEt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:04:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41425 "EHLO
+	id S932080AbaCDUEw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:04:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41470 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756974AbaCDUEi (ORCPT
+	with ESMTP id S1757025AbaCDUEq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:04:38 -0500
+	Tue, 4 Mar 2014 15:04:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Snitzer <snitzer@redhat.com>, Joe Thornber <ejt@redhat.com>
-Subject: [PATCH 3.13 165/172] dm thin: fix the error path for the thin device constructor
-Date: Tue,  4 Mar 2014 12:04:09 -0800
-Message-Id: <20140304200304.979272582@linuxfoundation.org>
+        Ahmed Tamrawi <ahmedtamrawi@gmail.com>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        "Dr. Tilmann Bubeck" <t.bubeck@reinform.de>,
+        Zheng Liu <wenqing.lz@taobao.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [PATCH 3.10 03/97] ext4: fix error paths in swap_inode_boot_loader()
+Date: Tue,  4 Mar 2014 12:03:16 -0800
+Message-Id: <20140304200346.202419275@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
-References: <20140304200259.626667112@linuxfoundation.org>
+In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
+References: <20140304200345.895517495@linuxfoundation.org>
 User-Agent: quilt/0.61-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,59 +27,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: Zheng Liu <wenqing.lz@taobao.com>
 
-commit 1acacc0784aab45627b6009e0e9224886279ac0b upstream.
+commit 30d29b119ef01776e0a301444ab24defe8d8bef3 upstream.
 
-dm_pool_close_thin_device() must be called if dm_set_target_max_io_len()
-fails in thin_ctr().  Otherwise __pool_destroy() will fail because the
-pool will still have an open thin device:
+In swap_inode_boot_loader() we forgot to release ->i_mutex and resume
+unlocked dio for inode and inode_bl if there is an error starting the
+journal handle.  This commit fixes this issue.
 
- device-mapper: thin metadata: attempt to close pmd when 1 device(s) are still open
- device-mapper: thin: __pool_destroy: dm_pool_metadata_close() failed.
-
-Also, must establish error code if failing thin_ctr() because the pool
-is in fail_io mode.
-
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Acked-by: Joe Thornber <ejt@redhat.com>
+Reported-by: Ahmed Tamrawi <ahmedtamrawi@gmail.com>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: Dr. Tilmann Bubeck <t.bubeck@reinform.de>
+Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-thin.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ fs/ext4/ioctl.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -2848,6 +2848,7 @@ static int thin_ctr(struct dm_target *ti
- 
- 	if (get_pool_mode(tc->pool) == PM_FAIL) {
- 		ti->error = "Couldn't open thin device, Pool is in fail mode";
-+		r = -EINVAL;
- 		goto bad_thin_open;
+--- a/fs/ext4/ioctl.c
++++ b/fs/ext4/ioctl.c
+@@ -145,7 +145,7 @@ static long swap_inode_boot_loader(struc
+ 	handle = ext4_journal_start(inode_bl, EXT4_HT_MOVE_EXTENTS, 2);
+ 	if (IS_ERR(handle)) {
+ 		err = -EINVAL;
+-		goto swap_boot_out;
++		goto journal_err_out;
  	}
  
-@@ -2859,7 +2860,7 @@ static int thin_ctr(struct dm_target *ti
+ 	/* Protect extent tree against block allocations via delalloc */
+@@ -203,6 +203,7 @@ static long swap_inode_boot_loader(struc
  
- 	r = dm_set_target_max_io_len(ti, tc->pool->sectors_per_block);
- 	if (r)
--		goto bad_thin_open;
-+		goto bad_target_max_io_len;
+ 	ext4_double_up_write_data_sem(inode, inode_bl);
  
- 	ti->num_flush_bios = 1;
- 	ti->flush_supported = true;
-@@ -2880,6 +2881,8 @@ static int thin_ctr(struct dm_target *ti
++journal_err_out:
+ 	ext4_inode_resume_unlocked_dio(inode);
+ 	ext4_inode_resume_unlocked_dio(inode_bl);
  
- 	return 0;
- 
-+bad_target_max_io_len:
-+	dm_pool_close_thin_device(tc->td);
- bad_thin_open:
- 	__pool_dec(tc->pool);
- bad_pool_lookup:
 
 
