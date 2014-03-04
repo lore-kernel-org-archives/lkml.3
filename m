@@ -1,251 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932381AbaCDVct (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:32:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40863 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755850AbaCDUDD (ORCPT
+	id S932329AbaCDVcr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:32:47 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:37252 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758244AbaCDVcp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:03:03 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Andre Naujoks <nautsch2@gmail.com>, Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 039/172] can: add destructor for self generated skbs
-Date: Tue,  4 Mar 2014 12:02:03 -0800
-Message-Id: <20140304200300.980842316@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
-References: <20140304200259.626667112@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Tue, 4 Mar 2014 16:32:45 -0500
+Date: Tue, 04 Mar 2014 16:32:42 -0500 (EST)
+Message-Id: <20140304.163242.1756502150027525045.davem@davemloft.net>
+To: hayeswang@realtek.com
+Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH net-next 07/12] r8152: support rx checksum
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1393934464-23675-8-git-send-email-hayeswang@realtek.com>
+References: <1393934464-23675-1-git-send-email-hayeswang@realtek.com>
+	<1393934464-23675-8-git-send-email-hayeswang@realtek.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 04 Mar 2014 13:32:44 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+From: Hayes Wang <hayeswang@realtek.com>
+Date: Tue, 4 Mar 2014 20:00:59 +0800
 
-------------------
+> @@ -1453,11 +1491,19 @@ static void rx_bottom(struct r8152 *tp)
+>  			pkt_len -= CRC_SIZE;
+>  			rx_data += sizeof(struct rx_desc);
+>  
+> +			checksum = r8152_rx_csum(tp, rx_desc);
+> +			if (checksum == RTL_CHECKSUM_FAIL) {
+> +				stats->rx_errors++;
+> +				goto find_next_rx;
+> +			}
+> +
 
-From: Oliver Hartkopp <socketcan@hartkopp.net>
+It is not for the driver to make this policy decision and drop the
+packet.  It is not a device RX error event.
 
-[ Upstream commit 0ae89beb283a0db5980d1d4781c7d7be2f2810d6 ]
+In fact you do not know what corrupted the checksum, or even if
+the device verified it correctly.  Anything is possible.
 
-Self generated skbuffs in net/can/bcm.c are setting a skb->sk reference but
-no explicit destructor which is enforced since Linux 3.11 with commit
-376c7311bdb6 (net: add a temporary sanity check in skb_orphan()).
+You must therefore still pass the packet up into the networking
+stack using CHECKSUM_NONE, and let the protocols double-check
+the checksum(s) in software and bump the appropriate statistic
+counter if the checksum is really bad.
 
-This patch adds some helper functions to make sure that a destructor is
-properly defined when a sock reference is assigned to a CAN related skb.
-To create an unshared skb owned by the original sock a common helper function
-has been introduced to replace open coded functions to create CAN echo skbs.
-
-Signed-off-by: Oliver Hartkopp <socketcan@hartkopp.net>
-Tested-by: Andre Naujoks <nautsch2@gmail.com>
-Reviewed-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/can/dev.c        |   15 +++------------
- drivers/net/can/janz-ican3.c |   18 ++++--------------
- drivers/net/can/vcan.c       |    9 ++++-----
- include/linux/can/skb.h      |   38 ++++++++++++++++++++++++++++++++++++++
- net/can/af_can.c             |    3 ++-
- net/can/bcm.c                |    4 ++--
- 6 files changed, 53 insertions(+), 34 deletions(-)
-
---- a/drivers/net/can/dev.c
-+++ b/drivers/net/can/dev.c
-@@ -324,19 +324,10 @@ void can_put_echo_skb(struct sk_buff *sk
- 	}
- 
- 	if (!priv->echo_skb[idx]) {
--		struct sock *srcsk = skb->sk;
- 
--		if (atomic_read(&skb->users) != 1) {
--			struct sk_buff *old_skb = skb;
--
--			skb = skb_clone(old_skb, GFP_ATOMIC);
--			kfree_skb(old_skb);
--			if (!skb)
--				return;
--		} else
--			skb_orphan(skb);
--
--		skb->sk = srcsk;
-+		skb = can_create_echo_skb(skb);
-+		if (!skb)
-+			return;
- 
- 		/* make settings for echo to reduce code in irq context */
- 		skb->protocol = htons(ETH_P_CAN);
---- a/drivers/net/can/janz-ican3.c
-+++ b/drivers/net/can/janz-ican3.c
-@@ -19,6 +19,7 @@
- #include <linux/netdevice.h>
- #include <linux/can.h>
- #include <linux/can/dev.h>
-+#include <linux/can/skb.h>
- #include <linux/can/error.h>
- 
- #include <linux/mfd/janz.h>
-@@ -1134,20 +1135,9 @@ static void ican3_handle_message(struct
-  */
- static void ican3_put_echo_skb(struct ican3_dev *mod, struct sk_buff *skb)
- {
--	struct sock *srcsk = skb->sk;
--
--	if (atomic_read(&skb->users) != 1) {
--		struct sk_buff *old_skb = skb;
--
--		skb = skb_clone(old_skb, GFP_ATOMIC);
--		kfree_skb(old_skb);
--		if (!skb)
--			return;
--	} else {
--		skb_orphan(skb);
--	}
--
--	skb->sk = srcsk;
-+	skb = can_create_echo_skb(skb);
-+	if (!skb)
-+		return;
- 
- 	/* save this skb for tx interrupt echo handling */
- 	skb_queue_tail(&mod->echoq, skb);
---- a/drivers/net/can/vcan.c
-+++ b/drivers/net/can/vcan.c
-@@ -46,6 +46,7 @@
- #include <linux/if_ether.h>
- #include <linux/can.h>
- #include <linux/can/dev.h>
-+#include <linux/can/skb.h>
- #include <linux/slab.h>
- #include <net/rtnetlink.h>
- 
-@@ -109,25 +110,23 @@ static netdev_tx_t vcan_tx(struct sk_buf
- 			stats->rx_packets++;
- 			stats->rx_bytes += cfd->len;
- 		}
--		kfree_skb(skb);
-+		consume_skb(skb);
- 		return NETDEV_TX_OK;
- 	}
- 
- 	/* perform standard echo handling for CAN network interfaces */
- 
- 	if (loop) {
--		struct sock *srcsk = skb->sk;
- 
--		skb = skb_share_check(skb, GFP_ATOMIC);
-+		skb = can_create_echo_skb(skb);
- 		if (!skb)
- 			return NETDEV_TX_OK;
- 
- 		/* receive with packet counting */
--		skb->sk = srcsk;
- 		vcan_rx(skb, dev);
- 	} else {
- 		/* no looped packets => no counting */
--		kfree_skb(skb);
-+		consume_skb(skb);
- 	}
- 	return NETDEV_TX_OK;
- }
---- a/include/linux/can/skb.h
-+++ b/include/linux/can/skb.h
-@@ -11,7 +11,9 @@
- #define CAN_SKB_H
- 
- #include <linux/types.h>
-+#include <linux/skbuff.h>
- #include <linux/can.h>
-+#include <net/sock.h>
- 
- /*
-  * The struct can_skb_priv is used to transport additional information along
-@@ -42,4 +44,40 @@ static inline void can_skb_reserve(struc
- 	skb_reserve(skb, sizeof(struct can_skb_priv));
- }
- 
-+static inline void can_skb_destructor(struct sk_buff *skb)
-+{
-+	sock_put(skb->sk);
-+}
-+
-+static inline void can_skb_set_owner(struct sk_buff *skb, struct sock *sk)
-+{
-+	if (sk) {
-+		sock_hold(sk);
-+		skb->destructor = can_skb_destructor;
-+		skb->sk = sk;
-+	}
-+}
-+
-+/*
-+ * returns an unshared skb owned by the original sock to be echo'ed back
-+ */
-+static inline struct sk_buff *can_create_echo_skb(struct sk_buff *skb)
-+{
-+	if (skb_shared(skb)) {
-+		struct sk_buff *nskb = skb_clone(skb, GFP_ATOMIC);
-+
-+		if (likely(nskb)) {
-+			can_skb_set_owner(nskb, skb->sk);
-+			consume_skb(skb);
-+			return nskb;
-+		} else {
-+			kfree_skb(skb);
-+			return NULL;
-+		}
-+	}
-+
-+	/* we can assume to have an unshared skb with proper owner */
-+	return skb;
-+}
-+
- #endif /* CAN_SKB_H */
---- a/net/can/af_can.c
-+++ b/net/can/af_can.c
-@@ -57,6 +57,7 @@
- #include <linux/skbuff.h>
- #include <linux/can.h>
- #include <linux/can/core.h>
-+#include <linux/can/skb.h>
- #include <linux/ratelimit.h>
- #include <net/net_namespace.h>
- #include <net/sock.h>
-@@ -290,7 +291,7 @@ int can_send(struct sk_buff *skb, int lo
- 				return -ENOMEM;
- 			}
- 
--			newskb->sk = skb->sk;
-+			can_skb_set_owner(newskb, skb->sk);
- 			newskb->ip_summed = CHECKSUM_UNNECESSARY;
- 			newskb->pkt_type = PACKET_BROADCAST;
- 		}
---- a/net/can/bcm.c
-+++ b/net/can/bcm.c
-@@ -268,7 +268,7 @@ static void bcm_can_tx(struct bcm_op *op
- 
- 	/* send with loopback */
- 	skb->dev = dev;
--	skb->sk = op->sk;
-+	can_skb_set_owner(skb, op->sk);
- 	can_send(skb, 1);
- 
- 	/* update statistics */
-@@ -1223,7 +1223,7 @@ static int bcm_tx_send(struct msghdr *ms
- 
- 	can_skb_prv(skb)->ifindex = dev->ifindex;
- 	skb->dev = dev;
--	skb->sk  = sk;
-+	can_skb_set_owner(skb, sk);
- 	err = can_send(skb, 1); /* send with loopback */
- 	dev_put(dev);
- 
-
-
+This allows allows network taps to see the packet, so that the
+administrator can analyze the situation.
