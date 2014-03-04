@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755855AbaCDXr4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 18:47:56 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:55162 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754716AbaCDXry (ORCPT
+	id S1756033AbaCDXsF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 18:48:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43535 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755989AbaCDXsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 18:47:54 -0500
-Date: Tue, 4 Mar 2014 23:47:47 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] EFI urgent fix
-Message-ID: <20140304234747.GD17362@console-pimps.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 4 Mar 2014 18:48:01 -0500
+Date: Tue, 4 Mar 2014 15:47:59 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Hedi Berriche <hedi@sgi.com>,
+        Mike Travis <travis@sgi.com>, Dimitri Sivanich <sivanich@sgi.com>
+Subject: Re: [PATCH 31/48] uv: Replace __get_cpu_var
+Message-Id: <20140304154759.9d64cecc5186dc4eda31080c@linux-foundation.org>
+In-Reply-To: <20140304184210.11a0b157@gandalf.local.home>
+References: <20140214201841.826179349@linux.com>
+	<20140214201907.228035121@linux.com>
+	<20140304150217.ac9d364008a3c95cb2a79b34@linux-foundation.org>
+	<20140304184210.11a0b157@gandalf.local.home>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull the following fix from Borislav that fixes a boot regression
-for SGI UV.
+On Tue, 4 Mar 2014 18:42:10 -0500 Steven Rostedt <rostedt@goodmis.org> wrote:
 
-The following changes since commit 09503379dc99535b1bbfa51aa1aeef340f5d82ec:
+> > --- a/arch/x86/include/asm/uv/uv_hub.h~uv-replace-__get_cpu_var-fix
+> > +++ a/arch/x86/include/asm/uv/uv_hub.h
+> > @@ -618,7 +618,7 @@ struct uv_cpu_nmi_s {
+> >  };
+> >  
+> >  DECLARE_PER_CPU(struct uv_cpu_nmi_s, __uv_cpu_nmi);
+> > -#define uv_cpu_nmi			__this_cpu_read(_uv_cpu_nmi)
+> > +#define uv_cpu_nmi			(*this_cpu_ptr(&__uv_cpu_nmi))
+> 
+> Looks like an extra "_" was added.
 
-  x86/efi: Check status field to validate BGRT header (2014-02-14 10:07:15 +0000)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-urgent
-
-for you to fetch changes up to a5d90c923bcfb9632d998ed06e9569216ad695f3:
-
-  x86/efi: Quirk out SGI UV (2014-03-04 23:43:33 +0000)
-
-----------------------------------------------------------------
- * Disable the new EFI 1:1 virtual mapping for SGI UV because using it
-   causes a crash during boot - Borislav Petkov
-
-----------------------------------------------------------------
-Borislav Petkov (1):
-      x86/efi: Quirk out SGI UV
-
- arch/x86/include/asm/efi.h  |  1 +
- arch/x86/kernel/setup.c     | 10 ++--------
- arch/x86/platform/efi/efi.c | 20 ++++++++++++++++++++
- 3 files changed, 23 insertions(+), 8 deletions(-)
-
--- 
-Matt Fleming, Intel Open Source Technology Center
+yes, there were two mistakes in that line.
