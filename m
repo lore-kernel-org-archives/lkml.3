@@ -1,55 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755492AbaCDXFL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 18:05:11 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:46707 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751565AbaCDXFI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 18:05:08 -0500
-Date: Wed, 5 Mar 2014 00:05:05 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: perf_fuzzer compiled for x32 causes reboot
-Message-ID: <20140304230505.GA27095@pd.tnic>
-References: <alpine.DEB.2.10.1402280957470.6727@vincent-weaver-1.um.maine.edu>
- <1c583986-74f8-4829-883b-390dc49ddabb@email.android.com>
- <20140228154026.GH9987@twins.programming.kicks-ass.net>
- <5310B60F.30806@zytor.com>
- <20140228112946.1f194397@gandalf.local.home>
- <20140228205638.GD14089@laptop.programming.kicks-ass.net>
- <20140228160638.3b045dbc@gandalf.local.home>
- <20140301091650.GD5885@gmail.com>
- <20140301095042.GA16524@pd.tnic>
- <7f55737e-25a2-4cf0-aa07-17102a368ef2@email.android.com>
+	id S1755700AbaCDXGV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 18:06:21 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:55017 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753299AbaCDXGT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 18:06:19 -0500
+Date: Tue, 4 Mar 2014 17:06:15 -0600
+From: Russ Anderson <rja@sgi.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Alex Thorlton <athorlton@sgi.com>, Matt Fleming <matt@console-pimps.org>,
+        Linux EFI <linux-efi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH] efi: Quirk out SGI UV
+Message-ID: <20140304230615.GF8556@sgi.com>
+Reply-To: Russ Anderson <rja@sgi.com>
+References: <1393948937-21840-1-git-send-email-bp@alien8.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <7f55737e-25a2-4cf0-aa07-17102a368ef2@email.android.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1393948937-21840-1-git-send-email-bp@alien8.de>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 01, 2014 at 08:50:17AM -0800, H. Peter Anvin wrote:
-> The bottom line is that if we want hard numbers we probably have to
-> measure.
->
-> Hoisting the cr2 read is a no-brainer, might even help performance...
+On Tue, Mar 04, 2014 at 05:02:17PM +0100, Borislav Petkov wrote:
+> From: Borislav Petkov <bp@suse.de>
+> 
+> Getting this thing to work with the new mapping scheme would need more
+> work.
 
-Btw, I just got word that on AMD, a read from CR2 is 4 cycles on family
-0x15 and 3 cycles on family 0x10. If we're in the same ballpark on
-Intel, I'd say we're fine with those numbers even in hot paths. The OoO
-is an additional bonus which should hide latency even more.
+Thanks Boris.  Allows SGI UV to boot (without the extra bootline).
+
+Acked-by: Russ Anderson <rja@sgi.com> 
+
+> Signed-off-by: Borislav Petkov <bp@suse.de>
+> ---
+>  arch/x86/include/asm/efi.h  |  1 +
+>  arch/x86/kernel/setup.c     | 10 ++--------
+>  arch/x86/platform/efi/efi.c | 20 ++++++++++++++++++++
+>  3 files changed, 23 insertions(+), 8 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
+> index e985d6bf7d3a..86d1fd4bf24c 100644
+> --- a/arch/x86/include/asm/efi.h
+> +++ b/arch/x86/include/asm/efi.h
+> @@ -135,6 +135,7 @@ extern void __init old_map_region(efi_memory_desc_t *md);
+>  extern void __init runtime_code_page_mkexec(void);
+>  extern void __init efi_runtime_mkexec(void);
+>  extern void __init efi_dump_pagetable(void);
+> +extern void __init efi_apply_memmap_quirks(void);
+>  
+>  struct efi_setup_data {
+>  	u64 fw_vendor;
+> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> index 830ae2d95450..09c76d265550 100644
+> --- a/arch/x86/kernel/setup.c
+> +++ b/arch/x86/kernel/setup.c
+> @@ -1238,14 +1238,8 @@ void __init setup_arch(char **cmdline_p)
+>  	register_refined_jiffies(CLOCK_TICK_RATE);
+>  
+>  #ifdef CONFIG_EFI
+> -	/* Once setup is done above, unmap the EFI memory map on
+> -	 * mismatched firmware/kernel archtectures since there is no
+> -	 * support for runtime services.
+> -	 */
+> -	if (efi_enabled(EFI_BOOT) && !efi_is_native()) {
+> -		pr_info("efi: Setup done, disabling due to 32/64-bit mismatch\n");
+> -		efi_unmap_memmap();
+> -	}
+> +	if (efi_enabled(EFI_BOOT))
+> +		efi_apply_memmap_quirks();
+>  #endif
+>  }
+>  
+> diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+> index 482986c3afc5..518aa8540a6d 100644
+> --- a/arch/x86/platform/efi/efi.c
+> +++ b/arch/x86/platform/efi/efi.c
+> @@ -52,6 +52,7 @@
+>  #include <asm/tlbflush.h>
+>  #include <asm/x86_init.h>
+>  #include <asm/rtc.h>
+> +#include <asm/uv/uv.h>
+>  
+>  #define EFI_DEBUG
+>  
+> @@ -1298,3 +1299,22 @@ static int __init parse_efi_cmdline(char *str)
+>  	return 0;
+>  }
+>  early_param("efi", parse_efi_cmdline);
+> +
+> +void __init efi_apply_memmap_quirks(void)
+> +{
+> +	/*
+> +	 * Once setup is done earlier, unmap the EFI memory map on mismatched
+> +	 * firmware/kernel architectures since there is no support for runtime
+> +	 * services.
+> +	 */
+> +	if (!efi_is_native()) {
+> +		pr_info("efi: Setup done, disabling due to 32/64-bit mismatch\n");
+> +		efi_unmap_memmap();
+> +	}
+> +
+> +	/*
+> +	 * UV doesn't support the new EFI pagetable mapping yet.
+> +	 */
+> +	if (is_uv_system())
+> +		set_bit(EFI_OLD_MEMMAP, &efi.flags);
+> +}
+> -- 
+> 1.9.0
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Russ Anderson,  Kernel and Performance Software Team Manager
+SGI - Silicon Graphics Inc          rja@sgi.com
