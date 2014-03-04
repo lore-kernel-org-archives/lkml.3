@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757974AbaCDV0T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:26:19 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:44545 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757334AbaCDV0Q (ORCPT
+	id S1758047AbaCDV0l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:26:41 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:42754 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755315AbaCDV0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 16:26:16 -0500
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: josh.h.morris@us.ibm.com, pjk1939@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] [RESEND] rsxx: Remove deprecated IRQF_DISABLED
-Date: Tue,  4 Mar 2014 22:25:40 +0100
-Message-Id: <1393968340-18136-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1386580990-4391-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1386580990-4391-1-git-send-email-michael.opdenacker@free-electrons.com>
+	Tue, 4 Mar 2014 16:26:38 -0500
+MIME-Version: 1.0
+Date: Tue, 4 Mar 2014 22:26:37 +0100
+Message-ID: <CA+MoWDrTNtAHKsiBHz=W4=eJRO=m9EK_HZ7zLxb=4fg5riUQeg@mail.gmail.com>
+Subject: My Kernel bug is celebrating 2 years. Can you help me fix it?
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: "kernelnewbies@kernelnewbies.org" <kernelnewbies@kernelnewbies.org>,
+        kernel-janitors@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This removes the use of the IRQF_DISABLED flag
-from drivers/block/rsxx/core.c
+I have reported a bug more than two years ago and it is still
+affecting me. The bug report gives some information:
 
-It's a NOOP since 2.6.35 and it will be removed one day.
+https://bugzilla.redhat.com/show_bug.cgi?id=787299
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Acked-by Philip Kelleher <pjk1939@linux.vnet.ibm.com>
----
- drivers/block/rsxx/core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I have tried basic debug instructions from:
+https://www.kernel.org/doc/Documentation/power/basic-pm-debugging.txt
 
-diff --git a/drivers/block/rsxx/core.c b/drivers/block/rsxx/core.c
-index a8de2eec6ff3..ddb6b2b2f451 100644
---- a/drivers/block/rsxx/core.c
-+++ b/drivers/block/rsxx/core.c
-@@ -886,7 +886,7 @@ static int rsxx_pci_probe(struct pci_dev *dev,
- 				"Failed to enable MSI\n");
- 	}
- 
--	st = request_irq(dev->irq, rsxx_isr, IRQF_DISABLED | IRQF_SHARED,
-+	st = request_irq(dev->irq, rsxx_isr, IRQF_SHARED,
- 			 DRIVER_NAME, card);
- 	if (st) {
- 		dev_err(CARD_TO_DEV(card),
+And everything works as expected when:
+# echo freeze > /sys/power/state
+# echo disk > /sys/power/state
+
+I have asked for help for fixing it:
+https://lkml.org/lkml/2013/11/1/186
+
+But I don't have a serial port. How can I debug this issue without a
+"real" serial port? Or what else can I try? How can I explore the hint
+about the problem only happening with VT-d enabled in BIOS? How can I
+explore the hint about the problem not happening if the option
+nox2apic is passed to the Kernel?
+
+Thank you,
+
+Peter
+
+P.S Yes, it works on Windows.
+
 -- 
-1.8.3.2
-
+Peter
