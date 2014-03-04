@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932328AbaCDMs5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 07:48:57 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:52084 "EHLO comal.ext.ti.com"
+	id S932366AbaCDMtI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 07:49:08 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:33971 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757236AbaCDMsy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 07:48:54 -0500
+	id S932331AbaCDMtB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 07:49:01 -0500
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Tony Lindgren <tony@atomide.com>
 CC: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
         <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v3 1/5] drivers: bus: omap_l3: Convert to use devm_kzalloc
-Date: Tue, 4 Mar 2014 14:48:09 +0200
-Message-ID: <1393937293-6036-2-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH v3 5/5] drivers: bus: omap_l3: Change pr_crit() to dev_err() when IRQ request fails
+Date: Tue, 4 Mar 2014 14:48:13 +0200
+Message-ID: <1393937293-6036-6-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1393937293-6036-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1393937293-6036-1-git-send-email-peter.ujfalusi@ti.com>
@@ -24,61 +24,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can remove the kfree() calls from probe and remove.
+Use dev_err() which will going to print the driver's name as well and the
+KERN_ERR level is sufficient in this case (we also print via dev_err when
+there is an error with the mem resources)
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
- drivers/bus/omap_l3_noc.c | 11 +++--------
- 1 file changed, 3 insertions(+), 8 deletions(-)
+ drivers/bus/omap_l3_noc.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
-index feeecae623f6..d25d727e7cfb 100644
+index 0eff48585ae3..972691a668a3 100644
 --- a/drivers/bus/omap_l3_noc.c
 +++ b/drivers/bus/omap_l3_noc.c
-@@ -134,7 +134,7 @@ static int omap4_l3_probe(struct platform_device *pdev)
- 	struct resource	*res;
- 	int ret;
- 
--	l3 = kzalloc(sizeof(*l3), GFP_KERNEL);
-+	l3 = devm_kzalloc(&pdev->dev, sizeof(*l3), GFP_KERNEL);
- 	if (!l3)
- 		return -ENOMEM;
- 
-@@ -142,15 +142,13 @@ static int omap4_l3_probe(struct platform_device *pdev)
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!res) {
- 		dev_err(&pdev->dev, "couldn't find resource 0\n");
--		ret = -ENODEV;
--		goto err0;
-+		return -ENODEV;
+@@ -158,8 +158,8 @@ static int omap4_l3_probe(struct platform_device *pdev)
+ 	ret = devm_request_irq(&pdev->dev, l3->debug_irq, l3_interrupt_handler,
+ 			       IRQF_DISABLED, "l3-dbg-irq", l3);
+ 	if (ret) {
+-		pr_crit("L3: request_irq failed to register for 0x%x\n",
+-						l3->debug_irq);
++		dev_err(&pdev->dev, "request_irq failed for %d\n",
++			l3->debug_irq);
+ 		return ret;
  	}
  
- 	l3->l3_base[0] = ioremap(res->start, resource_size(res));
- 	if (!l3->l3_base[0]) {
- 		dev_err(&pdev->dev, "ioremap failed\n");
--		ret = -ENOMEM;
--		goto err0;
-+		return -ENOMEM;
- 	}
+@@ -167,8 +167,7 @@ static int omap4_l3_probe(struct platform_device *pdev)
+ 	ret = devm_request_irq(&pdev->dev, l3->app_irq, l3_interrupt_handler,
+ 			       IRQF_DISABLED, "l3-app-irq", l3);
+ 	if (ret)
+-		pr_crit("L3: request_irq failed to register for 0x%x\n",
+-						l3->app_irq);
++		dev_err(&pdev->dev, "request_irq failed for %d\n", l3->app_irq);
  
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-@@ -214,8 +212,6 @@ err2:
- 	iounmap(l3->l3_base[1]);
- err1:
- 	iounmap(l3->l3_base[0]);
--err0:
--	kfree(l3);
  	return ret;
- }
- 
-@@ -228,7 +224,6 @@ static int omap4_l3_remove(struct platform_device *pdev)
- 	iounmap(l3->l3_base[0]);
- 	iounmap(l3->l3_base[1]);
- 	iounmap(l3->l3_base[2]);
--	kfree(l3);
- 
- 	return 0;
  }
 -- 
 1.9.0
