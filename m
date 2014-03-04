@@ -1,77 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756950AbaCDJMu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 04:12:50 -0500
-Received: from f148.i.mail.ru ([94.100.178.199]:39536 "EHLO f148.i.mail.ru"
+	id S1756626AbaCDJCf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 04:02:35 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:53382 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756733AbaCDJMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 04:12:45 -0500
-From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-To: =?UTF-8?B?UGV0ZXIgVWpmYWx1c2k=?= <peter.ujfalusi@ti.com>
-Cc: =?UTF-8?B?U2FudG9zaCBTaGlsaW1rYXI=?= <santosh.shilimkar@ti.com>,
-        =?UTF-8?B?VG9ueSBMaW5kZ3Jlbg==?= <tony@atomide.com>,
-        =?UTF-8?B?T2xvZiBKb2hhbnNzb24=?= <olof@lixom.net>,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?B?QXJuZCBCZXJnbWFubg==?= <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: =?UTF-8?B?UmU6IFtQQVRDSCAyLzVdIGRyaXZlcnM6IGJ1czogb21hcF9sMzogQ29udmVy?=
- =?UTF-8?B?dCB0byB1c2UgZGV2bV9yZXF1ZXN0X2FuZF9pb3JlbWFwKCk=?=
-Mime-Version: 1.0
-X-Mailer: Mail.Ru Mailer 1.0
-X-Originating-IP: [217.119.30.118]
-Date: Tue, 04 Mar 2014 13:12:39 +0400
-Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-X-Priority: 3 (Normal)
-Message-ID: <1393924359.866301359@f148.i.mail.ru>
-Content-Type: text/plain; charset=utf-8
-X-Mras: Ok
-X-Spam: undefined
-In-Reply-To: <1393923710-10377-3-git-send-email-peter.ujfalusi@ti.com>
+	id S1752195AbaCDJCc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 04:02:32 -0500
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Tony Lindgren <tony@atomide.com>
+CC: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH 1/5] drivers: bus: omap_l3: Convert to use devm_kzalloc
+Date: Tue, 4 Mar 2014 11:01:46 +0200
+Message-ID: <1393923710-10377-2-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1393923710-10377-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1393923710-10377-1-git-send-email-peter.ujfalusi@ti.com>
- <1393923710-10377-3-git-send-email-peter.ujfalusi@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s249CwIQ002234
 
-Ð’Ñ‚Ð¾Ñ€Ð½Ð¸Ðº,  4 Ð¼Ð°Ñ€Ñ‚Ð° 2014, 11:01 +02:00 Ð¾Ñ‚ Peter Ujfalusi <peter.ujfalusi@ti.com>:
-> We can then remove the iounmap() calls from probe and remove.
-> Since the driver requests the resources via index we can do the mem resource
-> request within a for loop.
-> 
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti>
-> ---
+We can remove the kfree() calls from probe and remove.
 
-> +	/* Get mem resources */
-> +	for (i = 0; i < 3; i++) {
-> +		struct resource	*res = platform_get_resource(pdev,
-> +							     IORESOURCE_MEM, i);
-> +		if (!res) {
-> +			dev_err(&pdev->dev, "couldn't find resource %d\n", i);
-> +			return -ENODEV;
-> +		}
-
-No need to check "res". devm_request_and_ioremap() do all for us.
-
-> -	l3->l3_base[2] = ioremap(res->start, resource_size(res));
-> -	if (!l3->l3_base[2]) {
-> -		dev_err(&pdev->dev, "ioremap failed\n");
-> -		ret = -ENOMEM;
-> -		goto err2;
-> +		l3->l3_base[i] = devm_request_and_ioremap(&pdev->dev, res);
-> +		if (!l3->l3_base[i]) {
-
-if (IS_ERR(l3->l3_base[i]))
-
-> +			dev_err(&pdev->dev, "ioremap %d failed\n", i);
-
-Unnecessary.
-
-> +			return -ENOMEM;
-
-return PTR_ERR(l3->l3_base[i]);
-
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti>
 ---
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+ drivers/bus/omap_l3_noc.c | 11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
+index feeecae623f6..d25d727e7cfb 100644
+--- a/drivers/bus/omap_l3_noc.c
++++ b/drivers/bus/omap_l3_noc.c
+@@ -134,7 +134,7 @@ static int omap4_l3_probe(struct platform_device *pdev)
+ 	struct resource	*res;
+ 	int ret;
+ 
+-	l3 = kzalloc(sizeof(*l3), GFP_KERNEL);
++	l3 = devm_kzalloc(&pdev->dev, sizeof(*l3), GFP_KERNEL);
+ 	if (!l3)
+ 		return -ENOMEM;
+ 
+@@ -142,15 +142,13 @@ static int omap4_l3_probe(struct platform_device *pdev)
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!res) {
+ 		dev_err(&pdev->dev, "couldn't find resource 0\n");
+-		ret = -ENODEV;
+-		goto err0;
++		return -ENODEV;
+ 	}
+ 
+ 	l3->l3_base[0] = ioremap(res->start, resource_size(res));
+ 	if (!l3->l3_base[0]) {
+ 		dev_err(&pdev->dev, "ioremap failed\n");
+-		ret = -ENOMEM;
+-		goto err0;
++		return -ENOMEM;
+ 	}
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+@@ -214,8 +212,6 @@ err2:
+ 	iounmap(l3->l3_base[1]);
+ err1:
+ 	iounmap(l3->l3_base[0]);
+-err0:
+-	kfree(l3);
+ 	return ret;
+ }
+ 
+@@ -228,7 +224,6 @@ static int omap4_l3_remove(struct platform_device *pdev)
+ 	iounmap(l3->l3_base[0]);
+ 	iounmap(l3->l3_base[1]);
+ 	iounmap(l3->l3_base[2]);
+-	kfree(l3);
+ 
+ 	return 0;
+ }
+-- 
+1.9.0
+
