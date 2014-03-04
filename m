@@ -1,81 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932570AbaCDUez (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:34:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41517 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932107AbaCDUE4 (ORCPT
+	id S1757910AbaCDUfR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:35:17 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:44159 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757334AbaCDUfP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:04:56 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sabrina Dubroca <sd@queasysnail.net>,
-        Cong Wang <cwang@twopensource.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 25/97] netpoll: fix netconsole IPv6 setup
-Date: Tue,  4 Mar 2014 12:03:38 -0800
-Message-Id: <20140304200346.885510126@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
-References: <20140304200345.895517495@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Tue, 4 Mar 2014 15:35:15 -0500
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
+Cc: x86@kernel.org, venki@google.com, linux-kernel@vger.kernel.org,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH] [RESEND] x86: remove deprecated IRQF_DISABLED
+Date: Tue,  4 Mar 2014 21:35:05 +0100
+Message-Id: <1393965305-17248-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1386407649-13288-1-git-send-email-michael.opdenacker@free-electrons.com>
+References: <1386407649-13288-1-git-send-email-michael.opdenacker@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+This patch removes the IRQF_DISABLED flag from x86 architecture
+code. It's a NOOP since 2.6.35 and it will be removed one day.
 
-------------------
-
-From: Sabrina Dubroca <sd@queasysnail.net>
-
-[ Upstream commit 00fe11b3c67dc670fe6391d22f1fe64e7c99a8ec ]
-
-Currently, to make netconsole start over IPv6, the source address
-needs to be specified. Without a source address, netpoll_parse_options
-assumes we're setting up over IPv4 and the destination IPv6 address is
-rejected.
-
-Check if the IP version has been forced by a source address before
-checking for a version mismatch when parsing the destination address.
-
-Signed-off-by: Sabrina Dubroca <sd@queasysnail.net>
-Acked-by: Cong Wang <cwang@twopensource.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
 ---
- net/core/netpoll.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/x86/include/asm/floppy.h | 4 ++--
+ arch/x86/kernel/hpet.c        | 2 +-
+ arch/x86/kernel/time.c        | 2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
---- a/net/core/netpoll.c
-+++ b/net/core/netpoll.c
-@@ -948,6 +948,7 @@ int netpoll_parse_options(struct netpoll
+diff --git a/arch/x86/include/asm/floppy.h b/arch/x86/include/asm/floppy.h
+index d3d74698dce9..1c7eefe32502 100644
+--- a/arch/x86/include/asm/floppy.h
++++ b/arch/x86/include/asm/floppy.h
+@@ -145,10 +145,10 @@ static int fd_request_irq(void)
  {
- 	char *cur=opt, *delim;
- 	int ipv6;
-+	bool ipversion_set = false;
- 
- 	if (*cur != '@') {
- 		if ((delim = strchr(cur, '@')) == NULL)
-@@ -960,6 +961,7 @@ int netpoll_parse_options(struct netpoll
- 	cur++;
- 
- 	if (*cur != '/') {
-+		ipversion_set = true;
- 		if ((delim = strchr(cur, '/')) == NULL)
- 			goto parse_failed;
- 		*delim = 0;
-@@ -1002,7 +1004,7 @@ int netpoll_parse_options(struct netpoll
- 	ipv6 = netpoll_parse_ip_addr(cur, &np->remote_ip);
- 	if (ipv6 < 0)
- 		goto parse_failed;
--	else if (np->ipv6 != (bool)ipv6)
-+	else if (ipversion_set && np->ipv6 != (bool)ipv6)
- 		goto parse_failed;
+ 	if (can_use_virtual_dma)
+ 		return request_irq(FLOPPY_IRQ, floppy_hardint,
+-				   IRQF_DISABLED, "floppy", NULL);
++				   0, "floppy", NULL);
  	else
- 		np->ipv6 = (bool)ipv6;
-
+ 		return request_irq(FLOPPY_IRQ, floppy_interrupt,
+-				   IRQF_DISABLED, "floppy", NULL);
++				   0, "floppy", NULL);
+ }
+ 
+ static unsigned long dma_mem_alloc(unsigned long size)
+diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
+index da85a8e830a1..45d2ded7b1e2 100644
+--- a/arch/x86/kernel/hpet.c
++++ b/arch/x86/kernel/hpet.c
+@@ -521,7 +521,7 @@ static int hpet_setup_irq(struct hpet_dev *dev)
+ {
+ 
+ 	if (request_irq(dev->irq, hpet_interrupt_handler,
+-			IRQF_TIMER | IRQF_DISABLED | IRQF_NOBALANCING,
++			IRQF_TIMER | IRQF_NOBALANCING,
+ 			dev->name, dev))
+ 		return -1;
+ 
+diff --git a/arch/x86/kernel/time.c b/arch/x86/kernel/time.c
+index 24d3c91e9812..36b2cee629cb 100644
+--- a/arch/x86/kernel/time.c
++++ b/arch/x86/kernel/time.c
+@@ -62,7 +62,7 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
+ 
+ static struct irqaction irq0  = {
+ 	.handler = timer_interrupt,
+-	.flags = IRQF_DISABLED | IRQF_NOBALANCING | IRQF_IRQPOLL | IRQF_TIMER,
++	.flags = IRQF_NOBALANCING | IRQF_IRQPOLL | IRQF_TIMER,
+ 	.name = "timer"
+ };
+ 
+-- 
+1.8.3.2
 
