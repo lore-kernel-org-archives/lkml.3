@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932359AbaCDUFo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:05:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41788 "EHLO
+	id S932392AbaCDUMq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:12:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41803 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757316AbaCDUFm (ORCPT
+	with ESMTP id S932353AbaCDUFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:05:42 -0500
+	Tue, 4 Mar 2014 15:05:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tony Thompson <anthony.thompson@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Li Zefan <lizefan@huawei.com>
-Subject: [PATCH 3.10 87/97] ARM: 7749/1: spinlock: retry trylock operation if strex fails on free lock
-Date: Tue,  4 Mar 2014 12:04:40 -0800
-Message-Id: <20140304200348.875416170@linuxfoundation.org>
+        Drew Richardson <drew.richardson@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Will Deacon <will.deacon@arm.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.10 77/97] perf: Fix hotplug splat
+Date: Tue,  4 Mar 2014 12:04:30 -0800
+Message-Id: <20140304200348.534625506@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -31,60 +30,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit 15e7e5c1ebf556cd620c9b091e121091ac760f6d upstream.
+commit e3703f8cdfcf39c25c4338c3ad8e68891cca3731 upstream.
 
-An exclusive store instruction may fail for reasons other than lock
-contention (e.g. a cache eviction during the critical section) so, in
-line with other architectures using similar exclusive instructions
-(alpha, mips, powerpc), retry the trylock operation if the lock appears
-to be free but the strex reported failure.
+Drew Richardson reported that he could make the kernel go *boom* when hotplugging
+while having perf events active.
 
-Reported-by: Tony Thompson <anthony.thompson@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Li Zefan <lizefan@huawei.com>
+It turned out that when you have a group event, the code in
+__perf_event_exit_context() fails to remove the group siblings from
+the context.
+
+We then proceed with destroying and freeing the event, and when you
+re-plug the CPU and try and add another event to that CPU, things go
+*boom* because you've still got dead entries there.
+
+Reported-by: Drew Richardson <drew.richardson@arm.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Will Deacon <will.deacon@arm.com>
+Link: http://lkml.kernel.org/n/tip-k6v5wundvusvcseqj1si0oz0@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/spinlock.h |   23 +++++++++++++----------
- 1 file changed, 13 insertions(+), 10 deletions(-)
+ kernel/events/core.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/arch/arm/include/asm/spinlock.h
-+++ b/arch/arm/include/asm/spinlock.h
-@@ -97,19 +97,22 @@ static inline void arch_spin_lock(arch_s
- 
- static inline int arch_spin_trylock(arch_spinlock_t *lock)
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -7421,14 +7421,14 @@ static void perf_pmu_rotate_stop(struct
+ static void __perf_event_exit_context(void *__info)
  {
--	unsigned long tmp;
-+	unsigned long contended, res;
- 	u32 slock;
+ 	struct perf_event_context *ctx = __info;
+-	struct perf_event *event, *tmp;
++	struct perf_event *event;
  
--	__asm__ __volatile__(
--"	ldrex	%0, [%2]\n"
--"	subs	%1, %0, %0, ror #16\n"
--"	addeq	%0, %0, %3\n"
--"	strexeq	%1, %0, [%2]"
--	: "=&r" (slock), "=&r" (tmp)
--	: "r" (&lock->slock), "I" (1 << TICKET_SHIFT)
--	: "cc");
-+	do {
-+		__asm__ __volatile__(
-+		"	ldrex	%0, [%3]\n"
-+		"	mov	%2, #0\n"
-+		"	subs	%1, %0, %0, ror #16\n"
-+		"	addeq	%0, %0, %4\n"
-+		"	strexeq	%2, %0, [%3]"
-+		: "=&r" (slock), "=&r" (contended), "=r" (res)
-+		: "r" (&lock->slock), "I" (1 << TICKET_SHIFT)
-+		: "cc");
-+	} while (res);
+ 	perf_pmu_rotate_stop(ctx->pmu);
  
--	if (tmp == 0) {
-+	if (!contended) {
- 		smp_mb();
- 		return 1;
- 	} else {
+-	list_for_each_entry_safe(event, tmp, &ctx->pinned_groups, group_entry)
+-		__perf_remove_from_context(event);
+-	list_for_each_entry_safe(event, tmp, &ctx->flexible_groups, group_entry)
++	rcu_read_lock();
++	list_for_each_entry_rcu(event, &ctx->event_list, event_entry)
+ 		__perf_remove_from_context(event);
++	rcu_read_unlock();
+ }
+ 
+ static void perf_event_exit_cpu_context(int cpu)
+@@ -7452,11 +7452,11 @@ static void perf_event_exit_cpu(int cpu)
+ {
+ 	struct swevent_htable *swhash = &per_cpu(swevent_htable, cpu);
+ 
++	perf_event_exit_cpu_context(cpu);
++
+ 	mutex_lock(&swhash->hlist_mutex);
+ 	swevent_hlist_release(swhash);
+ 	mutex_unlock(&swhash->hlist_mutex);
+-
+-	perf_event_exit_cpu_context(cpu);
+ }
+ #else
+ static inline void perf_event_exit_cpu(int cpu) { }
 
 
