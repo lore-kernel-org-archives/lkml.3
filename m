@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758053AbaCDU0k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:26:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41635 "EHLO
+	id S1758067AbaCDU0m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:26:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41630 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932251AbaCDUFO (ORCPT
+	with ESMTP id S932247AbaCDUFN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:05:14 -0500
+	Tue, 4 Mar 2014 15:05:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Florian Westphal <fw@strlen.de>, Eric Dumazet <edumazet@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 34/97] net: add and use skb_gso_transport_seglen()
-Date: Tue,  4 Mar 2014 12:03:47 -0800
-Message-Id: <20140304200347.175110941@linuxfoundation.org>
+Subject: [PATCH 3.10 33/97] net: sctp: fix sctp_connectx abi for ia32 emulation/compat mode
+Date: Tue,  4 Mar 2014 12:03:46 -0800
+Message-Id: <20140304200347.137887045@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -29,72 +31,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Westphal <fw@strlen.de>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit de960aa9ab4decc3304959f69533eef64d05d8e8 upstream.
+[ Upstream commit ffd5939381c609056b33b7585fb05a77b4c695f3 ]
 
-[ no skb_gso_seglen helper in 3.10, leave tbf alone ]
+SCTP's sctp_connectx() abi breaks for 64bit kernels compiled with 32bit
+emulation (e.g. ia32 emulation or x86_x32). Due to internal usage of
+'struct sctp_getaddrs_old' which includes a struct sockaddr pointer,
+sizeof(param) check will always fail in kernel as the structure in
+64bit kernel space is 4bytes larger than for user binaries compiled
+in 32bit mode. Thus, applications making use of sctp_connectx() won't
+be able to run under such circumstances.
 
-This moves part of Eric Dumazets skb_gso_seglen helper from tbf sched to
-skbuff core so it may be reused by upcoming ip forwarding path patch.
+Introduce a compat interface in the kernel to deal with such
+situations by using a 'struct compat_sctp_getaddrs_old' structure
+where user data is copied into it, and then sucessively transformed
+into a 'struct sctp_getaddrs_old' structure with the help of
+compat_ptr(). That fixes sctp_connectx() abi without any changes
+needed in user space, and lets the SCTP test suite pass when compiled
+in 32bit and run on 64bit kernels.
 
-Signed-off-by: Florian Westphal <fw@strlen.de>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Fixes: f9c67811ebc0 ("sctp: Fix regression introduced by new sctp_connectx api")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/linux/skbuff.h |    2 ++
- net/core/skbuff.c      |   25 +++++++++++++++++++++++++
- 2 files changed, 27 insertions(+)
+ net/sctp/socket.c |   41 ++++++++++++++++++++++++++++++++---------
+ 1 file changed, 32 insertions(+), 9 deletions(-)
 
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -2488,6 +2488,8 @@ extern int	       skb_shift(struct sk_bu
- extern struct sk_buff *skb_segment(struct sk_buff *skb,
- 				   netdev_features_t features);
- 
-+unsigned int skb_gso_transport_seglen(const struct sk_buff *skb);
-+
- static inline void *skb_header_pointer(const struct sk_buff *skb, int offset,
- 				       int len, void *buffer)
- {
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -47,6 +47,8 @@
- #include <linux/in.h>
- #include <linux/inet.h>
+--- a/net/sctp/socket.c
++++ b/net/sctp/socket.c
+@@ -71,6 +71,7 @@
+ #include <linux/crypto.h>
  #include <linux/slab.h>
-+#include <linux/tcp.h>
-+#include <linux/udp.h>
- #include <linux/netdevice.h>
- #ifdef CONFIG_NET_CLS_ACT
- #include <net/pkt_sched.h>
-@@ -3471,3 +3473,26 @@ bool skb_try_coalesce(struct sk_buff *to
- 	return true;
- }
- EXPORT_SYMBOL(skb_try_coalesce);
+ #include <linux/file.h>
++#include <linux/compat.h>
+ 
+ #include <net/ip.h>
+ #include <net/icmp.h>
+@@ -1384,11 +1385,19 @@ SCTP_STATIC int sctp_setsockopt_connectx
+ /*
+  * New (hopefully final) interface for the API.
+  * We use the sctp_getaddrs_old structure so that use-space library
+- * can avoid any unnecessary allocations.   The only defferent part
++ * can avoid any unnecessary allocations. The only different part
+  * is that we store the actual length of the address buffer into the
+- * addrs_num structure member.  That way we can re-use the existing
++ * addrs_num structure member. That way we can re-use the existing
+  * code.
+  */
++#ifdef CONFIG_COMPAT
++struct compat_sctp_getaddrs_old {
++	sctp_assoc_t	assoc_id;
++	s32		addr_num;
++	compat_uptr_t	addrs;		/* struct sockaddr * */
++};
++#endif
 +
-+/**
-+ * skb_gso_transport_seglen - Return length of individual segments of a gso packet
-+ *
-+ * @skb: GSO skb
-+ *
-+ * skb_gso_transport_seglen is used to determine the real size of the
-+ * individual segments, including Layer4 headers (TCP/UDP).
-+ *
-+ * The MAC/L2 or network (IP, IPv6) headers are not accounted for.
-+ */
-+unsigned int skb_gso_transport_seglen(const struct sk_buff *skb)
-+{
-+	const struct skb_shared_info *shinfo = skb_shinfo(skb);
-+	unsigned int hdr_len;
-+
-+	if (likely(shinfo->gso_type & (SKB_GSO_TCPV4 | SKB_GSO_TCPV6)))
-+		hdr_len = tcp_hdrlen(skb);
-+	else
-+		hdr_len = sizeof(struct udphdr);
-+	return hdr_len + shinfo->gso_size;
-+}
-+EXPORT_SYMBOL_GPL(skb_gso_transport_seglen);
+ SCTP_STATIC int sctp_getsockopt_connectx3(struct sock* sk, int len,
+ 					char __user *optval,
+ 					int __user *optlen)
+@@ -1397,16 +1406,30 @@ SCTP_STATIC int sctp_getsockopt_connectx
+ 	sctp_assoc_t assoc_id = 0;
+ 	int err = 0;
+ 
+-	if (len < sizeof(param))
+-		return -EINVAL;
++#ifdef CONFIG_COMPAT
++	if (is_compat_task()) {
++		struct compat_sctp_getaddrs_old param32;
+ 
+-	if (copy_from_user(&param, optval, sizeof(param)))
+-		return -EFAULT;
++		if (len < sizeof(param32))
++			return -EINVAL;
++		if (copy_from_user(&param32, optval, sizeof(param32)))
++			return -EFAULT;
+ 
+-	err = __sctp_setsockopt_connectx(sk,
+-			(struct sockaddr __user *)param.addrs,
+-			param.addr_num, &assoc_id);
++		param.assoc_id = param32.assoc_id;
++		param.addr_num = param32.addr_num;
++		param.addrs = compat_ptr(param32.addrs);
++	} else
++#endif
++	{
++		if (len < sizeof(param))
++			return -EINVAL;
++		if (copy_from_user(&param, optval, sizeof(param)))
++			return -EFAULT;
++	}
+ 
++	err = __sctp_setsockopt_connectx(sk, (struct sockaddr __user *)
++					 param.addrs, param.addr_num,
++					 &assoc_id);
+ 	if (err == 0 || err == -EINPROGRESS) {
+ 		if (copy_to_user(optval, &assoc_id, sizeof(assoc_id)))
+ 			return -EFAULT;
 
 
