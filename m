@@ -1,64 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757439AbaCDWHu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 17:07:50 -0500
-Received: from ring0.de ([5.45.105.125]:38907 "EHLO ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757035AbaCDWGo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 17:06:44 -0500
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-From: Sebastian Reichel <sre@debian.org>
-To: Sebastian Reichel <sre@ring0.de>, Marek Belisko <marek@goldelico.com>,
-        Jonathan Cameron <jic23@kernel.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-iio@vger.kernel.org,
-        Sebastian Reichel <sre@debian.org>
-Subject: [PATCHv2 8/9] iio: documentation: Add ABI documentation for *_mean_raw
-Date: Tue,  4 Mar 2014 23:05:50 +0100
-Message-Id: <1393970751-18157-9-git-send-email-sre@debian.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1393970751-18157-1-git-send-email-sre@debian.org>
-References: <1393702365-26429-1-git-send-email-sre@debian.org>
- <1393970751-18157-1-git-send-email-sre@debian.org>
+	id S1757554AbaCDWIS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 17:08:18 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:45577 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756924AbaCDWGg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 17:06:36 -0500
+From: Alexander Holler <holler@ahsoftware.de>
+To: linux-kernel@vger.kernel.org
+Cc: linux-gpio@vger.kernel.org, devicetree@vger.kernel.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-arm-kernel@lists.infradead.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Sekhar Nori <nsekhar@ti.com>,
+        Prabhakar Lad <prabhakar.csengg@gmail.com>,
+        Alexander Holler <holler@ahsoftware.de>
+Subject: [PATCH] gpio: davinci: fix gpio selection for OF
+Date: Tue,  4 Mar 2014 23:06:02 +0100
+Message-Id: <1393970762-5346-1-git-send-email-holler@ahsoftware.de>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <5315ED51.1000006@ti.com>
+References: <5315ED51.1000006@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add ABI documentation for in_*_mean_raw files, which are
-already supported and used in the kernel for some time.
+The driver missed an of_xlate function to translate gpio numbers
+as found in the DT to the correct chip and number.
 
-Signed-off-by: Sebastian Reichel <sre@debian.org>
+While there I've set #gpio_cells to a fixed value of 2.
+
+I've used gpio-pxa.c as template for those changes and tested my changes
+successfully on a da850 board using entries for gpio-leds in a DT. So I didn't
+reinvent the wheel but just copied and tested stuff.
+
+Thanks to Grygorii Strashko for the hint of the existing code in gpio-pxa.
+
+Signed-off-by: Alexander Holler <holler@ahsoftware.de>
 ---
- Documentation/ABI/testing/sysfs-bus-iio | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/gpio/gpio-davinci.c | 27 +++++++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
 
-diff --git a/Documentation/ABI/testing/sysfs-bus-iio b/Documentation/ABI/testing/sysfs-bus-iio
-index 6e02c50..58ba333 100644
---- a/Documentation/ABI/testing/sysfs-bus-iio
-+++ b/Documentation/ABI/testing/sysfs-bus-iio
-@@ -210,6 +210,14 @@ Contact:	linux-iio@vger.kernel.org
- Description:
- 		Scaled humidity measurement in milli percent.
+diff --git a/drivers/gpio/gpio-davinci.c b/drivers/gpio/gpio-davinci.c
+index 7629b4f..79f45c4 100644
+--- a/drivers/gpio/gpio-davinci.c
++++ b/drivers/gpio/gpio-davinci.c
+@@ -44,6 +44,9 @@ struct davinci_gpio_regs {
  
-+What:		/sys/bus/iio/devices/iio:deviceX/in_X_mean_raw
-+KernelVersion:	3.5
-+Contact:	linux-iio@vger.kernel.org
-+Description:
-+		Averaged raw measurement from channel X. The number of values
-+		used for averaging is device specific. The converting rules for
-+		normal raw values also applies to the averaged raw values.
+ static void __iomem *gpio_base;
+ 
++static struct davinci_gpio_controller *davinci_gpio_chips;
++static int davinci_last_gpio;
 +
- What:		/sys/bus/iio/devices/iio:deviceX/in_accel_offset
- What:		/sys/bus/iio/devices/iio:deviceX/in_accel_x_offset
- What:		/sys/bus/iio/devices/iio:deviceX/in_accel_y_offset
+ static struct davinci_gpio_regs __iomem *gpio2regs(unsigned gpio)
+ {
+ 	void __iomem *ptr;
+@@ -172,6 +175,24 @@ of_err:
+ 	return NULL;
+ }
+ 
++#ifdef CONFIG_OF_GPIO
++static int davinci_gpio_of_xlate(struct gpio_chip *gc,
++			     const struct of_phandle_args *gpiospec,
++			     u32 *flags)
++{
++	if (gpiospec->args[0] > davinci_last_gpio)
++		return -EINVAL;
++
++	if (gc != &davinci_gpio_chips[gpiospec->args[0] / 32].chip)
++		return -EINVAL;
++
++	if (flags)
++		*flags = gpiospec->args[1];
++
++	return gpiospec->args[0] % 32;
++}
++#endif
++
+ static int davinci_gpio_probe(struct platform_device *pdev)
+ {
+ 	int i, base;
+@@ -236,6 +257,8 @@ static int davinci_gpio_probe(struct platform_device *pdev)
+ 			chips[i].chip.ngpio = 32;
+ 
+ #ifdef CONFIG_OF_GPIO
++		chips[i].chip.of_gpio_n_cells = 2;
++		chips[i].chip.of_xlate = davinci_gpio_of_xlate;
+ 		chips[i].chip.of_node = dev->of_node;
+ #endif
+ 		spin_lock_init(&chips[i].lock);
+@@ -251,6 +274,10 @@ static int davinci_gpio_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, chips);
+ 	davinci_gpio_irq_setup(pdev);
++
++	davinci_gpio_chips = chips;
++	davinci_last_gpio = ngpio;
++
+ 	return 0;
+ }
+ 
 -- 
-1.9.0
+1.8.3.1
 
