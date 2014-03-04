@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758433AbaCDVil (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:38:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40779 "EHLO
+	id S1757314AbaCDVkp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:40:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40744 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755568AbaCDUCt (ORCPT
+	with ESMTP id S1755485AbaCDUCn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:02:49 -0500
+	Tue, 4 Mar 2014 15:02:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.13 016/172] ARM: 7950/1: mm: Fix stage-2 device memory attributes
-Date: Tue,  4 Mar 2014 12:01:40 -0800
-Message-Id: <20140304200300.248297945@linuxfoundation.org>
+        "Theodore Tso" <tytso@mit.edu>, Jon Bernard <jbernard@tuxion.com>
+Subject: [PATCH 3.13 013/172] ext4: fix online resize with a non-standard blocks per group setting
+Date: Tue,  4 Mar 2014 12:01:37 -0800
+Message-Id: <20140304200300.164324510@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -31,94 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoffer Dall <christoffer.dall@linaro.org>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 4d9c5b89cf3605bbc39c6e274351ff25f0d83e6a upstream.
+commit 3d2660d0c9c2f296837078c189b68a47f6b2e3b5 upstream.
 
-The stage-2 memory attributes are distinct from the Hyp memory
-attributes and the Stage-1 memory attributes.  We were using the stage-1
-memory attributes for stage-2 mappings causing device mappings to be
-mapped as normal memory.  Add the S2 equivalent defines for memory
-attributes and fix the comments explaining the defines while at it.
+The set_flexbg_block_bitmap() function assumed that the number of
+blocks in a blockgroup was sb->blocksize * 8, which is normally true,
+but not always!  Use EXT4_BLOCKS_PER_GROUP(sb) instead, to fix block
+bitmap corruption after:
 
-Add a prot_pte_s2 field to the mem_type struct and fill out the field
-for device mappings accordingly.
+mke2fs -t ext4 -g 3072 -i 4096 /dev/vdd 1G
+mount -t ext4 /dev/vdd /vdd
+resize2fs /dev/vdd 8G
 
-Acked-by: Marc Zyngier <marc.zyngier@arm.com>
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Christoffer Dall <christoffer.dall@linaro.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reported-by: Jon Bernard <jbernard@tuxion.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/pgtable-3level.h |   15 +++++++++------
- arch/arm/mm/mm.h                      |    1 +
- arch/arm/mm/mmu.c                     |    7 ++++++-
- 3 files changed, 16 insertions(+), 7 deletions(-)
+ fs/ext4/resize.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/include/asm/pgtable-3level.h
-+++ b/arch/arm/include/asm/pgtable-3level.h
-@@ -120,13 +120,16 @@
- /*
-  * 2nd stage PTE definitions for LPAE.
-  */
--#define L_PTE_S2_MT_UNCACHED	 (_AT(pteval_t, 0x5) << 2) /* MemAttr[3:0] */
--#define L_PTE_S2_MT_WRITETHROUGH (_AT(pteval_t, 0xa) << 2) /* MemAttr[3:0] */
--#define L_PTE_S2_MT_WRITEBACK	 (_AT(pteval_t, 0xf) << 2) /* MemAttr[3:0] */
--#define L_PTE_S2_RDONLY		 (_AT(pteval_t, 1) << 6)   /* HAP[1]   */
--#define L_PTE_S2_RDWR		 (_AT(pteval_t, 3) << 6)   /* HAP[2:1] */
-+#define L_PTE_S2_MT_UNCACHED		(_AT(pteval_t, 0x0) << 2) /* strongly ordered */
-+#define L_PTE_S2_MT_WRITETHROUGH	(_AT(pteval_t, 0xa) << 2) /* normal inner write-through */
-+#define L_PTE_S2_MT_WRITEBACK		(_AT(pteval_t, 0xf) << 2) /* normal inner write-back */
-+#define L_PTE_S2_MT_DEV_SHARED		(_AT(pteval_t, 0x1) << 2) /* device */
-+#define L_PTE_S2_MT_MASK		(_AT(pteval_t, 0xf) << 2)
+--- a/fs/ext4/resize.c
++++ b/fs/ext4/resize.c
+@@ -409,7 +409,7 @@ static int set_flexbg_block_bitmap(struc
+ 		start = ext4_group_first_block_no(sb, group);
+ 		group -= flex_gd->groups[0].group;
  
--#define L_PMD_S2_RDWR		 (_AT(pmdval_t, 3) << 6)   /* HAP[2:1] */
-+#define L_PTE_S2_RDONLY			(_AT(pteval_t, 1) << 6)   /* HAP[1]   */
-+#define L_PTE_S2_RDWR			(_AT(pteval_t, 3) << 6)   /* HAP[2:1] */
-+
-+#define L_PMD_S2_RDWR			(_AT(pmdval_t, 3) << 6)   /* HAP[2:1] */
+-		count2 = sb->s_blocksize * 8 - (block - start);
++		count2 = EXT4_BLOCKS_PER_GROUP(sb) - (block - start);
+ 		if (count2 > count)
+ 			count2 = count;
  
- /*
-  * Hyp-mode PL2 PTE definitions for LPAE.
---- a/arch/arm/mm/mm.h
-+++ b/arch/arm/mm/mm.h
-@@ -38,6 +38,7 @@ static inline pmd_t *pmd_off_k(unsigned
- 
- struct mem_type {
- 	pteval_t prot_pte;
-+	pteval_t prot_pte_s2;
- 	pmdval_t prot_l1;
- 	pmdval_t prot_sect;
- 	unsigned int domain;
---- a/arch/arm/mm/mmu.c
-+++ b/arch/arm/mm/mmu.c
-@@ -231,12 +231,16 @@ __setup("noalign", noalign_setup);
- #endif /* ifdef CONFIG_CPU_CP15 / else */
- 
- #define PROT_PTE_DEVICE		L_PTE_PRESENT|L_PTE_YOUNG|L_PTE_DIRTY|L_PTE_XN
-+#define PROT_PTE_S2_DEVICE	PROT_PTE_DEVICE
- #define PROT_SECT_DEVICE	PMD_TYPE_SECT|PMD_SECT_AP_WRITE
- 
- static struct mem_type mem_types[] = {
- 	[MT_DEVICE] = {		  /* Strongly ordered / ARMv6 shared device */
- 		.prot_pte	= PROT_PTE_DEVICE | L_PTE_MT_DEV_SHARED |
- 				  L_PTE_SHARED,
-+		.prot_pte_s2	= s2_policy(PROT_PTE_S2_DEVICE) |
-+				  s2_policy(L_PTE_S2_MT_DEV_SHARED) |
-+				  L_PTE_SHARED,
- 		.prot_l1	= PMD_TYPE_TABLE,
- 		.prot_sect	= PROT_SECT_DEVICE | PMD_SECT_S,
- 		.domain		= DOMAIN_IO,
-@@ -458,7 +462,8 @@ static void __init build_mem_type_table(
- 	cp = &cache_policies[cachepolicy];
- 	vecs_pgprot = kern_pgprot = user_pgprot = cp->pte;
- 	s2_pgprot = cp->pte_s2;
--	hyp_device_pgprot = s2_device_pgprot = mem_types[MT_DEVICE].prot_pte;
-+	hyp_device_pgprot = mem_types[MT_DEVICE].prot_pte;
-+	s2_device_pgprot = mem_types[MT_DEVICE].prot_pte_s2;
- 
- 	/*
- 	 * ARMv6 and above have extended page tables.
 
 
