@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757523AbaCDVYW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:24:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40947 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756070AbaCDUDS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756086AbaCDUDS (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 4 Mar 2014 15:03:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40902 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755763AbaCDUDL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 15:03:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Antonio Quartulli <antonio@open-mesh.com>,
-        Marek Lindner <mareklindner@neomailbox.ch>
-Subject: [PATCH 3.13 067/172] batman-adv: avoid potential race condition when adding a new neighbour
-Date: Tue,  4 Mar 2014 12:02:31 -0800
-Message-Id: <20140304200301.883957342@linuxfoundation.org>
+        David Vrabel <david.vrabel@citrix.com>,
+        Michael Chan <mchan@broadcom.com>,
+        Nithin Nayak Sujir <nsujir@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.13 045/172] tg3: Fix deadlock in tg3_change_mtu()
+Date: Tue,  4 Mar 2014 12:02:09 -0800
+Message-Id: <20140304200301.178835768@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -29,126 +31,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Antonio Quartulli <antonio@open-mesh.com>
+From: Nithin Sujir <nsujir@broadcom.com>
 
-[ Upstream commit 08bf0ed29c7ded45c477d08618220dd200c3524a ]
+[ Upstream commit c6993dfd7db9b0c6b7ca7503a56fda9236a4710f ]
 
-When adding a new neighbour it is important to atomically
-perform the following:
-- check if the neighbour already exists
-- append the neighbour to the proper list
+Quoting David Vrabel -
+"5780 cards cannot have jumbo frames and TSO enabled together.  When
+jumbo frames are enabled by setting the MTU, the TSO feature must be
+cleared.  This is done indirectly by calling netdev_update_features()
+which will call tg3_fix_features() to actually clear the flags.
 
-If the two operations are not performed in an atomic context
-it is possible that two concurrent insertions add the same
-neighbour twice.
+netdev_update_features() will also trigger a new netlink message for the
+feature change event which will result in a call to tg3_get_stats64()
+which deadlocks on the tg3 lock."
 
-Signed-off-by: Antonio Quartulli <antonio@open-mesh.com>
-Signed-off-by: Marek Lindner <mareklindner@neomailbox.ch>
+tg3_set_mtu() does not need to be under the tg3 lock since converting
+the flags to use set_bit(). Move it out to after tg3_netif_stop().
+
+Reported-by: David Vrabel <david.vrabel@citrix.com>
+Tested-by: David Vrabel <david.vrabel@citrix.com>
+Signed-off-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/batman-adv/bat_iv_ogm.c |   22 ++++++++++++++++------
- net/batman-adv/originator.c |   36 ++++++++++++++++++++++++++++++++++++
- net/batman-adv/originator.h |    4 ++++
- 3 files changed, 56 insertions(+), 6 deletions(-)
+ drivers/net/ethernet/broadcom/tg3.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/batman-adv/bat_iv_ogm.c
-+++ b/net/batman-adv/bat_iv_ogm.c
-@@ -268,7 +268,7 @@ batadv_iv_ogm_neigh_new(struct batadv_ha
- 			struct batadv_orig_node *orig_neigh)
- {
- 	struct batadv_priv *bat_priv = netdev_priv(hard_iface->soft_iface);
--	struct batadv_neigh_node *neigh_node;
-+	struct batadv_neigh_node *neigh_node, *tmp_neigh_node;
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -13965,12 +13965,12 @@ static int tg3_change_mtu(struct net_dev
  
- 	neigh_node = batadv_neigh_node_new(hard_iface, neigh_addr, orig_node);
- 	if (!neigh_node)
-@@ -276,14 +276,24 @@ batadv_iv_ogm_neigh_new(struct batadv_ha
+ 	tg3_netif_stop(tp);
  
- 	spin_lock_init(&neigh_node->bat_iv.lq_update_lock);
++	tg3_set_mtu(dev, tp, new_mtu);
++
+ 	tg3_full_lock(tp, 1);
  
--	batadv_dbg(BATADV_DBG_BATMAN, bat_priv,
--		   "Creating new neighbor %pM for orig_node %pM on interface %s\n",
--		   neigh_addr, orig_node->orig, hard_iface->net_dev->name);
+ 	tg3_halt(tp, RESET_KIND_SHUTDOWN, 1);
+ 
+-	tg3_set_mtu(dev, tp, new_mtu);
 -
- 	spin_lock_bh(&orig_node->neigh_list_lock);
--	hlist_add_head_rcu(&neigh_node->list, &orig_node->neigh_list);
-+	tmp_neigh_node = batadv_neigh_node_get(orig_node, hard_iface,
-+					       neigh_addr);
-+	if (!tmp_neigh_node) {
-+		hlist_add_head_rcu(&neigh_node->list, &orig_node->neigh_list);
-+	} else {
-+		kfree(neigh_node);
-+		batadv_hardif_free_ref(hard_iface);
-+		neigh_node = tmp_neigh_node;
-+	}
- 	spin_unlock_bh(&orig_node->neigh_list_lock);
- 
-+	if (!tmp_neigh_node)
-+		batadv_dbg(BATADV_DBG_BATMAN, bat_priv,
-+			   "Creating new neighbor %pM for orig_node %pM on interface %s\n",
-+			   neigh_addr, orig_node->orig,
-+			   hard_iface->net_dev->name);
-+
- out:
- 	return neigh_node;
- }
---- a/net/batman-adv/originator.c
-+++ b/net/batman-adv/originator.c
-@@ -511,6 +511,42 @@ void batadv_purge_orig_ref(struct batadv
- 	_batadv_purge_orig(bat_priv);
- }
- 
-+/**
-+ * batadv_neigh_node_get - retrieve a neighbour from the list
-+ * @orig_node: originator which the neighbour belongs to
-+ * @hard_iface: the interface where this neighbour is connected to
-+ * @addr: the address of the neighbour
-+ *
-+ * Looks for and possibly returns a neighbour belonging to this originator list
-+ * which is connected through the provided hard interface.
-+ * Returns NULL if the neighbour is not found.
-+ */
-+struct batadv_neigh_node *
-+batadv_neigh_node_get(const struct batadv_orig_node *orig_node,
-+		      const struct batadv_hard_iface *hard_iface,
-+		      const uint8_t *addr)
-+{
-+	struct batadv_neigh_node *tmp_neigh_node, *res = NULL;
-+
-+	rcu_read_lock();
-+	hlist_for_each_entry_rcu(tmp_neigh_node, &orig_node->neigh_list, list) {
-+		if (!batadv_compare_eth(tmp_neigh_node->addr, addr))
-+			continue;
-+
-+		if (tmp_neigh_node->if_incoming != hard_iface)
-+			continue;
-+
-+		if (!atomic_inc_not_zero(&tmp_neigh_node->refcount))
-+			continue;
-+
-+		res = tmp_neigh_node;
-+		break;
-+	}
-+	rcu_read_unlock();
-+
-+	return res;
-+}
-+
- int batadv_orig_seq_print_text(struct seq_file *seq, void *offset)
- {
- 	struct net_device *net_dev = (struct net_device *)seq->private;
---- a/net/batman-adv/originator.h
-+++ b/net/batman-adv/originator.h
-@@ -31,6 +31,10 @@ void batadv_orig_node_free_ref_now(struc
- struct batadv_orig_node *batadv_orig_node_new(struct batadv_priv *bat_priv,
- 					      const uint8_t *addr);
- struct batadv_neigh_node *
-+batadv_neigh_node_get(const struct batadv_orig_node *orig_node,
-+		      const struct batadv_hard_iface *hard_iface,
-+		      const uint8_t *addr);
-+struct batadv_neigh_node *
- batadv_neigh_node_new(struct batadv_hard_iface *hard_iface,
- 		      const uint8_t *neigh_addr,
- 		      struct batadv_orig_node *orig_node);
+ 	/* Reset PHY, otherwise the read DMA engine will be in a mode that
+ 	 * breaks all requests to 256 bytes.
+ 	 */
 
 
