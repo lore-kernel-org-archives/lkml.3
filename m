@@ -1,85 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756832AbaCDJJG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 04:09:06 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55303 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756687AbaCDJI7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 04:08:59 -0500
-Date: Tue, 4 Mar 2014 17:08:54 +0800
-From: Mark Brown <broonie@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>
-Message-ID: <20140304090854.GG13126@sirena.org.uk>
+	id S1756886AbaCDJJV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 04:09:21 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:53787 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756687AbaCDJJL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 04:09:11 -0500
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Tony Lindgren <tony@atomide.com>
+CC: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v2 3/5] drivers: bus: omap_l3: Convert to use devm_request_irq()
+Date: Tue, 4 Mar 2014 11:08:28 +0200
+Message-ID: <1393924110-11132-4-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1393924110-11132-1-git-send-email-peter.ujfalusi@ti.com>
+References: <1393924110-11132-1-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="w/VI3ydZO+RcZ3Ux"
-Content-Disposition: inline
-X-Cookie: You are always busy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 202.175.88.218
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [GIT PULL] regulator fixes for v3.14
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+With this we can remove the free_irq() calls from probe and remove.
 
---w/VI3ydZO+RcZ3Ux
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+---
+ drivers/bus/omap_l3_noc.c | 23 +++++------------------
+ 1 file changed, 5 insertions(+), 18 deletions(-)
 
-The following changes since commit acc3d5cec84f82ebea535fa0bd9500ac3df2aee9:
+diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
+index ca95d3db5055..2bbc87bdea2b 100644
+--- a/drivers/bus/omap_l3_noc.c
++++ b/drivers/bus/omap_l3_noc.c
+@@ -159,9 +159,8 @@ static int omap4_l3_probe(struct platform_device *pdev)
+ 	 * Setup interrupt Handlers
+ 	 */
+ 	l3->debug_irq = platform_get_irq(pdev, 0);
+-	ret = request_irq(l3->debug_irq,
+-			l3_interrupt_handler,
+-			IRQF_DISABLED, "l3-dbg-irq", l3);
++	ret = devm_request_irq(&pdev->dev, l3->debug_irq, l3_interrupt_handler,
++			       IRQF_DISABLED, "l3-dbg-irq", l3);
+ 	if (ret) {
+ 		pr_crit("L3: request_irq failed to register for 0x%x\n",
+ 						l3->debug_irq);
+@@ -169,29 +168,17 @@ static int omap4_l3_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	l3->app_irq = platform_get_irq(pdev, 1);
+-	ret = request_irq(l3->app_irq,
+-			l3_interrupt_handler,
+-			IRQF_DISABLED, "l3-app-irq", l3);
+-	if (ret) {
++	ret = devm_request_irq(&pdev->dev, l3->app_irq, l3_interrupt_handler,
++			       IRQF_DISABLED, "l3-app-irq", l3);
++	if (ret)
+ 		pr_crit("L3: request_irq failed to register for 0x%x\n",
+ 						l3->app_irq);
+-		goto err4;
+-	}
+-
+-	return 0;
+ 
+-err4:
+-	free_irq(l3->debug_irq, l3);
+ 	return ret;
+ }
+ 
+ static int omap4_l3_remove(struct platform_device *pdev)
+ {
+-	struct omap4_l3 *l3 = platform_get_drvdata(pdev);
+-
+-	free_irq(l3->app_irq, l3);
+-	free_irq(l3->debug_irq, l3);
+-
+ 	return 0;
+ }
+ 
+-- 
+1.9.0
 
-  regulator: core: Change dummy supplies error message to a warning (2014-02-21 08:35:31 +0900)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git tags/regulator-v3.14-rc5
-
-for you to fetch changes up to 66fda75f47dc583f1c187556e9a2c082dd64f8c6:
-
-  regulator: core: Replace direct ops->disable usage (2014-02-25 10:31:45 +0900)
-
-----------------------------------------------------------------
-regulator: Fixes for v3.14-rc5
-
-A couple of fixes here which ensure that regulators using the core
-support for GPIO enables work in all cases by ensuring that helpers are
-used consistently rather than open coding in places and hence not having
-GPIO support in some of them.
-
-----------------------------------------------------------------
-Markus Pargmann (2):
-      regulator: core: Replace direct ops->enable usage
-      regulator: core: Replace direct ops->disable usage
-
- drivers/regulator/core.c | 48 ++++++++++++++++++++----------------------------
- 1 file changed, 20 insertions(+), 28 deletions(-)
-
---w/VI3ydZO+RcZ3Ux
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTFZgJAAoJELSic+t+oim9+yAP/j6cZRXJYgACubvP4PMbYPmM
-HpT7FhsXOiAftPeYrqqP17zeJ6oV0yxsl3Wz4ONM7RKIooIDoJodxdvAvOlsK9I4
-mFkxojxb223WiXQ12irAsRWsDaSQhf19waqZiNYbmJtFurjwJw2WxVzYx46cosQr
-y3w8Xhz+Yyv2LqzAFoZP3juLR1w4OHQgdBfG5p5+dP+p972iwW1+H2wt8nsXPmNz
-7TCzUzSzLhEw8QUgnfNqkfUGfQbKTexw2jkcW1LA/cU3tAWFK/mjTd9+JpMNukuF
-xAmuz0lIQjmvNZYnMBkveqnSqUe3je3w+VnQ4IVc7UEnUf8MMPUtQ+/Fs0QaQCTo
-H72AhTzUXpYlnHWe0T88jc9erQ18brenQq5W9FfT+omf57J3B2lYV30N5KWDYpbT
-CEc6GBMq8I+8HozlRkG77USQBTNNgLep3UKM9DvcKM4XGxmG7bLP6PSuEGuAdAsh
-dTt+7BhJHQAz9k9SfoFZNeb/mS1gcTdpN2Q2P77Jpo8t2e0XsNxLLZ2eeQ2eD+VM
-yHZ3dk8JuDF+sA0SbgTG2oN8jcHJHABvcKAwArmZGkHg7sAFbWHG/0aEepBY9UK8
-YHj5sJ5GXpegX2YBD68eEZWaz4EWoItjp6zdATvJ0I/3AzWRpY3EqDrkb4uu5GzT
-W3iWOsRrAxzjYMbjDjmU
-=WEgF
------END PGP SIGNATURE-----
-
---w/VI3ydZO+RcZ3Ux--
