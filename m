@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757918AbaCDUVA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:21:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41677 "EHLO
+	id S1757937AbaCDUV0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:21:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41684 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757246AbaCDUF0 (ORCPT
+	with ESMTP id S1755413AbaCDUFZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:05:26 -0500
+	Tue, 4 Mar 2014 15:05:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Brown <broonie@linaro.org>,
-        Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
-Subject: [PATCH 3.10 47/97] ASoC: da732x: Mark DC offset control registers volatile
-Date: Tue,  4 Mar 2014 12:04:00 -0800
-Message-Id: <20140304200347.583215040@linuxfoundation.org>
+        Neil Brown <neilb@suse.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.10 52/97] SUNRPC: Fix races in xs_nospace()
+Date: Tue,  4 Mar 2014 12:04:05 -0800
+Message-Id: <20140304200347.738652789@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -29,53 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@linaro.org>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit 75306820248e26d15d84acf4e297b9fb27dd3bb2 upstream.
+commit 06ea0bfe6e6043cb56a78935a19f6f8ebc636226 upstream.
 
-The driver reads from the DC offset control registers during callibration
-but since the registers are marked as volatile and there is a register
-cache the values will not be read from the hardware after the first reading
-rendering the callibration ineffective.
+When a send failure occurs due to the socket being out of buffer space,
+we call xs_nospace() in order to have the RPC task wait until the
+socket has drained enough to make it worth while trying again.
+The current patch fixes a race in which the socket is drained before
+we get round to setting up the machinery in xs_nospace(), and which
+is reported to cause hangs.
 
-It appears that the driver was originally written for the ASoC level
-register I/O code but converted to regmap prior to merge and this issue
-was missed during the conversion as the framework level volatile register
-functionality was not being used.
-
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Acked-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+Link: http://lkml.kernel.org/r/20140210170315.33dfc621@notabene.brown
+Fixes: a9a6b52ee1ba (SUNRPC: Don't start the retransmission timer...)
+Reported-by: Neil Brown <neilb@suse.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/da732x.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ net/sunrpc/xprtsock.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/sound/soc/codecs/da732x.c
-+++ b/sound/soc/codecs/da732x.c
-@@ -1268,11 +1268,23 @@ static struct snd_soc_dai_driver da732x_
- 	},
- };
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -502,6 +502,7 @@ static int xs_nospace(struct rpc_task *t
+ 	struct rpc_rqst *req = task->tk_rqstp;
+ 	struct rpc_xprt *xprt = req->rq_xprt;
+ 	struct sock_xprt *transport = container_of(xprt, struct sock_xprt, xprt);
++	struct sock *sk = transport->inet;
+ 	int ret = -EAGAIN;
  
-+static bool da732x_volatile(struct device *dev, unsigned int reg)
-+{
-+	switch (reg) {
-+	case DA732X_REG_HPL_DAC_OFF_CNTL:
-+	case DA732X_REG_HPR_DAC_OFF_CNTL:
-+		return true;
-+	default:
-+		return false;
-+	}
-+}
+ 	dprintk("RPC: %5u xmit incomplete (%u left of %u)\n",
+@@ -519,7 +520,7 @@ static int xs_nospace(struct rpc_task *t
+ 			 * window size
+ 			 */
+ 			set_bit(SOCK_NOSPACE, &transport->sock->flags);
+-			transport->inet->sk_write_pending++;
++			sk->sk_write_pending++;
+ 			/* ...and wait for more buffer space */
+ 			xprt_wait_for_buffer_space(task, xs_nospace_callback);
+ 		}
+@@ -529,6 +530,9 @@ static int xs_nospace(struct rpc_task *t
+ 	}
+ 
+ 	spin_unlock_bh(&xprt->transport_lock);
 +
- static const struct regmap_config da732x_regmap = {
- 	.reg_bits		= 8,
- 	.val_bits		= 8,
++	/* Race breaker in case memory is freed before above code is called */
++	sk->sk_write_space(sk);
+ 	return ret;
+ }
  
- 	.max_register		= DA732X_MAX_REG,
-+	.volatile_reg		= da732x_volatile,
- 	.reg_defaults		= da732x_reg_cache,
- 	.num_reg_defaults	= ARRAY_SIZE(da732x_reg_cache),
- 	.cache_type		= REGCACHE_RBTREE,
 
 
