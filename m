@@ -1,115 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758030AbaCDUZm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:25:42 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:44081 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758008AbaCDUZj (ORCPT
+	id S1758048AbaCDU0S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:26:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41640 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752428AbaCDUFO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:25:39 -0500
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: dhowells@redhat.com
-Cc: linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] [RESEND] frv: remove deprecated IRQF_DISABLED
-Date: Tue,  4 Mar 2014 21:25:24 +0100
-Message-Id: <1393964724-16925-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1386396925-12199-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1386396925-12199-1-git-send-email-michael.opdenacker@free-electrons.com>
+	Tue, 4 Mar 2014 15:05:14 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Florian Westphal <fw@strlen.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 35/97] net: core: introduce netif_skb_dev_features
+Date: Tue,  4 Mar 2014 12:03:48 -0800
+Message-Id: <20140304200347.204691927@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
+References: <20140304200345.895517495@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the IRQF_DISABLED flag from FRV architecture
-code. It's a NOOP since 2.6.35 and it will be removed one day.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+------------------
+
+From: Florian Westphal <fw@strlen.de>
+
+commit d206940319c41df4299db75ed56142177bb2e5f6 upstream.
+
+Will be used by upcoming ipv4 forward path change that needs to
+determine feature mask using skb->dst->dev instead of skb->dev.
+
+Signed-off-by: Florian Westphal <fw@strlen.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/frv/kernel/irq-mb93091.c | 8 ++++----
- arch/frv/kernel/irq-mb93093.c | 1 -
- arch/frv/kernel/irq-mb93493.c | 4 ++--
- arch/frv/kernel/time.c        | 1 -
- 4 files changed, 6 insertions(+), 8 deletions(-)
+ include/linux/netdevice.h |    7 ++++++-
+ net/core/dev.c            |   27 ++++++++++++++++-----------
+ 2 files changed, 22 insertions(+), 12 deletions(-)
 
-diff --git a/arch/frv/kernel/irq-mb93091.c b/arch/frv/kernel/irq-mb93091.c
-index 2cc327a1ca44..091b2839be90 100644
---- a/arch/frv/kernel/irq-mb93091.c
-+++ b/arch/frv/kernel/irq-mb93091.c
-@@ -107,25 +107,25 @@ static irqreturn_t fpga_interrupt(int irq, void *_mask)
- static struct irqaction fpga_irq[4]  = {
- 	[0] = {
- 		.handler	= fpga_interrupt,
--		.flags		= IRQF_DISABLED | IRQF_SHARED,
-+		.flags		= IRQF_SHARED,
- 		.name		= "fpga.0",
- 		.dev_id		= (void *) 0x0028UL,
- 	},
- 	[1] = {
- 		.handler	= fpga_interrupt,
--		.flags		= IRQF_DISABLED | IRQF_SHARED,
-+		.flags		= IRQF_SHARED,
- 		.name		= "fpga.1",
- 		.dev_id		= (void *) 0x0050UL,
- 	},
- 	[2] = {
- 		.handler	= fpga_interrupt,
--		.flags		= IRQF_DISABLED | IRQF_SHARED,
-+		.flags		= IRQF_SHARED,
- 		.name		= "fpga.2",
- 		.dev_id		= (void *) 0x1c00UL,
- 	},
- 	[3] = {
- 		.handler	= fpga_interrupt,
--		.flags		= IRQF_DISABLED | IRQF_SHARED,
-+		.flags		= IRQF_SHARED,
- 		.name		= "fpga.3",
- 		.dev_id		= (void *) 0x6386UL,
- 	}
-diff --git a/arch/frv/kernel/irq-mb93093.c b/arch/frv/kernel/irq-mb93093.c
-index 95e4eb4f1f38..1f3015cf80f5 100644
---- a/arch/frv/kernel/irq-mb93093.c
-+++ b/arch/frv/kernel/irq-mb93093.c
-@@ -105,7 +105,6 @@ static irqreturn_t fpga_interrupt(int irq, void *_mask)
- static struct irqaction fpga_irq[1]  = {
- 	[0] = {
- 		.handler	= fpga_interrupt,
--		.flags		= IRQF_DISABLED,
- 		.name		= "fpga.0",
- 		.dev_id		= (void *) 0x0700UL,
- 	}
-diff --git a/arch/frv/kernel/irq-mb93493.c b/arch/frv/kernel/irq-mb93493.c
-index ba648da0932d..8ca5aa4ff595 100644
---- a/arch/frv/kernel/irq-mb93493.c
-+++ b/arch/frv/kernel/irq-mb93493.c
-@@ -118,13 +118,13 @@ static irqreturn_t mb93493_interrupt(int irq, void *_piqsr)
- static struct irqaction mb93493_irq[2]  = {
- 	[0] = {
- 		.handler	= mb93493_interrupt,
--		.flags		= IRQF_DISABLED | IRQF_SHARED,
-+		.flags		= IRQF_SHARED,
- 		.name		= "mb93493.0",
- 		.dev_id		= (void *) __addr_MB93493_IQSR(0),
- 	},
- 	[1] = {
- 		.handler	= mb93493_interrupt,
--		.flags		= IRQF_DISABLED | IRQF_SHARED,
-+		.flags		= IRQF_SHARED,
- 		.name		= "mb93493.1",
- 		.dev_id		= (void *) __addr_MB93493_IQSR(1),
- 	}
-diff --git a/arch/frv/kernel/time.c b/arch/frv/kernel/time.c
-index b457de496b70..332e00bf9d06 100644
---- a/arch/frv/kernel/time.c
-+++ b/arch/frv/kernel/time.c
-@@ -44,7 +44,6 @@ static irqreturn_t timer_interrupt(int irq, void *dummy);
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -2761,7 +2761,12 @@ void netdev_change_features(struct net_d
+ void netif_stacked_transfer_operstate(const struct net_device *rootdev,
+ 					struct net_device *dev);
  
- static struct irqaction timer_irq  = {
- 	.handler = timer_interrupt,
--	.flags = IRQF_DISABLED,
- 	.name = "timer",
- };
+-netdev_features_t netif_skb_features(struct sk_buff *skb);
++netdev_features_t netif_skb_dev_features(struct sk_buff *skb,
++					 const struct net_device *dev);
++static inline netdev_features_t netif_skb_features(struct sk_buff *skb)
++{
++	return netif_skb_dev_features(skb, skb->dev);
++}
  
--- 
-1.8.3.2
+ static inline bool net_gso_ok(netdev_features_t features, int gso_type)
+ {
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2374,7 +2374,7 @@ EXPORT_SYMBOL(netdev_rx_csum_fault);
+  * 2. No high memory really exists on this machine.
+  */
+ 
+-static int illegal_highdma(struct net_device *dev, struct sk_buff *skb)
++static int illegal_highdma(const struct net_device *dev, struct sk_buff *skb)
+ {
+ #ifdef CONFIG_HIGHMEM
+ 	int i;
+@@ -2454,46 +2454,51 @@ static int dev_gso_segment(struct sk_buf
+ }
+ 
+ static netdev_features_t harmonize_features(struct sk_buff *skb,
+-	__be16 protocol, netdev_features_t features)
++					    __be16 protocol,
++					    const struct net_device *dev,
++					    netdev_features_t features)
+ {
+ 	if (skb->ip_summed != CHECKSUM_NONE &&
+ 	    !can_checksum_protocol(features, protocol)) {
+ 		features &= ~NETIF_F_ALL_CSUM;
+-	} else if (illegal_highdma(skb->dev, skb)) {
++	} else if (illegal_highdma(dev, skb)) {
+ 		features &= ~NETIF_F_SG;
+ 	}
+ 
+ 	return features;
+ }
+ 
+-netdev_features_t netif_skb_features(struct sk_buff *skb)
++netdev_features_t netif_skb_dev_features(struct sk_buff *skb,
++					 const struct net_device *dev)
+ {
+ 	__be16 protocol = skb->protocol;
+-	netdev_features_t features = skb->dev->features;
++	netdev_features_t features = dev->features;
+ 
+-	if (skb_shinfo(skb)->gso_segs > skb->dev->gso_max_segs)
++	if (skb_shinfo(skb)->gso_segs > dev->gso_max_segs)
+ 		features &= ~NETIF_F_GSO_MASK;
+ 
+ 	if (protocol == htons(ETH_P_8021Q) || protocol == htons(ETH_P_8021AD)) {
+ 		struct vlan_ethhdr *veh = (struct vlan_ethhdr *)skb->data;
+ 		protocol = veh->h_vlan_encapsulated_proto;
+ 	} else if (!vlan_tx_tag_present(skb)) {
+-		return harmonize_features(skb, protocol, features);
++		return harmonize_features(skb, protocol, dev, features);
+ 	}
+ 
+-	features &= (skb->dev->vlan_features | NETIF_F_HW_VLAN_CTAG_TX |
++	features &= (dev->vlan_features | NETIF_F_HW_VLAN_CTAG_TX |
+ 					       NETIF_F_HW_VLAN_STAG_TX);
+ 
+ 	if (protocol != htons(ETH_P_8021Q) && protocol != htons(ETH_P_8021AD)) {
+-		return harmonize_features(skb, protocol, features);
++		return harmonize_features(skb, protocol, dev, features);
+ 	} else {
+ 		features &= NETIF_F_SG | NETIF_F_HIGHDMA | NETIF_F_FRAGLIST |
+ 				NETIF_F_GEN_CSUM | NETIF_F_HW_VLAN_CTAG_TX |
+ 				NETIF_F_HW_VLAN_STAG_TX;
+-		return harmonize_features(skb, protocol, features);
++		return harmonize_features(skb, protocol, dev, features);
+ 	}
++
++	return harmonize_features(skb, protocol, dev, features);
+ }
+-EXPORT_SYMBOL(netif_skb_features);
++EXPORT_SYMBOL(netif_skb_dev_features);
+ 
+ /*
+  * Returns true if either:
+
 
