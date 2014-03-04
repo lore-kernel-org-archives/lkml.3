@@ -1,182 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755578AbaCDTYM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 14:24:12 -0500
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:38569 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754537AbaCDTYJ (ORCPT
+	id S1755699AbaCDTZI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 14:25:08 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:56548 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754984AbaCDTZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 14:24:09 -0500
-From: Valentina Manea <valentina.manea.m@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: ly80toro@cip.cs.fau.de, ke42caxa@cip.cs.fau.de, eladwexler77@yahoo.com,
-        oat.elena@gmail.com, josh@joshtriplett.org, himangi774@gmail.com,
-        linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, andy.grover@gmail.com,
-        firefly@lists.rosedu.org,
-        Valentina Manea <valentina.manea.m@gmail.com>
-Subject: [PATCH] staging: usbip: trigger driver probing after unbinding from usbip-host
-Date: Tue,  4 Mar 2014 21:23:56 +0200
-Message-Id: <1393961037-21792-1-git-send-email-valentina.manea.m@gmail.com>
-X-Mailer: git-send-email 1.7.2.5
+	Tue, 4 Mar 2014 14:25:05 -0500
+Message-ID: <1393961100.10148.69.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [PATCH 6/8] evm: enable key retention service automatically
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        linux-security-module@vger.kernel.org,
+        James Morris <jmorris@namei.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        casey.schaufler@intel.com
+Date: Tue, 04 Mar 2014 14:25:00 -0500
+In-Reply-To: <CACE9dm_oQnOF1pp0k-GJcN9tOhr6Saod55srTJmsQEfhGphE=g@mail.gmail.com>
+References: <cover.1393599538.git.d.kasatkin@samsung.com>
+	 <43c402f0d4fbcf222f8d669ccf5d237059bd34fe.1393599538.git.d.kasatkin@samsung.com>
+	 <1393898536.10148.18.camel@dhcp-9-2-203-236.watson.ibm.com>
+	 <CACE9dm_oQnOF1pp0k-GJcN9tOhr6Saod55srTJmsQEfhGphE=g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14030419-1542-0000-0000-0000001A5D9C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A sysfs attribute is used to announce kernel space that a
-new driver probing session should be triggered for the just
-unbinded device.
+On Tue, 2014-03-04 at 16:10 +0200, Dmitry Kasatkin wrote: 
+> On Tue, Mar 4, 2014 at 4:02 AM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> > On Fri, 2014-02-28 at 16:59 +0200, Dmitry Kasatkin wrote:
+> >> If keys are not enabled, EVM is not visible in the configuration menu.
+> >> It may be difficult to figure out what to do unless  you really know.
+> >>
+> >> Other subsystems as NFS, CIFS select keys automatically.
+> >> This patch does the same.
+> >>
+> >> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+> >> ---
+> >>  security/integrity/evm/Kconfig | 5 +++--
+> >>  1 file changed, 3 insertions(+), 2 deletions(-)
+> >>
+> >> diff --git a/security/integrity/evm/Kconfig b/security/integrity/evm/Kconfig
+> >> index 5aa9103..d35b491 100644
+> >> --- a/security/integrity/evm/Kconfig
+> >> +++ b/security/integrity/evm/Kconfig
+> >> @@ -1,9 +1,10 @@
+> >>  config EVM
+> >>       boolean "EVM support"
+> >> -     depends on SECURITY && KEYS && (TRUSTED_KEYS=y || TRUSTED_KEYS=n)
+> >
+> > Including KEYS is fine, but the trusted-keys dependency is still
+> > required.  If trusted-keys is enabled, then the TPM and trusted-keys
+> > must be builtin.
+> >
+> 
+> Hello.
+> 
+> EVM does not depend on trusted keys, but on encrypted keys.
+> There is no need for "&& (TRUSTED_KEYS=y || TRUSTED_KEYS=n)"
+> 
+> Header file already provides all necessary compile time dependencies...
+> 
+> -------------------------------------------------------------------------------------------------
+> #if defined(CONFIG_TRUSTED_KEYS) || \
+>   (defined(CONFIG_TRUSTED_KEYS_MODULE) && defined(CONFIG_ENCRYPTED_KEYS_MODULE))
+> extern struct key *request_trusted_key(const char *trusted_desc,
+>       u8 **master_key, size_t *master_keylen);
+> #else
+> static inline struct key *request_trusted_key(const char *trusted_desc,
+>      u8 **master_key,
+>      size_t *master_keylen)
+> {
+> return ERR_PTR(-EOPNOTSUPP);
+> }
+> #endif
+> -------------------------------------------------------------------------------------------------
 
-In order to have the address of struct device associated to this
-USB device, a new member has been added to struct bus_id_priv.
+Either in the patch description or the changelog, please note the reason
+for removing the builtin TRUSTED_KEY dependency.  
 
-Signed-off-by: Valentina Manea <valentina.manea.m@gmail.com>
----
- drivers/staging/usbip/stub.h                       |  1 +
- drivers/staging/usbip/stub_dev.c                   |  1 +
- drivers/staging/usbip/stub_main.c                  | 39 ++++++++++++++++++++++
- drivers/staging/usbip/userspace/src/usbip_unbind.c | 18 ++++++++--
- 4 files changed, 57 insertions(+), 2 deletions(-)
+thanks,
 
-diff --git a/drivers/staging/usbip/stub.h b/drivers/staging/usbip/stub.h
-index 82e539a..266e2b0 100644
---- a/drivers/staging/usbip/stub.h
-+++ b/drivers/staging/usbip/stub.h
-@@ -86,6 +86,7 @@ struct bus_id_priv {
- 	char status;
- 	int interf_count;
- 	struct stub_device *sdev;
-+	struct usb_device *udev;
- 	char shutdown_busid;
- };
- 
-diff --git a/drivers/staging/usbip/stub_dev.c b/drivers/staging/usbip/stub_dev.c
-index 1bd13cf..ee899f0 100644
---- a/drivers/staging/usbip/stub_dev.c
-+++ b/drivers/staging/usbip/stub_dev.c
-@@ -386,6 +386,7 @@ static int stub_probe(struct usb_device *udev)
- 	/* set private data to usb_device */
- 	dev_set_drvdata(&udev->dev, sdev);
- 	busid_priv->sdev = sdev;
-+	busid_priv->udev = udev;
- 
- 	err = stub_add_files(&udev->dev);
- 	if (err) {
-diff --git a/drivers/staging/usbip/stub_main.c b/drivers/staging/usbip/stub_main.c
-index bd7b83a..9c5832a 100644
---- a/drivers/staging/usbip/stub_main.c
-+++ b/drivers/staging/usbip/stub_main.c
-@@ -19,6 +19,7 @@
- 
- #include <linux/string.h>
- #include <linux/module.h>
-+#include <linux/device.h>
- 
- #include "usbip_common.h"
- #include "stub.h"
-@@ -187,6 +188,34 @@ static ssize_t store_match_busid(struct device_driver *dev, const char *buf,
- static DRIVER_ATTR(match_busid, S_IRUSR | S_IWUSR, show_match_busid,
- 		   store_match_busid);
- 
-+static ssize_t rebind_store(struct device_driver *dev, const char *buf,
-+				 size_t count)
-+{
-+	int ret;
-+	int len;
-+	struct bus_id_priv *bid;
-+
-+	/* buf length should be less that BUSID_SIZE */
-+	len = strnlen(buf, BUSID_SIZE);
-+
-+	if (!(len < BUSID_SIZE))
-+		return -EINVAL;
-+
-+	bid = get_busid_priv(buf);
-+	if (!bid)
-+		return -ENODEV;
-+
-+	ret = device_attach(&bid->udev->dev);
-+	if (ret < 0) {
-+		dev_err(&bid->udev->dev, "rebind failed\n");
-+		return ret;
-+	}
-+
-+	return count;
-+}
-+
-+static DRIVER_ATTR_WO(rebind);
-+
- static struct stub_priv *stub_priv_pop_from_listhead(struct list_head *listhead)
- {
- 	struct stub_priv *priv, *tmp;
-@@ -267,6 +296,13 @@ static int __init usbip_host_init(void)
- 		goto err_create_file;
- 	}
- 
-+	ret = driver_create_file(&stub_driver.drvwrap.driver,
-+				 &driver_attr_rebind);
-+	if (ret) {
-+		pr_err("driver_create_file failed\n");
-+		goto err_create_file;
-+	}
-+
- 	pr_info(DRIVER_DESC " v" USBIP_VERSION "\n");
- 	return ret;
- 
-@@ -282,6 +318,9 @@ static void __exit usbip_host_exit(void)
- 	driver_remove_file(&stub_driver.drvwrap.driver,
- 			   &driver_attr_match_busid);
- 
-+	driver_remove_file(&stub_driver.drvwrap.driver,
-+			   &driver_attr_rebind);
-+
- 	/*
- 	 * deregister() calls stub_disconnect() for all devices. Device
- 	 * specific data is cleared in stub_disconnect().
-diff --git a/drivers/staging/usbip/userspace/src/usbip_unbind.c b/drivers/staging/usbip/userspace/src/usbip_unbind.c
-index 4776068..ba0a563 100644
---- a/drivers/staging/usbip/userspace/src/usbip_unbind.c
-+++ b/drivers/staging/usbip/userspace/src/usbip_unbind.c
-@@ -44,8 +44,10 @@ static int unbind_device(char *busid)
- 	char bus_type[] = "usb";
- 	int rc, ret = -1;
- 
--	char attr_name[] = "unbind";
-+	char unbind_attr_name[] = "unbind";
- 	char unbind_attr_path[SYSFS_PATH_MAX];
-+	char rebind_attr_name[] = "rebind";
-+	char rebind_attr_path[SYSFS_PATH_MAX];
- 
- 	struct udev *udev;
- 	struct udev_device *dev;
-@@ -71,7 +73,7 @@ static int unbind_device(char *busid)
- 	/* Unbind device from driver. */
- 	snprintf(unbind_attr_path, sizeof(unbind_attr_path), "%s/%s/%s/%s/%s/%s",
- 		 SYSFS_MNT_PATH, SYSFS_BUS_NAME, bus_type, SYSFS_DRIVERS_NAME,
--		 USBIP_HOST_DRV_NAME, attr_name);
-+		 USBIP_HOST_DRV_NAME, unbind_attr_name);
- 	dbg("unbind attribute path: %s", unbind_attr_path);
- 
- 	rc = write_sysfs_attribute(unbind_attr_path, busid, strlen(busid));
-@@ -87,6 +89,18 @@ static int unbind_device(char *busid)
- 		goto err_close_udev;
- 	}
- 
-+	/* Trigger new probing. */
-+	snprintf(rebind_attr_path, sizeof(unbind_attr_path), "%s/%s/%s/%s/%s/%s",
-+			SYSFS_MNT_PATH, SYSFS_BUS_NAME, bus_type, SYSFS_DRIVERS_NAME,
-+			USBIP_HOST_DRV_NAME, rebind_attr_name);
-+	dbg("rebind attribute path: %s", rebind_attr_path);
-+
-+	rc = write_sysfs_attribute(rebind_attr_path, busid, strlen(busid));
-+	if (rc < 0) {
-+		dbg("Error rebinding.");
-+		goto err_close_udev;
-+	}
-+
- 	ret = 0;
- 	printf("unbind device on busid %s: complete\n", busid);
- 
--- 
-1.8.1.2
+Mimi
 
