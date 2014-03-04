@@ -1,260 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755792AbaCDAMv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 19:12:51 -0500
-Received: from mga02.intel.com ([134.134.136.20]:5389 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755343AbaCDAMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 19:12:49 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,581,1389772800"; 
-   d="scan'208";a="493474918"
-Date: Mon, 3 Mar 2014 17:12:25 -0700
-From: Jon Mason <jon.mason@intel.com>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH v2 3/4] ntb: Split ntb_setup_msix() into separate BWD/SNB
- routines
-Message-ID: <20140304001224.GD9679@jonmason-lab>
-References: <cover.1392996332.git.agordeev@redhat.com>
- <bb2b61719e4dd15c29bc8022e76a9463d548f561.1392996332.git.agordeev@redhat.com>
+	id S1755673AbaCDAJM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 19:09:12 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:60655 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755301AbaCDAJK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 19:09:10 -0500
+Date: Tue, 4 Mar 2014 00:09:04 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Andreas Noever <andreas.noever@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/12] Thunderbolt hotplug support for Apple hardware
+ (testers needed)
+Message-ID: <20140304000904.GA6623@srcf.ucam.org>
+References: <1385688949-7101-1-git-send-email-andreas.noever@gmail.com>
+ <20131202162938.GA11241@srcf.ucam.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <bb2b61719e4dd15c29bc8022e76a9463d548f561.1392996332.git.agordeev@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131202162938.GA11241@srcf.ucam.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21, 2014 at 04:49:31PM +0100, Alexander Gordeev wrote:
-> This is an cleanup effort to make ntb_setup_msix() more
-> readable - use ntb_setup_bwd_msix() to init MSI-Xs on
-> BWD hardware and ntb_setup_snb_msix() - on SNB hardware.
-> 
-> Function ntb_setup_snb_msix() also initializes MSI-Xs the
-> way it should has been done - looping pci_enable_msix()
-> until success or failure.
-> 
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> Cc: Jon Mason <jon.mason@intel.com>
-> Cc: linux-pci@vger.kernel.org
-> ---
->  drivers/ntb/ntb_hw.c |  170 +++++++++++++++++++++++++++++++-------------------
->  1 files changed, 106 insertions(+), 64 deletions(-)
-> 
-> diff --git a/drivers/ntb/ntb_hw.c b/drivers/ntb/ntb_hw.c
-> index 53468f4..0472045 100644
-> --- a/drivers/ntb/ntb_hw.c
-> +++ b/drivers/ntb/ntb_hw.c
-> @@ -1079,6 +1079,107 @@ static irqreturn_t ntb_interrupt(int irq, void *dev)
->  	return IRQ_HANDLED;
->  }
->  
-> +static int ntb_setup_snb_msix(struct ntb_device *ndev, int msix_entries)
-> +{
-> +	struct pci_dev *pdev = ndev->pdev;
-> +	struct msix_entry *msix;
-> +	int rc, i;
-> +
-> +	if (msix_entries < SNB_MSIX_CNT)
+Actually, turns out there's a much easier way. Can you try this patch? 
+I see the Thunderbolt controller after resume, although it doesn't seem 
+to be in a working state.
 
-I would prefer ndev->limits.msix_cnt here to keep it generic.  I could
-foresee this number changing on upcoming hardware with a similar
-design.
+commit 102547d63e2cbbda42a25f650df9a33cf929a385
+Author: Matthew Garrett <matthew.garrett@nebula.com>
+Date:   Mon Mar 3 18:49:28 2014 -0500
 
-> +		return -ENOSPC;
-> +
-> +	rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
-> +	if (rc < 0)
-> +		return rc;
-> +	else if (rc > 0)
-> +		return -ENOSPC;
-> +
-> +	for (i = 0; i < msix_entries; i++) {
-> +		msix = &ndev->msix_entries[i];
-> +		WARN_ON(!msix->vector);
-> +
-> +		if (i == msix_entries - 1) {
-> +			rc = request_irq(msix->vector,
-> +					 xeon_event_msix_irq, 0,
-> +					 "ntb-event-msix", ndev);
-> +			if (rc)
-> +				goto err;
-> +		} else {
-> +			rc = request_irq(msix->vector,
-> +					 xeon_callback_msix_irq, 0,
-> +					 "ntb-callback-msix",
-> +					 &ndev->db_cb[i]);
-> +			if (rc)
-> +				goto err;
-> +		}
-> +	}
-> +
-> +	ndev->num_msix = msix_entries;
-> +	ndev->max_cbs = msix_entries - 1;
-> +
-> +	return 0;
-> +
-> +err:
-> +	while (--i >= 0) {
-> +		msix = &ndev->msix_entries[i];
-> +		WARN_ON(i == ndev->num_msix - 1);
-> +
-> +		if (i == ndev->num_msix - 1)
+    ACPI: Support _OSI("Darwin") correctly
+    
+    Apple hardware queries _OSI("Darwin") in order to determine whether the
+    system is running OS X, and changes firmware behaviour based on the answer.
+    The most obvious difference in behaviour is that Thunderbolt hardware is
+    forcibly powered down unless the system is running OS X. The obvious solution
+    would be to simply add Darwin to the list of supported _OSI strings, but this
+    causes problems.
+    
+    Recent Apple hardware includes two separate methods for checking _OSI
+    strings. The first will check whether Darwin is supported, and if so will
+    exit. The second will check whether Darwin is supported, but will then
+    continue to check for further operating systems. If a further operating
+    system is found then later firmware code will assume that the OS is not OS X.
+    This results in the unfortunate situation where the Thunderbolt controller is
+    available at boot time but remains powered down after suspend.
+    
+    The easiest way to handle this is to special-case it in the Linux-specific
+    OSI handling code. If we see Darwin, we should answer true and then disable
+    all other _OSI vendor strings.
+    
+    Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
 
-Why have a WARN followed by a if statement on the same condition?  As
-it stands right now, there is no way it could be hit.  So I'd say
-remove both of them.
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index 54a20ff..ef8656c 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -156,6 +156,16 @@ static u32 acpi_osi_handler(acpi_string interface, u32 supported)
+ 			osi_linux.dmi ? " via DMI" : "");
+ 	}
+ 
++	if (!strcmp("Darwin", interface)) {
++		/*
++		 * Apple firmware will behave poorly if it receives positive
++		 * answers to "Darwin" and any other OS. Respond positively
++		 * to Darwin and then disable all other vendor strings.
++		 */
++		acpi_update_interfaces(ACPI_DISABLE_ALL_VENDOR_STRINGS);
++		supported = ACPI_UINT32_MAX;
++	}
++
+ 	return supported;
+ }
+ 
 
-Aside from that it looks good.  Thanks for taking the time to cleanup
-the code!
-
-Thanks,
-Jon
-
-> +			free_irq(msix->vector, ndev);
-> +		else
-> +			free_irq(msix->vector, &ndev->db_cb[i]);
-> +	}
-> +
-> +	pci_disable_msix(pdev);
-> +	ndev->num_msix = 0;
-> +
-> +	return rc;
-> +}
-> +
-> +static int ntb_setup_bwd_msix(struct ntb_device *ndev, int msix_entries)
-> +{
-> +	struct pci_dev *pdev = ndev->pdev;
-> +	struct msix_entry *msix;
-> +	int rc, i;
-> +
-> +retry:
-> +	rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
-> +	if (rc < 0)
-> +		return rc;
-> +	else if (rc > 0) {
-> +		dev_warn(&pdev->dev,
-> +			 "Only %d MSI-X vectors. "
-> +			 "Limiting the number of queues to that number.\n",
-> +			 rc);
-> +		msix_entries = rc;
-> +		goto retry;
-> +	}
-> +
-> +	for (i = 0; i < msix_entries; i++) {
-> +		msix = &ndev->msix_entries[i];
-> +		WARN_ON(!msix->vector);
-> +
-> +		rc = request_irq(msix->vector, bwd_callback_msix_irq, 0,
-> +				 "ntb-callback-msix", &ndev->db_cb[i]);
-> +		if (rc)
-> +			goto err;
-> +	}
-> +
-> +	ndev->num_msix = msix_entries;
-> +	ndev->max_cbs = msix_entries;
-> +
-> +	return 0;
-> +
-> +err:
-> +	while (--i >= 0)
-> +		free_irq(msix->vector, &ndev->db_cb[i]);
-> +
-> +	pci_disable_msix(pdev);
-> +	ndev->num_msix = 0;
-> +
-> +	return rc;
-> +}
-> +
->  static int ntb_setup_msix(struct ntb_device *ndev)
->  {
->  	struct pci_dev *pdev = ndev->pdev;
-> @@ -1105,78 +1206,19 @@ static int ntb_setup_msix(struct ntb_device *ndev)
->  	for (i = 0; i < msix_entries; i++)
->  		ndev->msix_entries[i].entry = i;
->  
-> -	rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
-> -	if (rc < 0)
-> -		goto err1;
-> -	if (rc > 0) {
-> -		/* On SNB, the link interrupt is always tied to 4th vector.  If
-> -		 * we can't get all 4, then we can't use MSI-X.
-> -		 */
-> -		if (ndev->hw_type != BWD_HW) {
-> -			rc = -EIO;
-> -			goto err1;
-> -		}
-> -
-> -		dev_warn(&pdev->dev,
-> -			 "Only %d MSI-X vectors.  Limiting the number of queues to that number.\n",
-> -			 rc);
-> -		msix_entries = rc;
-> -
-> -		rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
-> -		if (rc)
-> -			goto err1;
-> -	}
-> -
-> -	for (i = 0; i < msix_entries; i++) {
-> -		msix = &ndev->msix_entries[i];
-> -		WARN_ON(!msix->vector);
-> -
-> -		/* Use the last MSI-X vector for Link status */
-> -		if (ndev->hw_type == BWD_HW) {
-> -			rc = request_irq(msix->vector, bwd_callback_msix_irq, 0,
-> -					 "ntb-callback-msix", &ndev->db_cb[i]);
-> -			if (rc)
-> -				goto err2;
-> -		} else {
-> -			if (i == msix_entries - 1) {
-> -				rc = request_irq(msix->vector,
-> -						 xeon_event_msix_irq, 0,
-> -						 "ntb-event-msix", ndev);
-> -				if (rc)
-> -					goto err2;
-> -			} else {
-> -				rc = request_irq(msix->vector,
-> -						 xeon_callback_msix_irq, 0,
-> -						 "ntb-callback-msix",
-> -						 &ndev->db_cb[i]);
-> -				if (rc)
-> -					goto err2;
-> -			}
-> -		}
-> -	}
-> -
-> -	ndev->num_msix = msix_entries;
->  	if (ndev->hw_type == BWD_HW)
-> -		ndev->max_cbs = msix_entries;
-> +		rc = ntb_setup_bwd_msix(ndev, msix_entries);
->  	else
-> -		ndev->max_cbs = msix_entries - 1;
-> +		rc = ntb_setup_snb_msix(ndev, msix_entries);
-> +	if (rc)
-> +		goto err1;
->  
->  	return 0;
->  
-> -err2:
-> -	while (--i >= 0) {
-> -		msix = &ndev->msix_entries[i];
-> -		if (ndev->hw_type != BWD_HW && i == ndev->num_msix - 1)
-> -			free_irq(msix->vector, ndev);
-> -		else
-> -			free_irq(msix->vector, &ndev->db_cb[i]);
-> -	}
-> -	pci_disable_msix(pdev);
->  err1:
->  	kfree(ndev->msix_entries);
-> -	dev_err(&pdev->dev, "Error allocating MSI-X interrupt\n");
->  err:
-> -	ndev->num_msix = 0;
-> +	dev_err(&pdev->dev, "Error allocating MSI-X interrupt\n");
->  	return rc;
->  }
->  
-> -- 
-> 1.7.7.6
-> 
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
