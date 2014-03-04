@@ -1,194 +1,376 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757212AbaCDMfG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 07:35:06 -0500
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:46088 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756052AbaCDMfD (ORCPT
+	id S1757233AbaCDMsU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 07:48:20 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:38083 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757192AbaCDMsS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 07:35:03 -0500
+	Tue, 4 Mar 2014 07:48:18 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s24Cm4Ko005747, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <oliver@neukum.org>, <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net] r8152: disable the ECM mode
+Date: Tue, 4 Mar 2014 20:47:48 +0800
+Message-ID: <1393937268-23798-1-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.8.4.2
 MIME-Version: 1.0
-In-Reply-To: <CAMwGMjwtZVPVaENWqNODPqkM4jAAOsLPrz8_xzRBgGP6_-_usQ@mail.gmail.com>
-References: <71F7AD3B89A7BF1E126CB3B1@C9882B18C00BA04428877CD4>
-	<CAMwGMjwtZVPVaENWqNODPqkM4jAAOsLPrz8_xzRBgGP6_-_usQ@mail.gmail.com>
-Date: Tue, 4 Mar 2014 07:34:59 -0500
-X-Google-Sender-Auth: NfuRqShkemwMrFecsw2U0jgA6x8
-Message-ID: <CAMwGMjxO3eV1t9VrBbL3SecwOJPs2rESGS6VEH60tne4Dx8tVw@mail.gmail.com>
-Subject: Fwd: Ethernet controller not starting
-From: Jon Ringle <jon@ringle.org>
-To: Christian Riesch <christian.riesch@omicron.at>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rafael.j.wysocki@intel.com, netdev@vger.kernel.org,
-        davinci-linux-open-source@linux.davincidsp.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.77]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 4, 2014 at 4:06 AM, Christian Riesch
-<christian.riesch@omicron.at> wrote:
-> [cc'ed netdev and davinci-linux-open-source]
->
->
-> --On March 03, 2014 19:39 -0500 Jon Ringle <jon@ringle.org> wrote:
->
->> On Mon, Mar 3, 2014 at 6:43 PM, Rafael J. Wysocki <rjw@rjwysocki.net>
->> wrote:
->>>
->>> On Monday, March 03, 2014 02:41:01 PM Jon Ringle wrote:
->>>>
->>>> I'm working on porting an ARM board from linux-3.10 to linux-3.12 (now
->>>> the latest LTS kernel).
->>>> I found that Ethernet controller on the board no longer comes up on
->>>> linux-3.12. I was able to bisect the issue I'm having to the following
->>>> commit:
->>>>
->>>> >   45f0a85c8258741d11bda25c0a5669c06267204a is the first bad commit
->>>> >   commit 45f0a85c8258741d11bda25c0a5669c06267204a
->>>> >   Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->>>> >   Date:   Mon Jun 3 21:49:52 2013 +0200
->>>> >
->>>> >       PM / Runtime: Rework the "runtime idle" helper routine
->>>> >
->>>> >       The "runtime idle" helper routine, rpm_idle(), currently ignores
->>>> >       return values from .runtime_idle() callbacks executed by it.
->>>> >       However, it turns out that many subsystems use
->>>> >       pm_generic_runtime_idle() which checks the return value of the
->>>> >       driver's callback and executes pm_runtime_suspend() for the
->>>> >       device unless that value is not 0.  If that logic is moved to
->>>> >       rpm_idle() instead, pm_generic_runtime_idle() can be dropped
->>>> >       and its users will not need any .runtime_idle() callbacks any
->>>> >       more.
->>>> >
->>>> >       Moreover, the PCI, SCSI, and SATA subsystems' .runtime_idle()
->>>> >       routines, pci_pm_runtime_idle(), scsi_runtime_idle(), and
->>>> >       ata_port_runtime_idle(), respectively, as well as a few drivers'
->>>> >       ones may be simplified if rpm_idle() calls rpm_suspend() after
->>>> >       0 has been returned by the .runtime_idle() callback executed by
->>>> >       it.
->>>> >
->>>> >       To reduce overall code bloat, make the changes described above.
->>>> >
->>>> >       Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
->>>> >       Tested-by: Kevin Hilman <khilman@linaro.org>
->>>> >       Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->>>> >       Acked-by: Kevin Hilman <khilman@linaro.org>
->>>> >       Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
->>>> >       Acked-by: Alan Stern <stern@rowland.harvard.edu>
->>>>
->>>> Can anyone offer any suggestions on what I should be looking for to
->>>> fix this on my board?
->>>
->>>
->>> Any pointers to the driver in question?
->>
->>
->> drivers/net/ethernet/ti/davinci_emac.c
->>
->
-> Hi Jon,
-> I have successfully used the davinci_emac driver on a custom board with an
-> AM1808 SoC with Kernel 3.13 a few weeks ago. So at least 3.13 should work.
-> Did you try more recent kernel versions than 3.12?
+There are known issues for switching the drivers between ECM mode and
+vendor mode. The interrup transfer may become abnormal. The hardware
+may have the opportunity to die if you change the configuration without
+unloading the current driver first, because all the control transfers
+of the current driver would fail after the command of switching the
+configuration.
 
-I have not tried 3.13, but will do so today. Could I get a copy of
-your .config for comparison purposes?
+Although to use the ecm driver and vendor driver independently is fine,
+it may have problems to change the driver from one to the other by
+switching the configuration. Additionally, now the vendor mode driver
+is more powerful than the ECM driver. Thus, disable the ECM mode driver,
+and let r8152 to set the configuration to vendor mode and reset the
+device automatically.
 
->
->
->> I also get the following output:
->>
->>          Starting Network Manager Wait Online...
->> [   30.946509] davinci_mdio davinci_mdio.0: resetting idled controller
->> [   30.953220] net net0: attached PHY driver [Generic PHY]
->> (mii_bus:phy_addr=davinci_mdio-0:00, id=7c0f1)
->> [   30.962938] IPv6: ADDRCONF(NETDEV_UP): net0: link is not ready
->> [   31.082087] genirq: Flags mismatch irq 33. 00000000 (net0) vs.
->> 00000000 (net0)
->
->
-> Is it correct that this warning can only appear in case of shared
-> interrupts? See kernel/irq/manage.c. Since we don't use shared interrupts
-> here: Are you sure your board configuration is correct with regard to emac
-> interrupts?
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/usb/Makefile    |   2 +-
+ drivers/net/usb/cdc_ether.c |   7 ++
+ drivers/net/usb/r8152.c     |  15 +--
+ drivers/net/usb/r815x.c     | 248 --------------------------------------------
+ 4 files changed, 17 insertions(+), 255 deletions(-)
+ delete mode 100644 drivers/net/usb/r815x.c
 
-I added some additional printk's and see that emac_dev_open() seems to
-get called again
-and it is trying to call devm_request_irq() again for irq resources
-(33-36) and fails when trying to get irq 33:
+diff --git a/drivers/net/usb/Makefile b/drivers/net/usb/Makefile
+index 433f0a0..e2797f1 100644
+--- a/drivers/net/usb/Makefile
++++ b/drivers/net/usb/Makefile
+@@ -11,7 +11,7 @@ obj-$(CONFIG_USB_HSO)		+= hso.o
+ obj-$(CONFIG_USB_NET_AX8817X)	+= asix.o
+ asix-y := asix_devices.o asix_common.o ax88172a.o
+ obj-$(CONFIG_USB_NET_AX88179_178A)      += ax88179_178a.o
+-obj-$(CONFIG_USB_NET_CDCETHER)	+= cdc_ether.o r815x.o
++obj-$(CONFIG_USB_NET_CDCETHER)	+= cdc_ether.o
+ obj-$(CONFIG_USB_NET_CDC_EEM)	+= cdc_eem.o
+ obj-$(CONFIG_USB_NET_DM9601)	+= dm9601.o
+ obj-$(CONFIG_USB_NET_SR9700)	+= sr9700.o
+diff --git a/drivers/net/usb/cdc_ether.c b/drivers/net/usb/cdc_ether.c
+index 42e1769..bd363b2 100644
+--- a/drivers/net/usb/cdc_ether.c
++++ b/drivers/net/usb/cdc_ether.c
+@@ -652,6 +652,13 @@ static const struct usb_device_id	products[] = {
+ 	.driver_info = 0,
+ },
+ 
++/* Samsung USB Ethernet Adapters */
++{
++	USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID, 0xa101, USB_CLASS_COMM,
++			USB_CDC_SUBCLASS_ETHERNET, USB_CDC_PROTO_NONE),
++	.driver_info = 0,
++},
++
+ /* WHITELIST!!!
+  *
+  * CDC Ether uses two interfaces, not necessarily consecutive.
+diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+index d89dbe3..adb12f3 100644
+--- a/drivers/net/usb/r8152.c
++++ b/drivers/net/usb/r8152.c
+@@ -449,9 +449,6 @@ enum rtl8152_flags {
+ #define MCU_TYPE_PLA			0x0100
+ #define MCU_TYPE_USB			0x0000
+ 
+-#define REALTEK_USB_DEVICE(vend, prod)	\
+-	USB_DEVICE_INTERFACE_CLASS(vend, prod, USB_CLASS_VENDOR_SPEC)
+-
+ struct rx_desc {
+ 	__le32 opts1;
+ #define RX_LEN_MASK			0x7fff
+@@ -2739,6 +2736,12 @@ static int rtl8152_probe(struct usb_interface *intf,
+ 	struct net_device *netdev;
+ 	int ret;
+ 
++	if (udev->actconfig->desc.bConfigurationValue != 1) {
++		usb_driver_set_configuration(udev, 1);
++		return -ENODEV;
++	}
++
++	usb_reset_device(udev);
+ 	netdev = alloc_etherdev(sizeof(struct r8152));
+ 	if (!netdev) {
+ 		dev_err(&intf->dev, "Out of memory\n");
+@@ -2819,9 +2822,9 @@ static void rtl8152_disconnect(struct usb_interface *intf)
+ 
+ /* table of devices that work with this driver */
+ static struct usb_device_id rtl8152_table[] = {
+-	{REALTEK_USB_DEVICE(VENDOR_ID_REALTEK, PRODUCT_ID_RTL8152)},
+-	{REALTEK_USB_DEVICE(VENDOR_ID_REALTEK, PRODUCT_ID_RTL8153)},
+-	{REALTEK_USB_DEVICE(VENDOR_ID_SAMSUNG, PRODUCT_ID_SAMSUNG)},
++	{USB_DEVICE(VENDOR_ID_REALTEK, PRODUCT_ID_RTL8152)},
++	{USB_DEVICE(VENDOR_ID_REALTEK, PRODUCT_ID_RTL8153)},
++	{USB_DEVICE(VENDOR_ID_SAMSUNG, PRODUCT_ID_SAMSUNG)},
+ 	{}
+ };
+ 
+diff --git a/drivers/net/usb/r815x.c b/drivers/net/usb/r815x.c
+deleted file mode 100644
+index f0a8791..0000000
+--- a/drivers/net/usb/r815x.c
++++ /dev/null
+@@ -1,248 +0,0 @@
+-#include <linux/module.h>
+-#include <linux/netdevice.h>
+-#include <linux/mii.h>
+-#include <linux/usb.h>
+-#include <linux/usb/cdc.h>
+-#include <linux/usb/usbnet.h>
+-
+-#define RTL815x_REQT_READ	0xc0
+-#define RTL815x_REQT_WRITE	0x40
+-#define RTL815x_REQ_GET_REGS	0x05
+-#define RTL815x_REQ_SET_REGS	0x05
+-
+-#define MCU_TYPE_PLA		0x0100
+-#define OCP_BASE		0xe86c
+-#define BASE_MII		0xa400
+-
+-#define BYTE_EN_DWORD		0xff
+-#define BYTE_EN_WORD		0x33
+-#define BYTE_EN_BYTE		0x11
+-
+-#define R815x_PHY_ID		32
+-#define REALTEK_VENDOR_ID	0x0bda
+-
+-
+-static int pla_read_word(struct usb_device *udev, u16 index)
+-{
+-	int ret;
+-	u8 shift = index & 2;
+-	__le32 *tmp;
+-
+-	tmp = kmalloc(sizeof(*tmp), GFP_KERNEL);
+-	if (!tmp)
+-		return -ENOMEM;
+-
+-	index &= ~3;
+-
+-	ret = usb_control_msg(udev, usb_rcvctrlpipe(udev, 0),
+-			      RTL815x_REQ_GET_REGS, RTL815x_REQT_READ,
+-			      index, MCU_TYPE_PLA, tmp, sizeof(*tmp), 500);
+-	if (ret < 0)
+-		goto out2;
+-
+-	ret = __le32_to_cpu(*tmp);
+-	ret >>= (shift * 8);
+-	ret &= 0xffff;
+-
+-out2:
+-	kfree(tmp);
+-	return ret;
+-}
+-
+-static int pla_write_word(struct usb_device *udev, u16 index, u32 data)
+-{
+-	__le32 *tmp;
+-	u32 mask = 0xffff;
+-	u16 byen = BYTE_EN_WORD;
+-	u8 shift = index & 2;
+-	int ret;
+-
+-	tmp = kmalloc(sizeof(*tmp), GFP_KERNEL);
+-	if (!tmp)
+-		return -ENOMEM;
+-
+-	data &= mask;
+-
+-	if (shift) {
+-		byen <<= shift;
+-		mask <<= (shift * 8);
+-		data <<= (shift * 8);
+-		index &= ~3;
+-	}
+-
+-	ret = usb_control_msg(udev, usb_rcvctrlpipe(udev, 0),
+-			      RTL815x_REQ_GET_REGS, RTL815x_REQT_READ,
+-			      index, MCU_TYPE_PLA, tmp, sizeof(*tmp), 500);
+-	if (ret < 0)
+-		goto out3;
+-
+-	data |= __le32_to_cpu(*tmp) & ~mask;
+-	*tmp = __cpu_to_le32(data);
+-
+-	ret = usb_control_msg(udev, usb_sndctrlpipe(udev, 0),
+-			      RTL815x_REQ_SET_REGS, RTL815x_REQT_WRITE,
+-			      index, MCU_TYPE_PLA | byen, tmp, sizeof(*tmp),
+-			      500);
+-
+-out3:
+-	kfree(tmp);
+-	return ret;
+-}
+-
+-static int ocp_reg_read(struct usbnet *dev, u16 addr)
+-{
+-	u16 ocp_base, ocp_index;
+-	int ret;
+-
+-	ocp_base = addr & 0xf000;
+-	ret = pla_write_word(dev->udev, OCP_BASE, ocp_base);
+-	if (ret < 0)
+-		goto out;
+-
+-	ocp_index = (addr & 0x0fff) | 0xb000;
+-	ret = pla_read_word(dev->udev, ocp_index);
+-
+-out:
+-	return ret;
+-}
+-
+-static int ocp_reg_write(struct usbnet *dev, u16 addr, u16 data)
+-{
+-	u16 ocp_base, ocp_index;
+-	int ret;
+-
+-	ocp_base = addr & 0xf000;
+-	ret = pla_write_word(dev->udev, OCP_BASE, ocp_base);
+-	if (ret < 0)
+-		goto out1;
+-
+-	ocp_index = (addr & 0x0fff) | 0xb000;
+-	ret = pla_write_word(dev->udev, ocp_index, data);
+-
+-out1:
+-	return ret;
+-}
+-
+-static int r815x_mdio_read(struct net_device *netdev, int phy_id, int reg)
+-{
+-	struct usbnet *dev = netdev_priv(netdev);
+-	int ret;
+-
+-	if (phy_id != R815x_PHY_ID)
+-		return -EINVAL;
+-
+-	if (usb_autopm_get_interface(dev->intf) < 0)
+-		return -ENODEV;
+-
+-	ret = ocp_reg_read(dev, BASE_MII + reg * 2);
+-
+-	usb_autopm_put_interface(dev->intf);
+-	return ret;
+-}
+-
+-static
+-void r815x_mdio_write(struct net_device *netdev, int phy_id, int reg, int val)
+-{
+-	struct usbnet *dev = netdev_priv(netdev);
+-
+-	if (phy_id != R815x_PHY_ID)
+-		return;
+-
+-	if (usb_autopm_get_interface(dev->intf) < 0)
+-		return;
+-
+-	ocp_reg_write(dev, BASE_MII + reg * 2, val);
+-
+-	usb_autopm_put_interface(dev->intf);
+-}
+-
+-static int r8153_bind(struct usbnet *dev, struct usb_interface *intf)
+-{
+-	int status;
+-
+-	status = usbnet_cdc_bind(dev, intf);
+-	if (status < 0)
+-		return status;
+-
+-	dev->mii.dev = dev->net;
+-	dev->mii.mdio_read = r815x_mdio_read;
+-	dev->mii.mdio_write = r815x_mdio_write;
+-	dev->mii.phy_id_mask = 0x3f;
+-	dev->mii.reg_num_mask = 0x1f;
+-	dev->mii.phy_id = R815x_PHY_ID;
+-	dev->mii.supports_gmii = 1;
+-
+-	return status;
+-}
+-
+-static int r8152_bind(struct usbnet *dev, struct usb_interface *intf)
+-{
+-	int status;
+-
+-	status = usbnet_cdc_bind(dev, intf);
+-	if (status < 0)
+-		return status;
+-
+-	dev->mii.dev = dev->net;
+-	dev->mii.mdio_read = r815x_mdio_read;
+-	dev->mii.mdio_write = r815x_mdio_write;
+-	dev->mii.phy_id_mask = 0x3f;
+-	dev->mii.reg_num_mask = 0x1f;
+-	dev->mii.phy_id = R815x_PHY_ID;
+-	dev->mii.supports_gmii = 0;
+-
+-	return status;
+-}
+-
+-static const struct driver_info r8152_info = {
+-	.description =	"RTL8152 ECM Device",
+-	.flags =	FLAG_ETHER | FLAG_POINTTOPOINT,
+-	.bind =		r8152_bind,
+-	.unbind =	usbnet_cdc_unbind,
+-	.status =	usbnet_cdc_status,
+-	.manage_power =	usbnet_manage_power,
+-};
+-
+-static const struct driver_info r8153_info = {
+-	.description =	"RTL8153 ECM Device",
+-	.flags =	FLAG_ETHER | FLAG_POINTTOPOINT,
+-	.bind =		r8153_bind,
+-	.unbind =	usbnet_cdc_unbind,
+-	.status =	usbnet_cdc_status,
+-	.manage_power =	usbnet_manage_power,
+-};
+-
+-static const struct usb_device_id products[] = {
+-{
+-	USB_DEVICE_AND_INTERFACE_INFO(REALTEK_VENDOR_ID, 0x8152, USB_CLASS_COMM,
+-			USB_CDC_SUBCLASS_ETHERNET, USB_CDC_PROTO_NONE),
+-	.driver_info = (unsigned long) &r8152_info,
+-},
+-
+-{
+-	USB_DEVICE_AND_INTERFACE_INFO(REALTEK_VENDOR_ID, 0x8153, USB_CLASS_COMM,
+-			USB_CDC_SUBCLASS_ETHERNET, USB_CDC_PROTO_NONE),
+-	.driver_info = (unsigned long) &r8153_info,
+-},
+-
+-	{ },		/* END */
+-};
+-MODULE_DEVICE_TABLE(usb, products);
+-
+-static struct usb_driver r815x_driver = {
+-	.name =		"r815x",
+-	.id_table =	products,
+-	.probe =	usbnet_probe,
+-	.disconnect =	usbnet_disconnect,
+-	.suspend =	usbnet_suspend,
+-	.resume =	usbnet_resume,
+-	.reset_resume =	usbnet_resume,
+-	.supports_autosuspend = 1,
+-	.disable_hub_initiated_lpm = 1,
+-};
+-
+-module_usb_driver(r815x_driver);
+-
+-MODULE_AUTHOR("Hayes Wang");
+-MODULE_DESCRIPTION("Realtek USB ECM device");
+-MODULE_LICENSE("GPL");
+-- 
+1.8.4.2
 
-         Starting Network Manager Wait Online...
-[   30.687505] emac_dev_open: trying to get irq 33
-[   30.692314] emac_dev_open: got irq 33
-[   30.696034] emac_dev_open: trying to get irq 34
-[   30.700750] emac_dev_open: got irq 34
-[   30.704469] emac_dev_open: trying to get irq 35
-[   30.709088] emac_dev_open: got irq 35
-[   30.712887] emac_dev_open: trying to get irq 36
-[   30.717542] emac_dev_open: got irq 36
-[   30.721507] davinci_mdio davinci_mdio.0: resetting idled controller
-[   30.728909] net net0: attached PHY driver [Generic PHY]
-(mii_bus:phy_addr=davinci_mdio-0:00, id=7c0f1)
-[   30.738614] IPv6: ADDRCONF(NETDEV_UP): net0: link is not ready
-[   30.847040] emac_dev_open: trying to get irq 33
-[   30.851809] genirq: Flags mismatch irq 33. 00000000 (net0) vs.
-00000000 (net0)
-[   30.859125] CPU: 0 PID: 677 Comm: NetworkManager Not tainted
-3.12.13-fs1-003-g5ae24fe-dirty+ #1234
-[   30.868261] [<c000d9c4>] (unwind_backtrace+0x0/0x128) from
-[<c000be14>] (show_stack+0x10/0x14)
-[   30.877020] [<c000be14>] (show_stack+0x10/0x14) from [<c0046970>]
-(__setup_irq+0x45c/0x4d4)
-[   30.885499] [<c0046970>] (__setup_irq+0x45c/0x4d4) from
-[<c0046b18>] (request_threaded_irq+0xa4/0x130)
-[   30.894935] [<c0046b18>] (request_threaded_irq+0xa4/0x130) from
-[<c00484e0>] (devm_request_threaded_irq+0x50/0x98)
-[   30.905414] [<c00484e0>] (devm_request_threaded_irq+0x50/0x98) from
-[<c02db4b4>] (emac_dev_open+0x3f4/0x4b8)
-[   30.915364] [<c02db4b4>] (emac_dev_open+0x3f4/0x4b8) from
-[<c0367b40>] (__dev_open+0xc0/0x130)
-[   30.924086] [<c0367b40>] (__dev_open+0xc0/0x130) from [<c0367dc4>]
-(__dev_change_flags+0x90/0x148)
-[   30.933154] [<c0367dc4>] (__dev_change_flags+0x90/0x148) from
-[<c0367f04>] (dev_change_flags+0x10/0x48)
-[   30.942679] [<c0367f04>] (dev_change_flags+0x10/0x48) from
-[<c0374510>] (do_setlink+0x2fc/0x838)
-[   30.951591] [<c0374510>] (do_setlink+0x2fc/0x838) from [<c0374dec>]
-(rtnl_newlink+0x2b4/0x458)
-[   30.960328] [<c0374dec>] (rtnl_newlink+0x2b4/0x458) from
-[<c03740b8>] (rtnetlink_rcv_msg+0x168/0x210)
-[   30.969692] [<c03740b8>] (rtnetlink_rcv_msg+0x168/0x210) from
-[<c037f50c>] (netlink_rcv_skb+0xac/0xc0)
-[   30.979130] [<c037f50c>] (netlink_rcv_skb+0xac/0xc0) from
-[<c0373f40>] (rtnetlink_rcv+0x1c/0x2c)
-[   30.988040] [<c0373f40>] (rtnetlink_rcv+0x1c/0x2c) from
-[<c037ee94>] (netlink_unicast+0x138/0x1e8)
-[   30.997122] [<c037ee94>] (netlink_unicast+0x138/0x1e8) from
-[<c037f2a4>] (netlink_sendmsg+0x2bc/0x37c)
-[   31.006552] [<c037f2a4>] (netlink_sendmsg+0x2bc/0x37c) from
-[<c0351f50>] (sock_sendmsg+0x84/0xa8)
-[   31.015546] [<c0351f50>] (sock_sendmsg+0x84/0xa8) from [<c035338c>]
-(___sys_sendmsg.part.35+0x268/0x278)
-[   31.025150] [<c035338c>] (___sys_sendmsg.part.35+0x268/0x278) from
-[<c03542e8>] (__sys_sendmsg+0x4c/0x7c)
-[   ) from [<c0009560>] (ret_fast_syscall+0x0/0x2c)
-[   31.043691] genirq: out_mask
-[   31.046723] genirq: out_thread
-[   31.049820] genirq: out_mput
-[   31.052825] net net0: DaVinci EMAC: devm_request_irq() failed
-
-
-> Is your configuration using device tree or not (my configuration
-> is a none-devicetree one)?
-No.
-
-> I also wonder why your network device is net0, on
-> my board it's eth0, maybe this triggers some bug?
-
-I doubt that this is the source of the problem. The davinci_emac
-interface is initiatially eth1 (we have a 2nd ethernet
-port on board that initially is assigned eth0), I rename them eth1 ->
-net0 and eth0 -> net1.
-See http://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames/
-
-Jon
