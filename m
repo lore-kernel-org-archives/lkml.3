@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756086AbaCDUDS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:03:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40902 "EHLO
+	id S1757440AbaCDVYU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:24:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40951 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755763AbaCDUDL (ORCPT
+	with ESMTP id S1756089AbaCDUDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:03:11 -0500
+	Tue, 4 Mar 2014 15:03:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        Michael Chan <mchan@broadcom.com>,
-        Nithin Nayak Sujir <nsujir@broadcom.com>,
+        Florian Westphal <fw@strlen.de>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 045/172] tg3: Fix deadlock in tg3_change_mtu()
-Date: Tue,  4 Mar 2014 12:02:09 -0800
-Message-Id: <20140304200301.178835768@linuxfoundation.org>
+Subject: [PATCH 3.13 055/172] net: core: introduce netif_skb_dev_features
+Date: Tue,  4 Mar 2014 12:02:19 -0800
+Message-Id: <20140304200301.495504670@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -31,49 +29,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nithin Sujir <nsujir@broadcom.com>
+From: Florian Westphal <fw@strlen.de>
 
-[ Upstream commit c6993dfd7db9b0c6b7ca7503a56fda9236a4710f ]
+commit d206940319c41df4299db75ed56142177bb2e5f6 upstream.
 
-Quoting David Vrabel -
-"5780 cards cannot have jumbo frames and TSO enabled together.  When
-jumbo frames are enabled by setting the MTU, the TSO feature must be
-cleared.  This is done indirectly by calling netdev_update_features()
-which will call tg3_fix_features() to actually clear the flags.
+Will be used by upcoming ipv4 forward path change that needs to
+determine feature mask using skb->dst->dev instead of skb->dev.
 
-netdev_update_features() will also trigger a new netlink message for the
-feature change event which will result in a call to tg3_get_stats64()
-which deadlocks on the tg3 lock."
-
-tg3_set_mtu() does not need to be under the tg3 lock since converting
-the flags to use set_bit(). Move it out to after tg3_netif_stop().
-
-Reported-by: David Vrabel <david.vrabel@citrix.com>
-Tested-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
+Signed-off-by: Florian Westphal <fw@strlen.de>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/broadcom/tg3.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/linux/netdevice.h |    7 ++++++-
+ net/core/dev.c            |   22 ++++++++++++----------
+ 2 files changed, 18 insertions(+), 11 deletions(-)
 
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -13965,12 +13965,12 @@ static int tg3_change_mtu(struct net_dev
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -2984,7 +2984,12 @@ void netdev_change_features(struct net_d
+ void netif_stacked_transfer_operstate(const struct net_device *rootdev,
+ 					struct net_device *dev);
  
- 	tg3_netif_stop(tp);
+-netdev_features_t netif_skb_features(struct sk_buff *skb);
++netdev_features_t netif_skb_dev_features(struct sk_buff *skb,
++					 const struct net_device *dev);
++static inline netdev_features_t netif_skb_features(struct sk_buff *skb)
++{
++	return netif_skb_dev_features(skb, skb->dev);
++}
  
-+	tg3_set_mtu(dev, tp, new_mtu);
-+
- 	tg3_full_lock(tp, 1);
+ static inline bool net_gso_ok(netdev_features_t features, int gso_type)
+ {
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2404,7 +2404,7 @@ EXPORT_SYMBOL(netdev_rx_csum_fault);
+  * 2. No high memory really exists on this machine.
+  */
  
- 	tg3_halt(tp, RESET_KIND_SHUTDOWN, 1);
+-static int illegal_highdma(struct net_device *dev, struct sk_buff *skb)
++static int illegal_highdma(const struct net_device *dev, struct sk_buff *skb)
+ {
+ #ifdef CONFIG_HIGHMEM
+ 	int i;
+@@ -2484,34 +2484,36 @@ static int dev_gso_segment(struct sk_buf
+ }
  
--	tg3_set_mtu(dev, tp, new_mtu);
--
- 	/* Reset PHY, otherwise the read DMA engine will be in a mode that
- 	 * breaks all requests to 256 bytes.
- 	 */
+ static netdev_features_t harmonize_features(struct sk_buff *skb,
+-	netdev_features_t features)
++					    const struct net_device *dev,
++					    netdev_features_t features)
+ {
+ 	if (skb->ip_summed != CHECKSUM_NONE &&
+ 	    !can_checksum_protocol(features, skb_network_protocol(skb))) {
+ 		features &= ~NETIF_F_ALL_CSUM;
+-	} else if (illegal_highdma(skb->dev, skb)) {
++	} else if (illegal_highdma(dev, skb)) {
+ 		features &= ~NETIF_F_SG;
+ 	}
+ 
+ 	return features;
+ }
+ 
+-netdev_features_t netif_skb_features(struct sk_buff *skb)
++netdev_features_t netif_skb_dev_features(struct sk_buff *skb,
++					 const struct net_device *dev)
+ {
+ 	__be16 protocol = skb->protocol;
+-	netdev_features_t features = skb->dev->features;
++	netdev_features_t features = dev->features;
+ 
+-	if (skb_shinfo(skb)->gso_segs > skb->dev->gso_max_segs)
++	if (skb_shinfo(skb)->gso_segs > dev->gso_max_segs)
+ 		features &= ~NETIF_F_GSO_MASK;
+ 
+ 	if (protocol == htons(ETH_P_8021Q) || protocol == htons(ETH_P_8021AD)) {
+ 		struct vlan_ethhdr *veh = (struct vlan_ethhdr *)skb->data;
+ 		protocol = veh->h_vlan_encapsulated_proto;
+ 	} else if (!vlan_tx_tag_present(skb)) {
+-		return harmonize_features(skb, features);
++		return harmonize_features(skb, dev, features);
+ 	}
+ 
+-	features &= (skb->dev->vlan_features | NETIF_F_HW_VLAN_CTAG_TX |
++	features &= (dev->vlan_features | NETIF_F_HW_VLAN_CTAG_TX |
+ 					       NETIF_F_HW_VLAN_STAG_TX);
+ 
+ 	if (protocol == htons(ETH_P_8021Q) || protocol == htons(ETH_P_8021AD))
+@@ -2519,9 +2521,9 @@ netdev_features_t netif_skb_features(str
+ 				NETIF_F_GEN_CSUM | NETIF_F_HW_VLAN_CTAG_TX |
+ 				NETIF_F_HW_VLAN_STAG_TX;
+ 
+-	return harmonize_features(skb, features);
++	return harmonize_features(skb, dev, features);
+ }
+-EXPORT_SYMBOL(netif_skb_features);
++EXPORT_SYMBOL(netif_skb_dev_features);
+ 
+ /*
+  * Returns true if either:
 
 
