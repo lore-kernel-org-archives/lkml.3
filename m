@@ -1,127 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932547AbaCDVeJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:34:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40841 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755767AbaCDUC7 (ORCPT
+	id S932757AbaCDVfO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:35:14 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:39486 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754973AbaCDVfJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:02:59 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pavel Shilovsky <piastry@etersoft.ru>,
-        Al Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
-        Steve French <smfrench@gmail.com>
-Subject: [PATCH 3.13 029/172] cifs: ensure that uncached writes handle unmapped areas correctly
-Date: Tue,  4 Mar 2014 12:01:53 -0800
-Message-Id: <20140304200300.656895045@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
-References: <20140304200259.626667112@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 4 Mar 2014 16:35:09 -0500
+Date: Tue, 4 Mar 2014 13:35:04 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Torvald Riegel <triegel@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+Message-ID: <20140304213504.GA9809@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1393515453.28840.9961.camel@triegel.csb>
+ <CA+55aFyE58NokYdoU+-feHTXv+5snByu+vCyMtg2fNc7npMbDg@mail.gmail.com>
+ <20140227190611.GU8264@linux.vnet.ibm.com>
+ <CA+55aFzav_2ayvEgbgeAzQohJ7EQH0tgUU0WcSyvUA6hgOo_Ow@mail.gmail.com>
+ <20140227205312.GX8264@linux.vnet.ibm.com>
+ <20140301005047.GA14777@linux.vnet.ibm.com>
+ <1393872908.28840.11660.camel@triegel.csb>
+ <20140303192026.GO11910@linux.vnet.ibm.com>
+ <1393879579.28840.11949.camel@triegel.csb>
+ <20140304190032.GY11910@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140304190032.GY11910@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14030421-7164-0000-0000-00000007EDE3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Mar 04, 2014 at 11:00:32AM -0800, Paul E. McKenney wrote:
+> On Mon, Mar 03, 2014 at 09:46:19PM +0100, Torvald Riegel wrote:
+> > xagsmtp2.20140303204700.3556@vmsdvma.vnet.ibm.com
+> > X-Xagent-Gateway: vmsdvma.vnet.ibm.com (XAGSMTP2 at VMSDVMA)
+> > 
+> > On Mon, 2014-03-03 at 11:20 -0800, Paul E. McKenney wrote:
+> > > On Mon, Mar 03, 2014 at 07:55:08PM +0100, Torvald Riegel wrote:
+> > > > xagsmtp2.20140303190831.9500@uk1vsc.vnet.ibm.com
+> > > > X-Xagent-Gateway: uk1vsc.vnet.ibm.com (XAGSMTP2 at UK1VSC)
+> > > > 
+> > > > On Fri, 2014-02-28 at 16:50 -0800, Paul E. McKenney wrote:
+> > > > > +o	Do not use the results from the boolean "&&" and "||" when
+> > > > > +	dereferencing.	For example, the following (rather improbable)
+> > > > > +	code is buggy:
+> > > > > +
+> > > > > +		int a[2];
+> > > > > +		int index;
+> > > > > +		int force_zero_index = 1;
+> > > > > +
+> > > > > +		...
+> > > > > +
+> > > > > +		r1 = rcu_dereference(i1)
+> > > > > +		r2 = a[r1 && force_zero_index];  /* BUGGY!!! */
+> > > > > +
+> > > > > +	The reason this is buggy is that "&&" and "||" are often compiled
+> > > > > +	using branches.  While weak-memory machines such as ARM or PowerPC
+> > > > > +	do order stores after such branches, they can speculate loads,
+> > > > > +	which can result in misordering bugs.
+> > > > > +
+> > > > > +o	Do not use the results from relational operators ("==", "!=",
+> > > > > +	">", ">=", "<", or "<=") when dereferencing.  For example,
+> > > > > +	the following (quite strange) code is buggy:
+> > > > > +
+> > > > > +		int a[2];
+> > > > > +		int index;
+> > > > > +		int flip_index = 0;
+> > > > > +
+> > > > > +		...
+> > > > > +
+> > > > > +		r1 = rcu_dereference(i1)
+> > > > > +		r2 = a[r1 != flip_index];  /* BUGGY!!! */
+> > > > > +
+> > > > > +	As before, the reason this is buggy is that relational operators
+> > > > > +	are often compiled using branches.  And as before, although
+> > > > > +	weak-memory machines such as ARM or PowerPC do order stores
+> > > > > +	after such branches, but can speculate loads, which can again
+> > > > > +	result in misordering bugs.
+> > > > 
+> > > > Those two would be allowed by the wording I have recently proposed,
+> > > > AFAICS.  r1 != flip_index would result in two possible values (unless
+> > > > there are further constraints due to the type of r1 and the values that
+> > > > flip_index can have).
+> > > 
+> > > And I am OK with the value_dep_preserving type providing more/better
+> > > guarantees than we get by default from current compilers.
+> > > 
+> > > One question, though.  Suppose that the code did not want a value
+> > > dependency to be tracked through a comparison operator.  What does
+> > > the developer do in that case?  (The reason I ask is that I have
+> > > not yet found a use case in the Linux kernel that expects a value
+> > > dependency to be tracked through a comparison.)
+> > 
+> > Hmm.  I suppose use an explicit cast to non-vdp before or after the
+> > comparison?
+> 
+> That should work well assuming that things like "if", "while", and "?:"
+> conditions are happy to take a vdp.  This assumes that p->a only returns
+> vdp if field "a" is declared vdp, otherwise we have vdps running wild
+> through the program.  ;-)
+> 
+> The other thing that can happen is that a vdp can get handed off to
+> another synchronization mechanism, for example, to reference counting:
+> 
+> 	p = atomic_load_explicit(&gp, memory_order_consume);
+> 	if (do_something_with(p->a)) {
+> 		/* fast path protected by RCU. */
+> 		return 0;
+> 	}
+> 	if (atomic_inc_not_zero(&p->refcnt) {
+> 		/* slow path protected by reference counting. */
+> 		return do_something_else_with((struct foo *)p);  /* CHANGE */
+> 	}
+> 	/* Needed slow path, but raced with deletion. */
+> 	return -EAGAIN;
+> 
+> I am guessing that the cast ends the vdp.  Is that the case?
 
-------------------
+And here is a more elaborate example from the Linux kernel:
 
-From: Jeff Layton <jlayton@redhat.com>
+	struct md_rdev value_dep_preserving *rdev;  /* CHANGE */
 
-commit 5d81de8e8667da7135d3a32a964087c0faf5483f upstream.
+	rdev = rcu_dereference(conf->mirrors[disk].rdev);
+	if (r1_bio->bios[disk] == IO_BLOCKED
+	    || rdev == NULL
+	    || test_bit(Unmerged, &rdev->flags)
+	    || test_bit(Faulty, &rdev->flags))
+		continue;
 
-It's possible for userland to pass down an iovec via writev() that has a
-bogus user pointer in it. If that happens and we're doing an uncached
-write, then we can end up getting less bytes than we expect from the
-call to iov_iter_copy_from_user. This is CVE-2014-0069
+The fact that the "rdev == NULL" returns vdp does not force the "||"
+operators to be evaluated arithmetically because the entire function
+is an "if" condition, correct?
 
-cifs_iovec_write isn't set up to handle that situation however. It'll
-blindly keep chugging through the page array and not filling those pages
-with anything useful. Worse yet, we'll later end up with a negative
-number in wdata->tailsz, which will confuse the sending routines and
-cause an oops at the very least.
-
-Fix this by having the copy phase of cifs_iovec_write stop copying data
-in this situation and send the last write as a short one. At the same
-time, we want to avoid sending a zero-length write to the server, so
-break out of the loop and set rc to -EFAULT if that happens. This also
-allows us to handle the case where no address in the iovec is valid.
-
-[Note: Marking this for stable on v3.4+ kernels, but kernels as old as
-       v2.6.38 may have a similar problem and may need similar fix]
-
-Reviewed-by: Pavel Shilovsky <piastry@etersoft.ru>
-Reported-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <smfrench@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/cifs/file.c |   37 ++++++++++++++++++++++++++++++++++---
- 1 file changed, 34 insertions(+), 3 deletions(-)
-
---- a/fs/cifs/file.c
-+++ b/fs/cifs/file.c
-@@ -2381,7 +2381,7 @@ cifs_iovec_write(struct file *file, cons
- 		 unsigned long nr_segs, loff_t *poffset)
- {
- 	unsigned long nr_pages, i;
--	size_t copied, len, cur_len;
-+	size_t bytes, copied, len, cur_len;
- 	ssize_t total_written = 0;
- 	loff_t offset;
- 	struct iov_iter it;
-@@ -2436,14 +2436,45 @@ cifs_iovec_write(struct file *file, cons
- 
- 		save_len = cur_len;
- 		for (i = 0; i < nr_pages; i++) {
--			copied = min_t(const size_t, cur_len, PAGE_SIZE);
-+			bytes = min_t(const size_t, cur_len, PAGE_SIZE);
- 			copied = iov_iter_copy_from_user(wdata->pages[i], &it,
--							 0, copied);
-+							 0, bytes);
- 			cur_len -= copied;
- 			iov_iter_advance(&it, copied);
-+			/*
-+			 * If we didn't copy as much as we expected, then that
-+			 * may mean we trod into an unmapped area. Stop copying
-+			 * at that point. On the next pass through the big
-+			 * loop, we'll likely end up getting a zero-length
-+			 * write and bailing out of it.
-+			 */
-+			if (copied < bytes)
-+				break;
- 		}
- 		cur_len = save_len - cur_len;
- 
-+		/*
-+		 * If we have no data to send, then that probably means that
-+		 * the copy above failed altogether. That's most likely because
-+		 * the address in the iovec was bogus. Set the rc to -EFAULT,
-+		 * free anything we allocated and bail out.
-+		 */
-+		if (!cur_len) {
-+			for (i = 0; i < nr_pages; i++)
-+				put_page(wdata->pages[i]);
-+			kfree(wdata);
-+			rc = -EFAULT;
-+			break;
-+		}
-+
-+		/*
-+		 * i + 1 now represents the number of pages we actually used in
-+		 * the copy phase above. Bring nr_pages down to that, and free
-+		 * any pages that we didn't use.
-+		 */
-+		for ( ; nr_pages > i + 1; nr_pages--)
-+			put_page(wdata->pages[nr_pages - 1]);
-+
- 		wdata->sync_mode = WB_SYNC_ALL;
- 		wdata->nr_pages = nr_pages;
- 		wdata->offset = (__u64)offset;
-
+							Thanx, Paul
 
