@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932750AbaCDUmA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:42:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41414 "EHLO
+	id S1757983AbaCDUm2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:42:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41402 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756944AbaCDUEh (ORCPT
+	with ESMTP id S1756862AbaCDUEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:04:37 -0500
+	Tue, 4 Mar 2014 15:04:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Snitzer <snitzer@redhat.com>, Joe Thornber <ejt@redhat.com>
-Subject: [PATCH 3.13 163/172] dm cache: move hook_info into common portion of per_bio_data structure
-Date: Tue,  4 Mar 2014 12:04:07 -0800
-Message-Id: <20140304200304.919825681@linuxfoundation.org>
+        Jani Nikula <jani.nikula@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH 3.13 171/172] drm/i915/dp: increase native aux defer retry timeout
+Date: Tue,  4 Mar 2014 12:04:15 -0800
+Message-Id: <20140304200305.164674237@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -28,44 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: Jani Nikula <jani.nikula@intel.com>
 
-commit c6eda5e81c4fcc77185117255c7419eda771f67f upstream.
+commit 04eada25d1f72efdecd32d702706594f81de65d5 upstream.
 
-Commit c9d28d5d ("dm cache: promotion optimisation for writes")
-incorrectly placed the 'hook_info' member in the writethrough-only
-portion of the per_bio_data structure.
+Give more slack to sink devices before retrying on native aux
+defer. AFAICT the 100 us timeout was not based on the DP spec.
 
-Given that the overwrite optimization may be used for writeback the
-'hook_info' member must be placed above the 'cache' member of the
-per_bio_data structure.  Any members above 'cache' are available from
-both writeback and writethrough modes' per_bio_data structure.
-
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Acked-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Cc: stable@vger.kernel.org (on Jani's request)
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-cache-target.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i915/intel_dp.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/md/dm-cache-target.c
-+++ b/drivers/md/dm-cache-target.c
-@@ -283,6 +283,7 @@ struct per_bio_data {
- 	bool tick:1;
- 	unsigned req_nr:2;
- 	struct dm_deferred_entry *all_io_entry;
-+	struct dm_hook_info hook_info;
- 
- 	/*
- 	 * writethrough fields.  These MUST remain at the end of this
-@@ -291,7 +292,6 @@ struct per_bio_data {
- 	 */
- 	struct cache *cache;
- 	dm_cblock_t cblock;
--	struct dm_hook_info hook_info;
- 	struct dm_bio_details bio_details;
- };
- 
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -555,7 +555,7 @@ intel_dp_aux_native_write(struct intel_d
+ 		if ((ack & AUX_NATIVE_REPLY_MASK) == AUX_NATIVE_REPLY_ACK)
+ 			break;
+ 		else if ((ack & AUX_NATIVE_REPLY_MASK) == AUX_NATIVE_REPLY_DEFER)
+-			udelay(100);
++			usleep_range(400, 500);
+ 		else
+ 			return -EIO;
+ 	}
+@@ -607,7 +607,7 @@ intel_dp_aux_native_read(struct intel_dp
+ 			return ret - 1;
+ 		}
+ 		else if ((ack & AUX_NATIVE_REPLY_MASK) == AUX_NATIVE_REPLY_DEFER)
+-			udelay(100);
++			usleep_range(400, 500);
+ 		else
+ 			return -EIO;
+ 	}
 
 
