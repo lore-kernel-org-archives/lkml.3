@@ -1,98 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757557AbaCDUJY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:09:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41808 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932360AbaCDUFo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:05:44 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 78/97] ALSA: hda - Add a fixup for HP Folio 13 mute LED
-Date: Tue,  4 Mar 2014 12:04:31 -0800
-Message-Id: <20140304200348.567331715@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
-References: <20140304200345.895517495@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	id S1757570AbaCDUJd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:09:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61455 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755102AbaCDUJa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 15:09:30 -0500
+From: Mark Salter <msalter@redhat.com>
+To: x86@kernel.org
+Cc: Dave Young <dyoung@redhat.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        patches@linaro.org, Mark Salter <msalter@redhat.com>
+Subject: [PATCH 1/5] x86/mm: sparse warning fix for early_memremap
+Date: Tue,  4 Mar 2014 15:08:54 -0500
+Message-Id: <1393963738-9210-2-git-send-email-msalter@redhat.com>
+In-Reply-To: <1393963738-9210-1-git-send-email-msalter@redhat.com>
+References: <1393963738-9210-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+From: Dave Young <dyoung@redhat.com>
 
-------------------
+There's a lot of sparse warnings for code like below:
+void *a = early_memremap(phys_addr, size);
 
-From: Takashi Iwai <tiwai@suse.de>
+early_memremap intend to map kernel memory with ioremap facility, the return
+pointer should be a kernel ram pointer instead of iomem one.
 
-commit 37c367ecdb9a01c9acc980e6e17913570a1788a7 upstream.
+For making the function clearer and supressing sparse warnings this patch
+do below two things:
+1. cast to (__force void *) for the return value of early_memremap
+2. add early_memunmap function and pass (__force void __iomem *) to iounmap
 
-HP Folio 13 may have a broken BIOS that doesn't set up the mute LED
-GPIO properly, and the driver guesses it wrongly, too.  Add a new
-fixup entry for setting the GPIO pin statically for this laptop.
+>From Boris:
+> Ingo told me yesterday, it makes sense too. I'd guess we can try it.
+> FWIW, all callers of early_memremap use the memory they get remapped as
+> normal memory so we should be safe.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=70991
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Dave Young <dyoung@redhat.com>
+Signed-off-by: Mark Salter <msalter@redhat.com>
+Acked-by: H. Peter Anvin <hpa@zytor.com>
 ---
- sound/pci/hda/patch_sigmatel.c |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ arch/x86/include/asm/io.h |  3 ++-
+ arch/x86/mm/ioremap.c     | 10 +++++++---
+ 2 files changed, 9 insertions(+), 4 deletions(-)
 
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -98,6 +98,7 @@ enum {
- 	STAC_92HD83XXX_HP_LED,
- 	STAC_92HD83XXX_HP_INV_LED,
- 	STAC_92HD83XXX_HP_MIC_LED,
-+	STAC_HP_LED_GPIO10,
- 	STAC_92HD83XXX_HEADSET_JACK,
- 	STAC_92HD83XXX_HP,
- 	STAC_HP_ENVY_BASS,
-@@ -2107,6 +2108,17 @@ static void stac92hd83xxx_fixup_hp_mic_l
- 		spec->mic_mute_led_gpio = 0x08; /* GPIO3 */
+diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
+index 34f69cb..1db414f 100644
+--- a/arch/x86/include/asm/io.h
++++ b/arch/x86/include/asm/io.h
+@@ -325,9 +325,10 @@ extern void early_ioremap_init(void);
+ extern void early_ioremap_reset(void);
+ extern void __iomem *early_ioremap(resource_size_t phys_addr,
+ 				   unsigned long size);
+-extern void __iomem *early_memremap(resource_size_t phys_addr,
++extern void *early_memremap(resource_size_t phys_addr,
+ 				    unsigned long size);
+ extern void early_iounmap(void __iomem *addr, unsigned long size);
++extern void early_memunmap(void *addr, unsigned long size);
+ extern void fixup_early_ioremap(void);
+ extern bool is_early_ioremap_ptep(pte_t *ptep);
+ 
+diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
+index 799580c..bbb4504 100644
+--- a/arch/x86/mm/ioremap.c
++++ b/arch/x86/mm/ioremap.c
+@@ -562,10 +562,9 @@ early_ioremap(resource_size_t phys_addr, unsigned long size)
  }
  
-+static void stac92hd83xxx_fixup_hp_led_gpio10(struct hda_codec *codec,
-+				   const struct hda_fixup *fix, int action)
-+{
-+	struct sigmatel_spec *spec = codec->spec;
-+
-+	if (action == HDA_FIXUP_ACT_PRE_PROBE) {
-+		spec->gpio_led = 0x10; /* GPIO4 */
-+		spec->default_polarity = 0;
-+	}
-+}
-+
- static void stac92hd83xxx_fixup_headset_jack(struct hda_codec *codec,
- 				   const struct hda_fixup *fix, int action)
+ /* Remap memory */
+-void __init __iomem *
+-early_memremap(resource_size_t phys_addr, unsigned long size)
++void __init *early_memremap(resource_size_t phys_addr, unsigned long size)
  {
-@@ -2173,6 +2185,12 @@ static const struct hda_fixup stac92hd83
- 		.chained = true,
- 		.chain_id = STAC_92HD83XXX_HP,
- 	},
-+	[STAC_HP_LED_GPIO10] = {
-+		.type = HDA_FIXUP_FUNC,
-+		.v.func = stac92hd83xxx_fixup_hp_led_gpio10,
-+		.chained = true,
-+		.chain_id = STAC_92HD83XXX_HP,
-+	},
- 	[STAC_92HD83XXX_HEADSET_JACK] = {
- 		.type = HDA_FIXUP_FUNC,
- 		.v.func = stac92hd83xxx_fixup_headset_jack,
-@@ -2244,6 +2262,8 @@ static const struct snd_pci_quirk stac92
- 			  "HP", STAC_92HD83XXX_HP_cNB11_INTQUAD),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x1888,
- 			  "HP Envy Spectre", STAC_HP_ENVY_BASS),
-+	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x1899,
-+			  "HP Folio 13", STAC_HP_LED_GPIO10),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x18df,
- 			  "HP Folio", STAC_92HD83XXX_HP_MIC_LED),
- 	SND_PCI_QUIRK_MASK(PCI_VENDOR_ID_HP, 0xff00, 0x1900,
-
+-	return __early_ioremap(phys_addr, size, PAGE_KERNEL);
++	return (__force void *)__early_ioremap(phys_addr, size, PAGE_KERNEL);
+ }
+ 
+ void __init early_iounmap(void __iomem *addr, unsigned long size)
+@@ -620,3 +619,8 @@ void __init early_iounmap(void __iomem *addr, unsigned long size)
+ 	}
+ 	prev_map[slot] = NULL;
+ }
++
++void __init early_memunmap(void *addr, unsigned long size)
++{
++	early_iounmap((__force void __iomem *)addr, size);
++}
+-- 
+1.8.5.3
 
