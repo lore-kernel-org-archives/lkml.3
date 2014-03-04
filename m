@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757679AbaCDVMX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:12:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41084 "EHLO
+	id S1757321AbaCDVMV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:12:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41091 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756408AbaCDUDm (ORCPT
+	with ESMTP id S1756424AbaCDUDm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Mar 2014 15:03:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Adam Thomson <Adam.Thomson.Opensource@diasemi.com>,
+        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
         Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.13 086/172] ASoC: da9055: Fix device registration of PMIC and CODEC devices
-Date: Tue,  4 Mar 2014 12:02:50 -0800
-Message-Id: <20140304200302.480530845@linuxfoundation.org>
+Subject: [PATCH 3.13 087/172] ASoC: rt5640: Add ACPI ID for Intel Baytrail
+Date: Tue,  4 Mar 2014 12:02:51 -0800
+Message-Id: <20140304200302.509171954@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -29,85 +29,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+From: Jarkko Nikula <jarkko.nikula@linux.intel.com>
 
-commit 07b0e5b10258b48e5edfb6c8ac156f05510eb775 upstream.
+commit b31b2b6d5de71c569413d8dc4f7b050cbe25a09e upstream.
 
-Currently the I2C device Ids conflict for the MFD and CODEC so
-cannot be both instantiated on one platform. This patch updates
-the Ids and names to make them unique from each other.
+Realtek RT5640 uses ACPI ID "10EC5640" for Intel Baytrail platforms.
 
-It should be noted that the I2C addresses for both PMIC and CODEC
-are modifiable so instantiation of the two are kept as separate
-devices, rather than instantiating the CODEC from the MFD code.
-
-Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
-Acked-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
 Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mfd/da9055-i2c.c  |   12 ++++++++++--
- sound/soc/codecs/da9055.c |   11 +++++++++--
- 2 files changed, 19 insertions(+), 4 deletions(-)
+ sound/soc/codecs/rt5640.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/mfd/da9055-i2c.c
-+++ b/drivers/mfd/da9055-i2c.c
-@@ -53,17 +53,25 @@ static int da9055_i2c_remove(struct i2c_
- 	return 0;
- }
- 
-+/*
-+ * DO NOT change the device Ids. The naming is intentionally specific as both
-+ * the PMIC and CODEC parts of this chip are instantiated separately as I2C
-+ * devices (both have configurable I2C addresses, and are to all intents and
-+ * purposes separate). As a result there are specific DA9055 ids for PMIC
-+ * and CODEC, which must be different to operate together.
-+ */
- static struct i2c_device_id da9055_i2c_id[] = {
--	{"da9055", 0},
-+	{"da9055-pmic", 0},
- 	{ }
+--- a/sound/soc/codecs/rt5640.c
++++ b/sound/soc/codecs/rt5640.c
+@@ -2093,6 +2093,7 @@ MODULE_DEVICE_TABLE(i2c, rt5640_i2c_id);
+ #ifdef CONFIG_ACPI
+ static struct acpi_device_id rt5640_acpi_match[] = {
+ 	{ "INT33CA", 0 },
++	{ "10EC5640", 0 },
+ 	{ },
  };
-+MODULE_DEVICE_TABLE(i2c, da9055_i2c_id);
- 
- static struct i2c_driver da9055_i2c_driver = {
- 	.probe = da9055_i2c_probe,
- 	.remove = da9055_i2c_remove,
- 	.id_table = da9055_i2c_id,
- 	.driver = {
--		.name = "da9055",
-+		.name = "da9055-pmic",
- 		.owner = THIS_MODULE,
- 	},
- };
---- a/sound/soc/codecs/da9055.c
-+++ b/sound/soc/codecs/da9055.c
-@@ -1523,8 +1523,15 @@ static int da9055_remove(struct i2c_clie
- 	return 0;
- }
- 
-+/*
-+ * DO NOT change the device Ids. The naming is intentionally specific as both
-+ * the CODEC and PMIC parts of this chip are instantiated separately as I2C
-+ * devices (both have configurable I2C addresses, and are to all intents and
-+ * purposes separate). As a result there are specific DA9055 Ids for CODEC
-+ * and PMIC, which must be different to operate together.
-+ */
- static const struct i2c_device_id da9055_i2c_id[] = {
--	{ "da9055", 0 },
-+	{ "da9055-codec", 0 },
- 	{ }
- };
- MODULE_DEVICE_TABLE(i2c, da9055_i2c_id);
-@@ -1532,7 +1539,7 @@ MODULE_DEVICE_TABLE(i2c, da9055_i2c_id);
- /* I2C codec control layer */
- static struct i2c_driver da9055_i2c_driver = {
- 	.driver = {
--		.name = "da9055",
-+		.name = "da9055-codec",
- 		.owner = THIS_MODULE,
- 	},
- 	.probe		= da9055_i2c_probe,
+ MODULE_DEVICE_TABLE(acpi, rt5640_acpi_match);
 
 
