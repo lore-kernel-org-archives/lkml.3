@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288AbaCDUAP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:00:15 -0500
-Received: from order.stressinduktion.org ([87.106.68.36]:40034 "EHLO
-	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755215AbaCDUAM (ORCPT
+	id S1755341AbaCDUA1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:00:27 -0500
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:30754 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753720AbaCDUAX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:00:12 -0500
-Date: Tue, 4 Mar 2014 21:00:10 +0100
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Linus =?utf-8?Q?L=C3=BCssing?= <linus.luessing@web.de>
-Cc: netdev@vger.kernel.org, bridge@lists.linux-foundation.org,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        Jan Stancek <jstancek@redhat.com>,
-        Florian Westphal <fwestpha@redhat.com>
-Subject: Re: [PATCH] bridge: multicast: add sanity check for query source addresses
-Message-ID: <20140304200010.GA26307@order.stressinduktion.org>
-Mail-Followup-To: Linus =?utf-8?Q?L=C3=BCssing?= <linus.luessing@web.de>,
-	netdev@vger.kernel.org, bridge@lists.linux-foundation.org,
-	Stephen Hemminger <stephen@networkplumber.org>,
-	"David S. Miller" <davem@davemloft.net>,
-	linux-kernel@vger.kernel.org, Jan Stancek <jstancek@redhat.com>,
-	Florian Westphal <fwestpha@redhat.com>
-References: <1393901855-18231-1-git-send-email-linus.luessing@web.de> <20140304090614.GA3952@order.stressinduktion.org> <20140304104032.GB5090@Linus-Debian>
+	Tue, 4 Mar 2014 15:00:23 -0500
+Message-ID: <1393962785.6784.110.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] ACPI / hotplug: Rework deferred execution of
+ acpi_device_hotplug()
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Tue, 04 Mar 2014 12:53:05 -0700
+In-Reply-To: <1573287.V189PcUPxA@vostro.rjw.lan>
+References: <1573287.V189PcUPxA@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140304104032.GB5090@Linus-Debian>
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 04, 2014 at 11:43:55AM +0100, Linus Lüssing wrote:
-> On Tue, Mar 04, 2014 at 10:06:14AM +0100, Hannes Frederic Sowa wrote:
-> > > diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
-> > > index ef66365..fb0e36f 100644
-> > > --- a/net/bridge/br_multicast.c
-> > > +++ b/net/bridge/br_multicast.c
-> > > @@ -1235,6 +1235,12 @@ static int br_ip6_multicast_query(struct net_bridge *br,
-> > >  	    (port && port->state == BR_STATE_DISABLED))
-> > >  		goto out;
-> > >  
-> > > +	/* RFC2710+RFC3810 (MLDv1+MLDv2) require link-local source addresses */
-> > > +	if (!(ipv6_addr_type(&ip6h->saddr) & IPV6_ADDR_LINKLOCAL)) {
-> > > +		err = -EINVAL;
-> > > +		goto out;
-> > > +	}
-> > > +
-> > 
-> > Shouldn't we allow empty source address, here?
-> > 
-> > Routers are supposed to drop them but bridges care. Linux uses ::
-> > as source address as long as no valid LL addresses are available,
-> > e.g. at boot-up (RFC3810 5.2.13.).
+On Sat, 2014-03-01 at 20:57 +0000, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > 
-> RFC3810, 5.2.13. refers to MLD reports, not queries, so that
-> shouldn't be relevant, section 5.1.14 should apply. Also the
-> bridge code only issues queries with a valid link-local source
-> address (see br_ip6_multicast_alloc_query() in
-> net/bridge/br_multicast.c). Where does Linux use :: for queries?
+> Since the only function executed by acpi_hotplug_execute() is
+> acpi_device_hotplug() and it only is called by the ACPI core,
+> simplify its definition so that it only takes two arguments, the
+> ACPI device object pointer and event code, rename it to
+> acpi_hotplug_schedule() and move its header from acpi_bus.h to
+> the ACPI core's internal header file internal.h.  Modify the
+> definition of acpi_device_hotplug() so that its first argument is
+> an ACPI device object pointer and modify the definition of
+> struct acpi_hp_work accordingly.
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Sorry, I confused queries with reports.
-Your patch looks good, same check as in igmp6_event_query.
+The change looks good to me.  I wonder if acpi_hotplug_schedule() should
+still be in acpi/osl.c after this change, though.
 
-Reviewed-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Acked-by: Toshi Kani <toshi.kani@hp.com>
 
-Bye,
+Thanks,
+-Toshi
 
-  Hannes
 
