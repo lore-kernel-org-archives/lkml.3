@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758618AbaCDVCy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:02:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41201 "EHLO
+	id S1758631AbaCDVDN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:03:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41197 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756645AbaCDUD7 (ORCPT
+	with ESMTP id S1756639AbaCDUD7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Mar 2014 15:03:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Peter Chen <Peter.Chen@freescale.com>
-Subject: [PATCH 3.13 123/172] USB: EHCI: add delay during suspend to prevent erroneous wakeups
-Date: Tue,  4 Mar 2014 12:03:27 -0800
-Message-Id: <20140304200303.663012546@linuxfoundation.org>
+        Hans-Christoph Schemmel <hans-christoph.schemmel@gemalto.com>,
+        Christian Schmiedl <christian.schmiedl@gemalto.com>,
+        Nicolaus Colberg <nicolaus.colberg@gemalto.com>,
+        David McCullough <david.mccullough@accelecon.com>,
+        Aleksander Morgado <aleksander@aleksander.es>
+Subject: [PATCH 3.13 122/172] USB: serial: option: blacklist interface 4 for Cinterion PHS8 and PXS8
+Date: Tue,  4 Mar 2014 12:03:26 -0800
+Message-Id: <20140304200303.634340992@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -29,96 +32,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Aleksander Morgado <aleksander@aleksander.es>
 
-commit 3e8d6d85adedc59115a564c0a54b36e42087c4d9 upstream.
+commit 12df84d4a80278a5b1abfec3206795291da52fc9 upstream.
 
-High-speed USB connections revert back to full-speed signalling when
-the device goes into suspend.  This takes several milliseconds, and
-during that time it's not possible to tell reliably whether the device
-has been disconnected.
+This interface is to be handled by the qmi_wwan driver.
 
-On some platforms, the Wake-On-Disconnect circuitry gets confused
-during this intermediate state.  It generates a false wakeup signal,
-which can prevent the controller from going to sleep.
-
-To avoid this problem, this patch adds a 5-ms delay to the
-ehci_bus_suspend() routine if any ports have to switch over to
-full-speed signalling.  (Actually, the delay was already present for
-devices using a particular kind of PHY power management; the patch
-merely causes the delay to be used more widely.)
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reviewed-by: Peter Chen <Peter.Chen@freescale.com>
+CC: Hans-Christoph Schemmel <hans-christoph.schemmel@gemalto.com>
+CC: Christian Schmiedl <christian.schmiedl@gemalto.com>
+CC: Nicolaus Colberg <nicolaus.colberg@gemalto.com>
+CC: David McCullough <david.mccullough@accelecon.com>
+Signed-off-by: Aleksander Morgado <aleksander@aleksander.es>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ehci-hub.c |   26 ++++++++++++++++++++++----
- 1 file changed, 22 insertions(+), 4 deletions(-)
+ drivers/usb/serial/option.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/ehci-hub.c
-+++ b/drivers/usb/host/ehci-hub.c
-@@ -238,6 +238,7 @@ static int ehci_bus_suspend (struct usb_
- 	int			port;
- 	int			mask;
- 	int			changed;
-+	bool			fs_idle_delay;
- 
- 	ehci_dbg(ehci, "suspend root hub\n");
- 
-@@ -272,6 +273,7 @@ static int ehci_bus_suspend (struct usb_
- 	ehci->bus_suspended = 0;
- 	ehci->owned_ports = 0;
- 	changed = 0;
-+	fs_idle_delay = false;
- 	port = HCS_N_PORTS(ehci->hcs_params);
- 	while (port--) {
- 		u32 __iomem	*reg = &ehci->regs->port_status [port];
-@@ -300,16 +302,32 @@ static int ehci_bus_suspend (struct usb_
- 		}
- 
- 		if (t1 != t2) {
-+			/*
-+			 * On some controllers, Wake-On-Disconnect will
-+			 * generate false wakeup signals until the bus
-+			 * switches over to full-speed idle.  For their
-+			 * sake, add a delay if we need one.
-+			 */
-+			if ((t2 & PORT_WKDISC_E) &&
-+					ehci_port_speed(ehci, t2) ==
-+						USB_PORT_STAT_HIGH_SPEED)
-+				fs_idle_delay = true;
- 			ehci_writel(ehci, t2, reg);
- 			changed = 1;
- 		}
- 	}
-+	spin_unlock_irq(&ehci->lock);
-+
-+	if ((changed && ehci->has_tdi_phy_lpm) || fs_idle_delay) {
-+		/*
-+		 * Wait for HCD to enter low-power mode or for the bus
-+		 * to switch to full-speed idle.
-+		 */
-+		usleep_range(5000, 5500);
-+	}
- 
- 	if (changed && ehci->has_tdi_phy_lpm) {
--		spin_unlock_irq(&ehci->lock);
--		msleep(5);	/* 5 ms for HCD to enter low-power mode */
- 		spin_lock_irq(&ehci->lock);
--
- 		port = HCS_N_PORTS(ehci->hcs_params);
- 		while (port--) {
- 			u32 __iomem	*hostpc_reg = &ehci->regs->hostpc[port];
-@@ -322,8 +340,8 @@ static int ehci_bus_suspend (struct usb_
- 					port, (t3 & HOSTPC_PHCD) ?
- 					"succeeded" : "failed");
- 		}
-+		spin_unlock_irq(&ehci->lock);
- 	}
--	spin_unlock_irq(&ehci->lock);
- 
- 	/* Apparently some devices need a >= 1-uframe delay here */
- 	if (ehci->bus_suspended)
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -1526,7 +1526,8 @@ static const struct usb_device_id option
+ 	/* Cinterion */
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_E) },
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_P) },
+-	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PH8) },
++	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PH8),
++		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_AHXX) },
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PLXX),
+ 		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
 
 
