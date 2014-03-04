@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757323AbaCDUF5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:05:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41859 "EHLO
+	id S1757363AbaCDUG1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:06:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41868 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932410AbaCDUFx (ORCPT
+	with ESMTP id S932417AbaCDUF4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:05:53 -0500
+	Tue, 4 Mar 2014 15:05:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.10 95/97] drm/radeon: print the supported atpx function mask
-Date: Tue,  4 Mar 2014 12:04:48 -0800
-Message-Id: <20140304200349.129685473@linuxfoundation.org>
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Li Zefan <lizefan@huawei.com>
+Subject: [PATCH 3.10 88/97] ARM: 7812/1: rwlocks: retry trylock operation if strex fails on free lock
+Date: Tue,  4 Mar 2014 12:04:41 -0800
+Message-Id: <20140304200348.905927391@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -28,32 +30,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 9f050c7f9738ffa746c63415136645ad231b1348 upstream.
+commit 00efaa0250939dc148e2d3104fb3c18395d24a2d upstream.
 
-Print the supported functions mask in addition to
-the version.  This is useful in debugging PX
-problems since we can see what functions are available.
+Commit 15e7e5c1ebf5 ("ARM: 7749/1: spinlock: retry trylock operation if
+strex fails on free lock") modifying our arch_spin_trylock to retry the
+acquisition if the lock appeared uncontended, but the strex failed.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+This patch does the same for rwlocks, which were missed by the original
+patch.
+
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_atpx_handler.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/arm/include/asm/spinlock.h |   49 ++++++++++++++++++++++++----------------
+ 1 file changed, 30 insertions(+), 19 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_atpx_handler.c
-+++ b/drivers/gpu/drm/radeon/radeon_atpx_handler.c
-@@ -215,7 +215,8 @@ static int radeon_atpx_verify_interface(
- 	memcpy(&output, info->buffer.pointer, size);
+--- a/arch/arm/include/asm/spinlock.h
++++ b/arch/arm/include/asm/spinlock.h
+@@ -168,17 +168,20 @@ static inline void arch_write_lock(arch_
  
- 	/* TODO: check version? */
--	printk("ATPX version %u\n", output.version);
-+	printk("ATPX version %u, functions 0x%08x\n",
-+	       output.version, output.function_bits);
+ static inline int arch_write_trylock(arch_rwlock_t *rw)
+ {
+-	unsigned long tmp;
++	unsigned long contended, res;
  
- 	radeon_atpx_parse_functions(&atpx->functions, output.function_bits);
+-	__asm__ __volatile__(
+-"	ldrex	%0, [%1]\n"
+-"	teq	%0, #0\n"
+-"	strexeq	%0, %2, [%1]"
+-	: "=&r" (tmp)
+-	: "r" (&rw->lock), "r" (0x80000000)
+-	: "cc");
++	do {
++		__asm__ __volatile__(
++		"	ldrex	%0, [%2]\n"
++		"	mov	%1, #0\n"
++		"	teq	%0, #0\n"
++		"	strexeq	%1, %3, [%2]"
++		: "=&r" (contended), "=&r" (res)
++		: "r" (&rw->lock), "r" (0x80000000)
++		: "cc");
++	} while (res);
  
+-	if (tmp == 0) {
++	if (!contended) {
+ 		smp_mb();
+ 		return 1;
+ 	} else {
+@@ -254,18 +257,26 @@ static inline void arch_read_unlock(arch
+ 
+ static inline int arch_read_trylock(arch_rwlock_t *rw)
+ {
+-	unsigned long tmp, tmp2 = 1;
++	unsigned long contended, res;
+ 
+-	__asm__ __volatile__(
+-"	ldrex	%0, [%2]\n"
+-"	adds	%0, %0, #1\n"
+-"	strexpl	%1, %0, [%2]\n"
+-	: "=&r" (tmp), "+r" (tmp2)
+-	: "r" (&rw->lock)
+-	: "cc");
++	do {
++		__asm__ __volatile__(
++		"	ldrex	%0, [%2]\n"
++		"	mov	%1, #0\n"
++		"	adds	%0, %0, #1\n"
++		"	strexpl	%1, %0, [%2]"
++		: "=&r" (contended), "=&r" (res)
++		: "r" (&rw->lock)
++		: "cc");
++	} while (res);
+ 
+-	smp_mb();
+-	return tmp2 == 0;
++	/* If the lock is negative, then it is already held for write. */
++	if (contended < 0x80000000) {
++		smp_mb();
++		return 1;
++	} else {
++		return 0;
++	}
+ }
+ 
+ /* read_can_lock - would read_trylock() succeed? */
 
 
