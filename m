@@ -1,83 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756203AbaCDWGG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 17:06:06 -0500
-Received: from ring0.de ([5.45.105.125]:38628 "EHLO ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755215AbaCDWGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 17:06:03 -0500
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-From: Sebastian Reichel <sre@debian.org>
-To: Sebastian Reichel <sre@ring0.de>, Marek Belisko <marek@goldelico.com>,
-        Jonathan Cameron <jic23@kernel.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-iio@vger.kernel.org,
-        Sebastian Reichel <sre@debian.org>
-Subject: [PATCHv2 0/9] Convert twl4030-madc to IIO API and add DT support
-Date: Tue,  4 Mar 2014 23:05:42 +0100
-Message-Id: <1393970751-18157-1-git-send-email-sre@debian.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1393702365-26429-1-git-send-email-sre@debian.org>
-References: <1393702365-26429-1-git-send-email-sre@debian.org>
+	id S1756097AbaCDWLQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 17:11:16 -0500
+Received: from www.linutronix.de ([62.245.132.108]:37572 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754034AbaCDWLO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 17:11:14 -0500
+Date: Tue, 4 Mar 2014 23:11:21 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andy Lutomirski <luto@amacapital.net>
+cc: Alexey Perevalov <a.perevalov@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Anton Vorontsov <anton@enomsg.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>, cw00.choi@samsung.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>
+Subject: Re: [PATCH v4 5/6] timerfd: Add support for deferrable timers
+In-Reply-To: <CALCETrVsmXjkC28pTSCfywTZCeHVcfvyFvHAXubEJ7=TRoEmPQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1403042254550.18573@ionos.tec.linutronix.de>
+References: <1392913425-29369-1-git-send-email-a.perevalov@samsung.com> <1392913425-29369-6-git-send-email-a.perevalov@samsung.com> <530D5715.1050901@mit.edu> <alpine.DEB.2.02.1403042153520.18573@ionos.tec.linutronix.de>
+ <CALCETrVsmXjkC28pTSCfywTZCeHVcfvyFvHAXubEJ7=TRoEmPQ@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 4 Mar 2014, Andy Lutomirski wrote:
 
-This is PATCHv2 for converting twl4030-madc to the IIO API and
-adding DT support. The plan is to remove the private twl4030-madc
-API once all users have been removed or converted to the IIO API.
-The patchset compiles and has been tested on my Nokia N900.
+> On Tue, Mar 4, 2014 at 12:58 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > On Tue, 25 Feb 2014, Andy Lutomirski wrote:
+> >> On the other hand, if you added a fancier version of timerfd_settime
+> >> that could explicitly set the slack value (or, equivalently, the
+> >> earliest and latest allowable times), that could be quite useful.
+> >>
+> >> It's often bugged me that timer slack is per-process.
+> >
+> > That's a totally different issue. There is a world aside of timerfd
+> > timers.
+> 
+> This is a patch to add deferrable support *to timerfd*.  I'm asking
 
-Changes since PATCHv1 [0]:
- * Fix warning about unused variable
- * Add IIO_CHAN_INFO_PROCESSED to all channels, since voltage
-   channels also need some postprocessing
+There is a new patch series which adds deferrable support to all timer
+related interfaces which have a flags field. And that's the only
+sensible solution right now.
 
-TODO:
- * Wait for feedback from DT binding maintainers
- * Wait for feedback from Marek Belisko, who is testing the
-   changes with twl4030-madc-battery driver on GTA04
+We do no add another random special case syscall for timerfd just
+because timerfd is linux specific.
 
-[0] https://lkml.org/lkml/2014/3/1/105
+No, we want to support that stuff right now with the existing
+interfaces as we have to revisit all of the timer related interfaces
+in the near future anyway due to the Y2038 issue.
 
--- Sebastian
+And your idea of per thread slack is completely bogus. If we want to
+make the slack value usefull then it needs to be done per timer and
+not per thread/process.
 
-Sebastian Reichel (9):
-  mfd: twl4030-madc: Use managed resources
-  mfd: twl4030-madc: Add DT support and convert to IIO framework
-  mfd: twl4030-madc: Cleanup driver
-  mfd: twl-core: Add twl_i2c_read/write_u16
-  mfd: twl4030-madc: Use twl_i2c_read/write_u16 for 16 bit registers
-  Documentation: DT: Document twl4030-madc binding
-  mfd: twl4030-madc: Move driver to drivers/iio/adc
-  iio: documentation: Add ABI documentation for *_mean_raw
-  iio: inkern: add iio_read_channel_average_raw
+But we cannot do that right now as we cannot whip up severl dozen of
+new syscalls just because we want to add slack/deferrable whatever
+properties.
 
- Documentation/ABI/testing/sysfs-bus-iio            |   8 +
- .../devicetree/bindings/iio/adc/twl4030-madc.txt   |  24 ++
- drivers/iio/adc/Kconfig                            |  10 +
- drivers/iio/adc/Makefile                           |   1 +
- drivers/{mfd => iio/adc}/twl4030-madc.c            | 299 +++++++++++++--------
- drivers/iio/inkern.c                               |  18 ++
- drivers/mfd/Kconfig                                |  10 -
- drivers/mfd/Makefile                               |   1 -
- include/linux/i2c/twl.h                            |  12 +
- include/linux/i2c/twl4030-madc.h                   |   2 +-
- include/linux/iio/consumer.h                       |  13 +
- 11 files changed, 274 insertions(+), 124 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/iio/adc/twl4030-madc.txt
- rename drivers/{mfd => iio/adc}/twl4030-madc.c (75%)
+Once we agree on a solution to the Y2038 issue on 32bit with a unified
+32/64 bit syscall interface which simply gets rid of the timespec/val
+nonsense and takes a simple u64 nsec value we can add the slack
+property to that without any further inconvenience.
 
--- 
-1.9.0
+Thanks,
+
+	tglx
 
