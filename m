@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756270AbaCDWuk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 17:50:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43270 "EHLO
+	id S1755453AbaCDXCU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 18:02:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43369 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751625AbaCDWui (ORCPT
+	with ESMTP id S1752428AbaCDXCT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 17:50:38 -0500
-Date: Tue, 4 Mar 2014 14:50:37 -0800
+	Tue, 4 Mar 2014 18:02:19 -0500
+Date: Tue, 4 Mar 2014 15:02:17 -0800
 From: Andrew Morton <akpm@linux-foundation.org>
-To: ebiederm@xmission.com (Eric W. Biederman)
-Cc: David Miller <davem@davemloft.net>, rgb@redhat.com, eparis@redhat.com,
-        linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [RFC][PATCH] audit: Simplify by assuming the callers socket
- buffer is large enough
-Message-Id: <20140304145037.d46ee775d293dd1ad60aa8e3@linux-foundation.org>
-In-Reply-To: <87mwh5d1tf.fsf@xmission.com>
-References: <874n3ir0uw.fsf_-_@xmission.com>
-	<87mwhaplo4.fsf_-_@xmission.com>
-	<20140304133004.b565820f60f595a48e621e58@linux-foundation.org>
-	<20140304.165122.445822929490466603.davem@davemloft.net>
-	<87mwh5d1tf.fsf@xmission.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Hedi Berriche <hedi@sgi.com>,
+        Mike Travis <travis@sgi.com>, Dimitri Sivanich <sivanich@sgi.com>
+Subject: Re: [PATCH 31/48] uv: Replace __get_cpu_var
+Message-Id: <20140304150217.ac9d364008a3c95cb2a79b34@linux-foundation.org>
+In-Reply-To: <20140214201907.228035121@linux.com>
+References: <20140214201841.826179349@linux.com>
+	<20140214201907.228035121@linux.com>
 X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -30,34 +28,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 04 Mar 2014 14:41:16 -0800 ebiederm@xmission.com (Eric W. Biederman) wrote:
+On Fri, 14 Feb 2014 14:19:12 -0600 Christoph Lameter <cl@linux.com> wrote:
 
-> David Miller <davem@davemloft.net> writes:
+> Use __this_cpu_read instead.
 > 
-> > From: Andrew Morton <akpm@linux-foundation.org>
-> > Date: Tue, 4 Mar 2014 13:30:04 -0800
-> >
-> >> On Fri, 28 Feb 2014 20:50:19 -0800 ebiederm@xmission.com (Eric W. Biederman) wrote:
-> >> 
-> >>> 
-> >>> Modify audit_send_reply to directly use a non-blocking send and
-> >>> to return an error on failure (if anyone cares).
-> >>> 
-> >>> Modify audit_list_rules_send to use audit_send_reply and give up
-> >>> if we can not send a packet.
-> >>> 
-> >>> Merge audit_list_rules into iaudit_list_rules_send as the code
-> >>> is now sufficiently simple to not justify to callers.
-> >>> 
-> >>> Kill audit_send_list, audit_send_reply_thread because using
-> >>> a separate thread for replies is not needed when sending
-> >>> packets syncrhonously.
-> >> 
-> >> Nothing much seems to be happening here?
-> 
-> Well you picked up the patch that fixes the worst of the bugs that I was
-> complaining about.  Beyond that I don't know what makes sense.
+> ...
+>
+> --- linux.orig/arch/x86/include/asm/uv/uv_hub.h	2014-02-03 14:16:53.987889372 -0600
+> +++ linux/arch/x86/include/asm/uv/uv_hub.h	2014-02-03 14:16:53.987889372 -0600
+> @@ -618,7 +618,7 @@
+>  };
+>  
+>  DECLARE_PER_CPU(struct uv_cpu_nmi_s, __uv_cpu_nmi);
+> -#define uv_cpu_nmi			(__get_cpu_var(__uv_cpu_nmi))
+> +#define uv_cpu_nmi			__this_cpu_read(_uv_cpu_nmi)
 
-Oh, so I did.  I wasn't planning on merging it myself, hoping that
-someone who hasaclue will step in.  Help.
+arch/x86/platform/uv/uv_nmi.c: In function 'uv_check_nmi':
+arch/x86/platform/uv/uv_nmi.c:218: error: '_uv_cpu_nmi' undeclared (first use in this function)
+arch/x86/platform/uv/uv_nmi.c:218: error: (Each undeclared identifier is reported only once
+arch/x86/platform/uv/uv_nmi.c:218: error: for each function it appears in.)
+
+
+This?
+
+--- a/arch/x86/include/asm/uv/uv_hub.h~uv-replace-__get_cpu_var-fix
++++ a/arch/x86/include/asm/uv/uv_hub.h
+@@ -618,7 +618,7 @@ struct uv_cpu_nmi_s {
+ };
+ 
+ DECLARE_PER_CPU(struct uv_cpu_nmi_s, __uv_cpu_nmi);
+-#define uv_cpu_nmi			__this_cpu_read(_uv_cpu_nmi)
++#define uv_cpu_nmi			(*this_cpu_ptr(&__uv_cpu_nmi))
+ #define uv_hub_nmi			(uv_cpu_nmi.hub)
+ #define uv_cpu_nmi_per(cpu)		(per_cpu(__uv_cpu_nmi, cpu))
+ #define uv_hub_nmi_per(cpu)		(uv_cpu_nmi_per(cpu).hub)
+_
 
