@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758451AbaCDU7U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:59:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41249 "EHLO
+	id S1756692AbaCDUEH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:04:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41210 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756697AbaCDUEI (ORCPT
+	with ESMTP id S1756660AbaCDUEB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:04:08 -0500
+	Tue, 4 Mar 2014 15:04:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrew Lunn <andrew@lunn.ch>, Bjorn Helgaas <bhelgaas@google.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.13 112/172] PCI: mvebu: Use Device ID and revision from underlying endpoint
-Date: Tue,  4 Mar 2014 12:03:16 -0800
-Message-Id: <20140304200303.292068608@linuxfoundation.org>
+        Joerg Dorchain <joerg@dorchain.net>
+Subject: [PATCH 3.13 125/172] USB: ftdi_sio: add Cressi Leonardo PID
+Date: Tue,  4 Mar 2014 12:03:29 -0800
+Message-Id: <20140304200303.717860262@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -30,60 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Lunn <andrew@lunn.ch>
+From: Joerg Dorchain <joerg@dorchain.net>
 
-commit 322a8e91844f4ae2093e0d3d8a318d0ef2596756 upstream.
+commit 6dbd46c849e071e6afc1e0cad489b0175bca9318 upstream.
 
-Marvell SoCs place the SoC number into the PCIe endpoint device ID.  The
-SoC stepping is placed into the PCIe revision. The old plat-orion PCIe
-driver allowed this information to be seen in user space with a simple
-lspci command.
+Hello,
 
-The new driver places a virtual PCI-PCI bridge on top of these endpoints.
-It has its own hard coded PCI device ID. Thus it is no longer possible to
-see what the SoC is using lspci.
+the following patch adds an entry for the PID of a Cressi Leonardo
+diving computer interface to kernel 3.13.0.
+It is detected as FT232RL.
+Works with subsurface.
 
-When initializing the PCI-PCI bridge, set its device ID and revision from
-the underlying endpoint, thus restoring this functionality.  Debian would
-like to use this in order to aid installing the correct DTB file.
-
-Fixes: 45361a4fe4464 ("pci: PCIe driver for Marvell Armada 370/XP systems")
-Signed-off-by: Andrew Lunn <andrew@lunn.ch>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Acked-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Joerg Dorchain <joerg@dorchain.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/host/pci-mvebu.c |   11 ++---------
- 1 file changed, 2 insertions(+), 9 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |    2 ++
+ drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
+ 2 files changed, 8 insertions(+)
 
---- a/drivers/pci/host/pci-mvebu.c
-+++ b/drivers/pci/host/pci-mvebu.c
-@@ -60,14 +60,6 @@
- #define PCIE_DEBUG_CTRL         0x1a60
- #define  PCIE_DEBUG_SOFT_RESET		BIT(20)
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -908,6 +908,8 @@ static struct usb_device_id id_table_com
+ 	/* Crucible Devices */
+ 	{ USB_DEVICE(FTDI_VID, FTDI_CT_COMET_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_Z3X_PID) },
++	/* Cressi Devices */
++	{ USB_DEVICE(FTDI_VID, FTDI_CRESSI_PID) },
+ 	{ }					/* Terminating entry */
+ };
  
--/*
-- * This product ID is registered by Marvell, and used when the Marvell
-- * SoC is not the root complex, but an endpoint on the PCIe bus. It is
-- * therefore safe to re-use this PCI ID for our emulated PCI-to-PCI
-- * bridge.
-- */
--#define MARVELL_EMULATED_PCI_PCI_BRIDGE_ID 0x7846
--
- /* PCI configuration space of a PCI-to-PCI bridge */
- struct mvebu_sw_pci_bridge {
- 	u16 vendor;
-@@ -377,7 +369,8 @@ static void mvebu_sw_pci_bridge_init(str
- 
- 	bridge->class = PCI_CLASS_BRIDGE_PCI;
- 	bridge->vendor = PCI_VENDOR_ID_MARVELL;
--	bridge->device = MARVELL_EMULATED_PCI_PCI_BRIDGE_ID;
-+	bridge->device = mvebu_readl(port, PCIE_DEV_ID_OFF) >> 16;
-+	bridge->revision = mvebu_readl(port, PCIE_DEV_REV_OFF) & 0xff;
- 	bridge->header_type = PCI_HEADER_TYPE_BRIDGE;
- 	bridge->cache_line_size = 0x10;
- 
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -1320,3 +1320,9 @@
+  * Manufacturer: Smart GSM Team
+  */
+ #define FTDI_Z3X_PID		0x0011
++
++/*
++ * Product: Cressi PC Interface
++ * Manufacturer: Cressi
++ */
++#define FTDI_CRESSI_PID		0x87d0
 
 
