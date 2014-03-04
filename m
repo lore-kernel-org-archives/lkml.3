@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932417AbaCDUIP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:08:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41840 "EHLO
+	id S1757492AbaCDUIh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:08:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41835 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932388AbaCDUFu (ORCPT
+	with ESMTP id S932381AbaCDUFt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:05:50 -0500
+	Tue, 4 Mar 2014 15:05:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jean Delvare <jdelvare@suse.de>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Doug Thompson <dougthompson@xmission.com>,
-        Borislav Petkov <bp@suse.de>
-Subject: [PATCH 3.10 90/97] i7300_edac: Fix device reference count
-Date: Tue,  4 Mar 2014 12:04:43 -0800
-Message-Id: <20140304200348.967599298@linuxfoundation.org>
+        "Dr. Greg Wettstein" <greg@enjellic.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.10 89/97] qla2xxx: Fix kernel panic on selective retransmission request
+Date: Tue,  4 Mar 2014 12:04:42 -0800
+Message-Id: <20140304200348.936191857@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -31,88 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <jdelvare@suse.de>
+From: "Dr. Greg Wettstein" <greg@enjellic.com>
 
-commit 75135da0d68419ef8a925f4c1d5f63d8046e314d upstream.
+commit 6f58c780e5a5b43a6d2121e0d43cdcba1d3cc5fc upstream.
 
-pci_get_device() decrements the reference count of "from" (last
-argument) so when we break off the loop successfully we have only one
-device reference - and we don't know which device we have. If we want
-a reference to each device, we must take them explicitly and let
-the pci_get_device() walk complete to avoid duplicate references.
+A selective retransmission request (SRR) is a fibre-channel
+protocol control request which provides support for requesting
+retransmission of a data sequence in response to an issue such as
+frame loss or corruption.  These events are experienced
+infrequently in fibre-channel based networks which makes
+it difficult to test and assess codepaths which handle these
+events.
 
-This is serious, as over-putting device references will cause
-the device to eventually disappear. Without this fix, the kernel
-crashes after a few insmod/rmmod cycles.
+We were fortunate enough, for some definition of fortunate, to
+have a metro-area single-mode SAN link which, at 10 GBPS
+sustained load levels, would consistently generate SRR's in
+a SCST based target implementation using our SCST/in-kernel
+Qlogic target interface driver.  In response to an SRR the
+in-kernel Qlogic target driver immediately panics resulting
+in a catastrophic storage failure for serviced initiators.
 
-Tested on an Intel S7000FC4UR system with a 7300 chipset.
+The culprit was a debug statement in the qla_target.c file which
+does not verify that a pointer to the SCSI CDB is not null.
+The unchecked pointer dereference results in the kernel panic
+and resultant system failure.
 
-Signed-off-by: Jean Delvare <jdelvare@suse.de>
-Link: http://lkml.kernel.org/r/20140224111656.09bbb7ed@endymion.delvare
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Doug Thompson <dougthompson@xmission.com>
-Signed-off-by: Borislav Petkov <bp@suse.de>
+The other two references to the SCSI CDB by the SRR handling code
+use a ternary operator to verify a non-null pointer is being
+acted on.  This patch simply adds a similar test to the implicated
+debug statement.
+
+This patch is a candidate for any stable kernel being maintained
+since it addresses a potentially catastrophic event with
+minimal downside.
+
+Signed-off-by: Dr. Greg Wettstein <greg@enjellic.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/edac/i7300_edac.c |   38 ++++++++++++++++++++------------------
- 1 file changed, 20 insertions(+), 18 deletions(-)
+ drivers/scsi/qla2xxx/qla_target.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/edac/i7300_edac.c
-+++ b/drivers/edac/i7300_edac.c
-@@ -943,33 +943,35 @@ static int i7300_get_devices(struct mem_
+--- a/drivers/scsi/qla2xxx/qla_target.c
++++ b/drivers/scsi/qla2xxx/qla_target.c
+@@ -3339,7 +3339,8 @@ restart:
+ 		ql_dbg(ql_dbg_tgt_mgt, vha, 0xf02c,
+ 		    "SRR cmd %p (se_cmd %p, tag %d, op %x), "
+ 		    "sg_cnt=%d, offset=%d", cmd, &cmd->se_cmd, cmd->tag,
+-		    se_cmd->t_task_cdb[0], cmd->sg_cnt, cmd->offset);
++		    se_cmd->t_task_cdb ? se_cmd->t_task_cdb[0] : 0,
++		    cmd->sg_cnt, cmd->offset);
  
- 	/* Attempt to 'get' the MCH register we want */
- 	pdev = NULL;
--	while (!pvt->pci_dev_16_1_fsb_addr_map ||
--	       !pvt->pci_dev_16_2_fsb_err_regs) {
--		pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
--				      PCI_DEVICE_ID_INTEL_I7300_MCH_ERR, pdev);
--		if (!pdev) {
--			/* End of list, leave */
--			i7300_printk(KERN_ERR,
--				"'system address,Process Bus' "
--				"device not found:"
--				"vendor 0x%x device 0x%x ERR funcs "
--				"(broken BIOS?)\n",
--				PCI_VENDOR_ID_INTEL,
--				PCI_DEVICE_ID_INTEL_I7300_MCH_ERR);
--			goto error;
--		}
--
-+	while ((pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
-+				      PCI_DEVICE_ID_INTEL_I7300_MCH_ERR,
-+				      pdev))) {
- 		/* Store device 16 funcs 1 and 2 */
- 		switch (PCI_FUNC(pdev->devfn)) {
- 		case 1:
--			pvt->pci_dev_16_1_fsb_addr_map = pdev;
-+			if (!pvt->pci_dev_16_1_fsb_addr_map)
-+				pvt->pci_dev_16_1_fsb_addr_map =
-+							pci_dev_get(pdev);
- 			break;
- 		case 2:
--			pvt->pci_dev_16_2_fsb_err_regs = pdev;
-+			if (!pvt->pci_dev_16_2_fsb_err_regs)
-+				pvt->pci_dev_16_2_fsb_err_regs =
-+							pci_dev_get(pdev);
- 			break;
- 		}
- 	}
+ 		qlt_handle_srr(vha, sctio, imm);
  
-+	if (!pvt->pci_dev_16_1_fsb_addr_map ||
-+	    !pvt->pci_dev_16_2_fsb_err_regs) {
-+		/* At least one device was not found */
-+		i7300_printk(KERN_ERR,
-+			"'system address,Process Bus' device not found:"
-+			"vendor 0x%x device 0x%x ERR funcs (broken BIOS?)\n",
-+			PCI_VENDOR_ID_INTEL,
-+			PCI_DEVICE_ID_INTEL_I7300_MCH_ERR);
-+		goto error;
-+	}
-+
- 	edac_dbg(1, "System Address, processor bus- PCI Bus ID: %s  %x:%x\n",
- 		 pci_name(pvt->pci_dev_16_0_fsb_ctlr),
- 		 pvt->pci_dev_16_0_fsb_ctlr->vendor,
 
 
