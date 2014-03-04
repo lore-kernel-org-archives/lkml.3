@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757337AbaCDNOg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 08:14:36 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:58350 "EHLO
+	id S932242AbaCDNSK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 08:18:10 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:58393 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757291AbaCDNOc (ORCPT
+	by vger.kernel.org with ESMTP id S1757313AbaCDNOe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 08:14:32 -0500
+	Tue, 4 Mar 2014 08:14:34 -0500
 From: Matt Fleming <matt@console-pimps.org>
 To: linux-efi@vger.kernel.org
 Cc: "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
         Alan Cox <alan@lxorguk.ukuu.org.uk>,
         Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org,
         Matt Fleming <matt.fleming@intel.com>
-Subject: [PATCH 02/13] x86, tools: Consolidate #ifdef code
-Date: Tue,  4 Mar 2014 13:14:10 +0000
-Message-Id: <1393938861-16797-3-git-send-email-matt@console-pimps.org>
+Subject: [PATCH 04/13] x86/efi: Delete dead code when checking for non-native
+Date: Tue,  4 Mar 2014 13:14:12 +0000
+Message-Id: <1393938861-16797-5-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1393938861-16797-1-git-send-email-matt@console-pimps.org>
 References: <1393938861-16797-1-git-send-email-matt@console-pimps.org>
@@ -25,122 +25,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Fleming <matt.fleming@intel.com>
 
-Instead of littering main() with #ifdef CONFIG_EFI_STUB, move the logic
-into separate functions that do nothing if the config option isn't set.
-This makes main() much easier to read.
+Both efi_free_boot_services() and efi_enter_virtual_mode() are invoked
+from init/main.c, but only if the EFI runtime services are available.
+This is not the case for non-native boots, e.g. where a 64-bit kernel is
+booted with 32-bit EFI firmware.
+
+Delete the dead code.
 
 Acked-by: Borislav Petkov <bp@suse.de>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
- arch/x86/boot/tools/build.c | 64 +++++++++++++++++++++++++++++----------------
- 1 file changed, 42 insertions(+), 22 deletions(-)
+ arch/x86/platform/efi/efi.c | 21 ---------------------
+ 1 file changed, 21 deletions(-)
 
-diff --git a/arch/x86/boot/tools/build.c b/arch/x86/boot/tools/build.c
-index 8e15b22391fc..bf262077ec92 100644
---- a/arch/x86/boot/tools/build.c
-+++ b/arch/x86/boot/tools/build.c
-@@ -219,6 +219,45 @@ static void update_pecoff_text(unsigned int text_start, unsigned int file_sz)
- 	update_pecoff_section_header(".text", text_start, text_sz);
- }
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 0c8672b3f9a3..5f623f3bcbba 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -452,9 +452,6 @@ void __init efi_free_boot_services(void)
+ {
+ 	void *p;
  
-+static int reserve_pecoff_reloc_section(int c)
-+{
-+	/* Reserve 0x20 bytes for .reloc section */
-+	memset(buf+c, 0, PECOFF_RELOC_RESERVE);
-+	return PECOFF_RELOC_RESERVE;
-+}
-+
-+static void efi_stub_defaults(void)
-+{
-+	/* Defaults for old kernel */
-+#ifdef CONFIG_X86_32
-+	efi_pe_entry = 0x10;
-+	efi_stub_entry = 0x30;
-+#else
-+	efi_pe_entry = 0x210;
-+	efi_stub_entry = 0x230;
-+	startup_64 = 0x200;
-+#endif
-+}
-+
-+static void efi_stub_entry_update(void)
-+{
-+#ifdef CONFIG_X86_64 /* Yes, this is really how we defined it :( */
-+	efi_stub_entry -= 0x200;
-+#endif
-+	put_unaligned_le32(efi_stub_entry, &buf[0x264]);
-+}
-+
-+#else
-+
-+static inline void update_pecoff_setup_and_reloc(unsigned int) {}
-+static inline void update_pecoff_text(unsigned int, unsigned int) {}
-+static inline void efi_stub_defaults(void) {}
-+static inline void efi_stup_entry_update(void) {}
-+
-+static inline int reserve_pecoff_reloc_section(int c)
-+{
-+	return 0;
-+}
- #endif /* CONFIG_EFI_STUB */
+-	if (!efi_is_native())
+-		return;
+-
+ 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+ 		efi_memory_desc_t *md = p;
+ 		unsigned long long start = md->phys_addr;
+@@ -979,15 +976,6 @@ static void __init kexec_enter_virtual_mode(void)
+ 	efi.systab = NULL;
  
+ 	/*
+-	 * We don't do virtual mode, since we don't do runtime services, on
+-	 * non-native EFI
+-	 */
+-	if (!efi_is_native()) {
+-		efi_unmap_memmap();
+-		return;
+-	}
+-
+-	/*
+ 	* Map efi regions which were passed via setup_data. The virt_addr is a
+ 	* fixed addr which was used in first kernel of a kexec boot.
+ 	*/
+@@ -1066,15 +1054,6 @@ static void __init __efi_enter_virtual_mode(void)
  
-@@ -271,15 +310,7 @@ int main(int argc, char ** argv)
- 	void *kernel;
- 	u32 crc = 0xffffffffUL;
+ 	efi.systab = NULL;
  
--	/* Defaults for old kernel */
--#ifdef CONFIG_X86_32
--	efi_pe_entry = 0x10;
--	efi_stub_entry = 0x30;
--#else
--	efi_pe_entry = 0x210;
--	efi_stub_entry = 0x230;
--	startup_64 = 0x200;
--#endif
-+	efi_stub_defaults();
- 
- 	if (argc != 5)
- 		usage();
-@@ -302,11 +333,7 @@ int main(int argc, char ** argv)
- 		die("Boot block hasn't got boot flag (0xAA55)");
- 	fclose(file);
- 
--#ifdef CONFIG_EFI_STUB
--	/* Reserve 0x20 bytes for .reloc section */
--	memset(buf+c, 0, PECOFF_RELOC_RESERVE);
--	c += PECOFF_RELOC_RESERVE;
--#endif
-+	c += reserve_pecoff_reloc_section(c);
- 
- 	/* Pad unused space with zeros */
- 	setup_sectors = (c + 511) / 512;
-@@ -315,9 +342,7 @@ int main(int argc, char ** argv)
- 	i = setup_sectors*512;
- 	memset(buf+c, 0, i-c);
- 
--#ifdef CONFIG_EFI_STUB
- 	update_pecoff_setup_and_reloc(i);
--#endif
- 
- 	/* Set the default root device */
- 	put_unaligned_le16(DEFAULT_ROOT_DEV, &buf[508]);
-@@ -342,14 +367,9 @@ int main(int argc, char ** argv)
- 	buf[0x1f1] = setup_sectors-1;
- 	put_unaligned_le32(sys_size, &buf[0x1f4]);
- 
--#ifdef CONFIG_EFI_STUB
- 	update_pecoff_text(setup_sectors * 512, sz + i + ((sys_size * 16) - sz));
- 
--#ifdef CONFIG_X86_64 /* Yes, this is really how we defined it :( */
--	efi_stub_entry -= 0x200;
--#endif
--	put_unaligned_le32(efi_stub_entry, &buf[0x264]);
--#endif
-+	efi_stub_entry_update();
- 
- 	crc = partial_crc32(buf, i, crc);
- 	if (fwrite(buf, 1, i, dest) != i)
+-	/*
+-	 * We don't do virtual mode, since we don't do runtime services, on
+-	 * non-native EFI
+-	 */
+-	if (!efi_is_native()) {
+-		efi_unmap_memmap();
+-		return;
+-	}
+-
+ 	efi_merge_regions();
+ 	new_memmap = efi_map_regions(&count, &pg_shift);
+ 	if (!new_memmap) {
 -- 
 1.8.5.3
 
