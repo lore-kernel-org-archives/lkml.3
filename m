@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756477AbaCDUDq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:03:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41033 "EHLO
+	id S933094AbaCDVKp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:10:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41113 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756241AbaCDUDc (ORCPT
+	with ESMTP id S1756475AbaCDUDq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:03:32 -0500
+	Tue, 4 Mar 2014 15:03:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.13 073/172] ALSA: usb-audio: work around KEF X300A firmware bug
-Date: Tue,  4 Mar 2014 12:02:37 -0800
-Message-Id: <20140304200302.070005831@linuxfoundation.org>
+        Mark Brown <broonie@linaro.org>,
+        Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+Subject: [PATCH 3.13 092/172] ASoC: da732x: Mark DC offset control registers volatile
+Date: Tue,  4 Mar 2014 12:02:56 -0800
+Message-Id: <20140304200302.657916632@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -28,46 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Mark Brown <broonie@linaro.org>
 
-commit 624aef494f86ed0c58056361c06347ad62b26806 upstream.
+commit 75306820248e26d15d84acf4e297b9fb27dd3bb2 upstream.
 
-When the driver tries to access Function Unit 10, the KEF X300A
-speakers' firmware apparently locks up, making even PCM streaming
-impossible.  Work around this by ignoring this FU.
+The driver reads from the DC offset control registers during callibration
+but since the registers are marked as volatile and there is a register
+cache the values will not be read from the hardware after the first reading
+rendering the callibration ineffective.
 
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+It appears that the driver was originally written for the ASoC level
+register I/O code but converted to regmap prior to merge and this issue
+was missed during the conversion as the framework level volatile register
+functionality was not being used.
+
+Signed-off-by: Mark Brown <broonie@linaro.org>
+Acked-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/mixer_maps.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ sound/soc/codecs/da732x.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
---- a/sound/usb/mixer_maps.c
-+++ b/sound/usb/mixer_maps.c
-@@ -322,6 +322,11 @@ static struct usbmix_name_map hercules_u
- 	{ 0 }				/* terminator */
- };
- 
-+static const struct usbmix_name_map kef_x300a_map[] = {
-+	{ 10, NULL }, /* firmware locks up (?) when we try to access this FU */
-+	{ 0 }
-+};
-+
- /*
-  * Control map entries
-  */
-@@ -409,6 +414,10 @@ static struct usbmix_ctl_map usbmix_ctl_
- 		.id = USB_ID(0x200c, 0x1018),
- 		.map = ebox44_map,
+--- a/sound/soc/codecs/da732x.c
++++ b/sound/soc/codecs/da732x.c
+@@ -1268,11 +1268,23 @@ static struct snd_soc_dai_driver da732x_
  	},
-+	{
-+		.id = USB_ID(0x27ac, 0x1000),
-+		.map = kef_x300a_map,
-+	},
- 	{ 0 } /* terminator */
  };
  
++static bool da732x_volatile(struct device *dev, unsigned int reg)
++{
++	switch (reg) {
++	case DA732X_REG_HPL_DAC_OFF_CNTL:
++	case DA732X_REG_HPR_DAC_OFF_CNTL:
++		return true;
++	default:
++		return false;
++	}
++}
++
+ static const struct regmap_config da732x_regmap = {
+ 	.reg_bits		= 8,
+ 	.val_bits		= 8,
+ 
+ 	.max_register		= DA732X_MAX_REG,
++	.volatile_reg		= da732x_volatile,
+ 	.reg_defaults		= da732x_reg_cache,
+ 	.num_reg_defaults	= ARRAY_SIZE(da732x_reg_cache),
+ 	.cache_type		= REGCACHE_RBTREE,
 
 
