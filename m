@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758291AbaCDU47 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:56:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41271 "EHLO
+	id S1754159AbaCDUEL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:04:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41206 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755216AbaCDUEN (ORCPT
+	with ESMTP id S1756654AbaCDUEA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:04:13 -0500
+	Tue, 4 Mar 2014 15:04:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 3.13 141/172] perf trace: Add fallback definition of EFD_SEMAPHORE
-Date: Tue,  4 Mar 2014 12:03:45 -0800
-Message-Id: <20140304200304.221590961@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH 3.13 124/172] usb: ehci: fix deadlock when threadirqs option is used
+Date: Tue,  4 Mar 2014 12:03:28 -0800
+Message-Id: <20140304200303.690103511@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -31,39 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 79d26a6a19ace19faabf8d8d27d3430be2e26d34 upstream.
+commit a1227f3c1030e96ebc51d677d2f636268845c5fb upstream.
 
-glibc 2.17 is missing this on sparc, despite the fact that it's not
-architecture-specific.
+ehci_irq() and ehci_hrtimer_func() can deadlock on ehci->lock when
+threadirqs option is used. To prevent the deadlock use
+spin_lock_irqsave() in ehci_irq().
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Fixes: 49af9e93adfa ('perf trace: Beautify eventfd2 'flags' arg')
-Cc: <stable@vger.kernel.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1391648435.3003.100.camel@deadeye.wl.decadent.org.uk
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+This change can be reverted when hrtimer callbacks become threaded.
+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/perf/builtin-trace.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/host/ehci-hcd.c |   13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -35,6 +35,10 @@
- # define MADV_UNMERGEABLE	13
- #endif
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -686,8 +686,15 @@ static irqreturn_t ehci_irq (struct usb_
+ 	struct ehci_hcd		*ehci = hcd_to_ehci (hcd);
+ 	u32			status, masked_status, pcd_status = 0, cmd;
+ 	int			bh;
++	unsigned long		flags;
  
-+#ifndef EFD_SEMAPHORE
-+# define EFD_SEMAPHORE		1
-+#endif
-+
- struct tp_field {
- 	int offset;
- 	union {
+-	spin_lock (&ehci->lock);
++	/*
++	 * For threadirqs option we use spin_lock_irqsave() variant to prevent
++	 * deadlock with ehci hrtimer callback, because hrtimer callbacks run
++	 * in interrupt context even when threadirqs is specified. We can go
++	 * back to spin_lock() variant when hrtimer callbacks become threaded.
++	 */
++	spin_lock_irqsave(&ehci->lock, flags);
+ 
+ 	status = ehci_readl(ehci, &ehci->regs->status);
+ 
+@@ -705,7 +712,7 @@ static irqreturn_t ehci_irq (struct usb_
+ 
+ 	/* Shared IRQ? */
+ 	if (!masked_status || unlikely(ehci->rh_state == EHCI_RH_HALTED)) {
+-		spin_unlock(&ehci->lock);
++		spin_unlock_irqrestore(&ehci->lock, flags);
+ 		return IRQ_NONE;
+ 	}
+ 
+@@ -823,7 +830,7 @@ dead:
+ 
+ 	if (bh)
+ 		ehci_work (ehci);
+-	spin_unlock (&ehci->lock);
++	spin_unlock_irqrestore(&ehci->lock, flags);
+ 	if (pcd_status)
+ 		usb_hcd_poll_rh_status(hcd);
+ 	return IRQ_HANDLED;
 
 
