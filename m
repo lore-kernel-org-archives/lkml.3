@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932537AbaCDUtP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:49:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41352 "EHLO
+	id S932894AbaCDUtl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:49:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41348 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756849AbaCDUE1 (ORCPT
+	with ESMTP id S1756833AbaCDUE0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:04:27 -0500
+	Tue, 4 Mar 2014 15:04:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sebastian Capella <sebastian.capella@linaro.org>,
-        Ming Lei <ming.lei@canonical.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.13 160/172] PM / hibernate: Fix restore hang in freeze_processes()
-Date: Tue,  4 Mar 2014 12:04:04 -0800
-Message-Id: <20140304200304.835191837@linuxfoundation.org>
+        Jean Delvare <jdelvare@suse.de>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Doug Thompson <dougthompson@xmission.com>,
+        Borislav Petkov <bp@suse.de>
+Subject: [PATCH 3.13 159/172] i7300_edac: Fix device reference count
+Date: Tue,  4 Mar 2014 12:04:03 -0800
+Message-Id: <20140304200304.801050376@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -30,35 +31,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Capella <sebastian.capella@linaro.org>
+From: Jean Delvare <jdelvare@suse.de>
 
-commit f8d5b9e9e5372f0deb7bc1ab1088a9b60b0a793d upstream.
+commit 75135da0d68419ef8a925f4c1d5f63d8046e314d upstream.
 
-During restore, pm_notifier chain are called with
-PM_RESTORE_PREPARE.  The firmware_class driver handler
-fw_pm_notify does not have a handler for this.  As a result,
-it keeps a reader on the kmod.c umhelper_sem.  During
-freeze_processes, the call to __usermodehelper_disable tries to
-take a write lock on this semaphore and hangs waiting.
+pci_get_device() decrements the reference count of "from" (last
+argument) so when we break off the loop successfully we have only one
+device reference - and we don't know which device we have. If we want
+a reference to each device, we must take them explicitly and let
+the pci_get_device() walk complete to avoid duplicate references.
 
-Signed-off-by: Sebastian Capella <sebastian.capella@linaro.org>
-Acked-by: Ming Lei <ming.lei@canonical.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+This is serious, as over-putting device references will cause
+the device to eventually disappear. Without this fix, the kernel
+crashes after a few insmod/rmmod cycles.
+
+Tested on an Intel S7000FC4UR system with a 7300 chipset.
+
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Link: http://lkml.kernel.org/r/20140224111656.09bbb7ed@endymion.delvare
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Doug Thompson <dougthompson@xmission.com>
+Signed-off-by: Borislav Petkov <bp@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/firmware_class.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/edac/i7300_edac.c |   38 ++++++++++++++++++++------------------
+ 1 file changed, 20 insertions(+), 18 deletions(-)
 
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -1541,6 +1541,7 @@ static int fw_pm_notify(struct notifier_
- 	switch (mode) {
- 	case PM_HIBERNATION_PREPARE:
- 	case PM_SUSPEND_PREPARE:
-+	case PM_RESTORE_PREPARE:
- 		kill_requests_without_uevent();
- 		device_cache_fw_images();
- 		break;
+--- a/drivers/edac/i7300_edac.c
++++ b/drivers/edac/i7300_edac.c
+@@ -943,33 +943,35 @@ static int i7300_get_devices(struct mem_
+ 
+ 	/* Attempt to 'get' the MCH register we want */
+ 	pdev = NULL;
+-	while (!pvt->pci_dev_16_1_fsb_addr_map ||
+-	       !pvt->pci_dev_16_2_fsb_err_regs) {
+-		pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
+-				      PCI_DEVICE_ID_INTEL_I7300_MCH_ERR, pdev);
+-		if (!pdev) {
+-			/* End of list, leave */
+-			i7300_printk(KERN_ERR,
+-				"'system address,Process Bus' "
+-				"device not found:"
+-				"vendor 0x%x device 0x%x ERR funcs "
+-				"(broken BIOS?)\n",
+-				PCI_VENDOR_ID_INTEL,
+-				PCI_DEVICE_ID_INTEL_I7300_MCH_ERR);
+-			goto error;
+-		}
+-
++	while ((pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
++				      PCI_DEVICE_ID_INTEL_I7300_MCH_ERR,
++				      pdev))) {
+ 		/* Store device 16 funcs 1 and 2 */
+ 		switch (PCI_FUNC(pdev->devfn)) {
+ 		case 1:
+-			pvt->pci_dev_16_1_fsb_addr_map = pdev;
++			if (!pvt->pci_dev_16_1_fsb_addr_map)
++				pvt->pci_dev_16_1_fsb_addr_map =
++							pci_dev_get(pdev);
+ 			break;
+ 		case 2:
+-			pvt->pci_dev_16_2_fsb_err_regs = pdev;
++			if (!pvt->pci_dev_16_2_fsb_err_regs)
++				pvt->pci_dev_16_2_fsb_err_regs =
++							pci_dev_get(pdev);
+ 			break;
+ 		}
+ 	}
+ 
++	if (!pvt->pci_dev_16_1_fsb_addr_map ||
++	    !pvt->pci_dev_16_2_fsb_err_regs) {
++		/* At least one device was not found */
++		i7300_printk(KERN_ERR,
++			"'system address,Process Bus' device not found:"
++			"vendor 0x%x device 0x%x ERR funcs (broken BIOS?)\n",
++			PCI_VENDOR_ID_INTEL,
++			PCI_DEVICE_ID_INTEL_I7300_MCH_ERR);
++		goto error;
++	}
++
+ 	edac_dbg(1, "System Address, processor bus- PCI Bus ID: %s  %x:%x\n",
+ 		 pci_name(pvt->pci_dev_16_0_fsb_ctlr),
+ 		 pvt->pci_dev_16_0_fsb_ctlr->vendor,
 
 
