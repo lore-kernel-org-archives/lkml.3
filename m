@@ -1,240 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758221AbaCDVbZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:31:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40875 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755882AbaCDUDF (ORCPT
+	id S932248AbaCDVbj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:31:39 -0500
+Received: from www.linutronix.de ([62.245.132.108]:37358 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755882AbaCDVbd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:03:05 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emil Goode <emilgoode@gmail.com>,
-        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 050/172] usbnet: remove generic hard_header_len check
-Date: Tue,  4 Mar 2014 12:02:14 -0800
-Message-Id: <20140304200301.332785051@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
-References: <20140304200259.626667112@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 4 Mar 2014 16:31:33 -0500
+Date: Tue, 4 Mar 2014 22:31:28 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH V3 1/5] genirq: define flag IRQ_SRC_DST_INVERTED, and
+ accessors
+In-Reply-To: <5315F7DB.6000700@wwwdotorg.org>
+Message-ID: <alpine.DEB.2.02.1403042203220.18573@ionos.tec.linutronix.de>
+References: <1393876300-3061-1-git-send-email-swarren@wwwdotorg.org> <alpine.DEB.2.02.1403041018370.18573@ionos.tec.linutronix.de> <5315F7DB.6000700@wwwdotorg.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
 
-From: Emil Goode <emilgoode@gmail.com>
+On Tue, 4 Mar 2014, Stephen Warren wrote:
 
-[ Upstream commit eb85569fe2d06c2fbf4de7b66c263ca095b397aa ]
+> On 03/04/2014 03:04 AM, Thomas Gleixner wrote:
+> > On Mon, 3 Mar 2014, Stephen Warren wrote:
+> > 
+> >> From: Stephen Warren <swarren@nvidia.com>
+> >>
+> >> Some devices have configurable IRQ output polarities. Software might
+> >> use IRQ_TYPE_* to determine how to configure such a device's IRQ
+> >> output polarity in order to match how the IRQ controller input is
+> >> configured. If the board or SoC inverts the signal between the
+> >> device's IRQ output and controller's IRQ output, software must be
+> >> aware of this fact, in order to program the IRQ output to the correct
+> >> (i.e. opposite) polarity. This flag provides that information.
+> > 
+> > So what you're saying is:
+> > 
+> > Device IRQ output --> [Optional Inverter Logic] --> IRQ controller input.
+> > 
+> > And you're storing the information about the presence of the inverter
+> > logic in the irq itself, but the core does not make any use of it and
+> > you let the device driver deal with the outcome.
+> > 
+> > This sucks as all affected drivers have to implement the same sanity
+> > logic for this.
+> > 
+> > Why don't you implement a core function which tells the driver which
+> > polarity to select? That requires a few more changes, but I think it's
+> > worth it for other reasons.
+> > 
+> > Right now the set_type logic requires the irq chip drivers to
+> > implement sanity checking and default selections for TYPE_NONE. We can
+> > be more clever about that and add this information to the irq chip
+> > flags.
+> 
+> I don't see any such checking in drivers/irqchip/irq-gic.c; it rejects
+> any type other than IRQ_TYPE_LEVEL_HIGH or IRQ_TYPE_EDGE_RISING, and I
+> don't see any mention of TYPE_NONE in that file. Is the driver incomplete?
 
-This patch removes a generic hard_header_len check from the usbnet
-module that is causing dropped packages under certain circumstances
-for devices that send rx packets that cross urb boundaries.
-
-One example is the AX88772B which occasionally send rx packets that
-cross urb boundaries where the remaining partial packet is sent with
-no hardware header. When the buffer with a partial packet is of less
-number of octets than the value of hard_header_len the buffer is
-discarded by the usbnet module.
-
-With AX88772B this can be reproduced by using ping with a packet
-size between 1965-1976.
-
-The bug has been reported here:
-
-https://bugzilla.kernel.org/show_bug.cgi?id=29082
-
-This patch introduces the following changes:
-- Removes the generic hard_header_len check in the rx_complete
-  function in the usbnet module.
-- Introduces a ETH_HLEN check for skbs that are not cloned from
-  within a rx_fixup callback.
-- For safety a hard_header_len check is added to each rx_fixup
-  callback function that could be affected by this change.
-  These extra checks could possibly be removed by someone
-  who has the hardware to test.
-- Removes a call to dev_kfree_skb_any() and instead utilizes the
-  dev->done list to queue skbs for cleanup.
-
-The changes place full responsibility on the rx_fixup callback
-functions that clone skbs to only pass valid skbs to the
-usbnet_skb_return function.
-
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
-Reported-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/usb/ax88179_178a.c |    4 ++++
- drivers/net/usb/gl620a.c       |    4 ++++
- drivers/net/usb/mcs7830.c      |    5 +++--
- drivers/net/usb/net1080.c      |    4 ++++
- drivers/net/usb/qmi_wwan.c     |    8 ++++----
- drivers/net/usb/rndis_host.c   |    4 ++++
- drivers/net/usb/smsc75xx.c     |    4 ++++
- drivers/net/usb/smsc95xx.c     |    4 ++++
- drivers/net/usb/usbnet.c       |   25 ++++++++++---------------
- 9 files changed, 41 insertions(+), 21 deletions(-)
-
---- a/drivers/net/usb/ax88179_178a.c
-+++ b/drivers/net/usb/ax88179_178a.c
-@@ -1119,6 +1119,10 @@ static int ax88179_rx_fixup(struct usbne
- 	u16 hdr_off;
- 	u32 *pkt_hdr;
+No. The IRQ_TYPE_NONE is a hysterical leftover.
  
-+	/* This check is no longer done by usbnet */
-+	if (skb->len < dev->net->hard_header_len)
-+		return 0;
-+
- 	skb_trim(skb, skb->len - 4);
- 	memcpy(&rx_hdr, skb_tail_pointer(skb), 4);
- 	le32_to_cpus(&rx_hdr);
---- a/drivers/net/usb/gl620a.c
-+++ b/drivers/net/usb/gl620a.c
-@@ -86,6 +86,10 @@ static int genelink_rx_fixup(struct usbn
- 	u32			size;
- 	u32			count;
- 
-+	/* This check is no longer done by usbnet */
-+	if (skb->len < dev->net->hard_header_len)
-+		return 0;
-+
- 	header = (struct gl_header *) skb->data;
- 
- 	// get the packet count of the received skb
---- a/drivers/net/usb/mcs7830.c
-+++ b/drivers/net/usb/mcs7830.c
-@@ -528,8 +528,9 @@ static int mcs7830_rx_fixup(struct usbne
- {
- 	u8 status;
- 
--	if (skb->len == 0) {
--		dev_err(&dev->udev->dev, "unexpected empty rx frame\n");
-+	/* This check is no longer done by usbnet */
-+	if (skb->len < dev->net->hard_header_len) {
-+		dev_err(&dev->udev->dev, "unexpected tiny rx frame\n");
- 		return 0;
- 	}
- 
---- a/drivers/net/usb/net1080.c
-+++ b/drivers/net/usb/net1080.c
-@@ -366,6 +366,10 @@ static int net1080_rx_fixup(struct usbne
- 	struct nc_trailer	*trailer;
- 	u16			hdr_len, packet_len;
- 
-+	/* This check is no longer done by usbnet */
-+	if (skb->len < dev->net->hard_header_len)
-+		return 0;
-+
- 	if (!(skb->len & 0x01)) {
- 		netdev_dbg(dev->net, "rx framesize %d range %d..%d mtu %d\n",
- 			   skb->len, dev->net->hard_header_len, dev->hard_mtu,
---- a/drivers/net/usb/qmi_wwan.c
-+++ b/drivers/net/usb/qmi_wwan.c
-@@ -80,10 +80,10 @@ static int qmi_wwan_rx_fixup(struct usbn
- {
- 	__be16 proto;
- 
--	/* usbnet rx_complete guarantees that skb->len is at least
--	 * hard_header_len, so we can inspect the dest address without
--	 * checking skb->len
--	 */
-+	/* This check is no longer done by usbnet */
-+	if (skb->len < dev->net->hard_header_len)
-+		return 0;
-+
- 	switch (skb->data[0] & 0xf0) {
- 	case 0x40:
- 		proto = htons(ETH_P_IP);
---- a/drivers/net/usb/rndis_host.c
-+++ b/drivers/net/usb/rndis_host.c
-@@ -494,6 +494,10 @@ EXPORT_SYMBOL_GPL(rndis_unbind);
-  */
- int rndis_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
- {
-+	/* This check is no longer done by usbnet */
-+	if (skb->len < dev->net->hard_header_len)
-+		return 0;
-+
- 	/* peripheral may have batched packets to us... */
- 	while (likely(skb->len)) {
- 		struct rndis_data_hdr	*hdr = (void *)skb->data;
---- a/drivers/net/usb/smsc75xx.c
-+++ b/drivers/net/usb/smsc75xx.c
-@@ -2108,6 +2108,10 @@ static void smsc75xx_rx_csum_offload(str
- 
- static int smsc75xx_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
- {
-+	/* This check is no longer done by usbnet */
-+	if (skb->len < dev->net->hard_header_len)
-+		return 0;
-+
- 	while (skb->len > 0) {
- 		u32 rx_cmd_a, rx_cmd_b, align_count, size;
- 		struct sk_buff *ax_skb;
---- a/drivers/net/usb/smsc95xx.c
-+++ b/drivers/net/usb/smsc95xx.c
-@@ -1725,6 +1725,10 @@ static void smsc95xx_rx_csum_offload(str
- 
- static int smsc95xx_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
- {
-+	/* This check is no longer done by usbnet */
-+	if (skb->len < dev->net->hard_header_len)
-+		return 0;
-+
- 	while (skb->len > 0) {
- 		u32 header, align_count;
- 		struct sk_buff *ax_skb;
---- a/drivers/net/usb/usbnet.c
-+++ b/drivers/net/usb/usbnet.c
-@@ -543,17 +543,19 @@ static inline void rx_process (struct us
- 	}
- 	// else network stack removes extra byte if we forced a short packet
- 
--	if (skb->len) {
--		/* all data was already cloned from skb inside the driver */
--		if (dev->driver_info->flags & FLAG_MULTI_PACKET)
--			dev_kfree_skb_any(skb);
--		else
--			usbnet_skb_return(dev, skb);
-+	/* all data was already cloned from skb inside the driver */
-+	if (dev->driver_info->flags & FLAG_MULTI_PACKET)
-+		goto done;
-+
-+	if (skb->len < ETH_HLEN) {
-+		dev->net->stats.rx_errors++;
-+		dev->net->stats.rx_length_errors++;
-+		netif_dbg(dev, rx_err, dev->net, "rx length %d\n", skb->len);
-+	} else {
-+		usbnet_skb_return(dev, skb);
- 		return;
- 	}
- 
--	netif_dbg(dev, rx_err, dev->net, "drop\n");
--	dev->net->stats.rx_errors++;
- done:
- 	skb_queue_tail(&dev->done, skb);
- }
-@@ -575,13 +577,6 @@ static void rx_complete (struct urb *urb
- 	switch (urb_status) {
- 	/* success */
- 	case 0:
--		if (skb->len < dev->net->hard_header_len) {
--			state = rx_cleanup;
--			dev->net->stats.rx_errors++;
--			dev->net->stats.rx_length_errors++;
--			netif_dbg(dev, rx_err, dev->net,
--				  "rx length %d\n", skb->len);
--		}
- 		break;
- 
- 	/* stalls need manual reset. this is rare ... except that
+> Instead of adding all this extra logic to the core, what do you think of
+> simply telling each driver that has a configurable interrupt output
+> polarity exactly which polarity to use. This information would come from
+> device tree or platform data. This is what I implemented in V1/V2 of
+> this series:
+>
+> http://www.spinics.net/lists/devicetree/msg23648.html
+> 
+> Is that any better, or do you definitely want the IRQ core to manage this?
+
+Oh, yes.
+
+Simply because any driver which is not aware of that inversion will
+trip over the issue that it requests by the best of its knowledge
+IRQ_TYPE_LEVEL_HIGH while it should actually request
+IRQ_TYPE_LEVEL_LOW due to the inversion.
+
+Are you really going to make all possibly affected drivers aware of
+that? Good luck!
+
+That's why we want to move such stuff to core code. Assume the
+following scenario:
+
+    driverX which works perfectly fine on SoCA is reused for SoCB
+    where the inverter sits between the device and the SoCB irq
+    controller.
+
+With your DT scheme the whole thing falls flat on the nose simply
+because neither the driverX nor the core code is aware of the
+incompability.
+
+So driverX is happily using the IRQ_TYPE_LEVEL_HIGH setting which was
+used when the driver was written and the core works nicely with that
+because the irq chips supports IRQ_TYPE_LEVEL_HIGH. Just the fact that
+the inverter is in the hardware results in an infinite interrupt
+storm. Are you going to handle the bug reports and "remote" debug
+sessions for this kind of crap?
+
+Fuck no. You don't want to deal with this and that's why it is way
+better to build that kind of support into the core where everything
+which trips over the issue tells the random driver user/developer
+what's wrong.
+
+Dammit. I explained you very detailed WHY this is useful aside of the
+inverted logic situation. Is it that hard to understand?
+
+This usecase clearly shows a shortcoming at the core level along with
+a potential for consolidation. So why are you trying to convince me
+that this can be solved with some DT/device drivers hackery?
+
+When will you SoC folks ever understand that nothing on your
+SoCs/board is special? I'm telling that you for years but you simply
+refuse to get a gripe.
+
+Thanks,
+
+	tglx
 
 
+
+ 
