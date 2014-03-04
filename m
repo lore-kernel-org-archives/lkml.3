@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758605AbaCDVCB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:02:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41206 "EHLO
+	id S1758590AbaCDVB7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:01:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41210 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756663AbaCDUEE (ORCPT
+	with ESMTP id S1756665AbaCDUEE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Mar 2014 15:04:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>, Aaron Lu <aaron.lu@intel.com>,
+        Lan Tianyu <tianyu.lan@intel.com>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.13 116/172] ACPI / video: Filter the _BCL table for duplicate brightness values
-Date: Tue,  4 Mar 2014 12:03:20 -0800
-Message-Id: <20140304200303.420069797@linuxfoundation.org>
+Subject: [PATCH 3.13 117/172] ACPI / processor: Rework processor throttling with work_on_cpu()
+Date: Tue,  4 Mar 2014 12:03:21 -0800
+Message-Id: <20140304200303.458953270@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -29,74 +29,173 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit bd8ba20597f0cfef3ef65c3fd2aa92ab23d4c8e1 upstream.
+commit f3ca4164529b875374c410193bbbac0ee960895f upstream.
 
-Some devices have duplicate entries in there brightness levels table, ie
-on my Dell Latitude E6430 the table looks like this:
+acpi_processor_set_throttling() uses set_cpus_allowed_ptr() to make
+sure that the (struct acpi_processor)->acpi_processor_set_throttling()
+callback will run on the right CPU.  However, the function may be
+called from a worker thread already bound to a different CPU in which
+case that won't work.
 
-[    3.686060] acpi backlight index   0, val 80
-[    3.686095] acpi backlight index   1, val 50
-[    3.686122] acpi backlight index   2, val 5
-[    3.686147] acpi backlight index   3, val 5
-[    3.686172] acpi backlight index   4, val 5
-[    3.686197] acpi backlight index   5, val 5
-[    3.686223] acpi backlight index   6, val 5
-[    3.686248] acpi backlight index   7, val 5
-[    3.686273] acpi backlight index   8, val 6
-[    3.686332] acpi backlight index   9, val 7
-[    3.686356] acpi backlight index  10, val 8
-[    3.686380] acpi backlight index  11, val 9
-etc.
+Make acpi_processor_set_throttling() use work_on_cpu() as appropriate
+instead of abusing set_cpus_allowed_ptr().
 
-Notice that brightness values 0-5 are all mapped to 5. This means that
-if userspace writes any value between 0 and 5 to the brightness sysfs attribute
-and then reads it, it will always return 0, which is somewhat unexpected.
-
-This is a problem for ie gnome-settings-daemon, which uses read-modify-write
-logic when the users presses the brightness up or down keys. This is done
-this way to take brightness changes from other sources into account.
-
-On this specific laptop what happens once the brightness has been set to 0,
-is that gsd reads 0, adds 5, writes 5, and on the next brightness up key press
-again reads 0, so things get stuck at the lowest brightness setting.
-
-Filtering out the duplicate table entries, makes any write to brightness
-read back as the written value as one would expect, fixing this.
-
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Reviewed-by: Aaron Lu <aaron.lu@intel.com>
+Reported-and-tested-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+[rjw: Changelog]
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/video.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/acpi/processor_throttling.c |   69 ++++++++++++++++--------------------
+ 1 file changed, 32 insertions(+), 37 deletions(-)
 
---- a/drivers/acpi/video.c
-+++ b/drivers/acpi/video.c
-@@ -686,6 +686,7 @@ acpi_video_init_brightness(struct acpi_v
- 	union acpi_object *o;
- 	struct acpi_video_device_brightness *br = NULL;
- 	int result = -EINVAL;
-+	u32 value;
+--- a/drivers/acpi/processor_throttling.c
++++ b/drivers/acpi/processor_throttling.c
+@@ -59,6 +59,12 @@ struct throttling_tstate {
+ 	int target_state;		/* target T-state */
+ };
  
- 	if (!ACPI_SUCCESS(acpi_video_device_lcd_query_levels(device, &obj))) {
- 		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Could not query available "
-@@ -716,7 +717,12 @@ acpi_video_init_brightness(struct acpi_v
- 			printk(KERN_ERR PREFIX "Invalid data\n");
- 			continue;
- 		}
--		br->levels[count] = (u32) o->integer.value;
-+		value = (u32) o->integer.value;
-+		/* Skip duplicate entries */
-+		if (count > 2 && br->levels[count - 1] == value)
-+			continue;
++struct acpi_processor_throttling_arg {
++	struct acpi_processor *pr;
++	int target_state;
++	bool force;
++};
 +
-+		br->levels[count] = value;
+ #define THROTTLING_PRECHANGE       (1)
+ #define THROTTLING_POSTCHANGE      (2)
  
- 		if (br->levels[count] > max_level)
- 			max_level = br->levels[count];
+@@ -1063,16 +1069,24 @@ static int acpi_processor_set_throttling
+ 	return 0;
+ }
+ 
++static long acpi_processor_throttling_fn(void *data)
++{
++	struct acpi_processor_throttling_arg *arg = data;
++	struct acpi_processor *pr = arg->pr;
++
++	return pr->throttling.acpi_processor_set_throttling(pr,
++			arg->target_state, arg->force);
++}
++
+ int acpi_processor_set_throttling(struct acpi_processor *pr,
+ 						int state, bool force)
+ {
+-	cpumask_var_t saved_mask;
+ 	int ret = 0;
+ 	unsigned int i;
+ 	struct acpi_processor *match_pr;
+ 	struct acpi_processor_throttling *p_throttling;
++	struct acpi_processor_throttling_arg arg;
+ 	struct throttling_tstate t_state;
+-	cpumask_var_t online_throttling_cpus;
+ 
+ 	if (!pr)
+ 		return -EINVAL;
+@@ -1083,14 +1097,6 @@ int acpi_processor_set_throttling(struct
+ 	if ((state < 0) || (state > (pr->throttling.state_count - 1)))
+ 		return -EINVAL;
+ 
+-	if (!alloc_cpumask_var(&saved_mask, GFP_KERNEL))
+-		return -ENOMEM;
+-
+-	if (!alloc_cpumask_var(&online_throttling_cpus, GFP_KERNEL)) {
+-		free_cpumask_var(saved_mask);
+-		return -ENOMEM;
+-	}
+-
+ 	if (cpu_is_offline(pr->id)) {
+ 		/*
+ 		 * the cpu pointed by pr->id is offline. Unnecessary to change
+@@ -1099,17 +1105,15 @@ int acpi_processor_set_throttling(struct
+ 		return -ENODEV;
+ 	}
+ 
+-	cpumask_copy(saved_mask, &current->cpus_allowed);
+ 	t_state.target_state = state;
+ 	p_throttling = &(pr->throttling);
+-	cpumask_and(online_throttling_cpus, cpu_online_mask,
+-		    p_throttling->shared_cpu_map);
++
+ 	/*
+ 	 * The throttling notifier will be called for every
+ 	 * affected cpu in order to get one proper T-state.
+ 	 * The notifier event is THROTTLING_PRECHANGE.
+ 	 */
+-	for_each_cpu(i, online_throttling_cpus) {
++	for_each_cpu_and(i, cpu_online_mask, p_throttling->shared_cpu_map) {
+ 		t_state.cpu = i;
+ 		acpi_processor_throttling_notifier(THROTTLING_PRECHANGE,
+ 							&t_state);
+@@ -1121,21 +1125,18 @@ int acpi_processor_set_throttling(struct
+ 	 * it can be called only for the cpu pointed by pr.
+ 	 */
+ 	if (p_throttling->shared_type == DOMAIN_COORD_TYPE_SW_ANY) {
+-		/* FIXME: use work_on_cpu() */
+-		if (set_cpus_allowed_ptr(current, cpumask_of(pr->id))) {
+-			/* Can't migrate to the pr->id CPU. Exit */
+-			ret = -ENODEV;
+-			goto exit;
+-		}
+-		ret = p_throttling->acpi_processor_set_throttling(pr,
+-						t_state.target_state, force);
++		arg.pr = pr;
++		arg.target_state = state;
++		arg.force = force;
++		ret = work_on_cpu(pr->id, acpi_processor_throttling_fn, &arg);
+ 	} else {
+ 		/*
+ 		 * When the T-state coordination is SW_ALL or HW_ALL,
+ 		 * it is necessary to set T-state for every affected
+ 		 * cpus.
+ 		 */
+-		for_each_cpu(i, online_throttling_cpus) {
++		for_each_cpu_and(i, cpu_online_mask,
++		    p_throttling->shared_cpu_map) {
+ 			match_pr = per_cpu(processors, i);
+ 			/*
+ 			 * If the pointer is invalid, we will report the
+@@ -1156,13 +1157,12 @@ int acpi_processor_set_throttling(struct
+ 					"on CPU %d\n", i));
+ 				continue;
+ 			}
+-			t_state.cpu = i;
+-			/* FIXME: use work_on_cpu() */
+-			if (set_cpus_allowed_ptr(current, cpumask_of(i)))
+-				continue;
+-			ret = match_pr->throttling.
+-				acpi_processor_set_throttling(
+-				match_pr, t_state.target_state, force);
++
++			arg.pr = match_pr;
++			arg.target_state = state;
++			arg.force = force;
++			ret = work_on_cpu(pr->id, acpi_processor_throttling_fn,
++				&arg);
+ 		}
+ 	}
+ 	/*
+@@ -1171,17 +1171,12 @@ int acpi_processor_set_throttling(struct
+ 	 * affected cpu to update the T-states.
+ 	 * The notifier event is THROTTLING_POSTCHANGE
+ 	 */
+-	for_each_cpu(i, online_throttling_cpus) {
++	for_each_cpu_and(i, cpu_online_mask, p_throttling->shared_cpu_map) {
+ 		t_state.cpu = i;
+ 		acpi_processor_throttling_notifier(THROTTLING_POSTCHANGE,
+ 							&t_state);
+ 	}
+-	/* restore the previous state */
+-	/* FIXME: use work_on_cpu() */
+-	set_cpus_allowed_ptr(current, saved_mask);
+-exit:
+-	free_cpumask_var(online_throttling_cpus);
+-	free_cpumask_var(saved_mask);
++
+ 	return ret;
+ }
+ 
 
 
