@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755073AbaCDSQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 13:16:28 -0500
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:56910 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751988AbaCDSQ0 (ORCPT
+	id S1754018AbaCDSUq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 13:20:46 -0500
+Received: from mailscanner02.zoner.fi ([84.34.166.11]:47115 "EHLO
+	mailscanner02.zoner.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751494AbaCDSUp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 13:16:26 -0500
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: Michal Simek <michal.simek@xilinx.com>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-serial@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH RFC 2/6] tty: xemacps: Print warning in clock notifier
-Date: Tue,  4 Mar 2014 09:17:25 -0800
-Message-Id: <1393953449-28551-3-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 1.9.0.1.g4196000
-In-Reply-To: <1393953449-28551-1-git-send-email-soren.brinkmann@xilinx.com>
-References: <1393953449-28551-1-git-send-email-soren.brinkmann@xilinx.com>
+	Tue, 4 Mar 2014 13:20:45 -0500
+Date: Tue, 4 Mar 2014 20:20:38 +0200
+From: Lasse Collin <lasse.collin@tukaani.org>
+To: Florian Fainelli <f.fainelli@gmail.com>
+Cc: Kyle McMartin <kyle@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] xz: make XZ_DEC_BCJ filters non-optional
+Message-ID: <20140304202038.03b36109@tukaani.org>
+In-Reply-To: <CAGVrzcZ7KU-m9s9KgoigK+WdSqeqwEmm=_pY6qF=ep2vFp6WUg@mail.gmail.com>
+References: <20140228230017.GE14970@merlin.infradead.org>
+	<20140303145137.70819698@tukaani.org>
+	<CAGVrzcZ7KU-m9s9KgoigK+WdSqeqwEmm=_pY6qF=ep2vFp6WUg@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-unknown-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Antivirus-Scanner: Clean mail though you should still use an Antivirus
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Print a warning if the clock notifier rejects a clock frequency change
-to facilitate debugging (see:
-http://thread.gmane.org/gmane.linux.ports.arm.kernel/304329/focus=304379)
+On 2014-03-03 Florian Fainelli wrote:
+> 2014-03-03 4:51 GMT-08:00 Lasse Collin <lasse.collin@tukaani.org>:
+> > The second version enables the BCJ filter only for the current arch
+> > by default if CONFIG_EXPERT; without CONFIG_EXPERT all filters are
+> > forced on:
+> 
+> I like this version better because it still provides you with accurate
+> defaults (i.e: enable only th X86 BCJ filter decoder where it makes
+> sense by default) and still provides enough flexibility.
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
----
- drivers/tty/serial/xilinx_uartps.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+I understand your viewpoint, but different people probably consider
+different options as "accurate defaults". The current behavior certainly
+isn't very accurate; otherwise Kyle McMartin wouldn't have had a reason
+to send a patch. The patch you prefer would give both of you the
+defaults you want *if* embedded devs always use CONFIG_EXPERT and
+non-embedded people never do. If a non-embedded dev uses CONFIG_EXPERT,
+then Kyle's problem can reappear.
 
-diff --git a/drivers/tty/serial/xilinx_uartps.c b/drivers/tty/serial/xilinx_uartps.c
-index 8769b68534b1..4eee8031ae25 100644
---- a/drivers/tty/serial/xilinx_uartps.c
-+++ b/drivers/tty/serial/xilinx_uartps.c
-@@ -430,8 +430,10 @@ static int xuartps_clk_notifier_cb(struct notifier_block *nb,
- 		 * frequency.
- 		 */
- 		if (!xuartps_calc_baud_divs(ndata->new_rate, xuartps->baud,
--					&bdiv, &cd, &div8))
-+					&bdiv, &cd, &div8)) {
-+			dev_warn(port->dev, "clock rate change rejected\n");
- 			return NOTIFY_BAD;
-+		}
- 
- 		spin_lock_irqsave(&xuartps->port->lock, flags);
- 
+I still think it is clearest to enable all by default and allow
+deselecting filters if CONFIG_EXPERT. That way the default selection
+doesn't change behind anyone's back when CONFIG_EXPERT is selected.
+I guess embedded devs go through the config carefully looking for
+things to deselect anyway, but maybe it was easy to miss these options
+just like some desktop users have missed them now.
+
+I'd like to make the defaults such that minimum number of people get
+annoyed in the long term. There will always be people who will need to
+change the options (otherwise options wouldn't be needed). At the same
+time this is so very tiny issue that I don't expect many people to care
+at all.
+
+I'll submit some patch this week but I'll wait for more opinions for a
+day or two. Thanks.
+
 -- 
-1.9.0.1.g4196000
-
+Lasse Collin  |  IRC: Larhzu @ IRCnet & Freenode
