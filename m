@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932933AbaCDVgt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:36:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40799 "EHLO
+	id S932957AbaCDVhO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:37:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40796 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755662AbaCDUCx (ORCPT
+	with ESMTP id S1755555AbaCDUCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:02:53 -0500
+	Tue, 4 Mar 2014 15:02:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Neil Brown <neilb@suse.de>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.13 034/172] NFS: Do not set NFS_INO_INVALID_LABEL unless server supports labeled NFS
-Date: Tue,  4 Mar 2014 12:01:58 -0800
-Message-Id: <20140304200300.815492443@linuxfoundation.org>
+        Olivier Langlois <olivier@trillion01.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.13 033/172] rtlwifi: rtl8192ce: Fix too long disable of IRQs
+Date: Tue,  4 Mar 2014 12:01:57 -0800
+Message-Id: <20140304200300.784185908@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -29,114 +30,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Olivier Langlois <olivier@trillion01.com>
 
-commit fd1defc257e2b12ab69bc0b379105c00eca4e112 upstream.
+commit f78bccd79ba3cd9d9664981b501d57bdb81ab8a4 upstream.
 
-Commit aa9c2669626c (NFS: Client implementation of Labeled-NFS) introduces
-a performance regression. When nfs_zap_caches_locked is called, it sets
-the NFS_INO_INVALID_LABEL flag irrespectively of whether or not the
-NFS server supports security labels. Since that flag is never cleared,
-it means that all calls to nfs_revalidate_inode() will now trigger
-an on-the-wire GETATTR call.
+rtl8192ce is disabling for too long the local interrupts during hw initiatialisation when performing scans
 
-This patch ensures that we never set the NFS_INO_INVALID_LABEL unless the
-server advertises support for labeled NFS.
-It also causes nfs_setsecurity() to clear NFS_INO_INVALID_LABEL when it
-has successfully set the security label for the inode.
-Finally it gets rid of the NFS_INO_INVALID_LABEL cruft from nfs_update_inode,
-which has nothing to do with labeled NFS.
+The observable symptoms in dmesg can be:
 
-Reported-by: Neil Brown <neilb@suse.de>
-Tested-by: Neil Brown <neilb@suse.de>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+- underruns from ALSA playback
+- clock freezes (tstamps do not change for several dmesg entries until irqs are finaly reenabled):
+
+[  250.817669] rtlwifi:rtl_op_config():<0-0-0> 0x100
+[  250.817685] rtl8192ce:_rtl92ce_phy_set_rf_power_state():<0-1-0> IPS Set eRf nic enable
+[  250.817732] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
+[  250.817796] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
+[  250.817910] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
+[  250.818024] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
+[  250.818139] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
+[  250.818253] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
+[  250.818367] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
+[  250.818472] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
+[  250.818472] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
+[  250.818472] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
+[  250.818472] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
+[  250.818472] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:98053f15:10
+[  250.818472] rtl8192ce:rtl92ce_sw_led_on():<0-1-0> LedAddr:4E ledpin=1
+[  250.818472] rtl8192c_common:rtl92c_download_fw():<0-1-0> Firmware Version(49), Signature(0x88c1),Size(32)
+[  250.818472] rtl8192ce:rtl92ce_enable_hw_security_config():<0-1-0> PairwiseEncAlgorithm = 0 GroupEncAlgorithm = 0
+[  250.818472] rtl8192ce:rtl92ce_enable_hw_security_config():<0-1-0> The SECR-value cc
+[  250.818472] rtl8192c_common:rtl92c_dm_check_txpower_tracking_thermal_meter():<0-1-0> Schedule TxPowerTracking direct call!!
+[  250.818472] rtl8192c_common:rtl92c_dm_txpower_tracking_callback_thermalmeter():<0-1-0> rtl92c_dm_txpower_tracking_callback_thermalmeter
+[  250.818472] rtl8192c_common:rtl92c_dm_txpower_tracking_callback_thermalmeter():<0-1-0> Readback Thermal Meter = 0xe pre thermal meter 0xf eeprom_thermalmeter 0xf
+[  250.818472] rtl8192c_common:rtl92c_dm_txpower_tracking_callback_thermalmeter():<0-1-0> Initial pathA ele_d reg0xc80 = 0x40000000, ofdm_index=0xc
+[  250.818472] rtl8192c_common:rtl92c_dm_txpower_tracking_callback_thermalmeter():<0-1-0> Initial reg0xa24 = 0x90e1317, cck_index=0xc, ch14 0
+[  250.818472] rtl8192c_common:rtl92c_dm_txpower_tracking_callback_thermalmeter():<0-1-0> Readback Thermal Meter = 0xe pre thermal meter 0xf eeprom_thermalmeter 0xf delta 0x1 delta_lck 0x0 delta_iqk 0x0
+[  250.818472] rtl8192c_common:rtl92c_dm_txpower_tracking_callback_thermalmeter():<0-1-0> <===
+[  250.818472] rtl8192c_common:rtl92c_dm_initialize_txpower_tracking_thermalmeter():<0-1-0> pMgntInfo->txpower_tracking = 1
+[  250.818472] rtl8192ce:rtl92ce_led_control():<0-1-0> ledaction 3
+[  250.818472] rtl8192ce:rtl92ce_sw_led_on():<0-1-0> LedAddr:4E ledpin=1
+[  250.818472] rtlwifi:rtl_ips_nic_on():<0-1-0> before spin_unlock_irqrestore
+[  251.154656] PCM: Lost interrupts? [Q]-0 (stream=0, delta=15903, new_hw_ptr=293408, old_hw_ptr=277505)
+
+The exact code flow that causes that is:
+
+1. wpa_supplicant send a start_scan request to the nl80211 driver
+2. mac80211 module call rtl_op_config with IEEE80211_CONF_CHANGE_IDLE
+3.   rtl_ips_nic_on is called which disable local irqs
+4.     rtl92c_phy_set_rf_power_state() is called
+5.       rtl_ps_enable_nic() is called and hw_init()is executed and then the interrupts on the device are enabled
+
+A good solution could be to refactor the code to avoid calling rtl92ce_hw_init() with the irqs disabled
+but a quick and dirty solution that has proven to work is
+to reenable the irqs during the function rtl92ce_hw_init().
+
+I think that it is safe doing so since the device interrupt will only be enabled after the init function succeed.
+
+Signed-off-by: Olivier Langlois <olivier@trillion01.com>
+Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/inode.c    |   14 ++++++++++----
- fs/nfs/internal.h |    9 +++++++++
- 2 files changed, 19 insertions(+), 4 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8192ce/hw.c |   18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
---- a/fs/nfs/inode.c
-+++ b/fs/nfs/inode.c
-@@ -164,17 +164,16 @@ static void nfs_zap_caches_locked(struct
- 	if (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode)) {
- 		nfs_fscache_invalidate(inode);
- 		nfsi->cache_validity |= NFS_INO_INVALID_ATTR
--					| NFS_INO_INVALID_LABEL
- 					| NFS_INO_INVALID_DATA
- 					| NFS_INO_INVALID_ACCESS
- 					| NFS_INO_INVALID_ACL
- 					| NFS_INO_REVAL_PAGECACHE;
- 	} else
- 		nfsi->cache_validity |= NFS_INO_INVALID_ATTR
--					| NFS_INO_INVALID_LABEL
- 					| NFS_INO_INVALID_ACCESS
- 					| NFS_INO_INVALID_ACL
- 					| NFS_INO_REVAL_PAGECACHE;
-+	nfs_zap_label_cache_locked(nfsi);
- }
+--- a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
+@@ -937,14 +937,26 @@ int rtl92ce_hw_init(struct ieee80211_hw
+ 	bool is92c;
+ 	int err;
+ 	u8 tmp_u1b;
++	unsigned long flags;
  
- void nfs_zap_caches(struct inode *inode)
-@@ -266,6 +265,13 @@ nfs_init_locked(struct inode *inode, voi
- }
- 
- #ifdef CONFIG_NFS_V4_SECURITY_LABEL
-+static void nfs_clear_label_invalid(struct inode *inode)
-+{
-+	spin_lock(&inode->i_lock);
-+	NFS_I(inode)->cache_validity &= ~NFS_INO_INVALID_LABEL;
-+	spin_unlock(&inode->i_lock);
-+}
+ 	rtlpci->being_init_adapter = true;
 +
- void nfs_setsecurity(struct inode *inode, struct nfs_fattr *fattr,
- 					struct nfs4_label *label)
- {
-@@ -283,6 +289,7 @@ void nfs_setsecurity(struct inode *inode
- 					__func__,
- 					(char *)label->label,
- 					label->len, error);
-+		nfs_clear_label_invalid(inode);
- 	}
- }
- 
-@@ -1597,7 +1604,7 @@ static int nfs_update_inode(struct inode
- 		inode->i_blocks = fattr->du.nfs2.blocks;
- 
- 	/* Update attrtimeo value if we're out of the unstable period */
--	if (invalid & (NFS_INO_INVALID_ATTR|NFS_INO_INVALID_LABEL)) {
-+	if (invalid & NFS_INO_INVALID_ATTR) {
- 		nfs_inc_stats(inode, NFSIOS_ATTRINVALIDATE);
- 		nfsi->attrtimeo = NFS_MINATTRTIMEO(inode);
- 		nfsi->attrtimeo_timestamp = now;
-@@ -1610,7 +1617,6 @@ static int nfs_update_inode(struct inode
- 		}
- 	}
- 	invalid &= ~NFS_INO_INVALID_ATTR;
--	invalid &= ~NFS_INO_INVALID_LABEL;
- 	/* Don't invalidate the data if we were to blame */
- 	if (!(S_ISREG(inode->i_mode) || S_ISDIR(inode->i_mode)
- 				|| S_ISLNK(inode->i_mode)))
---- a/fs/nfs/internal.h
-+++ b/fs/nfs/internal.h
-@@ -279,9 +279,18 @@ static inline void nfs4_label_free(struc
- 	}
- 	return;
- }
++	/* Since this function can take a very long time (up to 350 ms)
++	 * and can be called with irqs disabled, reenable the irqs
++	 * to let the other devices continue being serviced.
++	 *
++	 * It is safe doing so since our own interrupts will only be enabled
++	 * in a subsequent step.
++	 */
++	local_save_flags(flags);
++	local_irq_enable();
 +
-+static inline void nfs_zap_label_cache_locked(struct nfs_inode *nfsi)
-+{
-+	if (nfs_server_capable(&nfsi->vfs_inode, NFS_CAP_SECURITY_LABEL))
-+		nfsi->cache_validity |= NFS_INO_INVALID_LABEL;
-+}
- #else
- static inline struct nfs4_label *nfs4_label_alloc(struct nfs_server *server, gfp_t flags) { return NULL; }
- static inline void nfs4_label_free(void *label) {}
-+static inline void nfs_zap_label_cache_locked(struct nfs_inode *nfsi)
-+{
-+}
- #endif /* CONFIG_NFS_V4_SECURITY_LABEL */
+ 	rtlpriv->intf_ops->disable_aspm(hw);
+ 	rtstatus = _rtl92ce_init_mac(hw);
+ 	if (!rtstatus) {
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG, "Init MAC failed\n");
+ 		err = 1;
+-		return err;
++		goto exit;
+ 	}
  
- /* proc.c */
+ 	err = rtl92c_download_fw(hw);
+@@ -952,7 +964,7 @@ int rtl92ce_hw_init(struct ieee80211_hw
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_WARNING,
+ 			 "Failed to download FW. Init HW without FW now..\n");
+ 		err = 1;
+-		return err;
++		goto exit;
+ 	}
+ 
+ 	rtlhal->last_hmeboxnum = 0;
+@@ -1032,6 +1044,8 @@ int rtl92ce_hw_init(struct ieee80211_hw
+ 		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE, "under 1.5V\n");
+ 	}
+ 	rtl92c_dm_init(hw);
++exit:
++	local_irq_restore(flags);
+ 	rtlpci->being_init_adapter = false;
+ 	return err;
+ }
 
 
