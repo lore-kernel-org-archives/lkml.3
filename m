@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932603AbaCDUgi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:36:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41490 "EHLO
+	id S932615AbaCDUgx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:36:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41488 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756974AbaCDUEu (ORCPT
+	with ESMTP id S1757072AbaCDUEt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:04:50 -0500
+	Tue, 4 Mar 2014 15:04:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Albin Tonnerre <Albin.Tonnerre@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.10 09/97] ARM: 7953/1: mm: ensure TLB invalidation is complete before enabling MMU
-Date: Tue,  4 Mar 2014 12:03:22 -0800
-Message-Id: <20140304200346.412407407@linuxfoundation.org>
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [PATCH 3.10 08/97] ARM: dma-mapping: fix GFP_ATOMIC macro usage
+Date: Tue,  4 Mar 2014 12:03:21 -0800
+Message-Id: <20140304200346.382841545@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -30,66 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Marek Szyprowski <m.szyprowski@samsung.com>
 
-commit bae0ca2bc550d1ec6a118fb8f2696f18c4da3d8e upstream.
+commit 10c8562f932d89c030083e15f9279971ed637136 upstream.
 
-During __v{6,7}_setup, we invalidate the TLBs since we are about to
-enable the MMU on return to head.S. Unfortunately, without a subsequent
-dsb instruction, the invalidation is not guaranteed to have completed by
-the time we write to the sctlr, potentially exposing us to junk/stale
-translations cached in the TLB.
+GFP_ATOMIC is not a single gfp flag, but a macro which expands to the other
+flags and LACK of __GFP_WAIT flag. To check if caller wanted to perform an
+atomic allocation, the code must test __GFP_WAIT flag presence. This patch
+fixes the issue introduced in v3.6-rc5
 
-This patch reworks the init functions so that the dsb used to ensure
-completion of cache/predictor maintenance is also used to ensure
-completion of the TLB invalidation.
-
-Reported-by: Albin Tonnerre <Albin.Tonnerre@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mm/proc-v6.S |    3 ++-
- arch/arm/mm/proc-v7.S |    2 +-
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ arch/arm/mm/dma-mapping.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/mm/proc-v6.S
-+++ b/arch/arm/mm/proc-v6.S
-@@ -206,7 +206,6 @@ __v6_setup:
- 	mcr	p15, 0, r0, c7, c14, 0		@ clean+invalidate D cache
- 	mcr	p15, 0, r0, c7, c5, 0		@ invalidate I cache
- 	mcr	p15, 0, r0, c7, c15, 0		@ clean+invalidate cache
--	mcr	p15, 0, r0, c7, c10, 4		@ drain write buffer
- #ifdef CONFIG_MMU
- 	mcr	p15, 0, r0, c8, c7, 0		@ invalidate I + D TLBs
- 	mcr	p15, 0, r0, c2, c0, 2		@ TTB control register
-@@ -216,6 +215,8 @@ __v6_setup:
- 	ALT_UP(orr	r8, r8, #TTB_FLAGS_UP)
- 	mcr	p15, 0, r8, c2, c0, 1		@ load TTB1
- #endif /* CONFIG_MMU */
-+	mcr	p15, 0, r0, c7, c10, 4		@ drain write buffer and
-+						@ complete invalidations
- 	adr	r5, v6_crval
- 	ldmia	r5, {r5, r6}
- #ifdef CONFIG_CPU_ENDIAN_BE8
---- a/arch/arm/mm/proc-v7.S
-+++ b/arch/arm/mm/proc-v7.S
-@@ -329,7 +329,6 @@ __v7_setup:
+--- a/arch/arm/mm/dma-mapping.c
++++ b/arch/arm/mm/dma-mapping.c
+@@ -1311,7 +1311,7 @@ static void *arm_iommu_alloc_attrs(struc
+ 	*handle = DMA_ERROR_CODE;
+ 	size = PAGE_ALIGN(size);
  
- 3:	mov	r10, #0
- 	mcr	p15, 0, r10, c7, c5, 0		@ I+BTB cache invalidate
--	dsb
- #ifdef CONFIG_MMU
- 	mcr	p15, 0, r10, c8, c7, 0		@ invalidate I + D TLBs
- 	v7_ttb_setup r10, r4, r8, r5		@ TTBCR, TTBRx setup
-@@ -338,6 +337,7 @@ __v7_setup:
- 	mcr	p15, 0, r5, c10, c2, 0		@ write PRRR
- 	mcr	p15, 0, r6, c10, c2, 1		@ write NMRR
- #endif
-+	dsb					@ Complete invalidations
- #ifndef CONFIG_ARM_THUMBEE
- 	mrc	p15, 0, r0, c0, c1, 0		@ read ID_PFR0 for ThumbEE
- 	and	r0, r0, #(0xf << 12)		@ ThumbEE enabled field
+-	if (gfp & GFP_ATOMIC)
++	if (!(gfp & __GFP_WAIT))
+ 		return __iommu_alloc_atomic(dev, size, handle);
+ 
+ 	pages = __iommu_alloc_buffer(dev, size, gfp, attrs);
 
 
