@@ -1,89 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754900AbaCDTmL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 14:42:11 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:42772 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751908AbaCDTmJ (ORCPT
+	id S1754891AbaCDTpO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 14:45:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40151 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751494AbaCDTpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 14:42:09 -0500
-Date: Tue, 4 Mar 2014 14:42:08 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Valentina Manea <valentina.manea.m@gmail.com>
-cc: gregkh@linuxfoundation.org, <ly80toro@cip.cs.fau.de>,
-        <ke42caxa@cip.cs.fau.de>, <eladwexler77@yahoo.com>,
-        <oat.elena@gmail.com>, <josh@joshtriplett.org>, <himangi774@gmail.com>,
-        <linux-usb@vger.kernel.org>, <devel@driverdev.osuosl.org>,
-        <linux-kernel@vger.kernel.org>, <andy.grover@gmail.com>,
-        <firefly@lists.rosedu.org>
-Subject: Re: [PATCH] staging: usbip: claim ports used by shared devices
-In-Reply-To: <1393961104-21856-1-git-send-email-valentina.manea.m@gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1403041440320.1328-100000@iolanthe.rowland.org>
+	Tue, 4 Mar 2014 14:45:12 -0500
+Date: Tue, 4 Mar 2014 11:46:55 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Sitsofe Wheeler <sitsofe@yahoo.com>, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jim McDonough <jmcd@samba.org>,
+        David Disseldorp <ddiss@samba.org>, Steve French <smfrench@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: Stable backport of cifs nlink workaround?
+Message-ID: <20140304194655.GC19462@kroah.com>
+References: <20140225152443.GA15552@sucs.org>
+ <20140225161156.GA27235@kroah.com>
+ <20140225094306.63cccecb@corrin.poochiereds.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140225094306.63cccecb@corrin.poochiereds.net>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 Mar 2014, Valentina Manea wrote:
+On Tue, Feb 25, 2014 at 09:43:06AM -0800, Jeff Layton wrote:
+> On Tue, 25 Feb 2014 08:11:56 -0800
+> Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+> 
+> > On Tue, Feb 25, 2014 at 03:24:43PM +0000, Sitsofe Wheeler wrote:
+> > > Hi,
+> > > 
+> > > Is there any chance that 74d290da476f672ad756634d12aa707375d3564d
+> > > ([CIFS] Provide sane values for nlink) could be backported to the stable
+> > > 3.2 kernel?
+> > 
+> > Why just 3.2?  What's wrong with all of the other kernels before 3.12
+> > that do not have this patch in it?
+> > 
+> > thanks,
+> > 
+> > greg k-h
+> 
+> Yeah, you'd probably need to apply it to every stable kernel > 3.2 or
+> you'd technically have a regression. I've no real objection to putting
+> that fix in, but backporting to older kernels may not be trivial. There
+> have been other changes in this area over the years...
 
-> diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
-> index 90e18f6..a91dc1f 100644
-> --- a/drivers/usb/core/devio.c
-> +++ b/drivers/usb/core/devio.c
-> @@ -62,23 +62,6 @@
->  /* Mutual exclusion for removal, open, and release */
->  DEFINE_MUTEX(usbfs_mutex);
->  
-> -struct dev_state {
-> -	struct list_head list;      /* state list */
-> -	struct usb_device *dev;
-> -	struct file *file;
-> -	spinlock_t lock;            /* protects the async urb lists */
-> -	struct list_head async_pending;
-> -	struct list_head async_completed;
-> -	wait_queue_head_t wait;     /* wake up if a request completed */
-> -	unsigned int discsignr;
-> -	struct pid *disc_pid;
-> -	const struct cred *cred;
-> -	void __user *disccontext;
-> -	unsigned long ifclaimed;
-> -	u32 secid;
-> -	u32 disabled_bulk_eps;
-> -};
-> -
+It doesn't apply to 3.10 or 3.4-stable trees, so I'll wait for someone
+to provide a working backport before I can commit it.
 
-Don't remove this definition.
+thanks,
 
-> diff --git a/include/linux/usb.h b/include/linux/usb.h
-> index 22de4af..e0843a4 100644
-> --- a/include/linux/usb.h
-> +++ b/include/linux/usb.h
-> @@ -366,6 +366,24 @@ struct usb_bus {
->  #endif
->  };
->  
-> +struct dev_state {
-> +	struct list_head list;      /* state list */
-> +	struct usb_device *dev;
-> +	struct file *file;
-> +	spinlock_t lock;            /* protects the async urb lists */
-> +	struct list_head async_pending;
-> +	struct list_head async_completed;
-> +	wait_queue_head_t wait;     /* wake up if a request completed */
-> +	unsigned int discsignr;
-> +	struct pid *disc_pid;
-> +	const struct cred *cred;
-> +	void __user *disccontext;
-> +	unsigned long ifclaimed;
-> +	u32 secid;
-> +	u32 disabled_bulk_eps;
-> +};
-
-And don't put this here.  Instead, just put
-
-struct dev_state;
-
-Alan Stern
-
+greg k-h
