@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932641AbaCDVDv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:03:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41184 "EHLO
+	id S1757552AbaCDVEL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:04:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41178 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756630AbaCDUD5 (ORCPT
+	with ESMTP id S1756617AbaCDUD4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:03:57 -0500
+	Tue, 4 Mar 2014 15:03:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        John <da_audiophile@yahoo.com>, Borislav Petkov <bp@alien8.de>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.13 098/172] SUNRPC: Ensure that gss_auth isnt freed before its upcall messages
-Date: Tue,  4 Mar 2014 12:03:02 -0800
-Message-Id: <20140304200302.846910842@linuxfoundation.org>
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Stephane Eranian <eranian@google.com>, Dave Jones <davej@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.13 107/172] perf/x86: Fix event scheduling
+Date: Tue,  4 Mar 2014 12:03:11 -0800
+Message-Id: <20140304200303.132990937@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -29,81 +32,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit 9eb2ddb48ce3a7bd745c14a933112994647fa3cd upstream.
+commit 26e61e8939b1fe8729572dabe9a9e97d930dd4f6 upstream.
 
-Fix a race in which the RPC client is shutting down while the
-gss daemon is processing a downcall. If the RPC client manages to
-shut down before the gss daemon is done, then the struct gss_auth
-used in gss_release_msg() may have already been freed.
+Vince "Super Tester" Weaver reported a new round of syscall fuzzing (Trinity) failures,
+with perf WARN_ON()s triggering. He also provided traces of the failures.
 
-Link: http://lkml.kernel.org/r/1392494917.71728.YahooMailNeo@web140002.mail.bf1.yahoo.com
-Reported-by: John <da_audiophile@yahoo.com>
-Reported-by: Borislav Petkov <bp@alien8.de>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+This is I think the relevant bit:
+
+	>    pec_1076_warn-2804  [000] d...   147.926153: x86_pmu_disable: x86_pmu_disable
+	>    pec_1076_warn-2804  [000] d...   147.926153: x86_pmu_state: Events: {
+	>    pec_1076_warn-2804  [000] d...   147.926156: x86_pmu_state:   0: state: .R config: ffffffffffffffff (          (null))
+	>    pec_1076_warn-2804  [000] d...   147.926158: x86_pmu_state:   33: state: AR config: 0 (ffff88011ac99800)
+	>    pec_1076_warn-2804  [000] d...   147.926159: x86_pmu_state: }
+	>    pec_1076_warn-2804  [000] d...   147.926160: x86_pmu_state: n_events: 1, n_added: 0, n_txn: 1
+	>    pec_1076_warn-2804  [000] d...   147.926161: x86_pmu_state: Assignment: {
+	>    pec_1076_warn-2804  [000] d...   147.926162: x86_pmu_state:   0->33 tag: 1 config: 0 (ffff88011ac99800)
+	>    pec_1076_warn-2804  [000] d...   147.926163: x86_pmu_state: }
+	>    pec_1076_warn-2804  [000] d...   147.926166: collect_events: Adding event: 1 (ffff880119ec8800)
+
+So we add the insn:p event (fd[23]).
+
+At this point we should have:
+
+  n_events = 2, n_added = 1, n_txn = 1
+
+	>    pec_1076_warn-2804  [000] d...   147.926170: collect_events: Adding event: 0 (ffff8800c9e01800)
+	>    pec_1076_warn-2804  [000] d...   147.926172: collect_events: Adding event: 4 (ffff8800cbab2c00)
+
+We try and add the {BP,cycles,br_insn} group (fd[3], fd[4], fd[15]).
+These events are 0:cycles and 4:br_insn, the BP event isn't x86_pmu so
+that's not visible.
+
+	group_sched_in()
+	  pmu->start_txn() /* nop - BP pmu */
+	  event_sched_in()
+	     event->pmu->add()
+
+So here we should end up with:
+
+  0: n_events = 3, n_added = 2, n_txn = 2
+  4: n_events = 4, n_added = 3, n_txn = 3
+
+But seeing the below state on x86_pmu_enable(), the must have failed,
+because the 0 and 4 events aren't there anymore.
+
+Looking at group_sched_in(), since the BP is the leader, its
+event_sched_in() must have succeeded, for otherwise we would not have
+seen the sibling adds.
+
+But since neither 0 or 4 are in the below state; their event_sched_in()
+must have failed; but I don't see why, the complete state: 0,0,1:p,4
+fits perfectly fine on a core2.
+
+However, since we try and schedule 4 it means the 0 event must have
+succeeded!  Therefore the 4 event must have failed, its failure will
+have put group_sched_in() into the fail path, which will call:
+
+	event_sched_out()
+	  event->pmu->del()
+
+on 0 and the BP event.
+
+Now x86_pmu_del() will reduce n_events; but it will not reduce n_added;
+giving what we see below:
+
+ n_event = 2, n_added = 2, n_txn = 2
+
+	>    pec_1076_warn-2804  [000] d...   147.926177: x86_pmu_enable: x86_pmu_enable
+	>    pec_1076_warn-2804  [000] d...   147.926177: x86_pmu_state: Events: {
+	>    pec_1076_warn-2804  [000] d...   147.926179: x86_pmu_state:   0: state: .R config: ffffffffffffffff (          (null))
+	>    pec_1076_warn-2804  [000] d...   147.926181: x86_pmu_state:   33: state: AR config: 0 (ffff88011ac99800)
+	>    pec_1076_warn-2804  [000] d...   147.926182: x86_pmu_state: }
+	>    pec_1076_warn-2804  [000] d...   147.926184: x86_pmu_state: n_events: 2, n_added: 2, n_txn: 2
+	>    pec_1076_warn-2804  [000] d...   147.926184: x86_pmu_state: Assignment: {
+	>    pec_1076_warn-2804  [000] d...   147.926186: x86_pmu_state:   0->33 tag: 1 config: 0 (ffff88011ac99800)
+	>    pec_1076_warn-2804  [000] d...   147.926188: x86_pmu_state:   1->0 tag: 1 config: 1 (ffff880119ec8800)
+	>    pec_1076_warn-2804  [000] d...   147.926188: x86_pmu_state: }
+	>    pec_1076_warn-2804  [000] d...   147.926190: x86_pmu_enable: S0: hwc->idx: 33, hwc->last_cpu: 0, hwc->last_tag: 1 hwc->state: 0
+
+So the problem is that x86_pmu_del(), when called from a
+group_sched_in() that fails (for whatever reason), and without x86_pmu
+TXN support (because the leader is !x86_pmu), will corrupt the n_added
+state.
+
+Reported-and-Tested-by: Vince Weaver <vincent.weaver@maine.edu>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Dave Jones <davej@redhat.com>
+Link: http://lkml.kernel.org/r/20140221150312.GF3104@twins.programming.kicks-ass.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/auth_gss/auth_gss.c |   13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/net/sunrpc/auth_gss/auth_gss.c
-+++ b/net/sunrpc/auth_gss/auth_gss.c
-@@ -108,6 +108,7 @@ struct gss_auth {
- static DEFINE_SPINLOCK(pipe_version_lock);
- static struct rpc_wait_queue pipe_version_rpc_waitqueue;
- static DECLARE_WAIT_QUEUE_HEAD(pipe_version_waitqueue);
-+static void gss_put_auth(struct gss_auth *gss_auth);
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1192,6 +1192,9 @@ static void x86_pmu_del(struct perf_even
+ 	for (i = 0; i < cpuc->n_events; i++) {
+ 		if (event == cpuc->event_list[i]) {
  
- static void gss_free_ctx(struct gss_cl_ctx *);
- static const struct rpc_pipe_ops gss_upcall_ops_v0;
-@@ -320,6 +321,7 @@ gss_release_msg(struct gss_upcall_msg *g
- 	if (gss_msg->ctx != NULL)
- 		gss_put_ctx(gss_msg->ctx);
- 	rpc_destroy_wait_queue(&gss_msg->rpc_waitqueue);
-+	gss_put_auth(gss_msg->auth);
- 	kfree(gss_msg);
- }
- 
-@@ -500,6 +502,7 @@ gss_alloc_msg(struct gss_auth *gss_auth,
- 		if (err)
- 			goto err_free_msg;
- 	};
-+	kref_get(&gss_auth->kref);
- 	return gss_msg;
- err_free_msg:
- 	kfree(gss_msg);
-@@ -1071,6 +1074,12 @@ gss_free_callback(struct kref *kref)
- }
- 
- static void
-+gss_put_auth(struct gss_auth *gss_auth)
-+{
-+	kref_put(&gss_auth->kref, gss_free_callback);
-+}
++			if (i >= cpuc->n_events - cpuc->n_added)
++				--cpuc->n_added;
 +
-+static void
- gss_destroy(struct rpc_auth *auth)
- {
- 	struct gss_auth *gss_auth = container_of(auth,
-@@ -1091,7 +1100,7 @@ gss_destroy(struct rpc_auth *auth)
- 	gss_auth->gss_pipe[1] = NULL;
- 	rpcauth_destroy_credcache(auth);
+ 			if (x86_pmu.put_event_constraints)
+ 				x86_pmu.put_event_constraints(cpuc, event);
  
--	kref_put(&gss_auth->kref, gss_free_callback);
-+	gss_put_auth(gss_auth);
- }
- 
- /*
-@@ -1262,7 +1271,7 @@ gss_destroy_nullcred(struct rpc_cred *cr
- 	call_rcu(&cred->cr_rcu, gss_free_cred_callback);
- 	if (ctx)
- 		gss_put_ctx(ctx);
--	kref_put(&gss_auth->kref, gss_free_callback);
-+	gss_put_auth(gss_auth);
- }
- 
- static void
 
 
