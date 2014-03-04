@@ -1,62 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754725AbaCDRCT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 12:02:19 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:49861 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751582AbaCDRCR (ORCPT
+	id S1754943AbaCDRDR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 12:03:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38342 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751988AbaCDRDP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 12:02:17 -0500
-Date: Tue, 4 Mar 2014 22:31:53 +0530
-From: yogesh <mr.yogesh@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Levente Kurusa <levex@linux.com>, Joe Perches <joe@perches.com>,
-        rdunlap@infradead.org
-Subject: Subject: [PATCH v2 1/1] Add documentation for proper usage and order
- of preference of calls to print diagnostic messages.
-Message-ID: <20140304170153.GA11780@yogesh-Dell-System-XPS-L502X>
+	Tue, 4 Mar 2014 12:03:15 -0500
+Date: Tue, 4 Mar 2014 09:04:58 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Mathias Nyman <mathias.nyman@linux.intel.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sarah.a.sharp@linux.intel.com, dan.j.williams@intel.com,
+        stable@vger.kernel.org, David Cohen <david.a.cohen@linux.intel.com>
+Subject: Re: [PATCH v3 1/1] xhci: Prevent runtime pm from autosuspending
+ during initialization
+Message-ID: <20140304170458.GA10789@kroah.com>
+References: <1393867817-10389-1-git-send-email-mathias.nyman@linux.intel.com>
+ <1393867817-10389-2-git-send-email-mathias.nyman@linux.intel.com>
+ <20140303183733.GA13926@kroah.com>
+ <5315BE1F.8020100@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5315BE1F.8020100@linux.intel.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds documentation that clarifies the use of various
-diagnostic printing messages. It shows the preference of subsystem_dbg
-calls to dev_dbg (whenever possible), as the first preferred format of
-logging debug messages.
-Signed-off-by: Yogesh Chaudhari <mr.yogesh@gmail.com>
----
- Documentation/CodingStyle | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+On Tue, Mar 04, 2014 at 01:50:55PM +0200, Mathias Nyman wrote:
+> On 03/03/2014 08:37 PM, Greg KH wrote:
+> >On Mon, Mar 03, 2014 at 07:30:17PM +0200, Mathias Nyman wrote:
+> >>xHCI driver has its own pci probe function that will call usb_hcd_pci_probe
+> >>to register its usb-2 bus, and then continue to manually register the
+> >>usb-3 bus. usb_hcd_pci_probe does a pm_runtime_put_noidle at the end and
+> >>might thus trigger a runtime suspend before the usb-3 bus is ready.
+> >
+> >What is the result if that happens?
+> 
+> Crashes. Null pointer dereference in xhci_suspend() when touching
+> xhci->shared_hcd before it's initialized. More info here:
+> 
+> http://marc.info/?l=linux-usb&m=138914518219334&w=2
+> 
+> >
+> >Is this a regression from 3.13?  Or something new for 3.14?
+> >
+> 
+> According to reporter its been around since 3.7
+> 
+> commit 596d789a211d134dc5f94d1e5957248c204ef850
+> USB: set hub's default autosuspend delay as 0
+> 
+> But nobody else than the reporter is able to trigger it.
 
-diff --git a/Documentation/CodingStyle b/Documentation/CodingStyle
-index 7fe0546..cd14cc8 100644
---- a/Documentation/CodingStyle
-+++ b/Documentation/CodingStyle
-@@ -662,6 +662,23 @@ and driver, and are tagged with the right level:  dev_err(), dev_warn(),
- dev_info(), and so forth.  For messages that aren't associated with a
- particular device, <linux/printk.h> defines pr_debug() and pr_info().
- 
-+If the subsystem has its own diagnostic macros then they should be used
-+instead of dev_dbg calls.
-+E.g. If you are using network subsystem, use netdev_dbg;
-+if you are using V4L, use v4l_dbg etc.
-+This standardises the output format in every subsystem.
-+
-+Depending on your changes, the following order of precedence
-+applies to printing messages:
-+1. [subsystem]_dbg() is preferred when the subsystem has its own
-+diagnostic macros.
-+2. dev_dbg() is preferred when you have a generic struct device object.
-+3. pr_debug() should be used when 1 and 2 above are not applicable.
-+4. printk() should be avoided.
-+
-+Note: The above order applies to diagnostic calls of all log levels viz:
-+*_emerg, *_alert, *_crit, *_err, *_warn, *_notice, *_info and *_dbg.
-+
- Coming up with good debugging messages can be quite a challenge; and once
- you have them, they can be a huge help for remote troubleshooting.  Such
- messages should be compiled out when the DEBUG symbol is not defined (that
+Then it can wait for 3.15-rc1, and then go back to the stable trees at
+that time, right?  I'd prefer that as it's not a regression and not
+common.
+
+> >What platform(s) are affected by this?
+> 
+> David, the reporter (added to cc), mentioned
+> "This bug happened in a platform with 1 usb3 host controller + 1 usb3 OTG
+> controller" run by some Intel internal group
+> 
+> http://marc.info/?l=linux-usb&m=138915969822029&w=2
+
+That sounds like a "not shipping platform" to me :)
+
+Please resend this with patches for 3.15-rc1.
+
+thanks,
+
+greg k-h
