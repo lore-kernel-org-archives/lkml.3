@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757143AbaCDUFQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:05:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41588 "EHLO
+	id S1757994AbaCDUY5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:24:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41645 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757112AbaCDUFG (ORCPT
+	with ESMTP id S1757138AbaCDUFQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:05:06 -0500
+	Tue, 4 Mar 2014 15:05:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>, Andreas Dilger <adilger@dilger.ca>,
-        Jan Kara <jack@suse.cz>, Dave Chinner <dchinner@redhat.com>,
-        Chris Mason <clm@fb.com>, Ben Myers <bpm@sgi.com>
-Subject: [PATCH 3.10 39/97] fs: fix iversion handling
-Date: Tue,  4 Mar 2014 12:03:52 -0800
-Message-Id: <20140304200347.340856645@linuxfoundation.org>
+        Andrew Honig <ahonig@google.com>, Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.10 44/97] kvm: x86: fix emulator buffer overflow (CVE-2014-0049)
+Date: Tue,  4 Mar 2014 12:03:57 -0800
+Message-Id: <20140304200347.484903499@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -30,80 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Hellwig <hch@infradead.org>
+From: Andrew Honig <ahonig@google.com>
 
-commit dff6efc326a4d5f305797d4a6bba14f374fdd633 upstream.
+commit a08d3b3b99efd509133946056531cdf8f3a0c09b upstream.
 
-Currently notify_change directly updates i_version for size updates,
-which not only is counter to how all other fields are updated through
-struct iattr, but also breaks XFS, which need inode updates to happen
-under its own lock, and synchronized to the structure that gets written
-to the log.
+The problem occurs when the guest performs a pusha with the stack
+address pointing to an mmio address (or an invalid guest physical
+address) to start with, but then extending into an ordinary guest
+physical address.  When doing repeated emulated pushes
+emulator_read_write sets mmio_needed to 1 on the first one.  On a
+later push when the stack points to regular memory,
+mmio_nr_fragments is set to 0, but mmio_is_needed is not set to 0.
 
-Remove the update in the common code, and it to btrfs and ext4,
-XFS already does a proper updaste internally and currently gets a
-double update with the existing code.
+As a result, KVM exits to userspace, and then returns to
+complete_emulated_mmio.  In complete_emulated_mmio
+vcpu->mmio_cur_fragment is incremented.  The termination condition of
+vcpu->mmio_cur_fragment == vcpu->mmio_nr_fragments is never achieved.
+The code bounces back and fourth to userspace incrementing
+mmio_cur_fragment past it's buffer.  If the guest does nothing else it
+eventually leads to a a crash on a memcpy from invalid memory address.
 
-IMHO this is 3.13 and -stable material and should go in through the XFS
-tree.
+However if a guest code can cause the vm to be destroyed in another
+vcpu with excellent timing, then kvm_clear_async_pf_completion_queue
+can be used by the guest to control the data that's pointed to by the
+call to cancel_work_item, which can be used to gain execution.
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Reviewed-by: Andreas Dilger <adilger@dilger.ca>
-Acked-by: Jan Kara <jack@suse.cz>
-Reviewed-by: Dave Chinner <dchinner@redhat.com>
-Signed-off-by: Chris Mason <clm@fb.com>
-Signed-off-by: Ben Myers <bpm@sgi.com>
+Fixes: f78146b0f9230765c6315b2e14f56112513389ad
+Signed-off-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/attr.c        |    5 -----
- fs/btrfs/inode.c |    8 ++++++--
- fs/ext4/inode.c  |    4 ++++
- 3 files changed, 10 insertions(+), 7 deletions(-)
+ arch/x86/kvm/x86.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/attr.c
-+++ b/fs/attr.c
-@@ -182,11 +182,6 @@ int notify_change(struct dentry * dentry
- 			return -EPERM;
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -5982,7 +5982,7 @@ static int complete_emulated_mmio(struct
+ 		frag->len -= len;
  	}
  
--	if ((ia_valid & ATTR_SIZE) && IS_I_VERSION(inode)) {
--		if (attr->ia_size != inode->i_size)
--			inode_inc_iversion(inode);
--	}
--
- 	if ((ia_valid & ATTR_MODE)) {
- 		umode_t amode = attr->ia_mode;
- 		/* Flag setting protected by i_mutex */
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -4527,8 +4527,12 @@ static int btrfs_setsize(struct inode *i
- 	 * these flags set.  For all other operations the VFS set these flags
- 	 * explicitly if it wants a timestamp update.
- 	 */
--	if (newsize != oldsize && (!(mask & (ATTR_CTIME | ATTR_MTIME))))
--		inode->i_ctime = inode->i_mtime = current_fs_time(inode->i_sb);
-+	if (newsize != oldsize) {
-+		inode_inc_iversion(inode);
-+		if (!(mask & (ATTR_CTIME | ATTR_MTIME)))
-+			inode->i_ctime = inode->i_mtime =
-+				current_fs_time(inode->i_sb);
-+	}
- 
- 	if (newsize > oldsize) {
- 		truncate_pagecache(inode, oldsize, newsize);
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -4704,6 +4704,10 @@ int ext4_setattr(struct dentry *dentry,
- 			if (attr->ia_size > sbi->s_bitmap_maxbytes)
- 				return -EFBIG;
- 		}
-+
-+		if (IS_I_VERSION(inode) && attr->ia_size != inode->i_size)
-+			inode_inc_iversion(inode);
-+
- 		if (S_ISREG(inode->i_mode) &&
- 		    (attr->ia_size < inode->i_size)) {
- 			if (ext4_should_order_data(inode)) {
+-	if (vcpu->mmio_cur_fragment == vcpu->mmio_nr_fragments) {
++	if (vcpu->mmio_cur_fragment >= vcpu->mmio_nr_fragments) {
+ 		vcpu->mmio_needed = 0;
+ 		if (vcpu->mmio_is_write)
+ 			return 1;
 
 
