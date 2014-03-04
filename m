@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933186AbaCDVOj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:14:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40999 "EHLO
+	id S1756318AbaCDUDh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:03:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41020 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756347AbaCDUDj (ORCPT
+	with ESMTP id S1756240AbaCDUDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:03:39 -0500
+	Tue, 4 Mar 2014 15:03:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>,
-        Liam Girdwood <liam.r.girdwood@linux.intel.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.13 095/172] ASoC: sta32x: Fix array access overflow
-Date: Tue,  4 Mar 2014 12:02:59 -0800
-Message-Id: <20140304200302.752400638@linuxfoundation.org>
+        Russel Senior <russell@personaltelco.net>,
+        Antonio Quartulli <antonio@open-mesh.com>,
+        Marek Lindner <mareklindner@neomailbox.ch>
+Subject: [PATCH 3.13 070/172] batman-adv: free skb on TVLV parsing success
+Date: Tue,  4 Mar 2014 12:02:34 -0800
+Message-Id: <20140304200301.981664134@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -30,105 +30,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Antonio Quartulli <antonio@open-mesh.com>
 
-commit 025c3fa9256d4c54506b7a29dc3befac54f5c68d upstream.
+[ Upstream commit 05c3c8a636aa9ee35ce13f65afc5b665615cc786 ]
 
-Preset EQ enum of sta32x codec driver declares too many number of
-items and it may lead to the access over the actual array size.
+When the TVLV parsing routine succeed the skb is left
+untouched thus leading to a memory leak.
 
-Use SOC_ENUM_SINGLE_DECL() helper and it's automatically fixed.
+Fix this by consuming the skb in case of success.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Acked-by: Liam Girdwood <liam.r.girdwood@linux.intel.com>
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Introduced by ef26157747d42254453f6b3ac2bd8bd3c53339c3
+("batman-adv: tvlv - basic infrastructure")
+
+Reported-by: Russel Senior <russell@personaltelco.net>
+Signed-off-by: Antonio Quartulli <antonio@open-mesh.com>
+Tested-by: Russell Senior <russell@personaltelco.net>
+Signed-off-by: Marek Lindner <mareklindner@neomailbox.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- sound/soc/codecs/sta32x.c |   72 +++++++++++++++++++++++-----------------------
- 1 file changed, 36 insertions(+), 36 deletions(-)
+ net/batman-adv/routing.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/sound/soc/codecs/sta32x.c
-+++ b/sound/soc/codecs/sta32x.c
-@@ -187,42 +187,42 @@ static const unsigned int sta32x_limiter
- 	13, 16, TLV_DB_SCALE_ITEM(-1500, 300, 0),
- };
+--- a/net/batman-adv/routing.c
++++ b/net/batman-adv/routing.c
+@@ -1063,6 +1063,8 @@ int batadv_recv_unicast_tvlv(struct sk_b
  
--static const struct soc_enum sta32x_drc_ac_enum =
--	SOC_ENUM_SINGLE(STA32X_CONFD, STA32X_CONFD_DRC_SHIFT,
--			2, sta32x_drc_ac);
--static const struct soc_enum sta32x_auto_eq_enum =
--	SOC_ENUM_SINGLE(STA32X_AUTO1, STA32X_AUTO1_AMEQ_SHIFT,
--			3, sta32x_auto_eq_mode);
--static const struct soc_enum sta32x_auto_gc_enum =
--	SOC_ENUM_SINGLE(STA32X_AUTO1, STA32X_AUTO1_AMGC_SHIFT,
--			4, sta32x_auto_gc_mode);
--static const struct soc_enum sta32x_auto_xo_enum =
--	SOC_ENUM_SINGLE(STA32X_AUTO2, STA32X_AUTO2_XO_SHIFT,
--			16, sta32x_auto_xo_mode);
--static const struct soc_enum sta32x_preset_eq_enum =
--	SOC_ENUM_SINGLE(STA32X_AUTO3, STA32X_AUTO3_PEQ_SHIFT,
--			32, sta32x_preset_eq_mode);
--static const struct soc_enum sta32x_limiter_ch1_enum =
--	SOC_ENUM_SINGLE(STA32X_C1CFG, STA32X_CxCFG_LS_SHIFT,
--			3, sta32x_limiter_select);
--static const struct soc_enum sta32x_limiter_ch2_enum =
--	SOC_ENUM_SINGLE(STA32X_C2CFG, STA32X_CxCFG_LS_SHIFT,
--			3, sta32x_limiter_select);
--static const struct soc_enum sta32x_limiter_ch3_enum =
--	SOC_ENUM_SINGLE(STA32X_C3CFG, STA32X_CxCFG_LS_SHIFT,
--			3, sta32x_limiter_select);
--static const struct soc_enum sta32x_limiter1_attack_rate_enum =
--	SOC_ENUM_SINGLE(STA32X_L1AR, STA32X_LxA_SHIFT,
--			16, sta32x_limiter_attack_rate);
--static const struct soc_enum sta32x_limiter2_attack_rate_enum =
--	SOC_ENUM_SINGLE(STA32X_L2AR, STA32X_LxA_SHIFT,
--			16, sta32x_limiter_attack_rate);
--static const struct soc_enum sta32x_limiter1_release_rate_enum =
--	SOC_ENUM_SINGLE(STA32X_L1AR, STA32X_LxR_SHIFT,
--			16, sta32x_limiter_release_rate);
--static const struct soc_enum sta32x_limiter2_release_rate_enum =
--	SOC_ENUM_SINGLE(STA32X_L2AR, STA32X_LxR_SHIFT,
--			16, sta32x_limiter_release_rate);
-+static SOC_ENUM_SINGLE_DECL(sta32x_drc_ac_enum,
-+			    STA32X_CONFD, STA32X_CONFD_DRC_SHIFT,
-+			    sta32x_drc_ac);
-+static SOC_ENUM_SINGLE_DECL(sta32x_auto_eq_enum,
-+			    STA32X_AUTO1, STA32X_AUTO1_AMEQ_SHIFT,
-+			    sta32x_auto_eq_mode);
-+static SOC_ENUM_SINGLE_DECL(sta32x_auto_gc_enum,
-+			    STA32X_AUTO1, STA32X_AUTO1_AMGC_SHIFT,
-+			    sta32x_auto_gc_mode);
-+static SOC_ENUM_SINGLE_DECL(sta32x_auto_xo_enum,
-+			    STA32X_AUTO2, STA32X_AUTO2_XO_SHIFT,
-+			    sta32x_auto_xo_mode);
-+static SOC_ENUM_SINGLE_DECL(sta32x_preset_eq_enum,
-+			    STA32X_AUTO3, STA32X_AUTO3_PEQ_SHIFT,
-+			    sta32x_preset_eq_mode);
-+static SOC_ENUM_SINGLE_DECL(sta32x_limiter_ch1_enum,
-+			    STA32X_C1CFG, STA32X_CxCFG_LS_SHIFT,
-+			    sta32x_limiter_select);
-+static SOC_ENUM_SINGLE_DECL(sta32x_limiter_ch2_enum,
-+			    STA32X_C2CFG, STA32X_CxCFG_LS_SHIFT,
-+			    sta32x_limiter_select);
-+static SOC_ENUM_SINGLE_DECL(sta32x_limiter_ch3_enum,
-+			    STA32X_C3CFG, STA32X_CxCFG_LS_SHIFT,
-+			    sta32x_limiter_select);
-+static SOC_ENUM_SINGLE_DECL(sta32x_limiter1_attack_rate_enum,
-+			    STA32X_L1AR, STA32X_LxA_SHIFT,
-+			    sta32x_limiter_attack_rate);
-+static SOC_ENUM_SINGLE_DECL(sta32x_limiter2_attack_rate_enum,
-+			    STA32X_L2AR, STA32X_LxA_SHIFT,
-+			    sta32x_limiter_attack_rate);
-+static SOC_ENUM_SINGLE_DECL(sta32x_limiter1_release_rate_enum,
-+			    STA32X_L1AR, STA32X_LxR_SHIFT,
-+			    sta32x_limiter_release_rate);
-+static SOC_ENUM_SINGLE_DECL(sta32x_limiter2_release_rate_enum,
-+			    STA32X_L2AR, STA32X_LxR_SHIFT,
-+			    sta32x_limiter_release_rate);
+ 	if (ret != NET_RX_SUCCESS)
+ 		ret = batadv_route_unicast_packet(skb, recv_if);
++	else
++		consume_skb(skb);
  
- /* byte array controls for setting biquad, mixer, scaling coefficients;
-  * for biquads all five coefficients need to be set in one go,
+ 	return ret;
+ }
 
 
