@@ -1,82 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754839AbaCDRGm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 12:06:42 -0500
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:20786
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751820AbaCDRGl (ORCPT
+	id S1755137AbaCDRGx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 12:06:53 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:44475 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752622AbaCDRGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 12:06:41 -0500
-X-Forefront-Antispam-Report: CIP:165.204.84.221;KIP:(null);UIP:(null);IPV:NLI;H:atltwp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(z579ehzbb2dI98dI9371I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch1155h)
-X-WSS-ID: 0N1X8UZ-07-JE5-02
-X-M-MSG: 
-Message-ID: <5316081A.9020008@amd.com>
-Date: Tue, 4 Mar 2014 11:06:34 -0600
-From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 4 Mar 2014 12:06:49 -0500
+Date: Tue, 4 Mar 2014 11:04:01 -0600
+From: Josh Cartwright <joshc@codeaurora.org>
+To: S?ren Brinkmann <soren.brinkmann@xilinx.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Wolfram Sang <wsa@the-dreams.de>, devicetree@vger.kernel.org,
+        Harini Katakam <harinik@xilinx.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] i2c: Add driver for Cadence I2C controller
+Message-ID: <20140304170401.GA18529@joshc.qualcomm.com>
+References: <1393632046-20062-1-git-send-email-soren.brinkmann@xilinx.com>
+ <8af0e222-6337-4ec4-b718-099a9decc5ec@TX2EHSMHS034.ehs.local>
 MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-CC: <iommu@lists.linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jay Cornwall <jay.cornwall@amd.com>, "Naru, Kim" <Kim.Naru@amd.com>
-Subject: Re: [PATCH 1/1] iommu/amd: Fix PASID format in INVALIDATE_IOTLB_PAGES
- command
-References: <1393451371-17894-1-git-send-email-suravee.suthikulpanit@amd.com> <20140304141251.GB2799@8bytes.org> <5316051E.2030004@amd.com>
-In-Reply-To: <5316051E.2030004@amd.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: amd.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8af0e222-6337-4ec4-b718-099a9decc5ec@TX2EHSMHS034.ehs.local>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/4/2014 10:53 AM, Suravee Suthikulpanit wrote:
-> On 3/4/2014 8:12 AM, Joerg Roedel wrote:
->> On Wed, Feb 26, 2014 at 03:49:31PM -0600,
->> suravee.suthikulpanit@amd.com wrote:
->>> From: Jay Cornwall <jay.cornwall@amd.com>
->>>
->>> This patch corrects the PASID format in the INVALIDATE_IOTLB_PAGES
->>> command, which was caused by incorrect information in
->>> the AMD IOMMU Architectural Specification v2.01 document.
->>>
->>>      Incorrect format:
->>>           cmd->data[0][16:23] = PASID[7:0]
->>>           cmd->data[1][16:27] = PASID[19:8]
->>>
->>>       Correct format:
->>>           cmd->data[0][16:23] = PASID[15:8]
->>>           cmd->data[1][16:23] = PASID[7:0]
->>>
->>> However, this does not affect the IOMMUv2 hardware implementation,
->>> and has been corrected since version 2.02 of the specification
->>> (available through AMD NDA).
->>>
->>> Signed-off-by: Jay Cornwall <jay.cornwall@amd.com>
->>> Reviewed-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
->>
->> Applied, thanks.
->>
->> Does this mean that PASIDs are only 16 bits wide now from the former 20
->> bits?
->>
->>
->>
->
-> Thank you Joerg. The specification also state that this command format
-> does not support the maximum size of the PASID field. However, other
-> commands seem to still support 20-bit PASID.
->
-> Suravee
+On Fri, Feb 28, 2014 at 07:06:29PM -0800, S?ren Brinkmann wrote:
+> On Fri, 2014-02-28 at 04:00PM -0800, Soren Brinkmann wrote:
+> > Add a driver for the Cadence I2C controller. This controller is for
+> > example found in Xilinx Zynq.
+> > 
+> > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> > ---
+> >  .../devicetree/bindings/i2c/i2c-cadence.txt        |  21 +
+> >  MAINTAINERS                                        |   1 +
+> >  drivers/i2c/busses/Kconfig                         |   7 +
+> >  drivers/i2c/busses/Makefile                        |   1 +
+> >  drivers/i2c/busses/i2c-cadence.c                   | 901 +++++++++++++++++++++
+> >  5 files changed, 931 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/i2c/i2c-cadence.txt
+> >  create mode 100644 drivers/i2c/busses/i2c-cadence.c
+> > 
+> [...]
+> > diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+> > index f5ed03164d86..7806c1654068 100644
+> > --- a/drivers/i2c/busses/Kconfig
+> > +++ b/drivers/i2c/busses/Kconfig
+> > @@ -375,6 +375,13 @@ config I2C_BLACKFIN_TWI_CLK_KHZ
+> >  	help
+> >  	  The unit of the TWI clock is kHz.
+> >  
+> > +config I2C_CADENCE
+> > +	tristate "Cadence I2C Controller"
+> > +	depends on ARCH_ZYNQ
+> This can be reduced to a dependency on COMMON_CLK only, I think.
 
-Actually, just thinking about this again, even though we don't have 
-systems with 20-bit PASID yet (only up-to 16-bit), but for future proof, 
-we should add another logic to make sure that this logic won't try to 
-use the 20-bit PASID with this version of the command.  I'll send out 
-another patch soon.
+Do you really need to depend on COMMON_CLK?  Most of the clk_* API's are
+properly stubbed when !HAVE_CLK.
 
-Suravee
+Also, you may want to split out the device tree bindings in a separate
+patch for separate review.
 
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
