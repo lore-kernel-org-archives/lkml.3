@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758199AbaCDUwA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:52:00 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44606 "EHLO
+	id S932825AbaCDUwL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:52:11 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44611 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757274AbaCDUv5 (ORCPT
+	with ESMTP id S1757274AbaCDUwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:51:57 -0500
-Date: Tue, 4 Mar 2014 12:51:44 -0800
+	Tue, 4 Mar 2014 15:52:08 -0500
+Date: Tue, 4 Mar 2014 12:51:56 -0800
 From: tip-bot for Michael Opdenacker <tipbot@zytor.com>
-Message-ID: <tip-322a126a8fa8af80d9dc06e7168db11d1aabdba7@git.kernel.org>
+Message-ID: <tip-d20d2efbf227042920d386b8eda878815f63c987@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         michael.opdenacker@free-electrons.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         michael.opdenacker@free-electrons.com, tglx@linutronix.de
-In-Reply-To: <1393965111-17092-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1393965111-17092-1-git-send-email-michael.opdenacker@free-electrons.com>
+In-Reply-To: <1393965305-17248-1-git-send-email-michael.opdenacker@free-electrons.com>
+References: <1393965305-17248-1-git-send-email-michael.opdenacker@free-electrons.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] mn10300: Remove deprecated IRQF_DISABLED
-Git-Commit-ID: 322a126a8fa8af80d9dc06e7168db11d1aabdba7
+Subject: [tip:irq/core] x86: Remove deprecated IRQF_DISABLED
+Git-Commit-ID: d20d2efbf227042920d386b8eda878815f63c987
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,93 +31,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  322a126a8fa8af80d9dc06e7168db11d1aabdba7
-Gitweb:     http://git.kernel.org/tip/322a126a8fa8af80d9dc06e7168db11d1aabdba7
+Commit-ID:  d20d2efbf227042920d386b8eda878815f63c987
+Gitweb:     http://git.kernel.org/tip/d20d2efbf227042920d386b8eda878815f63c987
 Author:     Michael Opdenacker <michael.opdenacker@free-electrons.com>
-AuthorDate: Tue, 4 Mar 2014 21:31:51 +0100
+AuthorDate: Tue, 4 Mar 2014 21:35:05 +0100
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Tue, 4 Mar 2014 21:47:51 +0100
 
-mn10300: Remove deprecated IRQF_DISABLED
+x86: Remove deprecated IRQF_DISABLED
 
-This patch removes the IRQF_DISABLED flag from mn10300 architecture
+This patch removes the IRQF_DISABLED flag from x86 architecture
 code. It's a NOOP since 2.6.35 and it will be removed one day.
 
 Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Cc: srivatsa.bhat@linux.vnet.ibm.com
-Cc: linux-am33-list@redhat.com
-Cc: dhowells@redhat.com
-Cc: yasutake.koichi@jp.panasonic.com
-Link: http://lkml.kernel.org/r/1393965111-17092-1-git-send-email-michael.opdenacker@free-electrons.com
+Cc: venki@google.com
+Link: http://lkml.kernel.org/r/1393965305-17248-1-git-send-email-michael.opdenacker@free-electrons.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/mn10300/kernel/cevt-mn10300.c   | 2 +-
- arch/mn10300/kernel/mn10300-serial.c | 6 +++---
- arch/mn10300/kernel/smp.c            | 2 +-
- arch/mn10300/unit-asb2364/irq-fpga.c | 2 +-
- 4 files changed, 6 insertions(+), 6 deletions(-)
+ arch/x86/include/asm/floppy.h | 4 ++--
+ arch/x86/kernel/hpet.c        | 2 +-
+ arch/x86/kernel/time.c        | 2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/mn10300/kernel/cevt-mn10300.c b/arch/mn10300/kernel/cevt-mn10300.c
-index ccce35e..60f64ca 100644
---- a/arch/mn10300/kernel/cevt-mn10300.c
-+++ b/arch/mn10300/kernel/cevt-mn10300.c
-@@ -113,7 +113,7 @@ int __init init_clockevents(void)
- 	cd->set_next_event	= next_event;
+diff --git a/arch/x86/include/asm/floppy.h b/arch/x86/include/asm/floppy.h
+index d3d7469..1c7eefe 100644
+--- a/arch/x86/include/asm/floppy.h
++++ b/arch/x86/include/asm/floppy.h
+@@ -145,10 +145,10 @@ static int fd_request_irq(void)
+ {
+ 	if (can_use_virtual_dma)
+ 		return request_irq(FLOPPY_IRQ, floppy_hardint,
+-				   IRQF_DISABLED, "floppy", NULL);
++				   0, "floppy", NULL);
+ 	else
+ 		return request_irq(FLOPPY_IRQ, floppy_interrupt,
+-				   IRQF_DISABLED, "floppy", NULL);
++				   0, "floppy", NULL);
+ }
  
- 	iact = &per_cpu(timer_irq, cpu);
--	iact->flags = IRQF_DISABLED | IRQF_SHARED | IRQF_TIMER;
-+	iact->flags = IRQF_SHARED | IRQF_TIMER;
- 	iact->handler = timer_interrupt;
+ static unsigned long dma_mem_alloc(unsigned long size)
+diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
+index da85a8e..45d2ded 100644
+--- a/arch/x86/kernel/hpet.c
++++ b/arch/x86/kernel/hpet.c
+@@ -521,7 +521,7 @@ static int hpet_setup_irq(struct hpet_dev *dev)
+ {
  
- 	clockevents_register_device(cd);
-diff --git a/arch/mn10300/kernel/mn10300-serial.c b/arch/mn10300/kernel/mn10300-serial.c
-index bf6e949..7ecf698 100644
---- a/arch/mn10300/kernel/mn10300-serial.c
-+++ b/arch/mn10300/kernel/mn10300-serial.c
-@@ -985,17 +985,17 @@ static int mn10300_serial_startup(struct uart_port *_port)
- 	irq_set_chip(port->tm_irq, &mn10300_serial_pic);
+ 	if (request_irq(dev->irq, hpet_interrupt_handler,
+-			IRQF_TIMER | IRQF_DISABLED | IRQF_NOBALANCING,
++			IRQF_TIMER | IRQF_NOBALANCING,
+ 			dev->name, dev))
+ 		return -1;
  
- 	if (request_irq(port->rx_irq, mn10300_serial_interrupt,
--			IRQF_DISABLED | IRQF_NOBALANCING,
-+			IRQF_NOBALANCING,
- 			port->rx_name, port) < 0)
- 		goto error;
+diff --git a/arch/x86/kernel/time.c b/arch/x86/kernel/time.c
+index 24d3c91..36b2cee 100644
+--- a/arch/x86/kernel/time.c
++++ b/arch/x86/kernel/time.c
+@@ -62,7 +62,7 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
  
- 	if (request_irq(port->tx_irq, mn10300_serial_interrupt,
--			IRQF_DISABLED | IRQF_NOBALANCING,
-+			IRQF_NOBALANCING,
- 			port->tx_name, port) < 0)
- 		goto error2;
- 
- 	if (request_irq(port->tm_irq, mn10300_serial_interrupt,
--			IRQF_DISABLED | IRQF_NOBALANCING,
-+			IRQF_NOBALANCING,
- 			port->tm_name, port) < 0)
- 		goto error3;
- 	mn10300_serial_mask_ack(port->tm_irq);
-diff --git a/arch/mn10300/kernel/smp.c b/arch/mn10300/kernel/smp.c
-index a17f9c9..f984193 100644
---- a/arch/mn10300/kernel/smp.c
-+++ b/arch/mn10300/kernel/smp.c
-@@ -143,7 +143,7 @@ static struct irqaction call_function_ipi = {
- static irqreturn_t smp_ipi_timer_interrupt(int irq, void *dev_id);
- static struct irqaction local_timer_ipi = {
- 	.handler	= smp_ipi_timer_interrupt,
--	.flags		= IRQF_DISABLED | IRQF_NOBALANCING,
-+	.flags		= IRQF_NOBALANCING,
- 	.name		= "smp local timer IPI"
+ static struct irqaction irq0  = {
+ 	.handler = timer_interrupt,
+-	.flags = IRQF_DISABLED | IRQF_NOBALANCING | IRQF_IRQPOLL | IRQF_TIMER,
++	.flags = IRQF_NOBALANCING | IRQF_IRQPOLL | IRQF_TIMER,
+ 	.name = "timer"
  };
- #endif
-diff --git a/arch/mn10300/unit-asb2364/irq-fpga.c b/arch/mn10300/unit-asb2364/irq-fpga.c
-index e16c216..073e2cc 100644
---- a/arch/mn10300/unit-asb2364/irq-fpga.c
-+++ b/arch/mn10300/unit-asb2364/irq-fpga.c
-@@ -76,7 +76,7 @@ static irqreturn_t fpga_interrupt(int irq, void *_mask)
- static struct irqaction fpga_irq[]  = {
- 	[0] = {
- 		.handler	= fpga_interrupt,
--		.flags		= IRQF_DISABLED | IRQF_SHARED,
-+		.flags		= IRQF_SHARED,
- 		.name		= "fpga",
- 	},
- };
+ 
