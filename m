@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933094AbaCDVKp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:10:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41113 "EHLO
+	id S933120AbaCDVLH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:11:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41101 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756475AbaCDUDq (ORCPT
+	with ESMTP id S1756457AbaCDUDp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:03:46 -0500
+	Tue, 4 Mar 2014 15:03:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Brown <broonie@linaro.org>,
-        Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
-Subject: [PATCH 3.13 092/172] ASoC: da732x: Mark DC offset control registers volatile
-Date: Tue,  4 Mar 2014 12:02:56 -0800
-Message-Id: <20140304200302.657916632@linuxfoundation.org>
+        Dylan Reid <dgreid@chromium.org>, Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.13 090/172] ASoC: max98090: sync regcache on entering STANDBY
+Date: Tue,  4 Mar 2014 12:02:54 -0800
+Message-Id: <20140304200302.595518700@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -29,53 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@linaro.org>
+From: Dylan Reid <dgreid@chromium.org>
 
-commit 75306820248e26d15d84acf4e297b9fb27dd3bb2 upstream.
+commit c42c8922c46d33ed769e99618bdfba06866a0c72 upstream.
 
-The driver reads from the DC offset control registers during callibration
-but since the registers are marked as volatile and there is a register
-cache the values will not be read from the hardware after the first reading
-rendering the callibration ineffective.
+Sync regcache when entering STANDBY from OFF.  ON isn't entered with
+OFF as the current state, so the registers were not being re-synced
+after suspend/resume.
 
-It appears that the driver was originally written for the ASoC level
-register I/O code but converted to regmap prior to merge and this issue
-was missed during the conversion as the framework level volatile register
-functionality was not being used.
+The 98088 and 98095 already call regcache_sync from STANDBY.
 
+Signed-off-by: Dylan Reid <dgreid@chromium.org>
 Signed-off-by: Mark Brown <broonie@linaro.org>
-Acked-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/da732x.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ sound/soc/codecs/max98090.c |   20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
---- a/sound/soc/codecs/da732x.c
-+++ b/sound/soc/codecs/da732x.c
-@@ -1268,11 +1268,23 @@ static struct snd_soc_dai_driver da732x_
- 	},
- };
+--- a/sound/soc/codecs/max98090.c
++++ b/sound/soc/codecs/max98090.c
+@@ -1769,16 +1769,6 @@ static int max98090_set_bias_level(struc
  
-+static bool da732x_volatile(struct device *dev, unsigned int reg)
-+{
-+	switch (reg) {
-+	case DA732X_REG_HPL_DAC_OFF_CNTL:
-+	case DA732X_REG_HPR_DAC_OFF_CNTL:
-+		return true;
-+	default:
-+		return false;
-+	}
-+}
+ 	switch (level) {
+ 	case SND_SOC_BIAS_ON:
+-		if (codec->dapm.bias_level == SND_SOC_BIAS_OFF) {
+-			ret = regcache_sync(max98090->regmap);
+-
+-			if (ret != 0) {
+-				dev_err(codec->dev,
+-					"Failed to sync cache: %d\n", ret);
+-				return ret;
+-			}
+-		}
+-
+ 		if (max98090->jack_state == M98090_JACK_STATE_HEADSET) {
+ 			/*
+ 			 * Set to normal bias level.
+@@ -1792,6 +1782,16 @@ static int max98090_set_bias_level(struc
+ 		break;
+ 
+ 	case SND_SOC_BIAS_STANDBY:
++		if (codec->dapm.bias_level == SND_SOC_BIAS_OFF) {
++			ret = regcache_sync(max98090->regmap);
++			if (ret != 0) {
++				dev_err(codec->dev,
++					"Failed to sync cache: %d\n", ret);
++				return ret;
++			}
++		}
++		break;
 +
- static const struct regmap_config da732x_regmap = {
- 	.reg_bits		= 8,
- 	.val_bits		= 8,
- 
- 	.max_register		= DA732X_MAX_REG,
-+	.volatile_reg		= da732x_volatile,
- 	.reg_defaults		= da732x_reg_cache,
- 	.num_reg_defaults	= ARRAY_SIZE(da732x_reg_cache),
- 	.cache_type		= REGCACHE_RBTREE,
+ 	case SND_SOC_BIAS_OFF:
+ 		/* Set internal pull-up to lowest power mode */
+ 		snd_soc_update_bits(codec, M98090_REG_JACK_DETECT,
 
 
