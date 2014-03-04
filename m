@@ -1,71 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932472AbaCDVnq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:43:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40703 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754195AbaCDUCh (ORCPT
+	id S932480AbaCDVsG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:48:06 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:37389 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752428AbaCDVsD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:02:37 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Janecek <janjanjanx@gmail.com>, Ilia Mirkin <imirkin@alum.mit.edu>,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: [PATCH 3.13 004/172] drm/nouveau: set irq_enabled manually
-Date: Tue,  4 Mar 2014 12:01:28 -0800
-Message-Id: <20140304200259.854951930@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
-References: <20140304200259.626667112@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Tue, 4 Mar 2014 16:48:03 -0500
+Date: Tue, 04 Mar 2014 16:47:59 -0500 (EST)
+Message-Id: <20140304.164759.2230363367739786819.davem@davemloft.net>
+To: bhelgaas@google.com
+Cc: peterz@infradead.org, mingo@redhat.com, linux-mips@linux-mips.org,
+        linux-ia64@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] sched: Remove unused mc_capable() and smt_capable()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20140304210737.16893.54289.stgit@bhelgaas-glaptop.roam.corp.google.com>
+References: <20140304210621.16893.8772.stgit@bhelgaas-glaptop.roam.corp.google.com>
+	<20140304210737.16893.54289.stgit@bhelgaas-glaptop.roam.corp.google.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 04 Mar 2014 13:48:03 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 04 Mar 2014 14:07:37 -0700
 
-------------------
+> Remove mc_capable() and smt_capable().  Neither is used.
+> 
+> Both were added by 5c45bf279d37 ("sched: mc/smt power savings sched
+> policy").  Uses of both were removed by 8e7fbcbc22c1 ("sched: Remove stale
+> power aware scheduling remnants and dysfunctional knobs").
+> 
+> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 
-From: Ilia Mirkin <imirkin@alum.mit.edu>
-
-commit 7d3428cd4b2ad51af86fdbdf8284ca38fa95e601 upstream.
-
-Since commit 0fa9061ae8c ("drm/nouveau/mc: handle irq-related setup
-ourselves"), drm_device->irq_enabled remained unset. This is needed in
-order to properly wait for a vblank event in the generic drm code.
-
-See https://bugs.freedesktop.org/show_bug.cgi?id=74195
-
-Reported-by: Jan Janecek <janjanjanx@gmail.com>
-Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/gpu/drm/nouveau/nouveau_drm.c |    3 +++
- 1 file changed, 3 insertions(+)
-
---- a/drivers/gpu/drm/nouveau/nouveau_drm.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_drm.c
-@@ -376,6 +376,8 @@ nouveau_drm_load(struct drm_device *dev,
- 	if (ret)
- 		goto fail_device;
- 
-+	dev->irq_enabled = true;
-+
- 	/* workaround an odd issue on nvc1 by disabling the device's
- 	 * nosnoop capability.  hopefully won't cause issues until a
- 	 * better fix is found - assuming there is one...
-@@ -475,6 +477,7 @@ nouveau_drm_remove(struct pci_dev *pdev)
- 	struct nouveau_drm *drm = nouveau_drm(dev);
- 	struct nouveau_object *device;
- 
-+	dev->irq_enabled = false;
- 	device = drm->client.base.device;
- 	drm_put_dev(dev);
- 
-
-
+Acked-by: David S. Miller <davem@davemloft.net>
