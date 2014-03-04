@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933179AbaCDVOP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:14:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41076 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756376AbaCDUDk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756373AbaCDUDk (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 4 Mar 2014 15:03:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40999 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756238AbaCDUDb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 15:03:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Neil Brown <neilb@suse.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.13 097/172] SUNRPC: Fix races in xs_nospace()
-Date: Tue,  4 Mar 2014 12:03:01 -0800
-Message-Id: <20140304200302.815512648@linuxfoundation.org>
+        Antonio Quartulli <antonio@meshcoding.com>,
+        Marek Lindner <mareklindner@neomailbox.ch>
+Subject: [PATCH 3.13 071/172] batman-adv: avoid double free when orig_node initialization fails
+Date: Tue,  4 Mar 2014 12:02:35 -0800
+Message-Id: <20140304200302.010111461@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -29,55 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Antonio Quartulli <antonio@meshcoding.com>
 
-commit 06ea0bfe6e6043cb56a78935a19f6f8ebc636226 upstream.
+[ Upstream commit a5a5cb8cab526af2f6cbe9715f8ca843192f0d81 ]
 
-When a send failure occurs due to the socket being out of buffer space,
-we call xs_nospace() in order to have the RPC task wait until the
-socket has drained enough to make it worth while trying again.
-The current patch fixes a race in which the socket is drained before
-we get round to setting up the machinery in xs_nospace(), and which
-is reported to cause hangs.
+In the failure path of the orig_node initialization routine
+the orig_node->bat_iv.bcast_own field is free'd twice: first
+in batadv_iv_ogm_orig_get() and then later in
+batadv_orig_node_free_rcu().
 
-Link: http://lkml.kernel.org/r/20140210170315.33dfc621@notabene.brown
-Fixes: a9a6b52ee1ba (SUNRPC: Don't start the retransmission timer...)
-Reported-by: Neil Brown <neilb@suse.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Fix it by removing the kfree in batadv_iv_ogm_orig_get().
+
+Signed-off-by: Antonio Quartulli <antonio@meshcoding.com>
+Signed-off-by: Marek Lindner <mareklindner@neomailbox.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- net/sunrpc/xprtsock.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ net/batman-adv/bat_iv_ogm.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -504,6 +504,7 @@ static int xs_nospace(struct rpc_task *t
- 	struct rpc_rqst *req = task->tk_rqstp;
- 	struct rpc_xprt *xprt = req->rq_xprt;
- 	struct sock_xprt *transport = container_of(xprt, struct sock_xprt, xprt);
-+	struct sock *sk = transport->inet;
- 	int ret = -EAGAIN;
+--- a/net/batman-adv/bat_iv_ogm.c
++++ b/net/batman-adv/bat_iv_ogm.c
+@@ -243,18 +243,16 @@ batadv_iv_ogm_orig_get(struct batadv_pri
+ 	size = bat_priv->num_ifaces * sizeof(uint8_t);
+ 	orig_node->bat_iv.bcast_own_sum = kzalloc(size, GFP_ATOMIC);
+ 	if (!orig_node->bat_iv.bcast_own_sum)
+-		goto free_bcast_own;
++		goto free_orig_node;
  
- 	dprintk("RPC: %5u xmit incomplete (%u left of %u)\n",
-@@ -521,7 +522,7 @@ static int xs_nospace(struct rpc_task *t
- 			 * window size
- 			 */
- 			set_bit(SOCK_NOSPACE, &transport->sock->flags);
--			transport->inet->sk_write_pending++;
-+			sk->sk_write_pending++;
- 			/* ...and wait for more buffer space */
- 			xprt_wait_for_buffer_space(task, xs_nospace_callback);
- 		}
-@@ -531,6 +532,9 @@ static int xs_nospace(struct rpc_task *t
- 	}
+ 	hash_added = batadv_hash_add(bat_priv->orig_hash, batadv_compare_orig,
+ 				     batadv_choose_orig, orig_node,
+ 				     &orig_node->hash_entry);
+ 	if (hash_added != 0)
+-		goto free_bcast_own;
++		goto free_orig_node;
  
- 	spin_unlock_bh(&xprt->transport_lock);
-+
-+	/* Race breaker in case memory is freed before above code is called */
-+	sk->sk_write_space(sk);
- 	return ret;
- }
+ 	return orig_node;
  
+-free_bcast_own:
+-	kfree(orig_node->bat_iv.bcast_own);
+ free_orig_node:
+ 	/* free twice, as batadv_orig_node_new sets refcount to 2 */
+ 	batadv_orig_node_free_ref(orig_node);
 
 
