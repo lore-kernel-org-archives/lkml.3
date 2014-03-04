@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757684AbaCDUOU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:14:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41775 "EHLO
+	id S1757712AbaCDUOq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:14:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41771 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932333AbaCDUFj (ORCPT
+	with ESMTP id S932323AbaCDUFj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Mar 2014 15:05:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        James Hogan <james.hogan@imgtec.com>, linux-metag@vger.kernel.org
-Subject: [PATCH 3.10 84/97] irq-metag*: stop set_affinity vectoring to offline cpus
-Date: Tue,  4 Mar 2014 12:04:37 -0800
-Message-Id: <20140304200348.769489958@linuxfoundation.org>
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.10 83/97] Input - arizona-haptics: Fix double lock of dapm_mutex
+Date: Tue,  4 Mar 2014 12:04:36 -0800
+Message-Id: <20140304200348.741411747@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -29,51 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Hogan <james.hogan@imgtec.com>
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 
-commit f229006ec6beabf7b844653d92fa61f025fe3dcf upstream.
+commit c4204960e9d0ba99459dbf1db918f99a45e7a62a upstream.
 
-Fix irq_set_affinity callbacks in the Meta IRQ chip drivers to AND
-cpu_online_mask into the cpumask when picking a CPU to vector the
-interrupt to.
+snd_soc_dapm_sync takes the dapm_mutex internally, but we currently take
+it externally as well. This patch fixes this.
 
-As Thomas pointed out, the /proc/irq/$N/smp_affinity interface doesn't
-filter out offline CPUs, so without this patch if you offline CPU0 and
-set an IRQ affinity to 0x3 it vectors the interrupt onto CPU0 even
-though it is offline.
-
-Reported-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-metag@vger.kernel.org
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/irqchip/irq-metag-ext.c |    2 +-
- drivers/irqchip/irq-metag.c     |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/input/misc/arizona-haptics.c |   11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
---- a/drivers/irqchip/irq-metag-ext.c
-+++ b/drivers/irqchip/irq-metag-ext.c
-@@ -515,7 +515,7 @@ static int meta_intc_set_affinity(struct
- 	 * one cpu (the interrupt code doesn't support it), so we just
- 	 * pick the first cpu we find in 'cpumask'.
- 	 */
--	cpu = cpumask_any(cpumask);
-+	cpu = cpumask_any_and(cpumask, cpu_online_mask);
- 	thread = cpu_2_hwthread_id[cpu];
+--- a/drivers/input/misc/arizona-haptics.c
++++ b/drivers/input/misc/arizona-haptics.c
+@@ -77,16 +77,14 @@ static void arizona_haptics_work(struct
+ 			return;
+ 		}
  
- 	metag_out32(TBI_TRIG_VEC(TBID_SIGNUM_TR2(thread)), vec_addr);
---- a/drivers/irqchip/irq-metag.c
-+++ b/drivers/irqchip/irq-metag.c
-@@ -201,7 +201,7 @@ static int metag_internal_irq_set_affini
- 	 * one cpu (the interrupt code doesn't support it), so we just
- 	 * pick the first cpu we find in 'cpumask'.
- 	 */
--	cpu = cpumask_any(cpumask);
-+	cpu = cpumask_any_and(cpumask, cpu_online_mask);
- 	thread = cpu_2_hwthread_id[cpu];
++		mutex_unlock(dapm_mutex);
++
+ 		ret = snd_soc_dapm_sync(arizona->dapm);
+ 		if (ret != 0) {
+ 			dev_err(arizona->dev, "Failed to sync DAPM: %d\n",
+ 				ret);
+-			mutex_unlock(dapm_mutex);
+ 			return;
+ 		}
+-
+-		mutex_unlock(dapm_mutex);
+-
+ 	} else {
+ 		/* This disable sequence will be a noop if already enabled */
+ 		mutex_lock_nested(dapm_mutex, SND_SOC_DAPM_CLASS_RUNTIME);
+@@ -99,16 +97,15 @@ static void arizona_haptics_work(struct
+ 			return;
+ 		}
  
- 	metag_out32(TBI_TRIG_VEC(TBID_SIGNUM_TR1(thread)),
++		mutex_unlock(dapm_mutex);
++
+ 		ret = snd_soc_dapm_sync(arizona->dapm);
+ 		if (ret != 0) {
+ 			dev_err(arizona->dev, "Failed to sync DAPM: %d\n",
+ 				ret);
+-			mutex_unlock(dapm_mutex);
+ 			return;
+ 		}
+ 
+-		mutex_unlock(dapm_mutex);
+-
+ 		ret = regmap_update_bits(arizona->regmap,
+ 					 ARIZONA_HAPTICS_CONTROL_1,
+ 					 ARIZONA_HAP_CTRL_MASK,
 
 
