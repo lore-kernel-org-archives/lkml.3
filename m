@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756116AbaCDEAy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 23:00:54 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55052 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755520AbaCDEAw (ORCPT
+	id S1756169AbaCDEBM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 23:01:12 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:17676 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755520AbaCDEBJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 23:00:52 -0500
-Date: Tue, 4 Mar 2014 12:00:47 +0800
-From: Mark Brown <broonie@kernel.org>
-To: Nenghua Cao <nhcao@marvell.com>
-Cc: Liam Girdwood <liam.r.girdwood@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140304040047.GB2411@sirena.org.uk>
-References: <1393844903-1295-1-git-send-email-nhcao@marvell.com>
+	Mon, 3 Mar 2014 23:01:09 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/ht1JlYpU4+3KcvKuPYL9TyFCrFM2sfy4=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 72FAD5391A2
+Date: Mon, 3 Mar 2014 23:00:53 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Mark Rutland <mark.rutland@arm.com>, Andrew Lunn <andrew@lunn.ch>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/4] ARM: dove: add system controller node
+Message-ID: <20140304040053.GD1872@titan.lakedaemon.net>
+References: <1393536486-3827-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1393536486-3827-2-git-send-email-sebastian.hesselbarth@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="I7xMaAXwyt9AGI17"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1393844903-1295-1-git-send-email-nhcao@marvell.com>
-X-Cookie: You too can wear a nose mitten.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 202.175.88.218
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] asoc: soc-core: fix coccinelle warnings
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <1393536486-3827-2-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Feb 27, 2014 at 10:28:02PM +0100, Sebastian Hesselbarth wrote:
+> This adds a DT node for the system-controller found on Marvell Dove
+> SoCs.
+> 
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ---
+> Cc: Rob Herring <robh+dt@kernel.org>
+> Cc: Pawel Moll <pawel.moll@arm.com>
+> Cc: Mark Rutland <mark.rutland@arm.com>
+> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+> Cc: Kumar Gala <galak@codeaurora.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: Gregory Clement <gregory.clement@free-electrons.com>
+> Cc: devicetree@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  arch/arm/boot/dts/dove.dtsi | 5 +++++
+>  1 file changed, 5 insertions(+)
 
---I7xMaAXwyt9AGI17
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Applied to mvebu/dt
 
-On Mon, Mar 03, 2014 at 07:08:23PM +0800, Nenghua Cao wrote:
-> From: Nenghua Cao <nhcao@marvell.com>
->=20
-> sound/soc/soc-core.c:2708:6-13: WARNING: Assignment of
-> bool to 0/1
-> sound/soc/soc-core.c:2726:3-10: WARNING: Assignment of
-> bool to 0/1
+thx,
 
-Applied, thanks.  Please use subject lines consistnt with the style for
-the subsystem, CC the mailing list for the subsystem and send the patch
-to the maintainers in MAINTAINERS (you've used Liam's work address but
-he lists his kernel.org address for upstream).
-
---I7xMaAXwyt9AGI17
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTFU/sAAoJELSic+t+oim9vBAQAIlIprT+7ZGJaE2vEIFGAnMM
-0YNFlqlHFYNHB3ht9V4j2kqhtXup5QRE94STozVxtzCrI7GFvxtWU2O5RYP985Qk
-lc8pD4fYO4AV3WR9zYegBnUOwZmcHOOkZXYGhoUHB8KUI74POlmWk93ObkIOQfhx
-7xVXD3AGX5M5EVuDp52pqoMdFgMnjQFkppyWg1q/qWsWo+8oqT1RYPBZSkIwffLa
-qNFuZ4pydJdhF8a4xmNtNqzDe0RZ/H0Hmdz2GouaniHU2dQ3Tt31tFpsliV+hWb4
-i5zcjiXAP+s6oqFN12UU79/x4vDFdLVeYevJiH4tTe6IhQJfpfRVtjAYB9ZV4aFm
-YKjfEH2x9nf8aErT/6c6cfLg8fEgCeY8fJcCzGg8S89XFWROFZSXkF/GmjXtfKpv
-j21QQEh2fpyEMn/cCkxi8q1zbN6SzrvMJg5i08IYJBBGplds35FEPqOMJKTyP5K4
-h1MRdSmDe7XrC/vrCMOXFgjtdfBR417Mk7snqU2vsC8bZE2hQ6ZxxYlHs1wmpEiK
-ujl6BFeEmNKRLQ1lw8iaoIrFUpCOn+NVXxyrxfTkXaEsSJJeVM6D1vF0HRkUmDkY
-t/FtBP2YZAUrlQ1TBzuFHUz89aeZi0xip9sRRQCtTLKNj1HaC5Dv18HoL4duILOE
-tuQMc1IQFefx6ksr08bL
-=OvW6
------END PGP SIGNATURE-----
-
---I7xMaAXwyt9AGI17--
+Jason.
