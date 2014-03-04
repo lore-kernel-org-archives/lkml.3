@@ -1,79 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756165AbaCDE6y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 23:58:54 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55121 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755985AbaCDE6w (ORCPT
+	id S1751139AbaCDFBq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 00:01:46 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:49948 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750766AbaCDFBp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 23:58:52 -0500
-Date: Tue, 4 Mar 2014 12:36:03 +0800
-From: Mark Brown <broonie@kernel.org>
-To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-Cc: "lars@metafoo.de" <lars@metafoo.de>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <20140304043603.GI2411@sirena.org.uk>
-References: <1393814545-15002-1-git-send-email-Li.Xiubo@freescale.com>
- <1393814545-15002-2-git-send-email-Li.Xiubo@freescale.com>
- <20140303045952.GO2411@sirena.org.uk>
- <5bc570ec866541a68df5813ffbe3168e@BY2PR03MB505.namprd03.prod.outlook.com>
+	Tue, 4 Mar 2014 00:01:45 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PXCmn3RzZ5puKDEC"
-Content-Disposition: inline
-In-Reply-To: <5bc570ec866541a68df5813ffbe3168e@BY2PR03MB505.namprd03.prod.outlook.com>
-X-Cookie: You too can wear a nose mitten.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 202.175.88.218
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCHv3 1/3] ASoC: codec: Simplify ASoC probe code.
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <1393903494.20435.13.camel@joe-AO722>
+References: <2825545.2YpN0JuVSn@daeseok-laptop.cloud.net>
+	<1393903494.20435.13.camel@joe-AO722>
+Date: Tue, 4 Mar 2014 14:01:44 +0900
+Message-ID: <CAHb8M2DOE-Rk6b4zLNHwa3x_WKY5Ex7N26xs7BuQMH+okV6O8A@mail.gmail.com>
+Subject: Re: [PATCH 3/7] staging: cxt1e1: Fix line length over 80 characters
+ in linux.c
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "sachin.kamat" <sachin.kamat@linaro.org>,
+        Shaun Laing <shaun@xresource.ca>,
+        Dulshani Gunawardhana <dulshani.gunawardhana89@gmail.com>,
+        "ying.xue" <ying.xue@windriver.com>,
+        David Miller <davem@davemloft.net>, devel <devel@driverdev.osuosl.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Thanks for review.
 
---PXCmn3RzZ5puKDEC
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+How about fix it as your comment within another patch?
 
-On Mon, Mar 03, 2014 at 07:24:36AM +0000, Li.Xiubo@freescale.com wrote:
+I sent many smaller patches for fixing coding style and other things.
+And I think this patch has just fixed about long line length, so I
+want to let it leave this change and
+I will send a patch after fixing as your comment.
 
-> > >  	/* Default to using ALC auto offset calibration mode. */
-> > >  	snd_soc_update_bits(codec, DA7213_ALC_CTRL1,
-> > >  			    DA7213_ALC_CALIB_MODE_MAN, 0);
+just my opinion.
 
-> > This one will fail.
+Regards.
+Daeseok Youn.
 
-> Sorry, I'm not very understand why will this fail ? Before the ASoC probe,
-> the ASoC core will set the I/O.=20
-> :)
-
-OK, that's now been refactored.
-
---PXCmn3RzZ5puKDEC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTFVgwAAoJELSic+t+oim9fDcP/1Qxk7IG1ZAYa7yhDoYlEpbZ
-lKvQTuen9uToFzI1lgOOA0QX35vm25QkVxwNBHnvjSFmHgNwaXKNnbkih55Jjxca
-36s8YgPh3qKL8lSn1Xtua0TbQu0HpTMYqhLs0gsgMZdSQHHYG++MWuEkYpicU1V5
-SYle/z2wsW8j2fHejI0rGi7D6jzzBO0mR7/rTPH84YruV4EU0SSfp8r9CwA1fP68
-/o0fiazHeFMlPNhCShHHw/dhDc2ICin/sTT4L88wmig15NT9Bs41pcNxQvEs7e3X
-LnKvF81/cg0nguErxlfitNLdNFpnz7UbcgXMxPzIgIwPKEef0MqtNG3WUBeAjIkf
-yt3z469ZZbEE4HZi6T1A3hgaUujWyEuWWzDF84maThISNxLy/OyMbOEWA8p5xcBb
-6kN+jyPRvd+TNKEKvV74VpMjWAZ6Yt86WSvbWWfmN1UbYe16DVtLHRXSUhE/8Ki9
-CccNREjN3/YsZAd6NN4B3BCvC5o5BO3JkhYh0XBef2WNX9v4GiqKUTVPcfL8hff9
-UCpZJIwdaXTBorzFVKQ0gTT/E7aY36pTDyWF0ByryY8u5FthHDsAgdhEa/e0crbx
-LcHxmtZu7ztlALLwbtTisdVW2tSCLbDXnTmJfPv9Z0P8TD9vjPtw4kcdSehN36fb
-r6sONSnuOx6Pe12PnK7L
-=Q2Si
------END PGP SIGNATURE-----
-
---PXCmn3RzZ5puKDEC--
+2014-03-04 12:24 GMT+09:00 Joe Perches <joe@perches.com>:
+> On Tue, 2014-03-04 at 11:08 +0900, Daeseok Youn wrote:
+>> clean up checkpatch.pl warnings:
+>>  WARNING: Line length over 80 characters
+>
+> Please run your patches through checkpatch.
+>
+>> diff --git a/drivers/staging/cxt1e1/linux.c b/drivers/staging/cxt1e1/linux.c
+>
+>> @@ -431,13 +432,15 @@ create_chan(struct net_device *ndev, ci_t *ci,
+>>               priv = OS_kmalloc(sizeof(struct c4_priv));
+>>               if (!priv)
+>>               {
+>> -                     pr_warning("%s: no memory for net_device !\n", ci->devname);
+>> +                     pr_warning("%s: no memory for net_device !\n",
+>> +                                ci->devname);
+>
+> pr_warn would be nice
+>
+>> @@ -458,10 +461,12 @@ create_chan(struct net_device *ndev, ci_t *ci,
+>>               switch (hi->promfmt)
+>>               {
+>>               case PROM_FORMAT_TYPE1:
+>> -                     memcpy(dev->dev_addr, (FLD_TYPE1 *) (hi->mfg_info.pft1.Serial), 6);
+>> +                     memcpy(dev->dev_addr,
+>> +                            (FLD_TYPE1 *) (hi->mfg_info.pft1.Serial), 6);
+>
+> Likely better to remove the (FLD_TYPE1 *) altogether.
+>
+>>                       break;
+>>               case PROM_FORMAT_TYPE2:
+>> -                     memcpy(dev->dev_addr, (FLD_TYPE2 *) (hi->mfg_info.pft2.Serial), 6);
+>> +                     memcpy(dev->dev_addr,
+>> +                            (FLD_TYPE2 *) (hi->mfg_info.pft2.Serial), 6);
+>
+> Likely better to remove the (FLD_TYPE2 *) too.
+> Maybe consolidate the blocks too.
+>
+>
+>> @@ -1053,13 +1065,15 @@ c4_add_dev(hdw_info_t *hi, int brdno, unsigned long f0, unsigned long f1,
+>>               switch (hi->promfmt)
+>>               {
+>>               case PROM_FORMAT_TYPE1:
+>> -                     memcpy(ndev->dev_addr, (FLD_TYPE1 *) (hi->mfg_info.pft1.Serial), 6);
+>> +                     memcpy(ndev->dev_addr,
+>> +                            (FLD_TYPE1 *) (hi->mfg_info.pft1.Serial), 6);
+>
+> unnecessary casts?
+>
+>>                       /* unaligned data acquisition */
+>>                       memcpy(&tmp, (FLD_TYPE1 *) (hi->mfg_info.pft1.Id), 4);
+>
+> here too.
+>
+>>                       ci->brd_id = cpu_to_be32(tmp);
+>>                       break;
+>>               case PROM_FORMAT_TYPE2:
+>> -                     memcpy(ndev->dev_addr, (FLD_TYPE2 *) (hi->mfg_info.pft2.Serial), 6);
+>> +                     memcpy(ndev->dev_addr,
+>> +                            (FLD_TYPE2 *) (hi->mfg_info.pft2.Serial), 6);
+>>                       /* unaligned data acquisition */
+>>                       memcpy(&tmp, (FLD_TYPE2 *) (hi->mfg_info.pft2.Id), 4);
+>
+> etc.
+>
+>
