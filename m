@@ -1,43 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756741AbaCDJrw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 04:47:52 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:59734 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756522AbaCDJrt (ORCPT
+	id S932115AbaCDJut (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 04:50:49 -0500
+Received: from smtp-out-147.synserver.de ([212.40.185.147]:1087 "EHLO
+	smtp-out-014.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756613AbaCDJun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 04:47:49 -0500
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: lee.jones@linaro.org, pawell.moll@arm.com, sachin.kamat@linaro.org
-Subject: [PATCH 1/1] mfd: vexpress: Staticize vexpress_config_bridges
-Date: Tue,  4 Mar 2014 15:11:47 +0530
-Message-Id: <1393926107-9290-1-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 4 Mar 2014 04:50:43 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 12559
+Message-ID: <5315A203.2060103@metafoo.de>
+Date: Tue, 04 Mar 2014 10:50:59 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+MIME-Version: 1.0
+To: Xiubo Li <Li.Xiubo@freescale.com>
+CC: broonie@kernel.org, lgirdwood@gmail.com, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [alsa-devel] [RFC][PATCH 1/3] ASoC: core: Move the default regmap
+ I/O setting to snd_soc_register_codec()
+References: <1393921529-28985-1-git-send-email-Li.Xiubo@freescale.com> <1393921529-28985-2-git-send-email-Li.Xiubo@freescale.com>
+In-Reply-To: <1393921529-28985-2-git-send-email-Li.Xiubo@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vexpress_config_bridges is local to this file.
+On 03/04/2014 09:25 AM, Xiubo Li wrote:
+> Add the default regmap I/O setting to snd_soc_register_codec() while
+> the CODEC is initialising, which will be called by CODEC driver device
+> probe(), and then we can make set_cache_io() go away entirely from each
+> CODEC ASoC probe.
+>
+> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> ---
+>   include/sound/soc.h  |  3 +++
+>   sound/soc/soc-core.c | 11 +++++++++++
+>   2 files changed, 14 insertions(+)
+>
+> diff --git a/include/sound/soc.h b/include/sound/soc.h
+> index 4c4d7e1..94bc1c4 100644
+> --- a/include/sound/soc.h
+> +++ b/include/sound/soc.h
+> @@ -749,6 +749,9 @@ struct snd_soc_codec_driver {
+>   	int (*set_pll)(struct snd_soc_codec *codec, int pll_id, int source,
+>   		unsigned int freq_in, unsigned int freq_out);
+>
+> +	/* codec regmap */
+> +	struct regmap *regmap;
+> +
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
----
- drivers/mfd/vexpress-config.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/mfd/vexpress-config.c b/drivers/mfd/vexpress-config.c
-index 84ce6b9daa3d..0876de04ed4d 100644
---- a/drivers/mfd/vexpress-config.c
-+++ b/drivers/mfd/vexpress-config.c
-@@ -27,7 +27,7 @@
- 
- #define VEXPRESS_CONFIG_MAX_BRIDGES 2
- 
--struct vexpress_config_bridge {
-+static struct vexpress_config_bridge {
- 	struct device_node *node;
- 	struct vexpress_config_bridge_info *info;
- 	struct list_head transactions;
--- 
-1.7.9.5
-
+Nope. The driver struct is globally shared between all device instances, the 
+regmap struct is device instance specific. The proper way to solve this is 
+to have a function like snd_soc_register_codec_with_io() which takes a 
+pointer to the regmap struct.
