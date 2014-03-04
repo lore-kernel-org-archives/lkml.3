@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758284AbaCDU4T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:56:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41282 "EHLO
+	id S1758239AbaCDUzF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:55:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41291 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756733AbaCDUEO (ORCPT
+	with ESMTP id S1756600AbaCDUEQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:04:14 -0500
+	Tue, 4 Mar 2014 15:04:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.13 143/172] ALSA: hda - Add a fixup for HP Folio 13 mute LED
-Date: Tue,  4 Mar 2014 12:03:47 -0800
-Message-Id: <20140304200304.278911447@linuxfoundation.org>
+        Enric Balletbo Serra <eballetbo@iseebcn.com>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Stefan Roese <sr@denx.de>, Pekon Gupta <pekon@ti.com>,
+        Brian Norris <computersforpeace@gmail.com>
+Subject: [PATCH 3.13 130/172] mtd: nand: omap: fix ecclayout to be in sync with u-boot NAND driver
+Date: Tue,  4 Mar 2014 12:03:34 -0800
+Message-Id: <20140304200303.870985498@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -28,71 +31,161 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Pekon Gupta <pekon@ti.com>
 
-commit 37c367ecdb9a01c9acc980e6e17913570a1788a7 upstream.
+commit eae39cb4934d3daab3ec828c5201c955b2e56af9 upstream.
 
-HP Folio 13 may have a broken BIOS that doesn't set up the mute LED
-GPIO properly, and the driver guesses it wrongly, too.  Add a new
-fixup entry for setting the GPIO pin statically for this laptop.
+Fixes: commit a919e51161b58ed7e6e663daba99ab7d558808f3
+       mtd: nand: omap2: clean-up BCHx_HW and BCHx_SW ECC configurations in device_probe
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=70991
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Fixes ecclayout mismatch introduced in above commit for following ecc-schemes:
+ - OMAP_ECC_BCH4_CODE_HW_DETECTION_SW
+ - OMAP_ECC_BCH8_CODE_HW_DETECTION_SW
+ However, this patch also touches other ecc-schemes as the fix required
+ refactoring common code, into ecc-scheme specific code.
+
+This patch aligns ecc-layout for below ecc-schemes as per reference [1],[2],[3]
+
+ +---+------------+-------------++-------------+-------------+
+ |OOB|BCH8_CODE_HW|BCH8_CODE_HW_||HAM1_CODE_HW |HAM1_CODE_HW |
+ |pos|            | DETECTION_SW||(x8 device)  |(x16 device) |
+ +---+------------+-------------++-------------+-------------+
+ | 0 |BADBLK_MARK | BADBLK_MARK || BADBLK_MARK | BADBLK_MARK |
+ | 1 |BADBLK_MARK | BADBLK_MARK || eccpos[0]   | BADBLK_MARK |
+ | 2 | eccpos[0]  | eccpos[0]   || eccpos[1]   | eccpos[0]   |
+ | 3 | eccpos[1]  | eccpos[1]   || eccpos[2]   | eccpos[1]   |
+ | 4 | eccpos[2]  | eccpos[2]   || eccpos[3]   | eccpos[2]   |
+ | 5 | eccpos[3]  | eccpos[3]   || eccpos[4]   | eccpos[3]   |
+ | 6 | eccpos[4]  | eccpos[4]   || eccpos[5]   | eccpos[4]   |
+ | 7 | eccpos[5]  | eccpos[5]   || eccpos[6]   | eccpos[5]   |
+ | 8 | eccpos[6]  | eccpos[6]   || eccpos[7]   | eccpos[6]   |
+ | 9 | eccpos[7]  | eccpos[7]   || eccpos[8]   | eccpos[7]   |
+ |10 | eccpos[8]  | eccpos[8]   || eccpos[9]   | eccpos[8]   |
+ |11 | eccpos[9]  | eccpos[9]   || eccpos[10]  | eccpos[9]   |
+ |12 | eccpos[10] | eccpos[10]  || eccpos[11]  | eccpos[10]  |
+ |13 | eccpos[11] | eccpos[11]  || oobfree[0]  | eccpos[11]  |
+ |14 | eccpos[12] | eccpos[12]  || oobfree[1]  | oobfree[0]  |
+ |15 | eccpos[13] | <reserved>  || oobfree[2]  | oobfree[1]  |
+ +---+------------+-------------++-------------+-------------+
+ |16 | eccpos[14] | eccpos[13]  || oobfree[3]  | oobfree[2]  |
+ |...| [...]      | [...]       || [...]       | [...]       |
+ |56 | eccpos[54] | eccpos[51]  || oobfree[43] | oobfree[42] |
+ |57 | eccpos[55] | <reserved>  || oobfree[44] | oobfree[43] |
+ +===+============+=============+==============+=============+
+ |58 | oobfree[0] | oobfree[0]  || oobfree[45] | oobfree[44] |
+ |59 | oobfree[1] | oobfree[1]  || oobfree[46] | oobfree[45] |
+ |60 | oobfree[2] | oobfree[2]  || oobfree[47] | oobfree[46] |
+ |61 | oobfree[3] | oobfree[3]  || oobfree[48] | oobfree[47] |
+ |62 | oobfree[4] | oobfree[4]  || oobfree[49] | oobfree[48] |
+ |63 | oobfree[5] | oobfree[5]  || oobfree[50] | oobfree[49] |
+ +---+------------+-------------+--------------+-------------+
+
+[1] ecc-layout expected by ROM code, as specified in SoC TRM under:
+      Chapter="Initialization"
+        Section="Device Initialization by ROM code"
+            Sub-Section="Memory Booting"
+                Heading="NAND"
+                Figure="ECC Locations in NAND Spare Areas"
+
+[2] ecc-layout updates in u-boot
+    http://lists.denx.de/pipermail/u-boot/2013-November/167551.html
+
+[3] u-boot configurations to match above ecc-layout are documented at
+    https://processors.wiki.ti.com/index.php/Linux_Core_NAND_User%27s_Guide
+
+Reported-by: Enric Balletbo Serra <eballetbo@iseebcn.com>
+Tested-by: Enric Balletbo i Serra <eballetbo@gmail.com>
+Tested-by: Stefan Roese <sr@denx.de>
+Signed-off-by: Pekon Gupta <pekon@ti.com>
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_sigmatel.c |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ drivers/mtd/nand/omap2.c |   31 +++++++++++++++++++++++--------
+ 1 file changed, 23 insertions(+), 8 deletions(-)
 
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -98,6 +98,7 @@ enum {
- 	STAC_92HD83XXX_HP_LED,
- 	STAC_92HD83XXX_HP_INV_LED,
- 	STAC_92HD83XXX_HP_MIC_LED,
-+	STAC_HP_LED_GPIO10,
- 	STAC_92HD83XXX_HEADSET_JACK,
- 	STAC_92HD83XXX_HP,
- 	STAC_HP_ENVY_BASS,
-@@ -2112,6 +2113,17 @@ static void stac92hd83xxx_fixup_hp_mic_l
- 	}
- }
+--- a/drivers/mtd/nand/omap2.c
++++ b/drivers/mtd/nand/omap2.c
+@@ -1633,6 +1633,7 @@ static int omap_nand_probe(struct platfo
+ 	int				i;
+ 	dma_cap_mask_t			mask;
+ 	unsigned			sig;
++	unsigned			oob_index;
+ 	struct resource			*res;
+ 	struct mtd_part_parser_data	ppdata = {};
  
-+static void stac92hd83xxx_fixup_hp_led_gpio10(struct hda_codec *codec,
-+				   const struct hda_fixup *fix, int action)
-+{
-+	struct sigmatel_spec *spec = codec->spec;
-+
-+	if (action == HDA_FIXUP_ACT_PRE_PROBE) {
-+		spec->gpio_led = 0x10; /* GPIO4 */
-+		spec->default_polarity = 0;
-+	}
-+}
-+
- static void stac92hd83xxx_fixup_headset_jack(struct hda_codec *codec,
- 				   const struct hda_fixup *fix, int action)
- {
-@@ -2606,6 +2618,12 @@ static const struct hda_fixup stac92hd83
- 		.chained = true,
- 		.chain_id = STAC_92HD83XXX_HP,
- 	},
-+	[STAC_HP_LED_GPIO10] = {
-+		.type = HDA_FIXUP_FUNC,
-+		.v.func = stac92hd83xxx_fixup_hp_led_gpio10,
-+		.chained = true,
-+		.chain_id = STAC_92HD83XXX_HP,
-+	},
- 	[STAC_92HD83XXX_HEADSET_JACK] = {
- 		.type = HDA_FIXUP_FUNC,
- 		.v.func = stac92hd83xxx_fixup_headset_jack,
-@@ -2684,6 +2702,8 @@ static const struct snd_pci_quirk stac92
- 			  "HP", STAC_92HD83XXX_HP_cNB11_INTQUAD),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x1888,
- 			  "HP Envy Spectre", STAC_HP_ENVY_BASS),
-+	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x1899,
-+			  "HP Folio 13", STAC_HP_LED_GPIO10),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x18df,
- 			  "HP Folio", STAC_HP_BNB13_EQ),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x18F8,
+@@ -1832,9 +1833,11 @@ static int omap_nand_probe(struct platfo
+ 							(mtd->writesize /
+ 							nand_chip->ecc.size);
+ 		if (nand_chip->options & NAND_BUSWIDTH_16)
+-			ecclayout->eccpos[0]	= BADBLOCK_MARKER_LENGTH;
++			oob_index		= BADBLOCK_MARKER_LENGTH;
+ 		else
+-			ecclayout->eccpos[0]	= 1;
++			oob_index		= 1;
++		for (i = 0; i < ecclayout->eccbytes; i++, oob_index++)
++			ecclayout->eccpos[i]	= oob_index;
+ 		ecclayout->oobfree->offset	= ecclayout->eccpos[0] +
+ 							ecclayout->eccbytes;
+ 		break;
+@@ -1853,7 +1856,12 @@ static int omap_nand_probe(struct platfo
+ 		ecclayout->eccbytes		= nand_chip->ecc.bytes *
+ 							(mtd->writesize /
+ 							nand_chip->ecc.size);
+-		ecclayout->eccpos[0]		= BADBLOCK_MARKER_LENGTH;
++		oob_index			= BADBLOCK_MARKER_LENGTH;
++		for (i = 0; i < ecclayout->eccbytes; i++, oob_index++) {
++			ecclayout->eccpos[i] = oob_index;
++			if (((i + 1) % nand_chip->ecc.bytes) == 0)
++				oob_index++;
++		}
+ 		ecclayout->oobfree->offset	= ecclayout->eccpos[0] +
+ 							ecclayout->eccbytes;
+ 		/* software bch library is used for locating errors */
+@@ -1889,7 +1897,9 @@ static int omap_nand_probe(struct platfo
+ 		ecclayout->eccbytes		= nand_chip->ecc.bytes *
+ 							(mtd->writesize /
+ 							nand_chip->ecc.size);
+-		ecclayout->eccpos[0]		= BADBLOCK_MARKER_LENGTH;
++		oob_index			= BADBLOCK_MARKER_LENGTH;
++		for (i = 0; i < ecclayout->eccbytes; i++, oob_index++)
++			ecclayout->eccpos[i]	= oob_index;
+ 		ecclayout->oobfree->offset	= ecclayout->eccpos[0] +
+ 							ecclayout->eccbytes;
+ 		/* This ECC scheme requires ELM H/W block */
+@@ -1919,7 +1929,12 @@ static int omap_nand_probe(struct platfo
+ 		ecclayout->eccbytes		= nand_chip->ecc.bytes *
+ 							(mtd->writesize /
+ 							nand_chip->ecc.size);
+-		ecclayout->eccpos[0]		= BADBLOCK_MARKER_LENGTH;
++		oob_index			= BADBLOCK_MARKER_LENGTH;
++		for (i = 0; i < ecclayout->eccbytes; i++, oob_index++) {
++			ecclayout->eccpos[i] = oob_index;
++			if (((i + 1) % nand_chip->ecc.bytes) == 0)
++				oob_index++;
++		}
+ 		ecclayout->oobfree->offset	= ecclayout->eccpos[0] +
+ 							ecclayout->eccbytes;
+ 		/* software bch library is used for locating errors */
+@@ -1962,7 +1977,9 @@ static int omap_nand_probe(struct platfo
+ 		ecclayout->eccbytes		= nand_chip->ecc.bytes *
+ 							(mtd->writesize /
+ 							nand_chip->ecc.size);
+-		ecclayout->eccpos[0]		= BADBLOCK_MARKER_LENGTH;
++		oob_index			= BADBLOCK_MARKER_LENGTH;
++		for (i = 0; i < ecclayout->eccbytes; i++, oob_index++)
++			ecclayout->eccpos[i]	= oob_index;
+ 		ecclayout->oobfree->offset	= ecclayout->eccpos[0] +
+ 							ecclayout->eccbytes;
+ 		break;
+@@ -1981,8 +1998,6 @@ static int omap_nand_probe(struct platfo
+ 	/* populate remaining ECC layout data */
+ 	ecclayout->oobfree->length = mtd->oobsize - (BADBLOCK_MARKER_LENGTH +
+ 							ecclayout->eccbytes);
+-	for (i = 1; i < ecclayout->eccbytes; i++)
+-		ecclayout->eccpos[i] = ecclayout->eccpos[0] + i;
+ 	/* check if NAND device's OOB is enough to store ECC signatures */
+ 	if (mtd->oobsize < (ecclayout->eccbytes + BADBLOCK_MARKER_LENGTH)) {
+ 		pr_err("not enough OOB bytes required = %d, available=%d\n",
 
 
