@@ -1,154 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755197AbaCDQqj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 11:46:39 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41593 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754018AbaCDQmj (ORCPT
+	id S1755891AbaCDQq4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 11:46:56 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:48582 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755231AbaCDQqx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 11:42:39 -0500
-Date: Tue, 4 Mar 2014 08:40:40 -0800
-From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-49f3fbc7b8576fd578f3504c65aae9b8a212d0f6@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        linux-arm-kernel@lists.infradead.org, peterz@infradead.org,
-        haojian.zhuang@gmail.com, linux@arm.linux.org.uk,
-        eric.y.miao@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, peterz@infradead.org,
-        haojian.zhuang@gmail.com, linux@arm.linux.org.uk,
-        eric.y.miao@gmail.com, tglx@linutronix.de
-In-Reply-To: <20140223212737.214342433@linutronix.de>
-References: <20140223212737.214342433@linutronix.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] arm: mmp:
-  Remove pointless fiddling with irq internals
-Git-Commit-ID: 49f3fbc7b8576fd578f3504c65aae9b8a212d0f6
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Tue, 4 Mar 2014 11:46:53 -0500
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>
+Subject: [PATCH v3 1/2] net: macb: Check DMA mappings for error
+Date: Tue,  4 Mar 2014 08:46:39 -0800
+Message-Id: <1393951600-26039-1-git-send-email-soren.brinkmann@xilinx.com>
+X-Mailer: git-send-email 1.9.0.1.g4196000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  49f3fbc7b8576fd578f3504c65aae9b8a212d0f6
-Gitweb:     http://git.kernel.org/tip/49f3fbc7b8576fd578f3504c65aae9b8a212d0f6
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Sun, 23 Feb 2014 21:40:13 +0000
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Tue, 4 Mar 2014 17:37:52 +0100
+With CONFIG_DMA_API_DEBUG enabled the following warning is printed:
+ WARNING: CPU: 0 PID: 619 at lib/dma-debug.c:1101 check_unmap+0x758/0x894()
+ macb e000b000.ethernet: DMA-API: device driver failed to check map error[device address=0x000000002d171c02] [size=322 bytes] [mapped as single]
+ Modules linked in:
+ CPU: 0 PID: 619 Comm: udhcpc Not tainted 3.14.0-rc3-xilinx-00219-gd158fc7f36a2 #63
+ [<c001516c>] (unwind_backtrace) from [<c0011df8>] (show_stack+0x10/0x14)
+ [<c0011df8>] (show_stack) from [<c03c7714>] (dump_stack+0x7c/0xc8)
+ [<c03c7714>] (dump_stack) from [<c00245cc>] (warn_slowpath_common+0x60/0x84)
+ [<c00245cc>] (warn_slowpath_common) from [<c0024670>] (warn_slowpath_fmt+0x2c/0x3c)
+ [<c0024670>] (warn_slowpath_fmt) from [<c0228244>] (check_unmap+0x758/0x894)
+ [<c0228244>] (check_unmap) from [<c0228588>] (debug_dma_unmap_page+0x64/0x70)
+ [<c0228588>] (debug_dma_unmap_page) from [<c02aba64>] (macb_interrupt+0x1f8/0x2dc)
+ [<c02aba64>] (macb_interrupt) from [<c006c6e4>] (handle_irq_event_percpu+0x2c/0x178)
+ [<c006c6e4>] (handle_irq_event_percpu) from [<c006c86c>] (handle_irq_event+0x3c/0x5c)
+ [<c006c86c>] (handle_irq_event) from [<c006f548>] (handle_fasteoi_irq+0xb8/0x100)
+ [<c006f548>] (handle_fasteoi_irq) from [<c006c148>] (generic_handle_irq+0x20/0x30)
+ [<c006c148>] (generic_handle_irq) from [<c000f35c>] (handle_IRQ+0x64/0x8c)
+ [<c000f35c>] (handle_IRQ) from [<c0008528>] (gic_handle_irq+0x3c/0x60)
+ [<c0008528>] (gic_handle_irq) from [<c0012904>] (__irq_svc+0x44/0x78)
+ Exception stack(0xed197f60 to 0xed197fa8)
+ 7f60: 00000134 60000013 bd94362e bd94362e be96b37c 00000014 fffffd72 00000122
+ 7f80: c000ebe4 ed196000 00000000 00000011 c032c0d8 ed197fa8 c0064008 c000ea20
+ 7fa0: 60000013 ffffffff
+ [<c0012904>] (__irq_svc) from [<c000ea20>] (ret_fast_syscall+0x0/0x48)
+ ---[ end trace 478f921d0d542d1e ]---
+ Mapped at:
+  [<c0227184>] debug_dma_map_page+0x48/0x11c
+  [<c02aaca0>] macb_start_xmit+0x184/0x2a8
+  [<c03143c0>] dev_hard_start_xmit+0x334/0x470
+  [<c032c09c>] sch_direct_xmit+0x78/0x2f8
+  [<c0314814>] __dev_queue_xmit+0x318/0x708
 
-arm: mmp: Remove pointless fiddling with irq internals
+due to missing checks of the dma mapping. Add the appropriate checks to fix
+this.
 
-The pm-mmp2 and pm-pxa910 power management related irq_set_wake
-callbacks fiddle pointlessly with the irq actions for no reason except
-for lack of understanding how the wakeup mechanism works.
-
-On supsend the core disables all interrupts lazily, i.e. it does not
-mask them at the irq controller level. So any interrupt which is
-firing during suspend will mark the corresponding interrupt line as
-pending. Just before the core powers down it checks whether there are
-interrupts pending from interrupt lines which are marked as wakeup
-sources and if so it aborts the suspend and resends the interrupts.
-If there was no interrupt at this point, the cpu goes into suspend
-with these interrupts unmasked.
-
-The IRQF_NO_SUSPEND flag for interrupt actions is a totally different
-mechanism. That allows the device driver to prevent the core from
-disabling the interrupt despite the fact that it is not marked as a
-wakeup source. This has nothing to do with the case at hand. It was
-introduced for special cases where lazy disable is not possible.
-
-Remove the nonsense along with the braindamaged boundary check. The
-core code does NOT call these functions out of boundary.
-
-Add a FIXME comment to an unhandled error path which merily printks
-some useless blurb instead of returning a proper error code.
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: arm <linux-arm-kernel@lists.infradead.org>
-Cc: Eric Miao <eric.y.miao@gmail.com>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Link: http://lkml.kernel.org/r/20140223212737.214342433@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 ---
- arch/arm/mach-mmp/pm-mmp2.c   | 16 +---------------
- arch/arm/mach-mmp/pm-pxa910.c | 20 ++++----------------
- 2 files changed, 5 insertions(+), 31 deletions(-)
+v3:
+ - move tx_head pointer increment to after the DMA error check
+v2:
+ - unlock spinlock when mapping error is detected in start_xmit()
+ - use kfree_skb() instead of dev_kfree_skb in start_xmit()
+---
+ drivers/net/ethernet/cadence/macb.c | 14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-mmp/pm-mmp2.c b/arch/arm/mach-mmp/pm-mmp2.c
-index 461a191..43b1a51 100644
---- a/arch/arm/mach-mmp/pm-mmp2.c
-+++ b/arch/arm/mach-mmp/pm-mmp2.c
-@@ -27,22 +27,8 @@
+diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+index 3190d38e16fb..1f03e2041e86 100644
+--- a/drivers/net/ethernet/cadence/macb.c
++++ b/drivers/net/ethernet/cadence/macb.c
+@@ -632,11 +632,16 @@ static void gem_rx_refill(struct macb *bp)
+ 					   "Unable to allocate sk_buff\n");
+ 				break;
+ 			}
+-			bp->rx_skbuff[entry] = skb;
  
- int mmp2_set_wake(struct irq_data *d, unsigned int on)
- {
--	int irq = d->irq;
--	struct irq_desc *desc = irq_to_desc(irq);
- 	unsigned long data = 0;
--
--	if (unlikely(irq >= nr_irqs)) {
--		pr_err("IRQ nubmers are out of boundary!\n");
--		return -EINVAL;
--	}
--
--	if (on) {
--		if (desc->action)
--			desc->action->flags |= IRQF_NO_SUSPEND;
--	} else {
--		if (desc->action)
--			desc->action->flags &= ~IRQF_NO_SUSPEND;
--	}
-+	int irq = d->irq;
+ 			/* now fill corresponding descriptor entry */
+ 			paddr = dma_map_single(&bp->pdev->dev, skb->data,
+ 					       bp->rx_buffer_size, DMA_FROM_DEVICE);
++			if (dma_mapping_error(&bp->pdev->dev, paddr)) {
++				dev_kfree_skb(skb);
++				break;
++			}
++
++			bp->rx_skbuff[entry] = skb;
  
- 	/* enable wakeup sources */
- 	switch (irq) {
-diff --git a/arch/arm/mach-mmp/pm-pxa910.c b/arch/arm/mach-mmp/pm-pxa910.c
-index 48981ca..04c9daf 100644
---- a/arch/arm/mach-mmp/pm-pxa910.c
-+++ b/arch/arm/mach-mmp/pm-pxa910.c
-@@ -27,22 +27,8 @@
- 
- int pxa910_set_wake(struct irq_data *data, unsigned int on)
- {
--	int irq = data->irq;
--	struct irq_desc *desc = irq_to_desc(data->irq);
- 	uint32_t awucrm = 0, apcr = 0;
--
--	if (unlikely(irq >= nr_irqs)) {
--		pr_err("IRQ nubmers are out of boundary!\n");
--		return -EINVAL;
--	}
--
--	if (on) {
--		if (desc->action)
--			desc->action->flags |= IRQF_NO_SUSPEND;
--	} else {
--		if (desc->action)
--			desc->action->flags &= ~IRQF_NO_SUSPEND;
--	}
-+	int irq = data->irq;
- 
- 	/* setting wakeup sources */
- 	switch (irq) {
-@@ -115,9 +101,11 @@ int pxa910_set_wake(struct irq_data *data, unsigned int on)
- 		if (irq >= IRQ_GPIO_START && irq < IRQ_BOARD_START) {
- 			awucrm = MPMU_AWUCRM_WAKEUP(2);
- 			apcr |= MPMU_APCR_SLPWP2;
--		} else
-+		} else {
-+			/* FIXME: This should return a proper error code ! */
- 			printk(KERN_ERR "Error: no defined wake up source irq: %d\n",
- 				irq);
-+		}
+ 			if (entry == RX_RING_SIZE - 1)
+ 				paddr |= MACB_BIT(RX_WRAP);
+@@ -1036,11 +1041,15 @@ static int macb_start_xmit(struct sk_buff *skb, struct net_device *dev)
  	}
  
- 	if (on) {
+ 	entry = macb_tx_ring_wrap(bp->tx_head);
+-	bp->tx_head++;
+ 	netdev_vdbg(bp->dev, "Allocated ring entry %u\n", entry);
+ 	mapping = dma_map_single(&bp->pdev->dev, skb->data,
+ 				 len, DMA_TO_DEVICE);
++	if (dma_mapping_error(&bp->pdev->dev, mapping)) {
++		kfree_skb(skb);
++		goto unlock;
++	}
+ 
++	bp->tx_head++;
+ 	tx_skb = &bp->tx_skb[entry];
+ 	tx_skb->skb = skb;
+ 	tx_skb->mapping = mapping;
+@@ -1066,6 +1075,7 @@ static int macb_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 	if (CIRC_SPACE(bp->tx_head, bp->tx_tail, TX_RING_SIZE) < 1)
+ 		netif_stop_queue(dev);
+ 
++unlock:
+ 	spin_unlock_irqrestore(&bp->lock, flags);
+ 
+ 	return NETDEV_TX_OK;
+-- 
+1.9.0.1.g4196000
+
