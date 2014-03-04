@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758239AbaCDUzF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:55:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41291 "EHLO
+	id S1758254AbaCDUzH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:55:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41288 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756600AbaCDUEQ (ORCPT
+	with ESMTP id S1756750AbaCDUEQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Mar 2014 15:04:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Enric Balletbo Serra <eballetbo@iseebcn.com>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Stefan Roese <sr@denx.de>, Pekon Gupta <pekon@ti.com>,
-        Brian Norris <computersforpeace@gmail.com>
-Subject: [PATCH 3.13 130/172] mtd: nand: omap: fix ecclayout to be in sync with u-boot NAND driver
-Date: Tue,  4 Mar 2014 12:03:34 -0800
-Message-Id: <20140304200303.870985498@linuxfoundation.org>
+        Steve Twiss <stwiss.opensource@diasemi.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.13 129/172] regulator: da9063: Bug fix when setting max voltage on LDOs 5-11
+Date: Tue,  4 Mar 2014 12:03:33 -0800
+Message-Id: <20140304200303.841740658@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -31,161 +29,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pekon Gupta <pekon@ti.com>
+From: Steve Twiss <stwiss.opensource@diasemi.com>
 
-commit eae39cb4934d3daab3ec828c5201c955b2e56af9 upstream.
+commit ebf6dad0de89677aa58a4d8b009014ff88a23452 upstream.
 
-Fixes: commit a919e51161b58ed7e6e663daba99ab7d558808f3
-       mtd: nand: omap2: clean-up BCHx_HW and BCHx_SW ECC configurations in device_probe
+Bug fix to allow the setting of maximum voltage for certain LDOs.
 
-Fixes ecclayout mismatch introduced in above commit for following ecc-schemes:
- - OMAP_ECC_BCH4_CODE_HW_DETECTION_SW
- - OMAP_ECC_BCH8_CODE_HW_DETECTION_SW
- However, this patch also touches other ecc-schemes as the fix required
- refactoring common code, into ecc-scheme specific code.
+What the bug is:
 
-This patch aligns ecc-layout for below ecc-schemes as per reference [1],[2],[3]
+There is a problem caused by an invalid calculation of n_voltages
+in the driver. This n_voltages value has the potential to be
+different for each regulator.
 
- +---+------------+-------------++-------------+-------------+
- |OOB|BCH8_CODE_HW|BCH8_CODE_HW_||HAM1_CODE_HW |HAM1_CODE_HW |
- |pos|            | DETECTION_SW||(x8 device)  |(x16 device) |
- +---+------------+-------------++-------------+-------------+
- | 0 |BADBLK_MARK | BADBLK_MARK || BADBLK_MARK | BADBLK_MARK |
- | 1 |BADBLK_MARK | BADBLK_MARK || eccpos[0]   | BADBLK_MARK |
- | 2 | eccpos[0]  | eccpos[0]   || eccpos[1]   | eccpos[0]   |
- | 3 | eccpos[1]  | eccpos[1]   || eccpos[2]   | eccpos[1]   |
- | 4 | eccpos[2]  | eccpos[2]   || eccpos[3]   | eccpos[2]   |
- | 5 | eccpos[3]  | eccpos[3]   || eccpos[4]   | eccpos[3]   |
- | 6 | eccpos[4]  | eccpos[4]   || eccpos[5]   | eccpos[4]   |
- | 7 | eccpos[5]  | eccpos[5]   || eccpos[6]   | eccpos[5]   |
- | 8 | eccpos[6]  | eccpos[6]   || eccpos[7]   | eccpos[6]   |
- | 9 | eccpos[7]  | eccpos[7]   || eccpos[8]   | eccpos[7]   |
- |10 | eccpos[8]  | eccpos[8]   || eccpos[9]   | eccpos[8]   |
- |11 | eccpos[9]  | eccpos[9]   || eccpos[10]  | eccpos[9]   |
- |12 | eccpos[10] | eccpos[10]  || eccpos[11]  | eccpos[10]  |
- |13 | eccpos[11] | eccpos[11]  || oobfree[0]  | eccpos[11]  |
- |14 | eccpos[12] | eccpos[12]  || oobfree[1]  | oobfree[0]  |
- |15 | eccpos[13] | <reserved>  || oobfree[2]  | oobfree[1]  |
- +---+------------+-------------++-------------+-------------+
- |16 | eccpos[14] | eccpos[13]  || oobfree[3]  | oobfree[2]  |
- |...| [...]      | [...]       || [...]       | [...]       |
- |56 | eccpos[54] | eccpos[51]  || oobfree[43] | oobfree[42] |
- |57 | eccpos[55] | <reserved>  || oobfree[44] | oobfree[43] |
- +===+============+=============+==============+=============+
- |58 | oobfree[0] | oobfree[0]  || oobfree[45] | oobfree[44] |
- |59 | oobfree[1] | oobfree[1]  || oobfree[46] | oobfree[45] |
- |60 | oobfree[2] | oobfree[2]  || oobfree[47] | oobfree[46] |
- |61 | oobfree[3] | oobfree[3]  || oobfree[48] | oobfree[47] |
- |62 | oobfree[4] | oobfree[4]  || oobfree[49] | oobfree[48] |
- |63 | oobfree[5] | oobfree[5]  || oobfree[50] | oobfree[49] |
- +---+------------+-------------+--------------+-------------+
+The value for linear_min_sel is set as DA9063_V##regl_name#
+which can be different depending upon the regulator. This is
+chosen according to the following definitions in the DA9063
+registers.h file:
 
-[1] ecc-layout expected by ROM code, as specified in SoC TRM under:
-      Chapter="Initialization"
-        Section="Device Initialization by ROM code"
-            Sub-Section="Memory Booting"
-                Heading="NAND"
-                Figure="ECC Locations in NAND Spare Areas"
+DA9063_VLDO1_BIAS	0
+DA9063_VLDO2_BIAS	0
+DA9063_VLDO3_BIAS	0
+DA9063_VLDO4_BIAS	0
+DA9063_VLDO5_BIAS	2
+DA9063_VLDO6_BIAS	2
+DA9063_VLDO7_BIAS	2
+DA9063_VLDO8_BIAS	2
+DA9063_VLDO9_BIAS	3
+DA9063_VLDO10_BIAS	2
+DA9063_VLDO11_BIAS	2
 
-[2] ecc-layout updates in u-boot
-    http://lists.denx.de/pipermail/u-boot/2013-November/167551.html
+The calculation for n_voltages is valid for LDOs whose BIAS value
+is zero but this is not correct for those LDOs which have a
+non-zero value.
 
-[3] u-boot configurations to match above ecc-layout are documented at
-    https://processors.wiki.ti.com/index.php/Linux_Core_NAND_User%27s_Guide
+What the fix is:
 
-Reported-by: Enric Balletbo Serra <eballetbo@iseebcn.com>
-Tested-by: Enric Balletbo i Serra <eballetbo@gmail.com>
-Tested-by: Stefan Roese <sr@denx.de>
-Signed-off-by: Pekon Gupta <pekon@ti.com>
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+In order to take into account the non-zero linear_min_sel value which
+is set for the regulators LDO5, LDO6, LDO7, LDO8, LDO9, LDO10 and
+LDO11, the calculation for n_voltages should take into account the
+missing term defined by DA9063_V##regl_name#.
+
+This will in turn allow the core constraints calculation to set the
+maximum voltage limits correctly and therefore allow users to apply
+the maximum expected voltage to all of the LDOs.
+
+Signed-off-by: Steve Twiss <stwiss.opensource@diasemi.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/nand/omap2.c |   31 +++++++++++++++++++++++--------
- 1 file changed, 23 insertions(+), 8 deletions(-)
+ drivers/regulator/da9063-regulator.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/mtd/nand/omap2.c
-+++ b/drivers/mtd/nand/omap2.c
-@@ -1633,6 +1633,7 @@ static int omap_nand_probe(struct platfo
- 	int				i;
- 	dma_cap_mask_t			mask;
- 	unsigned			sig;
-+	unsigned			oob_index;
- 	struct resource			*res;
- 	struct mtd_part_parser_data	ppdata = {};
- 
-@@ -1832,9 +1833,11 @@ static int omap_nand_probe(struct platfo
- 							(mtd->writesize /
- 							nand_chip->ecc.size);
- 		if (nand_chip->options & NAND_BUSWIDTH_16)
--			ecclayout->eccpos[0]	= BADBLOCK_MARKER_LENGTH;
-+			oob_index		= BADBLOCK_MARKER_LENGTH;
- 		else
--			ecclayout->eccpos[0]	= 1;
-+			oob_index		= 1;
-+		for (i = 0; i < ecclayout->eccbytes; i++, oob_index++)
-+			ecclayout->eccpos[i]	= oob_index;
- 		ecclayout->oobfree->offset	= ecclayout->eccpos[0] +
- 							ecclayout->eccbytes;
- 		break;
-@@ -1853,7 +1856,12 @@ static int omap_nand_probe(struct platfo
- 		ecclayout->eccbytes		= nand_chip->ecc.bytes *
- 							(mtd->writesize /
- 							nand_chip->ecc.size);
--		ecclayout->eccpos[0]		= BADBLOCK_MARKER_LENGTH;
-+		oob_index			= BADBLOCK_MARKER_LENGTH;
-+		for (i = 0; i < ecclayout->eccbytes; i++, oob_index++) {
-+			ecclayout->eccpos[i] = oob_index;
-+			if (((i + 1) % nand_chip->ecc.bytes) == 0)
-+				oob_index++;
-+		}
- 		ecclayout->oobfree->offset	= ecclayout->eccpos[0] +
- 							ecclayout->eccbytes;
- 		/* software bch library is used for locating errors */
-@@ -1889,7 +1897,9 @@ static int omap_nand_probe(struct platfo
- 		ecclayout->eccbytes		= nand_chip->ecc.bytes *
- 							(mtd->writesize /
- 							nand_chip->ecc.size);
--		ecclayout->eccpos[0]		= BADBLOCK_MARKER_LENGTH;
-+		oob_index			= BADBLOCK_MARKER_LENGTH;
-+		for (i = 0; i < ecclayout->eccbytes; i++, oob_index++)
-+			ecclayout->eccpos[i]	= oob_index;
- 		ecclayout->oobfree->offset	= ecclayout->eccpos[0] +
- 							ecclayout->eccbytes;
- 		/* This ECC scheme requires ELM H/W block */
-@@ -1919,7 +1929,12 @@ static int omap_nand_probe(struct platfo
- 		ecclayout->eccbytes		= nand_chip->ecc.bytes *
- 							(mtd->writesize /
- 							nand_chip->ecc.size);
--		ecclayout->eccpos[0]		= BADBLOCK_MARKER_LENGTH;
-+		oob_index			= BADBLOCK_MARKER_LENGTH;
-+		for (i = 0; i < ecclayout->eccbytes; i++, oob_index++) {
-+			ecclayout->eccpos[i] = oob_index;
-+			if (((i + 1) % nand_chip->ecc.bytes) == 0)
-+				oob_index++;
-+		}
- 		ecclayout->oobfree->offset	= ecclayout->eccpos[0] +
- 							ecclayout->eccbytes;
- 		/* software bch library is used for locating errors */
-@@ -1962,7 +1977,9 @@ static int omap_nand_probe(struct platfo
- 		ecclayout->eccbytes		= nand_chip->ecc.bytes *
- 							(mtd->writesize /
- 							nand_chip->ecc.size);
--		ecclayout->eccpos[0]		= BADBLOCK_MARKER_LENGTH;
-+		oob_index			= BADBLOCK_MARKER_LENGTH;
-+		for (i = 0; i < ecclayout->eccbytes; i++, oob_index++)
-+			ecclayout->eccpos[i]	= oob_index;
- 		ecclayout->oobfree->offset	= ecclayout->eccpos[0] +
- 							ecclayout->eccbytes;
- 		break;
-@@ -1981,8 +1998,6 @@ static int omap_nand_probe(struct platfo
- 	/* populate remaining ECC layout data */
- 	ecclayout->oobfree->length = mtd->oobsize - (BADBLOCK_MARKER_LENGTH +
- 							ecclayout->eccbytes);
--	for (i = 1; i < ecclayout->eccbytes; i++)
--		ecclayout->eccpos[i] = ecclayout->eccpos[0] + i;
- 	/* check if NAND device's OOB is enough to store ECC signatures */
- 	if (mtd->oobsize < (ecclayout->eccbytes + BADBLOCK_MARKER_LENGTH)) {
- 		pr_err("not enough OOB bytes required = %d, available=%d\n",
+--- a/drivers/regulator/da9063-regulator.c
++++ b/drivers/regulator/da9063-regulator.c
+@@ -1,3 +1,4 @@
++
+ /*
+  * Regulator driver for DA9063 PMIC series
+  *
+@@ -60,7 +61,8 @@ struct da9063_regulator_info {
+ 	.desc.ops = &da9063_ldo_ops, \
+ 	.desc.min_uV = (min_mV) * 1000, \
+ 	.desc.uV_step = (step_mV) * 1000, \
+-	.desc.n_voltages = (((max_mV) - (min_mV))/(step_mV) + 1), \
++	.desc.n_voltages = (((max_mV) - (min_mV))/(step_mV) + 1 \
++		+ (DA9063_V##regl_name##_BIAS)), \
+ 	.desc.enable_reg = DA9063_REG_##regl_name##_CONT, \
+ 	.desc.enable_mask = DA9063_LDO_EN, \
+ 	.desc.vsel_reg = DA9063_REG_V##regl_name##_A, \
 
 
