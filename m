@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932330AbaCDUFj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:05:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41716 "EHLO
+	id S932407AbaCDUFw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:05:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41810 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755340AbaCDUF3 (ORCPT
+	with ESMTP id S932363AbaCDUFp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:05:29 -0500
+	Tue, 4 Mar 2014 15:05:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH 3.10 70/97] usb: ehci: fix deadlock when threadirqs option is used
-Date: Tue,  4 Mar 2014 12:04:23 -0800
-Message-Id: <20140304200348.302907557@linuxfoundation.org>
+        Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>
+Subject: [PATCH 3.10 79/97] xtensa: introduce spill_registers_kernel macro
+Date: Tue,  4 Mar 2014 12:04:32 -0800
+Message-Id: <20140304200348.594906021@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -29,60 +28,180 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Max Filippov <jcmvbkbc@gmail.com>
 
-commit a1227f3c1030e96ebc51d677d2f636268845c5fb upstream.
+commit e2fd1374c705abe4661df3fb6fadb3879c7c1846 upstream.
 
-ehci_irq() and ehci_hrtimer_func() can deadlock on ehci->lock when
-threadirqs option is used. To prevent the deadlock use
-spin_lock_irqsave() in ehci_irq().
+Most in-kernel users want registers spilled on the kernel stack and
+don't require PS.EXCM to be set. That means that they don't need fixup
+routine and could reuse regular window overflow mechanism for that,
+which makes spill routine very simple.
 
-This change can be reverted when hrtimer callbacks become threaded.
-
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Suggested-by: Chris Zankel <chris@zankel.net>
+Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ehci-hcd.c |   13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ arch/xtensa/include/asm/traps.h |   44 ++++++++++++++++++-----------
+ arch/xtensa/kernel/entry.S      |   60 ++++++++++++++++++++++++++++++++--------
+ 2 files changed, 76 insertions(+), 28 deletions(-)
 
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -686,8 +686,15 @@ static irqreturn_t ehci_irq (struct usb_
- 	struct ehci_hcd		*ehci = hcd_to_ehci (hcd);
- 	u32			status, masked_status, pcd_status = 0, cmd;
- 	int			bh;
-+	unsigned long		flags;
+--- a/arch/xtensa/include/asm/traps.h
++++ b/arch/xtensa/include/asm/traps.h
+@@ -22,25 +22,37 @@ extern void do_unhandled(struct pt_regs
  
--	spin_lock (&ehci->lock);
-+	/*
-+	 * For threadirqs option we use spin_lock_irqsave() variant to prevent
-+	 * deadlock with ehci hrtimer callback, because hrtimer callbacks run
-+	 * in interrupt context even when threadirqs is specified. We can go
-+	 * back to spin_lock() variant when hrtimer callbacks become threaded.
-+	 */
-+	spin_lock_irqsave(&ehci->lock, flags);
+ static inline void spill_registers(void)
+ {
+-
++#if XCHAL_NUM_AREGS > 16
+ 	__asm__ __volatile__ (
+-		"movi	a14, "__stringify((1 << PS_EXCM_BIT) | LOCKLEVEL)"\n\t"
+-		"mov	a12, a0\n\t"
+-		"rsr	a13, sar\n\t"
+-		"xsr	a14, ps\n\t"
+-		"movi	a0, _spill_registers\n\t"
+-		"rsync\n\t"
+-		"callx0 a0\n\t"
+-		"mov	a0, a12\n\t"
+-		"wsr	a13, sar\n\t"
+-		"wsr	a14, ps\n\t"
+-		: :
+-#if defined(CONFIG_FRAME_POINTER)
+-		: "a2", "a3", "a4",       "a11", "a12", "a13", "a14", "a15",
++		"	call12	1f\n"
++		"	_j	2f\n"
++		"	retw\n"
++		"	.align	4\n"
++		"1:\n"
++		"	_entry	a1, 48\n"
++		"	addi	a12, a0, 3\n"
++#if XCHAL_NUM_AREGS > 32
++		"	.rept	(" __stringify(XCHAL_NUM_AREGS) " - 32) / 12\n"
++		"	_entry	a1, 48\n"
++		"	mov	a12, a0\n"
++		"	.endr\n"
++#endif
++		"	_entry	a1, 48\n"
++#if XCHAL_NUM_AREGS % 12 == 0
++		"	mov	a8, a8\n"
++#elif XCHAL_NUM_AREGS % 12 == 4
++		"	mov	a12, a12\n"
++#elif XCHAL_NUM_AREGS % 12 == 8
++		"	mov	a4, a4\n"
++#endif
++		"	retw\n"
++		"2:\n"
++		: : : "a12", "a13", "memory");
+ #else
+-		: "a2", "a3", "a4", "a7", "a11", "a12", "a13", "a14", "a15",
++	__asm__ __volatile__ (
++		"	mov	a12, a12\n"
++		: : : "memory");
+ #endif
+-		  "memory");
+ }
  
- 	status = ehci_readl(ehci, &ehci->regs->status);
+ #endif /* _XTENSA_TRAPS_H */
+--- a/arch/xtensa/kernel/entry.S
++++ b/arch/xtensa/kernel/entry.S
+@@ -1912,6 +1912,43 @@ ENTRY(system_call)
  
-@@ -705,7 +712,7 @@ static irqreturn_t ehci_irq (struct usb_
+ ENDPROC(system_call)
  
- 	/* Shared IRQ? */
- 	if (!masked_status || unlikely(ehci->rh_state == EHCI_RH_HALTED)) {
--		spin_unlock(&ehci->lock);
-+		spin_unlock_irqrestore(&ehci->lock, flags);
- 		return IRQ_NONE;
- 	}
++/*
++ * Spill live registers on the kernel stack macro.
++ *
++ * Entry condition: ps.woe is set, ps.excm is cleared
++ * Exit condition: windowstart has single bit set
++ * May clobber: a12, a13
++ */
++	.macro	spill_registers_kernel
++
++#if XCHAL_NUM_AREGS > 16
++	call12	1f
++	_j	2f
++	retw
++	.align	4
++1:
++	_entry	a1, 48
++	addi	a12, a0, 3
++#if XCHAL_NUM_AREGS > 32
++	.rept	(XCHAL_NUM_AREGS - 32) / 12
++	_entry	a1, 48
++	mov	a12, a0
++	.endr
++#endif
++	_entry	a1, 48
++#if XCHAL_NUM_AREGS % 12 == 0
++	mov	a8, a8
++#elif XCHAL_NUM_AREGS % 12 == 4
++	mov	a12, a12
++#elif XCHAL_NUM_AREGS % 12 == 8
++	mov	a4, a4
++#endif
++	retw
++2:
++#else
++	mov	a12, a12
++#endif
++	.endm
  
-@@ -823,7 +830,7 @@ dead:
+ /*
+  * Task switch.
+@@ -1924,21 +1961,20 @@ ENTRY(_switch_to)
  
- 	if (bh)
- 		ehci_work (ehci);
--	spin_unlock (&ehci->lock);
-+	spin_unlock_irqrestore(&ehci->lock, flags);
- 	if (pcd_status)
- 		usb_hcd_poll_rh_status(hcd);
- 	return IRQ_HANDLED;
+ 	entry	a1, 16
+ 
+-	mov	a12, a2			# preserve 'prev' (a2)
+-	mov	a13, a3			# and 'next' (a3)
++	mov	a10, a2			# preserve 'prev' (a2)
++	mov	a11, a3			# and 'next' (a3)
+ 
+ 	l32i	a4, a2, TASK_THREAD_INFO
+ 	l32i	a5, a3, TASK_THREAD_INFO
+ 
+-	save_xtregs_user a4 a6 a8 a9 a10 a11 THREAD_XTREGS_USER
++	save_xtregs_user a4 a6 a8 a9 a12 a13 THREAD_XTREGS_USER
+ 
+-	s32i	a0, a12, THREAD_RA	# save return address
+-	s32i	a1, a12, THREAD_SP	# save stack pointer
++	s32i	a0, a10, THREAD_RA	# save return address
++	s32i	a1, a10, THREAD_SP	# save stack pointer
+ 
+ 	/* Disable ints while we manipulate the stack pointer. */
+ 
+-	movi	a14, (1 << PS_EXCM_BIT) | LOCKLEVEL
+-	xsr	a14, ps
++	rsil	a14, LOCKLEVEL
+ 	rsr	a3, excsave1
+ 	rsync
+ 	s32i	a3, a3, EXC_TABLE_FIXUP	/* enter critical section */
+@@ -1953,7 +1989,7 @@ ENTRY(_switch_to)
+ 
+ 	/* Flush register file. */
+ 
+-	call0	_spill_registers	# destroys a3, a4, and SAR
++	spill_registers_kernel
+ 
+ 	/* Set kernel stack (and leave critical section)
+ 	 * Note: It's save to set it here. The stack will not be overwritten
+@@ -1969,13 +2005,13 @@ ENTRY(_switch_to)
+ 
+ 	/* restore context of the task 'next' */
+ 
+-	l32i	a0, a13, THREAD_RA	# restore return address
+-	l32i	a1, a13, THREAD_SP	# restore stack pointer
++	l32i	a0, a11, THREAD_RA	# restore return address
++	l32i	a1, a11, THREAD_SP	# restore stack pointer
+ 
+-	load_xtregs_user a5 a6 a8 a9 a10 a11 THREAD_XTREGS_USER
++	load_xtregs_user a5 a6 a8 a9 a12 a13 THREAD_XTREGS_USER
+ 
+ 	wsr	a14, ps
+-	mov	a2, a12			# return 'prev'
++	mov	a2, a10			# return 'prev'
+ 	rsync
+ 
+ 	retw
 
 
