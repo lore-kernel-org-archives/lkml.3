@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933104AbaCDVLF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:11:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41109 "EHLO
+	id S933133AbaCDVLw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:11:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41098 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756463AbaCDUDp (ORCPT
+	with ESMTP id S1756236AbaCDUDo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:03:45 -0500
+	Tue, 4 Mar 2014 15:03:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>,
-        Liam Girdwood <liam.r.girdwood@linux.intel.com>,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.13 091/172] ASoC: wm8770: Fix wrong number of enum items
-Date: Tue,  4 Mar 2014 12:02:55 -0800
-Message-Id: <20140304200302.625757655@linuxfoundation.org>
+        Shawn Guo <shawn.guo@linaro.org>, Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.13 089/172] ASoC: fsl: fix pm support of machine drivers
+Date: Tue,  4 Mar 2014 12:02:53 -0800
+Message-Id: <20140304200302.567044728@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -31,37 +28,186 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Shawn Guo <shawn.guo@linaro.org>
 
-commit 7a6c0a58dc824523966f212c76322d47c5b0e6fe upstream.
+commit 47cf84e17ebb79a20e6244b954c4ea4e18a82d43 upstream.
 
-wm8770 codec driver defines ain_enum with a wrong number of items.
+The commit 1abe729 (ASoC: fsl: Add missing pm to current machine
+drivers) enables pm support for a few IMX machine drivers.  But it does
+not update dev drvdata to be the pointer to 'card'.  This causes the
+kernel dump below in system suspend, because snd_soc_suspend() expects
+that the dev drvdata points to 'card', while it still points to the
+private data of machine driver.
 
-Use SOC_ENUM_DOUBLE_DECL() macro and it's automatically fixed.
+This patch fixes imx-sgtl5000 and imx-wm8962 by attaching 'card' to dev
+drvdata and private data to card drvdata.  For imx-mc13783, I simply
+revert the pm change because it must be broken for the same reason and
+I don't have hardware to test pm enabling code.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Acked-by: Liam Girdwood <liam.r.girdwood@linux.intel.com>
-Acked-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+$ echo mem > /sys/power/state
+PM: Syncing filesystems ... done.
+PM: Preparing system for mem sleep
+mmc1: card e624 removed
+Freezing user space processes ... (elapsed 0.002 seconds) done.
+Freezing remaining freezable tasks ... (elapsed 0.002 seconds) done.
+PM: Entering mem sleep
+INFO: trying to register non-static key.
+the code is fine but needs lockdep annotation.
+turning off the locking correctness validator.
+CPU: 0 PID: 1861 Comm: bash Not tainted 3.14.0-rc1+ #1648
+Backtrace:
+[<80012144>] (dump_backtrace) from [<800122e4>] (show_stack+0x18/0x1c)
+ r6:8079c77c r5:00000c5a r4:00000000 r3:00000000
+[<800122cc>] (show_stack) from [<80637ac0>] (dump_stack+0x78/0x94)
+[<80637a48>] (dump_stack) from [<80028918>] (warn_slowpath_common+0x6c/0x8c)
+ r4:bdb21c38 r3:be62df00
+[<800288ac>] (warn_slowpath_common) from [<800289dc>] (warn_slowpath_fmt+0x38/0x40)
+ r8:be62e3a8 r7:bf122960 r6:00000005 r5:00000000 r4:00000000
+[<800289a8>] (warn_slowpath_fmt) from [<8006518c>] (__lock_acquire+0x1ae0/0x1ce0)
+ r3:8079d598 r2:80799e70
+[<800636ac>] (__lock_acquire) from [<80065894>] (lock_acquire+0x68/0x7c)
+ r10:bdb20000 r9:be62df00 r8:00000000 r7:00000000 r6:60000013 r5:bdb20000
+ r4:00000000
+[<8006582c>] (lock_acquire) from [<8063c938>] (mutex_lock_nested+0x5c/0x3b8)
+ r7:00000000 r6:80dfc78c r5:804be444 r4:bf122928
+[<8063c8dc>] (mutex_lock_nested) from [<804be444>] (snd_soc_suspend+0x34/0x42c)
+ r10:00000000 r9:00000000 r8:00000000 r7:bf1c4444 r6:bf1c4410 r5:be978150
+ r4:be978010
+[<804be410>] (snd_soc_suspend) from [<8034392c>] (platform_pm_suspend+0x34/0x64)
+ r10:00000000 r8:00000000 r7:bf1c4444 r6:bf1c4410 r5:803438f8 r4:bf1c4410
+[<803438f8>] (platform_pm_suspend) from [<80348e18>] (dpm_run_callback.isra.7+0x34/0x6c)
+[<80348de4>] (dpm_run_callback.isra.7) from [<80349354>] (__device_suspend+0x10c/0x220)
+ r9:808dd974 r8:808c4a5c r6:00000002 r5:80e5001c r4:bf1c4410
+[<80349248>] (__device_suspend) from [<8034a338>] (dpm_suspend+0x60/0x220)
+ r7:bf1c4410 r6:808dd90c r5:80e5001c r4:bf1c44c0
+[<8034a2d8>] (dpm_suspend) from [<8034a790>] (dpm_suspend_start+0x60/0x68)
+ r10:8079a818 r9:00000000 r8:00000004 r7:80dfbe90 r6:80641eec r5:00000000
+ r4:00000002
+[<8034a730>] (dpm_suspend_start) from [<8006a788>] (suspend_devices_and_enter+0x74/0x318)
+ r4:00000003 r3:80dfbe98
+[<8006a714>] (suspend_devices_and_enter) from [<8006abd8>] (pm_suspend+0x1ac/0x244)
+ r10:8079a818 r8:00000004 r7:00000003 r6:80641eec r5:00000000 r4:00000003
+[<8006aa2c>] (pm_suspend) from [<80069a4c>] (state_store+0x70/0xc0)
+ r5:00000003 r4:bd85ea40
+[<800699dc>] (state_store) from [<80294034>] (kobj_attr_store+0x1c/0x28)
+ r10:beb9fe08 r8:00000000 r7:bdb21f78 r6:bd85ea40 r5:00000004 r4:beb9fe00
+[<80294018>] (kobj_attr_store) from [<80140f90>] (sysfs_kf_write+0x54/0x58)
+[<80140f3c>] (sysfs_kf_write) from [<8014474c>] (kernfs_fop_write+0xc4/0x160)
+ r6:bd85ea40 r5:beb9fe00 r4:00000004 r3:80140f3c
+[<80144688>] (kernfs_fop_write) from [<800dfa14>] (vfs_write+0xbc/0x184)
+ r10:00000000 r9:00000000 r8:00000000 r7:bdb21f78 r6:00500c08 r5:00000004
+ r4:be782600
+[<800df958>] (vfs_write) from [<800dfe00>] (SyS_write+0x48/0x70)
+ r10:00000000 r8:00000000 r7:00000004 r6:00500c08 r5:00000000 r4:be782600
+[<800dfdb8>] (SyS_write) from [<8000e800>] (ret_fast_syscall+0x0/0x48)
+ r9:bdb20000 r8:8000e9c4 r7:00000004 r6:00500c08 r5:00000004 r4:76eb65e0
+
+Fixes: 1abe729 (ASoC: fsl: Add missing pm to current machine drivers)
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
 Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm8770.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/soc/fsl/imx-mc13783.c  |    1 -
+ sound/soc/fsl/imx-sgtl5000.c |   10 ++++++----
+ sound/soc/fsl/imx-wm8962.c   |   11 +++++++----
+ 3 files changed, 13 insertions(+), 9 deletions(-)
 
---- a/sound/soc/codecs/wm8770.c
-+++ b/sound/soc/codecs/wm8770.c
-@@ -196,8 +196,8 @@ static const char *ain_text[] = {
- 	"AIN5", "AIN6", "AIN7", "AIN8"
- };
+--- a/sound/soc/fsl/imx-mc13783.c
++++ b/sound/soc/fsl/imx-mc13783.c
+@@ -160,7 +160,6 @@ static struct platform_driver imx_mc1378
+ 	.driver = {
+ 		.name = "imx_mc13783",
+ 		.owner = THIS_MODULE,
+-		.pm = &snd_soc_pm_ops,
+ 	},
+ 	.probe = imx_mc13783_probe,
+ 	.remove = imx_mc13783_remove
+--- a/sound/soc/fsl/imx-sgtl5000.c
++++ b/sound/soc/fsl/imx-sgtl5000.c
+@@ -33,8 +33,7 @@ struct imx_sgtl5000_data {
  
--static const struct soc_enum ain_enum =
--	SOC_ENUM_DOUBLE(WM8770_ADCMUX, 0, 4, 8, ain_text);
-+static SOC_ENUM_DOUBLE_DECL(ain_enum,
-+			    WM8770_ADCMUX, 0, 4, ain_text);
+ static int imx_sgtl5000_dai_init(struct snd_soc_pcm_runtime *rtd)
+ {
+-	struct imx_sgtl5000_data *data = container_of(rtd->card,
+-					struct imx_sgtl5000_data, card);
++	struct imx_sgtl5000_data *data = snd_soc_card_get_drvdata(rtd->card);
+ 	struct device *dev = rtd->card->dev;
+ 	int ret;
  
- static const struct snd_kcontrol_new ain_mux =
- 	SOC_DAPM_ENUM("Capture Mux", ain_enum);
+@@ -159,13 +158,15 @@ static int imx_sgtl5000_probe(struct pla
+ 	data->card.dapm_widgets = imx_sgtl5000_dapm_widgets;
+ 	data->card.num_dapm_widgets = ARRAY_SIZE(imx_sgtl5000_dapm_widgets);
+ 
++	platform_set_drvdata(pdev, &data->card);
++	snd_soc_card_set_drvdata(&data->card, data);
++
+ 	ret = devm_snd_soc_register_card(&pdev->dev, &data->card);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "snd_soc_register_card failed (%d)\n", ret);
+ 		goto fail;
+ 	}
+ 
+-	platform_set_drvdata(pdev, data);
+ 	of_node_put(ssi_np);
+ 	of_node_put(codec_np);
+ 
+@@ -184,7 +185,8 @@ fail:
+ 
+ static int imx_sgtl5000_remove(struct platform_device *pdev)
+ {
+-	struct imx_sgtl5000_data *data = platform_get_drvdata(pdev);
++	struct snd_soc_card *card = platform_get_drvdata(pdev);
++	struct imx_sgtl5000_data *data = snd_soc_card_get_drvdata(card);
+ 
+ 	clk_put(data->codec_clk);
+ 
+--- a/sound/soc/fsl/imx-wm8962.c
++++ b/sound/soc/fsl/imx-wm8962.c
+@@ -71,7 +71,7 @@ static int imx_wm8962_set_bias_level(str
+ {
+ 	struct snd_soc_dai *codec_dai = card->rtd[0].codec_dai;
+ 	struct imx_priv *priv = &card_priv;
+-	struct imx_wm8962_data *data = platform_get_drvdata(priv->pdev);
++	struct imx_wm8962_data *data = snd_soc_card_get_drvdata(card);
+ 	struct device *dev = &priv->pdev->dev;
+ 	unsigned int pll_out;
+ 	int ret;
+@@ -137,7 +137,7 @@ static int imx_wm8962_late_probe(struct
+ {
+ 	struct snd_soc_dai *codec_dai = card->rtd[0].codec_dai;
+ 	struct imx_priv *priv = &card_priv;
+-	struct imx_wm8962_data *data = platform_get_drvdata(priv->pdev);
++	struct imx_wm8962_data *data = snd_soc_card_get_drvdata(card);
+ 	struct device *dev = &priv->pdev->dev;
+ 	int ret;
+ 
+@@ -264,13 +264,15 @@ static int imx_wm8962_probe(struct platf
+ 	data->card.late_probe = imx_wm8962_late_probe;
+ 	data->card.set_bias_level = imx_wm8962_set_bias_level;
+ 
++	platform_set_drvdata(pdev, &data->card);
++	snd_soc_card_set_drvdata(&data->card, data);
++
+ 	ret = devm_snd_soc_register_card(&pdev->dev, &data->card);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "snd_soc_register_card failed (%d)\n", ret);
+ 		goto clk_fail;
+ 	}
+ 
+-	platform_set_drvdata(pdev, data);
+ 	of_node_put(ssi_np);
+ 	of_node_put(codec_np);
+ 
+@@ -289,7 +291,8 @@ fail:
+ 
+ static int imx_wm8962_remove(struct platform_device *pdev)
+ {
+-	struct imx_wm8962_data *data = platform_get_drvdata(pdev);
++	struct snd_soc_card *card = platform_get_drvdata(pdev);
++	struct imx_wm8962_data *data = snd_soc_card_get_drvdata(card);
+ 
+ 	if (!IS_ERR(data->codec_clk))
+ 		clk_disable_unprepare(data->codec_clk);
 
 
