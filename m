@@ -1,87 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757906AbaCDUUe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:20:34 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:44035 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756649AbaCDUUa (ORCPT
+	id S1757918AbaCDUVA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:21:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41677 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757246AbaCDUF0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:20:30 -0500
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: linux@arm.linux.org.uk
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] [RESEND] ARM: footbridge: remove obsolete IRQF_DISABLED
-Date: Tue,  4 Mar 2014 21:20:13 +0100
-Message-Id: <1393964413-16829-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1386395865-11910-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1386395865-11910-1-git-send-email-michael.opdenacker@free-electrons.com>
+	Tue, 4 Mar 2014 15:05:26 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Mark Brown <broonie@linaro.org>,
+        Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+Subject: [PATCH 3.10 47/97] ASoC: da732x: Mark DC offset control registers volatile
+Date: Tue,  4 Mar 2014 12:04:00 -0800
+Message-Id: <20140304200347.583215040@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
+References: <20140304200345.895517495@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch proposes to remove the IRQF_DISABLED flag from footbridge
-code. It's a NOOP since 2.6.35.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+------------------
+
+From: Mark Brown <broonie@linaro.org>
+
+commit 75306820248e26d15d84acf4e297b9fb27dd3bb2 upstream.
+
+The driver reads from the DC offset control registers during callibration
+but since the registers are marked as volatile and there is a register
+cache the values will not be read from the hardware after the first reading
+rendering the callibration ineffective.
+
+It appears that the driver was originally written for the ASoC level
+register I/O code but converted to regmap prior to merge and this issue
+was missed during the conversion as the framework level volatile register
+functionality was not being used.
+
+Signed-off-by: Mark Brown <broonie@linaro.org>
+Acked-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- arch/arm/mach-footbridge/dc21285-timer.c |  2 +-
- arch/arm/mach-footbridge/dc21285.c       | 10 +++++-----
- arch/arm/mach-footbridge/isa-timer.c     |  2 +-
- 3 files changed, 7 insertions(+), 7 deletions(-)
+ sound/soc/codecs/da732x.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/arch/arm/mach-footbridge/dc21285-timer.c b/arch/arm/mach-footbridge/dc21285-timer.c
-index 3971104d32d4..952508f58ffb 100644
---- a/arch/arm/mach-footbridge/dc21285-timer.c
-+++ b/arch/arm/mach-footbridge/dc21285-timer.c
-@@ -105,7 +105,7 @@ static irqreturn_t timer1_interrupt(int irq, void *dev_id)
- static struct irqaction footbridge_timer_irq = {
- 	.name		= "dc21285_timer1",
- 	.handler	= timer1_interrupt,
--	.flags		= IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
-+	.flags		= IRQF_TIMER | IRQF_IRQPOLL,
- 	.dev_id		= &ckevt_dc21285,
+--- a/sound/soc/codecs/da732x.c
++++ b/sound/soc/codecs/da732x.c
+@@ -1268,11 +1268,23 @@ static struct snd_soc_dai_driver da732x_
+ 	},
  };
  
-diff --git a/arch/arm/mach-footbridge/dc21285.c b/arch/arm/mach-footbridge/dc21285.c
-index 7c2fdae9a38b..96a3d73ef4bf 100644
---- a/arch/arm/mach-footbridge/dc21285.c
-+++ b/arch/arm/mach-footbridge/dc21285.c
-@@ -334,15 +334,15 @@ void __init dc21285_preinit(void)
- 	/*
- 	 * We don't care if these fail.
- 	 */
--	dc21285_request_irq(IRQ_PCI_SERR, dc21285_serr_irq, IRQF_DISABLED,
-+	dc21285_request_irq(IRQ_PCI_SERR, dc21285_serr_irq, 0,
- 			    "PCI system error", &serr_timer);
--	dc21285_request_irq(IRQ_PCI_PERR, dc21285_parity_irq, IRQF_DISABLED,
-+	dc21285_request_irq(IRQ_PCI_PERR, dc21285_parity_irq, 0,
- 			    "PCI parity error", &perr_timer);
--	dc21285_request_irq(IRQ_PCI_ABORT, dc21285_abort_irq, IRQF_DISABLED,
-+	dc21285_request_irq(IRQ_PCI_ABORT, dc21285_abort_irq, 0,
- 			    "PCI abort", NULL);
--	dc21285_request_irq(IRQ_DISCARD_TIMER, dc21285_discard_irq, IRQF_DISABLED,
-+	dc21285_request_irq(IRQ_DISCARD_TIMER, dc21285_discard_irq, 0,
- 			    "Discard timer", NULL);
--	dc21285_request_irq(IRQ_PCI_DPERR, dc21285_dparity_irq, IRQF_DISABLED,
-+	dc21285_request_irq(IRQ_PCI_DPERR, dc21285_dparity_irq, 0,
- 			    "PCI data parity", NULL);
++static bool da732x_volatile(struct device *dev, unsigned int reg)
++{
++	switch (reg) {
++	case DA732X_REG_HPL_DAC_OFF_CNTL:
++	case DA732X_REG_HPR_DAC_OFF_CNTL:
++		return true;
++	default:
++		return false;
++	}
++}
++
+ static const struct regmap_config da732x_regmap = {
+ 	.reg_bits		= 8,
+ 	.val_bits		= 8,
  
- 	if (cfn_mode) {
-diff --git a/arch/arm/mach-footbridge/isa-timer.c b/arch/arm/mach-footbridge/isa-timer.c
-index d9301dd56354..b73f52e196b9 100644
---- a/arch/arm/mach-footbridge/isa-timer.c
-+++ b/arch/arm/mach-footbridge/isa-timer.c
-@@ -27,7 +27,7 @@ static irqreturn_t pit_timer_interrupt(int irq, void *dev_id)
- static struct irqaction pit_timer_irq = {
- 	.name		= "pit",
- 	.handler	= pit_timer_interrupt,
--	.flags		= IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
-+	.flags		= IRQF_TIMER | IRQF_IRQPOLL,
- 	.dev_id		= &i8253_clockevent,
- };
- 
--- 
-1.8.3.2
+ 	.max_register		= DA732X_MAX_REG,
++	.volatile_reg		= da732x_volatile,
+ 	.reg_defaults		= da732x_reg_cache,
+ 	.num_reg_defaults	= ARRAY_SIZE(da732x_reg_cache),
+ 	.cache_type		= REGCACHE_RBTREE,
+
 
