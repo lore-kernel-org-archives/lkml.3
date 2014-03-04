@@ -1,98 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758354AbaCDU6V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:58:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41257 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756710AbaCDUEK (ORCPT
+	id S1758382AbaCDU6d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:58:33 -0500
+Received: from www.linutronix.de ([62.245.132.108]:37043 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758364AbaCDU6a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:04:10 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yifan Zhang <zhangyf@marvell.com>, Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 3.13 137/172] iommu/arm-smmu: fix pud/pmd entry fill sequence
-Date: Tue,  4 Mar 2014 12:03:41 -0800
-Message-Id: <20140304200304.092688629@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
-References: <20140304200259.626667112@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 4 Mar 2014 15:58:30 -0500
+Date: Tue, 4 Mar 2014 21:58:37 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andy Lutomirski <luto@amacapital.net>
+cc: Alexey Perevalov <a.perevalov@samsung.com>, linux-kernel@vger.kernel.org,
+        john.stultz@linaro.org, Anton Vorontsov <anton@enomsg.org>,
+        kyungmin.park@samsung.com, cw00.choi@samsung.com,
+        akpm@linux-foundation.org,
+        Anton Vorontsov <anton.vorontsov@linaro.org>
+Subject: Re: [PATCH v4 5/6] timerfd: Add support for deferrable timers
+In-Reply-To: <530D5715.1050901@mit.edu>
+Message-ID: <alpine.DEB.2.02.1403042153520.18573@ionos.tec.linutronix.de>
+References: <1392913425-29369-1-git-send-email-a.perevalov@samsung.com> <1392913425-29369-6-git-send-email-a.perevalov@samsung.com> <530D5715.1050901@mit.edu>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+On Tue, 25 Feb 2014, Andy Lutomirski wrote:
+> On 02/20/2014 08:23 AM, Alexey Perevalov wrote:
+> > From: Anton Vorontsov <anton@enomsg.org>
+> > 
+> > This patch implements a userland-side API for generic deferrable timers,
+> > per linux/timer.h:
+> > 
+> >  * A deferrable timer will work normally when the system is busy, but
+> >  * will not cause a CPU to come out of idle just to service it; instead,
+> >  * the timer will be serviced when the CPU eventually wakes up with a
+> >  * subsequent non-deferrable timer.
+> > 
+> > These timers are crucial for power saving, i.e. periodic tasks that want
+> > to work in background when the system is under use, but don't want to
+> > cause wakeups themselves.
+> 
+> Please don't.  This API sucks for all kinds of reasons:
+> 
+>  - Why is it a new kind of clock?
 
-------------------
+We made it a flag already.
 
-From: Yifan Zhang <zhangyf@marvell.com>
+>  - How deferrable is deferrable?
 
-commit 97a644208d1a08b7104d1fe2ace8cef011222711 upstream.
+Deferrable is infinite.
 
-The ARM SMMU driver's population of puds and pmds is broken, since we
-iterate over the next level of table repeatedly setting the current
-level descriptor to point at the pmd being initialised. This is clearly
-wrong when dealing with multiple pmds/puds.
+>  - It adds new core code, which serves no purpose (the problem is
+> already solved).
 
-This patch fixes the problem by moving the pud/pmd population out of the
-loop and instead performing it when we allocate the next level (like we
-correctly do for ptes already). The starting address for the next level
-is then calculated prior to entering the loop.
+You wish and you're wrong.
 
-Signed-off-by: Yifan Zhang <zhangyf@marvell.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    - Make this work with the timer_list stuff for arbitrary clock
+      ids. No way we go back to the mess of CLOCK_REALTIME which we
+      had before hrtimers
 
----
- drivers/iommu/arm-smmu.c |   14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+    - No way that we add a gazillion of extra code in timer related
+      interfaces to distinguish between deferrable and non deferrable
+      timers utilizing a different interface.
 
---- a/drivers/iommu/arm-smmu.c
-+++ b/drivers/iommu/arm-smmu.c
-@@ -1317,6 +1317,11 @@ static int arm_smmu_alloc_init_pmd(struc
- 		pmd = pmd_alloc_one(NULL, addr);
- 		if (!pmd)
- 			return -ENOMEM;
-+
-+		pud_populate(NULL, pud, pmd);
-+		arm_smmu_flush_pgtable(smmu, pud, sizeof(*pud));
-+
-+		pmd += pmd_index(addr);
- 	} else
- #endif
- 		pmd = pmd_offset(pud, addr);
-@@ -1325,8 +1330,6 @@ static int arm_smmu_alloc_init_pmd(struc
- 		next = pmd_addr_end(addr, end);
- 		ret = arm_smmu_alloc_init_pte(smmu, pmd, addr, end, pfn,
- 					      flags, stage);
--		pud_populate(NULL, pud, pmd);
--		arm_smmu_flush_pgtable(smmu, pud, sizeof(*pud));
- 		phys += next - addr;
- 	} while (pmd++, addr = next, addr < end);
- 
-@@ -1346,6 +1349,11 @@ static int arm_smmu_alloc_init_pud(struc
- 		pud = pud_alloc_one(NULL, addr);
- 		if (!pud)
- 			return -ENOMEM;
-+
-+		pgd_populate(NULL, pgd, pud);
-+		arm_smmu_flush_pgtable(smmu, pgd, sizeof(*pgd));
-+
-+		pud += pud_index(addr);
- 	} else
- #endif
- 		pud = pud_offset(pgd, addr);
-@@ -1354,8 +1362,6 @@ static int arm_smmu_alloc_init_pud(struc
- 		next = pud_addr_end(addr, end);
- 		ret = arm_smmu_alloc_init_pmd(smmu, pud, addr, next, phys,
- 					      flags, stage);
--		pgd_populate(NULL, pud, pgd);
--		arm_smmu_flush_pgtable(smmu, pgd, sizeof(*pgd));
- 		phys += next - addr;
- 	} while (pud++, addr = next, addr < end);
- 
+> On the other hand, if you added a fancier version of timerfd_settime
+> that could explicitly set the slack value (or, equivalently, the
+> earliest and latest allowable times), that could be quite useful.
+> 
+> It's often bugged me that timer slack is per-process.
 
+That's a totally different issue. There is a world aside of timerfd
+timers.
 
+Thanks,
+
+	tglx
