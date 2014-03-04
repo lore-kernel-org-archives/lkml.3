@@ -1,419 +1,393 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756138AbaCDFjs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 00:39:48 -0500
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:43812 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752123AbaCDFjr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 00:39:47 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zze0eahzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6h1082kzz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch1155h)
-From: Robin Gong <b38343@freescale.com>
-To: <lgirdwood@gmail.com>, <broonie@kernel.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] regulator: pfuze100: add pfuze200 support
-Date: Tue, 4 Mar 2014 13:45:33 +0800
-Message-ID: <1393911933-25149-1-git-send-email-b38343@freescale.com>
-X-Mailer: git-send-email 1.7.5.4
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	id S1752216AbaCDFnd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 00:43:33 -0500
+Received: from mga09.intel.com ([134.134.136.24]:17502 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750990AbaCDFnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 00:43:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,583,1389772800"; 
+   d="scan'208";a="493587984"
+From: "David E. Box" <david.e.box@linux.intel.com>
+To: matthew.garrett@nebula.com
+Cc: "David E. Box" <david.e.box@linux.intel.com>, linux-kernel@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org
+Subject: [PATCH] Revert "X86 platform: New BayTrail IOSF-SB MBI driver"
+Date: Mon,  3 Mar 2014 21:41:43 -0800
+Message-Id: <1393911703-31691-1-git-send-email-david.e.box@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-support pfuze200 chip which remove SW1C and SW4 based on pfuze100.
+From: "David E. Box" <david.e.box@linux.intel.com>
 
-Signed-off-by: Robin Gong <b38343@freescale.com>
+This reverts commit 997ab407d2b4e7d7ce2788d2de68435eb94fcfec. This driver is
+replaced by the more general SOC IOSF driver in commit 46184415368a.
+
+Signed-off-by: David E. Box <david.e.box@linux.intel.com>
 ---
- drivers/regulator/pfuze100-regulator.c |  196 +++++++++++++++++++++++---------
- include/linux/regulator/pfuze100.h     |   14 +++
- 2 files changed, 157 insertions(+), 53 deletions(-)
+ drivers/platform/x86/Kconfig          |    8 --
+ drivers/platform/x86/Makefile         |    1 -
+ drivers/platform/x86/intel_baytrail.c |  224 ---------------------------------
+ drivers/platform/x86/intel_baytrail.h |   90 -------------
+ 4 files changed, 323 deletions(-)
+ delete mode 100644 drivers/platform/x86/intel_baytrail.c
+ delete mode 100644 drivers/platform/x86/intel_baytrail.h
 
-diff --git a/drivers/regulator/pfuze100-regulator.c b/drivers/regulator/pfuze100-regulator.c
-index ab174f2..9bf0ee9 100644
---- a/drivers/regulator/pfuze100-regulator.c
-+++ b/drivers/regulator/pfuze100-regulator.c
-@@ -56,6 +56,8 @@
- #define PFUZE100_VGEN5VOL	0x70
- #define PFUZE100_VGEN6VOL	0x71
+diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+index 5ae65c1..aee5f72 100644
+--- a/drivers/platform/x86/Kconfig
++++ b/drivers/platform/x86/Kconfig
+@@ -819,12 +819,4 @@ config PVPANIC
+ 	  a paravirtualized device provided by QEMU; it lets a virtual machine
+ 	  (guest) communicate panic events to the host.
  
-+enum chips {PFUZE100, PFUZE200, PFUZE_NUM};
-+
- struct pfuze_regulator {
- 	struct regulator_desc desc;
- 	unsigned char stby_reg;
-@@ -63,6 +65,7 @@ struct pfuze_regulator {
- };
- 
- struct pfuze_chip {
-+	int	chip_id;
- 	struct regmap *regmap;
- 	struct device *dev;
- 	struct pfuze_regulator regulator_descs[PFUZE100_MAX_REGULATOR];
-@@ -77,15 +80,15 @@ static const int pfuze100_vsnvs[] = {
- 	1000000, 1100000, 1200000, 1300000, 1500000, 1800000, 3000000,
- };
- 
--static const struct i2c_device_id pfuze_device_id[] = {
--	{.name = "pfuze100"},
--	{},
-+static const struct i2c_device_id pfuze_device_id[PFUZE_NUM] = {
-+	{.name = "pfuze100", .driver_data = PFUZE100},
-+	{.name = "pfuze200", .driver_data = PFUZE200},
- };
- MODULE_DEVICE_TABLE(i2c, pfuze_device_id);
- 
--static const struct of_device_id pfuze_dt_ids[] = {
--	{ .compatible = "fsl,pfuze100" },
--	{},
-+static const struct of_device_id pfuze_dt_ids[PFUZE_NUM] = {
-+	{ .compatible = "fsl,pfuze100", .data = (void *)PFUZE100},
-+	{ .compatible = "fsl,pfuze200", .data = (void *)PFUZE200},
- };
- MODULE_DEVICE_TABLE(of, pfuze_dt_ids);
- 
-@@ -139,14 +142,14 @@ static struct regulator_ops pfuze100_swb_regulator_ops = {
- 
- };
- 
--#define PFUZE100_FIXED_REG(_name, base, voltage)	\
--	[PFUZE100_ ## _name] = {	\
-+#define PFUZE100_FIXED_REG(_chip, _name, base, voltage)	\
-+	[_chip ## _ ## _name] = {	\
- 		.desc = {	\
- 			.name = #_name,	\
- 			.n_voltages = 1,	\
- 			.ops = &pfuze100_fixed_regulator_ops,	\
- 			.type = REGULATOR_VOLTAGE,	\
--			.id = PFUZE100_ ## _name,	\
-+			.id = _chip ## _ ## _name,	\
- 			.owner = THIS_MODULE,	\
- 			.min_uV = (voltage),	\
- 			.enable_reg = (base),	\
-@@ -154,14 +157,14 @@ static struct regulator_ops pfuze100_swb_regulator_ops = {
- 		},	\
- 	}
- 
--#define PFUZE100_SW_REG(_name, base, min, max, step)	\
--	[PFUZE100_ ## _name] = {	\
-+#define PFUZE100_SW_REG(_chip, _name, base, min, max, step)	\
-+	[_chip ## _ ## _name] = {	\
- 		.desc = {	\
- 			.name = #_name,\
- 			.n_voltages = ((max) - (min)) / (step) + 1,	\
- 			.ops = &pfuze100_sw_regulator_ops,	\
- 			.type = REGULATOR_VOLTAGE,	\
--			.id = PFUZE100_ ## _name,	\
-+			.id = _chip ## _ ## _name,	\
- 			.owner = THIS_MODULE,	\
- 			.min_uV = (min),	\
- 			.uV_step = (step),	\
-@@ -172,14 +175,14 @@ static struct regulator_ops pfuze100_swb_regulator_ops = {
- 		.stby_mask = 0x3f,	\
- 	}
- 
--#define PFUZE100_SWB_REG(_name, base, mask, voltages)	\
--	[PFUZE100_ ## _name] = {	\
-+#define PFUZE100_SWB_REG(_chip, _name, base, mask, voltages)	\
-+	[_chip ## _ ##  _name] = {	\
- 		.desc = {	\
- 			.name = #_name,	\
- 			.n_voltages = ARRAY_SIZE(voltages),	\
- 			.ops = &pfuze100_swb_regulator_ops,	\
- 			.type = REGULATOR_VOLTAGE,	\
--			.id = PFUZE100_ ## _name,	\
-+			.id = _chip ## _ ## _name,	\
- 			.owner = THIS_MODULE,	\
- 			.volt_table = voltages,	\
- 			.vsel_reg = (base),	\
-@@ -187,14 +190,14 @@ static struct regulator_ops pfuze100_swb_regulator_ops = {
- 		},	\
- 	}
- 
--#define PFUZE100_VGEN_REG(_name, base, min, max, step)	\
--	[PFUZE100_ ## _name] = {	\
-+#define PFUZE100_VGEN_REG(_chip, _name, base, min, max, step)	\
-+	[_chip ## _ ## _name] = {	\
- 		.desc = {	\
- 			.name = #_name,	\
- 			.n_voltages = ((max) - (min)) / (step) + 1,	\
- 			.ops = &pfuze100_ldo_regulator_ops,	\
- 			.type = REGULATOR_VOLTAGE,	\
--			.id = PFUZE100_ ## _name,	\
-+			.id = _chip ## _ ## _name,	\
- 			.owner = THIS_MODULE,	\
- 			.min_uV = (min),	\
- 			.uV_step = (step),	\
-@@ -207,25 +210,45 @@ static struct regulator_ops pfuze100_swb_regulator_ops = {
- 		.stby_mask = 0x20,	\
- 	}
- 
-+/* PFUZE100 */
- static struct pfuze_regulator pfuze100_regulators[] = {
--	PFUZE100_SW_REG(SW1AB, PFUZE100_SW1ABVOL, 300000, 1875000, 25000),
--	PFUZE100_SW_REG(SW1C, PFUZE100_SW1CVOL, 300000, 1875000, 25000),
--	PFUZE100_SW_REG(SW2, PFUZE100_SW2VOL, 400000, 1975000, 25000),
--	PFUZE100_SW_REG(SW3A, PFUZE100_SW3AVOL, 400000, 1975000, 25000),
--	PFUZE100_SW_REG(SW3B, PFUZE100_SW3BVOL, 400000, 1975000, 25000),
--	PFUZE100_SW_REG(SW4, PFUZE100_SW4VOL, 400000, 1975000, 25000),
--	PFUZE100_SWB_REG(SWBST, PFUZE100_SWBSTCON1, 0x3 , pfuze100_swbst),
--	PFUZE100_SWB_REG(VSNVS, PFUZE100_VSNVSVOL, 0x7, pfuze100_vsnvs),
--	PFUZE100_FIXED_REG(VREFDDR, PFUZE100_VREFDDRCON, 750000),
--	PFUZE100_VGEN_REG(VGEN1, PFUZE100_VGEN1VOL, 800000, 1550000, 50000),
--	PFUZE100_VGEN_REG(VGEN2, PFUZE100_VGEN2VOL, 800000, 1550000, 50000),
--	PFUZE100_VGEN_REG(VGEN3, PFUZE100_VGEN3VOL, 1800000, 3300000, 100000),
--	PFUZE100_VGEN_REG(VGEN4, PFUZE100_VGEN4VOL, 1800000, 3300000, 100000),
--	PFUZE100_VGEN_REG(VGEN5, PFUZE100_VGEN5VOL, 1800000, 3300000, 100000),
--	PFUZE100_VGEN_REG(VGEN6, PFUZE100_VGEN6VOL, 1800000, 3300000, 100000),
-+	PFUZE100_SW_REG(PFUZE100, SW1AB, PFUZE100_SW1ABVOL, 300000, 1875000, 25000),
-+	PFUZE100_SW_REG(PFUZE100, SW1C, PFUZE100_SW1CVOL, 300000, 1875000, 25000),
-+	PFUZE100_SW_REG(PFUZE100, SW2, PFUZE100_SW2VOL, 400000, 1975000, 25000),
-+	PFUZE100_SW_REG(PFUZE100, SW3A, PFUZE100_SW3AVOL, 400000, 1975000, 25000),
-+	PFUZE100_SW_REG(PFUZE100, SW3B, PFUZE100_SW3BVOL, 400000, 1975000, 25000),
-+	PFUZE100_SW_REG(PFUZE100, SW4, PFUZE100_SW4VOL, 400000, 1975000, 25000),
-+	PFUZE100_SWB_REG(PFUZE100, SWBST, PFUZE100_SWBSTCON1, 0x3 , pfuze100_swbst),
-+	PFUZE100_SWB_REG(PFUZE100, VSNVS, PFUZE100_VSNVSVOL, 0x7, pfuze100_vsnvs),
-+	PFUZE100_FIXED_REG(PFUZE100, VREFDDR, PFUZE100_VREFDDRCON, 750000),
-+	PFUZE100_VGEN_REG(PFUZE100, VGEN1, PFUZE100_VGEN1VOL, 800000, 1550000, 50000),
-+	PFUZE100_VGEN_REG(PFUZE100, VGEN2, PFUZE100_VGEN2VOL, 800000, 1550000, 50000),
-+	PFUZE100_VGEN_REG(PFUZE100, VGEN3, PFUZE100_VGEN3VOL, 1800000, 3300000, 100000),
-+	PFUZE100_VGEN_REG(PFUZE100, VGEN4, PFUZE100_VGEN4VOL, 1800000, 3300000, 100000),
-+	PFUZE100_VGEN_REG(PFUZE100, VGEN5, PFUZE100_VGEN5VOL, 1800000, 3300000, 100000),
-+	PFUZE100_VGEN_REG(PFUZE100, VGEN6, PFUZE100_VGEN6VOL, 1800000, 3300000, 100000),
-+};
-+
-+static struct pfuze_regulator pfuze200_regulators[] = {
-+	PFUZE100_SW_REG(PFUZE200, SW1AB, PFUZE100_SW1ABVOL, 300000, 1875000, 25000),
-+	PFUZE100_SW_REG(PFUZE200, SW2, PFUZE100_SW2VOL, 400000, 1975000, 25000),
-+	PFUZE100_SW_REG(PFUZE200, SW3A, PFUZE100_SW3AVOL, 400000, 1975000, 25000),
-+	PFUZE100_SW_REG(PFUZE200, SW3B, PFUZE100_SW3BVOL, 400000, 1975000, 25000),
-+	PFUZE100_SWB_REG(PFUZE200, SWBST, PFUZE100_SWBSTCON1, 0x3 , pfuze100_swbst),
-+	PFUZE100_SWB_REG(PFUZE200, VSNVS, PFUZE100_VSNVSVOL, 0x7, pfuze100_vsnvs),
-+	PFUZE100_FIXED_REG(PFUZE200, VREFDDR, PFUZE100_VREFDDRCON, 750000),
-+	PFUZE100_VGEN_REG(PFUZE200, VGEN1, PFUZE100_VGEN1VOL, 800000, 1550000, 50000),
-+	PFUZE100_VGEN_REG(PFUZE200, VGEN2, PFUZE100_VGEN2VOL, 800000, 1550000, 50000),
-+	PFUZE100_VGEN_REG(PFUZE200, VGEN3, PFUZE100_VGEN3VOL, 1800000, 3300000, 100000),
-+	PFUZE100_VGEN_REG(PFUZE200, VGEN4, PFUZE100_VGEN4VOL, 1800000, 3300000, 100000),
-+	PFUZE100_VGEN_REG(PFUZE200, VGEN5, PFUZE100_VGEN5VOL, 1800000, 3300000, 100000),
-+	PFUZE100_VGEN_REG(PFUZE200, VGEN6, PFUZE100_VGEN6VOL, 1800000, 3300000, 100000),
- };
- 
-+static struct pfuze_regulator *pfuze_regulators;
-+
- #ifdef CONFIG_OF
-+/* PFUZE100 */
- static struct of_regulator_match pfuze100_matches[] = {
- 	{ .name = "sw1ab",	},
- 	{ .name = "sw1c",	},
-@@ -244,6 +267,26 @@ static struct of_regulator_match pfuze100_matches[] = {
- 	{ .name = "vgen6",	},
- };
- 
-+/* PFUZE200 */
-+static struct of_regulator_match pfuze200_matches[] = {
-+
-+	{ .name = "sw1ab",	},
-+	{ .name = "sw2",	},
-+	{ .name = "sw3a",	},
-+	{ .name = "sw3b",	},
-+	{ .name = "swbst",	},
-+	{ .name = "vsnvs",	},
-+	{ .name = "vrefddr",	},
-+	{ .name = "vgen1",	},
-+	{ .name = "vgen2",	},
-+	{ .name = "vgen3",	},
-+	{ .name = "vgen4",	},
-+	{ .name = "vgen5",	},
-+	{ .name = "vgen6",	},
-+};
-+
-+static struct of_regulator_match *pfuze_matches;
-+
- static int pfuze_parse_regulators_dt(struct pfuze_chip *chip)
- {
- 	struct device *dev = chip->dev;
-@@ -260,8 +303,18 @@ static int pfuze_parse_regulators_dt(struct pfuze_chip *chip)
- 		return -EINVAL;
- 	}
- 
--	ret = of_regulator_match(dev, parent, pfuze100_matches,
--				 ARRAY_SIZE(pfuze100_matches));
-+	switch (chip->chip_id) {
-+	case PFUZE200:
-+		ret = of_regulator_match(dev, parent, pfuze200_matches,
-+					 ARRAY_SIZE(pfuze200_matches));
-+		break;
-+
-+	case PFUZE100:
-+	default:
-+		ret = of_regulator_match(dev, parent, pfuze100_matches,
-+					 ARRAY_SIZE(pfuze100_matches));
-+		break;
-+	}
- 
- 	of_node_put(parent);
- 	if (ret < 0) {
-@@ -275,12 +328,12 @@ static int pfuze_parse_regulators_dt(struct pfuze_chip *chip)
- 
- static inline struct regulator_init_data *match_init_data(int index)
- {
--	return pfuze100_matches[index].init_data;
-+	return pfuze_matches[index].init_data;
- }
- 
- static inline struct device_node *match_of_node(int index)
- {
--	return pfuze100_matches[index].of_node;
-+	return pfuze_matches[index].of_node;
- }
- #else
- static int pfuze_parse_regulators_dt(struct pfuze_chip *chip)
-@@ -308,16 +361,14 @@ static int pfuze_identify(struct pfuze_chip *pfuze_chip)
- 	if (ret)
- 		return ret;
- 
--	switch (value & 0x0f) {
--	/*
--	 * Freescale misprogrammed 1-3% of parts prior to week 8 of 2013
--	 * as ID=8
--	 */
--	case 0x8:
-+	if (((value & 0x0f) == 0x8) && (pfuze_chip->chip_id == PFUZE100)) {
-+		/*
-+		 * Freescale misprogrammed 1-3% of parts prior to week 8 of 2013
-+		 * as ID=8 in PFUZE100
-+		 */
- 		dev_info(pfuze_chip->dev, "Assuming misprogrammed ID=0x8");
--	case 0x0:
--		break;
--	default:
-+	} else if ((value & 0x0f) != pfuze_chip->chip_id) {
-+		/* device id NOT match with your setting */
- 		dev_warn(pfuze_chip->dev, "Illegal ID: %x\n", value);
- 		return -ENODEV;
- 	}
-@@ -353,17 +404,31 @@ static int pfuze100_regulator_probe(struct i2c_client *client,
- 	    dev_get_platdata(&client->dev);
- 	struct regulator_config config = { };
- 	int i, ret;
-+	const struct of_device_id *match;
-+	u32 regulator_num;
-+	u32 sw_check_start, sw_check_end;
- 
- 	pfuze_chip = devm_kzalloc(&client->dev, sizeof(*pfuze_chip),
- 			GFP_KERNEL);
- 	if (!pfuze_chip)
- 		return -ENOMEM;
- 
--	i2c_set_clientdata(client, pfuze_chip);
+-config INTEL_BAYTRAIL_MBI
+-	tristate
+-	depends on PCI
+-	---help---
+-	  Needed on Baytrail platforms for access to the IOSF Sideband Mailbox
+-	  Interface. This is a requirement for systems that need to configure
+-	  the PUNIT for power management features such as RAPL.
 -
--	memcpy(pfuze_chip->regulator_descs, pfuze100_regulators,
--		sizeof(pfuze_chip->regulator_descs));
-+	if (client->dev.of_node) {
-+		match = of_match_device(of_match_ptr(pfuze_dt_ids),
-+				&client->dev);
-+		if (!match) {
-+			dev_err(&client->dev, "Error: No device match found\n");
-+			return -ENODEV;
-+		}
-+		pfuze_chip->chip_id = (int)(long)match->data;
-+	} else if (id) {
-+		pfuze_chip->chip_id = id->driver_data;
-+	} else {
-+		dev_err(&client->dev, "No dts match or id table match found\n");
-+		return -ENODEV;
-+	}
+ endif # X86_PLATFORM_DEVICES
+diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
+index 9b87cfc..b8c36f7 100644
+--- a/drivers/platform/x86/Makefile
++++ b/drivers/platform/x86/Makefile
+@@ -55,4 +55,3 @@ obj-$(CONFIG_INTEL_RST)		+= intel-rst.o
+ obj-$(CONFIG_INTEL_SMARTCONNECT)	+= intel-smartconnect.o
  
-+	i2c_set_clientdata(client, pfuze_chip);
- 	pfuze_chip->dev = &client->dev;
- 
- 	pfuze_chip->regmap = devm_regmap_init_i2c(client, &pfuze_regmap_config);
-@@ -380,11 +445,36 @@ static int pfuze100_regulator_probe(struct i2c_client *client,
- 		return ret;
- 	}
- 
-+	/* use the right regulators after identify the right device */
-+	switch (pfuze_chip->chip_id) {
-+	case PFUZE200:
-+		pfuze_regulators = pfuze200_regulators;
-+		pfuze_matches = pfuze200_matches;
-+		regulator_num = ARRAY_SIZE(pfuze200_regulators);
-+		sw_check_start = PFUZE200_SW2;
-+		sw_check_end = PFUZE200_SW3B;
-+		break;
-+
-+	case PFUZE100:
-+	default:
-+		pfuze_regulators = pfuze100_regulators;
-+		pfuze_matches = pfuze100_matches;
-+		regulator_num = ARRAY_SIZE(pfuze100_regulators);
-+		sw_check_start = PFUZE100_SW2;
-+		sw_check_end = PFUZE100_SW4;
-+		break;
-+	}
-+	dev_err(&client->dev, "pfuze%s found.\n",
-+		(pfuze_chip->chip_id == PFUZE100) ? "100" : "200");
-+
-+	memcpy(pfuze_chip->regulator_descs, pfuze_regulators,
-+		sizeof(pfuze_chip->regulator_descs));
-+
- 	ret = pfuze_parse_regulators_dt(pfuze_chip);
- 	if (ret)
- 		return ret;
- 
--	for (i = 0; i < PFUZE100_MAX_REGULATOR; i++) {
-+	for (i = 0; i < regulator_num; i++) {
- 		struct regulator_init_data *init_data;
- 		struct regulator_desc *desc;
- 		int val;
-@@ -397,7 +487,7 @@ static int pfuze100_regulator_probe(struct i2c_client *client,
- 			init_data = match_init_data(i);
- 
- 		/* SW2~SW4 high bit check and modify the voltage value table */
--		if (i > PFUZE100_SW1C && i < PFUZE100_SWBST) {
-+		if (i >= sw_check_start && i <= sw_check_end) {
- 			regmap_read(pfuze_chip->regmap, desc->vsel_reg, &val);
- 			if (val & 0x40) {
- 				desc->min_uV = 800000;
-@@ -415,7 +505,7 @@ static int pfuze100_regulator_probe(struct i2c_client *client,
- 			devm_regulator_register(&client->dev, desc, &config);
- 		if (IS_ERR(pfuze_chip->regulators[i])) {
- 			dev_err(&client->dev, "register regulator%s failed\n",
--				pfuze100_regulators[i].desc.name);
-+				pfuze_regulators[i].desc.name);
- 			return PTR_ERR(pfuze_chip->regulators[i]);
- 		}
- 	}
-diff --git a/include/linux/regulator/pfuze100.h b/include/linux/regulator/pfuze100.h
-index 65d550b..364f7a7 100644
---- a/include/linux/regulator/pfuze100.h
-+++ b/include/linux/regulator/pfuze100.h
-@@ -35,6 +35,20 @@
- #define PFUZE100_VGEN6		14
- #define PFUZE100_MAX_REGULATOR	15
- 
-+#define PFUZE200_SW1AB		0
-+#define PFUZE200_SW2		1
-+#define PFUZE200_SW3A		2
-+#define PFUZE200_SW3B		3
-+#define PFUZE200_SWBST		4
-+#define PFUZE200_VSNVS		5
-+#define PFUZE200_VREFDDR	6
-+#define PFUZE200_VGEN1		7
-+#define PFUZE200_VGEN2		8
-+#define PFUZE200_VGEN3		9
-+#define PFUZE200_VGEN4		10
-+#define PFUZE200_VGEN5		11
-+#define PFUZE200_VGEN6		12
-+
- struct regulator_init_data;
- 
- struct pfuze_regulator_platform_data {
+ obj-$(CONFIG_PVPANIC)           += pvpanic.o
+-obj-$(CONFIG_INTEL_BAYTRAIL_MBI)	+= intel_baytrail.o
+diff --git a/drivers/platform/x86/intel_baytrail.c b/drivers/platform/x86/intel_baytrail.c
+deleted file mode 100644
+index f96626b..0000000
+--- a/drivers/platform/x86/intel_baytrail.c
++++ /dev/null
+@@ -1,224 +0,0 @@
+-/*
+- * Baytrail IOSF-SB MailBox Interface Driver
+- * Copyright (c) 2013, Intel Corporation.
+- *
+- * This program is free software; you can redistribute it and/or modify it
+- * under the terms and conditions of the GNU General Public License,
+- * version 2, as published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope it will be useful, but WITHOUT
+- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+- * more details.
+- *
+- *
+- * The IOSF-SB is a fabric bus available on Atom based SOC's that uses a
+- * mailbox interface (MBI) to communicate with mutiple devices. This
+- * driver implements BayTrail-specific access to this interface.
+- */
+-
+-#include <linux/module.h>
+-#include <linux/init.h>
+-#include <linux/spinlock.h>
+-#include <linux/pci.h>
+-
+-#include "intel_baytrail.h"
+-
+-static DEFINE_SPINLOCK(iosf_mbi_lock);
+-
+-static inline u32 iosf_mbi_form_mcr(u8 op, u8 port, u8 offset)
+-{
+-	return (op << 24) | (port << 16) | (offset << 8) | BT_MBI_ENABLE;
+-}
+-
+-static struct pci_dev *mbi_pdev;	/* one mbi device */
+-
+-/* Hold lock before calling */
+-static int iosf_mbi_pci_read_mdr(u32 mcrx, u32 mcr, u32 *mdr)
+-{
+-	int result;
+-
+-	if (!mbi_pdev)
+-		return -ENODEV;
+-
+-	if (mcrx) {
+-		result = pci_write_config_dword(mbi_pdev,
+-						BT_MBI_MCRX_OFFSET, mcrx);
+-		if (result < 0)
+-			goto iosf_mbi_read_err;
+-	}
+-
+-	result = pci_write_config_dword(mbi_pdev,
+-					BT_MBI_MCR_OFFSET, mcr);
+-	if (result < 0)
+-		goto iosf_mbi_read_err;
+-
+-	result = pci_read_config_dword(mbi_pdev,
+-				       BT_MBI_MDR_OFFSET, mdr);
+-	if (result < 0)
+-		goto iosf_mbi_read_err;
+-
+-	return 0;
+-
+-iosf_mbi_read_err:
+-	dev_err(&mbi_pdev->dev, "error: PCI config operation returned %d\n",
+-		result);
+-	return result;
+-}
+-
+-/* Hold lock before calling */
+-static int iosf_mbi_pci_write_mdr(u32 mcrx, u32 mcr, u32 mdr)
+-{
+-	int result;
+-
+-	if (!mbi_pdev)
+-		return -ENODEV;
+-
+-	result = pci_write_config_dword(mbi_pdev,
+-					BT_MBI_MDR_OFFSET, mdr);
+-	if (result < 0)
+-		goto iosf_mbi_write_err;
+-
+-	if (mcrx) {
+-		result = pci_write_config_dword(mbi_pdev,
+-			 BT_MBI_MCRX_OFFSET, mcrx);
+-		if (result < 0)
+-			goto iosf_mbi_write_err;
+-	}
+-
+-	result = pci_write_config_dword(mbi_pdev,
+-					BT_MBI_MCR_OFFSET, mcr);
+-	if (result < 0)
+-		goto iosf_mbi_write_err;
+-
+-	return 0;
+-
+-iosf_mbi_write_err:
+-	dev_err(&mbi_pdev->dev, "error: PCI config operation returned %d\n",
+-		result);
+-	return result;
+-}
+-
+-int bt_mbi_read(u8 port, u8 opcode, u32 offset, u32 *mdr)
+-{
+-	u32 mcr, mcrx;
+-	unsigned long flags;
+-	int ret;
+-
+-	/*Access to the GFX unit is handled by GPU code */
+-	BUG_ON(port == BT_MBI_UNIT_GFX);
+-
+-	mcr = iosf_mbi_form_mcr(opcode, port, offset & BT_MBI_MASK_LO);
+-	mcrx = offset & BT_MBI_MASK_HI;
+-
+-	spin_lock_irqsave(&iosf_mbi_lock, flags);
+-	ret = iosf_mbi_pci_read_mdr(mcrx, mcr, mdr);
+-	spin_unlock_irqrestore(&iosf_mbi_lock, flags);
+-
+-	return ret;
+-}
+-EXPORT_SYMBOL(bt_mbi_read);
+-
+-int bt_mbi_write(u8 port, u8 opcode, u32 offset, u32 mdr)
+-{
+-	u32 mcr, mcrx;
+-	unsigned long flags;
+-	int ret;
+-
+-	/*Access to the GFX unit is handled by GPU code */
+-	BUG_ON(port == BT_MBI_UNIT_GFX);
+-
+-	mcr = iosf_mbi_form_mcr(opcode, port, offset & BT_MBI_MASK_LO);
+-	mcrx = offset & BT_MBI_MASK_HI;
+-
+-	spin_lock_irqsave(&iosf_mbi_lock, flags);
+-	ret = iosf_mbi_pci_write_mdr(mcrx, mcr, mdr);
+-	spin_unlock_irqrestore(&iosf_mbi_lock, flags);
+-
+-	return ret;
+-}
+-EXPORT_SYMBOL(bt_mbi_write);
+-
+-int bt_mbi_modify(u8 port, u8 opcode, u32 offset, u32 mdr, u32 mask)
+-{
+-	u32 mcr, mcrx;
+-	u32 value;
+-	unsigned long flags;
+-	int ret;
+-
+-	/*Access to the GFX unit is handled by GPU code */
+-	BUG_ON(port == BT_MBI_UNIT_GFX);
+-
+-	mcr = iosf_mbi_form_mcr(opcode, port, offset & BT_MBI_MASK_LO);
+-	mcrx = offset & BT_MBI_MASK_HI;
+-
+-	spin_lock_irqsave(&iosf_mbi_lock, flags);
+-
+-	/* Read current mdr value */
+-	ret = iosf_mbi_pci_read_mdr(mcrx, mcr & BT_MBI_RD_MASK, &value);
+-	if (ret < 0) {
+-		spin_unlock_irqrestore(&iosf_mbi_lock, flags);
+-		return ret;
+-	}
+-
+-	/* Apply mask */
+-	value &= ~mask;
+-	mdr &= mask;
+-	value |= mdr;
+-
+-	/* Write back */
+-	ret = iosf_mbi_pci_write_mdr(mcrx, mcr | BT_MBI_WR_MASK, value);
+-
+-	spin_unlock_irqrestore(&iosf_mbi_lock, flags);
+-
+-	return ret;
+-}
+-EXPORT_SYMBOL(bt_mbi_modify);
+-
+-static int iosf_mbi_probe(struct pci_dev *pdev,
+-			  const struct pci_device_id *unused)
+-{
+-	int ret;
+-
+-	ret = pci_enable_device(pdev);
+-	if (ret < 0) {
+-		dev_err(&pdev->dev, "error: could not enable device\n");
+-		return ret;
+-	}
+-
+-	mbi_pdev = pci_dev_get(pdev);
+-	return 0;
+-}
+-
+-static DEFINE_PCI_DEVICE_TABLE(iosf_mbi_pci_ids) = {
+-	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0F00) },
+-	{ 0, },
+-};
+-MODULE_DEVICE_TABLE(pci, iosf_mbi_pci_ids);
+-
+-static struct pci_driver iosf_mbi_pci_driver = {
+-	.name		= "iosf_mbi_pci",
+-	.probe		= iosf_mbi_probe,
+-	.id_table	= iosf_mbi_pci_ids,
+-};
+-
+-static int __init bt_mbi_init(void)
+-{
+-	return pci_register_driver(&iosf_mbi_pci_driver);
+-}
+-
+-static void __exit bt_mbi_exit(void)
+-{
+-	pci_unregister_driver(&iosf_mbi_pci_driver);
+-	if (mbi_pdev) {
+-		pci_dev_put(mbi_pdev);
+-		mbi_pdev = NULL;
+-	}
+-}
+-
+-module_init(bt_mbi_init);
+-module_exit(bt_mbi_exit);
+-
+-MODULE_AUTHOR("David E. Box <david.e.box@linux.intel.com>");
+-MODULE_DESCRIPTION("BayTrail Mailbox Interface accessor");
+-MODULE_LICENSE("GPL v2");
+diff --git a/drivers/platform/x86/intel_baytrail.h b/drivers/platform/x86/intel_baytrail.h
+deleted file mode 100644
+index 8bcc311..0000000
+--- a/drivers/platform/x86/intel_baytrail.h
++++ /dev/null
+@@ -1,90 +0,0 @@
+-/*
+- * intel_baytrail.h: MailBox access support for Intel BayTrail platforms
+- */
+-
+-#ifndef INTEL_BAYTRAIL_MBI_SYMS_H
+-#define INTEL_BAYTRAIL_MBI_SYMS_H
+-
+-#define BT_MBI_MCR_OFFSET	0xD0
+-#define BT_MBI_MDR_OFFSET	0xD4
+-#define BT_MBI_MCRX_OFFSET	0xD8
+-
+-#define BT_MBI_RD_MASK		0xFEFFFFFF
+-#define BT_MBI_WR_MASK		0X01000000
+-
+-#define BT_MBI_MASK_HI		0xFFFFFF00
+-#define BT_MBI_MASK_LO		0x000000FF
+-#define BT_MBI_ENABLE		0xF0
+-
+-/* BT-SB unit access methods */
+-#define BT_MBI_UNIT_AUNIT	0x00
+-#define BT_MBI_UNIT_SMC		0x01
+-#define BT_MBI_UNIT_CPU		0x02
+-#define BT_MBI_UNIT_BUNIT	0x03
+-#define BT_MBI_UNIT_PMC		0x04
+-#define BT_MBI_UNIT_GFX		0x06
+-#define BT_MBI_UNIT_SMI		0x0C
+-#define BT_MBI_UNIT_USB		0x43
+-#define BT_MBI_UNIT_SATA	0xA3
+-#define BT_MBI_UNIT_PCIE	0xA6
+-
+-/* Read/write opcodes */
+-#define BT_MBI_AUNIT_READ	0x10
+-#define BT_MBI_AUNIT_WRITE	0x11
+-#define BT_MBI_SMC_READ		0x10
+-#define BT_MBI_SMC_WRITE	0x11
+-#define BT_MBI_CPU_READ		0x10
+-#define BT_MBI_CPU_WRITE	0x11
+-#define BT_MBI_BUNIT_READ	0x10
+-#define BT_MBI_BUNIT_WRITE	0x11
+-#define BT_MBI_PMC_READ		0x06
+-#define BT_MBI_PMC_WRITE	0x07
+-#define BT_MBI_GFX_READ		0x00
+-#define BT_MBI_GFX_WRITE	0x01
+-#define BT_MBI_SMIO_READ	0x06
+-#define BT_MBI_SMIO_WRITE	0x07
+-#define BT_MBI_USB_READ		0x06
+-#define BT_MBI_USB_WRITE	0x07
+-#define BT_MBI_SATA_READ	0x00
+-#define BT_MBI_SATA_WRITE	0x01
+-#define BT_MBI_PCIE_READ	0x00
+-#define BT_MBI_PCIE_WRITE	0x01
+-
+-/**
+- * bt_mbi_read() - MailBox Interface read command
+- * @port:	port indicating subunit being accessed
+- * @opcode:	port specific read or write opcode
+- * @offset:	register address offset
+- * @mdr:	register data to be read
+- *
+- * Locking is handled by spinlock - cannot sleep.
+- * Return: Nonzero on error
+- */
+-int bt_mbi_read(u8 port, u8 opcode, u32 offset, u32 *mdr);
+-
+-/**
+- * bt_mbi_write() - MailBox unmasked write command
+- * @port:	port indicating subunit being accessed
+- * @opcode:	port specific read or write opcode
+- * @offset:	register address offset
+- * @mdr:	register data to be written
+- *
+- * Locking is handled by spinlock - cannot sleep.
+- * Return: Nonzero on error
+- */
+-int bt_mbi_write(u8 port, u8 opcode, u32 offset, u32 mdr);
+-
+-/**
+- * bt_mbi_modify() - MailBox masked write command
+- * @port:	port indicating subunit being accessed
+- * @opcode:	port specific read or write opcode
+- * @offset:	register address offset
+- * @mdr:	register data being modified
+- * @mask:	mask indicating bits in mdr to be modified
+- *
+- * Locking is handled by spinlock - cannot sleep.
+- * Return: Nonzero on error
+- */
+-int bt_mbi_modify(u8 port, u8 opcode, u32 offset, u32 mdr, u32 mask);
+-
+-#endif /* INTEL_BAYTRAIL_MBI_SYMS_H */
 -- 
-1.7.5.4
-
+1.7.10.4
 
