@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756155AbaCDTSL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 14:18:11 -0500
-Received: from caiajhbdccac.dreamhost.com ([208.97.132.202]:59130 "EHLO
+	id S1756171AbaCDTS2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 14:18:28 -0500
+Received: from caiajhbdccah.dreamhost.com ([208.97.132.207]:59170 "EHLO
 	homiemail-a20.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755696AbaCDTSJ (ORCPT
+	by vger.kernel.org with ESMTP id S1754192AbaCDTS1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 14:18:09 -0500
-X-Greylist: delayed 530 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Mar 2014 14:18:09 EST
-Message-ID: <d31202acbd0097307fb52d8239466308.squirrel@webmail.novalis.org>
+	Tue, 4 Mar 2014 14:18:27 -0500
+Message-ID: <5a4dc13aac49671c68b4dfb3885e6b69.squirrel@webmail.novalis.org>
 In-Reply-To: <daed65ee080e4cc417c87f34af8447f2.squirrel@webmail.novalis.org>
 References: <daed65ee080e4cc417c87f34af8447f2.squirrel@webmail.novalis.org>
-Date: Tue, 4 Mar 2014 14:18:08 -0500
+Date: Tue, 4 Mar 2014 14:18:27 -0500
 Subject: Re: PROBLEM: Inotify leaks file descriptors.
 From: "David Turner" <novalis@novalis.org>
 To: "David Turner" <novalis@novalis.org>
@@ -19,12 +18,12 @@ Cc: "John McCutchan" <john@johnmccutchan.com>, "Robert Love" <rlove@rlove.org>,
         "Eric Paris" <eparis@parisplace.org>, linux-kernel@vger.kernel.org
 User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-Content-Type: multipart/mixed;boundary="----=_20140304141808_70807"
+Content-Type: multipart/mixed;boundary="----=_20140304141826_80745"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------=_20140304141808_70807
+------=_20140304141826_80745
 Content-Type: text/plain; charset="iso-8859-1"
 Content-Transfer-Encoding: quoted-printable
 
@@ -86,7 +85,7 @@ nd
 >
 >
 
-------=_20140304141808_70807
+------=_20140304141826_80745
 Content-Type: text/x-python; name="abuse-watchman.py"
 Content-Disposition: attachment; filename="abuse-watchman.py"
 Content-Transfer-Encoding: quoted-printable
@@ -254,6 +253,6 @@ while True:
         threaded(run)
     else:
         sleep(0.1)
-------=_20140304141808_70807--
+------=_20140304141826_80745--
 
 
