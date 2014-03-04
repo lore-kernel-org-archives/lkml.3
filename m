@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757417AbaCDUHB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:07:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41851 "EHLO
+	id S1757434AbaCDUHd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:07:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41847 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932402AbaCDUFw (ORCPT
+	with ESMTP id S932394AbaCDUFv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:05:52 -0500
+	Tue, 4 Mar 2014 15:05:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexander Larsson <alexl@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>, Joe Thornber <ejt@redhat.com>
-Subject: [PATCH 3.10 93/97] dm thin: avoid metadata commit if a pools thin devices havent changed
-Date: Tue,  4 Mar 2014 12:04:46 -0800
-Message-Id: <20140304200349.063762918@linuxfoundation.org>
+        Hannes Reinecke <hare@suse.de>, Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.10 92/97] dm mpath: fix stalls when handling invalid ioctls
+Date: Tue,  4 Mar 2014 12:04:45 -0800
+Message-Id: <20140304200349.034416444@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -29,76 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: Hannes Reinecke <hare@suse.de>
 
-commit 4d1662a30dde6e545086fe0e8fd7e474c4e0b639 upstream.
+commit a1989b330093578ea5470bea0a00f940c444c466 upstream.
 
-Commit 905e51b ("dm thin: commit outstanding data every second")
-introduced a periodic commit.  This commit occurs regardless of whether
-any thin devices have made changes.
+An invalid ioctl will never be valid, irrespective of whether multipath
+has active paths or not.  So for invalid ioctls we do not have to wait
+for multipath to activate any paths, but can rather return an error
+code immediately.  This fix resolves numerous instances of:
 
-Fix the periodic commit to check if any of a pool's thin devices have
-changed using dm_pool_changed_this_transaction().
+ udevd[]: worker [] unexpectedly returned with status 0x0100
 
-Reported-by: Alexander Larsson <alexl@redhat.com>
+that have been seen during testing.
+
+Signed-off-by: Hannes Reinecke <hare@suse.de>
 Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Acked-by: Joe Thornber <ejt@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-thin-metadata.c |   17 +++++++++++++++++
- drivers/md/dm-thin-metadata.h |    2 ++
- drivers/md/dm-thin.c          |    3 ++-
- 3 files changed, 21 insertions(+), 1 deletion(-)
+ drivers/md/dm-mpath.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/md/dm-thin-metadata.c
-+++ b/drivers/md/dm-thin-metadata.c
-@@ -1489,6 +1489,23 @@ bool dm_thin_changed_this_transaction(st
- 	return r;
- }
- 
-+bool dm_pool_changed_this_transaction(struct dm_pool_metadata *pmd)
-+{
-+	bool r = false;
-+	struct dm_thin_device *td, *tmp;
-+
-+	down_read(&pmd->root_lock);
-+	list_for_each_entry_safe(td, tmp, &pmd->thin_devices, list) {
-+		if (td->changed) {
-+			r = td->changed;
-+			break;
-+		}
+--- a/drivers/md/dm-mpath.c
++++ b/drivers/md/dm-mpath.c
+@@ -1608,8 +1608,11 @@ static int multipath_ioctl(struct dm_tar
+ 	/*
+ 	 * Only pass ioctls through if the device sizes match exactly.
+ 	 */
+-	if (!r && ti->len != i_size_read(bdev->bd_inode) >> SECTOR_SHIFT)
+-		r = scsi_verify_blk_ioctl(NULL, cmd);
++	if (!bdev || ti->len != i_size_read(bdev->bd_inode) >> SECTOR_SHIFT) {
++		int err = scsi_verify_blk_ioctl(NULL, cmd);
++		if (err)
++			r = err;
 +	}
-+	up_read(&pmd->root_lock);
-+
-+	return r;
-+}
-+
- bool dm_thin_aborted_changes(struct dm_thin_device *td)
- {
- 	bool r;
---- a/drivers/md/dm-thin-metadata.h
-+++ b/drivers/md/dm-thin-metadata.h
-@@ -161,6 +161,8 @@ int dm_thin_remove_block(struct dm_thin_
-  */
- bool dm_thin_changed_this_transaction(struct dm_thin_device *td);
  
-+bool dm_pool_changed_this_transaction(struct dm_pool_metadata *pmd);
-+
- bool dm_thin_aborted_changes(struct dm_thin_device *td);
- 
- int dm_thin_get_highest_mapped_block(struct dm_thin_device *td,
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -1344,7 +1344,8 @@ static void process_deferred_bios(struct
- 	bio_list_init(&pool->deferred_flush_bios);
- 	spin_unlock_irqrestore(&pool->lock, flags);
- 
--	if (bio_list_empty(&bios) && !need_commit_due_to_time(pool))
-+	if (bio_list_empty(&bios) &&
-+	    !(dm_pool_changed_this_transaction(pool->pmd) && need_commit_due_to_time(pool)))
- 		return;
- 
- 	if (commit_or_fallback(pool)) {
+ 	if (r == -ENOTCONN && !fatal_signal_pending(current))
+ 		queue_work(kmultipathd, &m->process_queued_ios);
 
 
