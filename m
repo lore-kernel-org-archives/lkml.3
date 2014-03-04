@@ -1,60 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756025AbaCDCO3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 21:14:29 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:55664 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755343AbaCDCO2 (ORCPT
+	id S1756073AbaCDCP4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 21:15:56 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:56965 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755308AbaCDCPy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 21:14:28 -0500
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: sachin.kamat@linaro.org, shaun@xresource.ca,
-        dulshani.gunawardhana89@gmail.com, davem@davemloft.net,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        ying.xue@windriver.com
-Subject: [PATCH 7/7] staging: cxt1e1: remove unneeded a value
-Date: Tue, 04 Mar 2014 11:14:24 +0900
-Message-ID: <3074150.zkyBSTHk8e@daeseok-laptop.cloud.net>
-User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Mon, 3 Mar 2014 21:15:54 -0500
+From: Graeme Gregory <graeme.gregory@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
+        linux-acpi@vger.kernel.org, grant.likely@linaro.org,
+        catalin.marinas@arm.com, will.deacon@arm.com, lenb@kernel.org,
+        rjw@rjwysocki.net
+Subject: ARM64 ACPI Maintainers
+Date: Tue,  4 Mar 2014 10:15:44 +0800
+Message-Id: <1393899345-7397-1-git-send-email-graeme.gregory@linaro.org>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-It doesn't need to assign name array address to np pointer.
+Grant Likely suggested that I send this patch to formally volunteer
+Hanjun and myself to be the maintainers for the new arm64 acpi support.
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
----
- drivers/staging/cxt1e1/linux.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+We have been working on the arm64 port of ACPI and the patches have
+now reached a few reviews but there has been some questions asked by
+the community who the maintainers will be.
 
-diff --git a/drivers/staging/cxt1e1/linux.c b/drivers/staging/cxt1e1/linux.c
-index 599a5ef..390b1f5 100644
---- a/drivers/staging/cxt1e1/linux.c
-+++ b/drivers/staging/cxt1e1/linux.c
-@@ -205,15 +205,14 @@ status_t
- c4_wq_port_init(mpi_t *pi)
- {
- 
--	char        name[16], *np;  /* NOTE: name of the queue limited by system
-+	char        name[16];  /* NOTE: name of the queue limited by system
- 				     * to 10 characters */
- 
- 	if (pi->wq_port)
- 		return 0;                   /* already initialized */
- 
--	np = name;
- 	memset(name, 0, 16);
--	sprintf(np, "%s%d", pi->up->devname, pi->portnum); /* IE pmcc4-01) */
-+	sprintf(name, "%s%d", pi->up->devname, pi->portnum); /* IE pmcc4-01) */
- 
- #ifdef RLD_RESTART_DEBUG
- 	pr_info(">> %s: creating workqueue <%s> for Port %d.\n",
--- 
-1.7.4.4
+Thanks
 
+Graeme
 
