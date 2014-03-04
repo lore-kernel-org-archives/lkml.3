@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757579AbaCDVmm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:42:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40732 "EHLO
+	id S932362AbaCDVm5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:42:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40724 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751565AbaCDUCk (ORCPT
+	with ESMTP id S1755424AbaCDUCk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Mar 2014 15:02:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ahmed Tamrawi <ahmedtamrawi@gmail.com>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        "Dr. Tilmann Bubeck" <t.bubeck@reinform.de>,
-        Zheng Liu <wenqing.lz@taobao.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [PATCH 3.13 010/172] ext4: fix error paths in swap_inode_boot_loader()
-Date: Tue,  4 Mar 2014 12:01:34 -0800
-Message-Id: <20140304200300.032554266@linuxfoundation.org>
+        Eric Whitney <enwlinux@gmail.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [PATCH 3.13 009/172] ext4: fix xfstest generic/299 block validity failures
+Date: Tue,  4 Mar 2014 12:01:33 -0800
+Message-Id: <20140304200300.004495685@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -31,43 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zheng Liu <wenqing.lz@taobao.com>
+From: Eric Whitney <enwlinux@gmail.com>
 
-commit 30d29b119ef01776e0a301444ab24defe8d8bef3 upstream.
+commit 15cc17678547676c82a5da9ccf357447333fc342 upstream.
 
-In swap_inode_boot_loader() we forgot to release ->i_mutex and resume
-unlocked dio for inode and inode_bl if there is an error starting the
-journal handle.  This commit fixes this issue.
+Commit a115f749c1 (ext4: remove wait for unwritten extent conversion from
+ext4_truncate) exposed a bug in ext4_ext_handle_uninitialized_extents().
+It can be triggered by xfstest generic/299 when run on a test file
+system created without a journal.  This test continuously fallocates and
+truncates files to which random dio/aio writes are simultaneously
+performed by a separate process.  The test completes successfully, but
+if the test filesystem is mounted with the block_validity option, a
+warning message stating that a logical block has been mapped to an
+illegal physical block is posted in the kernel log.
 
-Reported-by: Ahmed Tamrawi <ahmedtamrawi@gmail.com>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: Dr. Tilmann Bubeck <t.bubeck@reinform.de>
-Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
+The bug occurs when an extent is being converted to the written state
+by ext4_end_io_dio() and ext4_ext_handle_uninitialized_extents()
+discovers a mapping for an existing uninitialized extent. Although it
+sets EXT4_MAP_MAPPED in map->m_flags, it fails to set map->m_pblk to
+the discovered physical block number.  Because map->m_pblk is not
+otherwise initialized or set by this function or its callers, its
+uninitialized value is returned to ext4_map_blocks(), where it is
+stored as a bogus mapping in the extent status tree.
+
+Since map->m_pblk can accidentally contain illegal values that are
+larger than the physical size of the file system,  calls to
+check_block_validity() in ext4_map_blocks() that are enabled if the
+block_validity mount option is used can fail, resulting in the logged
+warning message.
+
+Signed-off-by: Eric Whitney <enwlinux@gmail.com>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/ioctl.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/ext4/extents.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/ext4/ioctl.c
-+++ b/fs/ext4/ioctl.c
-@@ -144,7 +144,7 @@ static long swap_inode_boot_loader(struc
- 	handle = ext4_journal_start(inode_bl, EXT4_HT_MOVE_EXTENTS, 2);
- 	if (IS_ERR(handle)) {
- 		err = -EINVAL;
--		goto swap_boot_out;
-+		goto journal_err_out;
- 	}
- 
- 	/* Protect extent tree against block allocations via delalloc */
-@@ -202,6 +202,7 @@ static long swap_inode_boot_loader(struc
- 
- 	ext4_double_up_write_data_sem(inode, inode_bl);
- 
-+journal_err_out:
- 	ext4_inode_resume_unlocked_dio(inode);
- 	ext4_inode_resume_unlocked_dio(inode_bl);
- 
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -3906,6 +3906,7 @@ ext4_ext_handle_uninitialized_extents(ha
+ 		} else
+ 			err = ret;
+ 		map->m_flags |= EXT4_MAP_MAPPED;
++		map->m_pblk = newblock;
+ 		if (allocated > map->m_len)
+ 			allocated = map->m_len;
+ 		map->m_len = allocated;
 
 
