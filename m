@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932080AbaCDUEw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:04:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41470 "EHLO
+	id S932330AbaCDUFj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:05:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41716 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757025AbaCDUEq (ORCPT
+	with ESMTP id S1755340AbaCDUF3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:04:46 -0500
+	Tue, 4 Mar 2014 15:05:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ahmed Tamrawi <ahmedtamrawi@gmail.com>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        "Dr. Tilmann Bubeck" <t.bubeck@reinform.de>,
-        Zheng Liu <wenqing.lz@taobao.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [PATCH 3.10 03/97] ext4: fix error paths in swap_inode_boot_loader()
-Date: Tue,  4 Mar 2014 12:03:16 -0800
-Message-Id: <20140304200346.202419275@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH 3.10 70/97] usb: ehci: fix deadlock when threadirqs option is used
+Date: Tue,  4 Mar 2014 12:04:23 -0800
+Message-Id: <20140304200348.302907557@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -31,43 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zheng Liu <wenqing.lz@taobao.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 30d29b119ef01776e0a301444ab24defe8d8bef3 upstream.
+commit a1227f3c1030e96ebc51d677d2f636268845c5fb upstream.
 
-In swap_inode_boot_loader() we forgot to release ->i_mutex and resume
-unlocked dio for inode and inode_bl if there is an error starting the
-journal handle.  This commit fixes this issue.
+ehci_irq() and ehci_hrtimer_func() can deadlock on ehci->lock when
+threadirqs option is used. To prevent the deadlock use
+spin_lock_irqsave() in ehci_irq().
 
-Reported-by: Ahmed Tamrawi <ahmedtamrawi@gmail.com>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: Dr. Tilmann Bubeck <t.bubeck@reinform.de>
-Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+This change can be reverted when hrtimer callbacks become threaded.
+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/ioctl.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/host/ehci-hcd.c |   13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
---- a/fs/ext4/ioctl.c
-+++ b/fs/ext4/ioctl.c
-@@ -145,7 +145,7 @@ static long swap_inode_boot_loader(struc
- 	handle = ext4_journal_start(inode_bl, EXT4_HT_MOVE_EXTENTS, 2);
- 	if (IS_ERR(handle)) {
- 		err = -EINVAL;
--		goto swap_boot_out;
-+		goto journal_err_out;
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -686,8 +686,15 @@ static irqreturn_t ehci_irq (struct usb_
+ 	struct ehci_hcd		*ehci = hcd_to_ehci (hcd);
+ 	u32			status, masked_status, pcd_status = 0, cmd;
+ 	int			bh;
++	unsigned long		flags;
+ 
+-	spin_lock (&ehci->lock);
++	/*
++	 * For threadirqs option we use spin_lock_irqsave() variant to prevent
++	 * deadlock with ehci hrtimer callback, because hrtimer callbacks run
++	 * in interrupt context even when threadirqs is specified. We can go
++	 * back to spin_lock() variant when hrtimer callbacks become threaded.
++	 */
++	spin_lock_irqsave(&ehci->lock, flags);
+ 
+ 	status = ehci_readl(ehci, &ehci->regs->status);
+ 
+@@ -705,7 +712,7 @@ static irqreturn_t ehci_irq (struct usb_
+ 
+ 	/* Shared IRQ? */
+ 	if (!masked_status || unlikely(ehci->rh_state == EHCI_RH_HALTED)) {
+-		spin_unlock(&ehci->lock);
++		spin_unlock_irqrestore(&ehci->lock, flags);
+ 		return IRQ_NONE;
  	}
  
- 	/* Protect extent tree against block allocations via delalloc */
-@@ -203,6 +203,7 @@ static long swap_inode_boot_loader(struc
+@@ -823,7 +830,7 @@ dead:
  
- 	ext4_double_up_write_data_sem(inode, inode_bl);
- 
-+journal_err_out:
- 	ext4_inode_resume_unlocked_dio(inode);
- 	ext4_inode_resume_unlocked_dio(inode_bl);
- 
+ 	if (bh)
+ 		ehci_work (ehci);
+-	spin_unlock (&ehci->lock);
++	spin_unlock_irqrestore(&ehci->lock, flags);
+ 	if (pcd_status)
+ 		usb_hcd_poll_rh_status(hcd);
+ 	return IRQ_HANDLED;
 
 
