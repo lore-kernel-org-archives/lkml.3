@@ -1,66 +1,304 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757131AbaCDL32 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 06:29:28 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55424 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756997AbaCDL30 (ORCPT
+	id S1757180AbaCDLbB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 06:31:01 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:1960 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756661AbaCDLa6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 06:29:26 -0500
-Date: Tue, 4 Mar 2014 18:50:51 +0800
-From: Mark Brown <broonie@kernel.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Robin Gong <b38343@freescale.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140304105051.GL13126@sirena.org.uk>
-References: <1393928414.9669.1.camel@phoenix>
+	Tue, 4 Mar 2014 06:30:58 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 04 Mar 2014 03:28:00 -0800
+From: Wei Ni <wni@nvidia.com>
+To: <khali@linux-fr.org>, <linux@roeck-us.net>, <swarren@wwwdotorg.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        <lm-sensors@lm-sensors.org>, Wei Ni <wni@nvidia.com>
+Subject: [PATCH v2 1/3] hwmon: (lm90) split set&show temp as common codes
+Date: Tue, 4 Mar 2014 19:31:02 +0800
+Message-ID: <1393932664-13319-2-git-send-email-wni@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1393932664-13319-1-git-send-email-wni@nvidia.com>
+References: <1393932664-13319-1-git-send-email-wni@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="TnYVF1hk1c8rpHiF"
-Content-Disposition: inline
-In-Reply-To: <1393928414.9669.1.camel@phoenix>
-X-Cookie: You are always busy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 182.93.4.226
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: pfuze100: Add terminate entry for
- [i2c|of]_device_id tables
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Split set&show temp codes as common functions, so we can use it
+directly when implement linux thermal framework.
+And handle error return value for the lm90_select_remote_channel
+and write_tempx, then set_temp8 and set_temp11 could return it
+to user-space.
 
---TnYVF1hk1c8rpHiF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Change-Id: Id7178f680718fd54b9ba953118d91052b59b692e
+Signed-off-by: Wei Ni <wni@nvidia.com>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+---
+ drivers/hwmon/lm90.c |  164 +++++++++++++++++++++++++++++++++-----------------
+ 1 file changed, 109 insertions(+), 55 deletions(-)
 
-On Tue, Mar 04, 2014 at 06:20:14PM +0800, Axel Lin wrote:
-> Also remove PFUZE_NUM to avoid below build warnings:
+diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
+index c9ff08d..cb33dcf 100644
+--- a/drivers/hwmon/lm90.c
++++ b/drivers/hwmon/lm90.c
+@@ -473,20 +473,23 @@ static int lm90_read16(struct i2c_client *client, u8 regh, u8 regl, u16 *value)
+  * various registers have different meanings as a result of selecting a
+  * non-default remote channel.
+  */
+-static inline void lm90_select_remote_channel(struct i2c_client *client,
+-					      struct lm90_data *data,
+-					      int channel)
++static inline int lm90_select_remote_channel(struct i2c_client *client,
++					     struct lm90_data *data,
++					     int channel)
+ {
+ 	u8 config;
++	int err = 0;
+ 
+ 	if (data->kind == max6696) {
+ 		lm90_read_reg(client, LM90_REG_R_CONFIG1, &config);
+ 		config &= ~0x08;
+ 		if (channel)
+ 			config |= 0x08;
+-		i2c_smbus_write_byte_data(client, LM90_REG_W_CONFIG1,
+-					  config);
++		err = i2c_smbus_write_byte_data(client, LM90_REG_W_CONFIG1,
++						config);
+ 	}
++
++	return err;
+ }
+ 
+ /*
+@@ -759,29 +762,34 @@ static u16 temp_to_u16_adt7461(struct lm90_data *data, long val)
+  * Sysfs stuff
+  */
+ 
+-static ssize_t show_temp8(struct device *dev, struct device_attribute *devattr,
+-			  char *buf)
++static int read_temp8(struct device *dev, int index)
+ {
+-	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
+ 	struct lm90_data *data = lm90_update_device(dev);
+ 	int temp;
+ 
+ 	if (data->kind == adt7461 || data->kind == tmp451)
+-		temp = temp_from_u8_adt7461(data, data->temp8[attr->index]);
++		temp = temp_from_u8_adt7461(data, data->temp8[index]);
+ 	else if (data->kind == max6646)
+-		temp = temp_from_u8(data->temp8[attr->index]);
++		temp = temp_from_u8(data->temp8[index]);
+ 	else
+-		temp = temp_from_s8(data->temp8[attr->index]);
++		temp = temp_from_s8(data->temp8[index]);
+ 
+ 	/* +16 degrees offset for temp2 for the LM99 */
+-	if (data->kind == lm99 && attr->index == 3)
++	if (data->kind == lm99 && index == 3)
+ 		temp += 16000;
+ 
+-	return sprintf(buf, "%d\n", temp);
++	return temp;
+ }
+ 
+-static ssize_t set_temp8(struct device *dev, struct device_attribute *devattr,
+-			 const char *buf, size_t count)
++static ssize_t show_temp8(struct device *dev, struct device_attribute *devattr,
++			  char *buf)
++{
++	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
++
++	return sprintf(buf, "%d\n", read_temp8(dev, attr->index));
++}
++
++static int write_temp8(struct device *dev, int index, long val)
+ {
+ 	static const u8 reg[TEMP8_REG_NUM] = {
+ 		LM90_REG_W_LOCAL_LOW,
+@@ -794,60 +802,79 @@ static ssize_t set_temp8(struct device *dev, struct device_attribute *devattr,
+ 		MAX6659_REG_W_REMOTE_EMERG,
+ 	};
+ 
+-	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
+ 	struct lm90_data *data = dev_get_drvdata(dev);
+ 	struct i2c_client *client = data->client;
+-	int nr = attr->index;
+-	long val;
+ 	int err;
+ 
+-	err = kstrtol(buf, 10, &val);
+-	if (err < 0)
+-		return err;
+-
+ 	/* +16 degrees offset for temp2 for the LM99 */
+-	if (data->kind == lm99 && attr->index == 3)
++	if (data->kind == lm99 && index == 3)
+ 		val -= 16000;
+ 
+ 	mutex_lock(&data->update_lock);
+ 	if (data->kind == adt7461 || data->kind == tmp451)
+-		data->temp8[nr] = temp_to_u8_adt7461(data, val);
++		data->temp8[index] = temp_to_u8_adt7461(data, val);
+ 	else if (data->kind == max6646)
+-		data->temp8[nr] = temp_to_u8(val);
++		data->temp8[index] = temp_to_u8(val);
+ 	else
+-		data->temp8[nr] = temp_to_s8(val);
+-
+-	lm90_select_remote_channel(client, data, nr >= 6);
+-	i2c_smbus_write_byte_data(client, reg[nr], data->temp8[nr]);
+-	lm90_select_remote_channel(client, data, 0);
++		data->temp8[index] = temp_to_s8(val);
+ 
++	if ((err = lm90_select_remote_channel(client, data, index >= 6)) ||
++	    (err = i2c_smbus_write_byte_data(client, reg[index],
++					     data->temp8[index])) ||
++	    (err = lm90_select_remote_channel(client, data, 0)))
++		dev_err(dev, "write_temp8 failed, err %d\n", err);
+ 	mutex_unlock(&data->update_lock);
++
++	return err;
++}
++
++static ssize_t set_temp8(struct device *dev, struct device_attribute *devattr,
++			 const char *buf, size_t count)
++{
++	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
++	int index = attr->index;
++	long val;
++	int err;
++
++	err = kstrtol(buf, 10, &val);
++	if (err < 0)
++		return err;
++
++	err = write_temp8(dev, index, val);
++	if (err < 0)
++		return err;
++
+ 	return count;
+ }
+ 
+-static ssize_t show_temp11(struct device *dev, struct device_attribute *devattr,
+-			   char *buf)
++static int read_temp11(struct device *dev, int index)
+ {
+-	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
+ 	struct lm90_data *data = lm90_update_device(dev);
+ 	int temp;
+ 
+ 	if (data->kind == adt7461 || data->kind == tmp451)
+-		temp = temp_from_u16_adt7461(data, data->temp11[attr->index]);
++		temp = temp_from_u16_adt7461(data, data->temp11[index]);
+ 	else if (data->kind == max6646)
+-		temp = temp_from_u16(data->temp11[attr->index]);
++		temp = temp_from_u16(data->temp11[index]);
+ 	else
+-		temp = temp_from_s16(data->temp11[attr->index]);
++		temp = temp_from_s16(data->temp11[index]);
+ 
+ 	/* +16 degrees offset for temp2 for the LM99 */
+-	if (data->kind == lm99 &&  attr->index <= 2)
++	if (data->kind == lm99 && index <= 2)
+ 		temp += 16000;
+ 
+-	return sprintf(buf, "%d\n", temp);
++	return temp;
+ }
+ 
+-static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
+-			  const char *buf, size_t count)
++static ssize_t show_temp11(struct device *dev, struct device_attribute *devattr,
++			   char *buf)
++{
++	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
++
++	return sprintf(buf, "%d\n", read_temp11(dev, attr->index));
++}
++
++static int write_temp11(struct device *dev, int nr, int index, long val)
+ {
+ 	struct {
+ 		u8 high;
+@@ -861,18 +888,10 @@ static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
+ 		{ LM90_REG_W_REMOTE_HIGHH, LM90_REG_W_REMOTE_HIGHL, 1 }
+ 	};
+ 
+-	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
+ 	struct lm90_data *data = dev_get_drvdata(dev);
+ 	struct i2c_client *client = data->client;
+-	int nr = attr->nr;
+-	int index = attr->index;
+-	long val;
+ 	int err;
+ 
+-	err = kstrtol(buf, 10, &val);
+-	if (err < 0)
+-		return err;
+-
+ 	/* +16 degrees offset for temp2 for the LM99 */
+ 	if (data->kind == lm99 && index <= 2)
+ 		val -= 16000;
+@@ -887,15 +906,50 @@ static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
+ 	else
+ 		data->temp11[index] = temp_to_s8(val) << 8;
+ 
+-	lm90_select_remote_channel(client, data, reg[nr].channel);
+-	i2c_smbus_write_byte_data(client, reg[nr].high,
+-				  data->temp11[index] >> 8);
+-	if (data->flags & LM90_HAVE_REM_LIMIT_EXT)
+-		i2c_smbus_write_byte_data(client, reg[nr].low,
+-					  data->temp11[index] & 0xff);
+-	lm90_select_remote_channel(client, data, 0);
++	err = lm90_select_remote_channel(client, data, reg[nr].channel);
++	if (err)
++		goto error;
++
++	err = i2c_smbus_write_byte_data(client, reg[nr].high,
++					data->temp11[index] >> 8);
++	if (err)
++		goto error;
++
++	if (data->flags & LM90_HAVE_REM_LIMIT_EXT) {
++		err = i2c_smbus_write_byte_data(client, reg[nr].low,
++						data->temp11[index] & 0xff);
++		if (err)
++			goto error;
++	}
++
++	err = lm90_select_remote_channel(client, data, 0);
++
++error:
++	if (err)
++		dev_err(dev, "write_temp11 failed, err %d\n", err);
+ 
+ 	mutex_unlock(&data->update_lock);
++
++	return err;
++}
++
++static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
++			  const char *buf, size_t count)
++{
++	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
++	int nr = attr->nr;
++	int index = attr->index;
++	long val;
++	int err;
++
++	err = kstrtol(buf, 10, &val);
++	if (err < 0)
++		return err;
++
++	err = write_temp11(dev, nr, index, val);
++	if (err < 0)
++		return err;
++
+ 	return count;
+ }
+ 
+-- 
+1.7.9.5
 
-Applied, thanks.
-
---TnYVF1hk1c8rpHiF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTFbAFAAoJELSic+t+oim9ssYP/2AsU8aphSZCLNprZELBvjVC
-4NCa9Ocgyr6qcUuM5aF+tsBmg1oc6EeJbClmIAhJ42igq9uXtGiNJhmIt0JYploC
-NykQVYLoVwaZBaAxpmCGp4hoymVAttS/cJb/+EiZbjfkNIQsHFO/5MQH5MDGJdl3
-c0TzNBN36T95pjmtongmqMN3FrIuPePvl6t5grLJawTPq7UkBJWoe20aaITP3dK2
-knGIzgqwZxxcKpU7Vo/ljvFispDpETAyxHAiiarxi3/gX5oEKBKQAH/ix56RK2Dq
-AgP+WfNA6jkrRzh3MlwZcK8ZBEi3o00PN6y07GSZ04X7FxM0O3d7DjMnltoSOGg4
-KdWLBIaA8ND7DFbyzevJXon8k8LrZwCNZzoVeqgnvLvNqnb2tFaSwJFr+zKBupC/
-hyAiybNkM+/aKgNVfT3XJ30iATE7fQ5WTtwpIej6o145DoFm0HGSi3FyQuO02Z1r
-Uziu3Tm9ziokcALZO4Yt6BbEgC3QpUHIYIvox55hYnLNdPncOqTzYjU7c5UV5YK9
-Ba+bDrCkI3OyDgW0AHmm6Cv6OeavWZjySwmivMQxREfjzo8TScuT4IkcgTTlHT4P
-kw0zD6IKUJcYov0pmvUhI0mndv1u4RUjOyH5HYt3hckwMN5URa40Q7g6nIhFPJ96
-zDUyspqs0OIc5i9x7pzq
-=qNQn
------END PGP SIGNATURE-----
-
---TnYVF1hk1c8rpHiF--
