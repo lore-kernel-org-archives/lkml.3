@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756872AbaCDJJT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 04:09:19 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:43529 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756835AbaCDJJM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 04:09:12 -0500
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-CC: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v2 5/5] drivers: bus: omap_l3: Change pr_crit() to dev_err() when IRQ request fails
-Date: Tue, 4 Mar 2014 11:08:30 +0200
-Message-ID: <1393924110-11132-6-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1393924110-11132-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1393924110-11132-1-git-send-email-peter.ujfalusi@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1756895AbaCDJKF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 04:10:05 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:60680 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756410AbaCDJJ6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 04:09:58 -0500
+From: Romain Izard <romain.izard.pro@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Cc: Romain Izard <romain.izard.pro@gmail.com>
+Subject: [PATCH v2] trace: module: Maintain a valid user count
+Date: Tue,  4 Mar 2014 10:09:39 +0100
+Message-Id: <1393924179-9147-1-git-send-email-romain.izard.pro@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <20140303133330.7031b2cb@gandalf.local.home>
+References: <20140303133330.7031b2cb@gandalf.local.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use dev_err() which will going to print the driver's name as well and the
-KERN_ERR level is sufficient in this case (we also print via dev_err when
-there is an error with the mem resources)
+The replacement of the 'count' variable by two variables 'incs' and
+'decs' to resolve some race conditions during module unloading was done
+in parallel with some cleanup in the trace subsystem, and was integrated
+as a merge.
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Unfortunately, the formula for this replacement was wrong in the tracing
+code, and the refcount in the traces was not usable as a result.
+
+Use 'count = incs - decs' to compute the user count.
+
+Signed-off-by: Romain Izard <romain.izard.pro@gmail.com>
 ---
- drivers/bus/omap_l3_noc.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ include/trace/events/module.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
-index ed428ada44f7..3a36e3ebcb57 100644
---- a/drivers/bus/omap_l3_noc.c
-+++ b/drivers/bus/omap_l3_noc.c
-@@ -162,8 +162,8 @@ static int omap4_l3_probe(struct platform_device *pdev)
- 	ret = devm_request_irq(&pdev->dev, l3->debug_irq, l3_interrupt_handler,
- 			       IRQF_DISABLED, "l3-dbg-irq", l3);
- 	if (ret) {
--		pr_crit("L3: request_irq failed to register for 0x%x\n",
--						l3->debug_irq);
-+		dev_err(&pdev->dev, "request_irq failed for %d\n",
-+			l3->debug_irq);
- 		return ret;
- 	}
+diff --git a/include/trace/events/module.h b/include/trace/events/module.h
+index 161932737416..ca298c7157ae 100644
+--- a/include/trace/events/module.h
++++ b/include/trace/events/module.h
+@@ -78,7 +78,7 @@ DECLARE_EVENT_CLASS(module_refcnt,
  
-@@ -171,8 +171,7 @@ static int omap4_l3_probe(struct platform_device *pdev)
- 	ret = devm_request_irq(&pdev->dev, l3->app_irq, l3_interrupt_handler,
- 			       IRQF_DISABLED, "l3-app-irq", l3);
- 	if (ret)
--		pr_crit("L3: request_irq failed to register for 0x%x\n",
--						l3->app_irq);
-+		dev_err(&pdev->dev, "request_irq failed for %d\n", l3->app_irq);
+ 	TP_fast_assign(
+ 		__entry->ip	= ip;
+-		__entry->refcnt	= __this_cpu_read(mod->refptr->incs) + __this_cpu_read(mod->refptr->decs);
++		__entry->refcnt	= __this_cpu_read(mod->refptr->incs) - __this_cpu_read(mod->refptr->decs);
+ 		__assign_str(name, mod->name);
+ 	),
  
- 	return ret;
- }
 -- 
-1.9.0
+1.8.3.2
 
