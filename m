@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758155AbaCDV2j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:28:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40911 "EHLO
+	id S1758178AbaCDV2z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:28:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40907 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755984AbaCDUDM (ORCPT
+	with ESMTP id S1755973AbaCDUDM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Mar 2014 15:03:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
+        Qin Chuanyu <qinchuanyu@huawei.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
         Jason Wang <jasowang@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 047/172] hyperv: Fix the carrier status setting
-Date: Tue,  4 Mar 2014 12:02:11 -0800
-Message-Id: <20140304200301.240740562@linuxfoundation.org>
+Subject: [PATCH 3.13 046/172] vhost: fix ref cnt checking deadlock
+Date: Tue,  4 Mar 2014 12:02:10 -0800
+Message-Id: <20140304200301.207014967@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -31,145 +31,141 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Haiyang Zhang <haiyangz@microsoft.com>
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
-[ Upstream commit 891de74d693bb4fefe2efcc6432a4a9a9bee561e ]
+[ Upstream commit 0ad8b480d6ee916aa84324f69acf690142aecd0e ]
 
-Without this patch, the "cat /sys/class/net/ethN/operstate" shows
-"unknown", and "ethtool ethN" shows "Link detected: yes", when VM
-boots up with or without vNIC connected.
+vhost checked the counter within the refcnt before decrementing.  It
+really wanted to know that it is the one that has the last reference, as
+a way to batch freeing resources a bit more efficiently.
 
-This patch fixed the problem.
+Note: we only let refcount go to 0 on device release.
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+This works well but we now access the ref counter twice so there's a
+race: all users might see a high count and decide to defer freeing
+resources.
+In the end no one initiates freeing resources until the last reference
+is gone (which is on VM shotdown so might happen after a looooong time).
+
+Let's do what we probably should have done straight away:
+switch from kref to plain atomic, documenting the
+semantics, return the refcount value atomically after decrement,
+then use that to avoid the deadlock.
+
+Reported-by: Qin Chuanyu <qinchuanyu@huawei.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 Acked-by: Jason Wang <jasowang@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/hyperv/netvsc_drv.c |   53 ++++++++++++++++++++++++++++------------
- 1 file changed, 38 insertions(+), 15 deletions(-)
+ drivers/vhost/net.c |   41 ++++++++++++++++++++---------------------
+ 1 file changed, 20 insertions(+), 21 deletions(-)
 
---- a/drivers/net/hyperv/netvsc_drv.c
-+++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -89,8 +89,12 @@ static int netvsc_open(struct net_device
- {
- 	struct net_device_context *net_device_ctx = netdev_priv(net);
- 	struct hv_device *device_obj = net_device_ctx->device_ctx;
-+	struct netvsc_device *nvdev;
-+	struct rndis_device *rdev;
- 	int ret = 0;
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -70,7 +70,12 @@ enum {
+ };
  
-+	netif_carrier_off(net);
-+
- 	/* Open up the device */
- 	ret = rndis_filter_open(device_obj);
- 	if (ret != 0) {
-@@ -100,6 +104,11 @@ static int netvsc_open(struct net_device
- 
- 	netif_start_queue(net);
- 
-+	nvdev = hv_get_drvdata(device_obj);
-+	rdev = nvdev->extension;
-+	if (!rdev->link_state)
-+		netif_carrier_on(net);
-+
- 	return ret;
+ struct vhost_net_ubuf_ref {
+-	struct kref kref;
++	/* refcount follows semantics similar to kref:
++	 *  0: object is released
++	 *  1: no outstanding ubufs
++	 * >1: outstanding ubufs
++	 */
++	atomic_t refcount;
+ 	wait_queue_head_t wait;
+ 	struct vhost_virtqueue *vq;
+ };
+@@ -116,14 +121,6 @@ static void vhost_net_enable_zcopy(int v
+ 	vhost_net_zcopy_mask |= 0x1 << vq;
  }
  
-@@ -230,23 +239,24 @@ void netvsc_linkstatus_callback(struct h
- 	struct net_device *net;
- 	struct net_device_context *ndev_ctx;
- 	struct netvsc_device *net_device;
-+	struct rndis_device *rdev;
+-static void vhost_net_zerocopy_done_signal(struct kref *kref)
+-{
+-	struct vhost_net_ubuf_ref *ubufs;
+-
+-	ubufs = container_of(kref, struct vhost_net_ubuf_ref, kref);
+-	wake_up(&ubufs->wait);
+-}
+-
+ static struct vhost_net_ubuf_ref *
+ vhost_net_ubuf_alloc(struct vhost_virtqueue *vq, bool zcopy)
+ {
+@@ -134,21 +131,24 @@ vhost_net_ubuf_alloc(struct vhost_virtqu
+ 	ubufs = kmalloc(sizeof(*ubufs), GFP_KERNEL);
+ 	if (!ubufs)
+ 		return ERR_PTR(-ENOMEM);
+-	kref_init(&ubufs->kref);
++	atomic_set(&ubufs->refcount, 1);
+ 	init_waitqueue_head(&ubufs->wait);
+ 	ubufs->vq = vq;
+ 	return ubufs;
+ }
  
- 	net_device = hv_get_drvdata(device_obj);
-+	rdev = net_device->extension;
-+
-+	rdev->link_state = status != 1;
-+
- 	net = net_device->ndev;
+-static void vhost_net_ubuf_put(struct vhost_net_ubuf_ref *ubufs)
++static int vhost_net_ubuf_put(struct vhost_net_ubuf_ref *ubufs)
+ {
+-	kref_put(&ubufs->kref, vhost_net_zerocopy_done_signal);
++	int r = atomic_sub_return(1, &ubufs->refcount);
++	if (unlikely(!r))
++		wake_up(&ubufs->wait);
++	return r;
+ }
  
--	if (!net) {
--		netdev_err(net, "got link status but net device "
--				"not initialized yet\n");
-+	if (!net || net->reg_state != NETREG_REGISTERED)
- 		return;
--	}
+ static void vhost_net_ubuf_put_and_wait(struct vhost_net_ubuf_ref *ubufs)
+ {
+-	kref_put(&ubufs->kref, vhost_net_zerocopy_done_signal);
+-	wait_event(ubufs->wait, !atomic_read(&ubufs->kref.refcount));
++	vhost_net_ubuf_put(ubufs);
++	wait_event(ubufs->wait, !atomic_read(&ubufs->refcount));
+ }
  
-+	ndev_ctx = netdev_priv(net);
- 	if (status == 1) {
--		netif_carrier_on(net);
--		ndev_ctx = netdev_priv(net);
- 		schedule_delayed_work(&ndev_ctx->dwork, 0);
- 		schedule_delayed_work(&ndev_ctx->dwork, msecs_to_jiffies(20));
- 	} else {
--		netif_carrier_off(net);
-+		schedule_delayed_work(&ndev_ctx->dwork, 0);
+ static void vhost_net_ubuf_put_wait_and_free(struct vhost_net_ubuf_ref *ubufs)
+@@ -306,22 +306,21 @@ static void vhost_zerocopy_callback(stru
+ {
+ 	struct vhost_net_ubuf_ref *ubufs = ubuf->ctx;
+ 	struct vhost_virtqueue *vq = ubufs->vq;
+-	int cnt = atomic_read(&ubufs->kref.refcount);
++	int cnt;
+ 
+ 	/* set len to mark this desc buffers done DMA */
+ 	vq->heads[ubuf->desc].len = success ?
+ 		VHOST_DMA_DONE_LEN : VHOST_DMA_FAILED_LEN;
+-	vhost_net_ubuf_put(ubufs);
++	cnt = vhost_net_ubuf_put(ubufs);
+ 
+ 	/*
+ 	 * Trigger polling thread if guest stopped submitting new buffers:
+-	 * in this case, the refcount after decrement will eventually reach 1
+-	 * so here it is 2.
++	 * in this case, the refcount after decrement will eventually reach 1.
+ 	 * We also trigger polling periodically after each 16 packets
+ 	 * (the value 16 here is more or less arbitrary, it's tuned to trigger
+ 	 * less than 10% of times).
+ 	 */
+-	if (cnt <= 2 || !(cnt % 16))
++	if (cnt <= 1 || !(cnt % 16))
+ 		vhost_poll_queue(&vq->poll);
+ }
+ 
+@@ -420,7 +419,7 @@ static void handle_tx(struct vhost_net *
+ 			msg.msg_control = ubuf;
+ 			msg.msg_controllen = sizeof(ubuf);
+ 			ubufs = nvq->ubufs;
+-			kref_get(&ubufs->kref);
++			atomic_inc(&ubufs->refcount);
+ 			nvq->upend_idx = (nvq->upend_idx + 1) % UIO_MAXIOV;
+ 		} else {
+ 			msg.msg_control = NULL;
+@@ -785,7 +784,7 @@ static void vhost_net_flush(struct vhost
+ 		vhost_net_ubuf_put_and_wait(n->vqs[VHOST_NET_VQ_TX].ubufs);
+ 		mutex_lock(&n->vqs[VHOST_NET_VQ_TX].vq.mutex);
+ 		n->tx_flush = false;
+-		kref_init(&n->vqs[VHOST_NET_VQ_TX].ubufs->kref);
++		atomic_set(&n->vqs[VHOST_NET_VQ_TX].ubufs->refcount, 1);
+ 		mutex_unlock(&n->vqs[VHOST_NET_VQ_TX].vq.mutex);
  	}
  }
- 
-@@ -389,17 +399,35 @@ static const struct net_device_ops devic
-  * current context when receiving RNDIS_STATUS_MEDIA_CONNECT event. So, add
-  * another netif_notify_peers() into a delayed work, otherwise GARP packet
-  * will not be sent after quick migration, and cause network disconnection.
-+ * Also, we update the carrier status here.
-  */
--static void netvsc_send_garp(struct work_struct *w)
-+static void netvsc_link_change(struct work_struct *w)
- {
- 	struct net_device_context *ndev_ctx;
- 	struct net_device *net;
- 	struct netvsc_device *net_device;
-+	struct rndis_device *rdev;
-+	bool notify;
-+
-+	rtnl_lock();
- 
- 	ndev_ctx = container_of(w, struct net_device_context, dwork.work);
- 	net_device = hv_get_drvdata(ndev_ctx->device_ctx);
-+	rdev = net_device->extension;
- 	net = net_device->ndev;
--	netdev_notify_peers(net);
-+
-+	if (rdev->link_state) {
-+		netif_carrier_off(net);
-+		notify = false;
-+	} else {
-+		netif_carrier_on(net);
-+		notify = true;
-+	}
-+
-+	rtnl_unlock();
-+
-+	if (notify)
-+		netdev_notify_peers(net);
- }
- 
- 
-@@ -415,13 +443,10 @@ static int netvsc_probe(struct hv_device
- 	if (!net)
- 		return -ENOMEM;
- 
--	/* Set initial state */
--	netif_carrier_off(net);
--
- 	net_device_ctx = netdev_priv(net);
- 	net_device_ctx->device_ctx = dev;
- 	hv_set_drvdata(dev, net);
--	INIT_DELAYED_WORK(&net_device_ctx->dwork, netvsc_send_garp);
-+	INIT_DELAYED_WORK(&net_device_ctx->dwork, netvsc_link_change);
- 	INIT_WORK(&net_device_ctx->work, do_set_multicast);
- 
- 	net->netdev_ops = &device_ops;
-@@ -444,8 +469,6 @@ static int netvsc_probe(struct hv_device
- 	}
- 	memcpy(net->dev_addr, device_info.mac_adr, ETH_ALEN);
- 
--	netif_carrier_on(net);
--
- 	ret = register_netdev(net);
- 	if (ret != 0) {
- 		pr_err("Unable to register netdev.\n");
 
 
