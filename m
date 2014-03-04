@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757664AbaCDUN6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:13:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41779 "EHLO
+	id S1757684AbaCDUOU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:14:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41775 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932336AbaCDUFk (ORCPT
+	with ESMTP id S932333AbaCDUFj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:05:40 -0500
+	Tue, 4 Mar 2014 15:05:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [PATCH 3.10 85/97] ARM64: unwind: Fix PC calculation
-Date: Tue,  4 Mar 2014 12:04:38 -0800
-Message-Id: <20140304200348.803488131@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>,
+        James Hogan <james.hogan@imgtec.com>, linux-metag@vger.kernel.org
+Subject: [PATCH 3.10 84/97] irq-metag*: stop set_affinity vectoring to offline cpus
+Date: Tue,  4 Mar 2014 12:04:37 -0800
+Message-Id: <20140304200348.769489958@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -29,44 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olof Johansson <olof@lixom.net>
+From: James Hogan <james.hogan@imgtec.com>
 
-commit e306dfd06fcb44d21c80acb8e5a88d55f3d1cf63 upstream.
+commit f229006ec6beabf7b844653d92fa61f025fe3dcf upstream.
 
-The frame PC value in the unwind code used to just take the saved LR
-value and use that.  That's incorrect as a stack trace, since it shows
-the return path stack, not the call path stack.
+Fix irq_set_affinity callbacks in the Meta IRQ chip drivers to AND
+cpu_online_mask into the cpumask when picking a CPU to vector the
+interrupt to.
 
-In particular, it shows faulty information in case the bl is done as
-the very last instruction of one label, since the return point will be
-in the next label. That can easily be seen with tail calls to panic(),
-which is marked __noreturn and thus doesn't have anything useful after it.
+As Thomas pointed out, the /proc/irq/$N/smp_affinity interface doesn't
+filter out offline CPUs, so without this patch if you offline CPU0 and
+set an IRQ affinity to 0x3 it vectors the interrupt onto CPU0 even
+though it is offline.
 
-Easiest here is to just correct the unwind code and do a -4, to get the
-actual call site for the backtrace instead of the return site.
-
-Signed-off-by: Olof Johansson <olof@lixom.net>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Reported-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-metag@vger.kernel.org
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/kernel/stacktrace.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/irqchip/irq-metag-ext.c |    2 +-
+ drivers/irqchip/irq-metag.c     |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/arm64/kernel/stacktrace.c
-+++ b/arch/arm64/kernel/stacktrace.c
-@@ -48,7 +48,11 @@ int unwind_frame(struct stackframe *fram
+--- a/drivers/irqchip/irq-metag-ext.c
++++ b/drivers/irqchip/irq-metag-ext.c
+@@ -515,7 +515,7 @@ static int meta_intc_set_affinity(struct
+ 	 * one cpu (the interrupt code doesn't support it), so we just
+ 	 * pick the first cpu we find in 'cpumask'.
+ 	 */
+-	cpu = cpumask_any(cpumask);
++	cpu = cpumask_any_and(cpumask, cpu_online_mask);
+ 	thread = cpu_2_hwthread_id[cpu];
  
- 	frame->sp = fp + 0x10;
- 	frame->fp = *(unsigned long *)(fp);
--	frame->pc = *(unsigned long *)(fp + 8);
-+	/*
-+	 * -4 here because we care about the PC at time of bl,
-+	 * not where the return will go.
-+	 */
-+	frame->pc = *(unsigned long *)(fp + 8) - 4;
+ 	metag_out32(TBI_TRIG_VEC(TBID_SIGNUM_TR2(thread)), vec_addr);
+--- a/drivers/irqchip/irq-metag.c
++++ b/drivers/irqchip/irq-metag.c
+@@ -201,7 +201,7 @@ static int metag_internal_irq_set_affini
+ 	 * one cpu (the interrupt code doesn't support it), so we just
+ 	 * pick the first cpu we find in 'cpumask'.
+ 	 */
+-	cpu = cpumask_any(cpumask);
++	cpu = cpumask_any_and(cpumask, cpu_online_mask);
+ 	thread = cpu_2_hwthread_id[cpu];
  
- 	return 0;
- }
+ 	metag_out32(TBI_TRIG_VEC(TBID_SIGNUM_TR1(thread)),
 
 
