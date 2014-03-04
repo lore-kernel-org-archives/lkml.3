@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932392AbaCDUMq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:12:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41803 "EHLO
+	id S932453AbaCDUNF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:13:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41797 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932353AbaCDUFo (ORCPT
+	with ESMTP id S932342AbaCDUFn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:05:44 -0500
+	Tue, 4 Mar 2014 15:05:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Drew Richardson <drew.richardson@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Will Deacon <will.deacon@arm.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.10 77/97] perf: Fix hotplug splat
-Date: Tue,  4 Mar 2014 12:04:30 -0800
-Message-Id: <20140304200348.534625506@linuxfoundation.org>
+        Denis Ciocca <denis.ciocca@st.com>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.10 76/97] iio:gyro: bug on L3GD20H gyroscope support
+Date: Tue,  4 Mar 2014 12:04:29 -0800
+Message-Id: <20140304200348.498193044@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -30,66 +29,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Denis CIOCCA <denis.ciocca@st.com>
 
-commit e3703f8cdfcf39c25c4338c3ad8e68891cca3731 upstream.
+commit a0657716416f834ef7710a9044614d50a36c3bdc upstream.
 
-Drew Richardson reported that he could make the kernel go *boom* when hotplugging
-while having perf events active.
+The driver was not able to manage the sensor: during probe function
+and wai check, the driver stops and writes: "device name and WhoAmI mismatch."
+The correct value of L3GD20H wai is 0xd7 instead of 0xd4.
+Dropped support for the sensor.
 
-It turned out that when you have a group event, the code in
-__perf_event_exit_context() fails to remove the group siblings from
-the context.
-
-We then proceed with destroying and freeing the event, and when you
-re-plug the CPU and try and add another event to that CPU, things go
-*boom* because you've still got dead entries there.
-
-Reported-by: Drew Richardson <drew.richardson@arm.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Will Deacon <will.deacon@arm.com>
-Link: http://lkml.kernel.org/n/tip-k6v5wundvusvcseqj1si0oz0@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Denis Ciocca <denis.ciocca@st.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/events/core.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/iio/gyro/Kconfig        |    2 +-
+ drivers/iio/gyro/st_gyro.h      |    1 -
+ drivers/iio/gyro/st_gyro_core.c |    9 ++++-----
+ drivers/iio/gyro/st_gyro_i2c.c  |    1 -
+ drivers/iio/gyro/st_gyro_spi.c  |    1 -
+ 5 files changed, 5 insertions(+), 9 deletions(-)
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -7421,14 +7421,14 @@ static void perf_pmu_rotate_stop(struct
- static void __perf_event_exit_context(void *__info)
- {
- 	struct perf_event_context *ctx = __info;
--	struct perf_event *event, *tmp;
-+	struct perf_event *event;
+--- a/drivers/iio/gyro/Kconfig
++++ b/drivers/iio/gyro/Kconfig
+@@ -50,7 +50,7 @@ config IIO_ST_GYRO_3AXIS
+ 	select IIO_ST_GYRO_BUFFER if (IIO_TRIGGERED_BUFFER)
+ 	help
+ 	  Say yes here to build support for STMicroelectronics gyroscopes:
+-	  L3G4200D, LSM330DL, L3GD20, L3GD20H, LSM330DLC, L3G4IS, LSM330.
++	  L3G4200D, LSM330DL, L3GD20, LSM330DLC, L3G4IS, LSM330.
  
- 	perf_pmu_rotate_stop(ctx->pmu);
+ 	  This driver can also be built as a module. If so, will be created
+ 	  these modules:
+--- a/drivers/iio/gyro/st_gyro.h
++++ b/drivers/iio/gyro/st_gyro.h
+@@ -19,7 +19,6 @@
+ #define LSM330DL_GYRO_DEV_NAME		"lsm330dl_gyro"
+ #define LSM330DLC_GYRO_DEV_NAME		"lsm330dlc_gyro"
+ #define L3GD20_GYRO_DEV_NAME		"l3gd20"
+-#define L3GD20H_GYRO_DEV_NAME		"l3gd20h"
+ #define L3G4IS_GYRO_DEV_NAME		"l3g4is_ui"
+ #define LSM330_GYRO_DEV_NAME		"lsm330_gyro"
  
--	list_for_each_entry_safe(event, tmp, &ctx->pinned_groups, group_entry)
--		__perf_remove_from_context(event);
--	list_for_each_entry_safe(event, tmp, &ctx->flexible_groups, group_entry)
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(event, &ctx->event_list, event_entry)
- 		__perf_remove_from_context(event);
-+	rcu_read_unlock();
- }
- 
- static void perf_event_exit_cpu_context(int cpu)
-@@ -7452,11 +7452,11 @@ static void perf_event_exit_cpu(int cpu)
- {
- 	struct swevent_htable *swhash = &per_cpu(swevent_htable, cpu);
- 
-+	perf_event_exit_cpu_context(cpu);
-+
- 	mutex_lock(&swhash->hlist_mutex);
- 	swevent_hlist_release(swhash);
- 	mutex_unlock(&swhash->hlist_mutex);
--
--	perf_event_exit_cpu_context(cpu);
- }
- #else
- static inline void perf_event_exit_cpu(int cpu) { }
+--- a/drivers/iio/gyro/st_gyro_core.c
++++ b/drivers/iio/gyro/st_gyro_core.c
+@@ -162,11 +162,10 @@ static const struct st_sensors st_gyro_s
+ 		.wai = ST_GYRO_2_WAI_EXP,
+ 		.sensors_supported = {
+ 			[0] = L3GD20_GYRO_DEV_NAME,
+-			[1] = L3GD20H_GYRO_DEV_NAME,
+-			[2] = LSM330D_GYRO_DEV_NAME,
+-			[3] = LSM330DLC_GYRO_DEV_NAME,
+-			[4] = L3G4IS_GYRO_DEV_NAME,
+-			[5] = LSM330_GYRO_DEV_NAME,
++			[1] = LSM330D_GYRO_DEV_NAME,
++			[2] = LSM330DLC_GYRO_DEV_NAME,
++			[3] = L3G4IS_GYRO_DEV_NAME,
++			[4] = LSM330_GYRO_DEV_NAME,
+ 		},
+ 		.ch = (struct iio_chan_spec *)st_gyro_16bit_channels,
+ 		.odr = {
+--- a/drivers/iio/gyro/st_gyro_i2c.c
++++ b/drivers/iio/gyro/st_gyro_i2c.c
+@@ -61,7 +61,6 @@ static const struct i2c_device_id st_gyr
+ 	{ LSM330DL_GYRO_DEV_NAME },
+ 	{ LSM330DLC_GYRO_DEV_NAME },
+ 	{ L3GD20_GYRO_DEV_NAME },
+-	{ L3GD20H_GYRO_DEV_NAME },
+ 	{ L3G4IS_GYRO_DEV_NAME },
+ 	{ LSM330_GYRO_DEV_NAME },
+ 	{},
+--- a/drivers/iio/gyro/st_gyro_spi.c
++++ b/drivers/iio/gyro/st_gyro_spi.c
+@@ -60,7 +60,6 @@ static const struct spi_device_id st_gyr
+ 	{ LSM330DL_GYRO_DEV_NAME },
+ 	{ LSM330DLC_GYRO_DEV_NAME },
+ 	{ L3GD20_GYRO_DEV_NAME },
+-	{ L3GD20H_GYRO_DEV_NAME },
+ 	{ L3G4IS_GYRO_DEV_NAME },
+ 	{ LSM330_GYRO_DEV_NAME },
+ 	{},
 
 
