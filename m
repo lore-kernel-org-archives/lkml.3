@@ -1,103 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755549AbaCDXVR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 18:21:17 -0500
-Received: from ozlabs.org ([203.10.76.45]:60554 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752984AbaCDXVP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 18:21:15 -0500
-Date: Wed, 5 Mar 2014 10:21:09 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg KH <greg@kroah.com>
-Subject: Re: linux-next: build failure after merge of the wireless-next tree
-Message-Id: <20140305102109.948255688bc31a030fdd49d7@canb.auug.org.au>
-In-Reply-To: <20140305101627.1d9e3a0941dbadbc6f0a7733@canb.auug.org.au>
-References: <20140225133537.55ce6935e55faa6aeae53d89@canb.auug.org.au>
-	<20140225190715.GA4384@tuxdriver.com>
-	<20140226074738.0b530aebe4cde54216698d91@canb.auug.org.au>
-	<20140305101627.1d9e3a0941dbadbc6f0a7733@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__5_Mar_2014_10_21_09_+1100_Git=hAb.29m4Sah1"
+	id S1755665AbaCDXVt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 18:21:49 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:34812 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755570AbaCDXVs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 18:21:48 -0500
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: dan.carpenter@oracle.com, sachin.kamat@linaro.org, shaun@xresource.ca,
+        dulshani.gunawardhana89@gmail.com, davem@davemloft.net,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 5/7 v2] staging: cxt1e1: fix checkpatch errors with open brace '{'
+Date: Wed, 05 Mar 2014 08:21:43 +0900
+Message-ID: <1397863.pBhgGVz4CT@daeseok-laptop.cloud.net>
+User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__5_Mar_2014_10_21_09_+1100_Git=hAb.29m4Sah1
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi John,
+clean up checkpatch.pl error in linux.c:
+ ERROR: that open brace { should be on the previous line
 
-On Wed, 5 Mar 2014 10:16:27 +1100 Stephen Rothwell <sfr@canb.auug.org.au> w=
-rote:
->
-> If I revert commit 161d78555435 "Revert "Staging: rtl8812ae: remove
-> modules field of rate_control_ops"", it fails differently:
->=20
-> In file included from drivers/staging/wlan-ng/p80211netdev.c:91:0:
-> drivers/staging/wlan-ng/cfg80211.c: In function 'prism2_scan':
-> drivers/staging/wlan-ng/cfg80211.c:419:10: error: implicit declaration of=
- function 'ieee80211_dsss_chan_to_freq' [-Werror=3Dimplicit-function-declar=
-ation]
->           ieee80211_dsss_chan_to_freq(msg2.dschannel.data)),
->           ^
-> drivers/staging/rtl8821ae/rtl8821ae/trx.c: In function 'rtl8821ae_rx_quer=
-y_desc':
-> drivers/staging/rtl8821ae/rtl8821ae/trx.c:619:3: warning: passing argumen=
-t 1 of 'ieee80211_is_robust_mgmt_frame' from incompatible pointer type [ena=
-bled by default]
->    if ((ieee80211_is_robust_mgmt_frame(hdr)) &&
->    ^
-> In file included from include/net/mac80211.h:20:0,
->                  from drivers/staging/rtl8821ae/rtl8821ae/../wifi.h:38,
->                  from drivers/staging/rtl8821ae/rtl8821ae/trx.c:30:
-> include/linux/ieee80211.h:2286:20: note: expected 'struct sk_buff *' but =
-argument is of type 'struct ieee80211_hdr *'
->  static inline bool ieee80211_is_robust_mgmt_frame(struct sk_buff *skb)
->                     ^
-> drivers/staging/rtl8821ae/rtl8821ae/dm.c: In function 'rtl8821ae_dm_clear=
-_txpower_tracking_state':
-> drivers/staging/rtl8821ae/rtl8821ae/dm.c:487:31: warning: iteration 2u in=
-vokes undefined behavior [-Waggressive-loop-optimizations]
->    rtldm->bb_swing_idx_ofdm[p] =3D rtldm->default_ofdm_index;
->                                ^
-> drivers/staging/rtl8821ae/rtl8821ae/dm.c:485:2: note: containing loop
->   for (p =3D RF90_PATH_A; p < MAX_RF_PATH; ++p) {
->   ^
->=20
-> So please revert 161d78555435, and then fix this other error.
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+---
+ drivers/staging/cxt1e1/linux.c |   67 ++++++++++++---------------------------
+ 1 files changed, 21 insertions(+), 46 deletions(-)
 
-That fix could be a simple as just disabling the affected staging tree
-driver and letting Greg know.  Or you could actually fix it.
---=20
-Cheers,
-Stephen Rothwell <sfr@canb.auug.org.au>
+diff --git a/drivers/staging/cxt1e1/linux.c b/drivers/staging/cxt1e1/linux.c
+index e4541af..478516f 100644
+--- a/drivers/staging/cxt1e1/linux.c
++++ b/drivers/staging/cxt1e1/linux.c
+@@ -242,8 +242,7 @@ c4_wq_port_cleanup(mpi_t *pi)
+ 	 * PORT POINT: cannot call this if WQ is statically allocated w/in
+ 	 * structure since it calls kfree(wq);
+ 	 */
+-	if (pi->wq_port)
+-	{
++	if (pi->wq_port) {
+ 		destroy_workqueue(pi->wq_port);        /* this also calls
+ 							* flush_workqueue() */
+ 		pi->wq_port = NULL;
+@@ -433,15 +432,13 @@ create_chan(struct net_device *ndev, ci_t *ci,
+ 
+ 		/* allocate then fill in private data structure */
+ 		priv = OS_kmalloc(sizeof(struct c4_priv));
+-		if (!priv)
+-		{
++		if (!priv) {
+ 			pr_warning("%s: no memory for net_device !\n",
+ 				   ci->devname);
+ 			return NULL;
+ 		}
+ 		dev = alloc_hdlcdev(priv);
+-		if (!dev)
+-		{
++		if (!dev) {
+ 			pr_warning("%s: no memory for hdlc_device !\n",
+ 				   ci->devname);
+ 			OS_kfree(priv);
+@@ -459,10 +456,8 @@ create_chan(struct net_device *ndev, ci_t *ci,
+ 	*dev->name = 0;                 /* default ifconfig name = "hdlc" */
+ 
+ 	hi = (hdw_info_t *)ci->hdw_info;
+-	if (hi->mfg_info_sts == EEPROM_OK)
+-	{
+-		switch (hi->promfmt)
+-		{
++	if (hi->mfg_info_sts == EEPROM_OK) {
++		switch (hi->promfmt) {
+ 		case PROM_FORMAT_TYPE1:
+ 			memcpy(dev->dev_addr,
+ 			       (FLD_TYPE1 *) (hi->mfg_info.pft1.Serial), 6);
+@@ -476,9 +471,7 @@ create_chan(struct net_device *ndev, ci_t *ci,
+ 			break;
+ 		}
+ 	} else
+-	{
+ 		memset(dev->dev_addr, 0, 6);
+-	}
+ 
+ 	hdlc->xmit = c4_linux_xmit;
+ 
+@@ -502,8 +495,7 @@ create_chan(struct net_device *ndev, ci_t *ci,
+ 
+ 	/* needed due to Ioctl calling sequence */
+ 	rtnl_lock();
+-	if (ret)
+-	{
++	if (ret) {
+ 		if (cxt1e1_log_level >= LOG_WARN)
+ 			pr_info("%s: create_chan[%d] registration error = %d.\n",
+ 				ci->devname, cp->channum, ret);
+@@ -698,8 +690,7 @@ do_create_chan(struct net_device *ndev, void *data)
+ 	if (!dev)
+ 		return -EBUSY;
+ 	ret = mkret(c4_new_chan(ci, cp.port, cp.channum, dev));
+-	if (ret)
+-	{
++	if (ret) {
+ 		/* needed due to Ioctl calling sequence */
+ 		rtnl_unlock();
+ 		unregister_hdlc_device(dev);
+@@ -805,8 +796,7 @@ do_reset(struct net_device *musycc_dev, void *data)
+ 	const struct c4_priv *priv;
+ 	int         i;
+ 
+-	for (i = 0; i < 128; i++)
+-	{
++	for (i = 0; i < 128; i++) {
+ 		struct net_device *ndev;
+ 		char        buf[sizeof(CHANNAME) + 3];
+ 
+@@ -817,8 +807,7 @@ do_reset(struct net_device *musycc_dev, void *data)
+ 		priv = dev_to_hdlc(ndev)->priv;
+ 
+ 		if ((unsigned long) (priv->ci) ==
+-			(unsigned long) (netdev_priv(musycc_dev)))
+-		{
++			(unsigned long) (netdev_priv(musycc_dev))) {
+ 			ndev->flags &= ~IFF_UP;
+ 			netif_stop_queue(ndev);
+ 			do_deluser(ndev, 1);
+@@ -845,10 +834,8 @@ c4_ioctl(struct net_device *ndev, struct ifreq *ifr, int cmd)
+ 	void       *data;
+ 	int         iocmd, iolen;
+ 	status_t    ret;
+-	static struct data
+-	{
+-		union
+-		{
++	static struct data {
++		union {
+ 			u_int8_t c;
+ 			u_int32_t i;
+ 			struct sbe_brd_info bip;
+@@ -891,8 +878,7 @@ c4_ioctl(struct net_device *ndev, struct ifreq *ifr, int cmd)
+ 		return -EFAULT;
+ 
+ 	ret = 0;
+-	switch (iocmd)
+-	{
++	switch (iocmd) {
+ 	case SBE_IOC_PORT_GET:
+ 		//pr_info(">> SBE_IOC_PORT_GET Ioctl...\n");
+ 		ret = do_get_port(ndev, data);
+@@ -975,8 +961,7 @@ c4_add_dev(hdw_info_t *hi, int brdno, unsigned long f0, unsigned long f1,
+ 	ci_t       *ci;
+ 
+ 	ndev = alloc_netdev(sizeof(ci_t), SBE_IFACETMPL, c4_setup);
+-	if (!ndev)
+-	{
++	if (!ndev) {
+ 		pr_warning("%s: no memory for struct net_device !\n",
+ 			   hi->devname);
+ 		error_flag = ENOMEM;
+@@ -1012,8 +997,7 @@ c4_add_dev(hdw_info_t *hi, int brdno, unsigned long f0, unsigned long f1,
+ 
+ 
+ 	if (register_netdev(ndev) ||
+-		(c4_init(ci, (u_char *) f0, (u_char *) f1) != SBE_DRVR_SUCCESS))
+-	{
++		(c4_init(ci, (u_char *) f0, (u_char *) f1) != SBE_DRVR_SUCCESS)) {
+ 		OS_kfree(netdev_priv(ndev));
+ 		OS_kfree(ndev);
+ 		error_flag = ENODEV;
+@@ -1036,8 +1020,7 @@ c4_add_dev(hdw_info_t *hi, int brdno, unsigned long f0, unsigned long f1,
+ 
+ 	if (request_irq(irq0, &c4_linux_interrupt,
+ 			IRQF_SHARED,
+-			ndev->name, ndev))
+-	{
++			ndev->name, ndev)) {
+ 		pr_warning("%s: MUSYCC could not get irq: %d\n",
+ 			   ndev->name, irq0);
+ 		unregister_netdev(ndev);
+@@ -1047,8 +1030,7 @@ c4_add_dev(hdw_info_t *hi, int brdno, unsigned long f0, unsigned long f1,
+ 		return NULL;
+ 	}
+ #ifdef CONFIG_SBE_PMCC4_NCOMM
+-	if (request_irq(irq1, &c4_ebus_interrupt, IRQF_SHARED, ndev->name, ndev))
+-	{
++	if (request_irq(irq1, &c4_ebus_interrupt, IRQF_SHARED, ndev->name, ndev)) {
+ 		pr_warning("%s: EBUS could not get irq: %d\n", hi->devname, irq1);
+ 		unregister_netdev(ndev);
+ 		free_irq(irq0, ndev);
+@@ -1067,8 +1049,7 @@ c4_add_dev(hdw_info_t *hi, int brdno, unsigned long f0, unsigned long f1,
+ 		/* also sets PROM format type (promfmt) for later usage */
+ 		hdw_sn_get(hi, brdno);
+ 
+-		switch (hi->promfmt)
+-		{
++		switch (hi->promfmt) {
+ 		case PROM_FORMAT_TYPE1:
+ 			memcpy(ndev->dev_addr,
+ 			       (FLD_TYPE1 *) (hi->mfg_info.pft1.Serial), 6);
+@@ -1141,15 +1122,13 @@ c4_mod_init(void)
+ 	if (cxt1e1_max_mtu != max_mtu_default)
+ 		pr_info("NOTE: driver parameter <cxt1e1_max_mtu> changed from default %d to %d.\n",
+ 			max_mtu_default, cxt1e1_max_mtu);
+-	if (max_rxdesc_used != max_rxdesc_default)
+-	{
++	if (max_rxdesc_used != max_rxdesc_default) {
+ 		if (max_rxdesc_used > 2000)
+ 			max_rxdesc_used = 2000; /* out-of-bounds reset */
+ 		pr_info("NOTE: driver parameter <max_rxdesc_used> changed from default %d to %d.\n",
+ 			max_rxdesc_default, max_rxdesc_used);
+ 	}
+-	if (max_txdesc_used != max_txdesc_default)
+-	{
++	if (max_txdesc_used != max_txdesc_default) {
+ 		if (max_txdesc_used > 1000)
+ 			max_txdesc_used = 1000; /* out-of-bounds reset */
+ 		pr_info("NOTE: driver parameter <max_txdesc_used> changed from default %d to %d.\n",
+@@ -1172,18 +1151,14 @@ cleanup_hdlc(void)
+ 	struct net_device *ndev;
+ 	int         i, j, k;
+ 
+-	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++)
+-	{
+-		if (hi->ndev)               /* a board has been attached */
+-		{
++	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++) {
++		if (hi->ndev) {          /* a board has been attached */
+ 			ci = (ci_t *)(netdev_priv(hi->ndev));
+ 			for (j = 0; j < ci->max_port; j++)
+ 				for (k = 0; k < MUSYCC_NCHANS; k++) {
+ 					ndev = ci->port[j].chan[k]->user;
+ 					if (ndev)
+-					{
+ 						do_deluser(ndev, 0);
+-					}
+ 				}
+ 		}
+ 	}
+-- 
+1.7.4.4
 
---Signature=_Wed__5_Mar_2014_10_21_09_+1100_Git=hAb.29m4Sah1
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTFl/qAAoJEMDTa8Ir7ZwV9rwQAIYXLwCQjarbUuJ7zlRbfCqS
-bX+yDRZUBIylFRh4+Ee6znWdnSnUOF0IZ0syfVjIc6TlLJCOLrH3t2TBmJmogR5i
-ntmomIpvlu+4nmq3pRsBnjsE+cGxJuHAggJccObIhPHpP1zcQh09/vvnqs0vSJc+
-DypYjZMUjw4ky/f1z/b3CgU95IECJ8GAAkut2gFf4DprgEQTqzmO7zN46RT9BjBR
-SNUp7Tl5RzP0AcV+Gz4Hf5xZc8Q1OXDpW4ppj/uddFf+unuHySCn2a943DprIJcB
-4Yg3WlanpDyMyx/5rZvIQOgeF7cLlN3Q/inuzVS60JpmypxX3yPzihGjp8LHYzT4
-Ouq2OjDwBOuk8DJwi7e/4SGf72QyxG/1Mh7E+HeLhCa900zLnmBtW1WHB7ey9hBU
-PQA+ZVDDZZ40pIrr/6+3s+GBtTrYrkiSSWj2EuE4WF8YsgfhAdoCbFvCSzXLMuSC
-KCwRcxRBCSbaF6zDaSAx/2R35YUcJt3pep0UvoHwVY70Ub87Ww2vNm0n6rq6jpVT
-J9jU8JoJtYGWqQj3TblSEhoBCW387jZKxXGIG0Y17CL6hvawU+b7T+rE4yJSFIpl
-Onrqd+eWDgNFhVPxLO9o1cwPPyOD4T785TiR9aJvCT9KzVMPg/qcmmOHoxMj2tSk
-/+a93Y5EpfxIAme1ZRUB
-=aHS2
------END PGP SIGNATURE-----
-
---Signature=_Wed__5_Mar_2014_10_21_09_+1100_Git=hAb.29m4Sah1--
