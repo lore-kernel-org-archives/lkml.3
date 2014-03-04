@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757314AbaCDVkp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:40:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40744 "EHLO
+	id S1757059AbaCDVkl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:40:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40748 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755485AbaCDUCn (ORCPT
+	with ESMTP id S1753078AbaCDUCn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Mar 2014 15:02:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Theodore Tso" <tytso@mit.edu>, Jon Bernard <jbernard@tuxion.com>
-Subject: [PATCH 3.13 013/172] ext4: fix online resize with a non-standard blocks per group setting
-Date: Tue,  4 Mar 2014 12:01:37 -0800
-Message-Id: <20140304200300.164324510@linuxfoundation.org>
+        Vegard Nossum <vegard.nossum@oracle.com>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [PATCH 3.13 014/172] ext4: dont leave i_crtime.tv_sec uninitialized
+Date: Tue,  4 Mar 2014 12:01:38 -0800
+Message-Id: <20140304200300.191959243@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -30,35 +31,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Theodore Ts'o <tytso@mit.edu>
 
-commit 3d2660d0c9c2f296837078c189b68a47f6b2e3b5 upstream.
+commit 19ea80603715d473600cd993b9987bc97d042e02 upstream.
 
-The set_flexbg_block_bitmap() function assumed that the number of
-blocks in a blockgroup was sb->blocksize * 8, which is normally true,
-but not always!  Use EXT4_BLOCKS_PER_GROUP(sb) instead, to fix block
-bitmap corruption after:
+If the i_crtime field is not present in the inode, don't leave the
+field uninitialized.
 
-mke2fs -t ext4 -g 3072 -i 4096 /dev/vdd 1G
-mount -t ext4 /dev/vdd /vdd
-resize2fs /dev/vdd 8G
-
+Fixes: ef7f38359 ("ext4: Add nanosecond timestamps")
+Reported-by: Vegard Nossum <vegard.nossum@oracle.com>
+Tested-by: Vegard Nossum <vegard.nossum@oracle.com>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reported-by: Jon Bernard <jbernard@tuxion.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/resize.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ext4/ext4.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -409,7 +409,7 @@ static int set_flexbg_block_bitmap(struc
- 		start = ext4_group_first_block_no(sb, group);
- 		group -= flex_gd->groups[0].group;
- 
--		count2 = sb->s_blocksize * 8 - (block - start);
-+		count2 = EXT4_BLOCKS_PER_GROUP(sb) - (block - start);
- 		if (count2 > count)
- 			count2 = count;
- 
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -771,6 +771,8 @@ do {									       \
+ 	if (EXT4_FITS_IN_INODE(raw_inode, einode, xtime))		       \
+ 		(einode)->xtime.tv_sec = 				       \
+ 			(signed)le32_to_cpu((raw_inode)->xtime);	       \
++	else								       \
++		(einode)->xtime.tv_sec = 0;				       \
+ 	if (EXT4_FITS_IN_INODE(raw_inode, einode, xtime ## _extra))	       \
+ 		ext4_decode_extra_time(&(einode)->xtime,		       \
+ 				       raw_inode->xtime ## _extra);	       \
 
 
