@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757552AbaCDVEL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:04:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41178 "EHLO
+	id S1758642AbaCDVEi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:04:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41172 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756617AbaCDUD4 (ORCPT
+	with ESMTP id S1756605AbaCDUD4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Mar 2014 15:03:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Stephane Eranian <eranian@google.com>, Dave Jones <davej@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.13 107/172] perf/x86: Fix event scheduling
-Date: Tue,  4 Mar 2014 12:03:11 -0800
-Message-Id: <20140304200303.132990937@linuxfoundation.org>
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 3.13 106/172] perf trace: Fix ioctl request beautifier build problems on !(i386 || x86_64) arches
+Date: Tue,  4 Mar 2014 12:03:10 -0800
+Message-Id: <20140304200303.102444372@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -32,116 +36,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-commit 26e61e8939b1fe8729572dabe9a9e97d930dd4f6 upstream.
+commit 844ae5b46c08dbc7ba695b543c023f9cf3bbf9ff upstream.
 
-Vince "Super Tester" Weaver reported a new round of syscall fuzzing (Trinity) failures,
-with perf WARN_ON()s triggering. He also provided traces of the failures.
+Supporting decoding the ioctl 'request' parameter needs more work to
+properly support more architectures, the current approach doesn't work
+on at least powerpc and sparc, as reported by Ben Hutchings in
+http://lkml.kernel.org/r/1391593985.3003.48.camel@deadeye.wl.decadent.org.uk .
 
-This is I think the relevant bit:
+Work around that by making it to be ifdefed for the architectures known
+to work with the current, limited approach, i386 and x86_64 till better
+code is written.
 
-	>    pec_1076_warn-2804  [000] d...   147.926153: x86_pmu_disable: x86_pmu_disable
-	>    pec_1076_warn-2804  [000] d...   147.926153: x86_pmu_state: Events: {
-	>    pec_1076_warn-2804  [000] d...   147.926156: x86_pmu_state:   0: state: .R config: ffffffffffffffff (          (null))
-	>    pec_1076_warn-2804  [000] d...   147.926158: x86_pmu_state:   33: state: AR config: 0 (ffff88011ac99800)
-	>    pec_1076_warn-2804  [000] d...   147.926159: x86_pmu_state: }
-	>    pec_1076_warn-2804  [000] d...   147.926160: x86_pmu_state: n_events: 1, n_added: 0, n_txn: 1
-	>    pec_1076_warn-2804  [000] d...   147.926161: x86_pmu_state: Assignment: {
-	>    pec_1076_warn-2804  [000] d...   147.926162: x86_pmu_state:   0->33 tag: 1 config: 0 (ffff88011ac99800)
-	>    pec_1076_warn-2804  [000] d...   147.926163: x86_pmu_state: }
-	>    pec_1076_warn-2804  [000] d...   147.926166: collect_events: Adding event: 1 (ffff880119ec8800)
-
-So we add the insn:p event (fd[23]).
-
-At this point we should have:
-
-  n_events = 2, n_added = 1, n_txn = 1
-
-	>    pec_1076_warn-2804  [000] d...   147.926170: collect_events: Adding event: 0 (ffff8800c9e01800)
-	>    pec_1076_warn-2804  [000] d...   147.926172: collect_events: Adding event: 4 (ffff8800cbab2c00)
-
-We try and add the {BP,cycles,br_insn} group (fd[3], fd[4], fd[15]).
-These events are 0:cycles and 4:br_insn, the BP event isn't x86_pmu so
-that's not visible.
-
-	group_sched_in()
-	  pmu->start_txn() /* nop - BP pmu */
-	  event_sched_in()
-	     event->pmu->add()
-
-So here we should end up with:
-
-  0: n_events = 3, n_added = 2, n_txn = 2
-  4: n_events = 4, n_added = 3, n_txn = 3
-
-But seeing the below state on x86_pmu_enable(), the must have failed,
-because the 0 and 4 events aren't there anymore.
-
-Looking at group_sched_in(), since the BP is the leader, its
-event_sched_in() must have succeeded, for otherwise we would not have
-seen the sibling adds.
-
-But since neither 0 or 4 are in the below state; their event_sched_in()
-must have failed; but I don't see why, the complete state: 0,0,1:p,4
-fits perfectly fine on a core2.
-
-However, since we try and schedule 4 it means the 0 event must have
-succeeded!  Therefore the 4 event must have failed, its failure will
-have put group_sched_in() into the fail path, which will call:
-
-	event_sched_out()
-	  event->pmu->del()
-
-on 0 and the BP event.
-
-Now x86_pmu_del() will reduce n_events; but it will not reduce n_added;
-giving what we see below:
-
- n_event = 2, n_added = 2, n_txn = 2
-
-	>    pec_1076_warn-2804  [000] d...   147.926177: x86_pmu_enable: x86_pmu_enable
-	>    pec_1076_warn-2804  [000] d...   147.926177: x86_pmu_state: Events: {
-	>    pec_1076_warn-2804  [000] d...   147.926179: x86_pmu_state:   0: state: .R config: ffffffffffffffff (          (null))
-	>    pec_1076_warn-2804  [000] d...   147.926181: x86_pmu_state:   33: state: AR config: 0 (ffff88011ac99800)
-	>    pec_1076_warn-2804  [000] d...   147.926182: x86_pmu_state: }
-	>    pec_1076_warn-2804  [000] d...   147.926184: x86_pmu_state: n_events: 2, n_added: 2, n_txn: 2
-	>    pec_1076_warn-2804  [000] d...   147.926184: x86_pmu_state: Assignment: {
-	>    pec_1076_warn-2804  [000] d...   147.926186: x86_pmu_state:   0->33 tag: 1 config: 0 (ffff88011ac99800)
-	>    pec_1076_warn-2804  [000] d...   147.926188: x86_pmu_state:   1->0 tag: 1 config: 1 (ffff880119ec8800)
-	>    pec_1076_warn-2804  [000] d...   147.926188: x86_pmu_state: }
-	>    pec_1076_warn-2804  [000] d...   147.926190: x86_pmu_enable: S0: hwc->idx: 33, hwc->last_cpu: 0, hwc->last_tag: 1 hwc->state: 0
-
-So the problem is that x86_pmu_del(), when called from a
-group_sched_in() that fails (for whatever reason), and without x86_pmu
-TXN support (because the leader is !x86_pmu), will corrupt the n_added
-state.
-
-Reported-and-Tested-by: Vince Weaver <vincent.weaver@maine.edu>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Reported-by: Ben Hutchings <ben@decadent.org.uk>
+Acked-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Cc: Dave Jones <davej@redhat.com>
-Link: http://lkml.kernel.org/r/20140221150312.GF3104@twins.programming.kicks-ass.net
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Link: http://lkml.kernel.org/n/tip-ss04k11insqlu329xh5g02q0@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/perf_event.c |    3 +++
- 1 file changed, 3 insertions(+)
+ tools/perf/builtin-trace.c |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1192,6 +1192,9 @@ static void x86_pmu_del(struct perf_even
- 	for (i = 0; i < cpuc->n_events; i++) {
- 		if (event == cpuc->event_list[i]) {
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -275,6 +275,11 @@ static size_t syscall_arg__scnprintf_str
  
-+			if (i >= cpuc->n_events - cpuc->n_added)
-+				--cpuc->n_added;
-+
- 			if (x86_pmu.put_event_constraints)
- 				x86_pmu.put_event_constraints(cpuc, event);
+ #define SCA_STRARRAY syscall_arg__scnprintf_strarray
  
++#if defined(__i386__) || defined(__x86_64__)
++/*
++ * FIXME: Make this available to all arches as soon as the ioctl beautifier
++ * 	  gets rewritten to support all arches.
++ */
+ static size_t syscall_arg__scnprintf_strhexarray(char *bf, size_t size,
+ 						 struct syscall_arg *arg)
+ {
+@@ -282,6 +287,7 @@ static size_t syscall_arg__scnprintf_str
+ }
+ 
+ #define SCA_STRHEXARRAY syscall_arg__scnprintf_strhexarray
++#endif /* defined(__i386__) || defined(__x86_64__) */
+ 
+ static size_t syscall_arg__scnprintf_fd(char *bf, size_t size,
+ 					struct syscall_arg *arg);
+@@ -835,6 +841,10 @@ static size_t syscall_arg__scnprintf_sig
+ 
+ #define SCA_SIGNUM syscall_arg__scnprintf_signum
+ 
++#if defined(__i386__) || defined(__x86_64__)
++/*
++ * FIXME: Make this available to all arches.
++ */
+ #define TCGETS		0x5401
+ 
+ static const char *tioctls[] = {
+@@ -856,6 +866,7 @@ static const char *tioctls[] = {
+ };
+ 
+ static DEFINE_STRARRAY_OFFSET(tioctls, 0x5401);
++#endif /* defined(__i386__) || defined(__x86_64__) */
+ 
+ #define STRARRAY(arg, name, array) \
+ 	  .arg_scnprintf = { [arg] = SCA_STRARRAY, }, \
+@@ -937,9 +948,16 @@ static struct syscall_fmt {
+ 	{ .name	    = "getrlimit",  .errmsg = true, STRARRAY(0, resource, rlimit_resources), },
+ 	{ .name	    = "ioctl",	    .errmsg = true,
+ 	  .arg_scnprintf = { [0] = SCA_FD, /* fd */ 
++#if defined(__i386__) || defined(__x86_64__)
++/*
++ * FIXME: Make this available to all arches.
++ */
+ 			     [1] = SCA_STRHEXARRAY, /* cmd */
+ 			     [2] = SCA_HEX, /* arg */ },
+ 	  .arg_parm	 = { [1] = &strarray__tioctls, /* cmd */ }, },
++#else
++			     [2] = SCA_HEX, /* arg */ }, },
++#endif
+ 	{ .name	    = "kill",	    .errmsg = true,
+ 	  .arg_scnprintf = { [1] = SCA_SIGNUM, /* sig */ }, },
+ 	{ .name	    = "linkat",	    .errmsg = true,
 
 
