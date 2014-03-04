@@ -1,364 +1,384 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757646AbaCDULZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:11:25 -0500
-Received: from mail1.bemta8.messagelabs.com ([216.82.243.195]:22845 "EHLO
-	mail1.bemta8.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757629AbaCDULU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:11:20 -0500
-X-Greylist: delayed 385 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Mar 2014 15:11:19 EST
-X-Env-Sender: Jonathan.Ringle@gridpoint.com
-X-Msg-Ref: server-8.tower-46.messagelabs.com!1393963490!26929705!1
-X-Originating-IP: [67.200.113.45]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.16; banners=-,-,-
-X-VirusChecked: Checked
-From: Jon Ringle <jringle@gridpoint.com>
-To: <dmitry.torokhov@gmail.com>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Jon Ringle <jringle@gridpoint.com>
-Subject: [PATCH] touchscreen: tps6507x-ts: only poll while touch event is occurring
-Date: Tue, 4 Mar 2014 15:04:39 -0500
-Message-ID: <1393963479-21875-1-git-send-email-jringle@gridpoint.com>
-X-Mailer: git-send-email 1.8.5.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-EMS-Proccessed: KgU7Zc8frcTgvrN/cX2wdQ==
-X-EMS-STAMP: fcETeOvNbsLVDBGE2zX6jw==
+	id S1757606AbaCDULD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:11:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3293 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752482AbaCDUJa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 15:09:30 -0500
+From: Mark Salter <msalter@redhat.com>
+To: x86@kernel.org
+Cc: Mark Salter <msalter@redhat.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        patches@linaro.org
+Subject: [PATCH 3/5] x86: use generic early_ioremap
+Date: Tue,  4 Mar 2014 15:08:56 -0500
+Message-Id: <1393963738-9210-4-git-send-email-msalter@redhat.com>
+In-Reply-To: <1393963738-9210-1-git-send-email-msalter@redhat.com>
+References: <1393963738-9210-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We only need to poll for touch events after an interrupt occurs due to the
-user touching the screen. We continue to poll until the user stops touching
-the screen
+Move x86 over to the generic early ioremap implementation.
 
-Signed-off-by: Jon Ringle <jringle@gridpoint.com>
+Signed-off-by: Mark Salter <msalter@redhat.com>
+Acked-by: H. Peter Anvin <hpa@zytor.com>
 ---
- drivers/input/touchscreen/tps6507x-ts.c | 191 +++++++++++++++++++++++++-------
- include/linux/mfd/tps6507x.h            |   1 +
- 2 files changed, 153 insertions(+), 39 deletions(-)
+ arch/x86/Kconfig              |   1 +
+ arch/x86/include/asm/Kbuild   |   1 +
+ arch/x86/include/asm/fixmap.h |   6 ++
+ arch/x86/include/asm/io.h     |  15 +--
+ arch/x86/mm/ioremap.c         | 228 +-----------------------------------------
+ arch/x86/mm/pgtable_32.c      |   2 +-
+ 6 files changed, 13 insertions(+), 240 deletions(-)
 
-diff --git a/drivers/input/touchscreen/tps6507x-ts.c b/drivers/input/touchscreen/tps6507x-ts.c
-index 94cde2c..fa1fb24 100644
---- a/drivers/input/touchscreen/tps6507x-ts.c
-+++ b/drivers/input/touchscreen/tps6507x-ts.c
-@@ -17,11 +17,14 @@
- #include <linux/workqueue.h>
- #include <linux/slab.h>
- #include <linux/input.h>
--#include <linux/input-polldev.h>
- #include <linux/platform_device.h>
- #include <linux/mfd/tps6507x.h>
- #include <linux/input/tps6507x-ts.h>
- #include <linux/delay.h>
-+#include <linux/gpio.h>
-+#include <linux/i2c.h>
-+#include <linux/irq.h>
-+#include <linux/interrupt.h>
-
- #define TSC_DEFAULT_POLL_PERIOD 30 /* ms */
- #define TPS_DEFAULT_MIN_PRESSURE 0x30
-@@ -39,13 +42,17 @@ struct ts_event {
- };
-
- struct tps6507x_ts {
-+       struct input_dev        *input_dev;
-        struct device           *dev;
--       struct input_polled_dev *poll_dev;
-        struct tps6507x_dev     *mfd;
-        char                    phys[32];
-+       struct delayed_work     work;
-        struct ts_event         tc;
-+       int                     irq;
-+       unsigned long           poll_period;    /* ms */
-        u16                     min_pressure;
-        bool                    pendown;
-+       int                     open_count;
- };
-
- static int tps6507x_read_u8(struct tps6507x_ts *tsc, u8 reg, u8 *data)
-@@ -155,13 +162,20 @@ static s32 tps6507x_adc_standby(struct tps6507x_ts *tsc)
-        return ret;
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 0af5250..fb479bc 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -127,6 +127,7 @@ config X86
+ 	select HAVE_DEBUG_STACKOVERFLOW
+ 	select HAVE_IRQ_EXIT_ON_IRQ_STACK if X86_64
+ 	select HAVE_CC_STACKPROTECTOR
++	select GENERIC_EARLY_IOREMAP
+ 
+ config INSTRUCTION_DECODER
+ 	def_bool y
+diff --git a/arch/x86/include/asm/Kbuild b/arch/x86/include/asm/Kbuild
+index 7f66985..203f5f9 100644
+--- a/arch/x86/include/asm/Kbuild
++++ b/arch/x86/include/asm/Kbuild
+@@ -5,3 +5,4 @@ genhdr-y += unistd_64.h
+ genhdr-y += unistd_x32.h
+ 
+ generic-y += clkdev.h
++generic-y += early_ioremap.h
+diff --git a/arch/x86/include/asm/fixmap.h b/arch/x86/include/asm/fixmap.h
+index 7252cd3..e5f236d 100644
+--- a/arch/x86/include/asm/fixmap.h
++++ b/arch/x86/include/asm/fixmap.h
+@@ -177,5 +177,11 @@ static inline void __set_fixmap(enum fixed_addresses idx,
+ 
+ #include <asm-generic/fixmap.h>
+ 
++#define __late_set_fixmap(idx, phys, flags) __set_fixmap(idx, phys, flags)
++#define __late_clear_fixmap(idx) __set_fixmap(idx, 0, __pgprot(0))
++
++void __early_set_fixmap(enum fixed_addresses idx,
++			phys_addr_t phys, pgprot_t flags);
++
+ #endif /* !__ASSEMBLY__ */
+ #endif /* _ASM_X86_FIXMAP_H */
+diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
+index 1db414f..aae7010 100644
+--- a/arch/x86/include/asm/io.h
++++ b/arch/x86/include/asm/io.h
+@@ -39,6 +39,7 @@
+ #include <linux/string.h>
+ #include <linux/compiler.h>
+ #include <asm/page.h>
++#include <asm/early_ioremap.h>
+ 
+ #define build_mmio_read(name, size, type, reg, barrier) \
+ static inline type name(const volatile void __iomem *addr) \
+@@ -316,20 +317,6 @@ extern int ioremap_change_attr(unsigned long vaddr, unsigned long size,
+ 				unsigned long prot_val);
+ extern void __iomem *ioremap_wc(resource_size_t offset, unsigned long size);
+ 
+-/*
+- * early_ioremap() and early_iounmap() are for temporary early boot-time
+- * mappings, before the real ioremap() is functional.
+- * A boot-time mapping is currently limited to at most 16 pages.
+- */
+-extern void early_ioremap_init(void);
+-extern void early_ioremap_reset(void);
+-extern void __iomem *early_ioremap(resource_size_t phys_addr,
+-				   unsigned long size);
+-extern void *early_memremap(resource_size_t phys_addr,
+-				    unsigned long size);
+-extern void early_iounmap(void __iomem *addr, unsigned long size);
+-extern void early_memunmap(void *addr, unsigned long size);
+-extern void fixup_early_ioremap(void);
+ extern bool is_early_ioremap_ptep(pte_t *ptep);
+ 
+ #ifdef CONFIG_XEN
+diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
+index bbb4504..597ac15 100644
+--- a/arch/x86/mm/ioremap.c
++++ b/arch/x86/mm/ioremap.c
+@@ -328,17 +328,6 @@ void unxlate_dev_mem_ptr(unsigned long phys, void *addr)
+ 	return;
  }
-
--static void tps6507x_ts_poll(struct input_polled_dev *poll_dev)
-+static void tps6507x_ts_handler(struct work_struct *work)
+ 
+-static int __initdata early_ioremap_debug;
+-
+-static int __init early_ioremap_debug_setup(char *str)
+-{
+-	early_ioremap_debug = 1;
+-
+-	return 0;
+-}
+-early_param("early_ioremap_debug", early_ioremap_debug_setup);
+-
+-static __initdata int after_paging_init;
+ static pte_t bm_pte[PAGE_SIZE/sizeof(pte_t)] __page_aligned_bss;
+ 
+ static inline pmd_t * __init early_ioremap_pmd(unsigned long addr)
+@@ -362,18 +351,11 @@ bool __init is_early_ioremap_ptep(pte_t *ptep)
+ 	return ptep >= &bm_pte[0] && ptep < &bm_pte[PAGE_SIZE/sizeof(pte_t)];
+ }
+ 
+-static unsigned long slot_virt[FIX_BTMAPS_SLOTS] __initdata;
+-
+ void __init early_ioremap_init(void)
  {
--       struct tps6507x_ts *tsc = poll_dev->private;
--       struct input_dev *input_dev = poll_dev->input;
-+       struct tps6507x_ts *tsc =  container_of(work, struct tps6507x_ts, work.work);
-+       struct input_dev *input_dev = tsc->input_dev;
-        bool pendown;
-+       int schd;
-+       int poll = 0;
-        s32 ret;
-
-+       if (tsc->irq) {
-+               // Disable the touch interrupt
-+               tps6507x_write_u8(tsc, TPS6507X_REG_INT, 0);
-+       }
-+
-        ret = tps6507x_adc_conversion(tsc, TPS6507X_TSCMODE_PRESSURE,
-                                      &tsc->tc.pressure);
-        if (ret)
-@@ -178,9 +192,11 @@ static void tps6507x_ts_poll(struct input_polled_dev *poll_dev)
-        }
-
-        if (pendown) {
-+               int report_pendown = 0;
-
-                if (!tsc->pendown) {
-                        dev_dbg(tsc->dev, "DOWN\n");
-+                       report_pendown = 1;
-                        input_report_key(input_dev, BTN_TOUCH, 1);
-                } else
-                        dev_dbg(tsc->dev, "still down\n");
-@@ -195,15 +211,89 @@ static void tps6507x_ts_poll(struct input_polled_dev *poll_dev)
-                if (ret)
-                        goto done;
-
--               input_report_abs(input_dev, ABS_X, tsc->tc.x);
--               input_report_abs(input_dev, ABS_Y, tsc->tc.y);
--               input_report_abs(input_dev, ABS_PRESSURE, tsc->tc.pressure);
--               input_sync(input_dev);
--               tsc->pendown = true;
-+               if (tsc->tc.x && tsc->tc.y) {
-+                       if (report_pendown)
-+                               input_report_key(input_dev, BTN_TOUCH, 1);
-+
-+                       input_report_abs(input_dev, ABS_X, tsc->tc.x);
-+                       input_report_abs(input_dev, ABS_Y, tsc->tc.y);
-+                       input_report_abs(input_dev, ABS_PRESSURE, tsc->tc.pressure);
-+                       input_sync(input_dev);
-+                       tsc->pendown = true;
-+               } else {
-+                       dev_dbg(tsc->dev, "discarding bogus read x=%d, y=%d, pressure=%d\n", tsc->tc.x, tsc->tc.y, tsc->tc.pressure);
-+               }
-+               poll = 1;
-        }
-
- done:
-        tps6507x_adc_standby(tsc);
-+       if (tsc->irq && !poll) {
-+               // Re-enable the interrupt
-+               tps6507x_write_u8(tsc, TPS6507X_REG_INT, TPS6507X_REG_MASK_TSC);
-+       } else {
-+               /* always poll if not using interrupts */
-+               schd = schedule_delayed_work(&tsc->work,
-+                                            msecs_to_jiffies(tsc->poll_period));
-+       }
-+}
-+
-+static irqreturn_t tps6507x_ts_irq(int irq, void * dev_id)
-+{
-+       struct tps6507x_ts * tsc = (struct tps6507x_ts *)dev_id;
-+
-+       schedule_delayed_work(&tsc->work, 0);
-+
-+       return IRQ_HANDLED;
-+}
-+
-+static int tps6507x_ts_open(struct input_dev *input_dev)
-+{
-+       int ret;
-+       struct tps6507x_ts *tsc = input_get_drvdata(input_dev);
-+
-+       tsc->open_count++;
-+
-+//     printk("%s: %s\n", __func__, comm);
-+       dump_stack();
-+
-+       if (tsc->irq) {
-+
-+               tps6507x_write_u8(tsc, TPS6507X_REG_INT, 0);
-+               tps6507x_adc_standby(tsc);
-+
-+               ret = request_irq(tsc->irq,tps6507x_ts_irq, 0, "TPS6507x",tsc);
-+
-+               if(ret < 0) {
-+                       tsc->open_count--;
-+                       dev_err(tsc->dev, "cannot register irq");
-+                       return ret;
-+               }
-+               // Enable the touch event interrupt
-+               tps6507x_write_u8(tsc, TPS6507X_REG_INT, TPS6507X_REG_MASK_TSC);
-+       } else {
-+               ret = schedule_delayed_work(&tsc->work,
-+                                           msecs_to_jiffies(tsc->poll_period));
-+
-+               if (!ret) {
-+                       tsc->open_count--;
-+                       dev_err(tsc->dev, "schedule failed");
-+                       return -ENOMEM;
-+               }
-+       }
-+
-+       return 0;
-+}
-+
-+static void tps6507x_ts_close(struct input_dev *input_dev)
-+{
-+       struct tps6507x_ts *tsc = input_get_drvdata(input_dev);
-+
-+       tsc->open_count--;
-+
-+       if(tsc->irq) {
-+               free_irq(tsc->irq,tsc);
-+       }
+ 	pmd_t *pmd;
+-	int i;
+ 
+-	if (early_ioremap_debug)
+-		printk(KERN_INFO "early_ioremap_init()\n");
+-
+-	for (i = 0; i < FIX_BTMAPS_SLOTS; i++)
+-		slot_virt[i] = __fix_to_virt(FIX_BTMAP_BEGIN - NR_FIX_BTMAPS*i);
++	early_ioremap_setup();
+ 
+ 	pmd = early_ioremap_pmd(fix_to_virt(FIX_BTMAP_BEGIN));
+ 	memset(bm_pte, 0, sizeof(bm_pte));
+@@ -402,13 +384,8 @@ void __init early_ioremap_init(void)
+ 	}
  }
-
- static int tps6507x_ts_probe(struct platform_device *pdev)
-@@ -212,8 +302,8 @@ static int tps6507x_ts_probe(struct platform_device *pdev)
-        const struct tps6507x_board *tps_board;
-        const struct touchscreen_init_data *init_data;
-        struct tps6507x_ts *tsc;
--       struct input_polled_dev *poll_dev;
-        struct input_dev *input_dev;
-+       int schd;
-        int error;
-
-        /*
-@@ -239,29 +329,18 @@ static int tps6507x_ts_probe(struct platform_device *pdev)
-                return -ENOMEM;
-        }
-
-+       tps6507x_dev->ts = tsc;
-        tsc->mfd = tps6507x_dev;
-        tsc->dev = tps6507x_dev->dev;
--       tsc->min_pressure = init_data ?
--                       init_data->min_pressure : TPS_DEFAULT_MIN_PRESSURE;
+ 
+-void __init early_ioremap_reset(void)
+-{
+-	after_paging_init = 1;
+-}
 -
--       snprintf(tsc->phys, sizeof(tsc->phys),
--                "%s/input0", dev_name(tsc->dev));
--
--       poll_dev = input_allocate_polled_device();
--       if (!poll_dev) {
--               dev_err(tsc->dev, "Failed to allocate polled input device.\n");
-+       input_dev = input_allocate_device();
-+       if (!input_dev) {
-+               dev_err(tsc->dev, "Failed to allocate input device.\n");
-                error = -ENOMEM;
-                goto err_free_mem;
-        }
-
--       tsc->poll_dev = poll_dev;
--
--       poll_dev->private = tsc;
--       poll_dev->poll = tps6507x_ts_poll;
--       poll_dev->poll_interval = init_data ?
--                       init_data->poll_period : TSC_DEFAULT_POLL_PERIOD;
--
--       input_dev = poll_dev->input;
-+       input_dev->open = tps6507x_ts_open;
-+       input_dev->close = tps6507x_ts_close;
-        input_dev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
-        input_dev->keybit[BIT_WORD(BTN_TOUCH)] = BIT_MASK(BTN_TOUCH);
-
-@@ -270,42 +349,76 @@ static int tps6507x_ts_probe(struct platform_device *pdev)
-        input_set_abs_params(input_dev, ABS_PRESSURE, 0, MAX_10BIT, 0, 0);
-
-        input_dev->name = "TPS6507x Touchscreen";
--       input_dev->phys = tsc->phys;
--       input_dev->dev.parent = tsc->dev;
-        input_dev->id.bustype = BUS_I2C;
-+       input_dev->dev.parent = tsc->dev;
-+
-+       snprintf(tsc->phys, sizeof(tsc->phys),
-+                "%s/input0", dev_name(tsc->dev));
-+       input_dev->phys = tsc->phys;
-+
-+       dev_dbg(tsc->dev, "device: %s\n", input_dev->phys);
-+
-+       input_set_drvdata(input_dev, tsc);
-+
-+       tsc->input_dev = input_dev;
-+
-+       INIT_DELAYED_WORK(&tsc->work, tps6507x_ts_handler);
-        if (init_data) {
-+               tsc->poll_period = init_data->poll_period;
-+               tsc->irq = gpio_to_irq(init_data->irq_pin);
-+               tsc->min_pressure = init_data->min_pressure;
-                input_dev->id.vendor = init_data->vendor;
-                input_dev->id.product = init_data->product;
-                input_dev->id.version = init_data->version;
-+       } else {
-+               tsc->poll_period = TSC_DEFAULT_POLL_PERIOD;
-+               tsc->min_pressure = TPS_DEFAULT_MIN_PRESSURE;
-        }
-
-        error = tps6507x_adc_standby(tsc);
-        if (error)
--               goto err_free_polled_dev;
-+               goto err_free_dev;
-
--       error = input_register_polled_device(poll_dev);
-+       error = input_register_device(input_dev);
-        if (error)
--               goto err_free_polled_dev;
-+               goto err_free_dev;
-+
-+       if (!tsc->irq) {
-+               schd = schedule_delayed_work(&tsc->work,
-+                                            msecs_to_jiffies(tsc->poll_period));
-+
-+               if (!schd) {
-+                       dev_err(tsc->dev, "schedule failed");
-+                       goto err_cancel_work;
-+               }
-+       }
-
-        platform_set_drvdata(pdev, tsc);
-
-        return 0;
-
--err_free_polled_dev:
--       input_free_polled_device(poll_dev);
-+err_cancel_work:
-+       cancel_delayed_work_sync(&tsc->work);
-+err_free_dev:
-+       input_free_device(input_dev);
- err_free_mem:
-        kfree(tsc);
-+       tps6507x_dev->ts = NULL;
-+
-        return error;
- }
-
- static int tps6507x_ts_remove(struct platform_device *pdev)
+-static void __init __early_set_fixmap(enum fixed_addresses idx,
+-				      phys_addr_t phys, pgprot_t flags)
++void __init __early_set_fixmap(enum fixed_addresses idx,
++			       phys_addr_t phys, pgprot_t flags)
  {
--       struct tps6507x_ts *tsc = platform_get_drvdata(pdev);
--       struct input_polled_dev *poll_dev = tsc->poll_dev;
-+       struct tps6507x_dev *tps6507x_dev = platform_get_drvdata(pdev);
-+       struct tps6507x_ts *tsc = tps6507x_dev->ts;
-+       struct input_dev *input_dev = tsc->input_dev;
-+
-+       cancel_delayed_work_sync(&tsc->work);
+ 	unsigned long addr = __fix_to_virt(idx);
+ 	pte_t *pte;
+@@ -425,202 +402,3 @@ static void __init __early_set_fixmap(enum fixed_addresses idx,
+ 		pte_clear(&init_mm, addr, pte);
+ 	__flush_tlb_one(addr);
+ }
+-
+-static inline void __init early_set_fixmap(enum fixed_addresses idx,
+-					   phys_addr_t phys, pgprot_t prot)
+-{
+-	if (after_paging_init)
+-		__set_fixmap(idx, phys, prot);
+-	else
+-		__early_set_fixmap(idx, phys, prot);
+-}
+-
+-static inline void __init early_clear_fixmap(enum fixed_addresses idx)
+-{
+-	if (after_paging_init)
+-		clear_fixmap(idx);
+-	else
+-		__early_set_fixmap(idx, 0, __pgprot(0));
+-}
+-
+-static void __iomem *prev_map[FIX_BTMAPS_SLOTS] __initdata;
+-static unsigned long prev_size[FIX_BTMAPS_SLOTS] __initdata;
+-
+-void __init fixup_early_ioremap(void)
+-{
+-	int i;
+-
+-	for (i = 0; i < FIX_BTMAPS_SLOTS; i++) {
+-		if (prev_map[i]) {
+-			WARN_ON(1);
+-			break;
+-		}
+-	}
+-
+-	early_ioremap_init();
+-}
+-
+-static int __init check_early_ioremap_leak(void)
+-{
+-	int count = 0;
+-	int i;
+-
+-	for (i = 0; i < FIX_BTMAPS_SLOTS; i++)
+-		if (prev_map[i])
+-			count++;
+-
+-	if (!count)
+-		return 0;
+-	WARN(1, KERN_WARNING
+-	       "Debug warning: early ioremap leak of %d areas detected.\n",
+-		count);
+-	printk(KERN_WARNING
+-		"please boot with early_ioremap_debug and report the dmesg.\n");
+-
+-	return 1;
+-}
+-late_initcall(check_early_ioremap_leak);
+-
+-static void __init __iomem *
+-__early_ioremap(resource_size_t phys_addr, unsigned long size, pgprot_t prot)
+-{
+-	unsigned long offset;
+-	resource_size_t last_addr;
+-	unsigned int nrpages;
+-	enum fixed_addresses idx;
+-	int i, slot;
+-
+-	WARN_ON(system_state != SYSTEM_BOOTING);
+-
+-	slot = -1;
+-	for (i = 0; i < FIX_BTMAPS_SLOTS; i++) {
+-		if (!prev_map[i]) {
+-			slot = i;
+-			break;
+-		}
+-	}
+-
+-	if (slot < 0) {
+-		printk(KERN_INFO "%s(%08llx, %08lx) not found slot\n",
+-		       __func__, (u64)phys_addr, size);
+-		WARN_ON(1);
+-		return NULL;
+-	}
+-
+-	if (early_ioremap_debug) {
+-		printk(KERN_INFO "%s(%08llx, %08lx) [%d] => ",
+-		       __func__, (u64)phys_addr, size, slot);
+-		dump_stack();
+-	}
+-
+-	/* Don't allow wraparound or zero size */
+-	last_addr = phys_addr + size - 1;
+-	if (!size || last_addr < phys_addr) {
+-		WARN_ON(1);
+-		return NULL;
+-	}
+-
+-	prev_size[slot] = size;
+-	/*
+-	 * Mappings have to be page-aligned
+-	 */
+-	offset = phys_addr & ~PAGE_MASK;
+-	phys_addr &= PAGE_MASK;
+-	size = PAGE_ALIGN(last_addr + 1) - phys_addr;
+-
+-	/*
+-	 * Mappings have to fit in the FIX_BTMAP area.
+-	 */
+-	nrpages = size >> PAGE_SHIFT;
+-	if (nrpages > NR_FIX_BTMAPS) {
+-		WARN_ON(1);
+-		return NULL;
+-	}
+-
+-	/*
+-	 * Ok, go for it..
+-	 */
+-	idx = FIX_BTMAP_BEGIN - NR_FIX_BTMAPS*slot;
+-	while (nrpages > 0) {
+-		early_set_fixmap(idx, phys_addr, prot);
+-		phys_addr += PAGE_SIZE;
+-		--idx;
+-		--nrpages;
+-	}
+-	if (early_ioremap_debug)
+-		printk(KERN_CONT "%08lx + %08lx\n", offset, slot_virt[slot]);
+-
+-	prev_map[slot] = (void __iomem *)(offset + slot_virt[slot]);
+-	return prev_map[slot];
+-}
+-
+-/* Remap an IO device */
+-void __init __iomem *
+-early_ioremap(resource_size_t phys_addr, unsigned long size)
+-{
+-	return __early_ioremap(phys_addr, size, PAGE_KERNEL_IO);
+-}
+-
+-/* Remap memory */
+-void __init *early_memremap(resource_size_t phys_addr, unsigned long size)
+-{
+-	return (__force void *)__early_ioremap(phys_addr, size, PAGE_KERNEL);
+-}
+-
+-void __init early_iounmap(void __iomem *addr, unsigned long size)
+-{
+-	unsigned long virt_addr;
+-	unsigned long offset;
+-	unsigned int nrpages;
+-	enum fixed_addresses idx;
+-	int i, slot;
+-
+-	slot = -1;
+-	for (i = 0; i < FIX_BTMAPS_SLOTS; i++) {
+-		if (prev_map[i] == addr) {
+-			slot = i;
+-			break;
+-		}
+-	}
+-
+-	if (slot < 0) {
+-		printk(KERN_INFO "early_iounmap(%p, %08lx) not found slot\n",
+-			 addr, size);
+-		WARN_ON(1);
+-		return;
+-	}
+-
+-	if (prev_size[slot] != size) {
+-		printk(KERN_INFO "early_iounmap(%p, %08lx) [%d] size not consistent %08lx\n",
+-			 addr, size, slot, prev_size[slot]);
+-		WARN_ON(1);
+-		return;
+-	}
+-
+-	if (early_ioremap_debug) {
+-		printk(KERN_INFO "early_iounmap(%p, %08lx) [%d]\n", addr,
+-		       size, slot);
+-		dump_stack();
+-	}
+-
+-	virt_addr = (unsigned long)addr;
+-	if (virt_addr < fix_to_virt(FIX_BTMAP_BEGIN)) {
+-		WARN_ON(1);
+-		return;
+-	}
+-	offset = virt_addr & ~PAGE_MASK;
+-	nrpages = PAGE_ALIGN(offset + size) >> PAGE_SHIFT;
+-
+-	idx = FIX_BTMAP_BEGIN - NR_FIX_BTMAPS*slot;
+-	while (nrpages > 0) {
+-		early_clear_fixmap(idx);
+-		--idx;
+-		--nrpages;
+-	}
+-	prev_map[slot] = NULL;
+-}
+-
+-void __init early_memunmap(void *addr, unsigned long size)
+-{
+-	early_iounmap((__force void __iomem *)addr, size);
+-}
+diff --git a/arch/x86/mm/pgtable_32.c b/arch/x86/mm/pgtable_32.c
+index a69bcb8..4dd8cf6 100644
+--- a/arch/x86/mm/pgtable_32.c
++++ b/arch/x86/mm/pgtable_32.c
+@@ -127,7 +127,7 @@ static int __init parse_reservetop(char *arg)
+ 
+ 	address = memparse(arg, &arg);
+ 	reserve_top_address(address);
+-	fixup_early_ioremap();
++	early_ioremap_init();
+ 	return 0;
+ }
+ early_param("reservetop", parse_reservetop);
+-- 
+1.8.5.3
 
--       input_unregister_polled_device(poll_dev);
--       input_free_polled_device(poll_dev);
-+       input_unregister_device(input_dev);
-
-+       tps6507x_dev->ts = NULL;
-        kfree(tsc);
-
-        return 0;
-diff --git a/include/linux/mfd/tps6507x.h b/include/linux/mfd/tps6507x.h
-index c2ae569..c923e486 100644
---- a/include/linux/mfd/tps6507x.h
-+++ b/include/linux/mfd/tps6507x.h
-@@ -163,6 +163,7 @@ struct tps6507x_dev {
-
-        /* Client devices */
-        struct tps6507x_pmic *pmic;
-+       struct tps6507x_ts *ts;
- };
-
- #endif /*  __LINUX_MFD_TPS6507X_H */
---
-1.8.5.4
-
-
-The information contained in this transmission may contain confidential information.  If the reader of this message is not the intended recipient, you are hereby notified that any review, dissemination, distribution or duplication of this communication is strictly prohibited.  If you are not the intended recipient, please contact the sender by reply email and destroy all copies of the original message.
