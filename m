@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758254AbaCDUzH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:55:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41288 "EHLO
+	id S932451AbaCDU4k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:56:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41276 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756750AbaCDUEQ (ORCPT
+	with ESMTP id S1756654AbaCDUEN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:04:16 -0500
+	Tue, 4 Mar 2014 15:04:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steve Twiss <stwiss.opensource@diasemi.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.13 129/172] regulator: da9063: Bug fix when setting max voltage on LDOs 5-11
-Date: Tue,  4 Mar 2014 12:03:33 -0800
-Message-Id: <20140304200303.841740658@linuxfoundation.org>
+        Drew Richardson <drew.richardson@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Will Deacon <will.deacon@arm.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.13 142/172] perf: Fix hotplug splat
+Date: Tue,  4 Mar 2014 12:03:46 -0800
+Message-Id: <20140304200304.249605791@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -29,74 +30,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steve Twiss <stwiss.opensource@diasemi.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit ebf6dad0de89677aa58a4d8b009014ff88a23452 upstream.
+commit e3703f8cdfcf39c25c4338c3ad8e68891cca3731 upstream.
 
-Bug fix to allow the setting of maximum voltage for certain LDOs.
+Drew Richardson reported that he could make the kernel go *boom* when hotplugging
+while having perf events active.
 
-What the bug is:
+It turned out that when you have a group event, the code in
+__perf_event_exit_context() fails to remove the group siblings from
+the context.
 
-There is a problem caused by an invalid calculation of n_voltages
-in the driver. This n_voltages value has the potential to be
-different for each regulator.
+We then proceed with destroying and freeing the event, and when you
+re-plug the CPU and try and add another event to that CPU, things go
+*boom* because you've still got dead entries there.
 
-The value for linear_min_sel is set as DA9063_V##regl_name#
-which can be different depending upon the regulator. This is
-chosen according to the following definitions in the DA9063
-registers.h file:
-
-DA9063_VLDO1_BIAS	0
-DA9063_VLDO2_BIAS	0
-DA9063_VLDO3_BIAS	0
-DA9063_VLDO4_BIAS	0
-DA9063_VLDO5_BIAS	2
-DA9063_VLDO6_BIAS	2
-DA9063_VLDO7_BIAS	2
-DA9063_VLDO8_BIAS	2
-DA9063_VLDO9_BIAS	3
-DA9063_VLDO10_BIAS	2
-DA9063_VLDO11_BIAS	2
-
-The calculation for n_voltages is valid for LDOs whose BIAS value
-is zero but this is not correct for those LDOs which have a
-non-zero value.
-
-What the fix is:
-
-In order to take into account the non-zero linear_min_sel value which
-is set for the regulators LDO5, LDO6, LDO7, LDO8, LDO9, LDO10 and
-LDO11, the calculation for n_voltages should take into account the
-missing term defined by DA9063_V##regl_name#.
-
-This will in turn allow the core constraints calculation to set the
-maximum voltage limits correctly and therefore allow users to apply
-the maximum expected voltage to all of the LDOs.
-
-Signed-off-by: Steve Twiss <stwiss.opensource@diasemi.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Reported-by: Drew Richardson <drew.richardson@arm.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Will Deacon <will.deacon@arm.com>
+Link: http://lkml.kernel.org/n/tip-k6v5wundvusvcseqj1si0oz0@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/regulator/da9063-regulator.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ kernel/events/core.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/regulator/da9063-regulator.c
-+++ b/drivers/regulator/da9063-regulator.c
-@@ -1,3 +1,4 @@
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -7833,14 +7833,14 @@ static void perf_pmu_rotate_stop(struct
+ static void __perf_event_exit_context(void *__info)
+ {
+ 	struct perf_event_context *ctx = __info;
+-	struct perf_event *event, *tmp;
++	struct perf_event *event;
+ 
+ 	perf_pmu_rotate_stop(ctx->pmu);
+ 
+-	list_for_each_entry_safe(event, tmp, &ctx->pinned_groups, group_entry)
+-		__perf_remove_from_context(event);
+-	list_for_each_entry_safe(event, tmp, &ctx->flexible_groups, group_entry)
++	rcu_read_lock();
++	list_for_each_entry_rcu(event, &ctx->event_list, event_entry)
+ 		__perf_remove_from_context(event);
++	rcu_read_unlock();
+ }
+ 
+ static void perf_event_exit_cpu_context(int cpu)
+@@ -7864,11 +7864,11 @@ static void perf_event_exit_cpu(int cpu)
+ {
+ 	struct swevent_htable *swhash = &per_cpu(swevent_htable, cpu);
+ 
++	perf_event_exit_cpu_context(cpu);
 +
- /*
-  * Regulator driver for DA9063 PMIC series
-  *
-@@ -60,7 +61,8 @@ struct da9063_regulator_info {
- 	.desc.ops = &da9063_ldo_ops, \
- 	.desc.min_uV = (min_mV) * 1000, \
- 	.desc.uV_step = (step_mV) * 1000, \
--	.desc.n_voltages = (((max_mV) - (min_mV))/(step_mV) + 1), \
-+	.desc.n_voltages = (((max_mV) - (min_mV))/(step_mV) + 1 \
-+		+ (DA9063_V##regl_name##_BIAS)), \
- 	.desc.enable_reg = DA9063_REG_##regl_name##_CONT, \
- 	.desc.enable_mask = DA9063_LDO_EN, \
- 	.desc.vsel_reg = DA9063_REG_V##regl_name##_A, \
+ 	mutex_lock(&swhash->hlist_mutex);
+ 	swevent_hlist_release(swhash);
+ 	mutex_unlock(&swhash->hlist_mutex);
+-
+-	perf_event_exit_cpu_context(cpu);
+ }
+ #else
+ static inline void perf_event_exit_cpu(int cpu) { }
 
 
