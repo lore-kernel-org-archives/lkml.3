@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758510AbaCDVAA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:00:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41238 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756685AbaCDUEH (ORCPT
+	id S1758535AbaCDVAj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:00:39 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:56352 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757948AbaCDVAe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:04:07 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Chen <peter.chen@freescale.com>,
-        Matthieu CASTET <matthieu.castet@parrot.com>,
-        Michael Grzeschik <mgrzeschik@pengutronix.de>
-Subject: [PATCH 3.13 120/172] usb: chipidea: need to mask when writting endptflush and endptprime
-Date: Tue,  4 Mar 2014 12:03:24 -0800
-Message-Id: <20140304200303.569292634@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
-References: <20140304200259.626667112@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 4 Mar 2014 16:00:34 -0500
+Date: Tue, 4 Mar 2014 13:00:10 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Richard Weinberger <richard@nod.at>
+Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, viro@zeniv.linux.org.uk,
+        vgupta@synopsys.com, catalin.marinas@arm.com, will.deacon@arm.com,
+        hskinnemoen@gmail.com, egtvedt@samfundet.no, vapier@gentoo.org,
+        msalter@redhat.com, a-jacquiot@ti.com, starvik@axis.com,
+        jesper.nilsson@axis.com, dhowells@redhat.com, rkuo@codeaurora.org,
+        tony.luck@intel.com, fenghua.yu@intel.com, takata@linux-m32r.org,
+        geert@linux-m68k.org, james.hogan@imgtec.com, monstr@monstr.eu,
+        yasutake.koichi@jp.panasonic.com, ralf@linux-mips.org,
+        jonas@southpole.se, jejb@parisc-linux.org, deller@gmx.de,
+        benh@kernel.crashing.org, paulus@samba.org, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, liqin.linux@gmail.com, lennox.wu@gmail.com,
+        cmetcalf@tilera.com, gxt@mprc.pku.edu.cn,
+        linux-xtensa@linux-xtensa.org, akpm@linux-foundation.org,
+        tj@kernel.org, hch@infradead.org
+Subject: Re: [PATCH 28/44] Add translate_signal() helper
+Message-ID: <20140304210010.GA6464@infradead.org>
+References: <1393804758-7916-1-git-send-email-richard@nod.at>
+ <1393804758-7916-6-git-send-email-richard@nod.at>
+ <20140304184109.GB19393@redhat.com>
+ <53163ADE.8080905@nod.at>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53163ADE.8080905@nod.at>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Mar 04, 2014 at 09:43:10PM +0100, Richard Weinberger wrote:
+> I remember a discussion with Al where he noted that register_exec_domain()
+> is currently only used by out of tree horrors. B-)
+> 
+> I'm sure we can rip it out of most archs. They seem to have it only because
+> they've copy&pasted it from i386.
 
-------------------
+We do have a few in-tree uses obviously.  Would be good to know how much
+of that actuall is used.
 
-From: Matthieu CASTET <matthieu.castet@parrot.com>
-
-commit 5bf5dbeda2454296f1984adfbfc8e6f5965ac389 upstream.
-
-ENDPTFLUSH and ENDPTPRIME registers are set by software and clear
-by hardware. There is a bit for each endpoint. When we are setting
-a bit for an endpoint we should make sure we do not touch other
-endpoint bit. There is a race condition if the hardware clear the
-bit between the read and the write in hw_write.
-
-Signed-off-by: Peter Chen <peter.chen@freescale.com>
-Signed-off-by: Matthieu CASTET <matthieu.castet@parrot.com>
-Tested-by: Michael Grzeschik <mgrzeschik@pengutronix.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/chipidea/udc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/drivers/usb/chipidea/udc.c
-+++ b/drivers/usb/chipidea/udc.c
-@@ -105,7 +105,7 @@ static int hw_ep_flush(struct ci_hdrc *c
- 
- 	do {
- 		/* flush any pending transfer */
--		hw_write(ci, OP_ENDPTFLUSH, BIT(n), BIT(n));
-+		hw_write(ci, OP_ENDPTFLUSH, ~0, BIT(n));
- 		while (hw_read(ci, OP_ENDPTFLUSH, BIT(n)))
- 			cpu_relax();
- 	} while (hw_read(ci, OP_ENDPTSTAT, BIT(n)));
-@@ -205,7 +205,7 @@ static int hw_ep_prime(struct ci_hdrc *c
- 	if (is_ctrl && dir == RX && hw_read(ci, OP_ENDPTSETUPSTAT, BIT(num)))
- 		return -EAGAIN;
- 
--	hw_write(ci, OP_ENDPTPRIME, BIT(n), BIT(n));
-+	hw_write(ci, OP_ENDPTPRIME, ~0, BIT(n));
- 
- 	while (hw_read(ci, OP_ENDPTPRIME, BIT(n)))
- 		cpu_relax();
-
-
+Except for that the major users is iBCS which became linux-abi long time
+ago.  I think someone is still keeing it on life support and
+occasionally forward porting it, but that's not a reason to keep any of
+this in tree.  Back when I maintained it linux-abi already was a large
+patch to core code and not just modules, and I doubt that has changed in
+the last 10 years.
