@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758150AbaCDUng (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:43:36 -0500
-Received: from www.linutronix.de ([62.245.132.108]:36901 "EHLO
+	id S932770AbaCDUnl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:43:41 -0500
+Received: from www.linutronix.de ([62.245.132.108]:36911 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758076AbaCDUnd (ORCPT
+	with ESMTP id S1756732AbaCDUnh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:43:33 -0500
-Message-Id: <20140304203101.088889302@linutronix.de>
+	Tue, 4 Mar 2014 15:43:37 -0500
+Message-Id: <20140304203100.650414633@linutronix.de>
 User-Agent: quilt/0.60-1
-Date: Tue, 04 Mar 2014 20:43:41 -0000
+Date: Tue, 04 Mar 2014 20:43:38 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [patch 5/5] irqchip: armanda: Sanitize set_irq_affinity()
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        ia64 <linux-ia64@vger.kernel.org>
+Subject: [patch 1/5] ia64: Validate online cpus in irq_set_affinity() callbacks
 References: <20140304202425.102779779@linutronix.de>
 Content-Disposition: inline;
- filename=irqchip-armanda-sanitize-irq-affinity-logic.patch
+ filename=ia64-filter-offline-cpus-in-irq-set-affinity.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -26,98 +26,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The set_irq_affinity() function has two issues:
+The [user space] interface does not filter out offline cpus. It merily
+guarantees that the mask contains at least one online cpu.
 
-1) It has no protection against selecting an offline cpu from the
-   given mask.
+So the selector in the irq chip implementation needs to make sure to
+pick only an online cpu because otherwise:
 
-2) It pointlessly restricts the affinity masks to have a single cpu
-   set. This collides with the irq migration code of arm.
-
-   irq affinity is set to core 3
-   core 3 goes offline
-
-   migration code sets mask to cpu_online_mask and calls the
-   irq_set_affinity() callback of the irq_chip which fails due to bit
-   0,1,2 set.
-
-So instead of doing silly for_each_cpu() loops just pick any bit of
-the mask which intersects with the online mask.
-
-The read back of the routing register is pointless as well. We can
-simply write the new mask as the bits in this register reflect one
-core.
-
-Get rid of fiddling with the default_irq_affinity as well.
+     Offline Core 1
+     Set affinity to 0xe (is valid due to online mask 0xd)
+     cpumask_first will pick core 1, which is offline
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Jason Cooper <jason@lakedaemon.net>
-
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: ia64 <linux-ia64@vger.kernel.org>
 ---
- drivers/irqchip/irq-armada-370-xp.c |   38 ++++--------------------------------
- 1 file changed, 5 insertions(+), 33 deletions(-)
+ arch/ia64/kernel/msi_ia64.c  |    5 +----
+ arch/ia64/sn/kernel/irq.c    |    4 ++--
+ arch/ia64/sn/kernel/msi_sn.c |    2 +-
+ 3 files changed, 4 insertions(+), 7 deletions(-)
 
-Index: tip/drivers/irqchip/irq-armada-370-xp.c
+Index: tip/arch/ia64/kernel/msi_ia64.c
 ===================================================================
---- tip.orig/drivers/irqchip/irq-armada-370-xp.c
-+++ tip/drivers/irqchip/irq-armada-370-xp.c
-@@ -244,35 +244,16 @@ static DEFINE_RAW_SPINLOCK(irq_controlle
- static int armada_xp_set_affinity(struct irq_data *d,
- 				  const struct cpumask *mask_val, bool force)
+--- tip.orig/arch/ia64/kernel/msi_ia64.c
++++ tip/arch/ia64/kernel/msi_ia64.c
+@@ -17,12 +17,9 @@ static int ia64_set_msi_irq_affinity(str
  {
--	unsigned long reg;
--	unsigned long new_mask = 0;
--	unsigned long online_mask = 0;
--	unsigned long count = 0;
- 	irq_hw_number_t hwirq = irqd_to_hwirq(d);
-+	unsigned long mask;
- 	int cpu;
+ 	struct msi_msg msg;
+ 	u32 addr, data;
+-	int cpu = first_cpu(*cpu_mask);
++	int cpu = cpumask_first_and(cpu_mask, cpu_online_mask);
+ 	unsigned int irq = idata->irq;
  
--	for_each_cpu(cpu, mask_val) {
--		new_mask |= 1 << cpu_logical_map(cpu);
--		count++;
--	}
+-	if (!cpu_online(cpu))
+-		return -1;
 -
--	/*
--	 * Forbid mutlicore interrupt affinity
--	 * This is required since the MPIC HW doesn't limit
--	 * several CPUs from acknowledging the same interrupt.
--	 */
--	if (count > 1)
--		return -EINVAL;
--
--	for_each_cpu(cpu, cpu_online_mask)
--		online_mask |= 1 << cpu_logical_map(cpu);
-+	/* Select a single core from the affinity mask which is online */
-+	cpu = cpumask_any_and(mask_val, cpu_online_mask);
-+	mask = 1UL << cpu_logical_map(cpu);
+ 	if (irq_prepare_move(irq, cpu))
+ 		return -1;
  
- 	raw_spin_lock(&irq_controller_lock);
--
--	reg = readl(main_int_base + ARMADA_370_XP_INT_SOURCE_CTL(hwirq));
--	reg = (reg & (~online_mask)) | new_mask;
--	writel(reg, main_int_base + ARMADA_370_XP_INT_SOURCE_CTL(hwirq));
--
-+	writel(mask, main_int_base + ARMADA_370_XP_INT_SOURCE_CTL(hwirq));
- 	raw_spin_unlock(&irq_controller_lock);
+Index: tip/arch/ia64/sn/kernel/irq.c
+===================================================================
+--- tip.orig/arch/ia64/sn/kernel/irq.c
++++ tip/arch/ia64/sn/kernel/irq.c
+@@ -209,8 +209,8 @@ static int sn_set_affinity_irq(struct ir
+ 	nasid_t nasid;
+ 	int slice;
  
- 	return 0;
-@@ -494,15 +475,6 @@ static int __init armada_370_xp_mpic_of_
+-	nasid = cpuid_to_nasid(cpumask_first(mask));
+-	slice = cpuid_to_slice(cpumask_first(mask));
++	nasid = cpuid_to_nasid(cpumask_first_and(mask, cpu_online_mask));
++	slice = cpuid_to_slice(cpumask_first_and(mask, cpu_online_mask));
  
- #ifdef CONFIG_SMP
- 	armada_xp_mpic_smp_cpu_init();
--
--	/*
--	 * Set the default affinity from all CPUs to the boot cpu.
--	 * This is required since the MPIC doesn't limit several CPUs
--	 * from acknowledging the same interrupt.
--	 */
--	cpumask_clear(irq_default_affinity);
--	cpumask_set_cpu(smp_processor_id(), irq_default_affinity);
--
- #endif
+ 	list_for_each_entry_safe(sn_irq_info, sn_irq_info_safe,
+ 				 sn_irq_lh[irq], list)
+Index: tip/arch/ia64/sn/kernel/msi_sn.c
+===================================================================
+--- tip.orig/arch/ia64/sn/kernel/msi_sn.c
++++ tip/arch/ia64/sn/kernel/msi_sn.c
+@@ -166,7 +166,7 @@ static int sn_set_msi_irq_affinity(struc
+ 	struct sn_pcibus_provider *provider;
+ 	unsigned int cpu, irq = data->irq;
  
- 	armada_370_xp_msi_init(node, main_int_res.start);
+-	cpu = cpumask_first(cpu_mask);
++	cpu = cpumask_first_and(cpu_mask, cpu_online_mask);
+ 	sn_irq_info = sn_msi_info[irq].sn_irq_info;
+ 	if (sn_irq_info == NULL || sn_irq_info->irq_int_bit >= 0)
+ 		return -1;
 
 
