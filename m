@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757817AbaCDU1m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:27:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41621 "EHLO
+	id S932299AbaCDU20 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:28:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41604 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932238AbaCDUFL (ORCPT
+	with ESMTP id S1751792AbaCDUFJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:05:11 -0500
+	Tue, 4 Mar 2014 15:05:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Bohac <jbohac@suse.cz>, Veaceslav Falico <vfalico@redhat.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Michael Chan <mchan@broadcom.com>,
+        Nithin Nayak Sujir <nsujir@broadcom.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 31/97] bonding: 802.3ad: make aggregator_identifier bond-private
-Date: Tue,  4 Mar 2014 12:03:44 -0800
-Message-Id: <20140304200347.079326257@linuxfoundation.org>
+Subject: [PATCH 3.10 28/97] tg3: Fix deadlock in tg3_change_mtu()
+Date: Tue,  4 Mar 2014 12:03:41 -0800
+Message-Id: <20140304200346.979486624@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -29,77 +31,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Bohac <jiri@boha.cz>
+From: Nithin Sujir <nsujir@broadcom.com>
 
-[ Upstream commit 163c8ff30dbe473abfbb24a7eac5536c87f3baa9 ]
+[ Upstream commit c6993dfd7db9b0c6b7ca7503a56fda9236a4710f ]
 
-aggregator_identifier is used to assign unique aggregator identifiers
-to aggregators of a bond during device enslaving.
+Quoting David Vrabel -
+"5780 cards cannot have jumbo frames and TSO enabled together.  When
+jumbo frames are enabled by setting the MTU, the TSO feature must be
+cleared.  This is done indirectly by calling netdev_update_features()
+which will call tg3_fix_features() to actually clear the flags.
 
-aggregator_identifier is currently a global variable that is zeroed in
-bond_3ad_initialize().
+netdev_update_features() will also trigger a new netlink message for the
+feature change event which will result in a call to tg3_get_stats64()
+which deadlocks on the tg3 lock."
 
-This sequence will lead to duplicate aggregator identifiers for eth1 and eth3:
+tg3_set_mtu() does not need to be under the tg3 lock since converting
+the flags to use set_bit(). Move it out to after tg3_netif_stop().
 
-create bond0
-change bond0 mode to 802.3ad
-enslave eth0 to bond0 		//eth0 gets agg id 1
-enslave eth1 to bond0 		//eth1 gets agg id 2
-create bond1
-change bond1 mode to 802.3ad
-enslave eth2 to bond1		//aggregator_identifier is reset to 0
-				//eth2 gets agg id 1
-enslave eth3 to bond0 		//eth3 gets agg id 2
-
-Fix this by making aggregator_identifier private to the bond.
-
-Signed-off-by: Jiri Bohac <jbohac@suse.cz>
-Acked-by: Veaceslav Falico <vfalico@redhat.com>
+Reported-by: David Vrabel <david.vrabel@citrix.com>
+Tested-by: David Vrabel <david.vrabel@citrix.com>
+Signed-off-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/bonding/bond_3ad.c |    6 ++----
- drivers/net/bonding/bond_3ad.h |    1 +
- 2 files changed, 3 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/broadcom/tg3.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/bonding/bond_3ad.c
-+++ b/drivers/net/bonding/bond_3ad.c
-@@ -1854,8 +1854,6 @@ void bond_3ad_initiate_agg_selection(str
- 	BOND_AD_INFO(bond).agg_select_timer = timeout;
- }
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -13777,12 +13777,12 @@ static int tg3_change_mtu(struct net_dev
  
--static u16 aggregator_identifier;
+ 	tg3_netif_stop(tp);
+ 
++	tg3_set_mtu(dev, tp, new_mtu);
++
+ 	tg3_full_lock(tp, 1);
+ 
+ 	tg3_halt(tp, RESET_KIND_SHUTDOWN, 1);
+ 
+-	tg3_set_mtu(dev, tp, new_mtu);
 -
- /**
-  * bond_3ad_initialize - initialize a bond's 802.3ad parameters and structures
-  * @bond: bonding struct to work on
-@@ -1869,7 +1867,7 @@ void bond_3ad_initialize(struct bonding
- 	if (MAC_ADDRESS_COMPARE(&(BOND_AD_INFO(bond).system.sys_mac_addr),
- 				bond->dev->dev_addr)) {
- 
--		aggregator_identifier = 0;
-+		BOND_AD_INFO(bond).aggregator_identifier = 0;
- 
- 		BOND_AD_INFO(bond).system.sys_priority = 0xFFFF;
- 		BOND_AD_INFO(bond).system.sys_mac_addr = *((struct mac_addr *)bond->dev->dev_addr);
-@@ -1940,7 +1938,7 @@ int bond_3ad_bind_slave(struct slave *sl
- 		ad_initialize_agg(aggregator);
- 
- 		aggregator->aggregator_mac_address = *((struct mac_addr *)bond->dev->dev_addr);
--		aggregator->aggregator_identifier = (++aggregator_identifier);
-+		aggregator->aggregator_identifier = ++BOND_AD_INFO(bond).aggregator_identifier;
- 		aggregator->slave = slave;
- 		aggregator->is_active = 0;
- 		aggregator->num_of_ports = 0;
---- a/drivers/net/bonding/bond_3ad.h
-+++ b/drivers/net/bonding/bond_3ad.h
-@@ -253,6 +253,7 @@ struct ad_system {
- struct ad_bond_info {
- 	struct ad_system system;	    /* 802.3ad system structure */
- 	u32 agg_select_timer;	    // Timer to select aggregator after all adapter's hand shakes
-+	u16 aggregator_identifier;
- };
- 
- struct ad_slave_info {
+ 	/* Reset PHY, otherwise the read DMA engine will be in a mode that
+ 	 * breaks all requests to 256 bytes.
+ 	 */
 
 
