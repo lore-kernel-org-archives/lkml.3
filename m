@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756576AbaCDIbY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 03:31:24 -0500
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:60578 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756384AbaCDIbX (ORCPT
+	id S1756590AbaCDIdb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 03:33:31 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:43341 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752123AbaCDId3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 03:31:23 -0500
-Message-ID: <1393921876.3038.3.camel@x220>
-Subject: Re: 3.13 i915 brightness settings broken when going from docked ->
- undocked
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jani Nikula <jani.nikula@linux.intel.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        intel-gfx@lists.freedesktop.org,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Date: Tue, 04 Mar 2014 09:31:16 +0100
-In-Reply-To: <878usz8vmi.fsf@intel.com>
-References: <CA+5PVA4zC1+TPWWdANnm7RuBDduwNetdTknfzSkVTpFcPSGZww@mail.gmail.com>
-	 <1392882819.5070.15.camel@x220> <878usz8vmi.fsf@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 04 Mar 2014 08:31:21.0825 (UTC) FILETIME=[1F5A3510:01CF3784]
-X-RcptDomain: vger.kernel.org
+	Tue, 4 Mar 2014 03:33:29 -0500
+Date: Tue, 4 Mar 2014 00:33:25 -0800
+From: Brian Norris <computersforpeace@gmail.com>
+To: Leon Pollak <leonp@plris.com>, Richard Weinberger <richard@nod.at>,
+        linux-mtd@lists.infradead.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Artem Bityutskiy <dedekind1@gmail.com>
+Subject: Re: What is wrong?
+Message-ID: <20140304083325.GJ13420@norris-Latitude-E6410>
+References: <4315632.KkRm7kzq26@leonp.plris.com>
+ <20140227011148.GI4194@ld-irv-0074>
+ <1553411.O1igofskp7@leonp.plris.com>
+ <20140227212208.GG13420@norris-Latitude-E6410>
+ <20140303211336.GA7369@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140303211336.GA7369@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-02-25 at 10:05 +0200, Jani Nikula wrote:
-> On Thu, 20 Feb 2014, Paul Bolle <pebolle@tiscali.nl> wrote:
-> > On an (rather old) ThinkPad X41, which also uses i915, brightness
-> > adjustments stopped working altogether in v3.14-rc1 (I haven't used its
-> > docking station in the v3.14 release cycle). In v3.13.y things behave as
-> > expected. So perhaps there's actually a more general problem here.
+On Mon, Mar 03, 2014 at 03:13:36PM -0600, Andrew Ruder wrote:
+> On Thu, Feb 27, 2014 at 01:22:08PM -0800, Brian Norris wrote:
+> > Perhaps Richard or Andrew can comment on whether this patch should help
+> > you. But I think JFFS2 on NAND uses write-buffered support which can be
+> > affected by this bug.
 > 
-> I presume different problems. Does the ThinkPad X41 have gen3 graphics?
-> (See e.g. /sys/kernel/debug/dri/0/i915_capabilities) If yes, it might be
-> https://bugs.freedesktop.org/show_bug.cgi?id=75001
+> Definitely sounds like the same issue and I'm kind of glad to see it
+> crop up in another filesystem.
 
-Yes, it has "gen3" graphics (a 915GM). And applying your patch
-"drm/i915: use backlight legacy combination mode also for
-i915gm/i945/gm" on top of v3.14-rc5 fixes the issue on that ThinkPad
-X41.
+We haven't confirmed that the *patch* actually affects Leon's problem;
+just that if he runs an additional 'sync' it solves his problem. Leon,
+did you get to try the patch?
 
-Thanks,
+Anyway, should commit 807612db2f9940b9fa6deaef054eb16d51bd3e00 be marked
+for -stable? 
 
-
-Paul Bolle
-
+Brian
