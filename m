@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932220AbaCDUFJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:05:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41575 "EHLO
+	id S932448AbaCDU2s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:28:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41588 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757109AbaCDUFE (ORCPT
+	with ESMTP id S932211AbaCDUFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:05:04 -0500
+	Tue, 4 Mar 2014 15:05:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Marcelo Ricardo Leitner <mleitner@redhat.com>,
-        Florian Westphal <fw@strlen.de>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 36/97] net: ip, ipv6: handle gso skbs in forwarding path
-Date: Tue,  4 Mar 2014 12:03:49 -0800
-Message-Id: <20140304200347.238636259@linuxfoundation.org>
+        Hsin-Yu Chao <hychao@chromium.org>, Dylan Reid <dgreid@chromium.org>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 42/97] ALSA: hda/ca0132 - Fix recording from mode id 0x8
+Date: Tue,  4 Mar 2014 12:03:55 -0800
+Message-Id: <20140304200347.429314569@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -31,219 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Westphal <fw@strlen.de>
+From: Hsin-Yu Chao <hychao@chromium.org>
 
-commit fe6cc55f3a9a053482a76f5a6b2257cee51b4663 upstream.
+commit 13c12dbe3a2ce17227f7ddef652b6a53c78fa51f upstream.
 
-Marcelo Ricardo Leitner reported problems when the forwarding link path
-has a lower mtu than the incoming one if the inbound interface supports GRO.
+Incorrect ADC is picked in ca0132_capture_pcm_prepare(),
+where it assumes multiple streams while there is one stream
+per ADC. Note that ca0132_capture_pcm_cleanup() already does
+the right thing.
 
-Given:
-Host <mtu1500> R1 <mtu1200> R2
+The Chromebook Pixel has a microphone under the keyboard that
+is attached to node id 0x8. Before this fix, recording would
+always go to the main internal mic (node id 0x7).
 
-Host sends tcp stream which is routed via R1 and R2.  R1 performs GRO.
-
-In this case, the kernel will fail to send ICMP fragmentation needed
-messages (or pkt too big for ipv6), as GSO packets currently bypass dstmtu
-checks in forward path. Instead, Linux tries to send out packets exceeding
-the mtu.
-
-When locking route MTU on Host (i.e., no ipv4 DF bit set), R1 does
-not fragment the packets when forwarding, and again tries to send out
-packets exceeding R1-R2 link mtu.
-
-This alters the forwarding dstmtu checks to take the individual gso
-segment lengths into account.
-
-For ipv6, we send out pkt too big error for gso if the individual
-segments are too big.
-
-For ipv4, we either send icmp fragmentation needed, or, if the DF bit
-is not set, perform software segmentation and let the output path
-create fragments when the packet is leaving the machine.
-It is not 100% correct as the error message will contain the headers of
-the GRO skb instead of the original/segmented one, but it seems to
-work fine in my (limited) tests.
-
-Eric Dumazet suggested to simply shrink mss via ->gso_size to avoid
-sofware segmentation.
-
-However it turns out that skb_segment() assumes skb nr_frags is related
-to mss size so we would BUG there.  I don't want to mess with it considering
-Herbert and Eric disagree on what the correct behavior should be.
-
-Hannes Frederic Sowa notes that when we would shrink gso_size
-skb_segment would then also need to deal with the case where
-SKB_MAX_FRAGS would be exceeded.
-
-This uses sofware segmentation in the forward path when we hit ipv4
-non-DF packets and the outgoing link mtu is too small.  Its not perfect,
-but given the lack of bug reports wrt. GRO fwd being broken this is a
-rare case anyway.  Also its not like this could not be improved later
-once the dust settles.
-
-Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
-Reported-by: Marcelo Ricardo Leitner <mleitner@redhat.com>
-Signed-off-by: Florian Westphal <fw@strlen.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Hsin-Yu Chao <hychao@chromium.org>
+Reviewed-by: Dylan Reid <dgreid@chromium.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/linux/skbuff.h |   17 +++++++++++
- net/ipv4/ip_forward.c  |   71 +++++++++++++++++++++++++++++++++++++++++++++++--
- net/ipv6/ip6_output.c  |   17 ++++++++++-
- 3 files changed, 101 insertions(+), 4 deletions(-)
 
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -2913,5 +2913,22 @@ static inline bool skb_head_is_locked(co
+---
+ sound/pci/hda/patch_ca0132.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+--- a/sound/pci/hda/patch_ca0132.c
++++ b/sound/pci/hda/patch_ca0132.c
+@@ -2768,9 +2768,7 @@ static int ca0132_capture_pcm_prepare(st
+ 					unsigned int format,
+ 					struct snd_pcm_substream *substream)
  {
- 	return !skb->head_frag || skb_cloned(skb);
- }
-+
-+/**
-+ * skb_gso_network_seglen - Return length of individual segments of a gso packet
-+ *
-+ * @skb: GSO skb
-+ *
-+ * skb_gso_network_seglen is used to determine the real size of the
-+ * individual segments, including Layer3 (IP, IPv6) and L4 headers (TCP/UDP).
-+ *
-+ * The MAC/L2 header is not accounted for.
-+ */
-+static inline unsigned int skb_gso_network_seglen(const struct sk_buff *skb)
-+{
-+	unsigned int hdr_len = skb_transport_header(skb) -
-+			       skb_network_header(skb);
-+	return hdr_len + skb_gso_transport_seglen(skb);
-+}
- #endif	/* __KERNEL__ */
- #endif	/* _LINUX_SKBUFF_H */
---- a/net/ipv4/ip_forward.c
-+++ b/net/ipv4/ip_forward.c
-@@ -39,6 +39,71 @@
- #include <net/route.h>
- #include <net/xfrm.h>
+-	struct ca0132_spec *spec = codec->spec;
+-
+-	snd_hda_codec_setup_stream(codec, spec->adcs[substream->number],
++	snd_hda_codec_setup_stream(codec, hinfo->nid,
+ 				   stream_tag, 0, format);
  
-+static bool ip_may_fragment(const struct sk_buff *skb)
-+{
-+	return unlikely((ip_hdr(skb)->frag_off & htons(IP_DF)) == 0) ||
-+	       !skb->local_df;
-+}
-+
-+static bool ip_exceeds_mtu(const struct sk_buff *skb, unsigned int mtu)
-+{
-+	if (skb->len <= mtu || skb->local_df)
-+		return false;
-+
-+	if (skb_is_gso(skb) && skb_gso_network_seglen(skb) <= mtu)
-+		return false;
-+
-+	return true;
-+}
-+
-+static bool ip_gso_exceeds_dst_mtu(const struct sk_buff *skb)
-+{
-+	unsigned int mtu;
-+
-+	if (skb->local_df || !skb_is_gso(skb))
-+		return false;
-+
-+	mtu = dst_mtu(skb_dst(skb));
-+
-+	/* if seglen > mtu, do software segmentation for IP fragmentation on
-+	 * output.  DF bit cannot be set since ip_forward would have sent
-+	 * icmp error.
-+	 */
-+	return skb_gso_network_seglen(skb) > mtu;
-+}
-+
-+/* called if GSO skb needs to be fragmented on forward */
-+static int ip_forward_finish_gso(struct sk_buff *skb)
-+{
-+	struct dst_entry *dst = skb_dst(skb);
-+	netdev_features_t features;
-+	struct sk_buff *segs;
-+	int ret = 0;
-+
-+	features = netif_skb_dev_features(skb, dst->dev);
-+	segs = skb_gso_segment(skb, features & ~NETIF_F_GSO_MASK);
-+	if (IS_ERR(segs)) {
-+		kfree_skb(skb);
-+		return -ENOMEM;
-+	}
-+
-+	consume_skb(skb);
-+
-+	do {
-+		struct sk_buff *nskb = segs->next;
-+		int err;
-+
-+		segs->next = NULL;
-+		err = dst_output(segs);
-+
-+		if (err && ret == 0)
-+			ret = err;
-+		segs = nskb;
-+	} while (segs);
-+
-+	return ret;
-+}
-+
- static int ip_forward_finish(struct sk_buff *skb)
- {
- 	struct ip_options *opt	= &(IPCB(skb)->opt);
-@@ -49,6 +114,9 @@ static int ip_forward_finish(struct sk_b
- 	if (unlikely(opt->optlen))
- 		ip_forward_options(skb);
- 
-+	if (ip_gso_exceeds_dst_mtu(skb))
-+		return ip_forward_finish_gso(skb);
-+
- 	return dst_output(skb);
- }
- 
-@@ -88,8 +156,7 @@ int ip_forward(struct sk_buff *skb)
- 	if (opt->is_strictroute && rt->rt_uses_gateway)
- 		goto sr_failed;
- 
--	if (unlikely(skb->len > dst_mtu(&rt->dst) && !skb_is_gso(skb) &&
--		     (ip_hdr(skb)->frag_off & htons(IP_DF))) && !skb->local_df) {
-+	if (!ip_may_fragment(skb) && ip_exceeds_mtu(skb, dst_mtu(&rt->dst))) {
- 		IP_INC_STATS(dev_net(rt->dst.dev), IPSTATS_MIB_FRAGFAILS);
- 		icmp_send(skb, ICMP_DEST_UNREACH, ICMP_FRAG_NEEDED,
- 			  htonl(dst_mtu(&rt->dst)));
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -345,6 +345,20 @@ static inline int ip6_forward_finish(str
- 	return dst_output(skb);
- }
- 
-+static bool ip6_pkt_too_big(const struct sk_buff *skb, unsigned int mtu)
-+{
-+	if (skb->len <= mtu || skb->local_df)
-+		return false;
-+
-+	if (IP6CB(skb)->frag_max_size && IP6CB(skb)->frag_max_size > mtu)
-+		return true;
-+
-+	if (skb_is_gso(skb) && skb_gso_network_seglen(skb) <= mtu)
-+		return false;
-+
-+	return true;
-+}
-+
- int ip6_forward(struct sk_buff *skb)
- {
- 	struct dst_entry *dst = skb_dst(skb);
-@@ -467,8 +481,7 @@ int ip6_forward(struct sk_buff *skb)
- 	if (mtu < IPV6_MIN_MTU)
- 		mtu = IPV6_MIN_MTU;
- 
--	if ((!skb->local_df && skb->len > mtu && !skb_is_gso(skb)) ||
--	    (IP6CB(skb)->frag_max_size && IP6CB(skb)->frag_max_size > mtu)) {
-+	if (ip6_pkt_too_big(skb, mtu)) {
- 		/* Again, force OUTPUT device used as source address */
- 		skb->dev = dst->dev;
- 		icmpv6_send(skb, ICMPV6_PKT_TOOBIG, 0, mtu);
+ 	return 0;
 
 
