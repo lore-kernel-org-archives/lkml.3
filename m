@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933255AbaCDVQt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:16:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41045 "EHLO
+	id S1757105AbaCDVRa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:17:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41050 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756308AbaCDUDg (ORCPT
+	with ESMTP id S1756280AbaCDUDf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:03:36 -0500
+	Tue, 4 Mar 2014 15:03:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrew Honig <ahonig@google.com>, Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.13 084/172] kvm: x86: fix emulator buffer overflow (CVE-2014-0049)
-Date: Tue,  4 Mar 2014 12:02:48 -0800
-Message-Id: <20140304200302.422960941@linuxfoundation.org>
+        David Henningsson <david.henningsson@canonical.com>,
+        Gerald Yang <gerald.yang@canonical.com>,
+        Hui Wang <hui.wang@canonical.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.13 077/172] ALSA: hda - Enable front audio jacks on one HP desktop model
+Date: Tue,  4 Mar 2014 12:02:41 -0800
+Message-Id: <20140304200302.207921239@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -28,50 +30,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Honig <ahonig@google.com>
+From: Hui Wang <hui.wang@canonical.com>
 
-commit a08d3b3b99efd509133946056531cdf8f3a0c09b upstream.
+commit 1de7ca5e844866f56bebb2fc47fa18e090677e88 upstream.
 
-The problem occurs when the guest performs a pusha with the stack
-address pointing to an mmio address (or an invalid guest physical
-address) to start with, but then extending into an ordinary guest
-physical address.  When doing repeated emulated pushes
-emulator_read_write sets mmio_needed to 1 on the first one.  On a
-later push when the stack points to regular memory,
-mmio_nr_fragments is set to 0, but mmio_is_needed is not set to 0.
+The front headphone and mic jackes on a HP desktop model (Vendor Id:
+0x111d76c7 Subsystem Id: 0x103c2b17) can not work, the codec on this
+machine has 8 physical ports, 6 of them are routed to rear jackes
+and all of them work very well, while the remaining 2 ports are
+routed to front headphone and mic jackes, but the corresponding
+pin complex node are not defined correctly.
 
-As a result, KVM exits to userspace, and then returns to
-complete_emulated_mmio.  In complete_emulated_mmio
-vcpu->mmio_cur_fragment is incremented.  The termination condition of
-vcpu->mmio_cur_fragment == vcpu->mmio_nr_fragments is never achieved.
-The code bounces back and fourth to userspace incrementing
-mmio_cur_fragment past it's buffer.  If the guest does nothing else it
-eventually leads to a a crash on a memcpy from invalid memory address.
+After apply this fix, the front audio jackes can work very well.
 
-However if a guest code can cause the vm to be destroyed in another
-vcpu with excellent timing, then kvm_clear_async_pf_completion_queue
-can be used by the guest to control the data that's pointed to by the
-call to cancel_work_item, which can be used to gain execution.
+[trivial fix of enum definition by tiwai]
 
-Fixes: f78146b0f9230765c6315b2e14f56112513389ad
-Signed-off-by: Andrew Honig <ahonig@google.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+BugLink: https://bugs.launchpad.net/bugs/1282369
+Cc: David Henningsson <david.henningsson@canonical.com>
+Tested-by: Gerald Yang <gerald.yang@canonical.com>
+Signed-off-by: Hui Wang <hui.wang@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/x86.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/patch_sigmatel.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -6163,7 +6163,7 @@ static int complete_emulated_mmio(struct
- 		frag->len -= len;
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -83,6 +83,7 @@ enum {
+ 	STAC_DELL_M6_BOTH,
+ 	STAC_DELL_EQ,
+ 	STAC_ALIENWARE_M17X,
++	STAC_92HD89XX_HP_FRONT_JACK,
+ 	STAC_92HD73XX_MODELS
+ };
+ 
+@@ -1777,6 +1778,12 @@ static const struct hda_pintbl intel_dg4
+ 	{}
+ };
+ 
++static const struct hda_pintbl stac92hd89xx_hp_front_jack_pin_configs[] = {
++	{ 0x0a, 0x02214030 },
++	{ 0x0b, 0x02A19010 },
++	{}
++};
++
+ static void stac92hd73xx_fixup_ref(struct hda_codec *codec,
+ 				   const struct hda_fixup *fix, int action)
+ {
+@@ -1895,6 +1902,10 @@ static const struct hda_fixup stac92hd73
+ 	[STAC_92HD73XX_NO_JD] = {
+ 		.type = HDA_FIXUP_FUNC,
+ 		.v.func = stac92hd73xx_fixup_no_jd,
++	},
++	[STAC_92HD89XX_HP_FRONT_JACK] = {
++		.type = HDA_FIXUP_PINS,
++		.v.pins = stac92hd89xx_hp_front_jack_pin_configs,
  	}
+ };
  
--	if (vcpu->mmio_cur_fragment == vcpu->mmio_nr_fragments) {
-+	if (vcpu->mmio_cur_fragment >= vcpu->mmio_nr_fragments) {
- 		vcpu->mmio_needed = 0;
+@@ -1955,6 +1966,8 @@ static const struct snd_pci_quirk stac92
+ 		      "Alienware M17x", STAC_ALIENWARE_M17X),
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x0490,
+ 		      "Alienware M17x R3", STAC_DELL_EQ),
++	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x2b17,
++				"unknown HP", STAC_92HD89XX_HP_FRONT_JACK),
+ 	{} /* terminator */
+ };
  
- 		/* FIXME: return into emulator if single-stepping.  */
 
 
