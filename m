@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757349AbaCDUF7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:05:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41854 "EHLO
+	id S1757323AbaCDUF5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:05:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41859 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932363AbaCDUFx (ORCPT
+	with ESMTP id S932410AbaCDUFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Mar 2014 15:05:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Snitzer <snitzer@redhat.com>, Joe Thornber <ejt@redhat.com>
-Subject: [PATCH 3.10 94/97] dm thin: fix the error path for the thin device constructor
-Date: Tue,  4 Mar 2014 12:04:47 -0800
-Message-Id: <20140304200349.094647320@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.10 95/97] drm/radeon: print the supported atpx function mask
+Date: Tue,  4 Mar 2014 12:04:48 -0800
+Message-Id: <20140304200349.129685473@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -28,55 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 1acacc0784aab45627b6009e0e9224886279ac0b upstream.
+commit 9f050c7f9738ffa746c63415136645ad231b1348 upstream.
 
-dm_pool_close_thin_device() must be called if dm_set_target_max_io_len()
-fails in thin_ctr().  Otherwise __pool_destroy() will fail because the
-pool will still have an open thin device:
+Print the supported functions mask in addition to
+the version.  This is useful in debugging PX
+problems since we can see what functions are available.
 
- device-mapper: thin metadata: attempt to close pmd when 1 device(s) are still open
- device-mapper: thin: __pool_destroy: dm_pool_metadata_close() failed.
-
-Also, must establish error code if failing thin_ctr() because the pool
-is in fail_io mode.
-
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Acked-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-thin.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_atpx_handler.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -2784,6 +2784,7 @@ static int thin_ctr(struct dm_target *ti
+--- a/drivers/gpu/drm/radeon/radeon_atpx_handler.c
++++ b/drivers/gpu/drm/radeon/radeon_atpx_handler.c
+@@ -215,7 +215,8 @@ static int radeon_atpx_verify_interface(
+ 	memcpy(&output, info->buffer.pointer, size);
  
- 	if (get_pool_mode(tc->pool) == PM_FAIL) {
- 		ti->error = "Couldn't open thin device, Pool is in fail mode";
-+		r = -EINVAL;
- 		goto bad_thin_open;
- 	}
+ 	/* TODO: check version? */
+-	printk("ATPX version %u\n", output.version);
++	printk("ATPX version %u, functions 0x%08x\n",
++	       output.version, output.function_bits);
  
-@@ -2795,7 +2796,7 @@ static int thin_ctr(struct dm_target *ti
+ 	radeon_atpx_parse_functions(&atpx->functions, output.function_bits);
  
- 	r = dm_set_target_max_io_len(ti, tc->pool->sectors_per_block);
- 	if (r)
--		goto bad_thin_open;
-+		goto bad_target_max_io_len;
- 
- 	ti->num_flush_bios = 1;
- 	ti->flush_supported = true;
-@@ -2816,6 +2817,8 @@ static int thin_ctr(struct dm_target *ti
- 
- 	return 0;
- 
-+bad_target_max_io_len:
-+	dm_pool_close_thin_device(tc->td);
- bad_thin_open:
- 	__pool_dec(tc->pool);
- bad_pool_lookup:
 
 
