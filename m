@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932980AbaCDUyL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:54:11 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:38910 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932970AbaCDUyF (ORCPT
+	id S1756773AbaCDUET (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:04:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41216 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753625AbaCDUED (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:54:05 -0500
+	Tue, 4 Mar 2014 15:04:03 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.13 114/172] ACPI / PCI: Fix memory leak in acpi_pci_irq_enable()
+Date: Tue,  4 Mar 2014 12:03:18 -0800
+Message-Id: <20140304200303.361999304@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
+References: <20140304200259.626667112@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-In-Reply-To: <20140226233541.18970.83328.stgit@bhelgaas-glaptop.roam.corp.google.com>
-References: <20140226233541.18970.83328.stgit@bhelgaas-glaptop.roam.corp.google.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 4 Mar 2014 13:53:44 -0700
-Message-ID: <CAErSpo50x1_iww5EmGXKUxbXUY2NLUxn6_yqF_3ABAjDSeFxog@mail.gmail.com>
-Subject: Re: [PATCH 0/7] PCI: Use default pcibios_enable_device()
-To: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 26, 2014 at 4:41 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> Several architectures implement a simple pcibios_enable_device() that looks
-> like this:
->
->   int pcibios_enable_device(struct pci_dev *dev, int mask)
->   {
->          return pci_enable_resources(dev, mask);
->   }
->
-> This puts a weak version of that in the PCI core and removes the
-> corresponding implementations from the architectures.
->
-> s390 is slightly less trivial but the same general idea.
->
-> I'd like to do the same for all the other architectures, but some (arm,
-> cris, m68k, mips, unicore32, xtensa, and parts of sparc and tile) don't
-> seem to use pci_claim_resource(), so BAR resource r->parent pointers
-> probably aren't set, so I can't change them yet.
->
-> ---
->
-> Bjorn Helgaas (7):
->       PCI: Add "weak" generic pcibios_enable_device() implementation
->       alpha/PCI: Use default pcibios_enable_device()
->       microblaze/PCI: Use default pcibios_enable_device()
->       sh/PCI: Use default pcibios_enable_device()
->       sparc/PCI: Use default pcibios_enable_device() (Leon only)
->       tile PCI RC: Use default pcibios_enable_device()
->       s390/PCI: Use generic pci_enable_resources()
->
->
->  arch/alpha/kernel/pci.c          |    6 ------
->  arch/microblaze/pci/pci-common.c |    5 -----
->  arch/s390/pci/pci.c              |   13 +------------
->  arch/sh/drivers/pci/pci.c        |    5 -----
->  arch/sparc/kernel/leon_pci.c     |    5 -----
->  arch/tile/kernel/pci_gx.c        |   12 ------------
->  drivers/pci/pci.c                |    5 +++++
->  7 files changed, 6 insertions(+), 45 deletions(-)
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-I applied these to pci/resource for v3.15.
+------------------
+
+From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+
+commit b685f3b1744061aa9ad822548ba9c674de5be7c6 upstream.
+
+acpi_pci_link_allocate_irq() can return negative gsi even if
+entry != NULL.  For that case we have a memory leak, so free
+entry before returning from acpi_pci_irq_enable() for gsi < 0.
+
+Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+[rjw: Subject and changelog]
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/acpi/pci_irq.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/acpi/pci_irq.c
++++ b/drivers/acpi/pci_irq.c
+@@ -432,6 +432,7 @@ int acpi_pci_irq_enable(struct pci_dev *
+ 				 pin_name(pin));
+ 		}
+ 
++		kfree(entry);
+ 		return 0;
+ 	}
+ 
+
+
