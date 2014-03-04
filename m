@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932894AbaCDUtl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:49:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41348 "EHLO
+	id S1755053AbaCDUEY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:04:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41309 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756833AbaCDUE0 (ORCPT
+	with ESMTP id S1753625AbaCDUEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:04:26 -0500
+	Tue, 4 Mar 2014 15:04:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jean Delvare <jdelvare@suse.de>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Doug Thompson <dougthompson@xmission.com>,
-        Borislav Petkov <bp@suse.de>
-Subject: [PATCH 3.13 159/172] i7300_edac: Fix device reference count
-Date: Tue,  4 Mar 2014 12:04:03 -0800
-Message-Id: <20140304200304.801050376@linuxfoundation.org>
+        Manu Gupta <manugupt1@gmail.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: [PATCH 3.13 135/172] staging: r8188eu: Add new device ID
+Date: Tue,  4 Mar 2014 12:03:39 -0800
+Message-Id: <20140304200304.030914489@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -31,88 +29,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <jdelvare@suse.de>
+From: Manu Gupta <manugupt1@gmail.com>
 
-commit 75135da0d68419ef8a925f4c1d5f63d8046e314d upstream.
+commit 260ea9c2e2d330303163e286ab01b66dbcfe3a6f upstream.
 
-pci_get_device() decrements the reference count of "from" (last
-argument) so when we break off the loop successfully we have only one
-device reference - and we don't know which device we have. If we want
-a reference to each device, we must take them explicitly and let
-the pci_get_device() walk complete to avoid duplicate references.
+The D-Link DWA-123 REV D1 with USB ID 2001:3310 uses this driver.
 
-This is serious, as over-putting device references will cause
-the device to eventually disappear. Without this fix, the kernel
-crashes after a few insmod/rmmod cycles.
-
-Tested on an Intel S7000FC4UR system with a 7300 chipset.
-
-Signed-off-by: Jean Delvare <jdelvare@suse.de>
-Link: http://lkml.kernel.org/r/20140224111656.09bbb7ed@endymion.delvare
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Doug Thompson <dougthompson@xmission.com>
-Signed-off-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Manu Gupta <manugupt1@gmail.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/edac/i7300_edac.c |   38 ++++++++++++++++++++------------------
- 1 file changed, 20 insertions(+), 18 deletions(-)
+ drivers/staging/rtl8188eu/os_dep/usb_intf.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/edac/i7300_edac.c
-+++ b/drivers/edac/i7300_edac.c
-@@ -943,33 +943,35 @@ static int i7300_get_devices(struct mem_
+--- a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
++++ b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
+@@ -55,6 +55,7 @@ static struct usb_device_id rtw_usb_id_t
+ 	/****** 8188EUS ********/
+ 	{USB_DEVICE(0x07b8, 0x8179)}, /* Abocom - Abocom */
+ 	{USB_DEVICE(0x2001, 0x330F)}, /* DLink DWA-125 REV D1 */
++	{USB_DEVICE(0x2001, 0x3310)}, /* Dlink DWA-123 REV D1 */
+ 	{}	/* Terminating entry */
+ };
  
- 	/* Attempt to 'get' the MCH register we want */
- 	pdev = NULL;
--	while (!pvt->pci_dev_16_1_fsb_addr_map ||
--	       !pvt->pci_dev_16_2_fsb_err_regs) {
--		pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
--				      PCI_DEVICE_ID_INTEL_I7300_MCH_ERR, pdev);
--		if (!pdev) {
--			/* End of list, leave */
--			i7300_printk(KERN_ERR,
--				"'system address,Process Bus' "
--				"device not found:"
--				"vendor 0x%x device 0x%x ERR funcs "
--				"(broken BIOS?)\n",
--				PCI_VENDOR_ID_INTEL,
--				PCI_DEVICE_ID_INTEL_I7300_MCH_ERR);
--			goto error;
--		}
--
-+	while ((pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
-+				      PCI_DEVICE_ID_INTEL_I7300_MCH_ERR,
-+				      pdev))) {
- 		/* Store device 16 funcs 1 and 2 */
- 		switch (PCI_FUNC(pdev->devfn)) {
- 		case 1:
--			pvt->pci_dev_16_1_fsb_addr_map = pdev;
-+			if (!pvt->pci_dev_16_1_fsb_addr_map)
-+				pvt->pci_dev_16_1_fsb_addr_map =
-+							pci_dev_get(pdev);
- 			break;
- 		case 2:
--			pvt->pci_dev_16_2_fsb_err_regs = pdev;
-+			if (!pvt->pci_dev_16_2_fsb_err_regs)
-+				pvt->pci_dev_16_2_fsb_err_regs =
-+							pci_dev_get(pdev);
- 			break;
- 		}
- 	}
- 
-+	if (!pvt->pci_dev_16_1_fsb_addr_map ||
-+	    !pvt->pci_dev_16_2_fsb_err_regs) {
-+		/* At least one device was not found */
-+		i7300_printk(KERN_ERR,
-+			"'system address,Process Bus' device not found:"
-+			"vendor 0x%x device 0x%x ERR funcs (broken BIOS?)\n",
-+			PCI_VENDOR_ID_INTEL,
-+			PCI_DEVICE_ID_INTEL_I7300_MCH_ERR);
-+		goto error;
-+	}
-+
- 	edac_dbg(1, "System Address, processor bus- PCI Bus ID: %s  %x:%x\n",
- 		 pci_name(pvt->pci_dev_16_0_fsb_ctlr),
- 		 pvt->pci_dev_16_0_fsb_ctlr->vendor,
 
 
