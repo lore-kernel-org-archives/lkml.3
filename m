@@ -1,147 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757375AbaCDUrY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:47:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41384 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752622AbaCDUEc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:04:32 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Davidlohr Bueso <davidlohr@hp.com>, Madars Vitolins <m@silodev.com>,
-        Doug Ledford <dledford@redhat.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.13 153/172] ipc,mqueue: remove limits for the amount of system-wide queues
-Date: Tue,  4 Mar 2014 12:03:57 -0800
-Message-Id: <20140304200304.612185901@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
-References: <20140304200259.626667112@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	id S1757731AbaCDUre (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:47:34 -0500
+Received: from smtp0.kfki.hu ([148.6.0.25]:53417 "EHLO smtp0.kfki.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757466AbaCDUra (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 15:47:30 -0500
+Date: Tue, 4 Mar 2014 21:47:26 +0100 (CET)
+From: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+To: "Jason A. Donenfeld" <Jason@zx2c4.com>
+cc: netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ip_set: remove extraneous log message
+In-Reply-To: <1393794424-1887-1-git-send-email-Jason@zx2c4.com>
+Message-ID: <alpine.DEB.2.10.1403042145590.17684@blackhole.kfki.hu>
+References: <1393794424-1887-1-git-send-email-Jason@zx2c4.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+On Sun, 2 Mar 2014, Jason A. Donenfeld wrote:
 
-------------------
+> This code path is hit everytime a new network namespace is created,
+> which means it runs everytime I start Chromium, resulting in needless
+> noise in my logs. This message doesn't add very much at all, and isn't
+> triggered at the correct place anyway, so this patch simply removes it.
+> 
+> Signed-off-by: Jason A. Donenfeld <Jason@zx2c4.com>
+> ---
+>  net/netfilter/ipset/ip_set_core.c | 1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/net/netfilter/ipset/ip_set_core.c b/net/netfilter/ipset/ip_set_core.c
+> index de770ec..283f197 100644
+> --- a/net/netfilter/ipset/ip_set_core.c
+> +++ b/net/netfilter/ipset/ip_set_core.c
+> @@ -1945,7 +1945,6 @@ ip_set_net_init(struct net *net)
+>  		return -ENOMEM;
+>  	inst->is_deleted = 0;
+>  	rcu_assign_pointer(inst->ip_set_list, list);
+> -	pr_notice("ip_set: protocol %u\n", IPSET_PROTOCOL);
+>  	return 0;
+>  }
 
-From: Davidlohr Bueso <davidlohr@hp.com>
+A similar patch has already been applied to the ipset git tree and going 
+to be submitted this week. Thanks your patch anyway.
 
-commit f3713fd9cff733d9df83116422d8e4af6e86b2bb upstream.
-
-Commit 93e6f119c0ce ("ipc/mqueue: cleanup definition names and
-locations") added global hardcoded limits to the amount of message
-queues that can be created.  While these limits are per-namespace,
-reality is that it ends up breaking userspace applications.
-Historically users have, at least in theory, been able to create up to
-INT_MAX queues, and limiting it to just 1024 is way too low and dramatic
-for some workloads and use cases.  For instance, Madars reports:
-
- "This update imposes bad limits on our multi-process application.  As
-  our app uses approaches that each process opens its own set of queues
-  (usually something about 3-5 queues per process).  In some scenarios
-  we might run up to 3000 processes or more (which of-course for linux
-  is not a problem).  Thus we might need up to 9000 queues or more.  All
-  processes run under one user."
-
-Other affected users can be found in launchpad bug #1155695:
-  https://bugs.launchpad.net/ubuntu/+source/manpages/+bug/1155695
-
-Instead of increasing this limit, revert it entirely and fallback to the
-original way of dealing queue limits -- where once a user's resource
-limit is reached, and all memory is used, new queues cannot be created.
-
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-Reported-by: Madars Vitolins <m@silodev.com>
-Acked-by: Doug Ledford <dledford@redhat.com>
-Cc: Manfred Spraul <manfred@colorfullife.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- include/linux/ipc_namespace.h |    2 --
- ipc/mq_sysctl.c               |   18 ++++++++++++------
- ipc/mqueue.c                  |    6 +++---
- 3 files changed, 15 insertions(+), 11 deletions(-)
-
---- a/include/linux/ipc_namespace.h
-+++ b/include/linux/ipc_namespace.h
-@@ -119,9 +119,7 @@ extern int mq_init_ns(struct ipc_namespa
-  *     the new maximum will handle anyone else.  I may have to revisit this
-  *     in the future.
-  */
--#define MIN_QUEUESMAX			1
- #define DFLT_QUEUESMAX		      256
--#define HARD_QUEUESMAX		     1024
- #define MIN_MSGMAX			1
- #define DFLT_MSG		       10U
- #define DFLT_MSGMAX		       10
---- a/ipc/mq_sysctl.c
-+++ b/ipc/mq_sysctl.c
-@@ -22,6 +22,16 @@ static void *get_mq(ctl_table *table)
- 	return which;
- }
- 
-+static int proc_mq_dointvec(ctl_table *table, int write,
-+			    void __user *buffer, size_t *lenp, loff_t *ppos)
-+{
-+	struct ctl_table mq_table;
-+	memcpy(&mq_table, table, sizeof(mq_table));
-+	mq_table.data = get_mq(table);
-+
-+	return proc_dointvec(&mq_table, write, buffer, lenp, ppos);
-+}
-+
- static int proc_mq_dointvec_minmax(ctl_table *table, int write,
- 	void __user *buffer, size_t *lenp, loff_t *ppos)
- {
-@@ -33,12 +43,10 @@ static int proc_mq_dointvec_minmax(ctl_t
- 					lenp, ppos);
- }
- #else
-+#define proc_mq_dointvec NULL
- #define proc_mq_dointvec_minmax NULL
- #endif
- 
--static int msg_queues_limit_min = MIN_QUEUESMAX;
--static int msg_queues_limit_max = HARD_QUEUESMAX;
+Best regards,
+Jozsef
 -
- static int msg_max_limit_min = MIN_MSGMAX;
- static int msg_max_limit_max = HARD_MSGMAX;
- 
-@@ -51,9 +59,7 @@ static ctl_table mq_sysctls[] = {
- 		.data		= &init_ipc_ns.mq_queues_max,
- 		.maxlen		= sizeof(int),
- 		.mode		= 0644,
--		.proc_handler	= proc_mq_dointvec_minmax,
--		.extra1		= &msg_queues_limit_min,
--		.extra2		= &msg_queues_limit_max,
-+		.proc_handler	= proc_mq_dointvec,
- 	},
- 	{
- 		.procname	= "msg_max",
---- a/ipc/mqueue.c
-+++ b/ipc/mqueue.c
-@@ -433,9 +433,9 @@ static int mqueue_create(struct inode *d
- 		error = -EACCES;
- 		goto out_unlock;
- 	}
--	if (ipc_ns->mq_queues_count >= HARD_QUEUESMAX ||
--	    (ipc_ns->mq_queues_count >= ipc_ns->mq_queues_max &&
--	     !capable(CAP_SYS_RESOURCE))) {
-+
-+	if (ipc_ns->mq_queues_count >= ipc_ns->mq_queues_max &&
-+	    !capable(CAP_SYS_RESOURCE)) {
- 		error = -ENOSPC;
- 		goto out_unlock;
- 	}
-
-
+E-mail  : kadlec@blackhole.kfki.hu, kadlecsik.jozsef@wigner.mta.hu
+PGP key : http://www.kfki.hu/~kadlec/pgp_public_key.txt
+Address : Wigner Research Centre for Physics, Hungarian Academy of Sciences
+          H-1525 Budapest 114, POB. 49, Hungary
