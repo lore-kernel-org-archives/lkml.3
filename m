@@ -1,55 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755974AbaCDAf4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 19:35:56 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:58107 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755498AbaCDAfy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 19:35:54 -0500
-Message-ID: <53151FE8.70703@codeaurora.org>
-Date: Mon, 03 Mar 2014 16:35:52 -0800
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Saravana Kannan <skannan@codeaurora.org>
-CC: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] PM / devfreq: Rewrite devfreq_update_status() to fix
- multiple bugs
-References: <1393558737-24037-1-git-send-email-skannan@codeaurora.org>
-In-Reply-To: <1393558737-24037-1-git-send-email-skannan@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755988AbaCDAgW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 19:36:22 -0500
+Received: from ozlabs.org ([203.10.76.45]:36599 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755498AbaCDAgU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 19:36:20 -0500
+Date: Tue, 4 Mar 2014 11:36:10 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org,
+        Josh Triplett <josh@joshtriplett.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: mmotm 2014-03-03-15-24 uploaded
+Message-Id: <20140304113610.a033faa8e5d3afeb38f7ac79@canb.auug.org.au>
+In-Reply-To: <20140303232530.2AC4131C2A3@corp2gmr1-1.hot.corp.google.com>
+References: <20140303232530.2AC4131C2A3@corp2gmr1-1.hot.corp.google.com>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__4_Mar_2014_11_36_10_+1100_NPBWuroT=CRDMbzy"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/2014 07:38 PM, Saravana Kannan wrote:
-> The current devfreq_update_status() has the following bugs:
-> - If previous frequency doesn't have a valid level, it does an out of bounds
->    access into the trans_table and causes memory corruption.
-> - When the new frequency doesn't have a valid level, the time spent in the
->    new frequency is counted towards the next valid frequency switch instead of
->    being ignored.
-> - The time spent on the previous frequency is added to the new frequency's
->    stats instead of the previous frequency's stats.
+--Signature=_Tue__4_Mar_2014_11_36_10_+1100_NPBWuroT=CRDMbzy
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi Andrew,
+
+On Mon, 03 Mar 2014 15:25:29 -0800 akpm@linux-foundation.org wrote:
 >
-> This patch fixes all of this.
->
-> Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
-> ---
+> The mm-of-the-moment snapshot 2014-03-03-15-24 has been uploaded to
+>=20
+>    http://www.ozlabs.org/~akpm/mmotm/
 
-MyungJoo/Kyungmin,
+> * kconfig-make-allnoconfig-disable-options-behind-embedded-and-expert.pat=
+ch
 
-Can you please take a look and let me know if this looks ok? Any 
-possibility of getting this into 3.14?
+I am carrying 5 fix patches for the above patch (they need to go before
+or as part of the above patch).
 
-Thanks,
-Saravana
+ppc_Make_PPC_BOOK3S_64_select_IRQ_WORK.patch
+ia64__select_CONFIG_TTY_for_use_of_tty_write_message_in_unaligned.patch
+s390__select_CONFIG_TTY_for_use_of_tty_in_unconditional_keyboard_driver.pat=
+ch
+cris__Make_ETRAX_ARCH_V10_select_TTY_for_use_in_debugport.patch
+cris__cpuinfo_op_should_depend_on_CONFIG_PROC_FS.patch
 
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+I can send them to you if you like, but I am pretty sure you were cc'd on
+all of them.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__4_Mar_2014_11_36_10_+1100_NPBWuroT=CRDMbzy
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTFR/+AAoJEMDTa8Ir7ZwVjUYP/A6vUrwvbbNoLN/CzmxSqY3u
+NdZAPYzUl3Avk7HZIyDm+m1a5yIYUGc99jChz0FAUb3nilTiVE3NNZszs/Y8KQcW
+u0kZ2mkLsQpIGAROu8DarBQXyPzajWW69JqgHgxris026LpbS+E5dBPH3aG6SuTa
++YCQAK7PzA9HTniHCyj7XvMKgZhevKHYZD9/lx7d07C51+fZO20hGPlSIqX692u4
+UOBbn1O0d2YVKjnXjFjp9lDqKPq3rfgHFfpIcCaCF9sCrzZDITuQYZDYZmCvWIVF
+VeLiJ03GYwI25PN8kE2lSj2egtL9/mtfD9H+BnZKXu+vStZXakwSFNPmCEcghjZf
+oGiBvnEjQM6pqT7pcExhzUyaq52armU7VvJLrhApRgONPjQnThhwzqZZWb25ZwcJ
+uBf+XrGtGB3wXgFMXPJXCYaxpGK4axnBlCO2xpr/8svTDGiXRWSFm8eiN6lQql2y
+4zSiIus+fytYKFD8zjqWpjfU00snMUsLDL+YyMZXIWNFrQ40v3gMIL1+4RnziikL
+n7toh02e7LLylAubXuy9ubYSOPx2hkt7XBHl2WaVwWXKR3kjtyj6rzBPF658u844
+IzjvA956YhRvKVKILHX5Q2b/NJ7dLKEtGZWDC5V/+4KSAs2UwGj7ah2l/EK61W5g
+H3b8SUmRepILRiF6W/K1
+=8e05
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__4_Mar_2014_11_36_10_+1100_NPBWuroT=CRDMbzy--
