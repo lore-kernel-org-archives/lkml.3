@@ -1,143 +1,276 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755969AbaCDA7o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 19:59:44 -0500
-Received: from g2t2352.austin.hp.com ([15.217.128.51]:1255 "EHLO
-	g2t2352.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755638AbaCDA7n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 19:59:43 -0500
-Message-ID: <1393894778.30648.29.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH v4] mm: per-thread vma caching
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, aswin@hp.com,
-        scott.norton@hp.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Date: Mon, 03 Mar 2014 16:59:38 -0800
-In-Reply-To: <20140303164002.02df915e12d05bb98762407f@linux-foundation.org>
-References: <1393537704.2899.3.camel@buesod1.americas.hpqcorp.net>
-	 <20140303164002.02df915e12d05bb98762407f@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755997AbaCDBBl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 20:01:41 -0500
+Received: from mga02.intel.com ([134.134.136.20]:63881 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755838AbaCDBBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 20:01:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,582,1389772800"; 
+   d="scan'208";a="485489341"
+Date: Tue, 4 Mar 2014 09:00:25 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Alex Shi <alex.shi@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, lkp@01.org
+Subject: [sched/balance] 598143917: -1.8% turbostat.Pkg_W
+Message-ID: <20140304010025.GA10470@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-03-03 at 16:40 -0800, Andrew Morton wrote:
-> On Thu, 27 Feb 2014 13:48:24 -0800 Davidlohr Bueso <davidlohr@hp.com> wrote:
-> > --- a/include/linux/mm_types.h
-> > +++ b/include/linux/mm_types.h
-> > @@ -342,9 +342,9 @@ struct mm_rss_stat {
-> >  
-> >  struct kioctx_table;
-> >  struct mm_struct {
-> > -	struct vm_area_struct * mmap;		/* list of VMAs */
-> > +	struct vm_area_struct *mmap;		/* list of VMAs */
-> >  	struct rb_root mm_rb;
-> > -	struct vm_area_struct * mmap_cache;	/* last find_vma result */
-> > +	u32 vmacache_seqnum;                   /* per-thread vmacache */
-> 
-> nitpick: in kernelese this is typically "per-task".  If it was in the
-> mm_struct then it would be "per process".  And I guess if it was in the
-> thread_struct it would be "per thread", but that isn't a distinction
-> I've seen made.
+Alex,
 
-Sure, I am referring to per-task, subject title as well. My mind just
-treats them as synonyms in this context. My bad.
+FYI, we noticed the below changes on commit 598143917dc5ecf11f0764de4166ee7c98e90aff
+("sched: only do load balance on tick_do_timer_cpu") in your git tree
 
-> > --- a/include/linux/sched.h
-> > +++ b/include/linux/sched.h
-> > @@ -23,6 +23,7 @@ struct sched_param {
-> >  #include <linux/errno.h>
-> >  #include <linux/nodemask.h>
-> >  #include <linux/mm_types.h>
-> > +#include <linux/vmacache.h>
-> 
-> This might be awkward - vmacache.h drags in mm.h and we have had tangly
-> problems with these major header files in the past.  I'd be inclined to
-> remove this inclusion and just forward-declare vm_area_struct, but we
-> still need VMACACHE_SIZE, sigh.  Wait and see what happens, I guess.
+https://github.com/alexshi/power-scheduling.git single-balance
 
-Yeah, I wasn't sure what to do about that and was expecting it to come
-up in the review process. Let me know if you want me to change/update
-this.
+bc575710efe937e  598143917dc5ecf11f0764de4  
+---------------  -------------------------  
+     63743 ~ 0%     -82.4%      11200 ~ 2%  lkp-nex05/micro/will-it-scale/futex2
+     63430 ~ 0%     -83.4%      10546 ~ 1%  lkp-nex05/micro/will-it-scale/signal1
+     60358 ~ 0%     -80.6%      11704 ~ 4%  lkp-snb01/micro/will-it-scale/sched_yield
+    187532 ~ 0%     -82.2%      33451 ~ 2%  TOTAL interrupts.RES
 
-> > ...
-> >
-> > --- /dev/null
-> > +++ b/include/linux/vmacache.h
-> > @@ -0,0 +1,40 @@
-> > +#ifndef __LINUX_VMACACHE_H
-> > +#define __LINUX_VMACACHE_H
-> > +
-> > +#include <linux/mm.h>
-> > +
-> > +#define VMACACHE_BITS 2
-> > +#define VMACACHE_SIZE (1U << VMACACHE_BITS)
-> > +#define VMACACHE_MASK (VMACACHE_SIZE - 1)
-> > +/*
-> > + * Hash based on the page number. Provides a good hit rate for
-> > + * workloads with good locality and those with random accesses as well.
-> > + */
-> > +#define VMACACHE_HASH(addr) ((addr >> PAGE_SHIFT) & VMACACHE_MASK)
-> > +
-> > +#define vmacache_flush(tsk)					 \
-> > +	do {							 \
-> > +		memset(tsk->vmacache, 0, sizeof(tsk->vmacache)); \
-> > +	} while (0)
-> 
-> There's no particular reason to implement this in cpp.  Using C is
-> typesafer and nicer.  But then we get into header file issues again. 
-> More sigh
+bc575710efe937e  598143917dc5ecf11f0764de4  
+---------------  -------------------------  
+    197848 ~ 1%     -97.5%       5000 ~ 5%  lkp-nex05/micro/will-it-scale/futex2
+    192607 ~ 7%     -96.8%       6186 ~31%  lkp-nex05/micro/will-it-scale/signal1
+     86509 ~ 5%     -96.1%       3399 ~ 9%  lkp-snb01/micro/will-it-scale/sched_yield
+    476965 ~ 4%     -96.9%      14586 ~17%  TOTAL softirqs.SCHED
 
-Yep, I ran into that issue when trying to make it an inline function.
+bc575710efe937e  598143917dc5ecf11f0764de4  
+---------------  -------------------------  
+    103938 ~ 1%     -36.2%      66267 ~ 0%  lkp-snb01/micro/will-it-scale/sched_yield
+    103938 ~ 1%     -36.2%      66267 ~ 0%  TOTAL cpuidle.C7-SNB.usage
 
-> 
-> > +extern void vmacache_flush_all(struct mm_struct *mm);
-> > +extern void vmacache_update(unsigned long addr, struct vm_area_struct *newvma);
-> > +extern struct vm_area_struct *vmacache_find(struct mm_struct *mm,
-> > +						    unsigned long addr);
-> > +
-> > +#ifndef CONFIG_MMU
-> > +extern struct vm_area_struct *vmacache_find_exact(struct mm_struct *mm,
-> > +						  unsigned long start,
-> > +						  unsigned long end);
-> > +#endif
-> 
-> We often omit the ifdefs in this case.  It means that a compile-time
-> error becomes a link-time error but that's a small cost for unmucking
-> the header files.  It doesn't matter much in vmacache.h, but some
-> headers would become a complete maze of ifdefs otherwise.
+bc575710efe937e  598143917dc5ecf11f0764de4  
+---------------  -------------------------  
+      5193 ~11%      +7.7%       5595 ~10%  lkp-nex05/micro/will-it-scale/futex2
+      5193 ~11%      +7.7%       5595 ~10%  TOTAL numa-vmstat.node1.nr_slab_unreclaimable
 
-Ok.
+bc575710efe937e  598143917dc5ecf11f0764de4  
+---------------  -------------------------  
+     20777 ~11%      +7.7%      22382 ~10%  lkp-nex05/micro/will-it-scale/futex2
+     20777 ~11%      +7.7%      22382 ~10%  TOTAL numa-meminfo.node1.SUnreclaim
 
-> >...
-> >
-> > +static bool vmacache_valid(struct mm_struct *mm)
-> > +{
-> > +	struct task_struct *curr = current;
-> > +
-> > +	if (mm != curr->mm)
-> > +		return false;
-> 
-> What's going on here?  Handling a task poking around in someone else's
-> mm?  I'm thinking "__access_remote_vm", but I don't know what you were
-> thinking ;) An explanatory comment would be revealing.
+bc575710efe937e  598143917dc5ecf11f0764de4  
+---------------  -------------------------  
+    215721 ~ 3%     -16.4%     180390 ~ 2%  lkp-nex05/micro/will-it-scale/futex2
+    235264 ~ 2%     -18.9%     190850 ~ 3%  lkp-nex05/micro/will-it-scale/signal1
+    450985 ~ 2%     -17.7%     371241 ~ 2%  TOTAL cpuidle.C3-NHM.usage
 
-I don't understand the doubt here. Seems like a pretty obvious thing to
-check -- yes it's probably unlikely but we certainly don't want to be
-validating the cache on an mm that's not ours... or are you saying it's
-redundant??
+bc575710efe937e  598143917dc5ecf11f0764de4  
+---------------  -------------------------  
+     19.88 ~ 0%     +12.5%      22.38 ~ 2%  lkp-nex05/micro/will-it-scale/signal1
+     20.65 ~ 0%     +24.5%      25.70 ~ 1%  lkp-snb01/micro/will-it-scale/sched_yield
+     40.53 ~ 0%     +18.6%      48.08 ~ 1%  TOTAL turbostat.%c1
 
-And no, we don't want __access_remote_vm() here.
+bc575710efe937e  598143917dc5ecf11f0764de4  
+---------------  -------------------------  
+    261584 ~ 8%      -9.8%     235897 ~ 5%  lkp-nex05/micro/will-it-scale/futex2
+    261584 ~ 8%      -9.8%     235897 ~ 5%  TOTAL numa-numastat.node1.local_node
+
+bc575710efe937e  598143917dc5ecf11f0764de4  
+---------------  -------------------------  
+    261584 ~ 8%      -9.8%     235897 ~ 5%  lkp-nex05/micro/will-it-scale/futex2
+    261584 ~ 8%      -9.8%     235897 ~ 5%  TOTAL numa-numastat.node1.numa_hit
+
+bc575710efe937e  598143917dc5ecf11f0764de4  
+---------------  -------------------------  
+      9292 ~ 3%      -8.0%       8545 ~ 4%  lkp-snb01/micro/will-it-scale/sched_yield
+      9292 ~ 3%      -8.0%       8545 ~ 4%  TOTAL slabinfo.anon_vma.active_objs
+
+bc575710efe937e  598143917dc5ecf11f0764de4  
+---------------  -------------------------  
+      9292 ~ 3%      -7.8%       8563 ~ 4%  lkp-snb01/micro/will-it-scale/sched_yield
+      9292 ~ 3%      -7.8%       8563 ~ 4%  TOTAL slabinfo.anon_vma.num_objs
+
+bc575710efe937e  598143917dc5ecf11f0764de4  
+---------------  -------------------------  
+    204033 ~ 1%      -8.6%     186466 ~ 3%  lkp-snb01/micro/will-it-scale/sched_yield
+    204033 ~ 1%      -8.6%     186466 ~ 3%  TOTAL softirqs.RCU
+
+bc575710efe937e  598143917dc5ecf11f0764de4  
+---------------  -------------------------  
+     34331 ~ 5%      +4.7%      35960 ~ 4%  lkp-nex05/micro/will-it-scale/futex2
+     34331 ~ 5%      +4.7%      35960 ~ 4%  TOTAL numa-meminfo.node1.Slab
+
+bc575710efe937e  598143917dc5ecf11f0764de4  
+---------------  -------------------------  
+    683581 ~ 0%      -9.3%     620065 ~ 1%  lkp-snb01/micro/will-it-scale/sched_yield
+    683581 ~ 0%      -9.3%     620065 ~ 1%  TOTAL softirqs.TIMER
+
+bc575710efe937e  598143917dc5ecf11f0764de4  
+---------------  -------------------------  
+ 4.902e+09 ~ 0%      +9.9%   5.39e+09 ~ 0%  lkp-snb01/micro/will-it-scale/sched_yield
+ 4.902e+09 ~ 0%      +9.9%   5.39e+09 ~ 0%  TOTAL cpuidle.C7-SNB.time
+
+bc575710efe937e  598143917dc5ecf11f0764de4  
+---------------  -------------------------  
+      3900 ~ 0%    +349.4%      17527 ~ 2%  lkp-nex05/micro/will-it-scale/futex2
+      3930 ~ 1%    +258.6%      14091 ~20%  lkp-nex05/micro/will-it-scale/signal1
+    143678 ~42%  +4.8e+05%   6.93e+08 ~ 0%  lkp-snb01/micro/will-it-scale/sched_yield
+    151509 ~40%  +4.6e+05%   6.93e+08 ~ 0%  TOTAL time.involuntary_context_switches
+
+bc575710efe937e  598143917dc5ecf11f0764de4  
+---------------  -------------------------  
+       884 ~ 1%      +8.3%        957 ~ 1%  lkp-nex05/micro/will-it-scale/futex2
+       883 ~ 0%      +9.4%        967 ~ 2%  lkp-nex05/micro/will-it-scale/signal1
+      2405 ~25%  +2.1e+05%    5129828 ~ 5%  lkp-snb01/micro/will-it-scale/sched_yield
+      4173 ~15%  +1.2e+05%    5131753 ~ 5%  TOTAL vmstat.system.cs
+
+bc575710efe937e  598143917dc5ecf11f0764de4  
+---------------  -------------------------  
+       250 ~ 4%     +29.1%        323 ~ 8%  lkp-snb01/micro/will-it-scale/sched_yield
+       250 ~ 4%     +29.1%        323 ~ 8%  TOTAL time.user_time
+
+bc575710efe937e  598143917dc5ecf11f0764de4  
+---------------  -------------------------  
+      2819 ~ 0%      -7.9%       2597 ~ 0%  lkp-nex05/micro/will-it-scale/futex2
+      2811 ~ 0%      -5.9%       2644 ~ 1%  lkp-nex05/micro/will-it-scale/signal1
+      1267 ~ 0%     -22.9%        978 ~ 2%  lkp-snb01/micro/will-it-scale/sched_yield
+      6898 ~ 0%      -9.8%       6219 ~ 1%  TOTAL time.system_time
+
+bc575710efe937e  598143917dc5ecf11f0764de4  
+---------------  -------------------------  
+       905 ~ 0%      -7.9%        833 ~ 0%  lkp-nex05/micro/will-it-scale/futex2
+       902 ~ 0%      -5.7%        850 ~ 1%  lkp-nex05/micro/will-it-scale/signal1
+       489 ~ 0%     -14.3%        419 ~ 0%  lkp-snb01/micro/will-it-scale/sched_yield
+      2296 ~ 0%      -8.4%       2103 ~ 0%  TOTAL time.percent_of_cpu_this_job_got
+
+bc575710efe937e  598143917dc5ecf11f0764de4  
+---------------  -------------------------  
+     45.10 ~ 0%      -4.8%      42.94 ~ 0%  lkp-nex05/micro/will-it-scale/futex2
+     45.04 ~ 0%      -5.1%      42.73 ~ 1%  lkp-nex05/micro/will-it-scale/signal1
+     50.62 ~ 0%     -10.0%      45.56 ~ 0%  lkp-snb01/micro/will-it-scale/sched_yield
+    140.76 ~ 0%      -6.8%     131.22 ~ 0%  TOTAL turbostat.%c0
+
+bc575710efe937e  598143917dc5ecf11f0764de4  
+---------------  -------------------------  
+      2380 ~ 2%     +15.7%       2753 ~13%  lkp-nex05/micro/will-it-scale/signal1
+      2380 ~ 2%     +15.7%       2753 ~13%  TOTAL boottime.idle
+
+bc575710efe937e  598143917dc5ecf11f0764de4  
+---------------  -------------------------  
+      7975 ~ 0%      -6.2%       7480 ~ 0%  lkp-nex05/micro/will-it-scale/futex2
+      8022 ~ 0%      -6.9%       7465 ~ 0%  lkp-nex05/micro/will-it-scale/signal1
+     15997 ~ 0%      -6.6%      14946 ~ 0%  TOTAL vmstat.system.in
+
+bc575710efe937e  598143917dc5ecf11f0764de4  
+---------------  -------------------------  
+     42.69 ~ 2%     +15.0%      49.08 ~14%  lkp-nex05/micro/will-it-scale/signal1
+     42.69 ~ 2%     +15.0%      49.08 ~14%  TOTAL boottime.boot
+
+bc575710efe937e  598143917dc5ecf11f0764de4  
+---------------  -------------------------  
+       121 ~ 0%      -2.2%        119 ~ 0%  lkp-snb01/micro/will-it-scale/sched_yield
+       121 ~ 0%      -2.2%        119 ~ 0%  TOTAL turbostat.Cor_W
+
+bc575710efe937e  598143917dc5ecf11f0764de4  
+---------------  -------------------------  
+       148 ~ 0%      -1.8%        145 ~ 0%  lkp-snb01/micro/will-it-scale/sched_yield
+       148 ~ 0%      -1.8%        145 ~ 0%  TOTAL turbostat.Pkg_W
+
+
+                                  time.system_time
+
+   2850 ++------------------------------------------------------------------+
+        |                                                                   |
+   2800 *+.*..*..*..*..*..*..*..*..*..*..*.*..*..*..*..*..*                 |
+        |                                                                   |
+        |                                                                   |
+   2750 ++                                                                  |
+        |                                                             O     |
+   2700 ++                                                                  |
+        |                                                                   |
+   2650 O+                                                               O  |
+        |        O        O                                     O           O
+        |     O              O             O              O  O              |
+   2600 ++          O              O          O     O                       |
+        |  O                    O     O  O       O     O           O        |
+   2550 ++-------------O----------------------------------------------------+
+
+
+                         time.percent_of_cpu_this_job_got
+
+   910 ++-------------------------------------------------------------------+
+       *..*..*..*..*..*..*..*..*..*..*..*..*..*..  .*..  .*                 |
+   900 ++                                        *.    *.                   |
+   890 ++                                                                   |
+       |                                                                    |
+   880 ++                                                             O     |
+   870 ++                                                                   |
+       |                                                                    |
+   860 ++                                                                O  |
+   850 O+                                                                   |
+       |        O        O  O              O                 O  O           O
+   840 ++    O     O              O           O     O     O                 |
+   830 ++ O                                      O     O                    |
+       |                       O     O  O                          O        |
+   820 ++-------------O-----------------------------------------------------+
+
+
+                          time.involuntary_context_switches
+
+   20000 ++-------------O---------------------------------------------------+
+         |                      O     O  O                         O        |
+   18000 ++ O  O     O                            O     O                   |
+   16000 ++                        O           O     O     O O              |
+         |        O       O  O              O                   O           O
+   14000 O+                                                              O  |
+   12000 ++                                                                 |
+         |                                                                  |
+   10000 ++                                                           O     |
+    8000 ++                                                                 |
+         |                                                                  |
+    6000 ++                                                                 |
+    4000 *+.     .*..  .*.  .*..*..              .*..  .*..                 |
+         |  *..*.    *.   *.       *..*..*..*..*.    *.    *                |
+    2000 ++-----------------------------------------------------------------+
+
+
+                                    turbostat.%c0
+
+   45.5 ++------------------------------------------------------------------+
+        *..*..*..*..*..*..*..*..*..*..*..*.*..*..   *..                     |
+     45 ++                                        ..   *..*                 |
+        |                                        *                          |
+   44.5 ++                                                                  |
+        |                                                                   |
+     44 ++                                                                  |
+        |                                                                   |
+   43.5 ++                                                                  |
+        |     O     O                                     O        O  O     |
+     43 O+ O                       O                                        |
+        |                 O           O  O O  O  O  O  O     O           O  |
+   42.5 ++       O     O                                                    |
+        |                       O                                           O
+     42 ++-------------------O----------------------------------O-----------+
+
+
+                                  vmstat.system.in
+
+   8100 ++------------------------------------------------------------------+
+        *..*..     .*..*..*..*..*..  .*..*.*..*..  .*..  .*                 |
+   8000 ++    *..*.                *.            *.    *.                   |
+   7900 ++                                                                  |
+        |                                                                   |
+   7800 ++                                                                  |
+        |                                                                   |
+   7700 ++                                                                  |
+        |                                                                   |
+   7600 O+          O              O                      O                 |
+   7500 ++ O  O  O                    O                            O  O     |
+        |                 O              O O  O  O  O  O     O           O  |
+   7400 ++             O        O                                           O
+        |                    O                                  O           |
+   7300 ++------------------------------------------------------------------+
 
 Thanks,
-Davidlohr
-
+Fengguang
