@@ -1,98 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756030AbaCDDrS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 22:47:18 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55023 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755410AbaCDDrR (ORCPT
+	id S1756124AbaCDDsg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 22:48:36 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:43920 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756052AbaCDDsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 22:47:17 -0500
-Date: Tue, 4 Mar 2014 11:46:41 +0800
-From: Mark Brown <broonie@kernel.org>
-To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-Cc: "'Takashi Iwai'" <tiwai@suse.de>, "'Lars-Peter Clausen'" <lars@metafoo.de>,
-        "'alsa-devel@alsa-project.org'" <alsa-devel@alsa-project.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <liam.r.girdwood@intel.com>
-Message-ID: <20140304034641.GY2411@sirena.org.uk>
-References: <s5hmwh7ab5w.wl%tiwai@suse.de>
- <35FD53F367049845BC99AC72306C23D102844605F392@CNBJMBX05.corpusers.net>
- <531468CA.6040302@metafoo.de>
- <35FD53F367049845BC99AC72306C23D102844605F393@CNBJMBX05.corpusers.net>
- <53146B6F.4000601@metafoo.de>
- <35FD53F367049845BC99AC72306C23D102844605F394@CNBJMBX05.corpusers.net>
- <53149037.20305@metafoo.de>
- <35FD53F367049845BC99AC72306C23D102844605F395@CNBJMBX05.corpusers.net>
- <s5hvbvv8hr1.wl%tiwai@suse.de>
- <35FD53F367049845BC99AC72306C23D102844605F396@CNBJMBX05.corpusers.net>
+	Mon, 3 Mar 2014 22:48:35 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wwhGNBny+TwOF9uv"
-Content-Disposition: inline
-In-Reply-To: <35FD53F367049845BC99AC72306C23D102844605F396@CNBJMBX05.corpusers.net>
-X-Cookie: You too can wear a nose mitten.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 202.175.88.218
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [alsa-devel] change kmalloc into vmalloc for large memory
- allocations
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <alpine.DEB.2.10.1403011858040.14057@nuc>
+References: <20140227073258.GA11087@meta-silence.Home> <alpine.DEB.2.10.1403011858040.14057@nuc>
+From: Zhan Jianyu <nasa4836@gmail.com>
+Date: Tue, 4 Mar 2014 11:47:52 +0800
+Message-ID: <CAHz2CGXmw24CMw8MqRRFJdYgHywJayHGYp5wK=uTyF-goqPeBA@mail.gmail.com>
+Subject: Re: [PATCH] mm/slab.c: cleanup outdated comments and unify variables naming
+To: Christoph Lameter <cl@linux.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>, penberg@kernel.org,
+        mpm@selenic.com, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Mar 2, 2014 at 8:59 AM, Christoph Lameter <cl@linux.com> wrote:
+> On Thu, 27 Feb 2014, Jianyu Zhan wrote:
+>
+>> As time goes, the code changes a lot, and this leads to that
+>> some old-days comments scatter around , which instead of faciliating
+>> understanding, but make more confusion. So this patch cleans up them.
+>
+> Acked-by: Christoph Lameter <cl@linux.com>
 
---wwhGNBny+TwOF9uv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Mon, Mar 03, 2014 at 11:33:24PM +0800, Wang, Yalin wrote:
-> Hi Takashi,
->=20
-> I see,
->=20
-> I just want to save low memory for kmalloc use,
-> So I want to filter out large memory allocations
-> To use vmalloc instead ,
->=20
-> It will be preferable, if there is a better solution :)
->=20
-> Thank you for your clarification.
+Thanks, Christoph Lameter.
 
-Don't top post. =20
 
-Without having seen the earlier mails in the thread I'm not 100% sure on
-the specifics here but wouldn't a more generic solution be to deal with
-this in the memory management code? =20
 
-As far as I can tell the concern is that the runtime structures are
-taking up too much memory when allocated using kzallloc?  We're also
-doing lots of small allocations for things like DAPM which will
-presumably also be burning this memory and will I expect for most
-systems end up being more than that consumed by the runtime structures.
 
---wwhGNBny+TwOF9uv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+--
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTFUyeAAoJELSic+t+oim9whgQAJVgCtESFaCtY2Vj9QQARkPl
-GdGdwDrfTNkLiIIyJIYK9740MLQujcy1ryemsSIBBcggvHsBaLJ9eQAKVANPHUbt
-sA8G803iX98Lu6offx+Nwj2kzOaYAS329WFr5NAqyU0eWedvWJHq9+msZiUXhnJL
-HnZInJ6zCAjtQxM0AYE3WmzK2OhNoG1yG5ZCdmlHXD4a3TR3QziWnIA/NLPMBUy6
-WRQaDDrD/Ezhq79NQaFdnBqslzDKwGQ6CQsSK24piKGgMG8ObJtARLwiJWe4pTvg
-poNelWTfGP1r9lvylV2iFvf9tKyzkg5GJrhxdv6n0iHXr6whaKxdY2M/MN8kehxh
-bivr9CbnWQMARxmvmBf6W28sZwaRC0XaY2i5t1jSViNBO5HLjlt9HYDzSVazBbn1
-KTJ9cWsSHHCKB3P11pqVm/wQi+wNRoNpqJRYhvpJlLKCiePNTQsNwWb2TwQtNQyY
-Gd/StwZUUze+tL6RzBXb3G2A0t3so38iHpvYMaWjeVDKF/NUspxuiB2N188qkE2I
-OnY8Dsebo5Q4cWVNWTbZ1YypPjgX1jtO8m3WlC9plghtxFBPDN9bEWxBTDJpPkh7
-HSO6BkVkPFAdarfgPwpMsHfrz3g3aaPpEEwDFP2+XbgvvTV1CUMVpQ5sUmd1uLQz
-dwEgM7Po8un/oIYuESmd
-=ghaq
------END PGP SIGNATURE-----
-
---wwhGNBny+TwOF9uv--
+Regards,
+Zhan Jianyu
