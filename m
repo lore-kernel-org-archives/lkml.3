@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758077AbaCDUr7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:47:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41381 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756900AbaCDUEb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756903AbaCDUEb (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 4 Mar 2014 15:04:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41361 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752622AbaCDUE2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 15:04:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH 3.13 152/172] quota: Fix race between dqput() and dquot_scan_active()
-Date: Tue,  4 Mar 2014 12:03:56 -0800
-Message-Id: <20140304200304.584614029@linuxfoundation.org>
+        Max Filippov <jcmvbkbc@gmail.com>
+Subject: [PATCH 3.13 148/172] xtensa: save current register frame in fast_syscall_spill_registers_fixup
+Date: Tue,  4 Mar 2014 12:03:52 -0800
+Message-Id: <20140304200304.461128130@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -28,66 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Max Filippov <jcmvbkbc@gmail.com>
 
-commit 1362f4ea20fa63688ba6026e586d9746ff13a846 upstream.
+commit 3251f1e27a5a17f0efd436cfd1e7b9896cfab0a0 upstream.
 
-Currently last dqput() can race with dquot_scan_active() causing it to
-call callback for an already deactivated dquot. The race is as follows:
+We need it saved because it contains a3 where we track which register
+windows we still need to spill, and fixup handler may call C exception
+handlers. Also fix comments.
 
-CPU1					CPU2
-  dqput()
-    spin_lock(&dq_list_lock);
-    if (atomic_read(&dquot->dq_count) > 1) {
-     - not taken
-    if (test_bit(DQ_ACTIVE_B, &dquot->dq_flags)) {
-      spin_unlock(&dq_list_lock);
-      ->release_dquot(dquot);
-        if (atomic_read(&dquot->dq_count) > 1)
-         - not taken
-					  dquot_scan_active()
-					    spin_lock(&dq_list_lock);
-					    if (!test_bit(DQ_ACTIVE_B, &dquot->dq_flags))
-					     - not taken
-					    atomic_inc(&dquot->dq_count);
-					    spin_unlock(&dq_list_lock);
-        - proceeds to release dquot
-					    ret = fn(dquot, priv);
-					     - called for inactive dquot
-
-Fix the problem by making sure possible ->release_dquot() is finished by
-the time we call the callback and new calls to it will notice reference
-dquot_scan_active() has taken and bail out.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/quota/dquot.c |   14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ arch/xtensa/kernel/entry.S |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
---- a/fs/quota/dquot.c
-+++ b/fs/quota/dquot.c
-@@ -581,9 +581,17 @@ int dquot_scan_active(struct super_block
- 		dqstats_inc(DQST_LOOKUPS);
- 		dqput(old_dquot);
- 		old_dquot = dquot;
--		ret = fn(dquot, priv);
--		if (ret < 0)
--			goto out;
-+		/*
-+		 * ->release_dquot() can be racing with us. Our reference
-+		 * protects us from new calls to it so just wait for any
-+		 * outstanding call and recheck the DQ_ACTIVE_B after that.
-+		 */
-+		wait_on_dquot(dquot);
-+		if (test_bit(DQ_ACTIVE_B, &dquot->dq_flags)) {
-+			ret = fn(dquot, priv);
-+			if (ret < 0)
-+				goto out;
-+		}
- 		spin_lock(&dq_list_lock);
- 		/* We are safe to continue now because our dquot could not
- 		 * be moved out of the inuse list while we hold the reference */
+--- a/arch/xtensa/kernel/entry.S
++++ b/arch/xtensa/kernel/entry.S
+@@ -1117,6 +1117,13 @@ ENDPROC(fast_syscall_spill_registers)
+  * We basically restore WINDOWBASE and WINDOWSTART to the condition when
+  * we entered the spill routine and jump to the user exception handler.
+  *
++ * Note that we only need to restore the bits in windowstart that have not
++ * been spilled yet by the _spill_register routine. Luckily, a3 contains a
++ * rotated windowstart with only those bits set for frames that haven't been
++ * spilled yet. Because a3 is rotated such that bit 0 represents the register
++ * frame for the current windowbase - 1, we need to rotate a3 left by the
++ * value of the current windowbase + 1 and move it to windowstart.
++ *
+  * a0: value of depc, original value in depc
+  * a2: trashed, original value in EXC_TABLE_DOUBLE_SAVE
+  * a3: exctable, original value in excsave1
+@@ -1131,10 +1138,15 @@ ENTRY(fast_syscall_spill_registers_fixup
+ 	/* We need to make sure the current registers (a0-a3) are preserved.
+ 	 * To do this, we simply set the bit for the current window frame
+ 	 * in WS, so that the exception handlers save them to the task stack.
++	 *
++	 * Note: we use a3 to set the windowbase, so we take a special care
++	 * of it, saving it in the original _spill_registers frame across
++	 * the exception handler call.
+ 	 */
+ 
+ 	xsr	a3, excsave1	# get spill-mask
+ 	slli	a3, a3, 1	# shift left by one
++	addi	a3, a3, 1	# set the bit for the current window frame
+ 
+ 	slli	a2, a3, 32-WSBITS
+ 	src	a2, a3, a2	# a2 = xxwww1yyxxxwww1yy......
 
 
