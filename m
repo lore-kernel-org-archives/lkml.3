@@ -1,69 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758026AbaCDUnR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:43:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41401 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756929AbaCDUEf (ORCPT
+	id S1758150AbaCDUng (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:43:36 -0500
+Received: from www.linutronix.de ([62.245.132.108]:36901 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758076AbaCDUnd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:04:35 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hannes Reinecke <hare@suse.de>, Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.13 162/172] dm mpath: fix stalls when handling invalid ioctls
-Date: Tue,  4 Mar 2014 12:04:06 -0800
-Message-Id: <20140304200304.890494319@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
-References: <20140304200259.626667112@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Tue, 4 Mar 2014 15:43:33 -0500
+Message-Id: <20140304203101.088889302@linutronix.de>
+User-Agent: quilt/0.60-1
+Date: Tue, 04 Mar 2014 20:43:41 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [patch 5/5] irqchip: armanda: Sanitize set_irq_affinity()
+References: <20140304202425.102779779@linutronix.de>
+Content-Disposition: inline;
+ filename=irqchip-armanda-sanitize-irq-affinity-logic.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+The set_irq_affinity() function has two issues:
 
-------------------
+1) It has no protection against selecting an offline cpu from the
+   given mask.
 
-From: Hannes Reinecke <hare@suse.de>
+2) It pointlessly restricts the affinity masks to have a single cpu
+   set. This collides with the irq migration code of arm.
 
-commit a1989b330093578ea5470bea0a00f940c444c466 upstream.
+   irq affinity is set to core 3
+   core 3 goes offline
 
-An invalid ioctl will never be valid, irrespective of whether multipath
-has active paths or not.  So for invalid ioctls we do not have to wait
-for multipath to activate any paths, but can rather return an error
-code immediately.  This fix resolves numerous instances of:
+   migration code sets mask to cpu_online_mask and calls the
+   irq_set_affinity() callback of the irq_chip which fails due to bit
+   0,1,2 set.
 
- udevd[]: worker [] unexpectedly returned with status 0x0100
+So instead of doing silly for_each_cpu() loops just pick any bit of
+the mask which intersects with the online mask.
 
-that have been seen during testing.
+The read back of the routing register is pointless as well. We can
+simply write the new mask as the bits in this register reflect one
+core.
 
-Signed-off-by: Hannes Reinecke <hare@suse.de>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Get rid of fiddling with the default_irq_affinity as well.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Jason Cooper <jason@lakedaemon.net>
 
 ---
- drivers/md/dm-mpath.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/irqchip/irq-armada-370-xp.c |   38 ++++--------------------------------
+ 1 file changed, 5 insertions(+), 33 deletions(-)
 
---- a/drivers/md/dm-mpath.c
-+++ b/drivers/md/dm-mpath.c
-@@ -1626,8 +1626,11 @@ static int multipath_ioctl(struct dm_tar
- 	/*
- 	 * Only pass ioctls through if the device sizes match exactly.
- 	 */
--	if (!r && ti->len != i_size_read(bdev->bd_inode) >> SECTOR_SHIFT)
--		r = scsi_verify_blk_ioctl(NULL, cmd);
-+	if (!bdev || ti->len != i_size_read(bdev->bd_inode) >> SECTOR_SHIFT) {
-+		int err = scsi_verify_blk_ioctl(NULL, cmd);
-+		if (err)
-+			r = err;
-+	}
+Index: tip/drivers/irqchip/irq-armada-370-xp.c
+===================================================================
+--- tip.orig/drivers/irqchip/irq-armada-370-xp.c
++++ tip/drivers/irqchip/irq-armada-370-xp.c
+@@ -244,35 +244,16 @@ static DEFINE_RAW_SPINLOCK(irq_controlle
+ static int armada_xp_set_affinity(struct irq_data *d,
+ 				  const struct cpumask *mask_val, bool force)
+ {
+-	unsigned long reg;
+-	unsigned long new_mask = 0;
+-	unsigned long online_mask = 0;
+-	unsigned long count = 0;
+ 	irq_hw_number_t hwirq = irqd_to_hwirq(d);
++	unsigned long mask;
+ 	int cpu;
  
- 	if (r == -ENOTCONN && !fatal_signal_pending(current))
- 		queue_work(kmultipathd, &m->process_queued_ios);
+-	for_each_cpu(cpu, mask_val) {
+-		new_mask |= 1 << cpu_logical_map(cpu);
+-		count++;
+-	}
+-
+-	/*
+-	 * Forbid mutlicore interrupt affinity
+-	 * This is required since the MPIC HW doesn't limit
+-	 * several CPUs from acknowledging the same interrupt.
+-	 */
+-	if (count > 1)
+-		return -EINVAL;
+-
+-	for_each_cpu(cpu, cpu_online_mask)
+-		online_mask |= 1 << cpu_logical_map(cpu);
++	/* Select a single core from the affinity mask which is online */
++	cpu = cpumask_any_and(mask_val, cpu_online_mask);
++	mask = 1UL << cpu_logical_map(cpu);
+ 
+ 	raw_spin_lock(&irq_controller_lock);
+-
+-	reg = readl(main_int_base + ARMADA_370_XP_INT_SOURCE_CTL(hwirq));
+-	reg = (reg & (~online_mask)) | new_mask;
+-	writel(reg, main_int_base + ARMADA_370_XP_INT_SOURCE_CTL(hwirq));
+-
++	writel(mask, main_int_base + ARMADA_370_XP_INT_SOURCE_CTL(hwirq));
+ 	raw_spin_unlock(&irq_controller_lock);
+ 
+ 	return 0;
+@@ -494,15 +475,6 @@ static int __init armada_370_xp_mpic_of_
+ 
+ #ifdef CONFIG_SMP
+ 	armada_xp_mpic_smp_cpu_init();
+-
+-	/*
+-	 * Set the default affinity from all CPUs to the boot cpu.
+-	 * This is required since the MPIC doesn't limit several CPUs
+-	 * from acknowledging the same interrupt.
+-	 */
+-	cpumask_clear(irq_default_affinity);
+-	cpumask_set_cpu(smp_processor_id(), irq_default_affinity);
+-
+ #endif
+ 
+ 	armada_370_xp_msi_init(node, main_int_res.start);
 
 
