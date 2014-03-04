@@ -1,74 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757938AbaCDWeS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 17:34:18 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:53788 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757874AbaCDWd3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 17:33:29 -0500
+	id S1757969AbaCDWez (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 17:34:55 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:45989 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757395AbaCDWdX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 17:33:23 -0500
 X-IronPort-AV: E=Sophos;i="4.97,588,1389744000"; 
-   d="scan'208";a="108145555"
+   d="scan'208";a="106598862"
 From: Zoltan Kiss <zoltan.kiss@citrix.com>
 To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
         <xen-devel@lists.xenproject.org>
 CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <jonathan.davies@citrix.com>, Zoltan Kiss <zoltan.kiss@citrix.com>
-Subject: [PATCH net-next v6 8/10] xen-netback: Add stat counters for frag_list skbs
-Date: Tue, 4 Mar 2014 22:32:19 +0000
-Message-ID: <1393972341-21135-9-git-send-email-zoltan.kiss@citrix.com>
+Subject: [PATCH net-next v6 6/10] xen-netback: Add stat counters for zerocopy
+Date: Tue, 4 Mar 2014 22:32:17 +0000
+Message-ID: <1393972341-21135-7-git-send-email-zoltan.kiss@citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1393972341-21135-1-git-send-email-zoltan.kiss@citrix.com>
 References: <1393972341-21135-1-git-send-email-zoltan.kiss@citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These counters help determine how often the guest sends a packet with more
-than MAX_SKB_FRAGS frags.
+These counters help determine how often the buffers had to be copied. Also
+they help find out if packets are leaked, as if "sent != success + fail",
+there are probably packets never freed up properly.
 
 NOTE: if bisect brought you here, you should apply the series up until #9,
-otherwise malicious guests can block other guests by not releasing their sent
-packets.
+otherwise Windows guests can't work properly and malicious guests can block
+other guests by not releasing their sent packets.
 
 Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
 ---
- drivers/net/xen-netback/common.h    |    1 +
- drivers/net/xen-netback/interface.c |    7 +++++++
- drivers/net/xen-netback/netback.c   |    1 +
- 3 files changed, 9 insertions(+)
+ drivers/net/xen-netback/common.h    |    3 +++
+ drivers/net/xen-netback/interface.c |   15 +++++++++++++++
+ drivers/net/xen-netback/netback.c   |    9 ++++++++-
+ 3 files changed, 26 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
-index eac171e..d8a2298 100644
+index 79ba456..eac171e 100644
 --- a/drivers/net/xen-netback/common.h
 +++ b/drivers/net/xen-netback/common.h
-@@ -170,6 +170,7 @@ struct xenvif {
- 	unsigned long tx_zerocopy_sent;
- 	unsigned long tx_zerocopy_success;
- 	unsigned long tx_zerocopy_fail;
-+	unsigned long tx_frag_overflow;
+@@ -167,6 +167,9 @@ struct xenvif {
+ 
+ 	/* Statistics */
+ 	unsigned long rx_gso_checksum_fixup;
++	unsigned long tx_zerocopy_sent;
++	unsigned long tx_zerocopy_success;
++	unsigned long tx_zerocopy_fail;
  
  	/* Miscellaneous private stuff. */
  	struct net_device *dev;
 diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
-index adfed30..ba5be2f 100644
+index 408ab57..adfed30 100644
 --- a/drivers/net/xen-netback/interface.c
 +++ b/drivers/net/xen-netback/interface.c
-@@ -252,6 +252,13 @@ static const struct xenvif_stat {
- 		"tx_zerocopy_fail",
- 		offsetof(struct xenvif, tx_zerocopy_fail)
+@@ -237,6 +237,21 @@ static const struct xenvif_stat {
+ 		"rx_gso_checksum_fixup",
+ 		offsetof(struct xenvif, rx_gso_checksum_fixup)
  	},
-+	/* Number of packets exceeding MAX_SKB_FRAG slots. You should use
-+	 * a guest with the same MAX_SKB_FRAG
++	/* If (sent != success + fail), there are probably packets never
++	 * freed up properly!
 +	 */
 +	{
-+		"tx_frag_overflow",
-+		offsetof(struct xenvif, tx_frag_overflow)
++		"tx_zerocopy_sent",
++		offsetof(struct xenvif, tx_zerocopy_sent),
++	},
++	{
++		"tx_zerocopy_success",
++		offsetof(struct xenvif, tx_zerocopy_success),
++	},
++	{
++		"tx_zerocopy_fail",
++		offsetof(struct xenvif, tx_zerocopy_fail)
 +	},
  };
  
  static int xenvif_get_sset_count(struct net_device *dev, int string_set)
-
+diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+index bc91965..44e6988 100644
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -1554,8 +1554,10 @@ static int xenvif_tx_submit(struct xenvif *vif)
+ 		 * do a skb_copy_ubufs while we are still in control of the
+ 		 * skb. E.g. the __pskb_pull_tail earlier can do such thing.
+ 		 */
+-		if (skb_shinfo(skb)->destructor_arg)
++		if (skb_shinfo(skb)->destructor_arg) {
+ 			skb_shinfo(skb)->tx_flags |= SKBTX_DEV_ZEROCOPY;
++			vif->tx_zerocopy_sent++;
++		}
+ 
+ 		netif_receive_skb(skb);
+ 	}
+@@ -1595,6 +1597,11 @@ void xenvif_zerocopy_callback(struct ubuf_info *ubuf, bool zerocopy_success)
+ 		napi_schedule(&vif->napi);
+ 		local_bh_enable();
+ 	}
++
++	if (likely(zerocopy_success))
++		vif->tx_zerocopy_success++;
++	else
++		vif->tx_zerocopy_fail++;
+ }
+ 
+ static inline void xenvif_tx_dealloc_action(struct xenvif *vif)
