@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755275AbaCDSe6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 13:34:58 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:54981 "EHLO
+	id S1755455AbaCDSfy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 13:35:54 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:54987 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755215AbaCDSez (ORCPT
+	with ESMTP id S1755214AbaCDSez (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Mar 2014 13:34:55 -0500
 From: Stephen Boyd <sboyd@codeaurora.org>
@@ -12,9 +12,9 @@ To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
         Josh Cartwright <joshc@codeaurora.org>, linux-input@vger.kernel.org
-Subject: [PATCH v5 5/9] Input: pmic8xxx-pwrkey - Migrate to DT
-Date: Tue,  4 Mar 2014 10:34:44 -0800
-Message-Id: <1393958088-1456-6-git-send-email-sboyd@codeaurora.org>
+Subject: [PATCH v5 4/9] Input: pmic8xxx-keypad - Migrate to DT
+Date: Tue,  4 Mar 2014 10:34:43 -0800
+Message-Id: <1393958088-1456-5-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
 In-Reply-To: <1393958088-1456-1-git-send-email-sboyd@codeaurora.org>
 References: <1393958088-1456-1-git-send-email-sboyd@codeaurora.org>
@@ -27,108 +27,339 @@ driver to DT so that it can probe properly.
 
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- drivers/input/misc/pmic8xxx-pwrkey.c  | 33 ++++++++++++++++++++-------------
- include/linux/input/pmic8xxx-pwrkey.h | 31 -------------------------------
- 2 files changed, 20 insertions(+), 44 deletions(-)
- delete mode 100644 include/linux/input/pmic8xxx-pwrkey.h
+ drivers/input/keyboard/pmic8xxx-keypad.c | 150 ++++++++++++++++++-------------
+ include/linux/input/pmic8xxx-keypad.h    |  52 -----------
+ 2 files changed, 86 insertions(+), 116 deletions(-)
+ delete mode 100644 include/linux/input/pmic8xxx-keypad.h
 
-diff --git a/drivers/input/misc/pmic8xxx-pwrkey.c b/drivers/input/misc/pmic8xxx-pwrkey.c
-index 0e1a05f95858..99a3587ff49f 100644
---- a/drivers/input/misc/pmic8xxx-pwrkey.c
-+++ b/drivers/input/misc/pmic8xxx-pwrkey.c
-@@ -19,8 +19,7 @@
- #include <linux/platform_device.h>
+diff --git a/drivers/input/keyboard/pmic8xxx-keypad.c b/drivers/input/keyboard/pmic8xxx-keypad.c
+index 0efd11e16b7e..6ee813acc34d 100644
+--- a/drivers/input/keyboard/pmic8xxx-keypad.c
++++ b/drivers/input/keyboard/pmic8xxx-keypad.c
+@@ -20,8 +20,8 @@
+ #include <linux/delay.h>
+ #include <linux/mutex.h>
  #include <linux/regmap.h>
- #include <linux/log2.h>
 -
--#include <linux/input/pmic8xxx-pwrkey.h>
+-#include <linux/input/pmic8xxx-keypad.h>
 +#include <linux/of.h>
++#include <linux/input/matrix_keypad.h>
  
- #define PON_CNTL_1 0x1C
- #define PON_CNTL_PULL_UP BIT(7)
-@@ -79,6 +78,13 @@ static int pmic8xxx_pwrkey_resume(struct device *dev)
- static SIMPLE_DEV_PM_OPS(pm8xxx_pwr_key_pm_ops,
- 		pmic8xxx_pwrkey_suspend, pmic8xxx_pwrkey_resume);
+ #define PM8XXX_MAX_ROWS		18
+ #define PM8XXX_MAX_COLS		8
+@@ -84,7 +84,8 @@
  
-+static const struct of_device_id pm8xxx_pwr_key_id_table[] = {
-+	{ .compatible = "qcom,pm8058-pwrkey" },
-+	{ .compatible = "qcom,pm8921-pwrkey" },
+ /**
+  * struct pmic8xxx_kp - internal keypad data structure
+- * @pdata - keypad platform data pointer
++ * @num_cols - number of columns of keypad
++ * @num_rows - number of row of keypad
+  * @input - input device pointer for keypad
+  * @regmap - regmap handle
+  * @key_sense_irq - key press/release irq number
+@@ -96,7 +97,8 @@
+  * @ctrl_reg - control register value
+  */
+ struct pmic8xxx_kp {
+-	const struct pm8xxx_keypad_platform_data *pdata;
++	unsigned int num_rows;
++	unsigned int num_cols;
+ 	struct input_dev *input;
+ 	struct regmap *regmap;
+ 	int key_sense_irq;
+@@ -115,9 +117,9 @@ static u8 pmic8xxx_col_state(struct pmic8xxx_kp *kp, u8 col)
+ {
+ 	/* all keys pressed on that particular row? */
+ 	if (col == 0x00)
+-		return 1 << kp->pdata->num_cols;
++		return 1 << kp->num_cols;
+ 	else
+-		return col & ((1 << kp->pdata->num_cols) - 1);
++		return col & ((1 << kp->num_cols) - 1);
+ }
+ 
+ /*
+@@ -180,10 +182,10 @@ static int pmic8xxx_kp_read_matrix(struct pmic8xxx_kp *kp, u16 *new_state,
+ 	int rc, read_rows;
+ 	unsigned int scan_val;
+ 
+-	if (kp->pdata->num_rows < PM8XXX_MIN_ROWS)
++	if (kp->num_rows < PM8XXX_MIN_ROWS)
+ 		read_rows = PM8XXX_MIN_ROWS;
+ 	else
+-		read_rows = kp->pdata->num_rows;
++		read_rows = kp->num_rows;
+ 
+ 	pmic8xxx_chk_sync_read(kp);
+ 
+@@ -227,13 +229,13 @@ static void __pmic8xxx_kp_scan_matrix(struct pmic8xxx_kp *kp, u16 *new_state,
+ {
+ 	int row, col, code;
+ 
+-	for (row = 0; row < kp->pdata->num_rows; row++) {
++	for (row = 0; row < kp->num_rows; row++) {
+ 		int bits_changed = new_state[row] ^ old_state[row];
+ 
+ 		if (!bits_changed)
+ 			continue;
+ 
+-		for (col = 0; col < kp->pdata->num_cols; col++) {
++		for (col = 0; col < kp->num_cols; col++) {
+ 			if (!(bits_changed & (1 << col)))
+ 				continue;
+ 
+@@ -259,9 +261,9 @@ static bool pmic8xxx_detect_ghost_keys(struct pmic8xxx_kp *kp, u16 *new_state)
+ 	u16 check, row_state;
+ 
+ 	check = 0;
+-	for (row = 0; row < kp->pdata->num_rows; row++) {
++	for (row = 0; row < kp->num_rows; row++) {
+ 		row_state = (~new_state[row]) &
+-				 ((1 << kp->pdata->num_cols) - 1);
++				 ((1 << kp->num_cols) - 1);
+ 
+ 		if (hweight16(row_state) > 1) {
+ 			if (found_first == -1)
+@@ -369,8 +371,13 @@ static irqreturn_t pmic8xxx_kp_irq(int irq, void *data)
+ 	return IRQ_HANDLED;
+ }
+ 
+-static int pmic8xxx_kpd_init(struct pmic8xxx_kp *kp)
++static int pmic8xxx_kpd_init(struct pmic8xxx_kp *kp,
++			     struct platform_device *pdev)
+ {
++	const struct device_node *of_node = pdev->dev.of_node;
++	unsigned int scan_delay_ms;
++	unsigned int row_hold_ns;
++	unsigned int debounce_ms;
+ 	int bits, rc, cycles;
+ 	u8 scan_val = 0, ctrl_val = 0;
+ 	static const u8 row_bits[] = {
+@@ -378,18 +385,18 @@ static int pmic8xxx_kpd_init(struct pmic8xxx_kp *kp)
+ 	};
+ 
+ 	/* Find column bits */
+-	if (kp->pdata->num_cols < KEYP_CTRL_SCAN_COLS_MIN)
++	if (kp->num_cols < KEYP_CTRL_SCAN_COLS_MIN)
+ 		bits = 0;
+ 	else
+-		bits = kp->pdata->num_cols - KEYP_CTRL_SCAN_COLS_MIN;
++		bits = kp->num_cols - KEYP_CTRL_SCAN_COLS_MIN;
+ 	ctrl_val = (bits & KEYP_CTRL_SCAN_COLS_BITS) <<
+ 		KEYP_CTRL_SCAN_COLS_SHIFT;
+ 
+ 	/* Find row bits */
+-	if (kp->pdata->num_rows < KEYP_CTRL_SCAN_ROWS_MIN)
++	if (kp->num_rows < KEYP_CTRL_SCAN_ROWS_MIN)
+ 		bits = 0;
+ 	else
+-		bits = row_bits[kp->pdata->num_rows - KEYP_CTRL_SCAN_ROWS_MIN];
++		bits = row_bits[kp->num_rows - KEYP_CTRL_SCAN_ROWS_MIN];
+ 
+ 	ctrl_val |= (bits << KEYP_CTRL_SCAN_ROWS_SHIFT);
+ 
+@@ -399,15 +406,44 @@ static int pmic8xxx_kpd_init(struct pmic8xxx_kp *kp)
+ 		return rc;
+ 	}
+ 
+-	bits = (kp->pdata->debounce_ms / 5) - 1;
++	if (of_property_read_u32(of_node, "scan-delay", &scan_delay_ms))
++		scan_delay_ms = MIN_SCAN_DELAY;
++
++	if (scan_delay_ms > MAX_SCAN_DELAY || scan_delay_ms < MIN_SCAN_DELAY ||
++		!is_power_of_2(scan_delay_ms)) {
++		dev_err(&pdev->dev, "invalid keypad scan time supplied\n");
++		return -EINVAL;
++	}
++
++	if (of_property_read_u32(of_node, "row-hold", &row_hold_ns))
++		row_hold_ns = MIN_ROW_HOLD_DELAY;
++
++	if (row_hold_ns > MAX_ROW_HOLD_DELAY ||
++		row_hold_ns < MIN_ROW_HOLD_DELAY ||
++		((row_hold_ns % MIN_ROW_HOLD_DELAY) != 0)) {
++		dev_err(&pdev->dev, "invalid keypad row hold time supplied\n");
++		return -EINVAL;
++	}
++
++	if (of_property_read_u32(of_node, "debounce", &debounce_ms))
++		debounce_ms = MIN_DEBOUNCE_TIME;
++
++	if (((debounce_ms % 5) != 0) ||
++		debounce_ms > MAX_DEBOUNCE_TIME ||
++		debounce_ms < MIN_DEBOUNCE_TIME) {
++		dev_err(&pdev->dev, "invalid debounce time supplied\n");
++		return -EINVAL;
++	}
++
++	bits = (debounce_ms / 5) - 1;
+ 
+ 	scan_val |= (bits << KEYP_SCAN_DBOUNCE_SHIFT);
+ 
+-	bits = fls(kp->pdata->scan_delay_ms) - 1;
++	bits = fls(scan_delay_ms) - 1;
+ 	scan_val |= (bits << KEYP_SCAN_PAUSE_SHIFT);
+ 
+ 	/* Row hold time is a multiple of 32KHz cycles. */
+-	cycles = (kp->pdata->row_hold_ns * KEYP_CLOCK_FREQ) / NSEC_PER_SEC;
++	cycles = (row_hold_ns * KEYP_CLOCK_FREQ) / NSEC_PER_SEC;
+ 
+ 	scan_val |= (cycles << KEYP_SCAN_ROW_HOLD_SHIFT);
+ 
+@@ -459,6 +495,13 @@ static void pmic8xxx_kp_close(struct input_dev *dev)
+ 	pmic8xxx_kp_disable(kp);
+ }
+ 
++static const struct of_device_id pm8xxx_match_table[] = {
++	{ .compatible = "qcom,pm8058-keypad" },
++	{ .compatible = "qcom,pm8921-keypad" },
 +	{ }
 +};
-+MODULE_DEVICE_TABLE(of, pm8xxx_pwr_key_id_table);
++MODULE_DEVICE_TABLE(of, pm8xxx_match_table);
 +
- static int pmic8xxx_pwrkey_probe(struct platform_device *pdev)
+ /*
+  * keypad controller should be initialized in the following sequence
+  * only, otherwise it might get into FSM stuck state.
+@@ -471,50 +514,27 @@ static void pmic8xxx_kp_close(struct input_dev *dev)
+  */
+ static int pmic8xxx_kp_probe(struct platform_device *pdev)
  {
- 	struct input_dev *pwr;
-@@ -89,15 +95,15 @@ static int pmic8xxx_pwrkey_probe(struct platform_device *pdev)
- 	unsigned int pon_cntl;
- 	struct regmap *regmap;
- 	struct pmic8xxx_pwrkey *pwrkey;
--	const struct pm8xxx_pwrkey_platform_data *pdata =
+-	const struct pm8xxx_keypad_platform_data *pdata =
 -					dev_get_platdata(&pdev->dev);
-+	u32 kpd_delay;
-+	bool pull_up;
+-	const struct matrix_keymap_data *keymap_data;
++	unsigned int rows, cols;
++	bool repeat;
++	bool wakeup;
+ 	struct pmic8xxx_kp *kp;
+ 	int rc;
+ 	unsigned int ctrl_val;
  
--	if (!pdata) {
--		dev_err(&pdev->dev, "power key platform data not supplied\n");
+-	if (!pdata || !pdata->num_cols || !pdata->num_rows ||
+-		pdata->num_cols > PM8XXX_MAX_COLS ||
+-		pdata->num_rows > PM8XXX_MAX_ROWS ||
+-		pdata->num_cols < PM8XXX_MIN_COLS) {
+-		dev_err(&pdev->dev, "invalid platform data\n");
 -		return -EINVAL;
 -	}
-+	if (of_property_read_u32(pdev->dev.of_node, "debounce", &kpd_delay))
-+		kpd_delay = 0;
-+
-+	pull_up = of_property_read_bool(pdev->dev.of_node, "pull-up");
+-
+-	if (!pdata->scan_delay_ms ||
+-		pdata->scan_delay_ms > MAX_SCAN_DELAY ||
+-		pdata->scan_delay_ms < MIN_SCAN_DELAY ||
+-		!is_power_of_2(pdata->scan_delay_ms)) {
+-		dev_err(&pdev->dev, "invalid keypad scan time supplied\n");
+-		return -EINVAL;
+-	}
+-
+-	if (!pdata->row_hold_ns ||
+-		pdata->row_hold_ns > MAX_ROW_HOLD_DELAY ||
+-		pdata->row_hold_ns < MIN_ROW_HOLD_DELAY ||
+-		((pdata->row_hold_ns % MIN_ROW_HOLD_DELAY) != 0)) {
+-		dev_err(&pdev->dev, "invalid keypad row hold time supplied\n");
+-		return -EINVAL;
+-	}
++	rc = matrix_keypad_parse_of_params(&pdev->dev, &rows, &cols);
++	if (rc)
++		return rc;
  
--	if (pdata->kpd_trigger_delay_us > 62500) {
-+	if (kpd_delay > 62500) {
- 		dev_err(&pdev->dev, "invalid power key trigger delay\n");
+-	if (!pdata->debounce_ms ||
+-		((pdata->debounce_ms % 5) != 0) ||
+-		pdata->debounce_ms > MAX_DEBOUNCE_TIME ||
+-		pdata->debounce_ms < MIN_DEBOUNCE_TIME) {
+-		dev_err(&pdev->dev, "invalid debounce time supplied\n");
++	if (cols > PM8XXX_MAX_COLS || rows > PM8XXX_MAX_ROWS ||
++		cols < PM8XXX_MIN_COLS) {
++		dev_err(&pdev->dev, "invalid platform data\n");
  		return -EINVAL;
  	}
-@@ -125,7 +131,7 @@ static int pmic8xxx_pwrkey_probe(struct platform_device *pdev)
- 	pwr->name = "pmic8xxx_pwrkey";
- 	pwr->phys = "pmic8xxx_pwrkey/input0";
  
--	delay = (pdata->kpd_trigger_delay_us << 10) / USEC_PER_SEC;
-+	delay = (kpd_delay << 10) / USEC_PER_SEC;
- 	delay = 1 + ilog2(delay);
+-	keymap_data = pdata->keymap_data;
+-	if (!keymap_data) {
+-		dev_err(&pdev->dev, "no keymap data supplied\n");
+-		return -EINVAL;
+-	}
++	repeat = !of_property_read_bool(pdev->dev.of_node,
++					"linux,input-no-autorepeat");
++	wakeup = of_property_read_bool(pdev->dev.of_node,
++					"linux,keypad-wakeup");
  
- 	err = regmap_read(regmap, PON_CNTL_1, &pon_cntl);
-@@ -136,7 +142,7 @@ static int pmic8xxx_pwrkey_probe(struct platform_device *pdev)
+ 	kp = devm_kzalloc(&pdev->dev, sizeof(*kp), GFP_KERNEL);
+ 	if (!kp)
+@@ -526,7 +546,8 @@ static int pmic8xxx_kp_probe(struct platform_device *pdev)
  
- 	pon_cntl &= ~PON_CNTL_TRIG_DELAY_MASK;
- 	pon_cntl |= (delay & PON_CNTL_TRIG_DELAY_MASK);
--	if (pdata->pull_up)
-+	if (pull_up)
- 		pon_cntl |= PON_CNTL_PULL_UP;
- 	else
- 		pon_cntl &= ~PON_CNTL_PULL_UP;
-@@ -172,7 +178,7 @@ static int pmic8xxx_pwrkey_probe(struct platform_device *pdev)
+ 	platform_set_drvdata(pdev, kp);
+ 
+-	kp->pdata	= pdata;
++	kp->num_rows	= rows;
++	kp->num_cols	= cols;
+ 	kp->dev		= &pdev->dev;
+ 
+ 	kp->input = devm_input_allocate_device(&pdev->dev);
+@@ -547,8 +568,8 @@ static int pmic8xxx_kp_probe(struct platform_device *pdev)
+ 		return kp->key_stuck_irq;
  	}
  
- 	platform_set_drvdata(pdev, pwrkey);
+-	kp->input->name = pdata->input_name ? : "PMIC8XXX keypad";
+-	kp->input->phys = pdata->input_phys_device ? : "pmic8xxx_keypad/input0";
++	kp->input->name = "PMIC8XXX keypad";
++	kp->input->phys = "pmic8xxx_keypad/input0";
+ 
+ 	kp->input->id.bustype	= BUS_I2C;
+ 	kp->input->id.version	= 0x0001;
+@@ -558,7 +579,7 @@ static int pmic8xxx_kp_probe(struct platform_device *pdev)
+ 	kp->input->open		= pmic8xxx_kp_open;
+ 	kp->input->close	= pmic8xxx_kp_close;
+ 
+-	rc = matrix_keypad_build_keymap(keymap_data, NULL,
++	rc = matrix_keypad_build_keymap(NULL, NULL,
+ 					PM8XXX_MAX_ROWS, PM8XXX_MAX_COLS,
+ 					kp->keycodes, kp->input);
+ 	if (rc) {
+@@ -566,7 +587,7 @@ static int pmic8xxx_kp_probe(struct platform_device *pdev)
+ 		return rc;
+ 	}
+ 
+-	if (pdata->rep)
++	if (repeat)
+ 		__set_bit(EV_REP, kp->input->evbit);
+ 	input_set_capability(kp->input, EV_MSC, MSC_SCAN);
+ 
+@@ -576,7 +597,7 @@ static int pmic8xxx_kp_probe(struct platform_device *pdev)
+ 	memset(kp->keystate, 0xff, sizeof(kp->keystate));
+ 	memset(kp->stuckstate, 0xff, sizeof(kp->stuckstate));
+ 
+-	rc = pmic8xxx_kpd_init(kp);
++	rc = pmic8xxx_kpd_init(kp, pdev);
+ 	if (rc < 0) {
+ 		dev_err(&pdev->dev, "unable to initialize keypad controller\n");
+ 		return rc;
+@@ -612,7 +633,7 @@ static int pmic8xxx_kp_probe(struct platform_device *pdev)
+ 		return rc;
+ 	}
+ 
 -	device_init_wakeup(&pdev->dev, pdata->wakeup);
-+	device_init_wakeup(&pdev->dev, 1);
++	device_init_wakeup(&pdev->dev, wakeup);
  
  	return 0;
  }
-@@ -188,9 +194,10 @@ static struct platform_driver pmic8xxx_pwrkey_driver = {
- 	.probe		= pmic8xxx_pwrkey_probe,
- 	.remove		= pmic8xxx_pwrkey_remove,
+@@ -665,9 +686,10 @@ static SIMPLE_DEV_PM_OPS(pm8xxx_kp_pm_ops,
+ static struct platform_driver pmic8xxx_kp_driver = {
+ 	.probe		= pmic8xxx_kp_probe,
  	.driver		= {
--		.name	= PM8XXX_PWRKEY_DEV_NAME,
-+		.name	= "pm8xxx-pwrkey",
- 		.owner	= THIS_MODULE,
- 		.pm	= &pm8xxx_pwr_key_pm_ops,
-+		.of_match_table = pm8xxx_pwr_key_id_table,
+-		.name = PM8XXX_KEYPAD_DEV_NAME,
++		.name = "pm8xxx-keypad",
+ 		.owner = THIS_MODULE,
+ 		.pm = &pm8xxx_kp_pm_ops,
++		.of_match_table = pm8xxx_match_table,
  	},
  };
- module_platform_driver(pmic8xxx_pwrkey_driver);
-diff --git a/include/linux/input/pmic8xxx-pwrkey.h b/include/linux/input/pmic8xxx-pwrkey.h
+ module_platform_driver(pmic8xxx_kp_driver);
+diff --git a/include/linux/input/pmic8xxx-keypad.h b/include/linux/input/pmic8xxx-keypad.h
 deleted file mode 100644
-index 6d2974e57109..000000000000
---- a/include/linux/input/pmic8xxx-pwrkey.h
+index 5f1e2f9ad959..000000000000
+--- a/include/linux/input/pmic8xxx-keypad.h
 +++ /dev/null
-@@ -1,31 +0,0 @@
--/* Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
+@@ -1,52 +0,0 @@
+-/* Copyright (c) 2011, Code Aurora Forum. All rights reserved.
 - *
 - * This program is free software; you can redistribute it and/or modify
 - * it under the terms of the GNU General Public License version 2 and
@@ -140,25 +371,46 @@ index 6d2974e57109..000000000000
 - * GNU General Public License for more details.
 - */
 -
--#ifndef __PMIC8XXX_PWRKEY_H__
--#define __PMIC8XXX_PWRKEY_H__
+-#ifndef __PMIC8XXX_KEYPAD_H__
+-#define __PMIC8XXX_KEYPAD_H__
 -
--#define PM8XXX_PWRKEY_DEV_NAME "pm8xxx-pwrkey"
+-#include <linux/input/matrix_keypad.h>
+-
+-#define PM8XXX_KEYPAD_DEV_NAME     "pm8xxx-keypad"
 -
 -/**
-- * struct pm8xxx_pwrkey_platform_data - platform data for pwrkey driver
-- * @pull up:  power on register control for pull up/down configuration
-- * @kpd_trigger_delay_us: time delay for power key state change interrupt
-- *                  trigger.
-- * @wakeup: configure power key as wakeup source
+- * struct pm8xxx_keypad_platform_data - platform data for keypad
+- * @keymap_data - matrix keymap data
+- * @input_name - input device name
+- * @input_phys_device - input device name
+- * @num_cols - number of columns of keypad
+- * @num_rows - number of row of keypad
+- * @debounce_ms - debounce period in milliseconds
+- * @scan_delay_ms - scan delay in milliseconds
+- * @row_hold_ns - row hold period in nanoseconds
+- * @wakeup - configure keypad as wakeup
+- * @rep - enable or disable key repeat bit
 - */
--struct pm8xxx_pwrkey_platform_data  {
--	bool pull_up;
--	u32  kpd_trigger_delay_us;
--	u32  wakeup;
+-struct pm8xxx_keypad_platform_data {
+-	const struct matrix_keymap_data *keymap_data;
+-
+-	const char *input_name;
+-	const char *input_phys_device;
+-
+-	unsigned int num_cols;
+-	unsigned int num_rows;
+-	unsigned int rows_gpio_start;
+-	unsigned int cols_gpio_start;
+-
+-	unsigned int debounce_ms;
+-	unsigned int scan_delay_ms;
+-	unsigned int row_hold_ns;
+-
+-	bool wakeup;
+-	bool rep;
 -};
 -
--#endif /* __PMIC8XXX_PWRKEY_H__ */
+-#endif /*__PMIC8XXX_KEYPAD_H__ */
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
