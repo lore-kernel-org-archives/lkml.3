@@ -1,215 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757145AbaCDMVh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 07:21:37 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:36420 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756703AbaCDMVf (ORCPT
+	id S1757212AbaCDMfG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 07:35:06 -0500
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:46088 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756052AbaCDMfD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 07:21:35 -0500
-Message-ID: <5315C535.2070303@ti.com>
-Date: Tue, 4 Mar 2014 14:21:09 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 4 Mar 2014 07:35:03 -0500
 MIME-Version: 1.0
-To: Philipp Zabel <p.zabel@pengutronix.de>
-CC: Grant Likely <grant.likely@linaro.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v5 5/7] [media] of: move common endpoint parsing to drivers/of
-References: <1393522540-22887-1-git-send-email-p.zabel@pengutronix.de>	 <1393522540-22887-6-git-send-email-p.zabel@pengutronix.de>	 <531595AB.4000001@ti.com> <1393932989.3917.62.camel@paszta.hi.pengutronix.de>
-In-Reply-To: <1393932989.3917.62.camel@paszta.hi.pengutronix.de>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="IXxvtPJjNkm96PREqxo5baSKBmbogb4sQ"
+In-Reply-To: <CAMwGMjwtZVPVaENWqNODPqkM4jAAOsLPrz8_xzRBgGP6_-_usQ@mail.gmail.com>
+References: <71F7AD3B89A7BF1E126CB3B1@C9882B18C00BA04428877CD4>
+	<CAMwGMjwtZVPVaENWqNODPqkM4jAAOsLPrz8_xzRBgGP6_-_usQ@mail.gmail.com>
+Date: Tue, 4 Mar 2014 07:34:59 -0500
+X-Google-Sender-Auth: NfuRqShkemwMrFecsw2U0jgA6x8
+Message-ID: <CAMwGMjxO3eV1t9VrBbL3SecwOJPs2rESGS6VEH60tne4Dx8tVw@mail.gmail.com>
+Subject: Fwd: Ethernet controller not starting
+From: Jon Ringle <jon@ringle.org>
+To: Christian Riesch <christian.riesch@omicron.at>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rafael.j.wysocki@intel.com, netdev@vger.kernel.org,
+        davinci-linux-open-source@linux.davincidsp.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---IXxvtPJjNkm96PREqxo5baSKBmbogb4sQ
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
-
-On 04/03/14 13:36, Philipp Zabel wrote:
-> Hi Tomi,
->=20
-> Am Dienstag, den 04.03.2014, 10:58 +0200 schrieb Tomi Valkeinen:
-> [...]
->>> +int of_graph_parse_endpoint(const struct device_node *node,
->>> +			    struct of_endpoint *endpoint)
->>> +{
->>> +	struct device_node *port_node =3D of_get_parent(node);
+On Tue, Mar 4, 2014 at 4:06 AM, Christian Riesch
+<christian.riesch@omicron.at> wrote:
+> [cc'ed netdev and davinci-linux-open-source]
+>
+>
+> --On March 03, 2014 19:39 -0500 Jon Ringle <jon@ringle.org> wrote:
+>
+>> On Mon, Mar 3, 2014 at 6:43 PM, Rafael J. Wysocki <rjw@rjwysocki.net>
+>> wrote:
+>>>
+>>> On Monday, March 03, 2014 02:41:01 PM Jon Ringle wrote:
+>>>>
+>>>> I'm working on porting an ARM board from linux-3.10 to linux-3.12 (now
+>>>> the latest LTS kernel).
+>>>> I found that Ethernet controller on the board no longer comes up on
+>>>> linux-3.12. I was able to bisect the issue I'm having to the following
+>>>> commit:
+>>>>
+>>>> >   45f0a85c8258741d11bda25c0a5669c06267204a is the first bad commit
+>>>> >   commit 45f0a85c8258741d11bda25c0a5669c06267204a
+>>>> >   Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>>>> >   Date:   Mon Jun 3 21:49:52 2013 +0200
+>>>> >
+>>>> >       PM / Runtime: Rework the "runtime idle" helper routine
+>>>> >
+>>>> >       The "runtime idle" helper routine, rpm_idle(), currently ignores
+>>>> >       return values from .runtime_idle() callbacks executed by it.
+>>>> >       However, it turns out that many subsystems use
+>>>> >       pm_generic_runtime_idle() which checks the return value of the
+>>>> >       driver's callback and executes pm_runtime_suspend() for the
+>>>> >       device unless that value is not 0.  If that logic is moved to
+>>>> >       rpm_idle() instead, pm_generic_runtime_idle() can be dropped
+>>>> >       and its users will not need any .runtime_idle() callbacks any
+>>>> >       more.
+>>>> >
+>>>> >       Moreover, the PCI, SCSI, and SATA subsystems' .runtime_idle()
+>>>> >       routines, pci_pm_runtime_idle(), scsi_runtime_idle(), and
+>>>> >       ata_port_runtime_idle(), respectively, as well as a few drivers'
+>>>> >       ones may be simplified if rpm_idle() calls rpm_suspend() after
+>>>> >       0 has been returned by the .runtime_idle() callback executed by
+>>>> >       it.
+>>>> >
+>>>> >       To reduce overall code bloat, make the changes described above.
+>>>> >
+>>>> >       Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+>>>> >       Tested-by: Kevin Hilman <khilman@linaro.org>
+>>>> >       Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>>>> >       Acked-by: Kevin Hilman <khilman@linaro.org>
+>>>> >       Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
+>>>> >       Acked-by: Alan Stern <stern@rowland.harvard.edu>
+>>>>
+>>>> Can anyone offer any suggestions on what I should be looking for to
+>>>> fix this on my board?
+>>>
+>>>
+>>> Any pointers to the driver in question?
 >>
->> Can port_node be NULL? Probably only if something is quite wrong, but
->> maybe it's safer to return error in that case.
->=20
-> both of_property_read_u32 and of_node_put can handle port_node =3D=3D N=
-ULL.
-> I'll add a WARN_ONCE here as for of_graph_get_next_endpoint and continu=
-e
-> on.
-
-Isn't it better to return an error?
-
->> And generally speaking, if struct of_endpoint is needed, maybe it woul=
-d
->> be better to return the struct of_endpoint when iterating the ports an=
-d
->> endpoints. That way there's no need to do parsing "afterwards", trying=
-
->> to figure out if there's a parent port node, but the information is
->> already at hand.
->=20
-> I'd like to keep the iteration separate from parsing so we can
-> eventually introduce a for_each_endpoint_of_node helper macro around
-> of_graph_get_next_endpoint.
->=20
-> [...]
->> A few thoughts about the iteration, and the API in general.
 >>
->> In the omapdss version I separated iterating ports and endpoints, for
->> the two reasons:
+>> drivers/net/ethernet/ti/davinci_emac.c
 >>
->> 1) I think there are cases where you may want to have properties in th=
-e
->> port node, for things that are common for all the port's endpoints.
+>
+> Hi Jon,
+> I have successfully used the davinci_emac driver on a custom board with an
+> AM1808 SoC with Kernel 3.13 a few weeks ago. So at least 3.13 should work.
+> Did you try more recent kernel versions than 3.12?
+
+I have not tried 3.13, but will do so today. Could I get a copy of
+your .config for comparison purposes?
+
+>
+>
+>> I also get the following output:
 >>
->> 2) if there are multiple ports, I think the driver code is cleaner if
->> you first take the port, decide what port that is and maybe call a
->> sub-function, and then iterate the endpoints for that port only.
->=20
-> It depends a bit on whether you are actually iterating over individual
-> ports, or if you are just walking the whole endpoint graph to find
-> remote devices that have to be added to the component master's waiting
-> list, for example.
+>>          Starting Network Manager Wait Online...
+>> [   30.946509] davinci_mdio davinci_mdio.0: resetting idled controller
+>> [   30.953220] net net0: attached PHY driver [Generic PHY]
+>> (mii_bus:phy_addr=davinci_mdio-0:00, id=7c0f1)
+>> [   30.962938] IPv6: ADDRCONF(NETDEV_UP): net0: link is not ready
+>> [   31.082087] genirq: Flags mismatch irq 33. 00000000 (net0) vs.
+>> 00000000 (net0)
+>
+>
+> Is it correct that this warning can only appear in case of shared
+> interrupts? See kernel/irq/manage.c. Since we don't use shared interrupts
+> here: Are you sure your board configuration is correct with regard to emac
+> interrupts?
 
-True, but the latter is easily implemented using the separate
-port/endpoint iteration. So I see it as a more powerful API.
+I added some additional printk's and see that emac_dev_open() seems to
+get called again
+and it is trying to call devm_request_irq() again for irq resources
+(33-36) and fails when trying to get irq 33:
 
->> Both of those are possible with the API in the series, but not very cl=
-eanly.
->>
->> Also, if you just want to iterate the endpoints, it's easy to implemen=
-t
->> a helper using the separate port and endpoint iterations.
->=20
-> I started out to move an existing (albeit lightly used) API to a common=
-
-> place so others can use it and improve upon it, too. I'm happy to pile
-> on fixes directly in this series, but could we separate the improvement=
-
-> step from the move, for the bigger modifications?
-
-Yes, I understand that. What I wonder is that which is easier: make it a
-public API now, more or less as it was in v4l2, or make it a public API
-only when all the improvements we can think of have been made.
-
-So my fear is that the API is now made public, and you and others start
-to use it. But I can't use it, as I need things like separate
-port/endpoint iteration. I need to add those, which also means that I
-need to change all the users of the API, making the task more difficult
-than I'd like.
-
-However, this is more of "thinking out loud" than "I don't like the
-series". It's a good series =3D).
-
-> I had no immediate use for the port iteration, so I have taken no steps=
-
-> to add a function for this. I see no problem to add this later when
-> somebody needs it, or even rewrite of_graph_get_next_endpoint to use it=
-
-> if it is feasible. Iterating over endpoints on a given port needs no
-> helper, as you can just use for_each_child_of_node.
-
-I would have a helper, which should do some sanity checks, like that the
-node names are "endpoint".
-
->> Then, about the get_remote functions: I think there should be only one=
-
->> function for that purpose, one that returns the device node that
->> contains the remote endpoint.
->>
->> My reasoning is that the ports and endpoints, and their contents, shou=
-ld
->> be private to the device. So the only use to get the remote is to get
->> the actual device, to see if it's been probed, or maybe get some video=
-
->> API for that device.
->=20
-> of_graph_get_remote_port currently is used in the exynos4-is/fimc-is.c
-> v4l2 driver to get the mipi-csi channel id from the remote port, and
-> I've started using it in imx-drm-core.c for two cases:
-> - given an endpoint on the encoder, find the remote port connected to
->   it, get the associated drm_crtc, to obtain its the drm_crtc_mask
->   for encoder->possible_crtcs.
-> - given an encoder and a connected drm_crtc, walk all endpoints to find=
-
->   the remote port associated with the drm_crtc, and then use the local
->   endpoint parent port to determine multiplexer settings.
-
-Ok.
-
-In omapdss each driver handles only the ports and endpoints defined for
-its device, and they can be considered private to that device. The only
-reason to look for the remote endpoint is to find the remote device. To
-me the omapdss model makes sense, and feels logical and sane =3D). So I
-have to say I'm not really familiar with the model you're using.
-
-Of course, the different get_remove_* funcs do no harm, even if we have
-a bunch of them. My point was only about enforcing the correct use of
-the model, where "correct" is of course subjective =3D).
-
->> If the driver model used has some kind of master-driver, which goes
->> through all the display entities, I think the above is still valid. Wh=
-en
->> the master-driver follows the remote-link, it still needs to first get=
-
->> the main device node, as the ports and endpoints make no sense without=
-
->> the context of the main device node.
->=20
-> I'm not sure about this. I might just need the remote port node
-> associated with a remote drm_crtc or drm_encoder structure to find out
-> which local endpoint I should look at to retrieve configuration.
-
-Ok. I guess if you have a fixed model for the video pipeline elements it
-works out. For omapdss we don't know what's there on the remote side, as
-we can have arbitrary amount of video pipeline elements.
-
- Tomi
+         Starting Network Manager Wait Online...
+[   30.687505] emac_dev_open: trying to get irq 33
+[   30.692314] emac_dev_open: got irq 33
+[   30.696034] emac_dev_open: trying to get irq 34
+[   30.700750] emac_dev_open: got irq 34
+[   30.704469] emac_dev_open: trying to get irq 35
+[   30.709088] emac_dev_open: got irq 35
+[   30.712887] emac_dev_open: trying to get irq 36
+[   30.717542] emac_dev_open: got irq 36
+[   30.721507] davinci_mdio davinci_mdio.0: resetting idled controller
+[   30.728909] net net0: attached PHY driver [Generic PHY]
+(mii_bus:phy_addr=davinci_mdio-0:00, id=7c0f1)
+[   30.738614] IPv6: ADDRCONF(NETDEV_UP): net0: link is not ready
+[   30.847040] emac_dev_open: trying to get irq 33
+[   30.851809] genirq: Flags mismatch irq 33. 00000000 (net0) vs.
+00000000 (net0)
+[   30.859125] CPU: 0 PID: 677 Comm: NetworkManager Not tainted
+3.12.13-fs1-003-g5ae24fe-dirty+ #1234
+[   30.868261] [<c000d9c4>] (unwind_backtrace+0x0/0x128) from
+[<c000be14>] (show_stack+0x10/0x14)
+[   30.877020] [<c000be14>] (show_stack+0x10/0x14) from [<c0046970>]
+(__setup_irq+0x45c/0x4d4)
+[   30.885499] [<c0046970>] (__setup_irq+0x45c/0x4d4) from
+[<c0046b18>] (request_threaded_irq+0xa4/0x130)
+[   30.894935] [<c0046b18>] (request_threaded_irq+0xa4/0x130) from
+[<c00484e0>] (devm_request_threaded_irq+0x50/0x98)
+[   30.905414] [<c00484e0>] (devm_request_threaded_irq+0x50/0x98) from
+[<c02db4b4>] (emac_dev_open+0x3f4/0x4b8)
+[   30.915364] [<c02db4b4>] (emac_dev_open+0x3f4/0x4b8) from
+[<c0367b40>] (__dev_open+0xc0/0x130)
+[   30.924086] [<c0367b40>] (__dev_open+0xc0/0x130) from [<c0367dc4>]
+(__dev_change_flags+0x90/0x148)
+[   30.933154] [<c0367dc4>] (__dev_change_flags+0x90/0x148) from
+[<c0367f04>] (dev_change_flags+0x10/0x48)
+[   30.942679] [<c0367f04>] (dev_change_flags+0x10/0x48) from
+[<c0374510>] (do_setlink+0x2fc/0x838)
+[   30.951591] [<c0374510>] (do_setlink+0x2fc/0x838) from [<c0374dec>]
+(rtnl_newlink+0x2b4/0x458)
+[   30.960328] [<c0374dec>] (rtnl_newlink+0x2b4/0x458) from
+[<c03740b8>] (rtnetlink_rcv_msg+0x168/0x210)
+[   30.969692] [<c03740b8>] (rtnetlink_rcv_msg+0x168/0x210) from
+[<c037f50c>] (netlink_rcv_skb+0xac/0xc0)
+[   30.979130] [<c037f50c>] (netlink_rcv_skb+0xac/0xc0) from
+[<c0373f40>] (rtnetlink_rcv+0x1c/0x2c)
+[   30.988040] [<c0373f40>] (rtnetlink_rcv+0x1c/0x2c) from
+[<c037ee94>] (netlink_unicast+0x138/0x1e8)
+[   30.997122] [<c037ee94>] (netlink_unicast+0x138/0x1e8) from
+[<c037f2a4>] (netlink_sendmsg+0x2bc/0x37c)
+[   31.006552] [<c037f2a4>] (netlink_sendmsg+0x2bc/0x37c) from
+[<c0351f50>] (sock_sendmsg+0x84/0xa8)
+[   31.015546] [<c0351f50>] (sock_sendmsg+0x84/0xa8) from [<c035338c>]
+(___sys_sendmsg.part.35+0x268/0x278)
+[   31.025150] [<c035338c>] (___sys_sendmsg.part.35+0x268/0x278) from
+[<c03542e8>] (__sys_sendmsg+0x4c/0x7c)
+[   ) from [<c0009560>] (ret_fast_syscall+0x0/0x2c)
+[   31.043691] genirq: out_mask
+[   31.046723] genirq: out_thread
+[   31.049820] genirq: out_mput
+[   31.052825] net net0: DaVinci EMAC: devm_request_irq() failed
 
 
+> Is your configuration using device tree or not (my configuration
+> is a none-devicetree one)?
+No.
 
---IXxvtPJjNkm96PREqxo5baSKBmbogb4sQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+> I also wonder why your network device is net0, on
+> my board it's eth0, maybe this triggers some bug?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+I doubt that this is the source of the problem. The davinci_emac
+interface is initiatially eth1 (we have a 2nd ethernet
+port on board that initially is assigned eth0), I rename them eth1 ->
+net0 and eth0 -> net1.
+See http://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames/
 
-iQIcBAEBAgAGBQJTFcU1AAoJEPo9qoy8lh71R5AQAIUM/WUCv72o2BJb5tLUhrmz
-GmE+lHeqbBth/+sxcXR4sT/c5Rm6kZA5xROMLDbJErKU8dDFImTAUve0a1e7cl4f
-T7REBPw2bckd/KdJ3T9jmCsfKqN0TxmmGXQ9FQ/XqBXLhmU5ejDzzpBJ5pRnz+kx
-wzXcVOFvHGgOlPMy9As6a2mr86fYPhJmkU+HRD4uGA+AptP69PGGniLV5pr53Kq1
-K5UjXQbEHk64aRX0giRvL7o6QATFEF5EmI5on1hW//JQn9jZj1KDnFmwkuIgpi9r
-OWW/pLipfKs0VdfpnYWx/ZzqEz5Tn+mGK0h7bL2BxXcNlurmZ9JuEdCdVe/HxWV3
-xJcYIOMah5wJk9qFx6iIQJ8tq9f01UsgRzLfXzZa7mkFsXMjOXhVRTFd7cLVkgc2
-pluhPRed6FBPV8F8lPU17V0kC2+fpJiI60H+radPv9iwocR6wmeRIQlexriHLozd
-hvOgFj3Yhq2lUmS9tB6jwWKMAENlUJ43R8ahWIKVj9BkZrJnxszQ2gBvUkGEczQr
-A+zlOPVE9P+UoxFiEOCrt83W07WI/6PMtQrmWHetb3C2BjPRHczEeLDFHP5La9Ik
-1sa3J5/fUG9h7zojUiPNd5C1yLJFJ9wh1wYqgvxLxC6vvhn1muyHmd5Fj4NIDAEX
-24l/x4gwYR6E7emc3MLQ
-=YW3P
------END PGP SIGNATURE-----
-
---IXxvtPJjNkm96PREqxo5baSKBmbogb4sQ--
+Jon
