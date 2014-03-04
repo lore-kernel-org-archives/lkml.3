@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932995AbaCDVGs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:06:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41135 "EHLO
+	id S932779AbaCDVGp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:06:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41141 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756533AbaCDUDu (ORCPT
+	with ESMTP id S1756224AbaCDUDu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Mar 2014 15:03:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pierre Ossman <pierre@ossman.eu>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.13 110/172] cpufreq: powernow-k8: Initialize per-cpu data-structures properly
-Date: Tue,  4 Mar 2014 12:03:14 -0800
-Message-Id: <20140304200303.230401020@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>
+Subject: [PATCH 3.13 111/172] Revert "writeback: do not sync data dirtied after sync start"
+Date: Tue,  4 Mar 2014 12:03:15 -0800
+Message-Id: <20140304200303.259259989@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -31,78 +28,224 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+From: Jan Kara <jack@suse.cz>
 
-commit c3274763bfc3bf1ececa269ed6e6c4d7ec1c3e5e upstream.
+commit 0dc83bd30b0bf5410c0933cfbbf8853248eff0a9 upstream.
 
-The powernow-k8 driver maintains a per-cpu data-structure called
-powernow_data that is used to perform the frequency transitions.
-It initializes this data structure only for the policy->cpu. So,
-accesses to this data structure by other CPUs results in various
-problems because they would have been uninitialized.
+This reverts commit c4a391b53a72d2df4ee97f96f78c1d5971b47489. Dave
+Chinner <david@fromorbit.com> has reported the commit may cause some
+inodes to be left out from sync(2). This is because we can call
+redirty_tail() for some inode (which sets i_dirtied_when to current time)
+after sync(2) has started or similarly requeue_inode() can set
+i_dirtied_when to current time if writeback had to skip some pages. The
+real problem is in the functions clobbering i_dirtied_when but fixing
+that isn't trivial so revert is a safer choice for now.
 
-Specifically, if a cpu (!= policy->cpu) invokes the drivers' ->get()
-function, it returns 0 as the KHz value, since its per-cpu memory
-doesn't point to anything valid. This causes problems during
-suspend/resume since cpufreq_update_policy() tries to enforce this
-(0 KHz) as the current frequency of the CPU, and this madness gets
-propagated to adjust_jiffies() as well. Eventually, lots of things
-start breaking down, including the r8169 ethernet card, in one
-particularly interesting case reported by Pierre Ossman.
-
-Fix this by initializing the per-cpu data-structures of all the CPUs
-in the policy appropriately.
-
-References: https://bugzilla.kernel.org/show_bug.cgi?id=70311
-Reported-by: Pierre Ossman <pierre@ossman.eu>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/powernow-k8.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ fs/fs-writeback.c                |   33 +++++++++++----------------------
+ fs/sync.c                        |   15 ++++++---------
+ fs/xfs/xfs_super.c               |    2 +-
+ include/linux/writeback.h        |    2 +-
+ include/trace/events/writeback.h |    6 +++---
+ 5 files changed, 22 insertions(+), 36 deletions(-)
 
---- a/drivers/cpufreq/powernow-k8.c
-+++ b/drivers/cpufreq/powernow-k8.c
-@@ -1081,7 +1081,7 @@ static int powernowk8_cpu_init(struct cp
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -40,18 +40,13 @@
+ struct wb_writeback_work {
+ 	long nr_pages;
+ 	struct super_block *sb;
+-	/*
+-	 * Write only inodes dirtied before this time. Don't forget to set
+-	 * older_than_this_is_set when you set this.
+-	 */
+-	unsigned long older_than_this;
++	unsigned long *older_than_this;
+ 	enum writeback_sync_modes sync_mode;
+ 	unsigned int tagged_writepages:1;
+ 	unsigned int for_kupdate:1;
+ 	unsigned int range_cyclic:1;
+ 	unsigned int for_background:1;
+ 	unsigned int for_sync:1;	/* sync(2) WB_SYNC_ALL writeback */
+-	unsigned int older_than_this_is_set:1;
+ 	enum wb_reason reason;		/* why was writeback initiated? */
+ 
+ 	struct list_head list;		/* pending work list */
+@@ -252,10 +247,10 @@ static int move_expired_inodes(struct li
+ 	int do_sb_sort = 0;
+ 	int moved = 0;
+ 
+-	WARN_ON_ONCE(!work->older_than_this_is_set);
+ 	while (!list_empty(delaying_queue)) {
+ 		inode = wb_inode(delaying_queue->prev);
+-		if (inode_dirtied_after(inode, work->older_than_this))
++		if (work->older_than_this &&
++		    inode_dirtied_after(inode, *work->older_than_this))
+ 			break;
+ 		list_move(&inode->i_wb_list, &tmp);
+ 		moved++;
+@@ -742,8 +737,6 @@ static long writeback_inodes_wb(struct b
+ 		.sync_mode	= WB_SYNC_NONE,
+ 		.range_cyclic	= 1,
+ 		.reason		= reason,
+-		.older_than_this = jiffies,
+-		.older_than_this_is_set = 1,
+ 	};
+ 
+ 	spin_lock(&wb->list_lock);
+@@ -802,13 +795,12 @@ static long wb_writeback(struct bdi_writ
  {
- 	struct powernow_k8_data *data;
- 	struct init_on_cpu init_on_cpu;
--	int rc;
-+	int rc, cpu;
+ 	unsigned long wb_start = jiffies;
+ 	long nr_pages = work->nr_pages;
++	unsigned long oldest_jif;
+ 	struct inode *inode;
+ 	long progress;
  
- 	smp_call_function_single(pol->cpu, check_supported_cpu, &rc, 1);
- 	if (rc)
-@@ -1145,7 +1145,9 @@ static int powernowk8_cpu_init(struct cp
- 	pr_debug("cpu_init done, current fid 0x%x, vid 0x%x\n",
- 		 data->currfid, data->currvid);
+-	if (!work->older_than_this_is_set) {
+-		work->older_than_this = jiffies;
+-		work->older_than_this_is_set = 1;
+-	}
++	oldest_jif = jiffies;
++	work->older_than_this = &oldest_jif;
  
--	per_cpu(powernow_data, pol->cpu) = data;
-+	/* Point all the CPUs in this policy to the same data */
-+	for_each_cpu(cpu, pol->cpus)
-+		per_cpu(powernow_data, cpu) = data;
+ 	spin_lock(&wb->list_lock);
+ 	for (;;) {
+@@ -842,10 +834,10 @@ static long wb_writeback(struct bdi_writ
+ 		 * safe.
+ 		 */
+ 		if (work->for_kupdate) {
+-			work->older_than_this = jiffies -
++			oldest_jif = jiffies -
+ 				msecs_to_jiffies(dirty_expire_interval * 10);
+ 		} else if (work->for_background)
+-			work->older_than_this = jiffies;
++			oldest_jif = jiffies;
  
- 	return 0;
+ 		trace_writeback_start(wb->bdi, work);
+ 		if (list_empty(&wb->b_io))
+@@ -1357,21 +1349,18 @@ EXPORT_SYMBOL(try_to_writeback_inodes_sb
  
-@@ -1160,6 +1162,7 @@ err_out:
- static int powernowk8_cpu_exit(struct cpufreq_policy *pol)
+ /**
+  * sync_inodes_sb	-	sync sb inode pages
+- * @sb:			the superblock
+- * @older_than_this:	timestamp
++ * @sb: the superblock
+  *
+  * This function writes and waits on any dirty inode belonging to this
+- * superblock that has been dirtied before given timestamp.
++ * super_block.
+  */
+-void sync_inodes_sb(struct super_block *sb, unsigned long older_than_this)
++void sync_inodes_sb(struct super_block *sb)
  {
- 	struct powernow_k8_data *data = per_cpu(powernow_data, pol->cpu);
-+	int cpu;
+ 	DECLARE_COMPLETION_ONSTACK(done);
+ 	struct wb_writeback_work work = {
+ 		.sb		= sb,
+ 		.sync_mode	= WB_SYNC_ALL,
+ 		.nr_pages	= LONG_MAX,
+-		.older_than_this = older_than_this,
+-		.older_than_this_is_set = 1,
+ 		.range_cyclic	= 0,
+ 		.done		= &done,
+ 		.reason		= WB_REASON_SYNC,
+--- a/fs/sync.c
++++ b/fs/sync.c
+@@ -27,11 +27,10 @@
+  * wait == 1 case since in that case write_inode() functions do
+  * sync_dirty_buffer() and thus effectively write one block at a time.
+  */
+-static int __sync_filesystem(struct super_block *sb, int wait,
+-			     unsigned long start)
++static int __sync_filesystem(struct super_block *sb, int wait)
+ {
+ 	if (wait)
+-		sync_inodes_sb(sb, start);
++		sync_inodes_sb(sb);
+ 	else
+ 		writeback_inodes_sb(sb, WB_REASON_SYNC);
  
- 	if (!data)
- 		return -EINVAL;
-@@ -1170,7 +1173,8 @@ static int powernowk8_cpu_exit(struct cp
+@@ -48,7 +47,6 @@ static int __sync_filesystem(struct supe
+ int sync_filesystem(struct super_block *sb)
+ {
+ 	int ret;
+-	unsigned long start = jiffies;
  
- 	kfree(data->powernow_table);
- 	kfree(data);
--	per_cpu(powernow_data, pol->cpu) = NULL;
-+	for_each_cpu(cpu, pol->cpus)
-+		per_cpu(powernow_data, cpu) = NULL;
+ 	/*
+ 	 * We need to be protected against the filesystem going from
+@@ -62,17 +60,17 @@ int sync_filesystem(struct super_block *
+ 	if (sb->s_flags & MS_RDONLY)
+ 		return 0;
  
- 	return 0;
+-	ret = __sync_filesystem(sb, 0, start);
++	ret = __sync_filesystem(sb, 0);
+ 	if (ret < 0)
+ 		return ret;
+-	return __sync_filesystem(sb, 1, start);
++	return __sync_filesystem(sb, 1);
  }
+ EXPORT_SYMBOL_GPL(sync_filesystem);
+ 
+ static void sync_inodes_one_sb(struct super_block *sb, void *arg)
+ {
+ 	if (!(sb->s_flags & MS_RDONLY))
+-		sync_inodes_sb(sb, *((unsigned long *)arg));
++		sync_inodes_sb(sb);
+ }
+ 
+ static void sync_fs_one_sb(struct super_block *sb, void *arg)
+@@ -104,10 +102,9 @@ static void fdatawait_one_bdev(struct bl
+ SYSCALL_DEFINE0(sync)
+ {
+ 	int nowait = 0, wait = 1;
+-	unsigned long start = jiffies;
+ 
+ 	wakeup_flusher_threads(0, WB_REASON_SYNC);
+-	iterate_supers(sync_inodes_one_sb, &start);
++	iterate_supers(sync_inodes_one_sb, NULL);
+ 	iterate_supers(sync_fs_one_sb, &nowait);
+ 	iterate_supers(sync_fs_one_sb, &wait);
+ 	iterate_bdevs(fdatawrite_one_bdev, NULL);
+--- a/fs/xfs/xfs_super.c
++++ b/fs/xfs/xfs_super.c
+@@ -913,7 +913,7 @@ xfs_flush_inodes(
+ 	struct super_block	*sb = mp->m_super;
+ 
+ 	if (down_read_trylock(&sb->s_umount)) {
+-		sync_inodes_sb(sb, jiffies);
++		sync_inodes_sb(sb);
+ 		up_read(&sb->s_umount);
+ 	}
+ }
+--- a/include/linux/writeback.h
++++ b/include/linux/writeback.h
+@@ -97,7 +97,7 @@ void writeback_inodes_sb_nr(struct super
+ int try_to_writeback_inodes_sb(struct super_block *, enum wb_reason reason);
+ int try_to_writeback_inodes_sb_nr(struct super_block *, unsigned long nr,
+ 				  enum wb_reason reason);
+-void sync_inodes_sb(struct super_block *sb, unsigned long older_than_this);
++void sync_inodes_sb(struct super_block *);
+ void wakeup_flusher_threads(long nr_pages, enum wb_reason reason);
+ void inode_wait_for_writeback(struct inode *inode);
+ 
+--- a/include/trace/events/writeback.h
++++ b/include/trace/events/writeback.h
+@@ -287,11 +287,11 @@ TRACE_EVENT(writeback_queue_io,
+ 		__field(int,		reason)
+ 	),
+ 	TP_fast_assign(
+-		unsigned long older_than_this = work->older_than_this;
++		unsigned long *older_than_this = work->older_than_this;
+ 		strncpy(__entry->name, dev_name(wb->bdi->dev), 32);
+-		__entry->older	= older_than_this;
++		__entry->older	= older_than_this ?  *older_than_this : 0;
+ 		__entry->age	= older_than_this ?
+-				  (jiffies - older_than_this) * 1000 / HZ : -1;
++				  (jiffies - *older_than_this) * 1000 / HZ : -1;
+ 		__entry->moved	= moved;
+ 		__entry->reason	= work->reason;
+ 	),
 
 
