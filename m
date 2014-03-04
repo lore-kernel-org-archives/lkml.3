@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756895AbaCDJKF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 04:10:05 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:60680 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756410AbaCDJJ6 (ORCPT
+	id S1756852AbaCDJJR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 04:09:17 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:57179 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756719AbaCDJJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 04:09:58 -0500
-From: Romain Izard <romain.izard.pro@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Cc: Romain Izard <romain.izard.pro@gmail.com>
-Subject: [PATCH v2] trace: module: Maintain a valid user count
-Date: Tue,  4 Mar 2014 10:09:39 +0100
-Message-Id: <1393924179-9147-1-git-send-email-romain.izard.pro@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <20140303133330.7031b2cb@gandalf.local.home>
-References: <20140303133330.7031b2cb@gandalf.local.home>
+	Tue, 4 Mar 2014 04:09:11 -0500
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Tony Lindgren <tony@atomide.com>
+CC: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v2 4/5] drivers: bus: omap_l3: Remove the platform driver's remove function
+Date: Tue, 4 Mar 2014 11:08:29 +0200
+Message-ID: <1393924110-11132-5-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1393924110-11132-1-git-send-email-peter.ujfalusi@ti.com>
+References: <1393924110-11132-1-git-send-email-peter.ujfalusi@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The replacement of the 'count' variable by two variables 'incs' and
-'decs' to resolve some race conditions during module unloading was done
-in parallel with some cleanup in the trace subsystem, and was integrated
-as a merge.
+It is NOP after the devm_* conversion.
 
-Unfortunately, the formula for this replacement was wrong in the tracing
-code, and the refcount in the traces was not usable as a result.
-
-Use 'count = incs - decs' to compute the user count.
-
-Signed-off-by: Romain Izard <romain.izard.pro@gmail.com>
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
- include/trace/events/module.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/bus/omap_l3_noc.c | 6 ------
+ 1 file changed, 6 deletions(-)
 
-diff --git a/include/trace/events/module.h b/include/trace/events/module.h
-index 161932737416..ca298c7157ae 100644
---- a/include/trace/events/module.h
-+++ b/include/trace/events/module.h
-@@ -78,7 +78,7 @@ DECLARE_EVENT_CLASS(module_refcnt,
+diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
+index 2bbc87bdea2b..ed428ada44f7 100644
+--- a/drivers/bus/omap_l3_noc.c
++++ b/drivers/bus/omap_l3_noc.c
+@@ -177,11 +177,6 @@ static int omap4_l3_probe(struct platform_device *pdev)
+ 	return ret;
+ }
  
- 	TP_fast_assign(
- 		__entry->ip	= ip;
--		__entry->refcnt	= __this_cpu_read(mod->refptr->incs) + __this_cpu_read(mod->refptr->decs);
-+		__entry->refcnt	= __this_cpu_read(mod->refptr->incs) - __this_cpu_read(mod->refptr->decs);
- 		__assign_str(name, mod->name);
- 	),
+-static int omap4_l3_remove(struct platform_device *pdev)
+-{
+-	return 0;
+-}
+-
+ #if defined(CONFIG_OF)
+ static const struct of_device_id l3_noc_match[] = {
+ 	{.compatible = "ti,omap4-l3-noc", },
+@@ -194,7 +189,6 @@ MODULE_DEVICE_TABLE(of, l3_noc_match);
  
+ static struct platform_driver omap4_l3_driver = {
+ 	.probe		= omap4_l3_probe,
+-	.remove		= omap4_l3_remove,
+ 	.driver		= {
+ 		.name		= "omap_l3_noc",
+ 		.owner		= THIS_MODULE,
 -- 
-1.8.3.2
+1.9.0
 
