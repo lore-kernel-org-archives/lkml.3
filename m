@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932666AbaCDVeN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:34:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40824 "EHLO
+	id S932583AbaCDVeL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:34:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40834 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755745AbaCDUC5 (ORCPT
+	with ESMTP id S1755761AbaCDUC6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:02:57 -0500
+	Tue, 4 Mar 2014 15:02:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [PATCH 3.13 026/172] jbd2: fix use after free in jbd2_journal_start_reserved()
-Date: Tue,  4 Mar 2014 12:01:50 -0800
-Message-Id: <20140304200300.565875701@linuxfoundation.org>
+        Chen Gang <gang.chen.5i5j@gmail.com>,
+        Hans-Christian Egtvedt <hegtvedt@cisco.com>
+Subject: [PATCH 3.13 028/172] avr32: Makefile: add -D__linux__ flag for gcc-4.4.7 use
+Date: Tue,  4 Mar 2014 12:01:52 -0800
+Message-Id: <20140304200300.628910914@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -29,38 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Chen Gang <gang.chen.5i5j@gmail.com>
 
-commit 92e3b40537707001d17bbad800d150ab04e53bf4 upstream.
+commit 8d80390cfc9434d5aa4fb9e5f9768a66b30cb8a6 upstream.
 
-If start_this_handle() fails then it leads to a use after free of
-"handle".
+For avr32 cross compiler, do not define '__linux__' internally, so it
+will cause issue with allmodconfig.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+The related error:
+
+    CC [M]  fs/coda/psdev.o
+  In file included from include/linux/coda.h:64,
+                   from fs/coda/psdev.c:45:
+  include/uapi/linux/coda.h:221: error: expected specifier-qualifier-list before 'u_quad_t'
+
+The related toolchain version (which only download, not re-compile):
+
+  [root@gchen linux-next]# /upstream/toolchain/download/avr32-gnu-toolchain-linux_x86/bin/avr32-gcc -v
+  Using built-in specs.
+  Target: avr32
+  Configured with: /data2/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/src/gcc/configure --target=avr32 --host=i686-pc-linux-gnu --build=x86_64-pc-linux-gnu --prefix=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --enable-languages=c,c++ --disable-nls --disable-libssp --disable-libstdcxx-pch --with-dwarf2 --enable-version-specific-runtime-libs --disable-shared --enable-doc --with-mpfr-lib=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86/lib --with-mpfr-include=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86/include
+--with-gmp=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --with-mpc=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --enable-__cxa_atexit --disable-shared --with-newlib --with-pkgversion=AVR_32_bit_GNU_Toolchain_3.4.2_435 --with-bugurl=http://www
+.atmel.com/avr
+  Thread model: single
+  gcc version 4.4.7 (AVR_32_bit_GNU_Toolchain_3.4.2_435)
+
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+Acked-by: Hans-Christian Egtvedt <hegtvedt@cisco.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/jbd2/transaction.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ arch/avr32/Makefile |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/jbd2/transaction.c
-+++ b/fs/jbd2/transaction.c
-@@ -514,11 +514,13 @@ int jbd2_journal_start_reserved(handle_t
- 	 * similarly constrained call sites
- 	 */
- 	ret = start_this_handle(journal, handle, GFP_NOFS);
--	if (ret < 0)
-+	if (ret < 0) {
- 		jbd2_journal_free_reserved(handle);
-+		return ret;
-+	}
- 	handle->h_type = type;
- 	handle->h_line_no = line_no;
--	return ret;
-+	return 0;
- }
- EXPORT_SYMBOL(jbd2_journal_start_reserved);
+--- a/arch/avr32/Makefile
++++ b/arch/avr32/Makefile
+@@ -11,7 +11,7 @@ all: uImage vmlinux.elf
  
+ KBUILD_DEFCONFIG	:= atstk1002_defconfig
+ 
+-KBUILD_CFLAGS	+= -pipe -fno-builtin -mno-pic
++KBUILD_CFLAGS	+= -pipe -fno-builtin -mno-pic -D__linux__
+ KBUILD_AFLAGS	+= -mrelax -mno-pic
+ KBUILD_CFLAGS_MODULE += -mno-relax
+ LDFLAGS_vmlinux	+= --relax
 
 
