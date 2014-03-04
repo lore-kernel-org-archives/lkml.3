@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758312AbaCDVhl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:37:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40791 "EHLO
+	id S1758381AbaCDViM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:38:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40787 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755630AbaCDUCv (ORCPT
+	with ESMTP id S1755596AbaCDUCu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:02:51 -0500
+	Tue, 4 Mar 2014 15:02:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>, Kevin Hao <haokexin@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.13 024/172] powerpc: Set the correct ksp_limit on ppc32 when switching to irq stack
-Date: Tue,  4 Mar 2014 12:01:48 -0800
-Message-Id: <20140304200300.504524647@linuxfoundation.org>
+        Albin Tonnerre <Albin.Tonnerre@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.13 017/172] ARM: 7953/1: mm: ensure TLB invalidation is complete before enabling MMU
+Date: Tue,  4 Mar 2014 12:01:41 -0800
+Message-Id: <20140304200300.277491034@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -29,71 +30,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kevin Hao <haokexin@gmail.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 1a18a66446f3f289b05b634f18012424d82aa63a upstream.
+commit bae0ca2bc550d1ec6a118fb8f2696f18c4da3d8e upstream.
 
-Guenter Roeck has got the following call trace on a p2020 board:
-  Kernel stack overflow in process eb3e5a00, r1=eb79df90
-  CPU: 0 PID: 2838 Comm: ssh Not tainted 3.13.0-rc8-juniper-00146-g19eca00 #4
-  task: eb3e5a00 ti: c0616000 task.ti: ef440000
-  NIP: c003a420 LR: c003a410 CTR: c0017518
-  REGS: eb79dee0 TRAP: 0901   Not tainted (3.13.0-rc8-juniper-00146-g19eca00)
-  MSR: 00029000 <CE,EE,ME>  CR: 24008444  XER: 00000000
-  GPR00: c003a410 eb79df90 eb3e5a00 00000000 eb05d900 00000001 65d87646 00000000
-  GPR08: 00000000 020b8000 00000000 00000000 44008442
-  NIP [c003a420] __do_softirq+0x94/0x1ec
-  LR [c003a410] __do_softirq+0x84/0x1ec
-  Call Trace:
-  [eb79df90] [c003a410] __do_softirq+0x84/0x1ec (unreliable)
-  [eb79dfe0] [c003a970] irq_exit+0xbc/0xc8
-  [eb79dff0] [c000cc1c] call_do_irq+0x24/0x3c
-  [ef441f20] [c00046a8] do_IRQ+0x8c/0xf8
-  [ef441f40] [c000e7f4] ret_from_except+0x0/0x18
-  --- Exception: 501 at 0xfcda524
-      LR = 0x10024900
-  Instruction dump:
-  7c781b78 3b40000a 3a73b040 543c0024 3a800000 3b3913a0 7ef5bb78 48201bf9
-  5463103a 7d3b182e 7e89b92e 7c008146 <3ba00000> 7e7e9b78 48000014 57fff87f
-  Kernel panic - not syncing: kernel stack overflow
-  CPU: 0 PID: 2838 Comm: ssh Not tainted 3.13.0-rc8-juniper-00146-g19eca00 #4
-  Call Trace:
+During __v{6,7}_setup, we invalidate the TLBs since we are about to
+enable the MMU on return to head.S. Unfortunately, without a subsequent
+dsb instruction, the invalidation is not guaranteed to have completed by
+the time we write to the sctlr, potentially exposing us to junk/stale
+translations cached in the TLB.
 
-The reason is that we have used the wrong register to calculate the
-ksp_limit in commit cbc9565ee826 (powerpc: Remove ksp_limit on ppc64).
-Just fix it.
+This patch reworks the init functions so that the dsb used to ensure
+completion of cache/predictor maintenance is also used to ensure
+completion of the TLB invalidation.
 
-As suggested by Benjamin Herrenschmidt, also add the C prototype of the
-function in the comment in order to avoid such kind of errors in the
-future.
-
-Reported-by: Guenter Roeck <linux@roeck-us.net>
-Tested-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Kevin Hao <haokexin@gmail.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reported-by: Albin Tonnerre <Albin.Tonnerre@arm.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/misc_32.S |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/arm/mm/proc-v6.S |    3 ++-
+ arch/arm/mm/proc-v7.S |    2 +-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
---- a/arch/powerpc/kernel/misc_32.S
-+++ b/arch/powerpc/kernel/misc_32.S
-@@ -57,11 +57,14 @@ _GLOBAL(call_do_softirq)
- 	mtlr	r0
- 	blr
+--- a/arch/arm/mm/proc-v6.S
++++ b/arch/arm/mm/proc-v6.S
+@@ -208,7 +208,6 @@ __v6_setup:
+ 	mcr	p15, 0, r0, c7, c14, 0		@ clean+invalidate D cache
+ 	mcr	p15, 0, r0, c7, c5, 0		@ invalidate I cache
+ 	mcr	p15, 0, r0, c7, c15, 0		@ clean+invalidate cache
+-	mcr	p15, 0, r0, c7, c10, 4		@ drain write buffer
+ #ifdef CONFIG_MMU
+ 	mcr	p15, 0, r0, c8, c7, 0		@ invalidate I + D TLBs
+ 	mcr	p15, 0, r0, c2, c0, 2		@ TTB control register
+@@ -218,6 +217,8 @@ __v6_setup:
+ 	ALT_UP(orr	r8, r8, #TTB_FLAGS_UP)
+ 	mcr	p15, 0, r8, c2, c0, 1		@ load TTB1
+ #endif /* CONFIG_MMU */
++	mcr	p15, 0, r0, c7, c10, 4		@ drain write buffer and
++						@ complete invalidations
+ 	adr	r5, v6_crval
+ 	ldmia	r5, {r5, r6}
+  ARM_BE8(orr	r6, r6, #1 << 25)		@ big-endian page tables
+--- a/arch/arm/mm/proc-v7.S
++++ b/arch/arm/mm/proc-v7.S
+@@ -351,7 +351,6 @@ __v7_setup:
  
-+/*
-+ * void call_do_irq(struct pt_regs *regs, struct thread_info *irqtp);
-+ */
- _GLOBAL(call_do_irq)
- 	mflr	r0
- 	stw	r0,4(r1)
- 	lwz	r10,THREAD+KSP_LIMIT(r2)
--	addi	r11,r3,THREAD_INFO_GAP
-+	addi	r11,r4,THREAD_INFO_GAP
- 	stwu	r1,THREAD_SIZE-STACK_FRAME_OVERHEAD(r4)
- 	mr	r1,r4
- 	stw	r10,8(r1)
+ 4:	mov	r10, #0
+ 	mcr	p15, 0, r10, c7, c5, 0		@ I+BTB cache invalidate
+-	dsb
+ #ifdef CONFIG_MMU
+ 	mcr	p15, 0, r10, c8, c7, 0		@ invalidate I + D TLBs
+ 	v7_ttb_setup r10, r4, r8, r5		@ TTBCR, TTBRx setup
+@@ -360,6 +359,7 @@ __v7_setup:
+ 	mcr	p15, 0, r5, c10, c2, 0		@ write PRRR
+ 	mcr	p15, 0, r6, c10, c2, 1		@ write NMRR
+ #endif
++	dsb					@ Complete invalidations
+ #ifndef CONFIG_ARM_THUMBEE
+ 	mrc	p15, 0, r0, c0, c1, 0		@ read ID_PFR0 for ThumbEE
+ 	and	r0, r0, #(0xf << 12)		@ ThumbEE enabled field
 
 
