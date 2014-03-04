@@ -1,87 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757605AbaCDVZE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:25:04 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:38780 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756062AbaCDUDR (ORCPT
+	id S1757716AbaCDVZi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:25:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40942 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756055AbaCDUDR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Mar 2014 15:03:17 -0500
-Date: Tue, 4 Mar 2014 12:02:15 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Ning Qu <quning@google.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Chinner <david@fromorbit.com>, Ning Qu <quning@gmail.com>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] mm: implement ->map_pages for shmem/tmpfs
-In-Reply-To: <alpine.LSU.2.11.1402281657520.976@eggly.anvils>
-Message-ID: <alpine.LSU.2.11.1403041143530.1739@eggly.anvils>
-References: <1393625931-2858-1-git-send-email-quning@google.com> <1393625931-2858-2-git-send-email-quning@google.com> <alpine.LSU.2.11.1402281657520.976@eggly.anvils>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Antonio Quartulli <antonio@meshcoding.com>,
+        Marek Lindner <mareklindner@neomailbox.ch>
+Subject: [PATCH 3.13 066/172] batman-adv: properly check pskb_may_pull return value
+Date: Tue,  4 Mar 2014 12:02:30 -0800
+Message-Id: <20140304200301.849227524@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
+References: <20140304200259.626667112@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Feb 2014, Hugh Dickins wrote:
-> On Fri, 28 Feb 2014, Ning Qu wrote:
-> 
-> > In shmem/tmpfs, we also use the generic filemap_map_pages,
-> > seems the additional checking is not worth a separate version
-> > of map_pages for it.
-> > 
-> > Signed-off-by: Ning Qu <quning@google.com>
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-Acked-by: Hugh Dickins <hughd@google.com>
+------------------
 
-> > ---
-> >  mm/shmem.c | 1 +
-> >  1 file changed, 1 insertion(+)
-> > 
-> > diff --git a/mm/shmem.c b/mm/shmem.c
-> > index 1f18c9d..2ea4e89 100644
-> > --- a/mm/shmem.c
-> > +++ b/mm/shmem.c
-> > @@ -2783,6 +2783,7 @@ static const struct super_operations shmem_ops = {
-> >  
-> >  static const struct vm_operations_struct shmem_vm_ops = {
-> >  	.fault		= shmem_fault,
-> > +	.map_pages	= filemap_map_pages,
-> >  #ifdef CONFIG_NUMA
-> >  	.set_policy     = shmem_set_policy,
-> >  	.get_policy     = shmem_get_policy,
-> > -- 
-> 
-> (There's no need for a 0/1, all the info should go into the one patch.)
-> 
-> I expect this will prove to be a very sensible and adequate patch,
-> thank you: it probably wouldn't be worth more effort to give shmem
-> anything special of its own, and filemap_map_pages() is already
-> (almost) coping with exceptional entries.
+From: Antonio Quartulli <antonio@meshcoding.com>
 
-I haven't looked at performance at all: I'm just glad that you and
-Kirill have it working correctly as on other filesystems, without
-any need for special treatment in filemap_map_pages() - thanks.
+[ Upstream commit f1791425cf0bcda43ab9a9a37df1ad3ccb1f6654 ]
 
-> 
-> But I can't Ack it until I've tested it some more, won't be able to
-> do so until Sunday; and even then some doubt, since this and Kirill's
-> are built upon mmotm/next, which after a while gives me spinlock
-> lockups under load these days, yet to be investigated.
+pskb_may_pull() returns 1 on success and 0 in case of failure,
+therefore checking for the return value being negative does
+not make sense at all.
 
-Other test machines didn't give me those lockups at the weekend, and
-overnight it looks like yesterday's mmotm has fixed the freezes on my
-laptop (PeterZ's "sched: Guarantee task priority in pick_next_task()"
-probably fixed them, but it's old history now, so I've not verified).
+This way if the function fails we will probably read beyond the current
+skb data buffer. Fix this by doing the proper check.
 
-Hugh
+Signed-off-by: Antonio Quartulli <antonio@meshcoding.com>
+Signed-off-by: Marek Lindner <mareklindner@neomailbox.ch>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/batman-adv/routing.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/net/batman-adv/routing.c
++++ b/net/batman-adv/routing.c
+@@ -833,7 +833,7 @@ static int batadv_check_unicast_ttvn(str
+ 	int is_old_ttvn;
+ 
+ 	/* check if there is enough data before accessing it */
+-	if (pskb_may_pull(skb, hdr_len + ETH_HLEN) < 0)
++	if (!pskb_may_pull(skb, hdr_len + ETH_HLEN))
+ 		return 0;
+ 
+ 	/* create a copy of the skb (in case of for re-routing) to modify it. */
+
+
