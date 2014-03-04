@@ -1,105 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756783AbaCDK53 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 05:57:29 -0500
-Received: from www.linutronix.de ([62.245.132.108]:60545 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756631AbaCDK52 (ORCPT
+	id S1756959AbaCDLAK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 06:00:10 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:39668 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756682AbaCDLAH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 05:57:28 -0500
-Date: Tue, 4 Mar 2014 11:57:19 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: James Hogan <james.hogan@imgtec.com>, grant.likely@linaro.org,
-        linus.walleij@linaro.org,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] irq: Changed the return type of irq_chip.irq_startup()
- from unsigned int to int
-In-Reply-To: <20140301160114.GE21483@n2100.arm.linux.org.uk>
-Message-ID: <alpine.DEB.2.02.1403041134410.18573@ionos.tec.linutronix.de>
-References: <CACh+v5Nkuct0J65OHcnSd6Dfq4EyfafY8RpTvdwKXUA7A8_+Xw@mail.gmail.com> <1393521679-32331-1-git-send-email-jjhiblot@traphandler.com> <7150036.UpHTd1PK1K@radagast> <alpine.DEB.2.02.1403011629540.18573@ionos.tec.linutronix.de>
- <20140301160114.GE21483@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 4 Mar 2014 06:00:07 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <53153A4C.9050602@infradead.org>
+References: <1393899345-7397-1-git-send-email-graeme.gregory@linaro.org>
+ <1393899345-7397-2-git-send-email-graeme.gregory@linaro.org>
+ <1393899715.20435.8.camel@joe-AO722> <53153A4C.9050602@infradead.org>
+From: Grant Likely <grant.likely@linaro.org>
+Date: Tue, 4 Mar 2014 18:59:46 +0800
+X-Google-Sender-Auth: R2H6hoTmmMoo8E4CYOnL0ZTIwEA
+Message-ID: <CACxGe6tD3mQshDSoEQaPXAnXG_siUdiFoAWhjmO2gDY7ZzkjUw@mail.gmail.com>
+Subject: Re: [PATCH] MAINTAINERS: add maintainers for arm64 acpi
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Joe Perches <joe@perches.com>, Graeme Gregory <graeme.gregory@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 1 Mar 2014, Russell King - ARM Linux wrote:
+On Tue, Mar 4, 2014 at 10:28 AM, Randy Dunlap <rdunlap@infradead.org> wrote:
+> On 03/03/2014 06:21 PM, Joe Perches wrote:
+>> On Tue, 2014-03-04 at 10:15 +0800, Graeme Gregory wrote:
+>>> Add maintainers for the arm-core file for arm64 ACPI support
+>>
+>> Shouldn't something have to be in the kernel
+>> tree before there's a MAINTAINERS entry?
+>
+> or in linux-next and the patch can be added to linux-next (some git tree).
 
-> On Sat, Mar 01, 2014 at 04:31:13PM +0100, Thomas Gleixner wrote:
-> > On Fri, 28 Feb 2014, James Hogan wrote:
-> > > On Thursday 27 February 2014 18:21:19 Jean-Jacques Hiblot wrote:
-> > > >  drivers/irqchip/irq-metag.c               | 4 ++--
-> > > 
-> > > I think you've missed out drivers/irqchip/irq-metag-ext.c
-> > 
-> > There is a good reason why I asked to do this with coccinelle.
-> 
-> Go easy, not everyone understands that complex tool - I certainly don't.
-> I ended up deleting it from my system after several failed attempts, and
-> I came to the conclusion that to use it properly, you also needed a Julia
-> installed along side you to learn how to write its scripts.
+Sure, it makes sense to merge this file along with the rest of the
+series, but I certainly appreciate that Graeme and Hanjun are willing
+to volunteer to do this work.
 
-The trick is to send your incomplete script with an explanation what
-it should do to the cocci mailinglist. Julia and the other folks are
-always happy to help. :)
+On Tue, Mar 4, 2014 at 6:23 PM, Catalin Marinas <catalin.marinas@arm.com> wrote:
+> On Tue, Mar 04, 2014 at 02:15:45AM +0000, Graeme Gregory wrote:
+>> +ACPI ARM64
+>
+> That's a pretty broad statement for a single file. Is it core support,
+> architected peripherals, SoC?
 
-But seriously, I whipped up a cocci script to verify James patch and
-yes it found all occurences except one in drivers/gpio/gpio-tz1090.c
+That's a good point. Graeme, it would be good if you could put some
+text in the patch describing how you propose the maintainership to
+work. Unfortunately the maintainers file doesn't have any kind of
+comments field, otherwise I'd suggest you make those comments directly
+there.
 
-The reason is the usage of commata instead of semicolons. You can work
-around that with cocci, but that gets ugly ....
+Given that ACPI can touch a lot of subsystems I would expect you and
+Hanjun not to be merging much code directly, but being listed in
+maintainers means that you will be kept in the loop when it comes to
+merging ARM ACPI changes. I would also expect that anything that does
+go through you (instead of merely acked) would be merged via Rafael
+and Len's tree.
 
-Thanks,
+>
+>> +M:   Hanjun Guo <hanjun.guo@linaro.org>
+>> +M:   Graeme Gregory <graeme.gregory@linaro.org>
+>> +S:   Supported
+>> +L:   linux-acpi@vger.kernel.org
+>> +F:   drivers/acpi/plat/arm-core.c
+>
+> This patch should be part of the series introducing the arm-core.c file
+> and it will be ACKed (or NAKed) following review. We can't really commit
+> maintainers to a file which does not exist in mainline and while there is
+> still feedback to be addressed. It's like a blank cheque.
 
-	tglx
+I agree with merging it with the rest of the series, but comparing it
+to a blank cheque is not appropriate. Merely having an entry in
+MAINTAINERS doesn't immediately confer trust or ability to merge code,
+but it does tell people who to talk to when looking at ACPI on ARM.
+You can bet that neither Linus, Len or Rafael will merge ARM ACPI
+trees from them if you disagree. (And even if they did, you would
+yell, and Linus would revert it).
 
---- a/drivers/gpio/gpio-tz1090.c
-+++ b/drivers/gpio/gpio-tz1090.c
-@@ -488,26 +488,26 @@ static int tz1090_gpio_bank_probe(struct tz1090_gpio_bank_info *info)
- 	gc->chip_types[0].handler		= handle_level_irq;
- 	gc->chip_types[0].regs.ack		= REG_GPIO_IRQ_STS;
- 	gc->chip_types[0].regs.mask		= REG_GPIO_IRQ_EN;
--	gc->chip_types[0].chip.irq_startup	= gpio_startup_irq,
--	gc->chip_types[0].chip.irq_ack		= irq_gc_ack_clr_bit,
--	gc->chip_types[0].chip.irq_mask		= irq_gc_mask_clr_bit,
--	gc->chip_types[0].chip.irq_unmask	= irq_gc_mask_set_bit,
--	gc->chip_types[0].chip.irq_set_type	= gpio_set_irq_type,
--	gc->chip_types[0].chip.irq_set_wake	= gpio_set_irq_wake,
--	gc->chip_types[0].chip.flags		= IRQCHIP_MASK_ON_SUSPEND,
-+	gc->chip_types[0].chip.irq_startup	= gpio_startup_irq;
-+	gc->chip_types[0].chip.irq_ack		= irq_gc_ack_clr_bit;
-+	gc->chip_types[0].chip.irq_mask		= irq_gc_mask_clr_bit;
-+	gc->chip_types[0].chip.irq_unmask	= irq_gc_mask_set_bit;
-+	gc->chip_types[0].chip.irq_set_type	= gpio_set_irq_type;
-+	gc->chip_types[0].chip.irq_set_wake	= gpio_set_irq_wake;
-+	gc->chip_types[0].chip.flags		= IRQCHIP_MASK_ON_SUSPEND;
- 
- 	/* edge chip type */
- 	gc->chip_types[1].type			= IRQ_TYPE_EDGE_BOTH;
- 	gc->chip_types[1].handler		= handle_edge_irq;
- 	gc->chip_types[1].regs.ack		= REG_GPIO_IRQ_STS;
- 	gc->chip_types[1].regs.mask		= REG_GPIO_IRQ_EN;
--	gc->chip_types[1].chip.irq_startup	= gpio_startup_irq,
--	gc->chip_types[1].chip.irq_ack		= irq_gc_ack_clr_bit,
--	gc->chip_types[1].chip.irq_mask		= irq_gc_mask_clr_bit,
--	gc->chip_types[1].chip.irq_unmask	= irq_gc_mask_set_bit,
--	gc->chip_types[1].chip.irq_set_type	= gpio_set_irq_type,
--	gc->chip_types[1].chip.irq_set_wake	= gpio_set_irq_wake,
--	gc->chip_types[1].chip.flags		= IRQCHIP_MASK_ON_SUSPEND,
-+	gc->chip_types[1].chip.irq_startup	= gpio_startup_irq;
-+	gc->chip_types[1].chip.irq_ack		= irq_gc_ack_clr_bit;
-+	gc->chip_types[1].chip.irq_mask		= irq_gc_mask_clr_bit;
-+	gc->chip_types[1].chip.irq_unmask	= irq_gc_mask_set_bit;
-+	gc->chip_types[1].chip.irq_set_type	= gpio_set_irq_type;
-+	gc->chip_types[1].chip.irq_set_wake	= gpio_set_irq_wake;
-+	gc->chip_types[1].chip.flags		= IRQCHIP_MASK_ON_SUSPEND;
- 
- 	/* Setup chained handler for this GPIO bank */
- 	irq_set_handler_data(bank->irq, bank);
+>
+> --
+> Catalin
+
+Graeme, you can add my a-b line:
+
+Acked-by: Grant Likely <grant.likely@linaro.org>
