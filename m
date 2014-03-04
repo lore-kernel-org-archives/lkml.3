@@ -1,103 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757105AbaCDVRa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:17:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41050 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756280AbaCDUDf (ORCPT
+	id S1757781AbaCDVRs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:17:48 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:44489 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757562AbaCDVRq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:03:35 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Henningsson <david.henningsson@canonical.com>,
-        Gerald Yang <gerald.yang@canonical.com>,
-        Hui Wang <hui.wang@canonical.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.13 077/172] ALSA: hda - Enable front audio jacks on one HP desktop model
-Date: Tue,  4 Mar 2014 12:02:41 -0800
-Message-Id: <20140304200302.207921239@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
-References: <20140304200259.626667112@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Tue, 4 Mar 2014 16:17:46 -0500
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: liqin.linux@gmail.com, lennox.wu@gmail.com
+Cc: linux-kernel@vger.kernel.org,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH] [RESEND] score: remove deprecated IRQF_DISABLED
+Date: Tue,  4 Mar 2014 22:17:36 +0100
+Message-Id: <1393967856-17938-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1386567048-19855-1-git-send-email-michael.opdenacker@free-electrons.com>
+References: <1386567048-19855-1-git-send-email-michael.opdenacker@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+This patch removes the use of the IRQF_DISABLED flag
+from arch/score/kernel/time.c
 
-------------------
+It's a NOOP since 2.6.35 and it will be removed one day.
 
-From: Hui Wang <hui.wang@canonical.com>
-
-commit 1de7ca5e844866f56bebb2fc47fa18e090677e88 upstream.
-
-The front headphone and mic jackes on a HP desktop model (Vendor Id:
-0x111d76c7 Subsystem Id: 0x103c2b17) can not work, the codec on this
-machine has 8 physical ports, 6 of them are routed to rear jackes
-and all of them work very well, while the remaining 2 ports are
-routed to front headphone and mic jackes, but the corresponding
-pin complex node are not defined correctly.
-
-After apply this fix, the front audio jackes can work very well.
-
-[trivial fix of enum definition by tiwai]
-
-BugLink: https://bugs.launchpad.net/bugs/1282369
-Cc: David Henningsson <david.henningsson@canonical.com>
-Tested-by: Gerald Yang <gerald.yang@canonical.com>
-Signed-off-by: Hui Wang <hui.wang@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
 ---
- sound/pci/hda/patch_sigmatel.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ arch/score/kernel/time.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -83,6 +83,7 @@ enum {
- 	STAC_DELL_M6_BOTH,
- 	STAC_DELL_EQ,
- 	STAC_ALIENWARE_M17X,
-+	STAC_92HD89XX_HP_FRONT_JACK,
- 	STAC_92HD73XX_MODELS
+diff --git a/arch/score/kernel/time.c b/arch/score/kernel/time.c
+index f0a43affb201..24770cd9b473 100644
+--- a/arch/score/kernel/time.c
++++ b/arch/score/kernel/time.c
+@@ -41,7 +41,7 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
+ 
+ static struct irqaction timer_irq = {
+ 	.handler = timer_interrupt,
+-	.flags = IRQF_DISABLED | IRQF_TIMER,
++	.flags = IRQF_TIMER,
+ 	.name = "timer",
  };
  
-@@ -1777,6 +1778,12 @@ static const struct hda_pintbl intel_dg4
- 	{}
- };
- 
-+static const struct hda_pintbl stac92hd89xx_hp_front_jack_pin_configs[] = {
-+	{ 0x0a, 0x02214030 },
-+	{ 0x0b, 0x02A19010 },
-+	{}
-+};
-+
- static void stac92hd73xx_fixup_ref(struct hda_codec *codec,
- 				   const struct hda_fixup *fix, int action)
- {
-@@ -1895,6 +1902,10 @@ static const struct hda_fixup stac92hd73
- 	[STAC_92HD73XX_NO_JD] = {
- 		.type = HDA_FIXUP_FUNC,
- 		.v.func = stac92hd73xx_fixup_no_jd,
-+	},
-+	[STAC_92HD89XX_HP_FRONT_JACK] = {
-+		.type = HDA_FIXUP_PINS,
-+		.v.pins = stac92hd89xx_hp_front_jack_pin_configs,
- 	}
- };
- 
-@@ -1955,6 +1966,8 @@ static const struct snd_pci_quirk stac92
- 		      "Alienware M17x", STAC_ALIENWARE_M17X),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x0490,
- 		      "Alienware M17x R3", STAC_DELL_EQ),
-+	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x2b17,
-+				"unknown HP", STAC_92HD89XX_HP_FRONT_JACK),
- 	{} /* terminator */
- };
- 
-
+-- 
+1.8.3.2
 
