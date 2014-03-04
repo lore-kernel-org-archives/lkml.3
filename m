@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756161AbaCDCmY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 21:42:24 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56383 "EHLO
+	id S1756206AbaCDCnM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 21:43:12 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56494 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755702AbaCDCmT (ORCPT
+	with ESMTP id S1756144AbaCDCmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 21:42:19 -0500
+	Mon, 3 Mar 2014 21:42:24 -0500
 X-Original-SENDERIP: 10.177.220.181
 X-Original-MAILFROM: namhyung@kernel.org
 From: Namhyung Kim <namhyung@kernel.org>
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Namhyung Kim <namhyung@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH 01/10] perf tools: Add ->cmp(), ->collapse() and ->sort() to perf_hpp_fmt
-Date: Tue,  4 Mar 2014 11:42:07 +0900
-Message-Id: <1393900936-22977-2-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 10/10] perf tools: Add ->sort() member to struct sort_entry
+Date: Tue,  4 Mar 2014 11:42:16 +0900
+Message-Id: <1393900936-22977-11-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1393900936-22977-1-git-send-email-namhyung@kernel.org>
 References: <1393900936-22977-1-git-send-email-namhyung@kernel.org>
@@ -26,112 +26,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Those function pointers will be used to sort report output based on
-the selected fields.  This is a preparation of later change.
+Currently, what the sort_entry does is just identifying hist entries
+so that they can be grouped properly.  However, with -F option
+support, it indeed needs to sort entries appropriately to be shown to
+users.  So add ->sort() member to do it.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/ui/hist.c   | 39 +++++++++++++++++++++++++++++++++++----
- tools/perf/util/hist.h |  3 +++
- 2 files changed, 38 insertions(+), 4 deletions(-)
+ tools/perf/util/sort.c | 23 ++++++++++++++++++++---
+ tools/perf/util/sort.h |  1 +
+ 2 files changed, 21 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index 62282eaa9d71..dce3cefbb3ff 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -191,6 +191,14 @@ static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
- 			  hpp_entry_scnprintf, true);				\
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index 39f8f36fc37a..b55ff6d615d3 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -95,6 +95,12 @@ sort__comm_collapse(struct hist_entry *left, struct hist_entry *right)
+ 	return comm__str(right->comm) - comm__str(left->comm);
  }
  
-+#define __HPP_SORT_FN(_type, _field)						\
-+static int64_t hpp__sort_##_type(struct hist_entry *a, struct hist_entry *b)	\
-+{										\
-+	s64 __a = he_get_##_field(a);						\
-+	s64 __b = he_get_##_field(b);						\
-+	return __a - __b;							\
-+}
-+
- #define __HPP_ENTRY_RAW_FN(_type, _field)					\
- static u64 he_get_raw_##_field(struct hist_entry *he)				\
- {										\
-@@ -205,16 +213,27 @@ static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
- 			  hpp_entry_scnprintf, false);				\
- }
- 
-+#define __HPP_SORT_RAW_FN(_type, _field)					\
-+static int64_t hpp__sort_##_type(struct hist_entry *a, struct hist_entry *b)	\
-+{										\
-+	s64 __a = he_get_raw_##_field(a);					\
-+	s64 __b = he_get_raw_##_field(b);					\
-+	return __a - __b;							\
-+}
-+
-+
- #define HPP_PERCENT_FNS(_type, _str, _field, _min_width, _unit_width)	\
- __HPP_HEADER_FN(_type, _str, _min_width, _unit_width)			\
- __HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
- __HPP_COLOR_PERCENT_FN(_type, _field)					\
--__HPP_ENTRY_PERCENT_FN(_type, _field)
-+__HPP_ENTRY_PERCENT_FN(_type, _field)					\
-+__HPP_SORT_FN(_type, _field)
- 
- #define HPP_RAW_FNS(_type, _str, _field, _min_width, _unit_width)	\
- __HPP_HEADER_FN(_type, _str, _min_width, _unit_width)			\
- __HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
--__HPP_ENTRY_RAW_FN(_type, _field)
-+__HPP_ENTRY_RAW_FN(_type, _field)					\
-+__HPP_SORT_RAW_FN(_type, _field)
- 
- 
- HPP_PERCENT_FNS(overhead, "Overhead", period, 8, 8)
-@@ -226,19 +245,31 @@ HPP_PERCENT_FNS(overhead_guest_us, "guest usr", period_guest_us, 9, 8)
- HPP_RAW_FNS(samples, "Samples", nr_events, 12, 12)
- HPP_RAW_FNS(period, "Period", period, 12, 12)
- 
-+static int64_t hpp__nop_cmp(struct hist_entry *a __maybe_unused,
-+			    struct hist_entry *b __maybe_unused)
++static int64_t
++sort__comm_sort(struct hist_entry *left, struct hist_entry *right)
 +{
-+	return 0;
++	return strcmp(comm__str(right->comm), comm__str(left->comm));
 +}
 +
- #define HPP__COLOR_PRINT_FNS(_name)			\
- 	{						\
- 		.header	= hpp__header_ ## _name,	\
- 		.width	= hpp__width_ ## _name,		\
- 		.color	= hpp__color_ ## _name,		\
--		.entry	= hpp__entry_ ## _name		\
-+		.entry	= hpp__entry_ ## _name,		\
-+		.cmp	= hpp__nop_cmp,			\
-+		.collapse = hpp__nop_cmp,		\
-+		.sort	= hpp__sort_ ## _name,		\
- 	}
- 
- #define HPP__PRINT_FNS(_name)				\
- 	{						\
- 		.header	= hpp__header_ ## _name,	\
- 		.width	= hpp__width_ ## _name,		\
--		.entry	= hpp__entry_ ## _name		\
-+		.entry	= hpp__entry_ ## _name,		\
-+		.cmp	= hpp__nop_cmp,			\
-+		.collapse = hpp__nop_cmp,		\
-+		.sort	= hpp__sort_ ## _name,		\
- 	}
- 
- struct perf_hpp_fmt perf_hpp__format[] = {
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 0c502118cc7f..ed583e88696c 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -153,6 +153,9 @@ struct perf_hpp_fmt {
- 		     struct hist_entry *he);
- 	int (*entry)(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
- 		     struct hist_entry *he);
-+	int64_t (*cmp)(struct hist_entry *a, struct hist_entry *b);
-+	int64_t (*collapse)(struct hist_entry *a, struct hist_entry *b);
-+	int64_t (*sort)(struct hist_entry *a, struct hist_entry *b);
- 
- 	struct list_head list;
+ static int hist_entry__comm_snprintf(struct hist_entry *he, char *bf,
+ 				     size_t size, unsigned int width)
+ {
+@@ -105,6 +111,7 @@ struct sort_entry sort_comm = {
+ 	.se_header	= "Command",
+ 	.se_cmp		= sort__comm_cmp,
+ 	.se_collapse	= sort__comm_collapse,
++	.se_sort	= sort__comm_sort,
+ 	.se_snprintf	= hist_entry__comm_snprintf,
+ 	.se_width_idx	= HISTC_COMM,
  };
+@@ -134,7 +141,7 @@ static int64_t _sort__dso_cmp(struct map *map_l, struct map *map_r)
+ static int64_t
+ sort__dso_cmp(struct hist_entry *left, struct hist_entry *right)
+ {
+-	return _sort__dso_cmp(left->ms.map, right->ms.map);
++	return _sort__dso_cmp(right->ms.map, left->ms.map);
+ }
+ 
+ static int _hist_entry__dso_snprintf(struct map *map, char *bf,
+@@ -206,6 +213,15 @@ sort__sym_cmp(struct hist_entry *left, struct hist_entry *right)
+ 	return _sort__sym_cmp(left->ms.sym, right->ms.sym);
+ }
+ 
++static int64_t
++sort__sym_sort(struct hist_entry *left, struct hist_entry *right)
++{
++	if (!left->ms.sym || !right->ms.sym)
++		return cmp_null(left->ms.sym, right->ms.sym);
++
++	return strcmp(right->ms.sym->name, left->ms.sym->name);
++}
++
+ static int _hist_entry__sym_snprintf(struct map *map, struct symbol *sym,
+ 				     u64 ip, char level, char *bf, size_t size,
+ 				     unsigned int width)
+@@ -252,6 +268,7 @@ static int hist_entry__sym_snprintf(struct hist_entry *he, char *bf,
+ struct sort_entry sort_sym = {
+ 	.se_header	= "Symbol",
+ 	.se_cmp		= sort__sym_cmp,
++	.se_sort	= sort__sym_sort,
+ 	.se_snprintf	= hist_entry__sym_snprintf,
+ 	.se_width_idx	= HISTC_SYMBOL,
+ };
+@@ -279,7 +296,7 @@ sort__srcline_cmp(struct hist_entry *left, struct hist_entry *right)
+ 					    map__rip_2objdump(map, right->ip));
+ 		}
+ 	}
+-	return strcmp(left->srcline, right->srcline);
++	return strcmp(right->srcline, left->srcline);
+ }
+ 
+ static int hist_entry__srcline_snprintf(struct hist_entry *he, char *bf,
+@@ -307,7 +324,7 @@ sort__parent_cmp(struct hist_entry *left, struct hist_entry *right)
+ 	if (!sym_l || !sym_r)
+ 		return cmp_null(sym_l, sym_r);
+ 
+-	return strcmp(sym_l->name, sym_r->name);
++	return strcmp(sym_r->name, sym_l->name);
+ }
+ 
+ static int hist_entry__parent_snprintf(struct hist_entry *he, char *bf,
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index ba65741783fa..1d8d80376e97 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -180,6 +180,7 @@ struct sort_entry {
+ 
+ 	int64_t (*se_cmp)(struct hist_entry *, struct hist_entry *);
+ 	int64_t (*se_collapse)(struct hist_entry *, struct hist_entry *);
++	int64_t	(*se_sort)(struct hist_entry *, struct hist_entry *);
+ 	int	(*se_snprintf)(struct hist_entry *he, char *bf, size_t size,
+ 			       unsigned int width);
+ 	u8	se_width_idx;
 -- 
 1.7.11.7
 
