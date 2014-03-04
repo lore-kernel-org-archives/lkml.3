@@ -1,56 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756754AbaCDVxZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:53:25 -0500
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:46954 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756072AbaCDVxY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 16:53:24 -0500
+	id S1756815AbaCDV5u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:57:50 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:33528 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754997AbaCDV5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 16:57:49 -0500
+Date: Tue, 4 Mar 2014 16:57:35 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: akpm@linux-foundation.org
+Cc: mm-commits@vger.kernel.org, walken@google.com, vbabka@suse.cz,
+        tj@kernel.org, semenzato@google.com, rmallon@gmail.com,
+        riel@redhat.com, peterz@infradead.org, ozgun@citusdata.com,
+        minchan@kernel.org, mgorman@suse.de, metin@citusdata.com,
+        kosaki.motohiro@jp.fujitsu.com, klamm@yandex-team.ru, jack@suse.cz,
+        hughd@google.com, hch@infradead.org, gthelen@google.com,
+        david@fromorbit.com, bob.liu@oracle.com, aarcange@redhat.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: +
+ mm-fs-prepare-for-non-page-entries-in-page-cache-radix-trees.patch added to
+ -mm tree
+Message-ID: <20140304215735.GA11171@cmpxchg.org>
+References: <52f17469.abvZ3DeLOCoQdhR5%akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1403042153520.18573@ionos.tec.linutronix.de>
-References: <1392913425-29369-1-git-send-email-a.perevalov@samsung.com>
- <1392913425-29369-6-git-send-email-a.perevalov@samsung.com>
- <530D5715.1050901@mit.edu> <alpine.DEB.2.02.1403042153520.18573@ionos.tec.linutronix.de>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 4 Mar 2014 13:53:03 -0800
-Message-ID: <CALCETrVsmXjkC28pTSCfywTZCeHVcfvyFvHAXubEJ7=TRoEmPQ@mail.gmail.com>
-Subject: Re: [PATCH v4 5/6] timerfd: Add support for deferrable timers
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Alexey Perevalov <a.perevalov@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton@enomsg.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>, cw00.choi@samsung.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52f17469.abvZ3DeLOCoQdhR5%akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 4, 2014 at 12:58 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Tue, 25 Feb 2014, Andy Lutomirski wrote:
->> On the other hand, if you added a fancier version of timerfd_settime
->> that could explicitly set the slack value (or, equivalently, the
->> earliest and latest allowable times), that could be quite useful.
->>
->> It's often bugged me that timer slack is per-process.
->
-> That's a totally different issue. There is a world aside of timerfd
-> timers.
+On Tue, Feb 04, 2014 at 03:14:49PM -0800, akpm@linux-foundation.org wrote:
+> @@ -307,14 +331,15 @@ void truncate_inode_pages_range(struct a
+>  	index = start;
+>  	for ( ; ; ) {
+>  		cond_resched();
+> -		if (!pagevec_lookup(&pvec, mapping, index,
+> -			min(end - index, (pgoff_t)PAGEVEC_SIZE))) {
+> +		if (!__pagevec_lookup(&pvec, mapping, index,
+> +			min(end - index, (pgoff_t)PAGEVEC_SIZE),
+> +			indices)) {
+>  			if (index == start)
+>  				break;
+>  			index = start;
+>  			continue;
+>  		}
+> -		if (index == start && pvec.pages[0]->index >= end) {
+> +		if (index == start && indices[0] >= end) {
+>  			pagevec_release(&pvec);
+>  			break;
+>  		}
 
-This is a patch to add deferrable support *to timerfd*.  I'm asking
-why this is a useful feature to add.  Some day (maybe soon -- systemd
-is doing something awful here) people will want choices of slack
-values other than the per-process value and infinity.  Why not just do
-that and skip this intermediate API that will have to be supported
-forever?
+There is a missing pagevec_remove_exceptionals(), which can crash the
+kernel when pagevec_release() passes the non-page pointers to the page
+allocator.
 
-I admit that I don't really understand the difference between hrtimers
-and the other kind of timer internally, but I don't see why this
-should have any effect at all of the userspace API.  The kernel
-supports slack, slack is strictly more useful than "deferrable", so
-let's just expose it properly to userspace.
+Andrew, could you please include this incremental fix?
 
---Andy
+---
+From: Johannes Weiner <hannes@cmpxchg.org>
+Subject: [patch] mm + fs: prepare for non-page entries in page cache radix
+ trees fix
+
+__pagevec_lookup() stores exceptional entries in the pagevec.  They
+must be pruned before passing the pagevec along to pagevec_release()
+or the kernel crashes when these non-page pointers reach the page
+allocator.
+
+Add a missing pagevec_remove_exceptionals() in the truncate path.
+
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/truncate.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/mm/truncate.c b/mm/truncate.c
+index b0f4d4bee8ab..5fafca2ed3d2 100644
+--- a/mm/truncate.c
++++ b/mm/truncate.c
+@@ -340,6 +340,7 @@ void truncate_inode_pages_range(struct address_space *mapping,
+ 			continue;
+ 		}
+ 		if (index == start && indices[0] >= end) {
++			pagevec_remove_exceptionals(&pvec);
+ 			pagevec_release(&pvec);
+ 			break;
+ 		}
+-- 
+1.9.0
+
