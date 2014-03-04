@@ -1,91 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757448AbaCDOpO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 09:45:14 -0500
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:58119 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757100AbaCDOpL (ORCPT
+	id S932200AbaCDOug (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 09:50:36 -0500
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:54871 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757100AbaCDOue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 09:45:11 -0500
-Date: Tue, 4 Mar 2014 15:45:04 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Aaron Lu <aaron.lu@intel.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Oleksij Rempel <linux@rempel-privat.de>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH] drm/i915/opregion: work around buggy firmware that
- provides 8+ output devices
-Message-ID: <20140304144504.GE17001@phenom.ffwll.local>
-Mail-Followup-To: Aaron Lu <aaron.lu@intel.com>,
-	Matthew Garrett <mjg59@srcf.ucam.org>,
-	Chris Wilson <chris@chris-wilson.co.uk>,
-	Jani Nikula <jani.nikula@linux.intel.com>,
-	"Rafael J. Wysocki" <rjw@rjwysocki.net>,
-	Oleksij Rempel <linux@rempel-privat.de>,
-	"intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
-References: <52FAE504.8020001@intel.com>
- <20140212103156.GC5298@nuc-i3427.alporthouse.com>
- <52FC8C01.1040002@intel.com>
- <20140213100814.GM14909@nuc-i3427.alporthouse.com>
- <CAKMK7uGN3Of2VU6_LsSLh041kkx4TrhyH0H8zvE-PRvOtzJgfg@mail.gmail.com>
- <53045DD1.5010406@intel.com>
- <20140219073339.GA30685@srcf.ucam.org>
- <5304725A.3020909@intel.com>
+	Tue, 4 Mar 2014 09:50:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5304725A.3020909@intel.com>
-X-Operating-System: Linux phenom 3.12.0+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140304143111.GA4074@yogesh-Dell-System-XPS-L502X>
+References: <20140304114814.GA28031@yogesh-Dell-System-XPS-L502X>
+	<CAAsK9AF-jbJZHOT+4gY0QmZFMhj84_DuSD9jDgddDH03vodcYw@mail.gmail.com>
+	<20140304143111.GA4074@yogesh-Dell-System-XPS-L502X>
+Date: Tue, 4 Mar 2014 15:50:33 +0100
+X-Google-Sender-Auth: MJyuQx0VxV6NLJd4UxqXsXrPOIU
+Message-ID: <CAAsK9AHyrx1aTDZ8e_YU=vhqK5qa__HDN=yqanApE4=mgNe0-w@mail.gmail.com>
+Subject: Re: [PATCH 1/1] Add documentation for proper usage and order of
+ preference of calls to print diagnostic messages.
+From: Levente Kurusa <levex@linux.com>
+To: yogesh <mr.yogesh@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Joe Perches <joe@perches.com>,
+        Rob Landley <rob@landley.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 04:59:06PM +0800, Aaron Lu wrote:
-> On 02/19/2014 03:33 PM, Matthew Garrett wrote:
-> > On Wed, Feb 19, 2014 at 03:31:29PM +0800, Aaron Lu wrote:
-> > 
-> >> DID2 is in system memory region and has some assigned value like 0x400
-> >> when we read it. For this case it is easy since there is only one output
-> >> device that is of type LVDS so we can match it to connector of type eDP
-> >> or LVDS, suppose there is only one such connector. But for output
-> >> devices' whose _ADR has the value of 0x301, 0x302, etc. I have no idea
-> >> how to match them up to the connectors of that type as we can't be sure
-> >> the probe order we have used in i915 driver is the same as BIOS'.
-> > 
-> > Non-standard _ADR values are assigend by the GPU vendor, so Intel should 
-> > be able to provide you with the correct interpretations.
-> 
-> It doesn't seem the _ADR value has to be the format defined by _DOD, as
-> the example of the ACPI spec gives:
-> Method (_ADR, 0) {
->     return(0x0100)
-> }
-> So that is not the problem here.
-> 
-> The problem is, we don't have any way of matching an ACPI output device
-> node to a drm connector of the same type when there are more than 1 of
-> those with the same type, i.e. we don't know how the index value are
-> assigned by BIOS.
+Hi,
 
-I've thought the OpRegion spec has some additional fields in there
-indicating the port number, which we could match up at least on modern
-platforms (where there's only ever port A-E). But that's very hazy
-recollection from a really old OpRegion spec, i.e. I have no bloody clue
-at all ;-)
+[+CC Rob]
 
-If I misremember this then we need to start on a begging tour again and
-ask the windows guys how this is all supposed to work ...
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+2014-03-04 15:31 GMT+01:00 yogesh <mr.yogesh@gmail.com>:
+> This patch adds documentation that clarifies the use of various
+> diagnostic printing messages. It shows the preference of subsystem_dbg
+> calls to dev_dbg (whenever possible), as they first preferred format of
+> logging debug messages.
+> Signed-off-by: Yogesh Chaudhari <mr.yogesh@gmail.com>
+
+Acked-by: Levente Kurusa <levex@linux.com>
+
+> ---
+>  Documentation/CodingStyle | 17 +++++++++++++++++
+>  1 file changed, 17 insertions(+)
+>
+> diff --git a/Documentation/CodingStyle b/Documentation/CodingStyle
+> index 7fe0546..083f738 100644
+> --- a/Documentation/CodingStyle
+> +++ b/Documentation/CodingStyle
+> @@ -662,6 +662,23 @@ and driver, and are tagged with the right level:  dev_err(), dev_warn(),
+>  dev_info(), and so forth.  For messages that aren't associated with a
+>  particular device, <linux/printk.h> defines pr_debug() and pr_info().
+>
+> +If the subsystem has its own diagnostic macros then they should be used
+> +instead of dev_dbg calls.
+> +e.g. If you are using network subsystem, use netdev_dbg;
+> +if you are using V4L, use v4l_dbg etc.
+> +This standardises the output format in every subsystem.
+> +
+> +Depending on your changes, the following order of precedence
+> +applies to printing messages:
+> +1. [subsystem]_dbg() is preferred when the subsystem has its own
+> +diagnostic macros.
+> +2. dev_dbg() is preferred when you have a generic struct device object.
+> +3. pr_debug() should be used when 1 and 2 above are not applicable.
+> +4. printk() should be avoided.
+> +
+> +Note: The above order applies to diagnostic calls of all log levels viz:
+> +*_emerg, *_alert, *_crit, *_err, *_warn, *_notice, *_info and *_dbg.
+> +
+>  Coming up with good debugging messages can be quite a challenge; and once
+>  you have them, they can be a huge help for remote troubleshooting.  Such
+>  messages should be compiled out when the DEBUG symbol is not defined (that
+> --
+>
+> Regards
+> Yogesh
+> [...]
+
+A lot better, but please next time send it as a separate mail
+with subject [PATCH v2] or something like that. Thanks!
+
+--
+Regards,
+Levente Kurusa
