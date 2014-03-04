@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756231AbaCDUD2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:03:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40970 "EHLO
+	id S1756632AbaCDUD5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:03:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41159 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756132AbaCDUDV (ORCPT
+	with ESMTP id S1756245AbaCDUDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:03:21 -0500
+	Tue, 4 Mar 2014 15:03:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Eric Dumazet <edumazet@google.com>, Arnaud Ebalard <arno@natisbad.org>,
-        Willy Tarreau <w@1wt.eu>, "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 058/172] net: mvneta: use per_cpu stats to fix an SMP lock up
-Date: Tue,  4 Mar 2014 12:02:22 -0800
-Message-Id: <20140304200301.584474609@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.13 104/172] ahci: disable NCQ on Samsung pci-e SSDs on macbooks
+Date: Tue,  4 Mar 2014 12:03:08 -0800
+Message-Id: <20140304200303.041949385@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -31,217 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: willy tarreau <w@1wt.eu>
+From: Levente Kurusa <levex@linux.com>
 
-[ Upstream commit 74c41b048db1073a04827d7f39e95ac1935524cc ]
+commit 67809f85d31eac600f6b28defa5386c9d2a13b1d upstream.
 
-Stats writers are mvneta_rx() and mvneta_tx(). They don't lock anything
-when they update the stats, and as a result, it randomly happens that
-the stats freeze on SMP if two updates happen during stats retrieval.
-This is very easily reproducible by starting two HTTP servers and binding
-each of them to a different CPU, then consulting /proc/net/dev in loops
-during transfers, the interface should immediately lock up. This issue
-also randomly happens upon link state changes during transfers, because
-the stats are collected in this situation, but it takes more attempts to
-reproduce it.
+Samsung's pci-e SSDs with device ID 0x1600 which are found on some
+macbooks time out on NCQ commands.  Blacklist NCQ on the device so
+that the affected machines can at least boot.
 
-The comments in netdevice.h suggest using per_cpu stats instead to get
-rid of this issue.
-
-This patch implements this. It merges both rx_stats and tx_stats into
-a single "stats" member with a single syncp. Both mvneta_rx() and
-mvneta_rx() now only update the a single CPU's counters.
-
-In turn, mvneta_get_stats64() does the summing by iterating over all CPUs
-to get their respective stats.
-
-With this change, stats are still correct and no more lockup is encountered.
-
-Note that this bug was present since the first import of the mvneta
-driver.  It might make sense to backport it to some stable trees. If
-so, it depends on "d33dc73 net: mvneta: increase the 64-bit rx/tx stats
-out of the hot path".
-
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Reviewed-by: Eric Dumazet <edumazet@google.com>
-Tested-by: Arnaud Ebalard <arno@natisbad.org>
-Signed-off-by: Willy Tarreau <w@1wt.eu>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Original-patch-by: Levente Kurusa <levex@linux.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=60731
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/marvell/mvneta.c |   88 ++++++++++++++++++++++------------
- 1 file changed, 57 insertions(+), 31 deletions(-)
 
---- a/drivers/net/ethernet/marvell/mvneta.c
-+++ b/drivers/net/ethernet/marvell/mvneta.c
-@@ -221,10 +221,12 @@
+---
+ drivers/ata/ahci.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -61,6 +61,7 @@ enum board_ids {
+ 	/* board IDs by feature in alphabetical order */
+ 	board_ahci,
+ 	board_ahci_ign_iferr,
++	board_ahci_noncq,
+ 	board_ahci_nosntf,
+ 	board_ahci_yes_fbs,
  
- #define MVNETA_RX_BUF_SIZE(pkt_size)   ((pkt_size) + NET_SKB_PAD)
+@@ -119,6 +120,13 @@ static const struct ata_port_info ahci_p
+ 		.udma_mask	= ATA_UDMA6,
+ 		.port_ops	= &ahci_ops,
+ 	},
++	[board_ahci_noncq] = {
++		AHCI_HFLAGS	(AHCI_HFLAG_NO_NCQ),
++		.flags		= AHCI_FLAG_COMMON,
++		.pio_mask	= ATA_PIO4,
++		.udma_mask	= ATA_UDMA6,
++		.port_ops	= &ahci_ops,
++	},
+ 	[board_ahci_nosntf] = {
+ 		AHCI_HFLAGS	(AHCI_HFLAG_NO_SNTF),
+ 		.flags		= AHCI_FLAG_COMMON,
+@@ -450,6 +458,12 @@ static const struct pci_device_id ahci_p
+ 	{ PCI_VDEVICE(ASMEDIA, 0x0611), board_ahci },	/* ASM1061 */
+ 	{ PCI_VDEVICE(ASMEDIA, 0x0612), board_ahci },	/* ASM1062 */
  
--struct mvneta_stats {
-+struct mvneta_pcpu_stats {
- 	struct	u64_stats_sync syncp;
--	u64	packets;
--	u64	bytes;
-+	u64	rx_packets;
-+	u64	rx_bytes;
-+	u64	tx_packets;
-+	u64	tx_bytes;
- };
- 
- struct mvneta_port {
-@@ -250,8 +252,7 @@ struct mvneta_port {
- 	u8 mcast_count[256];
- 	u16 tx_ring_size;
- 	u16 rx_ring_size;
--	struct mvneta_stats tx_stats;
--	struct mvneta_stats rx_stats;
-+	struct mvneta_pcpu_stats *stats;
- 
- 	struct mii_bus *mii_bus;
- 	struct phy_device *phy_dev;
-@@ -461,21 +462,29 @@ struct rtnl_link_stats64 *mvneta_get_sta
- {
- 	struct mvneta_port *pp = netdev_priv(dev);
- 	unsigned int start;
-+	int cpu;
- 
--	memset(stats, 0, sizeof(struct rtnl_link_stats64));
--
--	do {
--		start = u64_stats_fetch_begin_bh(&pp->rx_stats.syncp);
--		stats->rx_packets = pp->rx_stats.packets;
--		stats->rx_bytes	= pp->rx_stats.bytes;
--	} while (u64_stats_fetch_retry_bh(&pp->rx_stats.syncp, start));
--
--
--	do {
--		start = u64_stats_fetch_begin_bh(&pp->tx_stats.syncp);
--		stats->tx_packets = pp->tx_stats.packets;
--		stats->tx_bytes	= pp->tx_stats.bytes;
--	} while (u64_stats_fetch_retry_bh(&pp->tx_stats.syncp, start));
-+	for_each_possible_cpu(cpu) {
-+		struct mvneta_pcpu_stats *cpu_stats;
-+		u64 rx_packets;
-+		u64 rx_bytes;
-+		u64 tx_packets;
-+		u64 tx_bytes;
++	/*
++	 * Samsung SSDs found on some macbooks.  NCQ times out.
++	 * https://bugzilla.kernel.org/show_bug.cgi?id=60731
++	 */
++	{ PCI_VDEVICE(SAMSUNG, 0x1600), board_ahci_noncq },
 +
-+		cpu_stats = per_cpu_ptr(pp->stats, cpu);
-+		do {
-+			start = u64_stats_fetch_begin_bh(&cpu_stats->syncp);
-+			rx_packets = cpu_stats->rx_packets;
-+			rx_bytes   = cpu_stats->rx_bytes;
-+			tx_packets = cpu_stats->tx_packets;
-+			tx_bytes   = cpu_stats->tx_bytes;
-+		} while (u64_stats_fetch_retry_bh(&cpu_stats->syncp, start));
-+
-+		stats->rx_packets += rx_packets;
-+		stats->rx_bytes   += rx_bytes;
-+		stats->tx_packets += tx_packets;
-+		stats->tx_bytes   += tx_bytes;
-+	}
+ 	/* Enmotus */
+ 	{ PCI_DEVICE(0x1c44, 0x8000), board_ahci },
  
- 	stats->rx_errors	= dev->stats.rx_errors;
- 	stats->rx_dropped	= dev->stats.rx_dropped;
-@@ -1453,10 +1462,12 @@ static int mvneta_rx(struct mvneta_port
- 	}
- 
- 	if (rcvd_pkts) {
--		u64_stats_update_begin(&pp->rx_stats.syncp);
--		pp->rx_stats.packets += rcvd_pkts;
--		pp->rx_stats.bytes   += rcvd_bytes;
--		u64_stats_update_end(&pp->rx_stats.syncp);
-+		struct mvneta_pcpu_stats *stats = this_cpu_ptr(pp->stats);
-+
-+		u64_stats_update_begin(&stats->syncp);
-+		stats->rx_packets += rcvd_pkts;
-+		stats->rx_bytes   += rcvd_bytes;
-+		u64_stats_update_end(&stats->syncp);
- 	}
- 
- 	/* Update rxq management counters */
-@@ -1589,11 +1600,12 @@ static int mvneta_tx(struct sk_buff *skb
- 
- out:
- 	if (frags > 0) {
--		u64_stats_update_begin(&pp->tx_stats.syncp);
--		pp->tx_stats.packets++;
--		pp->tx_stats.bytes += skb->len;
--		u64_stats_update_end(&pp->tx_stats.syncp);
-+		struct mvneta_pcpu_stats *stats = this_cpu_ptr(pp->stats);
- 
-+		u64_stats_update_begin(&stats->syncp);
-+		stats->tx_packets++;
-+		stats->tx_bytes  += skb->len;
-+		u64_stats_update_end(&stats->syncp);
- 	} else {
- 		dev->stats.tx_dropped++;
- 		dev_kfree_skb_any(skb);
-@@ -2758,6 +2770,7 @@ static int mvneta_probe(struct platform_
- 	const char *mac_from;
- 	int phy_mode;
- 	int err;
-+	int cpu;
- 
- 	/* Our multiqueue support is not complete, so for now, only
- 	 * allow the usage of the first RX queue
-@@ -2799,9 +2812,6 @@ static int mvneta_probe(struct platform_
- 
- 	pp = netdev_priv(dev);
- 
--	u64_stats_init(&pp->tx_stats.syncp);
--	u64_stats_init(&pp->rx_stats.syncp);
--
- 	pp->weight = MVNETA_RX_POLL_WEIGHT;
- 	pp->phy_node = phy_node;
- 	pp->phy_interface = phy_mode;
-@@ -2820,6 +2830,19 @@ static int mvneta_probe(struct platform_
- 		goto err_clk;
- 	}
- 
-+	/* Alloc per-cpu stats */
-+	pp->stats = alloc_percpu(struct mvneta_pcpu_stats);
-+	if (!pp->stats) {
-+		err = -ENOMEM;
-+		goto err_unmap;
-+	}
-+
-+	for_each_possible_cpu(cpu) {
-+		struct mvneta_pcpu_stats *stats;
-+		stats = per_cpu_ptr(pp->stats, cpu);
-+		u64_stats_init(&stats->syncp);
-+	}
-+
- 	dt_mac_addr = of_get_mac_address(dn);
- 	if (dt_mac_addr) {
- 		mac_from = "device tree";
-@@ -2849,7 +2872,7 @@ static int mvneta_probe(struct platform_
- 	err = mvneta_init(pp, phy_addr);
- 	if (err < 0) {
- 		dev_err(&pdev->dev, "can't init eth hal\n");
--		goto err_unmap;
-+		goto err_free_stats;
- 	}
- 	mvneta_port_power_up(pp, phy_mode);
- 
-@@ -2879,6 +2902,8 @@ static int mvneta_probe(struct platform_
- 
- err_deinit:
- 	mvneta_deinit(pp);
-+err_free_stats:
-+	free_percpu(pp->stats);
- err_unmap:
- 	iounmap(pp->base);
- err_clk:
-@@ -2899,6 +2924,7 @@ static int mvneta_remove(struct platform
- 	unregister_netdev(dev);
- 	mvneta_deinit(pp);
- 	clk_disable_unprepare(pp->clk);
-+	free_percpu(pp->stats);
- 	iounmap(pp->base);
- 	irq_dispose_mapping(dev->irq);
- 	free_netdev(dev);
 
 
