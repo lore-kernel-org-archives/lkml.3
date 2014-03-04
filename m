@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755633AbaCDUCv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:02:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40762 "EHLO
+	id S1758312AbaCDVhl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:37:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40791 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755555AbaCDUCq (ORCPT
+	with ESMTP id S1755630AbaCDUCv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:02:46 -0500
+	Tue, 4 Mar 2014 15:02:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vinayak Kale <vkale@apm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.13 019/172] ARM: 7957/1: add DSB after icache flush in __flush_icache_all()
-Date: Tue,  4 Mar 2014 12:01:43 -0800
-Message-Id: <20140304200300.335268633@linuxfoundation.org>
+        Guenter Roeck <linux@roeck-us.net>, Kevin Hao <haokexin@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.13 024/172] powerpc: Set the correct ksp_limit on ppc32 when switching to irq stack
+Date: Tue,  4 Mar 2014 12:01:48 -0800
+Message-Id: <20140304200300.504524647@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -30,30 +29,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vinayak Kale <vkale@apm.com>
+From: Kevin Hao <haokexin@gmail.com>
 
-commit 39544ac9df20f73e49fc6b9ac19ff533388c82c0 upstream.
+commit 1a18a66446f3f289b05b634f18012424d82aa63a upstream.
 
-Add DSB after icache flush to complete the cache maintenance operation.
+Guenter Roeck has got the following call trace on a p2020 board:
+  Kernel stack overflow in process eb3e5a00, r1=eb79df90
+  CPU: 0 PID: 2838 Comm: ssh Not tainted 3.13.0-rc8-juniper-00146-g19eca00 #4
+  task: eb3e5a00 ti: c0616000 task.ti: ef440000
+  NIP: c003a420 LR: c003a410 CTR: c0017518
+  REGS: eb79dee0 TRAP: 0901   Not tainted (3.13.0-rc8-juniper-00146-g19eca00)
+  MSR: 00029000 <CE,EE,ME>  CR: 24008444  XER: 00000000
+  GPR00: c003a410 eb79df90 eb3e5a00 00000000 eb05d900 00000001 65d87646 00000000
+  GPR08: 00000000 020b8000 00000000 00000000 44008442
+  NIP [c003a420] __do_softirq+0x94/0x1ec
+  LR [c003a410] __do_softirq+0x84/0x1ec
+  Call Trace:
+  [eb79df90] [c003a410] __do_softirq+0x84/0x1ec (unreliable)
+  [eb79dfe0] [c003a970] irq_exit+0xbc/0xc8
+  [eb79dff0] [c000cc1c] call_do_irq+0x24/0x3c
+  [ef441f20] [c00046a8] do_IRQ+0x8c/0xf8
+  [ef441f40] [c000e7f4] ret_from_except+0x0/0x18
+  --- Exception: 501 at 0xfcda524
+      LR = 0x10024900
+  Instruction dump:
+  7c781b78 3b40000a 3a73b040 543c0024 3a800000 3b3913a0 7ef5bb78 48201bf9
+  5463103a 7d3b182e 7e89b92e 7c008146 <3ba00000> 7e7e9b78 48000014 57fff87f
+  Kernel panic - not syncing: kernel stack overflow
+  CPU: 0 PID: 2838 Comm: ssh Not tainted 3.13.0-rc8-juniper-00146-g19eca00 #4
+  Call Trace:
 
-Signed-off-by: Vinayak Kale <vkale@apm.com>
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+The reason is that we have used the wrong register to calculate the
+ksp_limit in commit cbc9565ee826 (powerpc: Remove ksp_limit on ppc64).
+Just fix it.
+
+As suggested by Benjamin Herrenschmidt, also add the C prototype of the
+function in the comment in order to avoid such kind of errors in the
+future.
+
+Reported-by: Guenter Roeck <linux@roeck-us.net>
+Tested-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Kevin Hao <haokexin@gmail.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/cacheflush.h |    1 +
- 1 file changed, 1 insertion(+)
+ arch/powerpc/kernel/misc_32.S |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/arch/arm/include/asm/cacheflush.h
-+++ b/arch/arm/include/asm/cacheflush.h
-@@ -212,6 +212,7 @@ extern void copy_to_user_page(struct vm_
- static inline void __flush_icache_all(void)
- {
- 	__flush_icache_preferred();
-+	dsb();
- }
+--- a/arch/powerpc/kernel/misc_32.S
++++ b/arch/powerpc/kernel/misc_32.S
+@@ -57,11 +57,14 @@ _GLOBAL(call_do_softirq)
+ 	mtlr	r0
+ 	blr
  
- /*
++/*
++ * void call_do_irq(struct pt_regs *regs, struct thread_info *irqtp);
++ */
+ _GLOBAL(call_do_irq)
+ 	mflr	r0
+ 	stw	r0,4(r1)
+ 	lwz	r10,THREAD+KSP_LIMIT(r2)
+-	addi	r11,r3,THREAD_INFO_GAP
++	addi	r11,r4,THREAD_INFO_GAP
+ 	stwu	r1,THREAD_SIZE-STACK_FRAME_OVERHEAD(r4)
+ 	mr	r1,r4
+ 	stw	r10,8(r1)
 
 
