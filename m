@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932477AbaCDUst (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:48:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41369 "EHLO
+	id S1756858AbaCDUE1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:04:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41339 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756875AbaCDUEa (ORCPT
+	with ESMTP id S1752622AbaCDUEZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:04:30 -0500
+	Tue, 4 Mar 2014 15:04:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>, Stephen Smalley <sds@tycho.nsa.gov>,
-        Paul Moore <pmoore@redhat.com>
-Subject: [PATCH 3.13 150/172] SELinux: bigendian problems with filename trans rules
-Date: Tue,  4 Mar 2014 12:03:54 -0800
-Message-Id: <20140304200304.521974189@linuxfoundation.org>
+        Olof Johansson <olof@lixom.net>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH 3.13 157/172] ARM64: unwind: Fix PC calculation
+Date: Tue,  4 Mar 2014 12:04:01 -0800
+Message-Id: <20140304200304.739440045@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -29,42 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Paris <eparis@redhat.com>
+From: Olof Johansson <olof@lixom.net>
 
-commit 9085a6422900092886da8c404e1c5340c4ff1cbf upstream.
+commit e306dfd06fcb44d21c80acb8e5a88d55f3d1cf63 upstream.
 
-When writing policy via /sys/fs/selinux/policy I wrote the type and class
-of filename trans rules in CPU endian instead of little endian.  On
-x86_64 this works just fine, but it means that on big endian arch's like
-ppc64 and s390 userspace reads the policy and converts it from
-le32_to_cpu.  So the values are all screwed up.  Write the values in le
-format like it should have been to start.
+The frame PC value in the unwind code used to just take the saved LR
+value and use that.  That's incorrect as a stack trace, since it shows
+the return path stack, not the call path stack.
 
-Signed-off-by: Eric Paris <eparis@redhat.com>
-Acked-by:  Stephen Smalley <sds@tycho.nsa.gov>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+In particular, it shows faulty information in case the bl is done as
+the very last instruction of one label, since the return point will be
+in the next label. That can easily be seen with tail calls to panic(),
+which is marked __noreturn and thus doesn't have anything useful after it.
+
+Easiest here is to just correct the unwind code and do a -4, to get the
+actual call site for the backtrace instead of the return site.
+
+Signed-off-by: Olof Johansson <olof@lixom.net>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- security/selinux/ss/policydb.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/arm64/kernel/stacktrace.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/security/selinux/ss/policydb.c
-+++ b/security/selinux/ss/policydb.c
-@@ -3260,10 +3260,10 @@ static int filename_write_helper(void *k
- 	if (rc)
- 		return rc;
+--- a/arch/arm64/kernel/stacktrace.c
++++ b/arch/arm64/kernel/stacktrace.c
+@@ -48,7 +48,11 @@ int unwind_frame(struct stackframe *fram
  
--	buf[0] = ft->stype;
--	buf[1] = ft->ttype;
--	buf[2] = ft->tclass;
--	buf[3] = otype->otype;
-+	buf[0] = cpu_to_le32(ft->stype);
-+	buf[1] = cpu_to_le32(ft->ttype);
-+	buf[2] = cpu_to_le32(ft->tclass);
-+	buf[3] = cpu_to_le32(otype->otype);
+ 	frame->sp = fp + 0x10;
+ 	frame->fp = *(unsigned long *)(fp);
+-	frame->pc = *(unsigned long *)(fp + 8);
++	/*
++	 * -4 here because we care about the PC at time of bl,
++	 * not where the return will go.
++	 */
++	frame->pc = *(unsigned long *)(fp + 8) - 4;
  
- 	rc = put_entry(buf, sizeof(u32), 4, fp);
- 	if (rc)
+ 	return 0;
+ }
 
 
