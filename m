@@ -1,51 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758047AbaCDV0l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:26:41 -0500
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:42754 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755315AbaCDV0i (ORCPT
+	id S1756048AbaCDUDP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:03:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40884 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755906AbaCDUDH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 16:26:38 -0500
+	Tue, 4 Mar 2014 15:03:07 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Cong Wang <cwang@twopensource.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.13 040/172] ipv4: Fix runtime WARNING in rtmsg_ifa()
+Date: Tue,  4 Mar 2014 12:02:04 -0800
+Message-Id: <20140304200301.014197959@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
+References: <20140304200259.626667112@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Date: Tue, 4 Mar 2014 22:26:37 +0100
-Message-ID: <CA+MoWDrTNtAHKsiBHz=W4=eJRO=m9EK_HZ7zLxb=4fg5riUQeg@mail.gmail.com>
-Subject: My Kernel bug is celebrating 2 years. Can you help me fix it?
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: "kernelnewbies@kernelnewbies.org" <kernelnewbies@kernelnewbies.org>,
-        kernel-janitors@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have reported a bug more than two years ago and it is still
-affecting me. The bug report gives some information:
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-https://bugzilla.redhat.com/show_bug.cgi?id=787299
+------------------
 
-I have tried basic debug instructions from:
-https://www.kernel.org/doc/Documentation/power/basic-pm-debugging.txt
+From: Geert Uytterhoeven <geert@linux-m68k.org>
 
-And everything works as expected when:
-# echo freeze > /sys/power/state
-# echo disk > /sys/power/state
+[ Upstream commit 63b5f152eb4a5bb79b9caf7ec37b4201d12f6e66 ]
 
-I have asked for help for fixing it:
-https://lkml.org/lkml/2013/11/1/186
+On m68k/ARAnyM:
 
-But I don't have a serial port. How can I debug this issue without a
-"real" serial port? Or what else can I try? How can I explore the hint
-about the problem only happening with VT-d enabled in BIOS? How can I
-explore the hint about the problem not happening if the option
-nox2apic is passed to the Kernel?
+WARNING: CPU: 0 PID: 407 at net/ipv4/devinet.c:1599 0x316a99()
+Modules linked in:
+CPU: 0 PID: 407 Comm: ifconfig Not tainted
+3.13.0-atari-09263-g0c71d68014d1 #1378
+Stack from 10c4fdf0:
+        10c4fdf0 002ffabb 000243e8 00000000 008ced6c 00024416 00316a99 0000063f
+        00316a99 00000009 00000000 002501b4 00316a99 0000063f c0a86117 00000080
+        c0a86117 00ad0c90 00250a5a 00000014 00ad0c90 00000000 00000000 00000001
+        00b02dd0 00356594 00000000 00356594 c0a86117 eff6c9e4 008ced6c 00000002
+        008ced60 0024f9b4 00250b52 00ad0c90 00000000 00000000 00252390 00ad0c90
+        eff6c9e4 0000004f 00000000 00000000 eff6c9e4 8000e25c eff6c9e4 80001020
+Call Trace: [<000243e8>] warn_slowpath_common+0x52/0x6c
+ [<00024416>] warn_slowpath_null+0x14/0x1a
+ [<002501b4>] rtmsg_ifa+0xdc/0xf0
+ [<00250a5a>] __inet_insert_ifa+0xd6/0x1c2
+ [<0024f9b4>] inet_abc_len+0x0/0x42
+ [<00250b52>] inet_insert_ifa+0xc/0x12
+ [<00252390>] devinet_ioctl+0x2ae/0x5d6
 
-Thank you,
+Adding some debugging code reveals that net_fill_ifaddr() fails in
 
-Peter
+    put_cacheinfo(skb, ifa->ifa_cstamp, ifa->ifa_tstamp,
+                              preferred, valid))
 
-P.S Yes, it works on Windows.
+nla_put complains:
 
--- 
-Peter
+    lib/nlattr.c:454: skb_tailroom(skb) = 12, nla_total_size(attrlen) = 20
+
+Apparently commit 5c766d642bcaffd0c2a5b354db2068515b3846cf ("ipv4:
+introduce address lifetime") forgot to take into account the addition of
+struct ifa_cacheinfo in inet_nlmsg_size(). Hence add it, like is already
+done for ipv6.
+
+Suggested-by: Cong Wang <cwang@twopensource.com>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Cong Wang <cwang@twopensource.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/ipv4/devinet.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/net/ipv4/devinet.c
++++ b/net/ipv4/devinet.c
+@@ -1435,7 +1435,8 @@ static size_t inet_nlmsg_size(void)
+ 	       + nla_total_size(4) /* IFA_ADDRESS */
+ 	       + nla_total_size(4) /* IFA_LOCAL */
+ 	       + nla_total_size(4) /* IFA_BROADCAST */
+-	       + nla_total_size(IFNAMSIZ); /* IFA_LABEL */
++	       + nla_total_size(IFNAMSIZ) /* IFA_LABEL */
++	       + nla_total_size(sizeof(struct ifa_cacheinfo)); /* IFA_CACHEINFO */
+ }
+ 
+ static inline u32 cstamp_delta(unsigned long cstamp)
+
+
