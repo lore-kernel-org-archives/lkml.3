@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756998AbaCDWZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 17:25:28 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:51125 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753521AbaCDWZ1 (ORCPT
+	id S1756639AbaCDW1f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 17:27:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42831 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757729AbaCDW13 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 17:25:27 -0500
-Date: Tue, 4 Mar 2014 22:23:56 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Khalid Aziz <khalid.aziz@oracle.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, tglx@linutronix.de,
-        Ingo Molnar <mingo@kernel.org>, peterz@infradead.org,
-        akpm@linux-foundation.org, andi.kleen@intel.com, rob@landley.net,
-        viro@zeniv.linux.org.uk, oleg@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] [PATCH] Pre-emption control for userspace
-Message-ID: <20140304222356.41c55bbc@alan.etchedpixels.co.uk>
-In-Reply-To: <53164824.3000704@oracle.com>
-References: <1393870033-31076-1-git-send-email-khalid.aziz@oracle.com>
-	<531641A8.40306@zytor.com>
-	<53164824.3000704@oracle.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+	Tue, 4 Mar 2014 17:27:29 -0500
+Date: Tue, 4 Mar 2014 14:27:27 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 05/48] percpu: Add preemption checks to __this_cpu ops
+Message-Id: <20140304142727.3e6d260c752c2e2ebd49260e@linux-foundation.org>
+In-Reply-To: <20140214201904.443470635@linux.com>
+References: <20140214201841.826179349@linux.com>
+	<20140214201904.443470635@linux.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -29,17 +27,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Obvious bug
+On Fri, 14 Feb 2014 14:18:46 -0600 Christoph Lameter <cl@linux.com> wrote:
 
-| Usage model is a thread mmaps this file during initialization. It then
-| writes a 1 to the mmap'd file after it grabs the lock in its critical
-| section where it wants immunity from pre-emption.
+> [Patch depends on another patch in this series that introduces raw_cpu_ops]
+> 
+> We define a check function in order to avoid trouble with the
+> include files. Then the higher level __this_cpu macros are
+> modified to invoke the preemption check.
+> 
+> --- linux.orig/lib/smp_processor_id.c	2014-01-30 14:40:50.936519233 -0600
+> +++ linux/lib/smp_processor_id.c	2014-01-30 14:40:50.936519233 -0600
+> @@ -7,7 +7,7 @@
+>  #include <linux/kallsyms.h>
+>  #include <linux/sched.h>
+>  
+> -notrace unsigned int debug_smp_processor_id(void)
+> +notrace static unsigned int check_preemption_disabled(char *what)
+>  {
+>  	int this_cpu = raw_smp_processor_id();
+>  
+> @@ -38,9 +38,9 @@
+>  	if (!printk_ratelimit())
+>  		goto out_enable;
+>  
+> -	printk(KERN_ERR "BUG: using smp_processor_id() in preemptible [%08x] "
+> -			"code: %s/%d\n",
+> -			preempt_count() - 1, current->comm, current->pid);
+> +	printk(KERN_ERR "BUG: using %s in preemptible [%08x] code: %s/%d\n",
+> +		what, preempt_count() - 1, current->comm, current->pid);
+> +
+>  	print_symbol("caller is %s\n", (long)__builtin_return_address(0));
+>  	dump_stack();
 
-You need to write it first or you can be pre-empted taking the lock
-before asking for immunity.
+I wonder if there's any point in printing __builtin_return_address. 
+Doesn't dump_stack() tell us the same thing?
 
-Presumably you could equally use something to group tasks (say a control
-group of some form) and implement voluntary pre-emption within the group
-only when in user space. Ie they only pre-empt each other by yielding but
-they can be pre-empted by other tasks outside the group ?
+> @@ -50,5 +50,17 @@
+>  	return this_cpu;
+>  }
+>  
+> +notrace unsigned int debug_smp_processor_id(void)
+> +{
+> +	return check_preemption_disabled("smp_processor_id()");
+> +}
+>  EXPORT_SYMBOL(debug_smp_processor_id);
+>  
+> +notrace void __this_cpu_preempt_check(const char *op)
+> +{
+> +	char text[40];
+> +
+> +	snprintf(text, sizeof(text), "__this_cpu_%s()", op);
+> +	check_preemption_disabled(text);
+> +}
+
+I'd like to see a comment here telling scared readers why this can
+never overflow text[].
 
