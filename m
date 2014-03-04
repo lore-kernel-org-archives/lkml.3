@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755995AbaCDWRa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 17:17:30 -0500
-Received: from moutng.kundenserver.de ([212.227.17.24]:61395 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754529AbaCDWRV (ORCPT
+	id S1756678AbaCDWRc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 17:17:32 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:59110 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755827AbaCDWRX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 17:17:21 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH RFC 3/6] tty: Rename xilinx_uart -> cadence_uart
-Date: Tue, 4 Mar 2014 23:16:26 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Michal Simek <michal.simek@xilinx.com>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-serial@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        Kevin Hilman <khilman@linaro.org>
-References: <1393953449-28551-1-git-send-email-soren.brinkmann@xilinx.com> <1393953449-28551-4-git-send-email-soren.brinkmann@xilinx.com> <20140304193913.71c6f307@alan.etchedpixels.co.uk>
-In-Reply-To: <20140304193913.71c6f307@alan.etchedpixels.co.uk>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201403042316.26221.arnd@arndb.de>
-X-Provags-ID: V02:K0:dhq8g7QslHYUxWJq8iJOYjz5YU7ckd/M9M80mBnuqu3
- 4yOBowKi22J7OqhkTILoR2lFGh6+pT+hfOf+7AhMiPhOptzcKZ
- BITgoRKqUXSAcLbsOEoC3Hr9bu2ibwcCInionQ+vp3xaa1bDUN
- pvH/2dOBbmujm0yykVvdBUXmk/GgLmG4ERtrg1rrBFONrSu3rn
- aKwk+TzRTrH12DTmKY9EtEhKxG8k5p14HxB8OGzcUoMqj48T2x
- yOsckmhnSpF27pCDXEL6TkNDWi5umOE6UuWWtjec6oz0RDK322
- tVSMmRWk5IvoJ65T5MBKbmiBY0+uMe10QRN8nH2vwFZIdEYO8O
- SlNusnUxXhdRFg1aFsxU=
+	Tue, 4 Mar 2014 17:17:23 -0500
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Hagen Paul Pfeifer <hagen@jauu.net>,
+        Jesse Gross <jesse@nicira.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: [PATCH v5 net-next 0/3] filter: add Extended BPF interpreter and converter
+Date: Tue,  4 Mar 2014 14:17:14 -0800
+Message-Id: <1393971437-4129-1-git-send-email-ast@plumgrid.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 04 March 2014, One Thousand Gnomes wrote:
-> On Tue,  4 Mar 2014 09:17:26 -0800
-> Soren Brinkmann <soren.brinkmann@xilinx.com> wrote:
+Hi All,
 
-> The following aspects of the change set are IMHO acceptable
-> 
-> - Cleaning up all the code formatting
-> - Update the driver comments and header to explain the Cadence/Xilinx
->   thing
-> - change "Xilinx PS UART Support" text to "Cadence (Xilinx PS) Support"
->   or similar wording in Kconfig
-> - Adding the cadence devicetree compatibility strings and inputs *in
->   addition* to the existing ones.
-> - Documentation for the new options
+V1 patches:
+http://thread.gmane.org/gmane.linux.kernel/1605783
+V2 patches:
+http://thread.gmane.org/gmane.linux.kernel/1642325
+V3 patches:
+http://thread.gmane.org/gmane.linux.kernel/1656538
 
-I agree. I think it would also be nice to allow the standard clock names
-to be used as an alternative to the bogus ref_clk" and "aper_clk"
-names, but just like the compatible string, it's too late to remove
-support for the existing ones.
+V4 summary:
+- addressed Daniel comments
+- RFC for seccomp with extended BPF
+- added extended BPF design doc
 
-Regarding the "xlnx,xuartps" compatible string, even if we were to break
-backwards comptibility with the clocks, I would still want to see this
-string being used in addition to "cdns,uart-r1p8" so we have a way to
-detect possible changes that xilinx did on top of the r1p8 version.
-I also wonder if "cdns,uart-r1p8" is actually specific enough: r1p8
-looks like a version number rather than a name, and it seems possible
-that Cadence has produced more than one uart implemention in the past
-or will do another one in the future that is not just a different
-revision of this one but instead something completely different.
+V5 summary:
+- fixed commit one-liner, removed empty line
+- added Hagen's ack
 
-	Arnd
+Please review.
+Thanks!
+
+Alexei Starovoitov (3):
+  filter: add Extended BPF interpreter and converter
+  [RFC] seccomp: convert seccomp to use extended BPF
+  doc: filter: add Extended BPF documentation
+
+ Documentation/networking/filter.txt |  181 ++++++++
+ include/linux/filter.h              |    6 +-
+ include/linux/netdevice.h           |    1 +
+ include/linux/seccomp.h             |    1 -
+ include/uapi/linux/filter.h         |   33 +-
+ kernel/seccomp.c                    |  112 +++--
+ net/core/filter.c                   |  807 ++++++++++++++++++++++++++++++++++-
+ net/core/sysctl_net_core.c          |    7 +
+ 8 files changed, 1059 insertions(+), 89 deletions(-)
+
+-- 
+1.7.9.5
+
