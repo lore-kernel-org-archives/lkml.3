@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757363AbaCDUG1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:06:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41868 "EHLO
+	id S1757389AbaCDUGo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:06:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41864 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932417AbaCDUF4 (ORCPT
+	with ESMTP id S932411AbaCDUFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:05:56 -0500
+	Tue, 4 Mar 2014 15:05:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Li Zefan <lizefan@huawei.com>
-Subject: [PATCH 3.10 88/97] ARM: 7812/1: rwlocks: retry trylock operation if strex fails on free lock
-Date: Tue,  4 Mar 2014 12:04:41 -0800
-Message-Id: <20140304200348.905927391@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.10 97/97] drm/radeon: disable pll sharing for DP on DCE4.1
+Date: Tue,  4 Mar 2014 12:04:50 -0800
+Message-Id: <20140304200349.186365367@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -30,94 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 00efaa0250939dc148e2d3104fb3c18395d24a2d upstream.
+commit 9ef4e1d000a5b335fcebfcf8aef3405e59574c89 upstream.
 
-Commit 15e7e5c1ebf5 ("ARM: 7749/1: spinlock: retry trylock operation if
-strex fails on free lock") modifying our arch_spin_trylock to retry the
-acquisition if the lock appeared uncontended, but the strex failed.
+Causes display problems.  We had already disabled
+sharing for non-DP displays.
 
-This patch does the same for rwlocks, which were missed by the original
-patch.
+Based on a patch from:
+Niels Ole Salscheider <niels_ole@salscheider-online.de>
 
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Li Zefan <lizefan@huawei.com>
+bug:
+https://bugzilla.kernel.org/show_bug.cgi?id=58121
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/spinlock.h |   49 ++++++++++++++++++++++++----------------
- 1 file changed, 30 insertions(+), 19 deletions(-)
+ drivers/gpu/drm/radeon/atombios_crtc.c |   16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
 
---- a/arch/arm/include/asm/spinlock.h
-+++ b/arch/arm/include/asm/spinlock.h
-@@ -168,17 +168,20 @@ static inline void arch_write_lock(arch_
- 
- static inline int arch_write_trylock(arch_rwlock_t *rw)
- {
--	unsigned long tmp;
-+	unsigned long contended, res;
- 
--	__asm__ __volatile__(
--"	ldrex	%0, [%1]\n"
--"	teq	%0, #0\n"
--"	strexeq	%0, %2, [%1]"
--	: "=&r" (tmp)
--	: "r" (&rw->lock), "r" (0x80000000)
--	: "cc");
-+	do {
-+		__asm__ __volatile__(
-+		"	ldrex	%0, [%2]\n"
-+		"	mov	%1, #0\n"
-+		"	teq	%0, #0\n"
-+		"	strexeq	%1, %3, [%2]"
-+		: "=&r" (contended), "=&r" (res)
-+		: "r" (&rw->lock), "r" (0x80000000)
-+		: "cc");
-+	} while (res);
- 
--	if (tmp == 0) {
-+	if (!contended) {
- 		smp_mb();
- 		return 1;
- 	} else {
-@@ -254,18 +257,26 @@ static inline void arch_read_unlock(arch
- 
- static inline int arch_read_trylock(arch_rwlock_t *rw)
- {
--	unsigned long tmp, tmp2 = 1;
-+	unsigned long contended, res;
- 
--	__asm__ __volatile__(
--"	ldrex	%0, [%2]\n"
--"	adds	%0, %0, #1\n"
--"	strexpl	%1, %0, [%2]\n"
--	: "=&r" (tmp), "+r" (tmp2)
--	: "r" (&rw->lock)
--	: "cc");
-+	do {
-+		__asm__ __volatile__(
-+		"	ldrex	%0, [%2]\n"
-+		"	mov	%1, #0\n"
-+		"	adds	%0, %0, #1\n"
-+		"	strexpl	%1, %0, [%2]"
-+		: "=&r" (contended), "=&r" (res)
-+		: "r" (&rw->lock)
-+		: "cc");
-+	} while (res);
- 
--	smp_mb();
--	return tmp2 == 0;
-+	/* If the lock is negative, then it is already held for write. */
-+	if (contended < 0x80000000) {
-+		smp_mb();
-+		return 1;
-+	} else {
-+		return 0;
-+	}
- }
- 
- /* read_can_lock - would read_trylock() succeed? */
+--- a/drivers/gpu/drm/radeon/atombios_crtc.c
++++ b/drivers/gpu/drm/radeon/atombios_crtc.c
+@@ -1661,6 +1661,20 @@ static int radeon_atom_pick_pll(struct d
+ 			return ATOM_PPLL1;
+ 		DRM_ERROR("unable to allocate a PPLL\n");
+ 		return ATOM_PPLL_INVALID;
++	} else if (ASIC_IS_DCE41(rdev)) {
++		/* Don't share PLLs on DCE4.1 chips */
++		if (ENCODER_MODE_IS_DP(atombios_get_encoder_mode(radeon_crtc->encoder))) {
++			if (rdev->clock.dp_extclk)
++				/* skip PPLL programming if using ext clock */
++				return ATOM_PPLL_INVALID;
++		}
++		pll_in_use = radeon_get_pll_use_mask(crtc);
++		if (!(pll_in_use & (1 << ATOM_PPLL1)))
++			return ATOM_PPLL1;
++		if (!(pll_in_use & (1 << ATOM_PPLL2)))
++			return ATOM_PPLL2;
++		DRM_ERROR("unable to allocate a PPLL\n");
++		return ATOM_PPLL_INVALID;
+ 	} else if (ASIC_IS_DCE4(rdev)) {
+ 		/* in DP mode, the DP ref clock can come from PPLL, DCPLL, or ext clock,
+ 		 * depending on the asic:
+@@ -1688,7 +1702,7 @@ static int radeon_atom_pick_pll(struct d
+ 				if (pll != ATOM_PPLL_INVALID)
+ 					return pll;
+ 			}
+-		} else if (!ASIC_IS_DCE41(rdev)) { /* Don't share PLLs on DCE4.1 chips */
++		} else {
+ 			/* use the same PPLL for all monitors with the same clock */
+ 			pll = radeon_get_shared_nondp_ppll(crtc);
+ 			if (pll != ATOM_PPLL_INVALID)
 
 
