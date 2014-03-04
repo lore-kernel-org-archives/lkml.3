@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758128AbaCDV2J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:28:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40913 "EHLO
+	id S1758155AbaCDV2j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:28:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40911 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756002AbaCDUDN (ORCPT
+	with ESMTP id S1755984AbaCDUDM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:03:13 -0500
+	Tue, 4 Mar 2014 15:03:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Cong Wang <cwang@twopensource.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>
-Subject: [PATCH 3.13 038/172] bridge: fix netconsole setup over bridge
-Date: Tue,  4 Mar 2014 12:02:02 -0800
-Message-Id: <20140304200300.947380194@linuxfoundation.org>
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>,
+        Jason Wang <jasowang@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.13 047/172] hyperv: Fix the carrier status setting
+Date: Tue,  4 Mar 2014 12:02:11 -0800
+Message-Id: <20140304200301.240740562@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -32,103 +31,145 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cong Wang <cwang@twopensource.com>
+From: Haiyang Zhang <haiyangz@microsoft.com>
 
-[ Upstream commit dbe173079ab58a444e12dbebe96f5aec1e0bed1a ]
+[ Upstream commit 891de74d693bb4fefe2efcc6432a4a9a9bee561e ]
 
-Commit 93d8bf9fb8f3 ("bridge: cleanup netpoll code") introduced
-a check in br_netpoll_enable(), but this check is incorrect for
-br_netpoll_setup(). This patch moves the code after the check
-into __br_netpoll_enable() and calls it in br_netpoll_setup().
-For br_add_if(), the check is still needed.
+Without this patch, the "cat /sys/class/net/ethN/operstate" shows
+"unknown", and "ethtool ethN" shows "Link detected: yes", when VM
+boots up with or without vNIC connected.
 
-Fixes: 93d8bf9fb8f3 ("bridge: cleanup netpoll code")
-Cc: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
-Cc: Stephen Hemminger <stephen@networkplumber.org>
-Cc: David S. Miller <davem@davemloft.net>
-Signed-off-by: Cong Wang <cwang@twopensource.com>
-Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
-Acked-by: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
-Tested-by: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
+This patch fixed the problem.
+
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+Acked-by: Jason Wang <jasowang@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/bridge/br_device.c |   51 ++++++++++++++++++++++++++-----------------------
- 1 file changed, 28 insertions(+), 23 deletions(-)
+ drivers/net/hyperv/netvsc_drv.c |   53 ++++++++++++++++++++++++++++------------
+ 1 file changed, 38 insertions(+), 15 deletions(-)
 
---- a/net/bridge/br_device.c
-+++ b/net/bridge/br_device.c
-@@ -226,6 +226,33 @@ static void br_netpoll_cleanup(struct ne
- 		br_netpoll_disable(p);
+--- a/drivers/net/hyperv/netvsc_drv.c
++++ b/drivers/net/hyperv/netvsc_drv.c
+@@ -89,8 +89,12 @@ static int netvsc_open(struct net_device
+ {
+ 	struct net_device_context *net_device_ctx = netdev_priv(net);
+ 	struct hv_device *device_obj = net_device_ctx->device_ctx;
++	struct netvsc_device *nvdev;
++	struct rndis_device *rdev;
+ 	int ret = 0;
+ 
++	netif_carrier_off(net);
++
+ 	/* Open up the device */
+ 	ret = rndis_filter_open(device_obj);
+ 	if (ret != 0) {
+@@ -100,6 +104,11 @@ static int netvsc_open(struct net_device
+ 
+ 	netif_start_queue(net);
+ 
++	nvdev = hv_get_drvdata(device_obj);
++	rdev = nvdev->extension;
++	if (!rdev->link_state)
++		netif_carrier_on(net);
++
+ 	return ret;
  }
  
-+static int __br_netpoll_enable(struct net_bridge_port *p, gfp_t gfp)
-+{
-+	struct netpoll *np;
-+	int err;
+@@ -230,23 +239,24 @@ void netvsc_linkstatus_callback(struct h
+ 	struct net_device *net;
+ 	struct net_device_context *ndev_ctx;
+ 	struct netvsc_device *net_device;
++	struct rndis_device *rdev;
+ 
+ 	net_device = hv_get_drvdata(device_obj);
++	rdev = net_device->extension;
 +
-+	np = kzalloc(sizeof(*p->np), gfp);
-+	if (!np)
-+		return -ENOMEM;
++	rdev->link_state = status != 1;
 +
-+	err = __netpoll_setup(np, p->dev, gfp);
-+	if (err) {
-+		kfree(np);
-+		return err;
+ 	net = net_device->ndev;
+ 
+-	if (!net) {
+-		netdev_err(net, "got link status but net device "
+-				"not initialized yet\n");
++	if (!net || net->reg_state != NETREG_REGISTERED)
+ 		return;
+-	}
+ 
++	ndev_ctx = netdev_priv(net);
+ 	if (status == 1) {
+-		netif_carrier_on(net);
+-		ndev_ctx = netdev_priv(net);
+ 		schedule_delayed_work(&ndev_ctx->dwork, 0);
+ 		schedule_delayed_work(&ndev_ctx->dwork, msecs_to_jiffies(20));
+ 	} else {
+-		netif_carrier_off(net);
++		schedule_delayed_work(&ndev_ctx->dwork, 0);
+ 	}
+ }
+ 
+@@ -389,17 +399,35 @@ static const struct net_device_ops devic
+  * current context when receiving RNDIS_STATUS_MEDIA_CONNECT event. So, add
+  * another netif_notify_peers() into a delayed work, otherwise GARP packet
+  * will not be sent after quick migration, and cause network disconnection.
++ * Also, we update the carrier status here.
+  */
+-static void netvsc_send_garp(struct work_struct *w)
++static void netvsc_link_change(struct work_struct *w)
+ {
+ 	struct net_device_context *ndev_ctx;
+ 	struct net_device *net;
+ 	struct netvsc_device *net_device;
++	struct rndis_device *rdev;
++	bool notify;
++
++	rtnl_lock();
+ 
+ 	ndev_ctx = container_of(w, struct net_device_context, dwork.work);
+ 	net_device = hv_get_drvdata(ndev_ctx->device_ctx);
++	rdev = net_device->extension;
+ 	net = net_device->ndev;
+-	netdev_notify_peers(net);
++
++	if (rdev->link_state) {
++		netif_carrier_off(net);
++		notify = false;
++	} else {
++		netif_carrier_on(net);
++		notify = true;
 +	}
 +
-+	p->np = np;
-+	return err;
-+}
++	rtnl_unlock();
 +
-+int br_netpoll_enable(struct net_bridge_port *p, gfp_t gfp)
-+{
-+	if (!p->br->dev->npinfo)
-+		return 0;
-+
-+	return __br_netpoll_enable(p, gfp);
-+}
-+
- static int br_netpoll_setup(struct net_device *dev, struct netpoll_info *ni,
- 			    gfp_t gfp)
- {
-@@ -236,7 +263,7 @@ static int br_netpoll_setup(struct net_d
- 	list_for_each_entry(p, &br->port_list, list) {
- 		if (!p->dev)
- 			continue;
--		err = br_netpoll_enable(p, gfp);
-+		err = __br_netpoll_enable(p, gfp);
- 		if (err)
- 			goto fail;
- 	}
-@@ -249,28 +276,6 @@ fail:
- 	goto out;
++	if (notify)
++		netdev_notify_peers(net);
  }
  
--int br_netpoll_enable(struct net_bridge_port *p, gfp_t gfp)
--{
--	struct netpoll *np;
--	int err;
+ 
+@@ -415,13 +443,10 @@ static int netvsc_probe(struct hv_device
+ 	if (!net)
+ 		return -ENOMEM;
+ 
+-	/* Set initial state */
+-	netif_carrier_off(net);
 -
--	if (!p->br->dev->npinfo)
--		return 0;
+ 	net_device_ctx = netdev_priv(net);
+ 	net_device_ctx->device_ctx = dev;
+ 	hv_set_drvdata(dev, net);
+-	INIT_DELAYED_WORK(&net_device_ctx->dwork, netvsc_send_garp);
++	INIT_DELAYED_WORK(&net_device_ctx->dwork, netvsc_link_change);
+ 	INIT_WORK(&net_device_ctx->work, do_set_multicast);
+ 
+ 	net->netdev_ops = &device_ops;
+@@ -444,8 +469,6 @@ static int netvsc_probe(struct hv_device
+ 	}
+ 	memcpy(net->dev_addr, device_info.mac_adr, ETH_ALEN);
+ 
+-	netif_carrier_on(net);
 -
--	np = kzalloc(sizeof(*p->np), gfp);
--	if (!np)
--		return -ENOMEM;
--
--	err = __netpoll_setup(np, p->dev, gfp);
--	if (err) {
--		kfree(np);
--		return err;
--	}
--
--	p->np = np;
--	return err;
--}
--
- void br_netpoll_disable(struct net_bridge_port *p)
- {
- 	struct netpoll *np = p->np;
+ 	ret = register_netdev(net);
+ 	if (ret != 0) {
+ 		pr_err("Unable to register netdev.\n");
 
 
