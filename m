@@ -1,155 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756465AbaCDICy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 03:02:54 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:61480 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756375AbaCDICx (ORCPT
+	id S1756550AbaCDIFQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 03:05:16 -0500
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:37919 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752195AbaCDIFN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 03:02:53 -0500
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: gregkh@linuxfoundation.org, khalasa@piap.pl
-Cc: sachin.kamat@linaro.org, shaun@xresource.ca,
-        dulshani.gunawardhana89@gmail.com, dan.carpenter@oracle.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/5 v4] Staging: cxt1e1: Fix line length over 80 characters in hwprobe.c
-Date: Tue, 04 Mar 2014 17:02:43 +0900
-Message-ID: <3208302.BmWMWeMhu4@daeseok-laptop.cloud.net>
-User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
+	Tue, 4 Mar 2014 03:05:13 -0500
+Date: Tue, 4 Mar 2014 09:02:31 +0100
+From: Henrik Austad <henrik@austad.us>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: John Stultz <john.stultz@linaro.org>, Salman Qazi <sqazi@google.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH] clocksource: avoid unnecessary overflow in
+ cyclecounter_cyc2ns()
+Message-ID: <20140304080231.GB18178@austad.us>
+References: <1393910409.6415.9.camel@marge.simpson.net>
+ <20140304072020.GA18178@austad.us>
+ <1393918280.5419.19.camel@marge.simpson.net>
+ <1393918588.5419.23.camel@marge.simpson.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393918588.5419.23.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-clean up checkpatch.pl warnings:
- WARNING: Line length over 80 characters
+On Tue, Mar 04, 2014 at 08:36:28AM +0100, Mike Galbraith wrote:
+> (boing boing boing... hell with it, today doesn't exist;)
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
----
- drivers/staging/cxt1e1/hwprobe.c |   45 ++++++++++++++++++++++++--------------
- 1 file changed, 28 insertions(+), 17 deletions(-)
+you lost me at boing.. :)
 
-diff --git a/drivers/staging/cxt1e1/hwprobe.c b/drivers/staging/cxt1e1/hwprobe.c
-index 85040bb..da991a3 100644
---- a/drivers/staging/cxt1e1/hwprobe.c
-+++ b/drivers/staging/cxt1e1/hwprobe.c
-@@ -37,7 +37,8 @@ extern int  drvr_state;
- 
- /* forward references */
- void        c4_stopwd(ci_t *);
--struct net_device * __init c4_add_dev(hdw_info_t *, int, unsigned long, unsigned long, int, int);
-+struct net_device * __init c4_add_dev(hdw_info_t *, int, unsigned long,
-+				      unsigned long, int, int);
- 
- 
- struct s_hdw_info hdw_info[MAX_BOARDS];
-@@ -104,24 +105,31 @@ hdw_sn_get(hdw_info_t *hi, int brdno)
- 	addr = (long) hi->addr_mapped[1] + EEPROM_OFFSET;
- 
- 	/* read EEPROM with largest known format size... */
--	pmc_eeprom_read_buffer(addr, 0, (char *)hi->mfg_info.data, sizeof(FLD_TYPE2));
-+	pmc_eeprom_read_buffer(addr, 0, (char *)hi->mfg_info.data,
-+			       sizeof(FLD_TYPE2));
- 
- #if 0
- 	{
- 		unsigned char *ucp = (unsigned char *) &hi->mfg_info.data;
- 
- 		pr_info("eeprom[00]:  %02x %02x %02x %02x  %02x %02x %02x %02x\n",
--				*(ucp + 0), *(ucp + 1), *(ucp + 2), *(ucp + 3), *(ucp + 4), *(ucp + 5), *(ucp + 6), *(ucp + 7));
-+			*(ucp + 0), *(ucp + 1), *(ucp + 2), *(ucp + 3),
-+			*(ucp + 4), *(ucp + 5), *(ucp + 6), *(ucp + 7));
- 		pr_info("eeprom[08]:  %02x %02x %02x %02x  %02x %02x %02x %02x\n",
--				*(ucp + 8), *(ucp + 9), *(ucp + 10), *(ucp + 11), *(ucp + 12), *(ucp + 13), *(ucp + 14), *(ucp + 15));
-+			*(ucp + 8), *(ucp + 9), *(ucp + 10), *(ucp + 11),
-+			*(ucp + 12), *(ucp + 13), *(ucp + 14), *(ucp + 15));
- 		pr_info("eeprom[16]:  %02x %02x %02x %02x  %02x %02x %02x %02x\n",
--				*(ucp + 16), *(ucp + 17), *(ucp + 18), *(ucp + 19), *(ucp + 20), *(ucp + 21), *(ucp + 22), *(ucp + 23));
-+			*(ucp + 16), *(ucp + 17), *(ucp + 18), *(ucp + 19),
-+			*(ucp + 20), *(ucp + 21), *(ucp + 22), *(ucp + 23));
- 		pr_info("eeprom[24]:  %02x %02x %02x %02x  %02x %02x %02x %02x\n",
--				*(ucp + 24), *(ucp + 25), *(ucp + 26), *(ucp + 27), *(ucp + 28), *(ucp + 29), *(ucp + 30), *(ucp + 31));
-+			*(ucp + 24), *(ucp + 25), *(ucp + 26), *(ucp + 27),
-+			*(ucp + 28), *(ucp + 29), *(ucp + 30), *(ucp + 31));
- 		pr_info("eeprom[32]:  %02x %02x %02x %02x  %02x %02x %02x %02x\n",
--				*(ucp + 32), *(ucp + 33), *(ucp + 34), *(ucp + 35), *(ucp + 36), *(ucp + 37), *(ucp + 38), *(ucp + 39));
-+			*(ucp + 32), *(ucp + 33), *(ucp + 34), *(ucp + 35),
-+			*(ucp + 36), *(ucp + 37), *(ucp + 38), *(ucp + 39));
- 		pr_info("eeprom[40]:  %02x %02x %02x %02x  %02x %02x %02x %02x\n",
--				*(ucp + 40), *(ucp + 41), *(ucp + 42), *(ucp + 43), *(ucp + 44), *(ucp + 45), *(ucp + 46), *(ucp + 47));
-+			*(ucp + 40), *(ucp + 41), *(ucp + 42), *(ucp + 43),
-+			*(ucp + 44), *(ucp + 45), *(ucp + 46), *(ucp + 47));
- 	}
- #endif
- #if 0
-@@ -230,10 +238,11 @@ c4_hdw_init(struct pci_dev *pdev, int found)
- 		return 0;
- 	}
- 
--	if (pdev->bus)                  /* obtain bus number */
-+	/* obtain bus number */
-+	if (pdev->bus)
- 		busno = pdev->bus->number;
- 	else
--		busno = 0;                  /* default for system PCI inconsistency */
-+		busno = 0; /* default for system PCI inconsistency */
- 	slot = pdev->devfn & ~0x07;
- 
- 	/*
-@@ -246,8 +255,8 @@ c4_hdw_init(struct pci_dev *pdev, int found)
- 	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++)
- 	{
- 		/*
--		 * match with board's first found interface, otherwise this is first
--		 * found
-+		 * match with board's first found interface, otherwise this is
-+		 * first found
- 		 */
- 		if ((hi->pci_slot == 0xff) ||   /* new board */
- 		    ((hi->pci_slot == slot) && (hi->bus == pdev->bus)))
-@@ -256,13 +265,14 @@ c4_hdw_init(struct pci_dev *pdev, int found)
- 	if (i == MAX_BOARDS)            /* no match in above loop means MAX
- 					 * exceeded */
- 	{
--		pr_warning("exceeded number of allowed devices (>%d)?\n", MAX_BOARDS);
-+		pr_warning("exceeded number of allowed devices (>%d)?\n",
-+			   MAX_BOARDS);
- 		return 0;
- 	}
- 	if (pdev->bus)
- 		hi->pci_busno = pdev->bus->number;
- 	else
--		hi->pci_busno = 0;          /* default for system PCI inconsistency */
-+		hi->pci_busno = 0; /* default for system PCI inconsistency */
- 	hi->pci_slot = slot;
- 	pci_read_config_byte(pdev, PCI_INTERRUPT_PIN, &hi->pci_pin[fun]);
- 	pci_read_config_byte(pdev, PCI_REVISION_ID, &hi->revid[fun]);
-@@ -345,7 +355,8 @@ c4hw_attach_all(void)
- 			}
- #ifdef SBE_MAP_DEBUG
- 			pr_warning("%s: io remapped from phys %x to virt %x\n",
--				   hi->devname, (u_int32_t) hi->addr[j], (u_int32_t) hi->addr_mapped[j]);
-+				   hi->devname, (u_int32_t) hi->addr[j],
-+				   (u_int32_t) hi->addr_mapped[j]);
- #endif
- 		}
- 	}
-@@ -380,9 +391,9 @@ c4hw_attach_all(void)
- #if 0
- 			cleanup_devs();
- #endif
--			return error_flag;      /* error_flag set w/in add_dev() */
-+			return error_flag; /* error_flag set w/in add_dev() */
- 		}
--		show_two(hi, i);           /* displays found information */
-+		show_two(hi, i); /* displays found information */
- 	}
- 	return 0;
- }
+> On Tue, 2014-03-04 at 08:31 +0100, Mike Galbraith wrote: 
+> > On Tue, 2014-03-04 at 08:20 +0100, Henrik Austad wrote: 
+> > > On Tue, Mar 04, 2014 at 06:20:09AM +0100, Mike Galbraith wrote:
+> > > > Greetings,
+> > > > 
+> > > > While rummaging around looking for HTH a gaggle of weird a$$ machines
+> > > > can manage to timewarp back and forth by exactly 208 days, I stumbled
+> > > > across $subject which looks like it may want to borrow Salman's fix.
+> > > > 
+> > > > clocksource: avoid unnecessary overflow in cyclecounter_cyc2ns()
+> > > > 
+> > > > As per 4cecf6d401a "sched, x86: Avoid unnecessary overflow in sched_clock",
+> > > > cycles * mult >> shift is overflow prone. so give it the same treatment.
+> > > > 
+> > > > Cc: Salman Qazi <sqazi@google.com>
+> > > > Cc: John Stultz <johnstul@us.ibm.com>
+> > > > Signed-off-by: Mike Galbraith <bitbucket@online.de>
+> > > > ---
+> > > >  include/linux/clocksource.h |   11 ++++++++---
+> > > >  1 file changed, 8 insertions(+), 3 deletions(-)
+> > > > 
+> > > > --- a/include/linux/clocksource.h
+> > > > +++ b/include/linux/clocksource.h
+> > > > @@ -77,13 +77,18 @@ struct timecounter {
+> > > >   *
+> > > >   * XXX - This could use some mult_lxl_ll() asm optimization. Same code
+> > > >   * as in cyc2ns, but with unsigned result.
+> > > > + *
+> > > > + * Because it is the same as x86 __cycles_2_ns, give it the same treatment as
+> > > > + * commit 4cecf6d401a "sched, x86: Avoid unnecessary overflow in sched_clock"
+> > > > + * to avoid a potential cycles * mult overflow.
+> > > 
+> > > Do we normally reference a particular commit in a comment? Why not just 
+> > > grab the same comment and add a "this is grabbed from arch/x86/... ?
+> > 
+> > Fewer '+' signs?  History doesn't go away, so seems fine to me.
+
+I wasn't thinking about the number of +'s in the code, but rather 
+referencing other parts of the code from the code and particular commits in 
+the commit-msg itself. It was the code<->commitmsg interface I was 
+pondering.
+
+Besides, it wasn't meant as "you shouldn't do that", but more "is it ok to 
+do that?" :)
+
 -- 
-1.7.9.5
-
-
+Henrik Austad
