@@ -1,57 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756470AbaCDH4r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 02:56:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25075 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756452AbaCDH4q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 02:56:46 -0500
-Date: Tue, 4 Mar 2014 09:56:42 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Question on vhost_has_feature()
-Message-ID: <20140304075642.GA8031@redhat.com>
-References: <20140303194422.GA17107@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140303194422.GA17107@linux.vnet.ibm.com>
+	id S1756515AbaCDH5w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 02:57:52 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:41671 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752195AbaCDH5v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 02:57:51 -0500
+From: Jean Pihet <jean.pihet@linaro.org>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnaldo <acme@ghostprotocols.net>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Steve Capper <steve.capper@linaro.org>
+Cc: Will Deacon <will.deacon@arm.com>, patches@linaro.org,
+        Jean Pihet <jean.pihet@linaro.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        David Ahern <dsahern@gmail.com>
+Subject: [PATCH 1/3] perf tests: Introduce perf_regs_load function on ARM
+Date: Tue,  4 Mar 2014 08:57:13 +0100
+Message-Id: <1393919833-15154-1-git-send-email-jean.pihet@linaro.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <CAFrcx1nBhu6jkcdpOu8POOk95MtDH5vjtFy92=9MGdVgEknzLg@mail.gmail.com>
+References: <CAFrcx1nBhu6jkcdpOu8POOk95MtDH5vjtFy92=9MGdVgEknzLg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 03, 2014 at 11:44:23AM -0800, Paul E. McKenney wrote:
-> Hello, Michael,
-> 
-> Just curious about the purpose of the rcu_dereference_index_check() in
-> vhost_has_feature().  I don't see how it fits in.  The closest thing
-> I see if the use in handle_rx(), where it selects vq->log or NULL.  But
-> in that case, I would expect the usual RCU usage pattern to wrap an
-> rcu_dereference() around the vq->log.
-> 
-> Enlightenment?
-> 
-> 							Thanx, Paul
+Introducing perf_regs_load function, which is going
+to be used for dwarf unwind test in following patches.
 
-Hi Paul,
+It takes single argument as a pointer to the regs dump
+buffer and populates it with current registers values.
 
-Yes, it's weird.  As you say the use is in handle_rx.
-The way it's supposed to work is that readers take vq mutex, and
-writers change the value and then take and release
-vq mutex.
-We did it like this because there are thinkably multiple vqs.
+Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
+Cc: Steve Capper <steve.capper@linaro.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+---
+ tools/perf/arch/arm/Makefile            |  1 +
+ tools/perf/arch/arm/include/perf_regs.h |  2 ++
+ tools/perf/arch/arm/tests/regs_load.S   | 47 +++++++++++++++++++++++++++++++++
+ 3 files changed, 50 insertions(+)
+ create mode 100644 tools/perf/arch/arm/tests/regs_load.S
 
-I tried to document it in vhost.h :
-        /* Readers use RCU to access memory table pointer
-         * log base pointer and features.
-         * Writers use mutex below.*/
-
-If this is a problem, it's possible to restructure the code to avoid
-this pattern for vhost_has_feature, pls let me know.
-
-Thanks a lot for paying attention!
-
-
+diff --git a/tools/perf/arch/arm/Makefile b/tools/perf/arch/arm/Makefile
+index 67e9b3d..9b8f87e 100644
+--- a/tools/perf/arch/arm/Makefile
++++ b/tools/perf/arch/arm/Makefile
+@@ -4,4 +4,5 @@ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
+ endif
+ ifndef NO_LIBUNWIND
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/unwind-libunwind.o
++LIB_OBJS += $(OUTPUT)arch/$(ARCH)/tests/regs_load.o
+ endif
+diff --git a/tools/perf/arch/arm/include/perf_regs.h b/tools/perf/arch/arm/include/perf_regs.h
+index 2a1cfde..1476ae7 100644
+--- a/tools/perf/arch/arm/include/perf_regs.h
++++ b/tools/perf/arch/arm/include/perf_regs.h
+@@ -5,6 +5,8 @@
+ #include "../../util/types.h"
+ #include <asm/perf_regs.h>
+ 
++void perf_regs_load(u64 *regs);
++
+ #define PERF_REGS_MASK	((1ULL << PERF_REG_ARM_MAX) - 1)
+ #define PERF_REG_IP	PERF_REG_ARM_PC
+ #define PERF_REG_SP	PERF_REG_ARM_SP
+diff --git a/tools/perf/arch/arm/tests/regs_load.S b/tools/perf/arch/arm/tests/regs_load.S
+new file mode 100644
+index 0000000..916d268
+--- /dev/null
++++ b/tools/perf/arch/arm/tests/regs_load.S
+@@ -0,0 +1,47 @@
++#include <linux/linkage.h>
++
++#define R0 0x00
++#define R1 0x08
++#define R2 0x10
++#define R3 0x18
++#define R4 0x20
++#define R5 0x28
++#define R6 0x30
++#define R7 0x38
++#define R8 0x40
++#define R9 0x48
++#define SL 0x50
++#define FP 0x58
++#define IP 0x60
++#define SP 0x68
++#define LR 0x70
++#define PC 0x78
++
++@ Implementation of void perf_regs_load(u64 *regs);
++@
++@ This functions fills in the 'regs' buffer from the actual registers values.
++@ Note that the return value (i.e. caller values) of pc is retrieved
++@ and stored, in order to skip the call to this function.
++
++.text
++.type perf_regs_load,%function
++ENTRY(perf_regs_load)
++	str r0, [r0, #R0]
++	str r1, [r0, #R1]
++	str r2, [r0, #R2]
++	str r3, [r0, #R3]
++	str r4, [r0, #R4]
++	str r5, [r0, #R5]
++	str r6, [r0, #R6]
++	str r7, [r0, #R7]
++	str r8, [r0, #R8]
++	str r9, [r0, #R9]
++	str sl, [r0, #SL]
++	str fp, [r0, #FP]
++	str ip, [r0, #IP]
++	str sp, [r0, #SP]
++	str lr, [r0, #LR]
++	str lr, [r0, #PC]	@ Save caller PC
++
++	bx lr
++ENDPROC(perf_regs_load)
 -- 
-MST
+1.8.1.2
+
