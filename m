@@ -1,50 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756840AbaCDKc6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 05:32:58 -0500
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:56022 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756651AbaCDKc5 (ORCPT
+	id S1756847AbaCDKeR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 05:34:17 -0500
+Received: from www.linutronix.de ([62.245.132.108]:60366 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756452AbaCDKeP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 05:32:57 -0500
-Message-ID: <5315ABD2.9030809@gmail.com>
-Date: Tue, 04 Mar 2014 11:32:50 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-To: Mark Brown <broonie@kernel.org>
-CC: Liam Girdwood <lgirdwood@gmail.com>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        alsa-devel@alsa-project.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/5] ASoC: kirkwood: prepare new Dove DT Kconfig variable
-References: <1393536486-3827-3-git-send-email-sebastian.hesselbarth@gmail.com> <1393662801-17950-1-git-send-email-sebastian.hesselbarth@gmail.com> <20140304040314.GC2411@sirena.org.uk>
-In-Reply-To: <20140304040314.GC2411@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 4 Mar 2014 05:34:15 -0500
+Date: Tue, 4 Mar 2014 11:34:13 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH V3 1/5] genirq: define flag IRQ_SRC_DST_INVERTED, and
+ accessors
+In-Reply-To: <alpine.DEB.2.02.1403041018370.18573@ionos.tec.linutronix.de>
+Message-ID: <alpine.DEB.2.02.1403041130280.18573@ionos.tec.linutronix.de>
+References: <1393876300-3061-1-git-send-email-swarren@wwwdotorg.org> <alpine.DEB.2.02.1403041018370.18573@ionos.tec.linutronix.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/2014 05:03 AM, Mark Brown wrote:
-> On Sat, Mar 01, 2014 at 09:33:17AM +0100, Sebastian Hesselbarth wrote:
->> DT-enabled Dove will move over from ARCH_DOVE in mach-dove to MACH_DOVE in
->> mach-mvebu. As non-DT ARCH_DOVE will stay to rot for a while, add a new
->> DT-only MACH_DOVE Kconfig.
->
-> This doesn't apply against current ASoC, please check and resend.
+On Tue, 4 Mar 2014, Thomas Gleixner wrote:
 
-Mark,
+> On Mon, 3 Mar 2014, Stephen Warren wrote:
+> 
+> > From: Stephen Warren <swarren@nvidia.com>
+> > 
+> > Some devices have configurable IRQ output polarities. Software might
+> > use IRQ_TYPE_* to determine how to configure such a device's IRQ
+> > output polarity in order to match how the IRQ controller input is
+> > configured. If the board or SoC inverts the signal between the
+> > device's IRQ output and controller's IRQ output, software must be
+> > aware of this fact, in order to program the IRQ output to the correct
+> > (i.e. opposite) polarity. This flag provides that information.
+> 
+> So what you're saying is:
+> 
+> Device IRQ output --> [Optional Inverter Logic] --> IRQ controller input.
+> 
+> And you're storing the information about the presence of the inverter
+> logic in the irq itself, but the core does not make any use of it and
+> you let the device driver deal with the outcome.
+> 
+> This sucks as all affected drivers have to implement the same sanity
+> logic for this.
+> 
+> Why don't you implement a core function which tells the driver which
+> polarity to select? That requires a few more changes, but I think it's
+> worth it for other reasons.
+> 
+> Right now the set_type logic requires the irq chip drivers to
+> implement sanity checking and default selections for TYPE_NONE. We can
+> be more clever about that and add this information to the irq chip
+> flags.
+> 
+> enum {
+>      IRQ_CHIP_TYPES_MASK	= 0x0f,
+>      IRQ_CHIP_DEFAULT_MASK	= 0xf0,
+>      IRQ_CHIP_EXISTING_FLAGS	....
+> }
 
-actually looking at what that specific Kconfig will look like in
-asoc/for-next, I guess the current version is sufficient already.
+We need to extend the mask to indicate whether the chip supports
+BOTH_EDGES. A chip can support FALLING and RISING, but not both at the
+same time. For the set_type side the current BOTH = FALLING | RISING
+is fine, but for checking the supported type it's not sufficient.
 
-It already says:
+Thanks,
 
-depends on ARCH_KIRKWOOD || ARCH_DOVE || ARCH_MVEBU || COMPILE_TEST
+	tglx
 
-and MACH_DOVE will be part of ARCH_MVEBU.
 
-Thanks for pointing this out, please ignore this patch.
-
-Sebastian
