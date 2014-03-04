@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757869AbaCDUR5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:17:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41744 "EHLO
+	id S932435AbaCDUSW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:18:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41733 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757300AbaCDUFd (ORCPT
+	with ESMTP id S1757292AbaCDUFd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Mar 2014 15:05:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jean Delvare <jdelvare@suse.de>, Alan Cox <alan@linux.intel.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Doug Thompson <dougthompson@xmission.com>,
-        Borislav Petkov <bp@suse.de>
-Subject: [PATCH 3.10 63/97] i7core_edac: Fix PCI device reference count
-Date: Tue,  4 Mar 2014 12:04:16 -0800
-Message-Id: <20140304200348.097254463@linuxfoundation.org>
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.10 62/97] ACPI / PCI: Fix memory leak in acpi_pci_irq_enable()
+Date: Tue,  4 Mar 2014 12:04:15 -0800
+Message-Id: <20140304200348.069731318@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -31,60 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <jdelvare@suse.de>
+From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
 
-commit c0f5eeed0f4cef4f05b74883a7160e7edde58b6a upstream.
+commit b685f3b1744061aa9ad822548ba9c674de5be7c6 upstream.
 
-The reference count changes done by pci_get_device can be a little
-misleading when the usage diverges from the most common scheme. The
-reference count of the device passed as the last parameter is always
-decreased, even if the function returns no new device. So if we are
-going to try alternative device IDs, we must manually increment the
-device reference count before each retry. If we don't, we end up
-decreasing the reference count, and after a few modprobe/rmmod cycles
-the PCI devices will vanish.
+acpi_pci_link_allocate_irq() can return negative gsi even if
+entry != NULL.  For that case we have a memory leak, so free
+entry before returning from acpi_pci_irq_enable() for gsi < 0.
 
-In other words and as Alan put it: without this fix the EDAC code
-corrupts the PCI device list.
-
-This fixes kernel bug #50491:
-https://bugzilla.kernel.org/show_bug.cgi?id=50491
-
-Signed-off-by: Jean Delvare <jdelvare@suse.de>
-Link: http://lkml.kernel.org/r/20140224093927.7659dd9d@endymion.delvare
-Reviewed-by: Alan Cox <alan@linux.intel.com>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Doug Thompson <dougthompson@xmission.com>
-Signed-off-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+[rjw: Subject and changelog]
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/edac/i7core_edac.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/acpi/pci_irq.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/edac/i7core_edac.c
-+++ b/drivers/edac/i7core_edac.c
-@@ -1334,14 +1334,19 @@ static int i7core_get_onedevice(struct p
- 	 * is at addr 8086:2c40, instead of 8086:2c41. So, we need
- 	 * to probe for the alternate address in case of failure
- 	 */
--	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_I7_NONCORE && !pdev)
-+	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_I7_NONCORE && !pdev) {
-+		pci_dev_get(*prev);	/* pci_get_device will put it */
- 		pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
- 				      PCI_DEVICE_ID_INTEL_I7_NONCORE_ALT, *prev);
-+	}
+--- a/drivers/acpi/pci_irq.c
++++ b/drivers/acpi/pci_irq.c
+@@ -432,6 +432,7 @@ int acpi_pci_irq_enable(struct pci_dev *
+ 				 pin_name(pin));
+ 		}
  
--	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE && !pdev)
-+	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE &&
-+	    !pdev) {
-+		pci_dev_get(*prev);	/* pci_get_device will put it */
- 		pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
- 				      PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE_ALT,
- 				      *prev);
-+	}
++		kfree(entry);
+ 		return 0;
+ 	}
  
- 	if (!pdev) {
- 		if (*prev) {
 
 
