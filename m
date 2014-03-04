@@ -1,76 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755180AbaCDTJa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 14:09:30 -0500
-Received: from hapkido.dreamhost.com ([66.33.216.122]:37932 "EHLO
-	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754683AbaCDTJ2 convert rfc822-to-8bit (ORCPT
+	id S1755425AbaCDTLP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 14:11:15 -0500
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:46362 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755332AbaCDTLM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 14:09:28 -0500
-Message-ID: <daed65ee080e4cc417c87f34af8447f2.squirrel@webmail.novalis.org>
-Date: Tue, 4 Mar 2014 14:09:18 -0500
-Subject: PROBLEM: Inotify leaks file descriptors.
-From: "David Turner" <novalis@novalis.org>
-To: "John McCutchan" <john@johnmccutchan.com>, "Robert Love" <rlove@rlove.org>,
-        "Eric Paris" <eparis@parisplace.org>, linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.21
+	Tue, 4 Mar 2014 14:11:12 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+In-Reply-To: <20140304014002.GA10071@lskakaxi-intel>
+References: <1393569464-14904-1-git-send-email-shuox.liu@intel.com>
+	<CAGXu5jLFq-FqXsw4SWuhE-JPzCCecvMdUHbF0_B=S-GODFU1pg@mail.gmail.com>
+	<20140304014002.GA10071@lskakaxi-intel>
+Date: Tue, 4 Mar 2014 11:11:11 -0800
+X-Google-Sender-Auth: 8lrOjrVu-uNTM55db5_YcLRRuUI
+Message-ID: <CAGXu5j+5CXKJ7+vaWgZXVJgFGHFzcwO6-D1iE+wyDcpr+g8jdw@mail.gmail.com>
+Subject: Re: [PATCH] pstore: reset ftrace_read_cnt at ramoops_pstore_open
+From: Kees Cook <keescook@chromium.org>
+To: Liu ShuoX <shuox.liu@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Colin Cross <ccross@android.com>, Anton Vorontsov <anton@enomsg.org>,
+        yanmin_zhang@linux.intel.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I apologize for the slightly convoluted reproduction steps here,
-but I was not easily able to find a simpler test case in the
-time that I had available.
+On Mon, Mar 3, 2014 at 5:40 PM, Liu ShuoX <shuox.liu@intel.com> wrote:
+> On Mon  3.Mar'14 at 11:45:59 -0800, Kees Cook wrote:
+>>
+>> On Thu, Feb 27, 2014 at 10:37 PM,  <shuox.liu@intel.com> wrote:
+>>>
+>>> From: Liu ShuoX <shuox.liu@intel.com>
+>>>
+>>> ftrace_read_cnt need to be reset in open to support mutli times
+>>> getting the records.
+>>>
+>>> Signed-off-by: Liu ShuoX <shuox.liu@intel.com>
+>>> ---
+>>>  fs/pstore/ram.c | 1 +
+>>>  1 file changed, 1 insertion(+)
+>>>
+>>> diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+>>> index fa8cef2..a5d0cab 100644
+>>> --- a/fs/pstore/ram.c
+>>> +++ b/fs/pstore/ram.c
+>>> @@ -101,6 +101,7 @@ static int ramoops_pstore_open(struct pstore_info
+>>> *psi)
+>>>
+>>>         cxt->dump_read_cnt = 0;
+>>>         cxt->console_read_cnt = 0;
+>>> +       cxt->ftrace_read_cnt = 0;
+>>>         return 0;
+>>>  }
+>>
+>>
+>> I think we need a separate function for "clear" for the
+>> ramoops_context struct. IIUC, we're missing a similar initialization
+>> in ramoops_probe, which lacks both console_read_cnt=0 and
+>> ftrace_read_cnt=0. Then both places could call this?
+>
+> Hi Kees,
+> Currently, we have only one static ramoops_context named oops_cxt.
+> *_read_cnt should be initialized to 0 as default. Need we still add
+> such function for 'clear'?
 
-First, you'll need Facebook's watchman:
-https://github.com/facebook/watchman
+We have the pstore-global "oops_cxt" context. It is "initialized" only
+once in ramoops_probe (and seems to needlessly set dump_read_cnt to
+0). Otherwise, the context is initialized via ramoops_register_dummy
+from module parameters (and initialized to zero with kzalloc).
 
-Build and install it.  Then run the attached Python script.
-After a few hundred lines, you'll start to see errors of the form
-inotify_init error: Too many open files.  That could just
-indicate that watchman is leaking, but I think that's not what's
-going on, because killing watchman does not fix the problem.
+So, I think my initial comment about "clear" is probably not right,
+but that ramoops_pstore_open should be doing that (i.e. your original
+patch is close). However, I think I'd like to see the needless zeroing
+in ramoops_probe removed, and the "variables that need clearing on
+open" documented in comments in "struct ramoops_context". That should
+make this code more clear to read next time. :)
 
-To demonstrate, kill the python script, then kill watchman.
-Then run tail -f /etc/hosts.  You'll get "tail: inotify cannot be
-used, reverting to polling: Too many open files" (you may need to
-run a few tails to see the error).  In fact, the only way I have
-found to get back to normal is to reboot.
+Thanks!
 
-I tried increasing the ulimit to 10000 (from the default 1024).
-The error still happens, but it seems to take a bit longer.
+-Kees
 
-I have tried on a couple of Ubuntu kernels:
-
-Linux version 3.11.0-17-generic (buildd@toyol) (gcc version 4.6.3
-(Ubuntu/Linaro 4.6.3-1ubuntu5) ) #31~precise1-Ubuntu SMP Tue Feb 4
-21:25:43 UTC 2014
-
-And Ubuntu's 3.8.0-36-generic (it's not running right now so I can't give
-the full version).
-
-I've also tried a stock kernel built from source (in a virtualbox):
-
-Linux version 3.13.5 (dturner@dturner-virtualbox) (gcc version 4.8.1
-(Ubuntu/Linaro 4.8.1-10ubuntu8) ) #1 SMP Mon Mar 3 20:41:51 EST 2014
-
-I get the error on all of these.
-There is no output in dmesg.
-
-I was running these tests on ext4 filesystems:
-(for the Ubuntu kernels)
-/dev/mapper/stross--vg-root on / type ext4 (rw,errors=remount-ro)
-(for the stock kernel, in the virtualbox)
-/dev/sda1 on / type ext4 (rw,errors=remount-ro)
-
-Please let me know if you need any more information.
-
-FWIW, I did find this bug while googling, but it was on older kernels and
-was allegedly fixed:
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1101666
-
-
-
+-- 
+Kees Cook
+Chrome OS Security
