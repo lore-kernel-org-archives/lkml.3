@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757083AbaCDVVa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:21:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40994 "EHLO
+	id S1758044AbaCDVVd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:21:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40988 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756179AbaCDUDY (ORCPT
+	with ESMTP id S1756157AbaCDUDY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Mar 2014 15:03:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        David Rientjes <rientjes@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 053/172] net: sctp: fix sctp_connectx abi for ia32 emulation/compat mode
-Date: Tue,  4 Mar 2014 12:02:17 -0800
-Message-Id: <20140304200301.440280990@linuxfoundation.org>
+Subject: [PATCH 3.13 062/172] net: use __GFP_NORETRY for high order allocations
+Date: Tue,  4 Mar 2014 12:02:26 -0800
+Message-Id: <20140304200301.729511422@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
 References: <20140304200259.626667112@linuxfoundation.org>
@@ -31,105 +31,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit ffd5939381c609056b33b7585fb05a77b4c695f3 ]
+[ Upstream commit ed98df3361f059db42786c830ea96e2d18b8d4db ]
 
-SCTP's sctp_connectx() abi breaks for 64bit kernels compiled with 32bit
-emulation (e.g. ia32 emulation or x86_x32). Due to internal usage of
-'struct sctp_getaddrs_old' which includes a struct sockaddr pointer,
-sizeof(param) check will always fail in kernel as the structure in
-64bit kernel space is 4bytes larger than for user binaries compiled
-in 32bit mode. Thus, applications making use of sctp_connectx() won't
-be able to run under such circumstances.
+sock_alloc_send_pskb() & sk_page_frag_refill()
+have a loop trying high order allocations to prepare
+skb with low number of fragments as this increases performance.
 
-Introduce a compat interface in the kernel to deal with such
-situations by using a 'struct compat_sctp_getaddrs_old' structure
-where user data is copied into it, and then sucessively transformed
-into a 'struct sctp_getaddrs_old' structure with the help of
-compat_ptr(). That fixes sctp_connectx() abi without any changes
-needed in user space, and lets the SCTP test suite pass when compiled
-in 32bit and run on 64bit kernels.
+Problem is that under memory pressure/fragmentation, this can
+trigger OOM while the intent was only to try the high order
+allocations, then fallback to order-0 allocations.
 
-Fixes: f9c67811ebc0 ("sctp: Fix regression introduced by new sctp_connectx api")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+We had various reports from unexpected regressions.
+
+According to David, setting __GFP_NORETRY should be fine,
+as the asynchronous compaction is still enabled, and this
+will prevent OOM from kicking as in :
+
+CFSClientEventm invoked oom-killer: gfp_mask=0x42d0, order=3, oom_adj=0,
+oom_score_adj=0, oom_score_badness=2 (enabled),memcg_scoring=disabled
+CFSClientEventm
+
+Call Trace:
+ [<ffffffff8043766c>] dump_header+0xe1/0x23e
+ [<ffffffff80437a02>] oom_kill_process+0x6a/0x323
+ [<ffffffff80438443>] out_of_memory+0x4b3/0x50d
+ [<ffffffff8043a4a6>] __alloc_pages_may_oom+0xa2/0xc7
+ [<ffffffff80236f42>] __alloc_pages_nodemask+0x1002/0x17f0
+ [<ffffffff8024bd23>] alloc_pages_current+0x103/0x2b0
+ [<ffffffff8028567f>] sk_page_frag_refill+0x8f/0x160
+ [<ffffffff80295fa0>] tcp_sendmsg+0x560/0xee0
+ [<ffffffff802a5037>] inet_sendmsg+0x67/0x100
+ [<ffffffff80283c9c>] __sock_sendmsg_nosec+0x6c/0x90
+ [<ffffffff80283e85>] sock_sendmsg+0xc5/0xf0
+ [<ffffffff802847b6>] __sys_sendmsg+0x136/0x430
+ [<ffffffff80284ec8>] sys_sendmsg+0x88/0x110
+ [<ffffffff80711472>] system_call_fastpath+0x16/0x1b
+Out of Memory: Kill process 2856 (bash) score 9999 or sacrifice child
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sctp/socket.c |   41 ++++++++++++++++++++++++++++++++---------
- 1 file changed, 32 insertions(+), 9 deletions(-)
+ net/core/sock.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/net/sctp/socket.c
-+++ b/net/sctp/socket.c
-@@ -65,6 +65,7 @@
- #include <linux/crypto.h>
- #include <linux/slab.h>
- #include <linux/file.h>
-+#include <linux/compat.h>
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -1800,7 +1800,9 @@ struct sk_buff *sock_alloc_send_pskb(str
+ 			while (order) {
+ 				if (npages >= 1 << order) {
+ 					page = alloc_pages(sk->sk_allocation |
+-							   __GFP_COMP | __GFP_NOWARN,
++							   __GFP_COMP |
++							   __GFP_NOWARN |
++							   __GFP_NORETRY,
+ 							   order);
+ 					if (page)
+ 						goto fill_page;
+@@ -1872,7 +1874,7 @@ bool skb_page_frag_refill(unsigned int s
+ 		gfp_t gfp = prio;
  
- #include <net/ip.h>
- #include <net/icmp.h>
-@@ -1369,11 +1370,19 @@ static int sctp_setsockopt_connectx(stru
- /*
-  * New (hopefully final) interface for the API.
-  * We use the sctp_getaddrs_old structure so that use-space library
-- * can avoid any unnecessary allocations.   The only defferent part
-+ * can avoid any unnecessary allocations. The only different part
-  * is that we store the actual length of the address buffer into the
-- * addrs_num structure member.  That way we can re-use the existing
-+ * addrs_num structure member. That way we can re-use the existing
-  * code.
-  */
-+#ifdef CONFIG_COMPAT
-+struct compat_sctp_getaddrs_old {
-+	sctp_assoc_t	assoc_id;
-+	s32		addr_num;
-+	compat_uptr_t	addrs;		/* struct sockaddr * */
-+};
-+#endif
-+
- static int sctp_getsockopt_connectx3(struct sock* sk, int len,
- 				     char __user *optval,
- 				     int __user *optlen)
-@@ -1382,16 +1391,30 @@ static int sctp_getsockopt_connectx3(str
- 	sctp_assoc_t assoc_id = 0;
- 	int err = 0;
- 
--	if (len < sizeof(param))
--		return -EINVAL;
-+#ifdef CONFIG_COMPAT
-+	if (is_compat_task()) {
-+		struct compat_sctp_getaddrs_old param32;
- 
--	if (copy_from_user(&param, optval, sizeof(param)))
--		return -EFAULT;
-+		if (len < sizeof(param32))
-+			return -EINVAL;
-+		if (copy_from_user(&param32, optval, sizeof(param32)))
-+			return -EFAULT;
- 
--	err = __sctp_setsockopt_connectx(sk,
--			(struct sockaddr __user *)param.addrs,
--			param.addr_num, &assoc_id);
-+		param.assoc_id = param32.assoc_id;
-+		param.addr_num = param32.addr_num;
-+		param.addrs = compat_ptr(param32.addrs);
-+	} else
-+#endif
-+	{
-+		if (len < sizeof(param))
-+			return -EINVAL;
-+		if (copy_from_user(&param, optval, sizeof(param)))
-+			return -EFAULT;
-+	}
- 
-+	err = __sctp_setsockopt_connectx(sk, (struct sockaddr __user *)
-+					 param.addrs, param.addr_num,
-+					 &assoc_id);
- 	if (err == 0 || err == -EINPROGRESS) {
- 		if (copy_to_user(optval, &assoc_id, sizeof(assoc_id)))
- 			return -EFAULT;
+ 		if (order)
+-			gfp |= __GFP_COMP | __GFP_NOWARN;
++			gfp |= __GFP_COMP | __GFP_NOWARN | __GFP_NORETRY;
+ 		pfrag->page = alloc_pages(gfp, order);
+ 		if (likely(pfrag->page)) {
+ 			pfrag->offset = 0;
 
 
