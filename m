@@ -1,131 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757440AbaCDVYU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 16:24:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40951 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756089AbaCDUDS (ORCPT
+	id S1757605AbaCDVZE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 16:25:04 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:38780 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756062AbaCDUDR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:03:18 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Florian Westphal <fw@strlen.de>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 055/172] net: core: introduce netif_skb_dev_features
-Date: Tue,  4 Mar 2014 12:02:19 -0800
-Message-Id: <20140304200301.495504670@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
-References: <20140304200259.626667112@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 4 Mar 2014 15:03:17 -0500
+Date: Tue, 4 Mar 2014 12:02:15 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Ning Qu <quning@google.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Chinner <david@fromorbit.com>, Ning Qu <quning@gmail.com>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] mm: implement ->map_pages for shmem/tmpfs
+In-Reply-To: <alpine.LSU.2.11.1402281657520.976@eggly.anvils>
+Message-ID: <alpine.LSU.2.11.1403041143530.1739@eggly.anvils>
+References: <1393625931-2858-1-git-send-email-quning@google.com> <1393625931-2858-2-git-send-email-quning@google.com> <alpine.LSU.2.11.1402281657520.976@eggly.anvils>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+On Fri, 28 Feb 2014, Hugh Dickins wrote:
+> On Fri, 28 Feb 2014, Ning Qu wrote:
+> 
+> > In shmem/tmpfs, we also use the generic filemap_map_pages,
+> > seems the additional checking is not worth a separate version
+> > of map_pages for it.
+> > 
+> > Signed-off-by: Ning Qu <quning@google.com>
 
-------------------
+Acked-by: Hugh Dickins <hughd@google.com>
 
-From: Florian Westphal <fw@strlen.de>
+> > ---
+> >  mm/shmem.c | 1 +
+> >  1 file changed, 1 insertion(+)
+> > 
+> > diff --git a/mm/shmem.c b/mm/shmem.c
+> > index 1f18c9d..2ea4e89 100644
+> > --- a/mm/shmem.c
+> > +++ b/mm/shmem.c
+> > @@ -2783,6 +2783,7 @@ static const struct super_operations shmem_ops = {
+> >  
+> >  static const struct vm_operations_struct shmem_vm_ops = {
+> >  	.fault		= shmem_fault,
+> > +	.map_pages	= filemap_map_pages,
+> >  #ifdef CONFIG_NUMA
+> >  	.set_policy     = shmem_set_policy,
+> >  	.get_policy     = shmem_get_policy,
+> > -- 
+> 
+> (There's no need for a 0/1, all the info should go into the one patch.)
+> 
+> I expect this will prove to be a very sensible and adequate patch,
+> thank you: it probably wouldn't be worth more effort to give shmem
+> anything special of its own, and filemap_map_pages() is already
+> (almost) coping with exceptional entries.
 
-commit d206940319c41df4299db75ed56142177bb2e5f6 upstream.
+I haven't looked at performance at all: I'm just glad that you and
+Kirill have it working correctly as on other filesystems, without
+any need for special treatment in filemap_map_pages() - thanks.
 
-Will be used by upcoming ipv4 forward path change that needs to
-determine feature mask using skb->dst->dev instead of skb->dev.
+> 
+> But I can't Ack it until I've tested it some more, won't be able to
+> do so until Sunday; and even then some doubt, since this and Kirill's
+> are built upon mmotm/next, which after a while gives me spinlock
+> lockups under load these days, yet to be investigated.
 
-Signed-off-by: Florian Westphal <fw@strlen.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/linux/netdevice.h |    7 ++++++-
- net/core/dev.c            |   22 ++++++++++++----------
- 2 files changed, 18 insertions(+), 11 deletions(-)
+Other test machines didn't give me those lockups at the weekend, and
+overnight it looks like yesterday's mmotm has fixed the freezes on my
+laptop (PeterZ's "sched: Guarantee task priority in pick_next_task()"
+probably fixed them, but it's old history now, so I've not verified).
 
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -2984,7 +2984,12 @@ void netdev_change_features(struct net_d
- void netif_stacked_transfer_operstate(const struct net_device *rootdev,
- 					struct net_device *dev);
- 
--netdev_features_t netif_skb_features(struct sk_buff *skb);
-+netdev_features_t netif_skb_dev_features(struct sk_buff *skb,
-+					 const struct net_device *dev);
-+static inline netdev_features_t netif_skb_features(struct sk_buff *skb)
-+{
-+	return netif_skb_dev_features(skb, skb->dev);
-+}
- 
- static inline bool net_gso_ok(netdev_features_t features, int gso_type)
- {
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2404,7 +2404,7 @@ EXPORT_SYMBOL(netdev_rx_csum_fault);
-  * 2. No high memory really exists on this machine.
-  */
- 
--static int illegal_highdma(struct net_device *dev, struct sk_buff *skb)
-+static int illegal_highdma(const struct net_device *dev, struct sk_buff *skb)
- {
- #ifdef CONFIG_HIGHMEM
- 	int i;
-@@ -2484,34 +2484,36 @@ static int dev_gso_segment(struct sk_buf
- }
- 
- static netdev_features_t harmonize_features(struct sk_buff *skb,
--	netdev_features_t features)
-+					    const struct net_device *dev,
-+					    netdev_features_t features)
- {
- 	if (skb->ip_summed != CHECKSUM_NONE &&
- 	    !can_checksum_protocol(features, skb_network_protocol(skb))) {
- 		features &= ~NETIF_F_ALL_CSUM;
--	} else if (illegal_highdma(skb->dev, skb)) {
-+	} else if (illegal_highdma(dev, skb)) {
- 		features &= ~NETIF_F_SG;
- 	}
- 
- 	return features;
- }
- 
--netdev_features_t netif_skb_features(struct sk_buff *skb)
-+netdev_features_t netif_skb_dev_features(struct sk_buff *skb,
-+					 const struct net_device *dev)
- {
- 	__be16 protocol = skb->protocol;
--	netdev_features_t features = skb->dev->features;
-+	netdev_features_t features = dev->features;
- 
--	if (skb_shinfo(skb)->gso_segs > skb->dev->gso_max_segs)
-+	if (skb_shinfo(skb)->gso_segs > dev->gso_max_segs)
- 		features &= ~NETIF_F_GSO_MASK;
- 
- 	if (protocol == htons(ETH_P_8021Q) || protocol == htons(ETH_P_8021AD)) {
- 		struct vlan_ethhdr *veh = (struct vlan_ethhdr *)skb->data;
- 		protocol = veh->h_vlan_encapsulated_proto;
- 	} else if (!vlan_tx_tag_present(skb)) {
--		return harmonize_features(skb, features);
-+		return harmonize_features(skb, dev, features);
- 	}
- 
--	features &= (skb->dev->vlan_features | NETIF_F_HW_VLAN_CTAG_TX |
-+	features &= (dev->vlan_features | NETIF_F_HW_VLAN_CTAG_TX |
- 					       NETIF_F_HW_VLAN_STAG_TX);
- 
- 	if (protocol == htons(ETH_P_8021Q) || protocol == htons(ETH_P_8021AD))
-@@ -2519,9 +2521,9 @@ netdev_features_t netif_skb_features(str
- 				NETIF_F_GEN_CSUM | NETIF_F_HW_VLAN_CTAG_TX |
- 				NETIF_F_HW_VLAN_STAG_TX;
- 
--	return harmonize_features(skb, features);
-+	return harmonize_features(skb, dev, features);
- }
--EXPORT_SYMBOL(netif_skb_features);
-+EXPORT_SYMBOL(netif_skb_dev_features);
- 
- /*
-  * Returns true if either:
-
-
+Hugh
