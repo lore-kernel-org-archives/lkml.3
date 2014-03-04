@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755617AbaCDTL0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 14:11:26 -0500
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:40618 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755450AbaCDTLX (ORCPT
+	id S1755674AbaCDTLc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 14:11:32 -0500
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:39801 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755450AbaCDTL1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 14:11:23 -0500
+	Tue, 4 Mar 2014 14:11:27 -0500
 From: Valentina Manea <valentina.manea.m@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: tobias.polzer@fau.de, dominik.paulus@fau.de, ly80toro@cip.cs.fau.de,
@@ -14,9 +14,9 @@ Cc: tobias.polzer@fau.de, dominik.paulus@fau.de, ly80toro@cip.cs.fau.de,
         linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
         devel@driverdev.osuosl.org, firefly@lists.rosedu.org,
         Valentina Manea <valentina.manea.m@gmail.com>
-Subject: [PATCH 04/12] staging: usbip: userspace: migrate usbip_list to libudev
-Date: Tue,  4 Mar 2014 21:10:44 +0200
-Message-Id: <1393960252-21247-5-git-send-email-valentina.manea.m@gmail.com>
+Subject: [PATCH 06/12] staging: usbip: userspace: add new list API
+Date: Tue,  4 Mar 2014 21:10:46 +0200
+Message-Id: <1393960252-21247-7-git-send-email-valentina.manea.m@gmail.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1393960252-21247-1-git-send-email-valentina.manea.m@gmail.com>
 References: <1393960252-21247-1-git-send-email-valentina.manea.m@gmail.com>
@@ -24,192 +24,933 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch modifies usbip_list to use libudev.
+Add a new list API from CCAN.
 
 Signed-off-by: Valentina Manea <valentina.manea.m@gmail.com>
 ---
- drivers/staging/usbip/userspace/src/usbip_list.c | 137 +++++++++--------------
- 1 file changed, 51 insertions(+), 86 deletions(-)
+ drivers/staging/usbip/userspace/libsrc/Makefile.am |   3 +-
+ .../staging/usbip/userspace/libsrc/build_assert.h  |  40 ++
+ .../staging/usbip/userspace/libsrc/check_type.h    |  64 +++
+ .../staging/usbip/userspace/libsrc/container_of.h  | 109 ++++
+ drivers/staging/usbip/userspace/libsrc/list.c      |  43 ++
+ drivers/staging/usbip/userspace/libsrc/list.h      | 613 +++++++++++++++++++++
+ 6 files changed, 871 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/staging/usbip/userspace/libsrc/build_assert.h
+ create mode 100644 drivers/staging/usbip/userspace/libsrc/check_type.h
+ create mode 100644 drivers/staging/usbip/userspace/libsrc/container_of.h
+ create mode 100644 drivers/staging/usbip/userspace/libsrc/list.c
+ create mode 100644 drivers/staging/usbip/userspace/libsrc/list.h
 
-diff --git a/drivers/staging/usbip/userspace/src/usbip_list.c b/drivers/staging/usbip/userspace/src/usbip_list.c
-index 8864fa2..2255107 100644
---- a/drivers/staging/usbip/userspace/src/usbip_list.c
-+++ b/drivers/staging/usbip/userspace/src/usbip_list.c
-@@ -17,7 +17,7 @@
-  */
+diff --git a/drivers/staging/usbip/userspace/libsrc/Makefile.am b/drivers/staging/usbip/userspace/libsrc/Makefile.am
+index 4921189..294270b 100644
+--- a/drivers/staging/usbip/userspace/libsrc/Makefile.am
++++ b/drivers/staging/usbip/userspace/libsrc/Makefile.am
+@@ -4,4 +4,5 @@ libusbip_la_LDFLAGS  = -version-info @LIBUSBIP_VERSION@
  
- #include <sys/types.h>
--#include <sysfs/libsysfs.h>
-+#include <libudev.h>
- 
- #include <errno.h>
- #include <stdbool.h>
-@@ -133,8 +133,8 @@ static int list_exported_devices(char *host)
- 	return 0;
- }
- 
--static void print_device(char *busid, char *vendor, char *product,
--			 bool parsable)
-+static void print_device(const char *busid, const char *vendor,
-+			 const char *product, bool parsable)
- {
- 	if (parsable)
- 		printf("busid=%s#usbid=%.4s:%.4s#", busid, vendor, product);
-@@ -148,106 +148,71 @@ static void print_product_name(char *product_name, bool parsable)
- 		printf("   %s\n", product_name);
- }
- 
--static void print_interface(char *busid, char *driver, bool parsable)
--{
--	if (parsable)
--		printf("%s=%s#", busid, driver);
--	else
--		printf("%9s%s -> %s\n", "", busid, driver);
--}
--
--static int is_device(void *x)
--{
--	struct sysfs_attribute *devpath;
--	struct sysfs_device *dev = x;
--	int ret = 0;
--
--	devpath = sysfs_get_device_attr(dev, "devpath");
--	if (devpath && *devpath->value != '0')
--		ret = 1;
--
--	return ret;
--}
--
--static int devcmp(void *a, void *b)
--{
--	return strcmp(a, b);
--}
--
- static int list_devices(bool parsable)
- {
--	char bus_type[] = "usb";
--	char busid[SYSFS_BUS_ID_SIZE];
-+	struct udev *udev;
-+	struct udev_enumerate *enumerate;
-+	struct udev_list_entry *devices, *dev_list_entry;
-+	struct udev_device *dev;
-+	const char *path;
-+	const char *idVendor;
-+	const char *idProduct;
-+	const char *bConfValue;
-+	const char *bNumIntfs;
-+	const char *busid;
- 	char product_name[128];
--	struct sysfs_bus *ubus;
--	struct sysfs_device *dev;
--	struct sysfs_device *intf;
--	struct sysfs_attribute *idVendor;
--	struct sysfs_attribute *idProduct;
--	struct sysfs_attribute *bConfValue;
--	struct sysfs_attribute *bNumIntfs;
--	struct dlist *devlist;
--	int i;
- 	int ret = -1;
- 
--	ubus = sysfs_open_bus(bus_type);
--	if (!ubus) {
--		err("could not open %s bus: %s", bus_type, strerror(errno));
--		return -1;
--	}
--
--	devlist = sysfs_get_bus_devices(ubus);
--	if (!devlist) {
--		err("could not get %s bus devices: %s", bus_type,
--		    strerror(errno));
--		goto err_out;
--	}
--
--	/* remove interfaces and root hubs from device list */
--	dlist_filter_sort(devlist, is_device, devcmp);
--
--	if (!parsable) {
--		printf("Local USB devices\n");
--		printf("=================\n");
--	}
--	dlist_for_each_data(devlist, dev, struct sysfs_device) {
--		idVendor   = sysfs_get_device_attr(dev, "idVendor");
--		idProduct  = sysfs_get_device_attr(dev, "idProduct");
--		bConfValue = sysfs_get_device_attr(dev, "bConfigurationValue");
--		bNumIntfs  = sysfs_get_device_attr(dev, "bNumInterfaces");
-+	/* Create libudev context. */
-+	udev = udev_new();
+ lib_LTLIBRARIES := libusbip.la
+ libusbip_la_SOURCES := names.c names.h usbip_host_driver.c usbip_host_driver.h \
+-		       usbip_common.c usbip_common.h vhci_driver.c vhci_driver.h
++		       usbip_common.c usbip_common.h vhci_driver.c vhci_driver.h \
++		       list.c list.h build_assert.h check_type.h container_of.h
+diff --git a/drivers/staging/usbip/userspace/libsrc/build_assert.h b/drivers/staging/usbip/userspace/libsrc/build_assert.h
+new file mode 100644
+index 0000000..b9ecd84
+--- /dev/null
++++ b/drivers/staging/usbip/userspace/libsrc/build_assert.h
+@@ -0,0 +1,40 @@
++/* CC0 (Public domain) - see LICENSE file for details */
++#ifndef CCAN_BUILD_ASSERT_H
++#define CCAN_BUILD_ASSERT_H
 +
-+	/* Create libudev device enumeration. */
-+	enumerate = udev_enumerate_new(udev);
++/**
++ * BUILD_ASSERT - assert a build-time dependency.
++ * @cond: the compile-time condition which must be true.
++ *
++ * Your compile will fail if the condition isn't true, or can't be evaluated
++ * by the compiler.  This can only be used within a function.
++ *
++ * Example:
++ *	#include <stddef.h>
++ *	...
++ *	static char *foo_to_char(struct foo *foo)
++ *	{
++ *		// This code needs string to be at start of foo.
++ *		BUILD_ASSERT(offsetof(struct foo, string) == 0);
++ *		return (char *)foo;
++ *	}
++ */
++#define BUILD_ASSERT(cond) \
++	do { (void) sizeof(char [1 - 2*!(cond)]); } while(0)
 +
-+	/* Take only USB devices that are not hubs and do not have
-+	 * the bInterfaceNumber attribute, i.e. are not interfaces.
-+	 */
-+	udev_enumerate_add_match_subsystem(enumerate, "usb");
-+	udev_enumerate_add_nomatch_sysattr(enumerate, "bDeviceClass", "09");
-+	udev_enumerate_add_nomatch_sysattr(enumerate, "bInterfaceNumber", NULL);
-+	udev_enumerate_scan_devices(enumerate);
++/**
++ * BUILD_ASSERT_OR_ZERO - assert a build-time dependency, as an expression.
++ * @cond: the compile-time condition which must be true.
++ *
++ * Your compile will fail if the condition isn't true, or can't be evaluated
++ * by the compiler.  This can be used in an expression: its value is "0".
++ *
++ * Example:
++ *	#define foo_to_char(foo)					\
++ *		 ((char *)(foo)						\
++ *		  + BUILD_ASSERT_OR_ZERO(offsetof(struct foo, string) == 0))
++ */
++#define BUILD_ASSERT_OR_ZERO(cond) \
++	(sizeof(char [1 - 2*!(cond)]) - 1)
 +
-+	devices = udev_enumerate_get_list_entry(enumerate);
++#endif /* CCAN_BUILD_ASSERT_H */
+diff --git a/drivers/staging/usbip/userspace/libsrc/check_type.h b/drivers/staging/usbip/userspace/libsrc/check_type.h
+new file mode 100644
+index 0000000..a39cc41
+--- /dev/null
++++ b/drivers/staging/usbip/userspace/libsrc/check_type.h
+@@ -0,0 +1,64 @@
++/* CC0 (Public domain) - see LICENSE file for details */
++#ifndef CCAN_CHECK_TYPE_H
++#define CCAN_CHECK_TYPE_H
++#include "config.h"
 +
-+	/* Show information about each device. */
-+	udev_list_entry_foreach(dev_list_entry, devices) {
-+		path = udev_list_entry_get_name(dev_list_entry);
-+		dev = udev_device_new_from_syspath(udev, path);
++/**
++ * check_type - issue a warning or build failure if type is not correct.
++ * @expr: the expression whose type we should check (not evaluated).
++ * @type: the exact type we expect the expression to be.
++ *
++ * This macro is usually used within other macros to try to ensure that a macro
++ * argument is of the expected type.  No type promotion of the expression is
++ * done: an unsigned int is not the same as an int!
++ *
++ * check_type() always evaluates to 0.
++ *
++ * If your compiler does not support typeof, then the best we can do is fail
++ * to compile if the sizes of the types are unequal (a less complete check).
++ *
++ * Example:
++ *	// They should always pass a 64-bit value to _set_some_value!
++ *	#define set_some_value(expr)			\
++ *		_set_some_value((check_type((expr), uint64_t), (expr)))
++ */
 +
-+		/* Get device information. */
-+		idVendor = udev_device_get_sysattr_value(dev, "idVendor");
-+		idProduct = udev_device_get_sysattr_value(dev, "idProduct");
-+		bConfValue = udev_device_get_sysattr_value(dev, "bConfigurationValue");
-+		bNumIntfs = udev_device_get_sysattr_value(dev, "bNumInterfaces");
-+		busid = udev_device_get_sysname(dev);
- 		if (!idVendor || !idProduct || !bConfValue || !bNumIntfs) {
--			err("problem getting device attributes: %s",
-+			err("Problem getting device attributes: %s",
- 			    strerror(errno));
- 			goto err_out;
- 		}
- 
--		/* get product name */
-+		/* Get product name. */
- 		usbip_names_get_product(product_name, sizeof(product_name),
--					strtol(idVendor->value, NULL, 16),
--					strtol(idProduct->value, NULL, 16));
--		print_device(dev->bus_id, idVendor->value, idProduct->value,
--			     parsable);
-+					strtol(idVendor, NULL, 16),
-+					strtol(idProduct, NULL, 16));
++/**
++ * check_types_match - issue a warning or build failure if types are not same.
++ * @expr1: the first expression (not evaluated).
++ * @expr2: the second expression (not evaluated).
++ *
++ * This macro is usually used within other macros to try to ensure that
++ * arguments are of identical types.  No type promotion of the expressions is
++ * done: an unsigned int is not the same as an int!
++ *
++ * check_types_match() always evaluates to 0.
++ *
++ * If your compiler does not support typeof, then the best we can do is fail
++ * to compile if the sizes of the types are unequal (a less complete check).
++ *
++ * Example:
++ *	// Do subtraction to get to enclosing type, but make sure that
++ *	// pointer is of correct type for that member.
++ *	#define container_of(mbr_ptr, encl_type, mbr)			\
++ *		(check_types_match((mbr_ptr), &((encl_type *)0)->mbr),	\
++ *		 ((encl_type *)						\
++ *		  ((char *)(mbr_ptr) - offsetof(enclosing_type, mbr))))
++ */
++#if HAVE_TYPEOF
++#define check_type(expr, type)			\
++	((typeof(expr) *)0 != (type *)0)
 +
-+		/* Print information. */
-+		print_device(busid, idVendor, idProduct, parsable);
- 		print_product_name(product_name, parsable);
- 
--		for (i = 0; i < atoi(bNumIntfs->value); i++) {
--			snprintf(busid, sizeof(busid), "%s:%.1s.%d",
--				 dev->bus_id, bConfValue->value, i);
--			intf = sysfs_open_device(bus_type, busid);
--			if (!intf) {
--				err("could not open device interface: %s",
--				    strerror(errno));
--				goto err_out;
--			}
--			print_interface(busid, intf->driver_name, parsable);
--			sysfs_close_device(intf);
--		}
- 		printf("\n");
--	}
- 
--	ret = 0;
-+		udev_device_unref(dev);
++#define check_types_match(expr1, expr2)		\
++	((typeof(expr1) *)0 != (typeof(expr2) *)0)
++#else
++#include <build_assert.h>
++/* Without typeof, we can only test the sizes. */
++#define check_type(expr, type)					\
++	BUILD_ASSERT_OR_ZERO(sizeof(expr) == sizeof(type))
++
++#define check_types_match(expr1, expr2)				\
++	BUILD_ASSERT_OR_ZERO(sizeof(expr1) == sizeof(expr2))
++#endif /* HAVE_TYPEOF */
++
++#endif /* CCAN_CHECK_TYPE_H */
+diff --git a/drivers/staging/usbip/userspace/libsrc/container_of.h b/drivers/staging/usbip/userspace/libsrc/container_of.h
+new file mode 100644
+index 0000000..4afd0fe
+--- /dev/null
++++ b/drivers/staging/usbip/userspace/libsrc/container_of.h
+@@ -0,0 +1,109 @@
++/* CC0 (Public domain) - see LICENSE file for details */
++#ifndef CCAN_CONTAINER_OF_H
++#define CCAN_CONTAINER_OF_H
++#include <stddef.h>
++
++#include "config.h"
++#include <check_type.h>
++
++/**
++ * container_of - get pointer to enclosing structure
++ * @member_ptr: pointer to the structure member
++ * @containing_type: the type this member is within
++ * @member: the name of this member within the structure.
++ *
++ * Given a pointer to a member of a structure, this macro does pointer
++ * subtraction to return the pointer to the enclosing type.
++ *
++ * Example:
++ *	struct foo {
++ *		int fielda, fieldb;
++ *		// ...
++ *	};
++ *	struct info {
++ *		int some_other_field;
++ *		struct foo my_foo;
++ *	};
++ *
++ *	static struct info *foo_to_info(struct foo *foo)
++ *	{
++ *		return container_of(foo, struct info, my_foo);
++ *	}
++ */
++#define container_of(member_ptr, containing_type, member)		\
++	 ((containing_type *)						\
++	  ((char *)(member_ptr)						\
++	   - container_off(containing_type, member))			\
++	  + check_types_match(*(member_ptr), ((containing_type *)0)->member))
++
++/**
++ * container_off - get offset to enclosing structure
++ * @containing_type: the type this member is within
++ * @member: the name of this member within the structure.
++ *
++ * Given a pointer to a member of a structure, this macro does
++ * typechecking and figures out the offset to the enclosing type.
++ *
++ * Example:
++ *	struct foo {
++ *		int fielda, fieldb;
++ *		// ...
++ *	};
++ *	struct info {
++ *		int some_other_field;
++ *		struct foo my_foo;
++ *	};
++ *
++ *	static struct info *foo_to_info(struct foo *foo)
++ *	{
++ *		size_t off = container_off(struct info, my_foo);
++ *		return (void *)((char *)foo - off);
++ *	}
++ */
++#define container_off(containing_type, member)	\
++	offsetof(containing_type, member)
++
++/**
++ * container_of_var - get pointer to enclosing structure using a variable
++ * @member_ptr: pointer to the structure member
++ * @container_var: a pointer of same type as this member's container
++ * @member: the name of this member within the structure.
++ *
++ * Given a pointer to a member of a structure, this macro does pointer
++ * subtraction to return the pointer to the enclosing type.
++ *
++ * Example:
++ *	static struct info *foo_to_i(struct foo *foo)
++ *	{
++ *		struct info *i = container_of_var(foo, i, my_foo);
++ *		return i;
++ *	}
++ */
++#if HAVE_TYPEOF
++#define container_of_var(member_ptr, container_var, member) \
++	container_of(member_ptr, typeof(*container_var), member)
++#else
++#define container_of_var(member_ptr, container_var, member)	\
++	((void *)((char *)(member_ptr)	-			\
++		  container_off_var(container_var, member)))
++#endif
++
++/**
++ * container_off_var - get offset of a field in enclosing structure
++ * @container_var: a pointer to a container structure
++ * @member: the name of a member within the structure.
++ *
++ * Given (any) pointer to a structure and a its member name, this
++ * macro does pointer subtraction to return offset of member in a
++ * structure memory layout.
++ *
++ */
++#if HAVE_TYPEOF
++#define container_off_var(var, member)		\
++	container_off(typeof(*var), member)
++#else
++#define container_off_var(var, member)			\
++	((char *)&(var)->member - (char *)(var))
++#endif
++
++#endif /* CCAN_CONTAINER_OF_H */
+diff --git a/drivers/staging/usbip/userspace/libsrc/list.c b/drivers/staging/usbip/userspace/libsrc/list.c
+new file mode 100644
+index 0000000..2717fa3
+--- /dev/null
++++ b/drivers/staging/usbip/userspace/libsrc/list.c
+@@ -0,0 +1,43 @@
++/* Licensed under BSD-MIT - see LICENSE file for details */
++#include <stdio.h>
++#include <stdlib.h>
++#include "list.h"
++
++static void *corrupt(const char *abortstr,
++		     const struct list_node *head,
++		     const struct list_node *node,
++		     unsigned int count)
++{
++	if (abortstr) {
++		fprintf(stderr,
++			"%s: prev corrupt in node %p (%u) of %p\n",
++			abortstr, node, count, head);
++		abort();
 +	}
- 
- err_out:
--	sysfs_close_bus(ubus);
-+	udev_enumerate_unref(enumerate);
-+	udev_unref(udev);
- 
- 	return ret;
- }
++	return NULL;
++}
++
++struct list_node *list_check_node(const struct list_node *node,
++				  const char *abortstr)
++{
++	const struct list_node *p, *n;
++	int count = 0;
++
++	for (p = node, n = node->next; n != node; p = n, n = n->next) {
++		count++;
++		if (n->prev != p)
++			return corrupt(abortstr, node, n, count);
++	}
++	/* Check prev on head node. */
++	if (node->prev != p)
++		return corrupt(abortstr, node, node, 0);
++
++	return (struct list_node *)node;
++}
++
++struct list_head *list_check(const struct list_head *h, const char *abortstr)
++{
++	if (!list_check_node(&h->n, abortstr))
++		return NULL;
++	return (struct list_head *)h;
++}
+diff --git a/drivers/staging/usbip/userspace/libsrc/list.h b/drivers/staging/usbip/userspace/libsrc/list.h
+new file mode 100644
+index 0000000..dadb40a
+--- /dev/null
++++ b/drivers/staging/usbip/userspace/libsrc/list.h
+@@ -0,0 +1,613 @@
++/* Licensed under BSD-MIT - see LICENSE file for details */
++#ifndef CCAN_LIST_H
++#define CCAN_LIST_H
++#include <stdbool.h>
++#include <assert.h>
++#include <container_of.h>
++#include <check_type.h>
++
++/**
++ * struct list_node - an entry in a doubly-linked list
++ * @next: next entry (self if empty)
++ * @prev: previous entry (self if empty)
++ *
++ * This is used as an entry in a linked list.
++ * Example:
++ *	struct child {
++ *		const char *name;
++ *		// Linked list of all us children.
++ *		struct list_node list;
++ *	};
++ */
++struct list_node {
++	struct list_node *next, *prev;
++};
++
++/**
++ * struct list_head - the head of a doubly-linked list
++ * @h: the list_head (containing next and prev pointers)
++ *
++ * This is used as the head of a linked list.
++ * Example:
++ *	struct parent {
++ *		const char *name;
++ *		struct list_head children;
++ *		unsigned int num_children;
++ *	};
++ */
++struct list_head {
++	struct list_node n;
++};
++
++/**
++ * list_check - check head of a list for consistency
++ * @h: the list_head
++ * @abortstr: the location to print on aborting, or NULL.
++ *
++ * Because list_nodes have redundant information, consistency checking between
++ * the back and forward links can be done.  This is useful as a debugging check.
++ * If @abortstr is non-NULL, that will be printed in a diagnostic if the list
++ * is inconsistent, and the function will abort.
++ *
++ * Returns the list head if the list is consistent, NULL if not (it
++ * can never return NULL if @abortstr is set).
++ *
++ * See also: list_check_node()
++ *
++ * Example:
++ *	static void dump_parent(struct parent *p)
++ *	{
++ *		struct child *c;
++ *
++ *		printf("%s (%u children):\n", p->name, p->num_children);
++ *		list_check(&p->children, "bad child list");
++ *		list_for_each(&p->children, c, list)
++ *			printf(" -> %s\n", c->name);
++ *	}
++ */
++struct list_head *list_check(const struct list_head *h, const char *abortstr);
++
++/**
++ * list_check_node - check node of a list for consistency
++ * @n: the list_node
++ * @abortstr: the location to print on aborting, or NULL.
++ *
++ * Check consistency of the list node is in (it must be in one).
++ *
++ * See also: list_check()
++ *
++ * Example:
++ *	static void dump_child(const struct child *c)
++ *	{
++ *		list_check_node(&c->list, "bad child list");
++ *		printf("%s\n", c->name);
++ *	}
++ */
++struct list_node *list_check_node(const struct list_node *n,
++				  const char *abortstr);
++
++#ifdef CCAN_LIST_DEBUG
++#define list_debug(h) list_check((h), __func__)
++#define list_debug_node(n) list_check_node((n), __func__)
++#else
++#define list_debug(h) (h)
++#define list_debug_node(n) (n)
++#endif
++
++/**
++ * LIST_HEAD_INIT - initializer for an empty list_head
++ * @name: the name of the list.
++ *
++ * Explicit initializer for an empty list.
++ *
++ * See also:
++ *	LIST_HEAD, list_head_init()
++ *
++ * Example:
++ *	static struct list_head my_list = LIST_HEAD_INIT(my_list);
++ */
++#define LIST_HEAD_INIT(name) { { &name.n, &name.n } }
++
++/**
++ * LIST_HEAD - define and initialize an empty list_head
++ * @name: the name of the list.
++ *
++ * The LIST_HEAD macro defines a list_head and initializes it to an empty
++ * list.  It can be prepended by "static" to define a static list_head.
++ *
++ * See also:
++ *	LIST_HEAD_INIT, list_head_init()
++ *
++ * Example:
++ *	static LIST_HEAD(my_global_list);
++ */
++#define LIST_HEAD(name) \
++	struct list_head name = LIST_HEAD_INIT(name)
++
++/**
++ * list_head_init - initialize a list_head
++ * @h: the list_head to set to the empty list
++ *
++ * Example:
++ *	...
++ *	struct parent *parent = malloc(sizeof(*parent));
++ *
++ *	list_head_init(&parent->children);
++ *	parent->num_children = 0;
++ */
++static inline void list_head_init(struct list_head *h)
++{
++	h->n.next = h->n.prev = &h->n;
++}
++
++/**
++ * list_add - add an entry at the start of a linked list.
++ * @h: the list_head to add the node to
++ * @n: the list_node to add to the list.
++ *
++ * The list_node does not need to be initialized; it will be overwritten.
++ * Example:
++ *	struct child *child = malloc(sizeof(*child));
++ *
++ *	child->name = "marvin";
++ *	list_add(&parent->children, &child->list);
++ *	parent->num_children++;
++ */
++static inline void list_add(struct list_head *h, struct list_node *n)
++{
++	n->next = h->n.next;
++	n->prev = &h->n;
++	h->n.next->prev = n;
++	h->n.next = n;
++	(void)list_debug(h);
++}
++
++/**
++ * list_add_tail - add an entry at the end of a linked list.
++ * @h: the list_head to add the node to
++ * @n: the list_node to add to the list.
++ *
++ * The list_node does not need to be initialized; it will be overwritten.
++ * Example:
++ *	list_add_tail(&parent->children, &child->list);
++ *	parent->num_children++;
++ */
++static inline void list_add_tail(struct list_head *h, struct list_node *n)
++{
++	n->next = &h->n;
++	n->prev = h->n.prev;
++	h->n.prev->next = n;
++	h->n.prev = n;
++	(void)list_debug(h);
++}
++
++/**
++ * list_empty - is a list empty?
++ * @h: the list_head
++ *
++ * If the list is empty, returns true.
++ *
++ * Example:
++ *	assert(list_empty(&parent->children) == (parent->num_children == 0));
++ */
++static inline bool list_empty(const struct list_head *h)
++{
++	(void)list_debug(h);
++	return h->n.next == &h->n;
++}
++
++/**
++ * list_del - delete an entry from an (unknown) linked list.
++ * @n: the list_node to delete from the list.
++ *
++ * Note that this leaves @n in an undefined state; it can be added to
++ * another list, but not deleted again.
++ *
++ * See also:
++ *	list_del_from()
++ *
++ * Example:
++ *	list_del(&child->list);
++ *	parent->num_children--;
++ */
++static inline void list_del(struct list_node *n)
++{
++	(void)list_debug_node(n);
++	n->next->prev = n->prev;
++	n->prev->next = n->next;
++#ifdef CCAN_LIST_DEBUG
++	/* Catch use-after-del. */
++	n->next = n->prev = NULL;
++#endif
++}
++
++/**
++ * list_del_from - delete an entry from a known linked list.
++ * @h: the list_head the node is in.
++ * @n: the list_node to delete from the list.
++ *
++ * This explicitly indicates which list a node is expected to be in,
++ * which is better documentation and can catch more bugs.
++ *
++ * See also: list_del()
++ *
++ * Example:
++ *	list_del_from(&parent->children, &child->list);
++ *	parent->num_children--;
++ */
++static inline void list_del_from(struct list_head *h, struct list_node *n)
++{
++#ifdef CCAN_LIST_DEBUG
++	{
++		/* Thorough check: make sure it was in list! */
++		struct list_node *i;
++		for (i = h->n.next; i != n; i = i->next)
++			assert(i != &h->n);
++	}
++#endif /* CCAN_LIST_DEBUG */
++
++	/* Quick test that catches a surprising number of bugs. */
++	assert(!list_empty(h));
++	list_del(n);
++}
++
++/**
++ * list_entry - convert a list_node back into the structure containing it.
++ * @n: the list_node
++ * @type: the type of the entry
++ * @member: the list_node member of the type
++ *
++ * Example:
++ *	// First list entry is children.next; convert back to child.
++ *	child = list_entry(parent->children.n.next, struct child, list);
++ *
++ * See Also:
++ *	list_top(), list_for_each()
++ */
++#define list_entry(n, type, member) container_of(n, type, member)
++
++/**
++ * list_top - get the first entry in a list
++ * @h: the list_head
++ * @type: the type of the entry
++ * @member: the list_node member of the type
++ *
++ * If the list is empty, returns NULL.
++ *
++ * Example:
++ *	struct child *first;
++ *	first = list_top(&parent->children, struct child, list);
++ *	if (!first)
++ *		printf("Empty list!\n");
++ */
++#define list_top(h, type, member)					\
++	((type *)list_top_((h), list_off_(type, member)))
++
++static inline const void *list_top_(const struct list_head *h, size_t off)
++{
++	if (list_empty(h))
++		return NULL;
++	return (const char *)h->n.next - off;
++}
++
++/**
++ * list_pop - remove the first entry in a list
++ * @h: the list_head
++ * @type: the type of the entry
++ * @member: the list_node member of the type
++ *
++ * If the list is empty, returns NULL.
++ *
++ * Example:
++ *	struct child *one;
++ *	one = list_pop(&parent->children, struct child, list);
++ *	if (!one)
++ *		printf("Empty list!\n");
++ */
++#define list_pop(h, type, member)					\
++	((type *)list_pop_((h), list_off_(type, member)))
++
++static inline const void *list_pop_(const struct list_head *h, size_t off)
++{
++	struct list_node *n;
++
++	if (list_empty(h))
++		return NULL;
++	n = h->n.next;
++	list_del(n);
++	return (const char *)n - off;
++}
++
++/**
++ * list_tail - get the last entry in a list
++ * @h: the list_head
++ * @type: the type of the entry
++ * @member: the list_node member of the type
++ *
++ * If the list is empty, returns NULL.
++ *
++ * Example:
++ *	struct child *last;
++ *	last = list_tail(&parent->children, struct child, list);
++ *	if (!last)
++ *		printf("Empty list!\n");
++ */
++#define list_tail(h, type, member) \
++	((type *)list_tail_((h), list_off_(type, member)))
++
++static inline const void *list_tail_(const struct list_head *h, size_t off)
++{
++	if (list_empty(h))
++		return NULL;
++	return (const char *)h->n.prev - off;
++}
++
++/**
++ * list_for_each - iterate through a list.
++ * @h: the list_head (warning: evaluated multiple times!)
++ * @i: the structure containing the list_node
++ * @member: the list_node member of the structure
++ *
++ * This is a convenient wrapper to iterate @i over the entire list.  It's
++ * a for loop, so you can break and continue as normal.
++ *
++ * Example:
++ *	list_for_each(&parent->children, child, list)
++ *		printf("Name: %s\n", child->name);
++ */
++#define list_for_each(h, i, member)					\
++	list_for_each_off(h, i, list_off_var_(i, member))
++
++/**
++ * list_for_each_rev - iterate through a list backwards.
++ * @h: the list_head
++ * @i: the structure containing the list_node
++ * @member: the list_node member of the structure
++ *
++ * This is a convenient wrapper to iterate @i over the entire list.  It's
++ * a for loop, so you can break and continue as normal.
++ *
++ * Example:
++ *	list_for_each_rev(&parent->children, child, list)
++ *		printf("Name: %s\n", child->name);
++ */
++#define list_for_each_rev(h, i, member)					\
++	for (i = container_of_var(list_debug(h)->n.prev, i, member);	\
++	     &i->member != &(h)->n;					\
++	     i = container_of_var(i->member.prev, i, member))
++
++/**
++ * list_for_each_safe - iterate through a list, maybe during deletion
++ * @h: the list_head
++ * @i: the structure containing the list_node
++ * @nxt: the structure containing the list_node
++ * @member: the list_node member of the structure
++ *
++ * This is a convenient wrapper to iterate @i over the entire list.  It's
++ * a for loop, so you can break and continue as normal.  The extra variable
++ * @nxt is used to hold the next element, so you can delete @i from the list.
++ *
++ * Example:
++ *	struct child *next;
++ *	list_for_each_safe(&parent->children, child, next, list) {
++ *		list_del(&child->list);
++ *		parent->num_children--;
++ *	}
++ */
++#define list_for_each_safe(h, i, nxt, member)				\
++	list_for_each_safe_off(h, i, nxt, list_off_var_(i, member))
++
++/**
++ * list_next - get the next entry in a list
++ * @h: the list_head
++ * @i: a pointer to an entry in the list.
++ * @member: the list_node member of the structure
++ *
++ * If @i was the last entry in the list, returns NULL.
++ *
++ * Example:
++ *	struct child *second;
++ *	second = list_next(&parent->children, first, list);
++ *	if (!second)
++ *		printf("No second child!\n");
++ */
++#define list_next(h, i, member)						\
++	((list_typeof(i))list_entry_or_null(list_debug(h),		\
++					    (i)->member.next,		\
++					    list_off_var_((i), member)))
++
++/**
++ * list_prev - get the previous entry in a list
++ * @h: the list_head
++ * @i: a pointer to an entry in the list.
++ * @member: the list_node member of the structure
++ *
++ * If @i was the first entry in the list, returns NULL.
++ *
++ * Example:
++ *	first = list_prev(&parent->children, second, list);
++ *	if (!first)
++ *		printf("Can't go back to first child?!\n");
++ */
++#define list_prev(h, i, member)						\
++	((list_typeof(i))list_entry_or_null(list_debug(h),		\
++					    (i)->member.prev,		\
++					    list_off_var_((i), member)))
++
++/**
++ * list_append_list - empty one list onto the end of another.
++ * @to: the list to append into
++ * @from: the list to empty.
++ *
++ * This takes the entire contents of @from and moves it to the end of
++ * @to.  After this @from will be empty.
++ *
++ * Example:
++ *	struct list_head adopter;
++ *
++ *	list_append_list(&adopter, &parent->children);
++ *	assert(list_empty(&parent->children));
++ *	parent->num_children = 0;
++ */
++static inline void list_append_list(struct list_head *to,
++				    struct list_head *from)
++{
++	struct list_node *from_tail = list_debug(from)->n.prev;
++	struct list_node *to_tail = list_debug(to)->n.prev;
++
++	/* Sew in head and entire list. */
++	to->n.prev = from_tail;
++	from_tail->next = &to->n;
++	to_tail->next = &from->n;
++	from->n.prev = to_tail;
++
++	/* Now remove head. */
++	list_del(&from->n);
++	list_head_init(from);
++}
++
++/**
++ * list_prepend_list - empty one list into the start of another.
++ * @to: the list to prepend into
++ * @from: the list to empty.
++ *
++ * This takes the entire contents of @from and moves it to the start
++ * of @to.  After this @from will be empty.
++ *
++ * Example:
++ *	list_prepend_list(&adopter, &parent->children);
++ *	assert(list_empty(&parent->children));
++ *	parent->num_children = 0;
++ */
++static inline void list_prepend_list(struct list_head *to,
++				     struct list_head *from)
++{
++	struct list_node *from_tail = list_debug(from)->n.prev;
++	struct list_node *to_head = list_debug(to)->n.next;
++
++	/* Sew in head and entire list. */
++	to->n.next = &from->n;
++	from->n.prev = &to->n;
++	to_head->prev = from_tail;
++	from_tail->next = to_head;
++
++	/* Now remove head. */
++	list_del(&from->n);
++	list_head_init(from);
++}
++
++/**
++ * list_for_each_off - iterate through a list of memory regions.
++ * @h: the list_head
++ * @i: the pointer to a memory region wich contains list node data.
++ * @off: offset(relative to @i) at which list node data resides.
++ *
++ * This is a low-level wrapper to iterate @i over the entire list, used to
++ * implement all oher, more high-level, for-each constructs. It's a for loop,
++ * so you can break and continue as normal.
++ *
++ * WARNING! Being the low-level macro that it is, this wrapper doesn't know
++ * nor care about the type of @i. The only assumtion made is that @i points
++ * to a chunk of memory that at some @offset, relative to @i, contains a
++ * properly filled `struct node_list' which in turn contains pointers to
++ * memory chunks and it's turtles all the way down. Whith all that in mind
++ * remember that given the wrong pointer/offset couple this macro will
++ * happilly churn all you memory untill SEGFAULT stops it, in other words
++ * caveat emptor.
++ *
++ * It is worth mentioning that one of legitimate use-cases for that wrapper
++ * is operation on opaque types with known offset for `struct list_node'
++ * member(preferably 0), because it allows you not to disclose the type of
++ * @i.
++ *
++ * Example:
++ *	list_for_each_off(&parent->children, child,
++ *				offsetof(struct child, list))
++ *		printf("Name: %s\n", child->name);
++ */
++#define list_for_each_off(h, i, off)                                            \
++	for (i = list_node_to_off_(list_debug(h)->n.next, (off));               \
++	     list_node_from_off_((void *)i, (off)) != &(h)->n;                  \
++	     i = list_node_to_off_(list_node_from_off_((void *)i, (off))->next, \
++				   (off)))
++
++/**
++ * list_for_each_safe_off - iterate through a list of memory regions, maybe
++ * during deletion
++ * @h: the list_head
++ * @i: the pointer to a memory region wich contains list node data.
++ * @nxt: the structure containing the list_node
++ * @off: offset(relative to @i) at which list node data resides.
++ *
++ * For details see `list_for_each_off' and `list_for_each_safe'
++ * descriptions.
++ *
++ * Example:
++ *	list_for_each_safe_off(&parent->children, child,
++ *		next, offsetof(struct child, list))
++ *		printf("Name: %s\n", child->name);
++ */
++#define list_for_each_safe_off(h, i, nxt, off)                                \
++	for (i = list_node_to_off_(list_debug(h)->n.next, (off)),             \
++	     nxt = list_node_to_off_(list_node_from_off_(i, (off))->next,     \
++				     (off));                                  \
++	     list_node_from_off_(i, (off)) != &(h)->n;                        \
++	     i = nxt,                                                         \
++		 nxt = list_node_to_off_(list_node_from_off_(i, (off))->next, \
++					 (off)))
++
++
++/* Other -off variants. */
++#define list_entry_off(n, type, off)		\
++	((type *)list_node_from_off_((n), (off)))
++
++#define list_head_off(h, type, off)		\
++	((type *)list_head_off((h), (off)))
++
++#define list_tail_off(h, type, off)		\
++	((type *)list_tail_((h), (off)))
++
++#define list_add_off(h, n, off)                 \
++	list_add((h), list_node_from_off_((n), (off)))
++
++#define list_del_off(n, off)                    \
++	list_del(list_node_from_off_((n), (off)))
++
++#define list_del_from_off(h, n, off)			\
++	list_del_from(h, list_node_from_off_((n), (off)))
++
++/* Offset helper functions so we only single-evaluate. */
++static inline void *list_node_to_off_(struct list_node *node, size_t off)
++{
++	return (void *)((char *)node - off);
++}
++static inline struct list_node *list_node_from_off_(void *ptr, size_t off)
++{
++	return (struct list_node *)((char *)ptr + off);
++}
++
++/* Get the offset of the member, but make sure it's a list_node. */
++#define list_off_(type, member)					\
++	(container_off(type, member) +				\
++	 check_type(((type *)0)->member, struct list_node))
++
++#define list_off_var_(var, member)			\
++	(container_off_var(var, member) +		\
++	 check_type(var->member, struct list_node))
++
++#if HAVE_TYPEOF
++#define list_typeof(var) typeof(var)
++#else
++#define list_typeof(var) void *
++#endif
++
++/* Returns member, or NULL if at end of list. */
++static inline void *list_entry_or_null(const struct list_head *h,
++				       const struct list_node *n,
++				       size_t off)
++{
++	if (n == &h->n)
++		return NULL;
++	return (char *)n - off;
++}
++#endif /* CCAN_LIST_H */
 -- 
 1.8.1.2
 
