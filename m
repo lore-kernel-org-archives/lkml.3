@@ -1,93 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756158AbaCDWn6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 17:43:58 -0500
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:46673 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755054AbaCDWn4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 17:43:56 -0500
+	id S1756820AbaCDWoG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 17:44:06 -0500
+Received: from mga09.intel.com ([134.134.136.24]:53321 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755122AbaCDWoC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 17:44:02 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,588,1389772800"; 
+   d="scan'208";a="494108685"
+Date: Tue, 4 Mar 2014 14:44:01 -0800
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Mathias Nyman <mathias.nyman@linux.intel.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dan.j.williams@intel.com,
+        stable@vger.kernel.org, David Cohen <david.a.cohen@linux.intel.com>
+Subject: Re: [PATCH v3 1/1] xhci: Prevent runtime pm from autosuspending
+ during initialization
+Message-ID: <20140304224401.GB14620@xanatos>
+References: <1393867817-10389-1-git-send-email-mathias.nyman@linux.intel.com>
+ <1393867817-10389-2-git-send-email-mathias.nyman@linux.intel.com>
+ <20140303183733.GA13926@kroah.com>
+ <5315BE1F.8020100@linux.intel.com>
+ <20140304170458.GA10789@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1403042254550.18573@ionos.tec.linutronix.de>
-References: <1392913425-29369-1-git-send-email-a.perevalov@samsung.com>
- <1392913425-29369-6-git-send-email-a.perevalov@samsung.com>
- <530D5715.1050901@mit.edu> <alpine.DEB.2.02.1403042153520.18573@ionos.tec.linutronix.de>
- <CALCETrVsmXjkC28pTSCfywTZCeHVcfvyFvHAXubEJ7=TRoEmPQ@mail.gmail.com> <alpine.DEB.2.02.1403042254550.18573@ionos.tec.linutronix.de>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 4 Mar 2014 14:43:35 -0800
-Message-ID: <CALCETrWOsSm3M9C+2bx2mLCdjjdFJOZk1QL6khCzvzxX9iO+0Q@mail.gmail.com>
-Subject: Re: [PATCH v4 5/6] timerfd: Add support for deferrable timers
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Alexey Perevalov <a.perevalov@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton@enomsg.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>, cw00.choi@samsung.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140304170458.GA10789@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 4, 2014 at 2:11 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Tue, 4 Mar 2014, Andy Lutomirski wrote:
->
->> On Tue, Mar 4, 2014 at 12:58 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
->> > On Tue, 25 Feb 2014, Andy Lutomirski wrote:
->> >> On the other hand, if you added a fancier version of timerfd_settime
->> >> that could explicitly set the slack value (or, equivalently, the
->> >> earliest and latest allowable times), that could be quite useful.
->> >>
->> >> It's often bugged me that timer slack is per-process.
->> >
->> > That's a totally different issue. There is a world aside of timerfd
->> > timers.
->>
->> This is a patch to add deferrable support *to timerfd*.  I'm asking
->
-> There is a new patch series which adds deferrable support to all timer
-> related interfaces which have a flags field. And that's the only
-> sensible solution right now.
->
-> We do no add another random special case syscall for timerfd just
-> because timerfd is linux specific.
+On Tue, Mar 04, 2014 at 09:04:58AM -0800, Greg KH wrote:
+> On Tue, Mar 04, 2014 at 01:50:55PM +0200, Mathias Nyman wrote:
+> > On 03/03/2014 08:37 PM, Greg KH wrote:
+> > >On Mon, Mar 03, 2014 at 07:30:17PM +0200, Mathias Nyman wrote:
+> > >>xHCI driver has its own pci probe function that will call usb_hcd_pci_probe
+> > >>to register its usb-2 bus, and then continue to manually register the
+> > >>usb-3 bus. usb_hcd_pci_probe does a pm_runtime_put_noidle at the end and
+> > >>might thus trigger a runtime suspend before the usb-3 bus is ready.
+> > >
+> > >What is the result if that happens?
+> > 
+> > Crashes. Null pointer dereference in xhci_suspend() when touching
+> > xhci->shared_hcd before it's initialized. More info here:
+> > 
+> > http://marc.info/?l=linux-usb&m=138914518219334&w=2
+> > 
+> > >
+> > >Is this a regression from 3.13?  Or something new for 3.14?
+> > >
+> > 
+> > According to reporter its been around since 3.7
+> > 
+> > commit 596d789a211d134dc5f94d1e5957248c204ef850
+> > USB: set hub's default autosuspend delay as 0
+> > 
+> > But nobody else than the reporter is able to trigger it.
+> 
+> Then it can wait for 3.15-rc1, and then go back to the stable trees at
+> that time, right?  I'd prefer that as it's not a regression and not
+> common.
 
-What syscalls?  I can think of exactly two timer interfaces that
-actually accept a clock id and flags: clock_nanosleep and
-timerfd_settime.
+Ok, I'll queue it with the other features for 3.15.
 
->
-> No, we want to support that stuff right now with the existing
-> interfaces as we have to revisit all of the timer related interfaces
-> in the near future anyway due to the Y2038 issue.
->
-> And your idea of per thread slack is completely bogus. If we want to
-> make the slack value usefull then it needs to be done per timer and
-> not per thread/process.
-
-This is *exactly* what I'm suggesting.
-
->
-> But we cannot do that right now as we cannot whip up severl dozen of
-> new syscalls just because we want to add slack/deferrable whatever
-> properties.
-
-Two syscalls, right?
-
->
-> Once we agree on a solution to the Y2038 issue on 32bit with a unified
-> 32/64 bit syscall interface which simply gets rid of the timespec/val
-> nonsense and takes a simple u64 nsec value we can add the slack
-> property to that without any further inconvenience.
->
-> Thanks,
->
->         tglx
->
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Sarah Sharp
