@@ -1,276 +1,323 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755997AbaCDBBl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Mar 2014 20:01:41 -0500
-Received: from mga02.intel.com ([134.134.136.20]:63881 "EHLO mga02.intel.com"
+	id S1756023AbaCDBDT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Mar 2014 20:03:19 -0500
+Received: from ozlabs.org ([203.10.76.45]:51880 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755838AbaCDBBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Mar 2014 20:01:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,582,1389772800"; 
-   d="scan'208";a="485489341"
-Date: Tue, 4 Mar 2014 09:00:25 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Alex Shi <alex.shi@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, lkp@01.org
-Subject: [sched/balance] 598143917: -1.8% turbostat.Pkg_W
-Message-ID: <20140304010025.GA10470@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755609AbaCDBDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Mar 2014 20:03:16 -0500
+Date: Tue, 4 Mar 2014 12:03:02 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org,
+        Josh Triplett <josh@joshtriplett.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: mmotm 2014-03-03-15-24 uploaded
+Message-Id: <20140304120302.7ee7f3a89b0e3c088479230d@canb.auug.org.au>
+In-Reply-To: <20140303163921.48ab37bdfd9b895ee985a776@linux-foundation.org>
+References: <20140303232530.2AC4131C2A3@corp2gmr1-1.hot.corp.google.com>
+	<20140304113610.a033faa8e5d3afeb38f7ac79@canb.auug.org.au>
+	<20140303163921.48ab37bdfd9b895ee985a776@linux-foundation.org>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__4_Mar_2014_12_03_02_+1100_Bw.nM=fy=yqb65yh"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alex,
-
-FYI, we noticed the below changes on commit 598143917dc5ecf11f0764de4166ee7c98e90aff
-("sched: only do load balance on tick_do_timer_cpu") in your git tree
-
-https://github.com/alexshi/power-scheduling.git single-balance
-
-bc575710efe937e  598143917dc5ecf11f0764de4  
----------------  -------------------------  
-     63743 ~ 0%     -82.4%      11200 ~ 2%  lkp-nex05/micro/will-it-scale/futex2
-     63430 ~ 0%     -83.4%      10546 ~ 1%  lkp-nex05/micro/will-it-scale/signal1
-     60358 ~ 0%     -80.6%      11704 ~ 4%  lkp-snb01/micro/will-it-scale/sched_yield
-    187532 ~ 0%     -82.2%      33451 ~ 2%  TOTAL interrupts.RES
-
-bc575710efe937e  598143917dc5ecf11f0764de4  
----------------  -------------------------  
-    197848 ~ 1%     -97.5%       5000 ~ 5%  lkp-nex05/micro/will-it-scale/futex2
-    192607 ~ 7%     -96.8%       6186 ~31%  lkp-nex05/micro/will-it-scale/signal1
-     86509 ~ 5%     -96.1%       3399 ~ 9%  lkp-snb01/micro/will-it-scale/sched_yield
-    476965 ~ 4%     -96.9%      14586 ~17%  TOTAL softirqs.SCHED
-
-bc575710efe937e  598143917dc5ecf11f0764de4  
----------------  -------------------------  
-    103938 ~ 1%     -36.2%      66267 ~ 0%  lkp-snb01/micro/will-it-scale/sched_yield
-    103938 ~ 1%     -36.2%      66267 ~ 0%  TOTAL cpuidle.C7-SNB.usage
-
-bc575710efe937e  598143917dc5ecf11f0764de4  
----------------  -------------------------  
-      5193 ~11%      +7.7%       5595 ~10%  lkp-nex05/micro/will-it-scale/futex2
-      5193 ~11%      +7.7%       5595 ~10%  TOTAL numa-vmstat.node1.nr_slab_unreclaimable
-
-bc575710efe937e  598143917dc5ecf11f0764de4  
----------------  -------------------------  
-     20777 ~11%      +7.7%      22382 ~10%  lkp-nex05/micro/will-it-scale/futex2
-     20777 ~11%      +7.7%      22382 ~10%  TOTAL numa-meminfo.node1.SUnreclaim
-
-bc575710efe937e  598143917dc5ecf11f0764de4  
----------------  -------------------------  
-    215721 ~ 3%     -16.4%     180390 ~ 2%  lkp-nex05/micro/will-it-scale/futex2
-    235264 ~ 2%     -18.9%     190850 ~ 3%  lkp-nex05/micro/will-it-scale/signal1
-    450985 ~ 2%     -17.7%     371241 ~ 2%  TOTAL cpuidle.C3-NHM.usage
-
-bc575710efe937e  598143917dc5ecf11f0764de4  
----------------  -------------------------  
-     19.88 ~ 0%     +12.5%      22.38 ~ 2%  lkp-nex05/micro/will-it-scale/signal1
-     20.65 ~ 0%     +24.5%      25.70 ~ 1%  lkp-snb01/micro/will-it-scale/sched_yield
-     40.53 ~ 0%     +18.6%      48.08 ~ 1%  TOTAL turbostat.%c1
-
-bc575710efe937e  598143917dc5ecf11f0764de4  
----------------  -------------------------  
-    261584 ~ 8%      -9.8%     235897 ~ 5%  lkp-nex05/micro/will-it-scale/futex2
-    261584 ~ 8%      -9.8%     235897 ~ 5%  TOTAL numa-numastat.node1.local_node
-
-bc575710efe937e  598143917dc5ecf11f0764de4  
----------------  -------------------------  
-    261584 ~ 8%      -9.8%     235897 ~ 5%  lkp-nex05/micro/will-it-scale/futex2
-    261584 ~ 8%      -9.8%     235897 ~ 5%  TOTAL numa-numastat.node1.numa_hit
-
-bc575710efe937e  598143917dc5ecf11f0764de4  
----------------  -------------------------  
-      9292 ~ 3%      -8.0%       8545 ~ 4%  lkp-snb01/micro/will-it-scale/sched_yield
-      9292 ~ 3%      -8.0%       8545 ~ 4%  TOTAL slabinfo.anon_vma.active_objs
-
-bc575710efe937e  598143917dc5ecf11f0764de4  
----------------  -------------------------  
-      9292 ~ 3%      -7.8%       8563 ~ 4%  lkp-snb01/micro/will-it-scale/sched_yield
-      9292 ~ 3%      -7.8%       8563 ~ 4%  TOTAL slabinfo.anon_vma.num_objs
-
-bc575710efe937e  598143917dc5ecf11f0764de4  
----------------  -------------------------  
-    204033 ~ 1%      -8.6%     186466 ~ 3%  lkp-snb01/micro/will-it-scale/sched_yield
-    204033 ~ 1%      -8.6%     186466 ~ 3%  TOTAL softirqs.RCU
-
-bc575710efe937e  598143917dc5ecf11f0764de4  
----------------  -------------------------  
-     34331 ~ 5%      +4.7%      35960 ~ 4%  lkp-nex05/micro/will-it-scale/futex2
-     34331 ~ 5%      +4.7%      35960 ~ 4%  TOTAL numa-meminfo.node1.Slab
-
-bc575710efe937e  598143917dc5ecf11f0764de4  
----------------  -------------------------  
-    683581 ~ 0%      -9.3%     620065 ~ 1%  lkp-snb01/micro/will-it-scale/sched_yield
-    683581 ~ 0%      -9.3%     620065 ~ 1%  TOTAL softirqs.TIMER
-
-bc575710efe937e  598143917dc5ecf11f0764de4  
----------------  -------------------------  
- 4.902e+09 ~ 0%      +9.9%   5.39e+09 ~ 0%  lkp-snb01/micro/will-it-scale/sched_yield
- 4.902e+09 ~ 0%      +9.9%   5.39e+09 ~ 0%  TOTAL cpuidle.C7-SNB.time
-
-bc575710efe937e  598143917dc5ecf11f0764de4  
----------------  -------------------------  
-      3900 ~ 0%    +349.4%      17527 ~ 2%  lkp-nex05/micro/will-it-scale/futex2
-      3930 ~ 1%    +258.6%      14091 ~20%  lkp-nex05/micro/will-it-scale/signal1
-    143678 ~42%  +4.8e+05%   6.93e+08 ~ 0%  lkp-snb01/micro/will-it-scale/sched_yield
-    151509 ~40%  +4.6e+05%   6.93e+08 ~ 0%  TOTAL time.involuntary_context_switches
-
-bc575710efe937e  598143917dc5ecf11f0764de4  
----------------  -------------------------  
-       884 ~ 1%      +8.3%        957 ~ 1%  lkp-nex05/micro/will-it-scale/futex2
-       883 ~ 0%      +9.4%        967 ~ 2%  lkp-nex05/micro/will-it-scale/signal1
-      2405 ~25%  +2.1e+05%    5129828 ~ 5%  lkp-snb01/micro/will-it-scale/sched_yield
-      4173 ~15%  +1.2e+05%    5131753 ~ 5%  TOTAL vmstat.system.cs
-
-bc575710efe937e  598143917dc5ecf11f0764de4  
----------------  -------------------------  
-       250 ~ 4%     +29.1%        323 ~ 8%  lkp-snb01/micro/will-it-scale/sched_yield
-       250 ~ 4%     +29.1%        323 ~ 8%  TOTAL time.user_time
-
-bc575710efe937e  598143917dc5ecf11f0764de4  
----------------  -------------------------  
-      2819 ~ 0%      -7.9%       2597 ~ 0%  lkp-nex05/micro/will-it-scale/futex2
-      2811 ~ 0%      -5.9%       2644 ~ 1%  lkp-nex05/micro/will-it-scale/signal1
-      1267 ~ 0%     -22.9%        978 ~ 2%  lkp-snb01/micro/will-it-scale/sched_yield
-      6898 ~ 0%      -9.8%       6219 ~ 1%  TOTAL time.system_time
-
-bc575710efe937e  598143917dc5ecf11f0764de4  
----------------  -------------------------  
-       905 ~ 0%      -7.9%        833 ~ 0%  lkp-nex05/micro/will-it-scale/futex2
-       902 ~ 0%      -5.7%        850 ~ 1%  lkp-nex05/micro/will-it-scale/signal1
-       489 ~ 0%     -14.3%        419 ~ 0%  lkp-snb01/micro/will-it-scale/sched_yield
-      2296 ~ 0%      -8.4%       2103 ~ 0%  TOTAL time.percent_of_cpu_this_job_got
-
-bc575710efe937e  598143917dc5ecf11f0764de4  
----------------  -------------------------  
-     45.10 ~ 0%      -4.8%      42.94 ~ 0%  lkp-nex05/micro/will-it-scale/futex2
-     45.04 ~ 0%      -5.1%      42.73 ~ 1%  lkp-nex05/micro/will-it-scale/signal1
-     50.62 ~ 0%     -10.0%      45.56 ~ 0%  lkp-snb01/micro/will-it-scale/sched_yield
-    140.76 ~ 0%      -6.8%     131.22 ~ 0%  TOTAL turbostat.%c0
-
-bc575710efe937e  598143917dc5ecf11f0764de4  
----------------  -------------------------  
-      2380 ~ 2%     +15.7%       2753 ~13%  lkp-nex05/micro/will-it-scale/signal1
-      2380 ~ 2%     +15.7%       2753 ~13%  TOTAL boottime.idle
-
-bc575710efe937e  598143917dc5ecf11f0764de4  
----------------  -------------------------  
-      7975 ~ 0%      -6.2%       7480 ~ 0%  lkp-nex05/micro/will-it-scale/futex2
-      8022 ~ 0%      -6.9%       7465 ~ 0%  lkp-nex05/micro/will-it-scale/signal1
-     15997 ~ 0%      -6.6%      14946 ~ 0%  TOTAL vmstat.system.in
-
-bc575710efe937e  598143917dc5ecf11f0764de4  
----------------  -------------------------  
-     42.69 ~ 2%     +15.0%      49.08 ~14%  lkp-nex05/micro/will-it-scale/signal1
-     42.69 ~ 2%     +15.0%      49.08 ~14%  TOTAL boottime.boot
-
-bc575710efe937e  598143917dc5ecf11f0764de4  
----------------  -------------------------  
-       121 ~ 0%      -2.2%        119 ~ 0%  lkp-snb01/micro/will-it-scale/sched_yield
-       121 ~ 0%      -2.2%        119 ~ 0%  TOTAL turbostat.Cor_W
-
-bc575710efe937e  598143917dc5ecf11f0764de4  
----------------  -------------------------  
-       148 ~ 0%      -1.8%        145 ~ 0%  lkp-snb01/micro/will-it-scale/sched_yield
-       148 ~ 0%      -1.8%        145 ~ 0%  TOTAL turbostat.Pkg_W
+--Signature=_Tue__4_Mar_2014_12_03_02_+1100_Bw.nM=fy=yqb65yh
+Content-Type: multipart/mixed;
+ boundary="Multipart=_Tue__4_Mar_2014_12_03_02_+1100_XeFjU_yk4y+pNlFY"
 
 
-                                  time.system_time
+--Multipart=_Tue__4_Mar_2014_12_03_02_+1100_XeFjU_yk4y+pNlFY
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-   2850 ++------------------------------------------------------------------+
-        |                                                                   |
-   2800 *+.*..*..*..*..*..*..*..*..*..*..*.*..*..*..*..*..*                 |
-        |                                                                   |
-        |                                                                   |
-   2750 ++                                                                  |
-        |                                                             O     |
-   2700 ++                                                                  |
-        |                                                                   |
-   2650 O+                                                               O  |
-        |        O        O                                     O           O
-        |     O              O             O              O  O              |
-   2600 ++          O              O          O     O                       |
-        |  O                    O     O  O       O     O           O        |
-   2550 ++-------------O----------------------------------------------------+
+Hi Andrew,
+
+On Mon, 3 Mar 2014 16:39:21 -0800 Andrew Morton <akpm@linux-foundation.org>=
+ wrote:
+>
+> On Tue, 4 Mar 2014 11:36:10 +1100 Stephen Rothwell <sfr@canb.auug.org.au>=
+ wrote:
+>=20
+> > I am carrying 5 fix patches for the above patch (they need to go before
+> > or as part of the above patch).
+> >=20
+> > ppc_Make_PPC_BOOK3S_64_select_IRQ_WORK.patch
+> > ia64__select_CONFIG_TTY_for_use_of_tty_write_message_in_unaligned.patch
+> > s390__select_CONFIG_TTY_for_use_of_tty_in_unconditional_keyboard_driver=
+.patch
+> > cris__Make_ETRAX_ARCH_V10_select_TTY_for_use_in_debugport.patch
+> > cris__cpuinfo_op_should_depend_on_CONFIG_PROC_FS.patch
+> >=20
+> > I can send them to you if you like,
+>=20
+> Yes please.
+>=20
+> > but I am pretty sure you were cc'd on all of them.
+>=20
+> I hoped someone else was collecting them ;)
+
+Attached (I hope that works for you)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Multipart=_Tue__4_Mar_2014_12_03_02_+1100_XeFjU_yk4y+pNlFY
+Content-Type: text/x-diff;
+ name="ppc_Make_PPC_BOOK3S_64_select_IRQ_WORK.patch"
+Content-Disposition: attachment;
+ filename="ppc_Make_PPC_BOOK3S_64_select_IRQ_WORK.patch"
+Content-Transfer-Encoding: quoted-printable
+
+From: Josh Triplett <josh@joshtriplett.org>
+Date: Wed, 26 Feb 2014 01:58:02 -0800
+Subject: [PATCH] ppc: Make PPC_BOOK3S_64 select IRQ_WORK
+
+arch/powerpc/kernel/mce.c, compiled in for PPC_BOOK3S_64, calls
+functions only built when IRQ_WORK, so select it.  Fixes the following
+build error:
+
+arch/powerpc/kernel/built-in.o: In function `.machine_check_queue_event':
+(.text+0x11260): undefined reference to `.irq_work_queue'
+
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+---
+ arch/powerpc/platforms/Kconfig.cputype | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/powerpc/platforms/Kconfig.cputype b/arch/powerpc/platform=
+s/Kconfig.cputype
+index 434fda3..d9e2b19 100644
+--- a/arch/powerpc/platforms/Kconfig.cputype
++++ b/arch/powerpc/platforms/Kconfig.cputype
+@@ -73,6 +73,7 @@ config PPC_BOOK3S_64
+ 	select SYS_SUPPORTS_HUGETLBFS
+ 	select HAVE_ARCH_TRANSPARENT_HUGEPAGE if PPC_64K_PAGES
+ 	select ARCH_SUPPORTS_NUMA_BALANCING
++	select IRQ_WORK
+=20
+ config PPC_BOOK3E_64
+ 	bool "Embedded processors"
+--=20
+1.9.0
 
 
-                         time.percent_of_cpu_this_job_got
+--Multipart=_Tue__4_Mar_2014_12_03_02_+1100_XeFjU_yk4y+pNlFY
+Content-Type: text/x-diff;
+ name="ia64__select_CONFIG_TTY_for_use_of_tty_write_message_in_unaligned.patch"
+Content-Disposition: attachment;
+ filename="ia64__select_CONFIG_TTY_for_use_of_tty_write_message_in_unaligned.patch"
+Content-Transfer-Encoding: quoted-printable
 
-   910 ++-------------------------------------------------------------------+
-       *..*..*..*..*..*..*..*..*..*..*..*..*..*..  .*..  .*                 |
-   900 ++                                        *.    *.                   |
-   890 ++                                                                   |
-       |                                                                    |
-   880 ++                                                             O     |
-   870 ++                                                                   |
-       |                                                                    |
-   860 ++                                                                O  |
-   850 O+                                                                   |
-       |        O        O  O              O                 O  O           O
-   840 ++    O     O              O           O     O     O                 |
-   830 ++ O                                      O     O                    |
-       |                       O     O  O                          O        |
-   820 ++-------------O-----------------------------------------------------+
+From: Josh Triplett <josh@joshtriplett.org>
+To: kbuild test robot <fengguang.wu@intel.com>, Linux Memory Management Lis=
+t <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>, Johannes=
+ Weiner <hannes@cmpxchg.org>, kbuild-all@01.org, Tony Luck <tony.luck@intel=
+.com>, Fenghua Yu <fenghua.yu@intel.com>, linux-ia64@vger.kernel.org, linux=
+-kernel@vger.kernel.org
+Subject: [PATCH] ia64: select CONFIG_TTY for use of tty_write_message in un=
+aligned
+Date: Wed, 26 Feb 2014 02:15:56 -0800
 
+arch/ia64/kernel/unaligned.c uses tty_write_message to print an
+unaligned access exception to the TTY of the current user process.
+Enable TTY to prevent a build error.
 
-                          time.involuntary_context_switches
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+---
+Not tested, but this *should* fix the build error with CONFIG_TTY=3Dn.
 
-   20000 ++-------------O---------------------------------------------------+
-         |                      O     O  O                         O        |
-   18000 ++ O  O     O                            O     O                   |
-   16000 ++                        O           O     O     O O              |
-         |        O       O  O              O                   O           O
-   14000 O+                                                              O  |
-   12000 ++                                                                 |
-         |                                                                  |
-   10000 ++                                                           O     |
-    8000 ++                                                                 |
-         |                                                                  |
-    6000 ++                                                                 |
-    4000 *+.     .*..  .*.  .*..*..              .*..  .*..                 |
-         |  *..*.    *.   *.       *..*..*..*..*.    *.    *                |
-    2000 ++-----------------------------------------------------------------+
+Minimal fix, on the basis that few people on ia64 will care deeply about
+kernel size enough to turn off TTY.  Ideally, I'd instead suggest
+dropping the tty_write_message entirely, and just leaving the printk.
+Bonus: no need to sprintf first.
 
+ arch/ia64/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-                                    turbostat.%c0
-
-   45.5 ++------------------------------------------------------------------+
-        *..*..*..*..*..*..*..*..*..*..*..*.*..*..   *..                     |
-     45 ++                                        ..   *..*                 |
-        |                                        *                          |
-   44.5 ++                                                                  |
-        |                                                                   |
-     44 ++                                                                  |
-        |                                                                   |
-   43.5 ++                                                                  |
-        |     O     O                                     O        O  O     |
-     43 O+ O                       O                                        |
-        |                 O           O  O O  O  O  O  O     O           O  |
-   42.5 ++       O     O                                                    |
-        |                       O                                           O
-     42 ++-------------------O----------------------------------O-----------+
+diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
+index 0c8e553..6b83c66 100644
+--- a/arch/ia64/Kconfig
++++ b/arch/ia64/Kconfig
+@@ -44,6 +44,7 @@ config IA64
+ 	select HAVE_MOD_ARCH_SPECIFIC
+ 	select MODULES_USE_ELF_RELA
+ 	select ARCH_USE_CMPXCHG_LOCKREF
++	select TTY
+ 	default y
+ 	help
+ 	  The Itanium Processor Family is Intel's 64-bit successor to
+--=20
+1.9.0
 
 
-                                  vmstat.system.in
+--Multipart=_Tue__4_Mar_2014_12_03_02_+1100_XeFjU_yk4y+pNlFY
+Content-Type: text/x-diff;
+ name="s390__select_CONFIG_TTY_for_use_of_tty_in_unconditional_keyboard_driver.patch"
+Content-Disposition: attachment;
+ filename="s390__select_CONFIG_TTY_for_use_of_tty_in_unconditional_keyboard_driver.patch"
+Content-Transfer-Encoding: quoted-printable
 
-   8100 ++------------------------------------------------------------------+
-        *..*..     .*..*..*..*..*..  .*..*.*..*..  .*..  .*                 |
-   8000 ++    *..*.                *.            *.    *.                   |
-   7900 ++                                                                  |
-        |                                                                   |
-   7800 ++                                                                  |
-        |                                                                   |
-   7700 ++                                                                  |
-        |                                                                   |
-   7600 O+          O              O                      O                 |
-   7500 ++ O  O  O                    O                            O  O     |
-        |                 O              O O  O  O  O  O     O           O  |
-   7400 ++             O        O                                           O
-        |                    O                                  O           |
-   7300 ++------------------------------------------------------------------+
+From: Josh Triplett <josh@joshtriplett.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org, =
+linux-kernel@vger.kernel.org, Martin Schwidefsky <schwidefsky@de.ibm.com>, =
+Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com, linux-s390=
+@vger.kernel.org
+Subject: [PATCH] s390: select CONFIG_TTY for use of tty in unconditional ke=
+yboard driver
+Date: Wed, 26 Feb 2014 18:13:06 -0800
 
-Thanks,
-Fengguang
+The unconditionally built keyboard driver, drivers/s390/char/keyboard.c,
+requires CONFIG_TTY, so select it from CONFIG_S390 to prevent a build
+error.
+
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+---
+ arch/s390/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
+index 65a0775..398efa1 100644
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@ -140,6 +140,7 @@ config S390
+ 	select OLD_SIGACTION
+ 	select OLD_SIGSUSPEND3
+ 	select SYSCTL_EXCEPTION_TRACE
++	select TTY
+ 	select VIRT_CPU_ACCOUNTING
+ 	select VIRT_TO_BUS
+=20
+--=20
+1.9.0
+
+
+--Multipart=_Tue__4_Mar_2014_12_03_02_+1100_XeFjU_yk4y+pNlFY
+Content-Type: text/x-diff;
+ name="cris__Make_ETRAX_ARCH_V10_select_TTY_for_use_in_debugport.patch"
+Content-Disposition: attachment;
+ filename="cris__Make_ETRAX_ARCH_V10_select_TTY_for_use_in_debugport.patch"
+Content-Transfer-Encoding: quoted-printable
+
+From: Josh Triplett <josh@joshtriplett.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org, =
+linux-kernel@vger.kernel.org, Mikael Starvik <starvik@axis.com>, Jesper Nil=
+sson <jesper.nilsson@axis.com>, linux-cris-kernel@axis.com
+Subject: [PATCH] cris: Make ETRAX_ARCH_V10 select TTY for use in debugport
+Date: Thu, 27 Feb 2014 17:27:34 -0800
+
+arch/cris/arch-v10/kernel/debugport.c, compiled in unconditionally with
+ETRAX_ARCH_V10, requires TTY, so select TTY to avoid a build failure.
+
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+---
+ arch/cris/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/cris/Kconfig b/arch/cris/Kconfig
+index ed0fcdf..7cb90a5 100644
+--- a/arch/cris/Kconfig
++++ b/arch/cris/Kconfig
+@@ -138,6 +138,7 @@ config ETRAX_ARCH_V10
+        bool
+        default y if ETRAX100LX || ETRAX100LX_V2
+        default n if !(ETRAX100LX || ETRAX100LX_V2)
++       select TTY
+=20
+ config ETRAX_ARCH_V32
+        bool
+--=20
+1.9.0
+
+
+--Multipart=_Tue__4_Mar_2014_12_03_02_+1100_XeFjU_yk4y+pNlFY
+Content-Type: text/x-diff;
+ name="cris__cpuinfo_op_should_depend_on_CONFIG_PROC_FS.patch"
+Content-Disposition: attachment;
+ filename="cris__cpuinfo_op_should_depend_on_CONFIG_PROC_FS.patch"
+Content-Transfer-Encoding: quoted-printable
+
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mikael Starvik <starvik@axis.com>, Jesper Nilsson <jesper.nilsson@axis.=
+com>
+Cc: linux-cris-kernel@axis.com, linux-next@vger.kernel.org, linux-kernel@vg=
+er.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH -next] cris: cpuinfo_op should depend on CONFIG_PROC_FS
+Date: Sun,  2 Mar 2014 11:34:39 +0100
+
+Now allnoconfig started disabling CONFIG_PROC_FS:
+
+    arch/cris/kernel/built-in.o:(.rodata+0xc): undefined reference to `show=
+_cpuinfo'
+    make: *** [vmlinux] Error 1
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+http://kisskb.ellerman.id.au/kisskb/buildresult/10665698/
+
+ arch/cris/kernel/setup.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/cris/kernel/setup.c b/arch/cris/kernel/setup.c
+index 32c3d248868e..905b70ea9939 100644
+--- a/arch/cris/kernel/setup.c
++++ b/arch/cris/kernel/setup.c
+@@ -165,6 +165,7 @@ void __init setup_arch(char **cmdline_p)
+ 	strcpy(init_utsname()->machine, cris_machine_name);
+ }
+=20
++#ifdef CONFIG_PROC_FS
+ static void *c_start(struct seq_file *m, loff_t *pos)
+ {
+ 	return *pos < nr_cpu_ids ? (void *)(int)(*pos + 1) : NULL;
+@@ -188,6 +189,7 @@ const struct seq_operations cpuinfo_op =3D {
+ 	.stop  =3D c_stop,
+ 	.show  =3D show_cpuinfo,
+ };
++#endif /* CONFIG_PROC_FS */
+=20
+ static int __init topology_init(void)
+ {
+--=20
+1.7.9.5
+
+--
+To unsubscribe from this list: send the line "unsubscribe linux-next" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+--Multipart=_Tue__4_Mar_2014_12_03_02_+1100_XeFjU_yk4y+pNlFY--
+
+--Signature=_Tue__4_Mar_2014_12_03_02_+1100_Bw.nM=fy=yqb65yh
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIbBAEBCAAGBQJTFSZPAAoJEMDTa8Ir7ZwV7/wP91zhetpr5izIcbu5crO0emzA
+87uBGITynOQTOZUoPmtCZoUVyPG2LVids6+S7TOzTz8Wx6JSSw/6j7xlW938u0cV
+B2EWqf+88BHU+6b4bMgYXlFtCVFVqAp0zLOwRrk40jN+2Qw+MSztBhdkyLIbnGMQ
+XDQmH6Jz9vuBSJjos1zJlChavk4Kp6KgQ3fK3lDeAMq/jsZT0LLrAJyrdWIgpeph
+szNMTfUg7FnLhjZ9ZxeEelmdzzJjNDUmMz0ngkzoOG8pr+yzD0wsWpd6WKSlyHIQ
+2lzwN4oraTpe4SNgkJrzaZ+HTlX2bIEXUAnPeFNSstHf6XyYgQFtzBILi+3tL2u/
+ubk5X4d5SvceEjhl+0qSGZbE6FFGrYqCUyWvBjQGoONsRzvb3wbo8p5NPqwzYnhi
+tzwj8i8YJycOZxaLIWHsgZM5dEpUb/3b7kyCV/pQ6IgsouQXHZHboEV4nf7gofCt
+nGq9PfYk7b7oA935JO0Euw7d7Kk9jOALJ0puxZ9I+RxO2/krRjUe2l2GAGF64uj0
+fiY6rokce4X1e2Z5Ywq5QO0bOunnx1HNToOJHA4WfT6nJ4hD6dkhjspu80+mOtWB
+CDeWtlX36WdvfjQKDFbME6qzS8uRvvhbkLgMMAhz9l2CjqNS5nYafN0gsoAGUXT1
+MfC0xGJ275UuZFQZfSs=
+=G6Tb
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__4_Mar_2014_12_03_02_+1100_Bw.nM=fy=yqb65yh--
