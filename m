@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758079AbaCDU1o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:27:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41615 "EHLO
+	id S1757817AbaCDU1m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:27:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41621 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932230AbaCDUFL (ORCPT
+	with ESMTP id S932238AbaCDUFL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Mar 2014 15:05:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emil Goode <emilgoode@gmail.com>,
-        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
+        Jiri Bohac <jbohac@suse.cz>, Veaceslav Falico <vfalico@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 30/97] usbnet: remove generic hard_header_len check
-Date: Tue,  4 Mar 2014 12:03:43 -0800
-Message-Id: <20140304200347.044877015@linuxfoundation.org>
+Subject: [PATCH 3.10 31/97] bonding: 802.3ad: make aggregator_identifier bond-private
+Date: Tue,  4 Mar 2014 12:03:44 -0800
+Message-Id: <20140304200347.079326257@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -30,211 +29,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emil Goode <emilgoode@gmail.com>
+From: Jiri Bohac <jiri@boha.cz>
 
-[ Upstream commit eb85569fe2d06c2fbf4de7b66c263ca095b397aa ]
+[ Upstream commit 163c8ff30dbe473abfbb24a7eac5536c87f3baa9 ]
 
-This patch removes a generic hard_header_len check from the usbnet
-module that is causing dropped packages under certain circumstances
-for devices that send rx packets that cross urb boundaries.
+aggregator_identifier is used to assign unique aggregator identifiers
+to aggregators of a bond during device enslaving.
 
-One example is the AX88772B which occasionally send rx packets that
-cross urb boundaries where the remaining partial packet is sent with
-no hardware header. When the buffer with a partial packet is of less
-number of octets than the value of hard_header_len the buffer is
-discarded by the usbnet module.
+aggregator_identifier is currently a global variable that is zeroed in
+bond_3ad_initialize().
 
-With AX88772B this can be reproduced by using ping with a packet
-size between 1965-1976.
+This sequence will lead to duplicate aggregator identifiers for eth1 and eth3:
 
-The bug has been reported here:
+create bond0
+change bond0 mode to 802.3ad
+enslave eth0 to bond0 		//eth0 gets agg id 1
+enslave eth1 to bond0 		//eth1 gets agg id 2
+create bond1
+change bond1 mode to 802.3ad
+enslave eth2 to bond1		//aggregator_identifier is reset to 0
+				//eth2 gets agg id 1
+enslave eth3 to bond0 		//eth3 gets agg id 2
 
-https://bugzilla.kernel.org/show_bug.cgi?id=29082
+Fix this by making aggregator_identifier private to the bond.
 
-This patch introduces the following changes:
-- Removes the generic hard_header_len check in the rx_complete
-  function in the usbnet module.
-- Introduces a ETH_HLEN check for skbs that are not cloned from
-  within a rx_fixup callback.
-- For safety a hard_header_len check is added to each rx_fixup
-  callback function that could be affected by this change.
-  These extra checks could possibly be removed by someone
-  who has the hardware to test.
-- Removes a call to dev_kfree_skb_any() and instead utilizes the
-  dev->done list to queue skbs for cleanup.
-
-The changes place full responsibility on the rx_fixup callback
-functions that clone skbs to only pass valid skbs to the
-usbnet_skb_return function.
-
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
-Reported-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
+Signed-off-by: Jiri Bohac <jbohac@suse.cz>
+Acked-by: Veaceslav Falico <vfalico@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/usb/ax88179_178a.c |    4 ++++
- drivers/net/usb/gl620a.c       |    4 ++++
- drivers/net/usb/mcs7830.c      |    5 +++--
- drivers/net/usb/net1080.c      |    4 ++++
- drivers/net/usb/qmi_wwan.c     |    8 ++++----
- drivers/net/usb/rndis_host.c   |    4 ++++
- drivers/net/usb/smsc75xx.c     |    4 ++++
- drivers/net/usb/smsc95xx.c     |    4 ++++
- drivers/net/usb/usbnet.c       |   25 ++++++++++---------------
- 9 files changed, 41 insertions(+), 21 deletions(-)
+ drivers/net/bonding/bond_3ad.c |    6 ++----
+ drivers/net/bonding/bond_3ad.h |    1 +
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
---- a/drivers/net/usb/ax88179_178a.c
-+++ b/drivers/net/usb/ax88179_178a.c
-@@ -1109,6 +1109,10 @@ static int ax88179_rx_fixup(struct usbne
- 	u16 hdr_off;
- 	u32 *pkt_hdr;
- 
-+	/* This check is no longer done by usbnet */
-+	if (skb->len < dev->net->hard_header_len)
-+		return 0;
-+
- 	skb_trim(skb, skb->len - 4);
- 	memcpy(&rx_hdr, skb_tail_pointer(skb), 4);
- 	le32_to_cpus(&rx_hdr);
---- a/drivers/net/usb/gl620a.c
-+++ b/drivers/net/usb/gl620a.c
-@@ -86,6 +86,10 @@ static int genelink_rx_fixup(struct usbn
- 	u32			size;
- 	u32			count;
- 
-+	/* This check is no longer done by usbnet */
-+	if (skb->len < dev->net->hard_header_len)
-+		return 0;
-+
- 	header = (struct gl_header *) skb->data;
- 
- 	// get the packet count of the received skb
---- a/drivers/net/usb/mcs7830.c
-+++ b/drivers/net/usb/mcs7830.c
-@@ -529,8 +529,9 @@ static int mcs7830_rx_fixup(struct usbne
- {
- 	u8 status;
- 
--	if (skb->len == 0) {
--		dev_err(&dev->udev->dev, "unexpected empty rx frame\n");
-+	/* This check is no longer done by usbnet */
-+	if (skb->len < dev->net->hard_header_len) {
-+		dev_err(&dev->udev->dev, "unexpected tiny rx frame\n");
- 		return 0;
- 	}
- 
---- a/drivers/net/usb/net1080.c
-+++ b/drivers/net/usb/net1080.c
-@@ -366,6 +366,10 @@ static int net1080_rx_fixup(struct usbne
- 	struct nc_trailer	*trailer;
- 	u16			hdr_len, packet_len;
- 
-+	/* This check is no longer done by usbnet */
-+	if (skb->len < dev->net->hard_header_len)
-+		return 0;
-+
- 	if (!(skb->len & 0x01)) {
- 		netdev_dbg(dev->net, "rx framesize %d range %d..%d mtu %d\n",
- 			   skb->len, dev->net->hard_header_len, dev->hard_mtu,
---- a/drivers/net/usb/qmi_wwan.c
-+++ b/drivers/net/usb/qmi_wwan.c
-@@ -80,10 +80,10 @@ static int qmi_wwan_rx_fixup(struct usbn
- {
- 	__be16 proto;
- 
--	/* usbnet rx_complete guarantees that skb->len is at least
--	 * hard_header_len, so we can inspect the dest address without
--	 * checking skb->len
--	 */
-+	/* This check is no longer done by usbnet */
-+	if (skb->len < dev->net->hard_header_len)
-+		return 0;
-+
- 	switch (skb->data[0] & 0xf0) {
- 	case 0x40:
- 		proto = htons(ETH_P_IP);
---- a/drivers/net/usb/rndis_host.c
-+++ b/drivers/net/usb/rndis_host.c
-@@ -494,6 +494,10 @@ EXPORT_SYMBOL_GPL(rndis_unbind);
-  */
- int rndis_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
- {
-+	/* This check is no longer done by usbnet */
-+	if (skb->len < dev->net->hard_header_len)
-+		return 0;
-+
- 	/* peripheral may have batched packets to us... */
- 	while (likely(skb->len)) {
- 		struct rndis_data_hdr	*hdr = (void *)skb->data;
---- a/drivers/net/usb/smsc75xx.c
-+++ b/drivers/net/usb/smsc75xx.c
-@@ -2108,6 +2108,10 @@ static void smsc75xx_rx_csum_offload(str
- 
- static int smsc75xx_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
- {
-+	/* This check is no longer done by usbnet */
-+	if (skb->len < dev->net->hard_header_len)
-+		return 0;
-+
- 	while (skb->len > 0) {
- 		u32 rx_cmd_a, rx_cmd_b, align_count, size;
- 		struct sk_buff *ax_skb;
---- a/drivers/net/usb/smsc95xx.c
-+++ b/drivers/net/usb/smsc95xx.c
-@@ -1725,6 +1725,10 @@ static void smsc95xx_rx_csum_offload(str
- 
- static int smsc95xx_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
- {
-+	/* This check is no longer done by usbnet */
-+	if (skb->len < dev->net->hard_header_len)
-+		return 0;
-+
- 	while (skb->len > 0) {
- 		u32 header, align_count;
- 		struct sk_buff *ax_skb;
---- a/drivers/net/usb/usbnet.c
-+++ b/drivers/net/usb/usbnet.c
-@@ -517,17 +517,19 @@ static inline void rx_process (struct us
- 	}
- 	// else network stack removes extra byte if we forced a short packet
- 
--	if (skb->len) {
--		/* all data was already cloned from skb inside the driver */
--		if (dev->driver_info->flags & FLAG_MULTI_PACKET)
--			dev_kfree_skb_any(skb);
--		else
--			usbnet_skb_return(dev, skb);
-+	/* all data was already cloned from skb inside the driver */
-+	if (dev->driver_info->flags & FLAG_MULTI_PACKET)
-+		goto done;
-+
-+	if (skb->len < ETH_HLEN) {
-+		dev->net->stats.rx_errors++;
-+		dev->net->stats.rx_length_errors++;
-+		netif_dbg(dev, rx_err, dev->net, "rx length %d\n", skb->len);
-+	} else {
-+		usbnet_skb_return(dev, skb);
- 		return;
- 	}
- 
--	netif_dbg(dev, rx_err, dev->net, "drop\n");
--	dev->net->stats.rx_errors++;
- done:
- 	skb_queue_tail(&dev->done, skb);
+--- a/drivers/net/bonding/bond_3ad.c
++++ b/drivers/net/bonding/bond_3ad.c
+@@ -1854,8 +1854,6 @@ void bond_3ad_initiate_agg_selection(str
+ 	BOND_AD_INFO(bond).agg_select_timer = timeout;
  }
-@@ -549,13 +551,6 @@ static void rx_complete (struct urb *urb
- 	switch (urb_status) {
- 	/* success */
- 	case 0:
--		if (skb->len < dev->net->hard_header_len) {
--			state = rx_cleanup;
--			dev->net->stats.rx_errors++;
--			dev->net->stats.rx_length_errors++;
--			netif_dbg(dev, rx_err, dev->net,
--				  "rx length %d\n", skb->len);
--		}
- 		break;
  
- 	/* stalls need manual reset. this is rare ... except that
+-static u16 aggregator_identifier;
+-
+ /**
+  * bond_3ad_initialize - initialize a bond's 802.3ad parameters and structures
+  * @bond: bonding struct to work on
+@@ -1869,7 +1867,7 @@ void bond_3ad_initialize(struct bonding
+ 	if (MAC_ADDRESS_COMPARE(&(BOND_AD_INFO(bond).system.sys_mac_addr),
+ 				bond->dev->dev_addr)) {
+ 
+-		aggregator_identifier = 0;
++		BOND_AD_INFO(bond).aggregator_identifier = 0;
+ 
+ 		BOND_AD_INFO(bond).system.sys_priority = 0xFFFF;
+ 		BOND_AD_INFO(bond).system.sys_mac_addr = *((struct mac_addr *)bond->dev->dev_addr);
+@@ -1940,7 +1938,7 @@ int bond_3ad_bind_slave(struct slave *sl
+ 		ad_initialize_agg(aggregator);
+ 
+ 		aggregator->aggregator_mac_address = *((struct mac_addr *)bond->dev->dev_addr);
+-		aggregator->aggregator_identifier = (++aggregator_identifier);
++		aggregator->aggregator_identifier = ++BOND_AD_INFO(bond).aggregator_identifier;
+ 		aggregator->slave = slave;
+ 		aggregator->is_active = 0;
+ 		aggregator->num_of_ports = 0;
+--- a/drivers/net/bonding/bond_3ad.h
++++ b/drivers/net/bonding/bond_3ad.h
+@@ -253,6 +253,7 @@ struct ad_system {
+ struct ad_bond_info {
+ 	struct ad_system system;	    /* 802.3ad system structure */
+ 	u32 agg_select_timer;	    // Timer to select aggregator after all adapter's hand shakes
++	u16 aggregator_identifier;
+ };
+ 
+ struct ad_slave_info {
 
 
