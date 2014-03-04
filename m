@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757544AbaCDUJW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 15:09:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41819 "EHLO
+	id S1757557AbaCDUJY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 15:09:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41808 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932367AbaCDUFr (ORCPT
+	with ESMTP id S932360AbaCDUFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 15:05:47 -0500
+	Tue, 4 Mar 2014 15:05:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH 3.10 81/97] quota: Fix race between dqput() and dquot_scan_active()
-Date: Tue,  4 Mar 2014 12:04:34 -0800
-Message-Id: <20140304200348.669205376@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 78/97] ALSA: hda - Add a fixup for HP Folio 13 mute LED
+Date: Tue,  4 Mar 2014 12:04:31 -0800
+Message-Id: <20140304200348.567331715@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140304200345.895517495@linuxfoundation.org>
 References: <20140304200345.895517495@linuxfoundation.org>
@@ -28,66 +28,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 1362f4ea20fa63688ba6026e586d9746ff13a846 upstream.
+commit 37c367ecdb9a01c9acc980e6e17913570a1788a7 upstream.
 
-Currently last dqput() can race with dquot_scan_active() causing it to
-call callback for an already deactivated dquot. The race is as follows:
+HP Folio 13 may have a broken BIOS that doesn't set up the mute LED
+GPIO properly, and the driver guesses it wrongly, too.  Add a new
+fixup entry for setting the GPIO pin statically for this laptop.
 
-CPU1					CPU2
-  dqput()
-    spin_lock(&dq_list_lock);
-    if (atomic_read(&dquot->dq_count) > 1) {
-     - not taken
-    if (test_bit(DQ_ACTIVE_B, &dquot->dq_flags)) {
-      spin_unlock(&dq_list_lock);
-      ->release_dquot(dquot);
-        if (atomic_read(&dquot->dq_count) > 1)
-         - not taken
-					  dquot_scan_active()
-					    spin_lock(&dq_list_lock);
-					    if (!test_bit(DQ_ACTIVE_B, &dquot->dq_flags))
-					     - not taken
-					    atomic_inc(&dquot->dq_count);
-					    spin_unlock(&dq_list_lock);
-        - proceeds to release dquot
-					    ret = fn(dquot, priv);
-					     - called for inactive dquot
-
-Fix the problem by making sure possible ->release_dquot() is finished by
-the time we call the callback and new calls to it will notice reference
-dquot_scan_active() has taken and bail out.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=70991
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/quota/dquot.c |   14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ sound/pci/hda/patch_sigmatel.c |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
---- a/fs/quota/dquot.c
-+++ b/fs/quota/dquot.c
-@@ -581,9 +581,17 @@ int dquot_scan_active(struct super_block
- 		dqstats_inc(DQST_LOOKUPS);
- 		dqput(old_dquot);
- 		old_dquot = dquot;
--		ret = fn(dquot, priv);
--		if (ret < 0)
--			goto out;
-+		/*
-+		 * ->release_dquot() can be racing with us. Our reference
-+		 * protects us from new calls to it so just wait for any
-+		 * outstanding call and recheck the DQ_ACTIVE_B after that.
-+		 */
-+		wait_on_dquot(dquot);
-+		if (test_bit(DQ_ACTIVE_B, &dquot->dq_flags)) {
-+			ret = fn(dquot, priv);
-+			if (ret < 0)
-+				goto out;
-+		}
- 		spin_lock(&dq_list_lock);
- 		/* We are safe to continue now because our dquot could not
- 		 * be moved out of the inuse list while we hold the reference */
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -98,6 +98,7 @@ enum {
+ 	STAC_92HD83XXX_HP_LED,
+ 	STAC_92HD83XXX_HP_INV_LED,
+ 	STAC_92HD83XXX_HP_MIC_LED,
++	STAC_HP_LED_GPIO10,
+ 	STAC_92HD83XXX_HEADSET_JACK,
+ 	STAC_92HD83XXX_HP,
+ 	STAC_HP_ENVY_BASS,
+@@ -2107,6 +2108,17 @@ static void stac92hd83xxx_fixup_hp_mic_l
+ 		spec->mic_mute_led_gpio = 0x08; /* GPIO3 */
+ }
+ 
++static void stac92hd83xxx_fixup_hp_led_gpio10(struct hda_codec *codec,
++				   const struct hda_fixup *fix, int action)
++{
++	struct sigmatel_spec *spec = codec->spec;
++
++	if (action == HDA_FIXUP_ACT_PRE_PROBE) {
++		spec->gpio_led = 0x10; /* GPIO4 */
++		spec->default_polarity = 0;
++	}
++}
++
+ static void stac92hd83xxx_fixup_headset_jack(struct hda_codec *codec,
+ 				   const struct hda_fixup *fix, int action)
+ {
+@@ -2173,6 +2185,12 @@ static const struct hda_fixup stac92hd83
+ 		.chained = true,
+ 		.chain_id = STAC_92HD83XXX_HP,
+ 	},
++	[STAC_HP_LED_GPIO10] = {
++		.type = HDA_FIXUP_FUNC,
++		.v.func = stac92hd83xxx_fixup_hp_led_gpio10,
++		.chained = true,
++		.chain_id = STAC_92HD83XXX_HP,
++	},
+ 	[STAC_92HD83XXX_HEADSET_JACK] = {
+ 		.type = HDA_FIXUP_FUNC,
+ 		.v.func = stac92hd83xxx_fixup_headset_jack,
+@@ -2244,6 +2262,8 @@ static const struct snd_pci_quirk stac92
+ 			  "HP", STAC_92HD83XXX_HP_cNB11_INTQUAD),
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x1888,
+ 			  "HP Envy Spectre", STAC_HP_ENVY_BASS),
++	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x1899,
++			  "HP Folio 13", STAC_HP_LED_GPIO10),
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x18df,
+ 			  "HP Folio", STAC_92HD83XXX_HP_MIC_LED),
+ 	SND_PCI_QUIRK_MASK(PCI_VENDOR_ID_HP, 0xff00, 0x1900,
 
 
