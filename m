@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758598AbaCEPFq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 10:05:46 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41157 "EHLO
+	id S1758640AbaCEPGI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:06:08 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41150 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755728AbaCEO0e (ORCPT
+	with ESMTP id S1753061AbaCEO0d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:26:34 -0500
+	Wed, 5 Mar 2014 09:26:33 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michele Baldessari <michele@acksyn.org>,
-        Aaron Brown <aaron.f.brown@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Ping Cheng <pingc@wacom.com>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Josh Boyer <jwboyer@fedoraproject.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 090/131] e100: Fix "disabling already-disabled device" warning
-Date: Wed,  5 Mar 2014 14:23:34 +0000
-Message-Id: <1394029455-23128-91-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 089/131] Input: wacom - make sure touch_max is set for touch devices
+Date: Wed,  5 Mar 2014 14:23:33 +0000
+Message-Id: <1394029455-23128-90-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -30,66 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michele Baldessari <michele@acksyn.org>
+From: Ping Cheng <pinglinux@gmail.com>
 
-commit 2b6e0ca175fe4a20f21ba82b1e7ccc71029c4dd4 upstream.
+commit 1d0d6df02750b4a6f466768cbfbf860e24f4c8d4 upstream.
 
-In https://bugzilla.redhat.com/show_bug.cgi?id=994438 and
-https://bugzilla.redhat.com/show_bug.cgi?id=970480  we
-received different reports of e100 throwing the following
-warning:
+Old single touch Tablet PCs do not have touch_max set at
+wacom_features. Since touch device at lease supports one
+finger, assign touch_max to 1 when touch usage is defined
+in its HID Descriptor and touch_max is not pre-defined.
 
- [<c06a0ba5>] ? pci_disable_device+0x85/0x90
- [<c044a153>] warn_slowpath_fmt+0x33/0x40
- [<c06a0ba5>] pci_disable_device+0x85/0x90
- [<f7fdf7e0>] __e100_shutdown+0x80/0x120 [e100]
- [<c0476ca5>] ? check_preempt_curr+0x65/0x90
- [<f7fdf8d6>] e100_suspend+0x16/0x30 [e100]
- [<c06a1ebb>] pci_legacy_suspend+0x2b/0xb0
- [<c098fc0f>] ? wait_for_completion+0x1f/0xd0
- [<c06a2d50>] ? pci_pm_poweroff+0xb0/0xb0
- [<c06a2de4>] pci_pm_freeze+0x94/0xa0
- [<c0767bb7>] dpm_run_callback+0x37/0x80
- [<c076a204>] ? pm_wakeup_pending+0xc4/0x140
- [<c0767f12>] __device_suspend+0xb2/0x1f0
- [<c076806f>] async_suspend+0x1f/0x90
- [<c04706e5>] async_run_entry_fn+0x35/0x140
- [<c0478aef>] ? wake_up_process+0x1f/0x40
- [<c0464495>] process_one_work+0x115/0x370
- [<c0462645>] ? start_worker+0x25/0x30
- [<c0464dc5>] ? manage_workers.isra.27+0x1a5/0x250
- [<c0464f6e>] worker_thread+0xfe/0x330
- [<c0464e70>] ? manage_workers.isra.27+0x250/0x250
- [<c046a224>] kthread+0x94/0xa0
- [<c0997f37>] ret_from_kernel_thread+0x1b/0x28
- [<c046a190>] ? insert_kthread_work+0x30/0x30
-
-This patch removes pci_disable_device() from __e100_shutdown().
-pci_clear_master() is enough.
-
-Signed-off-by: Michele Baldessari <michele@acksyn.org>
-Tested-by: Mark Harig <idirectscm@aim.com>
-Signed-off-by: Aaron Brown <aaron.f.brown@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Tested-by: Jason Gerecke <killertofu@gmail.com>
+Signed-off-by: Ping Cheng <pingc@wacom.com>
+Reviewed-by: Chris Bagwell <chris@cnpbagwell.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: Josh Boyer <jwboyer@fedoraproject.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/intel/e100.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/input/tablet/wacom_sys.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/intel/e100.c b/drivers/net/ethernet/intel/e100.c
-index 5115ae7..e1aaedb 100644
---- a/drivers/net/ethernet/intel/e100.c
-+++ b/drivers/net/ethernet/intel/e100.c
-@@ -3039,7 +3039,7 @@ static void __e100_shutdown(struct pci_dev *pdev, bool *enable_wake)
- 		*enable_wake = false;
+diff --git a/drivers/input/tablet/wacom_sys.c b/drivers/input/tablet/wacom_sys.c
+index aaf23ae..3d838c0 100644
+--- a/drivers/input/tablet/wacom_sys.c
++++ b/drivers/input/tablet/wacom_sys.c
+@@ -339,7 +339,7 @@ static int wacom_parse_hid(struct usb_interface *intf,
+ 	struct usb_device *dev = interface_to_usbdev(intf);
+ 	char limit = 0;
+ 	/* result has to be defined as int for some devices */
+-	int result = 0;
++	int result = 0, touch_max = 0;
+ 	int i = 0, usage = WCM_UNDEFINED, finger = 0, pen = 0;
+ 	unsigned char *report;
+ 
+@@ -386,7 +386,8 @@ static int wacom_parse_hid(struct usb_interface *intf,
+ 				if (usage == WCM_DESKTOP) {
+ 					if (finger) {
+ 						features->device_type = BTN_TOOL_FINGER;
+-
++						/* touch device at least supports one touch point */
++						touch_max = 1;
+ 						switch (features->type) {
+ 						case TABLETPC2FG:
+ 							features->pktlen = WACOM_PKGLEN_TPC2FG;
+@@ -539,6 +540,8 @@ static int wacom_parse_hid(struct usb_interface *intf,
  	}
  
--	pci_disable_device(pdev);
-+	pci_clear_master(pdev);
- }
- 
- static int __e100_power_off(struct pci_dev *pdev, bool wake)
+  out:
++	if (!features->touch_max && touch_max)
++		features->touch_max = touch_max;
+ 	result = 0;
+ 	kfree(report);
+ 	return result;
 -- 
 1.9.0
 
