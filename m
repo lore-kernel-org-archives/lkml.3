@@ -1,125 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754132AbaCEJuW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 04:50:22 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:39956 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752358AbaCEJuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 04:50:17 -0500
-Message-ID: <5316FFCE.1060603@ti.com>
-Date: Wed, 5 Mar 2014 12:43:26 +0200
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Alexander Holler <holler@ahsoftware.de>, <linux-kernel@vger.kernel.org>
-CC: <linux-gpio@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Sekhar Nori <nsekhar@ti.com>,
-        Prabhakar Lad <prabhakar.csengg@gmail.com>
-Subject: Re: [PATCH] gpio: davinci: fix gpio selection for OF
-References: <5315ED51.1000006@ti.com> <1393970762-5346-1-git-send-email-holler@ahsoftware.de>
-In-Reply-To: <1393970762-5346-1-git-send-email-holler@ahsoftware.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S1754169AbaCEJuj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 04:50:39 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:60509 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752625AbaCEJud (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 04:50:33 -0500
+Message-ID: <1394013249.19539.17.camel@haakon3.risingtidesystems.com>
+Subject: Re: linux rdma 3.14 merge plans
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Roland Dreier <roland@kernel.org>
+Cc: Or Gerlitz <or.gerlitz@gmail.com>, Hefty Sean <sean.hefty@intel.com>,
+        linux-rdma <linux-rdma@vger.kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        Sagi Grimberg <sagig@mellanox.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Wed, 05 Mar 2014 01:54:09 -0800
+In-Reply-To: <CAG4TOxNpnMMR-vfAVa+m6f-z82msxygADUkJ7mmrKtzHCOqdhA@mail.gmail.com>
+References: <CAJZOPZ+4yQ-sT=ks7+eiJjkxOjy5w=BmG16JVcUPiuVsof7qEA@mail.gmail.com>
+	 <CAG4TOxOMmvFWnkU3DBn33rscEKh2_YfbUCKY=iY8PCVN3+nEsA@mail.gmail.com>
+	 <52CD1C68.4050406@mellanox.com>
+	 <1389645171.5567.459.camel@haakon3.risingtidesystems.com>
+	 <1389820541.5567.543.camel@haakon3.risingtidesystems.com>
+	 <CAG4TOxNa32sLxifPx_f8sW04B_qSh01WWfWjRvam6fjvFLDXSQ@mail.gmail.com>
+	 <1389906852.5567.668.camel@haakon3.risingtidesystems.com>
+	 <CAG4TOxPeYQ=e5LdJft1Hkx8donUQjJaKDEAv3iRLGxPYJQ_b9w@mail.gmail.com>
+	 <1390102949.5567.749.camel@haakon3.risingtidesystems.com>
+	 <52DBB4F1.4020400@mellanox.com>
+	 <CAJZOPZJFbcTh2zO8mos0M+gv0LW-Gmh877Vxe4tLvfPX19oqTw@mail.gmail.com>
+	 <CAJZOPZLuz-Z59agBd0Q9J2=sSG-F+Y8MrJkoGbtiF5M+CnKU1g@mail.gmail.com>
+	 <CAG4TOxPLEfyWsUDf4_371u=_=tOgW2v5J4zSz8xx73DfziZOZg@mail.gmail.com>
+	 <1390375658.5567.917.camel@haakon3.risingtidesystems.com>
+	 <1391731323.14985.56.camel@haakon3.risingtidesystems.com>
+	 <CAG4TOxNpnMMR-vfAVa+m6f-z82msxygADUkJ7mmrKtzHCOqdhA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/2014 12:06 AM, Alexander Holler wrote:
-> The driver missed an of_xlate function to translate gpio numbers
-> as found in the DT to the correct chip and number.
->
-> While there I've set #gpio_cells to a fixed value of 2.
->
-> I've used gpio-pxa.c as template for those changes and tested my changes
-> successfully on a da850 board using entries for gpio-leds in a DT. So I didn't
-> reinvent the wheel but just copied and tested stuff.
->
-> Thanks to Grygorii Strashko for the hint of the existing code in gpio-pxa.
->
-> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
-> ---
->   drivers/gpio/gpio-davinci.c | 27 +++++++++++++++++++++++++++
->   1 file changed, 27 insertions(+)
->
-> diff --git a/drivers/gpio/gpio-davinci.c b/drivers/gpio/gpio-davinci.c
-> index 7629b4f..79f45c4 100644
-> --- a/drivers/gpio/gpio-davinci.c
-> +++ b/drivers/gpio/gpio-davinci.c
-> @@ -44,6 +44,9 @@ struct davinci_gpio_regs {
->
->   static void __iomem *gpio_base;
->
-> +static struct davinci_gpio_controller *davinci_gpio_chips;
-> +static int davinci_last_gpio;
-> +
->   static struct davinci_gpio_regs __iomem *gpio2regs(unsigned gpio)
->   {
->   	void __iomem *ptr;
-> @@ -172,6 +175,24 @@ of_err:
->   	return NULL;
->   }
->
-> +#ifdef CONFIG_OF_GPIO
-> +static int davinci_gpio_of_xlate(struct gpio_chip *gc,
-> +			     const struct of_phandle_args *gpiospec,
-> +			     u32 *flags)
-> +{
-> +	if (gpiospec->args[0] > davinci_last_gpio)
-> +		return -EINVAL;
-> +
-> +	if (gc != &davinci_gpio_chips[gpiospec->args[0] / 32].chip)
-> +		return -EINVAL;
-> +
-> +	if (flags)
-> +		*flags = gpiospec->args[1];
+On Thu, 2014-02-06 at 16:04 -0800, Roland Dreier wrote:
+> On Thu, Feb 6, 2014 at 4:02 PM, Nicholas A. Bellinger
+> <nab@linux-iscsi.org> wrote:
+> > Can you give us an estimate of when you'll have some time to give
+> > feedback on the outstanding patches..?
+> 
+> I hope to get to it in the next few weeks.
+> 
+>  - R.
 
-Just one question here - Could we use gpio_chip-dev and hence, drop
-static variables (davinci_gpio_chips, davinci_last_gpio)?
+Hi Roland,
 
-The Davinci device holds davinci_gpio_platform_data
-in dev->platform_data and pointer on davinci_gpio_controller array
-in dev->p->driver_data.
+We'd very much like to move forward with the verbs + mlx5 + LIO target
+PI related patches for v3.15 code.
 
-And looks like, dev_get_platdata(gc->dev) and
-dev_get_drvdata(gc->dev) can be used here.
+Given the verbs + mlx5 changes have undergone ~5 months of review at
+this point, I'd like to go ahead and get them in target-pending/for-next
+ASAP to continue making forward progress towards a mainline merge.
 
-> +
-> +	return gpiospec->args[0] % 32;
-> +}
-> +#endif
-> +
->   static int davinci_gpio_probe(struct platform_device *pdev)
->   {
->   	int i, base;
-> @@ -236,6 +257,8 @@ static int davinci_gpio_probe(struct platform_device *pdev)
->   			chips[i].chip.ngpio = 32;
->
+I'm happy with the state of the iser-target related changes, and Sagi &
+Co are making good progress on the iser-initiator related patches with
+Mike.
 
-add here	chips[i].chip.dev = dev;
+That all said, do you have an objection wrt taking this bits through
+target-pending..?  Given the dependencies involved, that would seem the
+most logical path to take.
 
->   #ifdef CONFIG_OF_GPIO
-> +		chips[i].chip.of_gpio_n_cells = 2;
-> +		chips[i].chip.of_xlate = davinci_gpio_of_xlate;
->   		chips[i].chip.of_node = dev->of_node;
->   #endif
->   		spin_lock_init(&chips[i].lock);
-> @@ -251,6 +274,10 @@ static int davinci_gpio_probe(struct platform_device *pdev)
->
->   	platform_set_drvdata(pdev, chips);
->   	davinci_gpio_irq_setup(pdev);
-> +
-> +	davinci_gpio_chips = chips;
-> +	davinci_last_gpio = ngpio;
-> +
->   	return 0;
->   }
-
-regards,
--grygorii
-
+--nab 
 
