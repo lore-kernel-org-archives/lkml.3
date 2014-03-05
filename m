@@ -1,39 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939AbaCEA5Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 19:57:24 -0500
-Received: from imta-38.everyone.net ([216.200.145.38]:57485 "EHLO
-	imta-38.everyone.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754105AbaCEA5W (ORCPT
+	id S1756132AbaCEA6M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 19:58:12 -0500
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:50100 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754749AbaCEA6K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 19:57:22 -0500
-X-Greylist: delayed 21693 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Mar 2014 19:57:22 EST
-X-Eon-Dm: m0005314.ppops.net
+	Tue, 4 Mar 2014 19:58:10 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Message-Id: <20140304165717.52B33358@m0048141.ppops.net>
-Date: Tue, 4 Mar 2014 16:57:17 -0800
-From: "Arnold Bird" <arnoldbird@cosmicemail.com>
-Reply-To: <arnoldbird@cosmicemail.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: <debian-project@lists.debian.org>
-Subject: Lennart Poettering and his software, a simple explaination (cartoon):
-X-Eon-Sig: AQO+1x5TFnZtVLEABgEAAAAC,cb90561e5f1b637c0771a86d12011500
-X-Originating-Ip: 85.114.142.172
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-03-04_07:2014-03-04,2014-03-04,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=23 spamscore=23 suspectscore=11
- phishscore=0 adultscore=0 bulkscore=1 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1403040161
+In-Reply-To: <1393917011.5419.12.camel@marge.simpson.net>
+References: <1393911500.6415.18.camel@marge.simpson.net>
+	<CALAqxLUeb2GuPyULnHL+FHgbdanVxz2JsvD2O0bJWKyN=CJ3UQ@mail.gmail.com>
+	<1393917011.5419.12.camel@marge.simpson.net>
+Date: Wed, 5 Mar 2014 08:58:08 +0800
+Message-ID: <CALAqxLVkDQO8nhFiX3avZ_dGyqH+uXCwLDzEMJbjp4i54Q9KaA@mail.gmail.com>
+Subject: Re: [RFC][PATCH] clocksource: avoid unnecessary overflow in cyclecounter_cyc2ns()
+From: John Stultz <john.stultz@linaro.org>
+To: Mike Galbraith <bitbucket@online.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, "Cc: Salman Qazi" <sqazi@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lennart Poettering and his software, a simple explaination (cartoon):
-archive.rebeccablacktech.com/boards/g/img/0406/33/1393881561558.png
+On Tue, Mar 4, 2014 at 3:10 PM, Mike Galbraith <bitbucket@online.de> wrote:
+> On Tue, 2014-03-04 at 14:40 +0800, John Stultz wrote:
+>> On Tue, Mar 4, 2014 at 1:38 PM, Mike Galbraith <bitbucket@online.de> wrote:
+>> > (crap crap crap... M.A.I.N.T.A.I.N.E.R.S _dummy_)
+>> >
+>> > clocksource: avoid unnecessary overflow in cyclecounter_cyc2ns()
+>> >
+>> > As per 4cecf6d401a "sched, x86: Avoid unnecessary overflow in sched_clock",
+>> > cycles * mult >> shift is overflow prone. so give it the same treatment.
+>> >
+>> > Cc: Salman Qazi <sqazi@google.com>
+>> > Cc: John Stultz <john.stultz@linaro.org>,
+>> > Signed-off-by: Mike Galbraith <bitbucket@online.de>
+>>
+>> Thanks for sending this in!  Curious exactly how the issue was being
+>> triggered?
+>
+> Dunno that it is.  This is the result of me rummaging around, looking
+> for any excuse what-so-ever for a small and identical group of weird a$$
+> boxen running old 2.6.32 kernels (w. 208 day fix!) to manage to hop back
+> and forth in time by exactly 208 days.  Grep showed me that function, so
+> I scurried off and swiped the fix.
 
-That is all that needs to be said.
+So.. this makes me a bit more hesitant to really queue this,
+particularly since the timecounter logic is supposed to periodically
+accumulate cycles so you don't run into these overflow issues (the
+earlier fix was for sched_clock which didn't do any accumulation).
 
+So, if you're seeing time jump around, that's probably clocksource or
+timekeping related, and not tied to the cyclecounter code. Do you have
+any other info about these systems? What clocksource are they using,
+etc?
 
-_____________________________________________________________
-Free e-mail, simple, clean and easy to use. Visit CosmicEmail.com for your instant free account.
+thanks
+-john
