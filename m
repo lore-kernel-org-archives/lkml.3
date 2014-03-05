@@ -1,56 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932107AbaCETdj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 14:33:39 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:59860 "EHLO
+	id S1756635AbaCETf6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 14:35:58 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:60241 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753025AbaCETc0 (ORCPT
+	with ESMTP id S1752215AbaCETf4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 14:32:26 -0500
+	Wed, 5 Mar 2014 14:35:56 -0500
 From: Josh Cartwright <joshc@codeaurora.org>
-To: Alessandro Zummo <a.zummo@towertech.it>
-Cc: linux-arm-msm@vger.kernel.org, Stephen Boyd <sboyd@codeaurora.org>,
-        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/6] rtc: pm8xxx: move device_init_wakeup() before rtc_register
-Date: Wed,  5 Mar 2014 13:29:35 -0600
-Message-Id: <1394047776-13827-6-git-send-email-joshc@codeaurora.org>
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] pinctrl: msm: drop wake_irqs bitmap
+Date: Wed,  5 Mar 2014 13:33:08 -0600
+Message-Id: <1394047988-14081-1-git-send-email-joshc@codeaurora.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1394047776-13827-1-git-send-email-joshc@codeaurora.org>
-References: <1394047776-13827-1-git-send-email-joshc@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Setup wakeup capability before rtc_register to ensure the rtc class core
-properly sets up our 'wakealarm' sysfs attribute.
+Currently, the wake_irqs bitmap is used to track whether there are any
+gpio's which are configured as wake irqs, and uses this to determine
+whether or not to call enable_irq_wake()/disable_irq_wake() on the
+summary interrupt.
+
+However, the genirq core already handles this case, by maintaining a
+'wake_count' per irq_desc, and only calling into the controlling
+irq_chip when wake_count transitions 0 <-> 1.
+
+Drop this bitmap, and unconditionally call irq_set_irq_wake() on the
+summary interrupt.
 
 Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
 ---
- drivers/rtc/rtc-pm8xxx.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/pinctrl/pinctrl-msm.c | 14 +-------------
+ 1 file changed, 1 insertion(+), 13 deletions(-)
 
-diff --git a/drivers/rtc/rtc-pm8xxx.c b/drivers/rtc/rtc-pm8xxx.c
-index cb5576f..761be65 100644
---- a/drivers/rtc/rtc-pm8xxx.c
-+++ b/drivers/rtc/rtc-pm8xxx.c
-@@ -422,6 +422,8 @@ static int pm8xxx_rtc_probe(struct platform_device *pdev)
+diff --git a/drivers/pinctrl/pinctrl-msm.c b/drivers/pinctrl/pinctrl-msm.c
+index 2cfb1d4..9b6b3a7 100644
+--- a/drivers/pinctrl/pinctrl-msm.c
++++ b/drivers/pinctrl/pinctrl-msm.c
+@@ -50,7 +50,6 @@
+  * @enabled_irqs:   Bitmap of currently enabled irqs.
+  * @dual_edge_irqs: Bitmap of irqs that need sw emulated dual edge
+  *                  detection.
+- * @wake_irqs:      Bitmap of irqs with requested as wakeup source.
+  * @soc;            Reference to soc_data of platform specific data.
+  * @regs:           Base address for the TLMM register map.
+  */
+@@ -65,7 +64,6 @@ struct msm_pinctrl {
  
- 	platform_set_drvdata(pdev, rtc_dd);
+ 	DECLARE_BITMAP(dual_edge_irqs, MAX_NR_GPIO);
+ 	DECLARE_BITMAP(enabled_irqs, MAX_NR_GPIO);
+-	DECLARE_BITMAP(wake_irqs, MAX_NR_GPIO);
  
-+	device_init_wakeup(&pdev->dev, 1);
-+
- 	/* Register the RTC device */
- 	rtc_dd->rtc = devm_rtc_device_register(&pdev->dev, "pm8xxx_rtc",
- 					       &pm8xxx_rtc_ops, THIS_MODULE);
-@@ -441,8 +443,6 @@ static int pm8xxx_rtc_probe(struct platform_device *pdev)
- 		return rc;
- 	}
+ 	const struct msm_pinctrl_soc_data *soc;
+ 	void __iomem *regs;
+@@ -810,22 +808,12 @@ static int msm_gpio_irq_set_wake(struct irq_data *d, unsigned int on)
+ {
+ 	struct msm_pinctrl *pctrl;
+ 	unsigned long flags;
+-	unsigned ngpio;
  
--	device_init_wakeup(&pdev->dev, 1);
--
- 	dev_dbg(&pdev->dev, "Probe success !!\n");
+ 	pctrl = irq_data_get_irq_chip_data(d);
+-	ngpio = pctrl->chip.ngpio;
  
- 	return 0;
+ 	spin_lock_irqsave(&pctrl->lock, flags);
+ 
+-	if (on) {
+-		if (bitmap_empty(pctrl->wake_irqs, ngpio))
+-			enable_irq_wake(pctrl->irq);
+-		set_bit(d->hwirq, pctrl->wake_irqs);
+-	} else {
+-		clear_bit(d->hwirq, pctrl->wake_irqs);
+-		if (bitmap_empty(pctrl->wake_irqs, ngpio))
+-			disable_irq_wake(pctrl->irq);
+-	}
++	irq_set_irq_wake(pctrl->irq, on);
+ 
+ 	spin_unlock_irqrestore(&pctrl->lock, flags);
+ 
 -- 
 Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
 hosted by The Linux Foundation
