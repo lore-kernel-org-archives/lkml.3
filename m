@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757446AbaCEO0i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:26:38 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41141 "EHLO
+	id S1757412AbaCEO0g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:26:36 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41138 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757383AbaCEO0a (ORCPT
+	with ESMTP id S1757340AbaCEO03 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:26:30 -0500
+	Wed, 5 Mar 2014 09:26:29 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dave Jones <davej@redhat.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        Paul Mackerras <paulus@samba.org>,
+Cc: Marcelo Tosatti <mtosatti@redhat.com>,
         Josh Boyer <jwboyer@fedoraproject.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 085/131] fs/proc/proc_devtree.c: remove empty /proc/device-tree when no openfirmware exists.
-Date: Wed,  5 Mar 2014 14:23:29 +0000
-Message-Id: <1394029455-23128-86-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 088/131] KVM: VMX: fix use after free of vmx->loaded_vmcs
+Date: Wed,  5 Mar 2014 14:23:32 +0000
+Message-Id: <1394029455-23128-89-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -32,47 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Jones <davej@redhat.com>
+From: Marcelo Tosatti <mtosatti@redhat.com>
 
-commit c1d867a54d426b45da017fbe8e585f8a3064ce8d upstream.
+commit 26a865f4aa8e66a6d94958de7656f7f1b03c6c56 upstream.
 
-Distribution kernels might want to build in support for /proc/device-tree
-for kernels that might end up running on hardware that doesn't support
-openfirmware.  This results in an empty /proc/device-tree existing.
-Remove it if the OFW root node doesn't exist.
+After free_loaded_vmcs executes, the "loaded_vmcs" structure
+is kfreed, and now vmx->loaded_vmcs points to a kfreed area.
+Subsequent free_loaded_vmcs then attempts to manipulate
+vmx->loaded_vmcs.
 
-This situation actually confuses grub2, resulting in install failures.
-grub2 sees the /proc/device-tree and picks the wrong install target cf.
-http://bzr.savannah.gnu.org/lh/grub/trunk/grub/annotate/4300/util/grub-install.in#L311
-grub should be more robust, but still, leaving an empty proc dir seems
-pointless.
+Switch the order to avoid the problem.
 
-Addresses https://bugzilla.redhat.com/show_bug.cgi?id=818378.
+https://bugzilla.redhat.com/show_bug.cgi?id=1047892
 
-Signed-off-by: Dave Jones <davej@redhat.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Paul Mackerras <paulus@samba.org>
+Reviewed-by: Jan Kiszka <jan.kiszka@siemens.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
 Cc: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/proc/proc_devtree.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/kvm/vmx.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/proc/proc_devtree.c b/fs/proc/proc_devtree.c
-index 106a835..9fa2154 100644
---- a/fs/proc/proc_devtree.c
-+++ b/fs/proc/proc_devtree.c
-@@ -235,6 +235,7 @@ void __init proc_device_tree_init(void)
- 		return;
- 	root = of_find_node_by_path("/");
- 	if (root == NULL) {
-+		remove_proc_entry("device-tree", NULL);
- 		pr_debug("/proc/device-tree: can't find root\n");
- 		return;
- 	}
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 064d0be..aef3d79 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -7142,8 +7142,8 @@ static void vmx_free_vcpu(struct kvm_vcpu *vcpu)
+ 	struct vcpu_vmx *vmx = to_vmx(vcpu);
+ 
+ 	free_vpid(vmx);
+-	free_nested(vmx);
+ 	free_loaded_vmcs(vmx->loaded_vmcs);
++	free_nested(vmx);
+ 	kfree(vmx->guest_msrs);
+ 	kvm_vcpu_uninit(vcpu);
+ 	kmem_cache_free(kvm_vcpu_cache, vmx);
 -- 
 1.9.0
 
