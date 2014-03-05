@@ -1,79 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932068AbaCEWsM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 17:48:12 -0500
-Received: from mout.web.de ([212.227.15.4]:55624 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752444AbaCEWsL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 17:48:11 -0500
-Message-ID: <5317A9A7.8080405@users.sourceforge.net>
-Date: Wed, 05 Mar 2014 23:48:07 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S932170AbaCEWsU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 17:48:20 -0500
+Received: from [216.32.181.181] ([216.32.181.181]:51353 "EHLO
+	ch1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S932105AbaCEWsQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 17:48:16 -0500
+X-Forefront-Antispam-Report: CIP:165.204.84.221;KIP:(null);UIP:(null);IPV:NLI;H:atltwp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(zzbb2dI98dI9371I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19c3h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h1155h)
+X-WSS-ID: 0N1ZJAC-07-6XH-02
+X-M-MSG: 
+Message-ID: <5317A962.10004@amd.com>
+Date: Wed, 5 Mar 2014 16:46:58 -0600
+From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Coccinelle <cocci@systeme.lip6.fr>, kernel-janitors@vger.kernel.org
-Subject: Re: [coccicheck Linux 3.14-rc5 PATCH 1 of 5] Deletion of unnecessary
- checks before specific function calls
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Joerg Roedel <joro@8bytes.org>
+CC: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <kim.naru@amd.com>, <jay.cornwall@amd.com>
+Subject: Re: [PATCH] iommu/amd: Fix logics to determine and checking max PASID
+References: <1394046068-3858-1-git-send-email-suravee.suthikulpanit@amd.com> <20140305223544.GA2813@8bytes.org>
+In-Reply-To: <20140305223544.GA2813@8bytes.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:0rp05vcUQBaXI88fv5S6NGhL/5fHGOFx4ESgjnK1bIxu90GwgKC
- 4/Pk9wIjkctLy4QKrnmQACqJkimpJ45CbqMpOhZDXf0qfhdxRT8UoaNA3VpfRYGwMietO9j
- mTu+ujMX4zhlA8aTHlh/K+BwlLAgAMmo3We/qyFfgj7/0dpPG24IL8mfTT6BgIDLQvBdKE6
- PA0zysPV1VR+I6ljCVX3w==
+X-OriginatorOrg: amd.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> If you are convinced that dropping the null tests is a good idea, then you 
->> can submit the patch that makes the change to the relevant maintainers and 
->> mailing lists.
+Joerg,
 
->From 48c9c4f61a7d7ea98538e02631a981a429281005 Mon Sep 17 00:00:00 2001
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Wed, 5 Mar 2014 18:15:34 +0100
-Subject: [PATCH 1/5] Addition of a semantic patch file for showing unnecessary
- checks before a few known functions
+Other commands can still support upto 20-bit PASID. As I mentioned, 
+there is still no system with more than 16-bit PASID.
 
-This semantic patch pattern tries to find source code places where a check
-is performed for an expression that is passed to a function (like "kfree")
-which checks this single parameter itself for usability.
-Redundant value or pointer checks can be avoided here.
+Either way, I have also replaced the PASID_MASK with the value derived 
+from MMIOx30h[PASmax] of the IOMMU Extended Feature register instead.
+This should allow us not to have to change the mask things again for 
+future hardware.
 
-The pattern contains a special comment in a regular expression for a SmPL
-constraint which supports extensions.
+We just need to revisit this BUG_ON() part when the new spec comes.
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- .../deletions/delete_unnecessary_checks_template1.cocci     | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
- create mode 100644
-scripts/coccinelle/deletions/delete_unnecessary_checks_template1.cocci
+Suravee
 
-diff --git
-a/scripts/coccinelle/deletions/delete_unnecessary_checks_template1.cocci
-b/scripts/coccinelle/deletions/delete_unnecessary_checks_template1.cocci
-new file mode 100644
-index 0000000..b092051
---- /dev/null
-+++ b/scripts/coccinelle/deletions/delete_unnecessary_checks_template1.cocci
-@@ -0,0 +1,13 @@
-+@Delete_unnecessary_checks@
-+expression x;
-+identifier release =~ "^(?x)
-+(?:
-+   (?:kz?|slob_)free
-+|
-+   (?:
-+# Alternation placeholder
-+   )
-+)$";
-+@@
-+-if (x)
-+    release(x);
--- 
-1.9.0
+
+On 3/5/2014 4:35 PM, Joerg Roedel wrote:
+> On Wed, Mar 05, 2014 at 01:01:08PM -0600, suravee.suthikulpanit@amd.com wrote:
+>>   drivers/iommu/amd_iommu.c       |   26 +++++++++++++++++++++++---
+>>   drivers/iommu/amd_iommu_init.c  |   15 ++++++++-------
+>>   drivers/iommu/amd_iommu_types.h |    6 ++----
+>>   drivers/iommu/amd_iommu_v2.c    |    2 +-
+>>   4 files changed, 34 insertions(+), 15 deletions(-)
+>
+> Hmm, this looks a bit complicated. Since the inv_iotlb_pasid and
+> complete_ppr command only support 16 bit pasids by specification, there
+> is no way to support pasids with more than 16 bits in general anymore. I
+> think the best way to handle it is to just change the PASID_MASK to
+> 0x0000ffff.
+>
+>>   static void build_inv_iotlb_pasid(struct iommu_cmd *cmd, u16 devid, int pasid,
+>>   				  int qdep, u64 address, bool size)
+>>   {
+>> +	/* Note:
+>> +	 * This command supports only 16-bit PASID.
+>> +	 * Currently, hardware only implement upto 16-bit PASID
+>> +	 * even though the spec says it could have upto 20 bits.
+>> +	 * This is likely to be updated in the future revision of
+>> +	 * IOMMU specs when the hardware with PASID > 16 bits
+>> +	 * become available.
+>> +	 */
+>> +	BUG_ON(pasid > 0xFFFF);
+>
+> We can keep this as BUG_ON(pasid & ~PASID_MASK), but then ...
+>
+>> -		cmd->data[1]  = pasid & PASID_MASK;
+>> +		cmd->data[1]  = pasid & amd_iommu_max_pasid;
+>
+> ... masking out the other bits is redundant.
+>
+>
+> 	Joerg
+>
+>
+>
 
 
