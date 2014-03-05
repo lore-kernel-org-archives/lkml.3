@@ -1,84 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754039AbaCEHLw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 02:11:52 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54002 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752600AbaCEHLu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 02:11:50 -0500
-Message-ID: <5316CE17.6010201@ti.com>
-Date: Wed, 5 Mar 2014 09:11:19 +0200
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752958AbaCEHQF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 02:16:05 -0500
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:44334 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751511AbaCEHQD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 02:16:03 -0500
 MIME-Version: 1.0
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-CC: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 5/5] drivers: bus: omap_l3: Change pr_crit() to dev_err()
- when IRQ request fails
-References: <1393937293-6036-1-git-send-email-peter.ujfalusi@ti.com> <1393937293-6036-6-git-send-email-peter.ujfalusi@ti.com> <5315E522.9090606@ti.com>
-In-Reply-To: <5315E522.9090606@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140305173559.0b50971a1ab88a16bee8819c@canb.auug.org.au>
+References: <20140305173559.0b50971a1ab88a16bee8819c@canb.auug.org.au>
+Date: Wed, 5 Mar 2014 15:16:02 +0800
+Message-ID: <CACRpkda8qHQRu-JCgdVOHAh+QvjfJB5ftJEEQ66tjePrRCuYzA@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the final tree (gpio
+ tree related)
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Fabian Vogt <fabian@ritter-vogt.de>
+Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/2014 04:37 PM, Santosh Shilimkar wrote:
-> On Tuesday 04 March 2014 08:48 PM, Peter Ujfalusi wrote:
->> Use dev_err() which will going to print the driver's name as well and the
->> KERN_ERR level is sufficient in this case (we also print via dev_err when
->> there is an error with the mem resources)
->>
->> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
->> Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->> ---
->>  drivers/bus/omap_l3_noc.c | 7 +++----
->>  1 file changed, 3 insertions(+), 4 deletions(-)
->>
->> diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
->> index 0eff48585ae3..972691a668a3 100644
->> --- a/drivers/bus/omap_l3_noc.c
->> +++ b/drivers/bus/omap_l3_noc.c
->> @@ -158,8 +158,8 @@ static int omap4_l3_probe(struct platform_device *pdev)
->>  	ret = devm_request_irq(&pdev->dev, l3->debug_irq, l3_interrupt_handler,
->>  			       IRQF_DISABLED, "l3-dbg-irq", l3);
->>  	if (ret) {
->> -		pr_crit("L3: request_irq failed to register for 0x%x\n",
->> -						l3->debug_irq);
->> +		dev_err(&pdev->dev, "request_irq failed for %d\n",
->> +			l3->debug_irq);
->>  		return ret;
->>  	}
->>  
->> @@ -167,8 +167,7 @@ static int omap4_l3_probe(struct platform_device *pdev)
->>  	ret = devm_request_irq(&pdev->dev, l3->app_irq, l3_interrupt_handler,
->>  			       IRQF_DISABLED, "l3-app-irq", l3);
->>  	if (ret)
->> -		pr_crit("L3: request_irq failed to register for 0x%x\n",
->> -						l3->app_irq);
->> +		dev_err(&pdev->dev, "request_irq failed for %d\n", l3->app_irq);
->>  
->>  	return ret;
->>  }
->>
-> So this one change in the log level. If I look at now, may be dev_err
-> is fine but the change is not same.
+On Wed, Mar 5, 2014 at 2:35 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-Not sure what you mean by 'the change is not same'?
-I just picked the old series and rebased it on linux-next, the patch is the
-same as it was back in May 2013:
-https://lkml.org/lkml/2013/5/2/205
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+>
+> drivers/gpio/gpio-zevio.c: In function 'zevio_gpio_port_get':
+> drivers/gpio/gpio-zevio.c:70:2: error: implicit declaration of function 'IOMEM' [-Werror=implicit-function-declaration]
+>   return readl(IOMEM(c->chip.regs + section_offset + port_offset));
+>   ^
+> drivers/gpio/gpio-zevio.c:70:2: warning: passing argument 1 of 'readl' makes pointer from integer without a cast [enabled by default]
+> In file included from include/linux/io.h:22:0,
+>                  from drivers/gpio/gpio-zevio.c:15:
+> arch/powerpc/include/asm/io-defs.h:6:16: note: expected 'const volatile void *' but argument is of type 'int'
+>  DEF_PCI_AC_RET(readl, u32, (const PCI_IO_ADDR addr), (addr), mem, addr)
+>                 ^
 
-And yes, I have shortened the texts in the print, but the meaning of the
-prints have not changed.
+Fabian can you suggest a patch adding the proper depends added to
+the Kconfig. Check what things bring in the IOMEM etc that is needed
+to compile this.
 
-> Apart from above comment, rest of the series looks fine to me.
-> Feel free to add my ack...
-
-Thanks.
-
--- 
-Péter
+Yours,
+Linus Walleij
