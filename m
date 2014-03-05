@@ -1,142 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752098AbaCEHnX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 02:43:23 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:32810 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750890AbaCEHnV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 02:43:21 -0500
-Date: Wed, 5 Mar 2014 07:42:52 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alexandre.torgue@st.com" <alexandre.torgue@st.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>
-Subject: Re: [PATCH 3/4] ARM: DT: STi: Add DT node for MiPHY365x
-Message-ID: <20140305074252.GF20016@e106331-lin.cambridge.arm.com>
-References: <1392377036-12816-1-git-send-email-lee.jones@linaro.org>
- <1392377036-12816-3-git-send-email-lee.jones@linaro.org>
+	id S1752520AbaCEHsM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 02:48:12 -0500
+Received: from 8bytes.org ([85.214.48.195]:60219 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751565AbaCEHsJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 02:48:09 -0500
+Date: Wed, 5 Mar 2014 08:48:04 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Ashok Raj <ashok.raj@intel.com>, Yijing Wang <wangyijing@huawei.com>,
+        Tony Luck <tony.luck@intel.com>, iommu@lists.linux-foundation.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmaengine@vger.kernel.org
+Subject: Re: [Patch Part2 V2 00/17] Enhance DMAR drivers to handle PCI/memory
+ hotplug events
+Message-ID: <20140305074804.GE27471@8bytes.org>
+References: <1392790057-32434-1-git-send-email-jiang.liu@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1392377036-12816-3-git-send-email-lee.jones@linaro.org>
-Thread-Topic: [PATCH 3/4] ARM: DT: STi: Add DT node for MiPHY365x
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1392790057-32434-1-git-send-email-jiang.liu@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Wed Mar  5 08:48:07 2014
+X-DSPAM-Confidence: 0.9995
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 5316d6b720866998361632
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 14, 2014 at 11:23:55AM +0000, Lee Jones wrote:
-> The MiPHY365x is a Generic PHY which can serve various SATA or PCIe
-> devices. It has 2 ports which it can use for either; both SATA, both
-> PCIe or one of each in any configuration.
+On Wed, Feb 19, 2014 at 02:07:20PM +0800, Jiang Liu wrote:
+> Jiang Liu (17):
+>   iommu/vt-d: avoid double free of g_iommus on error recovery path
+>   iommu/vt-d: avoid caching stale domain_device_info and fix memory
+>     leak
+>   iommu/vt-d: avoid caching stale domain_device_info when hot-removing
+>     PCI device
+>   iommu/vt-d: factor out dmar_alloc_dev_scope() for later reuse
+>   iommu/vt-d: move private structures and variables into intel-iommu.c
+>   iommu/vt-d: simplify function get_domain_for_dev()
+>   iommu/vt-d: free resources if failed to create domain for PCIe
+>     endpoint
+>   iommu/vt-d: reduce duplicated code to handle virtual machine domains
+>   iommu/vt-d: fix incorrect iommu_count for si_domain
+>   iommu/vt-d: check for NULL pointer when freeing IOMMU data structure
+>   iommu/vt-d: fix error in detect ATS capability
+>   iommu/vt-d: introduce macro for_each_dev_scope() to walk device scope
+>     entries
+>   iommu/vt-d: introduce a rwsem to protect global data structures
+>   iommu/vt-d: use RCU to protect global resources in interrupt context
+>   iommu/vt-d, PCI: update DRHD/RMRR/ATSR device scope caches when PCI
+>     hotplug happens
+>   iommu/vt-d, PCI: unify the way to process DMAR device scope array
+>   iommu/vt-d: update IOMMU state when memory hotplug happens
 > 
-> Cc: devicetree@vger.kernel.org
-> Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  arch/arm/boot/dts/stih416-b2020-revE.dts |  6 +++++-
->  arch/arm/boot/dts/stih416-b2020.dts      |  6 ++++++
->  arch/arm/boot/dts/stih416.dtsi           | 13 +++++++++++++
->  3 files changed, 24 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/boot/dts/stih416-b2020-revE.dts b/arch/arm/boot/dts/stih416-b2020-revE.dts
-> index a874570..dbe67fa 100644
-> --- a/arch/arm/boot/dts/stih416-b2020-revE.dts
-> +++ b/arch/arm/boot/dts/stih416-b2020-revE.dts
-> @@ -32,6 +32,10 @@
->  		ethernet1: ethernet@fef08000 {
->  			snps,reset-gpio 	= <&PIO0 7>;
->  		};
-> -	};
->  
-> +		miphy365x_phy: miphy365x@0 {
+>  drivers/iommu/dmar.c                |  412 +++++++++++++------
+>  drivers/iommu/intel-iommu.c         |  750 ++++++++++++++++++-----------------
+>  drivers/iommu/intel_irq_remapping.c |  108 +++--
+>  drivers/iommu/iova.c                |   64 ++-
+>  include/linux/dmar.h                |   74 ++--
+>  include/linux/iova.h                |    2 +
+>  6 files changed, 848 insertions(+), 562 deletions(-)
 
-This has registers at 0x0? Or is the unit-address wrong?
+Applied, thanks Jiang.
 
-> +			st,pcie_tx_pol_inv = <1>;
 
-This is a boolean. The '= <1>' is not required and is confusing.
-
-> +			st,sata_gen = "gen3";
-
-s/"gen3"/<3>/
-
-Both these properties need s/_/-/ applied.
-
-All these apply to the other dts too.
-
-> +		};
-> +	};
->  };
-> diff --git a/arch/arm/boot/dts/stih416-b2020.dts b/arch/arm/boot/dts/stih416-b2020.dts
-> index 276f28d..fd9cbad 100644
-> --- a/arch/arm/boot/dts/stih416-b2020.dts
-> +++ b/arch/arm/boot/dts/stih416-b2020.dts
-> @@ -13,4 +13,10 @@
->  	model = "STiH416 B2020";
->  	compatible = "st,stih416", "st,stih416-b2020";
-
-This compatible list is the wrong way around. Left to right should go
-from most specific to most general / oldest variant.
-
->  
-> +	soc {
-> +		miphy365x_phy: miphy365x@0 {
-
-> +			st,pcie_tx_pol_inv = <1>;
-> +			st,sata_gen = "gen3";
-> +		};
-> +	};
->  };
-> diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
-> index 85b8063..9fd8efb 100644
-> --- a/arch/arm/boot/dts/stih416.dtsi
-> +++ b/arch/arm/boot/dts/stih416.dtsi
-> @@ -9,6 +9,8 @@
->  #include "stih41x.dtsi"
->  #include "stih416-clock.dtsi"
->  #include "stih416-pinctrl.dtsi"
-> +
-> +#include <dt-bindings/phy/phy-miphy365x.h>
->  #include <dt-bindings/interrupt-controller/arm-gic.h>
->  #include <dt-bindings/reset-controller/stih416-resets.h>
->  / {
-> @@ -140,5 +142,16 @@
->  			clocks		= <&CLK_S_ICN_REG_0>;
->  		};
->  
-> +		miphy365x_phy: miphy365x@0 {
-
-The unit-address should be fe382000 rather than 0 to match the first reg
-entry.
-
-Cheers,
-Mark.
-
-> +			compatible      = "st,miphy365x-phy";
-> +			reg        	= <0xfe382000 0x100>,
-> +					  <0xfe38a000 0x100>,
-> +					  <0xfe394000 0x100>,
-> +					  <0xfe804000 0x100>;
-> +			reg-names  	= "sata0", "sata1", "pcie0", "pcie1";
-> +
-> +			#phy-cells 	= <2>;
-> +			st,syscfg  	= <&syscfg_rear>;
-> +		};
->  	};
->  };
-> -- 
-> 1.8.3.2
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe devicetree" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
