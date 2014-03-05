@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756521AbaCEBB4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 20:01:56 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:41582 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754407AbaCEBBz (ORCPT
+	id S1756614AbaCEBCA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 20:02:00 -0500
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:33549 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755952AbaCEBB5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 20:01:55 -0500
-Date: Tue, 4 Mar 2014 17:01:51 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Question on vhost_has_feature()
-Message-ID: <20140305010151.GA3334@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140303194422.GA17107@linux.vnet.ibm.com>
- <20140304075642.GA8031@redhat.com>
+	Tue, 4 Mar 2014 20:01:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140304075642.GA8031@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14030501-3532-0000-0000-00000008E5A7
+In-Reply-To: <1393369261-17469-1-git-send-email-delicious.quinoa@gmail.com>
+References: <1393369261-17469-1-git-send-email-delicious.quinoa@gmail.com>
+Date: Wed, 5 Mar 2014 09:01:56 +0800
+Message-ID: <CACRpkdbSk3Vv+-U=jQTH=8E=yx4tkHApGq-ARfwXs-cBf4=ddA@mail.gmail.com>
+Subject: Re: [PATCH v12] gpio: add a driver for the Synopsys DesignWare APB
+ GPIO block
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alan Tull <delicious.quinoa@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Jamie Iles <jamie@jamieiles.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Heiko Stuebner <heiko@sntech.de>, Alan Tull <atull@altera.com>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Yves Vandervennet <rocket.yvanderv@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 04, 2014 at 09:56:42AM +0200, Michael S. Tsirkin wrote:
-> On Mon, Mar 03, 2014 at 11:44:23AM -0800, Paul E. McKenney wrote:
-> > Hello, Michael,
-> > 
-> > Just curious about the purpose of the rcu_dereference_index_check() in
-> > vhost_has_feature().  I don't see how it fits in.  The closest thing
-> > I see if the use in handle_rx(), where it selects vq->log or NULL.  But
-> > in that case, I would expect the usual RCU usage pattern to wrap an
-> > rcu_dereference() around the vq->log.
-> > 
-> > Enlightenment?
-> > 
-> > 							Thanx, Paul
-> 
-> Hi Paul,
-> 
-> Yes, it's weird.  As you say the use is in handle_rx.
-> The way it's supposed to work is that readers take vq mutex, and
-> writers change the value and then take and release
-> vq mutex.
-> We did it like this because there are thinkably multiple vqs.
-> 
-> I tried to document it in vhost.h :
->         /* Readers use RCU to access memory table pointer
->          * log base pointer and features.
->          * Writers use mutex below.*/
-> 
-> If this is a problem, it's possible to restructure the code to avoid
-> this pattern for vhost_has_feature, pls let me know.
+On Wed, Feb 26, 2014 at 7:01 AM, Alan Tull <delicious.quinoa@gmail.com> wrote:
 
-I am not yet sure whether or not it is a problem, it just looked a bit
-strange.  ;-)
+> From: Jamie Iles <jamie@jamieiles.com>
+>
+> The Synopsys DesignWare block is used in some ARM devices (picoxcell)
+> and can be configured to provide multiple banks of GPIO pins.
+>
+> Signed-off-by: Jamie Iles <jamie@jamieiles.com>
+> Signed-off-by: Alan Tull <atull@altera.com>
+> Reviewed-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>
+> v12: - Add irq_startup/shutdown
+>      - do irq_create_mapping() in probe, irq_find_mapping() in to_irq()
+>      - Adjust mappings to show support for 1 gpio per port.
+>      - gpio-cells = <1>
 
-							Thanx, Paul
+Patch applied!
 
-> Thanks a lot for paying attention!
-> 
-> 
-> -- 
-> MST
-> 
+You've done a tremendous work on this driver and there is
+absolutely nothing controversial about the bindings, so it is
+my pleasure to include this driver.
 
+Yours,
+Linus Walleij
