@@ -1,154 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757202AbaCEXZy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 18:25:54 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39187 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757025AbaCEXZu (ORCPT
+	id S1756512AbaCEXbz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 18:31:55 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:39543 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754846AbaCEXby (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 18:25:50 -0500
-Message-ID: <1394061949.2861.1.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH v3 2/2] net: macb: DMA-unmap full rx-buffer
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Michal Simek <michal.simek@xilinx.com>
-Date: Wed, 05 Mar 2014 23:25:49 +0000
-In-Reply-To: <1393951600-26039-2-git-send-email-soren.brinkmann@xilinx.com>
-References: <1393951600-26039-1-git-send-email-soren.brinkmann@xilinx.com>
-	 <1393951600-26039-2-git-send-email-soren.brinkmann@xilinx.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-ymGjDS8j123qs3E5gZhf"
-X-Mailer: Evolution 3.8.5-2+b3 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.244
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Wed, 5 Mar 2014 18:31:54 -0500
+Date: Wed, 5 Mar 2014 23:31:35 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        LKML <linux-kernel@vger.kernel.org>, Tanmay Inamdar <tinamdar@apm.com>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v6 1/3] Fix ioport_map() for !CONFIG_GENERIC_IOMAP
+	cases.
+Message-ID: <20140305233135.GZ21483@n2100.arm.linux.org.uk>
+References: <1394020150-1875-1-git-send-email-Liviu.Dudau@arm.com> <1394020150-1875-2-git-send-email-Liviu.Dudau@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394020150-1875-2-git-send-email-Liviu.Dudau@arm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Mar 05, 2014 at 11:49:08AM +0000, Liviu Dudau wrote:
+> The inline version of ioport_map() that gets used when !CONFIG_GENERIC_IOMAP
+> is wrong. It returns a mapped (i.e. virtual) address that can start from
+> zero and completely ignores the PCI_IOBASE and IO_SPACE_LIMIT that most
+> architectures that use !CONFIG_GENERIC_MAP define.
 
---=-ymGjDS8j123qs3E5gZhf
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+What value does PCI_IOBASE and IO_SPACE_LIMIT have on other architectures
+who make use of asm-generic/io.h ?
 
-On Tue, 2014-03-04 at 08:46 -0800, Soren Brinkmann wrote:
-> When allocating RX buffers a fixed size is used, while freeing is based
-> on actually received bytes, resulting in the following kernel warning
-> when CONFIG_DMA_API_DEBUG is enabled:
->  WARNING: CPU: 0 PID: 0 at lib/dma-debug.c:1051 check_unmap+0x258/0x894()
->  macb e000b000.ethernet: DMA-API: device driver frees DMA memory with dif=
-ferent size [device address=3D0x000000002d170040] [map size=3D1536 bytes] [=
-unmap size=3D60 bytes]
->  Modules linked in:
->  CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.14.0-rc3-xilinx-00220-g49f84=
-081ce4f #65
->  [<c001516c>] (unwind_backtrace) from [<c0011df8>] (show_stack+0x10/0x14)
->  [<c0011df8>] (show_stack) from [<c03c775c>] (dump_stack+0x7c/0xc8)
->  [<c03c775c>] (dump_stack) from [<c00245cc>] (warn_slowpath_common+0x60/0=
-x84)
->  [<c00245cc>] (warn_slowpath_common) from [<c0024670>] (warn_slowpath_fmt=
-+0x2c/0x3c)
->  [<c0024670>] (warn_slowpath_fmt) from [<c0227d44>] (check_unmap+0x258/0x=
-894)
->  [<c0227d44>] (check_unmap) from [<c0228588>] (debug_dma_unmap_page+0x64/=
-0x70)
->  [<c0228588>] (debug_dma_unmap_page) from [<c02ab78c>] (gem_rx+0x118/0x17=
-0)
->  [<c02ab78c>] (gem_rx) from [<c02ac4d4>] (macb_poll+0x24/0x94)
->  [<c02ac4d4>] (macb_poll) from [<c031222c>] (net_rx_action+0x6c/0x188)
->  [<c031222c>] (net_rx_action) from [<c0028a28>] (__do_softirq+0x108/0x280=
-)
->  [<c0028a28>] (__do_softirq) from [<c0028e8c>] (irq_exit+0x84/0xf8)
->  [<c0028e8c>] (irq_exit) from [<c000f360>] (handle_IRQ+0x68/0x8c)
->  [<c000f360>] (handle_IRQ) from [<c0008528>] (gic_handle_irq+0x3c/0x60)
->  [<c0008528>] (gic_handle_irq) from [<c0012904>] (__irq_svc+0x44/0x78)
->  Exception stack(0xc056df20 to 0xc056df68)
->  df20: 00000001 c0577430 00000000 c0577430 04ce8e0d 00000002 edfce238 000=
-00000
->  df40: 04e20f78 00000002 c05981f4 00000000 00000008 c056df68 c0064008 c02=
-d7658
->  df60: 20000013 ffffffff
->  [<c0012904>] (__irq_svc) from [<c02d7658>] (cpuidle_enter_state+0x54/0xf=
-8)
->  [<c02d7658>] (cpuidle_enter_state) from [<c02d77dc>] (cpuidle_idle_call+=
-0xe0/0x138)
->  [<c02d77dc>] (cpuidle_idle_call) from [<c000f660>] (arch_cpu_idle+0x8/0x=
-3c)
->  [<c000f660>] (arch_cpu_idle) from [<c006bec4>] (cpu_startup_entry+0xbc/0=
-x124)
->  [<c006bec4>] (cpu_startup_entry) from [<c053daec>] (start_kernel+0x350/0=
-x3b0)
->  ---[ end trace d5fdc38641bd3a11 ]---
->  Mapped at:
->   [<c0227184>] debug_dma_map_page+0x48/0x11c
->   [<c02ab32c>] gem_rx_refill+0x154/0x1f8
->   [<c02ac7b4>] macb_open+0x270/0x3e0
->   [<c03152e0>] __dev_open+0x7c/0xfc
->   [<c031554c>] __dev_change_flags+0x8c/0x140
->=20
-> Fixing this by passing the same size which is passed during mapping the
-> memory to the unmap function as well.
->=20
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+$ git grep asm-generic/io.h arch/
+arch/arc/include/asm/io.h:#include <asm-generic/io.h>
+arch/blackfin/include/asm/io.h:#include <asm-generic/io.h>
+arch/metag/include/asm/io.h:#include <asm-generic/io.h>
+arch/microblaze/include/asm/io.h:/* from asm-generic/io.h */
+arch/openrisc/include/asm/io.h:#include <asm-generic/io.h>
+arch/s390/include/asm/io.h:#include <asm-generic/io.h>
+arch/score/include/asm/io.h:#include <asm-generic/io.h>
+arch/unicore32/include/asm/io.h:#include <asm-generic/io.h>
+arch/xtensa/include/asm/io.h:#include <asm-generic/io.h>
+$ arch/arc/include/asm/io.h:#define PCI_IOBASE ((void __iomem *)0)
+arch/arm64/include/asm/io.h:#define PCI_IOBASE          ((void __iomem *)(MODULES_VADDR - SZ_2M))
+arch/arm64/include/asm/io.h:    return readb(addr + PCI_IOBASE);
+arch/arm64/include/asm/io.h:    return readw(addr + PCI_IOBASE);
+arch/arm64/include/asm/io.h:    return readl(addr + PCI_IOBASE);
+arch/arm64/include/asm/io.h:    writeb(b, addr + PCI_IOBASE);
+arch/arm64/include/asm/io.h:    writew(b, addr + PCI_IOBASE);
+arch/arm64/include/asm/io.h:    writel(b, addr + PCI_IOBASE);
+arch/arm64/include/asm/io.h:            *buf++ = __raw_readb(addr + PCI_IOBASE);arch/arm64/include/asm/io.h:            *buf++ = __raw_readw(addr + PCI_IOBASE);arch/arm64/include/asm/io.h:            *buf++ = __raw_readl(addr + PCI_IOBASE);arch/arm64/include/asm/io.h:            __raw_writeb(*buf++, addr + PCI_IOBASE);arch/arm64/include/asm/io.h:            __raw_writew(*buf++, addr + PCI_IOBASE);arch/arm64/include/asm/io.h:            __raw_writel(*buf++, addr + PCI_IOBASE);arch/unicore32/include/asm/io.h:#define PCI_IOBASE      PKUNITY_PCILIO_BASE
+arch/unicore32/include/asm/io.h:#define PIO_OFFSET              (unsigned int)(PCI_IOBASE)
 
-Reviewed-by: Ben Hutchings <ben@decadent.org.uk>
 
-> ---
-> v3:
->  - no changes
-> v2:
->  - no changes
->=20
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> ---
->  drivers/net/ethernet/cadence/macb.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/c=
-adence/macb.c
-> index 1f03e2041e86..d0c38e01e99f 100644
-> --- a/drivers/net/ethernet/cadence/macb.c
-> +++ b/drivers/net/ethernet/cadence/macb.c
-> @@ -730,7 +730,7 @@ static int gem_rx(struct macb *bp, int budget)
->  		skb_put(skb, len);
->  		addr =3D MACB_BF(RX_WADDR, MACB_BFEXT(RX_WADDR, addr));
->  		dma_unmap_single(&bp->pdev->dev, addr,
-> -				 len, DMA_FROM_DEVICE);
-> +				 bp->rx_buffer_size, DMA_FROM_DEVICE);
-> =20
->  		skb->protocol =3D eth_type_trans(skb, bp->dev);
->  		skb_checksum_none_assert(skb);
-
---=20
-Ben Hutchings
-For every complex problem
-there is a solution that is simple, neat, and wrong.
-
---=-ymGjDS8j123qs3E5gZhf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIVAwUAUxeyfee/yOyVhhEJAQqMBBAAqklZDNlttZSQjBmOrDacPt702ryP1q7q
-F6Ri02vSNml0AmwPXoCputvpD3Zcah+yNtj+FjgXoO60n1gp0ECUFIPuNlwScZoD
-xW+ofC+O6w4wjKFSc+w6VLx0mvhadvlWoq5esNXhyYZXXfU4oT+JFQueZIdAGLe+
-YztAsr+74LmyRsgEg16THZTeMmNVkSgy8qwTaWUzMXnxTsVnqYitxI5QIl5tT3hG
-usyDmPhJE2VEfDr+ufgl7fRGxOLBdn+9k2a7ZWj3zEs9rv8y/jS6UmQ32ZC1hfhW
-tlVdmib+UtJhSlqSp94q5DmrJ0tWzCqQ2AZlIocXLptdoZTo62SH23JKMDGdYbNn
-ODriV7aJAFNjKv58BpfAGiVuQHr+Z3WMZNUrQ+71MMHniNdFi1opU252nDR2FKFR
-W9Meov0x+HSXeAukZCwUyvThhNuzuqYwVBKJ2zec3QY6HY3bbwIjdpA0B2o8JElt
-fHEd/FAtrBrsz9khGxekR9lyPAkwIHKJtBeF6BZ7dRFVzTg7ozmWTxRBlpalHh9p
-MLaHyE/dnjX0vUNGRmhkoSfBOHLo+7ICpb3rcd9Yd4fMgDgQejeFlgvlxtDTwWeK
-nhbacWSqPDA39/aNR1K4sjPTM7yCdDSeH4Y1JsKnWuOomJN0ByJheZBBw9lGDJqK
-y16WoSZJ020=
-=Qlab
------END PGP SIGNATURE-----
-
---=-ymGjDS8j123qs3E5gZhf--
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
