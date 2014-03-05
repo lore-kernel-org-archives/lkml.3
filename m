@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759119AbaCEPWo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 10:22:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40859 "EHLO
+	id S1759144AbaCEPXF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:23:05 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40854 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756890AbaCEOZL (ORCPT
+	with ESMTP id S1755329AbaCEOZJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:25:11 -0500
+	Wed, 5 Mar 2014 09:25:09 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Pavel Shilovsky <piastry@etersoft.ru>, Steve French <smfrench@gmail.com>,
+Cc: Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 034/131] CIFS: Fix too big maxBuf size for SMB3 mounts
-Date: Wed,  5 Mar 2014 14:22:38 +0000
-Message-Id: <1394029455-23128-35-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 033/131] cifs: ensure that uncached writes handle unmapped areas correctly
+Date: Wed,  5 Mar 2014 14:22:37 +0000
+Message-Id: <1394029455-23128-34-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -27,85 +27,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pavel Shilovsky <piastry@etersoft.ru>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 2365c4eaf077c48574ab6f143960048fc0f31518 upstream.
+commit 5d81de8e8667da7135d3a32a964087c0faf5483f upstream.
 
-SMB3 servers can respond with MaxTransactSize of more than 4M
-that can cause a memory allocation error returned from kmalloc
-in a lock codepath. Also the client doesn't support multicredit
-requests now and allows buffer sizes of 65536 bytes only. Set
-MaxTransactSize to this maximum supported value.
+It's possible for userland to pass down an iovec via writev() that has a
+bogus user pointer in it. If that happens and we're doing an uncached
+write, then we can end up getting less bytes than we expect from the
+call to iov_iter_copy_from_user. This is CVE-2014-0069
 
-Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
-Acked-by: Jeff Layton <jlayton@redhat.com>
+cifs_iovec_write isn't set up to handle that situation however. It'll
+blindly keep chugging through the page array and not filling those pages
+with anything useful. Worse yet, we'll later end up with a negative
+number in wdata->tailsz, which will confuse the sending routines and
+cause an oops at the very least.
+
+Fix this by having the copy phase of cifs_iovec_write stop copying data
+in this situation and send the last write as a short one. At the same
+time, we want to avoid sending a zero-length write to the server, so
+break out of the loop and set rc to -EFAULT if that happens. This also
+allows us to handle the case where no address in the iovec is valid.
+
+[Note: Marking this for stable on v3.4+ kernels, but kernels as old as
+       v2.6.38 may have a similar problem and may need similar fix]
+
+Reviewed-by: Pavel Shilovsky <piastry@etersoft.ru>
+Reported-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
 Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/cifs/smb2glob.h |  3 +++
- fs/cifs/smb2ops.c  | 14 ++++----------
- fs/cifs/smb2pdu.c  |  4 +++-
- 3 files changed, 10 insertions(+), 11 deletions(-)
+ fs/cifs/file.c | 37 ++++++++++++++++++++++++++++++++++---
+ 1 file changed, 34 insertions(+), 3 deletions(-)
 
-diff --git a/fs/cifs/smb2glob.h b/fs/cifs/smb2glob.h
-index c383508..bc0bb9c 100644
---- a/fs/cifs/smb2glob.h
-+++ b/fs/cifs/smb2glob.h
-@@ -57,4 +57,7 @@
- #define SMB2_CMACAES_SIZE (16)
- #define SMB3_SIGNKEY_SIZE (16)
+diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+index 7e36ae3..829b57d 100644
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -2378,7 +2378,7 @@ cifs_iovec_write(struct file *file, const struct iovec *iov,
+ 		 unsigned long nr_segs, loff_t *poffset)
+ {
+ 	unsigned long nr_pages, i;
+-	size_t copied, len, cur_len;
++	size_t bytes, copied, len, cur_len;
+ 	ssize_t total_written = 0;
+ 	loff_t offset;
+ 	struct iov_iter it;
+@@ -2433,14 +2433,45 @@ cifs_iovec_write(struct file *file, const struct iovec *iov,
  
-+/* Maximum buffer size value we can send with 1 credit */
-+#define SMB2_MAX_BUFFER_SIZE 65536
+ 		save_len = cur_len;
+ 		for (i = 0; i < nr_pages; i++) {
+-			copied = min_t(const size_t, cur_len, PAGE_SIZE);
++			bytes = min_t(const size_t, cur_len, PAGE_SIZE);
+ 			copied = iov_iter_copy_from_user(wdata->pages[i], &it,
+-							 0, copied);
++							 0, bytes);
+ 			cur_len -= copied;
+ 			iov_iter_advance(&it, copied);
++			/*
++			 * If we didn't copy as much as we expected, then that
++			 * may mean we trod into an unmapped area. Stop copying
++			 * at that point. On the next pass through the big
++			 * loop, we'll likely end up getting a zero-length
++			 * write and bailing out of it.
++			 */
++			if (copied < bytes)
++				break;
+ 		}
+ 		cur_len = save_len - cur_len;
+ 
++		/*
++		 * If we have no data to send, then that probably means that
++		 * the copy above failed altogether. That's most likely because
++		 * the address in the iovec was bogus. Set the rc to -EFAULT,
++		 * free anything we allocated and bail out.
++		 */
++		if (!cur_len) {
++			for (i = 0; i < nr_pages; i++)
++				put_page(wdata->pages[i]);
++			kfree(wdata);
++			rc = -EFAULT;
++			break;
++		}
 +
- #endif	/* _SMB2_GLOB_H */
-diff --git a/fs/cifs/smb2ops.c b/fs/cifs/smb2ops.c
-index f259e6c..ef476d3 100644
---- a/fs/cifs/smb2ops.c
-+++ b/fs/cifs/smb2ops.c
-@@ -181,11 +181,8 @@ smb2_negotiate_wsize(struct cifs_tcon *tcon, struct smb_vol *volume_info)
- 	/* start with specified wsize, or default */
- 	wsize = volume_info->wsize ? volume_info->wsize : CIFS_DEFAULT_IOSIZE;
- 	wsize = min_t(unsigned int, wsize, server->max_write);
--	/*
--	 * limit write size to 2 ** 16, because we don't support multicredit
--	 * requests now.
--	 */
--	wsize = min_t(unsigned int, wsize, 2 << 15);
-+	/* set it to the maximum buffer size value we can send with 1 credit */
-+	wsize = min_t(unsigned int, wsize, SMB2_MAX_BUFFER_SIZE);
- 
- 	return wsize;
- }
-@@ -199,11 +196,8 @@ smb2_negotiate_rsize(struct cifs_tcon *tcon, struct smb_vol *volume_info)
- 	/* start with specified rsize, or default */
- 	rsize = volume_info->rsize ? volume_info->rsize : CIFS_DEFAULT_IOSIZE;
- 	rsize = min_t(unsigned int, rsize, server->max_read);
--	/*
--	 * limit write size to 2 ** 16, because we don't support multicredit
--	 * requests now.
--	 */
--	rsize = min_t(unsigned int, rsize, 2 << 15);
-+	/* set it to the maximum buffer size value we can send with 1 credit */
-+	rsize = min_t(unsigned int, rsize, SMB2_MAX_BUFFER_SIZE);
- 
- 	return rsize;
- }
-diff --git a/fs/cifs/smb2pdu.c b/fs/cifs/smb2pdu.c
-index abc9c28..a826043 100644
---- a/fs/cifs/smb2pdu.c
-+++ b/fs/cifs/smb2pdu.c
-@@ -413,7 +413,9 @@ SMB2_negotiate(const unsigned int xid, struct cifs_ses *ses)
- 
- 	/* SMB2 only has an extended negflavor */
- 	server->negflavor = CIFS_NEGFLAVOR_EXTENDED;
--	server->maxBuf = le32_to_cpu(rsp->MaxTransactSize);
-+	/* set it to the maximum buffer size value we can send with 1 credit */
-+	server->maxBuf = min_t(unsigned int, le32_to_cpu(rsp->MaxTransactSize),
-+			       SMB2_MAX_BUFFER_SIZE);
- 	server->max_read = le32_to_cpu(rsp->MaxReadSize);
- 	server->max_write = le32_to_cpu(rsp->MaxWriteSize);
- 	/* BB Do we need to validate the SecurityMode? */
++		/*
++		 * i + 1 now represents the number of pages we actually used in
++		 * the copy phase above. Bring nr_pages down to that, and free
++		 * any pages that we didn't use.
++		 */
++		for ( ; nr_pages > i + 1; nr_pages--)
++			put_page(wdata->pages[nr_pages - 1]);
++
+ 		wdata->sync_mode = WB_SYNC_ALL;
+ 		wdata->nr_pages = nr_pages;
+ 		wdata->offset = (__u64)offset;
 -- 
 1.9.0
 
