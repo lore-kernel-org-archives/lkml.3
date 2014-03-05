@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757005AbaCEOZc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:25:32 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40917 "EHLO
+	id S932196AbaCEOZk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:25:40 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40940 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756948AbaCEOZ2 (ORCPT
+	with ESMTP id S1756964AbaCEOZe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:25:28 -0500
+	Wed, 5 Mar 2014 09:25:34 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, "Theodore Ts'o" <tytso@mit.edu>,
+Cc: Chao Bi <chao.bi@intel.com>, Tomas Winkler <tomas.winkler@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 046/131] jbd2: fix use after free in jbd2_journal_start_reserved()
-Date: Wed,  5 Mar 2014 14:22:50 +0000
-Message-Id: <1394029455-23128-47-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 050/131] mei: set client's read_cb to NULL when flow control fails
+Date: Wed,  5 Mar 2014 14:22:54 +0000
+Message-Id: <1394029455-23128-51-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -27,40 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Chao Bi <chao.bi@intel.com>
 
-commit 92e3b40537707001d17bbad800d150ab04e53bf4 upstream.
+commit accb884b32e82f943340688c9cd30290531e73e0 upstream.
 
-If start_this_handle() fails then it leads to a use after free of
-"handle".
+In mei_cl_read_start(), if it fails to send flow control request, it
+will release "cl->read_cb" but forget to set pointer to NULL, leaving
+"cl->read_cb" still pointing to random memory, next time this client is
+operated like mei_release(), it has chance to refer to this wrong pointer.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Fixes:  PANIC at kfree in mei_release()
+
+[228781.826904] Call Trace:
+[228781.829737]  [<c16249b8>] ? mei_cl_unlink+0x48/0xa0
+[228781.835283]  [<c1624487>] mei_io_cb_free+0x17/0x30
+[228781.840733]  [<c16265d8>] mei_release+0xa8/0x180
+[228781.845989]  [<c135c610>] ? __fsnotify_parent+0xa0/0xf0
+[228781.851925]  [<c1325a69>] __fput+0xd9/0x200
+[228781.856696]  [<c1325b9d>] ____fput+0xd/0x10
+[228781.861467]  [<c125cae1>] task_work_run+0x81/0xb0
+[228781.866821]  [<c1242e53>] do_exit+0x283/0xa00
+[228781.871786]  [<c1a82b36>] ? kprobe_flush_task+0x66/0xc0
+[228781.877722]  [<c124eeb8>] ? __dequeue_signal+0x18/0x1a0
+[228781.883657]  [<c124f072>] ? dequeue_signal+0x32/0x190
+[228781.889397]  [<c1243744>] do_group_exit+0x34/0xa0
+[228781.894750]  [<c12517b6>] get_signal_to_deliver+0x206/0x610
+[228781.901075]  [<c12018d8>] do_signal+0x38/0x100
+[228781.906136]  [<c1626d1c>] ? mei_read+0x42c/0x4e0
+[228781.911393]  [<c12600a0>] ? wake_up_bit+0x30/0x30
+[228781.916745]  [<c16268f0>] ? mei_poll+0x120/0x120
+[228781.922001]  [<c1324be9>] ? vfs_read+0x89/0x160
+[228781.927158]  [<c16268f0>] ? mei_poll+0x120/0x120
+[228781.932414]  [<c133ca34>] ? fget_light+0x44/0xe0
+[228781.937670]  [<c1324e58>] ? SyS_read+0x68/0x80
+[228781.942730]  [<c12019f5>] do_notify_resume+0x55/0x70
+[228781.948376]  [<c1a7de5d>] work_notifysig+0x29/0x30
+[228781.953827]  [<c1a70000>] ? bad_area+0x5/0x3e
+
+Signed-off-by: Chao Bi <chao.bi@intel.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/jbd2/transaction.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/misc/mei/client.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/fs/jbd2/transaction.c b/fs/jbd2/transaction.c
-index b0b74e5..7272cc6 100644
---- a/fs/jbd2/transaction.c
-+++ b/fs/jbd2/transaction.c
-@@ -514,11 +514,13 @@ int jbd2_journal_start_reserved(handle_t *handle, unsigned int type,
- 	 * similarly constrained call sites
- 	 */
- 	ret = start_this_handle(journal, handle, GFP_NOFS);
--	if (ret < 0)
-+	if (ret < 0) {
- 		jbd2_journal_free_reserved(handle);
-+		return ret;
-+	}
- 	handle->h_type = type;
- 	handle->h_line_no = line_no;
--	return ret;
-+	return 0;
- }
- EXPORT_SYMBOL(jbd2_journal_start_reserved);
+diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
+index d307760..b254132 100644
+--- a/drivers/misc/mei/client.c
++++ b/drivers/misc/mei/client.c
+@@ -663,7 +663,6 @@ int mei_cl_read_start(struct mei_cl *cl, size_t length)
+ 		goto err;
  
+ 	cb->fop_type = MEI_FOP_READ;
+-	cl->read_cb = cb;
+ 	if (dev->hbuf_is_ready) {
+ 		dev->hbuf_is_ready = false;
+ 		if (mei_hbm_cl_flow_control_req(dev, cl)) {
+@@ -674,6 +673,9 @@ int mei_cl_read_start(struct mei_cl *cl, size_t length)
+ 	} else {
+ 		list_add_tail(&cb->list, &dev->ctrl_wr_list.list);
+ 	}
++
++	cl->read_cb = cb;
++
+ 	return rets;
+ err:
+ 	mei_io_cb_free(cb);
 -- 
 1.9.0
 
