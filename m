@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757162AbaCEUn1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 15:43:27 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:19854 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755556AbaCEUn0 (ORCPT
+	id S1757194AbaCEUwj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 15:52:39 -0500
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:38286 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757021AbaCEUwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 15:43:26 -0500
-Date: Wed, 5 Mar 2014 15:43:15 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Subject: [GIT PULL] (xen) stable/for-linus-3.14-rc5-tag
-Message-ID: <20140305204315.GA11758@phenom.dumpdata.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="n8g4imXOkfNTN/H1"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Wed, 5 Mar 2014 15:52:36 -0500
+From: Marek Belisko <marek@goldelico.com>
+To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
+        dbaryshkov@gmail.com, dwmw2@infradead.org, grant.likely@linaro.org
+Cc: hns@goldelico.com, sre@debian.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marek Belisko <marek@goldelico.com>
+Subject: [PATCH v2 0/3] Convert twl4030_madc_battery to IIO consumer and add DT aupport
+Date: Wed,  5 Mar 2014 21:52:16 +0100
+Message-Id: <1394052739-8589-1-git-send-email-marek@goldelico.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patches are based on Sebastian Reichel work [1] which convert twl4030_madc mfd to iio
+framework. Patches was tested on gta04 board. twl4030_madc_battery driver is converted in
+first patch to iio consumer and in next patches is added support for devicetree.
 
---n8g4imXOkfNTN/H1
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Changes from V1:
+- use iio_read_channel_processed instead iio_read_channel_processed
+- convert probe to use devm_ as part of adding error handling for iio
+- free iio channels on error and on module removal
 
-Hey Linus,
+[1] - https://lkml.org/lkml/2014/2/26/482
 
-Please git pull the following tag:
+Marek Belisko (3):
+  power: twl4030-madc-battery: Convert to iio consumer.
+  power: twl4030_madc_battery: Add device tree support.
+  Documentation: DT: Document twl4030-madc-battery bindings.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git stable/for-linus-=
-3.14-rc5-tag
+ .../bindings/power_supply/twl4030_madc_battery.txt |  43 ++++++
+ drivers/power/twl4030_madc_battery.c               | 155 ++++++++++++++++-----
+ 2 files changed, 165 insertions(+), 33 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/power_supply/twl4030_madc_battery.txt
 
-which has exactly one patch for Xen ARM. It sets the dependency
-to compile the kernel with MMU enabled - otherwise - the guest
-won't work very well.
+-- 
+1.8.3.2
 
-Here is the diff - which has to be smallest I had even sent to you:
-
- arch/arm/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
-
-Uwe Kleine-K=F6nig (1):
-      ARM: XEN depends on having a MMU
-
-
---n8g4imXOkfNTN/H1
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQEcBAEBAgAGBQJTF4xMAAoJEFjIrFwIi8fJnG8H/R/KRidP5MinKT3ne5Y6QI2s
-ubspqD1KtOs39kKjZQg5Z8m14efBdSTZh7WiV2CrPuZVAkqgR9QPFRr+4w2uQJ19
-26iyuaHP2HB+YKPBwxohNWZECFAJEDqlZK0Xngh98y8aD5rRC7Xk3Wtev+IfdoQT
-3WwefXKYW/+TiFiXhv86hTKnpvxk9GZ64spYoKd/Nxms4V8qv7w7KOa+CM7pVyfP
-PqS/qvzmv1vdT0dDzLumh7FMWNmkvLJ6Z+PpqTNN3emcPsTLOkjORS4D1M6xE88U
-cvMNDBrND8Klu6dHkGPV97dfyFq9Zn+XmK5rqpPERjBcDxm0ia0lQK/Sz0WF4bA=
-=OF91
------END PGP SIGNATURE-----
-
---n8g4imXOkfNTN/H1--
