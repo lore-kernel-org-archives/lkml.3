@@ -1,112 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756771AbaCEXtN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 18:49:13 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:41329 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752675AbaCEXtL (ORCPT
+	id S1757177AbaCEXtz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 18:49:55 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:38822 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755378AbaCEXtx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 18:49:11 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Paul Bolle <pebolle@tiscali.nl>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] [media] v4l: omap4iss: Add DEBUG compiler flag
-Date: Thu, 06 Mar 2014 00:50:39 +0100
-Message-ID: <3099833.ZhlQFyxhbo@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140305171006.6243354a@samsung.com>
-References: <1391958577.25424.22.camel@x220> <1600194.93iSF4Yz3E@avalon> <20140305171006.6243354a@samsung.com>
+	Wed, 5 Mar 2014 18:49:53 -0500
+Message-ID: <5317B7D5.2030403@oracle.com>
+Date: Wed, 05 Mar 2014 16:48:37 -0700
+From: Khalid Aziz <khalid.aziz@oracle.com>
+Organization: Oracle Corp
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: David Lang <david@lang.hm>
+CC: Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        peterz@infradead.org, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] [PATCH] Pre-emption control for userspace
+References: <1393870033-31076-1-git-send-email-khalid.aziz@oracle.com> <531641A8.40306@zytor.com> <53164824.3000704@oracle.com> <20140304222356.41c55bbc@alan.etchedpixels.co.uk> <5316574F.6040105@oracle.com> <alpine.DEB.2.02.1403050129570.18573@ionos.tec.linutronix.de> <8738ix5uyk.fsf@tassilo.jf.intel.com> <20140305145420.GA30173@redhat.com> <20140305155601.GF22728@two.firstfloor.org> <20140305163644.GA2824@redhat.com> <53175D54.1020804@oracle.com> <alpine.DEB.2.02.1403051506550.6682@nftneq.ynat.uz>
+In-Reply-To: <alpine.DEB.2.02.1403051506550.6682@nftneq.ynat.uz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mauro,
+On 03/05/2014 04:13 PM, David Lang wrote:
+> Yes, you have paid the cost of the context switch, but your original
+> problem description talked about having multiple other threads trying to
+> get the lock, then spinning trying to get the lock (wasting time if the
+> process holding it is asleep, but not if it's running on another core)
+> and causing a long delay before the process holding the lock gets a
+> chance to run again.
+>
+> Having the threads immediately yield to the process that has the lock
+> reduces this down to two context switches, which isn't perfect, but it's
+> a LOT better than what you started from.
 
-Thank you for the review.
+OK, let us consider the multiple core scenario:
 
-On Wednesday 05 March 2014 17:10:06 Mauro Carvalho Chehab wrote:
-> Em Tue, 11 Feb 2014 13:38:51 +0100 Laurent Pinchart escreveu:
-> > On Tuesday 11 February 2014 12:17:01 Paul Bolle wrote:
-> > > Commit d632dfefd36f ("[media] v4l: omap4iss: Add support for OMAP4
-> > > camera interface - Build system") added a Kconfig entry for
-> > > VIDEO_OMAP4_DEBUG. But nothing uses that symbol.
-> > > 
-> > > This entry was apparently copied from a similar entry for "OMAP 3
-> > > Camera debug messages". The OMAP 3 entry is used to set the DEBUG
-> > > compiler flag, which enables calls of dev_dbg().
-> > > 
-> > > So add a Makefile line to do that for omap4iss too.
-> > > 
-> > > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> > 
-> > Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> > 
-> > and applied to my tree.
-> > 
-> > > ---
-> > > 0) v1 was called "[media] v4l: omap4iss: Remove VIDEO_OMAP4_DEBUG". This
-> > > versions implements Laurent's alternative (which is much better).
-> > 
-> > Thanks :-)
-> > 
-> > > 1) Still untested.
-> > > 
-> > >  drivers/staging/media/omap4iss/Makefile | 2 ++
-> > >  1 file changed, 2 insertions(+)
-> > > 
-> > > diff --git a/drivers/staging/media/omap4iss/Makefile
-> > > b/drivers/staging/media/omap4iss/Makefile index a716ce9..f46c6bd 100644
-> > > --- a/drivers/staging/media/omap4iss/Makefile
-> > > +++ b/drivers/staging/media/omap4iss/Makefile
-> > > @@ -1,5 +1,7 @@
-> > > 
-> > >  # Makefile for OMAP4 ISS driver
-> > > 
-> > > +ccflags-$(CONFIG_VIDEO_OMAP4_DEBUG) += -DDEBUG
-> > > +
-> 
-> This seems to be a very bad idea on my eyes. It is just creating an alias to
-> an already existing Kconfig symbol with no good reason.
-> 
-> To be fair, there are also two other drivers doing this:
-> 
-> 	
-drivers/media/platform/omap3isp/Makefile:ccflags-$(CONFIG_VIDEO_OMAP3_DEBUG
-> ) += -DDEBUG
-> drivers/media/platform/ti-vpe/Makefile:ccflags-$(CONFIG_VIDEO_TI_VPE_DEBUG)
-> += -DDEBUG
-> 
-> It sounds better do to a s/CONFIG_DEBUG/CONFIG_VIDEO_whatever_DEBUG/
-> inside each of those driver, or to just remove this, and document that
-> one should enable CONFIG_DEBUG if they want to debug v4l2 drivers.
+- Thread A gets scheduled on core 1, runs for 95% of its timeslice 
+before it gets to its critical section.
+- Thread A grabs the lock and quickly reaches the end of its timeslice 
+before finishing its critical section.
+- Thread A is preempted on core 1 by a completely unrelated thread.
+- Thread B in the mean time is scheduled on core 2 and happens to get to 
+its critical section right away where it tries to grab the lock held by 
+thread A. It spins for a bit waiting to see if lock becomes available, 
+gives up and yields to next process in queue.
+- Since thread A ran recently, it is now stuck towards the end of run 
+queue, so thread C gets to run on core 2 which goes through same fate as 
+thread A.
 
-Please note that -DDEBUG is equivalent to '#define DEBUG', not to '#define 
-CONFIG_DEBUG'. 'DEBUG' needs to be defined for dev_dbg() to have any effect. 
-Furthermore, there's not CONFIG_DEBUG as far as I know.
+Now scale this scenario across more cores and more threads that all want 
+the same lock to execute their small critical section. This cost of 
+spinning and context switch could have been avoided if thread A could 
+get additional timeslice to complete its critical section. Yielding to 
+the process holding the lock happens only after contention has happened 
+and we have paid the price of two context switches for the lock owner. 
+When yield_to() happens, the lock owner may not get to run on the core 
+it was on because an unrelated thread is running on that core and it 
+needs to wait for that thread's timeslice to run out. If the lock owner 
+gets scheduled on another core, we pay the price of repopulating the 
+cache for a new thread on that core. yield_to() is better than having a 
+convoy building up of processes waiting for the same lock but worse than 
+avoiding the contention altogether.
 
-An alternative to this would be to add
+>
+> well, writing to something in /proc isn't free either. And how is the
+> thread supposed to know if it needs to do so or if it's going to have
+> enough time to finish it's work before it's out of time (how can it know
+> how much time it would have left anyway?)
 
-#ifdef CONFIG_VIDEO_OMAP3_DEBUG
-#define DEBUG
-#endif
+Cost is writing to a memory location since thread is using mmap, not 
+insignificant but hardly expensive. Thread does not need to know how 
+much time it has left in current timeslice. It always sets the flag to 
+request pre-emption immunity before entering the critical section and 
+clears the flag when it exits its critical section. If the thread comes 
+up for pre-emption while the flag is set, it gets immunity. If it does 
+not, flag will be cleared at the end of critical section any way.
 
-at the beginning of each source file of the driver. That doesn't seem very 
-practical to me though.
+> is this gain from not giving up the CPU at all? or is it from avoiding
+> all the delays due to the contending thread trying in turn? the
+> yield_to() approach avoids all those other threads trying in turn so it
+> should get fairly close to the same benefits.
+>
 
-> > >  omap4-iss-objs += \
-> > >  
-> > >  	iss.o iss_csi2.o iss_csiphy.o iss_ipipeif.o iss_ipipe.o iss_resizer.o
-> > > 
-> > > iss_video.o
+The gain is from avoiding contention by giving locking thread a chance 
+to complete its critical section which is expected to be very short 
+(certainly shorter than timeslice). Pre-emption immunity gives it one 
+and only one additional timeslice.
 
--- 
-Regards,
+Hope this helps clear things up.
 
-Laurent Pinchart
+Thanks,
+Khalid
 
