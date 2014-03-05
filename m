@@ -1,114 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756623AbaCELxA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 06:53:00 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51492 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755203AbaCELti (ORCPT
+	id S1756648AbaCELxx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 06:53:53 -0500
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:35305 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754806AbaCELxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 06:49:38 -0500
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Tanmay Inamdar <tinamdar@apm.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH v6 2/6] pci: OF: Fix the conversion of IO ranges into IO resources.
-Date: Wed,  5 Mar 2014 11:48:53 +0000
-Message-Id: <1394020137-1830-3-git-send-email-Liviu.Dudau@arm.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1394020137-1830-1-git-send-email-Liviu.Dudau@arm.com>
-References: <1394020137-1830-1-git-send-email-Liviu.Dudau@arm.com>
+	Wed, 5 Mar 2014 06:53:51 -0500
+Message-ID: <5317102C.7000007@gmail.com>
+Date: Wed, 05 Mar 2014 12:53:16 +0100
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>, Russell King <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tomasz Figa <t.figa@samsung.com>, Mark Brown <broonie@kernel.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH v2 01/11] base: power: Add generic OF-based power domain
+ look-up
+References: <1393862536-9842-1-git-send-email-tomasz.figa@gmail.com> <1393862536-9842-2-git-send-email-tomasz.figa@gmail.com> <20140304182310.GA9985@codeaurora.org>
+In-Reply-To: <20140304182310.GA9985@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ranges property for a host bridge controller in DT describes
-the mapping between the PCI bus address and the CPU physical address.
-The resources framework however expects that the IO resources start
-at a pseudo "port" address 0 (zero) and have a maximum size of IO_SPACE_LIMIT.
-The conversion from pci ranges to resources failed to take that into account.
+On 04.03.2014 19:23, Stephen Boyd wrote:
+> On 03/03, Tomasz Figa wrote:
+>> diff --git a/drivers/base/power/domain.c b/drivers/base/power/domain.c
+>> index dc127e5..006b455 100644
+>> --- a/drivers/base/power/domain.c
+>> +++ b/drivers/base/power/domain.c
+>> @@ -3,12 +3,16 @@
+>>    *
+>>    * Copyright (C) 2011 Rafael J. Wysocki <rjw@sisk.pl>, Renesas Electronics Corp.
+>>    *
+>> + * Support for Device Tree based power domain providers:
+>> + * Copyright (C) 2014 Tomasz Figa <tomasz.figa@gmail.com>
+>> + *
+>>    * This file is released under the GPLv2.
+>>    */
+>>
+>>   #include <linux/init.h>
+>>   #include <linux/kernel.h>
+>>   #include <linux/io.h>
+>> +#include <linux/platform_device.h>
+>
+> Is this still needed?
+>
 
-In the process move the function into drivers/of/address.c as it
-now depends on pci_address_to_pio() code.
+Probably not.
 
-Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-Tested-by: Tanmay Inamdar <tinamdar@apm.com>
----
- drivers/of/address.c       | 34 ++++++++++++++++++++++++++++++++++
- include/linux/of_address.h | 13 ++-----------
- 2 files changed, 36 insertions(+), 11 deletions(-)
+>>   #include <linux/pm_runtime.h>
+>>   #include <linux/pm_domain.h>
+>>   #include <linux/pm_qos.h>
+> [...]
+>> +
+>> +/*
+>> + * DEVICE<->DOMAIN BINDING USING DEVICE TREE LOOK-UP
+>> + *
+>> + * The code below registers a notifier for platform bus devices'
+>> + * BUS_NOTIFY_BIND_DRIVER events and tries to attach devices to their power
+>> + * domains by looking them up using Device Tree.
+>> + *
+>> + * Similarly in BUS_NOTIFY_UNBOUND_DRIVER the device is detached from its
+>> + * domain, since it no longer supports runtime PM without any driver bound
+>> + * to it.
+>
+> This looks outdated.
+>
 
-diff --git a/drivers/of/address.c b/drivers/of/address.c
-index d1bb30f..d595d98 100644
---- a/drivers/of/address.c
-+++ b/drivers/of/address.c
-@@ -724,3 +724,37 @@ void __iomem *of_iomap(struct device_node *np, int index)
- 	return ioremap(res.start, resource_size(&res));
- }
- EXPORT_SYMBOL(of_iomap);
-+
-+/**
-+ * of_pci_range_to_resource - Create a resource from an of_pci_range
-+ * @range:	the PCI range that describes the resource
-+ * @np:		device node where the range belongs to
-+ * @res:	pointer to a valid resource that will be updated to
-+ *              reflect the values contained in the range.
-+ * Note that if the range is an IO range, the resource will be converted
-+ * using pci_address_to_pio() which can fail if it is called too early or
-+ * if the range cannot be matched to any host bridge IO space (our case here).
-+ * To guard against that we try to register the IO range first.
-+ * If that fails we know that pci_address_to_pio() will do too.
-+ */
-+void of_pci_range_to_resource(struct of_pci_range *range,
-+	struct device_node *np, struct resource *res)
-+{
-+	res->flags = range->flags;
-+	if (res->flags & IORESOURCE_IO) {
-+		unsigned long port = -1;
-+		if (!pci_register_io_range(range->cpu_addr, range->size))
-+			port = pci_address_to_pio(range->cpu_addr);
-+		if (port == (unsigned long)-1) {
-+			res->start = (resource_size_t)OF_BAD_ADDR;
-+			res->end = (resource_size_t)OF_BAD_ADDR;
-+			return;
-+		}
-+		res->start = port;
-+	} else {
-+		res->start = range->cpu_addr;
-+	}
-+	res->end = res->start + range->size - 1;
-+	res->parent = res->child = res->sibling = NULL;
-+	res->name = np->full_name;
-+}
-diff --git a/include/linux/of_address.h b/include/linux/of_address.h
-index 40c418d..3fe500a 100644
---- a/include/linux/of_address.h
-+++ b/include/linux/of_address.h
-@@ -23,17 +23,8 @@ struct of_pci_range {
- #define for_each_of_pci_range(parser, range) \
- 	for (; of_pci_range_parser_one(parser, range);)
- 
--static inline void of_pci_range_to_resource(struct of_pci_range *range,
--					    struct device_node *np,
--					    struct resource *res)
--{
--	res->flags = range->flags;
--	res->start = range->cpu_addr;
--	res->end = range->cpu_addr + range->size - 1;
--	res->parent = res->child = res->sibling = NULL;
--	res->name = np->full_name;
--}
--
-+extern void of_pci_range_to_resource(struct of_pci_range *range,
-+		struct device_node *np, struct resource *res);
- /* Translate a DMA address from device space to CPU space */
- extern u64 of_translate_dma_address(struct device_node *dev,
- 				    const __be32 *in_addr);
--- 
-1.9.0
+Oops, missed this one. Thanks for pointing out.
 
+Best regards,
+Tomasz
