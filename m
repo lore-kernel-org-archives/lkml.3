@@ -1,31 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758645AbaCEPNB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 10:13:01 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41017 "EHLO
+	id S1758838AbaCEPNj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:13:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41010 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755608AbaCEOZ4 (ORCPT
+	with ESMTP id S1757152AbaCEOZy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:25:56 -0500
+	Wed, 5 Mar 2014 09:25:54 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Colin Cross <ccross@android.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Jeremy Compostella <jeremy.compostella@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 065/131] staging: binder: Fix death notifications
-Date: Wed,  5 Mar 2014 14:23:09 +0000
-Message-Id: <1394029455-23128-66-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 064/131] irqchip: orion: Fix getting generic chip pointer.
+Date: Wed,  5 Mar 2014 14:23:08 +0000
+Message-Id: <1394029455-23128-65-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -35,48 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
+From: Andrew Lunn <andrew@lunn.ch>
 
-commit e194fd8a5d8e0a7eeed239a8534460724b62fe2d upstream.
+commit d86e9af6336c0ad586a5dbd70064253d40bbb5ff upstream.
 
-The change (008fa749e0fe5b2fffd20b7fe4891bb80d072c6a) that moved the
-node release code to a separate function broke death notifications in
-some cases. When it encountered a reference without a death
-notification request, it would skip looking at the remaining
-references, and therefore fail to send death notifications for them.
+Enabling SPARSE_IRQ shows up a bug in the irq-orion bridge interrupt
+handler. The bridge interrupt is implemented using a single generic
+chip. Thus the parameter passed to irq_get_domain_generic_chip()
+should always be zero.
 
-Cc: Colin Cross <ccross@android.com>
-Cc: Android Kernel Team <kernel-team@android.com>
-Signed-off-by: Arve Hjønnevåg <arve@android.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Jeremy Compostella <jeremy.compostella@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Andrew Lunn <andrew@lunn.ch>
+Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Fixes: 9dbd90f17e4f ("irqchip: Add support for Marvell Orion SoCs")
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/staging/android/binder.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/irqchip/irq-orion.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-index 119d486..8b986af 100644
---- a/drivers/staging/android/binder.c
-+++ b/drivers/staging/android/binder.c
-@@ -2903,7 +2903,7 @@ static int binder_node_release(struct binder_node *node, int refs)
- 		refs++;
+diff --git a/drivers/irqchip/irq-orion.c b/drivers/irqchip/irq-orion.c
+index 0dfdc5c..8e41be6 100644
+--- a/drivers/irqchip/irq-orion.c
++++ b/drivers/irqchip/irq-orion.c
+@@ -111,7 +111,8 @@ IRQCHIP_DECLARE(orion_intc, "marvell,orion-intc", orion_irq_init);
+ static void orion_bridge_irq_handler(unsigned int irq, struct irq_desc *desc)
+ {
+ 	struct irq_domain *d = irq_get_handler_data(irq);
+-	struct irq_chip_generic *gc = irq_get_domain_generic_chip(d, irq);
++
++	struct irq_chip_generic *gc = irq_get_domain_generic_chip(d, 0);
+ 	u32 stat = readl_relaxed(gc->reg_base + ORION_BRIDGE_IRQ_CAUSE) &
+ 		   gc->mask_cache;
  
- 		if (!ref->death)
--			goto out;
-+			continue;
- 
- 		death++;
- 
-@@ -2916,7 +2916,6 @@ static int binder_node_release(struct binder_node *node, int refs)
- 			BUG();
- 	}
- 
--out:
- 	binder_debug(BINDER_DEBUG_DEAD_BINDER,
- 		     "node %d now dead, refs %d, death %d\n",
- 		     node->debug_id, refs, death);
 -- 
 1.9.0
 
