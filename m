@@ -1,95 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756844AbaCEUcx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 15:32:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54030 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753056AbaCEUcw (ORCPT
+	id S1757119AbaCEUdM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 15:33:12 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:36159 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754511AbaCEUdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 15:32:52 -0500
-Date: Wed, 5 Mar 2014 12:32:50 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Jean Delvare <khali@linux-fr.org>, Li Zhong <zhong@linux.vnet.ibm.com>,
-        Jon Mason <jon.mason@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [RFC] Taint the kernel for unsafe module options
-Message-Id: <20140305123250.8caa9c6abc2b40d812bbb1b2@linux-foundation.org>
-In-Reply-To: <1394011994-30604-1-git-send-email-daniel.vetter@ffwll.ch>
-References: <1394011994-30604-1-git-send-email-daniel.vetter@ffwll.ch>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 5 Mar 2014 15:33:10 -0500
+Message-ID: <53178A03.3090004@codeaurora.org>
+Date: Wed, 05 Mar 2014 12:33:07 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: =?UTF-8?B?SsO8cmcgQmlsbGV0ZXI=?= <j@bitron.ch>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@lists.codethink.co.uk,
+        devicetree@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Subject: Re: [PATCH] ARM: kernel: respect device tree status of cpu nodes
+References: <1393240960-31846-1-git-send-email-j@bitron.ch>
+In-Reply-To: <1393240960-31846-1-git-send-email-j@bitron.ch>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  5 Mar 2014 10:33:14 +0100 Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
++Lorenzo
 
-> Users just love to set random piles of options since surely enabling
-> all the experimental stuff helps. Later on we get bug reports because
-> it all fell apart.
-> 
-> Even more fun when it's labelled a regression when some change only
-> just made the feature possible (e.g. stolen memory fixes suddenly
-> making fbc possible).
-> 
-> Make it clear that users are playing with fire here. In drm/i915 all
-> these options follow the same pattern of using -1 as the per-machine
-> default, and any other value being used for force the parameter.
-> 
-> Adding a pile of cc's to solicit input and figure out whether this
-> would be generally useful - this quick rfc is just for drm/i915.
-
-Seems harmless and potentially useful to others so yes, I'd vote for
-putting it in core kernel.
-
-However this only handles integers.  Will we end up needed great gobs
-of new code to detect unsafe setting of u8's, strings, etc?
-
-
-> --- a/drivers/gpu/drm/i915/i915_params.c
-> +++ b/drivers/gpu/drm/i915/i915_params.c
-
-The patch adds lots of trailing whitespace.  checkpatch is ->thattaway.
-
-> @@ -50,7 +50,46 @@ struct i915_params i915 __read_mostly = {
->  	.disable_display = 0,
->  };
+On 02/24/14 03:22, Jürg Billeter wrote:
+> Skip 'disabled' cpu nodes when building the cpu logical map. This avoids
+> booting cpus that have been disabled in the device tree.
+>
+> Signed-off-by: Jürg Billeter <j@bitron.ch>
+> Reviewed-by: Ben Dooks <ben.dooks@codethink.co.uk>
+> ---
+>  arch/arm/kernel/devtree.c | 4 ++++
+>  1 file changed, 4 insertions(+)
+>
+> diff --git a/arch/arm/kernel/devtree.c b/arch/arm/kernel/devtree.c
+> index 739c3df..9aed299 100644
+> --- a/arch/arm/kernel/devtree.c
+> +++ b/arch/arm/kernel/devtree.c
+> @@ -95,6 +95,10 @@ void __init arm_dt_init_cpu_maps(void)
+>  		if (of_node_cmp(cpu->type, "cpu"))
+>  			continue;
 >  
-> -module_param_named(modeset, i915.modeset, int, 0400);
-> +int param_set_unsafe_int(const char *val, const struct kernel_param *kp)
-> +{
-> +	long l;
-> +	int ret;
+> +		/* Check if CPU is enabled */
+> +		if (!of_device_is_available(cpu))
+> +			continue;
 > +
-> +	ret = kstrtol(val, 0, &l);
-> +	if (ret < 0 || ((int)l != l))
-> +		return ret < 0 ? ret : -EINVAL;
+>  		pr_debug(" * %s...\n", cpu->full_name);
+>  		/*
+>  		 * A device tree containing CPU nodes with missing "reg"
 
-That's a bit screwy.  Simpler:
+This doesn't follow the ePAPR spec. According to ePAPR status="disabled"
+in a cpu node means "the cpu is in a quiescent state" and one can enable
+it by using the "enable-method". At the least, we should document this
+in bindings/arm/cpus.txt if we can all agree that we want this
+definition of disabled.
 
-	if (ret < 0)
-		return ret;
-	if ((int)l != l)
-		return -EINVAL;
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-
-> +	/* Taint if userspace overrides the kernel defaults. */
-> +	if (l != -1) {
-> +		printk(KERN_WARNING "Setting dangerous option %s to non-default value!\n",
-> +		       kp->name);
-
-pr_warn() is nicer.
-
-> +		add_taint(TAINT_USER, LOCKDEP_STILL_OK);
-> +	}
-> +
-> +	*((int *)kp->arg) = l;
-> +	return 0;
-> +}
->
-> ...
->
