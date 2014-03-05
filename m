@@ -1,90 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754140AbaCEHUv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 02:20:51 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:63501 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753742AbaCEHTW (ORCPT
+	id S1752048AbaCEHaA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 02:30:00 -0500
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:51704 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751565AbaCEH37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 02:19:22 -0500
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        tony.luck@intel.com, fenghua.yu@intel.com, schwidefsky@de.ibm.com,
-        james.hogan@imgtec.com, cmetcalf@tilera.com, benh@kernel.crashing.org,
-        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org
-Cc: dietmar.eggemann@arm.com, preeti@linux.vnet.ibm.com,
-        linaro-kernel@lists.linaro.org,
-        Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [RFC 5/6] sched: add a new SD_SHARE_POWERDOMAIN for sched_domain
-Date: Wed,  5 Mar 2014 15:18:25 +0800
-Message-Id: <1394003906-11630-6-git-send-email-vincent.guittot@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1394003906-11630-1-git-send-email-vincent.guittot@linaro.org>
-References: <1394003906-11630-1-git-send-email-vincent.guittot@linaro.org>
+	Wed, 5 Mar 2014 02:29:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <1393862536-9842-3-git-send-email-tomasz.figa@gmail.com>
+References: <1393862536-9842-1-git-send-email-tomasz.figa@gmail.com>
+	<1393862536-9842-3-git-send-email-tomasz.figa@gmail.com>
+Date: Wed, 5 Mar 2014 08:22:48 +0100
+Message-ID: <CAPDyKFpMSwXG0e1Q38wMwBocXgMb4_v9y=1kNeNi6t0GXDGN2A@mail.gmail.com>
+Subject: Re: [PATCH v2 02/11] drivercore: Bind/unbind power domain on probe/remove
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        devicetree@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>, Russell King <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tomasz Figa <t.figa@samsung.com>, Mark Brown <broonie@kernel.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A new flag SD_SHARE_POWERDOMAIN is created to reflect whether groups of CPUs
-in a sched_domain level can or not reach different power state. As an example,
-the flag should be cleared at CPU level if groups of cores can be power gated
-independently. This information can be used to add load balancing level between
-group of CPUs than can power gate independantly. The default behavior of the
-scheduler is to spread tasks across CPUs and groups of CPUs so the flag is set
-into all sched_domains.
+On 3 March 2014 17:02, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+> On a number of platforms, devices are part of controllable power
+> domains, which need to be enabled before such devices can be accessed
+> and may be powered down when the device is idle to save some power.
+> This means that on systems that support power domain control using
+> generic power domains subsystem, it is necessary to add device to its
+> power domain before binding a driver to it and remove it from its power
+> domain after its driver is unbound to make sure that an unused device
+> does not affect power domain state.
+>
+> Since this is not limited to particular busses and specific
+> archs/platforms, it is more convenient to do the above directly in
+> driver core, just as done with pinctrl default configuration. This patch
+> adds necessary code to really_probe() and __device_release_driver() to
+> achieve this and maintain consistent stack-like ordering of operations
+> happening when binding and unbinding a driver.
+>
+> Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
 
-Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
----
- include/linux/sched.h |    1 +
- kernel/sched/core.c   |    9 ++++++---
- 2 files changed, 7 insertions(+), 3 deletions(-)
+This definitely makes sense to me!
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index dbc35dd..182a080 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -861,6 +861,7 @@ enum cpu_idle_type {
- #define SD_BALANCE_WAKE		0x0010  /* Balance on wakeup */
- #define SD_WAKE_AFFINE		0x0020	/* Wake task to waking CPU */
- #define SD_SHARE_CPUPOWER	0x0080	/* Domain members share cpu power */
-+#define SD_SHARE_POWERDOMAIN	0x0100	/* Domain members share power domain */
- #define SD_SHARE_PKG_RESOURCES	0x0200	/* Domain members share cpu pkg resources */
- #define SD_SERIALIZE		0x0400	/* Only a single load balancing instance */
- #define SD_ASYM_PACKING		0x0800  /* Place busy groups earlier in the domain */
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 7606de0..b28cff0 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5283,7 +5283,8 @@ static int sd_degenerate(struct sched_domain *sd)
- 			 SD_BALANCE_FORK |
- 			 SD_BALANCE_EXEC |
- 			 SD_SHARE_CPUPOWER |
--			 SD_SHARE_PKG_RESOURCES)) {
-+			 SD_SHARE_PKG_RESOURCES |
-+			 SD_SHARE_POWERDOMAIN)) {
- 		if (sd->groups != sd->groups->next)
- 			return 0;
- 	}
-@@ -5314,7 +5315,8 @@ sd_parent_degenerate(struct sched_domain *sd, struct sched_domain *parent)
- 				SD_BALANCE_EXEC |
- 				SD_SHARE_CPUPOWER |
- 				SD_SHARE_PKG_RESOURCES |
--				SD_PREFER_SIBLING);
-+				SD_PREFER_SIBLING |
-+				SD_SHARE_POWERDOMAIN);
- 		if (nr_node_ids == 1)
- 			pflags &= ~SD_SERIALIZE;
- 	}
-@@ -5932,7 +5934,8 @@ static struct cpumask ***sched_domains_numa_masks;
- 	(SD_SHARE_CPUPOWER |		\
- 	 SD_SHARE_PKG_RESOURCES |	\
- 	 SD_NUMA |			\
--	 SD_ASYM_PACKING)
-+	 SD_ASYM_PACKING |		\
-+	 SD_SHARE_POWERDOMAIN)
- 
- static struct sched_domain *
- sd_init(struct sched_domain_topology_level *tl, int cpu)
--- 
-1.7.9.5
+Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
 
+> ---
+>  drivers/base/dd.c | 9 ++++++++-
+>  1 file changed, 8 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+> index 0605176..78e5b36 100644
+> --- a/drivers/base/dd.c
+> +++ b/drivers/base/dd.c
+> @@ -23,6 +23,7 @@
+>  #include <linux/kthread.h>
+>  #include <linux/wait.h>
+>  #include <linux/async.h>
+> +#include <linux/pm_domain.h>
+>  #include <linux/pm_runtime.h>
+>  #include <linux/pinctrl/devinfo.h>
+>
+> @@ -273,6 +274,11 @@ static int really_probe(struct device *dev, struct device_driver *drv)
+>
+>         dev->driver = drv;
+>
+> +       /* If using genpd, bind power domain now before probing */
+> +       ret = genpd_bind_domain(dev);
+> +       if (ret)
+> +               goto probe_failed;
+> +
+>         /* If using pinctrl, bind pins now before probing */
+>         ret = pinctrl_bind_pins(dev);
+>         if (ret)
+> @@ -303,6 +309,7 @@ static int really_probe(struct device *dev, struct device_driver *drv)
+>  probe_failed:
+>         devres_release_all(dev);
+>         driver_sysfs_remove(dev);
+> +       genpd_unbind_domain(dev);
+>         dev->driver = NULL;
+>         dev_set_drvdata(dev, NULL);
+>
+> @@ -513,7 +520,7 @@ static void __device_release_driver(struct device *dev)
+>                         blocking_notifier_call_chain(&dev->bus->p->bus_notifier,
+>                                                      BUS_NOTIFY_UNBOUND_DRIVER,
+>                                                      dev);
+> -
+> +               genpd_unbind_domain(dev);
+>         }
+>  }
+>
+> --
+> 1.9.0
+>
