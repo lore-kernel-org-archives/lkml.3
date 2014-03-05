@@ -1,81 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754257AbaCEKPQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 05:15:16 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:54615 "EHLO extserv.mm-sol.com"
+	id S1754623AbaCEKPX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 05:15:23 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:54630 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753553AbaCEKPJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752625AbaCEKPJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Mar 2014 05:15:09 -0500
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Felipe Balbi <balbi@ti.com>,
-        Grant Likely <grant.likely@linaro.org>
+To: Felipe Balbi <balbi@ti.com>
 Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: [PATCH v5 00/14] usb: phy: msm: Fixes, cleanups and DT support
-Date: Wed,  5 Mar 2014 12:13:36 +0200
-Message-Id: <1394014430-26485-1-git-send-email-iivanov@mm-sol.com>
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: [PATCH v5 04/14] usb: phy: msm: Fix checkpatch.pl warnings
+Date: Wed,  5 Mar 2014 12:13:40 +0200
+Message-Id: <1394014430-26485-5-git-send-email-iivanov@mm-sol.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1394014430-26485-1-git-send-email-iivanov@mm-sol.com>
+References: <1394014430-26485-1-git-send-email-iivanov@mm-sol.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-Hi,
+This fixes following:
 
-This is a fifth version of patches posted earlier here [1].
+WARNING: quoted string split across lines
+WARNING: Prefer seq_puts to seq_printf
 
-They have been tested on AP8074 DragonBoard. Only gadget
-mode utilized for now.
+Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+---
+ drivers/usb/phy/phy-msm-usb.c |   39 ++++++++++++++-------------------------
+ 1 file changed, 14 insertions(+), 25 deletions(-)
 
-CV Test Suite engine "Chapter 9 tests" are passing except
-"Halt Endpoint Test".
+diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
+index 4f4b0c6..beafe84 100644
+--- a/drivers/usb/phy/phy-msm-usb.c
++++ b/drivers/usb/phy/phy-msm-usb.c
+@@ -67,8 +67,7 @@ static int msm_hsusb_init_vddcx(struct msm_otg *motg, int init)
+ 				USB_PHY_VDD_DIG_VOL_MIN,
+ 				USB_PHY_VDD_DIG_VOL_MAX);
+ 		if (ret) {
+-			dev_err(motg->phy.dev, "unable to set the voltage "
+-					"for hsusb vddcx\n");
++			dev_err(motg->phy.dev, "Cannot set vddcx voltage\n");
+ 			return ret;
+ 		}
 
-usbtest driver report following failure:
-test 13 --> 32 (Broken pipe)    ep 81 couldn't set halt, -32
+@@ -79,8 +78,7 @@ static int msm_hsusb_init_vddcx(struct msm_otg *motg, int init)
+ 		ret = regulator_set_voltage(motg->vddcx, 0,
+ 			USB_PHY_VDD_DIG_VOL_MAX);
+ 		if (ret)
+-			dev_err(motg->phy.dev, "unable to set the voltage "
+-					"for hsusb vddcx\n");
++			dev_err(motg->phy.dev, "Cannot set vddcx voltage\n");
+ 		ret = regulator_disable(motg->vddcx);
+ 		if (ret)
+ 			dev_err(motg->phy.dev, "unable to disable hsusb vddcx\n");
+@@ -97,8 +95,7 @@ static int msm_hsusb_ldo_init(struct msm_otg *motg, int init)
+ 		rc = regulator_set_voltage(motg->v3p3, USB_PHY_3P3_VOL_MIN,
+ 				USB_PHY_3P3_VOL_MAX);
+ 		if (rc) {
+-			dev_err(motg->phy.dev, "unable to set voltage level "
+-					"for hsusb 3p3\n");
++			dev_err(motg->phy.dev, "Cannot set v3p3 voltage\n");
+ 			goto exit;
+ 		}
+ 		rc = regulator_enable(motg->v3p3);
+@@ -109,8 +106,7 @@ static int msm_hsusb_ldo_init(struct msm_otg *motg, int init)
+ 		rc = regulator_set_voltage(motg->v1p8, USB_PHY_1P8_VOL_MIN,
+ 				USB_PHY_1P8_VOL_MAX);
+ 		if (rc) {
+-			dev_err(motg->phy.dev, "unable to set voltage level "
+-					"for hsusb 1p8\n");
++			dev_err(motg->phy.dev, "Cannot set v1p8 voltage\n");
+ 			goto disable_3p3;
+ 		}
+ 		rc = regulator_enable(motg->v1p8);
+@@ -137,15 +133,13 @@ static int msm_hsusb_ldo_set_mode(struct msm_otg *motg, int on)
+ 		ret = regulator_set_optimum_mode(motg->v1p8,
+ 				USB_PHY_1P8_HPM_LOAD);
+ 		if (ret < 0) {
+-			pr_err("%s: Unable to set HPM of the regulator "
+-				"HSUSB_1p8\n", __func__);
++			pr_err("Could not set HPM for v1p8\n");
+ 			return ret;
+ 		}
+ 		ret = regulator_set_optimum_mode(motg->v3p3,
+ 				USB_PHY_3P3_HPM_LOAD);
+ 		if (ret < 0) {
+-			pr_err("%s: Unable to set HPM of the regulator "
+-				"HSUSB_3p3\n", __func__);
++			pr_err("Could not set HPM for v3p3\n");
+ 			regulator_set_optimum_mode(motg->v1p8,
+ 				USB_PHY_1P8_LPM_LOAD);
+ 			return ret;
+@@ -154,13 +148,11 @@ static int msm_hsusb_ldo_set_mode(struct msm_otg *motg, int on)
+ 		ret = regulator_set_optimum_mode(motg->v1p8,
+ 				USB_PHY_1P8_LPM_LOAD);
+ 		if (ret < 0)
+-			pr_err("%s: Unable to set LPM of the regulator "
+-				"HSUSB_1p8\n", __func__);
++			pr_err("Could not set LPM for v1p8\n");
+ 		ret = regulator_set_optimum_mode(motg->v3p3,
+ 				USB_PHY_3P3_LPM_LOAD);
+ 		if (ret < 0)
+-			pr_err("%s: Unable to set LPM of the regulator "
+-				"HSUSB_3p3\n", __func__);
++			pr_err("Could not set LPM for v3p3\n");
+ 	}
 
-Changes since v4:
- - Drop patch [1/15] usb: phy: msm: Move mach dependent code to platform data
-   it is already merged.
- - Address comments regarding devicetree bindings.
+ 	pr_debug("reg (%s)\n", on ? "HPM" : "LPM");
+@@ -390,8 +382,7 @@ static int msm_hsusb_config_vddcx(struct msm_otg *motg, int high)
 
-[1] https://lkml.org/lkml/2013/11/12/298
+ 	ret = regulator_set_voltage(motg->vddcx, min_vol, max_vol);
+ 	if (ret) {
+-		pr_err("%s: unable to set the voltage for regulator "
+-			"HSUSB_VDDCX\n", __func__);
++		dev_err(motg->phy.dev, "Cannot set vddcx voltage\n");
+ 		return ret;
+ 	}
 
-Ivan T. Ivanov (14):
-  usb: phy: msm: Move global regulators variables to driver state
-  usb: phy: msm: Migrate to Managed Device Resource allocation
-  usb: phy: msm: Remove unnecessarily check for valid regulators.
-  usb: phy: msm: Fix checkpatch.pl warnings
-  usb: phy: msm: Replace custom enum usb_mode_type with enum
-    usb_dr_mode
-  usb: phy: msm: Remove unused pclk_src_name
-  usb: phy: msm: Remove HSUSB prefix from regulator names
-  usb: phy: msm: Properly check result from platform_get_irq()
-  usb: phy: msm: Add device tree support and binding information
-  usb: phy: msm: Use reset framework for LINK and PHY resets
-  usb: phy: msm: Add support for secondary PHY control
-  usb: phy: msm: Correct USB PHY Reset sequence for newer platform
-  usb: phy: msm: Handle disconnect events
-  usb: phy: msm: Vote for corner of VDD CX instead of voltage of VDD CX
+@@ -546,8 +537,7 @@ static int msm_otg_resume(struct msm_otg *motg)
+ 		 * PHY. USB state can not be restored. Re-insertion
+ 		 * of USB cable is the only way to get USB working.
+ 		 */
+-		dev_err(phy->dev, "Unable to resume USB."
+-				"Re-plugin the cable\n");
++		dev_err(phy->dev, "Unable to resume USB. Re-plugin the cable\n");
+ 		msm_otg_reset(phy);
+ 	}
 
- .../devicetree/bindings/usb/msm-hsusb.txt          |   78 +++
- arch/arm/mach-msm/board-msm7x30.c                  |    2 +-
- arch/arm/mach-msm/board-qsd8x50.c                  |    2 +-
- drivers/usb/phy/phy-msm-usb.c                      |  674 +++++++++++---------
- include/linux/usb/msm_hsusb.h                      |   39 +-
- include/linux/usb/msm_hsusb_hw.h                   |    6 +
- 6 files changed, 474 insertions(+), 327 deletions(-)
+@@ -1242,13 +1232,13 @@ static int msm_otg_mode_show(struct seq_file *s, void *unused)
 
+ 	switch (otg->phy->state) {
+ 	case OTG_STATE_A_HOST:
+-		seq_printf(s, "host\n");
++		seq_puts(s, "host\n");
+ 		break;
+ 	case OTG_STATE_B_PERIPHERAL:
+-		seq_printf(s, "peripheral\n");
++		seq_puts(s, "peripheral\n");
+ 		break;
+ 	default:
+-		seq_printf(s, "none\n");
++		seq_puts(s, "none\n");
+ 		break;
+ 	}
+
+@@ -1530,8 +1520,7 @@ static int __init msm_otg_probe(struct platform_device *pdev)
+ 			motg->pdata->otg_control == OTG_USER_CONTROL) {
+ 		ret = msm_otg_debugfs_init(motg);
+ 		if (ret)
+-			dev_dbg(&pdev->dev, "mode debugfs file is"
+-					"not available\n");
++			dev_dbg(&pdev->dev, "Can not create mode change file\n");
+ 	}
+
+ 	pm_runtime_set_active(&pdev->dev);
 --
 1.7.9.5
 
