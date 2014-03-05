@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758157AbaCEOhU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:37:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41528 "EHLO
+	id S932636AbaCEO6m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:58:42 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41547 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755305AbaCEOhN (ORCPT
+	with ESMTP id S1758142AbaCEOhT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:37:13 -0500
+	Wed, 5 Mar 2014 09:37:19 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tejun Heo <tj@kernel.org>, Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 02/62] sata_sil: apply MOD15WRITE quirk to TOSHIBA MK2561GSYN
-Date: Wed,  5 Mar 2014 14:36:06 +0000
-Message-Id: <1394030226-26652-3-git-send-email-luis.henriques@canonical.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.5 06/62] ext4: don't try to modify s_flags if the the file system is read-only
+Date: Wed,  5 Mar 2014 14:36:10 +0000
+Message-Id: <1394030226-26652-7-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
 References: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
@@ -26,38 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 9f9c47f00ce99329b1a82e2ac4f70f0fe3db549c upstream.
+commit 23301410972330c0ae9a8afc379ba2005e249cc6 upstream.
 
-It's a bit odd to see a newer device showing mod15write; however, the
-reported behavior is highly consistent and other factors which could
-contribute seem to have been verified well enough.  Also, both
-sata_sil itself and the drive are fairly outdated at this point making
-the risk of this change fairly low.  It is possible, probably likely,
-that other drive models in the same family have the same problem;
-however, for now, let's just add the specific model which was tested.
+If an ext4 file system is created by some tool other than mke2fs
+(perhaps by someone who has a pathalogical fear of the GPL) that
+doesn't set one or the other of the EXT2_FLAGS_{UN}SIGNED_HASH flags,
+and that file system is then mounted read-only, don't try to modify
+the s_flags field.  Otherwise, if dm_verity is in use, the superblock
+will change, causing an dm_verity failure.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: matson <lists-matsonpa@luxsci.me>
-References: http://lkml.kernel.org/g/201401211912.s0LJCk7F015058@rs103.luxsci.com
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/ata/sata_sil.c | 1 +
- 1 file changed, 1 insertion(+)
+ fs/ext4/super.c | 20 +++++++++++++-------
+ 1 file changed, 13 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/ata/sata_sil.c b/drivers/ata/sata_sil.c
-index 9dfb40b..0c4ed89 100644
---- a/drivers/ata/sata_sil.c
-+++ b/drivers/ata/sata_sil.c
-@@ -157,6 +157,7 @@ static const struct sil_drivelist {
- 	{ "ST380011ASL",	SIL_QUIRK_MOD15WRITE },
- 	{ "ST3120022ASL",	SIL_QUIRK_MOD15WRITE },
- 	{ "ST3160021ASL",	SIL_QUIRK_MOD15WRITE },
-+	{ "TOSHIBA MK2561GSYN",	SIL_QUIRK_MOD15WRITE },
- 	{ "Maxtor 4D060H3",	SIL_QUIRK_UDMA5MAX },
- 	{ }
- };
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index b2ae1e8..44884b7 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -3548,16 +3548,22 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+ 	for (i = 0; i < 4; i++)
+ 		sbi->s_hash_seed[i] = le32_to_cpu(es->s_hash_seed[i]);
+ 	sbi->s_def_hash_version = es->s_def_hash_version;
+-	i = le32_to_cpu(es->s_flags);
+-	if (i & EXT2_FLAGS_UNSIGNED_HASH)
+-		sbi->s_hash_unsigned = 3;
+-	else if ((i & EXT2_FLAGS_SIGNED_HASH) == 0) {
++	if (EXT4_HAS_COMPAT_FEATURE(sb, EXT4_FEATURE_COMPAT_DIR_INDEX)) {
++		i = le32_to_cpu(es->s_flags);
++		if (i & EXT2_FLAGS_UNSIGNED_HASH)
++			sbi->s_hash_unsigned = 3;
++		else if ((i & EXT2_FLAGS_SIGNED_HASH) == 0) {
+ #ifdef __CHAR_UNSIGNED__
+-		es->s_flags |= cpu_to_le32(EXT2_FLAGS_UNSIGNED_HASH);
+-		sbi->s_hash_unsigned = 3;
++			if (!(sb->s_flags & MS_RDONLY))
++				es->s_flags |=
++					cpu_to_le32(EXT2_FLAGS_UNSIGNED_HASH);
++			sbi->s_hash_unsigned = 3;
+ #else
+-		es->s_flags |= cpu_to_le32(EXT2_FLAGS_SIGNED_HASH);
++			if (!(sb->s_flags & MS_RDONLY))
++				es->s_flags |=
++					cpu_to_le32(EXT2_FLAGS_SIGNED_HASH);
+ #endif
++		}
+ 	}
+ 
+ 	/* Handle clustersize */
 -- 
 1.9.0
 
