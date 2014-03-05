@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758945AbaCEPRk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 10:17:40 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40945 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755781AbaCEOZf (ORCPT
+	id S1758959AbaCEPRt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:17:49 -0500
+Received: from smtprelay0177.hostedemail.com ([216.40.44.177]:36932 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755781AbaCEPRq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:25:35 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 051/131] drm/radeon: fix minor typos in si_dpm.c
-Date: Wed,  5 Mar 2014 14:22:55 +0000
-Message-Id: <1394029455-23128-52-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
-References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Wed, 5 Mar 2014 10:17:46 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3872:4321:5007:7652:7875:8660:9190:10004:10400:10466:10848:11026:11232:11473:11658:11914:12296:12517:12519:12740:13069:13148:13230:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: match62_5fcd9307aca60
+X-Filterd-Recvd-Size: 1944
+Message-ID: <1394032656.3271.51.camel@joe-AO722>
+Subject: Re: [PATCH 2/3] sched: Use clamp() and clamp_val() to make it more
+ readable.
+From: Joe Perches <joe@perches.com>
+To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com, rostedt@goodmis.org,
+        peterz@infradead.org, mingo@redhat.com,
+        Kees Cook <keescook@chromium.org>
+Date: Wed, 05 Mar 2014 07:17:36 -0800
+In-Reply-To: <0b02fa0f05c9cebca19cadce92cb8c85ee130ce0.1394022835.git.yangds.fnst@cn.fujitsu.com>
+References: <8ae8a3aefb157e9e7d1b62a4c136289e74783eaf.1394022835.git.yangds.fnst@cn.fujitsu.com>
+	 <0b02fa0f05c9cebca19cadce92cb8c85ee130ce0.1394022835.git.yangds.fnst@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.6 -stable review patch.  If anyone has any objections, please let me know.
+On Wed, 2014-03-05 at 20:36 +0800, Dongsheng Yang wrote:
+> As Kees suggested, I use clamp() function to replace the if and
+> else branch, making it more readable and modular.
+> 
+> Suggested-by: Kees Cook <keescook@chromium.org>
+> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+[]
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+[]
+> @@ -3070,17 +3070,10 @@ SYSCALL_DEFINE1(nice, int, increment)
+>  	 * We don't have to worry. Conceptually one call occurs first
+>  	 * and we have a single winner.
+>  	 */
+> -	if (increment < -40)
+> -		increment = -40;
+> -	if (increment > 40)
+> -		increment = 40;
+> -
+> +	increment = clamp(increment, -40, 40);
 
-------------------
+Maybe:
 
-From: Alex Deucher <alexander.deucher@amd.com>
+	increment = clamp(increment, -(NICE_MAX - NICE_MIN + 1), 
+				   , NICE_MAX - NICE_MIN + 1)
 
-commit 407b6dfd9afa30cf963fa99bca91870e47965612 upstream.
-
-Copy/paste typos from the ni code. Should not
-have any functional change.
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/gpu/drm/radeon/si_dpm.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/gpu/drm/radeon/si_dpm.c b/drivers/gpu/drm/radeon/si_dpm.c
-index 1c23b61..e7b41c7 100644
---- a/drivers/gpu/drm/radeon/si_dpm.c
-+++ b/drivers/gpu/drm/radeon/si_dpm.c
-@@ -2393,7 +2393,7 @@ static int si_populate_sq_ramping_values(struct radeon_device *rdev,
- 	if (SISLANDS_DPM2_SQ_RAMP_STI_SIZE > (STI_SIZE_MASK >> STI_SIZE_SHIFT))
- 		enable_sq_ramping = false;
- 
--	if (NISLANDS_DPM2_SQ_RAMP_LTI_RATIO <= (LTI_RATIO_MASK >> LTI_RATIO_SHIFT))
-+	if (SISLANDS_DPM2_SQ_RAMP_LTI_RATIO <= (LTI_RATIO_MASK >> LTI_RATIO_SHIFT))
- 		enable_sq_ramping = false;
- 
- 	for (i = 0; i < state->performance_level_count; i++) {
-@@ -5375,7 +5375,7 @@ static void si_populate_mc_reg_addresses(struct radeon_device *rdev,
- 
- 	for (i = 0, j = 0; j < si_pi->mc_reg_table.last; j++) {
- 		if (si_pi->mc_reg_table.valid_flag & (1 << j)) {
--			if (i >= SMC_NISLANDS_MC_REGISTER_ARRAY_SIZE)
-+			if (i >= SMC_SISLANDS_MC_REGISTER_ARRAY_SIZE)
- 				break;
- 			mc_reg_table->address[i].s0 =
- 				cpu_to_be16(si_pi->mc_reg_table.mc_reg_address[j].s0);
--- 
-1.9.0
+or add yet another define like #define NICE_RANGE
+or #define NICE_MAX_INCREMENT
 
