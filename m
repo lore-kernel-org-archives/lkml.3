@@ -1,59 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757816AbaCEVai (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 16:30:38 -0500
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:54328 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757184AbaCEVae (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 16:30:34 -0500
-Message-ID: <5317A58C.1080703@cogentembedded.com>
-Date: Thu, 06 Mar 2014 01:30:36 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Pavel Machek <pavel@denx.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        galak@codeaurora.org, ijc+devicetree@hellion.org.uk,
-        mark.rutland@arm.com, pawel.moll@arm.com, robh+dt@kernel.org,
-        dinguyen@altera.com
-Subject: Re: [PATCH] dts: add support for MMC on socfpga boards
-References: <20140305162350.GA3674@pollux.denx.de>
-In-Reply-To: <20140305162350.GA3674@pollux.denx.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932126AbaCEV3z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 16:29:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31590 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757791AbaCEV3v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 16:29:51 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: linux-audit@redhat.com, linux-kernel@vger.kernel.org
+Cc: Richard Guy Briggs <rgb@redhat.com>, eparis@redhat.com, sgrubb@redhat.com,
+        oleg@redhat.com, linux-arm-kernel@lists.infradead.org, x86@kernel.org,
+        linux-ia64@vger.kernel.org, microblaze-uclinux@itee.uq.edu.au,
+        linux-mips@linux-mips.org, linux@openrisc.net,
+        linux-parisc@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        sparclinux@vger.kernel.org,
+        user-mode-linux-devel@lists.sourceforge.net,
+        linux-arch@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, rostedt@goodmis.org, peterz@infradead.org
+Subject: [PATCH 6/6][RFC] audit: drop arch from __audit_syscall_entry() interface
+Date: Wed,  5 Mar 2014 16:27:07 -0500
+Message-Id: <fdcaea27c06177b1d5a23b08e42c5e68bbdc8e76.1393974970.git.rgb@redhat.com>
+In-Reply-To: <cover.1393974970.git.rgb@redhat.com>
+References: <cover.1393974970.git.rgb@redhat.com>
+In-Reply-To: <cover.1393974970.git.rgb@redhat.com>
+References: <cover.1393974970.git.rgb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Since arch is found locally in __audit_syscall_entry(), there is no need to
+pass it in as a parameter.  Delete it from the parameter list.
 
-On 03/05/2014 07:23 PM, Pavel Machek wrote:
+x86* was the only arch to call __audit_syscall_entry() directly and did so from
+assembly code.
 
-> Add DTS binding for MMC on socfpga boards. Tested on Sockit.
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
 
-> Signed-off-by: Pavel Machek <pavel@denx.de>
+---
+Can I get some constructive scrutiny from the x86 asm guys here?  It has been a
+long time since I've played with x86 assembly code (and never x86_64).  I've
+done automated build/regression tests on i686 and x86_64, and I've done manual
+tests on an x86_64 virtual machine and everything appears to work fine.  Thanks!
 
-> diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
-> index 537f1a5..cad7526 100644
-> --- a/arch/arm/boot/dts/socfpga.dtsi
-> +++ b/arch/arm/boot/dts/socfpga.dtsi
-> @@ -521,6 +521,23 @@
->   			reg-io-width = <4>;
->   		};
->
-> +		mmc: dwmmc0@ff704000 {
+ arch/x86/ia32/ia32entry.S  |   12 ++++++------
+ arch/x86/kernel/entry_32.S |   11 +++++------
+ arch/x86/kernel/entry_64.S |   11 +++++------
+ include/linux/audit.h      |    7 ++-----
+ kernel/auditsc.c           |    2 +-
+ 5 files changed, 19 insertions(+), 24 deletions(-)
 
-    ePAPR standard [1] tells us in section 2.2.2:
-
-The name of a node should be somewhat generic, reflecting the function of the 
-device and not its 3 precise programming model.
-
-     So, please name the node just "mmc@ff704000". You can choose whatever 
-label you like.
-
-[1] http://www.power.org/resources/downloads/Power_ePAPR_APPROVED_v1.0.pdf
-
-WBR, Sergei
+diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
+index 4299eb0..f5bdd28 100644
+--- a/arch/x86/ia32/ia32entry.S
++++ b/arch/x86/ia32/ia32entry.S
+@@ -186,12 +186,12 @@ sysexit_from_sys_call:
+ 
+ #ifdef CONFIG_AUDITSYSCALL
+ 	.macro auditsys_entry_common
+-	movl %esi,%r9d			/* 6th arg: 4th syscall arg */
+-	movl %edx,%r8d			/* 5th arg: 3rd syscall arg */
+-	/* (already in %ecx)		   4th arg: 2nd syscall arg */
+-	movl %ebx,%edx			/* 3rd arg: 1st syscall arg */
+-	movl %eax,%esi			/* 2nd arg: syscall number */
+-	movl $AUDIT_ARCH_I386,%edi	/* 1st arg: audit arch */
++	movl %esi,%r8d			/* 5th arg: 4th syscall arg */
++	movl %ecx,%r9d			/*swap with edx*/
++	movl %edx,%ecx			/* 4th arg: 3rd syscall arg */
++	movl %r9d,%edx			/* 3rd arg: 2nd syscall arg */
++	movl %ebx,%esi			/* 2nd arg: 1st syscall arg */
++	movl %eax,%edi			/* 1st arg: syscall number */
+ 	call __audit_syscall_entry
+ 	movl RAX-ARGOFFSET(%rsp),%eax	/* reload syscall number */
+ 	cmpq $(IA32_NR_syscalls-1),%rax
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index a2a4f46..078053e 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -456,12 +456,11 @@ sysenter_audit:
+ 	jnz syscall_trace_entry
+ 	addl $4,%esp
+ 	CFI_ADJUST_CFA_OFFSET -4
+-	/* %esi already in 8(%esp)	   6th arg: 4th syscall arg */
+-	/* %edx already in 4(%esp)	   5th arg: 3rd syscall arg */
+-	/* %ecx already in 0(%esp)	   4th arg: 2nd syscall arg */
+-	movl %ebx,%ecx			/* 3rd arg: 1st syscall arg */
+-	movl %eax,%edx			/* 2nd arg: syscall number */
+-	movl $AUDIT_ARCH_I386,%eax	/* 1st arg: audit arch */
++	movl %esi,4(%esp)		/* 5th arg: 4th syscall arg */
++	movl %edx,(%esp)		/* 4th arg: 3rd syscall arg */
++	/* %ecx already in %ecx		   3rd arg: 2nd syscall arg */
++	movl %ebx,%edx			/* 2nd arg: 1st syscall arg */
++	/* %eax already in %eax		   1st arg: syscall number */
+ 	call __audit_syscall_entry
+ 	pushl_cfi %ebx
+ 	movl PT_EAX(%esp),%eax		/* reload syscall number */
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 1e96c36..8292ff7 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -694,12 +694,11 @@ badsys:
+ 	 * jump back to the normal fast path.
+ 	 */
+ auditsys:
+-	movq %r10,%r9			/* 6th arg: 4th syscall arg */
+-	movq %rdx,%r8			/* 5th arg: 3rd syscall arg */
+-	movq %rsi,%rcx			/* 4th arg: 2nd syscall arg */
+-	movq %rdi,%rdx			/* 3rd arg: 1st syscall arg */
+-	movq %rax,%rsi			/* 2nd arg: syscall number */
+-	movl $AUDIT_ARCH_X86_64,%edi	/* 1st arg: audit arch */
++	movq %r10,%r8			/* 5th arg: 4th syscall arg */
++	movq %rdx,%rcx			/* 4th arg: 3rd syscall arg */
++	movq %rsi,%rdx			/* 3rd arg: 2nd syscall arg */
++	movq %rdi,%rsi			/* 2nd arg: 1st syscall arg */
++	movq %rax,%rdi			/* 1st arg: syscall number */
+ 	call __audit_syscall_entry
+ 	LOAD_ARGS 0		/* reload call-clobbered registers */
+ 	jmp system_call_fastpath
+diff --git a/include/linux/audit.h b/include/linux/audit.h
+index ee452f1..278bc9d 100644
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -27,8 +27,6 @@
+ #include <linux/ptrace.h>
+ #include <uapi/linux/audit.h>
+ 
+-#include <asm/syscall.h>
+-
+ struct audit_sig_info {
+ 	uid_t		uid;
+ 	pid_t		pid;
+@@ -100,8 +98,7 @@ extern void audit_log_session_info(struct audit_buffer *ab);
+ 				/* Public API */
+ extern int  audit_alloc(struct task_struct *task);
+ extern void __audit_free(struct task_struct *task);
+-extern void __audit_syscall_entry(int arch,
+-				  int major, unsigned long a0, unsigned long a1,
++extern void __audit_syscall_entry(int major, unsigned long a0, unsigned long a1,
+ 				  unsigned long a2, unsigned long a3);
+ extern void __audit_syscall_exit(int ret_success, long ret_value);
+ extern struct filename *__audit_reusename(const __user char *uptr);
+@@ -133,7 +130,7 @@ static inline void audit_syscall_entry(int major, unsigned long a0,
+ 				       unsigned long a3)
+ {
+ 	if (unlikely(current->audit_context))
+-		__audit_syscall_entry(syscall_get_arch(), major, a0, a1, a2, a3);
++		__audit_syscall_entry(major, a0, a1, a2, a3);
+ }
+ static inline void audit_syscall_exit(void *pt_regs)
+ {
+diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+index 565f7b7..a4e4447 100644
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -1445,7 +1445,7 @@ void __audit_free(struct task_struct *tsk)
+  * will only be written if another part of the kernel requests that it
+  * be written).
+  */
+-void __audit_syscall_entry(int arch, int major,
++void __audit_syscall_entry(int major,
+ 			 unsigned long a1, unsigned long a2,
+ 			 unsigned long a3, unsigned long a4)
+ {
+-- 
+1.7.1
 
