@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757307AbaCEO0O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:26:14 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41072 "EHLO
+	id S1758770AbaCEPIy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:08:54 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41082 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757270AbaCEO0K (ORCPT
+	with ESMTP id S1757287AbaCEO0N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:26:10 -0500
+	Wed, 5 Mar 2014 09:26:13 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Emil Goode <emilgoode@gmail.com>, "David S. Miller" <davem@davemloft.net>,
+Cc: Jiri Bohac <jbohac@suse.cz>, "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 075/131] net: asix: add missing flag to struct driver_info
-Date: Wed,  5 Mar 2014 14:23:19 +0000
-Message-Id: <1394029455-23128-76-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 077/131] bonding: 802.3ad: make aggregator_identifier bond-private
+Date: Wed,  5 Mar 2014 14:23:21 +0000
+Message-Id: <1394029455-23128-78-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,39 +27,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emil Goode <emilgoode@gmail.com>
+From: Jiri Bohac <jiri@boha.cz>
 
-commit d43ff4cd798911736fb39025ec8004284b1b0bc2 upstream.
+commit 163c8ff30dbe473abfbb24a7eac5536c87f3baa9 upstream.
 
-The struct driver_info ax88178_info is assigned the function
-asix_rx_fixup_common as it's rx_fixup callback. This means that
-FLAG_MULTI_PACKET must be set as this function is cloning the
-data and calling usbnet_skb_return. Not setting this flag leads
-to usbnet_skb_return beeing called a second time from within
-the rx_process function in the usbnet module.
+aggregator_identifier is used to assign unique aggregator identifiers
+to aggregators of a bond during device enslaving.
 
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
-Reported-by: Bjørn Mork <bjorn@mork.no>
+aggregator_identifier is currently a global variable that is zeroed in
+bond_3ad_initialize().
+
+This sequence will lead to duplicate aggregator identifiers for eth1 and eth3:
+
+create bond0
+change bond0 mode to 802.3ad
+enslave eth0 to bond0 		//eth0 gets agg id 1
+enslave eth1 to bond0 		//eth1 gets agg id 2
+create bond1
+change bond1 mode to 802.3ad
+enslave eth2 to bond1		//aggregator_identifier is reset to 0
+				//eth2 gets agg id 1
+enslave eth3 to bond0 		//eth3 gets agg id 2
+
+Fix this by making aggregator_identifier private to the bond.
+
+Signed-off-by: Jiri Bohac <jbohac@suse.cz>
+Acked-by: Veaceslav Falico <vfalico@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/usb/asix_devices.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/bonding/bond_3ad.c | 6 ++----
+ drivers/net/bonding/bond_3ad.h | 1 +
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/usb/asix_devices.c b/drivers/net/usb/asix_devices.c
-index ad5d1e4..97b5de7 100644
---- a/drivers/net/usb/asix_devices.c
-+++ b/drivers/net/usb/asix_devices.c
-@@ -915,7 +915,8 @@ static const struct driver_info ax88178_info = {
- 	.status = asix_status,
- 	.link_reset = ax88178_link_reset,
- 	.reset = ax88178_reset,
--	.flags = FLAG_ETHER | FLAG_FRAMING_AX | FLAG_LINK_INTR,
-+	.flags = FLAG_ETHER | FLAG_FRAMING_AX | FLAG_LINK_INTR |
-+		 FLAG_MULTI_PACKET,
- 	.rx_fixup = asix_rx_fixup_common,
- 	.tx_fixup = asix_tx_fixup,
+diff --git a/drivers/net/bonding/bond_3ad.c b/drivers/net/bonding/bond_3ad.c
+index 390061d..00c6c08 100644
+--- a/drivers/net/bonding/bond_3ad.c
++++ b/drivers/net/bonding/bond_3ad.c
+@@ -1854,8 +1854,6 @@ void bond_3ad_initiate_agg_selection(struct bonding *bond, int timeout)
+ 	BOND_AD_INFO(bond).agg_select_timer = timeout;
+ }
+ 
+-static u16 aggregator_identifier;
+-
+ /**
+  * bond_3ad_initialize - initialize a bond's 802.3ad parameters and structures
+  * @bond: bonding struct to work on
+@@ -1869,7 +1867,7 @@ void bond_3ad_initialize(struct bonding *bond, u16 tick_resolution)
+ 	if (MAC_ADDRESS_COMPARE(&(BOND_AD_INFO(bond).system.sys_mac_addr),
+ 				bond->dev->dev_addr)) {
+ 
+-		aggregator_identifier = 0;
++		BOND_AD_INFO(bond).aggregator_identifier = 0;
+ 
+ 		BOND_AD_INFO(bond).system.sys_priority = 0xFFFF;
+ 		BOND_AD_INFO(bond).system.sys_mac_addr = *((struct mac_addr *)bond->dev->dev_addr);
+@@ -1940,7 +1938,7 @@ int bond_3ad_bind_slave(struct slave *slave)
+ 		ad_initialize_agg(aggregator);
+ 
+ 		aggregator->aggregator_mac_address = *((struct mac_addr *)bond->dev->dev_addr);
+-		aggregator->aggregator_identifier = (++aggregator_identifier);
++		aggregator->aggregator_identifier = ++BOND_AD_INFO(bond).aggregator_identifier;
+ 		aggregator->slave = slave;
+ 		aggregator->is_active = 0;
+ 		aggregator->num_of_ports = 0;
+diff --git a/drivers/net/bonding/bond_3ad.h b/drivers/net/bonding/bond_3ad.h
+index 5d91ad0..1f081c8 100644
+--- a/drivers/net/bonding/bond_3ad.h
++++ b/drivers/net/bonding/bond_3ad.h
+@@ -253,6 +253,7 @@ struct ad_system {
+ struct ad_bond_info {
+ 	struct ad_system system;	    /* 802.3ad system structure */
+ 	u32 agg_select_timer;	    // Timer to select aggregator after all adapter's hand shakes
++	u16 aggregator_identifier;
  };
+ 
+ struct ad_slave_info {
 -- 
 1.9.0
 
