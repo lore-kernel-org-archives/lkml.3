@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753325AbaCEIXj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 03:23:39 -0500
-Received: from mga14.intel.com ([143.182.124.37]:18069 "EHLO mga14.intel.com"
+	id S1752685AbaCEI2C (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 03:28:02 -0500
+Received: from mx01-fr.bfs.de ([193.174.231.67]:18428 "EHLO mx01-fr.bfs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752331AbaCEIXi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 03:23:38 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,591,1389772800"; 
-   d="scan'208";a="486316984"
-Date: Wed, 5 Mar 2014 16:23:36 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, lkp@01.org
-Subject: [ACPI / hotplug / PCI] 1b360f44d00: -80.9% vm-scalability.stddev
-Message-ID: <20140305082336.GD17109@localhost>
+	id S1751544AbaCEI2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 03:28:00 -0500
+Message-ID: <5316E00A.3030704@bfs.de>
+Date: Wed, 05 Mar 2014 09:27:54 +0100
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+CC: "kernelnewbies@kernelnewbies.org" <kernelnewbies@kernelnewbies.org>,
+        kernel-janitors@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: My Kernel bug is celebrating 2 years. Can you help me fix it?
+References: <CA+MoWDrTNtAHKsiBHz=W4=eJRO=m9EK_HZ7zLxb=4fg5riUQeg@mail.gmail.com>
+In-Reply-To: <CA+MoWDrTNtAHKsiBHz=W4=eJRO=m9EK_HZ7zLxb=4fg5riUQeg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
-
-I don't know why but we are glad to find the below changes on commit
-
-1b360f44d009059e446532f29c1a889951e72667 ("ACPI / hotplug / PCI: Fix bridge removal race in handle_hotplug_event()")
-
-test case: brickland2/micro/vm-scalability/300s-anon-r-rand-mt
-
-d42f5da23400833  1b360f44d009059e446532f29  
----------------  -------------------------  
-      3.54 ~164%     -80.9%       0.68 ~37% TOTAL vm-scalability.stddev
-     14177 ~ 7%     -22.1%      11040 ~ 7%  TOTAL numa-meminfo.node0.SReclaimable
-      3543 ~ 7%     -22.1%       2759 ~ 7%  TOTAL numa-vmstat.node0.nr_slab_reclaimable
-    776196 ~ 6%     -10.0%     698893 ~ 5%  TOTAL numa-numastat.node2.local_node
-    776196 ~ 6%     -10.0%     698894 ~ 5%  TOTAL numa-numastat.node2.numa_hit
-
-The ~XX% numbers are stddev percent.
-The [+-]XX% is change percent.
-
-The below graph shows all samples collected during the bisect
-
-[*] bisect-good
-[O] bisect-bad ("bad" in the sense of bisect)
-
-In which you can see the stableness of the change and bisect.
-
-                               vm-scalability.stddev
-
-   16 ++--------------------------------------------------------------------+
-      |                                                                 *   |
-   14 ++                                                                :   |
-   12 ++                                                                :   |
-      |                                                                 ::  |
-   10 ++                                                                ::  |
-      |                                                                 ::  |
-    8 ++                                                                ::  |
-      |                                                                : :  |
-    6 ++                                                    *          : :  |
-    4 ++           *      *                                 ::         :  : |
-      |           +:     : +                       *       : :         :  : |
-    2 ++*.   *. .*  :    :  *          .*.        + :      :  :   .*   :  : |
-      |+  * +  *    *. .* O  *.*.*. .**   O.**.O.* O: *.O.* O OO.*  +  :  *.|
-    0 O+O-OO-O-O-O-OO-O-O---OO-O-O-O-OO-O---OO-*-O---OO-*-O------O-O-*-*----*
 
 
-Thanks,
-Fengguang
+Am 04.03.2014 22:26, schrieb Peter Senna Tschudin:
+> I have reported a bug more than two years ago and it is still
+> affecting me. The bug report gives some information:
+> 
+> https://bugzilla.redhat.com/show_bug.cgi?id=787299
+> 
+> I have tried basic debug instructions from:
+> https://www.kernel.org/doc/Documentation/power/basic-pm-debugging.txt
+> 
+> And everything works as expected when:
+> # echo freeze > /sys/power/state
+> # echo disk > /sys/power/state
+> 
+> I have asked for help for fixing it:
+> https://lkml.org/lkml/2013/11/1/186
+> 
+> But I don't have a serial port. How can I debug this issue without a
+> "real" serial port? Or what else can I try? 
+You need to create a kernel with networksupport,
+setup "netconsole" you need a second computer to receive the issues.
+
+
+>How can I explore the hint
+> about the problem only happening with VT-d enabled in BIOS? How can I
+> explore the hint about the problem not happening if the option
+> nox2apic is passed to the Kernel?
+
+never heard about that until now, obviously there is a bug in several
+acpi's that can be triggered. If your systems works with nox2apic
+as bootparameter you should be happy since a workaround is available.
+Information about it is used can be find here:
+http://lxr.free-electrons.com/ident?a=microblaze;i=nox2apic
+
+re,
+ wh
+
+
+> Thank you,
+> 
+> Peter
+> 
+> P.S Yes, it works on Windows.
+> 
