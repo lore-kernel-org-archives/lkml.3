@@ -1,63 +1,276 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754688AbaCEKPm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 05:15:42 -0500
-Received: from smtp-79.nebula.fi ([83.145.220.79]:44210 "EHLO smtp.nebula.fi"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752625AbaCEKPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 05:15:37 -0500
-X-Greylist: delayed 652 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Mar 2014 05:15:37 EST
-Date: Wed, 5 Mar 2014 12:01:51 +0200
-From: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fbdev: FB_OPENCORES should depend on HAS_DMA
-Message-ID: <20140305100150.GA17085@chokladfabriken.org>
-References: <1393012569-22560-1-git-send-email-geert@linux-m68k.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393012569-22560-1-git-send-email-geert@linux-m68k.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754559AbaCEKPV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 05:15:21 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:54616 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751943AbaCEKPJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 05:15:09 -0500
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: [PATCH v5 01/14] usb: phy: msm: Move global regulators variables to driver state
+Date: Wed,  5 Mar 2014 12:13:37 +0200
+Message-Id: <1394014430-26485-2-git-send-email-iivanov@mm-sol.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1394014430-26485-1-git-send-email-iivanov@mm-sol.com>
+References: <1394014430-26485-1-git-send-email-iivanov@mm-sol.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21, 2014 at 08:56:09PM +0100, Geert Uytterhoeven wrote:
-> If NO_DMA=y:
-> 
->     drivers/built-in.o: In function `ocfb_remove':
->     ocfb.c:(.text+0x27fee): undefined reference to `dma_free_coherent'
->     drivers/built-in.o: In function `ocfb_probe':
->     ocfb.c:(.text+0x28418): undefined reference to `dma_alloc_coherent'
->     ocfb.c:(.text+0x284d2): undefined reference to `dma_free_coherent'
-> 
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-I obviously had neglected compiling against that configuration,
-thanks for the catch.
+Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+---
+ drivers/usb/phy/phy-msm-usb.c |   82 ++++++++++++++++++++---------------------
+ include/linux/usb/msm_hsusb.h |    3 ++
+ 2 files changed, 42 insertions(+), 43 deletions(-)
 
-Acked-by: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
+index d204f74..410ef99 100644
+--- a/drivers/usb/phy/phy-msm-usb.c
++++ b/drivers/usb/phy/phy-msm-usb.c
+@@ -58,47 +58,43 @@
+ #define USB_PHY_VDD_DIG_VOL_MIN	1000000 /* uV */
+ #define USB_PHY_VDD_DIG_VOL_MAX	1320000 /* uV */
 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
->  drivers/video/Kconfig |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
-> index 0192900dd183..fb8d31e717bc 100644
-> --- a/drivers/video/Kconfig
-> +++ b/drivers/video/Kconfig
-> @@ -982,7 +982,7 @@ config FB_PVR2
->  
->  config FB_OPENCORES
->  	tristate "OpenCores VGA/LCD core 2.0 framebuffer support"
-> -	depends on FB
-> +	depends on FB && HAS_DMA
->  	select FB_CFB_FILLRECT
->  	select FB_CFB_COPYAREA
->  	select FB_CFB_IMAGEBLIT
-> -- 
-> 1.7.9.5
-> 
+-static struct regulator *hsusb_3p3;
+-static struct regulator *hsusb_1p8;
+-static struct regulator *hsusb_vddcx;
+-
+ static int msm_hsusb_init_vddcx(struct msm_otg *motg, int init)
+ {
+ 	int ret = 0;
+
+ 	if (init) {
+-		hsusb_vddcx = regulator_get(motg->phy.dev, "HSUSB_VDDCX");
+-		if (IS_ERR(hsusb_vddcx)) {
++		motg->vddcx = regulator_get(motg->phy.dev, "HSUSB_VDDCX");
++		if (IS_ERR(motg->vddcx)) {
+ 			dev_err(motg->phy.dev, "unable to get hsusb vddcx\n");
+-			return PTR_ERR(hsusb_vddcx);
++			return PTR_ERR(motg->vddcx);
+ 		}
+
+-		ret = regulator_set_voltage(hsusb_vddcx,
++		ret = regulator_set_voltage(motg->vddcx,
+ 				USB_PHY_VDD_DIG_VOL_MIN,
+ 				USB_PHY_VDD_DIG_VOL_MAX);
+ 		if (ret) {
+ 			dev_err(motg->phy.dev, "unable to set the voltage "
+ 					"for hsusb vddcx\n");
+-			regulator_put(hsusb_vddcx);
++			regulator_put(motg->vddcx);
+ 			return ret;
+ 		}
+
+-		ret = regulator_enable(hsusb_vddcx);
++		ret = regulator_enable(motg->vddcx);
+ 		if (ret) {
+ 			dev_err(motg->phy.dev, "unable to enable hsusb vddcx\n");
+-			regulator_put(hsusb_vddcx);
++			regulator_put(motg->vddcx);
+ 		}
+ 	} else {
+-		ret = regulator_set_voltage(hsusb_vddcx, 0,
++		ret = regulator_set_voltage(motg->vddcx, 0,
+ 			USB_PHY_VDD_DIG_VOL_MAX);
+ 		if (ret)
+ 			dev_err(motg->phy.dev, "unable to set the voltage "
+ 					"for hsusb vddcx\n");
+-		ret = regulator_disable(hsusb_vddcx);
++		ret = regulator_disable(motg->vddcx);
+ 		if (ret)
+ 			dev_err(motg->phy.dev, "unable to disable hsusb vddcx\n");
+
+-		regulator_put(hsusb_vddcx);
++		regulator_put(motg->vddcx);
+ 	}
+
+ 	return ret;
+@@ -109,38 +105,38 @@ static int msm_hsusb_ldo_init(struct msm_otg *motg, int init)
+ 	int rc = 0;
+
+ 	if (init) {
+-		hsusb_3p3 = regulator_get(motg->phy.dev, "HSUSB_3p3");
+-		if (IS_ERR(hsusb_3p3)) {
++		motg->v3p3 = regulator_get(motg->phy.dev, "HSUSB_3p3");
++		if (IS_ERR(motg->v3p3)) {
+ 			dev_err(motg->phy.dev, "unable to get hsusb 3p3\n");
+-			return PTR_ERR(hsusb_3p3);
++			return PTR_ERR(motg->v3p3);
+ 		}
+
+-		rc = regulator_set_voltage(hsusb_3p3, USB_PHY_3P3_VOL_MIN,
++		rc = regulator_set_voltage(motg->v3p3, USB_PHY_3P3_VOL_MIN,
+ 				USB_PHY_3P3_VOL_MAX);
+ 		if (rc) {
+ 			dev_err(motg->phy.dev, "unable to set voltage level "
+ 					"for hsusb 3p3\n");
+ 			goto put_3p3;
+ 		}
+-		rc = regulator_enable(hsusb_3p3);
++		rc = regulator_enable(motg->v3p3);
+ 		if (rc) {
+ 			dev_err(motg->phy.dev, "unable to enable the hsusb 3p3\n");
+ 			goto put_3p3;
+ 		}
+-		hsusb_1p8 = regulator_get(motg->phy.dev, "HSUSB_1p8");
+-		if (IS_ERR(hsusb_1p8)) {
++		motg->v1p8 = regulator_get(motg->phy.dev, "HSUSB_1p8");
++		if (IS_ERR(motg->v1p8)) {
+ 			dev_err(motg->phy.dev, "unable to get hsusb 1p8\n");
+-			rc = PTR_ERR(hsusb_1p8);
++			rc = PTR_ERR(motg->v1p8);
+ 			goto disable_3p3;
+ 		}
+-		rc = regulator_set_voltage(hsusb_1p8, USB_PHY_1P8_VOL_MIN,
++		rc = regulator_set_voltage(motg->v1p8, USB_PHY_1P8_VOL_MIN,
+ 				USB_PHY_1P8_VOL_MAX);
+ 		if (rc) {
+ 			dev_err(motg->phy.dev, "unable to set voltage level "
+ 					"for hsusb 1p8\n");
+ 			goto put_1p8;
+ 		}
+-		rc = regulator_enable(hsusb_1p8);
++		rc = regulator_enable(motg->v1p8);
+ 		if (rc) {
+ 			dev_err(motg->phy.dev, "unable to enable the hsusb 1p8\n");
+ 			goto put_1p8;
+@@ -149,54 +145,54 @@ static int msm_hsusb_ldo_init(struct msm_otg *motg, int init)
+ 		return 0;
+ 	}
+
+-	regulator_disable(hsusb_1p8);
++	regulator_disable(motg->v1p8);
+ put_1p8:
+-	regulator_put(hsusb_1p8);
++	regulator_put(motg->v1p8);
+ disable_3p3:
+-	regulator_disable(hsusb_3p3);
++	regulator_disable(motg->v3p3);
+ put_3p3:
+-	regulator_put(hsusb_3p3);
++	regulator_put(motg->v3p3);
+ 	return rc;
+ }
+
+-static int msm_hsusb_ldo_set_mode(int on)
++static int msm_hsusb_ldo_set_mode(struct msm_otg *motg, int on)
+ {
+ 	int ret = 0;
+
+-	if (!hsusb_1p8 || IS_ERR(hsusb_1p8)) {
++	if (!motg->v1p8 || IS_ERR(motg->v1p8)) {
+ 		pr_err("%s: HSUSB_1p8 is not initialized\n", __func__);
+ 		return -ENODEV;
+ 	}
+
+-	if (!hsusb_3p3 || IS_ERR(hsusb_3p3)) {
++	if (!motg->v3p3 || IS_ERR(motg->v3p3)) {
+ 		pr_err("%s: HSUSB_3p3 is not initialized\n", __func__);
+ 		return -ENODEV;
+ 	}
+
+ 	if (on) {
+-		ret = regulator_set_optimum_mode(hsusb_1p8,
++		ret = regulator_set_optimum_mode(motg->v1p8,
+ 				USB_PHY_1P8_HPM_LOAD);
+ 		if (ret < 0) {
+ 			pr_err("%s: Unable to set HPM of the regulator "
+ 				"HSUSB_1p8\n", __func__);
+ 			return ret;
+ 		}
+-		ret = regulator_set_optimum_mode(hsusb_3p3,
++		ret = regulator_set_optimum_mode(motg->v3p3,
+ 				USB_PHY_3P3_HPM_LOAD);
+ 		if (ret < 0) {
+ 			pr_err("%s: Unable to set HPM of the regulator "
+ 				"HSUSB_3p3\n", __func__);
+-			regulator_set_optimum_mode(hsusb_1p8,
++			regulator_set_optimum_mode(motg->v1p8,
+ 				USB_PHY_1P8_LPM_LOAD);
+ 			return ret;
+ 		}
+ 	} else {
+-		ret = regulator_set_optimum_mode(hsusb_1p8,
++		ret = regulator_set_optimum_mode(motg->v1p8,
+ 				USB_PHY_1P8_LPM_LOAD);
+ 		if (ret < 0)
+ 			pr_err("%s: Unable to set LPM of the regulator "
+ 				"HSUSB_1p8\n", __func__);
+-		ret = regulator_set_optimum_mode(hsusb_3p3,
++		ret = regulator_set_optimum_mode(motg->v3p3,
+ 				USB_PHY_3P3_LPM_LOAD);
+ 		if (ret < 0)
+ 			pr_err("%s: Unable to set LPM of the regulator "
+@@ -417,7 +413,7 @@ static int msm_otg_reset(struct usb_phy *phy)
+ #ifdef CONFIG_PM
+
+ #define USB_PHY_SUSP_DIG_VOL  500000
+-static int msm_hsusb_config_vddcx(int high)
++static int msm_hsusb_config_vddcx(struct msm_otg *motg, int high)
+ {
+ 	int max_vol = USB_PHY_VDD_DIG_VOL_MAX;
+ 	int min_vol;
+@@ -428,7 +424,7 @@ static int msm_hsusb_config_vddcx(int high)
+ 	else
+ 		min_vol = USB_PHY_SUSP_DIG_VOL;
+
+-	ret = regulator_set_voltage(hsusb_vddcx, min_vol, max_vol);
++	ret = regulator_set_voltage(motg->vddcx, min_vol, max_vol);
+ 	if (ret) {
+ 		pr_err("%s: unable to set the voltage for regulator "
+ 			"HSUSB_VDDCX\n", __func__);
+@@ -518,8 +514,8 @@ static int msm_otg_suspend(struct msm_otg *motg)
+
+ 	if (motg->pdata->phy_type == SNPS_28NM_INTEGRATED_PHY &&
+ 			motg->pdata->otg_control == OTG_PMIC_CONTROL) {
+-		msm_hsusb_ldo_set_mode(0);
+-		msm_hsusb_config_vddcx(0);
++		msm_hsusb_ldo_set_mode(motg, 0);
++		msm_hsusb_config_vddcx(motg, 0);
+ 	}
+
+ 	if (device_may_wakeup(phy->dev))
+@@ -555,8 +551,8 @@ static int msm_otg_resume(struct msm_otg *motg)
+
+ 	if (motg->pdata->phy_type == SNPS_28NM_INTEGRATED_PHY &&
+ 			motg->pdata->otg_control == OTG_PMIC_CONTROL) {
+-		msm_hsusb_ldo_set_mode(1);
+-		msm_hsusb_config_vddcx(1);
++		msm_hsusb_ldo_set_mode(motg, 1);
++		msm_hsusb_config_vddcx(motg, 1);
+ 		writel(readl(USB_PHY_CTRL) & ~PHY_RETEN, USB_PHY_CTRL);
+ 	}
+
+@@ -1520,7 +1516,7 @@ static int __init msm_otg_probe(struct platform_device *pdev)
+ 		dev_err(&pdev->dev, "hsusb vreg configuration failed\n");
+ 		goto vddcx_exit;
+ 	}
+-	ret = msm_hsusb_ldo_set_mode(1);
++	ret = msm_hsusb_ldo_set_mode(motg, 1);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "hsusb vreg enable failed\n");
+ 		goto ldo_exit;
+diff --git a/include/linux/usb/msm_hsusb.h b/include/linux/usb/msm_hsusb.h
+index 3275483..8705b01 100644
+--- a/include/linux/usb/msm_hsusb.h
++++ b/include/linux/usb/msm_hsusb.h
+@@ -183,6 +183,9 @@ struct msm_otg {
+ 	enum usb_chg_state chg_state;
+ 	enum usb_chg_type chg_type;
+ 	u8 dcd_retries;
++	struct regulator *v3p3;
++	struct regulator *v1p8;
++	struct regulator *vddcx;
+ };
+
+ #endif
+--
+1.7.9.5
+
