@@ -1,61 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756731AbaCEP5W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 10:57:22 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:59381 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752815AbaCEP5U (ORCPT
+	id S1756803AbaCEP5z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:57:55 -0500
+Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:57383 "EHLO
+	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756607AbaCEP5x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 10:57:20 -0500
-Date: Wed, 5 Mar 2014 23:56:19 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: tomi.valkeinen@ti.com
-Cc: plagnioj@jcrosoft.com, fengguang.wu@intel.com, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] video: fbdev: uvesafb: Remove impossible code path in
- uvesafb_init_info
-Message-ID: <20140305155619.GA32166@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>, tomi.valkeinen@ti.com,
-	plagnioj@jcrosoft.com, fengguang.wu@intel.com,
-	linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+	Wed, 5 Mar 2014 10:57:53 -0500
+Message-ID: <5317494D.5010907@mellanox.com>
+Date: Wed, 5 Mar 2014 17:57:01 +0200
+From: Or Gerlitz <ogerlitz@mellanox.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jiri Kosina <jkosina@suse.cz>
+CC: Or Gerlitz <or.gerlitz@gmail.com>, Roland Dreier <roland@kernel.org>,
+        Amir Vadai <amirv@mellanox.com>, Eli Cohen <eli@dev.mellanox.co.il>,
+        Eugenia Emantayev <eugenia@mellanox.com>,
+        "David S. Miller" <davem@davemloft.net>, Mel Gorman <mgorman@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Saeed Mahameed <saeedm@mellanox.com>
+Subject: Re: [PATCH] mlx4: Use GFP_NOFS calls during the ipoib TX path when
+ creating the QP
+References: <CAJZOPZKLcFC5Wqv7VS7AyovaeHw3PYSWEz9t9sZ4AMhG+dS1+A@mail.gmail.com> <alpine.LNX.2.00.1402271042240.21399@pobox.suse.cz> <530F0C4F.9030200@mellanox.com> <alpine.LNX.2.00.1402271123410.21399@pobox.suse.cz> <alpine.LNX.2.00.1403042348050.30402@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1403042348050.30402@pobox.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.222.66.109]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because uvesafb_vbe_init will fail when get zero avaiable modes,
-and we have checked the return value of uvesafb_vbe_init_mode,
-so it is impossible to pass NULL as mode into uvesafb_init_info.
+On 05/03/2014 00:48, Jiri Kosina wrote:
+> On Thu, 27 Feb 2014, Jiri Kosina wrote:
+>
+>> On Thu, 27 Feb 2014, Or Gerlitz wrote:
+>>
+>>> ipoib is coded over the verbs API (include/rdma/ib_verbs.h)  --- so tracking
+>>> the path from ipoib through the verbs api into mlx4 should be similar exercise
+>>> as doing so for mlx5, but let's 1st treat the higher level elements involved
+>>> with this patch.
+>>>
+>>> Can you shed some light why the problem happens only for NFS, and not for
+>>> example with other IP/TCP storage protocols?
+>>>
+>>> For example, do you expect it to happen with iSCSI/TCP too? the Linux
+>>> iSCSI initiator 1st open a TCP socket from user space to the target,
+>>> next they do login exchange over this socket and later provide the
+>>> socket to the kernel iscsi code to use as the back-end of a SCSI block
+>>> device registered with the SCSI midlayer
+>> Frankly, no idea. There was a problem with swapping over NFS, as writeback
+>> was deadlocked with memory reclaim (memory needs to be allocated so that
+>> swap could be accessed to reclaim memory). That's fixed by allocating the
+>> buffers from PF_MEMALLOC reserve, introduced by Mel's and Peter's patchset
+>> back in 3.9 or so. Oh, and the same has been done for swapping over NBD,
+>> btw. Maybe iSCSI needs similar treatment, maybe it has it already, I
+>> haven't checked. We haven't seen a bugreport for that though.
+>>
+>>>> I don't think we have, and it indeed should be rather easy to add. The
+>>>> more challenging part of the problem is where (and based on which
+>>>> data) the flag would actually be set up on the netdevice so that it's
+>>>> not horrible layering violation.
+>>> I assume that in the same manner netdevices advertize features to the
+>>> networking core, the core can provide them operating directives after
+>>> they register themselves.
+>> Whatever suits you best. To sum it up:
+>>
+>> - mlx4 is confirmed to have this problem, and we know how that problem
+>>    happens -- see the paragraph in the changelog explaining the dependency
+>>    between memory reclaim and allocation of TX ring
+>>
+>> - we have a work around which requires human interaction in order
+>>    to provide the information whether GFP_NOFS should be used or not
+>>
+>> - I can very well understand why Mellanox would see that as a hack, but if
+>>    more comprehensive fix is necessary, I'd expect those who understand
+>>    the code the best to come up with a solution/proposal. I'd assume that
+>>    you don't  want to keep the code with known and easily triggerable
+>>    deadlock out there unfixed.
+>>
+>> - where I see the potential for layering violation in any 'general'
+>>    solution is that it's the filesystem that has to be "talking" to the
+>>    underlying netdevice, i.e. you'll have to make filesystem
+>>    netdevice-aware, right?
+> Mellanox folks, do you have any plan how to proceed here please?
+>
 
-[ This patch fix warning report by fengguang.wu@intel.com
-  "drivers/video/fbdev/uvesafb.c:1509 uvesafb_init_info()
-   error: we previously assumed 'mode' could be null" ]
+Hi Jiri,
 
-Signed-off-by: Wang YanQing <udknight@gmail.com>
----
- drivers/video/fbdev/uvesafb.c | 7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+Yep, we will look on that. I think we still have few directions to 
+resolve here
 
-diff --git a/drivers/video/fbdev/uvesafb.c b/drivers/video/fbdev/uvesafb.c
-index 18352b2..509d452 100644
---- a/drivers/video/fbdev/uvesafb.c
-+++ b/drivers/video/fbdev/uvesafb.c
-@@ -1474,12 +1474,7 @@ static void uvesafb_init_info(struct fb_info *info, struct vbe_mode_ib *mode)
- 	 *                 used video mode, i.e. the minimum amount of
- 	 *                 memory we need.
- 	 */
--	if (mode != NULL) {
--		size_vmode = info->var.yres * mode->bytes_per_scan_line;
--	} else {
--		size_vmode = info->var.yres * info->var.xres *
--			     ((info->var.bits_per_pixel + 7) >> 3);
--	}
-+	size_vmode = info->var.yres * mode->bytes_per_scan_line;
- 
- 	/*
- 	 *   size_total -- all video memory we have. Used for mtrr
--- 
-1.8.3.4.8.g69490f3.dirty
+1. (our task) deeper understanding of the problem
+
+2. if the solution goes in the way you took it, look for
+
+2.1 a more generic verbs interface, e.g QP creation flag  that dictates 
+the GFP_YYY to use when allocating memory
+for that QP, e.g NOIO, NOFS, ATOMIC, etc
+
+2.2 a more programmable interface for the file-system to let the NIC 
+know they are under constraint YYY for their memory
+allocations, maybe per nieghbour? maybe use netdevice private flags?
+
+Or.
+
+
