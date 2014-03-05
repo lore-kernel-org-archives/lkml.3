@@ -1,92 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757101AbaCEDzp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 22:55:45 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:41718 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756055AbaCEDzn (ORCPT
+	id S1757273AbaCED47 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 22:56:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45629 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753797AbaCED46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 22:55:43 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140305014310.GC3334@linux.vnet.ibm.com>
-References: <CAGVrzcbsSV7h3qA3KuCTwKNFEeww_kSNcfUkfw3PPjeXQXBo6g@mail.gmail.com>
- <1393980534.26794.147.camel@edumazet-glaptop2.roam.corp.google.com>
- <CAGVrzcaekM51hme_tquaT6e22fV1_cocpn1kDUsYfFce=F+o4g@mail.gmail.com>
- <CAGVrzcbRycBy0w64R9pV=JG6M3aJeARbOnh-xRrumYzzVDgWGQ@mail.gmail.com> <20140305014310.GC3334@linux.vnet.ibm.com>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Tue, 4 Mar 2014 19:55:03 -0800
-Message-ID: <CAGVrzcae0XPXpue_+n-O+EBzK92JqXHNftTPGt+5SRzroTSF3Q@mail.gmail.com>
-Subject: Re: RCU stalls when running out of memory on 3.14-rc4 w/ NFS and
- kernel threads priorities changed
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, linux-nfs <linux-nfs@vger.kernel.org>,
-        "trond.myklebust" <trond.myklebust@primarydata.com>,
-        netdev <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 4 Mar 2014 22:56:58 -0500
+Date: Tue, 4 Mar 2014 20:00:23 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Hedi Berriche <hedi@sgi.com>,
+        Mike Travis <travis@sgi.com>, Dimitri Sivanich <sivanich@sgi.com>
+Subject: Re: [PATCH 31/48] uv: Replace __get_cpu_var
+Message-Id: <20140304200023.7b991909.akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.10.1403042130250.3742@nuc>
+References: <20140214201841.826179349@linux.com>
+	<20140214201907.228035121@linux.com>
+	<20140304150217.ac9d364008a3c95cb2a79b34@linux-foundation.org>
+	<alpine.DEB.2.10.1403042130250.3742@nuc>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-03-04 17:43 GMT-08:00 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
-> On Tue, Mar 04, 2014 at 05:16:27PM -0800, Florian Fainelli wrote:
->> 2014-03-04 17:03 GMT-08:00 Florian Fainelli <f.fainelli@gmail.com>:
->> > 2014-03-04 16:48 GMT-08:00 Eric Dumazet <eric.dumazet@gmail.com>:
->> >> On Tue, 2014-03-04 at 15:55 -0800, Florian Fainelli wrote:
->> >>> Hi all,
->> >>>
->> >>> I am seeing the following RCU stalls messages appearing on an ARMv7
->> >>> 4xCPUs system running 3.14-rc4:
->> >>>
->> >>> [   42.974327] INFO: rcu_sched detected stalls on CPUs/tasks:
->> >>> [   42.979839]  (detected by 0, t=2102 jiffies, g=4294967082,
->> >>> c=4294967081, q=516)
->> >>> [   42.987169] INFO: Stall ended before state dump start
->> >>>
->> >>> this is happening under the following conditions:
->> >>>
->> >>> - the attached bumper.c binary alters various kernel thread priorities
->> >>> based on the contents of bumpup.cfg and
->> >>> - malloc_crazy is running from a NFS share
->> >>> - malloc_crazy.c is running in a loop allocating chunks of memory but
->> >>> never freeing it
->> >>>
->> >>> when the priorities are altered, instead of getting the OOM killer to
->> >>> be invoked, the RCU stalls are happening. Taking NFS out of the
->> >>> equation does not allow me to reproduce the problem even with the
->> >>> priorities altered.
->> >>>
->> >>> This "problem" seems to have been there for quite a while now since I
->> >>> was able to get 3.8.13 to trigger that bug as well, with a slightly
->> >>> more detailed RCU debugging trace which points the finger at kswapd0.
->> >>>
->> >>> You should be able to get that reproduced under QEMU with the
->> >>> Versatile Express platform emulating a Cortex A15 CPU and the attached
->> >>> files.
->> >>>
->> >>> Any help or suggestions would be greatly appreciated. Thanks!
->> >>
->> >> Do you have a more complete trace, including stack traces ?
->> >
->> > Attatched is what I get out of SysRq-t, which is the only thing I have
->> > (note that the kernel is built with CONFIG_RCU_CPU_STALL_INFO=y):
->>
->> QEMU for Versatile Express w/ 2 CPUs yields something slightly
->> different than the real HW platform this is happening with, but it
->> does produce the RCU stall anyway:
->>
->> [  125.762946] BUG: soft lockup - CPU#1 stuck for 53s! [malloc_crazy:91]
->
-> This soft-lockup condition can result in RCU CPU stall warnings.  Fix
-> the problem causing the soft lockup, and I bet that your RCU CPU stall
-> warnings go away.
+On Tue, 4 Mar 2014 21:31:12 -0600 (CST) Christoph Lameter <cl@linux.com> wrote:
 
-I definitively agree, which is why I was asking for help, as I think
-the kernel thread priority change is what is causing the soft lockup
-to appear, but nothing obvious jumps to mind when looking at the
-trace.
+> On Tue, 4 Mar 2014, Andrew Morton wrote:
+> 
+> > >
+> > > ...
+> > >
+> > > --- linux.orig/arch/x86/include/asm/uv/uv_hub.h	2014-02-03 14:16:53.987889372 -0600
+> > > +++ linux/arch/x86/include/asm/uv/uv_hub.h	2014-02-03 14:16:53.987889372 -0600
+> > > @@ -618,7 +618,7 @@
+> > >  };
+> > >
+> > >  DECLARE_PER_CPU(struct uv_cpu_nmi_s, __uv_cpu_nmi);
+> > > -#define uv_cpu_nmi			(__get_cpu_var(__uv_cpu_nmi))
+> > > +#define uv_cpu_nmi			__this_cpu_read(_uv_cpu_nmi)
+> >
+> > arch/x86/platform/uv/uv_nmi.c: In function 'uv_check_nmi':
+> > arch/x86/platform/uv/uv_nmi.c:218: error: '_uv_cpu_nmi' undeclared (first use in this function)
+> > arch/x86/platform/uv/uv_nmi.c:218: error: (Each undeclared identifier is reported only once
+> > arch/x86/platform/uv/uv_nmi.c:218: error: for each function it appears in.)
+> >
+> >
+> > This?
+> 
+> Nope. I missed an underscore.
+> 
+> 
+> > --- a/arch/x86/include/asm/uv/uv_hub.h~uv-replace-__get_cpu_var-fix
+> > +++ a/arch/x86/include/asm/uv/uv_hub.h
+> > @@ -618,7 +618,7 @@ struct uv_cpu_nmi_s {
+> >  };
+> >
+> >  DECLARE_PER_CPU(struct uv_cpu_nmi_s, __uv_cpu_nmi);
+> > -#define uv_cpu_nmi			__this_cpu_read(_uv_cpu_nmi)
+> > +#define uv_cpu_nmi			(*this_cpu_ptr(&__uv_cpu_nmi))
+> 
+> __this_cpu_read(__uv_cpu_nmi)
 
-Thanks!
--- 
-Florian
+--- a/arch/x86/include/asm/uv/uv_hub.h~uv-replace-__get_cpu_var-fix
++++ a/arch/x86/include/asm/uv/uv_hub.h
+@@ -618,7 +618,7 @@ struct uv_cpu_nmi_s {
+ };
+ 
+ DECLARE_PER_CPU(struct uv_cpu_nmi_s, __uv_cpu_nmi);
+-#define uv_cpu_nmi			__this_cpu_read(_uv_cpu_nmi)
++#define uv_cpu_nmi			__this_cpu_read(__uv_cpu_nmi)
+ #define uv_hub_nmi			(uv_cpu_nmi.hub)
+ #define uv_cpu_nmi_per(cpu)		(per_cpu(__uv_cpu_nmi, cpu))
+ #define uv_hub_nmi_per(cpu)		(uv_cpu_nmi_per(cpu).hub)
+
+arch/x86/platform/uv/uv_nmi.c: In function 'uv_check_nmi':
+arch/x86/platform/uv/uv_nmi.c:218: error: lvalue required as increment operand
+arch/x86/platform/uv/uv_nmi.c: In function 'uv_nmi_wait':
+arch/x86/platform/uv/uv_nmi.c:362: error: lvalue required as unary '&' operand
+arch/x86/platform/uv/uv_nmi.c: In function 'uv_nmi_dump_state_cpu':
+arch/x86/platform/uv/uv_nmi.c:422: error: lvalue required as unary '&' operand
+arch/x86/platform/uv/uv_nmi.c: In function 'uv_nmi_dump_state':
+arch/x86/platform/uv/uv_nmi.c:491: error: lvalue required as unary '&' operand
+arch/x86/platform/uv/uv_nmi.c: In function 'uv_handle_nmi':
+arch/x86/platform/uv/uv_nmi.c:618: error: lvalue required as unary '&' operand
+arch/x86/platform/uv/uv_nmi.c:642: error: lvalue required as unary '&' operand
+arch/x86/platform/uv/uv_nmi.c: In function 'uv_handle_nmi_ping':
+arch/x86/platform/uv/uv_nmi.c:669: error: lvalue required as increment operand
+arch/x86/platform/uv/uv_nmi.c:670: error: lvalue required as unary '&' operand
+arch/x86/platform/uv/uv_nmi.c:675: error: lvalue required as increment operand
+arch/x86/platform/uv/uv_nmi.c:678: error: lvalue required as unary '&' operand
+
