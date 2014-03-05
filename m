@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430AbaCEGtW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 01:49:22 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:54596 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750747AbaCEGtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 01:49:20 -0500
-Date: Wed, 5 Mar 2014 07:49:15 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Cc: Johannes Thumshirn <johannes.thumshirn@men.de>, dougthompson@xmission.com,
-        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] EDAC: remove deprecated IRQF_DISABLED
-Message-ID: <20140305064915.GA28317@pd.tnic>
-References: <1381641477-7373-1-git-send-email-michael.opdenacker@free-electrons.com>
- <20131014095602.GA14274@jtlinux>
- <5316B065.7070104@free-electrons.com>
+	id S1754250AbaCEGuA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 01:50:00 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:57993 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752778AbaCEGt6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 01:49:58 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s256nsnC009154, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net-next v2 00/13] r8152: new features
+Date: Wed, 5 Mar 2014 14:49:15 +0800
+Message-ID: <1394002168-3193-1-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1393934464-23675-1-git-send-email-hayeswang@realtek.com>
+References: <1393934464-23675-1-git-send-email-hayeswang@realtek.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <5316B065.7070104@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 05, 2014 at 06:04:37AM +0100, Michael Opdenacker wrote:
-> My patch still applies to 3.14-rc5, which means that mpc85xx_edac is
-> still there.
-> 
-> I'd like to get rid of this patch for good ;)
+Besides the adjustment of the code, support rx checksum,
+TCP large send, and IPv6.
 
-Something like that, right:
+v2:
+ - Split "support rx checksum" into two patches.
+ - Don't drop the packet, even though the rx checksum fail for
+   "support rx checksum".
+ - Replace r8152_xmit_frags() with skb_copy_bits() for "support TSO".
+ - Fix the issue of reording the packets for "support IPv6".
 
-https://git.kernel.org/cgit/linux/kernel/git/bp/bp.git/commit/?id=e245e3b25f9ef33b166f0f01d19d6418f52ae726
+Hayes Wang (13):
+  r8152: deal with the empty line and space
+  r8152: replace tp->netdev with netdev
+  r8152: remove rtl8152_get_stats
+  r8152: replace spin_lock_irqsave and spin_unlock_irqrestore
+  r8152: check tx agg list before spin lock
+  r8152: up the priority of the transmission
+  r8152: calculate the dropped packets for rx
+  r8152: support rx checksum
+  r8152: support TSO
+  r8152: support IPv6
+  r8152: reduce the numbers of the bulks
+  r8152: add additional parameter for non x86 platform
+  r8152: modify the tx timeout funcfion
 
-?
+ drivers/net/usb/r8152.c | 411 +++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 318 insertions(+), 93 deletions(-)
 
-Its on its way upstream.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
 --
+1.8.4.2
+
