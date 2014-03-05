@@ -1,81 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754066AbaCEFhA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 00:37:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49977 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751249AbaCEFg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 00:36:58 -0500
-Date: Wed, 5 Mar 2014 13:36:17 +0800
-From: WANG Chao <chaowang@redhat.com>
-To: Muli Ben-Yehuda <muli@cs.technion.ac.il>,
-        "Jon D. Mason" <jdmason@kudzu.us>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        Baoquan He <bhe@redhat.com>
-Cc: kexec@lists.infradead.org, discuss@x86-64.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: How could we get rid of saved_max_pfn for calgary iommu?
-Message-ID: <20140305053617.GE26240@dhcp-17-89.nay.redhat.com>
-References: <20140219061824.GA29703@dhcp-17-89.nay.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140219061824.GA29703@dhcp-17-89.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751831AbaCEFl6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 00:41:58 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:46405 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750747AbaCEFl4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 00:41:56 -0500
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: akpm@linux-foundation.org
+Cc: gregkh@linuxfoundation.org, joe@perches.com, davem@davemloft.net,
+        m.chehab@samsung.com, swarren@nvidia.com, khali@linux-fr.org,
+        linux-kernel@vger.kernel.org, sonic.zhang@analog.com,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH] [RESEND] MAINTAINERS: blackfin: add git repository
+Date: Wed,  5 Mar 2014 06:41:44 +0100
+Message-Id: <1393998104-4180-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <5316B830.9060007@free-electrons.com>
+References: <5316B830.9060007@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Add Muli, I find his new email in git log]
+Add the git repository currently in use for
+blackfin architecture development.
 
-Hi, Muli
+This information was obtained from Steven Miao.
 
-saved_max_pfn is becoming a setback for kexec-tools. Ideally calgary
-could get rid of saved_max_pfn at all. But If this can't work, how about
-exporting a calgary tce table size to user space, so that kexec-tools
-can simply pass calgary=xxx cmdline to 2nd kernel.
+Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+---
+ MAINTAINERS | 1 +
+ 1 file changed, 1 insertion(+)
 
-What do you think of this problem?
+diff --git a/MAINTAINERS b/MAINTAINERS
+index c6d0e93eff62..d00f5ae83236 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -1737,6 +1737,7 @@ F:	include/uapi/linux/bfs_fs.h
+ BLACKFIN ARCHITECTURE
+ M:	Steven Miao <realmz6@gmail.com>
+ L:	adi-buildroot-devel@lists.sourceforge.net
++T:	git git://git.code.sf.net/p/adi-linux/code
+ W:	http://blackfin.uclinux.org
+ S:	Supported
+ F:	arch/blackfin/
+-- 
+1.8.3.2
 
-BTW MAINTAINERS file still uses your old email, please update
-accordingly.
-
-Thanks
-WANG Chao
-
-On 02/19/14 at 02:18pm, WANG Chao wrote:
-> Hi, All
-> 
-> arch/x86/kernel/pci-calgary.c is the only user of saved_max_pfn today:
-> 
-> int __init detect_calgary(void)
-> {
-> 	[..]
-> 	specified_table_size = determine_tce_table_size((is_kdump_kernel() ?
-> 					saved_max_pfn : max_pfn) * PAGE_SIZE);
-> 	[..]
-> }
-> 
-> saved_max_pfn is the real mem size and is calculated by 1st kernel E820
-> memmap which is passed in by 2nd kernel's boot_params (done by kexec):
-> 
-> 	saved_max_pfn = e820_end_of_ram_pfn();
-> 
-> After saved_max_pfn has been set, memmap=exactmap will reset the E820
-> provided by boot_params and use the user defined E820 instead.
-> 
-> Now we want to get rid of memmap=exactmap and directly pass the E820
-> memmap by boot_params for some reason (eg. exactmap may exceed the cmdline
-> size and also isn't compatible with kaslr).
-> 
-> However saved_max_pfn becomes the obstacle for obsoleting exactmap.
-> Because it needs two conditions: first kernel's E820 map and
-> memmap=exactmap cmdline.
-> 
-> So I'm wondering if it's possible to get rid of saved_max_pfn totally in
-> calgary code. Or we can get saved_max_pfn using a different way, for
-> example calculated in 1st kernel and passed in to 2nd kernel by cmdline.
-> 
-> Thanks
-> WANG Chao
