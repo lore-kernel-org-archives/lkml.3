@@ -1,45 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756207AbaCEADa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 19:03:30 -0500
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:58029 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755587AbaCEADZ (ORCPT
+	id S1756152AbaCEAD2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 19:03:28 -0500
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:40679 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755586AbaCEADY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 19:03:25 -0500
+	Tue, 4 Mar 2014 19:03:24 -0500
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>,
         Gregory Clement <gregory.clement@free-electrons.com>,
         Linus Walleij <linus.walleij@linaro.org>, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] devicetree: bindings: drop pinctrl PMU reg property
-Date: Wed,  5 Mar 2014 01:03:09 +0100
-Message-Id: <1393977790-29110-3-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 3/3] pinctrl: mvebu: silence WARN to dev_warn
+Date: Wed,  5 Mar 2014 01:03:10 +0100
+Message-Id: <1393977790-29110-4-git-send-email-sebastian.hesselbarth@gmail.com>
 In-Reply-To: <1393977790-29110-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1393977790-29110-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marvell Dove's pinctrl does require some PMU regs for muxing PMU
-functions to MPP pins. Recently, a discussion started about consolidating
-Power Management Unit (PMU) into a single DT node. As we don't want
-anymore DT ABI in the way, drop the corresponding reg property from
-pinctrl binding documentation now.
+Pinctrl will WARN on missing DT resources, which is a little bit too
+noisy. Use dev_warn with FW_BUG instead.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
-Cc: Rob Herring <robh+dt@kernel.org> 
-Cc: Pawel Moll <pawel.moll@arm.com> 
-Cc: Mark Rutland <mark.rutland@arm.com> 
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk> 
-Cc: Kumar Gala <galak@codeaurora.org> 
 Cc: Russell King <linux@arm.linux.org.uk> 
 Cc: Jason Cooper <jason@lakedaemon.net> 
 Cc: Andrew Lunn <andrew@lunn.ch>
@@ -49,36 +37,23 @@ Cc: devicetree@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org 
 Cc: linux-kernel@vger.kernel.org
 ---
- Documentation/devicetree/bindings/pinctrl/marvell,dove-pinctrl.txt  | 2 +-
- Documentation/devicetree/bindings/pinctrl/marvell,mvebu-pinctrl.txt | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/pinctrl/mvebu/pinctrl-dove.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/devicetree/bindings/pinctrl/marvell,dove-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/marvell,dove-pinctrl.txt
-index cf52477cc7ee..3b3d465cbfd9 100644
---- a/Documentation/devicetree/bindings/pinctrl/marvell,dove-pinctrl.txt
-+++ b/Documentation/devicetree/bindings/pinctrl/marvell,dove-pinctrl.txt
-@@ -6,7 +6,7 @@ part and usage.
- Required properties:
- - compatible: "marvell,dove-pinctrl"
- - clocks: (optional) phandle of pdma clock
--- reg: register specifiers of MPP, MPP4, and PMU MPP registers
-+- reg: register specifiers of MPP and MPP4 registers
+diff --git a/drivers/pinctrl/mvebu/pinctrl-dove.c b/drivers/pinctrl/mvebu/pinctrl-dove.c
+index 9e7ff651c018..3b022178a566 100644
+--- a/drivers/pinctrl/mvebu/pinctrl-dove.c
++++ b/drivers/pinctrl/mvebu/pinctrl-dove.c
+@@ -832,7 +832,8 @@ static int dove_pinctrl_probe(struct platform_device *pdev)
+ 	}
  
- Available mpp pins/groups and functions:
- Note: brackets (x) are not part of the mpp name for marvell,function and given
-diff --git a/Documentation/devicetree/bindings/pinctrl/marvell,mvebu-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/marvell,mvebu-pinctrl.txt
-index 0c09f4eb2af0..111b6eea72e8 100644
---- a/Documentation/devicetree/bindings/pinctrl/marvell,mvebu-pinctrl.txt
-+++ b/Documentation/devicetree/bindings/pinctrl/marvell,mvebu-pinctrl.txt
-@@ -37,7 +37,7 @@ uart1: serial@12100 {
+ 	/* Warn on any missing DT resource */
+-	WARN(fb_res.start, FW_BUG "Missing pinctrl regs in DTB. Please update your firmware.\n");
++	if (fb_res.start)
++		dev_warn(&pdev->dev, FW_BUG "Missing pinctrl regs in DTB. Please update your firmware.\n");
  
- pinctrl: pinctrl@d0200 {
- 	compatible = "marvell,dove-pinctrl";
--	reg = <0xd0200 0x14>, <0xd0440 0x04>, <0xd802c 0x08>;
-+	reg = <0xd0200 0x14>, <0xd0440 0x04>;
- 
- 	pmx_uart1_sw: pmx-uart1-sw {
- 		marvell,pins = "mpp_uart1";
+ 	return mvebu_pinctrl_probe(pdev);
+ }
 -- 
 1.8.5.3
 
