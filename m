@@ -1,39 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755870AbaCETZs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 14:25:48 -0500
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:48431 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751630AbaCETZr (ORCPT
+	id S1757051AbaCETZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 14:25:58 -0500
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:35831 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756502AbaCETZz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 14:25:47 -0500
-Message-ID: <1394047535.2512.83.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH][v2] selftests: ipc: handle msgget failure return
- correctly
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Colin King <colin.king@canonical.com>
-Cc: skinsbursky@parallels.com, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Wed, 05 Mar 2014 11:25:35 -0800
-In-Reply-To: <1394045908-9031-1-git-send-email-colin.king@canonical.com>
-References: <1394045908-9031-1-git-send-email-colin.king@canonical.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 5 Mar 2014 14:25:55 -0500
+MIME-Version: 1.0
+In-Reply-To: <alpine.LNX.2.00.1402271123410.21399@pobox.suse.cz>
+References: <CAJZOPZKLcFC5Wqv7VS7AyovaeHw3PYSWEz9t9sZ4AMhG+dS1+A@mail.gmail.com>
+ <alpine.LNX.2.00.1402271042240.21399@pobox.suse.cz> <530F0C4F.9030200@mellanox.com>
+ <alpine.LNX.2.00.1402271123410.21399@pobox.suse.cz>
+From: Roland Dreier <roland@kernel.org>
+Date: Wed, 5 Mar 2014 11:25:34 -0800
+X-Google-Sender-Auth: -Aj2Vq2WByZSrhoAtAcAlShRiik
+Message-ID: <CAG4TOxMw4siOqtjXrgUDaw8yWqYgSG4d8PqGuJ62AZBrC2O2AA@mail.gmail.com>
+Subject: Re: [PATCH] mlx4: Use GFP_NOFS calls during the ipoib TX path when
+ creating the QP
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Or Gerlitz <ogerlitz@mellanox.com>, Or Gerlitz <or.gerlitz@gmail.com>,
+        Amir Vadai <amirv@mellanox.com>, Eli Cohen <eli@dev.mellanox.co.il>,
+        Eugenia Emantayev <eugenia@mellanox.com>,
+        "David S. Miller" <davem@davemloft.net>, Mel Gorman <mgorman@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-03-05 at 18:58 +0000, Colin King wrote:
-> From: Colin Ian King <colin.king@canonical.com>
-> 
-> A failed msgget causes the test to return an uninitialised value
-> in ret. Assign ret to -errno on error exit.
-> 
-> Signed-off-by: Colin Ian King <colin.king@canonical.com>
+On Thu, Feb 27, 2014 at 2:42 AM, Jiri Kosina <jkosina@suse.cz> wrote:
+> Whatever suits you best. To sum it up:
+>
+> - mlx4 is confirmed to have this problem, and we know how that problem
+>   happens -- see the paragraph in the changelog explaining the dependency
+>   between memory reclaim and allocation of TX ring
+>
+> - we have a work around which requires human interaction in order
+>   to provide the information whether GFP_NOFS should be used or not
+>
+> - I can very well understand why Mellanox would see that as a hack, but if
+>   more comprehensive fix is necessary, I'd expect those who understand
+>   the code the best to come up with a solution/proposal. I'd assume that
+>   you don't  want to keep the code with known and easily triggerable
+>   deadlock out there unfixed.
+>
+> - where I see the potential for layering violation in any 'general'
+>   solution is that it's the filesystem that has to be "talking" to the
+>   underlying netdevice, i.e. you'll have to make filesystem
+>   netdevice-aware, right?
 
-Why are you not carrying my ack??
+It's quite clear that this is a general problem with IPoIB connected
+mode on any IB device.  In connected mode, a packet send can trigger
+establishing a new connection, which will allocate a new QP, which in
+particular will allocate memory for the QP in the low-level IB device
+driver.  Currently I'm positive that every driver will do GFP_KERNEL
+allocations when allocating a QP (ehca does both a GFP_KERNEL
+kmem_cache allocation and vmalloc in internal_create_qp(), mlx5 and
+mthca are similar to mlx4 and qib does vmalloc() in qib_create_qp()).
+So this patch needs to be extended to the other 4 IB device drivers in
+the tree.
 
-Also, this needs to be CCed to Andrew.
+Also, I don't think GFP_NOFS is enough -- it seems we need GFP_NOIO,
+since we could be swapping to a block device over iSCSI over IPoIB-CM,
+so even non-FS stuff could deadlock.
 
+I don't think it makes any sense to have a "do_not_deadlock" module
+parameter, especially one that defaults to "false."  If this is the
+right thing to do, then we should just unconditionally do it.
+
+It does seem that only using GFP_NOIO when we really need to would be
+a very difficult problem--how can we carry information about whether a
+particular packet is involved in freeing memory through all the layers
+of, say, NFS, TCP, IPSEC, bonding, &c?
