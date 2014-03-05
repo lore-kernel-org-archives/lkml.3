@@ -1,34 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726AbaCEFJI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 00:09:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46090 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751275AbaCEFJH (ORCPT
+	id S1753066AbaCEFJy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 00:09:54 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:46268 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751275AbaCEFJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 00:09:07 -0500
-Date: Tue, 4 Mar 2014 21:09:27 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Jon Ringle <jringle@gridpoint.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Add option to build with -O3
-Message-ID: <20140305050927.GA8534@kroah.com>
-References: <1393977709-9809-1-git-send-email-jringle@gridpoint.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393977709-9809-1-git-send-email-jringle@gridpoint.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Wed, 5 Mar 2014 00:09:52 -0500
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: JBottomley@parallels.com
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH] [RESEND] [SCSI] NCR5380: remove deprecated IRQF_DISABLED
+Date: Wed,  5 Mar 2014 06:09:41 +0100
+Message-Id: <1393996181-3425-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1386582290-4755-1-git-send-email-michael.opdenacker@free-electrons.com>
+References: <1386582290-4755-1-git-send-email-michael.opdenacker@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 04, 2014 at 07:01:49PM -0500, Jon Ringle wrote:
-> +config CC_OPTIMIZE_FOR_SPEED
-> +    bool "Optimze for speed (-O3)"
-> +    help
-> +      Enabling this option will pass "-O3" to gcc
-> +      resulting in a larger kernel (but possibly faster)
+This patch removes the use of the IRQF_DISABLED flag
+from drivers/scsi/NCR5380.c
 
-Are you sure about that?  Have you measured it?
+It's a NOOP since 2.6.35 and it will be removed one day.
+
+Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+---
+ drivers/scsi/NCR5380.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/scsi/NCR5380.c b/drivers/scsi/NCR5380.c
+index 1e9d6ad9302b..bcd223868227 100644
+--- a/drivers/scsi/NCR5380.c
++++ b/drivers/scsi/NCR5380.c
+@@ -584,7 +584,7 @@ static int __init __maybe_unused NCR5380_probe_irq(struct Scsi_Host *instance,
+ 	NCR5380_setup(instance);
+ 
+ 	for (trying_irqs = i = 0, mask = 1; i < 16; ++i, mask <<= 1)
+-		if ((mask & possible) && (request_irq(i, &probe_intr, IRQF_DISABLED, "NCR-probe", NULL) == 0))
++		if ((mask & possible) && (request_irq(i, &probe_intr, 0, "NCR-probe", NULL) == 0))
+ 			trying_irqs |= mask;
+ 
+ 	timeout = jiffies + (250 * HZ / 1000);
+-- 
+1.8.3.2
 
