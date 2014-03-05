@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757723AbaCEO1K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:27:10 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41253 "EHLO
+	id S932262AbaCEO1e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:27:34 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41353 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757654AbaCEO1C (ORCPT
+	with ESMTP id S1753053AbaCEO13 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:27:02 -0500
+	Wed, 5 Mar 2014 09:27:29 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
+Cc: Peter Zijlstra <peterz@infradead.org>, Paul Mackerras <paulus@samba.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Stephane Eranian <eranian@google.com>, Dave Jones <davej@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 110/131] ALSA: hda - Add a fixup for HP Folio 13 mute LED
-Date: Wed,  5 Mar 2014 14:23:54 +0000
-Message-Id: <1394029455-23128-111-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 123/131] perf/x86: Fix event scheduling
+Date: Wed,  5 Mar 2014 14:24:07 +0000
+Message-Id: <1394029455-23128-124-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -27,73 +30,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit 37c367ecdb9a01c9acc980e6e17913570a1788a7 upstream.
+commit 26e61e8939b1fe8729572dabe9a9e97d930dd4f6 upstream.
 
-HP Folio 13 may have a broken BIOS that doesn't set up the mute LED
-GPIO properly, and the driver guesses it wrongly, too.  Add a new
-fixup entry for setting the GPIO pin statically for this laptop.
+Vince "Super Tester" Weaver reported a new round of syscall fuzzing (Trinity) failures,
+with perf WARN_ON()s triggering. He also provided traces of the failures.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=70991
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+This is I think the relevant bit:
+
+	>    pec_1076_warn-2804  [000] d...   147.926153: x86_pmu_disable: x86_pmu_disable
+	>    pec_1076_warn-2804  [000] d...   147.926153: x86_pmu_state: Events: {
+	>    pec_1076_warn-2804  [000] d...   147.926156: x86_pmu_state:   0: state: .R config: ffffffffffffffff (          (null))
+	>    pec_1076_warn-2804  [000] d...   147.926158: x86_pmu_state:   33: state: AR config: 0 (ffff88011ac99800)
+	>    pec_1076_warn-2804  [000] d...   147.926159: x86_pmu_state: }
+	>    pec_1076_warn-2804  [000] d...   147.926160: x86_pmu_state: n_events: 1, n_added: 0, n_txn: 1
+	>    pec_1076_warn-2804  [000] d...   147.926161: x86_pmu_state: Assignment: {
+	>    pec_1076_warn-2804  [000] d...   147.926162: x86_pmu_state:   0->33 tag: 1 config: 0 (ffff88011ac99800)
+	>    pec_1076_warn-2804  [000] d...   147.926163: x86_pmu_state: }
+	>    pec_1076_warn-2804  [000] d...   147.926166: collect_events: Adding event: 1 (ffff880119ec8800)
+
+So we add the insn:p event (fd[23]).
+
+At this point we should have:
+
+  n_events = 2, n_added = 1, n_txn = 1
+
+	>    pec_1076_warn-2804  [000] d...   147.926170: collect_events: Adding event: 0 (ffff8800c9e01800)
+	>    pec_1076_warn-2804  [000] d...   147.926172: collect_events: Adding event: 4 (ffff8800cbab2c00)
+
+We try and add the {BP,cycles,br_insn} group (fd[3], fd[4], fd[15]).
+These events are 0:cycles and 4:br_insn, the BP event isn't x86_pmu so
+that's not visible.
+
+	group_sched_in()
+	  pmu->start_txn() /* nop - BP pmu */
+	  event_sched_in()
+	     event->pmu->add()
+
+So here we should end up with:
+
+  0: n_events = 3, n_added = 2, n_txn = 2
+  4: n_events = 4, n_added = 3, n_txn = 3
+
+But seeing the below state on x86_pmu_enable(), the must have failed,
+because the 0 and 4 events aren't there anymore.
+
+Looking at group_sched_in(), since the BP is the leader, its
+event_sched_in() must have succeeded, for otherwise we would not have
+seen the sibling adds.
+
+But since neither 0 or 4 are in the below state; their event_sched_in()
+must have failed; but I don't see why, the complete state: 0,0,1:p,4
+fits perfectly fine on a core2.
+
+However, since we try and schedule 4 it means the 0 event must have
+succeeded!  Therefore the 4 event must have failed, its failure will
+have put group_sched_in() into the fail path, which will call:
+
+	event_sched_out()
+	  event->pmu->del()
+
+on 0 and the BP event.
+
+Now x86_pmu_del() will reduce n_events; but it will not reduce n_added;
+giving what we see below:
+
+ n_event = 2, n_added = 2, n_txn = 2
+
+	>    pec_1076_warn-2804  [000] d...   147.926177: x86_pmu_enable: x86_pmu_enable
+	>    pec_1076_warn-2804  [000] d...   147.926177: x86_pmu_state: Events: {
+	>    pec_1076_warn-2804  [000] d...   147.926179: x86_pmu_state:   0: state: .R config: ffffffffffffffff (          (null))
+	>    pec_1076_warn-2804  [000] d...   147.926181: x86_pmu_state:   33: state: AR config: 0 (ffff88011ac99800)
+	>    pec_1076_warn-2804  [000] d...   147.926182: x86_pmu_state: }
+	>    pec_1076_warn-2804  [000] d...   147.926184: x86_pmu_state: n_events: 2, n_added: 2, n_txn: 2
+	>    pec_1076_warn-2804  [000] d...   147.926184: x86_pmu_state: Assignment: {
+	>    pec_1076_warn-2804  [000] d...   147.926186: x86_pmu_state:   0->33 tag: 1 config: 0 (ffff88011ac99800)
+	>    pec_1076_warn-2804  [000] d...   147.926188: x86_pmu_state:   1->0 tag: 1 config: 1 (ffff880119ec8800)
+	>    pec_1076_warn-2804  [000] d...   147.926188: x86_pmu_state: }
+	>    pec_1076_warn-2804  [000] d...   147.926190: x86_pmu_enable: S0: hwc->idx: 33, hwc->last_cpu: 0, hwc->last_tag: 1 hwc->state: 0
+
+So the problem is that x86_pmu_del(), when called from a
+group_sched_in() that fails (for whatever reason), and without x86_pmu
+TXN support (because the leader is !x86_pmu), will corrupt the n_added
+state.
+
+Reported-and-Tested-by: Vince Weaver <vincent.weaver@maine.edu>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Dave Jones <davej@redhat.com>
+Link: http://lkml.kernel.org/r/20140221150312.GF3104@twins.programming.kicks-ass.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/patch_sigmatel.c | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ arch/x86/kernel/cpu/perf_event.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/sound/pci/hda/patch_sigmatel.c b/sound/pci/hda/patch_sigmatel.c
-index 5c005d4..254515d 100644
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -98,6 +98,7 @@ enum {
- 	STAC_92HD83XXX_HP_LED,
- 	STAC_92HD83XXX_HP_INV_LED,
- 	STAC_92HD83XXX_HP_MIC_LED,
-+	STAC_HP_LED_GPIO10,
- 	STAC_92HD83XXX_HEADSET_JACK,
- 	STAC_92HD83XXX_HP,
- 	STAC_HP_ENVY_BASS,
-@@ -2107,6 +2108,17 @@ static void stac92hd83xxx_fixup_hp_mic_led(struct hda_codec *codec,
- 		spec->mic_mute_led_gpio = 0x08; /* GPIO3 */
- }
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index a7c7305..f646d40 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1192,6 +1192,9 @@ static void x86_pmu_del(struct perf_event *event, int flags)
+ 	for (i = 0; i < cpuc->n_events; i++) {
+ 		if (event == cpuc->event_list[i]) {
  
-+static void stac92hd83xxx_fixup_hp_led_gpio10(struct hda_codec *codec,
-+				   const struct hda_fixup *fix, int action)
-+{
-+	struct sigmatel_spec *spec = codec->spec;
++			if (i >= cpuc->n_events - cpuc->n_added)
++				--cpuc->n_added;
 +
-+	if (action == HDA_FIXUP_ACT_PRE_PROBE) {
-+		spec->gpio_led = 0x10; /* GPIO4 */
-+		spec->default_polarity = 0;
-+	}
-+}
-+
- static void stac92hd83xxx_fixup_headset_jack(struct hda_codec *codec,
- 				   const struct hda_fixup *fix, int action)
- {
-@@ -2173,6 +2185,12 @@ static const struct hda_fixup stac92hd83xxx_fixups[] = {
- 		.chained = true,
- 		.chain_id = STAC_92HD83XXX_HP,
- 	},
-+	[STAC_HP_LED_GPIO10] = {
-+		.type = HDA_FIXUP_FUNC,
-+		.v.func = stac92hd83xxx_fixup_hp_led_gpio10,
-+		.chained = true,
-+		.chain_id = STAC_92HD83XXX_HP,
-+	},
- 	[STAC_92HD83XXX_HEADSET_JACK] = {
- 		.type = HDA_FIXUP_FUNC,
- 		.v.func = stac92hd83xxx_fixup_headset_jack,
-@@ -2244,6 +2262,8 @@ static const struct snd_pci_quirk stac92hd83xxx_fixup_tbl[] = {
- 			  "HP", STAC_92HD83XXX_HP_cNB11_INTQUAD),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x1888,
- 			  "HP Envy Spectre", STAC_HP_ENVY_BASS),
-+	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x1899,
-+			  "HP Folio 13", STAC_HP_LED_GPIO10),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x18df,
- 			  "HP Folio", STAC_92HD83XXX_HP_MIC_LED),
- 	SND_PCI_QUIRK_MASK(PCI_VENDOR_ID_HP, 0xff00, 0x1900,
+ 			if (x86_pmu.put_event_constraints)
+ 				x86_pmu.put_event_constraints(cpuc, event);
+ 
 -- 
 1.9.0
 
