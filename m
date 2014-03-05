@@ -1,124 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756881AbaCEAfX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 19:35:23 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:45487 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756676AbaCEAds (ORCPT
+	id S1757463AbaCEAfv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 19:35:51 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:60677 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756677AbaCEAfq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 19:33:48 -0500
-Message-Id: <20140305003346.885459803@goodmis.org>
-User-Agent: quilt/0.61-1
-Date: Tue, 04 Mar 2014 19:33:38 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        <stable-rt@vger.kernel.org>
-Subject: [PATCH RT 5/6] arm/unwind: use a raw_spin_lock
-References: <20140305003333.402759240@goodmis.org>
+	Tue, 4 Mar 2014 19:35:46 -0500
+Subject: [PATCH] phy: fix compiler array bounds warning on settings[]
+To: netdev@vger.kernel.org
+From: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Tue, 04 Mar 2014 17:35:44 -0700
+Message-ID: <20140305003544.23016.55079.stgit@bhelgaas-glaptop.roam.corp.google.com>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0005-arm-unwind-use-a-raw_spin_lock.patch
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.55-rt79-rc1 stable review patch.
-If anyone has any objections, please let me know.
+With -Werror=array-bounds, gcc v4.7.x warns that in phy_find_valid(), the
+settings[] "array subscript is above array bounds", I think because idx is
+a signed integer and if the caller supplied idx < 0, we pass the guard but
+still reference out of bounds.
 
-------------------
+Fix this by making idx unsigned here and elsewhere.
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-
-Mostly unwind is done with irqs enabled however SLUB may call it with
-irqs disabled while creating a new SLUB cache.
-
-I had system freeze while loading a module which called
-kmem_cache_create() on init. That means SLUB's __slab_alloc() disabled
-interrupts and then
-
-->new_slab_objects()
- ->new_slab()
-  ->setup_object()
-   ->setup_object_debug()
-    ->init_tracking()
-     ->set_track()
-      ->save_stack_trace()
-       ->save_stack_trace_tsk()
-        ->walk_stackframe()
-         ->unwind_frame()
-          ->unwind_find_idx()
-           =>spin_lock_irqsave(&unwind_lock);
-
-Cc: stable-rt@vger.kernel.org
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 ---
- arch/arm/kernel/unwind.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ drivers/net/phy/phy.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/kernel/unwind.c b/arch/arm/kernel/unwind.c
-index 00df012..bbafc67 100644
---- a/arch/arm/kernel/unwind.c
-+++ b/arch/arm/kernel/unwind.c
-@@ -87,7 +87,7 @@ extern const struct unwind_idx __start_unwind_idx[];
- static const struct unwind_idx *__origin_unwind_idx;
- extern const struct unwind_idx __stop_unwind_idx[];
+diff --git a/drivers/net/phy/phy.c b/drivers/net/phy/phy.c
+index 19c9eca0ef26..76d96b9ebcdb 100644
+--- a/drivers/net/phy/phy.c
++++ b/drivers/net/phy/phy.c
+@@ -164,9 +164,9 @@ static const struct phy_setting settings[] = {
+  *   of that setting.  Returns the index of the last setting if
+  *   none of the others match.
+  */
+-static inline int phy_find_setting(int speed, int duplex)
++static inline unsigned int phy_find_setting(int speed, int duplex)
+ {
+-	int idx = 0;
++	unsigned int idx = 0;
  
--static DEFINE_SPINLOCK(unwind_lock);
-+static DEFINE_RAW_SPINLOCK(unwind_lock);
- static LIST_HEAD(unwind_tables);
+ 	while (idx < ARRAY_SIZE(settings) &&
+ 	       (settings[idx].speed != speed || settings[idx].duplex != duplex))
+@@ -185,7 +185,7 @@ static inline int phy_find_setting(int speed, int duplex)
+  *   the mask in features.  Returns the index of the last setting
+  *   if nothing else matches.
+  */
+-static inline int phy_find_valid(int idx, u32 features)
++static inline unsigned int phy_find_valid(unsigned int idx, u32 features)
+ {
+ 	while (idx < MAX_NUM_SETTINGS && !(settings[idx].setting & features))
+ 		idx++;
+@@ -204,7 +204,7 @@ static inline int phy_find_valid(int idx, u32 features)
+ static void phy_sanitize_settings(struct phy_device *phydev)
+ {
+ 	u32 features = phydev->supported;
+-	int idx;
++	unsigned int idx;
  
- /* Convert a prel31 symbol to an absolute address */
-@@ -195,7 +195,7 @@ static const struct unwind_idx *unwind_find_idx(unsigned long addr)
- 		/* module unwind tables */
- 		struct unwind_table *table;
+ 	/* Sanitize settings based on PHY capabilities */
+ 	if ((features & SUPPORTED_Autoneg) == 0)
+@@ -954,7 +954,8 @@ int phy_init_eee(struct phy_device *phydev, bool clk_stop_enable)
+ 	    (phydev->interface == PHY_INTERFACE_MODE_RGMII))) {
+ 		int eee_lp, eee_cap, eee_adv;
+ 		u32 lp, cap, adv;
+-		int idx, status;
++		int status;
++		unsigned int idx;
  
--		spin_lock_irqsave(&unwind_lock, flags);
-+		raw_spin_lock_irqsave(&unwind_lock, flags);
- 		list_for_each_entry(table, &unwind_tables, list) {
- 			if (addr >= table->begin_addr &&
- 			    addr < table->end_addr) {
-@@ -207,7 +207,7 @@ static const struct unwind_idx *unwind_find_idx(unsigned long addr)
- 				break;
- 			}
- 		}
--		spin_unlock_irqrestore(&unwind_lock, flags);
-+		raw_spin_unlock_irqrestore(&unwind_lock, flags);
- 	}
- 
- 	pr_debug("%s: idx = %p\n", __func__, idx);
-@@ -469,9 +469,9 @@ struct unwind_table *unwind_table_add(unsigned long start, unsigned long size,
- 	tab->begin_addr = text_addr;
- 	tab->end_addr = text_addr + text_size;
- 
--	spin_lock_irqsave(&unwind_lock, flags);
-+	raw_spin_lock_irqsave(&unwind_lock, flags);
- 	list_add_tail(&tab->list, &unwind_tables);
--	spin_unlock_irqrestore(&unwind_lock, flags);
-+	raw_spin_unlock_irqrestore(&unwind_lock, flags);
- 
- 	return tab;
- }
-@@ -483,9 +483,9 @@ void unwind_table_del(struct unwind_table *tab)
- 	if (!tab)
- 		return;
- 
--	spin_lock_irqsave(&unwind_lock, flags);
-+	raw_spin_lock_irqsave(&unwind_lock, flags);
- 	list_del(&tab->list);
--	spin_unlock_irqrestore(&unwind_lock, flags);
-+	raw_spin_unlock_irqrestore(&unwind_lock, flags);
- 
- 	kfree(tab);
- }
--- 
-1.8.5.3
-
+ 		/* Read phy status to properly get the right settings */
+ 		status = phy_read_status(phydev);
 
