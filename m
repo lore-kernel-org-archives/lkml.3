@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756772AbaCEMBb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 07:01:31 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:41889 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755901AbaCEMBZ (ORCPT
+	id S1756818AbaCEMBh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 07:01:37 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:48311 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756785AbaCEMBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 07:01:25 -0500
-Subject: [PATCH -tip v8 22/26] kprobes/x86: Use kprobe_blacklist for
- .kprobes.text and .entry.text
+	Wed, 5 Mar 2014 07:01:32 -0500
+Subject: [PATCH -tip v8 23/26] kprobes/x86: Remove unneeded
+ preempt_disable/enable in interrupt handlers
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
 Cc: Andi Kleen <andi@firstfloor.org>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "David S. Miller" <davem@davemloft.net>, fche@redhat.com,
+        Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
         mingo@redhat.com, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, 05 Mar 2014 21:01:17 +0900
-Message-ID: <20140305120117.22766.26620.stgit@ltc230.yrl.intra.hitachi.co.jp>
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Date: Wed, 05 Mar 2014 21:01:24 +0900
+Message-ID: <20140305120124.22766.92183.stgit@ltc230.yrl.intra.hitachi.co.jp>
 In-Reply-To: <20140305115843.22766.8355.stgit@ltc230.yrl.intra.hitachi.co.jp>
 References: <20140305115843.22766.8355.stgit@ltc230.yrl.intra.hitachi.co.jp>
 User-Agent: StGit/0.17-dirty
@@ -33,170 +30,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use kprobe_blackpoint for blacklisting .entry.text and .kprobees.text
-instead of arch_within_kprobe_blacklist. This also makes them visible
-via (debugfs)/kprobes/blacklist.
+Since the int3 itself disables the local_irq and kprobes
+keeps it disabled while the single step has done, the
+kernel preemption never happen while processing a kprobe.
+This means that we don't need to disable/enable preemption.
+Also, this changes kprobe_int3_handler to use goto-out style.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@redhat.com>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- arch/x86/kernel/kprobes/core.c |   11 +------
- include/linux/kprobes.h        |    1 +
- kernel/kprobes.c               |   64 ++++++++++++++++++++++++++++------------
- 3 files changed, 48 insertions(+), 28 deletions(-)
+ arch/x86/kernel/kprobes/core.c |   24 +++++++-----------------
+ 1 file changed, 7 insertions(+), 17 deletions(-)
 
 diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
-index d00103a..4767fda 100644
+index 4767fda..8ef676f 100644
 --- a/arch/x86/kernel/kprobes/core.c
 +++ b/arch/x86/kernel/kprobes/core.c
-@@ -1065,17 +1065,10 @@ int longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
- }
- NOKPROBE_SYMBOL(longjmp_break_handler);
+@@ -506,7 +506,6 @@ static void setup_singlestep(struct kprobe *p, struct pt_regs *regs,
+ 		 * stepping.
+ 		 */
+ 		regs->ip = (unsigned long)p->ainsn.insn;
+-		preempt_enable_no_resched();
+ 		return;
+ 	}
+ #endif
+@@ -575,13 +574,6 @@ int kprobe_int3_handler(struct pt_regs *regs)
+ 	struct kprobe_ctlblk *kcb;
  
--bool arch_within_kprobe_blacklist(unsigned long addr)
--{
--	return  (addr >= (unsigned long)__kprobes_text_start &&
--		 addr < (unsigned long)__kprobes_text_end) ||
--		(addr >= (unsigned long)__entry_text_start &&
--		 addr < (unsigned long)__entry_text_end);
--}
--
- int __init arch_init_kprobes(void)
- {
--	return 0;
-+	return kprobe_blacklist_add_range((unsigned long)__entry_text_start,
-+					  (unsigned long) __entry_text_end);
- }
+ 	addr = (kprobe_opcode_t *)(regs->ip - sizeof(kprobe_opcode_t));
+-	/*
+-	 * We don't want to be preempted for the entire
+-	 * duration of kprobe processing. We conditionally
+-	 * re-enable preemption at the end of this function,
+-	 * and also in reenter_kprobe() and setup_singlestep().
+-	 */
+-	preempt_disable();
  
- int arch_trampoline_kprobe(struct kprobe *p)
-diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
-index e059507..e81bced 100644
---- a/include/linux/kprobes.h
-+++ b/include/linux/kprobes.h
-@@ -266,6 +266,7 @@ extern int arch_init_kprobes(void);
- extern void show_registers(struct pt_regs *regs);
- extern void kprobes_inc_nmissed_count(struct kprobe *p);
- extern bool arch_within_kprobe_blacklist(unsigned long addr);
-+extern int kprobe_blacklist_add_range(unsigned long start, unsigned long end);
- 
- struct kprobe_insn_cache {
- 	struct mutex mutex;
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 8319048..abdede5 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -1325,13 +1325,6 @@ out:
- 	return ret;
- }
- 
--bool __weak arch_within_kprobe_blacklist(unsigned long addr)
--{
--	/* The __kprobes marked functions and entry code must not be probed */
--	return addr >= (unsigned long)__kprobes_text_start &&
--	       addr < (unsigned long)__kprobes_text_end;
--}
--
- static struct kprobe_blacklist_entry *find_blacklist_entry(unsigned long addr)
- {
- 	struct kprobe_blacklist_entry *ent;
-@@ -1346,8 +1339,6 @@ static struct kprobe_blacklist_entry *find_blacklist_entry(unsigned long addr)
- 
- static bool within_kprobe_blacklist(unsigned long addr)
- {
--	if (arch_within_kprobe_blacklist(addr))
--		return true;
- 	/*
- 	 * If there exists a kprobe_blacklist, verify and
- 	 * fail any probe registration in the prohibited area
-@@ -2032,6 +2023,40 @@ void dump_kprobe(struct kprobe *kp)
- }
- NOKPROBE_SYMBOL(dump_kprobe);
- 
-+static int __kprobe_blacklist_add(unsigned long start, unsigned long end)
-+{
-+	struct kprobe_blacklist_entry *ent;
-+
-+	ent = kmalloc(sizeof(*ent), GFP_KERNEL);
-+	if (!ent)
-+		return -ENOMEM;
-+
-+	ent->start_addr = start;
-+	ent->end_addr = end;
-+	INIT_LIST_HEAD(&ent->list);
-+	list_add_tail(&ent->list, &kprobe_blacklist);
-+	return 0;
-+}
-+
-+int kprobe_blacklist_add_range(unsigned long start, unsigned long end)
-+{
-+	unsigned long offset = 0, size = 0;
-+	int err = 0;
-+
-+	mutex_lock(&kprobe_blacklist_mutex);
-+	while (!err && start < end) {
-+		if (!kallsyms_lookup_size_offset(start, &size, &offset) ||
-+		    size == 0) {
-+			err = -ENOENT;
-+			break;
-+		}
-+		err = __kprobe_blacklist_add(start, start + size);
-+		start += size;
-+	}
-+	mutex_unlock(&kprobe_blacklist_mutex);
-+	return err;
-+}
-+
- /*
-  * Lookup and populate the kprobe_blacklist.
-  *
-@@ -2043,8 +2068,8 @@ NOKPROBE_SYMBOL(dump_kprobe);
- static int populate_kprobe_blacklist(unsigned long *start, unsigned long *end)
- {
- 	unsigned long *iter;
--	struct kprobe_blacklist_entry *ent;
- 	unsigned long offset = 0, size = 0;
-+	int ret;
- 
- 	mutex_lock(&kprobe_blacklist_mutex);
- 	for (iter = start; iter < end; iter++) {
-@@ -2052,14 +2077,7 @@ static int populate_kprobe_blacklist(unsigned long *start, unsigned long *end)
- 			pr_err("Failed to find blacklist %p\n", (void *)*iter);
- 			continue;
+ 	kcb = get_kprobe_ctlblk();
+ 	p = get_kprobe(addr);
+@@ -589,7 +581,7 @@ int kprobe_int3_handler(struct pt_regs *regs)
+ 	if (p) {
+ 		if (kprobe_running()) {
+ 			if (reenter_kprobe(p, regs, kcb))
+-				return 1;
++				goto handled;
+ 		} else {
+ 			set_current_kprobe(p, regs, kcb);
+ 			kcb->kprobe_status = KPROBE_HIT_ACTIVE;
+@@ -604,7 +596,7 @@ int kprobe_int3_handler(struct pt_regs *regs)
+ 			 */
+ 			if (!p->pre_handler || !p->pre_handler(p, regs))
+ 				setup_singlestep(p, regs, kcb, 0);
+-			return 1;
++			goto handled;
  		}
--
--		ent = kmalloc(sizeof(*ent), GFP_KERNEL);
--		if (!ent)
--			return -ENOMEM;
--		ent->start_addr = *iter;
--		ent->end_addr = *iter + size;
--		INIT_LIST_HEAD(&ent->list);
--		list_add_tail(&ent->list, &kprobe_blacklist);
-+		ret = __kprobe_blacklist_add(*iter, *iter + size);
- 	}
- 	mutex_unlock(&kprobe_blacklist_mutex);
+ 	} else if (*addr != BREAKPOINT_INSTRUCTION) {
+ 		/*
+@@ -617,19 +609,20 @@ int kprobe_int3_handler(struct pt_regs *regs)
+ 		 * the original instruction.
+ 		 */
+ 		regs->ip = (unsigned long)addr;
+-		preempt_enable_no_resched();
+-		return 1;
++		goto handled;
+ 	} else if (kprobe_running()) {
+ 		p = __this_cpu_read(current_kprobe);
+ 		if (p->break_handler && p->break_handler(p, regs)) {
+ 			if (!skip_singlestep(p, regs, kcb))
+ 				setup_singlestep(p, regs, kcb, 0);
+-			return 1;
++			goto handled;
+ 		}
+ 	} /* else: not a kprobe fault; let the kernel handle it */
  
-@@ -2154,7 +2172,15 @@ static int __init init_kprobes(void)
+-	preempt_enable_no_resched();
+ 	return 0;
++
++handled:
++	return 1;
+ }
+ NOKPROBE_SYMBOL(kprobe_int3_handler);
  
- 	err = populate_kprobe_blacklist(__start_kprobe_blacklist,
- 					__stop_kprobe_blacklist);
--	if (err) {
-+
-+	if (err >= 0 && __kprobes_text_start != __kprobes_text_end) {
-+		/* The __kprobes marked functions must not be probed */
-+		err = kprobe_blacklist_add_range(
-+					(unsigned long)__kprobes_text_start,
-+					(unsigned long)__kprobes_text_end);
-+	}
-+
-+	if (err < 0) {
- 		pr_err("kprobes: failed to populate blacklist: %d\n", err);
- 		pr_err("Please take care of using kprobes.\n");
+@@ -894,7 +887,6 @@ int kprobe_debug_handler(struct pt_regs *regs)
  	}
+ 	reset_current_kprobe();
+ out:
+-	preempt_enable_no_resched();
+ 
+ 	/*
+ 	 * if somebody else is singlestepping across a probe point, flags
+@@ -927,7 +919,6 @@ int kprobe_fault_handler(struct pt_regs *regs, int trapnr)
+ 			restore_previous_kprobe(kcb);
+ 		else
+ 			reset_current_kprobe();
+-		preempt_enable_no_resched();
+ 	} else if (kcb->kprobe_status == KPROBE_HIT_ACTIVE ||
+ 		   kcb->kprobe_status == KPROBE_HIT_SSDONE) {
+ 		/*
+@@ -1058,7 +1049,6 @@ int longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
+ 		memcpy((kprobe_opcode_t *)(kcb->jprobe_saved_sp),
+ 		       kcb->jprobes_stack,
+ 		       MIN_STACK_SIZE(kcb->jprobe_saved_sp));
+-		preempt_enable_no_resched();
+ 		return 1;
+ 	}
+ 	return 0;
 
 
