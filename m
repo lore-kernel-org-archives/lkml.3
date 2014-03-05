@@ -1,46 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556AbaCEKhG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 05:37:06 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:4689 "EHLO SMTP02.CITRIX.COM"
+	id S1753941AbaCEKiJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 05:38:09 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:42053 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751459AbaCEKhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 05:37:00 -0500
-X-IronPort-AV: E=Sophos;i="4.97,592,1389744000"; 
-   d="scan'208";a="106751093"
-Message-ID: <5316FE49.1020203@citrix.com>
-Date: Wed, 5 Mar 2014 10:36:57 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	id S1753548AbaCEKhh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 05:37:37 -0500
+Message-ID: <5316FE51.5090705@ti.com>
+Date: Wed, 5 Mar 2014 12:37:05 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Xen <xen-devel@lists.xenproject.org>
-Subject: Re: [patch 4/5] xen: Validate online cpus in set_affinity
-References: <20140304202425.102779779@linutronix.de> <20140304203100.978031089@linutronix.de>
-In-Reply-To: <20140304203100.978031089@linutronix.de>
+To: Tony Lindgren <tony@atomide.com>
+CC: <kishon@ti.com>, <balbi@ti.com>, <george.cherian@ti.com>,
+        <balajitk@ti.com>, <hdegoede@redhat.com>, <linux-omap@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-ide@vger.kernel.org>
+Subject: Re: [PATCH 02/12] phy: omap-control: Update DT binding information
+References: <1393859254-10937-1-git-send-email-rogerq@ti.com> <1393859254-10937-3-git-send-email-rogerq@ti.com> <20140303190247.GD25804@atomide.com> <5315995F.5050206@ti.com> <20140304162855.GB3376@atomide.com>
+In-Reply-To: <20140304162855.GB3376@atomide.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/14 20:43, Thomas Gleixner wrote:
-> The user space interface does not filter out offline cpus. It merily
-> verifies that the mask contains at least one online cpu. So the
-> selector in the irq chip implementation needs to make sure to pick
-> only an online cpu because otherwise:
+On 03/04/2014 06:28 PM, Tony Lindgren wrote:
+> * Roger Quadros <rogerq@ti.com> [140304 01:17]:
+>> Hi Tony,
+>>
+>> On 03/03/2014 09:02 PM, Tony Lindgren wrote:
+>>> * Roger Quadros <rogerq@ti.com> [140303 07:10]:
+>>>> Move omap-control binding information to the right location.
+>>>>
+>>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>>>> ---
+>>>>  Documentation/devicetree/bindings/phy/ti-phy.txt   | 25 ++++++++++++++++++++++
+>>>>  Documentation/devicetree/bindings/usb/omap-usb.txt | 24 ---------------------
+>>>>  2 files changed, 25 insertions(+), 24 deletions(-)
+>>>>
+>>>> diff --git a/Documentation/devicetree/bindings/phy/ti-phy.txt b/Documentation/devicetree/bindings/phy/ti-phy.txt
+>>>> index 207e14c..41dc132 100644
+>>>> --- a/Documentation/devicetree/bindings/phy/ti-phy.txt
+>>>> +++ b/Documentation/devicetree/bindings/phy/ti-phy.txt
+>>>> @@ -1,5 +1,30 @@
+>>>>  TI PHY: DT DOCUMENTATION FOR PHYs in TI PLATFORMs
+>>>>  
+>>>> +OMAP CONTROL PHY
+>>>> +
+>>>> +Required properties:
+>>>> + - compatible: Should be one of
+>>>> + "ti,control-phy-otghs" - if it has otghs_control mailbox register as on OMAP4.
+>>>> + "ti,control-phy-usb2" - if it has Power down bit in control_dev_conf register
+>>>> +                        e.g. USB2_PHY on OMAP5.
+>>>> + "ti,control-phy-pipe3" - if it has DPLL and individual Rx & Tx power control
+>>>> +                        e.g. USB3 PHY and SATA PHY on OMAP5.
+>>>> + "ti,control-phy-dra7usb2" - if it has power down register like USB2 PHY on
+>>>> +                        DRA7 platform.
+>>>> + "ti,control-phy-am437usb2" - if it has power down register like USB2 PHY on
+>>>> +                        AM437 platform.
+>>>
+>>> To me it seems that you can leave out all the above. You can set these falgs
+>>> flags directly in the driver based on the compatible flag. Then just initialize
+>>> the .data in the driver based on the compatible flag.
+>>
+>> I'm not sure if I got you. A single platform can have different type of phys.
+>>
+>> e.g. OMAP5 has both usb2 and pipe3 PHYs,
+>> DRA7 has both pipe3 and usb2 PHYs, but this usb2 PHY is not compatible with OMAP5 one
+>> so we need a new compatible id for that.
+>>
+>> To add to the woes, the designers were creative enough to make another mutation to
+>> the USB2 PHY for AM437x, :(
 > 
->      Offline Core 1
->      Set affinity to 0xe
->      Selector will pick first set bit, i.e. core 1
+> Oh OK, in that case the compatible flag may not be enough for configuring the
+> various instances.
+>  
+>> What do you suggest the compatible ids should look like for these 5 types of PHY control?
+>> OTGHS	(OMAP4 & 5)
+>> USB2	(OMAP5)
+>> PIPE3	(OMAP5 & DRA7)
+>> USB2x	(DRA7)
+>> USB2y	(AM437)
+> 
+> I think in that case having the various instances fully configurable from
+> device tree is OK if you prefer that. But if you wanted to use the
+> compatible flag, then you could do something like this:
 
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+I'll stick to the compatible flag.
 
-Thanks.
+> 
+> ti,control-phy-omap4-otghs	(assuming same on omap4 & 5)
+> ti,control-phy-omap5-usb2
+> ti,control-phy-omap5-pipe3	(assuming same on omap5 & dra7)
+> ti,control-phy-dra7-usb2x
+> ti,control-phy-am437-usb2y
 
-David
+OK.
+
+The last 2 can just be 
+
+ti,control-phy-dra7-usb2
+ti,control-phy-am437-usb2
+
+cheers,
+-roger
