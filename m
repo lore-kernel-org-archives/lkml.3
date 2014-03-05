@@ -1,223 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756595AbaCEA3i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 19:29:38 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:60687 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755021AbaCEA3g (ORCPT
+	id S1757100AbaCEA3w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 19:29:52 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:44985 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757010AbaCEA3t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 19:29:36 -0500
-X-AuditID: 9c93017e-b7cf9ae000004b4b-5a-53166fee7c8f
-Date: Wed, 5 Mar 2014 09:29:32 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan@kernel.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: [PATCH 2/6] mm: add get_pageblock_migratetype_nolock() for cases
- where locking is undesirable
-Message-ID: <20140305002932.GA2340@lge.com>
-References: <1393596904-16537-1-git-send-email-vbabka@suse.cz>
- <1393596904-16537-3-git-send-email-vbabka@suse.cz>
- <20140303082227.GA28899@lge.com>
- <53148981.90709@suse.cz>
- <20140304005513.GB32172@lge.com>
- <5315C438.8070504@suse.cz>
+	Tue, 4 Mar 2014 19:29:49 -0500
+Message-Id: <20140305002943.983290223@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Tue, 04 Mar 2014 19:29:35 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        John Kacur <jkacur@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        <stable-rt@vger.kernel.org>, Brian Silverman <bsilver16384@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: [PATCH RT 2/6] Revert "x86: Disable IST stacks for debug/int 3/stack fault for
+ PREEMPT_RT"
+References: <20140305002933.559081123@goodmis.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5315C438.8070504@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=0002-Revert-x86-Disable-IST-stacks-for-debug-int-3-stack-.patch
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 04, 2014 at 01:16:56PM +0100, Vlastimil Babka wrote:
-> On 03/04/2014 01:55 AM, Joonsoo Kim wrote:
-> >On Mon, Mar 03, 2014 at 02:54:09PM +0100, Vlastimil Babka wrote:
-> >>On 03/03/2014 09:22 AM, Joonsoo Kim wrote:
-> >>>On Fri, Feb 28, 2014 at 03:15:00PM +0100, Vlastimil Babka wrote:
-> >>>>In order to prevent race with set_pageblock_migratetype, most of calls to
-> >>>>get_pageblock_migratetype have been moved under zone->lock. For the remaining
-> >>>>call sites, the extra locking is undesirable, notably in free_hot_cold_page().
-> >>>>
-> >>>>This patch introduces a _nolock version to be used on these call sites, where
-> >>>>a wrong value does not affect correctness. The function makes sure that the
-> >>>>value does not exceed valid migratetype numbers. Such too-high values are
-> >>>>assumed to be a result of race and caller-supplied fallback value is returned
-> >>>>instead.
-> >>>>
-> >>>>Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-> >>>>---
-> >>>>  include/linux/mmzone.h | 24 ++++++++++++++++++++++++
-> >>>>  mm/compaction.c        | 14 +++++++++++---
-> >>>>  mm/memory-failure.c    |  3 ++-
-> >>>>  mm/page_alloc.c        | 22 +++++++++++++++++-----
-> >>>>  mm/vmstat.c            |  2 +-
-> >>>>  5 files changed, 55 insertions(+), 10 deletions(-)
-> >>>>
-> >>>>diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> >>>>index fac5509..7c3f678 100644
-> >>>>--- a/include/linux/mmzone.h
-> >>>>+++ b/include/linux/mmzone.h
-> >>>>@@ -75,6 +75,30 @@ enum {
-> >>>>
-> >>>>  extern int page_group_by_mobility_disabled;
-> >>>>
-> >>>>+/*
-> >>>>+ * When called without zone->lock held, a race with set_pageblock_migratetype
-> >>>>+ * may result in bogus values. Use this variant only when this does not affect
-> >>>>+ * correctness, and taking zone->lock would be costly. Values >= MIGRATE_TYPES
-> >>>>+ * are considered to be a result of this race and the value of race_fallback
-> >>>>+ * argument is returned instead.
-> >>>>+ */
-> >>>>+static inline int get_pageblock_migratetype_nolock(struct page *page,
-> >>>>+	int race_fallback)
-> >>>>+{
-> >>>>+	int ret = get_pageblock_flags_group(page, PB_migrate, PB_migrate_end);
-> >>>>+
-> >>>>+	if (unlikely(ret >= MIGRATE_TYPES))
-> >>>>+		ret = race_fallback;
-> >>>>+
-> >>>>+	return ret;
-> >>>>+}
-> >>>
-> >>>Hello, Vlastimil.
-> >>>
-> >>>First of all, thanks for nice work!
-> >>>I have another opinion about this implementation. It can be wrong, so if it
-> >>>is wrong, please let me know.
-> >>
-> >>Thanks, all opinions/reviewing is welcome :)
-> >>
-> >>>Although this implementation would close the race which triggers NULL dereference,
-> >>>I think that this isn't enough if you have a plan to add more
-> >>>{start,undo}_isolate_page_range().
-> >>>
-> >>>Consider that there are lots of {start,undo}_isolate_page_range() calls
-> >>>on the system without CMA.
-> >>>
-> >>>bit representation of migratetype is like as following.
-> >>>
-> >>>MIGRATE_MOVABLE = 010
-> >>>MIGRATE_ISOLATE = 100
-> >>>
-> >>>We could read following values as migratetype of the page on movable pageblock
-> >>>if race occurs.
-> >>>
-> >>>start_isolate_page_range() case: 010 -> 100
-> >>>010, 000, 100
-> >>>
-> >>>undo_isolate_page_range() case: 100 -> 010
-> >>>100, 110, 010
-> >>>
-> >>>Above implementation prevents us from getting 110, but, it can't prevent us from
-> >>>getting 000, that is, MIGRATE_UNMOVABLE. If this race occurs in free_hot_cold_page(),
-> >>>this page would go into unmovable pcp and then allocated for that migratetype.
-> >>>It results in more fragmented memory.
-> >>
-> >>Yes, that can happen. But I would expect it to be negligible to
-> >>other causes of fragmentation. But I'm not at this moment sure how
-> >>often {start,undo}_isolate_page_range() would be called in the end.
-> >>Certainly
-> >>not as often as in the development patch which is just to see if
-> >>that can improve anything. Because it will have its own overhead
-> >>(mostly for zone->lock) that might be too large. But good point, I
-> >>will try to quantify this.
-> >>
-> >>>
-> >>>Consider another case that system enables CONFIG_CMA,
-> >>>
-> >>>MIGRATE_MOVABLE = 010
-> >>>MIGRATE_ISOLATE = 101
-> >>>
-> >>>start_isolate_page_range() case: 010 -> 101
-> >>>010, 011, 001, 101
-> >>>
-> >>>undo_isolate_page_range() case: 101 -> 010
-> >>>101, 100, 110, 010
-> >>>
-> >>>This can results in totally different values and this also makes the problem
-> >>>mentioned above. And, although this doesn't cause any problem on CMA for now,
-> >>>if another migratetype is introduced or some migratetype is removed, it can cause
-> >>>CMA typed page to go into other migratetype and makes CMA permanently failed.
-> >>
-> >>This should actually be no problem for free_hot_cold_page() as any
-> >>migratetype >= MIGRATE_PCPTYPES will defer to free_one_page() which
-> >>will reread migratetype under zone->lock. So as long as
-> >>MIGRATE_PCPTYPES does not include a migratetype with such dangerous
-> >>"permanently failed" properties, it should be good. And I doubt such
-> >>migratetype would be added to pcptypes. But of course, anyone adding
-> >>new migratetype would have to reconsider each
-> >>get_pageblock_migratetype_nolock() call for such potential problems.
-> >
-> >Please let me explain more.
-> >Now CMA page can have following race values.
-> >
-> >MIGRATE_CMA = 100
-> >MIGRATE_ISOLATE = 101
-> >
-> >start_isolate_page_range(): 100 -> 101
-> >100, 101
-> >undo_isolate_page_range(): 101 -> 100
-> >101, 100
-> >
-> >So, race doesn't cause any big problem.
-> >
-> >But, as you mentioned in earlier patch, it could get worse if MIGRATE_RESERVE
-> >is removed. It doesn't happen until now, but, it can be possible.
-> >
-> >In that case,
-> >
-> >MIGRATE_CMA = 011
-> >MIGRATE_ISOLATE = 100
-> >
-> >start_isolate_page_range(): 011 -> 100
-> >011, 010, 000, 100
-> >undo_isolate_page_range(): 100 -> 011
-> >100, 101, 111, 011
-> >
-> >If this race happens, CMA page can go into MIGRATE_UNMOVABLE list, because
-> >"migratetpye >= MIGRATE_PCPTYPES" can't prevent it, and this could make
-> >CMA permanently failed.
-> 
-> Oh, I understand what you mean now, sorry. And since
-> alloc_contig_range() is already doing just this kind of
-> CMA->ISOLATE->CMA transitions, it could really be a problem even
-> without my pending work. But maybe it would be enough to add just
-> extra PG_isolate bit to prevent this, and CMA could stay within the
-> current migratetype bits, no? The separate bit could be even useful
-> to simplify my work.
+3.4.82-rt101-rc1 stable review patch.
+If anyone has any objections, please let me know.
 
-Yes, CMA could stay within the current migratetype bits.
+------------------
 
-> Would you agree that this can be postponed a bit as I develop the
-> further compaction series, since CMA currently doesn't have the
-> dangerous value? Maybe there will be new concerns that will lead to
-> different solution.
-> This series already prevents possible panic, which is worse than this issue.
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-If we introduce separate bit for MIGRATE_ISOLATE and makes bit operation atomic(6/6),
-this patchset can be changed. Although I think that it is better to distinguish
-lock/nolock case, nolock variant has no effect since there is no possibility
-to get strange race values prevented by this patch if we have separate bit for
-MIGRATE_ISOLATE. So I would like to see the change at this time. But, I don't
-have strong objection to current implementation. :)
+where do I start. Let me explain what is going on here. The code
+sequence
+| pushf
+| pop    %edx
+| or     $0x1,%dh
+| push   %edx
+| mov    $0xe0,%eax
+| popf
+| sysenter
 
-> 
-> >I think that to dump the responsibility on developer who want to add/remove migratetype
-> >is not reasonable and doesn't work well, because they may not have enough background
-> >knowledge. I hope to close the possible race more in this time.
-> 
-> Right, but even if we now added separate bits for ISOLATE and CMA,
-> anyone adding new migratetype would still have to think how to
-> handle that one (common migratetype bits or also some new bit?) and
-> what are the consequences.
+triggers the bug. On 64bit kernel we see the double fault (with 32bit and
+64bit userland) and on 32bit kernel there is no problem. The reporter said
+that double fault does not happen on 64bit kernel with 64bit userland and
+this is because in that case the VDSO uses the "syscall" interface instead
+of "sysenter".
 
-Okay.
+The bug. "popf" loads the flags with the TF bit set which enables
+"single stepping" and this leads to a debug exception. Usually on 64bit
+we have a special IST stack for the debug exception. Due to patch [0] we
+do not use the IST stack but the kernel stack instead. On 64bit the
+sysenter instruction starts in kernel with the stack address NULL. The
+code sequence above enters the debug exception (TF flag) after the
+sysenter instruction was executed which sets the stack pointer to NULL
+and we have a fault (it seems that the debug exception saves some bytes
+on the stack).
+To fix the double fault I'm going to drop patch [0]. It is completely
+pointless. In do_debug() and do_stack_segment() we disable preemption
+which means the task can't leave the CPU. So it does not matter if we run
+on IST or on kernel stack.
+There is a patch [1] which drops preempt_disable() call for a 32bit
+kernel but not for 64bit so there should be no regression.
+And [1] seems valid even for this code sequence. We enter the debug
+exception with a 256bytes long per cpu stack and migrate to the kernel
+stack before calling do_debug().
 
-Thanks.
+[0] x86-disable-debug-stack.patch
+[1] fix-rt-int3-x86_32-3.2-rt.patch
+
+Cc: stable-rt@vger.kernel.org
+Reported-by: Brian Silverman <bsilver16384@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ arch/x86/include/asm/page_64_types.h | 21 ++++++---------------
+ arch/x86/kernel/cpu/common.c         |  2 --
+ arch/x86/kernel/dumpstack_64.c       |  4 ----
+ 3 files changed, 6 insertions(+), 21 deletions(-)
+
+diff --git a/arch/x86/include/asm/page_64_types.h b/arch/x86/include/asm/page_64_types.h
+index 0883ecd..7639dbf 100644
+--- a/arch/x86/include/asm/page_64_types.h
++++ b/arch/x86/include/asm/page_64_types.h
+@@ -14,21 +14,12 @@
+ #define IRQ_STACK_ORDER 2
+ #define IRQ_STACK_SIZE (PAGE_SIZE << IRQ_STACK_ORDER)
+ 
+-#ifdef CONFIG_PREEMPT_RT_FULL
+-# define STACKFAULT_STACK 0
+-# define DOUBLEFAULT_STACK 1
+-# define NMI_STACK 2
+-# define DEBUG_STACK 0
+-# define MCE_STACK 3
+-# define N_EXCEPTION_STACKS 3  /* hw limit: 7 */
+-#else
+-# define STACKFAULT_STACK 1
+-# define DOUBLEFAULT_STACK 2
+-# define NMI_STACK 3
+-# define DEBUG_STACK 4
+-# define MCE_STACK 5
+-# define N_EXCEPTION_STACKS 5  /* hw limit: 7 */
+-#endif
++#define STACKFAULT_STACK 1
++#define DOUBLEFAULT_STACK 2
++#define NMI_STACK 3
++#define DEBUG_STACK 4
++#define MCE_STACK 5
++#define N_EXCEPTION_STACKS 5  /* hw limit: 7 */
+ 
+ #define PUD_PAGE_SIZE		(_AC(1, UL) << PUD_SHIFT)
+ #define PUD_PAGE_MASK		(~(PUD_PAGE_SIZE-1))
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index f743261..cf79302 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -1056,9 +1056,7 @@ DEFINE_PER_CPU(struct task_struct *, fpu_owner_task);
+  */
+ static const unsigned int exception_stack_sizes[N_EXCEPTION_STACKS] = {
+ 	  [0 ... N_EXCEPTION_STACKS - 1]	= EXCEPTION_STKSZ,
+-#if DEBUG_STACK > 0
+ 	  [DEBUG_STACK - 1]			= DEBUG_STKSZ
+-#endif
+ };
+ 
+ static DEFINE_PER_CPU_PAGE_ALIGNED(char, exception_stacks
+diff --git a/arch/x86/kernel/dumpstack_64.c b/arch/x86/kernel/dumpstack_64.c
+index 9d50b30..17107bd 100644
+--- a/arch/x86/kernel/dumpstack_64.c
++++ b/arch/x86/kernel/dumpstack_64.c
+@@ -21,14 +21,10 @@
+ 		(N_EXCEPTION_STACKS + DEBUG_STKSZ/EXCEPTION_STKSZ - 2)
+ 
+ static char x86_stack_ids[][8] = {
+-#if DEBUG_STACK > 0
+ 		[ DEBUG_STACK-1			]	= "#DB",
+-#endif
+ 		[ NMI_STACK-1			]	= "NMI",
+ 		[ DOUBLEFAULT_STACK-1		]	= "#DF",
+-#if STACKFAULT_STACK > 0
+ 		[ STACKFAULT_STACK-1		]	= "#SS",
+-#endif
+ 		[ MCE_STACK-1			]	= "#MC",
+ #if DEBUG_STKSZ > EXCEPTION_STKSZ
+ 		[ N_EXCEPTION_STACKS ...
+-- 
+1.8.5.3
+
 
