@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932183AbaCEMAt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 07:00:49 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:41808 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932105AbaCEMAo (ORCPT
+	id S1757026AbaCEMD7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 07:03:59 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:56001 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932140AbaCEMAh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 07:00:44 -0500
-Subject: [PATCH -tip v8 16/26] ftrace/kprobes: Use NOKPROBE_SYMBOL macro in
- ftrace
+	Wed, 5 Mar 2014 07:00:37 -0500
+Subject: [PATCH -tip v8 15/26] kprobes: Use NOKPROBE_SYMBOL macro instead of
+ __kprobes
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
 Cc: Andi Kleen <andi@firstfloor.org>,
@@ -17,9 +17,10 @@ Cc: Andi Kleen <andi@firstfloor.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
         Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
         mingo@redhat.com, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, 05 Mar 2014 21:00:35 +0900
-Message-ID: <20140305120035.22766.90265.stgit@ltc230.yrl.intra.hitachi.co.jp>
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Wed, 05 Mar 2014 21:00:28 +0900
+Message-ID: <20140305120028.22766.30860.stgit@ltc230.yrl.intra.hitachi.co.jp>
 In-Reply-To: <20140305115843.22766.8355.stgit@ltc230.yrl.intra.hitachi.co.jp>
 References: <20140305115843.22766.8355.stgit@ltc230.yrl.intra.hitachi.co.jp>
 User-Agent: StGit/0.17-dirty
@@ -31,516 +32,261 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Use NOKPROBE_SYMBOL macro to protect functions from
-kprobes instead of __kprobes annotation in ftrace.
-This applies nokprobe_inline annotation for some cases,
-because NOKPROBE_SYMBOL() will inhibit inlining by
-referring the symbol address.
-
-Changes from previous:
- - Use nokprobe_inline for call_fetch (Thanks to Steven Rostedt)
- - Use nokprobe_inline instead of __always_inline.
- - Apply NOKPROBE_SYMBOL to __get_data_size and store_trace_args
-   (Thanks to Steven Rostedt)
+kprobes instead of __kprobes annotation.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: "David S. Miller" <davem@davemloft.net>
 ---
- kernel/trace/trace_event_perf.c |    5 ++-
- kernel/trace/trace_kprobe.c     |   64 +++++++++++++++++++++++----------------
- kernel/trace/trace_probe.c      |   61 ++++++++++++++++++++-----------------
- kernel/trace/trace_probe.h      |   15 ++++-----
- 4 files changed, 81 insertions(+), 64 deletions(-)
+ kernel/kprobes.c |   67 +++++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 41 insertions(+), 26 deletions(-)
 
-diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
-index e854f42..c97a795 100644
---- a/kernel/trace/trace_event_perf.c
-+++ b/kernel/trace/trace_event_perf.c
-@@ -232,8 +232,8 @@ void perf_trace_del(struct perf_event *p_event, int flags)
- 	tp_event->class->reg(tp_event, TRACE_REG_PERF_DEL, p_event);
- }
- 
--__kprobes void *perf_trace_buf_prepare(int size, unsigned short type,
--				       struct pt_regs *regs, int *rctxp)
-+void *perf_trace_buf_prepare(int size, unsigned short type,
-+			     struct pt_regs *regs, int *rctxp)
- {
- 	struct trace_entry *entry;
- 	unsigned long flags;
-@@ -265,6 +265,7 @@ __kprobes void *perf_trace_buf_prepare(int size, unsigned short type,
- 	return raw_data;
- }
- EXPORT_SYMBOL_GPL(perf_trace_buf_prepare);
-+NOKPROBE_SYMBOL(perf_trace_buf_prepare);
- 
- #ifdef CONFIG_FUNCTION_TRACER
- static void
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index d0ffbbe..6fc79e4 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -45,27 +45,27 @@ struct event_file_link {
- 	(sizeof(struct probe_arg) * (n)))
- 
- 
--static __kprobes bool trace_kprobe_is_return(struct trace_kprobe *tk)
-+static nokprobe_inline bool trace_kprobe_is_return(struct trace_kprobe *tk)
- {
- 	return tk->rp.handler != NULL;
- }
- 
--static __kprobes const char *trace_kprobe_symbol(struct trace_kprobe *tk)
-+static nokprobe_inline const char *trace_kprobe_symbol(struct trace_kprobe *tk)
- {
- 	return tk->symbol ? tk->symbol : "unknown";
- }
- 
--static __kprobes unsigned long trace_kprobe_offset(struct trace_kprobe *tk)
-+static nokprobe_inline unsigned long trace_kprobe_offset(struct trace_kprobe *tk)
- {
- 	return tk->rp.kp.offset;
- }
- 
--static __kprobes bool trace_kprobe_has_gone(struct trace_kprobe *tk)
-+static nokprobe_inline bool trace_kprobe_has_gone(struct trace_kprobe *tk)
- {
- 	return !!(kprobe_gone(&tk->rp.kp));
- }
- 
--static __kprobes bool trace_kprobe_within_module(struct trace_kprobe *tk,
-+static nokprobe_inline bool trace_kprobe_within_module(struct trace_kprobe *tk,
- 						 struct module *mod)
- {
- 	int len = strlen(mod->name);
-@@ -73,7 +73,7 @@ static __kprobes bool trace_kprobe_within_module(struct trace_kprobe *tk,
- 	return strncmp(mod->name, name, len) == 0 && name[len] == ':';
- }
- 
--static __kprobes bool trace_kprobe_is_on_module(struct trace_kprobe *tk)
-+static nokprobe_inline bool trace_kprobe_is_on_module(struct trace_kprobe *tk)
- {
- 	return !!strchr(trace_kprobe_symbol(tk), ':');
- }
-@@ -137,19 +137,21 @@ struct symbol_cache *alloc_symbol_cache(const char *sym, long offset)
-  * Kprobes-specific fetch functions
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 4db2cc6..a21b4e6 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -301,7 +301,7 @@ static inline void reset_kprobe_instance(void)
+  * 				OR
+  * 	- with preemption disabled - from arch/xxx/kernel/kprobes.c
   */
- #define DEFINE_FETCH_stack(type)					\
--static __kprobes void FETCH_FUNC_NAME(stack, type)(struct pt_regs *regs,\
-+static void FETCH_FUNC_NAME(stack, type)(struct pt_regs *regs,		\
- 					  void *offset, void *dest)	\
- {									\
- 	*(type *)dest = (type)regs_get_kernel_stack_nth(regs,		\
- 				(unsigned int)((unsigned long)offset));	\
--}
-+}									\
-+NOKPROBE_SYMBOL(FETCH_FUNC_NAME(stack, type));
-+
- DEFINE_BASIC_FETCH_FUNCS(stack)
- /* No string on the stack entry */
- #define fetch_stack_string	NULL
- #define fetch_stack_string_size	NULL
- 
- #define DEFINE_FETCH_memory(type)					\
--static __kprobes void FETCH_FUNC_NAME(memory, type)(struct pt_regs *regs,\
-+static void FETCH_FUNC_NAME(memory, type)(struct pt_regs *regs,		\
- 					  void *addr, void *dest)	\
- {									\
- 	type retval;							\
-@@ -157,14 +159,16 @@ static __kprobes void FETCH_FUNC_NAME(memory, type)(struct pt_regs *regs,\
- 		*(type *)dest = 0;					\
- 	else								\
- 		*(type *)dest = retval;					\
--}
-+}									\
-+NOKPROBE_SYMBOL(FETCH_FUNC_NAME(memory, type));
-+
- DEFINE_BASIC_FETCH_FUNCS(memory)
- /*
-  * Fetch a null-terminated string. Caller MUST set *(u32 *)dest with max
-  * length and relative data location.
-  */
--static __kprobes void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
--						      void *addr, void *dest)
-+static void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
-+					    void *addr, void *dest)
+-struct kprobe __kprobes *get_kprobe(void *addr)
++struct kprobe *get_kprobe(void *addr)
  {
- 	long ret;
- 	int maxlen = get_rloc_len(*(u32 *)dest);
-@@ -198,10 +202,11 @@ static __kprobes void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
- 					      get_rloc_offs(*(u32 *)dest));
+ 	struct hlist_head *head;
+ 	struct kprobe *p;
+@@ -314,8 +314,9 @@ struct kprobe __kprobes *get_kprobe(void *addr)
+ 
+ 	return NULL;
+ }
++NOKPROBE_SYMBOL(get_kprobe);
+ 
+-static int __kprobes aggr_pre_handler(struct kprobe *p, struct pt_regs *regs);
++static int aggr_pre_handler(struct kprobe *p, struct pt_regs *regs);
+ 
+ /* Return true if the kprobe is an aggregator */
+ static inline int kprobe_aggrprobe(struct kprobe *p)
+@@ -347,7 +348,7 @@ static bool kprobes_allow_optimization;
+  * Call all pre_handler on the list, but ignores its return value.
+  * This must be called from arch-dep optimized caller.
+  */
+-void __kprobes opt_pre_handler(struct kprobe *p, struct pt_regs *regs)
++void opt_pre_handler(struct kprobe *p, struct pt_regs *regs)
+ {
+ 	struct kprobe *kp;
+ 
+@@ -359,6 +360,7 @@ void __kprobes opt_pre_handler(struct kprobe *p, struct pt_regs *regs)
+ 		reset_kprobe_instance();
  	}
  }
-+NOKPROBE_SYMBOL(FETCH_FUNC_NAME(memory, string));
++NOKPROBE_SYMBOL(opt_pre_handler);
  
- /* Return the length of string -- including null terminal byte */
--static __kprobes void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
--							void *addr, void *dest)
-+static void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
-+						 void *addr, void *dest)
+ /* Free optimized instructions and optimized_kprobe */
+ static void free_aggr_kprobe(struct kprobe *p)
+@@ -995,7 +997,7 @@ static void disarm_kprobe(struct kprobe *kp, bool reopt)
+  * Aggregate handlers for multiple kprobes support - these handlers
+  * take care of invoking the individual kprobe handlers on p->list
+  */
+-static int __kprobes aggr_pre_handler(struct kprobe *p, struct pt_regs *regs)
++static int aggr_pre_handler(struct kprobe *p, struct pt_regs *regs)
  {
- 	mm_segment_t old_fs;
- 	int ret, len = 0;
-@@ -224,17 +229,19 @@ static __kprobes void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
- 	else
- 		*(u32 *)dest = len;
- }
-+NOKPROBE_SYMBOL(FETCH_FUNC_NAME(memory, string_size));
+ 	struct kprobe *kp;
  
- #define DEFINE_FETCH_symbol(type)					\
--__kprobes void FETCH_FUNC_NAME(symbol, type)(struct pt_regs *regs,	\
--					  void *data, void *dest)	\
-+void FETCH_FUNC_NAME(symbol, type)(struct pt_regs *regs, void *data, void *dest)\
- {									\
- 	struct symbol_cache *sc = data;					\
- 	if (sc->addr)							\
- 		fetch_memory_##type(regs, (void *)sc->addr, dest);	\
- 	else								\
- 		*(type *)dest = 0;					\
--}
-+}									\
-+NOKPROBE_SYMBOL(FETCH_FUNC_NAME(symbol, type));
-+
- DEFINE_BASIC_FETCH_FUNCS(symbol)
- DEFINE_FETCH_symbol(string)
- DEFINE_FETCH_symbol(string_size)
-@@ -920,7 +927,7 @@ static const struct file_operations kprobe_profile_ops = {
- };
- 
- /* Kprobe handler */
--static __kprobes void
-+static nokprobe_inline void
- __kprobe_trace_func(struct trace_kprobe *tk, struct pt_regs *regs,
- 		    struct ftrace_event_file *ftrace_file)
- {
-@@ -956,7 +963,7 @@ __kprobe_trace_func(struct trace_kprobe *tk, struct pt_regs *regs,
- 					 entry, irq_flags, pc, regs);
- }
- 
--static __kprobes void
-+static void
- kprobe_trace_func(struct trace_kprobe *tk, struct pt_regs *regs)
- {
- 	struct event_file_link *link;
-@@ -964,9 +971,10 @@ kprobe_trace_func(struct trace_kprobe *tk, struct pt_regs *regs)
- 	list_for_each_entry_rcu(link, &tk->tp.files, list)
- 		__kprobe_trace_func(tk, regs, link->file);
- }
-+NOKPROBE_SYMBOL(kprobe_trace_func);
- 
- /* Kretprobe handler */
--static __kprobes void
-+static nokprobe_inline void
- __kretprobe_trace_func(struct trace_kprobe *tk, struct kretprobe_instance *ri,
- 		       struct pt_regs *regs,
- 		       struct ftrace_event_file *ftrace_file)
-@@ -1004,7 +1012,7 @@ __kretprobe_trace_func(struct trace_kprobe *tk, struct kretprobe_instance *ri,
- 					 entry, irq_flags, pc, regs);
- }
- 
--static __kprobes void
-+static void
- kretprobe_trace_func(struct trace_kprobe *tk, struct kretprobe_instance *ri,
- 		     struct pt_regs *regs)
- {
-@@ -1013,6 +1021,7 @@ kretprobe_trace_func(struct trace_kprobe *tk, struct kretprobe_instance *ri,
- 	list_for_each_entry_rcu(link, &tk->tp.files, list)
- 		__kretprobe_trace_func(tk, ri, regs, link->file);
- }
-+NOKPROBE_SYMBOL(kretprobe_trace_func);
- 
- /* Event entry printers */
- static enum print_line_t
-@@ -1144,7 +1153,7 @@ static int kretprobe_event_define_fields(struct ftrace_event_call *event_call)
- #ifdef CONFIG_PERF_EVENTS
- 
- /* Kprobe profile handler */
--static __kprobes void
-+static void
- kprobe_perf_func(struct trace_kprobe *tk, struct pt_regs *regs)
- {
- 	struct ftrace_event_call *call = &tk->tp.call;
-@@ -1171,9 +1180,10 @@ kprobe_perf_func(struct trace_kprobe *tk, struct pt_regs *regs)
- 	store_trace_args(sizeof(*entry), &tk->tp, regs, (u8 *)&entry[1], dsize);
- 	perf_trace_buf_submit(entry, size, rctx, 0, 1, regs, head, NULL);
- }
-+NOKPROBE_SYMBOL(kprobe_perf_func);
- 
- /* Kretprobe profile handler */
--static __kprobes void
-+static void
- kretprobe_perf_func(struct trace_kprobe *tk, struct kretprobe_instance *ri,
- 		    struct pt_regs *regs)
- {
-@@ -1201,6 +1211,7 @@ kretprobe_perf_func(struct trace_kprobe *tk, struct kretprobe_instance *ri,
- 	store_trace_args(sizeof(*entry), &tk->tp, regs, (u8 *)&entry[1], dsize);
- 	perf_trace_buf_submit(entry, size, rctx, 0, 1, regs, head, NULL);
- }
-+NOKPROBE_SYMBOL(kretprobe_perf_func);
- #endif	/* CONFIG_PERF_EVENTS */
- 
- /*
-@@ -1237,8 +1248,7 @@ int kprobe_register(struct ftrace_event_call *event,
+@@ -1009,9 +1011,10 @@ static int __kprobes aggr_pre_handler(struct kprobe *p, struct pt_regs *regs)
+ 	}
  	return 0;
  }
++NOKPROBE_SYMBOL(aggr_pre_handler);
  
--static __kprobes
--int kprobe_dispatcher(struct kprobe *kp, struct pt_regs *regs)
-+static int kprobe_dispatcher(struct kprobe *kp, struct pt_regs *regs)
+-static void __kprobes aggr_post_handler(struct kprobe *p, struct pt_regs *regs,
+-					unsigned long flags)
++static void aggr_post_handler(struct kprobe *p, struct pt_regs *regs,
++			      unsigned long flags)
  {
- 	struct trace_kprobe *tk = container_of(kp, struct trace_kprobe, rp.kp);
+ 	struct kprobe *kp;
  
-@@ -1252,8 +1262,9 @@ int kprobe_dispatcher(struct kprobe *kp, struct pt_regs *regs)
- #endif
- 	return 0;	/* We don't tweek kernel, so just return 0 */
+@@ -1023,9 +1026,10 @@ static void __kprobes aggr_post_handler(struct kprobe *p, struct pt_regs *regs,
+ 		}
+ 	}
  }
-+NOKPROBE_SYMBOL(kprobe_dispatcher);
++NOKPROBE_SYMBOL(aggr_post_handler);
  
--static __kprobes
-+static
- int kretprobe_dispatcher(struct kretprobe_instance *ri, struct pt_regs *regs)
+-static int __kprobes aggr_fault_handler(struct kprobe *p, struct pt_regs *regs,
+-					int trapnr)
++static int aggr_fault_handler(struct kprobe *p, struct pt_regs *regs,
++			      int trapnr)
  {
- 	struct trace_kprobe *tk = container_of(ri->rp, struct trace_kprobe, rp);
-@@ -1268,6 +1279,7 @@ int kretprobe_dispatcher(struct kretprobe_instance *ri, struct pt_regs *regs)
- #endif
- 	return 0;	/* We don't tweek kernel, so just return 0 */
+ 	struct kprobe *cur = __this_cpu_read(kprobe_instance);
+ 
+@@ -1039,8 +1043,9 @@ static int __kprobes aggr_fault_handler(struct kprobe *p, struct pt_regs *regs,
+ 	}
+ 	return 0;
  }
-+NOKPROBE_SYMBOL(kretprobe_dispatcher);
++NOKPROBE_SYMBOL(aggr_fault_handler);
  
- static struct trace_event_functions kretprobe_funcs = {
- 	.trace		= print_kretprobe_event
-diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
-index d3a91e4..d4b9fc2 100644
---- a/kernel/trace/trace_probe.c
-+++ b/kernel/trace/trace_probe.c
-@@ -37,13 +37,13 @@ const char *reserved_field_names[] = {
- 
- /* Printing  in basic type function template */
- #define DEFINE_BASIC_PRINT_TYPE_FUNC(type, fmt)				\
--__kprobes int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s,	\
--						const char *name,	\
--						void *data, void *ent)	\
-+int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s, const char *name,	\
-+				void *data, void *ent)			\
- {									\
- 	return trace_seq_printf(s, " %s=" fmt, name, *(type *)data);	\
- }									\
--const char PRINT_TYPE_FMT_NAME(type)[] = fmt;
-+const char PRINT_TYPE_FMT_NAME(type)[] = fmt;				\
-+NOKPROBE_SYMBOL(PRINT_TYPE_FUNC_NAME(type));
- 
- DEFINE_BASIC_PRINT_TYPE_FUNC(u8 , "0x%x")
- DEFINE_BASIC_PRINT_TYPE_FUNC(u16, "0x%x")
-@@ -55,9 +55,8 @@ DEFINE_BASIC_PRINT_TYPE_FUNC(s32, "%d")
- DEFINE_BASIC_PRINT_TYPE_FUNC(s64, "%Ld")
- 
- /* Print type function for string type */
--__kprobes int PRINT_TYPE_FUNC_NAME(string)(struct trace_seq *s,
--						  const char *name,
--						  void *data, void *ent)
-+int PRINT_TYPE_FUNC_NAME(string)(struct trace_seq *s, const char *name,
-+				 void *data, void *ent)
+-static int __kprobes aggr_break_handler(struct kprobe *p, struct pt_regs *regs)
++static int aggr_break_handler(struct kprobe *p, struct pt_regs *regs)
  {
- 	int len = *(u32 *)data >> 16;
- 
-@@ -67,6 +66,7 @@ __kprobes int PRINT_TYPE_FUNC_NAME(string)(struct trace_seq *s,
- 		return trace_seq_printf(s, " %s=\"%s\"", name,
- 					(const char *)get_loc_data(data, ent));
+ 	struct kprobe *cur = __this_cpu_read(kprobe_instance);
+ 	int ret = 0;
+@@ -1052,9 +1057,10 @@ static int __kprobes aggr_break_handler(struct kprobe *p, struct pt_regs *regs)
+ 	reset_kprobe_instance();
+ 	return ret;
  }
-+NOKPROBE_SYMBOL(PRINT_TYPE_FUNC_NAME(string));
++NOKPROBE_SYMBOL(aggr_break_handler);
  
- const char PRINT_TYPE_FMT_NAME(string)[] = "\\\"%s\\\"";
- 
-@@ -81,23 +81,24 @@ const char PRINT_TYPE_FMT_NAME(string)[] = "\\\"%s\\\"";
- 
- /* Data fetch function templates */
- #define DEFINE_FETCH_reg(type)						\
--__kprobes void FETCH_FUNC_NAME(reg, type)(struct pt_regs *regs,		\
--					void *offset, void *dest)	\
-+void FETCH_FUNC_NAME(reg, type)(struct pt_regs *regs, void *offset, void *dest)	\
- {									\
- 	*(type *)dest = (type)regs_get_register(regs,			\
- 				(unsigned int)((unsigned long)offset));	\
--}
-+}									\
-+NOKPROBE_SYMBOL(FETCH_FUNC_NAME(reg, type));
- DEFINE_BASIC_FETCH_FUNCS(reg)
- /* No string on the register */
- #define fetch_reg_string	NULL
- #define fetch_reg_string_size	NULL
- 
- #define DEFINE_FETCH_retval(type)					\
--__kprobes void FETCH_FUNC_NAME(retval, type)(struct pt_regs *regs,	\
--					  void *dummy, void *dest)	\
-+void FETCH_FUNC_NAME(retval, type)(struct pt_regs *regs,		\
-+				   void *dummy, void *dest)		\
- {									\
- 	*(type *)dest = (type)regs_return_value(regs);			\
--}
-+}									\
-+NOKPROBE_SYMBOL(FETCH_FUNC_NAME(retval, type));
- DEFINE_BASIC_FETCH_FUNCS(retval)
- /* No string on the retval */
- #define fetch_retval_string		NULL
-@@ -112,8 +113,8 @@ struct deref_fetch_param {
- };
- 
- #define DEFINE_FETCH_deref(type)					\
--__kprobes void FETCH_FUNC_NAME(deref, type)(struct pt_regs *regs,	\
--					    void *data, void *dest)	\
-+void FETCH_FUNC_NAME(deref, type)(struct pt_regs *regs,			\
-+				  void *data, void *dest)		\
- {									\
- 	struct deref_fetch_param *dprm = data;				\
- 	unsigned long addr;						\
-@@ -123,12 +124,13 @@ __kprobes void FETCH_FUNC_NAME(deref, type)(struct pt_regs *regs,	\
- 		dprm->fetch(regs, (void *)addr, dest);			\
- 	} else								\
- 		*(type *)dest = 0;					\
--}
-+}									\
-+NOKPROBE_SYMBOL(FETCH_FUNC_NAME(deref, type));
- DEFINE_BASIC_FETCH_FUNCS(deref)
- DEFINE_FETCH_deref(string)
- 
--__kprobes void FETCH_FUNC_NAME(deref, string_size)(struct pt_regs *regs,
--						   void *data, void *dest)
-+void FETCH_FUNC_NAME(deref, string_size)(struct pt_regs *regs,
-+					 void *data, void *dest)
+ /* Walks the list and increments nmissed count for multiprobe case */
+-void __kprobes kprobes_inc_nmissed_count(struct kprobe *p)
++void kprobes_inc_nmissed_count(struct kprobe *p)
  {
- 	struct deref_fetch_param *dprm = data;
- 	unsigned long addr;
-@@ -140,16 +142,18 @@ __kprobes void FETCH_FUNC_NAME(deref, string_size)(struct pt_regs *regs,
- 	} else
- 		*(string_size *)dest = 0;
+ 	struct kprobe *kp;
+ 	if (!kprobe_aggrprobe(p)) {
+@@ -1065,9 +1071,10 @@ void __kprobes kprobes_inc_nmissed_count(struct kprobe *p)
+ 	}
+ 	return;
  }
-+NOKPROBE_SYMBOL(FETCH_FUNC_NAME(deref, string_size));
++NOKPROBE_SYMBOL(kprobes_inc_nmissed_count);
  
--static __kprobes void update_deref_fetch_param(struct deref_fetch_param *data)
-+static void update_deref_fetch_param(struct deref_fetch_param *data)
+-void __kprobes recycle_rp_inst(struct kretprobe_instance *ri,
+-				struct hlist_head *head)
++void recycle_rp_inst(struct kretprobe_instance *ri,
++		     struct hlist_head *head)
  {
- 	if (CHECK_FETCH_FUNCS(deref, data->orig.fn))
- 		update_deref_fetch_param(data->orig.data);
- 	else if (CHECK_FETCH_FUNCS(symbol, data->orig.fn))
- 		update_symbol_cache(data->orig.data);
- }
-+NOKPROBE_SYMBOL(update_deref_fetch_param);
+ 	struct kretprobe *rp = ri->rp;
  
--static __kprobes void free_deref_fetch_param(struct deref_fetch_param *data)
-+static void free_deref_fetch_param(struct deref_fetch_param *data)
+@@ -1082,8 +1089,9 @@ void __kprobes recycle_rp_inst(struct kretprobe_instance *ri,
+ 		/* Unregistering */
+ 		hlist_add_head(&ri->hlist, head);
+ }
++NOKPROBE_SYMBOL(recycle_rp_inst);
+ 
+-void __kprobes kretprobe_hash_lock(struct task_struct *tsk,
++void kretprobe_hash_lock(struct task_struct *tsk,
+ 			 struct hlist_head **head, unsigned long *flags)
+ __acquires(hlist_lock)
  {
- 	if (CHECK_FETCH_FUNCS(deref, data->orig.fn))
- 		free_deref_fetch_param(data->orig.data);
-@@ -157,6 +161,7 @@ static __kprobes void free_deref_fetch_param(struct deref_fetch_param *data)
- 		free_symbol_cache(data->orig.data);
- 	kfree(data);
+@@ -1094,17 +1102,19 @@ __acquires(hlist_lock)
+ 	hlist_lock = kretprobe_table_lock_ptr(hash);
+ 	raw_spin_lock_irqsave(hlist_lock, *flags);
  }
-+NOKPROBE_SYMBOL(free_deref_fetch_param);
++NOKPROBE_SYMBOL(kretprobe_hash_lock);
  
- /* Bitfield fetch function */
- struct bitfield_fetch_param {
-@@ -166,8 +171,8 @@ struct bitfield_fetch_param {
- };
- 
- #define DEFINE_FETCH_bitfield(type)					\
--__kprobes void FETCH_FUNC_NAME(bitfield, type)(struct pt_regs *regs,	\
--					    void *data, void *dest)	\
-+void FETCH_FUNC_NAME(bitfield, type)(struct pt_regs *regs,		\
-+				     void *data, void *dest)		\
- {									\
- 	struct bitfield_fetch_param *bprm = data;			\
- 	type buf = 0;							\
-@@ -177,8 +182,8 @@ __kprobes void FETCH_FUNC_NAME(bitfield, type)(struct pt_regs *regs,	\
- 		buf >>= bprm->low_shift;				\
- 	}								\
- 	*(type *)dest = buf;						\
--}
--
-+}									\
-+NOKPROBE_SYMBOL(FETCH_FUNC_NAME(bitfield, type));
- DEFINE_BASIC_FETCH_FUNCS(bitfield)
- #define fetch_bitfield_string		NULL
- #define fetch_bitfield_string_size	NULL
-@@ -255,17 +260,17 @@ fail:
- }
- 
- /* Special function : only accept unsigned long */
--static __kprobes void fetch_kernel_stack_address(struct pt_regs *regs,
--						 void *dummy, void *dest)
-+static void fetch_kernel_stack_address(struct pt_regs *regs, void *dummy, void *dest)
+-static void __kprobes kretprobe_table_lock(unsigned long hash,
+-	unsigned long *flags)
++static void kretprobe_table_lock(unsigned long hash,
++				 unsigned long *flags)
+ __acquires(hlist_lock)
  {
- 	*(unsigned long *)dest = kernel_stack_pointer(regs);
+ 	raw_spinlock_t *hlist_lock = kretprobe_table_lock_ptr(hash);
+ 	raw_spin_lock_irqsave(hlist_lock, *flags);
  }
-+NOKPROBE_SYMBOL(fetch_kernel_stack_address);
++NOKPROBE_SYMBOL(kretprobe_table_lock);
  
--static __kprobes void fetch_user_stack_address(struct pt_regs *regs,
--					       void *dummy, void *dest)
-+static void fetch_user_stack_address(struct pt_regs *regs, void *dummy, void *dest)
+-void __kprobes kretprobe_hash_unlock(struct task_struct *tsk,
+-	unsigned long *flags)
++void kretprobe_hash_unlock(struct task_struct *tsk,
++			   unsigned long *flags)
+ __releases(hlist_lock)
  {
- 	*(unsigned long *)dest = user_stack_pointer(regs);
+ 	unsigned long hash = hash_ptr(tsk, KPROBE_HASH_BITS);
+@@ -1113,14 +1123,16 @@ __releases(hlist_lock)
+ 	hlist_lock = kretprobe_table_lock_ptr(hash);
+ 	raw_spin_unlock_irqrestore(hlist_lock, *flags);
  }
-+NOKPROBE_SYMBOL(fetch_user_stack_address);
++NOKPROBE_SYMBOL(kretprobe_hash_unlock);
  
- static fetch_func_t get_fetch_size_function(const struct fetch_type *type,
- 					    fetch_func_t orig_fn,
-diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
-index b73574a..72b5da2 100644
---- a/kernel/trace/trace_probe.h
-+++ b/kernel/trace/trace_probe.h
-@@ -81,13 +81,13 @@
+-static void __kprobes kretprobe_table_unlock(unsigned long hash,
+-       unsigned long *flags)
++static void kretprobe_table_unlock(unsigned long hash,
++				   unsigned long *flags)
+ __releases(hlist_lock)
+ {
+ 	raw_spinlock_t *hlist_lock = kretprobe_table_lock_ptr(hash);
+ 	raw_spin_unlock_irqrestore(hlist_lock, *flags);
+ }
++NOKPROBE_SYMBOL(kretprobe_table_unlock);
+ 
+ /*
+  * This function is called from finish_task_switch when task tk becomes dead,
+@@ -1128,7 +1140,7 @@ __releases(hlist_lock)
+  * with this task. These left over instances represent probed functions
+  * that have been called but will never return.
   */
- #define convert_rloc_to_loc(dl, offs)	((u32)(dl) + (offs))
- 
--static inline void *get_rloc_data(u32 *dl)
-+static nokprobe_inline void *get_rloc_data(u32 *dl)
+-void __kprobes kprobe_flush_task(struct task_struct *tk)
++void kprobe_flush_task(struct task_struct *tk)
  {
- 	return (u8 *)dl + get_rloc_offs(*dl);
+ 	struct kretprobe_instance *ri;
+ 	struct hlist_head *head, empty_rp;
+@@ -1153,6 +1165,7 @@ void __kprobes kprobe_flush_task(struct task_struct *tk)
+ 		kfree(ri);
+ 	}
+ }
++NOKPROBE_SYMBOL(kprobe_flush_task);
+ 
+ static inline void free_rp_inst(struct kretprobe *rp)
+ {
+@@ -1165,7 +1178,7 @@ static inline void free_rp_inst(struct kretprobe *rp)
+ 	}
  }
  
- /* For data_loc conversion */
--static inline void *get_loc_data(u32 *dl, void *ent)
-+static nokprobe_inline void *get_loc_data(u32 *dl, void *ent)
+-static void __kprobes cleanup_rp_inst(struct kretprobe *rp)
++static void cleanup_rp_inst(struct kretprobe *rp)
  {
- 	return (u8 *)ent + get_rloc_offs(*dl);
+ 	unsigned long flags, hash;
+ 	struct kretprobe_instance *ri;
+@@ -1184,6 +1197,7 @@ static void __kprobes cleanup_rp_inst(struct kretprobe *rp)
+ 	}
+ 	free_rp_inst(rp);
  }
-@@ -136,9 +136,8 @@ typedef u32 string_size;
++NOKPROBE_SYMBOL(cleanup_rp_inst);
  
- /* Printing  in basic type function template */
- #define DECLARE_BASIC_PRINT_TYPE_FUNC(type)				\
--__kprobes int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s,		\
--					 const char *name,		\
--					 void *data, void *ent);	\
-+int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s, const char *name,	\
-+				void *data, void *ent);			\
- extern const char PRINT_TYPE_FMT_NAME(type)[]
- 
- DECLARE_BASIC_PRINT_TYPE_FUNC(u8);
-@@ -298,7 +297,7 @@ static inline bool trace_probe_is_registered(struct trace_probe *tp)
- 	return !!(tp->flags & TP_FLAG_REGISTERED);
+ /*
+ * Add the new probe to ap->list. Fail if this is the
+@@ -1758,8 +1772,7 @@ EXPORT_SYMBOL_GPL(unregister_jprobes);
+  * This kprobe pre_handler is registered with every kretprobe. When probe
+  * hits it will set up the return probe.
+  */
+-static int __kprobes pre_handler_kretprobe(struct kprobe *p,
+-					   struct pt_regs *regs)
++static int pre_handler_kretprobe(struct kprobe *p, struct pt_regs *regs)
+ {
+ 	struct kretprobe *rp = container_of(p, struct kretprobe, kp);
+ 	unsigned long hash, flags = 0;
+@@ -1797,6 +1810,7 @@ static int __kprobes pre_handler_kretprobe(struct kprobe *p,
+ 	}
+ 	return 0;
  }
++NOKPROBE_SYMBOL(pre_handler_kretprobe);
  
--static inline __kprobes void call_fetch(struct fetch_param *fprm,
-+static nokprobe_inline void call_fetch(struct fetch_param *fprm,
- 				 struct pt_regs *regs, void *dest)
+ int register_kretprobe(struct kretprobe *rp)
  {
- 	return fprm->fn(regs, fprm->data, dest);
-@@ -334,7 +333,7 @@ extern ssize_t traceprobe_probes_write(struct file *file,
- extern int traceprobe_command(const char *buf, int (*createfn)(int, char**));
- 
- /* Sum up total data length for dynamic arraies (strings) */
--static inline __kprobes int
-+static nokprobe_inline int
- __get_data_size(struct trace_probe *tp, struct pt_regs *regs)
- {
- 	int i, ret = 0;
-@@ -350,7 +349,7 @@ __get_data_size(struct trace_probe *tp, struct pt_regs *regs)
+@@ -1920,11 +1934,11 @@ void unregister_kretprobes(struct kretprobe **rps, int num)
  }
+ EXPORT_SYMBOL_GPL(unregister_kretprobes);
  
- /* Store the value of each argument */
--static inline __kprobes void
-+static nokprobe_inline void
- store_trace_args(int ent_size, struct trace_probe *tp, struct pt_regs *regs,
- 		 u8 *data, int maxlen)
+-static int __kprobes pre_handler_kretprobe(struct kprobe *p,
+-					   struct pt_regs *regs)
++static int pre_handler_kretprobe(struct kprobe *p, struct pt_regs *regs)
  {
+ 	return 0;
+ }
++NOKPROBE_SYMBOL(pre_handler_kretprobe);
+ 
+ #endif /* CONFIG_KRETPROBES */
+ 
+@@ -2002,12 +2016,13 @@ out:
+ }
+ EXPORT_SYMBOL_GPL(enable_kprobe);
+ 
+-void __kprobes dump_kprobe(struct kprobe *kp)
++void dump_kprobe(struct kprobe *kp)
+ {
+ 	printk(KERN_WARNING "Dumping kprobe:\n");
+ 	printk(KERN_WARNING "Name: %s\nAddress: %p\nOffset: %x\n",
+ 	       kp->symbol_name, kp->addr, kp->offset);
+ }
++NOKPROBE_SYMBOL(dump_kprobe);
+ 
+ /*
+  * Lookup and populate the kprobe_blacklist.
 
 
