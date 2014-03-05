@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757550AbaCEO0u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:26:50 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41161 "EHLO
+	id S1757881AbaCEPCM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:02:12 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41210 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757403AbaCEO0f (ORCPT
+	with ESMTP id S1757534AbaCEO0t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:26:35 -0500
+	Wed, 5 Mar 2014 09:26:49 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@lst.de>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Takashi Iwai <tiwai@suse.de>, Mark Brown <broonie@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 091/131] bio-integrity: Fix bio_integrity_verify segment start bug
-Date: Wed,  5 Mar 2014 14:23:35 +0000
-Message-Id: <1394029455-23128-92-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 101/131] ASoC: wm8770: Fix wrong number of enum items
+Date: Wed,  5 Mar 2014 14:23:45 +0000
+Message-Id: <1394029455-23128-102-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -29,47 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 5837c80e870bc3b12ac6a98cdc9ce7a9522a8fb6 upstream.
+commit 7a6c0a58dc824523966f212c76322d47c5b0e6fe upstream.
 
-This patch addresses a bug in bio_integrity_verify() code that has
-been causing DIF READ verify operations to be silently skipped.
+wm8770 codec driver defines ain_enum with a wrong number of items.
 
-The issue is that bio->bi_idx will have been incremented within
-bio_advance() code in the normal blk_update_request() ->
-req_bio_endio() completion path, and bio_integrity_verify() is
-using bio_for_each_segment() which starts the bio segment walk
-at the current bio->bi_idx.
+Use SOC_ENUM_DOUBLE_DECL() macro and it's automatically fixed.
 
-So instead use bio_for_each_segment_all() to always start the bio
-segment walk from zero, regardless of the current bio->bi_idx
-value after bio_advance() has been called.
-
-Cc: Martin K. Petersen <martin.petersen@oracle.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
-[ luis: backported to 3.11: used Nicholas's backport to v3.10.y+ ]
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Acked-by: Liam Girdwood <liam.r.girdwood@linux.intel.com>
+Acked-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/bio-integrity.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/soc/codecs/wm8770.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
-index 8dccf73..433c3b8 100644
---- a/fs/bio-integrity.c
-+++ b/fs/bio-integrity.c
-@@ -458,7 +458,7 @@ static int bio_integrity_verify(struct bio *bio)
- 	bix.disk_name = bio->bi_bdev->bd_disk->disk_name;
- 	bix.sector_size = bi->sector_size;
+diff --git a/sound/soc/codecs/wm8770.c b/sound/soc/codecs/wm8770.c
+index 89a18d8..5bce210 100644
+--- a/sound/soc/codecs/wm8770.c
++++ b/sound/soc/codecs/wm8770.c
+@@ -196,8 +196,8 @@ static const char *ain_text[] = {
+ 	"AIN5", "AIN6", "AIN7", "AIN8"
+ };
  
--	bio_for_each_segment(bv, bio, i) {
-+	bio_for_each_segment_all(bv, bio, i) {
- 		void *kaddr = kmap_atomic(bv->bv_page);
- 		bix.data_buf = kaddr + bv->bv_offset;
- 		bix.data_size = bv->bv_len;
+-static const struct soc_enum ain_enum =
+-	SOC_ENUM_DOUBLE(WM8770_ADCMUX, 0, 4, 8, ain_text);
++static SOC_ENUM_DOUBLE_DECL(ain_enum,
++			    WM8770_ADCMUX, 0, 4, ain_text);
+ 
+ static const struct snd_kcontrol_new ain_mux =
+ 	SOC_DAPM_ENUM("Capture Mux", ain_enum);
 -- 
 1.9.0
 
