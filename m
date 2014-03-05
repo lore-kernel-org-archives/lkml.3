@@ -1,61 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758348AbaCEOi4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:38:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55509 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752925AbaCEOiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:38:54 -0500
-Date: Wed, 5 Mar 2014 15:38:00 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Khalid Aziz <khalid.aziz@oracle.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, peterz@infradead.org,
-        akpm@linux-foundation.org, andi.kleen@intel.com, rob@landley.net,
-        viro@zeniv.linux.org.uk, venki@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] [PATCH] Pre-emption control for userspace
-Message-ID: <20140305143800.GA29480@redhat.com>
-References: <1393870033-31076-1-git-send-email-khalid.aziz@oracle.com> <20140304135624.GA6846@redhat.com> <53161116.9050109@oracle.com> <20140304190348.GA22075@redhat.com> <5316343B.2030404@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5316343B.2030404@oracle.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S932530AbaCEOin (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:38:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41836 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758300AbaCEOij (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 09:38:39 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Andrew Honig <ahonig@google.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.5 60/62] kvm: x86: fix emulator buffer overflow (CVE-2014-0049)
+Date: Wed,  5 Mar 2014 14:37:04 +0000
+Message-Id: <1394030226-26652-61-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
+References: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04, Khalid Aziz wrote:
->
-> On 03/04/2014 12:03 PM, Oleg Nesterov wrote:
->>
->> 	1. mremap() can move this vma, so do_exit() can't trust ->uaddr
->>
->> 	2. Even worse, mremap() itself is not safe. It can do ->close()
->> 	   too and create the new vma with the same vm_ops. Another
->> 	   unmap from (say) exit_mm() won't be happy.
->
-> I agree this looks like a potential spot for trouble. I was asking if
-> removing sys_munmap() of uaddr from do_exit() solves both of the above
-> problems?
+3.5.7.32 -stable review patch.  If anyone has any objections, please let me know.
 
-How? Of course this won't solve the problems. And there are more problems.
+------------------
 
-> You have convinced me this sys_munmap() I added is unnecessary.
+From: Andrew Honig <ahonig@google.com>
 
-Cough ;) I didn't try to convince you that it should be removed. It is
-necessary (but of course you should not use sys_munmap(), say vm_munmap
-is better.
+commit a08d3b3b99efd509133946056531cdf8f3a0c09b upstream.
 
-But you know, I think this all doesn't matter. Imho, this proc/mmap
-interface is horrible. Perhaps something like tls area visible to kernel
-make sense, but it should be more generic at least.
+The problem occurs when the guest performs a pusha with the stack
+address pointing to an mmio address (or an invalid guest physical
+address) to start with, but then extending into an ordinary guest
+physical address.  When doing repeated emulated pushes
+emulator_read_write sets mmio_needed to 1 on the first one.  On a
+later push when the stack points to regular memory,
+mmio_nr_fragments is set to 0, but mmio_is_needed is not set to 0.
 
-You added /proc/sched_preempt_delay to avoid the syscall. I think it
-would be better to simply add vdso_sched_preempt_delay() instead.
+As a result, KVM exits to userspace, and then returns to
+complete_emulated_mmio.  In complete_emulated_mmio
+vcpu->mmio_cur_fragment is incremented.  The termination condition of
+vcpu->mmio_cur_fragment == vcpu->mmio_nr_fragments is never achieved.
+The code bounces back and fourth to userspace incrementing
+mmio_cur_fragment past it's buffer.  If the guest does nothing else it
+eventually leads to a a crash on a memcpy from invalid memory address.
 
+However if a guest code can cause the vm to be destroyed in another
+vcpu with excellent timing, then kvm_clear_async_pf_completion_queue
+can be used by the guest to control the data that's pointed to by the
+call to cancel_work_item, which can be used to gain execution.
 
-But the main problem, of course, is that this feature is questionable.
+Fixes: f78146b0f9230765c6315b2e14f56112513389ad
+Signed-off-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+[ luis: backported to 3.5: adjusted context ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ arch/x86/kvm/x86.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Oleg.
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 494817e..122ee5f 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -5469,7 +5469,7 @@ static int complete_mmio(struct kvm_vcpu *vcpu)
+ 		frag = &vcpu->mmio_fragments[vcpu->mmio_cur_fragment++];
+ 		if (!vcpu->mmio_is_write)
+ 			memcpy(frag->data, run->mmio.data, frag->len);
+-		if (vcpu->mmio_cur_fragment == vcpu->mmio_nr_fragments) {
++		if (vcpu->mmio_cur_fragment >= vcpu->mmio_nr_fragments) {
+ 			vcpu->mmio_needed = 0;
+ 			if (vcpu->mmio_is_write)
+ 				return 1;
+-- 
+1.9.0
 
