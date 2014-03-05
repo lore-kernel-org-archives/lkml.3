@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756902AbaCESyq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 13:54:46 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:33467 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750817AbaCESyo (ORCPT
+	id S1756674AbaCES6d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 13:58:33 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43164 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753070AbaCES6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 13:54:44 -0500
-Date: Wed, 5 Mar 2014 10:54:39 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Robert Baldyga <r.baldyga@samsung.com>
-Cc: sameo@linux.intel.com, lee.jones@linaro.org, myungjoo.ham@samsung.com,
-        cw00.choi@samsung.com, cooloney@gmail.com, rpurdie@rpsys.net,
-        dbaryshkov@gmail.com, dwmw2@infradead.org, lgirdwood@gmail.com,
-        broonie@kernel.org, a.zummo@towertech.it, paul.gortmaker@windriver.com,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-leds@vger.kernel.org, rtc-linux@googlegroups.com,
-        m.szyprowski@samsung.com, k.kozlowski@samsung.com
-Subject: Re: [PATCH v2] mfd: max8997: use regmap to access registers
-Message-ID: <20140305185439.GC5453@core.coreip.homeip.net>
-References: <1394031497-16648-1-git-send-email-r.baldyga@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394031497-16648-1-git-send-email-r.baldyga@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 5 Mar 2014 13:58:31 -0500
+From: Colin King <colin.king@canonical.com>
+To: skinsbursky@parallels.com, linux-kernel@vger.kernel.org
+Subject: [PATCH][v2] selftests: ipc: handle msgget failure return correctly
+Date: Wed,  5 Mar 2014 18:58:28 +0000
+Message-Id: <1394045908-9031-1-git-send-email-colin.king@canonical.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Robert,
+From: Colin Ian King <colin.king@canonical.com>
 
-On Wed, Mar 05, 2014 at 03:58:17PM +0100, Robert Baldyga wrote:
->  
-> -int max8997_write_reg(struct i2c_client *i2c, u8 reg, u8 value)
-> +int max8997_write_reg(struct regmap *map, u8 reg, u8 value)
+A failed msgget causes the test to return an uninitialised value
+in ret. Assign ret to -errno on error exit.
 
-Why don't you make read/write reg to take struct max8997_dev as argument
-instead of regmap? regmap seems to be the current implementation du jur,
-but that is core's detail, functions do not need to care.
+Signed-off-by: Colin Ian King <colin.king@canonical.com>
+---
+ tools/testing/selftests/ipc/msgque.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-Thanks.
-
+diff --git a/tools/testing/selftests/ipc/msgque.c b/tools/testing/selftests/ipc/msgque.c
+index d664182..aa290c0 100644
+--- a/tools/testing/selftests/ipc/msgque.c
++++ b/tools/testing/selftests/ipc/msgque.c
+@@ -201,6 +201,7 @@ int main(int argc, char **argv)
+ 
+ 	msgque.msq_id = msgget(msgque.key, IPC_CREAT | IPC_EXCL | 0666);
+ 	if (msgque.msq_id == -1) {
++		err = -errno;
+ 		printf("Can't create queue\n");
+ 		goto err_out;
+ 	}
 -- 
-Dmitry
+1.9.0
+
