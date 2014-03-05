@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755932AbaCEPzZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 10:55:25 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:44553 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753008AbaCEPzX (ORCPT
+	id S1756681AbaCEP4G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:56:06 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:60494 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755012AbaCEP4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 10:55:23 -0500
-Date: Wed, 5 Mar 2014 23:54:18 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: tomi.valkeinen@ti.com
-Cc: plagnioj@jcrosoft.com, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, fengguang.wu@intel.com
-Subject: [PATCH] video: fbdev: uvesafb: Remove redundant NULL check in
- uvesafb_remove
-Message-ID: <20140305155418.GA32106@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>, tomi.valkeinen@ti.com,
-	plagnioj@jcrosoft.com, linux-fbdev@vger.kernel.org,
-	linux-kernel@vger.kernel.org, fengguang.wu@intel.com
+	Wed, 5 Mar 2014 10:56:04 -0500
+Date: Wed, 5 Mar 2014 16:56:01 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Khalid Aziz <khalid.aziz@oracle.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        peterz@infradead.org, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] [PATCH] Pre-emption control for userspace
+Message-ID: <20140305155601.GF22728@two.firstfloor.org>
+References: <1393870033-31076-1-git-send-email-khalid.aziz@oracle.com>
+ <531641A8.40306@zytor.com>
+ <53164824.3000704@oracle.com>
+ <20140304222356.41c55bbc@alan.etchedpixels.co.uk>
+ <5316574F.6040105@oracle.com>
+ <alpine.DEB.2.02.1403050129570.18573@ionos.tec.linutronix.de>
+ <8738ix5uyk.fsf@tassilo.jf.intel.com>
+ <20140305145420.GA30173@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140305145420.GA30173@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because uvesafb_par is allocated as part of fb_info in uvesafb_probe,
-so we don't need to do NULL check for both fb_info and uvesafb_par in
-uvesafb_remove.
+On Wed, Mar 05, 2014 at 03:54:20PM +0100, Oleg Nesterov wrote:
+> On 03/04, Andi Kleen wrote:
+> >
+> > Anything else?
+> 
+> Well, we have yield_to(). Perhaps sys_yield_to(lock_owner) can help.
+> Or perhaps sys_futex() can do this if it knows the owner. Don't ask
+> me what exactly I mean though ;)
 
-[ This patch also fix a warning report by fengguang.wu@intel.com
-  "drivers/video/fbdev/uvesafb.c:1815 uvesafb_remove()
-   warn: variable dereferenced before check 'par'" ]
+You mean yield_to() would extend the time slice?
 
-Signed-off-by: Wang YanQing <udknight@gmail.com>
----
- drivers/video/fbdev/uvesafb.c | 8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+That would be the same as the mmap page, just with a syscall right?
 
-diff --git a/drivers/video/fbdev/uvesafb.c b/drivers/video/fbdev/uvesafb.c
-index 1f38445..18352b2 100644
---- a/drivers/video/fbdev/uvesafb.c
-+++ b/drivers/video/fbdev/uvesafb.c
-@@ -1812,11 +1812,9 @@ static int uvesafb_remove(struct platform_device *dev)
- 		fb_destroy_modedb(info->monspecs.modedb);
- 		fb_dealloc_cmap(&info->cmap);
- 
--		if (par) {
--			kfree(par->vbe_modes);
--			kfree(par->vbe_state_orig);
--			kfree(par->vbe_state_saved);
--		}
-+		kfree(par->vbe_modes);
-+		kfree(par->vbe_state_orig);
-+		kfree(par->vbe_state_saved);
- 
- 		framebuffer_release(info);
- 	}
+-andi
+
 -- 
-1.8.3.4.8.g69490f3.dirty
+ak@linux.intel.com -- Speaking for myself only.
