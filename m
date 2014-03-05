@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758877AbaCEPPM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 10:15:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40993 "EHLO
+	id S1758164AbaCEPQS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:16:18 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40987 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757106AbaCEOZu (ORCPT
+	with ESMTP id S1755759AbaCEOZs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:25:50 -0500
+	Wed, 5 Mar 2014 09:25:48 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hans-Christoph Schemmel <hans-christoph.schemmel@gemalto.com>,
-        Christian Schmiedl <christian.schmiedl@gemalto.com>,
-        Nicolaus Colberg <nicolaus.colberg@gemalto.com>,
-        David McCullough <david.mccullough@accelecon.com>,
-        Aleksander Morgado <aleksander@aleksander.es>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Hsin-Yu Chao <hychao@chromium.org>, Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 054/131] USB: serial: option: blacklist interface 4 for Cinterion PHS8 and PXS8
-Date: Wed,  5 Mar 2014 14:22:58 +0000
-Message-Id: <1394029455-23128-55-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 060/131] ALSA: hda/ca0132 - Fix recording from mode id 0x8
+Date: Wed,  5 Mar 2014 14:23:04 +0000
+Message-Id: <1394029455-23128-61-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -32,37 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aleksander Morgado <aleksander@aleksander.es>
+From: Hsin-Yu Chao <hychao@chromium.org>
 
-commit 12df84d4a80278a5b1abfec3206795291da52fc9 upstream.
+commit 13c12dbe3a2ce17227f7ddef652b6a53c78fa51f upstream.
 
-This interface is to be handled by the qmi_wwan driver.
+Incorrect ADC is picked in ca0132_capture_pcm_prepare(),
+where it assumes multiple streams while there is one stream
+per ADC. Note that ca0132_capture_pcm_cleanup() already does
+the right thing.
 
-CC: Hans-Christoph Schemmel <hans-christoph.schemmel@gemalto.com>
-CC: Christian Schmiedl <christian.schmiedl@gemalto.com>
-CC: Nicolaus Colberg <nicolaus.colberg@gemalto.com>
-CC: David McCullough <david.mccullough@accelecon.com>
-Signed-off-by: Aleksander Morgado <aleksander@aleksander.es>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+The Chromebook Pixel has a microphone under the keyboard that
+is attached to node id 0x8. Before this fix, recording would
+always go to the main internal mic (node id 0x7).
+
+Signed-off-by: Hsin-Yu Chao <hychao@chromium.org>
+Reviewed-by: Dylan Reid <dgreid@chromium.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/option.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ sound/pci/hda/patch_ca0132.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index 216d20a..68fc9fe 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -1526,7 +1526,8 @@ static const struct usb_device_id option_ids[] = {
- 	/* Cinterion */
- 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_E) },
- 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_P) },
--	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PH8) },
-+	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PH8),
-+		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_AHXX) },
- 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PLXX),
- 		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+diff --git a/sound/pci/hda/patch_ca0132.c b/sound/pci/hda/patch_ca0132.c
+index 1e1e4b2..a91ad74 100644
+--- a/sound/pci/hda/patch_ca0132.c
++++ b/sound/pci/hda/patch_ca0132.c
+@@ -2768,9 +2768,7 @@ static int ca0132_capture_pcm_prepare(struct hda_pcm_stream *hinfo,
+ 					unsigned int format,
+ 					struct snd_pcm_substream *substream)
+ {
+-	struct ca0132_spec *spec = codec->spec;
+-
+-	snd_hda_codec_setup_stream(codec, spec->adcs[substream->number],
++	snd_hda_codec_setup_stream(codec, hinfo->nid,
+ 				   stream_tag, 0, format);
+ 
+ 	return 0;
 -- 
 1.9.0
 
