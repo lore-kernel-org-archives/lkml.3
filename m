@@ -1,67 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759342AbaCEP3Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 10:29:16 -0500
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:52444 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754112AbaCEP2w convert rfc822-to-8bit (ORCPT
+	id S932298AbaCEP32 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:29:28 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:23347 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754112AbaCEP3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 10:28:52 -0500
-MIME-Version: 1.0
-In-Reply-To: <1394020752-6186-1-git-send-email-thomas@archlinux.org>
-References: <1394020752-6186-1-git-send-email-thomas@archlinux.org>
-Date: Wed, 5 Mar 2014 10:28:52 -0500
-X-Google-Sender-Auth: 3UxGM3kLaKpr50C_rc1getDPNFg
-Message-ID: <CA+5PVA5JuMLLG82YB8Z2FrOz3a0JrbeGzjamGYh1Qt89LtBEfA@mail.gmail.com>
-Subject: Re: [PATCH] Revert "Bluetooth: Use devname:vhci module alias for
- virtual HCI driver"
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: =?ISO-8859-1?Q?Thomas_B=E4chler?= <thomas@archlinux.org>
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        linux-bluetooth@vger.kernel.org,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 5 Mar 2014 10:29:24 -0500
+X-AuditID: cbfee61b-b7f456d000006dfd-bd-531742d21211
+From: Kamil Debski <k.debski@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-usb@vger.kernel.org, devicetree@vger.kernel.org
+Cc: kyungmin.park@samsung.com, kishon@ti.com, t.figa@samsung.com,
+        s.nawrocki@samsung.com, m.szyprowski@samsung.com,
+        gautam.vivek@samsung.com, mat.krawczuk@gmail.com,
+        yulgon.kim@samsung.com, p.paneri@samsung.com,
+        av.tikhomirov@samsung.com, jg1.han@samsung.com, galak@codeaurora.org,
+        matt.porter@linaro.org, k.debski@samsung.com,
+        tjakobi@math.uni-bielefeld.de, stern@rowland.harvard.edu,
+        sander@humilis.net
+Subject: [PATCH v9 2/4] phy: core: Add devm_of_phy_get to phy-core
+Date: Wed, 05 Mar 2014 16:28:06 +0100
+Message-id: <1394033288-5551-3-git-send-email-k.debski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1394033288-5551-1-git-send-email-k.debski@samsung.com>
+References: <1394033288-5551-1-git-send-email-k.debski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJLMWRmVeSWpSXmKPExsVy+t9jQd1LTuLBBv17VSyW7L7BajH/yDlW
+	i/43C1kt2q4cZLe4vPASq8WP1xfYLC487WGzONv0Bii2aw6bxYzz+5gsFi1rZbZYe+Quu8XZ
+	/ttsFhObprFbnN/SyWRx+E07q8WKe7vZLSb8BupdP+M1i0Xb6g+sFh1nD7I7iHpc7utl8tg5
+	6y67x6e3i5k97lzbw+bx7xi7x+y7Pxg9+rasYvQ4fmM7k8fnTXIBnFFcNimpOZllqUX6dglc
+	GQue3WYs+CVScXHdNtYGxsmCXYwcHBICJhJ3e9y7GDmBTDGJC/fWs3UxcnEICUxnlHjf/5od
+	JCEk0MEkcfYBE0g9m4CmxKp7HiBhEYEaiSm3rrCD1DMLzGOW+PBlOgtIQljASeLCh/mMIDaL
+	gKpE5/u7zCA2r4CzxPn3yxkh9ipIzJlkA2JyCrhI/PtbD7HJWaLxyTq2CYy8CxgZVjGKphYk
+	FxQnpeca6RUn5haX5qXrJefnbmIER8Az6R2MqxosDjEKcDAq8fC+4BALFmJNLCuuzD3EKMHB
+	rCTCG60lHizEm5JYWZValB9fVJqTWnyIUZqDRUmc92CrdaCQQHpiSWp2ampBahFMlomDU6qB
+	MZr199bbUgbWGlk8Bg3SX2IclW6eviw6dy+bSF1lbDN/9qX3ESe193B7l1+a/uonF8/zAsm+
+	/PAtFxIF5mjx/3osJbNBWrp38QYx1dSk2rtSv39brtNsmLZjovF5hWvf3Ttdztx+PfW88pTp
+	PZVfz0f/0u1NnPl82tJ45QMPzq2edpkxYMtxayWW4oxEQy3mouJEAH02kHZ8AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 5, 2014 at 6:59 AM, Thomas Bächler <thomas@archlinux.org> wrote:
-> Adding the devname:vhci alias and thus adding a static /dev/vhci device node
-> only works when assigning a fixed major/minor number. However, the code
-> currently uses a dynamically assigned minor number. It is therefore impossible
-> to create a static device and to autoload the module when accessing it.
->
-> Reverting this fixes the kmod error message
->  depmod: ERROR: Module 'hci_vhci' has devname (vhci) but lacks major and minor information. Ignoring.
->
-> This reverts commit bfacbb9aec029b3200053d84c8cd5d7575f2d4a5.
+Adding devm_of_phy_get will allow to get phys by supplying a
+pointer to the struct device_node instead of struct device.
 
-We've had several reports of this in Fedora as well.  I hadn't gotten
-around to digging into it yet, so thanks for bringing this up Thomas.
+Signed-off-by: Kamil Debski <k.debski@samsung.com>
+---
+ drivers/phy/phy-core.c  |   31 +++++++++++++++++++++++++++++++
+ include/linux/phy/phy.h |    8 ++++++++
+ 2 files changed, 39 insertions(+)
 
-josh
+diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
+index 7c1b0e1..623b71c 100644
+--- a/drivers/phy/phy-core.c
++++ b/drivers/phy/phy-core.c
+@@ -526,6 +526,37 @@ struct phy *devm_phy_optional_get(struct device *dev, const char *string)
+ EXPORT_SYMBOL_GPL(devm_phy_optional_get);
+ 
+ /**
++ * devm_of_phy_get() - lookup and obtain a reference to a phy.
++ * @dev: device that requests this phy
++ * @np: node containing the phy
++ * @con_id: name of the phy from device's point of view
++ *
++ * Gets the phy using of_phy_get(), and associates a device with it using
++ * devres. On driver detach, release function is invoked on the devres data,
++ * then, devres data is freed.
++ */
++struct phy *devm_of_phy_get(struct device *dev, struct device_node *np,
++			    const char *con_id)
++{
++	struct phy **ptr, *phy;
++
++	ptr = devres_alloc(devm_phy_release, sizeof(*ptr), GFP_KERNEL);
++	if (!ptr)
++		return ERR_PTR(-ENOMEM);
++
++	phy = of_phy_get(np, con_id);
++	if (!IS_ERR(phy)) {
++		*ptr = phy;
++		devres_add(dev, ptr);
++	} else {
++		devres_free(ptr);
++	}
++
++	return phy;
++}
++EXPORT_SYMBOL_GPL(devm_of_phy_get);
++
++/**
+  * phy_create() - create a new phy
+  * @dev: device that is creating the new phy
+  * @ops: function pointers for performing phy operations
+diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
+index 2fe3194..bcbf96c 100644
+--- a/include/linux/phy/phy.h
++++ b/include/linux/phy/phy.h
+@@ -149,6 +149,8 @@ struct phy *phy_get(struct device *dev, const char *string);
+ struct phy *phy_optional_get(struct device *dev, const char *string);
+ struct phy *devm_phy_get(struct device *dev, const char *string);
+ struct phy *devm_phy_optional_get(struct device *dev, const char *string);
++struct phy *devm_of_phy_get(struct device *dev, struct device_node *np,
++			    const char *con_id);
+ void phy_put(struct phy *phy);
+ void devm_phy_put(struct device *dev, struct phy *phy);
+ struct phy *of_phy_get(struct device_node *np, const char *con_id);
+@@ -252,6 +254,12 @@ static inline struct phy *devm_phy_optional_get(struct device *dev,
+ 	return ERR_PTR(-ENOSYS);
+ }
+ 
++struct phy *devm_of_phy_get(struct device *dev, struct device_node *np,
++			    const char *con_id)
++{
++	return ERR_PTR(-ENOSYS);
++}
++
+ static inline void phy_put(struct phy *phy)
+ {
+ }
+-- 
+1.7.9.5
 
-> ---
->  drivers/bluetooth/hci_vhci.c | 1 -
->  1 file changed, 1 deletion(-)
->
-> diff --git a/drivers/bluetooth/hci_vhci.c b/drivers/bluetooth/hci_vhci.c
-> index 1ef6990..cf05d70 100644
-> --- a/drivers/bluetooth/hci_vhci.c
-> +++ b/drivers/bluetooth/hci_vhci.c
-> @@ -384,4 +384,3 @@ MODULE_AUTHOR("Marcel Holtmann <marcel@holtmann.org>");
->  MODULE_DESCRIPTION("Bluetooth virtual HCI driver ver " VERSION);
->  MODULE_VERSION(VERSION);
->  MODULE_LICENSE("GPL");
-> -MODULE_ALIAS("devname:vhci");
-> --
-> 1.9.0
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
