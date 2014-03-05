@@ -1,141 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756054AbaCEApy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 19:45:54 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:56470 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753299AbaCEApw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 19:45:52 -0500
-X-IronPort-AV: E=Sophos;i="4.97,589,1389744000"; 
-   d="scan'208";a="108181410"
-Message-ID: <531673BD.3070309@citrix.com>
-Date: Wed, 5 Mar 2014 00:45:49 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
-        <xen-devel@lists.xenproject.org>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jonathan.davies@citrix.com>
-Subject: Re: [PATCH net-next v6 9/9] xen-netback: Aggregate TX unmap operations
-References: <1393972341-21135-1-git-send-email-zoltan.kiss@citrix.com> <1393972341-21135-11-git-send-email-zoltan.kiss@citrix.com>
-In-Reply-To: <1393972341-21135-11-git-send-email-zoltan.kiss@citrix.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S1755753AbaCEAtF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 19:49:05 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:59822 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753907AbaCEAtD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 19:49:03 -0500
+Message-ID: <1393980534.26794.147.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: RCU stalls when running out of memory on 3.14-rc4 w/ NFS and
+ kernel threads priorities changed
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Florian Fainelli <f.fainelli@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, paulmck@linux.vnet.ibm.com,
+        linux-nfs@vger.kernel.org, trond.myklebust@primarydata.com,
+        netdev <netdev@vger.kernel.org>
+Date: Tue, 04 Mar 2014 16:48:54 -0800
+In-Reply-To: <CAGVrzcbsSV7h3qA3KuCTwKNFEeww_kSNcfUkfw3PPjeXQXBo6g@mail.gmail.com>
+References: <CAGVrzcbsSV7h3qA3KuCTwKNFEeww_kSNcfUkfw3PPjeXQXBo6g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Despite all my efforts to do renumbering right, this subject still shows 
-9/9 instead of 10/10.
+On Tue, 2014-03-04 at 15:55 -0800, Florian Fainelli wrote:
+> Hi all,
+> 
+> I am seeing the following RCU stalls messages appearing on an ARMv7
+> 4xCPUs system running 3.14-rc4:
+> 
+> [   42.974327] INFO: rcu_sched detected stalls on CPUs/tasks:
+> [   42.979839]  (detected by 0, t=2102 jiffies, g=4294967082,
+> c=4294967081, q=516)
+> [   42.987169] INFO: Stall ended before state dump start
+> 
+> this is happening under the following conditions:
+> 
+> - the attached bumper.c binary alters various kernel thread priorities
+> based on the contents of bumpup.cfg and
+> - malloc_crazy is running from a NFS share
+> - malloc_crazy.c is running in a loop allocating chunks of memory but
+> never freeing it
+> 
+> when the priorities are altered, instead of getting the OOM killer to
+> be invoked, the RCU stalls are happening. Taking NFS out of the
+> equation does not allow me to reproduce the problem even with the
+> priorities altered.
+> 
+> This "problem" seems to have been there for quite a while now since I
+> was able to get 3.8.13 to trigger that bug as well, with a slightly
+> more detailed RCU debugging trace which points the finger at kswapd0.
+> 
+> You should be able to get that reproduced under QEMU with the
+> Versatile Express platform emulating a Cortex A15 CPU and the attached
+> files.
+> 
+> Any help or suggestions would be greatly appreciated. Thanks!
 
-On 04/03/14 22:32, Zoltan Kiss wrote:
-> Unmapping causes TLB flushing, therefore we should make it in the largest
-> possible batches. However we shouldn't starve the guest for too long. So if
-> the guest has space for at least two big packets and we don't have at least a
-> quarter ring to unmap, delay it for at most 1 milisec.
->
-> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-> ---
-> v4:
-> - use bool for tx_dealloc_work_todo
->
-> v6:
-> - rebase tx_dealloc_work_todo due to missing ;
->
->   drivers/net/xen-netback/common.h    |    2 ++
->   drivers/net/xen-netback/interface.c |    2 ++
->   drivers/net/xen-netback/netback.c   |   34 +++++++++++++++++++++++++++++++++-
->   3 files changed, 37 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
-> index d1cd8ce..95498c8 100644
-> --- a/drivers/net/xen-netback/common.h
-> +++ b/drivers/net/xen-netback/common.h
-> @@ -118,6 +118,8 @@ struct xenvif {
->   	u16 dealloc_ring[MAX_PENDING_REQS];
->   	struct task_struct *dealloc_task;
->   	wait_queue_head_t dealloc_wq;
-> +	struct timer_list dealloc_delay;
-> +	bool dealloc_delay_timed_out;
->
->   	/* Use kthread for guest RX */
->   	struct task_struct *task;
-> diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
-> index 40aa500..f925af5 100644
-> --- a/drivers/net/xen-netback/interface.c
-> +++ b/drivers/net/xen-netback/interface.c
-> @@ -407,6 +407,7 @@ struct xenvif *xenvif_alloc(struct device *parent, domid_t domid,
->   			  .desc = i };
->   		vif->grant_tx_handle[i] = NETBACK_INVALID_HANDLE;
->   	}
-> +	init_timer(&vif->dealloc_delay);
->
->   	/*
->   	 * Initialise a dummy MAC address. We choose the numerically
-> @@ -557,6 +558,7 @@ void xenvif_disconnect(struct xenvif *vif)
->   	}
->
->   	if (vif->dealloc_task) {
-> +		del_timer_sync(&vif->dealloc_delay);
->   		kthread_stop(vif->dealloc_task);
->   		vif->dealloc_task = NULL;
->   	}
-> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-> index bb65c7c..c098276 100644
-> --- a/drivers/net/xen-netback/netback.c
-> +++ b/drivers/net/xen-netback/netback.c
-> @@ -135,6 +135,11 @@ static inline pending_ring_idx_t nr_pending_reqs(struct xenvif *vif)
->   		vif->pending_prod + vif->pending_cons;
->   }
->
-> +static inline pending_ring_idx_t nr_free_slots(struct xen_netif_tx_back_ring *ring)
-> +{
-> +	return ring->nr_ents -	(ring->sring->req_prod - ring->rsp_prod_pvt);
-> +}
-> +
->   bool xenvif_rx_ring_slots_available(struct xenvif *vif, int needed)
->   {
->   	RING_IDX prod, cons;
-> @@ -1932,9 +1937,36 @@ static inline int tx_work_todo(struct xenvif *vif)
->   	return 0;
->   }
->
-> +static void xenvif_dealloc_delay(unsigned long data)
-> +{
-> +	struct xenvif *vif = (struct xenvif *)data;
-> +
-> +	vif->dealloc_delay_timed_out = true;
-> +	wake_up(&vif->dealloc_wq);
-> +}
-> +
->   static inline bool tx_dealloc_work_todo(struct xenvif *vif)
->   {
-> -	return vif->dealloc_cons != vif->dealloc_prod;
-> +	if (vif->dealloc_cons != vif->dealloc_prod) {
-> +		if ((nr_free_slots(&vif->tx) > 2 * XEN_NETBK_LEGACY_SLOTS_MAX) &&
-> +		    (vif->dealloc_prod - vif->dealloc_cons < MAX_PENDING_REQS / 4) &&
-> +		    !vif->dealloc_delay_timed_out) {
-> +			if (!timer_pending(&vif->dealloc_delay)) {
-> +				vif->dealloc_delay.function =
-> +					xenvif_dealloc_delay;
-> +				vif->dealloc_delay.data = (unsigned long)vif;
-> +				mod_timer(&vif->dealloc_delay,
-> +					  jiffies + msecs_to_jiffies(1));
-> +
-> +			}
-> +			return false;
-> +		}
-> +		del_timer_sync(&vif->dealloc_delay);
-> +		vif->dealloc_delay_timed_out = false;
-> +		return true;
-> +	}
-> +
-> +	return false;
->   }
->
->   void xenvif_unmap_frontend_rings(struct xenvif *vif)
->
+Do you have a more complete trace, including stack traces ?
+
+
+
 
