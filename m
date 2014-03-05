@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758111AbaCEOhA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:37:00 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41225 "EHLO
+	id S1757573AbaCEO0v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:26:51 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41171 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757595AbaCEO0x (ORCPT
+	with ESMTP id S1754719AbaCEO0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:26:53 -0500
+	Wed, 5 Mar 2014 09:26:38 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Paris <eparis@redhat.com>, Paul Moore <pmoore@redhat.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 104/131] SELinux: bigendian problems with filename trans rules
-Date: Wed,  5 Mar 2014 14:23:48 +0000
-Message-Id: <1394029455-23128-105-git-send-email-luis.henriques@canonical.com>
+Cc: Christoph Hellwig <hch@lst.de>, Chris Mason <clm@fb.com>,
+        Ben Myers <bpm@sgi.com>, Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 092/131] fs: fix iversion handling
+Date: Wed,  5 Mar 2014 14:23:36 +0000
+Message-Id: <1394029455-23128-93-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -27,44 +27,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Paris <eparis@redhat.com>
+From: Christoph Hellwig <hch@infradead.org>
 
-commit 9085a6422900092886da8c404e1c5340c4ff1cbf upstream.
+commit dff6efc326a4d5f305797d4a6bba14f374fdd633 upstream.
 
-When writing policy via /sys/fs/selinux/policy I wrote the type and class
-of filename trans rules in CPU endian instead of little endian.  On
-x86_64 this works just fine, but it means that on big endian arch's like
-ppc64 and s390 userspace reads the policy and converts it from
-le32_to_cpu.  So the values are all screwed up.  Write the values in le
-format like it should have been to start.
+Currently notify_change directly updates i_version for size updates,
+which not only is counter to how all other fields are updated through
+struct iattr, but also breaks XFS, which need inode updates to happen
+under its own lock, and synchronized to the structure that gets written
+to the log.
 
-Signed-off-by: Eric Paris <eparis@redhat.com>
-Acked-by:  Stephen Smalley <sds@tycho.nsa.gov>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+Remove the update in the common code, and it to btrfs and ext4,
+XFS already does a proper updaste internally and currently gets a
+double update with the existing code.
+
+IMHO this is 3.13 and -stable material and should go in through the XFS
+tree.
+
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Reviewed-by: Andreas Dilger <adilger@dilger.ca>
+Acked-by: Jan Kara <jack@suse.cz>
+Reviewed-by: Dave Chinner <dchinner@redhat.com>
+Signed-off-by: Chris Mason <clm@fb.com>
+Signed-off-by: Ben Myers <bpm@sgi.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- security/selinux/ss/policydb.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ fs/attr.c        | 5 -----
+ fs/btrfs/inode.c | 8 ++++++--
+ fs/ext4/inode.c  | 4 ++++
+ 3 files changed, 10 insertions(+), 7 deletions(-)
 
-diff --git a/security/selinux/ss/policydb.c b/security/selinux/ss/policydb.c
-index 7e5bced..4d35eb7 100644
---- a/security/selinux/ss/policydb.c
-+++ b/security/selinux/ss/policydb.c
-@@ -3261,10 +3261,10 @@ static int filename_write_helper(void *key, void *data, void *ptr)
- 	if (rc)
- 		return rc;
+diff --git a/fs/attr.c b/fs/attr.c
+index 1449adb..8dd5825 100644
+--- a/fs/attr.c
++++ b/fs/attr.c
+@@ -182,11 +182,6 @@ int notify_change(struct dentry * dentry, struct iattr * attr)
+ 			return -EPERM;
+ 	}
  
--	buf[0] = ft->stype;
--	buf[1] = ft->ttype;
--	buf[2] = ft->tclass;
--	buf[3] = otype->otype;
-+	buf[0] = cpu_to_le32(ft->stype);
-+	buf[1] = cpu_to_le32(ft->ttype);
-+	buf[2] = cpu_to_le32(ft->tclass);
-+	buf[3] = cpu_to_le32(otype->otype);
+-	if ((ia_valid & ATTR_SIZE) && IS_I_VERSION(inode)) {
+-		if (attr->ia_size != inode->i_size)
+-			inode_inc_iversion(inode);
+-	}
+-
+ 	if ((ia_valid & ATTR_MODE)) {
+ 		umode_t amode = attr->ia_mode;
+ 		/* Flag setting protected by i_mutex */
+diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+index f992daf..bfe5f39 100644
+--- a/fs/btrfs/inode.c
++++ b/fs/btrfs/inode.c
+@@ -4413,8 +4413,12 @@ static int btrfs_setsize(struct inode *inode, struct iattr *attr)
+ 	 * these flags set.  For all other operations the VFS set these flags
+ 	 * explicitly if it wants a timestamp update.
+ 	 */
+-	if (newsize != oldsize && (!(mask & (ATTR_CTIME | ATTR_MTIME))))
+-		inode->i_ctime = inode->i_mtime = current_fs_time(inode->i_sb);
++	if (newsize != oldsize) {
++		inode_inc_iversion(inode);
++		if (!(mask & (ATTR_CTIME | ATTR_MTIME)))
++			inode->i_ctime = inode->i_mtime =
++				current_fs_time(inode->i_sb);
++	}
  
- 	rc = put_entry(buf, sizeof(u32), 4, fp);
- 	if (rc)
+ 	if (newsize > oldsize) {
+ 		truncate_pagecache(inode, oldsize, newsize);
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index d343bb7..0ea5961 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -4598,6 +4598,10 @@ int ext4_setattr(struct dentry *dentry, struct iattr *attr)
+ 			if (attr->ia_size > sbi->s_bitmap_maxbytes)
+ 				return -EFBIG;
+ 		}
++
++		if (IS_I_VERSION(inode) && attr->ia_size != inode->i_size)
++			inode_inc_iversion(inode);
++
+ 		if (S_ISREG(inode->i_mode) &&
+ 		    (attr->ia_size < inode->i_size)) {
+ 			if (ext4_should_order_data(inode)) {
 -- 
 1.9.0
 
