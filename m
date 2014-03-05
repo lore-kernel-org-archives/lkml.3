@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756246AbaCEO3B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:29:01 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41351 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757823AbaCEO13 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757824AbaCEO13 (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 5 Mar 2014 09:27:29 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41299 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753053AbaCEO1Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 09:27:16 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Peter Zijlstra <peterz@infradead.org>, Will Deacon <will.deacon@arm.com>,
-        Ingo Molnar <mingo@kernel.org>,
+Cc: Hannes Reinecke <hare@suse.de>, Mike Snitzer <snitzer@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 124/131] perf: Fix hotplug splat
-Date: Wed,  5 Mar 2014 14:24:08 +0000
-Message-Id: <1394029455-23128-125-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 118/131] dm mpath: fix stalls when handling invalid ioctls
+Date: Wed,  5 Mar 2014 14:24:02 +0000
+Message-Id: <1394029455-23128-119-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -28,68 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Hannes Reinecke <hare@suse.de>
 
-commit e3703f8cdfcf39c25c4338c3ad8e68891cca3731 upstream.
+commit a1989b330093578ea5470bea0a00f940c444c466 upstream.
 
-Drew Richardson reported that he could make the kernel go *boom* when hotplugging
-while having perf events active.
+An invalid ioctl will never be valid, irrespective of whether multipath
+has active paths or not.  So for invalid ioctls we do not have to wait
+for multipath to activate any paths, but can rather return an error
+code immediately.  This fix resolves numerous instances of:
 
-It turned out that when you have a group event, the code in
-__perf_event_exit_context() fails to remove the group siblings from
-the context.
+ udevd[]: worker [] unexpectedly returned with status 0x0100
 
-We then proceed with destroying and freeing the event, and when you
-re-plug the CPU and try and add another event to that CPU, things go
-*boom* because you've still got dead entries there.
+that have been seen during testing.
 
-Reported-by: Drew Richardson <drew.richardson@arm.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Will Deacon <will.deacon@arm.com>
-Link: http://lkml.kernel.org/n/tip-k6v5wundvusvcseqj1si0oz0@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Hannes Reinecke <hare@suse.de>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/events/core.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/md/dm-mpath.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index fc645f1..e074291 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -7656,14 +7656,14 @@ static void perf_pmu_rotate_stop(struct pmu *pmu)
- static void __perf_event_exit_context(void *__info)
- {
- 	struct perf_event_context *ctx = __info;
--	struct perf_event *event, *tmp;
-+	struct perf_event *event;
+diff --git a/drivers/md/dm-mpath.c b/drivers/md/dm-mpath.c
+index eb7ddb2..0ba21b0 100644
+--- a/drivers/md/dm-mpath.c
++++ b/drivers/md/dm-mpath.c
+@@ -1608,8 +1608,11 @@ static int multipath_ioctl(struct dm_target *ti, unsigned int cmd,
+ 	/*
+ 	 * Only pass ioctls through if the device sizes match exactly.
+ 	 */
+-	if (!r && ti->len != i_size_read(bdev->bd_inode) >> SECTOR_SHIFT)
+-		r = scsi_verify_blk_ioctl(NULL, cmd);
++	if (!bdev || ti->len != i_size_read(bdev->bd_inode) >> SECTOR_SHIFT) {
++		int err = scsi_verify_blk_ioctl(NULL, cmd);
++		if (err)
++			r = err;
++	}
  
- 	perf_pmu_rotate_stop(ctx->pmu);
- 
--	list_for_each_entry_safe(event, tmp, &ctx->pinned_groups, group_entry)
--		__perf_remove_from_context(event);
--	list_for_each_entry_safe(event, tmp, &ctx->flexible_groups, group_entry)
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(event, &ctx->event_list, event_entry)
- 		__perf_remove_from_context(event);
-+	rcu_read_unlock();
- }
- 
- static void perf_event_exit_cpu_context(int cpu)
-@@ -7687,11 +7687,11 @@ static void perf_event_exit_cpu(int cpu)
- {
- 	struct swevent_htable *swhash = &per_cpu(swevent_htable, cpu);
- 
-+	perf_event_exit_cpu_context(cpu);
-+
- 	mutex_lock(&swhash->hlist_mutex);
- 	swevent_hlist_release(swhash);
- 	mutex_unlock(&swhash->hlist_mutex);
--
--	perf_event_exit_cpu_context(cpu);
- }
- #else
- static inline void perf_event_exit_cpu(int cpu) { }
+ 	if (r == -ENOTCONN && !fatal_signal_pending(current))
+ 		queue_work(kmultipathd, &m->process_queued_ios);
 -- 
 1.9.0
 
