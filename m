@@ -1,174 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754501AbaCEJ6o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 04:58:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39174 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751459AbaCEJ6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 04:58:39 -0500
-Message-ID: <5316ED4C.9080402@redhat.com>
-Date: Wed, 05 Mar 2014 10:24:28 +0100
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Alexei Starovoitov <ast@plumgrid.com>
-CC: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
+	id S1753962AbaCEKAo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 05:00:44 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:32816 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751574AbaCEKAk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 05:00:40 -0500
+X-IronPort-AV: E=Sophos;i="4.97,591,1389715200"; 
+   d="scan'208";a="9648694"
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+To: x86@kernel.org, linux-kernel@vger.kernel.org
+Cc: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Hagen Paul Pfeifer <hagen@jauu.net>,
-        Jesse Gross <jesse@nicira.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH v5 net-next 1/3] filter: add Extended BPF interpreter
- and converter
-References: <1393971437-4129-1-git-send-email-ast@plumgrid.com> <1393971437-4129-2-git-send-email-ast@plumgrid.com>
-In-Reply-To: <1393971437-4129-2-git-send-email-ast@plumgrid.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH tip] perf/x86/uncore: Add __init for uncore_cpumask_init().
+Date: Wed, 5 Mar 2014 17:58:36 +0800
+Message-Id: <1394013516-4964-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.2.1
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/05 17:57:55,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/05 17:57:58,
+	Serialize complete at 2014/03/05 17:57:58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/2014 11:17 PM, Alexei Starovoitov wrote:
-> Extended BPF extends old BPF in the following ways:
-> - from 2 to 10 registers
->    Original BPF has two registers (A and X) and hidden frame pointer.
->    Extended BPF has ten registers and read-only frame pointer.
-> - from 32-bit registers to 64-bit registers
->    semantics of old 32-bit ALU operations are preserved via 32-bit
->    subregisters
-> - if (cond) jump_true; else jump_false;
->    old BPF insns are replaced with:
->    if (cond) jump_true; /* else fallthrough */
-> - adds signed > and >= insns
-> - 16 4-byte stack slots for register spill-fill replaced with
->    up to 512 bytes of multi-use stack space
-> - introduces bpf_call insn and register passing convention for zero
->    overhead calls from/to other kernel functions (not part of this patch)
-> - adds arithmetic right shift insn
-> - adds swab32/swab64 insns
-> - adds atomic_add insn
-> - old tax/txa insns are replaced with 'mov dst,src' insn
->
-> Extended BPF is designed to be JITed with one to one mapping, which
-> allows GCC/LLVM backends to generate optimized BPF code that performs
-> almost as fast as natively compiled code
->
-> sk_convert_filter() remaps old style insns into extended:
-> 'sock_filter' instructions are remapped on the fly to
-> 'sock_filter_ext' extended instructions when
-> sysctl net.core.bpf_ext_enable=1
->
-> Old filter comes through sk_attach_filter() or sk_unattached_filter_create()
->   if (bpf_ext_enable) {
->      convert to new
->      sk_chk_filter() - check old bpf
->      use sk_run_filter_ext() - new interpreter
->   } else {
->      sk_chk_filter() - check old bpf
->      if (bpf_jit_enable)
->          use old jit
->      else
->          use sk_run_filter() - old interpreter
->   }
->
-> sk_run_filter_ext() interpreter is noticeably faster
-> than sk_run_filter() for two reasons:
->
-> 1.fall-through jumps
->    Old BPF jump instructions are forced to go either 'true' or 'false'
->    branch which causes branch-miss penalty.
->    Extended BPF jump instructions have one branch and fall-through,
->    which fit CPU branch predictor logic better.
->    'perf stat' shows drastic difference for branch-misses.
->
-> 2.jump-threaded implementation of interpreter vs switch statement
->    Instead of single tablejump at the top of 'switch' statement, GCC will
->    generate multiple tablejump instructions, which helps CPU branch predictor
->
-> Performance of two BPF filters generated by libpcap was measured
-> on x86_64, i386 and arm32.
->
-> fprog #1 is taken from Documentation/networking/filter.txt:
-> tcpdump -i eth0 port 22 -dd
->
-> fprog #2 is taken from 'man tcpdump':
-> tcpdump -i eth0 'tcp port 22 and (((ip[2:2] - ((ip[0]&0xf)<<2)) -
->     ((tcp[12]&0xf0)>>2)) != 0)' -dd
->
-> Other libpcap programs have similar performance differences.
->
-> Raw performance data from BPF micro-benchmark:
-> SK_RUN_FILTER on same SKB (cache-hit) or 10k SKBs (cache-miss)
-> time in nsec per call, smaller is better
-> --x86_64--
->           fprog #1  fprog #1   fprog #2  fprog #2
->           cache-hit cache-miss cache-hit cache-miss
-> old BPF     90       101       192       202
-> ext BPF     31        71       47         97
-> old BPF jit 12        34       17         44
-> ext BPF jit TBD
->
-> --i386--
->           fprog #1  fprog #1   fprog #2  fprog #2
->           cache-hit cache-miss cache-hit cache-miss
-> old BPF    107        136      227       252
-> ext BPF     40        119       69       172
->
-> --arm32--
->           fprog #1  fprog #1   fprog #2  fprog #2
->           cache-hit cache-miss cache-hit cache-miss
-> old BPF    202        300      475       540
-> ext BPF    139        270      296       470
-> old BPF jit 26        182       37       202
-> new BPF jit TBD
->
-> Tested with trinify BPF fuzzer
->
-> Future work:
->
-> 0. seccomp
->
-> 1. add extended BPF JIT for x86_64
->
-> 2. add inband old/new demux and extended BPF verifier, so that new programs
->     can be loaded through old sk_attach_filter() and sk_unattached_filter_create()
->     interfaces
->
-> 3. tracing filters systemtap-like with extended BPF
->
-> 4. OVS with extended BPF
->
-> 5. nftables with extended BPF
->
-> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
-> Acked-by: Hagen Paul Pfeifer <hagen@jauu.net>
+Commit 411cf180f introduce function uncore_cpumask_init() and it is only
+called in __init intel_uncore_init(). But it is not marked with __init,
+then the following warning is there when building.
 
- From what I can tell, looks good to me:
+WARNING: vmlinux.o(.text+0x2464a): Section mismatch in reference from the function uncore_cpumask_init() to the function .init.text:uncore_cpu_setup()
+The function uncore_cpumask_init() references
+the function __init uncore_cpu_setup().
+This is often because uncore_cpumask_init lacks a __init
+annotation or the annotation of uncore_cpu_setup is wrong.
 
-Reviewed-by: Daniel Borkmann <dborkman@redhat.com>
+This patch add __init for uncore_cpumask_init() function.
 
-So next step would be to add selftests and then after that JIT?
+Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+cc: Paul Mackerras <paulus@samba.org>
+cc: Ingo Molnar <mingo@redhat.com>
+cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+cc: Thomas Gleixner <tglx@linutronix.de>
+cc: "H. Peter Anvin" <hpa@zytor.com>
+cc: Stephane Eranian <eranian@google.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-...
-> +#undef LOAD_IMM
-> +}
-> +EXPORT_SYMBOL(sk_run_filter_ext);
-> +
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index b262c61..5c2537a 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -4229,7 +4229,7 @@ static int __init uncore_pmus_register(void)
+ 	return 0;
+ }
+ 
+-static void uncore_cpumask_init(void)
++static void __init uncore_cpumask_init(void)
+ {
+ 	int cpu;
+ 
+-- 
+1.8.2.1
 
-One minor thing I noticed when I git-am'ed your patch is the newline at
-the end of file, but perhaps this can be fixed up in directly patchwork.
-
-> diff --git a/net/core/sysctl_net_core.c b/net/core/sysctl_net_core.c
-> index cf9cd13509a7..e1b979312588 100644
-> --- a/net/core/sysctl_net_core.c
-> +++ b/net/core/sysctl_net_core.c
