@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932504AbaCEPTT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 10:19:19 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:46941 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756924AbaCEPTP (ORCPT
+	id S1756943AbaCEOZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:25:27 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40882 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932117AbaCEOZR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 10:19:15 -0500
-MIME-Version: 1.0
-In-Reply-To: <1394013249.19539.17.camel@haakon3.risingtidesystems.com>
-References: <CAJZOPZ+4yQ-sT=ks7+eiJjkxOjy5w=BmG16JVcUPiuVsof7qEA@mail.gmail.com>
- <CAG4TOxOMmvFWnkU3DBn33rscEKh2_YfbUCKY=iY8PCVN3+nEsA@mail.gmail.com>
- <52CD1C68.4050406@mellanox.com> <1389645171.5567.459.camel@haakon3.risingtidesystems.com>
- <1389820541.5567.543.camel@haakon3.risingtidesystems.com> <CAG4TOxNa32sLxifPx_f8sW04B_qSh01WWfWjRvam6fjvFLDXSQ@mail.gmail.com>
- <1389906852.5567.668.camel@haakon3.risingtidesystems.com> <CAG4TOxPeYQ=e5LdJft1Hkx8donUQjJaKDEAv3iRLGxPYJQ_b9w@mail.gmail.com>
- <1390102949.5567.749.camel@haakon3.risingtidesystems.com> <52DBB4F1.4020400@mellanox.com>
- <CAJZOPZJFbcTh2zO8mos0M+gv0LW-Gmh877Vxe4tLvfPX19oqTw@mail.gmail.com>
- <CAJZOPZLuz-Z59agBd0Q9J2=sSG-F+Y8MrJkoGbtiF5M+CnKU1g@mail.gmail.com>
- <CAG4TOxPLEfyWsUDf4_371u=_=tOgW2v5J4zSz8xx73DfziZOZg@mail.gmail.com>
- <1390375658.5567.917.camel@haakon3.risingtidesystems.com> <1391731323.14985.56.camel@haakon3.risingtidesystems.com>
- <CAG4TOxNpnMMR-vfAVa+m6f-z82msxygADUkJ7mmrKtzHCOqdhA@mail.gmail.com> <1394013249.19539.17.camel@haakon3.risingtidesystems.com>
-From: Roland Dreier <roland@kernel.org>
-Date: Wed, 5 Mar 2014 07:18:54 -0800
-X-Google-Sender-Auth: BPMlMFR1sYAi6INA1W6w0chSmR8
-Message-ID: <CAG4TOxNRkAUH5Jsd67--ydWtUJqE1=pnVSuorgn4vNQiuYx1wg@mail.gmail.com>
-Subject: Re: linux rdma 3.14 merge plans
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Or Gerlitz <or.gerlitz@gmail.com>, Hefty Sean <sean.hefty@intel.com>,
-        linux-rdma <linux-rdma@vger.kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        Sagi Grimberg <sagig@mellanox.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 5 Mar 2014 09:25:17 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 039/131] ext4: don't leave i_crtime.tv_sec uninitialized
+Date: Wed,  5 Mar 2014 14:22:43 +0000
+Message-Id: <1394029455-23128-40-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
+References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 5, 2014 at 1:54 AM, Nicholas A. Bellinger
-<nab@linux-iscsi.org> wrote:
-> That all said, do you have an objection wrt taking this bits through
-> target-pending..?  Given the dependencies involved, that would seem the
-> most logical path to take.
+3.11.10.6 -stable review patch.  If anyone has any objections, please let me know.
 
-Perhaps not surprisingly, I would prefer to get a chance to review a
-major change to the core RDMA midlayer rather than having you merge it
-through your tree.  So yes I do object.  Please give me a chance to
-review and merge it.  I am working on that this week.
+------------------
 
- - R.
+From: Theodore Ts'o <tytso@mit.edu>
+
+commit 19ea80603715d473600cd993b9987bc97d042e02 upstream.
+
+If the i_crtime field is not present in the inode, don't leave the
+field uninitialized.
+
+Fixes: ef7f38359 ("ext4: Add nanosecond timestamps")
+Reported-by: Vegard Nossum <vegard.nossum@oracle.com>
+Tested-by: Vegard Nossum <vegard.nossum@oracle.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ fs/ext4/ext4.h | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index caa5e5b..db03437 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -759,6 +759,8 @@ do {									       \
+ 	if (EXT4_FITS_IN_INODE(raw_inode, einode, xtime))		       \
+ 		(einode)->xtime.tv_sec = 				       \
+ 			(signed)le32_to_cpu((raw_inode)->xtime);	       \
++	else								       \
++		(einode)->xtime.tv_sec = 0;				       \
+ 	if (EXT4_FITS_IN_INODE(raw_inode, einode, xtime ## _extra))	       \
+ 		ext4_decode_extra_time(&(einode)->xtime,		       \
+ 				       raw_inode->xtime ## _extra);	       \
+-- 
+1.9.0
+
