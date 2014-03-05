@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757480AbaCEO0m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:26:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41132 "EHLO
+	id S1758503AbaCEPES (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:04:18 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41189 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753025AbaCEO02 (ORCPT
+	with ESMTP id S1753025AbaCEO0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:26:28 -0500
+	Wed, 5 Mar 2014 09:26:43 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Josh Boyer <jwboyer@fedoraproject.org>,
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Vinod Koul <vinod.koul@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 086/131] Input: elantech -  improve clickpad detection
-Date: Wed,  5 Mar 2014 14:23:30 +0000
-Message-Id: <1394029455-23128-87-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 096/131] dma: ste_dma40: don't dereference free:d descriptor
+Date: Wed,  5 Mar 2014 14:23:40 +0000
+Message-Id: <1394029455-23128-97-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -29,113 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Linus Walleij <linus.walleij@linaro.org>
 
-commit c15bdfd5b9831e4cab8cfc118243956e267dd30e upstream.
+commit e9baa9d9d520fb0e24cca671e430689de2d4a4b2 upstream.
 
-The current assumption in the elantech driver that hw version 3 touchpads
-are never clickpads and hw version 4 touchpads are always clickpads is
-wrong.
+It appears that in the DMA40 driver the DMA tasklet will very
+often dereference memory for a descriptor just free:d from the
+DMA40 slab. Nothing happens because no other part of the driver
+has yet had a chance to claim this memory, but it's really
+nasty to dereference free:d memory, so let's check the flag
+before the descriptor is free and store it in a bool variable.
 
-There are several bug reports for this, ie:
-https://bugzilla.redhat.com/show_bug.cgi?id=1030802
-http://superuser.com/questions/619582/right-elantech-touchpad-button-not-working-in-linux
-
-I've spend a couple of hours wading through various bugzillas, launchpads
-and forum posts to create a list of fw-versions and capabilities for
-different laptop models to find a good method to differentiate between
-clickpads and versions with separate hardware buttons.
-
-Which shows that a device being a clickpad is reliable indicated by bit 12
-being set in the fw_version. I've included the gathered list inside the
-driver, so that we've this info at hand if we need to revisit this later.
-
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/input/mouse/elantech.c | 45 +++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 42 insertions(+), 3 deletions(-)
+ drivers/dma/ste_dma40.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
-index 8551dca..6cd2d2d 100644
---- a/drivers/input/mouse/elantech.c
-+++ b/drivers/input/mouse/elantech.c
-@@ -486,6 +486,7 @@ static void elantech_input_sync_v4(struct psmouse *psmouse)
- 	unsigned char *packet = psmouse->packet;
+diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+index 5ab5880..637f4c5 100644
+--- a/drivers/dma/ste_dma40.c
++++ b/drivers/dma/ste_dma40.c
+@@ -1640,6 +1640,7 @@ static void dma_tasklet(unsigned long data)
+ 	struct d40_chan *d40c = (struct d40_chan *) data;
+ 	struct d40_desc *d40d;
+ 	unsigned long flags;
++	bool callback_active;
+ 	dma_async_tx_callback callback;
+ 	void *callback_param;
  
- 	input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
-+	input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
- 	input_mt_report_pointer_emulation(dev, true);
- 	input_sync(dev);
- }
-@@ -984,6 +985,44 @@ static int elantech_get_resolution_v4(struct psmouse *psmouse,
- }
+@@ -1667,6 +1668,7 @@ static void dma_tasklet(unsigned long data)
+ 	}
  
- /*
-+ * Advertise INPUT_PROP_BUTTONPAD for clickpads. The testing of bit 12 in
-+ * fw_version for this is based on the following fw_version & caps table:
-+ *
-+ * Laptop-model:           fw_version:     caps:           buttons:
-+ * Acer S3                 0x461f00        10, 13, 0e      clickpad
-+ * Acer S7-392             0x581f01        50, 17, 0d      clickpad
-+ * Acer V5-131             0x461f02        01, 16, 0c      clickpad
-+ * Acer V5-551             0x461f00        ?               clickpad
-+ * Asus K53SV              0x450f01        78, 15, 0c      2 hw buttons
-+ * Asus G46VW              0x460f02        00, 18, 0c      2 hw buttons
-+ * Asus G750JX             0x360f00        00, 16, 0c      2 hw buttons
-+ * Asus UX31               0x361f00        20, 15, 0e      clickpad
-+ * Asus UX32VD             0x361f02        00, 15, 0e      clickpad
-+ * Avatar AVIU-145A2       0x361f00        ?               clickpad
-+ * Gigabyte U2442          0x450f01        58, 17, 0c      2 hw buttons
-+ * Lenovo L430             0x350f02        b9, 15, 0c      2 hw buttons (*)
-+ * Samsung NF210           0x150b00        78, 14, 0a      2 hw buttons
-+ * Samsung NP770Z5E        0x575f01        10, 15, 0f      clickpad
-+ * Samsung NP700Z5B        0x361f06        21, 15, 0f      clickpad
-+ * Samsung NP900X3E-A02    0x575f03        ?               clickpad
-+ * Samsung NP-QX410        0x851b00        19, 14, 0c      clickpad
-+ * Samsung RC512           0x450f00        08, 15, 0c      2 hw buttons
-+ * Samsung RF710           0x450f00        ?               2 hw buttons
-+ * System76 Pangolin       0x250f01        ?               2 hw buttons
-+ * (*) + 3 trackpoint buttons
-+ */
-+static void elantech_set_buttonpad_prop(struct psmouse *psmouse)
-+{
-+	struct input_dev *dev = psmouse->dev;
-+	struct elantech_data *etd = psmouse->private;
-+
-+	if (etd->fw_version & 0x001000) {
-+		__set_bit(INPUT_PROP_BUTTONPAD, dev->propbit);
-+		__clear_bit(BTN_RIGHT, dev->keybit);
-+	}
-+}
-+
-+/*
-  * Set the appropriate event bits for the input subsystem
-  */
- static int elantech_set_input_params(struct psmouse *psmouse)
-@@ -1026,6 +1065,8 @@ static int elantech_set_input_params(struct psmouse *psmouse)
- 		__set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
- 		/* fall through */
- 	case 3:
-+		if (etd->hw_version == 3)
-+			elantech_set_buttonpad_prop(psmouse);
- 		input_set_abs_params(dev, ABS_X, x_min, x_max, 0, 0);
- 		input_set_abs_params(dev, ABS_Y, y_min, y_max, 0, 0);
- 		if (etd->reports_pressure) {
-@@ -1047,9 +1088,7 @@ static int elantech_set_input_params(struct psmouse *psmouse)
- 			 */
- 			psmouse_warn(psmouse, "couldn't query resolution data.\n");
- 		}
--		/* v4 is clickpad, with only one button. */
--		__set_bit(INPUT_PROP_BUTTONPAD, dev->propbit);
--		__clear_bit(BTN_RIGHT, dev->keybit);
-+		elantech_set_buttonpad_prop(psmouse);
- 		__set_bit(BTN_TOOL_QUADTAP, dev->keybit);
- 		/* For X to recognize me as touchpad. */
- 		input_set_abs_params(dev, ABS_X, x_min, x_max, 0, 0);
+ 	/* Callback to client */
++	callback_active = !!(d40d->txd.flags & DMA_PREP_INTERRUPT);
+ 	callback = d40d->txd.callback;
+ 	callback_param = d40d->txd.callback_param;
+ 
+@@ -1689,7 +1691,7 @@ static void dma_tasklet(unsigned long data)
+ 
+ 	spin_unlock_irqrestore(&d40c->lock, flags);
+ 
+-	if (callback && (d40d->txd.flags & DMA_PREP_INTERRUPT))
++	if (callback_active && callback)
+ 		callback(callback_param);
+ 
+ 	return;
 -- 
 1.9.0
 
