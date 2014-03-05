@@ -1,220 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756499AbaCEGz4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 01:55:56 -0500
-Received: from 6.mo68.mail-out.ovh.net ([46.105.63.100]:56912 "EHLO
-	mo68.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755668AbaCEGzy (ORCPT
+	id S1756566AbaCEG42 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 01:56:28 -0500
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:54954 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755835AbaCEG4Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 01:55:54 -0500
-X-Greylist: delayed 3600 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Mar 2014 01:55:53 EST
-Content-Type: multipart/signed; boundary="Apple-Mail=_1528776B-48EC-4CA4-A814-65410CFD3677"; protocol="application/pgp-signature"; micalg=pgp-sha512
-Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
-Subject: Re: [PATCH] pinctrl: at91: add the config GPIO_OUTPUT_x
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-In-Reply-To: <1393984400-14687-1-git-send-email-wenyou.yang@atmel.com>
-Date: Wed, 5 Mar 2014 12:58:12 +0800
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linus.walleij@linaro.org, b.brezillon@overkiz.com,
-        "<linux-arm-kernel@lists.infradead.org> mailing list" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org
-Message-Id: <635C1A75-4651-4B2C-AB64-E1D170A1F5F9@jcrosoft.com>
-References: <1393984400-14687-1-git-send-email-wenyou.yang@atmel.com>
-To: Wenyou Yang <wenyou.yang@atmel.com>
-X-Mailer: Apple Mail (2.1827)
-X-Ovh-Tracer-Id: 12621900906999950213
-X-Ovh-Remote: 140.206.255.243 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -200
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejuddrudduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdengfhvvghrhghhihhtvgdqqdetucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -200
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejuddrudduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdengfhvvghrhghhihhtvgdqqdetucdlqddutddtmd
+	Wed, 5 Mar 2014 01:56:24 -0500
+MIME-Version: 1.0
+In-Reply-To: <1393961226-25618-2-git-send-email-gdjakov@mm-sol.com>
+References: <1393961226-25618-1-git-send-email-gdjakov@mm-sol.com>
+	<1393961226-25618-2-git-send-email-gdjakov@mm-sol.com>
+Date: Wed, 5 Mar 2014 00:56:22 -0600
+Message-ID: <CAL_JsqKJ5Jn4wb8xtqrc09kkP4dzUA6qDEkK396RW+4qFNVf+Q@mail.gmail.com>
+Subject: Re: [PATCH v10 1/3] mmc: sdhci-msm: Qualcomm SDHCI binding documentation
+From: Rob Herring <robherring2@gmail.com>
+To: Georgi Djakov <gdjakov@mm-sol.com>
+Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Chris Ball <cjb@laptop.org>, Ulf Hansson <ulf.hansson@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---Apple-Mail=_1528776B-48EC-4CA4-A814-65410CFD3677
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain;
-	charset=us-ascii
-
-
-On Mar 5, 2014, at 9:53 AM, Wenyou Yang <wenyou.yang@atmel.com> wrote:
-
-> In order to support the pinctrl sleep state.
-
-As I said before NACK
-
-this is not the job of the pinctrl to describe gpio output or input =
-state
-
-Best Regards,
-J.
->=20
-> Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+On Tue, Mar 4, 2014 at 1:27 PM, Georgi Djakov <gdjakov@mm-sol.com> wrote:
+> This patch adds the device-tree binding documentation for
+> Qualcomm SDHCI driver. It contains the differences between
+> the core properties in mmc.txt and the properties used by
+> the sdhci-msm driver.
+>
+> Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
 > ---
-> Hi Linus,
->=20
-> The patch is based on branch: for-next
-> git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl
->=20
-> Best Regards,
-> Wenyou Yang
->=20
-> drivers/pinctrl/pinctrl-at91.c     |   31 =
-+++++++++++++++++++++++++++++++
-> include/dt-bindings/pinctrl/at91.h |    2 ++
-> 2 files changed, 33 insertions(+)
->=20
-> diff --git a/drivers/pinctrl/pinctrl-at91.c =
-b/drivers/pinctrl/pinctrl-at91.c
-> index 5d24aae..fc51e59 100644
-> --- a/drivers/pinctrl/pinctrl-at91.c
-> +++ b/drivers/pinctrl/pinctrl-at91.c
-> @@ -62,6 +62,8 @@ static int gpio_banks;
-> #define DEGLITCH	(1 << 2)
-> #define PULL_DOWN	(1 << 3)
-> #define DIS_SCHMIT	(1 << 4)
-> +#define GPIO_OUTPUT_HIGH	(1 << 5)
-> +#define GPIO_OUTPUT_LOW		(1 << 6)
-> #define DEBOUNCE	(1 << 16)
-> #define DEBOUNCE_VAL_SHIFT	17
-> #define DEBOUNCE_VAL	(0x3fff << DEBOUNCE_VAL_SHIFT)
-> @@ -152,12 +154,15 @@ struct at91_pinctrl_mux_ops {
-> 	void (*set_pulldown)(void __iomem *pio, unsigned mask, bool =
-is_on);
-> 	bool (*get_schmitt_trig)(void __iomem *pio, unsigned pin);
-> 	void (*disable_schmitt_trig)(void __iomem *pio, unsigned mask);
-> +	bool (*get_gpio_output)(void __iomem *pio, unsigned mask);
-> +	void (*set_gpio_output)(void __iomem *pio, unsigned mask, bool =
-is_high);
-> 	/* irq */
-> 	int (*irq_type)(struct irq_data *d, unsigned type);
-> };
->=20
-> static int gpio_irq_type(struct irq_data *d, unsigned type);
-> static int alt_gpio_irq_type(struct irq_data *d, unsigned type);
-> +static void at91_mux_gpio_enable(void __iomem *pio, unsigned mask, =
-bool input);
->=20
-> struct at91_pinctrl {
-> 	struct device		*dev;
-> @@ -472,6 +477,20 @@ static bool at91_mux_pio3_get_schmitt_trig(void =
-__iomem *pio, unsigned pin)
-> 	return (__raw_readl(pio + PIO_SCHMITT) >> pin) & 0x1;
-> }
->=20
-> +static bool at91_mux_pio3_get_gpio_output(void __iomem *pio, unsigned =
-pin)
-> +{
-> +	return (__raw_readl(pio + PIO_ODSR) >> pin) & 0x1;
-> +}
+>  .../devicetree/bindings/mmc/sdhci-msm.txt          |   63 ++++++++++++++++++++
+>  1 file changed, 63 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/mmc/sdhci-msm.txt
+>
+> diff --git a/Documentation/devicetree/bindings/mmc/sdhci-msm.txt b/Documentation/devicetree/bindings/mmc/sdhci-msm.txt
+> new file mode 100644
+> index 0000000..c635c53
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mmc/sdhci-msm.txt
+> @@ -0,0 +1,63 @@
+> +* Qualcomm SDHCI controller (sdhci-msm)
 > +
-> +static void at91_mux_pio3_set_gpio_output(void __iomem *pio,
-> +						unsigned mask,
-> +						bool is_high)
-> +{
-> +	at91_mux_gpio_enable(pio, mask, 0);
-> +	writel_relaxed(mask, pio + (is_high ? PIO_SODR : PIO_CODR));
-> +}
+> +This file documents differences between the core properties in mmc.txt
+> +and the properties used by the sdhci-msm driver.
 > +
+> +Required properties:
+> +- compatible: Should contain "qcom,sdhci-msm-v4".
+> +- reg: Base address and length of the register set listed in reg-names.
+> +- reg-names: Should contain the following:
+> +       "hc_mem"   - Host controller register map
+> +       "core_mem" - SD Core register map
+
+reg-names should not be required and the order specified by the binding.
+
+> +- interrupts: Should contain an interrupt-specifiers for the interrupts listed in interrupt-names.
+> +- interrupt-names: Should contain the following:
+> +       "hc_irq"     - Host controller interrupt
+> +       "pwr_irq"    - PMIC interrupt
+
+Same for interrupt-names.
+
+> +- vdd-supply: Phandle to the regulator for the vdd (core voltage) supply.
+> +- vdd-io-supply: Phandle to the regulator for the vdd-io (i/o voltage) supply.
+> +- pinctrl-names: Should contain only one value - "default".
+> +- pinctrl-0: Should specify pin control groups used for this controller.
+> +- clocks: A list of phandle + clock-specifier pairs for the clocks listed in clock-names.
+> +- clock-names: Should contain the following:
+> +       "iface" - Main peripheral bus clock (PCLK/HCLK - AHB Bus clock) (required)
+> +       "core"  - SDC MMC clock (MCLK) (required)
+> +       "bus"   - SDCC bus voter clock (optional)
 > +
-> static struct at91_pinctrl_mux_ops at91rm9200_ops =3D {
-> 	.get_periph	=3D at91_mux_get_periph,
-> 	.mux_A_periph	=3D at91_mux_set_A_periph,
-> @@ -495,6 +514,8 @@ static struct at91_pinctrl_mux_ops at91sam9x5_ops =
-=3D {
-> 	.set_pulldown	=3D at91_mux_pio3_set_pulldown,
-> 	.get_schmitt_trig =3D at91_mux_pio3_get_schmitt_trig,
-> 	.disable_schmitt_trig =3D at91_mux_pio3_disable_schmitt_trig,
-> +	.get_gpio_output =3D at91_mux_pio3_get_gpio_output,
-> +	.set_gpio_output =3D at91_mux_pio3_set_gpio_output,
-> 	.irq_type	=3D alt_gpio_irq_type,
-> };
->=20
-> @@ -741,6 +762,10 @@ static int at91_pinconf_get(struct pinctrl_dev =
-*pctldev,
-> 		*config |=3D PULL_DOWN;
-> 	if (info->ops->get_schmitt_trig && =
-info->ops->get_schmitt_trig(pio, pin))
-> 		*config |=3D DIS_SCHMIT;
-> +	if (info->ops->get_gpio_output) {
-> +		*config |=3D info->ops->get_gpio_output(pio, pin) ?
-> +					GPIO_OUTPUT_HIGH : =
-GPIO_OUTPUT_LOW;
-> +	}
->=20
-> 	return 0;
-> }
-> @@ -778,6 +803,12 @@ static int at91_pinconf_set(struct pinctrl_dev =
-*pctldev,
-> 			info->ops->set_pulldown(pio, mask, config & =
-PULL_DOWN);
-> 		if (info->ops->disable_schmitt_trig && config & =
-DIS_SCHMIT)
-> 			info->ops->disable_schmitt_trig(pio, mask);
-> +		if (info->ops->set_gpio_output) {
-> +			if (config & GPIO_OUTPUT_HIGH)
-> +				info->ops->set_gpio_output(pio, mask, =
-1);
-> +			if (config & GPIO_OUTPUT_LOW)
-> +				info->ops->set_gpio_output(pio, mask, =
-0);
-> +		};
->=20
-> 	} /* for each config */
->=20
-> diff --git a/include/dt-bindings/pinctrl/at91.h =
-b/include/dt-bindings/pinctrl/at91.h
-> index 0fee6ff..e799268 100644
-> --- a/include/dt-bindings/pinctrl/at91.h
-> +++ b/include/dt-bindings/pinctrl/at91.h
-> @@ -15,6 +15,8 @@
-> #define AT91_PINCTRL_DEGLITCH		(1 << 2)
-> #define AT91_PINCTRL_PULL_DOWN		(1 << 3)
-> #define AT91_PINCTRL_DIS_SCHMIT		(1 << 4)
-> +#define AT91_PINCTRL_OUTPUT_HIGH	(1 << 5)
-> +#define AT91_PINCTRL_OUTPUT_LOW		(1 << 6)
-> #define AT91_PINCTRL_DEBOUNCE		(1 << 16)
-> #define AT91_PINCTRL_DEBOUNCE_VAL(x)	(x << 17)
->=20
-> --=20
+> +Example:
+> +
+> +       sdhc_1: sdhci@f9824900 {
+> +               compatible = "qcom,sdhci-msm-v4";
+> +               reg = <0xf9824900 0x11c>, <0xf9824000 0x800>;
+
+Are there cases where these are really in a different 4KB range? If
+not, this should just be 1 range.
+
+> +               reg-names = "hc_mem", "core_mem";
+> +               interrupts = <0 123 0>, <0 138 0>;
+> +               interrupt-names = "hc_irq", "pwr_irq";
+> +               bus-width = <8>;
+> +               non-removable;
+> +
+> +               vdd-supply = <&pm8941_l20>;
+> +               vdd-io-supply = <&pm8941_s3>;
+> +
+> +               pinctrl-names = "default";
+> +               pinctrl-0 = <&sdc1_clk &sdc1_cmd &sdc1_data>;
+> +
+> +               clocks = <&gcc GCC_SDCC1_APPS_CLK>, <&gcc GCC_SDCC1_AHB_CLK>;
+> +               clock-names = "core", "iface";
+> +       };
+> +
+> +       sdhc_2: sdhci@f98a4900 {
+> +               compatible = "qcom,sdhci-msm-v4";
+> +               reg = <0xf98a4900 0x11c>, <0xf98a4000 0x800>;
+> +               reg-names = "hc_mem", "core_mem";
+> +               interrupts = <0 125 0>, <0 221 0>;
+> +               interrupt-names = "hc_irq", "pwr_irq";
+> +               bus-width = <4>;
+> +
+> +               vdd-supply = <&pm8941_l21>;
+> +               vdd-io-supply = <&pm8941_l13>;
+> +
+> +               pinctrl-names = "default";
+> +               pinctrl-0 = <&sdc2_clk &sdc2_cmd &sdc2_data>;
+> +
+> +               clocks = <&gcc GCC_SDCC2_APPS_CLK>, <&gcc GCC_SDCC2_AHB_CLK>;
+> +               clock-names = "core", "iface";
+> +       };
+> --
 > 1.7.9.5
->=20
-
-
---Apple-Mail=_1528776B-48EC-4CA4-A814-65410CFD3677
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
-	filename=signature.asc
-Content-Type: application/pgp-signature;
-	name=signature.asc
-Content-Description: Message signed with OpenPGP using GPGMail
-
------BEGIN PGP SIGNATURE-----
-Comment: GPGTools - https://gpgtools.org
-
-iQIcBAEBCgAGBQJTFq7kAAoJEOrjwV5ZMRf2QF8P/35yh3Ks3LSytxpXiIQVgeI+
-TWy0pKsn1SYPqNpetjE0TqqQcWtlgq4NkFq6ce9Nn3mJruvcPBQy76tenAWU+Yzb
-8KiBI45FZd3fTg0TPoh8K0SmrZybKdknitbaaWRqVuu/HV1PExpKMQpar4uE/6o+
-jrndbwFONr/zQiw2T0fbLiiSzGXUkDSb7IM1EggXTkZUDiWEMxFSXN1ssrZEwBxR
-mPxwGMhBt7pW6/gZQ+wlLOw6Hpgjqzlsw8BHbMS70ymPXypYMc6Onw4uYlaShA8o
-m01Mriq+tkRtuiJibkIDEcQzVGIC5WyRq/95imagzfpk8qEDxYsl1s6Oq2vxlNlK
-XmoqCsG82UnjB4ZSZ/X/3PWaE1eDn/bB0gJwDdaG5Xw+bO/9ZM4p6+7oztkZWu4C
-xacGnIUo9iMYTtTlAbliSNnVLjV86UoOUYc0v/sO7QeizCrYTMhzB8HBTf4Rhb/5
-F5cQvpUcTFJFAwgaOGlNR28JwHhkoz7FEVxRFbTfKkmcVOEZGO/lmKKLVmvEq2AC
-FcNyrfCCMaFbyxli6Ibsu4hGtfbocCZNlanxuzwvVwDjfmf64Ez1vlfdU31N7COl
-RuprIA3RUuyqAqJ0+xcJFtvJvz1V5leRzKmokQl3ckcRIEmgXMrzLRimAN2QjweW
-0omh6l341kQ89BsKGgTM
-=Y7St
------END PGP SIGNATURE-----
-
---Apple-Mail=_1528776B-48EC-4CA4-A814-65410CFD3677--
+>
