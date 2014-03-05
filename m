@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932516AbaCEOiY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:38:24 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41760 "EHLO
+	id S1757718AbaCEOnh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:43:37 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41776 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932459AbaCEOiR (ORCPT
+	with ESMTP id S932457AbaCEOiW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:38:17 -0500
+	Wed, 5 Mar 2014 09:38:22 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>, Mark Brown <broonie@linaro.org>,
+Cc: "Dr. Greg Wettstein" <greg@enjellic.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 45/62] ASoC: wm8770: Fix wrong number of enum items
-Date: Wed,  5 Mar 2014 14:36:49 +0000
-Message-Id: <1394030226-26652-46-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 48/62] qla2xxx: Fix kernel panic on selective retransmission request
+Date: Wed,  5 Mar 2014 14:36:52 +0000
+Message-Id: <1394030226-26652-49-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
 References: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
@@ -27,39 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: "Dr. Greg Wettstein" <greg@enjellic.com>
 
-commit 7a6c0a58dc824523966f212c76322d47c5b0e6fe upstream.
+commit 6f58c780e5a5b43a6d2121e0d43cdcba1d3cc5fc upstream.
 
-wm8770 codec driver defines ain_enum with a wrong number of items.
+A selective retransmission request (SRR) is a fibre-channel
+protocol control request which provides support for requesting
+retransmission of a data sequence in response to an issue such as
+frame loss or corruption.  These events are experienced
+infrequently in fibre-channel based networks which makes
+it difficult to test and assess codepaths which handle these
+events.
 
-Use SOC_ENUM_DOUBLE_DECL() macro and it's automatically fixed.
+We were fortunate enough, for some definition of fortunate, to
+have a metro-area single-mode SAN link which, at 10 GBPS
+sustained load levels, would consistently generate SRR's in
+a SCST based target implementation using our SCST/in-kernel
+Qlogic target interface driver.  In response to an SRR the
+in-kernel Qlogic target driver immediately panics resulting
+in a catastrophic storage failure for serviced initiators.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Acked-by: Liam Girdwood <liam.r.girdwood@linux.intel.com>
-Acked-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+The culprit was a debug statement in the qla_target.c file which
+does not verify that a pointer to the SCSI CDB is not null.
+The unchecked pointer dereference results in the kernel panic
+and resultant system failure.
+
+The other two references to the SCSI CDB by the SRR handling code
+use a ternary operator to verify a non-null pointer is being
+acted on.  This patch simply adds a similar test to the implicated
+debug statement.
+
+This patch is a candidate for any stable kernel being maintained
+since it addresses a potentially catastrophic event with
+minimal downside.
+
+Signed-off-by: Dr. Greg Wettstein <greg@enjellic.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/soc/codecs/wm8770.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/scsi/qla2xxx/qla_target.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/sound/soc/codecs/wm8770.c b/sound/soc/codecs/wm8770.c
-index a5127b4..9e82674 100644
---- a/sound/soc/codecs/wm8770.c
-+++ b/sound/soc/codecs/wm8770.c
-@@ -162,8 +162,8 @@ static const char *ain_text[] = {
- 	"AIN5", "AIN6", "AIN7", "AIN8"
- };
+diff --git a/drivers/scsi/qla2xxx/qla_target.c b/drivers/scsi/qla2xxx/qla_target.c
+index 714a97d..a8eee44 100644
+--- a/drivers/scsi/qla2xxx/qla_target.c
++++ b/drivers/scsi/qla2xxx/qla_target.c
+@@ -3367,7 +3367,8 @@ restart:
+ 		ql_dbg(ql_dbg_tgt_mgt, vha, 0xf02c,
+ 		    "SRR cmd %p (se_cmd %p, tag %d, op %x), "
+ 		    "sg_cnt=%d, offset=%d", cmd, &cmd->se_cmd, cmd->tag,
+-		    se_cmd->t_task_cdb[0], cmd->sg_cnt, cmd->offset);
++		    se_cmd->t_task_cdb ? se_cmd->t_task_cdb[0] : 0,
++		    cmd->sg_cnt, cmd->offset);
  
--static const struct soc_enum ain_enum =
--	SOC_ENUM_DOUBLE(WM8770_ADCMUX, 0, 4, 8, ain_text);
-+static SOC_ENUM_DOUBLE_DECL(ain_enum,
-+			    WM8770_ADCMUX, 0, 4, ain_text);
+ 		qlt_handle_srr(vha, sctio, imm);
  
- static const struct snd_kcontrol_new ain_mux =
- 	SOC_DAPM_ENUM("Capture Mux", ain_enum);
 -- 
 1.9.0
 
