@@ -1,48 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752958AbaCEHQF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 02:16:05 -0500
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:44334 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751511AbaCEHQD (ORCPT
+	id S1752281AbaCEHSV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 02:18:21 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40724 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751249AbaCEHST (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 02:16:03 -0500
+	Wed, 5 Mar 2014 02:18:19 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <5316CF96.20902@jp.fujitsu.com>
+Date: Wed, 5 Mar 2014 16:17:42 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <20140305173559.0b50971a1ab88a16bee8819c@canb.auug.org.au>
-References: <20140305173559.0b50971a1ab88a16bee8819c@canb.auug.org.au>
-Date: Wed, 5 Mar 2014 15:16:02 +0800
-Message-ID: <CACRpkda8qHQRu-JCgdVOHAh+QvjfJB5ftJEEQ66tjePrRCuYzA@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the final tree (gpio
- tree related)
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Fabian Vogt <fabian@ritter-vogt.de>
-Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tang Chen <tangchen@cn.fujitsu.com>, <bcrl@kvack.org>
+CC: <viro@zeniv.linux.org.uk>, <jmoyer@redhat.com>,
+        <kosaki.motohiro@gmail.com>, <kosaki.motohiro@jp.fujitsu.com>,
+        <guz.fnst@cn.fujitsu.com>, <linux-fsdevel@vger.kernel.org>,
+        <linux-aio@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <miaox@cn.fujitsu.com>
+Subject: [Update v2 PATCH 2/2] aio, mem-hotplug: Add memory barrier to aio
+ ring page migration.
+References: <1393497616-16428-1-git-send-email-tangchen@cn.fujitsu.com> <1393497616-16428-3-git-send-email-tangchen@cn.fujitsu.com> <530F2A2D.50307@jp.fujitsu.com> <530F3327.8020205@jp.fujitsu.com>
+In-Reply-To: <530F3327.8020205@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 5, 2014 at 2:35 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+When doing aio ring page migration, we migrated the page, and update
+ctx->ring_pages[]. Like the following:
 
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
->
-> drivers/gpio/gpio-zevio.c: In function 'zevio_gpio_port_get':
-> drivers/gpio/gpio-zevio.c:70:2: error: implicit declaration of function 'IOMEM' [-Werror=implicit-function-declaration]
->   return readl(IOMEM(c->chip.regs + section_offset + port_offset));
->   ^
-> drivers/gpio/gpio-zevio.c:70:2: warning: passing argument 1 of 'readl' makes pointer from integer without a cast [enabled by default]
-> In file included from include/linux/io.h:22:0,
->                  from drivers/gpio/gpio-zevio.c:15:
-> arch/powerpc/include/asm/io-defs.h:6:16: note: expected 'const volatile void *' but argument is of type 'int'
->  DEF_PCI_AC_RET(readl, u32, (const PCI_IO_ADDR addr), (addr), mem, addr)
->                 ^
+aio_migratepage()
+ |-> migrate_page_copy(new, old)
+ |   ......				/* Need barrier here */
+ |-> ctx->ring_pages[idx] = new
 
-Fabian can you suggest a patch adding the proper depends added to
-the Kconfig. Check what things bring in the IOMEM etc that is needed
-to compile this.
+Actually, we need a memory barrier between these two operations.
+Otherwise, if ctx->ring_pages[] is updated before memory copy due to
+the compiler optimization, other processes may have an opportunity
+to access to the not fully initialized new ring page.
 
-Yours,
-Linus Walleij
+So add a wmb and rmb to synchronize them.
+
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+---
+v2: change smp_rmb() to smp_read_barrier_depends(). Thanks Miao.
+---
+ fs/aio.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/fs/aio.c b/fs/aio.c
+index 50c089c..98c7f2d 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -327,6 +327,14 @@ static int aio_migratepage(struct address_space *mapping, struct page *new,
+ 		pgoff_t idx;
+ 		spin_lock_irqsave(&ctx->completion_lock, flags);
+ 		migrate_page_copy(new, old);
++
++		/*
++		 * Ensure memory copy is finished before updating
++		 * ctx->ring_pages[]. Otherwise other processes may access to
++		 * new ring pages which are not fully initialized.
++		 */
++		smp_wmb();
++
+ 		idx = old->index;
+ 		if (idx < (pgoff_t)ctx->nr_pages) {
+ 			/* And only do the move if things haven't changed */
+@@ -1074,6 +1082,12 @@ static long aio_read_events_ring(struct kioctx *ctx,
+ 		page = ctx->ring_pages[pos / AIO_EVENTS_PER_PAGE];
+ 		pos %= AIO_EVENTS_PER_PAGE;
+
++		/*
++		 * Ensure that the page's data was copied from old one by
++		 * aio_migratepage().
++		 */
++		smp_read_barrier_depends();
++
+ 		ev = kmap(page);
+ 		copy_ret = copy_to_user(event + ret, ev + pos,
+ 					sizeof(*ev) * avail);
+
