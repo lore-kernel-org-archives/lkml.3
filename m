@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757780AbaCEO1X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:27:23 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41302 "EHLO
+	id S1757761AbaCEO1U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:27:20 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41289 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757735AbaCEO1Q (ORCPT
+	with ESMTP id S1757732AbaCEO1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:27:16 -0500
+	Wed, 5 Mar 2014 09:27:13 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lan Tianyu <tianyu.lan@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Mark Brown <broonie@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 119/131] ACPI / processor: Rework processor throttling with work_on_cpu()
-Date: Wed,  5 Mar 2014 14:24:03 +0000
-Message-Id: <1394029455-23128-120-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 117/131] ASoC: da732x: Mark DC offset control registers volatile
+Date: Wed,  5 Mar 2014 14:24:01 +0000
+Message-Id: <1394029455-23128-118-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -28,175 +27,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: Mark Brown <broonie@linaro.org>
 
-commit f3ca4164529b875374c410193bbbac0ee960895f upstream.
+commit 75306820248e26d15d84acf4e297b9fb27dd3bb2 upstream.
 
-acpi_processor_set_throttling() uses set_cpus_allowed_ptr() to make
-sure that the (struct acpi_processor)->acpi_processor_set_throttling()
-callback will run on the right CPU.  However, the function may be
-called from a worker thread already bound to a different CPU in which
-case that won't work.
+The driver reads from the DC offset control registers during callibration
+but since the registers are marked as volatile and there is a register
+cache the values will not be read from the hardware after the first reading
+rendering the callibration ineffective.
 
-Make acpi_processor_set_throttling() use work_on_cpu() as appropriate
-instead of abusing set_cpus_allowed_ptr().
+It appears that the driver was originally written for the ASoC level
+register I/O code but converted to regmap prior to merge and this issue
+was missed during the conversion as the framework level volatile register
+functionality was not being used.
 
-Reported-and-tested-by: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-[rjw: Changelog]
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
+Acked-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/acpi/processor_throttling.c | 69 +++++++++++++++++--------------------
- 1 file changed, 32 insertions(+), 37 deletions(-)
+ sound/soc/codecs/da732x.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/drivers/acpi/processor_throttling.c b/drivers/acpi/processor_throttling.c
-index e7dd2c1..5e47d7b 100644
---- a/drivers/acpi/processor_throttling.c
-+++ b/drivers/acpi/processor_throttling.c
-@@ -59,6 +59,12 @@ struct throttling_tstate {
- 	int target_state;		/* target T-state */
+diff --git a/sound/soc/codecs/da732x.c b/sound/soc/codecs/da732x.c
+index dc0284d..76fdf0a 100644
+--- a/sound/soc/codecs/da732x.c
++++ b/sound/soc/codecs/da732x.c
+@@ -1268,11 +1268,23 @@ static struct snd_soc_dai_driver da732x_dai[] = {
+ 	},
  };
  
-+struct acpi_processor_throttling_arg {
-+	struct acpi_processor *pr;
-+	int target_state;
-+	bool force;
-+};
-+
- #define THROTTLING_PRECHANGE       (1)
- #define THROTTLING_POSTCHANGE      (2)
- 
-@@ -1063,16 +1069,24 @@ static int acpi_processor_set_throttling_ptc(struct acpi_processor *pr,
- 	return 0;
- }
- 
-+static long acpi_processor_throttling_fn(void *data)
++static bool da732x_volatile(struct device *dev, unsigned int reg)
 +{
-+	struct acpi_processor_throttling_arg *arg = data;
-+	struct acpi_processor *pr = arg->pr;
-+
-+	return pr->throttling.acpi_processor_set_throttling(pr,
-+			arg->target_state, arg->force);
++	switch (reg) {
++	case DA732X_REG_HPL_DAC_OFF_CNTL:
++	case DA732X_REG_HPR_DAC_OFF_CNTL:
++		return true;
++	default:
++		return false;
++	}
 +}
 +
- int acpi_processor_set_throttling(struct acpi_processor *pr,
- 						int state, bool force)
- {
--	cpumask_var_t saved_mask;
- 	int ret = 0;
- 	unsigned int i;
- 	struct acpi_processor *match_pr;
- 	struct acpi_processor_throttling *p_throttling;
-+	struct acpi_processor_throttling_arg arg;
- 	struct throttling_tstate t_state;
--	cpumask_var_t online_throttling_cpus;
+ static const struct regmap_config da732x_regmap = {
+ 	.reg_bits		= 8,
+ 	.val_bits		= 8,
  
- 	if (!pr)
- 		return -EINVAL;
-@@ -1083,14 +1097,6 @@ int acpi_processor_set_throttling(struct acpi_processor *pr,
- 	if ((state < 0) || (state > (pr->throttling.state_count - 1)))
- 		return -EINVAL;
- 
--	if (!alloc_cpumask_var(&saved_mask, GFP_KERNEL))
--		return -ENOMEM;
--
--	if (!alloc_cpumask_var(&online_throttling_cpus, GFP_KERNEL)) {
--		free_cpumask_var(saved_mask);
--		return -ENOMEM;
--	}
--
- 	if (cpu_is_offline(pr->id)) {
- 		/*
- 		 * the cpu pointed by pr->id is offline. Unnecessary to change
-@@ -1099,17 +1105,15 @@ int acpi_processor_set_throttling(struct acpi_processor *pr,
- 		return -ENODEV;
- 	}
- 
--	cpumask_copy(saved_mask, &current->cpus_allowed);
- 	t_state.target_state = state;
- 	p_throttling = &(pr->throttling);
--	cpumask_and(online_throttling_cpus, cpu_online_mask,
--		    p_throttling->shared_cpu_map);
-+
- 	/*
- 	 * The throttling notifier will be called for every
- 	 * affected cpu in order to get one proper T-state.
- 	 * The notifier event is THROTTLING_PRECHANGE.
- 	 */
--	for_each_cpu(i, online_throttling_cpus) {
-+	for_each_cpu_and(i, cpu_online_mask, p_throttling->shared_cpu_map) {
- 		t_state.cpu = i;
- 		acpi_processor_throttling_notifier(THROTTLING_PRECHANGE,
- 							&t_state);
-@@ -1121,21 +1125,18 @@ int acpi_processor_set_throttling(struct acpi_processor *pr,
- 	 * it can be called only for the cpu pointed by pr.
- 	 */
- 	if (p_throttling->shared_type == DOMAIN_COORD_TYPE_SW_ANY) {
--		/* FIXME: use work_on_cpu() */
--		if (set_cpus_allowed_ptr(current, cpumask_of(pr->id))) {
--			/* Can't migrate to the pr->id CPU. Exit */
--			ret = -ENODEV;
--			goto exit;
--		}
--		ret = p_throttling->acpi_processor_set_throttling(pr,
--						t_state.target_state, force);
-+		arg.pr = pr;
-+		arg.target_state = state;
-+		arg.force = force;
-+		ret = work_on_cpu(pr->id, acpi_processor_throttling_fn, &arg);
- 	} else {
- 		/*
- 		 * When the T-state coordination is SW_ALL or HW_ALL,
- 		 * it is necessary to set T-state for every affected
- 		 * cpus.
- 		 */
--		for_each_cpu(i, online_throttling_cpus) {
-+		for_each_cpu_and(i, cpu_online_mask,
-+		    p_throttling->shared_cpu_map) {
- 			match_pr = per_cpu(processors, i);
- 			/*
- 			 * If the pointer is invalid, we will report the
-@@ -1156,13 +1157,12 @@ int acpi_processor_set_throttling(struct acpi_processor *pr,
- 					"on CPU %d\n", i));
- 				continue;
- 			}
--			t_state.cpu = i;
--			/* FIXME: use work_on_cpu() */
--			if (set_cpus_allowed_ptr(current, cpumask_of(i)))
--				continue;
--			ret = match_pr->throttling.
--				acpi_processor_set_throttling(
--				match_pr, t_state.target_state, force);
-+
-+			arg.pr = match_pr;
-+			arg.target_state = state;
-+			arg.force = force;
-+			ret = work_on_cpu(pr->id, acpi_processor_throttling_fn,
-+				&arg);
- 		}
- 	}
- 	/*
-@@ -1171,17 +1171,12 @@ int acpi_processor_set_throttling(struct acpi_processor *pr,
- 	 * affected cpu to update the T-states.
- 	 * The notifier event is THROTTLING_POSTCHANGE
- 	 */
--	for_each_cpu(i, online_throttling_cpus) {
-+	for_each_cpu_and(i, cpu_online_mask, p_throttling->shared_cpu_map) {
- 		t_state.cpu = i;
- 		acpi_processor_throttling_notifier(THROTTLING_POSTCHANGE,
- 							&t_state);
- 	}
--	/* restore the previous state */
--	/* FIXME: use work_on_cpu() */
--	set_cpus_allowed_ptr(current, saved_mask);
--exit:
--	free_cpumask_var(online_throttling_cpus);
--	free_cpumask_var(saved_mask);
-+
- 	return ret;
- }
- 
+ 	.max_register		= DA732X_MAX_REG,
++	.volatile_reg		= da732x_volatile,
+ 	.reg_defaults		= da732x_reg_cache,
+ 	.num_reg_defaults	= ARRAY_SIZE(da732x_reg_cache),
+ 	.cache_type		= REGCACHE_RBTREE,
 -- 
 1.9.0
 
