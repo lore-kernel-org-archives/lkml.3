@@ -1,146 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756365AbaCEGzQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 01:55:16 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:58006 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754615AbaCEGuG (ORCPT
+	id S1756499AbaCEGz4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 01:55:56 -0500
+Received: from 6.mo68.mail-out.ovh.net ([46.105.63.100]:56912 "EHLO
+	mo68.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755668AbaCEGzy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 01:50:06 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s256o2hk009455, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next v2 04/13] r8152: replace spin_lock_irqsave and spin_unlock_irqrestore
-Date: Wed, 5 Mar 2014 14:49:19 +0800
-Message-ID: <1394002168-3193-5-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1394002168-3193-1-git-send-email-hayeswang@realtek.com>
-References: <1393934464-23675-1-git-send-email-hayeswang@realtek.com>
- <1394002168-3193-1-git-send-email-hayeswang@realtek.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+	Wed, 5 Mar 2014 01:55:54 -0500
+X-Greylist: delayed 3600 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Mar 2014 01:55:53 EST
+Content-Type: multipart/signed; boundary="Apple-Mail=_1528776B-48EC-4CA4-A814-65410CFD3677"; protocol="application/pgp-signature"; micalg=pgp-sha512
+Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
+Subject: Re: [PATCH] pinctrl: at91: add the config GPIO_OUTPUT_x
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+In-Reply-To: <1393984400-14687-1-git-send-email-wenyou.yang@atmel.com>
+Date: Wed, 5 Mar 2014 12:58:12 +0800
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linus.walleij@linaro.org, b.brezillon@overkiz.com,
+        "<linux-arm-kernel@lists.infradead.org> mailing list" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        devicetree@vger.kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org
+Message-Id: <635C1A75-4651-4B2C-AB64-E1D170A1F5F9@jcrosoft.com>
+References: <1393984400-14687-1-git-send-email-wenyou.yang@atmel.com>
+To: Wenyou Yang <wenyou.yang@atmel.com>
+X-Mailer: Apple Mail (2.1827)
+X-Ovh-Tracer-Id: 12621900906999950213
+X-Ovh-Remote: 140.206.255.243 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -200
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejuddrudduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdengfhvvghrhghhihhtvgdqqdetucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -200
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejuddrudduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdengfhvvghrhghhihhtvgdqqdetucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use spin_lock and spin_unlock in interrupt context.
 
-The ndo_start_xmit would not be called in interrupt context, so
-replace the relative spin_lock_irqsave and spin_unlock_irqrestore
-with spin_lock_bh and spin_unlock_bh.
+--Apple-Mail=_1528776B-48EC-4CA4-A814-65410CFD3677
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain;
+	charset=us-ascii
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 28 ++++++++++++----------------
- 1 file changed, 12 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index b8eee36..8ecb41b 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -963,7 +963,6 @@ static int rtl8152_set_mac_address(struct net_device *netdev, void *p)
- static void read_bulk_callback(struct urb *urb)
- {
- 	struct net_device *netdev;
--	unsigned long flags;
- 	int status = urb->status;
- 	struct rx_agg *agg;
- 	struct r8152 *tp;
-@@ -997,9 +996,9 @@ static void read_bulk_callback(struct urb *urb)
- 		if (urb->actual_length < ETH_ZLEN)
- 			break;
- 
--		spin_lock_irqsave(&tp->rx_lock, flags);
-+		spin_lock(&tp->rx_lock);
- 		list_add_tail(&agg->list, &tp->rx_done);
--		spin_unlock_irqrestore(&tp->rx_lock, flags);
-+		spin_unlock(&tp->rx_lock);
- 		tasklet_schedule(&tp->tl);
- 		return;
- 	case -ESHUTDOWN:
-@@ -1022,9 +1021,9 @@ static void read_bulk_callback(struct urb *urb)
- 	if (result == -ENODEV) {
- 		netif_device_detach(tp->netdev);
- 	} else if (result) {
--		spin_lock_irqsave(&tp->rx_lock, flags);
-+		spin_lock(&tp->rx_lock);
- 		list_add_tail(&agg->list, &tp->rx_done);
--		spin_unlock_irqrestore(&tp->rx_lock, flags);
-+		spin_unlock(&tp->rx_lock);
- 		tasklet_schedule(&tp->tl);
- 	}
- }
-@@ -1033,7 +1032,6 @@ static void write_bulk_callback(struct urb *urb)
- {
- 	struct net_device_stats *stats;
- 	struct net_device *netdev;
--	unsigned long flags;
- 	struct tx_agg *agg;
- 	struct r8152 *tp;
- 	int status = urb->status;
-@@ -1057,9 +1055,9 @@ static void write_bulk_callback(struct urb *urb)
- 		stats->tx_bytes += agg->skb_len;
- 	}
- 
--	spin_lock_irqsave(&tp->tx_lock, flags);
-+	spin_lock(&tp->tx_lock);
- 	list_add_tail(&agg->list, &tp->tx_free);
--	spin_unlock_irqrestore(&tp->tx_lock, flags);
-+	spin_unlock(&tp->tx_lock);
- 
- 	usb_autopm_put_interface_async(tp->intf);
- 
-@@ -1330,14 +1328,13 @@ r8152_tx_csum(struct r8152 *tp, struct tx_desc *desc, struct sk_buff *skb)
- static int r8152_tx_agg_fill(struct r8152 *tp, struct tx_agg *agg)
- {
- 	struct sk_buff_head skb_head, *tx_queue = &tp->tx_queue;
--	unsigned long flags;
- 	int remain, ret;
- 	u8 *tx_data;
- 
- 	__skb_queue_head_init(&skb_head);
--	spin_lock_irqsave(&tx_queue->lock, flags);
-+	spin_lock_bh(&tx_queue->lock);
- 	skb_queue_splice_init(tx_queue, &skb_head);
--	spin_unlock_irqrestore(&tx_queue->lock, flags);
-+	spin_unlock_bh(&tx_queue->lock);
- 
- 	tx_data = agg->head;
- 	agg->skb_num = agg->skb_len = 0;
-@@ -1374,9 +1371,9 @@ static int r8152_tx_agg_fill(struct r8152 *tp, struct tx_agg *agg)
- 	}
- 
- 	if (!skb_queue_empty(&skb_head)) {
--		spin_lock_irqsave(&tx_queue->lock, flags);
-+		spin_lock_bh(&tx_queue->lock);
- 		skb_queue_splice(&skb_head, tx_queue);
--		spin_unlock_irqrestore(&tx_queue->lock, flags);
-+		spin_unlock_bh(&tx_queue->lock);
- 	}
- 
- 	netif_tx_lock_bh(tp->netdev);
-@@ -1551,16 +1548,15 @@ static void rtl_drop_queued_tx(struct r8152 *tp)
- {
- 	struct net_device_stats *stats = &tp->netdev->stats;
- 	struct sk_buff_head skb_head, *tx_queue = &tp->tx_queue;
--	unsigned long flags;
- 	struct sk_buff *skb;
- 
- 	if (skb_queue_empty(tx_queue))
- 		return;
- 
- 	__skb_queue_head_init(&skb_head);
--	spin_lock_irqsave(&tx_queue->lock, flags);
-+	spin_lock_bh(&tx_queue->lock);
- 	skb_queue_splice_init(tx_queue, &skb_head);
--	spin_unlock_irqrestore(&tx_queue->lock, flags);
-+	spin_unlock_bh(&tx_queue->lock);
- 
- 	while ((skb = __skb_dequeue(&skb_head))) {
- 		dev_kfree_skb(skb);
--- 
-1.8.4.2
+On Mar 5, 2014, at 9:53 AM, Wenyou Yang <wenyou.yang@atmel.com> wrote:
 
+> In order to support the pinctrl sleep state.
+
+As I said before NACK
+
+this is not the job of the pinctrl to describe gpio output or input =
+state
+
+Best Regards,
+J.
+>=20
+> Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+> ---
+> Hi Linus,
+>=20
+> The patch is based on branch: for-next
+> git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl
+>=20
+> Best Regards,
+> Wenyou Yang
+>=20
+> drivers/pinctrl/pinctrl-at91.c     |   31 =
++++++++++++++++++++++++++++++++
+> include/dt-bindings/pinctrl/at91.h |    2 ++
+> 2 files changed, 33 insertions(+)
+>=20
+> diff --git a/drivers/pinctrl/pinctrl-at91.c =
+b/drivers/pinctrl/pinctrl-at91.c
+> index 5d24aae..fc51e59 100644
+> --- a/drivers/pinctrl/pinctrl-at91.c
+> +++ b/drivers/pinctrl/pinctrl-at91.c
+> @@ -62,6 +62,8 @@ static int gpio_banks;
+> #define DEGLITCH	(1 << 2)
+> #define PULL_DOWN	(1 << 3)
+> #define DIS_SCHMIT	(1 << 4)
+> +#define GPIO_OUTPUT_HIGH	(1 << 5)
+> +#define GPIO_OUTPUT_LOW		(1 << 6)
+> #define DEBOUNCE	(1 << 16)
+> #define DEBOUNCE_VAL_SHIFT	17
+> #define DEBOUNCE_VAL	(0x3fff << DEBOUNCE_VAL_SHIFT)
+> @@ -152,12 +154,15 @@ struct at91_pinctrl_mux_ops {
+> 	void (*set_pulldown)(void __iomem *pio, unsigned mask, bool =
+is_on);
+> 	bool (*get_schmitt_trig)(void __iomem *pio, unsigned pin);
+> 	void (*disable_schmitt_trig)(void __iomem *pio, unsigned mask);
+> +	bool (*get_gpio_output)(void __iomem *pio, unsigned mask);
+> +	void (*set_gpio_output)(void __iomem *pio, unsigned mask, bool =
+is_high);
+> 	/* irq */
+> 	int (*irq_type)(struct irq_data *d, unsigned type);
+> };
+>=20
+> static int gpio_irq_type(struct irq_data *d, unsigned type);
+> static int alt_gpio_irq_type(struct irq_data *d, unsigned type);
+> +static void at91_mux_gpio_enable(void __iomem *pio, unsigned mask, =
+bool input);
+>=20
+> struct at91_pinctrl {
+> 	struct device		*dev;
+> @@ -472,6 +477,20 @@ static bool at91_mux_pio3_get_schmitt_trig(void =
+__iomem *pio, unsigned pin)
+> 	return (__raw_readl(pio + PIO_SCHMITT) >> pin) & 0x1;
+> }
+>=20
+> +static bool at91_mux_pio3_get_gpio_output(void __iomem *pio, unsigned =
+pin)
+> +{
+> +	return (__raw_readl(pio + PIO_ODSR) >> pin) & 0x1;
+> +}
+> +
+> +static void at91_mux_pio3_set_gpio_output(void __iomem *pio,
+> +						unsigned mask,
+> +						bool is_high)
+> +{
+> +	at91_mux_gpio_enable(pio, mask, 0);
+> +	writel_relaxed(mask, pio + (is_high ? PIO_SODR : PIO_CODR));
+> +}
+> +
+> +
+> static struct at91_pinctrl_mux_ops at91rm9200_ops =3D {
+> 	.get_periph	=3D at91_mux_get_periph,
+> 	.mux_A_periph	=3D at91_mux_set_A_periph,
+> @@ -495,6 +514,8 @@ static struct at91_pinctrl_mux_ops at91sam9x5_ops =
+=3D {
+> 	.set_pulldown	=3D at91_mux_pio3_set_pulldown,
+> 	.get_schmitt_trig =3D at91_mux_pio3_get_schmitt_trig,
+> 	.disable_schmitt_trig =3D at91_mux_pio3_disable_schmitt_trig,
+> +	.get_gpio_output =3D at91_mux_pio3_get_gpio_output,
+> +	.set_gpio_output =3D at91_mux_pio3_set_gpio_output,
+> 	.irq_type	=3D alt_gpio_irq_type,
+> };
+>=20
+> @@ -741,6 +762,10 @@ static int at91_pinconf_get(struct pinctrl_dev =
+*pctldev,
+> 		*config |=3D PULL_DOWN;
+> 	if (info->ops->get_schmitt_trig && =
+info->ops->get_schmitt_trig(pio, pin))
+> 		*config |=3D DIS_SCHMIT;
+> +	if (info->ops->get_gpio_output) {
+> +		*config |=3D info->ops->get_gpio_output(pio, pin) ?
+> +					GPIO_OUTPUT_HIGH : =
+GPIO_OUTPUT_LOW;
+> +	}
+>=20
+> 	return 0;
+> }
+> @@ -778,6 +803,12 @@ static int at91_pinconf_set(struct pinctrl_dev =
+*pctldev,
+> 			info->ops->set_pulldown(pio, mask, config & =
+PULL_DOWN);
+> 		if (info->ops->disable_schmitt_trig && config & =
+DIS_SCHMIT)
+> 			info->ops->disable_schmitt_trig(pio, mask);
+> +		if (info->ops->set_gpio_output) {
+> +			if (config & GPIO_OUTPUT_HIGH)
+> +				info->ops->set_gpio_output(pio, mask, =
+1);
+> +			if (config & GPIO_OUTPUT_LOW)
+> +				info->ops->set_gpio_output(pio, mask, =
+0);
+> +		};
+>=20
+> 	} /* for each config */
+>=20
+> diff --git a/include/dt-bindings/pinctrl/at91.h =
+b/include/dt-bindings/pinctrl/at91.h
+> index 0fee6ff..e799268 100644
+> --- a/include/dt-bindings/pinctrl/at91.h
+> +++ b/include/dt-bindings/pinctrl/at91.h
+> @@ -15,6 +15,8 @@
+> #define AT91_PINCTRL_DEGLITCH		(1 << 2)
+> #define AT91_PINCTRL_PULL_DOWN		(1 << 3)
+> #define AT91_PINCTRL_DIS_SCHMIT		(1 << 4)
+> +#define AT91_PINCTRL_OUTPUT_HIGH	(1 << 5)
+> +#define AT91_PINCTRL_OUTPUT_LOW		(1 << 6)
+> #define AT91_PINCTRL_DEBOUNCE		(1 << 16)
+> #define AT91_PINCTRL_DEBOUNCE_VAL(x)	(x << 17)
+>=20
+> --=20
+> 1.7.9.5
+>=20
+
+
+--Apple-Mail=_1528776B-48EC-4CA4-A814-65410CFD3677
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename=signature.asc
+Content-Type: application/pgp-signature;
+	name=signature.asc
+Content-Description: Message signed with OpenPGP using GPGMail
+
+-----BEGIN PGP SIGNATURE-----
+Comment: GPGTools - https://gpgtools.org
+
+iQIcBAEBCgAGBQJTFq7kAAoJEOrjwV5ZMRf2QF8P/35yh3Ks3LSytxpXiIQVgeI+
+TWy0pKsn1SYPqNpetjE0TqqQcWtlgq4NkFq6ce9Nn3mJruvcPBQy76tenAWU+Yzb
+8KiBI45FZd3fTg0TPoh8K0SmrZybKdknitbaaWRqVuu/HV1PExpKMQpar4uE/6o+
+jrndbwFONr/zQiw2T0fbLiiSzGXUkDSb7IM1EggXTkZUDiWEMxFSXN1ssrZEwBxR
+mPxwGMhBt7pW6/gZQ+wlLOw6Hpgjqzlsw8BHbMS70ymPXypYMc6Onw4uYlaShA8o
+m01Mriq+tkRtuiJibkIDEcQzVGIC5WyRq/95imagzfpk8qEDxYsl1s6Oq2vxlNlK
+XmoqCsG82UnjB4ZSZ/X/3PWaE1eDn/bB0gJwDdaG5Xw+bO/9ZM4p6+7oztkZWu4C
+xacGnIUo9iMYTtTlAbliSNnVLjV86UoOUYc0v/sO7QeizCrYTMhzB8HBTf4Rhb/5
+F5cQvpUcTFJFAwgaOGlNR28JwHhkoz7FEVxRFbTfKkmcVOEZGO/lmKKLVmvEq2AC
+FcNyrfCCMaFbyxli6Ibsu4hGtfbocCZNlanxuzwvVwDjfmf64Ez1vlfdU31N7COl
+RuprIA3RUuyqAqJ0+xcJFtvJvz1V5leRzKmokQl3ckcRIEmgXMrzLRimAN2QjweW
+0omh6l341kQ89BsKGgTM
+=Y7St
+-----END PGP SIGNATURE-----
+
+--Apple-Mail=_1528776B-48EC-4CA4-A814-65410CFD3677--
