@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758437AbaCEOlF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:41:05 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41816 "EHLO
+	id S932541AbaCEOl3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:41:29 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41811 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757811AbaCEOid (ORCPT
+	with ESMTP id S1758258AbaCEOib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:38:33 -0500
+	Wed, 5 Mar 2014 09:38:31 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
+Cc: Joerg Dorchain <joerg@dorchain.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 56/62] usb: ehci: fix deadlock when threadirqs option is used
-Date: Wed,  5 Mar 2014 14:37:00 +0000
-Message-Id: <1394030226-26652-57-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 55/62] USB: ftdi_sio: add Cressi Leonardo PID
+Date: Wed,  5 Mar 2014 14:36:59 +0000
+Message-Id: <1394030226-26652-56-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
 References: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
@@ -28,63 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Joerg Dorchain <joerg@dorchain.net>
 
-commit a1227f3c1030e96ebc51d677d2f636268845c5fb upstream.
+commit 6dbd46c849e071e6afc1e0cad489b0175bca9318 upstream.
 
-ehci_irq() and ehci_hrtimer_func() can deadlock on ehci->lock when
-threadirqs option is used. To prevent the deadlock use
-spin_lock_irqsave() in ehci_irq().
+Hello,
 
-This change can be reverted when hrtimer callbacks become threaded.
+the following patch adds an entry for the PID of a Cressi Leonardo
+diving computer interface to kernel 3.13.0.
+It is detected as FT232RL.
+Works with subsurface.
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Joerg Dorchain <joerg@dorchain.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/host/ehci-hcd.c | 13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     | 2 ++
+ drivers/usb/serial/ftdi_sio_ids.h | 6 ++++++
+ 2 files changed, 8 insertions(+)
 
-diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
-index 800be38..6cea7c4 100644
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -849,8 +849,15 @@ static irqreturn_t ehci_irq (struct usb_hcd *hcd)
- 	struct ehci_hcd		*ehci = hcd_to_ehci (hcd);
- 	u32			status, masked_status, pcd_status = 0, cmd;
- 	int			bh;
-+	unsigned long		flags;
- 
--	spin_lock (&ehci->lock);
-+	/*
-+	 * For threadirqs option we use spin_lock_irqsave() variant to prevent
-+	 * deadlock with ehci hrtimer callback, because hrtimer callbacks run
-+	 * in interrupt context even when threadirqs is specified. We can go
-+	 * back to spin_lock() variant when hrtimer callbacks become threaded.
-+	 */
-+	spin_lock_irqsave(&ehci->lock, flags);
- 
- 	status = ehci_readl(ehci, &ehci->regs->status);
- 
-@@ -868,7 +875,7 @@ static irqreturn_t ehci_irq (struct usb_hcd *hcd)
- 
- 	/* Shared IRQ? */
- 	if (!masked_status || unlikely(ehci->rh_state == EHCI_RH_HALTED)) {
--		spin_unlock(&ehci->lock);
-+		spin_unlock_irqrestore(&ehci->lock, flags);
- 		return IRQ_NONE;
- 	}
- 
-@@ -969,7 +976,7 @@ dead:
- 
- 	if (bh)
- 		ehci_work (ehci);
--	spin_unlock (&ehci->lock);
-+	spin_unlock_irqrestore(&ehci->lock, flags);
- 	if (pcd_status)
- 		usb_hcd_poll_rh_status(hcd);
- 	return IRQ_HANDLED;
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index ab8b689..1dfb333 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -918,6 +918,8 @@ static struct usb_device_id id_table_combined [] = {
+ 	/* Crucible Devices */
+ 	{ USB_DEVICE(FTDI_VID, FTDI_CT_COMET_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_Z3X_PID) },
++	/* Cressi Devices */
++	{ USB_DEVICE(FTDI_VID, FTDI_CRESSI_PID) },
+ 	{ },					/* Optional parameter entry */
+ 	{ }					/* Terminating entry */
+ };
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index 1e2d369..e599fbf 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -1320,3 +1320,9 @@
+  * Manufacturer: Smart GSM Team
+  */
+ #define FTDI_Z3X_PID		0x0011
++
++/*
++ * Product: Cressi PC Interface
++ * Manufacturer: Cressi
++ */
++#define FTDI_CRESSI_PID		0x87d0
 -- 
 1.9.0
 
