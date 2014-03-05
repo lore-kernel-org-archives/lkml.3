@@ -1,53 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754569AbaCES11 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 13:27:27 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:51172 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752550AbaCES1Z (ORCPT
+	id S1755737AbaCES26 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 13:28:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51590 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752841AbaCES25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 13:27:25 -0500
-Date: Wed, 5 Mar 2014 19:27:22 +0100
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jonathan Cameron <jic23@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 04/15] iio: adc: at91_adc: Add support for touchscreens
- without TSMR
-Message-ID: <20140305192722.786d5549@skate>
-In-Reply-To: <1394040940-18246-5-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1394040940-18246-1-git-send-email-alexandre.belloni@free-electrons.com>
-	<1394040940-18246-5-git-send-email-alexandre.belloni@free-electrons.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 5 Mar 2014 13:28:57 -0500
+Date: Wed, 5 Mar 2014 10:30:42 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Eric Biederman <ebiederm@xmission.com>,
+        Tejun Heo <tj@kernel.org>, stable@vger.kernel.org
+Subject: Re: [PATCH] kernfs: fix off by one error.
+Message-ID: <20140305183042.GC9824@kroah.com>
+References: <74f5a436ebf5c13ed89a81c47ba09a6549e385f6.1394035568.git.richardcochran@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <74f5a436ebf5c13ed89a81c47ba09a6549e385f6.1394035568.git.richardcochran@gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Alexandre Belloni,
+On Wed, Mar 05, 2014 at 05:10:52PM +0100, Richard Cochran wrote:
+> The hash values 0 and 1 are reserved for magic directory entries, but
+> the code only prevents names hashing to 0. This patch fixes the test
+> to also prevent hash value 1.
+> 
+> Signed-off-by: Richard Cochran <richardcochran@gmail.com>
+> Cc: <stable@vger.kernel.org>
+> ---
+>  fs/kernfs/dir.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-On Wed,  5 Mar 2014 18:35:29 +0100, Alexandre Belloni wrote:
+Is this for 3.14-final or 3.15-rc1?
 
-> -static irqreturn_t at91_adc_interrupt(int irq, void *private)
-> +void handle_adc_rl_ts_irq(int irq, struct at91_adc_state *st, u32 status)
+thanks,
 
-I believe this function,
-
-> +void handle_adc_9x5_ts_irq(int irq, struct at91_adc_state *st, u32 status)
-
-and this one should be 'static'.
-
-Thomas
--- 
-Thomas Petazzoni, CTO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+greg k-h
