@@ -1,248 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758548AbaCEOtU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:49:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41706 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932358AbaCEOiC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:38:02 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Florian Westphal <fw@strlen.de>, "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 35/62] net: ip, ipv6: handle gso skbs in forwarding path
-Date: Wed,  5 Mar 2014 14:36:39 +0000
-Message-Id: <1394030226-26652-36-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
-References: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	id S1758555AbaCEOtf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:49:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9167 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751457AbaCEOtc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 09:49:32 -0500
+Message-ID: <53173961.6080301@redhat.com>
+Date: Wed, 05 Mar 2014 15:49:05 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: "Li, Bin (Bin)" <bin.bl.li@alcatel-lucent.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+CC: "Jatania, Neel (Neel)" <Neel.Jatania@alcatel-lucent.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>,
+        "ttracy@redhat.com" <ttracy@redhat.com>,
+        "Nakajima, Jun" <jun.nakajima@intel.com>,
+        "riel@redhat.com" <riel@redhat.com>
+Subject: Re: Enhancement for PLE handler in KVM
+References: <53061044.2000009@alcatel-lucent.com> <530B9637.6030708@alcatel-lucent.com> <5314C8C3.3090607@alcatel-lucent.com> <5314D61B.9050407@redhat.com> <72F5E0D8DB6D83469579E473AD72DB23779EFF64@US70UWXCHMBA01.zam.alcatel-lucent.com>
+In-Reply-To: <72F5E0D8DB6D83469579E473AD72DB23779EFF64@US70UWXCHMBA01.zam.alcatel-lucent.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.32 -stable review patch.  If anyone has any objections, please let me know.
+Il 05/03/2014 15:17, Li, Bin (Bin) ha scritto:
+> Hello, Paolo,
+>
+> We are using a customized embedded SMP OS as guest OS. It is not meaningful to post the guest OS code.
+> Also, there is no "performance numbers for common workloads" since there is no common workloads to compare with.
+> In our OS, there is still a big kernel lock to protect the kernel.
 
-------------------
+Does this means that average spinning time for the spinlock is 
+relatively high compared to Linux or Windows?
 
-From: Florian Westphal <fw@strlen.de>
+> - when the in-correct boosting happens, the vCPU in spin lock will run
+> longer time on the pCPU and causing the lock holder vCPU having less
+> time to run on pCPU since they are sharing the on same pCPU.
 
-commit fe6cc55f3a9a053482a76f5a6b2257cee51b4663 upstream.
+Correct.  This is an unfortunate problem in the current implementation 
+of PLE.
 
-Marcelo Ricardo Leitner reported problems when the forwarding link path
-has a lower mtu than the incoming one if the inbound interface supports GRO.
+> Adding hyper call in every kernel enter and kernel exist is
+> expensive. From the trace log collect from i7 running @ 3.0GHz , the
+> cost per  hyper is <1us.
 
-Given:
-Host <mtu1500> R1 <mtu1200> R2
+Right, it is around 1500 cycles and 0.4-0.5 us, i.e. approximately 1 us 
+for enter and exit together.
 
-Host sends tcp stream which is routed via R1 and R2.  R1 performs GRO.
+This is not too bad for a kernel with a big lock, but not acceptable if 
+you do not have it (as is the case for Linux and Windows).
 
-In this case, the kernel will fail to send ICMP fragmentation needed
-messages (or pkt too big for ipv6), as GSO packets currently bypass dstmtu
-checks in forward path. Instead, Linux tries to send out packets exceeding
-the mtu.
+> Regarding to the " paravirtual ticketlock ", we did try the same idea in our embedded guest OS.
+> We got following results:
+>
+> a) We implemented similar approach like linux "paravirtual
+> ticketlock". The system clock jitter does get reduced a lot. But, the
+> system clock jitter is still happening at lower rate. In a few hours
+> system stress test, we still see the big jitter few times.
 
-When locking route MTU on Host (i.e., no ipv4 DF bit set), R1 does
-not fragment the packets when forwarding, and again tries to send out
-packets exceeding R1-R2 link mtu.
+Did you find out why?  It could happen if the virtual CPU is scheduled 
+out for a relatively long time.  A small number of spinning iterations 
+can then account for a relatively large time.
 
-This alters the forwarding dstmtu checks to take the individual gso
-segment lengths into account.
+My impression is that you're implementing a paravirtual spinlock, except 
+that you're relying on PLE to decide when to go to sleep.  PLE is 
+implemented using the TSC.  Can you assume the host TSC is of good 
+quality?  If so, perhaps you can try to modify the pv ticketlock 
+algorithm, and use a threshold based on TSC instead of an iteration count?
 
-For ipv6, we send out pkt too big error for gso if the individual
-segments are too big.
+> b) When using "paravirtual ticketlock", the threshold to decide "are
+> we spinning too much" becomes an important factor need to be tuned to
+> the final system case by case. What we found from the test is, different
+> application running in our guest OS would require different threshold
+> setting.
 
-For ipv4, we either send icmp fragmentation needed, or, if the DF bit
-is not set, perform software segmentation and let the output path
-create fragments when the packet is leaving the machine.
-It is not 100% correct as the error message will contain the headers of
-the GRO skb instead of the original/segmented one, but it seems to
-work fine in my (limited) tests.
+Did you also find out here why this is the case?
 
-Eric Dumazet suggested to simply shrink mss via ->gso_size to avoid
-sofware segmentation.
-
-However it turns out that skb_segment() assumes skb nr_frags is related
-to mss size so we would BUG there.  I don't want to mess with it considering
-Herbert and Eric disagree on what the correct behavior should be.
-
-Hannes Frederic Sowa notes that when we would shrink gso_size
-skb_segment would then also need to deal with the case where
-SKB_MAX_FRAGS would be exceeded.
-
-This uses sofware segmentation in the forward path when we hit ipv4
-non-DF packets and the outgoing link mtu is too small.  Its not perfect,
-but given the lack of bug reports wrt. GRO fwd being broken this is a
-rare case anyway.  Also its not like this could not be improved later
-once the dust settles.
-
-Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
-Reported-by: Marcelo Ricardo Leitner <mleitner@redhat.com>
-Signed-off-by: Florian Westphal <fw@strlen.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[ luis: backported to 3.5: used davem's backport to 3.4:
-  - use zero netdev_feature mask to avoid backport of
-    netif_skb_dev_features function ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- include/linux/skbuff.h | 17 +++++++++++++
- net/ipv4/ip_forward.c  | 68 ++++++++++++++++++++++++++++++++++++++++++++++++--
- net/ipv6/ip6_output.c  | 13 +++++++++-
- 3 files changed, 95 insertions(+), 3 deletions(-)
-
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 0d40dda..0f7fcc4 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -2587,5 +2587,22 @@ static inline bool skb_head_is_locked(const struct sk_buff *skb)
- {
- 	return !skb->head_frag || skb_cloned(skb);
- }
-+
-+/**
-+ * skb_gso_network_seglen - Return length of individual segments of a gso packet
-+ *
-+ * @skb: GSO skb
-+ *
-+ * skb_gso_network_seglen is used to determine the real size of the
-+ * individual segments, including Layer3 (IP, IPv6) and L4 headers (TCP/UDP).
-+ *
-+ * The MAC/L2 header is not accounted for.
-+ */
-+static inline unsigned int skb_gso_network_seglen(const struct sk_buff *skb)
-+{
-+	unsigned int hdr_len = skb_transport_header(skb) -
-+			       skb_network_header(skb);
-+	return hdr_len + skb_gso_transport_seglen(skb);
-+}
- #endif	/* __KERNEL__ */
- #endif	/* _LINUX_SKBUFF_H */
-diff --git a/net/ipv4/ip_forward.c b/net/ipv4/ip_forward.c
-index ab09b12..d9342ce 100644
---- a/net/ipv4/ip_forward.c
-+++ b/net/ipv4/ip_forward.c
-@@ -39,6 +39,68 @@
- #include <net/route.h>
- #include <net/xfrm.h>
- 
-+static bool ip_may_fragment(const struct sk_buff *skb)
-+{
-+	return unlikely((ip_hdr(skb)->frag_off & htons(IP_DF)) == 0) ||
-+	       !skb->local_df;
-+}
-+
-+static bool ip_exceeds_mtu(const struct sk_buff *skb, unsigned int mtu)
-+{
-+	if (skb->len <= mtu || skb->local_df)
-+		return false;
-+
-+	if (skb_is_gso(skb) && skb_gso_network_seglen(skb) <= mtu)
-+		return false;
-+
-+	return true;
-+}
-+
-+static bool ip_gso_exceeds_dst_mtu(const struct sk_buff *skb)
-+{
-+	unsigned int mtu;
-+
-+	if (skb->local_df || !skb_is_gso(skb))
-+		return false;
-+
-+	mtu = dst_mtu(skb_dst(skb));
-+
-+	/* if seglen > mtu, do software segmentation for IP fragmentation on
-+	 * output.  DF bit cannot be set since ip_forward would have sent
-+	 * icmp error.
-+	 */
-+	return skb_gso_network_seglen(skb) > mtu;
-+}
-+
-+/* called if GSO skb needs to be fragmented on forward */
-+static int ip_forward_finish_gso(struct sk_buff *skb)
-+{
-+	struct sk_buff *segs;
-+	int ret = 0;
-+
-+	segs = skb_gso_segment(skb, 0);
-+	if (IS_ERR(segs)) {
-+		kfree_skb(skb);
-+		return -ENOMEM;
-+	}
-+
-+	consume_skb(skb);
-+
-+	do {
-+		struct sk_buff *nskb = segs->next;
-+		int err;
-+
-+		segs->next = NULL;
-+		err = dst_output(segs);
-+
-+		if (err && ret == 0)
-+			ret = err;
-+		segs = nskb;
-+	} while (segs);
-+
-+	return ret;
-+}
-+
- static int ip_forward_finish(struct sk_buff *skb)
- {
- 	struct ip_options *opt	= &(IPCB(skb)->opt);
-@@ -49,6 +111,9 @@ static int ip_forward_finish(struct sk_buff *skb)
- 	if (unlikely(opt->optlen))
- 		ip_forward_options(skb);
- 
-+	if (ip_gso_exceeds_dst_mtu(skb))
-+		return ip_forward_finish_gso(skb);
-+
- 	return dst_output(skb);
- }
- 
-@@ -88,8 +153,7 @@ int ip_forward(struct sk_buff *skb)
- 	if (opt->is_strictroute && opt->nexthop != rt->rt_gateway)
- 		goto sr_failed;
- 
--	if (unlikely(skb->len > dst_mtu(&rt->dst) && !skb_is_gso(skb) &&
--		     (ip_hdr(skb)->frag_off & htons(IP_DF))) && !skb->local_df) {
-+	if (!ip_may_fragment(skb) && ip_exceeds_mtu(skb, dst_mtu(&rt->dst))) {
- 		IP_INC_STATS(dev_net(rt->dst.dev), IPSTATS_MIB_FRAGFAILS);
- 		icmp_send(skb, ICMP_DEST_UNREACH, ICMP_FRAG_NEEDED,
- 			  htonl(dst_mtu(&rt->dst)));
-diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
-index 9665b28..3fe4480 100644
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -381,6 +381,17 @@ static inline int ip6_forward_finish(struct sk_buff *skb)
- 	return dst_output(skb);
- }
- 
-+static bool ip6_pkt_too_big(const struct sk_buff *skb, unsigned int mtu)
-+{
-+	if (skb->len <= mtu || skb->local_df)
-+		return false;
-+
-+	if (skb_is_gso(skb) && skb_gso_network_seglen(skb) <= mtu)
-+		return false;
-+
-+	return true;
-+}
-+
- int ip6_forward(struct sk_buff *skb)
- {
- 	struct dst_entry *dst = skb_dst(skb);
-@@ -502,7 +513,7 @@ int ip6_forward(struct sk_buff *skb)
- 	if (mtu < IPV6_MIN_MTU)
- 		mtu = IPV6_MIN_MTU;
- 
--	if (skb->len > mtu && !skb_is_gso(skb)) {
-+	if (ip6_pkt_too_big(skb, mtu)) {
- 		/* Again, force OUTPUT device used as source address */
- 		skb->dev = dst->dev;
- 		icmpv6_send(skb, ICMPV6_PKT_TOOBIG, 0, mtu);
--- 
-1.9.0
-
+Paolo
