@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753962AbaCEKAo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 05:00:44 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:32816 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751574AbaCEKAk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 05:00:40 -0500
-X-IronPort-AV: E=Sophos;i="4.97,591,1389715200"; 
-   d="scan'208";a="9648694"
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-To: x86@kernel.org, linux-kernel@vger.kernel.org
-Cc: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH tip] perf/x86/uncore: Add __init for uncore_cpumask_init().
-Date: Wed, 5 Mar 2014 17:58:36 +0800
-Message-Id: <1394013516-4964-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.2.1
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/05 17:57:55,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/05 17:57:58,
-	Serialize complete at 2014/03/05 17:57:58
+	id S1753382AbaCEKCx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 05:02:53 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:43470 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751604AbaCEKCu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 05:02:50 -0500
+Message-ID: <1394013763.16890.1.camel@phoenix>
+Subject: [PATCH] regulator: pfuze100: Add PFUZE200 support to Kconfig and
+ module description
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Robin Gong <b38343@freescale.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org
+Date: Wed, 05 Mar 2014 18:02:43 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 411cf180f introduce function uncore_cpumask_init() and it is only
-called in __init intel_uncore_init(). But it is not marked with __init,
-then the following warning is there when building.
-
-WARNING: vmlinux.o(.text+0x2464a): Section mismatch in reference from the function uncore_cpumask_init() to the function .init.text:uncore_cpu_setup()
-The function uncore_cpumask_init() references
-the function __init uncore_cpu_setup().
-This is often because uncore_cpumask_init lacks a __init
-annotation or the annotation of uncore_cpu_setup is wrong.
-
-This patch add __init for uncore_cpumask_init() function.
-
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-cc: Paul Mackerras <paulus@samba.org>
-cc: Ingo Molnar <mingo@redhat.com>
-cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-cc: Thomas Gleixner <tglx@linutronix.de>
-cc: "H. Peter Anvin" <hpa@zytor.com>
-cc: Stephane Eranian <eranian@google.com>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_uncore.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/regulator/Kconfig              | 6 +++---
+ drivers/regulator/pfuze100-regulator.c | 2 +-
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index b262c61..5c2537a 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -4229,7 +4229,7 @@ static int __init uncore_pmus_register(void)
- 	return 0;
- }
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index 4ddfb6c..eb36d8b 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -408,12 +408,12 @@ config REGULATOR_PCF50633
+ 	 on PCF50633
  
--static void uncore_cpumask_init(void)
-+static void __init uncore_cpumask_init(void)
- {
- 	int cpu;
+ config REGULATOR_PFUZE100
+-	tristate "Freescale PFUZE100 regulator driver"
++	tristate "Freescale PFUZE100/PFUZE200 regulator driver"
+ 	depends on I2C
+ 	select REGMAP_I2C
+ 	help
+-	  Say y here to support the regulators found on the Freescale PFUZE100
+-	  PMIC.
++	  Say y here to support the regulators found on the Freescale
++	  PFUZE100/PFUZE200 PMIC.
  
+ config REGULATOR_RC5T583
+ 	tristate "RICOH RC5T583 Power regulators"
+diff --git a/drivers/regulator/pfuze100-regulator.c b/drivers/regulator/pfuze100-regulator.c
+index f87ec70..67e678c 100644
+--- a/drivers/regulator/pfuze100-regulator.c
++++ b/drivers/regulator/pfuze100-regulator.c
+@@ -527,6 +527,6 @@ static struct i2c_driver pfuze_driver = {
+ module_i2c_driver(pfuze_driver);
+ 
+ MODULE_AUTHOR("Robin Gong <b38343@freescale.com>");
+-MODULE_DESCRIPTION("Regulator Driver for Freescale PFUZE100 PMIC");
++MODULE_DESCRIPTION("Regulator Driver for Freescale PFUZE100/PFUZE200 PMIC");
+ MODULE_LICENSE("GPL v2");
+ MODULE_ALIAS("i2c:pfuze100-regulator");
 -- 
-1.8.2.1
+1.8.1.2
+
+
 
