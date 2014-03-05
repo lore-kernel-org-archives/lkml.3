@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757026AbaCEMD7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 07:03:59 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:56001 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932140AbaCEMAh (ORCPT
+	id S1757082AbaCEMEm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 07:04:42 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:48162 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932106AbaCEMAW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 07:00:37 -0500
-Subject: [PATCH -tip v8 15/26] kprobes: Use NOKPROBE_SYMBOL macro instead of
- __kprobes
+	Wed, 5 Mar 2014 07:00:22 -0500
+Subject: [PATCH -tip v8 13/26] x86: Allow kprobes on text_poke/hw_breakpoint
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
 Cc: Andi Kleen <andi@firstfloor.org>,
@@ -17,10 +16,9 @@ Cc: Andi Kleen <andi@firstfloor.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
         Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
         mingo@redhat.com, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Wed, 05 Mar 2014 21:00:28 +0900
-Message-ID: <20140305120028.22766.30860.stgit@ltc230.yrl.intra.hitachi.co.jp>
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Date: Wed, 05 Mar 2014 21:00:14 +0900
+Message-ID: <20140305120014.22766.2114.stgit@ltc230.yrl.intra.hitachi.co.jp>
 In-Reply-To: <20140305115843.22766.8355.stgit@ltc230.yrl.intra.hitachi.co.jp>
 References: <20140305115843.22766.8355.stgit@ltc230.yrl.intra.hitachi.co.jp>
 User-Agent: StGit/0.17-dirty
@@ -31,262 +29,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use NOKPROBE_SYMBOL macro to protect functions from
-kprobes instead of __kprobes annotation.
+Allow kprobes on text_poke/hw_breakpoint because
+those are not related to the critical int3-debug
+recursive path of kprobes at this moment.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: "David S. Miller" <davem@davemloft.net>
 ---
- kernel/kprobes.c |   67 +++++++++++++++++++++++++++++++++---------------------
- 1 file changed, 41 insertions(+), 26 deletions(-)
+ arch/x86/kernel/alternative.c   |    3 +--
+ arch/x86/kernel/hw_breakpoint.c |    5 ++---
+ 2 files changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 4db2cc6..a21b4e6 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -301,7 +301,7 @@ static inline void reset_kprobe_instance(void)
-  * 				OR
-  * 	- with preemption disabled - from arch/xxx/kernel/kprobes.c
+diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+index df94598..703130f 100644
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -5,7 +5,6 @@
+ #include <linux/mutex.h>
+ #include <linux/list.h>
+ #include <linux/stringify.h>
+-#include <linux/kprobes.h>
+ #include <linux/mm.h>
+ #include <linux/vmalloc.h>
+ #include <linux/memory.h>
+@@ -551,7 +550,7 @@ void *__init_or_module text_poke_early(void *addr, const void *opcode,
+  *
+  * Note: Must be called under text_mutex.
   */
--struct kprobe __kprobes *get_kprobe(void *addr)
-+struct kprobe *get_kprobe(void *addr)
+-void *__kprobes text_poke(void *addr, const void *opcode, size_t len)
++void *text_poke(void *addr, const void *opcode, size_t len)
  {
- 	struct hlist_head *head;
- 	struct kprobe *p;
-@@ -314,8 +314,9 @@ struct kprobe __kprobes *get_kprobe(void *addr)
- 
- 	return NULL;
- }
-+NOKPROBE_SYMBOL(get_kprobe);
- 
--static int __kprobes aggr_pre_handler(struct kprobe *p, struct pt_regs *regs);
-+static int aggr_pre_handler(struct kprobe *p, struct pt_regs *regs);
- 
- /* Return true if the kprobe is an aggregator */
- static inline int kprobe_aggrprobe(struct kprobe *p)
-@@ -347,7 +348,7 @@ static bool kprobes_allow_optimization;
-  * Call all pre_handler on the list, but ignores its return value.
-  * This must be called from arch-dep optimized caller.
+ 	unsigned long flags;
+ 	char *vaddr;
+diff --git a/arch/x86/kernel/hw_breakpoint.c b/arch/x86/kernel/hw_breakpoint.c
+index a67b47c..5f9cf20 100644
+--- a/arch/x86/kernel/hw_breakpoint.c
++++ b/arch/x86/kernel/hw_breakpoint.c
+@@ -32,7 +32,6 @@
+ #include <linux/irqflags.h>
+ #include <linux/notifier.h>
+ #include <linux/kallsyms.h>
+-#include <linux/kprobes.h>
+ #include <linux/percpu.h>
+ #include <linux/kdebug.h>
+ #include <linux/kernel.h>
+@@ -424,7 +423,7 @@ EXPORT_SYMBOL_GPL(hw_breakpoint_restore);
+  * NOTIFY_STOP returned for all other cases
+  *
   */
--void __kprobes opt_pre_handler(struct kprobe *p, struct pt_regs *regs)
-+void opt_pre_handler(struct kprobe *p, struct pt_regs *regs)
+-static int __kprobes hw_breakpoint_handler(struct die_args *args)
++static int hw_breakpoint_handler(struct die_args *args)
  {
- 	struct kprobe *kp;
- 
-@@ -359,6 +360,7 @@ void __kprobes opt_pre_handler(struct kprobe *p, struct pt_regs *regs)
- 		reset_kprobe_instance();
- 	}
- }
-+NOKPROBE_SYMBOL(opt_pre_handler);
- 
- /* Free optimized instructions and optimized_kprobe */
- static void free_aggr_kprobe(struct kprobe *p)
-@@ -995,7 +997,7 @@ static void disarm_kprobe(struct kprobe *kp, bool reopt)
-  * Aggregate handlers for multiple kprobes support - these handlers
-  * take care of invoking the individual kprobe handlers on p->list
-  */
--static int __kprobes aggr_pre_handler(struct kprobe *p, struct pt_regs *regs)
-+static int aggr_pre_handler(struct kprobe *p, struct pt_regs *regs)
- {
- 	struct kprobe *kp;
- 
-@@ -1009,9 +1011,10 @@ static int __kprobes aggr_pre_handler(struct kprobe *p, struct pt_regs *regs)
- 	}
- 	return 0;
- }
-+NOKPROBE_SYMBOL(aggr_pre_handler);
- 
--static void __kprobes aggr_post_handler(struct kprobe *p, struct pt_regs *regs,
--					unsigned long flags)
-+static void aggr_post_handler(struct kprobe *p, struct pt_regs *regs,
-+			      unsigned long flags)
- {
- 	struct kprobe *kp;
- 
-@@ -1023,9 +1026,10 @@ static void __kprobes aggr_post_handler(struct kprobe *p, struct pt_regs *regs,
- 		}
- 	}
- }
-+NOKPROBE_SYMBOL(aggr_post_handler);
- 
--static int __kprobes aggr_fault_handler(struct kprobe *p, struct pt_regs *regs,
--					int trapnr)
-+static int aggr_fault_handler(struct kprobe *p, struct pt_regs *regs,
-+			      int trapnr)
- {
- 	struct kprobe *cur = __this_cpu_read(kprobe_instance);
- 
-@@ -1039,8 +1043,9 @@ static int __kprobes aggr_fault_handler(struct kprobe *p, struct pt_regs *regs,
- 	}
- 	return 0;
- }
-+NOKPROBE_SYMBOL(aggr_fault_handler);
- 
--static int __kprobes aggr_break_handler(struct kprobe *p, struct pt_regs *regs)
-+static int aggr_break_handler(struct kprobe *p, struct pt_regs *regs)
- {
- 	struct kprobe *cur = __this_cpu_read(kprobe_instance);
- 	int ret = 0;
-@@ -1052,9 +1057,10 @@ static int __kprobes aggr_break_handler(struct kprobe *p, struct pt_regs *regs)
- 	reset_kprobe_instance();
- 	return ret;
- }
-+NOKPROBE_SYMBOL(aggr_break_handler);
- 
- /* Walks the list and increments nmissed count for multiprobe case */
--void __kprobes kprobes_inc_nmissed_count(struct kprobe *p)
-+void kprobes_inc_nmissed_count(struct kprobe *p)
- {
- 	struct kprobe *kp;
- 	if (!kprobe_aggrprobe(p)) {
-@@ -1065,9 +1071,10 @@ void __kprobes kprobes_inc_nmissed_count(struct kprobe *p)
- 	}
- 	return;
- }
-+NOKPROBE_SYMBOL(kprobes_inc_nmissed_count);
- 
--void __kprobes recycle_rp_inst(struct kretprobe_instance *ri,
--				struct hlist_head *head)
-+void recycle_rp_inst(struct kretprobe_instance *ri,
-+		     struct hlist_head *head)
- {
- 	struct kretprobe *rp = ri->rp;
- 
-@@ -1082,8 +1089,9 @@ void __kprobes recycle_rp_inst(struct kretprobe_instance *ri,
- 		/* Unregistering */
- 		hlist_add_head(&ri->hlist, head);
- }
-+NOKPROBE_SYMBOL(recycle_rp_inst);
- 
--void __kprobes kretprobe_hash_lock(struct task_struct *tsk,
-+void kretprobe_hash_lock(struct task_struct *tsk,
- 			 struct hlist_head **head, unsigned long *flags)
- __acquires(hlist_lock)
- {
-@@ -1094,17 +1102,19 @@ __acquires(hlist_lock)
- 	hlist_lock = kretprobe_table_lock_ptr(hash);
- 	raw_spin_lock_irqsave(hlist_lock, *flags);
- }
-+NOKPROBE_SYMBOL(kretprobe_hash_lock);
- 
--static void __kprobes kretprobe_table_lock(unsigned long hash,
--	unsigned long *flags)
-+static void kretprobe_table_lock(unsigned long hash,
-+				 unsigned long *flags)
- __acquires(hlist_lock)
- {
- 	raw_spinlock_t *hlist_lock = kretprobe_table_lock_ptr(hash);
- 	raw_spin_lock_irqsave(hlist_lock, *flags);
- }
-+NOKPROBE_SYMBOL(kretprobe_table_lock);
- 
--void __kprobes kretprobe_hash_unlock(struct task_struct *tsk,
--	unsigned long *flags)
-+void kretprobe_hash_unlock(struct task_struct *tsk,
-+			   unsigned long *flags)
- __releases(hlist_lock)
- {
- 	unsigned long hash = hash_ptr(tsk, KPROBE_HASH_BITS);
-@@ -1113,14 +1123,16 @@ __releases(hlist_lock)
- 	hlist_lock = kretprobe_table_lock_ptr(hash);
- 	raw_spin_unlock_irqrestore(hlist_lock, *flags);
- }
-+NOKPROBE_SYMBOL(kretprobe_hash_unlock);
- 
--static void __kprobes kretprobe_table_unlock(unsigned long hash,
--       unsigned long *flags)
-+static void kretprobe_table_unlock(unsigned long hash,
-+				   unsigned long *flags)
- __releases(hlist_lock)
- {
- 	raw_spinlock_t *hlist_lock = kretprobe_table_lock_ptr(hash);
- 	raw_spin_unlock_irqrestore(hlist_lock, *flags);
- }
-+NOKPROBE_SYMBOL(kretprobe_table_unlock);
- 
+ 	int i, cpu, rc = NOTIFY_STOP;
+ 	struct perf_event *bp;
+@@ -511,7 +510,7 @@ static int __kprobes hw_breakpoint_handler(struct die_args *args)
  /*
-  * This function is called from finish_task_switch when task tk becomes dead,
-@@ -1128,7 +1140,7 @@ __releases(hlist_lock)
-  * with this task. These left over instances represent probed functions
-  * that have been called but will never return.
+  * Handle debug exception notifications.
   */
--void __kprobes kprobe_flush_task(struct task_struct *tk)
-+void kprobe_flush_task(struct task_struct *tk)
+-int __kprobes hw_breakpoint_exceptions_notify(
++int hw_breakpoint_exceptions_notify(
+ 		struct notifier_block *unused, unsigned long val, void *data)
  {
- 	struct kretprobe_instance *ri;
- 	struct hlist_head *head, empty_rp;
-@@ -1153,6 +1165,7 @@ void __kprobes kprobe_flush_task(struct task_struct *tk)
- 		kfree(ri);
- 	}
- }
-+NOKPROBE_SYMBOL(kprobe_flush_task);
- 
- static inline void free_rp_inst(struct kretprobe *rp)
- {
-@@ -1165,7 +1178,7 @@ static inline void free_rp_inst(struct kretprobe *rp)
- 	}
- }
- 
--static void __kprobes cleanup_rp_inst(struct kretprobe *rp)
-+static void cleanup_rp_inst(struct kretprobe *rp)
- {
- 	unsigned long flags, hash;
- 	struct kretprobe_instance *ri;
-@@ -1184,6 +1197,7 @@ static void __kprobes cleanup_rp_inst(struct kretprobe *rp)
- 	}
- 	free_rp_inst(rp);
- }
-+NOKPROBE_SYMBOL(cleanup_rp_inst);
- 
- /*
- * Add the new probe to ap->list. Fail if this is the
-@@ -1758,8 +1772,7 @@ EXPORT_SYMBOL_GPL(unregister_jprobes);
-  * This kprobe pre_handler is registered with every kretprobe. When probe
-  * hits it will set up the return probe.
-  */
--static int __kprobes pre_handler_kretprobe(struct kprobe *p,
--					   struct pt_regs *regs)
-+static int pre_handler_kretprobe(struct kprobe *p, struct pt_regs *regs)
- {
- 	struct kretprobe *rp = container_of(p, struct kretprobe, kp);
- 	unsigned long hash, flags = 0;
-@@ -1797,6 +1810,7 @@ static int __kprobes pre_handler_kretprobe(struct kprobe *p,
- 	}
- 	return 0;
- }
-+NOKPROBE_SYMBOL(pre_handler_kretprobe);
- 
- int register_kretprobe(struct kretprobe *rp)
- {
-@@ -1920,11 +1934,11 @@ void unregister_kretprobes(struct kretprobe **rps, int num)
- }
- EXPORT_SYMBOL_GPL(unregister_kretprobes);
- 
--static int __kprobes pre_handler_kretprobe(struct kprobe *p,
--					   struct pt_regs *regs)
-+static int pre_handler_kretprobe(struct kprobe *p, struct pt_regs *regs)
- {
- 	return 0;
- }
-+NOKPROBE_SYMBOL(pre_handler_kretprobe);
- 
- #endif /* CONFIG_KRETPROBES */
- 
-@@ -2002,12 +2016,13 @@ out:
- }
- EXPORT_SYMBOL_GPL(enable_kprobe);
- 
--void __kprobes dump_kprobe(struct kprobe *kp)
-+void dump_kprobe(struct kprobe *kp)
- {
- 	printk(KERN_WARNING "Dumping kprobe:\n");
- 	printk(KERN_WARNING "Name: %s\nAddress: %p\nOffset: %x\n",
- 	       kp->symbol_name, kp->addr, kp->offset);
- }
-+NOKPROBE_SYMBOL(dump_kprobe);
- 
- /*
-  * Lookup and populate the kprobe_blacklist.
+ 	if (val != DIE_DEBUG)
 
 
