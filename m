@@ -1,125 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756776AbaCEUAj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 15:00:39 -0500
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:49926 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756366AbaCEUAi (ORCPT
+	id S1756967AbaCEUCr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 15:02:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53760 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752815AbaCEUCp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 15:00:38 -0500
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Minchan Kim <minchan@kernel.org>, Jerome Marchand <jmarchan@redhat.com>,
-        Nitin Gupta <ngupta@vflare.org>, linux-kernel@vger.kernel.org,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Subject: [PATCH] zram: return error-valued pointer from zcomp_create()
-Date: Wed,  5 Mar 2014 22:56:55 +0300
-Message-Id: <1394049415-11759-1-git-send-email-sergey.senozhatsky@gmail.com>
-X-Mailer: git-send-email 1.9.0.382.g7f3562c
+	Wed, 5 Mar 2014 15:02:45 -0500
+Date: Wed, 5 Mar 2014 12:02:43 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Chinner <david@fromorbit.com>, Ning Qu <quning@gmail.com>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 1/2] mm: introduce vm_ops->map_pages()
+Message-Id: <20140305120243.5b69dfe64d66f5cc7afe66e2@linux-foundation.org>
+In-Reply-To: <8761nt1pfk.fsf@rustcorp.com.au>
+References: <1393530827-25450-1-git-send-email-kirill.shutemov@linux.intel.com>
+	<1393530827-25450-2-git-send-email-kirill.shutemov@linux.intel.com>
+	<20140303151611.5671eebb74cedb99aa5396c8@linux-foundation.org>
+	<8761nt1pfk.fsf@rustcorp.com.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of returning just NULL, return ERR_PTR from zcomp_create()
-if compressing backend creation has failed. ERR_PTR(-EINVAL) for
-unsupported compression algorithm request, ERR_PTR(-ENOMEM) for
-allocation (zcomp or compression stream) error.
+On Wed, 05 Mar 2014 10:34:15 +1030 Rusty Russell <rusty@rustcorp.com.au> wrote:
 
-Perform IS_ERR() check of returned from zcomp_create() value in
-disksize_store() and set return code to PTR_ERR().
+> Andrew Morton <akpm@linux-foundation.org> writes:
+> > On Thu, 27 Feb 2014 21:53:46 +0200 "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
+> >> +
+> >> +void do_set_pte(struct vm_area_struct *vma, unsigned long address,
+> >> +		struct page *page, pte_t *pte, bool write, bool anon);
+> >>  #endif
+> >>  
+> >>  /*
+> >
+> > lguest made a dubious naming decision:
+> >
+> > drivers/lguest/page_tables.c:890: error: conflicting types for 'do_set_pte'
+> > include/linux/mm.h:593: note: previous declaration of 'do_set_pte' was here
+> >
+> > I'll rename lguest's do_set_pte() to do_guest_set_pte() as a
+> > preparatory patch.
+> 
+> s/do_/ if you don't mind; if we're going to prefix it, we don't need the
+> extra verb.
 
-Change suggested by Jerome Marchand.
+drivers/lguest/page_tables.c already has a guest_set_pte(), which calls
+do_guest_set_pte().
 
-Reported-by: Jerome Marchand <jmarchan@redhat.com>
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
----
- drivers/block/zram/zcomp.c    | 13 +++++++------
- drivers/block/zram/zram_drv.c |  8 ++++----
- 2 files changed, 11 insertions(+), 10 deletions(-)
+How about we use the __ tradition, so __guest_set_pte() is a helper for
+guest_set_pte()?
 
-diff --git a/drivers/block/zram/zcomp.c b/drivers/block/zram/zcomp.c
-index d591903..92a83df 100644
---- a/drivers/block/zram/zcomp.c
-+++ b/drivers/block/zram/zcomp.c
-@@ -319,9 +319,10 @@ void zcomp_destroy(struct zcomp *comp)
- 
- /*
-  * search available compressors for requested algorithm.
-- * allocate new zcomp and initialize it. return NULL
-- * if requested algorithm is not supported or in case
-- * of init error
-+ * allocate new zcomp and initialize it. return compressing
-+ * backend pointer or ERR_PTR if things went bad. ERR_PTR(-EINVAL)
-+ * if requested algorithm is not supported, ERR_PTR(-ENOMEM) in
-+ * case of allocation error.
+
+--- a/drivers/lguest/page_tables.c~drivers-lguest-page_tablesc-rename-do_set_pte
++++ a/drivers/lguest/page_tables.c
+@@ -887,7 +887,7 @@ void guest_new_pagetable(struct lg_cpu *
+  * _PAGE_ACCESSED then we can put a read-only PTE entry in immediately, and if
+  * they set _PAGE_DIRTY then we can put a writable PTE entry in immediately.
   */
- struct zcomp *zcomp_create(const char *compress, int max_strm)
+-static void do_set_pte(struct lg_cpu *cpu, int idx,
++static void __guest_set_pte(struct lg_cpu *cpu, int idx,
+ 		       unsigned long vaddr, pte_t gpte)
  {
-@@ -330,11 +331,11 @@ struct zcomp *zcomp_create(const char *compress, int max_strm)
- 
- 	backend = find_backend(compress);
- 	if (!backend)
--		return NULL;
-+		return ERR_PTR(-EINVAL);
- 
- 	comp = kzalloc(sizeof(struct zcomp), GFP_KERNEL);
- 	if (!comp)
--		return NULL;
-+		return ERR_PTR(-ENOMEM);
- 
- 	comp->backend = backend;
- 	if (max_strm > 1)
-@@ -343,7 +344,7 @@ struct zcomp *zcomp_create(const char *compress, int max_strm)
- 		zcomp_strm_single_create(comp);
- 	if (!comp->stream) {
- 		kfree(comp);
--		return NULL;
-+		return ERR_PTR(-ENOMEM);
+ 	/* Look up the matching shadow page directory entry. */
+@@ -960,13 +960,13 @@ void guest_set_pte(struct lg_cpu *cpu,
+ 		unsigned int i;
+ 		for (i = 0; i < ARRAY_SIZE(cpu->lg->pgdirs); i++)
+ 			if (cpu->lg->pgdirs[i].pgdir)
+-				do_set_pte(cpu, i, vaddr, gpte);
++				__guest_set_pte(cpu, i, vaddr, gpte);
+ 	} else {
+ 		/* Is this page table one we have a shadow for? */
+ 		int pgdir = find_pgdir(cpu->lg, gpgdir);
+ 		if (pgdir != ARRAY_SIZE(cpu->lg->pgdirs))
+ 			/* If so, do the update. */
+-			do_set_pte(cpu, pgdir, vaddr, gpte);
++			__guest_set_pte(cpu, pgdir, vaddr, gpte);
  	}
- 	return comp;
  }
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index e4d536b..9585957 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -583,7 +583,7 @@ static ssize_t disksize_store(struct device *dev,
- 	struct zcomp *comp;
- 	struct zram_meta *meta;
- 	struct zram *zram = dev_to_zram(dev);
--	int err = -EINVAL;
-+	int err = -EBUSY;
  
- 	disksize = memparse(buf, NULL);
- 	if (!disksize)
-@@ -595,9 +595,10 @@ static ssize_t disksize_store(struct device *dev,
- 		return -ENOMEM;
- 
- 	comp = zcomp_create(zram->compressor, zram->max_comp_streams);
--	if (!comp) {
-+	if (IS_ERR(comp)) {
- 		pr_info("Cannot initialise %s compressing backend\n",
- 				zram->compressor);
-+		err = PTR_ERR(comp);
- 		goto out_cleanup;
- 	}
- 
-@@ -605,7 +606,6 @@ static ssize_t disksize_store(struct device *dev,
- 	if (init_done(zram)) {
- 		up_write(&zram->init_lock);
- 		pr_info("Cannot change disksize for initialized device\n");
--		err = -EBUSY;
- 		goto out_cleanup;
- 	}
- 
-@@ -618,7 +618,7 @@ static ssize_t disksize_store(struct device *dev,
- 	return len;
- 
- out_cleanup:
--	if (comp)
-+	if (!IS_ERR(comp))
- 		zcomp_destroy(comp);
- 	zram_meta_free(meta);
- 	return err;
--- 
-1.9.0.382.g7f3562c
+_
 
