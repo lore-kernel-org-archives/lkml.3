@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932604AbaCEWel (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 17:34:41 -0500
-Received: from smtprelay0043.hostedemail.com ([216.40.44.43]:58950 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932387AbaCEWej (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 17:34:39 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2376:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3870:3874:4321:5007:7652:8660:10004:10400:10848:11026:11232:11473:11658:11914:12296:12438:12517:12519:12555:12740:13069:13148:13161:13229:13230:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: kick38_7fc63ec66382a
-X-Filterd-Recvd-Size: 1956
-Message-ID: <1394058876.12070.26.camel@joe-AO722>
-Subject: Re: [PATCH] audit: remove stray newlines from audit_log_lost
- messages
-From: Joe Perches <joe@perches.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>, Eric Paris <eparis@redhat.com>,
-        linux-kernel@vger.kernel.org
-Date: Wed, 05 Mar 2014 14:34:36 -0800
-In-Reply-To: <20140305222703.GW16640@madcap2.tricolour.ca>
-References: <20140305212955.GV6301@hansolo.jdub.homelinux.org>
-	 <20140305222703.GW16640@madcap2.tricolour.ca>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757569AbaCEWfu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 17:35:50 -0500
+Received: from 8bytes.org ([85.214.48.195]:33474 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756496AbaCEWft (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 17:35:49 -0500
+Date: Wed, 5 Mar 2014 23:35:45 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: suravee.suthikulpanit@amd.com
+Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        kim.naru@amd.com, jay.cornwall@amd.com
+Subject: Re: [PATCH] iommu/amd: Fix logics to determine and checking max PASID
+Message-ID: <20140305223544.GA2813@8bytes.org>
+References: <1394046068-3858-1-git-send-email-suravee.suthikulpanit@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394046068-3858-1-git-send-email-suravee.suthikulpanit@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Wed Mar  5 23:35:47 2014
+X-DSPAM-Confidence: 0.9994
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 5317a6c320861073413135
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-03-05 at 17:27 -0500, Richard Guy Briggs wrote:
-> On 14/03/05, Josh Boyer wrote:
-> > Calling audit_log_lost with a \n in the format string leads to extra
-> > newlines in dmesg.  That function will eventually call audit_panic which
-> > uses pr_err with an explicit \n included.  Just make these calls match the
-> > others that lack \n.
-> > 
-> > Reported-by: Jonathan Kamens <jik@kamens.brookline.ma.us>
-> > Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
-> 
-> Ack.  queued.
+On Wed, Mar 05, 2014 at 01:01:08PM -0600, suravee.suthikulpanit@amd.com wrote:
+>  drivers/iommu/amd_iommu.c       |   26 +++++++++++++++++++++++---
+>  drivers/iommu/amd_iommu_init.c  |   15 ++++++++-------
+>  drivers/iommu/amd_iommu_types.h |    6 ++----
+>  drivers/iommu/amd_iommu_v2.c    |    2 +-
+>  4 files changed, 34 insertions(+), 15 deletions(-)
 
-There's an unnecessary use of a \n in audit_panic too
----
- kernel/auditsc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Hmm, this looks a bit complicated. Since the inv_iotlb_pasid and
+complete_ppr command only support 16 bit pasids by specification, there
+is no way to support pasids with more than 16 bits in general anymore. I
+think the best way to handle it is to just change the PASID_MASK to
+0x0000ffff.
 
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index 7aef2f4..da93d2e 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -1157,7 +1157,7 @@ static void audit_log_execve_info(struct audit_context *context,
- 	 */
- 	buf = kmalloc(MAX_EXECVE_AUDIT_LEN + 1, GFP_KERNEL);
- 	if (!buf) {
--		audit_panic("out of memory for argv string\n");
-+		audit_panic("out of memory for argv string");
- 		return;
- 	}
- 
+>  static void build_inv_iotlb_pasid(struct iommu_cmd *cmd, u16 devid, int pasid,
+>  				  int qdep, u64 address, bool size)
+>  {
+> +	/* Note:
+> +	 * This command supports only 16-bit PASID.
+> +	 * Currently, hardware only implement upto 16-bit PASID
+> +	 * even though the spec says it could have upto 20 bits.
+> +	 * This is likely to be updated in the future revision of
+> +	 * IOMMU specs when the hardware with PASID > 16 bits
+> +	 * become available.
+> +	 */
+> +	BUG_ON(pasid > 0xFFFF);
+
+We can keep this as BUG_ON(pasid & ~PASID_MASK), but then ...
+
+> -		cmd->data[1]  = pasid & PASID_MASK;
+> +		cmd->data[1]  = pasid & amd_iommu_max_pasid;
+
+... masking out the other bits is redundant.
+
+
+	Joerg
 
 
