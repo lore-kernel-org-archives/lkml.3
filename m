@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757094AbaCEC70 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 21:59:26 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:49666 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755305AbaCEC7X (ORCPT
+	id S1756043AbaCEDFH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 22:05:07 -0500
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:44749 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754190AbaCEDFD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 21:59:23 -0500
-Message-ID: <53169304.9080002@wwwdotorg.org>
-Date: Tue, 04 Mar 2014 19:59:16 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 4 Mar 2014 22:05:03 -0500
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "David S. Miller" <davem@davemloft.net>, Chen-Yu Tsai <wens@csie.org>,
-        Rhyland Klein <rklein@nvidia.com>, Marc Dietrich <marvin24@gmx.de>,
-        Arnd Bergmann <arnd@arndb.de>, Alexandre Courbot <gnurou@gmail.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCHv2 3/5] net: rfkill: gpio: remove gpio names
-References: <1393330950-7283-1-git-send-email-heikki.krogerus@linux.intel.com>	<1393330950-7283-4-git-send-email-heikki.krogerus@linux.intel.com>	<530D218E.9010007@wwwdotorg.org>	<CACRpkdZF4-rWs1WkOp3t0x77fgSCE71E=wdrxiDuGZ8eBu_p_Q@mail.gmail.com>	<53168976.7000008@wwwdotorg.org> <CACRpkdYfQoDmPX0He4J2Sn2wgQn2hHoHyPqnStLRVqrvi=M+-w@mail.gmail.com>
-In-Reply-To: <CACRpkdYfQoDmPX0He4J2Sn2wgQn2hHoHyPqnStLRVqrvi=M+-w@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
+In-Reply-To: <53156621.60900@cn.fujitsu.com>
+References: <1393497616-16428-1-git-send-email-tangchen@cn.fujitsu.com>
+ <1393497616-16428-3-git-send-email-tangchen@cn.fujitsu.com>
+ <530F2A2D.50307@jp.fujitsu.com> <530F3327.8020205@jp.fujitsu.com> <53156621.60900@cn.fujitsu.com>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Tue, 4 Mar 2014 22:04:42 -0500
+Message-ID: <CAHGf_=prxk+gJt8Xk_aZdVRcMLifw7jMYNfMb-h34FOEFuUO4g@mail.gmail.com>
+Subject: Re: [Update PATCH 2/2] aio, mem-hotplug: Add memory barrier to aio
+ ring page migration.
+To: Miao Xie <miaox@cn.fujitsu.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>, Benjamin LaHaise <bcrl@kvack.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Jeff Moyer <jmoyer@redhat.com>,
+        guz.fnst@cn.fujitsu.com,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        linux-aio@kvack.org, LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/2014 07:37 PM, Linus Walleij wrote:
-> On Wed, Mar 5, 2014 at 10:18 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> On 03/04/2014 06:43 PM, Linus Walleij wrote:
-> 
->>> If I understand the situation correctly it's like ACPI does not have named
->>> GPIOs so keeping specifying this in DT GPIO bindings is counter-productive
->>> to the work of abstracting the access to GPIO handlers so that drivers
->>> need not know whether ACPI or DT is used for describing the hardware.
->>
->> For devices that already have both ACPI and DT bindings, we can't
->> pretend they can be the same; they are already potentially different. We
->> simply need to parse DT and ACPI differently, since that's the sway
->> their bindings are defined.
->>
->> For any devices that don't have both ACPI and DT bindings, I agree we
->> should certainly strive to make any new bindings aligned so we don't
->> have to deal with this for them.
->>
->> However, we can't change the past.
-> 
-> Yeah, right, so for this very driver there are no bindings defined (yet)
-> and the only device tree I can find referencing it is the Tegra20-paz00
-> and it just use gpios = <>;
-> 
-> So in this case I think this patch is the right way forward, but I admit
-> I'm really uncertain in the general case.
+>> +             /*
+>> +              * Ensure that the page's data was copied from old one by
+>> +              * aio_migratepage().
+>> +              */
+>> +             smp_rmb();
+>> +
+>
+> smp_read_barrier_depends() is better.
+>
+> "One could place an A smp_rmb() primitive between the pointer fetch and
+>  dereference. However, this imposes unneeded overhead on systems (such as
+>  i386, IA64, PPC, and SPARC) that respect data dependencies on the read side.
+>  A smp_read_barrier_depends() primitive has been added to the Linux 2.6 kernel
+>  to eliminate overhead on these systems."
+>                 -- From Chapter 7.1 of <Memory Barriers: a Hardware View for Software Hackers>
+>                    Written by Paul E. McKenney
+>
 
-If there are no bindings defined at all yet, then we can define both DT
-and ACPI bindings to use name-based GPIOs. Index-based lookups aren't a
-good way forward.
+Right.
+The document of memory barrier described this situation.
 
+
+see https://www.kernel.org/doc/Documentation/memory-barriers.txt
+
+CPU 1                            CPU 2
+===============      ===============
+{ M[0] == 1, M[1] == 2, M[3] = 3, P == 0, Q == 3 }
+M[1] = 4;
+<write barrier>
+ACCESS_ONCE(P) = 1
+                                     Q = ACCESS_ONCE(P);
+                                     <data dependency barrier>
+                                     D = M[Q];
