@@ -1,83 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759372AbaCEPbl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 10:31:41 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40766 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756578AbaCEOYp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:24:45 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 017/131] SUNRPC: Fix races in xs_nospace()
-Date: Wed,  5 Mar 2014 14:22:21 +0000
-Message-Id: <1394029455-23128-18-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
-References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S1759388AbaCEPbw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:31:52 -0500
+Received: from mga09.intel.com ([134.134.136.24]:43536 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756461AbaCEPbu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 10:31:50 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,593,1389772800"; 
+   d="scan'208";a="494521639"
+Date: Wed, 5 Mar 2014 07:31:49 -0800
+From: Andi Kleen <ak@linux.intel.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, acme@redhat.com, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, eranian@google.com, namhyung@kernel.org
+Subject: Re: [PATCH 2/8] perf, tools: Support handling complete branch stacks
+ as histograms v4
+Message-ID: <20140305153149.GQ12219@tassilo.jf.intel.com>
+References: <1393561352-23448-1-git-send-email-andi@firstfloor.org>
+ <1393561352-23448-3-git-send-email-andi@firstfloor.org>
+ <20140305102948.GB1835@krava.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140305102948.GB1835@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.6 -stable review patch.  If anyone has any objections, please let me know.
+> segfaults here..
+> 
+> [jolsa@krava perf]$ ./perf record -g sleep 1
+> [ perf record: Woken up 1 times to write data ]
+> [ perf record: Captured and wrote 0.013 MB perf.data (~567 samples) ]
+> [jolsa@krava perf]$ ./perf report
+> perf: Segmentation fault
+> [jolsa@krava perf]$ 
 
-------------------
+Thanks. Fixed with this patch:
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+commit 124014960a8fb09043914fb79ea86e0444408ab0
+Author: Andi Kleen <ak@linux.intel.com>
+Date:   Wed Mar 5 07:28:56 2014 -0800
 
-commit 06ea0bfe6e6043cb56a78935a19f6f8ebc636226 upstream.
+    perf, tools, report: Fix perf report without -b
+    
+    Fix report crash when -b is not used. Reported by Jiri Olsa.
+    
+    Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
-When a send failure occurs due to the socket being out of buffer space,
-we call xs_nospace() in order to have the RPC task wait until the
-socket has drained enough to make it worth while trying again.
-The current patch fixes a race in which the socket is drained before
-we get round to setting up the machinery in xs_nospace(), and which
-is reported to cause hangs.
-
-Link: http://lkml.kernel.org/r/20140210170315.33dfc621@notabene.brown
-Fixes: a9a6b52ee1ba (SUNRPC: Don't start the retransmission timer...)
-Reported-by: Neil Brown <neilb@suse.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- net/sunrpc/xprtsock.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
-index e865e08..2eeea23 100644
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -502,6 +502,7 @@ static int xs_nospace(struct rpc_task *task)
- 	struct rpc_rqst *req = task->tk_rqstp;
- 	struct rpc_xprt *xprt = req->rq_xprt;
- 	struct sock_xprt *transport = container_of(xprt, struct sock_xprt, xprt);
-+	struct sock *sk = transport->inet;
- 	int ret = -EAGAIN;
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index ef198c3..04ec451 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -1381,15 +1381,15 @@ static int machine__resolve_callchain_sample(struct machine *machine,
+ 	 * - No annotations (should annotate somehow)
+ 	 */
  
- 	dprintk("RPC: %5u xmit incomplete (%u left of %u)\n",
-@@ -519,7 +520,7 @@ static int xs_nospace(struct rpc_task *task)
- 			 * window size
- 			 */
- 			set_bit(SOCK_NOSPACE, &transport->sock->flags);
--			transport->inet->sk_write_pending++;
-+			sk->sk_write_pending++;
- 			/* ...and wait for more buffer space */
- 			xprt_wait_for_buffer_space(task, xs_nospace_callback);
- 		}
-@@ -529,6 +530,9 @@ static int xs_nospace(struct rpc_task *task)
- 	}
+-	if (branch->nr > PERF_MAX_BRANCH_DEPTH) {
+-		pr_warning("corrupted branch chain. skipping...\n");
+-		return 0;
+-	}
+-
+-	if (callchain_param.branch_callstack) {
++	if (branch && callchain_param.branch_callstack) {
+ 		int nr = min(max_stack, (int)branch->nr);
+ 		struct branch_entry be[nr];
  
- 	spin_unlock_bh(&xprt->transport_lock);
++		if (branch->nr > PERF_MAX_BRANCH_DEPTH) {
++			pr_warning("corrupted branch chain. skipping...\n");
++			return 0;
++		}
 +
-+	/* Race breaker in case memory is freed before above code is called */
-+	sk->sk_write_space(sk);
- 	return ret;
- }
- 
--- 
-1.9.0
+ 		for (i = 0; i < nr; i++) {
+ 			if (callchain_param.order == ORDER_CALLEE) {
+ 				be[i] = branch->entries[i];
 
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
