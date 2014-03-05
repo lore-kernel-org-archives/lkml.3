@@ -1,128 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755759AbaCEQ0y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 11:26:54 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:53650 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753538AbaCEQ0u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 11:26:50 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18TGF3teosS97RKO6ocQtVG
-Date: Wed, 5 Mar 2014 08:26:42 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: George Cherian <george.cherian@ti.com>, kishon@ti.com, balbi@ti.com,
-        balajitk@ti.com, hdegoede@redhat.com, linux-omap@vger.kernel.org,
-        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org
-Subject: Re: [PATCH 02/12] phy: omap-control: Update DT binding information
-Message-ID: <20140305162642.GA4983@atomide.com>
-References: <1393859254-10937-1-git-send-email-rogerq@ti.com>
- <1393859254-10937-3-git-send-email-rogerq@ti.com>
- <20140303190247.GD25804@atomide.com>
- <5315995F.5050206@ti.com>
- <20140304162855.GB3376@atomide.com>
- <5317172A.1050803@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5317172A.1050803@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755989AbaCEQ1U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 11:27:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16595 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755791AbaCEQ1R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 11:27:17 -0500
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Torvald Riegel <triegel@redhat.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+In-Reply-To: <20140304190032.GY11910@linux.vnet.ibm.com>
+References: <CA+55aFzXyob0aKnv1u7Stbu0rH5Aq2jaA1rHb=TvQe9c1KY0oQ@mail.gmail.com>
+	 <1393515453.28840.9961.camel@triegel.csb>
+	 <CA+55aFyE58NokYdoU+-feHTXv+5snByu+vCyMtg2fNc7npMbDg@mail.gmail.com>
+	 <20140227190611.GU8264@linux.vnet.ibm.com>
+	 <CA+55aFzav_2ayvEgbgeAzQohJ7EQH0tgUU0WcSyvUA6hgOo_Ow@mail.gmail.com>
+	 <20140227205312.GX8264@linux.vnet.ibm.com>
+	 <20140301005047.GA14777@linux.vnet.ibm.com>
+	 <1393872908.28840.11660.camel@triegel.csb>
+	 <20140303192026.GO11910@linux.vnet.ibm.com>
+	 <1393879579.28840.11949.camel@triegel.csb>
+	 <20140304190032.GY11910@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 05 Mar 2014 17:26:36 +0100
+Message-ID: <1394036796.28840.14900.camel@triegel.csb>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Roger Quadros <rogerq@ti.com> [140305 04:26]:
-> + George
-> 
-> Tony,
-> 
-> On 03/04/2014 06:28 PM, Tony Lindgren wrote:
-> > * Roger Quadros <rogerq@ti.com> [140304 01:17]:
-> >> Hi Tony,
-> >>
-> >> On 03/03/2014 09:02 PM, Tony Lindgren wrote:
-> >>> * Roger Quadros <rogerq@ti.com> [140303 07:10]:
-> >>>> Move omap-control binding information to the right location.
-> >>>>
-> >>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> >>>> ---
-> >>>>  Documentation/devicetree/bindings/phy/ti-phy.txt   | 25 ++++++++++++++++++++++
-> >>>>  Documentation/devicetree/bindings/usb/omap-usb.txt | 24 ---------------------
-> >>>>  2 files changed, 25 insertions(+), 24 deletions(-)
-> >>>>
-> >>>> diff --git a/Documentation/devicetree/bindings/phy/ti-phy.txt b/Documentation/devicetree/bindings/phy/ti-phy.txt
-> >>>> index 207e14c..41dc132 100644
-> >>>> --- a/Documentation/devicetree/bindings/phy/ti-phy.txt
-> >>>> +++ b/Documentation/devicetree/bindings/phy/ti-phy.txt
-> >>>> @@ -1,5 +1,30 @@
-> >>>>  TI PHY: DT DOCUMENTATION FOR PHYs in TI PLATFORMs
-> >>>>  
-> >>>> +OMAP CONTROL PHY
-> >>>> +
-> >>>> +Required properties:
-> >>>> + - compatible: Should be one of
-> >>>> + "ti,control-phy-otghs" - if it has otghs_control mailbox register as on OMAP4.
-> >>>> + "ti,control-phy-usb2" - if it has Power down bit in control_dev_conf register
-> >>>> +                        e.g. USB2_PHY on OMAP5.
-> >>>> + "ti,control-phy-pipe3" - if it has DPLL and individual Rx & Tx power control
-> >>>> +                        e.g. USB3 PHY and SATA PHY on OMAP5.
-> >>>> + "ti,control-phy-dra7usb2" - if it has power down register like USB2 PHY on
-> >>>> +                        DRA7 platform.
-> >>>> + "ti,control-phy-am437usb2" - if it has power down register like USB2 PHY on
-> >>>> +                        AM437 platform.
-> >>>
-> >>> To me it seems that you can leave out all the above. You can set these falgs
-> >>> flags directly in the driver based on the compatible flag. Then just initialize
-> >>> the .data in the driver based on the compatible flag.
-> >>
-> >> I'm not sure if I got you. A single platform can have different type of phys.
-> >>
-> >> e.g. OMAP5 has both usb2 and pipe3 PHYs,
-> >> DRA7 has both pipe3 and usb2 PHYs, but this usb2 PHY is not compatible with OMAP5 one
-> >> so we need a new compatible id for that.
-> >>
-> >> To add to the woes, the designers were creative enough to make another mutation to
-> >> the USB2 PHY for AM437x, :(
+On Tue, 2014-03-04 at 11:00 -0800, Paul E. McKenney wrote:
+> On Mon, Mar 03, 2014 at 09:46:19PM +0100, Torvald Riegel wrote:
+> > xagsmtp2.20140303204700.3556@vmsdvma.vnet.ibm.com
+> > X-Xagent-Gateway: vmsdvma.vnet.ibm.com (XAGSMTP2 at VMSDVMA)
 > > 
-> > Oh OK, in that case the compatible flag may not be enough for configuring the
-> > various instances.
-> >  
-> >> What do you suggest the compatible ids should look like for these 5 types of PHY control?
-> >> OTGHS	(OMAP4 & 5)
-> >> USB2	(OMAP5)
-> >> PIPE3	(OMAP5 & DRA7)
-> >> USB2x	(DRA7)
-> >> USB2y	(AM437)
+> > On Mon, 2014-03-03 at 11:20 -0800, Paul E. McKenney wrote:
+> > > On Mon, Mar 03, 2014 at 07:55:08PM +0100, Torvald Riegel wrote:
+> > > > xagsmtp2.20140303190831.9500@uk1vsc.vnet.ibm.com
+> > > > X-Xagent-Gateway: uk1vsc.vnet.ibm.com (XAGSMTP2 at UK1VSC)
+> > > > 
+> > > > On Fri, 2014-02-28 at 16:50 -0800, Paul E. McKenney wrote:
+> > > > > +o	Do not use the results from the boolean "&&" and "||" when
+> > > > > +	dereferencing.	For example, the following (rather improbable)
+> > > > > +	code is buggy:
+> > > > > +
+> > > > > +		int a[2];
+> > > > > +		int index;
+> > > > > +		int force_zero_index = 1;
+> > > > > +
+> > > > > +		...
+> > > > > +
+> > > > > +		r1 = rcu_dereference(i1)
+> > > > > +		r2 = a[r1 && force_zero_index];  /* BUGGY!!! */
+> > > > > +
+> > > > > +	The reason this is buggy is that "&&" and "||" are often compiled
+> > > > > +	using branches.  While weak-memory machines such as ARM or PowerPC
+> > > > > +	do order stores after such branches, they can speculate loads,
+> > > > > +	which can result in misordering bugs.
+> > > > > +
+> > > > > +o	Do not use the results from relational operators ("==", "!=",
+> > > > > +	">", ">=", "<", or "<=") when dereferencing.  For example,
+> > > > > +	the following (quite strange) code is buggy:
+> > > > > +
+> > > > > +		int a[2];
+> > > > > +		int index;
+> > > > > +		int flip_index = 0;
+> > > > > +
+> > > > > +		...
+> > > > > +
+> > > > > +		r1 = rcu_dereference(i1)
+> > > > > +		r2 = a[r1 != flip_index];  /* BUGGY!!! */
+> > > > > +
+> > > > > +	As before, the reason this is buggy is that relational operators
+> > > > > +	are often compiled using branches.  And as before, although
+> > > > > +	weak-memory machines such as ARM or PowerPC do order stores
+> > > > > +	after such branches, but can speculate loads, which can again
+> > > > > +	result in misordering bugs.
+> > > > 
+> > > > Those two would be allowed by the wording I have recently proposed,
+> > > > AFAICS.  r1 != flip_index would result in two possible values (unless
+> > > > there are further constraints due to the type of r1 and the values that
+> > > > flip_index can have).
+> > > 
+> > > And I am OK with the value_dep_preserving type providing more/better
+> > > guarantees than we get by default from current compilers.
+> > > 
+> > > One question, though.  Suppose that the code did not want a value
+> > > dependency to be tracked through a comparison operator.  What does
+> > > the developer do in that case?  (The reason I ask is that I have
+> > > not yet found a use case in the Linux kernel that expects a value
+> > > dependency to be tracked through a comparison.)
 > > 
-> > I think in that case having the various instances fully configurable from
-> > device tree is OK if you prefer that. But if you wanted to use the
-> > compatible flag, then you could do something like this:
-> > 
-> > ti,control-phy-omap4-otghs	(assuming same on omap4 & 5)
-> > ti,control-phy-omap5-usb2
-> > ti,control-phy-omap5-pipe3	(assuming same on omap5 & dra7)
-> > ti,control-phy-dra7-usb2x
-> > ti,control-phy-am437-usb2y
-> > ...
-> > 
+> > Hmm.  I suppose use an explicit cast to non-vdp before or after the
+> > comparison?
 > 
-> Please note that the original bindings were added in v3.13 and I'm just moving the documentation
-> to the right location. So I don't think we should change the bindings now.
+> That should work well assuming that things like "if", "while", and "?:"
+> conditions are happy to take a vdp.
 
-OK yeah if the bindings are established you should keep them around.
- 
-> "ti,control-phy-dra7usb2" and "ti,control-phy-am437usb2" have no users still so we could probably
-> change those to "ti,control-phy-dra7-usb2" and "ti,control-phy-am437-usb2".
+I currently don't see a reason why that should be disallowed.  If we
+have allowed an implicit conversion to non-vdp, I believe that should
+follow.  ?: could be somewhat special, in that the type depends on the
+2nd and 3rd operand.  Thus, "vdp x = non-vdp ? vdp : vdp;" should be
+allowed, whereas "vdp x = non-vdp ? non-vdp : vdp;" probably should be
+disallowed if we don't provide for implicit casts from non-vdp to vdp.
+
+> This assumes that p->a only returns
+> vdp if field "a" is declared vdp, otherwise we have vdps running wild
+> through the program.  ;-)
+
+That's a good question.  For the scheme I had in mind, I'm not concerned
+about vdps running wild because one needs to assign to explicitly
+vdp-typed variables (or function arguments, etc.) to let vdp extend to
+beyond single expressions.
+
+Nonetheless, I think it's a good question how -> should behave if the
+field is not vdp; in particular, should vdp->non_vdp be automatically
+vdp?  One concern might be that we know something about non-vdp -- OTOH,
+we shouldn't be able to do so because we (assume to) don't know anything
+about the vdp pointer, so we can't infer something about something it
+points to.
+
+> The other thing that can happen is that a vdp can get handed off to
+> another synchronization mechanism, for example, to reference counting:
 > 
-> What do you say?
+> 	p = atomic_load_explicit(&gp, memory_order_consume);
+> 	if (do_something_with(p->a)) {
+> 		/* fast path protected by RCU. */
+> 		return 0;
+> 	}
+> 	if (atomic_inc_not_zero(&p->refcnt) {
 
-Makes sense to me.
+Is the argument to atomic_inc_no_zero vdp or non-vdp?
 
-Regards,
+> 		/* slow path protected by reference counting. */
+> 		return do_something_else_with((struct foo *)p);  /* CHANGE */
+> 	}
+> 	/* Needed slow path, but raced with deletion. */
+> 	return -EAGAIN;
+> 
+> I am guessing that the cast ends the vdp.  Is that the case?
 
-Tony
+That would end it, yes.  The other way this could happen is that the
+argument of do_something_else_with() would be specified to be non-vdp.
+
