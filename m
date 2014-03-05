@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759260AbaCEPYt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 10:24:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40824 "EHLO
+	id S1759245AbaCEPYs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:24:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40835 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756816AbaCEOZE (ORCPT
+	with ESMTP id S1756826AbaCEOZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:25:04 -0500
+	Wed, 5 Mar 2014 09:25:05 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stanislaw Gruszka <stf_xl@wp.pl>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Pekon Gupta <pekon@ti.com>, Tony Lindgren <tony@atomide.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 029/131] rtl8187: fix regression on MIPS without coherent DMA
-Date: Wed,  5 Mar 2014 14:22:33 +0000
-Message-Id: <1394029455-23128-30-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 030/131] ARM: OMAP2+: gpmc: fix: DT NAND child nodes not probed when MTD_NAND is built as module
+Date: Wed,  5 Mar 2014 14:22:34 +0000
+Message-Id: <1394029455-23128-31-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -28,85 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <stf_xl@wp.pl>
+From: Pekon Gupta <pekon@ti.com>
 
-commit b6213e413a4e0c66548153516b074df14f9d08e0 upstream.
+commit 6b187b21c92b6e2c7e8ef0b450181c37a3f31681 upstream.
 
-This patch fixes regression caused by commit a16dad77634 "MIPS: Fix
-potencial corruption". That commit fixes one corruption scenario in
-cost of adding another one, which actually start to cause crashes
-on Yeeloong laptop when rtl8187 driver is used.
+Fixes: commit bc6b1e7b86f5d8e4a6fc1c0189e64bba4077efe0
+       ARM: OMAP: gpmc: add DT bindings for GPMC timings and NAND
 
-For correct DMA read operation on machines without DMA coherence, kernel
-have to invalidate cache, such it will refill later with new data that
-device wrote to memory, when that data is needed to process. We can only
-invalidate full cache line. Hence when cache line includes both dma
-buffer and some other data (written in cache, but not yet in main
-memory), the other data can not hit memory due to invalidation. That
-happen on rtl8187 where struct rtl8187_priv fields are located just
-before and after small buffers that are passed to USB layer and DMA
-is performed on them.
+OMAP SoC(s) depend on GPMC controller driver to parse GPMC DT child nodes and
+register them platform_device for NAND driver to probe later. However this does
+not happen if generic MTD_NAND framework is built as module (CONFIG_MTD_NAND=m).
 
-To fix the problem we align buffers and reserve space after them to make
-them match cache line.
+Therefore, when MTD/NAND and MTD/NAND/OMAP2 modules are loaded, they are unable
+to find any matching platform_device and remain un-binded. This causes on board
+NAND flash to remain un-detected.
 
-This patch does not resolve all possible MIPS problems entirely, for
-that we have to assure that we always map cache aligned buffers for DMA,
-what can be complex or even not possible. But patch fixes visible and
-reproducible regression and seems other possible corruptions do not
-happen in practice, since Yeeloong laptop works stable without rtl8187
-driver.
+This patch causes GPMC controller to parse DT nodes when
+CONFIG_MTD_NAND=y || CONFIG_MTD_NAND=m
 
-Bug report:
-https://bugzilla.kernel.org/show_bug.cgi?id=54391
-
-Reported-by: Petr Pisar <petr.pisar@atlas.cz>
-Bisected-by: Tom Li <biergaizi2009@gmail.com>
-Reported-and-tested-by: Tom Li <biergaizi2009@gmail.com>
-Signed-off-by: Stanislaw Gruszka <stf_xl@wp.pl>
-Acked-by: Larry Finger <Larry.Finger@lwfinger.next>
-Acked-by: Hin-Tak Leung <htl10@users.sourceforge.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Pekon Gupta <pekon@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/rtl818x/rtl8187/rtl8187.h | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ arch/arm/mach-omap2/gpmc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/rtl818x/rtl8187/rtl8187.h b/drivers/net/wireless/rtl818x/rtl8187/rtl8187.h
-index e19a20a..ecd1ac4 100644
---- a/drivers/net/wireless/rtl818x/rtl8187/rtl8187.h
-+++ b/drivers/net/wireless/rtl818x/rtl8187/rtl8187.h
-@@ -15,6 +15,8 @@
- #ifndef RTL8187_H
- #define RTL8187_H
+diff --git a/arch/arm/mach-omap2/gpmc.c b/arch/arm/mach-omap2/gpmc.c
+index f3fdd6a..0fe1f7f 100644
+--- a/arch/arm/mach-omap2/gpmc.c
++++ b/arch/arm/mach-omap2/gpmc.c
+@@ -1339,7 +1339,7 @@ static void __maybe_unused gpmc_read_timings_dt(struct device_node *np,
+ 		of_property_read_bool(np, "gpmc,time-para-granularity");
+ }
  
-+#include <linux/cache.h>
-+
- #include "rtl818x.h"
- #include "leds.h"
+-#ifdef CONFIG_MTD_NAND
++#if IS_ENABLED(CONFIG_MTD_NAND)
  
-@@ -139,7 +141,10 @@ struct rtl8187_priv {
- 	u8 aifsn[4];
- 	u8 rfkill_mask;
- 	struct {
--		__le64 buf;
-+		union {
-+			__le64 buf;
-+			u8 dummy1[L1_CACHE_BYTES];
-+		} ____cacheline_aligned;
- 		struct sk_buff_head queue;
- 	} b_tx_status; /* This queue is used by both -b and non-b devices */
- 	struct mutex io_mutex;
-@@ -147,7 +152,8 @@ struct rtl8187_priv {
- 		u8 bits8;
- 		__le16 bits16;
- 		__le32 bits32;
--	} *io_dmabuf;
-+		u8 dummy2[L1_CACHE_BYTES];
-+	} *io_dmabuf ____cacheline_aligned;
- 	bool rfkill_off;
- 	u16 seqno;
- };
+ static const char * const nand_ecc_opts[] = {
+ 	[OMAP_ECC_HAMMING_CODE_DEFAULT]		= "sw",
 -- 
 1.9.0
 
