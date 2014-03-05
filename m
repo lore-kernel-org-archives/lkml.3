@@ -1,141 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756719AbaCEA0r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 19:26:47 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:42718 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756051AbaCEAZL (ORCPT
+	id S1756749AbaCEA1J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 19:27:09 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:53117 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756727AbaCEA1F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 19:25:11 -0500
-Message-Id: <20140305002507.961435281@goodmis.org>
-User-Agent: quilt/0.61-1
-Date: Tue, 04 Mar 2014 19:24:52 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        <stable-rt@vger.kernel.org>, Nicholas Mc Guire <der.herr@hofr.at>
-Subject: [PATCH RT 6/8] net: ip_send_unicast_reply: add missing local serialization
-References: <20140305002446.173840270@goodmis.org>
+	Tue, 4 Mar 2014 19:27:05 -0500
+Date: Wed, 5 Mar 2014 00:26:59 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Andreas Noever <andreas.noever@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/12] Thunderbolt hotplug support for Apple hardware
+ (testers needed)
+Message-ID: <20140305002659.GA25643@srcf.ucam.org>
+References: <1385688949-7101-1-git-send-email-andreas.noever@gmail.com>
+ <20131202162938.GA11241@srcf.ucam.org>
+ <20140304000904.GA6623@srcf.ucam.org>
+ <CAMxnaaVEg5ohZwopnDdMfoDseQy4Xoqbm-J3BzOcxDS=HVQN2w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0006-net-ip_send_unicast_reply-add-missing-local-serializ.patch
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMxnaaVEg5ohZwopnDdMfoDseQy4Xoqbm-J3BzOcxDS=HVQN2w@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.14-rt28-rc1 stable review patch.
-If anyone has any objections, please let me know.
+On Wed, Mar 05, 2014 at 12:59:54AM +0100, Andreas Noever wrote:
 
-------------------
+> 
+> I belive that the patch has the same effect as passing
+>     acpi_osi=! acpi_osi=Darwin
+> to the kernel. The problem with that approach is that it changes the
+> firmware behaviour quite a lot. In particular it prevents Linux from
+> taking over pci hotplug control:
 
-From: Nicholas Mc Guire <der.herr@hofr.at>
+There's not really any way around this. The method to power up the chip 
+will refuse to run unless the system claims Darwin and nothing else.
 
-in response to the oops in ip_output.c:ip_send_unicast_reply under high
-network load with CONFIG_PREEMPT_RT_FULL=y, reported by Sami Pietikainen
-<Sami.Pietikainen@wapice.com>, this patch adds local serialization in
-ip_send_unicast_reply.
+> I would prefer to find a solution that boots without acpi_osi=Darwin
+> as seems to trigger quite a lot of ACPI code. My current approach is
+> to inject a custom OSDW method somewhere into the NHI namespace and to
+> replace _PTS and _WAK from my driver. I can then wake the controller
+> with the XRPE method. The last problem is that the PCI code does not
+> allocate enough (or any) bus numbers below the hotplug ports. I'm
+> trying to add some quirks to it but the code is not really made for
+> that...
 
-from ip_output.c:
-/*
- *      Generic function to send a packet as reply to another packet.
- *      Used to send some TCP resets/acks so far.
- *
- *      Use a fake percpu inet socket to avoid false sharing and contention.
- */
-static DEFINE_PER_CPU(struct inet_sock, unicast_sock) = {
-...
+I don't think that's a workable approach - any change in the firmware 
+implementation could break it. If we're going to insert quirks then I 
+think it makes more sense to do it in the PCI layer rather than 
+injecting things into ACPI.
 
-which was added in commit be9f4a44 in linux-stable. The git log, wich
-introduced the PER_CPU unicast_sock, states:
-<snip>
-commit be9f4a44e7d41cee50ddb5f038fc2391cbbb4046
-Author: Eric Dumazet <edumazet@google.com>
-Date:   Thu Jul 19 07:34:03 2012 +0000
-
-    ipv4: tcp: remove per net tcp_sock
-
-    tcp_v4_send_reset() and tcp_v4_send_ack() use a single socket
-    per network namespace.
-
-    This leads to bad behavior on multiqueue NICS, because many cpus
-    contend for the socket lock and once socket lock is acquired, extra
-    false sharing on various socket fields slow down the operations.
-
-    To better resist to attacks, we use a percpu socket. Each cpu can
-    run without contention, using appropriate memory (local node)
-<snip>
-
-The per-cpu here thus is assuming exclusivity serializing per cpu - so
-the use of get_cpu_ligh introduced in
-net-use-cpu-light-in-ip-send-unicast-reply.patch, which droped the
-preempt_disable in favor of a migrate_disable is probably wrong as this
-only handles the referencial consistency but not the serialization. To
-evade a preempt_disable here a local lock would be needed.
-
-Therapie:
- * add local lock:
- * and re-introduce local serialization:
-
-Tested on x86 with high network load using the testcase from Sami Pietikainen
-  while : ; do wget -O - ftp://LOCAL_SERVER/empty_file > /dev/null 2>&1; done
-
-Link: http://www.spinics.net/lists/linux-rt-users/msg11007.html
-Cc: stable-rt@vger.kernel.org
-Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- net/ipv4/ip_output.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
-
-diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
-index 90af992..6e75fb1 100644
---- a/net/ipv4/ip_output.c
-+++ b/net/ipv4/ip_output.c
-@@ -79,6 +79,7 @@
- #include <linux/mroute.h>
- #include <linux/netlink.h>
- #include <linux/tcp.h>
-+#include <linux/locallock.h>
- 
- int sysctl_ip_default_ttl __read_mostly = IPDEFTTL;
- EXPORT_SYMBOL(sysctl_ip_default_ttl);
-@@ -1471,6 +1472,9 @@ static DEFINE_PER_CPU(struct inet_sock, unicast_sock) = {
- 	.uc_ttl		= -1,
- };
- 
-+/* serialize concurrent calls on the same CPU to ip_send_unicast_reply */
-+static DEFINE_LOCAL_IRQ_LOCK(unicast_lock);
-+
- void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
- 			   __be32 saddr, const struct ip_reply_arg *arg,
- 			   unsigned int len)
-@@ -1508,8 +1512,7 @@ void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
- 	if (IS_ERR(rt))
- 		return;
- 
--	get_cpu_light();
--	inet = &__get_cpu_var(unicast_sock);
-+	inet = &get_locked_var(unicast_lock, unicast_sock);
- 
- 	inet->tos = arg->tos;
- 	sk = &inet->sk;
-@@ -1533,7 +1536,7 @@ void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
- 		ip_push_pending_frames(sk, &fl4);
- 	}
- 
--	put_cpu_light();
-+	put_locked_var(unicast_lock, unicast_sock);
- 
- 	ip_rt_put(rt);
- }
 -- 
-1.8.5.3
-
-
+Matthew Garrett | mjg59@srcf.ucam.org
