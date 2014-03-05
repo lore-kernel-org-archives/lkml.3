@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756510AbaCEOYm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:24:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40721 "EHLO
+	id S1759410AbaCEPdU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:33:20 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40753 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756094AbaCEOYc (ORCPT
+	with ESMTP id S1756201AbaCEOYl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:24:32 -0500
+	Wed, 5 Mar 2014 09:24:41 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 007/131] ARM: 7953/1: mm: ensure TLB invalidation is complete before enabling MMU
-Date: Wed,  5 Mar 2014 14:22:11 +0000
-Message-Id: <1394029455-23128-8-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 014/131] iommu/arm-smmu: fix table flushing during initial allocations
+Date: Wed,  5 Mar 2014 14:22:18 +0000
+Message-Id: <1394029455-23128-15-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -30,68 +29,135 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Will Deacon <will.deacon@arm.com>
 
-commit bae0ca2bc550d1ec6a118fb8f2696f18c4da3d8e upstream.
+commit 6dd35f45b8dac827b6f9dd86f5aca6436cdd2410 upstream.
 
-During __v{6,7}_setup, we invalidate the TLBs since we are about to
-enable the MMU on return to head.S. Unfortunately, without a subsequent
-dsb instruction, the invalidation is not guaranteed to have completed by
-the time we write to the sctlr, potentially exposing us to junk/stale
-translations cached in the TLB.
+Now that we populate page tables as we traverse them ("iommu/arm-smmu:
+fix pud/pmd entry fill sequence"), we need to ensure that we flush out
+our zeroed tables after initial allocation, to prevent speculative TLB
+fills using bogus data.
 
-This patch reworks the init functions so that the dsb used to ensure
-completion of cache/predictor maintenance is also used to ensure
-completion of the TLB invalidation.
+This patch adds additional calls to arm_smmu_flush_pgtable during
+initial table allocation, and moves the dsb required by coherent table
+walkers into the helper.
 
-Reported-by: Albin Tonnerre <Albin.Tonnerre@arm.com>
 Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/mm/proc-v6.S | 3 ++-
- arch/arm/mm/proc-v7.S | 2 +-
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ drivers/iommu/arm-smmu.c | 51 +++++++++++++++++++++++++-----------------------
+ 1 file changed, 27 insertions(+), 24 deletions(-)
 
-diff --git a/arch/arm/mm/proc-v6.S b/arch/arm/mm/proc-v6.S
-index 1128064..c0b44fb 100644
---- a/arch/arm/mm/proc-v6.S
-+++ b/arch/arm/mm/proc-v6.S
-@@ -208,7 +208,6 @@ __v6_setup:
- 	mcr	p15, 0, r0, c7, c14, 0		@ clean+invalidate D cache
- 	mcr	p15, 0, r0, c7, c5, 0		@ invalidate I cache
- 	mcr	p15, 0, r0, c7, c15, 0		@ clean+invalidate cache
--	mcr	p15, 0, r0, c7, c10, 4		@ drain write buffer
- #ifdef CONFIG_MMU
- 	mcr	p15, 0, r0, c8, c7, 0		@ invalidate I + D TLBs
- 	mcr	p15, 0, r0, c2, c0, 2		@ TTB control register
-@@ -218,6 +217,8 @@ __v6_setup:
- 	ALT_UP(orr	r8, r8, #TTB_FLAGS_UP)
- 	mcr	p15, 0, r8, c2, c0, 1		@ load TTB1
- #endif /* CONFIG_MMU */
-+	mcr	p15, 0, r0, c7, c10, 4		@ drain write buffer and
-+						@ complete invalidations
- 	adr	r5, v6_crval
- 	ldmia	r5, {r5, r6}
- #ifdef CONFIG_CPU_ENDIAN_BE8
-diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
-index 73398bc..4c662f3 100644
---- a/arch/arm/mm/proc-v7.S
-+++ b/arch/arm/mm/proc-v7.S
-@@ -332,7 +332,6 @@ __v7_setup:
+diff --git a/drivers/iommu/arm-smmu.c b/drivers/iommu/arm-smmu.c
+index b066eef..0b98867 100644
+--- a/drivers/iommu/arm-smmu.c
++++ b/drivers/iommu/arm-smmu.c
+@@ -81,7 +81,6 @@
  
- 3:	mov	r10, #0
- 	mcr	p15, 0, r10, c7, c5, 0		@ I+BTB cache invalidate
--	dsb
- #ifdef CONFIG_MMU
- 	mcr	p15, 0, r10, c8, c7, 0		@ invalidate I + D TLBs
- 	v7_ttb_setup r10, r4, r8, r5		@ TTBCR, TTBRx setup
-@@ -341,6 +340,7 @@ __v7_setup:
- 	mcr	p15, 0, r5, c10, c2, 0		@ write PRRR
- 	mcr	p15, 0, r6, c10, c2, 1		@ write NMRR
- #endif
-+	dsb					@ Complete invalidations
- #ifndef CONFIG_ARM_THUMBEE
- 	mrc	p15, 0, r0, c0, c1, 0		@ read ID_PFR0 for ThumbEE
- 	and	r0, r0, #(0xf << 12)		@ ThumbEE enabled field
+ #define ARM_SMMU_PTE_CONT_SIZE		(PAGE_SIZE * ARM_SMMU_PTE_CONT_ENTRIES)
+ #define ARM_SMMU_PTE_CONT_MASK		(~(ARM_SMMU_PTE_CONT_SIZE - 1))
+-#define ARM_SMMU_PTE_HWTABLE_SIZE	(PTRS_PER_PTE * sizeof(pte_t))
+ 
+ /* Stage-1 PTE */
+ #define ARM_SMMU_PTE_AP_UNPRIV		(((pteval_t)1) << 6)
+@@ -605,6 +604,28 @@ static irqreturn_t arm_smmu_global_fault(int irq, void *dev)
+ 	return IRQ_NONE;
+ }
+ 
++static void arm_smmu_flush_pgtable(struct arm_smmu_device *smmu, void *addr,
++				   size_t size)
++{
++	unsigned long offset = (unsigned long)addr & ~PAGE_MASK;
++
++
++	/* Ensure new page tables are visible to the hardware walker */
++	if (smmu->features & ARM_SMMU_FEAT_COHERENT_WALK) {
++		dsb();
++	} else {
++		/*
++		 * If the SMMU can't walk tables in the CPU caches, treat them
++		 * like non-coherent DMA since we need to flush the new entries
++		 * all the way out to memory. There's no possibility of
++		 * recursion here as the SMMU table walker will not be wired
++		 * through another SMMU.
++		 */
++		dma_map_page(smmu->dev, virt_to_page(addr), offset, size,
++				DMA_TO_DEVICE);
++	}
++}
++
+ static void arm_smmu_init_context_bank(struct arm_smmu_domain *smmu_domain)
+ {
+ 	u32 reg;
+@@ -687,6 +708,8 @@ static void arm_smmu_init_context_bank(struct arm_smmu_domain *smmu_domain)
+ 	}
+ 
+ 	/* TTBR0 */
++	arm_smmu_flush_pgtable(smmu, root_cfg->pgd,
++			       PTRS_PER_PGD * sizeof(pgd_t));
+ 	reg = __pa(root_cfg->pgd);
+ #ifndef __BIG_ENDIAN
+ 	writel_relaxed(reg, cb_base + ARM_SMMU_CB_TTBR0_LO);
+@@ -1155,23 +1178,6 @@ static void arm_smmu_detach_dev(struct iommu_domain *domain, struct device *dev)
+ 		arm_smmu_domain_remove_master(smmu_domain, master);
+ }
+ 
+-static void arm_smmu_flush_pgtable(struct arm_smmu_device *smmu, void *addr,
+-				   size_t size)
+-{
+-	unsigned long offset = (unsigned long)addr & ~PAGE_MASK;
+-
+-	/*
+-	 * If the SMMU can't walk tables in the CPU caches, treat them
+-	 * like non-coherent DMA since we need to flush the new entries
+-	 * all the way out to memory. There's no possibility of recursion
+-	 * here as the SMMU table walker will not be wired through another
+-	 * SMMU.
+-	 */
+-	if (!(smmu->features & ARM_SMMU_FEAT_COHERENT_WALK))
+-		dma_map_page(smmu->dev, virt_to_page(addr), offset, size,
+-			     DMA_TO_DEVICE);
+-}
+-
+ static bool arm_smmu_pte_is_contiguous_range(unsigned long addr,
+ 					     unsigned long end)
+ {
+@@ -1192,8 +1198,7 @@ static int arm_smmu_alloc_init_pte(struct arm_smmu_device *smmu, pmd_t *pmd,
+ 		if (!table)
+ 			return -ENOMEM;
+ 
+-		arm_smmu_flush_pgtable(smmu, page_address(table),
+-				       ARM_SMMU_PTE_HWTABLE_SIZE);
++		arm_smmu_flush_pgtable(smmu, page_address(table), PAGE_SIZE);
+ 		pgtable_page_ctor(table);
+ 		pmd_populate(NULL, pmd, table);
+ 		arm_smmu_flush_pgtable(smmu, pmd, sizeof(*pmd));
+@@ -1294,6 +1299,7 @@ static int arm_smmu_alloc_init_pmd(struct arm_smmu_device *smmu, pud_t *pud,
+ 		if (!pmd)
+ 			return -ENOMEM;
+ 
++		arm_smmu_flush_pgtable(smmu, pmd, PAGE_SIZE);
+ 		pud_populate(NULL, pud, pmd);
+ 		arm_smmu_flush_pgtable(smmu, pud, sizeof(*pud));
+ 
+@@ -1326,6 +1332,7 @@ static int arm_smmu_alloc_init_pud(struct arm_smmu_device *smmu, pgd_t *pgd,
+ 		if (!pud)
+ 			return -ENOMEM;
+ 
++		arm_smmu_flush_pgtable(smmu, pud, PAGE_SIZE);
+ 		pgd_populate(NULL, pgd, pud);
+ 		arm_smmu_flush_pgtable(smmu, pgd, sizeof(*pgd));
+ 
+@@ -1394,10 +1401,6 @@ static int arm_smmu_handle_mapping(struct arm_smmu_domain *smmu_domain,
+ out_unlock:
+ 	spin_unlock(&smmu_domain->lock);
+ 
+-	/* Ensure new page tables are visible to the hardware walker */
+-	if (smmu->features & ARM_SMMU_FEAT_COHERENT_WALK)
+-		dsb();
+-
+ 	return ret;
+ }
+ 
 -- 
 1.9.0
 
