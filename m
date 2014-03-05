@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758245AbaCEOi3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:38:29 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41789 "EHLO
+	id S932578AbaCEOmB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:42:01 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41800 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752568AbaCEOi0 (ORCPT
+	with ESMTP id S1757872AbaCEOi2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:38:26 -0500
+	Wed, 5 Mar 2014 09:38:28 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jean Delvare <jdelvare@suse.de>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Doug Thompson <dougthompson@xmission.com>,
-        Borislav Petkov <bp@suse.de>,
+Cc: Davidlohr Bueso <davidlohr@hp.com>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 50/62] i7core_edac: Fix PCI device reference count
-Date: Wed,  5 Mar 2014 14:36:54 +0000
-Message-Id: <1394030226-26652-51-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 52/62] ipc,mqueue: remove limits for the amount of system-wide queues
+Date: Wed,  5 Mar 2014 14:36:56 +0000
+Message-Id: <1394030226-26652-53-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
 References: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
@@ -30,62 +30,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <jdelvare@suse.de>
+From: Davidlohr Bueso <davidlohr@hp.com>
 
-commit c0f5eeed0f4cef4f05b74883a7160e7edde58b6a upstream.
+commit f3713fd9cff733d9df83116422d8e4af6e86b2bb upstream.
 
-The reference count changes done by pci_get_device can be a little
-misleading when the usage diverges from the most common scheme. The
-reference count of the device passed as the last parameter is always
-decreased, even if the function returns no new device. So if we are
-going to try alternative device IDs, we must manually increment the
-device reference count before each retry. If we don't, we end up
-decreasing the reference count, and after a few modprobe/rmmod cycles
-the PCI devices will vanish.
+Commit 93e6f119c0ce ("ipc/mqueue: cleanup definition names and
+locations") added global hardcoded limits to the amount of message
+queues that can be created.  While these limits are per-namespace,
+reality is that it ends up breaking userspace applications.
+Historically users have, at least in theory, been able to create up to
+INT_MAX queues, and limiting it to just 1024 is way too low and dramatic
+for some workloads and use cases.  For instance, Madars reports:
 
-In other words and as Alan put it: without this fix the EDAC code
-corrupts the PCI device list.
+ "This update imposes bad limits on our multi-process application.  As
+  our app uses approaches that each process opens its own set of queues
+  (usually something about 3-5 queues per process).  In some scenarios
+  we might run up to 3000 processes or more (which of-course for linux
+  is not a problem).  Thus we might need up to 9000 queues or more.  All
+  processes run under one user."
 
-This fixes kernel bug #50491:
-https://bugzilla.kernel.org/show_bug.cgi?id=50491
+Other affected users can be found in launchpad bug #1155695:
+  https://bugs.launchpad.net/ubuntu/+source/manpages/+bug/1155695
 
-Signed-off-by: Jean Delvare <jdelvare@suse.de>
-Link: http://lkml.kernel.org/r/20140224093927.7659dd9d@endymion.delvare
-Reviewed-by: Alan Cox <alan@linux.intel.com>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Doug Thompson <dougthompson@xmission.com>
-Signed-off-by: Borislav Petkov <bp@suse.de>
+Instead of increasing this limit, revert it entirely and fallback to the
+original way of dealing queue limits -- where once a user's resource
+limit is reached, and all memory is used, new queues cannot be created.
+
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+Reported-by: Madars Vitolins <m@silodev.com>
+Acked-by: Doug Ledford <dledford@redhat.com>
+Cc: Manfred Spraul <manfred@colorfullife.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/edac/i7core_edac.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ include/linux/ipc_namespace.h |  2 --
+ ipc/mq_sysctl.c               | 18 ++++++++++++------
+ ipc/mqueue.c                  |  6 +++---
+ 3 files changed, 15 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
-index a499c7e..36ec0ef 100644
---- a/drivers/edac/i7core_edac.c
-+++ b/drivers/edac/i7core_edac.c
-@@ -1250,14 +1250,19 @@ static int i7core_get_onedevice(struct pci_dev **prev,
- 	 * is at addr 8086:2c40, instead of 8086:2c41. So, we need
- 	 * to probe for the alternate address in case of failure
- 	 */
--	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_I7_NONCORE && !pdev)
-+	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_I7_NONCORE && !pdev) {
-+		pci_dev_get(*prev);	/* pci_get_device will put it */
- 		pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
- 				      PCI_DEVICE_ID_INTEL_I7_NONCORE_ALT, *prev);
-+	}
+diff --git a/include/linux/ipc_namespace.h b/include/linux/ipc_namespace.h
+index c731973..545893d 100644
+--- a/include/linux/ipc_namespace.h
++++ b/include/linux/ipc_namespace.h
+@@ -116,9 +116,7 @@ extern int mq_init_ns(struct ipc_namespace *ns);
+  *     the new maximum will handle anyone else.  I may have to revisit this
+  *     in the future.
+  */
+-#define MIN_QUEUESMAX			1
+ #define DFLT_QUEUESMAX		      256
+-#define HARD_QUEUESMAX		     1024
+ #define MIN_MSGMAX			1
+ #define DFLT_MSG		       10U
+ #define DFLT_MSGMAX		       10
+diff --git a/ipc/mq_sysctl.c b/ipc/mq_sysctl.c
+index 383d638..5bb8bfe 100644
+--- a/ipc/mq_sysctl.c
++++ b/ipc/mq_sysctl.c
+@@ -22,6 +22,16 @@ static void *get_mq(ctl_table *table)
+ 	return which;
+ }
  
--	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE && !pdev)
-+	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE &&
-+	    !pdev) {
-+		pci_dev_get(*prev);	/* pci_get_device will put it */
- 		pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
- 				      PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE_ALT,
- 				      *prev);
-+	}
++static int proc_mq_dointvec(ctl_table *table, int write,
++			    void __user *buffer, size_t *lenp, loff_t *ppos)
++{
++	struct ctl_table mq_table;
++	memcpy(&mq_table, table, sizeof(mq_table));
++	mq_table.data = get_mq(table);
++
++	return proc_dointvec(&mq_table, write, buffer, lenp, ppos);
++}
++
+ static int proc_mq_dointvec_minmax(ctl_table *table, int write,
+ 	void __user *buffer, size_t *lenp, loff_t *ppos)
+ {
+@@ -33,12 +43,10 @@ static int proc_mq_dointvec_minmax(ctl_table *table, int write,
+ 					lenp, ppos);
+ }
+ #else
++#define proc_mq_dointvec NULL
+ #define proc_mq_dointvec_minmax NULL
+ #endif
  
- 	if (!pdev) {
- 		if (*prev) {
+-static int msg_queues_limit_min = MIN_QUEUESMAX;
+-static int msg_queues_limit_max = HARD_QUEUESMAX;
+-
+ static int msg_max_limit_min = MIN_MSGMAX;
+ static int msg_max_limit_max = HARD_MSGMAX;
+ 
+@@ -51,9 +59,7 @@ static ctl_table mq_sysctls[] = {
+ 		.data		= &init_ipc_ns.mq_queues_max,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_mq_dointvec_minmax,
+-		.extra1		= &msg_queues_limit_min,
+-		.extra2		= &msg_queues_limit_max,
++		.proc_handler	= proc_mq_dointvec,
+ 	},
+ 	{
+ 		.procname	= "msg_max",
+diff --git a/ipc/mqueue.c b/ipc/mqueue.c
+index 8ce5769..44700e0 100644
+--- a/ipc/mqueue.c
++++ b/ipc/mqueue.c
+@@ -426,9 +426,9 @@ static int mqueue_create(struct inode *dir, struct dentry *dentry,
+ 		error = -EACCES;
+ 		goto out_unlock;
+ 	}
+-	if (ipc_ns->mq_queues_count >= HARD_QUEUESMAX ||
+-	    (ipc_ns->mq_queues_count >= ipc_ns->mq_queues_max &&
+-	     !capable(CAP_SYS_RESOURCE))) {
++
++	if (ipc_ns->mq_queues_count >= ipc_ns->mq_queues_max &&
++	    !capable(CAP_SYS_RESOURCE)) {
+ 		error = -ENOSPC;
+ 		goto out_unlock;
+ 	}
 -- 
 1.9.0
 
