@@ -1,38 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758712AbaCEOy1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:54:27 -0500
-Received: from www.linutronix.de ([62.245.132.108]:44055 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758426AbaCEOyY (ORCPT
+	id S1758731AbaCEOyz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:54:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41604 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752215AbaCEOhh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:54:24 -0500
-Date: Wed, 5 Mar 2014 15:54:32 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: Re: [patch 2/5] mips: Validate online cpus in irq_set_affinity()
- callbacks
-In-Reply-To: <20140305112038.GW9987@twins.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.02.1403051554180.18573@ionos.tec.linutronix.de>
-References: <20140304202425.102779779@linutronix.de> <20140304203100.744800502@linutronix.de> <20140305112038.GW9987@twins.programming.kicks-ass.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 5 Mar 2014 09:37:37 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Chen Gang <gang.chen.5i5j@gmail.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.5 18/62] avr32: Makefile: add '-D__linux__' flag for gcc-4.4.7 use
+Date: Wed,  5 Mar 2014 14:36:22 +0000
+Message-Id: <1394030226-26652-19-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
+References: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Mar 2014, Peter Zijlstra wrote:
+3.5.7.32 -stable review patch.  If anyone has any objections, please let me know.
 
-> On Tue, Mar 04, 2014 at 08:43:39PM -0000, Thomas Gleixner wrote:
-> > +	i = cpumask_first_and(mask< cpu_online_mask);
-> > +	i = cpumask_first_and(mask< cpu_online_mask);
-> 
-> s/</,/ ?
+------------------
 
-Duh, yes. 
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+
+commit 8d80390cfc9434d5aa4fb9e5f9768a66b30cb8a6 upstream.
+
+For avr32 cross compiler, do not define '__linux__' internally, so it
+will cause issue with allmodconfig.
+
+The related error:
+
+    CC [M]  fs/coda/psdev.o
+  In file included from include/linux/coda.h:64,
+                   from fs/coda/psdev.c:45:
+  include/uapi/linux/coda.h:221: error: expected specifier-qualifier-list before 'u_quad_t'
+
+The related toolchain version (which only download, not re-compile):
+
+  [root@gchen linux-next]# /upstream/toolchain/download/avr32-gnu-toolchain-linux_x86/bin/avr32-gcc -v
+  Using built-in specs.
+  Target: avr32
+  Configured with: /data2/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/src/gcc/configure --target=avr32 --host=i686-pc-linux-gnu --build=x86_64-pc-linux-gnu --prefix=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --enable-languages=c,c++ --disable-nls --disable-libssp --disable-libstdcxx-pch --with-dwarf2 --enable-version-specific-runtime-libs --disable-shared --enable-doc --with-mpfr-lib=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86/lib --with-mpfr-include=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86/include --with-gmp=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --with-mpc=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --enable-__cxa_atexit --disable-shared --with-newlib --with-pkgversion=AVR_32_bit_GNU_Toolchain_3.4.2_435 --with-bugurl=http://www
+.atmel.com/avr
+  Thread model: single
+  gcc version 4.4.7 (AVR_32_bit_GNU_Toolchain_3.4.2_435)
+
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+Acked-by: Hans-Christian Egtvedt <hegtvedt@cisco.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ arch/avr32/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/avr32/Makefile b/arch/avr32/Makefile
+index 22fb665..dba48a5 100644
+--- a/arch/avr32/Makefile
++++ b/arch/avr32/Makefile
+@@ -11,7 +11,7 @@ all: uImage vmlinux.elf
+ 
+ KBUILD_DEFCONFIG	:= atstk1002_defconfig
+ 
+-KBUILD_CFLAGS	+= -pipe -fno-builtin -mno-pic
++KBUILD_CFLAGS	+= -pipe -fno-builtin -mno-pic -D__linux__
+ KBUILD_AFLAGS	+= -mrelax -mno-pic
+ KBUILD_CFLAGS_MODULE += -mno-relax
+ LDFLAGS_vmlinux	+= --relax
+-- 
+1.9.0
+
