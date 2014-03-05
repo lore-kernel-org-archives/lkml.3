@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685AbaCEI2C (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 03:28:02 -0500
-Received: from mx01-fr.bfs.de ([193.174.231.67]:18428 "EHLO mx01-fr.bfs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751544AbaCEI2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 03:28:00 -0500
-Message-ID: <5316E00A.3030704@bfs.de>
-Date: Wed, 05 Mar 2014 09:27:54 +0100
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	id S1753652AbaCEIbq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 03:31:46 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:61496 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752064AbaCEIbn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 03:31:43 -0500
 MIME-Version: 1.0
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-CC: "kernelnewbies@kernelnewbies.org" <kernelnewbies@kernelnewbies.org>,
-        kernel-janitors@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: My Kernel bug is celebrating 2 years. Can you help me fix it?
-References: <CA+MoWDrTNtAHKsiBHz=W4=eJRO=m9EK_HZ7zLxb=4fg5riUQeg@mail.gmail.com>
-In-Reply-To: <CA+MoWDrTNtAHKsiBHz=W4=eJRO=m9EK_HZ7zLxb=4fg5riUQeg@mail.gmail.com>
+In-Reply-To: <1393324219-3317-1-git-send-email-geert@linux-m68k.org>
+References: <1393324219-3317-1-git-send-email-geert@linux-m68k.org>
+Date: Wed, 5 Mar 2014 17:31:42 +0900
+Message-ID: <CANqRtoSM-51NRVAtYOOAzZQ-pagC2JteC+M=SKMuBYniLFfhLA@mail.gmail.com>
+Subject: Re: [PATCH v2 00/11] ARM: shmobile: MSIOF integration on
+ r8a7790/lager and r8a7791/koelsch
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Simon Horman <horms@verge.net.au>, SH-Linux <linux-sh@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Feb 25, 2014 at 7:30 PM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+>         Hi Simon, Magnus,
+>
+> This patch series integrates support for the MSIOF module in the Renesas
+> R-Car H2 (r8a7790) and M2 (r8a7791) SoCs on the Lager and Koelsch
+> development boards.
+>
+> It was tested on Lager and Koelsch, both legacy and DT, using a dummy
+> driver for the Renesas r2a11302ft PMIC that reads out the PMIC's version
+> ID.
+>
+>     [01/11] ARM: shmobile: r8a7790: Add MSIOF clocks
+>     [02/11] ARM: shmobile: r8a7791: Add MSIOF clocks
+>     [03/11] ARM: shmobile: lager legacy: Add MSIOF support
+>     [04/11] ARM: shmobile: koelsch legacy: Add MSIOF support
+>     [05/11] ARM: shmobile: r8a7790/lager dts: Rename label spi to qspi, add
+>             spi0 alias
+>     [06/11] ARM: shmobile: r8a7791/koelsch dts: Rename label spi to qspi,
+>             add spi0 alias
+>     [07/11] ARM: shmobile: r8a7790 dtsi: Add MSIOF nodes and aliases
+>     [08/11] ARM: shmobile: r8a7791 dtsi: Add MSIOF nodes and aliases
+>     [09/11] ARM: shmobile: lager dts: Add MSIOF nodes
+>     [10/11] ARM: shmobile: koelsch dts: Add MSIOF nodes
+>     [11/11] ARM: shmobile: koelsch/lager/multi defconfig: Enable MSIOF
+>
+> These are (reworked versions of) the remaining patches not taken from v1.
+> Changelogs are available in the individual patches.
 
+Hi Geert,
 
-Am 04.03.2014 22:26, schrieb Peter Senna Tschudin:
-> I have reported a bug more than two years ago and it is still
-> affecting me. The bug report gives some information:
-> 
-> https://bugzilla.redhat.com/show_bug.cgi?id=787299
-> 
-> I have tried basic debug instructions from:
-> https://www.kernel.org/doc/Documentation/power/basic-pm-debugging.txt
-> 
-> And everything works as expected when:
-> # echo freeze > /sys/power/state
-> # echo disk > /sys/power/state
-> 
-> I have asked for help for fixing it:
-> https://lkml.org/lkml/2013/11/1/186
-> 
-> But I don't have a serial port. How can I debug this issue without a
-> "real" serial port? Or what else can I try? 
-You need to create a kernel with networksupport,
-setup "netconsole" you need a second computer to receive the issues.
+Thanks for your efforts. All these look fine to me.
 
+Acked-by: Magnus Damm <damm@opensource.se>
 
->How can I explore the hint
-> about the problem only happening with VT-d enabled in BIOS? How can I
-> explore the hint about the problem not happening if the option
-> nox2apic is passed to the Kernel?
+Exactly what to merge upstream depends on what the ARM SoC maintainers prefer.
 
-never heard about that until now, obviously there is a bug in several
-acpi's that can be triggered. If your systems works with nox2apic
-as bootparameter you should be happy since a workaround is available.
-Information about it is used can be find here:
-http://lxr.free-electrons.com/ident?a=microblaze;i=nox2apic
+Cheers,
 
-re,
- wh
-
-
-> Thank you,
-> 
-> Peter
-> 
-> P.S Yes, it works on Windows.
-> 
+/ magnus
