@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754982AbaCEOTJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:19:09 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:54743 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753008AbaCEOTC (ORCPT
+	id S1755278AbaCEOTk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:19:40 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:18706 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755067AbaCEOTi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:19:02 -0500
-X-AuditID: cbfee61a-b7fb26d00000724f-20-53173254c634
+	Wed, 5 Mar 2014 09:19:38 -0500
+X-AuditID: cbfee61b-b7f456d000006dfd-a9-531732781e4e
 From: Kamil Debski <k.debski@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
         linux-usb@vger.kernel.org, devicetree@vger.kernel.org
@@ -19,224 +19,105 @@ Cc: kyungmin.park@samsung.com, kishon@ti.com, t.figa@samsung.com,
         matt.porter@linaro.org, k.debski@samsung.com,
         tjakobi@math.uni-bielefeld.de, stern@rowland.harvard.edu,
         sander@humilis.net
-Subject: [PATCH v8 0/4] phy: Add new Exynos USB 2.0 PHY driver
-Date: Wed, 05 Mar 2014 15:18:24 +0100
-Message-id: <1394029108-2531-1-git-send-email-k.debski@samsung.com>
+Subject: [PATCH v8 2/4] phy: core: Add devm_of_phy_get to phy-core
+Date: Wed, 05 Mar 2014 15:18:26 +0100
+Message-id: <1394029108-2531-3-git-send-email-k.debski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t9jQd1QI/Fgg77TLBZLdt9gtZh/5Byr
-	Rf+bhawWbVcOsltcXniJ1eLH6wtsFhee9rBZnG16AxTbNYfNYsb5fUwWi5a1MlusPXKX3eJs
-	/202i4lN09gtzm/pZLI4/Kad1WLFvd3sFhN+A/Wun/GaxaJt9QdWi46zB9kdRD0u9/Uyeeyc
-	dZfd49Pbxcwed67tYfP4d4zdY/bdH4wefVtWMXocv7GdyePzJrkAzigum5TUnMyy1CJ9uwSu
-	jFsfH7EUdLpWPJg0i62B8YlpFyMnh4SAicSy99vYIWwxiQv31rOB2EIC0xklbjVqdDFyAdkd
-	TBKnX95j7WLk4GAT0JRYdc8DpEZEoEZiyq0r7CA1zALzmCU+fJnOApIQFrCTeLTtCCOIzSKg
-	KjFp4ks2kF5eAWeJ+SeDQUwJAQWJOZNsJjByL2BkWMUomlqQXFCclJ5rqFecmFtcmpeul5yf
-	u4kRHNLPpHYwrmywOMQowMGoxMP7gkMsWIg1say4MvcQowQHs5IIb7SWeLAQb0piZVVqUX58
-	UWlOavEhRmkOFiVx3gOt1oFCAumJJanZqakFqUUwWSYOTqkGxhMnk57d+bui6+aHpho5G6HO
-	jnALiaDDvySlw4LmOKsq7Zk0y0Ow5P3N/ntZb/XXd1oklc9TEpzpzcx3W4atOznszsHEKT8q
-	mQ+dTltvd/0Ew3u1m2F2W4/EvGLw5nVXOxUzSe/9yVkFn9bu/9E1cVcuY1PcgUO7ZdNMBSsf
-	JjGc5b0f3be/SImlOCPRUIu5qDgRAEywRwtlAgAA
+In-reply-to: <1394029108-2531-1-git-send-email-k.debski@samsung.com>
+References: <1394029108-2531-1-git-send-email-k.debski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDLMWRmVeSWpSXmKPExsVy+t9jQd0KI/Fgg70zdSyW7L7BajH/yDlW
+	i/43C1kt2q4cZLe4vPASq8WP1xfYLC487WGzONv0Bii2aw6bxYzz+5gsFi1rZbZYe+Quu8XZ
+	/ttsFhObprFbnN/SyWRx+E07q8WKe7vZLSb8BupdP+M1i0Xb6g+sFh1nD7I7iHpc7utl8tg5
+	6y67x6e3i5k97lzbw+bx7xi7x+y7Pxg9+rasYvQ4fmM7k8fnTXIBnFFcNimpOZllqUX6dglc
+	GQue3WYs+CVScXHdNtYGxsmCXYycHBICJhLPJ81mgbDFJC7cW8/WxcjFISQwnVHi0IxlzBBO
+	B5PE5bv7gTIcHGwCmhKr7nmANIgI1EhMuXWFHaSGWWAes8SHL9PBJgkLOEk8b1zDBGKzCKhK
+	fPi9lxHE5hVwlrj29wEjyBwJAQWJOZNsQMKcAi4ST7c/BCsXAirp/LmAeQIj7wJGhlWMoqkF
+	yQXFSem5RnrFibnFpXnpesn5uZsYwXHwTHoH46oGi0OMAhyMSjy8LzjEgoVYE8uKK3MPMUpw
+	MCuJ8EZriQcL8aYkVlalFuXHF5XmpBYfYpTmYFES5z3Yah0oJJCeWJKanZpakFoEk2Xi4JRq
+	YAy52HA3/GX+jGPirDsyTjTZ8bJobktu/O3iJ2rxeI51Kut6n3vbngtuXnDUSzv466TN2S3v
+	Y5cmTOpjnPhB7LfqLt/Px5/yfPLbVL4v4d/f19I3A6rWLru9es/VCINbq7bwl6+WuaM18XPh
+	RF2F3o7zWa9uZ+8tStP4tvShoW9ET3nH3fKzEyWUWIozEg21mIuKEwF7dHhJfwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Adding devm_of_phy_get will allow to get phys by supplying a
+pointer to the struct device_node instead of struct device.
 
-This is the eighth version of this patchset. First and most significant change
-since v6 is that this patchset includes only patches touching the Generic PHY
-Framework. Patches to the USB controllers were stripped as they require
-additional work. S5PV210 support is also omitted - it requires more testing.
+Signed-off-by: Kamil Debski <k.debski@samsung.com>
+---
+ drivers/phy/phy-core.c  |   31 +++++++++++++++++++++++++++++++
+ include/linux/phy/phy.h |    8 ++++++++
+ 2 files changed, 39 insertions(+)
 
-Since v7 this patch includes fixes for checkpath errors and was rebased onto
-Kishon's next branch.
-
-Best wishes,
-Kamil Debski
-
---------------
-Changes from v7:
-1) phy: core: Add an exported of_phy_get function
-   - No changes since v7.
-2) phy: core: Add devm_of_phy_get to phy-core
-   - No changes since v7.
-3) phy: Add new Exynos USB 2.0 PHY driver
-   - Fix checkpatch errors with code indentation and corrected whitespace.
-4) phy: Add Exynos 5250 support to the Exynos USB 2.0 PHY
-   - Fix checkpatch errors with code indentation and corrected whitespace.
-
---------------
-Changes from v6: (not including the change that controller patches were removed
-form this patchset, also this patchset excludes S5PV210 support - it needs more
-testing)
-1) phy: core: Add an exported of_phy_get function
-   - No changes since v6.
-2) phy: core: Add devm_of_phy_get to phy-core
-   - No changes since v6.
-3) phy: Add new Exynos USB 2.0 PHY driver
-   - Changed the way clocks are supplied to the driver. Prior to version v7
-     there were reference clocks for every phy instance, now a single "ref"
-     clock was introduced.
-   - Updated documentation to match the aforementioned change.
-   - Add offset EXYNOS_*_UPHYCLK_PHYFSEL_OFFSET to the clock register content
-     defines.
-   - Corrected way clock register is modified. Instead of a simple write, a
-     proper read, modify, write sequence was introduced.
-   - Important stability fix - added udelay after PHY reset. This fixes a bug
-     causing instability in USB LAN adapters. Without the delay the DMA burst
-     mode was could not be enabled.
-4) phy: Add Exynos 5250 support to the Exynos USB 2.0 PHY
-   - Changed handling of clocks to use a single "ref" clock.
-
-----------------
-Changes from v5:
-1) phy: core: Add an exported of_phy_get function
-- corrected behaviour of the modification when GENERIC_PHY is not enabled
-  by adding a stub of the of_phy_get function
-2) phy: core: Add devm_of_phy_get to phy-core
-- corrected behaviour of the modification when GENERIC_PHY is not enabled
-  by adding a stub of the devm_of_phy_get function
-3) dts: Add usb2phy to Exynos 4
-- no change
-4) dts: Add usb2phy to Exynos 5250
-- in the previous version, this patch included some phy-exynos5250-usb2.c code
-  by mistake, the code has been remove and added to the proper patch
-5) phy: Add new Exynos USB PHY driver
-- changed strings from Exynos 4212 to Exynos 4x12, as the Exynos 4212 driver is
-  actually a driver for the whole Exynos 4x12 family
-- added documentation to the Exynos USB 2.0 PHY driver adaptaion layer
-- corrected strings HSCI -> HSIC
-- fixed a problem introduced by previous change - on Exynos 4x12 the HSIC did
-  not work on its own
-- mode switch support was added to Exynos 4x12 (same io pins are used by host
-  and device)
-- support for phy_set_bus_width introduced by Matt Porter was added
-6) phy: Add support for S5PV210 to the Exynos USB PHY
-- setting of clk register was fixed
-7) phy: Add Exynos 5250 support to the Exynos USB 2.0 PHY
-- supoprt was added for HSIC and device
-8) usb: ehci-exynos: Change to use phy provided by the generic phy framework
-- DT documentation was moved from usb-ehci.txt to exynos-usb.txt
-
-----------------
-Changes from v4:
-1) phy: core: Add an exported of_phy_get function
-- the new exported function of_phy_get was changed to take the phy's name as a
-  parameter instead of the index
-2) phy: core: Add devm_of_phy_get to phy-core
-- fixes made in the comments to devm_of_phy_get
-3) phy: Add new Exynos USB PHY driver
-- move the documentation from a new to an existing file - samsung-phy.txt
-- fix typos and uppercase hex addresses
-- add more explanations to Kconfig (checkpatch still complains, but I find it
-  hard to think what else could I add)
-- add selects MFD_SYSCON as the driver needs it (Thank you, Tobias!)
-- cleanup included headers in both *.c and .h files
-- use BIT(x) macro instead of (1 << x)
-- replaced HOST and DEV with PHY0 and PHY1 in phy-exynos4212-usb2.c, the
-  registers are described as PHYx in the documentation hence the decision to
-  leave the PHYx naming
-- fixed typo in exynos4210_rate_to_clk reg -> *reg
-- change hax_mode_switch and enabled type to bool
-4) usb: ehci-s5p: Change to use phy provided by the generic phy framework
-- Put the issue of phy->otg in order - since the new phy driver does not provide
-  this field. With the new driver the switch between host and device is done in
-  power_on of the respective host and device phys.
-5) usb: s3c-hsotg: Use the new Exynos USB phy driver with the generic phy
-   framework
-- fixed the example in the documentation
-6) phy: Add support for S5PV210 to the Exynos USB PHY driver
-- include files cleanup
-- use BIT(x) macro instead of (1 << x)
-7) phy: Add Exynos 5250 support to the Exynos USB 2.0 PHY driver
-- include files cleanup
-- use BIT(x) macro instead of (1 << x)
-8) dts: Add usb2phy to Exynos 4
-- no changes
-9) dts: Add usb2phy to Exynos 5250
-- no changes
-
-----------------
-Changes from v3:
-- using PMU and system registers indirectly via syscon
-- change labelling
-- change Kconfig name
-- fixed typos/stray whitespace
-- move of_phy_provider_register() to the end of probe
-- add a regular error return code to the rate_to_clk functions
-- cleanup code and remove unused code
-- change struct names to avoid collisions
-- add mechanism to support multiple phys by the ehci driver
-
-----------------
-Changes from v2:
-- rebase all patches to the usb-next branch
-- fixes in the documentation file
-  - remove wrong entries in the phy node (ranges, and #address- & #size-cells)
-  - add clocks and clock-names as required properites
-  - rephrase a few sentences
-- fixes in the ehci-exynos.c file
-  - move phy_name variable next to phy in exynos_ehci_hcd
-  - remove otg from exynos_ehci_hcd as it was no longer used
-  - move devm_phy_get after the Exynos5440 skip_phy check
-- fixes in the s3c-hsotg.c file
-  - cosmetic fixes (remove empty line that was wrongfully added)
-- fixes in the main driver
-  - remove cpu_type in favour for a boolean flag matched with the compatible
-    value
-  - rename files, structures, variables and Kconfig entires - change from simple
-    "uphy" to "usb2_phy"
-  - fix multiline comments style
-  - simplify #ifdefs in of_device_id
-  - fix Kconfig description
-  - change dev_info to dev_dbg where reasonable
-  - cosmetic changes (remove wrongful blank lines)
-  - remove unnecessary reference counting
-
-----------------
-Changes from v1:
-- the changes include minor fixes of the hardware initialization of the PHY
-  module
-- some other minor fixes were introduced
-
-----------------------
-Original cover letter:
-
-Hi,
-
-This patch adds a new drive for USB PHYs for Samsung SoCs. The driver is
-using the Generic PHY Framework created by Kishon Vijay Abrahan I. It
-can be found here https://lkml.org/lkml/2013/8/21/29. This patch adds
-support to Exynos4 family of SoCs. Support for Exynos3 and Exynos5 is
-planned to be added in the near future.
-
-I welcome your comments.
-
-----------------------
-
-Kamil Debski (4):
-  phy: core: Add an exported of_phy_get function
-  phy: core: Add devm_of_phy_get to phy-core
-  phy: Add new Exynos USB 2.0 PHY driver
-  phy: Add Exynos 5250 support to the Exynos USB 2.0 PHY driver
-
- .../devicetree/bindings/phy/samsung-phy.txt        |   54 +++
- Documentation/phy/samsung-usb2.txt                 |  134 +++++++
- drivers/phy/Kconfig                                |   40 ++
- drivers/phy/Makefile                               |    4 +
- drivers/phy/phy-core.c                             |   76 +++-
- drivers/phy/phy-exynos4210-usb2.c                  |  262 +++++++++++++
- drivers/phy/phy-exynos4x12-usb2.c                  |  329 ++++++++++++++++
- drivers/phy/phy-exynos5250-usb2.c                  |  405 ++++++++++++++++++++
- drivers/phy/phy-samsung-usb2.c                     |  229 +++++++++++
- drivers/phy/phy-samsung-usb2.h                     |   68 ++++
- include/linux/phy/phy.h                            |   14 +
- 11 files changed, 1606 insertions(+), 9 deletions(-)
- create mode 100644 Documentation/phy/samsung-usb2.txt
- create mode 100644 drivers/phy/phy-exynos4210-usb2.c
- create mode 100644 drivers/phy/phy-exynos4x12-usb2.c
- create mode 100644 drivers/phy/phy-exynos5250-usb2.c
- create mode 100644 drivers/phy/phy-samsung-usb2.c
- create mode 100644 drivers/phy/phy-samsung-usb2.h
-
+diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
+index 7c1b0e1..623b71c 100644
+--- a/drivers/phy/phy-core.c
++++ b/drivers/phy/phy-core.c
+@@ -526,6 +526,37 @@ struct phy *devm_phy_optional_get(struct device *dev, const char *string)
+ EXPORT_SYMBOL_GPL(devm_phy_optional_get);
+ 
+ /**
++ * devm_of_phy_get() - lookup and obtain a reference to a phy.
++ * @dev: device that requests this phy
++ * @np: node containing the phy
++ * @con_id: name of the phy from device's point of view
++ *
++ * Gets the phy using of_phy_get(), and associates a device with it using
++ * devres. On driver detach, release function is invoked on the devres data,
++ * then, devres data is freed.
++ */
++struct phy *devm_of_phy_get(struct device *dev, struct device_node *np,
++			    const char *con_id)
++{
++	struct phy **ptr, *phy;
++
++	ptr = devres_alloc(devm_phy_release, sizeof(*ptr), GFP_KERNEL);
++	if (!ptr)
++		return ERR_PTR(-ENOMEM);
++
++	phy = of_phy_get(np, con_id);
++	if (!IS_ERR(phy)) {
++		*ptr = phy;
++		devres_add(dev, ptr);
++	} else {
++		devres_free(ptr);
++	}
++
++	return phy;
++}
++EXPORT_SYMBOL_GPL(devm_of_phy_get);
++
++/**
+  * phy_create() - create a new phy
+  * @dev: device that is creating the new phy
+  * @ops: function pointers for performing phy operations
+diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
+index 2fe3194..bcbf96c 100644
+--- a/include/linux/phy/phy.h
++++ b/include/linux/phy/phy.h
+@@ -149,6 +149,8 @@ struct phy *phy_get(struct device *dev, const char *string);
+ struct phy *phy_optional_get(struct device *dev, const char *string);
+ struct phy *devm_phy_get(struct device *dev, const char *string);
+ struct phy *devm_phy_optional_get(struct device *dev, const char *string);
++struct phy *devm_of_phy_get(struct device *dev, struct device_node *np,
++			    const char *con_id);
+ void phy_put(struct phy *phy);
+ void devm_phy_put(struct device *dev, struct phy *phy);
+ struct phy *of_phy_get(struct device_node *np, const char *con_id);
+@@ -252,6 +254,12 @@ static inline struct phy *devm_phy_optional_get(struct device *dev,
+ 	return ERR_PTR(-ENOSYS);
+ }
+ 
++struct phy *devm_of_phy_get(struct device *dev, struct device_node *np,
++			    const char *con_id)
++{
++	return ERR_PTR(-ENOSYS);
++}
++
+ static inline void phy_put(struct phy *phy)
+ {
+ }
 -- 
 1.7.9.5
 
