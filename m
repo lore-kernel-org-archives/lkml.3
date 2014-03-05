@@ -1,58 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756825AbaCECtn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 21:49:43 -0500
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:57551 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755366AbaCECtl (ORCPT
+	id S1756961AbaCECt6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 21:49:58 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:58118 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754190AbaCECt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 21:49:41 -0500
+	Tue, 4 Mar 2014 21:49:56 -0500
+X-Sasl-enc: svdU+Ynsz/OOUxL2PKA8kD6lLlmH6bOQ6f+nHTG8hblh 1393987795
+Date: Tue, 4 Mar 2014 18:50:16 -0800
+From: Greg KH <greg@kroah.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Sasha Levin <sasha.levin@oracle.com>
+Subject: Re: [PATCH driver-core-next] kernfs: cache atomic_write_len in
+ kernfs_open_file
+Message-ID: <20140305025016.GB18412@kroah.com>
+References: <53113485.2090407@oracle.com>
+ <20140303223933.GC26523@mtj.dyndns.org>
+ <531505E4.8020802@oracle.com>
+ <20140303224609.GF26523@mtj.dyndns.org>
+ <20140304203846.GB2204@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <1393257611-18031-2-git-send-email-mika.westerberg@linux.intel.com>
-References: <1393257611-18031-1-git-send-email-mika.westerberg@linux.intel.com>
-	<1393257611-18031-2-git-send-email-mika.westerberg@linux.intel.com>
-Date: Wed, 5 Mar 2014 10:49:41 +0800
-Message-ID: <CACRpkdZSdb_xn=swV3owEr0YwCiYVXp-90iyc=9yi-M_P=+L+Q@mail.gmail.com>
-Subject: Re: [PATCH 1/6] gpiolib: Allow GPIO chips to request their own GPIOs
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Lan Tianyu <tianyu.lan@intel.com>,
-        Lv Zheng <lv.zheng@intel.com>, Alan Cox <alan.cox@intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140304203846.GB2204@htj.dyndns.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 12:00 AM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
+On Tue, Mar 04, 2014 at 03:38:46PM -0500, Tejun Heo wrote:
+> While implementing atomic_write_len, 4d3773c4bb41 ("kernfs: implement
+> kernfs_ops->atomic_write_len") moved data copy from userland inside
+> kernfs_get_active() and kernfs_open_file->mutex so that
+> kernfs_ops->atomic_write_len can be accessed before copying buffer
+> from userland; unfortunately, this could lead to locking order
+> inversion involving mmap_sem if copy_from_user() takes a page fault.
+> 
+>   ======================================================
+>   [ INFO: possible circular locking dependency detected ]
+>   3.14.0-rc4-next-20140228-sasha-00011-g4077c67-dirty #26 Tainted: G        W
+>   -------------------------------------------------------
+>   trinity-c236/10658 is trying to acquire lock:
+>    (&of->mutex#2){+.+.+.}, at: [<fs/kernfs/file.c:487>] kernfs_fop_mmap+0x54/0x120
+> 
+>   but task is already holding lock:
+>    (&mm->mmap_sem){++++++}, at: [<mm/util.c:397>] vm_mmap_pgoff+0x6e/0xe0
+> 
+>   which lock already depends on the new lock.
+> 
+> 
+>   the existing dependency chain (in reverse order) is:
+> 
+>  -> #1 (&mm->mmap_sem){++++++}:
+> 	 [<kernel/locking/lockdep.c:1945 kernel/locking/lockdep.c:2131>] validate_chain+0x6c5/0x7b0
+> 	 [<kernel/locking/lockdep.c:3182>] __lock_acquire+0x4cd/0x5a0
+> 	 [<arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602>] lock_acquire+0x182/0x1d0
+> 	 [<mm/memory.c:4188>] might_fault+0x7e/0xb0
+> 	 [<arch/x86/include/asm/uaccess.h:713 fs/kernfs/file.c:291>] kernfs_fop_write+0xd8/0x190
+> 	 [<fs/read_write.c:473>] vfs_write+0xe3/0x1d0
+> 	 [<fs/read_write.c:523 fs/read_write.c:515>] SyS_write+0x5d/0xa0
+> 	 [<arch/x86/kernel/entry_64.S:749>] tracesys+0xdd/0xe2
+> 
+>  -> #0 (&of->mutex#2){+.+.+.}:
+> 	 [<kernel/locking/lockdep.c:1840>] check_prev_add+0x13f/0x560
+> 	 [<kernel/locking/lockdep.c:1945 kernel/locking/lockdep.c:2131>] validate_chain+0x6c5/0x7b0
+> 	 [<kernel/locking/lockdep.c:3182>] __lock_acquire+0x4cd/0x5a0
+> 	 [<arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602>] lock_acquire+0x182/0x1d0
+> 	 [<kernel/locking/mutex.c:470 kernel/locking/mutex.c:571>] mutex_lock_nested+0x6a/0x510
+> 	 [<fs/kernfs/file.c:487>] kernfs_fop_mmap+0x54/0x120
+> 	 [<mm/mmap.c:1573>] mmap_region+0x310/0x5c0
+> 	 [<mm/mmap.c:1365>] do_mmap_pgoff+0x385/0x430
+> 	 [<mm/util.c:399>] vm_mmap_pgoff+0x8f/0xe0
+> 	 [<mm/mmap.c:1416 mm/mmap.c:1374>] SyS_mmap_pgoff+0x1b0/0x210
+> 	 [<arch/x86/kernel/sys_x86_64.c:72>] SyS_mmap+0x1d/0x20
+> 	 [<arch/x86/kernel/entry_64.S:749>] tracesys+0xdd/0xe2
+> 
+>   other info that might help us debug this:
+> 
+>    Possible unsafe locking scenario:
+> 
+> 	 CPU0                    CPU1
+> 	 ----                    ----
+>     lock(&mm->mmap_sem);
+> 				 lock(&of->mutex#2);
+> 				 lock(&mm->mmap_sem);
+>     lock(&of->mutex#2);
+> 
+>    *** DEADLOCK ***
+> 
+>   1 lock held by trinity-c236/10658:
+>    #0:  (&mm->mmap_sem){++++++}, at: [<mm/util.c:397>] vm_mmap_pgoff+0x6e/0xe0
+> 
+>   stack backtrace:
+>   CPU: 2 PID: 10658 Comm: trinity-c236 Tainted: G        W 3.14.0-rc4-next-20140228-sasha-00011-g4077c67-dirty #26
+>    0000000000000000 ffff88011911fa48 ffffffff8438e945 0000000000000000
+>    0000000000000000 ffff88011911fa98 ffffffff811a0109 ffff88011911fab8
+>    ffff88011911fab8 ffff88011911fa98 ffff880119128cc0 ffff880119128cf8
+>   Call Trace:
+>    [<lib/dump_stack.c:52>] dump_stack+0x52/0x7f
+>    [<kernel/locking/lockdep.c:1213>] print_circular_bug+0x129/0x160
+>    [<kernel/locking/lockdep.c:1840>] check_prev_add+0x13f/0x560
+>    [<include/linux/spinlock.h:343 mm/slub.c:1933>] ? deactivate_slab+0x511/0x550
+>    [<kernel/locking/lockdep.c:1945 kernel/locking/lockdep.c:2131>] validate_chain+0x6c5/0x7b0
+>    [<kernel/locking/lockdep.c:3182>] __lock_acquire+0x4cd/0x5a0
+>    [<mm/mmap.c:1552>] ? mmap_region+0x24a/0x5c0
+>    [<arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602>] lock_acquire+0x182/0x1d0
+>    [<fs/kernfs/file.c:487>] ? kernfs_fop_mmap+0x54/0x120
+>    [<kernel/locking/mutex.c:470 kernel/locking/mutex.c:571>] mutex_lock_nested+0x6a/0x510
+>    [<fs/kernfs/file.c:487>] ? kernfs_fop_mmap+0x54/0x120
+>    [<kernel/sched/core.c:2477>] ? get_parent_ip+0x11/0x50
+>    [<fs/kernfs/file.c:487>] ? kernfs_fop_mmap+0x54/0x120
+>    [<fs/kernfs/file.c:487>] kernfs_fop_mmap+0x54/0x120
+>    [<mm/mmap.c:1573>] mmap_region+0x310/0x5c0
+>    [<mm/mmap.c:1365>] do_mmap_pgoff+0x385/0x430
+>    [<mm/util.c:397>] ? vm_mmap_pgoff+0x6e/0xe0
+>    [<mm/util.c:399>] vm_mmap_pgoff+0x8f/0xe0
+>    [<kernel/rcu/update.c:97>] ? __rcu_read_unlock+0x44/0xb0
+>    [<fs/file.c:641>] ? dup_fd+0x3c0/0x3c0
+>    [<mm/mmap.c:1416 mm/mmap.c:1374>] SyS_mmap_pgoff+0x1b0/0x210
+>    [<arch/x86/kernel/sys_x86_64.c:72>] SyS_mmap+0x1d/0x20
+>    [<arch/x86/kernel/entry_64.S:749>] tracesys+0xdd/0xe2
+> 
+> Fix it by caching atomic_write_len in kernfs_open_file during open so
+> that it can be determined without accessing kernfs_ops in
+> kernfs_fop_write().  This restores the structure of kernfs_fop_write()
+> before 4d3773c4bb41 with updated @len determination logic.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-by: Sasha Levin <sasha.levin@oracle.com>
+> References: http://lkml.kernel.org/g/53113485.2090407@oracle.com
+> ---
+>  fs/kernfs/file.c       |   63 ++++++++++++++++++++++++-------------------------
+>  include/linux/kernfs.h |    1 
+>  2 files changed, 33 insertions(+), 31 deletions(-)
 
-> Sometimes it is useful to allow GPIO chips themselves to request GPIOs they
-> own through gpiolib API. One usecase is ACPI ASL code that should be able
-> to toggle GPIOs through GPIO operation regions.
->
-> We can't really use gpio_request() and its counterparts because it will pin
-> the module to the kernel forever (as it calls module_get()). Instead we
-> provide a gpiolib internal functions gpiochip_request/free_own_desc() that
-> work the same as gpio_request() but don't manipulate module refrence count.
->
-> Since it's the GPIO chip driver who requests the GPIOs in the first place
-> we can be sure that it cannot be unloaded without the driver knowing about
-> that. Furthermore we only limit this functionality to be available only
-> inside gpiolib.
->
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+This is for 3.15, right?
 
-I fully trust you in doing the ACPI stuff in patches 2-n but on this patch
-in particular I want Alexandre's review tag as well, as he's working
-actively with the descriptor API and I don't want to add too many quirks
-without his consent.
+thanks,
 
-So Alexandre, what do you say about this?
-
-Yours,
-Linus Walleij
+greg k-h
