@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932212AbaCEGxy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 01:53:54 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:58009 "EHLO
+	id S1755167AbaCEGuH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 01:50:07 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:58001 "EHLO
 	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755012AbaCEGuI (ORCPT
+	with ESMTP id S1754470AbaCEGuB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 01:50:08 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s256o4ex009511, This message is accepted by code: ctloc85258
+	Wed, 5 Mar 2014 01:50:01 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s256nwH7009176, This message is accepted by code: ctloc85258
 From: Hayes Wang <hayeswang@realtek.com>
 To: <netdev@vger.kernel.org>
 CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next v2 06/13] r8152: up the priority of the transmission
-Date: Wed, 5 Mar 2014 14:49:21 +0800
-Message-ID: <1394002168-3193-7-git-send-email-hayeswang@realtek.com>
+Subject: [PATCH net-next v2 01/13] r8152: deal with the empty line and space
+Date: Wed, 5 Mar 2014 14:49:16 +0800
+Message-ID: <1394002168-3193-2-git-send-email-hayeswang@realtek.com>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1394002168-3193-1-git-send-email-hayeswang@realtek.com>
 References: <1393934464-23675-1-git-send-email-hayeswang@realtek.com>
@@ -26,140 +26,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-move the tx_bottom() from delayed_work to tasklet. It makes the rx
-and tx balanced. If the device is in runtime suspend when getting
-the tx packet, wakeup the device before trasmitting.
+Add or remove some empty lines. Replace the spaces with the tabs.
 
 Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 ---
- drivers/net/usb/r8152.c | 45 +++++++++++++++++++++++++++------------------
- 1 file changed, 27 insertions(+), 18 deletions(-)
+ drivers/net/usb/r8152.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index 00b3192..f1eaa18 100644
+index 0654bd3..c8bad62 100644
 --- a/drivers/net/usb/r8152.c
 +++ b/drivers/net/usb/r8152.c
-@@ -447,6 +447,7 @@ enum rtl8152_flags {
- 	RTL8152_LINK_CHG,
- 	SELECTIVE_SUSPEND,
- 	PHY_RESET,
-+	SCHEDULE_TASKLET,
- };
+@@ -593,6 +593,7 @@ int set_registers(struct r8152 *tp, u16 value, u16 index, u16 size, void *data)
+ 			       value, index, tmp, size, 500);
  
- /* Define these values to match your device */
-@@ -1071,7 +1072,7 @@ static void write_bulk_callback(struct urb *urb)
- 		return;
- 
- 	if (!skb_queue_empty(&tp->tx_queue))
--		schedule_delayed_work(&tp->schedule, 0);
-+		tasklet_schedule(&tp->tl);
- }
- 
- static void intr_callback(struct urb *urb)
-@@ -1335,9 +1336,9 @@ static int r8152_tx_agg_fill(struct r8152 *tp, struct tx_agg *agg)
- 	u8 *tx_data;
- 
- 	__skb_queue_head_init(&skb_head);
--	spin_lock_bh(&tx_queue->lock);
-+	spin_lock(&tx_queue->lock);
- 	skb_queue_splice_init(tx_queue, &skb_head);
--	spin_unlock_bh(&tx_queue->lock);
-+	spin_unlock(&tx_queue->lock);
- 
- 	tx_data = agg->head;
- 	agg->skb_num = agg->skb_len = 0;
-@@ -1374,20 +1375,20 @@ static int r8152_tx_agg_fill(struct r8152 *tp, struct tx_agg *agg)
- 	}
- 
- 	if (!skb_queue_empty(&skb_head)) {
--		spin_lock_bh(&tx_queue->lock);
-+		spin_lock(&tx_queue->lock);
- 		skb_queue_splice(&skb_head, tx_queue);
--		spin_unlock_bh(&tx_queue->lock);
-+		spin_unlock(&tx_queue->lock);
- 	}
- 
--	netif_tx_lock_bh(tp->netdev);
-+	netif_tx_lock(tp->netdev);
- 
- 	if (netif_queue_stopped(tp->netdev) &&
- 	    skb_queue_len(&tp->tx_queue) < tp->tx_qlen)
- 		netif_wake_queue(tp->netdev);
- 
--	netif_tx_unlock_bh(tp->netdev);
-+	netif_tx_unlock(tp->netdev);
- 
--	ret = usb_autopm_get_interface(tp->intf);
-+	ret = usb_autopm_get_interface_async(tp->intf);
- 	if (ret < 0)
- 		goto out_tx_fill;
- 
-@@ -1395,9 +1396,9 @@ static int r8152_tx_agg_fill(struct r8152 *tp, struct tx_agg *agg)
- 			  agg->head, (int)(tx_data - (u8 *)agg->head),
- 			  (usb_complete_t)write_bulk_callback, agg);
- 
--	ret = usb_submit_urb(agg->urb, GFP_KERNEL);
-+	ret = usb_submit_urb(agg->urb, GFP_ATOMIC);
- 	if (ret < 0)
--		usb_autopm_put_interface(tp->intf);
-+		usb_autopm_put_interface_async(tp->intf);
- 
- out_tx_fill:
+ 	kfree(tmp);
++
  	return ret;
-@@ -1535,6 +1536,7 @@ static void bottom_half(unsigned long data)
- 		return;
- 
- 	rx_bottom(tp);
-+	tx_bottom(tp);
  }
  
- static
-@@ -1630,7 +1632,7 @@ static void _rtl8152_set_rx_mode(struct net_device *netdev)
- }
- 
- static netdev_tx_t rtl8152_start_xmit(struct sk_buff *skb,
--					    struct net_device *netdev)
-+					struct net_device *netdev)
- {
- 	struct r8152 *tp = netdev_priv(netdev);
- 
-@@ -1638,13 +1640,17 @@ static netdev_tx_t rtl8152_start_xmit(struct sk_buff *skb,
- 
- 	skb_queue_tail(&tp->tx_queue, skb);
- 
--	if (list_empty(&tp->tx_free) &&
--	    skb_queue_len(&tp->tx_queue) > tp->tx_qlen)
-+	if (!list_empty(&tp->tx_free)) {
-+		if (test_bit(SELECTIVE_SUSPEND, &tp->flags)) {
-+			set_bit(SCHEDULE_TASKLET, &tp->flags);
-+			schedule_delayed_work(&tp->schedule, 0);
-+		} else {
-+			usb_mark_last_busy(tp->udev);
-+			tasklet_schedule(&tp->tl);
-+		}
-+	} else if (skb_queue_len(&tp->tx_queue) > tp->tx_qlen)
- 		netif_stop_queue(netdev);
- 
--	if (!list_empty(&tp->tx_free))
--		schedule_delayed_work(&tp->schedule, 0);
+@@ -1514,6 +1515,7 @@ static void tx_bottom(struct r8152 *tp)
+ 				netif_warn(tp, tx_err, netdev,
+ 					   "failed tx_urb %d\n", res);
+ 				stats->tx_dropped += agg->skb_num;
++
+ 				spin_lock_irqsave(&tp->tx_lock, flags);
+ 				list_add_tail(&agg->list, &tp->tx_free);
+ 				spin_unlock_irqrestore(&tp->tx_lock, flags);
+@@ -1833,7 +1835,6 @@ static void r8152_power_cut_en(struct r8152 *tp, bool enable)
+ 	ocp_data = ocp_read_word(tp, MCU_TYPE_USB, USB_PM_CTRL_STATUS);
+ 	ocp_data &= ~RESUME_INDICATE;
+ 	ocp_write_word(tp, MCU_TYPE_USB, USB_PM_CTRL_STATUS, ocp_data);
 -
- 	return NETDEV_TX_OK;
  }
  
-@@ -2523,8 +2529,11 @@ static void rtl_work_func_t(struct work_struct *work)
- 	if (test_bit(RTL8152_SET_RX_MODE, &tp->flags))
- 		_rtl8152_set_rx_mode(tp->netdev);
+ #define WAKE_ANY (WAKE_PHY | WAKE_MAGIC | WAKE_UCAST | WAKE_BCAST | WAKE_MCAST)
+@@ -2013,8 +2014,8 @@ static void r8152b_hw_phy_cfg(struct r8152 *tp)
  
--	if (tp->speed & LINK_STATUS)
--		tx_bottom(tp);
-+	if (test_bit(SCHEDULE_TASKLET, &tp->flags) &&
-+	    (tp->speed & LINK_STATUS)) {
-+		clear_bit(SCHEDULE_TASKLET, &tp->flags);
-+		tasklet_schedule(&tp->tl);
-+	}
+ static void r8152b_exit_oob(struct r8152 *tp)
+ {
+-	u32	ocp_data;
+-	int	i;
++	u32 ocp_data;
++	int i;
  
- 	if (test_bit(PHY_RESET, &tp->flags))
- 		rtl_phy_reset(tp);
+ 	ocp_data = ocp_read_dword(tp, MCU_TYPE_PLA, PLA_RCR);
+ 	ocp_data &= ~RCR_ACPT_ALL;
+@@ -2573,6 +2574,7 @@ static int rtl8152_open(struct net_device *netdev)
+ 	netif_carrier_off(netdev);
+ 	netif_start_queue(netdev);
+ 	set_bit(WORK_ENABLE, &tp->flags);
++
+ 	res = usb_submit_urb(tp->intr_urb, GFP_KERNEL);
+ 	if (res) {
+ 		if (res == -ENODEV)
+@@ -3101,6 +3103,7 @@ static int rtl8152_probe(struct usb_interface *intf,
+ 
+ 	netdev->features |= NETIF_F_IP_CSUM;
+ 	netdev->hw_features = NETIF_F_IP_CSUM;
++
+ 	SET_ETHTOOL_OPS(netdev, &ops);
+ 
+ 	tp->mii.dev = netdev;
 -- 
 1.8.4.2
 
