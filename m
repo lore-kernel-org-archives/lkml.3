@@ -1,140 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753703AbaCEJd1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 04:33:27 -0500
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:64968 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751622AbaCEJdX (ORCPT
+	id S1754001AbaCEJhL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 04:37:11 -0500
+Received: from ZIVM-WWU3-1.UNI-MUENSTER.DE ([128.176.192.17]:6175 "EHLO
+	zivm-wwu3.uni-muenster.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752625AbaCEJhH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 04:33:23 -0500
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Intel Graphics Development <intel-gfx@lists.freedesktop.org>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Jean Delvare <khali@linux-fr.org>,
+	Wed, 5 Mar 2014 04:37:07 -0500
+X-Greylist: delayed 595 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Mar 2014 04:37:06 EST
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgEFADvtFlOAsLwY/2dsb2JhbABagwbCHYEXFnSCJQEBAQMBJxM6BQULCxUDCRUQDwFHBhOHcQjNaxeNbWQHhDgElFKKMItmgy6BZw
+X-IPAS-Result: AgEFADvtFlOAsLwY/2dsb2JhbABagwbCHYEXFnSCJQEBAQMBJxM6BQULCxUDCRUQDwFHBhOHcQjNaxeNbWQHhDgElFKKMItmgy6BZw
+X-IronPort-AV: E=Sophos;i="4.97,591,1389740400"; 
+   d="scan'208";a="29345578"
+From: Markus Blank-Burian <burian@muenster.de>
+To: Hugh Dickins <hughd@google.com>
+Cc: Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Filipe Brandenburger <filbranden@google.com>,
+        Li Zefan <lizefan@huawei.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>, Jon Mason <jon.mason@intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] [RFC] Taint the kernel for unsafe module options
-Date: Wed,  5 Mar 2014 10:33:14 +0100
-Message-Id: <1394011994-30604-1-git-send-email-daniel.vetter@ffwll.ch>
-X-Mailer: git-send-email 1.8.5.2
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>,
+        Shawn Bohrer <shawn.bohrer@gmail.com>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 1/2] memcg: reparent charges of children before processing parent
+Date: Wed, 05 Mar 2014 10:27:08 +0100
+Message-ID: <1645786.OfqIDFbIrl@akheu22.uni-muenster.de>
+User-Agent: KMail/4.12.2 (Linux/3.13.4-gentoo; KDE/4.12.2; x86_64; ; )
+In-Reply-To: <alpine.LSU.2.11.1402121500070.5029@eggly.anvils>
+References: <alpine.LSU.2.11.1402121500070.5029@eggly.anvils>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Users just love to set random piles of options since surely enabling
-all the experimental stuff helps. Later on we get bug reports because
-it all fell apart.
+I wanted to give you small feedback, that this patch successfully fixes the 
+problem with reparent_charges on our cluster. Thank you very much for finding 
+and fixing this one!
 
-Even more fun when it's labelled a regression when some change only
-just made the feature possible (e.g. stolen memory fixes suddenly
-making fbc possible).
 
-Make it clear that users are playing with fire here. In drm/i915 all
-these options follow the same pattern of using -1 as the per-machine
-default, and any other value being used for force the parameter.
-
-Adding a pile of cc's to solicit input and figure out whether this
-would be generally useful - this quick rfc is just for drm/i915.
-
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Jean Delvare <khali@linux-fr.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Jon Mason <jon.mason@intel.com>
-Cc: linux-kernel@vger.kernel.org
-References: https://bugzilla.kernel.org/show_bug.cgi?id=71391
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
----
- drivers/gpu/drm/i915/i915_params.c | 49 ++++++++++++++++++++++++++++++++++----
- 1 file changed, 44 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/gpu/drm/i915/i915_params.c b/drivers/gpu/drm/i915/i915_params.c
-index 3b482585c5ae..9cb89adeabcd 100644
---- a/drivers/gpu/drm/i915/i915_params.c
-+++ b/drivers/gpu/drm/i915/i915_params.c
-@@ -50,7 +50,46 @@ struct i915_params i915 __read_mostly = {
- 	.disable_display = 0,
- };
- 
--module_param_named(modeset, i915.modeset, int, 0400);
-+int param_set_unsafe_int(const char *val, const struct kernel_param *kp)
-+{
-+	long l;
-+	int ret;
-+
-+	ret = kstrtol(val, 0, &l);
-+	if (ret < 0 || ((int)l != l))
-+		return ret < 0 ? ret : -EINVAL;
-+
-+	/* Taint if userspace overrides the kernel defaults. */
-+	if (l != -1) {
-+		printk(KERN_WARNING "Setting dangerous option %s to non-default value!\n",
-+		       kp->name);
-+		add_taint(TAINT_USER, LOCKDEP_STILL_OK);
-+	}
-+
-+	*((int *)kp->arg) = l;
-+	return 0;
-+}
-+
-+struct kernel_param_ops param_ops_unsafe_int = {
-+	.set = param_set_unsafe_int,
-+	.get = param_get_int,
-+};
-+/**
-+ * module_param_unsafe_int_named - integer module param which taints the kernel
-+ * @name: a valid C identifier which is the parameter name.
-+ * @value: the actual lvalue to alter.
-+ * @perm: visibility in sysfs.
-+ *
-+ * This is a special integer module parameter. The default is assumed to be -1,
-+ * if any other values are set this will taint the kernel. Useful for debug and
-+ * other dangerous options which users really shouldn't set normally.
-+ */
-+#define module_param_unsafe_int_named(name, value, perm)		\
-+	param_check_int(name, &(value));				\
-+	module_param_cb(name, &param_ops_unsafe_int, &value, perm);	\
-+	__MODULE_PARM_TYPE(name, "int")
-+
-+module_param_unsafe_int_named(modeset, i915.modeset, 0400);
- MODULE_PARM_DESC(modeset,
- 	"Use kernel modesetting [KMS] (0=DRM_I915_KMS from .config, "
- 	"1=on, -1=force vga console preference [default])");
-@@ -64,12 +103,12 @@ module_param_named(powersave, i915.powersave, int, 0600);
- MODULE_PARM_DESC(powersave,
- 	"Enable powersavings, fbc, downclocking, etc. (default: true)");
- 
--module_param_named(semaphores, i915.semaphores, int, 0400);
-+module_param_unsafe_int_named(semaphores, i915.semaphores, 0400);
- MODULE_PARM_DESC(semaphores,
- 	"Use semaphores for inter-ring sync "
- 	"(default: -1 (use per-chip defaults))");
- 
--module_param_named(enable_rc6, i915.enable_rc6, int, 0400);
-+module_param_unsafe_int_named(enable_rc6, i915.enable_rc6, 0400);
- MODULE_PARM_DESC(enable_rc6,
- 	"Enable power-saving render C-state 6. "
- 	"Different stages can be selected via bitmask values "
-@@ -77,7 +116,7 @@ MODULE_PARM_DESC(enable_rc6,
- 	"For example, 3 would enable rc6 and deep rc6, and 7 would enable everything. "
- 	"default: -1 (use per-chip default)");
- 
--module_param_named(enable_fbc, i915.enable_fbc, int, 0600);
-+module_param_unsafe_int_named(enable_fbc, i915.enable_fbc, 0600);
- MODULE_PARM_DESC(enable_fbc,
- 	"Enable frame buffer compression for power savings "
- 	"(default: -1 (use per-chip default))");
-@@ -111,7 +150,7 @@ MODULE_PARM_DESC(enable_hangcheck,
- 	"WARNING: Disabling this can cause system wide hangs. "
- 	"(default: true)");
- 
--module_param_named(enable_ppgtt, i915.enable_ppgtt, int, 0400);
-+module_param_unsafe_int_named(enable_ppgtt, i915.enable_ppgtt, 0400);
- MODULE_PARM_DESC(enable_ppgtt,
- 	"Override PPGTT usage. "
- 	"(-1=auto [default], 0=disabled, 1=aliasing, 2=full)");
--- 
-1.8.5.2
+On Wednesday 12 February 2014 15:03:31 Hugh Dickins wrote:
+> From: Filipe Brandenburger <filbranden@google.com>
+> 
+> Sometimes the cleanup after memcg hierarchy testing gets stuck in
+> mem_cgroup_reparent_charges(), unable to bring non-kmem usage down to 0.
+> 
+> There may turn out to be several causes, but a major cause is this: the
+> workitem to offline parent can get run before workitem to offline child;
+> parent's mem_cgroup_reparent_charges() circles around waiting for the
+> child's pages to be reparented to its lrus, but it's holding cgroup_mutex
+> which prevents the child from reaching its mem_cgroup_reparent_charges().
+> 
+> Further testing showed that an ordered workqueue for cgroup_destroy_wq
+> is not always good enough: percpu_ref_kill_and_confirm's call_rcu_sched
+> stage on the way can mess up the order before reaching the workqueue.
+> 
+> Instead, when offlining a memcg, call mem_cgroup_reparent_charges() on
+> all its children (and grandchildren, in the correct order) to have their
+> charges reparented first.
+> 
+> Fixes: e5fca243abae ("cgroup: use a dedicated workqueue for cgroup
+> destruction") Signed-off-by: Filipe Brandenburger <filbranden@google.com>
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+> Cc: stable@vger.kernel.org # v3.10+ (but will need extra care)
+> ---
+> Or, you may prefer my alternative cgroup.c approach in 2/2:
+> there's no need for both.  Please note that neither of these patches
+> attempts to handle the unlikely case of racy charges made to child
+> after its offline, but parent's offline coming before child's free:
+> mem_cgroup_css_free()'s backstop call to mem_cgroup_reparent_charges()
+> cannot help in that case, with or without these patches.  Fixing that
+> would have to be a separate effort - Michal's?
+> 
+>  mm/memcontrol.c |   10 +++++++++-
+>  1 file changed, 9 insertions(+), 1 deletion(-)
+> 
+> --- 3.14-rc2/mm/memcontrol.c	2014-02-02 18:49:07.897302115 -0800
+> +++ linux/mm/memcontrol.c	2014-02-11 17:48:07.604582963 -0800
+> @@ -6595,6 +6595,7 @@ static void mem_cgroup_css_offline(struc
+>  {
+>  	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
+>  	struct mem_cgroup_event *event, *tmp;
+> +	struct cgroup_subsys_state *iter;
+> 
+>  	/*
+>  	 * Unregister events and notify userspace.
+> @@ -6611,7 +6612,14 @@ static void mem_cgroup_css_offline(struc
+>  	kmem_cgroup_css_offline(memcg);
+> 
+>  	mem_cgroup_invalidate_reclaim_iterators(memcg);
+> -	mem_cgroup_reparent_charges(memcg);
+> +
+> +	/*
+> +	 * This requires that offlining is serialized.  Right now that is
+> +	 * guaranteed because css_killed_work_fn() holds the cgroup_mutex.
+> +	 */
+> +	css_for_each_descendant_post(iter, css)
+> +		mem_cgroup_reparent_charges(mem_cgroup_from_css(iter));
+> +
+>  	mem_cgroup_destroy_all_caches(memcg);
+>  	vmpressure_cleanup(&memcg->vmpressure);
+>  }
 
