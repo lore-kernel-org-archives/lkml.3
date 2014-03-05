@@ -1,69 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568AbaCEQRU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 11:17:20 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:42300 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752229AbaCEQRS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 11:17:18 -0500
-Date: Thu, 6 Mar 2014 00:16:11 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: tomi.valkeinen@ti.com
-Cc: plagnioj@jcrosoft.com, fengguang.wu@intel.com, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] video: fbdev: uvesafb: use CONFIG_X86_PAE surround _PAGE_NX
- check code
-Message-ID: <20140305161611.GA32461@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>, tomi.valkeinen@ti.com,
-	plagnioj@jcrosoft.com, fengguang.wu@intel.com,
-	linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1753053AbaCEQUH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 11:20:07 -0500
+Received: from mail1.bemta5.messagelabs.com ([195.245.231.141]:25926 "EHLO
+	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751967AbaCEQUF convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 11:20:05 -0500
+X-Env-Sender: stwiss.opensource@diasemi.com
+X-Msg-Ref: server-5.tower-180.messagelabs.com!1394036403!29273731!1
+X-Originating-IP: [82.210.246.133]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.16; banners=-,-,-
+X-VirusChecked: Checked
+From: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
+To: Alessandro Zummo <a.zummo@towertech.it>
+CC: David Dajun Chen <david.chen@diasemi.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        RTC linux <rtc-linux@googlegroups.com>
+Subject: RE: [RFC V1 2/2] rtc: da9063: RTC driver
+Thread-Topic: [RFC V1 2/2] rtc: da9063: RTC driver
+Thread-Index: AQHPOIlTzlEM1gazP0aPdymXTYluDprSqWeQ
+Date: Wed, 5 Mar 2014 16:20:01 +0000
+Message-ID: <6ED8E3B22081A4459DAC7699F3695FB7A0C6027B@NB-EX-MBX02.diasemi.com>
+References: <cover.1394022316.git.stwiss.opensource@diasemi.com>
+	<649fad1df15ee9f79655bc109282a21e9e9810cf.1394022316.git.stwiss.opensource@diasemi.com>
+ <20140305164102.1f8644e4@linux.lan.towertech.it>
+In-Reply-To: <20140305164102.1f8644e4@linux.lan.towertech.it>
+Accept-Language: en-GB, de-DE, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.1.50.144]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because _PAGE_NX check will always false when we don't define
-CONFIG_X86_PAE for CONFIG_X86_32, so use CONFIG_X86_PAE surround
-the check code.
 
-Although I believe "smart" compile will optimize out and generate
-the same code, but use CONFIG_X86_PAE surround check code will
-clear it and prohibit warning from static source code analyze tool.
+On: 05 March 2014 15:41 Alessandro Zummo [mailto:a.zummo@towertech.it] wrote
 
-[ This patch fix warning report by fengguang.wu@intel.com
-  "drivers/video/fbdev/uvesafb.c:816 uvesafb_vbe_init()
-   warn: bitwise AND condition is false here" ]
+>-----Original Message-----
+>From: Alessandro Zummo [mailto:a.zummo@towertech.it]
+>Sent: 05 March 2014 15:41
+>
+>On Wed, 5 Mar 2014 12:25:16 +0000
+>"Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com> wrote:
+>
+>> +	if (IS_ERR(rtc->rtc_dev)) {
+>> +		ret = PTR_ERR(rtc->rtc_dev);
+>> +		goto err;
+>> +	}
+>
+> please,
+>
+>  return PTR_ERR(....)
+>
 
-Signed-off-by: Wang YanQing <udknight@gmail.com>
----
- drivers/video/fbdev/uvesafb.c | 4 ++++
- 1 file changed, 4 insertions(+)
+Yes, thanks, I'll make that change
 
-diff --git a/drivers/video/fbdev/uvesafb.c b/drivers/video/fbdev/uvesafb.c
-index 509d452..102858c 100644
---- a/drivers/video/fbdev/uvesafb.c
-+++ b/drivers/video/fbdev/uvesafb.c
-@@ -813,6 +813,7 @@ static int uvesafb_vbe_init(struct fb_info *info)
- 	par->ypan = ypan;
- 
- 	if (par->pmi_setpal || par->ypan) {
-+#ifdef CONFIG_X86_PAE
- 		if (__supported_pte_mask & _PAGE_NX) {
- 			par->pmi_setpal = par->ypan = 0;
- 			printk(KERN_WARNING "uvesafb: NX protection is active, "
-@@ -820,6 +821,9 @@ static int uvesafb_vbe_init(struct fb_info *info)
- 		} else {
- 			uvesafb_vbe_getpmi(task, par);
- 		}
-+#else
-+		uvesafb_vbe_getpmi(task, par);
-+#endif
- 	}
- #else
- 	/* The protected mode interface is not available on non-x86. */
--- 
-1.8.3.4.8.g69490f3.dirty
+>> +
+>> +	irq_alarm = platform_get_irq_byname(pdev, "ALARM");
+>> +	ret = devm_request_threaded_irq(&pdev->dev, irq_alarm, NULL,
+>> +					da9063_alarm_event,
+>> +					IRQF_TRIGGER_LOW | IRQF_ONESHOT,
+>> +					"ALARM", rtc);
+>> +	if (ret)
+>> +		dev_err(&pdev->dev, "Failed to request ALARM IRQ %d: %d\n",
+>> +			irq_alarm, ret);
+>> +
+>> +	da9063_data_to_tm(data, &rtc->alarm_time);
+>> +	rtc->rtc_sync = false;
+>> +err:
+>> +	return ret;
+>> +}
+>
+>   if the interrupt is mandatory you should request it before registering
+>  the rtc device. if it isn't, please return 0.
+
+I will make that change also and resubmit later.
+Thank you for your quick response.
+
+Regards
+Steve
