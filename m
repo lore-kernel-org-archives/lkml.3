@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758228AbaCEPKN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 10:10:13 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41062 "EHLO
+	id S1758782AbaCEPKr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:10:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41055 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757243AbaCEO0I (ORCPT
+	with ESMTP id S1754165AbaCEO0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:26:08 -0500
+	Wed, 5 Mar 2014 09:26:07 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: John Ogness <john.ogness@linutronix.de>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Knut Petersen <Knut_Petersen@t-online.de>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Weng Meiling <wengmeiling.weng@huawei.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 073/131] tcp: tsq: fix nonagle handling
-Date: Wed,  5 Mar 2014 14:23:17 +0000
-Message-Id: <1394029455-23128-74-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 066/131] perf: Enforce 1 as lower limit for perf_event_max_sample_rate
+Date: Wed,  5 Mar 2014 14:23:10 +0000
+Message-Id: <1394029455-23128-67-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -29,71 +29,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Ogness <john.ogness@linutronix.de>
+From: Knut Petersen <Knut_Petersen@t-online.de>
 
-commit bf06200e732de613a1277984bf34d1a21c2de03d upstream.
+commit 723478c8a471403c53cf144999701f6e0c4bbd11 upstream.
 
-Commit 46d3ceabd8d9 ("tcp: TCP Small Queues") introduced a possible
-regression for applications using TCP_NODELAY.
+/proc/sys/kernel/perf_event_max_sample_rate will accept
+negative values as well as 0.
 
-If TCP session is throttled because of tsq, we should consult
-tp->nonagle when TX completion is done and allow us to send additional
-segment, especially if this segment is not a full MSS.
-Otherwise this segment is sent after an RTO.
+Negative values are unreasonable, and 0 causes a
+divide by zero exception in perf_proc_update_handler.
 
-[edumazet] : Cooked the changelog, added another fix about testing
-sk_wmem_alloc twice because TX completion can happen right before
-setting TSQ_THROTTLED bit.
+This patch enforces a lower limit of 1.
 
-This problem is particularly visible with recent auto corking,
-but might also be triggered with low tcp_limit_output_bytes
-values or NIC drivers delaying TX completion by hundred of usec,
-and very low rtt.
-
-Thomas Glanzmann for example reported an iscsi regression, caused
-by tcp auto corking making this bug quite visible.
-
-Fixes: 46d3ceabd8d9 ("tcp: TCP Small Queues")
-Signed-off-by: John Ogness <john.ogness@linutronix.de>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Reported-by: Thomas Glanzmann <thomas@glanzmann.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Knut Petersen <Knut_Petersen@t-online.de>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/5242DB0C.4070005@t-online.de
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Weng Meiling <wengmeiling.weng@huawei.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv4/tcp_output.c | 13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ kernel/events/core.c | 2 +-
+ kernel/sysctl.c      | 1 +
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index d26060b..20d01ff 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -691,7 +691,8 @@ static void tcp_tsq_handler(struct sock *sk)
- 	if ((1 << sk->sk_state) &
- 	    (TCPF_ESTABLISHED | TCPF_FIN_WAIT1 | TCPF_CLOSING |
- 	     TCPF_CLOSE_WAIT  | TCPF_LAST_ACK))
--		tcp_write_xmit(sk, tcp_current_mss(sk), 0, 0, GFP_ATOMIC);
-+		tcp_write_xmit(sk, tcp_current_mss(sk), tcp_sk(sk)->nonagle,
-+			       0, GFP_ATOMIC);
- }
- /*
-  * One tasklest per cpu tries to send more skbs.
-@@ -1880,7 +1881,15 @@ static bool tcp_write_xmit(struct sock *sk, unsigned int mss_now, int nonagle,
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index f86599e..fc645f1 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -192,7 +192,7 @@ int perf_proc_update_handler(struct ctl_table *table, int write,
+ 		void __user *buffer, size_t *lenp,
+ 		loff_t *ppos)
+ {
+-	int ret = proc_dointvec(table, write, buffer, lenp, ppos);
++	int ret = proc_dointvec_minmax(table, write, buffer, lenp, ppos);
  
- 		if (atomic_read(&sk->sk_wmem_alloc) > limit) {
- 			set_bit(TSQ_THROTTLED, &tp->tsq_flags);
--			break;
-+			/* It is possible TX completion already happened
-+			 * before we set TSQ_THROTTLED, so we must
-+			 * test again the condition.
-+			 * We abuse smp_mb__after_clear_bit() because
-+			 * there is no smp_mb__after_set_bit() yet
-+			 */
-+			smp_mb__after_clear_bit();
-+			if (atomic_read(&sk->sk_wmem_alloc) > limit)
-+				break;
- 		}
- 
- 		limit = mss_now;
+ 	if (ret || !write)
+ 		return ret;
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 07f6fc4..f252045 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1049,6 +1049,7 @@ static struct ctl_table kern_table[] = {
+ 		.maxlen		= sizeof(sysctl_perf_event_sample_rate),
+ 		.mode		= 0644,
+ 		.proc_handler	= perf_proc_update_handler,
++		.extra1		= &one,
+ 	},
+ 	{
+ 		.procname	= "perf_cpu_time_max_percent",
 -- 
 1.9.0
 
