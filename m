@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932109AbaCEOZR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:25:17 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40864 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756913AbaCEOZM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756911AbaCEOZM (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 5 Mar 2014 09:25:12 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40845 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756745AbaCEOZH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 09:25:07 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alexander Shiyan <shc_work@mail.ru>, Mark Brown <broonie@linaro.org>,
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 035/131] ASoC: txx9aclc_ac97: Fix kernel crash on probe
-Date: Wed,  5 Mar 2014 14:22:39 +0000
-Message-Id: <1394029455-23128-36-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 032/131] PCI: Enable INTx if BIOS left them disabled
+Date: Wed,  5 Mar 2014 14:22:36 +0000
+Message-Id: <1394029455-23128-33-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -27,49 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Shiyan <shc_work@mail.ru>
+From: Bjorn Helgaas <bhelgaas@google.com>
 
-commit 9febd494d15c4a351e9c9cae7184643144eea892 upstream.
+commit 1f42db786b14a31bf807fc41ee5583a00c08fcb1 upstream.
 
-This patch fixes a crash caused by commit 3bed3344c826
-(ASoC: txx9aclc_ac97: Convert to devm_ioremap_resource()).
-This is an attempt to assign "drvdata->base" while memory
-for "drvdata" is not already allocated.
+Some firmware leaves the Interrupt Disable bit set even if the device uses
+INTx interrupts.  Clear Interrupt Disable so we get those interrupts.
 
-Fixes: 3bed3344c826 (ASoC: txx9aclc_ac97: Convert to devm_ioremap_resource())
-Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Based on the report mentioned below, if the user selects the "EHCI only"
+option in the Intel Baytrail BIOS, the EHCI device is handed off to the OS
+with the PCI_COMMAND_INTX_DISABLE bit set.
+
+Link: http://lkml.kernel.org/r/20140114181721.GC12126@xanatos
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=70601
+Reported-by: Chris Cheng <chris.cheng@atrustcorp.com>
+Reported-and-tested-by: Jamie Chen <jamie.chen@intel.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/soc/txx9/txx9aclc-ac97.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/pci/pci.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/sound/soc/txx9/txx9aclc-ac97.c b/sound/soc/txx9/txx9aclc-ac97.c
-index 4bcce8a..91977ea 100644
---- a/sound/soc/txx9/txx9aclc-ac97.c
-+++ b/sound/soc/txx9/txx9aclc-ac97.c
-@@ -183,6 +183,11 @@ static int txx9aclc_ac97_dev_probe(struct platform_device *pdev)
- 	irq = platform_get_irq(pdev, 0);
- 	if (irq < 0)
- 		return irq;
-+
-+	drvdata = devm_kzalloc(&pdev->dev, sizeof(*drvdata), GFP_KERNEL);
-+	if (!drvdata)
-+		return -ENOMEM;
-+
- 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!r)
- 		return -EBUSY;
-@@ -191,9 +196,6 @@ static int txx9aclc_ac97_dev_probe(struct platform_device *pdev)
- 	if (IS_ERR(drvdata->base))
- 		return PTR_ERR(drvdata->base);
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index e37fea6..1088e0d 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -1119,6 +1119,8 @@ EXPORT_SYMBOL_GPL(pci_load_and_free_saved_state);
+ static int do_pci_enable_device(struct pci_dev *dev, int bars)
+ {
+ 	int err;
++	u16 cmd;
++	u8 pin;
  
--	drvdata = devm_kzalloc(&pdev->dev, sizeof(*drvdata), GFP_KERNEL);
--	if (!drvdata)
--		return -ENOMEM;
- 	platform_set_drvdata(pdev, drvdata);
- 	drvdata->physbase = r->start;
- 	if (sizeof(drvdata->physbase) > sizeof(r->start) &&
+ 	err = pci_set_power_state(dev, PCI_D0);
+ 	if (err < 0 && err != -EIO)
+@@ -1128,6 +1130,14 @@ static int do_pci_enable_device(struct pci_dev *dev, int bars)
+ 		return err;
+ 	pci_fixup_device(pci_fixup_enable, dev);
+ 
++	pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
++	if (pin) {
++		pci_read_config_word(dev, PCI_COMMAND, &cmd);
++		if (cmd & PCI_COMMAND_INTX_DISABLE)
++			pci_write_config_word(dev, PCI_COMMAND,
++					      cmd & ~PCI_COMMAND_INTX_DISABLE);
++	}
++
+ 	return 0;
+ }
+ 
 -- 
 1.9.0
 
