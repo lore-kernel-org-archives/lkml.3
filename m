@@ -1,65 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754061AbaCEGaw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 01:30:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46457 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752099AbaCEGav (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 01:30:51 -0500
-Date: Tue, 4 Mar 2014 22:31:11 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Jon Ringle <jringle@gridpoint.com>
-Cc: "Ringle, Jonathan" <Jonathan.Ringle@gridpoint.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Add option to build with -O3
-Message-ID: <20140305063111.GA8816@kroah.com>
-References: <1393977709-9809-1-git-send-email-jringle@gridpoint.com>
- <20140305050927.GA8534@kroah.com>
- <alpine.DEB.2.02.1403050019300.22601@jringle-ubuntu>
- <20140305060815.GA3432@kroah.com>
- <alpine.DEB.2.02.1403050111490.24331@jringle-ubuntu>
+	id S1754551AbaCEGd1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 01:33:27 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:46092 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753394AbaCEGdZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 01:33:25 -0500
+Message-ID: <5316C508.2000402@ti.com>
+Date: Wed, 5 Mar 2014 08:32:40 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1403050111490.24331@jringle-ubuntu>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Randy Dunlap <rdunlap@infradead.org>, <linux-fbdev@vger.kernel.org>,
+        <dri-devel@lists.freedesktop.org>, <linux-kernel@vger.kernel.org>
+CC: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        David Airlie <airlied@linux.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 0/3] Reorder drivers/video directory
+References: <1393502086-9433-1-git-send-email-tomi.valkeinen@ti.com> <5314412B.6060502@ti.com> <531627D6.6060007@infradead.org>
+In-Reply-To: <531627D6.6060007@infradead.org>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="HxSXmBe5hEpmEaFNg6ksOkRBjcVNlQc7K"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 05, 2014 at 01:19:17AM -0500, Jon Ringle wrote:
-> 
-> 
-> On Wed, 5 Mar 2014, Greg KH wrote:
-> 
-> > On Wed, Mar 05, 2014 at 12:37:56AM -0500, Jon Ringle wrote:
-> > > The information contained in this transmission may contain confidential information.  If the reader of this message is not the intended recipient, you are hereby notified that any review, dissemination, distribution or duplication of this communication is strictly prohibited.  If you are not the intended recipient, please contact the sender by reply email and destroy all copies of the original message.
-> >
-> > Because of this footer, I must destroy this message, kernel development
-> > is not confidental.
-> >
-> 
-> Obviously, this is a footer that is not added by me, but rather the mail
-> server I am sending this message through. Besides, the footer indates it
-> "may contain confidential information". The key word being *may*. Of
-> course kernel development is never confidential and the content of any
-> transmission done to the lkml is of public record. You and anyone who
-> cares to read/comment this message on lkml is indeed the inteded
-> recipient, therefore there is no need to destroy this message :)
+--HxSXmBe5hEpmEaFNg6ksOkRBjcVNlQc7K
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-But how do I know for sure that there isn't anything confidential in it?
+On 04/03/14 21:21, Randy Dunlap wrote:
 
-> I sure hope your response was just in jest :)
+>> I have pushed this to my for-next branch. Let's see what happens... At=
 
-Sadly, no, I have been advised that I am not supposed to respond to
-messages with footers like that, and I am not allowed to take patches
-with them either.
+>> least I'm able to merge the current linux-next without any conflicts.
+>=20
+> Thanks, I'm looking at this change in linux-next now.
+>=20
+> EXYNOS_VIDEO seems to be a little bit odd.  Can you clarify that for me=
+?
+> (This is not a change that you introduced.)
+>=20
+>=20
+> In particular, under Graphics support, select Framebuffer Devices.
+> This lists:
+>   Support for frame buffer devices -->
+>   Exynos Video driver support
+>=20
+> It appears to me that Exynos either is a Framebuffer Device and should =
+depend
+> on FB like the other drivers here do OR (actually XOR) it is not a fram=
+e buffer
+> device and it should not be listed here.
+>=20
+> Then once that is cleared up :), we don't need 2 levels of menu to get =
+to the
+> list of FB drivers -- i.e., one of those levels can be removed.
 
-Now, I'm ignoring the first part (responding) to help you learn why your
-patches will proabably always be ignored, please work to remove that
-from your email server.
+There are others. For my config, I have:
 
-good luck,
+{*} Support for frame buffer devices  --->
+<M> OMAP2+ Display Subsystem support  --->
+[ ] Exynos Video driver support  ----
+< > Solomon SSD1307 framebuffer support
 
-greg k-h
+I didn't want to start fixing those at the moment, as I have no idea
+about exynos or solomon, and I wanted to just try to do the reorder,
+without any other changes.
+
+I agree that there's something wrong with the items. For the OMAP DSS,
+there are non-fbdev related items under that menu, used also by omapdrm.
+So it should probably be split into different components.
+
+> Oh, and if you keep the new menu item "Framebuffer Devices", please spe=
+ll it
+> like the other entry (Frame Buffer).
+
+Ok, fixed.
+
+> Other than those nits, I like this change very much.  Thanks.
+
+Thanks. After pushing this to for-next, I'm getting compile error
+reports from Fengguang and Stephen. Let's see if I manage to avoid
+those... This is not the easiest change to manage.
+
+ Tomi
+
+
+
+--HxSXmBe5hEpmEaFNg6ksOkRBjcVNlQc7K
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJTFsULAAoJEPo9qoy8lh71rJcP/0BW6/QHly9c7AVDsU5UA/b4
+EA24lrGl9dS7z7oPQHeEh0tjPOfvGGo2raZ4fnm5gGkewWSZAYHyhVjDf3HqgZEA
+2wfcR7n9/Y4PC3L1ZrL1Utof4PjN3JWLUA6IiBK54xlB1rABKWjPguQP7E1EboHC
+xhDKwz8f/adRHH3QVJVzkEUH2d7d/X58WuC/x02/sFlYvxl2RU15A9AdXJ/no5Qp
+POw6CmUcpsfiWD5oKFWy8CprZWr2Hto45FOQEhDFHb/YmRmva8EFJFcTo3Wu72fi
+T81kTNA22qEA31vIttqMxtq+9sQlAfNKN3GhzuuatIP9M63x2/y3mbVybNrRw0i1
+c14Lv1JwTI5bqwpij4xJ69qWasc+1Ln9rIwBZYLdz+8Bo4ddkZOoz24oXMRaR3uZ
+hy9v+lVTYNYeRpk/HhHlXeTIpqOKXhN4OKKH142fo3WEfD4l1pvdxHupr4LqgByG
+5xKskmVfyUwomBHDN1eLXs3wWYe1ZPzilwlU4HzDkoPnqx8tqpRwINmG0a5/Ses/
+huu6TNxzBHXG2yJtJa8sBKZ7qvsw/LG3TQ+DDt+KGNW53CS8BMoGcEW7i3YEBVr/
+fTODC7PiZ5x5xa17bRntakqh6AAPwPfM9NGPEqvdzghqhB6BDJ4f+Z5K5h4D7gAk
+4wzdU0SOf11FDC9N2BXf
+=17dJ
+-----END PGP SIGNATURE-----
+
+--HxSXmBe5hEpmEaFNg6ksOkRBjcVNlQc7K--
