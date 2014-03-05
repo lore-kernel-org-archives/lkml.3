@@ -1,47 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758745AbaCEOzS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:55:18 -0500
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:52986 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754794AbaCEOzO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:55:14 -0500
+	id S932511AbaCEOza (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:55:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18749 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754794AbaCEOzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 09:55:25 -0500
+Date: Wed, 5 Mar 2014 15:54:20 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Khalid Aziz <khalid.aziz@oracle.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        peterz@infradead.org, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] [PATCH] Pre-emption control for userspace
+Message-ID: <20140305145420.GA30173@redhat.com>
+References: <1393870033-31076-1-git-send-email-khalid.aziz@oracle.com> <531641A8.40306@zytor.com> <53164824.3000704@oracle.com> <20140304222356.41c55bbc@alan.etchedpixels.co.uk> <5316574F.6040105@oracle.com> <alpine.DEB.2.02.1403050129570.18573@ionos.tec.linutronix.de> <8738ix5uyk.fsf@tassilo.jf.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D0F6D1440@AcuExch.aculab.com>
-References: <20140305003544.23016.55079.stgit@bhelgaas-glaptop.roam.corp.google.com>
- <063D6719AE5E284EB5DD2968C1650D6D0F6D1440@AcuExch.aculab.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 5 Mar 2014 07:54:53 -0700
-Message-ID: <CAErSpo5Pb2bABmnQZ04KRqjU=38=Pcr2OQv8hUJd_hv69QVc-A@mail.gmail.com>
-Subject: Re: [PATCH] phy: fix compiler array bounds warning on settings[]
-To: David Laight <David.Laight@aculab.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8738ix5uyk.fsf@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 5, 2014 at 2:10 AM, David Laight <David.Laight@aculab.com> wrote:
-> From: Bjorn Helgaas
->> With -Werror=array-bounds, gcc v4.7.x warns that in phy_find_valid(), the
->> settings[] "array subscript is above array bounds", I think because idx is
->> a signed integer and if the caller supplied idx < 0, we pass the guard but
->> still reference out of bounds.
+On 03/04, Andi Kleen wrote:
 >
-> Not rejecting the patch but...
->
-> Just indexing an array with 'int' shouldn't cause this warning,
-> so somewhere a caller must actually be passing an idx < 0.
->
-> While changing the type to unsigned will make the comparison
-> against the array bound reject the -1, I suspect that the
-> specific call path didn't really intend passing a hard-coded -1.
->
-> It might be worth trying to locate the call site that passes -1.
+> Anything else?
 
-I agree 100%.  If that's the case, we definitely should find that
-caller rather than apply this patch.  I'll look more today.
+Well, we have yield_to(). Perhaps sys_yield_to(lock_owner) can help.
+Or perhaps sys_futex() can do this if it knows the owner. Don't ask
+me what exactly I mean though ;)
 
-Bjorn
+Oleg.
+
