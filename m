@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758680AbaCEOwl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:52:41 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41636 "EHLO
+	id S932218AbaCEOhn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:37:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41591 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932232AbaCEOhp (ORCPT
+	with ESMTP id S1751374AbaCEOhc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:37:45 -0500
+	Wed, 5 Mar 2014 09:37:32 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Guenter Roeck <linux@roeck-us.net>,
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 24/62] hwmon: (max1668) Fix writing the minimum temperature
-Date: Wed,  5 Mar 2014 14:36:28 +0000
-Message-Id: <1394030226-26652-25-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 15/62] ext4: don't leave i_crtime.tv_sec uninitialized
+Date: Wed,  5 Mar 2014 14:36:19 +0000
+Message-Id: <1394030226-26652-16-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
 References: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
@@ -27,33 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 500a91571f0a5d0d3242d83802ea2fd1faccc66e upstream.
+commit 19ea80603715d473600cd993b9987bc97d042e02 upstream.
 
-When trying to set the minimum temperature, the driver was erroneously
-writing the maximum temperature into the chip.
+If the i_crtime field is not present in the inode, don't leave the
+field uninitialized.
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Reviewed-by: Jean Delvare <jdelvare@suse.de>
+Fixes: ef7f38359 ("ext4: Add nanosecond timestamps")
+Reported-by: Vegard Nossum <vegard.nossum@oracle.com>
+Tested-by: Vegard Nossum <vegard.nossum@oracle.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hwmon/max1668.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ext4/ext4.h | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/hwmon/max1668.c b/drivers/hwmon/max1668.c
-index 335b183..f058886 100644
---- a/drivers/hwmon/max1668.c
-+++ b/drivers/hwmon/max1668.c
-@@ -243,7 +243,7 @@ static ssize_t set_temp_min(struct device *dev,
- 	data->temp_min[index] = SENSORS_LIMIT(temp/1000, -128, 127);
- 	if (i2c_smbus_write_byte_data(client,
- 					MAX1668_REG_LIML_WR(index),
--					data->temp_max[index]))
-+					data->temp_min[index]))
- 		count = -EIO;
- 	mutex_unlock(&data->update_lock);
- 
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index 6a83398..4373e10 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -775,6 +775,8 @@ do {									       \
+ 	if (EXT4_FITS_IN_INODE(raw_inode, einode, xtime))		       \
+ 		(einode)->xtime.tv_sec = 				       \
+ 			(signed)le32_to_cpu((raw_inode)->xtime);	       \
++	else								       \
++		(einode)->xtime.tv_sec = 0;				       \
+ 	if (EXT4_FITS_IN_INODE(raw_inode, einode, xtime ## _extra))	       \
+ 		ext4_decode_extra_time(&(einode)->xtime,		       \
+ 				       raw_inode->xtime ## _extra);	       \
 -- 
 1.9.0
 
