@@ -1,49 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358AbaCEFdY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 00:33:24 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:46331 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751630AbaCEFdX (ORCPT
+	id S1753403AbaCEFet (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 00:34:49 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:60561 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751880AbaCEFer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 00:33:23 -0500
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: zaga@fly.cc.fer.hr, JBottomley@parallels.com
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] [RESEND] [SCSI] wd7000: remove deprecated IRQF_DISABLED
-Date: Wed,  5 Mar 2014 06:32:59 +0100
-Message-Id: <1393997579-4035-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1386584001-5341-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1386584001-5341-1-git-send-email-michael.opdenacker@free-electrons.com>
+	Wed, 5 Mar 2014 00:34:47 -0500
+Date: Tue, 4 Mar 2014 21:34:40 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Florian Fainelli <f.fainelli@gmail.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, linux-nfs <linux-nfs@vger.kernel.org>,
+        "trond.myklebust" <trond.myklebust@primarydata.com>,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: RCU stalls when running out of memory on 3.14-rc4 w/ NFS and
+ kernel threads priorities changed
+Message-ID: <20140305053440.GD3334@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CAGVrzcbsSV7h3qA3KuCTwKNFEeww_kSNcfUkfw3PPjeXQXBo6g@mail.gmail.com>
+ <1393980534.26794.147.camel@edumazet-glaptop2.roam.corp.google.com>
+ <CAGVrzcaekM51hme_tquaT6e22fV1_cocpn1kDUsYfFce=F+o4g@mail.gmail.com>
+ <CAGVrzcbRycBy0w64R9pV=JG6M3aJeARbOnh-xRrumYzzVDgWGQ@mail.gmail.com>
+ <20140305014310.GC3334@linux.vnet.ibm.com>
+ <CAGVrzcae0XPXpue_+n-O+EBzK92JqXHNftTPGt+5SRzroTSF3Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGVrzcae0XPXpue_+n-O+EBzK92JqXHNftTPGt+5SRzroTSF3Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14030505-0928-0000-0000-0000002497C8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the use of the IRQF_DISABLED flag
-from drivers/scsi/wd7000.c
+On Tue, Mar 04, 2014 at 07:55:03PM -0800, Florian Fainelli wrote:
+> 2014-03-04 17:43 GMT-08:00 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
+> > On Tue, Mar 04, 2014 at 05:16:27PM -0800, Florian Fainelli wrote:
+> >> 2014-03-04 17:03 GMT-08:00 Florian Fainelli <f.fainelli@gmail.com>:
+> >> > 2014-03-04 16:48 GMT-08:00 Eric Dumazet <eric.dumazet@gmail.com>:
+> >> >> On Tue, 2014-03-04 at 15:55 -0800, Florian Fainelli wrote:
+> >> >>> Hi all,
+> >> >>>
+> >> >>> I am seeing the following RCU stalls messages appearing on an ARMv7
+> >> >>> 4xCPUs system running 3.14-rc4:
+> >> >>>
+> >> >>> [   42.974327] INFO: rcu_sched detected stalls on CPUs/tasks:
+> >> >>> [   42.979839]  (detected by 0, t=2102 jiffies, g=4294967082,
+> >> >>> c=4294967081, q=516)
+> >> >>> [   42.987169] INFO: Stall ended before state dump start
+> >> >>>
+> >> >>> this is happening under the following conditions:
+> >> >>>
+> >> >>> - the attached bumper.c binary alters various kernel thread priorities
+> >> >>> based on the contents of bumpup.cfg and
+> >> >>> - malloc_crazy is running from a NFS share
+> >> >>> - malloc_crazy.c is running in a loop allocating chunks of memory but
+> >> >>> never freeing it
+> >> >>>
+> >> >>> when the priorities are altered, instead of getting the OOM killer to
+> >> >>> be invoked, the RCU stalls are happening. Taking NFS out of the
+> >> >>> equation does not allow me to reproduce the problem even with the
+> >> >>> priorities altered.
+> >> >>>
+> >> >>> This "problem" seems to have been there for quite a while now since I
+> >> >>> was able to get 3.8.13 to trigger that bug as well, with a slightly
+> >> >>> more detailed RCU debugging trace which points the finger at kswapd0.
+> >> >>>
+> >> >>> You should be able to get that reproduced under QEMU with the
+> >> >>> Versatile Express platform emulating a Cortex A15 CPU and the attached
+> >> >>> files.
+> >> >>>
+> >> >>> Any help or suggestions would be greatly appreciated. Thanks!
+> >> >>
+> >> >> Do you have a more complete trace, including stack traces ?
+> >> >
+> >> > Attatched is what I get out of SysRq-t, which is the only thing I have
+> >> > (note that the kernel is built with CONFIG_RCU_CPU_STALL_INFO=y):
+> >>
+> >> QEMU for Versatile Express w/ 2 CPUs yields something slightly
+> >> different than the real HW platform this is happening with, but it
+> >> does produce the RCU stall anyway:
+> >>
+> >> [  125.762946] BUG: soft lockup - CPU#1 stuck for 53s! [malloc_crazy:91]
+> >
+> > This soft-lockup condition can result in RCU CPU stall warnings.  Fix
+> > the problem causing the soft lockup, and I bet that your RCU CPU stall
+> > warnings go away.
+> 
+> I definitively agree, which is why I was asking for help, as I think
+> the kernel thread priority change is what is causing the soft lockup
+> to appear, but nothing obvious jumps to mind when looking at the
+> trace.
 
-It's a NOOP since 2.6.35 and it will be removed one day.
+Is your hardware able to make the malloc_crazy CPU periodically dump
+its stack, perhaps in response to an NMI?  If not, another approach is
+to use ftrace -- though this will require a very high-priority task to
+turn tracing on and off reasonably quickly, unless you happen to have
+a very large amount of storage to hold the trace.
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
----
- drivers/scsi/wd7000.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+What happens if you malloc() less intensively?  Does that avoid this
+problem?  The reason I ask is that you mentioned that avoiding NFS helped,
+and it is possible that NFS is increasing storage-access latencies and
+thus triggering another problem.  It is quite possible that slowing
+down the malloc()s would also help, and might allow you to observe what
+is happening more easily than when the system is driven fully to the
+lockup condition.
 
-diff --git a/drivers/scsi/wd7000.c b/drivers/scsi/wd7000.c
-index f9a6e4b0affe..32674236fec7 100644
---- a/drivers/scsi/wd7000.c
-+++ b/drivers/scsi/wd7000.c
-@@ -1252,7 +1252,7 @@ static int wd7000_init(Adapter * host)
- 		return 0;
- 
- 
--	if (request_irq(host->irq, wd7000_intr, IRQF_DISABLED, "wd7000", host)) {
-+	if (request_irq(host->irq, wd7000_intr, 0, "wd7000", host)) {
- 		printk("wd7000_init: can't get IRQ %d.\n", host->irq);
- 		return (0);
- 	}
--- 
-1.8.3.2
+Finally, what are you trying to achieve with this workload?  Does your
+production workload behave in this way?  Or is this an experimental
+investigation of some sort?
+
+							Thanx, Paul
 
