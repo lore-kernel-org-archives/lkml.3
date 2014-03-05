@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756132AbaCEA6M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 19:58:12 -0500
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:50100 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754749AbaCEA6K (ORCPT
+	id S1756245AbaCEA6Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 19:58:24 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:38925 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754749AbaCEA6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 19:58:10 -0500
+	Tue, 4 Mar 2014 19:58:22 -0500
+Message-ID: <53167662.5000801@huawei.com>
+Date: Wed, 5 Mar 2014 08:57:06 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <1393917011.5419.12.camel@marge.simpson.net>
-References: <1393911500.6415.18.camel@marge.simpson.net>
-	<CALAqxLUeb2GuPyULnHL+FHgbdanVxz2JsvD2O0bJWKyN=CJ3UQ@mail.gmail.com>
-	<1393917011.5419.12.camel@marge.simpson.net>
-Date: Wed, 5 Mar 2014 08:58:08 +0800
-Message-ID: <CALAqxLVkDQO8nhFiX3avZ_dGyqH+uXCwLDzEMJbjp4i54Q9KaA@mail.gmail.com>
-Subject: Re: [RFC][PATCH] clocksource: avoid unnecessary overflow in cyclecounter_cyc2ns()
-From: John Stultz <john.stultz@linaro.org>
-To: Mike Galbraith <bitbucket@online.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, "Cc: Salman Qazi" <sqazi@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tejun Heo <tj@kernel.org>
+CC: Sasha Levin <sasha.levin@oracle.com>,
+        <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] cgroup: missing rcu read lock around task_css_set
+References: <1393729211-937-1-git-send-email-sasha.levin@oracle.com> <20140303223327.GB26523@mtj.dyndns.org> <5315057F.3030602@oracle.com> <20140303224505.GE26523@mtj.dyndns.org> <53150989.70307@oracle.com> <53160B6D.8020501@oracle.com> <20140304194741.GA2204@htj.dyndns.org>
+In-Reply-To: <20140304194741.GA2204@htj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 4, 2014 at 3:10 PM, Mike Galbraith <bitbucket@online.de> wrote:
-> On Tue, 2014-03-04 at 14:40 +0800, John Stultz wrote:
->> On Tue, Mar 4, 2014 at 1:38 PM, Mike Galbraith <bitbucket@online.de> wrote:
->> > (crap crap crap... M.A.I.N.T.A.I.N.E.R.S _dummy_)
->> >
->> > clocksource: avoid unnecessary overflow in cyclecounter_cyc2ns()
->> >
->> > As per 4cecf6d401a "sched, x86: Avoid unnecessary overflow in sched_clock",
->> > cycles * mult >> shift is overflow prone. so give it the same treatment.
->> >
->> > Cc: Salman Qazi <sqazi@google.com>
->> > Cc: John Stultz <john.stultz@linaro.org>,
->> > Signed-off-by: Mike Galbraith <bitbucket@online.de>
+On 2014/3/5 3:47, Tejun Heo wrote:
+> On Tue, Mar 04, 2014 at 12:20:45PM -0500, Sasha Levin wrote:
+>>> Hrm... there is a PF_EXITING check there already:
+>>>
+>>>     #define task_css_set_check(task, __c)            \
+>>>         rcu_dereference_check((task)->cgroups,        \
+>>>         lockdep_is_held(&cgroup_mutex) ||        \
+>>>         lockdep_is_held(&css_set_rwsem) ||        \
+>>>         ((task)->flags & PF_EXITING) || (__c))
+>>>
+>>> I see it's not happening on Linus's master so I'll run a bisection to figure out what broke it.
 >>
->> Thanks for sending this in!  Curious exactly how the issue was being
->> triggered?
->
-> Dunno that it is.  This is the result of me rummaging around, looking
-> for any excuse what-so-ever for a small and identical group of weird a$$
-> boxen running old 2.6.32 kernels (w. 208 day fix!) to manage to hop back
-> and forth in time by exactly 208 days.  Grep showed me that function, so
-> I scurried off and swiped the fix.
+>> Hi Tejun,
+>>
+>> It bisects down to your patch: "cgroup: drop task_lock() protection
+>> around task->cgroups". I'll look into it later unless it's obvious
+>> to you.
+> 
+> Hmmm... maybe I'm confused and PF_EXITING is not set there and
+> task_lock was what held off the lockdep warning.  Confused....
+> 
 
-So.. this makes me a bit more hesitant to really queue this,
-particularly since the timecounter logic is supposed to periodically
-accumulate cycles so you don't run into these overflow issues (the
-earlier fix was for sched_clock which didn't do any accumulation).
+Because this cgroup_exit() is called in a failure path in copy_process().
 
-So, if you're seeing time jump around, that's probably clocksource or
-timekeping related, and not tied to the cyclecounter code. Do you have
-any other info about these systems? What clocksource are they using,
-etc?
-
-thanks
--john
