@@ -1,108 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860AbaCEKuX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 05:50:23 -0500
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:33099 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753566AbaCEKuU (ORCPT
+	id S1754988AbaCEKuk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 05:50:40 -0500
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:34082 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753046AbaCEKuh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 05:50:20 -0500
+	Wed, 5 Mar 2014 05:50:37 -0500
 From: Sebastian Capella <sebastian.capella@linaro.org>
 To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
         linaro-kernel@lists.linaro.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v7 0/2] hibernation support on ARM
-Date: Wed,  5 Mar 2014 02:50:03 -0800
-Message-Id: <1394016605-24120-1-git-send-email-sebastian.capella@linaro.org>
+Cc: Sebastian Capella <sebastian.capella@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Will Deacon <will.deacon@arm.com>, Robin Holt <robin.m.holt@gmail.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        Steven Capper <steve.capper@linaro.org>,
+        Stephen Warren <swarren@nvidia.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH v7 1/2] ARM: avoid tracers in soft_restart
+Date: Wed,  5 Mar 2014 02:50:04 -0800
+Message-Id: <1394016605-24120-2-git-send-email-sebastian.capella@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1394016605-24120-1-git-send-email-sebastian.capella@linaro.org>
+References: <1394016605-24120-1-git-send-email-sebastian.capella@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patches adding support for hibernation on ARM
- - ARM hibernation / suspend-to-disk
- - Change soft_restart to use non-tracing raw_local_irq_disable
+Use of tracers in local_irq_disable is causes recursive aborts when
+called with irqs disabled and using a temporary stack (hibernation).
+Replace local_irq_disable with raw_local_irq_disable instead to
+avoid tracers.
 
-Patches based on v3.14-rc5 tag, verified hibernation on beaglebone black on a
-branch based on 3.13 merged with initial omap support from Russ Dill which
-can be found here (includes v1 patchset):
-http://git.linaro.org/git-ro/people/sebastian.capella/linux.git hibernation_3.13_russMerge
-
-[PATCH v7 1/2] ARM: avoid tracers in soft_restart
+Signed-off-by: Sebastian Capella <sebastian.capella@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Robin Holt <robin.m.holt@gmail.com>
+Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+Cc: Steven Capper <steve.capper@linaro.org>
+Cc: Stephen Warren <swarren@nvidia.com>
+Cc: Tejun Heo <tj@kernel.org>
+---
  arch/arm/kernel/process.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
- Use raw_local_irq_disable in place of local_irq_disable to avoid
- infinite abort recursion while tracing. (unchanged since v3)
-
-[PATCH v7 2/2] ARM hibernation / suspend-to-disk
- arch/arm/include/asm/memory.h |    1 +
- arch/arm/kernel/Makefile      |    1 +
- arch/arm/kernel/hibernate.c   |  108 +++++++++++++++++++++++++++++++++++++++++
- arch/arm/mm/Kconfig           |    5 ++
- include/linux/suspend.h       |    2 +
- 5 files changed, 117 insertions(+)
-
- Adds support for ARM based hibernation
-
-
-Additional notes:
------------------
-
-There are two checkpatch warnings added by this patch.  These follow
-behavior in existing hibernation implementations on other platforms.
-
-
-    WARNING: externs should be avoided in .c files
-    #120: FILE: arch/arm/kernel/hibernate.c:24:
-    +extern const void __nosave_begin, __nosave_end;
-
-  This extern is picking up the linker nosave region definitions, only
-  used in hibernate.  Follows same extern line used mips, powerpc, s390,
-  sh, sparc, x86 & unicore32
-
-    WARNING: externs should be avoided in .c files
-    #200: FILE: arch/arm/kernel/hibernate.c:104:
-    +	extern void call_with_stack(void (*fn)(void *), void *arg, void *sp);
-
-  This extern is used in the arch/arm/ in hibernate, process and bL_switcher
-
-
-Changes in v7:
---------------
-* remove use of RELOC_HIDE macro
-* remove unused #includes
-* fixup comment for arch_restore_image
-* ensure alignment of resume stack on 8 byte boundary
-
-Changes in v6:
---------------
-* Simplify static variable names
-
-Changes in v5:
---------------
-* Fixed checkpatch warning on trailing whitespace
-
-Changes in v4:
---------------
-* updated comment for soft_restart with review feedback
-* dropped freeze_processes patch which was queued separately 
-  to 3.14 by Rafael Wysocki:
-  https://lkml.org/lkml/2014/2/25/683
-
-Changes in v3:
---------------
-* added comment to use of soft_restart
-* drop irq disable soft_restart patch
-* add patch to avoid tracers in soft_restart by using raw_local_irq_*
-
-Changes in v2:
---------------
-* Removed unneeded flush_thread, use of __naked and cpu_init.
-* dropped Cyril Chemparathy <cyril@ti.com> from Cc: list as 
-  emails are bouncing.
-
-Thanks,
-
-Sebastian Capella
-
+diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+index 92f7b15..f58b723 100644
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -100,7 +100,7 @@ void soft_restart(unsigned long addr)
+ 	u64 *stack = soft_restart_stack + ARRAY_SIZE(soft_restart_stack);
+ 
+ 	/* Disable interrupts first */
+-	local_irq_disable();
++	raw_local_irq_disable();
+ 	local_fiq_disable();
+ 
+ 	/* Disable the L2 if we're the last man standing. */
+-- 
+1.7.9.5
 
