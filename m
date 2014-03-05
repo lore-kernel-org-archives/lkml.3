@@ -1,98 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756273AbaCEAZN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 19:25:13 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:43100 "EHLO
+	id S1756497AbaCEAZT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 19:25:19 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:44905 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754823AbaCEAZJ (ORCPT
+	by vger.kernel.org with ESMTP id S1755862AbaCEAZK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 19:25:09 -0500
-Message-Id: <20140305002507.658095357@goodmis.org>
+	Tue, 4 Mar 2014 19:25:10 -0500
+Message-Id: <20140305002446.173840270@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Tue, 04 Mar 2014 19:24:50 -0500
+Date: Tue, 04 Mar 2014 19:24:46 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         John Kacur <jkacur@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        <stable-rt@vger.kernel.org>
-Subject: [PATCH RT 4/8] kernel/hrtimer: be non-freezeable in cpu_chill()
-References: <20140305002446.173840270@goodmis.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0004-kernel-hrtimer-be-non-freezeable-in-cpu_chill.patch
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH RT 0/8] Linux 3.8.13.14-rt28-rc1
 X-RR-Connecting-IP: 107.14.168.142:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.14-rt28-rc1 stable review patch.
-If anyone has any objections, please let me know.
 
-------------------
+Dear RT Folks,
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+This is the RT stable review cycle of patch 3.8.13.14-rt28-rc1.
 
-Since we replaced msleep() by hrtimer I see now and then (rarely) this:
+Please scream at me if I messed something up. Please test the patches too.
 
-| [....] Waiting for /dev to be fully populated...
-| =====================================
-| [ BUG: udevd/229 still has locks held! ]
-| 3.12.11-rt17 #23 Not tainted
-| -------------------------------------
-| 1 lock held by udevd/229:
-|  #0:  (&type->i_mutex_dir_key#2){+.+.+.}, at: lookup_slow+0x28/0x98
-|
-| stack backtrace:
-| CPU: 0 PID: 229 Comm: udevd Not tainted 3.12.11-rt17 #23
-| (unwind_backtrace+0x0/0xf8) from (show_stack+0x10/0x14)
-| (show_stack+0x10/0x14) from (dump_stack+0x74/0xbc)
-| (dump_stack+0x74/0xbc) from (do_nanosleep+0x120/0x160)
-| (do_nanosleep+0x120/0x160) from (hrtimer_nanosleep+0x90/0x110)
-| (hrtimer_nanosleep+0x90/0x110) from (cpu_chill+0x30/0x38)
-| (cpu_chill+0x30/0x38) from (dentry_kill+0x158/0x1ec)
-| (dentry_kill+0x158/0x1ec) from (dput+0x74/0x15c)
-| (dput+0x74/0x15c) from (lookup_real+0x4c/0x50)
-| (lookup_real+0x4c/0x50) from (__lookup_hash+0x34/0x44)
-| (__lookup_hash+0x34/0x44) from (lookup_slow+0x38/0x98)
-| (lookup_slow+0x38/0x98) from (path_lookupat+0x208/0x7fc)
-| (path_lookupat+0x208/0x7fc) from (filename_lookup+0x20/0x60)
-| (filename_lookup+0x20/0x60) from (user_path_at_empty+0x50/0x7c)
-| (user_path_at_empty+0x50/0x7c) from (user_path_at+0x14/0x1c)
-| (user_path_at+0x14/0x1c) from (vfs_fstatat+0x48/0x94)
-| (vfs_fstatat+0x48/0x94) from (SyS_stat64+0x14/0x30)
-| (SyS_stat64+0x14/0x30) from (ret_fast_syscall+0x0/0x48)
+The -rc release will be uploaded to kernel.org and will be deleted when
+the final release is out. This is just a review release (or release candidate).
 
-For now I see no better way but to disable the freezer the sleep the period.
+The pre-releases will not be pushed to the git repository, only the
+final release is.
 
-Cc: stable-rt@vger.kernel.org
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+If all goes well, this patch will be converted to the next main release
+on 3/7/2014.
+
+Enjoy,
+
+-- Steve
+
+
+To build 3.8.13.14-rt28-rc1 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.8.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.8.13.14.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.8/patch-3.8.13.14-rt28-rc1.patch.xz
+
+You can also build from 3.8.13.14-rt27 by applying the incremental patch:
+
+http://www.kernel.org/pub/linux/kernel/projects/rt/3.8/incr/patch-3.8.13.14-rt27-rt28-rc1.patch.xz
+
+
+Changes from 3.8.13.14-rt27:
+
 ---
- kernel/hrtimer.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 2f023aa..2e66fbb 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1861,8 +1861,12 @@ void cpu_chill(void)
- 	struct timespec tu = {
- 		.tv_nsec = NSEC_PER_MSEC,
- 	};
-+	unsigned int freeze_flag = current->flags & PF_NOFREEZE;
- 
-+	current->flags |= PF_NOFREEZE;
- 	hrtimer_nanosleep(&tu, NULL, HRTIMER_MODE_REL, CLOCK_MONOTONIC);
-+	if (!freeze_flag)
-+		current->flags &= ~PF_NOFREEZE;
- }
- EXPORT_SYMBOL(cpu_chill);
- #endif
--- 
-1.8.5.3
 
 
+Nicholas Mc Guire (1):
+      net: ip_send_unicast_reply: add missing local serialization
+
+Paul E. McKenney (1):
+      rcu: Eliminate softirq processing from rcutree
+
+Sebastian Andrzej Siewior (3):
+      Revert "x86: Disable IST stacks for debug/int 3/stack fault for PREEMPT_RT"
+      kernel/hrtimer: be non-freezeable in cpu_chill()
+      arm/unwind: use a raw_spin_lock
+
+Steven Rostedt (1):
+      rt: Make cpu_chill() use hrtimer instead of msleep()
+
+Steven Rostedt (Red Hat) (1):
+      Linux 3.8.13.14-rt28-rc1
+
+Tiejun Chen (1):
+      rcutree/rcu_bh_qs: disable irq while calling rcu_preempt_qs()
+
+----
+ arch/arm/kernel/unwind.c             |  14 ++--
+ arch/x86/include/asm/page_64_types.h |  21 ++----
+ arch/x86/kernel/cpu/common.c         |   2 -
+ arch/x86/kernel/dumpstack_64.c       |   4 --
+ include/linux/delay.h                |   2 +-
+ kernel/hrtimer.c                     |  19 +++++
+ kernel/rcutree.c                     | 119 +++++++++++++++++++++++++++----
+ kernel/rcutree.h                     |   3 +-
+ kernel/rcutree_plugin.h              | 133 ++++-------------------------------
+ localversion-rt                      |   2 +-
+ net/ipv4/ip_output.c                 |   9 ++-
+ 11 files changed, 159 insertions(+), 169 deletions(-)
