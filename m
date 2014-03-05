@@ -1,140 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755436AbaCEHFN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 02:05:13 -0500
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:37245 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751249AbaCEHFK (ORCPT
+	id S1755484AbaCEHGt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 02:06:49 -0500
+Received: from mail-we0-f175.google.com ([74.125.82.175]:50569 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752568AbaCEHGr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 02:05:10 -0500
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(zz98dI9371Ic89bh936eI542I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h17326ah8275bh1de097h186068hz2fh95h109h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h2216h2336h2438h2461h2487h24d7h2516h2545h255eh25f6h906i1155h)
-From: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>
-To: Oliver Hartkopp <socketcan@hartkopp.net>
-CC: Soren Brinkmann <sorenb@xilinx.com>,
-        "wg@grandegger.com" <wg@grandegger.com>,
-        "mkl@pengutronix.de" <mkl@pengutronix.de>,
-        Michal Simek <michals@xilinx.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: RE: [PATCH v5] can: xilinx CAN controller support.
-Thread-Topic: [PATCH v5] can: xilinx CAN controller support.
-Thread-Index: AQHPOEBce+/Jq2y0+ECMRZjewV7XtprSEZzg
-Date: Wed, 5 Mar 2014 07:04:21 +0000
-References: <5254bfec-c6fd-4681-a34d-706d51e60fbb@VA3EHSMHS004.ehs.local>
- <1b9f22ac-4dde-4ecc-885a-3d8081157081@AM1EHSMHS012.ehs.local>
- <5316CB29.7040200@hartkopp.net>
-In-Reply-To: <5316CB29.7040200@hartkopp.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.23.16.46]
-Content-Type: text/plain; charset="utf-8"
+	Wed, 5 Mar 2014 02:06:47 -0500
 MIME-Version: 1.0
-X-RCIS-Action: ALLOW
-Message-ID: <c6cf1c12-8e7b-4f5e-a495-0f23c04ddc5d@TX2EHSMHS013.ehs.local>
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <5316C5A7.5070400@canonical.com>
+References: <5314AE4C.4090502@canonical.com> <20140304091916.GE1883@distanz.ch>
+ <5315B572.1000403@canonical.com> <CAEjAshqCq+t5gXpLZaJ0QDT1O6o4XURv5teV8u5ky5x+Fvnf1w@mail.gmail.com>
+ <5316C5A7.5070400@canonical.com>
+From: SeongJae Park <sj38.park@gmail.com>
+Date: Wed, 5 Mar 2014 16:06:15 +0900
+Message-ID: <CAEjAshoPBvJTLC4mf43z6M1YPa5kfXUJrwHr1mSCtQwEh+Yp+w@mail.gmail.com>
+Subject: Re: [PATCH V3] support Thinkpad X1 Carbon 2nd generation's adaptive keyboard
+To: Shuduo Sang <shuduo.sang@canonical.com>
+Cc: Tobias Klauser <tklauser@distanz.ch>, bjorn@mork.no,
+        ibm-acpi-devel@lists.sourceforge.net, linux-acpi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ibm-acpi@hmh.eng.br, matthew.garrett@nebula.net,
+        platform-driver-x86@vger.kernel.org, Bruce Ma <bruce.ma@canonical.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2575gG0012901
 
-Hi Oliver,
-
-> -----Original Message-----
-> From: Oliver Hartkopp [mailto:socketcan@hartkopp.net]
-> Sent: Wednesday, March 05, 2014 12:29 PM
-> To: Appana Durga Kedareswara Rao
-> Cc: Soren Brinkmann; wg@grandegger.com; mkl@pengutronix.de; Michal
-> Simek; grant.likely@linaro.org; robh+dt@kernel.org; linux-
-> can@vger.kernel.org; netdev@vger.kernel.org; linux-arm-
-> kernel@lists.infradead.org; linux-kernel@vger.kernel.org;
-> devicetree@vger.kernel.org; Appana Durga Kedareswara Rao
-> Subject: Re: [PATCH v5] can: xilinx CAN controller support.
+On Wed, Mar 5, 2014 at 3:35 PM, Shuduo Sang <shuduo.sang@canonical.com> wrote:
 >
 >
+> On 03/05/2014 01:54 PM, SeongJae Park wrote:
+>> Hello,
+>> This is just a trivial comment.
+>>
+>>
+>> On Tue, Mar 4, 2014 at 8:13 PM, Shuduo Sang <shuduo.sang@canonical.com> wrote:
+>>>
+>>>
+>>> Submit patch V3 to support Adaptive Keyboard on Thinkpad X1 Carbon 2nd
+>>> generation according to Tobias's comments.
+>>>
+>>> Thanks,
+>>> Shuduo
+>>>
+>>> From 2b8175e69deee661d97d371b2422a9c192fefd52 Mon Sep 17 00:00:00 2001
+>>> From: Shuduo Sang <sangshuduo@gmail.com>
+>>> Date: Mon, 3 Mar 2014 14:29:32 +0800
+>>> Subject: [PATCH] support thinkpad X1 Carbon's adaptive keyboard
+>>>
+>>> Thinkpad X1 Carbon's adaptive keyboard has five modes including Home
+>>> mode, Web browser mode, Web conference mode, Function mode and Lay-flat
+>>> mode. We support Home mode and Function mode currently.
+>>>
+>>> Signed-off-by: Bruce Ma <bruce.ma@canonical.com>
+>>> Signed-off-by: Shuduo Sang <shuduo.sang@canonical.com>
+>>> ---
+>>>  drivers/platform/x86/thinkpad_acpi.c | 102
+>>> +++++++++++++++++++++++++++++++++++
+>>>  1 file changed, 102 insertions(+)
+>>>
+>>> diff --git a/drivers/platform/x86/thinkpad_acpi.c
+>>> b/drivers/platform/x86/thinkpad_acpi.c
+>>> index defb6af..6664dcd 100644
+>>> --- a/drivers/platform/x86/thinkpad_acpi.c
+>>> +++ b/drivers/platform/x86/thinkpad_acpi.c
+>>> @@ -3437,6 +3437,106 @@ err_exit:
+>>>         return (res < 0)? res : 1;
+>>>  }
+>>>
+>>> +/* Thinkpad X1 Carbon support 5 modes including Home mode, Web browser
+>>> + * mode, Web conference mode, Function mode and Lay-flat mode.
+>>> + * We support Home mode and Function mode currently.
+>>> + *
+>>> + * Will consider support rest of modes in future.
+>>> + *
+>>> + */
+>>> +enum ADAPTIVE_KEY_MODE {
+>>> +       HOME_MODE,
+>>> +       WEB_BROWSER_MODE,
+>>> +       WEB_CONFERENCE_MODE,
+>>> +       FUNCTION_MODE,
+>>> +       LAYFLAT_MODE
+>>> +};
+>>> +
+>>> +int adaptive_keyboard_modes[] = {
+>>> +       HOME_MODE,
+>>> +/*     WEB_BROWSER_MODE = 2,
+>>> +       WEB_CONFERENCE_MODE = 3, */
+>>> +       FUNCTION_MODE
+>>> +};
+>>> +
+>>> +#define DFR_CHANGE_ROW                 0x101
+>>> +#define DFR_SHOW_QUICKVIEW_ROW         0x102
+>>> +
+>>> +/* press Fn key a while second, it will switch to Function Mode. Then
+>>> + * release Fn key, previous mode be restored.
+>>> + */
+>>> +static bool adaptive_keyboard_mode_is_saved;
+>>> +static int adaptive_keyboard_prev_mode;
+>>> +
+>>> +static int adaptive_keyboard_get_next_mode(int mode)
+>>> +{
+>>> +       int i;
+>>> +       size_t max_mode = ARRAY_SIZE(adaptive_keyboard_modes) - 1;
+>>> +
+>>> +       for (i = 0; i <= max_mode; i++) {
+>>> +               if (adaptive_keyboard_modes[i] == mode)
+>>> +                       break;
+>>> +       }
+>>> +
+>>> +       if (i >= max_mode)
+>>> +               i = 0;
+>>> +       else
+>>> +               i++;
+>>> +
+>>> +       return adaptive_keyboard_modes[i];
+>>> +}
+>>> +
+>>> +static bool adaptive_keyboard_hotkey_notify_hotkey(unsigned int scancode)
+>>> +{
+>>> +       u32 current_mode = 0;
+>>> +       int new_mode = 0;
+>>> +
+>>> +       switch (scancode) {
+>>> +       case DFR_CHANGE_ROW:
+>>> +               if (adaptive_keyboard_mode_is_saved) {
+>>> +                       new_mode = adaptive_keyboard_prev_mode;
+>>> +                       adaptive_keyboard_mode_is_saved = false;
+>>> +               } else {
+>>> +                       if (!acpi_evalf(
+>>> +                                       hkey_handle, &current_mode,
+>>> +                                       "GTRW", "dd", 0)) {
+>>> +                               pr_err("Cannot read adaptive keyboard mode\n");
+>>> +                               return false;
+>>> +                       } else {
+>>> +                               new_mode = adaptive_keyboard_get_next_mode(
+>>> +                                               current_mode);
+>>> +                       }
+>>> +               }
+>>> +
+>>> +               if (!acpi_evalf(hkey_handle, NULL, "STRW", "vd", new_mode)) {
+>>> +                       pr_err("Cannot set adaptive keyboard mode\n");
+>>> +                       return false;
+>>> +               }
+>>> +
+>>> +               return true;
+>>
+>> Isn't the blank line above return statement unnecessary?
+>>
 >
-> On 05.03.2014 00:51, SÃ¶ren Brinkmann wrote:
-> > Hi Kedar,
-> >
-> > On Tue, 2014-03-04 at 06:50PM +0530, Kedareswara rao Appana wrote:
-> >> This patch adds xilinx CAN controller support.
-> >> This driver supports both ZYNQ CANPS and Soft IP AXI CAN controller.
-> >>
-> > [...]
-> >> diff --git a/Documentation/devicetree/bindings/net/can/xilinx_can.txt
-> >> b/Documentation/devicetree/bindings/net/can/xilinx_can.txt
-> >> new file mode 100644
-> >> index 0000000..0e57103
-> >> --- /dev/null
-> >> +++ b/Documentation/devicetree/bindings/net/can/xilinx_can.txt
-> >> @@ -0,0 +1,45 @@
-> >> +Xilinx Axi CAN/Zynq CANPS controller Device Tree Bindings
-> >> +---------------------------------------------------------
-> >> +
-> >> +Required properties:
-> >> +- compatible              : Should be "xlnx,zynq-can-1.00.a" for Zynq
-> CAN
-> >> +                    controllers and "xlnx,axi-can-1.00.a" for Axi CAN
-> >> +                    controllers.
-> >> +- reg                     : Physical base address and size of the Axi
-> CAN/Zynq
-> >> +                    CANPS registers map.
-> >> +- interrupts              : Property with a value describing the interrupt
-> >> +                    number.
-> >> +- interrupt-parent        : Must be core interrupt controller
-> >> +- clock-names             : List of input clock names - "ref_clk",
-> "aper_clk"
-> >
-> > Let's reconsider these names. These are rather Zynq specific names.
-> > Does the IP documentation use these as well? The names should match
-> > the naming used for the IP, rather than the SOC. Is this the correct data
-> sheet:
-> >
-> http://www.xilinx.com/support/documentation/ip_documentation/axi_can
-> /v
-> > 1_03_a/ds791_axi_can.pdf ? According to that the names should rather
-> > be 's_axi_aclk' and 'can_clk', IMHO.
-> >
-> >     SÃ¶ren
-> >
->
-> And when renaming stuff anyway:
->
-> +
-> +#define DRIVER_NAME  "XILINX_CAN"
-> +
->
-> should be changed to
+> Doesn't it look clearly? :)
 
-Ok Will do
-
-Regards,
-Kedar.
+Well, I thought it might be unintended blank line because
+the return statement in below case doesn't have blank line.
+Anyway, I agree if it was your intention.
 
 >
-> +
-> +#define DRIVER_NAME  "xilinx_can"
-> +
->
-> Regards,
-> Oliver
->
-
-
-
-This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
-
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+>>> +
+>>> +       case DFR_SHOW_QUICKVIEW_ROW:
+>>> +               if (!acpi_evalf(hkey_handle,
+>>> +                               &adaptive_keyboard_prev_mode,
+>>> +                               "GTRW", "dd", 0)) {
+>>> +                       pr_err("Cannot read adaptive keyboard mode\n");
+>>> +                       return false;
+>>> +               } else {
+>>> +                       adaptive_keyboard_mode_is_saved = true;
+>>> +
+>>> +                       if (!acpi_evalf(hkey_handle,
+>>> +                                       NULL, "STRW", "vd", FUNCTION_MODE)) {
+>>> +                               pr_err("Cannot set adaptive keyboard mode\n");
+>>> +                               return false;
+>>> +                       }
+>>> +               }
+>>> +               return true;
+>>> +
+>>> +       default:
+>>> +               return false;
+>>> +       }
+>>> +}
+>>> +
+>>>  static bool hotkey_notify_hotkey(const u32 hkey,
+>>>                                  bool *send_acpi_ev,
+>>>                                  bool *ignore_acpi_ev)
+>>> @@ -3456,6 +3556,8 @@ static bool hotkey_notify_hotkey(const u32 hkey,
+>>>                         *ignore_acpi_ev = true;
+>>>                 }
+>>>                 return true;
+>>> +       } else {
+>>> +               return adaptive_keyboard_hotkey_notify_hotkey(scancode);
+>>>         }
+>>>         return false;
+>>>  }
+>>> --
+>>> 1.9.0
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
