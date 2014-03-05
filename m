@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756354AbaCECbJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 21:31:09 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:2746 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754756AbaCECbG (ORCPT
+	id S1757010AbaCECba (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 21:31:30 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:34188 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755414AbaCECb2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 21:31:06 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 04 Mar 2014 18:26:50 -0800
-Message-ID: <53168C5B.6070003@nvidia.com>
-Date: Wed, 5 Mar 2014 10:30:51 +0800
-From: Wei Ni <wni@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>, Stephen Warren <swarren@wwwdotorg.org>
-CC: "khali@linux-fr.org" <khali@linux-fr.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [PATCH v2 3/3] ARM: tegra: dalmore: add thermal zones for nct1008
-References: <1393932664-13319-1-git-send-email-wni@nvidia.com>
- <1393932664-13319-4-git-send-email-wni@nvidia.com>
- <53164E78.5010708@wwwdotorg.org> <20140304222357.GA6125@roeck-us.net>
-In-Reply-To: <20140304222357.GA6125@roeck-us.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Tue, 4 Mar 2014 21:31:28 -0500
+From: Zhouyi Zhou <zhouzhouyi@gmail.com>
+To: <joro@8bytes.org>, <iommu@lists.linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>
+Cc: Zhouyi Zhou <zhouzhouyi@gmail.com>, Zhouyi Zhou <yizhouzhou@ict.ac.cn>
+Subject: Re: Re: [PATCH] IOMMU: iommu module do not check NULL return of kmem_cache_zalloc
+Date: Wed,  5 Mar 2014 10:31:17 +0800
+Message-Id: <1393986677-22160-1-git-send-email-yizhouzhou@ict.ac.cn>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/2014 06:23 AM, Guenter Roeck wrote:
-> On Tue, Mar 04, 2014 at 03:06:48PM -0700, Stephen Warren wrote:
->> On 03/04/2014 04:31 AM, Wei Ni wrote:
->>> Add dt node to describe the thermal zone for the nct1008.
->>>
->>> Change-Id: I0256836e52d73ec282574e4fd91df52958936e35
->>
->> ???????
->>
-> I think this is for one of those open-source sites out there
-> which count open source contributions. Not Ohloh, but similar.
-> You have to specify that Change-Id to have it associate your
-> name with the patch.
+From: Zhouyi Zhou <zhouzhouyi@gmail.com>
 
-It's so sorry, I'm working for chromiumos, this change-id is generated
-by gerrit, I should remove it.
+On Tue, 4 Mar 2014 16:41:18 +0100
+Joerg Roedel <joro@8bytes.org> wrote:
 
+> On Tue, Feb 11, 2014 at 10:12:53AM +0800, Zhouyi Zhou wrote:
+> > From: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
+> > 
+> > The function iopte_alloc do not check NULL return of kmem_cache_zalloc,
+> > call iopte_free with argument 0 will panic.
+> > 
+> > Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
+> > ---
+> >  drivers/iommu/omap-iommu.c |    3 ++-
+> >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/iommu/omap-iommu.c b/drivers/iommu/omap-iommu.c
+> > index bcd78a7..5155714 100644
+> > --- a/drivers/iommu/omap-iommu.c
+> > +++ b/drivers/iommu/omap-iommu.c
+> > @@ -551,7 +551,8 @@ static u32 *iopte_alloc(struct omap_iommu *obj, u32 *iopgd, u32 da)
+> >    	      dev_vdbg(obj->dev, "%s: a new pte:%p\n", __func__, iopte);
+> >  	      } else {
+> >  	      	/* We raced, free the reduniovant table */
+> > -		   iopte_free(iopte);
+> > +			if (iopte)
+> > +				iopte_free(iopte);
 > 
-> Guenter
+> Isn't it better to put the check into iopte_free?
 > 
->>> diff --git a/arch/arm/boot/dts/tegra114-dalmore.dts b/arch/arm/boot/dts/tegra114-dalmore.dts
->>
->>> +	thermal-zones {
->>> +		nct1008-local {
->>> +			polling-delay-passive = <2000>; /* milliseconds */
->>
->> Nothing can possible make use of this node, since there's no compatible
->> value or anything else like that to bind a driver to it.
+> 
+>	Joerg
+> 
+> 
+Thanks Joerg for reviewing
+Checking the null pointer in iopte_free guarantees kmem_cache_free
+is happy all the time.
 
-We have special Tskin driver that estimator skin temperature based on
-nct1008 local and remote sensors.
+Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
 
-Thanks.
-Wei.
+---
+ drivers/iommu/omap-iommu.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
->>
+diff --git a/drivers/iommu/omap-iommu.c b/drivers/iommu/omap-iommu.c
+index bcd78a7..51211e8 100644
+--- a/drivers/iommu/omap-iommu.c
++++ b/drivers/iommu/omap-iommu.c
+@@ -523,7 +523,8 @@ static void flush_iopte_range(u32 *first, u32 *last)
+ static void iopte_free(u32 *iopte)
+ {
+ 	/* Note: freed iopte's must be clean ready for re-use */
+-	kmem_cache_free(iopte_cachep, iopte);
++	if (iopte)
++		kmem_cache_free(iopte_cachep, iopte);
+ }
+ 
+ static u32 *iopte_alloc(struct omap_iommu *obj, u32 *iopgd, u32 da)
+
 
