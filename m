@@ -1,54 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756793AbaCEA1T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 19:27:19 -0500
-Received: from www.linutronix.de ([62.245.132.108]:38226 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756727AbaCEA1Q (ORCPT
+	id S1756899AbaCEA1y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 19:27:54 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:43093 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755853AbaCEAZK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 19:27:16 -0500
-Date: Wed, 5 Mar 2014 01:27:23 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-sh@vger.kernel.org
-Subject: Re: [PATCH] irq-gic: remove file name from heading comment
-In-Reply-To: <53166B67.2060804@cogentembedded.com>
-Message-ID: <alpine.DEB.2.02.1403050112180.18573@ionos.tec.linutronix.de>
-References: <201312140224.53928.sergei.shtylyov@cogentembedded.com> <52D5CCFB.1090205@cogentembedded.com> <53166B67.2060804@cogentembedded.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 4 Mar 2014 19:25:10 -0500
+Message-Id: <20140305002507.352731397@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Tue, 04 Mar 2014 19:24:48 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        John Kacur <jkacur@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        <stable-rt@vger.kernel.org>, Brian Silverman <bsilver16384@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: [PATCH RT 2/8] Revert "x86: Disable IST stacks for debug/int 3/stack fault for
+ PREEMPT_RT"
+References: <20140305002446.173840270@goodmis.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=0002-Revert-x86-Disable-IST-stacks-for-debug-int-3-stack-.patch
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Mar 2014, Sergei Shtylyov wrote:
-> Hello.
-> 
-> On 01/15/2014 02:49 AM, Sergei Shtylyov wrote:
-> 
-> > > File names in the heading comments  fell out of favor long ago, and this
-> > > one
-> > > weren't even changed when the driver was moved from arch/arm/common/, so
-> > > remove
-> > > it at last...
-> 
-> > > Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-> 
-> > > ---
-> > > The patch is against the 'irq/core' branch of the 'tip.git' repo.
-> 
-> >     Thomas, is there a chance that you merge this patch for 3.14? Is it even
-> > the right branch for cleanups (I'm seeing fixes there)?
-> 
->    Thomas, will you ever reply to me? Who's maintaining the GIC driver, you?
-> Or the patches shoud just go in via arm-soc.git?
+3.8.13.14-rt28-rc1 stable review patch.
+If anyone has any objections, please let me know.
 
-That patch is so important^Wtrivial that it really can go via the
-obvious trivial@kernel.org
+------------------
 
-Sigh....
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+
+where do I start. Let me explain what is going on here. The code
+sequence
+| pushf
+| pop    %edx
+| or     $0x1,%dh
+| push   %edx
+| mov    $0xe0,%eax
+| popf
+| sysenter
+
+triggers the bug. On 64bit kernel we see the double fault (with 32bit and
+64bit userland) and on 32bit kernel there is no problem. The reporter said
+that double fault does not happen on 64bit kernel with 64bit userland and
+this is because in that case the VDSO uses the "syscall" interface instead
+of "sysenter".
+
+The bug. "popf" loads the flags with the TF bit set which enables
+"single stepping" and this leads to a debug exception. Usually on 64bit
+we have a special IST stack for the debug exception. Due to patch [0] we
+do not use the IST stack but the kernel stack instead. On 64bit the
+sysenter instruction starts in kernel with the stack address NULL. The
+code sequence above enters the debug exception (TF flag) after the
+sysenter instruction was executed which sets the stack pointer to NULL
+and we have a fault (it seems that the debug exception saves some bytes
+on the stack).
+To fix the double fault I'm going to drop patch [0]. It is completely
+pointless. In do_debug() and do_stack_segment() we disable preemption
+which means the task can't leave the CPU. So it does not matter if we run
+on IST or on kernel stack.
+There is a patch [1] which drops preempt_disable() call for a 32bit
+kernel but not for 64bit so there should be no regression.
+And [1] seems valid even for this code sequence. We enter the debug
+exception with a 256bytes long per cpu stack and migrate to the kernel
+stack before calling do_debug().
+
+[0] x86-disable-debug-stack.patch
+[1] fix-rt-int3-x86_32-3.2-rt.patch
+
+Cc: stable-rt@vger.kernel.org
+Reported-by: Brian Silverman <bsilver16384@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ arch/x86/include/asm/page_64_types.h | 21 ++++++---------------
+ arch/x86/kernel/cpu/common.c         |  2 --
+ arch/x86/kernel/dumpstack_64.c       |  4 ----
+ 3 files changed, 6 insertions(+), 21 deletions(-)
+
+diff --git a/arch/x86/include/asm/page_64_types.h b/arch/x86/include/asm/page_64_types.h
+index 65b85f4..320f7bb 100644
+--- a/arch/x86/include/asm/page_64_types.h
++++ b/arch/x86/include/asm/page_64_types.h
+@@ -14,21 +14,12 @@
+ #define IRQ_STACK_ORDER 2
+ #define IRQ_STACK_SIZE (PAGE_SIZE << IRQ_STACK_ORDER)
+ 
+-#ifdef CONFIG_PREEMPT_RT_FULL
+-# define STACKFAULT_STACK 0
+-# define DOUBLEFAULT_STACK 1
+-# define NMI_STACK 2
+-# define DEBUG_STACK 0
+-# define MCE_STACK 3
+-# define N_EXCEPTION_STACKS 3  /* hw limit: 7 */
+-#else
+-# define STACKFAULT_STACK 1
+-# define DOUBLEFAULT_STACK 2
+-# define NMI_STACK 3
+-# define DEBUG_STACK 4
+-# define MCE_STACK 5
+-# define N_EXCEPTION_STACKS 5  /* hw limit: 7 */
+-#endif
++#define STACKFAULT_STACK 1
++#define DOUBLEFAULT_STACK 2
++#define NMI_STACK 3
++#define DEBUG_STACK 4
++#define MCE_STACK 5
++#define N_EXCEPTION_STACKS 5  /* hw limit: 7 */
+ 
+ #define PUD_PAGE_SIZE		(_AC(1, UL) << PUD_SHIFT)
+ #define PUD_PAGE_MASK		(~(PUD_PAGE_SIZE-1))
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 2636e0f..9c3ab43 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -1103,9 +1103,7 @@ DEFINE_PER_CPU(struct task_struct *, fpu_owner_task);
+  */
+ static const unsigned int exception_stack_sizes[N_EXCEPTION_STACKS] = {
+ 	  [0 ... N_EXCEPTION_STACKS - 1]	= EXCEPTION_STKSZ,
+-#if DEBUG_STACK > 0
+ 	  [DEBUG_STACK - 1]			= DEBUG_STKSZ
+-#endif
+ };
+ 
+ static DEFINE_PER_CPU_PAGE_ALIGNED(char, exception_stacks
+diff --git a/arch/x86/kernel/dumpstack_64.c b/arch/x86/kernel/dumpstack_64.c
+index f16c07b..b653675 100644
+--- a/arch/x86/kernel/dumpstack_64.c
++++ b/arch/x86/kernel/dumpstack_64.c
+@@ -21,14 +21,10 @@
+ 		(N_EXCEPTION_STACKS + DEBUG_STKSZ/EXCEPTION_STKSZ - 2)
+ 
+ static char x86_stack_ids[][8] = {
+-#if DEBUG_STACK > 0
+ 		[ DEBUG_STACK-1			]	= "#DB",
+-#endif
+ 		[ NMI_STACK-1			]	= "NMI",
+ 		[ DOUBLEFAULT_STACK-1		]	= "#DF",
+-#if STACKFAULT_STACK > 0
+ 		[ STACKFAULT_STACK-1		]	= "#SS",
+-#endif
+ 		[ MCE_STACK-1			]	= "#MC",
+ #if DEBUG_STKSZ > EXCEPTION_STKSZ
+ 		[ N_EXCEPTION_STACKS ...
+-- 
+1.8.5.3
+
+
