@@ -1,195 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756534AbaCEVMB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 16:12:01 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:29732 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751879AbaCEVLz (ORCPT
+	id S1755761AbaCEVRW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 16:17:22 -0500
+Received: from ihemail3.lucent.com ([135.245.0.37]:61335 "EHLO
+	ihemail3.lucent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753448AbaCEVRS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 16:11:55 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19rUT2nGXkHLlQSckj8jU5FDKgIT2r+f1A=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 0F5C853B092
-Date: Wed, 5 Mar 2014 16:11:45 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Matt Mackall <mpm@selenic.com>
-Cc: Kees Cook <keescook@chromium.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
-        linux-crypto <linux-crypto@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH][RESEND 3] hwrng: add randomness to system from rng
- sources
-Message-ID: <20140305211145.GV1872@titan.lakedaemon.net>
-References: <20140303235148.GA7601@www.outflux.net>
- <20140304153841.GN1872@titan.lakedaemon.net>
- <CAGXu5jKqB62ZaD0HEG=vJoROOqvdSYeHYB2h61Kw1-ov5phFww@mail.gmail.com>
- <20140304195356.GS1872@titan.lakedaemon.net>
- <CAGXu5jL5JBHL0tqZzA03LY67HZU4jEQ0_V=bJs9TV3g0Bfwr_w@mail.gmail.com>
- <1393972797.8344.190.camel@calx>
+	Wed, 5 Mar 2014 16:17:18 -0500
+From: "Li, Bin (Bin)" <bin.bl.li@alcatel-lucent.com>
+To: Paolo Bonzini <pbonzini@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+CC: "Jatania, Neel (Neel)" <Neel.Jatania@alcatel-lucent.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>,
+        "ttracy@redhat.com" <ttracy@redhat.com>,
+        "Nakajima, Jun" <jun.nakajima@intel.com>,
+        "riel@redhat.com" <riel@redhat.com>
+Subject: RE: Enhancement for PLE handler in KVM
+Thread-Topic: Enhancement for PLE handler in KVM
+Thread-Index: AQHPNw3F4lhzD8AlbUmUFBaMt3tdkZrQESCAgAJ5ASCAAF+xgP//5v4A
+Date: Wed, 5 Mar 2014 21:16:45 +0000
+Message-ID: <72F5E0D8DB6D83469579E473AD72DB23779F1B6B@US70UWXCHMBA01.zam.alcatel-lucent.com>
+References: <53061044.2000009@alcatel-lucent.com>
+ <530B9637.6030708@alcatel-lucent.com> <5314C8C3.3090607@alcatel-lucent.com>
+ <5314D61B.9050407@redhat.com>
+ <72F5E0D8DB6D83469579E473AD72DB23779EFF64@US70UWXCHMBA01.zam.alcatel-lucent.com>
+ <53173961.6080301@redhat.com>
+In-Reply-To: <53173961.6080301@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [135.5.27.17]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393972797.8344.190.camel@calx>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s25LHXoM020624
 
-Matt, Kees,
+Thanks for the quick response.
 
-On Tue, Mar 04, 2014 at 04:39:57PM -0600, Matt Mackall wrote:
-> On Tue, 2014-03-04 at 11:59 -0800, Kees Cook wrote:
-> > On Tue, Mar 4, 2014 at 11:53 AM, Jason Cooper <jason@lakedaemon.net> wrote:
-> > > On Tue, Mar 04, 2014 at 11:01:49AM -0800, Kees Cook wrote:
-> > >> On Tue, Mar 4, 2014 at 7:38 AM, Jason Cooper <jason@lakedaemon.net> wrote:
-> > >> > On Mon, Mar 03, 2014 at 03:51:48PM -0800, Kees Cook wrote:
+Inline the comments and also added a typical log.
+
+Regards
+Bin
+  
+
+-----Original Message-----
+From: Paolo Bonzini [mailto:pbonzini@redhat.com] 
+Sent: Wednesday, March 05, 2014 9:49 AM
+To: Li, Bin (Bin); kvm@vger.kernel.org
+Cc: Jatania, Neel (Neel); linux-kernel@vger.kernel.org; Srivatsa Vaddagiri; Peter Zijlstra; Mike Galbraith; Chris Wright; ttracy@redhat.com; Nakajima, Jun; riel@redhat.com
+Subject: Re: Enhancement for PLE handler in KVM
+
+Il 05/03/2014 15:17, Li, Bin (Bin) ha scritto:
+> Hello, Paolo,
+>
+> We are using a customized embedded SMP OS as guest OS. It is not meaningful to post the guest OS code.
+> Also, there is no "performance numbers for common workloads" since there is no common workloads to compare with.
+> In our OS, there is still a big kernel lock to protect the kernel.
+
+Does this means that average spinning time for the spinlock is relatively high compared to Linux or Windows?
+
+Binl:
+
+Yes. The default setting for ple_window is 4096 which based on linux and window. In our guest OS, the ple_window need to be at least 16384 in order to prevent large jitter caused system reset. With setting ple_window to 16384, the biggest jitter in guest OS is about 24-25ms.
+
+
+> - when the in-correct boosting happens, the vCPU in spin lock will run 
+> longer time on the pCPU and causing the lock holder vCPU having less 
+> time to run on pCPU since they are sharing the on same pCPU.
+
+Correct.  This is an unfortunate problem in the current implementation of PLE.
+
+> Adding hyper call in every kernel enter and kernel exist is expensive. 
+> From the trace log collect from i7 running @ 3.0GHz , the cost per  
+> hyper is <1us.
+
+Right, it is around 1500 cycles and 0.4-0.5 us, i.e. approximately 1 us for enter and exit together.
+
+This is not too bad for a kernel with a big lock, but not acceptable if you do not have it (as is the case for Linux and Windows).
+
+> Regarding to the " paravirtual ticketlock ", we did try the same idea in our embedded guest OS.
+> We got following results:
+>
+> a) We implemented similar approach like linux "paravirtual 
+> ticketlock". The system clock jitter does get reduced a lot. But, the 
+> system clock jitter is still happening at lower rate. In a few hours 
+> system stress test, we still see the big jitter few times.
+
+Did you find out why?  It could happen if the virtual CPU is scheduled out for a relatively long time.  A small number of spinning iterations can then account for a relatively large time.
+
+My impression is that you're implementing a paravirtual spinlock, except that you're relying on PLE to decide when to go to sleep.  PLE is implemented using the TSC.  Can you assume the host TSC is of good quality?  If so, perhaps you can try to modify the pv ticketlock algorithm, and use a threshold based on TSC instead of an iteration count?
+
+BinL:
+Our "paravirtual ticket lock" is done in following way, 
+ - when a vCPU is doing spin loop to get into kernel state, it will set up a counter to track how many time in the tight loop.
+If the counter reach certain threshold, the vCPU will add a request to the lock holder work item pipe ( multiple producer, single consumer pipe ) and the vCPU will run "hlt" instruction, waiting for the lock holder to wake it up.
+ - TSC is not used in this case.
+ - When lock holder sees the request, it will send an IPI interrupt to wake up the vCPU which is hlt-ed.
+ - With this implementation, we are able to get the system stress test ( about hours run with traffic ) completing successfully most of time. But not all the time. The big jitter still happening during the run, just less frequently. The root cause of the problem is still there.
+
+ The lock holder vCPU is schedule out for a relatively long time. We did more investigation for why.
+  a) From the trace-cmd log, we believe the root cause is PLE handler incorrectly boost the spin loop vCPU which being stack with the lock holder vCPU on same pCPU. 
+     The sample log we captured is, lock holder vCPU and the vCPU doing spin loop, both running on a pCPU. The vCPU in spin loop being incorrectly boosted by ple handler. And linux scheduler could toggling two vCPU on the pCPU at vert high rate. The worst case is, the lock is happen to stay between the two vCPUs on the same pCPU. Then we will see lock holder vCPU is scheduled in doing a little bit real work and the other spin loop vCPU being scheduled in doing spin loop. And the context switch on the pCPU happens very often. ( see more details of typical trace below)
+
+     This causing the real cpu power used for processing real work becomes much less than normal. ( a short period truly over load on this pCPU). And the guest OS stays in a very slow kernel work stage because the lock holder vCPU having much less time to do its real work. The system will get out of this slow movement eventually. But depending on how long being stuck in slow movement, when system get back to normal speed, the application could realize big time gap passed by already. And many time out following...
+
+  b) We also did another test to verify the theory. We built a KVM with a dummy ple handler ( not doing yield to, ple vm exit, just return right away). With this dummy ple handler, the jitter is an issue any more. The biggest jitter in the system is just around 25-30ms during the hours traffic run.
+
+  c) the typical trace captured when running on cent os 6.4 ( even older ple handler which would incorrectly boost spin loop vcpu more often)
+
+      Typical trace is like:
+
+        In the following trace, - cpu 0 being hold for 6ms ( no chance to run ). 
+        6ms here is not a big deal. But showing linux could decide not allowing a process to run.
+
+       brief event
 ...
-> > Well, I think there's confusion here over "the" hwrng and "a" hwrng. I
-> > have devices with multiple entropy sources, and all my hwrngs are
-> > built as modules, so I choose when to load them into my kernel. "The"
-> > arch-specific entropy source (e.g. RDRAND) is very different.
+        qemu-kvm-5069  [003]  8242.604669: kvm_apic_ipi:         dst 9 vec 253 (Fixed|physical|assert|edge|dst)
+        qemu-kvm-5069  [003]  8242.604670: kvm_apic_accept_irq:  apicid 9 vec 253 (Fixed|edge)
+        qemu-kvm-5069  [003]  8242.604673: wakeup:               5069:120:0  ==+ 5078:120:0 [003]
+        qemu-kvm-5069  [003]  8242.604677: context_switch:       5069:120:0  ==> 5078:120:0 [003]   ... linux stacking vcpu 9 (pid 5078) on cpu 3 too
+...
+        qemu-kvm-5077  [001]  8242.610485: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x60edd06
+        qemu-kvm-5073  [000]  8242.610485: kvm_entry:            vcpu 4
+        qemu-kvm-5076  [015]  8242.610486: kvm_entry:            vcpu 7
+        qemu-kvm-5078  [003]  8242.610486: kvm_entry:            vcpu 9
+        qemu-kvm-5075  [014]  8242.610488: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x60edd06 ---> exist due to pause instruction.,
+        qemu-kvm-5070  [016]  8242.610488: kvm_entry:            vcpu 1
+        qemu-kvm-5073  [000]  8242.610488: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x60edd06
+        qemu-kvm-5078  [003]  8242.610488: kvm_exit:             [FAILED TO PARSE] exit_reason=1 guest_rip=0x60edd08
+...
+        qemu-kvm-5078  [003]  8242.610491: context_switch:       5078:120:0  ==> 5069:120:0 [003]
 
-Dynamically loading modules _after_ boot is fine.  Especially with
-Matt's clear explanation.  I'm not concerned about that scenario.
+        qemu-kvm-5069  [003]  8242.610494: kvm_apic_accept_irq:  apicid 0 vec 240 (Fixed|edge)
+...
+        qemu-kvm-5069  [003]  8242.610496: context_switch:       5069:120:0  ==> 5078:120:0 [003]
 
-> > > Please understand, my point-of-view is as someone who installs Linux on
-> > > equipment *after* purchase (hobbyist, tinkers).  If I control the part
-> > > selection and sourcing of the board components, of course I have more
-> > > trust in the hwrng.
-> > >
-> > > So my situation is similar to buying an Intel based laptop.  I can't do
-> > > a special order at Bestbuy and ask for a system without the RDRAND
-> > > instruction.  Same with the hobbyist market.  We buy the gear, but we
-> > > have no control over what's inside it.
-> > >
-> > > In that situation, without this patch, I would enable the hwrng for the
-> > > board.  With the patch in it's current form, I would start looking for
-> > > research papers and discussions regarding using the hwrng for input.  If
-> > > the patch provided arch_get_random_long(), I would feel comfortable
-> > > enabling the hwrng.
-> > >
-> > > Perhaps I'm being too conservative, but I'd rather have the discussion
-> > > now and have concerns proven unfounded than have someone say "How the
-> > > hell did this happen?" three releases down the road.
-> > 
-> > Sure, and I don't want to be the one weakening the entropy pool.
-> 
-> [temporarily coming out of retirement to provide a clue]
+... ( all other CPUs are busy trying to entering kernel state )
+       qemu-kvm-5078  [003]  8242.610502: context_switch:       5078:120:0  ==> 5069:120:0 [003]
+... ( all other CPUs are busy trying to entering kernel state )
 
-Thanks, Matt!
+        qemu-kvm-5069  [003]  8242.610552: kvm_apic_accept_irq:  apicid 0 vec 240 (Fixed|edge) (coalesced)
+        qemu-kvm-5069  [003]  8242.610554: context_switch:       5069:120:0  ==> 5078:120:0 [003]
+        qemu-kvm-5069  [003]  8242.610559: kvm_apic_accept_irq:  apicid 0 vec 240 (Fixed|edge) (coalesced)
+        qemu-kvm-5069  [003]  8242.610562: context_switch:       5069:120:0  ==> 5078:120:0 [003]
+        qemu-kvm-5069  [003]  8242.610569: kvm_apic_accept_irq:  apicid 0 vec 240 (Fixed|edge) (coalesced)
+        qemu-kvm-5069  [003]  8242.610571: context_switch:       5069:120:0  ==> 5078:120:0 [003]
+        qemu-kvm-5069  [003]  8242.610577: kvm_entry:            vcpu 0
+        qemu-kvm-5069  [003]  8242.610579: kvm_exit:             [FAILED TO PARSE] exit_reason=1 guest_rip=0x60ed11f
+        qemu-kvm-5069  [003]  8242.610579: kvm_apic_accept_irq:  apicid 0 vec 240 (Fixed|edge) (coalesced)
+        qemu-kvm-5069  [003]  8242.610581: context_switch:       5069:120:0  ==> 5078:120:0 [003]
+        qemu-kvm-5069  [003]  8242.610588: kvm_apic_accept_irq:  apicid 0 vec 240 (Fixed|edge) (coalesced)
+        qemu-kvm-5069  [003]  8242.610590: context_switch:       5069:120:0  ==> 5078:120:0 [003]
+        qemu-kvm-5069  [003]  8242.610595: kvm_apic_accept_irq:  apicid 0 vec 240 (Fixed|edge) (coalesced)
+        qemu-kvm-5069  [003]  8242.610597: context_switch:       5069:120:0  ==> 5078:120:0 [003]
+        qemu-kvm-5069  [003]  8242.610605: kvm_apic_accept_irq:  apicid 0 vec 240 (Fixed|edge) (coalesced)
+        qemu-kvm-5069  [003]  8242.610607: context_switch:       5069:120:0  ==> 5078:120:0 [003]
+...
+       qemu-kvm-5078  [003]  8242.610611: context_switch:       5078:120:0  ==> 5069:120:0 [003]
+...
+       qemu-kvm-5069  [003]  8242.610613: kvm_entry:            vcpu 0   ... start run vm work after not having chance to do real work for 6 ms.
+...  
 
-> The pool mixing function is intentionally _reversible_. This is a
-> crucial security property.
-> 
-> That means, if I have an initial secret pool state X, and hostile
-> attacker controlled data Y, then we can do:
-> 
-> X' = mix(X, Y)
-> 
->  and 
-> 
-> X = unmix(X', Y)
-> 
-> We can see from this that the combination of (X' and Y) still contain
-> the information that was originally in X. Since it's clearly not in Y..
-> it must all remain in X'.
-> 
-> In other words, if there are 4096 bits of "unknownness" in X to start
-> with, and I can get those same 4096 bits of "unknownness" back by
-> unmixing X' and Y, then there must still be 4096 bits of "unknownness"
-> in X'. If X' is 4096 bits long, then we've just proven that
-> reversibility means the attacker can know nothing about the contents of
-> X' by his choice of Y.
+        Close to the end of this log file, we can see, only vcpu 0 and vcpu 9 doing some real work but very slow, but all on        physical cpu 003. While others kept doing kvm_exit ( reason 40, due to pause instruction ) and kvm_entry. 
 
-Well, this reinforces my comfortability with loadable modules.  The pool
-is already initialized by the point at which the driver is loaded.
+        qemu-kvm-5078  [003]  8242.617050: kvm_entry:            vcpu 9
+        qemu-kvm-5071  [005]  8242.617051: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5070  [016]  8242.617051: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5078  [003]  8242.617052: kvm_exit:             [FAILED TO PARSE] exit_reason=0 guest_rip=0x6194c00
+        qemu-kvm-5075  [014]  8242.617053: kvm_entry:            vcpu 6
+        qemu-kvm-5074  [013]  8242.617054: kvm_entry:            vcpu 5
+        qemu-kvm-5073  [000]  8242.617054: kvm_entry:            vcpu 4
+        qemu-kvm-5072  [017]  8242.617054: kvm_entry:            vcpu 3
+        qemu-kvm-5079  [004]  8242.617054: kvm_entry:            vcpu 10
+        qemu-kvm-5076  [015]  8242.617055: kvm_entry:            vcpu 7
+        qemu-kvm-5071  [005]  8242.617055: kvm_entry:            vcpu 2
+        qemu-kvm-5070  [016]  8242.617055: kvm_entry:            vcpu 1
+        qemu-kvm-5077  [001]  8242.617056: kvm_entry:            vcpu 8
+        qemu-kvm-5075  [014]  8242.617056: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5078  [003]  8242.617056: context_switch:       5078:120:0  ==> 5069:120:0 [003]
+        qemu-kvm-5073  [000]  8242.617057: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x618b94b
+        qemu-kvm-5074  [013]  8242.617057: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5072  [017]  8242.617057: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5079  [004]  8242.617058: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5076  [015]  8242.617058: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5071  [005]  8242.617058: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5075  [014]  8242.617059: kvm_entry:            vcpu 6
+        qemu-kvm-5070  [016]  8242.617059: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5077  [001]  8242.617059: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5069  [003]  8242.617060: context_switch:       5069:120:0  ==> 5078:120:0 [003]
+        qemu-kvm-5075  [014]  8242.617062: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5076  [015]  8242.617062: kvm_entry:            vcpu 7
+        qemu-kvm-5071  [005]  8242.617063: kvm_entry:            vcpu 2
+        qemu-kvm-5070  [016]  8242.617063: kvm_entry:            vcpu 1
+        qemu-kvm-5077  [001]  8242.617064: kvm_entry:            vcpu 8
+        qemu-kvm-5072  [017]  8242.617064: kvm_entry:            vcpu 3
+        qemu-kvm-5078  [003]  8242.617065: context_switch:       5078:120:0  ==> 5069:120:0 [003]
+        qemu-kvm-5076  [015]  8242.617066: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5071  [005]  8242.617066: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5070  [016]  8242.617067: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5074  [013]  8242.617067: kvm_entry:            vcpu 5
+        qemu-kvm-5077  [001]  8242.617068: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5072  [017]  8242.617068: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5073  [000]  8242.617068: kvm_entry:            vcpu 4
+        qemu-kvm-5079  [004]  8242.617068: kvm_entry:            vcpu 10
+        qemu-kvm-5069  [003]  8242.617069: context_switch:       5069:120:0  ==> 5078:120:0 [003]
+        qemu-kvm-5074  [013]  8242.617071: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5073  [000]  8242.617071: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x618b94b
+        qemu-kvm-5079  [004]  8242.617071: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5072  [017]  8242.617071: kvm_entry:            vcpu 3
+        qemu-kvm-5075  [014]  8242.617072: kvm_entry:            vcpu 6
+        qemu-kvm-5078  [003]  8242.617072: context_switch:       5078:120:0  ==> 5069:120:0 [003]
+        qemu-kvm-5077  [001]  8242.617072: kvm_entry:            vcpu 8
+        qemu-kvm-5075  [014]  8242.617075: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5072  [017]  8242.617075: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5076  [015]  8242.617076: kvm_entry:            vcpu 7
+        qemu-kvm-5077  [001]  8242.617076: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5071  [005]  8242.617076: kvm_entry:            vcpu 2
+        qemu-kvm-5073  [000]  8242.617076: kvm_entry:            vcpu 4
+        qemu-kvm-5070  [016]  8242.617076: kvm_entry:            vcpu 1
+        qemu-kvm-5074  [013]  8242.617077: kvm_entry:            vcpu 5
+        qemu-kvm-5079  [004]  8242.617077: kvm_entry:            vcpu 10
+        qemu-kvm-5069  [003]  8242.617077: context_switch:       5069:120:0  ==> 5078:120:0 [003]
+        qemu-kvm-5071  [005]  8242.617079: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5076  [015]  8242.617079: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5073  [000]  8242.617079: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x618b94b
+        qemu-kvm-5070  [016]  8242.617080: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5074  [013]  8242.617080: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5079  [004]  8242.617080: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5077  [001]  8242.617081: kvm_entry:            vcpu 8
+        qemu-kvm-5075  [014]  8242.617081: kvm_entry:            vcpu 6
+        qemu-kvm-5078  [003]  8242.617082: context_switch:       5078:120:0  ==> 5069:120:0 [003]
+        qemu-kvm-5069  [003]  8242.617083: kvm_entry:            vcpu 0
+        qemu-kvm-5072  [017]  8242.617084: kvm_entry:            vcpu 3
+        qemu-kvm-5077  [001]  8242.617084: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5075  [014]  8242.617084: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5069  [003]  8242.617086: kvm_exit:             [FAILED TO PARSE] exit_reason=1 guest_rip=0x60edd08
+        qemu-kvm-5072  [017]  8242.617087: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5074  [013]  8242.617087: kvm_entry:            vcpu 5
+        qemu-kvm-5079  [004]  8242.617087: kvm_entry:            vcpu 10
+        qemu-kvm-5071  [005]  8242.617088: kvm_entry:            vcpu 2
+        qemu-kvm-5069  [003]  8242.617089: context_switch:       5069:120:0  ==> 5078:120:0 [003]
+        qemu-kvm-5076  [015]  8242.617089: kvm_entry:            vcpu 7
+        qemu-kvm-5074  [013]  8242.617090: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5070  [016]  8242.617090: kvm_entry:            vcpu 1
+        qemu-kvm-5078  [003]  8242.617090: kvm_entry:            vcpu 9
+        qemu-kvm-5079  [004]  8242.617090: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5073  [000]  8242.617091: kvm_entry:            vcpu 4
+        qemu-kvm-5071  [005]  8242.617091: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5076  [015]  8242.617092: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5072  [017]  8242.617092: kvm_entry:            vcpu 3
+        qemu-kvm-5078  [003]  8242.617092: kvm_exit:             [FAILED TO PARSE] exit_reason=1 guest_rip=0x6194c00
+        qemu-kvm-5075  [014]  8242.617093: kvm_entry:            vcpu 6
+        qemu-kvm-5079  [004]  8242.617093: kvm_entry:            vcpu 10
+        qemu-kvm-5070  [016]  8242.617094: kvm_exit:             [FAILED TO PARSE] exit_reason=40 guest_rip=0x6180a6c
+        qemu-kvm-5077  [001]  8242.617094: kvm_entry:            vcpu 8
 
-Unfortunately, any of the drivers in hw_random can be built in.  When
-built in, hwrng_register is going to be called during the kernel
-initialization process.  In that case, the unknownness in X is not 4096
-bits, but far less.  Also, the items that may have seeded X (MAC addr,
-time, etc) are discoverable by a potential attacker.  This is also well
-before random-seed has been fed in.
+> b) When using "paravirtual ticketlock", the threshold to decide "are 
+> we spinning too much" becomes an important factor need to be tuned to 
+> the final system case by case. What we found from the test is, 
+> different application running in our guest OS would require different 
+> threshold setting.
 
-That's the crux of my concern with this patch.  Basically, the user can
-choose 'y' over 'm', say when building a dedicated system w/o loadable
-modules, and not realize how much more trust he has placed in the hwrng.
+Did you also find out here why this is the case?
 
-How does this patch look?  I'm not claiming my change is acceptable for
-mainline, just seeking feedback on the concept.  IS_MODULE() really
-doesn't have many users afaict.
+Binl:
+Yes. The application running in our customized embedded OS is also real time application which is timing sensitive. 
+The timing sensitive level varies among the applications.
+When I talking about different threshold, the assumption is using default 4096 ple_window setting.
+If I set up the ple_window to 16384 or higher, there will be no problem for our application. But the finial user could also run linux or window VM on same hypervisor which would prefer default 4096 setting for linux and windows.
+We are looking for a solution to be good for both linux / window and real time application.
+The enhancement patch we proposed will satisfy both linux/window application and real time embedded applications.
 
-This builds without warning on ARCH=arm with multi_v7_defconfig when
-HW_RANDOM={y,m,n}
-
-thx,
-
-Jason.
-
--------->8--------------------------
-commit 0fcc0669ee4bbeae355c0f61f79a6b319a32ba12
-Author: Kees Cook <keescook@chromium.org>
-Date:   Mon Mar 3 15:51:48 2014 -0800
-
-    hwrng: add randomness to system from rng sources
-    
-    When bringing a new RNG source online, it seems like it would make sense
-    to use some of its bytes to make the system entropy pool more random,
-    as done with all sorts of other devices that contain per-device or
-    per-boot differences.
-    
-    [jac] prevent the code from being called at boot up, before the entropy
-    pool has had time to build and be well initialized.  We do this by
-    making the code conditional on being built as a module.
-    
-    Signed-off-by: Kees Cook <keescook@chromium.org>
-    Signed-off-by: Jason Cooper <jason@lakedaemon.net>
-
-diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
-index a0f7724852eb..5c3314cbf671 100644
---- a/drivers/char/hw_random/core.c
-+++ b/drivers/char/hw_random/core.c
-@@ -41,6 +41,8 @@
- #include <linux/miscdevice.h>
- #include <linux/delay.h>
- #include <linux/slab.h>
-+#include <linux/random.h>
-+#include <linux/kconfig.h>
- #include <asm/uaccess.h>
- 
- 
-@@ -305,6 +307,10 @@ int hwrng_register(struct hwrng *rng)
- 	int must_register_misc;
- 	int err = -EINVAL;
- 	struct hwrng *old_rng, *tmp;
-+#if IS_MODULE(CONFIG_HW_RANDOM)
-+	unsigned char bytes[16];
-+	int bytes_read;
-+#endif
- 
- 	if (rng->name == NULL ||
- 	    (rng->data_read == NULL && rng->read == NULL))
-@@ -348,6 +354,18 @@ int hwrng_register(struct hwrng *rng)
- 	}
- 	INIT_LIST_HEAD(&rng->list);
- 	list_add_tail(&rng->list, &rng_list);
-+
-+	/*
-+	 * Out of an abundance of caution, we should avoid seeding the entropy
-+	 * pool when it is first initialized (ie at kernel boot time).
-+	 * Therefore, we take advantage of the hwrng when it is built as a
-+	 * module, but not when built in.
-+	 */
-+#if IS_MODULE(CONFIG_HW_RANDOM)
-+	bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
-+	if (bytes_read > 0)
-+		add_device_randomness(bytes, bytes_read);
-+#endif
- out_unlock:
- 	mutex_unlock(&rng_mutex);
- out:
+Paolo
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
