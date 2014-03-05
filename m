@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757713AbaCED7Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 22:59:24 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:60629 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757675AbaCED7S (ORCPT
+	id S1757778AbaCED7j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 22:59:39 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:65489 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757752AbaCED7e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 22:59:18 -0500
-Date: Tue, 4 Mar 2014 19:59:16 -0800 (PST)
+	Tue, 4 Mar 2014 22:59:34 -0500
+Date: Tue, 4 Mar 2014 19:59:32 -0800 (PST)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
 To: Andrew Morton <akpm@linux-foundation.org>
@@ -19,9 +19,9 @@ cc: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
         Rik van Riel <riel@redhat.com>, Jianguo Wu <wujianguo@huawei.com>,
         Tim Hockin <thockin@google.com>, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, cgroups@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: [patch 03/11] mm, mempolicy: remove per-process flag
+Subject: [patch 08/11] mm, memcg: add memcg oom reserve documentation
 In-Reply-To: <alpine.DEB.2.02.1403041952170.8067@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.02.1403041954420.8067@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.02.1403041956250.8067@chino.kir.corp.google.com>
 References: <alpine.DEB.2.02.1403041952170.8067@chino.kir.corp.google.com>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
@@ -30,136 +30,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PF_MEMPOLICY is an unnecessary optimization for CONFIG_SLAB users.
-There's no significant performance degradation to checking
-current->mempolicy rather than current->flags & PF_MEMPOLICY in the
-allocation path, especially since this is considered unlikely().
-
-Running TCP_RR with netperf-2.4.5 through localhost on 16 cpu machine
-with 64GB of memory and without a mempolicy:
-
-	threads		before		after
-	16		1249409		1244487
-	32		1281786		1246783
-	48		1239175		1239138
-	64		1244642		1241841
-	80		1244346		1248918
-	96		1266436		1254316
-	112		1307398		1312135
-	128		1327607		1326502
-
-Per-process flags are a scarce resource so we should free them up
-whenever possible and make them available.  We'll be using it shortly for
-memcg oom reserves.
+Add documentation on memcg oom reserves to
+Documentation/cgroups/memory.txt and give an example of its usage and
+recommended best practices.
 
 Signed-off-by: David Rientjes <rientjes@google.com>
 ---
- include/linux/mempolicy.h |  1 -
- include/linux/sched.h     |  1 -
- kernel/fork.c             |  1 -
- mm/mempolicy.c            | 31 -------------------------------
- mm/slab.c                 |  4 ++--
- 5 files changed, 2 insertions(+), 36 deletions(-)
+ Documentation/cgroups/memory.txt | 26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
 
-diff --git a/include/linux/mempolicy.h b/include/linux/mempolicy.h
---- a/include/linux/mempolicy.h
-+++ b/include/linux/mempolicy.h
-@@ -143,7 +143,6 @@ extern void numa_policy_init(void);
- extern void mpol_rebind_task(struct task_struct *tsk, const nodemask_t *new,
- 				enum mpol_rebind_step step);
- extern void mpol_rebind_mm(struct mm_struct *mm, nodemask_t *new);
--extern void mpol_fix_fork_child_flag(struct task_struct *p);
+diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+--- a/Documentation/cgroups/memory.txt
++++ b/Documentation/cgroups/memory.txt
+@@ -71,6 +71,7 @@ Brief summary of control files.
+ 				 (See sysctl's vm.swappiness)
+  memory.move_charge_at_immigrate # set/show controls of moving charges
+  memory.oom_control		 # set/show oom controls.
++ memory.oom_reserve_in_bytes	 # set/show limit of oom memory reserves
+  memory.numa_stat		 # show the number of memory usage per numa node
  
- extern struct zonelist *huge_zonelist(struct vm_area_struct *vma,
- 				unsigned long addr, gfp_t gfp_flags,
-diff --git a/include/linux/sched.h b/include/linux/sched.h
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1821,7 +1821,6 @@ extern void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut,
- #define PF_SPREAD_SLAB	0x02000000	/* Spread some slab caches over cpuset */
- #define PF_NO_SETAFFINITY 0x04000000	/* Userland is not allowed to meddle with cpus_allowed */
- #define PF_MCE_EARLY    0x08000000      /* Early kill for mce process policy */
--#define PF_MEMPOLICY	0x10000000	/* Non-default NUMA mempolicy */
- #define PF_MUTEX_TESTER	0x20000000	/* Thread belongs to the rt mutex tester */
- #define PF_FREEZER_SKIP	0x40000000	/* Freezer should not count it as freezable */
- #define PF_SUSPEND_TASK 0x80000000      /* this thread called freeze_processes and should not be frozen */
-diff --git a/kernel/fork.c b/kernel/fork.c
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1265,7 +1265,6 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 		p->mempolicy = NULL;
- 		goto bad_fork_cleanup_cgroup;
- 	}
--	mpol_fix_fork_child_flag(p);
- #endif
- #ifdef CONFIG_CPUSETS
- 	p->cpuset_mem_spread_rotor = NUMA_NO_NODE;
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -795,36 +795,6 @@ static int mbind_range(struct mm_struct *mm, unsigned long start,
- 	return err;
- }
+  memory.kmem.limit_in_bytes      # set/show hard limit for kernel memory
+@@ -772,6 +773,31 @@ At reading, current status of OOM is shown.
+ 	under_oom	 0 or 1 (if 1, the memory cgroup is under OOM, tasks may
+ 				 be stopped.)
  
--/*
-- * Update task->flags PF_MEMPOLICY bit: set iff non-default
-- * mempolicy.  Allows more rapid checking of this (combined perhaps
-- * with other PF_* flag bits) on memory allocation hot code paths.
-- *
-- * If called from outside this file, the task 'p' should -only- be
-- * a newly forked child not yet visible on the task list, because
-- * manipulating the task flags of a visible task is not safe.
-- *
-- * The above limitation is why this routine has the funny name
-- * mpol_fix_fork_child_flag().
-- *
-- * It is also safe to call this with a task pointer of current,
-- * which the static wrapper mpol_set_task_struct_flag() does,
-- * for use within this file.
-- */
--
--void mpol_fix_fork_child_flag(struct task_struct *p)
--{
--	if (p->mempolicy)
--		p->flags |= PF_MEMPOLICY;
--	else
--		p->flags &= ~PF_MEMPOLICY;
--}
--
--static void mpol_set_task_struct_flag(void)
--{
--	mpol_fix_fork_child_flag(current);
--}
--
- /* Set the process memory policy */
- static long do_set_mempolicy(unsigned short mode, unsigned short flags,
- 			     nodemask_t *nodes)
-@@ -861,7 +831,6 @@ static long do_set_mempolicy(unsigned short mode, unsigned short flags,
- 	}
- 	old = current->mempolicy;
- 	current->mempolicy = new;
--	mpol_set_task_struct_flag();
- 	if (new && new->mode == MPOL_INTERLEAVE &&
- 	    nodes_weight(new->v.nodes))
- 		current->il_next = first_node(new->v.nodes);
-diff --git a/mm/slab.c b/mm/slab.c
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -3027,7 +3027,7 @@ out:
++Processes that handle oom conditions in their own memcgs or their child
++memcgs may need to allocate memory themselves to do anything useful,
++including pagefaulting its text or allocating kernel memory to read the
++memcg "tasks" file.  For this reason, memory.oom_reserve_in_bytes is
++provided that specifies how much memory that processes waiting on
++memory.oom_control can allocate above the memcg limit.
++
++The memcg that the oom handler is attached to is charged for the memory
++that it allocates against its own memory.oom_reserve_in_bytes.  This
++memory is therefore only available to processes that are waiting for
++a notification.
++
++For example, if you do
++
++	# echo 2m > memory.oom_reserve_in_bytes
++
++then any process attached to this memcg that is waiting on memcg oom
++notifications anywhere on the system can allocate an additional 2MB
++above memory.limit_in_bytes.
++
++You may still consider doing mlockall(MCL_FUTURE) for processes that
++are waiting on oom notifications to keep this vaue as minimal as
++possible, or allow it to be large enough so that its text can still
++be pagefaulted in under oom conditions when the value is known.
++
+ 11. Memory Pressure
  
- #ifdef CONFIG_NUMA
- /*
-- * Try allocating on another node if PF_SPREAD_SLAB|PF_MEMPOLICY.
-+ * Try allocating on another node if PF_SPREAD_SLAB is a mempolicy is set.
-  *
-  * If we are in_interrupt, then process context, including cpusets and
-  * mempolicy, may not apply and should not be used for allocation policy.
-@@ -3259,7 +3259,7 @@ __do_cache_alloc(struct kmem_cache *cache, gfp_t flags)
- {
- 	void *objp;
- 
--	if (unlikely(current->flags & (PF_SPREAD_SLAB | PF_MEMPOLICY))) {
-+	if (current->mempolicy || unlikely(current->flags & PF_SPREAD_SLAB)) {
- 		objp = alternate_node_alloc(cache, flags);
- 		if (objp)
- 			goto out;
+ The pressure level notifications can be used to monitor the memory
