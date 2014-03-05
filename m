@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757718AbaCEOnh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:43:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41776 "EHLO
+	id S1757638AbaCEOng (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:43:36 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41779 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932457AbaCEOiW (ORCPT
+	with ESMTP id S932501AbaCEOiW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Mar 2014 09:38:22 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Dr. Greg Wettstein" <greg@enjellic.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 48/62] qla2xxx: Fix kernel panic on selective retransmission request
-Date: Wed,  5 Mar 2014 14:36:52 +0000
-Message-Id: <1394030226-26652-49-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 49/62] ASoC: wm8958-dsp: Fix firmware block loading
+Date: Wed,  5 Mar 2014 14:36:53 +0000
+Message-Id: <1394030226-26652-50-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
 References: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
@@ -28,61 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Dr. Greg Wettstein" <greg@enjellic.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit 6f58c780e5a5b43a6d2121e0d43cdcba1d3cc5fc upstream.
+commit 548da08fc1e245faf9b0d7c41ecd8e07984fc332 upstream.
 
-A selective retransmission request (SRR) is a fibre-channel
-protocol control request which provides support for requesting
-retransmission of a data sequence in response to an issue such as
-frame loss or corruption.  These events are experienced
-infrequently in fibre-channel based networks which makes
-it difficult to test and assess codepaths which handle these
-events.
+The codec->control_data contains a pointer to the device's regmap struct. But
+wm8994_bulk_write() expects a pointer to the parent wm8998 device.
 
-We were fortunate enough, for some definition of fortunate, to
-have a metro-area single-mode SAN link which, at 10 GBPS
-sustained load levels, would consistently generate SRR's in
-a SCST based target implementation using our SCST/in-kernel
-Qlogic target interface driver.  In response to an SRR the
-in-kernel Qlogic target driver immediately panics resulting
-in a catastrophic storage failure for serviced initiators.
+The issue was introduced in commit d9a7666f ("ASoC: Remove ASoC-specific
+WM8994 I/O code").
 
-The culprit was a debug statement in the qla_target.c file which
-does not verify that a pointer to the SCSI CDB is not null.
-The unchecked pointer dereference results in the kernel panic
-and resultant system failure.
-
-The other two references to the SCSI CDB by the SRR handling code
-use a ternary operator to verify a non-null pointer is being
-acted on.  This patch simply adds a similar test to the implicated
-debug statement.
-
-This patch is a candidate for any stable kernel being maintained
-since it addresses a potentially catastrophic event with
-minimal downside.
-
-Signed-off-by: Dr. Greg Wettstein <greg@enjellic.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Fixes: d9a7666f ("ASoC: Remove ASoC-specific WM8994 I/O code")
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/scsi/qla2xxx/qla_target.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ sound/soc/codecs/wm8958-dsp2.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/qla2xxx/qla_target.c b/drivers/scsi/qla2xxx/qla_target.c
-index 714a97d..a8eee44 100644
---- a/drivers/scsi/qla2xxx/qla_target.c
-+++ b/drivers/scsi/qla2xxx/qla_target.c
-@@ -3367,7 +3367,8 @@ restart:
- 		ql_dbg(ql_dbg_tgt_mgt, vha, 0xf02c,
- 		    "SRR cmd %p (se_cmd %p, tag %d, op %x), "
- 		    "sg_cnt=%d, offset=%d", cmd, &cmd->se_cmd, cmd->tag,
--		    se_cmd->t_task_cdb[0], cmd->sg_cnt, cmd->offset);
-+		    se_cmd->t_task_cdb ? se_cmd->t_task_cdb[0] : 0,
-+		    cmd->sg_cnt, cmd->offset);
+diff --git a/sound/soc/codecs/wm8958-dsp2.c b/sound/soc/codecs/wm8958-dsp2.c
+index 1332692..77552b5 100644
+--- a/sound/soc/codecs/wm8958-dsp2.c
++++ b/sound/soc/codecs/wm8958-dsp2.c
+@@ -153,7 +153,7 @@ static int wm8958_dsp2_fw(struct snd_soc_codec *codec, const char *name,
  
- 		qlt_handle_srr(vha, sctio, imm);
+ 			data32 &= 0xffffff;
  
+-			wm8994_bulk_write(codec->control_data,
++			wm8994_bulk_write(wm8994->wm8994,
+ 					  data32 & 0xffffff,
+ 					  block_len / 2,
+ 					  (void *)(data + 8));
 -- 
 1.9.0
 
