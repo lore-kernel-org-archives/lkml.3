@@ -1,116 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755267AbaCEAKP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 19:10:15 -0500
-Received: from www.linutronix.de ([62.245.132.108]:38123 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753797AbaCEAKN (ORCPT
+	id S1756035AbaCEALM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 19:11:12 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35229 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755879AbaCEALI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 19:10:13 -0500
-Date: Wed, 5 Mar 2014 01:10:20 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andy Lutomirski <luto@amacapital.net>
-cc: Alexey Perevalov <a.perevalov@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton@enomsg.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>, cw00.choi@samsung.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>
-Subject: Re: [PATCH v4 5/6] timerfd: Add support for deferrable timers
-In-Reply-To: <CALCETrWOsSm3M9C+2bx2mLCdjjdFJOZk1QL6khCzvzxX9iO+0Q@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1403050017020.18573@ionos.tec.linutronix.de>
-References: <1392913425-29369-1-git-send-email-a.perevalov@samsung.com> <1392913425-29369-6-git-send-email-a.perevalov@samsung.com> <530D5715.1050901@mit.edu> <alpine.DEB.2.02.1403042153520.18573@ionos.tec.linutronix.de> <CALCETrVsmXjkC28pTSCfywTZCeHVcfvyFvHAXubEJ7=TRoEmPQ@mail.gmail.com>
- <alpine.DEB.2.02.1403042254550.18573@ionos.tec.linutronix.de> <CALCETrWOsSm3M9C+2bx2mLCdjjdFJOZk1QL6khCzvzxX9iO+0Q@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 4 Mar 2014 19:11:08 -0500
+Message-ID: <1393978247.16256.27.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH net RESEND] vlan: don't allow to add VLAN on VLAN device
+From: Ben Hutchings <ben@decadent.org.uk>
+To: John Fastabend <john.r.fastabend@intel.com>
+Cc: Ding Tianhong <dingtianhong@huawei.com>, Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 05 Mar 2014 00:10:47 +0000
+In-Reply-To: <53100677.2060705@intel.com>
+References: <530FF7BF.4030706@huawei.com> <53100677.2060705@intel.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-1D+2k3mML1dib6IMILwZ"
+X-Mailer: Evolution 3.8.5-2+b2 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.244
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 Mar 2014, Andy Lutomirski wrote:
-> On Tue, Mar 4, 2014 at 2:11 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > We do no add another random special case syscall for timerfd just
-> > because timerfd is linux specific.
-> 
-> What syscalls?  I can think of exactly two timer interfaces that
-> actually accept a clock id and flags: clock_nanosleep and
-> timerfd_settime.
 
-Sure, and what you can think of is reality?
+--=-1D+2k3mML1dib6IMILwZ
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
- sys_timer_settime() which relies on sys_timer_create() are outside
- your universe, right?
+On Thu, 2014-02-27 at 19:45 -0800, John Fastabend wrote:
+> On 2/27/2014 6:43 PM, Ding Tianhong wrote:
+> > I run these steps:
+> >
+> > modprobe 8021q
+> > vconfig add eth2 20
+> > vconfig add eth2.20 20
+> > ifconfig eth2 xx.xx.xx.xx
+> >
+> > then the Call Trace happened:
+> >
+>=20
+> [...]
+>=20
+> > =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+> >
+> > The reason is that if add vlan on vlan dev, the vlan dev will create vl=
+an_info,
+> > then the notification will let the real dev to run dev_set_rx_mode() an=
+d hold
+> > netif_addr_lock, and then the real dev will call ndo_set_rx_mode(), if =
+the real
+> > dev is vlan dev, the ndo_set_rx_mode() will hold netif_addr_lock again,=
+ so deadlock
+> > happened.
+> >
+> > Don't allow to add vlan on vlan dev to fix this problem.
+> >
+> > Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+> > ---
+>=20
+> I'm not sure we can just disable stacked vlans. There might be something
+> using them today and they have worked in the past. Lets try to find a
+> better fix.
 
-And no. We are not adding timer_list mess back to any of them.
+I don't think there's any deadlock possible here.  We try to acquire the
+addr_list_lock for eth2.20, then the addr_list_lock for eth2.  We never
+try to acquire them in the opposite order.  The fix would involve
+telling lockdep about lock ordering between stacked net_devices (I have
+no idea how that's done).
 
-Aside of that if you want to make the slack thing usefull on a per
-call basis then you want to add it to a lot of other interfaces like
-poll.
+Ben.
 
-And you are completely ignoring the fact that the slack works
-completely differrent:
+--=20
+Ben Hutchings
+For every complex problem
+there is a solution that is simple, neat, and wrong.
 
-A slacked timer still gets enqueued into the main timer queue. It just
-relies on the fact that it gets batched with some other expiring
-timer. But thats completely different to the deferrable approach.
+--=-1D+2k3mML1dib6IMILwZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-       start_timer(timer, expiry, slack);
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-       	   timer.hard_expiry = expiry + slack;
-	   timer.soft_expiry = expiry;
-	   enqueue_timer(timer, timer.hard_expiry);
+iQIVAwUAUxZrh+e/yOyVhhEJAQpK2BAAkAwjaQd0UsTb1W7iwkBsOsZkCndU6oqV
+FpNPUUL4DmZa2UMddEfVvAWump0TscZy7CWbc2GWYWo+kg8XUtlcfib3/bMMYoIq
+xxdhJprDAgvOkJ/cO1fkDwUxahI6F/1UfAx3r8rNgZf/+dlgZ2ELMFKcvy59m8ja
+2setoNK5tOu5/gm/LE/moPvNRicQgWsaJFt/8S7gfVmOB6yTvso9XfgFvJdV1QIg
+2AYxmf20ZRXNcVigOOVYvYvEPuJjO+M6tFgjgZcAP8N6+Qb9X9T/Jt83rHhZQjJP
+POe7zEvibX6SjVTSFElKFBzix6NdL3hzZOBr56PLBt+3fpvUoE2c8B+XZL/sz+Z2
+XnUp5dgCzeCO9VpXJtmQ7A4lkP3l/5Al5MFiyv4nnLVmUKCJlPbR0Yml6WX41AIi
+KxWO0HgBjVr79WaqX4GzYRB/aPP7KZCo3zj2+ijOs1eC2ckumTRF5e7taY24LEJ2
+ZHXbcq0H5ntW7/cnhRFlepbedy+r0ap/8o07dmdQD6M/4hEnG9vwHNo0DetuuwZ+
+/loVqac1Rrkx66xcb95atO7oAXHPKfnTjp3KweROwuj3Kp0LcPxCuK2vnJpohFr+
+3Hf8OFugfv9CTqkXJH7dGavKw+U+BjlWDTW9Qtsj+VXzCIS97R8uCLBzun+agKgc
+uNzTf+XVck4=
+=MPZj
+-----END PGP SIGNATURE-----
 
-The enqueueing code puts it into the queue by looking at the
-hard_expiry code. And the expiry code looks at the timer.soft_expiry
-value to expire a timer early.
-
-Now assume the following:
-
-       start_timer(timer, +100ms, 100s);
-
-So that puts that timer into the hard expiry line of 100.1 sec from
-now. So if the cpu is busy and is firing a lot of timers then your
-timer could be delayed up to the hard expiry time, i.e. 100.1 seconds
-from now, which has completely differrent semantics than the
-deferrrable timers.
-
-The deferrable timer is guaranteed to expire (halfways) on time when
-the system is active and does not affect the system from going idle,
-but it expires right away when the system comes back out of idle.
-
-The slack timers are just a batching mechanism to align expiry times
-of non deferrable timers to a common time.
-
-So how do you map those together?
-
-I'm not saying that a per timer slack is useless, but it does not
-solve the issue of deferrable timers.
-
-Quite the contrary, it would be simpler to implement the slacked
-timers as a special case of the deferrable timers. But hell no, we are
-not going to go there.
-
-> > But we cannot do that right now as we cannot whip up severl dozen of
-> > new syscalls just because we want to add slack/deferrable whatever
-> > properties.
-
-> Two syscalls, right?
-
-It does not matter at all how many syscalls this affects. We are not
-adding any random new syscalls just because we can.
-
-> Once we agree on a solution to the Y2038 issue on 32bit with a unified
-> 32/64 bit syscall interface which simply gets rid of the timespec/val
-> nonsense and takes a simple u64 nsec value we can add the slack
-> property to that without any further inconvenience.
-
-Ignoring this wont get you anywhere.
-
-Thanks,
-
-	tglx
+--=-1D+2k3mML1dib6IMILwZ--
