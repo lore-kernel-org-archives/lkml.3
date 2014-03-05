@@ -1,52 +1,338 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757189AbaCEDJY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 22:09:24 -0500
-Received: from smtprelay0169.hostedemail.com ([216.40.44.169]:42417 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754396AbaCEDJX (ORCPT
+	id S1757238AbaCEDLw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 22:11:52 -0500
+Received: from mail-we0-f172.google.com ([74.125.82.172]:53549 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756172AbaCEDLv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 22:09:23 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2559:2562:2828:2901:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3874:4321:5007:7652:7903:10004:10400:10848:11658:11914:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: ants62_8be00fae56321
-X-Filterd-Recvd-Size: 1878
-Message-ID: <1393988959.3271.37.camel@joe-AO722>
-Subject: Re: [PATCH] gpio: clamp returned values to the boolean range
-From: Joe Perches <joe@perches.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Alexandre Courbot <gnurou@gmail.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 04 Mar 2014 19:09:19 -0800
-In-Reply-To: <CACRpkdbaLy+uY_fsht=Fk0qPdtAnttpOK3xrpirPbwB0mA+TPQ@mail.gmail.com>
-References: <1393378800-7220-1-git-send-email-acourbot@nvidia.com>
-	 <CACRpkdY-oBdxxWhsGraEU31qyu+RWJAiRA+KEip6QNW3jRwGUA@mail.gmail.com>
-	 <1393985087.3271.21.camel@joe-AO722>
-	 <CAAVeFuJdg-p4K1wdLpdv3byiEBUezGGUVjyScoOaZcLZxhPk7A@mail.gmail.com>
-	 <1393985959.3271.25.camel@joe-AO722>
-	 <CAAVeFuKwLJ5-Q1_u4e_o6tp1F-AKaVQG0ph1GdqjBqFiMCQvPQ@mail.gmail.com>
-	 <CACRpkdbaLy+uY_fsht=Fk0qPdtAnttpOK3xrpirPbwB0mA+TPQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 4 Mar 2014 22:11:51 -0500
+MIME-Version: 1.0
+In-Reply-To: <1393971437-4129-3-git-send-email-ast@plumgrid.com>
+References: <1393971437-4129-1-git-send-email-ast@plumgrid.com>
+	<1393971437-4129-3-git-send-email-ast@plumgrid.com>
+Date: Tue, 4 Mar 2014 19:11:49 -0800
+Message-ID: <CAMEtUux+sQLbz4AO=T9==FmOFVf6M=hHQyigmUBvsW=qLXP6GQ@mail.gmail.com>
+Subject: Re: [PATCH v5 net-next 2/3] [RFC] seccomp: convert seccomp to use
+ extended BPF
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Daniel Borkmann <dborkman@redhat.com>, Kees Cook <keescook@chromium.org>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Hagen Paul Pfeifer <hagen@jauu.net>,
+        Jesse Gross <jesse@nicira.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-03-05 at 10:33 +0800, Linus Walleij wrote:
-> the local "value" variable in the function should still be
-> converted to a bool as well right? And the assignment should still
-> be "false" not 0. So I would still add my hunk of code...
+On Tue, Mar 4, 2014 at 2:17 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+> use sk_convert_filter() to convert seccomp BPF into extended BPF
+>
+> 05-sim-long_jumps.c of libseccomp was used as micro-benchmark:
+>   seccomp_rule_add_exact(ctx,...
+>   seccomp_rule_add_exact(ctx,...
+>   rc = seccomp_load(ctx);
+>   for (i = 0; i < 10000000; i++)
+>      syscall(199, 100);
+>
+> --x86_64--
+> old BPF: 8.6 seconds
+>     73.38%    bench  [kernel.kallsyms]  [k] sk_run_filter
+>     10.70%    bench  libc-2.15.so       [.] syscall
+>      5.09%    bench  [kernel.kallsyms]  [k] seccomp_bpf_load
+>      1.97%    bench  [kernel.kallsyms]  [k] system_call
+> ext BPF: 5.7 seconds
+>     66.20%    bench  [kernel.kallsyms]  [k] sk_run_filter_ext
+>     16.75%    bench  libc-2.15.so       [.] syscall
+>      3.31%    bench  [kernel.kallsyms]  [k] system_call
+>      2.88%    bench  [kernel.kallsyms]  [k] __secure_computing
+>
+> --i386---
+> old BPF: 5.4 sec
+> ext BPF: 3.8 sec
+>
+> BPF filters generated by seccomp are very branchy, so ext BPF
+> performance is better than old BPF.
+>
+> Performance gains will be even higher when extended BPF JIT
+> is committed.
+>
+> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+>
+> ---
+> This patch is an RFC to use extended BPF in seccomp.
+> Change it to do it conditionally with bpf_ext_enable knob ?
 
-No idea.  I don't know the code, just wanted to point
-out that a bool is not an int.
+Kees, Will,
 
-Generically, I think converting an int to a bool in
-any "raw" function probably isn't the right thing to do.
+I've played with libseccomp to test this patch and just found
+your other testsuite for bpf+seccomp:
+https://github.com/redpig/seccomp
+It passes as well on x86_64 and i386.
 
-Especially if any of these GPIOs are ever used as ports
-(aggregates) in any access.
+Not sure how real all 'seccomp' and libseccomp' bpf filters.
+Some of them are very short, some very long.
+If average number of filtered syscalls is > 10, then upcoming
+'ebpf table' will give another performance boost, since single table
+lookup will be faster than long sequence of 'if' conditions.
 
+Please review.
+
+Thanks
+Alexei
+
+> ---
+>  include/linux/seccomp.h |    1 -
+>  kernel/seccomp.c        |  112 +++++++++++++++++++++--------------------------
+>  net/core/filter.c       |    5 ---
+>  3 files changed, 51 insertions(+), 67 deletions(-)
+>
+> diff --git a/include/linux/seccomp.h b/include/linux/seccomp.h
+> index 6f19cfd1840e..4054b0994071 100644
+> --- a/include/linux/seccomp.h
+> +++ b/include/linux/seccomp.h
+> @@ -76,7 +76,6 @@ static inline int seccomp_mode(struct seccomp *s)
+>  #ifdef CONFIG_SECCOMP_FILTER
+>  extern void put_seccomp_filter(struct task_struct *tsk);
+>  extern void get_seccomp_filter(struct task_struct *tsk);
+> -extern u32 seccomp_bpf_load(int off);
+>  #else  /* CONFIG_SECCOMP_FILTER */
+>  static inline void put_seccomp_filter(struct task_struct *tsk)
+>  {
+> diff --git a/kernel/seccomp.c b/kernel/seccomp.c
+> index b7a10048a32c..346c597b44cc 100644
+> --- a/kernel/seccomp.c
+> +++ b/kernel/seccomp.c
+> @@ -55,60 +55,27 @@ struct seccomp_filter {
+>         atomic_t usage;
+>         struct seccomp_filter *prev;
+>         unsigned short len;  /* Instruction count */
+> -       struct sock_filter insns[];
+> +       struct sock_filter_ext insns[];
+>  };
+>
+>  /* Limit any path through the tree to 256KB worth of instructions. */
+>  #define MAX_INSNS_PER_PATH ((1 << 18) / sizeof(struct sock_filter))
+>
+> -/**
+> - * get_u32 - returns a u32 offset into data
+> - * @data: a unsigned 64 bit value
+> - * @index: 0 or 1 to return the first or second 32-bits
+> - *
+> - * This inline exists to hide the length of unsigned long.  If a 32-bit
+> - * unsigned long is passed in, it will be extended and the top 32-bits will be
+> - * 0. If it is a 64-bit unsigned long, then whatever data is resident will be
+> - * properly returned.
+> - *
+> +/*
+>   * Endianness is explicitly ignored and left for BPF program authors to manage
+>   * as per the specific architecture.
+>   */
+> -static inline u32 get_u32(u64 data, int index)
+> -{
+> -       return ((u32 *)&data)[index];
+> -}
+> -
+> -/* Helper for bpf_load below. */
+> -#define BPF_DATA(_name) offsetof(struct seccomp_data, _name)
+> -/**
+> - * bpf_load: checks and returns a pointer to the requested offset
+> - * @off: offset into struct seccomp_data to load from
+> - *
+> - * Returns the requested 32-bits of data.
+> - * seccomp_check_filter() should assure that @off is 32-bit aligned
+> - * and not out of bounds.  Failure to do so is a BUG.
+> - */
+> -u32 seccomp_bpf_load(int off)
+> +static void populate_seccomp_data(struct seccomp_data *sd)
+>  {
+>         struct pt_regs *regs = task_pt_regs(current);
+> -       if (off == BPF_DATA(nr))
+> -               return syscall_get_nr(current, regs);
+> -       if (off == BPF_DATA(arch))
+> -               return syscall_get_arch(current, regs);
+> -       if (off >= BPF_DATA(args[0]) && off < BPF_DATA(args[6])) {
+> -               unsigned long value;
+> -               int arg = (off - BPF_DATA(args[0])) / sizeof(u64);
+> -               int index = !!(off % sizeof(u64));
+> -               syscall_get_arguments(current, regs, arg, 1, &value);
+> -               return get_u32(value, index);
+> -       }
+> -       if (off == BPF_DATA(instruction_pointer))
+> -               return get_u32(KSTK_EIP(current), 0);
+> -       if (off == BPF_DATA(instruction_pointer) + sizeof(u32))
+> -               return get_u32(KSTK_EIP(current), 1);
+> -       /* seccomp_check_filter should make this impossible. */
+> -       BUG();
+> +       int i;
+> +
+> +       sd->nr = syscall_get_nr(current, regs);
+> +       sd->arch = syscall_get_arch(current, regs);
+> +       for (i = 0; i < 6; i++)
+> +               syscall_get_arguments(current, regs, i, 1,
+> +                                     (unsigned long *)&sd->args[i]);
+> +       sd->instruction_pointer = KSTK_EIP(current);
+>  }
+>
+>  /**
+> @@ -133,17 +100,17 @@ static int seccomp_check_filter(struct sock_filter *filter, unsigned int flen)
+>
+>                 switch (code) {
+>                 case BPF_S_LD_W_ABS:
+> -                       ftest->code = BPF_S_ANC_SECCOMP_LD_W;
+> +                       ftest->code = BPF_LDX | BPF_W | BPF_ABS;
+>                         /* 32-bit aligned and not out of bounds. */
+>                         if (k >= sizeof(struct seccomp_data) || k & 3)
+>                                 return -EINVAL;
+>                         continue;
+>                 case BPF_S_LD_W_LEN:
+> -                       ftest->code = BPF_S_LD_IMM;
+> +                       ftest->code = BPF_LD | BPF_IMM;
+>                         ftest->k = sizeof(struct seccomp_data);
+>                         continue;
+>                 case BPF_S_LDX_W_LEN:
+> -                       ftest->code = BPF_S_LDX_IMM;
+> +                       ftest->code = BPF_LDX | BPF_IMM;
+>                         ftest->k = sizeof(struct seccomp_data);
+>                         continue;
+>                 /* Explicitly include allowed calls. */
+> @@ -185,6 +152,7 @@ static int seccomp_check_filter(struct sock_filter *filter, unsigned int flen)
+>                 case BPF_S_JMP_JGT_X:
+>                 case BPF_S_JMP_JSET_K:
+>                 case BPF_S_JMP_JSET_X:
+> +                       sk_decode_filter(ftest, ftest);
+>                         continue;
+>                 default:
+>                         return -EINVAL;
+> @@ -202,18 +170,21 @@ static int seccomp_check_filter(struct sock_filter *filter, unsigned int flen)
+>  static u32 seccomp_run_filters(int syscall)
+>  {
+>         struct seccomp_filter *f;
+> +       struct seccomp_data sd;
+>         u32 ret = SECCOMP_RET_ALLOW;
+>
+>         /* Ensure unexpected behavior doesn't result in failing open. */
+>         if (WARN_ON(current->seccomp.filter == NULL))
+>                 return SECCOMP_RET_KILL;
+>
+> +       populate_seccomp_data(&sd);
+> +
+>         /*
+>          * All filters in the list are evaluated and the lowest BPF return
+>          * value always takes priority (ignoring the DATA).
+>          */
+>         for (f = current->seccomp.filter; f; f = f->prev) {
+> -               u32 cur_ret = sk_run_filter(NULL, f->insns);
+> +               u32 cur_ret = sk_run_filter_ext(&sd, f->insns);
+>                 if ((cur_ret & SECCOMP_RET_ACTION) < (ret & SECCOMP_RET_ACTION))
+>                         ret = cur_ret;
+>         }
+> @@ -231,6 +202,8 @@ static long seccomp_attach_filter(struct sock_fprog *fprog)
+>         struct seccomp_filter *filter;
+>         unsigned long fp_size = fprog->len * sizeof(struct sock_filter);
+>         unsigned long total_insns = fprog->len;
+> +       struct sock_filter *fp;
+> +       int new_len;
+>         long ret;
+>
+>         if (fprog->len == 0 || fprog->len > BPF_MAXINSNS)
+> @@ -252,28 +225,42 @@ static long seccomp_attach_filter(struct sock_fprog *fprog)
+>                                      CAP_SYS_ADMIN) != 0)
+>                 return -EACCES;
+>
+> -       /* Allocate a new seccomp_filter */
+> -       filter = kzalloc(sizeof(struct seccomp_filter) + fp_size,
+> -                        GFP_KERNEL|__GFP_NOWARN);
+> -       if (!filter)
+> +       fp = kzalloc(fp_size, GFP_KERNEL|__GFP_NOWARN);
+> +       if (!fp)
+>                 return -ENOMEM;
+> -       atomic_set(&filter->usage, 1);
+> -       filter->len = fprog->len;
+>
+>         /* Copy the instructions from fprog. */
+>         ret = -EFAULT;
+> -       if (copy_from_user(filter->insns, fprog->filter, fp_size))
+> -               goto fail;
+> +       if (copy_from_user(fp, fprog->filter, fp_size))
+> +               goto free_prog;
+>
+>         /* Check and rewrite the fprog via the skb checker */
+> -       ret = sk_chk_filter(filter->insns, filter->len);
+> +       ret = sk_chk_filter(fp, fprog->len);
+>         if (ret)
+> -               goto fail;
+> +               goto free_prog;
+>
+>         /* Check and rewrite the fprog for seccomp use */
+> -       ret = seccomp_check_filter(filter->insns, filter->len);
+> +       ret = seccomp_check_filter(fp, fprog->len);
+>         if (ret)
+> -               goto fail;
+> +               goto free_prog;
+> +
+> +       /* convert 'sock_filter' insns to 'sock_filter_ext' insns */
+> +       ret = sk_convert_filter(fp, fprog->len, NULL, &new_len);
+> +       if (ret)
+> +               goto free_prog;
+> +
+> +       /* Allocate a new seccomp_filter */
+> +       filter = kzalloc(sizeof(struct seccomp_filter) +
+> +                        sizeof(struct sock_filter_ext) * new_len,
+> +                        GFP_KERNEL|__GFP_NOWARN);
+> +       if (!filter)
+> +               goto free_prog;
+> +
+> +       ret = sk_convert_filter(fp, fprog->len, filter->insns, &new_len);
+> +       if (ret)
+> +               goto free_filter;
+> +       atomic_set(&filter->usage, 1);
+> +       filter->len = new_len;
+>
+>         /*
+>          * If there is an existing filter, make it the prev and don't drop its
+> @@ -282,8 +269,11 @@ static long seccomp_attach_filter(struct sock_fprog *fprog)
+>         filter->prev = current->seccomp.filter;
+>         current->seccomp.filter = filter;
+>         return 0;
+> -fail:
+> +
+> +free_filter:
+>         kfree(filter);
+> +free_prog:
+> +       kfree(fp);
+>         return ret;
+>  }
+>
+> diff --git a/net/core/filter.c b/net/core/filter.c
+> index 1494421486b7..f144a6a7d939 100644
+> --- a/net/core/filter.c
+> +++ b/net/core/filter.c
+> @@ -388,11 +388,6 @@ load_b:
+>                                 A = 0;
+>                         continue;
+>                 }
+> -#ifdef CONFIG_SECCOMP_FILTER
+> -               case BPF_S_ANC_SECCOMP_LD_W:
+> -                       A = seccomp_bpf_load(fentry->k);
+> -                       continue;
+> -#endif
+>                 default:
+>                         WARN_RATELIMIT(1, "Unknown code:%u jt:%u tf:%u k:%u\n",
+>                                        fentry->code, fentry->jt,
+> --
+> 1.7.9.5
+>
