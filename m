@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758365AbaCEOj0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:39:26 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41851 "EHLO
+	id S1758380AbaCEOju (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:39:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41849 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932525AbaCEOim (ORCPT
+	with ESMTP id S1758310AbaCEOil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:38:42 -0500
+	Wed, 5 Mar 2014 09:38:41 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Peter Zijlstra <peterz@infradead.org>, Paul Mackerras <paulus@samba.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Stephane Eranian <eranian@google.com>, Dave Jones <davej@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>,
+Cc: Tony Breeds <tony@bakeyournoodle.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 58/62] perf/x86: Fix event scheduling
-Date: Wed,  5 Mar 2014 14:37:02 +0000
-Message-Id: <1394030226-26652-59-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 61/62] powerpc/le: Ensure that the 'stop-self' RTAS token is handled correctly
+Date: Wed,  5 Mar 2014 14:37:05 +0000
+Message-Id: <1394030226-26652-62-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
 References: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
@@ -30,118 +28,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Tony Breeds <tony@bakeyournoodle.com>
 
-commit 26e61e8939b1fe8729572dabe9a9e97d930dd4f6 upstream.
+commit 41dd03a94c7d408d2ef32530545097f7d1befe5c upstream.
 
-Vince "Super Tester" Weaver reported a new round of syscall fuzzing (Trinity) failures,
-with perf WARN_ON()s triggering. He also provided traces of the failures.
+Currently we're storing a host endian RTAS token in
+rtas_stop_self_args.token.  We then pass that directly to rtas.  This is
+fine on big endian however on little endian the token is not what we
+expect.
 
-This is I think the relevant bit:
+This will typically result in hitting:
+	panic("Alas, I survived.\n");
 
-	>    pec_1076_warn-2804  [000] d...   147.926153: x86_pmu_disable: x86_pmu_disable
-	>    pec_1076_warn-2804  [000] d...   147.926153: x86_pmu_state: Events: {
-	>    pec_1076_warn-2804  [000] d...   147.926156: x86_pmu_state:   0: state: .R config: ffffffffffffffff (          (null))
-	>    pec_1076_warn-2804  [000] d...   147.926158: x86_pmu_state:   33: state: AR config: 0 (ffff88011ac99800)
-	>    pec_1076_warn-2804  [000] d...   147.926159: x86_pmu_state: }
-	>    pec_1076_warn-2804  [000] d...   147.926160: x86_pmu_state: n_events: 1, n_added: 0, n_txn: 1
-	>    pec_1076_warn-2804  [000] d...   147.926161: x86_pmu_state: Assignment: {
-	>    pec_1076_warn-2804  [000] d...   147.926162: x86_pmu_state:   0->33 tag: 1 config: 0 (ffff88011ac99800)
-	>    pec_1076_warn-2804  [000] d...   147.926163: x86_pmu_state: }
-	>    pec_1076_warn-2804  [000] d...   147.926166: collect_events: Adding event: 1 (ffff880119ec8800)
+To fix this we always use the stop-self token in host order and always
+convert it to be32 before passing this to rtas.
 
-So we add the insn:p event (fd[23]).
-
-At this point we should have:
-
-  n_events = 2, n_added = 1, n_txn = 1
-
-	>    pec_1076_warn-2804  [000] d...   147.926170: collect_events: Adding event: 0 (ffff8800c9e01800)
-	>    pec_1076_warn-2804  [000] d...   147.926172: collect_events: Adding event: 4 (ffff8800cbab2c00)
-
-We try and add the {BP,cycles,br_insn} group (fd[3], fd[4], fd[15]).
-These events are 0:cycles and 4:br_insn, the BP event isn't x86_pmu so
-that's not visible.
-
-	group_sched_in()
-	  pmu->start_txn() /* nop - BP pmu */
-	  event_sched_in()
-	     event->pmu->add()
-
-So here we should end up with:
-
-  0: n_events = 3, n_added = 2, n_txn = 2
-  4: n_events = 4, n_added = 3, n_txn = 3
-
-But seeing the below state on x86_pmu_enable(), the must have failed,
-because the 0 and 4 events aren't there anymore.
-
-Looking at group_sched_in(), since the BP is the leader, its
-event_sched_in() must have succeeded, for otherwise we would not have
-seen the sibling adds.
-
-But since neither 0 or 4 are in the below state; their event_sched_in()
-must have failed; but I don't see why, the complete state: 0,0,1:p,4
-fits perfectly fine on a core2.
-
-However, since we try and schedule 4 it means the 0 event must have
-succeeded!  Therefore the 4 event must have failed, its failure will
-have put group_sched_in() into the fail path, which will call:
-
-	event_sched_out()
-	  event->pmu->del()
-
-on 0 and the BP event.
-
-Now x86_pmu_del() will reduce n_events; but it will not reduce n_added;
-giving what we see below:
-
- n_event = 2, n_added = 2, n_txn = 2
-
-	>    pec_1076_warn-2804  [000] d...   147.926177: x86_pmu_enable: x86_pmu_enable
-	>    pec_1076_warn-2804  [000] d...   147.926177: x86_pmu_state: Events: {
-	>    pec_1076_warn-2804  [000] d...   147.926179: x86_pmu_state:   0: state: .R config: ffffffffffffffff (          (null))
-	>    pec_1076_warn-2804  [000] d...   147.926181: x86_pmu_state:   33: state: AR config: 0 (ffff88011ac99800)
-	>    pec_1076_warn-2804  [000] d...   147.926182: x86_pmu_state: }
-	>    pec_1076_warn-2804  [000] d...   147.926184: x86_pmu_state: n_events: 2, n_added: 2, n_txn: 2
-	>    pec_1076_warn-2804  [000] d...   147.926184: x86_pmu_state: Assignment: {
-	>    pec_1076_warn-2804  [000] d...   147.926186: x86_pmu_state:   0->33 tag: 1 config: 0 (ffff88011ac99800)
-	>    pec_1076_warn-2804  [000] d...   147.926188: x86_pmu_state:   1->0 tag: 1 config: 1 (ffff880119ec8800)
-	>    pec_1076_warn-2804  [000] d...   147.926188: x86_pmu_state: }
-	>    pec_1076_warn-2804  [000] d...   147.926190: x86_pmu_enable: S0: hwc->idx: 33, hwc->last_cpu: 0, hwc->last_tag: 1 hwc->state: 0
-
-So the problem is that x86_pmu_del(), when called from a
-group_sched_in() that fails (for whatever reason), and without x86_pmu
-TXN support (because the leader is !x86_pmu), will corrupt the n_added
-state.
-
-Reported-and-Tested-by: Vince Weaver <vincent.weaver@maine.edu>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Dave Jones <davej@redhat.com>
-Link: http://lkml.kernel.org/r/20140221150312.GF3104@twins.programming.kicks-ass.net
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Tony Breeds <tony@bakeyournoodle.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kernel/cpu/perf_event.c | 3 +++
- 1 file changed, 3 insertions(+)
+ arch/powerpc/platforms/pseries/hotplug-cpu.c | 22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index c4706cf..3396fc4 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1162,6 +1162,9 @@ static void x86_pmu_del(struct perf_event *event, int flags)
- 	for (i = 0; i < cpuc->n_events; i++) {
- 		if (event == cpuc->event_list[i]) {
+diff --git a/arch/powerpc/platforms/pseries/hotplug-cpu.c b/arch/powerpc/platforms/pseries/hotplug-cpu.c
+index 64c97d8..e8f1b00 100644
+--- a/arch/powerpc/platforms/pseries/hotplug-cpu.c
++++ b/arch/powerpc/platforms/pseries/hotplug-cpu.c
+@@ -34,12 +34,7 @@
+ #include "offline_states.h"
  
-+			if (i >= cpuc->n_events - cpuc->n_added)
-+				--cpuc->n_added;
-+
- 			if (x86_pmu.put_event_constraints)
- 				x86_pmu.put_event_constraints(cpuc, event);
+ /* This version can't take the spinlock, because it never returns */
+-static struct rtas_args rtas_stop_self_args = {
+-	.token = RTAS_UNKNOWN_SERVICE,
+-	.nargs = 0,
+-	.nret = 1,
+-	.rets = &rtas_stop_self_args.args[0],
+-};
++static int rtas_stop_self_token = RTAS_UNKNOWN_SERVICE;
  
+ static DEFINE_PER_CPU(enum cpu_state_vals, preferred_offline_state) =
+ 							CPU_STATE_OFFLINE;
+@@ -92,15 +87,20 @@ void set_default_offline_state(int cpu)
+ 
+ static void rtas_stop_self(void)
+ {
+-	struct rtas_args *args = &rtas_stop_self_args;
++	struct rtas_args args = {
++		.token = cpu_to_be32(rtas_stop_self_token),
++		.nargs = 0,
++		.nret = 1,
++		.rets = &args.args[0],
++	};
+ 
+ 	local_irq_disable();
+ 
+-	BUG_ON(args->token == RTAS_UNKNOWN_SERVICE);
++	BUG_ON(rtas_stop_self_token == RTAS_UNKNOWN_SERVICE);
+ 
+ 	printk("cpu %u (hwid %u) Ready to die...\n",
+ 	       smp_processor_id(), hard_smp_processor_id());
+-	enter_rtas(__pa(args));
++	enter_rtas(__pa(&args));
+ 
+ 	panic("Alas, I survived.\n");
+ }
+@@ -383,10 +383,10 @@ static int __init pseries_cpu_hotplug_init(void)
+ 		}
+ 	}
+ 
+-	rtas_stop_self_args.token = rtas_token("stop-self");
++	rtas_stop_self_token = rtas_token("stop-self");
+ 	qcss_tok = rtas_token("query-cpu-stopped-state");
+ 
+-	if (rtas_stop_self_args.token == RTAS_UNKNOWN_SERVICE ||
++	if (rtas_stop_self_token == RTAS_UNKNOWN_SERVICE ||
+ 			qcss_tok == RTAS_UNKNOWN_SERVICE) {
+ 		printk(KERN_INFO "CPU Hotplug not supported by firmware "
+ 				"- disabling.\n");
 -- 
 1.9.0
 
