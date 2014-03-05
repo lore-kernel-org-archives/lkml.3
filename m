@@ -1,83 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932611AbaCEOmr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:42:47 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:60296 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932597AbaCEOmp (ORCPT
+	id S932516AbaCEOiY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:38:24 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41760 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932459AbaCEOiR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:42:45 -0500
-Message-ID: <1394030554.8754.31.camel@paszta.hi.pengutronix.de>
-Subject: Re: [PATCH v6 0/8] Move device tree graph parsing helpers to
- drivers/of
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        devicetree@vger.kernel.org
-Date: Wed, 05 Mar 2014 15:42:34 +0100
-In-Reply-To: <53170C00.20200@ti.com>
-References: <1394011242-16783-1-git-send-email-p.zabel@pengutronix.de>
-	 <53170C00.20200@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 5 Mar 2014 09:38:17 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Takashi Iwai <tiwai@suse.de>, Mark Brown <broonie@linaro.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.5 45/62] ASoC: wm8770: Fix wrong number of enum items
+Date: Wed,  5 Mar 2014 14:36:49 +0000
+Message-Id: <1394030226-26652-46-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
+References: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomi,
+3.5.7.32 -stable review patch.  If anyone has any objections, please let me know.
 
-Am Mittwoch, den 05.03.2014, 13:35 +0200 schrieb Tomi Valkeinen:
-> Hi,
-> 
-> On 05/03/14 11:20, Philipp Zabel wrote:
-> > Hi,
-> > 
-> > this version of the OF graph helper move series further addresses a few of
-> > Tomi's and Sylwester's comments.
-> > 
-> > Changes since v5:
-> >  - Fixed spelling errors and a wrong device node name in the link section
-> >  - Added parentless previous endpoint's full name to warning
-> >  - Fixed documentation comment for of_graph_parse_endpoint
-> >  - Unrolled for-loop in of_graph_get_remote_port_parent
-> > 
-> > Philipp Zabel (8):
-> >   [media] of: move graph helpers from drivers/media/v4l2-core to
-> >     drivers/of
-> >   Documentation: of: Document graph bindings
-> >   of: Warn if of_graph_get_next_endpoint is called with the root node
-> >   of: Reduce indentation in of_graph_get_next_endpoint
-> >   [media] of: move common endpoint parsing to drivers/of
-> >   of: Implement simplified graph binding for single port devices
-> >   of: Document simplified graph binding for single port devices
-> >   of: Warn if of_graph_parse_endpoint is called with the root node
-> 
-> So, as I've pointed out, I don't agree with the API, as it's too limited
-> and I can't use it, but as this series is (mostly) about moving the
-> current API to a common place, it's fine for me.
-> 
-> Acked-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+------------------
 
-Thanks. I'll be happy to help expanding the API to parse ports
-individually, once this gets accepted.
+From: Takashi Iwai <tiwai@suse.de>
 
-Mauro, Guennadi, are you fine with how this turned out? I'd like to get
-your acks again, for the changed location.
+commit 7a6c0a58dc824523966f212c76322d47c5b0e6fe upstream.
 
-regards
-Philipp
+wm8770 codec driver defines ain_enum with a wrong number of items.
+
+Use SOC_ENUM_DOUBLE_DECL() macro and it's automatically fixed.
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Acked-by: Liam Girdwood <liam.r.girdwood@linux.intel.com>
+Acked-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ sound/soc/codecs/wm8770.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/sound/soc/codecs/wm8770.c b/sound/soc/codecs/wm8770.c
+index a5127b4..9e82674 100644
+--- a/sound/soc/codecs/wm8770.c
++++ b/sound/soc/codecs/wm8770.c
+@@ -162,8 +162,8 @@ static const char *ain_text[] = {
+ 	"AIN5", "AIN6", "AIN7", "AIN8"
+ };
+ 
+-static const struct soc_enum ain_enum =
+-	SOC_ENUM_DOUBLE(WM8770_ADCMUX, 0, 4, 8, ain_text);
++static SOC_ENUM_DOUBLE_DECL(ain_enum,
++			    WM8770_ADCMUX, 0, 4, ain_text);
+ 
+ static const struct snd_kcontrol_new ain_mux =
+ 	SOC_DAPM_ENUM("Capture Mux", ain_enum);
+-- 
+1.9.0
 
