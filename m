@@ -1,190 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755525AbaCESNu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 13:13:50 -0500
-Received: from mail-we0-f181.google.com ([74.125.82.181]:65473 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754582AbaCESNm (ORCPT
+	id S1756259AbaCESPp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 13:15:45 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:36306 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755991AbaCESPm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 13:13:42 -0500
+	Wed, 5 Mar 2014 13:15:42 -0500
+Date: Wed, 5 Mar 2014 10:15:37 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Torvald Riegel <triegel@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+Message-ID: <20140305181537.GM3334@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140227190611.GU8264@linux.vnet.ibm.com>
+ <CA+55aFzav_2ayvEgbgeAzQohJ7EQH0tgUU0WcSyvUA6hgOo_Ow@mail.gmail.com>
+ <20140227205312.GX8264@linux.vnet.ibm.com>
+ <20140301005047.GA14777@linux.vnet.ibm.com>
+ <1393872908.28840.11660.camel@triegel.csb>
+ <20140303192026.GO11910@linux.vnet.ibm.com>
+ <1393879579.28840.11949.camel@triegel.csb>
+ <20140304190032.GY11910@linux.vnet.ibm.com>
+ <20140304213504.GA9809@linux.vnet.ibm.com>
+ <1394038499.28840.14979.camel@triegel.csb>
 MIME-Version: 1.0
-In-Reply-To: <5316ED4C.9080402@redhat.com>
-References: <1393971437-4129-1-git-send-email-ast@plumgrid.com>
-	<1393971437-4129-2-git-send-email-ast@plumgrid.com>
-	<5316ED4C.9080402@redhat.com>
-Date: Wed, 5 Mar 2014 10:13:41 -0800
-Message-ID: <CAMEtUuxo0A_25ceGLWQOf+X1VeG5=NetaGALrzMAztypwjOBXw@mail.gmail.com>
-Subject: Re: [PATCH v5 net-next 1/3] filter: add Extended BPF interpreter and converter
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Hagen Paul Pfeifer <hagen@jauu.net>,
-        Jesse Gross <jesse@nicira.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394038499.28840.14979.camel@triegel.csb>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14030518-8236-0000-0000-00000079C13C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 5, 2014 at 1:24 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
-> On 03/04/2014 11:17 PM, Alexei Starovoitov wrote:
->>
->> Extended BPF extends old BPF in the following ways:
->> - from 2 to 10 registers
->>    Original BPF has two registers (A and X) and hidden frame pointer.
->>    Extended BPF has ten registers and read-only frame pointer.
->> - from 32-bit registers to 64-bit registers
->>    semantics of old 32-bit ALU operations are preserved via 32-bit
->>    subregisters
->> - if (cond) jump_true; else jump_false;
->>    old BPF insns are replaced with:
->>    if (cond) jump_true; /* else fallthrough */
->> - adds signed > and >= insns
->> - 16 4-byte stack slots for register spill-fill replaced with
->>    up to 512 bytes of multi-use stack space
->> - introduces bpf_call insn and register passing convention for zero
->>    overhead calls from/to other kernel functions (not part of this patch)
->> - adds arithmetic right shift insn
->> - adds swab32/swab64 insns
->> - adds atomic_add insn
->> - old tax/txa insns are replaced with 'mov dst,src' insn
->>
->> Extended BPF is designed to be JITed with one to one mapping, which
->> allows GCC/LLVM backends to generate optimized BPF code that performs
->> almost as fast as natively compiled code
->>
->> sk_convert_filter() remaps old style insns into extended:
->> 'sock_filter' instructions are remapped on the fly to
->> 'sock_filter_ext' extended instructions when
->> sysctl net.core.bpf_ext_enable=1
->>
->> Old filter comes through sk_attach_filter() or
->> sk_unattached_filter_create()
->>   if (bpf_ext_enable) {
->>      convert to new
->>      sk_chk_filter() - check old bpf
->>      use sk_run_filter_ext() - new interpreter
->>   } else {
->>      sk_chk_filter() - check old bpf
->>      if (bpf_jit_enable)
->>          use old jit
->>      else
->>          use sk_run_filter() - old interpreter
->>   }
->>
->> sk_run_filter_ext() interpreter is noticeably faster
->> than sk_run_filter() for two reasons:
->>
->> 1.fall-through jumps
->>    Old BPF jump instructions are forced to go either 'true' or 'false'
->>    branch which causes branch-miss penalty.
->>    Extended BPF jump instructions have one branch and fall-through,
->>    which fit CPU branch predictor logic better.
->>    'perf stat' shows drastic difference for branch-misses.
->>
->> 2.jump-threaded implementation of interpreter vs switch statement
->>    Instead of single tablejump at the top of 'switch' statement, GCC will
->>    generate multiple tablejump instructions, which helps CPU branch
->> predictor
->>
->> Performance of two BPF filters generated by libpcap was measured
->> on x86_64, i386 and arm32.
->>
->> fprog #1 is taken from Documentation/networking/filter.txt:
->> tcpdump -i eth0 port 22 -dd
->>
->> fprog #2 is taken from 'man tcpdump':
->> tcpdump -i eth0 'tcp port 22 and (((ip[2:2] - ((ip[0]&0xf)<<2)) -
->>     ((tcp[12]&0xf0)>>2)) != 0)' -dd
->>
->> Other libpcap programs have similar performance differences.
->>
->> Raw performance data from BPF micro-benchmark:
->> SK_RUN_FILTER on same SKB (cache-hit) or 10k SKBs (cache-miss)
->> time in nsec per call, smaller is better
->> --x86_64--
->>           fprog #1  fprog #1   fprog #2  fprog #2
->>           cache-hit cache-miss cache-hit cache-miss
->> old BPF     90       101       192       202
->> ext BPF     31        71       47         97
->> old BPF jit 12        34       17         44
->> ext BPF jit TBD
->>
->> --i386--
->>           fprog #1  fprog #1   fprog #2  fprog #2
->>           cache-hit cache-miss cache-hit cache-miss
->> old BPF    107        136      227       252
->> ext BPF     40        119       69       172
->>
->> --arm32--
->>           fprog #1  fprog #1   fprog #2  fprog #2
->>           cache-hit cache-miss cache-hit cache-miss
->> old BPF    202        300      475       540
->> ext BPF    139        270      296       470
->> old BPF jit 26        182       37       202
->> new BPF jit TBD
->>
->> Tested with trinify BPF fuzzer
->>
->> Future work:
->>
->> 0. seccomp
->>
->> 1. add extended BPF JIT for x86_64
->>
->> 2. add inband old/new demux and extended BPF verifier, so that new
->> programs
->>     can be loaded through old sk_attach_filter() and
->> sk_unattached_filter_create()
->>     interfaces
->>
->> 3. tracing filters systemtap-like with extended BPF
->>
->> 4. OVS with extended BPF
->>
->> 5. nftables with extended BPF
->>
->> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
->> Acked-by: Hagen Paul Pfeifer <hagen@jauu.net>
->
->
-> From what I can tell, looks good to me:
->
-> Reviewed-by: Daniel Borkmann <dborkman@redhat.com>
+On Wed, Mar 05, 2014 at 05:54:59PM +0100, Torvald Riegel wrote:
+> On Tue, 2014-03-04 at 13:35 -0800, Paul E. McKenney wrote:
+> > On Tue, Mar 04, 2014 at 11:00:32AM -0800, Paul E. McKenney wrote:
+> > > On Mon, Mar 03, 2014 at 09:46:19PM +0100, Torvald Riegel wrote:
+> > > > xagsmtp2.20140303204700.3556@vmsdvma.vnet.ibm.com
+> > > > X-Xagent-Gateway: vmsdvma.vnet.ibm.com (XAGSMTP2 at VMSDVMA)
+> > > > 
+> > > > On Mon, 2014-03-03 at 11:20 -0800, Paul E. McKenney wrote:
+> > > > > On Mon, Mar 03, 2014 at 07:55:08PM +0100, Torvald Riegel wrote:
+> > > > > > xagsmtp2.20140303190831.9500@uk1vsc.vnet.ibm.com
+> > > > > > X-Xagent-Gateway: uk1vsc.vnet.ibm.com (XAGSMTP2 at UK1VSC)
+> > > > > > 
+> > > > > > On Fri, 2014-02-28 at 16:50 -0800, Paul E. McKenney wrote:
+> > > > > > > +o	Do not use the results from the boolean "&&" and "||" when
+> > > > > > > +	dereferencing.	For example, the following (rather improbable)
+> > > > > > > +	code is buggy:
+> > > > > > > +
+> > > > > > > +		int a[2];
+> > > > > > > +		int index;
+> > > > > > > +		int force_zero_index = 1;
+> > > > > > > +
+> > > > > > > +		...
+> > > > > > > +
+> > > > > > > +		r1 = rcu_dereference(i1)
+> > > > > > > +		r2 = a[r1 && force_zero_index];  /* BUGGY!!! */
+> > > > > > > +
+> > > > > > > +	The reason this is buggy is that "&&" and "||" are often compiled
+> > > > > > > +	using branches.  While weak-memory machines such as ARM or PowerPC
+> > > > > > > +	do order stores after such branches, they can speculate loads,
+> > > > > > > +	which can result in misordering bugs.
+> > > > > > > +
+> > > > > > > +o	Do not use the results from relational operators ("==", "!=",
+> > > > > > > +	">", ">=", "<", or "<=") when dereferencing.  For example,
+> > > > > > > +	the following (quite strange) code is buggy:
+> > > > > > > +
+> > > > > > > +		int a[2];
+> > > > > > > +		int index;
+> > > > > > > +		int flip_index = 0;
+> > > > > > > +
+> > > > > > > +		...
+> > > > > > > +
+> > > > > > > +		r1 = rcu_dereference(i1)
+> > > > > > > +		r2 = a[r1 != flip_index];  /* BUGGY!!! */
+> > > > > > > +
+> > > > > > > +	As before, the reason this is buggy is that relational operators
+> > > > > > > +	are often compiled using branches.  And as before, although
+> > > > > > > +	weak-memory machines such as ARM or PowerPC do order stores
+> > > > > > > +	after such branches, but can speculate loads, which can again
+> > > > > > > +	result in misordering bugs.
+> > > > > > 
+> > > > > > Those two would be allowed by the wording I have recently proposed,
+> > > > > > AFAICS.  r1 != flip_index would result in two possible values (unless
+> > > > > > there are further constraints due to the type of r1 and the values that
+> > > > > > flip_index can have).
+> > > > > 
+> > > > > And I am OK with the value_dep_preserving type providing more/better
+> > > > > guarantees than we get by default from current compilers.
+> > > > > 
+> > > > > One question, though.  Suppose that the code did not want a value
+> > > > > dependency to be tracked through a comparison operator.  What does
+> > > > > the developer do in that case?  (The reason I ask is that I have
+> > > > > not yet found a use case in the Linux kernel that expects a value
+> > > > > dependency to be tracked through a comparison.)
+> > > > 
+> > > > Hmm.  I suppose use an explicit cast to non-vdp before or after the
+> > > > comparison?
+> > > 
+> > > That should work well assuming that things like "if", "while", and "?:"
+> > > conditions are happy to take a vdp.  This assumes that p->a only returns
+> > > vdp if field "a" is declared vdp, otherwise we have vdps running wild
+> > > through the program.  ;-)
+> > > 
+> > > The other thing that can happen is that a vdp can get handed off to
+> > > another synchronization mechanism, for example, to reference counting:
+> > > 
+> > > 	p = atomic_load_explicit(&gp, memory_order_consume);
+> > > 	if (do_something_with(p->a)) {
+> > > 		/* fast path protected by RCU. */
+> > > 		return 0;
+> > > 	}
+> > > 	if (atomic_inc_not_zero(&p->refcnt) {
+> > > 		/* slow path protected by reference counting. */
+> > > 		return do_something_else_with((struct foo *)p);  /* CHANGE */
+> > > 	}
+> > > 	/* Needed slow path, but raced with deletion. */
+> > > 	return -EAGAIN;
+> > > 
+> > > I am guessing that the cast ends the vdp.  Is that the case?
+> > 
+> > And here is a more elaborate example from the Linux kernel:
+> > 
+> > 	struct md_rdev value_dep_preserving *rdev;  /* CHANGE */
+> > 
+> > 	rdev = rcu_dereference(conf->mirrors[disk].rdev);
+> > 	if (r1_bio->bios[disk] == IO_BLOCKED
+> > 	    || rdev == NULL
+> > 	    || test_bit(Unmerged, &rdev->flags)
+> > 	    || test_bit(Faulty, &rdev->flags))
+> > 		continue;
+> > 
+> > The fact that the "rdev == NULL" returns vdp does not force the "||"
+> > operators to be evaluated arithmetically because the entire function
+> > is an "if" condition, correct?
+> 
+> That's a good question, and one that as far as I understand currently,
+> essentially boils down to whether we want to have tight restrictions on
+> which operations are still vdp.
+> 
+> If we look at the different combinations, then it seems we can't decide
+> on whether we have a value-dependency just due to a vdp type:
+> * non-vdp || vdp:  vdp iff non-vdp == false
+> * vdp || non-vdp:  vdp iff non-vdp == false?
+> * vdp || vdp: always vdp? (and dependency on both?)
+> 
+> I'm not sure it makes sense to try to not make all of those
+> vdp-by-default.  The first and second case show that it's dependent on
+> the specific execution anyway, and thus is already covered by the
+> requirement that the value must still matter.   The vdp type is just a
+> way to prevent inappropriate compiler optimizations; it's not critical
+> for correctness is we make more stuff vdp, yet it may prevent some
+> optimizations in the affected expression.
+> 
+> If the compiler knows that some vdp-typed evaluation will not have a
+> value-dependency anyway, then it can just optimize this evaluation like
+> non-vdp code.
+> 
+> I guess not much would change for the code you posted, because we
+> already have to evaluate || operands in order, I believe (e.g., don't
+> access rdev->flags before doing the rdev == NULL check, modulo as-if).
+> Do I understand your question correctly?
 
-Thanks!
+Let me give an example for the other side:
 
-> So next step would be to add selftests and then after that JIT?
+	struct foo value_dep_preserving *p;
+	struct foo value_dep_preserving *q;
 
-yes. that's the plan.
-Will probably split selftest into few patches to simplify review.
+	p = rcu_dereference(gp);
+	q = rcu_dereference(gq);
+	return myarray[p || q]];  /* Linux kernel doesn't do this. */
 
-JIT should go into the existing bpf_jit_comp.c and call it
-bpf_ext_jit_compile(), right?
+If we wanted this to work (and I am not at all convinced that we do),
+the compiler would have to force a data dependency through the "||".
 
->> +#undef LOAD_IMM
->> +}
->> +EXPORT_SYMBOL(sk_run_filter_ext);
->> +
->
->
-> One minor thing I noticed when I git-am'ed your patch is the newline at
-> the end of file, but perhaps this can be fixed up in directly patchwork.
+But I would be just as happy to instead just say that boolean logical
+operators ("||" and "&&") never return vdp values.  Ditto for the
+relational operators ("==", "!=", ">", ">=", "<", and "<=").  No one
+seems to rely on value dependencies via these operators, after all,
+and preserving value dependencies through them seems to require that
+the compiler generate odd code.
 
-oops. Too bad checkpatch.pl didn't complain about that... will address
-in the future.
+							Thanx, Paul
 
-Thanks!
-Alexei
