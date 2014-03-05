@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754379AbaCEKPS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 05:15:18 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:54625 "EHLO extserv.mm-sol.com"
+	id S1755041AbaCEKRI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 05:17:08 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:54711 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753599AbaCEKPJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 05:15:09 -0500
+	id S1754158AbaCEKPQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 05:15:16 -0500
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 To: Felipe Balbi <balbi@ti.com>
 Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: [PATCH v5 03/14] usb: phy: msm: Remove unnecessarily check for valid regulators.
-Date: Wed,  5 Mar 2014 12:13:39 +0200
-Message-Id: <1394014430-26485-4-git-send-email-iivanov@mm-sol.com>
+        linux-arm-msm@vger.kernel.org,
+        Pavankumar Kondeti <pkondeti@codeaurora.org>
+Subject: [PATCH v5 13/14] usb: phy: msm: Handle disconnect events
+Date: Wed,  5 Mar 2014 12:13:49 +0200
+Message-Id: <1394014430-26485-14-git-send-email-iivanov@mm-sol.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1394014430-26485-1-git-send-email-iivanov@mm-sol.com>
 References: <1394014430-26485-1-git-send-email-iivanov@mm-sol.com>
@@ -24,36 +25,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-Whether regulators are available or not is checked at driver
-probe. If they are not available driver will refuse to load,
-so no need to check them again.
+Put the transceiver in non-driving mode. Otherwise host
+may not detect soft-disconnection.
 
 Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+Cc: Pavankumar Kondeti <pkondeti@codeaurora.org>
 ---
- drivers/usb/phy/phy-msm-usb.c |   10 ----------
- 1 file changed, 10 deletions(-)
+ drivers/usb/phy/phy-msm-usb.c |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
 diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
-index 3f8d3bc..4f4b0c6 100644
+index 8068555..f1e74a7 100644
 --- a/drivers/usb/phy/phy-msm-usb.c
 +++ b/drivers/usb/phy/phy-msm-usb.c
-@@ -133,16 +133,6 @@ static int msm_hsusb_ldo_set_mode(struct msm_otg *motg, int on)
- {
- 	int ret = 0;
+@@ -235,6 +235,23 @@ static void ulpi_init(struct msm_otg *motg)
+ 	}
+ }
 
--	if (!motg->v1p8 || IS_ERR(motg->v1p8)) {
--		pr_err("%s: HSUSB_1p8 is not initialized\n", __func__);
--		return -ENODEV;
--	}
--
--	if (!motg->v3p3 || IS_ERR(motg->v3p3)) {
--		pr_err("%s: HSUSB_3p3 is not initialized\n", __func__);
--		return -ENODEV;
--	}
--
- 	if (on) {
- 		ret = regulator_set_optimum_mode(motg->v1p8,
- 				USB_PHY_1P8_HPM_LOAD);
++static int msm_phy_notify_disconnect(struct usb_phy *phy,
++				   enum usb_device_speed speed)
++{
++	int val;
++
++	/*
++	 * Put the transceiver in non-driving mode. Otherwise host
++	 * may not detect soft-disconnection.
++	 */
++	val = ulpi_read(phy, ULPI_FUNC_CTRL);
++	val &= ~ULPI_FUNC_CTRL_OPMODE_MASK;
++	val |= ULPI_FUNC_CTRL_OPMODE_NONDRIVING;
++	ulpi_write(phy, val, ULPI_FUNC_CTRL);
++
++	return 0;
++}
++
+ static int msm_otg_link_clk_reset(struct msm_otg *motg, bool assert)
+ {
+ 	int ret;
+@@ -1609,6 +1626,7 @@ static int __init msm_otg_probe(struct platform_device *pdev)
+
+ 	phy->init = msm_phy_init;
+ 	phy->set_power = msm_otg_set_power;
++	phy->notify_disconnect = msm_phy_notify_disconnect;
+
+ 	phy->io_ops = &msm_otg_io_ops;
+
 --
 1.7.9.5
 
