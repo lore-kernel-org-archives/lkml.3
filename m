@@ -1,51 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755414AbaCECpc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 21:45:32 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:54573 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753299AbaCECpa (ORCPT
+	id S1755945AbaCECrO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 21:47:14 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55841 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754243AbaCECrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 21:45:30 -0500
+	Tue, 4 Mar 2014 21:47:13 -0500
+Date: Wed, 5 Mar 2014 10:03:26 +0800
+From: Mark Brown <broonie@kernel.org>
+To: Nenghua Cao <nhcao@marvell.com>
+Cc: Liam Girdwood <liam.r.girdwood@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <20140305020326.GT13126@sirena.org.uk>
+References: <1392806653-29604-1-git-send-email-nhcao@marvell.com>
+ <5305BBA6.3070105@marvell.com>
+ <20140220085500.GX2669@sirena.org.uk>
+ <5305F08F.8040008@marvell.com>
+ <20140220134203.GA12197@sirena.org.uk>
+ <53145D05.60207@marvell.com>
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdaBMozNayXXyn8Ag+GUU_+C2j4X7aVuaZjgV_krCvSy0A@mail.gmail.com>
-References: <1393418614-3968549-1-git-send-email-arnd@arndb.de>
-	<1393418614-3968549-3-git-send-email-arnd@arndb.de>
-	<CACRpkdaBMozNayXXyn8Ag+GUU_+C2j4X7aVuaZjgV_krCvSy0A@mail.gmail.com>
-Date: Wed, 5 Mar 2014 10:45:30 +0800
-Message-ID: <CACRpkdZOpym2bit=kRE3F3rhuFQd=U2A=RynxwDfXNbsditS7A@mail.gmail.com>
-Subject: Re: [PATCH 2/5] gpio: remove obsolete tnetv107x driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>, Sekhar Nori <nsekhar@ti.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Cyril Chemparathy <cyril@ti.com>, Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6axCafNXXMM8qu6Q"
+Content-Disposition: inline
+In-Reply-To: <53145D05.60207@marvell.com>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 202.175.88.218
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] driver: regmap: add regmap_parse_val api
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 5, 2014 at 9:52 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Wed, Feb 26, 2014 at 8:43 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->
->> The tnetv107x platform is getting removed, so this driver won't
->> be needed any more.
->>
->> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
->> Cc: Linus Walleij <linus.walleij@linaro.org>
->> Cc: Alexandre Courbot <gnurou@gmail.com>
->> Cc: linux-gpio@vger.kernel.org
->
-> Can I have an ACK from some Sekhar to apply this
-> to the GPIO tree, so we are all aligned?
 
-Bah I found the ACK on patch 0, sorry about the fuzz.
-Patch applied.
+--6axCafNXXMM8qu6Q
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Yours,
-Linus Walleij
+On Mon, Mar 03, 2014 at 06:44:21PM +0800, Nenghua Cao wrote:
+
+>       Do you have any comments about these two patches? Thanks!
+
+I've not looked at it yet, please don't nag - one of the reasons it got
+bumped down my priority list is that you nagged previously.  I tend to
+do this partly as a function of looking at the nag making me feel like I
+looked at the code and partly as a deliberate method for discouraging
+nags.
+
+Looking at this I do also notice that you didn't use a subject line
+matching the style for the subsystem which means it's going to be less
+likely to be looked at.  Patches that aren't for subsystems I maintain
+tend to get a lower priority.
+
+--6axCafNXXMM8qu6Q
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTFoXrAAoJELSic+t+oim94K0P/1x/S7NckG7AZ/sU60bXRvS4
+Lp/sc30tPjeJUPloZMsQ07Q4lJJbkwYOioFTIMm5wbbwGHNNCHZe7B3NHLakaaIa
+KRZBVah3Qsxapbi+xidKOZP62X/bFiwXzMOcFntGkumLmtoI7YXDp4F09EvesQZD
+EKMe0HlmxadZduOrAfz4TOmPRK04e4PaaJOzQNHYTtbFvCmuZHDtxK+FKyJJT8DW
+nzFJmScXwHHYkerbT2Uy+ERh87iDN9E5a0pfF+cVs4KzhCoaI4oC0S1zyzsmk3Ay
+B4uI9LybVSzJK5WTylUG6peg5UE82DNT8EFeFBtlk80W2Zc/okmOsvUkx2wC/Xsn
+IZB9ViIsu1tm/pbU/4iRrU4qlDX/T1X9qAb/LN5G4yrmsMnkqHZ/eTKRMplqblTd
+MJcLaxtyNFepW2yBBI7uQb4vhWe7VSY4PjZ3OCum/z9QjzsGYmekRLosW9mvixFH
+F8daR4RCsRk41/+PfC3eM9le11Ey638YJiamFFmjQJFp+cXf6TRU/4JC17MwUMQX
+RQGzqV2L0Gu2S8wfjiHECxKquQHhL2CidkpuGQCSrv8BAFAs9Po6xZNK/D2UDuns
+eSjgGnoVCEd+paxqWunc8fyM1qX5A1/buEsmFumQjhbUFl0nITnvM06M66JQTPb1
+eSOdg9nM1MLn/Gi8XbpV
+=QrAp
+-----END PGP SIGNATURE-----
+
+--6axCafNXXMM8qu6Q--
