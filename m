@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932177AbaCEOZY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:25:24 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40881 "EHLO
+	id S932512AbaCEPVG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:21:06 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40896 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932114AbaCEOZR (ORCPT
+	with ESMTP id S932149AbaCEOZW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:25:17 -0500
+	Wed, 5 Mar 2014 09:25:22 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Chen Gang <gang.chen.5i5j@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 038/131] powerpc/powernv: Rework EEH reset
-Date: Wed,  5 Mar 2014 14:22:42 +0000
-Message-Id: <1394029455-23128-39-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 042/131] avr32: Makefile: add '-D__linux__' flag for gcc-4.4.7 use
+Date: Wed,  5 Mar 2014 14:22:46 +0000
+Message-Id: <1394029455-23128-43-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -28,77 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gavin Shan <shangw@linux.vnet.ibm.com>
+From: Chen Gang <gang.chen.5i5j@gmail.com>
 
-commit 5b2e198e50f6ba57081586b853163ea1bb95f1a8 upstream.
+commit 8d80390cfc9434d5aa4fb9e5f9768a66b30cb8a6 upstream.
 
-When doing reset in order to recover the affected PE, we issue
-hot reset on PE primary bus if it's not root bus. Otherwise, we
-issue hot or fundamental reset on root port or PHB accordingly.
-For the later case, we didn't cover the situation where PE only
-includes root port and it potentially causes kernel crash upon
-EEH error to the PE.
+For avr32 cross compiler, do not define '__linux__' internally, so it
+will cause issue with allmodconfig.
 
-The patch reworks the logic of EEH reset to improve the code
-readability and also avoid the kernel crash.
+The related error:
 
-Reported-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+    CC [M]  fs/coda/psdev.o
+  In file included from include/linux/coda.h:64,
+                   from fs/coda/psdev.c:45:
+  include/uapi/linux/coda.h:221: error: expected specifier-qualifier-list before 'u_quad_t'
+
+The related toolchain version (which only download, not re-compile):
+
+  [root@gchen linux-next]# /upstream/toolchain/download/avr32-gnu-toolchain-linux_x86/bin/avr32-gcc -v
+  Using built-in specs.
+  Target: avr32
+  Configured with: /data2/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/src/gcc/configure --target=avr32 --host=i686-pc-linux-gnu --build=x86_64-pc-linux-gnu --prefix=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --enable-languages=c,c++ --disable-nls --disable-libssp --disable-libstdcxx-pch --with-dwarf2 --enable-version-specific-runtime-libs --disable-shared --enable-doc --with-mpfr-lib=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86/lib --with-mpfr-include=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86/include --with-gmp=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --with-mpc=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --enable-__cxa_atexit --disable-shared --with-newlib --with-pkgversion=AVR_32_bit_GNU_Toolchain_3.4.2_435 --with-bugurl=http://www
+.atmel.com/avr
+  Thread model: single
+  gcc version 4.4.7 (AVR_32_bit_GNU_Toolchain_3.4.2_435)
+
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+Acked-by: Hans-Christian Egtvedt <hegtvedt@cisco.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/powerpc/platforms/powernv/eeh-ioda.c | 29 ++++-------------------------
- 1 file changed, 4 insertions(+), 25 deletions(-)
+ arch/avr32/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/powerpc/platforms/powernv/eeh-ioda.c b/arch/powerpc/platforms/powernv/eeh-ioda.c
-index 0cd1c4a..d972157 100644
---- a/arch/powerpc/platforms/powernv/eeh-ioda.c
-+++ b/arch/powerpc/platforms/powernv/eeh-ioda.c
-@@ -470,8 +470,7 @@ static int ioda_eeh_bridge_reset(struct pci_controller *hose,
- static int ioda_eeh_reset(struct eeh_pe *pe, int option)
- {
- 	struct pci_controller *hose = pe->phb;
--	struct eeh_dev *edev;
--	struct pci_dev *dev;
-+	struct pci_bus *bus;
- 	int ret;
+diff --git a/arch/avr32/Makefile b/arch/avr32/Makefile
+index 22fb665..dba48a5 100644
+--- a/arch/avr32/Makefile
++++ b/arch/avr32/Makefile
+@@ -11,7 +11,7 @@ all: uImage vmlinux.elf
  
- 	/*
-@@ -500,31 +499,11 @@ static int ioda_eeh_reset(struct eeh_pe *pe, int option)
- 	if (pe->type & EEH_PE_PHB) {
- 		ret = ioda_eeh_phb_reset(hose, option);
- 	} else {
--		if (pe->type & EEH_PE_DEVICE) {
--			/*
--			 * If it's device PE, we didn't refer to the parent
--			 * PCI bus yet. So we have to figure it out indirectly.
--			 */
--			edev = list_first_entry(&pe->edevs,
--					struct eeh_dev, list);
--			dev = eeh_dev_to_pci_dev(edev);
--			dev = dev->bus->self;
--		} else {
--			/*
--			 * If it's bus PE, the parent PCI bus is already there
--			 * and just pick it up.
--			 */
--			dev = pe->bus->self;
--		}
--
--		/*
--		 * Do reset based on the fact that the direct upstream bridge
--		 * is root bridge (port) or not.
--		 */
--		if (dev->bus->number == 0)
-+		bus = eeh_pe_bus_get(pe);
-+		if (pci_is_root_bus(bus))
- 			ret = ioda_eeh_root_reset(hose, option);
- 		else
--			ret = ioda_eeh_bridge_reset(hose, dev, option);
-+			ret = ioda_eeh_bridge_reset(hose, bus->self, option);
- 	}
+ KBUILD_DEFCONFIG	:= atstk1002_defconfig
  
- 	return ret;
+-KBUILD_CFLAGS	+= -pipe -fno-builtin -mno-pic
++KBUILD_CFLAGS	+= -pipe -fno-builtin -mno-pic -D__linux__
+ KBUILD_AFLAGS	+= -mrelax -mno-pic
+ KBUILD_CFLAGS_MODULE += -mno-relax
+ LDFLAGS_vmlinux	+= --relax
 -- 
 1.9.0
 
