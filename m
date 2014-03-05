@@ -1,142 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756961AbaCECt6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 21:49:58 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:58118 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754190AbaCECt4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 21:49:56 -0500
-X-Sasl-enc: svdU+Ynsz/OOUxL2PKA8kD6lLlmH6bOQ6f+nHTG8hblh 1393987795
-Date: Tue, 4 Mar 2014 18:50:16 -0800
-From: Greg KH <greg@kroah.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Sasha Levin <sasha.levin@oracle.com>
-Subject: Re: [PATCH driver-core-next] kernfs: cache atomic_write_len in
- kernfs_open_file
-Message-ID: <20140305025016.GB18412@kroah.com>
-References: <53113485.2090407@oracle.com>
- <20140303223933.GC26523@mtj.dyndns.org>
- <531505E4.8020802@oracle.com>
- <20140303224609.GF26523@mtj.dyndns.org>
- <20140304203846.GB2204@htj.dyndns.org>
+	id S1757088AbaCECvY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 21:51:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22799 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754407AbaCECvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 21:51:23 -0500
+Date: Tue, 4 Mar 2014 21:50:37 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: eparis@redhat.com, catalin.marinas@arm.com, will.deacon@arm.com,
+        dsaxena@linaro.org, arndb@arndb.de,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        linux-kernel@vger.kernel.org, linux-audit@redhat.com
+Subject: Re: [PATCH v6 1/2] arm64: Add audit support
+Message-ID: <20140305025037.GT16640@madcap2.tricolour.ca>
+References: <1393319934-2810-1-git-send-email-takahiro.akashi@linaro.org>
+ <1393564635-3921-1-git-send-email-takahiro.akashi@linaro.org>
+ <1393564635-3921-2-git-send-email-takahiro.akashi@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140304203846.GB2204@htj.dyndns.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1393564635-3921-2-git-send-email-takahiro.akashi@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 04, 2014 at 03:38:46PM -0500, Tejun Heo wrote:
-> While implementing atomic_write_len, 4d3773c4bb41 ("kernfs: implement
-> kernfs_ops->atomic_write_len") moved data copy from userland inside
-> kernfs_get_active() and kernfs_open_file->mutex so that
-> kernfs_ops->atomic_write_len can be accessed before copying buffer
-> from userland; unfortunately, this could lead to locking order
-> inversion involving mmap_sem if copy_from_user() takes a page fault.
+On 14/02/28, AKASHI Takahiro wrote:
+> On AArch64, audit is supported through generic lib/audit.c and
+> compat_audit.c, and so this patch adds arch specific definitions required.
 > 
->   ======================================================
->   [ INFO: possible circular locking dependency detected ]
->   3.14.0-rc4-next-20140228-sasha-00011-g4077c67-dirty #26 Tainted: G        W
->   -------------------------------------------------------
->   trinity-c236/10658 is trying to acquire lock:
->    (&of->mutex#2){+.+.+.}, at: [<fs/kernfs/file.c:487>] kernfs_fop_mmap+0x54/0x120
-> 
->   but task is already holding lock:
->    (&mm->mmap_sem){++++++}, at: [<mm/util.c:397>] vm_mmap_pgoff+0x6e/0xe0
-> 
->   which lock already depends on the new lock.
-> 
-> 
->   the existing dependency chain (in reverse order) is:
-> 
->  -> #1 (&mm->mmap_sem){++++++}:
-> 	 [<kernel/locking/lockdep.c:1945 kernel/locking/lockdep.c:2131>] validate_chain+0x6c5/0x7b0
-> 	 [<kernel/locking/lockdep.c:3182>] __lock_acquire+0x4cd/0x5a0
-> 	 [<arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602>] lock_acquire+0x182/0x1d0
-> 	 [<mm/memory.c:4188>] might_fault+0x7e/0xb0
-> 	 [<arch/x86/include/asm/uaccess.h:713 fs/kernfs/file.c:291>] kernfs_fop_write+0xd8/0x190
-> 	 [<fs/read_write.c:473>] vfs_write+0xe3/0x1d0
-> 	 [<fs/read_write.c:523 fs/read_write.c:515>] SyS_write+0x5d/0xa0
-> 	 [<arch/x86/kernel/entry_64.S:749>] tracesys+0xdd/0xe2
-> 
->  -> #0 (&of->mutex#2){+.+.+.}:
-> 	 [<kernel/locking/lockdep.c:1840>] check_prev_add+0x13f/0x560
-> 	 [<kernel/locking/lockdep.c:1945 kernel/locking/lockdep.c:2131>] validate_chain+0x6c5/0x7b0
-> 	 [<kernel/locking/lockdep.c:3182>] __lock_acquire+0x4cd/0x5a0
-> 	 [<arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602>] lock_acquire+0x182/0x1d0
-> 	 [<kernel/locking/mutex.c:470 kernel/locking/mutex.c:571>] mutex_lock_nested+0x6a/0x510
-> 	 [<fs/kernfs/file.c:487>] kernfs_fop_mmap+0x54/0x120
-> 	 [<mm/mmap.c:1573>] mmap_region+0x310/0x5c0
-> 	 [<mm/mmap.c:1365>] do_mmap_pgoff+0x385/0x430
-> 	 [<mm/util.c:399>] vm_mmap_pgoff+0x8f/0xe0
-> 	 [<mm/mmap.c:1416 mm/mmap.c:1374>] SyS_mmap_pgoff+0x1b0/0x210
-> 	 [<arch/x86/kernel/sys_x86_64.c:72>] SyS_mmap+0x1d/0x20
-> 	 [<arch/x86/kernel/entry_64.S:749>] tracesys+0xdd/0xe2
-> 
->   other info that might help us debug this:
-> 
->    Possible unsafe locking scenario:
-> 
-> 	 CPU0                    CPU1
-> 	 ----                    ----
->     lock(&mm->mmap_sem);
-> 				 lock(&of->mutex#2);
-> 				 lock(&mm->mmap_sem);
->     lock(&of->mutex#2);
-> 
->    *** DEADLOCK ***
-> 
->   1 lock held by trinity-c236/10658:
->    #0:  (&mm->mmap_sem){++++++}, at: [<mm/util.c:397>] vm_mmap_pgoff+0x6e/0xe0
-> 
->   stack backtrace:
->   CPU: 2 PID: 10658 Comm: trinity-c236 Tainted: G        W 3.14.0-rc4-next-20140228-sasha-00011-g4077c67-dirty #26
->    0000000000000000 ffff88011911fa48 ffffffff8438e945 0000000000000000
->    0000000000000000 ffff88011911fa98 ffffffff811a0109 ffff88011911fab8
->    ffff88011911fab8 ffff88011911fa98 ffff880119128cc0 ffff880119128cf8
->   Call Trace:
->    [<lib/dump_stack.c:52>] dump_stack+0x52/0x7f
->    [<kernel/locking/lockdep.c:1213>] print_circular_bug+0x129/0x160
->    [<kernel/locking/lockdep.c:1840>] check_prev_add+0x13f/0x560
->    [<include/linux/spinlock.h:343 mm/slub.c:1933>] ? deactivate_slab+0x511/0x550
->    [<kernel/locking/lockdep.c:1945 kernel/locking/lockdep.c:2131>] validate_chain+0x6c5/0x7b0
->    [<kernel/locking/lockdep.c:3182>] __lock_acquire+0x4cd/0x5a0
->    [<mm/mmap.c:1552>] ? mmap_region+0x24a/0x5c0
->    [<arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602>] lock_acquire+0x182/0x1d0
->    [<fs/kernfs/file.c:487>] ? kernfs_fop_mmap+0x54/0x120
->    [<kernel/locking/mutex.c:470 kernel/locking/mutex.c:571>] mutex_lock_nested+0x6a/0x510
->    [<fs/kernfs/file.c:487>] ? kernfs_fop_mmap+0x54/0x120
->    [<kernel/sched/core.c:2477>] ? get_parent_ip+0x11/0x50
->    [<fs/kernfs/file.c:487>] ? kernfs_fop_mmap+0x54/0x120
->    [<fs/kernfs/file.c:487>] kernfs_fop_mmap+0x54/0x120
->    [<mm/mmap.c:1573>] mmap_region+0x310/0x5c0
->    [<mm/mmap.c:1365>] do_mmap_pgoff+0x385/0x430
->    [<mm/util.c:397>] ? vm_mmap_pgoff+0x6e/0xe0
->    [<mm/util.c:399>] vm_mmap_pgoff+0x8f/0xe0
->    [<kernel/rcu/update.c:97>] ? __rcu_read_unlock+0x44/0xb0
->    [<fs/file.c:641>] ? dup_fd+0x3c0/0x3c0
->    [<mm/mmap.c:1416 mm/mmap.c:1374>] SyS_mmap_pgoff+0x1b0/0x210
->    [<arch/x86/kernel/sys_x86_64.c:72>] SyS_mmap+0x1d/0x20
->    [<arch/x86/kernel/entry_64.S:749>] tracesys+0xdd/0xe2
-> 
-> Fix it by caching atomic_write_len in kernfs_open_file during open so
-> that it can be determined without accessing kernfs_ops in
-> kernfs_fop_write().  This restores the structure of kernfs_fop_write()
-> before 4d3773c4bb41 with updated @len determination logic.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-by: Sasha Levin <sasha.levin@oracle.com>
-> References: http://lkml.kernel.org/g/53113485.2090407@oracle.com
+> Acked-by Will Deacon <will.deacon@arm.com>
+> Acked-by: Richard Guy Briggs <rgb@redhat.com>
+> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
 > ---
->  fs/kernfs/file.c       |   63 ++++++++++++++++++++++++-------------------------
->  include/linux/kernfs.h |    1 
->  2 files changed, 33 insertions(+), 31 deletions(-)
+>  arch/arm64/Kconfig               |    1 +
+>  arch/arm64/include/asm/syscall.h |   15 +++++++++++++++
+>  include/uapi/linux/audit.h       |    1 +
+>  3 files changed, 17 insertions(+)
+> 
+> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+> index 27bbcfc..aa47548 100644
+> --- a/arch/arm64/Kconfig
+> +++ b/arch/arm64/Kconfig
+> @@ -25,6 +25,7 @@ config ARM64
+>  	select GENERIC_STRNLEN_USER
+>  	select GENERIC_TIME_VSYSCALL
+>  	select HARDIRQS_SW_RESEND
+> +	select HAVE_ARCH_AUDITSYSCALL
+>  	select HAVE_ARCH_JUMP_LABEL
+>  	select HAVE_ARCH_TRACEHOOK
+>  	select HAVE_DEBUG_BUGVERBOSE
+> diff --git a/arch/arm64/include/asm/syscall.h b/arch/arm64/include/asm/syscall.h
+> index 70ba9d4..6900183 100644
+> --- a/arch/arm64/include/asm/syscall.h
+> +++ b/arch/arm64/include/asm/syscall.h
+> @@ -16,7 +16,9 @@
+>  #ifndef __ASM_SYSCALL_H
+>  #define __ASM_SYSCALL_H
+>  
+> +#include <linux/audit.h>
 
-This is for 3.15, right?
+This could be changed to <uapi/linux/audit.h> to pick up the
+AUDIT_ARCH_* definitions needed and not any of the audit kernel
+funcitons.
 
-thanks,
+>  #include <linux/err.h>
+> +#include <asm/compat.h>
+>  
+>  
+>  static inline int syscall_get_nr(struct task_struct *task,
+> @@ -104,4 +106,17 @@ static inline void syscall_set_arguments(struct task_struct *task,
+>  	memcpy(&regs->regs[i], args, n * sizeof(args[0]));
+>  }
+>  
+> +/*
+> + * We don't care about endianness (__AUDIT_ARCH_LE bit) here because
+> + * AArch64 has the same system calls both on little- and big- endian.
+> + */
+> +static inline int syscall_get_arch(struct task_struct *task,
+> +				   struct pt_regs *regs)
+> +{
+> +	if (is_compat_thread(task_thread_info(task)))
+> +		return AUDIT_ARCH_ARM;
+> +
+> +	return AUDIT_ARCH_AARCH64;
+> +}
+> +
+>  #endif	/* __ASM_SYSCALL_H */
+> diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
+> index 624df43..aa86fab 100644
+> --- a/include/uapi/linux/audit.h
+> +++ b/include/uapi/linux/audit.h
+> @@ -333,6 +333,7 @@ enum {
+>  /* distinguish syscall tables */
+>  #define __AUDIT_ARCH_64BIT 0x80000000
+>  #define __AUDIT_ARCH_LE	   0x40000000
+> +#define AUDIT_ARCH_AARCH64	(EM_AARCH64|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
+>  #define AUDIT_ARCH_ALPHA	(EM_ALPHA|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
+>  #define AUDIT_ARCH_ARM		(EM_ARM|__AUDIT_ARCH_LE)
+>  #define AUDIT_ARCH_ARMEB	(EM_ARM)
+> -- 
+> 1.7.9.5
+> 
 
-greg k-h
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
