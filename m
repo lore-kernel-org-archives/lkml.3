@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757388AbaCEDuM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 22:50:12 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:49125 "EHLO
+	id S1757425AbaCEDvI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 22:51:08 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49129 "EHLO
 	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756901AbaCEDuK (ORCPT
+	with ESMTP id S1753797AbaCEDvF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 22:50:10 -0500
-Date: Wed, 5 Mar 2014 03:50:10 +0000
+	Tue, 4 Mar 2014 22:51:05 -0500
+Date: Wed, 5 Mar 2014 03:51:04 +0000
 From: Al Viro <viro@ZenIV.linux.org.uk>
 To: linux-fsdevel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         linux-kernel@vger.kernel.org, Stephen Tweedie <sct@redhat.com>,
         Jeremy Eder <jeder@redhat.com>
-Subject: [PATCH 2/5][RFC][CFT] fold pcpu_split_block() into the only caller
-Message-ID: <20140305035009.GB26528@ZenIV.linux.org.uk>
+Subject: [PATCH 3/5][RFC][CFT] smarter propagate_mnt()
+Message-ID: <20140305035104.GC26528@ZenIV.linux.org.uk>
 References: <20140305034751.GW18016@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -25,97 +25,385 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-... and clean it up a bit
+The current mainline has copies propagated to *all* nodes, then
+tears down the copies we made for nodes that do not contain
+counterparts of the desired mountpoint.  That sets the right
+propagation graph for the copies (at teardown time we move
+the slaves of removed node to a surviving peer or directly
+to master), but we end up paying a fairly steep price in
+useless allocations.  It's fairly easy to create a situation
+where N calls of mount(2) create exactly N bindings, with
+O(N^2) vfsmounts allocated and freed in process.
+
+Fortunately, it is possible to avoid those allocations/freeings.
+The trick is to create copies in the right order and find which
+one would've eventually become a master with the current algorithm.
+It turns out to be possible in O(nodes getting propagation) time
+and with no extra allocations at all.
+
+One part is that we need to make sure that eventual master will be
+created before its slaves, so we need to walk the propagation
+tree in a different order - by peer groups.  And iterate through
+the peers before dealing with the next group.
+
+Another thing is finding the (earlier) copy that will be a master
+of one we are about to create; to do that we are (temporary) marking
+the masters of mountpoints we are attaching the copies to.
+
+Either we are in a peer of the last mountpoint we'd dealt with,
+or we have the following situation: we are attaching to mountpoint M,
+the last copy S_0 had been attached to M_0 and there are sequences
+S_0...S_n, M_0...M_n such that S_{i+1} is a master of S_{i},
+S_{i} mounted on M{i} and we need to create a slave of the first S_{k}
+such that M is getting propagation from M_{k}.  It means that the master
+of M_{k} will be among the sequence of masters of M.  On the
+other hand, the nearest marked node in that sequence will either
+be the master of M_{k} or the master of M_{k-1} (the latter -
+in the case if M_{k-1} is a slave of something M gets propagation
+from, but in a wrong peer group).
+
+So we go through the sequence of masters of M until we find
+a marked one (P).  Let N be the one before it.  Then we go through
+the sequence of masters of S_0 until we find one (say, S) mounted
+on a node D that has P as master and check if D is a peer of N.
+If it is, S will be the master of new copy, if not - the master of S
+will be.
+
+That's it for the hard part; the rest is fairly simple.  Iterator
+is in next_group(), handling of one prospective mountpoint is
+propagate_one().
+
+It seems to survive all tests and gives a noticably better performance
+than the current mainline for setups that are seriously using shared
+subtrees.
 
 Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 ---
- mm/percpu.c |   58 ++++++++++++----------------------------------------------
- 1 file changed, 12 insertions(+), 46 deletions(-)
+ fs/namespace.c        |   26 ++++---
+ fs/pnode.c            |  194 ++++++++++++++++++++++++++++++-------------------
+ fs/pnode.h            |    3 +
+ include/linux/mount.h |    3 +
+ 4 files changed, 138 insertions(+), 88 deletions(-)
 
-diff --git a/mm/percpu.c b/mm/percpu.c
-index 4469fbd..383801e 100644
---- a/mm/percpu.c
-+++ b/mm/percpu.c
-@@ -419,47 +419,6 @@ out_unlock:
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 22e5367..f28c4fd 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -849,7 +849,7 @@ static struct mount *clone_mnt(struct mount *old, struct dentry *root,
+ 			goto out_free;
+ 	}
+ 
+-	mnt->mnt.mnt_flags = old->mnt.mnt_flags & ~MNT_WRITE_HOLD;
++	mnt->mnt.mnt_flags = old->mnt.mnt_flags & ~(MNT_WRITE_HOLD|MNT_MARKED);
+ 	/* Don't allow unprivileged users to change mount flags */
+ 	if ((flag & CL_UNPRIVILEGED) && (mnt->mnt.mnt_flags & MNT_READONLY))
+ 		mnt->mnt.mnt_flags |= MNT_LOCK_READONLY;
+@@ -1613,16 +1613,14 @@ static int attach_recursive_mnt(struct mount *source_mnt,
+ 		err = invent_group_ids(source_mnt, true);
+ 		if (err)
+ 			goto out;
+-	}
+-	err = propagate_mnt(dest_mnt, dest_mp, source_mnt, &tree_list);
+-	if (err)
+-		goto out_cleanup_ids;
+-
+-	lock_mount_hash();
+-
+-	if (IS_MNT_SHARED(dest_mnt)) {
++		err = propagate_mnt(dest_mnt, dest_mp, source_mnt, &tree_list);
++		lock_mount_hash();
++		if (err)
++			goto out_cleanup_ids;
+ 		for (p = source_mnt; p; p = next_mnt(p, source_mnt))
+ 			set_mnt_shared(p);
++	} else {
++		lock_mount_hash();
+ 	}
+ 	if (parent_path) {
+ 		detach_mnt(source_mnt, parent_path);
+@@ -1642,8 +1640,12 @@ static int attach_recursive_mnt(struct mount *source_mnt,
+ 	return 0;
+ 
+  out_cleanup_ids:
+-	if (IS_MNT_SHARED(dest_mnt))
+-		cleanup_group_ids(source_mnt, NULL);
++	while (!list_empty(&tree_list)) {
++		child = list_first_entry(&tree_list, struct mount, mnt_hash);
++		umount_tree(child, 0);
++	}
++	unlock_mount_hash();
++	cleanup_group_ids(source_mnt, NULL);
+  out:
+ 	return err;
+ }
+@@ -1997,7 +1999,7 @@ static int do_add_mount(struct mount *newmnt, struct path *path, int mnt_flags)
+ 	struct mount *parent;
+ 	int err;
+ 
+-	mnt_flags &= ~(MNT_SHARED | MNT_WRITE_HOLD | MNT_INTERNAL | MNT_DOOMED | MNT_SYNC_UMOUNT);
++	mnt_flags &= ~MNT_INTERNAL_FLAGS;
+ 
+ 	mp = lock_mount(path);
+ 	if (IS_ERR(mp))
+diff --git a/fs/pnode.c b/fs/pnode.c
+index c7221bb..04ca12c 100644
+--- a/fs/pnode.c
++++ b/fs/pnode.c
+@@ -164,46 +164,94 @@ static struct mount *propagation_next(struct mount *m,
+ 	}
  }
  
- /**
-- * pcpu_split_block - split a map block
-- * @chunk: chunk of interest
-- * @i: index of map block to split
-- * @head: head size in bytes (can be 0)
-- * @tail: tail size in bytes (can be 0)
+-/*
+- * return the source mount to be used for cloning
 - *
-- * Split the @i'th map block into two or three blocks.  If @head is
-- * non-zero, @head bytes block is inserted before block @i moving it
-- * to @i+1 and reducing its size by @head bytes.
-- *
-- * If @tail is non-zero, the target block, which can be @i or @i+1
-- * depending on @head, is reduced by @tail bytes and @tail byte block
-- * is inserted after the target block.
-- *
-- * @chunk->map must have enough free slots to accommodate the split.
-- *
-- * CONTEXT:
-- * pcpu_lock.
+- * @dest 	the current destination mount
+- * @last_dest  	the last seen destination mount
+- * @last_src  	the last seen source mount
+- * @type	return CL_SLAVE if the new mount has to be
+- * 		cloned as a slave.
 - */
--static void pcpu_split_block(struct pcpu_chunk *chunk, int i,
--			     int head, int size, int tail)
--{
--	int nr_extra = !!head + !!tail;
--	int off;
+-static struct mount *get_source(struct mount *dest,
+-				struct mount *last_dest,
+-				struct mount *last_src,
+-				int *type)
++static struct mount *next_group(struct mount *m, struct mount *origin)
+ {
+-	struct mount *p_last_src = NULL;
+-	struct mount *p_last_dest = NULL;
 -
--	BUG_ON(chunk->map_alloc <= chunk->map_used + nr_extra);
--
--	/* insert new subblocks */
--	memmove(&chunk->map[i + nr_extra] + 1, &chunk->map[i] + 1,
--		sizeof(chunk->map[0]) * (chunk->map_used - i));
--	chunk->map_used += nr_extra;
--
--	off = chunk->map[i];
--
--	if (head)
--		chunk->map[++i] = off += head;
--	if (tail)
--		chunk->map[++i] = off += size;
--}
--
--/**
-  * pcpu_alloc_area - allocate area from a pcpu_chunk
-  * @chunk: chunk of interest
-  * @size: wanted size in bytes
-@@ -530,19 +489,26 @@ static int pcpu_alloc_area(struct pcpu_chunk *chunk, int size, int align)
+-	while (last_dest != dest->mnt_master) {
+-		p_last_dest = last_dest;
+-		p_last_src = last_src;
+-		last_dest = last_dest->mnt_master;
+-		last_src = last_src->mnt_master;
++	while (1) {
++		while (1) {
++			struct mount *next;
++			if (!IS_MNT_NEW(m) && !list_empty(&m->mnt_slave_list))
++				return first_slave(m);
++			next = next_peer(m);
++			if (m->mnt_group_id == origin->mnt_group_id) {
++				if (next == origin)
++					return NULL;
++			} else if (m->mnt_slave.next != &next->mnt_slave)
++				break;
++			m = next;
++		}
++		/* m is the last peer */
++		while (1) {
++			struct mount *master = m->mnt_master;
++			if (m->mnt_slave.next != &master->mnt_slave_list)
++				return next_slave(m);
++			m = next_peer(master);
++			if (master->mnt_group_id == origin->mnt_group_id)
++				break;
++			if (master->mnt_slave.next == &m->mnt_slave)
++				break;
++			m = master;
++		}
++		if (m == origin)
++			return NULL;
+ 	}
++}
  
- 		/* split if warranted */
- 		if (head || tail) {
--			pcpu_split_block(chunk, i, head, size, tail);
-+			int nr_extra = !!head + !!tail;
+-	if (p_last_dest) {
+-		do {
+-			p_last_dest = next_peer(p_last_dest);
+-		} while (IS_MNT_NEW(p_last_dest));
+-		/* is that a peer of the earlier? */
+-		if (dest == p_last_dest) {
+-			*type = CL_MAKE_SHARED;
+-			return p_last_src;
++/* all accesses are serialized by namespace_sem */
++static struct user_namespace *user_ns;
++static struct mount *last_dest, *last_source, *dest_master;
++static struct mountpoint *mp;
++static struct list_head *list;
 +
-+			/* insert new subblocks */
-+			memmove(p + nr_extra + 1, p + 1,
-+				sizeof(chunk->map[0]) * (chunk->map_used - i));
-+			chunk->map_used += nr_extra;
-+
- 			if (head) {
- 				if (!seen_free) {
- 					chunk->first_free = i;
- 					seen_free = 1;
- 				}
--				i++;
--				p++;
--				off += head;
-+				*++p = off += head;
-+				++i;
- 				max_contig = max(head, max_contig);
- 			}
--			if (tail)
-+			if (tail) {
-+				p[1] = off + size;
- 				max_contig = max(tail, max_contig);
++static int propagate_one(struct mount *m)
++{
++	struct mount *child;
++	int type;
++	/* skip ones added by this propagate_mnt() */
++	if (IS_MNT_NEW(m))
++		return 0;
++	/* skip if mountpoint isn't covered by it */
++	if (!is_subdir(mp->m_dentry, m->mnt.mnt_root))
++		return 0;
++	if (m->mnt_group_id == last_dest->mnt_group_id) {
++		type = CL_MAKE_SHARED;
++	} else {
++		struct mount *n, *p;
++		for (n = m; ; n = p) {
++			p = n->mnt_master;
++			if (p == dest_master || IS_MNT_MARKED(p)) {
++				while (last_dest->mnt_master != p) {
++					last_source = last_source->mnt_master;
++					last_dest = last_source->mnt_parent;
++				}
++				if (n->mnt_group_id != last_dest->mnt_group_id) {
++					last_source = last_source->mnt_master;
++					last_dest = last_source->mnt_parent;
++				}
++				break;
 +			}
  		}
++		type = CL_SLAVE;
++		/* beginning of peer group among the slaves? */
++		if (IS_MNT_SHARED(m))
++			type |= CL_MAKE_SHARED;
++	}
++		
++	/* Notice when we are propagating across user namespaces */
++	if (m->mnt_ns->user_ns != user_ns)
++		type |= CL_UNPRIVILEGED;
++	child = copy_tree(last_source, last_source->mnt.mnt_root, type);
++	if (IS_ERR(child))
++		return PTR_ERR(child);
++	mnt_set_mountpoint(m, mp, child);
++	last_dest = m;
++	last_source = child;
++	if (m->mnt_master != dest_master) {
++		read_seqlock_excl(&mount_lock);
++		SET_MNT_MARK(m->mnt_master);
++		read_sequnlock_excl(&mount_lock);
+ 	}
+-	/* slave of the earlier, then */
+-	*type = CL_SLAVE;
+-	/* beginning of peer group among the slaves? */
+-	if (IS_MNT_SHARED(dest))
+-		*type |= CL_MAKE_SHARED;
+-	return last_src;
++	list_add_tail(&child->mnt_hash, list);
++	return 0;
+ }
  
- 		if (!seen_free)
+ /*
+@@ -222,54 +270,48 @@ static struct mount *get_source(struct mount *dest,
+ int propagate_mnt(struct mount *dest_mnt, struct mountpoint *dest_mp,
+ 		    struct mount *source_mnt, struct list_head *tree_list)
+ {
+-	struct user_namespace *user_ns = current->nsproxy->mnt_ns->user_ns;
+-	struct mount *m, *child;
++	struct mount *m, *n;
+ 	int ret = 0;
+-	struct mount *prev_dest_mnt = dest_mnt;
+-	struct mount *prev_src_mnt  = source_mnt;
+-	LIST_HEAD(tmp_list);
+-
+-	for (m = propagation_next(dest_mnt, dest_mnt); m;
+-			m = propagation_next(m, dest_mnt)) {
+-		int type;
+-		struct mount *source;
+-
+-		if (IS_MNT_NEW(m))
+-			continue;
+-
+-		source =  get_source(m, prev_dest_mnt, prev_src_mnt, &type);
+-
+-		/* Notice when we are propagating across user namespaces */
+-		if (m->mnt_ns->user_ns != user_ns)
+-			type |= CL_UNPRIVILEGED;
+ 
+-		child = copy_tree(source, source->mnt.mnt_root, type);
+-		if (IS_ERR(child)) {
+-			ret = PTR_ERR(child);
+-			list_splice(tree_list, tmp_list.prev);
++	/*
++	 * we don't want to bother passing tons of arguments to
++	 * propagate_one(); everything is serialized by namespace_sem,
++	 * so globals will do just fine.
++	 */
++	user_ns = current->nsproxy->mnt_ns->user_ns;
++	last_dest = dest_mnt;
++	last_source = source_mnt;
++	mp = dest_mp;
++	list = tree_list;
++	dest_master = dest_mnt->mnt_master;
++
++	/* all peers of dest_mnt, except dest_mnt itself */
++	for (n = next_peer(dest_mnt); n != dest_mnt; n = next_peer(n)) {
++		ret = propagate_one(n);
++		if (ret)
+ 			goto out;
+-		}
++	}
+ 
+-		if (is_subdir(dest_mp->m_dentry, m->mnt.mnt_root)) {
+-			mnt_set_mountpoint(m, dest_mp, child);
+-			list_add_tail(&child->mnt_hash, tree_list);
+-		} else {
+-			/*
+-			 * This can happen if the parent mount was bind mounted
+-			 * on some subdirectory of a shared/slave mount.
+-			 */
+-			list_add_tail(&child->mnt_hash, &tmp_list);
+-		}
+-		prev_dest_mnt = m;
+-		prev_src_mnt  = child;
++	/* all slave groups */
++	for (m = next_group(dest_mnt, dest_mnt); m;
++			m = next_group(m, dest_mnt)) {
++		/* everything in that slave group */
++		n = m;
++		do {
++			ret = propagate_one(n);
++			if (ret)
++				goto out;
++			n = next_peer(n);
++		} while (n != m);
+ 	}
+ out:
+-	lock_mount_hash();
+-	while (!list_empty(&tmp_list)) {
+-		child = list_first_entry(&tmp_list, struct mount, mnt_hash);
+-		umount_tree(child, 0);
++	read_seqlock_excl(&mount_lock);
++	list_for_each_entry(n, tree_list, mnt_hash) {
++		m = n->mnt_parent;
++		if (m->mnt_master != dest_mnt->mnt_master)
++			CLEAR_MNT_MARK(m->mnt_master);
+ 	}
+-	unlock_mount_hash();
++	read_sequnlock_excl(&mount_lock);
+ 	return ret;
+ }
+ 
+diff --git a/fs/pnode.h b/fs/pnode.h
+index 59e7eda..65e04f6 100644
+--- a/fs/pnode.h
++++ b/fs/pnode.h
+@@ -16,6 +16,9 @@
+ #define IS_MNT_NEW(m)  (!(m)->mnt_ns)
+ #define CLEAR_MNT_SHARED(m) ((m)->mnt.mnt_flags &= ~MNT_SHARED)
+ #define IS_MNT_UNBINDABLE(m) ((m)->mnt.mnt_flags & MNT_UNBINDABLE)
++#define IS_MNT_MARKED(m) ((m)->mnt.mnt_flags & MNT_MARKED)
++#define SET_MNT_MARK(m) ((m)->mnt.mnt_flags |= MNT_MARKED)
++#define CLEAR_MNT_MARK(m) ((m)->mnt.mnt_flags &= ~MNT_MARKED)
+ 
+ #define CL_EXPIRE    		0x01
+ #define CL_SLAVE     		0x02
+diff --git a/include/linux/mount.h b/include/linux/mount.h
+index 371d346..839bac2 100644
+--- a/include/linux/mount.h
++++ b/include/linux/mount.h
+@@ -44,6 +44,8 @@ struct mnt_namespace;
+ #define MNT_SHARED_MASK	(MNT_UNBINDABLE)
+ #define MNT_PROPAGATION_MASK	(MNT_SHARED | MNT_UNBINDABLE)
+ 
++#define MNT_INTERNAL_FLAGS (MNT_SHARED | MNT_WRITE_HOLD | MNT_INTERNAL | \
++			    MNT_DOOMED | MNT_SYNC_UMOUNT | MNT_MARKED)
+ 
+ #define MNT_INTERNAL	0x4000
+ 
+@@ -51,6 +53,7 @@ struct mnt_namespace;
+ #define MNT_LOCKED		0x800000
+ #define MNT_DOOMED		0x1000000
+ #define MNT_SYNC_UMOUNT		0x2000000
++#define MNT_MARKED		0x4000000
+ 
+ struct vfsmount {
+ 	struct dentry *mnt_root;	/* root of the mounted tree */
 -- 
 1.7.10.4
 
