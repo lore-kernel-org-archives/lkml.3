@@ -1,64 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759008AbaCEPTV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 10:19:21 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40922 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756956AbaCEOZ3 (ORCPT
+	id S932504AbaCEPTT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:19:19 -0500
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:46941 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756924AbaCEPTP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:25:29 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Ilia Mirkin <imirkin@alum.mit.edu>, Ben Skeggs <bskeggs@redhat.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 045/131] drm/nv50/disp: use correct register to determine DP display bpp
-Date: Wed,  5 Mar 2014 14:22:49 +0000
-Message-Id: <1394029455-23128-46-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
-References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Wed, 5 Mar 2014 10:19:15 -0500
+MIME-Version: 1.0
+In-Reply-To: <1394013249.19539.17.camel@haakon3.risingtidesystems.com>
+References: <CAJZOPZ+4yQ-sT=ks7+eiJjkxOjy5w=BmG16JVcUPiuVsof7qEA@mail.gmail.com>
+ <CAG4TOxOMmvFWnkU3DBn33rscEKh2_YfbUCKY=iY8PCVN3+nEsA@mail.gmail.com>
+ <52CD1C68.4050406@mellanox.com> <1389645171.5567.459.camel@haakon3.risingtidesystems.com>
+ <1389820541.5567.543.camel@haakon3.risingtidesystems.com> <CAG4TOxNa32sLxifPx_f8sW04B_qSh01WWfWjRvam6fjvFLDXSQ@mail.gmail.com>
+ <1389906852.5567.668.camel@haakon3.risingtidesystems.com> <CAG4TOxPeYQ=e5LdJft1Hkx8donUQjJaKDEAv3iRLGxPYJQ_b9w@mail.gmail.com>
+ <1390102949.5567.749.camel@haakon3.risingtidesystems.com> <52DBB4F1.4020400@mellanox.com>
+ <CAJZOPZJFbcTh2zO8mos0M+gv0LW-Gmh877Vxe4tLvfPX19oqTw@mail.gmail.com>
+ <CAJZOPZLuz-Z59agBd0Q9J2=sSG-F+Y8MrJkoGbtiF5M+CnKU1g@mail.gmail.com>
+ <CAG4TOxPLEfyWsUDf4_371u=_=tOgW2v5J4zSz8xx73DfziZOZg@mail.gmail.com>
+ <1390375658.5567.917.camel@haakon3.risingtidesystems.com> <1391731323.14985.56.camel@haakon3.risingtidesystems.com>
+ <CAG4TOxNpnMMR-vfAVa+m6f-z82msxygADUkJ7mmrKtzHCOqdhA@mail.gmail.com> <1394013249.19539.17.camel@haakon3.risingtidesystems.com>
+From: Roland Dreier <roland@kernel.org>
+Date: Wed, 5 Mar 2014 07:18:54 -0800
+X-Google-Sender-Auth: BPMlMFR1sYAi6INA1W6w0chSmR8
+Message-ID: <CAG4TOxNRkAUH5Jsd67--ydWtUJqE1=pnVSuorgn4vNQiuYx1wg@mail.gmail.com>
+Subject: Re: linux rdma 3.14 merge plans
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Or Gerlitz <or.gerlitz@gmail.com>, Hefty Sean <sean.hefty@intel.com>,
+        linux-rdma <linux-rdma@vger.kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        Sagi Grimberg <sagig@mellanox.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.6 -stable review patch.  If anyone has any objections, please let me know.
+On Wed, Mar 5, 2014 at 1:54 AM, Nicholas A. Bellinger
+<nab@linux-iscsi.org> wrote:
+> That all said, do you have an objection wrt taking this bits through
+> target-pending..?  Given the dependencies involved, that would seem the
+> most logical path to take.
 
-------------------
+Perhaps not surprisingly, I would prefer to get a chance to review a
+major change to the core RDMA midlayer rather than having you merge it
+through your tree.  So yes I do object.  Please give me a chance to
+review and merge it.  I am working on that this week.
 
-From: Ilia Mirkin <imirkin@alum.mit.edu>
-
-commit a7f1c1e65b68e1e1ab70898528d5977ed68a0a7d upstream.
-
-Commit 0a0afd282f ("drm/nv50-/disp: move DP link training to core and
-train from supervisor") added code that uses the wrong register for
-computing the display bpp, used for bandwidth calculation. Adjust to use
-the same register as used by exec_clkcmp and nv50_disp_intr_unk20_2_dp.
-
-Reported-by: Torsten Wagner <torsten.wagner@gmail.com>
-Reported-by: Michael Gulick <mgulick@mathworks.com>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=67628
-Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/gpu/drm/nouveau/core/engine/disp/nv50.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/gpu/drm/nouveau/core/engine/disp/nv50.c b/drivers/gpu/drm/nouveau/core/engine/disp/nv50.c
-index 7ffe2f3..bcebe96 100644
---- a/drivers/gpu/drm/nouveau/core/engine/disp/nv50.c
-+++ b/drivers/gpu/drm/nouveau/core/engine/disp/nv50.c
-@@ -1112,7 +1112,7 @@ nv50_disp_intr_unk20_2(struct nv50_disp_priv *priv, int head)
- 	if (conf != ~0) {
- 		if (outp.location == 0 && outp.type == DCB_OUTPUT_DP) {
- 			u32 soff = (ffs(outp.or) - 1) * 0x08;
--			u32 ctrl = nv_rd32(priv, 0x610798 + soff);
-+			u32 ctrl = nv_rd32(priv, 0x610794 + soff);
- 			u32 datarate;
- 
- 			switch ((ctrl & 0x000f0000) >> 16) {
--- 
-1.9.0
-
+ - R.
