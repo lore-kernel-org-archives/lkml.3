@@ -1,63 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754964AbaCET7j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 14:59:39 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:33718 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752392AbaCET7h (ORCPT
+	id S1756776AbaCEUAj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 15:00:39 -0500
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:49926 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756366AbaCEUAi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 14:59:37 -0500
-Message-ID: <531781E5.8010000@oracle.com>
-Date: Wed, 05 Mar 2014 12:58:29 -0700
-From: Khalid Aziz <khalid.aziz@oracle.com>
-Organization: Oracle Corp
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        akpm@linux-foundation.org, viro@zeniv.linux.org.uk, oleg@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] [PATCH] Pre-emption control for userspace
-References: <1393870033-31076-1-git-send-email-khalid.aziz@oracle.com> <531641A8.40306@zytor.com> <53164824.3000704@oracle.com> <20140304222356.41c55bbc@alan.etchedpixels.co.uk> <5316574F.6040105@oracle.com> <alpine.DEB.2.02.1403050129570.18573@ionos.tec.linutronix.de> <8738ix5uyk.fsf@tassilo.jf.intel.com> <20140305111006.GT9987@twins.programming.kicks-ass.net>
-In-Reply-To: <20140305111006.GT9987@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Wed, 5 Mar 2014 15:00:38 -0500
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Minchan Kim <minchan@kernel.org>, Jerome Marchand <jmarchan@redhat.com>,
+        Nitin Gupta <ngupta@vflare.org>, linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Subject: [PATCH] zram: return error-valued pointer from zcomp_create()
+Date: Wed,  5 Mar 2014 22:56:55 +0300
+Message-Id: <1394049415-11759-1-git-send-email-sergey.senozhatsky@gmail.com>
+X-Mailer: git-send-email 1.9.0.382.g7f3562c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/2014 04:10 AM, Peter Zijlstra wrote:
-> On Tue, Mar 04, 2014 at 04:51:15PM -0800, Andi Kleen wrote:
->> Anything else?
->
-> Proxy execution; its a form of PI that works for arbitrary scheduling
-> policies (thus also very much including fair).
->
-> With that what you effectively end up with is the lock holder running
-> 'boosted' by the runtime of its blocked chain until the entire chain
-> runs out of time, at which point preemption doesn't matter anyhow.
->
+Instead of returning just NULL, return ERR_PTR from zcomp_create()
+if compressing backend creation has failed. ERR_PTR(-EINVAL) for
+unsupported compression algorithm request, ERR_PTR(-ENOMEM) for
+allocation (zcomp or compression stream) error.
 
-Hello Peter,
+Perform IS_ERR() check of returned from zcomp_create() value in
+disksize_store() and set return code to PTR_ERR().
 
-I read through the concept of proxy execution and it is a very 
-interesting concept. I come from many years of realtime and embeddded 
-systems development and I can easily recall various problems in the past 
-that can be solved or helped by this. Looking at the current problem I 
-am trying to solve with databases and JVM, I run into the same issue I 
-described in my earlier email. Proxy execution is a post-contention 
-solution. By the time proxy execution can do something for my case, I 
-have already paid the price of contention and a context switch which is 
-what I am trying to avoid. For a critical section that is very short 
-compared to the size of execution thread, which is the case I am looking 
-at, avoiding preemption in the middle of that short critical section 
-helps much more than dealing with lock contention later on. The goal 
-here is to avoid lock contention and associated cost. I do understand 
-the cost of dealing with lock contention poorly and that can easily be 
-much bigger cost, but I am looking into avoiding even getting there.
+Change suggested by Jerome Marchand.
 
-Thanks,
-Khalid
+Reported-by: Jerome Marchand <jmarchan@redhat.com>
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+---
+ drivers/block/zram/zcomp.c    | 13 +++++++------
+ drivers/block/zram/zram_drv.c |  8 ++++----
+ 2 files changed, 11 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/block/zram/zcomp.c b/drivers/block/zram/zcomp.c
+index d591903..92a83df 100644
+--- a/drivers/block/zram/zcomp.c
++++ b/drivers/block/zram/zcomp.c
+@@ -319,9 +319,10 @@ void zcomp_destroy(struct zcomp *comp)
+ 
+ /*
+  * search available compressors for requested algorithm.
+- * allocate new zcomp and initialize it. return NULL
+- * if requested algorithm is not supported or in case
+- * of init error
++ * allocate new zcomp and initialize it. return compressing
++ * backend pointer or ERR_PTR if things went bad. ERR_PTR(-EINVAL)
++ * if requested algorithm is not supported, ERR_PTR(-ENOMEM) in
++ * case of allocation error.
+  */
+ struct zcomp *zcomp_create(const char *compress, int max_strm)
+ {
+@@ -330,11 +331,11 @@ struct zcomp *zcomp_create(const char *compress, int max_strm)
+ 
+ 	backend = find_backend(compress);
+ 	if (!backend)
+-		return NULL;
++		return ERR_PTR(-EINVAL);
+ 
+ 	comp = kzalloc(sizeof(struct zcomp), GFP_KERNEL);
+ 	if (!comp)
+-		return NULL;
++		return ERR_PTR(-ENOMEM);
+ 
+ 	comp->backend = backend;
+ 	if (max_strm > 1)
+@@ -343,7 +344,7 @@ struct zcomp *zcomp_create(const char *compress, int max_strm)
+ 		zcomp_strm_single_create(comp);
+ 	if (!comp->stream) {
+ 		kfree(comp);
+-		return NULL;
++		return ERR_PTR(-ENOMEM);
+ 	}
+ 	return comp;
+ }
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index e4d536b..9585957 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -583,7 +583,7 @@ static ssize_t disksize_store(struct device *dev,
+ 	struct zcomp *comp;
+ 	struct zram_meta *meta;
+ 	struct zram *zram = dev_to_zram(dev);
+-	int err = -EINVAL;
++	int err = -EBUSY;
+ 
+ 	disksize = memparse(buf, NULL);
+ 	if (!disksize)
+@@ -595,9 +595,10 @@ static ssize_t disksize_store(struct device *dev,
+ 		return -ENOMEM;
+ 
+ 	comp = zcomp_create(zram->compressor, zram->max_comp_streams);
+-	if (!comp) {
++	if (IS_ERR(comp)) {
+ 		pr_info("Cannot initialise %s compressing backend\n",
+ 				zram->compressor);
++		err = PTR_ERR(comp);
+ 		goto out_cleanup;
+ 	}
+ 
+@@ -605,7 +606,6 @@ static ssize_t disksize_store(struct device *dev,
+ 	if (init_done(zram)) {
+ 		up_write(&zram->init_lock);
+ 		pr_info("Cannot change disksize for initialized device\n");
+-		err = -EBUSY;
+ 		goto out_cleanup;
+ 	}
+ 
+@@ -618,7 +618,7 @@ static ssize_t disksize_store(struct device *dev,
+ 	return len;
+ 
+ out_cleanup:
+-	if (comp)
++	if (!IS_ERR(comp))
+ 		zcomp_destroy(comp);
+ 	zram_meta_free(meta);
+ 	return err;
+-- 
+1.9.0.382.g7f3562c
+
