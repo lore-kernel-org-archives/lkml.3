@@ -1,80 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756062AbaCEAD0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 19:03:26 -0500
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:43649 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755539AbaCEADY (ORCPT
+	id S1756236AbaCEAEK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 19:04:10 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:47250 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755523AbaCEAEG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 19:03:24 -0500
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Linus Walleij <linus.walleij@linaro.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/3] pinctrl: mvebu: prepare for single PMU node
-Date: Wed,  5 Mar 2014 01:03:07 +0100
-Message-Id: <1393977790-29110-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Tue, 4 Mar 2014 19:04:06 -0500
+Date: Tue, 4 Mar 2014 16:03:25 -0800
+From: tip-bot for Jiri Olsa <tipbot@zytor.com>
+Message-ID: <tip-0ac09f9f8cd1fb028a48330edba6023d347d3cea@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
+        mingo@kernel.org, a.p.zijlstra@chello.nl, acme@ghostprotocols.net,
+        seiji.aguchi@hds.com, jolsa@redhat.com, vincent.weaver@maine.edu,
+        rostedt@goodmis.org, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        acme@ghostprotocols.net, seiji.aguchi@hds.com, jolsa@redhat.com,
+        vincent.weaver@maine.edu, rostedt@goodmis.org, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <20140228160526.GD1133@krava.brq.redhat.com>
+References: <alpine.DEB.2.10.1402211701380.6395@vincent-weaver-1.um.maine.edu>
+	<20140228160526.GD1133@krava.brq.redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, trace:
+  Fix CR2 corruption when tracing page faults
+Git-Commit-ID: 0ac09f9f8cd1fb028a48330edba6023d347d3cea
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a small patch set preparing a discussion and rework for the
-Power Management Unit (PMU) found on Marvell Dove SoCs. We are planing
-to consolidate PMU into a single DT node instead of chopping it into
-tiny pieces [1].
+Commit-ID:  0ac09f9f8cd1fb028a48330edba6023d347d3cea
+Gitweb:     http://git.kernel.org/tip/0ac09f9f8cd1fb028a48330edba6023d347d3cea
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Fri, 28 Feb 2014 17:05:26 +0100
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Tue, 4 Mar 2014 16:00:14 -0800
 
-As we just have taken in patches for pinctrl driver that grab another
-piece of PMU reg space, we rather drop the corresponding reg property
-and wait for v3.15 and proper PMU node rework.
+x86, trace: Fix CR2 corruption when tracing page faults
 
-Patch 1 drops the reg property added for pinctrl and is based on mvebu/dt.
+The trace_do_page_fault function trigger tracepoint
+and then handles the actual page fault.
 
-Patch 2 drops the reg property added for pinctrl from the corresponding
-binding documentation and example. It is based on recently pulled
-mvebu/pinctrl-dove.
+This could lead to error if the tracepoint caused page
+fault. The original cr2 value gets lost and the original
+page fault handler kills current process with SIGSEGV.
 
-Patch 3 reduces a WARN on missing reg properties to dev_warn with FW_BUG,
-as we just enforced this situation. The driver will continue to work
-properly without the resource and derive it from other resources. As soon
-as PMU binding is worked out, we will update the driver to make use of it.
+This happens if you record page faults with callchain
+data, the user part of it will cause tracepoint handler
+to page fault:
 
-The last patch is optional and Linus Walleij can reject it, if he is already
-done for v3.15.
+  # perf record -g -e exceptions:page_fault_user ls
 
-[1] https://lkml.org/lkml/2014/3/3/326
+Fixing this by saving the original cr2 value
+and using it after tracepoint handler is done.
 
-Sebastian Hesselbarth (3):
-  ARM: dove: drop pinctrl PMU reg property
-  devicetree: bindings: drop pinctrl PMU reg property
-  pinctrl: mvebu: silence WARN to dev_warn
+v2: Moving the cr2 read before exception_enter, because
+    it could trigger tracepoint as well.
 
- Documentation/devicetree/bindings/pinctrl/marvell,dove-pinctrl.txt  | 2 +-
- Documentation/devicetree/bindings/pinctrl/marvell,mvebu-pinctrl.txt | 2 +-
- arch/arm/boot/dts/dove.dtsi                                         | 3 +--
- drivers/pinctrl/mvebu/pinctrl-dove.c                                | 3 ++-
- 4 files changed, 5 insertions(+), 5 deletions(-)
-
+Reported-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Reported-by: Vince Weaver <vincent.weaver@maine.edu>
+Tested-by: Vince Weaver <vincent.weaver@maine.edu>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Link: http://lkml.kernel.org/r/alpine.DEB.2.10.1402211701380.6395@vincent-weaver-1.um.maine.edu
+Link: http://lkml.kernel.org/r/20140228160526.GD1133@krava.brq.redhat.com
 ---
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-Cc: Kumar Gala <galak@codeaurora.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Gregory Clement <gregory.clement@free-electrons.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: devicetree@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
--- 
-1.8.5.3
+ arch/x86/mm/fault.c | 20 +++++++++++++-------
+ 1 file changed, 13 insertions(+), 7 deletions(-)
 
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 6dea040..e7fa28b 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -1022,11 +1022,11 @@ static inline bool smap_violation(int error_code, struct pt_regs *regs)
+  * routines.
+  */
+ static void __kprobes
+-__do_page_fault(struct pt_regs *regs, unsigned long error_code)
++__do_page_fault(struct pt_regs *regs, unsigned long error_code,
++		unsigned long address)
+ {
+ 	struct vm_area_struct *vma;
+ 	struct task_struct *tsk;
+-	unsigned long address;
+ 	struct mm_struct *mm;
+ 	int fault;
+ 	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE;
+@@ -1034,9 +1034,6 @@ __do_page_fault(struct pt_regs *regs, unsigned long error_code)
+ 	tsk = current;
+ 	mm = tsk->mm;
+ 
+-	/* Get the faulting address: */
+-	address = read_cr2();
+-
+ 	/*
+ 	 * Detect and handle instructions that would cause a page fault for
+ 	 * both a tracked kernel page and a userspace page.
+@@ -1252,9 +1249,11 @@ dotraplinkage void __kprobes
+ do_page_fault(struct pt_regs *regs, unsigned long error_code)
+ {
+ 	enum ctx_state prev_state;
++	/* Get the faulting address: */
++	unsigned long address = read_cr2();
+ 
+ 	prev_state = exception_enter();
+-	__do_page_fault(regs, error_code);
++	__do_page_fault(regs, error_code, address);
+ 	exception_exit(prev_state);
+ }
+ 
+@@ -1271,9 +1270,16 @@ dotraplinkage void __kprobes
+ trace_do_page_fault(struct pt_regs *regs, unsigned long error_code)
+ {
+ 	enum ctx_state prev_state;
++	/*
++	 * The exception_enter and tracepoint processing could
++	 * trigger another page faults (user space callchain
++	 * reading) and destroy the original cr2 value, so read
++	 * the faulting address now.
++	 */
++	unsigned long address = read_cr2();
+ 
+ 	prev_state = exception_enter();
+ 	trace_page_fault_entries(regs, error_code);
+-	__do_page_fault(regs, error_code);
++	__do_page_fault(regs, error_code, address);
+ 	exception_exit(prev_state);
+ }
