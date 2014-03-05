@@ -1,197 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754847AbaCEGfc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 01:35:32 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:63435 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753435AbaCEGf3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 01:35:29 -0500
-Message-ID: <5316C5A7.5070400@canonical.com>
-Date: Wed, 05 Mar 2014 14:35:19 +0800
-From: Shuduo Sang <shuduo.sang@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: SeongJae Park <sj38.park@gmail.com>
-CC: Tobias Klauser <tklauser@distanz.ch>, bjorn@mork.no,
-        ibm-acpi-devel@lists.sourceforge.net, linux-acpi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ibm-acpi@hmh.eng.br, matthew.garrett@nebula.net,
-        platform-driver-x86@vger.kernel.org, bruce.ma@canonical.com
-Subject: Re: [PATCH V3] support Thinkpad X1 Carbon 2nd generation's adaptive
- keyboard
-References: <5314AE4C.4090502@canonical.com> <20140304091916.GE1883@distanz.ch> <5315B572.1000403@canonical.com> <CAEjAshqCq+t5gXpLZaJ0QDT1O6o4XURv5teV8u5ky5x+Fvnf1w@mail.gmail.com>
-In-Reply-To: <CAEjAshqCq+t5gXpLZaJ0QDT1O6o4XURv5teV8u5ky5x+Fvnf1w@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1755077AbaCEGgJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 01:36:09 -0500
+Received: from ozlabs.org ([203.10.76.45]:48118 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754870AbaCEGgG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 01:36:06 -0500
+Date: Wed, 5 Mar 2014 17:35:59 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Fabian Vogt <fabian@ritter-vogt.de>
+Subject: linux-next: build failure after merge of the final tree (gpio tree
+ related)
+Message-Id: <20140305173559.0b50971a1ab88a16bee8819c@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__5_Mar_2014_17_35_59_+1100_7=g7GB2x5dQ=JEng"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Wed__5_Mar_2014_17_35_59_+1100_7=g7GB2x5dQ=JEng
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi all,
 
-On 03/05/2014 01:54 PM, SeongJae Park wrote:
-> Hello,
-> This is just a trivial comment.
-> 
-> 
-> On Tue, Mar 4, 2014 at 8:13 PM, Shuduo Sang <shuduo.sang@canonical.com> wrote:
->>
->>
->> Submit patch V3 to support Adaptive Keyboard on Thinkpad X1 Carbon 2nd
->> generation according to Tobias's comments.
->>
->> Thanks,
->> Shuduo
->>
->> From 2b8175e69deee661d97d371b2422a9c192fefd52 Mon Sep 17 00:00:00 2001
->> From: Shuduo Sang <sangshuduo@gmail.com>
->> Date: Mon, 3 Mar 2014 14:29:32 +0800
->> Subject: [PATCH] support thinkpad X1 Carbon's adaptive keyboard
->>
->> Thinkpad X1 Carbon's adaptive keyboard has five modes including Home
->> mode, Web browser mode, Web conference mode, Function mode and Lay-flat
->> mode. We support Home mode and Function mode currently.
->>
->> Signed-off-by: Bruce Ma <bruce.ma@canonical.com>
->> Signed-off-by: Shuduo Sang <shuduo.sang@canonical.com>
->> ---
->>  drivers/platform/x86/thinkpad_acpi.c | 102
->> +++++++++++++++++++++++++++++++++++
->>  1 file changed, 102 insertions(+)
->>
->> diff --git a/drivers/platform/x86/thinkpad_acpi.c
->> b/drivers/platform/x86/thinkpad_acpi.c
->> index defb6af..6664dcd 100644
->> --- a/drivers/platform/x86/thinkpad_acpi.c
->> +++ b/drivers/platform/x86/thinkpad_acpi.c
->> @@ -3437,6 +3437,106 @@ err_exit:
->>         return (res < 0)? res : 1;
->>  }
->>
->> +/* Thinkpad X1 Carbon support 5 modes including Home mode, Web browser
->> + * mode, Web conference mode, Function mode and Lay-flat mode.
->> + * We support Home mode and Function mode currently.
->> + *
->> + * Will consider support rest of modes in future.
->> + *
->> + */
->> +enum ADAPTIVE_KEY_MODE {
->> +       HOME_MODE,
->> +       WEB_BROWSER_MODE,
->> +       WEB_CONFERENCE_MODE,
->> +       FUNCTION_MODE,
->> +       LAYFLAT_MODE
->> +};
->> +
->> +int adaptive_keyboard_modes[] = {
->> +       HOME_MODE,
->> +/*     WEB_BROWSER_MODE = 2,
->> +       WEB_CONFERENCE_MODE = 3, */
->> +       FUNCTION_MODE
->> +};
->> +
->> +#define DFR_CHANGE_ROW                 0x101
->> +#define DFR_SHOW_QUICKVIEW_ROW         0x102
->> +
->> +/* press Fn key a while second, it will switch to Function Mode. Then
->> + * release Fn key, previous mode be restored.
->> + */
->> +static bool adaptive_keyboard_mode_is_saved;
->> +static int adaptive_keyboard_prev_mode;
->> +
->> +static int adaptive_keyboard_get_next_mode(int mode)
->> +{
->> +       int i;
->> +       size_t max_mode = ARRAY_SIZE(adaptive_keyboard_modes) - 1;
->> +
->> +       for (i = 0; i <= max_mode; i++) {
->> +               if (adaptive_keyboard_modes[i] == mode)
->> +                       break;
->> +       }
->> +
->> +       if (i >= max_mode)
->> +               i = 0;
->> +       else
->> +               i++;
->> +
->> +       return adaptive_keyboard_modes[i];
->> +}
->> +
->> +static bool adaptive_keyboard_hotkey_notify_hotkey(unsigned int scancode)
->> +{
->> +       u32 current_mode = 0;
->> +       int new_mode = 0;
->> +
->> +       switch (scancode) {
->> +       case DFR_CHANGE_ROW:
->> +               if (adaptive_keyboard_mode_is_saved) {
->> +                       new_mode = adaptive_keyboard_prev_mode;
->> +                       adaptive_keyboard_mode_is_saved = false;
->> +               } else {
->> +                       if (!acpi_evalf(
->> +                                       hkey_handle, &current_mode,
->> +                                       "GTRW", "dd", 0)) {
->> +                               pr_err("Cannot read adaptive keyboard mode\n");
->> +                               return false;
->> +                       } else {
->> +                               new_mode = adaptive_keyboard_get_next_mode(
->> +                                               current_mode);
->> +                       }
->> +               }
->> +
->> +               if (!acpi_evalf(hkey_handle, NULL, "STRW", "vd", new_mode)) {
->> +                       pr_err("Cannot set adaptive keyboard mode\n");
->> +                       return false;
->> +               }
->> +
->> +               return true;
-> 
-> Isn't the blank line above return statement unnecessary?
-> 
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-Doesn't it look clearly? :)
+drivers/gpio/gpio-zevio.c: In function 'zevio_gpio_port_get':
+drivers/gpio/gpio-zevio.c:70:2: error: implicit declaration of function 'IO=
+MEM' [-Werror=3Dimplicit-function-declaration]
+  return readl(IOMEM(c->chip.regs + section_offset + port_offset));
+  ^
+drivers/gpio/gpio-zevio.c:70:2: warning: passing argument 1 of 'readl' make=
+s pointer from integer without a cast [enabled by default]
+In file included from include/linux/io.h:22:0,
+                 from drivers/gpio/gpio-zevio.c:15:
+arch/powerpc/include/asm/io-defs.h:6:16: note: expected 'const volatile voi=
+d *' but argument is of type 'int'
+ DEF_PCI_AC_RET(readl, u32, (const PCI_IO_ADDR addr), (addr), mem, addr)
+                ^
+arch/powerpc/include/asm/io.h:577:19: note: in definition of macro 'DEF_PCI=
+_AC_RET'
+ static inline ret name at     \
+                   ^
+drivers/gpio/gpio-zevio.c: In function 'zevio_gpio_port_set':
+drivers/gpio/gpio-zevio.c:77:2: warning: passing argument 2 of 'writel' mak=
+es pointer from integer without a cast [enabled by default]
+  writel(val, IOMEM(c->chip.regs + section_offset + port_offset));
+  ^
+In file included from include/linux/io.h:22:0,
+                 from drivers/gpio/gpio-zevio.c:15:
+arch/powerpc/include/asm/io-defs.h:11:18: note: expected 'volatile void *' =
+but argument is of type 'int'
+ DEF_PCI_AC_NORET(writel, (u32 val, PCI_IO_ADDR addr), (val, addr), mem, ad=
+dr)
+                  ^
+arch/powerpc/include/asm/io.h:585:20: note: in definition of macro 'DEF_PCI=
+_AC_NORET'
+ static inline void name at     \
+                    ^
 
->> +
->> +       case DFR_SHOW_QUICKVIEW_ROW:
->> +               if (!acpi_evalf(hkey_handle,
->> +                               &adaptive_keyboard_prev_mode,
->> +                               "GTRW", "dd", 0)) {
->> +                       pr_err("Cannot read adaptive keyboard mode\n");
->> +                       return false;
->> +               } else {
->> +                       adaptive_keyboard_mode_is_saved = true;
->> +
->> +                       if (!acpi_evalf(hkey_handle,
->> +                                       NULL, "STRW", "vd", FUNCTION_MODE)) {
->> +                               pr_err("Cannot set adaptive keyboard mode\n");
->> +                               return false;
->> +                       }
->> +               }
->> +               return true;
->> +
->> +       default:
->> +               return false;
->> +       }
->> +}
->> +
->>  static bool hotkey_notify_hotkey(const u32 hkey,
->>                                  bool *send_acpi_ev,
->>                                  bool *ignore_acpi_ev)
->> @@ -3456,6 +3556,8 @@ static bool hotkey_notify_hotkey(const u32 hkey,
->>                         *ignore_acpi_ev = true;
->>                 }
->>                 return true;
->> +       } else {
->> +               return adaptive_keyboard_hotkey_notify_hotkey(scancode);
->>         }
->>         return false;
->>  }
->> --
->> 1.9.0
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+Caused by commit 9af4d80ba566 ("gpio: New driver for LSI ZEVIO SoCs").
+
+I have reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__5_Mar_2014_17_35_59_+1100_7=g7GB2x5dQ=JEng
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTFsXUAAoJEMDTa8Ir7ZwVWjgP+gKJQJ8fmAsB54yi2Aebdgax
+iMxHVY6vyceGMdWFdLeJYSag1i0e02uMHSeyzz8D8fEXr1rqpusXxjgKPkaVwZyj
+stDRjzwbMzRreaz4sHdMwlIMnOv6BvAsSEZ5EoaKELLkyDNdMhyE3Ib1DlmM7zCj
+o9DVfgdQPMhLhDzzN+BposA8+WfGq77HKpuzFUXtYGA8pACHANb8y+jbAyk8OPYF
+DdYJbn2rx1f9oQaHZnZFHNkbcpbqLCdsGbJhdW1whpWxc5Cj/G4qouhuFJzwdUKM
+VGLDBeJ3h05eDewgi+DwmIDfkOEME5LmTU+H1hkILMcuJksU5QnTdNaF2gAq+RLV
+qB3H4PNHjlHWRZQrF7xO/JqU4GMhBieYc6jYAUMzKwiXp/DOHel4EmV3xCn1eY6C
+HPqWQYyx3aoqjrS16xtscqZawJFBgKZ7ZPgYcFE8tCcBE17MljqGlAzjYM5sNr6S
+qwuQTr4s88bHaLIdsLwhdB8hUJ/9mk08K1J7ktD3DO8euuqohIU6xrAfECxzW35B
+OMm8c/yRXbXZlITYG4KlFIs1rcGAuUMxlDrIUvDqjYBgLmH1+IY0ojS1//VE3d48
+69amsCSUkLq+jJT4QdkA+1iAHzleIL4Nd/Y2J/Hcx078MVOCoTiaucH657zzsen2
+VYwWoEkq0tbc9qiY2k1l
+=4TIf
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__5_Mar_2014_17_35_59_+1100_7=g7GB2x5dQ=JEng--
