@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756977AbaCETq3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 14:46:29 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:57785 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756229AbaCETq1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 14:46:27 -0500
+	id S1756507AbaCETrg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 14:47:36 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:40056 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751630AbaCETrf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 14:47:35 -0500
+Date: Wed, 5 Mar 2014 20:47:29 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
+        greg@kroah.com, jkosina@suse.cz
+Subject: Re: [PATCH 08/11] kexec-bzImage: Support for loading bzImage using
+ 64bit entry
+Message-ID: <20140305194729.GF28317@pd.tnic>
+References: <1390849071-21989-1-git-send-email-vgoyal@redhat.com>
+ <1390849071-21989-9-git-send-email-vgoyal@redhat.com>
+ <20140227213629.GP18191@pd.tnic>
+ <20140228163134.GG28744@redhat.com>
+ <20140305163722.GC28317@pd.tnic>
+ <20140305184010.GC1740@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1402252307130.5180@pobox.suse.cz>
-References: <alpine.LNX.2.00.1402211450410.1192@pobox.suse.cz>
-	<CAJZOPZK4Ah+nKPWnX3=yM43jbf586GYJ+fh0-OL4bOnqKK8v8A@mail.gmail.com>
-	<alpine.LNX.2.00.1402252307130.5180@pobox.suse.cz>
-Date: Wed, 5 Mar 2014 21:46:26 +0200
-Message-ID: <CAJZOPZ+xKFwjrpWnBQDU=CU2XbjP00Qfgj8AYJ1SGHhf8U9O-A@mail.gmail.com>
-Subject: Re: [PATCH] mlx4: Use GFP_NOFS calls during the ipoib TX path when
- creating the QP
-From: Or Gerlitz <or.gerlitz@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Roland Dreier <roland@kernel.org>, Amir Vadai <amirv@mellanox.com>,
-        Eli Cohen <eli@dev.mellanox.co.il>, Or Gerlitz <ogerlitz@mellanox.com>,
-        Eugenia Emantayev <eugenia@mellanox.com>,
-        "David S. Miller" <davem@davemloft.net>, Mel Gorman <mgorman@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140305184010.GC1740@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 26, 2014 at 12:11 AM, Jiri Kosina <jkosina@suse.cz> wrote:
-> The problem encountered was described as follows:
->         It's not memory reclamation that is the problem as such. There is
->         an indirect dependency between network filesystems writing back
->         pages and ipoib_cm_tx_init() due to how a kworker is used. Page
->         reclaim cannot make forward progress until ipoib_cm_tx_init()
->         succeeds and it is stuck in page reclaim itself waiting for network
->         transmission. Ordinarily this sitaution may be avoided by having
->         the caller use GFP_NOFS but ipoib_cm_tx_init() does not have
->         that information.
+On Wed, Mar 05, 2014 at 01:40:10PM -0500, Vivek Goyal wrote:
+> I thought Dave passed relevant information on bootparams and some in
+> cmdline (I have not looked at details). Once the EFI support is in,
+> kernel implementaion should do the same thing as kexec-tools is doing
+> to pass EFI mapping information to second kernel.
 
-So to hit the bug, one just needs to attempt doing NFS client mount
-over an IP subnet served by IPoIB NIC that uses connected-mode and
-runs over mlx4 device?  Or this happens when  the connection is going
-through teardown/re-establishment or something else?
+Right, he reads the runtime map from sysfs:
+
+Documentation/ABI/testing/sysfs-firmware-efi-runtime-map
+
+How exactly he prepares it with kexec-tools I don't remember anymore - I
+just skimmed over that part at the time.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
