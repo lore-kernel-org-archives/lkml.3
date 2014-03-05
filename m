@@ -1,107 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754368AbaCEKE2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 05:04:28 -0500
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:42575 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754271AbaCEKET (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 05:04:19 -0500
+	id S1754155AbaCEKGF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 05:06:05 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:40753 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751788AbaCEKGA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 05:06:00 -0500
+Message-ID: <5316F6ED.8040204@ti.com>
+Date: Wed, 5 Mar 2014 12:05:33 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <1394011373-4057-4-git-send-email-k.kozlowski@samsung.com>
-References: <1394011373-4057-1-git-send-email-k.kozlowski@samsung.com>
-	<1394011373-4057-4-git-send-email-k.kozlowski@samsung.com>
-Date: Wed, 5 Mar 2014 15:34:18 +0530
-Message-ID: <CAK9yfHxFciupJPw9XbVRsBUmY7bUT8L4goGW+TYPwQRUUqsKew@mail.gmail.com>
-Subject: Re: [PATCH 3/3] Documentation: mfd: s2mps11: Document support for S2MPS14
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+To: Philipp Zabel <p.zabel@pengutronix.de>
+CC: Grant Likely <grant.likely@linaro.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
         Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v5 5/7] [media] of: move common endpoint parsing to drivers/of
+References: <1393522540-22887-1-git-send-email-p.zabel@pengutronix.de>		 <1393522540-22887-6-git-send-email-p.zabel@pengutronix.de>		 <531595AB.4000001@ti.com>	 <1393932989.3917.62.camel@paszta.hi.pengutronix.de>	 <5315C535.2070303@ti.com> <1393948056.3917.120.camel@paszta.hi.pengutronix.de>
+In-Reply-To: <1393948056.3917.120.camel@paszta.hi.pengutronix.de>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="mGhrgJ7cfBIaic3fsUhOVhkmVp5XxcGKt"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Krzysztof,
+--mGhrgJ7cfBIaic3fsUhOVhkmVp5XxcGKt
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-On 5 March 2014 14:52, Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
-> Add bindings documentation for S2MPS14 device to the s2mps11 driver.
+On 04/03/14 17:47, Philipp Zabel wrote:
+> Am Dienstag, den 04.03.2014, 14:21 +0200 schrieb Tomi Valkeinen:
+>> On 04/03/14 13:36, Philipp Zabel wrote:
+> [...]
+>>>> Can port_node be NULL? Probably only if something is quite wrong, bu=
+t
+>>>> maybe it's safer to return error in that case.
+>>>
+>>> both of_property_read_u32 and of_node_put can handle port_node =3D=3D=
+ NULL.
+>>> I'll add a WARN_ONCE here as for of_graph_get_next_endpoint and conti=
+nue
+>>> on.
+>>
+>> Isn't it better to return an error?
+>=20
+> I am not sure. We can still correctly parse the endpoint properties of =
+a
+> parentless node. All current users ignore the return value anyway. So a=
+s
+> long as we still do the memset and and set local_node and id, returning=
 
-nit: s/s2mps11/S2MPS11
+> an error effectively won't change the current behaviour.
 
->
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Cc: Mark Brown <broonie@kernel.org>
-> Cc: Liam Girdwood <lgirdwood@gmail.com>
-> Cc: Tomasz Figa <t.figa@samsung.com>
-> Cc: devicetree@vger.kernel.org
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Pawel Moll <pawel.moll@arm.com>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-> Cc: Kumar Gala <galak@codeaurora.org>
-> Acked-by: Tomasz Figa <t.figa@samsung.com>
-> ---
->  Documentation/devicetree/bindings/mfd/s2mps11.txt |   12 ++++++++----
->  1 file changed, 8 insertions(+), 4 deletions(-)
->
-> diff --git a/Documentation/devicetree/bindings/mfd/s2mps11.txt b/Documentation/devicetree/bindings/mfd/s2mps11.txt
-> index 15ee89c3cc7b..f69bec294f02 100644
-> --- a/Documentation/devicetree/bindings/mfd/s2mps11.txt
-> +++ b/Documentation/devicetree/bindings/mfd/s2mps11.txt
-> @@ -1,5 +1,5 @@
->
-> -* Samsung S2MPS11 Voltage and Current Regulator
-> +* Samsung S2MPS11 and S2MPS14 Voltage and Current Regulator
->
->  The Samsung S2MPS11 is a multi-function device which includes voltage and
->  current regulators, RTC, charger controller and other sub-blocks. It is
-> @@ -7,7 +7,7 @@ interfaced to the host controller using an I2C interface. Each sub-block is
->  addressed by the host system using different I2C slave addresses.
->
->  Required properties:
-> -- compatible: Should be "samsung,s2mps11-pmic".
-> +- compatible: Should be "samsung,s2mps11-pmic" or "samsung,s2mps14-pmic".
->  - reg: Specifies the I2C slave address of the pmic block. It should be 0x66.
->
->  Optional properties:
-> @@ -59,10 +59,14 @@ supports. Note: The 'n' in LDOn and BUCKn represents the LDO or BUCK number
->  as per the datasheet of s2mps11.
->
->         - LDOn
-> -                 - valid values for n are 1 to 38
-> +                 - valid values for n are:
-> +                       - S2MPS11: 1 to 38
-> +                       - S2MPS14: 1 to 25
->                   - Example: LDO1, LD02, LDO28
->         - BUCKn
-> -                 - valid values for n are 1 to 10.
-> +                 - valid values for n are:
-> +                       - S2MPS11: 1 to 10
-> +                       - S2MPS14: 1 to 5
->                   - Example: BUCK1, BUCK2, BUCK9
->
->  Example:
-> --
-> 1.7.9.5
->
-Looks good.
-Acked-by: Sachin Kamat <sachin.kamat@linaro.org>
+Is the parentless node case an error or not? If it's not, we can handle
+it silently and return 0, no WARN needed. If it is an error, we should
+return an error, even if nobody is currently handling that (which is a
+bug in itself, as the function does return an error value, and callers
+should handle it).
+
+ Tomi
 
 
--- 
-With warm regards,
-Sachin
+
+--mGhrgJ7cfBIaic3fsUhOVhkmVp5XxcGKt
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJTFvbtAAoJEPo9qoy8lh71GJAP/1MfqyfTObudamAIR8RPgoSq
+oFAnftU5j309N99ETx/xmjV2MaMD1heDNFIVcdKQTXFKxGhnhBxUB/JQuoPV4dt8
+eayXMhYeiZ9sex+etLBI0eqVTj1PFrxQV4eOnC+zEaIxUgGajk8QFCSxwUww6MQg
+oyy3+esFxiL8YkN2aPRKFn+DJoSluwg8pkLTXBhimYdXU5l6u6KIV7eWNRIo+STN
+GOXfaBcOKlppKa0i6zqoapaJkxBn8guHWW1nuYU0LLGH/YzfiPLEs6WSGLnk8BgT
+VFIA+lCEf977m3iN2VBcQ8wbeeOicAF/pA2pV2BKEH9VBANam/TWsIs6bdvGuKd/
+vJwjjomQ6bZG3Exivaz9jCfC2t2ZjPPOO+fAM8Cfn72bbGfEOGyWFv99BxtDwOv8
+XWRhsGoXTA0EEcpndY+aV0pm8rF9UKdt4tMrFKoAZX01pCS6lhPZXOlGerrYTvtD
+zklwhghP4lR/6byzQLb3bu5dBsKyh0109TdH0fryGj+FKQK8N7HUac9CN2x3V0cq
+Wx2aOgbvLNTwg8/bBZpScf9dw8fDhijiyoDclm0nWhig9P15V5SyT+mDvEvo6v72
+NJ5ydjeKieF4x5PJJYMVQE43AzuDzugMn+ypqjssHk/c8C3DczB0SUtBymtuGsRg
+/pgU6Ag+jOxvnXfPNQGn
+=k9h/
+-----END PGP SIGNATURE-----
+
+--mGhrgJ7cfBIaic3fsUhOVhkmVp5XxcGKt--
