@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758380AbaCEOju (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:39:50 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41849 "EHLO
+	id S1758409AbaCEOkK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:40:10 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41843 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758310AbaCEOil (ORCPT
+	with ESMTP id S1758306AbaCEOil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Mar 2014 09:38:41 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tony Breeds <tony@bakeyournoodle.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Peter Zijlstra <peterz@infradead.org>, Will Deacon <will.deacon@arm.com>,
+        Ingo Molnar <mingo@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 61/62] powerpc/le: Ensure that the 'stop-self' RTAS token is handled correctly
-Date: Wed,  5 Mar 2014 14:37:05 +0000
-Message-Id: <1394030226-26652-62-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 59/62] perf: Fix hotplug splat
+Date: Wed,  5 Mar 2014 14:37:03 +0000
+Message-Id: <1394030226-26652-60-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
 References: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
@@ -28,83 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Breeds <tony@bakeyournoodle.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit 41dd03a94c7d408d2ef32530545097f7d1befe5c upstream.
+commit e3703f8cdfcf39c25c4338c3ad8e68891cca3731 upstream.
 
-Currently we're storing a host endian RTAS token in
-rtas_stop_self_args.token.  We then pass that directly to rtas.  This is
-fine on big endian however on little endian the token is not what we
-expect.
+Drew Richardson reported that he could make the kernel go *boom* when hotplugging
+while having perf events active.
 
-This will typically result in hitting:
-	panic("Alas, I survived.\n");
+It turned out that when you have a group event, the code in
+__perf_event_exit_context() fails to remove the group siblings from
+the context.
 
-To fix this we always use the stop-self token in host order and always
-convert it to be32 before passing this to rtas.
+We then proceed with destroying and freeing the event, and when you
+re-plug the CPU and try and add another event to that CPU, things go
+*boom* because you've still got dead entries there.
 
-Signed-off-by: Tony Breeds <tony@bakeyournoodle.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reported-by: Drew Richardson <drew.richardson@arm.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Will Deacon <will.deacon@arm.com>
+Link: http://lkml.kernel.org/n/tip-k6v5wundvusvcseqj1si0oz0@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/powerpc/platforms/pseries/hotplug-cpu.c | 22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
+ kernel/events/core.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/arch/powerpc/platforms/pseries/hotplug-cpu.c b/arch/powerpc/platforms/pseries/hotplug-cpu.c
-index 64c97d8..e8f1b00 100644
---- a/arch/powerpc/platforms/pseries/hotplug-cpu.c
-+++ b/arch/powerpc/platforms/pseries/hotplug-cpu.c
-@@ -34,12 +34,7 @@
- #include "offline_states.h"
- 
- /* This version can't take the spinlock, because it never returns */
--static struct rtas_args rtas_stop_self_args = {
--	.token = RTAS_UNKNOWN_SERVICE,
--	.nargs = 0,
--	.nret = 1,
--	.rets = &rtas_stop_self_args.args[0],
--};
-+static int rtas_stop_self_token = RTAS_UNKNOWN_SERVICE;
- 
- static DEFINE_PER_CPU(enum cpu_state_vals, preferred_offline_state) =
- 							CPU_STATE_OFFLINE;
-@@ -92,15 +87,20 @@ void set_default_offline_state(int cpu)
- 
- static void rtas_stop_self(void)
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 3ea14c1..9e13b2d 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -7148,14 +7148,14 @@ static void perf_pmu_rotate_stop(struct pmu *pmu)
+ static void __perf_event_exit_context(void *__info)
  {
--	struct rtas_args *args = &rtas_stop_self_args;
-+	struct rtas_args args = {
-+		.token = cpu_to_be32(rtas_stop_self_token),
-+		.nargs = 0,
-+		.nret = 1,
-+		.rets = &args.args[0],
-+	};
+ 	struct perf_event_context *ctx = __info;
+-	struct perf_event *event, *tmp;
++	struct perf_event *event;
  
- 	local_irq_disable();
+ 	perf_pmu_rotate_stop(ctx->pmu);
  
--	BUG_ON(args->token == RTAS_UNKNOWN_SERVICE);
-+	BUG_ON(rtas_stop_self_token == RTAS_UNKNOWN_SERVICE);
- 
- 	printk("cpu %u (hwid %u) Ready to die...\n",
- 	       smp_processor_id(), hard_smp_processor_id());
--	enter_rtas(__pa(args));
-+	enter_rtas(__pa(&args));
- 
- 	panic("Alas, I survived.\n");
+-	list_for_each_entry_safe(event, tmp, &ctx->pinned_groups, group_entry)
+-		__perf_remove_from_context(event);
+-	list_for_each_entry_safe(event, tmp, &ctx->flexible_groups, group_entry)
++	rcu_read_lock();
++	list_for_each_entry_rcu(event, &ctx->event_list, event_entry)
+ 		__perf_remove_from_context(event);
++	rcu_read_unlock();
  }
-@@ -383,10 +383,10 @@ static int __init pseries_cpu_hotplug_init(void)
- 		}
- 	}
  
--	rtas_stop_self_args.token = rtas_token("stop-self");
-+	rtas_stop_self_token = rtas_token("stop-self");
- 	qcss_tok = rtas_token("query-cpu-stopped-state");
+ static void perf_event_exit_cpu_context(int cpu)
+@@ -7179,11 +7179,11 @@ static void perf_event_exit_cpu(int cpu)
+ {
+ 	struct swevent_htable *swhash = &per_cpu(swevent_htable, cpu);
  
--	if (rtas_stop_self_args.token == RTAS_UNKNOWN_SERVICE ||
-+	if (rtas_stop_self_token == RTAS_UNKNOWN_SERVICE ||
- 			qcss_tok == RTAS_UNKNOWN_SERVICE) {
- 		printk(KERN_INFO "CPU Hotplug not supported by firmware "
- 				"- disabling.\n");
++	perf_event_exit_cpu_context(cpu);
++
+ 	mutex_lock(&swhash->hlist_mutex);
+ 	swevent_hlist_release(swhash);
+ 	mutex_unlock(&swhash->hlist_mutex);
+-
+-	perf_event_exit_cpu_context(cpu);
+ }
+ #else
+ static inline void perf_event_exit_cpu(int cpu) { }
 -- 
 1.9.0
 
