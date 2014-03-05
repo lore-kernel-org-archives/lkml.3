@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756943AbaCEOZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:25:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40882 "EHLO
+	id S1759024AbaCEPUJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:20:09 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40908 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932117AbaCEOZR (ORCPT
+	with ESMTP id S1754846AbaCEOZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:25:17 -0500
+	Wed, 5 Mar 2014 09:25:25 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
+Cc: Vinayak Kale <vkale@apm.com>, Russell King <rmk+kernel@arm.linux.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 039/131] ext4: don't leave i_crtime.tv_sec uninitialized
-Date: Wed,  5 Mar 2014 14:22:43 +0000
-Message-Id: <1394029455-23128-40-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 043/131] ARM: 7957/1: add DSB after icache flush in __flush_icache_all()
+Date: Wed,  5 Mar 2014 14:22:47 +0000
+Message-Id: <1394029455-23128-44-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -27,35 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Vinayak Kale <vkale@apm.com>
 
-commit 19ea80603715d473600cd993b9987bc97d042e02 upstream.
+commit 39544ac9df20f73e49fc6b9ac19ff533388c82c0 upstream.
 
-If the i_crtime field is not present in the inode, don't leave the
-field uninitialized.
+Add DSB after icache flush to complete the cache maintenance operation.
 
-Fixes: ef7f38359 ("ext4: Add nanosecond timestamps")
-Reported-by: Vegard Nossum <vegard.nossum@oracle.com>
-Tested-by: Vegard Nossum <vegard.nossum@oracle.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Vinayak Kale <vkale@apm.com>
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ext4/ext4.h | 2 ++
- 1 file changed, 2 insertions(+)
+ arch/arm/include/asm/cacheflush.h | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index caa5e5b..db03437 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -759,6 +759,8 @@ do {									       \
- 	if (EXT4_FITS_IN_INODE(raw_inode, einode, xtime))		       \
- 		(einode)->xtime.tv_sec = 				       \
- 			(signed)le32_to_cpu((raw_inode)->xtime);	       \
-+	else								       \
-+		(einode)->xtime.tv_sec = 0;				       \
- 	if (EXT4_FITS_IN_INODE(raw_inode, einode, xtime ## _extra))	       \
- 		ext4_decode_extra_time(&(einode)->xtime,		       \
- 				       raw_inode->xtime ## _extra);	       \
+diff --git a/arch/arm/include/asm/cacheflush.h b/arch/arm/include/asm/cacheflush.h
+index 17d0ae8..a25e62d 100644
+--- a/arch/arm/include/asm/cacheflush.h
++++ b/arch/arm/include/asm/cacheflush.h
+@@ -212,6 +212,7 @@ extern void copy_to_user_page(struct vm_area_struct *, struct page *,
+ static inline void __flush_icache_all(void)
+ {
+ 	__flush_icache_preferred();
++	dsb();
+ }
+ 
+ /*
 -- 
 1.9.0
 
