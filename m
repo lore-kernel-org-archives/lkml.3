@@ -1,118 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403AbaCEFet (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 00:34:49 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:60561 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751880AbaCEFer (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 00:34:47 -0500
-Date: Tue, 4 Mar 2014 21:34:40 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, linux-nfs <linux-nfs@vger.kernel.org>,
-        "trond.myklebust" <trond.myklebust@primarydata.com>,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: RCU stalls when running out of memory on 3.14-rc4 w/ NFS and
- kernel threads priorities changed
-Message-ID: <20140305053440.GD3334@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CAGVrzcbsSV7h3qA3KuCTwKNFEeww_kSNcfUkfw3PPjeXQXBo6g@mail.gmail.com>
- <1393980534.26794.147.camel@edumazet-glaptop2.roam.corp.google.com>
- <CAGVrzcaekM51hme_tquaT6e22fV1_cocpn1kDUsYfFce=F+o4g@mail.gmail.com>
- <CAGVrzcbRycBy0w64R9pV=JG6M3aJeARbOnh-xRrumYzzVDgWGQ@mail.gmail.com>
- <20140305014310.GC3334@linux.vnet.ibm.com>
- <CAGVrzcae0XPXpue_+n-O+EBzK92JqXHNftTPGt+5SRzroTSF3Q@mail.gmail.com>
+	id S1753705AbaCEFfW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 00:35:22 -0500
+Received: from nm7-vm4.bullet.mail.gq1.yahoo.com ([98.136.218.211]:25132 "EHLO
+	nm7-vm4.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753430AbaCEFfT convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 00:35:19 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 804556.72464.bm@omp1001.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=De/JBBAy/ASxyxKpD48yaDzLyyPhNVb9qB9dclSHUxAbHp4XvsQLktpW2npskky0hn9r3vayklwy4Qm5VHgW9eSdnUcBeZSItBoNS3AyEL6KM4QpKba/duz3UzRxZtxe7nVEHd3bbUpfK9c/92nkmk0m4g7MwZfmihNv3X2PiK4=;
+X-YMail-OSG: QJJsEMwVM1mNUfsT3mhOjzEhk5XNMJWbZQvjJSDswZ8Gv7h
+ gwyvh2Be_JGyGVt7w0n0zbPsM217CFF2t41Ju.5areRXaAZU2YWCbPNxrqKC
+ kA.DVPsZ8fVmMhJ3JZfasH_aIXVvDWJBVbOYpFw.EVHKZyfSO3IuWDdDbKe6
+ B9Or7d0qx8GHb1aWxqg3UBY_pLvgOLA9kLsSr2pNWVdrC369obDeBqIBpPOx
+ 7LJtRc_xeGm0X9MACVj_AXG_4J2NQWqzq0NOL3Hmoaguz1PkFQyUz5NHT5h3
+ 4hPZdTR22QJtiys23kW0DYWn1r6uz9R8si.hgnFy9cs2bznnePIjkeqYvdka
+ IWMJne00HTQSYOIZJiazaV9mla91RGZwEVkOkPyjI2.yGItorsmETXWHpFbL
+ LiaVZxmM_HI3Esxp7D4VEoDHQg.2yp2_SQmbXnL_UOby5.q6Hf89aG1XORy_
+ uyMzfUq.s25P4auyUcCi_37rcjn5U_YdRkcfvchM0zoB3UCnf41.nJiEjdp_
+ Ki1y.URdqu_WqgEkH6_mLdgMW2Ohs1IU-
+X-Rocket-MIMEInfo: 002.001,Pk9uIFR1ZXNkYXksIE1hcmNoIDQsIDIwMTQgNjozOCBQTSwgR3JlZyBLSCA8Z3JlZ2toQGxpbnV4Zm91bmRhdGlvbi5vcmc.IHdyb3RlOgoKPj5PbiBNb24sIE1hciAwMywgMjAxNCBhdCAxMjoyNzo1NVBNICswMzAwLCBEYW4gQ2FycGVudGVyIHdyb3RlOgo.Pj4gT24gU3VuLCBNYXIgMDIsIDIwMTQgYXQgMDg6NTI6MTlQTSAtMDYwMCwgQ2hhc2UgU291dGh3b29kIHdyb3RlOgo.Pj4gVGhpcyBwYXRjaCBpbnRyb2R1Y2VzIGEgZmV3IHNpbXBsZSBvdXRsIGFuZCBpbmwgaGVscGVyIGZ1bmN0aW9ucyB0byBhbGwBMAEBAQE-
+X-Mailer: YahooMailWebService/0.8.177.636
+References: <1393669707-20107-1-git-send-email-chase.southwood@yahoo.com> <1393815139-10663-1-git-send-email-chase.southwood@yahoo.com> <20140303092755.GD27552@mwanda> <20140305003943.GA1286@kroah.com>
+Message-ID: <1393997718.25929.YahooMailNeo@web164002.mail.gq1.yahoo.com>
+Date: Tue, 4 Mar 2014 21:35:18 -0800 (PST)
+From: Chase Southwood <chase.southwood@yahoo.com>
+Reply-To: Chase Southwood <chase.southwood@yahoo.com>
+Subject: Re: [PATCH v2 1/2] Staging: comedi: introduce {outl,inl}_amcc() and {outl,inl}_iobase() helper functions in hwdrv_apci1564.c
+To: Greg KH <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20140305003943.GA1286@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGVrzcae0XPXpue_+n-O+EBzK92JqXHNftTPGt+5SRzroTSF3Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14030505-0928-0000-0000-0000002497C8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 04, 2014 at 07:55:03PM -0800, Florian Fainelli wrote:
-> 2014-03-04 17:43 GMT-08:00 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
-> > On Tue, Mar 04, 2014 at 05:16:27PM -0800, Florian Fainelli wrote:
-> >> 2014-03-04 17:03 GMT-08:00 Florian Fainelli <f.fainelli@gmail.com>:
-> >> > 2014-03-04 16:48 GMT-08:00 Eric Dumazet <eric.dumazet@gmail.com>:
-> >> >> On Tue, 2014-03-04 at 15:55 -0800, Florian Fainelli wrote:
-> >> >>> Hi all,
-> >> >>>
-> >> >>> I am seeing the following RCU stalls messages appearing on an ARMv7
-> >> >>> 4xCPUs system running 3.14-rc4:
-> >> >>>
-> >> >>> [   42.974327] INFO: rcu_sched detected stalls on CPUs/tasks:
-> >> >>> [   42.979839]  (detected by 0, t=2102 jiffies, g=4294967082,
-> >> >>> c=4294967081, q=516)
-> >> >>> [   42.987169] INFO: Stall ended before state dump start
-> >> >>>
-> >> >>> this is happening under the following conditions:
-> >> >>>
-> >> >>> - the attached bumper.c binary alters various kernel thread priorities
-> >> >>> based on the contents of bumpup.cfg and
-> >> >>> - malloc_crazy is running from a NFS share
-> >> >>> - malloc_crazy.c is running in a loop allocating chunks of memory but
-> >> >>> never freeing it
-> >> >>>
-> >> >>> when the priorities are altered, instead of getting the OOM killer to
-> >> >>> be invoked, the RCU stalls are happening. Taking NFS out of the
-> >> >>> equation does not allow me to reproduce the problem even with the
-> >> >>> priorities altered.
-> >> >>>
-> >> >>> This "problem" seems to have been there for quite a while now since I
-> >> >>> was able to get 3.8.13 to trigger that bug as well, with a slightly
-> >> >>> more detailed RCU debugging trace which points the finger at kswapd0.
-> >> >>>
-> >> >>> You should be able to get that reproduced under QEMU with the
-> >> >>> Versatile Express platform emulating a Cortex A15 CPU and the attached
-> >> >>> files.
-> >> >>>
-> >> >>> Any help or suggestions would be greatly appreciated. Thanks!
-> >> >>
-> >> >> Do you have a more complete trace, including stack traces ?
-> >> >
-> >> > Attatched is what I get out of SysRq-t, which is the only thing I have
-> >> > (note that the kernel is built with CONFIG_RCU_CPU_STALL_INFO=y):
-> >>
-> >> QEMU for Versatile Express w/ 2 CPUs yields something slightly
-> >> different than the real HW platform this is happening with, but it
-> >> does produce the RCU stall anyway:
-> >>
-> >> [  125.762946] BUG: soft lockup - CPU#1 stuck for 53s! [malloc_crazy:91]
-> >
-> > This soft-lockup condition can result in RCU CPU stall warnings.  Fix
-> > the problem causing the soft lockup, and I bet that your RCU CPU stall
-> > warnings go away.
-> 
-> I definitively agree, which is why I was asking for help, as I think
-> the kernel thread priority change is what is causing the soft lockup
-> to appear, but nothing obvious jumps to mind when looking at the
-> trace.
+>On Tuesday, March 4, 2014 6:38 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
 
-Is your hardware able to make the malloc_crazy CPU periodically dump
-its stack, perhaps in response to an NMI?  If not, another approach is
-to use ftrace -- though this will require a very high-priority task to
-turn tracing on and off reasonably quickly, unless you happen to have
-a very large amount of storage to hold the trace.
+>>On Mon, Mar 03, 2014 at 12:27:55PM +0300, Dan Carpenter wrote:
+>>> On Sun, Mar 02, 2014 at 08:52:19PM -0600, Chase Southwood wrote:
+>>> This patch introduces a few simple outl and inl helper functions to allow
+>>> several lines which violate the character limit to be shortened
+>>> appropriately.  It also changes a few macro values which represented
+>>> offset values from a single unique base value to instead represent the value
+>>> of that base plus the offset.  This is to simplify the use of these macros
+>>> in the new helper functions.
+>>> 
+>>> Cc: Dan Carpenter <dan.carpenter@oracle.com>
+>>> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
+>>> ---
+>>> 
+>>> All right, here's another shot at this.  Dan, I took your outl_amcc idea
+>>> and did a version for the outl/inl calls based from devpriv->iobase as well.
+>>> I changed all of the macros which only offset from one base value as you
+>>> had mentioned as well, and the result is starting to look very good.
+>>> The only outl/inl calls which still look a little gross (see PATCH v2 2/2) are
+>>> the ones involving DIGITAL_OP_WATCHDOG, TIMER, or any of the COUNTER macros,
+>>> just because they use a common set of offset macros so simplifying
+>>> those calls in the same way as the rest isn't possible.  What are your
+>>> thoughts on this version of the patchset?
+>>> 
+>>> This is version 2 of [PATCH 1/2] Staging: comedi: introduce outl_1564_* and
+>>> inl_1564_* helper functions in hwdrv_apci1564.c
+>>> 
+>>> 2: Changed helper functions from {outl,inl}_1564_*() to
+>>> {outl,inl}_{amcc,iobase}()
+>>> 
+>>> Comments welcome!
+>>> 
+>>>  .../comedi/drivers/addi-data/hwdrv_apci1564.c      | 38 +++++++++++++++++-----
+>>>  1 file changed, 30 insertions(+), 8 deletions(-)
+>>> 
+>>> diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
+>>> index 2b47fa1..58e301d 100644
+>>> --- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
+>>> +++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
+>>> @@ -49,25 +49,25 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY
+>>>  /* DIGITAL INPUT-OUTPUT DEFINE */
+>>>  /* Input defines */
+>>>  #define APCI1564_DIGITAL_IP                0x04
+>>> -#define APCI1564_DIGITAL_IP_INTERRUPT_MODE1        4
+>>> -#define APCI1564_DIGITAL_IP_INTERRUPT_MODE2        8
+>>> -#define APCI1564_DIGITAL_IP_IRQ                16
+>>> +#define APCI1564_DIGITAL_IP_INTERRUPT_MODE1        (0x04 + 0x04)
+>>> +#define APCI1564_DIGITAL_IP_INTERRUPT_MODE2        (0x04 + 0x08)
+>>> +#define APCI1564_DIGITAL_IP_IRQ                (0x04 + 0x10)
+>> 
+>> You can't change these without changing the callers.  This bit needs to
+>> be in patch 2/2.  You should probably just merge both patches anyway
+>> because presumably this one adds some GCC warnings about unused static
+>> functions.>
+>
+>I'm totally confused about this series...
+>
+>Chase, can you resend any outstanding patches that I haven't applied of
+>yours, as these different revisions and threads don't make much sense
+>right now.
+>
 
-What happens if you malloc() less intensively?  Does that avoid this
-problem?  The reason I ask is that you mentioned that avoiding NFS helped,
-and it is possible that NFS is increasing storage-access latencies and
-thus triggering another problem.  It is quite possible that slowing
-down the malloc()s would also help, and might allow you to observe what
-is happening more easily than when the system is driven fully to the
-lockup condition.
+Greg,
+Yes, admittedly this whole thing has gotten a little messy :P sorry for all the confusion.
+I've finally spoken with Hartley about how to best clean this driver, and so I will submit
+a final patchset to you as soon as I finish up with it.  Until then, please just disregard
+all prior patches to hwdrv_apci1564.c from me, as the one I send next will supersede all of them
+and I will clearly mark it as such for you.
 
-Finally, what are you trying to achieve with this workload?  Does your
-production workload behave in this way?  Or is this an experimental
-investigation of some sort?
+Thanks,
+Chase
 
-							Thanx, Paul
-
+>
+>thanks,
+>
+>greg k-h
