@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759225AbaCEPYc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 10:24:32 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40840 "EHLO
+	id S1759260AbaCEPYt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:24:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40824 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756831AbaCEOZG (ORCPT
+	with ESMTP id S1756816AbaCEOZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:25:06 -0500
+	Wed, 5 Mar 2014 09:25:04 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Pekon Gupta <pekon@ti.com>, Tony Lindgren <tony@atomide.com>,
+Cc: Stanislaw Gruszka <stf_xl@wp.pl>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 031/131] ARM: OMAP2+: gpmc: fix: DT ONENAND child nodes not probed when MTD_ONENAND is built as module
-Date: Wed,  5 Mar 2014 14:22:35 +0000
-Message-Id: <1394029455-23128-32-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 029/131] rtl8187: fix regression on MIPS without coherent DMA
+Date: Wed,  5 Mar 2014 14:22:33 +0000
+Message-Id: <1394029455-23128-30-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -27,44 +28,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pekon Gupta <pekon@ti.com>
+From: Stanislaw Gruszka <stf_xl@wp.pl>
 
-commit 980386d2d6d49e0b42f48550853ef1ad6aa5d79a upstream.
+commit b6213e413a4e0c66548153516b074df14f9d08e0 upstream.
 
-Fixes: commit 75d3625e0e86b2d8d77b4e9c6f685fd7ea0d5a96
-       ARM: OMAP2+: gpmc: add DT bindings for OneNAND
+This patch fixes regression caused by commit a16dad77634 "MIPS: Fix
+potencial corruption". That commit fixes one corruption scenario in
+cost of adding another one, which actually start to cause crashes
+on Yeeloong laptop when rtl8187 driver is used.
 
-OMAP SoC(s) depend on GPMC controller driver to parse GPMC DT child nodes and
-register them platform_device for ONENAND driver to probe later. However this does
-not happen if generic MTD_ONENAND framework is built as module (CONFIG_MTD_ONENAND=m).
+For correct DMA read operation on machines without DMA coherence, kernel
+have to invalidate cache, such it will refill later with new data that
+device wrote to memory, when that data is needed to process. We can only
+invalidate full cache line. Hence when cache line includes both dma
+buffer and some other data (written in cache, but not yet in main
+memory), the other data can not hit memory due to invalidation. That
+happen on rtl8187 where struct rtl8187_priv fields are located just
+before and after small buffers that are passed to USB layer and DMA
+is performed on them.
 
-Therefore, when MTD/ONENAND and MTD/ONENAND/OMAP2 modules are loaded, they are unable
-to find any matching platform_device and remain un-binded. This causes on board
-ONENAND flash to remain un-detected.
+To fix the problem we align buffers and reserve space after them to make
+them match cache line.
 
-This patch causes GPMC controller to parse DT nodes when
-CONFIG_MTD_ONENAND=y || CONFIG_MTD_ONENAND=m
+This patch does not resolve all possible MIPS problems entirely, for
+that we have to assure that we always map cache aligned buffers for DMA,
+what can be complex or even not possible. But patch fixes visible and
+reproducible regression and seems other possible corruptions do not
+happen in practice, since Yeeloong laptop works stable without rtl8187
+driver.
 
-Signed-off-by: Pekon Gupta <pekon@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Bug report:
+https://bugzilla.kernel.org/show_bug.cgi?id=54391
+
+Reported-by: Petr Pisar <petr.pisar@atlas.cz>
+Bisected-by: Tom Li <biergaizi2009@gmail.com>
+Reported-and-tested-by: Tom Li <biergaizi2009@gmail.com>
+Signed-off-by: Stanislaw Gruszka <stf_xl@wp.pl>
+Acked-by: Larry Finger <Larry.Finger@lwfinger.next>
+Acked-by: Hin-Tak Leung <htl10@users.sourceforge.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/mach-omap2/gpmc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/rtl818x/rtl8187/rtl8187.h | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/gpmc.c b/arch/arm/mach-omap2/gpmc.c
-index 0fe1f7f..8d993d7 100644
---- a/arch/arm/mach-omap2/gpmc.c
-+++ b/arch/arm/mach-omap2/gpmc.c
-@@ -1409,7 +1409,7 @@ static int gpmc_probe_nand_child(struct platform_device *pdev,
- }
- #endif
+diff --git a/drivers/net/wireless/rtl818x/rtl8187/rtl8187.h b/drivers/net/wireless/rtl818x/rtl8187/rtl8187.h
+index e19a20a..ecd1ac4 100644
+--- a/drivers/net/wireless/rtl818x/rtl8187/rtl8187.h
++++ b/drivers/net/wireless/rtl818x/rtl8187/rtl8187.h
+@@ -15,6 +15,8 @@
+ #ifndef RTL8187_H
+ #define RTL8187_H
  
--#ifdef CONFIG_MTD_ONENAND
-+#if IS_ENABLED(CONFIG_MTD_ONENAND)
- static int gpmc_probe_onenand_child(struct platform_device *pdev,
- 				 struct device_node *child)
- {
++#include <linux/cache.h>
++
+ #include "rtl818x.h"
+ #include "leds.h"
+ 
+@@ -139,7 +141,10 @@ struct rtl8187_priv {
+ 	u8 aifsn[4];
+ 	u8 rfkill_mask;
+ 	struct {
+-		__le64 buf;
++		union {
++			__le64 buf;
++			u8 dummy1[L1_CACHE_BYTES];
++		} ____cacheline_aligned;
+ 		struct sk_buff_head queue;
+ 	} b_tx_status; /* This queue is used by both -b and non-b devices */
+ 	struct mutex io_mutex;
+@@ -147,7 +152,8 @@ struct rtl8187_priv {
+ 		u8 bits8;
+ 		__le16 bits16;
+ 		__le32 bits32;
+-	} *io_dmabuf;
++		u8 dummy2[L1_CACHE_BYTES];
++	} *io_dmabuf ____cacheline_aligned;
+ 	bool rfkill_off;
+ 	u16 seqno;
+ };
 -- 
 1.9.0
 
