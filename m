@@ -1,82 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755516AbaCEQee (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 11:34:34 -0500
-Received: from sauhun.de ([89.238.76.85]:51322 "EHLO pokefinder.org"
+	id S1753224AbaCEQhc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 11:37:32 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:33265 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752232AbaCEQec (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 11:34:32 -0500
-Date: Wed, 5 Mar 2014 17:34:30 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com
-Subject: Re: [PATCH v3 2/5] i2c: mv64xxx: Add support for the Allwinner A31
- I2C driver
-Message-ID: <20140305163430.GC9228@katana>
-References: <1393950521-4173-1-git-send-email-maxime.ripard@free-electrons.com>
- <1393950521-4173-3-git-send-email-maxime.ripard@free-electrons.com>
+	id S1750817AbaCEQha (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 11:37:30 -0500
+Date: Wed, 5 Mar 2014 17:37:22 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
+        greg@kroah.com, jkosina@suse.cz
+Subject: Re: [PATCH 08/11] kexec-bzImage: Support for loading bzImage using
+ 64bit entry
+Message-ID: <20140305163722.GC28317@pd.tnic>
+References: <1390849071-21989-1-git-send-email-vgoyal@redhat.com>
+ <1390849071-21989-9-git-send-email-vgoyal@redhat.com>
+ <20140227213629.GP18191@pd.tnic>
+ <20140228163134.GG28744@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/Uq4LBwYP4y1W6pO"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1393950521-4173-3-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <20140228163134.GG28744@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Feb 28, 2014 at 11:31:35AM -0500, Vivek Goyal wrote:
+> Thanks for taking time to review this large patchset.
 
---/Uq4LBwYP4y1W6pO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Sure, np. Thanks for your patience in explaining stuff which is unclear
+to me.
 
-On Tue, Mar 04, 2014 at 05:28:38PM +0100, Maxime Ripard wrote:
-> The Allwinner A31 I2C controller is almost identical to the one used in t=
-he
-> other Allwinner SoCs, except for the fact that it needs to clear the inte=
-rrupt
-> by setting the INT_FLAGS bit in the control register, instead of clearing=
- it.
->=20
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> Reviewed-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-> Tested-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> > > +struct bzimage64_data {
+> > > +	/*
+> > > +	 * Temporary buffer to hold bootparams buffer. This should be
+> > > +	 * freed once the bootparam segment has been loaded.
+> > > +	 */
+> > > +	void *bootparams_buf;
+> > > +};
+> > 
+> > Why a struct if it is going to have only one member?
+> 
+> Well, I had started with a generic idea of bootloader being able to store
+> some data in image and retrieve it later. Finally it turned out to be only
+> one field in current implementation.
+> 
+> But I still like it as it allows storing more data down the line. There
+> is no other place where we can store bootloader specific data. So this
+> is the mechanism I created.
 
-Applied to for-next, thanks!
+Right, but people would ask so you probably should hold down this
+intention in a comment somewhere.
 
-Still...
+> > What's 2*512? Two sectors?
+> 
+> Yep, two sectors.
 
-> +	if (of_device_is_compatible(np, "allwinner,sun6i-a31-i2c"))
-> +		drv_data->irq_clear_inverted =3D true;
+Also a comment or a nicely-named define then.
 
-=2E.. next time an errata is needed, I think it makes sense to refactor all
-these checks into one struct which can be used as match->data directly.
+> So Documentation/x86/boot.txt says following.
+> 
+> 
+> If the "HdrS" (0x53726448) magic number is not found at offset 0x202,
+> the boot protocol version is "old".  Loading an old kernel, the
+> following parameters should be assumed:
+> 
+>         Image type = zImage
+>         initrd not supported
+>         Real-mode kernel must be located at 0x90000.
+> 
+> So if it is old version then it is zImage (and not bzImage). So pr_debug()
+> message seems to be correct that image one is trying to load is not
+> bzImage and this loader will not handle this image.
 
+Ok, old == zImage, got it.
 
---/Uq4LBwYP4y1W6pO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> Yep, that's LOADED_HIGH check. I think if LOADED_HIGH is not set, then
+> that means protected mode code needs to be loaded at 0x10000 and I think
+> that also means that it is zImage and not bzImage.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
+Yes, hpa confirmed this in IRC just now.
 
-iQIcBAEBAgAGBQJTF1IWAAoJEBQN5MwUoCm2BE0P/ROppN1iC50iHQsjp8knwcjv
-7Ht6YAb3joEDy79k/H84wMcAWubWnmZnGwYA19RQqfar0sqPOh0XxYQhxtZaCakJ
-udn04WMHwrLMH0aKQZEdvdYw7Ags+hgphZkD1wlaEjVogxPduWN0speqzDTrjyQ2
-8Zt24uXOgmrMql/Tq48qyjWn2Uo8eLw63Q1aBYm571thJ+KR1YBJCofYRyyvrRed
-Xctgo6UNWZIaM6hsV5o+HRunCKcFZL0WBEskQsucSkNVRiPmSaskx1tk4ay0WjZN
-O+Mtg6mFS+4QZg51xgsX+SNEqcF7yzYxqL8p7RIOR24DbJDtymd2i/p3JwtXZEqe
-b97ZrcwA8z3TenE22trmnMj//8uCYVdNyo+34S6Z74qnFVwcl+6cyl2aEwjDsneH
-41cJSsv90wh8XNvLBFBTrzlAFIoM4UE1Uoxa6n/eeSt9/VQ3oNLMMMptZtXFmEZ5
-ksNEdvkMG5y3W6LzvcrRRe7hEmvoH46ZHHLnv8eCdor+C18UWwY3TjnRFRWd1ryS
-/3c6wNsFiskwDZIIAuMTWpIv494LNp840NFAepGluWdpxbh4QrpMaVRKJGnyjMvh
-CQj4QiNycG8PzZ9aPCpUFYv228/4ryiIYcqjVVz0E9j7oQtx4ktDDXAux67N0rGV
-HpQHzcm+etPx+c8QDcwX
-=Xk19
------END PGP SIGNATURE-----
+> That's how boot.txt defines it. Look at 64-bit BOOT PROTOCOL.
+> 
+> 0x0202 + byte value at offset 0x0201
+> 
+> Now one can argue that create some new defines to represent those magic
+> numbers and include that file in kexec-bzimage loader. I will see what
+> can I do.
 
---/Uq4LBwYP4y1W6pO--
+Yeah, I was simply commenting it with the innocent onlooker hat on.
+FWIW, referring to boot.txt in a comment should be helpful enough for
+people who don't have an idea where to look, methinks.
+
+> Hmm.., I have seen all kinds of alignments. But anyway, if you prefer
+> that, I will change atleast some of them.
+
+It is most readable this way, but this is only my opinion so consider it
+only as a suggestion.
+
+> I meant in general I have not done any EFI handling. I am not even
+> sure what needs to be done for EFI. I am just going through memory
+> map and filling up E820 map in bootparams so that second kernel knows
+> what are the memory areas available.
+> 
+> At some point of time we need to start passing EFI memory map to
+> second kernel. (All the new code you and dave young have added to
+> make kexec work on EFI systems).
+
+Right, the efi runtime pieces are already in sysfs but you'd need to put
+them somewhere for the second kernel to find out. Maybe make it part of
+the bzImage or supply it separately...
+
+> I wanted to that in a separate patch. This patch series is alredy very
+> big. bzImage signing and verification also I am planning to post in a
+> separate series.
+
+Right.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
