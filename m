@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758725AbaCEPKp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 10:10:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41056 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755194AbaCEO0H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:26:07 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 072/131] net: qmi_wwan: add Netgear Aircard 340U
-Date: Wed,  5 Mar 2014 14:23:16 +0000
-Message-Id: <1394029455-23128-73-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
-References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
+	id S1758793AbaCEPLJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:11:09 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:38198 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1757558AbaCEPLE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 10:11:04 -0500
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Bjorn Helgaas'" <bhelgaas@google.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] phy: fix compiler array bounds warning on settings[]
+Thread-Topic: [PATCH] phy: fix compiler array bounds warning on settings[]
+Thread-Index: AQHPOAruIxtn6MjoSU2S08w3Vpy7W5rSNHzAgABhKYCAAARCkA==
+Date: Wed, 5 Mar 2014 15:10:34 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F6D1D1E@AcuExch.aculab.com>
+References: <20140305003544.23016.55079.stgit@bhelgaas-glaptop.roam.corp.google.com>
+ <063D6719AE5E284EB5DD2968C1650D6D0F6D1440@AcuExch.aculab.com>
+ <CAErSpo5Pb2bABmnQZ04KRqjU=38=Pcr2OQv8hUJd_hv69QVc-A@mail.gmail.com>
+In-Reply-To: <CAErSpo5Pb2bABmnQZ04KRqjU=38=Pcr2OQv8hUJd_hv69QVc-A@mail.gmail.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s25FBJm2017308
 
-3.11.10.6 -stable review patch.  If anyone has any objections, please let me know.
+From: Bjorn Helgaas
+> On Wed, Mar 5, 2014 at 2:10 AM, David Laight <David.Laight@aculab.com> wrote:
+> > From: Bjorn Helgaas
+> >> With -Werror=array-bounds, gcc v4.7.x warns that in phy_find_valid(), the
+> >> settings[] "array subscript is above array bounds", I think because idx is
+> >> a signed integer and if the caller supplied idx < 0, we pass the guard but
+> >> still reference out of bounds.
+> >
+> > Not rejecting the patch but...
+> >
+> > Just indexing an array with 'int' shouldn't cause this warning,
+> > so somewhere a caller must actually be passing an idx < 0.
+> >
+> > While changing the type to unsigned will make the comparison
+> > against the array bound reject the -1, I suspect that the
+> > specific call path didn't really intend passing a hard-coded -1.
+> >
+> > It might be worth trying to locate the call site that passes -1.
+> 
+> I agree 100%.  If that's the case, we definitely should find that
+> caller rather than apply this patch.  I'll look more today.
 
-------------------
+You might want to apply the patch as well :-)
 
-From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+	David
 
-commit fbd3a77d813f211060f86cc7a2f8416caf0e03b1 upstream.
-
-This device was mentioned in an OpenWRT forum.  Seems to have a "standard"
-Sierra Wireless ifnumber to function layout:
- 0: qcdm
- 2: nmea
- 3: modem
- 8: qmi
- 9: storage
-
-Signed-off-by: BjÃ¸rn Mork <bjorn@mork.no>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/net/usb/qmi_wwan.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
-index eff8ede..5dba7a8 100644
---- a/drivers/net/usb/qmi_wwan.c
-+++ b/drivers/net/usb/qmi_wwan.c
-@@ -710,6 +710,7 @@ static const struct usb_device_id products[] = {
- 	{QMI_FIXED_INTF(0x1199, 0x68a2, 8)},	/* Sierra Wireless MC7710 in QMI mode */
- 	{QMI_FIXED_INTF(0x1199, 0x68a2, 19)},	/* Sierra Wireless MC7710 in QMI mode */
- 	{QMI_FIXED_INTF(0x1199, 0x901c, 8)},    /* Sierra Wireless EM7700 */
-+	{QMI_FIXED_INTF(0x1199, 0x9051, 8)},	/* Netgear AirCard 340U */
- 	{QMI_FIXED_INTF(0x1bbb, 0x011e, 4)},	/* Telekom Speedstick LTE II (Alcatel One Touch L100V LTE) */
- 	{QMI_FIXED_INTF(0x2357, 0x0201, 4)},	/* TP-LINK HSUPA Modem MA180 */
- 	{QMI_FIXED_INTF(0x2357, 0x9000, 4)},	/* TP-LINK MA260 */
--- 
-1.9.0
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
