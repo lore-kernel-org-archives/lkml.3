@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757940AbaCEOay (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:30:54 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41335 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752924AbaCEO1Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757800AbaCEO1Z (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 5 Mar 2014 09:27:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41300 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757734AbaCEO1Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 09:27:16 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andrew Honig <ahonig@google.com>, Paolo Bonzini <pbonzini@redhat.com>,
+Cc: Davidlohr Bueso <davidlohr@hp.com>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 125/131] kvm: x86: fix emulator buffer overflow (CVE-2014-0049)
-Date: Wed,  5 Mar 2014 14:24:09 +0000
-Message-Id: <1394029455-23128-126-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 115/131] ipc,mqueue: remove limits for the amount of system-wide queues
+Date: Wed,  5 Mar 2014 14:23:59 +0000
+Message-Id: <1394029455-23128-116-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -27,52 +30,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Honig <ahonig@google.com>
+From: Davidlohr Bueso <davidlohr@hp.com>
 
-commit a08d3b3b99efd509133946056531cdf8f3a0c09b upstream.
+commit f3713fd9cff733d9df83116422d8e4af6e86b2bb upstream.
 
-The problem occurs when the guest performs a pusha with the stack
-address pointing to an mmio address (or an invalid guest physical
-address) to start with, but then extending into an ordinary guest
-physical address.  When doing repeated emulated pushes
-emulator_read_write sets mmio_needed to 1 on the first one.  On a
-later push when the stack points to regular memory,
-mmio_nr_fragments is set to 0, but mmio_is_needed is not set to 0.
+Commit 93e6f119c0ce ("ipc/mqueue: cleanup definition names and
+locations") added global hardcoded limits to the amount of message
+queues that can be created.  While these limits are per-namespace,
+reality is that it ends up breaking userspace applications.
+Historically users have, at least in theory, been able to create up to
+INT_MAX queues, and limiting it to just 1024 is way too low and dramatic
+for some workloads and use cases.  For instance, Madars reports:
 
-As a result, KVM exits to userspace, and then returns to
-complete_emulated_mmio.  In complete_emulated_mmio
-vcpu->mmio_cur_fragment is incremented.  The termination condition of
-vcpu->mmio_cur_fragment == vcpu->mmio_nr_fragments is never achieved.
-The code bounces back and fourth to userspace incrementing
-mmio_cur_fragment past it's buffer.  If the guest does nothing else it
-eventually leads to a a crash on a memcpy from invalid memory address.
+ "This update imposes bad limits on our multi-process application.  As
+  our app uses approaches that each process opens its own set of queues
+  (usually something about 3-5 queues per process).  In some scenarios
+  we might run up to 3000 processes or more (which of-course for linux
+  is not a problem).  Thus we might need up to 9000 queues or more.  All
+  processes run under one user."
 
-However if a guest code can cause the vm to be destroyed in another
-vcpu with excellent timing, then kvm_clear_async_pf_completion_queue
-can be used by the guest to control the data that's pointed to by the
-call to cancel_work_item, which can be used to gain execution.
+Other affected users can be found in launchpad bug #1155695:
+  https://bugs.launchpad.net/ubuntu/+source/manpages/+bug/1155695
 
-Fixes: f78146b0f9230765c6315b2e14f56112513389ad
-Signed-off-by: Andrew Honig <ahonig@google.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Instead of increasing this limit, revert it entirely and fallback to the
+original way of dealing queue limits -- where once a user's resource
+limit is reached, and all memory is used, new queues cannot be created.
+
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+Reported-by: Madars Vitolins <m@silodev.com>
+Acked-by: Doug Ledford <dledford@redhat.com>
+Cc: Manfred Spraul <manfred@colorfullife.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kvm/x86.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/ipc_namespace.h |  2 --
+ ipc/mq_sysctl.c               | 18 ++++++++++++------
+ ipc/mqueue.c                  |  6 +++---
+ 3 files changed, 15 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 6740fbf..75c56bd 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -6024,7 +6024,7 @@ static int complete_emulated_mmio(struct kvm_vcpu *vcpu)
- 		frag->len -= len;
- 	}
+diff --git a/include/linux/ipc_namespace.h b/include/linux/ipc_namespace.h
+index f6c82de..d6ad91f 100644
+--- a/include/linux/ipc_namespace.h
++++ b/include/linux/ipc_namespace.h
+@@ -119,9 +119,7 @@ extern int mq_init_ns(struct ipc_namespace *ns);
+  *     the new maximum will handle anyone else.  I may have to revisit this
+  *     in the future.
+  */
+-#define MIN_QUEUESMAX			1
+ #define DFLT_QUEUESMAX		      256
+-#define HARD_QUEUESMAX		     1024
+ #define MIN_MSGMAX			1
+ #define DFLT_MSG		       10U
+ #define DFLT_MSGMAX		       10
+diff --git a/ipc/mq_sysctl.c b/ipc/mq_sysctl.c
+index 383d638..5bb8bfe 100644
+--- a/ipc/mq_sysctl.c
++++ b/ipc/mq_sysctl.c
+@@ -22,6 +22,16 @@ static void *get_mq(ctl_table *table)
+ 	return which;
+ }
  
--	if (vcpu->mmio_cur_fragment == vcpu->mmio_nr_fragments) {
-+	if (vcpu->mmio_cur_fragment >= vcpu->mmio_nr_fragments) {
- 		vcpu->mmio_needed = 0;
- 		if (vcpu->mmio_is_write)
- 			return 1;
++static int proc_mq_dointvec(ctl_table *table, int write,
++			    void __user *buffer, size_t *lenp, loff_t *ppos)
++{
++	struct ctl_table mq_table;
++	memcpy(&mq_table, table, sizeof(mq_table));
++	mq_table.data = get_mq(table);
++
++	return proc_dointvec(&mq_table, write, buffer, lenp, ppos);
++}
++
+ static int proc_mq_dointvec_minmax(ctl_table *table, int write,
+ 	void __user *buffer, size_t *lenp, loff_t *ppos)
+ {
+@@ -33,12 +43,10 @@ static int proc_mq_dointvec_minmax(ctl_table *table, int write,
+ 					lenp, ppos);
+ }
+ #else
++#define proc_mq_dointvec NULL
+ #define proc_mq_dointvec_minmax NULL
+ #endif
+ 
+-static int msg_queues_limit_min = MIN_QUEUESMAX;
+-static int msg_queues_limit_max = HARD_QUEUESMAX;
+-
+ static int msg_max_limit_min = MIN_MSGMAX;
+ static int msg_max_limit_max = HARD_MSGMAX;
+ 
+@@ -51,9 +59,7 @@ static ctl_table mq_sysctls[] = {
+ 		.data		= &init_ipc_ns.mq_queues_max,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_mq_dointvec_minmax,
+-		.extra1		= &msg_queues_limit_min,
+-		.extra2		= &msg_queues_limit_max,
++		.proc_handler	= proc_mq_dointvec,
+ 	},
+ 	{
+ 		.procname	= "msg_max",
+diff --git a/ipc/mqueue.c b/ipc/mqueue.c
+index ae1996d..bb0248f 100644
+--- a/ipc/mqueue.c
++++ b/ipc/mqueue.c
+@@ -433,9 +433,9 @@ static int mqueue_create(struct inode *dir, struct dentry *dentry,
+ 		error = -EACCES;
+ 		goto out_unlock;
+ 	}
+-	if (ipc_ns->mq_queues_count >= HARD_QUEUESMAX ||
+-	    (ipc_ns->mq_queues_count >= ipc_ns->mq_queues_max &&
+-	     !capable(CAP_SYS_RESOURCE))) {
++
++	if (ipc_ns->mq_queues_count >= ipc_ns->mq_queues_max &&
++	    !capable(CAP_SYS_RESOURCE)) {
+ 		error = -ENOSPC;
+ 		goto out_unlock;
+ 	}
 -- 
 1.9.0
 
