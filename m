@@ -1,122 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764AbaCEOS5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:18:57 -0500
-Received: from mail1.bemta14.messagelabs.com ([193.109.254.116]:12367 "EHLO
-	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753008AbaCEOSy (ORCPT
+	id S1754982AbaCEOTJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:19:09 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:54743 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753008AbaCEOTC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:18:54 -0500
-X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
-X-Msg-Ref: server-12.tower-193.messagelabs.com!1394029118!16413495!1
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.16; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <566f6e7e74d468c49a667f5181292f431946070a.1394018471.git.Adam.Thomson.Opensource@diasemi.com>
-In-Reply-To: <cover.1394018471.git.Adam.Thomson.Opensource@diasemi.com>
-References: <cover.1394018471.git.Adam.Thomson.Opensource@diasemi.com>
-From: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
-Date: Wed, 5 Mar 2014 14:18:37 +0000
-Subject: [PATCH v2 2/2] mfd: da9055: Add DT binding documentation for PMIC
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Lee Jones <lee.jones@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 5 Mar 2014 09:19:02 -0500
+X-AuditID: cbfee61a-b7fb26d00000724f-20-53173254c634
+From: Kamil Debski <k.debski@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-usb@vger.kernel.org, devicetree@vger.kernel.org
+Cc: kyungmin.park@samsung.com, kishon@ti.com, t.figa@samsung.com,
+        s.nawrocki@samsung.com, m.szyprowski@samsung.com,
+        gautam.vivek@samsung.com, mat.krawczuk@gmail.com,
+        yulgon.kim@samsung.com, p.paneri@samsung.com,
+        av.tikhomirov@samsung.com, jg1.han@samsung.com, galak@codeaurora.org,
+        matt.porter@linaro.org, k.debski@samsung.com,
+        tjakobi@math.uni-bielefeld.de, stern@rowland.harvard.edu,
+        sander@humilis.net
+Subject: [PATCH v8 0/4] phy: Add new Exynos USB 2.0 PHY driver
+Date: Wed, 05 Mar 2014 15:18:24 +0100
+Message-id: <1394029108-2531-1-git-send-email-k.debski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t9jQd1QI/Fgg77TLBZLdt9gtZh/5Byr
+	Rf+bhawWbVcOsltcXniJ1eLH6wtsFhee9rBZnG16AxTbNYfNYsb5fUwWi5a1MlusPXKX3eJs
+	/202i4lN09gtzm/pZLI4/Kad1WLFvd3sFhN+A/Wun/GaxaJt9QdWi46zB9kdRD0u9/Uyeeyc
+	dZfd49Pbxcwed67tYfP4d4zdY/bdH4wefVtWMXocv7GdyePzJrkAzigum5TUnMyy1CJ9uwSu
+	jFsfH7EUdLpWPJg0i62B8YlpFyMnh4SAicSy99vYIWwxiQv31rOB2EIC0xklbjVqdDFyAdkd
+	TBKnX95j7WLk4GAT0JRYdc8DpEZEoEZiyq0r7CA1zALzmCU+fJnOApIQFrCTeLTtCCOIzSKg
+	KjFp4ks2kF5eAWeJ+SeDQUwJAQWJOZNsJjByL2BkWMUomlqQXFCclJ5rqFecmFtcmpeul5yf
+	u4kRHNLPpHYwrmywOMQowMGoxMP7gkMsWIg1say4MvcQowQHs5IIb7SWeLAQb0piZVVqUX58
+	UWlOavEhRmkOFiVx3gOt1oFCAumJJanZqakFqUUwWSYOTqkGxhMnk57d+bui6+aHpho5G6HO
+	jnALiaDDvySlw4LmOKsq7Zk0y0Ow5P3N/ntZb/XXd1oklc9TEpzpzcx3W4atOznszsHEKT8q
+	mQ+dTltvd/0Ew3u1m2F2W4/EvGLw5nVXOxUzSe/9yVkFn9bu/9E1cVcuY1PcgUO7ZdNMBSsf
+	JjGc5b0f3be/SImlOCPRUIu5qDgRAEywRwtlAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
-Acked-by: Mark Brown <broonie@kernel.org>
----
- Documentation/devicetree/bindings/mfd/da9055.txt |   72 ++++++++++++++++++++++
- 1 files changed, 72 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mfd/da9055.txt
+Hi,
 
-diff --git a/Documentation/devicetree/bindings/mfd/da9055.txt b/Documentation/devicetree/bindings/mfd/da9055.txt
-new file mode 100644
-index 0000000..6dab34d
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/da9055.txt
-@@ -0,0 +1,72 @@
-+* Dialog DA9055 Power Management Integrated Circuit (PMIC)
-+
-+DA9055 consists of a large and varied group of sub-devices (I2C Only):
-+
-+Device			 Supply Names	 Description
-+------			 ------------	 -----------
-+da9055-gpio		:		: GPIOs
-+da9055-regulator	:		: Regulators
-+da9055-onkey		:		: On key
-+da9055-rtc		:		: RTC
-+da9055-hwmon		:		: ADC
-+da9055-watchdog		:		: Watchdog
-+
-+The CODEC device in DA9055 has a separate, configurable I2C address and so
-+is instantiated separately from the PMIC.
-+
-+For details on accompanying CODEC I2C device, see the following:
-+Documentation/devicetree/bindings/sound/da9055.txt
-+
-+======
-+
-+Required properties:
-+- compatible : Should be "dlg,da9055-pmic"
-+- reg: Specifies the I2C slave address (defaults to 0x5a but can be modified)
-+- interrupt-parent: Specifies the phandle of the interrupt controller to which
-+  the IRQs from da9055 are delivered to.
-+- interrupts: IRQ line info for da9055 chip.
-+- interrupt-controller: da9055 has internal IRQs (has own IRQ domain).
-+- #interrupt-cells: Should be 1, is the local IRQ number for da9055.
-+
-+Sub-nodes:
-+- regulators : Contain the regulator nodes. The DA9055 regulators are
-+  bound using their names as listed below:
-+
-+    buck1     : regulator BUCK1
-+    buck2     : regulator BUCK2
-+    ldo1      : regulator LDO1
-+    ldo2      : regulator LDO2
-+    ldo3      : regulator LDO3
-+    ldo4      : regulator LDO4
-+    ldo5      : regulator LDO5
-+    ldo6      : regulator LDO6
-+
-+  The bindings details of individual regulator device can be found in:
-+  Documentation/devicetree/bindings/regulator/regulator.txt
-+
-+
-+Example:
-+
-+	pmic: da9055-pmic@5a {
-+		compatible = "dlg,da9055-pmic";
-+		reg = <0x5a>;
-+		interrupt-parent = <&intc>;
-+		interrupts = <5 IRQ_TYPE_LEVEL_LOW>;
-+		interrupt-controller;
-+		#interrupt-cells = <1>;
-+
-+		regulators {
-+			buck1: BUCK1 {
-+				regulator-min-microvolt = <725000>;
-+				regulator-max-microvolt = <2075000>;
-+			};
-+			buck2: BUCK2 {
-+				regulator-min-microvolt = <925000>;
-+				regulator-max-microvolt = <2500000>;
-+			};
-+			ldo1: LDO1 {
-+				regulator-min-microvolt = <900000>;
-+				regulator-max-microvolt = <3300000>;
-+			};
-+		};
-+	};
---
-1.7.0.4
+This is the eighth version of this patchset. First and most significant change
+since v6 is that this patchset includes only patches touching the Generic PHY
+Framework. Patches to the USB controllers were stripped as they require
+additional work. S5PV210 support is also omitted - it requires more testing.
+
+Since v7 this patch includes fixes for checkpath errors and was rebased onto
+Kishon's next branch.
+
+Best wishes,
+Kamil Debski
+
+--------------
+Changes from v7:
+1) phy: core: Add an exported of_phy_get function
+   - No changes since v7.
+2) phy: core: Add devm_of_phy_get to phy-core
+   - No changes since v7.
+3) phy: Add new Exynos USB 2.0 PHY driver
+   - Fix checkpatch errors with code indentation and corrected whitespace.
+4) phy: Add Exynos 5250 support to the Exynos USB 2.0 PHY
+   - Fix checkpatch errors with code indentation and corrected whitespace.
+
+--------------
+Changes from v6: (not including the change that controller patches were removed
+form this patchset, also this patchset excludes S5PV210 support - it needs more
+testing)
+1) phy: core: Add an exported of_phy_get function
+   - No changes since v6.
+2) phy: core: Add devm_of_phy_get to phy-core
+   - No changes since v6.
+3) phy: Add new Exynos USB 2.0 PHY driver
+   - Changed the way clocks are supplied to the driver. Prior to version v7
+     there were reference clocks for every phy instance, now a single "ref"
+     clock was introduced.
+   - Updated documentation to match the aforementioned change.
+   - Add offset EXYNOS_*_UPHYCLK_PHYFSEL_OFFSET to the clock register content
+     defines.
+   - Corrected way clock register is modified. Instead of a simple write, a
+     proper read, modify, write sequence was introduced.
+   - Important stability fix - added udelay after PHY reset. This fixes a bug
+     causing instability in USB LAN adapters. Without the delay the DMA burst
+     mode was could not be enabled.
+4) phy: Add Exynos 5250 support to the Exynos USB 2.0 PHY
+   - Changed handling of clocks to use a single "ref" clock.
+
+----------------
+Changes from v5:
+1) phy: core: Add an exported of_phy_get function
+- corrected behaviour of the modification when GENERIC_PHY is not enabled
+  by adding a stub of the of_phy_get function
+2) phy: core: Add devm_of_phy_get to phy-core
+- corrected behaviour of the modification when GENERIC_PHY is not enabled
+  by adding a stub of the devm_of_phy_get function
+3) dts: Add usb2phy to Exynos 4
+- no change
+4) dts: Add usb2phy to Exynos 5250
+- in the previous version, this patch included some phy-exynos5250-usb2.c code
+  by mistake, the code has been remove and added to the proper patch
+5) phy: Add new Exynos USB PHY driver
+- changed strings from Exynos 4212 to Exynos 4x12, as the Exynos 4212 driver is
+  actually a driver for the whole Exynos 4x12 family
+- added documentation to the Exynos USB 2.0 PHY driver adaptaion layer
+- corrected strings HSCI -> HSIC
+- fixed a problem introduced by previous change - on Exynos 4x12 the HSIC did
+  not work on its own
+- mode switch support was added to Exynos 4x12 (same io pins are used by host
+  and device)
+- support for phy_set_bus_width introduced by Matt Porter was added
+6) phy: Add support for S5PV210 to the Exynos USB PHY
+- setting of clk register was fixed
+7) phy: Add Exynos 5250 support to the Exynos USB 2.0 PHY
+- supoprt was added for HSIC and device
+8) usb: ehci-exynos: Change to use phy provided by the generic phy framework
+- DT documentation was moved from usb-ehci.txt to exynos-usb.txt
+
+----------------
+Changes from v4:
+1) phy: core: Add an exported of_phy_get function
+- the new exported function of_phy_get was changed to take the phy's name as a
+  parameter instead of the index
+2) phy: core: Add devm_of_phy_get to phy-core
+- fixes made in the comments to devm_of_phy_get
+3) phy: Add new Exynos USB PHY driver
+- move the documentation from a new to an existing file - samsung-phy.txt
+- fix typos and uppercase hex addresses
+- add more explanations to Kconfig (checkpatch still complains, but I find it
+  hard to think what else could I add)
+- add selects MFD_SYSCON as the driver needs it (Thank you, Tobias!)
+- cleanup included headers in both *.c and .h files
+- use BIT(x) macro instead of (1 << x)
+- replaced HOST and DEV with PHY0 and PHY1 in phy-exynos4212-usb2.c, the
+  registers are described as PHYx in the documentation hence the decision to
+  leave the PHYx naming
+- fixed typo in exynos4210_rate_to_clk reg -> *reg
+- change hax_mode_switch and enabled type to bool
+4) usb: ehci-s5p: Change to use phy provided by the generic phy framework
+- Put the issue of phy->otg in order - since the new phy driver does not provide
+  this field. With the new driver the switch between host and device is done in
+  power_on of the respective host and device phys.
+5) usb: s3c-hsotg: Use the new Exynos USB phy driver with the generic phy
+   framework
+- fixed the example in the documentation
+6) phy: Add support for S5PV210 to the Exynos USB PHY driver
+- include files cleanup
+- use BIT(x) macro instead of (1 << x)
+7) phy: Add Exynos 5250 support to the Exynos USB 2.0 PHY driver
+- include files cleanup
+- use BIT(x) macro instead of (1 << x)
+8) dts: Add usb2phy to Exynos 4
+- no changes
+9) dts: Add usb2phy to Exynos 5250
+- no changes
+
+----------------
+Changes from v3:
+- using PMU and system registers indirectly via syscon
+- change labelling
+- change Kconfig name
+- fixed typos/stray whitespace
+- move of_phy_provider_register() to the end of probe
+- add a regular error return code to the rate_to_clk functions
+- cleanup code and remove unused code
+- change struct names to avoid collisions
+- add mechanism to support multiple phys by the ehci driver
+
+----------------
+Changes from v2:
+- rebase all patches to the usb-next branch
+- fixes in the documentation file
+  - remove wrong entries in the phy node (ranges, and #address- & #size-cells)
+  - add clocks and clock-names as required properites
+  - rephrase a few sentences
+- fixes in the ehci-exynos.c file
+  - move phy_name variable next to phy in exynos_ehci_hcd
+  - remove otg from exynos_ehci_hcd as it was no longer used
+  - move devm_phy_get after the Exynos5440 skip_phy check
+- fixes in the s3c-hsotg.c file
+  - cosmetic fixes (remove empty line that was wrongfully added)
+- fixes in the main driver
+  - remove cpu_type in favour for a boolean flag matched with the compatible
+    value
+  - rename files, structures, variables and Kconfig entires - change from simple
+    "uphy" to "usb2_phy"
+  - fix multiline comments style
+  - simplify #ifdefs in of_device_id
+  - fix Kconfig description
+  - change dev_info to dev_dbg where reasonable
+  - cosmetic changes (remove wrongful blank lines)
+  - remove unnecessary reference counting
+
+----------------
+Changes from v1:
+- the changes include minor fixes of the hardware initialization of the PHY
+  module
+- some other minor fixes were introduced
+
+----------------------
+Original cover letter:
+
+Hi,
+
+This patch adds a new drive for USB PHYs for Samsung SoCs. The driver is
+using the Generic PHY Framework created by Kishon Vijay Abrahan I. It
+can be found here https://lkml.org/lkml/2013/8/21/29. This patch adds
+support to Exynos4 family of SoCs. Support for Exynos3 and Exynos5 is
+planned to be added in the near future.
+
+I welcome your comments.
+
+----------------------
+
+Kamil Debski (4):
+  phy: core: Add an exported of_phy_get function
+  phy: core: Add devm_of_phy_get to phy-core
+  phy: Add new Exynos USB 2.0 PHY driver
+  phy: Add Exynos 5250 support to the Exynos USB 2.0 PHY driver
+
+ .../devicetree/bindings/phy/samsung-phy.txt        |   54 +++
+ Documentation/phy/samsung-usb2.txt                 |  134 +++++++
+ drivers/phy/Kconfig                                |   40 ++
+ drivers/phy/Makefile                               |    4 +
+ drivers/phy/phy-core.c                             |   76 +++-
+ drivers/phy/phy-exynos4210-usb2.c                  |  262 +++++++++++++
+ drivers/phy/phy-exynos4x12-usb2.c                  |  329 ++++++++++++++++
+ drivers/phy/phy-exynos5250-usb2.c                  |  405 ++++++++++++++++++++
+ drivers/phy/phy-samsung-usb2.c                     |  229 +++++++++++
+ drivers/phy/phy-samsung-usb2.h                     |   68 ++++
+ include/linux/phy/phy.h                            |   14 +
+ 11 files changed, 1606 insertions(+), 9 deletions(-)
+ create mode 100644 Documentation/phy/samsung-usb2.txt
+ create mode 100644 drivers/phy/phy-exynos4210-usb2.c
+ create mode 100644 drivers/phy/phy-exynos4x12-usb2.c
+ create mode 100644 drivers/phy/phy-exynos5250-usb2.c
+ create mode 100644 drivers/phy/phy-samsung-usb2.c
+ create mode 100644 drivers/phy/phy-samsung-usb2.h
+
+-- 
+1.7.9.5
 
