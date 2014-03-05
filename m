@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758856AbaCEPO1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 10:14:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41002 "EHLO
+	id S1755815AbaCEOZv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:25:51 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40981 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755512AbaCEOZx (ORCPT
+	with ESMTP id S1755512AbaCEOZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:25:53 -0500
+	Wed, 5 Mar 2014 09:25:46 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hans de Goede <hdegoede@redhat.com>,
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 061/131] ACPI / video: Filter the _BCL table for duplicate brightness values
-Date: Wed,  5 Mar 2014 14:23:05 +0000
-Message-Id: <1394029455-23128-62-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 058/131] cpufreq: powernow-k8: Initialize per-cpu data-structures properly
+Date: Wed,  5 Mar 2014 14:23:02 +0000
+Message-Id: <1394029455-23128-59-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -28,76 +28,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
 
-commit bd8ba20597f0cfef3ef65c3fd2aa92ab23d4c8e1 upstream.
+commit c3274763bfc3bf1ececa269ed6e6c4d7ec1c3e5e upstream.
 
-Some devices have duplicate entries in there brightness levels table, ie
-on my Dell Latitude E6430 the table looks like this:
+The powernow-k8 driver maintains a per-cpu data-structure called
+powernow_data that is used to perform the frequency transitions.
+It initializes this data structure only for the policy->cpu. So,
+accesses to this data structure by other CPUs results in various
+problems because they would have been uninitialized.
 
-[    3.686060] acpi backlight index   0, val 80
-[    3.686095] acpi backlight index   1, val 50
-[    3.686122] acpi backlight index   2, val 5
-[    3.686147] acpi backlight index   3, val 5
-[    3.686172] acpi backlight index   4, val 5
-[    3.686197] acpi backlight index   5, val 5
-[    3.686223] acpi backlight index   6, val 5
-[    3.686248] acpi backlight index   7, val 5
-[    3.686273] acpi backlight index   8, val 6
-[    3.686332] acpi backlight index   9, val 7
-[    3.686356] acpi backlight index  10, val 8
-[    3.686380] acpi backlight index  11, val 9
-etc.
+Specifically, if a cpu (!= policy->cpu) invokes the drivers' ->get()
+function, it returns 0 as the KHz value, since its per-cpu memory
+doesn't point to anything valid. This causes problems during
+suspend/resume since cpufreq_update_policy() tries to enforce this
+(0 KHz) as the current frequency of the CPU, and this madness gets
+propagated to adjust_jiffies() as well. Eventually, lots of things
+start breaking down, including the r8169 ethernet card, in one
+particularly interesting case reported by Pierre Ossman.
 
-Notice that brightness values 0-5 are all mapped to 5. This means that
-if userspace writes any value between 0 and 5 to the brightness sysfs attribute
-and then reads it, it will always return 0, which is somewhat unexpected.
+Fix this by initializing the per-cpu data-structures of all the CPUs
+in the policy appropriately.
 
-This is a problem for ie gnome-settings-daemon, which uses read-modify-write
-logic when the users presses the brightness up or down keys. This is done
-this way to take brightness changes from other sources into account.
-
-On this specific laptop what happens once the brightness has been set to 0,
-is that gsd reads 0, adds 5, writes 5, and on the next brightness up key press
-again reads 0, so things get stuck at the lowest brightness setting.
-
-Filtering out the duplicate table entries, makes any write to brightness
-read back as the written value as one would expect, fixing this.
-
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Reviewed-by: Aaron Lu <aaron.lu@intel.com>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=70311
+Reported-by: Pierre Ossman <pierre@ossman.eu>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/acpi/video.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/cpufreq/powernow-k8.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-index 28e5184..e37996d 100644
---- a/drivers/acpi/video.c
-+++ b/drivers/acpi/video.c
-@@ -735,6 +735,7 @@ acpi_video_init_brightness(struct acpi_video_device *device)
- 	union acpi_object *o;
- 	struct acpi_video_device_brightness *br = NULL;
- 	int result = -EINVAL;
-+	u32 value;
+diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
+index c39d189..9292f1f 100644
+--- a/drivers/cpufreq/powernow-k8.c
++++ b/drivers/cpufreq/powernow-k8.c
+@@ -1100,7 +1100,7 @@ static int powernowk8_cpu_init(struct cpufreq_policy *pol)
+ {
+ 	struct powernow_k8_data *data;
+ 	struct init_on_cpu init_on_cpu;
+-	int rc;
++	int rc, cpu;
  
- 	if (!ACPI_SUCCESS(acpi_video_device_lcd_query_levels(device, &obj))) {
- 		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Could not query available "
-@@ -765,7 +766,12 @@ acpi_video_init_brightness(struct acpi_video_device *device)
- 			printk(KERN_ERR PREFIX "Invalid data\n");
- 			continue;
- 		}
--		br->levels[count] = (u32) o->integer.value;
-+		value = (u32) o->integer.value;
-+		/* Skip duplicate entries */
-+		if (count > 2 && br->levels[count - 1] == value)
-+			continue;
-+
-+		br->levels[count] = value;
+ 	smp_call_function_single(pol->cpu, check_supported_cpu, &rc, 1);
+ 	if (rc)
+@@ -1169,7 +1169,9 @@ static int powernowk8_cpu_init(struct cpufreq_policy *pol)
+ 	pr_debug("cpu_init done, current fid 0x%x, vid 0x%x\n",
+ 		 data->currfid, data->currvid);
  
- 		if (br->levels[count] > max_level)
- 			max_level = br->levels[count];
+-	per_cpu(powernow_data, pol->cpu) = data;
++	/* Point all the CPUs in this policy to the same data */
++	for_each_cpu(cpu, pol->cpus)
++		per_cpu(powernow_data, cpu) = data;
+ 
+ 	return 0;
+ 
+@@ -1184,6 +1186,7 @@ err_out:
+ static int powernowk8_cpu_exit(struct cpufreq_policy *pol)
+ {
+ 	struct powernow_k8_data *data = per_cpu(powernow_data, pol->cpu);
++	int cpu;
+ 
+ 	if (!data)
+ 		return -EINVAL;
+@@ -1194,7 +1197,8 @@ static int powernowk8_cpu_exit(struct cpufreq_policy *pol)
+ 
+ 	kfree(data->powernow_table);
+ 	kfree(data);
+-	per_cpu(powernow_data, pol->cpu) = NULL;
++	for_each_cpu(cpu, pol->cpus)
++		per_cpu(powernow_data, cpu) = NULL;
+ 
+ 	return 0;
+ }
 -- 
 1.9.0
 
