@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757972AbaCEObt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:31:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41320 "EHLO
+	id S1755876AbaCEOcZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:32:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41313 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757758AbaCEO1U (ORCPT
+	with ESMTP id S1757745AbaCEO1T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:27:20 -0500
+	Wed, 5 Mar 2014 09:27:19 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>, Mark Brown <broonie@linaro.org>,
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 122/131] ASoC: sta32x: Fix wrong enum for limiter2 release rate
-Date: Wed,  5 Mar 2014 14:24:06 +0000
-Message-Id: <1394029455-23128-123-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 121/131] usb: ehci: fix deadlock when threadirqs option is used
+Date: Wed,  5 Mar 2014 14:24:05 +0000
+Message-Id: <1394029455-23128-122-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,45 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit b3619b288b621e63f66908045f48495869a996a6 upstream.
+commit a1227f3c1030e96ebc51d677d2f636268845c5fb upstream.
 
-There is a typo in the Limiter2 Release Rate control, a wrong enum for
-Limiter1 is assigned.  It must point to Limiter2.
-Spotted by a compile warning:
+ehci_irq() and ehci_hrtimer_func() can deadlock on ehci->lock when
+threadirqs option is used. To prevent the deadlock use
+spin_lock_irqsave() in ehci_irq().
 
-In file included from sound/soc/codecs/sta32x.c:34:0:
-sound/soc/codecs/sta32x.c:223:29: warning: ‘sta32x_limiter2_release_rate_enum’ defined but not used [-Wunused-variable]
- static SOC_ENUM_SINGLE_DECL(sta32x_limiter2_release_rate_enum,
-                             ^
-include/sound/soc.h:275:18: note: in definition of macro ‘SOC_ENUM_DOUBLE_DECL’
-  struct soc_enum name = SOC_ENUM_DOUBLE(xreg, xshift_l, xshift_r, \
-                  ^
-sound/soc/codecs/sta32x.c:223:8: note: in expansion of macro ‘SOC_ENUM_SINGLE_DECL’
- static SOC_ENUM_SINGLE_DECL(sta32x_limiter2_release_rate_enum,
-        ^
+This change can be reverted when hrtimer callbacks become threaded.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/soc/codecs/sta32x.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/host/ehci-hcd.c | 13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
-diff --git a/sound/soc/codecs/sta32x.c b/sound/soc/codecs/sta32x.c
-index 4d8a3ae..8517e70 100644
---- a/sound/soc/codecs/sta32x.c
-+++ b/sound/soc/codecs/sta32x.c
-@@ -432,7 +432,7 @@ SOC_SINGLE_TLV("Treble Tone Control", STA32X_TONE, STA32X_TONE_TTC_SHIFT, 15, 0,
- SOC_ENUM("Limiter1 Attack Rate (dB/ms)", sta32x_limiter1_attack_rate_enum),
- SOC_ENUM("Limiter2 Attack Rate (dB/ms)", sta32x_limiter2_attack_rate_enum),
- SOC_ENUM("Limiter1 Release Rate (dB/ms)", sta32x_limiter1_release_rate_enum),
--SOC_ENUM("Limiter2 Release Rate (dB/ms)", sta32x_limiter1_release_rate_enum),
-+SOC_ENUM("Limiter2 Release Rate (dB/ms)", sta32x_limiter2_release_rate_enum),
+diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+index 7abf1ce..9a91bb6 100644
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -689,8 +689,15 @@ static irqreturn_t ehci_irq (struct usb_hcd *hcd)
+ 	struct ehci_hcd		*ehci = hcd_to_ehci (hcd);
+ 	u32			status, masked_status, pcd_status = 0, cmd;
+ 	int			bh;
++	unsigned long		flags;
  
- /* depending on mode, the attack/release thresholds have
-  * two different enum definitions; provide both
+-	spin_lock (&ehci->lock);
++	/*
++	 * For threadirqs option we use spin_lock_irqsave() variant to prevent
++	 * deadlock with ehci hrtimer callback, because hrtimer callbacks run
++	 * in interrupt context even when threadirqs is specified. We can go
++	 * back to spin_lock() variant when hrtimer callbacks become threaded.
++	 */
++	spin_lock_irqsave(&ehci->lock, flags);
+ 
+ 	status = ehci_readl(ehci, &ehci->regs->status);
+ 
+@@ -708,7 +715,7 @@ static irqreturn_t ehci_irq (struct usb_hcd *hcd)
+ 
+ 	/* Shared IRQ? */
+ 	if (!masked_status || unlikely(ehci->rh_state == EHCI_RH_HALTED)) {
+-		spin_unlock(&ehci->lock);
++		spin_unlock_irqrestore(&ehci->lock, flags);
+ 		return IRQ_NONE;
+ 	}
+ 
+@@ -826,7 +833,7 @@ dead:
+ 
+ 	if (bh)
+ 		ehci_work (ehci);
+-	spin_unlock (&ehci->lock);
++	spin_unlock_irqrestore(&ehci->lock, flags);
+ 	if (pcd_status)
+ 		usb_hcd_poll_rh_status(hcd);
+ 	return IRQ_HANDLED;
 -- 
 1.9.0
 
