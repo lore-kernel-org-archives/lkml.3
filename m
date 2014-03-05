@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758985AbaCEPSX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 10:18:23 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40929 "EHLO
+	id S932459AbaCEPSp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:18:45 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40925 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756977AbaCEOZb (ORCPT
+	with ESMTP id S1756967AbaCEOZa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:25:31 -0500
+	Wed, 5 Mar 2014 09:25:30 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tejun Heo <tj@kernel.org>, Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 048/131] ahci: disable NCQ on Samsung pci-e SSDs on macbooks
-Date: Wed,  5 Mar 2014 14:22:52 +0000
-Message-Id: <1394029455-23128-49-git-send-email-luis.henriques@canonical.com>
+Cc: Tomasz Nowicki <tomasz.nowicki@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 047/131] ACPI / PCI: Fix memory leak in acpi_pci_irq_enable()
+Date: Wed,  5 Mar 2014 14:22:51 +0000
+Message-Id: <1394029455-23128-48-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -26,60 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Levente Kurusa <levex@linux.com>
+From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
 
-commit 67809f85d31eac600f6b28defa5386c9d2a13b1d upstream.
+commit b685f3b1744061aa9ad822548ba9c674de5be7c6 upstream.
 
-Samsung's pci-e SSDs with device ID 0x1600 which are found on some
-macbooks time out on NCQ commands.  Blacklist NCQ on the device so
-that the affected machines can at least boot.
+acpi_pci_link_allocate_irq() can return negative gsi even if
+entry != NULL.  For that case we have a memory leak, so free
+entry before returning from acpi_pci_irq_enable() for gsi < 0.
 
-Original-patch-by: Levente Kurusa <levex@linux.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=60731
+Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+[rjw: Subject and changelog]
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/ata/ahci.c | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/acpi/pci_irq.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 54bf3f8..75979cd 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -61,6 +61,7 @@ enum board_ids {
- 	/* board IDs by feature in alphabetical order */
- 	board_ahci,
- 	board_ahci_ign_iferr,
-+	board_ahci_noncq,
- 	board_ahci_nosntf,
- 	board_ahci_yes_fbs,
+diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
+index 41c5e1b..f658e09 100644
+--- a/drivers/acpi/pci_irq.c
++++ b/drivers/acpi/pci_irq.c
+@@ -432,6 +432,7 @@ int acpi_pci_irq_enable(struct pci_dev *dev)
+ 				 pin_name(pin));
+ 		}
  
-@@ -119,6 +120,13 @@ static const struct ata_port_info ahci_port_info[] = {
- 		.udma_mask	= ATA_UDMA6,
- 		.port_ops	= &ahci_ops,
- 	},
-+	[board_ahci_noncq] = {
-+		AHCI_HFLAGS	(AHCI_HFLAG_NO_NCQ),
-+		.flags		= AHCI_FLAG_COMMON,
-+		.pio_mask	= ATA_PIO4,
-+		.udma_mask	= ATA_UDMA6,
-+		.port_ops	= &ahci_ops,
-+	},
- 	[board_ahci_nosntf] = {
- 		AHCI_HFLAGS	(AHCI_HFLAG_NO_SNTF),
- 		.flags		= AHCI_FLAG_COMMON,
-@@ -450,6 +458,12 @@ static const struct pci_device_id ahci_pci_tbl[] = {
- 	{ PCI_VDEVICE(ASMEDIA, 0x0611), board_ahci },	/* ASM1061 */
- 	{ PCI_VDEVICE(ASMEDIA, 0x0612), board_ahci },	/* ASM1062 */
- 
-+	/*
-+	 * Samsung SSDs found on some macbooks.  NCQ times out.
-+	 * https://bugzilla.kernel.org/show_bug.cgi?id=60731
-+	 */
-+	{ PCI_VDEVICE(SAMSUNG, 0x1600), board_ahci_noncq },
-+
- 	/* Enmotus */
- 	{ PCI_DEVICE(0x1c44, 0x8000), board_ahci },
++		kfree(entry);
+ 		return 0;
+ 	}
  
 -- 
 1.9.0
