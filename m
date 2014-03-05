@@ -1,49 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755383AbaCEQ0B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 11:26:01 -0500
-Received: from mail-we0-f170.google.com ([74.125.82.170]:36701 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752221AbaCEQZ6 (ORCPT
+	id S1755759AbaCEQ0y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 11:26:54 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:53650 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753538AbaCEQ0u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 11:25:58 -0500
-Date: Wed, 5 Mar 2014 18:25:52 +0200
-From: Eyal Perry <eyalpe@dev.mellanox.co.il>
-To: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Cc: Amir Vadai <amirv@mellanox.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: mlx4_core: DMA-API: device driver tries to sync DMA memory it
- has not allocated
-Message-ID: <20140305162534.GA19488@mtl-eit-vdi-146.mtl.labs.mlnx>
-References: <20131210144416.31b7002c@thinkpad>
- <20140227170107.GB24226@mtl-eit-vdi-22.mtl.labs.mlnx>
- <20140228222457.3db91448@vbox-ubuntu>
- <20140302084046.GD809@mtl-eit-vdi-22.mtl.labs.mlnx>
- <20140303185832.67862975@thinkpad>
+	Wed, 5 Mar 2014 11:26:50 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18TGF3teosS97RKO6ocQtVG
+Date: Wed, 5 Mar 2014 08:26:42 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: George Cherian <george.cherian@ti.com>, kishon@ti.com, balbi@ti.com,
+        balajitk@ti.com, hdegoede@redhat.com, linux-omap@vger.kernel.org,
+        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org
+Subject: Re: [PATCH 02/12] phy: omap-control: Update DT binding information
+Message-ID: <20140305162642.GA4983@atomide.com>
+References: <1393859254-10937-1-git-send-email-rogerq@ti.com>
+ <1393859254-10937-3-git-send-email-rogerq@ti.com>
+ <20140303190247.GD25804@atomide.com>
+ <5315995F.5050206@ti.com>
+ <20140304162855.GB3376@atomide.com>
+ <5317172A.1050803@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140303185832.67862975@thinkpad>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <5317172A.1050803@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/03/14 18:58 +0100, Gerald Schaefer wrote:
-> I checked again with 3.10 and 3.11, and couldn't reproduce the warning
-> there. However, there is another warning on those kernel versions:
+* Roger Quadros <rogerq@ti.com> [140305 04:26]:
+> + George
 > 
-> mlx4_core 0000:00:00.0: DMA-API: device driver failed to check map error[device address=0x00000001046af186] [size=258 bytes] [mapped as single]
+> Tony,
 > 
-> That one was fixed with commit 237a3a3b "net/mlx4_en: Fix handling of dma_map failure".
-> When I apply commit 237a3a3b on top of 3.11, I can also reproduce the
-> new "sync DMA" warning there.
+> On 03/04/2014 06:28 PM, Tony Lindgren wrote:
+> > * Roger Quadros <rogerq@ti.com> [140304 01:17]:
+> >> Hi Tony,
+> >>
+> >> On 03/03/2014 09:02 PM, Tony Lindgren wrote:
+> >>> * Roger Quadros <rogerq@ti.com> [140303 07:10]:
+> >>>> Move omap-control binding information to the right location.
+> >>>>
+> >>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> >>>> ---
+> >>>>  Documentation/devicetree/bindings/phy/ti-phy.txt   | 25 ++++++++++++++++++++++
+> >>>>  Documentation/devicetree/bindings/usb/omap-usb.txt | 24 ---------------------
+> >>>>  2 files changed, 25 insertions(+), 24 deletions(-)
+> >>>>
+> >>>> diff --git a/Documentation/devicetree/bindings/phy/ti-phy.txt b/Documentation/devicetree/bindings/phy/ti-phy.txt
+> >>>> index 207e14c..41dc132 100644
+> >>>> --- a/Documentation/devicetree/bindings/phy/ti-phy.txt
+> >>>> +++ b/Documentation/devicetree/bindings/phy/ti-phy.txt
+> >>>> @@ -1,5 +1,30 @@
+> >>>>  TI PHY: DT DOCUMENTATION FOR PHYs in TI PLATFORMs
+> >>>>  
+> >>>> +OMAP CONTROL PHY
+> >>>> +
+> >>>> +Required properties:
+> >>>> + - compatible: Should be one of
+> >>>> + "ti,control-phy-otghs" - if it has otghs_control mailbox register as on OMAP4.
+> >>>> + "ti,control-phy-usb2" - if it has Power down bit in control_dev_conf register
+> >>>> +                        e.g. USB2_PHY on OMAP5.
+> >>>> + "ti,control-phy-pipe3" - if it has DPLL and individual Rx & Tx power control
+> >>>> +                        e.g. USB3 PHY and SATA PHY on OMAP5.
+> >>>> + "ti,control-phy-dra7usb2" - if it has power down register like USB2 PHY on
+> >>>> +                        DRA7 platform.
+> >>>> + "ti,control-phy-am437usb2" - if it has power down register like USB2 PHY on
+> >>>> +                        AM437 platform.
+> >>>
+> >>> To me it seems that you can leave out all the above. You can set these falgs
+> >>> flags directly in the driver based on the compatible flag. Then just initialize
+> >>> the .data in the driver based on the compatible flag.
+> >>
+> >> I'm not sure if I got you. A single platform can have different type of phys.
+> >>
+> >> e.g. OMAP5 has both usb2 and pipe3 PHYs,
+> >> DRA7 has both pipe3 and usb2 PHYs, but this usb2 PHY is not compatible with OMAP5 one
+> >> so we need a new compatible id for that.
+> >>
+> >> To add to the woes, the designers were creative enough to make another mutation to
+> >> the USB2 PHY for AM437x, :(
+> > 
+> > Oh OK, in that case the compatible flag may not be enough for configuring the
+> > various instances.
+> >  
+> >> What do you suggest the compatible ids should look like for these 5 types of PHY control?
+> >> OTGHS	(OMAP4 & 5)
+> >> USB2	(OMAP5)
+> >> PIPE3	(OMAP5 & DRA7)
+> >> USB2x	(DRA7)
+> >> USB2y	(AM437)
+> > 
+> > I think in that case having the various instances fully configurable from
+> > device tree is OK if you prefer that. But if you wanted to use the
+> > compatible flag, then you could do something like this:
+> > 
+> > ti,control-phy-omap4-otghs	(assuming same on omap4 & 5)
+> > ti,control-phy-omap5-usb2
+> > ti,control-phy-omap5-pipe3	(assuming same on omap5 & dra7)
+> > ti,control-phy-dra7-usb2x
+> > ti,control-phy-am437-usb2y
+> > ...
+> > 
 > 
-> So, either the new "sync DMA" warning was introduced with commit 237a3a3b,
-> or it was just occluded by the previous "map error" warning.
-Hi Gerald,
-Thanks for the update and for your efforts on investigating this issue,
-we are currently working on reproducing this issue on our lab in order
-to understand thoroughly the root cause.
+> Please note that the original bindings were added in v3.13 and I'm just moving the documentation
+> to the right location. So I don't think we should change the bindings now.
 
-Eyal
+OK yeah if the bindings are established you should keep them around.
+ 
+> "ti,control-phy-dra7usb2" and "ti,control-phy-am437usb2" have no users still so we could probably
+> change those to "ti,control-phy-dra7-usb2" and "ti,control-phy-am437-usb2".
+> 
+> What do you say?
+
+Makes sense to me.
+
+Regards,
+
+Tony
