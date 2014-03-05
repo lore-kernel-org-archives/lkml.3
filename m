@@ -1,52 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752428AbaCEFye (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 00:54:34 -0500
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:56837 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750702AbaCEFyc (ORCPT
+	id S1753005AbaCEFym (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 00:54:42 -0500
+Received: from relay.parallels.com ([195.214.232.42]:53773 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752518AbaCEFyj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 00:54:32 -0500
+	Wed, 5 Mar 2014 00:54:39 -0500
+Message-ID: <5316BC18.7060107@parallels.com>
+Date: Wed, 5 Mar 2014 09:54:32 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
 MIME-Version: 1.0
-In-Reply-To: <1393622017.4052.5.camel@x220>
-References: <1362744373.5994.57.camel@x61.thuisdomein>
-	<1392284459.30853.17.camel@x220>
-	<CAMk6uBnjEA2eozct6Q_Cm2BCrF-_3gGuNaBmtymGKYpPjoLUVw@mail.gmail.com>
-	<1393622017.4052.5.camel@x220>
-Date: Wed, 5 Mar 2014 13:54:32 +0800
-Message-ID: <CAMk6uBmm8mXqjW6iP+P8rDEY3hN-JpWvohomBeeRTFK4PgcXCw@mail.gmail.com>
-Subject: Re: [PATCH] blackfin: bf537: fix typo "CONFIG_SND_SOC_ADV80X_MODULE"
-From: Steven Miao <realmz6@gmail.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: bfin <adi-buildroot-devel@lists.sourceforge.net>,
-        "open list:CAN NETWORK DRIVERS <linux-can@vger.kernel.org>, open" 
-	<linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Michal Hocko <mhocko@suse.cz>
+CC: <hannes@cmpxchg.org>, <akpm@linux-foundation.org>, <glommer@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <devel@openvz.org>
+Subject: Re: [PATCH -mm 00/12] kmemcg reparenting
+References: <cover.1393423762.git.vdavydov@parallels.com> <5315E986.7070608@parallels.com> <20140304152145.GB12647@dhcp22.suse.cz>
+In-Reply-To: <20140304152145.GB12647@dhcp22.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+On 03/04/2014 07:21 PM, Michal Hocko wrote:
+> On Tue 04-03-14 18:56:06, Vladimir Davydov wrote:
+>> Hi Johannes, Michal
+>>
+>> Could you please take a look at this set when you have time?
+> I plan to catch up with others as well. I was on vacation last week and
+> now catching up with other stuff. I do understand that this review
+> "speed" might be really frustrating for you but there is a lot of things
+> on my agenda now (and last few weeks). Sorry about that.
 
-On Sat, Mar 1, 2014 at 5:13 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> Steven,
->
-> On Wed, 2014-02-26 at 18:35 +0800, Steven Miao wrote:
->> On Thu, Feb 13, 2014 at 5:40 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
->> >> 1) There are many lines that might be converted to IS_ENABLED() in this
->> >> file. I'm not sure if and how that should be done.
->> Sorry for the late reply. There are many CONFIG_xxx ||
->> CONFIG_xxx_MODULE things, we need a cleanup for it under all the
->> stamp.c and ezkit.c.
->
-> Should I draft a patch to do that? And should that patch include this
-> patch, or is this patch finally getting pushed (after some testing, that
-> is)?
-Yes, sure you can, and I will test your patch.
->
-> Thanks,
->
->
-> Paul Bolle
->
--steven
+Never mind. I just want to be sure you haven't missed that.
+
+Thank you.
