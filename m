@@ -1,75 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754947AbaCEJZJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 04:25:09 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:53741 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753561AbaCEJVB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 04:21:01 -0500
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Grant Likely <grant.likely@linaro.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        devicetree@vger.kernel.org, Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH v6 0/8] Move device tree graph parsing helpers to drivers/of
-Date: Wed,  5 Mar 2014 10:20:34 +0100
-Message-Id: <1394011242-16783-1-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 1.9.0.rc3
-X-SA-Exim-Connect-IP: 10.1.0.120
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1755075AbaCEJZe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 04:25:34 -0500
+Received: from vps0.lunn.ch ([178.209.37.122]:38924 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753992AbaCEJZ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 04:25:28 -0500
+Date: Wed, 5 Mar 2014 10:24:17 +0100
+From: Andrew Lunn <andrew@lunn.ch>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Jason Cooper <jason@lakedaemon.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] Revert "irqchip: irq-dove: Add PMU interrupt controller."
+Message-ID: <20140305092417.GB26485@lunn.ch>
+References: <20140304030838.GA1872@titan.lakedaemon.net>
+ <1393911160-7688-1-git-send-email-jason@lakedaemon.net>
+ <20140305004139.GT21483@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140305004139.GT21483@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+> >From the spec, it looks like this is probably true of DFSDone as well.
 
-this version of the OF graph helper move series further addresses a few of
-Tomi's and Sylwester's comments.
+The cpufreq driver makes use of DFSDone. I've never had it loop
+endlessly. There is also no action needed to clear it in the DFS
+hardware.
 
-Changes since v5:
- - Fixed spelling errors and a wrong device node name in the link section
- - Added parentless previous endpoint's full name to warning
- - Fixed documentation comment for of_graph_parse_endpoint
- - Unrolled for-loop in of_graph_get_remote_port_parent
-
-Philipp Zabel (8):
-  [media] of: move graph helpers from drivers/media/v4l2-core to
-    drivers/of
-  Documentation: of: Document graph bindings
-  of: Warn if of_graph_get_next_endpoint is called with the root node
-  of: Reduce indentation in of_graph_get_next_endpoint
-  [media] of: move common endpoint parsing to drivers/of
-  of: Implement simplified graph binding for single port devices
-  of: Document simplified graph binding for single port devices
-  of: Warn if of_graph_parse_endpoint is called with the root node
-
- Documentation/devicetree/bindings/graph.txt   | 137 +++++++++++++++++++++
- drivers/media/i2c/adv7343.c                   |   4 +-
- drivers/media/i2c/mt9p031.c                   |   4 +-
- drivers/media/i2c/s5k5baf.c                   |   3 +-
- drivers/media/i2c/tvp514x.c                   |   3 +-
- drivers/media/i2c/tvp7002.c                   |   3 +-
- drivers/media/platform/exynos4-is/fimc-is.c   |   6 +-
- drivers/media/platform/exynos4-is/media-dev.c |  13 +-
- drivers/media/platform/exynos4-is/mipi-csis.c |   5 +-
- drivers/media/v4l2-core/v4l2-of.c             | 133 +-------------------
- drivers/of/base.c                             | 167 ++++++++++++++++++++++++++
- include/linux/of_graph.h                      |  66 ++++++++++
- include/media/v4l2-of.h                       |  33 +----
- 13 files changed, 399 insertions(+), 178 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/graph.txt
- create mode 100644 include/linux/of_graph.h
-
--- 
-1.9.0.rc3
-
+	Andrew
