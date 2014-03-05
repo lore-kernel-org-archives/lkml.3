@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757797AbaCEO7Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:59:25 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41543 "EHLO
+	id S1758136AbaCEOhR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:37:17 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41529 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758137AbaCEOhS (ORCPT
+	with ESMTP id S1755487AbaCEOhO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:37:18 -0500
+	Wed, 5 Mar 2014 09:37:14 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
+Cc: "Denis V. Lunev" <den@openvz.org>, Tejun Heo <tj@kernel.org>,
+        <linux-ide@vger.kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 05/62] SUNRPC: Fix races in xs_nospace()
-Date: Wed,  5 Mar 2014 14:36:09 +0000
-Message-Id: <1394030226-26652-6-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 01/62] ata: enable quirk from jmicron JMB350 for JMB394
+Date: Wed,  5 Mar 2014 14:36:05 +0000
+Message-Id: <1394030226-26652-2-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
 References: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
@@ -27,57 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: "Denis V. Lunev" <den@openvz.org>
 
-commit 06ea0bfe6e6043cb56a78935a19f6f8ebc636226 upstream.
+commit efb9e0f4f43780f0ae0c6428d66bd03e805c7539 upstream.
 
-When a send failure occurs due to the socket being out of buffer space,
-we call xs_nospace() in order to have the RPC task wait until the
-socket has drained enough to make it worth while trying again.
-The current patch fixes a race in which the socket is drained before
-we get round to setting up the machinery in xs_nospace(), and which
-is reported to cause hangs.
+Without the patch the kernel generates the following error.
 
-Link: http://lkml.kernel.org/r/20140210170315.33dfc621@notabene.brown
-Fixes: a9a6b52ee1ba (SUNRPC: Don't start the retransmission timer...)
-Reported-by: Neil Brown <neilb@suse.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+ ata11.15: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ ata11.15: Port Multiplier vendor mismatch '0x197b' != '0x123'
+ ata11.15: PMP revalidation failed (errno=-19)
+ ata11.15: failed to recover PMP after 5 tries, giving up
+
+This patch helps to bypass this error and the device becomes
+functional.
+
+Signed-off-by: Denis V. Lunev <den@openvz.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: <linux-ide@vger.kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/sunrpc/xprtsock.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/ata/libata-pmp.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
-index 31f981d..31275e5 100644
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -501,6 +501,7 @@ static int xs_nospace(struct rpc_task *task)
- 	struct rpc_rqst *req = task->tk_rqstp;
- 	struct rpc_xprt *xprt = req->rq_xprt;
- 	struct sock_xprt *transport = container_of(xprt, struct sock_xprt, xprt);
-+	struct sock *sk = transport->inet;
- 	int ret = -EAGAIN;
- 
- 	dprintk("RPC: %5u xmit incomplete (%u left of %u)\n",
-@@ -518,7 +519,7 @@ static int xs_nospace(struct rpc_task *task)
- 			 * window size
- 			 */
- 			set_bit(SOCK_NOSPACE, &transport->sock->flags);
--			transport->inet->sk_write_pending++;
-+			sk->sk_write_pending++;
- 			/* ...and wait for more buffer space */
- 			xprt_wait_for_buffer_space(task, xs_nospace_callback);
- 		}
-@@ -528,6 +529,9 @@ static int xs_nospace(struct rpc_task *task)
- 	}
- 
- 	spin_unlock_bh(&xprt->transport_lock);
-+
-+	/* Race breaker in case memory is freed before above code is called */
-+	sk->sk_write_space(sk);
- 	return ret;
- }
- 
+diff --git a/drivers/ata/libata-pmp.c b/drivers/ata/libata-pmp.c
+index f5c35be..0ba32fe 100644
+--- a/drivers/ata/libata-pmp.c
++++ b/drivers/ata/libata-pmp.c
+@@ -447,8 +447,11 @@ static void sata_pmp_quirks(struct ata_port *ap)
+ 		 * otherwise.  Don't try hard to recover it.
+ 		 */
+ 		ap->pmp_link[ap->nr_pmp_links - 1].flags |= ATA_LFLAG_NO_RETRY;
+-	} else if (vendor == 0x197b && devid == 0x2352) {
+-		/* chip found in Thermaltake BlackX Duet, jmicron JMB350? */
++	} else if (vendor == 0x197b && (devid == 0x2352 || devid == 0x0325)) {
++		/*
++		 * 0x2352: found in Thermaltake BlackX Duet, jmicron JMB350?
++		 * 0x0325: jmicron JMB394.
++		 */
+ 		ata_for_each_link(link, ap, EDGE) {
+ 			/* SRST breaks detection and disks get misclassified
+ 			 * LPM disabled to avoid potential problems
 -- 
 1.9.0
 
