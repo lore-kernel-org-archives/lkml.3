@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757761AbaCEO1U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:27:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41289 "EHLO
+	id S1757972AbaCEObt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:31:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41320 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757732AbaCEO1N (ORCPT
+	with ESMTP id S1757758AbaCEO1U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:27:13 -0500
+	Wed, 5 Mar 2014 09:27:20 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mark Brown <broonie@linaro.org>,
+Cc: Takashi Iwai <tiwai@suse.de>, Mark Brown <broonie@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 117/131] ASoC: da732x: Mark DC offset control registers volatile
-Date: Wed,  5 Mar 2014 14:24:01 +0000
-Message-Id: <1394029455-23128-118-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 122/131] ASoC: sta32x: Fix wrong enum for limiter2 release rate
+Date: Wed,  5 Mar 2014 14:24:06 +0000
+Message-Id: <1394029455-23128-123-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,55 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@linaro.org>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 75306820248e26d15d84acf4e297b9fb27dd3bb2 upstream.
+commit b3619b288b621e63f66908045f48495869a996a6 upstream.
 
-The driver reads from the DC offset control registers during callibration
-but since the registers are marked as volatile and there is a register
-cache the values will not be read from the hardware after the first reading
-rendering the callibration ineffective.
+There is a typo in the Limiter2 Release Rate control, a wrong enum for
+Limiter1 is assigned.  It must point to Limiter2.
+Spotted by a compile warning:
 
-It appears that the driver was originally written for the ASoC level
-register I/O code but converted to regmap prior to merge and this issue
-was missed during the conversion as the framework level volatile register
-functionality was not being used.
+In file included from sound/soc/codecs/sta32x.c:34:0:
+sound/soc/codecs/sta32x.c:223:29: warning: ‘sta32x_limiter2_release_rate_enum’ defined but not used [-Wunused-variable]
+ static SOC_ENUM_SINGLE_DECL(sta32x_limiter2_release_rate_enum,
+                             ^
+include/sound/soc.h:275:18: note: in definition of macro ‘SOC_ENUM_DOUBLE_DECL’
+  struct soc_enum name = SOC_ENUM_DOUBLE(xreg, xshift_l, xshift_r, \
+                  ^
+sound/soc/codecs/sta32x.c:223:8: note: in expansion of macro ‘SOC_ENUM_SINGLE_DECL’
+ static SOC_ENUM_SINGLE_DECL(sta32x_limiter2_release_rate_enum,
+        ^
 
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Mark Brown <broonie@linaro.org>
-Acked-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/soc/codecs/da732x.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ sound/soc/codecs/sta32x.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/sound/soc/codecs/da732x.c b/sound/soc/codecs/da732x.c
-index dc0284d..76fdf0a 100644
---- a/sound/soc/codecs/da732x.c
-+++ b/sound/soc/codecs/da732x.c
-@@ -1268,11 +1268,23 @@ static struct snd_soc_dai_driver da732x_dai[] = {
- 	},
- };
+diff --git a/sound/soc/codecs/sta32x.c b/sound/soc/codecs/sta32x.c
+index 4d8a3ae..8517e70 100644
+--- a/sound/soc/codecs/sta32x.c
++++ b/sound/soc/codecs/sta32x.c
+@@ -432,7 +432,7 @@ SOC_SINGLE_TLV("Treble Tone Control", STA32X_TONE, STA32X_TONE_TTC_SHIFT, 15, 0,
+ SOC_ENUM("Limiter1 Attack Rate (dB/ms)", sta32x_limiter1_attack_rate_enum),
+ SOC_ENUM("Limiter2 Attack Rate (dB/ms)", sta32x_limiter2_attack_rate_enum),
+ SOC_ENUM("Limiter1 Release Rate (dB/ms)", sta32x_limiter1_release_rate_enum),
+-SOC_ENUM("Limiter2 Release Rate (dB/ms)", sta32x_limiter1_release_rate_enum),
++SOC_ENUM("Limiter2 Release Rate (dB/ms)", sta32x_limiter2_release_rate_enum),
  
-+static bool da732x_volatile(struct device *dev, unsigned int reg)
-+{
-+	switch (reg) {
-+	case DA732X_REG_HPL_DAC_OFF_CNTL:
-+	case DA732X_REG_HPR_DAC_OFF_CNTL:
-+		return true;
-+	default:
-+		return false;
-+	}
-+}
-+
- static const struct regmap_config da732x_regmap = {
- 	.reg_bits		= 8,
- 	.val_bits		= 8,
- 
- 	.max_register		= DA732X_MAX_REG,
-+	.volatile_reg		= da732x_volatile,
- 	.reg_defaults		= da732x_reg_cache,
- 	.num_reg_defaults	= ARRAY_SIZE(da732x_reg_cache),
- 	.cache_type		= REGCACHE_RBTREE,
+ /* depending on mode, the attack/release thresholds have
+  * two different enum definitions; provide both
 -- 
 1.9.0
 
