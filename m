@@ -1,71 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759291AbaCEP1G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 10:27:06 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:22439 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755808AbaCEP1E (ORCPT
+	id S1759310AbaCEP1q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:27:46 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40786 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755539AbaCEOYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 10:27:04 -0500
-Date: Wed, 5 Mar 2014 10:26:58 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Joe Perches <joe@perches.com>
-Cc: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, peterz@infradead.org, mingo@redhat.com,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: [PATCH 2/3] sched: Use clamp() and clamp_val() to make it more
- readable.
-Message-ID: <20140305102658.4c7ffe2c@gandalf.local.home>
-In-Reply-To: <1394032656.3271.51.camel@joe-AO722>
-References: <8ae8a3aefb157e9e7d1b62a4c136289e74783eaf.1394022835.git.yangds.fnst@cn.fujitsu.com>
-	<0b02fa0f05c9cebca19cadce92cb8c85ee130ce0.1394022835.git.yangds.fnst@cn.fujitsu.com>
-	<1394032656.3271.51.camel@joe-AO722>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Wed, 5 Mar 2014 09:24:50 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Bjoern C <lkml@call-home.ch>,
+        Alexandru DAMIAN <alexandru.damian@intel.com>,
+        Enrico Tagliavini <enrico.tagliavini@gmail.com>,
+        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
+	<ville.syrjala@linux.intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 019/131] drm/i915: Prevent MI_DISPLAY_FLIP straddling two cachelines on IVB
+Date: Wed,  5 Mar 2014 14:22:23 +0000
+Message-Id: <1394029455-23128-20-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
+References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 05 Mar 2014 07:17:36 -0800
-Joe Perches <joe@perches.com> wrote:
+3.11.10.6 -stable review patch.  If anyone has any objections, please let me know.
 
-> On Wed, 2014-03-05 at 20:36 +0800, Dongsheng Yang wrote:
-> > As Kees suggested, I use clamp() function to replace the if and
-> > else branch, making it more readable and modular.
-> > 
-> > Suggested-by: Kees Cook <keescook@chromium.org>
-> > Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-> []
-> > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> []
-> > @@ -3070,17 +3070,10 @@ SYSCALL_DEFINE1(nice, int, increment)
-> >  	 * We don't have to worry. Conceptually one call occurs first
-> >  	 * and we have a single winner.
-> >  	 */
-> > -	if (increment < -40)
-> > -		increment = -40;
-> > -	if (increment > 40)
-> > -		increment = 40;
-> > -
-> > +	increment = clamp(increment, -40, 40);
-> 
-> Maybe:
-> 
-> 	increment = clamp(increment, -(NICE_MAX - NICE_MIN + 1), 
-> 				   , NICE_MAX - NICE_MIN + 1)
+------------------
 
-Ug, that's much harder to read.
+From: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= <ville.syrjala@linux.intel.com>
 
-> 
-> or add yet another define like #define NICE_RANGE
-> or #define NICE_MAX_INCREMENT
+commit f66fab8e1cd6b3127ba4c5c0d11539fbe1de1e36 upstream.
 
-Sure, if there's a NICE_MAX_INC == 40, then we could do:
+According to BSpec the entire MI_DISPLAY_FLIP packet must be contained
+in a single cacheline. Make sure that happens.
 
-	increment = clamp(increment, -NICE_MAX_INC, NICE_MAX_INC);
+v2: Use intel_ring_begin_cacheline_safe()
+v3: Use intel_ring_cacheline_align() (Chris)
 
--- Steve
+Cc: Bjoern C <lkml@call-home.ch>
+Cc: Alexandru DAMIAN <alexandru.damian@intel.com>
+Cc: Enrico Tagliavini <enrico.tagliavini@gmail.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=74053
+Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[ luis: backported to 3.11: adjusted context ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/gpu/drm/i915/intel_display.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 0e3f213..5df9798 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -7477,6 +7477,20 @@ static int intel_gen7_queue_flip(struct drm_device *dev,
+ 		goto err_unpin;
+ 	}
+ 
++	/*
++	 * BSpec MI_DISPLAY_FLIP for IVB:
++	 * "The full packet must be contained within the same cache line."
++	 *
++	 * Currently the LRI+SRM+MI_DISPLAY_FLIP all fit within the same
++	 * cacheline, if we ever start emitting more commands before
++	 * the MI_DISPLAY_FLIP we may need to first emit everything else,
++	 * then do the cacheline alignment, and finally emit the
++	 * MI_DISPLAY_FLIP.
++	 */
++	ret = intel_ring_cacheline_align(ring);
++	if (ret)
++		goto err_unpin;
++
+ 	ret = intel_ring_begin(ring, 4);
+ 	if (ret)
+ 		goto err_unpin;
+-- 
+1.9.0
+
