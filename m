@@ -1,126 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754517AbaCEJzy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 04:55:54 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:45135 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752358AbaCEJzt convert rfc822-to-8bit (ORCPT
+	id S1754218AbaCEJ5W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 04:57:22 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:23542 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752314AbaCEJ5S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 04:55:49 -0500
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: [PATCH 2/3] soc: keystone: add QMSS driver
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <53169036.9060808@ti.com>
-Date: Wed, 5 Mar 2014 03:55:43 -0600
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Nair, Sandeep" <sandeep_n@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>, Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <0817AD72-FBD0-4DB0-86C7-6C8EAC84BAA2@codeaurora.org>
-References: <1393629520-12713-1-git-send-email-santosh.shilimkar@ti.com> <1393629520-12713-3-git-send-email-santosh.shilimkar@ti.com> <AAE2808F-A2C8-4031-BFA4-1A20B182EA69@codeaurora.org> <53169036.9060808@ti.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-X-Mailer: Apple Mail (2.1874)
+	Wed, 5 Mar 2014 04:57:18 -0500
+Date: Wed, 5 Mar 2014 12:56:19 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Valentina Manea <valentina.manea.m@gmail.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        shuah.kh@samsung.com, linux-usb@vger.kernel.org,
+        ly80toro@cip.cs.fau.de, tobias.polzer@fau.de,
+        linux-kernel@vger.kernel.org, firefly@lists.rosedu.org,
+        dominik.paulus@fau.de, ihadzic@research.bell-labs.com
+Subject: Re: [PATCH 01/12] staging: usbip: userspace: migrate usbip_bind to
+ libudev
+Message-ID: <20140305095619.GY26722@mwanda>
+References: <1393960252-21247-1-git-send-email-valentina.manea.m@gmail.com>
+ <1393960252-21247-2-git-send-email-valentina.manea.m@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393960252-21247-2-git-send-email-valentina.manea.m@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Mar 04, 2014 at 09:10:41PM +0200, Valentina Manea wrote:
 
-On Mar 4, 2014, at 8:47 PM, Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
+> +int write_sysfs_attribute(const char *attr_path, const char *new_value,
+> +			  size_t len)
+> +{
+> +	int fd;
+> +	int length;
+> +
+> +	if (attr_path == NULL || new_value == NULL || len == 0) {
 
-> On Wednesday 05 March 2014 01:59 AM, Kumar Gala wrote:
->> 
->> On Feb 28, 2014, at 5:18 PM, Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
->> 
->>> From: Sandeep Nair <sandeep_n@ti.com>
->>> 
->>> The QMSS (Queue Manager Sub System) found on Keystone SOCs is one of
->>> the main hardware sub system which forms the backbone of the Keystone
->>> Multi-core Navigator. QMSS consist of queue managers, packed-data structure
->>> processors(PDSP), linking RAM, descriptor pools and infrastructure
->>> Packet DMA.
->>> 
->>> The Queue Manager is a hardware module that is responsible for accelerating
->>> management of the packet queues. Packets are queued/de-queued by writing or
->>> reading descriptor address to a particular memory mapped location. The PDSPs
->>> perform QMSS related functions like accumulation, QoS, or event management.
->>> Linking RAM registers are used to link the descriptors which are stored in
->>> descriptor RAM. Descriptor RAM is configurable as internal or external memory.
->>> 
->>> The QMSS driver manages the PDSP setups, linking RAM regions,
->>> queue pool management (allocation, push, pop and notify) and descriptor
->>> pool management. The specifics on the device tree bindings for
->>> QMSS can be found in:
->>>       Documentation/devicetree/bindings/soc/keystone-qmss.txt
->>> 
->>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->>> Cc: Kumar Gala <galak@codeaurora.org>
->>> Cc: Olof Johansson <olof@lixom.net>
->>> Cc: Arnd Bergmann <arnd@arndb.de>
->>> Cc: Grant Likely <grant.likely@linaro.org>
->>> Cc: Rob Herring <robh+dt@kernel.org>
->>> Cc: Mark Rutland <mark.rutland@arm.com>
->>> Signed-off-by: Sandeep Nair <sandeep_n@ti.com>
->>> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->>> ---
->>> .../devicetree/bindings/soc/keystone-qmss.txt      |  209 +++
->>> drivers/Kconfig                                    |    2 +
->>> drivers/Makefile                                   |    3 +
->>> drivers/soc/Kconfig                                |    2 +
->>> drivers/soc/Makefile                               |    5 +
->>> drivers/soc/keystone/Kconfig                       |   15 +
->>> drivers/soc/keystone/Makefile                      |    5 +
->>> drivers/soc/keystone/qmss_acc.c                    |  591 ++++++++
->>> drivers/soc/keystone/qmss_queue.c                  | 1533 ++++++++++++++++++++
->>> drivers/soc/keystone/qmss_queue.h                  |  236 +++
->>> include/linux/soc/keystone_qmss.h                  |  390 +++++
->>> 11 files changed, 2991 insertions(+)
->>> create mode 100644 Documentation/devicetree/bindings/soc/keystone-qmss.txt
->>> create mode 100644 drivers/soc/Makefile
->>> create mode 100644 drivers/soc/keystone/Kconfig
->>> create mode 100644 drivers/soc/keystone/Makefile
->>> create mode 100644 drivers/soc/keystone/qmss_acc.c
->>> create mode 100644 drivers/soc/keystone/qmss_queue.c
->>> create mode 100644 drivers/soc/keystone/qmss_queue.h
->>> create mode 100644 include/linux/soc/keystone_qmss.h
->> 
->> Do you see qmss being able to provide HW support for a qdisc or doing processor to processor communication over something like rpmsg?
->> 
->> I ask because I do wondering if we should be looking at a drivers/hwqueue as other vendors have similar hardware.
->> 
-> QMSS just provides the programming interfaces so that certain queues can be configured to achieve QOS tree. The actual qdisc should be
-> part of the network driver as such. The queues are such a generic hardware that it can be used for wide variety of usecases and 
-> supporting that through one driver will be really hard. We did talk of hwqueue last year but looks like the usecase variety is
-> too much because of generic nature of them.
-> 
-> QMSS isn't used as such for message passing but queue hardware can be used as done by APM hardware which Arnd pointed me on the other
-> thread. As Arnd recommended, the processor to processor communication related drivers should go under drivers/mailbox. One example,
-> was the APM QMTM patchset [1]
-> 
-> From first look the QMSS(APM) and QMTM(APM) looked very similar but they actually differ largely the way it works. Thanks to Arnd
-> for useful discussion here at connect, I better understood how the QMTM works.
-> 
-> If you know any other hardware, which needs similar interfaces as QMSS, we can surely think of another subsystem. QMSS is
-> largely network usecase dominated but not limited to only those usecases. It is also used by pure drivers/crypto/ or
-> can also be used for data movement for video etc. 
-> 
-> Regards,
-> Santosh
-> 
-> [1] https://lkml.org/lkml/2014/2/14/703
+Can any of these conditions be true?
 
-The Freescale QorIQ Devices have a Queue Manager (QMan) as part of their Data Path Architecture (DPAA).  I haven’t looked at the QMTM from APM, but not sure if mailbox is the best place for these things.  They seem so much more involved than what I’m guessing most people are thinking with mailbox.
 
-- k
+> +		dbg("Invalid values provided for attribute %s.", attr_path);
+> +		errno = EINVAL;
+> +		return -1;
+> +	}
+> +
+> +	if ((fd = open(attr_path, O_WRONLY)) < 0) {
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+Move the assignment out of the condition.
+
+> +		dbg("Error opening attribute %s.", attr_path);
+> +		return -1;
+> +	}
+> +
+> +	length = write(fd, new_value, len);
+> +	if (length < 0) {
+> +		dbg("Error writing to attribute %s.", attr_path);
+> +		close(fd);
+> +		return -1;
+> +	}
+> +
+> +	close(fd);
+> +
+> +	return 0;
+> +}
+> diff --git a/drivers/staging/usbip/userspace/src/sysfs_utils.h b/drivers/staging/usbip/userspace/src/sysfs_utils.h
+> new file mode 100644
+> index 0000000..32ac1d1
+> --- /dev/null
+> +++ b/drivers/staging/usbip/userspace/src/sysfs_utils.h
+> @@ -0,0 +1,8 @@
+> +
+> +#ifndef __SYSFS_UTILS_H
+> +#define __SYSFS_UTILS_H
+> +
+> +int write_sysfs_attribute(const char *attr_path, const char *new_value,
+> +			  size_t len);
+> +
+> +#endif
+> diff --git a/drivers/staging/usbip/userspace/src/usbip_bind.c b/drivers/staging/usbip/userspace/src/usbip_bind.c
+> index 8cfd2db..d122089 100644
+> --- a/drivers/staging/usbip/userspace/src/usbip_bind.c
+> +++ b/drivers/staging/usbip/userspace/src/usbip_bind.c
+> @@ -16,7 +16,7 @@
+>   * along with this program. If not, see <http://www.gnu.org/licenses/>.
+>   */
+>  
+> -#include <sysfs/libsysfs.h>
+> +#include <libudev.h>
+>  
+>  #include <errno.h>
+>  #include <stdio.h>
+> @@ -28,6 +28,7 @@
+>  #include "usbip_common.h"
+>  #include "utils.h"
+>  #include "usbip.h"
+> +#include "sysfs_utils.h"
+>  
+>  enum unbind_status {
+>  	UNBIND_ST_OK,
+> @@ -48,135 +49,94 @@ void usbip_bind_usage(void)
+>  /* call at unbound state */
+>  static int bind_usbip(char *busid)
+>  {
+> -	char bus_type[] = "usb";
+
+Ok.  This code was already really stupid before this patch but now it's
+even more idiotic.  Just put these things things directly into the
+string instead of abstracting the abastractions of the abstract
+abstractions.  Sheesh.
+
+>  	char attr_name[] = "bind";
+> -	char sysfs_mntpath[SYSFS_PATH_MAX];
+>  	char bind_attr_path[SYSFS_PATH_MAX];
+> -	struct sysfs_attribute *bind_attr;
+> -	int failed = 0;
+> -	int rc, ret = -1;
+> -
+> -	rc = sysfs_get_mnt_path(sysfs_mntpath, SYSFS_PATH_MAX);
+> -	if (rc < 0) {
+> -		err("sysfs must be mounted: %s", strerror(errno));
+> -		return -1;
+> -	}
+> +	int rc = -1;
+
+Don't do pointless assignments.  The compiler has builtin checks for
+uninitialized variables but now you are turning the checks off and the
+compiler can't do its job.
+
+>  
+>  	snprintf(bind_attr_path, sizeof(bind_attr_path), "%s/%s/%s/%s/%s/%s",
+> -		 sysfs_mntpath, SYSFS_BUS_NAME, bus_type, SYSFS_DRIVERS_NAME,
+> -		 USBIP_HOST_DRV_NAME, attr_name);
+> +		 SYSFS_MNT_PATH, SYSFS_BUS_NAME, SYSFS_BUS_TYPE,
+> +		 SYSFS_DRIVERS_NAME, USBIP_HOST_DRV_NAME, attr_name);
+> +	dbg("bind attribute path: %s", bind_attr_path);
+
+These dbg statements are totally pointless.  Just use strace.
+
+>  
+> -	bind_attr = sysfs_open_attribute(bind_attr_path);
+> -	if (!bind_attr) {
+> -		dbg("problem getting bind attribute: %s", strerror(errno));
+> -		return -1;
+> -	}
+> -
+> -	rc = sysfs_write_attribute(bind_attr, busid, SYSFS_BUS_ID_SIZE);
+> +	rc = write_sysfs_attribute(bind_attr_path, busid, strlen(busid));
+>  	if (rc < 0) {
+> -		dbg("bind driver at %s failed", busid);
+> -		failed = 1;
+> +		dbg("Error binding device %s to driver: %s", busid,
+> +		    strerror(errno));
+
+The temptation here would be to change the debug statement to an on by
+default print statement.  The other option would be to just remove all
+the debug statements.
+
+Etc...  For the rest of this patch.  Remove abstraction levels and dead
+code.
+
+regards,
+dan carpenter
 
