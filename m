@@ -1,94 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756545AbaCECIJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 21:08:09 -0500
-Received: from mga14.intel.com ([143.182.124.37]:61949 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755400AbaCECIG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 21:08:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,589,1389772800"; 
-   d="scan'208";a="486193022"
-Date: Wed, 5 Mar 2014 10:07:46 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Kent Overstreet <kmo@daterainc.com>, LKML <linux-kernel@vger.kernel.org>,
-        lkp@01.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [blk-lib] 6a0608544e5: fileio -77.4% max latency, -5.7%
- throughput
-Message-ID: <20140305020746.GA14711@localhost>
-References: <20140304132130.GB28854@localhost>
- <20140304215225.GH11655@kmo>
- <20140305011645.GA7433@localhost>
- <20140305012352.GR13647@dastard>
+	id S1756813AbaCECIb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 21:08:31 -0500
+Received: from nasmtp02.atmel.com ([204.2.163.16]:44455 "EHLO
+	SJOEDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755628AbaCECI3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 21:08:29 -0500
+X-Greylist: delayed 308 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Mar 2014 21:08:29 EST
+From: Wenyou Yang <wenyou.yang@atmel.com>
+To: <broonie@kernel.org>, <nicolas.ferre@atmel.com>, <plagnioj@jcrosoft.com>,
+        <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <linux@arm.linux.org.uk>
+CC: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-spi@vger.kernel.org>,
+        <wenyou.yang@atmel.com>
+Subject: [PATCH 1/2] spi: atmel: adopt pinctrl support
+Date: Wed, 5 Mar 2014 09:58:49 +0800
+Message-ID: <1393984730-14828-2-git-send-email-wenyou.yang@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1393984730-14828-1-git-send-email-wenyou.yang@atmel.com>
+References: <1393984730-14828-1-git-send-email-wenyou.yang@atmel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140305012352.GR13647@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 05, 2014 at 12:23:53PM +1100, Dave Chinner wrote:
-> On Wed, Mar 05, 2014 at 09:16:45AM +0800, Fengguang Wu wrote:
-> > On Tue, Mar 04, 2014 at 01:52:25PM -0800, Kent Overstreet wrote:
-> > > On Tue, Mar 04, 2014 at 09:21:30PM +0800, Fengguang Wu wrote:
-> > > > Hi Kent,
-> > > > 
-> > > > FYI, we noticed the below changes on
-> > > > 
-> > > > git://evilpiepirate.org/~kent/linux-bcache.git for-jens
-> > > > commit 6a0608544e5672bd9a044c285119547eae41abe5 ("blk-lib.c: generic_make_request() handles large bios now")
-> > > > 
-> > > > test case: snb-drag/sysbench/fileio/600s-100%-1HDD-ext4-64G-1024-seqrewr-sync
-> > 
-> > snb-drag is the test machine, it's a SNB desktop.
-> > 
-> > The test command is
-> > 
-> >         mkfs -t ext4 -q /dev/sda2
-> >         mount -t ext4 /dev/sda2 /fs/sda2
-> >         cd /fs/sda2
-> > 
-> >         for i in $(seq 0 1023)
-> >         do
-> >                 fallocate -l 67108864 test_file.$i
-> >         done
-> > 
-> >         sysbench --test=fileio --max-requests=0 --num-threads=4 --max-time=600 --file-test-mode=seqrewr --file-total-size=68719476736 --file-io-mode=sync --file-num=1024 run
-> > 
-> > 
-> > > I'm trying to figure out how to parse this and the graphs - where do I find the
-> > > test? And is there anything you can point me to for the graphs, or is that
-> > > output from that test?
-> > > 
-> > > > 
-> > > > 11541d5f5b7002b  6a0608544e5672bd9a044c285  
-> > > > ---------------  -------------------------  
-> > > >       1885 ~60%     -77.4%        426 ~ 7%  TOTAL fileio.request_latency_max_ms
-> > 
-> > The ~XX% numbers are stddev percent.
-> > The [+-]XX% is change percent.
-> 
-> Can you put this in as column headers so that people don't have to
-> this every time they see a report from you?
+Amend the spi atmel pin controller to optionally take a pin control
+handle and set the state of the pins to:
 
-Good idea!
+- "default" on boot, resume and before performing an spitransfer
+- "sleep" on suspend()
 
-> > The below graph shows all samples collected during the bisect
-> > 
-> > [*] bisect-good 
-> > [O] bisect-bad
-> > 
-> > In which you can see the stableness of the change and bisect. 
-> 
-> Oh, so that's what the graphs contain. :/
-> 
-> Again - perhaps you should include this information with the graphs
-> rather than just dumping unlabelled data on people ;)
+This should make it possible to optimize energy usage for the pins
+both for the suspend/resume cycle
 
-Yeah sure. I'll follow your nice suggestions!
+Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+---
+ drivers/spi/spi-atmel.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-Thanks,
-Fengguang
+diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
+index b0842f7..54b4436 100644
+--- a/drivers/spi/spi-atmel.c
++++ b/drivers/spi/spi-atmel.c
+@@ -26,6 +26,7 @@
+ 
+ #include <linux/io.h>
+ #include <linux/gpio.h>
++#include <linux/pinctrl/consumer.h>
+ 
+ /* SPI register offsets */
+ #define SPI_CR					0x0000
+@@ -1303,6 +1304,9 @@ static int atmel_spi_probe(struct platform_device *pdev)
+ 	struct spi_master	*master;
+ 	struct atmel_spi	*as;
+ 
++	/* Select default pin state */
++	pinctrl_pm_select_default_state(&pdev->dev);
++
+ 	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!regs)
+ 		return -ENXIO;
+@@ -1457,6 +1461,9 @@ static int atmel_spi_suspend(struct device *dev)
+ 	struct atmel_spi	*as = spi_master_get_devdata(master);
+ 
+ 	clk_disable_unprepare(as->clk);
++
++	pinctrl_pm_select_sleep_state(dev);
++
+ 	return 0;
+ }
+ 
+@@ -1465,6 +1472,8 @@ static int atmel_spi_resume(struct device *dev)
+ 	struct spi_master	*master = dev_get_drvdata(dev);
+ 	struct atmel_spi	*as = spi_master_get_devdata(master);
+ 
++	pinctrl_pm_select_default_state(dev);
++
+ 	clk_prepare_enable(as->clk);
+ 	return 0;
+ }
+-- 
+1.7.9.5
+
