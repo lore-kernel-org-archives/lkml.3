@@ -1,96 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755906AbaCETRi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 14:17:38 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:44921 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752943AbaCETRg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 14:17:36 -0500
-X-IronPort-AV: E=Sophos;i="4.97,594,1389744000"; 
-   d="scan'208";a="108470031"
-Message-ID: <5317784D.7090306@citrix.com>
-Date: Wed, 5 Mar 2014 19:17:33 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1756252AbaCETUV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 14:20:21 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:39185 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751630AbaCETUT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 14:20:19 -0500
+Date: Wed, 5 Mar 2014 19:20:05 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] Revert "irqchip: irq-dove: Add PMU interrupt
+	controller."
+Message-ID: <20140305192005.GX21483@n2100.arm.linux.org.uk>
+References: <20140304030838.GA1872@titan.lakedaemon.net> <1393911160-7688-1-git-send-email-jason@lakedaemon.net> <20140305004139.GT21483@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1403051445020.18573@ionos.tec.linutronix.de>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: <netdev@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
-        <wei.liu2@citrix.com>, <ian.campbell@citrix.com>,
-        <jonathan.davies@citrix.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH net-next v6 8/10] xen-netback: Add stat counters
- for frag_list skbs
-References: <201403050217.s252HoVa004730@userz7021.oracle.com>
-In-Reply-To: <201403050217.s252HoVa004730@userz7021.oracle.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1403051445020.18573@ionos.tec.linutronix.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Mar 05, 2014 at 03:42:34PM +0100, Thomas Gleixner wrote:
+> On Wed, 5 Mar 2014, Russell King - ARM Linux wrote:
+> > This results in the RTC alarm test receiving exactly one interrupt for
+> > each alarm expiry, as it should do.  Thoughts?
+> 
+> You are worried about clearing an interrupt which is transitory and
+> not kept active at the device level until you handled it for real,
+> right?
 
-I've changed the numbers to actual patch names, thanks. Btw. your 
-replies doesn't have In-reply-to header, it breaks sorting into threads.
+Yep.  Let's take the code:
 
-Zoli
+	ldr	r0, [r1]		; read the interrupt cause register
+	and	r0, r0, r2		; clear interrupts we've serviced
+	str	r0, [r1]		; write it back
 
-On 05/03/14 02:17, Konrad Rzeszutek Wilk wrote:
->
-> On Mar 4, 2014 5:32 PM, Zoltan Kiss <zoltan.kiss@citrix.com> wrote:
->>
->> These counters help determine how often the guest sends a packet with more
->> than MAX_SKB_FRAGS frags.
->>
->> NOTE: if bisect brought you here, you should apply the series up until #9,
->
-> s/#9/"the name of the patch.."
->
->> otherwise malicious guests can block other guests by not releasing their sent
->> packets.
->>
->> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
->> ---
->> drivers/net/xen-netback/common.h    |    1 +
->> drivers/net/xen-netback/interface.c |    7 +++++++
->> drivers/net/xen-netback/netback.c   |    1 +
->> 3 files changed, 9 insertions(+)
->>
->> diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
->> index eac171e..d8a2298 100644
->> --- a/drivers/net/xen-netback/common.h
->> +++ b/drivers/net/xen-netback/common.h
->> @@ -170,6 +170,7 @@ struct xenvif {
->> unsigned long tx_zerocopy_sent;
->> unsigned long tx_zerocopy_success;
->> unsigned long tx_zerocopy_fail;
->> + unsigned long tx_frag_overflow;
->>
->> /* Miscellaneous private stuff. */
->> struct net_device *dev;
->> diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
->> index adfed30..ba5be2f 100644
->> --- a/drivers/net/xen-netback/interface.c
->> +++ b/drivers/net/xen-netback/interface.c
->> @@ -252,6 +252,13 @@ static const struct xenvif_stat {
->> "tx_zerocopy_fail",
->> offsetof(struct xenvif, tx_zerocopy_fail)
->> },
->> + /* Number of packets exceeding MAX_SKB_FRAG slots. You should use
->> + * a guest with the same MAX_SKB_FRAG
->> + */
->> + {
->> + "tx_frag_overflow",
->> + offsetof(struct xenvif, tx_frag_overflow)
->> + },
->> };
->>
->> static int xenvif_get_sset_count(struct net_device *dev, int string_set)
->>
->>
->> _______________________________________________
->> Xen-devel mailing list
->> Xen-devel@lists.xen.org
->> http://lists.xen.org/xen-devel
+The problem here is if a transitory interrupt is received between the
+load and store, the write can clear it back to zero.  There's nothing
+which can be done to get around that - which is why I'd prefer to do
+this as infrequently as necessary.
 
+> Is the datasheet for this stuff public available?
+
+Thankfully, it is, but like many such things, it'll leave you with /lots/
+of questions.  In the case of this register, the documentation only goes
+as far as describing the bits, but doesn't really describe their behaviour.
+Much of that can only come via experimentation with the hardware. :(
+
+> I don't think it matters in which order you process multiple pending
+> interrupts.
+
+Me neither - I'm just going to use fls() for no other reason that it
+produces more efficient code.  My comments on that were to see whether
+I'd missed anything, and to stave off any review comments about why
+it's changed :)
+
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
