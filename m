@@ -1,81 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757543AbaCED6E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 22:58:04 -0500
-Received: from na3sys010aog107.obsmtp.com ([74.125.245.82]:37890 "HELO
-	na3sys010aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757326AbaCED6B (ORCPT
+	id S1757586AbaCED6n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 22:58:43 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:47672 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756018AbaCED6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 22:58:01 -0500
-From: Roland Dreier <roland@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Arjan van de Ven <arjan@infradead.org>
-Subject: [PATCH] Revert "driver core: synchronize device shutdown"
-Date: Tue,  4 Mar 2014 19:57:51 -0800
-Message-Id: <1393991871-1743-1-git-send-email-roland@kernel.org>
-X-Mailer: git-send-email 1.9.0
+	Tue, 4 Mar 2014 22:58:40 -0500
+Date: Tue, 4 Mar 2014 19:58:38 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Tejun Heo <tj@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Oleg Nesterov <oleg@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Jianguo Wu <wujianguo@huawei.com>,
+        Tim Hockin <thockin@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, cgroups@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: [patch 00/11] userspace out of memory handling
+Message-ID: <alpine.DEB.2.02.1403041952170.8067@chino.kir.corp.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roland Dreier <roland@purestorage.com>
+This patchset implements userspace out of memory handling.
 
-This reverts commit 401097ea4b89846d66ac78f7f108d49c2e922d9c.  The
-original changelog said:
+It is based on v3.14-rc5.  Individual patches will apply cleanly or you
+may pull the entire series from
 
-    A patch series to make .shutdown execute asynchronously.  Some drivers's
-    shutdown can take a lot of time.  The patches can help save some shutdown
-    time.  The patches use Arjan's async API.
+	git://git.kernel.org/pub/scm/linux/kernel/git/rientjes/linux.git mm/oom
 
-    This patch:
+When the system or a memcg is oom, processes running on that system or
+attached to that memcg cannot allocate memory.  It is impossible for a
+process to reliably handle the oom condition from userspace.
 
-    synchronize all tasks submitted by .shutdown
+First, consider only system oom conditions.  When memory is completely
+depleted and nothing may be reclaimed, the kernel is forced to free some
+memory; the only way it can do so is to kill a userspace process.  This
+will happen instantaneously and userspace can enforce neither its own
+policy nor collect information.
 
-However, I'm not able to find any evidence that any other patches from
-this series were applied, nor am I able to find any async tasks that are
-scheduled in a .shutdown context.
+On system oom, there may be a hierarchy of memcgs that represent user
+jobs, for example.  Each job may have a priority independent of their
+current memory usage.  There is no existing kernel interface to kill the
+lowest priority job; userspace can now kill the lowest priority job or
+allow priorities to change based on whether the job is using more memory
+than its pre-defined reservation.
 
-On the other hand, we see occasional hangs on shutdown that appear to be
-caused by the async_synchronize_full() in device_shutdown() waiting
-forever for the async probing in sd if a SCSI disk shows up at just the
-wrong time — the system starts the probe, but begins shutting down and
-tears down too much of the SCSI driver to finish the probe.
+Additionally, users may want to log the condition or debug applications
+that are using too much memory.  They may wish to collect heap profiles
+or are able to do memory freeing without killing a process by throttling
+or ratelimiting.
 
-If we had any async shutdown tasks, I guess the right fix would be to
-create a "shutdown" async domain and have device_shutdown() only wait
-for that domain.  But since there apparently are no async shutdown
-tasks, we can just revert the waiting.
+Interactive users using X window environments may wish to have a dialogue
+box appear to determine how to proceed -- it may even allow them shell
+access to examine the state of the system while oom.
 
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+It's not sufficient to simply restrict all user processes to a subset of
+memory and oom handling processes to the remainder via a memcg hierarchy:
+kernel memory and other page allocations can easily deplete all memory
+that is not charged to a user hierarchy of memory.
+
+This patchset allows userspace to do all of these things by defining a
+small memory reserve that is accessible only by processes that are
+handling the notification.
+
+Second, consider memcg oom conditions.  Processes need no special
+knowledge of whether they are attached to the root memcg, where memcg
+charging will always succeed, or a child memcg where charging will fail
+when the limit has been reached.  This allows those processes handling
+memcg oom conditions to overcharge the memcg by the amount of reserved
+memory.  They need not create child memcgs with smaller limits and
+attach the userspace oom handler only to the parent; such support would
+not allow userspace to handle system oom conditions anyway.
+
+This patchset introduces a standard interface through memcg that allows
+both of these conditions to be handled in the same clean way: users
+define memory.oom_reserve_in_bytes to define the reserve and this
+amount is allowed to be overcharged to the process handling the oom
+condition's memcg.  If used with the root memcg, this amount is allowed
+to be allocated below the per-zone watermarks for root processes that
+are handling such conditions (only root may write to
+cgroup.event_control for the root memcg).
 ---
- drivers/base/core.c | 2 --
- 1 file changed, 2 deletions(-)
-
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 2b567177ef78..afea3697fa2e 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -23,7 +23,6 @@
- #include <linux/genhd.h>
- #include <linux/kallsyms.h>
- #include <linux/mutex.h>
--#include <linux/async.h>
- #include <linux/pm_runtime.h>
- #include <linux/netdevice.h>
- #include <linux/sysfs.h>
-@@ -2003,7 +2002,6 @@ void device_shutdown(void)
- 		spin_lock(&devices_kset->list_lock);
- 	}
- 	spin_unlock(&devices_kset->list_lock);
--	async_synchronize_full();
- }
- 
- /*
--- 
-1.9.0
-
+ Documentation/cgroups/memory.txt           |  46 ++++++++-
+ Documentation/cgroups/resource_counter.txt |  12 +--
+ Documentation/sysctl/vm.txt                |   5 +
+ arch/m32r/mm/discontig.c                   |   1 +
+ include/linux/memcontrol.h                 |  24 +++++
+ include/linux/mempolicy.h                  |   3 +-
+ include/linux/mmzone.h                     |   2 +
+ include/linux/res_counter.h                |  16 ++--
+ include/linux/sched.h                      |   2 +-
+ kernel/fork.c                              |  13 +--
+ kernel/res_counter.c                       |  42 ++++++---
+ mm/memcontrol.c                            | 144 ++++++++++++++++++++++++++++-
+ mm/mempolicy.c                             |  46 ++-------
+ mm/oom_kill.c                              |   7 ++
+ mm/page_alloc.c                            |  17 +++-
+ mm/slab.c                                  |   8 +-
+ mm/slub.c                                  |   2 +-
+ 17 files changed, 292 insertions(+), 98 deletions(-)
