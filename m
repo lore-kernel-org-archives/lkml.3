@@ -1,88 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755698AbaCELWG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 06:22:06 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:43662 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754811AbaCELWD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 06:22:03 -0500
-Message-ID: <531708C5.6010506@ti.com>
-Date: Wed, 5 Mar 2014 16:51:41 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1755818AbaCEL3H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 06:29:07 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:40592 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755362AbaCEL2a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 06:28:30 -0500
+Date: Wed, 5 Mar 2014 12:28:28 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] clk: turn rate change failed warning into pr_debug
+Message-ID: <20140305112828.GN24917@pengutronix.de>
+References: <1389885175-14174-1-git-send-email-s.hauer@pengutronix.de>
 MIME-Version: 1.0
-To: Kamil Debski <k.debski@samsung.com>, <linux-kernel@vger.kernel.org>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-CC: <kyungmin.park@samsung.com>, <t.figa@samsung.com>,
-        <s.nawrocki@samsung.com>, <m.szyprowski@samsung.com>,
-        <gautam.vivek@samsung.com>, <mat.krawczuk@gmail.com>,
-        <yulgon.kim@samsung.com>, <p.paneri@samsung.com>,
-        <av.tikhomirov@samsung.com>, <jg1.han@samsung.com>,
-        <galak@codeaurora.org>, <matt.porter@linaro.org>,
-        <tjakobi@math.uni-bielefeld.de>, <stern@rowland.harvard.edu>
-Subject: Re: [PATCH v7 0/4] phy: Add new Exynos USB 2.0 PHY driver
-References: <1393946616-20062-1-git-send-email-k.debski@samsung.com>
-In-Reply-To: <1393946616-20062-1-git-send-email-k.debski@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389885175-14174-1-git-send-email-s.hauer@pengutronix.de>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 12:27:24 up 192 days, 20:58, 55 users,  load average: 0.13, 0.69,
+ 0.96
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Mike,
 
-On Tuesday 04 March 2014 08:53 PM, Kamil Debski wrote:
-> Hi,
->
-> This is the seventh version of this patchset. First and most significant change
-> is that this patchset includes only patches touching the Generic PHY Framework.
-> Patches to the USB controllers were stripped as they require additional work.
-> S5PV210 support is also omitted - it requires more testing.
->
-> Thank you to everyone who joined the discussion, reviewed the patched and
-> contributed to making the code and consequently the Linux Kernel better.
+Any objections to this patch?
 
-Can you refresh your patches on
-git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git next
-It's not applying cleanly.
+Sascha
 
-While at that pls fix these checkpatch errors/warnings
+On Thu, Jan 16, 2014 at 04:12:55PM +0100, Sascha Hauer wrote:
+> If a rate change failed it's the opportunity of the caller to handle
+> this. Do not spam the log with a message.
+> 
+> Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+> Cc: Mike Turquette <mturquette@linaro.org>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  drivers/clk/clk.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index 2cf2ea6..f0124d4 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -1460,7 +1460,7 @@ int clk_set_rate(struct clk *clk, unsigned long rate)
+>  	/* notify that we are about to change rates */
+>  	fail_clk = clk_propagate_rate_change(top, PRE_RATE_CHANGE);
+>  	if (fail_clk) {
+> -		pr_warn("%s: failed to set %s rate\n", __func__,
+> +		pr_debug("%s: failed to set %s rate\n", __func__,
+>  				fail_clk->name);
+>  		clk_propagate_rate_change(top, ABORT_RATE_CHANGE);
+>  		ret = -EBUSY;
+> -- 
+> 1.8.5.2
+> 
+> 
 
-on patch 3.
-ERROR: code indent should use tabs where possible
-#854: FILE: drivers/phy/phy-exynos4x12-usb2.c:233:
-+^I^I^I        EXYNOS_4x12_MODE_SWITCH_OFFSET,$
-
-CHECK: Alignment should match open parenthesis
-#854: FILE: drivers/phy/phy-exynos4x12-usb2.c:233:
-+			regmap_update_bits(drv->reg_sys,
-+			        EXYNOS_4x12_MODE_SWITCH_OFFSET,
-
-ERROR: code indent should use tabs where possible
-#855: FILE: drivers/phy/phy-exynos4x12-usb2.c:234:
-+^I^I^I        EXYNOS_4x12_MODE_SWITCH_MASK,$
-
-CHECK: Alignment should match open parenthesis
-#986: FILE: drivers/phy/phy-samsung-usb2.c:29:
-+	dev_dbg(drv->dev, "Request to power_on \"%s\" usb phy\n",
-+							inst->cfg->label);
-
-CHECK: Alignment should match open parenthesis
-#1014: FILE: drivers/phy/phy-samsung-usb2.c:57:
-+	dev_dbg(drv->dev, "Request to power_off \"%s\" usb phy\n",
-+							inst->cfg->label);
-
-CHECK: Alignment should match open parenthesis
-#1146: FILE: drivers/phy/phy-samsung-usb2.c:189:
-+			dev_err(drv->dev, "Failed to create usb2_phy \"%s\"\n",
-+
-
-And on patch 4
-
-CHECK: Alignment should match open parenthesis
-#350: FILE: drivers/phy/phy-exynos5250-usb2.c:212:
-+		regmap_update_bits(drv->reg_sys,
-+			EXYNOS_5250_MODE_SWITCH_OFFSET,
-
--Kishon
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
