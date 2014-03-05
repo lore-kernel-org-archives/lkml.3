@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757173AbaCEOZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:25:56 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40982 "EHLO
+	id S1757203AbaCEOZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:25:57 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40969 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755608AbaCEOZq (ORCPT
+	with ESMTP id S1755194AbaCEOZn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:25:46 -0500
+	Wed, 5 Mar 2014 09:25:43 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hsin-Yu Chao <hychao@chromium.org>, Takashi Iwai <tiwai@suse.de>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 059/131] ALSA: hda/ca0132 - setup/cleanup streams
-Date: Wed,  5 Mar 2014 14:23:03 +0000
-Message-Id: <1394029455-23128-60-git-send-email-luis.henriques@canonical.com>
+Cc: Tejun Heo <tj@kernel.org>, Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 056/131] cgroup: update cgroup_enable_task_cg_lists() to grab siglock
+Date: Wed,  5 Mar 2014 14:23:00 +0000
+Message-Id: <1394029455-23128-57-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -27,138 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hsin-Yu Chao <hychao@chromium.org>
+From: Tejun Heo <tj@kernel.org>
 
-commit 28fba95087a7f3d107a3a6728aef7dbfaf3fd782 upstream.
+commit 532de3fc72adc2a6525c4d53c07bf81e1732083d upstream.
 
-When a HDMI stream is opened with the same stream tag
-as a following opened stream to ca0132, audio will be
-heard from two ports simultaneously.
-Fix this issue by change to use snd_hda_codec_setup_stream
-and snd_hda_codec_cleanup_stream instead, so that an
-inactive stream can be marked as 'dirty' when found
-with a conflict stream tag, and then get purified.
+Currently, there's nothing preventing cgroup_enable_task_cg_lists()
+from missing set PF_EXITING and race against cgroup_exit().  Depending
+on the timing, cgroup_exit() may finish with the task still linked on
+css_set leading to list corruption.  Fix it by grabbing siglock in
+cgroup_enable_task_cg_lists() so that PF_EXITING is guaranteed to be
+visible.
 
-Signed-off-by: Hsin-Yu Chao <hychao@chromium.org>
-Reviewed-by: Chih-Chung Chang <chihchung@chromium.org>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+This whole on-demand cg_list optimization is extremely fragile and has
+ample possibility to lead to bugs which can cause things like
+once-a-year oops during boot.  I'm wondering whether the better
+approach would be just adding "cgroup_disable=all" handling which
+disables the whole cgroup rather than tempting fate with this
+on-demand craziness.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/patch_ca0132.c | 66 +++++---------------------------------------
- 1 file changed, 7 insertions(+), 59 deletions(-)
+ kernel/cgroup.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/sound/pci/hda/patch_ca0132.c b/sound/pci/hda/patch_ca0132.c
-index 6e9876f..1e1e4b2 100644
---- a/sound/pci/hda/patch_ca0132.c
-+++ b/sound/pci/hda/patch_ca0132.c
-@@ -2662,60 +2662,6 @@ static bool dspload_wait_loaded(struct hda_codec *codec)
- }
- 
- /*
-- * PCM stuffs
-- */
--static void ca0132_setup_stream(struct hda_codec *codec, hda_nid_t nid,
--				 u32 stream_tag,
--				 int channel_id, int format)
--{
--	unsigned int oldval, newval;
--
--	if (!nid)
--		return;
--
--	snd_printdd(
--		   "ca0132_setup_stream: NID=0x%x, stream=0x%x, "
--		   "channel=%d, format=0x%x\n",
--		   nid, stream_tag, channel_id, format);
--
--	/* update the format-id if changed */
--	oldval = snd_hda_codec_read(codec, nid, 0,
--				    AC_VERB_GET_STREAM_FORMAT,
--				    0);
--	if (oldval != format) {
--		msleep(20);
--		snd_hda_codec_write(codec, nid, 0,
--				    AC_VERB_SET_STREAM_FORMAT,
--				    format);
--	}
--
--	oldval = snd_hda_codec_read(codec, nid, 0, AC_VERB_GET_CONV, 0);
--	newval = (stream_tag << 4) | channel_id;
--	if (oldval != newval) {
--		snd_hda_codec_write(codec, nid, 0,
--				    AC_VERB_SET_CHANNEL_STREAMID,
--				    newval);
--	}
--}
--
--static void ca0132_cleanup_stream(struct hda_codec *codec, hda_nid_t nid)
--{
--	unsigned int val;
--
--	if (!nid)
--		return;
--
--	snd_printdd(KERN_INFO "ca0132_cleanup_stream: NID=0x%x\n", nid);
--
--	val = snd_hda_codec_read(codec, nid, 0, AC_VERB_GET_CONV, 0);
--	if (!val)
--		return;
--
--	snd_hda_codec_write(codec, nid, 0, AC_VERB_SET_STREAM_FORMAT, 0);
--	snd_hda_codec_write(codec, nid, 0, AC_VERB_SET_CHANNEL_STREAMID, 0);
--}
--
--/*
-  * PCM callbacks
-  */
- static int ca0132_playback_pcm_prepare(struct hda_pcm_stream *hinfo,
-@@ -2726,7 +2672,7 @@ static int ca0132_playback_pcm_prepare(struct hda_pcm_stream *hinfo,
- {
- 	struct ca0132_spec *spec = codec->spec;
- 
--	ca0132_setup_stream(codec, spec->dacs[0], stream_tag, 0, format);
-+	snd_hda_codec_setup_stream(codec, spec->dacs[0], stream_tag, 0, format);
- 
- 	return 0;
- }
-@@ -2745,7 +2691,7 @@ static int ca0132_playback_pcm_cleanup(struct hda_pcm_stream *hinfo,
- 	if (spec->effects_switch[PLAY_ENHANCEMENT - EFFECT_START_NID])
- 		msleep(50);
- 
--	ca0132_cleanup_stream(codec, spec->dacs[0]);
-+	snd_hda_codec_cleanup_stream(codec, spec->dacs[0]);
- 
- 	return 0;
- }
-@@ -2824,8 +2770,8 @@ static int ca0132_capture_pcm_prepare(struct hda_pcm_stream *hinfo,
- {
- 	struct ca0132_spec *spec = codec->spec;
- 
--	ca0132_setup_stream(codec, spec->adcs[substream->number],
--			    stream_tag, 0, format);
-+	snd_hda_codec_setup_stream(codec, spec->adcs[substream->number],
-+				   stream_tag, 0, format);
- 
- 	return 0;
- }
-@@ -2839,7 +2785,7 @@ static int ca0132_capture_pcm_cleanup(struct hda_pcm_stream *hinfo,
- 	if (spec->dsp_state == DSP_DOWNLOADING)
- 		return 0;
- 
--	ca0132_cleanup_stream(codec, hinfo->nid);
-+	snd_hda_codec_cleanup_stream(codec, hinfo->nid);
- 	return 0;
- }
- 
-@@ -4742,6 +4688,8 @@ static int patch_ca0132(struct hda_codec *codec)
- 		return err;
- 
- 	codec->patch_ops = ca0132_patch_ops;
-+	codec->pcm_format_first = 1;
-+	codec->no_sticky_stream = 1;
- 
- 	return 0;
- }
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index d22f597..95f16f6 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -3014,9 +3014,14 @@ static void cgroup_enable_task_cg_lists(void)
+ 		 * We should check if the process is exiting, otherwise
+ 		 * it will race with cgroup_exit() in that the list
+ 		 * entry won't be deleted though the process has exited.
++		 * Do it while holding siglock so that we don't end up
++		 * racing against cgroup_exit().
+ 		 */
++		spin_lock_irq(&p->sighand->siglock);
+ 		if (!(p->flags & PF_EXITING) && list_empty(&p->cg_list))
+ 			list_add(&p->cg_list, &task_css_set(p)->tasks);
++		spin_unlock_irq(&p->sighand->siglock);
++
+ 		task_unlock(p);
+ 	} while_each_thread(g, p);
+ 	read_unlock(&tasklist_lock);
 -- 
 1.9.0
 
