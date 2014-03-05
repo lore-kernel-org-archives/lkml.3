@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753794AbaCERUP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 12:20:15 -0500
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:40897 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750817AbaCERUN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 12:20:13 -0500
-Subject: [PATCH] powerpc/le: fix endianness of the arguments passed to the
- ppc_rtas() syscall
-To: benh@kernel.crashing.org, paulus@samba.org
-From: Greg Kurz <gkurz@linux.vnet.ibm.com>
-Cc: linuxppc-dev@lists.ozlabs.org, anton@samba.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 05 Mar 2014 18:20:06 +0100
-Message-ID: <20140305172006.26117.57219.stgit@bahia.local>
-User-Agent: StGit/0.16
+	id S1754997AbaCERWf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 12:22:35 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37773 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752623AbaCERWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 12:22:34 -0500
+Date: Wed, 5 Mar 2014 18:22:32 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Daniel Vetter <daniel@ffwll.ch>
+cc: Borislav Petkov <bp@alien8.de>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
+Subject: Re: i915 resume-from-hibernation problems on resume with current
+ Linus' tree
+In-Reply-To: <20140305171558.GM17001@phenom.ffwll.local>
+Message-ID: <alpine.LNX.2.00.1403051821090.3690@pobox.suse.cz>
+References: <alpine.LNX.2.00.1402271153480.21399@pobox.suse.cz> <alpine.LNX.2.00.1403031519500.7030@pobox.suse.cz> <20140304134509.GA5427@pd.tnic> <20140305170640.GE28317@pd.tnic> <20140305171558.GM17001@phenom.ffwll.local>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14030517-8372-0000-0000-000008E31C81
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-RTAS manipulates its input and output arguments in big endian order.
+On Wed, 5 Mar 2014, Daniel Vetter wrote:
 
-I have looked at factoring some lines with rtas_call() but it is not really
-worth it because of the variable arguments.
+> > > Maybe I should say that I'm booting the box with
+> > > 
+> > > [ 0.000000] Kernel command line: 
+> > > BOOT_IMAGE=/boot/vmlinuz-3.14.0-rc5+ root=/dev/sdb2 ro 
+> > > root=/dev/sdb2 ignore_loglevel log_buf_len=10M resume=/dev/sdb1 
+> > > i915.i915_enable_rc6=4 i915.i915_enable_fbc=1 i915.lvds_downclock=1 
+> > > i915.powersave=1
+> > 
+> > From looking at
+> > 
+> > http://lkml.kernel.org/r/1394011994-30604-1-git-send-email-daniel.vetter@ffwll.ch
+> > 
+> > it looks like I should stop using the rc6/fbc settings?
+> > 
+> > :-)
+> 
+> Indeed. If going back to defaults fixes your issues, then it's not a real
+> bug. There are reasons the defaults are as-is ...
 
-Signed-off-by: Greg Kurz <gkurz@linux.vnet.ibm.com>
----
- arch/powerpc/kernel/rtas.c |   15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+Let's not have the issues mixed.
 
-diff --git a/arch/powerpc/kernel/rtas.c b/arch/powerpc/kernel/rtas.c
-index 4cf674d..00dbe36 100644
---- a/arch/powerpc/kernel/rtas.c
-+++ b/arch/powerpc/kernel/rtas.c
-@@ -1020,6 +1020,7 @@ asmlinkage int ppc_rtas(struct rtas_args __user *uargs)
- 	char *buff_copy, *errbuf = NULL;
- 	int nargs;
- 	int rc;
-+	int i;
- 
- 	if (!capable(CAP_SYS_ADMIN))
- 		return -EPERM;
-@@ -1056,9 +1057,19 @@ asmlinkage int ppc_rtas(struct rtas_args __user *uargs)
- 
- 	flags = lock_rtas();
- 
--	rtas.args = args;
-+	rtas.args.token = cpu_to_be32(args.token);
-+	rtas.args.nargs = cpu_to_be32(args.nargs);
-+	rtas.args.nret  = cpu_to_be32(args.nret);
-+	for (i = 0; i < nargs; ++i)
-+		rtas.args.args[i] = cpu_to_be32(args.args[i]);
-+	rtas.args.rets  = &rtas.args.args[nargs];
-+	for (i = 0; i < args.nret; ++i)
-+		rtas.args.rets[i] = 0;
-+
- 	enter_rtas(__pa(&rtas.args));
--	args = rtas.args;
-+
-+	for (i = 0; i < args.nret; ++i)
-+		args.rets[i] = be32_to_cpu(rtas.args.rets[i]);
- 
- 	/* A -1 return code indicates that the last command couldn't
- 	   be completed due to a hardware error. */
+The one originally reported in this thread
 
+  *ERROR* render ring initialization failed ctl 0001f001 head 00003004 tail 00000000 start 00003000
+
+and subsequent resume busted is there even with the default i915 driver 
+settings.
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs
