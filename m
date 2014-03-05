@@ -1,54 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756947AbaCEEKb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 23:10:31 -0500
-Received: from ozlabs.org ([203.10.76.45]:52000 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756300AbaCEEKa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 23:10:30 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Chinner <david@fromorbit.com>, Ning Qu <quning@gmail.com>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 1/2] mm: introduce vm_ops->map_pages()
-In-Reply-To: <20140303151611.5671eebb74cedb99aa5396c8@linux-foundation.org>
-References: <1393530827-25450-1-git-send-email-kirill.shutemov@linux.intel.com> <1393530827-25450-2-git-send-email-kirill.shutemov@linux.intel.com> <20140303151611.5671eebb74cedb99aa5396c8@linux-foundation.org>
-User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
-Date: Wed, 05 Mar 2014 10:34:15 +1030
-Message-ID: <8761nt1pfk.fsf@rustcorp.com.au>
+	id S1756018AbaCEEP7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 23:15:59 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:37019 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755038AbaCEEP5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 23:15:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20140305040929.GA31130@kroah.com>
+References: <1393991871-1743-1-git-send-email-roland@kernel.org> <20140305040929.GA31130@kroah.com>
+From: Roland Dreier <roland@kernel.org>
+Date: Tue, 4 Mar 2014 20:15:36 -0800
+X-Google-Sender-Auth: DgvX_2i-Q_lbjQUIIAJsyZarrRM
+Message-ID: <CAG4TOxONSsyokdy9Sw+fT21QA7E-uY572ZDoNf3V9f7D1ytyxQ@mail.gmail.com>
+Subject: Re: [PATCH] Revert "driver core: synchronize device shutdown"
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>, shli@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton <akpm@linux-foundation.org> writes:
-> On Thu, 27 Feb 2014 21:53:46 +0200 "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
->> +
->> +void do_set_pte(struct vm_area_struct *vma, unsigned long address,
->> +		struct page *page, pte_t *pte, bool write, bool anon);
->>  #endif
->>  
->>  /*
->
-> lguest made a dubious naming decision:
->
-> drivers/lguest/page_tables.c:890: error: conflicting types for 'do_set_pte'
-> include/linux/mm.h:593: note: previous declaration of 'do_set_pte' was here
->
-> I'll rename lguest's do_set_pte() to do_guest_set_pte() as a
-> preparatory patch.
+> Hm, no one seems to have said anything for the past 5 years about this.
 
-s/do_/ if you don't mind; if we're going to prefix it, we don't need the
-extra verb.
+It definitely is hard to hit -- you have to do "shutdown" or "reboot"
+right as something schedules async work.  In our case we have some
+systems with a large and slightly flaky SAS fabric, so there's a
+constant level of re-probing SCSI disks, and we occasionally see
+reboots hanging due to waiting for never-finishing sd probe async
+work.
+
+AFAICT the synchronization does nothing useful and is just a remnant
+of a patch series where the real meat didn't get applied.  But of
+course it would be great if Shaohua could confirm my understanding.
 
 Thanks,
-Rusty.
+  Roland
