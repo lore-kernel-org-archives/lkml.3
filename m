@@ -1,81 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757216AbaCEDdk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 22:33:40 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:12288 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751007AbaCEDdi (ORCPT
+	id S1756267AbaCEDg5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 22:36:57 -0500
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:36080 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755237AbaCEDg4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 22:33:38 -0500
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <broonie@kernel.org>, <nicolas.ferre@atmel.com>
-CC: <linux-spi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <wenyou.yang@atmel.com>
-Subject: [PATCH] spi: atmel: add missing spi_master_{resume,suspend} calls to PM callbacks
-Date: Wed, 5 Mar 2014 11:29:01 +0800
-Message-ID: <1393990141-3157-1-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 4 Mar 2014 22:36:56 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1393983784.2512.40.camel@buesod1.americas.hpqcorp.net>
+References: <1393983784.2512.40.camel@buesod1.americas.hpqcorp.net>
+Date: Tue, 4 Mar 2014 19:36:55 -0800
+X-Google-Sender-Auth: L3miiI9r3jprZqjKO_deYqk51-0
+Message-ID: <CA+55aFzRi+r4=8D+d5odaRMRNOWSY01ydsbreko7HNsD_Dg68Q@mail.gmail.com>
+Subject: Re: futex funkiness -- massive lockups
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PM callbacks implemented by the spi-atmel driver don't call
-spi_master_{resume,suspend}, fix that.
+On Tue, Mar 4, 2014 at 5:43 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+>
+>
+> From the paths related to futex wait we are stuck when taking the hb
+> spinlock in futex_wait_setup >> queue_lock.
 
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
----
-Hi Mark, 
+Just judging from your trace, I would have suspected a (possibly soft)
+lockup in load_balance() rather than the futexes.
 
-The patch is based on the branch: for-next
-git://git.kernel.org/pub/scm/linux/kernel/git/broonie/spi.git
+The futex being stuck seems expected, since one cpu is definitely
+holding the lock - it was interrupted by a timer interrupt at the
+successful return case of raw_spin_lock if I read the offset right.
 
-Best Regards,
-Wenyou Yang
+So if that softirq is stuck - perhaps because it's in some endless
+loop in load_balance(), or perhaps because it's spending so much time
+load-balancing that the next balancing time happens immediately, or
+whatever - then you'd see that trace.
 
- drivers/spi/spi-atmel.c |   17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
-index 47e7aeb..bda961e 100644
---- a/drivers/spi/spi-atmel.c
-+++ b/drivers/spi/spi-atmel.c
-@@ -1440,6 +1440,14 @@ static int atmel_spi_suspend(struct device *dev)
- {
- 	struct spi_master	*master = dev_get_drvdata(dev);
- 	struct atmel_spi	*as = spi_master_get_devdata(master);
-+	int ret;
-+
-+	/* Stop the queue running */
-+	ret = spi_master_suspend(master);
-+	if (ret) {
-+		dev_warn(dev, "cannot suspend master\n");
-+		return ret;
-+	}
- 
- 	clk_disable_unprepare(as->clk);
- 
-@@ -1452,11 +1460,18 @@ static int atmel_spi_resume(struct device *dev)
- {
- 	struct spi_master	*master = dev_get_drvdata(dev);
- 	struct atmel_spi	*as = spi_master_get_devdata(master);
-+	int ret;
- 
- 	pinctrl_pm_select_default_state(dev);
- 
- 	clk_prepare_enable(as->clk);
--	return 0;
-+
-+	/* Start the queue running */
-+	ret = spi_master_resume(master);
-+	if (ret)
-+		dev_err(dev, "problem starting queue (%d)\n", ret);
-+
-+	return ret;
- }
- 
- static SIMPLE_DEV_PM_OPS(atmel_spi_pm_ops, atmel_spi_suspend, atmel_spi_resume);
--- 
-1.7.9.5
-
+              Linus
