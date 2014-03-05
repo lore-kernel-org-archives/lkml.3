@@ -1,88 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755913AbaCERbI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 12:31:08 -0500
-Received: from mailscanner02.zoner.fi ([84.34.166.11]:26356 "EHLO
-	mailscanner02.zoner.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752430AbaCERbE (ORCPT
+	id S1756441AbaCERf7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 12:35:59 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:50755 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753090AbaCERfy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 12:31:04 -0500
-Date: Wed, 5 Mar 2014 19:30:57 +0200
-From: Lasse Collin <lasse.collin@tukaani.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Kyle McMartin <kyle@infradead.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Phillip Lougher <phillip@lougher.demon.co.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] xz: Enable all filters by default in Kconfig
-Message-ID: <20140305193057.4a481aaf@tukaani.org>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-unknown-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Antivirus-Scanner: Clean mail though you should still use an Antivirus
+	Wed, 5 Mar 2014 12:35:54 -0500
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-iio@vger.kernel.org, linux-input@vger.kernel.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH 00/15] iio: adc: at91 cleanups and atmel_tsadcc removal
+Date: Wed,  5 Mar 2014 18:35:25 +0100
+Message-Id: <1394040940-18246-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lasse Collin <lasse.collin@tukaani.org>
+This patch set is a followup of my previous series: iio: adc: at91 fixes
 
-This restores the old behavior that existed before 2013-02-22.
-Disabling the filters only makes sense on embedded systems.
+I'm sorry it is so long, I made sure this is bissectable.
 
-Signed-off-by: Lasse Collin <lasse.collin@tukaani.org>
----
+1-3) The first 3 patches are cleaning up the patform_data used for at91_adc.
 
- lib/xz/Kconfig |   24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+4-5) Then touchscreen support for older ADCs is added, this allows to use that
+     for the sam9m10g45ek.
 
-diff -Nru linux-3.14-rc5.orig/lib/xz/Kconfig linux-3.14-rc5/lib/xz/Kconfig
---- linux-3.14-rc5.orig/lib/xz/Kconfig	2014-03-03 04:56:16.000000000 +0200
-+++ linux-3.14-rc5/lib/xz/Kconfig	2014-03-03 13:26:58.402872951 +0200
-@@ -9,33 +9,33 @@
- if XZ_DEC
- 
- config XZ_DEC_X86
--	bool "x86 BCJ filter decoder"
--	default y if X86
-+	bool "x86 BCJ filter decoder" if EXPERT
-+	default y
- 	select XZ_DEC_BCJ
- 
- config XZ_DEC_POWERPC
--	bool "PowerPC BCJ filter decoder"
--	default y if PPC
-+	bool "PowerPC BCJ filter decoder" if EXPERT
-+	default y
- 	select XZ_DEC_BCJ
- 
- config XZ_DEC_IA64
--	bool "IA-64 BCJ filter decoder"
--	default y if IA64
-+	bool "IA-64 BCJ filter decoder" if EXPERT
-+	default y
- 	select XZ_DEC_BCJ
- 
- config XZ_DEC_ARM
--	bool "ARM BCJ filter decoder"
--	default y if ARM
-+	bool "ARM BCJ filter decoder" if EXPERT
-+	default y
- 	select XZ_DEC_BCJ
- 
- config XZ_DEC_ARMTHUMB
--	bool "ARM-Thumb BCJ filter decoder"
--	default y if (ARM && ARM_THUMB)
-+	bool "ARM-Thumb BCJ filter decoder" if EXPERT
-+	default y
- 	select XZ_DEC_BCJ
- 
- config XZ_DEC_SPARC
--	bool "SPARC BCJ filter decoder"
--	default y if SPARC
-+	bool "SPARC BCJ filter decoder" if EXPERT
-+	default y
- 	select XZ_DEC_BCJ
- 
- endif
+6) Following those modifications, the mach/at91_adc.h is not used anywhere but
+   in the at91_adc driver so it is remove and its content (register definitions)
+   placed directly in the driver.
+
+7-9) at91sam9rl support is added to at91_adc and is used for the at91sam9rl
+     based boards.
+
+10-11) Prepare the atmel_tsadcc removal by switching sam9rl and sam9g45 to use
+       only at91_adc instead of atmel_tsadcc.
+
+12-15) atmel_tsadcc removal
+
+
+Alexandre Belloni (15):
+  ARM: at91: sam9g45: remove unused platform_data
+  ARM: at91: sam9260: remove unused platform_data
+  iio: adc: at91: cleanup platform_data
+  iio: adc: at91_adc: Add support for touchscreens without TSMR
+  ARM: at91: sam9m10g45ek: Add touchscreen support through at91_adc
+  iio: adc: at91: remove unused include from include/mach
+  iio: adc: at91: add sam9rl support
+  ARM: at91: sam9rl: add at91_adc to support adc and touchscreen
+  ARM: at91: sam9rlek add touchscreen support through at91_adc
+  ARM: at91: sam9g45: switch from atmel_tsadcc to at91_adc
+  ARM: at91: sam9rl: switch from atmel_tsadcc to at91_adc
+  ARM: at91: remove atmel_tsadcc platform_data
+  ARM: at91: remove atmel_tsadcc from sama5_defconfig
+  Input: atmel_tsadcc: remove driver
+  ARM: at91/dt: at91-cosino_mega2560 remove useless tsadcc node
+
+ MAINTAINERS                                |   6 -
+ arch/arm/boot/dts/at91-cosino_mega2560.dts |   5 -
+ arch/arm/configs/at91sam9g45_defconfig     |   3 +-
+ arch/arm/configs/at91sam9rl_defconfig      |   3 +-
+ arch/arm/configs/sama5_defconfig           |   1 -
+ arch/arm/mach-at91/at91sam9260_devices.c   |  10 -
+ arch/arm/mach-at91/at91sam9g45.c           |   2 +-
+ arch/arm/mach-at91/at91sam9g45_devices.c   |  63 +----
+ arch/arm/mach-at91/at91sam9rl.c            |   7 +
+ arch/arm/mach-at91/at91sam9rl_devices.c    |  83 +++++--
+ arch/arm/mach-at91/board-sam9m10g45ek.c    |  16 +-
+ arch/arm/mach-at91/board-sam9rlek.c        |  16 +-
+ arch/arm/mach-at91/board.h                 |   3 -
+ arch/arm/mach-at91/include/mach/at91_adc.h | 107 ---------
+ drivers/iio/adc/at91_adc.c                 | 339 +++++++++++++++++++++++----
+ drivers/input/touchscreen/Kconfig          |  12 -
+ drivers/input/touchscreen/Makefile         |   1 -
+ drivers/input/touchscreen/atmel_tsadcc.c   | 358 -----------------------------
+ include/linux/platform_data/at91_adc.h     |  27 +--
+ include/linux/platform_data/atmel.h        |   7 -
+ 20 files changed, 380 insertions(+), 689 deletions(-)
+ delete mode 100644 arch/arm/mach-at91/include/mach/at91_adc.h
+ delete mode 100644 drivers/input/touchscreen/atmel_tsadcc.c
+
+-- 
+1.8.3.2
+
