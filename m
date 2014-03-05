@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758085AbaCEOpO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:45:14 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41764 "EHLO
+	id S932454AbaCEOiO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:38:14 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41717 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932473AbaCEOiS (ORCPT
+	with ESMTP id S932374AbaCEOiG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:38:18 -0500
+	Wed, 5 Mar 2014 09:38:06 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Paris <eparis@redhat.com>, Paul Moore <pmoore@redhat.com>,
+Cc: Emil Goode <emilgoode@gmail.com>, "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 46/62] SELinux: bigendian problems with filename trans rules
-Date: Wed,  5 Mar 2014 14:36:50 +0000
-Message-Id: <1394030226-26652-47-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 37/62] net: asix: add missing flag to struct driver_info
+Date: Wed,  5 Mar 2014 14:36:41 +0000
+Message-Id: <1394030226-26652-38-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
 References: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,44 +30,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Paris <eparis@redhat.com>
+From: Emil Goode <emilgoode@gmail.com>
 
-commit 9085a6422900092886da8c404e1c5340c4ff1cbf upstream.
+commit d43ff4cd798911736fb39025ec8004284b1b0bc2 upstream.
 
-When writing policy via /sys/fs/selinux/policy I wrote the type and class
-of filename trans rules in CPU endian instead of little endian.  On
-x86_64 this works just fine, but it means that on big endian arch's like
-ppc64 and s390 userspace reads the policy and converts it from
-le32_to_cpu.  So the values are all screwed up.  Write the values in le
-format like it should have been to start.
+The struct driver_info ax88178_info is assigned the function
+asix_rx_fixup_common as it's rx_fixup callback. This means that
+FLAG_MULTI_PACKET must be set as this function is cloning the
+data and calling usbnet_skb_return. Not setting this flag leads
+to usbnet_skb_return beeing called a second time from within
+the rx_process function in the usbnet module.
 
-Signed-off-by: Eric Paris <eparis@redhat.com>
-Acked-by:  Stephen Smalley <sds@tycho.nsa.gov>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
+Reported-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- security/selinux/ss/policydb.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/net/usb/asix.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/security/selinux/ss/policydb.c b/security/selinux/ss/policydb.c
-index 142a59f..bcdca73 100644
---- a/security/selinux/ss/policydb.c
-+++ b/security/selinux/ss/policydb.c
-@@ -3258,10 +3258,10 @@ static int filename_write_helper(void *key, void *data, void *ptr)
- 	if (rc)
- 		return rc;
- 
--	buf[0] = ft->stype;
--	buf[1] = ft->ttype;
--	buf[2] = ft->tclass;
--	buf[3] = otype->otype;
-+	buf[0] = cpu_to_le32(ft->stype);
-+	buf[1] = cpu_to_le32(ft->ttype);
-+	buf[2] = cpu_to_le32(ft->tclass);
-+	buf[3] = cpu_to_le32(otype->otype);
- 
- 	rc = put_entry(buf, sizeof(u32), 4, fp);
- 	if (rc)
+diff --git a/drivers/net/usb/asix.c b/drivers/net/usb/asix.c
+index 9402f9c..fa0327c 100644
+--- a/drivers/net/usb/asix.c
++++ b/drivers/net/usb/asix.c
+@@ -1574,7 +1574,8 @@ static const struct driver_info ax88178_info = {
+ 	.status = asix_status,
+ 	.link_reset = ax88178_link_reset,
+ 	.reset = ax88178_reset,
+-	.flags = FLAG_ETHER | FLAG_FRAMING_AX | FLAG_LINK_INTR,
++	.flags = FLAG_ETHER | FLAG_FRAMING_AX | FLAG_LINK_INTR |
++		 FLAG_MULTI_PACKET,
+ 	.rx_fixup = asix_rx_fixup_common,
+ 	.tx_fixup = asix_tx_fixup,
+ };
 -- 
 1.9.0
 
