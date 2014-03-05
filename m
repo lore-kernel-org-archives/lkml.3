@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752994AbaCEKNZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 05:13:25 -0500
-Received: from sym2.noone.org ([178.63.92.236]:46232 "EHLO sym2.noone.org"
+	id S1754257AbaCEKPQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 05:15:16 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:54615 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751459AbaCEKNX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 05:13:23 -0500
-Date: Wed, 5 Mar 2014 11:13:21 +0100
-From: Tobias Klauser <tklauser@distanz.ch>
-To: Daeseok Youn <daeseok.youn@gmail.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org, shaun@xresource.ca,
-        sachin.kamat@linaro.org, linux-kernel@vger.kernel.org,
-        dulshani.gunawardhana89@gmail.com, ying.xue@windriver.com,
-        davem@davemloft.net
-Subject: Re: [PATCH 7/7] staging: cxt1e1: remove unneeded a value
-Message-ID: <20140305101320.GH1883@distanz.ch>
-References: <4401309.KAOCJ1Tfb2@daeseok-laptop.cloud.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4401309.KAOCJ1Tfb2@daeseok-laptop.cloud.net>
-X-Editor: Vi IMproved 7.2
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753553AbaCEKPJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 05:15:09 -0500
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Felipe Balbi <balbi@ti.com>,
+        Grant Likely <grant.likely@linaro.org>
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: [PATCH v5 00/14] usb: phy: msm: Fixes, cleanups and DT support
+Date: Wed,  5 Mar 2014 12:13:36 +0200
+Message-Id: <1394014430-26485-1-git-send-email-iivanov@mm-sol.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-03-05 at 02:24:22 +0100, Daeseok Youn <daeseok.youn@gmail.com> wrote:
-> 
-> It doesn't need to assign name array address to np pointer.
-> 
-> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
-> ---
->  drivers/staging/cxt1e1/linux.c |    5 ++---
->  1 files changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/staging/cxt1e1/linux.c b/drivers/staging/cxt1e1/linux.c
-> index 5bb42ae..cae8c66 100644
-> --- a/drivers/staging/cxt1e1/linux.c
-> +++ b/drivers/staging/cxt1e1/linux.c
-> @@ -205,15 +205,14 @@ status_t
->  c4_wq_port_init(mpi_t *pi)
->  {
->  
-> -	char        name[16], *np;  /* NOTE: name of the queue limited by system
-> +	char        name[16];  /* NOTE: name of the queue limited by system
->  				     * to 10 characters */
->  
->  	if (pi->wq_port)
->  		return 0;                   /* already initialized */
->  
-> -	np = name;
->  	memset(name, 0, 16);
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-This isn't necessary since s{,n}printf() adds a terminating '\0'.
+Hi,
 
-> -	sprintf(np, "%s%d", pi->up->devname, pi->portnum); /* IE pmcc4-01) */
-> +	sprintf(name, "%s%d", pi->up->devname, pi->portnum); /* IE pmcc4-01) */
+This is a fifth version of patches posted earlier here [1].
 
-Better use snprintf() here, even if the comment above claims the name
-never to be no longer than 10 characters.
+They have been tested on AP8074 DragonBoard. Only gadget
+mode utilized for now.
 
-Cheers
-Tobias
+CV Test Suite engine "Chapter 9 tests" are passing except
+"Halt Endpoint Test".
+
+usbtest driver report following failure:
+test 13 --> 32 (Broken pipe)    ep 81 couldn't set halt, -32
+
+Changes since v4:
+ - Drop patch [1/15] usb: phy: msm: Move mach dependent code to platform data
+   it is already merged.
+ - Address comments regarding devicetree bindings.
+
+[1] https://lkml.org/lkml/2013/11/12/298
+
+Ivan T. Ivanov (14):
+  usb: phy: msm: Move global regulators variables to driver state
+  usb: phy: msm: Migrate to Managed Device Resource allocation
+  usb: phy: msm: Remove unnecessarily check for valid regulators.
+  usb: phy: msm: Fix checkpatch.pl warnings
+  usb: phy: msm: Replace custom enum usb_mode_type with enum
+    usb_dr_mode
+  usb: phy: msm: Remove unused pclk_src_name
+  usb: phy: msm: Remove HSUSB prefix from regulator names
+  usb: phy: msm: Properly check result from platform_get_irq()
+  usb: phy: msm: Add device tree support and binding information
+  usb: phy: msm: Use reset framework for LINK and PHY resets
+  usb: phy: msm: Add support for secondary PHY control
+  usb: phy: msm: Correct USB PHY Reset sequence for newer platform
+  usb: phy: msm: Handle disconnect events
+  usb: phy: msm: Vote for corner of VDD CX instead of voltage of VDD CX
+
+ .../devicetree/bindings/usb/msm-hsusb.txt          |   78 +++
+ arch/arm/mach-msm/board-msm7x30.c                  |    2 +-
+ arch/arm/mach-msm/board-qsd8x50.c                  |    2 +-
+ drivers/usb/phy/phy-msm-usb.c                      |  674 +++++++++++---------
+ include/linux/usb/msm_hsusb.h                      |   39 +-
+ include/linux/usb/msm_hsusb_hw.h                   |    6 +
+ 6 files changed, 474 insertions(+), 327 deletions(-)
+
+--
+1.7.9.5
+
