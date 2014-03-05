@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756740AbaCEUkz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 15:40:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55030 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753448AbaCEUky (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 15:40:54 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Seiji Aguchi <seiji.aguchi@hds.com>,
-        Yang Zhang <yang.z.zhang@Intel.com>, Andi Kleen <ak@linux.intel.com>,
-        David Rientjes <rientjes@google.com>
-Subject: [PATCH] x86, fix defined for VECTOR_UNDEFINED and VECTOR_RETRIGGERED
-Date: Wed,  5 Mar 2014 15:10:46 -0500
-Message-Id: <1394050246-28453-1-git-send-email-prarit@redhat.com>
+	id S1757162AbaCEUn1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 15:43:27 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:19854 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755556AbaCEUn0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 15:43:26 -0500
+Date: Wed, 5 Mar 2014 15:43:15 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Subject: [GIT PULL] (xen) stable/for-linus-3.14-rc5-tag
+Message-ID: <20140305204315.GA11758@phenom.dumpdata.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="n8g4imXOkfNTN/H1"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During another patch review, David Rientjes noted that VECTOR_UNDEFINED
-and VECTOR_RETRIGGERED should be defined with ()s so that they are not
-erroneously used in an arithmetic operation.
 
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: Yang Zhang <yang.z.zhang@Intel.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: David Rientjes <rientjes@google.com>
----
- arch/x86/include/asm/hw_irq.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+--n8g4imXOkfNTN/H1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
-index 67d69b8..9d4dabe 100644
---- a/arch/x86/include/asm/hw_irq.h
-+++ b/arch/x86/include/asm/hw_irq.h
-@@ -191,8 +191,8 @@ extern void (*__initconst interrupt[NR_VECTORS-FIRST_EXTERNAL_VECTOR])(void);
- #define trace_interrupt interrupt
- #endif
- 
--#define VECTOR_UNDEFINED	-1
--#define VECTOR_RETRIGGERED	-2
-+#define VECTOR_UNDEFINED	(-1)
-+#define VECTOR_RETRIGGERED	(-2)
- 
- typedef int vector_irq_t[NR_VECTORS];
- DECLARE_PER_CPU(vector_irq_t, vector_irq);
--- 
-1.7.9.3
+Hey Linus,
 
+Please git pull the following tag:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git stable/for-linus-=
+3.14-rc5-tag
+
+which has exactly one patch for Xen ARM. It sets the dependency
+to compile the kernel with MMU enabled - otherwise - the guest
+won't work very well.
+
+Here is the diff - which has to be smallest I had even sent to you:
+
+ arch/arm/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+Uwe Kleine-K=F6nig (1):
+      ARM: XEN depends on having a MMU
+
+
+--n8g4imXOkfNTN/H1
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQEcBAEBAgAGBQJTF4xMAAoJEFjIrFwIi8fJnG8H/R/KRidP5MinKT3ne5Y6QI2s
+ubspqD1KtOs39kKjZQg5Z8m14efBdSTZh7WiV2CrPuZVAkqgR9QPFRr+4w2uQJ19
+26iyuaHP2HB+YKPBwxohNWZECFAJEDqlZK0Xngh98y8aD5rRC7Xk3Wtev+IfdoQT
+3WwefXKYW/+TiFiXhv86hTKnpvxk9GZ64spYoKd/Nxms4V8qv7w7KOa+CM7pVyfP
+PqS/qvzmv1vdT0dDzLumh7FMWNmkvLJ6Z+PpqTNN3emcPsTLOkjORS4D1M6xE88U
+cvMNDBrND8Klu6dHkGPV97dfyFq9Zn+XmK5rqpPERjBcDxm0ia0lQK/Sz0WF4bA=
+=OF91
+-----END PGP SIGNATURE-----
+
+--n8g4imXOkfNTN/H1--
