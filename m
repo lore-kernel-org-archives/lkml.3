@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758432AbaCEPgE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 10:36:04 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40706 "EHLO
+	id S1759449AbaCEPgi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:36:38 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40694 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755970AbaCEOY1 (ORCPT
+	with ESMTP id S1753657AbaCEOYY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:24:27 -0500
+	Wed, 5 Mar 2014 09:24:24 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 004/131] irqchip: orion: use handle_edge_irq on bridge irqs
-Date: Wed,  5 Mar 2014 14:22:08 +0000
-Message-Id: <1394029455-23128-5-git-send-email-luis.henriques@canonical.com>
+Cc: Tejun Heo <tj@kernel.org>, Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 002/131] sata_sil: apply MOD15WRITE quirk to TOSHIBA MK2561GSYN
+Date: Wed,  5 Mar 2014 14:22:06 +0000
+Message-Id: <1394029455-23128-3-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -28,35 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 5f40067fc86f0e49329ad4a852c278998ff4394e upstream.
+commit 9f9c47f00ce99329b1a82e2ac4f70f0fe3db549c upstream.
 
-Bridge irqs are edge-triggered, i.e. they get asserted on low-to-high
-transitions and not on the level of the downstream interrupt line.
-This replaces handle_level_irq by the more appropriate handle_edge_irq.
+It's a bit odd to see a newer device showing mod15write; however, the
+reported behavior is highly consistent and other factors which could
+contribute seem to have been verified well enough.  Also, both
+sata_sil itself and the drive are fairly outdated at this point making
+the risk of this change fairly low.  It is possible, probably likely,
+that other drive models in the same family have the same problem;
+however, for now, let's just add the specific model which was tested.
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Tested-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: matson <lists-matsonpa@luxsci.me>
+References: http://lkml.kernel.org/g/201401211912.s0LJCk7F015058@rs103.luxsci.com
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/irqchip/irq-orion.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/ata/sata_sil.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/irqchip/irq-orion.c b/drivers/irqchip/irq-orion.c
-index 4137c3d..1f636f7 100644
---- a/drivers/irqchip/irq-orion.c
-+++ b/drivers/irqchip/irq-orion.c
-@@ -143,7 +143,7 @@ static int __init orion_bridge_irq_init(struct device_node *np,
- 	}
- 
- 	ret = irq_alloc_domain_generic_chips(domain, nrirqs, 1, np->name,
--			     handle_level_irq, clr, 0, IRQ_GC_INIT_MASK_CACHE);
-+			     handle_edge_irq, clr, 0, IRQ_GC_INIT_MASK_CACHE);
- 	if (ret) {
- 		pr_err("%s: unable to alloc irq domain gc\n", np->name);
- 		return ret;
+diff --git a/drivers/ata/sata_sil.c b/drivers/ata/sata_sil.c
+index d67fc35..b7695e8 100644
+--- a/drivers/ata/sata_sil.c
++++ b/drivers/ata/sata_sil.c
+@@ -157,6 +157,7 @@ static const struct sil_drivelist {
+ 	{ "ST380011ASL",	SIL_QUIRK_MOD15WRITE },
+ 	{ "ST3120022ASL",	SIL_QUIRK_MOD15WRITE },
+ 	{ "ST3160021ASL",	SIL_QUIRK_MOD15WRITE },
++	{ "TOSHIBA MK2561GSYN",	SIL_QUIRK_MOD15WRITE },
+ 	{ "Maxtor 4D060H3",	SIL_QUIRK_UDMA5MAX },
+ 	{ }
+ };
 -- 
 1.9.0
 
