@@ -1,80 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932396AbaCEOiH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:38:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41677 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932317AbaCEOhz (ORCPT
+	id S1758507AbaCEOsS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:48:18 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:53539 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752886AbaCEOsO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:37:55 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Michael Chan <mchan@broadcom.com>,
-        Nithin Nayak Sujir <nsujir@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 30/62] tg3: Fix deadlock in tg3_change_mtu()
-Date: Wed,  5 Mar 2014 14:36:34 +0000
-Message-Id: <1394030226-26652-31-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
-References: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Wed, 5 Mar 2014 09:48:14 -0500
+Message-ID: <531738FF.5050902@ti.com>
+Date: Wed, 5 Mar 2014 20:17:27 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Roger Quadros <rogerq@ti.com>, <bcousson@baylibre.com>, <balbi@ti.com>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
+        <george.cherian@ti.com>, <heikki.krogerus@linux.intel.com>
+CC: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
+        <rob@landley.net>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
+        <gregkh@linuxfoundation.org>, <grant.likely@linaro.org>,
+        <s.nawrocki@samsung.com>, <galak@codeaurora.org>
+Subject: Re: [PATCH v5 2/6] usb: dwc3: adapt dwc3 core to use Generic PHY
+ Framework
+References: <1393846695-14644-1-git-send-email-kishon@ti.com> <1393846695-14644-3-git-send-email-kishon@ti.com> <53173809.2060303@ti.com>
+In-Reply-To: <53173809.2060303@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.32 -stable review patch.  If anyone has any objections, please let me know.
+Roger,
 
-------------------
+On Wednesday 05 March 2014 08:13 PM, Roger Quadros wrote:
+> Hi Kishon,
+>
+> On 03/03/2014 01:38 PM, Kishon Vijay Abraham I wrote:
+>> Adapted dwc3 core to use the Generic PHY Framework. So for init, exit,
+>> power_on and power_off the following APIs are used phy_init(), phy_exit(),
+>> phy_power_on() and phy_power_off().
+>>
+>> However using the old USB phy library wont be removed till the PHYs of all
+>> other SoC's using dwc3 core is adapted to the Generic PHY Framework.
+>>
+>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>> ---
+>>   Documentation/devicetree/bindings/usb/dwc3.txt |    6 +-
+>>   drivers/usb/dwc3/core.c                        |   86 +++++++++++++++++++++---
+>>   drivers/usb/dwc3/core.h                        |    7 ++
+>>   3 files changed, 89 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/Documentation/devicetree/bindings/usb/dwc3.txt b/Documentation/devicetree/bindings/usb/dwc3.txt
+>> index e807635..471366d 100644
+>> --- a/Documentation/devicetree/bindings/usb/dwc3.txt
+>> +++ b/Documentation/devicetree/bindings/usb/dwc3.txt
+>> @@ -6,11 +6,13 @@ Required properties:
+>>    - compatible: must be "snps,dwc3"
+>>    - reg : Address and length of the register set for the device
+>>    - interrupts: Interrupts used by the dwc3 controller.
+>> +
+>> +Optional properties:
+>>    - usb-phy : array of phandle for the PHY device.  The first element
+>>      in the array is expected to be a handle to the USB2/HS PHY and
+>>      the second element is expected to be a handle to the USB3/SS PHY
+>> -
+>> -Optional properties:
+>> + - phys: from the *Generic PHY* bindings
+>> + - phy-names: from the *Generic PHY* bindings
+>>    - tx-fifo-resize: determines if the FIFO *has* to be reallocated.
+>>
+>>   This is usually a subnode to DWC3 glue to which it is connected.
+>> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+>> index 225a4d6..497234a 100644
+>> --- a/drivers/usb/dwc3/core.c
+>> +++ b/drivers/usb/dwc3/core.c
+>> @@ -61,9 +61,10 @@ void dwc3_set_mode(struct dwc3 *dwc, u32 mode)
+>>    * dwc3_core_soft_reset - Issues core soft reset and PHY reset
+>>    * @dwc: pointer to our context structure
+>>    */
+>> -static void dwc3_core_soft_reset(struct dwc3 *dwc)
+>> +static int dwc3_core_soft_reset(struct dwc3 *dwc)
+>>   {
+>>   	u32		reg;
+>> +	int		ret;
+>>
+>>   	/* Before Resetting PHY, put Core in Reset */
+>>   	reg = dwc3_readl(dwc->regs, DWC3_GCTL);
+>> @@ -82,6 +83,15 @@ static void dwc3_core_soft_reset(struct dwc3 *dwc)
+>>
+>>   	usb_phy_init(dwc->usb2_phy);
+>>   	usb_phy_init(dwc->usb3_phy);
+>> +	ret = phy_init(dwc->usb2_generic_phy);
+>
+> you need to check if dwc->usb?_generic_phy is not NULL before using any of the PHY APIs
+> throughout this patch.
 
-From: Nithin Sujir <nsujir@broadcom.com>
+Recently a patch to allow NULL in phy APIs was added to support optional 
+PHYs.
 
-commit c6993dfd7db9b0c6b7ca7503a56fda9236a4710f upstream.
+commit 04c2facad8fee66c981a51852806d8923336f362
+Author: Andrew Lunn <andrew@lunn.ch>
+Date:   Tue Feb 4 18:33:11 2014 +0100
 
-Quoting David Vrabel -
-"5780 cards cannot have jumbo frames and TSO enabled together.  When
-jumbo frames are enabled by setting the MTU, the TSO feature must be
-cleared.  This is done indirectly by calling netdev_update_features()
-which will call tg3_fix_features() to actually clear the flags.
+     drivers: phy: Make NULL a valid phy reference
 
-netdev_update_features() will also trigger a new netlink message for the
-feature change event which will result in a call to tg3_get_stats64()
-which deadlocks on the tg3 lock."
-
-tg3_set_mtu() does not need to be under the tg3 lock since converting
-the flags to use set_bit(). Move it out to after tg3_netif_stop().
-
-Reported-by: David Vrabel <david.vrabel@citrix.com>
-Tested-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/net/ethernet/broadcom/tg3.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-index 3390b69..6dcd72a 100644
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -12485,12 +12485,12 @@ static int tg3_change_mtu(struct net_device *dev, int new_mtu)
- 
- 	tg3_netif_stop(tp);
- 
-+	tg3_set_mtu(dev, tp, new_mtu);
-+
- 	tg3_full_lock(tp, 1);
- 
- 	tg3_halt(tp, RESET_KIND_SHUTDOWN, 1);
- 
--	tg3_set_mtu(dev, tp, new_mtu);
--
- 	/* Reset PHY, otherwise the read DMA engine will be in a mode that
- 	 * breaks all requests to 256 bytes.
- 	 */
--- 
-1.9.0
-
+Thanks
+Kishon
