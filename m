@@ -1,67 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757569AbaCEWfu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 17:35:50 -0500
-Received: from 8bytes.org ([85.214.48.195]:33474 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756496AbaCEWft (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 17:35:49 -0500
-Date: Wed, 5 Mar 2014 23:35:45 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: suravee.suthikulpanit@amd.com
-Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        kim.naru@amd.com, jay.cornwall@amd.com
-Subject: Re: [PATCH] iommu/amd: Fix logics to determine and checking max PASID
-Message-ID: <20140305223544.GA2813@8bytes.org>
-References: <1394046068-3858-1-git-send-email-suravee.suthikulpanit@amd.com>
+	id S1757461AbaCEWjB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 17:39:01 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:50037 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752946AbaCEWi7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 17:38:59 -0500
+Message-ID: <5317A77C.8020501@arm.com>
+Date: Wed, 05 Mar 2014 22:38:52 +0000
+From: Dietmar Eggemann <dietmar.eggemann@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394046068-3858-1-git-send-email-suravee.suthikulpanit@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Wed Mar  5 23:35:47 2014
-X-DSPAM-Confidence: 0.9994
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 5317a6c320861073413135
+To: Vincent Guittot <vincent.guittot@linaro.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Subject: Re: [RFC 6/6] sched: ARM: create a dedicated scheduler topology table
+References: <1394003906-11630-1-git-send-email-vincent.guittot@linaro.org> <1394003906-11630-7-git-send-email-vincent.guittot@linaro.org>
+In-Reply-To: <1394003906-11630-7-git-send-email-vincent.guittot@linaro.org>
+X-OriginalArrivalTime: 05 Mar 2014 22:39:01.0891 (UTC) FILETIME=[B4BA2530:01CF38C3]
+X-MC-Unique: 114030522385600501
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 05, 2014 at 01:01:08PM -0600, suravee.suthikulpanit@amd.com wrote:
->  drivers/iommu/amd_iommu.c       |   26 +++++++++++++++++++++++---
->  drivers/iommu/amd_iommu_init.c  |   15 ++++++++-------
->  drivers/iommu/amd_iommu_types.h |    6 ++----
->  drivers/iommu/amd_iommu_v2.c    |    2 +-
->  4 files changed, 34 insertions(+), 15 deletions(-)
+On 05/03/14 07:18, Vincent Guittot wrote:
+> Create a dedicated topology table for ARM which will create new level to
+> differentiate CPUs that can or not powergate independantly from others.
+> 
+> The patch gives an example of how to add domain that will take advantage of
+> SD_SHARE_POWERDOMAIN.
+> 
+> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+> ---
+>   arch/arm/kernel/topology.c |   26 ++++++++++++++++++++++++++
+>   1 file changed, 26 insertions(+)
+> 
+> diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
+> index 0bc94b1..ae8ffbc 100644
+> --- a/arch/arm/kernel/topology.c
+> +++ b/arch/arm/kernel/topology.c
+> @@ -185,6 +185,15 @@ const struct cpumask *cpu_coregroup_mask(int cpu)
+>   	return &cpu_topology[cpu].core_sibling;
+>   }
+>   
+> +/*
+> + * The current assumption is that we can power gate each core independently.
+> + * This will be superseded by DT binding once available.
+> + */
+> +const struct cpumask *cpu_corepower_mask(int cpu)
+> +{
+> +	return &cpu_topology[cpu].thread_sibling;
+> +}
 
-Hmm, this looks a bit complicated. Since the inv_iotlb_pasid and
-complete_ppr command only support 16 bit pasids by specification, there
-is no way to support pasids with more than 16 bits in general anymore. I
-think the best way to handle it is to just change the PASID_MASK to
-0x0000ffff.
+Although you already explained this to me in a private conversation,
+it's important to notice that running this set-up on a dual cluster TC2
+(2 Cortex A15 - 3 Cortex A7) (no independent core power gating) we
+don't see the SD_SHARE_POWERDOMAIN topology flag set in the sd's on MC
+level because this patch-set doesn't contain the appropriate DT
+parsing. Like you said back then, the comment above mentions this.
 
->  static void build_inv_iotlb_pasid(struct iommu_cmd *cmd, u16 devid, int pasid,
->  				  int qdep, u64 address, bool size)
->  {
-> +	/* Note:
-> +	 * This command supports only 16-bit PASID.
-> +	 * Currently, hardware only implement upto 16-bit PASID
-> +	 * even though the spec says it could have upto 20 bits.
-> +	 * This is likely to be updated in the future revision of
-> +	 * IOMMU specs when the hardware with PASID > 16 bits
-> +	 * become available.
-> +	 */
-> +	BUG_ON(pasid > 0xFFFF);
+> +
+>   static void update_siblings_masks(unsigned int cpuid)
+>   {
+>   	struct cputopo_arm *cpu_topo, *cpuid_topo = &cpu_topology[cpuid];
+> @@ -266,6 +275,20 @@ void store_cpu_topology(unsigned int cpuid)
+>   		cpu_topology[cpuid].socket_id, mpidr);
+>   }
+>   
+> +static struct sched_domain_topology_level arm_topology[] = {
+> +#ifdef CONFIG_SCHED_MC
+> +	{ cpu_corepower_mask, SD_SHARE_PKG_RESOURCES | SD_SHARE_POWERDOMAIN, SD_INIT_NAME(GMC) },
+> +	{ cpu_coregroup_mask, SD_SHARE_PKG_RESOURCES, SD_INIT_NAME(MC) },
+> +#endif
+> +	{ cpu_cpu_mask, SD_INIT_NAME(DIE) },
+> +	{ NULL, },
+> +};
+> +
+> +static void __init set_sched_topology(void)
+> +{
+> +	sched_domain_topology = arm_topology;
+> +}
+> +
+>   /*
+>    * init_cpu_topology is called at boot when only one cpu is running
+>    * which prevent simultaneous write access to cpu_topology array
+> @@ -289,4 +312,7 @@ void __init init_cpu_topology(void)
+>   	smp_wmb();
+>   
+>   	parse_dt_topology();
+> +
+> +	/* Set scheduler topology descriptor */
+> +	set_sched_topology();
+>   }
+> 
 
-We can keep this as BUG_ON(pasid & ~PASID_MASK), but then ...
+How about the core scheduler provides an interface set_sched_topology()
+instead of each arch has its own __init function? Sketched out below
+for ARM.
 
-> -		cmd->data[1]  = pasid & PASID_MASK;
-> +		cmd->data[1]  = pasid & amd_iommu_max_pasid;
+-- >8 --
+Subject: [PATCH] sched: set_sched_topology() as an interface of core scheduler
 
-... masking out the other bits is redundant.
+---
+ arch/arm/kernel/topology.c | 7 +------
+ include/linux/sched.h      | 2 +-
+ kernel/sched/core.c        | 5 +++++
+ 3 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
+index ae8ffbc..89d5592 100644
+--- a/arch/arm/kernel/topology.c
++++ b/arch/arm/kernel/topology.c
+@@ -284,11 +284,6 @@ static struct sched_domain_topology_level arm_topology[] = {
+ 	{ NULL, },
+ };
+ 
+-static void __init set_sched_topology(void)
+-{
+-	sched_domain_topology = arm_topology;
+-}
+-
+ /*
+  * init_cpu_topology is called at boot when only one cpu is running
+  * which prevent simultaneous write access to cpu_topology array
+@@ -314,5 +309,5 @@ void __init init_cpu_topology(void)
+ 	parse_dt_topology();
+ 
+ 	/* Set scheduler topology descriptor */
+-	set_sched_topology();
++	set_sched_topology(arm_topology);
+ }
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 8831413..fefd4e7 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -998,7 +998,7 @@ struct sched_domain_topology_level {
+ #endif
+ };
+ 
+-extern struct sched_domain_topology_level *sched_domain_topology;
++extern void set_sched_topology(struct sched_domain_topology_level *tl);
+ 
+ #ifdef CONFIG_SCHED_DEBUG
+ # define SD_INIT_NAME(type)            .name = #type
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index b4fb0df..a748c92 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -6105,6 +6105,11 @@ static struct sched_domain_topology_level default_topology[] = {
+ 
+ struct sched_domain_topology_level *sched_domain_topology = default_topology;
+ 
++void set_sched_topology(struct sched_domain_topology_level *tl)
++{
++	sched_domain_topology = tl;
++}
++
+ #define for_each_sd_topology(tl)                       \
+        for (tl = sched_domain_topology; tl->mask; tl++)
+ 
+-- 
+1.8.3.2
 
 
-	Joerg
+
 
 
