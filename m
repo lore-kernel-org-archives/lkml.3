@@ -1,63 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753720AbaCENCm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 08:02:42 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:51149 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751919AbaCENCk (ORCPT
+	id S1753865AbaCENEo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 08:04:44 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:52822 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751943AbaCENEm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 08:02:40 -0500
-Date: Wed, 5 Mar 2014 14:02:24 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@ghostprotocols.net,
-        seiji.aguchi@hds.com, jolsa@redhat.com, vincent.weaver@maine.edu,
-        tglx@linutronix.de, hpa@linux.intel.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86, trace: Fix CR2 corruption when tracing
- page faults
-Message-ID: <20140305130224.GQ3104@twins.programming.kicks-ass.net>
-References: <alpine.DEB.2.10.1402211701380.6395@vincent-weaver-1.um.maine.edu>
- <20140228160526.GD1133@krava.brq.redhat.com>
- <tip-0ac09f9f8cd1fb028a48330edba6023d347d3cea@git.kernel.org>
- <20140305111415.GU9987@twins.programming.kicks-ass.net>
- <20140305072022.6f69f699@gandalf.local.home>
- <20140305122535.GA9987@twins.programming.kicks-ass.net>
- <20140305073344.2f179931@gandalf.local.home>
- <20140305125421.GB9987@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140305125421.GB9987@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Wed, 5 Mar 2014 08:04:42 -0500
+From: "Maxin B. John" <maxin.john@gmail.com>
+To: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Cc: gregkh@linuxfoundation.org, andreas.dilger@intel.com,
+        josh@joshtriplett.org, bergwolf@gmail.com,
+        dulshani.gunawardhana89@gmail.com, jinshan.xiong@intel.com,
+        alexey.zhuravlev@intel.com, "Maxin B. John" <maxin.john@enea.com>
+Subject: [PATCH 1/2] lustre/mdc_lib: fix possible null pointer dereference
+Date: Wed,  5 Mar 2014 14:04:35 +0100
+Message-Id: <1394024676-35160-1-git-send-email-maxin.john@enea.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 05, 2014 at 01:54:21PM +0100, Peter Zijlstra wrote:
-> On Wed, Mar 05, 2014 at 07:33:44AM -0500, Steven Rostedt wrote:
-> > Then we better make sure that __do_page_fault() is never inlined.
-> > Otherwise, it wont be available to trace.
-> > 
-> > I'm fine with adding "notrace" to do_page_fault() and to
-> > trace_do_page_fault() as long as we also include a "noinline" to
-> > __do_page_fault(). Would need a comment stating why that noinline is
-> > there though.
-> 
-> When CONFIG_TRACING there's two callers, which makes it highly unlikely
-> GCC would inline the massive __do_page_fault() function, but sure.
-> 
-> How about something like so then; still has the normal_do_page_fault()
-> thing, although I suppose we could drop that.
-> 
-> It also puts trace_page_fault_entries() and trace_do_page_fault() under
-> CONFIG_TRACING. I could only find the entry_32.S user; I suppose the
-> 64bit one is hidden by CPP goo somewhere?
+From: "Maxin B. John" <maxin.john@enea.com>
 
-> +trace_errorentry page_fault normal_do_page_fault
+cppcheck reported possible null pointer dereference in mdc_lib.c
 
-ah found it; its in there. That also means the normal_do_page_fault()
-thing won't actually compile proper.
+[lustre/lustre/mdc/mdc_lib.c:233]: (error) Possible null pointer dereference
+: op_data - otherwise it is redundant to check if op_data is null at line 226
 
-Lemme do one with that.
+Signed-off-by: Maxin B. John <maxin.john@enea.com>
+---
+ drivers/staging/lustre/lustre/mdc/mdc_lib.c |   41 ++++++++++++++-------------
+ 1 file changed, 21 insertions(+), 20 deletions(-)
+
+diff --git a/drivers/staging/lustre/lustre/mdc/mdc_lib.c b/drivers/staging/lustre/lustre/mdc/mdc_lib.c
+index 91f6876..594e07c 100644
+--- a/drivers/staging/lustre/lustre/mdc/mdc_lib.c
++++ b/drivers/staging/lustre/lustre/mdc/mdc_lib.c
+@@ -223,29 +223,30 @@ void mdc_open_pack(struct ptlrpc_request *req, struct md_op_data *op_data,
+ 	rec->cr_fsuid    = from_kuid(&init_user_ns, current_fsuid());
+ 	rec->cr_fsgid    = from_kgid(&init_user_ns, current_fsgid());
+ 	rec->cr_cap      = cfs_curproc_cap_pack();
++
+ 	if (op_data != NULL) {
+ 		rec->cr_fid1 = op_data->op_fid1;
+ 		rec->cr_fid2 = op_data->op_fid2;
+-	}
+-	rec->cr_mode     = mode;
+-	cr_flags = mds_pack_open_flags(flags, mode);
+-	rec->cr_rdev     = rdev;
+-	rec->cr_time     = op_data->op_mod_time;
+-	rec->cr_suppgid1 = op_data->op_suppgids[0];
+-	rec->cr_suppgid2 = op_data->op_suppgids[1];
+-	rec->cr_bias     = op_data->op_bias;
+-	rec->cr_umask    = current_umask();
+-	rec->cr_old_handle = op_data->op_handle;
+-
+-	mdc_pack_capa(req, &RMF_CAPA1, op_data->op_capa1);
+-	/* the next buffer is child capa, which is used for replay,
+-	 * will be packed from the data in reply message. */
+-
+-	if (op_data->op_name) {
+-		tmp = req_capsule_client_get(&req->rq_pill, &RMF_NAME);
+-		LOGL0(op_data->op_name, op_data->op_namelen, tmp);
+-		if (op_data->op_bias & MDS_CREATE_VOLATILE)
+-			cr_flags |= MDS_OPEN_VOLATILE;
++		rec->cr_mode     = mode;
++		cr_flags = mds_pack_open_flags(flags, mode);
++		rec->cr_rdev     = rdev;
++		rec->cr_time     = op_data->op_mod_time;
++		rec->cr_suppgid1 = op_data->op_suppgids[0];
++		rec->cr_suppgid2 = op_data->op_suppgids[1];
++		rec->cr_bias     = op_data->op_bias;
++		rec->cr_umask    = current_umask();
++		rec->cr_old_handle = op_data->op_handle;
++
++		mdc_pack_capa(req, &RMF_CAPA1, op_data->op_capa1);
++		/* the next buffer is child capa, which is used for replay,
++		* will be packed from the data in reply message. */
++
++		if (op_data->op_name) {
++			tmp = req_capsule_client_get(&req->rq_pill, &RMF_NAME);
++			LOGL0(op_data->op_name, op_data->op_namelen, tmp);
++			if (op_data->op_bias & MDS_CREATE_VOLATILE)
++				cr_flags |= MDS_OPEN_VOLATILE;
++		}
+ 	}
+ 
+ 	if (lmm) {
+-- 
+1.7.10.4
+
