@@ -1,107 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754001AbaCEJhL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 04:37:11 -0500
-Received: from ZIVM-WWU3-1.UNI-MUENSTER.DE ([128.176.192.17]:6175 "EHLO
-	zivm-wwu3.uni-muenster.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752625AbaCEJhH (ORCPT
+	id S1753895AbaCEJmV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 04:42:21 -0500
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:52116 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751943AbaCEJmS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 04:37:07 -0500
-X-Greylist: delayed 595 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Mar 2014 04:37:06 EST
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgEFADvtFlOAsLwY/2dsb2JhbABagwbCHYEXFnSCJQEBAQMBJxM6BQULCxUDCRUQDwFHBhOHcQjNaxeNbWQHhDgElFKKMItmgy6BZw
-X-IPAS-Result: AgEFADvtFlOAsLwY/2dsb2JhbABagwbCHYEXFnSCJQEBAQMBJxM6BQULCxUDCRUQDwFHBhOHcQjNaxeNbWQHhDgElFKKMItmgy6BZw
-X-IronPort-AV: E=Sophos;i="4.97,591,1389740400"; 
-   d="scan'208";a="29345578"
-From: Markus Blank-Burian <burian@muenster.de>
-To: Hugh Dickins <hughd@google.com>
-Cc: Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Filipe Brandenburger <filbranden@google.com>,
-        Li Zefan <lizefan@huawei.com>,
+	Wed, 5 Mar 2014 04:42:18 -0500
+Date: Wed, 5 Mar 2014 10:42:10 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Alexey Perevalov <a.perevalov@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Anton Vorontsov <anton@enomsg.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>, cw00.choi@samsung.com,
         Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>,
-        Shawn Bohrer <shawn.bohrer@gmail.com>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 1/2] memcg: reparent charges of children before processing parent
-Date: Wed, 05 Mar 2014 10:27:08 +0100
-Message-ID: <1645786.OfqIDFbIrl@akheu22.uni-muenster.de>
-User-Agent: KMail/4.12.2 (Linux/3.13.4-gentoo; KDE/4.12.2; x86_64; ; )
-In-Reply-To: <alpine.LSU.2.11.1402121500070.5029@eggly.anvils>
-References: <alpine.LSU.2.11.1402121500070.5029@eggly.anvils>
+        Anton Vorontsov <anton.vorontsov@linaro.org>
+Subject: Re: [PATCH v4 5/6] timerfd: Add support for deferrable timers
+Message-ID: <20140305094210.GA6328@netboy>
+References: <1392913425-29369-1-git-send-email-a.perevalov@samsung.com>
+ <1392913425-29369-6-git-send-email-a.perevalov@samsung.com>
+ <530D5715.1050901@mit.edu>
+ <alpine.DEB.2.02.1403042153520.18573@ionos.tec.linutronix.de>
+ <CALCETrVsmXjkC28pTSCfywTZCeHVcfvyFvHAXubEJ7=TRoEmPQ@mail.gmail.com>
+ <alpine.DEB.2.02.1403042254550.18573@ionos.tec.linutronix.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1403042254550.18573@ionos.tec.linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I wanted to give you small feedback, that this patch successfully fixes the 
-problem with reparent_charges on our cluster. Thank you very much for finding 
-and fixing this one!
+On Tue, Mar 04, 2014 at 11:11:21PM +0100, Thomas Gleixner wrote:
+> 
+> Once we agree on a solution to the Y2038 issue on 32bit with a unified
+> 32/64 bit syscall interface which simply gets rid of the timespec/val
+> nonsense and takes a simple u64 nsec value we can add the slack
+> property to that without any further inconvenience.
 
+Can you expand on this tangent a bit?
 
-On Wednesday 12 February 2014 15:03:31 Hugh Dickins wrote:
-> From: Filipe Brandenburger <filbranden@google.com>
-> 
-> Sometimes the cleanup after memcg hierarchy testing gets stuck in
-> mem_cgroup_reparent_charges(), unable to bring non-kmem usage down to 0.
-> 
-> There may turn out to be several causes, but a major cause is this: the
-> workitem to offline parent can get run before workitem to offline child;
-> parent's mem_cgroup_reparent_charges() circles around waiting for the
-> child's pages to be reparented to its lrus, but it's holding cgroup_mutex
-> which prevents the child from reaching its mem_cgroup_reparent_charges().
-> 
-> Further testing showed that an ordered workqueue for cgroup_destroy_wq
-> is not always good enough: percpu_ref_kill_and_confirm's call_rcu_sched
-> stage on the way can mess up the order before reaching the workqueue.
-> 
-> Instead, when offlining a memcg, call mem_cgroup_reparent_charges() on
-> all its children (and grandchildren, in the correct order) to have their
-> charges reparented first.
-> 
-> Fixes: e5fca243abae ("cgroup: use a dedicated workqueue for cgroup
-> destruction") Signed-off-by: Filipe Brandenburger <filbranden@google.com>
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> Cc: stable@vger.kernel.org # v3.10+ (but will need extra care)
-> ---
-> Or, you may prefer my alternative cgroup.c approach in 2/2:
-> there's no need for both.  Please note that neither of these patches
-> attempts to handle the unlikely case of racy charges made to child
-> after its offline, but parent's offline coming before child's free:
-> mem_cgroup_css_free()'s backstop call to mem_cgroup_reparent_charges()
-> cannot help in that case, with or without these patches.  Fixing that
-> would have to be a separate effort - Michal's?
-> 
->  mm/memcontrol.c |   10 +++++++++-
->  1 file changed, 9 insertions(+), 1 deletion(-)
-> 
-> --- 3.14-rc2/mm/memcontrol.c	2014-02-02 18:49:07.897302115 -0800
-> +++ linux/mm/memcontrol.c	2014-02-11 17:48:07.604582963 -0800
-> @@ -6595,6 +6595,7 @@ static void mem_cgroup_css_offline(struc
->  {
->  	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
->  	struct mem_cgroup_event *event, *tmp;
-> +	struct cgroup_subsys_state *iter;
-> 
->  	/*
->  	 * Unregister events and notify userspace.
-> @@ -6611,7 +6612,14 @@ static void mem_cgroup_css_offline(struc
->  	kmem_cgroup_css_offline(memcg);
-> 
->  	mem_cgroup_invalidate_reclaim_iterators(memcg);
-> -	mem_cgroup_reparent_charges(memcg);
-> +
-> +	/*
-> +	 * This requires that offlining is serialized.  Right now that is
-> +	 * guaranteed because css_killed_work_fn() holds the cgroup_mutex.
-> +	 */
-> +	css_for_each_descendant_post(iter, css)
-> +		mem_cgroup_reparent_charges(mem_cgroup_from_css(iter));
-> +
->  	mem_cgroup_destroy_all_caches(memcg);
->  	vmpressure_cleanup(&memcg->vmpressure);
->  }
+Who needs to agree, and where is this being debated?
 
+Thanks,
+Richard
