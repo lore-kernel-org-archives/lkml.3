@@ -1,146 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755612AbaCELlB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 06:41:01 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:43215 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754964AbaCELk7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 06:40:59 -0500
-Date: Wed, 5 Mar 2014 11:40:54 +0000
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Tanmay Inamdar <tinamdar@apm.com>
-Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v5 0/7] [RFC] Support for creating generic host_bridge
- from device tree
-Message-ID: <20140305114054.GG1692@e106497-lin.cambridge.arm.com>
-Mail-Followup-To: Tanmay Inamdar <tinamdar@apm.com>,
-	linux-pci <linux-pci@vger.kernel.org>,
-	Bjorn Helgaas <bhelgaas@google.com>,
-	Catalin Marinas <Catalin.Marinas@arm.com>,
-	Will Deacon <Will.Deacon@arm.com>,
-	linaro-kernel <linaro-kernel@lists.linaro.org>,
-	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-	LAKML <linux-arm-kernel@lists.infradead.org>,
-	Arnd Bergmann <arnd@arndb.de>
-References: <1393948204-11555-1-git-send-email-Liviu.Dudau@arm.com>
- <CACoXjcmmbVsmvy46NhjFoBg8mRO=APiY3dZZY=ra-Ceib9Sr4A@mail.gmail.com>
+	id S1755884AbaCELmi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 06:42:38 -0500
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:13991
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755787AbaCELme convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 06:42:34 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zcb8kz98dIc89bh1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz8275ch1de098h17326ah8275bh8275dh1de097h186068hz2dh87h2a8h839h947hd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Wed, 5 Mar 2014 19:42:28 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Vincent =?iso-8859-1?Q?Stehl=E9?= <vincent.stehle@freescale.com>
+CC: Sascha Hauer <kernel@pengutronix.de>,
+        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v2] ARM: dts: imx6qdl-sabresd.dtsi: Add red led
+Message-ID: <20140305114223.GN8784@S2101-09.ap.freescale.net>
+References: <20140305062216.GI8784@S2101-09.ap.freescale.net>
+ <1394007383-21874-1-git-send-email-vincent.stehle@freescale.com>
 MIME-Version: 1.0
-In-Reply-To: <CACoXjcmmbVsmvy46NhjFoBg8mRO=APiY3dZZY=ra-Ceib9Sr4A@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 05 Mar 2014 11:40:55.0324 (UTC) FILETIME=[C4E62DC0:01CF3867]
-X-MC-Unique: 114030511405607501
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Disposition: inline
+In-Reply-To: <1394007383-21874-1-git-send-email-vincent.stehle@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 05, 2014 at 01:53:55AM +0000, Tanmay Inamdar wrote:
-> Hello,
+On Wed, Mar 05, 2014 at 09:16:23AM +0100, Vincent Stehlé wrote:
+> Make the red gpio led available to the user.
 > 
-> Thanks for the patch set.
+> This can be toggled with the sysfs for example, or used as a heartbeat or mmc
+> activity light by changing the trigger.
 > 
-> On Tue, Mar 4, 2014 at 7:49 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> > This is v5 of my attempt to add support for a generic pci_host_bridge controller created
-> > from a description passed in the device tree.
-> >
-> > Changes from v4:
-> >   - Export pci_find_host_bridge() to be used by arch code. There is scope for
-> >     making the arch/arm64 version of pci_domain_nr the default weak implementation
-> >     but that would double the size of this series in order to handle all #define
-> >     versions of the pci_domain_nr() function, so I suggest keeping that for a separate
-> >     cleanup series.
-> >
-> > Changes from v3:
-> >   - Dynamically allocate bus_range resource in of_create_pci_host_bridge()
-> >   - Fix the domain number used when creating child busses.
-> >   - Changed domain number allocator to use atomic operations.
-> >   - Use ERR_PTR() to propagate the error out of pci_create_root_bus_in_domain()
-> >     and of_create_pci_host_bridge().
-> >
-> > Changes from v2:
-> >   - Use range->cpu_addr when calling pci_address_to_pio()
-> >   - Introduce pci_register_io_range() helper function in order to register
-> >     io ranges ahead of their conversion to PIO values. This is needed as no
-> >     information is being stored yet regarding the range mapping, making
-> >     pci_address_to_pio() fail. Default weak implementation does nothing,
-> >     to cover the default weak implementation of pci_address_to_pio() that
-> >     expects direct mapping of physical addresses into PIO values (x86 view).
-> >
-> > Changes from v1:
-> >   - Add patch to fix conversion of IO ranges into IO resources.
-> >   - Added a domain_nr member to pci_host_bridge structure, and a new function
-> >     to create a root bus in a given domain number. In order to facilitate that
-> >     I propose changing the order of initialisation between pci_host_bridge and
-> >     it's related bus in pci_create_root_bus() as sort of a rever of 7b5436635800.
-> >     This is done in patch 1/4 and 2/4.
-> >   - Added a simple allocator of domain numbers in drivers/pci/host-bridge.c. The
-> >     code will first try to get a domain id from of_alias_get_id(..., "pci-domain")
-> >     and if that fails assign the next unallocated domain id.
-> >   - Changed the name of the function that creates the generic host bridge from
-> >     pci_host_bridge_of_init to of_create_pci_host_bridge and exported as GPL symbol.
-> >
-> >
-> > v4 thread here: https://lkml.org/lkml/2014/3/3/301
-> > v3 thread here: https://lkml.org/lkml/2014/2/28/216
-> > v2 thread here: https://lkml.org/lkml/2014/2/27/245
-> > v1 thread here: https://lkml.org/lkml/2014/2/3/380
-> >
-> > Best regards,
-> > Liviu
-> >
-> > Liviu Dudau (7):
-> >   pci: Introduce pci_register_io_range() helper function.
-> >   pci: OF: Fix the conversion of IO ranges into IO resources.
-> >   pci: Create pci_host_bridge before its associated bus in pci_create_root_bus.
-> >   pci: Introduce a domain number for pci_host_bridge.
-> >   pci: Use parent domain number when allocating child busses.
-> >   pci: Export find_pci_host_bridge() function.
-> >   pci: Add support for creating a generic host_bridge from device tree
-> >
-> >  drivers/of/address.c       |  39 +++++++++++++
-> >  drivers/pci/host-bridge.c  | 142 ++++++++++++++++++++++++++++++++++++++++++++-
-> >  drivers/pci/probe.c        |  72 +++++++++++++++--------
-> >  include/linux/of_address.h |  14 +----
-> >  include/linux/pci.h        |  17 ++++++
-> >  5 files changed, 248 insertions(+), 36 deletions(-)
-> >
-> > --
-> > 1.9.0
-> >
+> Signed-off-by: Vincent Stehlé <vincent.stehle@freescale.com>
+> Cc: Shawn Guo <shawn.guo@linaro.org>
+> Cc: Sascha Hauer <kernel@pengutronix.de>
 > 
-> This series is working fine on X-Gene with multiple PCIe ports. You
-> can add my Tested-by if you want.
+> ---
+> 
+> Hi Shawn,
+> 
+> Thanks for your feedback.
+> 
+> If you don't want to make the led a heartbeat by default, here is v2 of the
+> patch, which only makes the led available to the user. One is then free to use
+> it as a heartbeat, or something else. Do you prefer it this way?
+> 
+> Best regards,
+> 
+> V.
+> 
+> 
+> Changes since v1:
+> - Do not make it a heartbeat by default.
+> 
+>  arch/arm/boot/dts/imx6qdl-sabresd.dtsi | 11 +++++++++++
+>  1 file changed, 11 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/imx6qdl-sabresd.dtsi b/arch/arm/boot/dts/imx6qdl-sabresd.dtsi
+> index e75e11b..210a8df 100644
+> --- a/arch/arm/boot/dts/imx6qdl-sabresd.dtsi
+> +++ b/arch/arm/boot/dts/imx6qdl-sabresd.dtsi
+> @@ -88,6 +88,16 @@
+>  		default-brightness-level = <7>;
+>  		status = "okay";
+>  	};
+> +
+> +	leds {
+> +		compatible = "gpio-leds";
+> +
+> +		red {
+> +		        gpios = <&gpio1 2 0>;
+> +		        linux,default-trigger = "none";
 
-What about the arm64 series, can I add a Tested-by to that one as well?
+Per Documentation/devicetree/bindings/leds/common.txt, 'none' is not a
+valid value of property 'linux,default-trigger'.  I suggest you simply
+drop the property.
 
-Thanks,
-Liviu
+> +		        default-state = "on";
+> +		};
+> +	};
+>  };
+>  
+>  &audmux {
+> @@ -182,6 +192,7 @@
+>  				MX6QDL_PAD_ENET_TXD1__GPIO1_IO29 0x80000000
+>  				MX6QDL_PAD_EIM_D22__GPIO3_IO22  0x80000000
+>  				MX6QDL_PAD_ENET_CRS_DV__GPIO1_IO25 0x80000000
+> +				MX6QDL_PAD_GPIO_2__GPIO1_IO02 0x80000000
 
+It's not a hog pin, so shouldn't be added here.  (Right, most of the
+existing pins shouldn't be here from the beginning)
+
+The patch from Liu Ying [1] could be a good example on this regard.
+
+Shawn
+
+[1] http://www.spinics.net/lists/arm-kernel/msg308999.html
+
+>  			>;
+>  		};
+>  	};
+> -- 
+> 1.9.0
 > 
-> Thanks,
-> Tanmay
 > 
-
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    Â¯\_(ãƒ„)_/Â¯
 
