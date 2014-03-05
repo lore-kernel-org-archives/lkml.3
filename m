@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757378AbaCEO0Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:26:25 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41112 "EHLO
+	id S1757598AbaCEO0y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:26:54 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41176 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757340AbaCEO0W (ORCPT
+	with ESMTP id S1757450AbaCEO0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:26:22 -0500
+	Wed, 5 Mar 2014 09:26:39 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Florian Westphal <fw@strlen.de>, "David S. Miller" <davem@davemloft.net>,
+Cc: Kailang Yang <kailang@realtek.com>, Takashi Iwai <tiwai@suse.de>,
+        Hui Wang <hui.wang@canonical.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 082/131] net: ip, ipv6: handle gso skbs in forwarding path
-Date: Wed,  5 Mar 2014 14:23:26 +0000
-Message-Id: <1394029455-23128-83-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 093/131] ALSA: hda/realtek - Add more entry for enable HP mute led
+Date: Wed,  5 Mar 2014 14:23:37 +0000
+Message-Id: <1394029455-23128-94-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -27,227 +28,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Westphal <fw@strlen.de>
+From: Kailang Yang <kailang@realtek.com>
 
-commit fe6cc55f3a9a053482a76f5a6b2257cee51b4663 upstream.
+commit c60666bd2224a32606364fdbc620e4cb9446a1d1 upstream.
 
-Marcelo Ricardo Leitner reported problems when the forwarding link path
-has a lower mtu than the incoming one if the inbound interface supports GRO.
+More HP machine need mute led support.
 
-Given:
-Host <mtu1500> R1 <mtu1200> R2
-
-Host sends tcp stream which is routed via R1 and R2.  R1 performs GRO.
-
-In this case, the kernel will fail to send ICMP fragmentation needed
-messages (or pkt too big for ipv6), as GSO packets currently bypass dstmtu
-checks in forward path. Instead, Linux tries to send out packets exceeding
-the mtu.
-
-When locking route MTU on Host (i.e., no ipv4 DF bit set), R1 does
-not fragment the packets when forwarding, and again tries to send out
-packets exceeding R1-R2 link mtu.
-
-This alters the forwarding dstmtu checks to take the individual gso
-segment lengths into account.
-
-For ipv6, we send out pkt too big error for gso if the individual
-segments are too big.
-
-For ipv4, we either send icmp fragmentation needed, or, if the DF bit
-is not set, perform software segmentation and let the output path
-create fragments when the packet is leaving the machine.
-It is not 100% correct as the error message will contain the headers of
-the GRO skb instead of the original/segmented one, but it seems to
-work fine in my (limited) tests.
-
-Eric Dumazet suggested to simply shrink mss via ->gso_size to avoid
-sofware segmentation.
-
-However it turns out that skb_segment() assumes skb nr_frags is related
-to mss size so we would BUG there.  I don't want to mess with it considering
-Herbert and Eric disagree on what the correct behavior should be.
-
-Hannes Frederic Sowa notes that when we would shrink gso_size
-skb_segment would then also need to deal with the case where
-SKB_MAX_FRAGS would be exceeded.
-
-This uses sofware segmentation in the forward path when we hit ipv4
-non-DF packets and the outgoing link mtu is too small.  Its not perfect,
-but given the lack of bug reports wrt. GRO fwd being broken this is a
-rare case anyway.  Also its not like this could not be improved later
-once the dust settles.
-
-Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
-Reported-by: Marcelo Ricardo Leitner <mleitner@redhat.com>
-Signed-off-by: Florian Westphal <fw@strlen.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[ luis: backported to 3.11: used davem's backport to 3.10 ]
+Signed-off-by: Kailang Yang <kailang@realtek.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Cc: Hui Wang <hui.wang@canonical.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/linux/skbuff.h | 17 ++++++++++++
- net/ipv4/ip_forward.c  | 71 ++++++++++++++++++++++++++++++++++++++++++++++++--
- net/ipv6/ip6_output.c  | 17 ++++++++++--
- 3 files changed, 101 insertions(+), 4 deletions(-)
+ sound/pci/hda/patch_realtek.c | 47 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 47 insertions(+)
 
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 3d9dcd4..29db63f 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -2816,5 +2816,22 @@ static inline bool skb_head_is_locked(const struct sk_buff *skb)
- {
- 	return !skb->head_frag || skb_cloned(skb);
- }
-+
-+/**
-+ * skb_gso_network_seglen - Return length of individual segments of a gso packet
-+ *
-+ * @skb: GSO skb
-+ *
-+ * skb_gso_network_seglen is used to determine the real size of the
-+ * individual segments, including Layer3 (IP, IPv6) and L4 headers (TCP/UDP).
-+ *
-+ * The MAC/L2 header is not accounted for.
-+ */
-+static inline unsigned int skb_gso_network_seglen(const struct sk_buff *skb)
-+{
-+	unsigned int hdr_len = skb_transport_header(skb) -
-+			       skb_network_header(skb);
-+	return hdr_len + skb_gso_transport_seglen(skb);
-+}
- #endif	/* __KERNEL__ */
- #endif	/* _LINUX_SKBUFF_H */
-diff --git a/net/ipv4/ip_forward.c b/net/ipv4/ip_forward.c
-index 694de3b..98d7e53 100644
---- a/net/ipv4/ip_forward.c
-+++ b/net/ipv4/ip_forward.c
-@@ -39,6 +39,71 @@
- #include <net/route.h>
- #include <net/xfrm.h>
- 
-+static bool ip_may_fragment(const struct sk_buff *skb)
-+{
-+	return unlikely((ip_hdr(skb)->frag_off & htons(IP_DF)) == 0) ||
-+	       !skb->local_df;
-+}
-+
-+static bool ip_exceeds_mtu(const struct sk_buff *skb, unsigned int mtu)
-+{
-+	if (skb->len <= mtu || skb->local_df)
-+		return false;
-+
-+	if (skb_is_gso(skb) && skb_gso_network_seglen(skb) <= mtu)
-+		return false;
-+
-+	return true;
-+}
-+
-+static bool ip_gso_exceeds_dst_mtu(const struct sk_buff *skb)
-+{
-+	unsigned int mtu;
-+
-+	if (skb->local_df || !skb_is_gso(skb))
-+		return false;
-+
-+	mtu = dst_mtu(skb_dst(skb));
-+
-+	/* if seglen > mtu, do software segmentation for IP fragmentation on
-+	 * output.  DF bit cannot be set since ip_forward would have sent
-+	 * icmp error.
-+	 */
-+	return skb_gso_network_seglen(skb) > mtu;
-+}
-+
-+/* called if GSO skb needs to be fragmented on forward */
-+static int ip_forward_finish_gso(struct sk_buff *skb)
-+{
-+	struct dst_entry *dst = skb_dst(skb);
-+	netdev_features_t features;
-+	struct sk_buff *segs;
-+	int ret = 0;
-+
-+	features = netif_skb_dev_features(skb, dst->dev);
-+	segs = skb_gso_segment(skb, features & ~NETIF_F_GSO_MASK);
-+	if (IS_ERR(segs)) {
-+		kfree_skb(skb);
-+		return -ENOMEM;
-+	}
-+
-+	consume_skb(skb);
-+
-+	do {
-+		struct sk_buff *nskb = segs->next;
-+		int err;
-+
-+		segs->next = NULL;
-+		err = dst_output(segs);
-+
-+		if (err && ret == 0)
-+			ret = err;
-+		segs = nskb;
-+	} while (segs);
-+
-+	return ret;
-+}
-+
- static int ip_forward_finish(struct sk_buff *skb)
- {
- 	struct ip_options *opt	= &(IPCB(skb)->opt);
-@@ -49,6 +114,9 @@ static int ip_forward_finish(struct sk_buff *skb)
- 	if (unlikely(opt->optlen))
- 		ip_forward_options(skb);
- 
-+	if (ip_gso_exceeds_dst_mtu(skb))
-+		return ip_forward_finish_gso(skb);
-+
- 	return dst_output(skb);
- }
- 
-@@ -88,8 +156,7 @@ int ip_forward(struct sk_buff *skb)
- 	if (opt->is_strictroute && rt->rt_uses_gateway)
- 		goto sr_failed;
- 
--	if (unlikely(skb->len > dst_mtu(&rt->dst) && !skb_is_gso(skb) &&
--		     (ip_hdr(skb)->frag_off & htons(IP_DF))) && !skb->local_df) {
-+	if (!ip_may_fragment(skb) && ip_exceeds_mtu(skb, dst_mtu(&rt->dst))) {
- 		IP_INC_STATS(dev_net(rt->dst.dev), IPSTATS_MIB_FRAGFAILS);
- 		icmp_send(skb, ICMP_DEST_UNREACH, ICMP_FRAG_NEEDED,
- 			  htonl(dst_mtu(&rt->dst)));
-diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
-index e50a9e3..554eb0d 100644
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -346,6 +346,20 @@ static inline int ip6_forward_finish(struct sk_buff *skb)
- 	return dst_output(skb);
- }
- 
-+static bool ip6_pkt_too_big(const struct sk_buff *skb, unsigned int mtu)
-+{
-+	if (skb->len <= mtu || skb->local_df)
-+		return false;
-+
-+	if (IP6CB(skb)->frag_max_size && IP6CB(skb)->frag_max_size > mtu)
-+		return true;
-+
-+	if (skb_is_gso(skb) && skb_gso_network_seglen(skb) <= mtu)
-+		return false;
-+
-+	return true;
-+}
-+
- int ip6_forward(struct sk_buff *skb)
- {
- 	struct dst_entry *dst = skb_dst(skb);
-@@ -468,8 +482,7 @@ int ip6_forward(struct sk_buff *skb)
- 	if (mtu < IPV6_MIN_MTU)
- 		mtu = IPV6_MIN_MTU;
- 
--	if ((!skb->local_df && skb->len > mtu && !skb_is_gso(skb)) ||
--	    (IP6CB(skb)->frag_max_size && IP6CB(skb)->frag_max_size > mtu)) {
-+	if (ip6_pkt_too_big(skb, mtu)) {
- 		/* Again, force OUTPUT device used as source address */
- 		skb->dev = dst->dev;
- 		icmpv6_send(skb, ICMPV6_PKT_TOOBIG, 0, mtu);
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index 3bebaaf..516410e 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -3811,6 +3811,53 @@ static const struct snd_pci_quirk alc269_fixup_tbl[] = {
+ 	SND_PCI_QUIRK(0x103c, 0x18e6, "HP", ALC269_FIXUP_HP_GPIO_LED),
+ 	SND_PCI_QUIRK(0x103c, 0x1973, "HP Pavilion", ALC269_FIXUP_HP_MUTE_LED_MIC1),
+ 	SND_PCI_QUIRK(0x103c, 0x1983, "HP Pavilion", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	/* ALC282 */
++	SND_PCI_QUIRK(0x103c, 0x220f, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x2213, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x2266, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x2267, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x2268, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x2269, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x226a, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x226b, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x227a, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x227b, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x229e, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x22a0, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x22b2, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x22b7, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x22bf, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x22c0, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x22c1, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x22c2, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x22cd, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x22ce, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x22cf, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x22d0, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	/* ALC290 */
++	SND_PCI_QUIRK(0x103c, 0x2260, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x2261, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x2262, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x2263, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x2264, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x2265, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x227d, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x227e, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x227f, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x2280, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x2281, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x2282, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x2289, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x228a, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x228b, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x228c, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x228e, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x22c5, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x22c6, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x22c7, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x22c8, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x22c3, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
++	SND_PCI_QUIRK(0x103c, 0x22c4, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC1),
+ 	SND_PCI_QUIRK_VENDOR(0x103c, "HP", ALC269_FIXUP_HP_MUTE_LED),
+ 	SND_PCI_QUIRK(0x1043, 0x106d, "Asus K53BE", ALC269_FIXUP_LIMIT_INT_MIC_BOOST),
+ 	SND_PCI_QUIRK(0x1043, 0x115d, "Asus 1015E", ALC269_FIXUP_LIMIT_INT_MIC_BOOST),
 -- 
 1.9.0
 
