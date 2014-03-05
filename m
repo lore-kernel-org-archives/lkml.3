@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753382AbaCEKCx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 05:02:53 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:43470 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751604AbaCEKCu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 05:02:50 -0500
-Message-ID: <1394013763.16890.1.camel@phoenix>
-Subject: [PATCH] regulator: pfuze100: Add PFUZE200 support to Kconfig and
- module description
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Robin Gong <b38343@freescale.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org
-Date: Wed, 05 Mar 2014 18:02:43 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754210AbaCEKEP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 05:04:15 -0500
+Received: from sym2.noone.org ([178.63.92.236]:45450 "EHLO sym2.noone.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753798AbaCEKEI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 05:04:08 -0500
+Date: Wed, 5 Mar 2014 11:04:05 +0100
+From: Tobias Klauser <tklauser@distanz.ch>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: gregkh@linuxfoundation.org, sachin.kamat@linaro.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        dulshani.gunawardhana89@gmail.com
+Subject: Re: [PATCH] staging: cxt1e1: use kzalloc instead of kmalloc/memset
+ 0
+Message-ID: <20140305100405.GG1883@distanz.ch>
+References: <1673333.LFj7fBDsDS@daeseok-laptop.cloud.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1673333.LFj7fBDsDS@daeseok-laptop.cloud.net>
+X-Editor: Vi IMproved 7.2
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/Kconfig              | 6 +++---
- drivers/regulator/pfuze100-regulator.c | 2 +-
- 2 files changed, 4 insertions(+), 4 deletions(-)
+On 2014-03-05 at 03:37:15 +0100, Daeseok Youn <daeseok.youn@gmail.com> wrote:
+> 
+> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+> ---
+>  drivers/staging/cxt1e1/sbecom_inline_linux.h |    6 ++----
+>  1 files changed, 2 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/staging/cxt1e1/sbecom_inline_linux.h b/drivers/staging/cxt1e1/sbecom_inline_linux.h
+> index ba3ff3e..6dd1b55 100644
+> --- a/drivers/staging/cxt1e1/sbecom_inline_linux.h
+> +++ b/drivers/staging/cxt1e1/sbecom_inline_linux.h
+> @@ -46,11 +46,9 @@ void        pci_write_32 (u_int32_t *p, u_int32_t v);
+>  static inline void *
+>  OS_kmalloc (size_t size)
+>  {
+> -    char       *ptr = kmalloc (size, GFP_KERNEL | GFP_DMA);
+> +	char *ptr = kzalloc(size, GFP_KERNEL | GFP_DMA);
+>  
+> -    if (ptr)
+> -        memset (ptr, 0, size);
+> -    return ptr;
+> +	return ptr;
+>  }
 
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index 4ddfb6c..eb36d8b 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -408,12 +408,12 @@ config REGULATOR_PCF50633
- 	 on PCF50633
- 
- config REGULATOR_PFUZE100
--	tristate "Freescale PFUZE100 regulator driver"
-+	tristate "Freescale PFUZE100/PFUZE200 regulator driver"
- 	depends on I2C
- 	select REGMAP_I2C
- 	help
--	  Say y here to support the regulators found on the Freescale PFUZE100
--	  PMIC.
-+	  Say y here to support the regulators found on the Freescale
-+	  PFUZE100/PFUZE200 PMIC.
- 
- config REGULATOR_RC5T583
- 	tristate "RICOH RC5T583 Power regulators"
-diff --git a/drivers/regulator/pfuze100-regulator.c b/drivers/regulator/pfuze100-regulator.c
-index f87ec70..67e678c 100644
---- a/drivers/regulator/pfuze100-regulator.c
-+++ b/drivers/regulator/pfuze100-regulator.c
-@@ -527,6 +527,6 @@ static struct i2c_driver pfuze_driver = {
- module_i2c_driver(pfuze_driver);
- 
- MODULE_AUTHOR("Robin Gong <b38343@freescale.com>");
--MODULE_DESCRIPTION("Regulator Driver for Freescale PFUZE100 PMIC");
-+MODULE_DESCRIPTION("Regulator Driver for Freescale PFUZE100/PFUZE200 PMIC");
- MODULE_LICENSE("GPL v2");
- MODULE_ALIAS("i2c:pfuze100-regulator");
--- 
-1.8.1.2
+It would probably be even better to get rid of this function altogether
+and replace all calls to it by kmalloc/kzalloc.
 
+>From a quick look at the users of OS_kmalloc, it also looks like GFP_DMA
+isn't needed for all of them.
 
-
+Cheers
+Tobias
