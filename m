@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757561AbaCETwU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 14:52:20 -0500
-Received: from mga02.intel.com ([134.134.136.20]:42787 "EHLO mga02.intel.com"
+	id S1757527AbaCETwR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 14:52:17 -0500
+Received: from mga11.intel.com ([192.55.52.93]:42534 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755552AbaCETtq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756211AbaCETtq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Mar 2014 14:49:46 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,594,1389772800"; 
-   d="scan'208";a="467243877"
+   d="scan'208";a="486652908"
 From: Andi Kleen <andi@firstfloor.org>
 To: acme@infradead.org
 Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, peterz@infradead.org,
         eranian@google.com, namhyung@kernel.org, jolsa@redhat.com,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 3/8] perf, tools: Automatically look for event file name for cpu
-Date: Wed,  5 Mar 2014 11:49:33 -0800
-Message-Id: <1394048978-15909-4-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 5/8] perf, tools: Allow events with dot
+Date: Wed,  5 Mar 2014 11:49:35 -0800
+Message-Id: <1394048978-15909-6-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1394048978-15909-1-git-send-email-andi@firstfloor.org>
 References: <1394048978-15909-1-git-send-email-andi@firstfloor.org>
@@ -26,148 +26,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-When no JSON event file is specified automatically look
-for a suitable file in ~/.events. A "perf download" can
-automatically add files there for the current CPUs.
+The Intel events use a dot to separate event name and unit mask.
+Allow dot in names in the scanner, and remove special handling
+of dot as EOF. Also remove the hack in jevents to replace dot
+with underscore. This way dotted events can be specified
+directly by the user.
 
-This does not include the actual event files with perf,
-but they can be automatically downloaded instead
-(implemented in the next patch)
-
-This has the advantage that the events can be always uptodate,
-because they are freshly downloaded. In oprofile we always
-had problems with out of date or incomplete events files.
-
-The event file format is per architecture, but can be
-extended for other architectures.
+I'm not fully sure this change to the scanner is correct
+(what was the dot special case good for?), but I haven't
+found anything that breaks with it so far at least.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/arch/x86/Makefile      |  1 +
- tools/perf/arch/x86/util/cpustr.c | 35 +++++++++++++++++++++++++++++++++++
- tools/perf/util/jevents.c         | 22 ++++++++++++++++++++++
- tools/perf/util/jevents.h         |  1 +
- tools/perf/util/pmu.c             |  2 +-
- 5 files changed, 60 insertions(+), 1 deletion(-)
- create mode 100644 tools/perf/arch/x86/util/cpustr.c
+ tools/perf/util/jevents.c      | 9 +--------
+ tools/perf/util/parse-events.l | 3 +--
+ 2 files changed, 2 insertions(+), 10 deletions(-)
 
-diff --git a/tools/perf/arch/x86/Makefile b/tools/perf/arch/x86/Makefile
-index 1641542..0efeb14 100644
---- a/tools/perf/arch/x86/Makefile
-+++ b/tools/perf/arch/x86/Makefile
-@@ -14,4 +14,5 @@ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/tests/dwarf-unwind.o
- endif
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/header.o
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/tsc.o
-+LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/cpustr.o
- LIB_H += arch/$(ARCH)/util/tsc.h
-diff --git a/tools/perf/arch/x86/util/cpustr.c b/tools/perf/arch/x86/util/cpustr.c
-new file mode 100644
-index 0000000..0fb987a
---- /dev/null
-+++ b/tools/perf/arch/x86/util/cpustr.c
-@@ -0,0 +1,35 @@
-+#define _GNU_SOURCE 1
-+#include <stdio.h>
-+#include <stdlib.h>
-+#include "../../util/jevents.h"
-+
-+char *get_cpu_str(void)
-+{
-+	char *line = NULL;
-+	size_t llen = 0;
-+	int found = 0, n;
-+	char vendor[30];
-+	int model, fam;
-+	char *res = NULL;
-+	FILE *f = fopen("/proc/cpuinfo", "r");
-+
-+	if (!f)
-+		return NULL;
-+	while (getline(&line, &llen, f) > 0) {
-+		if (sscanf(line, "vendor_id : %30s", vendor) == 1)
-+			found++;
-+		else if (sscanf(line, "model : %d", &model) == 1)
-+			found++;
-+		else if (sscanf(line, "cpu family : %d", &fam) == 1)
-+			found++;
-+		if (found == 3) {
-+			n = asprintf(&res, "%s-%d-%X-core", vendor, fam, model);
-+			if (n < 0)
-+				res = NULL;
-+			break;
-+		}
-+	}
-+	free(line);
-+	fclose(f);
-+	return res;
-+}
 diff --git a/tools/perf/util/jevents.c b/tools/perf/util/jevents.c
-index 0173b68..a3c776a 100644
+index a3c776a..9743d70 100644
 --- a/tools/perf/util/jevents.c
 +++ b/tools/perf/util/jevents.c
-@@ -33,10 +33,30 @@
- #include <errno.h>
- #include <string.h>
- #include <ctype.h>
-+#include "cache.h"
- #include "jsmn.h"
- #include "json.h"
- #include "jevents.h"
+@@ -78,15 +78,8 @@ static void addfield(char *map, char **dst, const char *sep,
  
-+__attribute__((weak)) char *get_cpu_str(void)
-+{
-+	return NULL;
-+}
-+
-+static const char *json_default_name(void)
-+{
-+	char *home = getenv("HOME");
-+	char *idstr = get_cpu_str();
-+	char *res = NULL;
-+
-+	if (home && idstr)
-+		res = mkpath("%s/.events/%s.json",
-+			     home,
-+			     idstr);
-+	free(idstr);
-+	return res;
-+}
-+
- static void addfield(char *map, char **dst, const char *sep,
- 		     const char *a, jsmntok_t *bt)
+ static void fixname(char *s)
  {
-@@ -171,6 +191,8 @@ int json_events(const char *fn,
- 	int i, j, len;
- 	char *map;
+-	for (; *s; s++) {
++	for (; *s; s++)
+ 		*s = tolower(*s);
+-		/*
+-		 * Remove '.' for now, until the parser
+-		 * can deal with it.
+-		 */
+-		if (*s == '.')
+-			*s = '_';
+-	}
+ }
  
-+	if (!fn)
-+		fn = json_default_name();
- 	tokens = parse_json(fn, &map, &size, &len);
- 	if (!tokens)
- 		return -EIO;
-diff --git a/tools/perf/util/jevents.h b/tools/perf/util/jevents.h
-index 4c2b879..6a377a8 100644
---- a/tools/perf/util/jevents.h
-+++ b/tools/perf/util/jevents.h
-@@ -1,3 +1,4 @@
- int json_events(const char *fn,
- 		int (*func)(void *data, char *name, char *event, char *desc),
- 		void *data);
-+char *get_cpu_str(void);
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index 831f525..5d69c29 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -433,7 +433,7 @@ static struct perf_pmu *pmu_lookup(const char *name)
- 	if (pmu_aliases(name, &aliases))
- 		return NULL;
+ static void fixdesc(char *s)
+diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+index 3432995..709fa3b 100644
+--- a/tools/perf/util/parse-events.l
++++ b/tools/perf/util/parse-events.l
+@@ -81,7 +81,7 @@ num_dec		[0-9]+
+ num_hex		0x[a-fA-F0-9]+
+ num_raw_hex	[a-fA-F0-9]+
+ name		[a-zA-Z_*?][a-zA-Z0-9_*?]*
+-name_minus	[a-zA-Z_*?][a-zA-Z0-9\-_*?]*
++name_minus	[a-zA-Z_*?][a-zA-Z0-9\-_*?.]*
+ /* If you add a modifier you need to update check_modifier() */
+ modifier_event	[ukhpGHSD]+
+ modifier_bp	[rwx]{1,3}
+@@ -119,7 +119,6 @@ modifier_bp	[rwx]{1,3}
+ 			return PE_EVENT_NAME;
+ 		}
  
--	if (!strcmp(name, "cpu") && json_file)
-+	if (!strcmp(name, "cpu"))
- 		json_events(json_file, add_alias, &aliases);
- 
- 	if (pmu_type(name, &type))
+-.		|
+ <<EOF>>		{
+ 			BEGIN(INITIAL); yyless(0);
+ 		}
 -- 
 1.8.5.3
 
