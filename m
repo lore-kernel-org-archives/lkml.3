@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758608AbaCEOvG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:51:06 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41683 "EHLO
+	id S932292AbaCEOhu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:37:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41632 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932318AbaCEOhz (ORCPT
+	with ESMTP id S932231AbaCEOho (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:37:55 -0500
+	Wed, 5 Mar 2014 09:37:44 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jiri Bohac <jbohac@suse.cz>, "David S. Miller" <davem@davemloft.net>,
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 31/62] bonding: 802.3ad: make aggregator_identifier bond-private
-Date: Wed,  5 Mar 2014 14:36:35 +0000
-Message-Id: <1394030226-26652-32-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 22/62] workqueue: ensure @task is valid across kthread_stop()
+Date: Wed,  5 Mar 2014 14:36:26 +0000
+Message-Id: <1394030226-26652-23-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
 References: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
@@ -27,82 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Bohac <jiri@boha.cz>
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-commit 163c8ff30dbe473abfbb24a7eac5536c87f3baa9 upstream.
+commit 5bdfff96c69a4d5ab9c49e60abf9e070ecd2acbb upstream.
 
-aggregator_identifier is used to assign unique aggregator identifiers
-to aggregators of a bond during device enslaving.
+When a kworker should die, the kworkre is notified through WORKER_DIE
+flag instead of kthread_should_stop().  This, IIRC, is primarily to
+keep the test synchronized inside worker_pool lock.  WORKER_DIE is
+first set while holding pool->lock, the lock is dropped and
+kthread_stop() is called.
 
-aggregator_identifier is currently a global variable that is zeroed in
-bond_3ad_initialize().
+Unfortunately, this means that there's a slight chance that the target
+kworker may see WORKER_DIE before kthread_stop() finishes and exits
+and frees the target task before or during kthread_stop().
 
-This sequence will lead to duplicate aggregator identifiers for eth1 and eth3:
+Fix it by pinning the target task before setting WORKER_DIE and
+putting it after kthread_stop() is done.
 
-create bond0
-change bond0 mode to 802.3ad
-enslave eth0 to bond0 		//eth0 gets agg id 1
-enslave eth1 to bond0 		//eth1 gets agg id 2
-create bond1
-change bond1 mode to 802.3ad
-enslave eth2 to bond1		//aggregator_identifier is reset to 0
-				//eth2 gets agg id 1
-enslave eth3 to bond0 		//eth3 gets agg id 2
+tj: Improved patch description and comment.  Moved pinning above
+    WORKER_DIE for better signify what it's protecting.
 
-Fix this by making aggregator_identifier private to the bond.
-
-Signed-off-by: Jiri Bohac <jbohac@suse.cz>
-Acked-by: Veaceslav Falico <vfalico@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/bonding/bond_3ad.c | 6 ++----
- drivers/net/bonding/bond_3ad.h | 1 +
- 2 files changed, 3 insertions(+), 4 deletions(-)
+ kernel/workqueue.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/drivers/net/bonding/bond_3ad.c b/drivers/net/bonding/bond_3ad.c
-index 3463b46..184be29 100644
---- a/drivers/net/bonding/bond_3ad.c
-+++ b/drivers/net/bonding/bond_3ad.c
-@@ -1854,8 +1854,6 @@ void bond_3ad_initiate_agg_selection(struct bonding *bond, int timeout)
- 	BOND_AD_INFO(bond).agg_select_timer = timeout;
- }
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 89743ae..d19727f 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1472,12 +1472,19 @@ static void destroy_worker(struct worker *worker)
+ 	if (worker->flags & WORKER_IDLE)
+ 		gcwq->nr_idle--;
  
--static u16 aggregator_identifier;
--
- /**
-  * bond_3ad_initialize - initialize a bond's 802.3ad parameters and structures
-  * @bond: bonding struct to work on
-@@ -1869,7 +1867,7 @@ void bond_3ad_initialize(struct bonding *bond, u16 tick_resolution)
- 	if (MAC_ADDRESS_COMPARE(&(BOND_AD_INFO(bond).system.sys_mac_addr),
- 				bond->dev->dev_addr)) {
++	/*
++	 * Once WORKER_DIE is set, the kworker may destroy itself at any
++	 * point.  Pin to ensure the task stays until we're done with it.
++	 */
++	get_task_struct(worker->task);
++
+ 	list_del_init(&worker->entry);
+ 	worker->flags |= WORKER_DIE;
  
--		aggregator_identifier = 0;
-+		BOND_AD_INFO(bond).aggregator_identifier = 0;
+ 	spin_unlock_irq(&gcwq->lock);
  
- 		BOND_AD_INFO(bond).system.sys_priority = 0xFFFF;
- 		BOND_AD_INFO(bond).system.sys_mac_addr = *((struct mac_addr *)bond->dev->dev_addr);
-@@ -1941,7 +1939,7 @@ int bond_3ad_bind_slave(struct slave *slave)
- 		ad_initialize_agg(aggregator);
+ 	kthread_stop(worker->task);
++	put_task_struct(worker->task);
+ 	kfree(worker);
  
- 		aggregator->aggregator_mac_address = *((struct mac_addr *)bond->dev->dev_addr);
--		aggregator->aggregator_identifier = (++aggregator_identifier);
-+		aggregator->aggregator_identifier = ++BOND_AD_INFO(bond).aggregator_identifier;
- 		aggregator->slave = slave;
- 		aggregator->is_active = 0;
- 		aggregator->num_of_ports = 0;
-diff --git a/drivers/net/bonding/bond_3ad.h b/drivers/net/bonding/bond_3ad.h
-index 5ee7e3c..656b2f5 100644
---- a/drivers/net/bonding/bond_3ad.h
-+++ b/drivers/net/bonding/bond_3ad.h
-@@ -253,6 +253,7 @@ struct ad_system {
- struct ad_bond_info {
- 	struct ad_system system;	    /* 802.3ad system structure */
- 	u32 agg_select_timer;	    // Timer to select aggregator after all adapter's hand shakes
-+	u16 aggregator_identifier;
- };
- 
- struct ad_slave_info {
+ 	spin_lock_irq(&gcwq->lock);
 -- 
 1.9.0
 
