@@ -1,29 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756557AbaCEL7j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 06:59:39 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:48069 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755870AbaCEL7e (ORCPT
+	id S1756659AbaCEL7o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 06:59:44 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:41672 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756593AbaCEL7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 06:59:34 -0500
-Subject: [PATCH -tip v8 06/26] [BUGFIX] x86: Prohibit probing on
- native_set_debugreg/load_idt
+	Wed, 5 Mar 2014 06:59:41 -0500
+Subject: [PATCH -tip v8 07/26] [BUGFIX] x86: Prohibit probing on thunk
+ functions and restore
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, x86@kernel.org,
-        Andi Kleen <andi@firstfloor.org>,
+Cc: Andi Kleen <andi@firstfloor.org>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chris Wright <chrisw@sous-sol.org>, fche@redhat.com, mingo@redhat.com,
-        systemtap@sourceware.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alok Kataria <akataria@vmware.com>
-Date: Wed, 05 Mar 2014 20:59:25 +0900
-Message-ID: <20140305115925.22766.31964.stgit@ltc230.yrl.intra.hitachi.co.jp>
+        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
+        mingo@redhat.com, systemtap@sourceware.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Date: Wed, 05 Mar 2014 20:59:32 +0900
+Message-ID: <20140305115932.22766.76074.stgit@ltc230.yrl.intra.hitachi.co.jp>
 In-Reply-To: <20140305115843.22766.8355.stgit@ltc230.yrl.intra.hitachi.co.jp>
 References: <20140305115843.22766.8355.stgit@ltc230.yrl.intra.hitachi.co.jp>
 User-Agent: StGit/0.17-dirty
@@ -34,40 +30,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prohibit probing on native_set_debugreg and native_load_idt.
-Since the kprobes uses do_debug for single stepping,
-functions called from do_debug before notify_die must not
-be probed.
-And also native_load_idt is called from paranoid_exit when
-returning int3, this also must not be probed.
+thunk/restore functions are also used for tracing irqoff etc.
+and those are involved in kprobe's exception handling.
+Prohibit probing on them to avoid kernel crash.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Chris Wright <chrisw@sous-sol.org>
-Cc: Alok Kataria <akataria@vmware.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@redhat.com>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 ---
- arch/x86/kernel/paravirt.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/x86/lib/thunk_32.S |    3 ++-
+ arch/x86/lib/thunk_64.S |    3 +++
+ 2 files changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/paravirt.c b/arch/x86/kernel/paravirt.c
-index 4c785fd..abff75f 100644
---- a/arch/x86/kernel/paravirt.c
-+++ b/arch/x86/kernel/paravirt.c
-@@ -390,8 +390,10 @@ __visible struct pv_cpu_ops pv_cpu_ops = {
- 	.end_context_switch = paravirt_nop,
- };
+diff --git a/arch/x86/lib/thunk_32.S b/arch/x86/lib/thunk_32.S
+index 2930ae0..28f85c91 100644
+--- a/arch/x86/lib/thunk_32.S
++++ b/arch/x86/lib/thunk_32.S
+@@ -4,8 +4,8 @@
+  *  (inspired by Andi Kleen's thunk_64.S)
+  * Subject to the GNU public license, v.2. No warranty of any kind.
+  */
+-
+ 	#include <linux/linkage.h>
++	#include <asm/asm.h>
  
--/* At this point, native_get_debugreg has real function entry */
-+/* At this point, native_get/set_debugreg has real function entry */
- NOKPROBE_SYMBOL(native_get_debugreg);
-+NOKPROBE_SYMBOL(native_set_debugreg);
-+NOKPROBE_SYMBOL(native_load_idt);
+ #ifdef CONFIG_TRACE_IRQFLAGS
+ 	/* put return address in eax (arg1) */
+@@ -22,6 +22,7 @@
+ 	popl %ecx
+ 	popl %eax
+ 	ret
++	_ASM_NOKPROBE(\name)
+ 	.endm
  
- struct pv_apic_ops pv_apic_ops = {
- #ifdef CONFIG_X86_LOCAL_APIC
+ 	thunk_ra trace_hardirqs_on_thunk,trace_hardirqs_on_caller
+diff --git a/arch/x86/lib/thunk_64.S b/arch/x86/lib/thunk_64.S
+index a63efd6..92d9fea 100644
+--- a/arch/x86/lib/thunk_64.S
++++ b/arch/x86/lib/thunk_64.S
+@@ -8,6 +8,7 @@
+ #include <linux/linkage.h>
+ #include <asm/dwarf2.h>
+ #include <asm/calling.h>
++#include <asm/asm.h>
+ 
+ 	/* rdi:	arg1 ... normal C conventions. rax is saved/restored. */
+ 	.macro THUNK name, func, put_ret_addr_in_rdi=0
+@@ -25,6 +26,7 @@
+ 	call \func
+ 	jmp  restore
+ 	CFI_ENDPROC
++	_ASM_NOKPROBE(\name)
+ 	.endm
+ 
+ #ifdef CONFIG_TRACE_IRQFLAGS
+@@ -43,3 +45,4 @@ restore:
+ 	RESTORE_ARGS
+ 	ret
+ 	CFI_ENDPROC
++	_ASM_NOKPROBE(restore)
 
 
