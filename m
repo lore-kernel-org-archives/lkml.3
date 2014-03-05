@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758640AbaCEPGI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 10:06:08 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41150 "EHLO
+	id S1758660AbaCEPGj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:06:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41114 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753061AbaCEO0d (ORCPT
+	with ESMTP id S1757358AbaCEO0W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:26:33 -0500
+	Wed, 5 Mar 2014 09:26:22 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ping Cheng <pingc@wacom.com>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Josh Boyer <jwboyer@fedoraproject.org>,
+Cc: Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 089/131] Input: wacom - make sure touch_max is set for touch devices
-Date: Wed,  5 Mar 2014 14:23:33 +0000
-Message-Id: <1394029455-23128-90-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 083/131] net: use __GFP_NORETRY for high order allocations
+Date: Wed,  5 Mar 2014 14:23:27 +0000
+Message-Id: <1394029455-23128-84-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -28,57 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ping Cheng <pinglinux@gmail.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit 1d0d6df02750b4a6f466768cbfbf860e24f4c8d4 upstream.
+commit ed98df3361f059db42786c830ea96e2d18b8d4db upstream.
 
-Old single touch Tablet PCs do not have touch_max set at
-wacom_features. Since touch device at lease supports one
-finger, assign touch_max to 1 when touch usage is defined
-in its HID Descriptor and touch_max is not pre-defined.
+sock_alloc_send_pskb() & sk_page_frag_refill()
+have a loop trying high order allocations to prepare
+skb with low number of fragments as this increases performance.
 
-Tested-by: Jason Gerecke <killertofu@gmail.com>
-Signed-off-by: Ping Cheng <pingc@wacom.com>
-Reviewed-by: Chris Bagwell <chris@cnpbagwell.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>
+Problem is that under memory pressure/fragmentation, this can
+trigger OOM while the intent was only to try the high order
+allocations, then fallback to order-0 allocations.
+
+We had various reports from unexpected regressions.
+
+According to David, setting __GFP_NORETRY should be fine,
+as the asynchronous compaction is still enabled, and this
+will prevent OOM from kicking as in :
+
+CFSClientEventm invoked oom-killer: gfp_mask=0x42d0, order=3, oom_adj=0,
+oom_score_adj=0, oom_score_badness=2 (enabled),memcg_scoring=disabled
+CFSClientEventm
+
+Call Trace:
+ [<ffffffff8043766c>] dump_header+0xe1/0x23e
+ [<ffffffff80437a02>] oom_kill_process+0x6a/0x323
+ [<ffffffff80438443>] out_of_memory+0x4b3/0x50d
+ [<ffffffff8043a4a6>] __alloc_pages_may_oom+0xa2/0xc7
+ [<ffffffff80236f42>] __alloc_pages_nodemask+0x1002/0x17f0
+ [<ffffffff8024bd23>] alloc_pages_current+0x103/0x2b0
+ [<ffffffff8028567f>] sk_page_frag_refill+0x8f/0x160
+ [<ffffffff80295fa0>] tcp_sendmsg+0x560/0xee0
+ [<ffffffff802a5037>] inet_sendmsg+0x67/0x100
+ [<ffffffff80283c9c>] __sock_sendmsg_nosec+0x6c/0x90
+ [<ffffffff80283e85>] sock_sendmsg+0xc5/0xf0
+ [<ffffffff802847b6>] __sys_sendmsg+0x136/0x430
+ [<ffffffff80284ec8>] sys_sendmsg+0x88/0x110
+ [<ffffffff80711472>] system_call_fastpath+0x16/0x1b
+Out of Memory: Kill process 2856 (bash) score 9999 or sacrifice child
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[ luis: backported to 3.11: dropped changes to sock_alloc_send_pskb() ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/input/tablet/wacom_sys.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ net/core/sock.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/input/tablet/wacom_sys.c b/drivers/input/tablet/wacom_sys.c
-index aaf23ae..3d838c0 100644
---- a/drivers/input/tablet/wacom_sys.c
-+++ b/drivers/input/tablet/wacom_sys.c
-@@ -339,7 +339,7 @@ static int wacom_parse_hid(struct usb_interface *intf,
- 	struct usb_device *dev = interface_to_usbdev(intf);
- 	char limit = 0;
- 	/* result has to be defined as int for some devices */
--	int result = 0;
-+	int result = 0, touch_max = 0;
- 	int i = 0, usage = WCM_UNDEFINED, finger = 0, pen = 0;
- 	unsigned char *report;
+diff --git a/net/core/sock.c b/net/core/sock.c
+index dca3102..2d92ff8 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -1835,7 +1835,7 @@ bool sk_page_frag_refill(struct sock *sk, struct page_frag *pfrag)
+ 		gfp_t gfp = sk->sk_allocation;
  
-@@ -386,7 +386,8 @@ static int wacom_parse_hid(struct usb_interface *intf,
- 				if (usage == WCM_DESKTOP) {
- 					if (finger) {
- 						features->device_type = BTN_TOOL_FINGER;
--
-+						/* touch device at least supports one touch point */
-+						touch_max = 1;
- 						switch (features->type) {
- 						case TABLETPC2FG:
- 							features->pktlen = WACOM_PKGLEN_TPC2FG;
-@@ -539,6 +540,8 @@ static int wacom_parse_hid(struct usb_interface *intf,
- 	}
- 
-  out:
-+	if (!features->touch_max && touch_max)
-+		features->touch_max = touch_max;
- 	result = 0;
- 	kfree(report);
- 	return result;
+ 		if (order)
+-			gfp |= __GFP_COMP | __GFP_NOWARN;
++			gfp |= __GFP_COMP | __GFP_NOWARN | __GFP_NORETRY;
+ 		pfrag->page = alloc_pages(gfp, order);
+ 		if (likely(pfrag->page)) {
+ 			pfrag->offset = 0;
 -- 
 1.9.0
 
