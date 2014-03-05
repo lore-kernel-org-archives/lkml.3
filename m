@@ -1,409 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757425AbaCEDvI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 22:51:08 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:49129 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753797AbaCEDvF (ORCPT
+	id S1757481AbaCEDvj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 22:51:39 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33070 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755237AbaCEDvh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 22:51:05 -0500
-Date: Wed, 5 Mar 2014 03:51:04 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: linux-fsdevel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Stephen Tweedie <sct@redhat.com>,
-        Jeremy Eder <jeder@redhat.com>
-Subject: [PATCH 3/5][RFC][CFT] smarter propagate_mnt()
-Message-ID: <20140305035104.GC26528@ZenIV.linux.org.uk>
-References: <20140305034751.GW18016@ZenIV.linux.org.uk>
+	Tue, 4 Mar 2014 22:51:37 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140305034751.GW18016@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53169123.4020909@lougher.demon.co.uk>
+References: <20140228230017.GE14970@merlin.infradead.org> <20140303145137.70819698@tukaani.org>
+ <CAGVrzcZ7KU-m9s9KgoigK+WdSqeqwEmm=_pY6qF=ep2vFp6WUg@mail.gmail.com>
+ <20140304202038.03b36109@tukaani.org> <53169123.4020909@lougher.demon.co.uk>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Tue, 4 Mar 2014 19:50:56 -0800
+Message-ID: <CAGVrzcYQ44fYA0kpRC84Qfe7v0vPGy+euWLfs8xF0XEMnsFmGA@mail.gmail.com>
+Subject: Re: [PATCH] xz: make XZ_DEC_BCJ filters non-optional
+To: Phillip Lougher <phillip@lougher.demon.co.uk>
+Cc: Lasse Collin <lasse.collin@tukaani.org>,
+        Kyle McMartin <kyle@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current mainline has copies propagated to *all* nodes, then
-tears down the copies we made for nodes that do not contain
-counterparts of the desired mountpoint.  That sets the right
-propagation graph for the copies (at teardown time we move
-the slaves of removed node to a surviving peer or directly
-to master), but we end up paying a fairly steep price in
-useless allocations.  It's fairly easy to create a situation
-where N calls of mount(2) create exactly N bindings, with
-O(N^2) vfsmounts allocated and freed in process.
+2014-03-04 18:51 GMT-08:00 Phillip Lougher <phillip@lougher.demon.co.uk>:
+> On 04/03/14 18:20, Lasse Collin wrote:
+>> On 2014-03-03 Florian Fainelli wrote:
+>>> 2014-03-03 4:51 GMT-08:00 Lasse Collin <lasse.collin@tukaani.org>:
+>>>> The second version enables the BCJ filter only for the current arch
+>>>> by default if CONFIG_EXPERT; without CONFIG_EXPERT all filters are
+>>>> forced on:
+>>>
+>>> I like this version better because it still provides you with accurate
+>>> defaults (i.e: enable only th X86 BCJ filter decoder where it makes
+>>> sense by default) and still provides enough flexibility.
+>>
+>> I understand your viewpoint, but different people probably consider
+>> different options as "accurate defaults". The current behavior certainly
+>> isn't very accurate; otherwise Kyle McMartin wouldn't have had a reason
+>> to send a patch. The patch you prefer would give both of you the
+>> defaults you want *if* embedded devs always use CONFIG_EXPERT and
+>> non-embedded people never do. If a non-embedded dev uses CONFIG_EXPERT,
+>> then Kyle's problem can reappear.
+>>
+>
+> CONFIG_EMBEDDED was renamed CONFIG_EXPERT a couple of years
+> ago because it was being used by more than embedded people.  As
+> such I'd be wary adding an option which relied on the original
+> meaning.
+>
+> http://lwn.net/Articles/421304/
+>
+>
+>> I still think it is clearest to enable all by default and allow
+>> deselecting filters if CONFIG_EXPERT. That way the default selection
+>> doesn't change behind anyone's back when CONFIG_EXPERT is selected.
+>> I guess embedded devs go through the config carefully looking for
+>> things to deselect anyway, but maybe it was easy to miss these options
+>> just like some desktop users have missed them now.
+>>
+>> I'd like to make the defaults such that minimum number of people get
+>> annoyed in the long term. There will always be people who will need to
+>> change the options (otherwise options wouldn't be needed). At the same
+>> time this is so very tiny issue that I don't expect many people to care
+>> at all.
+>>
+>> I'll submit some patch this week but I'll wait for more opinions for a
+>> day or two. Thanks.
+>>
+>
+> As Kyle should know Redhat hit this problem with Squashfs a while back,
+> and it was I who identified the config changes as the culprit
+> (BTW Kyle you should have CC'd me on the patch as a courtesy).
+> The bug is only viewable by Redhat employees (disclaimer, I'm
+> also a Redhat employee), and so I'll say no more.
+>
+> But speaking as the Squashfs author, the lack of BCJ support for
+> an architecture creates a subtle failure mode in Squashfs, this is
+> because not all blocks in a Squashfs filesystem get compressed
+> with a BCJ filter.  At compression time each block is compressed
+> without any BCJ filter, and then with the BCJ filter(s) selected on
+> the command line, and the best compression for *that* block is
+> chosen.  What this means is kernels without a particular
+> BCJ filter can still read the Squashfs metadata (mount, ls etc.) and
+> read many of the files, it is only some files that mysteriously
+> fail with decompression error.  As such this will be (and has been)
+> invariably treated as a bug in Squashfs.
+>
+> Moreover, without expert knowledge of Squashfs, and the config
+> options, most people will not have a clue how to fix the issue.
+>
+> This is why I prefer the first option, which is to reinstate
+> the enabling of all filters by default, and then to allow people
+> to remove the filters they don't want.
+>
+> BTW there is a potential additional fix for Squashfs that will
+> make its handling of (lack of) BCJ filters more intelligent
+> at mount time, but this of course only addresses Squashfs,
+> and it relies on an additional call into XZ being added.  The
+> BCJ filters specified at filesystem creation are stored in the
+> compression options part of the superblock, and are known at
+> mount time.  Squashfs should check that these filters are
+> supported by the kernel and refuse to mount it otherwise.  This
+> has not been done because AFAIK there is no way to query XZ to
+> determine which BCJ filters are supported (beyond passing it a
+> test stream which is too messy).
+>
+> If this call was added, I would be happy to add a patch to Squashfs
+> to do this.
 
-Fortunately, it is possible to avoid those allocations/freeings.
-The trick is to create copies in the right order and find which
-one would've eventually become a master with the current algorithm.
-It turns out to be possible in O(nodes getting propagation) time
-and with no extra allocations at all.
+I am okay with enabling all filters by default as long as there is a
+knob to allow turning achitecture specific BCJ filters off, as it
+barely makes sense for embedded systems to have a BCJ filter
+implementation for anything but the architecture you are running on.
 
-One part is that we need to make sure that eventual master will be
-created before its slaves, so we need to walk the propagation
-tree in a different order - by peer groups.  And iterate through
-the peers before dealing with the next group.
+It does make sense for a desktop use-case like what Kyle describes in
+his initial patch. What you describes sounds like there is room for
+improvements though instead of silently failing...
 
-Another thing is finding the (earlier) copy that will be a master
-of one we are about to create; to do that we are (temporary) marking
-the masters of mountpoints we are attaching the copies to.
-
-Either we are in a peer of the last mountpoint we'd dealt with,
-or we have the following situation: we are attaching to mountpoint M,
-the last copy S_0 had been attached to M_0 and there are sequences
-S_0...S_n, M_0...M_n such that S_{i+1} is a master of S_{i},
-S_{i} mounted on M{i} and we need to create a slave of the first S_{k}
-such that M is getting propagation from M_{k}.  It means that the master
-of M_{k} will be among the sequence of masters of M.  On the
-other hand, the nearest marked node in that sequence will either
-be the master of M_{k} or the master of M_{k-1} (the latter -
-in the case if M_{k-1} is a slave of something M gets propagation
-from, but in a wrong peer group).
-
-So we go through the sequence of masters of M until we find
-a marked one (P).  Let N be the one before it.  Then we go through
-the sequence of masters of S_0 until we find one (say, S) mounted
-on a node D that has P as master and check if D is a peer of N.
-If it is, S will be the master of new copy, if not - the master of S
-will be.
-
-That's it for the hard part; the rest is fairly simple.  Iterator
-is in next_group(), handling of one prospective mountpoint is
-propagate_one().
-
-It seems to survive all tests and gives a noticably better performance
-than the current mainline for setups that are seriously using shared
-subtrees.
-
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
----
- fs/namespace.c        |   26 ++++---
- fs/pnode.c            |  194 ++++++++++++++++++++++++++++++-------------------
- fs/pnode.h            |    3 +
- include/linux/mount.h |    3 +
- 4 files changed, 138 insertions(+), 88 deletions(-)
-
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 22e5367..f28c4fd 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -849,7 +849,7 @@ static struct mount *clone_mnt(struct mount *old, struct dentry *root,
- 			goto out_free;
- 	}
- 
--	mnt->mnt.mnt_flags = old->mnt.mnt_flags & ~MNT_WRITE_HOLD;
-+	mnt->mnt.mnt_flags = old->mnt.mnt_flags & ~(MNT_WRITE_HOLD|MNT_MARKED);
- 	/* Don't allow unprivileged users to change mount flags */
- 	if ((flag & CL_UNPRIVILEGED) && (mnt->mnt.mnt_flags & MNT_READONLY))
- 		mnt->mnt.mnt_flags |= MNT_LOCK_READONLY;
-@@ -1613,16 +1613,14 @@ static int attach_recursive_mnt(struct mount *source_mnt,
- 		err = invent_group_ids(source_mnt, true);
- 		if (err)
- 			goto out;
--	}
--	err = propagate_mnt(dest_mnt, dest_mp, source_mnt, &tree_list);
--	if (err)
--		goto out_cleanup_ids;
--
--	lock_mount_hash();
--
--	if (IS_MNT_SHARED(dest_mnt)) {
-+		err = propagate_mnt(dest_mnt, dest_mp, source_mnt, &tree_list);
-+		lock_mount_hash();
-+		if (err)
-+			goto out_cleanup_ids;
- 		for (p = source_mnt; p; p = next_mnt(p, source_mnt))
- 			set_mnt_shared(p);
-+	} else {
-+		lock_mount_hash();
- 	}
- 	if (parent_path) {
- 		detach_mnt(source_mnt, parent_path);
-@@ -1642,8 +1640,12 @@ static int attach_recursive_mnt(struct mount *source_mnt,
- 	return 0;
- 
-  out_cleanup_ids:
--	if (IS_MNT_SHARED(dest_mnt))
--		cleanup_group_ids(source_mnt, NULL);
-+	while (!list_empty(&tree_list)) {
-+		child = list_first_entry(&tree_list, struct mount, mnt_hash);
-+		umount_tree(child, 0);
-+	}
-+	unlock_mount_hash();
-+	cleanup_group_ids(source_mnt, NULL);
-  out:
- 	return err;
- }
-@@ -1997,7 +1999,7 @@ static int do_add_mount(struct mount *newmnt, struct path *path, int mnt_flags)
- 	struct mount *parent;
- 	int err;
- 
--	mnt_flags &= ~(MNT_SHARED | MNT_WRITE_HOLD | MNT_INTERNAL | MNT_DOOMED | MNT_SYNC_UMOUNT);
-+	mnt_flags &= ~MNT_INTERNAL_FLAGS;
- 
- 	mp = lock_mount(path);
- 	if (IS_ERR(mp))
-diff --git a/fs/pnode.c b/fs/pnode.c
-index c7221bb..04ca12c 100644
---- a/fs/pnode.c
-+++ b/fs/pnode.c
-@@ -164,46 +164,94 @@ static struct mount *propagation_next(struct mount *m,
- 	}
- }
- 
--/*
-- * return the source mount to be used for cloning
-- *
-- * @dest 	the current destination mount
-- * @last_dest  	the last seen destination mount
-- * @last_src  	the last seen source mount
-- * @type	return CL_SLAVE if the new mount has to be
-- * 		cloned as a slave.
-- */
--static struct mount *get_source(struct mount *dest,
--				struct mount *last_dest,
--				struct mount *last_src,
--				int *type)
-+static struct mount *next_group(struct mount *m, struct mount *origin)
- {
--	struct mount *p_last_src = NULL;
--	struct mount *p_last_dest = NULL;
--
--	while (last_dest != dest->mnt_master) {
--		p_last_dest = last_dest;
--		p_last_src = last_src;
--		last_dest = last_dest->mnt_master;
--		last_src = last_src->mnt_master;
-+	while (1) {
-+		while (1) {
-+			struct mount *next;
-+			if (!IS_MNT_NEW(m) && !list_empty(&m->mnt_slave_list))
-+				return first_slave(m);
-+			next = next_peer(m);
-+			if (m->mnt_group_id == origin->mnt_group_id) {
-+				if (next == origin)
-+					return NULL;
-+			} else if (m->mnt_slave.next != &next->mnt_slave)
-+				break;
-+			m = next;
-+		}
-+		/* m is the last peer */
-+		while (1) {
-+			struct mount *master = m->mnt_master;
-+			if (m->mnt_slave.next != &master->mnt_slave_list)
-+				return next_slave(m);
-+			m = next_peer(master);
-+			if (master->mnt_group_id == origin->mnt_group_id)
-+				break;
-+			if (master->mnt_slave.next == &m->mnt_slave)
-+				break;
-+			m = master;
-+		}
-+		if (m == origin)
-+			return NULL;
- 	}
-+}
- 
--	if (p_last_dest) {
--		do {
--			p_last_dest = next_peer(p_last_dest);
--		} while (IS_MNT_NEW(p_last_dest));
--		/* is that a peer of the earlier? */
--		if (dest == p_last_dest) {
--			*type = CL_MAKE_SHARED;
--			return p_last_src;
-+/* all accesses are serialized by namespace_sem */
-+static struct user_namespace *user_ns;
-+static struct mount *last_dest, *last_source, *dest_master;
-+static struct mountpoint *mp;
-+static struct list_head *list;
-+
-+static int propagate_one(struct mount *m)
-+{
-+	struct mount *child;
-+	int type;
-+	/* skip ones added by this propagate_mnt() */
-+	if (IS_MNT_NEW(m))
-+		return 0;
-+	/* skip if mountpoint isn't covered by it */
-+	if (!is_subdir(mp->m_dentry, m->mnt.mnt_root))
-+		return 0;
-+	if (m->mnt_group_id == last_dest->mnt_group_id) {
-+		type = CL_MAKE_SHARED;
-+	} else {
-+		struct mount *n, *p;
-+		for (n = m; ; n = p) {
-+			p = n->mnt_master;
-+			if (p == dest_master || IS_MNT_MARKED(p)) {
-+				while (last_dest->mnt_master != p) {
-+					last_source = last_source->mnt_master;
-+					last_dest = last_source->mnt_parent;
-+				}
-+				if (n->mnt_group_id != last_dest->mnt_group_id) {
-+					last_source = last_source->mnt_master;
-+					last_dest = last_source->mnt_parent;
-+				}
-+				break;
-+			}
- 		}
-+		type = CL_SLAVE;
-+		/* beginning of peer group among the slaves? */
-+		if (IS_MNT_SHARED(m))
-+			type |= CL_MAKE_SHARED;
-+	}
-+		
-+	/* Notice when we are propagating across user namespaces */
-+	if (m->mnt_ns->user_ns != user_ns)
-+		type |= CL_UNPRIVILEGED;
-+	child = copy_tree(last_source, last_source->mnt.mnt_root, type);
-+	if (IS_ERR(child))
-+		return PTR_ERR(child);
-+	mnt_set_mountpoint(m, mp, child);
-+	last_dest = m;
-+	last_source = child;
-+	if (m->mnt_master != dest_master) {
-+		read_seqlock_excl(&mount_lock);
-+		SET_MNT_MARK(m->mnt_master);
-+		read_sequnlock_excl(&mount_lock);
- 	}
--	/* slave of the earlier, then */
--	*type = CL_SLAVE;
--	/* beginning of peer group among the slaves? */
--	if (IS_MNT_SHARED(dest))
--		*type |= CL_MAKE_SHARED;
--	return last_src;
-+	list_add_tail(&child->mnt_hash, list);
-+	return 0;
- }
- 
- /*
-@@ -222,54 +270,48 @@ static struct mount *get_source(struct mount *dest,
- int propagate_mnt(struct mount *dest_mnt, struct mountpoint *dest_mp,
- 		    struct mount *source_mnt, struct list_head *tree_list)
- {
--	struct user_namespace *user_ns = current->nsproxy->mnt_ns->user_ns;
--	struct mount *m, *child;
-+	struct mount *m, *n;
- 	int ret = 0;
--	struct mount *prev_dest_mnt = dest_mnt;
--	struct mount *prev_src_mnt  = source_mnt;
--	LIST_HEAD(tmp_list);
--
--	for (m = propagation_next(dest_mnt, dest_mnt); m;
--			m = propagation_next(m, dest_mnt)) {
--		int type;
--		struct mount *source;
--
--		if (IS_MNT_NEW(m))
--			continue;
--
--		source =  get_source(m, prev_dest_mnt, prev_src_mnt, &type);
--
--		/* Notice when we are propagating across user namespaces */
--		if (m->mnt_ns->user_ns != user_ns)
--			type |= CL_UNPRIVILEGED;
- 
--		child = copy_tree(source, source->mnt.mnt_root, type);
--		if (IS_ERR(child)) {
--			ret = PTR_ERR(child);
--			list_splice(tree_list, tmp_list.prev);
-+	/*
-+	 * we don't want to bother passing tons of arguments to
-+	 * propagate_one(); everything is serialized by namespace_sem,
-+	 * so globals will do just fine.
-+	 */
-+	user_ns = current->nsproxy->mnt_ns->user_ns;
-+	last_dest = dest_mnt;
-+	last_source = source_mnt;
-+	mp = dest_mp;
-+	list = tree_list;
-+	dest_master = dest_mnt->mnt_master;
-+
-+	/* all peers of dest_mnt, except dest_mnt itself */
-+	for (n = next_peer(dest_mnt); n != dest_mnt; n = next_peer(n)) {
-+		ret = propagate_one(n);
-+		if (ret)
- 			goto out;
--		}
-+	}
- 
--		if (is_subdir(dest_mp->m_dentry, m->mnt.mnt_root)) {
--			mnt_set_mountpoint(m, dest_mp, child);
--			list_add_tail(&child->mnt_hash, tree_list);
--		} else {
--			/*
--			 * This can happen if the parent mount was bind mounted
--			 * on some subdirectory of a shared/slave mount.
--			 */
--			list_add_tail(&child->mnt_hash, &tmp_list);
--		}
--		prev_dest_mnt = m;
--		prev_src_mnt  = child;
-+	/* all slave groups */
-+	for (m = next_group(dest_mnt, dest_mnt); m;
-+			m = next_group(m, dest_mnt)) {
-+		/* everything in that slave group */
-+		n = m;
-+		do {
-+			ret = propagate_one(n);
-+			if (ret)
-+				goto out;
-+			n = next_peer(n);
-+		} while (n != m);
- 	}
- out:
--	lock_mount_hash();
--	while (!list_empty(&tmp_list)) {
--		child = list_first_entry(&tmp_list, struct mount, mnt_hash);
--		umount_tree(child, 0);
-+	read_seqlock_excl(&mount_lock);
-+	list_for_each_entry(n, tree_list, mnt_hash) {
-+		m = n->mnt_parent;
-+		if (m->mnt_master != dest_mnt->mnt_master)
-+			CLEAR_MNT_MARK(m->mnt_master);
- 	}
--	unlock_mount_hash();
-+	read_sequnlock_excl(&mount_lock);
- 	return ret;
- }
- 
-diff --git a/fs/pnode.h b/fs/pnode.h
-index 59e7eda..65e04f6 100644
---- a/fs/pnode.h
-+++ b/fs/pnode.h
-@@ -16,6 +16,9 @@
- #define IS_MNT_NEW(m)  (!(m)->mnt_ns)
- #define CLEAR_MNT_SHARED(m) ((m)->mnt.mnt_flags &= ~MNT_SHARED)
- #define IS_MNT_UNBINDABLE(m) ((m)->mnt.mnt_flags & MNT_UNBINDABLE)
-+#define IS_MNT_MARKED(m) ((m)->mnt.mnt_flags & MNT_MARKED)
-+#define SET_MNT_MARK(m) ((m)->mnt.mnt_flags |= MNT_MARKED)
-+#define CLEAR_MNT_MARK(m) ((m)->mnt.mnt_flags &= ~MNT_MARKED)
- 
- #define CL_EXPIRE    		0x01
- #define CL_SLAVE     		0x02
-diff --git a/include/linux/mount.h b/include/linux/mount.h
-index 371d346..839bac2 100644
---- a/include/linux/mount.h
-+++ b/include/linux/mount.h
-@@ -44,6 +44,8 @@ struct mnt_namespace;
- #define MNT_SHARED_MASK	(MNT_UNBINDABLE)
- #define MNT_PROPAGATION_MASK	(MNT_SHARED | MNT_UNBINDABLE)
- 
-+#define MNT_INTERNAL_FLAGS (MNT_SHARED | MNT_WRITE_HOLD | MNT_INTERNAL | \
-+			    MNT_DOOMED | MNT_SYNC_UMOUNT | MNT_MARKED)
- 
- #define MNT_INTERNAL	0x4000
- 
-@@ -51,6 +53,7 @@ struct mnt_namespace;
- #define MNT_LOCKED		0x800000
- #define MNT_DOOMED		0x1000000
- #define MNT_SYNC_UMOUNT		0x2000000
-+#define MNT_MARKED		0x4000000
- 
- struct vfsmount {
- 	struct dentry *mnt_root;	/* root of the mounted tree */
+Thanks
 -- 
-1.7.10.4
-
+Florian
