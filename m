@@ -1,67 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756252AbaCETUV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 14:20:21 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:39185 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751630AbaCETUT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 14:20:19 -0500
-Date: Wed, 5 Mar 2014 19:20:05 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] Revert "irqchip: irq-dove: Add PMU interrupt
-	controller."
-Message-ID: <20140305192005.GX21483@n2100.arm.linux.org.uk>
-References: <20140304030838.GA1872@titan.lakedaemon.net> <1393911160-7688-1-git-send-email-jason@lakedaemon.net> <20140305004139.GT21483@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1403051445020.18573@ionos.tec.linutronix.de>
+	id S1756889AbaCETYX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 14:24:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14373 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753028AbaCETYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 14:24:21 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: viro@zeniv.linux.org.uk, bcrl@kvack.org, kosaki.motohiro@gmail.com,
+        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        guz.fnst@cn.fujitsu.com, linux-fsdevel@vger.kernel.org,
+        linux-aio@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] aio, memory-hotplug: Fix confliction when migrating and accessing ring pages.
+References: <1393497616-16428-1-git-send-email-tangchen@cn.fujitsu.com>
+	<1393497616-16428-2-git-send-email-tangchen@cn.fujitsu.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Wed, 05 Mar 2014 14:23:58 -0500
+In-Reply-To: <1393497616-16428-2-git-send-email-tangchen@cn.fujitsu.com> (Tang
+	Chen's message of "Thu, 27 Feb 2014 18:40:15 +0800")
+Message-ID: <x49siqwbga9.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1403051445020.18573@ionos.tec.linutronix.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 05, 2014 at 03:42:34PM +0100, Thomas Gleixner wrote:
-> On Wed, 5 Mar 2014, Russell King - ARM Linux wrote:
-> > This results in the RTC alarm test receiving exactly one interrupt for
-> > each alarm expiry, as it should do.  Thoughts?
-> 
-> You are worried about clearing an interrupt which is transitory and
-> not kept active at the device level until you handled it for real,
-> right?
+Tang Chen <tangchen@cn.fujitsu.com> writes:
 
-Yep.  Let's take the code:
+> AIO ring page migration has been implemented by the following patch:
+>
+>         https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/fs/aio.c?id=36bc08cc01709b4a9bb563b35aa530241ddc63e3
+>
+> In this patch, ctx->completion_lock is used to prevent other processes
+> from accessing the ring page being migrated.
+>
+> But in aio_setup_ring(), ioctx_add_table() and aio_read_events_ring(),
+> when writing to the ring page, they didn't take ctx->completion_lock.
+>
+> As a result, for example, we have the following problem:
+>
+>             thread 1                      |              thread 2
+>                                           |
+> aio_migratepage()                         |
+>  |-> take ctx->completion_lock            |
+>  |-> migrate_page_copy(new, old)          |
+>  |   *NOW*, ctx->ring_pages[idx] == old   |
+>                                           |
+>                                           |    *NOW*, ctx->ring_pages[idx] == old
+>                                           |    aio_read_events_ring()
+>                                           |     |-> ring = kmap_atomic(ctx->ring_pages[0])
+>                                           |     |-> ring->head = head;          *HERE, write to the old ring page*
+>                                           |     |-> kunmap_atomic(ring);
+>                                           |
+>  |-> ctx->ring_pages[idx] = new           |
+>  |   *BUT NOW*, the content of            |
+>  |    ring_pages[idx] is old.             |
+>  |-> release ctx->completion_lock         |
+>
+> As above, the new ring page will not be updated.
+>
+> The solution is taking ctx->completion_lock in thread 2, which means,
+> in aio_setup_ring(), ioctx_add_table() and aio_read_events_ring() when
+> writing to ring pages.
 
-	ldr	r0, [r1]		; read the interrupt cause register
-	and	r0, r0, r2		; clear interrupts we've serviced
-	str	r0, [r1]		; write it back
+Thanks for the good explanation and for adding comments to the code.
+This looks right to me.  I guess the only issue I have with it is that
+the code paths changed don't run in interrupt context, so I think you
+could just use spin_lock_irq.  That's not a big deal, though.
 
-The problem here is if a transitory interrupt is received between the
-load and store, the write can clear it back to zero.  There's nothing
-which can be done to get around that - which is why I'd prefer to do
-this as infrequently as necessary.
+Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
 
-> Is the datasheet for this stuff public available?
 
-Thankfully, it is, but like many such things, it'll leave you with /lots/
-of questions.  In the case of this register, the documentation only goes
-as far as describing the bits, but doesn't really describe their behaviour.
-Much of that can only come via experimentation with the hardware. :(
-
-> I don't think it matters in which order you process multiple pending
-> interrupts.
-
-Me neither - I'm just going to use fls() for no other reason that it
-produces more efficient code.  My comments on that were to see whether
-I'd missed anything, and to stave off any review comments about why
-it's changed :)
-
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+> Reported-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+> ---
+>  fs/aio.c | 33 +++++++++++++++++++++++++++++++++
+>  1 file changed, 33 insertions(+)
+>
+> diff --git a/fs/aio.c b/fs/aio.c
+> index 062a5f6..50c089c 100644
+> --- a/fs/aio.c
+> +++ b/fs/aio.c
+> @@ -366,6 +366,7 @@ static int aio_setup_ring(struct kioctx *ctx)
+>  	int nr_pages;
+>  	int i;
+>  	struct file *file;
+> +	unsigned long flags;
+>  
+>  	/* Compensate for the ring buffer's head/tail overlap entry */
+>  	nr_events += 2;	/* 1 is required, 2 for good luck */
+> @@ -437,6 +438,14 @@ static int aio_setup_ring(struct kioctx *ctx)
+>  	ctx->user_id = ctx->mmap_base;
+>  	ctx->nr_events = nr_events; /* trusted copy */
+>  
+> +	/*
+> +	 * The aio ring pages are user space pages, so they can be migrated.
+> +	 * When writing to an aio ring page, we should ensure the page is not
+> +	 * being migrated. Aio page migration procedure is protected by
+> +	 * ctx->completion_lock, so we add this lock here.
+> +	 */
+> +	spin_lock_irqsave(&ctx->completion_lock, flags);
+> +
+>  	ring = kmap_atomic(ctx->ring_pages[0]);
+>  	ring->nr = nr_events;	/* user copy */
+>  	ring->id = ~0U;
+> @@ -448,6 +457,8 @@ static int aio_setup_ring(struct kioctx *ctx)
+>  	kunmap_atomic(ring);
+>  	flush_dcache_page(ctx->ring_pages[0]);
+>  
+> +	spin_unlock_irqrestore(&ctx->completion_lock, flags);
+> +
+>  	return 0;
+>  }
+>  
+> @@ -542,6 +553,7 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
+>  	unsigned i, new_nr;
+>  	struct kioctx_table *table, *old;
+>  	struct aio_ring *ring;
+> +	unsigned long flags;
+>  
+>  	spin_lock(&mm->ioctx_lock);
+>  	rcu_read_lock();
+> @@ -556,9 +568,19 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
+>  					rcu_read_unlock();
+>  					spin_unlock(&mm->ioctx_lock);
+>  
+> +					/*
+> +					 * Accessing ring pages must be done
+> +					 * holding ctx->completion_lock to
+> +					 * prevent aio ring page migration
+> +					 * procedure from migrating ring pages.
+> +					 */
+> +					spin_lock_irqsave(&ctx->completion_lock,
+> +							  flags);
+>  					ring = kmap_atomic(ctx->ring_pages[0]);
+>  					ring->id = ctx->id;
+>  					kunmap_atomic(ring);
+> +					spin_unlock_irqrestore(
+> +						&ctx->completion_lock, flags);
+>  					return 0;
+>  				}
+>  
+> @@ -1021,6 +1043,7 @@ static long aio_read_events_ring(struct kioctx *ctx,
+>  	unsigned head, tail, pos;
+>  	long ret = 0;
+>  	int copy_ret;
+> +	unsigned long flags;
+>  
+>  	mutex_lock(&ctx->ring_lock);
+>  
+> @@ -1066,11 +1089,21 @@ static long aio_read_events_ring(struct kioctx *ctx,
+>  		head %= ctx->nr_events;
+>  	}
+>  
+> +	/*
+> +	 * The aio ring pages are user space pages, so they can be migrated.
+> +	 * When writing to an aio ring page, we should ensure the page is not
+> +	 * being migrated. Aio page migration procedure is protected by
+> +	 * ctx->completion_lock, so we add this lock here.
+> +	 */
+> +	spin_lock_irqsave(&ctx->completion_lock, flags);
+> +
+>  	ring = kmap_atomic(ctx->ring_pages[0]);
+>  	ring->head = head;
+>  	kunmap_atomic(ring);
+>  	flush_dcache_page(ctx->ring_pages[0]);
+>  
+> +	spin_unlock_irqrestore(&ctx->completion_lock, flags);
+> +
+>  	pr_debug("%li  h%u t%u\n", ret, head, tail);
+>  
+>  	put_reqs_available(ctx, ret);
