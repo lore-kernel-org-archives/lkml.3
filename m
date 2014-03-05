@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756911AbaCEOZM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:25:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40845 "EHLO
+	id S1759090AbaCEPWW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:22:22 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40872 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756745AbaCEOZH (ORCPT
+	with ESMTP id S1756920AbaCEOZP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:25:07 -0500
+	Wed, 5 Mar 2014 09:25:15 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 032/131] PCI: Enable INTx if BIOS left them disabled
-Date: Wed,  5 Mar 2014 14:22:36 +0000
-Message-Id: <1394029455-23128-33-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 037/131] ext4: fix online resize with a non-standard blocks per group setting
+Date: Wed,  5 Mar 2014 14:22:41 +0000
+Message-Id: <1394029455-23128-38-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -28,55 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjorn Helgaas <bhelgaas@google.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 1f42db786b14a31bf807fc41ee5583a00c08fcb1 upstream.
+commit 3d2660d0c9c2f296837078c189b68a47f6b2e3b5 upstream.
 
-Some firmware leaves the Interrupt Disable bit set even if the device uses
-INTx interrupts.  Clear Interrupt Disable so we get those interrupts.
+The set_flexbg_block_bitmap() function assumed that the number of
+blocks in a blockgroup was sb->blocksize * 8, which is normally true,
+but not always!  Use EXT4_BLOCKS_PER_GROUP(sb) instead, to fix block
+bitmap corruption after:
 
-Based on the report mentioned below, if the user selects the "EHCI only"
-option in the Intel Baytrail BIOS, the EHCI device is handed off to the OS
-with the PCI_COMMAND_INTX_DISABLE bit set.
+mke2fs -t ext4 -g 3072 -i 4096 /dev/vdd 1G
+mount -t ext4 /dev/vdd /vdd
+resize2fs /dev/vdd 8G
 
-Link: http://lkml.kernel.org/r/20140114181721.GC12126@xanatos
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=70601
-Reported-by: Chris Cheng <chris.cheng@atrustcorp.com>
-Reported-and-tested-by: Jamie Chen <jamie.chen@intel.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reported-by: Jon Bernard <jbernard@tuxion.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/pci/pci.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ fs/ext4/resize.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index e37fea6..1088e0d 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -1119,6 +1119,8 @@ EXPORT_SYMBOL_GPL(pci_load_and_free_saved_state);
- static int do_pci_enable_device(struct pci_dev *dev, int bars)
- {
- 	int err;
-+	u16 cmd;
-+	u8 pin;
+diff --git a/fs/ext4/resize.c b/fs/ext4/resize.c
+index 69a6261..f3b84cd 100644
+--- a/fs/ext4/resize.c
++++ b/fs/ext4/resize.c
+@@ -409,7 +409,7 @@ static int set_flexbg_block_bitmap(struct super_block *sb, handle_t *handle,
+ 		start = ext4_group_first_block_no(sb, group);
+ 		group -= flex_gd->groups[0].group;
  
- 	err = pci_set_power_state(dev, PCI_D0);
- 	if (err < 0 && err != -EIO)
-@@ -1128,6 +1130,14 @@ static int do_pci_enable_device(struct pci_dev *dev, int bars)
- 		return err;
- 	pci_fixup_device(pci_fixup_enable, dev);
- 
-+	pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
-+	if (pin) {
-+		pci_read_config_word(dev, PCI_COMMAND, &cmd);
-+		if (cmd & PCI_COMMAND_INTX_DISABLE)
-+			pci_write_config_word(dev, PCI_COMMAND,
-+					      cmd & ~PCI_COMMAND_INTX_DISABLE);
-+	}
-+
- 	return 0;
- }
+-		count2 = sb->s_blocksize * 8 - (block - start);
++		count2 = EXT4_BLOCKS_PER_GROUP(sb) - (block - start);
+ 		if (count2 > count)
+ 			count2 = count;
  
 -- 
 1.9.0
