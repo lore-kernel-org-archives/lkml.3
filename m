@@ -1,100 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756710AbaCECBB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 21:01:01 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:40150 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755151AbaCECA7 (ORCPT
+	id S1756556AbaCECCj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 21:02:39 -0500
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:55652 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754555AbaCECCi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 21:00:59 -0500
-Date: Wed, 5 Mar 2014 10:00:52 +0800
-From: Lee Jones <lee.jones@linaro.org>
-To: Denis Carikli <denis@eukrea.com>
-Cc: Bryan Wu <cooloney@gmail.com>, Jingoo Han <jg1.han@samsung.com>,
-        Eric =?iso-8859-1?Q?B=E9nard?= <eric@eukrea.com>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv12] video: backlight: gpio-backlight: Add DT support.
-Message-ID: <20140305020052.GL10579@lee--X1>
-References: <1393511313-18756-1-git-send-email-denis@eukrea.com>
+	Tue, 4 Mar 2014 21:02:38 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1393511313-18756-1-git-send-email-denis@eukrea.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <004101cf3379$ada38d30$08eaa790$%han@samsung.com>
+References: <003e01cf3378$c9f54420$5ddfcc60$%han@samsung.com>
+	<004101cf3379$ada38d30$08eaa790$%han@samsung.com>
+Date: Wed, 5 Mar 2014 10:02:37 +0800
+Message-ID: <CACRpkdbAhW=TB9Yu=rOSJbcok_B8fGhPd-gJ_osC3ysTVvUVbA@mail.gmail.com>
+Subject: Re: [PATCH 4/5] hwrng: nomadik - Use devm_*() functions
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alessandro Rubini <rubini@gnudd.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Feb 2014, Denis Carikli wrote:
+On Thu, Feb 27, 2014 at 1:06 PM, Jingoo Han <jg1.han@samsung.com> wrote:
 
-> Signed-off-by: Denis Carikli <denis@eukrea.com>
-> ---
-> ChangeLog v11-resend->v12:
-> - Moved the Cc from the commit message to the "email patch".
-> - The documentation is now more clear.
-> - The unnecessary default_on variable was removed.
-> - gbl->fbdev was already NULL and didn't need to be re-assigned,
->   so the re-assignement was removed.
-> - The of_device_id struct and .of_match_table are now guarded
->   against the driver beeing compiled without CONFIG_OF.
-> 
-> ChangeLog v11->v11-resend:
-> - Removed the Cc list because it's only one patch.
-> 
-> ChangeLog v10->v11:
-> - Shrinked the Cc list.
-> - Fixed the of_match_table warning.
-> 
-> ChangeLog v9->v10:
-> - Only the respective maintainers, or people who responded to the patch
->   were kept in the Cc.
-> - The unnecessary of_match_ptr in of_match_table was removed.
-> 
-> ChangeLog v8->v9:
-> - Added Shawn Guo in the Cc list.
-> - The default-brightness-level is now a boolean default-on property,
->   the gpio is only touched if the gpio-backlight driver instance probes.
-> - The code and documentation was updated accordingly.
-> 
-> ChangeLog v7->v8:
-> - The default-state was renamed to default-brightness-level.
-> - default-brightness-level is now mandatory, like for backlight-pwm,
->   That way we avoid having to handle the case where it's not set,
->   which means that we would need not to set the gpio, but still
->   report a brightness value for sysfs, when not all gpio controllers are
->   able to read the gpio value.
-> - switched the default-brightness-level to boolean values (0 or 1) instead
->   of using strings ("on", "off", "keep").
-> - The documentation was updated accordingly.
-> - The example in the documentation now uses the dts gpio defines.
-> - The "backlight: gpio_backlight: Use a default state enum." patch was then
->   dropped, becuase it is not necessary anymore.
-> 
-> ChangeLog v6->v7:
-> - removed a compilation warning with the removal of the useless ret declaration.
-> 
-> ChangeLog v5->v6:
-> - The default state handling was reworked:
->   - it's now called default-state, and looks like the gpio-leds default-state.
->   - it now has a "keep" option, like for the gpio-leds.
->   - that "keep" option is the default when the default-state property is not set.
-> - The documentation was updated accordingly.
-> 
-> ChangeLog v4->v5:
-> - The default-brightness property now defaults to 0 in the driver.
-> - def_value int becomes a bool.
-> - The check for the gpio validity has been reworked.
-> ---
->  .../bindings/video/backlight/gpio-backlight.txt    |   16 ++++++
->  drivers/video/backlight/gpio_backlight.c           |   58 +++++++++++++++++---
->  2 files changed, 67 insertions(+), 7 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/video/backlight/gpio-backlight.txt
+> Use devm_*() functions to make cleanup paths simpler.
+>
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 
-Applied with Jingoo's Ack.
+Excellent, thanks!
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+
+Yours,
+Linus Walleij
