@@ -1,126 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932259AbaCEWbd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 17:31:33 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37563 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932189AbaCEWba (ORCPT
+	id S932291AbaCEWbl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 17:31:41 -0500
+Received: from mailout3.w2.samsung.com ([211.189.100.13]:61505 "EHLO
+	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932266AbaCEWbg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 17:31:30 -0500
-Date: Wed, 5 Mar 2014 14:31:07 -0800
-From: tip-bot for Stefani Seibold <tipbot@zytor.com>
-Message-ID: <tip-44e016d37d0e84f1d7063f699ee8df68d7bd7607@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, luto@amacapital.net, hpa@zytor.com,
-        mingo@kernel.org, stefani@seibold.net, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, luto@amacapital.net,
-        linux-kernel@vger.kernel.org, stefani@seibold.net, tglx@linutronix.de,
-        hpa@linux.intel.com
-In-Reply-To: <1393881143-3569-5-git-send-email-stefani@seibold.net>
-References: <1393881143-3569-5-git-send-email-stefani@seibold.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/vdso] x86, vdso: __vdso_clock_gettime() cleanup
-Git-Commit-ID: 44e016d37d0e84f1d7063f699ee8df68d7bd7607
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Wed, 5 Mar 2014 17:31:36 -0500
+X-AuditID: cbfec37d-b7f616d0000059df-77-5317a5c69da5
+Message-id: <5317A5C4.2070307@samsung.com>
+Date: Wed, 05 Mar 2014 15:31:32 -0700
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.2.0
+MIME-version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org, Shuah Khan <shuah.kh@samsung.com>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [PATCH 3.10 00/97] 3.10.33-stable review
+References: <20140304200345.895517495@linuxfoundation.org>
+In-reply-to: <20140304200345.895517495@linuxfoundation.org>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.34.11]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t9hX93jS8WDDRZeZbWYs34Nm0Xz4vVs
+	Fpd3zWGz+PrTwWLBxkeMFo/63rI7sHnsnHWX3ePEjN8sHvvnrmH3+LxJLoAlissmJTUnsyy1
+	SN8ugSvjweW7zAWN7BXP7l9ja2A8ydrFyMkhIWAicff3bjYIW0ziwr31QDYXh5DAMkaJWctm
+	MUM4vUwSj/qvskA4mxglji5/CtbCK6Al0f9/AguIzSKgKnH15l2wOJuAusTn1zvYQWwhATmJ
+	piWrmUFsUYEIiVdnJ7JA9ApK/Jh8D8wWEQiWWPt1ISPIAmaBFYwSx1++BBskLGAqsbXjOyPE
+	ICuJLXceMoHYnALWEk+WrQSLMwuYSTxqWccMYctLbF7zlhmiXlniz+VTQPUcQL8pSvz67z6B
+	UWQWktWzkHTPQtK9gJF5FaNYaXFyQXFSemqFiV5xYm5xaV66XnJ+7iZGSNTU7mC8/9XmEKMA
+	B6MSD+8GP/FgIdbEsuLK3EOMEhzMSiK8AZFAId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYztupuc
+	in5ybFXVqLoVf6L71bt/PtqPczrzFjyc2npxwYlg5d/mN4/mreByePtOweWOo/23DRNqti9g
+	mrf0v/iOdQYq7NMXZ314qWghIf2aUyxcg+HqohsXjthvW/q1vY3HsOpj7/fkFhOJ+TH2aRzN
+	PRFxu9+//npztnr8V9WHSfM3TAvyvrdOiaU4I9FQi7moOBEAxqK+uHgCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  44e016d37d0e84f1d7063f699ee8df68d7bd7607
-Gitweb:     http://git.kernel.org/tip/44e016d37d0e84f1d7063f699ee8df68d7bd7607
-Author:     Stefani Seibold <stefani@seibold.net>
-AuthorDate: Mon, 3 Mar 2014 22:12:15 +0100
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 5 Mar 2014 14:02:38 -0800
+On 03/04/2014 01:03 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.10.33 release.
+> There are 97 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Thu Mar  6 20:03:11 UTC 2014.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.33-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
+>
 
-x86, vdso: __vdso_clock_gettime() cleanup
+Compile tests and boot tests passed. No dmesg regressions: emerg, crit, 
+alert, err are clean. No regressions in warn.
 
-This patch is a small code cleanup for the __vdso_clock_gettime() function.
+-- Shuah
 
-It removes the unneeded return values from do_monotonic_coarse() and
-do_realtime_coarse() and add a fallback label for doing the kernel
-gettimeofday() system call.
-
-Reviewed-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: Stefani Seibold <stefani@seibold.net>
-Link: http://lkml.kernel.org/r/1393881143-3569-5-git-send-email-stefani@seibold.net
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/vdso/vclock_gettime.c | 27 ++++++++++++++-------------
- 1 file changed, 14 insertions(+), 13 deletions(-)
-
-diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
-index bbc8065..fd074dd 100644
---- a/arch/x86/vdso/vclock_gettime.c
-+++ b/arch/x86/vdso/vclock_gettime.c
-@@ -209,7 +209,7 @@ notrace static int do_monotonic(struct timespec *ts)
- 	return mode;
- }
- 
--notrace static int do_realtime_coarse(struct timespec *ts)
-+notrace static void do_realtime_coarse(struct timespec *ts)
- {
- 	unsigned long seq;
- 	do {
-@@ -217,10 +217,9 @@ notrace static int do_realtime_coarse(struct timespec *ts)
- 		ts->tv_sec = gtod->wall_time_coarse.tv_sec;
- 		ts->tv_nsec = gtod->wall_time_coarse.tv_nsec;
- 	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
--	return 0;
- }
- 
--notrace static int do_monotonic_coarse(struct timespec *ts)
-+notrace static void do_monotonic_coarse(struct timespec *ts)
- {
- 	unsigned long seq;
- 	do {
-@@ -228,30 +227,32 @@ notrace static int do_monotonic_coarse(struct timespec *ts)
- 		ts->tv_sec = gtod->monotonic_time_coarse.tv_sec;
- 		ts->tv_nsec = gtod->monotonic_time_coarse.tv_nsec;
- 	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
--
--	return 0;
- }
- 
- notrace int __vdso_clock_gettime(clockid_t clock, struct timespec *ts)
- {
--	int ret = VCLOCK_NONE;
--
- 	switch (clock) {
- 	case CLOCK_REALTIME:
--		ret = do_realtime(ts);
-+		if (do_realtime(ts) == VCLOCK_NONE)
-+			goto fallback;
- 		break;
- 	case CLOCK_MONOTONIC:
--		ret = do_monotonic(ts);
-+		if (do_monotonic(ts) == VCLOCK_NONE)
-+			goto fallback;
- 		break;
- 	case CLOCK_REALTIME_COARSE:
--		return do_realtime_coarse(ts);
-+		do_realtime_coarse(ts);
-+		break;
- 	case CLOCK_MONOTONIC_COARSE:
--		return do_monotonic_coarse(ts);
-+		do_monotonic_coarse(ts);
-+		break;
-+	default:
-+		goto fallback;
- 	}
- 
--	if (ret == VCLOCK_NONE)
--		return vdso_fallback_gettime(clock, ts);
- 	return 0;
-+fallback:
-+	return vdso_fallback_gettime(clock, ts);
- }
- int clock_gettime(clockid_t, struct timespec *)
- 	__attribute__((weak, alias("__vdso_clock_gettime")));
+-- 
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
