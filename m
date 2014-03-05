@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758255AbaCEPCp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 10:02:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41200 "EHLO
+	id S1758093AbaCEPCo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:02:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41205 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757518AbaCEO0r (ORCPT
+	with ESMTP id S1757522AbaCEO0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Mar 2014 09:26:47 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Denis Ciocca <denis.ciocca@st.com>, Jonathan Cameron <jic23@kernel.org>,
+Cc: Takashi Iwai <tiwai@suse.de>, Mark Brown <broonie@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 099/131] iio:gyro: bug on L3GD20H gyroscope support
-Date: Wed,  5 Mar 2014 14:23:43 +0000
-Message-Id: <1394029455-23128-100-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 100/131] ASoC: sta32x: Fix array access overflow
+Date: Wed,  5 Mar 2014 14:23:44 +0000
+Message-Id: <1394029455-23128-101-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -27,95 +27,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Denis CIOCCA <denis.ciocca@st.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit a0657716416f834ef7710a9044614d50a36c3bdc upstream.
+commit 025c3fa9256d4c54506b7a29dc3befac54f5c68d upstream.
 
-The driver was not able to manage the sensor: during probe function
-and wai check, the driver stops and writes: "device name and WhoAmI mismatch."
-The correct value of L3GD20H wai is 0xd7 instead of 0xd4.
-Dropped support for the sensor.
+Preset EQ enum of sta32x codec driver declares too many number of
+items and it may lead to the access over the actual array size.
 
-Signed-off-by: Denis Ciocca <denis.ciocca@st.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Use SOC_ENUM_SINGLE_DECL() helper and it's automatically fixed.
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Acked-by: Liam Girdwood <liam.r.girdwood@linux.intel.com>
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/iio/gyro/Kconfig        | 2 +-
- drivers/iio/gyro/st_gyro.h      | 1 -
- drivers/iio/gyro/st_gyro_core.c | 9 ++++-----
- drivers/iio/gyro/st_gyro_i2c.c  | 1 -
- drivers/iio/gyro/st_gyro_spi.c  | 1 -
- 5 files changed, 5 insertions(+), 9 deletions(-)
+ sound/soc/codecs/sta32x.c | 72 +++++++++++++++++++++++------------------------
+ 1 file changed, 36 insertions(+), 36 deletions(-)
 
-diff --git a/drivers/iio/gyro/Kconfig b/drivers/iio/gyro/Kconfig
-index 8498e9d..c400416 100644
---- a/drivers/iio/gyro/Kconfig
-+++ b/drivers/iio/gyro/Kconfig
-@@ -56,7 +56,7 @@ config IIO_ST_GYRO_3AXIS
- 	select IIO_TRIGGERED_BUFFER if (IIO_BUFFER)
- 	help
- 	  Say yes here to build support for STMicroelectronics gyroscopes:
--	  L3G4200D, LSM330DL, L3GD20, L3GD20H, LSM330DLC, L3G4IS, LSM330.
-+	  L3G4200D, LSM330DL, L3GD20, LSM330DLC, L3G4IS, LSM330.
+diff --git a/sound/soc/codecs/sta32x.c b/sound/soc/codecs/sta32x.c
+index cfb55fe..dc5e7f5 100644
+--- a/sound/soc/codecs/sta32x.c
++++ b/sound/soc/codecs/sta32x.c
+@@ -187,42 +187,42 @@ static const unsigned int sta32x_limiter_drc_release_tlv[] = {
+ 	13, 16, TLV_DB_SCALE_ITEM(-1500, 300, 0),
+ };
  
- 	  This driver can also be built as a module. If so, will be created
- 	  these modules:
-diff --git a/drivers/iio/gyro/st_gyro.h b/drivers/iio/gyro/st_gyro.h
-index 3ad9907..25ee236 100644
---- a/drivers/iio/gyro/st_gyro.h
-+++ b/drivers/iio/gyro/st_gyro.h
-@@ -19,7 +19,6 @@
- #define LSM330DL_GYRO_DEV_NAME		"lsm330dl_gyro"
- #define LSM330DLC_GYRO_DEV_NAME		"lsm330dlc_gyro"
- #define L3GD20_GYRO_DEV_NAME		"l3gd20"
--#define L3GD20H_GYRO_DEV_NAME		"l3gd20h"
- #define L3G4IS_GYRO_DEV_NAME		"l3g4is_ui"
- #define LSM330_GYRO_DEV_NAME		"lsm330_gyro"
+-static const struct soc_enum sta32x_drc_ac_enum =
+-	SOC_ENUM_SINGLE(STA32X_CONFD, STA32X_CONFD_DRC_SHIFT,
+-			2, sta32x_drc_ac);
+-static const struct soc_enum sta32x_auto_eq_enum =
+-	SOC_ENUM_SINGLE(STA32X_AUTO1, STA32X_AUTO1_AMEQ_SHIFT,
+-			3, sta32x_auto_eq_mode);
+-static const struct soc_enum sta32x_auto_gc_enum =
+-	SOC_ENUM_SINGLE(STA32X_AUTO1, STA32X_AUTO1_AMGC_SHIFT,
+-			4, sta32x_auto_gc_mode);
+-static const struct soc_enum sta32x_auto_xo_enum =
+-	SOC_ENUM_SINGLE(STA32X_AUTO2, STA32X_AUTO2_XO_SHIFT,
+-			16, sta32x_auto_xo_mode);
+-static const struct soc_enum sta32x_preset_eq_enum =
+-	SOC_ENUM_SINGLE(STA32X_AUTO3, STA32X_AUTO3_PEQ_SHIFT,
+-			32, sta32x_preset_eq_mode);
+-static const struct soc_enum sta32x_limiter_ch1_enum =
+-	SOC_ENUM_SINGLE(STA32X_C1CFG, STA32X_CxCFG_LS_SHIFT,
+-			3, sta32x_limiter_select);
+-static const struct soc_enum sta32x_limiter_ch2_enum =
+-	SOC_ENUM_SINGLE(STA32X_C2CFG, STA32X_CxCFG_LS_SHIFT,
+-			3, sta32x_limiter_select);
+-static const struct soc_enum sta32x_limiter_ch3_enum =
+-	SOC_ENUM_SINGLE(STA32X_C3CFG, STA32X_CxCFG_LS_SHIFT,
+-			3, sta32x_limiter_select);
+-static const struct soc_enum sta32x_limiter1_attack_rate_enum =
+-	SOC_ENUM_SINGLE(STA32X_L1AR, STA32X_LxA_SHIFT,
+-			16, sta32x_limiter_attack_rate);
+-static const struct soc_enum sta32x_limiter2_attack_rate_enum =
+-	SOC_ENUM_SINGLE(STA32X_L2AR, STA32X_LxA_SHIFT,
+-			16, sta32x_limiter_attack_rate);
+-static const struct soc_enum sta32x_limiter1_release_rate_enum =
+-	SOC_ENUM_SINGLE(STA32X_L1AR, STA32X_LxR_SHIFT,
+-			16, sta32x_limiter_release_rate);
+-static const struct soc_enum sta32x_limiter2_release_rate_enum =
+-	SOC_ENUM_SINGLE(STA32X_L2AR, STA32X_LxR_SHIFT,
+-			16, sta32x_limiter_release_rate);
++static SOC_ENUM_SINGLE_DECL(sta32x_drc_ac_enum,
++			    STA32X_CONFD, STA32X_CONFD_DRC_SHIFT,
++			    sta32x_drc_ac);
++static SOC_ENUM_SINGLE_DECL(sta32x_auto_eq_enum,
++			    STA32X_AUTO1, STA32X_AUTO1_AMEQ_SHIFT,
++			    sta32x_auto_eq_mode);
++static SOC_ENUM_SINGLE_DECL(sta32x_auto_gc_enum,
++			    STA32X_AUTO1, STA32X_AUTO1_AMGC_SHIFT,
++			    sta32x_auto_gc_mode);
++static SOC_ENUM_SINGLE_DECL(sta32x_auto_xo_enum,
++			    STA32X_AUTO2, STA32X_AUTO2_XO_SHIFT,
++			    sta32x_auto_xo_mode);
++static SOC_ENUM_SINGLE_DECL(sta32x_preset_eq_enum,
++			    STA32X_AUTO3, STA32X_AUTO3_PEQ_SHIFT,
++			    sta32x_preset_eq_mode);
++static SOC_ENUM_SINGLE_DECL(sta32x_limiter_ch1_enum,
++			    STA32X_C1CFG, STA32X_CxCFG_LS_SHIFT,
++			    sta32x_limiter_select);
++static SOC_ENUM_SINGLE_DECL(sta32x_limiter_ch2_enum,
++			    STA32X_C2CFG, STA32X_CxCFG_LS_SHIFT,
++			    sta32x_limiter_select);
++static SOC_ENUM_SINGLE_DECL(sta32x_limiter_ch3_enum,
++			    STA32X_C3CFG, STA32X_CxCFG_LS_SHIFT,
++			    sta32x_limiter_select);
++static SOC_ENUM_SINGLE_DECL(sta32x_limiter1_attack_rate_enum,
++			    STA32X_L1AR, STA32X_LxA_SHIFT,
++			    sta32x_limiter_attack_rate);
++static SOC_ENUM_SINGLE_DECL(sta32x_limiter2_attack_rate_enum,
++			    STA32X_L2AR, STA32X_LxA_SHIFT,
++			    sta32x_limiter_attack_rate);
++static SOC_ENUM_SINGLE_DECL(sta32x_limiter1_release_rate_enum,
++			    STA32X_L1AR, STA32X_LxR_SHIFT,
++			    sta32x_limiter_release_rate);
++static SOC_ENUM_SINGLE_DECL(sta32x_limiter2_release_rate_enum,
++			    STA32X_L2AR, STA32X_LxR_SHIFT,
++			    sta32x_limiter_release_rate);
  
-diff --git a/drivers/iio/gyro/st_gyro_core.c b/drivers/iio/gyro/st_gyro_core.c
-index f9ed348..e0289e1 100644
---- a/drivers/iio/gyro/st_gyro_core.c
-+++ b/drivers/iio/gyro/st_gyro_core.c
-@@ -167,11 +167,10 @@ static const struct st_sensors st_gyro_sensors[] = {
- 		.wai = ST_GYRO_2_WAI_EXP,
- 		.sensors_supported = {
- 			[0] = L3GD20_GYRO_DEV_NAME,
--			[1] = L3GD20H_GYRO_DEV_NAME,
--			[2] = LSM330D_GYRO_DEV_NAME,
--			[3] = LSM330DLC_GYRO_DEV_NAME,
--			[4] = L3G4IS_GYRO_DEV_NAME,
--			[5] = LSM330_GYRO_DEV_NAME,
-+			[1] = LSM330D_GYRO_DEV_NAME,
-+			[2] = LSM330DLC_GYRO_DEV_NAME,
-+			[3] = L3G4IS_GYRO_DEV_NAME,
-+			[4] = LSM330_GYRO_DEV_NAME,
- 		},
- 		.ch = (struct iio_chan_spec *)st_gyro_16bit_channels,
- 		.odr = {
-diff --git a/drivers/iio/gyro/st_gyro_i2c.c b/drivers/iio/gyro/st_gyro_i2c.c
-index 8a31050..c1755ce 100644
---- a/drivers/iio/gyro/st_gyro_i2c.c
-+++ b/drivers/iio/gyro/st_gyro_i2c.c
-@@ -61,7 +61,6 @@ static const struct i2c_device_id st_gyro_id_table[] = {
- 	{ LSM330DL_GYRO_DEV_NAME },
- 	{ LSM330DLC_GYRO_DEV_NAME },
- 	{ L3GD20_GYRO_DEV_NAME },
--	{ L3GD20H_GYRO_DEV_NAME },
- 	{ L3G4IS_GYRO_DEV_NAME },
- 	{ LSM330_GYRO_DEV_NAME },
- 	{},
-diff --git a/drivers/iio/gyro/st_gyro_spi.c b/drivers/iio/gyro/st_gyro_spi.c
-index f354039..b37fc9e 100644
---- a/drivers/iio/gyro/st_gyro_spi.c
-+++ b/drivers/iio/gyro/st_gyro_spi.c
-@@ -60,7 +60,6 @@ static const struct spi_device_id st_gyro_id_table[] = {
- 	{ LSM330DL_GYRO_DEV_NAME },
- 	{ LSM330DLC_GYRO_DEV_NAME },
- 	{ L3GD20_GYRO_DEV_NAME },
--	{ L3GD20H_GYRO_DEV_NAME },
- 	{ L3G4IS_GYRO_DEV_NAME },
- 	{ LSM330_GYRO_DEV_NAME },
- 	{},
+ /* byte array controls for setting biquad, mixer, scaling coefficients;
+  * for biquads all five coefficients need to be set in one go,
 -- 
 1.9.0
 
