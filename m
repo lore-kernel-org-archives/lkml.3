@@ -1,113 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048AbaCEHaA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 02:30:00 -0500
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:51704 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751565AbaCEH37 (ORCPT
+	id S1752636AbaCEHcp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 02:32:45 -0500
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:60230 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752392AbaCEHco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 02:29:59 -0500
+	Wed, 5 Mar 2014 02:32:44 -0500
+Date: Wed, 5 Mar 2014 02:32:26 -0500 (EST)
+From: Jon Ringle <jon@ringle.org>
+X-X-Sender: jringle@jringle-ubuntu
+To: Greg KH <gregkh@linuxfoundation.org>
+cc: "Ringle, Jonathan" <Jonathan.Ringle@gridpoint.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Add option to build with -O3
+In-Reply-To: <20140305050927.GA8534@kroah.com>
+Message-ID: <alpine.DEB.2.02.1403050230120.24331@jringle-ubuntu>
+References: <1393977709-9809-1-git-send-email-jringle@gridpoint.com> <20140305050927.GA8534@kroah.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1393862536-9842-3-git-send-email-tomasz.figa@gmail.com>
-References: <1393862536-9842-1-git-send-email-tomasz.figa@gmail.com>
-	<1393862536-9842-3-git-send-email-tomasz.figa@gmail.com>
-Date: Wed, 5 Mar 2014 08:22:48 +0100
-Message-ID: <CAPDyKFpMSwXG0e1Q38wMwBocXgMb4_v9y=1kNeNi6t0GXDGN2A@mail.gmail.com>
-Subject: Re: [PATCH v2 02/11] drivercore: Bind/unbind power domain on probe/remove
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        devicetree@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>, Russell King <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Tomasz Figa <t.figa@samsung.com>, Mark Brown <broonie@kernel.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 March 2014 17:02, Tomasz Figa <tomasz.figa@gmail.com> wrote:
-> On a number of platforms, devices are part of controllable power
-> domains, which need to be enabled before such devices can be accessed
-> and may be powered down when the device is idle to save some power.
-> This means that on systems that support power domain control using
-> generic power domains subsystem, it is necessary to add device to its
-> power domain before binding a driver to it and remove it from its power
-> domain after its driver is unbound to make sure that an unused device
-> does not affect power domain state.
->
-> Since this is not limited to particular busses and specific
-> archs/platforms, it is more convenient to do the above directly in
-> driver core, just as done with pinctrl default configuration. This patch
-> adds necessary code to really_probe() and __device_release_driver() to
-> achieve this and maintain consistent stack-like ordering of operations
-> happening when binding and unbinding a driver.
->
-> Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
+On Wed, 5 Mar 2014, Greg KH wrote:
 
-This definitely makes sense to me!
+> On Tue, Mar 04, 2014 at 07:01:49PM -0500, Jon Ringle wrote:
+> > +config CC_OPTIMIZE_FOR_SPEED
+> > +    bool "Optimze for speed (-O3)"
+> > +    help
+> > +      Enabling this option will pass "-O3" to gcc
+> > +      resulting in a larger kernel (but possibly faster)
+> 
+> Are you sure about that?  Have you measured it?
 
-Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
+(Resending this message, since it was "destroyed". Hopefully, this is now 
+an an acceptable form :)
 
-> ---
->  drivers/base/dd.c | 9 ++++++++-
->  1 file changed, 8 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/base/dd.c b/drivers/base/dd.c
-> index 0605176..78e5b36 100644
-> --- a/drivers/base/dd.c
-> +++ b/drivers/base/dd.c
-> @@ -23,6 +23,7 @@
->  #include <linux/kthread.h>
->  #include <linux/wait.h>
->  #include <linux/async.h>
-> +#include <linux/pm_domain.h>
->  #include <linux/pm_runtime.h>
->  #include <linux/pinctrl/devinfo.h>
->
-> @@ -273,6 +274,11 @@ static int really_probe(struct device *dev, struct device_driver *drv)
->
->         dev->driver = drv;
->
-> +       /* If using genpd, bind power domain now before probing */
-> +       ret = genpd_bind_domain(dev);
-> +       if (ret)
-> +               goto probe_failed;
-> +
->         /* If using pinctrl, bind pins now before probing */
->         ret = pinctrl_bind_pins(dev);
->         if (ret)
-> @@ -303,6 +309,7 @@ static int really_probe(struct device *dev, struct device_driver *drv)
->  probe_failed:
->         devres_release_all(dev);
->         driver_sysfs_remove(dev);
-> +       genpd_unbind_domain(dev);
->         dev->driver = NULL;
->         dev_set_drvdata(dev, NULL);
->
-> @@ -513,7 +520,7 @@ static void __device_release_driver(struct device *dev)
->                         blocking_notifier_call_chain(&dev->bus->p->bus_notifier,
->                                                      BUS_NOTIFY_UNBOUND_DRIVER,
->                                                      dev);
-> -
-> +               genpd_unbind_domain(dev);
->         }
->  }
->
-> --
-> 1.9.0
->
+I do know that there is an improvement performance-wise for my particular 
+use-case.
+
+My target is an ARM board being built with gcc-4.8.2. My board has on it a 
+sc16is740 that is used as an RS-485 port. The sc16is740 is on the i2c bus, 
+so when an interrupt comes in to indicate that there is data available to 
+be read, I need to get the data over the i2c bus. I do this on a kthread 
+to do this work. The i2c transactions (using i2c-davinci driver) are also 
+interrupt driven. I was seeing a lot of lost packets when receiving data 
+at only 19200. Adding the -O3 compile option helped in this regard in that 
+I am now rarely seeing packet loss.
+
+Jon
+ 
