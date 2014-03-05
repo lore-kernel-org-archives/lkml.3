@@ -1,89 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757240AbaCEAbo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 19:31:44 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:44027 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755420AbaCEA3q (ORCPT
+	id S1756249AbaCEAdX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 19:33:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44046 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753907AbaCEAdW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 19:29:46 -0500
-Message-Id: <20140305002933.559081123@goodmis.org>
-User-Agent: quilt/0.61-1
-Date: Tue, 04 Mar 2014 19:29:33 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH RT 0/6] Linux 3.4.82-rt101-rc1
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	Tue, 4 Mar 2014 19:33:22 -0500
+Date: Tue, 4 Mar 2014 16:35:05 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: devel@driverdev.osuosl.org, shaun@xresource.ca, sachin.kamat@linaro.org,
+        linux-kernel@vger.kernel.org, dulshani.gunawardhana89@gmail.com,
+        ying.xue@windriver.com, davem@davemloft.net
+Subject: Re: [PATCH 5/7] staging: cxt1e1: fix checkpatch errors with open
+ brace '{'
+Message-ID: <20140305003505.GA28196@kroah.com>
+References: <2842786.yy4V63h1Bd@daeseok-laptop.cloud.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2842786.yy4V63h1Bd@daeseok-laptop.cloud.net>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Mar 04, 2014 at 11:10:44AM +0900, Daeseok Youn wrote:
+> 
+> clean up checkpatch.pl error in linux.c:
+>  ERROR: that open brace { should be on the previous line
+> 
+> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+> ---
+>  drivers/staging/cxt1e1/linux.c |   67 ++++++++++++---------------------------
+>  1 files changed, 21 insertions(+), 46 deletions(-)
 
-Dear RT Folks,
+As patch 4 can't be applied, I can't apply these either, please resend
+the rest of the series when you fix them up.
 
-This is the RT stable review cycle of patch 3.4.82-rt101-rc1.
+thanks,
 
-Please scream at me if I messed something up. Please test the patches too.
-
-The -rc release will be uploaded to kernel.org and will be deleted when
-the final release is out. This is just a review release (or release candidate).
-
-The pre-releases will not be pushed to the git repository, only the
-final release is.
-
-If all goes well, this patch will be converted to the next main release
-on 3/7/2014.
-
-Enjoy,
-
--- Steve
-
-
-To build 3.4.82-rt101-rc1 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.82.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.82-rt101-rc1.patch.xz
-
-You can also build from 3.4.82-rt100 by applying the incremental patch:
-
-http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/incr/patch-3.4.82-rt100-rt101-rc1.patch.xz
-
-
-Changes from 3.4.82-rt100:
-
----
-
-
-Sebastian Andrzej Siewior (3):
-      Revert "x86: Disable IST stacks for debug/int 3/stack fault for PREEMPT_RT"
-      kernel/hrtimer: be non-freezeable in cpu_chill()
-      arm/unwind: use a raw_spin_lock
-
-Steven Rostedt (1):
-      rt: Make cpu_chill() use hrtimer instead of msleep()
-
-Steven Rostedt (Red Hat) (1):
-      Linux 3.4.82-rt101-rc1
-
-Tiejun Chen (1):
-      rcutree/rcu_bh_qs: disable irq while calling rcu_preempt_qs()
-
-----
- arch/arm/kernel/unwind.c             | 14 +++++++-------
- arch/x86/include/asm/page_64_types.h | 21 ++++++---------------
- arch/x86/kernel/cpu/common.c         |  2 --
- arch/x86/kernel/dumpstack_64.c       |  4 ----
- include/linux/delay.h                |  2 +-
- kernel/hrtimer.c                     | 19 +++++++++++++++++++
- kernel/rcutree.c                     |  5 +++++
- localversion-rt                      |  2 +-
- 8 files changed, 39 insertions(+), 30 deletions(-)
+greg k-h
