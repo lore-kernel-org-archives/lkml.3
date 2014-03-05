@@ -1,67 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757919AbaCEEA7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 23:00:59 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55903 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757889AbaCEEA5 (ORCPT
+	id S1757750AbaCED7e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 22:59:34 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:38070 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757719AbaCED70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 23:00:57 -0500
-Date: Wed, 5 Mar 2014 12:00:45 +0800
-From: Mark Brown <broonie@kernel.org>
-To: Wenyou Yang <wenyou.yang@atmel.com>
-Cc: nicolas.ferre@atmel.com, linux-spi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Message-ID: <20140305040045.GC13126@sirena.org.uk>
-References: <1393990141-3157-1-git-send-email-wenyou.yang@atmel.com>
+	Tue, 4 Mar 2014 22:59:26 -0500
+Date: Tue, 4 Mar 2014 19:59:22 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Tejun Heo <tj@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Oleg Nesterov <oleg@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Jianguo Wu <wujianguo@huawei.com>,
+        Tim Hockin <thockin@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, cgroups@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: [patch 05/11] res_counter: remove interface for locked charging and
+ uncharging
+In-Reply-To: <alpine.DEB.2.02.1403041952170.8067@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.02.1403041955250.8067@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1403041952170.8067@chino.kir.corp.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="k/A+UfywgnnvevLW"
-Content-Disposition: inline
-In-Reply-To: <1393990141-3157-1-git-send-email-wenyou.yang@atmel.com>
-X-Cookie: You are always busy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 202.175.88.218
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] spi: atmel: add missing spi_master_{resume,suspend}
- calls to PM callbacks
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The res_counter_{charge,uncharge}_locked() variants are not used in the
+kernel outside of the resource counter code itself, so remove the
+interface.
 
---k/A+UfywgnnvevLW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ Documentation/cgroups/resource_counter.txt | 12 ++----------
+ include/linux/res_counter.h                |  6 +-----
+ kernel/res_counter.c                       | 23 ++++++++++++-----------
+ 3 files changed, 15 insertions(+), 26 deletions(-)
 
-On Wed, Mar 05, 2014 at 11:29:01AM +0800, Wenyou Yang wrote:
-> The PM callbacks implemented by the spi-atmel driver don't call
-> spi_master_{resume,suspend}, fix that.
-
-Applied, thanks.
-
---k/A+UfywgnnvevLW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTFqFqAAoJELSic+t+oim9s9kP/io0JQ7rTaDLy979yeHLK+56
-jNQ6ObYhIGVqTl/8XTIUAdNGkfAnyD8UIlEm0yOa8tgJSaazIsROdlx6iRdx+fd8
-+989/HhgKfXDZROGBR8f6Vs67OgkU0iS+tAe7sNR0pmAnZj5A+Y33D120VM1l7rN
-gXFcqoPRIaRbE8k3NrAaF02XSW7KiB1QeLJvn+scZg5yuASJoWkCHNQgMTWbvsAV
-5LRnFU0muUbveZfH9a7nqsUQAbA8PJQRxlaH1186VcMidFLa/Tgro1I+oR/GM3pZ
-vsnQJZFkIhhBfCey00IvAODnGhwmWPef+vGurePvtmYNhL6okBSXTmlqZTBZqJq0
-810BbpCS89sPhI/YG5AwEvlOido1SaUdQYZh4s34wEW7emBW2guMNlxDLtZMuMki
-bNqtx9gQjtEQ9FBsJOA6t6bRmjb9vUAmEqqd0ax/ID+/mv/IxE0/L0DQIdgRueIJ
-UZQVWcDPkyF/fZl540XRl1z14FNA2aLzt0psq+cpxnk24yJrnhq0Z8KZJwkVg7KJ
-uFBL/LFXIKJBdybncJPUVK2kC6rzLh5bDGczUtmOnbd0VBowVYrCbVjZYki62Blj
-DMudbdHrM5tl855eFqF1GHKy5NpVypWlb9FXxNOMlAkc2GHiYJISQ6DMEfkFX8pw
-QNCF7mO+rNogDVRuYHDb
-=VvZg
------END PGP SIGNATURE-----
-
---k/A+UfywgnnvevLW--
+diff --git a/Documentation/cgroups/resource_counter.txt b/Documentation/cgroups/resource_counter.txt
+--- a/Documentation/cgroups/resource_counter.txt
++++ b/Documentation/cgroups/resource_counter.txt
+@@ -76,15 +76,7 @@ to work with it.
+ 	limit_fail_at parameter is set to the particular res_counter element
+ 	where the charging failed.
+ 
+- d. int res_counter_charge_locked
+-			(struct res_counter *rc, unsigned long val, bool force)
+-
+-	The same as res_counter_charge(), but it must not acquire/release the
+-	res_counter->lock internally (it must be called with res_counter->lock
+-	held). The force parameter indicates whether we can bypass the limit.
+-
+- e. u64 res_counter_uncharge[_locked]
+-			(struct res_counter *rc, unsigned long val)
++ d. u64 res_counter_uncharge(struct res_counter *rc, unsigned long val)
+ 
+ 	When a resource is released (freed) it should be de-accounted
+ 	from the resource counter it was accounted to.  This is called
+@@ -93,7 +85,7 @@ to work with it.
+ 
+ 	The _locked routines imply that the res_counter->lock is taken.
+ 
+- f. u64 res_counter_uncharge_until
++ e. u64 res_counter_uncharge_until
+ 		(struct res_counter *rc, struct res_counter *top,
+ 		 unsigned long val)
+ 
+diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
+--- a/include/linux/res_counter.h
++++ b/include/linux/res_counter.h
+@@ -104,15 +104,13 @@ void res_counter_init(struct res_counter *counter, struct res_counter *parent);
+  *       units, e.g. numbers, bytes, Kbytes, etc
+  *
+  * returns 0 on success and <0 if the counter->usage will exceed the
+- * counter->limit _locked call expects the counter->lock to be taken
++ * counter->limit
+  *
+  * charge_nofail works the same, except that it charges the resource
+  * counter unconditionally, and returns < 0 if the after the current
+  * charge we are over limit.
+  */
+ 
+-int __must_check res_counter_charge_locked(struct res_counter *counter,
+-					   unsigned long val, bool force);
+ int __must_check res_counter_charge(struct res_counter *counter,
+ 		unsigned long val, struct res_counter **limit_fail_at);
+ int res_counter_charge_nofail(struct res_counter *counter,
+@@ -125,12 +123,10 @@ int res_counter_charge_nofail(struct res_counter *counter,
+  * @val: the amount of the resource
+  *
+  * these calls check for usage underflow and show a warning on the console
+- * _locked call expects the counter->lock to be taken
+  *
+  * returns the total charges still present in @counter.
+  */
+ 
+-u64 res_counter_uncharge_locked(struct res_counter *counter, unsigned long val);
+ u64 res_counter_uncharge(struct res_counter *counter, unsigned long val);
+ 
+ u64 res_counter_uncharge_until(struct res_counter *counter,
+diff --git a/kernel/res_counter.c b/kernel/res_counter.c
+--- a/kernel/res_counter.c
++++ b/kernel/res_counter.c
+@@ -22,8 +22,18 @@ void res_counter_init(struct res_counter *counter, struct res_counter *parent)
+ 	counter->parent = parent;
+ }
+ 
+-int res_counter_charge_locked(struct res_counter *counter, unsigned long val,
+-			      bool force)
++static u64 res_counter_uncharge_locked(struct res_counter *counter,
++				       unsigned long val)
++{
++	if (WARN_ON(counter->usage < val))
++		val = counter->usage;
++
++	counter->usage -= val;
++	return counter->usage;
++}
++
++static int res_counter_charge_locked(struct res_counter *counter,
++				     unsigned long val, bool force)
+ {
+ 	int ret = 0;
+ 
+@@ -86,15 +96,6 @@ int res_counter_charge_nofail(struct res_counter *counter, unsigned long val,
+ 	return __res_counter_charge(counter, val, limit_fail_at, true);
+ }
+ 
+-u64 res_counter_uncharge_locked(struct res_counter *counter, unsigned long val)
+-{
+-	if (WARN_ON(counter->usage < val))
+-		val = counter->usage;
+-
+-	counter->usage -= val;
+-	return counter->usage;
+-}
+-
+ u64 res_counter_uncharge_until(struct res_counter *counter,
+ 			       struct res_counter *top,
+ 			       unsigned long val)
