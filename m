@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757818AbaCED7t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 22:59:49 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:64166 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757789AbaCED7n (ORCPT
+	id S1757842AbaCED7z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 22:59:55 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:40569 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757812AbaCED7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 22:59:43 -0500
-Date: Tue, 4 Mar 2014 19:59:35 -0800 (PST)
+	Tue, 4 Mar 2014 22:59:48 -0500
+Date: Tue, 4 Mar 2014 19:59:46 -0800 (PST)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
 To: Andrew Morton <akpm@linux-foundation.org>
@@ -19,10 +19,9 @@ cc: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
         Rik van Riel <riel@redhat.com>, Jianguo Wu <wujianguo@huawei.com>,
         Tim Hockin <thockin@google.com>, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, cgroups@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: [patch 09/11] mm, page_alloc: allow system oom handlers to use memory
- reserves
+Subject: [patch 11/11] mm, memcg: allow system oom killer to be disabled
 In-Reply-To: <alpine.DEB.2.02.1403041952170.8067@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.02.1403041956510.8067@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.02.1403041957340.8067@chino.kir.corp.google.com>
 References: <alpine.DEB.2.02.1403041952170.8067@chino.kir.corp.google.com>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
@@ -31,220 +30,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The root memcg allows unlimited memory charging, so no memory may be
-reserved for userspace oom handlers that are responsible for dealing
-with system oom conditions.
-
-Instead, this memory must come from per-zone memory reserves.  This
-allows the memory allocation to succeed, and the memcg charge will
-naturally succeed afterwards.
-
-This patch introduces per-zone oom watermarks that aren't really
-watermarks in the traditional sense.  The oom watermark is the root
-memcg's oom reserve proportional to the size of the zone.  When a page
-allocation is done, the effective watermark is
-
-	[min/low/high watermark] - [oom watermark]
-
-For the [min watermark] case, this is effectively the oom reserve.
-However, it also adjusts the low and high watermark accordingly so
-memory is actually only allocated from min reserves when appropriate.
+Now that system oom conditions can properly be handled from userspace,
+allow the oom killer to be disabled.  Otherwise, the kernel will
+immediately kill a process and memory will be freed.  The userspace oom
+handler may have a different policy.
 
 Signed-off-by: David Rientjes <rientjes@google.com>
 ---
- Documentation/cgroups/memory.txt |  9 +++++++++
- Documentation/sysctl/vm.txt      |  5 +++++
- arch/m32r/mm/discontig.c         |  1 +
- include/linux/memcontrol.h       | 13 +++++++++++++
- include/linux/mmzone.h           |  2 ++
- mm/memcontrol.c                  | 26 +++++++++++++++++++++++++-
- mm/page_alloc.c                  | 17 ++++++++++++++++-
- 7 files changed, 71 insertions(+), 2 deletions(-)
+ Documentation/cgroups/memory.txt |  4 ++--
+ include/linux/memcontrol.h       |  6 ++++++
+ mm/memcontrol.c                  | 11 ++++++++---
+ mm/oom_kill.c                    |  3 +++
+ 4 files changed, 19 insertions(+), 5 deletions(-)
 
 diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
 --- a/Documentation/cgroups/memory.txt
 +++ b/Documentation/cgroups/memory.txt
-@@ -798,6 +798,15 @@ are waiting on oom notifications to keep this vaue as minimal as
- possible, or allow it to be large enough so that its text can still
- be pagefaulted in under oom conditions when the value is known.
+@@ -755,8 +755,8 @@ You can disable the OOM-killer by writing "1" to memory.oom_control file, as:
  
-+For root processes that are responsible for handling system oom
-+conditions, this reserve comes from the per-zone watermarks rather than
-+exceeding the limit of the root memcg (since the limit of that memcg is
-+always infinity).  Such processes may allocate into per-zone memory
-+reserves proportional to the setting of the root memcg's oom reserve.
-+If setting an oom reserve for the root memcg to handle system oom
-+conditions, it is recommended that min_free_kbytes (see
-+Documentation/sysctl/vm.txt) exceeds this value.
-+
- 11. Memory Pressure
+ 	# echo 1 > memory.oom_control
  
- The pressure level notifications can be used to monitor the memory
-diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
---- a/Documentation/sysctl/vm.txt
-+++ b/Documentation/sysctl/vm.txt
-@@ -403,6 +403,11 @@ become subtly broken, and prone to deadlock under high loads.
+-This operation is only allowed to the top cgroup of a sub-hierarchy and does
+-not include the root memcg.
++This operation is only allowed to the top cgroup of a sub-hierarchy.  If
++disabled for the root memcg, the system oom killer is disabled.
+ If OOM-killer is disabled, tasks under cgroup will hang/sleep
+ in memory cgroup's OOM-waitqueue when they request accountable memory.
  
- Setting this too high will OOM your machine instantly.
- 
-+If root memory controller OOM reserves are configured (see
-+Documentation/cgroups/memory.txt), some of this memory may also be
-+used for userspace processes that are responsible for handling
-+system OOM conditions.
-+
- =============================================================
- 
- min_slab_ratio:
-diff --git a/arch/m32r/mm/discontig.c b/arch/m32r/mm/discontig.c
---- a/arch/m32r/mm/discontig.c
-+++ b/arch/m32r/mm/discontig.c
-@@ -156,6 +156,7 @@ void __init zone_sizes_init(void)
- 	 *  Use all area of internal RAM.
- 	 *  see __alloc_pages()
- 	 */
-+	NODE_DATA(1)->node_zones->watermark[WMARK_OOM] = 0;
- 	NODE_DATA(1)->node_zones->watermark[WMARK_MIN] = 0;
- 	NODE_DATA(1)->node_zones->watermark[WMARK_LOW] = 0;
- 	NODE_DATA(1)->node_zones->watermark[WMARK_HIGH] = 0;
 diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
 --- a/include/linux/memcontrol.h
 +++ b/include/linux/memcontrol.h
-@@ -156,6 +156,9 @@ static inline bool task_in_memcg_oom(struct task_struct *p)
+@@ -159,6 +159,7 @@ bool mem_cgroup_oom_synchronize(bool wait);
+ extern bool mem_cgroup_alloc_use_oom_reserve(void);
+ extern u64 mem_cgroup_root_oom_reserve(void);
+ extern void mem_cgroup_root_oom_notify(void);
++extern bool mem_cgroup_root_oom_disable(void);
  
- bool mem_cgroup_oom_synchronize(bool wait);
- 
-+extern bool mem_cgroup_alloc_use_oom_reserve(void);
-+extern u64 mem_cgroup_root_oom_reserve(void);
-+
  #ifdef CONFIG_MEMCG_SWAP
  extern int do_swap_account;
- #endif
-@@ -397,6 +400,16 @@ static inline bool mem_cgroup_oom_synchronize(bool wait)
- 	return false;
+@@ -415,6 +416,11 @@ static inline void mem_cgroup_root_oom_notify(void)
+ {
  }
  
-+static inline bool mem_cgroup_alloc_use_oom_reserve(void)
++static inline bool mem_cgroup_root_oom_disable(void)
 +{
 +	return false;
-+}
-+
-+static inline u64 mem_cgroup_root_oom_reserve(void)
-+{
-+	return 0;
 +}
 +
  static inline void mem_cgroup_inc_page_stat(struct page *page,
  					    enum mem_cgroup_stat_index idx)
  {
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -226,12 +226,14 @@ struct lruvec {
- typedef unsigned __bitwise__ isolate_mode_t;
- 
- enum zone_watermarks {
-+	WMARK_OOM,
- 	WMARK_MIN,
- 	WMARK_LOW,
- 	WMARK_HIGH,
- 	NR_WMARK
- };
- 
-+#define oom_wmark_pages(z) (z->watermark[WMARK_OOM])
- #define min_wmark_pages(z) (z->watermark[WMARK_MIN])
- #define low_wmark_pages(z) (z->watermark[WMARK_LOW])
- #define high_wmark_pages(z) (z->watermark[WMARK_HIGH])
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -6026,7 +6026,31 @@ static int mem_cgroup_oom_reserve_write(struct cgroup_subsys_state *css,
- 	if (ret)
- 		return ret;
+@@ -5976,13 +5976,13 @@ static int mem_cgroup_oom_control_write(struct cgroup_subsys_state *css,
+ 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
+ 	struct mem_cgroup *parent = mem_cgroup_from_css(css_parent(&memcg->css));
  
--	return mem_cgroup_resize_oom_reserve(memcg, val);
-+	ret = mem_cgroup_resize_oom_reserve(memcg, val);
-+	if (ret)
-+		return ret;
-+
-+	/* Zone oom watermarks need to be reset for root memcg changes */
-+	if (memcg == root_mem_cgroup)
-+		setup_per_zone_wmarks();
-+	return 0;
-+}
-+
-+bool mem_cgroup_alloc_use_oom_reserve(void)
-+{
-+	bool ret = false;
-+
-+	rcu_read_lock();
-+	if (mem_cgroup_from_task(current) == root_mem_cgroup)
-+		ret = true;
-+	rcu_read_unlock();
-+
-+	return ret;
-+}
-+
-+u64 mem_cgroup_root_oom_reserve(void)
-+{
-+	return root_mem_cgroup->oom_reserve >> PAGE_SHIFT;
- }
+-	/* cannot set to root cgroup and only 0 and 1 are allowed */
+-	if (!parent || !((val == 0) || (val == 1)))
++	/* only 0 and 1 are allowed */
++	if (val != !!val)
+ 		return -EINVAL;
  
- #ifdef CONFIG_MEMCG_KMEM
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1722,6 +1722,12 @@ bool zone_watermark_ok_safe(struct zone *z, int order, unsigned long mark,
- 								free_pages);
- }
- 
-+static bool use_oom_reserves(void)
-+{
-+	return (current->flags & PF_OOM_HANDLER) && !in_interrupt() &&
-+	       mem_cgroup_alloc_use_oom_reserve();
-+}
-+
- #ifdef CONFIG_NUMA
- /*
-  * zlc_setup - Setup for "zonelist cache".  Uses cached zone data to
-@@ -1982,6 +1988,9 @@ zonelist_scan:
- 			goto this_zone_full;
- 
- 		mark = zone->watermark[alloc_flags & ALLOC_WMARK_MASK];
-+		if (unlikely(use_oom_reserves()))
-+			mark -= min_wmark_pages(zone) - oom_wmark_pages(zone);
-+
- 		if (!zone_watermark_ok(zone, order, mark,
- 				       classzone_idx, alloc_flags)) {
- 			int ret;
-@@ -5595,11 +5604,15 @@ static void __setup_per_zone_wmarks(void)
+ 	mutex_lock(&memcg_create_mutex);
+ 	/* oom-kill-disable is a flag for subhierarchy. */
+-	if ((parent->use_hierarchy) || memcg_has_children(memcg)) {
++	if (parent && (parent->use_hierarchy || memcg_has_children(memcg))) {
+ 		mutex_unlock(&memcg_create_mutex);
+ 		return -EINVAL;
  	}
+@@ -6062,6 +6062,11 @@ u64 mem_cgroup_root_oom_reserve(void)
+ 	return root_mem_cgroup->oom_reserve >> PAGE_SHIFT;
+ }
  
- 	for_each_zone(zone) {
--		u64 tmp;
-+		u64 tmp, oom;
++bool mem_cgroup_root_oom_disable(void)
++{
++	return root_mem_cgroup->oom_kill_disable;
++}
++
+ #ifdef CONFIG_MEMCG_KMEM
+ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
+ {
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -656,6 +656,9 @@ void out_of_memory(struct zonelist *zonelist, gfp_t gfp_mask,
+ 	mpol_mask = (constraint == CONSTRAINT_MEMORY_POLICY) ? nodemask : NULL;
+ 	check_panic_on_oom(constraint, gfp_mask, order, mpol_mask);
  
- 		spin_lock_irqsave(&zone->lock, flags);
- 		tmp = (u64)pages_min * zone->managed_pages;
- 		do_div(tmp, lowmem_pages);
-+		oom = mem_cgroup_root_oom_reserve() * zone->managed_pages;
-+		do_div(oom, lowmem_pages);
-+		if (oom > tmp)
-+			oom = tmp;
- 		if (is_highmem(zone)) {
- 			/*
- 			 * __GFP_HIGH and PF_MEMALLOC allocations usually don't
-@@ -5615,12 +5628,14 @@ static void __setup_per_zone_wmarks(void)
- 			min_pages = zone->managed_pages / 1024;
- 			min_pages = clamp(min_pages, SWAP_CLUSTER_MAX, 128UL);
- 			zone->watermark[WMARK_MIN] = min_pages;
-+			zone->watermark[WMARK_OOM] = min_pages;
- 		} else {
- 			/*
- 			 * If it's a lowmem zone, reserve a number of pages
- 			 * proportionate to the zone's size.
- 			 */
- 			zone->watermark[WMARK_MIN] = tmp;
-+			zone->watermark[WMARK_OOM] = oom;
- 		}
- 
- 		zone->watermark[WMARK_LOW]  = min_wmark_pages(zone) + (tmp >> 2);
++	if (mem_cgroup_root_oom_disable())
++		return;
++
+ 	if (sysctl_oom_kill_allocating_task && current->mm &&
+ 	    !oom_unkillable_task(current, NULL, nodemask) &&
+ 	    current->signal->oom_score_adj != OOM_SCORE_ADJ_MIN) {
