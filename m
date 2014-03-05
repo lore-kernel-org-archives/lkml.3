@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932112AbaCEBVJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 20:21:09 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:57547 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754649AbaCEBVH (ORCPT
+	id S1756421AbaCEBWP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 20:22:15 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46940 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754375AbaCEBWO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 20:21:07 -0500
+	Tue, 4 Mar 2014 20:22:14 -0500
 From: Daeseok Youn <daeseok.youn@gmail.com>
 To: gregkh@linuxfoundation.org
-Cc: dan.carpenter@oracle.com, sachin.kamat@linaro.org, shaun@xresource.ca,
-        dulshani.gunawardhana89@gmail.com, davem@davemloft.net,
+Cc: dan.carpenter@oracle.com, davem@davemloft.net, sachin.kamat@linaro.org,
+        shaun@xresource.ca, dulshani.gunawardhana89@gmail.com,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/7 v3] staging: cxt1e1: fix checkpatch error 'assignment in if condition'
-Date: Wed, 05 Mar 2014 10:21:01 +0900
-Message-ID: <2109601.U7a2ESYcJ8@daeseok-laptop.cloud.net>
+Subject: [PATCH 5/7 v3] staging: cxt1e1: fix checkpatch errors with open brace '{'
+Date: Wed, 05 Mar 2014 10:22:09 +0900
+Message-ID: <99574068.3H5DtFj7x2@daeseok-laptop.cloud.net>
 User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
@@ -24,104 +24,221 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-checkpatch.pl error in linux.c:
- ERROR: do not use assignment in if condition
+clean up checkpatch.pl error in linux.c:
+ ERROR: that open brace { should be on the previous line
 
 Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
 ---
- drivers/staging/cxt1e1/linux.c |   31 +++++++++++++++++++------------
- 1 files changed, 19 insertions(+), 12 deletions(-)
+ drivers/staging/cxt1e1/linux.c |   67 ++++++++++++---------------------------
+ 1 files changed, 21 insertions(+), 46 deletions(-)
 
 diff --git a/drivers/staging/cxt1e1/linux.c b/drivers/staging/cxt1e1/linux.c
-index 579e68e..e4541af 100644
+index e4541af..478516f 100644
 --- a/drivers/staging/cxt1e1/linux.c
 +++ b/drivers/staging/cxt1e1/linux.c
-@@ -229,7 +229,8 @@ c4_wq_port_init(mpi_t *pi)
- 	pr_info(">> %s: creating workqueue <%s> for Port %d.\n",
- 		__func__, name, pi->portnum); /* RLD DEBUG */
- #endif
--	if (!(pi->wq_port = create_singlethread_workqueue(name)))
-+	pi->wq_port = create_singlethread_workqueue(name);
-+	if (!pi->wq_port)
- 		return -ENOMEM;
- 	return 0;                       /* success */
- }
-@@ -286,12 +287,14 @@ chan_open(struct net_device *ndev)
- 	const struct c4_priv *priv = hdlc->priv;
- 	int         ret;
- 
--	if ((ret = hdlc_open(ndev)))
+@@ -242,8 +242,7 @@ c4_wq_port_cleanup(mpi_t *pi)
+ 	 * PORT POINT: cannot call this if WQ is statically allocated w/in
+ 	 * structure since it calls kfree(wq);
+ 	 */
+-	if (pi->wq_port)
 -	{
-+	ret = hdlc_open(ndev);
++	if (pi->wq_port) {
+ 		destroy_workqueue(pi->wq_port);        /* this also calls
+ 							* flush_workqueue() */
+ 		pi->wq_port = NULL;
+@@ -433,15 +432,13 @@ create_chan(struct net_device *ndev, ci_t *ci,
+ 
+ 		/* allocate then fill in private data structure */
+ 		priv = OS_kmalloc(sizeof(struct c4_priv));
+-		if (!priv)
+-		{
++		if (!priv) {
+ 			pr_warning("%s: no memory for net_device !\n",
+ 				   ci->devname);
+ 			return NULL;
+ 		}
+ 		dev = alloc_hdlcdev(priv);
+-		if (!dev)
+-		{
++		if (!dev) {
+ 			pr_warning("%s: no memory for hdlc_device !\n",
+ 				   ci->devname);
+ 			OS_kfree(priv);
+@@ -459,10 +456,8 @@ create_chan(struct net_device *ndev, ci_t *ci,
+ 	*dev->name = 0;                 /* default ifconfig name = "hdlc" */
+ 
+ 	hi = (hdw_info_t *)ci->hdw_info;
+-	if (hi->mfg_info_sts == EEPROM_OK)
+-	{
+-		switch (hi->promfmt)
+-		{
++	if (hi->mfg_info_sts == EEPROM_OK) {
++		switch (hi->promfmt) {
+ 		case PROM_FORMAT_TYPE1:
+ 			memcpy(dev->dev_addr,
+ 			       (FLD_TYPE1 *) (hi->mfg_info.pft1.Serial), 6);
+@@ -476,9 +471,7 @@ create_chan(struct net_device *ndev, ci_t *ci,
+ 			break;
+ 		}
+ 	} else
+-	{
+ 		memset(dev->dev_addr, 0, 6);
+-	}
+ 
+ 	hdlc->xmit = c4_linux_xmit;
+ 
+@@ -502,8 +495,7 @@ create_chan(struct net_device *ndev, ci_t *ci,
+ 
+ 	/* needed due to Ioctl calling sequence */
+ 	rtnl_lock();
+-	if (ret)
+-	{
 +	if (ret) {
- 		pr_info("hdlc_open failure, err %d.\n", ret);
- 		return ret;
- 	}
--	if ((ret = c4_chan_up(priv->ci, priv->channum)))
-+
-+	ret = c4_chan_up(priv->ci, priv->channum);
-+	if (ret)
- 		return -ret;
- 	try_module_get(THIS_MODULE);
- 	netif_start_queue(ndev);
-@@ -648,7 +651,8 @@ do_get_chan(struct net_device *ndev, void *data)
- 				sizeof(struct sbecom_chan_param)))
+ 		if (cxt1e1_log_level >= LOG_WARN)
+ 			pr_info("%s: create_chan[%d] registration error = %d.\n",
+ 				ci->devname, cp->channum, ret);
+@@ -698,8 +690,7 @@ do_create_chan(struct net_device *ndev, void *data)
+ 	if (!dev)
+ 		return -EBUSY;
+ 	ret = mkret(c4_new_chan(ci, cp.port, cp.channum, dev));
+-	if (ret)
+-	{
++	if (ret) {
+ 		/* needed due to Ioctl calling sequence */
+ 		rtnl_unlock();
+ 		unregister_hdlc_device(dev);
+@@ -805,8 +796,7 @@ do_reset(struct net_device *musycc_dev, void *data)
+ 	const struct c4_priv *priv;
+ 	int         i;
+ 
+-	for (i = 0; i < 128; i++)
+-	{
++	for (i = 0; i < 128; i++) {
+ 		struct net_device *ndev;
+ 		char        buf[sizeof(CHANNAME) + 3];
+ 
+@@ -817,8 +807,7 @@ do_reset(struct net_device *musycc_dev, void *data)
+ 		priv = dev_to_hdlc(ndev)->priv;
+ 
+ 		if ((unsigned long) (priv->ci) ==
+-			(unsigned long) (netdev_priv(musycc_dev)))
+-		{
++			(unsigned long) (netdev_priv(musycc_dev))) {
+ 			ndev->flags &= ~IFF_UP;
+ 			netif_stop_queue(ndev);
+ 			do_deluser(ndev, 1);
+@@ -845,10 +834,8 @@ c4_ioctl(struct net_device *ndev, struct ifreq *ifr, int cmd)
+ 	void       *data;
+ 	int         iocmd, iolen;
+ 	status_t    ret;
+-	static struct data
+-	{
+-		union
+-		{
++	static struct data {
++		union {
+ 			u_int8_t c;
+ 			u_int32_t i;
+ 			struct sbe_brd_info bip;
+@@ -891,8 +878,7 @@ c4_ioctl(struct net_device *ndev, struct ifreq *ifr, int cmd)
  		return -EFAULT;
  
--	if ((ret = mkret(c4_get_chan(cp.channum, &cp))))
-+	ret = mkret(c4_get_chan(cp.channum, &cp));
-+	if (ret)
- 		return ret;
- 
- 	if (copy_to_user(data, &cp, sizeof(struct sbecom_chan_param)))
-@@ -864,7 +868,8 @@ c4_ioctl(struct net_device *ndev, struct ifreq *ifr, int cmd)
- 		return -EPERM;
- 	if (cmd != SIOCDEVPRIVATE + 15)
- 		return -EINVAL;
--	if (!(ci = get_ci_by_dev(ndev)))
-+	ci =  get_ci_by_dev(ndev);
-+	if (!ci)
- 		return -EINVAL;
- 	if (ci->state != C_RUNNING)
- 		return -ENODEV;
-@@ -1100,9 +1105,8 @@ c4_add_dev(hdw_info_t *hi, int brdno, unsigned long f0, unsigned long f1,
- 	tasklet_enable(&ci->ci_musycc_isr_tasklet);
- #endif
- 
--
--	if ((error_flag = c4_init2(ci)) != SBE_DRVR_SUCCESS)
+ 	ret = 0;
+-	switch (iocmd)
 -	{
-+	error_flag = c4_init2(ci);
-+	if (error_flag != SBE_DRVR_SUCCESS) {
- #ifdef CONFIG_PROC_FS
- 		sbecom_proc_brd_cleanup(ci);
- #endif
-@@ -1123,7 +1127,8 @@ c4_mod_init(void)
- 	int         rtn;
++	switch (iocmd) {
+ 	case SBE_IOC_PORT_GET:
+ 		//pr_info(">> SBE_IOC_PORT_GET Ioctl...\n");
+ 		ret = do_get_port(ndev, data);
+@@ -975,8 +961,7 @@ c4_add_dev(hdw_info_t *hi, int brdno, unsigned long f0, unsigned long f1,
+ 	ci_t       *ci;
  
- 	pr_warning("%s\n", pmcc4_OSSI_release);
--	if ((rtn = c4hw_attach_all()))
-+	rtn = c4hw_attach_all();
-+	if (rtn)
- 		return -rtn; /* installation failure - see system log */
+ 	ndev = alloc_netdev(sizeof(ci_t), SBE_IFACETMPL, c4_setup);
+-	if (!ndev)
+-	{
++	if (!ndev) {
+ 		pr_warning("%s: no memory for struct net_device !\n",
+ 			   hi->devname);
+ 		error_flag = ENOMEM;
+@@ -1012,8 +997,7 @@ c4_add_dev(hdw_info_t *hi, int brdno, unsigned long f0, unsigned long f1,
  
- 	/* housekeeping notifications */
-@@ -1173,11 +1178,13 @@ cleanup_hdlc(void)
- 		{
+ 
+ 	if (register_netdev(ndev) ||
+-		(c4_init(ci, (u_char *) f0, (u_char *) f1) != SBE_DRVR_SUCCESS))
+-	{
++		(c4_init(ci, (u_char *) f0, (u_char *) f1) != SBE_DRVR_SUCCESS)) {
+ 		OS_kfree(netdev_priv(ndev));
+ 		OS_kfree(ndev);
+ 		error_flag = ENODEV;
+@@ -1036,8 +1020,7 @@ c4_add_dev(hdw_info_t *hi, int brdno, unsigned long f0, unsigned long f1,
+ 
+ 	if (request_irq(irq0, &c4_linux_interrupt,
+ 			IRQF_SHARED,
+-			ndev->name, ndev))
+-	{
++			ndev->name, ndev)) {
+ 		pr_warning("%s: MUSYCC could not get irq: %d\n",
+ 			   ndev->name, irq0);
+ 		unregister_netdev(ndev);
+@@ -1047,8 +1030,7 @@ c4_add_dev(hdw_info_t *hi, int brdno, unsigned long f0, unsigned long f1,
+ 		return NULL;
+ 	}
+ #ifdef CONFIG_SBE_PMCC4_NCOMM
+-	if (request_irq(irq1, &c4_ebus_interrupt, IRQF_SHARED, ndev->name, ndev))
+-	{
++	if (request_irq(irq1, &c4_ebus_interrupt, IRQF_SHARED, ndev->name, ndev)) {
+ 		pr_warning("%s: EBUS could not get irq: %d\n", hi->devname, irq1);
+ 		unregister_netdev(ndev);
+ 		free_irq(irq0, ndev);
+@@ -1067,8 +1049,7 @@ c4_add_dev(hdw_info_t *hi, int brdno, unsigned long f0, unsigned long f1,
+ 		/* also sets PROM format type (promfmt) for later usage */
+ 		hdw_sn_get(hi, brdno);
+ 
+-		switch (hi->promfmt)
+-		{
++		switch (hi->promfmt) {
+ 		case PROM_FORMAT_TYPE1:
+ 			memcpy(ndev->dev_addr,
+ 			       (FLD_TYPE1 *) (hi->mfg_info.pft1.Serial), 6);
+@@ -1141,15 +1122,13 @@ c4_mod_init(void)
+ 	if (cxt1e1_max_mtu != max_mtu_default)
+ 		pr_info("NOTE: driver parameter <cxt1e1_max_mtu> changed from default %d to %d.\n",
+ 			max_mtu_default, cxt1e1_max_mtu);
+-	if (max_rxdesc_used != max_rxdesc_default)
+-	{
++	if (max_rxdesc_used != max_rxdesc_default) {
+ 		if (max_rxdesc_used > 2000)
+ 			max_rxdesc_used = 2000; /* out-of-bounds reset */
+ 		pr_info("NOTE: driver parameter <max_rxdesc_used> changed from default %d to %d.\n",
+ 			max_rxdesc_default, max_rxdesc_used);
+ 	}
+-	if (max_txdesc_used != max_txdesc_default)
+-	{
++	if (max_txdesc_used != max_txdesc_default) {
+ 		if (max_txdesc_used > 1000)
+ 			max_txdesc_used = 1000; /* out-of-bounds reset */
+ 		pr_info("NOTE: driver parameter <max_txdesc_used> changed from default %d to %d.\n",
+@@ -1172,18 +1151,14 @@ cleanup_hdlc(void)
+ 	struct net_device *ndev;
+ 	int         i, j, k;
+ 
+-	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++)
+-	{
+-		if (hi->ndev)               /* a board has been attached */
+-		{
++	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++) {
++		if (hi->ndev) {          /* a board has been attached */
  			ci = (ci_t *)(netdev_priv(hi->ndev));
  			for (j = 0; j < ci->max_port; j++)
--				for (k = 0; k < MUSYCC_NCHANS; k++)
--					if ((ndev = ci->port[j].chan[k]->user))
-+				for (k = 0; k < MUSYCC_NCHANS; k++) {
-+					ndev = ci->port[j].chan[k]->user;
-+					if (ndev)
- 					{
+ 				for (k = 0; k < MUSYCC_NCHANS; k++) {
+ 					ndev = ci->port[j].chan[k]->user;
+ 					if (ndev)
+-					{
  						do_deluser(ndev, 0);
- 					}
-+				}
+-					}
+ 				}
  		}
  	}
- }
 -- 
 1.7.4.4
 
