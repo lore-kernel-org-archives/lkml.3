@@ -1,84 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757382AbaCEE3j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 23:29:39 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55967 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757027AbaCEE3N (ORCPT
+	id S1757402AbaCEEaS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 23:30:18 -0500
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:14626 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755460AbaCEEaQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 23:29:13 -0500
-Date: Wed, 5 Mar 2014 12:28:07 +0800
-From: Mark Brown <broonie@kernel.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>, Russell King <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Tomasz Figa <t.figa@samsung.com>, Stephen Boyd <sboyd@codeaurora.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Message-ID: <20140305042807.GF13126@sirena.org.uk>
-References: <1393862536-9842-1-git-send-email-tomasz.figa@gmail.com>
- <1393862536-9842-7-git-send-email-tomasz.figa@gmail.com>
+	Tue, 4 Mar 2014 23:30:16 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 04 Mar 2014 20:26:00 -0800
+Message-ID: <5316A868.7000908@nvidia.com>
+Date: Wed, 5 Mar 2014 12:30:32 +0800
+From: Wei Ni <wni@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1YtYzP3stTOlsn9I"
-Content-Disposition: inline
-In-Reply-To: <1393862536-9842-7-git-send-email-tomasz.figa@gmail.com>
-X-Cookie: You are always busy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 202.175.88.218
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 06/11] ARM: s3c64xx: pm: Add pwr_stat bit for domain G
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Guenter Roeck <linux@roeck-us.net>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Subject: Re: [PATCH v2 3/3] ARM: tegra: dalmore: add thermal zones for nct1008
+References: <1393932664-13319-1-git-send-email-wni@nvidia.com> <1393932664-13319-4-git-send-email-wni@nvidia.com> <53164E78.5010708@wwwdotorg.org> <20140304222357.GA6125@roeck-us.net> <53168C5B.6070003@nvidia.com> <531692D2.6040204@wwwdotorg.org> <531694EB.50906@nvidia.com> <531696A9.6060906@wwwdotorg.org> <5316A785.8030504@nvidia.com>
+In-Reply-To: <5316A785.8030504@nvidia.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/05/2014 12:26 PM, Wei Ni wrote:
+> On 03/05/2014 11:14 AM, Stephen Warren wrote:
+>> On 03/04/2014 08:07 PM, Wei Ni wrote:
+>>> On 03/05/2014 10:58 AM, Stephen Warren wrote:
+>>>> On 03/04/2014 07:30 PM, Wei Ni wrote:
+>>>>> On 03/05/2014 06:23 AM, Guenter Roeck wrote:
+>>>>>> On Tue, Mar 04, 2014 at 03:06:48PM -0700, Stephen Warren wrote:
+>>>>>>> On 03/04/2014 04:31 AM, Wei Ni wrote:
+>>>>>>>> Add dt node to describe the thermal zone for the nct1008.
+>>>>>>>>
+>>>>>>>> Change-Id: I0256836e52d73ec282574e4fd91df52958936e35
+>>>>>>>
+>>>>>>> ???????
+>>>>>>>
+>>>>>> I think this is for one of those open-source sites out there
+>>>>>> which count open source contributions. Not Ohloh, but similar.
+>>>>>> You have to specify that Change-Id to have it associate your
+>>>>>> name with the patch.
+>>>>>
+>>>>> It's so sorry, I'm working for chromiumos, this change-id is generated
+>>>>> by gerrit, I should remove it.
+>>>>>
+>>>>>>
+>>>>>> Guenter
+>>>>>>
+>>>>>>>> diff --git a/arch/arm/boot/dts/tegra114-dalmore.dts b/arch/arm/boot/dts/tegra114-dalmore.dts
+>>>>>>>
+>>>>>>>> +	thermal-zones {
+>>>>>>>> +		nct1008-local {
+>>>>>>>> +			polling-delay-passive = <2000>; /* milliseconds */
+>>>>>>>
+>>>>>>> Nothing can possible make use of this node, since there's no compatible
+>>>>>>> value or anything else like that to bind a driver to it.
+>>>>>
+>>>>> We have special Tskin driver that estimator skin temperature based on
+>>>>> nct1008 local and remote sensors.
+>>>>
+>>>> Where? Anything that gets added to the upstream kernel DT files must be
+>>>> supported by a driver and binding in the upstream kernel.
+>>>
+>>> I didn't submit the Tskin driver yet, but the of-thermal framework can
+>>> parse this node, and create thermal zone devices.
+>>
+>> How is that possible? There's no compatible value for the of-thermal
+>> framework to know that it should process this node. It's not correct for
+>> the of-thermal framework to do anything like look for a node with a
+>> particular name... has the DT binding for this been reviewed by any DT
+>> maintainer?
+> 
+> Eduardo developed the of-thermal framework, and have merged in
+> linux-next, it can parse the node thermal-zones, and properties, such as
+> polling-delay-passive. Please check the omap.dtsi, it also has this node.
 
---1YtYzP3stTOlsn9I
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Please check Documentation/devicetree/bindings/thermal/thermal.txt
 
-On Mon, Mar 03, 2014 at 05:02:11PM +0100, Tomasz Figa wrote:
-> There is a status bit for domain G present in BLK_PWR_STAT register, but
-> it is currently not specified in the driver.
->=20
-> This patch adds the status bit of domain G to structure describing it.
+> 
+>>
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-Reviwed-by: Mark Brown <broonie@linaro.org>
-
---1YtYzP3stTOlsn9I
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTFqfUAAoJELSic+t+oim9ehkP+gOXyGk78hMlouZoxks7zLAh
-j4kVUoDMQyFVMVi7S2v+e009JW8sdvZeA932CcTsRYpYsoxXtBk5NVHOVdRoRFeq
-GTDhySPzmzw6zDgOpkHhMbuQid2Mq8opymPKpVVUH7MTDI718CAuOKAHIcBIeFMa
-19W/gXIAbxGL18VLGBMHBrvrKJ+YoEaXm7PT9CO7UuPcCBomeUER8OodmoiITQfU
-1CZQ+Q/Lz1Pp5mHhiEHkBtqCqijIO0sE+X8lfmFlcw15lVx5Czokqx0ZWJzFYA0S
-kU5yd6pXTFr9lO1Y11hMB1NpyqR78KAQKUYUTb9B6mNVFYzu6Bam4jADMX6RE+e+
-3Y4JqFW/kWKv2v0qLNynKKDhadonY9M2IiNo/2erlmqNFNHX49Qn5G+v6ql7FFVN
-zV1MmJH+rf+zcZ9gDPiTT9kFEqa96dwpjsn/yai0p+CGzFK4cod6/c0d+fa8SCO1
-b9dKADY7BMpa30rX/d6J4hjEbOzaKKL01SrApZdfGLDs0KlnlHSA3HNtZ6fLQghZ
-kKQ362mGOi0MKyq9rjw/PNNUFfTe6LBWO5FnrA7oSENNBuHusx3eXyKqsvQMsDlz
-O4KmjjvyTOMNkdVQyP8fMhUvV7bCKFvUM0EwT3Bd4oQqMIPjzcCbc3Yx+4OFrgts
-M8NN0AS5/SNlNwXkLr5i
-=KB3w
------END PGP SIGNATURE-----
-
---1YtYzP3stTOlsn9I--
