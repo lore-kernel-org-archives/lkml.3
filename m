@@ -1,30 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932344AbaCEOh7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:37:59 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41666 "EHLO
+	id S1758585AbaCEOum (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:50:42 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41688 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932229AbaCEOhx (ORCPT
+	with ESMTP id S932326AbaCEOh6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:37:53 -0500
+	Wed, 5 Mar 2014 09:37:58 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Maciej=20=C5=BBenczykowski?= <maze@google.com>,
-        Willem de Bruijn <willemb@google.com>,
-        Eric Dumazet <edumazet@google.com>, Chris Davis <chrismd@google.com>,
-        Carlo Contavalli <ccontavalli@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Emil Goode <emilgoode@gmail.com>, "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 29/62] net: fix 'ip rule' iif/oif device rename
-Date: Wed,  5 Mar 2014 14:36:33 +0000
-Message-Id: <1394030226-26652-30-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 32/62] usbnet: remove generic hard_header_len check
+Date: Wed,  5 Mar 2014 14:36:36 +0000
+Message-Id: <1394030226-26652-33-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
 References: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,45 +27,216 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Maciej=20=C5=BBenczykowski?= <maze@google.com>
+From: Emil Goode <emilgoode@gmail.com>
 
-commit 946c032e5a53992ea45e062ecb08670ba39b99e3 upstream.
+commit eb85569fe2d06c2fbf4de7b66c263ca095b397aa upstream.
 
-ip rules with iif/oif references do not update:
-(detach/attach) across interface renames.
+This patch removes a generic hard_header_len check from the usbnet
+module that is causing dropped packages under certain circumstances
+for devices that send rx packets that cross urb boundaries.
 
-Signed-off-by: Maciej Żenczykowski <maze@google.com>
-CC: Willem de Bruijn <willemb@google.com>
-CC: Eric Dumazet <edumazet@google.com>
-CC: Chris Davis <chrismd@google.com>
-CC: Carlo Contavalli <ccontavalli@google.com>
+One example is the AX88772B which occasionally send rx packets that
+cross urb boundaries where the remaining partial packet is sent with
+no hardware header. When the buffer with a partial packet is of less
+number of octets than the value of hard_header_len the buffer is
+discarded by the usbnet module.
 
-Google-Bug-Id: 12936021
-Acked-by: Eric Dumazet <edumazet@google.com>
+With AX88772B this can be reproduced by using ping with a packet
+size between 1965-1976.
+
+The bug has been reported here:
+
+https://bugzilla.kernel.org/show_bug.cgi?id=29082
+
+This patch introduces the following changes:
+- Removes the generic hard_header_len check in the rx_complete
+  function in the usbnet module.
+- Introduces a ETH_HLEN check for skbs that are not cloned from
+  within a rx_fixup callback.
+- For safety a hard_header_len check is added to each rx_fixup
+  callback function that could be affected by this change.
+  These extra checks could possibly be removed by someone
+  who has the hardware to test.
+- Removes a call to dev_kfree_skb_any() and instead utilizes the
+  dev->done list to queue skbs for cleanup.
+
+The changes place full responsibility on the rx_fixup callback
+functions that clone skbs to only pass valid skbs to the
+usbnet_skb_return function.
+
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
+Reported-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+[ luis: backported to 3.5: dropped changes to drivers/net/usb/ax88179_178a.c
+  and drivers/net/usb/sr9800.c ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/core/fib_rules.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/net/usb/gl620a.c     |  4 ++++
+ drivers/net/usb/mcs7830.c    |  5 +++--
+ drivers/net/usb/net1080.c    |  4 ++++
+ drivers/net/usb/qmi_wwan.c   |  8 ++++----
+ drivers/net/usb/rndis_host.c |  4 ++++
+ drivers/net/usb/smsc75xx.c   |  4 ++++
+ drivers/net/usb/smsc95xx.c   |  4 ++++
+ drivers/net/usb/usbnet.c     | 25 ++++++++++---------------
+ 8 files changed, 37 insertions(+), 21 deletions(-)
 
-diff --git a/net/core/fib_rules.c b/net/core/fib_rules.c
-index d660ad4..cef5e71 100644
---- a/net/core/fib_rules.c
-+++ b/net/core/fib_rules.c
-@@ -716,6 +716,13 @@ static int fib_rules_event(struct notifier_block *this, unsigned long event,
- 			attach_rules(&ops->rules_list, dev);
+diff --git a/drivers/net/usb/gl620a.c b/drivers/net/usb/gl620a.c
+index db3c802..f14e8de 100644
+--- a/drivers/net/usb/gl620a.c
++++ b/drivers/net/usb/gl620a.c
+@@ -86,6 +86,10 @@ static int genelink_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
+ 	u32			size;
+ 	u32			count;
+ 
++	/* This check is no longer done by usbnet */
++	if (skb->len < dev->net->hard_header_len)
++		return 0;
++
+ 	header = (struct gl_header *) skb->data;
+ 
+ 	// get the packet count of the received skb
+diff --git a/drivers/net/usb/mcs7830.c b/drivers/net/usb/mcs7830.c
+index 03c2d8d..3acdf1d 100644
+--- a/drivers/net/usb/mcs7830.c
++++ b/drivers/net/usb/mcs7830.c
+@@ -601,8 +601,9 @@ static int mcs7830_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
+ {
+ 	u8 status;
+ 
+-	if (skb->len == 0) {
+-		dev_err(&dev->udev->dev, "unexpected empty rx frame\n");
++	/* This check is no longer done by usbnet */
++	if (skb->len < dev->net->hard_header_len) {
++		dev_err(&dev->udev->dev, "unexpected tiny rx frame\n");
+ 		return 0;
+ 	}
+ 
+diff --git a/drivers/net/usb/net1080.c b/drivers/net/usb/net1080.c
+index 28c4d51..389afcf 100644
+--- a/drivers/net/usb/net1080.c
++++ b/drivers/net/usb/net1080.c
+@@ -419,6 +419,10 @@ static int net1080_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
+ 	struct nc_trailer	*trailer;
+ 	u16			hdr_len, packet_len;
+ 
++	/* This check is no longer done by usbnet */
++	if (skb->len < dev->net->hard_header_len)
++		return 0;
++
+ 	if (!(skb->len & 0x01)) {
+ #ifdef DEBUG
+ 		struct net_device	*net = dev->net;
+diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
+index 7589509..6546f21 100644
+--- a/drivers/net/usb/qmi_wwan.c
++++ b/drivers/net/usb/qmi_wwan.c
+@@ -202,10 +202,10 @@ static int qmi_wwan_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
+ {
+ 	__be16 proto;
+ 
+-	/* usbnet rx_complete guarantees that skb->len is at least
+-	 * hard_header_len, so we can inspect the dest address without
+-	 * checking skb->len
+-	 */
++	/* This check is no longer done by usbnet */
++	if (skb->len < dev->net->hard_header_len)
++		return 0;
++
+ 	switch (skb->data[0] & 0xf0) {
+ 	case 0x40:
+ 		proto = htons(ETH_P_IP);
+diff --git a/drivers/net/usb/rndis_host.c b/drivers/net/usb/rndis_host.c
+index 4a433583..38e6d25 100644
+--- a/drivers/net/usb/rndis_host.c
++++ b/drivers/net/usb/rndis_host.c
+@@ -495,6 +495,10 @@ EXPORT_SYMBOL_GPL(rndis_unbind);
+  */
+ int rndis_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
+ {
++	/* This check is no longer done by usbnet */
++	if (skb->len < dev->net->hard_header_len)
++		return 0;
++
+ 	/* peripheral may have batched packets to us... */
+ 	while (likely(skb->len)) {
+ 		struct rndis_data_hdr	*hdr = (void *)skb->data;
+diff --git a/drivers/net/usb/smsc75xx.c b/drivers/net/usb/smsc75xx.c
+index c241ae7..a4370d2 100644
+--- a/drivers/net/usb/smsc75xx.c
++++ b/drivers/net/usb/smsc75xx.c
+@@ -1097,6 +1097,10 @@ static void smsc75xx_rx_csum_offload(struct usbnet *dev, struct sk_buff *skb,
+ 
+ static int smsc75xx_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
+ {
++	/* This check is no longer done by usbnet */
++	if (skb->len < dev->net->hard_header_len)
++		return 0;
++
+ 	while (skb->len > 0) {
+ 		u32 rx_cmd_a, rx_cmd_b, align_count, size;
+ 		struct sk_buff *ax_skb;
+diff --git a/drivers/net/usb/smsc95xx.c b/drivers/net/usb/smsc95xx.c
+index b1112e7..86b6fda 100644
+--- a/drivers/net/usb/smsc95xx.c
++++ b/drivers/net/usb/smsc95xx.c
+@@ -1041,6 +1041,10 @@ static void smsc95xx_rx_csum_offload(struct sk_buff *skb)
+ 
+ static int smsc95xx_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
+ {
++	/* This check is no longer done by usbnet */
++	if (skb->len < dev->net->hard_header_len)
++		return 0;
++
+ 	while (skb->len > 0) {
+ 		u32 header, align_count;
+ 		struct sk_buff *ax_skb;
+diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
+index a936201..49d4e9a 100644
+--- a/drivers/net/usb/usbnet.c
++++ b/drivers/net/usb/usbnet.c
+@@ -415,17 +415,19 @@ static inline void rx_process (struct usbnet *dev, struct sk_buff *skb)
+ 	}
+ 	// else network stack removes extra byte if we forced a short packet
+ 
+-	if (skb->len) {
+-		/* all data was already cloned from skb inside the driver */
+-		if (dev->driver_info->flags & FLAG_MULTI_PACKET)
+-			dev_kfree_skb_any(skb);
+-		else
+-			usbnet_skb_return(dev, skb);
++	/* all data was already cloned from skb inside the driver */
++	if (dev->driver_info->flags & FLAG_MULTI_PACKET)
++		goto done;
++
++	if (skb->len < ETH_HLEN) {
++		dev->net->stats.rx_errors++;
++		dev->net->stats.rx_length_errors++;
++		netif_dbg(dev, rx_err, dev->net, "rx length %d\n", skb->len);
++	} else {
++		usbnet_skb_return(dev, skb);
+ 		return;
+ 	}
+ 
+-	netif_dbg(dev, rx_err, dev->net, "drop\n");
+-	dev->net->stats.rx_errors++;
+ done:
+ 	skb_queue_tail(&dev->done, skb);
+ }
+@@ -447,13 +449,6 @@ static void rx_complete (struct urb *urb)
+ 	switch (urb_status) {
+ 	/* success */
+ 	case 0:
+-		if (skb->len < dev->net->hard_header_len) {
+-			state = rx_cleanup;
+-			dev->net->stats.rx_errors++;
+-			dev->net->stats.rx_length_errors++;
+-			netif_dbg(dev, rx_err, dev->net,
+-				  "rx length %d\n", skb->len);
+-		}
  		break;
  
-+	case NETDEV_CHANGENAME:
-+		list_for_each_entry(ops, &net->rules_ops, list) {
-+			detach_rules(&ops->rules_list, dev);
-+			attach_rules(&ops->rules_list, dev);
-+		}
-+		break;
-+
- 	case NETDEV_UNREGISTER:
- 		list_for_each_entry(ops, &net->rules_ops, list)
- 			detach_rules(&ops->rules_list, dev);
+ 	/* stalls need manual reset. this is rare ... except that
 -- 
 1.9.0
 
