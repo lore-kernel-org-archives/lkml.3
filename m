@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757336AbaCEO0R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:26:17 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41071 "EHLO
+	id S932309AbaCEPHl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:07:41 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41100 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757235AbaCEO0K (ORCPT
+	with ESMTP id S1754112AbaCEO0T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:26:10 -0500
+	Wed, 5 Mar 2014 09:26:19 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michael Chan <mchan@broadcom.com>,
-        Nithin Nayak Sujir <nsujir@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Florian Westphal <fw@strlen.de>, "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 074/131] tg3: Fix deadlock in tg3_change_mtu()
-Date: Wed,  5 Mar 2014 14:23:18 +0000
-Message-Id: <1394029455-23128-75-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 080/131] net: add and use skb_gso_transport_seglen()
+Date: Wed,  5 Mar 2014 14:23:24 +0000
+Message-Id: <1394029455-23128-81-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -29,52 +27,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nithin Sujir <nsujir@broadcom.com>
+From: Florian Westphal <fw@strlen.de>
 
-commit c6993dfd7db9b0c6b7ca7503a56fda9236a4710f upstream.
+commit de960aa9ab4decc3304959f69533eef64d05d8e8 upstream.
 
-Quoting David Vrabel -
-"5780 cards cannot have jumbo frames and TSO enabled together.  When
-jumbo frames are enabled by setting the MTU, the TSO feature must be
-cleared.  This is done indirectly by calling netdev_update_features()
-which will call tg3_fix_features() to actually clear the flags.
+This moves part of Eric Dumazets skb_gso_seglen helper from tbf sched to
+skbuff core so it may be reused by upcoming ip forwarding path patch.
 
-netdev_update_features() will also trigger a new netlink message for the
-feature change event which will result in a call to tg3_get_stats64()
-which deadlocks on the tg3 lock."
-
-tg3_set_mtu() does not need to be under the tg3 lock since converting
-the flags to use set_bit(). Move it out to after tg3_netif_stop().
-
-Reported-by: David Vrabel <david.vrabel@citrix.com>
-Tested-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
+Signed-off-by: Florian Westphal <fw@strlen.de>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/broadcom/tg3.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/linux/skbuff.h |  2 ++
+ net/core/skbuff.c      | 25 +++++++++++++++++++++++++
+ net/sched/sch_tbf.c    | 13 +++----------
+ 3 files changed, 30 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-index f9aec90..849b141 100644
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -13907,12 +13907,12 @@ static int tg3_change_mtu(struct net_device *dev, int new_mtu)
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index e27c8f6..3d9dcd4 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -2391,6 +2391,8 @@ extern void	       skb_scrub_packet(struct sk_buff *skb);
+ extern struct sk_buff *skb_segment(struct sk_buff *skb,
+ 				   netdev_features_t features);
  
- 	tg3_netif_stop(tp);
- 
-+	tg3_set_mtu(dev, tp, new_mtu);
++unsigned int skb_gso_transport_seglen(const struct sk_buff *skb);
 +
- 	tg3_full_lock(tp, 1);
+ static inline void *skb_header_pointer(const struct sk_buff *skb, int offset,
+ 				       int len, void *buffer)
+ {
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 290f73b..ba05e04 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -47,6 +47,8 @@
+ #include <linux/in.h>
+ #include <linux/inet.h>
+ #include <linux/slab.h>
++#include <linux/tcp.h>
++#include <linux/udp.h>
+ #include <linux/netdevice.h>
+ #ifdef CONFIG_NET_CLS_ACT
+ #include <net/pkt_sched.h>
+@@ -3489,3 +3491,26 @@ void skb_scrub_packet(struct sk_buff *skb)
+ 	nf_reset_trace(skb);
+ }
+ EXPORT_SYMBOL_GPL(skb_scrub_packet);
++
++/**
++ * skb_gso_transport_seglen - Return length of individual segments of a gso packet
++ *
++ * @skb: GSO skb
++ *
++ * skb_gso_transport_seglen is used to determine the real size of the
++ * individual segments, including Layer4 headers (TCP/UDP).
++ *
++ * The MAC/L2 or network (IP, IPv6) headers are not accounted for.
++ */
++unsigned int skb_gso_transport_seglen(const struct sk_buff *skb)
++{
++	const struct skb_shared_info *shinfo = skb_shinfo(skb);
++	unsigned int hdr_len;
++
++	if (likely(shinfo->gso_type & (SKB_GSO_TCPV4 | SKB_GSO_TCPV6)))
++		hdr_len = tcp_hdrlen(skb);
++	else
++		hdr_len = sizeof(struct udphdr);
++	return hdr_len + shinfo->gso_size;
++}
++EXPORT_SYMBOL_GPL(skb_gso_transport_seglen);
+diff --git a/net/sched/sch_tbf.c b/net/sched/sch_tbf.c
+index 6ddda28..fecd35a 100644
+--- a/net/sched/sch_tbf.c
++++ b/net/sched/sch_tbf.c
+@@ -21,7 +21,6 @@
+ #include <net/netlink.h>
+ #include <net/sch_generic.h>
+ #include <net/pkt_sched.h>
+-#include <net/tcp.h>
  
- 	tg3_halt(tp, RESET_KIND_SHUTDOWN, 1);
  
--	tg3_set_mtu(dev, tp, new_mtu);
+ /*	Simple Token Bucket Filter.
+@@ -122,16 +121,10 @@ struct tbf_sched_data {
+  * Return length of individual segments of a gso packet,
+  * including all headers (MAC, IP, TCP/UDP)
+  */
+-static unsigned int skb_gso_seglen(const struct sk_buff *skb)
++static unsigned int skb_gso_mac_seglen(const struct sk_buff *skb)
+ {
+ 	unsigned int hdr_len = skb_transport_header(skb) - skb_mac_header(skb);
+-	const struct skb_shared_info *shinfo = skb_shinfo(skb);
 -
- 	/* Reset PHY, otherwise the read DMA engine will be in a mode that
- 	 * breaks all requests to 256 bytes.
- 	 */
+-	if (likely(shinfo->gso_type & (SKB_GSO_TCPV4 | SKB_GSO_TCPV6)))
+-		hdr_len += tcp_hdrlen(skb);
+-	else
+-		hdr_len += sizeof(struct udphdr);
+-	return hdr_len + shinfo->gso_size;
++	return hdr_len + skb_gso_transport_seglen(skb);
+ }
+ 
+ /* GSO packet is too big, segment it so that tbf can transmit
+@@ -176,7 +169,7 @@ static int tbf_enqueue(struct sk_buff *skb, struct Qdisc *sch)
+ 	int ret;
+ 
+ 	if (qdisc_pkt_len(skb) > q->max_size) {
+-		if (skb_is_gso(skb) && skb_gso_seglen(skb) <= q->max_size)
++		if (skb_is_gso(skb) && skb_gso_mac_seglen(skb) <= q->max_size)
+ 			return tbf_segment(skb, sch);
+ 		return qdisc_reshape_fail(skb, sch);
+ 	}
 -- 
 1.9.0
 
