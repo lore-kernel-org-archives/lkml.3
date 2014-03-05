@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757062AbaCEDc1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 22:32:27 -0500
-Received: from ozlabs.org ([203.10.76.45]:33693 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751007AbaCEDcZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 22:32:25 -0500
-Date: Wed, 5 Mar 2014 14:32:19 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the omap_dss2 tree
-Message-Id: <20140305143219.1613f7dcad9ab8a3290be9ee@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__5_Mar_2014_14_32_19_+1100_fmBFALPj2dyj7Rp_"
+	id S1757216AbaCEDdk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 22:33:40 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:12288 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751007AbaCEDdi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 22:33:38 -0500
+From: Wenyou Yang <wenyou.yang@atmel.com>
+To: <broonie@kernel.org>, <nicolas.ferre@atmel.com>
+CC: <linux-spi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <wenyou.yang@atmel.com>
+Subject: [PATCH] spi: atmel: add missing spi_master_{resume,suspend} calls to PM callbacks
+Date: Wed, 5 Mar 2014 11:29:01 +0800
+Message-ID: <1393990141-3157-1-git-send-email-wenyou.yang@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__5_Mar_2014_14_32_19_+1100_fmBFALPj2dyj7Rp_
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The PM callbacks implemented by the spi-atmel driver don't call
+spi_master_{resume,suspend}, fix that.
 
-Hi Tomi,
+Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+---
+Hi Mark, 
 
-After merging the omap_dss2 tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+The patch is based on the branch: for-next
+git://git.kernel.org/pub/scm/linux/kernel/git/broonie/spi.git
 
-drivers/video/fbdev/aty/mach64_cursor.c:8:24: fatal error: ../fb_draw.h: No=
- such file or directory
- #include "../fb_draw.h"
-                        ^
+Best Regards,
+Wenyou Yang
 
-Caused by commit 236c52f2ad52 ("fbdev: move fbdev core files to separate di=
-rectory").
+ drivers/spi/spi-atmel.c |   17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
 
-I have used the omap_dss2 tree from next-20140304 for today.
+diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
+index 47e7aeb..bda961e 100644
+--- a/drivers/spi/spi-atmel.c
++++ b/drivers/spi/spi-atmel.c
+@@ -1440,6 +1440,14 @@ static int atmel_spi_suspend(struct device *dev)
+ {
+ 	struct spi_master	*master = dev_get_drvdata(dev);
+ 	struct atmel_spi	*as = spi_master_get_devdata(master);
++	int ret;
++
++	/* Stop the queue running */
++	ret = spi_master_suspend(master);
++	if (ret) {
++		dev_warn(dev, "cannot suspend master\n");
++		return ret;
++	}
+ 
+ 	clk_disable_unprepare(as->clk);
+ 
+@@ -1452,11 +1460,18 @@ static int atmel_spi_resume(struct device *dev)
+ {
+ 	struct spi_master	*master = dev_get_drvdata(dev);
+ 	struct atmel_spi	*as = spi_master_get_devdata(master);
++	int ret;
+ 
+ 	pinctrl_pm_select_default_state(dev);
+ 
+ 	clk_prepare_enable(as->clk);
+-	return 0;
++
++	/* Start the queue running */
++	ret = spi_master_resume(master);
++	if (ret)
++		dev_err(dev, "problem starting queue (%d)\n", ret);
++
++	return ret;
+ }
+ 
+ static SIMPLE_DEV_PM_OPS(atmel_spi_pm_ops, atmel_spi_suspend, atmel_spi_resume);
+-- 
+1.7.9.5
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__5_Mar_2014_14_32_19_+1100_fmBFALPj2dyj7Rp_
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTFprHAAoJEMDTa8Ir7ZwVH7gP/2YSwA4hlDGyGsRyForiBq4/
-iHqCqOJkbXf0LxyozMiI0JIZTLQ3phvIcZ4lhPKq+V9+y0KPLipi1PZGC0iLbyCU
-YSHue75ogFCV1WuZXeToOPLhCz3C2BLTGiryfY1QaIJGt6UQss2WRRkD/Mci7CQa
-MH1UOVrNaiAk3DIEWpH6XFEjyg0JWRv8v2HY3H5Z9285U2laf1kFf2HImHRZvQkq
-kfZ2NUoUxtOWryh3QRj3EnkI0JY34wSmp2eqRU7gRim/aZR3zQffDW/glQ4Y5P9i
-36/G71hr2ROym8puVoOKzeXb4C/A2afwhN99f+5qbaUXQ3AGPfqWbxoQjjge2IvT
-heDCwV944VKjH2Y+WkC9lFvg4atwSMr7L+imK5S8PoJqUf2VTgKo8n5SFyhLMvKh
-aWbMEYeg8d9Fz7/I9swGecX5cepaxECCKQ5upu6ZKqHwxK3q79WTgfSHg5uqAvqF
-+dauvwOLaB53IlYalH3Au4Iulv3/njiU92nRzpWr11BsGSWdyIhbAz0VEm8Wf9Pv
-X+NLA1e8rCCSuusV14RF0XlT/Tlg7f8xinepgHf5em/9ylRi77LsJSisirmqfg4W
-2JybA9Mza1awvVHfo/9SIzAJPsReaUfCeIJqfvvQx3hndkjNoUgVtDyoWAHkf/y2
-SDehqmI1+KQT/9LARgIR
-=IEXh
------END PGP SIGNATURE-----
-
---Signature=_Wed__5_Mar_2014_14_32_19_+1100_fmBFALPj2dyj7Rp_--
