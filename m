@@ -1,65 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754AbaCEKVu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 05:21:50 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:54688 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753798AbaCEKPM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 05:15:12 -0500
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: [PATCH v5 07/14] usb: phy: msm: Remove HSUSB prefix from regulator names
-Date: Wed,  5 Mar 2014 12:13:43 +0200
-Message-Id: <1394014430-26485-8-git-send-email-iivanov@mm-sol.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1394014430-26485-1-git-send-email-iivanov@mm-sol.com>
-References: <1394014430-26485-1-git-send-email-iivanov@mm-sol.com>
+	id S1754615AbaCEKZK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 05:25:10 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:44600 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752524AbaCEKZE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 05:25:04 -0500
+Date: Wed, 5 Mar 2014 18:24:42 +0800
+From: Lee Jones <lee.jones@linaro.org>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mark.rutland@arm.com, sbkim73@samsung.com, broonie@kernel.org
+Subject: Re: [PATCH v3 3/3] Documentation: mfd: Add binding document for
+ S2MPA01
+Message-ID: <20140305100739.GF10380@lee--X1>
+References: <1392273476-32736-1-git-send-email-sachin.kamat@linaro.org>
+ <1392273476-32736-3-git-send-email-sachin.kamat@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1392273476-32736-3-git-send-email-sachin.kamat@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+FAO Mark Brown,
 
-Prefix did not bring any useful information. Currently none
-of the MSM platforms define these regulators, so it is safe
-to rename them.
+> Added initial binding documentation for S2MPA01 MFD.
+> 
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> ---
+> Changes since v2:
+> * Re-worded as suggested by Mark Rutland
+> ---
+>  Documentation/devicetree/bindings/mfd/s2mpa01.txt |   90 +++++++++++++++++++++
+>  1 file changed, 90 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/mfd/s2mpa01.txt
 
-Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
----
- drivers/usb/phy/phy-msm-usb.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+This document has been sitting on the MLs for nearly a month now. It
+seems well written and doesn't add any new bindings. With that in mind
+I'm inclined to take it though. However, as most of the important
+configuration here is regulator related I'd like Mark Browns Ack on
+it.
 
-diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
-index 193d6bc..c2048c7 100644
---- a/drivers/usb/phy/phy-msm-usb.c
-+++ b/drivers/usb/phy/phy-msm-usb.c
-@@ -1417,19 +1417,19 @@ static int __init msm_otg_probe(struct platform_device *pdev)
- 		return motg->irq;
- 	}
+Mark, would you be so kind?
 
--	motg->vddcx = devm_regulator_get(motg->phy.dev, "HSUSB_VDDCX");
-+	motg->vddcx = devm_regulator_get(motg->phy.dev, "vddcx");
- 	if (IS_ERR(motg->vddcx)) {
- 		dev_err(motg->phy.dev, "unable to get hsusb vddcx\n");
- 		return PTR_ERR(motg->vddcx);
- 	}
+> diff --git a/Documentation/devicetree/bindings/mfd/s2mpa01.txt b/Documentation/devicetree/bindings/mfd/s2mpa01.txt
+> new file mode 100644
+> index 000000000000..c13d3d8c3947
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mfd/s2mpa01.txt
+> @@ -0,0 +1,90 @@
+> +
+> +* Samsung S2MPA01 Voltage and Current Regulator
+> +
+> +The Samsung S2MPA01 is a multi-function device which includes high
+> +efficiency buck converters including Dual-Phase buck converter, various LDOs,
+> +and an RTC. It is interfaced to the host controller using an I2C interface.
+> +Each sub-block is addressed by the host system using different I2C slave
+> +addresses.
+> +
+> +Required properties:
+> +- compatible: Should be "samsung,s2mpa01-pmic".
+> +- reg: Specifies the I2C slave address of the PMIC block. It should be 0x66.
+> +
+> +Optional properties:
+> +- interrupt-parent: Specifies the phandle of the interrupt controller to which
+> +  the interrupts from s2mpa01 are delivered to.
+> +- interrupts: An interrupt specifier for the sole interrupt generated by the
+> +  device.
+> +
+> +Optional nodes:
+> +- regulators: The regulators of s2mpa01 that have to be instantiated should be
+> +  included in a sub-node named 'regulators'. Regulator nodes and constraints
+> +  included in this sub-node use the standard regulator bindings which are
+> +  documented elsewhere.
+> +
+> +Properties for BUCK regulator nodes:
+> +- regulator-ramp-delay: ramp delay in uV/us. May be 6250, 12500
+> +  (default), 25000, or 50000. May be 0 for disabling the ramp delay on
+> +  BUCK{1,2,3,4}.
+> +
+> + In the absence of the regulator-ramp-delay property, the default ramp
+> + delay will be used.
+> +
+> +  NOTE: Some BUCKs share the ramp rate setting i.e. same ramp value will be set
+> +  for a particular group of BUCKs. So provide same regulator-ramp-delay=<value>.
+> +
+> +  The following BUCKs share ramp settings:
+> +  * 1 and 6
+> +  * 2 and 4
+> +  * 8, 9, and 10
+> +
+> +The following are the names of the regulators that the s2mpa01 PMIC block
+> +supports. Note: The 'n' in LDOn and BUCKn represents the LDO or BUCK number
+> +as per the datasheet of s2mpa01.
+> +
+> +	- LDOn
+> +		  - valid values for n are 1 to 26
+> +		  - Example: LDO1, LD02, LDO26
+> +	- BUCKn
+> +		  - valid values for n are 1 to 10.
+> +		  - Example: BUCK1, BUCK2, BUCK9
+> +
+> +Example:
+> +
+> +	s2mpa01_pmic@66 {
+> +		compatible = "samsung,s2mpa01-pmic";
+> +		reg = <0x66>;
+> +
+> +		regulators {
+> +			ldo1_reg: LDO1 {
+> +				regulator-name = "VDD_ALIVE";
+> +				regulator-min-microvolt = <1000000>;
+> +				regulator-max-microvolt = <1000000>;
+> +			};
+> +
+> +			ldo2_reg: LDO2 {
+> +				regulator-name = "VDDQ_MMC2";
+> +				regulator-min-microvolt = <2800000>;
+> +				regulator-max-microvolt = <2800000>;
+> +				regulator-always-on;
+> +			};
+> +
+> +			buck1_reg: BUCK1 {
+> +				regulator-name = "vdd_mif";
+> +				regulator-min-microvolt = <950000>;
+> +				regulator-max-microvolt = <1350000>;
+> +				regulator-always-on;
+> +				regulator-boot-on;
+> +			};
+> +
+> +			buck2_reg: BUCK2 {
+> +				regulator-name = "vdd_arm";
+> +				regulator-min-microvolt = <950000>;
+> +				regulator-max-microvolt = <1350000>;
+> +				regulator-always-on;
+> +				regulator-boot-on;
+> +				regulator-ramp-delay = <50000>;
+> +			};
+> +		};
+> +	};
 
--	motg->v3p3 = devm_regulator_get(motg->phy.dev, "HSUSB_3p3");
-+	motg->v3p3 = devm_regulator_get(motg->phy.dev, "v3p3");
- 	if (IS_ERR(motg->v3p3)) {
- 		dev_err(motg->phy.dev, "unable to get hsusb 3p3\n");
- 		return PTR_ERR(motg->v3p3);
- 	}
-
--	motg->v1p8 = devm_regulator_get(motg->phy.dev, "HSUSB_1p8");
-+	motg->v1p8 = devm_regulator_get(motg->phy.dev, "v1p8");
- 	if (IS_ERR(motg->v1p8)) {
- 		dev_err(motg->phy.dev, "unable to get hsusb 1p8\n");
- 		return PTR_ERR(motg->v1p8);
---
-1.7.9.5
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
