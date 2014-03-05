@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758311AbaCEOq5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:46:57 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41733 "EHLO
+	id S1758391AbaCEOr0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:47:26 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41729 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932422AbaCEOiL (ORCPT
+	with ESMTP id S932411AbaCEOiJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:38:11 -0500
+	Wed, 5 Mar 2014 09:38:09 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Marcelo Tosatti <mtosatti@redhat.com>,
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
         Josh Boyer <jwboyer@fedoraproject.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 41/62] KVM: VMX: fix use after free of vmx->loaded_vmcs
-Date: Wed,  5 Mar 2014 14:36:45 +0000
-Message-Id: <1394030226-26652-42-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 40/62] KVM: MMU: handle invalid root_hpa at __direct_map
+Date: Wed,  5 Mar 2014 14:36:44 +0000
+Message-Id: <1394030226-26652-41-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
 References: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
@@ -30,39 +30,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Marcelo Tosatti <mtosatti@redhat.com>
 
-commit 26a865f4aa8e66a6d94958de7656f7f1b03c6c56 upstream.
+commit 989c6b34f6a9480e397b170cc62237e89bf4fdb9 upstream.
 
-After free_loaded_vmcs executes, the "loaded_vmcs" structure
-is kfreed, and now vmx->loaded_vmcs points to a kfreed area.
-Subsequent free_loaded_vmcs then attempts to manipulate
-vmx->loaded_vmcs.
+It is possible for __direct_map to be called on invalid root_hpa
+(-1), two examples:
 
-Switch the order to avoid the problem.
+1) try_async_pf -> can_do_async_pf
+    -> vmx_interrupt_allowed -> nested_vmx_vmexit
+2) vmx_handle_exit -> vmx_interrupt_allowed -> nested_vmx_vmexit
 
-https://bugzilla.redhat.com/show_bug.cgi?id=1047892
+Then to load_vmcs12_host_state and kvm_mmu_reset_context.
 
-Reviewed-by: Jan Kiszka <jan.kiszka@siemens.com>
+Check for this possibility, let fault exception be regenerated.
+
+BZ: https://bugzilla.redhat.com/show_bug.cgi?id=924916
+
 Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Cc: Josh Boyer <jwboyer@fedoraproject.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kvm/vmx.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kvm/mmu.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index eed06fc..732cf6c 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -6324,8 +6324,8 @@ static void vmx_free_vcpu(struct kvm_vcpu *vcpu)
- 	struct vcpu_vmx *vmx = to_vmx(vcpu);
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 57e168e..d6c365f 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2500,6 +2500,9 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
+ 	int emulate = 0;
+ 	gfn_t pseudo_gfn;
  
- 	free_vpid(vmx);
--	free_nested(vmx);
- 	free_loaded_vmcs(vmx->loaded_vmcs);
-+	free_nested(vmx);
- 	kfree(vmx->guest_msrs);
- 	kvm_vcpu_uninit(vcpu);
- 	kmem_cache_free(kvm_vcpu_cache, vmx);
++	if (!VALID_PAGE(vcpu->arch.mmu.root_hpa))
++		return 0;
++
+ 	for_each_shadow_entry(vcpu, (u64)gfn << PAGE_SHIFT, iterator) {
+ 		if (iterator.level == level) {
+ 			unsigned pte_access = ACC_ALL;
 -- 
 1.9.0
 
