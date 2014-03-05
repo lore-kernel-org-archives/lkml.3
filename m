@@ -1,136 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755329AbaCERta (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 12:49:30 -0500
-Received: from exprod5og108.obsmtp.com ([64.18.0.186]:50793 "HELO
-	exprod5og108.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752550AbaCERt2 convert rfc822-to-8bit (ORCPT
+	id S1755738AbaCERua (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 12:50:30 -0500
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:54439 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750850AbaCERu3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 12:49:28 -0500
+	Wed, 5 Mar 2014 12:50:29 -0500
 MIME-Version: 1.0
-In-Reply-To: <20140305114054.GG1692@e106497-lin.cambridge.arm.com>
-References: <1393948204-11555-1-git-send-email-Liviu.Dudau@arm.com>
-	<CACoXjcmmbVsmvy46NhjFoBg8mRO=APiY3dZZY=ra-Ceib9Sr4A@mail.gmail.com>
-	<20140305114054.GG1692@e106497-lin.cambridge.arm.com>
-Date: Wed, 5 Mar 2014 09:49:26 -0800
-Message-ID: <CACoXjcmZQuuOW3b6BwWSWPRL7JBCQ9HMWMfXjhCy3tTi+-HV3A@mail.gmail.com>
-Subject: Re: [PATCH v5 0/7] [RFC] Support for creating generic host_bridge
- from device tree
-From: Tanmay Inamdar <tinamdar@apm.com>
-To: Tanmay Inamdar <tinamdar@apm.com>, linux-pci <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <7E804DF3-E191-427E-8E20-FE6ECDC490EA@holtmann.org>
+References: <1394020752-6186-1-git-send-email-thomas@archlinux.org>
+	<7E804DF3-E191-427E-8E20-FE6ECDC490EA@holtmann.org>
+Date: Wed, 5 Mar 2014 12:50:28 -0500
+X-Google-Sender-Auth: Clqhp-x6rxoypBa0trVtUyl2Rto
+Message-ID: <CA+5PVA56oO6FS2pG+D7yJtNrTqBGZ1CtPygjid4E0f3cPPi83g@mail.gmail.com>
+Subject: Re: [PATCH] Revert "Bluetooth: Use devname:vhci module alias for
+ virtual HCI driver"
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Marcel Holtmann <marcel@holtmann.org>
+Cc: =?ISO-8859-1?Q?Thomas_B=E4chler?= <thomas@archlinux.org>,
+        "Gustavo F. Padovan" <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        linux-bluetooth@vger.kernel.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 5, 2014 at 3:40 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> On Wed, Mar 05, 2014 at 01:53:55AM +0000, Tanmay Inamdar wrote:
->> Hello,
->>
->> Thanks for the patch set.
->>
->> On Tue, Mar 4, 2014 at 7:49 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
->> > This is v5 of my attempt to add support for a generic pci_host_bridge controller created
->> > from a description passed in the device tree.
->> >
->> > Changes from v4:
->> >   - Export pci_find_host_bridge() to be used by arch code. There is scope for
->> >     making the arch/arm64 version of pci_domain_nr the default weak implementation
->> >     but that would double the size of this series in order to handle all #define
->> >     versions of the pci_domain_nr() function, so I suggest keeping that for a separate
->> >     cleanup series.
->> >
->> > Changes from v3:
->> >   - Dynamically allocate bus_range resource in of_create_pci_host_bridge()
->> >   - Fix the domain number used when creating child busses.
->> >   - Changed domain number allocator to use atomic operations.
->> >   - Use ERR_PTR() to propagate the error out of pci_create_root_bus_in_domain()
->> >     and of_create_pci_host_bridge().
->> >
->> > Changes from v2:
->> >   - Use range->cpu_addr when calling pci_address_to_pio()
->> >   - Introduce pci_register_io_range() helper function in order to register
->> >     io ranges ahead of their conversion to PIO values. This is needed as no
->> >     information is being stored yet regarding the range mapping, making
->> >     pci_address_to_pio() fail. Default weak implementation does nothing,
->> >     to cover the default weak implementation of pci_address_to_pio() that
->> >     expects direct mapping of physical addresses into PIO values (x86 view).
->> >
->> > Changes from v1:
->> >   - Add patch to fix conversion of IO ranges into IO resources.
->> >   - Added a domain_nr member to pci_host_bridge structure, and a new function
->> >     to create a root bus in a given domain number. In order to facilitate that
->> >     I propose changing the order of initialisation between pci_host_bridge and
->> >     it's related bus in pci_create_root_bus() as sort of a rever of 7b5436635800.
->> >     This is done in patch 1/4 and 2/4.
->> >   - Added a simple allocator of domain numbers in drivers/pci/host-bridge.c. The
->> >     code will first try to get a domain id from of_alias_get_id(..., "pci-domain")
->> >     and if that fails assign the next unallocated domain id.
->> >   - Changed the name of the function that creates the generic host bridge from
->> >     pci_host_bridge_of_init to of_create_pci_host_bridge and exported as GPL symbol.
->> >
->> >
->> > v4 thread here: https://lkml.org/lkml/2014/3/3/301
->> > v3 thread here: https://lkml.org/lkml/2014/2/28/216
->> > v2 thread here: https://lkml.org/lkml/2014/2/27/245
->> > v1 thread here: https://lkml.org/lkml/2014/2/3/380
->> >
->> > Best regards,
->> > Liviu
->> >
->> > Liviu Dudau (7):
->> >   pci: Introduce pci_register_io_range() helper function.
->> >   pci: OF: Fix the conversion of IO ranges into IO resources.
->> >   pci: Create pci_host_bridge before its associated bus in pci_create_root_bus.
->> >   pci: Introduce a domain number for pci_host_bridge.
->> >   pci: Use parent domain number when allocating child busses.
->> >   pci: Export find_pci_host_bridge() function.
->> >   pci: Add support for creating a generic host_bridge from device tree
->> >
->> >  drivers/of/address.c       |  39 +++++++++++++
->> >  drivers/pci/host-bridge.c  | 142 ++++++++++++++++++++++++++++++++++++++++++++-
->> >  drivers/pci/probe.c        |  72 +++++++++++++++--------
->> >  include/linux/of_address.h |  14 +----
->> >  include/linux/pci.h        |  17 ++++++
->> >  5 files changed, 248 insertions(+), 36 deletions(-)
->> >
->> > --
->> > 1.9.0
->> >
->>
->> This series is working fine on X-Gene with multiple PCIe ports. You
->> can add my Tested-by if you want.
+On Wed, Mar 5, 2014 at 11:46 AM, Marcel Holtmann <marcel@holtmann.org> wrote:
+> Hi Thomas,
 >
-> What about the arm64 series, can I add a Tested-by to that one as well?
+>> Adding the devname:vhci alias and thus adding a static /dev/vhci device node
+>> only works when assigning a fixed major/minor number. However, the code
+>> currently uses a dynamically assigned minor number. It is therefore impossible
+>> to create a static device and to autoload the module when accessing it.
+>>
+>> Reverting this fixes the kmod error message
+>> depmod: ERROR: Module 'hci_vhci' has devname (vhci) but lacks major and minor information. Ignoring.
+>>
+>> This reverts commit bfacbb9aec029b3200053d84c8cd5d7575f2d4a5.
+>
+> NAK. We allocated a static minor for this.
 
-Sure.
+Johan mentioned that.  Commit b075dd40c95d11c2c8690f6c4d6232fc,
+correct?  Why isn't that headed into 3.14 right now, and CC'd to
+stable?  Currently you have a somewhat broken driver in 3.13 and
+3.14-rcX that seems to have a pretty clear fix.
 
->
-> Thanks,
-> Liviu
->
->>
->> Thanks,
->> Tanmay
->>
->
-> --
-> ====================
-> | I would like to |
-> | fix the world,  |
-> | but they're not |
-> | giving me the   |
->  \ source code!  /
->   ---------------
->     ¯\_(ツ)_/¯
->
+josh
