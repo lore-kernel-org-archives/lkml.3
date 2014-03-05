@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757264AbaCEO0K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:26:10 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41049 "EHLO
+	id S932332AbaCEPJX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:09:23 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41077 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757235AbaCEO0F (ORCPT
+	with ESMTP id S1757274AbaCEO0M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:26:05 -0500
+	Wed, 5 Mar 2014 09:26:12 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sabrina Dubroca <sd@queasysnail.net>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Emil Goode <emilgoode@gmail.com>, "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 071/131] netpoll: fix netconsole IPv6 setup
-Date: Wed,  5 Mar 2014 14:23:15 +0000
-Message-Id: <1394029455-23128-72-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 076/131] usbnet: remove generic hard_header_len check
+Date: Wed,  5 Mar 2014 14:23:20 +0000
+Message-Id: <1394029455-23128-77-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -28,55 +27,231 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sabrina Dubroca <sd@queasysnail.net>
+From: Emil Goode <emilgoode@gmail.com>
 
-commit 00fe11b3c67dc670fe6391d22f1fe64e7c99a8ec upstream.
+commit eb85569fe2d06c2fbf4de7b66c263ca095b397aa upstream.
 
-Currently, to make netconsole start over IPv6, the source address
-needs to be specified. Without a source address, netpoll_parse_options
-assumes we're setting up over IPv4 and the destination IPv6 address is
-rejected.
+This patch removes a generic hard_header_len check from the usbnet
+module that is causing dropped packages under certain circumstances
+for devices that send rx packets that cross urb boundaries.
 
-Check if the IP version has been forced by a source address before
-checking for a version mismatch when parsing the destination address.
+One example is the AX88772B which occasionally send rx packets that
+cross urb boundaries where the remaining partial packet is sent with
+no hardware header. When the buffer with a partial packet is of less
+number of octets than the value of hard_header_len the buffer is
+discarded by the usbnet module.
 
-Signed-off-by: Sabrina Dubroca <sd@queasysnail.net>
-Acked-by: Cong Wang <cwang@twopensource.com>
+With AX88772B this can be reproduced by using ping with a packet
+size between 1965-1976.
+
+The bug has been reported here:
+
+https://bugzilla.kernel.org/show_bug.cgi?id=29082
+
+This patch introduces the following changes:
+- Removes the generic hard_header_len check in the rx_complete
+  function in the usbnet module.
+- Introduces a ETH_HLEN check for skbs that are not cloned from
+  within a rx_fixup callback.
+- For safety a hard_header_len check is added to each rx_fixup
+  callback function that could be affected by this change.
+  These extra checks could possibly be removed by someone
+  who has the hardware to test.
+- Removes a call to dev_kfree_skb_any() and instead utilizes the
+  dev->done list to queue skbs for cleanup.
+
+The changes place full responsibility on the rx_fixup callback
+functions that clone skbs to only pass valid skbs to the
+usbnet_skb_return function.
+
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
+Reported-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+[ luis: backported to 3.11: dropped changes to drivers/net/usb/sr9800.c ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/core/netpoll.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/net/usb/ax88179_178a.c |  4 ++++
+ drivers/net/usb/gl620a.c       |  4 ++++
+ drivers/net/usb/mcs7830.c      |  5 +++--
+ drivers/net/usb/net1080.c      |  4 ++++
+ drivers/net/usb/qmi_wwan.c     |  8 ++++----
+ drivers/net/usb/rndis_host.c   |  4 ++++
+ drivers/net/usb/smsc75xx.c     |  4 ++++
+ drivers/net/usb/smsc95xx.c     |  4 ++++
+ drivers/net/usb/usbnet.c       | 25 ++++++++++---------------
+ 9 files changed, 41 insertions(+), 21 deletions(-)
 
-diff --git a/net/core/netpoll.c b/net/core/netpoll.c
-index 0c1482c..462cdc9 100644
---- a/net/core/netpoll.c
-+++ b/net/core/netpoll.c
-@@ -943,6 +943,7 @@ int netpoll_parse_options(struct netpoll *np, char *opt)
+diff --git a/drivers/net/usb/ax88179_178a.c b/drivers/net/usb/ax88179_178a.c
+index 2bc87e3..8bd8a11 100644
+--- a/drivers/net/usb/ax88179_178a.c
++++ b/drivers/net/usb/ax88179_178a.c
+@@ -1109,6 +1109,10 @@ static int ax88179_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
+ 	u16 hdr_off;
+ 	u32 *pkt_hdr;
+ 
++	/* This check is no longer done by usbnet */
++	if (skb->len < dev->net->hard_header_len)
++		return 0;
++
+ 	skb_trim(skb, skb->len - 4);
+ 	memcpy(&rx_hdr, skb_tail_pointer(skb), 4);
+ 	le32_to_cpus(&rx_hdr);
+diff --git a/drivers/net/usb/gl620a.c b/drivers/net/usb/gl620a.c
+index a7e3f4e..82ab61d 100644
+--- a/drivers/net/usb/gl620a.c
++++ b/drivers/net/usb/gl620a.c
+@@ -86,6 +86,10 @@ static int genelink_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
+ 	u32			size;
+ 	u32			count;
+ 
++	/* This check is no longer done by usbnet */
++	if (skb->len < dev->net->hard_header_len)
++		return 0;
++
+ 	header = (struct gl_header *) skb->data;
+ 
+ 	// get the packet count of the received skb
+diff --git a/drivers/net/usb/mcs7830.c b/drivers/net/usb/mcs7830.c
+index 03832d3..9237c45 100644
+--- a/drivers/net/usb/mcs7830.c
++++ b/drivers/net/usb/mcs7830.c
+@@ -529,8 +529,9 @@ static int mcs7830_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
  {
- 	char *cur=opt, *delim;
- 	int ipv6;
-+	bool ipversion_set = false;
+ 	u8 status;
  
- 	if (*cur != '@') {
- 		if ((delim = strchr(cur, '@')) == NULL)
-@@ -955,6 +956,7 @@ int netpoll_parse_options(struct netpoll *np, char *opt)
- 	cur++;
+-	if (skb->len == 0) {
+-		dev_err(&dev->udev->dev, "unexpected empty rx frame\n");
++	/* This check is no longer done by usbnet */
++	if (skb->len < dev->net->hard_header_len) {
++		dev_err(&dev->udev->dev, "unexpected tiny rx frame\n");
+ 		return 0;
+ 	}
  
- 	if (*cur != '/') {
-+		ipversion_set = true;
- 		if ((delim = strchr(cur, '/')) == NULL)
- 			goto parse_failed;
- 		*delim = 0;
-@@ -997,7 +999,7 @@ int netpoll_parse_options(struct netpoll *np, char *opt)
- 	ipv6 = netpoll_parse_ip_addr(cur, &np->remote_ip);
- 	if (ipv6 < 0)
- 		goto parse_failed;
--	else if (np->ipv6 != (bool)ipv6)
-+	else if (ipversion_set && np->ipv6 != (bool)ipv6)
- 		goto parse_failed;
- 	else
- 		np->ipv6 = (bool)ipv6;
+diff --git a/drivers/net/usb/net1080.c b/drivers/net/usb/net1080.c
+index 93e0716..7f4a3a4 100644
+--- a/drivers/net/usb/net1080.c
++++ b/drivers/net/usb/net1080.c
+@@ -366,6 +366,10 @@ static int net1080_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
+ 	struct nc_trailer	*trailer;
+ 	u16			hdr_len, packet_len;
+ 
++	/* This check is no longer done by usbnet */
++	if (skb->len < dev->net->hard_header_len)
++		return 0;
++
+ 	if (!(skb->len & 0x01)) {
+ 		netdev_dbg(dev->net, "rx framesize %d range %d..%d mtu %d\n",
+ 			   skb->len, dev->net->hard_header_len, dev->hard_mtu,
+diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
+index 5dba7a8..7a38ea6 100644
+--- a/drivers/net/usb/qmi_wwan.c
++++ b/drivers/net/usb/qmi_wwan.c
+@@ -80,10 +80,10 @@ static int qmi_wwan_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
+ {
+ 	__be16 proto;
+ 
+-	/* usbnet rx_complete guarantees that skb->len is at least
+-	 * hard_header_len, so we can inspect the dest address without
+-	 * checking skb->len
+-	 */
++	/* This check is no longer done by usbnet */
++	if (skb->len < dev->net->hard_header_len)
++		return 0;
++
+ 	switch (skb->data[0] & 0xf0) {
+ 	case 0x40:
+ 		proto = htons(ETH_P_IP);
+diff --git a/drivers/net/usb/rndis_host.c b/drivers/net/usb/rndis_host.c
+index cc49aac..691fca4 100644
+--- a/drivers/net/usb/rndis_host.c
++++ b/drivers/net/usb/rndis_host.c
+@@ -494,6 +494,10 @@ EXPORT_SYMBOL_GPL(rndis_unbind);
+  */
+ int rndis_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
+ {
++	/* This check is no longer done by usbnet */
++	if (skb->len < dev->net->hard_header_len)
++		return 0;
++
+ 	/* peripheral may have batched packets to us... */
+ 	while (likely(skb->len)) {
+ 		struct rndis_data_hdr	*hdr = (void *)skb->data;
+diff --git a/drivers/net/usb/smsc75xx.c b/drivers/net/usb/smsc75xx.c
+index 66ebbac..12afae0 100644
+--- a/drivers/net/usb/smsc75xx.c
++++ b/drivers/net/usb/smsc75xx.c
+@@ -2108,6 +2108,10 @@ static void smsc75xx_rx_csum_offload(struct usbnet *dev, struct sk_buff *skb,
+ 
+ static int smsc75xx_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
+ {
++	/* This check is no longer done by usbnet */
++	if (skb->len < dev->net->hard_header_len)
++		return 0;
++
+ 	while (skb->len > 0) {
+ 		u32 rx_cmd_a, rx_cmd_b, align_count, size;
+ 		struct sk_buff *ax_skb;
+diff --git a/drivers/net/usb/smsc95xx.c b/drivers/net/usb/smsc95xx.c
+index 3f38ba8..9375b8c 100644
+--- a/drivers/net/usb/smsc95xx.c
++++ b/drivers/net/usb/smsc95xx.c
+@@ -1725,6 +1725,10 @@ static void smsc95xx_rx_csum_offload(struct sk_buff *skb)
+ 
+ static int smsc95xx_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
+ {
++	/* This check is no longer done by usbnet */
++	if (skb->len < dev->net->hard_header_len)
++		return 0;
++
+ 	while (skb->len > 0) {
+ 		u32 header, align_count;
+ 		struct sk_buff *ax_skb;
+diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
+index 28f16ed..f6dce47 100644
+--- a/drivers/net/usb/usbnet.c
++++ b/drivers/net/usb/usbnet.c
+@@ -517,17 +517,19 @@ static inline void rx_process (struct usbnet *dev, struct sk_buff *skb)
+ 	}
+ 	// else network stack removes extra byte if we forced a short packet
+ 
+-	if (skb->len) {
+-		/* all data was already cloned from skb inside the driver */
+-		if (dev->driver_info->flags & FLAG_MULTI_PACKET)
+-			dev_kfree_skb_any(skb);
+-		else
+-			usbnet_skb_return(dev, skb);
++	/* all data was already cloned from skb inside the driver */
++	if (dev->driver_info->flags & FLAG_MULTI_PACKET)
++		goto done;
++
++	if (skb->len < ETH_HLEN) {
++		dev->net->stats.rx_errors++;
++		dev->net->stats.rx_length_errors++;
++		netif_dbg(dev, rx_err, dev->net, "rx length %d\n", skb->len);
++	} else {
++		usbnet_skb_return(dev, skb);
+ 		return;
+ 	}
+ 
+-	netif_dbg(dev, rx_err, dev->net, "drop\n");
+-	dev->net->stats.rx_errors++;
+ done:
+ 	skb_queue_tail(&dev->done, skb);
+ }
+@@ -549,13 +551,6 @@ static void rx_complete (struct urb *urb)
+ 	switch (urb_status) {
+ 	/* success */
+ 	case 0:
+-		if (skb->len < dev->net->hard_header_len) {
+-			state = rx_cleanup;
+-			dev->net->stats.rx_errors++;
+-			dev->net->stats.rx_length_errors++;
+-			netif_dbg(dev, rx_err, dev->net,
+-				  "rx length %d\n", skb->len);
+-		}
+ 		break;
+ 
+ 	/* stalls need manual reset. this is rare ... except that
 -- 
 1.9.0
 
