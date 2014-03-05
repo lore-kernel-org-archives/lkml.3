@@ -1,129 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757435AbaCEWzz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 17:55:55 -0500
-Received: from mout.web.de ([212.227.15.3]:49906 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752444AbaCEWzx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 17:55:53 -0500
-Message-ID: <5317AB75.4000601@users.sourceforge.net>
-Date: Wed, 05 Mar 2014 23:55:49 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
+	id S1757615AbaCEW47 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 17:56:59 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:13395 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754326AbaCEW46 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 17:56:58 -0500
+X-IronPort-AV: E=Sophos;i="4.97,595,1389744000"; 
+   d="scan'208";a="107025349"
+Message-ID: <5317ABB5.8010005@citrix.com>
+Date: Wed, 5 Mar 2014 22:56:53 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Coccinelle <cocci@systeme.lip6.fr>, kernel-janitors@vger.kernel.org
-Subject: Re: [coccicheck Linux 3.14-rc5 PATCH 4 of 5] Deletion of unnecessary
- checks before specific function calls
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Wei Liu <wei.liu2@citrix.com>
+CC: <ian.campbell@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jonathan.davies@citrix.com>
+Subject: Re: [PATCH net-next v6 7/10] xen-netback: Handle guests with too
+ many frags
+References: <1393972341-21135-1-git-send-email-zoltan.kiss@citrix.com> <1393972341-21135-8-git-send-email-zoltan.kiss@citrix.com> <20140305123514.GH19620@zion.uk.xensource.com>
+In-Reply-To: <20140305123514.GH19620@zion.uk.xensource.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:Pbp80UXLZKpkpLlcShEVlGmQ+uaSrav/TBoTBtp6IH5VGjUr74F
- vMLDcNHXGquXjpuDJAaXmerTQH7szzYuDBSL5UxAbhmy+PIC5g80d/pduEPsff/20WeCi7J
- v34NwBZUh04RfwIkQIoN82rQs1NkqAM36vYLDf3oKoEubM/0HKcOGF/VEUP6L9ISfoIL3Fk
- 5I/SUTiwlVLGBJF3vsiXg==
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> If you are convinced that dropping the null tests is a good idea, then you 
->> can submit the patch that makes the change to the relevant maintainers and 
->> mailing lists.
+On 05/03/14 12:35, Wei Liu wrote:
+> On Tue, Mar 04, 2014 at 10:32:18PM +0000, Zoltan Kiss wrote:
+>> Xen network protocol had implicit dependency on MAX_SKB_FRAGS. Netback has to
+>> handle guests sending up to XEN_NETBK_LEGACY_SLOTS_MAX slots. To achieve that:
+>> - create a new skb
+>> - map the leftover slots to its frags (no linear buffer here!)
+>> - chain it to the previous through skb_shinfo(skb)->frag_list
+>> - map them
+>> - copy and coalesce the frags into a brand new one and send it to the stack
+>> - unmap the 2 old skb's pages
+>>
+>
+> IIRC you once said there's problem with some NICs sending out SKBs with
+> large linear area. Is that solved?
+That was a red herring, the problem was around NAPI scheduling, and it 
+is solved.
 
->From e6a21b920fcca2f6f01c9528909dc036a9b3bc41 Mon Sep 17 00:00:00 2001
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Wed, 5 Mar 2014 19:10:32 +0100
-Subject: [PATCH 4/5] Addition of a semantic patch file for listing of
- unnecessary checks before a few known functions
+> [...]
+>> v6:
+>> - move out handling from tx_submit into a new funciont, as it became quite long
+>> - skb_copy[_expand] allocate a new skb with a huge linear buffer, which is bad
+>>    in times of memory pressure. Just make a new frags array and do the copy and
+>>    coalesce with skb_copy_bits
+>>
+>
+> And with this change, the above issue is solved?
+Yes.
 
-This semantic patch pattern tries to find source code places where a check
-is performed for an expression that is passed to a function (like "kfree")
-which checks this single parameter itself for usability.
-Redundant value or pointer checks can be avoided here.
+>> +static inline struct sk_buff *xenvif_alloc_skb(unsigned int size)
+>> +{
+>> +	struct sk_buff *skb =
+>> +		alloc_skb(size + NET_SKB_PAD + NET_IP_ALIGN,
+>> +			  GFP_ATOMIC | __GFP_NOWARN);
+>> +	if (unlikely(skb == NULL))
+>> +		return NULL;
+>> +
+>> +	/* Packets passed to netif_rx() must have some headroom. */
+>> +	skb_reserve(skb, NET_SKB_PAD + NET_IP_ALIGN);
+>> +
+>> +	/* Initialize it here to avoid later surprises */
+>> +	skb_shinfo(skb)->destructor_arg = NULL;
+>> +
+>> +	return skb;
+>> +}
+>
+> This hunk can probably be moved to previous where you introduce mapping
+> mechanism.
+In that patch we would use it only once. This patch is the one where we 
+allocate skb's twice. Plus, that prev patch is already big enough.
 
-The pattern contains a special comment in a regular expression for a SmPL
-constraint which supports extensions.
+>
+>> +
+>>   static struct gnttab_map_grant_ref *xenvif_get_requests(struct xenvif *vif,
+>>   							struct sk_buff *skb,
+>>   							struct xen_netif_tx_request *txp,
+>> @@ -802,11 +820,16 @@ static struct gnttab_map_grant_ref *xenvif_get_requests(struct xenvif *vif,
+>>   	u16 pending_idx = *((u16 *)skb->cb);
+>>   	int start;
+>>   	pending_ring_idx_t index;
+>> -	unsigned int nr_slots;
+>> +	unsigned int nr_slots, frag_overflow = 0;
+>>
+>>   	/* At this point shinfo->nr_frags is in fact the number of
+>>   	 * slots, which can be as large as XEN_NETBK_LEGACY_SLOTS_MAX.
+>>   	 */
+>> +	if (shinfo->nr_frags > MAX_SKB_FRAGS) {
+>> +		frag_overflow = shinfo->nr_frags - MAX_SKB_FRAGS;
+>> +		BUG_ON(frag_overflow > MAX_SKB_FRAGS);
+>> +		shinfo->nr_frags = MAX_SKB_FRAGS;
+>> +	}
+>>   	nr_slots = shinfo->nr_frags;
+>>
+>>   	/* Skip first skb fragment if it is on same page as header fragment. */
+>> @@ -822,6 +845,30 @@ static struct gnttab_map_grant_ref *xenvif_get_requests(struct xenvif *vif,
+>>
+>>   	BUG_ON(shinfo->nr_frags > MAX_SKB_FRAGS);
+>>
+>
+> This BUG_ON is pointless as shinfo->nr_frags is guaranteed to be not
+> larger than MAX_SKB_FRAGS a few lines above.
+Ok
 
-It uses Python statements to write information about the found places in
-a data format that is a variant of a CSV text file.
+>> +	if (skb_has_frag_list(skb)) {
+>> +		first_skb = skb;
+>> +		skb = shinfo->frag_list;
+>> +		shinfo = skb_shinfo(skb);
+>> +		nr_frags = shinfo->nr_frags;
+>> +		start = 0;
+>> +
+>> +		goto check_frags;
+>> +	}
+>> +
+>> +	/* There was a mapping error in the frag_list skb. We have to unmap
+>> +	 * the first skb's frags
+>> +	 */
+>> +	if (first_skb && err) {
+>> +		int j;
+>> +		shinfo = skb_shinfo(first_skb);
+>> +		pending_idx = *((u16 *)first_skb->cb);
+>> +		start = (frag_get_pending_idx(&shinfo->frags[0]) == pending_idx);
+>> +		for (j = start; j < shinfo->nr_frags; j++) {
+>> +			pending_idx = frag_get_pending_idx(&shinfo->frags[j]);
+>> +			xenvif_idx_unmap(vif, pending_idx);
+>> +			xenvif_idx_release(vif, pending_idx,
+>> +					   XEN_NETIF_RSP_OKAY);
+>
+> _unmap and _release at the same time? IIRC _unmap calls _release.
+Yes, that remained here from old times, thanks for pointing it out.
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- ...nctions_with_unnecessary_checks_template1.cocci | 59 ++++++++++++++++++++++
- 1 file changed, 59 insertions(+)
- create mode 100644
-scripts/coccinelle/deletions/list_functions_with_unnecessary_checks_template1.cocci
+>> +static int xenvif_handle_frag_list(struct xenvif *vif, struct sk_buff *skb)
+>> +{
+>> +	unsigned int offset = skb_headlen(skb);
+>> +	skb_frag_t frags[MAX_SKB_FRAGS];
+>> +	int i;
+>> +	struct ubuf_info *uarg;
+>> +	struct sk_buff *nskb = skb_shinfo(skb)->frag_list;
+>> +
+>> +	vif->tx_zerocopy_sent += 2;
+>> +	vif->tx_frag_overflow++;
+>> +
+>> +	xenvif_fill_frags(vif, nskb);
+>> +	/* Subtract frags size, we will correct it later */
+>> +	skb->truesize -= skb->data_len;
+>> +	skb->len += nskb->len;
+>> +	skb->data_len += nskb->len;
+>> +
+>> +	/* create a brand new frags array and coalesce there */
+>> +	for (i = 0; offset < skb->len; i++) {
+>> +		struct page *page;
+>> +		void *vaddr;
+>> +		unsigned int len;
+>> +
+>> +		BUG_ON(i >= MAX_SKB_FRAGS);
+>> +		page = alloc_page(GFP_ATOMIC|__GFP_COLD);
+>> +		if (!page) {
+>> +			int j;
+>> +			skb->truesize += skb->data_len;
+>> +			for (j = 0; j < i; j++)
+>> +				put_page(frags[j].page.p);
+>> +			return -ENOMEM;
+>> +		}
+>> +
+>> +		vaddr = kmap_atomic(page);
+>
+> Why do you need this? The page is not allocated with __GFP_HIGHMEM.
+Indeed. I took core networking code as example, but the the gfp comes as 
+a parameter.
 
-diff --git
-a/scripts/coccinelle/deletions/list_functions_with_unnecessary_checks_template1.cocci
-b/scripts/coccinelle/deletions/list_functions_with_unnecessary_checks_template1.cocci
-new file mode 100644
-index 0000000..d2637e8
---- /dev/null
-+++
-b/scripts/coccinelle/deletions/list_functions_with_unnecessary_checks_template1.cocci
-@@ -0,0 +1,59 @@
-+@initialize:python@
-+@@
-+import sys
-+result = []
-+mark = ['"', '', '"']
-+delimiter = '|'
-+
-+def store_positions(fun, point, places):
-+    """Add source code positions to an internal list."""
-+    for place in places:
-+        fields = []
-+        fields.append(fun)
-+
-+        fields.append(point)
-+
-+        mark[1] = place.file.replace('"', '""')
-+        fields.append(''.join(mark))
-+
-+        fields.append(place.line)
-+        fields.append(str(int(place.column) + 1))
-+        result.append(delimiter.join(fields))
-+
-+@is_unnecessary_check@
-+expression data;
-+identifier work;
-+identifier release =~ "^(?x)
-+(?:
-+   (?:kz?|slob_)free
-+|
-+   (?:
-+# Alternation placeholder
-+   )
-+)$";
-+position pos;
-+type t;
-+@@
-+ t work@pos(...)
-+ {
-+  ... when any
-+( if (data) release(data);
-+| if (likely(data)) release(data);
-+)
-+  ... when any
-+ }
-+
-+@script:python collection depends on is_unnecessary_check@
-+fun << is_unnecessary_check.work;
-+point << is_unnecessary_check.data;
-+places << is_unnecessary_check.pos;
-+@@
-+store_positions(fun, point, places)
-+
-+@finalize:python@
-+@@
-+if result:
-+   result.insert(0, delimiter.join(("function", '"parameter"', '"source file"',
-"line", "column")))
-+   print("\r\n".join(result))
-+else:
-+   sys.stderr.write("No result for this analysis!\n")
--- 
-1.9.0
+>
+>> +	}
+>> +	/* swap out with old one */
+>> +	memcpy(skb_shinfo(skb)->frags,
+>> +	       frags,
+>> +	       i * sizeof(skb_frag_t));
+>
+> The old frags array is over-written, when do you pages in old frags
+> array?
+You mean release? uarg->callback does that, we don't need the original 
+frags array to do that.
+
+>
+>> +	skb_shinfo(skb)->nr_frags = i;
+>> +	skb->truesize += i * PAGE_SIZE;
+>> +
+>> +	/* remove traces of mapped pages and frag_list */
+>> +	skb_frag_list_init(skb);
+>> +	uarg = skb_shinfo(skb)->destructor_arg;
+>> +	uarg->callback(uarg, true);
+>> +	skb_shinfo(skb)->destructor_arg = NULL;
+>> +
+>> +	skb_shinfo(nskb)->tx_flags |= SKBTX_DEV_ZEROCOPY;
+>> +	kfree_skb(nskb);
+>> +
+>> +	return 0;
+>> +}
+>>
+>>   static int xenvif_tx_submit(struct xenvif *vif)
+>>   {
+>> @@ -1258,7 +1400,6 @@ static int xenvif_tx_submit(struct xenvif *vif)
+>>   				&vif->pending_tx_info[pending_idx].callback_struct;
+>>   		} else {
+>>   			/* Schedule a response immediately. */
+>> -			skb_shinfo(skb)->destructor_arg = NULL;
+>
+> Why? You added this in previous patch but remove it here.
+xenvif_alloc_skb does this now.
+
 
