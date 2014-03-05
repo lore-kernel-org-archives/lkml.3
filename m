@@ -1,61 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758793AbaCEPLJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 10:11:09 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:38198 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1757558AbaCEPLE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 10:11:04 -0500
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Bjorn Helgaas'" <bhelgaas@google.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] phy: fix compiler array bounds warning on settings[]
-Thread-Topic: [PATCH] phy: fix compiler array bounds warning on settings[]
-Thread-Index: AQHPOAruIxtn6MjoSU2S08w3Vpy7W5rSNHzAgABhKYCAAARCkA==
-Date: Wed, 5 Mar 2014 15:10:34 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F6D1D1E@AcuExch.aculab.com>
-References: <20140305003544.23016.55079.stgit@bhelgaas-glaptop.roam.corp.google.com>
- <063D6719AE5E284EB5DD2968C1650D6D0F6D1440@AcuExch.aculab.com>
- <CAErSpo5Pb2bABmnQZ04KRqjU=38=Pcr2OQv8hUJd_hv69QVc-A@mail.gmail.com>
-In-Reply-To: <CAErSpo5Pb2bABmnQZ04KRqjU=38=Pcr2OQv8hUJd_hv69QVc-A@mail.gmail.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1758816AbaCEPLv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:11:51 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41042 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757211AbaCEO0D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 09:26:03 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Cong Wang <cwang@twopensource.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 069/131] ipv4: Fix runtime WARNING in rtmsg_ifa()
+Date: Wed,  5 Mar 2014 14:23:13 +0000
+Message-Id: <1394029455-23128-70-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
+References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s25FBJm2017308
 
-From: Bjorn Helgaas
-> On Wed, Mar 5, 2014 at 2:10 AM, David Laight <David.Laight@aculab.com> wrote:
-> > From: Bjorn Helgaas
-> >> With -Werror=array-bounds, gcc v4.7.x warns that in phy_find_valid(), the
-> >> settings[] "array subscript is above array bounds", I think because idx is
-> >> a signed integer and if the caller supplied idx < 0, we pass the guard but
-> >> still reference out of bounds.
-> >
-> > Not rejecting the patch but...
-> >
-> > Just indexing an array with 'int' shouldn't cause this warning,
-> > so somewhere a caller must actually be passing an idx < 0.
-> >
-> > While changing the type to unsigned will make the comparison
-> > against the array bound reject the -1, I suspect that the
-> > specific call path didn't really intend passing a hard-coded -1.
-> >
-> > It might be worth trying to locate the call site that passes -1.
-> 
-> I agree 100%.  If that's the case, we definitely should find that
-> caller rather than apply this patch.  I'll look more today.
+3.11.10.6 -stable review patch.  If anyone has any objections, please let me know.
 
-You might want to apply the patch as well :-)
+------------------
 
-	David
+From: Geert Uytterhoeven <geert@linux-m68k.org>
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+commit 63b5f152eb4a5bb79b9caf7ec37b4201d12f6e66 upstream.
+
+On m68k/ARAnyM:
+
+WARNING: CPU: 0 PID: 407 at net/ipv4/devinet.c:1599 0x316a99()
+Modules linked in:
+CPU: 0 PID: 407 Comm: ifconfig Not tainted
+3.13.0-atari-09263-g0c71d68014d1 #1378
+Stack from 10c4fdf0:
+        10c4fdf0 002ffabb 000243e8 00000000 008ced6c 00024416 00316a99 0000063f
+        00316a99 00000009 00000000 002501b4 00316a99 0000063f c0a86117 00000080
+        c0a86117 00ad0c90 00250a5a 00000014 00ad0c90 00000000 00000000 00000001
+        00b02dd0 00356594 00000000 00356594 c0a86117 eff6c9e4 008ced6c 00000002
+        008ced60 0024f9b4 00250b52 00ad0c90 00000000 00000000 00252390 00ad0c90
+        eff6c9e4 0000004f 00000000 00000000 eff6c9e4 8000e25c eff6c9e4 80001020
+Call Trace: [<000243e8>] warn_slowpath_common+0x52/0x6c
+ [<00024416>] warn_slowpath_null+0x14/0x1a
+ [<002501b4>] rtmsg_ifa+0xdc/0xf0
+ [<00250a5a>] __inet_insert_ifa+0xd6/0x1c2
+ [<0024f9b4>] inet_abc_len+0x0/0x42
+ [<00250b52>] inet_insert_ifa+0xc/0x12
+ [<00252390>] devinet_ioctl+0x2ae/0x5d6
+
+Adding some debugging code reveals that net_fill_ifaddr() fails in
+
+    put_cacheinfo(skb, ifa->ifa_cstamp, ifa->ifa_tstamp,
+                              preferred, valid))
+
+nla_put complains:
+
+    lib/nlattr.c:454: skb_tailroom(skb) = 12, nla_total_size(attrlen) = 20
+
+Apparently commit 5c766d642bcaffd0c2a5b354db2068515b3846cf ("ipv4:
+introduce address lifetime") forgot to take into account the addition of
+struct ifa_cacheinfo in inet_nlmsg_size(). Hence add it, like is already
+done for ipv6.
+
+Suggested-by: Cong Wang <cwang@twopensource.com>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Cong Wang <cwang@twopensource.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[ luis: backported to 3.11: used davem's backport to 3.10 ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ net/ipv4/devinet.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
+index 34ca6d5..d281cb8 100644
+--- a/net/ipv4/devinet.c
++++ b/net/ipv4/devinet.c
+@@ -1434,7 +1434,8 @@ static size_t inet_nlmsg_size(void)
+ 	       + nla_total_size(4) /* IFA_ADDRESS */
+ 	       + nla_total_size(4) /* IFA_LOCAL */
+ 	       + nla_total_size(4) /* IFA_BROADCAST */
+-	       + nla_total_size(IFNAMSIZ); /* IFA_LABEL */
++	       + nla_total_size(IFNAMSIZ) /* IFA_LABEL */
++	       + nla_total_size(sizeof(struct ifa_cacheinfo)); /* IFA_CACHEINFO */
+ }
+ 
+ static inline u32 cstamp_delta(unsigned long cstamp)
+-- 
+1.9.0
+
