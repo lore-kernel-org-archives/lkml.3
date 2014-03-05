@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756839AbaCEBY3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 20:24:29 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:44244 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755033AbaCEBY1 (ORCPT
+	id S1755483AbaCEBbn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 20:31:43 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:64165 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753904AbaCEBbm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 20:24:27 -0500
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: davem@davemloft.net, sachin.kamat@linaro.org, shaun@xresource.ca,
-        dulshani.gunawardhana89@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, ying.xue@windriver.com
-Subject: [PATCH 7/7] staging: cxt1e1: remove unneeded a value
-Date: Wed, 05 Mar 2014 10:24:22 +0900
-Message-ID: <4401309.KAOCJ1Tfb2@daeseok-laptop.cloud.net>
-User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
+	Tue, 4 Mar 2014 20:31:42 -0500
+Message-ID: <53167E62.4020601@huawei.com>
+Date: Wed, 5 Mar 2014 09:31:14 +0800
+From: Ding Tianhong <dingtianhong@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Ben Hutchings <ben@decadent.org.uk>,
+        John Fastabend <john.r.fastabend@intel.com>
+CC: Patrick McHardy <kaber@trash.net>, "David S. Miller" <davem@davemloft.net>,
+        Netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH net RESEND] vlan: don't allow to add VLAN on VLAN device
+References: <530FF7BF.4030706@huawei.com> <53100677.2060705@intel.com> <1393978247.16256.27.camel@deadeye.wl.decadent.org.uk>
+In-Reply-To: <1393978247.16256.27.camel@deadeye.wl.decadent.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.22.246]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2014/3/5 8:10, Ben Hutchings wrote:
+> On Thu, 2014-02-27 at 19:45 -0800, John Fastabend wrote:
+>> On 2/27/2014 6:43 PM, Ding Tianhong wrote:
+>>> I run these steps:
+>>>
+>>> modprobe 8021q
+>>> vconfig add eth2 20
+>>> vconfig add eth2.20 20
+>>> ifconfig eth2 xx.xx.xx.xx
+>>>
+>>> then the Call Trace happened:
+>>>
+>>
+>> [...]
+>>
+>>> ========================================================================
+>>>
+>>> The reason is that if add vlan on vlan dev, the vlan dev will create vlan_info,
+>>> then the notification will let the real dev to run dev_set_rx_mode() and hold
+>>> netif_addr_lock, and then the real dev will call ndo_set_rx_mode(), if the real
+>>> dev is vlan dev, the ndo_set_rx_mode() will hold netif_addr_lock again, so deadlock
+>>> happened.
+>>>
+>>> Don't allow to add vlan on vlan dev to fix this problem.
+>>>
+>>> Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+>>> ---
+>>
+>> I'm not sure we can just disable stacked vlans. There might be something
+>> using them today and they have worked in the past. Lets try to find a
+>> better fix.
+> 
+> I don't think there's any deadlock possible here.  We try to acquire the
+> addr_list_lock for eth2.20, then the addr_list_lock for eth2.  We never
+> try to acquire them in the opposite order.  The fix would involve
+> telling lockdep about lock ordering between stacked net_devices (I have
+> no idea how that's done).
+> 
+> Ben.
+> 
 
-It doesn't need to assign name array address to np pointer.
+Yep, it is a warning when the lockdep is open, I review the code again, and the deadlock would not happen,
+just the same class of locks twice, so I think it is not a bugfix, just like a optimization.
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
----
- drivers/staging/cxt1e1/linux.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/staging/cxt1e1/linux.c b/drivers/staging/cxt1e1/linux.c
-index 5bb42ae..cae8c66 100644
---- a/drivers/staging/cxt1e1/linux.c
-+++ b/drivers/staging/cxt1e1/linux.c
-@@ -205,15 +205,14 @@ status_t
- c4_wq_port_init(mpi_t *pi)
- {
- 
--	char        name[16], *np;  /* NOTE: name of the queue limited by system
-+	char        name[16];  /* NOTE: name of the queue limited by system
- 				     * to 10 characters */
- 
- 	if (pi->wq_port)
- 		return 0;                   /* already initialized */
- 
--	np = name;
- 	memset(name, 0, 16);
--	sprintf(np, "%s%d", pi->up->devname, pi->portnum); /* IE pmcc4-01) */
-+	sprintf(name, "%s%d", pi->up->devname, pi->portnum); /* IE pmcc4-01) */
- 
- #ifdef RLD_RESTART_DEBUG
- 	pr_info(">> %s: creating workqueue <%s> for Port %d.\n",
--- 
-1.7.4.4
+Regards
+Ding
 
 
