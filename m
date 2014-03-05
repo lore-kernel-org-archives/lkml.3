@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757990AbaCEOcy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:32:54 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41288 "EHLO
+	id S1758024AbaCEOdn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:33:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41272 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757729AbaCEO1N (ORCPT
+	with ESMTP id S1757707AbaCEO1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:27:13 -0500
+	Wed, 5 Mar 2014 09:27:09 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sebastian Capella <sebastian.capella@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: James Hogan <james.hogan@imgtec.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-metag@vger.kernel.org,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 116/131] PM / hibernate: Fix restore hang in freeze_processes()
-Date: Wed,  5 Mar 2014 14:24:00 +0000
-Message-Id: <1394029455-23128-117-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 114/131] irq-metag*: stop set_affinity vectoring to offline cpus
+Date: Wed,  5 Mar 2014 14:23:58 +0000
+Message-Id: <1394029455-23128-115-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -28,37 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Capella <sebastian.capella@linaro.org>
+From: James Hogan <james.hogan@imgtec.com>
 
-commit f8d5b9e9e5372f0deb7bc1ab1088a9b60b0a793d upstream.
+commit f229006ec6beabf7b844653d92fa61f025fe3dcf upstream.
 
-During restore, pm_notifier chain are called with
-PM_RESTORE_PREPARE.  The firmware_class driver handler
-fw_pm_notify does not have a handler for this.  As a result,
-it keeps a reader on the kmod.c umhelper_sem.  During
-freeze_processes, the call to __usermodehelper_disable tries to
-take a write lock on this semaphore and hangs waiting.
+Fix irq_set_affinity callbacks in the Meta IRQ chip drivers to AND
+cpu_online_mask into the cpumask when picking a CPU to vector the
+interrupt to.
 
-Signed-off-by: Sebastian Capella <sebastian.capella@linaro.org>
-Acked-by: Ming Lei <ming.lei@canonical.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+As Thomas pointed out, the /proc/irq/$N/smp_affinity interface doesn't
+filter out offline CPUs, so without this patch if you offline CPU0 and
+set an IRQ affinity to 0x3 it vectors the interrupt onto CPU0 even
+though it is offline.
+
+Reported-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-metag@vger.kernel.org
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/base/firmware_class.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/irqchip/irq-metag-ext.c | 2 +-
+ drivers/irqchip/irq-metag.c     | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index c8dac74..8933926 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -1532,6 +1532,7 @@ static int fw_pm_notify(struct notifier_block *notify_block,
- 	switch (mode) {
- 	case PM_HIBERNATION_PREPARE:
- 	case PM_SUSPEND_PREPARE:
-+	case PM_RESTORE_PREPARE:
- 		kill_requests_without_uevent();
- 		device_cache_fw_images();
- 		break;
+diff --git a/drivers/irqchip/irq-metag-ext.c b/drivers/irqchip/irq-metag-ext.c
+index 92c41ab..2cb474a 100644
+--- a/drivers/irqchip/irq-metag-ext.c
++++ b/drivers/irqchip/irq-metag-ext.c
+@@ -515,7 +515,7 @@ static int meta_intc_set_affinity(struct irq_data *data,
+ 	 * one cpu (the interrupt code doesn't support it), so we just
+ 	 * pick the first cpu we find in 'cpumask'.
+ 	 */
+-	cpu = cpumask_any(cpumask);
++	cpu = cpumask_any_and(cpumask, cpu_online_mask);
+ 	thread = cpu_2_hwthread_id[cpu];
+ 
+ 	metag_out32(TBI_TRIG_VEC(TBID_SIGNUM_TR2(thread)), vec_addr);
+diff --git a/drivers/irqchip/irq-metag.c b/drivers/irqchip/irq-metag.c
+index 8e94d7a..c16c186 100644
+--- a/drivers/irqchip/irq-metag.c
++++ b/drivers/irqchip/irq-metag.c
+@@ -201,7 +201,7 @@ static int metag_internal_irq_set_affinity(struct irq_data *data,
+ 	 * one cpu (the interrupt code doesn't support it), so we just
+ 	 * pick the first cpu we find in 'cpumask'.
+ 	 */
+-	cpu = cpumask_any(cpumask);
++	cpu = cpumask_any_and(cpumask, cpu_online_mask);
+ 	thread = cpu_2_hwthread_id[cpu];
+ 
+ 	metag_out32(TBI_TRIG_VEC(TBID_SIGNUM_TR1(thread)),
 -- 
 1.9.0
 
