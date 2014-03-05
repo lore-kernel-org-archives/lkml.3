@@ -1,98 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503AbaCENwj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 08:52:39 -0500
-Received: from mga09.intel.com ([134.134.136.24]:27314 "EHLO mga09.intel.com"
+	id S1754034AbaCEN6O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 08:58:14 -0500
+Received: from smtp4.epfl.ch ([128.178.224.219]:58481 "EHLO smtp4.epfl.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751630AbaCENwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 08:52:38 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,593,1389772800"; 
-   d="scan'208";a="494471249"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <53166881.1020504@oracle.com>
-References: <530F3F0A.5040304@oracle.com>
- <20140227150313.3BA27E0098@blue.fi.intel.com>
- <53166881.1020504@oracle.com>
-Subject: Re: mm: kernel BUG at mm/huge_memory.c:2785!
+	id S1752487AbaCEN6M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 08:58:12 -0500
+Message-ID: <53172D6A.9050900@epfl.ch>
+Date: Wed, 05 Mar 2014 14:58:02 +0100
+From: Florian Vaussard <florian.vaussard@epfl.ch>
+Reply-To: florian.vaussard@epfl.ch
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: Andy Whitcroft <apw@canonical.com>, Rob Herring <robh@kernel.org>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] checkpatch: fix spurious vendor compatible warnings
+References: <1393604742-14317-1-git-send-email-florian.vaussard@epfl.ch>	 <1393604742-14317-3-git-send-email-florian.vaussard@epfl.ch>	 <1393621571.10280.49.camel@joe-AO722> <53145D21.4080101@epfl.ch> <1393869097.13719.88.camel@joe-AO722>
+In-Reply-To: <1393869097.13719.88.camel@joe-AO722>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <20140305135232.EC420E0098@blue.fi.intel.com>
-Date: Wed,  5 Mar 2014 15:52:32 +0200 (EET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sasha Levin wrote:
-> On 02/27/2014 10:03 AM, Kirill A. Shutemov wrote:
-> > Sasha Levin wrote:
-> >> >Hi all,
-> >> >
-> >> >While fuzzing with trinity inside a KVM tools guest running latest -next kernel I've stumbled on the
-> >> >following spew:
-> >> >
-> >> >[ 1428.146261] kernel BUG at mm/huge_memory.c:2785!
-> > Hm, interesting.
-> >
-> > It seems we either failed to split huge page on vma split or it
-> > materialized from under us. I don't see how it can happen:
-> >
-> >    - it seems we do the right thing with vma_adjust_trans_huge() in
-> >      __split_vma();
-> >    - we hold ->mmap_sem all the way from vm_munmap(). At least I don't see
-> >      a place where we could drop it;
-> >
-> > Andrea, any ideas?
-> 
-> And a somewhat related issue (please correct me if I'm wrong):
+Hi,
 
-Yeah. Looks similar. And I still have no idea how it could happened.
-
-Do you trinity logs for the crash?
-
+On 03/03/2014 06:51 PM, Joe Perches wrote:
+> On Mon, 2014-03-03 at 11:44 +0100, Florian Vaussard wrote:
+>> Looking at the current documentation, the list of these generic
+>> placeholders is pretty short:
+>>
+>> $ git grep ',<.*>-' Documentation/devicetree/bindings/ | \
+>>   grep -P -o ',<.*?>-' | grep -P -o '<.*>' | sort | uniq
+>>
+>> <board>
+>> <chip>
+>> <chip name>
+>> <mcu-chip>
+>> <processor>
+>> <soc>
+>> <SOC>
+>> <soc-family>
+>>
+>> so '[a-zA-Z0-9-]+' seems more reasonable indeed.
 > 
-> [ 2208.713223] kernel BUG at mm/mlock.c:528!
-> [ 2208.713692] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> [ 2208.714488] Dumping ftrace buffer:
-> [ 2208.715209]    (ftrace buffer empty)
-> [ 2208.715759] Modules linked in:
-> [ 2208.716206] CPU: 34 PID: 3736 Comm: trinity-c209 Tainted: G        W    3.14.0-rc5-next-20140304-sasha-00009-geaa4df0 #77
-> [ 2208.717637] task: ffff880ff90c8000 ti: ffff880ff90c6000 task.ti: ffff880ff90c6000
-> [ 2208.718742] RIP: 0010:[<ffffffff812a53d6>]  [<ffffffff812a53d6>] munlock_vma_pages_range+0x176/0x1d0
-> [ 2208.720107] RSP: 0018:ffff880ff90c7e08  EFLAGS: 00010206
-> [ 2208.720711] RAX: 00000000000001ff RBX: 000000000003f000 RCX: 0000000000000000
-> [ 2208.721456] RDX: 000000000000003f RSI: ffffffff8129d92d RDI: ffffffff84476115
-> [ 2208.721456] RBP: ffff880ff90c7ec8 R08: 0000000000000000 R09: 0000000000000000
-> [ 2208.721456] R10: 0000000000000001 R11: 0000000000000000 R12: fffffffffffffff2
-> [ 2208.721456] R13: ffff880313b41600 R14: 0000000000040000 R15: ffff880ff90c7e94
-> [ 2208.721456] FS:  00007f2bd5330700(0000) GS:ffff88032bc00000(0000) knlGS:0000000000000000
-> [ 2208.721456] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [ 2208.721456] CR2: 0000000002767c90 CR3: 0000000ffa1d4000 CR4: 00000000000006e0
-> [ 2208.721456] DR0: 00007f15fe555000 DR1: 0000000000000000 DR2: 0000000000000000
-> [ 2208.721456] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
-> [ 2208.721456] Stack:
-> [ 2208.721456]  0000000000000000 0000000000000000 0001880ff90c7e38 0000000000000000
-> [ 2208.721456]  0000000000000000 ffff880313b41600 00000000f90c7e88 0000000000000000
-> [ 2208.721456]  00ff880ff90c7e58 ffff880815e8cba0 ffff880ff90c7eb8 ffff880313b41600
-> [ 2208.721456] Call Trace:
-> [ 2208.721456]  [<ffffffff812a8a52>] do_munmap+0x1d2/0x350
-> [ 2208.721456]  [<ffffffff84473eb6>] ? down_write+0xa6/0xc0
-> [ 2208.721456]  [<ffffffff812a8c16>] ? vm_munmap+0x46/0x80
-> [ 2208.721456]  [<ffffffff812a8c24>] vm_munmap+0x54/0x80
-> [ 2208.721456]  [<ffffffff812a8c7c>] SyS_munmap+0x2c/0x40
-> [ 2208.721456]  [<ffffffff84480110>] tracesys+0xdd/0xe2
-> [ 2208.721456] Code: fd ff ff 4c 89 e6 48 89 c3 48 8d bd 40 ff ff ff e8 80 fa ff ff eb 2f 66 0f 1f 44 00 00 8b 45 cc 48 89 da 48 c1 ea 0c 85 d0 74 12 <0f> 0b 0f 1f 84 00 00 00 00 00 eb fe 66 0f 1f 44 00 00 ff c0 48
-> [ 2208.721456] RIP  [<ffffffff812a53d6>] munlock_vma_pages_range+0x176/0x1d0
-> [ 2208.721456]  RSP <ffff880ff90c7e08>
+> The <mcu-chip> use seems as if it's 2 wildcards
 > 
+> 	fsl,<mcu-chip>-<board>
 > 
-> Thanks,
-> Sasha
+> I'm not sure that could work with the current
+> checkpatch code.
+> 
 
--- 
- Kirill A. Shutemov
+I don't think it is desirable to make it work with the current
+checkpatch code, as it is not enough constrained. For example, it allows
+any compatible "fsl,foo-bar" to match, which opens the door for abuse.
+We should have at least one fixed pattern.
+
+> There's a space in "<chip name>" that should
+> probably be replaced by "<chip-name>" or just
+> "<chip>" for consistency.
+> 
+
+Sure, some cleaning could be necessary. I will see what I can do.
+
+>> $compat2 =~ s/\,[a-zA-Z0-9]*\-/<\.\*>\-/g;
+> 
+> hand-escaped, not necessary if using "\Q$compat2\E"
+> 
+
+I wasn't aware of this, thanks.
+
+> Anyway, if either you or Rob think it appropriate to
+> submit a patch for either of the things I mentioned
+> in the first place:
+> 
+>> o Look for ".compatible = "foo" strings in .c and .h files
+>> o Improve the vendor name match in vendor-prefix.txt by only
+>>   matching the exact vendor name at the beginning of lines.
+> 
+> or any of the stuff above here, please do.
+> 
+
+As you already sent a patch for these, I will include it in the v3 of
+this series.
+
+I see another problem: with the current regexp patterns, we have
+enforced the use of a limited character set. But if one uses an exotic
+character (even a simple space ' '), no warning will be produced at all.
+We may check that we have at least one matching test, and throw a
+warning otherwise. But this opens the question of enforcing the
+characters used in compatible strings, where there is no strict
+guideline AFAIK.
+
+Regards,
+Florian
