@@ -1,141 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756586AbaCEB72 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 20:59:28 -0500
-Received: from nasmtp01.atmel.com ([192.199.1.246]:34420 "EHLO
-	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753299AbaCEB70 (ORCPT
+	id S1756710AbaCECBB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 21:01:01 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:40150 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755151AbaCECA7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 20:59:26 -0500
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <linus.walleij@linaro.org>, <plagnioj@jcrosoft.com>
-CC: <b.brezillon@overkiz.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <wenyou.yang@atmel.com>
-Subject: [PATCH] pinctrl: at91: add the config GPIO_OUTPUT_x
-Date: Wed, 5 Mar 2014 09:53:20 +0800
-Message-ID: <1393984400-14687-1-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 4 Mar 2014 21:00:59 -0500
+Date: Wed, 5 Mar 2014 10:00:52 +0800
+From: Lee Jones <lee.jones@linaro.org>
+To: Denis Carikli <denis@eukrea.com>
+Cc: Bryan Wu <cooloney@gmail.com>, Jingoo Han <jg1.han@samsung.com>,
+        Eric =?iso-8859-1?Q?B=E9nard?= <eric@eukrea.com>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv12] video: backlight: gpio-backlight: Add DT support.
+Message-ID: <20140305020052.GL10579@lee--X1>
+References: <1393511313-18756-1-git-send-email-denis@eukrea.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1393511313-18756-1-git-send-email-denis@eukrea.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to support the pinctrl sleep state.
+On Thu, 27 Feb 2014, Denis Carikli wrote:
 
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
----
-Hi Linus,
+> Signed-off-by: Denis Carikli <denis@eukrea.com>
+> ---
+> ChangeLog v11-resend->v12:
+> - Moved the Cc from the commit message to the "email patch".
+> - The documentation is now more clear.
+> - The unnecessary default_on variable was removed.
+> - gbl->fbdev was already NULL and didn't need to be re-assigned,
+>   so the re-assignement was removed.
+> - The of_device_id struct and .of_match_table are now guarded
+>   against the driver beeing compiled without CONFIG_OF.
+> 
+> ChangeLog v11->v11-resend:
+> - Removed the Cc list because it's only one patch.
+> 
+> ChangeLog v10->v11:
+> - Shrinked the Cc list.
+> - Fixed the of_match_table warning.
+> 
+> ChangeLog v9->v10:
+> - Only the respective maintainers, or people who responded to the patch
+>   were kept in the Cc.
+> - The unnecessary of_match_ptr in of_match_table was removed.
+> 
+> ChangeLog v8->v9:
+> - Added Shawn Guo in the Cc list.
+> - The default-brightness-level is now a boolean default-on property,
+>   the gpio is only touched if the gpio-backlight driver instance probes.
+> - The code and documentation was updated accordingly.
+> 
+> ChangeLog v7->v8:
+> - The default-state was renamed to default-brightness-level.
+> - default-brightness-level is now mandatory, like for backlight-pwm,
+>   That way we avoid having to handle the case where it's not set,
+>   which means that we would need not to set the gpio, but still
+>   report a brightness value for sysfs, when not all gpio controllers are
+>   able to read the gpio value.
+> - switched the default-brightness-level to boolean values (0 or 1) instead
+>   of using strings ("on", "off", "keep").
+> - The documentation was updated accordingly.
+> - The example in the documentation now uses the dts gpio defines.
+> - The "backlight: gpio_backlight: Use a default state enum." patch was then
+>   dropped, becuase it is not necessary anymore.
+> 
+> ChangeLog v6->v7:
+> - removed a compilation warning with the removal of the useless ret declaration.
+> 
+> ChangeLog v5->v6:
+> - The default state handling was reworked:
+>   - it's now called default-state, and looks like the gpio-leds default-state.
+>   - it now has a "keep" option, like for the gpio-leds.
+>   - that "keep" option is the default when the default-state property is not set.
+> - The documentation was updated accordingly.
+> 
+> ChangeLog v4->v5:
+> - The default-brightness property now defaults to 0 in the driver.
+> - def_value int becomes a bool.
+> - The check for the gpio validity has been reworked.
+> ---
+>  .../bindings/video/backlight/gpio-backlight.txt    |   16 ++++++
+>  drivers/video/backlight/gpio_backlight.c           |   58 +++++++++++++++++---
+>  2 files changed, 67 insertions(+), 7 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/video/backlight/gpio-backlight.txt
 
-The patch is based on branch: for-next
-git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl
+Applied with Jingoo's Ack.
 
-Best Regards,
-Wenyou Yang
-
- drivers/pinctrl/pinctrl-at91.c     |   31 +++++++++++++++++++++++++++++++
- include/dt-bindings/pinctrl/at91.h |    2 ++
- 2 files changed, 33 insertions(+)
-
-diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
-index 5d24aae..fc51e59 100644
---- a/drivers/pinctrl/pinctrl-at91.c
-+++ b/drivers/pinctrl/pinctrl-at91.c
-@@ -62,6 +62,8 @@ static int gpio_banks;
- #define DEGLITCH	(1 << 2)
- #define PULL_DOWN	(1 << 3)
- #define DIS_SCHMIT	(1 << 4)
-+#define GPIO_OUTPUT_HIGH	(1 << 5)
-+#define GPIO_OUTPUT_LOW		(1 << 6)
- #define DEBOUNCE	(1 << 16)
- #define DEBOUNCE_VAL_SHIFT	17
- #define DEBOUNCE_VAL	(0x3fff << DEBOUNCE_VAL_SHIFT)
-@@ -152,12 +154,15 @@ struct at91_pinctrl_mux_ops {
- 	void (*set_pulldown)(void __iomem *pio, unsigned mask, bool is_on);
- 	bool (*get_schmitt_trig)(void __iomem *pio, unsigned pin);
- 	void (*disable_schmitt_trig)(void __iomem *pio, unsigned mask);
-+	bool (*get_gpio_output)(void __iomem *pio, unsigned mask);
-+	void (*set_gpio_output)(void __iomem *pio, unsigned mask, bool is_high);
- 	/* irq */
- 	int (*irq_type)(struct irq_data *d, unsigned type);
- };
- 
- static int gpio_irq_type(struct irq_data *d, unsigned type);
- static int alt_gpio_irq_type(struct irq_data *d, unsigned type);
-+static void at91_mux_gpio_enable(void __iomem *pio, unsigned mask, bool input);
- 
- struct at91_pinctrl {
- 	struct device		*dev;
-@@ -472,6 +477,20 @@ static bool at91_mux_pio3_get_schmitt_trig(void __iomem *pio, unsigned pin)
- 	return (__raw_readl(pio + PIO_SCHMITT) >> pin) & 0x1;
- }
- 
-+static bool at91_mux_pio3_get_gpio_output(void __iomem *pio, unsigned pin)
-+{
-+	return (__raw_readl(pio + PIO_ODSR) >> pin) & 0x1;
-+}
-+
-+static void at91_mux_pio3_set_gpio_output(void __iomem *pio,
-+						unsigned mask,
-+						bool is_high)
-+{
-+	at91_mux_gpio_enable(pio, mask, 0);
-+	writel_relaxed(mask, pio + (is_high ? PIO_SODR : PIO_CODR));
-+}
-+
-+
- static struct at91_pinctrl_mux_ops at91rm9200_ops = {
- 	.get_periph	= at91_mux_get_periph,
- 	.mux_A_periph	= at91_mux_set_A_periph,
-@@ -495,6 +514,8 @@ static struct at91_pinctrl_mux_ops at91sam9x5_ops = {
- 	.set_pulldown	= at91_mux_pio3_set_pulldown,
- 	.get_schmitt_trig = at91_mux_pio3_get_schmitt_trig,
- 	.disable_schmitt_trig = at91_mux_pio3_disable_schmitt_trig,
-+	.get_gpio_output = at91_mux_pio3_get_gpio_output,
-+	.set_gpio_output = at91_mux_pio3_set_gpio_output,
- 	.irq_type	= alt_gpio_irq_type,
- };
- 
-@@ -741,6 +762,10 @@ static int at91_pinconf_get(struct pinctrl_dev *pctldev,
- 		*config |= PULL_DOWN;
- 	if (info->ops->get_schmitt_trig && info->ops->get_schmitt_trig(pio, pin))
- 		*config |= DIS_SCHMIT;
-+	if (info->ops->get_gpio_output) {
-+		*config |= info->ops->get_gpio_output(pio, pin) ?
-+					GPIO_OUTPUT_HIGH : GPIO_OUTPUT_LOW;
-+	}
- 
- 	return 0;
- }
-@@ -778,6 +803,12 @@ static int at91_pinconf_set(struct pinctrl_dev *pctldev,
- 			info->ops->set_pulldown(pio, mask, config & PULL_DOWN);
- 		if (info->ops->disable_schmitt_trig && config & DIS_SCHMIT)
- 			info->ops->disable_schmitt_trig(pio, mask);
-+		if (info->ops->set_gpio_output) {
-+			if (config & GPIO_OUTPUT_HIGH)
-+				info->ops->set_gpio_output(pio, mask, 1);
-+			if (config & GPIO_OUTPUT_LOW)
-+				info->ops->set_gpio_output(pio, mask, 0);
-+		};
- 
- 	} /* for each config */
- 
-diff --git a/include/dt-bindings/pinctrl/at91.h b/include/dt-bindings/pinctrl/at91.h
-index 0fee6ff..e799268 100644
---- a/include/dt-bindings/pinctrl/at91.h
-+++ b/include/dt-bindings/pinctrl/at91.h
-@@ -15,6 +15,8 @@
- #define AT91_PINCTRL_DEGLITCH		(1 << 2)
- #define AT91_PINCTRL_PULL_DOWN		(1 << 3)
- #define AT91_PINCTRL_DIS_SCHMIT		(1 << 4)
-+#define AT91_PINCTRL_OUTPUT_HIGH	(1 << 5)
-+#define AT91_PINCTRL_OUTPUT_LOW		(1 << 6)
- #define AT91_PINCTRL_DEBOUNCE		(1 << 16)
- #define AT91_PINCTRL_DEBOUNCE_VAL(x)	(x << 17)
- 
 -- 
-1.7.9.5
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
