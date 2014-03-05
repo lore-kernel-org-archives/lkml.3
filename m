@@ -1,71 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932291AbaCEWbl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 17:31:41 -0500
-Received: from mailout3.w2.samsung.com ([211.189.100.13]:61505 "EHLO
-	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932266AbaCEWbg (ORCPT
+	id S932326AbaCEWbs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 17:31:48 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37573 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932281AbaCEWbl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 17:31:36 -0500
-X-AuditID: cbfec37d-b7f616d0000059df-77-5317a5c69da5
-Message-id: <5317A5C4.2070307@samsung.com>
-Date: Wed, 05 Mar 2014 15:31:32 -0700
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.2.0
-MIME-version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org, Shuah Khan <shuah.kh@samsung.com>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [PATCH 3.10 00/97] 3.10.33-stable review
-References: <20140304200345.895517495@linuxfoundation.org>
-In-reply-to: <20140304200345.895517495@linuxfoundation.org>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.34.11]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t9hX93jS8WDDRZeZbWYs34Nm0Xz4vVs
-	Fpd3zWGz+PrTwWLBxkeMFo/63rI7sHnsnHWX3ePEjN8sHvvnrmH3+LxJLoAlissmJTUnsyy1
-	SN8ugSvjweW7zAWN7BXP7l9ja2A8ydrFyMkhIWAicff3bjYIW0ziwr31QDYXh5DAMkaJWctm
-	MUM4vUwSj/qvskA4mxglji5/CtbCK6Al0f9/AguIzSKgKnH15l2wOJuAusTn1zvYQWwhATmJ
-	piWrmUFsUYEIiVdnJ7JA9ApK/Jh8D8wWEQiWWPt1ISPIAmaBFYwSx1++BBskLGAqsbXjOyPE
-	ICuJLXceMoHYnALWEk+WrQSLMwuYSTxqWccMYctLbF7zlhmiXlniz+VTQPUcQL8pSvz67z6B
-	UWQWktWzkHTPQtK9gJF5FaNYaXFyQXFSemqFiV5xYm5xaV66XnJ+7iZGSNTU7mC8/9XmEKMA
-	B6MSD+8GP/FgIdbEsuLK3EOMEhzMSiK8AZFAId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYztupuc
-	in5ybFXVqLoVf6L71bt/PtqPczrzFjyc2npxwYlg5d/mN4/mreByePtOweWOo/23DRNqti9g
-	mrf0v/iOdQYq7NMXZ314qWghIf2aUyxcg+HqohsXjthvW/q1vY3HsOpj7/fkFhOJ+TH2aRzN
-	PRFxu9+//npztnr8V9WHSfM3TAvyvrdOiaU4I9FQi7moOBEAxqK+uHgCAAA=
+	Wed, 5 Mar 2014 17:31:41 -0500
+Date: Wed, 5 Mar 2014 14:31:18 -0800
+From: tip-bot for Stefani Seibold <tipbot@zytor.com>
+Message-ID: <tip-2e0035eefd9cc8a386c706cab7547b5280772726@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, luto@amacapital.net, hpa@zytor.com,
+        mingo@kernel.org, stefani@seibold.net, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, luto@amacapital.net,
+        linux-kernel@vger.kernel.org, stefani@seibold.net, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <1393881143-3569-6-git-send-email-stefani@seibold.net>
+References: <1393881143-3569-6-git-send-email-stefani@seibold.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/vdso] x86, vdso: Replace VVAR(vsyscall_gtod_data)
+  by gtod macro
+Git-Commit-ID: 2e0035eefd9cc8a386c706cab7547b5280772726
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/2014 01:03 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.10.33 release.
-> There are 97 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Thu Mar  6 20:03:11 UTC 2014.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.33-rc1.gz
-> and the diffstat can be found below.
->
-> thanks,
->
-> greg k-h
->
+Commit-ID:  2e0035eefd9cc8a386c706cab7547b5280772726
+Gitweb:     http://git.kernel.org/tip/2e0035eefd9cc8a386c706cab7547b5280772726
+Author:     Stefani Seibold <stefani@seibold.net>
+AuthorDate: Mon, 3 Mar 2014 22:12:16 +0100
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 5 Mar 2014 14:02:38 -0800
 
-Compile tests and boot tests passed. No dmesg regressions: emerg, crit, 
-alert, err are clean. No regressions in warn.
+x86, vdso: Replace VVAR(vsyscall_gtod_data) by gtod macro
 
--- Shuah
+There a currently more than 30 users of the gtod macro, so replace the
+last VVAR(vsyscall_gtod_data) by gtod macro.
 
--- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+Reviewed-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Stefani Seibold <stefani@seibold.net>
+Link: http://lkml.kernel.org/r/1393881143-3569-6-git-send-email-stefani@seibold.net
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/vdso/vclock_gettime.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+index fd074dd..743f277 100644
+--- a/arch/x86/vdso/vclock_gettime.c
++++ b/arch/x86/vdso/vclock_gettime.c
+@@ -109,7 +109,7 @@ static notrace cycle_t vread_pvclock(int *mode)
+ 		*mode = VCLOCK_NONE;
+ 
+ 	/* refer to tsc.c read_tsc() comment for rationale */
+-	last = VVAR(vsyscall_gtod_data).clock.cycle_last;
++	last = gtod->clock.cycle_last;
+ 
+ 	if (likely(ret >= last))
+ 		return ret;
+@@ -133,7 +133,7 @@ notrace static cycle_t vread_tsc(void)
+ 	rdtsc_barrier();
+ 	ret = (cycle_t)vget_cycles();
+ 
+-	last = VVAR(vsyscall_gtod_data).clock.cycle_last;
++	last = gtod->clock.cycle_last;
+ 
+ 	if (likely(ret >= last))
+ 		return ret;
+@@ -288,7 +288,7 @@ int gettimeofday(struct timeval *, struct timezone *)
+ notrace time_t __vdso_time(time_t *t)
+ {
+ 	/* This is atomic on x86_64 so we don't need any locks. */
+-	time_t result = ACCESS_ONCE(VVAR(vsyscall_gtod_data).wall_time_sec);
++	time_t result = ACCESS_ONCE(gtod->wall_time_sec);
+ 
+ 	if (t)
+ 		*t = result;
