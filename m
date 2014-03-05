@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758136AbaCEOhR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:37:17 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41529 "EHLO
+	id S932644AbaCEO7n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:59:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41539 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755487AbaCEOhO (ORCPT
+	with ESMTP id S1757775AbaCEOhR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:37:14 -0500
+	Wed, 5 Mar 2014 09:37:17 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Denis V. Lunev" <den@openvz.org>, Tejun Heo <tj@kernel.org>,
-        <linux-ide@vger.kernel.org>,
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 01/62] ata: enable quirk from jmicron JMB350 for JMB394
-Date: Wed,  5 Mar 2014 14:36:05 +0000
-Message-Id: <1394030226-26652-2-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 04/62] x86: dma-mapping: fix GFP_ATOMIC macro usage
+Date: Wed,  5 Mar 2014 14:36:08 +0000
+Message-Id: <1394030226-26652-5-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
 References: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
@@ -28,46 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Denis V. Lunev" <den@openvz.org>
+From: Marek Szyprowski <m.szyprowski@samsung.com>
 
-commit efb9e0f4f43780f0ae0c6428d66bd03e805c7539 upstream.
+commit c091c71ad2218fc50a07b3d1dab85783f3b77efd upstream.
 
-Without the patch the kernel generates the following error.
+GFP_ATOMIC is not a single gfp flag, but a macro which expands to the other
+flags, where meaningful is the LACK of __GFP_WAIT flag. To check if caller
+wants to perform an atomic allocation, the code must test for a lack of the
+__GFP_WAIT flag. This patch fixes the issue introduced in v3.5-rc1.
 
- ata11.15: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
- ata11.15: Port Multiplier vendor mismatch '0x197b' != '0x123'
- ata11.15: PMP revalidation failed (errno=-19)
- ata11.15: failed to recover PMP after 5 tries, giving up
-
-This patch helps to bypass this error and the device becomes
-functional.
-
-Signed-off-by: Denis V. Lunev <den@openvz.org>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: <linux-ide@vger.kernel.org>
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/ata/libata-pmp.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ arch/x86/kernel/pci-dma.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/ata/libata-pmp.c b/drivers/ata/libata-pmp.c
-index f5c35be..0ba32fe 100644
---- a/drivers/ata/libata-pmp.c
-+++ b/drivers/ata/libata-pmp.c
-@@ -447,8 +447,11 @@ static void sata_pmp_quirks(struct ata_port *ap)
- 		 * otherwise.  Don't try hard to recover it.
- 		 */
- 		ap->pmp_link[ap->nr_pmp_links - 1].flags |= ATA_LFLAG_NO_RETRY;
--	} else if (vendor == 0x197b && devid == 0x2352) {
--		/* chip found in Thermaltake BlackX Duet, jmicron JMB350? */
-+	} else if (vendor == 0x197b && (devid == 0x2352 || devid == 0x0325)) {
-+		/*
-+		 * 0x2352: found in Thermaltake BlackX Duet, jmicron JMB350?
-+		 * 0x0325: jmicron JMB394.
-+		 */
- 		ata_for_each_link(link, ap, EDGE) {
- 			/* SRST breaks detection and disks get misclassified
- 			 * LPM disabled to avoid potential problems
+diff --git a/arch/x86/kernel/pci-dma.c b/arch/x86/kernel/pci-dma.c
+index c0f420f..4baa8ff 100644
+--- a/arch/x86/kernel/pci-dma.c
++++ b/arch/x86/kernel/pci-dma.c
+@@ -109,8 +109,10 @@ void *dma_generic_alloc_coherent(struct device *dev, size_t size,
+ 	flag |= __GFP_ZERO;
+ again:
+ 	page = NULL;
+-	if (!(flag & GFP_ATOMIC))
++	/* CMA can be used only in the context which permits sleeping */
++	if (flag & __GFP_WAIT)
+ 		page = dma_alloc_from_contiguous(dev, count, get_order(size));
++	/* fallback */
+ 	if (!page)
+ 		page = alloc_pages_node(dev_to_node(dev), flag, get_order(size));
+ 	if (!page)
 -- 
 1.9.0
 
