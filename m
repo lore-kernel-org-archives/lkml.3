@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759050AbaCEPUh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 10:20:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40906 "EHLO
+	id S932177AbaCEOZY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:25:24 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40881 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754821AbaCEOZZ (ORCPT
+	with ESMTP id S932114AbaCEOZR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:25:25 -0500
+	Wed, 5 Mar 2014 09:25:17 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Sergei Trofimovich <slyfox@gentoo.org>,
+Cc: Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 041/131] avr32: fix missing module.h causing build failure in mimc200/fram.c
-Date: Wed,  5 Mar 2014 14:22:45 +0000
-Message-Id: <1394029455-23128-42-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 038/131] powerpc/powernv: Rework EEH reset
+Date: Wed,  5 Mar 2014 14:22:42 +0000
+Message-Id: <1394029455-23128-39-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -30,40 +28,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
+From: Gavin Shan <shangw@linux.vnet.ibm.com>
 
-commit 5745d6a41a4f4aec29e2ccd591c6fb09ed73a955 upstream.
+commit 5b2e198e50f6ba57081586b853163ea1bb95f1a8 upstream.
 
-Causing this:
+When doing reset in order to recover the affected PE, we issue
+hot reset on PE primary bus if it's not root bus. Otherwise, we
+issue hot or fundamental reset on root port or PHB accordingly.
+For the later case, we didn't cover the situation where PE only
+includes root port and it potentially causes kernel crash upon
+EEH error to the PE.
 
-In file included from arch/avr32/boards/mimc200/fram.c:13:
-include/linux/miscdevice.h:51: error: field 'list' has incomplete type
-include/linux/miscdevice.h:55: error: expected specifier-qualifier-list before 'mode_t'
-arch/avr32/boards/mimc200/fram.c:42: error: 'THIS_MODULE' undeclared here (not in a function)
+The patch reworks the logic of EEH reset to improve the code
+readability and also avoid the kernel crash.
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
-Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
-Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Reported-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/avr32/boards/mimc200/fram.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/powerpc/platforms/powernv/eeh-ioda.c | 29 ++++-------------------------
+ 1 file changed, 4 insertions(+), 25 deletions(-)
 
-diff --git a/arch/avr32/boards/mimc200/fram.c b/arch/avr32/boards/mimc200/fram.c
-index 9764a1a..c1466a8 100644
---- a/arch/avr32/boards/mimc200/fram.c
-+++ b/arch/avr32/boards/mimc200/fram.c
-@@ -11,6 +11,7 @@
- #define FRAM_VERSION	"1.0"
+diff --git a/arch/powerpc/platforms/powernv/eeh-ioda.c b/arch/powerpc/platforms/powernv/eeh-ioda.c
+index 0cd1c4a..d972157 100644
+--- a/arch/powerpc/platforms/powernv/eeh-ioda.c
++++ b/arch/powerpc/platforms/powernv/eeh-ioda.c
+@@ -470,8 +470,7 @@ static int ioda_eeh_bridge_reset(struct pci_controller *hose,
+ static int ioda_eeh_reset(struct eeh_pe *pe, int option)
+ {
+ 	struct pci_controller *hose = pe->phb;
+-	struct eeh_dev *edev;
+-	struct pci_dev *dev;
++	struct pci_bus *bus;
+ 	int ret;
  
- #include <linux/miscdevice.h>
-+#include <linux/module.h>
- #include <linux/proc_fs.h>
- #include <linux/mm.h>
- #include <linux/io.h>
+ 	/*
+@@ -500,31 +499,11 @@ static int ioda_eeh_reset(struct eeh_pe *pe, int option)
+ 	if (pe->type & EEH_PE_PHB) {
+ 		ret = ioda_eeh_phb_reset(hose, option);
+ 	} else {
+-		if (pe->type & EEH_PE_DEVICE) {
+-			/*
+-			 * If it's device PE, we didn't refer to the parent
+-			 * PCI bus yet. So we have to figure it out indirectly.
+-			 */
+-			edev = list_first_entry(&pe->edevs,
+-					struct eeh_dev, list);
+-			dev = eeh_dev_to_pci_dev(edev);
+-			dev = dev->bus->self;
+-		} else {
+-			/*
+-			 * If it's bus PE, the parent PCI bus is already there
+-			 * and just pick it up.
+-			 */
+-			dev = pe->bus->self;
+-		}
+-
+-		/*
+-		 * Do reset based on the fact that the direct upstream bridge
+-		 * is root bridge (port) or not.
+-		 */
+-		if (dev->bus->number == 0)
++		bus = eeh_pe_bus_get(pe);
++		if (pci_is_root_bus(bus))
+ 			ret = ioda_eeh_root_reset(hose, option);
+ 		else
+-			ret = ioda_eeh_bridge_reset(hose, dev, option);
++			ret = ioda_eeh_bridge_reset(hose, bus->self, option);
+ 	}
+ 
+ 	return ret;
 -- 
 1.9.0
 
