@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758872AbaCEPOq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 10:14:46 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40997 "EHLO
+	id S1758892AbaCEPPO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:15:14 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40992 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757116AbaCEOZv (ORCPT
+	with ESMTP id S1757111AbaCEOZu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:25:51 -0500
+	Wed, 5 Mar 2014 09:25:50 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Henningsson <david.henningsson@canonical.com>,
-        Hui Wang <hui.wang@canonical.com>, Takashi Iwai <tiwai@suse.de>,
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 062/131] ALSA: hda - Enable front audio jacks on one HP desktop model
-Date: Wed,  5 Mar 2014 14:23:06 +0000
-Message-Id: <1394029455-23128-63-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 055/131] workqueue: ensure @task is valid across kthread_stop()
+Date: Wed,  5 Mar 2014 14:22:59 +0000
+Message-Id: <1394029455-23128-56-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -28,76 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hui Wang <hui.wang@canonical.com>
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-commit 1de7ca5e844866f56bebb2fc47fa18e090677e88 upstream.
+commit 5bdfff96c69a4d5ab9c49e60abf9e070ecd2acbb upstream.
 
-The front headphone and mic jackes on a HP desktop model (Vendor Id:
-0x111d76c7 Subsystem Id: 0x103c2b17) can not work, the codec on this
-machine has 8 physical ports, 6 of them are routed to rear jackes
-and all of them work very well, while the remaining 2 ports are
-routed to front headphone and mic jackes, but the corresponding
-pin complex node are not defined correctly.
+When a kworker should die, the kworkre is notified through WORKER_DIE
+flag instead of kthread_should_stop().  This, IIRC, is primarily to
+keep the test synchronized inside worker_pool lock.  WORKER_DIE is
+first set while holding pool->lock, the lock is dropped and
+kthread_stop() is called.
 
-After apply this fix, the front audio jackes can work very well.
+Unfortunately, this means that there's a slight chance that the target
+kworker may see WORKER_DIE before kthread_stop() finishes and exits
+and frees the target task before or during kthread_stop().
 
-[trivial fix of enum definition by tiwai]
+Fix it by pinning the target task before setting WORKER_DIE and
+putting it after kthread_stop() is done.
 
-BugLink: https://bugs.launchpad.net/bugs/1282369
-Cc: David Henningsson <david.henningsson@canonical.com>
-Tested-by: Gerald Yang <gerald.yang@canonical.com>
-Signed-off-by: Hui Wang <hui.wang@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+tj: Improved patch description and comment.  Moved pinning above
+    WORKER_DIE for better signify what it's protecting.
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/patch_sigmatel.c | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ kernel/workqueue.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/sound/pci/hda/patch_sigmatel.c b/sound/pci/hda/patch_sigmatel.c
-index 6d1924c..5c005d4 100644
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -83,6 +83,7 @@ enum {
- 	STAC_DELL_M6_BOTH,
- 	STAC_DELL_EQ,
- 	STAC_ALIENWARE_M17X,
-+	STAC_92HD89XX_HP_FRONT_JACK,
- 	STAC_92HD73XX_MODELS
- };
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 4235d5e..d06e6e1 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1836,6 +1836,12 @@ static void destroy_worker(struct worker *worker)
+ 	if (worker->flags & WORKER_IDLE)
+ 		pool->nr_idle--;
  
-@@ -1775,6 +1776,12 @@ static const struct hda_pintbl intel_dg45id_pin_configs[] = {
- 	{}
- };
- 
-+static const struct hda_pintbl stac92hd89xx_hp_front_jack_pin_configs[] = {
-+	{ 0x0a, 0x02214030 },
-+	{ 0x0b, 0x02A19010 },
-+	{}
-+};
++	/*
++	 * Once WORKER_DIE is set, the kworker may destroy itself at any
++	 * point.  Pin to ensure the task stays until we're done with it.
++	 */
++	get_task_struct(worker->task);
 +
- static void stac92hd73xx_fixup_ref(struct hda_codec *codec,
- 				   const struct hda_fixup *fix, int action)
- {
-@@ -1893,6 +1900,10 @@ static const struct hda_fixup stac92hd73xx_fixups[] = {
- 	[STAC_92HD73XX_NO_JD] = {
- 		.type = HDA_FIXUP_FUNC,
- 		.v.func = stac92hd73xx_fixup_no_jd,
-+	},
-+	[STAC_92HD89XX_HP_FRONT_JACK] = {
-+		.type = HDA_FIXUP_PINS,
-+		.v.pins = stac92hd89xx_hp_front_jack_pin_configs,
- 	}
- };
+ 	list_del_init(&worker->entry);
+ 	worker->flags |= WORKER_DIE;
  
-@@ -1953,6 +1964,8 @@ static const struct snd_pci_quirk stac92hd73xx_fixup_tbl[] = {
- 		      "Alienware M17x", STAC_ALIENWARE_M17X),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x0490,
- 		      "Alienware M17x R3", STAC_DELL_EQ),
-+	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x2b17,
-+				"unknown HP", STAC_92HD89XX_HP_FRONT_JACK),
- 	{} /* terminator */
- };
+@@ -1844,6 +1850,7 @@ static void destroy_worker(struct worker *worker)
+ 	spin_unlock_irq(&pool->lock);
  
+ 	kthread_stop(worker->task);
++	put_task_struct(worker->task);
+ 	kfree(worker);
+ 
+ 	spin_lock_irq(&pool->lock);
 -- 
 1.9.0
 
