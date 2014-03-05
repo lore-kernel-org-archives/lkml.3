@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757865AbaCEO2E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:28:04 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41368 "EHLO
+	id S1753356AbaCEO2a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:28:30 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41362 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932251AbaCEO1d (ORCPT
+	with ESMTP id S1757741AbaCEO1c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:27:33 -0500
+	Wed, 5 Mar 2014 09:27:32 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Laurent Dufour <ldufour@linux.vnet.ibm.com>,
+Cc: Tony Breeds <tony@bakeyournoodle.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 130/131] powerpc/crashdump : Fix page frame number check in copy_oldmem_page
-Date: Wed,  5 Mar 2014 14:24:14 +0000
-Message-Id: <1394029455-23128-131-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 129/131] powerpc/le: Ensure that the 'stop-self' RTAS token is handled correctly
+Date: Wed,  5 Mar 2014 14:24:13 +0000
+Message-Id: <1394029455-23128-130-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -28,58 +28,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laurent Dufour <ldufour@linux.vnet.ibm.com>
+From: Tony Breeds <tony@bakeyournoodle.com>
 
-commit f5295bd8ea8a65dc5eac608b151386314cb978f1 upstream.
+commit 41dd03a94c7d408d2ef32530545097f7d1befe5c upstream.
 
-In copy_oldmem_page, the current check using max_pfn and min_low_pfn to
-decide if the page is backed or not, is not valid when the memory layout is
-not continuous.
+Currently we're storing a host endian RTAS token in
+rtas_stop_self_args.token.  We then pass that directly to rtas.  This is
+fine on big endian however on little endian the token is not what we
+expect.
 
-This happens when running as a QEMU/KVM guest, where RTAS is mapped higher
-in the memory. In that case max_pfn points to the end of RTAS, and a hole
-between the end of the kdump kernel and RTAS is not backed by PTEs. As a
-consequence, the kdump kernel is crashing in copy_oldmem_page when accessing
-in a direct way the pages in that hole.
+This will typically result in hitting:
+	panic("Alas, I survived.\n");
 
-This fix relies on the memblock's service memblock_is_region_memory to
-check if the read page is part or not of the directly accessible memory.
+To fix this we always use the stop-self token in host order and always
+convert it to be32 before passing this to rtas.
 
-Signed-off-by: Laurent Dufour <ldufour@linux.vnet.ibm.com>
-Tested-by: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
+Signed-off-by: Tony Breeds <tony@bakeyournoodle.com>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/powerpc/kernel/crash_dump.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ arch/powerpc/platforms/pseries/hotplug-cpu.c | 22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/arch/powerpc/kernel/crash_dump.c b/arch/powerpc/kernel/crash_dump.c
-index 779a78c..c16ceb1 100644
---- a/arch/powerpc/kernel/crash_dump.c
-+++ b/arch/powerpc/kernel/crash_dump.c
-@@ -98,17 +98,19 @@ ssize_t copy_oldmem_page(unsigned long pfn, char *buf,
- 			size_t csize, unsigned long offset, int userbuf)
+diff --git a/arch/powerpc/platforms/pseries/hotplug-cpu.c b/arch/powerpc/platforms/pseries/hotplug-cpu.c
+index 217ca5c..2882d61 100644
+--- a/arch/powerpc/platforms/pseries/hotplug-cpu.c
++++ b/arch/powerpc/platforms/pseries/hotplug-cpu.c
+@@ -34,12 +34,7 @@
+ #include "offline_states.h"
+ 
+ /* This version can't take the spinlock, because it never returns */
+-static struct rtas_args rtas_stop_self_args = {
+-	.token = RTAS_UNKNOWN_SERVICE,
+-	.nargs = 0,
+-	.nret = 1,
+-	.rets = &rtas_stop_self_args.args[0],
+-};
++static int rtas_stop_self_token = RTAS_UNKNOWN_SERVICE;
+ 
+ static DEFINE_PER_CPU(enum cpu_state_vals, preferred_offline_state) =
+ 							CPU_STATE_OFFLINE;
+@@ -92,15 +87,20 @@ void set_default_offline_state(int cpu)
+ 
+ static void rtas_stop_self(void)
  {
- 	void  *vaddr;
-+	phys_addr_t paddr;
+-	struct rtas_args *args = &rtas_stop_self_args;
++	struct rtas_args args = {
++		.token = cpu_to_be32(rtas_stop_self_token),
++		.nargs = 0,
++		.nret = 1,
++		.rets = &args.args[0],
++	};
  
- 	if (!csize)
- 		return 0;
+ 	local_irq_disable();
  
- 	csize = min_t(size_t, csize, PAGE_SIZE);
-+	paddr = pfn << PAGE_SHIFT;
+-	BUG_ON(args->token == RTAS_UNKNOWN_SERVICE);
++	BUG_ON(rtas_stop_self_token == RTAS_UNKNOWN_SERVICE);
  
--	if ((min_low_pfn < pfn) && (pfn < max_pfn)) {
--		vaddr = __va(pfn << PAGE_SHIFT);
-+	if (memblock_is_region_memory(paddr, csize)) {
-+		vaddr = __va(paddr);
- 		csize = copy_oldmem_vaddr(vaddr, buf, csize, offset, userbuf);
- 	} else {
--		vaddr = __ioremap(pfn << PAGE_SHIFT, PAGE_SIZE, 0);
-+		vaddr = __ioremap(paddr, PAGE_SIZE, 0);
- 		csize = copy_oldmem_vaddr(vaddr, buf, csize, offset, userbuf);
- 		iounmap(vaddr);
+ 	printk("cpu %u (hwid %u) Ready to die...\n",
+ 	       smp_processor_id(), hard_smp_processor_id());
+-	enter_rtas(__pa(args));
++	enter_rtas(__pa(&args));
+ 
+ 	panic("Alas, I survived.\n");
+ }
+@@ -391,10 +391,10 @@ static int __init pseries_cpu_hotplug_init(void)
+ 		}
  	}
+ 
+-	rtas_stop_self_args.token = rtas_token("stop-self");
++	rtas_stop_self_token = rtas_token("stop-self");
+ 	qcss_tok = rtas_token("query-cpu-stopped-state");
+ 
+-	if (rtas_stop_self_args.token == RTAS_UNKNOWN_SERVICE ||
++	if (rtas_stop_self_token == RTAS_UNKNOWN_SERVICE ||
+ 			qcss_tok == RTAS_UNKNOWN_SERVICE) {
+ 		printk(KERN_INFO "CPU Hotplug not supported by firmware "
+ 				"- disabling.\n");
 -- 
 1.9.0
 
