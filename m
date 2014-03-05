@@ -1,220 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757615AbaCEW47 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 17:56:59 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:13395 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754326AbaCEW46 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 17:56:58 -0500
-X-IronPort-AV: E=Sophos;i="4.97,595,1389744000"; 
-   d="scan'208";a="107025349"
-Message-ID: <5317ABB5.8010005@citrix.com>
-Date: Wed, 5 Mar 2014 22:56:53 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1757708AbaCEW5o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 17:57:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50924 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756571AbaCEW5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 17:57:43 -0500
+Message-ID: <5317ABD5.80908@redhat.com>
+Date: Wed, 05 Mar 2014 17:57:25 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130108 Thunderbird/10.0.12
 MIME-Version: 1.0
-To: Wei Liu <wei.liu2@citrix.com>
-CC: <ian.campbell@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jonathan.davies@citrix.com>
-Subject: Re: [PATCH net-next v6 7/10] xen-netback: Handle guests with too
- many frags
-References: <1393972341-21135-1-git-send-email-zoltan.kiss@citrix.com> <1393972341-21135-8-git-send-email-zoltan.kiss@citrix.com> <20140305123514.GH19620@zion.uk.xensource.com>
-In-Reply-To: <20140305123514.GH19620@zion.uk.xensource.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: David Rientjes <rientjes@google.com>
+CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Rui Wang <rui.y.wang@intel.com>,
+        Liu Ping Fan <kernelfans@gmail.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Lv Zheng <lv.zheng@intel.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
+        Yang Zhang <yang.z.zhang@intel.com>, Andi Kleen <ak@linux.intel.com>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        Li Fei <fei.li@intel.com>, gong.chen@linux.intel.com
+Subject: Re: [PATCH] x86, fix x86 fixup_irqs() error handling
+References: <1394049854-28266-1-git-send-email-prarit@redhat.com> <alpine.DEB.2.02.1403051307590.22928@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1403051307590.22928@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/14 12:35, Wei Liu wrote:
-> On Tue, Mar 04, 2014 at 10:32:18PM +0000, Zoltan Kiss wrote:
->> Xen network protocol had implicit dependency on MAX_SKB_FRAGS. Netback has to
->> handle guests sending up to XEN_NETBK_LEGACY_SLOTS_MAX slots. To achieve that:
->> - create a new skb
->> - map the leftover slots to its frags (no linear buffer here!)
->> - chain it to the previous through skb_shinfo(skb)->frag_list
->> - map them
->> - copy and coalesce the frags into a brand new one and send it to the stack
->> - unmap the 2 old skb's pages
->>
->
-> IIRC you once said there's problem with some NICs sending out SKBs with
-> large linear area. Is that solved?
-That was a red herring, the problem was around NAPI scheduling, and it 
-is solved.
 
-> [...]
->> v6:
->> - move out handling from tx_submit into a new funciont, as it became quite long
->> - skb_copy[_expand] allocate a new skb with a huge linear buffer, which is bad
->>    in times of memory pressure. Just make a new frags array and do the copy and
->>    coalesce with skb_copy_bits
->>
->
-> And with this change, the above issue is solved?
-Yes.
 
->> +static inline struct sk_buff *xenvif_alloc_skb(unsigned int size)
->> +{
->> +	struct sk_buff *skb =
->> +		alloc_skb(size + NET_SKB_PAD + NET_IP_ALIGN,
->> +			  GFP_ATOMIC | __GFP_NOWARN);
->> +	if (unlikely(skb == NULL))
->> +		return NULL;
->> +
->> +	/* Packets passed to netif_rx() must have some headroom. */
->> +	skb_reserve(skb, NET_SKB_PAD + NET_IP_ALIGN);
->> +
->> +	/* Initialize it here to avoid later surprises */
->> +	skb_shinfo(skb)->destructor_arg = NULL;
->> +
->> +	return skb;
->> +}
->
-> This hunk can probably be moved to previous where you introduce mapping
-> mechanism.
-In that patch we would use it only once. This patch is the one where we 
-allocate skb's twice. Plus, that prev patch is already big enough.
+On 03/05/2014 04:09 PM, David Rientjes wrote:
+> On Wed, 5 Mar 2014, Prarit Bhargava wrote:
+> 
+>> diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+>> index d99f31d..55fab61 100644
+>> --- a/arch/x86/kernel/irq.c
+>> +++ b/arch/x86/kernel/irq.c
+>> @@ -351,6 +351,7 @@ void fixup_irqs(void)
+>>  	struct irq_desc *desc;
+>>  	struct irq_data *data;
+>>  	struct irq_chip *chip;
+>> +	int ret;
+>>  
+>>  	for_each_irq_desc(irq, desc) {
+>>  		int break_affinity = 0;
+>> @@ -389,8 +390,12 @@ void fixup_irqs(void)
+>>  		if (!irqd_can_move_in_process_context(data) && chip->irq_mask)
+>>  			chip->irq_mask(data);
+>>  
+>> -		if (chip->irq_set_affinity)
+>> -			chip->irq_set_affinity(data, affinity, true);
+>> +		if (chip->irq_set_affinity) {
+>> +			ret = chip->irq_set_affinity(data, affinity, true);
+>> +			WARN(ret == -ENOSPC,
+>> +			     "IRQ %d set affinity failed with %d.  The device assigned to this IRQ is unstable.\n",
+>> +			     irq, ret);
+> 
+> Should this be WARN_ON_ONCE() to avoid filling the kernel log instead?
 
->
->> +
->>   static struct gnttab_map_grant_ref *xenvif_get_requests(struct xenvif *vif,
->>   							struct sk_buff *skb,
->>   							struct xen_netif_tx_request *txp,
->> @@ -802,11 +820,16 @@ static struct gnttab_map_grant_ref *xenvif_get_requests(struct xenvif *vif,
->>   	u16 pending_idx = *((u16 *)skb->cb);
->>   	int start;
->>   	pending_ring_idx_t index;
->> -	unsigned int nr_slots;
->> +	unsigned int nr_slots, frag_overflow = 0;
->>
->>   	/* At this point shinfo->nr_frags is in fact the number of
->>   	 * slots, which can be as large as XEN_NETBK_LEGACY_SLOTS_MAX.
->>   	 */
->> +	if (shinfo->nr_frags > MAX_SKB_FRAGS) {
->> +		frag_overflow = shinfo->nr_frags - MAX_SKB_FRAGS;
->> +		BUG_ON(frag_overflow > MAX_SKB_FRAGS);
->> +		shinfo->nr_frags = MAX_SKB_FRAGS;
->> +	}
->>   	nr_slots = shinfo->nr_frags;
->>
->>   	/* Skip first skb fragment if it is on same page as header fragment. */
->> @@ -822,6 +845,30 @@ static struct gnttab_map_grant_ref *xenvif_get_requests(struct xenvif *vif,
->>
->>   	BUG_ON(shinfo->nr_frags > MAX_SKB_FRAGS);
->>
->
-> This BUG_ON is pointless as shinfo->nr_frags is guaranteed to be not
-> larger than MAX_SKB_FRAGS a few lines above.
-Ok
+The problem is that it could hit multiple IRQs ... maybe pr_crit might be better
+here so we don't flood the log with an unnecessary stack trace; anyone with the
+source can figure out what the call path is.
 
->> +	if (skb_has_frag_list(skb)) {
->> +		first_skb = skb;
->> +		skb = shinfo->frag_list;
->> +		shinfo = skb_shinfo(skb);
->> +		nr_frags = shinfo->nr_frags;
->> +		start = 0;
->> +
->> +		goto check_frags;
->> +	}
->> +
->> +	/* There was a mapping error in the frag_list skb. We have to unmap
->> +	 * the first skb's frags
->> +	 */
->> +	if (first_skb && err) {
->> +		int j;
->> +		shinfo = skb_shinfo(first_skb);
->> +		pending_idx = *((u16 *)first_skb->cb);
->> +		start = (frag_get_pending_idx(&shinfo->frags[0]) == pending_idx);
->> +		for (j = start; j < shinfo->nr_frags; j++) {
->> +			pending_idx = frag_get_pending_idx(&shinfo->frags[j]);
->> +			xenvif_idx_unmap(vif, pending_idx);
->> +			xenvif_idx_release(vif, pending_idx,
->> +					   XEN_NETIF_RSP_OKAY);
->
-> _unmap and _release at the same time? IIRC _unmap calls _release.
-Yes, that remained here from old times, thanks for pointing it out.
 
->> +static int xenvif_handle_frag_list(struct xenvif *vif, struct sk_buff *skb)
->> +{
->> +	unsigned int offset = skb_headlen(skb);
->> +	skb_frag_t frags[MAX_SKB_FRAGS];
->> +	int i;
->> +	struct ubuf_info *uarg;
->> +	struct sk_buff *nskb = skb_shinfo(skb)->frag_list;
->> +
->> +	vif->tx_zerocopy_sent += 2;
->> +	vif->tx_frag_overflow++;
->> +
->> +	xenvif_fill_frags(vif, nskb);
->> +	/* Subtract frags size, we will correct it later */
->> +	skb->truesize -= skb->data_len;
->> +	skb->len += nskb->len;
->> +	skb->data_len += nskb->len;
->> +
->> +	/* create a brand new frags array and coalesce there */
->> +	for (i = 0; offset < skb->len; i++) {
->> +		struct page *page;
->> +		void *vaddr;
->> +		unsigned int len;
->> +
->> +		BUG_ON(i >= MAX_SKB_FRAGS);
->> +		page = alloc_page(GFP_ATOMIC|__GFP_COLD);
->> +		if (!page) {
->> +			int j;
->> +			skb->truesize += skb->data_len;
->> +			for (j = 0; j < i; j++)
->> +				put_page(frags[j].page.p);
->> +			return -ENOMEM;
+> 
+> It doesn't make much sense to print out the negative return value, maybe 
+> you meant to print -ret instead?
+
+Heh :)  You're right.  I'll fix that too.
+
+P.
+
+> 
 >> +		}
->> +
->> +		vaddr = kmap_atomic(page);
->
-> Why do you need this? The page is not allocated with __GFP_HIGHMEM.
-Indeed. I took core networking code as example, but the the gfp comes as 
-a parameter.
-
->
->> +	}
->> +	/* swap out with old one */
->> +	memcpy(skb_shinfo(skb)->frags,
->> +	       frags,
->> +	       i * sizeof(skb_frag_t));
->
-> The old frags array is over-written, when do you pages in old frags
-> array?
-You mean release? uarg->callback does that, we don't need the original 
-frags array to do that.
-
->
->> +	skb_shinfo(skb)->nr_frags = i;
->> +	skb->truesize += i * PAGE_SIZE;
->> +
->> +	/* remove traces of mapped pages and frag_list */
->> +	skb_frag_list_init(skb);
->> +	uarg = skb_shinfo(skb)->destructor_arg;
->> +	uarg->callback(uarg, true);
->> +	skb_shinfo(skb)->destructor_arg = NULL;
->> +
->> +	skb_shinfo(nskb)->tx_flags |= SKBTX_DEV_ZEROCOPY;
->> +	kfree_skb(nskb);
->> +
->> +	return 0;
->> +}
->>
->>   static int xenvif_tx_submit(struct xenvif *vif)
->>   {
->> @@ -1258,7 +1400,6 @@ static int xenvif_tx_submit(struct xenvif *vif)
->>   				&vif->pending_tx_info[pending_idx].callback_struct;
->>   		} else {
->>   			/* Schedule a response immediately. */
->> -			skb_shinfo(skb)->destructor_arg = NULL;
->
-> Why? You added this in previous patch but remove it here.
-xenvif_alloc_skb does this now.
-
-
+>>  		else if (!(warned++))
+>>  			set_affinity = 0;
+>>  
