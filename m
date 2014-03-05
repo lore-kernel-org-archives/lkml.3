@@ -1,137 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757884AbaCEEAj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 23:00:39 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:58310 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757793AbaCED7q (ORCPT
+	id S1757919AbaCEEA7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 23:00:59 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55903 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757889AbaCEEA5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 22:59:46 -0500
-Date: Tue, 4 Mar 2014 19:59:41 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Tejun Heo <tj@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Oleg Nesterov <oleg@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Jianguo Wu <wujianguo@huawei.com>,
-        Tim Hockin <thockin@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, cgroups@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: [patch 10/11] mm, memcg: add memory.oom_control notification for
- system oom
-In-Reply-To: <alpine.DEB.2.02.1403041952170.8067@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.02.1403041957140.8067@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1403041952170.8067@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 4 Mar 2014 23:00:57 -0500
+Date: Wed, 5 Mar 2014 12:00:45 +0800
+From: Mark Brown <broonie@kernel.org>
+To: Wenyou Yang <wenyou.yang@atmel.com>
+Cc: nicolas.ferre@atmel.com, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Message-ID: <20140305040045.GC13126@sirena.org.uk>
+References: <1393990141-3157-1-git-send-email-wenyou.yang@atmel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="k/A+UfywgnnvevLW"
+Content-Disposition: inline
+In-Reply-To: <1393990141-3157-1-git-send-email-wenyou.yang@atmel.com>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 202.175.88.218
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] spi: atmel: add missing spi_master_{resume,suspend}
+ calls to PM callbacks
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that process handling system oom conditions have access to a small
-amount of memory reserves, we need a way to notify those process on
-system oom conditions.
 
-When a userspace process waits on the root memcg's memory.oom_control, it
-will wake up anytime there is a system oom condition.
+--k/A+UfywgnnvevLW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This is a special case of oom notifiers since it doesn't subsequently
-notify all memcgs under the root memcg (all memcgs on the system).  We
-don't want to trigger those oom handlers which are set aside specifically
-for true memcg oom notifications that disable their own oom killers to
-enforce their own oom policy, for example.
+On Wed, Mar 05, 2014 at 11:29:01AM +0800, Wenyou Yang wrote:
+> The PM callbacks implemented by the spi-atmel driver don't call
+> spi_master_{resume,suspend}, fix that.
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- Documentation/cgroups/memory.txt | 11 ++++++-----
- include/linux/memcontrol.h       |  5 +++++
- mm/memcontrol.c                  |  9 +++++++++
- mm/oom_kill.c                    |  4 ++++
- 4 files changed, 24 insertions(+), 5 deletions(-)
+Applied, thanks.
 
-diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
---- a/Documentation/cgroups/memory.txt
-+++ b/Documentation/cgroups/memory.txt
-@@ -744,18 +744,19 @@ delivery and gets notification when OOM happens.
- 
- To register a notifier, an application must:
-  - create an eventfd using eventfd(2)
-- - open memory.oom_control file
-+ - open memory.oom_control file for reading
-  - write string like "<event_fd> <fd of memory.oom_control>" to
-    cgroup.event_control
- 
--The application will be notified through eventfd when OOM happens.
--OOM notification doesn't work for the root cgroup.
-+The application will be notified through eventfd when OOM happens, including
-+on system oom when used with the root memcg.
- 
- You can disable the OOM-killer by writing "1" to memory.oom_control file, as:
- 
--	#echo 1 > memory.oom_control
-+	# echo 1 > memory.oom_control
- 
--This operation is only allowed to the top cgroup of a sub-hierarchy.
-+This operation is only allowed to the top cgroup of a sub-hierarchy and does
-+not include the root memcg.
- If OOM-killer is disabled, tasks under cgroup will hang/sleep
- in memory cgroup's OOM-waitqueue when they request accountable memory.
- 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -158,6 +158,7 @@ bool mem_cgroup_oom_synchronize(bool wait);
- 
- extern bool mem_cgroup_alloc_use_oom_reserve(void);
- extern u64 mem_cgroup_root_oom_reserve(void);
-+extern void mem_cgroup_root_oom_notify(void);
- 
- #ifdef CONFIG_MEMCG_SWAP
- extern int do_swap_account;
-@@ -410,6 +411,10 @@ static inline u64 mem_cgroup_root_oom_reserve(void)
- 	return 0;
- }
- 
-+static inline void mem_cgroup_root_oom_notify(void)
-+{
-+}
-+
- static inline void mem_cgroup_inc_page_stat(struct page *page,
- 					    enum mem_cgroup_stat_index idx)
- {
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -5721,6 +5721,15 @@ static void mem_cgroup_oom_notify(struct mem_cgroup *memcg)
- 		mem_cgroup_oom_notify_cb(iter);
- }
- 
-+/*
-+ * Notify any process waiting on the root memcg's memory.oom_control, but do not
-+ * notify any child memcgs to avoid triggering their per-memcg oom handlers.
-+ */
-+void mem_cgroup_root_oom_notify(void)
-+{
-+	mem_cgroup_oom_notify_cb(root_mem_cgroup);
-+}
-+
- static int __mem_cgroup_usage_register_event(struct mem_cgroup *memcg,
- 	struct eventfd_ctx *eventfd, const char *args, enum res_type type)
- {
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -643,6 +643,10 @@ void out_of_memory(struct zonelist *zonelist, gfp_t gfp_mask,
- 		return;
- 	}
- 
-+	/* Avoid waking up processes for oom kills triggered by sysrq */
-+	if (!force_kill)
-+		mem_cgroup_root_oom_notify();
-+
- 	/*
- 	 * Check if there were limitations on the allocation (only relevant for
- 	 * NUMA) that may require different handling.
+--k/A+UfywgnnvevLW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTFqFqAAoJELSic+t+oim9s9kP/io0JQ7rTaDLy979yeHLK+56
+jNQ6ObYhIGVqTl/8XTIUAdNGkfAnyD8UIlEm0yOa8tgJSaazIsROdlx6iRdx+fd8
++989/HhgKfXDZROGBR8f6Vs67OgkU0iS+tAe7sNR0pmAnZj5A+Y33D120VM1l7rN
+gXFcqoPRIaRbE8k3NrAaF02XSW7KiB1QeLJvn+scZg5yuASJoWkCHNQgMTWbvsAV
+5LRnFU0muUbveZfH9a7nqsUQAbA8PJQRxlaH1186VcMidFLa/Tgro1I+oR/GM3pZ
+vsnQJZFkIhhBfCey00IvAODnGhwmWPef+vGurePvtmYNhL6okBSXTmlqZTBZqJq0
+810BbpCS89sPhI/YG5AwEvlOido1SaUdQYZh4s34wEW7emBW2guMNlxDLtZMuMki
+bNqtx9gQjtEQ9FBsJOA6t6bRmjb9vUAmEqqd0ax/ID+/mv/IxE0/L0DQIdgRueIJ
+UZQVWcDPkyF/fZl540XRl1z14FNA2aLzt0psq+cpxnk24yJrnhq0Z8KZJwkVg7KJ
+uFBL/LFXIKJBdybncJPUVK2kC6rzLh5bDGczUtmOnbd0VBowVYrCbVjZYki62Blj
+DMudbdHrM5tl855eFqF1GHKy5NpVypWlb9FXxNOMlAkc2GHiYJISQ6DMEfkFX8pw
+QNCF7mO+rNogDVRuYHDb
+=VvZg
+-----END PGP SIGNATURE-----
+
+--k/A+UfywgnnvevLW--
