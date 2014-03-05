@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757854AbaCEO1p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:27:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41369 "EHLO
+	id S1757865AbaCEO2E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:28:04 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41368 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932253AbaCEO1d (ORCPT
+	with ESMTP id S932251AbaCEO1d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Mar 2014 09:27:33 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andrew Lunn <andrew@lunn.ch>, Bjorn Helgaas <bhelgaas@google.com>,
+Cc: Laurent Dufour <ldufour@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 131/131] PCI: mvebu: Use Device ID and revision from underlying endpoint
-Date: Wed,  5 Mar 2014 14:24:15 +0000
-Message-Id: <1394029455-23128-132-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 130/131] powerpc/crashdump : Fix page frame number check in copy_oldmem_page
+Date: Wed,  5 Mar 2014 14:24:14 +0000
+Message-Id: <1394029455-23128-131-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -27,63 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Lunn <andrew@lunn.ch>
+From: Laurent Dufour <ldufour@linux.vnet.ibm.com>
 
-commit 322a8e91844f4ae2093e0d3d8a318d0ef2596756 upstream.
+commit f5295bd8ea8a65dc5eac608b151386314cb978f1 upstream.
 
-Marvell SoCs place the SoC number into the PCIe endpoint device ID.  The
-SoC stepping is placed into the PCIe revision. The old plat-orion PCIe
-driver allowed this information to be seen in user space with a simple
-lspci command.
+In copy_oldmem_page, the current check using max_pfn and min_low_pfn to
+decide if the page is backed or not, is not valid when the memory layout is
+not continuous.
 
-The new driver places a virtual PCI-PCI bridge on top of these endpoints.
-It has its own hard coded PCI device ID. Thus it is no longer possible to
-see what the SoC is using lspci.
+This happens when running as a QEMU/KVM guest, where RTAS is mapped higher
+in the memory. In that case max_pfn points to the end of RTAS, and a hole
+between the end of the kdump kernel and RTAS is not backed by PTEs. As a
+consequence, the kdump kernel is crashing in copy_oldmem_page when accessing
+in a direct way the pages in that hole.
 
-When initializing the PCI-PCI bridge, set its device ID and revision from
-the underlying endpoint, thus restoring this functionality.  Debian would
-like to use this in order to aid installing the correct DTB file.
+This fix relies on the memblock's service memblock_is_region_memory to
+check if the read page is part or not of the directly accessible memory.
 
-Fixes: 45361a4fe4464 ("pci: PCIe driver for Marvell Armada 370/XP systems")
-Signed-off-by: Andrew Lunn <andrew@lunn.ch>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Acked-by: Jason Cooper <jason@lakedaemon.net>
-[ luis: backported to 3.11: replaced mvebu_readl() by readl() ]
+Signed-off-by: Laurent Dufour <ldufour@linux.vnet.ibm.com>
+Tested-by: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/pci/host/pci-mvebu.c | 11 ++---------
- 1 file changed, 2 insertions(+), 9 deletions(-)
+ arch/powerpc/kernel/crash_dump.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/pci/host/pci-mvebu.c b/drivers/pci/host/pci-mvebu.c
-index 7bf3926..86d3fa4 100644
---- a/drivers/pci/host/pci-mvebu.c
-+++ b/drivers/pci/host/pci-mvebu.c
-@@ -56,14 +56,6 @@
- #define PCIE_DEBUG_CTRL         0x1a60
- #define  PCIE_DEBUG_SOFT_RESET		BIT(20)
+diff --git a/arch/powerpc/kernel/crash_dump.c b/arch/powerpc/kernel/crash_dump.c
+index 779a78c..c16ceb1 100644
+--- a/arch/powerpc/kernel/crash_dump.c
++++ b/arch/powerpc/kernel/crash_dump.c
+@@ -98,17 +98,19 @@ ssize_t copy_oldmem_page(unsigned long pfn, char *buf,
+ 			size_t csize, unsigned long offset, int userbuf)
+ {
+ 	void  *vaddr;
++	phys_addr_t paddr;
  
--/*
-- * This product ID is registered by Marvell, and used when the Marvell
-- * SoC is not the root complex, but an endpoint on the PCIe bus. It is
-- * therefore safe to re-use this PCI ID for our emulated PCI-to-PCI
-- * bridge.
-- */
--#define MARVELL_EMULATED_PCI_PCI_BRIDGE_ID 0x7846
--
- /* PCI configuration space of a PCI-to-PCI bridge */
- struct mvebu_sw_pci_bridge {
- 	u16 vendor;
-@@ -356,7 +348,8 @@ static void mvebu_sw_pci_bridge_init(struct mvebu_pcie_port *port)
+ 	if (!csize)
+ 		return 0;
  
- 	bridge->class = PCI_CLASS_BRIDGE_PCI;
- 	bridge->vendor = PCI_VENDOR_ID_MARVELL;
--	bridge->device = MARVELL_EMULATED_PCI_PCI_BRIDGE_ID;
-+	bridge->device = readl(port->base + PCIE_DEV_ID_OFF) >> 16;
-+	bridge->revision = readl(port->base + PCIE_DEV_REV_OFF) & 0xff;
- 	bridge->header_type = PCI_HEADER_TYPE_BRIDGE;
- 	bridge->cache_line_size = 0x10;
+ 	csize = min_t(size_t, csize, PAGE_SIZE);
++	paddr = pfn << PAGE_SHIFT;
  
+-	if ((min_low_pfn < pfn) && (pfn < max_pfn)) {
+-		vaddr = __va(pfn << PAGE_SHIFT);
++	if (memblock_is_region_memory(paddr, csize)) {
++		vaddr = __va(paddr);
+ 		csize = copy_oldmem_vaddr(vaddr, buf, csize, offset, userbuf);
+ 	} else {
+-		vaddr = __ioremap(pfn << PAGE_SHIFT, PAGE_SIZE, 0);
++		vaddr = __ioremap(paddr, PAGE_SIZE, 0);
+ 		csize = copy_oldmem_vaddr(vaddr, buf, csize, offset, userbuf);
+ 		iounmap(vaddr);
+ 	}
 -- 
 1.9.0
 
