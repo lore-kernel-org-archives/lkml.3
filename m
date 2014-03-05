@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757785AbaCEOgM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:36:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41238 "EHLO
+	id S1758099AbaCEOgm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:36:42 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41229 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757632AbaCEO06 (ORCPT
+	with ESMTP id S1757601AbaCEO0z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:26:58 -0500
+	Wed, 5 Mar 2014 09:26:55 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mike Snitzer <snitzer@redhat.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 107/131] dm thin: fix the error path for the thin device constructor
-Date: Wed,  5 Mar 2014 14:23:51 +0000
-Message-Id: <1394029455-23128-108-git-send-email-luis.henriques@canonical.com>
+Cc: Jan Kara <jack@suse.cz>, Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 105/131] quota: Fix race between dqput() and dquot_scan_active()
+Date: Wed,  5 Mar 2014 14:23:49 +0000
+Message-Id: <1394029455-23128-106-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -27,57 +26,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 1acacc0784aab45627b6009e0e9224886279ac0b upstream.
+commit 1362f4ea20fa63688ba6026e586d9746ff13a846 upstream.
 
-dm_pool_close_thin_device() must be called if dm_set_target_max_io_len()
-fails in thin_ctr().  Otherwise __pool_destroy() will fail because the
-pool will still have an open thin device:
+Currently last dqput() can race with dquot_scan_active() causing it to
+call callback for an already deactivated dquot. The race is as follows:
 
- device-mapper: thin metadata: attempt to close pmd when 1 device(s) are still open
- device-mapper: thin: __pool_destroy: dm_pool_metadata_close() failed.
+CPU1					CPU2
+  dqput()
+    spin_lock(&dq_list_lock);
+    if (atomic_read(&dquot->dq_count) > 1) {
+     - not taken
+    if (test_bit(DQ_ACTIVE_B, &dquot->dq_flags)) {
+      spin_unlock(&dq_list_lock);
+      ->release_dquot(dquot);
+        if (atomic_read(&dquot->dq_count) > 1)
+         - not taken
+					  dquot_scan_active()
+					    spin_lock(&dq_list_lock);
+					    if (!test_bit(DQ_ACTIVE_B, &dquot->dq_flags))
+					     - not taken
+					    atomic_inc(&dquot->dq_count);
+					    spin_unlock(&dq_list_lock);
+        - proceeds to release dquot
+					    ret = fn(dquot, priv);
+					     - called for inactive dquot
 
-Also, must establish error code if failing thin_ctr() because the pool
-is in fail_io mode.
+Fix the problem by making sure possible ->release_dquot() is finished by
+the time we call the callback and new calls to it will notice reference
+dquot_scan_active() has taken and bail out.
 
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Acked-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/md/dm-thin.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ fs/quota/dquot.c | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/md/dm-thin.c b/drivers/md/dm-thin.c
-index 9189838..b75f2a4 100644
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -2812,6 +2812,7 @@ static int thin_ctr(struct dm_target *ti, unsigned argc, char **argv)
- 
- 	if (get_pool_mode(tc->pool) == PM_FAIL) {
- 		ti->error = "Couldn't open thin device, Pool is in fail mode";
-+		r = -EINVAL;
- 		goto bad_thin_open;
- 	}
- 
-@@ -2823,7 +2824,7 @@ static int thin_ctr(struct dm_target *ti, unsigned argc, char **argv)
- 
- 	r = dm_set_target_max_io_len(ti, tc->pool->sectors_per_block);
- 	if (r)
--		goto bad_thin_open;
-+		goto bad_target_max_io_len;
- 
- 	ti->num_flush_bios = 1;
- 	ti->flush_supported = true;
-@@ -2844,6 +2845,8 @@ static int thin_ctr(struct dm_target *ti, unsigned argc, char **argv)
- 
- 	return 0;
- 
-+bad_target_max_io_len:
-+	dm_pool_close_thin_device(tc->td);
- bad_thin_open:
- 	__pool_dec(tc->pool);
- bad_pool_lookup:
+diff --git a/fs/quota/dquot.c b/fs/quota/dquot.c
+index fbad622..e980b6f 100644
+--- a/fs/quota/dquot.c
++++ b/fs/quota/dquot.c
+@@ -581,9 +581,17 @@ int dquot_scan_active(struct super_block *sb,
+ 		dqstats_inc(DQST_LOOKUPS);
+ 		dqput(old_dquot);
+ 		old_dquot = dquot;
+-		ret = fn(dquot, priv);
+-		if (ret < 0)
+-			goto out;
++		/*
++		 * ->release_dquot() can be racing with us. Our reference
++		 * protects us from new calls to it so just wait for any
++		 * outstanding call and recheck the DQ_ACTIVE_B after that.
++		 */
++		wait_on_dquot(dquot);
++		if (test_bit(DQ_ACTIVE_B, &dquot->dq_flags)) {
++			ret = fn(dquot, priv);
++			if (ret < 0)
++				goto out;
++		}
+ 		spin_lock(&dq_list_lock);
+ 		/* We are safe to continue now because our dquot could not
+ 		 * be moved out of the inuse list while we hold the reference */
 -- 
 1.9.0
 
