@@ -1,95 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757401AbaCED5r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 22:57:47 -0500
-Received: from [207.46.163.139] ([207.46.163.139]:47873 "EHLO
-	na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756680AbaCED5p convert rfc822-to-8bit (ORCPT
+	id S1757543AbaCED6E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 22:58:04 -0500
+Received: from na3sys010aog107.obsmtp.com ([74.125.245.82]:37890 "HELO
+	na3sys010aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757326AbaCED6B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 22:57:45 -0500
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Mark Brown <broonie@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>
-CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "Fabio.Estevam@freescale.com" <Fabio.Estevam@freescale.com>,
-        "moinejf@free.fr" <moinejf@free.fr>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>,
-        "tiwai@suse.de" <tiwai@suse.de>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "timur@tabi.org" <timur@tabi.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "denis@eukrea.com" <denis@eukrea.com>,
-        "guangyu.chen@freescale.com" <guangyu.chen@freescale.com>,
-        "mpa@pengutronix.de" <mpa@pengutronix.de>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>
-Subject: RE: [alsa-devel] [PATCH 01/10] ASoC: core: Add
- snd_soc_dai_set_tdm_slot_xlate().
-Thread-Topic: [alsa-devel] [PATCH 01/10] ASoC: core: Add
- snd_soc_dai_set_tdm_slot_xlate().
-Thread-Index: AQHPMrCgZUeIw1X2K0GrJD0FMlCJVprMPHAAgAWnPICAAADBIA==
-Date: Wed, 5 Mar 2014 03:55:50 +0000
-Message-ID: <6991b4aaf2a34f8180b24f7a2ae8355a@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1393387175-15539-1-git-send-email-Li.Xiubo@freescale.com>
- <1393387175-15539-2-git-send-email-Li.Xiubo@freescale.com>
- <5311DE70.7000901@metafoo.de> <20140305033935.GY13126@sirena.org.uk>
-In-Reply-To: <20140305033935.GY13126@sirena.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 01415BB535
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(24454002)(199002)(189002)(164054003)(51704005)(83322001)(86362001)(94946001)(59766001)(77982001)(46102001)(33646001)(85852003)(81686001)(65816001)(80022001)(66066001)(93136001)(54356001)(53806001)(51856001)(74502001)(76576001)(94316002)(95416001)(93516002)(47446002)(80976001)(81542001)(76786001)(76796001)(63696002)(92566001)(85306002)(31966008)(79102001)(69226001)(81342001)(74366001)(74706001)(74316001)(56816005)(47976001)(50986001)(90146001)(81816001)(4396001)(83072002)(49866001)(54316002)(76482001)(87936001)(2656002)(95666003)(47736001)(87266001)(74876001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB254;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:ACF3FC33.A4DAAF13.53DCBDDB.48FAE1B8.20263;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 4 Mar 2014 22:58:01 -0500
+From: Roland Dreier <roland@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Shaohua Li <shaohua.li@intel.com>,
+        Arjan van de Ven <arjan@infradead.org>
+Subject: [PATCH] Revert "driver core: synchronize device shutdown"
+Date: Tue,  4 Mar 2014 19:57:51 -0800
+Message-Id: <1393991871-1743-1-git-send-email-roland@kernel.org>
+X-Mailer: git-send-email 1.9.0
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Roland Dreier <roland@purestorage.com>
 
-> Subject: Re: [alsa-devel] [PATCH 01/10] ASoC: core: Add
-> snd_soc_dai_set_tdm_slot_xlate().
-> 
-> On Sat, Mar 01, 2014 at 02:19:44PM +0100, Lars-Peter Clausen wrote:
-> 
-> > I'm not quite sure I fully understand what this patch is trying to
-> > solve. It adds a variant snd_soc_dai_set_tdm_slot() that instead of
-> > taking a rx and tx mask calculates the masks based on the number of
-> > slots? In that case I don't really see how the xlate in the name
-> > relates to that. xlate is something you'd typically expect in a
-> > devicetree context. Maybe one should be called
-> > snd_soc_dai_set_tdm_slot() and the other
-> > snd_soc_dai_set_tdm_slot_and_masks()?
-> 
-> > But another question is do we really need this? I don't see the
-> > problem that is solved by this patchset.
-> 
-> My understanding is that the patch set aims to provide a way of using
-> the TDM features of drivers from DT, providing a standardised format for
-> expressing the TDM setup in the DT.  I've not looked at the actual code
-> yet though.
+This reverts commit 401097ea4b89846d66ac78f7f108d49c2e922d9c.  The
+original changelog said:
 
-@Lars,
+    A patch series to make .shutdown execute asynchronously.  Some drivers's
+    shutdown can take a lot of time.  The patches can help save some shutdown
+    time.  The patches use Arjan's async API.
 
-Sorry for late, many mails had been discard by my outlook, including the
-Last one.
+    This patch:
 
-@Mark, @Lars,
+    synchronize all tasks submitted by .shutdown
 
-This adds the function of snd_soc_dai_set_tdm_slot_xlate, which is almost
-One new signature of snd_soc_dai_set_tdm_slot discarding the mask
-Parameters, which could be generated by itself.
+However, I'm not able to find any evidence that any other patches from
+this series were applied, nor am I able to find any async tasks that are
+scheduled in a .shutdown context.
 
-And I want to provide one standard method for the drivers who are parsing
-The TDM information from the DT node. 
+On the other hand, we see occasional hangs on shutdown that appear to be
+caused by the async_synchronize_full() in device_shutdown() waiting
+forever for the async probing in sd if a SCSI disk shows up at just the
+wrong time — the system starts the probe, but begins shutting down and
+tears down too much of the SCSI driver to finish the probe.
 
+If we had any async shutdown tasks, I guess the right fix would be to
+create a "shutdown" async domain and have device_shutdown() only wait
+for that domain.  But since there apparently are no async shutdown
+tasks, we can just revert the waiting.
 
-Thanks,
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+---
+ drivers/base/core.c | 2 --
+ 1 file changed, 2 deletions(-)
 
---
-Best Regards,
-Xiubo
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index 2b567177ef78..afea3697fa2e 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -23,7 +23,6 @@
+ #include <linux/genhd.h>
+ #include <linux/kallsyms.h>
+ #include <linux/mutex.h>
+-#include <linux/async.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/netdevice.h>
+ #include <linux/sysfs.h>
+@@ -2003,7 +2002,6 @@ void device_shutdown(void)
+ 		spin_lock(&devices_kset->list_lock);
+ 	}
+ 	spin_unlock(&devices_kset->list_lock);
+-	async_synchronize_full();
+ }
+ 
+ /*
+-- 
+1.9.0
 
