@@ -1,141 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756236AbaCEAEK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 19:04:10 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:47250 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755523AbaCEAEG (ORCPT
+	id S1756290AbaCEAER (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 19:04:17 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:48658 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756243AbaCEAEN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 19:04:06 -0500
-Date: Tue, 4 Mar 2014 16:03:25 -0800
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-0ac09f9f8cd1fb028a48330edba6023d347d3cea@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, acme@ghostprotocols.net,
-        seiji.aguchi@hds.com, jolsa@redhat.com, vincent.weaver@maine.edu,
-        rostedt@goodmis.org, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        acme@ghostprotocols.net, seiji.aguchi@hds.com, jolsa@redhat.com,
-        vincent.weaver@maine.edu, rostedt@goodmis.org, tglx@linutronix.de,
-        hpa@linux.intel.com
-In-Reply-To: <20140228160526.GD1133@krava.brq.redhat.com>
-References: <alpine.DEB.2.10.1402211701380.6395@vincent-weaver-1.um.maine.edu>
-	<20140228160526.GD1133@krava.brq.redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, trace:
-  Fix CR2 corruption when tracing page faults
-Git-Commit-ID: 0ac09f9f8cd1fb028a48330edba6023d347d3cea
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 4 Mar 2014 19:04:13 -0500
+Date: Wed, 5 Mar 2014 00:04:11 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: George Spelvin <linux@horizon.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Update of file offset on write() etc. is non-atomic with I/O
+Message-ID: <20140305000411.GV18016@ZenIV.linux.org.uk>
+References: <CA+55aFyRJqb1HkVESdZDOcQ+20t-s-JWxZa15SHJpGU+k=6www@mail.gmail.com>
+ <20140303232858.GO18016@ZenIV.linux.org.uk>
+ <CA+55aFyEXgMh61P3cmjZzw3RxitiL0oymWSyUsiMp96iJ+98Og@mail.gmail.com>
+ <20140303234207.GQ18016@ZenIV.linux.org.uk>
+ <CA+55aFyWorcX0qYAcD2bj=bOqa-X6Gmb_Ph4g25nqwSPxo4XSg@mail.gmail.com>
+ <20140304002342.GS18016@ZenIV.linux.org.uk>
+ <CA+55aFzzt+BK3YQf08KGXapL-sXjL=LkQcBvwTYBAZosNgsSgw@mail.gmail.com>
+ <20140304010517.GT18016@ZenIV.linux.org.uk>
+ <20140304200027.GA11932@ZenIV.linux.org.uk>
+ <CA+55aFy2G5e0oBNWwmEiA5VS9+bB37JRNV2=X161FKEeH_odwA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <CA+55aFy2G5e0oBNWwmEiA5VS9+bB37JRNV2=X161FKEeH_odwA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0ac09f9f8cd1fb028a48330edba6023d347d3cea
-Gitweb:     http://git.kernel.org/tip/0ac09f9f8cd1fb028a48330edba6023d347d3cea
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Fri, 28 Feb 2014 17:05:26 +0100
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 4 Mar 2014 16:00:14 -0800
+On Tue, Mar 04, 2014 at 01:17:50PM -0800, Linus Torvalds wrote:
+> On Tue, Mar 4, 2014 at 12:00 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >
+> > OK, with the attached set (the first one is essentially unchanged from
+> > your first one), it seems to work and produce better code on all targets
+> > I've tried.  Comments?
+> 
+> I'm certainly ok with it. You seem to have left the fput_light()
+> function around, though, despite removing fget_[raw_]light(). That
+> seems a bit silly, since there is no valid use any more apart from
+> net/socket.c that now doesn't balance things properly.
 
-x86, trace: Fix CR2 corruption when tracing page faults
+There's also a pile of crap around sockfd_lookup/sockfd_put, related
+to that.   Moreover, there's net/compat.c, which probably ought to
+have the compat syscalls themselves moved to net/socket.c (under
+ifdef CONFIG_COMPAT) and switched to sockfd_lookup_light().
+There's l2tp_tunnel_sock_lookup(), which is simply broken - it assumes
+that if tunnel->fd still resolves to a socket, that socket must
+be l2tp one.  Trivial to drive into BUG_ON(), in queue_work() callback,
+no less...  There's bluetooth, assuming that pretty much the same
+(that if it got a file descriptor that resolves to a socket, it must
+be a bluetooth one).  BTW, I wonder what will happen if one gives
+iscsi_sw_tcp_conn_bind() descriptor of a socket of sufficiently
+weird sort...
 
-The trace_do_page_fault function trigger tracepoint
-and then handles the actual page fault.
+Then there's staging/usbip with its sockfd_to_socket(), which is more or
+less parallel to sockfd_lookup().  And open-coded analogs in nbd and
+ncpfs...
 
-This could lead to error if the tracepoint caused page
-fault. The original cr2 value gets lost and the original
-page fault handler kills current process with SIGSEGV.
+> > I've also pushed those (on top of old ocfs2 fix) into vfs.git#for-linus,
+> > if you prefer to read it that way.  Should propagate in a few...
+> 
+> Should I pull?
+> 
+> I also get the feeling that the first patch should likely be marked
+> for stable. Hmm?
 
-This happens if you record page faults with callchain
-data, the user part of it will cause tracepoint handler
-to page fault:
-
-  # perf record -g -e exceptions:page_fault_user ls
-
-Fixing this by saving the original cr2 value
-and using it after tracepoint handler is done.
-
-v2: Moving the cr2 read before exception_enter, because
-    it could trigger tracepoint as well.
-
-Reported-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-Tested-by: Vince Weaver <vincent.weaver@maine.edu>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.10.1402211701380.6395@vincent-weaver-1.um.maine.edu
-Link: http://lkml.kernel.org/r/20140228160526.GD1133@krava.brq.redhat.com
----
- arch/x86/mm/fault.c | 20 +++++++++++++-------
- 1 file changed, 13 insertions(+), 7 deletions(-)
-
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 6dea040..e7fa28b 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -1022,11 +1022,11 @@ static inline bool smap_violation(int error_code, struct pt_regs *regs)
-  * routines.
-  */
- static void __kprobes
--__do_page_fault(struct pt_regs *regs, unsigned long error_code)
-+__do_page_fault(struct pt_regs *regs, unsigned long error_code,
-+		unsigned long address)
- {
- 	struct vm_area_struct *vma;
- 	struct task_struct *tsk;
--	unsigned long address;
- 	struct mm_struct *mm;
- 	int fault;
- 	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE;
-@@ -1034,9 +1034,6 @@ __do_page_fault(struct pt_regs *regs, unsigned long error_code)
- 	tsk = current;
- 	mm = tsk->mm;
- 
--	/* Get the faulting address: */
--	address = read_cr2();
--
- 	/*
- 	 * Detect and handle instructions that would cause a page fault for
- 	 * both a tracked kernel page and a userspace page.
-@@ -1252,9 +1249,11 @@ dotraplinkage void __kprobes
- do_page_fault(struct pt_regs *regs, unsigned long error_code)
- {
- 	enum ctx_state prev_state;
-+	/* Get the faulting address: */
-+	unsigned long address = read_cr2();
- 
- 	prev_state = exception_enter();
--	__do_page_fault(regs, error_code);
-+	__do_page_fault(regs, error_code, address);
- 	exception_exit(prev_state);
- }
- 
-@@ -1271,9 +1270,16 @@ dotraplinkage void __kprobes
- trace_do_page_fault(struct pt_regs *regs, unsigned long error_code)
- {
- 	enum ctx_state prev_state;
-+	/*
-+	 * The exception_enter and tracepoint processing could
-+	 * trigger another page faults (user space callchain
-+	 * reading) and destroy the original cr2 value, so read
-+	 * the faulting address now.
-+	 */
-+	unsigned long address = read_cr2();
- 
- 	prev_state = exception_enter();
- 	trace_page_fault_entries(regs, error_code);
--	__do_page_fault(regs, error_code);
-+	__do_page_fault(regs, error_code, address);
- 	exception_exit(prev_state);
- }
+It should; I'll mark it such when I send a pull request.  I really want
+to sort the situation with sockfd_lookup() and friends out, though - at
+least to the point where I would understand how painful the fixes
+will be.
