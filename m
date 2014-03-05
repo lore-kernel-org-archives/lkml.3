@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932530AbaCEOin (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:38:43 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41836 "EHLO
+	id S1758365AbaCEOj0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:39:26 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41851 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758300AbaCEOij (ORCPT
+	with ESMTP id S932525AbaCEOim (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:38:39 -0500
+	Wed, 5 Mar 2014 09:38:42 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andrew Honig <ahonig@google.com>, Paolo Bonzini <pbonzini@redhat.com>,
+Cc: Peter Zijlstra <peterz@infradead.org>, Paul Mackerras <paulus@samba.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Stephane Eranian <eranian@google.com>, Dave Jones <davej@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 60/62] kvm: x86: fix emulator buffer overflow (CVE-2014-0049)
-Date: Wed,  5 Mar 2014 14:37:04 +0000
-Message-Id: <1394030226-26652-61-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 58/62] perf/x86: Fix event scheduling
+Date: Wed,  5 Mar 2014 14:37:02 +0000
+Message-Id: <1394030226-26652-59-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
 References: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
@@ -27,53 +30,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Honig <ahonig@google.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit a08d3b3b99efd509133946056531cdf8f3a0c09b upstream.
+commit 26e61e8939b1fe8729572dabe9a9e97d930dd4f6 upstream.
 
-The problem occurs when the guest performs a pusha with the stack
-address pointing to an mmio address (or an invalid guest physical
-address) to start with, but then extending into an ordinary guest
-physical address.  When doing repeated emulated pushes
-emulator_read_write sets mmio_needed to 1 on the first one.  On a
-later push when the stack points to regular memory,
-mmio_nr_fragments is set to 0, but mmio_is_needed is not set to 0.
+Vince "Super Tester" Weaver reported a new round of syscall fuzzing (Trinity) failures,
+with perf WARN_ON()s triggering. He also provided traces of the failures.
 
-As a result, KVM exits to userspace, and then returns to
-complete_emulated_mmio.  In complete_emulated_mmio
-vcpu->mmio_cur_fragment is incremented.  The termination condition of
-vcpu->mmio_cur_fragment == vcpu->mmio_nr_fragments is never achieved.
-The code bounces back and fourth to userspace incrementing
-mmio_cur_fragment past it's buffer.  If the guest does nothing else it
-eventually leads to a a crash on a memcpy from invalid memory address.
+This is I think the relevant bit:
 
-However if a guest code can cause the vm to be destroyed in another
-vcpu with excellent timing, then kvm_clear_async_pf_completion_queue
-can be used by the guest to control the data that's pointed to by the
-call to cancel_work_item, which can be used to gain execution.
+	>    pec_1076_warn-2804  [000] d...   147.926153: x86_pmu_disable: x86_pmu_disable
+	>    pec_1076_warn-2804  [000] d...   147.926153: x86_pmu_state: Events: {
+	>    pec_1076_warn-2804  [000] d...   147.926156: x86_pmu_state:   0: state: .R config: ffffffffffffffff (          (null))
+	>    pec_1076_warn-2804  [000] d...   147.926158: x86_pmu_state:   33: state: AR config: 0 (ffff88011ac99800)
+	>    pec_1076_warn-2804  [000] d...   147.926159: x86_pmu_state: }
+	>    pec_1076_warn-2804  [000] d...   147.926160: x86_pmu_state: n_events: 1, n_added: 0, n_txn: 1
+	>    pec_1076_warn-2804  [000] d...   147.926161: x86_pmu_state: Assignment: {
+	>    pec_1076_warn-2804  [000] d...   147.926162: x86_pmu_state:   0->33 tag: 1 config: 0 (ffff88011ac99800)
+	>    pec_1076_warn-2804  [000] d...   147.926163: x86_pmu_state: }
+	>    pec_1076_warn-2804  [000] d...   147.926166: collect_events: Adding event: 1 (ffff880119ec8800)
 
-Fixes: f78146b0f9230765c6315b2e14f56112513389ad
-Signed-off-by: Andrew Honig <ahonig@google.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-[ luis: backported to 3.5: adjusted context ]
+So we add the insn:p event (fd[23]).
+
+At this point we should have:
+
+  n_events = 2, n_added = 1, n_txn = 1
+
+	>    pec_1076_warn-2804  [000] d...   147.926170: collect_events: Adding event: 0 (ffff8800c9e01800)
+	>    pec_1076_warn-2804  [000] d...   147.926172: collect_events: Adding event: 4 (ffff8800cbab2c00)
+
+We try and add the {BP,cycles,br_insn} group (fd[3], fd[4], fd[15]).
+These events are 0:cycles and 4:br_insn, the BP event isn't x86_pmu so
+that's not visible.
+
+	group_sched_in()
+	  pmu->start_txn() /* nop - BP pmu */
+	  event_sched_in()
+	     event->pmu->add()
+
+So here we should end up with:
+
+  0: n_events = 3, n_added = 2, n_txn = 2
+  4: n_events = 4, n_added = 3, n_txn = 3
+
+But seeing the below state on x86_pmu_enable(), the must have failed,
+because the 0 and 4 events aren't there anymore.
+
+Looking at group_sched_in(), since the BP is the leader, its
+event_sched_in() must have succeeded, for otherwise we would not have
+seen the sibling adds.
+
+But since neither 0 or 4 are in the below state; their event_sched_in()
+must have failed; but I don't see why, the complete state: 0,0,1:p,4
+fits perfectly fine on a core2.
+
+However, since we try and schedule 4 it means the 0 event must have
+succeeded!  Therefore the 4 event must have failed, its failure will
+have put group_sched_in() into the fail path, which will call:
+
+	event_sched_out()
+	  event->pmu->del()
+
+on 0 and the BP event.
+
+Now x86_pmu_del() will reduce n_events; but it will not reduce n_added;
+giving what we see below:
+
+ n_event = 2, n_added = 2, n_txn = 2
+
+	>    pec_1076_warn-2804  [000] d...   147.926177: x86_pmu_enable: x86_pmu_enable
+	>    pec_1076_warn-2804  [000] d...   147.926177: x86_pmu_state: Events: {
+	>    pec_1076_warn-2804  [000] d...   147.926179: x86_pmu_state:   0: state: .R config: ffffffffffffffff (          (null))
+	>    pec_1076_warn-2804  [000] d...   147.926181: x86_pmu_state:   33: state: AR config: 0 (ffff88011ac99800)
+	>    pec_1076_warn-2804  [000] d...   147.926182: x86_pmu_state: }
+	>    pec_1076_warn-2804  [000] d...   147.926184: x86_pmu_state: n_events: 2, n_added: 2, n_txn: 2
+	>    pec_1076_warn-2804  [000] d...   147.926184: x86_pmu_state: Assignment: {
+	>    pec_1076_warn-2804  [000] d...   147.926186: x86_pmu_state:   0->33 tag: 1 config: 0 (ffff88011ac99800)
+	>    pec_1076_warn-2804  [000] d...   147.926188: x86_pmu_state:   1->0 tag: 1 config: 1 (ffff880119ec8800)
+	>    pec_1076_warn-2804  [000] d...   147.926188: x86_pmu_state: }
+	>    pec_1076_warn-2804  [000] d...   147.926190: x86_pmu_enable: S0: hwc->idx: 33, hwc->last_cpu: 0, hwc->last_tag: 1 hwc->state: 0
+
+So the problem is that x86_pmu_del(), when called from a
+group_sched_in() that fails (for whatever reason), and without x86_pmu
+TXN support (because the leader is !x86_pmu), will corrupt the n_added
+state.
+
+Reported-and-Tested-by: Vince Weaver <vincent.weaver@maine.edu>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Dave Jones <davej@redhat.com>
+Link: http://lkml.kernel.org/r/20140221150312.GF3104@twins.programming.kicks-ass.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kvm/x86.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/cpu/perf_event.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 494817e..122ee5f 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -5469,7 +5469,7 @@ static int complete_mmio(struct kvm_vcpu *vcpu)
- 		frag = &vcpu->mmio_fragments[vcpu->mmio_cur_fragment++];
- 		if (!vcpu->mmio_is_write)
- 			memcpy(frag->data, run->mmio.data, frag->len);
--		if (vcpu->mmio_cur_fragment == vcpu->mmio_nr_fragments) {
-+		if (vcpu->mmio_cur_fragment >= vcpu->mmio_nr_fragments) {
- 			vcpu->mmio_needed = 0;
- 			if (vcpu->mmio_is_write)
- 				return 1;
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index c4706cf..3396fc4 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1162,6 +1162,9 @@ static void x86_pmu_del(struct perf_event *event, int flags)
+ 	for (i = 0; i < cpuc->n_events; i++) {
+ 		if (event == cpuc->event_list[i]) {
+ 
++			if (i >= cpuc->n_events - cpuc->n_added)
++				--cpuc->n_added;
++
+ 			if (x86_pmu.put_event_constraints)
+ 				x86_pmu.put_event_constraints(cpuc, event);
+ 
 -- 
 1.9.0
 
