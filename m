@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932413AbaCEOiJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:38:09 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41694 "EHLO
+	id S1758263AbaCEOic (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:38:32 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41794 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932341AbaCEOh7 (ORCPT
+	with ESMTP id S1754423AbaCEOi1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:37:59 -0500
+	Wed, 5 Mar 2014 09:38:27 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Joel Uckelman <joel@lightboxtechnologies.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Vinson Lee <vlee@twopensource.com>,
+Cc: Jean Delvare <jdelvare@suse.de>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Doug Thompson <dougthompson@xmission.com>,
+        Borislav Petkov <bp@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 28/62] perf tools: Fix cache event name generation
-Date: Wed,  5 Mar 2014 14:36:32 +0000
-Message-Id: <1394030226-26652-29-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 51/62] i7300_edac: Fix device reference count
+Date: Wed,  5 Mar 2014 14:36:55 +0000
+Message-Id: <1394030226-26652-52-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
 References: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
@@ -33,46 +30,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Jean Delvare <jdelvare@suse.de>
 
-commit 275ef3878f698941353780440fec6926107a320b upstream.
+commit 75135da0d68419ef8a925f4c1d5f63d8046e314d upstream.
 
-If the event name is specified with all 3 components, the last one
-overwrites the previous one during the name composing within the
-parse_events_add_cache function.
+pci_get_device() decrements the reference count of "from" (last
+argument) so when we break off the loop successfully we have only one
+device reference - and we don't know which device we have. If we want
+a reference to each device, we must take them explicitly and let
+the pci_get_device() walk complete to avoid duplicate references.
 
-Fixing this by properly adjusting the string index.
+This is serious, as over-putting device references will cause
+the device to eventually disappear. Without this fix, the kernel
+crashes after a few insmod/rmmod cycles.
 
-Reported-by: Joel Uckelman <joel@lightboxtechnologies.com>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Joel Uckelman <joel@lightboxtechnologies.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LPU-Reference: 20120905175133.GA18352@krava.brq.redhat.com
-[ committer note: Remove the newline fix, done already in 42e1fb7 ]
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Vinson Lee <vlee@twopensource.com>
+Tested on an Intel S7000FC4UR system with a 7300 chipset.
+
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Link: http://lkml.kernel.org/r/20140224111656.09bbb7ed@endymion.delvare
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Doug Thompson <dougthompson@xmission.com>
+Signed-off-by: Borislav Petkov <bp@suse.de>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- tools/perf/util/parse-events.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/edac/i7300_edac.c | 38 ++++++++++++++++++++------------------
+ 1 file changed, 20 insertions(+), 18 deletions(-)
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index d2006bd..5f99cec 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -420,7 +420,7 @@ int parse_events_add_cache(struct list_head **list, int *idx,
- 	for (i = 0; (i < 2) && (op_result[i]); i++) {
- 		char *str = op_result[i];
+diff --git a/drivers/edac/i7300_edac.c b/drivers/edac/i7300_edac.c
+index 856a250..3fa8c20 100644
+--- a/drivers/edac/i7300_edac.c
++++ b/drivers/edac/i7300_edac.c
+@@ -943,33 +943,35 @@ static int __devinit i7300_get_devices(struct mem_ctl_info *mci)
  
--		snprintf(name + n, MAX_NAME_LEN - n, "-%s", str);
-+		n += snprintf(name + n, MAX_NAME_LEN - n, "-%s", str);
+ 	/* Attempt to 'get' the MCH register we want */
+ 	pdev = NULL;
+-	while (!pvt->pci_dev_16_1_fsb_addr_map ||
+-	       !pvt->pci_dev_16_2_fsb_err_regs) {
+-		pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
+-				      PCI_DEVICE_ID_INTEL_I7300_MCH_ERR, pdev);
+-		if (!pdev) {
+-			/* End of list, leave */
+-			i7300_printk(KERN_ERR,
+-				"'system address,Process Bus' "
+-				"device not found:"
+-				"vendor 0x%x device 0x%x ERR funcs "
+-				"(broken BIOS?)\n",
+-				PCI_VENDOR_ID_INTEL,
+-				PCI_DEVICE_ID_INTEL_I7300_MCH_ERR);
+-			goto error;
+-		}
+-
++	while ((pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
++				      PCI_DEVICE_ID_INTEL_I7300_MCH_ERR,
++				      pdev))) {
+ 		/* Store device 16 funcs 1 and 2 */
+ 		switch (PCI_FUNC(pdev->devfn)) {
+ 		case 1:
+-			pvt->pci_dev_16_1_fsb_addr_map = pdev;
++			if (!pvt->pci_dev_16_1_fsb_addr_map)
++				pvt->pci_dev_16_1_fsb_addr_map =
++							pci_dev_get(pdev);
+ 			break;
+ 		case 2:
+-			pvt->pci_dev_16_2_fsb_err_regs = pdev;
++			if (!pvt->pci_dev_16_2_fsb_err_regs)
++				pvt->pci_dev_16_2_fsb_err_regs =
++							pci_dev_get(pdev);
+ 			break;
+ 		}
+ 	}
  
- 		if (cache_op == -1) {
- 			cache_op = parse_aliases(str, hw_cache_op,
++	if (!pvt->pci_dev_16_1_fsb_addr_map ||
++	    !pvt->pci_dev_16_2_fsb_err_regs) {
++		/* At least one device was not found */
++		i7300_printk(KERN_ERR,
++			"'system address,Process Bus' device not found:"
++			"vendor 0x%x device 0x%x ERR funcs (broken BIOS?)\n",
++			PCI_VENDOR_ID_INTEL,
++			PCI_DEVICE_ID_INTEL_I7300_MCH_ERR);
++		goto error;
++	}
++
+ 	debugf1("System Address, processor bus- PCI Bus ID: %s  %x:%x\n",
+ 		pci_name(pvt->pci_dev_16_0_fsb_ctlr),
+ 		pvt->pci_dev_16_0_fsb_ctlr->vendor,
 -- 
 1.9.0
 
