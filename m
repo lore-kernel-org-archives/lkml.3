@@ -1,39 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932172AbaCETxV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 14:53:21 -0500
-Received: from fsunotes1.ferris.edu ([161.57.5.15]:59139 "EHLO
-	fsunotes1.ferris.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753986AbaCETxS convert rfc822-to-8bit (ORCPT
+	id S1754964AbaCET7j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 14:59:39 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:33718 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752392AbaCET7h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 14:53:18 -0500
-X-Greylist: delayed 903 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Mar 2014 14:53:18 EST
-X-Disclaimed: 1
+	Wed, 5 Mar 2014 14:59:37 -0500
+Message-ID: <531781E5.8010000@oracle.com>
+Date: Wed, 05 Mar 2014 12:58:29 -0700
+From: Khalid Aziz <khalid.aziz@oracle.com>
+Organization: Oracle Corp
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Importance: Normal
-X-Priority: 3 (Normal)
-In-Reply-To: 
-References: 
-Subject: 
-From: Diane_P_Cleland/FSU%FERRIS@ferris.edu
-Date: Wed, 5 Mar 2014 14:36:57 -0500
-Message-ID: <OF798CFA99.455BCBAA-ON85257C92.006BC0D9-85257C92.006BC0E2@ferris.edu>
-X-Mailer: Lotus Domino Web Server Release 8.5.3FP6 November 21, 2013
-X-MIMETrack: Serialize by HTTP Server on FSUNOTES1/FSU(Release 8.5.3FP6|November 21, 2013) at
- 03/05/2014 02:36:57 PM,
-	Serialize complete at 03/05/2014 02:36:57 PM,
-	Itemize by HTTP Server on FSUNOTES1/FSU(Release 8.5.3FP6|November 21, 2013) at
- 03/05/2014 02:36:57 PM,
-	Serialize by Router on FSUNOTES1/FSU(Release 8.5.3FP6|November 21, 2013) at
- 03/05/2014 02:53:18 PM,
-	Serialize complete at 03/05/2014 02:53:18 PM
-Content-Transfer-Encoding: 7BIT
-Content-Type: text/plain; charset=US-ASCII
-X-Notes-Item: linux-kernel@vger.kernel.org; name=AltBlindCopyTo
-To: unlisted-recipients:; (no To-header on input)
+To: Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        akpm@linux-foundation.org, viro@zeniv.linux.org.uk, oleg@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] [PATCH] Pre-emption control for userspace
+References: <1393870033-31076-1-git-send-email-khalid.aziz@oracle.com> <531641A8.40306@zytor.com> <53164824.3000704@oracle.com> <20140304222356.41c55bbc@alan.etchedpixels.co.uk> <5316574F.6040105@oracle.com> <alpine.DEB.2.02.1403050129570.18573@ionos.tec.linutronix.de> <8738ix5uyk.fsf@tassilo.jf.intel.com> <20140305111006.GT9987@twins.programming.kicks-ass.net>
+In-Reply-To: <20140305111006.GT9987@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your email as been awarded sum of 500,000.00 GBP as charity Compensation from Qatar Foundation,contact(
-morgananderson11@sbcglobal.net)
+On 03/05/2014 04:10 AM, Peter Zijlstra wrote:
+> On Tue, Mar 04, 2014 at 04:51:15PM -0800, Andi Kleen wrote:
+>> Anything else?
+>
+> Proxy execution; its a form of PI that works for arbitrary scheduling
+> policies (thus also very much including fair).
+>
+> With that what you effectively end up with is the lock holder running
+> 'boosted' by the runtime of its blocked chain until the entire chain
+> runs out of time, at which point preemption doesn't matter anyhow.
+>
+
+Hello Peter,
+
+I read through the concept of proxy execution and it is a very 
+interesting concept. I come from many years of realtime and embeddded 
+systems development and I can easily recall various problems in the past 
+that can be solved or helped by this. Looking at the current problem I 
+am trying to solve with databases and JVM, I run into the same issue I 
+described in my earlier email. Proxy execution is a post-contention 
+solution. By the time proxy execution can do something for my case, I 
+have already paid the price of contention and a context switch which is 
+what I am trying to avoid. For a critical section that is very short 
+compared to the size of execution thread, which is the case I am looking 
+at, avoiding preemption in the middle of that short critical section 
+helps much more than dealing with lock contention later on. The goal 
+here is to avoid lock contention and associated cost. I do understand 
+the cost of dealing with lock contention poorly and that can easily be 
+much bigger cost, but I am looking into avoiding even getting there.
+
+Thanks,
+Khalid
