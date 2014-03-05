@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756778AbaCEBRc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 20:17:32 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:49843 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756655AbaCEBRL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 20:17:11 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <53167B15.3020105@roeck-us.net>
-Date: Tue, 04 Mar 2014 17:17:09 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3.13 000/172] 3.13.6-stable review
-References: <20140304200259.626667112@linuxfoundation.org>
-In-Reply-To: <20140304200259.626667112@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1756095AbaCEBTb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 20:19:31 -0500
+Received: from ozlabs.org ([203.10.76.45]:50333 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753299AbaCEBTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 20:19:30 -0500
+Message-ID: <1393982366.13402.0.camel@concordia>
+Subject: Re: [PATCH v3 03/11] perf: provide a common perf_event_nop_0() for
+ use with .event_idx
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: Cody P Schafer <cody@linux.vnet.ibm.com>
+Cc: Linux PPC <linuxppc-dev@lists.ozlabs.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, scottwood@freescale.com
+Date: Wed, 05 Mar 2014 12:19:26 +1100
+In-Reply-To: <53157A45.4080600@linux.vnet.ibm.com>
+References: <20140304051936.97CBF2C020A@ozlabs.org>
+	 <53157A45.4080600@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/2014 12:01 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.13.6 release.
-> There are 172 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Thu Mar  6 20:02:29 UTC 2014.
-> Anything received after that time might be too late.
->
+On Mon, 2014-03-03 at 23:01 -0800, Cody P Schafer wrote:
+> On 03/03/2014 09:19 PM, Michael Ellerman wrote:
+> > On Thu, 2014-27-02 at 21:04:56 UTC, Cody P Schafer wrote:
+> >> Rather an having every pmu that needs a function that just returns 0 for
+> >> .event_idx define their own copy, reuse the one in kernel/events/core.c.
+> >>
+> >> Rename from perf_swevent_event_idx() because we're no longer using it
+> >> for just software events. Naming is based on the perf_pmu_nop_*()
+> >> functions.
+> >
+> > You could just use perf_pmu_nop_int() directly.
+> 
+> No, .event_idx needs something that takes a (struct perf_event *), 
+> perf_pmu_nop_int() takes a (struct pmu *).
 
-Build results:
-	total: 126 pass: 122 skipped: 4 fail: 0
+Yeah, duh.
 
-qemu tests all passed.
+cheers
 
-Results are as expected. Details are available at http://server.roeck-us.net:8010/builders.
-
-Guenter
 
