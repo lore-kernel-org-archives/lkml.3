@@ -1,49 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752567AbaCEFHs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 00:07:48 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:46262 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751282AbaCEFHr (ORCPT
+	id S1752726AbaCEFJI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 00:09:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46090 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275AbaCEFJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 00:07:47 -0500
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: rafael.j.wysocki@intel.com, bhelgaas@google.com
-Cc: linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] [RESEND] PNP: remove deprecated IRQF_DISABLED
-Date: Wed,  5 Mar 2014 06:07:41 +0100
-Message-Id: <1393996061-3044-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1386582146-4695-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1386582146-4695-1-git-send-email-michael.opdenacker@free-electrons.com>
+	Wed, 5 Mar 2014 00:09:07 -0500
+Date: Tue, 4 Mar 2014 21:09:27 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jon Ringle <jringle@gridpoint.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Add option to build with -O3
+Message-ID: <20140305050927.GA8534@kroah.com>
+References: <1393977709-9809-1-git-send-email-jringle@gridpoint.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393977709-9809-1-git-send-email-jringle@gridpoint.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the use of the IRQF_DISABLED flag
-from drivers/pnp/resource.c
+On Tue, Mar 04, 2014 at 07:01:49PM -0500, Jon Ringle wrote:
+> +config CC_OPTIMIZE_FOR_SPEED
+> +    bool "Optimze for speed (-O3)"
+> +    help
+> +      Enabling this option will pass "-O3" to gcc
+> +      resulting in a larger kernel (but possibly faster)
 
-It's a NOOP since 2.6.35 and it will be removed one day.
-
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
----
- drivers/pnp/resource.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/pnp/resource.c b/drivers/pnp/resource.c
-index bacddd102ae9..01712cbfd92e 100644
---- a/drivers/pnp/resource.c
-+++ b/drivers/pnp/resource.c
-@@ -385,7 +385,7 @@ int pnp_check_irq(struct pnp_dev *dev, struct resource *res)
- 	 * device is active because it itself may be in use */
- 	if (!dev->active) {
- 		if (request_irq(*irq, pnp_test_handler,
--				IRQF_DISABLED | IRQF_PROBE_SHARED, "pnp", NULL))
-+				IRQF_PROBE_SHARED, "pnp", NULL))
- 			return 0;
- 		free_irq(*irq, NULL);
- 	}
--- 
-1.8.3.2
+Are you sure about that?  Have you measured it?
 
