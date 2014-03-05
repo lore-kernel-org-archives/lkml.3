@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757573AbaCEO0v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:26:51 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41171 "EHLO
+	id S932648AbaCEPBk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:01:40 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41216 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754719AbaCEO0i (ORCPT
+	with ESMTP id S1757403AbaCEO0u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:26:38 -0500
+	Wed, 5 Mar 2014 09:26:50 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Christoph Hellwig <hch@lst.de>, Chris Mason <clm@fb.com>,
-        Ben Myers <bpm@sgi.com>, Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 092/131] fs: fix iversion handling
-Date: Wed,  5 Mar 2014 14:23:36 +0000
-Message-Id: <1394029455-23128-93-git-send-email-luis.henriques@canonical.com>
+Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@linaro.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 102/131] Input - arizona-haptics: Fix double lock of dapm_mutex
+Date: Wed,  5 Mar 2014 14:23:46 +0000
+Message-Id: <1394029455-23128-103-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -27,86 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Hellwig <hch@infradead.org>
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 
-commit dff6efc326a4d5f305797d4a6bba14f374fdd633 upstream.
+commit c4204960e9d0ba99459dbf1db918f99a45e7a62a upstream.
 
-Currently notify_change directly updates i_version for size updates,
-which not only is counter to how all other fields are updated through
-struct iattr, but also breaks XFS, which need inode updates to happen
-under its own lock, and synchronized to the structure that gets written
-to the log.
+snd_soc_dapm_sync takes the dapm_mutex internally, but we currently take
+it externally as well. This patch fixes this.
 
-Remove the update in the common code, and it to btrfs and ext4,
-XFS already does a proper updaste internally and currently gets a
-double update with the existing code.
-
-IMHO this is 3.13 and -stable material and should go in through the XFS
-tree.
-
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Reviewed-by: Andreas Dilger <adilger@dilger.ca>
-Acked-by: Jan Kara <jack@suse.cz>
-Reviewed-by: Dave Chinner <dchinner@redhat.com>
-Signed-off-by: Chris Mason <clm@fb.com>
-Signed-off-by: Ben Myers <bpm@sgi.com>
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/attr.c        | 5 -----
- fs/btrfs/inode.c | 8 ++++++--
- fs/ext4/inode.c  | 4 ++++
- 3 files changed, 10 insertions(+), 7 deletions(-)
+ drivers/input/misc/arizona-haptics.c | 11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
-diff --git a/fs/attr.c b/fs/attr.c
-index 1449adb..8dd5825 100644
---- a/fs/attr.c
-+++ b/fs/attr.c
-@@ -182,11 +182,6 @@ int notify_change(struct dentry * dentry, struct iattr * attr)
- 			return -EPERM;
- 	}
- 
--	if ((ia_valid & ATTR_SIZE) && IS_I_VERSION(inode)) {
--		if (attr->ia_size != inode->i_size)
--			inode_inc_iversion(inode);
--	}
--
- 	if ((ia_valid & ATTR_MODE)) {
- 		umode_t amode = attr->ia_mode;
- 		/* Flag setting protected by i_mutex */
-diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
-index f992daf..bfe5f39 100644
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -4413,8 +4413,12 @@ static int btrfs_setsize(struct inode *inode, struct iattr *attr)
- 	 * these flags set.  For all other operations the VFS set these flags
- 	 * explicitly if it wants a timestamp update.
- 	 */
--	if (newsize != oldsize && (!(mask & (ATTR_CTIME | ATTR_MTIME))))
--		inode->i_ctime = inode->i_mtime = current_fs_time(inode->i_sb);
-+	if (newsize != oldsize) {
-+		inode_inc_iversion(inode);
-+		if (!(mask & (ATTR_CTIME | ATTR_MTIME)))
-+			inode->i_ctime = inode->i_mtime =
-+				current_fs_time(inode->i_sb);
-+	}
- 
- 	if (newsize > oldsize) {
- 		truncate_pagecache(inode, oldsize, newsize);
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index d343bb7..0ea5961 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -4598,6 +4598,10 @@ int ext4_setattr(struct dentry *dentry, struct iattr *attr)
- 			if (attr->ia_size > sbi->s_bitmap_maxbytes)
- 				return -EFBIG;
+diff --git a/drivers/input/misc/arizona-haptics.c b/drivers/input/misc/arizona-haptics.c
+index 7a04f54..e7e12a5 100644
+--- a/drivers/input/misc/arizona-haptics.c
++++ b/drivers/input/misc/arizona-haptics.c
+@@ -77,16 +77,14 @@ static void arizona_haptics_work(struct work_struct *work)
+ 			return;
  		}
+ 
++		mutex_unlock(dapm_mutex);
 +
-+		if (IS_I_VERSION(inode) && attr->ia_size != inode->i_size)
-+			inode_inc_iversion(inode);
+ 		ret = snd_soc_dapm_sync(arizona->dapm);
+ 		if (ret != 0) {
+ 			dev_err(arizona->dev, "Failed to sync DAPM: %d\n",
+ 				ret);
+-			mutex_unlock(dapm_mutex);
+ 			return;
+ 		}
+-
+-		mutex_unlock(dapm_mutex);
+-
+ 	} else {
+ 		/* This disable sequence will be a noop if already enabled */
+ 		mutex_lock_nested(dapm_mutex, SND_SOC_DAPM_CLASS_RUNTIME);
+@@ -99,16 +97,15 @@ static void arizona_haptics_work(struct work_struct *work)
+ 			return;
+ 		}
+ 
++		mutex_unlock(dapm_mutex);
 +
- 		if (S_ISREG(inode->i_mode) &&
- 		    (attr->ia_size < inode->i_size)) {
- 			if (ext4_should_order_data(inode)) {
+ 		ret = snd_soc_dapm_sync(arizona->dapm);
+ 		if (ret != 0) {
+ 			dev_err(arizona->dev, "Failed to sync DAPM: %d\n",
+ 				ret);
+-			mutex_unlock(dapm_mutex);
+ 			return;
+ 		}
+ 
+-		mutex_unlock(dapm_mutex);
+-
+ 		ret = regmap_update_bits(arizona->regmap,
+ 					 ARIZONA_HAPTICS_CONTROL_1,
+ 					 ARIZONA_HAP_CTRL_MASK,
 -- 
 1.9.0
 
