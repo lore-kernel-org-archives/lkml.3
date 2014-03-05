@@ -1,74 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754169AbaCEJuj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 04:50:39 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:60509 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752625AbaCEJud (ORCPT
+	id S1753901AbaCEJuU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 04:50:20 -0500
+Received: from mail1.bemta14.messagelabs.com ([193.109.254.108]:9911 "EHLO
+	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752331AbaCEJuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 04:50:33 -0500
-Message-ID: <1394013249.19539.17.camel@haakon3.risingtidesystems.com>
-Subject: Re: linux rdma 3.14 merge plans
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Roland Dreier <roland@kernel.org>
-Cc: Or Gerlitz <or.gerlitz@gmail.com>, Hefty Sean <sean.hefty@intel.com>,
-        linux-rdma <linux-rdma@vger.kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        Sagi Grimberg <sagig@mellanox.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Wed, 05 Mar 2014 01:54:09 -0800
-In-Reply-To: <CAG4TOxNpnMMR-vfAVa+m6f-z82msxygADUkJ7mmrKtzHCOqdhA@mail.gmail.com>
-References: <CAJZOPZ+4yQ-sT=ks7+eiJjkxOjy5w=BmG16JVcUPiuVsof7qEA@mail.gmail.com>
-	 <CAG4TOxOMmvFWnkU3DBn33rscEKh2_YfbUCKY=iY8PCVN3+nEsA@mail.gmail.com>
-	 <52CD1C68.4050406@mellanox.com>
-	 <1389645171.5567.459.camel@haakon3.risingtidesystems.com>
-	 <1389820541.5567.543.camel@haakon3.risingtidesystems.com>
-	 <CAG4TOxNa32sLxifPx_f8sW04B_qSh01WWfWjRvam6fjvFLDXSQ@mail.gmail.com>
-	 <1389906852.5567.668.camel@haakon3.risingtidesystems.com>
-	 <CAG4TOxPeYQ=e5LdJft1Hkx8donUQjJaKDEAv3iRLGxPYJQ_b9w@mail.gmail.com>
-	 <1390102949.5567.749.camel@haakon3.risingtidesystems.com>
-	 <52DBB4F1.4020400@mellanox.com>
-	 <CAJZOPZJFbcTh2zO8mos0M+gv0LW-Gmh877Vxe4tLvfPX19oqTw@mail.gmail.com>
-	 <CAJZOPZLuz-Z59agBd0Q9J2=sSG-F+Y8MrJkoGbtiF5M+CnKU1g@mail.gmail.com>
-	 <CAG4TOxPLEfyWsUDf4_371u=_=tOgW2v5J4zSz8xx73DfziZOZg@mail.gmail.com>
-	 <1390375658.5567.917.camel@haakon3.risingtidesystems.com>
-	 <1391731323.14985.56.camel@haakon3.risingtidesystems.com>
-	 <CAG4TOxNpnMMR-vfAVa+m6f-z82msxygADUkJ7mmrKtzHCOqdhA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 5 Mar 2014 04:50:16 -0500
+X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
+X-Msg-Ref: server-7.tower-194.messagelabs.com!1394013012!13920554!1
+X-Originating-IP: [94.185.165.51]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.16; banners=-,-,-
+X-VirusChecked: Checked
+From: "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>
+To: Lee Jones <lee.jones@linaro.org>,
+        "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>
+Subject: RE: [PATCH Resend 2/2] mfd: da9055: Add DT binding documentation
+ for PMIC
+Thread-Topic: [PATCH Resend 2/2] mfd: da9055: Add DT binding documentation
+ for PMIC
+Thread-Index: AQHPOBwQQANILTjFQEuHGLJYPpcoYJrSQCbQ
+Date: Wed, 5 Mar 2014 09:50:10 +0000
+Message-ID: <2E89032DDAA8B9408CB92943514A03376BAD4D92@SW-EX-MBX01.diasemi.com>
+References: <cover.1392286537.git.Adam.Thomson.Opensource@diasemi.com>
+ <574af9f46ca08e66f6e9bda8ef3a51e7c5c5178b.1392286537.git.Adam.Thomson.Opensource@diasemi.com>
+ <20140305023850.GN10579@lee--X1>
+In-Reply-To: <20140305023850.GN10579@lee--X1>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.27.23]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s259pVo2013929
 
-On Thu, 2014-02-06 at 16:04 -0800, Roland Dreier wrote:
-> On Thu, Feb 6, 2014 at 4:02 PM, Nicholas A. Bellinger
-> <nab@linux-iscsi.org> wrote:
-> > Can you give us an estimate of when you'll have some time to give
-> > feedback on the outstanding patches..?
+On Tue, 05 Mar 2014 02:40:38 +0000, Lee Jones wrote:
+
+> > Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+> > Acked-by: Mark Brown <broonie@kernel.org>
 > 
-> I hope to get to it in the next few weeks.
+> As this has Mark's ack, I'd be happy to apply the patch if you correct
+> a couple of nits.
+
+Yep. No problem.
+
+> > +Example:
+> > +
+> > +	pmic: da9055-pmic@5a {
+> > +		compatible = "dlg,da9055-pmic";
+> > +		reg = <0x5a>;
+> > +		interrupt-parent = <&intc>;
+> > +		interrupts = <5 0x8>;
 > 
->  - R.
+> I'd prefer if you used the #defines in:
+>     dt-bindings/interrupt-controller/irq.h
 
-Hi Roland,
+Fine. Will do that.
 
-We'd very much like to move forward with the verbs + mlx5 + LIO target
-PI related patches for v3.15 code.
+> > +			buck2: BUCK2 {
+> > +				regulator-min-microvolt = <925000>;
+> > +				regulator-max-microvolt = <2500000>;
+> > +			};
+> 
+> New line here.
 
-Given the verbs + mlx5 changes have undergone ~5 months of review at
-this point, I'd like to go ahead and get them in target-pending/for-next
-ASAP to continue making forward progress towards a mainline merge.
-
-I'm happy with the state of the iser-target related changes, and Sagi &
-Co are making good progress on the iser-initiator related patches with
-Mike.
-
-That all said, do you have an objection wrt taking this bits through
-target-pending..?  Given the dependencies involved, that would seem the
-most logical path to take.
-
---nab 
-
+Will remove it.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
