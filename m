@@ -1,88 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756705AbaCEAhN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 19:37:13 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:63606 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756055AbaCEAhL (ORCPT
+	id S1756715AbaCEAiB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 19:38:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44137 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754105AbaCEAh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 19:37:11 -0500
-X-AuditID: 9c93017e-b7cf9ae000004b4b-aa-531671b51ee6
-Date: Wed, 5 Mar 2014 09:37:10 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan@kernel.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: [PATCH 2/6] mm: add get_pageblock_migratetype_nolock() for cases
- where locking is undesirable
-Message-ID: <20140305003709.GB2340@lge.com>
-References: <1393596904-16537-1-git-send-email-vbabka@suse.cz>
- <1393596904-16537-3-git-send-email-vbabka@suse.cz>
+	Tue, 4 Mar 2014 19:37:59 -0500
+Date: Tue, 4 Mar 2014 16:39:43 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Chase Southwood <chase.southwood@yahoo.com>, devel@driverdev.osuosl.org,
+        abbotti@mev.co.uk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] Staging: comedi: introduce {outl,inl}_amcc() and
+ {outl,inl}_iobase() helper functions in hwdrv_apci1564.c
+Message-ID: <20140305003943.GA1286@kroah.com>
+References: <1393669707-20107-1-git-send-email-chase.southwood@yahoo.com>
+ <1393815139-10663-1-git-send-email-chase.southwood@yahoo.com>
+ <20140303092755.GD27552@mwanda>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1393596904-16537-3-git-send-email-vbabka@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <20140303092755.GD27552@mwanda>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 28, 2014 at 03:15:00PM +0100, Vlastimil Babka wrote:
-> In order to prevent race with set_pageblock_migratetype, most of calls to
-> get_pageblock_migratetype have been moved under zone->lock. For the remaining
-> call sites, the extra locking is undesirable, notably in free_hot_cold_page().
+On Mon, Mar 03, 2014 at 12:27:55PM +0300, Dan Carpenter wrote:
+> On Sun, Mar 02, 2014 at 08:52:19PM -0600, Chase Southwood wrote:
+> > This patch introduces a few simple outl and inl helper functions to allow
+> > several lines which violate the character limit to be shortened
+> > appropriately.  It also changes a few macro values which represented
+> > offset values from a single unique base value to instead represent the value
+> > of that base plus the offset.  This is to simplify the use of these macros
+> > in the new helper functions.
+> > 
+> > Cc: Dan Carpenter <dan.carpenter@oracle.com>
+> > Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
+> > ---
+> > 
+> > All right, here's another shot at this.  Dan, I took your outl_amcc idea
+> > and did a version for the outl/inl calls based from devpriv->iobase as well.
+> > I changed all of the macros which only offset from one base value as you
+> > had mentioned as well, and the result is starting to look very good.
+> > The only outl/inl calls which still look a little gross (see PATCH v2 2/2) are
+> > the ones involving DIGITAL_OP_WATCHDOG, TIMER, or any of the COUNTER macros,
+> > just because they use a common set of offset macros so simplifying
+> > those calls in the same way as the rest isn't possible.  What are your
+> > thoughts on this version of the patchset?
+> > 
+> > This is version 2 of [PATCH 1/2] Staging: comedi: introduce outl_1564_* and
+> > inl_1564_* helper functions in hwdrv_apci1564.c
+> > 
+> > 2: Changed helper functions from {outl,inl}_1564_*() to
+> > {outl,inl}_{amcc,iobase}()
+> > 
+> > Comments welcome!
+> > 
+> >  .../comedi/drivers/addi-data/hwdrv_apci1564.c      | 38 +++++++++++++++++-----
+> >  1 file changed, 30 insertions(+), 8 deletions(-)
+> > 
+> > diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
+> > index 2b47fa1..58e301d 100644
+> > --- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
+> > +++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
+> > @@ -49,25 +49,25 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY
+> >  /* DIGITAL INPUT-OUTPUT DEFINE */
+> >  /* Input defines */
+> >  #define APCI1564_DIGITAL_IP				0x04
+> > -#define APCI1564_DIGITAL_IP_INTERRUPT_MODE1		4
+> > -#define APCI1564_DIGITAL_IP_INTERRUPT_MODE2		8
+> > -#define APCI1564_DIGITAL_IP_IRQ				16
+> > +#define APCI1564_DIGITAL_IP_INTERRUPT_MODE1		(0x04 + 0x04)
+> > +#define APCI1564_DIGITAL_IP_INTERRUPT_MODE2		(0x04 + 0x08)
+> > +#define APCI1564_DIGITAL_IP_IRQ				(0x04 + 0x10)
 > 
-> This patch introduces a _nolock version to be used on these call sites, where
-> a wrong value does not affect correctness. The function makes sure that the
-> value does not exceed valid migratetype numbers. Such too-high values are
-> assumed to be a result of race and caller-supplied fallback value is returned
-> instead.
-> 
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-> ---
->  include/linux/mmzone.h | 24 ++++++++++++++++++++++++
->  mm/compaction.c        | 14 +++++++++++---
->  mm/memory-failure.c    |  3 ++-
->  mm/page_alloc.c        | 22 +++++++++++++++++-----
->  mm/vmstat.c            |  2 +-
->  5 files changed, 55 insertions(+), 10 deletions(-)
-> 
-> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> index fac5509..7c3f678 100644
-> --- a/include/linux/mmzone.h
-> +++ b/include/linux/mmzone.h
-> @@ -75,6 +75,30 @@ enum {
->  
->  extern int page_group_by_mobility_disabled;
->  
-> +/*
-> + * When called without zone->lock held, a race with set_pageblock_migratetype
-> + * may result in bogus values. Use this variant only when this does not affect
-> + * correctness, and taking zone->lock would be costly. Values >= MIGRATE_TYPES
-> + * are considered to be a result of this race and the value of race_fallback
-> + * argument is returned instead.
-> + */
-> +static inline int get_pageblock_migratetype_nolock(struct page *page,
-> +	int race_fallback)
-> +{
-> +	int ret = get_pageblock_flags_group(page, PB_migrate, PB_migrate_end);
-> +
-> +	if (unlikely(ret >= MIGRATE_TYPES))
-> +		ret = race_fallback;
-> +
-> +	return ret;
-> +}
+> You can't change these without changing the callers.  This bit needs to
+> be in patch 2/2.  You should probably just merge both patches anyway
+> because presumably this one adds some GCC warnings about unused static
+> functions.
 
-How about below forms?
+I'm totally confused about this series...
 
-get_pageblock_migratetype_locked(struct page *page)
-get_pageblock_migratetype(struct page *page, int race_fallback)
+Chase, can you resend any outstanding patches that I haven't applied of
+yours, as these different revisions and threads don't make much sense
+right now.
 
-get_pageblock_migratetype() and _nolock looks error-prone because developer
-who try to use get_pageblock_migratetype() may not know that it needs lock.
+thanks,
 
-Thanks.
+greg k-h
