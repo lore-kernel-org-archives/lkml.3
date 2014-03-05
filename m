@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932229AbaCEWbY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 17:31:24 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37551 "EHLO
+	id S932259AbaCEWbd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 17:31:33 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37563 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932189AbaCEWbS (ORCPT
+	with ESMTP id S932189AbaCEWba (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 17:31:18 -0500
-Date: Wed, 5 Mar 2014 14:30:56 -0800
+	Wed, 5 Mar 2014 17:31:30 -0500
+Date: Wed, 5 Mar 2014 14:31:07 -0800
 From: tip-bot for Stefani Seibold <tipbot@zytor.com>
-Message-ID: <tip-20dd4e23a10764f886c2a615bdc1f0c7db991cdb@git.kernel.org>
+Message-ID: <tip-44e016d37d0e84f1d7063f699ee8df68d7bd7607@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, luto@amacapital.net, hpa@zytor.com,
         mingo@kernel.org, stefani@seibold.net, tglx@linutronix.de,
         hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, luto@amacapital.net,
         linux-kernel@vger.kernel.org, stefani@seibold.net, tglx@linutronix.de,
         hpa@linux.intel.com
-In-Reply-To: <1393881143-3569-4-git-send-email-stefani@seibold.net>
-References: <1393881143-3569-4-git-send-email-stefani@seibold.net>
+In-Reply-To: <1393881143-3569-5-git-send-email-stefani@seibold.net>
+References: <1393881143-3569-5-git-send-email-stefani@seibold.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/vdso] x86, vdso: Revamp vclock_gettime.c
-Git-Commit-ID: 20dd4e23a10764f886c2a615bdc1f0c7db991cdb
+Subject: [tip:x86/vdso] x86, vdso: __vdso_clock_gettime() cleanup
+Git-Commit-ID: 44e016d37d0e84f1d7063f699ee8df68d7bd7607
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,136 +33,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  20dd4e23a10764f886c2a615bdc1f0c7db991cdb
-Gitweb:     http://git.kernel.org/tip/20dd4e23a10764f886c2a615bdc1f0c7db991cdb
+Commit-ID:  44e016d37d0e84f1d7063f699ee8df68d7bd7607
+Gitweb:     http://git.kernel.org/tip/44e016d37d0e84f1d7063f699ee8df68d7bd7607
 Author:     Stefani Seibold <stefani@seibold.net>
-AuthorDate: Mon, 3 Mar 2014 22:12:14 +0100
+AuthorDate: Mon, 3 Mar 2014 22:12:15 +0100
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 5 Mar 2014 14:02:37 -0800
+CommitDate: Wed, 5 Mar 2014 14:02:38 -0800
 
-x86, vdso: Revamp vclock_gettime.c
+x86, vdso: __vdso_clock_gettime() cleanup
 
-This intermediate patch revamps the vclock_gettime.c by moving some functions
-around. It is only for spliting purpose, to make whole the 32 bit vdso timer
-patch easier to review.
+This patch is a small code cleanup for the __vdso_clock_gettime() function.
+
+It removes the unneeded return values from do_monotonic_coarse() and
+do_realtime_coarse() and add a fallback label for doing the kernel
+gettimeofday() system call.
 
 Reviewed-by: Andy Lutomirski <luto@amacapital.net>
 Signed-off-by: Stefani Seibold <stefani@seibold.net>
-Link: http://lkml.kernel.org/r/1393881143-3569-4-git-send-email-stefani@seibold.net
+Link: http://lkml.kernel.org/r/1393881143-3569-5-git-send-email-stefani@seibold.net
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/vdso/vclock_gettime.c | 85 +++++++++++++++++++++---------------------
- 1 file changed, 42 insertions(+), 43 deletions(-)
+ arch/x86/vdso/vclock_gettime.c | 27 ++++++++++++++-------------
+ 1 file changed, 14 insertions(+), 13 deletions(-)
 
 diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
-index eb5d7a5..bbc8065 100644
+index bbc8065..fd074dd 100644
 --- a/arch/x86/vdso/vclock_gettime.c
 +++ b/arch/x86/vdso/vclock_gettime.c
-@@ -26,41 +26,26 @@
- 
- #define gtod (&VVAR(vsyscall_gtod_data))
- 
--notrace static cycle_t vread_tsc(void)
-+static notrace cycle_t vread_hpet(void)
- {
--	cycle_t ret;
--	u64 last;
--
--	/*
--	 * Empirically, a fence (of type that depends on the CPU)
--	 * before rdtsc is enough to ensure that rdtsc is ordered
--	 * with respect to loads.  The various CPU manuals are unclear
--	 * as to whether rdtsc can be reordered with later loads,
--	 * but no one has ever seen it happen.
--	 */
--	rdtsc_barrier();
--	ret = (cycle_t)vget_cycles();
--
--	last = VVAR(vsyscall_gtod_data).clock.cycle_last;
--
--	if (likely(ret >= last))
--		return ret;
-+	return readl((const void __iomem *)fix_to_virt(VSYSCALL_HPET) + HPET_COUNTER);
-+}
- 
--	/*
--	 * GCC likes to generate cmov here, but this branch is extremely
--	 * predictable (it's just a funciton of time and the likely is
--	 * very likely) and there's a data dependence, so force GCC
--	 * to generate a branch instead.  I don't barrier() because
--	 * we don't actually need a barrier, and if this function
--	 * ever gets inlined it will generate worse code.
--	 */
--	asm volatile ("");
--	return last;
-+notrace static long vdso_fallback_gettime(long clock, struct timespec *ts)
-+{
-+	long ret;
-+	asm("syscall" : "=a" (ret) :
-+	    "0" (__NR_clock_gettime), "D" (clock), "S" (ts) : "memory");
-+	return ret;
+@@ -209,7 +209,7 @@ notrace static int do_monotonic(struct timespec *ts)
+ 	return mode;
  }
  
--static notrace cycle_t vread_hpet(void)
-+notrace static long vdso_fallback_gtod(struct timeval *tv, struct timezone *tz)
+-notrace static int do_realtime_coarse(struct timespec *ts)
++notrace static void do_realtime_coarse(struct timespec *ts)
  {
--	return readl((const void __iomem *)fix_to_virt(VSYSCALL_HPET) + HPET_COUNTER);
-+	long ret;
-+
-+	asm("syscall" : "=a" (ret) :
-+	    "0" (__NR_gettimeofday), "D" (tv), "S" (tz) : "memory");
-+	return ret;
+ 	unsigned long seq;
+ 	do {
+@@ -217,10 +217,9 @@ notrace static int do_realtime_coarse(struct timespec *ts)
+ 		ts->tv_sec = gtod->wall_time_coarse.tv_sec;
+ 		ts->tv_nsec = gtod->wall_time_coarse.tv_nsec;
+ 	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
+-	return 0;
  }
  
- #ifdef CONFIG_PARAVIRT_CLOCK
-@@ -133,23 +118,37 @@ static notrace cycle_t vread_pvclock(int *mode)
+-notrace static int do_monotonic_coarse(struct timespec *ts)
++notrace static void do_monotonic_coarse(struct timespec *ts)
+ {
+ 	unsigned long seq;
+ 	do {
+@@ -228,30 +227,32 @@ notrace static int do_monotonic_coarse(struct timespec *ts)
+ 		ts->tv_sec = gtod->monotonic_time_coarse.tv_sec;
+ 		ts->tv_nsec = gtod->monotonic_time_coarse.tv_nsec;
+ 	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
+-
+-	return 0;
  }
- #endif
  
--notrace static long vdso_fallback_gettime(long clock, struct timespec *ts)
-+notrace static cycle_t vread_tsc(void)
+ notrace int __vdso_clock_gettime(clockid_t clock, struct timespec *ts)
  {
--	long ret;
--	asm("syscall" : "=a" (ret) :
--	    "0" (__NR_clock_gettime),"D" (clock), "S" (ts) : "memory");
--	return ret;
--}
-+	cycle_t ret;
-+	u64 last;
+-	int ret = VCLOCK_NONE;
+-
+ 	switch (clock) {
+ 	case CLOCK_REALTIME:
+-		ret = do_realtime(ts);
++		if (do_realtime(ts) == VCLOCK_NONE)
++			goto fallback;
+ 		break;
+ 	case CLOCK_MONOTONIC:
+-		ret = do_monotonic(ts);
++		if (do_monotonic(ts) == VCLOCK_NONE)
++			goto fallback;
+ 		break;
+ 	case CLOCK_REALTIME_COARSE:
+-		return do_realtime_coarse(ts);
++		do_realtime_coarse(ts);
++		break;
+ 	case CLOCK_MONOTONIC_COARSE:
+-		return do_monotonic_coarse(ts);
++		do_monotonic_coarse(ts);
++		break;
++	default:
++		goto fallback;
+ 	}
  
--notrace static long vdso_fallback_gtod(struct timeval *tv, struct timezone *tz)
--{
--	long ret;
-+	/*
-+	 * Empirically, a fence (of type that depends on the CPU)
-+	 * before rdtsc is enough to ensure that rdtsc is ordered
-+	 * with respect to loads.  The various CPU manuals are unclear
-+	 * as to whether rdtsc can be reordered with later loads,
-+	 * but no one has ever seen it happen.
-+	 */
-+	rdtsc_barrier();
-+	ret = (cycle_t)vget_cycles();
- 
--	asm("syscall" : "=a" (ret) :
--	    "0" (__NR_gettimeofday), "D" (tv), "S" (tz) : "memory");
--	return ret;
--}
-+	last = VVAR(vsyscall_gtod_data).clock.cycle_last;
- 
-+	if (likely(ret >= last))
-+		return ret;
-+
-+	/*
-+	 * GCC likes to generate cmov here, but this branch is extremely
-+	 * predictable (it's just a funciton of time and the likely is
-+	 * very likely) and there's a data dependence, so force GCC
-+	 * to generate a branch instead.  I don't barrier() because
-+	 * we don't actually need a barrier, and if this function
-+	 * ever gets inlined it will generate worse code.
-+	 */
-+	asm volatile ("");
-+	return last;
-+}
- 
- notrace static inline u64 vgetsns(int *mode)
- {
+-	if (ret == VCLOCK_NONE)
+-		return vdso_fallback_gettime(clock, ts);
+ 	return 0;
++fallback:
++	return vdso_fallback_gettime(clock, ts);
+ }
+ int clock_gettime(clockid_t, struct timespec *)
+ 	__attribute__((weak, alias("__vdso_clock_gettime")));
