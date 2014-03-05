@@ -1,94 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752730AbaCEIQl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 03:16:41 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:56591 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751441AbaCEIQi convert rfc822-to-8bit (ORCPT
+	id S1753372AbaCEIRD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 03:17:03 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:43187 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753059AbaCEIRB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 03:16:38 -0500
-Date: Wed, 5 Mar 2014 08:16:33 +0000
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Tanmay Inamdar <tinamdar@apm.com>
-Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v5 5/7] pci: Use parent domain number when allocating
- child busses.
-Message-ID: <20140305081633.GC1692@e106497-lin.cambridge.arm.com>
-Mail-Followup-To: Tanmay Inamdar <tinamdar@apm.com>,
-	linux-pci <linux-pci@vger.kernel.org>,
-	Bjorn Helgaas <bhelgaas@google.com>,
-	Catalin Marinas <Catalin.Marinas@arm.com>,
-	Will Deacon <Will.Deacon@arm.com>,
-	linaro-kernel <linaro-kernel@lists.linaro.org>,
-	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-	LAKML <linux-arm-kernel@lists.infradead.org>,
-	Arnd Bergmann <arnd@arndb.de>
-References: <1393948204-11555-1-git-send-email-Liviu.Dudau@arm.com>
- <1393948204-11555-6-git-send-email-Liviu.Dudau@arm.com>
- <CACoXjcmKKObSFignRWZAuOmmvfFtLf5O04Y5romJ=c6a9Jriqg@mail.gmail.com>
+	Wed, 5 Mar 2014 03:17:01 -0500
+Date: Wed, 5 Mar 2014 09:16:44 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: tglx@linutronix.de, mingo@kernel.org, dvhart@linux.intel.com,
+        paulmck@linux.vnet.ibm.com, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: futex funkiness -- massive lockups
+Message-ID: <20140305081644.GR9987@twins.programming.kicks-ass.net>
+References: <1393983784.2512.40.camel@buesod1.americas.hpqcorp.net>
 MIME-Version: 1.0
-In-Reply-To: <CACoXjcmKKObSFignRWZAuOmmvfFtLf5O04Y5romJ=c6a9Jriqg@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 05 Mar 2014 08:16:34.0080 (UTC) FILETIME=[38A0D200:01CF384B]
-X-MC-Unique: 114030508163602301
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1393983784.2512.40.camel@buesod1.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 05, 2014 at 01:49:13AM +0000, Tanmay Inamdar wrote:
-> Hello,
+On Tue, Mar 04, 2014 at 05:43:04PM -0800, Davidlohr Bueso wrote:
+> Hi,
 > 
-> On Tue, Mar 4, 2014 at 7:50 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> > pci_alloc_child_bus() uses the newly allocated child bus to figure
-> > out the domain number that is going to use for setting the device
-> > name. A better option is to use the parent bus domain number.
-> >
-> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> >
-> > diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> > index 26237a0..a12cda5 100644
-> > --- a/drivers/pci/probe.c
-> > +++ b/drivers/pci/probe.c
-> > @@ -677,7 +677,7 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
-> >          * now as the parent is not properly set up yet.
-> >          */
-> >         child->dev.class = &pcibus_class;
-> > -       dev_set_name(&child->dev, "%04x:%02x", pci_domain_nr(child), busnr);
-> > +       dev_set_name(&child->dev, "%04x:%02x", pci_domain_nr(parent), busnr);
-> >
-> >         /*
-> >          * Set up the primary, secondary and subordinate
-> > --
-> > 1.9.0
-> >
+> A large amount of lockups are seen on a 480 core system doing some sort
+> of database-like workload. All except one are soft lockups. This is a
+> SLES11 system with most of the recent futex changes backported,
+> including commits 63b1a816, b0c29f79, 99b60ce6, a52b89eb, 0d00c7b2,
+> 5cdec2d8 and f12d5bfc.
 > 
-> This patch is not required after the fix in pci_domain_nr for arm64.
+> [212071.494920]  [<ffffffff810589e5>] load_balance+0xa5/0x470
+> [212071.494920]  [<ffffffff81058f13>] rebalance_domains+0x163/0x220
+> [212071.494920]  [<ffffffff81059144>] run_rebalance_domains+0x44/0x60
+> [212071.494920]  [<ffffffff810677df>] __do_softirq+0x11f/0x260
+> [212071.494920]  [<ffffffff81469fdc>] call_softirq+0x1c/0x30
+> [212071.494920]  [<ffffffff81004435>] do_softirq+0x65/0xa0
+> [212071.494920]  [<ffffffff810675a5>] irq_exit+0xc5/0xe0
+> [212071.494920]  [<ffffffff81026588>] smp_apic_timer_interrupt+0x68/0xa0
+> [212071.494920]  [<ffffffff81469773>] apic_timer_interrupt+0x13/0x20
+> [212071.494920]  [<ffffffff81460ec5>] _raw_spin_lock+0x15/0x20
+> [212071.494920]  [<ffffffff8109626a>] futex_wake+0xba/0x180
+> [212071.494920]  [<ffffffff810987c4>] do_futex+0x94/0x1c0
+> [212071.494920]  [<ffffffff81098972>] sys_futex+0x82/0x170
+> [212071.494920]  [<ffffffff81468d92>] system_call_fastpath+0x16/0x1b
 > 
 
-True. Thanks for testing this!
+Like Linus said; that looks like its stuck in the load balancer. Now 480
+is certainly more CPUs that usual. However, SGI ran with lots more and I
+don't recall them seeing soft lockups from this.
 
-Liviu
-
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
-
+OTOH I do know the softirq runs for more than a softirq should; even on
+moderate systems.
