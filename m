@@ -1,40 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754541AbaCEQuU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 11:50:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22170 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752841AbaCEQuS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 11:50:18 -0500
-Date: Wed, 5 Mar 2014 17:49:42 +0100
-From: Igor Mammedov <imammedo@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, prarit@redhat.com, mgorman@suse.de,
-        peterz@infradead.org, alex.shi@intel.com, hpa@zytor.com
-Subject: Re: deadlock between cpu_stopper &
- native_flush_tlb_others()->smp_call_function_many()
-Message-ID: <20140305174942.3efc053f@nial.usersys.redhat.com>
-In-Reply-To: <5314B190.5060906@redhat.com>
-References: <20140303174356.082ec348@nial.usersys.redhat.com>
-	<5314B190.5060906@redhat.com>
+	id S1755905AbaCEQua (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 11:50:30 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:33078 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754857AbaCEQu1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 11:50:27 -0500
+Date: Wed, 5 Mar 2014 17:50:20 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Surendra Patil <surendra.tux@gmail.com>
+Cc: linville@tuxdriver.com, pali.rohar@gmail.com, david.gnedt@davizone.at,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Drivers:net:wireless:ti:wl1251: Fixed Sparse invalid
+ assignment warning
+Message-ID: <20140305165020.GA17056@Nokia-N900>
+References: <1393921132-15950-1-git-send-email-surendra.tux@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393921132-15950-1-git-send-email-surendra.tux@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 03 Mar 2014 11:45:04 -0500
-Rik van Riel <riel@redhat.com> wrote:
+On Tue 2014-03-04 00:18:52, Surendra Patil wrote:
+> Sparse warns about invalid assignment in
+> drivers/net/wireless/ti/wl1251/cmd.c:451:42: warning: invalid assignment: |=
+> drivers/net/wireless/ti/wl1251/cmd.c:451:42:    left side has type restricted __le16
+> drivers/net/wireless/ti/wl1251/cmd.c:451:42:    right side has type int
+> Hence type converted right side to __le16.
+> 
+> Signed-off-by: Surendra Patil <surendra.tux@gmail.com>
 
-> On 03/03/2014 11:43 AM, Igor Mammedov wrote:
-> > It looks like I hit a deadlock between smp_call_function_many() and
-> > cpu_stopper threads.
-> 
-> > Are there any suggestions on how to fix this nicely?
-> 
-> This patch should fix it:
-> 
-> https://lkml.org/lkml/2014/2/28/194
-
-I've just tried it and it doesn't fix issue.
+Acked-by: Pavel MMachek <pavel@ucw.cz>
