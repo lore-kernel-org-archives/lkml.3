@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755815AbaCEOZv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:25:51 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40981 "EHLO
+	id S1758872AbaCEPOq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:14:46 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40997 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755512AbaCEOZq (ORCPT
+	with ESMTP id S1757116AbaCEOZv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:25:46 -0500
+	Wed, 5 Mar 2014 09:25:51 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: David Henningsson <david.henningsson@canonical.com>,
+        Hui Wang <hui.wang@canonical.com>, Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 058/131] cpufreq: powernow-k8: Initialize per-cpu data-structures properly
-Date: Wed,  5 Mar 2014 14:23:02 +0000
-Message-Id: <1394029455-23128-59-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 062/131] ALSA: hda - Enable front audio jacks on one HP desktop model
+Date: Wed,  5 Mar 2014 14:23:06 +0000
+Message-Id: <1394029455-23128-63-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -28,80 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+From: Hui Wang <hui.wang@canonical.com>
 
-commit c3274763bfc3bf1ececa269ed6e6c4d7ec1c3e5e upstream.
+commit 1de7ca5e844866f56bebb2fc47fa18e090677e88 upstream.
 
-The powernow-k8 driver maintains a per-cpu data-structure called
-powernow_data that is used to perform the frequency transitions.
-It initializes this data structure only for the policy->cpu. So,
-accesses to this data structure by other CPUs results in various
-problems because they would have been uninitialized.
+The front headphone and mic jackes on a HP desktop model (Vendor Id:
+0x111d76c7 Subsystem Id: 0x103c2b17) can not work, the codec on this
+machine has 8 physical ports, 6 of them are routed to rear jackes
+and all of them work very well, while the remaining 2 ports are
+routed to front headphone and mic jackes, but the corresponding
+pin complex node are not defined correctly.
 
-Specifically, if a cpu (!= policy->cpu) invokes the drivers' ->get()
-function, it returns 0 as the KHz value, since its per-cpu memory
-doesn't point to anything valid. This causes problems during
-suspend/resume since cpufreq_update_policy() tries to enforce this
-(0 KHz) as the current frequency of the CPU, and this madness gets
-propagated to adjust_jiffies() as well. Eventually, lots of things
-start breaking down, including the r8169 ethernet card, in one
-particularly interesting case reported by Pierre Ossman.
+After apply this fix, the front audio jackes can work very well.
 
-Fix this by initializing the per-cpu data-structures of all the CPUs
-in the policy appropriately.
+[trivial fix of enum definition by tiwai]
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=70311
-Reported-by: Pierre Ossman <pierre@ossman.eu>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+BugLink: https://bugs.launchpad.net/bugs/1282369
+Cc: David Henningsson <david.henningsson@canonical.com>
+Tested-by: Gerald Yang <gerald.yang@canonical.com>
+Signed-off-by: Hui Wang <hui.wang@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/cpufreq/powernow-k8.c | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ sound/pci/hda/patch_sigmatel.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
-index c39d189..9292f1f 100644
---- a/drivers/cpufreq/powernow-k8.c
-+++ b/drivers/cpufreq/powernow-k8.c
-@@ -1100,7 +1100,7 @@ static int powernowk8_cpu_init(struct cpufreq_policy *pol)
+diff --git a/sound/pci/hda/patch_sigmatel.c b/sound/pci/hda/patch_sigmatel.c
+index 6d1924c..5c005d4 100644
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -83,6 +83,7 @@ enum {
+ 	STAC_DELL_M6_BOTH,
+ 	STAC_DELL_EQ,
+ 	STAC_ALIENWARE_M17X,
++	STAC_92HD89XX_HP_FRONT_JACK,
+ 	STAC_92HD73XX_MODELS
+ };
+ 
+@@ -1775,6 +1776,12 @@ static const struct hda_pintbl intel_dg45id_pin_configs[] = {
+ 	{}
+ };
+ 
++static const struct hda_pintbl stac92hd89xx_hp_front_jack_pin_configs[] = {
++	{ 0x0a, 0x02214030 },
++	{ 0x0b, 0x02A19010 },
++	{}
++};
++
+ static void stac92hd73xx_fixup_ref(struct hda_codec *codec,
+ 				   const struct hda_fixup *fix, int action)
  {
- 	struct powernow_k8_data *data;
- 	struct init_on_cpu init_on_cpu;
--	int rc;
-+	int rc, cpu;
+@@ -1893,6 +1900,10 @@ static const struct hda_fixup stac92hd73xx_fixups[] = {
+ 	[STAC_92HD73XX_NO_JD] = {
+ 		.type = HDA_FIXUP_FUNC,
+ 		.v.func = stac92hd73xx_fixup_no_jd,
++	},
++	[STAC_92HD89XX_HP_FRONT_JACK] = {
++		.type = HDA_FIXUP_PINS,
++		.v.pins = stac92hd89xx_hp_front_jack_pin_configs,
+ 	}
+ };
  
- 	smp_call_function_single(pol->cpu, check_supported_cpu, &rc, 1);
- 	if (rc)
-@@ -1169,7 +1169,9 @@ static int powernowk8_cpu_init(struct cpufreq_policy *pol)
- 	pr_debug("cpu_init done, current fid 0x%x, vid 0x%x\n",
- 		 data->currfid, data->currvid);
+@@ -1953,6 +1964,8 @@ static const struct snd_pci_quirk stac92hd73xx_fixup_tbl[] = {
+ 		      "Alienware M17x", STAC_ALIENWARE_M17X),
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x0490,
+ 		      "Alienware M17x R3", STAC_DELL_EQ),
++	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x2b17,
++				"unknown HP", STAC_92HD89XX_HP_FRONT_JACK),
+ 	{} /* terminator */
+ };
  
--	per_cpu(powernow_data, pol->cpu) = data;
-+	/* Point all the CPUs in this policy to the same data */
-+	for_each_cpu(cpu, pol->cpus)
-+		per_cpu(powernow_data, cpu) = data;
- 
- 	return 0;
- 
-@@ -1184,6 +1186,7 @@ err_out:
- static int powernowk8_cpu_exit(struct cpufreq_policy *pol)
- {
- 	struct powernow_k8_data *data = per_cpu(powernow_data, pol->cpu);
-+	int cpu;
- 
- 	if (!data)
- 		return -EINVAL;
-@@ -1194,7 +1197,8 @@ static int powernowk8_cpu_exit(struct cpufreq_policy *pol)
- 
- 	kfree(data->powernow_table);
- 	kfree(data);
--	per_cpu(powernow_data, pol->cpu) = NULL;
-+	for_each_cpu(cpu, pol->cpus)
-+		per_cpu(powernow_data, cpu) = NULL;
- 
- 	return 0;
- }
 -- 
 1.9.0
 
