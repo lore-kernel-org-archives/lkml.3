@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755067AbaCEQjO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 11:39:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43126 "EHLO mx1.redhat.com"
+	id S1754980AbaCEQlt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 11:41:49 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59171 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751951AbaCEQjN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 11:39:13 -0500
-Message-ID: <1394037524.5094.35.camel@deneb.redhat.com>
-Subject: Re: [PATCH 5/5] arm64: add early_ioremap support
-From: Mark Salter <msalter@redhat.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Linaro Patches <patches@linaro.org>, Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Wed, 05 Mar 2014 11:38:44 -0500
-In-Reply-To: <CAL_JsqLQ8gj4nkwh+67i58rQBARoh_CgZ+4D9uepdBQm-XBwJA@mail.gmail.com>
-References: <1393963738-9210-1-git-send-email-msalter@redhat.com>
-	 <1393963738-9210-6-git-send-email-msalter@redhat.com>
-	 <CAL_JsqLQ8gj4nkwh+67i58rQBARoh_CgZ+4D9uepdBQm-XBwJA@mail.gmail.com>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751630AbaCEQls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 11:41:48 -0500
+Message-ID: <5317538D.9060302@zytor.com>
+Date: Wed, 05 Mar 2014 08:40:45 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>, Vivek Goyal <vgoyal@redhat.com>
+CC: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, mjg59@srcf.ucam.org, greg@kroah.com,
+        jkosina@suse.cz
+Subject: Re: [PATCH 08/11] kexec-bzImage: Support for loading bzImage using
+ 64bit entry
+References: <1390849071-21989-1-git-send-email-vgoyal@redhat.com> <1390849071-21989-9-git-send-email-vgoyal@redhat.com> <20140227213629.GP18191@pd.tnic> <20140228163134.GG28744@redhat.com> <20140305163722.GC28317@pd.tnic>
+In-Reply-To: <20140305163722.GC28317@pd.tnic>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-03-04 at 17:31 -0600, Rob Herring wrote:
-> On Tue, Mar 4, 2014 at 2:08 PM, Mark Salter <msalter@redhat.com> wrote:
-> > Add support for early IO or memory mappings which are needed
-> > before the normal ioremap() is usable. This also adds fixmap
-> > support for permanent fixed mappings such as that used by the
-> > earlyprintk device register region.
+On 03/05/2014 08:37 AM, Borislav Petkov wrote:
+>>
+>> If the "HdrS" (0x53726448) magic number is not found at offset 0x202,
+>> the boot protocol version is "old".  Loading an old kernel, the
+>> following parameters should be assumed:
+>>
+>>         Image type = zImage
+>>         initrd not supported
+>>         Real-mode kernel must be located at 0x90000.
+>>
+>> So if it is old version then it is zImage (and not bzImage). So pr_debug()
+>> message seems to be correct that image one is trying to load is not
+>> bzImage and this loader will not handle this image.
 > 
-> One minor comment:
+> Ok, old == zImage, got it.
 > 
-> > +enum fixed_addresses {
-> > +       FIX_EARLYCON,
-> 
-> Can you align this name with x86 and rename to FIX_EARLYCON_MEM_BASE.
-> Doing that will help enable the earlycon driver in 8250_early.c.
 
-Is there any advantage to earlycon=uart8250 vs. earlyprintk=uart8250?
-I don't mind using FIX_EARLYCON_MEM_BASE, but CONFIG_FIX_EARLYCON_MEM
-is X86 only right now and I think changing that should be a separate
-patch.
+No, old ⊂ zImage, but you can have a zImage with a newer protocol
+version, too.  There are no load flags in the old protocol.
 
+These days the old protocol is interesting mostly because of non-Linux
+images using the same boot protocol.
+
+	-hpa
 
