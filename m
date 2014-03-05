@@ -1,76 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758731AbaCEOyz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:54:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41604 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752215AbaCEOhh (ORCPT
+	id S1758745AbaCEOzS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:55:18 -0500
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:52986 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754794AbaCEOzO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:37:37 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Chen Gang <gang.chen.5i5j@gmail.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 18/62] avr32: Makefile: add '-D__linux__' flag for gcc-4.4.7 use
-Date: Wed,  5 Mar 2014 14:36:22 +0000
-Message-Id: <1394030226-26652-19-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
-References: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Wed, 5 Mar 2014 09:55:14 -0500
+MIME-Version: 1.0
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D0F6D1440@AcuExch.aculab.com>
+References: <20140305003544.23016.55079.stgit@bhelgaas-glaptop.roam.corp.google.com>
+ <063D6719AE5E284EB5DD2968C1650D6D0F6D1440@AcuExch.aculab.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 5 Mar 2014 07:54:53 -0700
+Message-ID: <CAErSpo5Pb2bABmnQZ04KRqjU=38=Pcr2OQv8hUJd_hv69QVc-A@mail.gmail.com>
+Subject: Re: [PATCH] phy: fix compiler array bounds warning on settings[]
+To: David Laight <David.Laight@aculab.com>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.32 -stable review patch.  If anyone has any objections, please let me know.
+On Wed, Mar 5, 2014 at 2:10 AM, David Laight <David.Laight@aculab.com> wrote:
+> From: Bjorn Helgaas
+>> With -Werror=array-bounds, gcc v4.7.x warns that in phy_find_valid(), the
+>> settings[] "array subscript is above array bounds", I think because idx is
+>> a signed integer and if the caller supplied idx < 0, we pass the guard but
+>> still reference out of bounds.
+>
+> Not rejecting the patch but...
+>
+> Just indexing an array with 'int' shouldn't cause this warning,
+> so somewhere a caller must actually be passing an idx < 0.
+>
+> While changing the type to unsigned will make the comparison
+> against the array bound reject the -1, I suspect that the
+> specific call path didn't really intend passing a hard-coded -1.
+>
+> It might be worth trying to locate the call site that passes -1.
 
-------------------
+I agree 100%.  If that's the case, we definitely should find that
+caller rather than apply this patch.  I'll look more today.
 
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-
-commit 8d80390cfc9434d5aa4fb9e5f9768a66b30cb8a6 upstream.
-
-For avr32 cross compiler, do not define '__linux__' internally, so it
-will cause issue with allmodconfig.
-
-The related error:
-
-    CC [M]  fs/coda/psdev.o
-  In file included from include/linux/coda.h:64,
-                   from fs/coda/psdev.c:45:
-  include/uapi/linux/coda.h:221: error: expected specifier-qualifier-list before 'u_quad_t'
-
-The related toolchain version (which only download, not re-compile):
-
-  [root@gchen linux-next]# /upstream/toolchain/download/avr32-gnu-toolchain-linux_x86/bin/avr32-gcc -v
-  Using built-in specs.
-  Target: avr32
-  Configured with: /data2/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/src/gcc/configure --target=avr32 --host=i686-pc-linux-gnu --build=x86_64-pc-linux-gnu --prefix=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --enable-languages=c,c++ --disable-nls --disable-libssp --disable-libstdcxx-pch --with-dwarf2 --enable-version-specific-runtime-libs --disable-shared --enable-doc --with-mpfr-lib=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86/lib --with-mpfr-include=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86/include --with-gmp=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --with-mpc=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --enable-__cxa_atexit --disable-shared --with-newlib --with-pkgversion=AVR_32_bit_GNU_Toolchain_3.4.2_435 --with-bugurl=http://www
-.atmel.com/avr
-  Thread model: single
-  gcc version 4.4.7 (AVR_32_bit_GNU_Toolchain_3.4.2_435)
-
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-Acked-by: Hans-Christian Egtvedt <hegtvedt@cisco.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- arch/avr32/Makefile | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/avr32/Makefile b/arch/avr32/Makefile
-index 22fb665..dba48a5 100644
---- a/arch/avr32/Makefile
-+++ b/arch/avr32/Makefile
-@@ -11,7 +11,7 @@ all: uImage vmlinux.elf
- 
- KBUILD_DEFCONFIG	:= atstk1002_defconfig
- 
--KBUILD_CFLAGS	+= -pipe -fno-builtin -mno-pic
-+KBUILD_CFLAGS	+= -pipe -fno-builtin -mno-pic -D__linux__
- KBUILD_AFLAGS	+= -mrelax -mno-pic
- KBUILD_CFLAGS_MODULE += -mno-relax
- LDFLAGS_vmlinux	+= --relax
--- 
-1.9.0
-
+Bjorn
