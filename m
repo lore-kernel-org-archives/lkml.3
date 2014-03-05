@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758073AbaCEOeu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:34:50 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41263 "EHLO
+	id S1757675AbaCEO1E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:27:04 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41249 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757687AbaCEO1G (ORCPT
+	with ESMTP id S1757653AbaCEO1B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:27:06 -0500
+	Wed, 5 Mar 2014 09:27:01 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jean Delvare <jdelvare@suse.de>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Doug Thompson <dougthompson@xmission.com>,
-        Borislav Petkov <bp@suse.de>,
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 111/131] i7core_edac: Fix PCI device reference count
-Date: Wed,  5 Mar 2014 14:23:55 +0000
-Message-Id: <1394029455-23128-112-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 109/131] ASoC: wm8958-dsp: Fix firmware block loading
+Date: Wed,  5 Mar 2014 14:23:53 +0000
+Message-Id: <1394029455-23128-110-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -30,62 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <jdelvare@suse.de>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit c0f5eeed0f4cef4f05b74883a7160e7edde58b6a upstream.
+commit 548da08fc1e245faf9b0d7c41ecd8e07984fc332 upstream.
 
-The reference count changes done by pci_get_device can be a little
-misleading when the usage diverges from the most common scheme. The
-reference count of the device passed as the last parameter is always
-decreased, even if the function returns no new device. So if we are
-going to try alternative device IDs, we must manually increment the
-device reference count before each retry. If we don't, we end up
-decreasing the reference count, and after a few modprobe/rmmod cycles
-the PCI devices will vanish.
+The codec->control_data contains a pointer to the device's regmap struct. But
+wm8994_bulk_write() expects a pointer to the parent wm8998 device.
 
-In other words and as Alan put it: without this fix the EDAC code
-corrupts the PCI device list.
+The issue was introduced in commit d9a7666f ("ASoC: Remove ASoC-specific
+WM8994 I/O code").
 
-This fixes kernel bug #50491:
-https://bugzilla.kernel.org/show_bug.cgi?id=50491
-
-Signed-off-by: Jean Delvare <jdelvare@suse.de>
-Link: http://lkml.kernel.org/r/20140224093927.7659dd9d@endymion.delvare
-Reviewed-by: Alan Cox <alan@linux.intel.com>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Doug Thompson <dougthompson@xmission.com>
-Signed-off-by: Borislav Petkov <bp@suse.de>
+Fixes: d9a7666f ("ASoC: Remove ASoC-specific WM8994 I/O code")
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/edac/i7core_edac.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ sound/soc/codecs/wm8958-dsp2.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
-index 80a963d..c67fb4d 100644
---- a/drivers/edac/i7core_edac.c
-+++ b/drivers/edac/i7core_edac.c
-@@ -1334,14 +1334,19 @@ static int i7core_get_onedevice(struct pci_dev **prev,
- 	 * is at addr 8086:2c40, instead of 8086:2c41. So, we need
- 	 * to probe for the alternate address in case of failure
- 	 */
--	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_I7_NONCORE && !pdev)
-+	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_I7_NONCORE && !pdev) {
-+		pci_dev_get(*prev);	/* pci_get_device will put it */
- 		pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
- 				      PCI_DEVICE_ID_INTEL_I7_NONCORE_ALT, *prev);
-+	}
+diff --git a/sound/soc/codecs/wm8958-dsp2.c b/sound/soc/codecs/wm8958-dsp2.c
+index b0710d8..754f88e 100644
+--- a/sound/soc/codecs/wm8958-dsp2.c
++++ b/sound/soc/codecs/wm8958-dsp2.c
+@@ -153,7 +153,7 @@ static int wm8958_dsp2_fw(struct snd_soc_codec *codec, const char *name,
  
--	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE && !pdev)
-+	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE &&
-+	    !pdev) {
-+		pci_dev_get(*prev);	/* pci_get_device will put it */
- 		pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
- 				      PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE_ALT,
- 				      *prev);
-+	}
+ 			data32 &= 0xffffff;
  
- 	if (!pdev) {
- 		if (*prev) {
+-			wm8994_bulk_write(codec->control_data,
++			wm8994_bulk_write(wm8994->wm8994,
+ 					  data32 & 0xffffff,
+ 					  block_len / 2,
+ 					  (void *)(data + 8));
 -- 
 1.9.0
 
