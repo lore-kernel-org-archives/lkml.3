@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752872AbaCEO0V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:26:21 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41093 "EHLO
+	id S1757378AbaCEO0Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:26:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41112 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757340AbaCEO0R (ORCPT
+	with ESMTP id S1757340AbaCEO0W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:26:17 -0500
+	Wed, 5 Mar 2014 09:26:22 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Florian Westphal <fw@strlen.de>, "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 079/131] net: sctp: fix sctp_connectx abi for ia32 emulation/compat mode
-Date: Wed,  5 Mar 2014 14:23:23 +0000
-Message-Id: <1394029455-23128-80-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 082/131] net: ip, ipv6: handle gso skbs in forwarding path
+Date: Wed,  5 Mar 2014 14:23:26 +0000
+Message-Id: <1394029455-23128-83-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -28,109 +27,227 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Florian Westphal <fw@strlen.de>
 
-commit ffd5939381c609056b33b7585fb05a77b4c695f3 upstream.
+commit fe6cc55f3a9a053482a76f5a6b2257cee51b4663 upstream.
 
-SCTP's sctp_connectx() abi breaks for 64bit kernels compiled with 32bit
-emulation (e.g. ia32 emulation or x86_x32). Due to internal usage of
-'struct sctp_getaddrs_old' which includes a struct sockaddr pointer,
-sizeof(param) check will always fail in kernel as the structure in
-64bit kernel space is 4bytes larger than for user binaries compiled
-in 32bit mode. Thus, applications making use of sctp_connectx() won't
-be able to run under such circumstances.
+Marcelo Ricardo Leitner reported problems when the forwarding link path
+has a lower mtu than the incoming one if the inbound interface supports GRO.
 
-Introduce a compat interface in the kernel to deal with such
-situations by using a 'struct compat_sctp_getaddrs_old' structure
-where user data is copied into it, and then sucessively transformed
-into a 'struct sctp_getaddrs_old' structure with the help of
-compat_ptr(). That fixes sctp_connectx() abi without any changes
-needed in user space, and lets the SCTP test suite pass when compiled
-in 32bit and run on 64bit kernels.
+Given:
+Host <mtu1500> R1 <mtu1200> R2
 
-Fixes: f9c67811ebc0 ("sctp: Fix regression introduced by new sctp_connectx api")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Host sends tcp stream which is routed via R1 and R2.  R1 performs GRO.
+
+In this case, the kernel will fail to send ICMP fragmentation needed
+messages (or pkt too big for ipv6), as GSO packets currently bypass dstmtu
+checks in forward path. Instead, Linux tries to send out packets exceeding
+the mtu.
+
+When locking route MTU on Host (i.e., no ipv4 DF bit set), R1 does
+not fragment the packets when forwarding, and again tries to send out
+packets exceeding R1-R2 link mtu.
+
+This alters the forwarding dstmtu checks to take the individual gso
+segment lengths into account.
+
+For ipv6, we send out pkt too big error for gso if the individual
+segments are too big.
+
+For ipv4, we either send icmp fragmentation needed, or, if the DF bit
+is not set, perform software segmentation and let the output path
+create fragments when the packet is leaving the machine.
+It is not 100% correct as the error message will contain the headers of
+the GRO skb instead of the original/segmented one, but it seems to
+work fine in my (limited) tests.
+
+Eric Dumazet suggested to simply shrink mss via ->gso_size to avoid
+sofware segmentation.
+
+However it turns out that skb_segment() assumes skb nr_frags is related
+to mss size so we would BUG there.  I don't want to mess with it considering
+Herbert and Eric disagree on what the correct behavior should be.
+
+Hannes Frederic Sowa notes that when we would shrink gso_size
+skb_segment would then also need to deal with the case where
+SKB_MAX_FRAGS would be exceeded.
+
+This uses sofware segmentation in the forward path when we hit ipv4
+non-DF packets and the outgoing link mtu is too small.  Its not perfect,
+but given the lack of bug reports wrt. GRO fwd being broken this is a
+rare case anyway.  Also its not like this could not be improved later
+once the dust settles.
+
+Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
+Reported-by: Marcelo Ricardo Leitner <mleitner@redhat.com>
+Signed-off-by: Florian Westphal <fw@strlen.de>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-[ luis: backported to 3.11: adjusted context ]
+[ luis: backported to 3.11: used davem's backport to 3.10 ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/sctp/socket.c | 41 ++++++++++++++++++++++++++++++++---------
- 1 file changed, 32 insertions(+), 9 deletions(-)
+ include/linux/skbuff.h | 17 ++++++++++++
+ net/ipv4/ip_forward.c  | 71 ++++++++++++++++++++++++++++++++++++++++++++++++--
+ net/ipv6/ip6_output.c  | 17 ++++++++++--
+ 3 files changed, 101 insertions(+), 4 deletions(-)
 
-diff --git a/net/sctp/socket.c b/net/sctp/socket.c
-index cf6c6b0..bd4a48d 100644
---- a/net/sctp/socket.c
-+++ b/net/sctp/socket.c
-@@ -71,6 +71,7 @@
- #include <linux/crypto.h>
- #include <linux/slab.h>
- #include <linux/file.h>
-+#include <linux/compat.h>
- 
- #include <net/ip.h>
- #include <net/icmp.h>
-@@ -1375,11 +1376,19 @@ static int sctp_setsockopt_connectx(struct sock* sk,
- /*
-  * New (hopefully final) interface for the API.
-  * We use the sctp_getaddrs_old structure so that use-space library
-- * can avoid any unnecessary allocations.   The only defferent part
-+ * can avoid any unnecessary allocations. The only different part
-  * is that we store the actual length of the address buffer into the
-- * addrs_num structure member.  That way we can re-use the existing
-+ * addrs_num structure member. That way we can re-use the existing
-  * code.
-  */
-+#ifdef CONFIG_COMPAT
-+struct compat_sctp_getaddrs_old {
-+	sctp_assoc_t	assoc_id;
-+	s32		addr_num;
-+	compat_uptr_t	addrs;		/* struct sockaddr * */
-+};
-+#endif
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 3d9dcd4..29db63f 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -2816,5 +2816,22 @@ static inline bool skb_head_is_locked(const struct sk_buff *skb)
+ {
+ 	return !skb->head_frag || skb_cloned(skb);
+ }
 +
- static int sctp_getsockopt_connectx3(struct sock* sk, int len,
- 				     char __user *optval,
- 				     int __user *optlen)
-@@ -1388,16 +1397,30 @@ static int sctp_getsockopt_connectx3(struct sock* sk, int len,
- 	sctp_assoc_t assoc_id = 0;
- 	int err = 0;
++/**
++ * skb_gso_network_seglen - Return length of individual segments of a gso packet
++ *
++ * @skb: GSO skb
++ *
++ * skb_gso_network_seglen is used to determine the real size of the
++ * individual segments, including Layer3 (IP, IPv6) and L4 headers (TCP/UDP).
++ *
++ * The MAC/L2 header is not accounted for.
++ */
++static inline unsigned int skb_gso_network_seglen(const struct sk_buff *skb)
++{
++	unsigned int hdr_len = skb_transport_header(skb) -
++			       skb_network_header(skb);
++	return hdr_len + skb_gso_transport_seglen(skb);
++}
+ #endif	/* __KERNEL__ */
+ #endif	/* _LINUX_SKBUFF_H */
+diff --git a/net/ipv4/ip_forward.c b/net/ipv4/ip_forward.c
+index 694de3b..98d7e53 100644
+--- a/net/ipv4/ip_forward.c
++++ b/net/ipv4/ip_forward.c
+@@ -39,6 +39,71 @@
+ #include <net/route.h>
+ #include <net/xfrm.h>
  
--	if (len < sizeof(param))
--		return -EINVAL;
-+#ifdef CONFIG_COMPAT
-+	if (is_compat_task()) {
-+		struct compat_sctp_getaddrs_old param32;
- 
--	if (copy_from_user(&param, optval, sizeof(param)))
--		return -EFAULT;
-+		if (len < sizeof(param32))
-+			return -EINVAL;
-+		if (copy_from_user(&param32, optval, sizeof(param32)))
-+			return -EFAULT;
- 
--	err = __sctp_setsockopt_connectx(sk,
--			(struct sockaddr __user *)param.addrs,
--			param.addr_num, &assoc_id);
-+		param.assoc_id = param32.assoc_id;
-+		param.addr_num = param32.addr_num;
-+		param.addrs = compat_ptr(param32.addrs);
-+	} else
-+#endif
-+	{
-+		if (len < sizeof(param))
-+			return -EINVAL;
-+		if (copy_from_user(&param, optval, sizeof(param)))
-+			return -EFAULT;
++static bool ip_may_fragment(const struct sk_buff *skb)
++{
++	return unlikely((ip_hdr(skb)->frag_off & htons(IP_DF)) == 0) ||
++	       !skb->local_df;
++}
++
++static bool ip_exceeds_mtu(const struct sk_buff *skb, unsigned int mtu)
++{
++	if (skb->len <= mtu || skb->local_df)
++		return false;
++
++	if (skb_is_gso(skb) && skb_gso_network_seglen(skb) <= mtu)
++		return false;
++
++	return true;
++}
++
++static bool ip_gso_exceeds_dst_mtu(const struct sk_buff *skb)
++{
++	unsigned int mtu;
++
++	if (skb->local_df || !skb_is_gso(skb))
++		return false;
++
++	mtu = dst_mtu(skb_dst(skb));
++
++	/* if seglen > mtu, do software segmentation for IP fragmentation on
++	 * output.  DF bit cannot be set since ip_forward would have sent
++	 * icmp error.
++	 */
++	return skb_gso_network_seglen(skb) > mtu;
++}
++
++/* called if GSO skb needs to be fragmented on forward */
++static int ip_forward_finish_gso(struct sk_buff *skb)
++{
++	struct dst_entry *dst = skb_dst(skb);
++	netdev_features_t features;
++	struct sk_buff *segs;
++	int ret = 0;
++
++	features = netif_skb_dev_features(skb, dst->dev);
++	segs = skb_gso_segment(skb, features & ~NETIF_F_GSO_MASK);
++	if (IS_ERR(segs)) {
++		kfree_skb(skb);
++		return -ENOMEM;
 +	}
++
++	consume_skb(skb);
++
++	do {
++		struct sk_buff *nskb = segs->next;
++		int err;
++
++		segs->next = NULL;
++		err = dst_output(segs);
++
++		if (err && ret == 0)
++			ret = err;
++		segs = nskb;
++	} while (segs);
++
++	return ret;
++}
++
+ static int ip_forward_finish(struct sk_buff *skb)
+ {
+ 	struct ip_options *opt	= &(IPCB(skb)->opt);
+@@ -49,6 +114,9 @@ static int ip_forward_finish(struct sk_buff *skb)
+ 	if (unlikely(opt->optlen))
+ 		ip_forward_options(skb);
  
-+	err = __sctp_setsockopt_connectx(sk, (struct sockaddr __user *)
-+					 param.addrs, param.addr_num,
-+					 &assoc_id);
- 	if (err == 0 || err == -EINPROGRESS) {
- 		if (copy_to_user(optval, &assoc_id, sizeof(assoc_id)))
- 			return -EFAULT;
++	if (ip_gso_exceeds_dst_mtu(skb))
++		return ip_forward_finish_gso(skb);
++
+ 	return dst_output(skb);
+ }
+ 
+@@ -88,8 +156,7 @@ int ip_forward(struct sk_buff *skb)
+ 	if (opt->is_strictroute && rt->rt_uses_gateway)
+ 		goto sr_failed;
+ 
+-	if (unlikely(skb->len > dst_mtu(&rt->dst) && !skb_is_gso(skb) &&
+-		     (ip_hdr(skb)->frag_off & htons(IP_DF))) && !skb->local_df) {
++	if (!ip_may_fragment(skb) && ip_exceeds_mtu(skb, dst_mtu(&rt->dst))) {
+ 		IP_INC_STATS(dev_net(rt->dst.dev), IPSTATS_MIB_FRAGFAILS);
+ 		icmp_send(skb, ICMP_DEST_UNREACH, ICMP_FRAG_NEEDED,
+ 			  htonl(dst_mtu(&rt->dst)));
+diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
+index e50a9e3..554eb0d 100644
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -346,6 +346,20 @@ static inline int ip6_forward_finish(struct sk_buff *skb)
+ 	return dst_output(skb);
+ }
+ 
++static bool ip6_pkt_too_big(const struct sk_buff *skb, unsigned int mtu)
++{
++	if (skb->len <= mtu || skb->local_df)
++		return false;
++
++	if (IP6CB(skb)->frag_max_size && IP6CB(skb)->frag_max_size > mtu)
++		return true;
++
++	if (skb_is_gso(skb) && skb_gso_network_seglen(skb) <= mtu)
++		return false;
++
++	return true;
++}
++
+ int ip6_forward(struct sk_buff *skb)
+ {
+ 	struct dst_entry *dst = skb_dst(skb);
+@@ -468,8 +482,7 @@ int ip6_forward(struct sk_buff *skb)
+ 	if (mtu < IPV6_MIN_MTU)
+ 		mtu = IPV6_MIN_MTU;
+ 
+-	if ((!skb->local_df && skb->len > mtu && !skb_is_gso(skb)) ||
+-	    (IP6CB(skb)->frag_max_size && IP6CB(skb)->frag_max_size > mtu)) {
++	if (ip6_pkt_too_big(skb, mtu)) {
+ 		/* Again, force OUTPUT device used as source address */
+ 		skb->dev = dst->dev;
+ 		icmpv6_send(skb, ICMPV6_PKT_TOOBIG, 0, mtu);
 -- 
 1.9.0
 
