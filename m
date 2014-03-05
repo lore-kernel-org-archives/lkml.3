@@ -1,97 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755803AbaCEHIS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 02:08:18 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:56149 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751544AbaCEHIQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 02:08:16 -0500
-Date: Wed, 5 Mar 2014 14:30:15 +0800
-From: Mark Brown <broonie@kernel.org>
-To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-Cc: Lars-Peter Clausen <lars@metafoo.de>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "Fabio.Estevam@freescale.com" <Fabio.Estevam@freescale.com>,
-        "moinejf@free.fr" <moinejf@free.fr>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>,
-        "tiwai@suse.de" <tiwai@suse.de>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "timur@tabi.org" <timur@tabi.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "denis@eukrea.com" <denis@eukrea.com>,
-        "guangyu.chen@freescale.com" <guangyu.chen@freescale.com>,
-        "mpa@pengutronix.de" <mpa@pengutronix.de>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>
-Message-ID: <20140305063015.GA1704@sirena.org.uk>
-References: <1393387175-15539-1-git-send-email-Li.Xiubo@freescale.com>
- <1393387175-15539-2-git-send-email-Li.Xiubo@freescale.com>
- <5311DE70.7000901@metafoo.de>
- <20140305033935.GY13126@sirena.org.uk>
- <6991b4aaf2a34f8180b24f7a2ae8355a@BY2PR03MB505.namprd03.prod.outlook.com>
+	id S1754039AbaCEHLw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 02:11:52 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:54002 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752600AbaCEHLu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 02:11:50 -0500
+Message-ID: <5316CE17.6010201@ti.com>
+Date: Wed, 5 Mar 2014 09:11:19 +0200
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rwEMma7ioTxnRzrJ"
-Content-Disposition: inline
-In-Reply-To: <6991b4aaf2a34f8180b24f7a2ae8355a@BY2PR03MB505.namprd03.prod.outlook.com>
-X-Cookie: Avoid gunfire in the bathroom tonight.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 202.175.88.218
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [alsa-devel] [PATCH 01/10] ASoC: core: Add
- snd_soc_dai_set_tdm_slot_xlate().
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Tony Lindgren <tony@atomide.com>
+CC: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 5/5] drivers: bus: omap_l3: Change pr_crit() to dev_err()
+ when IRQ request fails
+References: <1393937293-6036-1-git-send-email-peter.ujfalusi@ti.com> <1393937293-6036-6-git-send-email-peter.ujfalusi@ti.com> <5315E522.9090606@ti.com>
+In-Reply-To: <5315E522.9090606@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/04/2014 04:37 PM, Santosh Shilimkar wrote:
+> On Tuesday 04 March 2014 08:48 PM, Peter Ujfalusi wrote:
+>> Use dev_err() which will going to print the driver's name as well and the
+>> KERN_ERR level is sufficient in this case (we also print via dev_err when
+>> there is an error with the mem resources)
+>>
+>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+>> Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> ---
+>>  drivers/bus/omap_l3_noc.c | 7 +++----
+>>  1 file changed, 3 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
+>> index 0eff48585ae3..972691a668a3 100644
+>> --- a/drivers/bus/omap_l3_noc.c
+>> +++ b/drivers/bus/omap_l3_noc.c
+>> @@ -158,8 +158,8 @@ static int omap4_l3_probe(struct platform_device *pdev)
+>>  	ret = devm_request_irq(&pdev->dev, l3->debug_irq, l3_interrupt_handler,
+>>  			       IRQF_DISABLED, "l3-dbg-irq", l3);
+>>  	if (ret) {
+>> -		pr_crit("L3: request_irq failed to register for 0x%x\n",
+>> -						l3->debug_irq);
+>> +		dev_err(&pdev->dev, "request_irq failed for %d\n",
+>> +			l3->debug_irq);
+>>  		return ret;
+>>  	}
+>>  
+>> @@ -167,8 +167,7 @@ static int omap4_l3_probe(struct platform_device *pdev)
+>>  	ret = devm_request_irq(&pdev->dev, l3->app_irq, l3_interrupt_handler,
+>>  			       IRQF_DISABLED, "l3-app-irq", l3);
+>>  	if (ret)
+>> -		pr_crit("L3: request_irq failed to register for 0x%x\n",
+>> -						l3->app_irq);
+>> +		dev_err(&pdev->dev, "request_irq failed for %d\n", l3->app_irq);
+>>  
+>>  	return ret;
+>>  }
+>>
+> So this one change in the log level. If I look at now, may be dev_err
+> is fine but the change is not same.
 
---rwEMma7ioTxnRzrJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Not sure what you mean by 'the change is not same'?
+I just picked the old series and rebased it on linux-next, the patch is the
+same as it was back in May 2013:
+https://lkml.org/lkml/2013/5/2/205
 
-On Wed, Mar 05, 2014 at 03:55:50AM +0000, Li.Xiubo@freescale.com wrote:
+And yes, I have shortened the texts in the print, but the meaning of the
+prints have not changed.
 
-> This adds the function of snd_soc_dai_set_tdm_slot_xlate, which is almost
-> One new signature of snd_soc_dai_set_tdm_slot discarding the mask
-> Parameters, which could be generated by itself.
+> Apart from above comment, rest of the series looks fine to me.
+> Feel free to add my ack...
 
-Right, so that's not a bad thing but the _xlate() naming is confusing -
-Lars' point was that if a function is called _xlate() it would usually
-be an operation used as part of DT parsing, not something called from
-non-DT code.  The new interface is probably a good thing but needs a
-different name (perhaps _simple or something?) or we need to rename the
-old one out of the way (it's slightly less flexible so we probably don't
-want to remove it totally).
+Thanks.
 
-> And I want to provide one standard method for the drivers who are parsing
-> The TDM information from the DT node.=20
-
-This is a good goal.
-
---rwEMma7ioTxnRzrJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTFsR0AAoJELSic+t+oim9nRgP/Rw0obl6L5b0lI0MbxJjCMT8
-o4sxUT2d3HmLgJSrFOCt5g3Z5yoK0+tbCH1ID86FmgHh0hjNuw+WQR5gci1Rd2aO
-waKUk05MtT5GbeuV/9RZS3XIISxzWQHlJ8tfonWxfAPD02QlEa7MT5oPO4DqSGkM
-hq5/YekujQf5bu+TK08Vq4Tkc6ZTuauO1cDD+uHQ/b1tAPpuXprfXrLmy2yWd43Y
-gM6qygMWZio0aXi05EkJa8Saj3A/Rz/fxXNY8ddkPQv1bgqPNUaPqfO3OdDNOZ6i
-ybgWMbJagmRH0m10hO9/38B2iD1f3oao7h3RrAH/n7qz5SFc5nzbCLQ6Y1Zxa47u
-JL0jr7tbHf1r5JzoG/r+AJ7RQpZQOANBLjv+qWFoD4aJ37Cj8GdwJoyngjxa5cQF
-0NR3zWpWWJUyDTkx0h79O/gdelcUIVBf+AuBFbmrkobLY15VdE5jnMQCtFpp1duA
-Jc+ZwlQT2rfTbsrPUbyC8QSFgP65qg2431ZqATRv1/tbIIa6nZEQ8EirBt9ZG7kP
-p+l7RigcYJNat2k/xXEjR9oOGZ5VoKGG5Dm/MsB9o7rGQXkAIPAN95rVu7Cc4LKr
-DhpZtODxRemrQ1rg/K5zoyUepyLqgRB0W1yv3MOppt5OZ2QNNWTvI9A5sVaU0xhL
-g+UkIc11T1L5w7EvCAJs
-=HBoj
------END PGP SIGNATURE-----
-
---rwEMma7ioTxnRzrJ--
+-- 
+Péter
