@@ -1,61 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758959AbaCEPRt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 10:17:49 -0500
-Received: from smtprelay0177.hostedemail.com ([216.40.44.177]:36932 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755781AbaCEPRq (ORCPT
+	id S1758985AbaCEPSX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:18:23 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40929 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756977AbaCEOZb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 10:17:46 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3872:4321:5007:7652:7875:8660:9190:10004:10400:10466:10848:11026:11232:11473:11658:11914:12296:12517:12519:12740:13069:13148:13230:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: match62_5fcd9307aca60
-X-Filterd-Recvd-Size: 1944
-Message-ID: <1394032656.3271.51.camel@joe-AO722>
-Subject: Re: [PATCH 2/3] sched: Use clamp() and clamp_val() to make it more
- readable.
-From: Joe Perches <joe@perches.com>
-To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com, rostedt@goodmis.org,
-        peterz@infradead.org, mingo@redhat.com,
-        Kees Cook <keescook@chromium.org>
-Date: Wed, 05 Mar 2014 07:17:36 -0800
-In-Reply-To: <0b02fa0f05c9cebca19cadce92cb8c85ee130ce0.1394022835.git.yangds.fnst@cn.fujitsu.com>
-References: <8ae8a3aefb157e9e7d1b62a4c136289e74783eaf.1394022835.git.yangds.fnst@cn.fujitsu.com>
-	 <0b02fa0f05c9cebca19cadce92cb8c85ee130ce0.1394022835.git.yangds.fnst@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 5 Mar 2014 09:25:31 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Tejun Heo <tj@kernel.org>, Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 048/131] ahci: disable NCQ on Samsung pci-e SSDs on macbooks
+Date: Wed,  5 Mar 2014 14:22:52 +0000
+Message-Id: <1394029455-23128-49-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
+References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-03-05 at 20:36 +0800, Dongsheng Yang wrote:
-> As Kees suggested, I use clamp() function to replace the if and
-> else branch, making it more readable and modular.
-> 
-> Suggested-by: Kees Cook <keescook@chromium.org>
-> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-[]
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-[]
-> @@ -3070,17 +3070,10 @@ SYSCALL_DEFINE1(nice, int, increment)
->  	 * We don't have to worry. Conceptually one call occurs first
->  	 * and we have a single winner.
->  	 */
-> -	if (increment < -40)
-> -		increment = -40;
-> -	if (increment > 40)
-> -		increment = 40;
-> -
-> +	increment = clamp(increment, -40, 40);
+3.11.10.6 -stable review patch.  If anyone has any objections, please let me know.
 
-Maybe:
+------------------
 
-	increment = clamp(increment, -(NICE_MAX - NICE_MIN + 1), 
-				   , NICE_MAX - NICE_MIN + 1)
+From: Levente Kurusa <levex@linux.com>
 
-or add yet another define like #define NICE_RANGE
-or #define NICE_MAX_INCREMENT
+commit 67809f85d31eac600f6b28defa5386c9d2a13b1d upstream.
+
+Samsung's pci-e SSDs with device ID 0x1600 which are found on some
+macbooks time out on NCQ commands.  Blacklist NCQ on the device so
+that the affected machines can at least boot.
+
+Original-patch-by: Levente Kurusa <levex@linux.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=60731
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/ata/ahci.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index 54bf3f8..75979cd 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -61,6 +61,7 @@ enum board_ids {
+ 	/* board IDs by feature in alphabetical order */
+ 	board_ahci,
+ 	board_ahci_ign_iferr,
++	board_ahci_noncq,
+ 	board_ahci_nosntf,
+ 	board_ahci_yes_fbs,
+ 
+@@ -119,6 +120,13 @@ static const struct ata_port_info ahci_port_info[] = {
+ 		.udma_mask	= ATA_UDMA6,
+ 		.port_ops	= &ahci_ops,
+ 	},
++	[board_ahci_noncq] = {
++		AHCI_HFLAGS	(AHCI_HFLAG_NO_NCQ),
++		.flags		= AHCI_FLAG_COMMON,
++		.pio_mask	= ATA_PIO4,
++		.udma_mask	= ATA_UDMA6,
++		.port_ops	= &ahci_ops,
++	},
+ 	[board_ahci_nosntf] = {
+ 		AHCI_HFLAGS	(AHCI_HFLAG_NO_SNTF),
+ 		.flags		= AHCI_FLAG_COMMON,
+@@ -450,6 +458,12 @@ static const struct pci_device_id ahci_pci_tbl[] = {
+ 	{ PCI_VDEVICE(ASMEDIA, 0x0611), board_ahci },	/* ASM1061 */
+ 	{ PCI_VDEVICE(ASMEDIA, 0x0612), board_ahci },	/* ASM1062 */
+ 
++	/*
++	 * Samsung SSDs found on some macbooks.  NCQ times out.
++	 * https://bugzilla.kernel.org/show_bug.cgi?id=60731
++	 */
++	{ PCI_VDEVICE(SAMSUNG, 0x1600), board_ahci_noncq },
++
+ 	/* Enmotus */
+ 	{ PCI_DEVICE(0x1c44, 0x8000), board_ahci },
+ 
+-- 
+1.9.0
 
