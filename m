@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754415AbaCEJww (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 04:52:52 -0500
-Received: from webbox1416.server-home.net ([77.236.96.61]:58666 "EHLO
-	webbox1416.server-home.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753933AbaCEJwu (ORCPT
+	id S1753922AbaCEJzc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 04:55:32 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:36301 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751459AbaCEJz0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 04:52:50 -0500
-X-Greylist: delayed 439 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Mar 2014 04:52:50 EST
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        Alexander Stein <alexander.stein@systec-electronic.com>
-Subject: [PATCH] pch_phub: Report error writing MAC back to user
-Date: Wed,  5 Mar 2014 10:44:57 +0100
-Message-Id: <1394012697-27285-1-git-send-email-alexander.stein@systec-electronic.com>
-X-Mailer: git-send-email 1.8.3.2
+	Wed, 5 Mar 2014 04:55:26 -0500
+Date: Wed, 5 Mar 2014 17:55:19 +0800
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>
+Subject: Re: [PATCH 2/3] regulator: s2mps11: Add set_suspend_disable for
+ S2MPS14
+Message-ID: <20140305095519.GD10380@lee--X1>
+References: <1394011373-4057-1-git-send-email-k.kozlowski@samsung.com>
+ <1394011373-4057-3-git-send-email-k.kozlowski@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1394011373-4057-3-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
----
- drivers/misc/pch_phub.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+> S2MPS14 regulators support suspend mode where their status is controlled
+> by PWREN coming from SoC. This patch implements the set_suspend_disable
+> for S2MPS14 regulators.
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> ---
+>  drivers/regulator/s2mps11.c         |   26 ++++++++++++++++++++++++++
+>  include/linux/mfd/samsung/s2mps14.h |    2 ++
+>  2 files changed, 28 insertions(+)
 
-diff --git a/drivers/misc/pch_phub.c b/drivers/misc/pch_phub.c
-index a5925f7f..9565973 100644
---- a/drivers/misc/pch_phub.c
-+++ b/drivers/misc/pch_phub.c
-@@ -636,6 +636,7 @@ static ssize_t store_pch_mac(struct device *dev, struct device_attribute *attr,
- 	u8 mac[ETH_ALEN];
- 	ssize_t rom_size;
- 	struct pch_phub_reg *chip = dev_get_drvdata(dev);
-+	int ret;
- 
- 	if (!mac_pton(buf, mac))
- 		return -EINVAL;
-@@ -644,8 +645,10 @@ static ssize_t store_pch_mac(struct device *dev, struct device_attribute *attr,
- 	if (!chip->pch_phub_extrom_base_address)
- 		return -ENOMEM;
- 
--	pch_phub_write_gbe_mac_addr(chip, mac);
-+	ret = pch_phub_write_gbe_mac_addr(chip, mac);
- 	pci_unmap_rom(chip->pdev, chip->pch_phub_extrom_base_address);
-+	if (ret)
-+		return ret;
- 
- 	return count;
- }
+For the MFD changes:
+  Acked-by: Lee Jones <lee.jones@linaro.org>
+
 -- 
-1.8.3.2
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
