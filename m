@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753811AbaCEHTZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 02:19:25 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:48876 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753582AbaCEHTR (ORCPT
+	id S1753893AbaCEHT3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 02:19:29 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:44003 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753752AbaCEHT0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 02:19:17 -0500
+	Wed, 5 Mar 2014 02:19:26 -0500
 From: Vincent Guittot <vincent.guittot@linaro.org>
 To: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
         tony.luck@intel.com, fenghua.yu@intel.com, schwidefsky@de.ibm.com,
@@ -15,9 +15,9 @@ To: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
 Cc: dietmar.eggemann@arm.com, preeti@linux.vnet.ibm.com,
         linaro-kernel@lists.linaro.org,
         Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [RFC 4/6] sched: powerpc: create a dedicated topology table
-Date: Wed,  5 Mar 2014 15:18:24 +0800
-Message-Id: <1394003906-11630-5-git-send-email-vincent.guittot@linaro.org>
+Subject: [RFC 6/6] sched: ARM: create a dedicated scheduler topology table
+Date: Wed,  5 Mar 2014 15:18:26 +0800
+Message-Id: <1394003906-11630-7-git-send-email-vincent.guittot@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1394003906-11630-1-git-send-email-vincent.guittot@linaro.org>
 References: <1394003906-11630-1-git-send-email-vincent.guittot@linaro.org>
@@ -25,44 +25,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create a dedicated topology table for handling asymetric feature.
-The current proposal creates a new level which describes which groups of CPUs
-take adavantge of SD_ASYM_PACKING. The useless level will be removed during the
-build of the sched_domain topology.
+Create a dedicated topology table for ARM which will create new level to
+differentiate CPUs that can or not powergate independantly from others.
 
-Another solution would be to set SD_ASYM_PACKING in the sd_flags of SMT level
-during the boot sequence and before the build of the sched_domain topology.
+The patch gives an example of how to add domain that will take advantage of
+SD_SHARE_POWERDOMAIN.
 
 Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
 ---
- arch/powerpc/kernel/smp.c |   35 +++++++++++++++++++++++++++--------
- kernel/sched/core.c       |    6 ------
- 2 files changed, 27 insertions(+), 14 deletions(-)
+ arch/arm/kernel/topology.c |   26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
 
-diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
-index ac2621a..75da054 100644
---- a/arch/powerpc/kernel/smp.c
-+++ b/arch/powerpc/kernel/smp.c
-@@ -755,6 +755,32 @@ int setup_profiling_timer(unsigned int multiplier)
- 	return 0;
+diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
+index 0bc94b1..ae8ffbc 100644
+--- a/arch/arm/kernel/topology.c
++++ b/arch/arm/kernel/topology.c
+@@ -185,6 +185,15 @@ const struct cpumask *cpu_coregroup_mask(int cpu)
+ 	return &cpu_topology[cpu].core_sibling;
  }
  
-+#ifdef CONFIG_SCHED_SMT
-+/* cpumask of CPUs with asymetric SMT dependancy */
-+static const struct cpumask *cpu_asmt_mask(int cpu)
++/*
++ * The current assumption is that we can power gate each core independently.
++ * This will be superseded by DT binding once available.
++ */
++const struct cpumask *cpu_corepower_mask(int cpu)
 +{
-+	if (cpu_has_feature(CPU_FTR_ASYM_SMT)) {
-+		printk_once(KERN_INFO "Enabling Asymmetric SMT scheduling\n");
-+		return topology_thread_cpumask(cpu);
-+	}
-+	return cpumask_of(cpu);
++	return &cpu_topology[cpu].thread_sibling;
 +}
-+#endif
 +
-+static struct sched_domain_topology_level powerpc_topology[] = {
-+#ifdef CONFIG_SCHED_SMT
-+	{ cpu_asmt_mask, SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES | SD_ASYM_PACKING, SD_INIT_NAME(ASMT) },
-+	{ cpu_smt_mask, SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES, SD_INIT_NAME(SMT) },
+ static void update_siblings_masks(unsigned int cpuid)
+ {
+ 	struct cputopo_arm *cpu_topo, *cpuid_topo = &cpu_topology[cpuid];
+@@ -266,6 +275,20 @@ void store_cpu_topology(unsigned int cpuid)
+ 		cpu_topology[cpuid].socket_id, mpidr);
+ }
+ 
++static struct sched_domain_topology_level arm_topology[] = {
++#ifdef CONFIG_SCHED_MC
++	{ cpu_corepower_mask, SD_SHARE_PKG_RESOURCES | SD_SHARE_POWERDOMAIN, SD_INIT_NAME(GMC) },
++	{ cpu_coregroup_mask, SD_SHARE_PKG_RESOURCES, SD_INIT_NAME(MC) },
 +#endif
 +	{ cpu_cpu_mask, SD_INIT_NAME(DIE) },
 +	{ NULL, },
@@ -70,53 +71,20 @@ index ac2621a..75da054 100644
 +
 +static void __init set_sched_topology(void)
 +{
-+	sched_domain_topology = powerpc_topology;
++	sched_domain_topology = arm_topology;
 +}
 +
- void __init smp_cpus_done(unsigned int max_cpus)
- {
- 	cpumask_var_t old_mask;
-@@ -779,15 +805,8 @@ void __init smp_cpus_done(unsigned int max_cpus)
- 
- 	dump_numa_cpu_topology();
- 
--}
-+	set_sched_topology();
- 
--int arch_sd_sibling_asym_packing(void)
--{
--	if (cpu_has_feature(CPU_FTR_ASYM_SMT)) {
--		printk_once(KERN_INFO "Enabling Asymmetric SMT scheduling\n");
--		return SD_ASYM_PACKING;
--	}
--	return 0;
- }
- 
- #ifdef CONFIG_HOTPLUG_CPU
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 3479467..7606de0 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5818,11 +5818,6 @@ static void init_sched_groups_power(int cpu, struct sched_domain *sd)
- 	atomic_set(&sg->sgp->nr_busy_cpus, sg->group_weight);
- }
- 
--int __weak arch_sd_sibling_asym_packing(void)
--{
--       return 0*SD_ASYM_PACKING;
--}
--
  /*
-  * Initializers for schedule domains
-  * Non-inlined to reduce accumulated stack pressure in build_sched_domains()
-@@ -6000,7 +5995,6 @@ sd_init(struct sched_domain_topology_level *tl, int cpu)
- 	if (sd->flags & SD_SHARE_CPUPOWER) {
- 		sd->imbalance_pct = 110;
- 		sd->smt_gain = 1178; /* ~15% */
--		sd->flags |= arch_sd_sibling_asym_packing();
+  * init_cpu_topology is called at boot when only one cpu is running
+  * which prevent simultaneous write access to cpu_topology array
+@@ -289,4 +312,7 @@ void __init init_cpu_topology(void)
+ 	smp_wmb();
  
- 	} else if (sd->flags & SD_SHARE_PKG_RESOURCES) {
- 		sd->imbalance_pct = 117;
+ 	parse_dt_topology();
++
++	/* Set scheduler topology descriptor */
++	set_sched_topology();
+ }
 -- 
 1.7.9.5
 
