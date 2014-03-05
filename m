@@ -1,101 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756257AbaCEQ7L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 11:59:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56513 "EHLO mx1.redhat.com"
+	id S1753506AbaCERGr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 12:06:47 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:54169 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755270AbaCEQ7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 11:59:07 -0500
-From: Steve Grubb <sgrubb@redhat.com>
-To: linux-audit@redhat.com
-Cc: David Miller <davem@davemloft.net>, ebiederm@xmission.com, rgb@redhat.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org
-Subject: Re: [RFC][PATCH] audit: Simplify by assuming the callers socket buffer is large enough
-Date: Wed, 05 Mar 2014 11:59:01 -0500
-Message-ID: <7457128.6VP2v68V93@x2>
-Organization: Red Hat
-User-Agent: KMail/4.12.2 (Linux/3.13.5-200.fc20.x86_64; KDE/4.12.2; x86_64; ; )
-In-Reply-To: <20140304.192152.1234652192226780071.davem@davemloft.net>
-References: <20140304133004.b565820f60f595a48e621e58@linux-foundation.org> <87mwh5d1tf.fsf@xmission.com> <20140304.192152.1234652192226780071.davem@davemloft.net>
+	id S1751573AbaCERGq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 12:06:46 -0500
+Date: Wed, 5 Mar 2014 18:06:40 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Jani Nikula <jani.nikula@linux.intel.com>, Jiri Kosina <jkosina@suse.cz>,
+        linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
+Subject: Re: i915 resume-from-hibernation problems on resume with current
+ Linus' tree
+Message-ID: <20140305170640.GE28317@pd.tnic>
+References: <alpine.LNX.2.00.1402271153480.21399@pobox.suse.cz>
+ <alpine.LNX.2.00.1403031519500.7030@pobox.suse.cz>
+ <20140304134509.GA5427@pd.tnic>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140304134509.GA5427@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, March 04, 2014 07:21:52 PM David Miller wrote:
-> From: ebiederm@xmission.com (Eric W. Biederman)
-> Date: Tue, 04 Mar 2014 14:41:16 -0800
+On Tue, Mar 04, 2014 at 02:45:09PM +0100, Borislav Petkov wrote:
+> On Mon, Mar 03, 2014 at 03:20:11PM +0100, Jiri Kosina wrote:
+> > I encountered this again with -rc5.
+> > 
+> > If there is anything I can do to help debug this, please let me know.
 > 
-> > If we really want the ability to always appened to the queue of skb's
-> > is to just have a version of netlink_send_skb that ignores the queued
-> > limits.  Of course an evil program then could force the generation of
-> > enough audit records to DOS the kernel, but we seem to be in that
-> > situation now.  Shrug.
+> I have a similar issue where the screen blanks after the machine idle
+> timeout expires (not suspending the box - just leaving it idle) and then
+> when I press any button to wake up the screen, it remains off. The box
+> is otherwise alive, I can log into it and restart X. Then the screen is
+> back on. This started appearing in the -rc3-4 timeframe AFAICT.
 > 
-> There is never a valid reason to bypass the socket limits.
+> My GPU is
 > 
-> It protects the system from things going out of control.
+> 00:02.0 VGA compatible controller: Intel Corporation 3rd Gen Core processor Graphics Controller (rev 09) (prog-if 00 [VGA controller])
+>         Subsystem: Lenovo Device 21fa
+>         Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx+
+>         Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+>         Latency: 0
+>         Interrupt: pin A routed to IRQ 42
+>         Region 0: Memory at f0000000 (64-bit, non-prefetchable) [size=4M]
+>         Region 2: Memory at e0000000 (64-bit, prefetchable) [size=256M]
+>         Region 4: I/O ports at 4000 [size=64]
+>         Expansion ROM at <unassigned> [disabled]
+>         Capabilities: <access denied>
+>         Kernel driver in use: i915
+> 00: 86 80 66 01 07 04 90 00 09 00 00 03 00 00 00 00
+> 10: 04 00 00 f0 00 00 00 00 0c 00 00 e0 00 00 00 00
+> 20: 01 40 00 00 00 00 00 00 00 00 00 00 aa 17 fa 21
+> 30: 00 00 00 00 90 00 00 00 00 00 00 00 0b 01 00 00
 > 
-> Netlink packet sends can fail, and audit should cope with that
-> event instead of trying to bludgeon it into not happening.
+> Maybe I should say that I'm booting the box with
+> 
+> [    0.000000] Kernel command line: BOOT_IMAGE=/boot/vmlinuz-3.14.0-rc5+ root=/dev/sdb2 ro root=/dev/sdb2 ignore_loglevel log_buf_len=10M resume=/dev/sdb1 i915.i915_enable_rc6=4 i915.i915_enable_fbc=1 i915.lvds_downclock=1 i915.powersave=1
 
-I am not sure what exactly is the problem with the code that was being 
-patched. The audit code has been stable and working pretty well for everyone 
-for the last 5-6 years. But lately there has been a lot of kernel code churn 
-and I am concerned that the changes are being made without a complete 
-understanding of the design goals.
+>From looking at
 
-The audit system has to be very reliable. It can't lose any event or record. 
-The people that really depend on it would rather have access denied to the 
-system than lose any event. This is the reason it goes to such lengths.
+http://lkml.kernel.org/r/1394011994-30604-1-git-send-email-daniel.vetter@ffwll.ch
 
-If I understand the patch, it looks like its affecting code that adds, deletes, 
-or lists audit rules. This code is quite old and working well. It didn't at 
-first. We found a lot of problems by writing scripts like:
+it looks like I should stop using the rc6/fbc settings?
 
-#!/bin/bash
-while [ 1 ] ;
-do
-        echo "Inserting syscalls..."
-        sys=1
-        while [ $sys -lt 100 ]
-        do
-                sys=`expr $sys + 1`
-                echo "$sys"
-                auditctl -a entry,always -S $sys
-        done
+:-)
 
-        echo "Listing..."
-        auditctl -l
-        echo "Deleting..."
-        auditctl -D
-done
+-- 
+Regards/Gruss,
+    Boris.
 
-with another shell running:
-
-#!/bin/bash
-while [ 1 ] ; 
-do
-	echo "Listing..."
-	auditctl -l
-done
-
-and another shell running:
-
-#!/bin/bash
-while [ 1 ] ; 
-do
-	echo "Disabling..."
-	auditctl -e 0
-	echo "Enabling..."
-	auditctl -e 1
-done
-
-You can probably imagine more stress tests. But the proposed code should be 
-well tested similar to this.
-
-Thanks,
--Steve
+Sent from a fat crate under my desk. Formatting is fine.
+--
