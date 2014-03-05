@@ -1,80 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757463AbaCEAfv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 19:35:51 -0500
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:60677 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756677AbaCEAfq (ORCPT
+	id S1756705AbaCEAhN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 19:37:13 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:63606 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756055AbaCEAhL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 19:35:46 -0500
-Subject: [PATCH] phy: fix compiler array bounds warning on settings[]
-To: netdev@vger.kernel.org
-From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Tue, 04 Mar 2014 17:35:44 -0700
-Message-ID: <20140305003544.23016.55079.stgit@bhelgaas-glaptop.roam.corp.google.com>
-User-Agent: StGit/0.16
+	Tue, 4 Mar 2014 19:37:11 -0500
+X-AuditID: 9c93017e-b7cf9ae000004b4b-aa-531671b51ee6
+Date: Wed, 5 Mar 2014 09:37:10 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan@kernel.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: Re: [PATCH 2/6] mm: add get_pageblock_migratetype_nolock() for cases
+ where locking is undesirable
+Message-ID: <20140305003709.GB2340@lge.com>
+References: <1393596904-16537-1-git-send-email-vbabka@suse.cz>
+ <1393596904-16537-3-git-send-email-vbabka@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393596904-16537-3-git-send-email-vbabka@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With -Werror=array-bounds, gcc v4.7.x warns that in phy_find_valid(), the
-settings[] "array subscript is above array bounds", I think because idx is
-a signed integer and if the caller supplied idx < 0, we pass the guard but
-still reference out of bounds.
+On Fri, Feb 28, 2014 at 03:15:00PM +0100, Vlastimil Babka wrote:
+> In order to prevent race with set_pageblock_migratetype, most of calls to
+> get_pageblock_migratetype have been moved under zone->lock. For the remaining
+> call sites, the extra locking is undesirable, notably in free_hot_cold_page().
+> 
+> This patch introduces a _nolock version to be used on these call sites, where
+> a wrong value does not affect correctness. The function makes sure that the
+> value does not exceed valid migratetype numbers. Such too-high values are
+> assumed to be a result of race and caller-supplied fallback value is returned
+> instead.
+> 
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> ---
+>  include/linux/mmzone.h | 24 ++++++++++++++++++++++++
+>  mm/compaction.c        | 14 +++++++++++---
+>  mm/memory-failure.c    |  3 ++-
+>  mm/page_alloc.c        | 22 +++++++++++++++++-----
+>  mm/vmstat.c            |  2 +-
+>  5 files changed, 55 insertions(+), 10 deletions(-)
+> 
+> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> index fac5509..7c3f678 100644
+> --- a/include/linux/mmzone.h
+> +++ b/include/linux/mmzone.h
+> @@ -75,6 +75,30 @@ enum {
+>  
+>  extern int page_group_by_mobility_disabled;
+>  
+> +/*
+> + * When called without zone->lock held, a race with set_pageblock_migratetype
+> + * may result in bogus values. Use this variant only when this does not affect
+> + * correctness, and taking zone->lock would be costly. Values >= MIGRATE_TYPES
+> + * are considered to be a result of this race and the value of race_fallback
+> + * argument is returned instead.
+> + */
+> +static inline int get_pageblock_migratetype_nolock(struct page *page,
+> +	int race_fallback)
+> +{
+> +	int ret = get_pageblock_flags_group(page, PB_migrate, PB_migrate_end);
+> +
+> +	if (unlikely(ret >= MIGRATE_TYPES))
+> +		ret = race_fallback;
+> +
+> +	return ret;
+> +}
 
-Fix this by making idx unsigned here and elsewhere.
+How about below forms?
 
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
----
- drivers/net/phy/phy.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+get_pageblock_migratetype_locked(struct page *page)
+get_pageblock_migratetype(struct page *page, int race_fallback)
 
-diff --git a/drivers/net/phy/phy.c b/drivers/net/phy/phy.c
-index 19c9eca0ef26..76d96b9ebcdb 100644
---- a/drivers/net/phy/phy.c
-+++ b/drivers/net/phy/phy.c
-@@ -164,9 +164,9 @@ static const struct phy_setting settings[] = {
-  *   of that setting.  Returns the index of the last setting if
-  *   none of the others match.
-  */
--static inline int phy_find_setting(int speed, int duplex)
-+static inline unsigned int phy_find_setting(int speed, int duplex)
- {
--	int idx = 0;
-+	unsigned int idx = 0;
- 
- 	while (idx < ARRAY_SIZE(settings) &&
- 	       (settings[idx].speed != speed || settings[idx].duplex != duplex))
-@@ -185,7 +185,7 @@ static inline int phy_find_setting(int speed, int duplex)
-  *   the mask in features.  Returns the index of the last setting
-  *   if nothing else matches.
-  */
--static inline int phy_find_valid(int idx, u32 features)
-+static inline unsigned int phy_find_valid(unsigned int idx, u32 features)
- {
- 	while (idx < MAX_NUM_SETTINGS && !(settings[idx].setting & features))
- 		idx++;
-@@ -204,7 +204,7 @@ static inline int phy_find_valid(int idx, u32 features)
- static void phy_sanitize_settings(struct phy_device *phydev)
- {
- 	u32 features = phydev->supported;
--	int idx;
-+	unsigned int idx;
- 
- 	/* Sanitize settings based on PHY capabilities */
- 	if ((features & SUPPORTED_Autoneg) == 0)
-@@ -954,7 +954,8 @@ int phy_init_eee(struct phy_device *phydev, bool clk_stop_enable)
- 	    (phydev->interface == PHY_INTERFACE_MODE_RGMII))) {
- 		int eee_lp, eee_cap, eee_adv;
- 		u32 lp, cap, adv;
--		int idx, status;
-+		int status;
-+		unsigned int idx;
- 
- 		/* Read phy status to properly get the right settings */
- 		status = phy_read_status(phydev);
+get_pageblock_migratetype() and _nolock looks error-prone because developer
+who try to use get_pageblock_migratetype() may not know that it needs lock.
 
+Thanks.
