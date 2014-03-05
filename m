@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754606AbaCEKVU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 05:21:20 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:54690 "EHLO extserv.mm-sol.com"
+	id S1755823AbaCEKVz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 05:21:55 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:54617 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753869AbaCEKPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 05:15:13 -0500
+	id S1753561AbaCEKPJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 05:15:09 -0500
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 To: Felipe Balbi <balbi@ti.com>
 Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-msm@vger.kernel.org
-Subject: [PATCH v5 10/14] usb: phy: msm: Use reset framework for LINK and PHY resets
-Date: Wed,  5 Mar 2014 12:13:46 +0200
-Message-Id: <1394014430-26485-11-git-send-email-iivanov@mm-sol.com>
+Subject: [PATCH v5 02/14] usb: phy: msm: Migrate to Managed Device Resource allocation
+Date: Wed,  5 Mar 2014 12:13:38 +0200
+Message-Id: <1394014430-26485-3-git-send-email-iivanov@mm-sol.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1394014430-26485-1-git-send-email-iivanov@mm-sol.com>
 References: <1394014430-26485-1-git-send-email-iivanov@mm-sol.com>
@@ -24,92 +24,415 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
+Move memory, regulators, clocks and irq allocation to
+devm_* variants. Properly check for valid clk handles.
+
 Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
 ---
- drivers/usb/phy/phy-msm-usb.c |   30 ++++++++++++++++++++++--------
- include/linux/usb/msm_hsusb.h |    3 +++
- 2 files changed, 25 insertions(+), 8 deletions(-)
+ drivers/usb/phy/phy-msm-usb.c |  192 ++++++++++++++++-------------------------
+ 1 file changed, 74 insertions(+), 118 deletions(-)
 
 diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
-index 298820f..7e5c4ab 100644
+index 410ef99..3f8d3bc 100644
 --- a/drivers/usb/phy/phy-msm-usb.c
 +++ b/drivers/usb/phy/phy-msm-usb.c
-@@ -32,6 +32,7 @@
- #include <linux/pm_runtime.h>
- #include <linux/of.h>
- #include <linux/of_device.h>
-+#include <linux/reset.h>
+@@ -63,27 +63,18 @@ static int msm_hsusb_init_vddcx(struct msm_otg *motg, int init)
+ 	int ret = 0;
 
- #include <linux/usb.h>
- #include <linux/usb/otg.h>
-@@ -235,12 +236,16 @@ static void ulpi_init(struct msm_otg *motg)
+ 	if (init) {
+-		motg->vddcx = regulator_get(motg->phy.dev, "HSUSB_VDDCX");
+-		if (IS_ERR(motg->vddcx)) {
+-			dev_err(motg->phy.dev, "unable to get hsusb vddcx\n");
+-			return PTR_ERR(motg->vddcx);
+-		}
+-
+ 		ret = regulator_set_voltage(motg->vddcx,
+ 				USB_PHY_VDD_DIG_VOL_MIN,
+ 				USB_PHY_VDD_DIG_VOL_MAX);
+ 		if (ret) {
+ 			dev_err(motg->phy.dev, "unable to set the voltage "
+ 					"for hsusb vddcx\n");
+-			regulator_put(motg->vddcx);
+ 			return ret;
+ 		}
 
- static int msm_otg_link_clk_reset(struct msm_otg *motg, bool assert)
- {
--	int ret = 0;
-+	int ret;
+ 		ret = regulator_enable(motg->vddcx);
+-		if (ret) {
++		if (ret)
+ 			dev_err(motg->phy.dev, "unable to enable hsusb vddcx\n");
+-			regulator_put(motg->vddcx);
+-		}
+ 	} else {
+ 		ret = regulator_set_voltage(motg->vddcx, 0,
+ 			USB_PHY_VDD_DIG_VOL_MAX);
+@@ -93,8 +84,6 @@ static int msm_hsusb_init_vddcx(struct msm_otg *motg, int init)
+ 		ret = regulator_disable(motg->vddcx);
+ 		if (ret)
+ 			dev_err(motg->phy.dev, "unable to disable hsusb vddcx\n");
+-
+-		regulator_put(motg->vddcx);
+ 	}
 
--	if (!motg->pdata->link_clk_reset)
--		return ret;
-+	if (motg->pdata->link_clk_reset)
-+		ret = motg->pdata->link_clk_reset(motg->clk, assert);
-+	else
-+		if (assert)
-+			ret = reset_control_assert(motg->link_rst);
-+		else
-+			ret = reset_control_deassert(motg->link_rst);
+ 	return ret;
+@@ -105,53 +94,38 @@ static int msm_hsusb_ldo_init(struct msm_otg *motg, int init)
+ 	int rc = 0;
 
--	ret = motg->pdata->link_clk_reset(motg->clk, assert);
- 	if (ret)
- 		dev_err(motg->phy.dev, "usb link clk reset %s failed\n",
- 			assert ? "assert" : "deassert");
-@@ -250,12 +255,13 @@ static int msm_otg_link_clk_reset(struct msm_otg *motg, bool assert)
+ 	if (init) {
+-		motg->v3p3 = regulator_get(motg->phy.dev, "HSUSB_3p3");
+-		if (IS_ERR(motg->v3p3)) {
+-			dev_err(motg->phy.dev, "unable to get hsusb 3p3\n");
+-			return PTR_ERR(motg->v3p3);
+-		}
+-
+ 		rc = regulator_set_voltage(motg->v3p3, USB_PHY_3P3_VOL_MIN,
+ 				USB_PHY_3P3_VOL_MAX);
+ 		if (rc) {
+ 			dev_err(motg->phy.dev, "unable to set voltage level "
+ 					"for hsusb 3p3\n");
+-			goto put_3p3;
++			goto exit;
+ 		}
+ 		rc = regulator_enable(motg->v3p3);
+ 		if (rc) {
+ 			dev_err(motg->phy.dev, "unable to enable the hsusb 3p3\n");
+-			goto put_3p3;
+-		}
+-		motg->v1p8 = regulator_get(motg->phy.dev, "HSUSB_1p8");
+-		if (IS_ERR(motg->v1p8)) {
+-			dev_err(motg->phy.dev, "unable to get hsusb 1p8\n");
+-			rc = PTR_ERR(motg->v1p8);
+-			goto disable_3p3;
++			goto exit;
+ 		}
+ 		rc = regulator_set_voltage(motg->v1p8, USB_PHY_1P8_VOL_MIN,
+ 				USB_PHY_1P8_VOL_MAX);
+ 		if (rc) {
+ 			dev_err(motg->phy.dev, "unable to set voltage level "
+ 					"for hsusb 1p8\n");
+-			goto put_1p8;
++			goto disable_3p3;
+ 		}
+ 		rc = regulator_enable(motg->v1p8);
+ 		if (rc) {
+ 			dev_err(motg->phy.dev, "unable to enable the hsusb 1p8\n");
+-			goto put_1p8;
++			goto disable_3p3;
+ 		}
 
- static int msm_otg_phy_clk_reset(struct msm_otg *motg)
- {
--	int ret = 0;
-+	int ret;
+ 		return 0;
+ 	}
 
--	if (!motg->pdata->phy_clk_reset)
--		return ret;
-+	if (motg->pdata->phy_clk_reset)
-+		ret = motg->pdata->phy_clk_reset(motg->phy_reset_clk);
-+	else
-+		ret = reset_control_reset(motg->phy_rst);
+ 	regulator_disable(motg->v1p8);
+-put_1p8:
+-	regulator_put(motg->v1p8);
+ disable_3p3:
+ 	regulator_disable(motg->v3p3);
+-put_3p3:
+-	regulator_put(motg->v3p3);
++exit:
+ 	return rc;
+ }
 
--	ret = motg->pdata->phy_clk_reset(motg->phy_reset_clk);
- 	if (ret)
- 		dev_err(motg->phy.dev, "usb phy clk reset failed\n");
+@@ -506,7 +480,7 @@ static int msm_otg_suspend(struct msm_otg *motg)
 
-@@ -1374,6 +1380,14 @@ static int msm_otg_read_dt(struct platform_device *pdev, struct msm_otg *motg)
- 	id = of_match_device(msm_otg_dt_match, &pdev->dev);
- 	pdata->phy_type = (int) id->data;
+ 	clk_disable_unprepare(motg->pclk);
+ 	clk_disable_unprepare(motg->clk);
+-	if (motg->core_clk)
++	if (!IS_ERR(motg->core_clk))
+ 		clk_disable_unprepare(motg->core_clk);
 
-+	motg->link_rst = devm_reset_control_get(&pdev->dev, "link");
-+	if (IS_ERR(motg->link_rst))
-+		return PTR_ERR(motg->link_rst);
+ 	if (!IS_ERR(motg->pclk_src))
+@@ -546,7 +520,7 @@ static int msm_otg_resume(struct msm_otg *motg)
+
+ 	clk_prepare_enable(motg->pclk);
+ 	clk_prepare_enable(motg->clk);
+-	if (motg->core_clk)
++	if (!IS_ERR(motg->core_clk))
+ 		clk_prepare_enable(motg->core_clk);
+
+ 	if (motg->pdata->phy_type == SNPS_28NM_INTEGRATED_PHY &&
+@@ -1415,13 +1389,14 @@ static int __init msm_otg_probe(struct platform_device *pdev)
+ 		return -ENODEV;
+ 	}
+
+-	motg = kzalloc(sizeof(struct msm_otg), GFP_KERNEL);
++	motg = devm_kzalloc(&pdev->dev, sizeof(struct msm_otg), GFP_KERNEL);
+ 	if (!motg) {
+ 		dev_err(&pdev->dev, "unable to allocate msm_otg\n");
+ 		return -ENOMEM;
+ 	}
+
+-	motg->phy.otg = kzalloc(sizeof(struct usb_otg), GFP_KERNEL);
++	motg->phy.otg = devm_kzalloc(&pdev->dev, sizeof(struct usb_otg),
++				     GFP_KERNEL);
+ 	if (!motg->phy.otg) {
+ 		dev_err(&pdev->dev, "unable to allocate msm_otg\n");
+ 		return -ENOMEM;
+@@ -1431,20 +1406,17 @@ static int __init msm_otg_probe(struct platform_device *pdev)
+ 	phy = &motg->phy;
+ 	phy->dev = &pdev->dev;
+
+-	motg->phy_reset_clk = clk_get(&pdev->dev, "usb_phy_clk");
++	motg->phy_reset_clk = devm_clk_get(&pdev->dev, "usb_phy_clk");
+ 	if (IS_ERR(motg->phy_reset_clk)) {
+ 		dev_err(&pdev->dev, "failed to get usb_phy_clk\n");
+-		ret = PTR_ERR(motg->phy_reset_clk);
+-		goto free_motg;
++		return PTR_ERR(motg->phy_reset_clk);
+ 	}
+
+-	motg->clk = clk_get(&pdev->dev, "usb_hs_clk");
++	motg->clk = devm_clk_get(&pdev->dev, "usb_hs_clk");
+ 	if (IS_ERR(motg->clk)) {
+ 		dev_err(&pdev->dev, "failed to get usb_hs_clk\n");
+-		ret = PTR_ERR(motg->clk);
+-		goto put_phy_reset_clk;
++		return PTR_ERR(motg->clk);
+ 	}
+-	clk_set_rate(motg->clk, 60000000);
+
+ 	/*
+ 	 * If USB Core is running its protocol engine based on CORE CLK,
+@@ -1453,22 +1425,18 @@ static int __init msm_otg_probe(struct platform_device *pdev)
+ 	 * CORE CLK. For such USB cores, vote for maximum clk frequency
+ 	 * on pclk source
+ 	 */
++	 motg->pclk_src = ERR_PTR(-ENOENT);
+ 	 if (motg->pdata->pclk_src_name) {
+-		motg->pclk_src = clk_get(&pdev->dev,
+-			motg->pdata->pclk_src_name);
++		motg->pclk_src = devm_clk_get(&pdev->dev,
++					motg->pdata->pclk_src_name);
+ 		if (IS_ERR(motg->pclk_src))
+-			goto put_clk;
+-		clk_set_rate(motg->pclk_src, INT_MAX);
+-		clk_prepare_enable(motg->pclk_src);
+-	} else
+-		motg->pclk_src = ERR_PTR(-ENOENT);
+-
++			return PTR_ERR(motg->pclk_src);
++	}
+
+-	motg->pclk = clk_get(&pdev->dev, "usb_hs_pclk");
++	motg->pclk = devm_clk_get(&pdev->dev, "usb_hs_pclk");
+ 	if (IS_ERR(motg->pclk)) {
+ 		dev_err(&pdev->dev, "failed to get usb_hs_pclk\n");
+-		ret = PTR_ERR(motg->pclk);
+-		goto put_pclk_src;
++		return PTR_ERR(motg->pclk);
+ 	}
+
+ 	/*
+@@ -1476,65 +1444,78 @@ static int __init msm_otg_probe(struct platform_device *pdev)
+ 	 * clock is introduced to remove the dependency on AXI
+ 	 * bus frequency.
+ 	 */
+-	motg->core_clk = clk_get(&pdev->dev, "usb_hs_core_clk");
+-	if (IS_ERR(motg->core_clk))
+-		motg->core_clk = NULL;
++	motg->core_clk = devm_clk_get(&pdev->dev, "usb_hs_core_clk");
+
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		dev_err(&pdev->dev, "failed to get platform resource mem\n");
+-		ret = -ENODEV;
+-		goto put_core_clk;
+-	}
++	motg->regs = devm_ioremap(&pdev->dev, res->start, resource_size(res));
++	if (IS_ERR(motg->regs))
++		return PTR_ERR(motg->regs);
+
+-	motg->regs = ioremap(res->start, resource_size(res));
+-	if (!motg->regs) {
+-		dev_err(&pdev->dev, "ioremap failed\n");
+-		ret = -ENOMEM;
+-		goto put_core_clk;
+-	}
+ 	dev_info(&pdev->dev, "OTG regs = %p\n", motg->regs);
+
+ 	motg->irq = platform_get_irq(pdev, 0);
+ 	if (!motg->irq) {
+ 		dev_err(&pdev->dev, "platform_get_irq failed\n");
+-		ret = -ENODEV;
+-		goto free_regs;
++		return motg->irq;
++	}
 +
-+	motg->phy_rst = devm_reset_control_get(&pdev->dev, "phy");
-+	if (IS_ERR(motg->phy_rst))
-+		return PTR_ERR(motg->phy_rst);
++	motg->vddcx = devm_regulator_get(motg->phy.dev, "HSUSB_VDDCX");
++	if (IS_ERR(motg->vddcx)) {
++		dev_err(motg->phy.dev, "unable to get hsusb vddcx\n");
++		return PTR_ERR(motg->vddcx);
++	}
 +
- 	pdata->mode = of_usb_get_dr_mode(node);
- 	if (pdata->mode == USB_DR_MODE_UNKNOWN)
- 		pdata->mode = USB_DR_MODE_OTG;
-diff --git a/include/linux/usb/msm_hsusb.h b/include/linux/usb/msm_hsusb.h
-index bd68299..4e5d916 100644
---- a/include/linux/usb/msm_hsusb.h
-+++ b/include/linux/usb/msm_hsusb.h
-@@ -165,6 +165,9 @@ struct msm_otg {
- 	struct regulator *v3p3;
- 	struct regulator *v1p8;
- 	struct regulator *vddcx;
++	motg->v3p3 = devm_regulator_get(motg->phy.dev, "HSUSB_3p3");
++	if (IS_ERR(motg->v3p3)) {
++		dev_err(motg->phy.dev, "unable to get hsusb 3p3\n");
++		return PTR_ERR(motg->v3p3);
++	}
 +
-+	struct reset_control *phy_rst;
-+	struct reset_control *link_rst;
++	motg->v1p8 = devm_regulator_get(motg->phy.dev, "HSUSB_1p8");
++	if (IS_ERR(motg->v1p8)) {
++		dev_err(motg->phy.dev, "unable to get hsusb 1p8\n");
++		return PTR_ERR(motg->v1p8);
++	}
++
++	clk_set_rate(motg->clk, 60000000);
++	if (!IS_ERR(motg->pclk_src)) {
++		clk_set_rate(motg->pclk_src, INT_MAX);
++		clk_prepare_enable(motg->pclk_src);
+ 	}
+
+ 	clk_prepare_enable(motg->clk);
+ 	clk_prepare_enable(motg->pclk);
+
++	if (!IS_ERR(motg->core_clk))
++		clk_prepare_enable(motg->core_clk);
++
+ 	ret = msm_hsusb_init_vddcx(motg, 1);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "hsusb vddcx configuration failed\n");
+-		goto free_regs;
++		goto disable_clks;
+ 	}
+
+ 	ret = msm_hsusb_ldo_init(motg, 1);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "hsusb vreg configuration failed\n");
+-		goto vddcx_exit;
++		goto disable_vddcx;
+ 	}
+ 	ret = msm_hsusb_ldo_set_mode(motg, 1);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "hsusb vreg enable failed\n");
+-		goto ldo_exit;
++		goto disable_ldo;
+ 	}
+
+-	if (motg->core_clk)
+-		clk_prepare_enable(motg->core_clk);
+-
+ 	writel(0, USB_USBINTR);
+ 	writel(0, USB_OTGSC);
+
+ 	INIT_WORK(&motg->sm_work, msm_otg_sm_work);
+ 	INIT_DELAYED_WORK(&motg->chg_work, msm_chg_detect_work);
+-	ret = request_irq(motg->irq, msm_otg_irq, IRQF_SHARED,
++	ret = devm_request_irq(&pdev->dev, motg->irq, msm_otg_irq, IRQF_SHARED,
+ 					"msm_otg", motg);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "request irq failed\n");
+-		goto disable_clks;
++		goto disable_ldo;
+ 	}
+
+ 	phy->init = msm_otg_reset;
+@@ -1549,7 +1530,7 @@ static int __init msm_otg_probe(struct platform_device *pdev)
+ 	ret = usb_add_phy(&motg->phy, USB_PHY_TYPE_USB2);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "usb_add_phy failed\n");
+-		goto free_irq;
++		goto disable_ldo;
+ 	}
+
+ 	platform_set_drvdata(pdev, motg);
+@@ -1567,33 +1548,18 @@ static int __init msm_otg_probe(struct platform_device *pdev)
+ 	pm_runtime_enable(&pdev->dev);
+
+ 	return 0;
+-free_irq:
+-	free_irq(motg->irq, motg);
++
++disable_ldo:
++	msm_hsusb_ldo_init(motg, 0);
++disable_vddcx:
++	msm_hsusb_init_vddcx(motg, 0);
+ disable_clks:
+ 	clk_disable_unprepare(motg->pclk);
+ 	clk_disable_unprepare(motg->clk);
+-ldo_exit:
+-	msm_hsusb_ldo_init(motg, 0);
+-vddcx_exit:
+-	msm_hsusb_init_vddcx(motg, 0);
+-free_regs:
+-	iounmap(motg->regs);
+-put_core_clk:
+-	if (motg->core_clk)
+-		clk_put(motg->core_clk);
+-	clk_put(motg->pclk);
+-put_pclk_src:
+-	if (!IS_ERR(motg->pclk_src)) {
++	if (!IS_ERR(motg->core_clk))
++		clk_disable_unprepare(motg->core_clk);
++	if (!IS_ERR(motg->pclk_src))
+ 		clk_disable_unprepare(motg->pclk_src);
+-		clk_put(motg->pclk_src);
+-	}
+-put_clk:
+-	clk_put(motg->clk);
+-put_phy_reset_clk:
+-	clk_put(motg->phy_reset_clk);
+-free_motg:
+-	kfree(motg->phy.otg);
+-	kfree(motg);
+ 	return ret;
+ }
+
+@@ -1616,7 +1582,7 @@ static int msm_otg_remove(struct platform_device *pdev)
+ 	pm_runtime_disable(&pdev->dev);
+
+ 	usb_remove_phy(phy);
+-	free_irq(motg->irq, motg);
++	disable_irq(motg->irq);
+
+ 	/*
+ 	 * Put PHY in low power mode.
+@@ -1636,26 +1602,15 @@ static int msm_otg_remove(struct platform_device *pdev)
+
+ 	clk_disable_unprepare(motg->pclk);
+ 	clk_disable_unprepare(motg->clk);
+-	if (motg->core_clk)
++	if (!IS_ERR(motg->core_clk))
+ 		clk_disable_unprepare(motg->core_clk);
+-	if (!IS_ERR(motg->pclk_src)) {
++	if (!IS_ERR(motg->pclk_src))
+ 		clk_disable_unprepare(motg->pclk_src);
+-		clk_put(motg->pclk_src);
+-	}
++
+ 	msm_hsusb_ldo_init(motg, 0);
+
+-	iounmap(motg->regs);
+ 	pm_runtime_set_suspended(&pdev->dev);
+
+-	clk_put(motg->phy_reset_clk);
+-	clk_put(motg->pclk);
+-	clk_put(motg->clk);
+-	if (motg->core_clk)
+-		clk_put(motg->core_clk);
+-
+-	kfree(motg->phy.otg);
+-	kfree(motg);
+-
+ 	return 0;
+ }
+
+@@ -1735,6 +1690,7 @@ static const struct dev_pm_ops msm_otg_dev_pm_ops = {
  };
 
- #endif
+ static struct platform_driver msm_otg_driver = {
++	.probe = msm_otg_probe,
+ 	.remove = msm_otg_remove,
+ 	.driver = {
+ 		.name = DRIVER_NAME,
+@@ -1743,7 +1699,7 @@ static struct platform_driver msm_otg_driver = {
+ 	},
+ };
+
+-module_platform_driver_probe(msm_otg_driver, msm_otg_probe);
++module_platform_driver(msm_otg_driver);
+
+ MODULE_LICENSE("GPL v2");
+ MODULE_DESCRIPTION("MSM USB transceiver driver");
 --
 1.7.9.5
 
