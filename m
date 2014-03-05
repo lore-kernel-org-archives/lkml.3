@@ -1,147 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759168AbaCEPX1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 10:23:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40852 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756868AbaCEOZI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:25:08 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Olivier Langlois <olivier@trillion01.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 027/131] rtlwifi: rtl8192ce: Fix too long disable of IRQs
-Date: Wed,  5 Mar 2014 14:22:31 +0000
-Message-Id: <1394029455-23128-28-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
-References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S1759218AbaCEPYB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:24:01 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45368 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759206AbaCEPX5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 10:23:57 -0500
+Date: Wed, 5 Mar 2014 09:22:12 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+CC: "balbi@ti.com" <balbi@ti.com>, Michal Nazarewicz <mina86@mina86.com>,
+        Robert Baldyga <r.baldyga@samsung.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "david.a.cohen@linux.intel.com" <david.a.cohen@linux.intel.com>
+Subject: Re: [PATCH v2] usb: gadget: return the right length in
+ ffs_epfile_io()
+Message-ID: <20140305152212.GE16430@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1393918497-30916-1-git-send-email-chuansheng.liu@intel.com>
+ <531606DB.4010601@cogentembedded.com>
+ <20140304160620.GH15233@saruman.home>
+ <xa1td2i14u63.fsf@mina86.com>
+ <20140304195541.GB24463@saruman.home>
+ <27240C0AC20F114CBF8149A2696CBE4A01C3E4C2@SHSMSX101.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2NLGdgz3UMHa/lqP"
+Content-Disposition: inline
+In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A01C3E4C2@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.6 -stable review patch.  If anyone has any objections, please let me know.
+--2NLGdgz3UMHa/lqP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+On Tue, Mar 04, 2014 at 11:38:32PM +0000, Liu, Chuansheng wrote:
+> Hi Balbi,
+>=20
+> > -----Original Message-----
+> > From: Felipe Balbi [mailto:balbi@ti.com]
+> > Sent: Wednesday, March 05, 2014 3:56 AM
+> > To: Michal Nazarewicz
+> > Cc: Robert Baldyga; Felipe Balbi; Sergei Shtylyov; Liu, Chuansheng;
+> > gregkh@linuxfoundation.org; linux-usb@vger.kernel.org;
+> > linux-kernel@vger.kernel.org; david.a.cohen@linux.intel.com
+> > Subject: Re: [PATCH v2] usb: gadget: return the right length in ffs_epf=
+ile_io()
+> >=20
+> > On Tue, Mar 04, 2014 at 08:53:40PM +0100, Michal Nazarewicz wrote:
+> > > >> On 03/04/2014 10:34 AM, Chuansheng Liu wrote:
+> > > >> >@@ -845,12 +845,14 @@ static ssize_t ffs_epfile_io(struct file *f=
+ile,
+> > struct ffs_io_data *io_data)
+> > > >> >  			 * we may end up with more data then user space has
+> > > >> >  			 * space for.
+> > > >> >  			 */
+> > > >> >-			ret =3D ep->status;
+> > > >> >-			if (io_data->read && ret > 0 &&
+> > > >> >-			    unlikely(copy_to_user(io_data->buf, data,
+> > > >> >-						  min_t(size_t, ret,
+> > > >> >-						  io_data->len))))
+> > > >> >-				ret =3D -EFAULT;
+> > > >> >+				ret =3D ep->status;
+> > >
+> > > On Tue, Mar 04 2014, Felipe Balbi wrote:
+> > > >>    Why the indentation jumped suddenly to the right?
+> > >
+> > > > On Tue, Mar 04, 2014 at 08:01:15PM +0300, Sergei Shtylyov wrote:
+> > > > because it was wrong before ;-)
+> > >
+> > > Yep.  It looks like Robert's [2e4c7553: add aio support] introduced an
+> > > if-else-if-else flow but did not indent the code and I didn't caught =
+it
+> > > when reviewing that patch.
+> >=20
+> > it's in my testing/next now, I also fixed the comment indentation which
+> > was also wrong.
+> Thanks your help and the fix for comment indentation also:)
 
-From: Olivier Langlois <olivier@trillion01.com>
+no problem, cheers ;-)
 
-commit f78bccd79ba3cd9d9664981b501d57bdb81ab8a4 upstream.
+--=20
+balbi
 
-rtl8192ce is disabling for too long the local interrupts during hw initiatialisation when performing scans
+--2NLGdgz3UMHa/lqP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-The observable symptoms in dmesg can be:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-- underruns from ALSA playback
-- clock freezes (tstamps do not change for several dmesg entries until irqs are finaly reenabled):
+iQIcBAEBAgAGBQJTF0EkAAoJEIaOsuA1yqRE0vMP/iGVITSC2uNSGyKmoylgJaZa
+lhfP7UeQM85JGCCZHsEUGQsOVyAAEvZ/BQvL0SuQ3YnlGIUBPX7kA7i2qYGKMv0+
+FbJzSgIiVevGUHtnuMLxl7DrtYaWkRUTtp9ghgStwyAK3TbAMgdmy0jg04PmwfoX
+rpaQOCsqqLGHi6B6dKSbl21pIVE3SFUReIr6uL0YOHID6FqmKcqmfPn8gepChIaz
+YNtDET78J0Tc1mh+qWSHk70f5fjskHW/OgFCvy2xG6eEAtHfZPiNzy/LG0ncct1v
+G5s/WdVeJ+6WdQFCXAuiSl2znI6RsTo/WxbKoiHBA/8EBn6KYswthvLVBBZ8TtZi
+bYFoel9cWyZGj3wUQ62A7IbNC9c5n+f2HRnPOfbKX3fEuanU3xlWEcevYH161pH+
+4uAWbgr92mka79xW4U/osYo9+cmvtcCDOH8MNqKyLAATaDda9mrpHbIV7SBpvN/E
+mIKq+4LcNIh/vp7l4ztlQpqY9z30HyOkMgSwYr6twgMQ18OBcGCimGh/uexGQdIP
+WOyGydtMBB/YgB51ArctC2k7nzYmia7vmKfKZJxWG66OAlG//prABCquRQ3gxnYt
+boRaX1DWONt77xDRty8kfqv1WmoE7nOZc3hP1wYj4hbuH3hFLWxzpMl2nSLO/r2i
+se/LzSYhF4D+EbD1N6KS
+=1sUS
+-----END PGP SIGNATURE-----
 
-[  250.817669] rtlwifi:rtl_op_config():<0-0-0> 0x100
-[  250.817685] rtl8192ce:_rtl92ce_phy_set_rf_power_state():<0-1-0> IPS Set eRf nic enable
-[  250.817732] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.817796] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.817910] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.818024] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.818139] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.818253] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.818367] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.818472] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.818472] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.818472] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.818472] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.818472] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:98053f15:10
-[  250.818472] rtl8192ce:rtl92ce_sw_led_on():<0-1-0> LedAddr:4E ledpin=1
-[  250.818472] rtl8192c_common:rtl92c_download_fw():<0-1-0> Firmware Version(49), Signature(0x88c1),Size(32)
-[  250.818472] rtl8192ce:rtl92ce_enable_hw_security_config():<0-1-0> PairwiseEncAlgorithm = 0 GroupEncAlgorithm = 0
-[  250.818472] rtl8192ce:rtl92ce_enable_hw_security_config():<0-1-0> The SECR-value cc
-[  250.818472] rtl8192c_common:rtl92c_dm_check_txpower_tracking_thermal_meter():<0-1-0> Schedule TxPowerTracking direct call!!
-[  250.818472] rtl8192c_common:rtl92c_dm_txpower_tracking_callback_thermalmeter():<0-1-0> rtl92c_dm_txpower_tracking_callback_thermalmeter
-[  250.818472] rtl8192c_common:rtl92c_dm_txpower_tracking_callback_thermalmeter():<0-1-0> Readback Thermal Meter = 0xe pre thermal meter 0xf eeprom_thermalmeter 0xf
-[  250.818472] rtl8192c_common:rtl92c_dm_txpower_tracking_callback_thermalmeter():<0-1-0> Initial pathA ele_d reg0xc80 = 0x40000000, ofdm_index=0xc
-[  250.818472] rtl8192c_common:rtl92c_dm_txpower_tracking_callback_thermalmeter():<0-1-0> Initial reg0xa24 = 0x90e1317, cck_index=0xc, ch14 0
-[  250.818472] rtl8192c_common:rtl92c_dm_txpower_tracking_callback_thermalmeter():<0-1-0> Readback Thermal Meter = 0xe pre thermal meter 0xf eeprom_thermalmeter 0xf delta 0x1 delta_lck 0x0 delta_iqk 0x0
-[  250.818472] rtl8192c_common:rtl92c_dm_txpower_tracking_callback_thermalmeter():<0-1-0> <===
-[  250.818472] rtl8192c_common:rtl92c_dm_initialize_txpower_tracking_thermalmeter():<0-1-0> pMgntInfo->txpower_tracking = 1
-[  250.818472] rtl8192ce:rtl92ce_led_control():<0-1-0> ledaction 3
-[  250.818472] rtl8192ce:rtl92ce_sw_led_on():<0-1-0> LedAddr:4E ledpin=1
-[  250.818472] rtlwifi:rtl_ips_nic_on():<0-1-0> before spin_unlock_irqrestore
-[  251.154656] PCM: Lost interrupts? [Q]-0 (stream=0, delta=15903, new_hw_ptr=293408, old_hw_ptr=277505)
-
-The exact code flow that causes that is:
-
-1. wpa_supplicant send a start_scan request to the nl80211 driver
-2. mac80211 module call rtl_op_config with IEEE80211_CONF_CHANGE_IDLE
-3.   rtl_ips_nic_on is called which disable local irqs
-4.     rtl92c_phy_set_rf_power_state() is called
-5.       rtl_ps_enable_nic() is called and hw_init()is executed and then the interrupts on the device are enabled
-
-A good solution could be to refactor the code to avoid calling rtl92ce_hw_init() with the irqs disabled
-but a quick and dirty solution that has proven to work is
-to reenable the irqs during the function rtl92ce_hw_init().
-
-I think that it is safe doing so since the device interrupt will only be enabled after the init function succeed.
-
-Signed-off-by: Olivier Langlois <olivier@trillion01.com>
-Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/net/wireless/rtlwifi/rtl8192ce/hw.c | 18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
-index a82b30a..2eb0b38 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
-@@ -937,14 +937,26 @@ int rtl92ce_hw_init(struct ieee80211_hw *hw)
- 	bool is92c;
- 	int err;
- 	u8 tmp_u1b;
-+	unsigned long flags;
- 
- 	rtlpci->being_init_adapter = true;
-+
-+	/* Since this function can take a very long time (up to 350 ms)
-+	 * and can be called with irqs disabled, reenable the irqs
-+	 * to let the other devices continue being serviced.
-+	 *
-+	 * It is safe doing so since our own interrupts will only be enabled
-+	 * in a subsequent step.
-+	 */
-+	local_save_flags(flags);
-+	local_irq_enable();
-+
- 	rtlpriv->intf_ops->disable_aspm(hw);
- 	rtstatus = _rtl92ce_init_mac(hw);
- 	if (!rtstatus) {
- 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG, "Init MAC failed\n");
- 		err = 1;
--		return err;
-+		goto exit;
- 	}
- 
- 	err = rtl92c_download_fw(hw);
-@@ -952,7 +964,7 @@ int rtl92ce_hw_init(struct ieee80211_hw *hw)
- 		RT_TRACE(rtlpriv, COMP_ERR, DBG_WARNING,
- 			 "Failed to download FW. Init HW without FW now..\n");
- 		err = 1;
--		return err;
-+		goto exit;
- 	}
- 
- 	rtlhal->last_hmeboxnum = 0;
-@@ -1032,6 +1044,8 @@ int rtl92ce_hw_init(struct ieee80211_hw *hw)
- 		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE, "under 1.5V\n");
- 	}
- 	rtl92c_dm_init(hw);
-+exit:
-+	local_irq_restore(flags);
- 	rtlpci->being_init_adapter = false;
- 	return err;
- }
--- 
-1.9.0
-
+--2NLGdgz3UMHa/lqP--
