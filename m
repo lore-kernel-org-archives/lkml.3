@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757426AbaCEAfZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 19:35:25 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:49877 "EHLO
+	id S1756881AbaCEAfX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 19:35:23 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:45487 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756667AbaCEAds (ORCPT
+	by vger.kernel.org with ESMTP id S1756676AbaCEAds (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Mar 2014 19:33:48 -0500
-Message-Id: <20140305003346.744721424@goodmis.org>
+Message-Id: <20140305003346.885459803@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Tue, 04 Mar 2014 19:33:37 -0500
+Date: Tue, 04 Mar 2014 19:33:38 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
@@ -18,12 +18,12 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         John Kacur <jkacur@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
         <stable-rt@vger.kernel.org>
-Subject: [PATCH RT 4/6] kernel/hrtimer: be non-freezeable in cpu_chill()
+Subject: [PATCH RT 5/6] arm/unwind: use a raw_spin_lock
 References: <20140305003333.402759240@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0004-kernel-hrtimer-be-non-freezeable-in-cpu_chill.patch
-X-RR-Connecting-IP: 107.14.168.130:25
+Content-Disposition: inline; filename=0005-arm-unwind-use-a-raw_spin_lock.patch
+X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -36,62 +36,88 @@ If anyone has any objections, please let me know.
 
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-Since we replaced msleep() by hrtimer I see now and then (rarely) this:
+Mostly unwind is done with irqs enabled however SLUB may call it with
+irqs disabled while creating a new SLUB cache.
 
-| [....] Waiting for /dev to be fully populated...
-| =====================================
-| [ BUG: udevd/229 still has locks held! ]
-| 3.12.11-rt17 #23 Not tainted
-| -------------------------------------
-| 1 lock held by udevd/229:
-|  #0:  (&type->i_mutex_dir_key#2){+.+.+.}, at: lookup_slow+0x28/0x98
-|
-| stack backtrace:
-| CPU: 0 PID: 229 Comm: udevd Not tainted 3.12.11-rt17 #23
-| (unwind_backtrace+0x0/0xf8) from (show_stack+0x10/0x14)
-| (show_stack+0x10/0x14) from (dump_stack+0x74/0xbc)
-| (dump_stack+0x74/0xbc) from (do_nanosleep+0x120/0x160)
-| (do_nanosleep+0x120/0x160) from (hrtimer_nanosleep+0x90/0x110)
-| (hrtimer_nanosleep+0x90/0x110) from (cpu_chill+0x30/0x38)
-| (cpu_chill+0x30/0x38) from (dentry_kill+0x158/0x1ec)
-| (dentry_kill+0x158/0x1ec) from (dput+0x74/0x15c)
-| (dput+0x74/0x15c) from (lookup_real+0x4c/0x50)
-| (lookup_real+0x4c/0x50) from (__lookup_hash+0x34/0x44)
-| (__lookup_hash+0x34/0x44) from (lookup_slow+0x38/0x98)
-| (lookup_slow+0x38/0x98) from (path_lookupat+0x208/0x7fc)
-| (path_lookupat+0x208/0x7fc) from (filename_lookup+0x20/0x60)
-| (filename_lookup+0x20/0x60) from (user_path_at_empty+0x50/0x7c)
-| (user_path_at_empty+0x50/0x7c) from (user_path_at+0x14/0x1c)
-| (user_path_at+0x14/0x1c) from (vfs_fstatat+0x48/0x94)
-| (vfs_fstatat+0x48/0x94) from (SyS_stat64+0x14/0x30)
-| (SyS_stat64+0x14/0x30) from (ret_fast_syscall+0x0/0x48)
+I had system freeze while loading a module which called
+kmem_cache_create() on init. That means SLUB's __slab_alloc() disabled
+interrupts and then
 
-For now I see no better way but to disable the freezer the sleep the period.
+->new_slab_objects()
+ ->new_slab()
+  ->setup_object()
+   ->setup_object_debug()
+    ->init_tracking()
+     ->set_track()
+      ->save_stack_trace()
+       ->save_stack_trace_tsk()
+        ->walk_stackframe()
+         ->unwind_frame()
+          ->unwind_find_idx()
+           =>spin_lock_irqsave(&unwind_lock);
 
 Cc: stable-rt@vger.kernel.org
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/hrtimer.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ arch/arm/kernel/unwind.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index a9f8842..71acc21 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1856,8 +1856,12 @@ void cpu_chill(void)
- 	struct timespec tu = {
- 		.tv_nsec = NSEC_PER_MSEC,
- 	};
-+	unsigned int freeze_flag = current->flags & PF_NOFREEZE;
+diff --git a/arch/arm/kernel/unwind.c b/arch/arm/kernel/unwind.c
+index 00df012..bbafc67 100644
+--- a/arch/arm/kernel/unwind.c
++++ b/arch/arm/kernel/unwind.c
+@@ -87,7 +87,7 @@ extern const struct unwind_idx __start_unwind_idx[];
+ static const struct unwind_idx *__origin_unwind_idx;
+ extern const struct unwind_idx __stop_unwind_idx[];
  
-+	current->flags |= PF_NOFREEZE;
- 	hrtimer_nanosleep(&tu, NULL, HRTIMER_MODE_REL, CLOCK_MONOTONIC);
-+	if (!freeze_flag)
-+		current->flags &= ~PF_NOFREEZE;
+-static DEFINE_SPINLOCK(unwind_lock);
++static DEFINE_RAW_SPINLOCK(unwind_lock);
+ static LIST_HEAD(unwind_tables);
+ 
+ /* Convert a prel31 symbol to an absolute address */
+@@ -195,7 +195,7 @@ static const struct unwind_idx *unwind_find_idx(unsigned long addr)
+ 		/* module unwind tables */
+ 		struct unwind_table *table;
+ 
+-		spin_lock_irqsave(&unwind_lock, flags);
++		raw_spin_lock_irqsave(&unwind_lock, flags);
+ 		list_for_each_entry(table, &unwind_tables, list) {
+ 			if (addr >= table->begin_addr &&
+ 			    addr < table->end_addr) {
+@@ -207,7 +207,7 @@ static const struct unwind_idx *unwind_find_idx(unsigned long addr)
+ 				break;
+ 			}
+ 		}
+-		spin_unlock_irqrestore(&unwind_lock, flags);
++		raw_spin_unlock_irqrestore(&unwind_lock, flags);
+ 	}
+ 
+ 	pr_debug("%s: idx = %p\n", __func__, idx);
+@@ -469,9 +469,9 @@ struct unwind_table *unwind_table_add(unsigned long start, unsigned long size,
+ 	tab->begin_addr = text_addr;
+ 	tab->end_addr = text_addr + text_size;
+ 
+-	spin_lock_irqsave(&unwind_lock, flags);
++	raw_spin_lock_irqsave(&unwind_lock, flags);
+ 	list_add_tail(&tab->list, &unwind_tables);
+-	spin_unlock_irqrestore(&unwind_lock, flags);
++	raw_spin_unlock_irqrestore(&unwind_lock, flags);
+ 
+ 	return tab;
  }
- EXPORT_SYMBOL(cpu_chill);
- #endif
+@@ -483,9 +483,9 @@ void unwind_table_del(struct unwind_table *tab)
+ 	if (!tab)
+ 		return;
+ 
+-	spin_lock_irqsave(&unwind_lock, flags);
++	raw_spin_lock_irqsave(&unwind_lock, flags);
+ 	list_del(&tab->list);
+-	spin_unlock_irqrestore(&unwind_lock, flags);
++	raw_spin_unlock_irqrestore(&unwind_lock, flags);
+ 
+ 	kfree(tab);
+ }
 -- 
 1.8.5.3
 
