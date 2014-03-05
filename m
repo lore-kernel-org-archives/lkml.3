@@ -1,127 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757481AbaCEDvj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 22:51:39 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33070 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755237AbaCEDvh (ORCPT
+	id S1757535AbaCEDvv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 22:51:51 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49134 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756752AbaCEDvs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 22:51:37 -0500
+	Tue, 4 Mar 2014 22:51:48 -0500
+Date: Wed, 5 Mar 2014 03:51:47 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: linux-fsdevel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Stephen Tweedie <sct@redhat.com>,
+        Jeremy Eder <jeder@redhat.com>
+Subject: [PATCH 4/5][RFC][CFT] reduce m_start() cost...
+Message-ID: <20140305035147.GD26528@ZenIV.linux.org.uk>
+References: <20140305034751.GW18016@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <53169123.4020909@lougher.demon.co.uk>
-References: <20140228230017.GE14970@merlin.infradead.org> <20140303145137.70819698@tukaani.org>
- <CAGVrzcZ7KU-m9s9KgoigK+WdSqeqwEmm=_pY6qF=ep2vFp6WUg@mail.gmail.com>
- <20140304202038.03b36109@tukaani.org> <53169123.4020909@lougher.demon.co.uk>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Tue, 4 Mar 2014 19:50:56 -0800
-Message-ID: <CAGVrzcYQ44fYA0kpRC84Qfe7v0vPGy+euWLfs8xF0XEMnsFmGA@mail.gmail.com>
-Subject: Re: [PATCH] xz: make XZ_DEC_BCJ filters non-optional
-To: Phillip Lougher <phillip@lougher.demon.co.uk>
-Cc: Lasse Collin <lasse.collin@tukaani.org>,
-        Kyle McMartin <kyle@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140305034751.GW18016@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-03-04 18:51 GMT-08:00 Phillip Lougher <phillip@lougher.demon.co.uk>:
-> On 04/03/14 18:20, Lasse Collin wrote:
->> On 2014-03-03 Florian Fainelli wrote:
->>> 2014-03-03 4:51 GMT-08:00 Lasse Collin <lasse.collin@tukaani.org>:
->>>> The second version enables the BCJ filter only for the current arch
->>>> by default if CONFIG_EXPERT; without CONFIG_EXPERT all filters are
->>>> forced on:
->>>
->>> I like this version better because it still provides you with accurate
->>> defaults (i.e: enable only th X86 BCJ filter decoder where it makes
->>> sense by default) and still provides enough flexibility.
->>
->> I understand your viewpoint, but different people probably consider
->> different options as "accurate defaults". The current behavior certainly
->> isn't very accurate; otherwise Kyle McMartin wouldn't have had a reason
->> to send a patch. The patch you prefer would give both of you the
->> defaults you want *if* embedded devs always use CONFIG_EXPERT and
->> non-embedded people never do. If a non-embedded dev uses CONFIG_EXPERT,
->> then Kyle's problem can reappear.
->>
->
-> CONFIG_EMBEDDED was renamed CONFIG_EXPERT a couple of years
-> ago because it was being used by more than embedded people.  As
-> such I'd be wary adding an option which relied on the original
-> meaning.
->
-> http://lwn.net/Articles/421304/
->
->
->> I still think it is clearest to enable all by default and allow
->> deselecting filters if CONFIG_EXPERT. That way the default selection
->> doesn't change behind anyone's back when CONFIG_EXPERT is selected.
->> I guess embedded devs go through the config carefully looking for
->> things to deselect anyway, but maybe it was easy to miss these options
->> just like some desktop users have missed them now.
->>
->> I'd like to make the defaults such that minimum number of people get
->> annoyed in the long term. There will always be people who will need to
->> change the options (otherwise options wouldn't be needed). At the same
->> time this is so very tiny issue that I don't expect many people to care
->> at all.
->>
->> I'll submit some patch this week but I'll wait for more opinions for a
->> day or two. Thanks.
->>
->
-> As Kyle should know Redhat hit this problem with Squashfs a while back,
-> and it was I who identified the config changes as the culprit
-> (BTW Kyle you should have CC'd me on the patch as a courtesy).
-> The bug is only viewable by Redhat employees (disclaimer, I'm
-> also a Redhat employee), and so I'll say no more.
->
-> But speaking as the Squashfs author, the lack of BCJ support for
-> an architecture creates a subtle failure mode in Squashfs, this is
-> because not all blocks in a Squashfs filesystem get compressed
-> with a BCJ filter.  At compression time each block is compressed
-> without any BCJ filter, and then with the BCJ filter(s) selected on
-> the command line, and the best compression for *that* block is
-> chosen.  What this means is kernels without a particular
-> BCJ filter can still read the Squashfs metadata (mount, ls etc.) and
-> read many of the files, it is only some files that mysteriously
-> fail with decompression error.  As such this will be (and has been)
-> invariably treated as a bug in Squashfs.
->
-> Moreover, without expert knowledge of Squashfs, and the config
-> options, most people will not have a clue how to fix the issue.
->
-> This is why I prefer the first option, which is to reinstate
-> the enabling of all filters by default, and then to allow people
-> to remove the filters they don't want.
->
-> BTW there is a potential additional fix for Squashfs that will
-> make its handling of (lack of) BCJ filters more intelligent
-> at mount time, but this of course only addresses Squashfs,
-> and it relies on an additional call into XZ being added.  The
-> BCJ filters specified at filesystem creation are stored in the
-> compression options part of the superblock, and are known at
-> mount time.  Squashfs should check that these filters are
-> supported by the kernel and refuse to mount it otherwise.  This
-> has not been done because AFAIK there is no way to query XZ to
-> determine which BCJ filters are supported (beyond passing it a
-> test stream which is too messy).
->
-> If this call was added, I would be happy to add a patch to Squashfs
-> to do this.
+Don't rescan the mount list in m_start() if there hadn't been
+any changes and we are right at the needed place of just before
+it (that's the only occuring ones on sequential read() without
+seeks).
 
-I am okay with enabling all filters by default as long as there is a
-knob to allow turning achitecture specific BCJ filters off, as it
-barely makes sense for embedded systems to have a BCJ filter
-implementation for anything but the architecture you are running on.
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+---
+ fs/mount.h          |    5 ++++-
+ fs/namespace.c      |   21 ++++++++++++++++++---
+ fs/proc_namespace.c |    1 +
+ 3 files changed, 23 insertions(+), 4 deletions(-)
 
-It does make sense for a desktop use-case like what Kyle describes in
-his initial patch. What you describes sounds like there is room for
-improvements though instead of silently failing...
-
-Thanks
+diff --git a/fs/mount.h b/fs/mount.h
+index a17458c..61e1c05 100644
+--- a/fs/mount.h
++++ b/fs/mount.h
+@@ -10,7 +10,7 @@ struct mnt_namespace {
+ 	struct user_namespace	*user_ns;
+ 	u64			seq;	/* Sequence number to prevent loops */
+ 	wait_queue_head_t poll;
+-	int event;
++	u64 event;
+ };
+ 
+ struct mnt_pcp {
+@@ -104,6 +104,9 @@ struct proc_mounts {
+ 	struct mnt_namespace *ns;
+ 	struct path root;
+ 	int (*show)(struct seq_file *, struct vfsmount *);
++	void *cached_mount;
++	u64 cached_event;
++	loff_t cached_index;
+ };
+ 
+ #define proc_mounts(p) (container_of((p), struct proc_mounts, m))
+diff --git a/fs/namespace.c b/fs/namespace.c
+index f28c4fd..00f12af 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -29,7 +29,7 @@
+ #define HASH_SHIFT ilog2(PAGE_SIZE / sizeof(struct list_head))
+ #define HASH_SIZE (1UL << HASH_SHIFT)
+ 
+-static int event;
++static u64 event;
+ static DEFINE_IDA(mnt_id_ida);
+ static DEFINE_IDA(mnt_group_ida);
+ static DEFINE_SPINLOCK(mnt_id_lock);
+@@ -1064,14 +1064,29 @@ static void *m_start(struct seq_file *m, loff_t *pos)
+ 	struct proc_mounts *p = proc_mounts(m);
+ 
+ 	down_read(&namespace_sem);
+-	return seq_list_start(&p->ns->list, *pos);
++	if (p->cached_event == p->ns->event) {
++		void *v = p->cached_mount;
++		if (*pos == p->cached_index)
++			return v;
++		if (*pos == p->cached_index + 1) {
++			v = seq_list_next(v, &p->ns->list, &p->cached_index);
++			return p->cached_mount = v;
++		}
++	}
++
++	p->cached_event = p->ns->event;
++	p->cached_mount = seq_list_start(&p->ns->list, *pos);
++	p->cached_index = *pos;
++	return p->cached_mount;
+ }
+ 
+ static void *m_next(struct seq_file *m, void *v, loff_t *pos)
+ {
+ 	struct proc_mounts *p = proc_mounts(m);
+ 
+-	return seq_list_next(v, &p->ns->list, pos);
++	p->cached_mount = seq_list_next(v, &p->ns->list, pos);
++	p->cached_index = *pos;
++	return p->cached_mount;
+ }
+ 
+ static void m_stop(struct seq_file *m, void *v)
+diff --git a/fs/proc_namespace.c b/fs/proc_namespace.c
+index 7be26f0..1a81373 100644
+--- a/fs/proc_namespace.c
++++ b/fs/proc_namespace.c
+@@ -267,6 +267,7 @@ static int mounts_open_common(struct inode *inode, struct file *file,
+ 	p->root = root;
+ 	p->m.poll_event = ns->event;
+ 	p->show = show;
++	p->cached_event = ~0ULL;
+ 
+ 	return 0;
+ 
 -- 
-Florian
+1.7.10.4
+
