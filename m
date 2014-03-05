@@ -1,70 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932561AbaCEOl7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:41:59 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41802 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757895AbaCEOi2 (ORCPT
+	id S932594AbaCEOmg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:42:36 -0500
+Received: from www.linutronix.de ([62.245.132.108]:43891 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752606AbaCEOmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:38:28 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Hannes Reinecke <hare@suse.de>, Mike Snitzer <snitzer@redhat.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 53/62] dm mpath: fix stalls when handling invalid ioctls
-Date: Wed,  5 Mar 2014 14:36:57 +0000
-Message-Id: <1394030226-26652-54-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
-References: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Wed, 5 Mar 2014 09:42:33 -0500
+Date: Wed, 5 Mar 2014 15:42:34 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] Revert "irqchip: irq-dove: Add PMU interrupt
+ controller."
+In-Reply-To: <20140305004139.GT21483@n2100.arm.linux.org.uk>
+Message-ID: <alpine.DEB.2.02.1403051445020.18573@ionos.tec.linutronix.de>
+References: <20140304030838.GA1872@titan.lakedaemon.net> <1393911160-7688-1-git-send-email-jason@lakedaemon.net> <20140305004139.GT21483@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.32 -stable review patch.  If anyone has any objections, please let me know.
+On Wed, 5 Mar 2014, Russell King - ARM Linux wrote:
+> In some ways, this is good news - it shows that the bits in this register
+> latch '1' when an interrupt is pending, and remain '1' while the block
+> continues to assert its interrupt signal - but can we say that the other
+> interrupt functions in this register have that behaviour?
+> 
+> >From the spec, it looks like this is probably true of DFSDone as well.
+> DVSDone - I see no separate status register containing status bits
+> indicating what the cause of the DVSDone status is.  The thermal bits -
+> if it's a transitory excursion, may not hold.  Battery fault... we
+> can guess.
+> 
+> Now, genirq doesn't have a good way to handle this.  I'll also say that
+> because of the above, I've always been worried about hardware races when
+> trying to clear down interrupts in this register - I'd much prefer not
+> to touch it unless absolutely necessary.  So... how about this instead?
+> 
+>         u32 stat = readl_relaxed(gc->reg_base + DOVE_PMC_IRQ_CAUSE) &
+>                    gc->mask_cache;
+> 	u32 done = ~0;
+> 
+> 	while (stat) {
+> 		unsigned hwirq = ffs(stat) - 1;
+> 
+> 		stat &= ~(1 << hwirq);
+> 		done &= ~(1 << hwirq);
+> 
+> 		generic_handle_irq(irq_find_mapping(domain, hwirq));
+> 	}
+> 
+> 	irq_gc_lock(gc);
+> 	done &= readl_relaxed(gc->reg_base + DOVE_PMC_IRQ_CAUSE);
+> 	writel_relaxed(done, gc->reg_base + DOVE_PMC_IRQ_CAUSE);
+> 	irq_gc_unlock(gc);
+> 
+> This results in the RTC alarm test receiving exactly one interrupt for
+> each alarm expiry, as it should do.  Thoughts?
 
-------------------
+You are worried about clearing an interrupt which is transitory and
+not kept active at the device level until you handled it for real,
+right?
 
-From: Hannes Reinecke <hare@suse.de>
+Is the datasheet for this stuff public available?
 
-commit a1989b330093578ea5470bea0a00f940c444c466 upstream.
+> Another question: ffs(stat) - any reason to use ffs() there rather than
+> fls(stat) which would result in simpler code?  r1 = ffs(r4 = stat) creates:
+> 
+>  198:   e2641000        rsb     r1, r4, #0
+>  19c:   e1a00006        mov     r0, r6
+>  1a0:   e0011004        and     r1, r1, r4
+>  1a4:   e16f1f11        clz     r1, r1
+>  1a8:   e261101f        rsb     r1, r1, #31
+> 
+> whereas fls(stat):
+> 
+>  198:   e16f1f14        clz     r1, r4
+>  19c:   e261101f        rsb     r1, r1, #31
+>  1a0:   e1a00006        mov     r0, r6
+> 
+> Kind of a micro-optimisation, but I see no reason to prefer one over the
+> other except for this - and I think the switch to ffs() was made in the
+> hope of optimising this code!
 
-An invalid ioctl will never be valid, irrespective of whether multipath
-has active paths or not.  So for invalid ioctls we do not have to wait
-for multipath to activate any paths, but can rather return an error
-code immediately.  This fix resolves numerous instances of:
+I don't think it matters in which order you process multiple pending
+interrupts.
 
- udevd[]: worker [] unexpectedly returned with status 0x0100
+Thanks,
 
-that have been seen during testing.
-
-Signed-off-by: Hannes Reinecke <hare@suse.de>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/md/dm-mpath.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/md/dm-mpath.c b/drivers/md/dm-mpath.c
-index 274354d..72398e5 100644
---- a/drivers/md/dm-mpath.c
-+++ b/drivers/md/dm-mpath.c
-@@ -1562,8 +1562,11 @@ static int multipath_ioctl(struct dm_target *ti, unsigned int cmd,
- 	/*
- 	 * Only pass ioctls through if the device sizes match exactly.
- 	 */
--	if (!r && ti->len != i_size_read(bdev->bd_inode) >> SECTOR_SHIFT)
--		r = scsi_verify_blk_ioctl(NULL, cmd);
-+	if (!bdev || ti->len != i_size_read(bdev->bd_inode) >> SECTOR_SHIFT) {
-+		int err = scsi_verify_blk_ioctl(NULL, cmd);
-+		if (err)
-+			r = err;
-+	}
- 
- 	if (r == -ENOTCONN && !fatal_signal_pending(current))
- 		queue_work(kmultipathd, &m->process_queued_ios);
--- 
-1.9.0
-
+	tglx
