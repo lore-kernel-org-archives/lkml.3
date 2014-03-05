@@ -1,68 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755753AbaCEAtF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 19:49:05 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:59822 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753907AbaCEAtD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 19:49:03 -0500
-Message-ID: <1393980534.26794.147.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: RCU stalls when running out of memory on 3.14-rc4 w/ NFS and
- kernel threads priorities changed
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, paulmck@linux.vnet.ibm.com,
-        linux-nfs@vger.kernel.org, trond.myklebust@primarydata.com,
-        netdev <netdev@vger.kernel.org>
-Date: Tue, 04 Mar 2014 16:48:54 -0800
-In-Reply-To: <CAGVrzcbsSV7h3qA3KuCTwKNFEeww_kSNcfUkfw3PPjeXQXBo6g@mail.gmail.com>
-References: <CAGVrzcbsSV7h3qA3KuCTwKNFEeww_kSNcfUkfw3PPjeXQXBo6g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1756006AbaCEAvS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 19:51:18 -0500
+Received: from mga01.intel.com ([192.55.52.88]:10843 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754243AbaCEAvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 19:51:17 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,589,1389772800"; 
+   d="scan'208";a="492468172"
+From: Andi Kleen <andi@firstfloor.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Khalid Aziz <khalid.aziz@oracle.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        peterz@infradead.org, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, oleg@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] [PATCH] Pre-emption control for userspace
+References: <1393870033-31076-1-git-send-email-khalid.aziz@oracle.com>
+	<531641A8.40306@zytor.com> <53164824.3000704@oracle.com>
+	<20140304222356.41c55bbc@alan.etchedpixels.co.uk>
+	<5316574F.6040105@oracle.com>
+	<alpine.DEB.2.02.1403050129570.18573@ionos.tec.linutronix.de>
+Date: Tue, 04 Mar 2014 16:51:15 -0800
+In-Reply-To: <alpine.DEB.2.02.1403050129570.18573@ionos.tec.linutronix.de>
+	(Thomas Gleixner's message of "Wed, 5 Mar 2014 01:39:07 +0100 (CET)")
+Message-ID: <8738ix5uyk.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-03-04 at 15:55 -0800, Florian Fainelli wrote:
-> Hi all,
-> 
-> I am seeing the following RCU stalls messages appearing on an ARMv7
-> 4xCPUs system running 3.14-rc4:
-> 
-> [   42.974327] INFO: rcu_sched detected stalls on CPUs/tasks:
-> [   42.979839]  (detected by 0, t=2102 jiffies, g=4294967082,
-> c=4294967081, q=516)
-> [   42.987169] INFO: Stall ended before state dump start
-> 
-> this is happening under the following conditions:
-> 
-> - the attached bumper.c binary alters various kernel thread priorities
-> based on the contents of bumpup.cfg and
-> - malloc_crazy is running from a NFS share
-> - malloc_crazy.c is running in a loop allocating chunks of memory but
-> never freeing it
-> 
-> when the priorities are altered, instead of getting the OOM killer to
-> be invoked, the RCU stalls are happening. Taking NFS out of the
-> equation does not allow me to reproduce the problem even with the
-> priorities altered.
-> 
-> This "problem" seems to have been there for quite a while now since I
-> was able to get 3.8.13 to trigger that bug as well, with a slightly
-> more detailed RCU debugging trace which points the finger at kswapd0.
-> 
-> You should be able to get that reproduced under QEMU with the
-> Versatile Express platform emulating a Cortex A15 CPU and the attached
-> files.
-> 
-> Any help or suggestions would be greatly appreciated. Thanks!
+Thomas Gleixner <tglx@linutronix.de> writes:
 
-Do you have a more complete trace, including stack traces ?
+> On Tue, 4 Mar 2014, Khalid Aziz wrote:
+>> be in the right control group. Besides they want to use a common mechanism
+>> across multiple OSs and pre-emption delay is already in use on other OSs. Good
+>> idea though.
+>
+> Well, just because preemption delay is a mechanism exposed by some
+> other OS does not make it a good idea.
+>
+> In fact its a horrible idea.
+>
+> What you are creating is a crystal ball based form of time bound
+> priority ceiling with the worst user space interface i've ever seen.
 
+So how would you solve the user space lock holder preemption 
+problem then?
 
+It's a real problem, affecting lots of workloads.
 
+Just saying everything is crap without suggesting anything 
+constructive is not really getting us anywhere.
 
+The workarounds I've seen for it are generally far worse
+than this. Often people do all kinds of fragile tunings
+to address this, when then break on the next kernel
+update that does even a minor scheduler change.
+
+futex doesn't solve the problem at all.
+
+The real time scheduler is also really poor fit for these 
+workloads and needs a lot of hacks to scale.
+
+The thread swap proposal from plumbers had some potential,
+but it's likely very intrusive everywhere and seems
+to have died too.
+
+Anything else?
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
