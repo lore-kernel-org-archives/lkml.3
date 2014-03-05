@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758024AbaCEOdn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:33:43 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41272 "EHLO
+	id S1757701AbaCEO1H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:27:07 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41244 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757707AbaCEO1J (ORCPT
+	with ESMTP id S1757460AbaCEO1A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:27:09 -0500
+	Wed, 5 Mar 2014 09:27:00 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: James Hogan <james.hogan@imgtec.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-metag@vger.kernel.org,
+Cc: "Dr. Greg Wettstein" <greg@enjellic.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 114/131] irq-metag*: stop set_affinity vectoring to offline cpus
-Date: Wed,  5 Mar 2014 14:23:58 +0000
-Message-Id: <1394029455-23128-115-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 108/131] qla2xxx: Fix kernel panic on selective retransmission request
+Date: Wed,  5 Mar 2014 14:23:52 +0000
+Message-Id: <1394029455-23128-109-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -28,55 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Hogan <james.hogan@imgtec.com>
+From: "Dr. Greg Wettstein" <greg@enjellic.com>
 
-commit f229006ec6beabf7b844653d92fa61f025fe3dcf upstream.
+commit 6f58c780e5a5b43a6d2121e0d43cdcba1d3cc5fc upstream.
 
-Fix irq_set_affinity callbacks in the Meta IRQ chip drivers to AND
-cpu_online_mask into the cpumask when picking a CPU to vector the
-interrupt to.
+A selective retransmission request (SRR) is a fibre-channel
+protocol control request which provides support for requesting
+retransmission of a data sequence in response to an issue such as
+frame loss or corruption.  These events are experienced
+infrequently in fibre-channel based networks which makes
+it difficult to test and assess codepaths which handle these
+events.
 
-As Thomas pointed out, the /proc/irq/$N/smp_affinity interface doesn't
-filter out offline CPUs, so without this patch if you offline CPU0 and
-set an IRQ affinity to 0x3 it vectors the interrupt onto CPU0 even
-though it is offline.
+We were fortunate enough, for some definition of fortunate, to
+have a metro-area single-mode SAN link which, at 10 GBPS
+sustained load levels, would consistently generate SRR's in
+a SCST based target implementation using our SCST/in-kernel
+Qlogic target interface driver.  In response to an SRR the
+in-kernel Qlogic target driver immediately panics resulting
+in a catastrophic storage failure for serviced initiators.
 
-Reported-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-metag@vger.kernel.org
+The culprit was a debug statement in the qla_target.c file which
+does not verify that a pointer to the SCSI CDB is not null.
+The unchecked pointer dereference results in the kernel panic
+and resultant system failure.
+
+The other two references to the SCSI CDB by the SRR handling code
+use a ternary operator to verify a non-null pointer is being
+acted on.  This patch simply adds a similar test to the implicated
+debug statement.
+
+This patch is a candidate for any stable kernel being maintained
+since it addresses a potentially catastrophic event with
+minimal downside.
+
+Signed-off-by: Dr. Greg Wettstein <greg@enjellic.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/irqchip/irq-metag-ext.c | 2 +-
- drivers/irqchip/irq-metag.c     | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/scsi/qla2xxx/qla_target.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/irqchip/irq-metag-ext.c b/drivers/irqchip/irq-metag-ext.c
-index 92c41ab..2cb474a 100644
---- a/drivers/irqchip/irq-metag-ext.c
-+++ b/drivers/irqchip/irq-metag-ext.c
-@@ -515,7 +515,7 @@ static int meta_intc_set_affinity(struct irq_data *data,
- 	 * one cpu (the interrupt code doesn't support it), so we just
- 	 * pick the first cpu we find in 'cpumask'.
- 	 */
--	cpu = cpumask_any(cpumask);
-+	cpu = cpumask_any_and(cpumask, cpu_online_mask);
- 	thread = cpu_2_hwthread_id[cpu];
+diff --git a/drivers/scsi/qla2xxx/qla_target.c b/drivers/scsi/qla2xxx/qla_target.c
+index 2a636c1..ba580ad 100644
+--- a/drivers/scsi/qla2xxx/qla_target.c
++++ b/drivers/scsi/qla2xxx/qla_target.c
+@@ -3215,7 +3215,8 @@ restart:
+ 		ql_dbg(ql_dbg_tgt_mgt, vha, 0xf02c,
+ 		    "SRR cmd %p (se_cmd %p, tag %d, op %x), "
+ 		    "sg_cnt=%d, offset=%d", cmd, &cmd->se_cmd, cmd->tag,
+-		    se_cmd->t_task_cdb[0], cmd->sg_cnt, cmd->offset);
++		    se_cmd->t_task_cdb ? se_cmd->t_task_cdb[0] : 0,
++		    cmd->sg_cnt, cmd->offset);
  
- 	metag_out32(TBI_TRIG_VEC(TBID_SIGNUM_TR2(thread)), vec_addr);
-diff --git a/drivers/irqchip/irq-metag.c b/drivers/irqchip/irq-metag.c
-index 8e94d7a..c16c186 100644
---- a/drivers/irqchip/irq-metag.c
-+++ b/drivers/irqchip/irq-metag.c
-@@ -201,7 +201,7 @@ static int metag_internal_irq_set_affinity(struct irq_data *data,
- 	 * one cpu (the interrupt code doesn't support it), so we just
- 	 * pick the first cpu we find in 'cpumask'.
- 	 */
--	cpu = cpumask_any(cpumask);
-+	cpu = cpumask_any_and(cpumask, cpu_online_mask);
- 	thread = cpu_2_hwthread_id[cpu];
+ 		qlt_handle_srr(vha, sctio, imm);
  
- 	metag_out32(TBI_TRIG_VEC(TBID_SIGNUM_TR1(thread)),
 -- 
 1.9.0
 
