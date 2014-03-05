@@ -1,60 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757226AbaCEBzr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 20:55:47 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:53617 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754396AbaCEBzp (ORCPT
+	id S1755971AbaCEB6a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 20:58:30 -0500
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:43274 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751805AbaCEB62 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 20:55:45 -0500
-Date: Wed, 5 Mar 2014 09:55:39 +0800
-From: Lee Jones <lee.jones@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>, Mark Brown <broonie@linaro.org>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Vince Hsu <vinceh@nvidia.com>
-Subject: Re: [PATCH] mfd: as3722: make FUSE7_REG readable
-Message-ID: <20140305015539.GK10579@lee--X1>
-References: <1393951832-2638-1-git-send-email-swarren@wwwdotorg.org>
+	Tue, 4 Mar 2014 20:58:28 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1393951832-2638-1-git-send-email-swarren@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140226101026.16737.30404.sendpatchset@w520>
+References: <20140226101026.16737.30404.sendpatchset@w520>
+Date: Wed, 5 Mar 2014 09:58:27 +0800
+Message-ID: <CACRpkdYK_ej8f_+EUsgc_X-iJ-Ynp40az59i6D1z9f4k31v+rQ@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: sh-pfc: r8a7791: SD1_CLK fix
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Valentine <valentine.barshak@cogentembedded.com>,
+        Simon Horman <horms@verge.net.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Stephen Warren <swarren@nvidia.com>
-> 
-> The FUSE7_REG register is not currently marked readable. This causes
-> as3722_sd0_is_low_voltage() to emit an error during boot, and assume
-> the range of the SD0 regulator:
-> 
-> as3722-regulator as3722-regulator: Reg 0xa7 read failed: -5
-> 
-> Fixes: d4807ad2c4c0 ("regmap: Check readable regs in _regmap_read")
-> [exposed the bug, by checking for readability]
-> Fixes: 762a8ee80897 ("regulator: as3722: detect SD0 low-voltage mode")
-> [left out this register from the readable list]
-> Cc: Mark Brown <broonie@linaro.org>
-> Cc: Michal Simek <michal.simek@xilinx.com>
-> Cc: Andrew Bresticker <abrestic@chromium.org>
-> Cc: Vince Hsu <vinceh@nvidia.com>
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> ---
-> Note: I believe the regmap commit mentioned above is for 3.15, whereas
-> the as3722 commit is in at least 3.14. So, this only needs to be applied
-> for 3.15, but might make sense to go into earlier kernels, at your
-> discretion.
+On Wed, Feb 26, 2014 at 6:10 PM, Magnus Damm <magnus.damm@gmail.com> wrote:
 
-Applied to MFD -next (v3.15).
+> From: Magnus Damm <damm@opensource.se>
+>
+> Fix the SD1_CLK handling for r8a7791. Without this patch
+> it is impossible to request all pins needed for SDHI1 on
+> the Koelsch board.
+>
+> Signed-off-by: Magnus Damm <damm@opensource.se>
+> Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Thanks, applied for fixes.
+
+Yours,
+Linus Walleij
