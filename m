@@ -1,95 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758660AbaCEPGj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 10:06:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41114 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757358AbaCEO0W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:26:22 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 083/131] net: use __GFP_NORETRY for high order allocations
-Date: Wed,  5 Mar 2014 14:23:27 +0000
-Message-Id: <1394029455-23128-84-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
-References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S1758763AbaCEPGr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 10:06:47 -0500
+Received: from na01-by1-obe.ptr.o365filtering.com ([64.4.22.90]:7312 "EHLO
+	na01-by1-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757707AbaCEPGo convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 10:06:44 -0500
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: Jason Wang <jasowang@redhat.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: KY Srinivasan <kys@microsoft.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+Subject: RE: [PATCH net-next] hyperv: Move state setting for link query
+Thread-Topic: [PATCH net-next] hyperv: Move state setting for link query
+Thread-Index: AQHPNzS1MjMVTcnutkixH59RjUyzbprQxhqAgABZCqCAAWgcgIAAC5qg
+Date: Wed, 5 Mar 2014 15:06:13 +0000
+Message-ID: <ca6e88ec74af496383d25d0c29730d4c@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+References: <1393890875-1420-1-git-send-email-haiyangz@microsoft.com>
+ <531543FD.7090907@redhat.com>
+ <856c5dedc14a458b8100dcb2d3a2f9e6@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+ <5316BCC3.50408@redhat.com>
+In-Reply-To: <5316BCC3.50408@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.159.99;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(51704005)(479174003)(189002)(13464003)(199002)(164054003)(24454002)(377454003)(87936001)(94946001)(95416001)(19580395003)(86612001)(81342001)(19580405001)(94316002)(83322001)(76786001)(56816005)(74876001)(2201001)(81816001)(47446002)(74502001)(44976005)(84676001)(23726002)(46406003)(95666003)(50466002)(6806004)(2656002)(69226001)(85306002)(81542001)(93136001)(79102001)(85852003)(74706001)(31966008)(65816001)(92566001)(33646001)(47736001)(80022001)(56776001)(53806001)(59766001)(47976001)(77982001)(74366001)(50986001)(87266001)(66066001)(49866001)(93516002)(74662001)(51856001)(93886001)(90146001)(76796001)(80976001)(81686001)(20776003)(47776003)(54316002)(4396001)(54356001)(83072002)(46102001)(76482001)(63696002)(97186001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2SR01MB594;H:hybrid.exchange.microsoft.com;FPR:260C781E.3C639DEA.41FABF07.80E2E92B.20308;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Forefront-PRVS: 01415BB535
+X-OriginatorOrg: msft.ccsctp.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.6 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
 
-From: Eric Dumazet <edumazet@google.com>
+> -----Original Message-----
+> From: Jason Wang [mailto:jasowang@redhat.com]
+> Sent: Wednesday, March 5, 2014 12:57 AM
+> To: Haiyang Zhang; davem@davemloft.net; netdev@vger.kernel.org
+> Cc: KY Srinivasan; olaf@aepfle.de; linux-kernel@vger.kernel.org; driverdev-
+> devel@linuxdriverproject.org
+> Subject: Re: [PATCH net-next] hyperv: Move state setting for link query
+> 
+> On 03/05/2014 12:57 AM, Haiyang Zhang wrote:
+> >
+> >> -----Original Message-----
+> >> From: Jason Wang [mailto:jasowang@redhat.com]
+> >> Sent: Monday, March 3, 2014 10:10 PM
+> >> To: Haiyang Zhang; davem@davemloft.net; netdev@vger.kernel.org
+> >> Cc: KY Srinivasan; olaf@aepfle.de; linux-kernel@vger.kernel.org;
+> >> driverdev- devel@linuxdriverproject.org
+> >> Subject: Re: [PATCH net-next] hyperv: Move state setting for link
+> >> query
+> >>
+> >> On 03/04/2014 07:54 AM, Haiyang Zhang wrote:
+> >>> It moves the state setting for query into rndis_filter_receive_response().
+> >>> All callbacks including query-complete and status-callback are
+> >>> synchronized by channel->inbound_lock. This prevents pentential race
+> >> between them.
+> >>
+> >> This still looks racy to me. The problem is workqueue is not
+> >> synchronized with those here.
+> >>
+> >> Consider the following case in netvsc_link_change():
+> >>
+> >>     if (rdev->link_state) {
+> >>     ... receive interrupt ...
+> >>     rndis_filter_receice_response() which changes rdev->link_state
+> >>     ...
+> >>         netif_carrier_off()
+> >>     }
+> >>
+> >> And also it need to schedule a work otherwise the link status is out of sync.
+> > The rndis_filter_query_device_link_status() makes the query and wait
+> > for the complete message, including set state, before returning.
+> >
+> > The rndis_filter_query_device_link_status() is called from
+> > rndis_filter_device_add(), which is called from either netvsc_change_mtu()
+> or netvsc_probe().
+> >
+> > The change_mtu() and netvsc_link_change() are synchronized by
+> rtnl_lock().
+> > In netvsc_probe(), the status query & complete happens before
+> > register_netdev(), and the netvsc_linkstatus_callback() schedules the work
+> only after netdevice is registered.
+> > So, there are no race in either case.
+> >
+> > The carrier_on/off work will be scheduled when netvsc_open() is
+> > called. Then, the status will be updated based on the latest link_state.
+> >
+> > Thanks,
+> > - Haiyang
+> >
+> 
+> I see. Then if the link status is changing during mtu changing in guest.
+> Looks like we may miss a link status updating?
 
-commit ed98df3361f059db42786c830ea96e2d18b8d4db upstream.
+When changing mtu, rndis_filter_device_add() is called, and host will send a link
+status call back immediately after connect-to-netvsp, no matter the link is changing
+or not. This will schedule a work to update the status.
 
-sock_alloc_send_pskb() & sk_page_frag_refill()
-have a loop trying high order allocations to prepare
-skb with low number of fragments as this increases performance.
-
-Problem is that under memory pressure/fragmentation, this can
-trigger OOM while the intent was only to try the high order
-allocations, then fallback to order-0 allocations.
-
-We had various reports from unexpected regressions.
-
-According to David, setting __GFP_NORETRY should be fine,
-as the asynchronous compaction is still enabled, and this
-will prevent OOM from kicking as in :
-
-CFSClientEventm invoked oom-killer: gfp_mask=0x42d0, order=3, oom_adj=0,
-oom_score_adj=0, oom_score_badness=2 (enabled),memcg_scoring=disabled
-CFSClientEventm
-
-Call Trace:
- [<ffffffff8043766c>] dump_header+0xe1/0x23e
- [<ffffffff80437a02>] oom_kill_process+0x6a/0x323
- [<ffffffff80438443>] out_of_memory+0x4b3/0x50d
- [<ffffffff8043a4a6>] __alloc_pages_may_oom+0xa2/0xc7
- [<ffffffff80236f42>] __alloc_pages_nodemask+0x1002/0x17f0
- [<ffffffff8024bd23>] alloc_pages_current+0x103/0x2b0
- [<ffffffff8028567f>] sk_page_frag_refill+0x8f/0x160
- [<ffffffff80295fa0>] tcp_sendmsg+0x560/0xee0
- [<ffffffff802a5037>] inet_sendmsg+0x67/0x100
- [<ffffffff80283c9c>] __sock_sendmsg_nosec+0x6c/0x90
- [<ffffffff80283e85>] sock_sendmsg+0xc5/0xf0
- [<ffffffff802847b6>] __sys_sendmsg+0x136/0x430
- [<ffffffff80284ec8>] sys_sendmsg+0x88/0x110
- [<ffffffff80711472>] system_call_fastpath+0x16/0x1b
-Out of Memory: Kill process 2856 (bash) score 9999 or sacrifice child
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[ luis: backported to 3.11: dropped changes to sock_alloc_send_pskb() ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- net/core/sock.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/net/core/sock.c b/net/core/sock.c
-index dca3102..2d92ff8 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -1835,7 +1835,7 @@ bool sk_page_frag_refill(struct sock *sk, struct page_frag *pfrag)
- 		gfp_t gfp = sk->sk_allocation;
- 
- 		if (order)
--			gfp |= __GFP_COMP | __GFP_NOWARN;
-+			gfp |= __GFP_COMP | __GFP_NOWARN | __GFP_NORETRY;
- 		pfrag->page = alloc_pages(gfp, order);
- 		if (likely(pfrag->page)) {
- 			pfrag->offset = 0;
--- 
-1.9.0
+Thanks,
+- Haiyang
 
