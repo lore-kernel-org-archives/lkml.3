@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757050AbaCEXyb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 18:54:31 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:52798 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755012AbaCEXy0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 18:54:26 -0500
-Date: Wed, 5 Mar 2014 17:51:38 -0600
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Josh Cartwright <joshc@codeaurora.org>,
-        Alessandro Zummo <a.zummo@towertech.it>, linux-arm-msm@vger.kernel.org,
-        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] rtc: pm8xxx: fixup checkpatch/style issues
-Message-ID: <20140305235138.GD18529@joshc.qualcomm.com>
-References: <1394047776-13827-1-git-send-email-joshc@codeaurora.org>
- <1394047776-13827-2-git-send-email-joshc@codeaurora.org>
- <531790E5.8020204@codeaurora.org>
+	id S1756884AbaCEX5s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 18:57:48 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38377 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754957AbaCEX5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 18:57:46 -0500
+Message-ID: <5317B9B2.8070205@zytor.com>
+Date: Wed, 05 Mar 2014 15:56:34 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <531790E5.8020204@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Khalid Aziz <khalid.aziz@oracle.com>, David Lang <david@lang.hm>
+CC: Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Ingo Molnar <mingo@kernel.org>, peterz@infradead.org,
+        akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] [PATCH] Pre-emption control for userspace
+References: <1393870033-31076-1-git-send-email-khalid.aziz@oracle.com> <531641A8.40306@zytor.com> <53164824.3000704@oracle.com> <20140304222356.41c55bbc@alan.etchedpixels.co.uk> <5316574F.6040105@oracle.com> <alpine.DEB.2.02.1403050129570.18573@ionos.tec.linutronix.de> <8738ix5uyk.fsf@tassilo.jf.intel.com> <20140305145420.GA30173@redhat.com> <20140305155601.GF22728@two.firstfloor.org> <20140305163644.GA2824@redhat.com> <53175D54.1020804@oracle.com> <alpine.DEB.2.02.1403051506550.6682@nftneq.ynat.uz> <5317B7D5.2030403@oracle.com>
+In-Reply-To: <5317B7D5.2030403@oracle.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 05, 2014 at 01:02:29PM -0800, Stephen Boyd wrote:
-> On 03/05/14 11:29, Josh Cartwright wrote:
-> > Before performing additional cleanups to this driver, do the easy
-> > cleanups first.
-> >
-> > Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+On 03/05/2014 03:48 PM, Khalid Aziz wrote:
 > 
-> Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
-
-Thanks for the reviews.
-
-> > @@ -253,7 +253,7 @@ static int pm8xxx_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
-> >  
-> >  	ctrl_reg = rtc_dd->ctrl_reg;
-> >  	ctrl_reg = alarm->enabled ? (ctrl_reg | PM8xxx_RTC_ALARM_ENABLE) :
-> > -					(ctrl_reg & ~PM8xxx_RTC_ALARM_ENABLE);
-> > +				    (ctrl_reg & ~PM8xxx_RTC_ALARM_ENABLE);
-> >  
-> >  	rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base, 1);
-> >  	if (rc < 0) {
+> Cost is writing to a memory location since thread is using mmap, not
+> insignificant but hardly expensive. Thread does not need to know how
+> much time it has left in current timeslice. It always sets the flag to
+> request pre-emption immunity before entering the critical section and
+> clears the flag when it exits its critical section. If the thread comes
+> up for pre-emption while the flag is set, it gets immunity. If it does
+> not, flag will be cleared at the end of critical section any way.
 > 
-> This could be better style with more lines:
-> 
-> if (alarm->enabled)
->     ctrl_reg |= PM8xxx_RTC_ALARM_ENABLE;
-> else
->     ctrl_reg &= ~PM8xxx_RTC_ALARM_ENABLE;
 
-Agreed, I'll clean this up in a v2.
+A little more than that.  The scheduler needs to set *another* flag
+telling the process to yield upon leaving the critical section; if the
+process doesn't, the scheduler needs to keep enough accounting to know
+to penalize the process, or this method will not be usable for
+unprivileged processes.
 
-I might go back and see just how much can be cleanup up to use the
-regmap_update_bits() API as well.
+I have been thinking about how to deal with the fact that if this isn't
+locked in memory, what happens if it is paged out.  If that can be
+detected at reasonable cost, it probably makes most sense to simply say
+that if the pointed-to memory is paged out, we're not in a critical section.
+	
+	-hpa
 
-Thanks,
-  Josh
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
