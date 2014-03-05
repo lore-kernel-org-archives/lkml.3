@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758093AbaCEPCo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 10:02:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41205 "EHLO
+	id S1757508AbaCEO0q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:26:46 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41133 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757522AbaCEO0r (ORCPT
+	with ESMTP id S1752487AbaCEO02 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:26:47 -0500
+	Wed, 5 Mar 2014 09:26:28 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>, Mark Brown <broonie@linaro.org>,
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Josh Boyer <jwboyer@fedoraproject.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 100/131] ASoC: sta32x: Fix array access overflow
-Date: Wed,  5 Mar 2014 14:23:44 +0000
-Message-Id: <1394029455-23128-101-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 087/131] KVM: MMU: handle invalid root_hpa at __direct_map
+Date: Wed,  5 Mar 2014 14:23:31 +0000
+Message-Id: <1394029455-23128-88-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -27,107 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Marcelo Tosatti <mtosatti@redhat.com>
 
-commit 025c3fa9256d4c54506b7a29dc3befac54f5c68d upstream.
+commit 989c6b34f6a9480e397b170cc62237e89bf4fdb9 upstream.
 
-Preset EQ enum of sta32x codec driver declares too many number of
-items and it may lead to the access over the actual array size.
+It is possible for __direct_map to be called on invalid root_hpa
+(-1), two examples:
 
-Use SOC_ENUM_SINGLE_DECL() helper and it's automatically fixed.
+1) try_async_pf -> can_do_async_pf
+    -> vmx_interrupt_allowed -> nested_vmx_vmexit
+2) vmx_handle_exit -> vmx_interrupt_allowed -> nested_vmx_vmexit
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Acked-by: Liam Girdwood <liam.r.girdwood@linux.intel.com>
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Then to load_vmcs12_host_state and kvm_mmu_reset_context.
+
+Check for this possibility, let fault exception be regenerated.
+
+BZ: https://bugzilla.redhat.com/show_bug.cgi?id=924916
+
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/soc/codecs/sta32x.c | 72 +++++++++++++++++++++++------------------------
- 1 file changed, 36 insertions(+), 36 deletions(-)
+ arch/x86/kvm/mmu.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/sound/soc/codecs/sta32x.c b/sound/soc/codecs/sta32x.c
-index cfb55fe..dc5e7f5 100644
---- a/sound/soc/codecs/sta32x.c
-+++ b/sound/soc/codecs/sta32x.c
-@@ -187,42 +187,42 @@ static const unsigned int sta32x_limiter_drc_release_tlv[] = {
- 	13, 16, TLV_DB_SCALE_ITEM(-1500, 300, 0),
- };
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 9e9285a..5239897 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2691,6 +2691,9 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
+ 	int emulate = 0;
+ 	gfn_t pseudo_gfn;
  
--static const struct soc_enum sta32x_drc_ac_enum =
--	SOC_ENUM_SINGLE(STA32X_CONFD, STA32X_CONFD_DRC_SHIFT,
--			2, sta32x_drc_ac);
--static const struct soc_enum sta32x_auto_eq_enum =
--	SOC_ENUM_SINGLE(STA32X_AUTO1, STA32X_AUTO1_AMEQ_SHIFT,
--			3, sta32x_auto_eq_mode);
--static const struct soc_enum sta32x_auto_gc_enum =
--	SOC_ENUM_SINGLE(STA32X_AUTO1, STA32X_AUTO1_AMGC_SHIFT,
--			4, sta32x_auto_gc_mode);
--static const struct soc_enum sta32x_auto_xo_enum =
--	SOC_ENUM_SINGLE(STA32X_AUTO2, STA32X_AUTO2_XO_SHIFT,
--			16, sta32x_auto_xo_mode);
--static const struct soc_enum sta32x_preset_eq_enum =
--	SOC_ENUM_SINGLE(STA32X_AUTO3, STA32X_AUTO3_PEQ_SHIFT,
--			32, sta32x_preset_eq_mode);
--static const struct soc_enum sta32x_limiter_ch1_enum =
--	SOC_ENUM_SINGLE(STA32X_C1CFG, STA32X_CxCFG_LS_SHIFT,
--			3, sta32x_limiter_select);
--static const struct soc_enum sta32x_limiter_ch2_enum =
--	SOC_ENUM_SINGLE(STA32X_C2CFG, STA32X_CxCFG_LS_SHIFT,
--			3, sta32x_limiter_select);
--static const struct soc_enum sta32x_limiter_ch3_enum =
--	SOC_ENUM_SINGLE(STA32X_C3CFG, STA32X_CxCFG_LS_SHIFT,
--			3, sta32x_limiter_select);
--static const struct soc_enum sta32x_limiter1_attack_rate_enum =
--	SOC_ENUM_SINGLE(STA32X_L1AR, STA32X_LxA_SHIFT,
--			16, sta32x_limiter_attack_rate);
--static const struct soc_enum sta32x_limiter2_attack_rate_enum =
--	SOC_ENUM_SINGLE(STA32X_L2AR, STA32X_LxA_SHIFT,
--			16, sta32x_limiter_attack_rate);
--static const struct soc_enum sta32x_limiter1_release_rate_enum =
--	SOC_ENUM_SINGLE(STA32X_L1AR, STA32X_LxR_SHIFT,
--			16, sta32x_limiter_release_rate);
--static const struct soc_enum sta32x_limiter2_release_rate_enum =
--	SOC_ENUM_SINGLE(STA32X_L2AR, STA32X_LxR_SHIFT,
--			16, sta32x_limiter_release_rate);
-+static SOC_ENUM_SINGLE_DECL(sta32x_drc_ac_enum,
-+			    STA32X_CONFD, STA32X_CONFD_DRC_SHIFT,
-+			    sta32x_drc_ac);
-+static SOC_ENUM_SINGLE_DECL(sta32x_auto_eq_enum,
-+			    STA32X_AUTO1, STA32X_AUTO1_AMEQ_SHIFT,
-+			    sta32x_auto_eq_mode);
-+static SOC_ENUM_SINGLE_DECL(sta32x_auto_gc_enum,
-+			    STA32X_AUTO1, STA32X_AUTO1_AMGC_SHIFT,
-+			    sta32x_auto_gc_mode);
-+static SOC_ENUM_SINGLE_DECL(sta32x_auto_xo_enum,
-+			    STA32X_AUTO2, STA32X_AUTO2_XO_SHIFT,
-+			    sta32x_auto_xo_mode);
-+static SOC_ENUM_SINGLE_DECL(sta32x_preset_eq_enum,
-+			    STA32X_AUTO3, STA32X_AUTO3_PEQ_SHIFT,
-+			    sta32x_preset_eq_mode);
-+static SOC_ENUM_SINGLE_DECL(sta32x_limiter_ch1_enum,
-+			    STA32X_C1CFG, STA32X_CxCFG_LS_SHIFT,
-+			    sta32x_limiter_select);
-+static SOC_ENUM_SINGLE_DECL(sta32x_limiter_ch2_enum,
-+			    STA32X_C2CFG, STA32X_CxCFG_LS_SHIFT,
-+			    sta32x_limiter_select);
-+static SOC_ENUM_SINGLE_DECL(sta32x_limiter_ch3_enum,
-+			    STA32X_C3CFG, STA32X_CxCFG_LS_SHIFT,
-+			    sta32x_limiter_select);
-+static SOC_ENUM_SINGLE_DECL(sta32x_limiter1_attack_rate_enum,
-+			    STA32X_L1AR, STA32X_LxA_SHIFT,
-+			    sta32x_limiter_attack_rate);
-+static SOC_ENUM_SINGLE_DECL(sta32x_limiter2_attack_rate_enum,
-+			    STA32X_L2AR, STA32X_LxA_SHIFT,
-+			    sta32x_limiter_attack_rate);
-+static SOC_ENUM_SINGLE_DECL(sta32x_limiter1_release_rate_enum,
-+			    STA32X_L1AR, STA32X_LxR_SHIFT,
-+			    sta32x_limiter_release_rate);
-+static SOC_ENUM_SINGLE_DECL(sta32x_limiter2_release_rate_enum,
-+			    STA32X_L2AR, STA32X_LxR_SHIFT,
-+			    sta32x_limiter_release_rate);
- 
- /* byte array controls for setting biquad, mixer, scaling coefficients;
-  * for biquads all five coefficients need to be set in one go,
++	if (!VALID_PAGE(vcpu->arch.mmu.root_hpa))
++		return 0;
++
+ 	for_each_shadow_entry(vcpu, (u64)gfn << PAGE_SHIFT, iterator) {
+ 		if (iterator.level == level) {
+ 			mmu_set_spte(vcpu, iterator.sptep, ACC_ALL,
 -- 
 1.9.0
 
