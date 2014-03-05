@@ -1,101 +1,330 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756224AbaCEDr5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 22:47:57 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:49117 "EHLO
+	id S1757109AbaCEDtV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 22:49:21 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49120 "EHLO
 	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755237AbaCEDrz (ORCPT
+	with ESMTP id S1756660AbaCEDtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 22:47:55 -0500
-Date: Wed, 5 Mar 2014 03:47:51 +0000
+	Tue, 4 Mar 2014 22:49:20 -0500
+Date: Wed, 5 Mar 2014 03:49:19 +0000
 From: Al Viro <viro@ZenIV.linux.org.uk>
 To: linux-fsdevel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         linux-kernel@vger.kernel.org, Stephen Tweedie <sct@redhat.com>,
         Jeremy Eder <jeder@redhat.com>
-Subject: [PATCHES][RFC][CFT] scalability fixes for shitloads of mounts
-Message-ID: <20140305034751.GW18016@ZenIV.linux.org.uk>
+Subject: [PATCH 1/5][RFC][CFT] percpu fixes, part 1
+Message-ID: <20140305034919.GA26528@ZenIV.linux.org.uk>
+References: <20140305034751.GW18016@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140305034751.GW18016@ZenIV.linux.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Looks like people had finally started to use setups with serious
-amounts of mounts.  And that has uncovered some downright embarrassing
-bottlenecks.  Below is more or less the catch from the last couple of weeks.
-Kudos to Stephen and Jeremy for testing and profiling that stuff.
+convert ->map[] to array of offsets, cache the "no free areas among the
+first N" in chunk.  Free/in-use is represented by the LSB, a sentry
+element (<free = false, offset = total size of chunk>) is added in
+the end.
 
-	1) percpu_alloc()/percpu_free() doesn't scale well, to put it
-_very_ mildly.  The time complexity of N small allocations is O(N^2).
-Yes, really.  Freeing is the same.  Fortunately, there are several
-low-hanging fruits in there and dealing with those helps quite a bit.
-First of all, the information about splitup of chunk into areas is
-kept in the following form: an array of +-length.  Sign is used to
-distinguish free from in-use.  It's much better to use offset | (0 or 1),
-with the lowest bit indicating free vs. in-use.  For starters, that
-allows freeing to use binary search in that array.  Another thing is
-that we can easily maintain the "I know that first N areas are all
-in use" hint, so that sequential allocation does *not* have to add up
-the lengths of already allocated areas just to find the candidate
-offset.  It could be improved further, but these two already kick
-the damn thing from the top of profiles on "lots of mount/umount"
-loads.  Note that all this work is done with IRQs disabled, so in
-mainline excessive time spent there easily leads to softlockups.
-Another benefitiary is aio - io_setup(2) does a couple of 4-byte
-allocations (alloc_vfsmnt() does one 8-byte percpu_alloc()), so a load
-with a bunch of aio contexts created in parallel on the same box suffers
-from the same bottleneck.  That's first couple of patches (1 and 2 out
-of 5)
-	2) propagate_mnt() tried to save the complexity in the case
-when some nodes in propagation graph are rejected, since they do not
-contain the counterparts of our mountpoint dentry.  It's much simpler
-to create a copy for each node, set propagation between them parallel
-to that on what they are mounted on and then kill the ones that shouldn't
-survive.  IIRC, we recognized the problem, but decided to go for simpler
-logics unless and until somebody runs into situations where it creates
-a lot of copies only to tear almost all of them down.  Well, it turns
-out that it's *very* easy to trigger the worst-case behaviour - have
-N mount --bind create O(N^2) vfsmounts and tear down all but O(N) of them.
-Just
-	mkdir /tmp/blah
-	mount --bind /tmp/blah /tmp/blah
-	mount --make-shared /tmp/blah
-	cd /tmp/blah
-	touch foo
-	for i in `seq 4000`; do touch $i; mount --bind foo $i; done
-will step into it - that loop adds 4000 vfsmounts, but allocates about
-two million more of them, never seen by userland and freed in the
-same mount(2) call that has allocated them.
-	Turns out, it *is* possible to avoid the excessive allocations,
-with a slightly different order of creating the copies and a bit of a trick
-to find which copy will end up the master of given one.  See the commit
-message for more details.  That's patch 3 of 5.
-	3) reading /proc/mounts end-to-end (e.g. cat /proc/mounts) turns
-out to be (embarrassingly) quadratic by the size of said /proc/mounts.
-The reason is that read() will need to find out the next vfsmount to
-return, and that's done by walking the list.  From the beginning.  Even
-if no changes have happened, which we *can* detect - namespace has event
-counter.  Solution is trivial - cache that + the last vfsmount we'd been
-looking at for that one + the index it had been at.  And if the event
-counter matches, have m_start() skip the search from the beginning of
-the list.  In fact, all we really need is a couple of cases - last index
-we looked at and last index plus one.  Taking care of that reduces the
-time needed to read the damn thing from O(mounts^2) to O(mounts).  The
-same goes for /proc/self/mountinfo, and e.g. umount(8) does read it
-end-to-end.  So does the Lennart's horror.  Without that patch (and with
-previous stupidities taken care of) we had seq_start_list() fairly high
-in the profiles; with it it's pretty much gone.  That's patch 4 of 5.
-	4) mount hash is ridiculously small.  256 hash chains is not
-enough when you might get thousands of elements in that hash and when
-hash lookups happen on fairly hot paths.  Solved by switch to
-alloc_large_system_hash(), hopefully with sane order (less than it used
-to be way back).  That may need tuning, but I think that this variant is
-tolerable.
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+---
+ mm/percpu.c |  165 +++++++++++++++++++++++++++++++++++++----------------------
+ 1 file changed, 103 insertions(+), 62 deletions(-)
 
-	Folks, please review.  It survives pretty heavy testing and most
-of that stuff is pretty straightforward, but I would rather have it
-discussed on fsdevel before I push that pile to Linus.  Patches follow;
-if there are any questions and/or objections - please, yell.
+diff --git a/mm/percpu.c b/mm/percpu.c
+index 036cfe0..4469fbd 100644
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -102,10 +102,11 @@ struct pcpu_chunk {
+ 	int			free_size;	/* free bytes in the chunk */
+ 	int			contig_hint;	/* max contiguous size hint */
+ 	void			*base_addr;	/* base address of this chunk */
+-	int			map_used;	/* # of map entries used */
++	int			map_used;	/* # of map entries used before the sentry */
+ 	int			map_alloc;	/* # of map entries allocated */
+ 	int			*map;		/* allocation map */
+ 	void			*data;		/* chunk data */
++	int			first_free;	/* no free below this */
+ 	bool			immutable;	/* no [de]population allowed */
+ 	unsigned long		populated[];	/* populated bitmap */
+ };
+@@ -356,11 +357,11 @@ static int pcpu_need_to_extend(struct pcpu_chunk *chunk)
+ {
+ 	int new_alloc;
+ 
+-	if (chunk->map_alloc >= chunk->map_used + 2)
++	if (chunk->map_alloc >= chunk->map_used + 3)
+ 		return 0;
+ 
+ 	new_alloc = PCPU_DFL_MAP_ALLOC;
+-	while (new_alloc < chunk->map_used + 2)
++	while (new_alloc < chunk->map_used + 3)
+ 		new_alloc *= 2;
+ 
+ 	return new_alloc;
+@@ -438,25 +439,24 @@ out_unlock:
+  * pcpu_lock.
+  */
+ static void pcpu_split_block(struct pcpu_chunk *chunk, int i,
+-			     int head, int tail)
++			     int head, int size, int tail)
+ {
+ 	int nr_extra = !!head + !!tail;
++	int off;
+ 
+-	BUG_ON(chunk->map_alloc < chunk->map_used + nr_extra);
++	BUG_ON(chunk->map_alloc <= chunk->map_used + nr_extra);
+ 
+ 	/* insert new subblocks */
+-	memmove(&chunk->map[i + nr_extra], &chunk->map[i],
++	memmove(&chunk->map[i + nr_extra] + 1, &chunk->map[i] + 1,
+ 		sizeof(chunk->map[0]) * (chunk->map_used - i));
+ 	chunk->map_used += nr_extra;
+ 
+-	if (head) {
+-		chunk->map[i + 1] = chunk->map[i] - head;
+-		chunk->map[i++] = head;
+-	}
+-	if (tail) {
+-		chunk->map[i++] -= tail;
+-		chunk->map[i] = tail;
+-	}
++	off = chunk->map[i];
++
++	if (head)
++		chunk->map[++i] = off += head;
++	if (tail)
++		chunk->map[++i] = off += size;
+ }
+ 
+ /**
+@@ -483,19 +483,27 @@ static int pcpu_alloc_area(struct pcpu_chunk *chunk, int size, int align)
+ 	int oslot = pcpu_chunk_slot(chunk);
+ 	int max_contig = 0;
+ 	int i, off;
++	int seen_free = 0;
++	int *p;
+ 
+-	for (i = 0, off = 0; i < chunk->map_used; off += abs(chunk->map[i++])) {
+-		bool is_last = i + 1 == chunk->map_used;
++	for (i = chunk->first_free, p = chunk->map + i; i < chunk->map_used; i++, p++) {
+ 		int head, tail;
++		int this_size;
++
++		off = *p;
++		if (off & 1)
++			continue;
+ 
+ 		/* extra for alignment requirement */
+ 		head = ALIGN(off, align) - off;
+-		BUG_ON(i == 0 && head != 0);
+ 
+-		if (chunk->map[i] < 0)
+-			continue;
+-		if (chunk->map[i] < head + size) {
+-			max_contig = max(chunk->map[i], max_contig);
++		this_size = (p[1] & ~1) - off;
++		if (this_size < head + size) {
++			if (!seen_free) {
++				chunk->first_free = i;
++				seen_free = 1;
++			}
++			max_contig = max(this_size, max_contig);
+ 			continue;
+ 		}
+ 
+@@ -505,44 +513,50 @@ static int pcpu_alloc_area(struct pcpu_chunk *chunk, int size, int align)
+ 		 * than sizeof(int), which is very small but isn't too
+ 		 * uncommon for percpu allocations.
+ 		 */
+-		if (head && (head < sizeof(int) || chunk->map[i - 1] > 0)) {
+-			if (chunk->map[i - 1] > 0)
+-				chunk->map[i - 1] += head;
+-			else {
+-				chunk->map[i - 1] -= head;
++		if (head && (head < sizeof(int) || !(p[-1] & 1))) {
++			if (p[-1] & 1)
+ 				chunk->free_size -= head;
+-			}
+-			chunk->map[i] -= head;
+-			off += head;
++			*p = off += head;
++			this_size -= head;
+ 			head = 0;
+ 		}
+ 
+ 		/* if tail is small, just keep it around */
+-		tail = chunk->map[i] - head - size;
+-		if (tail < sizeof(int))
++		tail = this_size - head - size;
++		if (tail < sizeof(int)) {
+ 			tail = 0;
++			size = this_size - head;
++		}
+ 
+ 		/* split if warranted */
+ 		if (head || tail) {
+-			pcpu_split_block(chunk, i, head, tail);
++			pcpu_split_block(chunk, i, head, size, tail);
+ 			if (head) {
++				if (!seen_free) {
++					chunk->first_free = i;
++					seen_free = 1;
++				}
+ 				i++;
++				p++;
+ 				off += head;
+-				max_contig = max(chunk->map[i - 1], max_contig);
++				max_contig = max(head, max_contig);
+ 			}
+ 			if (tail)
+-				max_contig = max(chunk->map[i + 1], max_contig);
++				max_contig = max(tail, max_contig);
+ 		}
+ 
++		if (!seen_free)
++			chunk->first_free = i + 1;
++
+ 		/* update hint and mark allocated */
+-		if (is_last)
++		if (i + 1 == chunk->map_used)
+ 			chunk->contig_hint = max_contig; /* fully scanned */
+ 		else
+ 			chunk->contig_hint = max(chunk->contig_hint,
+ 						 max_contig);
+ 
+-		chunk->free_size -= chunk->map[i];
+-		chunk->map[i] = -chunk->map[i];
++		chunk->free_size -= size;
++		*p |= 1;
+ 
+ 		pcpu_chunk_relocate(chunk, oslot);
+ 		return off;
+@@ -570,34 +584,50 @@ static int pcpu_alloc_area(struct pcpu_chunk *chunk, int size, int align)
+ static void pcpu_free_area(struct pcpu_chunk *chunk, int freeme)
+ {
+ 	int oslot = pcpu_chunk_slot(chunk);
+-	int i, off;
+-
+-	for (i = 0, off = 0; i < chunk->map_used; off += abs(chunk->map[i++]))
+-		if (off == freeme)
+-			break;
++	int off = 0;
++	unsigned i, j;
++	int to_free = 0;
++	int *p;
++
++	freeme |= 1;
++
++	i = 0;
++	j = chunk->map_used;
++	while (i != j) {
++		unsigned k = (i + j) / 2;
++		off = chunk->map[k];
++		if (off < freeme)
++			i = k + 1;
++		else if (off > freeme)
++			j = k;
++		else
++			i = j = k;
++	}
+ 	BUG_ON(off != freeme);
+-	BUG_ON(chunk->map[i] > 0);
+ 
+-	chunk->map[i] = -chunk->map[i];
+-	chunk->free_size += chunk->map[i];
++	if (i < chunk->first_free)
++		chunk->first_free = i;
++
++	p = chunk->map + i;
++	*p = off &= ~1;
++	chunk->free_size += (p[1] & ~1) - off;
+ 
++	/* merge with next? */
++	if (!(p[1] & 1))
++		to_free++;
+ 	/* merge with previous? */
+-	if (i > 0 && chunk->map[i - 1] >= 0) {
+-		chunk->map[i - 1] += chunk->map[i];
+-		chunk->map_used--;
+-		memmove(&chunk->map[i], &chunk->map[i + 1],
+-			(chunk->map_used - i) * sizeof(chunk->map[0]));
++	if (i > 0 && !(p[-1] & 1)) {
++		to_free++;
+ 		i--;
++		p--;
+ 	}
+-	/* merge with next? */
+-	if (i + 1 < chunk->map_used && chunk->map[i + 1] >= 0) {
+-		chunk->map[i] += chunk->map[i + 1];
+-		chunk->map_used--;
+-		memmove(&chunk->map[i + 1], &chunk->map[i + 2],
+-			(chunk->map_used - (i + 1)) * sizeof(chunk->map[0]));
++	if (to_free) {
++		chunk->map_used -= to_free;
++		memmove(p + 1, p + 1 + to_free, 
++			(chunk->map_used - i) * sizeof(chunk->map[0]));
+ 	}
+ 
+-	chunk->contig_hint = max(chunk->map[i], chunk->contig_hint);
++	chunk->contig_hint = max(chunk->map[i + 1] - chunk->map[i] - 1, chunk->contig_hint);
+ 	pcpu_chunk_relocate(chunk, oslot);
+ }
+ 
+@@ -617,7 +647,9 @@ static struct pcpu_chunk *pcpu_alloc_chunk(void)
+ 	}
+ 
+ 	chunk->map_alloc = PCPU_DFL_MAP_ALLOC;
+-	chunk->map[chunk->map_used++] = pcpu_unit_size;
++	chunk->map[0] = 0;
++	chunk->map[1] = pcpu_unit_size | 1;
++	chunk->map_used = 1;
+ 
+ 	INIT_LIST_HEAD(&chunk->list);
+ 	chunk->free_size = pcpu_unit_size;
+@@ -713,6 +745,9 @@ static void __percpu *pcpu_alloc(size_t size, size_t align, bool reserved)
+ 	unsigned long flags;
+ 	void __percpu *ptr;
+ 
++	if (unlikely(align < 2))
++		align = 2;
++
+ 	if (unlikely(!size || size > PCPU_MIN_UNIT_SIZE || align > PAGE_SIZE)) {
+ 		WARN(true, "illegal size (%zu) or align (%zu) for "
+ 		     "percpu allocation\n", size, align);
+@@ -1343,9 +1378,13 @@ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
+ 	}
+ 	schunk->contig_hint = schunk->free_size;
+ 
+-	schunk->map[schunk->map_used++] = -ai->static_size;
++	schunk->map[0] = 1;
++	schunk->map[1] = ai->static_size;
++	schunk->map_used = 1;
+ 	if (schunk->free_size)
+-		schunk->map[schunk->map_used++] = schunk->free_size;
++		schunk->map[++schunk->map_used] = 1 | (ai->static_size + schunk->free_size);
++	else
++		schunk->map[1] |= 1;
+ 
+ 	/* init dynamic chunk if necessary */
+ 	if (dyn_size) {
+@@ -1358,8 +1397,10 @@ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
+ 		bitmap_fill(dchunk->populated, pcpu_unit_pages);
+ 
+ 		dchunk->contig_hint = dchunk->free_size = dyn_size;
+-		dchunk->map[dchunk->map_used++] = -pcpu_reserved_chunk_limit;
+-		dchunk->map[dchunk->map_used++] = dchunk->free_size;
++		dchunk->map[0] = 1;
++		dchunk->map[1] = pcpu_reserved_chunk_limit;
++		dchunk->map[2] = (pcpu_reserved_chunk_limit + dchunk->free_size) | 1;
++		dchunk->map_used = 2;
+ 	}
+ 
+ 	/* link the first chunk in */
+-- 
+1.7.10.4
+
