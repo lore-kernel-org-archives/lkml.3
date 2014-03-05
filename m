@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757845AbaCEOpy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:45:54 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41748 "EHLO
+	id S932432AbaCEOiL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:38:11 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41696 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932450AbaCEOiO (ORCPT
+	with ESMTP id S932345AbaCEOh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:38:14 -0500
+	Wed, 5 Mar 2014 09:37:59 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Vinod Koul <vinod.koul@intel.com>,
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 43/62] dma: ste_dma40: don't dereference free:d descriptor
-Date: Wed,  5 Mar 2014 14:36:47 +0000
-Message-Id: <1394030226-26652-44-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 33/62] net: sctp: fix sctp_connectx abi for ia32 emulation/compat mode
+Date: Wed,  5 Mar 2014 14:36:37 +0000
+Message-Id: <1394030226-26652-34-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
 References: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
@@ -28,54 +28,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Walleij <linus.walleij@linaro.org>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit e9baa9d9d520fb0e24cca671e430689de2d4a4b2 upstream.
+commit ffd5939381c609056b33b7585fb05a77b4c695f3 upstream.
 
-It appears that in the DMA40 driver the DMA tasklet will very
-often dereference memory for a descriptor just free:d from the
-DMA40 slab. Nothing happens because no other part of the driver
-has yet had a chance to claim this memory, but it's really
-nasty to dereference free:d memory, so let's check the flag
-before the descriptor is free and store it in a bool variable.
+SCTP's sctp_connectx() abi breaks for 64bit kernels compiled with 32bit
+emulation (e.g. ia32 emulation or x86_x32). Due to internal usage of
+'struct sctp_getaddrs_old' which includes a struct sockaddr pointer,
+sizeof(param) check will always fail in kernel as the structure in
+64bit kernel space is 4bytes larger than for user binaries compiled
+in 32bit mode. Thus, applications making use of sctp_connectx() won't
+be able to run under such circumstances.
 
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+Introduce a compat interface in the kernel to deal with such
+situations by using a 'struct compat_sctp_getaddrs_old' structure
+where user data is copied into it, and then sucessively transformed
+into a 'struct sctp_getaddrs_old' structure with the help of
+compat_ptr(). That fixes sctp_connectx() abi without any changes
+needed in user space, and lets the SCTP test suite pass when compiled
+in 32bit and run on 64bit kernels.
+
+Fixes: f9c67811ebc0 ("sctp: Fix regression introduced by new sctp_connectx api")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/dma/ste_dma40.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ net/sctp/socket.c | 41 ++++++++++++++++++++++++++++++++---------
+ 1 file changed, 32 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index aec952f..b138bc4 100644
---- a/drivers/dma/ste_dma40.c
-+++ b/drivers/dma/ste_dma40.c
-@@ -1412,6 +1412,7 @@ static void dma_tasklet(unsigned long data)
- 	struct d40_chan *d40c = (struct d40_chan *) data;
- 	struct d40_desc *d40d;
- 	unsigned long flags;
-+	bool callback_active;
- 	dma_async_tx_callback callback;
- 	void *callback_param;
+diff --git a/net/sctp/socket.c b/net/sctp/socket.c
+index d01802a..a06d778 100644
+--- a/net/sctp/socket.c
++++ b/net/sctp/socket.c
+@@ -70,6 +70,7 @@
+ #include <linux/init.h>
+ #include <linux/crypto.h>
+ #include <linux/slab.h>
++#include <linux/compat.h>
  
-@@ -1435,6 +1436,7 @@ static void dma_tasklet(unsigned long data)
- 	}
+ #include <net/ip.h>
+ #include <net/icmp.h>
+@@ -1376,11 +1377,19 @@ SCTP_STATIC int sctp_setsockopt_connectx(struct sock* sk,
+ /*
+  * New (hopefully final) interface for the API.
+  * We use the sctp_getaddrs_old structure so that use-space library
+- * can avoid any unnecessary allocations.   The only defferent part
++ * can avoid any unnecessary allocations. The only different part
+  * is that we store the actual length of the address buffer into the
+- * addrs_num structure member.  That way we can re-use the existing
++ * addrs_num structure member. That way we can re-use the existing
+  * code.
+  */
++#ifdef CONFIG_COMPAT
++struct compat_sctp_getaddrs_old {
++	sctp_assoc_t	assoc_id;
++	s32		addr_num;
++	compat_uptr_t	addrs;		/* struct sockaddr * */
++};
++#endif
++
+ SCTP_STATIC int sctp_getsockopt_connectx3(struct sock* sk, int len,
+ 					char __user *optval,
+ 					int __user *optlen)
+@@ -1389,16 +1398,30 @@ SCTP_STATIC int sctp_getsockopt_connectx3(struct sock* sk, int len,
+ 	sctp_assoc_t assoc_id = 0;
+ 	int err = 0;
  
- 	/* Callback to client */
-+	callback_active = !!(d40d->txd.flags & DMA_PREP_INTERRUPT);
- 	callback = d40d->txd.callback;
- 	callback_param = d40d->txd.callback_param;
+-	if (len < sizeof(param))
+-		return -EINVAL;
++#ifdef CONFIG_COMPAT
++	if (is_compat_task()) {
++		struct compat_sctp_getaddrs_old param32;
  
-@@ -1459,7 +1461,7 @@ static void dma_tasklet(unsigned long data)
+-	if (copy_from_user(&param, optval, sizeof(param)))
+-		return -EFAULT;
++		if (len < sizeof(param32))
++			return -EINVAL;
++		if (copy_from_user(&param32, optval, sizeof(param32)))
++			return -EFAULT;
  
- 	spin_unlock_irqrestore(&d40c->lock, flags);
+-	err = __sctp_setsockopt_connectx(sk,
+-			(struct sockaddr __user *)param.addrs,
+-			param.addr_num, &assoc_id);
++		param.assoc_id = param32.assoc_id;
++		param.addr_num = param32.addr_num;
++		param.addrs = compat_ptr(param32.addrs);
++	} else
++#endif
++	{
++		if (len < sizeof(param))
++			return -EINVAL;
++		if (copy_from_user(&param, optval, sizeof(param)))
++			return -EFAULT;
++	}
  
--	if (callback && (d40d->txd.flags & DMA_PREP_INTERRUPT))
-+	if (callback_active && callback)
- 		callback(callback_param);
- 
- 	return;
++	err = __sctp_setsockopt_connectx(sk, (struct sockaddr __user *)
++					 param.addrs, param.addr_num,
++					 &assoc_id);
+ 	if (err == 0 || err == -EINPROGRESS) {
+ 		if (copy_to_user(optval, &assoc_id, sizeof(assoc_id)))
+ 			return -EFAULT;
 -- 
 1.9.0
 
