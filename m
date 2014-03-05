@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932126AbaCEV3z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 16:29:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31590 "EHLO mx1.redhat.com"
+	id S1757534AbaCEV2y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 16:28:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9373 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757791AbaCEV3v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 16:29:51 -0500
+	id S1754846AbaCEV2t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 16:28:49 -0500
 From: Richard Guy Briggs <rgb@redhat.com>
 To: linux-audit@redhat.com, linux-kernel@vger.kernel.org
 Cc: Richard Guy Briggs <rgb@redhat.com>, eparis@redhat.com, sgrubb@redhat.com,
@@ -16,11 +16,10 @@ Cc: Richard Guy Briggs <rgb@redhat.com>, eparis@redhat.com, sgrubb@redhat.com,
         linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
         sparclinux@vger.kernel.org,
         user-mode-linux-devel@lists.sourceforge.net,
-        linux-arch@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, rostedt@goodmis.org, peterz@infradead.org
-Subject: [PATCH 6/6][RFC] audit: drop arch from __audit_syscall_entry() interface
-Date: Wed,  5 Mar 2014 16:27:07 -0500
-Message-Id: <fdcaea27c06177b1d5a23b08e42c5e68bbdc8e76.1393974970.git.rgb@redhat.com>
+        linux-arch@vger.kernel.org
+Subject: [PATCH 1/6][RFC] syscall: define syscall_get_arch() for each audit-supported arch
+Date: Wed,  5 Mar 2014 16:27:02 -0500
+Message-Id: <cb88576237b1bc4fc7981200c2c23ae05790db0d.1393974970.git.rgb@redhat.com>
 In-Reply-To: <cover.1393974970.git.rgb@redhat.com>
 References: <cover.1393974970.git.rgb@redhat.com>
 In-Reply-To: <cover.1393974970.git.rgb@redhat.com>
@@ -29,139 +28,235 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since arch is found locally in __audit_syscall_entry(), there is no need to
-pass it in as a parameter.  Delete it from the parameter list.
-
-x86* was the only arch to call __audit_syscall_entry() directly and did so from
-assembly code.
+Each arch that supports audit requires syscall_get_arch() to able to log and
+identify architecture-dependent syscall numbers.  The information is used in at
+least two different subsystems, so standardize it in the same call across all
+arches.
 
 Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
 
 ---
-Can I get some constructive scrutiny from the x86 asm guys here?  It has been a
-long time since I've played with x86 assembly code (and never x86_64).  I've
-done automated build/regression tests on i686 and x86_64, and I've done manual
-tests on an x86_64 virtual machine and everything appears to work fine.  Thanks!
+ arch/ia64/include/asm/syscall.h       |    7 +++++++
+ arch/microblaze/include/asm/syscall.h |    6 ++++++
+ arch/mips/include/asm/syscall.h       |    8 +++++++-
+ arch/openrisc/include/asm/syscall.h   |    6 ++++++
+ arch/parisc/include/asm/syscall.h     |   12 ++++++++++++
+ arch/powerpc/include/asm/syscall.h    |   13 +++++++++++++
+ arch/sh/include/asm/syscall.h         |   17 +++++++++++++++++
+ arch/sparc/include/asm/syscall.h      |    8 ++++++++
+ include/uapi/linux/audit.h            |    1 +
+ 9 files changed, 77 insertions(+), 1 deletions(-)
 
- arch/x86/ia32/ia32entry.S  |   12 ++++++------
- arch/x86/kernel/entry_32.S |   11 +++++------
- arch/x86/kernel/entry_64.S |   11 +++++------
- include/linux/audit.h      |    7 ++-----
- kernel/auditsc.c           |    2 +-
- 5 files changed, 19 insertions(+), 24 deletions(-)
-
-diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
-index 4299eb0..f5bdd28 100644
---- a/arch/x86/ia32/ia32entry.S
-+++ b/arch/x86/ia32/ia32entry.S
-@@ -186,12 +186,12 @@ sysexit_from_sys_call:
+diff --git a/arch/ia64/include/asm/syscall.h b/arch/ia64/include/asm/syscall.h
+index a7ff1c6..0fd2a7a 100644
+--- a/arch/ia64/include/asm/syscall.h
++++ b/arch/ia64/include/asm/syscall.h
+@@ -15,6 +15,7 @@
  
- #ifdef CONFIG_AUDITSYSCALL
- 	.macro auditsys_entry_common
--	movl %esi,%r9d			/* 6th arg: 4th syscall arg */
--	movl %edx,%r8d			/* 5th arg: 3rd syscall arg */
--	/* (already in %ecx)		   4th arg: 2nd syscall arg */
--	movl %ebx,%edx			/* 3rd arg: 1st syscall arg */
--	movl %eax,%esi			/* 2nd arg: syscall number */
--	movl $AUDIT_ARCH_I386,%edi	/* 1st arg: audit arch */
-+	movl %esi,%r8d			/* 5th arg: 4th syscall arg */
-+	movl %ecx,%r9d			/*swap with edx*/
-+	movl %edx,%ecx			/* 4th arg: 3rd syscall arg */
-+	movl %r9d,%edx			/* 3rd arg: 2nd syscall arg */
-+	movl %ebx,%esi			/* 2nd arg: 1st syscall arg */
-+	movl %eax,%edi			/* 1st arg: syscall number */
- 	call __audit_syscall_entry
- 	movl RAX-ARGOFFSET(%rsp),%eax	/* reload syscall number */
- 	cmpq $(IA32_NR_syscalls-1),%rax
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index a2a4f46..078053e 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -456,12 +456,11 @@ sysenter_audit:
- 	jnz syscall_trace_entry
- 	addl $4,%esp
- 	CFI_ADJUST_CFA_OFFSET -4
--	/* %esi already in 8(%esp)	   6th arg: 4th syscall arg */
--	/* %edx already in 4(%esp)	   5th arg: 3rd syscall arg */
--	/* %ecx already in 0(%esp)	   4th arg: 2nd syscall arg */
--	movl %ebx,%ecx			/* 3rd arg: 1st syscall arg */
--	movl %eax,%edx			/* 2nd arg: syscall number */
--	movl $AUDIT_ARCH_I386,%eax	/* 1st arg: audit arch */
-+	movl %esi,4(%esp)		/* 5th arg: 4th syscall arg */
-+	movl %edx,(%esp)		/* 4th arg: 3rd syscall arg */
-+	/* %ecx already in %ecx		   3rd arg: 2nd syscall arg */
-+	movl %ebx,%edx			/* 2nd arg: 1st syscall arg */
-+	/* %eax already in %eax		   1st arg: syscall number */
- 	call __audit_syscall_entry
- 	pushl_cfi %ebx
- 	movl PT_EAX(%esp),%eax		/* reload syscall number */
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 1e96c36..8292ff7 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -694,12 +694,11 @@ badsys:
- 	 * jump back to the normal fast path.
- 	 */
- auditsys:
--	movq %r10,%r9			/* 6th arg: 4th syscall arg */
--	movq %rdx,%r8			/* 5th arg: 3rd syscall arg */
--	movq %rsi,%rcx			/* 4th arg: 2nd syscall arg */
--	movq %rdi,%rdx			/* 3rd arg: 1st syscall arg */
--	movq %rax,%rsi			/* 2nd arg: syscall number */
--	movl $AUDIT_ARCH_X86_64,%edi	/* 1st arg: audit arch */
-+	movq %r10,%r8			/* 5th arg: 4th syscall arg */
-+	movq %rdx,%rcx			/* 4th arg: 3rd syscall arg */
-+	movq %rsi,%rdx			/* 3rd arg: 2nd syscall arg */
-+	movq %rdi,%rsi			/* 2nd arg: 1st syscall arg */
-+	movq %rax,%rdi			/* 1st arg: syscall number */
- 	call __audit_syscall_entry
- 	LOAD_ARGS 0		/* reload call-clobbered registers */
- 	jmp system_call_fastpath
-diff --git a/include/linux/audit.h b/include/linux/audit.h
-index ee452f1..278bc9d 100644
---- a/include/linux/audit.h
-+++ b/include/linux/audit.h
-@@ -27,8 +27,6 @@
- #include <linux/ptrace.h>
- #include <uapi/linux/audit.h>
+ #include <linux/sched.h>
+ #include <linux/err.h>
++#include <linux/audit.h>
  
--#include <asm/syscall.h>
--
- struct audit_sig_info {
- 	uid_t		uid;
- 	pid_t		pid;
-@@ -100,8 +98,7 @@ extern void audit_log_session_info(struct audit_buffer *ab);
- 				/* Public API */
- extern int  audit_alloc(struct task_struct *task);
- extern void __audit_free(struct task_struct *task);
--extern void __audit_syscall_entry(int arch,
--				  int major, unsigned long a0, unsigned long a1,
-+extern void __audit_syscall_entry(int major, unsigned long a0, unsigned long a1,
- 				  unsigned long a2, unsigned long a3);
- extern void __audit_syscall_exit(int ret_success, long ret_value);
- extern struct filename *__audit_reusename(const __user char *uptr);
-@@ -133,7 +130,7 @@ static inline void audit_syscall_entry(int major, unsigned long a0,
- 				       unsigned long a3)
- {
- 	if (unlikely(current->audit_context))
--		__audit_syscall_entry(syscall_get_arch(), major, a0, a1, a2, a3);
-+		__audit_syscall_entry(major, a0, a1, a2, a3);
+ static inline long syscall_get_nr(struct task_struct *task,
+ 				  struct pt_regs *regs)
+@@ -79,4 +80,10 @@ static inline void syscall_set_arguments(struct task_struct *task,
+ 
+ 	ia64_syscall_get_set_arguments(task, regs, i, n, args, 1);
  }
- static inline void audit_syscall_exit(void *pt_regs)
++
++static inline int syscall_get_arch(struct task_struct *tsk,
++				   struct pt_regs *regs)
++{
++	return AUDIT_ARCH_IA64;
++}
+ #endif	/* _ASM_SYSCALL_H */
+diff --git a/arch/microblaze/include/asm/syscall.h b/arch/microblaze/include/asm/syscall.h
+index 9bc4317..06854da 100644
+--- a/arch/microblaze/include/asm/syscall.h
++++ b/arch/microblaze/include/asm/syscall.h
+@@ -3,6 +3,7 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/sched.h>
++#include <linux/audit.h>
+ #include <asm/ptrace.h>
+ 
+ /* The system call number is given by the user in R12 */
+@@ -99,4 +100,9 @@ static inline void syscall_set_arguments(struct task_struct *task,
+ asmlinkage long do_syscall_trace_enter(struct pt_regs *regs);
+ asmlinkage void do_syscall_trace_leave(struct pt_regs *regs);
+ 
++static inline int syscall_get_arch(struct tast_struct *tsk,
++				   struct pt_regs *regs)
++{
++	return AUDIT_ARCH_MICROBLAZE;
++}
+ #endif /* __ASM_MICROBLAZE_SYSCALL_H */
+diff --git a/arch/mips/include/asm/syscall.h b/arch/mips/include/asm/syscall.h
+index 81c8913..41ecde4 100644
+--- a/arch/mips/include/asm/syscall.h
++++ b/arch/mips/include/asm/syscall.h
+@@ -103,7 +103,7 @@ extern const unsigned long sysn32_call_table[];
+ 
+ static inline int __syscall_get_arch(void)
  {
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index 565f7b7..a4e4447 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -1445,7 +1445,7 @@ void __audit_free(struct task_struct *tsk)
-  * will only be written if another part of the kernel requests that it
-  * be written).
-  */
--void __audit_syscall_entry(int arch, int major,
-+void __audit_syscall_entry(int major,
- 			 unsigned long a1, unsigned long a2,
- 			 unsigned long a3, unsigned long a4)
- {
+-	int arch = EM_MIPS;
++	int arch = AUDIT_ARCH_MIPS;
+ #ifdef CONFIG_64BIT
+ 	arch |=  __AUDIT_ARCH_64BIT;
+ #endif
+@@ -113,4 +113,10 @@ static inline int __syscall_get_arch(void)
+ 	return arch;
+ }
+ 
++static inline int syscall_get_arch(struct task_struct *task,
++				   struct pt_regs *regs)
++{
++	return __syscall_get_arch();
++}
++
+ #endif	/* __ASM_MIPS_SYSCALL_H */
+diff --git a/arch/openrisc/include/asm/syscall.h b/arch/openrisc/include/asm/syscall.h
+index b752bb6..534b9c3 100644
+--- a/arch/openrisc/include/asm/syscall.h
++++ b/arch/openrisc/include/asm/syscall.h
+@@ -21,6 +21,7 @@
+ 
+ #include <linux/err.h>
+ #include <linux/sched.h>
++#include <linux/audit.h>
+ 
+ static inline int
+ syscall_get_nr(struct task_struct *task, struct pt_regs *regs)
+@@ -71,4 +72,9 @@ syscall_set_arguments(struct task_struct *task, struct pt_regs *regs,
+ 	memcpy(&regs->gpr[3 + i], args, n * sizeof(args[0]));
+ }
+ 
++static inline int syscall_get_arch(struct task_struct *tsk,
++				   struct pt_regs *regs)
++{
++	return AUDIT_ARCH_OPENRISC;
++}
+ #endif
+diff --git a/arch/parisc/include/asm/syscall.h b/arch/parisc/include/asm/syscall.h
+index 8bdfd2c..b3b604f 100644
+--- a/arch/parisc/include/asm/syscall.h
++++ b/arch/parisc/include/asm/syscall.h
+@@ -4,6 +4,8 @@
+ #define _ASM_PARISC_SYSCALL_H_
+ 
+ #include <linux/err.h>
++#include <linux/compat.h>
++#include <linux/audit.h>
+ #include <asm/ptrace.h>
+ 
+ static inline long syscall_get_nr(struct task_struct *tsk,
+@@ -37,4 +39,14 @@ static inline void syscall_get_arguments(struct task_struct *tsk,
+ 	}
+ }
+ 
++static inline int syscall_get_arch(struct task_struct *tsk,
++				   struct pt_regs *regs)
++{
++	int arch = AUDIT_ARCH_PARISC;
++#ifdef CONFIG_64BIT
++	if (!is_compat_task())
++		arch = AUDIT_ARCH_PARISC64;
++#endif
++	return arch;
++}
+ #endif /*_ASM_PARISC_SYSCALL_H_*/
+diff --git a/arch/powerpc/include/asm/syscall.h b/arch/powerpc/include/asm/syscall.h
+index b54b2ad..b824eb2 100644
+--- a/arch/powerpc/include/asm/syscall.h
++++ b/arch/powerpc/include/asm/syscall.h
+@@ -14,6 +14,8 @@
+ #define _ASM_SYSCALL_H	1
+ 
+ #include <linux/sched.h>
++#include <linux/compat.h>
++#include <linux/audit.h>
+ 
+ /* ftrace syscalls requires exporting the sys_call_table */
+ #ifdef CONFIG_FTRACE_SYSCALLS
+@@ -86,4 +88,15 @@ static inline void syscall_set_arguments(struct task_struct *task,
+ 	memcpy(&regs->gpr[3 + i], args, n * sizeof(args[0]));
+ }
+ 
++static inline int syscall_get_arch(struct task_struct *tsk,
++				   struct pt_regs *regs)
++{
++	int arch = AUDIT_ARCH_PPC;
++
++#ifdef CONFIG_PPC64
++	if (!is_32bit_task())
++		arch = AUDIT_ARCH_PPC64;
++#endif
++	return arch;
++}
+ #endif	/* _ASM_SYSCALL_H */
+diff --git a/arch/sh/include/asm/syscall.h b/arch/sh/include/asm/syscall.h
+index 847128d..f1a79d4 100644
+--- a/arch/sh/include/asm/syscall.h
++++ b/arch/sh/include/asm/syscall.h
+@@ -9,4 +9,21 @@ extern const unsigned long sys_call_table[];
+ # include <asm/syscall_64.h>
+ #endif
+ 
++# include <linux/audit.h>
++
++static inline int syscall_get_arch(struct task_struct *tsk,
++				   struct pt_regs *regs)
++{
++	int arch = AUDIT_ARCH_SH;
++
++#ifdef CONFIG_64BIT
++	arch |= __AUDIT_ARCH_64BIT;
++#endif
++#ifdef CONFIG_CPU_LITTLE_ENDIAN
++	arch |= __AUDIT_ARCH_LE;
++#endif
++
++	return arch;
++}
++
+ #endif /* __ASM_SH_SYSCALL_H */
+diff --git a/arch/sparc/include/asm/syscall.h b/arch/sparc/include/asm/syscall.h
+index 025a02a..c7a8f75 100644
+--- a/arch/sparc/include/asm/syscall.h
++++ b/arch/sparc/include/asm/syscall.h
+@@ -3,6 +3,7 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/sched.h>
++#include <linux/audit.h>
+ #include <asm/ptrace.h>
+ 
+ /*
+@@ -124,4 +125,11 @@ static inline void syscall_set_arguments(struct task_struct *task,
+ 		regs->u_regs[UREG_I0 + i + j] = args[j];
+ }
+ 
++static inline int syscall_get_arch(struct task_struct *tsk,
++				   struct pt_regs *regs)
++{
++	return test_thread_flag(TIF_32BIT) ? AUDIT_ARCH_SPARC
++					   : AUDIT_ARCH_SPARC64;
++}
++
+ #endif /* __ASM_SPARC_SYSCALL_H */
+diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
+index 2d48fe1..b9c4826 100644
+--- a/include/uapi/linux/audit.h
++++ b/include/uapi/linux/audit.h
+@@ -342,6 +342,7 @@ enum {
+ #define AUDIT_ARCH_IA64		(EM_IA_64|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
+ #define AUDIT_ARCH_M32R		(EM_M32R)
+ #define AUDIT_ARCH_M68K		(EM_68K)
++#define AUDIT_ARCH_MICROBLAZE	(EM_MICROBLAZE)
+ #define AUDIT_ARCH_MIPS		(EM_MIPS)
+ #define AUDIT_ARCH_MIPSEL	(EM_MIPS|__AUDIT_ARCH_LE)
+ #define AUDIT_ARCH_MIPS64	(EM_MIPS|__AUDIT_ARCH_64BIT)
 -- 
 1.7.1
 
