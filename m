@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751669AbaCEFXi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 00:23:38 -0500
-Received: from mail-oa0-f68.google.com ([209.85.219.68]:39007 "EHLO
-	mail-oa0-f68.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750702AbaCEFXh (ORCPT
+	id S1752531AbaCEFZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 00:25:56 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:46310 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751721AbaCEFZz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 00:23:37 -0500
-MIME-Version: 1.0
-Reply-To: mrsroserobert0022@gmail.com
-Date: Wed, 5 Mar 2014 05:23:36 +0000
-Message-ID: <CAJHEXXAVJA_Z7pVw3cyqLoP3tDLYS1qVXT3jcNQ_8aTOKDrdxQ@mail.gmail.com>
-Subject: Urgent Please
-From: rose robert <mrs.rose.robert2012@gmail.com>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 5 Mar 2014 00:25:55 -0500
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: mike@i-Connect.Net, ballabio_dario@emc.com, JBottomley@parallels.com
+Cc: linux-eata@i-Connect.Net, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH] [RESEND] [SCSI] eata: remove deprecated IRQF_DISABLED
+Date: Wed,  5 Mar 2014 06:25:44 +0100
+Message-Id: <1393997144-3865-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1386583297-5069-1-git-send-email-michael.opdenacker@free-electrons.com>
+References: <1386583297-5069-1-git-send-email-michael.opdenacker@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch removes the use of the IRQF_DISABLED flag
+from drivers/scsi/eata*
+
+It's a NOOP since 2.6.35 and it will be removed one day.
+
+Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+---
+ drivers/scsi/eata.c     | 2 +-
+ drivers/scsi/eata_pio.c | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/scsi/eata.c b/drivers/scsi/eata.c
+index 94de88955a99..ebf57364df91 100644
+--- a/drivers/scsi/eata.c
++++ b/drivers/scsi/eata.c
+@@ -1221,7 +1221,7 @@ static int port_detect(unsigned long port_base, unsigned int j,
+ 
+ 	/* Board detected, allocate its IRQ */
+ 	if (request_irq(irq, do_interrupt_handler,
+-			IRQF_DISABLED | ((subversion == ESA) ? IRQF_SHARED : 0),
++			(subversion == ESA) ? IRQF_SHARED : 0,
+ 			driver_name, (void *)&sha[j])) {
+ 		printk("%s: unable to allocate IRQ %u, detaching.\n", name,
+ 		       irq);
+diff --git a/drivers/scsi/eata_pio.c b/drivers/scsi/eata_pio.c
+index 1663173cdb91..8319d2b417b8 100644
+--- a/drivers/scsi/eata_pio.c
++++ b/drivers/scsi/eata_pio.c
+@@ -687,7 +687,7 @@ static int register_pio_HBA(long base, struct get_conf *gc, struct pci_dev *pdev
+ 		return 0;
+ 
+ 	if (!reg_IRQ[gc->IRQ]) {	/* Interrupt already registered ? */
+-		if (!request_irq(gc->IRQ, do_eata_pio_int_handler, IRQF_DISABLED, "EATA-PIO", sh)) {
++		if (!request_irq(gc->IRQ, do_eata_pio_int_handler, 0, "EATA-PIO", sh)) {
+ 			reg_IRQ[gc->IRQ]++;
+ 			if (!gc->IRQ_TR)
+ 				reg_IRQL[gc->IRQ] = 1;	/* IRQ is edge triggered */
+@@ -921,7 +921,7 @@ static int eata_pio_detect(struct scsi_host_template *tpnt)
+ 
+ 	for (i = 0; i < MAXIRQ; i++)
+ 		if (reg_IRQ[i])
+-			request_irq(i, do_eata_pio_int_handler, IRQF_DISABLED, "EATA-PIO", NULL);
++			request_irq(i, do_eata_pio_int_handler, 0, "EATA-PIO", NULL);
+ 
+ 	HBA_ptr = first_HBA;
+ 
 -- 
-Urgent Please
+1.8.3.2
 
-My name is Mrs Rose Robert, I have been surffering from Ovarian cancer
-disease and the doctor says that i have just few days to leave.I am
-from Belgium, but based in Burkina Faso,Africa since ten years ago as
-a business woman dealing with cocoa exportation,now that i am about to
-end the race like this,without any family members and no child.I have
-$1 Million US DOLLARS in EcoBank here in Burkina Faso
-
-which i instructed the bank to give African union leaders to help sick
-people around Africa.But my mind is not at rest because of that i am
-writing thisletter now through the help of my Doctor beside me here in
-my hospital room. I also have $3.1 Million US Dollars in Bank Of
-Africa Burkina Faso,
-
-which i want you to claim from the bank and use it to help less
-previledge people in your country,but you must assure me that you will
-take only 40% of the total money and give the rest 60% to the
-orphanage home in your country,
-
-for my heart to rest.Upon the receipt of your email that you are
-willing and capable to execute my plan, i will instruct the bank
-management to make an immediate transfer into your account. forther
-more as soon as you receive the massge if you want to reply me i will
-want you to reply me  with your personal information and you will also
-send me a copy id to forward to them that you are the person I am
-willing my wealth;
-
-Sincerely,
-
-Mrs Rose Robert
