@@ -1,130 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756853AbaCEA1w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 19:27:52 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:44912 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755876AbaCEAZK (ORCPT
+	id S1756595AbaCEA3i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 19:29:38 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:60687 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755021AbaCEA3g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 19:25:10 -0500
-Message-Id: <20140305002507.507475968@goodmis.org>
-User-Agent: quilt/0.61-1
-Date: Tue, 04 Mar 2014 19:24:49 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        <stable-rt@vger.kernel.org>
-Subject: [PATCH RT 3/8] rt: Make cpu_chill() use hrtimer instead of msleep()
-References: <20140305002446.173840270@goodmis.org>
+	Tue, 4 Mar 2014 19:29:36 -0500
+X-AuditID: 9c93017e-b7cf9ae000004b4b-5a-53166fee7c8f
+Date: Wed, 5 Mar 2014 09:29:32 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan@kernel.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: Re: [PATCH 2/6] mm: add get_pageblock_migratetype_nolock() for cases
+ where locking is undesirable
+Message-ID: <20140305002932.GA2340@lge.com>
+References: <1393596904-16537-1-git-send-email-vbabka@suse.cz>
+ <1393596904-16537-3-git-send-email-vbabka@suse.cz>
+ <20140303082227.GA28899@lge.com>
+ <53148981.90709@suse.cz>
+ <20140304005513.GB32172@lge.com>
+ <5315C438.8070504@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0003-rt-Make-cpu_chill-use-hrtimer-instead-of-msleep.patch
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5315C438.8070504@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.14-rt28-rc1 stable review patch.
-If anyone has any objections, please let me know.
+On Tue, Mar 04, 2014 at 01:16:56PM +0100, Vlastimil Babka wrote:
+> On 03/04/2014 01:55 AM, Joonsoo Kim wrote:
+> >On Mon, Mar 03, 2014 at 02:54:09PM +0100, Vlastimil Babka wrote:
+> >>On 03/03/2014 09:22 AM, Joonsoo Kim wrote:
+> >>>On Fri, Feb 28, 2014 at 03:15:00PM +0100, Vlastimil Babka wrote:
+> >>>>In order to prevent race with set_pageblock_migratetype, most of calls to
+> >>>>get_pageblock_migratetype have been moved under zone->lock. For the remaining
+> >>>>call sites, the extra locking is undesirable, notably in free_hot_cold_page().
+> >>>>
+> >>>>This patch introduces a _nolock version to be used on these call sites, where
+> >>>>a wrong value does not affect correctness. The function makes sure that the
+> >>>>value does not exceed valid migratetype numbers. Such too-high values are
+> >>>>assumed to be a result of race and caller-supplied fallback value is returned
+> >>>>instead.
+> >>>>
+> >>>>Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> >>>>---
+> >>>>  include/linux/mmzone.h | 24 ++++++++++++++++++++++++
+> >>>>  mm/compaction.c        | 14 +++++++++++---
+> >>>>  mm/memory-failure.c    |  3 ++-
+> >>>>  mm/page_alloc.c        | 22 +++++++++++++++++-----
+> >>>>  mm/vmstat.c            |  2 +-
+> >>>>  5 files changed, 55 insertions(+), 10 deletions(-)
+> >>>>
+> >>>>diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> >>>>index fac5509..7c3f678 100644
+> >>>>--- a/include/linux/mmzone.h
+> >>>>+++ b/include/linux/mmzone.h
+> >>>>@@ -75,6 +75,30 @@ enum {
+> >>>>
+> >>>>  extern int page_group_by_mobility_disabled;
+> >>>>
+> >>>>+/*
+> >>>>+ * When called without zone->lock held, a race with set_pageblock_migratetype
+> >>>>+ * may result in bogus values. Use this variant only when this does not affect
+> >>>>+ * correctness, and taking zone->lock would be costly. Values >= MIGRATE_TYPES
+> >>>>+ * are considered to be a result of this race and the value of race_fallback
+> >>>>+ * argument is returned instead.
+> >>>>+ */
+> >>>>+static inline int get_pageblock_migratetype_nolock(struct page *page,
+> >>>>+	int race_fallback)
+> >>>>+{
+> >>>>+	int ret = get_pageblock_flags_group(page, PB_migrate, PB_migrate_end);
+> >>>>+
+> >>>>+	if (unlikely(ret >= MIGRATE_TYPES))
+> >>>>+		ret = race_fallback;
+> >>>>+
+> >>>>+	return ret;
+> >>>>+}
+> >>>
+> >>>Hello, Vlastimil.
+> >>>
+> >>>First of all, thanks for nice work!
+> >>>I have another opinion about this implementation. It can be wrong, so if it
+> >>>is wrong, please let me know.
+> >>
+> >>Thanks, all opinions/reviewing is welcome :)
+> >>
+> >>>Although this implementation would close the race which triggers NULL dereference,
+> >>>I think that this isn't enough if you have a plan to add more
+> >>>{start,undo}_isolate_page_range().
+> >>>
+> >>>Consider that there are lots of {start,undo}_isolate_page_range() calls
+> >>>on the system without CMA.
+> >>>
+> >>>bit representation of migratetype is like as following.
+> >>>
+> >>>MIGRATE_MOVABLE = 010
+> >>>MIGRATE_ISOLATE = 100
+> >>>
+> >>>We could read following values as migratetype of the page on movable pageblock
+> >>>if race occurs.
+> >>>
+> >>>start_isolate_page_range() case: 010 -> 100
+> >>>010, 000, 100
+> >>>
+> >>>undo_isolate_page_range() case: 100 -> 010
+> >>>100, 110, 010
+> >>>
+> >>>Above implementation prevents us from getting 110, but, it can't prevent us from
+> >>>getting 000, that is, MIGRATE_UNMOVABLE. If this race occurs in free_hot_cold_page(),
+> >>>this page would go into unmovable pcp and then allocated for that migratetype.
+> >>>It results in more fragmented memory.
+> >>
+> >>Yes, that can happen. But I would expect it to be negligible to
+> >>other causes of fragmentation. But I'm not at this moment sure how
+> >>often {start,undo}_isolate_page_range() would be called in the end.
+> >>Certainly
+> >>not as often as in the development patch which is just to see if
+> >>that can improve anything. Because it will have its own overhead
+> >>(mostly for zone->lock) that might be too large. But good point, I
+> >>will try to quantify this.
+> >>
+> >>>
+> >>>Consider another case that system enables CONFIG_CMA,
+> >>>
+> >>>MIGRATE_MOVABLE = 010
+> >>>MIGRATE_ISOLATE = 101
+> >>>
+> >>>start_isolate_page_range() case: 010 -> 101
+> >>>010, 011, 001, 101
+> >>>
+> >>>undo_isolate_page_range() case: 101 -> 010
+> >>>101, 100, 110, 010
+> >>>
+> >>>This can results in totally different values and this also makes the problem
+> >>>mentioned above. And, although this doesn't cause any problem on CMA for now,
+> >>>if another migratetype is introduced or some migratetype is removed, it can cause
+> >>>CMA typed page to go into other migratetype and makes CMA permanently failed.
+> >>
+> >>This should actually be no problem for free_hot_cold_page() as any
+> >>migratetype >= MIGRATE_PCPTYPES will defer to free_one_page() which
+> >>will reread migratetype under zone->lock. So as long as
+> >>MIGRATE_PCPTYPES does not include a migratetype with such dangerous
+> >>"permanently failed" properties, it should be good. And I doubt such
+> >>migratetype would be added to pcptypes. But of course, anyone adding
+> >>new migratetype would have to reconsider each
+> >>get_pageblock_migratetype_nolock() call for such potential problems.
+> >
+> >Please let me explain more.
+> >Now CMA page can have following race values.
+> >
+> >MIGRATE_CMA = 100
+> >MIGRATE_ISOLATE = 101
+> >
+> >start_isolate_page_range(): 100 -> 101
+> >100, 101
+> >undo_isolate_page_range(): 101 -> 100
+> >101, 100
+> >
+> >So, race doesn't cause any big problem.
+> >
+> >But, as you mentioned in earlier patch, it could get worse if MIGRATE_RESERVE
+> >is removed. It doesn't happen until now, but, it can be possible.
+> >
+> >In that case,
+> >
+> >MIGRATE_CMA = 011
+> >MIGRATE_ISOLATE = 100
+> >
+> >start_isolate_page_range(): 011 -> 100
+> >011, 010, 000, 100
+> >undo_isolate_page_range(): 100 -> 011
+> >100, 101, 111, 011
+> >
+> >If this race happens, CMA page can go into MIGRATE_UNMOVABLE list, because
+> >"migratetpye >= MIGRATE_PCPTYPES" can't prevent it, and this could make
+> >CMA permanently failed.
+> 
+> Oh, I understand what you mean now, sorry. And since
+> alloc_contig_range() is already doing just this kind of
+> CMA->ISOLATE->CMA transitions, it could really be a problem even
+> without my pending work. But maybe it would be enough to add just
+> extra PG_isolate bit to prevent this, and CMA could stay within the
+> current migratetype bits, no? The separate bit could be even useful
+> to simplify my work.
 
-------------------
+Yes, CMA could stay within the current migratetype bits.
 
-From: Steven Rostedt <rostedt@goodmis.org>
+> Would you agree that this can be postponed a bit as I develop the
+> further compaction series, since CMA currently doesn't have the
+> dangerous value? Maybe there will be new concerns that will lead to
+> different solution.
+> This series already prevents possible panic, which is worse than this issue.
 
-Ulrich Obergfell pointed out that cpu_chill() calls msleep() which is woken
-up by the ksoftirqd running the TIMER softirq. But as the cpu_chill() is
-called from softirq context, it may block the ksoftirqd() from running, in
-which case, it may never wake up the msleep() causing the deadlock.
+If we introduce separate bit for MIGRATE_ISOLATE and makes bit operation atomic(6/6),
+this patchset can be changed. Although I think that it is better to distinguish
+lock/nolock case, nolock variant has no effect since there is no possibility
+to get strange race values prevented by this patch if we have separate bit for
+MIGRATE_ISOLATE. So I would like to see the change at this time. But, I don't
+have strong objection to current implementation. :)
 
-I checked the vmcore, and irq/74-qla2xxx is stuck in the msleep() call,
-running on CPU 8. The one ksoftirqd that is stuck, happens to be the one that
-runs on CPU 8, and it is blocked on a lock held by irq/74-qla2xxx. As that
-ksoftirqd is the one that will wake up irq/74-qla2xxx, and it happens to be
-blocked on a lock that irq/74-qla2xxx holds, we have our deadlock.
+> 
+> >I think that to dump the responsibility on developer who want to add/remove migratetype
+> >is not reasonable and doesn't work well, because they may not have enough background
+> >knowledge. I hope to close the possible race more in this time.
+> 
+> Right, but even if we now added separate bits for ISOLATE and CMA,
+> anyone adding new migratetype would still have to think how to
+> handle that one (common migratetype bits or also some new bit?) and
+> what are the consequences.
 
-The solution is not to convert the cpu_chill() back to a cpu_relax() as that
-will re-create a possible live lock that the cpu_chill() fixed earlier, and may
-also leave this bug open on other softirqs. The fix is to remove the
-dependency on ksoftirqd from cpu_chill(). That is, instead of calling
-msleep() that requires ksoftirqd to wake it up, use the
-hrtimer_nanosleep() code that does the wakeup from hard irq context.
+Okay.
 
-|Looks to be the lock of the block softirq. I don't have the core dump
-|anymore, but from what I could tell the ksoftirqd was blocked on the
-|block softirq lock, where the block softirq handler did a msleep
-|(called by the qla2xxx interrupt handler).
-|
-|Looking at trigger_softirq() in block/blk-softirq.c, it can do a
-|smp_callfunction() to another cpu to run the block softirq. If that
-|happens to be the cpu where the qla2xx irq handler is doing the block
-|softirq and is in a middle of a msleep(), I believe the ksoftirqd will
-|try to run the softirq. If it does that, then BOOM, it's deadlocked
-|because the ksoftirqd will never run the timer softirq either.
-
-|I should have also stated that it was only one lock that was involved.
-|But the lock owner was doing a msleep() that requires a wakeup by
-|ksoftirqd to continue. If ksoftirqd happens to be blocked on a lock
-|held by the msleep() caller, then you have your deadlock.
-|
-|It's best not to have any softirqs going to sleep requiring another
-|softirq to wake it up. Note, if we ever require a timer softirq to do a
-|cpu_chill() it will most definitely hit this deadlock.
-
-Cc: stable-rt@vger.kernel.org
-Found-by: Ulrich Obergfell <uobergfe@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-[bigeasy: add the 4 | chapters from email]
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- include/linux/delay.h |  2 +-
- kernel/hrtimer.c      | 15 +++++++++++++++
- 2 files changed, 16 insertions(+), 1 deletion(-)
-
-diff --git a/include/linux/delay.h b/include/linux/delay.h
-index e23a7c0..37caab3 100644
---- a/include/linux/delay.h
-+++ b/include/linux/delay.h
-@@ -53,7 +53,7 @@ static inline void ssleep(unsigned int seconds)
- }
- 
- #ifdef CONFIG_PREEMPT_RT_FULL
--# define cpu_chill()	msleep(1)
-+extern void cpu_chill(void);
- #else
- # define cpu_chill()	cpu_relax()
- #endif
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index aa5eb4f..2f023aa 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1852,6 +1852,21 @@ SYSCALL_DEFINE2(nanosleep, struct timespec __user *, rqtp,
- 	return hrtimer_nanosleep(&tu, rmtp, HRTIMER_MODE_REL, CLOCK_MONOTONIC);
- }
- 
-+#ifdef CONFIG_PREEMPT_RT_FULL
-+/*
-+ * Sleep for 1 ms in hope whoever holds what we want will let it go.
-+ */
-+void cpu_chill(void)
-+{
-+	struct timespec tu = {
-+		.tv_nsec = NSEC_PER_MSEC,
-+	};
-+
-+	hrtimer_nanosleep(&tu, NULL, HRTIMER_MODE_REL, CLOCK_MONOTONIC);
-+}
-+EXPORT_SYMBOL(cpu_chill);
-+#endif
-+
- /*
-  * Functions related to boot-time initialization:
-  */
--- 
-1.8.5.3
-
+Thanks.
 
