@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759144AbaCEPXF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 10:23:05 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40854 "EHLO
+	id S1756857AbaCEOZH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:25:07 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40809 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755329AbaCEOZJ (ORCPT
+	with ESMTP id S1756745AbaCEOY5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:25:09 -0500
+	Wed, 5 Mar 2014 09:24:57 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>,
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>,
+        "Dr. Tilmann Bubeck" <t.bubeck@reinform.de>,
+        Zheng Liu <wenqing.lz@taobao.com>, "Theodore Ts'o" <tytso@mit.edu>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 033/131] cifs: ensure that uncached writes handle unmapped areas correctly
-Date: Wed,  5 Mar 2014 14:22:37 +0000
-Message-Id: <1394029455-23128-34-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 022/131] ext4: fix error paths in swap_inode_boot_loader()
+Date: Wed,  5 Mar 2014 14:22:26 +0000
+Message-Id: <1394029455-23128-23-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
 References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com>
@@ -27,100 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Zheng Liu <wenqing.lz@taobao.com>
 
-commit 5d81de8e8667da7135d3a32a964087c0faf5483f upstream.
+commit 30d29b119ef01776e0a301444ab24defe8d8bef3 upstream.
 
-It's possible for userland to pass down an iovec via writev() that has a
-bogus user pointer in it. If that happens and we're doing an uncached
-write, then we can end up getting less bytes than we expect from the
-call to iov_iter_copy_from_user. This is CVE-2014-0069
+In swap_inode_boot_loader() we forgot to release ->i_mutex and resume
+unlocked dio for inode and inode_bl if there is an error starting the
+journal handle.  This commit fixes this issue.
 
-cifs_iovec_write isn't set up to handle that situation however. It'll
-blindly keep chugging through the page array and not filling those pages
-with anything useful. Worse yet, we'll later end up with a negative
-number in wdata->tailsz, which will confuse the sending routines and
-cause an oops at the very least.
-
-Fix this by having the copy phase of cifs_iovec_write stop copying data
-in this situation and send the last write as a short one. At the same
-time, we want to avoid sending a zero-length write to the server, so
-break out of the loop and set rc to -EFAULT if that happens. This also
-allows us to handle the case where no address in the iovec is valid.
-
-[Note: Marking this for stable on v3.4+ kernels, but kernels as old as
-       v2.6.38 may have a similar problem and may need similar fix]
-
-Reviewed-by: Pavel Shilovsky <piastry@etersoft.ru>
-Reported-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <smfrench@gmail.com>
+Reported-by: Ahmed Tamrawi <ahmedtamrawi@gmail.com>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: Dr. Tilmann Bubeck <t.bubeck@reinform.de>
+Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/cifs/file.c | 37 ++++++++++++++++++++++++++++++++++---
- 1 file changed, 34 insertions(+), 3 deletions(-)
+ fs/ext4/ioctl.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/fs/cifs/file.c b/fs/cifs/file.c
-index 7e36ae3..829b57d 100644
---- a/fs/cifs/file.c
-+++ b/fs/cifs/file.c
-@@ -2378,7 +2378,7 @@ cifs_iovec_write(struct file *file, const struct iovec *iov,
- 		 unsigned long nr_segs, loff_t *poffset)
- {
- 	unsigned long nr_pages, i;
--	size_t copied, len, cur_len;
-+	size_t bytes, copied, len, cur_len;
- 	ssize_t total_written = 0;
- 	loff_t offset;
- 	struct iov_iter it;
-@@ -2433,14 +2433,45 @@ cifs_iovec_write(struct file *file, const struct iovec *iov,
+diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
+index c0427e2..42624a9 100644
+--- a/fs/ext4/ioctl.c
++++ b/fs/ext4/ioctl.c
+@@ -145,7 +145,7 @@ static long swap_inode_boot_loader(struct super_block *sb,
+ 	handle = ext4_journal_start(inode_bl, EXT4_HT_MOVE_EXTENTS, 2);
+ 	if (IS_ERR(handle)) {
+ 		err = -EINVAL;
+-		goto swap_boot_out;
++		goto journal_err_out;
+ 	}
  
- 		save_len = cur_len;
- 		for (i = 0; i < nr_pages; i++) {
--			copied = min_t(const size_t, cur_len, PAGE_SIZE);
-+			bytes = min_t(const size_t, cur_len, PAGE_SIZE);
- 			copied = iov_iter_copy_from_user(wdata->pages[i], &it,
--							 0, copied);
-+							 0, bytes);
- 			cur_len -= copied;
- 			iov_iter_advance(&it, copied);
-+			/*
-+			 * If we didn't copy as much as we expected, then that
-+			 * may mean we trod into an unmapped area. Stop copying
-+			 * at that point. On the next pass through the big
-+			 * loop, we'll likely end up getting a zero-length
-+			 * write and bailing out of it.
-+			 */
-+			if (copied < bytes)
-+				break;
- 		}
- 		cur_len = save_len - cur_len;
+ 	/* Protect extent tree against block allocations via delalloc */
+@@ -203,6 +203,7 @@ static long swap_inode_boot_loader(struct super_block *sb,
  
-+		/*
-+		 * If we have no data to send, then that probably means that
-+		 * the copy above failed altogether. That's most likely because
-+		 * the address in the iovec was bogus. Set the rc to -EFAULT,
-+		 * free anything we allocated and bail out.
-+		 */
-+		if (!cur_len) {
-+			for (i = 0; i < nr_pages; i++)
-+				put_page(wdata->pages[i]);
-+			kfree(wdata);
-+			rc = -EFAULT;
-+			break;
-+		}
-+
-+		/*
-+		 * i + 1 now represents the number of pages we actually used in
-+		 * the copy phase above. Bring nr_pages down to that, and free
-+		 * any pages that we didn't use.
-+		 */
-+		for ( ; nr_pages > i + 1; nr_pages--)
-+			put_page(wdata->pages[nr_pages - 1]);
-+
- 		wdata->sync_mode = WB_SYNC_ALL;
- 		wdata->nr_pages = nr_pages;
- 		wdata->offset = (__u64)offset;
+ 	ext4_double_up_write_data_sem(inode, inode_bl);
+ 
++journal_err_out:
+ 	ext4_inode_resume_unlocked_dio(inode);
+ 	ext4_inode_resume_unlocked_dio(inode_bl);
+ 
 -- 
 1.9.0
 
