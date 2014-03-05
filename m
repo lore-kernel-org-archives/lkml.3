@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932292AbaCEOhu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:37:50 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41632 "EHLO
+	id S1758636AbaCEOvr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:51:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41647 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932231AbaCEOho (ORCPT
+	with ESMTP id S932277AbaCEOht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:37:44 -0500
+	Wed, 5 Mar 2014 09:37:49 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 22/62] workqueue: ensure @task is valid across kthread_stop()
-Date: Wed,  5 Mar 2014 14:36:26 +0000
-Message-Id: <1394030226-26652-23-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 26/62] ACPI / video: Filter the _BCL table for duplicate brightness values
+Date: Wed,  5 Mar 2014 14:36:30 +0000
+Message-Id: <1394030226-26652-27-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
 References: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
@@ -27,58 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 5bdfff96c69a4d5ab9c49e60abf9e070ecd2acbb upstream.
+commit bd8ba20597f0cfef3ef65c3fd2aa92ab23d4c8e1 upstream.
 
-When a kworker should die, the kworkre is notified through WORKER_DIE
-flag instead of kthread_should_stop().  This, IIRC, is primarily to
-keep the test synchronized inside worker_pool lock.  WORKER_DIE is
-first set while holding pool->lock, the lock is dropped and
-kthread_stop() is called.
+Some devices have duplicate entries in there brightness levels table, ie
+on my Dell Latitude E6430 the table looks like this:
 
-Unfortunately, this means that there's a slight chance that the target
-kworker may see WORKER_DIE before kthread_stop() finishes and exits
-and frees the target task before or during kthread_stop().
+[    3.686060] acpi backlight index   0, val 80
+[    3.686095] acpi backlight index   1, val 50
+[    3.686122] acpi backlight index   2, val 5
+[    3.686147] acpi backlight index   3, val 5
+[    3.686172] acpi backlight index   4, val 5
+[    3.686197] acpi backlight index   5, val 5
+[    3.686223] acpi backlight index   6, val 5
+[    3.686248] acpi backlight index   7, val 5
+[    3.686273] acpi backlight index   8, val 6
+[    3.686332] acpi backlight index   9, val 7
+[    3.686356] acpi backlight index  10, val 8
+[    3.686380] acpi backlight index  11, val 9
+etc.
 
-Fix it by pinning the target task before setting WORKER_DIE and
-putting it after kthread_stop() is done.
+Notice that brightness values 0-5 are all mapped to 5. This means that
+if userspace writes any value between 0 and 5 to the brightness sysfs attribute
+and then reads it, it will always return 0, which is somewhat unexpected.
 
-tj: Improved patch description and comment.  Moved pinning above
-    WORKER_DIE for better signify what it's protecting.
+This is a problem for ie gnome-settings-daemon, which uses read-modify-write
+logic when the users presses the brightness up or down keys. This is done
+this way to take brightness changes from other sources into account.
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-[ luis: backported to 3.5: adjusted context ]
+On this specific laptop what happens once the brightness has been set to 0,
+is that gsd reads 0, adds 5, writes 5, and on the next brightness up key press
+again reads 0, so things get stuck at the lowest brightness setting.
+
+Filtering out the duplicate table entries, makes any write to brightness
+read back as the written value as one would expect, fixing this.
+
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Reviewed-by: Aaron Lu <aaron.lu@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/workqueue.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/acpi/video.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 89743ae..d19727f 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1472,12 +1472,19 @@ static void destroy_worker(struct worker *worker)
- 	if (worker->flags & WORKER_IDLE)
- 		gcwq->nr_idle--;
+diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
+index 403283d..ba46775 100644
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -648,6 +648,7 @@ acpi_video_init_brightness(struct acpi_video_device *device)
+ 	union acpi_object *o;
+ 	struct acpi_video_device_brightness *br = NULL;
+ 	int result = -EINVAL;
++	u32 value;
  
-+	/*
-+	 * Once WORKER_DIE is set, the kworker may destroy itself at any
-+	 * point.  Pin to ensure the task stays until we're done with it.
-+	 */
-+	get_task_struct(worker->task);
+ 	if (!ACPI_SUCCESS(acpi_video_device_lcd_query_levels(device, &obj))) {
+ 		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Could not query available "
+@@ -678,7 +679,12 @@ acpi_video_init_brightness(struct acpi_video_device *device)
+ 			printk(KERN_ERR PREFIX "Invalid data\n");
+ 			continue;
+ 		}
+-		br->levels[count] = (u32) o->integer.value;
++		value = (u32) o->integer.value;
++		/* Skip duplicate entries */
++		if (count > 2 && br->levels[count - 1] == value)
++			continue;
 +
- 	list_del_init(&worker->entry);
- 	worker->flags |= WORKER_DIE;
++		br->levels[count] = value;
  
- 	spin_unlock_irq(&gcwq->lock);
- 
- 	kthread_stop(worker->task);
-+	put_task_struct(worker->task);
- 	kfree(worker);
- 
- 	spin_lock_irq(&gcwq->lock);
+ 		if (br->levels[count] > max_level)
+ 			max_level = br->levels[count];
 -- 
 1.9.0
 
