@@ -1,64 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485AbaCEAzQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 19:55:16 -0500
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:35768 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751805AbaCEAzO (ORCPT
+	id S1755939AbaCEA5Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 19:57:24 -0500
+Received: from imta-38.everyone.net ([216.200.145.38]:57485 "EHLO
+	imta-38.everyone.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754105AbaCEA5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 19:55:14 -0500
+	Tue, 4 Mar 2014 19:57:22 -0500
+X-Greylist: delayed 21693 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Mar 2014 19:57:22 EST
+X-Eon-Dm: m0005314.ppops.net
 MIME-Version: 1.0
-In-Reply-To: <20140305003505.GA28196@kroah.com>
-References: <2842786.yy4V63h1Bd@daeseok-laptop.cloud.net>
-	<20140305003505.GA28196@kroah.com>
-Date: Wed, 5 Mar 2014 09:55:14 +0900
-Message-ID: <CAHb8M2D8miCPsse4twZxqtSaOAv4bKncUWcm47JXvfKxQZodVw@mail.gmail.com>
-Subject: Re: [PATCH 5/7] staging: cxt1e1: fix checkpatch errors with open
- brace '{'
-From: DaeSeok Youn <daeseok.youn@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: devel <devel@driverdev.osuosl.org>, Shaun Laing <shaun@xresource.ca>,
-        "sachin.kamat" <sachin.kamat@linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dulshani Gunawardhana <dulshani.gunawardhana89@gmail.com>,
-        "ying.xue" <ying.xue@windriver.com>,
-        David Miller <davem@davemloft.net>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="UTF-8"
+Message-Id: <20140304165717.52B33358@m0048141.ppops.net>
+Date: Tue, 4 Mar 2014 16:57:17 -0800
+From: "Arnold Bird" <arnoldbird@cosmicemail.com>
+Reply-To: <arnoldbird@cosmicemail.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: <debian-project@lists.debian.org>
+Subject: Lennart Poettering and his software, a simple explaination (cartoon):
+X-Eon-Sig: AQO+1x5TFnZtVLEABgEAAAAC,cb90561e5f1b637c0771a86d12011500
+X-Originating-Ip: 85.114.142.172
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-03-04_07:2014-03-04,2014-03-04,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=23 spamscore=23 suspectscore=11
+ phishscore=0 adultscore=0 bulkscore=1 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1403040161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, greg
+Lennart Poettering and his software, a simple explaination (cartoon):
+archive.rebeccablacktech.com/boards/g/img/0406/33/1393881561558.png
 
-I already resend patch 4 and 5. :-)
+That is all that needs to be said.
 
-It had a bug which is noticed by Dan.
 
-I tried to fix assignment in if condition and missed curly brace in inner loop.
-So I fixed that bug and resend patch 4. And patch 5 is rebased after
-fixing patch 4.
-
-And I tested to apply these patch to staging-next branch from mailing list.
-Please check.
-
-Thanks.
-Daeseok Youn.
-
-2014-03-05 9:35 GMT+09:00 Greg KH <gregkh@linuxfoundation.org>:
-> On Tue, Mar 04, 2014 at 11:10:44AM +0900, Daeseok Youn wrote:
->>
->> clean up checkpatch.pl error in linux.c:
->>  ERROR: that open brace { should be on the previous line
->>
->> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
->> ---
->>  drivers/staging/cxt1e1/linux.c |   67 ++++++++++++---------------------------
->>  1 files changed, 21 insertions(+), 46 deletions(-)
->
-> As patch 4 can't be applied, I can't apply these either, please resend
-> the rest of the series when you fix them up.
->
-> thanks,
->
-> greg k-h
+_____________________________________________________________
+Free e-mail, simple, clean and easy to use. Visit CosmicEmail.com for your instant free account.
