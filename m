@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755952AbaCECLi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 21:11:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44874 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754190AbaCECLg (ORCPT
+	id S1756602AbaCECOs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 21:14:48 -0500
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:48637 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754190AbaCECOq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 21:11:36 -0500
-Date: Tue, 4 Mar 2014 18:11:57 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [PATCH 3.13 000/172] 3.13.6-stable review
-Message-ID: <20140305021157.GA18412@kroah.com>
-References: <20140304200259.626667112@linuxfoundation.org>
- <53167B15.3020105@roeck-us.net>
+	Tue, 4 Mar 2014 21:14:46 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53167B15.3020105@roeck-us.net>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1393985087.3271.21.camel@joe-AO722>
+References: <1393378800-7220-1-git-send-email-acourbot@nvidia.com>
+ <CACRpkdY-oBdxxWhsGraEU31qyu+RWJAiRA+KEip6QNW3jRwGUA@mail.gmail.com> <1393985087.3271.21.camel@joe-AO722>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Wed, 5 Mar 2014 11:14:23 +0900
+Message-ID: <CAAVeFuJdg-p4K1wdLpdv3byiEBUezGGUVjyScoOaZcLZxhPk7A@mail.gmail.com>
+Subject: Re: [PATCH] gpio: clamp returned values to the boolean range
+To: Joe Perches <joe@perches.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 04, 2014 at 05:17:09PM -0800, Guenter Roeck wrote:
-> On 03/04/2014 12:01 PM, Greg Kroah-Hartman wrote:
-> > This is the start of the stable review cycle for the 3.13.6 release.
-> > There are 172 patches in this series, all will be posted as a response
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
-> >
-> > Responses should be made by Thu Mar  6 20:02:29 UTC 2014.
-> > Anything received after that time might be too late.
-> >
-> 
-> Build results:
-> 	total: 126 pass: 122 skipped: 4 fail: 0
-> 
-> qemu tests all passed.
-> 
-> Results are as expected. Details are available at http://server.roeck-us.net:8010/builders.
+On Wed, Mar 5, 2014 at 11:04 AM, Joe Perches <joe@perches.com> wrote:
+> On Wed, 2014-03-05 at 09:49 +0800, Linus Walleij wrote:
+>> On Wed, Feb 26, 2014 at 9:40 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+>>
+>> > Nothing prevents GPIO drivers from returning values outside the
+>> > boolean range, and as it turns out a few drivers are actually doing so.
+>> > These values were passed as-is to unsuspecting consumers and created
+>> > confusion.
+>> >
+>> > This patch makes the internal _gpiod_get_raw_value() function return a
+>> > bool, effectively clamping the GPIO value to the boolean range no
+>> > matter what the driver does.
+>>
+>> No, that will not be the semantic effect of this patch, bool is just
+>> another name for an int, maybe some static checkers will be able
+>> to use it however.
+>
+> No, a bool is not an int.
+>
+> It's really different.
+> include/linux/types.h:typedef _Bool                     bool;
 
-Thanks for testing both of these and letting me know.
+It indeed seems that _Bool is an actual boolean type in C99. However I
+could not find in the C99 standard how ints are supposed to be
+converted to it. So in the end it is probably safer to perform this
+change the way Linus suggested.
 
-greg k-h
+Alex.
