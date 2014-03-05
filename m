@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752673AbaCEF25 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 00:28:57 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:46317 "EHLO
+	id S1752951AbaCEFbF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 00:31:05 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:46322 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750990AbaCEF2z (ORCPT
+	with ESMTP id S1751249AbaCEFbC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 00:28:55 -0500
+	Wed, 5 Mar 2014 00:31:02 -0500
 From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: JBottomley@parallels.com
+To: ballabio_dario@emc.com, JBottomley@parallels.com
 Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
         Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] [RESEND] [SCSI] ibmvstgt: remove deprecated IRQF_DISABLED
-Date: Wed,  5 Mar 2014 06:28:45 +0100
-Message-Id: <1393997325-3927-1-git-send-email-michael.opdenacker@free-electrons.com>
+Subject: [PATCH] [RESEND] [SCSI] u14-34f: remove deprecated IRQF_DISABLED
+Date: Wed,  5 Mar 2014 06:30:56 +0100
+Message-Id: <1393997456-3980-1-git-send-email-michael.opdenacker@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1386583397-5126-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1386583397-5126-1-git-send-email-michael.opdenacker@free-electrons.com>
+In-Reply-To: <1386583893-5282-1-git-send-email-michael.opdenacker@free-electrons.com>
+References: <1386583893-5282-1-git-send-email-michael.opdenacker@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the use of the IRQF_DISABLED flag
-from drivers/scsi/ibmvscsi/ibmvstgt.c
+This patch removes the the use of the IRQF_DISABLED flag
+from drivers/scsi/u14-34f.c
 
 It's a NOOP since 2.6.35 and it will be removed one day.
 
 Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
 ---
- drivers/scsi/ibmvscsi/ibmvstgt.c | 2 +-
+ drivers/scsi/u14-34f.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/ibmvscsi/ibmvstgt.c b/drivers/scsi/ibmvscsi/ibmvstgt.c
-index bf9eca845166..56f8a861ed72 100644
---- a/drivers/scsi/ibmvscsi/ibmvstgt.c
-+++ b/drivers/scsi/ibmvscsi/ibmvstgt.c
-@@ -589,7 +589,7 @@ static int crq_queue_create(struct crq_queue *queue, struct srp_target *target)
- 	}
+diff --git a/drivers/scsi/u14-34f.c b/drivers/scsi/u14-34f.c
+index 9c216e563568..5a03bb3bcfef 100644
+--- a/drivers/scsi/u14-34f.c
++++ b/drivers/scsi/u14-34f.c
+@@ -873,7 +873,7 @@ static int port_detect \
  
- 	err = request_irq(vport->dma_dev->irq, &ibmvstgt_interrupt,
--			  IRQF_DISABLED, "ibmvstgt", target);
-+			  0, "ibmvstgt", target);
- 	if (err)
- 		goto req_irq_failed;
- 
+    /* Board detected, allocate its IRQ */
+    if (request_irq(irq, do_interrupt_handler,
+-             IRQF_DISABLED | ((subversion == ESA) ? IRQF_SHARED : 0),
++             (subversion == ESA) ? IRQF_SHARED : 0,
+              driver_name, (void *) &sha[j])) {
+       printk("%s: unable to allocate IRQ %u, detaching.\n", name, irq);
+       goto freelock;
 -- 
 1.8.3.2
 
