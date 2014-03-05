@@ -1,99 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757273AbaCED47 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 22:56:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45629 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753797AbaCED46 (ORCPT
+	id S1757401AbaCED5r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 22:57:47 -0500
+Received: from [207.46.163.139] ([207.46.163.139]:47873 "EHLO
+	na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756680AbaCED5p convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 22:56:58 -0500
-Date: Tue, 4 Mar 2014 20:00:23 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Hedi Berriche <hedi@sgi.com>,
-        Mike Travis <travis@sgi.com>, Dimitri Sivanich <sivanich@sgi.com>
-Subject: Re: [PATCH 31/48] uv: Replace __get_cpu_var
-Message-Id: <20140304200023.7b991909.akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.10.1403042130250.3742@nuc>
-References: <20140214201841.826179349@linux.com>
-	<20140214201907.228035121@linux.com>
-	<20140304150217.ac9d364008a3c95cb2a79b34@linux-foundation.org>
-	<alpine.DEB.2.10.1403042130250.3742@nuc>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 4 Mar 2014 22:57:45 -0500
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Mark Brown <broonie@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>
+CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "Fabio.Estevam@freescale.com" <Fabio.Estevam@freescale.com>,
+        "moinejf@free.fr" <moinejf@free.fr>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>,
+        "tiwai@suse.de" <tiwai@suse.de>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "timur@tabi.org" <timur@tabi.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "denis@eukrea.com" <denis@eukrea.com>,
+        "guangyu.chen@freescale.com" <guangyu.chen@freescale.com>,
+        "mpa@pengutronix.de" <mpa@pengutronix.de>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>
+Subject: RE: [alsa-devel] [PATCH 01/10] ASoC: core: Add
+ snd_soc_dai_set_tdm_slot_xlate().
+Thread-Topic: [alsa-devel] [PATCH 01/10] ASoC: core: Add
+ snd_soc_dai_set_tdm_slot_xlate().
+Thread-Index: AQHPMrCgZUeIw1X2K0GrJD0FMlCJVprMPHAAgAWnPICAAADBIA==
+Date: Wed, 5 Mar 2014 03:55:50 +0000
+Message-ID: <6991b4aaf2a34f8180b24f7a2ae8355a@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1393387175-15539-1-git-send-email-Li.Xiubo@freescale.com>
+ <1393387175-15539-2-git-send-email-Li.Xiubo@freescale.com>
+ <5311DE70.7000901@metafoo.de> <20140305033935.GY13126@sirena.org.uk>
+In-Reply-To: <20140305033935.GY13126@sirena.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.49]
+x-forefront-prvs: 01415BB535
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(24454002)(199002)(189002)(164054003)(51704005)(83322001)(86362001)(94946001)(59766001)(77982001)(46102001)(33646001)(85852003)(81686001)(65816001)(80022001)(66066001)(93136001)(54356001)(53806001)(51856001)(74502001)(76576001)(94316002)(95416001)(93516002)(47446002)(80976001)(81542001)(76786001)(76796001)(63696002)(92566001)(85306002)(31966008)(79102001)(69226001)(81342001)(74366001)(74706001)(74316001)(56816005)(47976001)(50986001)(90146001)(81816001)(4396001)(83072002)(49866001)(54316002)(76482001)(87936001)(2656002)(95666003)(47736001)(87266001)(74876001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB254;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:ACF3FC33.A4DAAF13.53DCBDDB.48FAE1B8.20263;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 Mar 2014 21:31:12 -0600 (CST) Christoph Lameter <cl@linux.com> wrote:
 
-> On Tue, 4 Mar 2014, Andrew Morton wrote:
+> Subject: Re: [alsa-devel] [PATCH 01/10] ASoC: core: Add
+> snd_soc_dai_set_tdm_slot_xlate().
 > 
-> > >
-> > > ...
-> > >
-> > > --- linux.orig/arch/x86/include/asm/uv/uv_hub.h	2014-02-03 14:16:53.987889372 -0600
-> > > +++ linux/arch/x86/include/asm/uv/uv_hub.h	2014-02-03 14:16:53.987889372 -0600
-> > > @@ -618,7 +618,7 @@
-> > >  };
-> > >
-> > >  DECLARE_PER_CPU(struct uv_cpu_nmi_s, __uv_cpu_nmi);
-> > > -#define uv_cpu_nmi			(__get_cpu_var(__uv_cpu_nmi))
-> > > +#define uv_cpu_nmi			__this_cpu_read(_uv_cpu_nmi)
-> >
-> > arch/x86/platform/uv/uv_nmi.c: In function 'uv_check_nmi':
-> > arch/x86/platform/uv/uv_nmi.c:218: error: '_uv_cpu_nmi' undeclared (first use in this function)
-> > arch/x86/platform/uv/uv_nmi.c:218: error: (Each undeclared identifier is reported only once
-> > arch/x86/platform/uv/uv_nmi.c:218: error: for each function it appears in.)
-> >
-> >
-> > This?
+> On Sat, Mar 01, 2014 at 02:19:44PM +0100, Lars-Peter Clausen wrote:
 > 
-> Nope. I missed an underscore.
+> > I'm not quite sure I fully understand what this patch is trying to
+> > solve. It adds a variant snd_soc_dai_set_tdm_slot() that instead of
+> > taking a rx and tx mask calculates the masks based on the number of
+> > slots? In that case I don't really see how the xlate in the name
+> > relates to that. xlate is something you'd typically expect in a
+> > devicetree context. Maybe one should be called
+> > snd_soc_dai_set_tdm_slot() and the other
+> > snd_soc_dai_set_tdm_slot_and_masks()?
 > 
+> > But another question is do we really need this? I don't see the
+> > problem that is solved by this patchset.
 > 
-> > --- a/arch/x86/include/asm/uv/uv_hub.h~uv-replace-__get_cpu_var-fix
-> > +++ a/arch/x86/include/asm/uv/uv_hub.h
-> > @@ -618,7 +618,7 @@ struct uv_cpu_nmi_s {
-> >  };
-> >
-> >  DECLARE_PER_CPU(struct uv_cpu_nmi_s, __uv_cpu_nmi);
-> > -#define uv_cpu_nmi			__this_cpu_read(_uv_cpu_nmi)
-> > +#define uv_cpu_nmi			(*this_cpu_ptr(&__uv_cpu_nmi))
-> 
-> __this_cpu_read(__uv_cpu_nmi)
+> My understanding is that the patch set aims to provide a way of using
+> the TDM features of drivers from DT, providing a standardised format for
+> expressing the TDM setup in the DT.  I've not looked at the actual code
+> yet though.
 
---- a/arch/x86/include/asm/uv/uv_hub.h~uv-replace-__get_cpu_var-fix
-+++ a/arch/x86/include/asm/uv/uv_hub.h
-@@ -618,7 +618,7 @@ struct uv_cpu_nmi_s {
- };
- 
- DECLARE_PER_CPU(struct uv_cpu_nmi_s, __uv_cpu_nmi);
--#define uv_cpu_nmi			__this_cpu_read(_uv_cpu_nmi)
-+#define uv_cpu_nmi			__this_cpu_read(__uv_cpu_nmi)
- #define uv_hub_nmi			(uv_cpu_nmi.hub)
- #define uv_cpu_nmi_per(cpu)		(per_cpu(__uv_cpu_nmi, cpu))
- #define uv_hub_nmi_per(cpu)		(uv_cpu_nmi_per(cpu).hub)
+@Lars,
 
-arch/x86/platform/uv/uv_nmi.c: In function 'uv_check_nmi':
-arch/x86/platform/uv/uv_nmi.c:218: error: lvalue required as increment operand
-arch/x86/platform/uv/uv_nmi.c: In function 'uv_nmi_wait':
-arch/x86/platform/uv/uv_nmi.c:362: error: lvalue required as unary '&' operand
-arch/x86/platform/uv/uv_nmi.c: In function 'uv_nmi_dump_state_cpu':
-arch/x86/platform/uv/uv_nmi.c:422: error: lvalue required as unary '&' operand
-arch/x86/platform/uv/uv_nmi.c: In function 'uv_nmi_dump_state':
-arch/x86/platform/uv/uv_nmi.c:491: error: lvalue required as unary '&' operand
-arch/x86/platform/uv/uv_nmi.c: In function 'uv_handle_nmi':
-arch/x86/platform/uv/uv_nmi.c:618: error: lvalue required as unary '&' operand
-arch/x86/platform/uv/uv_nmi.c:642: error: lvalue required as unary '&' operand
-arch/x86/platform/uv/uv_nmi.c: In function 'uv_handle_nmi_ping':
-arch/x86/platform/uv/uv_nmi.c:669: error: lvalue required as increment operand
-arch/x86/platform/uv/uv_nmi.c:670: error: lvalue required as unary '&' operand
-arch/x86/platform/uv/uv_nmi.c:675: error: lvalue required as increment operand
-arch/x86/platform/uv/uv_nmi.c:678: error: lvalue required as unary '&' operand
+Sorry for late, many mails had been discard by my outlook, including the
+Last one.
+
+@Mark, @Lars,
+
+This adds the function of snd_soc_dai_set_tdm_slot_xlate, which is almost
+One new signature of snd_soc_dai_set_tdm_slot discarding the mask
+Parameters, which could be generated by itself.
+
+And I want to provide one standard method for the drivers who are parsing
+The TDM information from the DT node. 
+
+
+Thanks,
+
+--
+Best Regards,
+Xiubo
 
