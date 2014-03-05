@@ -1,83 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754848AbaCEMn5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 07:43:57 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:38580 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754470AbaCEMnw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 07:43:52 -0500
-Message-ID: <53171BC9.8050808@ti.com>
-Date: Wed, 5 Mar 2014 18:12:49 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
+	id S1755090AbaCEMoW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 07:44:22 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:48106 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752996AbaCEMoT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 07:44:19 -0500
+Message-ID: <53171C16.20505@ti.com>
+Date: Wed, 5 Mar 2014 14:44:06 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: <bcousson@baylibre.com>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
-        <george.cherian@ti.com>, <heikki.krogerus@linux.intel.com>,
-        <rogerq@ti.com>, <tony@atomide.com>
-CC: <balbi@ti.com>, <devicetree@vger.kernel.org>, <rob.herring@calxeda.com>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
-        <ijc+devicetree@hellion.org.uk>, <rob@landley.net>,
-        <linux@arm.linux.org.uk>, <gregkh@linuxfoundation.org>,
-        <grant.likely@linaro.org>, <s.nawrocki@samsung.com>,
-        <galak@codeaurora.org>
-Subject: Re: [PATCH v5 6/6] arm/dts: added dt properties to adapt to the new
- phy framwork
-References: <1393846695-14644-1-git-send-email-kishon@ti.com> <1393846695-14644-7-git-send-email-kishon@ti.com>
-In-Reply-To: <1393846695-14644-7-git-send-email-kishon@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fbdev: FB_OPENCORES should depend on HAS_DMA
+References: <1393012569-22560-1-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1393012569-22560-1-git-send-email-geert@linux-m68k.org>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="qX4r0E5FKqhRUBSi70TVJGJdwKKDcR6FB"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tony/Benoit,
+--qX4r0E5FKqhRUBSi70TVJGJdwKKDcR6FB
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-On Monday 03 March 2014 05:08 PM, Kishon Vijay Abraham I wrote:
-> Added device tree bindings for dwc3, usb2 and usb3 PHYs. The documentation
-> of these can be found at Documentation/devicetree/bindings/phy/phy-bindings.txt
-> and Documentation/devicetree/bindings/phy/ti-phy.txt.
+On 21/02/14 21:56, Geert Uytterhoeven wrote:
+> If NO_DMA=3Dy:
+>=20
+>     drivers/built-in.o: In function `ocfb_remove':
+>     ocfb.c:(.text+0x27fee): undefined reference to `dma_free_coherent'
+>     drivers/built-in.o: In function `ocfb_probe':
+>     ocfb.c:(.text+0x28418): undefined reference to `dma_alloc_coherent'=
 
-Can this patch be queued for 3.15 merge window?
+>     ocfb.c:(.text+0x284d2): undefined reference to `dma_free_coherent'
+>=20
 
-Thanks
-Kishon
+Thanks, applied to fbdev branch.
 
->
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> ---
->   arch/arm/boot/dts/omap5.dtsi |    5 ++++-
->   1 file changed, 4 insertions(+), 1 deletion(-)
->
-> diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
-> index a72813a..1c68558 100644
-> --- a/arch/arm/boot/dts/omap5.dtsi
-> +++ b/arch/arm/boot/dts/omap5.dtsi
-> @@ -732,7 +732,8 @@
->   				compatible = "snps,dwc3";
->   				reg = <0x4a030000 0x10000>;
->   				interrupts = <GIC_SPI 92 IRQ_TYPE_LEVEL_HIGH>;
-> -				usb-phy = <&usb2_phy>, <&usb3_phy>;
-> +				phys = <&usb2_phy>, <&usb3_phy>;
-> +				phy-names = "usb2-phy", "usb3-phy";
->   				dr_mode = "peripheral";
->   				tx-fifo-resize;
->   			};
-> @@ -749,6 +750,7 @@
->   				compatible = "ti,omap-usb2";
->   				reg = <0x4a084000 0x7c>;
->   				ctrl-module = <&omap_control_usb2phy>;
-> +				#phy-cells = <0>;
->   			};
->
->   			usb3_phy: usb3phy@4a084400 {
-> @@ -758,6 +760,7 @@
->   				      <0x4a084c00 0x40>;
->   				reg-names = "phy_rx", "phy_tx", "pll_ctrl";
->   				ctrl-module = <&omap_control_usb3phy>;
-> +				#phy-cells = <0>;
->   			};
->   		};
->
->
+ Tomi
+
+
+
+--qX4r0E5FKqhRUBSi70TVJGJdwKKDcR6FB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJTFxwWAAoJEPo9qoy8lh71XxwP+gKLDjnzZw7TH1CM5fTMBM4O
+rG+y/Y1S07m8hqqiqTnhtBu7uqkpEB13Mr7ZKVQegmv+Z3vmyQzm0PrwhIXsQFpz
+nz38fT0PmPu2aP09BgC4b789LVMDqFCyvKlKAzw0/HGKABH3yZqqU94MoiyviDVm
+PcDTQ1FowhyC88MG9OO+6eMhf5JHWz7qf86pb130fn++vFkumlXXEwyMBgwjPdvv
+gcMXi+exQf7x0se30heEjX3PUZAJn+OFI+g5eDVPFamCl8kM5PWk0S7a0webnv/z
+rrAIvTTooJMNk+MWOjF8bfaJmxDkfO9LK5X76WJcUx3z0CaMcSLlonqoCo1sbqRy
+WPyn9GxAKnqQ3qZjpd+uhZmq6yefnW91TfFFAxcl4qyYrD6WHagv3Zdk2U0hBIpB
+2mXVVzkUwenAEld+0K7dNW+PydkQi8ivXR8EOArAEwBHzbp2iqURk8CqCliPZ6YI
+6AUddmF57bwnyMPST9hETmGKQaLmbybdQyWNSIUMXaCC8jTCZ4AK58w/OYuQX56J
+Ht9/4ZyrRfqfqEiq6LtpvOcsJ56knubFCnd8PGgC8UevshrgXb3c6gbgvMoCg009
+SHyNuy7hGsrHfh/tHJZu0tZJ6UA+DlzN3I8ISuN5ST2GI7JyARurBeR5siyLiFx/
+oYqKRhM7fhKAytUpLiiq
+=LBRN
+-----END PGP SIGNATURE-----
+
+--qX4r0E5FKqhRUBSi70TVJGJdwKKDcR6FB--
