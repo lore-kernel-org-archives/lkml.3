@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756921AbaCECIv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 21:08:51 -0500
-Received: from nasmtp02.atmel.com ([204.2.163.16]:44459 "EHLO
-	SJOEDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754243AbaCECIt (ORCPT
+	id S1755952AbaCECLi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 21:11:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44874 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754190AbaCECLg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 21:08:49 -0500
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <broonie@kernel.org>, <nicolas.ferre@atmel.com>, <plagnioj@jcrosoft.com>,
-        <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <linux@arm.linux.org.uk>
-CC: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-spi@vger.kernel.org>,
-        <wenyou.yang@atmel.com>
-Subject: [PATCH 2/2] ARM: dts: sama5d36ek: add spi pinctrl sleep state
-Date: Wed, 5 Mar 2014 09:58:50 +0800
-Message-ID: <1393984730-14828-3-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1393984730-14828-1-git-send-email-wenyou.yang@atmel.com>
-References: <1393984730-14828-1-git-send-email-wenyou.yang@atmel.com>
+	Tue, 4 Mar 2014 21:11:36 -0500
+Date: Tue, 4 Mar 2014 18:11:57 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [PATCH 3.13 000/172] 3.13.6-stable review
+Message-ID: <20140305021157.GA18412@kroah.com>
+References: <20140304200259.626667112@linuxfoundation.org>
+ <53167B15.3020105@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53167B15.3020105@roeck-us.net>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
----
- arch/arm/boot/dts/sama5d36ek.dts |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+On Tue, Mar 04, 2014 at 05:17:09PM -0800, Guenter Roeck wrote:
+> On 03/04/2014 12:01 PM, Greg Kroah-Hartman wrote:
+> > This is the start of the stable review cycle for the 3.13.6 release.
+> > There are 172 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> >
+> > Responses should be made by Thu Mar  6 20:02:29 UTC 2014.
+> > Anything received after that time might be too late.
+> >
+> 
+> Build results:
+> 	total: 126 pass: 122 skipped: 4 fail: 0
+> 
+> qemu tests all passed.
+> 
+> Results are as expected. Details are available at http://server.roeck-us.net:8010/builders.
 
-diff --git a/arch/arm/boot/dts/sama5d36ek.dts b/arch/arm/boot/dts/sama5d36ek.dts
-index 59576c6..676d121 100644
---- a/arch/arm/boot/dts/sama5d36ek.dts
-+++ b/arch/arm/boot/dts/sama5d36ek.dts
-@@ -18,6 +18,8 @@
- 	ahb {
- 		apb {
- 			spi0: spi@f0004000 {
-+				pinctrl-names = "default", "sleep";
-+				pinctrl-1 = <&pinctrl_spi0_sleep>;
- 				status = "okay";
- 			};
- 
-@@ -44,6 +46,18 @@
- 			macb1: ethernet@f802c000 {
- 				status = "okay";
- 			};
-+
-+			pinctrl@fffff200 {
-+				spi0 {
-+					pinctrl_spi0_sleep: spi0-1 {
-+						atmel,pins =
-+							<AT91_PIOD 10 AT91_PERIPH_GPIO AT91_PINCTRL_OUTPUT_LOW	/* PD10 GPIO Output Low */
-+							 AT91_PIOD 11 AT91_PERIPH_GPIO AT91_PINCTRL_OUTPUT_LOW	/* PD11 GPIO Output Low */
-+							 AT91_PIOD 12 AT91_PERIPH_GPIO AT91_PINCTRL_OUTPUT_LOW>;	/* PD12 GPIO Output Low */
-+					};
-+				};
-+
-+			};
- 		};
- 	};
- 
--- 
-1.7.9.5
+Thanks for testing both of these and letting me know.
 
+greg k-h
