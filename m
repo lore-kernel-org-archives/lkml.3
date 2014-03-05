@@ -1,58 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755523AbaCEATF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 19:19:05 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:47379 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753907AbaCEATD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 19:19:03 -0500
-Message-ID: <53166D4D.1090004@zytor.com>
-Date: Tue, 04 Mar 2014 16:18:21 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1755885AbaCEATV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 19:19:21 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:60414 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755657AbaCEATT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Mar 2014 19:19:19 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Linux PCI <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ACPI / hotplug / PCI: Use pci_device_is_present()
+Date: Wed, 05 Mar 2014 01:34:29 +0100
+Message-ID: <4033818.pd6BkAIJKt@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140304082358.GV5018@intel.com>
+References: <1505390.MlpMqG8COu@vostro.rjw.lan> <20140304082358.GV5018@intel.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>
-CC: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Hedi Berriche <hedi@sgi.com>,
-        Mike Travis <travis@sgi.com>, Dimitri Sivanich <sivanich@sgi.com>
-Subject: Re: [PATCH 31/48] uv: Replace __get_cpu_var
-References: <20140214201841.826179349@linux.com>	<20140214201907.228035121@linux.com> <20140304150217.ac9d364008a3c95cb2a79b34@linux-foundation.org>
-In-Reply-To: <20140304150217.ac9d364008a3c95cb2a79b34@linux-foundation.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/2014 03:02 PM, Andrew Morton wrote:
-> On Fri, 14 Feb 2014 14:19:12 -0600 Christoph Lameter <cl@linux.com> wrote:
+On Tuesday, March 04, 2014 10:23:58 AM Mika Westerberg wrote:
+> On Mon, Mar 03, 2014 at 01:19:25AM +0100, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > 
+> > Make the ACPI-based PCI hotplug (ACPIPHP) code use
+> > pci_device_is_present() for checking if devices are present instead
+> > of open coding the same thing.
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > 
->> Use __this_cpu_read instead.
->>
->>
->> --- linux.orig/arch/x86/include/asm/uv/uv_hub.h	2014-02-03 14:16:53.987889372 -0600
->> +++ linux/arch/x86/include/asm/uv/uv_hub.h	2014-02-03 14:16:53.987889372 -0600
->> @@ -618,7 +618,7 @@
->>  };
->>  
->>  DECLARE_PER_CPU(struct uv_cpu_nmi_s, __uv_cpu_nmi);
->> -#define uv_cpu_nmi			(__get_cpu_var(__uv_cpu_nmi))
->> +#define uv_cpu_nmi			__this_cpu_read(_uv_cpu_nmi)
-> 
-> arch/x86/platform/uv/uv_nmi.c: In function 'uv_check_nmi':
-> arch/x86/platform/uv/uv_nmi.c:218: error: '_uv_cpu_nmi' undeclared (first use in this function)
-> arch/x86/platform/uv/uv_nmi.c:218: error: (Each undeclared identifier is reported only once
-> arch/x86/platform/uv/uv_nmi.c:218: error: for each function it appears in.)
-> 
-> 
-> This?
-> 
+> Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-More likely just add the missing second underscore.
+Thanks!
 
-	-hpa
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
