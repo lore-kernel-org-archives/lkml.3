@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756090AbaCEBtO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 20:49:14 -0500
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:48075 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754729AbaCEBtL (ORCPT
+	id S1756697AbaCEBth (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 20:49:37 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:65366 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756649AbaCEBtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 20:49:11 -0500
+	Tue, 4 Mar 2014 20:49:25 -0500
 MIME-Version: 1.0
-In-Reply-To: <2332228.mAUBjM5x8d@vostro.rjw.lan>
-References: <b37f304efa4a007c0c53d9e8a33e11b7977cb0a4.1393901906.git.viresh.kumar@linaro.org>
-	<2332228.mAUBjM5x8d@vostro.rjw.lan>
-Date: Wed, 5 Mar 2014 09:49:10 +0800
-Message-ID: <CAKohpokRTb=o7xR5y9TLZ8YvSzkMC-37YxuSoUyES-oEOwM-jQ@mail.gmail.com>
-Subject: Re: [PATCH V6 Resend 1/5] cpufreq: suspend governors on system suspend/hibernate
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>, Stephen Warren <swarren@wwwdotorg.org>,
-        Kgene Kim <kgene.kim@samsung.com>,
-        "jinchoi@broadcom.com" <jinchoi@broadcom.com>,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        Sebastian Capella <sebastian.capella@linaro.org>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
+In-Reply-To: <1393378800-7220-1-git-send-email-acourbot@nvidia.com>
+References: <1393378800-7220-1-git-send-email-acourbot@nvidia.com>
+Date: Wed, 5 Mar 2014 09:49:24 +0800
+Message-ID: <CACRpkdY-oBdxxWhsGraEU31qyu+RWJAiRA+KEip6QNW3jRwGUA@mail.gmail.com>
+Subject: Re: [PATCH] gpio: clamp returned values to the boolean range
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5 March 2014 08:37, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> So, previously the driver's ->suspend callback was executed with interrupts off
-> and it was only executed for the boot CPU.
+On Wed, Feb 26, 2014 at 9:40 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+
+> Nothing prevents GPIO drivers from returning values outside the
+> boolean range, and as it turns out a few drivers are actually doing so.
+> These values were passed as-is to unsuspecting consumers and created
+> confusion.
 >
-> Now, it is going to be executed for all CPUs and with interrupts on.
+> This patch makes the internal _gpiod_get_raw_value() function return a
+> bool, effectively clamping the GPIO value to the boolean range no
+> matter what the driver does.
 
-Its not called for all CPUs but once for each instance of 'policy'.
+No, that will not be the semantic effect of this patch, bool is just
+another name for an int, maybe some static checkers will be able
+to use it however.
 
-> This sounds potentially dangerous, so did you check all drivers supplying
-> ->suspend if they are fine with that?
->
-> And same for ->resume, of course.
+If you really want the desired semantic effect, do this:
 
-Completely agree with you on that. I had similar doubts when I started earlier.
-And then grep'd for suspend/resume in drivers/cpufreq and this is what I found:
+static int _gpiod_get_raw_value(const struct gpio_desc *desc)
+{
+        struct gpio_chip        *chip;
+-        int value;
++       bool value;
+        int offset;
 
-drivers/cpufreq/acpi-cpufreq.c: Only have resume implemented and is unaffected
-with new code.
+        chip = desc->chip;
+        offset = gpio_chip_hwgpio(desc);
+-        value = chip->get ? chip->get(chip, offset) : 0;
++        value = chip->get ? !!(chip->get(chip, offset)) : false;
+        trace_gpio_value(desc_to_gpio(desc), 1, value);
+        return value;
+}
 
-drivers/cpufreq/pmac32-cpufreq.c: This is always UP and so no issues.
+Can you please update the patch accordingly, maybe also the
+commit message.
 
-drivers/cpufreq/s3c24xx-cpufreq.c: There is only one policy and so would be
-called only once.
-
-drivers/cpufreq/speedstep-smi.c: Only has resume implemented and it looks
-to be harmless again..
-
-So, I think yes, we shouldn't end up breaking any stuff here. Fingers crossed :)
-Otherwise as well, I am not going on leaves or something else in coming weeks
-and would be there to fix any issues that might come in. But I am
-still hopeful of
-not breaking any existing stuff.
+Yours,
+Linus Walleij
