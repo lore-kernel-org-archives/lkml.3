@@ -1,38 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756174AbaCEBHL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 20:07:11 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:39403 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753625AbaCEBHJ (ORCPT
+	id S1756325AbaCEBJM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 20:09:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44519 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754555AbaCEBJK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 20:07:09 -0500
-Date: Tue, 04 Mar 2014 20:07:05 -0500 (EST)
-Message-Id: <20140304.200705.2133440563547580847.davem@davemloft.net>
-To: zoltan.kiss@citrix.com
-Cc: ian.campbell@citrix.com, wei.liu2@citrix.com,
-        xen-devel@lists.xenproject.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jonathan.davies@citrix.com
-Subject: Re: [PATCH net-next v6 9/9] xen-netback: Aggregate TX unmap
- operations
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <531673BD.3070309@citrix.com>
-References: <1393972341-21135-1-git-send-email-zoltan.kiss@citrix.com>
-	<1393972341-21135-11-git-send-email-zoltan.kiss@citrix.com>
-	<531673BD.3070309@citrix.com>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 04 Mar 2014 17:07:09 -0800 (PST)
+	Tue, 4 Mar 2014 20:09:10 -0500
+Date: Tue, 4 Mar 2014 17:10:54 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Keerthimai Janarthanan <keerthimaipb@gmail.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] staging :keucr:scsiglue.c : fixed a macros should
+ not be colon terminated issue
+Message-ID: <20140305011054.GA10990@kroah.com>
+References: <1393764677-4709-1-git-send-email-keerthimaipb@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393764677-4709-1-git-send-email-keerthimaipb@gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-Date: Wed, 5 Mar 2014 00:45:49 +0000
+On Sun, Mar 02, 2014 at 06:21:16PM +0530, Keerthimai Janarthanan wrote:
+> fixed a coding style issue.
+> 
+> Signed-off-by: Keerthimai Janarthanan <keerthimaipb@gmail.com>
+> ---
+>  drivers/staging/keucr/scsiglue.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/staging/keucr/scsiglue.c b/drivers/staging/keucr/scsiglue.c
+> index ac3d34d..fce19a4 100644
+> --- a/drivers/staging/keucr/scsiglue.c
+> +++ b/drivers/staging/keucr/scsiglue.c
+> @@ -277,7 +277,7 @@ static int show_info(struct seq_file *m, struct Scsi_Host *host)
+>  	do { \
+>  		if (us->fflags & value) \
+>  			SPRINTF(" " #name); \
+> -	} while (0);
+> +	} while (0)
 
-> Despite all my efforts to do renumbering right, this subject still
-> shows 9/9 instead of 10/10.
+You just broke the build.
 
-No worries.
+Please ALWAYS test your patches, don't break someone else's build with
+broken patches...
+
+Please be more careful.
