@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756982AbaCERii (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 12:38:38 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:50762 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756283AbaCERf6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756289AbaCERf6 (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 5 Mar 2014 12:35:58 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:50754 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752675AbaCERfx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 12:35:53 -0500
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jonathan Cameron <jic23@kernel.org>,
@@ -17,9 +17,9 @@ Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Maxime Ripard <maxime.ripard@free-electrons.com>,
         Gregory Clement <gregory.clement@free-electrons.com>,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH 08/15] ARM: at91: sam9rl: add at91_adc to support adc and touchscreen
-Date: Wed,  5 Mar 2014 18:35:33 +0100
-Message-Id: <1394040940-18246-9-git-send-email-alexandre.belloni@free-electrons.com>
+Subject: [PATCH 02/15] ARM: at91: sam9260: remove unused platform_data
+Date: Wed,  5 Mar 2014 18:35:27 +0100
+Message-Id: <1394040940-18246-3-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1394040940-18246-1-git-send-email-alexandre.belloni@free-electrons.com>
 References: <1394040940-18246-1-git-send-email-alexandre.belloni@free-electrons.com>
@@ -27,150 +27,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ADC clock needs to be defined to enable the at91_adc driver. It is defined
-to the same speed that is used for atmel_tsadcc.
+num_channels and registers are not used anymore since they are defined inside
+the at91_adc driver and assigned by matching the id_table.
+
+Also, remove the mach/at91_adc.h include that is not necessary anymore.
 
 Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
- arch/arm/mach-at91/at91sam9rl.c         |  7 +++
- arch/arm/mach-at91/at91sam9rl_devices.c | 85 +++++++++++++++++++++++++++++++++
- 2 files changed, 92 insertions(+)
+ arch/arm/mach-at91/at91sam9260_devices.c | 10 ----------
+ 1 file changed, 10 deletions(-)
 
-diff --git a/arch/arm/mach-at91/at91sam9rl.c b/arch/arm/mach-at91/at91sam9rl.c
-index 3651517abedf..753ba4893836 100644
---- a/arch/arm/mach-at91/at91sam9rl.c
-+++ b/arch/arm/mach-at91/at91sam9rl.c
-@@ -151,6 +151,11 @@ static struct clk ac97_clk = {
- 	.pmc_mask	= 1 << AT91SAM9RL_ID_AC97C,
- 	.type		= CLK_TYPE_PERIPHERAL,
- };
-+static struct clk adc_op_clk = {
-+	.name		= "adc_op_clk",
-+	.type		= CLK_TYPE_PERIPHERAL,
-+	.rate_hz	= 1000000,
-+};
- 
- static struct clk *periph_clocks[] __initdata = {
- 	&pioA_clk,
-@@ -176,6 +181,7 @@ static struct clk *periph_clocks[] __initdata = {
- 	&udphs_clk,
- 	&lcdc_clk,
- 	&ac97_clk,
-+	&adc_op_clk,
- 	// irq0
- };
- 
-@@ -196,6 +202,7 @@ static struct clk_lookup periph_clocks_lookups[] = {
- 	CLKDEV_CON_ID("pioB", &pioB_clk),
- 	CLKDEV_CON_ID("pioC", &pioC_clk),
- 	CLKDEV_CON_ID("pioD", &pioD_clk),
-+	CLKDEV_CON_ID("adc_clk", &tsc_clk),
- };
- 
- static struct clk_lookup usart_clocks_lookups[] = {
-diff --git a/arch/arm/mach-at91/at91sam9rl_devices.c b/arch/arm/mach-at91/at91sam9rl_devices.c
-index a698bdab2cce..b836dada942c 100644
---- a/arch/arm/mach-at91/at91sam9rl_devices.c
-+++ b/arch/arm/mach-at91/at91sam9rl_devices.c
-@@ -22,6 +22,7 @@
+diff --git a/arch/arm/mach-at91/at91sam9260_devices.c b/arch/arm/mach-at91/at91sam9260_devices.c
+index 0a0315920963..a299c50512f0 100644
+--- a/arch/arm/mach-at91/at91sam9260_devices.c
++++ b/arch/arm/mach-at91/at91sam9260_devices.c
+@@ -24,7 +24,6 @@
+ #include <mach/at91sam9260_matrix.h>
  #include <mach/at91_matrix.h>
  #include <mach/at91sam9_smc.h>
- #include <linux/platform_data/dma-atmel.h>
-+#include <linux/platform_data/at91_adc.h>
+-#include <mach/at91_adc.h>
  
  #include "board.h"
  #include "generic.h"
-@@ -656,6 +657,90 @@ void __init at91_add_device_tsadcc(struct at91_tsadcc_data *data)
- void __init at91_add_device_tsadcc(struct at91_tsadcc_data *data) {}
- #endif
+@@ -1321,13 +1320,6 @@ static struct at91_adc_trigger at91_adc_triggers[] = {
+ 	},
+ };
  
-+/* --------------------------------------------------------------------
-+ *  ADC and Touchscreen
-+ * -------------------------------------------------------------------- */
-+
-+#if IS_ENABLED(CONFIG_AT91_ADC)
-+static struct at91_adc_data adc_data;
-+
-+static struct resource adc_resources[] = {
-+	[0] = {
-+		.start	= AT91SAM9RL_BASE_TSC,
-+		.end	= AT91SAM9RL_BASE_TSC + SZ_16K - 1,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+	[1] = {
-+		.start	= NR_IRQS_LEGACY + AT91SAM9RL_ID_TSC,
-+		.end	= NR_IRQS_LEGACY + AT91SAM9RL_ID_TSC,
-+		.flags	= IORESOURCE_IRQ,
-+	}
-+};
-+
-+static struct platform_device at91_adc_device = {
-+	.name           = "at91sam9rl-adc",
-+	.id             = -1,
-+	.dev            = {
-+		.platform_data  = &adc_data,
-+	},
-+	.resource       = adc_resources,
-+	.num_resources  = ARRAY_SIZE(adc_resources),
-+};
-+
-+static struct at91_adc_trigger at91_adc_triggers[] = {
-+	[0] = {
-+		.name = "external-rising",
-+		.value = 1,
-+		.is_external = true,
-+	},
-+	[1] = {
-+		.name = "external-falling",
-+		.value = 2,
-+		.is_external = true,
-+	},
-+	[2] = {
-+		.name = "external-any",
-+		.value = 3,
-+		.is_external = true,
-+	},
-+	[3] = {
-+		.name = "continuous",
-+		.value = 6,
-+		.is_external = false,
-+	},
-+};
-+
-+void __init at91_add_device_adc(struct at91_adc_data *data)
-+{
-+	if (!data)
-+		return;
-+
-+	if (test_bit(0, &data->channels_used))
-+		at91_set_A_periph(AT91_PIN_PA17, 0);
-+	if (test_bit(1, &data->channels_used))
-+		at91_set_A_periph(AT91_PIN_PA18, 0);
-+	if (test_bit(2, &data->channels_used))
-+		at91_set_A_periph(AT91_PIN_PA19, 0);
-+	if (test_bit(3, &data->channels_used))
-+		at91_set_A_periph(AT91_PIN_PA20, 0);
-+	if (test_bit(4, &data->channels_used))
-+		at91_set_A_periph(AT91_PIN_PD6, 0);
-+	if (test_bit(5, &data->channels_used))
-+		at91_set_A_periph(AT91_PIN_PD7, 0);
-+
-+	if (data->use_external_triggers)
-+		at91_set_A_periph(AT91_PIN_PB15, 0);
-+
-+	data->startup_time = 40;
-+	data->trigger_number = 4;
-+	data->trigger_list = at91_adc_triggers;
-+
-+	adc_data = *data;
-+	platform_device_register(&at91_adc_device);
-+}
-+#else
-+void __init at91_add_device_adc(struct at91_adc_data *data) {}
-+#endif
+-static struct at91_adc_reg_desc at91_adc_register_g20 = {
+-	.channel_base = AT91_ADC_CHR(0),
+-	.drdy_mask = AT91_ADC_DRDY,
+-	.status_register = AT91_ADC_SR,
+-	.trigger_register = AT91_ADC_MR,
+-};
+-
+ void __init at91_add_device_adc(struct at91_adc_data *data)
+ {
+ 	if (!data)
+@@ -1345,9 +1337,7 @@ void __init at91_add_device_adc(struct at91_adc_data *data)
+ 	if (data->use_external_triggers)
+ 		at91_set_A_periph(AT91_PIN_PA22, 0);
  
- /* --------------------------------------------------------------------
-  *  RTC
+-	data->num_channels = 4;
+ 	data->startup_time = 10;
+-	data->registers = &at91_adc_register_g20;
+ 	data->trigger_number = 4;
+ 	data->trigger_list = at91_adc_triggers;
+ 
 -- 
 1.8.3.2
 
