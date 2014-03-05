@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756877AbaCEBnX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 20:43:23 -0500
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:32787 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756722AbaCEBnS (ORCPT
+	id S1756917AbaCEBoG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 20:44:06 -0500
+Received: from smtprelay0060.hostedemail.com ([216.40.44.60]:40263 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754105AbaCEBoE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 20:43:18 -0500
-MIME-Version: 1.0
-In-Reply-To: <530D218E.9010007@wwwdotorg.org>
-References: <1393330950-7283-1-git-send-email-heikki.krogerus@linux.intel.com>
-	<1393330950-7283-4-git-send-email-heikki.krogerus@linux.intel.com>
-	<530D218E.9010007@wwwdotorg.org>
-Date: Wed, 5 Mar 2014 09:43:16 +0800
-Message-ID: <CACRpkdZF4-rWs1WkOp3t0x77fgSCE71E=wdrxiDuGZ8eBu_p_Q@mail.gmail.com>
-Subject: Re: [PATCHv2 3/5] net: rfkill: gpio: remove gpio names
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "David S. Miller" <davem@davemloft.net>, Chen-Yu Tsai <wens@csie.org>,
-        Rhyland Klein <rklein@nvidia.com>, Marc Dietrich <marvin24@gmx.de>,
-        Arnd Bergmann <arnd@arndb.de>, Alexandre Courbot <gnurou@gmail.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 4 Mar 2014 20:44:04 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1801:2393:2553:2559:2562:2828:2901:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3873:4250:4321:4362:4605:5007:7652:9149:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12517:12519:12555:12740:13069:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: foot07_7aa6d58f40745
+X-Filterd-Recvd-Size: 2314
+Message-ID: <1393983841.3271.19.camel@joe-AO722>
+Subject: Re: [PATCH 2/2] staging :keucr:scsiglue.c : fixed a macros should
+ not be colon terminated issue
+From: Joe Perches <joe@perches.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Keerthimai Janarthanan <keerthimaipb@gmail.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Tue, 04 Mar 2014 17:44:01 -0800
+In-Reply-To: <20140305011054.GA10990@kroah.com>
+References: <1393764677-4709-1-git-send-email-keerthimaipb@gmail.com>
+	 <20140305011054.GA10990@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 26, 2014 at 7:04 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+On Tue, 2014-03-04 at 17:10 -0800, Greg KH wrote:
+> On Sun, Mar 02, 2014 at 06:21:16PM +0530, Keerthimai Janarthanan wrote:
+> > fixed a coding style issue.
+[]
+> > diff --git a/drivers/staging/keucr/scsiglue.c b/drivers/staging/keucr/scsiglue.c
+[]
+> > @@ -277,7 +277,7 @@ static int show_info(struct seq_file *m, struct Scsi_Host *host)
+> >  	do { \
+> >  		if (us->fflags & value) \
+> >  			SPRINTF(" " #name); \
+> > -	} while (0);
+> > +	} while (0)
+> 
+> You just broke the build.
+> 
+> Please ALWAYS test your patches, don't break someone else's build with
+> broken patches...
+> 
+> Please be more careful.
 
->> -     gpio = devm_gpiod_get_index(&pdev->dev, rfkill->reset_name, 0);
->> +     gpio = devm_gpiod_get_index(&pdev->dev, NULL, 0);
->
-> I think the correct fix here is to look up the GPIO by name rather than
-> by index, but simply hard-code the name rather than generating it with
-> sprintf(). Index lookups are hard to expand compatibly, but named-based
-> lookups scale much better.
->
-> In other words, I rather specifically disagree with using a plain
-> "gpios" property in any future DT binding, but would strongly prefer
-> e.g. reset-gpios/shutdown-gpios or gpios/gpio-names.
+Thanks Greg.
 
-If I understand the situation correctly it's like ACPI does not have named
-GPIOs so keeping specifying this in DT GPIO bindings is counter-productive
-to the work of abstracting the access to GPIO handlers so that drivers
-need not know whether ACPI or DT is used for describing the hardware.
+Keerthimai, a possibly "better" fix would be to add a
+do { ... } while (0) guard and semicolons to the relatively
+ugly US_DO_ALL_FLAGS macro and US_FLAG uses in
+include/linux/usb_usual.h
 
-We could do worse. Like putting the GPIOs in a differently indexed order
-in DT vs ACPI.
+include/linux/usb_usual.h:#define US_DO_ALL_FLAGS                                               \
+include/linux/usb_usual.h-      US_FLAG(SINGLE_LUN,     0x00000001)                     \
+include/linux/usb_usual.h-              /* allow access to only LUN 0 */                \
+include/linux/usb_usual.h-      US_FLAG(NEED_OVERRIDE,  0x00000002)                     \
+include/linux/usb_usual.h-              /* unusual_devs entry is necessary */           \
+...
 
-I have no strong opinion really, I just see that people doing DT and ACPI
-HW descriptions need to cooperate if they want to share infrastructure
-or we have to give up that pipe dream and let each HW description
-method have its own unique probe()-runpath. Which would be the result
-in this driver if we persist on using named GPIOs.
+and then add a semicolon to the uses of US_DO_ALL_FLAGS
+and then remove a semicolon as above.
 
-Yours,
-Linus Walleij
