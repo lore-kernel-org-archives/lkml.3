@@ -1,78 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757095AbaCEW3J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 17:29:09 -0500
-Received: from mailout4.w2.samsung.com ([211.189.100.14]:58404 "EHLO
-	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754582AbaCEW3G (ORCPT
+	id S1757352AbaCEW34 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 17:29:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54770 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755012AbaCEW3z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 17:29:06 -0500
-X-AuditID: cbfec37a-b7fc06d00000555a-4d-5317a5309fd8
-Message-id: <5317A52E.4@samsung.com>
-Date: Wed, 05 Mar 2014 15:29:02 -0700
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.2.0
-MIME-version: 1.0
-To: Joe Perches <joe@perches.com>
-Cc: lgirdwood@gmail.com, broonie@kernel.org, gregkh@linuxfoundation.org,
-        stable@vger.kernel.org, linux-kernel@vger.kernel.org,
-        shuahkhan@gmail.com, Mark Brown <broonie@linaro.org>,
-        Shuah Khan <shuah.kh@samsung.com>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [PATCH 3.13] regulator: core: Change dummy supplies error message
- to a warning
-References: <1394054987-4743-1-git-send-email-shuah.kh@samsung.com>
- <1394056859.12070.23.camel@joe-AO722>
-In-reply-to: <1394056859.12070.23.camel@joe-AO722>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.34.11]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMLMWRmVeSWpSXmKPExsVy+t9hX12DpeLBBktWGltMffiEzWLT9eus
-	Fs2L17NZzL7/mMXi25UOJovLu+awWXz96WCxYOMjRgcOj52z7rJ7bFrVyeZx59oeNo/9c9ew
-	e3xZdY3Z4/MmuQC2KC6blNSczLLUIn27BK6Mdatushas46hYdGkzawPjNbYuRk4OCQETiVkN
-	u1ggbDGJC/fWg8WFBJYxShw+UAth9zJJfF7A1cXIBWRvYpR4umINO0iCV0BFYv+eO6wgNouA
-	qsSS1mOMIDabgLrE59c72CGa5SSalqxmBrFFBSIkXp2dyALRKyjxY/I9IJuDQ0RAUeLuFn6Q
-	MLNAJ5PEmqN6IGFhgViJl11ZEFOyJV7+WM4IEuYUMJKYv9wCotpaYuWkbYwQtrzE5jVvmSHK
-	lSX+XD7FBFIuATT813/3CYwis5CsnYWkexaS7gWMzKsYxUqLkwuKk9JTKwz1ihNzi0vz0vWS
-	83M3MUIiqmoH452vNocYBTgYlXh4N/iJBwuxJpYVV+YeYpTgYFYS4Q2IBArxpiRWVqUW5ccX
-	leakFh9iZOLglGpg9L3zYmmPXNh6t5gZt53ZEts+mhssiFn7g4np1caObbOMvxwr7H4qy7W3
-	rfyy3uvNEp+EoiNmp66+cHL5OlMe7tna+Rf2xbo9zwozVZBtn8PJK9vw73bSZYN1HvMi6u+L
-	39I7urH532b39euL8+eq6Hc8Xmu5OeJWZH54YJzJc5lZip0fPiUtVWIpzkg01GIuKk4EAJXR
-	3+qGAgAA
+	Wed, 5 Mar 2014 17:29:55 -0500
+Date: Wed, 5 Mar 2014 14:29:53 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mark Salter <msalter@redhat.com>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, patches@linaro.org
+Subject: Re: [PATCH 2/5] mm: create generic early_ioremap() support
+Message-Id: <20140305142953.669fd030495e802b2e03879c@linux-foundation.org>
+In-Reply-To: <1393963738-9210-3-git-send-email-msalter@redhat.com>
+References: <1393963738-9210-1-git-send-email-msalter@redhat.com>
+	<1393963738-9210-3-git-send-email-msalter@redhat.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/2014 03:00 PM, Joe Perches wrote:
-> On Wed, 2014-03-05 at 14:29 -0700, Shuah Khan wrote:
->> Change "dummy supplies not allowed" error message to warning instead,
->> as this is a just warning message with no change to the behavior.
-> []
->> diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-> []
->> @@ -1359,7 +1359,7 @@ static struct regulator *_regulator_get(struct device *dev, const char *id,
->>   		rdev = dummy_regulator_rdev;
->>   		goto found;
->>   	} else {
->> -		dev_err(dev, "dummy supplies not allowed\n");
->> +		dev_warn(dev, "dummy supplies not allowed\n");
->
-> What does this mean anyway?
->
-> Would it be better to emit the calling function too with
-> %pf, __builtin_return_address(0)?
->
+On Tue,  4 Mar 2014 15:08:55 -0500 Mark Salter <msalter@redhat.com> wrote:
 
-Maybe. In that case, that change has to first go into the mainline. This 
-is a back port of an upstream commit to get rid of a regression in error 
-messages.
+> This patch creates a generic implementation of early_ioremap() support
+> based on the existing x86 implementation. early_ioremp() is useful for
+> early boot code which needs to temporarily map I/O or memory regions
+> before normal mapping functions such as ioremap() are available.
+> 
+> Some architectures have optional MMU. In the no-MMU case, the remap
+> functions simply return the passed in physical address and the unmap
+> functions do nothing.
+> 
+>
+> ....
+>
+> --- /dev/null
+> +++ b/mm/early_ioremap.c
+> @@ -0,0 +1,271 @@
+> +/*
+> + * Provide common bits of early_ioremap() support for architectures needing
+> + * temporary mappings during boot before ioremap() is available.
+> + *
+> + * This is mostly a direct copy of the x86 early_ioremap implementation.
+> + *
+> + * (C) Copyright 1995 1996, 2014 Linus Torvalds
+> + *
+> + */
 
--- Shuah
+I suppose one should include linux/kernel.h.
 
--- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+> +#include <linux/init.h>
+> +#include <linux/io.h>
+> +#include <linux/module.h>
+> +#include <linux/slab.h>
+> +#include <linux/mm.h>
+> +#include <linux/vmalloc.h>
+> +#include <asm/fixmap.h>
+> +
+> +#ifdef CONFIG_MMU
+> +static int early_ioremap_debug __initdata;
+> +
+> +static int __init early_ioremap_debug_setup(char *str)
+> +{
+> +	early_ioremap_debug = 1;
+> +
+> +	return 0;
+> +}
+> +early_param("early_ioremap_debug", early_ioremap_debug_setup);
+
+Should be documented somewhere.  Documentation/kernel-parameters.txt?
+
+> +static int after_paging_init __initdata;
+> +
+> +void __init __attribute__((weak)) early_ioremap_shutdown(void)
+
+__weak
+
+Do __init and __weak work together?  They should, but I don't recall
+seeing it.
+
+> +{
+> +}
+> +
+>
+> ....
+>
+> +static void __init __iomem *
+> +__early_ioremap(resource_size_t phys_addr, unsigned long size, pgprot_t prot)
+> +{
+> +	unsigned long offset;
+> +	resource_size_t last_addr;
+> +	unsigned int nrpages;
+> +	enum fixed_addresses idx;
+> +	int i, slot;
+> +
+> +	WARN_ON(system_state != SYSTEM_BOOTING);
+> +
+> +	slot = -1;
+> +	for (i = 0; i < FIX_BTMAPS_SLOTS; i++) {
+> +		if (!prev_map[i]) {
+> +			slot = i;
+> +			break;
+> +		}
+> +	}
+> +
+> +	if (slot < 0) {
+> +		pr_info("%s(%08llx, %08lx) not found slot\n",
+> +			__func__, (u64)phys_addr, size);
+> +		WARN_ON(1);
+> +		return NULL;
+> +	}
+> +
+> +	if (early_ioremap_debug) {
+> +		pr_info("%s(%08llx, %08lx) [%d] => ",
+> +			__func__, (u64)phys_addr, size, slot);
+> +		dump_stack();
+> +	}
+> +
+> +	/* Don't allow wraparound or zero size */
+> +	last_addr = phys_addr + size - 1;
+> +	if (!size || last_addr < phys_addr) {
+> +		WARN_ON(1);
+> +		return NULL;
+> +	}
+
+	if (WARN_ON(!size || last_addr < phys_addr))
+		return NULL;
+
+> +	prev_size[slot] = size;
+> +	/*
+> +	 * Mappings have to be page-aligned
+> +	 */
+> +	offset = phys_addr & ~PAGE_MASK;
+> +	phys_addr &= PAGE_MASK;
+> +	size = PAGE_ALIGN(last_addr + 1) - phys_addr;
+> +
+> +	/*
+> +	 * Mappings have to fit in the FIX_BTMAP area.
+> +	 */
+> +	nrpages = size >> PAGE_SHIFT;
+> +	if (nrpages > NR_FIX_BTMAPS) {
+> +		WARN_ON(1);
+> +		return NULL;
+> +	}
+
+Ditto.
+
+> +	/*
+> +	 * Ok, go for it..
+> +	 */
+> +	idx = FIX_BTMAP_BEGIN - NR_FIX_BTMAPS*slot;
+> +	while (nrpages > 0) {
+> +		if (after_paging_init)
+> +			__late_set_fixmap(idx, phys_addr, prot);
+> +		else
+> +			__early_set_fixmap(idx, phys_addr, prot);
+> +		phys_addr += PAGE_SIZE;
+> +		--idx;
+> +		--nrpages;
+> +	}
+> +	if (early_ioremap_debug)
+> +		pr_cont("%08lx + %08lx\n", offset, slot_virt[slot]);
+> +
+> +	prev_map[slot] = (void __iomem *)(offset + slot_virt[slot]);
+> +	return prev_map[slot];
+> +}
+> +
+> +void __init early_iounmap(void __iomem *addr, unsigned long size)
+> +{
+> +	unsigned long virt_addr;
+> +	unsigned long offset;
+> +	unsigned int nrpages;
+> +	enum fixed_addresses idx;
+> +	int i, slot;
+> +
+> +	slot = -1;
+> +	for (i = 0; i < FIX_BTMAPS_SLOTS; i++) {
+> +		if (prev_map[i] == addr) {
+> +			slot = i;
+> +			break;
+> +		}
+> +	}
+> +
+> +	if (slot < 0) {
+> +		pr_info("early_iounmap(%p, %08lx) not found slot\n",
+> +			addr, size);
+> +		WARN_ON(1);
+> +		return;
+> +	}
+
+Can we do
+
+	if (WARN(slot < 0, "...", addr, size))
+		return;
+
+here?
+
+And in lots of other places?
+
+> +	if (prev_size[slot] != size) {
+> +		pr_info("early_iounmap(%p, %08lx) [%d] size not consistent %08lx\n",
+> +			addr, size, slot, prev_size[slot]);
+> +		WARN_ON(1);
+> +		return;
+> +	}
+> +
+> +	if (early_ioremap_debug) {
+> +		pr_info("early_iounmap(%p, %08lx) [%d]\n", addr,
+> +			size, slot);
+> +		dump_stack();
+> +	}
+
+That could be a WARN as well.
+
+> +	virt_addr = (unsigned long)addr;
+> +	if (virt_addr < fix_to_virt(FIX_BTMAP_BEGIN)) {
+> +		WARN_ON(1);
+> +		return;
+> +	}
+> +	offset = virt_addr & ~PAGE_MASK;
+> +	nrpages = PAGE_ALIGN(offset + size) >> PAGE_SHIFT;
+> +
+> +	idx = FIX_BTMAP_BEGIN - NR_FIX_BTMAPS*slot;
+> +	while (nrpages > 0) {
+> +		if (after_paging_init)
+> +			__late_clear_fixmap(idx);
+> +		else
+> +			__early_set_fixmap(idx, 0, FIXMAP_PAGE_CLEAR);
+> +		--idx;
+> +		--nrpages;
+> +	}
+> +	prev_map[slot] = NULL;
+> +}
+> +
+>
+> ...
