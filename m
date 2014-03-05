@@ -1,52 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157AbaCEMic (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 07:38:32 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:23445 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752221AbaCEMia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 07:38:30 -0500
-X-IronPort-AV: E=Sophos;i="4.97,592,1389715200"; 
-   d="scan'208";a="9649258"
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org
-Cc: fweisbec@gmail.com, rostedt@goodmis.org, peterz@infradead.org,
-        mingo@redhat.com, Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Subject: [PATCH 1/3] tracing: Use inline task_nice() to get rid of an open coded implementation of it.
-Date: Wed, 5 Mar 2014 20:36:40 +0800
-Message-Id: <8ae8a3aefb157e9e7d1b62a4c136289e74783eaf.1394022835.git.yangds.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.2.1
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/05 20:35:54,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/05 20:35:54,
-	Serialize complete at 2014/03/05 20:35:54
+	id S1754307AbaCEMnp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 07:43:45 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:60961 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752250AbaCEMno (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 07:43:44 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org
+Subject: Re: [ACPI / hotplug / PCI] 1b360f44d00: -80.9% vm-scalability.stddev
+Date: Wed, 05 Mar 2014 13:58:54 +0100
+Message-ID: <1530281.asBBpMI1MW@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140305082336.GD17109@localhost>
+References: <20140305082336.GD17109@localhost>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Function task_nice() was reimplemented as inline function, we can use it here
-to replace the open coded implementation.
+On Wednesday, March 05, 2014 04:23:36 PM Fengguang Wu wrote:
+> Hi Rafael,
 
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-cc: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Hi,
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 815c878..dba0e3d 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1003,7 +1003,7 @@ __update_max_tr(struct trace_array *tr, struct task_struct *tsk, int cpu)
- 	else
- 		max_data->uid = task_uid(tsk);
- 
--	max_data->nice = tsk->static_prio - 20 - MAX_RT_PRIO;
-+	max_data->nice = task_nice(tsk);
- 	max_data->policy = tsk->policy;
- 	max_data->rt_priority = tsk->rt_priority;
- 
+> I don't know why but we are glad to find the below changes on commit
+
+Do I understand correcty that you mean you're seeing improvement?
+
+Either way, if the test below doesn't involve hotplug or device removal via
+sysfs, I have no explanation ...
+
+> 1b360f44d009059e446532f29c1a889951e72667 ("ACPI / hotplug / PCI: Fix bridge removal race in handle_hotplug_event()")
+> 
+> test case: brickland2/micro/vm-scalability/300s-anon-r-rand-mt
+> 
+> d42f5da23400833  1b360f44d009059e446532f29  
+> ---------------  -------------------------  
+>       3.54 ~164%     -80.9%       0.68 ~37% TOTAL vm-scalability.stddev
+>      14177 ~ 7%     -22.1%      11040 ~ 7%  TOTAL numa-meminfo.node0.SReclaimable
+>       3543 ~ 7%     -22.1%       2759 ~ 7%  TOTAL numa-vmstat.node0.nr_slab_reclaimable
+>     776196 ~ 6%     -10.0%     698893 ~ 5%  TOTAL numa-numastat.node2.local_node
+>     776196 ~ 6%     -10.0%     698894 ~ 5%  TOTAL numa-numastat.node2.numa_hit
+> 
+> The ~XX% numbers are stddev percent.
+> The [+-]XX% is change percent.
+> 
+> The below graph shows all samples collected during the bisect
+> 
+> [*] bisect-good
+> [O] bisect-bad ("bad" in the sense of bisect)
+> 
+> In which you can see the stableness of the change and bisect.
+> 
+>                                vm-scalability.stddev
+> 
+>    16 ++--------------------------------------------------------------------+
+>       |                                                                 *   |
+>    14 ++                                                                :   |
+>    12 ++                                                                :   |
+>       |                                                                 ::  |
+>    10 ++                                                                ::  |
+>       |                                                                 ::  |
+>     8 ++                                                                ::  |
+>       |                                                                : :  |
+>     6 ++                                                    *          : :  |
+>     4 ++           *      *                                 ::         :  : |
+>       |           +:     : +                       *       : :         :  : |
+>     2 ++*.   *. .*  :    :  *          .*.        + :      :  :   .*   :  : |
+>       |+  * +  *    *. .* O  *.*.*. .**   O.**.O.* O: *.O.* O OO.*  +  :  *.|
+>     0 O+O-OO-O-O-O-OO-O-O---OO-O-O-O-OO-O---OO-*-O---OO-*-O------O-O-*-*----*
+> 
+> 
+> Thanks,
+> Fengguang
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
 -- 
-1.8.2.1
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
