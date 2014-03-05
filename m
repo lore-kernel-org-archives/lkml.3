@@ -1,208 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757186AbaCEVva (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 16:51:30 -0500
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:40386 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756353AbaCEVvZ (ORCPT
+	id S1757394AbaCEVyu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 16:54:50 -0500
+Received: from smtprelay0100.hostedemail.com ([216.40.44.100]:60953 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753236AbaCEVys (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 16:51:25 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140305211145.GV1872@titan.lakedaemon.net>
-References: <20140303235148.GA7601@www.outflux.net>
-	<20140304153841.GN1872@titan.lakedaemon.net>
-	<CAGXu5jKqB62ZaD0HEG=vJoROOqvdSYeHYB2h61Kw1-ov5phFww@mail.gmail.com>
-	<20140304195356.GS1872@titan.lakedaemon.net>
-	<CAGXu5jL5JBHL0tqZzA03LY67HZU4jEQ0_V=bJs9TV3g0Bfwr_w@mail.gmail.com>
-	<1393972797.8344.190.camel@calx>
-	<20140305211145.GV1872@titan.lakedaemon.net>
-Date: Wed, 5 Mar 2014 13:51:24 -0800
-X-Google-Sender-Auth: deStcgDaSGmgtxZboezZVzyZUzQ
-Message-ID: <CAGXu5j+=QLE7Rnae8XKCAWji5aXoGm1tufDWRuzDZcsNSkBF5w@mail.gmail.com>
-Subject: Re: [PATCH][RESEND 3] hwrng: add randomness to system from rng sources
-From: Kees Cook <keescook@chromium.org>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Matt Mackall <mpm@selenic.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
-        linux-crypto <linux-crypto@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 5 Mar 2014 16:54:48 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:2:41:355:379:541:599:800:857:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1535:1593:1594:1605:1606:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3867:3868:3870:3872:3874:4117:4321:4605:5007:7652:7903:10004:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12555:12740:13161:13229,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: beds28_46aa74f080f10
+X-Filterd-Recvd-Size: 6994
+Message-ID: <1394056484.12070.20.camel@joe-AO722>
+Subject: Re: [PATCH 1/6] rtc: pm8xxx: fixup checkpatch/style issues
+From: Joe Perches <joe@perches.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Josh Cartwright <joshc@codeaurora.org>,
+        Alessandro Zummo <a.zummo@towertech.it>, linux-arm-msm@vger.kernel.org,
+        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
+Date: Wed, 05 Mar 2014 13:54:44 -0800
+In-Reply-To: <531790E5.8020204@codeaurora.org>
+References: <1394047776-13827-1-git-send-email-joshc@codeaurora.org>
+	 <1394047776-13827-2-git-send-email-joshc@codeaurora.org>
+	 <531790E5.8020204@codeaurora.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 5, 2014 at 1:11 PM, Jason Cooper <jason@lakedaemon.net> wrote:
-> Matt, Kees,
->
-> On Tue, Mar 04, 2014 at 04:39:57PM -0600, Matt Mackall wrote:
->> On Tue, 2014-03-04 at 11:59 -0800, Kees Cook wrote:
->> > On Tue, Mar 4, 2014 at 11:53 AM, Jason Cooper <jason@lakedaemon.net> wrote:
->> > > On Tue, Mar 04, 2014 at 11:01:49AM -0800, Kees Cook wrote:
->> > >> On Tue, Mar 4, 2014 at 7:38 AM, Jason Cooper <jason@lakedaemon.net> wrote:
->> > >> > On Mon, Mar 03, 2014 at 03:51:48PM -0800, Kees Cook wrote:
-> ...
->> > Well, I think there's confusion here over "the" hwrng and "a" hwrng. I
->> > have devices with multiple entropy sources, and all my hwrngs are
->> > built as modules, so I choose when to load them into my kernel. "The"
->> > arch-specific entropy source (e.g. RDRAND) is very different.
->
-> Dynamically loading modules _after_ boot is fine.  Especially with
-> Matt's clear explanation.  I'm not concerned about that scenario.
->
->> > > Please understand, my point-of-view is as someone who installs Linux on
->> > > equipment *after* purchase (hobbyist, tinkers).  If I control the part
->> > > selection and sourcing of the board components, of course I have more
->> > > trust in the hwrng.
->> > >
->> > > So my situation is similar to buying an Intel based laptop.  I can't do
->> > > a special order at Bestbuy and ask for a system without the RDRAND
->> > > instruction.  Same with the hobbyist market.  We buy the gear, but we
->> > > have no control over what's inside it.
->> > >
->> > > In that situation, without this patch, I would enable the hwrng for the
->> > > board.  With the patch in it's current form, I would start looking for
->> > > research papers and discussions regarding using the hwrng for input.  If
->> > > the patch provided arch_get_random_long(), I would feel comfortable
->> > > enabling the hwrng.
->> > >
->> > > Perhaps I'm being too conservative, but I'd rather have the discussion
->> > > now and have concerns proven unfounded than have someone say "How the
->> > > hell did this happen?" three releases down the road.
->> >
->> > Sure, and I don't want to be the one weakening the entropy pool.
->>
->> [temporarily coming out of retirement to provide a clue]
->
-> Thanks, Matt!
->
->> The pool mixing function is intentionally _reversible_. This is a
->> crucial security property.
->>
->> That means, if I have an initial secret pool state X, and hostile
->> attacker controlled data Y, then we can do:
->>
->> X' = mix(X, Y)
->>
->>  and
->>
->> X = unmix(X', Y)
->>
->> We can see from this that the combination of (X' and Y) still contain
->> the information that was originally in X. Since it's clearly not in Y..
->> it must all remain in X'.
->>
->> In other words, if there are 4096 bits of "unknownness" in X to start
->> with, and I can get those same 4096 bits of "unknownness" back by
->> unmixing X' and Y, then there must still be 4096 bits of "unknownness"
->> in X'. If X' is 4096 bits long, then we've just proven that
->> reversibility means the attacker can know nothing about the contents of
->> X' by his choice of Y.
->
-> Well, this reinforces my comfortability with loadable modules.  The pool
-> is already initialized by the point at which the driver is loaded.
->
-> Unfortunately, any of the drivers in hw_random can be built in.  When
-> built in, hwrng_register is going to be called during the kernel
-> initialization process.  In that case, the unknownness in X is not 4096
-> bits, but far less.  Also, the items that may have seeded X (MAC addr,
-> time, etc) are discoverable by a potential attacker.  This is also well
-> before random-seed has been fed in.
+On Wed, 2014-03-05 at 13:02 -0800, Stephen Boyd wrote:
+> On 03/05/14 11:29, Josh Cartwright wrote:
+> > Before performing additional cleanups to this driver, do the easy
+> > cleanups first.
+> >
+> > Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+> 
+> Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+> 
+> > @@ -253,7 +253,7 @@ static int pm8xxx_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
+> >  
+> >  	ctrl_reg = rtc_dd->ctrl_reg;
+> >  	ctrl_reg = alarm->enabled ? (ctrl_reg | PM8xxx_RTC_ALARM_ENABLE) :
+> > -					(ctrl_reg & ~PM8xxx_RTC_ALARM_ENABLE);
+> > +				    (ctrl_reg & ~PM8xxx_RTC_ALARM_ENABLE);
+> >  
+> >  	rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base, 1);
+> >  	if (rc < 0) {
+> 
+> This could be better style with more lines:
+> 
+> if (alarm->enabled)
+>     ctrl_reg |= PM8xxx_RTC_ALARM_ENABLE;
+> else
+>     ctrl_reg &= ~PM8xxx_RTC_ALARM_ENABLE;
+> 
 
-Would reducing the size of the buffer used for this help your
-concerns? Ironically, a non-malicious hwng using this code would
-actually improve defense against other early-boot rng badness since
-unlike time and MAC, this is much less discoverable by an attacker.
+I agree.
 
->
-> That's the crux of my concern with this patch.  Basically, the user can
-> choose 'y' over 'm', say when building a dedicated system w/o loadable
-> modules, and not realize how much more trust he has placed in the hwrng.
->
-> How does this patch look?  I'm not claiming my change is acceptable for
-> mainline, just seeking feedback on the concept.  IS_MODULE() really
-> doesn't have many users afaict.
+Maybe something like a set_or_clear_bits macro similar to clamp
+could be useful.
 
-Regardless, making this change to the patch would be fine with me,
-yeah. I think the module case is much more common.
+Maybe:
 
--Kees
+#define set_or_clear_bits(value, test, bits)	\
+({						\
+	typeof value _value;			\
+	if (test)				\
+		_value = (value) | (bits);	\
+	else					\
+		_value = (value) & (~(bits));	\
+	_value;					\
+})
 
->
-> This builds without warning on ARCH=arm with multi_v7_defconfig when
-> HW_RANDOM={y,m,n}
->
-> thx,
->
-> Jason.
->
-> -------->8--------------------------
-> commit 0fcc0669ee4bbeae355c0f61f79a6b319a32ba12
-> Author: Kees Cook <keescook@chromium.org>
-> Date:   Mon Mar 3 15:51:48 2014 -0800
->
->     hwrng: add randomness to system from rng sources
->
->     When bringing a new RNG source online, it seems like it would make sense
->     to use some of its bytes to make the system entropy pool more random,
->     as done with all sorts of other devices that contain per-device or
->     per-boot differences.
->
->     [jac] prevent the code from being called at boot up, before the entropy
->     pool has had time to build and be well initialized.  We do this by
->     making the code conditional on being built as a module.
->
->     Signed-off-by: Kees Cook <keescook@chromium.org>
->     Signed-off-by: Jason Cooper <jason@lakedaemon.net>
->
-> diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
-> index a0f7724852eb..5c3314cbf671 100644
-> --- a/drivers/char/hw_random/core.c
-> +++ b/drivers/char/hw_random/core.c
-> @@ -41,6 +41,8 @@
->  #include <linux/miscdevice.h>
->  #include <linux/delay.h>
->  #include <linux/slab.h>
-> +#include <linux/random.h>
-> +#include <linux/kconfig.h>
->  #include <asm/uaccess.h>
->
->
-> @@ -305,6 +307,10 @@ int hwrng_register(struct hwrng *rng)
->         int must_register_misc;
->         int err = -EINVAL;
->         struct hwrng *old_rng, *tmp;
-> +#if IS_MODULE(CONFIG_HW_RANDOM)
-> +       unsigned char bytes[16];
-> +       int bytes_read;
-> +#endif
->
->         if (rng->name == NULL ||
->             (rng->data_read == NULL && rng->read == NULL))
-> @@ -348,6 +354,18 @@ int hwrng_register(struct hwrng *rng)
->         }
->         INIT_LIST_HEAD(&rng->list);
->         list_add_tail(&rng->list, &rng_list);
-> +
-> +       /*
-> +        * Out of an abundance of caution, we should avoid seeding the entropy
-> +        * pool when it is first initialized (ie at kernel boot time).
-> +        * Therefore, we take advantage of the hwrng when it is built as a
-> +        * module, but not when built in.
-> +        */
-> +#if IS_MODULE(CONFIG_HW_RANDOM)
-> +       bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
-> +       if (bytes_read > 0)
-> +               add_device_randomness(bytes, bytes_read);
-> +#endif
->  out_unlock:
->         mutex_unlock(&rng_mutex);
->  out:
+so the code above could be something like:
+
+	ctrl_reg = set_or_clear_bits(ctrl_reg, alarm->enabled, PM8xxx_RTC_ALARM_ENABLE);
+
+(or some other better macro name, or maybe not type
+ the value name twice and have it set by the macro)
+
+There's at least a few dozen like alarm->enabled use
+above that could be converted in drivers/.
+
+( a few false positives here too )
+
+$ grep-2.5.4 -rP --include=*.[ch] "([\w\.\>\[\]\-]+)\s*=[^;\?]+\?\s*\(?\s*\1\s*[\&\|][^;]+;" drivers/
+drivers/input/misc/twl4030-vibra.c:		reg = (dir) ? (reg | TWL4030_VIBRA_DIR) :
+			(reg & ~TWL4030_VIBRA_DIR);
+drivers/ata/libata-scsi.c:	tf->device = dev->devno ?
+		tf->device | ATA_DEV1 : tf->device & ~ATA_DEV1;
+drivers/ata/pata_samsung_cf.c:	reg = mode ? (reg & ~S3C_ATA_CFG_SWAP) : (reg | S3C_ATA_CFG_SWAP);
+drivers/ata/pata_samsung_cf.c:	temp = state ? (temp | 1) : (temp & ~1);
+drivers/staging/iio/accel/lis3l02dq_core.c:		control = val & 0x3f ?
+			(control | LIS3L02DQ_REG_CTRL_2_ENABLE_INTERRUPT) :
+			(control & ~LIS3L02DQ_REG_CTRL_2_ENABLE_INTERRUPT);
+drivers/staging/media/sn9c102/sn9c102_core.c:	rect->left = (s->_rect.left & 1L) ? rect->left | 1L : rect->left & ~1L;
+drivers/staging/media/sn9c102/sn9c102_core.c:	rect->top = (s->_rect.top & 1L) ? rect->top | 1L : rect->top & ~1L;
+drivers/message/fusion/mptsas.c:	ioc->device_missing_delay = (device_missing_delay & MPI_SAS_IOUNIT1_REPORT_MISSING_UNIT_16) ?
+	    (device_missing_delay & MPI_SAS_IOUNIT1_REPORT_MISSING_TIMEOUT_MASK) * 16 :
+	    device_missing_delay & MPI_SAS_IOUNIT1_REPORT_MISSING_TIMEOUT_MASK;
+drivers/gpio/gpio-max732x.c:	reg_out = (val) ? reg_out | mask : reg_out & ~mask;
+drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c:	mac_filters->ucast_drop_all = drop_all_ucast ?
+		mac_filters->ucast_drop_all | mask :
+		mac_filters->ucast_drop_all & ~mask;
+drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c:	mac_filters->mcast_drop_all = drop_all_mcast ?
+		mac_filters->mcast_drop_all | mask :
+		mac_filters->mcast_drop_all & ~mask;
+drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c:	mac_filters->ucast_accept_all = accp_all_ucast ?
+		mac_filters->ucast_accept_all | mask :
+		mac_filters->ucast_accept_all & ~mask;
+drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c:	mac_filters->mcast_accept_all = accp_all_mcast ?
+		mac_filters->mcast_accept_all | mask :
+		mac_filters->mcast_accept_all & ~mask;
+drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c:	mac_filters->bcast_accept_all = accp_all_bcast ?
+		mac_filters->bcast_accept_all | mask :
+		mac_filters->bcast_accept_all & ~mask;
+drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c:	mac_filters->unmatched_unicast = unmatched_unicast ?
+		mac_filters->unmatched_unicast | mask :
+		mac_filters->unmatched_unicast & ~mask;
+drivers/net/ethernet/broadcom/bnx2x/bnx2x_init.h:				reg_bit_map = new_cos ?
+					      (reg_bit_map | q_bit_map) :
+					      (reg_bit_map & (~q_bit_map));
+drivers/ide/pdc202xx_old.c:		word_count = (rq_data_dir(rq) == READ) ?
+					word_count | 0x05000000 :
+					word_count | 0x06000000;
+drivers/spi/spi-fsl-spi.c:		slvsel = on ? (slvsel | (1 << cs)) : (slvsel & ~(1 << cs));
+drivers/rtc/rtc-pm8xxx.c:	ctrl_reg = alarm->enabled ? (ctrl_reg | PM8xxx_RTC_ALARM_ENABLE) :
+					(ctrl_reg & ~PM8xxx_RTC_ALARM_ENABLE);
+drivers/rtc/rtc-pm8xxx.c:	ctrl_reg = (enable) ? (ctrl_reg | PM8xxx_RTC_ALARM_ENABLE) :
+				(ctrl_reg & ~PM8xxx_RTC_ALARM_ENABLE);
+drivers/platform/x86/acer-wmi.c:	set_params.devices = (value) ? (devices | device) : (devices & ~device);
+drivers/media/i2c/ov9650.c:		reg = awb ? reg | REG_COM8 : reg & ~REG_COM8;
+drivers/media/i2c/ov9650.c:	com14 = value ? com14 | COM14_EDGE_EN : com14 & ~COM14_EDGE_EN;
+drivers/media/i2c/ov9650.c:	reg = value ? reg | COM23_TEST_MODE : reg & ~COM23_TEST_MODE;
+drivers/media/i2c/s5k6aa.c:		reg = awb ? reg | AALG_WB_EN_MASK : reg & ~AALG_WB_EN_MASK;
+drivers/media/usb/dvb-usb-v2/lmedm04.c:	cold = (cold > 0) ? (cold & 1) : 0;
+drivers/media/usb/gspca/m5602/m5602_s5k83a.c:	data[0] = (vflip) ? data[0] | 0x40 : data[0];
+drivers/media/usb/gspca/m5602/m5602_s5k83a.c:	data[0] = (hflip) ? data[0] | 0x80 : data[0];
+drivers/media/dvb-frontends/dib3000mb.c:	pid = (onoff ? pid | DIB3000_ACTIVATE_PID_FILTERING : 0);
+drivers/video/s1d13xxxfb.c:	regno=((regno & 1) ? (regno & ~1L) : (regno + 1));
+drivers/video/s1d13xxxfb.c:	regno=((regno & 1) ? (regno & ~1L) : (regno + 1));
+drivers/video/i810/i810_main.c:	val = (mode == OFF) ? val | SCR_OFF :
+		val & ~SCR_OFF;
+drivers/video/i810/i810_main.c:	reg = (mode == OFF) ? reg & ~0x80 :
+		reg | 0x80;
+drivers/video/i810/i810_main.c:	temp = (mode == ON) ? temp | CURSOR_ENABLE_MASK :
+		temp & ~CURSOR_ENABLE_MASK;
+drivers/atm/eni.c:			tonga = (address >> j) & 1 ? tonga | SEPROM_DATA :
+			    tonga & ~SEPROM_DATA;
 
 
-
--- 
-Kees Cook
-Chrome OS Security
