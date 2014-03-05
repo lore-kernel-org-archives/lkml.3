@@ -1,62 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757129AbaCEUyc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 15:54:32 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:43925 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756924AbaCEUya (ORCPT
+	id S1756948AbaCEU67 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 15:58:59 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:38159 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754149AbaCEU65 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 15:54:30 -0500
+	Wed, 5 Mar 2014 15:58:57 -0500
+Message-ID: <5317900F.5030803@codeaurora.org>
+Date: Wed, 05 Mar 2014 12:58:55 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D0F6D1440@AcuExch.aculab.com>
-References: <20140305003544.23016.55079.stgit@bhelgaas-glaptop.roam.corp.google.com>
- <063D6719AE5E284EB5DD2968C1650D6D0F6D1440@AcuExch.aculab.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 5 Mar 2014 13:54:09 -0700
-Message-ID: <CAErSpo6hUVc_2MP85CM3-qvOmdSBUJ1bxn+RiXqymJpTwQLzfg@mail.gmail.com>
-Subject: Re: [PATCH] phy: fix compiler array bounds warning on settings[]
-To: David Laight <David.Laight@aculab.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Florian Fainelli <f.fainelli@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Josh Cartwright <joshc@codeaurora.org>
+CC: Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH 6/6] documentation: bindings: document PMIC8921/8058 RTC
+References: <1394047776-13827-1-git-send-email-joshc@codeaurora.org> <1394047776-13827-7-git-send-email-joshc@codeaurora.org>
+In-Reply-To: <1394047776-13827-7-git-send-email-joshc@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Florian]
+On 03/05/14 11:29, Josh Cartwright wrote:
+> diff --git a/Documentation/devicetree/bindings/rtc/qcom,pm8xxx-rtc.txt b/Documentation/devicetree/bindings/rtc/qcom,pm8xxx-rtc.txt
+> new file mode 100644
+> index 0000000..699bd30
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/rtc/qcom,pm8xxx-rtc.txt
+> @@ -0,0 +1,29 @@
+> +* Real-Time Clock for Qualcomm 8058/8921 PMICs
+> +
+> +Required properties:
+> +- compatible: should be one of the following.
+> +    * "qcom,pm8058-rtc"
+> +    * "qcom,pm8921-rtc"
+> +- reg: base address of the register region
+> +- reg-names: corresponding reg names for the regions listed in the 'reg'
+> +             property, must contain:
+> +     "rtc_base" - base of the RTC register region
 
-On Wed, Mar 5, 2014 at 2:10 AM, David Laight <David.Laight@aculab.com> wrote:
-> From: Bjorn Helgaas
->> With -Werror=array-bounds, gcc v4.7.x warns that in phy_find_valid(), the
->> settings[] "array subscript is above array bounds", I think because idx is
->> a signed integer and if the caller supplied idx < 0, we pass the guard but
->> still reference out of bounds.
->
-> Not rejecting the patch but...
->
-> Just indexing an array with 'int' shouldn't cause this warning,
-> so somewhere a caller must actually be passing an idx < 0.
->
-> While changing the type to unsigned will make the comparison
-> against the array bound reject the -1, I suspect that the
-> specific call path didn't really intend passing a hard-coded -1.
->
-> It might be worth trying to locate the call site that passes -1.
+optional reg-names?
 
-I'm stumped.  phy_find_valid() is static and only called from one
-place.  The 'idx' argument is always the result of phy_find_setting(),
-which should always return something between 0 and
-ARRAY_SIZE(settings), so I don't see any way idx can be < 0.
+> +- interrupts: interrupt list for the RTC, must contain a single interrupt
+> +              specifier for the alarm interrupt
+> +- interrupt-names: corresponding interrupt names for the interrupts listed in
+> +                   the 'interrupts' property, must contain:
+> +     "alarm" - summary interrupt for PMIC peripherals
 
-I stripped this down as far as I could; the resulting test code is at
-http://pastebin.com/pp1zMEWu if anybody else wants to look at it.  I'm
-using gcc 4.8.x 20131105 (prerelease), with "-Warray-bounds -O2"
-flags.
+optional interrupt-names?
 
-I hesitate to suspect a compiler bug, but it is very strange.  For
-example, in my test code, replacing "MAX_NUM_SETTINGS" with "2" gets
-rid of the warnings.  MAX_NUM_SETTINGS is known to be 2 at
-compile-time, so I don't know why this should make a difference.
+> +
+> +Option properties:
+> +- linux,allow-set-time: indicates that the setting of RTC time is allowed by
+> +                        the host CPU
 
-Bjorn
+Is this a "linux" property? It seems like something that other OSes
+would want to know about and doesn't require any explicit knowledge
+about operating  system things (like keymaps for example).
+
+> +
+> +Example:
+> +
+> +	rtc {
+
+rtc@11d
+
+> +		compatible = "qcom,pm8921-rtc";
+> +		reg = <0x11D>;
+> +		reg-names = "rtc_base";
+> +		interrupts = <0x27 0>;
+> +		interrupt-names = "alarm";
+> +	};
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
