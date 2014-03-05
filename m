@@ -1,100 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753780AbaCEMTp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 07:19:45 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:33173 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751441AbaCEMTn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 07:19:43 -0500
-Message-ID: <531722D9.9020904@ti.com>
-Date: Wed, 5 Mar 2014 15:12:57 +0200
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753956AbaCEMU2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 07:20:28 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:21502 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752064AbaCEMU0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 07:20:26 -0500
+Date: Wed, 5 Mar 2014 07:20:22 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@ghostprotocols.net,
+        seiji.aguchi@hds.com, jolsa@redhat.com, vincent.weaver@maine.edu,
+        tglx@linutronix.de, hpa@linux.intel.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86, trace: Fix CR2 corruption when tracing
+ page faults
+Message-ID: <20140305072022.6f69f699@gandalf.local.home>
+In-Reply-To: <20140305111415.GU9987@twins.programming.kicks-ass.net>
+References: <alpine.DEB.2.10.1402211701380.6395@vincent-weaver-1.um.maine.edu>
+	<20140228160526.GD1133@krava.brq.redhat.com>
+	<tip-0ac09f9f8cd1fb028a48330edba6023d347d3cea@git.kernel.org>
+	<20140305111415.GU9987@twins.programming.kicks-ass.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Alexander Holler <holler@ahsoftware.de>, <linux-kernel@vger.kernel.org>
-CC: <linux-gpio@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Sekhar Nori <nsekhar@ti.com>,
-        Prabhakar Lad <prabhakar.csengg@gmail.com>
-Subject: Re: [PATCH v2] gpio: davinci: fix gpio selection for OF
-References: <5316FFCE.1060603@ti.com> <1394018461-757-1-git-send-email-holler@ahsoftware.de>
-In-Reply-To: <1394018461-757-1-git-send-email-holler@ahsoftware.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexander,
+On Wed, 5 Mar 2014 12:14:15 +0100
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-On 03/05/2014 01:21 PM, Alexander Holler wrote:
-> The driver missed an of_xlate function to translate gpio numbers
-> as found in the DT to the correct chip and number.
->
-> While there I've set #gpio_cells to a fixed value of 2.
->
-> I've used gpio-pxa.c as template for those changes and tested my changes
-> successfully on a da850 board using entries for gpio-leds in a DT. So I didn't
-> reinvent the wheel but just copied and tested stuff.
->
-> Thanks to Grygorii Strashko for the hint to the existing code in gpio-pxa.
->
-> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
-> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+> On Tue, Mar 04, 2014 at 04:03:25PM -0800, tip-bot for Jiri Olsa wrote:
+> 
+> FWIW I also prefer this patch.
+> 
+> > @@ -1252,9 +1249,11 @@ dotraplinkage void __kprobes
+> >  do_page_fault(struct pt_regs *regs, unsigned long error_code)
+> >  {
+> >  	enum ctx_state prev_state;
+> > +	/* Get the faulting address: */
+> > +	unsigned long address = read_cr2();
+> >  
+> >  	prev_state = exception_enter();
+> > -	__do_page_fault(regs, error_code);
+> > +	__do_page_fault(regs, error_code, address);
+> >  	exception_exit(prev_state);
+> >  }
+> >  
+> > @@ -1271,9 +1270,16 @@ dotraplinkage void __kprobes
+> >  trace_do_page_fault(struct pt_regs *regs, unsigned long error_code)
+> >  {
+> >  	enum ctx_state prev_state;
+> > +	/*
+> > +	 * The exception_enter and tracepoint processing could
+> > +	 * trigger another page faults (user space callchain
+> > +	 * reading) and destroy the original cr2 value, so read
+> > +	 * the faulting address now.
+> > +	 */
+> > +	unsigned long address = read_cr2();
+> >  
+> >  	prev_state = exception_enter();
+> >  	trace_page_fault_entries(regs, error_code);
+> > -	__do_page_fault(regs, error_code);
+> > +	__do_page_fault(regs, error_code, address);
+> >  	exception_exit(prev_state);
+> >  }
+> 
+> How about also marking these two functions as notrace? That would also
+> avoid getting __mcount calls from before we read CR2.
 
-Looks good to me now. Thanks.
+Please no! I used tracing of the do_page_fault function all the time.
+It is very useful.
 
-> ---
->   drivers/gpio/gpio-davinci.c | 24 ++++++++++++++++++++++++
->   1 file changed, 24 insertions(+)
->
->   Changes in v2: replaced static variables by indirections.
->
-> diff --git a/drivers/gpio/gpio-davinci.c b/drivers/gpio/gpio-davinci.c
-> index 7629b4f..92574a0 100644
-> --- a/drivers/gpio/gpio-davinci.c
-> +++ b/drivers/gpio/gpio-davinci.c
-> @@ -172,6 +172,27 @@ of_err:
->   	return NULL;
->   }
->
-> +#ifdef CONFIG_OF_GPIO
-> +static int davinci_gpio_of_xlate(struct gpio_chip *gc,
-> +			     const struct of_phandle_args *gpiospec,
-> +			     u32 *flags)
-> +{
-> +	struct davinci_gpio_controller *chips = dev_get_drvdata(gc->dev);
-> +	struct davinci_gpio_platform_data *pdata = dev_get_platdata(gc->dev);
-> +
-> +	if (gpiospec->args[0] > pdata->ngpio)
-> +		return -EINVAL;
-> +
-> +	if (gc != &chips[gpiospec->args[0] / 32].chip)
-> +		return -EINVAL;
-> +
-> +	if (flags)
-> +		*flags = gpiospec->args[1];
-> +
-> +	return gpiospec->args[0] % 32;
-> +}
-> +#endif
-> +
->   static int davinci_gpio_probe(struct platform_device *pdev)
->   {
->   	int i, base;
-> @@ -236,6 +257,9 @@ static int davinci_gpio_probe(struct platform_device *pdev)
->   			chips[i].chip.ngpio = 32;
->
->   #ifdef CONFIG_OF_GPIO
-> +		chips[i].chip.of_gpio_n_cells = 2;
-> +		chips[i].chip.of_xlate = davinci_gpio_of_xlate;
-> +		chips[i].chip.dev = dev;
->   		chips[i].chip.of_node = dev->of_node;
->   #endif
->   		spin_lock_init(&chips[i].lock);
->
+Call backs from function tracing are to be very limited. They are more
+restrictive than NMI contexts. One thing you shouldn't do is to have
+page faults. Thus, fix the callback.
 
+-- Steve
