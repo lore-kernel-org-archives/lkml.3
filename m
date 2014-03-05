@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757750AbaCED7e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 22:59:34 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:38070 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757719AbaCED70 (ORCPT
+	id S1757953AbaCEEBc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 23:01:32 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:60258 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757529AbaCED7c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 22:59:26 -0500
-Date: Tue, 4 Mar 2014 19:59:22 -0800 (PST)
+	Tue, 4 Mar 2014 22:59:32 -0500
+Date: Tue, 4 Mar 2014 19:59:29 -0800 (PST)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
 To: Andrew Morton <akpm@linux-foundation.org>
@@ -19,10 +19,10 @@ cc: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
         Rik van Riel <riel@redhat.com>, Jianguo Wu <wujianguo@huawei.com>,
         Tim Hockin <thockin@google.com>, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, cgroups@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: [patch 05/11] res_counter: remove interface for locked charging and
- uncharging
+Subject: [patch 07/11] mm, memcg: allow processes handling oom notifications
+ to access reserves
 In-Reply-To: <alpine.DEB.2.02.1403041952170.8067@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.02.1403041955250.8067@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.02.1403041956040.8067@chino.kir.corp.google.com>
 References: <alpine.DEB.2.02.1403041952170.8067@chino.kir.corp.google.com>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
@@ -31,116 +31,122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The res_counter_{charge,uncharge}_locked() variants are not used in the
-kernel outside of the resource counter code itself, so remove the
-interface.
+Now that a per-process flag is available, define it for processes that
+handle userspace oom notifications.  This is an optimization to avoid
+mantaining a list of such processes attached to a memcg at any given time
+and iterating it at charge time.
+
+This flag gets set whenever a process has registered for an oom
+notification and is cleared whenever it unregisters.
+
+When memcg reclaim has failed to free any memory, it is necessary for
+userspace oom handlers to be able to dip into reserves to pagefault text,
+allocate kernel memory to read the "tasks" file, allocate heap, etc.
+
+System oom conditions are not addressed at this time, but the same per-
+process flag can be used in the page allocator to determine if access
+should be given to userspace oom handlers to per-zone memory reserves at
+a later time once there is consensus.
 
 Signed-off-by: David Rientjes <rientjes@google.com>
 ---
- Documentation/cgroups/resource_counter.txt | 12 ++----------
- include/linux/res_counter.h                |  6 +-----
- kernel/res_counter.c                       | 23 ++++++++++++-----------
- 3 files changed, 15 insertions(+), 26 deletions(-)
+ include/linux/sched.h |  1 +
+ mm/memcontrol.c       | 47 ++++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 47 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/cgroups/resource_counter.txt b/Documentation/cgroups/resource_counter.txt
---- a/Documentation/cgroups/resource_counter.txt
-+++ b/Documentation/cgroups/resource_counter.txt
-@@ -76,15 +76,7 @@ to work with it.
- 	limit_fail_at parameter is set to the particular res_counter element
- 	where the charging failed.
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1821,6 +1821,7 @@ extern void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut,
+ #define PF_SPREAD_SLAB	0x02000000	/* Spread some slab caches over cpuset */
+ #define PF_NO_SETAFFINITY 0x04000000	/* Userland is not allowed to meddle with cpus_allowed */
+ #define PF_MCE_EARLY    0x08000000      /* Early kill for mce process policy */
++#define PF_OOM_HANDLER	0x10000000	/* Userspace process handling oom conditions */
+ #define PF_MUTEX_TESTER	0x20000000	/* Thread belongs to the rt mutex tester */
+ #define PF_FREEZER_SKIP	0x40000000	/* Freezer should not count it as freezable */
+ #define PF_SUSPEND_TASK 0x80000000      /* this thread called freeze_processes and should not be frozen */
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2633,6 +2633,33 @@ enum {
+ 	CHARGE_WOULDBLOCK,	/* GFP_WAIT wasn't set and no enough res. */
+ };
  
-- d. int res_counter_charge_locked
--			(struct res_counter *rc, unsigned long val, bool force)
--
--	The same as res_counter_charge(), but it must not acquire/release the
--	res_counter->lock internally (it must be called with res_counter->lock
--	held). The force parameter indicates whether we can bypass the limit.
--
-- e. u64 res_counter_uncharge[_locked]
--			(struct res_counter *rc, unsigned long val)
-+ d. u64 res_counter_uncharge(struct res_counter *rc, unsigned long val)
- 
- 	When a resource is released (freed) it should be de-accounted
- 	from the resource counter it was accounted to.  This is called
-@@ -93,7 +85,7 @@ to work with it.
- 
- 	The _locked routines imply that the res_counter->lock is taken.
- 
-- f. u64 res_counter_uncharge_until
-+ e. u64 res_counter_uncharge_until
- 		(struct res_counter *rc, struct res_counter *top,
- 		 unsigned long val)
- 
-diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
---- a/include/linux/res_counter.h
-+++ b/include/linux/res_counter.h
-@@ -104,15 +104,13 @@ void res_counter_init(struct res_counter *counter, struct res_counter *parent);
-  *       units, e.g. numbers, bytes, Kbytes, etc
-  *
-  * returns 0 on success and <0 if the counter->usage will exceed the
-- * counter->limit _locked call expects the counter->lock to be taken
-+ * counter->limit
-  *
-  * charge_nofail works the same, except that it charges the resource
-  * counter unconditionally, and returns < 0 if the after the current
-  * charge we are over limit.
-  */
- 
--int __must_check res_counter_charge_locked(struct res_counter *counter,
--					   unsigned long val, bool force);
- int __must_check res_counter_charge(struct res_counter *counter,
- 		unsigned long val, struct res_counter **limit_fail_at);
- int res_counter_charge_nofail(struct res_counter *counter,
-@@ -125,12 +123,10 @@ int res_counter_charge_nofail(struct res_counter *counter,
-  * @val: the amount of the resource
-  *
-  * these calls check for usage underflow and show a warning on the console
-- * _locked call expects the counter->lock to be taken
-  *
-  * returns the total charges still present in @counter.
-  */
- 
--u64 res_counter_uncharge_locked(struct res_counter *counter, unsigned long val);
- u64 res_counter_uncharge(struct res_counter *counter, unsigned long val);
- 
- u64 res_counter_uncharge_until(struct res_counter *counter,
-diff --git a/kernel/res_counter.c b/kernel/res_counter.c
---- a/kernel/res_counter.c
-+++ b/kernel/res_counter.c
-@@ -22,8 +22,18 @@ void res_counter_init(struct res_counter *counter, struct res_counter *parent)
- 	counter->parent = parent;
- }
- 
--int res_counter_charge_locked(struct res_counter *counter, unsigned long val,
--			      bool force)
-+static u64 res_counter_uncharge_locked(struct res_counter *counter,
-+				       unsigned long val)
++/*
++ * Processes handling oom conditions are allowed to utilize memory reserves so
++ * that they may handle the condition.
++ */
++static int mem_cgroup_oom_handler_charge(struct mem_cgroup *memcg,
++					 unsigned long csize,
++					 struct mem_cgroup **mem_over_limit)
 +{
-+	if (WARN_ON(counter->usage < val))
-+		val = counter->usage;
++	struct res_counter *fail_res;
++	int ret;
 +
-+	counter->usage -= val;
-+	return counter->usage;
++	ret = res_counter_charge_nofail_max(&memcg->res, csize, &fail_res,
++					    memcg->oom_reserve);
++	if (!ret && do_swap_account) {
++		ret = res_counter_charge_nofail_max(&memcg->memsw, csize,
++						    &fail_res,
++						    memcg->oom_reserve);
++		if (ret) {
++			res_counter_uncharge(&memcg->res, csize);
++			*mem_over_limit = mem_cgroup_from_res_counter(fail_res,
++								      memsw);
++
++		}
++	}
++	return !ret ? CHARGE_OK : CHARGE_NOMEM;
 +}
 +
-+static int res_counter_charge_locked(struct res_counter *counter,
-+				     unsigned long val, bool force)
- {
- 	int ret = 0;
+ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
+ 				unsigned int nr_pages, unsigned int min_pages,
+ 				bool invoke_oom)
+@@ -2692,6 +2719,13 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
+ 	if (mem_cgroup_wait_acct_move(mem_over_limit))
+ 		return CHARGE_RETRY;
  
-@@ -86,15 +96,6 @@ int res_counter_charge_nofail(struct res_counter *counter, unsigned long val,
- 	return __res_counter_charge(counter, val, limit_fail_at, true);
++	if (current->flags & PF_OOM_HANDLER) {
++		ret = mem_cgroup_oom_handler_charge(memcg, csize,
++						    &mem_over_limit);
++		if (ret == CHARGE_OK)
++			return CHARGE_OK;
++	}
++
+ 	if (invoke_oom)
+ 		mem_cgroup_oom(mem_over_limit, gfp_mask, get_order(csize));
+ 
+@@ -2739,7 +2773,8 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
+ 		     || fatal_signal_pending(current)))
+ 		goto bypass;
+ 
+-	if (unlikely(task_in_memcg_oom(current)))
++	if (unlikely(task_in_memcg_oom(current)) &&
++	    !(current->flags & PF_OOM_HANDLER))
+ 		goto nomem;
+ 
+ 	if (gfp_mask & __GFP_NOFAIL)
+@@ -5877,6 +5912,11 @@ static int mem_cgroup_oom_register_event(struct mem_cgroup *memcg,
+ 	if (!event)
+ 		return -ENOMEM;
+ 
++	/*
++	 * Setting PF_OOM_HANDLER before taking memcg_oom_lock ensures it is
++	 * set before getting added to memcg->oom_notify.
++	 */
++	current->flags |= PF_OOM_HANDLER;
+ 	spin_lock(&memcg_oom_lock);
+ 
+ 	event->eventfd = eventfd;
+@@ -5904,6 +5944,11 @@ static void mem_cgroup_oom_unregister_event(struct mem_cgroup *memcg,
+ 		}
+ 	}
+ 
++	/*
++	 * Clearing PF_OOM_HANDLER before dropping memcg_oom_lock ensures it is
++	 * cleared before receiving another notification.
++	 */
++	current->flags &= ~PF_OOM_HANDLER;
+ 	spin_unlock(&memcg_oom_lock);
  }
  
--u64 res_counter_uncharge_locked(struct res_counter *counter, unsigned long val)
--{
--	if (WARN_ON(counter->usage < val))
--		val = counter->usage;
--
--	counter->usage -= val;
--	return counter->usage;
--}
--
- u64 res_counter_uncharge_until(struct res_counter *counter,
- 			       struct res_counter *top,
- 			       unsigned long val)
