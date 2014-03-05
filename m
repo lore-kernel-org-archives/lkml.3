@@ -1,80 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756663AbaCECdw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 21:33:52 -0500
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:42846 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754997AbaCECdu (ORCPT
+	id S1755811AbaCEChW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 21:37:22 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:60660 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755272AbaCEChV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 21:33:50 -0500
+	Tue, 4 Mar 2014 21:37:21 -0500
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: dulshani.gunawardhana89@gmail.com, sachin.kamat@linaro.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: cxt1e1: use kzalloc instead of kmalloc/memset 0
+Date: Wed, 05 Mar 2014 11:37:15 +0900
+Message-ID: <1673333.LFj7fBDsDS@daeseok-laptop.cloud.net>
+User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
 MIME-Version: 1.0
-In-Reply-To: <CAAVeFuKwLJ5-Q1_u4e_o6tp1F-AKaVQG0ph1GdqjBqFiMCQvPQ@mail.gmail.com>
-References: <1393378800-7220-1-git-send-email-acourbot@nvidia.com>
-	<CACRpkdY-oBdxxWhsGraEU31qyu+RWJAiRA+KEip6QNW3jRwGUA@mail.gmail.com>
-	<1393985087.3271.21.camel@joe-AO722>
-	<CAAVeFuJdg-p4K1wdLpdv3byiEBUezGGUVjyScoOaZcLZxhPk7A@mail.gmail.com>
-	<1393985959.3271.25.camel@joe-AO722>
-	<CAAVeFuKwLJ5-Q1_u4e_o6tp1F-AKaVQG0ph1GdqjBqFiMCQvPQ@mail.gmail.com>
-Date: Wed, 5 Mar 2014 10:33:48 +0800
-Message-ID: <CACRpkdbaLy+uY_fsht=Fk0qPdtAnttpOK3xrpirPbwB0mA+TPQ@mail.gmail.com>
-Subject: Re: [PATCH] gpio: clamp returned values to the boolean range
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: Joe Perches <joe@perches.com>, Alexandre Courbot <acourbot@nvidia.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 5, 2014 at 10:22 AM, Alexandre Courbot <gnurou@gmail.com> wrote:
-> On Wed, Mar 5, 2014 at 11:19 AM, Joe Perches <joe@perches.com> wrote:
->> On Wed, 2014-03-05 at 11:14 +0900, Alexandre Courbot wrote:
->>> On Wed, Mar 5, 2014 at 11:04 AM, Joe Perches <joe@perches.com> wrote:
->>> > On Wed, 2014-03-05 at 09:49 +0800, Linus Walleij wrote:
->>> >> On Wed, Feb 26, 2014 at 9:40 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
->>> >>
->>> >> > Nothing prevents GPIO drivers from returning values outside the
->>> >> > boolean range, and as it turns out a few drivers are actually doing so.
->>> >> > These values were passed as-is to unsuspecting consumers and created
->>> >> > confusion.
->>> >> >
->>> >> > This patch makes the internal _gpiod_get_raw_value() function return a
->>> >> > bool, effectively clamping the GPIO value to the boolean range no
->>> >> > matter what the driver does.
->>> >>
->>> >> No, that will not be the semantic effect of this patch, bool is just
->>> >> another name for an int, maybe some static checkers will be able
->>> >> to use it however.
->>> >
->>> > No, a bool is not an int.
->>> >
->>> > It's really different.
->>> > include/linux/types.h:typedef _Bool                     bool;
->>>
->>> It indeed seems that _Bool is an actual boolean type in C99. However I
->>> could not find in the C99 standard how ints are supposed to be
->>> converted to it.
->>
->> 6.3.1.2 Boolean type
->>
->> When any scalar value is converted to _Bool, the result is 0 if the
->> value compares equal to 0; otherwise, the result is 1.
->>
->>> So in the end it is probably safer to perform this
->>> change the way Linus suggested.
->>
->> Not really.
->
-> Ok, you are obviously correct here. Linus, what do you think?
 
-Yeah I was wrong ... too old and not keeping up with standards
-development :-)
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+---
+ drivers/staging/cxt1e1/sbecom_inline_linux.h |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-Anyway, the local "value" variable in the function should still be
-converted to a bool as well right? And the assignment should still
-be "false" not 0. So I would still add my hunk of code...
+diff --git a/drivers/staging/cxt1e1/sbecom_inline_linux.h b/drivers/staging/cxt1e1/sbecom_inline_linux.h
+index ba3ff3e..6dd1b55 100644
+--- a/drivers/staging/cxt1e1/sbecom_inline_linux.h
++++ b/drivers/staging/cxt1e1/sbecom_inline_linux.h
+@@ -46,11 +46,9 @@ void        pci_write_32 (u_int32_t *p, u_int32_t v);
+ static inline void *
+ OS_kmalloc (size_t size)
+ {
+-    char       *ptr = kmalloc (size, GFP_KERNEL | GFP_DMA);
++	char *ptr = kzalloc(size, GFP_KERNEL | GFP_DMA);
+ 
+-    if (ptr)
+-        memset (ptr, 0, size);
+-    return ptr;
++	return ptr;
+ }
+ 
+ static inline void
+-- 
+1.7.4.4
 
-Yours,
-Linus Walleij
+
