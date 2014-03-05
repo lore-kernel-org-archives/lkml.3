@@ -1,79 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756738AbaCEDHO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 22:07:14 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:7932 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754190AbaCEDHL (ORCPT
+	id S1757042AbaCEDIQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 22:08:16 -0500
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:41256 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756094AbaCEDIP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 22:07:11 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 04 Mar 2014 19:02:55 -0800
-Message-ID: <531694EB.50906@nvidia.com>
-Date: Wed, 5 Mar 2014 11:07:23 +0800
-From: Wei Ni <wni@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 4 Mar 2014 22:08:15 -0500
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Guenter Roeck <linux@roeck-us.net>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [PATCH v2 3/3] ARM: tegra: dalmore: add thermal zones for nct1008
-References: <1393932664-13319-1-git-send-email-wni@nvidia.com>
- <1393932664-13319-4-git-send-email-wni@nvidia.com>
- <53164E78.5010708@wwwdotorg.org> <20140304222357.GA6125@roeck-us.net>
- <53168C5B.6070003@nvidia.com> <531692D2.6040204@wwwdotorg.org>
-In-Reply-To: <531692D2.6040204@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1393967856-17938-1-git-send-email-michael.opdenacker@free-electrons.com>
+References: <1386567048-19855-1-git-send-email-michael.opdenacker@free-electrons.com>
+	<1393967856-17938-1-git-send-email-michael.opdenacker@free-electrons.com>
+Date: Wed, 5 Mar 2014 11:08:14 +0800
+Message-ID: <CAF0htA4B=jhBu_YmSTj9=BQ-m3_UGRggwop5ZtgPbO9Y45V+aA@mail.gmail.com>
+Subject: Re: [PATCH] [RESEND] score: remove deprecated IRQF_DISABLED
+From: Lennox Wu <lennox.wu@gmail.com>
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Cc: Liqin Chen <liqin.linux@gmail.com>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/2014 10:58 AM, Stephen Warren wrote:
-> On 03/04/2014 07:30 PM, Wei Ni wrote:
->> On 03/05/2014 06:23 AM, Guenter Roeck wrote:
->>> On Tue, Mar 04, 2014 at 03:06:48PM -0700, Stephen Warren wrote:
->>>> On 03/04/2014 04:31 AM, Wei Ni wrote:
->>>>> Add dt node to describe the thermal zone for the nct1008.
->>>>>
->>>>> Change-Id: I0256836e52d73ec282574e4fd91df52958936e35
->>>>
->>>> ???????
->>>>
->>> I think this is for one of those open-source sites out there
->>> which count open source contributions. Not Ohloh, but similar.
->>> You have to specify that Change-Id to have it associate your
->>> name with the patch.
->>
->> It's so sorry, I'm working for chromiumos, this change-id is generated
->> by gerrit, I should remove it.
->>
->>>
->>> Guenter
->>>
->>>>> diff --git a/arch/arm/boot/dts/tegra114-dalmore.dts b/arch/arm/boot/dts/tegra114-dalmore.dts
->>>>
->>>>> +	thermal-zones {
->>>>> +		nct1008-local {
->>>>> +			polling-delay-passive = <2000>; /* milliseconds */
->>>>
->>>> Nothing can possible make use of this node, since there's no compatible
->>>> value or anything else like that to bind a driver to it.
->>
->> We have special Tskin driver that estimator skin temperature based on
->> nct1008 local and remote sensors.
-> 
-> Where? Anything that gets added to the upstream kernel DT files must be
-> supported by a driver and binding in the upstream kernel.
+Thanks for cleaning the code.
 
-I didn't submit the Tskin driver yet, but the of-thermal framework can
-parse this node, and create thermal zone devices.
+Acked-by: Lennox Wu<lennox.wu@gmail.com>
 
-Thanks.
-Wei.
-
-> 
-
+2014-03-05 5:17 GMT+08:00 Michael Opdenacker
+<michael.opdenacker@free-electrons.com>:
+> This patch removes the use of the IRQF_DISABLED flag
+> from arch/score/kernel/time.c
+>
+> It's a NOOP since 2.6.35 and it will be removed one day.
+>
+> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+> ---
+>  arch/score/kernel/time.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/arch/score/kernel/time.c b/arch/score/kernel/time.c
+> index f0a43affb201..24770cd9b473 100644
+> --- a/arch/score/kernel/time.c
+> +++ b/arch/score/kernel/time.c
+> @@ -41,7 +41,7 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
+>
+>  static struct irqaction timer_irq = {
+>         .handler = timer_interrupt,
+> -       .flags = IRQF_DISABLED | IRQF_TIMER,
+> +       .flags = IRQF_TIMER,
+>         .name = "timer",
+>  };
+>
+> --
+> 1.8.3.2
+>
