@@ -1,77 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755818AbaCEL3H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 06:29:07 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:40592 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755362AbaCEL2a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 06:28:30 -0500
-Date: Wed, 5 Mar 2014 12:28:28 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] clk: turn rate change failed warning into pr_debug
-Message-ID: <20140305112828.GN24917@pengutronix.de>
-References: <1389885175-14174-1-git-send-email-s.hauer@pengutronix.de>
+	id S1755241AbaCELf6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 06:35:58 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:44328 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752524AbaCELf4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 06:35:56 -0500
+Message-ID: <53170C00.20200@ti.com>
+Date: Wed, 5 Mar 2014 13:35:28 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389885175-14174-1-git-send-email-s.hauer@pengutronix.de>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 12:27:24 up 192 days, 20:58, 55 users,  load average: 0.13, 0.69,
- 0.96
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Philipp Zabel <p.zabel@pengutronix.de>
+CC: Grant Likely <grant.likely@linaro.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v6 0/8] Move device tree graph parsing helpers to drivers/of
+References: <1394011242-16783-1-git-send-email-p.zabel@pengutronix.de>
+In-Reply-To: <1394011242-16783-1-git-send-email-p.zabel@pengutronix.de>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="Ijxt5XB3RhGk7AVmrWSf4NnRCNT4LOlEX"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike,
+--Ijxt5XB3RhGk7AVmrWSf4NnRCNT4LOlEX
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Any objections to this patch?
+Hi,
 
-Sascha
+On 05/03/14 11:20, Philipp Zabel wrote:
+> Hi,
+>=20
+> this version of the OF graph helper move series further addresses a few=
+ of
+> Tomi's and Sylwester's comments.
+>=20
+> Changes since v5:
+>  - Fixed spelling errors and a wrong device node name in the link secti=
+on
+>  - Added parentless previous endpoint's full name to warning
+>  - Fixed documentation comment for of_graph_parse_endpoint
+>  - Unrolled for-loop in of_graph_get_remote_port_parent
+>=20
+> Philipp Zabel (8):
+>   [media] of: move graph helpers from drivers/media/v4l2-core to
+>     drivers/of
+>   Documentation: of: Document graph bindings
+>   of: Warn if of_graph_get_next_endpoint is called with the root node
+>   of: Reduce indentation in of_graph_get_next_endpoint
+>   [media] of: move common endpoint parsing to drivers/of
+>   of: Implement simplified graph binding for single port devices
+>   of: Document simplified graph binding for single port devices
+>   of: Warn if of_graph_parse_endpoint is called with the root node
 
-On Thu, Jan 16, 2014 at 04:12:55PM +0100, Sascha Hauer wrote:
-> If a rate change failed it's the opportunity of the caller to handle
-> this. Do not spam the log with a message.
-> 
-> Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-> Cc: Mike Turquette <mturquette@linaro.org>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  drivers/clk/clk.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> index 2cf2ea6..f0124d4 100644
-> --- a/drivers/clk/clk.c
-> +++ b/drivers/clk/clk.c
-> @@ -1460,7 +1460,7 @@ int clk_set_rate(struct clk *clk, unsigned long rate)
->  	/* notify that we are about to change rates */
->  	fail_clk = clk_propagate_rate_change(top, PRE_RATE_CHANGE);
->  	if (fail_clk) {
-> -		pr_warn("%s: failed to set %s rate\n", __func__,
-> +		pr_debug("%s: failed to set %s rate\n", __func__,
->  				fail_clk->name);
->  		clk_propagate_rate_change(top, ABORT_RATE_CHANGE);
->  		ret = -EBUSY;
-> -- 
-> 1.8.5.2
-> 
-> 
+So, as I've pointed out, I don't agree with the API, as it's too limited
+and I can't use it, but as this series is (mostly) about moving the
+current API to a common place, it's fine for me.
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Acked-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+
+ Tomi
+
+
+
+--Ijxt5XB3RhGk7AVmrWSf4NnRCNT4LOlEX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJTFwwAAAoJEPo9qoy8lh71JEsP/03+t53g9vANGhDyiOXREbXb
+IEaTqZEKLSF0gK6VP3wmOhDwKbM10Fs4pF4J4RgxZhr5uFRjMbm9sNg/mdurGFMq
+hxdH0er2i7sjIMU+aEfMQ59VvvLelkDjE5KhafHqf9HGuSNIjrVSdA47zrawnxiJ
+RWtJ3jNi417S+N4x8THoCZk3tScdVt2lIe+AHrvxdZDoLU2UyBr0FNXyxYDz3qwu
+NkUipsQEdaTmgMkDtNrFgLY1Prp8pLNeP5arHnrQAhK8abrhijM1Zdw48flRxsx7
+GUn5n0FpooIUW3vthAD3CZkQ55qr9/2ux5r1t27YZw21o6oFLk01GlLz1F7bS9vX
+YHtTtnWvPjYWEx+PokQdfjrXssYxDXDXznztlpGBUb+JcegYt9Fe0MAqE739LYKh
+q7IDmiAfSk4Xug1Z4QeD6H8y7hLyqbaU55L12/0SuHeVrSmXrhJZx3+cVqYC5X58
+g/80BQ2GOOUOtiWEGEWMp/vC8x7Zbpejfu4sKDH2Dy5VNPAGkXRmd5zkyy1GGQFz
+VgYwDl5Dxvxpfdq+oAIq3Ek/y48q/t9YMm1fgc/5nT16axJcLErPpvOavWqwRJ4T
+VU2RIXli2hWmQw0fIOsy1444vDGV6alI1DJ4NnmO5zaTzDIbx2/rBRT+aAx9eky2
+VyshKqNekhVO41mv3F3g
+=TPD2
+-----END PGP SIGNATURE-----
+
+--Ijxt5XB3RhGk7AVmrWSf4NnRCNT4LOlEX--
