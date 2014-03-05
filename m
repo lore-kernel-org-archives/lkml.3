@@ -1,152 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615AbaCEKZK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 05:25:10 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:44600 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752524AbaCEKZE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 05:25:04 -0500
-Date: Wed, 5 Mar 2014 18:24:42 +0800
-From: Lee Jones <lee.jones@linaro.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mark.rutland@arm.com, sbkim73@samsung.com, broonie@kernel.org
-Subject: Re: [PATCH v3 3/3] Documentation: mfd: Add binding document for
- S2MPA01
-Message-ID: <20140305100739.GF10380@lee--X1>
-References: <1392273476-32736-1-git-send-email-sachin.kamat@linaro.org>
- <1392273476-32736-3-git-send-email-sachin.kamat@linaro.org>
+	id S1753561AbaCEKaZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 05:30:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36039 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751459AbaCEKaW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 05:30:22 -0500
+Date: Wed, 5 Mar 2014 11:29:48 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: acme@redhat.com, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        eranian@google.com, namhyung@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/8] perf, tools: Support handling complete branch stacks
+ as histograms v4
+Message-ID: <20140305102948.GB1835@krava.brq.redhat.com>
+References: <1393561352-23448-1-git-send-email-andi@firstfloor.org>
+ <1393561352-23448-3-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1392273476-32736-3-git-send-email-sachin.kamat@linaro.org>
+In-Reply-To: <1393561352-23448-3-git-send-email-andi@firstfloor.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-FAO Mark Brown,
-
-> Added initial binding documentation for S2MPA01 MFD.
+On Thu, Feb 27, 2014 at 08:22:26PM -0800, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
 > 
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> ---
-> Changes since v2:
-> * Re-worded as suggested by Mark Rutland
-> ---
->  Documentation/devicetree/bindings/mfd/s2mpa01.txt |   90 +++++++++++++++++++++
->  1 file changed, 90 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/mfd/s2mpa01.txt
 
-This document has been sitting on the MLs for nearly a month now. It
-seems well written and doesn't add any new bindings. With that in mind
-I'm inclined to take it though. However, as most of the important
-configuration here is regulator related I'd like Mark Browns Ack on
-it.
+SNIP
 
-Mark, would you be so kind?
+> +
+>  static int machine__resolve_callchain_sample(struct machine *machine,
+>  					     struct thread *thread,
+>  					     struct ip_callchain *chain,
+> +					     struct branch_stack *branch,
+>  					     struct symbol **parent,
+>  					     struct addr_location *root_al,
+>  					     int max_stack)
+> @@ -1283,17 +1365,73 @@ static int machine__resolve_callchain_sample(struct machine *machine,
+>  	int chain_nr = min(max_stack, (int)chain->nr);
+>  	int i;
+>  	int err;
+> +	int first_call = 0;
+>  
+>  	callchain_cursor_reset(&callchain_cursor);
+>  
+> +	/*
+> +	 * Add branches to call stack for easier browsing. This gives
+> +	 * more context for a sample than just the callers.
+> +	 *
+> +	 * This uses individual histograms of paths compared to the
+> +	 * aggregated histograms the normal LBR mode uses.
+> +	 *
+> +	 * Limitations for now:
+> +	 * - No extra filters
+> +	 * - No annotations (should annotate somehow)
+> +	 */
+> +
+> +	if (branch->nr > PERF_MAX_BRANCH_DEPTH) {
+> +		pr_warning("corrupted branch chain. skipping...\n");
+> +		return 0;
+> +	}
 
-> diff --git a/Documentation/devicetree/bindings/mfd/s2mpa01.txt b/Documentation/devicetree/bindings/mfd/s2mpa01.txt
-> new file mode 100644
-> index 000000000000..c13d3d8c3947
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mfd/s2mpa01.txt
-> @@ -0,0 +1,90 @@
-> +
-> +* Samsung S2MPA01 Voltage and Current Regulator
-> +
-> +The Samsung S2MPA01 is a multi-function device which includes high
-> +efficiency buck converters including Dual-Phase buck converter, various LDOs,
-> +and an RTC. It is interfaced to the host controller using an I2C interface.
-> +Each sub-block is addressed by the host system using different I2C slave
-> +addresses.
-> +
-> +Required properties:
-> +- compatible: Should be "samsung,s2mpa01-pmic".
-> +- reg: Specifies the I2C slave address of the PMIC block. It should be 0x66.
-> +
-> +Optional properties:
-> +- interrupt-parent: Specifies the phandle of the interrupt controller to which
-> +  the interrupts from s2mpa01 are delivered to.
-> +- interrupts: An interrupt specifier for the sole interrupt generated by the
-> +  device.
-> +
-> +Optional nodes:
-> +- regulators: The regulators of s2mpa01 that have to be instantiated should be
-> +  included in a sub-node named 'regulators'. Regulator nodes and constraints
-> +  included in this sub-node use the standard regulator bindings which are
-> +  documented elsewhere.
-> +
-> +Properties for BUCK regulator nodes:
-> +- regulator-ramp-delay: ramp delay in uV/us. May be 6250, 12500
-> +  (default), 25000, or 50000. May be 0 for disabling the ramp delay on
-> +  BUCK{1,2,3,4}.
-> +
-> + In the absence of the regulator-ramp-delay property, the default ramp
-> + delay will be used.
-> +
-> +  NOTE: Some BUCKs share the ramp rate setting i.e. same ramp value will be set
-> +  for a particular group of BUCKs. So provide same regulator-ramp-delay=<value>.
-> +
-> +  The following BUCKs share ramp settings:
-> +  * 1 and 6
-> +  * 2 and 4
-> +  * 8, 9, and 10
-> +
-> +The following are the names of the regulators that the s2mpa01 PMIC block
-> +supports. Note: The 'n' in LDOn and BUCKn represents the LDO or BUCK number
-> +as per the datasheet of s2mpa01.
-> +
-> +	- LDOn
-> +		  - valid values for n are 1 to 26
-> +		  - Example: LDO1, LD02, LDO26
-> +	- BUCKn
-> +		  - valid values for n are 1 to 10.
-> +		  - Example: BUCK1, BUCK2, BUCK9
-> +
-> +Example:
-> +
-> +	s2mpa01_pmic@66 {
-> +		compatible = "samsung,s2mpa01-pmic";
-> +		reg = <0x66>;
-> +
-> +		regulators {
-> +			ldo1_reg: LDO1 {
-> +				regulator-name = "VDD_ALIVE";
-> +				regulator-min-microvolt = <1000000>;
-> +				regulator-max-microvolt = <1000000>;
-> +			};
-> +
-> +			ldo2_reg: LDO2 {
-> +				regulator-name = "VDDQ_MMC2";
-> +				regulator-min-microvolt = <2800000>;
-> +				regulator-max-microvolt = <2800000>;
-> +				regulator-always-on;
-> +			};
-> +
-> +			buck1_reg: BUCK1 {
-> +				regulator-name = "vdd_mif";
-> +				regulator-min-microvolt = <950000>;
-> +				regulator-max-microvolt = <1350000>;
-> +				regulator-always-on;
-> +				regulator-boot-on;
-> +			};
-> +
-> +			buck2_reg: BUCK2 {
-> +				regulator-name = "vdd_arm";
-> +				regulator-min-microvolt = <950000>;
-> +				regulator-max-microvolt = <1350000>;
-> +				regulator-always-on;
-> +				regulator-boot-on;
-> +				regulator-ramp-delay = <50000>;
-> +			};
-> +		};
-> +	};
+segfaults here..
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+[jolsa@krava perf]$ ./perf record -g sleep 1
+[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 0.013 MB perf.data (~567 samples) ]
+[jolsa@krava perf]$ ./perf report
+perf: Segmentation fault
+[jolsa@krava perf]$ 
+
+jirka
