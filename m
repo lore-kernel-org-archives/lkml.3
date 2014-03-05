@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758649AbaCEOwE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 09:52:04 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41642 "EHLO
+	id S932267AbaCEOhr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 09:37:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41581 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932270AbaCEOhs (ORCPT
+	with ESMTP id S1758200AbaCEOhb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 09:37:48 -0500
+	Wed, 5 Mar 2014 09:37:31 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 25/62] cpufreq: powernow-k8: Initialize per-cpu data-structures properly
-Date: Wed,  5 Mar 2014 14:36:29 +0000
-Message-Id: <1394030226-26652-26-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 13/62] cifs: ensure that uncached writes handle unmapped areas correctly
+Date: Wed,  5 Mar 2014 14:36:17 +0000
+Message-Id: <1394030226-26652-14-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
 References: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
@@ -28,80 +27,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit c3274763bfc3bf1ececa269ed6e6c4d7ec1c3e5e upstream.
+commit 5d81de8e8667da7135d3a32a964087c0faf5483f upstream.
 
-The powernow-k8 driver maintains a per-cpu data-structure called
-powernow_data that is used to perform the frequency transitions.
-It initializes this data structure only for the policy->cpu. So,
-accesses to this data structure by other CPUs results in various
-problems because they would have been uninitialized.
+It's possible for userland to pass down an iovec via writev() that has a
+bogus user pointer in it. If that happens and we're doing an uncached
+write, then we can end up getting less bytes than we expect from the
+call to iov_iter_copy_from_user. This is CVE-2014-0069
 
-Specifically, if a cpu (!= policy->cpu) invokes the drivers' ->get()
-function, it returns 0 as the KHz value, since its per-cpu memory
-doesn't point to anything valid. This causes problems during
-suspend/resume since cpufreq_update_policy() tries to enforce this
-(0 KHz) as the current frequency of the CPU, and this madness gets
-propagated to adjust_jiffies() as well. Eventually, lots of things
-start breaking down, including the r8169 ethernet card, in one
-particularly interesting case reported by Pierre Ossman.
+cifs_iovec_write isn't set up to handle that situation however. It'll
+blindly keep chugging through the page array and not filling those pages
+with anything useful. Worse yet, we'll later end up with a negative
+number in wdata->tailsz, which will confuse the sending routines and
+cause an oops at the very least.
 
-Fix this by initializing the per-cpu data-structures of all the CPUs
-in the policy appropriately.
+Fix this by having the copy phase of cifs_iovec_write stop copying data
+in this situation and send the last write as a short one. At the same
+time, we want to avoid sending a zero-length write to the server, so
+break out of the loop and set rc to -EFAULT if that happens. This also
+allows us to handle the case where no address in the iovec is valid.
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=70311
-Reported-by: Pierre Ossman <pierre@ossman.eu>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+[Note: Marking this for stable on v3.4+ kernels, but kernels as old as
+       v2.6.38 may have a similar problem and may need similar fix]
+
+Reviewed-by: Pavel Shilovsky <piastry@etersoft.ru>
+Reported-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/cpufreq/powernow-k8.c | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ fs/cifs/file.c | 37 ++++++++++++++++++++++++++++++++++---
+ 1 file changed, 34 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
-index c671369..3d26001 100644
---- a/drivers/cpufreq/powernow-k8.c
-+++ b/drivers/cpufreq/powernow-k8.c
-@@ -1271,7 +1271,7 @@ static int __cpuinit powernowk8_cpu_init(struct cpufreq_policy *pol)
- 		FW_BUG PFX "Try again with latest BIOS.\n";
- 	struct powernow_k8_data *data;
- 	struct init_on_cpu init_on_cpu;
--	int rc;
-+	int rc, cpu;
- 	struct cpuinfo_x86 *c = &cpu_data(pol->cpu);
- 
- 	if (!cpu_online(pol->cpu))
-@@ -1360,7 +1360,9 @@ static int __cpuinit powernowk8_cpu_init(struct cpufreq_policy *pol)
- 		pr_debug("cpu_init done, current fid 0x%x, vid 0x%x\n",
- 			data->currfid, data->currvid);
- 
--	per_cpu(powernow_data, pol->cpu) = data;
-+	/* Point all the CPUs in this policy to the same data */
-+	for_each_cpu(cpu, pol->cpus)
-+		per_cpu(powernow_data, cpu) = data;
- 
- 	return 0;
- 
-@@ -1375,6 +1377,7 @@ err_out:
- static int __devexit powernowk8_cpu_exit(struct cpufreq_policy *pol)
+diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+index 8a0f553..bd7d67c 100644
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -2238,7 +2238,7 @@ cifs_iovec_write(struct file *file, const struct iovec *iov,
+ 		 unsigned long nr_segs, loff_t *poffset)
  {
- 	struct powernow_k8_data *data = per_cpu(powernow_data, pol->cpu);
-+	int cpu;
+ 	unsigned long nr_pages, i;
+-	size_t copied, len, cur_len;
++	size_t bytes, copied, len, cur_len;
+ 	ssize_t total_written = 0;
+ 	loff_t offset;
+ 	struct iov_iter it;
+@@ -2289,14 +2289,45 @@ cifs_iovec_write(struct file *file, const struct iovec *iov,
  
- 	if (!data)
- 		return -EINVAL;
-@@ -1385,7 +1388,8 @@ static int __devexit powernowk8_cpu_exit(struct cpufreq_policy *pol)
+ 		save_len = cur_len;
+ 		for (i = 0; i < nr_pages; i++) {
+-			copied = min_t(const size_t, cur_len, PAGE_SIZE);
++			bytes = min_t(const size_t, cur_len, PAGE_SIZE);
+ 			copied = iov_iter_copy_from_user(wdata->pages[i], &it,
+-							 0, copied);
++							 0, bytes);
+ 			cur_len -= copied;
+ 			iov_iter_advance(&it, copied);
++			/*
++			 * If we didn't copy as much as we expected, then that
++			 * may mean we trod into an unmapped area. Stop copying
++			 * at that point. On the next pass through the big
++			 * loop, we'll likely end up getting a zero-length
++			 * write and bailing out of it.
++			 */
++			if (copied < bytes)
++				break;
+ 		}
+ 		cur_len = save_len - cur_len;
  
- 	kfree(data->powernow_table);
- 	kfree(data);
--	per_cpu(powernow_data, pol->cpu) = NULL;
-+	for_each_cpu(cpu, pol->cpus)
-+		per_cpu(powernow_data, cpu) = NULL;
- 
- 	return 0;
- }
++		/*
++		 * If we have no data to send, then that probably means that
++		 * the copy above failed altogether. That's most likely because
++		 * the address in the iovec was bogus. Set the rc to -EFAULT,
++		 * free anything we allocated and bail out.
++		 */
++		if (!cur_len) {
++			for (i = 0; i < nr_pages; i++)
++				put_page(wdata->pages[i]);
++			kfree(wdata);
++			rc = -EFAULT;
++			break;
++		}
++
++		/*
++		 * i + 1 now represents the number of pages we actually used in
++		 * the copy phase above. Bring nr_pages down to that, and free
++		 * any pages that we didn't use.
++		 */
++		for ( ; nr_pages > i + 1; nr_pages--)
++			put_page(wdata->pages[nr_pages - 1]);
++
+ 		wdata->sync_mode = WB_SYNC_ALL;
+ 		wdata->nr_pages = nr_pages;
+ 		wdata->offset = (__u64)offset;
 -- 
 1.9.0
 
