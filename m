@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757538AbaCEVDL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 16:03:11 -0500
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:52710 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757503AbaCEVDJ (ORCPT
+	id S1757377AbaCEVDp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 16:03:45 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:35398 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756211AbaCEVDo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 16:03:09 -0500
+	Wed, 5 Mar 2014 16:03:44 -0500
 MIME-Version: 1.0
-X-Originating-IP: [84.73.67.144]
-In-Reply-To: <CAKMK7uHyQ04-bAjYw9Fjud_2bDwXkgq5iOQU+7N7aZGVYPT5WA@mail.gmail.com>
-References: <1394011994-30604-1-git-send-email-daniel.vetter@ffwll.ch>
-	<20140305123250.8caa9c6abc2b40d812bbb1b2@linux-foundation.org>
-	<CAKMK7uHyQ04-bAjYw9Fjud_2bDwXkgq5iOQU+7N7aZGVYPT5WA@mail.gmail.com>
-Date: Wed, 5 Mar 2014 22:03:08 +0100
-Message-ID: <CAKMK7uH2MT5zioE4qTWvFMXTMXSCdxa-j1g6z4DTGY=Z_Fmahg@mail.gmail.com>
-Subject: Re: [PATCH] [RFC] Taint the kernel for unsafe module options
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Jean Delvare <khali@linux-fr.org>, Li Zhong <zhong@linux.vnet.ibm.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20140227222104.GT18191@pd.tnic>
+References: <20140225163010.GG24636@pd.tnic>
+	<CABPqkBS04H6GOT4prZ3v=YZMdj=3KHkW77ON67p8f_Wor17kpw@mail.gmail.com>
+	<20140227102722.GD18191@pd.tnic>
+	<6583599.OFJjbmgnW2@vostro.rjw.lan>
+	<20140227222104.GT18191@pd.tnic>
+Date: Wed, 5 Mar 2014 22:03:43 +0100
+Message-ID: <CABPqkBQfu7hnNt=6EQLaAeZaZSJuY3E4EXyxPAtZVjh05NOyWw@mail.gmail.com>
+Subject: Re: Info: mapping multiple BARs. Your kernel is fine.
+From: Stephane Eranian <eranian@google.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        x86 <x86@kernel.org>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, Jiri Kosina <jkosina@suse.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 5, 2014 at 10:00 PM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
-> On Wed, Mar 5, 2014 at 9:32 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
->> On Wed,  5 Mar 2014 10:33:14 +0100 Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
->>
->>> Users just love to set random piles of options since surely enabling
->>> all the experimental stuff helps. Later on we get bug reports because
->>> it all fell apart.
->>>
->>> Even more fun when it's labelled a regression when some change only
->>> just made the feature possible (e.g. stolen memory fixes suddenly
->>> making fbc possible).
->>>
->>> Make it clear that users are playing with fire here. In drm/i915 all
->>> these options follow the same pattern of using -1 as the per-machine
->>> default, and any other value being used for force the parameter.
->>>
->>> Adding a pile of cc's to solicit input and figure out whether this
->>> would be generally useful - this quick rfc is just for drm/i915.
->>
->> Seems harmless and potentially useful to others so yes, I'd vote for
->> putting it in core kernel.
->>
->> However this only handles integers.  Will we end up needed great gobs
->> of new code to detect unsafe setting of u8's, strings, etc?
->
-> Well I've just done integers because hardcoding the -1 default was so
-> easy ... But thinking about it some more (and looking at some more mod
-> params in i915) passing the default to the macro and storing it in
-> some struct, together with the pointer for the variable sounds useful.
-> With that this could be easily extended to all kinds of types.
->
-> Now would such a temporary structure to store the default be
-> acceptable or is there some neater trick to pull this off?
+Hi,
 
-s/temporary/created by the macro/ ... past beer time here already ;-)
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Any update on this problem?
+
+On Thu, Feb 27, 2014 at 11:21 PM, Borislav Petkov <bp@alien8.de> wrote:
+> On Thu, Feb 27, 2014 at 11:12:17PM +0100, Rafael J. Wysocki wrote:
+>> I won't be able to look at that before Monday I'm afraid (personal
+>> stuff).
+>
+> No worries, sir, whenever. It can wait.
+>
+> Thanks a lot!
+>
+> --
+> Regards/Gruss,
+>     Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
