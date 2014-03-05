@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756192AbaCEGwN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 01:52:13 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:58013 "EHLO
+	id S932141AbaCEGwM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 01:52:12 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:58020 "EHLO
 	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755436AbaCEGuL (ORCPT
+	with ESMTP id S1750855AbaCEGuP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 01:50:11 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s256o8rC009536, This message is accepted by code: ctloc85258
+	Wed, 5 Mar 2014 01:50:15 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s256oCCD009571, This message is accepted by code: ctloc85258
 From: Hayes Wang <hayeswang@realtek.com>
 To: <netdev@vger.kernel.org>
 CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next v2 08/13] r8152: support rx checksum
-Date: Wed, 5 Mar 2014 14:49:23 +0800
-Message-ID: <1394002168-3193-9-git-send-email-hayeswang@realtek.com>
+Subject: [PATCH net-next v2 11/13] r8152: reduce the numbers of the bulks
+Date: Wed, 5 Mar 2014 14:49:26 +0800
+Message-ID: <1394002168-3193-12-git-send-email-hayeswang@realtek.com>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1394002168-3193-1-git-send-email-hayeswang@realtek.com>
 References: <1393934464-23675-1-git-send-email-hayeswang@realtek.com>
@@ -26,89 +26,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support hw rx checksum for TCP and UDP packets.
+Reduce the numbers of tx and rx aggregation buffers.
 
 Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 ---
- drivers/net/usb/r8152.c | 41 +++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 39 insertions(+), 2 deletions(-)
+ drivers/net/usb/r8152.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index 08f4e870..c76e018 100644
+index 8e208f30..ddb5200 100644
 --- a/drivers/net/usb/r8152.c
 +++ b/drivers/net/usb/r8152.c
-@@ -466,9 +466,19 @@ enum rtl8152_flags {
+@@ -416,8 +416,8 @@ enum rtl_register_content {
+ 	FULL_DUP	= 0x01,
+ };
  
- struct rx_desc {
- 	__le32 opts1;
-+#define RD_CRC				(1 << 15)
- #define RX_LEN_MASK			0x7fff
-+
- 	__le32 opts2;
-+#define RD_UDP_CS			(1 << 23)
-+#define RD_TCP_CS			(1 << 22)
-+#define RD_IPV4_CS			(1 << 19)
-+
- 	__le32 opts3;
-+#define IPF				(1 << 23) /* IP checksum fail */
-+#define UDPF				(1 << 22) /* UDP checksum fail */
-+#define TCPF				(1 << 21) /* TCP checksum fail */
-+
- 	__le32 opts4;
- 	__le32 opts5;
- 	__le32 opts6;
-@@ -1404,6 +1414,31 @@ out_tx_fill:
- 	return ret;
- }
- 
-+static int r8152_rx_csum(struct r8152 *tp, struct rx_desc *rx_desc)
-+{
-+	int checksum = CHECKSUM_NONE;
-+	u32 opts2, opts3;
-+
-+	if (tp->version == RTL_VER_01)
-+		goto return_result;
-+
-+	opts2 = le32_to_cpu(rx_desc->opts2);
-+	opts3 = le32_to_cpu(rx_desc->opts3);
-+
-+	if (opts2 & RD_IPV4_CS) {
-+		if (opts3 & IPF)
-+			checksum = CHECKSUM_NONE;
-+		else if (((opts2 & RD_UDP_CS) && (opts3 & UDPF)) ||
-+			 ((opts2 & RD_TCP_CS) && (opts3 & TCPF)))
-+			checksum = CHECKSUM_NONE;
-+		else
-+			checksum = CHECKSUM_UNNECESSARY;
-+	}
-+
-+return_result:
-+	return checksum;
-+}
-+
- static void rx_bottom(struct r8152 *tp)
- {
- 	unsigned long flags;
-@@ -1458,6 +1493,8 @@ static void rx_bottom(struct r8152 *tp)
- 				stats->rx_dropped++;
- 				goto find_next_rx;
- 			}
-+
-+			skb->ip_summed = r8152_rx_csum(tp, rx_desc);
- 			memcpy(skb->data, rx_data, pkt_len);
- 			skb_put(skb, pkt_len);
- 			skb->protocol = eth_type_trans(skb, netdev);
-@@ -3103,8 +3140,8 @@ static int rtl8152_probe(struct usb_interface *intf,
- 	netdev->netdev_ops = &rtl8152_netdev_ops;
- 	netdev->watchdog_timeo = RTL8152_TX_TIMEOUT;
- 
--	netdev->features |= NETIF_F_IP_CSUM;
--	netdev->hw_features = NETIF_F_IP_CSUM;
-+	netdev->features |= NETIF_F_RXCSUM | NETIF_F_IP_CSUM;
-+	netdev->hw_features = NETIF_F_RXCSUM | NETIF_F_IP_CSUM;
- 
- 	SET_ETHTOOL_OPS(netdev, &ops);
- 
+-#define RTL8152_MAX_TX		10
+-#define RTL8152_MAX_RX		10
++#define RTL8152_MAX_TX		4
++#define RTL8152_MAX_RX		4
+ #define INTBUFSIZE		2
+ #define CRC_SIZE		4
+ #define TX_ALIGN		4
 -- 
 1.8.4.2
 
