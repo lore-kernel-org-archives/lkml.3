@@ -1,82 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753901AbaCEJuU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 04:50:20 -0500
-Received: from mail1.bemta14.messagelabs.com ([193.109.254.108]:9911 "EHLO
-	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752331AbaCEJuQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 04:50:16 -0500
-X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
-X-Msg-Ref: server-7.tower-194.messagelabs.com!1394013012!13920554!1
-X-Originating-IP: [94.185.165.51]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.16; banners=-,-,-
-X-VirusChecked: Checked
-From: "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>
-To: Lee Jones <lee.jones@linaro.org>,
-        "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>
-Subject: RE: [PATCH Resend 2/2] mfd: da9055: Add DT binding documentation
- for PMIC
-Thread-Topic: [PATCH Resend 2/2] mfd: da9055: Add DT binding documentation
- for PMIC
-Thread-Index: AQHPOBwQQANILTjFQEuHGLJYPpcoYJrSQCbQ
-Date: Wed, 5 Mar 2014 09:50:10 +0000
-Message-ID: <2E89032DDAA8B9408CB92943514A03376BAD4D92@SW-EX-MBX01.diasemi.com>
-References: <cover.1392286537.git.Adam.Thomson.Opensource@diasemi.com>
- <574af9f46ca08e66f6e9bda8ef3a51e7c5c5178b.1392286537.git.Adam.Thomson.Opensource@diasemi.com>
- <20140305023850.GN10579@lee--X1>
-In-Reply-To: <20140305023850.GN10579@lee--X1>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.27.23]
-Content-Type: text/plain; charset="utf-8"
+	id S1753351AbaCEJwD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 04:52:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27455 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751622AbaCEJwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 04:52:00 -0500
+Date: Wed, 5 Mar 2014 10:51:56 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH] perf kvm: introduce --list-cmds for use by scripts
+Message-ID: <20140305095155.GA1835@krava.brq.redhat.com>
+References: <1393896396-10427-1-git-send-email-artagnon@gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393896396-10427-1-git-send-email-artagnon@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s259pVo2013929
 
-On Tue, 05 Mar 2014 02:40:38 +0000, Lee Jones wrote:
-
-> > Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
-> > Acked-by: Mark Brown <broonie@kernel.org>
+On Mon, Mar 03, 2014 at 08:26:36PM -0500, Ramkumar Ramachandra wrote:
+> Introduce
 > 
-> As this has Mark's ack, I'd be happy to apply the patch if you correct
-> a couple of nits.
-
-Yep. No problem.
-
-> > +Example:
-> > +
-> > +	pmic: da9055-pmic@5a {
-> > +		compatible = "dlg,da9055-pmic";
-> > +		reg = <0x5a>;
-> > +		interrupt-parent = <&intc>;
-> > +		interrupts = <5 0x8>;
+>   $ perf kvm --list-cmds
 > 
-> I'd prefer if you used the #defines in:
->     dt-bindings/interrupt-controller/irq.h
+> to dump a raw list of commands for use by the completion script. In
+> order to do this, introduce parse_options_subcommand() for handling
+> subcommands as a special case in the parse-options machinery.
 
-Fine. Will do that.
+so this doesn't change the behaviour at all, right?
 
-> > +			buck2: BUCK2 {
-> > +				regulator-min-microvolt = <925000>;
-> > +				regulator-max-microvolt = <2500000>;
-> > +			};
-> 
-> New line here.
+SNIP
 
-Will remove it.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+>  
+> -	argc = parse_options(argc, argv, kvm_options, kvm_usage,
+> -			PARSE_OPT_STOP_AT_NON_OPTION);
+> +	argc = parse_options_subcommand(argc, argv, kvm_options, kvm_subcommands, kvm_usage,
+> +					PARSE_OPT_STOP_AT_NON_OPTION);
+>  	if (!argc)
+>  		usage_with_options(kvm_usage, kvm_options);
+>  
+> diff --git a/tools/perf/perf-completion.sh b/tools/perf/perf-completion.sh
+> index 496e2ab..ae3a576 100644
+> --- a/tools/perf/perf-completion.sh
+> +++ b/tools/perf/perf-completion.sh
+> @@ -123,7 +123,7 @@ __perf_main ()
+>  		__perfcomp_colon "$evts" "$cur"
+>  	# List subcommands for 'perf kvm'
+>  	elif [[ $prev == "kvm" ]]; then
+> -		subcmds="top record report diff buildid-list stat"
+> +		subcmds=$($cmd $prev --list-cmds)
+
+Do we want some generic approach here.. if we're
+adding generic --list-cmds option anyway.. hm?
+
+SNIP
+
+> -int parse_options(int argc, const char **argv, const struct option *options,
+> -		  const char * const usagestr[], int flags)
+> +int parse_options_subcommand(int argc, const char **argv, const struct option *options,
+> +			const char *const subcommands[], const char *usagestr[], int flags)
+>  {
+>  	struct parse_opt_ctx_t ctx;
+>  
+>  	perf_header__set_cmdline(argc, argv);
+>  
+> +	/* build usage string if it's not provided */
+> +	if (subcommands && !usagestr[0]) {
+> +		struct strbuf buf = STRBUF_INIT;
+> +
+> +		strbuf_addf(&buf, "perf %s [<options>] {", argv[0]);
+> +		for (int i = 0; subcommands[i]; i++) {
+> +			if (i)
+> +				strbuf_addstr(&buf, "|");
+> +			strbuf_addstr(&buf, subcommands[i]);
+> +		}
+> +		strbuf_addstr(&buf, "}");
+> +
+> +		usagestr[0] = strdup(buf.buf);
+> +		strbuf_release(&buf);
+> +	}
+
+is above code ever used now?
+
+jirka
