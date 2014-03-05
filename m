@@ -1,82 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757010AbaCECba (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Mar 2014 21:31:30 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:34188 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755414AbaCECb2 (ORCPT
+	id S1756663AbaCECdw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Mar 2014 21:33:52 -0500
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:42846 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754997AbaCECdu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Mar 2014 21:31:28 -0500
-From: Zhouyi Zhou <zhouzhouyi@gmail.com>
-To: <joro@8bytes.org>, <iommu@lists.linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>
-Cc: Zhouyi Zhou <zhouzhouyi@gmail.com>, Zhouyi Zhou <yizhouzhou@ict.ac.cn>
-Subject: Re: Re: [PATCH] IOMMU: iommu module do not check NULL return of kmem_cache_zalloc
-Date: Wed,  5 Mar 2014 10:31:17 +0800
-Message-Id: <1393986677-22160-1-git-send-email-yizhouzhou@ict.ac.cn>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 4 Mar 2014 21:33:50 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAAVeFuKwLJ5-Q1_u4e_o6tp1F-AKaVQG0ph1GdqjBqFiMCQvPQ@mail.gmail.com>
+References: <1393378800-7220-1-git-send-email-acourbot@nvidia.com>
+	<CACRpkdY-oBdxxWhsGraEU31qyu+RWJAiRA+KEip6QNW3jRwGUA@mail.gmail.com>
+	<1393985087.3271.21.camel@joe-AO722>
+	<CAAVeFuJdg-p4K1wdLpdv3byiEBUezGGUVjyScoOaZcLZxhPk7A@mail.gmail.com>
+	<1393985959.3271.25.camel@joe-AO722>
+	<CAAVeFuKwLJ5-Q1_u4e_o6tp1F-AKaVQG0ph1GdqjBqFiMCQvPQ@mail.gmail.com>
+Date: Wed, 5 Mar 2014 10:33:48 +0800
+Message-ID: <CACRpkdbaLy+uY_fsht=Fk0qPdtAnttpOK3xrpirPbwB0mA+TPQ@mail.gmail.com>
+Subject: Re: [PATCH] gpio: clamp returned values to the boolean range
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: Joe Perches <joe@perches.com>, Alexandre Courbot <acourbot@nvidia.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhouyi Zhou <zhouzhouyi@gmail.com>
+On Wed, Mar 5, 2014 at 10:22 AM, Alexandre Courbot <gnurou@gmail.com> wrote:
+> On Wed, Mar 5, 2014 at 11:19 AM, Joe Perches <joe@perches.com> wrote:
+>> On Wed, 2014-03-05 at 11:14 +0900, Alexandre Courbot wrote:
+>>> On Wed, Mar 5, 2014 at 11:04 AM, Joe Perches <joe@perches.com> wrote:
+>>> > On Wed, 2014-03-05 at 09:49 +0800, Linus Walleij wrote:
+>>> >> On Wed, Feb 26, 2014 at 9:40 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+>>> >>
+>>> >> > Nothing prevents GPIO drivers from returning values outside the
+>>> >> > boolean range, and as it turns out a few drivers are actually doing so.
+>>> >> > These values were passed as-is to unsuspecting consumers and created
+>>> >> > confusion.
+>>> >> >
+>>> >> > This patch makes the internal _gpiod_get_raw_value() function return a
+>>> >> > bool, effectively clamping the GPIO value to the boolean range no
+>>> >> > matter what the driver does.
+>>> >>
+>>> >> No, that will not be the semantic effect of this patch, bool is just
+>>> >> another name for an int, maybe some static checkers will be able
+>>> >> to use it however.
+>>> >
+>>> > No, a bool is not an int.
+>>> >
+>>> > It's really different.
+>>> > include/linux/types.h:typedef _Bool                     bool;
+>>>
+>>> It indeed seems that _Bool is an actual boolean type in C99. However I
+>>> could not find in the C99 standard how ints are supposed to be
+>>> converted to it.
+>>
+>> 6.3.1.2 Boolean type
+>>
+>> When any scalar value is converted to _Bool, the result is 0 if the
+>> value compares equal to 0; otherwise, the result is 1.
+>>
+>>> So in the end it is probably safer to perform this
+>>> change the way Linus suggested.
+>>
+>> Not really.
+>
+> Ok, you are obviously correct here. Linus, what do you think?
 
-On Tue, 4 Mar 2014 16:41:18 +0100
-Joerg Roedel <joro@8bytes.org> wrote:
+Yeah I was wrong ... too old and not keeping up with standards
+development :-)
 
-> On Tue, Feb 11, 2014 at 10:12:53AM +0800, Zhouyi Zhou wrote:
-> > From: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
-> > 
-> > The function iopte_alloc do not check NULL return of kmem_cache_zalloc,
-> > call iopte_free with argument 0 will panic.
-> > 
-> > Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
-> > ---
-> >  drivers/iommu/omap-iommu.c |    3 ++-
-> >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/iommu/omap-iommu.c b/drivers/iommu/omap-iommu.c
-> > index bcd78a7..5155714 100644
-> > --- a/drivers/iommu/omap-iommu.c
-> > +++ b/drivers/iommu/omap-iommu.c
-> > @@ -551,7 +551,8 @@ static u32 *iopte_alloc(struct omap_iommu *obj, u32 *iopgd, u32 da)
-> >    	      dev_vdbg(obj->dev, "%s: a new pte:%p\n", __func__, iopte);
-> >  	      } else {
-> >  	      	/* We raced, free the reduniovant table */
-> > -		   iopte_free(iopte);
-> > +			if (iopte)
-> > +				iopte_free(iopte);
-> 
-> Isn't it better to put the check into iopte_free?
-> 
-> 
->	Joerg
-> 
-> 
-Thanks Joerg for reviewing
-Checking the null pointer in iopte_free guarantees kmem_cache_free
-is happy all the time.
+Anyway, the local "value" variable in the function should still be
+converted to a bool as well right? And the assignment should still
+be "false" not 0. So I would still add my hunk of code...
 
-Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
-
----
- drivers/iommu/omap-iommu.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/iommu/omap-iommu.c b/drivers/iommu/omap-iommu.c
-index bcd78a7..51211e8 100644
---- a/drivers/iommu/omap-iommu.c
-+++ b/drivers/iommu/omap-iommu.c
-@@ -523,7 +523,8 @@ static void flush_iopte_range(u32 *first, u32 *last)
- static void iopte_free(u32 *iopte)
- {
- 	/* Note: freed iopte's must be clean ready for re-use */
--	kmem_cache_free(iopte_cachep, iopte);
-+	if (iopte)
-+		kmem_cache_free(iopte_cachep, iopte);
- }
- 
- static u32 *iopte_alloc(struct omap_iommu *obj, u32 *iopgd, u32 da)
-
-
+Yours,
+Linus Walleij
