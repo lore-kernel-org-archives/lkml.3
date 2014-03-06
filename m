@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757560AbaCFBfr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 20:35:47 -0500
-Received: from smtprelay0038.hostedemail.com ([216.40.44.38]:46088 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757232AbaCFBfp (ORCPT
+	id S1757645AbaCFBgJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 20:36:09 -0500
+Received: from mail-yh0-f52.google.com ([209.85.213.52]:38285 "EHLO
+	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757232AbaCFBgG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 20:35:45 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2551:2553:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3871:3872:3873:4250:4321:5007:7652:9108:10004:10400:10848:11026:11232:11473:11658:11914:12050:12296:12438:12517:12519:12740:13018:13019:13069:13137:13150:13230:13231:13311:13357:14039,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: test23_6c28257482707
-X-Filterd-Recvd-Size: 2298
-Message-ID: <1394069742.12070.39.camel@joe-AO722>
-Subject: Re: [PATCH v2] [media] v4l: omap4iss: Add DEBUG compiler flag
-From: Joe Perches <joe@perches.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Paul Bolle <pebolle@tiscali.nl>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 05 Mar 2014 17:35:42 -0800
-In-Reply-To: <3032500.9J1uSX3lel@avalon>
-References: <1391958577.25424.22.camel@x220> <2136780.FIdBGb725A@avalon>
-	 <1394067637.12070.36.camel@joe-AO722> <3032500.9J1uSX3lel@avalon>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	Wed, 5 Mar 2014 20:36:06 -0500
+Message-ID: <5317D105.6050206@gmail.com>
+Date: Wed, 05 Mar 2014 22:36:05 -0300
+From: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Kieran Clancy <clancy.kieran@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Li Guang <lig.fnst@cn.fujitsu.com>,
+        Lan Tianyu <tianyu.lan@intel.com>,
+        Dennis Jansen <dennis.jansen@web.de>
+Subject: Re: [PATCH v2] ACPI / EC: Clear stale EC events on Samsung systems
+References: <1393429360-4344-1-git-send-email-clancy.kieran@gmail.com> <53176D59.3030602@canonical.com> <CAGf84Q+7=abgk78WuhNWdy+3kgXma1fHj6OPk9ytQ4kFzcoFJA@mail.gmail.com> <1885040.WKp5oRmh5C@vostro.rjw.lan> <CAGf84QK-N+C6eHct4XDzOCHwfN649F2okJ1y2V70wWz-wHFKEA@mail.gmail.com>
+In-Reply-To: <CAGf84QK-N+C6eHct4XDzOCHwfN649F2okJ1y2V70wWz-wHFKEA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-03-06 at 02:27 +0100, Laurent Pinchart wrote:
-> On Wednesday 05 March 2014 17:00:37 Joe Perches wrote:
-> > On Thu, 2014-03-06 at 01:48 +0100, Laurent Pinchart wrote:
-> > > Would you recommend to drop driver-specific Kconfig options related to
-> > > debugging and use CONFIG_DYNAMIC_DEBUG instead ?
-> > For development, sure, if there's sufficient memory.
-> > For embedded systems with limited memory, using dynamic_debug isn't always
-> > possible or effective.
-> > Also, there are sometimes reasons to have debugging messages always enabled
-> > or emitted.
-> > For those cases, either adding #define DEBUG or using printk(KERN_DEBUG
-> > would be fine.
-> My goal here is to offer an easy way for users to enable debugging without 
-> requiring changes to the source code.
+Beware, the context line:        
+             static struct dmi_system_id ec_dmi_table[] __initdata = {
+has changed in recent kernels, so that line of the patch would need
+to be different for it to apply older kernels.
+It used to be this:
+             static struct dmi_system_id __initdata ec_dmi_table[] = {
+until 3.11 I guess.
 
-Dynamic debugging works, but various distributions don't
-have it enabled.
+It is just a context line and is not important for the patch itself.
 
-> The driver includes various dev_dbg() 
-> messages, I don't want to ask people reporting problems to turn them into 
-> printk() calls :-) Even adding #define DEBUG at the beginning of the source 
-> files is likely too error prone for users without much programming experience.
+See:
+http://lxr.free-electrons.com/source/drivers/acpi/ec.c?v=3.11
+http://lxr.free-electrons.com/source/drivers/acpi/ec.c?v=3.12
 
-I think your best bet is to add #define DEBUG to a common
-header file like iss.h or omap4iss.h
+Cheers!
+--Juan Manuel Cabo
 
 
-
+On 03/05/2014 10:24 PM, Kieran Clancy wrote:
+> On Thu, Mar 6, 2014 at 11:22 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+>> On Thursday, March 06, 2014 11:04:14 AM Kieran Clancy wrote:
+>>> Rafael, is it a separate process to get this in the stable tree or
+>>> will it naturally happen after being merged into the mainline?
+>> I need to add a proper "CC stable" tag to your patch for this to happen.
+>>
+>> Which -stable kernels should it go to?
+> 3.2 and 3.10 seem like natural choices (3.4?), but I don't know the
+> norm for this kind of fix. Would there be any reason not to include it
+> in some particular stable kernels?
+>
+> Cheers,
+> Kieran.
+>
 
