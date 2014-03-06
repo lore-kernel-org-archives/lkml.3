@@ -1,111 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752229AbaCFNrN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 08:47:13 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55237 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751496AbaCFNrL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 08:47:11 -0500
-Date: Thu, 6 Mar 2014 14:47:08 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Or Gerlitz <ogerlitz@mellanox.com>
-cc: Roland Dreier <roland@kernel.org>, Amir Vadai <amirv@mellanox.com>,
-        Eli Cohen <eli@dev.mellanox.co.il>,
-        Eugenia Emantayev <eugenia@mellanox.com>,
-        "David S. Miller" <davem@davemloft.net>, Mel Gorman <mgorman@suse.de>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Saeed Mahameed <saeedm@mellanox.com>,
-        Sagi Grimberg <sagig@mellanox.com>,
-        Shlomo Pongratz <shlomop@mellanox.com>
-Subject: Re: [PATCH] mlx4: Use GFP_NOFS calls during the ipoib TX path when
- creating the QP
-In-Reply-To: <5318789B.1040402@mellanox.com>
-Message-ID: <alpine.LNX.2.00.1403061438080.3690@pobox.suse.cz>
-References: <alpine.LNX.2.00.1402211450410.1192@pobox.suse.cz> <5318789B.1040402@mellanox.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752439AbaCFNr1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 08:47:27 -0500
+Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:39609 "EHLO
+	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752314AbaCFNrZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 08:47:25 -0500
+Message-ID: <53187C13.3040202@st.com>
+Date: Thu, 6 Mar 2014 14:45:55 +0100
+From: Maxime Coquelin <maxime.coquelin@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>
+Cc: <mark.rutland@arm.com>, <mturquette@linaro.org>,
+        <gregkh@linuxfoundation.org>, <t.figa@samsung.com>,
+        <sw0312.kim@samsung.com>, <linux-kernel@vger.kernel.org>,
+        <kyungmin.park@samsung.com>, <robh+dt@kernel.org>,
+        <galak@codeaurora.org>, <grant.likely@linaro.org>,
+        <linux@arm.linux.org.uk>, <m.szyprowski@samsung.com>
+Subject: Re: [RFC PATCH v2 0/2] clk: Support for DT assigned clock parents
+ and rates
+References: <1393870533-20845-1-git-send-email-s.nawrocki@samsung.com>
+In-Reply-To: <1393870533-20845-1-git-send-email-s.nawrocki@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.201.23.80]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Mar 2014, Or Gerlitz wrote:
+Hi Sylwester,
 
-> > This was originally a patch from Matthew Finlay<matt@mellanox.com>  that
-> > addressed a problem whereby NFS writes would enter uninterruptible sleep
-> > forever.  The issue happened when using NFS over IPoIB. This is not a
-> > recommended configuration as RDMA is preferred but it is still a valid
-> > configuration and is important to have in situations where the NFS server
-> > does not support RDMA. The problem encountered was described as follows:
-> > 
-> > 	It's not memory reclamation that is the problem as such. There is
-> > 	an indirect dependency between network filesystems writing back
-> > 	pages and ipoib_cm_tx_init() due to how a kworker is used. Page
-> > 	reclaim cannot make forward progress until ipoib_cm_tx_init()
-> > 	succeeds and it is stuck in page reclaim itself waiting for network
-> > 	transmission. Ordinarily this sitaution may be avoided by having
-> > 	the caller use GFP_NOFS but ipoib_cm_tx_init() does not have that
-> > information.
-> > 
-> 
-> Hi Jiri,
+	I like the principle of your implementation, but I have two questions:
+	1 - How can we manage PM with this solution, as the parent/rate will be 
+set only once at probe time?
+	2 - How to set the parent of a parent clock (which can be shared with 
+other devices)? Same question about the parent rates.
+
+
+Thanks,
+Maxime
+
+On 03/03/2014 07:15 PM, Sylwester Nawrocki wrote:
+> This patch set adds a DT binding documentation for new 'clock-parents'
+> and 'clock-rates' DT properties and a helper function to parse them.
+> The helper is now being called from within the driver core, similarly
+> as it is done for the pins configuration binding to a device.
 >
-> Reading again (*) the problem description, the team here would be happy 
-> to clarify with you some details (possibly few MM newbie questions, but 
-> it will help us):
-
-Hi Or,
-
-thanks for getting back to me. I am sure there are better people to ask 
-MM-related questions, but here we go.
-
-Oh, and by the way, the very original version of the patch is coming from 
-a Mellanox employee Matthew Finlay, so perhaps it might be much more 
-efficient if you would be able to contact him and discuss the details with 
-him.
-
-> 1. just to make sure, the problem happen on the NFS client, not the NFS 
-> server, right? so writing-back means client writing over the NFS mount 
-> --> network
-
-Yes, that is the case.
-
-> 2. you wrote "due to how a kworker is used", can you clarify if/why things go
-> wrong b/c of the kworker usage, or this is matter of phrasing?
-
-The mlx kworker trying to allocate memory with GFP_KERNEL will eventually 
-get stuck; if the system is under memory pressure, performing memory 
-reclaim is needed in order to free occupied memory and use it for the 
-GFP_KERNEL allocation.
-
-Writeback can't however proceed, as the mlx kworker is stuck waiting 
-exactly on the writeback to eventually happen.
-
-> in earlier post over this thread you wrote "There was a problem with swapping
-> over NFS, as writeback was deadlocked with memory reclaim (memory needs to be
-> allocated so that > swap could be accessed to reclaim memory). That's fixed by
-> allocating the buffers from PF_MEMALLOC reserve, introduced by Mel's and
-> Peter's patchset back in 3.9 or so. Oh, and the same has been done for
-> swapping over NBD, btw", in that respect:
+> Patch 1/2 adds a variant of of_clk_get() function which accepts name of
+> a DT property containing list of phandle + clock specifier pairs, as
+> opposed to hard coded "clocks" property name in of_clk_get().
+> As Mike suggested I've renamed this function to of_clk_get_by_property().
 >
-> 3. you mentioned that the memory allocations in ipoib_cm_tx_init() and 
-> ib_create_qp() --> mlx4 driver requires page reclaim and waits for 
-> network transmission, so this client node put their swap over that NFS 
-> partition?
-
-They need memory reclaim to happen in low-memory situations. GFP_KERNEL 
-allocation is allowed to go to sleep and wait for the reclaim to succeed.
-
-> 4. Can you shed more light, why the problem hits also for kmalloc based 
-> allocations and not only for vmalloc based allocation e.g not only b/c 
-> of the vzalloc call in ipoib_cm_tx_init but rather also b/c of misc 
-> kmalloc calls within the HW (here mlx4) driver?
-
-The GFP_KERNEL is the key here -- allocation using GFP_KERNEL allocation 
-is allowed to sleep until memory reclamation has succeeded.
-
-Thanks again,
-
--- 
-Jiri Kosina
-SUSE Labs
+> Patch 2/2 actually adds the code searching for related DT properties at
+> device node and performing re-parenting and/or clock frequency setting
+> as specified.
+>
+> Changes since v1:
+>   - updated DT binding documentation,
+>   - dropped the platform bus notifier, the clock setup routine is now
+>     being called directly from the driver core before a driver probe() call;
+>     this has an advantage such as all bus types are handled and any errors
+>     are propagated, so that, for instance a driver probe() can be deferred
+>     also when resources specified by clock-parents/clock-rates properties
+>     are not yet available; an alternative would be to let drivers call
+>     of_clk_device_setup() directly,
+>   - dropped the patch adding a macro definition for maximum DT property
+>     name length for now.
+>
+> Open issues:
+>   - handling of errors from of_clk_get_by_property() could be improved,
+>     currently ENOENT is returned by this function not only for a null
+>     entry.
+>
+> This series has been tested on ARM, on Exynos4412 Trats2 board.
+> RFC v1 can be found at:
+> http://www.spinics.net/lists/arm-kernel/msg309241.html
+>
+> Sylwester Nawrocki (2):
+>    clk: Add function parsing arbitrary clock list DT property
+>    clk: Add handling of clk parent and rate assigned from DT
+>
+>   .../devicetree/bindings/clock/clock-bindings.txt   |   23 ++++++
+>   drivers/base/dd.c                                  |    5 ++
+>   drivers/clk/clk.c                                  |   77 ++++++++++++++++++++
+>   drivers/clk/clk.h                                  |    3 +
+>   drivers/clk/clkdev.c                               |   25 ++++++-
+>   include/linux/clk-provider.h                       |    6 ++
+>   6 files changed, 135 insertions(+), 4 deletions(-)
+>
+> --
+> 1.7.9.5
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>
