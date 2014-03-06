@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751469AbaCFHZE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 02:25:04 -0500
-Received: from nm20-vm4.bullet.mail.gq1.yahoo.com ([98.136.217.35]:43655 "EHLO
-	nm20-vm4.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750865AbaCFHZB (ORCPT
+	id S1751950AbaCFHZr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 02:25:47 -0500
+Received: from nm1-vm10.bullet.mail.gq1.yahoo.com ([98.136.218.89]:41545 "EHLO
+	nm1-vm10.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751276AbaCFHZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 02:25:01 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=gcom1024; d=yahoo.com;
-	b=WRisagJjm7rBkSL0gLa7B2iZ0rF7JIg1gDhNbGVdy05ZS01agNlDs2mjddPwhaVz5QUVvKK3TTaezR9SDN8bnRMBljgXVwcC7hFlUDy+0Noi/nKBz3BDBhDhE1bvuWUeNsyFc1L5J9o7ocZbrKplr+EpK+G/CWKE2nNJFBAL4bk=;
-X-Yahoo-Newman-Id: 827180.22850.bm@smtp235.mail.gq1.yahoo.com
+	Thu, 6 Mar 2014 02:25:46 -0500
+X-Yahoo-Newman-Id: 840308.23993.bm@smtp237.mail.gq1.yahoo.com
 X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: g6.hym0VM1m0YQTKipXoRrIx9lmEs9Ufyp5RorzU3kg1Pw9
- vlQoq7B5bTufulihtF2PaRZFxjoWb6WdhYK39HVDu5wpzllin3M7IIYEFg_W
- .InHz6_zuVDeqYZG2SUt4AbSNGqg1zanLX.NJTe2yGRVE2UaROVS3QNB86WU
- S_57vdXyH35xqtPZUdV_T8.kReI9cPfqmIqW2kGiCM5tbmrZVYIs.1Jz.9H9
- ifBk5Ejpb5a0qWOguIWRfk.uHR2T.lrPApDihKVJXBvJlEL6nWnmfBuSfMIZ
- pTSLHS1LUh1JakkHCPJGJfhSZwie3HPfR01zCBb7gWitVugtt_C3id15xG42
- KnoNsSDFeTKqEh7XuFty4Rn4B3oF3x.hARPKYmldr9lVY_D6UQcNlNV20J.V
- fo20Q3uvU2x9aslNgpxYM6Y6oZnnN5gt4Su1x568mFcbXXzm7vpcpPJYy9lT
- CSbqPZrEBAQAmFUxk9SEY0s3VR_ZfuJrfm.3lTX4aV.PQIkTRcsQONYjCw7y
- 1tyyi6zNlhV2bUNuSTSCJ9dcCKnmzsqk-
+X-YMail-OSG: 3pAS1NwVM1l63r.P944oco3ik4YGtQSGzzTuBRVJkE8wZVx
+ DZvsUoScC.8SAwbn8E9Vwm.B2e0JWCA4zMw3XumUFdQjmj5P7P3oOiUkA7yP
+ TG1C41W38nj0142sECvqG7Ix5LEMD77jb9cxY3SNgY1sPMv1vtwszFSlUPIS
+ bPsK4pNabR1KURZTm5Bfp7AccH3Lg8Z3quMXVnUJdI53dsdywThHLjxe92yk
+ .GRULZ.nDTj2qqDIXPER2Lh0OivzjNYetmXsae6j8L1ecBmNazVbA_14Mpcb
+ MRffp5cewHNn3BuoecDVcaMqrZolnLYKZOaalh42qX034iDuF7cQLlS1sHYW
+ pyNj9WvUQZq3Cm5R.S0GA9iurj5bz0R3P8hc5CA1hVtRylrVnIm2wNRfYn1Y
+ ffDsaBQIymQyR20scki6LDCycGrP4JsiD6YbWbAVtMRXeeB6TQYJP5ed0O7i
+ PjSA9LD6tfXnbB91dBrsMIaIJUZMkzBwtAc3ATD3UxpcNTOFOjW4j.F7b_cv
+ da.YvA8gn6LXcyxZh3Laevdh.KGsOkXA-
 X-Yahoo-SMTP: Ua.BYCGswBCLcNpMqiQEtkMTjL08M6XQy5ZdmA--
 X-Rocket-Received: from localhost.localdomain (chase.southwood@50.129.102.163 with plain [98.139.211.125])
-        by smtp235.mail.gq1.yahoo.com with SMTP; 06 Mar 2014 07:25:00 +0000 UTC
+        by smtp237.mail.gq1.yahoo.com with SMTP; 06 Mar 2014 07:25:45 +0000 UTC
 From: Chase Southwood <chase.southwood@yahoo.com>
 To: gregkh@linuxfoundation.org
 Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Chase Southwood <chase.southwood@yahoo.com>
-Subject: [PATCH 1/5] Staging: comedi: addi-data: tidy up digital input register map defines in hwdrv_apci1564.c
-Date: Thu,  6 Mar 2014 01:24:51 -0600
-Message-Id: <1394090691-7850-1-git-send-email-chase.southwood@yahoo.com>
+Subject: [PATCH 2/5] Staging: comedi: addi-data: tidy up digital output register map defines in hwdrv_apci1564.c
+Date: Thu,  6 Mar 2014 01:25:40 -0600
+Message-Id: <1394090740-7895-1-git-send-email-chase.southwood@yahoo.com>
 X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1394090691-7850-1-git-send-email-chase.southwood@yahoo.com>
+References: <1394090691-7850-1-git-send-email-chase.southwood@yahoo.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This patch for hwdrv_apci1564.c fixes the register map defines for the
-digital input registers such that they are all the real offsets to each
+digital output registers such that they are all the real offsets to each
 register, rather than a mix of real offsets and adders to those offsets.
 Additionally, the defines have been renamed to assist with shortening
 some lines in excess of 80 characters.
@@ -49,172 +49,126 @@ new ones in this function, their use has been corrected.
 
 Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
 ---
-
-Greg, as promised, this is the most up-to-date patchset for hwdrv_apci1564.c.
-Please disregard any outstanding unapplied patches from me for this file as this
-5 patch set supersedes all previous patchsets I have submitted for this file.
-
-Hartley, I have followed the advice you gave and broke up this patchset
-accordingly.  It'd be great if I could get a review!  This serves as the
-beginning of a much more substantial cleanup of this driver.
-
-Thanks,
-Chase
- .../comedi/drivers/addi-data/hwdrv_apci1564.c      | 78 +++++++++-------------
- 1 file changed, 31 insertions(+), 47 deletions(-)
+ .../comedi/drivers/addi-data/hwdrv_apci1564.c      | 50 +++++++---------------
+ 1 file changed, 16 insertions(+), 34 deletions(-)
 
 diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
-index 2b47fa1..d178a3b 100644
+index d178a3b..d17c37b 100644
 --- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
 +++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
-@@ -47,11 +47,6 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY
+@@ -46,21 +46,10 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ 
  #define APCI1564_ADDRESS_RANGE				128
  
- /* DIGITAL INPUT-OUTPUT DEFINE */
--/* Input defines */
--#define APCI1564_DIGITAL_IP				0x04
--#define APCI1564_DIGITAL_IP_INTERRUPT_MODE1		4
--#define APCI1564_DIGITAL_IP_INTERRUPT_MODE2		8
--#define APCI1564_DIGITAL_IP_IRQ				16
- 
- /* Output defines */
- #define APCI1564_DIGITAL_OP				0x18
-@@ -63,9 +58,6 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY
+-/* DIGITAL INPUT-OUTPUT DEFINE */
+-
+-/* Output defines */
+-#define APCI1564_DIGITAL_OP				0x18
+-#define APCI1564_DIGITAL_OP_RW				0
+-#define APCI1564_DIGITAL_OP_INTERRUPT			4
+-#define APCI1564_DIGITAL_OP_IRQ				12
+-
+ /* Digital Input IRQ Function Selection */
  #define ADDIDATA_OR					0
  #define ADDIDATA_AND					1
  
--/* Digital Input Interrupt Status */
--#define APCI1564_DIGITAL_IP_INTERRUPT_STATUS		12
+-/* Digital Output Interrupt Status */
+-#define APCI1564_DIGITAL_OP_INTERRUPT_STATUS		8
 -
- /* Digital Output Interrupt Status */
- #define APCI1564_DIGITAL_OP_INTERRUPT_STATUS		8
+ /* Digital Input Interrupt Enable Disable. */
+ #define APCI1564_DIGITAL_IP_INTERRUPT_ENABLE		0x4
+ #define APCI1564_DIGITAL_IP_INTERRUPT_DISABLE		0xfffffffb
+@@ -99,6 +88,10 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ #define APCI1564_DI_INT_MODE2_REG		0x0c
+ #define APCI1564_DI_INT_STATUS_REG		0x10
+ #define APCI1564_DI_IRQ_REG				0x14
++#define APCI1564_DO_REG				0x18
++#define APCI1564_DO_INT_CTRL_REG			0x1c
++#define APCI1564_DO_INT_STATUS_REG			0x20
++#define APCI1564_DO_IRQ_REG				0x24
  
-@@ -99,6 +91,15 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY
- #define APCI1564_TCW_WARN_TIMEVAL			24
- #define APCI1564_TCW_WARN_TIMEBASE			28
- 
-+/*
-+ * devpriv->i_IobaseAmcc Register Map
-+ */
-+#define APCI1564_DI_REG				0x04
-+#define APCI1564_DI_INT_MODE1_REG			0x08
-+#define APCI1564_DI_INT_MODE2_REG			0x0c
-+#define APCI1564_DI_INT_STATUS_REG			0x10
-+#define APCI1564_DI_IRQ_REG				0x14
-+
  /* Global variables */
  static unsigned int ui_InterruptStatus_1564;
- static unsigned int ui_InterruptData, ui_Type;
-@@ -143,31 +144,17 @@ static int i_APCI1564_ConfigDigitalInput(struct comedi_device *dev,
- 	if (data[0] == ADDIDATA_ENABLE) {
- 		data[2] = data[2] << 4;
- 		data[3] = data[3] << 4;
--		outl(data[2],
--			devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP +
--			APCI1564_DIGITAL_IP_INTERRUPT_MODE1);
--		outl(data[3],
--			devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP +
--			APCI1564_DIGITAL_IP_INTERRUPT_MODE2);
-+		outl(data[2], devpriv->i_IobaseAmcc + APCI1564_DI_INT_MODE1_REG);
-+		outl(data[3], devpriv->i_IobaseAmcc + APCI1564_DI_INT_MODE2_REG);
- 		if (data[1] == ADDIDATA_OR) {
--			outl(0x4,
--				devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP +
--				APCI1564_DIGITAL_IP_IRQ);
-+			outl(0x4, devpriv->i_IobaseAmcc + APCI1564_DI_IRQ_REG);
- 		} else {
--			outl(0x6,
--				devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP +
--				APCI1564_DIGITAL_IP_IRQ);
-+			outl(0x6, devpriv->i_IobaseAmcc + APCI1564_DI_IRQ_REG);
- 		}
- 	} else {
--		outl(0x0,
--			devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP +
--			APCI1564_DIGITAL_IP_INTERRUPT_MODE1);
--		outl(0x0,
--			devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP +
--			APCI1564_DIGITAL_IP_INTERRUPT_MODE2);
--		outl(0x0,
--			devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP +
--			APCI1564_DIGITAL_IP_IRQ);
-+		outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DI_INT_MODE1_REG);
-+		outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DI_INT_MODE2_REG);
-+		outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DI_IRQ_REG);
- 	}
+@@ -226,12 +219,8 @@ static int i_APCI1564_ConfigDigitalOutput(struct comedi_device *dev,
+ 	else
+ 		ul_Command = ul_Command & 0xFFFFFFFD;
  
- 	return insn->n;
-@@ -180,7 +167,7 @@ static int apci1564_di_insn_bits(struct comedi_device *dev,
- {
- 	struct addi_private *devpriv = dev->private;
- 
--	data[1] = inl(devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP);
-+	data[1] = inl(devpriv->i_IobaseAmcc + APCI1564_DI_REG);
- 
+-	outl(ul_Command,
+-		devpriv->i_IobaseAmcc + APCI1564_DIGITAL_OP +
+-		APCI1564_DIGITAL_OP_INTERRUPT);
+-	ui_InterruptData =
+-		inl(devpriv->i_IobaseAmcc + APCI1564_DIGITAL_OP +
+-		APCI1564_DIGITAL_OP_INTERRUPT);
++	outl(ul_Command, devpriv->i_IobaseAmcc + APCI1564_DO_INT_CTRL_REG);
++	ui_InterruptData = inl(devpriv->i_IobaseAmcc + APCI1564_DO_INT_CTRL_REG);
+ 	devpriv->tsk_Current = current;
  	return insn->n;
  }
-@@ -329,9 +316,7 @@ static int i_APCI1564_ConfigTimerCounterWatchdog(struct comedi_device *dev,
- 		devpriv->b_TimerSelectMode = ADDIDATA_TIMER;
- 		if (data[1] == 1) {
- 			outl(0x02, devpriv->i_IobaseAmcc + APCI1564_TIMER + APCI1564_TCW_PROG);	/* Enable TIMER int & DISABLE ALL THE OTHER int SOURCES */
--			outl(0x0,
--				devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP +
--				APCI1564_DIGITAL_IP_IRQ);
-+			outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DI_IRQ_REG);
- 			outl(0x0,
- 				devpriv->i_IobaseAmcc + APCI1564_DIGITAL_OP +
- 				APCI1564_DIGITAL_OP_IRQ);
-@@ -648,8 +633,7 @@ static void v_APCI1564_Interrupt(int irq, void *d)
- 	unsigned int ui_C1, ui_C2, ui_C3, ui_C4;
- 	unsigned int ul_Command2 = 0;
- 
--	ui_DI = inl(devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP +
--		APCI1564_DIGITAL_IP_IRQ) & 0x01;
-+	ui_DI = inl(devpriv->i_IobaseAmcc + APCI1564_DI_IRQ_REG) & 0x01;
- 	ui_DO = inl(devpriv->i_IobaseAmcc + APCI1564_DIGITAL_OP +
- 		APCI1564_DIGITAL_OP_IRQ) & 0x01;
- 	ui_Timer =
-@@ -669,17 +653,14 @@ static void v_APCI1564_Interrupt(int irq, void *d)
- 	}
- 
- 	if (ui_DI == 1) {
--		ui_DI = inl(devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP +
--			APCI1564_DIGITAL_IP_IRQ);
--		outl(0x0,
--			devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP +
--			APCI1564_DIGITAL_IP_IRQ);
-+		ui_DI = inl(devpriv->i_IobaseAmcc + APCI1564_DI_IRQ_REG);
-+		outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DI_IRQ_REG);
- 		ui_InterruptStatus_1564 =
--			inl(devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP +
--			APCI1564_DIGITAL_IP_INTERRUPT_STATUS);
-+			inl(devpriv->i_IobaseAmcc + APCI1564_DI_INT_STATUS_REG);
- 		ui_InterruptStatus_1564 = ui_InterruptStatus_1564 & 0X000FFFF0;
- 		send_sig(SIGIO, devpriv->tsk_Current, 0);	/*  send signal to the sample */
--		outl(ui_DI, devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP + APCI1564_DIGITAL_IP_IRQ);	/* enable the interrupt */
-+		/* enable the interrupt */
-+		outl(ui_DI, devpriv->i_IobaseAmcc + APCI1564_DI_IRQ_REG);
- 		return;
- 	}
- 
-@@ -829,10 +810,13 @@ static int i_APCI1564_Reset(struct comedi_device *dev)
+@@ -243,12 +232,10 @@ static int apci1564_do_insn_bits(struct comedi_device *dev,
  {
  	struct addi_private *devpriv = dev->private;
  
--	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP_IRQ);	/* disable the interrupts */
--	inl(devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP_INTERRUPT_STATUS);	/* Reset the interrupt status register */
--	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP_INTERRUPT_MODE1);	/* Disable the and/or interrupt */
--	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP_INTERRUPT_MODE2);
-+	/* disable the interrupts */
-+	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DI_IRQ_REG);
-+	/* Reset the interrupt status register */
-+	inl(devpriv->i_IobaseAmcc + APCI1564_DI_INT_STATUS_REG);
-+	/* Disable the and/or interrupt */
-+	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DI_INT_MODE1_REG);
-+	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DI_INT_MODE2_REG);
+-	s->state = inl(devpriv->i_IobaseAmcc + APCI1564_DIGITAL_OP +
+-			APCI1564_DIGITAL_OP_RW);
++	s->state = inl(devpriv->i_IobaseAmcc + APCI1564_DO_REG);
+ 
+ 	if (comedi_dio_update_state(s, data))
+-		outl(s->state, devpriv->i_IobaseAmcc + APCI1564_DIGITAL_OP +
+-			APCI1564_DIGITAL_OP_RW);
++		outl(s->state, devpriv->i_IobaseAmcc + APCI1564_DO_REG);
+ 
+ 	data[1] = s->state;
+ 
+@@ -317,9 +304,7 @@ static int i_APCI1564_ConfigTimerCounterWatchdog(struct comedi_device *dev,
+ 		if (data[1] == 1) {
+ 			outl(0x02, devpriv->i_IobaseAmcc + APCI1564_TIMER + APCI1564_TCW_PROG);	/* Enable TIMER int & DISABLE ALL THE OTHER int SOURCES */
+ 			outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DI_IRQ_REG);
+-			outl(0x0,
+-				devpriv->i_IobaseAmcc + APCI1564_DIGITAL_OP +
+-				APCI1564_DIGITAL_OP_IRQ);
++			outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DO_IRQ_REG);
+ 			outl(0x0,
+ 				devpriv->i_IobaseAmcc +
+ 				APCI1564_DIGITAL_OP_WATCHDOG +
+@@ -634,8 +619,7 @@ static void v_APCI1564_Interrupt(int irq, void *d)
+ 	unsigned int ul_Command2 = 0;
+ 
+ 	ui_DI = inl(devpriv->i_IobaseAmcc + APCI1564_DI_IRQ_REG) & 0x01;
+-	ui_DO = inl(devpriv->i_IobaseAmcc + APCI1564_DIGITAL_OP +
+-		APCI1564_DIGITAL_OP_IRQ) & 0x01;
++	ui_DO = inl(devpriv->i_IobaseAmcc + APCI1564_DO_IRQ_REG) & 0x01;
+ 	ui_Timer =
+ 		inl(devpriv->i_IobaseAmcc + APCI1564_TIMER +
+ 		APCI1564_TCW_IRQ) & 0x01;
+@@ -666,13 +650,9 @@ static void v_APCI1564_Interrupt(int irq, void *d)
+ 
+ 	if (ui_DO == 1) {
+ 		/*  Check for Digital Output interrupt Type - 1: Vcc interrupt 2: CC interrupt. */
+-		ui_Type =
+-			inl(devpriv->i_IobaseAmcc + APCI1564_DIGITAL_OP +
+-			APCI1564_DIGITAL_OP_INTERRUPT_STATUS) & 0x3;
++		ui_Type = inl(devpriv->i_IobaseAmcc + APCI1564_DO_INT_STATUS_REG) & 0x3;
+ 		/* Disable the  Interrupt */
+-		outl(0x0,
+-			devpriv->i_IobaseAmcc + APCI1564_DIGITAL_OP +
+-			APCI1564_DIGITAL_OP_INTERRUPT);
++		outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DO_INT_CTRL_REG);
+ 
+ 		/* Sends signal to user space */
+ 		send_sig(SIGIO, devpriv->tsk_Current, 0);
+@@ -819,8 +799,10 @@ static int i_APCI1564_Reset(struct comedi_device *dev)
+ 	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DI_INT_MODE2_REG);
  	devpriv->b_DigitalOutputRegister = 0;
  	ui_Type = 0;
- 	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DIGITAL_OP);	/* Resets the output channels */
+-	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DIGITAL_OP);	/* Resets the output channels */
+-	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DIGITAL_OP_INTERRUPT);	/* Disables the interrupt. */
++	/* Resets the output channels */
++	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DO_REG);
++	/* Disables the interrupt. */
++	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DO_INT_CTRL_REG);
+ 	outl(0x0,
+ 		devpriv->i_IobaseAmcc + APCI1564_DIGITAL_OP_WATCHDOG +
+ 		APCI1564_TCW_RELOAD_VALUE);
 -- 
 1.8.5.3
 
