@@ -1,59 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758009AbaCFCx6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 21:53:58 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:46371 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757436AbaCFCx5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 21:53:57 -0500
-Message-ID: <5317E33F.5000206@sgi.com>
-Date: Wed, 05 Mar 2014 18:53:51 -0800
-From: Mike Travis <travis@sgi.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1758035AbaCFCzB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 21:55:01 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:52779 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757297AbaCFCy7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 21:54:59 -0500
+Date: Wed, 5 Mar 2014 18:53:58 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Markus Blank-Burian <burian@muenster.de>
+cc: Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Filipe Brandenburger <filbranden@google.com>,
+        Li Zefan <lizefan@huawei.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>,
+        Shawn Bohrer <shawn.bohrer@gmail.com>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 1/2] memcg: reparent charges of children before processing
+ parent
+In-Reply-To: <1645786.OfqIDFbIrl@akheu22.uni-muenster.de>
+Message-ID: <alpine.LSU.2.11.1403051843120.1529@eggly.anvils>
+References: <alpine.LSU.2.11.1402121500070.5029@eggly.anvils> <1645786.OfqIDFbIrl@akheu22.uni-muenster.de>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Hedi Berriche <hedi@sgi.com>,
-        Dimitri Sivanich <sivanich@sgi.com>
-Subject: Re: [PATCH 31/48] uv: Replace __get_cpu_var
-References: <20140214201841.826179349@linux.com> <20140214201907.228035121@linux.com> <20140304150217.ac9d364008a3c95cb2a79b34@linux-foundation.org> <alpine.DEB.2.10.1403042130250.3742@nuc> <20140304200023.7b991909.akpm@linux-foundation.org> <alpine.DEB.2.10.1403051547140.16786@nuc>
-In-Reply-To: <alpine.DEB.2.10.1403051547140.16786@nuc>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 5 Mar 2014, Markus Blank-Burian wrote:
 
-
-On 3/5/2014 1:57 PM, Christoph Lameter wrote:
-> The driver seems to use local64_t to define a single static instance of a
-> counter and then seems to think that it is safe to increment the counter
-> from multiple processors using local64_inc and friends. Common
-> misunderstanding and a reason why I wanted the this_cpu operations.
-> 
-> The counters seem to be exported via module parameters.. So I guess we
-> need to define these per cpu and then sum them up when they need to be
-> displayed.
-> 
-> Dimitri?
-> 
-> Maybe lets move this outside of this patchset.
+> I wanted to give you small feedback, that this patch successfully fixes the 
+> problem with reparent_charges on our cluster. Thank you very much for finding 
+> and fixing this one!
 > 
 
-Hi Christoph,
+That's great to hear, Markus: thanks a lot for letting us know.
+All credit to Filipe, who had the idea of what might be going wrong,
+and the best patch to fix it.
 
-I haven't had much chance yet to look over your proposed changes but
-FYI, the counters are strictly feedback to insure that there are not
-unhandled NMI events from the perf subsystem.  The exact count is
-irrelevant.  IOW, counts in the double or triple digits is okay,
-counts > 100,000 is definitely not okay (there are multiple millions
-of perf events every 'perf top' refresh.)
+Hugh
 
-I'm not sure if this alters how you want to approach the changes.
-
-Thanks,
-Mike
+> 
+> On Wednesday 12 February 2014 15:03:31 Hugh Dickins wrote:
+> > From: Filipe Brandenburger <filbranden@google.com>
+> > 
+> > Sometimes the cleanup after memcg hierarchy testing gets stuck in
+> > mem_cgroup_reparent_charges(), unable to bring non-kmem usage down to 0.
+> > 
+> > There may turn out to be several causes, but a major cause is this: the
+> > workitem to offline parent can get run before workitem to offline child;
+> > parent's mem_cgroup_reparent_charges() circles around waiting for the
+> > child's pages to be reparented to its lrus, but it's holding cgroup_mutex
+> > which prevents the child from reaching its mem_cgroup_reparent_charges().
+> > 
+> > Further testing showed that an ordered workqueue for cgroup_destroy_wq
+> > is not always good enough: percpu_ref_kill_and_confirm's call_rcu_sched
+> > stage on the way can mess up the order before reaching the workqueue.
+> > 
+> > Instead, when offlining a memcg, call mem_cgroup_reparent_charges() on
+> > all its children (and grandchildren, in the correct order) to have their
+> > charges reparented first.
+> > 
+> > Fixes: e5fca243abae ("cgroup: use a dedicated workqueue for cgroup
+> > destruction") Signed-off-by: Filipe Brandenburger <filbranden@google.com>
+> > Signed-off-by: Hugh Dickins <hughd@google.com>
+> > Cc: stable@vger.kernel.org # v3.10+ (but will need extra care)
+> > ---
+> > Or, you may prefer my alternative cgroup.c approach in 2/2:
+> > there's no need for both.  Please note that neither of these patches
+> > attempts to handle the unlikely case of racy charges made to child
+> > after its offline, but parent's offline coming before child's free:
+> > mem_cgroup_css_free()'s backstop call to mem_cgroup_reparent_charges()
+> > cannot help in that case, with or without these patches.  Fixing that
+> > would have to be a separate effort - Michal's?
+> > 
+> >  mm/memcontrol.c |   10 +++++++++-
+> >  1 file changed, 9 insertions(+), 1 deletion(-)
+> > 
+> > --- 3.14-rc2/mm/memcontrol.c	2014-02-02 18:49:07.897302115 -0800
+> > +++ linux/mm/memcontrol.c	2014-02-11 17:48:07.604582963 -0800
+> > @@ -6595,6 +6595,7 @@ static void mem_cgroup_css_offline(struc
+> >  {
+> >  	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
+> >  	struct mem_cgroup_event *event, *tmp;
+> > +	struct cgroup_subsys_state *iter;
+> > 
+> >  	/*
+> >  	 * Unregister events and notify userspace.
+> > @@ -6611,7 +6612,14 @@ static void mem_cgroup_css_offline(struc
+> >  	kmem_cgroup_css_offline(memcg);
+> > 
+> >  	mem_cgroup_invalidate_reclaim_iterators(memcg);
+> > -	mem_cgroup_reparent_charges(memcg);
+> > +
+> > +	/*
+> > +	 * This requires that offlining is serialized.  Right now that is
+> > +	 * guaranteed because css_killed_work_fn() holds the cgroup_mutex.
+> > +	 */
+> > +	css_for_each_descendant_post(iter, css)
+> > +		mem_cgroup_reparent_charges(mem_cgroup_from_css(iter));
+> > +
+> >  	mem_cgroup_destroy_all_caches(memcg);
+> >  	vmpressure_cleanup(&memcg->vmpressure);
+> >  }
