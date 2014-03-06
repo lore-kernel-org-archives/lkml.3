@@ -1,76 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950AbaCFIxC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 03:53:02 -0500
-Received: from mailapp01.imgtec.com ([195.89.28.114]:39964 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003AbaCFIw7 (ORCPT
+	id S1751885AbaCFIx5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 03:53:57 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:44887 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750829AbaCFIxx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 03:52:59 -0500
-X-Greylist: delayed 936 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Mar 2014 03:52:59 EST
-Message-ID: <531833F0.8080300@imgtec.com>
-Date: Thu, 6 Mar 2014 08:38:08 +0000
-From: Markos Chandras <Markos.Chandras@imgtec.com>
+	Thu, 6 Mar 2014 03:53:53 -0500
+Message-ID: <53183771.9070501@ti.com>
+Date: Thu, 6 Mar 2014 14:23:05 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Richard Guy Briggs <rgb@redhat.com>, <linux-audit@redhat.com>,
-        <linux-kernel@vger.kernel.org>
-CC: <eparis@redhat.com>, <sgrubb@redhat.com>, <oleg@redhat.com>,
-        <linux-mips@linux-mips.org>,
-        <user-mode-linux-devel@lists.sourceforge.net>,
-        <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH 1/6][RFC] syscall: define syscall_get_arch() for each
- audit-supported arch
-References: <cover.1393974970.git.rgb@redhat.com> <cb88576237b1bc4fc7981200c2c23ae05790db0d.1393974970.git.rgb@redhat.com>
-In-Reply-To: <cb88576237b1bc4fc7981200c2c23ae05790db0d.1393974970.git.rgb@redhat.com>
+To: Loc Ho <lho@apm.com>, <tj@kernel.org>
+CC: <olof@lixom.net>, <arnd@arndb.de>, <linux-kernel@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>, <linux-ide@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <ddutile@redhat.com>, <jcm@redhat.com>, <patches@apm.com>,
+        Tuan Phan <tphan@apm.com>, Suman Tripathi <stripathi@apm.com>
+Subject: Re: [PATCH v13 2/3] PHY: add APM X-Gene SoC 15Gbps Multi-purpose
+ PHY driver
+References: <1394059399-30671-1-git-send-email-lho@apm.com> <1394059399-30671-2-git-send-email-lho@apm.com> <1394059399-30671-3-git-send-email-lho@apm.com>
+In-Reply-To: <1394059399-30671-3-git-send-email-lho@apm.com>
 Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.47]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Richard,
+Hi,
 
-On 03/05/2014 09:27 PM, Richard Guy Briggs wrote:
-> Each arch that supports audit requires syscall_get_arch() to able to log and
-> identify architecture-dependent syscall numbers.  The information is used in at
-> least two different subsystems, so standardize it in the same call across all
-> arches.
+On Thursday 06 March 2014 04:13 AM, Loc Ho wrote:
+> This patch adds support for the APM X-Gene SoC 15Gbps Multi-purpose PHY.
+> This is the physical layer interface for the corresponding host
+> controller. Currently, only external clock and Gen3 SATA mode
+> are supported.
 >
-> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
->
+> Signed-off-by: Loc Ho <lho@apm.com>
+> Signed-off-by: Tuan Phan <tphan@apm.com>
+> Signed-off-by: Suman Tripathi <stripathi@apm.com>
 > ---
-> diff --git a/arch/mips/include/asm/syscall.h b/arch/mips/include/asm/syscall.h
-> index 81c8913..41ecde4 100644
-> --- a/arch/mips/include/asm/syscall.h
-> +++ b/arch/mips/include/asm/syscall.h
-> @@ -103,7 +103,7 @@ extern const unsigned long sysn32_call_table[];
+>   drivers/phy/Kconfig     |    7 +
+>   drivers/phy/Makefile    |    2 +
+>   drivers/phy/phy-xgene.c | 1756 +++++++++++++++++++++++++++++++++++++++++++++++
+>   3 files changed, 1765 insertions(+), 0 deletions(-)
+>   create mode 100644 drivers/phy/phy-xgene.c
 >
->   static inline int __syscall_get_arch(void)
->   {
-> -	int arch = EM_MIPS;
-> +	int arch = AUDIT_ARCH_MIPS;
->   #ifdef CONFIG_64BIT
->   	arch |=  __AUDIT_ARCH_64BIT;
->   #endif
-> @@ -113,4 +113,10 @@ static inline int __syscall_get_arch(void)
->   	return arch;
->   }
+> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+> index afa2354..221a1b7 100644
+> --- a/drivers/phy/Kconfig
+> +++ b/drivers/phy/Kconfig
+> @@ -64,4 +64,11 @@ config BCM_KONA_USB2_PHY
+>   	help
+>   	  Enable this to support the Broadcom Kona USB 2.0 PHY.
 >
-> +static inline int syscall_get_arch(struct task_struct *task,
-> +				   struct pt_regs *regs)
-> +{
-> +	return __syscall_get_arch();
+> +config PHY_XGENE
+> +	tristate "APM X-Gene 15Gbps PHY support"
+> +	depends on HAS_IOMEM && OF && (ARM64 || COMPILE_TEST)
+> +	select GENERIC_PHY
+> +	help
+> +	  This option enables support for APM X-Gene SoC multi-purpose PHY.
+> +
+>   endmenu
+> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+> index b57c253..dee70f4 100644
+> --- a/drivers/phy/Makefile
+> +++ b/drivers/phy/Makefile
+> @@ -9,3 +9,5 @@ obj-$(CONFIG_PHY_EXYNOS_MIPI_VIDEO)	+= phy-exynos-mipi-video.o
+>   obj-$(CONFIG_PHY_MVEBU_SATA)		+= phy-mvebu-sata.o
+>   obj-$(CONFIG_OMAP_USB2)			+= phy-omap-usb2.o
+>   obj-$(CONFIG_TWL4030_USB)		+= phy-twl4030-usb.o
+> +obj-$(CONFIG_PHY_XGENE)			+= phy-xgene.o
+> +
+.
+.
+<snip>
+.
+.
+
+> +	int i;
+> +
+> +	rc = xgene_phy_hw_initialize(ctx, CLK_EXT_DIFF, SSC_DISABLE);
+> +	if (rc) {
+> +		dev_err(ctx->dev, "PHY initialize failed %d\n", rc);
+> +		return rc;
+> +	}
+> +
+> +	/* Setup clock properly after PHY configuration */
+> +	if (!IS_ERR(ctx->clk)) {
+> +		/* HW requires an toggle of the clock */
+> +		clk_prepare_enable(ctx->clk);
+> +		clk_disable_unprepare(ctx->clk);
+> +		clk_prepare_enable(ctx->clk);
+> +	}
+> +
+> +	/* Compute average value */
+> +	for (i = 0; i < MAX_LANE; i++)
+> +		xgene_phy_gen_avg_val(ctx, i);
+> +
+> +	dev_dbg(ctx->dev, "PHY initialized\n");
+> +	return 0;
 > +}
 > +
->   #endif	/* __ASM_MIPS_SYSCALL_H */
+> +static const struct phy_ops xgene_phy_ops = {
+> +	.init		= xgene_phy_hw_init,
+> +	.owner		= THIS_MODULE,
+> +};
+> +
+> +static struct phy *xgene_phy_xlate(struct device *dev,
+> +				   struct of_phandle_args *args)
+> +{
+> +	struct xgene_phy_ctx *ctx = dev_get_drvdata(dev);
+> +
+> +	if (args->args_count > 0) {
+> +		if (args->args[0] >= MODE_MAX)
+> +			return NULL;
 
-This is already fixed for MIPS
+Are you sure you want to return NULL instead of error? NULL is 
+considered a valid value for optional PHYs.
+> +		ctx->mode = args->args[0];
+> +	}
 
-http://patchwork.linux-mips.org/patch/6398/
+I think it doesn't make sense to return the phy without the 'mode'. So 
+we should report error here too.
 
-The code is in linux-next targeting 3.15 as far as I can tell.
+> +	return ctx->phy;
+> +}
+> +
+> +static void xgene_phy_get_param(struct platform_device *pdev,
+> +				const char *name, u32 *buffer,
+> +				int count, u32 *default_val,
+> +				u32 conv_factor)
+> +{
+> +	int i;
+> +
+> +	if (!of_property_read_u32_array(pdev->dev.of_node, name, buffer,
+> +					count)) {
+> +		for (i = 0; i < count; i++)
+> +			buffer[i] /= conv_factor;
+> +		return;
+> +	}
+> +	/* Does not exist, load default */
+> +	for (i = 0; i < count; i++)
+> +		buffer[i] = default_val[i % 3];
+> +}
+> +
+> +static int xgene_phy_probe(struct platform_device *pdev)
+> +{
+> +	struct phy_provider *phy_provider;
+> +	struct xgene_phy_ctx *ctx;
+> +	struct resource *res;
+> +	int rc = 0;
+> +	u32 default_spd[] = DEFAULT_SATA_SPD_SEL;
+> +	u32 default_txboost_gain[] = DEFAULT_SATA_TXBOOST_GAIN;
+> +	u32 default_txeye_direction[] = DEFAULT_SATA_TXEYEDIRECTION;
+> +	u32 default_txeye_tuning[] = DEFAULT_SATA_TXEYETUNING;
+> +	u32 default_txamp[] = DEFAULT_SATA_TXAMP;
+> +	u32 default_txcn1[] = DEFAULT_SATA_TXCN1;
+> +	u32 default_txcn2[] = DEFAULT_SATA_TXCN2;
+> +	u32 default_txcp1[] = DEFAULT_SATA_TXCP1;
+> +	int i;
+> +
+> +	ctx = devm_kzalloc(&pdev->dev, sizeof(*ctx), GFP_KERNEL);
+> +	if (!ctx) {
+> +		dev_err(&pdev->dev, "can't allocate PHY context\n");
+remove dev_err here.. kzalloc will do that for you..
+> +		return -ENOMEM;
+> +	}
+> +	ctx->dev = &pdev->dev;
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	if (!res) {
+> +		dev_err(&pdev->dev, "no PHY resource address\n");
 
--- 
-markos
+same here.. you don't have to even check for return value of res. 
+ioremap_resource will take care of that.
+> +		rc = -EINVAL;
+> +		goto error;
+> +	}
+> +	ctx->sds_base = devm_ioremap_resource(&pdev->dev, res);
+> +	if (!ctx->sds_base) {
+> +		dev_err(&pdev->dev, "can't map PHY resource\n");
+
+same here..
+
+Thanks
+Kishon
