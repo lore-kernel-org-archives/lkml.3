@@ -1,93 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757330AbaCFDFX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 22:05:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49323 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755769AbaCFDFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 22:05:21 -0500
-Date: Wed, 5 Mar 2014 22:05:11 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: dan.j.williams@intel.com, linux-usb@vger.kernel.org
-Subject: uhci_hcd: DMA-API: cpu touching an active dma mapped cacheline
-Message-ID: <20140306030511.GA19653@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	dan.j.williams@intel.com, linux-usb@vger.kernel.org
+	id S1752960AbaCFDSg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 22:18:36 -0500
+Received: from mail-bl2lp0208.outbound.protection.outlook.com ([207.46.163.208]:34695
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752185AbaCFDSf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 22:18:35 -0500
+From: Jingchang Lu <jingchang.lu@freescale.com>
+To: Shawn Guo <shawn.guo@linaro.org>, Stefan Agner <stefan@agner.ch>
+CC: "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] clocksource: vf_pit_timer: use complement for
+ sched_clock reading
+Thread-Topic: [PATCH] clocksource: vf_pit_timer: use complement for
+ sched_clock reading
+Thread-Index: AQHPON3HUpK7HJWWQ0yawbcrDHe6WprTYsKA
+Date: Thu, 6 Mar 2014 03:18:14 +0000
+Message-ID: <a821b61811ff4861b577ee17ff9f0448@BL2PR03MB467.namprd03.prod.outlook.com>
+References: <d25af915993aec1b486be653eb86f748ddef54fe.1394057313.git.stefan@agner.ch>
+ <20140306014530.GA11366@S2101-09.ap.freescale.net>
+In-Reply-To: <20140306014530.GA11366@S2101-09.ap.freescale.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.49]
+x-forefront-prvs: 0142F22657
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(13464003)(199002)(189002)(377454003)(24454002)(51704005)(77982001)(74876001)(63696002)(54356001)(76576001)(93516002)(56816005)(76482001)(33646001)(53806001)(79102001)(74706001)(46102001)(66066001)(65816001)(59766001)(69226001)(95666003)(86362001)(90146001)(76786001)(51856001)(54316002)(81342001)(81542001)(94946001)(19580395003)(4396001)(87266001)(2656002)(83322001)(19580405001)(74366001)(47976001)(95416001)(49866001)(47736001)(85306002)(83072002)(81686001)(74316001)(85852003)(74502001)(94316002)(80976001)(81816001)(50986001)(93136001)(76796001)(47446002)(80022001)(31966008)(87936001)(92566001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB403;H:BL2PR03MB467.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:7AED5140.AEF3AEEA.E2F93FA3.88D6BA3B.20290;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s263JHDG022339
 
-WARNING: CPU: 3 PID: 25477 at lib/dma-debug.c:593 debug_dma_assert_idle+0x1ba/0x223()
-uhci_hcd 0000:00:1d.2: DMA-API: cpu touching an active dma mapped cacheline [cln=0x0000000002355f80]
-Modules linked in: fuse tun l2tp_ppp l2tp_netlink l2tp_core can_raw can_bcm scsi_transport_iscsi nfc caif_socket caif af_802154 phonet af_rxrpc hidp bluetooth 6lowpan_iphc can pppoe pppox ppp_generic slhc irda crc_ccitt rds rose x25 atm netrom appletalk ipx p8023 p8022 psnap llc ax25 cfg80211 rfkill nouveau video backlight mxm_wmi wmi i2c_algo_bit ttm drm_kms_helper drm tg3 i2c_core ptp pps_core libphy kvm_intel kvm lpc_ich microcode pcspkr mfd_core parport_pc serio_raw parport shpchp rtc_cmos xfs libcrc32c raid0 floppy
-CPU: 3 PID: 25477 Comm: cc Not tainted 3.14.0-rc5+ #2 
-Hardware name: Dell Inc.                 Precision WorkStation 490    /0DT031, BIOS A08 04/25/2008
- 00000000 2e7036e5 00000000 db851dbc c15f76ee db851dfc db851dec c1043733
- c17ce4b0 db851e1c 00006385 c17ccc7a 00000251 c130a152 c130a152 eef3f650
- efb53480 00000000 db851e08 c1043788 00000009 db851dfc c17ce4b0 db851e1c
-Call Trace:
- [<c15f76ee>] dump_stack+0x4b/0x75
- [<c1043733>] warn_slowpath_common+0x7e/0x95
- [<c130a152>] ? debug_dma_assert_idle+0x1ba/0x223
- [<c130a152>] ? debug_dma_assert_idle+0x1ba/0x223
- [<c1043788>] warn_slowpath_fmt+0x3e/0x51
- [<c130a152>] debug_dma_assert_idle+0x1ba/0x223
- [<c1159704>] do_wp_page+0x108/0x8a1
- [<c115b790>] ? handle_mm_fault+0x1ba/0xd54
- [<c15ff7ea>] ? _raw_spin_lock+0x6b/0x72
- [<c115bae2>] handle_mm_fault+0x50c/0xd54
- [<c160357c>] ? __do_page_fault+0xee/0x55c
- [<c16035da>] __do_page_fault+0x14c/0x55c
- [<c16039ea>] ? __do_page_fault+0x55c/0x55c
- [<c16039f7>] do_page_fault+0xd/0xf
- [<c1600dfc>] error_code+0x6c/0x74
-------------[ cut here ]------------
-WARNING: CPU: 3 PID: 25490 at lib/dma-debug.c:593 debug_dma_assert_idle+0x1ba/0x223()
-uhci_hcd 0000:00:1d.2: DMA-API: cpu touching an active dma mapped cacheline [cln=0x0000000002355f80]
----[ end trace 3ac75acf24cf0b9e ]---
-Mapped at:
- [<c13081b5>] debug_dma_alloc_coherent+0x2b/0xc3
-Modules linked in: fuse tun l2tp_ppp l2tp_netlink l2tp_core can_raw can_bcm scsi_transport_iscsi nfc caif_socket caif af_802154 phonet af_rxrpc hidp bluetooth 6lowpan_iphc can pppoe pppox ppp_generic slhc irda crc_ccitt rds rose x25 atm netrom appletalk ipx p8023 p8022 psnap llc ax25 cfg80211 rfkill nouveau video backlight mxm_wmi wmi i2c_algo_bit ttm drm_kms_helper drm tg3 i2c_core ptp pps_core libphy kvm_intel kvm lpc_ich microcode pcspkr mfd_core parport_pc serio_raw parport shpchp rtc_cmos xfs libcrc32c raid0 floppy
- 
-[<c116fcee>] dma_pool_alloc+0x14f/0x2fd
- [<c1456eaa>] uhci_alloc_td.isra.35+0x24/0x60
- [<c1457fa6>] uhci_start+0x272/0x56b
- [<c142d8fb>] usb_add_hcd+0x252/0x774
 
-CPU: 3 PID: 25490 Comm: cc Tainted: G        W    3.14.0-rc5+ #2 
-Hardware name: Dell Inc.                 Precision WorkStation 490    /0DT031, BIOS A08 04/25/2008
- 00000000 bf79585b 00000000 db81bdbc c15f76ee db81bdfc db81bdec c1043733
- c17ce4b0 db81be1c 00006392 c17ccc7a 00000251 c130a152 c130a152 eef3f650
- efb53480 00000000 db81be08 c1043788 00000009 db81bdfc c17ce4b0 db81be1c
-Call Trace:
- [<c15f76ee>] dump_stack+0x4b/0x75
- [<c1043733>] warn_slowpath_common+0x7e/0x95
- [<c130a152>] ? debug_dma_assert_idle+0x1ba/0x223
- [<c130a152>] ? debug_dma_assert_idle+0x1ba/0x223
- [<c1043788>] warn_slowpath_fmt+0x3e/0x51
- [<c130a152>] debug_dma_assert_idle+0x1ba/0x223
- [<c1159704>] do_wp_page+0x108/0x8a1
- [<c115b790>] ? handle_mm_fault+0x1ba/0xd54
- [<c15ff7ea>] ? _raw_spin_lock+0x6b/0x72
- [<c115bae2>] handle_mm_fault+0x50c/0xd54
- [<c160357c>] ? __do_page_fault+0xee/0x55c
- [<c16035da>] __do_page_fault+0x14c/0x55c
- [<c1603683>] ? __do_page_fault+0x1f5/0x55c
- [<c160065b>] ? restore_all+0xf/0xf
- [<c12f0d89>] ? __put_user_4+0x11/0x18
- [<c16039ea>] ? __do_page_fault+0x55c/0x55c
- [<c16039f7>] do_page_fault+0xd/0xf
- [<c1600dfc>] error_code+0x6c/0x74
----[ end trace 3ac75acf24cf0b9f ]---
-Mapped at:
- [<c13081b5>] debug_dma_alloc_coherent+0x2b/0xc3
- [<c116fcee>] dma_pool_alloc+0x14f/0x2fd
- [<c1456eaa>] uhci_alloc_td.isra.35+0x24/0x60
- [<c1457fa6>] uhci_start+0x272/0x56b
- [<c142d8fb>] usb_add_hcd+0x252/0x774
+
+> -----Original Message-----
+> From: Shawn Guo [mailto:shawn.guo@linaro.org]
+> Sent: Thursday, March 06, 2014 9:46 AM
+> To: Stefan Agner
+> Cc: daniel.lezcano@linaro.org; tglx@linutronix.de; linux@arm.linux.org.uk;
+> linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org; Lu
+> Jingchang-B35083
+> Subject: Re: [PATCH] clocksource: vf_pit_timer: use complement for
+> sched_clock reading
+> 
+> On Wed, Mar 05, 2014 at 11:11:08PM +0100, Stefan Agner wrote:
+> > Vybrids PIT register is monitonic decreasing. However, sched_clock
+> > reading needs to be monitonic increasing. Use bitwise not to get the
+> > complement of the clock register. This fixes the clock going backward.
+> > Also, the clock now starts at 0 since we load the register with the
+> > maximum value at start.
+> >
+> > Signed-off-by: Stefan Agner <stefan@agner.ch>
+> 
+> Looks correct to me, so
+> 
+> Acked-by: Shawn Guo <shawn.guo@linaro.org>
+> 
+> But I also copied the driver author Jingchang to see if he has any
+> comment.
+> 
+> Shawn
+> 
+The fix is correct, thanks.
+
+Best Regards,
+Jingchang
+
+> > ---
+> >  drivers/clocksource/vf_pit_timer.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >
+> > diff --git a/drivers/clocksource/vf_pit_timer.c
+> > b/drivers/clocksource/vf_pit_timer.c
+> > index 02821b0..a918bc4 100644
+> > --- a/drivers/clocksource/vf_pit_timer.c
+> > +++ b/drivers/clocksource/vf_pit_timer.c
+> > @@ -54,7 +54,7 @@ static inline void pit_irq_acknowledge(void)
+> >
+> >  static u64 pit_read_sched_clock(void)  {
+> > -	return __raw_readl(clksrc_base + PITCVAL);
+> > +	return ~__raw_readl(clksrc_base + PITCVAL);
+> >  }
+> >
+> >  static int __init pit_clocksource_init(unsigned long rate)
+> > --
+> > 1.9.0
+> >
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
