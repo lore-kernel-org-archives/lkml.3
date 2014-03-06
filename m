@@ -1,174 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855AbaCFPST (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 10:18:19 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:57056 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752594AbaCFPSQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 10:18:16 -0500
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] ARM: mvebu: add Device Tree for the Armada 385 RD board
-Date: Thu,  6 Mar 2014 16:17:55 +0100
-Message-Id: <1394119075-18657-1-git-send-email-gregory.clement@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1752880AbaCFPUf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 10:20:35 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:57878 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752437AbaCFPUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 10:20:33 -0500
+Message-ID: <5318922D.5090508@ti.com>
+Date: Thu, 6 Mar 2014 20:50:13 +0530
+From: Balaji T K <balajitk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Axel Lin <axel.lin@ingics.com>
+CC: Chris Ball <chris@printf.net>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>,
+        Florian Vaussard <florian.vaussard@epfl.ch>, Stefan Roese <sr@denx.de>,
+        <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>
+Subject: Re: [PATCH RFT] regulator: pbias: Convert to use regmap helper functions
+References: <1394111433.21007.2.camel@phoenix>
+In-Reply-To: <1394111433.21007.2.camel@phoenix>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Armada 385 RD board is the reference design board from Marvell
-for the Armada 385 SoC. This commit adds a Device Tree description for
-this board, which enables the following features:
+On Thursday 06 March 2014 06:40 PM, Axel Lin wrote:
+> This patch converts this driver to use the regmap helper functions provided by
+> regulator core.
+>
+> This fixes a few issues in current implementation:
+>
+> 1) In original code, the set voltage does not check max_uV,
+>     which means if request max_uV < 1800000, it will still set the voltage
+>     to 1800000.
+>
+> 2) The is_enable implementation is wrong in some cases:
+>     e.g. for pbias_mmc_omap5: emable_mask is : BIT(27) | BIT(25) | BIT(26)
+>     However, pbias_regulator_enable() only sets BIT(26) | BIT(22) bits.
+>     So is_enable always return false in this case.
+>
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> ---
+> Hi Balaji,
+> I don't have this h/w, so please test if it works.
 
- * Network interfaces
- * I2C bus
- * Serial port
- * SPI bus, with a SPI flash
- * PCIe interface
+Hi Axel,
 
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
----
-Changelog:
-v1 -> v2:
+There were few issues when I tried using regmap helper,
+will check on this.
 
-- used the phy-mode "rgmii-id" to be able to work with the Marvell PHY
-  driver enabled
+Thanks and Regards,
+Balaji T K
 
-- put the ethernet nodes in the address order, as it has no effect to
-  change ti at this level (should be done at dtsi level)
-
-- inverted the phy devices (which was improperly assigned in v1)
-
-- added the vendor prefix for the SPI flash
-
-
- arch/arm/boot/dts/Makefile          |  3 +-
- arch/arm/boot/dts/armada-385-rd.dts | 94 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 96 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm/boot/dts/armada-385-rd.dts
-
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 7407ee8961cf..670897b9e915 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -153,7 +153,8 @@ dtb-$(CONFIG_MACH_ARMADA_370) += \
- dtb-$(CONFIG_MACH_ARMADA_375) += \
- 	armada-375-db.dtb
- dtb-$(CONFIG_MACH_ARMADA_38X) += \
--	armada-385-db.dtb
-+	armada-385-db.dtb \
-+	armada-385-rd.dtb
- dtb-$(CONFIG_MACH_ARMADA_XP) += \
- 	armada-xp-axpwifiap.dtb \
- 	armada-xp-db.dtb \
-diff --git a/arch/arm/boot/dts/armada-385-rd.dts b/arch/arm/boot/dts/armada-385-rd.dts
-new file mode 100644
-index 000000000000..45250c88814b
---- /dev/null
-+++ b/arch/arm/boot/dts/armada-385-rd.dts
-@@ -0,0 +1,94 @@
-+/*
-+ * Device Tree file for Marvell Armada 385 Reference Design board
-+ * (RD-88F6820-AP)
-+ *
-+ *  Copyright (C) 2014 Marvell
-+ *
-+ * Gregory CLEMENT <gregory.clement@free-electrons.com>
-+ * Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+/dts-v1/;
-+#include "armada-385.dtsi"
-+
-+/ {
-+	model = "Marvell Armada 385 Reference Design";
-+	compatible = "marvell,a385-rd", "marvell,armada385", "marvell,armada38x";
-+
-+	chosen {
-+		bootargs = "console=ttyS0,115200 earlyprintk";
-+	};
-+
-+	memory {
-+		device_type = "memory";
-+		reg = <0x00000000 0x10000000>; /* 256 MB */
-+	};
-+
-+	soc {
-+		ranges = <MBUS_ID(0xf0, 0x01) 0 0xf1000000 0x100000
-+			  MBUS_ID(0x01, 0x1d) 0 0xfff00000 0x100000>;
-+
-+		internal-regs {
-+			spi@10600 {
-+				status = "okay";
-+
-+				spi-flash@0 {
-+					#address-cells = <1>;
-+					#size-cells = <1>;
-+					compatible = "st,m25p128";
-+					reg = <0>; /* Chip select 0 */
-+					spi-max-frequency = <108000000>;
-+				};
-+			};
-+
-+			i2c@11000 {
-+				status = "okay";
-+				clock-frequency = <100000>;
-+			};
-+
-+			serial@12000 {
-+				clock-frequency = <200000000>;
-+				status = "okay";
-+			};
-+
-+			ethernet@30000 {
-+				status = "okay";
-+				phy = <&phy0>;
-+				phy-mode = "rgmii-id";
-+			};
-+
-+			ethernet@70000 {
-+				status = "okay";
-+				phy = <&phy1>;
-+				phy-mode = "rgmii-id";
-+			};
-+
-+
-+			mdio {
-+				phy0: ethernet-phy@0 {
-+					reg = <0>;
-+				};
-+
-+				phy1: ethernet-phy@1 {
-+					reg = <1>;
-+				};
-+			};
-+		};
-+
-+		pcie-controller {
-+			status = "okay";
-+			/*
-+			 * One PCIe units is accessible through
-+			 * standard PCIe slot on the board.
-+			 */
-+			pcie@1,0 {
-+				/* Port 0, Lane 0 */
-+				status = "okay";
-+			};
-+		};
-+	};
-+};
--- 
-1.8.1.2
+> Regards,
+> Axel
+>   drivers/regulator/pbias-regulator.c | 86 ++++++++++---------------------------
+>   1 file changed, 23 insertions(+), 63 deletions(-)
+>
+> diff --git a/drivers/regulator/pbias-regulator.c b/drivers/regulator/pbias-regulator.c
+> index ded3b35..f25c91e 100644
+> --- a/drivers/regulator/pbias-regulator.c
+> +++ b/drivers/regulator/pbias-regulator.c
+> @@ -38,85 +38,41 @@ struct pbias_reg_info {
+>   struct pbias_regulator_data {
+>   	struct regulator_desc desc;
+>   	void __iomem *pbias_addr;
+> -	unsigned int pbias_reg;
+>   	struct regulator_dev *dev;
+>   	struct regmap *syscon;
+>   	const struct pbias_reg_info *info;
+>   	int voltage;
+>   };
+>
+> -static int pbias_regulator_set_voltage(struct regulator_dev *dev,
+> -			int min_uV, int max_uV, unsigned *selector)
+> +static int pbias_regulator_list_voltage(struct regulator_dev *rdev,
+> +					unsigned int selector)
+>   {
+> -	struct pbias_regulator_data *data = rdev_get_drvdata(dev);
+> -	const struct pbias_reg_info *info = data->info;
+> -	int ret, vmode;
+> -
+> -	if (min_uV <= 1800000)
+> -		vmode = 0;
+> -	else if (min_uV > 1800000)
+> -		vmode = info->vmode;
+> -
+> -	ret = regmap_update_bits(data->syscon, data->pbias_reg,
+> -						info->vmode, vmode);
+> -
+> -	return ret;
+> -}
+> -
+> -static int pbias_regulator_get_voltage(struct regulator_dev *rdev)
+> -{
+> -	struct pbias_regulator_data *data = rdev_get_drvdata(rdev);
+> -	const struct pbias_reg_info *info = data->info;
+> -	int value, voltage;
+> -
+> -	regmap_read(data->syscon, data->pbias_reg, &value);
+> -	value &= info->vmode;
+> -
+> -	voltage = value ? 3000000 : 1800000;
+> -
+> -	return voltage;
+> +	switch (selector) {
+> +	case 0:
+> +		return 1800000;
+> +	case 1:
+> +		return 3000000;
+> +	default:
+> +		return -EINVAL;
+> +	}
+>   }
+>
+>   static int pbias_regulator_enable(struct regulator_dev *rdev)
+>   {
+>   	struct pbias_regulator_data *data = rdev_get_drvdata(rdev);
+>   	const struct pbias_reg_info *info = data->info;
+> -	int ret;
+> -
+> -	ret = regmap_update_bits(data->syscon, data->pbias_reg,
+> -					info->enable_mask, info->enable);
+> -
+> -	return ret;
+> -}
+> -
+> -static int pbias_regulator_disable(struct regulator_dev *rdev)
+> -{
+> -	struct pbias_regulator_data *data = rdev_get_drvdata(rdev);
+> -	const struct pbias_reg_info *info = data->info;
+> -	int ret;
+> -
+> -	ret = regmap_update_bits(data->syscon, data->pbias_reg,
+> -						info->enable_mask, 0);
+> -	return ret;
+> -}
+> -
+> -static int pbias_regulator_is_enable(struct regulator_dev *rdev)
+> -{
+> -	struct pbias_regulator_data *data = rdev_get_drvdata(rdev);
+> -	const struct pbias_reg_info *info = data->info;
+> -	int value;
+> -
+> -	regmap_read(data->syscon, data->pbias_reg, &value);
+>
+> -	return (value & info->enable_mask) == info->enable_mask;
+> +	return regmap_update_bits(data->syscon, rdev->desc->enable_reg,
+> +				  info->enable_mask, info->enable);
+>   }
+>
+>   static struct regulator_ops pbias_regulator_voltage_ops = {
+> -	.set_voltage	= pbias_regulator_set_voltage,
+> -	.get_voltage	= pbias_regulator_get_voltage,
+> -	.enable		= pbias_regulator_enable,
+> -	.disable	= pbias_regulator_disable,
+> -	.is_enabled	= pbias_regulator_is_enable,
+> +	.list_voltage = pbias_regulator_list_voltage,
+> +	.get_voltage_sel = regulator_get_voltage_sel_regmap,
+> +	.set_voltage_sel = regulator_set_voltage_sel_regmap,
+> +	.enable = pbias_regulator_enable,
+> +	.disable = regulator_disable_regmap,
+> +	.is_enabled = regulator_is_enabled_regmap,
+>   };
+>
+>   static const struct pbias_reg_info pbias_mmc_omap2430 = {
+> @@ -192,6 +148,7 @@ static int pbias_regulator_probe(struct platform_device *pdev)
+>   	if (IS_ERR(syscon))
+>   		return PTR_ERR(syscon);
+>
+> +	cfg.regmap = syscon;
+>   	cfg.dev = &pdev->dev;
+>
+>   	for (idx = 0; idx < PBIAS_NUM_REGS && data_idx < count; idx++) {
+> @@ -207,7 +164,6 @@ static int pbias_regulator_probe(struct platform_device *pdev)
+>   		if (!res)
+>   			return -EINVAL;
+>
+> -		drvdata[data_idx].pbias_reg = res->start;
+>   		drvdata[data_idx].syscon = syscon;
+>   		drvdata[data_idx].info = info;
+>   		drvdata[data_idx].desc.name = info->name;
+> @@ -216,6 +172,10 @@ static int pbias_regulator_probe(struct platform_device *pdev)
+>   		drvdata[data_idx].desc.ops = &pbias_regulator_voltage_ops;
+>   		drvdata[data_idx].desc.n_voltages = 2;
+>   		drvdata[data_idx].desc.enable_time = info->enable_time;
+> +		drvdata[data_idx].desc.vsel_reg = res->start;
+> +		drvdata[data_idx].desc.vsel_mask = info->vmode;
+> +		drvdata[data_idx].desc.enable_reg = res->start;
+> +		drvdata[data_idx].desc.enable_mask = info->enable_mask;
+>
+>   		cfg.init_data = pbias_matches[idx].init_data;
+>   		cfg.driver_data = &drvdata[data_idx];
+>
 
