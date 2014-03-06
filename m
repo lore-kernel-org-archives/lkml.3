@@ -1,41 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753150AbaCFJZZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 04:25:25 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:19780 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751650AbaCFJZW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 04:25:22 -0500
-Date: Thu, 6 Mar 2014 12:24:46 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Fred Akers <knivey@botops.net>
-Cc: greg@kroah.com, abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] Staging: comedi: range: remove unnecessary sanity
- check
-Message-ID: <20140306092446.GF26722@mwanda>
-References: <20140306062333.GA19862@kroah.com>
- <1394089039-12408-2-git-send-email-knivey@botops.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394089039-12408-2-git-send-email-knivey@botops.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	id S1753173AbaCFJZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 04:25:57 -0500
+Received: from sauhun.de ([89.238.76.85]:54994 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751975AbaCFJTc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 04:19:32 -0500
+From: Wolfram Sang <wsa@the-dreams.de>
+To: linux-i2c@vger.kernel.org
+Cc: Wolfram Sang <wsa@the-dreams.de>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH] i2c: mv64xxx: fix circular Kconfig dependency
+Date: Thu,  6 Mar 2014 10:19:13 +0100
+Message-Id: <1394097553-5804-1-git-send-email-wsa@the-dreams.de>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140306135016.2f026cd81b41cd2474c99124@canb.auug.org.au>
+References: <20140306135016.2f026cd81b41cd2474c99124@canb.auug.org.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 06, 2014 at 01:57:19AM -0500, Fred Akers wrote:
-> This check is unnecessary because range_table will always be
-> initialized to range_unknown by comedi_device_postconfig() for
-> drivers that do not initialize range_table or range_table_list
-> 
-> Signed-off-by: Fred Akers <knivey@botops.net>
+Commit 370136bc67c3 ("i2c: mv64xxx: Add reset deassert call")
+introduced:
 
-Just merge these two into one patch.
+drivers/video/Kconfig:42:error: recursive dependency detected!
 
-regards,
-dan carpenter
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+---
+ drivers/i2c/busses/Kconfig | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+index 70bcad9..ce0de47 100644
+--- a/drivers/i2c/busses/Kconfig
++++ b/drivers/i2c/busses/Kconfig
+@@ -527,8 +527,7 @@ config I2C_MPC
+ 
+ config I2C_MV64XXX
+ 	tristate "Marvell mv64xxx I2C Controller"
+-	depends on (MV64X60 || PLAT_ORION || ARCH_SUNXI)
+-	select RESET_CONTROLLER
++	depends on MV64X60 || PLAT_ORION || (ARCH_SUNXI && RESET_CONTROLLER)
+ 	help
+ 	  If you say yes to this option, support will be included for the
+ 	  built-in I2C interface on the Marvell 64xxx line of host bridges.
+-- 
+1.9.0
 
