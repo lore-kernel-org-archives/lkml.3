@@ -1,67 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808AbaCFKiA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 05:38:00 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44139 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752716AbaCFKh5 (ORCPT
+	id S1752229AbaCFKkN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 05:40:13 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:34840 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751169AbaCFKkK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 05:37:57 -0500
-Date: Thu, 6 Mar 2014 02:37:32 -0800
-From: tip-bot for Finn Thain <tipbot@zytor.com>
-Message-ID: <tip-e571c58f313d35c56e0018470e3375ddd1fd320e@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        geert@linux-m68k.org, fthain@telegraphics.com.au, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        geert@linux-m68k.org, fthain@telegraphics.com.au, tglx@linutronix.de
-In-Reply-To: <alpine.LNX.2.00.1403061006440.5525@nippy.intranet>
-References: <alpine.LNX.2.00.1403061006440.5525@nippy.intranet>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] m68k: Skip futex_atomic_cmpxchg_inatomic()
-  test
-Git-Commit-ID: e571c58f313d35c56e0018470e3375ddd1fd320e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Thu, 6 Mar 2014 05:40:10 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-94-5318508844cb
+Message-id: <1394102406.25853.4.camel@AMDC1943>
+Subject: Re: [PATCH v3 Resend 2/3] regulator: Add support for S2MPA01 regulator
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, lee.jones@linaro.org
+Date: Thu, 06 Mar 2014 11:40:06 +0100
+In-reply-to: <1394100057-32677-2-git-send-email-sachin.kamat@linaro.org>
+References: <1394100057-32677-1-git-send-email-sachin.kamat@linaro.org>
+ <1394100057-32677-2-git-send-email-sachin.kamat@linaro.org>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.2.3-0ubuntu6
+Content-transfer-encoding: 7bit
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBLMWRmVeSWpSXmKPExsVy+t/xq7odARLBBv37uSzufz3KaHF51xw2
+	i5N/ehkdmD3uXNvD5vF5k1wAUxSXTUpqTmZZapG+XQJXxomWH6wFjVIVS6+uZGxgvCHaxcjB
+	ISFgInHwenwXIyeQKSZx4d56ti5GLg4hgaWMEju+P2CEcD4zSly40MwE0sAroC/x4nwyiCks
+	4C/RuK8QpJdNwFhi8/IlbCC2iICWxMvu5UwgNrOAmcT75gYWkHIWAVWJlp5akDCngIfEnjsv
+	WCCmtzJKNM/7zghRry4xad4iZoh7lCR2t3eyQ8TlJTaveQsW5xUQlPgx+R7LBEaBWUhaZiEp
+	m4WkbAEj8ypG0dTS5ILipPRcI73ixNzi0rx0veT83E2MkND8uoNx6TGrQ4wCHIxKPLwb/MSD
+	hVgTy4orcw8xSnAwK4nwbjGUCBbiTUmsrEotyo8vKs1JLT7EyMTBKdXAWL5J+Haa8/cLVbMd
+	7c49Ol71Q43z+um1k4Sm3ugw3KwbrXxCjeXsbhGbvVMLuwVlw+NniRb8MVz27rtOxrGFcx97
+	VXecFtC6ue/R05dXU3zTF6ULW6yedl3w1uHTv8oUQyW2RLup2tV4aiaWc2yoXWaSMbtz+dct
+	SjHFpVMUfb2OP3XMuKgersRSnJFoqMVcVJwIAMBFvMUrAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e571c58f313d35c56e0018470e3375ddd1fd320e
-Gitweb:     http://git.kernel.org/tip/e571c58f313d35c56e0018470e3375ddd1fd320e
-Author:     Finn Thain <fthain@telegraphics.com.au>
-AuthorDate: Thu, 6 Mar 2014 10:29:27 +1100
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Thu, 6 Mar 2014 11:35:17 +0100
+On Thu, 2014-03-06 at 15:30 +0530, Sachin Kamat wrote:
+> Add support for S2MPA01 voltage and current regulator.
+> 
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> Acked-by: Mark Brown <broonie@linaro.org>
+> ---
+>  drivers/regulator/Kconfig   |    7 +
+>  drivers/regulator/Makefile  |    1 +
+>  drivers/regulator/s2mpa01.c |  483 +++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 491 insertions(+)
+>  create mode 100644 drivers/regulator/s2mpa01.c
+> 
+> diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+> index 4ddfb6c065c7..5b08ea927870 100644
+> --- a/drivers/regulator/Kconfig
+> +++ b/drivers/regulator/Kconfig
+> @@ -425,6 +425,13 @@ config REGULATOR_RC5T583
+>  	  through regulator interface. The device supports multiple DCDC/LDO
+>  	  outputs which can be controlled by i2c communication.
+>  
+> +config REGULATOR_S2MPA01
+> +	tristate "Samsung S2MPA01 voltage regulator"
+> +	depends on MFD_SEC_CORE
+> +	help
+> +	 This driver controls Samsung S2MPA01 voltage output regulator
+> +	 via I2C bus. S2MPA01 has 10 Bucks and 26 LDO outputs.
+> +
+>  config REGULATOR_S2MPS11
+>  	tristate "Samsung S2MPS11 voltage regulator"
+>  	depends on MFD_SEC_CORE
+> diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+> index c624dbcdcc76..2d14f7580304 100644
+> --- a/drivers/regulator/Makefile
+> +++ b/drivers/regulator/Makefile
+> @@ -58,6 +58,7 @@ obj-$(CONFIG_REGULATOR_PBIAS) += pbias-regulator.o
+>  obj-$(CONFIG_REGULATOR_PCAP) += pcap-regulator.o
+>  obj-$(CONFIG_REGULATOR_PCF50633) += pcf50633-regulator.o
+>  obj-$(CONFIG_REGULATOR_RC5T583)  += rc5t583-regulator.o
+> +obj-$(CONFIG_REGULATOR_S2MPA01) += s2mpa01.o
+>  obj-$(CONFIG_REGULATOR_S2MPS11) += s2mps11.o
+>  obj-$(CONFIG_REGULATOR_S5M8767) += s5m8767.o
+>  obj-$(CONFIG_REGULATOR_STW481X_VMMC) += stw481x-vmmc.o
+> diff --git a/drivers/regulator/s2mpa01.c b/drivers/regulator/s2mpa01.c
+> new file mode 100644
+> index 000000000000..6ac6e8205a05
+> --- /dev/null
+> +++ b/drivers/regulator/s2mpa01.c
+> @@ -0,0 +1,483 @@
+> +/*
+> + * Copyright (c) 2013 Samsung Electronics Co., Ltd
+> + *		http://www.samsung.com
+> + *
+> + *  This program is free software; you can redistribute  it and/or modify it
+> + *  under  the terms of  the GNU General  Public License as published by the
+> + *  Free Software Foundation;  either version 2 of the  License, or (at your
+> + *  option) any later version.
+> + *
+> + */
+> +
+> +#include <linux/bug.h>
+> +#include <linux/err.h>
+> +#include <linux/gpio.h>
+> +#include <linux/slab.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/regmap.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/regulator/driver.h>
+> +#include <linux/regulator/machine.h>
+> +#include <linux/regulator/of_regulator.h>
+> +#include <linux/mfd/samsung/core.h>
+> +#include <linux/mfd/samsung/s2mpa01.h>
+> +
+> +#define S2MPA01_REGULATOR_CNT ARRAY_SIZE(regulators)
+> +
+> +struct s2mpa01_info {
+> +	struct regulator_dev *rdev[S2MPA01_REGULATOR_MAX];
 
-m68k: Skip futex_atomic_cmpxchg_inatomic() test
+Hi,
 
-Skip the futex_atomic_cmpxchg_inatomic() test in futex_init(). It causes a 
-fatal exception on 68030 (and presumably 68020 also).
+It seems that s2mpa01_info->rdev is not used anywhere, except as return
+value of devm_regulator_register. I think you can remove it completely.
 
-Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Link: http://lkml.kernel.org/r/alpine.LNX.2.00.1403061006440.5525@nippy.intranet
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Beside that, can this driver be merged into existing s2mps11 regulator
+driver?
 
----
- arch/m68k/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
+Best regards,
+Krzysztof
 
-diff --git a/arch/m68k/Kconfig b/arch/m68k/Kconfig
-index dbdd223..b2e3229 100644
---- a/arch/m68k/Kconfig
-+++ b/arch/m68k/Kconfig
-@@ -17,6 +17,7 @@ config M68K
- 	select FPU if MMU
- 	select ARCH_WANT_IPC_PARSE_VERSION
- 	select ARCH_USES_GETTIMEOFFSET if MMU && !COLDFIRE
-+	select HAVE_FUTEX_CMPXCHG if MMU && FUTEX
- 	select HAVE_MOD_ARCH_SPECIFIC
- 	select MODULES_USE_ELF_REL
- 	select MODULES_USE_ELF_RELA
+
+
