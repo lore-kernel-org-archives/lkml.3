@@ -1,146 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829AbaCFOxX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 09:53:23 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:57049 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752238AbaCFOxW (ORCPT
+	id S1752068AbaCFPEN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 10:04:13 -0500
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:53779 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751910AbaCFPD6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 09:53:22 -0500
-Date: Thu, 6 Mar 2014 15:53:00 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, mingo@kernel.org, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@ghostprotocols.net,
-        seiji.aguchi@hds.com, jolsa@redhat.com, vincent.weaver@maine.edu,
-        tglx@linutronix.de, hpa@linux.intel.com,
-        linux-tip-commits@vger.kernel.org
-Subject: [PATCH] x86: Further robustify CR2 handling vs tracing
-Message-ID: <20140306145300.GO9987@twins.programming.kicks-ass.net>
-References: <tip-0ac09f9f8cd1fb028a48330edba6023d347d3cea@git.kernel.org>
- <20140305111415.GU9987@twins.programming.kicks-ass.net>
- <20140305072022.6f69f699@gandalf.local.home>
- <20140305122535.GA9987@twins.programming.kicks-ass.net>
- <20140305123635.GP3104@twins.programming.kicks-ass.net>
- <20140305080018.4be698f7@gandalf.local.home>
- <20140305130849.GC9987@twins.programming.kicks-ass.net>
- <53179915.40408@zytor.com>
- <20140306084050.GE9987@twins.programming.kicks-ass.net>
- <20140306060215.2a78efc2@gandalf.local.home>
+	Thu, 6 Mar 2014 10:03:58 -0500
+Message-ID: <53188E50.70808@gmail.com>
+Date: Thu, 06 Mar 2014 16:03:44 +0100
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140306060215.2a78efc2@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: mtk.manpages@gmail.com, lkml <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <miklos@szeredi.hu>, "Theodore T'so" <tytso@mit.edu>,
+        Christoph Hellwig <hch@lst.de>, Chris Mason <clm@fb.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "J. Bruce Fields" <bfields@citi.umich.edu>,
+        Yongzhi Pan <panyongzhi@gmail.com>
+Subject: Re: Update of file offset on write() etc. is non-atomic with I/O
+References: <53022DB1.4070805@gmail.com>	<CA+55aFxjAp23=ySEe8e8bTPbVw8Uh8d03zirg4TdHXGYiyjmwA@mail.gmail.com> <CA+55aFy4GvpFcboBiKdreU_Zh1RzynPoLxhvC9hijn60hkEZ3g@mail.gmail.com>
+In-Reply-To: <CA+55aFy4GvpFcboBiKdreU_Zh1RzynPoLxhvC9hijn60hkEZ3g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: x86: Further robustify CR2 handling vs tracing
-From: Peter Zijlstra <peterz@infradead.org>
-Date: Wed, 5 Mar 2014 14:07:49 +0100
+On 03/03/2014 06:36 PM, Linus Torvalds wrote:
+> Ok, sorry for the long delay, I was distracted (and hoping that Al
+> would come up with a patch).
+> 
+> Anyway, attached is the patch I think we should do for this issue. It
+> is fairly simple:
+> 
+>  - it adds a "f_pos_mutex" to the "struct file".
+> 
+>  - it adds a new FMODE_ATOMIC_POS flag to the file mode flags to mark
+> things that need atomic f_pos updates
+> 
+>  - it makes the "struct fd" flags be two flags rather than one: the
+> second flag is for "unlock f_pos_mutex when done"
+> 
+>  - it introduces "fd[get,put]_pos()" which gets the f_pos_mutex when required
+> 
+>  - it makes read/write/lseek use that.
+> 
+> It's pretty damn straightforward, I think, and is minimally serializing.
+> 
+> Al, comments? Yongzhi Pan, this is pretty much untested, but it's
+> pretty simple and it does fix your test-case.
 
-Building on commit 0ac09f9f8cd1 ("x86, trace: Fix CR2 corruption when
-tracing page faults") this patch addresses another few issues:
+The original code (where Yongzhi Pan reported an issue) and
+the multi_writer.c test code where both mine actually. Anyway,
+I applied the patch to 3.14-rc5, and I (not withstanding the other
+points raised by Al about the patch) I confirm that this patch makes 
+the  problem that I'm seeing go away.
 
- - Now that read_cr2() is lifted into trace_do_page_fault(), we should
-   pass the address to trace_page_fault_entries() to avoid it
-   re-reading a potentially changed cr2.
+Thanks for looking at this, Linus.
 
- - Put both trace_do_page_fault() and trace_page_fault_entries() under
-   CONFIG_TRACING.
+Cheers,
 
- - Mark both fault entry functions {,trace_}do_page_fault() as notrace
-   to avoid getting __mcount or other function entry trace callbacks
-   before we've observed CR2.
+Michael
 
- - Mark __do_page_fault() as noinline to guarantee the function tracer
-   does get to see the fault.
-
-Cc: jolsa@redhat.com
-Cc: vincent.weaver@maine.edu
-Cc: tglx@linutronix.de
-Cc: hpa@linux.intel.com
-Cc: mingo@kernel.org
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
----
- arch/x86/mm/fault.c |   33 +++++++++++++++++++++++----------
- 1 file changed, 23 insertions(+), 10 deletions(-)
-
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -1020,8 +1020,12 @@ static inline bool smap_violation(int er
-  * This routine handles page faults.  It determines the address,
-  * and the problem, and then passes it off to one of the appropriate
-  * routines.
-+ *
-+ * This function must have noinline because both callers
-+ * {,trace_}do_page_fault() have notrace on. Having this an actual function
-+ * guarantees there's a function trace entry.
-  */
--static void __kprobes
-+static void __kprobes noinline
- __do_page_fault(struct pt_regs *regs, unsigned long error_code,
- 		unsigned long address)
- {
-@@ -1245,31 +1249,38 @@ __do_page_fault(struct pt_regs *regs, un
- 	up_read(&mm->mmap_sem);
- }
- 
--dotraplinkage void __kprobes
-+dotraplinkage void __kprobes notrace
- do_page_fault(struct pt_regs *regs, unsigned long error_code)
- {
-+	unsigned long address = read_cr2(); /* Get the faulting address */
- 	enum ctx_state prev_state;
--	/* Get the faulting address: */
--	unsigned long address = read_cr2();
-+
-+	/*
-+	 * We must have this function tagged with __kprobes, notrace and call
-+	 * read_cr2() before calling anything else. To avoid calling any kind
-+	 * of tracing machinery before we've observed the CR2 value.
-+	 *
-+	 * exception_{enter,exit}() contain all sorts of tracepoints.
-+	 */
- 
- 	prev_state = exception_enter();
- 	__do_page_fault(regs, error_code, address);
- 	exception_exit(prev_state);
- }
- 
--static void trace_page_fault_entries(struct pt_regs *regs,
-+#ifdef CONFIG_TRACING
-+static void trace_page_fault_entries(unsigned long address, struct pt_regs *regs,
- 				     unsigned long error_code)
- {
- 	if (user_mode(regs))
--		trace_page_fault_user(read_cr2(), regs, error_code);
-+		trace_page_fault_user(address, regs, error_code);
- 	else
--		trace_page_fault_kernel(read_cr2(), regs, error_code);
-+		trace_page_fault_kernel(address, regs, error_code);
- }
- 
--dotraplinkage void __kprobes
-+dotraplinkage void __kprobes notrace
- trace_do_page_fault(struct pt_regs *regs, unsigned long error_code)
- {
--	enum ctx_state prev_state;
- 	/*
- 	 * The exception_enter and tracepoint processing could
- 	 * trigger another page faults (user space callchain
-@@ -1277,9 +1288,11 @@ trace_do_page_fault(struct pt_regs *regs
- 	 * the faulting address now.
- 	 */
- 	unsigned long address = read_cr2();
-+	enum ctx_state prev_state;
- 
- 	prev_state = exception_enter();
--	trace_page_fault_entries(regs, error_code);
-+	trace_page_fault_entries(address, regs, error_code);
- 	__do_page_fault(regs, error_code, address);
- 	exception_exit(prev_state);
- }
-+#endif /* CONFIG_TRACING */
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
