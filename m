@@ -1,58 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757589AbaCFCKa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 21:10:30 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:50388 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755512AbaCFCK3 (ORCPT
+	id S1757659AbaCFCNN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 21:13:13 -0500
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:30788
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755769AbaCFCNK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 21:10:29 -0500
-Message-ID: <5317D90B.3020606@linaro.org>
-Date: Thu, 06 Mar 2014 11:10:19 +0900
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 5 Mar 2014 21:13:10 -0500
+X-Forefront-Antispam-Report: CIP:165.204.84.222;KIP:(null);UIP:(null);IPV:NLI;H:atltwp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(z579ehzbb2dI98dI9371I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h1155h)
+X-WSS-ID: 0N1ZSTS-08-22L-02
+X-M-MSG: 
+Message-ID: <5317D9B0.1080502@amd.com>
+Date: Wed, 5 Mar 2014 20:13:04 -0600
+From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        "eparis@redhat.com" <eparis@redhat.com>,
-        "rgb@redhat.com" <rgb@redhat.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "arndb@arndb.de" <arndb@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-audit@redhat.com" <linux-audit@redhat.com>
-Subject: Re: [PATCH v6 2/2] arm64: audit: Add audit hook in ptrace/syscall_trace
-References: <1393319934-2810-1-git-send-email-takahiro.akashi@linaro.org> <1393564635-3921-1-git-send-email-takahiro.akashi@linaro.org> <1393564635-3921-3-git-send-email-takahiro.akashi@linaro.org> <20140228161558.GE29546@mudshark.cambridge.arm.com>
-In-Reply-To: <20140228161558.GE29546@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>,
+        <kim.naru@amd.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH 0/3] amd/pci: Add AMD hostbridge supports for newer AMD
+ systems
+References: <1394053603-3724-1-git-send-email-suravee.suthikulpanit@amd.com> <CAErSpo4MMJh9b0aivwGSbxCMVw24He1+Vo_LH0R0E+fYM5aThg@mail.gmail.com>
+In-Reply-To: <CAErSpo4MMJh9b0aivwGSbxCMVw24He1+Vo_LH0R0E+fYM5aThg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: amd.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/01/2014 01:15 AM, Will Deacon wrote:
-> On Fri, Feb 28, 2014 at 05:17:15AM +0000, AKASHI Takahiro wrote:
->> This patch adds auditing functions on entry to or exit from
->> every system call invocation.
+On 3/5/2014 3:24 PM, Bjorn Helgaas wrote:
+> [+cc linux-acpi]
+>
+> On Wed, Mar 5, 2014 at 2:06 PM,  <suravee.suthikulpanit@amd.com> wrote:
+>> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
 >>
->> Acked-by: Richard Guy Briggs <rgb@redhat.com>
->> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
->> ---
->>   arch/arm64/kernel/ptrace.c |   54 ++++++++++++++++++++++++++------------------
->>   1 file changed, 32 insertions(+), 22 deletions(-)
+>> The current code only supports upto AMD hostbridge for family11h.
+>> This causes PCI numa_node information to be reported incorrectly
+>> for newer family with multi sockets.
 >
-> I think you need to do something like I did for arch/arm/, where we have
-> separate trace functions for entry/exit  to make sure that we invoke the
-> various helpers in the correct order (for example, you want to invoke all
-> the debug stuff *first* on entry, but *last* on exit).
+> Where is the incorrect reporting?  In ACPI tables?  Is this patch a
+> way to cover up firmware defects in the ACPI description?  Or is this
+> for machines without ACPI (it seems unlikely that machines with new
+> AMD processors would not have ACPI)?
+
+This is incorrectly reported in the sysfs for each PCI device (e.g. 
+/devices/pci0000:50/0000:50:00.2/numa_node). Without the patch, they 
+return -1.
+
+In file arch/x86/pci/acpi.c, in function pci_acpi_scan_root(), it is 
+queries the node information as following:
+
+#ifdef CONFIG_ACPI_NUMA
+	pxm = acpi_get_pxm(device->handle);
+	if (pxm >= 0)
+		node = pxm_to_node(pxm);
+	if (node != -1)
+		set_mp_bus_to_node(busnum, node);
+	else
+#endif
+		node = get_mp_bus_to_node(busnum);
+
+In this case, I see that the acpi_get_pxm() returns -1.  Therefore, it 
+falls back to using the node information in mp_bus_to_node[].  So, 
+without this patch, it would also returning -1.
+
+Also, the spec mentioned that the _PXM is optional, so I am not sure if 
+this is a firmware bug.
+
+Suravee
+
 >
-> Will
+> The whole point of ACPI is that we shouldn't need to update the kernel
+> for new hardware, so if there's a firmware bug, it should be fixed, or
+> if the ACPI spec isn't powerful enough, it should be extended.
+>
+>> This patch set introduces the logic to discover AMD hostbridges.
+>>
+>> Note:
+>>      * Patch 1 and 2 are functional changes.
+>>      * Patch 3 is code clean up/restructuring
+>>
+>> Suravee Suthikulpanit (3):
+>>    amd/pci: Add supports for generic AMD hostbridges
+>>    amd/pci: Support additional MMIO ranges capabilities
+>>    amd/pci: Miscellaneous code clean up for early_fillup_mp_bus_info
+>>
+>>   arch/x86/pci/amd_bus.c |  376 ++++++++++++++++++++++++++++++++----------------
+>>   1 file changed, 251 insertions(+), 125 deletions(-)
+>>
+>> --
+>> 1.7.10.4
+>>
+>>
 >
 
-If you mean syscall_trace_enter()/exit(), I will follow your suggestion
-for readability.
 
--Takahiro AKASHI
