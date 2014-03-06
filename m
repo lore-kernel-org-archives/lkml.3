@@ -1,93 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751015AbaCFFoM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 00:44:12 -0500
-Received: from gate.crashing.org ([63.228.1.57]:36791 "EHLO gate.crashing.org"
+	id S1751084AbaCFFw7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 00:52:59 -0500
+Received: from mga01.intel.com ([192.55.52.88]:27649 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750829AbaCFFoL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 00:44:11 -0500
-Message-ID: <1394084634.26321.23.camel@pasglop>
-Subject: Re: [PATCH] powerpc/le: fix endianness of the arguments passed to
- the ppc_rtas() syscall
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Greg Kurz <gkurz@linux.vnet.ibm.com>
-Cc: paulus@samba.org, linuxppc-dev@lists.ozlabs.org, anton@samba.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 06 Mar 2014 16:43:54 +1100
-In-Reply-To: <20140305172006.26117.57219.stgit@bahia.local>
-References: <20140305172006.26117.57219.stgit@bahia.local>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.11.90 
-Mime-Version: 1.0
+	id S1750885AbaCFFw6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 00:52:58 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,598,1389772800"; 
+   d="scan'208";a="493272965"
+Message-ID: <53180D39.7050207@linux.intel.com>
+Date: Wed, 05 Mar 2014 21:52:57 -0800
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: "Li, Aubrey" <aubrey.li@linux.intel.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, mingo@redhat.com,
+        tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        "alan@linux.intel.com" <alan@linux.intel.com>
+Subject: Re: [PATCH] x86: new Intel Atom SoC power management controller driver
+References: <5317EC0C.4010807@linux.intel.com> <5317F044.8080407@linux.intel.com> <531805D4.6040806@linux.intel.com> <5318076C.7080605@linux.intel.com> <531808BD.4070000@linux.intel.com>
+In-Reply-To: <531808BD.4070000@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-03-05 at 18:20 +0100, Greg Kurz wrote:
-> RTAS manipulates its input and output arguments in big endian order.
+On 03/05/2014 09:33 PM, Li, Aubrey wrote:
 > 
-> I have looked at factoring some lines with rtas_call() but it is not really
-> worth it because of the variable arguments.
-
-I'm not sure about that one ...
-
-So this assumes that userspace will pass the RTAS arguments LE...
-
-This will work only as long as the arguments are indeed just an array
-of u32's. The minute userspace tries to crap something like two u16's
-in one argument or a u64 accross two arguments, it has the potential
-to be broken depending on how it has been done.
-
-I would have done it the other way around which is to define that
-ppc_rtas takes a BE structure since this is what RTAS expects (and
-the bit of RMA memory we expose to userspace for communicating with
-it also has to be handled BE so userspace has to know anyway).
-
-That means that the only things we need to fix here is when we interpret
-the args.nargs etc... we need a be32_to_cpu
-
-Cheers,
-Ben.
-
-> Signed-off-by: Greg Kurz <gkurz@linux.vnet.ibm.com>
-> ---
->  arch/powerpc/kernel/rtas.c |   15 +++++++++++++--
->  1 file changed, 13 insertions(+), 2 deletions(-)
+> These interfaces are uncommitted and don't have consumers now, I'd like
+> to keep them unstable in debugfs.
 > 
-> diff --git a/arch/powerpc/kernel/rtas.c b/arch/powerpc/kernel/rtas.c
-> index 4cf674d..00dbe36 100644
-> --- a/arch/powerpc/kernel/rtas.c
-> +++ b/arch/powerpc/kernel/rtas.c
-> @@ -1020,6 +1020,7 @@ asmlinkage int ppc_rtas(struct rtas_args __user *uargs)
->  	char *buff_copy, *errbuf = NULL;
->  	int nargs;
->  	int rc;
-> +	int i;
->  
->  	if (!capable(CAP_SYS_ADMIN))
->  		return -EPERM;
-> @@ -1056,9 +1057,19 @@ asmlinkage int ppc_rtas(struct rtas_args __user *uargs)
->  
->  	flags = lock_rtas();
->  
-> -	rtas.args = args;
-> +	rtas.args.token = cpu_to_be32(args.token);
-> +	rtas.args.nargs = cpu_to_be32(args.nargs);
-> +	rtas.args.nret  = cpu_to_be32(args.nret);
-> +	for (i = 0; i < nargs; ++i)
-> +		rtas.args.args[i] = cpu_to_be32(args.args[i]);
-> +	rtas.args.rets  = &rtas.args.args[nargs];
-> +	for (i = 0; i < args.nret; ++i)
-> +		rtas.args.rets[i] = 0;
-> +
->  	enter_rtas(__pa(&rtas.args));
-> -	args = rtas.args;
-> +
-> +	for (i = 0; i < args.nret; ++i)
-> +		args.rets[i] = be32_to_cpu(rtas.args.rets[i]);
->  
->  	/* A -1 return code indicates that the last command couldn't
->  	   be completed due to a hardware error. */
+> We can change it if we received a requirement to use them later.
+> 
+
+What we absolutely don't want to happen is someone starting to use these
+unstable interfaces for something other than debugging.  If debugfs ever
+needs to be mounted in a system for full functionality, that is a bug.
+
+	-hpa
 
 
