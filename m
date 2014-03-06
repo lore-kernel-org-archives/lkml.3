@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756066AbaCFEnN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 23:43:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58339 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755948AbaCFEnL (ORCPT
+	id S1756197AbaCFEoe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 23:44:34 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:19731 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751573AbaCFEod (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 23:43:11 -0500
-Date: Wed, 5 Mar 2014 20:43:37 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Jon Ringle <jon@ringle.org>
-Cc: "Ringle, Jonathan" <Jonathan.Ringle@gridpoint.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Add option to build with -O3
-Message-ID: <20140306044337.GB5722@kroah.com>
-References: <1393977709-9809-1-git-send-email-jringle@gridpoint.com>
- <20140305050927.GA8534@kroah.com>
- <alpine.DEB.2.02.1403050230120.24331@jringle-ubuntu>
+	Wed, 5 Mar 2014 23:44:33 -0500
+Message-ID: <5317FD2A.9020003@oracle.com>
+Date: Wed, 05 Mar 2014 23:44:26 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1403050230120.24331@jringle-ubuntu>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: Andrea Arcangeli <aarcange@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: mm: kernel BUG at mm/huge_memory.c:2785!
+References: <530F3F0A.5040304@oracle.com> <20140227150313.3BA27E0098@blue.fi.intel.com> <53166881.1020504@oracle.com> <20140305135232.EC420E0098@blue.fi.intel.com>
+In-Reply-To: <20140305135232.EC420E0098@blue.fi.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 05, 2014 at 02:32:26AM -0500, Jon Ringle wrote:
-> On Wed, 5 Mar 2014, Greg KH wrote:
-> 
-> > On Tue, Mar 04, 2014 at 07:01:49PM -0500, Jon Ringle wrote:
-> > > +config CC_OPTIMIZE_FOR_SPEED
-> > > +    bool "Optimze for speed (-O3)"
-> > > +    help
-> > > +      Enabling this option will pass "-O3" to gcc
-> > > +      resulting in a larger kernel (but possibly faster)
-> > 
-> > Are you sure about that?  Have you measured it?
-> 
-> (Resending this message, since it was "destroyed". Hopefully, this is now 
-> an an acceptable form :)
-> 
-> I do know that there is an improvement performance-wise for my particular 
-> use-case.
-> 
-> My target is an ARM board being built with gcc-4.8.2. My board has on it a 
-> sc16is740 that is used as an RS-485 port. The sc16is740 is on the i2c bus, 
-> so when an interrupt comes in to indicate that there is data available to 
-> be read, I need to get the data over the i2c bus. I do this on a kthread 
-> to do this work. The i2c transactions (using i2c-davinci driver) are also 
-> interrupt driven. I was seeing a lot of lost packets when receiving data 
-> at only 19200. Adding the -O3 compile option helped in this regard in that 
-> I am now rarely seeing packet loss.
+On 03/05/2014 08:52 AM, Kirill A. Shutemov wrote:
+> Sasha Levin wrote:
+>> On 02/27/2014 10:03 AM, Kirill A. Shutemov wrote:
+>>> Sasha Levin wrote:
+>>>>> Hi all,
+>>>>>
+>>>>> While fuzzing with trinity inside a KVM tools guest running latest -next kernel I've stumbled on the
+>>>>> following spew:
+>>>>>
+>>>>> [ 1428.146261] kernel BUG at mm/huge_memory.c:2785!
+>>> Hm, interesting.
+>>>
+>>> It seems we either failed to split huge page on vma split or it
+>>> materialized from under us. I don't see how it can happen:
+>>>
+>>>     - it seems we do the right thing with vma_adjust_trans_huge() in
+>>>       __split_vma();
+>>>     - we hold ->mmap_sem all the way from vm_munmap(). At least I don't see
+>>>       a place where we could drop it;
+>>>
+>>> Andrea, any ideas?
+>>
+>> And a somewhat related issue (please correct me if I'm wrong):
+>
+> Yeah. Looks similar. And I still have no idea how it could happened.
+>
+> Do you trinity logs for the crash?
 
-I'd take this up with the linux-arm developers, that sounds like
-something is wrong with your system that a compiler change fixes
-problems.  Something else must be wrong...
+I can't get it to reproduce with trinity logging enabled, I guess it makes it harder for
+the race to occur.
 
-good luck,
+I'll keep it running through the night but don't really have high hopes.
 
-greg k-h
+
+Thanks,
+Sasha
+
