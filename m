@@ -1,50 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878AbaCFVPk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 16:15:40 -0500
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:63789 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752671AbaCFVPd (ORCPT
+	id S1753626AbaCFVQk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 16:16:40 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:35105 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753193AbaCFVQi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 16:15:33 -0500
-Date: Thu, 6 Mar 2014 16:15:29 -0500
-From: Tejun Heo <tj@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Oleg Nesterov <oleg@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Jianguo Wu <wujianguo@huawei.com>, Tim Hockin <thockin@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: Re: [patch 11/11] mm, memcg: allow system oom killer to be disabled
-Message-ID: <20140306211529.GE17902@htj.dyndns.org>
-References: <alpine.DEB.2.02.1403041952170.8067@chino.kir.corp.google.com>
- <alpine.DEB.2.02.1403041957340.8067@chino.kir.corp.google.com>
+	Thu, 6 Mar 2014 16:16:38 -0500
+Message-ID: <5318E5AD.9090107@oracle.com>
+Date: Thu, 06 Mar 2014 16:16:29 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1403041957340.8067@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+CC: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, riel@redhat.com
+Subject: Re: [PATCH] mm: add pte_present() check on existing hugetlb_entry
+ callbacks
+References: <53126861.7040107@oracle.com> <1393822946-26871-1-git-send-email-n-horiguchi@ah.jp.nec.com> <5314E0CD.6070308@oracle.com> <5314F661.30202@oracle.com> <1393968743-imrxpynb@n-horiguchi@ah.jp.nec.com> <531657DC.4050204@oracle.com> <1393976967-lnmm5xcs@n-horiguchi@ah.jp.nec.com> <5317FA3B.8060900@oracle.com> <1394122113-xsq3i6vw@n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1394122113-xsq3i6vw@n-horiguchi@ah.jp.nec.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 04, 2014 at 07:59:46PM -0800, David Rientjes wrote:
-> Now that system oom conditions can properly be handled from userspace,
-> allow the oom killer to be disabled.  Otherwise, the kernel will
-> immediately kill a process and memory will be freed.  The userspace oom
-> handler may have a different policy.
-> 
-> Signed-off-by: David Rientjes <rientjes@google.com>
+On 03/06/2014 11:08 AM, Naoya Horiguchi wrote:
+> And I found my patch was totally wrong because it should check
+> !pte_present(), not pte_present().
+> I'm testing fixed one (see below), and the problem seems not to reproduce
+> in my environment at least for now.
+> But I'm not 100% sure, so I need your double checking.
 
-Until consensus on the whole approach can be reached,
+Nope, I still see the problem. Same NULL deref and trace as before.
 
- Nacked-by: Tejun Heo <tj@kernel.org>
 
-Thanks.
-
--- 
-tejun
+Thanks,
+Sasha
