@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755551AbaCFEmW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 23:42:22 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:59771 "EHLO
+	id S1754666AbaCFEmU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 23:42:20 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:59772 "EHLO
 	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753220AbaCFEmS (ORCPT
+	with ESMTP id S1753065AbaCFEmS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Mar 2014 23:42:18 -0500
 From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
@@ -13,251 +13,226 @@ Cc: <linux-kernel@vger.kernel.org>, linuxppc-dev@ozlabs.org,
         Stephane Eranian <eranian@google.com>,
         Michael Ellerman <michaele@au1.ibm.com>,
         Paul Mackerras <paulus@samba.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: [RFC][PATCH 1/3] power: perf: Enable saving the user stack in a sample.
-Date: Wed,  5 Mar 2014 20:41:57 -0800
-Message-Id: <1394080919-17957-2-git-send-email-sukadev@linux.vnet.ibm.com>
+Subject: [RFC][PATCH 2/3] power: perf tool: Add libunwind support for Power
+Date: Wed,  5 Mar 2014 20:41:58 -0800
+Message-Id: <1394080919-17957-3-git-send-email-sukadev@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1394080919-17957-1-git-send-email-sukadev@linux.vnet.ibm.com>
 References: <1394080919-17957-1-git-send-email-sukadev@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14030604-1542-0000-0000-00000024F85E
+x-cbid: 14030604-1542-0000-0000-00000024F865
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When requested, have the kernel save the user stack in each perf sample
-so 'perf report' can use libunwind and produce better backtraces.
+Add ability to link with libunwind on Power.
 
-The downside of course is that the kernel has to copy the user-stack
-on each sample which has both performance and file-size implications
-(of the perf.data file).
+This is based on similar changes in x86 and arm. Basically, implement
+accessor functions that libunwind can call into while building the
+backtrace from the user stack (which the kernel saved in a perf sample
+- in previous commit).
 
-But we save the user-stack only when user explicitly requests it:
+Tested on Fedora-20 with libunwind and libunwind-devel libdwarf packages
+installed.
 
-	perf record --call-graph=dwarf,8192 <application>
+TODO:
+	- Not sure if we need to list all the Power registers or restrict
+	  to only those that libunwind needs.
+	- Check about perf_reg_abi()
+	- Build for 32-bit
 
 Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 ---
- arch/powerpc/Kconfig                      |    2 +
- arch/powerpc/include/uapi/asm/perf_regs.h |   70 +++++++++++++++++++
- arch/powerpc/perf/Makefile                |    1 +
- arch/powerpc/perf/perf-regs.c             |  104 +++++++++++++++++++++++++++++
- 4 files changed, 177 insertions(+)
- create mode 100644 arch/powerpc/include/uapi/asm/perf_regs.h
- create mode 100644 arch/powerpc/perf/perf-regs.c
+ tools/perf/arch/powerpc/Makefile            |    5 ++
+ tools/perf/arch/powerpc/include/perf_regs.h |   69 +++++++++++++++++++++++++++
+ tools/perf/arch/powerpc/util/unwind.c       |   63 ++++++++++++++++++++++++
+ tools/perf/config/Makefile                  |    7 +++
+ 4 files changed, 144 insertions(+)
+ create mode 100644 tools/perf/arch/powerpc/include/perf_regs.h
+ create mode 100644 tools/perf/arch/powerpc/util/unwind.c
 
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index 957bf34..e79ce6e 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -113,6 +113,8 @@ config PPC
- 	select GENERIC_ATOMIC64 if PPC32
- 	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
- 	select HAVE_PERF_EVENTS
-+	select HAVE_PERF_REGS
-+	select HAVE_PERF_USER_STACK_DUMP
- 	select HAVE_REGS_AND_STACK_ACCESS_API
- 	select HAVE_HW_BREAKPOINT if PERF_EVENTS && PPC_BOOK3S_64
- 	select ARCH_WANT_IPC_PARSE_VERSION
-diff --git a/arch/powerpc/include/uapi/asm/perf_regs.h b/arch/powerpc/include/uapi/asm/perf_regs.h
+diff --git a/tools/perf/arch/powerpc/Makefile b/tools/perf/arch/powerpc/Makefile
+index 744e629..9d3b8ce 100644
+--- a/tools/perf/arch/powerpc/Makefile
++++ b/tools/perf/arch/powerpc/Makefile
+@@ -2,4 +2,9 @@ ifndef NO_DWARF
+ PERF_HAVE_DWARF_REGS := 1
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
+ endif
++
++ifndef NO_LIBUNWIND
++LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/unwind.o
++endif
++
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/header.o
+diff --git a/tools/perf/arch/powerpc/include/perf_regs.h b/tools/perf/arch/powerpc/include/perf_regs.h
 new file mode 100644
-index 0000000..b6120dc
+index 0000000..d5667da
 --- /dev/null
-+++ b/arch/powerpc/include/uapi/asm/perf_regs.h
-@@ -0,0 +1,70 @@
-+#ifndef _ASM_POWERPC_PERF_REGS_H
-+#define _ASM_POWERPC_PERF_REGS_H
++++ b/tools/perf/arch/powerpc/include/perf_regs.h
+@@ -0,0 +1,69 @@
++#ifndef ARCH_PERF_REGS_H
++#define ARCH_PERF_REGS_H
 +
-+#ifndef __powerpc64__
-+#error Support for 32bit processors is TBD.
-+#endif
-+
-+enum perf_event_powerpc_regs {
-+	/*
-+	 * The order of these values are based on the corresponding
-+	 * macros in arch/powerpc/include/uapi/asm/ptrace.h .
-+	 */
-+	PERF_REG_POWERPC_GPR0,
-+	PERF_REG_POWERPC_GPR1,
-+	PERF_REG_POWERPC_GPR2,
-+	PERF_REG_POWERPC_GPR3,
-+	PERF_REG_POWERPC_GPR4,
-+	PERF_REG_POWERPC_GPR5,
-+	PERF_REG_POWERPC_GPR6,
-+	PERF_REG_POWERPC_GPR7,
-+	PERF_REG_POWERPC_GPR8,
-+	PERF_REG_POWERPC_GPR9,
-+
-+	PERF_REG_POWERPC_GPR10,
-+	PERF_REG_POWERPC_GPR11,
-+	PERF_REG_POWERPC_GPR12,
-+	PERF_REG_POWERPC_GPR13,
-+	PERF_REG_POWERPC_GPR14,
-+	PERF_REG_POWERPC_GPR15,
-+	PERF_REG_POWERPC_GPR16,
-+	PERF_REG_POWERPC_GPR17,
-+	PERF_REG_POWERPC_GPR18,
-+	PERF_REG_POWERPC_GPR19,
-+
-+	PERF_REG_POWERPC_GPR20,
-+	PERF_REG_POWERPC_GPR21,
-+	PERF_REG_POWERPC_GPR22,
-+	PERF_REG_POWERPC_GPR23,
-+	PERF_REG_POWERPC_GPR24,
-+	PERF_REG_POWERPC_GPR25,
-+	PERF_REG_POWERPC_GPR26,
-+	PERF_REG_POWERPC_GPR27,
-+	PERF_REG_POWERPC_GPR28,
-+	PERF_REG_POWERPC_GPR29,
-+
-+	PERF_REG_POWERPC_GPR30,
-+	PERF_REG_POWERPC_GPR31,
-+
-+	PERF_REG_POWERPC_NIP,
-+	PERF_REG_POWERPC_MSR,
-+	PERF_REG_POWERPC_ORIG_GPR3,
-+	PERF_REG_POWERPC_CTR,		/* 35 */
-+
-+	PERF_REG_POWERPC_LINK,
-+	PERF_REG_POWERPC_XER,
-+	PERF_REG_POWERPC_CCR,
-+#ifdef __powerpc64__
-+	PERF_REG_POWERPC_SOFTE,
-+#else
-+	PERF_REG_POWERPC_MQ, 
-+#endif
-+	PERF_REG_POWERPC_TRAP,		/* 40 */
-+
-+	PERF_REG_POWERPC_DAR,
-+	PERF_REG_POWERPC_DSISR,
-+	PERF_REG_POWERPC_RESULT,
-+	PERF_REG_POWERPC_DSCR,
-+	PERF_REG_POWERPC_MAX
-+};
-+#endif
-diff --git a/arch/powerpc/perf/Makefile b/arch/powerpc/perf/Makefile
-index 60d71ee..44fec45 100644
---- a/arch/powerpc/perf/Makefile
-+++ b/arch/powerpc/perf/Makefile
-@@ -2,6 +2,7 @@ subdir-ccflags-$(CONFIG_PPC_WERROR) := -Werror
- 
- obj-$(CONFIG_PERF_EVENTS)	+= callchain.o
- 
-+obj-$(CONFIG_HAVE_PERF_REGS)	+= perf-regs.o
- obj-$(CONFIG_PPC_PERF_CTRS)	+= core-book3s.o bhrb.o
- obj64-$(CONFIG_PPC_PERF_CTRS)	+= power4-pmu.o ppc970-pmu.o power5-pmu.o \
- 				   power5+-pmu.o power6-pmu.o power7-pmu.o \
-diff --git a/arch/powerpc/perf/perf-regs.c b/arch/powerpc/perf/perf-regs.c
-new file mode 100644
-index 0000000..3963038
---- /dev/null
-+++ b/arch/powerpc/perf/perf-regs.c
-@@ -0,0 +1,104 @@
-+#include <linux/errno.h>
-+#include <linux/sched.h>
-+#include <linux/types.h>
-+#include <linux/stddef.h>
 +#include <asm/perf_regs.h>
 +
-+#define PT_REGS_GPR_OFFSET(g)	\
-+	[PERF_REG_POWERPC_GPR##g] = offsetof(struct pt_regs, gpr[g])
++#define PERF_REGS_MASK	((1ULL << PERF_REG_POWERPC_MAX) - 1)
++#define PERF_REG_IP	PERF_REG_POWERPC_NIP
++#define PERF_REG_SP	PERF_REG_POWERPC_GPR1
 +
-+#define PT_REGS_OFFSET(n, r) 	\
-+	[PERF_REG_POWERPC_##n] = offsetof(struct pt_regs, r)
++static inline const char *perf_reg_name(int id)
++{
++	switch (id) {
++		case PERF_REG_POWERPC_GPR0: 		return "R0";
++		case PERF_REG_POWERPC_GPR1: 		return "R1";
++		case PERF_REG_POWERPC_GPR2: 		return "R2";
++		case PERF_REG_POWERPC_GPR3: 		return "R3";
++		case PERF_REG_POWERPC_GPR4: 		return "R4";
++		case PERF_REG_POWERPC_GPR5: 		return "R5";
++		case PERF_REG_POWERPC_GPR6: 		return "R6";
++		case PERF_REG_POWERPC_GPR7: 		return "R7";
++		case PERF_REG_POWERPC_GPR8: 		return "R8";
++		case PERF_REG_POWERPC_GPR9: 		return "R9";
++		case PERF_REG_POWERPC_GPR10: 		return "R10";
++		case PERF_REG_POWERPC_GPR11: 		return "R11";
++		case PERF_REG_POWERPC_GPR12: 		return "R12";
++		case PERF_REG_POWERPC_GPR13: 		return "R13";
++		case PERF_REG_POWERPC_GPR14: 		return "R14";
++		case PERF_REG_POWERPC_GPR15: 		return "R15";
++		case PERF_REG_POWERPC_GPR16: 		return "R16";
++		case PERF_REG_POWERPC_GPR17: 		return "R17";
++		case PERF_REG_POWERPC_GPR18: 		return "R18";
++		case PERF_REG_POWERPC_GPR19: 		return "R19";
++		case PERF_REG_POWERPC_GPR20: 		return "R20";
++		case PERF_REG_POWERPC_GPR21: 		return "R21";
++		case PERF_REG_POWERPC_GPR22: 		return "R22";
++		case PERF_REG_POWERPC_GPR23: 		return "R23";
++		case PERF_REG_POWERPC_GPR24: 		return "R24";
++		case PERF_REG_POWERPC_GPR25: 		return "R25";
++		case PERF_REG_POWERPC_GPR26: 		return "R26";
++		case PERF_REG_POWERPC_GPR27: 		return "R27";
++		case PERF_REG_POWERPC_GPR28: 		return "R28";
++		case PERF_REG_POWERPC_GPR29: 		return "R29";
++		case PERF_REG_POWERPC_GPR30: 		return "R30";
++		case PERF_REG_POWERPC_GPR31: 		return "R31";
++
++		case PERF_REG_POWERPC_NIP: 		return "NIP";
++		case PERF_REG_POWERPC_MSR: 		return "MSR";
++		case PERF_REG_POWERPC_ORIG_GPR3:	return "ORIG_GPR3";
++		case PERF_REG_POWERPC_CTR: 		return "CTR";
++		case PERF_REG_POWERPC_LINK: 		return "LINK";
++		case PERF_REG_POWERPC_XER: 		return "XER";
++		case PERF_REG_POWERPC_CCR: 		return "CCR";
++
++#ifdef __powerpc64__
++		case PERF_REG_POWERPC_SOFTE: 		return "SOFTE";
++#else
++		case PERF_REG_POWERPC_MQ: 		return "MQ";
++#endif
++		case PERF_REG_POWERPC_TRAP: 		return "TRAP";
++		case PERF_REG_POWERPC_DAR: 		return "DAR";
++		case PERF_REG_POWERPC_DSISR: 		return "DSISR";
++		case PERF_REG_POWERPC_RESULT: 		return "RESULT";
++
++		default: 				return NULL;
++	}
++	return NULL;
++}
++
++#endif /* ARCH_PERF_REGS_H */
+diff --git a/tools/perf/arch/powerpc/util/unwind.c b/tools/perf/arch/powerpc/util/unwind.c
+new file mode 100644
+index 0000000..ba73399
+--- /dev/null
++++ b/tools/perf/arch/powerpc/util/unwind.c
+@@ -0,0 +1,63 @@
++#ifdef HAVE_ARCH_POWERPC_SUPPORT
++#include <libunwind.h>			/* UNW_PPC64* macros */
++#include <asm/perf_regs.h>		/* PERF_REG* macros */
++#include "../../util/unwind.h"		/* unwind__arch_reg_id() prototype */
++#include <errno.h>
 +
 +/*
-+ * An enum in arch/powerpc/include/uapi/asm/perf_regs.h assigns an "id" to
-+ * each register in Power. Build a table mapping each register id to its
-+ * offset in 'struct pt_regs', that we can use to quickly read-from or
-+ * write-to the register in pt_regs.
++ * Map Libunwind's "UNWIND" register ids to "PERF" register ids. 
++ *
++ * One place where this mapping is used is when unwinding the user
++ * stack saved in a perf-sample by the kernel. The kernel uses the
++ * "PERF" register ids to find offset of the register in 'struct
++ * pt_regs'. When using libunwind, we find the "PERF" register id
++ * and use it to retrieve the register contents from the sample.
 + */
-+static unsigned int pt_regs_offset[PERF_REG_POWERPC_MAX] = {
-+	PT_REGS_GPR_OFFSET(0),
-+	PT_REGS_GPR_OFFSET(1),
-+	PT_REGS_GPR_OFFSET(2),
-+	PT_REGS_GPR_OFFSET(3),
-+	PT_REGS_GPR_OFFSET(4),
-+	PT_REGS_GPR_OFFSET(5),
-+	PT_REGS_GPR_OFFSET(6),
-+	PT_REGS_GPR_OFFSET(7),
-+	PT_REGS_GPR_OFFSET(8),
-+	PT_REGS_GPR_OFFSET(9),
-+	PT_REGS_GPR_OFFSET(10),
-+
-+	PT_REGS_GPR_OFFSET(11),
-+	PT_REGS_GPR_OFFSET(12),
-+	PT_REGS_GPR_OFFSET(13),
-+	PT_REGS_GPR_OFFSET(14),
-+	PT_REGS_GPR_OFFSET(15),
-+	PT_REGS_GPR_OFFSET(16),
-+	PT_REGS_GPR_OFFSET(17),
-+	PT_REGS_GPR_OFFSET(18),
-+	PT_REGS_GPR_OFFSET(19),
-+	PT_REGS_GPR_OFFSET(20),
-+
-+	PT_REGS_GPR_OFFSET(21),
-+	PT_REGS_GPR_OFFSET(22),
-+	PT_REGS_GPR_OFFSET(23),
-+	PT_REGS_GPR_OFFSET(24),
-+	PT_REGS_GPR_OFFSET(25),
-+	PT_REGS_GPR_OFFSET(26),
-+	PT_REGS_GPR_OFFSET(27),
-+	PT_REGS_GPR_OFFSET(28),
-+	PT_REGS_GPR_OFFSET(29),
-+	PT_REGS_GPR_OFFSET(30),
-+
-+	PT_REGS_GPR_OFFSET(31),
-+
-+	PT_REGS_OFFSET(NIP, nip),
-+	PT_REGS_OFFSET(MSR, msr),
-+	PT_REGS_OFFSET(ORIG_GPR3, orig_gpr3),
-+	PT_REGS_OFFSET(CTR, ctr),
-+
-+	PT_REGS_OFFSET(LINK, link),
-+	PT_REGS_OFFSET(XER, xer),
-+	PT_REGS_OFFSET(CCR, ccr),
-+#ifdef __powerpc64__
-+	PT_REGS_OFFSET(SOFTE, softe),
-+#else
-+	PT_REGS_OFFSET(MQ, mq),
-+#endif
-+
-+	PT_REGS_OFFSET(TRAP, trap),
-+	PT_REGS_OFFSET(DAR, dar),
-+	PT_REGS_OFFSET(DSISR, dsisr),
-+	PT_REGS_OFFSET(RESULT, result),
-+};
-+
-+u64 perf_reg_value(struct pt_regs *regs, int idx)
++int unwind__arch_reg_id(int regnum)
 +{
-+	if (WARN_ON_ONCE(idx >= ARRAY_SIZE(pt_regs_offset)))
-+		return 0;
++	switch (regnum) {
++	case UNW_PPC64_R0: return PERF_REG_POWERPC_GPR0;
++	case UNW_PPC64_R1: return PERF_REG_POWERPC_GPR1;
++	case UNW_PPC64_R2: return PERF_REG_POWERPC_GPR2;
++	case UNW_PPC64_R3: return PERF_REG_POWERPC_GPR3;
++	case UNW_PPC64_R4: return PERF_REG_POWERPC_GPR4;
++	case UNW_PPC64_R5: return PERF_REG_POWERPC_GPR5;
++	case UNW_PPC64_R6: return PERF_REG_POWERPC_GPR6;
++	case UNW_PPC64_R7: return PERF_REG_POWERPC_GPR7;
++	case UNW_PPC64_R8: return PERF_REG_POWERPC_GPR8;
++	case UNW_PPC64_R9: return PERF_REG_POWERPC_GPR9;
++	case UNW_PPC64_R10: return PERF_REG_POWERPC_GPR9;
++	case UNW_PPC64_R11: return PERF_REG_POWERPC_GPR11;
++	case UNW_PPC64_R12: return PERF_REG_POWERPC_GPR12;
++	case UNW_PPC64_R13: return PERF_REG_POWERPC_GPR13;
++	case UNW_PPC64_R14: return PERF_REG_POWERPC_GPR14;
++	case UNW_PPC64_R15: return PERF_REG_POWERPC_GPR15;
++	case UNW_PPC64_R16: return PERF_REG_POWERPC_GPR16;
++	case UNW_PPC64_R17: return PERF_REG_POWERPC_GPR17;
++	case UNW_PPC64_R18: return PERF_REG_POWERPC_GPR18;
++	case UNW_PPC64_R19: return PERF_REG_POWERPC_GPR19;
++	case UNW_PPC64_R20: return PERF_REG_POWERPC_GPR20;
++	case UNW_PPC64_R21: return PERF_REG_POWERPC_GPR21;
++	case UNW_PPC64_R22: return PERF_REG_POWERPC_GPR22;
++	case UNW_PPC64_R23: return PERF_REG_POWERPC_GPR23;
++	case UNW_PPC64_R24: return PERF_REG_POWERPC_GPR24;
++	case UNW_PPC64_R25: return PERF_REG_POWERPC_GPR25;
++	case UNW_PPC64_R26: return PERF_REG_POWERPC_GPR26;
++	case UNW_PPC64_R27: return PERF_REG_POWERPC_GPR27;
++	case UNW_PPC64_R28: return PERF_REG_POWERPC_GPR28;
++	case UNW_PPC64_R29: return PERF_REG_POWERPC_GPR29;
++	case UNW_PPC64_R30: return PERF_REG_POWERPC_GPR30;
++	case UNW_PPC64_R31: return PERF_REG_POWERPC_GPR31;
 +
-+	return regs_get_register(regs, pt_regs_offset[idx]);
-+}
++	case UNW_PPC64_LR: return PERF_REG_POWERPC_LINK;
++	case UNW_PPC64_CTR: return PERF_REG_POWERPC_CTR;
++	case UNW_PPC64_XER: return PERF_REG_POWERPC_XER;
++	case UNW_PPC64_NIP: return PERF_REG_POWERPC_NIP;
 +
-+u64 perf_reg_validate(u64 mask)
-+{
-+	/*
-+	 * TODO: Are there any registers to ignore/check here ?
-+	 */
-+	if (!mask)
++	default:
++		pr_err("unwind: invalid reg id %d\n", regnum);
 +		return -EINVAL;
-+
-+	return 0;
++	}
++	return -EINVAL;
 +}
++#endif /* HAVE_ARCH_POWERPC_SUPPORT */
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index c48d449..6446afd 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -29,11 +29,18 @@ ifeq ($(ARCH),x86)
+   endif
+   NO_PERF_REGS := 0
+ endif
 +
-+u64 perf_reg_abi(struct task_struct *task)
-+{
-+	/*
-+	 * TODO: WHAT SHOULD WE RETURN HERE ????
-+	 *
-+	 * 	x86 returns PERF_SAMPLE_REGS_ABI_32
-+	 * 	perf tool needs this to be non-zero to process registers.
-+	 */
-+        return 1;
-+}
+ ifeq ($(ARCH),arm)
+   NO_PERF_REGS := 0
+   LIBUNWIND_LIBS = -lunwind -lunwind-arm
+ endif
+ 
++ifeq ($(ARCH),powerpc)
++  CFLAGS += -DHAVE_ARCH_POWERPC_SUPPORT
++  NO_PERF_REGS := 0
++  LIBUNWIND_LIBS = -lunwind -lunwind-ppc64
++endif
++
+ ifeq ($(LIBUNWIND_LIBS),)
+   NO_LIBUNWIND := 1
+ else
 -- 
 1.7.9.5
 
