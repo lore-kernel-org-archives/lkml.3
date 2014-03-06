@@ -1,93 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782AbaCFJcJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 04:32:09 -0500
-Received: from relay.parallels.com ([195.214.232.42]:54850 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752247AbaCFJcF (ORCPT
+	id S1752413AbaCFJd3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 04:33:29 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:30558 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750919AbaCFJdZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 04:32:05 -0500
-Message-ID: <1394098315.19290.10.camel@tkhai>
-Subject: [PATCH tip 1/2] sched/fair: Push down check for high priority class
- task into idle_balance()
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
-Date: Thu, 6 Mar 2014 13:31:55 +0400
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.26.172]
+	Thu, 6 Mar 2014 04:33:25 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-23-531840e29200
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Beomho Seo <beomho.seo@samsung.com>, Lars-Peter Clausen <lars@metafoo.de>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH] iio: cm36651: Fix i2c client leak and possible NULL pointer
+ dereference
+Date: Thu, 06 Mar 2014 10:33:10 +0100
+Message-id: <1394098390-11213-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrAJMWRmVeSWpSXmKPExsVy+t/xa7qPHCSCDR590bI4/Wkbu8WDplVM
+	Fq9fGFosmTyf1WLekXcsFpd3zWFzYPPYtKqTzWPJm0OsHn1bVjF6fN4kF8ASxWWTkpqTWZZa
+	pG+XwJUx415UQY9ARVP7M8YGxju8XYycHBICJhI3L79mg7DFJC7cWw9kc3EICSxllJjz/xoz
+	hNPHJPHmxRkWkCo2AWOJzcuXgHWICCRJ3HpymRHEZhaok5jz6AsTiC0sECVxb9sRdhCbRUBV
+	Yuu896xdjBwcvALuEp0r+EBMCQEFiTmTbCYwci9gZFjFKJpamlxQnJSea6hXnJhbXJqXrpec
+	n7uJERIKX3YwLj5mdYhRgINRiYd3g594sBBrYllxZe4hRgkOZiUR3i2GEsFCvCmJlVWpRfnx
+	RaU5qcWHGJk4OKUaGJff6L8zS6uAQd3s+G7b5qKotXlZbkIWNjtaL6dNfpZQnH+DN728gDNJ
+	+sd8+SMiBYKKB//v+pbUWcXj01rw4P+0pDkBinvyd1Q0qXjlnlt4yoDtaFCSu5GPHdP6VRNC
+	pea5zJy76q9WYMnd2xU5u1msLRUE+Y9suyJZbyn6x6lizpnLyo6+SizFGYmGWsxFxYkAQw6m
+	+eMBAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We close idle_exit_fair() bracket in case of we've pulled something or we've received
-task of high priority class.
+During probe the driver allocates dummy I2C devices (i2c_new_dummy())
+but they aren't unregistered during driver remove or probe failure.
 
-Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
-CC: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@redhat.com>
+Additionally driver does not check the return value of i2c_new_dummy().
+In case of error (i2c_new_device(): memory allocation failure or I2C
+address cannot be used) this function returns NULL which is later
+dereferenced by i2c_smbus_{read,write}_data() functions.
+
+Fix issues by properly checking for i2c_new_dummy() return value and
+unregistering I2C devices on driver remove or probe failure.
+
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- kernel/sched/fair.c      |   15 ++++++++++-----
- kernel/sched/idle_task.c |    1 -
- 2 files changed, 10 insertions(+), 6 deletions(-)
+ drivers/iio/light/cm36651.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index d8482e1..b956e70 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4787,17 +4787,16 @@ simple:
- 	return p;
- 
- idle:
-+	new_tasks = idle_balance(rq);
- 	/*
- 	 * Because idle_balance() releases (and re-acquires) rq->lock, it is
- 	 * possible for any higher priority task to appear. In that case we
- 	 * must re-start the pick_next_entity() loop.
- 	 */
--	new_tasks = idle_balance(rq);
--
--	if (rq->nr_running != rq->cfs.h_nr_running)
-+	if (new_tasks < 0)
- 		return RETRY_TASK;
- 
--	if (new_tasks)
-+	if (new_tasks > 0)
- 		goto again;
- 
- 	return NULL;
-@@ -6728,8 +6727,14 @@ static int idle_balance(struct rq *this_rq)
- 		this_rq->max_idle_balance_cost = curr_cost;
- 
- out:
--	if (pulled_task)
-+	/* Is there a task of a high priority class? */
-+	if (this_rq->nr_running != this_rq->cfs.h_nr_running)
-+		pulled_task = -1;
-+
-+	if (pulled_task) {
-+		idle_exit_fair(this_rq);
- 		this_rq->idle_stamp = 0;
+diff --git a/drivers/iio/light/cm36651.c b/drivers/iio/light/cm36651.c
+index a45e07492db3..e7e9a597159f 100644
+--- a/drivers/iio/light/cm36651.c
++++ b/drivers/iio/light/cm36651.c
+@@ -653,6 +653,11 @@ static int cm36651_probe(struct i2c_client *client,
+ 	cm36651->ps_client = i2c_new_dummy(client->adapter,
+ 						     CM36651_I2C_ADDR_PS);
+ 	cm36651->ara_client = i2c_new_dummy(client->adapter, CM36651_ARA);
++	if (!cm36651->ps_client || !cm36651->ara_client) {
++		dev_err(&client->dev, "%s: new i2c device failed\n", __func__);
++		ret = -ENODEV;
++		goto error_i2c_unregister;
 +	}
- 
- 	return pulled_task;
+ 	mutex_init(&cm36651->lock);
+ 	indio_dev->dev.parent = &client->dev;
+ 	indio_dev->channels = cm36651_channels;
+@@ -687,6 +692,11 @@ error_free_irq:
+ 	free_irq(client->irq, indio_dev);
+ error_disable_reg:
+ 	regulator_disable(cm36651->vled_reg);
++error_i2c_unregister:
++	if (cm36651->ps_client)
++		i2c_unregister_device(cm36651->ps_client);
++	if (cm36651->ara_client)
++		i2c_unregister_device(cm36651->ara_client);
+ 	return ret;
  }
-diff --git a/kernel/sched/idle_task.c b/kernel/sched/idle_task.c
-index 1f37258..879f2b7 100644
---- a/kernel/sched/idle_task.c
-+++ b/kernel/sched/idle_task.c
-@@ -29,7 +29,6 @@ pick_next_task_idle(struct rq *rq, struct task_struct *prev)
- 	put_prev_task(rq, prev);
  
- 	schedstat_inc(rq, sched_goidle);
--	idle_enter_fair(rq);
- 	return rq->idle;
+@@ -698,6 +708,8 @@ static int cm36651_remove(struct i2c_client *client)
+ 	iio_device_unregister(indio_dev);
+ 	regulator_disable(cm36651->vled_reg);
+ 	free_irq(client->irq, indio_dev);
++	i2c_unregister_device(cm36651->ps_client);
++	i2c_unregister_device(cm36651->ara_client);
+ 
+ 	return 0;
  }
- 
-
-
+-- 
+1.7.9.5
 
