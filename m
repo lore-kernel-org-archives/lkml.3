@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757317AbaCFBZB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 20:25:01 -0500
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:38984 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755378AbaCFBY7 (ORCPT
+	id S1757571AbaCFB0Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 20:26:24 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:41827 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755556AbaCFB0X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 20:24:59 -0500
+	Wed, 5 Mar 2014 20:26:23 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Joe Perches <joe@perches.com>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Paul Bolle <pebolle@tiscali.nl>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] [media] v4l: omap4iss: Add DEBUG compiler flag
+Date: Thu, 06 Mar 2014 02:27:46 +0100
+Message-ID: <3032500.9J1uSX3lel@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1394067637.12070.36.camel@joe-AO722>
+References: <1391958577.25424.22.camel@x220> <2136780.FIdBGb725A@avalon> <1394067637.12070.36.camel@joe-AO722>
 MIME-Version: 1.0
-In-Reply-To: <1885040.WKp5oRmh5C@vostro.rjw.lan>
-References: <1393429360-4344-1-git-send-email-clancy.kieran@gmail.com>
- <53176D59.3030602@canonical.com> <CAGf84Q+7=abgk78WuhNWdy+3kgXma1fHj6OPk9ytQ4kFzcoFJA@mail.gmail.com>
- <1885040.WKp5oRmh5C@vostro.rjw.lan>
-From: Kieran Clancy <clancy.kieran@gmail.com>
-Date: Thu, 6 Mar 2014 11:54:28 +1030
-Message-ID: <CAGf84QK-N+C6eHct4XDzOCHwfN649F2okJ1y2V70wWz-wHFKEA@mail.gmail.com>
-Subject: Re: [PATCH v2] ACPI / EC: Clear stale EC events on Samsung systems
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Li Guang <lig.fnst@cn.fujitsu.com>,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        Juan Manuel Cabo <juanmanuel.cabo@gmail.com>,
-        Dennis Jansen <dennis.jansen@web.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 6, 2014 at 11:22 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> On Thursday, March 06, 2014 11:04:14 AM Kieran Clancy wrote:
->>
->> Rafael, is it a separate process to get this in the stable tree or
->> will it naturally happen after being merged into the mainline?
->
-> I need to add a proper "CC stable" tag to your patch for this to happen.
->
-> Which -stable kernels should it go to?
+Hi Joe,
 
-3.2 and 3.10 seem like natural choices (3.4?), but I don't know the
-norm for this kind of fix. Would there be any reason not to include it
-in some particular stable kernels?
+On Wednesday 05 March 2014 17:00:37 Joe Perches wrote:
+> On Thu, 2014-03-06 at 01:48 +0100, Laurent Pinchart wrote:
+> > Would you recommend to drop driver-specific Kconfig options related to
+> > debugging and use CONFIG_DYNAMIC_DEBUG instead ?
+> 
+> For development, sure, if there's sufficient memory.
+> 
+> For embedded systems with limited memory, using dynamic_debug isn't always
+> possible or effective.
+> 
+> Also, there are sometimes reasons to have debugging messages always enabled
+> or emitted.
+> 
+> For those cases, either adding #define DEBUG or using printk(KERN_DEBUG
+> would be fine.
 
-Cheers,
-Kieran.
+My goal here is to offer an easy way for users to enable debugging without 
+requiring changes to the source code. The driver includes various dev_dbg() 
+messages, I don't want to ask people reporting problems to turn them into 
+printk() calls :-) Even adding #define DEBUG at the beginning of the source 
+files is likely too error prone for users without much programming experience.
+
+-- 
+Regards,
+
+Laurent Pinchart
+
