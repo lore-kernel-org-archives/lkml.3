@@ -1,60 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753171AbaCFPkJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 10:40:09 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48143 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143AbaCFPkH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 10:40:07 -0500
-Message-ID: <1394120379.3622.37.camel@paszta.hi.pengutronix.de>
-Subject: Re: [PATCH v6 0/8] Move device tree graph parsing helpers to
- drivers/of
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        devicetree@vger.kernel.org
-Date: Thu, 06 Mar 2014 16:39:39 +0100
-In-Reply-To: <20140306152414.GC21483@n2100.arm.linux.org.uk>
-References: <1394011242-16783-1-git-send-email-p.zabel@pengutronix.de>
-	 <20140306152414.GC21483@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
-Mime-Version: 1.0
+	id S1753217AbaCFPlE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 10:41:04 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:47444 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752353AbaCFPlC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 10:41:02 -0500
+Message-ID: <531896EB.1050409@ti.com>
+Date: Thu, 6 Mar 2014 21:10:27 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Roger Quadros <rogerq@ti.com>, <tony@atomide.com>, <balbi@ti.com>
+CC: <george.cherian@ti.com>, <balajitk@ti.com>, <hdegoede@redhat.com>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-ide@vger.kernel.org>
+Subject: Re: [PATCH v2 02/13] phy: omap-control: Update DT binding information
+References: <1394116729-28811-1-git-send-email-rogerq@ti.com> <1394116729-28811-3-git-send-email-rogerq@ti.com>
+In-Reply-To: <1394116729-28811-3-git-send-email-rogerq@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, den 06.03.2014, 15:24 +0000 schrieb Russell King - ARM
-Linux:
-> On Wed, Mar 05, 2014 at 10:20:34AM +0100, Philipp Zabel wrote:
-> > this version of the OF graph helper move series further addresses a few of
-> > Tomi's and Sylwester's comments.
-> 
-> Philipp,
-> 
-> You mention in your other cover for imx-drm bits that this is available
-> via:
-> 
-> 	git://git.pengutronix.de/git/pza/linux.git topic/of-graph
-> 
-> What is this tree based upon?
+Felipe,
 
-It is based on v3.14-rc5.
+On Thursday 06 March 2014 08:08 PM, Roger Quadros wrote:
+> Move omap-control binding information to the right location.
+>
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> ---
+>   Documentation/devicetree/bindings/phy/ti-phy.txt   | 25 ++++++++++++++++++++++
 
-regards
-Philipp
+This patch is dependent on
 
+"Documentation: dt bindings: move ..usb/usb-phy.txt to
+  ..phy/ti-phy.txt"
+
+which got merged in your tree. So can you take this patch also?
+Acked-by: Kishon Vijay Abraham I <kishon@ti.com>
+
+Regards
+Kishon
+
+>   Documentation/devicetree/bindings/usb/omap-usb.txt | 24 ---------------------
+>   2 files changed, 25 insertions(+), 24 deletions(-)
+>
+> diff --git a/Documentation/devicetree/bindings/phy/ti-phy.txt b/Documentation/devicetree/bindings/phy/ti-phy.txt
+> index f671163..5c5b1b0 100644
+> --- a/Documentation/devicetree/bindings/phy/ti-phy.txt
+> +++ b/Documentation/devicetree/bindings/phy/ti-phy.txt
+> @@ -1,5 +1,30 @@
+>   TI PHY: DT DOCUMENTATION FOR PHYs in TI PLATFORMs
+>
+> +OMAP CONTROL PHY
+> +
+> +Required properties:
+> + - compatible: Should be one of
+> + "ti,control-phy-otghs" - if it has otghs_control mailbox register as on OMAP4.
+> + "ti,control-phy-usb2" - if it has Power down bit in control_dev_conf register
+> +                        e.g. USB2_PHY on OMAP5.
+> + "ti,control-phy-pipe3" - if it has DPLL and individual Rx & Tx power control
+> +                        e.g. USB3 PHY and SATA PHY on OMAP5.
+> + "ti,control-phy-dra7usb2" - if it has power down register like USB2 PHY on
+> +                        DRA7 platform.
+> + "ti,control-phy-am437usb2" - if it has power down register like USB2 PHY on
+> +                        AM437 platform.
+> + - reg : Address and length of the register set for the device. It contains
+> +   the address of "otghs_control" for control-phy-otghs or "power" register
+> +   for other types.
+> + - reg-names: should be "otghs_control" control-phy-otghs and "power" for
+> +   other types.
+> +
+> +omap_control_usb: omap-control-usb@4a002300 {
+> +        compatible = "ti,control-phy-otghs";
+> +        reg = <0x4a00233c 0x4>;
+> +        reg-names = "otghs_control";
+> +};
+> +
+>   OMAP USB2 PHY
+>
+>   Required properties:
+> diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt b/Documentation/devicetree/bindings/usb/omap-usb.txt
+> index c495135..38b2fae 100644
+> --- a/Documentation/devicetree/bindings/usb/omap-usb.txt
+> +++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
+> @@ -76,27 +76,3 @@ omap_dwc3 {
+>   	ranges;
+>   };
+>
+> -OMAP CONTROL USB
+> -
+> -Required properties:
+> - - compatible: Should be one of
+> - "ti,control-phy-otghs" - if it has otghs_control mailbox register as on OMAP4.
+> - "ti,control-phy-usb2" - if it has Power down bit in control_dev_conf register
+> -			e.g. USB2_PHY on OMAP5.
+> - "ti,control-phy-pipe3" - if it has DPLL and individual Rx & Tx power control
+> -			e.g. USB3 PHY and SATA PHY on OMAP5.
+> - "ti,control-phy-dra7usb2" - if it has power down register like USB2 PHY on
+> -			DRA7 platform.
+> - "ti,control-phy-am437usb2" - if it has power down register like USB2 PHY on
+> -			AM437 platform.
+> - - reg : Address and length of the register set for the device. It contains
+> -   the address of "otghs_control" for control-phy-otghs or "power" register
+> -   for other types.
+> - - reg-names: should be "otghs_control" control-phy-otghs and "power" for
+> -   other types.
+> -
+> -omap_control_usb: omap-control-usb@4a002300 {
+> -	compatible = "ti,control-phy-otghs";
+> -	reg = <0x4a00233c 0x4>;
+> -	reg-names = "otghs_control";
+> -};
+>
