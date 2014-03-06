@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526AbaCFTs3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 14:48:29 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:42582 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751444AbaCFTs2 (ORCPT
+	id S1752753AbaCFTt4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 14:49:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35113 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124AbaCFTtz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 14:48:28 -0500
-Date: Thu, 6 Mar 2014 14:48:26 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Dan Williams <dan.j.williams@intel.com>
-cc: Dave Jones <davej@redhat.com>, Joerg Roedel <joerg.roedel@amd.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>
-Subject: Re: uhci_hcd: DMA-API: cpu touching an active dma mapped cacheline
-In-Reply-To: <CAPcyv4iqno9r_AvhQShSz1mN=4wEBv7Ld1fwG9x4um7KmfdWxA@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1403061443110.961-100000@iolanthe.rowland.org>
+	Thu, 6 Mar 2014 14:49:55 -0500
+Date: Thu, 6 Mar 2014 11:51:42 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: "Maxin B. John" <maxin.john@gmail.com>, devel@driverdev.osuosl.org,
+        andreas.dilger@intel.com, bergwolf@gmail.com,
+        alexey.zhuravlev@intel.com, linux-kernel@vger.kernel.org,
+        dulshani.gunawardhana89@gmail.com, josh@joshtriplett.org,
+        jinshan.xiong@intel.com, "Maxin B. John" <maxin.john@enea.com>
+Subject: Re: [PATCH 1/2] lustre/mdc_lib: fix possible null pointer dereference
+Message-ID: <20140306195142.GA3403@kroah.com>
+References: <1394024676-35160-1-git-send-email-maxin.john@enea.com>
+ <20140305185048.GC26722@mwanda>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140305185048.GC26722@mwanda>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Mar 2014, Dan Williams wrote:
-
-> >>> Mapped at:
-> >>>  [<c13081b5>] debug_dma_alloc_coherent+0x2b/0xc3
-> >>>  [<c116fcee>] dma_pool_alloc+0x14f/0x2fd
-> >>>  [<c1456eaa>] uhci_alloc_td.isra.35+0x24/0x60
-> >>>  [<c1457fa6>] uhci_start+0x272/0x56b
-> >>>  [<c142d8fb>] usb_add_hcd+0x252/0x774
-> >>
-> >> I don't get it.  As the name indicates, debug_dma_alloc_coherent should
-> >> give us consistent memory -- meaning that the CPU is allowed to access
-> >> the memory while DMA is in progress, without worrying about caching
-> >> effects (see Documentation/DMA-API.txt).
-> >>
-> >> So why should we get a warning when the CPU accesses this memory?  Is
-> >> this a regression in the DMA debug library?
-> >
-> > Yes, it seems so.  alloc_coherent needs to be exempt from active
-> > mapping tracking.  Fix coming up.
-> >
+On Wed, Mar 05, 2014 at 09:53:06PM +0300, Dan Carpenter wrote:
+> On Wed, Mar 05, 2014 at 02:04:35PM +0100, Maxin B. John wrote:
+> > From: "Maxin B. John" <maxin.john@enea.com>
+> > 
+> > cppcheck reported possible null pointer dereference in mdc_lib.c
+> > 
+> > [lustre/lustre/mdc/mdc_lib.c:233]: (error) Possible null pointer dereference
+> > : op_data - otherwise it is redundant to check if op_data is null at line 226
+> > 
 > 
-> Actually I'm not so sure.  Yes, alloc_coherent means the cpu can
-> touch, but if that page is COW'd how can you be sure that the copy
-> gets the most up to date data from the device?  This check is
-> asserting that dma might be colliding with a copy-on-write event.
+> There is only one caller and "op_data" is not NULL.
 
-dma_pool_create should never return memory that requires COW.  How 
-would the system know when to do the copies?
+I agree, John, please fix your tools.  Or check the result and fix the
+code so that there isn't false-positives (by not checking for NULL at
+all here...)
 
-Alan Stern
+thanks,
 
+greg k-h
