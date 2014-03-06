@@ -1,197 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880AbaCFPUf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 10:20:35 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:57878 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752437AbaCFPUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 10:20:33 -0500
-Message-ID: <5318922D.5090508@ti.com>
-Date: Thu, 6 Mar 2014 20:50:13 +0530
-From: Balaji T K <balajitk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1752582AbaCFPY3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 10:24:29 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:40290 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751015AbaCFPY2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 10:24:28 -0500
+Date: Thu, 6 Mar 2014 15:24:14 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v6 0/8] Move device tree graph parsing helpers to
+	drivers/of
+Message-ID: <20140306152414.GC21483@n2100.arm.linux.org.uk>
+References: <1394011242-16783-1-git-send-email-p.zabel@pengutronix.de>
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@ingics.com>
-CC: Chris Ball <chris@printf.net>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>,
-        Florian Vaussard <florian.vaussard@epfl.ch>, Stefan Roese <sr@denx.de>,
-        <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>
-Subject: Re: [PATCH RFT] regulator: pbias: Convert to use regmap helper functions
-References: <1394111433.21007.2.camel@phoenix>
-In-Reply-To: <1394111433.21007.2.camel@phoenix>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394011242-16783-1-git-send-email-p.zabel@pengutronix.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 06 March 2014 06:40 PM, Axel Lin wrote:
-> This patch converts this driver to use the regmap helper functions provided by
-> regulator core.
->
-> This fixes a few issues in current implementation:
->
-> 1) In original code, the set voltage does not check max_uV,
->     which means if request max_uV < 1800000, it will still set the voltage
->     to 1800000.
->
-> 2) The is_enable implementation is wrong in some cases:
->     e.g. for pbias_mmc_omap5: emable_mask is : BIT(27) | BIT(25) | BIT(26)
->     However, pbias_regulator_enable() only sets BIT(26) | BIT(22) bits.
->     So is_enable always return false in this case.
->
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> ---
-> Hi Balaji,
-> I don't have this h/w, so please test if it works.
+On Wed, Mar 05, 2014 at 10:20:34AM +0100, Philipp Zabel wrote:
+> this version of the OF graph helper move series further addresses a few of
+> Tomi's and Sylwester's comments.
 
-Hi Axel,
+Philipp,
 
-There were few issues when I tried using regmap helper,
-will check on this.
+You mention in your other cover for imx-drm bits that this is available
+via:
 
-Thanks and Regards,
-Balaji T K
+	git://git.pengutronix.de/git/pza/linux.git topic/of-graph
 
-> Regards,
-> Axel
->   drivers/regulator/pbias-regulator.c | 86 ++++++++++---------------------------
->   1 file changed, 23 insertions(+), 63 deletions(-)
->
-> diff --git a/drivers/regulator/pbias-regulator.c b/drivers/regulator/pbias-regulator.c
-> index ded3b35..f25c91e 100644
-> --- a/drivers/regulator/pbias-regulator.c
-> +++ b/drivers/regulator/pbias-regulator.c
-> @@ -38,85 +38,41 @@ struct pbias_reg_info {
->   struct pbias_regulator_data {
->   	struct regulator_desc desc;
->   	void __iomem *pbias_addr;
-> -	unsigned int pbias_reg;
->   	struct regulator_dev *dev;
->   	struct regmap *syscon;
->   	const struct pbias_reg_info *info;
->   	int voltage;
->   };
->
-> -static int pbias_regulator_set_voltage(struct regulator_dev *dev,
-> -			int min_uV, int max_uV, unsigned *selector)
-> +static int pbias_regulator_list_voltage(struct regulator_dev *rdev,
-> +					unsigned int selector)
->   {
-> -	struct pbias_regulator_data *data = rdev_get_drvdata(dev);
-> -	const struct pbias_reg_info *info = data->info;
-> -	int ret, vmode;
-> -
-> -	if (min_uV <= 1800000)
-> -		vmode = 0;
-> -	else if (min_uV > 1800000)
-> -		vmode = info->vmode;
-> -
-> -	ret = regmap_update_bits(data->syscon, data->pbias_reg,
-> -						info->vmode, vmode);
-> -
-> -	return ret;
-> -}
-> -
-> -static int pbias_regulator_get_voltage(struct regulator_dev *rdev)
-> -{
-> -	struct pbias_regulator_data *data = rdev_get_drvdata(rdev);
-> -	const struct pbias_reg_info *info = data->info;
-> -	int value, voltage;
-> -
-> -	regmap_read(data->syscon, data->pbias_reg, &value);
-> -	value &= info->vmode;
-> -
-> -	voltage = value ? 3000000 : 1800000;
-> -
-> -	return voltage;
-> +	switch (selector) {
-> +	case 0:
-> +		return 1800000;
-> +	case 1:
-> +		return 3000000;
-> +	default:
-> +		return -EINVAL;
-> +	}
->   }
->
->   static int pbias_regulator_enable(struct regulator_dev *rdev)
->   {
->   	struct pbias_regulator_data *data = rdev_get_drvdata(rdev);
->   	const struct pbias_reg_info *info = data->info;
-> -	int ret;
-> -
-> -	ret = regmap_update_bits(data->syscon, data->pbias_reg,
-> -					info->enable_mask, info->enable);
-> -
-> -	return ret;
-> -}
-> -
-> -static int pbias_regulator_disable(struct regulator_dev *rdev)
-> -{
-> -	struct pbias_regulator_data *data = rdev_get_drvdata(rdev);
-> -	const struct pbias_reg_info *info = data->info;
-> -	int ret;
-> -
-> -	ret = regmap_update_bits(data->syscon, data->pbias_reg,
-> -						info->enable_mask, 0);
-> -	return ret;
-> -}
-> -
-> -static int pbias_regulator_is_enable(struct regulator_dev *rdev)
-> -{
-> -	struct pbias_regulator_data *data = rdev_get_drvdata(rdev);
-> -	const struct pbias_reg_info *info = data->info;
-> -	int value;
-> -
-> -	regmap_read(data->syscon, data->pbias_reg, &value);
->
-> -	return (value & info->enable_mask) == info->enable_mask;
-> +	return regmap_update_bits(data->syscon, rdev->desc->enable_reg,
-> +				  info->enable_mask, info->enable);
->   }
->
->   static struct regulator_ops pbias_regulator_voltage_ops = {
-> -	.set_voltage	= pbias_regulator_set_voltage,
-> -	.get_voltage	= pbias_regulator_get_voltage,
-> -	.enable		= pbias_regulator_enable,
-> -	.disable	= pbias_regulator_disable,
-> -	.is_enabled	= pbias_regulator_is_enable,
-> +	.list_voltage = pbias_regulator_list_voltage,
-> +	.get_voltage_sel = regulator_get_voltage_sel_regmap,
-> +	.set_voltage_sel = regulator_set_voltage_sel_regmap,
-> +	.enable = pbias_regulator_enable,
-> +	.disable = regulator_disable_regmap,
-> +	.is_enabled = regulator_is_enabled_regmap,
->   };
->
->   static const struct pbias_reg_info pbias_mmc_omap2430 = {
-> @@ -192,6 +148,7 @@ static int pbias_regulator_probe(struct platform_device *pdev)
->   	if (IS_ERR(syscon))
->   		return PTR_ERR(syscon);
->
-> +	cfg.regmap = syscon;
->   	cfg.dev = &pdev->dev;
->
->   	for (idx = 0; idx < PBIAS_NUM_REGS && data_idx < count; idx++) {
-> @@ -207,7 +164,6 @@ static int pbias_regulator_probe(struct platform_device *pdev)
->   		if (!res)
->   			return -EINVAL;
->
-> -		drvdata[data_idx].pbias_reg = res->start;
->   		drvdata[data_idx].syscon = syscon;
->   		drvdata[data_idx].info = info;
->   		drvdata[data_idx].desc.name = info->name;
-> @@ -216,6 +172,10 @@ static int pbias_regulator_probe(struct platform_device *pdev)
->   		drvdata[data_idx].desc.ops = &pbias_regulator_voltage_ops;
->   		drvdata[data_idx].desc.n_voltages = 2;
->   		drvdata[data_idx].desc.enable_time = info->enable_time;
-> +		drvdata[data_idx].desc.vsel_reg = res->start;
-> +		drvdata[data_idx].desc.vsel_mask = info->vmode;
-> +		drvdata[data_idx].desc.enable_reg = res->start;
-> +		drvdata[data_idx].desc.enable_mask = info->enable_mask;
->
->   		cfg.init_data = pbias_matches[idx].init_data;
->   		cfg.driver_data = &drvdata[data_idx];
->
+What is this tree based upon?
 
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
