@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752248AbaCFLWX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 06:22:23 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:56857 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751084AbaCFLWV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 06:22:21 -0500
+	id S1753085AbaCFLWh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 06:22:37 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52436 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752387AbaCFLWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 06:22:34 -0500
+Message-ID: <53185A79.9010206@suse.de>
+Date: Thu, 06 Mar 2014 12:22:33 +0100
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <1394102406.25853.4.camel@AMDC1943>
-References: <1394100057-32677-1-git-send-email-sachin.kamat@linaro.org>
-	<1394100057-32677-2-git-send-email-sachin.kamat@linaro.org>
-	<1394102406.25853.4.camel@AMDC1943>
-Date: Thu, 6 Mar 2014 16:52:21 +0530
-Message-ID: <CAK9yfHyv+PhLCfy131KCS4GWaAEgQ9qmS5X27bTYHWYUspkYjA@mail.gmail.com>
-Subject: Re: [PATCH v3 Resend 2/3] regulator: Add support for S2MPA01 regulator
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Lee Jones <lee.jones@linaro.org>
+To: Paolo Bonzini <pbonzini@redhat.com>, Fam Zheng <famz@redhat.com>,
+        linux-kernel@vger.kernel.org
+CC: linux-scsi@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH] virtio-scsi: Change sense buffer size to 252
+References: <1394095660-15075-1-git-send-email-famz@redhat.com> <53184962.3080100@redhat.com>
+In-Reply-To: <53184962.3080100@redhat.com>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Krzysztof,
+On 03/06/2014 11:09 AM, Paolo Bonzini wrote:
+> Il 06/03/2014 09:47, Fam Zheng ha scritto:
+>> According to SPC-4, section 4.5.2.1, 252 is the limit of sense
+>> data. So
+>> increase the value.
+>>
+>> Signed-off-by: Fam Zheng <famz@redhat.com>
+>> ---
+>>  include/linux/virtio_scsi.h | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/include/linux/virtio_scsi.h
+>> b/include/linux/virtio_scsi.h
+>> index 4195b97..a437f7f 100644
+>> --- a/include/linux/virtio_scsi.h
+>> +++ b/include/linux/virtio_scsi.h
+>> @@ -28,7 +28,7 @@
+>>  #define _LINUX_VIRTIO_SCSI_H
+>>
+>>  #define VIRTIO_SCSI_CDB_SIZE   32
+>> -#define VIRTIO_SCSI_SENSE_SIZE 96
+>> +#define VIRTIO_SCSI_SENSE_SIZE 252
+>>
+>>  /* SCSI command request, followed by data-out */
+>>  struct virtio_scsi_cmd_req {
+>>
+> 
+> Hi Fam, how did you test this?
+> 
+Is there a specific reason _not_ to use the linux default?
+The SCSI stack typically limits the sense code to
+SCSI_SENSE_BUFFERSIZE, so using other values have a
+limited sense.
+Literally :-)
 
-On 6 March 2014 16:10, Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
-> On Thu, 2014-03-06 at 15:30 +0530, Sachin Kamat wrote:
->> Add support for S2MPA01 voltage and current regulator.
+Cheers,
 
->> +
->> +struct s2mpa01_info {
->> +     struct regulator_dev *rdev[S2MPA01_REGULATOR_MAX];
->
-> Hi,
->
-> It seems that s2mpa01_info->rdev is not used anywhere, except as return
-> value of devm_regulator_register. I think you can remove it completely.
-
-Yes. I will send a follow up patch for this.
-
->
-> Beside that, can this driver be merged into existing s2mps11 regulator
-> driver?
-
-Haven't analyzed this yet. Will look into the possibility of consolidation
-later.
-
-Thank you for your feedback.
-
+Hannes
 -- 
-With warm regards,
-Sachin
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
