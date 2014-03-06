@@ -1,259 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751946AbaCFPJv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 10:09:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2783 "EHLO mx1.redhat.com"
+	id S1752678AbaCFPLh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 10:11:37 -0500
+Received: from mga03.intel.com ([143.182.124.21]:34480 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750794AbaCFPJu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 10:09:50 -0500
-Message-ID: <53188AC1.809@redhat.com>
-Date: Thu, 06 Mar 2014 09:48:33 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130108 Thunderbird/10.0.12
+	id S1750829AbaCFPLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 10:11:35 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,600,1389772800"; 
+   d="scan'208";a="416171025"
+Date: Thu, 6 Mar 2014 07:11:33 -0800
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Robert Hancock <hancockrwd@gmail.com>,
+        "Nyman, Mathias" <mathias.nyman@intel.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux-usb <linux-usb@vger.kernel.org>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: Re: xHCI regression in stable 3.13.5 with USB3 card reader (Bisected)
+Message-ID: <20140306151133.GA5858@xanatos>
+References: <531804E7.2040406@gmail.com>
+ <5318156F.7050904@gmail.com>
 MIME-Version: 1.0
-To: Igor Mammedov <imammedo@redhat.com>
-CC: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, seiji.aguchi@hds.com, bp@suse.de,
-        paul.gortmaker@windriver.com, peterz@infradead.org, JBeulich@suse.com,
-        kirill.shutemov@linux.intel.com, toshi.kani@hp.com, drjones@redhat.com
-Subject: Re: [PATCH v2] abort secondary CPU bring-up gracefully if do_boot_cpu
- timed out on cpu_callin_mask
-References: <1394115032-15858-1-git-send-email-imammedo@redhat.com>
-In-Reply-To: <1394115032-15858-1-git-send-email-imammedo@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5318156F.7050904@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+[Adding Mathias.]
 
+On Thu, Mar 06, 2014 at 12:27:59AM -0600, Robert Hancock wrote:
+> On 05/03/14 11:17 PM, Robert Hancock wrote:
+> >I have a USB 3.0 multi-card reader device:
+> >
+> >Bus 004 Device 002: ID 05e3:0743 Genesys Logic, Inc.
+> >
+> >which seems to work fine in 3.13.4 (Fedora version kernel-3.13.4-200
+> >specifically) but fails in 3.13.5 (specifically kernel-3.13.5-202).
+> >Below is what I get in dmesg. Essentially there's a bunch of
+> >input/output errors making the reader mostly unusable.
+> >
+> >This is on an Intel Haswell machine with this controller:
+> >
+> >00:14.0 USB controller [0c03]: Intel Corporation 8 Series/C220 Series
+> >Chipset Family USB xHCI [8086:8c31] (rev 05)
+> >
+> >It looks like there were some XHCI commits that went into 3.13.5 so it
+> >seems likely one of those is the cause. I can try current git if there's
+> >anything in there that's likely to fix it. But it does seem like a
+> >regression got into the stable kernel in this respect.
+> 
+> Bisecting between 3.13.4 and 3.13.5 gives me this:
+> 
+> c8f44f98901994832ccecb87c3dd7900274b699a is the first bad commit
+> commit c8f44f98901994832ccecb87c3dd7900274b699a
+> Author: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+> Date:   Fri Jan 31 11:26:25 2014 -0800
+> 
+>     xhci 1.0: Limit arbitrarily-aligned scatter gather.
 
-On 03/06/2014 09:10 AM, Igor Mammedov wrote:
-> Hang is observed on virtual machines during CPU hotplug, especially
-> in big guests with many CPUs. (It happens more often if host is
-> over-committed).
-> 
-> Patch is present in RHEL6 since 2012 and it fixes issue there,
-> it also fixes issue in upstream kernel according to tests.
-> 
-> Below is detailed description of the problem:
-> -----
-> Master CPU may timeout before cpu_callin_mask is set and cancel
-> booting CPU, but being onlined CPU still continues to boot, sets
-> cpu_active_mask (CPU_STARTING notifiers) and spins in
-> check_tsc_sync_target() for master cpu to arrive. Following attempt
-> to online another cpu hangs in stop_machine, initiated from here:
-> 
-> smp_callin ->
->   smp_store_cpu_info ->
->     identify_secondary_cpu ->
->       mtrr_ap_init -> set_mtrr_from_inactive_cpu
-> 
-> stop_machine waits on completion of stop_work on all CPUs from
-> cpu_active_mask including a failed CPU that spins in check_tsc_sync_target().
-> 
-> Issue is fixed if being onlined CPU continues to boot and calls
-> notify_cpu_starting(cpuid) only when master CPU waits for it to
-> come online. If master CPU times out on cpu_callin_mask and goes via
-> cancel path, the being onlined CPU should gracefully shutdown itself.
-> 
-> Patch introduces cpu_may_complete_boot_mask to notify a being onlined
-> CPU that it may call notify_cpu_starting(cpuid) and continue to boot
-> when master CPU goes via normal boot path and going to wait till the
-> being onlined CPU completes its initialization.
-> 
-> - normal boot sequence will look like:
->     master CPU1                         being onlined CPU2
-> 
->  * wait for CPU2 in cpu_callin_mask
-> ---------------------------------------------------------------------
->                                         * set CPU2 in cpu_callin_mask
->                                         * wait till CPU1 set CPU2 bit
->                                         in cpu_may_complete_boot_mask
-> ---------------------------------------------------------------------
->  * set CPU2 bit in
->    cpu_may_complete_boot_mask
->  * return from do_boot_cpu() and
->    wait in
->      - check_tsc_sync_source() or
->      - while (!cpu_online(CPU2))
-> ---------------------------------------------------------------------
->                                         * call notify_cpu_starting()
->                                           and continue CPU2 initialization
->                                         * mark itself as ONLINE
-> ---------------------------------------------------------------------
->  * return to _cpu_up and call
->    cpu_notify(CPU_ONLINE, ...)
-> 
-> - cancel/error path will look like:
->     master CPU1                         being onlined CPU2
-> 
->  * time out on cpu_callin_mask
-> ---------------------------------------------------------------------
->                                        * set CPU2 in cpu_callin_mask
->                                        * wait till CPU2 is set in
->                                          cpu_may_complete_boot_mask or
->                                          cleared in cpu_callout_mask
-> ---------------------------------------------------------------------
->  * clear CPU2 in cpu_callout_mask
->  and return with error
-> ---------------------------------------------------------------------
->                                        * do cleanups and play_dead()
-> 
-> Signed-off-by: Igor Mammedov <imammedo@redhat.com>
-> ---
-> v2:
->  * updated commit message with description of which systems are affected
->    but bug and under which conditions.
-> ---
->  arch/x86/include/asm/cpumask.h |    1 +
->  arch/x86/kernel/cpu/common.c   |    2 ++
->  arch/x86/kernel/smpboot.c      |   37 +++++++++++++++++++++++++++++++++++--
->  3 files changed, 38 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/cpumask.h b/arch/x86/include/asm/cpumask.h
-> index 61c852f..eacd269 100644
-> --- a/arch/x86/include/asm/cpumask.h
-> +++ b/arch/x86/include/asm/cpumask.h
-> @@ -7,6 +7,7 @@ extern cpumask_var_t cpu_callin_mask;
->  extern cpumask_var_t cpu_callout_mask;
->  extern cpumask_var_t cpu_initialized_mask;
->  extern cpumask_var_t cpu_sibling_setup_mask;
-> +extern cpumask_var_t cpu_may_complete_boot_mask;
->  
->  extern void setup_cpu_local_masks(void);
->  
-> diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-> index 8e28bf2..4797111 100644
-> --- a/arch/x86/kernel/cpu/common.c
-> +++ b/arch/x86/kernel/cpu/common.c
-> @@ -50,6 +50,7 @@
->  cpumask_var_t cpu_initialized_mask;
->  cpumask_var_t cpu_callout_mask;
->  cpumask_var_t cpu_callin_mask;
-> +cpumask_var_t cpu_may_complete_boot_mask;
->  
->  /* representing cpus for which sibling maps can be computed */
->  cpumask_var_t cpu_sibling_setup_mask;
-> @@ -61,6 +62,7 @@ void __init setup_cpu_local_masks(void)
->  	alloc_bootmem_cpumask_var(&cpu_callin_mask);
->  	alloc_bootmem_cpumask_var(&cpu_callout_mask);
->  	alloc_bootmem_cpumask_var(&cpu_sibling_setup_mask);
-> +	alloc_bootmem_cpumask_var(&cpu_may_complete_boot_mask);
->  }
->  
->  static void default_init(struct cpuinfo_x86 *c)
-> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-> index a32da80..4e9a63b 100644
-> --- a/arch/x86/kernel/smpboot.c
-> +++ b/arch/x86/kernel/smpboot.c
-> @@ -104,6 +104,8 @@ EXPORT_PER_CPU_SYMBOL(cpu_info);
->  
->  atomic_t init_deasserted;
->  
-> +static void remove_siblinginfo(int cpu);
-> +
->  /*
->   * Report back to the Boot Processor during boot time or to the caller processor
->   * during CPU online.
-> @@ -202,12 +204,38 @@ static void smp_callin(void)
->  	set_cpu_sibling_map(raw_smp_processor_id());
->  	wmb();
->  
-> -	notify_cpu_starting(cpuid);
-> -
->  	/*
->  	 * Allow the master to continue.
->  	 */
->  	cpumask_set_cpu(cpuid, cpu_callin_mask);
-> +
-> +	/*
-> +	* Wait for signal from master CPU to continue or abort.
-> +	*/
-> +	while (!cpumask_test_cpu(cpuid, cpu_may_complete_boot_mask) &&
-> +		cpumask_test_cpu(cpuid, cpu_callout_mask)) {
-> +		cpu_relax();
-> +	}
+Yes, this is a known regression.  That commit should be reverted in
+3.14-rc shortly, and the patch will be backported to stable kernels.
+Mathias is taking over as xHCI maintainer, and he will queue the revert
+patches to Greg shortly.
 
-It is possible that you loop indefinitely in here ... but I suppose that's okay
-because other places in the cpu_up() path also loop indefinitely.
+Sarah Sharp
 
-> +
-> +	/* die if master cancelled cpu_up */
-> +	if (!cpumask_test_cpu(cpuid, cpu_may_complete_boot_mask))
-> +		goto die;
-
-Can this really happen?  AFAICT the master cpu does in do_boot_cpu() ... (sorry
-for the cut-and-paste)
-
-
-                /*
-                 * Wait 5s total for a response
-                 */
-                for (timeout = 0; timeout < 50000; timeout++) {
-                        if (cpumask_test_cpu(cpu, cpu_callin_mask))
-                                break;  /* It has booted */
-                        udelay(100);
-                        /*
-                         * Allow other tasks to run while we wait for the
-                         * AP to come online. This also gives a chance
-                         * for the MTRR work(triggered by the AP coming online)
-                         * to be completed in the stop machine context.
-                         */
-                        schedule();
-                }
-
-and if !cpumask_test_cpu(cpu, cpu_callin_mask) the master will set boot_error =
-1, which would result in the cpu_may_complete_boot_mask mask being cleared.  But
-you're not patching that path, or maybe I'm missing something.  Either way it is
-also prone to races through the code.
-
-> +
-> +	notify_cpu_starting(cpuid);
-> +	return;
-> +
-> +die:
-> +#ifdef CONFIG_HOTPLUG_CPU
-> +	/* was set by smp_store_cpu_info->...->numa_add_cpu */
-> +	numa_remove_cpu(cpuid);
-> +	remove_siblinginfo(cpuid);
-> +	clear_local_APIC();
-> +	/* was set by cpu_init() */
-> +	cpumask_clear_cpu(cpuid, cpu_initialized_mask);
-> +	cpumask_clear_cpu(cpuid, cpu_callin_mask);
-> +	play_dead();
-> +#endif
-
-Is the above necessary or should we just leave the state as-is and panic.  I
-think having the information around might be useful in determining what went wrong.
-
-> +	panic("%s: Failed to online CPU%d!\n", __func__, cpuid);
->  }
->  
->  static int cpu0_logical_apicid;
-> @@ -827,6 +855,8 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
->  		}
->  
->  		if (cpumask_test_cpu(cpu, cpu_callin_mask)) {
-> +			/* Signal AP that it may continue to boot */
-> +			cpumask_set_cpu(cpu, cpu_may_complete_boot_mask);
->  			print_cpu_msr(&cpu_data(cpu));
->  			pr_debug("CPU%d: has booted.\n", cpu);
->  		} else {
-> @@ -1085,6 +1115,7 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
->  	 */
->  	smp_store_boot_cpu_info(); /* Final full version of the data */
->  	cpumask_copy(cpu_callin_mask, cpumask_of(0));
-> +	cpumask_copy(cpu_may_complete_boot_mask, cpumask_of(0));
->  	mb();
->  
->  	current_thread_info()->cpu = 0;  /* needed? */
-> @@ -1294,6 +1325,8 @@ static void __ref remove_cpu_from_maps(int cpu)
->  	cpumask_clear_cpu(cpu, cpu_callin_mask);
->  	/* was set by cpu_init() */
->  	cpumask_clear_cpu(cpu, cpu_initialized_mask);
-> +	/* set by do_boot_cpu() */
-> +	cpumask_clear_cpu(cpu, cpu_may_complete_boot_mask);
->  	numa_remove_cpu(cpu);
->  }
->  
+> 
+>     commit 247bf557273dd775505fb9240d2d152f4f20d304 upstream.
+> 
+>     xHCI 1.0 hosts have a set of requirements on how to align transfer
+>     buffers on the endpoint rings called "TD fragment" rules.  When the
+>     ax88179_178a driver added support for scatter gather in 3.12, with
+>     commit 804fad45411b48233b48003e33a78f290d227c8 "USBNET: ax88179_178a:
+>     enable tso if usb host supports sg dma", it broke the device under xHCI
+>     1.0 hosts.  Under certain network loads, the device would see an
+>     unexpected short packet from the host, which would cause the device to
+>     stop sending ethernet packets, even through USB packets would still be
+>     sent.
+> 
+>     Commit 35773dac5f86 "usb: xhci: Link TRB must not occur within a USB
+>     payload burst" attempted to fix this.  It was a quick hack to partially
+>     implement the TD fragment rules.  However, it caused regressions in the
+>     usb-storage layer and userspace USB drivers using libusb.  The patches
+>     to attempt to fix this are too far reaching into the USB core, and we
+>     really need to implement the TD fragment rules correctly in the xHCI
+>     driver, instead of continuing to wallpaper over the issues.
+> 
+>     Disable arbitrarily-aligned scatter-gather in the xHCI driver for 1.0
+>     hosts.  Only the ax88179_178a driver checks the no_sg_constraint flag,
+>     so don't set it for 1.0 hosts.  This should not impact usb-storage or
+>     usbfs behavior, since they pass down max packet sized aligned sg-list
+>     entries (512 for USB 2.0 and 1024 for USB 3.0).
+> 
+>     Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+>     Tested-by: Mark Lord <mlord@pobox.com>
+>     Cc: David Laight <David.Laight@ACULAB.COM>
+>     Cc: Bjørn Mork <bjorn@mork.no>
+>     Cc: Freddy Xin <freddy@asix.com.tw>
+>     Cc: Ming Lei <ming.lei@canonical.com>
+>     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
