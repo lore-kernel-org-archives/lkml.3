@@ -1,59 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752049AbaCFN2p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 08:28:45 -0500
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:62181 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751602AbaCFN2n (ORCPT
+	id S1752179AbaCFNbX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 08:31:23 -0500
+Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:35945 "EHLO
+	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751055AbaCFNbV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 08:28:43 -0500
+	Thu, 6 Mar 2014 08:31:21 -0500
+Message-ID: <5318789B.1040402@mellanox.com>
+Date: Thu, 6 Mar 2014 15:31:07 +0200
+From: Or Gerlitz <ogerlitz@mellanox.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1403050019300.22601@jringle-ubuntu>
-References: <1393977709-9809-1-git-send-email-jringle@gridpoint.com>
-	<20140305050927.GA8534@kroah.com>
-	<alpine.DEB.2.02.1403050019300.22601@jringle-ubuntu>
-Date: Thu, 6 Mar 2014 14:28:42 +0100
-Message-ID: <CAFLxGvyB0r2RgeFhKoWqgWHLKEMF=BEM8ThRr8Mq6nGtJWQm1w@mail.gmail.com>
-Subject: Re: [PATCH] Add option to build with -O3
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: Jon Ringle <jringle@gridpoint.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "Ringle, Jonathan" <Jonathan.Ringle@gridpoint.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jiri Kosina <jkosina@suse.cz>
+CC: Roland Dreier <roland@kernel.org>, Amir Vadai <amirv@mellanox.com>,
+        Eli Cohen <eli@dev.mellanox.co.il>,
+        Eugenia Emantayev <eugenia@mellanox.com>,
+        "David S. Miller" <davem@davemloft.net>, Mel Gorman <mgorman@suse.de>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Saeed Mahameed <saeedm@mellanox.com>,
+        Sagi Grimberg <sagig@mellanox.com>,
+        Shlomo Pongratz <shlomop@mellanox.com>
+Subject: Re: [PATCH] mlx4: Use GFP_NOFS calls during the ipoib TX path when
+ creating the QP
+References: <alpine.LNX.2.00.1402211450410.1192@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1402211450410.1192@pobox.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.222.66.109]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 5, 2014 at 6:37 AM, Jon Ringle <jringle@gridpoint.com> wrote:
+On 21/02/2014 23:53, Jiri Kosina wrote:
+> This was originally a patch from Matthew Finlay<matt@mellanox.com>  that
+> addressed a problem whereby NFS writes would enter uninterruptible sleep
+> forever.  The issue happened when using NFS over IPoIB. This is not a
+> recommended configuration as RDMA is preferred but it is still a valid
+> configuration and is important to have in situations where the NFS server
+> does not support RDMA. The problem encountered was described as follows:
 >
+> 	It's not memory reclamation that is the problem as such. There is
+> 	an indirect dependency between network filesystems writing back
+> 	pages and ipoib_cm_tx_init() due to how a kworker is used. Page
+> 	reclaim cannot make forward progress until ipoib_cm_tx_init()
+> 	succeeds and it is stuck in page reclaim itself waiting for network
+> 	transmission. Ordinarily this sitaution may be avoided by having
+> 	the caller use GFP_NOFS but ipoib_cm_tx_init() does not have that information.
 >
-> On Wed, 5 Mar 2014, Greg KH wrote:
->
->> On Tue, Mar 04, 2014 at 07:01:49PM -0500, Jon Ringle wrote:
->> > +config CC_OPTIMIZE_FOR_SPEED
->> > +    bool "Optimze for speed (-O3)"
->> > +    help
->> > +      Enabling this option will pass "-O3" to gcc
->> > +      resulting in a larger kernel (but possibly faster)
->>
->> Are you sure about that?  Have you measured it?
->
-> I do know that there is an improvement performance-wise for my particular
-> use-case.
->
-> My target is an ARM board being built with gcc-4.8.2. My board has on it a
-> sc16is740 that is used as an RS-485 port. The sc16is740 is on the i2c bus,
-> so when an interrupt comes in to indicate that there is data available to
-> be read, I need to get the data over the i2c bus. I do this on a kthread
-> to do this work. The i2c transactions (using i2c-davinci driver) are also
-> interrupt driven. I was seeing a lot of lost packets when receiving data
-> at only 19200. Adding the -O3 compile option helped in this regard in that
-> I am now rarely seeing packet loss.
 
-Please also see:
-http://www.gossamer-threads.com/lists/linux/kernel/1835761?do=post_view_threaded#1835761
+Hi Jiri,
 
--- 
-Thanks,
-//richard
+Reading again (*) the problem description, the team here would be happy 
+to clarify with you some details (possibly
+few MM newbie questions, but it will help us):
+
+1. just to make sure, the problem happen on the NFS client, not the NFS 
+server, right? so writing-back means client
+writing over the NFS mount --> network
+
+2. you wrote "due to how a kworker is used", can you clarify if/why 
+things go wrong b/c of the kworker usage, or this is matter of phrasing?
+
+in earlier post over this thread you wrote "There was a problem with 
+swapping over NFS, as writeback was deadlocked with memory reclaim 
+(memory needs to be allocated so that > swap could be accessed to 
+reclaim memory). That's fixed by allocating the buffers from PF_MEMALLOC 
+reserve, introduced by Mel's and Peter's patchset back in 3.9 or so. Oh, 
+and the same has been done for swapping over NBD, btw", in that respect:
+
+3. you mentioned that the memory allocations in ipoib_cm_tx_init() and 
+ib_create_qp() --> mlx4 driver requires
+page reclaim and waits for network transmission, so this client node put 
+their swap over that NFS partition?
+
+4. Can you shed more light, why the problem hits also for kmalloc based 
+allocations and not only for vmalloc
+based allocation e.g not only b/c of the vzalloc call in 
+ipoib_cm_tx_init but rather also b/c of misc kmalloc calls within
+the HW (here mlx4) driver?
+
+thanks,
+
+Or.
+
+(*) and sorry for my stupid question from yesterday, sometimes it's bad 
+idea to ask questions on mailing lists when you are very tired
