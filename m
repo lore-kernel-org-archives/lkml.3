@@ -1,100 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752957AbaCFJXF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 04:23:05 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:33310 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752763AbaCFJVM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 04:21:12 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: [PATCH 6/7] ARM: dma: Use dma_pfn_offset for dma address translation
-Date: Thu, 6 Mar 2014 17:19:57 +0800
-Message-ID: <1394097598-17622-7-git-send-email-santosh.shilimkar@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1394097598-17622-1-git-send-email-santosh.shilimkar@ti.com>
-References: <1394097598-17622-1-git-send-email-santosh.shilimkar@ti.com>
+	id S1753047AbaCFJXk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 04:23:40 -0500
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:48855 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753023AbaCFJXi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 04:23:38 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <3a0fb59a555b40aca5610ef00626fdba@BL2PR03MB226.namprd03.prod.outlook.com>
+References: <CAOAoqGuicMKJ8e6kmQ92fL73UpvBzfXx9kafP4tCbUKkiT2=vA@mail.gmail.com>
+	<Pine.LNX.4.44L0.1403051101430.1629-100000@iolanthe.rowland.org>
+	<975d7885a8b64971923466f9f06a6229@BL2PR03MB226.namprd03.prod.outlook.com>
+	<CAOAoqGvzxsnpopgi4-DtfUp-zXbq6iV0J_y18Q0NgZ1AGzSu2Q@mail.gmail.com>
+	<3a0fb59a555b40aca5610ef00626fdba@BL2PR03MB226.namprd03.prod.outlook.com>
+Date: Thu, 6 Mar 2014 14:53:37 +0530
+Message-ID: <CAOAoqGu4exeZP2wgEWpRyD7+4RVRbB=vOe4Hc+rK3CVVigCWvg@mail.gmail.com>
+Subject: Re: USB remote wakeup through gpio interrupt
+From: Jagdish Gedia <jvgediya@gmail.com>
+To: Peter Chen <Peter.Chen@freescale.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Grygorii Strashko <grygorii.strashko@ti.com>
+Hi Alan,
 
-In most of cases DMA addresses can be performed using offset value of
- Bus address space relatively to physical address space as following:
+As you have told, i have executed pm_request_resume() function from my
+interrupt handler, and it is waking up my USB device. I have
+implemented all this functionality in class driver(cdc-acm.c).
+but what is happening is after 2-3 times, ausosuspend is getting
+disable for my device. I want autosuspend to be enabled for usb device
+forever. Do pm_request_resume function causes this behavior?
 
-PFN->DMA:
- __pfn_to_phys(pfn + [-]dma_pfn_offset)
 
-DMA->PFN:
- __phys_to_pfn(dma_addr) + [-]dma_pfn_offset
 
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Olof Johansson <olof@lixom.net>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
----
- arch/arm/include/asm/dma-mapping.h |   17 +++++++++++++----
- 1 file changed, 13 insertions(+), 4 deletions(-)
-
-diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
-index e701a4d..8c12149 100644
---- a/arch/arm/include/asm/dma-mapping.h
-+++ b/arch/arm/include/asm/dma-mapping.h
-@@ -58,22 +58,31 @@ static inline int dma_set_mask(struct device *dev, u64 mask)
- #ifndef __arch_pfn_to_dma
- static inline dma_addr_t pfn_to_dma(struct device *dev, unsigned long pfn)
- {
--	return (dma_addr_t)__pfn_to_bus(pfn);
-+	if (!dev)
-+		return DMA_ERROR_CODE;
-+	return (dma_addr_t)__pfn_to_bus(pfn - dev->dma_pfn_offset);
- }
- 
- static inline unsigned long dma_to_pfn(struct device *dev, dma_addr_t addr)
- {
--	return __bus_to_pfn(addr);
-+	if (!dev)
-+		return 0;
-+	return __bus_to_pfn(addr) + dev->dma_pfn_offset;
- }
- 
- static inline void *dma_to_virt(struct device *dev, dma_addr_t addr)
- {
--	return (void *)__bus_to_virt((unsigned long)addr);
-+	if (!dev)
-+		return NULL;
-+	return (void *)__bus_to_virt(__pfn_to_bus(dma_to_pfn(dev, addr)));
- }
- 
- static inline dma_addr_t virt_to_dma(struct device *dev, void *addr)
- {
--	return (dma_addr_t)__virt_to_bus((unsigned long)(addr));
-+	if (!dev)
-+		return DMA_ERROR_CODE;
-+	return pfn_to_dma(dev,
-+			   __bus_to_pfn(__virt_to_bus((unsigned long)(addr))));
- }
- 
- #else
--- 
-1.7.9.5
-
+Thanks,
+Jagdish Gediya
