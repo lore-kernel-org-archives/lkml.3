@@ -1,80 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753305AbaCFQQx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 11:16:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33878 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751647AbaCFQQv (ORCPT
+	id S1753370AbaCFQRT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 11:17:19 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:49276 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751647AbaCFQRQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 11:16:51 -0500
-Date: Thu, 6 Mar 2014 08:17:18 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Andrew Grover <andy.grover@gmail.com>,
-        Valentina Manea <valentina.manea.m@gmail.com>
-Cc: devel@driverdev.osuosl.org, shuah.kh@samsung.com,
-        linux-usb@vger.kernel.org, ly80toro@cip.cs.fau.de,
-        tobias.polzer@fau.de, linux-kernel@vger.kernel.org,
-        "Linux Kernel Community @ ROSEdu" <firefly@lists.rosedu.org>,
-        dominik.paulus@fau.de, ihadzic@research.bell-labs.com
-Subject: Re: [PATCH] staging: usbip: userspace: increase version to 2.0
-Message-ID: <20140306161718.GB9823@kroah.com>
-References: <1393960599-21379-1-git-send-email-valentina.manea.m@gmail.com>
- <20140304192014.GA28665@kroah.com>
- <CABdoFFdXzRE7wnkmwFo7Dt6vzM8KtunGo-vtOTTszekDfAOMVA@mail.gmail.com>
- <CABwEGXhH6AHO+qcNkq7qsMncJLUhS8YoK4koN9oJKeoF4uXuGw@mail.gmail.com>
+	Thu, 6 Mar 2014 11:17:16 -0500
+Date: Thu, 6 Mar 2014 16:17:13 +0000
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>
+Subject: Re: [PATCH v5 3/3] arm64: Add architecture support for PCI
+Message-ID: <20140306161713.GH6457@e106497-lin.cambridge.arm.com>
+Mail-Followup-To: Arnd Bergmann <arnd@arndb.de>,
+	linux-pci <linux-pci@vger.kernel.org>,
+	Bjorn Helgaas <bhelgaas@google.com>,
+	Catalin Marinas <Catalin.Marinas@arm.com>,
+	Will Deacon <Will.Deacon@arm.com>,
+	linaro-kernel <linaro-kernel@lists.linaro.org>,
+	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	LAKML <linux-arm-kernel@lists.infradead.org>,
+	Tanmay Inamdar <tinamdar@apm.com>
+References: <1393948216-11599-1-git-send-email-Liviu.Dudau@arm.com>
+ <1393948216-11599-4-git-send-email-Liviu.Dudau@arm.com>
+ <201403042328.51361.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABwEGXhH6AHO+qcNkq7qsMncJLUhS8YoK4koN9oJKeoF4uXuGw@mail.gmail.com>
+In-Reply-To: <201403042328.51361.arnd@arndb.de>
 User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 06 Mar 2014 16:17:14.0482 (UTC) FILETIME=[8942AD20:01CF3957]
+X-MC-Unique: 114030616171500601
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 05, 2014 at 11:30:06PM -0800, Andrew Grover wrote:
-> On Wed, Mar 5, 2014 at 10:14 PM, Valentina Manea
-> <valentina.manea.m@gmail.com> wrote:
-> > On Tue, Mar 4, 2014 at 9:20 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >> On Tue, Mar 04, 2014 at 09:16:39PM +0200, Valentina Manea wrote:
-> >>> -AC_INIT([usbip-utils], [1.1.1], [linux-usb@vger.kernel.org])
-> >>> +AC_INIT([usbip-utils], [2.0], [linux-usb@vger.kernel.org])
-> >>
-> >> Why?
-> >>
-> >> What does this mean?  What warrents the version change?  Why have a
-> >> version at all?
-> >
-> > This was part of an effort to "refresh" USB/IP by moving userspace out
-> > of kernel.git.
-> > Since some major changes have been made (libudev migration), Andy (cc'ed) and me
-> > thought it was worth to be promoted to version 2.0.
+On Tue, Mar 04, 2014 at 10:28:51PM +0000, Arnd Bergmann wrote:
+> On Tuesday 04 March 2014, Liviu Dudau wrote:
 > 
-> (sorry, resending in plain text mode so vger doesn't bounce (curse you
-> gmail :-))
+> > +extern int isa_dma_bridge_buggy;
 > 
-> Valentina did considerable work in moving usbip-utils from using the
-> defunct libsysfs to libudev (well, part of systemd now it seems.) so
-> some version bump seems appropriate, why not to 2.0? esp. as a
-> heads-up to pkg maintainers - btw usbip-utils is already packaged for
-> Debian, and I could probably see it in Fedora too, why not.
+> As commented before, I still think we can hardcode this to off
+
+Unfortunately that doesn't work when you have CONFIG_PCI=y. drivers/pci/pci.c has:
+
+drivers/pci/pci.c:int isa_dma_bridge_buggy;
+drivers/pci/pci.c:EXPORT_SYMBOL(isa_dma_bridge_buggy);
+
+and drivers/pci/quirks.c does:
+
+drivers/pci/quirks.c:   if (!isa_dma_bridge_buggy) {
+drivers/pci/quirks.c:           isa_dma_bridge_buggy=1;
+drivers/pci/quirks.c-           dev_info(&dev->dev, "Activating ISA DMA hang workarounds\n");
+drivers/pci/quirks.c-   }
+
+
 > 
-> As to why have a version at all, this is of course tied to whether
-> usbip-utils will ever emerge from the belly of the whale and return to
-> its own home. I think it should someday, if the concerns about
-> long-term maintenance and interface stability can be addressed to your
-> satisfaction. It would be considerable work to integrate it into the
-> kernel build, and would need to be undone if it ever left kernel.git.
+> > +unsigned long pci_address_to_pio(phys_addr_t address)
+> > +{
+> > +	struct ioresource *res;
+> > +
+> > +	list_for_each_entry(res, &io_list, list) {
+> > +		if (address >= res->start &&
+> > +			address < res->start + res->size) {
+> > +			return res->start - address;
+> > +		}
+> > +	}
+> > +
+> > +	return (unsigned long)-1;
+> > +}
+> > +EXPORT_SYMBOL_GPL(pci_address_to_pio);
+> 
+> This has two problems:
+> 
+> - You return the address in bus space not the logical Linux
+>   port number as powerpc and microblaze do.
+> - You imply that the window starts at bus address zero, which
+>   might not be the case.
 
-One big confusion this patch caused, is that it showed up "on its own"
-before the "libudev rewrite" in my inbox.  So all I see is this patch
-incrementing the version for no real reason.
+That's definitely not the intention here. I want to return the
+logical port number and I want that port number to start from
+zero for every registered IO range. 
 
-Valentina, please always order all of your patches so I know which order
-in which to apply them in.  I see a bunch of follow-on patches after
-your larger series, what order should they be applied in?  Can you just
-resend _all_ of these, and number them in the correct order in which
-they need to be applied in, so I know exactly what to do here?
+> 
+> > +EXPORT_SYMBOL(pcibios_fixup_bus);
+> 
+> no need for this export.
 
-thanks,
+OK.
 
-greg k-h
+> 
+> > +/*
+> > + * We don't have to worry about legacy ISA devices, so nothing to do here
+> > + */
+> > +resource_size_t pcibios_align_resource(void *data, const struct resource *res,
+> > +				resource_size_t size, resource_size_t align)
+> > +{
+> > +	return ALIGN(res->start, align);
+> > +}
+> > +EXPORT_SYMBOL(pcibios_align_resource);
+> 
+> or this one. Also, the ALIGN() is already done by the PCI core.
+
+This has been fix in v6 already.
+
+Thanks for reviewing this!
+
+Liviu
+
+> 
+> 	Arnd
+> 
+
+-- 
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
+
