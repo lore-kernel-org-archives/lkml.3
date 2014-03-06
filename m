@@ -1,58 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531AbaCFJbf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 04:31:35 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:32858 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752125AbaCFJbb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 04:31:31 -0500
-X-AuditID: cbfec7f5-b7fc96d000004885-68-53184070f718
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 1/2] gpio: max732x: Fix I2C dummy device resource leak on probe
- failure
-Date: Thu, 06 Mar 2014 10:31:15 +0100
-Message-id: <1394098276-11113-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFJMWRmVeSWpSXmKPExsVy+t/xy7oFDhLBBj/+qVmce/WIxeL1C0OL
-	KX+WM1lsnv+H0eLyrjlsDqweO2fdZfe4c20Pm0ffllWMHp83yQWwRHHZpKTmZJalFunbJXBl
-	LNy/hrVgMlvFszmH2RoYJ7F2MXJwSAiYSKz9x9/FyAlkiklcuLeeDcQWEljKKHF3TUoXIxeQ
-	3cck8WPNJnaQBJuAscTm5UvYQBIiAhMYJT61PWIESTALGEr8fPcHrEhYIFLix+bJLCA2i4Cq
-	xO4Pf5i7GNk5eAXcJWbrQaxVkJgzyWYCI/cCRoZVjKKppckFxUnpuUZ6xYm5xaV56XrJ+bmb
-	GCH+/7qDcekxq0OMAhyMSjy8G/zEg4VYE8uKK3MPMUpwMCuJ8G4xlAgW4k1JrKxKLcqPLyrN
-	SS0+xMjEwSnVwFjGe18m/GKr5uXMd1KFLRKaaltOfX9stuf34jqx9+rVxxmOiTqu3evx/M/U
-	mWZryx1y+7IW/5f5JTeNre2IxtOgjxNWrdjh6XtgYUrcbCmdH1d0J3TfS1JTPr+CR8TsuIrp
-	P0WnFzZsi7KnXC0rsX0wKy2Aleu9sP6P41ycS9uC07kswkN6c5RYijMSDbWYi4oTAehywLLd	AQAA
+	id S1752863AbaCFJcL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 04:32:11 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:44089 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751673AbaCFJcC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 04:32:02 -0500
+Message-ID: <5318408B.5060008@ti.com>
+Date: Thu, 6 Mar 2014 11:31:55 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Wang YanQing <udknight@gmail.com>
+CC: <plagnioj@jcrosoft.com>, <linux-fbdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <fengguang.wu@intel.com>
+Subject: Re: [PATCH] video: fbdev: uvesafb: Remove redundant NULL check in
+ uvesafb_remove
+References: <20140305155418.GA32106@udknight>
+In-Reply-To: <20140305155418.GA32106@udknight>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="ArhphSkR9HshWXe3UhRxH07fVj8mxJBVS"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In max732x_probe() driver allocates dummy I2C device (if number of ports
-is greater than 8) however it is not unregistered if probe fails later.
-Fix the leak by unregistering dummy I2C device if it was allocated.
+--ArhphSkR9HshWXe3UhRxH07fVj8mxJBVS
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- drivers/gpio/gpio-max732x.c |    2 ++
- 1 file changed, 2 insertions(+)
+On 05/03/14 17:54, Wang YanQing wrote:
+> Because uvesafb_par is allocated as part of fb_info in uvesafb_probe,
+> so we don't need to do NULL check for both fb_info and uvesafb_par in
+> uvesafb_remove.
+>=20
+> [ This patch also fix a warning report by fengguang.wu@intel.com
+>   "drivers/video/fbdev/uvesafb.c:1815 uvesafb_remove()
+>    warn: variable dereferenced before check 'par'" ]
+>=20
+> Signed-off-by: Wang YanQing <udknight@gmail.com>
+> ---
+>  drivers/video/fbdev/uvesafb.c | 8 +++-----
+>  1 file changed, 3 insertions(+), 5 deletions(-)
+>=20
+> diff --git a/drivers/video/fbdev/uvesafb.c b/drivers/video/fbdev/uvesaf=
+b.c
+> index 1f38445..18352b2 100644
+> --- a/drivers/video/fbdev/uvesafb.c
+> +++ b/drivers/video/fbdev/uvesafb.c
+> @@ -1812,11 +1812,9 @@ static int uvesafb_remove(struct platform_device=
+ *dev)
+>  		fb_destroy_modedb(info->monspecs.modedb);
+>  		fb_dealloc_cmap(&info->cmap);
+> =20
+> -		if (par) {
+> -			kfree(par->vbe_modes);
+> -			kfree(par->vbe_state_orig);
+> -			kfree(par->vbe_state_saved);
+> -		}
+> +		kfree(par->vbe_modes);
+> +		kfree(par->vbe_state_orig);
+> +		kfree(par->vbe_state_saved);
+> =20
+>  		framebuffer_release(info);
+>  	}
+>=20
 
-diff --git a/drivers/gpio/gpio-max732x.c b/drivers/gpio/gpio-max732x.c
-index 36cb290764b6..74432daaf656 100644
---- a/drivers/gpio/gpio-max732x.c
-+++ b/drivers/gpio/gpio-max732x.c
-@@ -647,6 +647,8 @@ static int max732x_probe(struct i2c_client *client,
- 	return 0;
- 
- out_failed:
-+	if (chip->client_dummy)
-+		i2c_unregister_device(chip->client_dummy);
- 	max732x_irq_teardown(chip);
- 	return ret;
- }
--- 
-1.7.9.5
+Thanks, queuing for 3.15.
 
+ Tomi
+
+
+
+--ArhphSkR9HshWXe3UhRxH07fVj8mxJBVS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJTGECLAAoJEPo9qoy8lh71qWMP/jMeWcJ+lkCR7fUTh7QZRyYA
+ncegUkI2h0+fM3woDhkojeWKWLHMK1DNGd33Pk0YiPmaTXBFS95aIcFtNY0TWOyg
+EGTmjRntPvw/KeiWbxlVhrcK2dZiC6P2Xfyou9CL2pRW90y2VpNw6kNGws0NKT+b
+MMYI/OeDYaOO4xHoOCevJ0T2zONDFHyPWDMMLmYx1wJJiTW3UQBsAiyszvAgRmAH
+V3T63FlEF9rocUVZdQ2Va8vi91zl7jxZ2z2cKSaBv+6qb+YE4NQZyvfBYVhaBnAf
+InARxz4o9dNyNjErUYZ5VuM1qqfz0VWs80gjszFIK4Pugop9pmG1YQkFsA2iLBoU
+wZYH1dG3vwtvck4k9+81nIUtdNhl54DHI9WCDsUKRAu+OVja4L86ZOGsEtr6nXnF
+9vzGFB0mD7rZI/cv/GkJGRCOQdRwEk5OcIR2q8GCOfdRxDSWATkXTxfI8vsV/lvh
+kyLTynVhbzdx9S9BLo78AcKg/ids1YFOYswaFFt9sew1V5kfJdYfoqQ8tz41AIX3
+0L61CGKEsAKIH57F28CzJfieRqDm6P675iag1nFFk6l6b6XBqncz9sU1JF1Crg1C
+FmbGQcY9yk26E4g3N9lusk3Xzc2AJuqOrtbh/ztz3m/HGDCQtLjhXGd4KCRGuvkt
+COFUTCGugNASYRVuGxx4
+=zre0
+-----END PGP SIGNATURE-----
+
+--ArhphSkR9HshWXe3UhRxH07fVj8mxJBVS--
