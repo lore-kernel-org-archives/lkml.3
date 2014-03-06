@@ -1,175 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736AbaCFRlQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 12:41:16 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:45396 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972AbaCFRlO (ORCPT
+	id S1752926AbaCFRld (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 12:41:33 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:60778 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752306AbaCFRlP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 12:41:14 -0500
-Message-ID: <5318B339.6010000@codeaurora.org>
-Date: Thu, 06 Mar 2014 09:41:13 -0800
-From: Laura Abbott <lauraa@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 6 Mar 2014 12:41:15 -0500
 MIME-Version: 1.0
-To: Vlastimil Babka <vbabka@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH] mm/compaction: Break out of loop on !PageBuddy in isolate_freepages_block
-References: <1394072800-11776-1-git-send-email-lauraa@codeaurora.org> <53184C5F.1080406@suse.cz>
-In-Reply-To: <53184C5F.1080406@suse.cz>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <5318160D.8070305@amd.com>
+References: <1394053603-3724-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <CAErSpo4MMJh9b0aivwGSbxCMVw24He1+Vo_LH0R0E+fYM5aThg@mail.gmail.com>
+ <5317D9B0.1080502@amd.com> <5318160D.8070305@amd.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 6 Mar 2014 10:40:54 -0700
+Message-ID: <CAErSpo59=52bqgyvqk1x7kcgFmRtdZhT6faYTi3wy7KDtk5=Pw@mail.gmail.com>
+Subject: Re: [PATCH 0/3] amd/pci: Add AMD hostbridge supports for newer AMD systems
+To: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>,
+        kim.naru@amd.com,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/6/2014 2:22 AM, Vlastimil Babka wrote:
-> On 03/06/2014 03:26 AM, Laura Abbott wrote:
->> We received several reports of bad page state when freeing CMA pages
->> previously allocated with alloc_contig_range:
->>
->> <1>[ 1258.084111] BUG: Bad page state in process Binder_A  pfn:63202
->> <1>[ 1258.089763] page:d21130b0 count:0 mapcount:1 mapping:  (null)
->> index:0x7dfbf
->> <1>[ 1258.096109] page flags: 0x40080068(uptodate|lru|active|swapbacked)
->>
->> Based on the page state, it looks like the page was still in use. The
->> page
->> flags do not make sense for the use case though. Further debugging showed
->> that despite alloc_contig_range returning success, at least one page
->> in the
->> range still remained in the buddy allocator.
->>
->> There is an issue with isolate_freepages_block. In strict mode (which CMA
->> uses), if any pages in the range cannot be isolated,
->> isolate_freepages_block
->> should return failure 0. The current check keeps track of the total
->> number
->> of isolated pages and compares against the size of the range:
->>
->>          if (strict && nr_strict_required > total_isolated)
->>                  total_isolated = 0;
->>
->> After taking the zone lock, if one of the pages in the range is not
->> in the buddy allocator, we continue through the loop and do not
->
->> increment total_isolated. If we end up over isolating by more than
->> one page (e.g. last since page needed is a higher order page), it
->> is not possible to detect that the page was skipped. The fix is to
->
-> I found it hard to grasp this sentence at first. Perhaps something like
-> "if in the last iteration of the loop we isolate more than one page
-> (e.g. ...), the check for total_isolated may pass and we fail to detect
-> that a page was skipped" would be better?
->
+[+cc Yinghai, sorry I didn't think of it before]
 
-Yes, that sounds much better.
-
->> bail out if the loop immediately if we are in strict mode. There's
->> no benfit to continuing anyway since we need all pages to be
->> isolated.
->
-> That looks sound , but I wonder if it makes sense to keep the
-> nr_strict_required stuff after this change. The check could then simply
-> use 'if (pfn < end_pfn)' the same way as isolate_freepages_range does,
-> right?
->
-
-I had that thought as well. I'll fix that up for v2 along with the rest 
-of your comments.
-
->> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
->> ---
->>   mm/compaction.c |   25 +++++++++++++++++++------
->>   1 files changed, 19 insertions(+), 6 deletions(-)
+On Wed, Mar 5, 2014 at 11:30 PM, Suravee Suthikulpanit
+<suravee.suthikulpanit@amd.com> wrote:
+> On 3/5/2014 8:13 PM, Suravee Suthikulanit wrote:
 >>
->> diff --git a/mm/compaction.c b/mm/compaction.c
->> index b48c525..3190cef 100644
->> --- a/mm/compaction.c
->> +++ b/mm/compaction.c
->> @@ -263,12 +263,21 @@ static unsigned long
->> isolate_freepages_block(struct compact_control *cc,
->>           struct page *page = cursor;
+>> On 3/5/2014 3:24 PM, Bjorn Helgaas wrote:
+>>>
+>>> [+cc linux-acpi]
+>>>
+>>> On Wed, Mar 5, 2014 at 2:06 PM,  <suravee.suthikulpanit@amd.com> wrote:
+>>>>
+>>>> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+>>>>
+>>>> The current code only supports upto AMD hostbridge for family11h.
+>>>> This causes PCI numa_node information to be reported incorrectly
+>>>> for newer family with multi sockets.
+>>>
+>>>
+>>> Where is the incorrect reporting?  In ACPI tables?  Is this patch a
+>>> way to cover up firmware defects in the ACPI description?  Or is this
+>>> for machines without ACPI (it seems unlikely that machines with new
+>>> AMD processors would not have ACPI)?
 >>
->>           nr_scanned++;
->> -        if (!pfn_valid_within(blockpfn))
->> -            continue;
->> +        if (!pfn_valid_within(blockpfn)) {
->> +            if (strict)
->> +                break;
->> +            else
->> +                continue;
->> +        }
->> +
->>           if (!valid_page)
->>               valid_page = page;
->> -        if (!PageBuddy(page))
->> -            continue;
->> +        if (!PageBuddy(page)) {
->> +            if (strict)
->> +                break;
->> +            else
->> +                continue;
->> +        }
 >>
->>           /*
->>            * The zone lock must be held to isolate freepages.
->> @@ -288,8 +297,12 @@ static unsigned long
->> isolate_freepages_block(struct compact_control *cc,
->>               break;
+>> This is incorrectly reported in the sysfs for each PCI device (e.g.
+>> /devices/pci0000:50/0000:50:00.2/numa_node). Without the patch, they
+>> return -1.
 >>
->>           /* Recheck this is a buddy page under lock */
->> -        if (!PageBuddy(page))
->> -            continue;
->> +        if (!PageBuddy(page)) {
->> +            if (strict)
->> +                break;
->> +            else
->> +                continue;
->> +        }
->
-> To avoid this triple if-else occurence, you could instead do a "goto
-> isolate_failed;" and put the if-else under said label at the end of the
-> loop, also allowing extra cleanup, something like this:
->
-> @@ -298,8 +298,6 @@ static unsigned long isolate_freepages_block(struct
-> compact_control *cc,
->
->                  /* Found a free page, break it into order-0 pages */
->                  isolated = split_free_page(page);
-> -               if (!isolated && strict)
-> -                       break;
->                  total_isolated += isolated;
->                  for (i = 0; i < isolated; i++) {
->                          list_add(&page->lru, freelist);
-> @@ -310,7 +308,13 @@ static unsigned long isolate_freepages_block(struct
-> compact_control *cc,
->                  if (isolated) {
->                          blockpfn += isolated - 1;
->                          cursor += isolated - 1;
-> +                       continue;
->                  }
-> +isolate_fail:
-> +               if (strict)
-> +                       break;
-> +               else
-> +                       continue;
->
->
-> Thanks,
-> Vlastimil
->
->>           /* Found a free page, break it into order-0 pages */
->>           isolated = split_free_page(page);
+>> In file arch/x86/pci/acpi.c, in function pci_acpi_scan_root(), it is
+>> queries the node information as following:
 >>
+>> #ifdef CONFIG_ACPI_NUMA
+>>      pxm = acpi_get_pxm(device->handle);
+>>      if (pxm >= 0)
+>>          node = pxm_to_node(pxm);
+>>      if (node != -1)
+>>          set_mp_bus_to_node(busnum, node);
+>>      else
+>> #endif
+>>          node = get_mp_bus_to_node(busnum);
+>>
+>> In this case, I see that the acpi_get_pxm() returns -1.  Therefore, it
+>> falls back to using the node information in mp_bus_to_node[].  So,
+>> without this patch, it would also returning -1.
+>>
+>> Also, the spec mentioned that the _PXM is optional, so I am not sure if
+>> this is a firmware bug.
 >
+> I am not quite familiar with the ACPI for this part.  However, after taking
+> a look at the code (in driver/acpi/pci_root.c: acpi_pci_root_add()), I
+> believe it's trying to locate _PXM method in the DSDT table, in which I
+> don't see any _PXM methods.
 
-Thanks,
-Laura
+This sure looks like a firmware bug.  True, _PXM is optional, but if
+the firmware doesn't provide it, nobody should be surprised that the
+OS thinks everything is in the same proximity domain.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+I would not endorse extending amd_bus.c for new CPUs.  That just
+covers up firmware problems like this, and if you ever run a different
+OS on the box, you'll trip over them again.  And I don't think a patch
+like this will even be a possibility for Windows.
+
+Bjorn
