@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752428AbaCFTPi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 14:15:38 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:57772 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750829AbaCFTPg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 14:15:36 -0500
-Message-ID: <5318C98C.1070702@kernel.org>
-Date: Thu, 06 Mar 2014 19:16:28 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752752AbaCFTQM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 14:16:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32550 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751124AbaCFTQL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 14:16:11 -0500
+Message-ID: <5318C961.4000606@redhat.com>
+Date: Thu, 06 Mar 2014 20:15:45 +0100
+From: Nikolay Aleksandrov <nikolay@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Josh Wu <josh.wu@atmel.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org
-Subject: Re: [PATCH 2/3] ARM: at91: at91sam9g45: change at91_adc name
-References: <1394038675-15809-1-git-send-email-alexandre.belloni@free-electrons.com> <1394038675-15809-3-git-send-email-alexandre.belloni@free-electrons.com>
-In-Reply-To: <1394038675-15809-3-git-send-email-alexandre.belloni@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Sasha Levin <sasha.levin@oracle.com>, fubar@us.ibm.com, vfalico@redhat.com,
+        andy@greyhouse.net
+CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] bonding: correctly handle out of range parameters for
+ lp_interval
+References: <1394129030-9947-1-git-send-email-sasha.levin@oracle.com>
+In-Reply-To: <1394129030-9947-1-git-send-email-sasha.levin@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/14 16:57, Alexandre Belloni wrote:
-> We can't use "at91_adc" to refer to the at91_adc driver anymore as the name is
-> used to match an id_table.
->
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-As stated in previous email, I'll take this along with the fix that 'broke'
-this, if I get an Ack from one of the at91 maintainers.
-
-Thanks,
-
-Jonathan
+On 03/06/2014 07:03 PM, Sasha Levin wrote:
+> We didn't correctly check cases where the value for lp_interval is not
+> within the legal range due to a missing table terminator.
+> 
+> This would let userspace trigger a kernel panic by specifying a value out
+> of range:
+> 
+> 	echo -1 > /sys/devices/virtual/net/bond0/bonding/lp_interval
+> 
+> Introduced by commit "bonding: add infrastructure for an option API".
+> 
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 > ---
->   arch/arm/mach-at91/at91sam9g45_devices.c | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
-> index cb36fa872d30..88554024eb2d 100644
-> --- a/arch/arm/mach-at91/at91sam9g45_devices.c
-> +++ b/arch/arm/mach-at91/at91sam9g45_devices.c
-> @@ -1203,7 +1203,7 @@ static struct resource adc_resources[] = {
->   };
->
->   static struct platform_device at91_adc_device = {
-> -	.name		= "at91_adc",
-> +	.name		= "at91sam9g45-adc",
->   	.id		= -1,
->   	.dev		= {
->   				.platform_data	= &adc_data,
->
+>  drivers/net/bonding/bond_options.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/net/bonding/bond_options.c b/drivers/net/bonding/bond_options.c
+> index 23f3655..4d35cdc 100644
+> --- a/drivers/net/bonding/bond_options.c
+> +++ b/drivers/net/bonding/bond_options.c
+> @@ -124,6 +124,7 @@ static struct bond_opt_value bond_resend_igmp_tbl[] = {
+>  static struct bond_opt_value bond_lp_interval_tbl[] = {
+>  	{ "minval",  1,       BOND_VALFLAG_MIN | BOND_VALFLAG_DEFAULT},
+>  	{ "maxval",  INT_MAX, BOND_VALFLAG_MAX},
+> +	{ NULL,      -1,      0},	
+>  };
+>  
+>  static struct bond_option bond_opts[] = {
+> 
+Thanks!
+
+One note though, the commit that introduces the problem is not that one.
+It's 4325b374f84e59226851636df946f2500d0bfeba ("bonding: convert
+lp_interval to use the new option API"), after that's corrected you
+can add my:
+
+Acked-by: Nikolay Aleksandrov <nikolay@redhat.com>
 
