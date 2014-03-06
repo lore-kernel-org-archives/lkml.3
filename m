@@ -1,79 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757985AbaCFAGE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 19:06:04 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:37932 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754865AbaCFAGB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 19:06:01 -0500
-Message-ID: <5317BBE1.4050001@linux.vnet.ibm.com>
-Date: Wed, 05 Mar 2014 16:05:53 -0800
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Michael Ellerman <mpe@ellerman.id.au>,
-        Linux PPC <linuxppc-dev@lists.ozlabs.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        scottwood@freescale.com
-Subject: Re: [PATCH v3 02/11] perf: add PMU_FORMAT_RANGE() helper for use
- by sw-like pmus
-References: <20140304051936.33A712C01AB@ozlabs.org> <53158A2F.8050605@linux.vnet.ibm.com>
-In-Reply-To: <53158A2F.8050605@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14030600-1344-0000-0000-0000000E0A94
+	id S1756968AbaCFAMn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 19:12:43 -0500
+Received: from ozlabs.org ([203.10.76.45]:57566 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754846AbaCFAMl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 19:12:41 -0500
+Date: Thu, 6 Mar 2014 11:12:29 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: akpm@linux-foundation.org
+Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-next@vger.kernel.org
+Subject: Re: mmotm 2014-03-05-15-50 uploaded
+Message-Id: <20140306111229.7e9821f6171c15c6d7b95bd6@canb.auug.org.au>
+In-Reply-To: <20140305235119.DE4EE31C369@corp2gmr1-1.hot.corp.google.com>
+References: <20140305235119.DE4EE31C369@corp2gmr1-1.hot.corp.google.com>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__6_Mar_2014_11_12_29_+1100_tlJ7ouoTJSu7ENbK"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/2014 12:09 AM, Cody P Schafer wrote:
-> On 03/03/2014 09:19 PM, Michael Ellerman wrote:
->> On Thu, 2014-27-02 at 21:04:55 UTC, Cody P Schafer wrote:
->>> Add PMU_FORMAT_RANGE() and PMU_FORMAT_RANGE_RESERVED() (for reserved
->>> areas) which generate functions to extract the relevent bits from
->>> event->attr.config{,1,2} for use by sw-like pmus where the
->>> 'config{,1,2}' values don't map directly to hardware registers.
->>>
->>> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
->>> ---
->>>   include/linux/perf_event.h | 17 +++++++++++++++++
->>>   1 file changed, 17 insertions(+)
->>>
->>> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
->>> index e56b07f..3da5081 100644
->>> --- a/include/linux/perf_event.h
->>> +++ b/include/linux/perf_event.h
->>> @@ -871,4 +871,21 @@ _name##_show(struct device
->>> *dev,                    \
->>>                                       \
->>>   static struct device_attribute format_attr_##_name = __ATTR_RO(_name)
->>>
->>> +#define PMU_FORMAT_RANGE(name, attr_var, bit_start, bit_end)        \
->>> +PMU_FORMAT_ATTR(name, #attr_var ":" #bit_start "-" #bit_end);        \
->>> +PMU_FORMAT_RANGE_RESERVED(name, attr_var, bit_start, bit_end)
->>
->> I really think these should have event in the name.
->>
->> Someone looking at the code is going to see event_get_foo() and wonder
->> where
->> that is defined. Grep won't find a definition, tags won't find a
->> definition,
->> the least you can do is have the macro name give some hint.
->>
->
-> That is a good point (grep-ability). Let me think about this. There is
-> also the possibility that I could adjust the event_get_*() naming to
-> something else. format_get_*()? event_get_format_*()? (these names keep
-> growing...)
->
+--Signature=_Thu__6_Mar_2014_11_12_29_+1100_tlJ7ouoTJSu7ENbK
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I've gone with a format_get(name, event) style macro (making it more 
-grep-able), in v4.
-Feel free to direct further discussion to the v4 posting.
+Hi Andrew,
 
+On Wed, 05 Mar 2014 15:51:19 -0800 akpm@linux-foundation.org wrote:
+>
+> The mm-of-the-moment snapshot 2014-03-05-15-50 has been uploaded to
+>=20
+>    http://www.ozlabs.org/~akpm/mmotm/
+>=20
+> mmotm-readme.txt says
+>=20
+> README for mm-of-the-moment:
+>=20
+> http://www.ozlabs.org/~akpm/mmotm/
+
+	.
+	.
+
+>   linux-next.patch
+> * drivers-gpio-gpio-zevioc-fix-build.patch
+
+I will drop this patch in linux-next as I have reverted the commit that
+introduces that driver until it is fixed.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__6_Mar_2014_11_12_29_+1100_tlJ7ouoTJSu7ENbK
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTF712AAoJEMDTa8Ir7ZwV4KwP/jBr9+EqR6rp2SUbpnxAAB01
+NtDLX7HItpUovaFFvo9XSgmMU1VtNqVv28XidTRBI0sggHpdedxC8Ss3ynQGy+nY
+N04BSI12LsVcAR5dU04Z2B9LMo8WVYo0W0lMgE/8ZHagyhoHph82PzNrMiKUSk9h
+osvdz6cOI+IJLZmD83HYI1RaWTNP0ZGbuGhdXeh7iRXVLVcHhUdZadA9Y8lS5Rpy
+lAdrKvLOPMvksXPkqWgCgEO6K7fEK2JSL0pttfH3lOFcdC7M8asjLG9x4OVYbEAC
+3X9rr+W1bV/18slke6bwtQgCqM+IaWGKMGWejvfl4OWiWEOEcf7XuFaSAnr3qziD
+yWhVzIJI48v3HdEO9ji6IhupxdDKrf1p2hQEUCkkk7OUSLBaLsWOUrcaDZdYVnbO
+lnz6wmsS4UwdUP1LKR/miX2fus7hGMoG4Uo/fzXWGGDMmOLN9amlGPO+mK/IDlvp
+C6a5bkZcHZjrqhwwbbAy6kIUxqebd+faYuPCj9v8BnrTN9umbViaAtWYDAPqcJEz
+Ubfxte/J6/I0heXL4oWykel8TP9haN0HOjub7yvOOXx/WCga+Do0Ekk/RffW3vJW
+ji2Llse/NPOE5VmLWto5u65hMVUD+ELj41v+I/7L2H8yWxVwyVw/9hpf9wCx9rd2
+Ur1QXHuJdu1ycyj0xjjv
+=qdOE
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__6_Mar_2014_11_12_29_+1100_tlJ7ouoTJSu7ENbK--
