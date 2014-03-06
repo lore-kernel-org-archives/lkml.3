@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752690AbaCFKho (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 05:37:44 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44133 "EHLO
+	id S1752808AbaCFKiA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 05:38:00 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44139 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751545AbaCFKhl (ORCPT
+	with ESMTP id S1752716AbaCFKh5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 05:37:41 -0500
-Date: Thu, 6 Mar 2014 02:37:20 -0800
-From: tip-bot for Stefan Agner <tipbot@zytor.com>
-Message-ID: <tip-224aa3ed45c8735ae02bb2ecca002409fa6aa772@git.kernel.org>
+	Thu, 6 Mar 2014 05:37:57 -0500
+Date: Thu, 6 Mar 2014 02:37:32 -0800
+From: tip-bot for Finn Thain <tipbot@zytor.com>
+Message-ID: <tip-e571c58f313d35c56e0018470e3375ddd1fd320e@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, shawn.guo@linaro.org, stefan@agner.ch
+        geert@linux-m68k.org, fthain@telegraphics.com.au, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, stefan@agner.ch, shawn.guo@linaro.org
-In-Reply-To: <d25af915993aec1b486be653eb86f748ddef54fe.1394057313.git.stefan@agner.ch>
-References: <d25af915993aec1b486be653eb86f748ddef54fe.1394057313.git.stefan@agner.ch>
+        geert@linux-m68k.org, fthain@telegraphics.com.au, tglx@linutronix.de
+In-Reply-To: <alpine.LNX.2.00.1403061006440.5525@nippy.intranet>
+References: <alpine.LNX.2.00.1403061006440.5525@nippy.intranet>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/urgent] clocksource: vf_pit_timer:
-  use complement for sched_clock reading
-Git-Commit-ID: 224aa3ed45c8735ae02bb2ecca002409fa6aa772
+Subject: [tip:core/locking] m68k: Skip futex_atomic_cmpxchg_inatomic()
+  test
+Git-Commit-ID: e571c58f313d35c56e0018470e3375ddd1fd320e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,43 +32,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  224aa3ed45c8735ae02bb2ecca002409fa6aa772
-Gitweb:     http://git.kernel.org/tip/224aa3ed45c8735ae02bb2ecca002409fa6aa772
-Author:     Stefan Agner <stefan@agner.ch>
-AuthorDate: Wed, 5 Mar 2014 23:11:08 +0100
+Commit-ID:  e571c58f313d35c56e0018470e3375ddd1fd320e
+Gitweb:     http://git.kernel.org/tip/e571c58f313d35c56e0018470e3375ddd1fd320e
+Author:     Finn Thain <fthain@telegraphics.com.au>
+AuthorDate: Thu, 6 Mar 2014 10:29:27 +1100
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Thu, 6 Mar 2014 11:34:14 +0100
+CommitDate: Thu, 6 Mar 2014 11:35:17 +0100
 
-clocksource: vf_pit_timer: use complement for sched_clock reading
+m68k: Skip futex_atomic_cmpxchg_inatomic() test
 
-Vybrids PIT register is monitonic decreasing. However, sched_clock
-reading needs to be monitonic increasing. Use bitwise not to get
-the complement of the clock register. This fixes the clock going
-backward. Also, the clock now starts at 0 since we load the
-register with the maximum value at start.
+Skip the futex_atomic_cmpxchg_inatomic() test in futex_init(). It causes a 
+fatal exception on 68030 (and presumably 68020 also).
 
-Signed-off-by: Stefan Agner <stefan@agner.ch>
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
-Cc: daniel.lezcano@linaro.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux@arm.linux.org.uk
-Link: http://lkml.kernel.org/r/d25af915993aec1b486be653eb86f748ddef54fe.1394057313.git.stefan@agner.ch
-Cc: stable@vger.kernel.org
+Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Link: http://lkml.kernel.org/r/alpine.LNX.2.00.1403061006440.5525@nippy.intranet
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- drivers/clocksource/vf_pit_timer.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/clocksource/vf_pit_timer.c b/drivers/clocksource/vf_pit_timer.c
-index 02821b0..a918bc4 100644
---- a/drivers/clocksource/vf_pit_timer.c
-+++ b/drivers/clocksource/vf_pit_timer.c
-@@ -54,7 +54,7 @@ static inline void pit_irq_acknowledge(void)
- 
- static u64 pit_read_sched_clock(void)
- {
--	return __raw_readl(clksrc_base + PITCVAL);
-+	return ~__raw_readl(clksrc_base + PITCVAL);
- }
- 
- static int __init pit_clocksource_init(unsigned long rate)
+---
+ arch/m68k/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/m68k/Kconfig b/arch/m68k/Kconfig
+index dbdd223..b2e3229 100644
+--- a/arch/m68k/Kconfig
++++ b/arch/m68k/Kconfig
+@@ -17,6 +17,7 @@ config M68K
+ 	select FPU if MMU
+ 	select ARCH_WANT_IPC_PARSE_VERSION
+ 	select ARCH_USES_GETTIMEOFFSET if MMU && !COLDFIRE
++	select HAVE_FUTEX_CMPXCHG if MMU && FUTEX
+ 	select HAVE_MOD_ARCH_SPECIFIC
+ 	select MODULES_USE_ELF_REL
+ 	select MODULES_USE_ELF_RELA
