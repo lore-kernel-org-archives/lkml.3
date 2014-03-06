@@ -1,79 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407AbaCFUbz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 15:31:55 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:16582 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751645AbaCFUby (ORCPT
+	id S1752782AbaCFUh0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 15:37:26 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:60408 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751953AbaCFUhY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 15:31:54 -0500
-Date: Thu, 6 Mar 2014 15:31:51 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: jirislaby@gmail.com, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH v2 6/6] ftrace: Fix compilation warning about
- control_ops_free
-Message-ID: <20140306153151.4f7ca9ca@gandalf.local.home>
-In-Reply-To: <1393268401-24379-6-git-send-email-jslaby@suse.cz>
-References: <1393268401-24379-1-git-send-email-jslaby@suse.cz>
-	<1393268401-24379-6-git-send-email-jslaby@suse.cz>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Thu, 6 Mar 2014 15:37:24 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+In-Reply-To: <CAGVrzcYQ44fYA0kpRC84Qfe7v0vPGy+euWLfs8xF0XEMnsFmGA@mail.gmail.com>
+References: <20140228230017.GE14970@merlin.infradead.org>
+	<20140303145137.70819698@tukaani.org>
+	<CAGVrzcZ7KU-m9s9KgoigK+WdSqeqwEmm=_pY6qF=ep2vFp6WUg@mail.gmail.com>
+	<20140304202038.03b36109@tukaani.org>
+	<53169123.4020909@lougher.demon.co.uk>
+	<CAGVrzcYQ44fYA0kpRC84Qfe7v0vPGy+euWLfs8xF0XEMnsFmGA@mail.gmail.com>
+Date: Thu, 6 Mar 2014 21:37:23 +0100
+X-Google-Sender-Auth: dtpdrYErhD2kzQzy-HZSdNddRJw
+Message-ID: <CAMuHMdXJ+GKtbCr-fzq2tRf8yUeYmgSA2VpmL2aofybc84Wwog@mail.gmail.com>
+Subject: Re: [PATCH] xz: make XZ_DEC_BCJ filters non-optional
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Florian Fainelli <f.fainelli@gmail.com>
+Cc: Phillip Lougher <phillip@lougher.demon.co.uk>,
+        Lasse Collin <lasse.collin@tukaani.org>,
+        Kyle McMartin <kyle@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Feb 2014 20:00:01 +0100
-Jiri Slaby <jslaby@suse.cz> wrote:
+On Wed, Mar 5, 2014 at 4:50 AM, Florian Fainelli <f.fainelli@gmail.com> wrote:
+> I am okay with enabling all filters by default as long as there is a
+> knob to allow turning achitecture specific BCJ filters off, as it
+> barely makes sense for embedded systems to have a BCJ filter
+> implementation for anything but the architecture you are running on.
 
-> With CONFIG_DYNAMIC_FTRACE=n, I see a warning:
-> kernel/trace/ftrace.c:240:13: warning: 'control_ops_free' defined but not used
->  static void control_ops_free(struct ftrace_ops *ops)
->              ^
-> Add an ifdef block with CONFIG_DYNAMIC_FTRACE around that function as
-> it is used solely from the dynamic function tracing functions.
-> 
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> ---
->  kernel/trace/ftrace.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-> index 5bd70e8b09b0..34b1de9390af 100644
-> --- a/kernel/trace/ftrace.c
-> +++ b/kernel/trace/ftrace.c
-> @@ -237,10 +237,12 @@ static int control_ops_alloc(struct ftrace_ops *ops)
->  	return 0;
->  }
->  
-> +#ifdef CONFIG_DYNAMIC_FTRACE
->  static void control_ops_free(struct ftrace_ops *ops)
->  {
->  	free_percpu(ops->disabled);
->  }
-> +#endif
+And for x86? (oh no, I started promoting x86 ;-)
 
-I've pulled in all your patches up to this one.
+I once tried xz with an initrd on ARM. The kernel complained it couldn't
+decompress the initrd, oops. I didn't investigate it at that time, but probably
+I didn't have the x86 BCJ filter enabled, while I compressed the initrd on\
+amd64.
 
-But instead of adding another #ifdef CONFIG_DYNAMIC_FTRACE, please just
-move the function into the block that it's used in.
+Gr{oetje,eeting}s,
 
-Just resend this patch. The others are already in my 3.15 queue.
+                        Geert
 
-Thanks,
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
--- Steve
-
->  
->  static void update_global_ops(void)
->  {
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
