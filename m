@@ -1,112 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757421AbaCFBO3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 20:14:29 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:5743 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754511AbaCFBO2 (ORCPT
+	id S1756665AbaCFBX2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 20:23:28 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:29973 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754846AbaCFBX1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 20:14:28 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 05 Mar 2014 17:11:25 -0800
-Message-ID: <5317CBF2.40908@nvidia.com>
-Date: Wed, 5 Mar 2014 17:14:26 -0800
-From: Aaron Plattner <aplattner@nvidia.com>
+	Wed, 5 Mar 2014 20:23:27 -0500
+Message-ID: <5317CDC4.8020908@oracle.com>
+Date: Wed, 05 Mar 2014 18:22:12 -0700
+From: Khalid Aziz <khalid.aziz@oracle.com>
+Organization: Oracle Corp
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-CC: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] cpufreq: use cpufreq_cpu_get to avoid cpufreq_get race
- conditions
-References: <1393965735-15610-1-git-send-email-aplattner@nvidia.com> <2327882.a9zobM63G6@vostro.rjw.lan>
-In-Reply-To: <2327882.a9zobM63G6@vostro.rjw.lan>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+To: David Lang <david@lang.hm>
+CC: Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        peterz@infradead.org, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] [PATCH] Pre-emption control for userspace
+References: <1393870033-31076-1-git-send-email-khalid.aziz@oracle.com> <531641A8.40306@zytor.com> <53164824.3000704@oracle.com> <20140304222356.41c55bbc@alan.etchedpixels.co.uk> <5316574F.6040105@oracle.com> <alpine.DEB.2.02.1403050129570.18573@ionos.tec.linutronix.de> <8738ix5uyk.fsf@tassilo.jf.intel.com> <20140305145420.GA30173@redhat.com> <20140305155601.GF22728@two.firstfloor.org> <20140305163644.GA2824@redhat.com> <53175D54.1020804@oracle.com> <alpine.DEB.2.02.1403051506550.6682@nftneq.ynat.uz> <5317B7D5.2030403@oracle.com> <alpine.DEB.2.02.1403051555360.6682@nftneq.ynat.uz> <5317BE94.20703@oracle.com> <alpine.DEB.2.02.1403051631590.6682@nftneq.ynat.uz>
+In-Reply-To: <alpine.DEB.2.02.1403051631590.6682@nftneq.ynat.uz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/14 17:23, Rafael J. Wysocki wrote:
-> On Tuesday, March 04, 2014 12:42:15 PM Aaron Plattner wrote:
->> If a module calls cpufreq_get while cpufreq is initializing, it's possible for
->> it to be called after cpufreq_driver is set but before cpufreq_cpu_data is
->> written during subsys_interface_register.  This happens because cpufreq_get
->> doesn't take the cpufreq_driver_lock around its use of cpufreq_cpu_data.
->
-> Is this a theoretical race, or can you actually reproduce it?  If so, on what
-> system/driver?  Or are there any bug reports related to this you can point me
-> to?
-
-It reproduces on my Arch Linux system at home with the nvidia driver, 
-and there has been at least one bug report that looks like the same thing:
-
-https://bbs.archlinux.org/viewtopic.php?id=177934
-
-I reproduced the problem with v3.13.5, then applied this change and was 
-able to boot successfully 10/10 times.  So I guess that means you can add
-
-Tested-by: Aaron Plattner <aplattner@nvidia.com>
-
-to the commit.
-
--- Aaron
-
->> Fix this by using cpufreq_cpu_get(cpu) to look up the policy rather than reading
->> it out of cpufreq_cpu_data directly.  cpufreq_cpu_get takes the appropriate
->> locks to prevent this race from happening.
->>
->> Since it's possible for policy to be NULL if the caller passes in an invalid CPU
->> number or calls the function before cpufreq is initialized, delete the
->> BUG_ON(!policy) and simply return 0.  Don't try to return -ENOENT because that's
->> negative and the function returns an unsigned integer.
->>
->> Signed-off-by: Aaron Plattner <aplattner@nvidia.com>
->
-> Viresh, have you seen this?
->
->> ---
->>   drivers/cpufreq/cpufreq.c | 21 +++++++--------------
->>   1 file changed, 7 insertions(+), 14 deletions(-)
->>
->> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
->> index 8d19f7c..158d0b5 100644
->> --- a/drivers/cpufreq/cpufreq.c
->> +++ b/drivers/cpufreq/cpufreq.c
->> @@ -1447,23 +1447,16 @@ static unsigned int __cpufreq_get(unsigned int cpu)
->>    */
->>   unsigned int cpufreq_get(unsigned int cpu)
->>   {
->> -	struct cpufreq_policy *policy = per_cpu(cpufreq_cpu_data, cpu);
->> +	struct cpufreq_policy *policy = cpufreq_cpu_get(cpu);
->>   	unsigned int ret_freq = 0;
->>
->> -	if (cpufreq_disabled() || !cpufreq_driver)
->> -		return -ENOENT;
->> -
->> -	BUG_ON(!policy);
->> -
->> -	if (!down_read_trylock(&cpufreq_rwsem))
->> -		return 0;
->> -
->> -	down_read(&policy->rwsem);
->> -
->> -	ret_freq = __cpufreq_get(cpu);
->> +	if (policy) {
->> +		down_read(&policy->rwsem);
->> +		ret_freq = __cpufreq_get(cpu);
->> +		up_read(&policy->rwsem);
->>
->> -	up_read(&policy->rwsem);
->> -	up_read(&cpufreq_rwsem);
->> +		cpufreq_cpu_put(policy);
->> +	}
->>
->>   	return ret_freq;
->>   }
->>
+On 03/05/2014 05:36 PM, David Lang wrote:
+> Yes, you pay for two context switches, but you don't pay for threads
+> B..ZZZ all running (and potentially spinning) trying to aquire the lock
+> before thread A is able to complete it's work.
 >
 
+Ah, great. We are converging now.
+
+> As soon as a second thread hits the contention, thread A gets time to
+> finish.
+
+Only as long as thread A could be scheduled immediately which may or may 
+not be the case depending upon what else is running on the core thread A 
+last ran on and if thread A needs to be migrated to another core.
+
+>
+> It's not as 'good' [1] as thread A just working longer,
+
+and that is the exact spot where I am trying to improve performance.
+
+> but it's FAR
+> better than thread A sleeping while every other thread runs and
+> potentially tries to get the lock
+
+Absolutely. I agree with that.
+
+>
+> [1] it wastes the context switches, but it avoids the overhead of
+> figuring out if the thread needs to extend it's time, and if it's time
+> was actually extended, and what penalty it should suffer the next time
+> it runs....
+
+All of it can be done by setting and checking couple of flags in 
+task_struct. That is not insignificant, but hardly expensive. Logic is 
+quite simple:
+
+resched()
+{
+	........
+	if (immmunity) {
+		if (!penalty) {
+			immunity = 0;
+			penalty = 1;
+			-- skip context switch --
+		}
+		else {
+			immunity = penalty = 0;
+			-- do the context switch --
+		}
+	}
+	.........
+}
+
+sched_yield()
+{
+	......
+	penalty = 0;
+	......
+}
+
+This simple logic will also work to defeat the obnoxius threads that 
+keep setting immunity request flag repeatedly within the same critical 
+section to give themselves multiple extensions.
+
+Thanks,
+Khalid
