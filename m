@@ -1,152 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752640AbaCFKW3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 05:22:29 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51079 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752461AbaCFKW0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 05:22:26 -0500
-Message-ID: <53184C5F.1080406@suse.cz>
-Date: Thu, 06 Mar 2014 11:22:23 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752740AbaCFKWh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 05:22:37 -0500
+Received: from www.linutronix.de ([62.245.132.108]:51427 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752461AbaCFKWb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 05:22:31 -0500
+Date: Thu, 6 Mar 2014 11:22:32 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: David Rientjes <rientjes@google.com>
+cc: Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Rui Wang <rui.y.wang@intel.com>,
+        Liu Ping Fan <kernelfans@gmail.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Lv Zheng <lv.zheng@intel.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
+        Yang Zhang <yang.z.zhang@intel.com>, Andi Kleen <ak@linux.intel.com>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        Li Fei <fei.li@intel.com>, gong.chen@linux.intel.com
+Subject: Re: [PATCH] x86, fix x86 fixup_irqs() error handling
+In-Reply-To: <alpine.DEB.2.02.1403051307590.22928@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.02.1403061122010.18573@ionos.tec.linutronix.de>
+References: <1394049854-28266-1-git-send-email-prarit@redhat.com> <alpine.DEB.2.02.1403051307590.22928@chino.kir.corp.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Laura Abbott <lauraa@codeaurora.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH] mm/compaction: Break out of loop on !PageBuddy in isolate_freepages_block
-References: <1394072800-11776-1-git-send-email-lauraa@codeaurora.org>
-In-Reply-To: <1394072800-11776-1-git-send-email-lauraa@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/2014 03:26 AM, Laura Abbott wrote:
-> We received several reports of bad page state when freeing CMA pages
-> previously allocated with alloc_contig_range:
->
-> <1>[ 1258.084111] BUG: Bad page state in process Binder_A  pfn:63202
-> <1>[ 1258.089763] page:d21130b0 count:0 mapcount:1 mapping:  (null) index:0x7dfbf
-> <1>[ 1258.096109] page flags: 0x40080068(uptodate|lru|active|swapbacked)
->
-> Based on the page state, it looks like the page was still in use. The page
-> flags do not make sense for the use case though. Further debugging showed
-> that despite alloc_contig_range returning success, at least one page in the
-> range still remained in the buddy allocator.
->
-> There is an issue with isolate_freepages_block. In strict mode (which CMA
-> uses), if any pages in the range cannot be isolated, isolate_freepages_block
-> should return failure 0. The current check keeps track of the total number
-> of isolated pages and compares against the size of the range:
->
->          if (strict && nr_strict_required > total_isolated)
->                  total_isolated = 0;
->
-> After taking the zone lock, if one of the pages in the range is not
-> in the buddy allocator, we continue through the loop and do not
 
-> increment total_isolated. If we end up over isolating by more than
-> one page (e.g. last since page needed is a higher order page), it
-> is not possible to detect that the page was skipped. The fix is to
+On Wed, 5 Mar 2014, David Rientjes wrote:
 
-I found it hard to grasp this sentence at first. Perhaps something like 
-"if in the last iteration of the loop we isolate more than one page 
-(e.g. ...), the check for total_isolated may pass and we fail to detect 
-that a page was skipped" would be better?
+> On Wed, 5 Mar 2014, Prarit Bhargava wrote:
+> 
+> > diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+> > index d99f31d..55fab61 100644
+> > --- a/arch/x86/kernel/irq.c
+> > +++ b/arch/x86/kernel/irq.c
+> > @@ -351,6 +351,7 @@ void fixup_irqs(void)
+> >  	struct irq_desc *desc;
+> >  	struct irq_data *data;
+> >  	struct irq_chip *chip;
+> > +	int ret;
+> >  
+> >  	for_each_irq_desc(irq, desc) {
+> >  		int break_affinity = 0;
+> > @@ -389,8 +390,12 @@ void fixup_irqs(void)
+> >  		if (!irqd_can_move_in_process_context(data) && chip->irq_mask)
+> >  			chip->irq_mask(data);
+> >  
+> > -		if (chip->irq_set_affinity)
+> > -			chip->irq_set_affinity(data, affinity, true);
+> > +		if (chip->irq_set_affinity) {
+> > +			ret = chip->irq_set_affinity(data, affinity, true);
+> > +			WARN(ret == -ENOSPC,
+> > +			     "IRQ %d set affinity failed with %d.  The device assigned to this IRQ is unstable.\n",
+> > +			     irq, ret);
+> 
+> Should this be WARN_ON_ONCE() to avoid filling the kernel log instead?
+> 
+> It doesn't make much sense to print out the negative return value, maybe 
+> you meant to print -ret instead?
 
-> bail out if the loop immediately if we are in strict mode. There's
-> no benfit to continuing anyway since we need all pages to be
-> isolated.
-
-That looks sound , but I wonder if it makes sense to keep the 
-nr_strict_required stuff after this change. The check could then simply 
-use 'if (pfn < end_pfn)' the same way as isolate_freepages_range does, 
-right?
-
-> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
-> ---
->   mm/compaction.c |   25 +++++++++++++++++++------
->   1 files changed, 19 insertions(+), 6 deletions(-)
->
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index b48c525..3190cef 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -263,12 +263,21 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
->   		struct page *page = cursor;
->
->   		nr_scanned++;
-> -		if (!pfn_valid_within(blockpfn))
-> -			continue;
-> +		if (!pfn_valid_within(blockpfn)) {
-> +			if (strict)
-> +				break;
-> +			else
-> +				continue;
-> +		}
-> +
->   		if (!valid_page)
->   			valid_page = page;
-> -		if (!PageBuddy(page))
-> -			continue;
-> +		if (!PageBuddy(page)) {
-> +			if (strict)
-> +				break;
-> +			else
-> +				continue;
-> +		}
->
->   		/*
->   		 * The zone lock must be held to isolate freepages.
-> @@ -288,8 +297,12 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
->   			break;
->
->   		/* Recheck this is a buddy page under lock */
-> -		if (!PageBuddy(page))
-> -			continue;
-> +		if (!PageBuddy(page)) {
-> +			if (strict)
-> +				break;
-> +			else
-> +				continue;
-> +		}
-
-To avoid this triple if-else occurence, you could instead do a "goto 
-isolate_failed;" and put the if-else under said label at the end of the 
-loop, also allowing extra cleanup, something like this:
-
-@@ -298,8 +298,6 @@ static unsigned long isolate_freepages_block(struct 
-compact_control *cc,
-
-                 /* Found a free page, break it into order-0 pages */
-                 isolated = split_free_page(page);
--               if (!isolated && strict)
--                       break;
-                 total_isolated += isolated;
-                 for (i = 0; i < isolated; i++) {
-                         list_add(&page->lru, freelist);
-@@ -310,7 +308,13 @@ static unsigned long isolate_freepages_block(struct 
-compact_control *cc,
-                 if (isolated) {
-                         blockpfn += isolated - 1;
-                         cursor += isolated - 1;
-+                       continue;
-                 }
-+isolate_fail:
-+               if (strict)
-+                       break;
-+               else
-+                       continue;
-
-
-Thanks,
-Vlastimil
-
->   		/* Found a free page, break it into order-0 pages */
->   		isolated = split_free_page(page);
->
-
+Well, that does not make sense either. We only print if ret == -ENOSPC!
+ 
+> > +		}
+> >  		else if (!(warned++))
+> >  			set_affinity = 0;
+> >  
+> 
