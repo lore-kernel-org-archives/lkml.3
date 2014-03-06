@@ -1,555 +1,330 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752718AbaCFKIE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 05:08:04 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:56002 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752481AbaCFKHE (ORCPT
+	id S1752760AbaCFKIO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 05:08:14 -0500
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:49406 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752481AbaCFKIF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 05:07:04 -0500
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: lee.jones@linaro.org, sachin.kamat@linaro.org
-Subject: [PATCH v3 Resend 2/3] regulator: Add support for S2MPA01 regulator
-Date: Thu,  6 Mar 2014 15:30:56 +0530
-Message-Id: <1394100057-32677-2-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1394100057-32677-1-git-send-email-sachin.kamat@linaro.org>
-References: <1394100057-32677-1-git-send-email-sachin.kamat@linaro.org>
+	Thu, 6 Mar 2014 05:08:05 -0500
+Message-ID: <B0EFDC0724C0400DBC0931FD129D1859@local.st.by>
+From: "Victor Miasnikov" <vvm@tut.by>
+To: <linux-kernel@vger.kernel.org>, "Brian Wong" <draconicpenguin1@yahoo.com>
+Cc: "Abhishek Gupta \(LIS\)" <abgupta@microsoft.com>,
+        "KY Srinivasan" <kys@microsoft.com>
+References: <531813B4.7060205@yahoo.com> <53181489.6040000@yahoo.com>
+Subject: Re: Linux does not use more than the startup RAM under Hyper-V with dynamic memory enabled RE: [PATCH 2/2] Drivers: hv: balloon: Online the hot-added memory "in context" Re: [PATCH 1/1] Drivers: hv:
+Date: Thu, 6 Mar 2014 13:07:52 +0300
+MIME-Version: 1.0
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-1";
+	reply-type=original
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.3790.4548
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for S2MPA01 voltage and current regulator.
+Hi!
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-Acked-by: Mark Brown <broonie@linaro.org>
----
- drivers/regulator/Kconfig   |    7 +
- drivers/regulator/Makefile  |    1 +
- drivers/regulator/s2mpa01.c |  483 +++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 491 insertions(+)
- create mode 100644 drivers/regulator/s2mpa01.c
+ Short:
 
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index 4ddfb6c065c7..5b08ea927870 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -425,6 +425,13 @@ config REGULATOR_RC5T583
- 	  through regulator interface. The device supports multiple DCDC/LDO
- 	  outputs which can be controlled by i2c communication.
- 
-+config REGULATOR_S2MPA01
-+	tristate "Samsung S2MPA01 voltage regulator"
-+	depends on MFD_SEC_CORE
-+	help
-+	 This driver controls Samsung S2MPA01 voltage output regulator
-+	 via I2C bus. S2MPA01 has 10 Bucks and 26 LDO outputs.
-+
- config REGULATOR_S2MPS11
- 	tristate "Samsung S2MPS11 voltage regulator"
- 	depends on MFD_SEC_CORE
-diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-index c624dbcdcc76..2d14f7580304 100644
---- a/drivers/regulator/Makefile
-+++ b/drivers/regulator/Makefile
-@@ -58,6 +58,7 @@ obj-$(CONFIG_REGULATOR_PBIAS) += pbias-regulator.o
- obj-$(CONFIG_REGULATOR_PCAP) += pcap-regulator.o
- obj-$(CONFIG_REGULATOR_PCF50633) += pcf50633-regulator.o
- obj-$(CONFIG_REGULATOR_RC5T583)  += rc5t583-regulator.o
-+obj-$(CONFIG_REGULATOR_S2MPA01) += s2mpa01.o
- obj-$(CONFIG_REGULATOR_S2MPS11) += s2mps11.o
- obj-$(CONFIG_REGULATOR_S5M8767) += s5m8767.o
- obj-$(CONFIG_REGULATOR_STW481X_VMMC) += stw481x-vmmc.o
-diff --git a/drivers/regulator/s2mpa01.c b/drivers/regulator/s2mpa01.c
-new file mode 100644
-index 000000000000..6ac6e8205a05
---- /dev/null
-+++ b/drivers/regulator/s2mpa01.c
-@@ -0,0 +1,483 @@
-+/*
-+ * Copyright (c) 2013 Samsung Electronics Co., Ltd
-+ *		http://www.samsung.com
-+ *
-+ *  This program is free software; you can redistribute  it and/or modify it
-+ *  under  the terms of  the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the  License, or (at your
-+ *  option) any later version.
-+ *
-+ */
-+
-+#include <linux/bug.h>
-+#include <linux/err.h>
-+#include <linux/gpio.h>
-+#include <linux/slab.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/regmap.h>
-+#include <linux/platform_device.h>
-+#include <linux/regulator/driver.h>
-+#include <linux/regulator/machine.h>
-+#include <linux/regulator/of_regulator.h>
-+#include <linux/mfd/samsung/core.h>
-+#include <linux/mfd/samsung/s2mpa01.h>
-+
-+#define S2MPA01_REGULATOR_CNT ARRAY_SIZE(regulators)
-+
-+struct s2mpa01_info {
-+	struct regulator_dev *rdev[S2MPA01_REGULATOR_MAX];
-+
-+	int ramp_delay24;
-+	int ramp_delay3;
-+	int ramp_delay5;
-+	int ramp_delay16;
-+	int ramp_delay7;
-+	int ramp_delay8910;
-+};
-+
-+static int get_ramp_delay(int ramp_delay)
-+{
-+	unsigned char cnt = 0;
-+
-+	ramp_delay /= 6250;
-+
-+	while (true) {
-+		ramp_delay = ramp_delay >> 1;
-+		if (ramp_delay == 0)
-+			break;
-+		cnt++;
-+	}
-+
-+	if (cnt > 3)
-+		cnt = 3;
-+
-+	return cnt;
-+}
-+
-+static int s2mpa01_regulator_set_voltage_time_sel(struct regulator_dev *rdev,
-+				   unsigned int old_selector,
-+				   unsigned int new_selector)
-+{
-+	struct s2mpa01_info *s2mpa01 = rdev_get_drvdata(rdev);
-+	unsigned int ramp_delay = 0;
-+	int old_volt, new_volt;
-+
-+	switch (rdev->desc->id) {
-+	case S2MPA01_BUCK2:
-+	case S2MPA01_BUCK4:
-+		ramp_delay = s2mpa01->ramp_delay24;
-+		break;
-+	case S2MPA01_BUCK3:
-+		ramp_delay = s2mpa01->ramp_delay3;
-+		break;
-+	case S2MPA01_BUCK5:
-+		ramp_delay = s2mpa01->ramp_delay5;
-+		break;
-+	case S2MPA01_BUCK1:
-+	case S2MPA01_BUCK6:
-+		ramp_delay = s2mpa01->ramp_delay16;
-+		break;
-+	case S2MPA01_BUCK7:
-+		ramp_delay = s2mpa01->ramp_delay7;
-+		break;
-+	case S2MPA01_BUCK8:
-+	case S2MPA01_BUCK9:
-+	case S2MPA01_BUCK10:
-+		ramp_delay = s2mpa01->ramp_delay8910;
-+		break;
-+	}
-+
-+	if (ramp_delay == 0)
-+		ramp_delay = rdev->desc->ramp_delay;
-+
-+	old_volt = rdev->desc->min_uV + (rdev->desc->uV_step * old_selector);
-+	new_volt = rdev->desc->min_uV + (rdev->desc->uV_step * new_selector);
-+
-+	return DIV_ROUND_UP(abs(new_volt - old_volt), ramp_delay);
-+}
-+
-+static int s2mpa01_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
-+{
-+	struct s2mpa01_info *s2mpa01 = rdev_get_drvdata(rdev);
-+	unsigned int ramp_val, ramp_shift, ramp_reg = S2MPA01_REG_RAMP2;
-+	unsigned int ramp_enable = 1, enable_shift = 0;
-+	int ret;
-+
-+	switch (rdev->desc->id) {
-+	case S2MPA01_BUCK1:
-+		enable_shift = S2MPA01_BUCK1_RAMP_EN_SHIFT;
-+		if (!ramp_delay) {
-+			ramp_enable = 0;
-+			break;
-+		}
-+
-+		if (ramp_delay > s2mpa01->ramp_delay16)
-+			s2mpa01->ramp_delay16 = ramp_delay;
-+		else
-+			ramp_delay = s2mpa01->ramp_delay16;
-+
-+		ramp_shift = S2MPA01_BUCK16_RAMP_SHIFT;
-+		ramp_reg = S2MPA01_REG_RAMP1;
-+		break;
-+	case S2MPA01_BUCK2:
-+		enable_shift = S2MPA01_BUCK2_RAMP_EN_SHIFT;
-+		if (!ramp_delay) {
-+			ramp_enable = 0;
-+			break;
-+		}
-+
-+		if (ramp_delay > s2mpa01->ramp_delay24)
-+			s2mpa01->ramp_delay24 = ramp_delay;
-+		else
-+			ramp_delay = s2mpa01->ramp_delay24;
-+
-+		ramp_shift = S2MPA01_BUCK24_RAMP_SHIFT;
-+		ramp_reg = S2MPA01_REG_RAMP1;
-+		break;
-+	case S2MPA01_BUCK3:
-+		enable_shift = S2MPA01_BUCK3_RAMP_EN_SHIFT;
-+		if (!ramp_delay) {
-+			ramp_enable = 0;
-+			break;
-+		}
-+
-+		s2mpa01->ramp_delay3 = ramp_delay;
-+		ramp_shift = S2MPA01_BUCK3_RAMP_SHIFT;
-+		ramp_reg = S2MPA01_REG_RAMP1;
-+		break;
-+	case S2MPA01_BUCK4:
-+		enable_shift = S2MPA01_BUCK4_RAMP_EN_SHIFT;
-+		if (!ramp_delay) {
-+			ramp_enable = 0;
-+			break;
-+		}
-+
-+		if (ramp_delay > s2mpa01->ramp_delay24)
-+			s2mpa01->ramp_delay24 = ramp_delay;
-+		else
-+			ramp_delay = s2mpa01->ramp_delay24;
-+
-+		ramp_shift = S2MPA01_BUCK24_RAMP_SHIFT;
-+		ramp_reg = S2MPA01_REG_RAMP1;
-+		break;
-+	case S2MPA01_BUCK5:
-+		s2mpa01->ramp_delay5 = ramp_delay;
-+		ramp_shift = S2MPA01_BUCK5_RAMP_SHIFT;
-+		break;
-+	case S2MPA01_BUCK6:
-+		if (ramp_delay > s2mpa01->ramp_delay16)
-+			s2mpa01->ramp_delay16 = ramp_delay;
-+		else
-+			ramp_delay = s2mpa01->ramp_delay16;
-+
-+		ramp_shift = S2MPA01_BUCK16_RAMP_SHIFT;
-+		break;
-+	case S2MPA01_BUCK7:
-+		s2mpa01->ramp_delay7 = ramp_delay;
-+		ramp_shift = S2MPA01_BUCK7_RAMP_SHIFT;
-+		break;
-+	case S2MPA01_BUCK8:
-+	case S2MPA01_BUCK9:
-+	case S2MPA01_BUCK10:
-+		if (ramp_delay > s2mpa01->ramp_delay8910)
-+			s2mpa01->ramp_delay8910 = ramp_delay;
-+		else
-+			ramp_delay = s2mpa01->ramp_delay8910;
-+
-+		ramp_shift = S2MPA01_BUCK8910_RAMP_SHIFT;
-+		break;
-+	default:
-+		return 0;
-+	}
-+
-+	if (!ramp_enable)
-+		goto ramp_disable;
-+
-+	if (enable_shift) {
-+		ret = regmap_update_bits(rdev->regmap, S2MPA01_REG_RAMP1,
-+					1 << enable_shift, 1 << enable_shift);
-+		if (ret) {
-+			dev_err(&rdev->dev, "failed to enable ramp rate\n");
-+			return ret;
-+		}
-+	}
-+
-+	ramp_val = get_ramp_delay(ramp_delay);
-+
-+	return regmap_update_bits(rdev->regmap, ramp_reg, 0x3 << ramp_shift,
-+				  ramp_val << ramp_shift);
-+
-+ramp_disable:
-+	return regmap_update_bits(rdev->regmap, S2MPA01_REG_RAMP1,
-+				  1 << enable_shift, 0);
-+}
-+
-+static struct regulator_ops s2mpa01_ldo_ops = {
-+	.list_voltage		= regulator_list_voltage_linear,
-+	.map_voltage		= regulator_map_voltage_linear,
-+	.is_enabled		= regulator_is_enabled_regmap,
-+	.enable			= regulator_enable_regmap,
-+	.disable		= regulator_disable_regmap,
-+	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
-+	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
-+};
-+
-+static struct regulator_ops s2mpa01_buck_ops = {
-+	.list_voltage		= regulator_list_voltage_linear,
-+	.map_voltage		= regulator_map_voltage_linear,
-+	.is_enabled		= regulator_is_enabled_regmap,
-+	.enable			= regulator_enable_regmap,
-+	.disable		= regulator_disable_regmap,
-+	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
-+	.set_voltage_time_sel	= s2mpa01_regulator_set_voltage_time_sel,
-+	.set_ramp_delay		= s2mpa01_set_ramp_delay,
-+};
-+
-+#define regulator_desc_ldo1(num)	{		\
-+	.name		= "LDO"#num,			\
-+	.id		= S2MPA01_LDO##num,		\
-+	.ops		= &s2mpa01_ldo_ops,		\
-+	.type		= REGULATOR_VOLTAGE,		\
-+	.owner		= THIS_MODULE,			\
-+	.min_uV		= S2MPA01_LDO_MIN,		\
-+	.uV_step	= S2MPA01_LDO_STEP1,		\
-+	.n_voltages	= S2MPA01_LDO_N_VOLTAGES,	\
-+	.vsel_reg	= S2MPA01_REG_L1CTRL + num - 1,	\
-+	.vsel_mask	= S2MPA01_LDO_VSEL_MASK,	\
-+	.enable_reg	= S2MPA01_REG_L1CTRL + num - 1,	\
-+	.enable_mask	= S2MPA01_ENABLE_MASK		\
-+}
-+#define regulator_desc_ldo2(num)	{		\
-+	.name		= "LDO"#num,			\
-+	.id		= S2MPA01_LDO##num,		\
-+	.ops		= &s2mpa01_ldo_ops,		\
-+	.type		= REGULATOR_VOLTAGE,		\
-+	.owner		= THIS_MODULE,			\
-+	.min_uV		= S2MPA01_LDO_MIN,		\
-+	.uV_step	= S2MPA01_LDO_STEP2,		\
-+	.n_voltages	= S2MPA01_LDO_N_VOLTAGES,	\
-+	.vsel_reg	= S2MPA01_REG_L1CTRL + num - 1,	\
-+	.vsel_mask	= S2MPA01_LDO_VSEL_MASK,	\
-+	.enable_reg	= S2MPA01_REG_L1CTRL + num - 1,	\
-+	.enable_mask	= S2MPA01_ENABLE_MASK		\
-+}
-+
-+#define regulator_desc_buck1_4(num)	{			\
-+	.name		= "BUCK"#num,				\
-+	.id		= S2MPA01_BUCK##num,			\
-+	.ops		= &s2mpa01_buck_ops,			\
-+	.type		= REGULATOR_VOLTAGE,			\
-+	.owner		= THIS_MODULE,				\
-+	.min_uV		= S2MPA01_BUCK_MIN1,			\
-+	.uV_step	= S2MPA01_BUCK_STEP1,			\
-+	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
-+	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
-+	.vsel_reg	= S2MPA01_REG_B1CTRL2 + (num - 1) * 2,	\
-+	.vsel_mask	= S2MPA01_BUCK_VSEL_MASK,		\
-+	.enable_reg	= S2MPA01_REG_B1CTRL1 + (num - 1) * 2,	\
-+	.enable_mask	= S2MPA01_ENABLE_MASK			\
-+}
-+
-+#define regulator_desc_buck5	{				\
-+	.name		= "BUCK5",				\
-+	.id		= S2MPA01_BUCK5,			\
-+	.ops		= &s2mpa01_buck_ops,			\
-+	.type		= REGULATOR_VOLTAGE,			\
-+	.owner		= THIS_MODULE,				\
-+	.min_uV		= S2MPA01_BUCK_MIN2,			\
-+	.uV_step	= S2MPA01_BUCK_STEP1,			\
-+	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
-+	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
-+	.vsel_reg	= S2MPA01_REG_B5CTRL2,			\
-+	.vsel_mask	= S2MPA01_BUCK_VSEL_MASK,		\
-+	.enable_reg	= S2MPA01_REG_B5CTRL1,			\
-+	.enable_mask	= S2MPA01_ENABLE_MASK			\
-+}
-+
-+#define regulator_desc_buck6_7(num)	{			\
-+	.name		= "BUCK"#num,				\
-+	.id		= S2MPA01_BUCK##num,			\
-+	.ops		= &s2mpa01_buck_ops,			\
-+	.type		= REGULATOR_VOLTAGE,			\
-+	.owner		= THIS_MODULE,				\
-+	.min_uV		= S2MPA01_BUCK_MIN1,			\
-+	.uV_step	= S2MPA01_BUCK_STEP1,			\
-+	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
-+	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
-+	.vsel_reg	= S2MPA01_REG_B6CTRL2 + (num - 6) * 2,	\
-+	.vsel_mask	= S2MPA01_BUCK_VSEL_MASK,		\
-+	.enable_reg	= S2MPA01_REG_B6CTRL1 + (num - 6) * 2,	\
-+	.enable_mask	= S2MPA01_ENABLE_MASK			\
-+}
-+
-+#define regulator_desc_buck8	{				\
-+	.name		= "BUCK8",				\
-+	.id		= S2MPA01_BUCK8,			\
-+	.ops		= &s2mpa01_buck_ops,			\
-+	.type		= REGULATOR_VOLTAGE,			\
-+	.owner		= THIS_MODULE,				\
-+	.min_uV		= S2MPA01_BUCK_MIN2,			\
-+	.uV_step	= S2MPA01_BUCK_STEP2,			\
-+	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
-+	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
-+	.vsel_reg	= S2MPA01_REG_B8CTRL2,			\
-+	.vsel_mask	= S2MPA01_BUCK_VSEL_MASK,		\
-+	.enable_reg	= S2MPA01_REG_B8CTRL1,			\
-+	.enable_mask	= S2MPA01_ENABLE_MASK			\
-+}
-+
-+#define regulator_desc_buck9	{				\
-+	.name		= "BUCK9",				\
-+	.id		= S2MPA01_BUCK9,			\
-+	.ops		= &s2mpa01_buck_ops,			\
-+	.type		= REGULATOR_VOLTAGE,			\
-+	.owner		= THIS_MODULE,				\
-+	.min_uV		= S2MPA01_BUCK_MIN4,			\
-+	.uV_step	= S2MPA01_BUCK_STEP2,			\
-+	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
-+	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
-+	.vsel_reg	= S2MPA01_REG_B9CTRL2,			\
-+	.vsel_mask	= S2MPA01_BUCK_VSEL_MASK,		\
-+	.enable_reg	= S2MPA01_REG_B9CTRL1,			\
-+	.enable_mask	= S2MPA01_ENABLE_MASK			\
-+}
-+
-+#define regulator_desc_buck10	{				\
-+	.name		= "BUCK10",				\
-+	.id		= S2MPA01_BUCK10,			\
-+	.ops		= &s2mpa01_buck_ops,			\
-+	.type		= REGULATOR_VOLTAGE,			\
-+	.owner		= THIS_MODULE,				\
-+	.min_uV		= S2MPA01_BUCK_MIN3,			\
-+	.uV_step	= S2MPA01_BUCK_STEP2,			\
-+	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
-+	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
-+	.vsel_reg	= S2MPA01_REG_B10CTRL2,			\
-+	.vsel_mask	= S2MPA01_BUCK_VSEL_MASK,		\
-+	.enable_reg	= S2MPA01_REG_B10CTRL1,			\
-+	.enable_mask	= S2MPA01_ENABLE_MASK			\
-+}
-+
-+static struct regulator_desc regulators[] = {
-+	regulator_desc_ldo2(1),
-+	regulator_desc_ldo1(2),
-+	regulator_desc_ldo1(3),
-+	regulator_desc_ldo1(4),
-+	regulator_desc_ldo1(5),
-+	regulator_desc_ldo2(6),
-+	regulator_desc_ldo1(7),
-+	regulator_desc_ldo1(8),
-+	regulator_desc_ldo1(9),
-+	regulator_desc_ldo1(10),
-+	regulator_desc_ldo2(11),
-+	regulator_desc_ldo1(12),
-+	regulator_desc_ldo1(13),
-+	regulator_desc_ldo1(14),
-+	regulator_desc_ldo1(15),
-+	regulator_desc_ldo1(16),
-+	regulator_desc_ldo1(17),
-+	regulator_desc_ldo1(18),
-+	regulator_desc_ldo1(19),
-+	regulator_desc_ldo1(20),
-+	regulator_desc_ldo1(21),
-+	regulator_desc_ldo2(22),
-+	regulator_desc_ldo2(23),
-+	regulator_desc_ldo1(24),
-+	regulator_desc_ldo1(25),
-+	regulator_desc_ldo1(26),
-+	regulator_desc_buck1_4(1),
-+	regulator_desc_buck1_4(2),
-+	regulator_desc_buck1_4(3),
-+	regulator_desc_buck1_4(4),
-+	regulator_desc_buck5,
-+	regulator_desc_buck6_7(6),
-+	regulator_desc_buck6_7(7),
-+	regulator_desc_buck8,
-+	regulator_desc_buck9,
-+	regulator_desc_buck10,
-+};
-+
-+static int s2mpa01_pmic_probe(struct platform_device *pdev)
-+{
-+	struct sec_pmic_dev *iodev = dev_get_drvdata(pdev->dev.parent);
-+	struct sec_platform_data *pdata = dev_get_platdata(iodev->dev);
-+	struct of_regulator_match rdata[S2MPA01_REGULATOR_MAX];
-+	struct device_node *reg_np = NULL;
-+	struct regulator_config config = { };
-+	struct s2mpa01_info *s2mpa01;
-+	int i, ret;
-+
-+	s2mpa01 = devm_kzalloc(&pdev->dev, sizeof(*s2mpa01), GFP_KERNEL);
-+	if (!s2mpa01)
-+		return -ENOMEM;
-+
-+	for (i = 0; i < S2MPA01_REGULATOR_CNT; i++)
-+		rdata[i].name = regulators[i].name;
-+
-+	if (iodev->dev->of_node) {
-+		reg_np = of_get_child_by_name(iodev->dev->of_node,
-+							"regulators");
-+			if (!reg_np) {
-+				dev_err(&pdev->dev,
-+					"could not find regulators sub-node\n");
-+				return -EINVAL;
-+			}
-+
-+		of_regulator_match(&pdev->dev, reg_np, rdata,
-+						S2MPA01_REGULATOR_MAX);
-+		of_node_put(reg_np);
-+	}
-+
-+	platform_set_drvdata(pdev, s2mpa01);
-+
-+	config.dev = &pdev->dev;
-+	config.regmap = iodev->regmap_pmic;
-+	config.driver_data = s2mpa01;
-+
-+	for (i = 0; i < S2MPA01_REGULATOR_MAX; i++) {
-+		if (pdata)
-+			config.init_data = pdata->regulators[i].initdata;
-+		else
-+			config.init_data = rdata[i].init_data;
-+
-+		if (reg_np)
-+			config.of_node = rdata[i].of_node;
-+
-+		s2mpa01->rdev[i] = devm_regulator_register(&pdev->dev,
-+						&regulators[i], &config);
-+		if (IS_ERR(s2mpa01->rdev[i])) {
-+			ret = PTR_ERR(s2mpa01->rdev[i]);
-+			dev_err(&pdev->dev, "regulator init failed for %d\n",
-+				i);
-+			return ret;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static const struct platform_device_id s2mpa01_pmic_id[] = {
-+	{ "s2mpa01-pmic", 0},
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(platform, s2mpa01_pmic_id);
-+
-+static struct platform_driver s2mpa01_pmic_driver = {
-+	.driver = {
-+		.name = "s2mpa01-pmic",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = s2mpa01_pmic_probe,
-+	.id_table = s2mpa01_pmic_id,
-+};
-+
-+module_platform_driver(s2mpa01_pmic_driver);
-+
-+/* Module information */
-+MODULE_AUTHOR("Sangbeom Kim <sbkim73@samsung.com>");
-+MODULE_AUTHOR("Sachin Kamat <sachin.kamat@samsung.com>");
-+MODULE_DESCRIPTION("SAMSUNG S2MPA01 Regulator Driver");
-+MODULE_LICENSE("GPL");
+ Question to Linux kernel team:
+
+may be patch
+
+>>> [PATCH 2/2] Drivers: hv: balloon: Online the hot-added memory "in context"
+
+can solve problems with dynamic memory hot add in Hyper-V VMs with Linux OS ?
+
+
+
+ Full:
+
+BW>> .., if I set the startup memory to 512 MB, and enable dynamic
+BW>> memory with a minimum of 512 MB and a maximum of 8192 MB,
+BW>>  the system will never allocate than 512 MB of physical memory
+
+BW>>
+BW>> Have I encountered a bug in the Hyper-V balloon driver?
+BW>>
+
+ Unfortunately,  It's long story . . . :-(
+
+a)
+
+ I already ( on January 09, 2014 2:18 PM )  write about problems with "Online the hot-added memory"  in "user space" see
+P.P.S.
+
+b)
+
+  See
+
+Bug 979257 -[Hyper-V][RHEL6.5][RFE]in-kernel online support for memory hot-add
+https://bugzilla.redhat.com/show_bug.cgi?id=979257
+
+ (  Info from this topic may be interessant not only for RedHat users )
+
+
+b2)
+
+ Detail about pathes related problem "Online the hot-added memory"  in "user space" :
+
+>>> [PATCH 2/2] Drivers: hv: balloon: Online the hot-added memory "in context"
+>>>
+>>>
+>>> === 0001-Drivers-base-memory-Export-functionality-for-in-kern.patch
+>>>  . . .
+>>> +/*
+>>> + * Given the start pfn of a memory block; bring the memory
+>>> + * block online. This API would be useful for drivers that may
+>>> + * want to bring "online" the memory that has been hot-added.
+>>> + */
+>>> +
+>>> +int online_memory_block(unsigned long start_pfn) {  struct mem_section
+>>> +*cur_section;  struct memory_block *cur_memory_block;
+>>>
+>>>  . . .
+>>> ===
+>>>
+>>>
+>>> ==
+>>>  . . .
+>>> == 0002-Drivers-hv-balloon-Online-the-hot-added-memory-in-co.patch
+>>>   . . .
+>>>    /*
+>>> -   * Wait for the memory block to be onlined.
+>>> -   * Since the hot add has succeeded, it is ok to
+>>> -   * proceed even if the pages in the hot added region
+>>> -   * have not been "onlined" within the allowed time.
+>>> +   * Before proceeding to hot add the next segment,
+>>> +   * online the segment that has been hot added.
+>>>     */
+>>> -  wait_for_completion_timeout(&dm_device.ol_waitevent, 5*HZ);
+>>> +  online_memory_block(start_pfn);
+>>>
+>>>   }
+
+
+
+
+c)
+
+  Before apply patches ( see in P.S. about native udev-script) we are need use one of this methods:
+
+http://social.technet.microsoft.com/Forums/en-US/8e1994b9-9ca1-4411-ad8e-25e6b1ee28e1/dynamic-memory-on-linux-vm?forum=linuxintegrationservices
+
+
+
+c1)
+
+"/bin/cp method" by Nikolay Pushkarev :
+
+Following udev rule works slightly faster for me (assuming that memory0 bank always in online state):
+
+SUBSYSTEM=="memory", ACTION=="add", DEVPATH=="/devices/system/memory/memory[1-9]*",
+RUN+="/bin/cp /sys$devpath/../memory0/state /sys$devpath/state"}}
+
+( VVM : of course all need be place in one line, 2 line in this msg. -- only for good visual formating reasons )
+
+
+c2)
+
+udev rule using "putarg" by Nikolay Pushkarev :
+
+
+ Even "/bin/cp method" udev rule work time to time not as need :-(
+
+
+As a result, Nikolay Pushkarev write a program putarg.c, that is even faster than "/bin/cp method" :
+
+==
+#include <stdio.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <string.h>
+int main(int argc, char** argv) {
+  int i, fd;
+  if (argc < 2) return 0;
+  if ((fd = open(argv[1], O_RDWR)) < 0) return 1;
+  for (i = 2; i < argc; i++) {
+    if (write(fd, argv[i], strlen(argv[i])) < 0) {
+      close(fd);
+      return i;
+    }
+  }
+  close(fd);
+  return 0;
+}
+==
+
+ The first argument - the name of the output file ,
+and argument number 2 ( and all subsequent (  if exist ) ) - are text that are wiil be written in output file.
+
+
+ Compile source code to executable file by run command:
+gcc -o putarg -s putarg.c
+
+The resulting binary need be placed an accessible location , such as /usr/bin, or wherever you want.
+
+
+Now udev rule using "putarg" can be written as :
+
+SUBSYSTEM=="memory", ACTION=="add", RUN+="/usr/bin/putarg /sys$devpath/state online"
+
+
+This complex solutions ( compiled file and udev-rule ) works exceptionally fast.
+
+
+
+
+
+Best regards, Victor Miasnikov
+Blog:  http://vvm.blog.tut.by/
+
+P.S.
+
+Nikolay Pushkarev about standart udev-script :
+
+{{
+
+Strange, that the native udev-script
+
+SUBSYSTEM=="memory", ACTION=="add", ATTR{state}="online"
+
+
+triggered somehow through time ( VVM: very often not work as need )
+
+
+}}
+
+
+
+P.P.S.
+
+----- Original Message ----- 
+From: "Victor Miasnikov"
+To: "Dan Carpenter"; "K. Y. Srinivasan" ; <linux-kernel@vger.kernel.org>
+Cc: "Greg KH" ; <devel@linuxdriverproject.org>; <olaf (at) aepfle.de>; ""Andy Whitcroft"" <zzzzzzzzzzzz (at)
+canonical.com>;
+<jasowang (at) redhat.com>
+Sent: Thursday, January 09, 2014 2:18 PM
+Subject: RE: [PATCH 2/2] Drivers: hv: balloon: Online the hot-added memory "in context" Re: [PATCH 1/1] Drivers: hv:
+Implement the file copy service
+
+
+Hi!
+
+> Is there no way we could implement file copying in user space?
+
+
+  For "file copy service"  "user space"  may be pretty good
+
+But I ( and other Hyper-V sysadmin)  see non-Ok ( in "political correct" terminalogy) results with "hv: balloon: Online
+the hot-added memory" in "user space"
+
+
+==
+ [PATCH 2/2] Drivers: hv: balloon: Online the hot-added memory "in context"
+==
+
+
+ What news?  Roadmap?
+
+
+Best regards, Victor Miasnikov
+Blog:  http://vvm.blog.tut.by/
+
+
+
+
+P.P.S.
+
+----- Original Message ----- 
+From: "Brian Wong"
+To: <linux-kernel@vger.kernel.org>
+Sent: Thursday, March 06, 2014 9:24 AM
+Subject: Re: Linux does not use more than the startup RAM under Hyper-V with dynamic memory enabled
+
+
+On 3/6/2014 1:20 AM, Brian Wong wrote:
+
+   . . .
+
+> The kernel is built with the full set of Hyper-V drivers, including the
+> key "Microsoft Hyper-V Balloon Driver" as well as memory hot-add and
+> hot-remove functionality. This is happening with both the Gentoo-patched
+> 3.10.32 kernel and the vanilla 3.12.5 kernel. The host machine has a
+> total of 24 GB of memory.
+>
+> For now, I am working around the issue by starting the VM with the
+> startup memory set to the maximum and letting Hyper-V take the usused
+> memory back when it is not in use. The VM will then get the extra memory
+> when it needs it.
+>
+> Have I encountered a bug in the Hyper-V balloon driver?
+>
+
+Just a correction: the vanilla kernel version is 3.13.5, not 3.12.5.
+Sorry for any confusion.
+
 -- 
-1.7.9.5
+Brian Wong
+http://www.fierydragonlord.com
+--
+
+
+
+----- Original Message ----- 
+From: "Brian Wong"
+To: <linux-kernel@vger.kernel.org>
+Sent: Thursday, March 06, 2014 9:20 AM
+Subject: Linux does not use more than the startup RAM under Hyper-V with dynamic memory enabled
+
+I'm new to LKML, so please don't be too hard on me :)
+
+I'm running Gentoo Linux under Microsoft Client Hyper-V on Windows 8.1
+Pro, and I've noticed some odd behavior with respect to dynamic memory
+(aka memory ballooning). The system will never use more than the startup
+memory defined in the virtual machine's settings.
+
+( VVM: typewriting error viRtual fixed by me, for best search in future )
+
+For example, if I set the startup memory to 512 MB, and enable dynamic
+memory with a minimum of 512 MB and a maximum of 8192 MB, the system
+will never allocate than 512 MB of physical memory, despite Hyper-V
+assigning more memory to the VM and the added memory being visible in
+the output of "free" and "htop". Attempting to use more memory causes
+the system to start paging to swap, rather than actually allocating the
+memory above the startup memory assigned to the VM.
+
+The kernel is built with the full set of Hyper-V drivers, including the
+key "Microsoft Hyper-V Balloon Driver" as well as memory hot-add and
+hot-remove functionality. This is happening with both the Gentoo-patched
+3.10.32 kernel and the vanilla 3.12.5 kernel. The host machine has a
+total of 24 GB of memory.
+
+(
+  Brian Wong wrote On 3/6/2014 1:20 AM:
+ Just a correction: the vanilla kernel version is 3.13.5, not 3.12.5. )
+)
+
+For now, I am working around the issue by starting the VM with the
+startup memory set to the maximum and letting Hyper-V take the usused
+memory back when it is not in use. The VM will then get the extra memory
+when it needs it.
+
+Have I encountered a bug in the Hyper-V balloon driver?
+
+-- 
+Brian Wong
+http://www.fierydragonlord.com
+--
+
+
+
 
