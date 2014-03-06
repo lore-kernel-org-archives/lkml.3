@@ -1,70 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754357AbaCFEcM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 23:32:12 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:48266 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752275AbaCFEcJ (ORCPT
+	id S1754572AbaCFEeB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 23:34:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58247 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751573AbaCFEd7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 23:32:09 -0500
-Message-ID: <5317FA3B.8060900@oracle.com>
-Date: Wed, 05 Mar 2014 23:31:55 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 5 Mar 2014 23:33:59 -0500
+Date: Wed, 5 Mar 2014 20:34:25 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Simon Horman <horms@verge.net.au>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, Jiri Slaby <jslaby@suse.cz>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-serial@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Subject: Re: [PATCH 2/2] serial: sh-sci: Add missing call to
+ uart_remove_one_port() in failure path
+Message-ID: <20140306043425.GA24704@kroah.com>
+References: <1393593694-30262-1-git-send-email-geert@linux-m68k.org>
+ <1393593694-30262-2-git-send-email-geert@linux-m68k.org>
+ <20140306041912.GB29693@verge.net.au>
 MIME-Version: 1.0
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-CC: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, riel@redhat.com
-Subject: Re: [PATCH] mm: add pte_present() check on existing hugetlb_entry
- callbacks
-References: <53126861.7040107@oracle.com> <1393822946-26871-1-git-send-email-n-horiguchi@ah.jp.nec.com> <5314E0CD.6070308@oracle.com> <5314F661.30202@oracle.com> <1393968743-imrxpynb@n-horiguchi@ah.jp.nec.com> <531657DC.4050204@oracle.com> <1393976967-lnmm5xcs@n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1393976967-lnmm5xcs@n-horiguchi@ah.jp.nec.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140306041912.GB29693@verge.net.au>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/2014 06:49 PM, Naoya Horiguchi wrote:
-> On Tue, Mar 04, 2014 at 05:46:52PM -0500, Sasha Levin wrote:
->> On 03/04/2014 04:32 PM, Naoya Horiguchi wrote:
->>> # sorry if duplicate message
->>>
->>> On Mon, Mar 03, 2014 at 04:38:41PM -0500, Sasha Levin wrote:
->>>> On 03/03/2014 03:06 PM, Sasha Levin wrote:
->>>>> On 03/03/2014 12:02 AM, Naoya Horiguchi wrote:
->>>>>> Hi Sasha,
->>>>>>
->>>>>>>> I can confirm that with this patch the lockdep issue is gone. However, the NULL deref in
->>>>>>>> walk_pte_range() and the BUG at mm/hugemem.c:3580 still appear.
->>>>>> I spotted the cause of this problem.
->>>>>> Could you try testing if this patch fixes it?
->>>>>
->>>>> I'm seeing a different failure with this patch:
->>>>
->>>> And the NULL deref still happens.
->>>
->>> I don't yet find out the root reason why this issue remains.
->>> So I tried to run trinity myself but the problem didn't reproduce.
->>> (I did simply like "./trinity --group vm --dangerous" a few hours.)
->>> Could you show more detail or tips about how the problem occurs?
->>
->> I run it as root in a disposable vm, that may be the difference here.
+On Thu, Mar 06, 2014 at 01:19:13PM +0900, Simon Horman wrote:
+> On Fri, Feb 28, 2014 at 02:21:33PM +0100, Geert Uytterhoeven wrote:
+> > From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+> > 
+> > If cpufreq_register_notifier() fails, we have to remove the port added by
+> > sci_probe_single(), which is not done by sci_cleanup_single().
+> > 
+> > Else the serial port stays active from the point of view of the serial
+> > subsystem, and it may crash when userspace getty is started, or when the
+> > loadable driver module is unloaded.
+> > 
+> > This was introduced by commit 6dae14216c85eea13db7b12c469475c5d30e5499
+> > ("serial: sh-sci: Fix probe error paths").
+> > 
+> > Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 > 
-> Sorry, I didn't write it but I also run it as root on VM, so condition is
-> the same. It might depend on kernel config, so I'm now trying the config
-> you previously gave me, but it doesn't boot correctly on my environment
-> (panic in initialization). I may need some time to get over this.
+> Acked-by: Simon Horman <horms+renesas@verge.net.au>
+> 
+> This looks reasonable to me.
+> 
+> Greg, could you take this one?
 
-I'd be happy to help with anything off-list, it shouldn't be too difficult
-to get that kernel to boot :)
-
-I've also reverted the page walker series for now, it makes it impossible
-to test anything else since it seems that hitting one of the issues is quite
-easy.
-
-
-Thanks,
-Sasha
-
+Will do, thanks.
