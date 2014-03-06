@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753290AbaCFSDN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 13:03:13 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:40574 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753063AbaCFSDL (ORCPT
+	id S1753463AbaCFSEH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 13:04:07 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:51292 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752142AbaCFSEF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 13:03:11 -0500
-From: behanw@converseincode.com
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, dwmw2@infradead.org, pageexec@freemail.hu,
-        =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>,
-        Behan Webster <behanw@converseincode.com>,
-        Mark Charlebois <charlebm@gmail.com>
-Subject: [PATCH 5/5 v2] x86 kbuild: LLVMLinux: More cc-options added for clang
-Date: Thu,  6 Mar 2014 10:03:06 -0800
-Message-Id: <1394128986-3915-1-git-send-email-behanw@converseincode.com>
+	Thu, 6 Mar 2014 13:04:05 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+To: fubar@us.ibm.com, vfalico@redhat.com, andy@greyhouse.net
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nikolay@redhat.com, Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH] bonding: correctly handle out of range parameters for lp_interval
+Date: Thu,  6 Mar 2014 13:03:50 -0500
+Message-Id: <1394129030-9947-1-git-send-email-sasha.levin@oracle.com>
 X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <530D4445.8060304@zytor.com>
-References: <530D4445.8060304@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan-Simon Möller <dl9pf@gmx.de>
+We didn't correctly check cases where the value for lp_interval is not
+within the legal range due to a missing table terminator.
 
-Protect more options for x86 with cc-option so that we don't get errors when
-using clang instead of gcc.  Add more or different options when using clang as
-well. Also need to enforce that SSE is off for clang and the stack is 8-byte
-aligned.
+This would let userspace trigger a kernel panic by specifying a value out
+of range:
 
-Removed improper reassetion of -mno-sse and -mpreferred-stack-boundary
+	echo -1 > /sys/devices/virtual/net/bond0/bonding/lp_interval
 
-Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
-Signed-off-by: Behan Webster <behanw@converseincode.com>
-Signed-off-by: Mark Charlebois <charlebm@gmail.com>
+Introduced by commit "bonding: add infrastructure for an option API".
+
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 ---
- arch/x86/Makefile | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/bonding/bond_options.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-index eeda43a..d5a5a91 100644
---- a/arch/x86/Makefile
-+++ b/arch/x86/Makefile
-@@ -108,7 +108,7 @@ else
+diff --git a/drivers/net/bonding/bond_options.c b/drivers/net/bonding/bond_options.c
+index 23f3655..4d35cdc 100644
+--- a/drivers/net/bonding/bond_options.c
++++ b/drivers/net/bonding/bond_options.c
+@@ -124,6 +124,7 @@ static struct bond_opt_value bond_resend_igmp_tbl[] = {
+ static struct bond_opt_value bond_lp_interval_tbl[] = {
+ 	{ "minval",  1,       BOND_VALFLAG_MIN | BOND_VALFLAG_DEFAULT},
+ 	{ "maxval",  INT_MAX, BOND_VALFLAG_MAX},
++	{ NULL,      -1,      0},	
+ };
  
-         # this works around some issues with generating unwind tables in older gccs
-         # newer gccs do it by default
--        KBUILD_CFLAGS += -maccumulate-outgoing-args
-+        KBUILD_CFLAGS += $(call cc-option,-maccumulate-outgoing-args)
- endif
- 
- # Make sure compiler does not have buggy stack-protector support.
+ static struct bond_option bond_opts[] = {
 -- 
-1.8.3.2
+1.7.2.5
 
