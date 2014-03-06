@@ -1,55 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754572AbaCFEeB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 23:34:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58247 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751573AbaCFEd7 (ORCPT
+	id S1755301AbaCFEeo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 23:34:44 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:34455 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752185AbaCFEem (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 23:33:59 -0500
-Date: Wed, 5 Mar 2014 20:34:25 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Simon Horman <horms@verge.net.au>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, Jiri Slaby <jslaby@suse.cz>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-serial@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Subject: Re: [PATCH 2/2] serial: sh-sci: Add missing call to
- uart_remove_one_port() in failure path
-Message-ID: <20140306043425.GA24704@kroah.com>
-References: <1393593694-30262-1-git-send-email-geert@linux-m68k.org>
- <1393593694-30262-2-git-send-email-geert@linux-m68k.org>
- <20140306041912.GB29693@verge.net.au>
+	Wed, 5 Mar 2014 23:34:42 -0500
+Message-ID: <5317FAA3.9020409@ti.com>
+Date: Thu, 6 Mar 2014 10:03:39 +0530
+From: Sricharan R <r.sricharan@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140306041912.GB29693@verge.net.au>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Tony Lindgren <tony@atomide.com>
+CC: Mugunthan V N <mugunthanvnm@ti.com>, <bcousson@baylibre.com>,
+        <linux@arm.linux.org.uk>, <akpm@linux-foundation.org>, <nm@ti.com>,
+        <balajitk@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [RESEND Patch 0/9] dts pending patches for TI omap
+References: <1393858226-32595-1-git-send-email-mugunthanvnm@ti.com> <20140305195053.GG7599@atomide.com>
+In-Reply-To: <20140305195053.GG7599@atomide.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 06, 2014 at 01:19:13PM +0900, Simon Horman wrote:
-> On Fri, Feb 28, 2014 at 02:21:33PM +0100, Geert Uytterhoeven wrote:
-> > From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-> > 
-> > If cpufreq_register_notifier() fails, we have to remove the port added by
-> > sci_probe_single(), which is not done by sci_cleanup_single().
-> > 
-> > Else the serial port stays active from the point of view of the serial
-> > subsystem, and it may crash when userspace getty is started, or when the
-> > loadable driver module is unloaded.
-> > 
-> > This was introduced by commit 6dae14216c85eea13db7b12c469475c5d30e5499
-> > ("serial: sh-sci: Fix probe error paths").
-> > 
-> > Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+On Thursday 06 March 2014 01:20 AM, Tony Lindgren wrote:
+> * Mugunthan V N <mugunthanvnm@ti.com> [140303 06:53]:
+>> Benoit/Tony
+>>
+>> Here I am send all the pending dt patches that can go into 3.15 merge window,
+>> all the patches were already posted to mailing list and has beed reviewed.
+>>
+>> I have rebased the patches on top of
+>> git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap.git omap-for-v3.15/dt
+>> and fixed all the merge conflicts.
+>>
+>> Pasting the mail archive for the patches series
+>>
+>> * Add ABB device nodes
+>> http://linux-kernel.2935.n7.nabble.com/PATCH-0-4-ARM-dts-OMAP3630-Add-ABB-device-nodes-td794852.html
+>>
+>> * MMC hot plug support
+>> http://mail.blameitonlove.com/lists/linux-omap/msg101933.html
+>> Dropped [PATCH 2/3] ARM: dts: am335x-evmsk: add SD card hotplug support as this
+>> is already merged with commit id 29ea5efb0bb612d352aa360de26e2095cb230e4a
+>>
+>> * DRA7 Cross bar DTS patches
+>> Cross bar driver has been pulled for next merge, so the dts patches can also
+>> be pulled for next merge window.
+>>
+>> Here is the pull request for the same patch series.
+>>
+>> The following changes since commit f777ba1780584b100ab9664cc06d04f3bb273a84:
+>>
+>>   Merge tag 'for_3.15/dts_signed' of git://git.kernel.org/pub/scm/linux/kernel/git/bcousson/linux-omap-dt into omap-for-v3.15/dt (2014-03-02 14:22:03 -0800)
+>>
+>> are available in the git repository at:
+>>
+>>
+>>   git://git.ti.com/~mugunthanvnm/ti-linux-kernel/linux.git omapdt-for-3.15
+>>
+>> for you to fetch changes up to 5f78b45aa45c5b2c4de895c3b0740fda4684dae4:
+>>
+>>   ARM: DTS: DRA7: Add routable-irqs property for gic node (2014-03-03 19:53:25 +0530)
 > 
-> Acked-by: Simon Horman <horms+renesas@verge.net.au>
+> Thanks applying all except for the crossbar ones into
+> omap-for-v3.15/dt.
 > 
-> This looks reasonable to me.
-> 
-> Greg, could you take this one?
+> Please resend the last three patches once the dependencies
+> are merged to mainline kernel as otherwise the interrupt
+> nubers are all wrong without the crossbar driver related
+> code.
+ 
+   Ok, i will resend when the dependencies are merged
 
-Will do, thanks.
+Regards,
+ Sricharan
+
