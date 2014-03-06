@@ -1,90 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521AbaCFMQg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 07:16:36 -0500
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:62581 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751597AbaCFMQe (ORCPT
+	id S1752328AbaCFMRM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 07:17:12 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:58584 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750760AbaCFMRK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 07:16:34 -0500
+	Thu, 6 Mar 2014 07:17:10 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Kieran Clancy <clancy.kieran@gmail.com>
+Cc: Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Li Guang <lig.fnst@cn.fujitsu.com>,
+        Lan Tianyu <tianyu.lan@intel.com>,
+        Juan Manuel Cabo <juanmanuel.cabo@gmail.com>,
+        Dennis Jansen <dennis.jansen@web.de>
+Subject: Re: [PATCH v2] ACPI / EC: Clear stale EC events on Samsung systems
+Date: Thu, 06 Mar 2014 13:32:23 +0100
+Message-ID: <3916368.BifXucqhsP@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAGf84QK-N+C6eHct4XDzOCHwfN649F2okJ1y2V70wWz-wHFKEA@mail.gmail.com>
+References: <1393429360-4344-1-git-send-email-clancy.kieran@gmail.com> <1885040.WKp5oRmh5C@vostro.rjw.lan> <CAGf84QK-N+C6eHct4XDzOCHwfN649F2okJ1y2V70wWz-wHFKEA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <531465FF.1000201@ti.com>
-References: <1390486503-1504-1-git-send-email-dh.herrmann@gmail.com>
-	<53145591.4070004@ti.com>
-	<CANq1E4QJqB0CSNeSh2jsp90ZtcLwFwfSG=qjodSLdV_aGbL3BQ@mail.gmail.com>
-	<53145D42.9080806@ti.com>
-	<CANq1E4QYuMsj3W80jiyOfeYr+Xm=J096idyvgCUpFhADWR1ZvA@mail.gmail.com>
-	<531465FF.1000201@ti.com>
-Date: Thu, 6 Mar 2014 13:16:34 +0100
-Message-ID: <CANq1E4TmACNwyANaUsWufJL1ne4pk4Gv+g4y7b6xeO=Po-SN9g@mail.gmail.com>
-Subject: Re: [PATCH 00/11] SimpleDRM & Sysfb
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        Dave Airlie <airlied@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Tom Gundersen <teg@jklm.no>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomi
+On Thursday, March 06, 2014 11:54:28 AM Kieran Clancy wrote:
+> On Thu, Mar 6, 2014 at 11:22 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> > On Thursday, March 06, 2014 11:04:14 AM Kieran Clancy wrote:
+> >>
+> >> Rafael, is it a separate process to get this in the stable tree or
+> >> will it naturally happen after being merged into the mainline?
+> >
+> > I need to add a proper "CC stable" tag to your patch for this to happen.
+> >
+> > Which -stable kernels should it go to?
+> 
+> 3.2 and 3.10 seem like natural choices (3.4?), but I don't know the
+> norm for this kind of fix. Would there be any reason not to include it
+> in some particular stable kernels?
 
-On Mon, Mar 3, 2014 at 12:22 PM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
-> On 03/03/14 13:09, David Herrmann wrote:
->
->>> What do you think, would it be possible to keep the sysfb stuff in
->>> arch/x86, and still be able to do the rest of the stuff here? And then
->>> move the sysfs from arch/x86 to drivers/video later?
->>
->> I don't think there's any need for that. Linus does conflict
->> resolution all day long, so a short hint in Dave's pull-request (plus
->> an example merge) should be enough. Same is true for -next, I think.
->
-> True, but, well, the conflict with this one is not a few lines. "git
-> diff |wc -l" gives 2494 lines for the conflict. It's not really complex
-> to resolve that one, though, as it's really about copying all the stuff
-> into its new place.
->
-> So I'm not sure if that makes Linus think "this is simple one, 30 secs
-> and done" or "who the f*** sends me this crap" ;). Especially for two
-> reasons:
->
-> - The fb-reogranization is not very critical, and often clean-ups are
-> not worth it (although I think this one is good one, of course).
-> - Conflicting fbdev changes coming from another tree
->
->> And this is really just a mechanical thing, nothing hard to do. But of
->> course, it's your decision. However, keeping the code in x86 is the
->> wrong thing to do. As discussed with Ingo, the patch that extends
->
-> Yes, I didn't mean keeping the code in x86 for good, but just for one
-> kernel version to make merging easier.
->
->> x86/sysfb is only provided for easier backporting. The followup patch
->> immediately removes it again and adds proper video/sysfb. I'd dislike
->> splitting these just to avoid merge conflicts. I can also maintain a
->> merge-fixup branch in my tree, if anyone wants that.
->
-> You can have a try at merging. If you think it's trivial, maybe it is
-> and we can just let Linus handle it:
->
-> git://git.kernel.org/pub/scm/linux/kernel/git/tomba/linux.git
-> work/fb-reorder
+In some cases patches are not needed in older -stable, because the
+changes are not relevant there etc.
 
-Ok, I'm fine with delaying this one more merge-window. However, to
-make things easier, could you pick up the two fbdev cleanups? These
-are:
-  fbdev: efifb: add dev->remove() callback
-  fbdev: vesafb: add dev->remove() callback
+OK, I'll mark if for all applicable -stable series.
 
-They only add ->remove() callbacks which are never triggered currently
-except with my sysfb series. But I'd like to drop both to make the
-series smaller.
+Thanks!
 
-Thanks
-David
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
