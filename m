@@ -1,98 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752058AbaCFMzk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 07:55:40 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:16019 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750829AbaCFMzi (ORCPT
+	id S1751969AbaCFM7W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 07:59:22 -0500
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:40477 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750805AbaCFM7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 07:55:38 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+dJxRM30CsqLrszHelT2QKVOD4C7FNF3c=
-X-DKIM: OpenDKIM Filter v2.0.1 titan DF59553B882
-Date: Thu, 6 Mar 2014 07:55:33 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
-        linux-crypto@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH][RESEND 3] hwrng: add randomness to system from rng
- sources
-Message-ID: <20140306125533.GA1872@titan.lakedaemon.net>
-References: <20140303235148.GA7601@www.outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140303235148.GA7601@www.outflux.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 6 Mar 2014 07:59:20 -0500
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Subject: [PATCH] net: use raw_cpu ops in snmp stats bh
+Date: Thu,  6 Mar 2014 15:55:36 +0300
+Message-Id: <1394110536-4532-1-git-send-email-sergey.senozhatsky@gmail.com>
+X-Mailer: git-send-email 1.9.0.382.g7f3562c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 03, 2014 at 03:51:48PM -0800, Kees Cook wrote:
-> When bringing a new RNG source online, it seems like it would make sense
-> to use some of its bytes to make the system entropy pool more random,
-> as done with all sorts of other devices that contain per-device or
-> per-boot differences.
-> 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
->  drivers/char/hw_random/core.c |    7 +++++++
->  1 file changed, 7 insertions(+)
+Commit a25982c15ae52 ("percpu: add preemption checks to __this_cpu
+ops") added preemption checks to __this_cpu ops, which are used in
+SNMP_INC_STATS_BH() and SNMP_ADD_STATS_BH(), resulting in following
+warnings:
 
-fwiw,
+BUG: using __this_cpu_add() in preemptible [00000000] code: ssh/4661
+caller is __this_cpu_preempt_check+0x2b/0x2d
+CPU: 3 PID: 4661 Comm: ssh Not tainted 3.14.0-rc5-next-20140306-dbg-dirty #162
+Hardware name: Acer             Aspire 5741G    /Aspire 5741G    , BIOS V1.20 02/08/2011
+ 0000000000000000 ffff880094939be0 ffffffff813b8305 0000000000000003
+ ffff880094939c00 ffffffff8121221f ffff88015130a8c0 0000000000000000
+ ffff880094939c38 ffffffff8121226b 635f736968745f5f 29286464615f7570
+Call Trace:
+ [<ffffffff813b8305>] dump_stack+0x4e/0x7a
+ [<ffffffff8121221f>] check_preemption_disabled+0xce/0xdd
+ [<ffffffff8121226b>] __this_cpu_preempt_check+0x2b/0x2d
+ [<ffffffff81370b5a>] ? tcp_rearm_rto+0x9f/0xa1
+ [<ffffffff81373456>] tcp_event_new_data_sent+0x6d/0x91
+ [<ffffffff81374dc6>] tcp_write_xmit+0x3f1/0x935
+ [<ffffffff813754e4>] __tcp_push_pending_frames+0x28/0x82
+ [<ffffffff81368109>] tcp_push+0xcc/0x102
+ [<ffffffff8136a0c1>] tcp_sendmsg+0x8c5/0xb7a
+ [<ffffffff81207d59>] ? string.isra.6+0x3b/0x9f
+ [<ffffffff8138a10a>] inet_sendmsg+0x75/0xa0
+ [<ffffffff81320fb6>] sock_aio_write+0xe7/0xfe
+ [<ffffffff81207d59>] ? string.isra.6+0x3b/0x9f
+ [<ffffffff810e08ab>] do_sync_write+0x54/0x73
+ [<ffffffff810e0df7>] vfs_write+0xc6/0x17c
+ [<ffffffff810e1603>] SyS_write+0x44/0x78
+ [<ffffffff813be0a1>] tracesys+0xd4/0xd9
 
-Reviewed-by: Jason Cooper <jason@lakedaemon.net>
+use raw_cpu_inc() and raw_cpu_add() instead of __this_cpu_inc()
+and __this_cpu_add().
 
-thx,
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+---
+ include/net/snmp.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Jason.
+diff --git a/include/net/snmp.h b/include/net/snmp.h
+index 36ab852..b549ad6 100644
+--- a/include/net/snmp.h
++++ b/include/net/snmp.h
+@@ -126,7 +126,7 @@ struct linux_xfrm_mib {
+ 	extern __typeof__(type) __percpu *name[SNMP_ARRAY_SZ]
+ 
+ #define SNMP_INC_STATS_BH(mib, field)	\
+-			__this_cpu_inc(mib[0]->mibs[field])
++			raw_cpu_inc(mib[0]->mibs[field])
+ 
+ #define SNMP_INC_STATS_USER(mib, field)	\
+ 			this_cpu_inc(mib[0]->mibs[field])
+@@ -141,7 +141,7 @@ struct linux_xfrm_mib {
+ 			this_cpu_dec(mib[0]->mibs[field])
+ 
+ #define SNMP_ADD_STATS_BH(mib, field, addend)	\
+-			__this_cpu_add(mib[0]->mibs[field], addend)
++			raw_cpu_add(mib[0]->mibs[field], addend)
+ 
+ #define SNMP_ADD_STATS_USER(mib, field, addend)	\
+ 			this_cpu_add(mib[0]->mibs[field], addend)
+-- 
+1.9.0.382.g7f3562c
 
-> diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
-> index a0f7724852eb..6e5bb68a708c 100644
-> --- a/drivers/char/hw_random/core.c
-> +++ b/drivers/char/hw_random/core.c
-> @@ -41,6 +41,7 @@
->  #include <linux/miscdevice.h>
->  #include <linux/delay.h>
->  #include <linux/slab.h>
-> +#include <linux/random.h>
->  #include <asm/uaccess.h>
->  
->  
-> @@ -305,6 +306,8 @@ int hwrng_register(struct hwrng *rng)
->  	int must_register_misc;
->  	int err = -EINVAL;
->  	struct hwrng *old_rng, *tmp;
-> +	unsigned char bytes[16];
-> +	int bytes_read;
->  
->  	if (rng->name == NULL ||
->  	    (rng->data_read == NULL && rng->read == NULL))
-> @@ -348,6 +351,10 @@ int hwrng_register(struct hwrng *rng)
->  	}
->  	INIT_LIST_HEAD(&rng->list);
->  	list_add_tail(&rng->list, &rng_list);
-> +
-> +	bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
-> +	if (bytes_read > 0)
-> +		add_device_randomness(bytes, bytes_read);
->  out_unlock:
->  	mutex_unlock(&rng_mutex);
->  out:
-> -- 
-> 1.7.9.5
-> 
-> 
-> -- 
-> Kees Cook
-> Chrome OS Security
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-crypto" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
