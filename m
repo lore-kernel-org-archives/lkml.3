@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757515AbaCFACV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 19:02:21 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:57523 "EHLO e7.ny.us.ibm.com"
+	id S1757562AbaCFACc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 19:02:32 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:57561 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755704AbaCFACQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 19:02:16 -0500
+	id S1754326AbaCFAC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 19:02:28 -0500
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 To: Linux PPC <linuxppc-dev@lists.ozlabs.org>,
         Cody P Schafer <cody@linux.vnet.ibm.com>
@@ -15,107 +15,193 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Michael Ellerman <michael@ellerman.id.au>, scottwood@freescale.com,
         Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH v4 05/11] powerpc/perf: add hv_gpci interface header
-Date: Wed,  5 Mar 2014 16:01:04 -0800
-Message-Id: <1394064082-6242-6-git-send-email-cody@linux.vnet.ibm.com>
+Subject: [PATCH v4 06/11] powerpc/perf: add 24x7 interface headers
+Date: Wed,  5 Mar 2014 16:01:05 -0800
+Message-Id: <1394064082-6242-7-git-send-email-cody@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394064082-6242-1-git-send-email-cody@linux.vnet.ibm.com>
 References: <1394064082-6242-1-git-send-email-cody@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14030600-5806-0000-0000-000024488F63
+x-cbid: 14030600-5806-0000-0000-000024488F81
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"H_GetPerformanceCounterInfo" (refered to as hv_gpci or just gpci from
-here on) is an interface to retrieve specific performance counters and
-other data from the hypervisor. All outputs have a fixed format. This
-header only describes the portions of the interface that we plan on
-using in linux at this time.
+24x7 (also called hv_24x7 or H_24X7) is an interface to obtain
+performance counters from the hypervisor. These counters do not have a
+fixed format/possition and are instead documented in a "24x7 Catalog",
+which is provided by the hypervisor (that interface is also documented
+paritialy in the included hv-24x7-catalog.h and fully in at
+https://raw.githubusercontent.com/jmesmon/catalog-24x7/master/hv-24x7-catalog.h ).
+
+The 24x7 data access is simply a copy operation into a 4 dimentional
+array of 64bit counters (from hypervisor to kernel memory). There is no
+interupt triggered on overflow, these are completely disjoint from the
+typical power pmu.
+
+This method of obtaining performance counters from the hypervisor is
+intended to paritialy replace the gpci interface.
 
 Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 ---
- arch/powerpc/perf/hv-gpci.h | 73 +++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 73 insertions(+)
- create mode 100644 arch/powerpc/perf/hv-gpci.h
+ arch/powerpc/perf/hv-24x7-catalog.h |  33 +++++++++++
+ arch/powerpc/perf/hv-24x7.h         | 109 ++++++++++++++++++++++++++++++++++++
+ 2 files changed, 142 insertions(+)
+ create mode 100644 arch/powerpc/perf/hv-24x7-catalog.h
+ create mode 100644 arch/powerpc/perf/hv-24x7.h
 
-diff --git a/arch/powerpc/perf/hv-gpci.h b/arch/powerpc/perf/hv-gpci.h
+diff --git a/arch/powerpc/perf/hv-24x7-catalog.h b/arch/powerpc/perf/hv-24x7-catalog.h
 new file mode 100644
-index 0000000..b25f460
+index 0000000..21b19dd
 --- /dev/null
-+++ b/arch/powerpc/perf/hv-gpci.h
-@@ -0,0 +1,73 @@
-+#ifndef LINUX_POWERPC_PERF_HV_GPCI_H_
-+#define LINUX_POWERPC_PERF_HV_GPCI_H_
++++ b/arch/powerpc/perf/hv-24x7-catalog.h
+@@ -0,0 +1,33 @@
++#ifndef LINUX_POWERPC_PERF_HV_24X7_CATALOG_H_
++#define LINUX_POWERPC_PERF_HV_24X7_CATALOG_H_
 +
 +#include <linux/types.h>
 +
-+/* From the document "H_GetPerformanceCounterInfo Interface" v1.07 */
++/* From document "24x7 Event and Group Catalog Formats Proposal" v0.15 */
 +
-+/* H_GET_PERF_COUNTER_INFO argument */
-+struct hv_get_perf_counter_info_params {
-+	__be32 counter_request; /* I */
-+	__be32 starting_index;  /* IO */
-+	__be16 secondary_index; /* IO */
-+	__be16 returned_values; /* O */
-+	__be32 detail_rc; /* O, only needed when called via *_norets() */
-+
-+	/*
-+	 * O, size each of counter_value element in bytes, only set for version
-+	 * >= 0x3
-+	 */
-+	__be16 cv_element_size;
-+
-+	/* I, 0 (zero) for versions < 0x3 */
-+	__u8 counter_info_version_in;
-+
-+	/* O, 0 (zero) if version < 0x3. Must be set to 0 when making hcall */
-+	__u8 counter_info_version_out;
-+	__u8 reserved[0xC];
-+	__u8 counter_value[];
++struct hv_24x7_catalog_page_0 {
++#define HV_24X7_CATALOG_MAGIC 0x32347837 /* "24x7" in ASCII */
++	__be32 magic;
++	__be32 length; /* In 4096 byte pages */
++	__be64 version; /* XXX: arbitrary? what's the meaning/useage/purpose? */
++	__u8 build_time_stamp[16]; /* "YYYYMMDDHHMMSS\0\0" */
++	__u8 reserved2[32];
++	__be16 schema_data_offs; /* in 4096 byte pages */
++	__be16 schema_data_len;  /* in 4096 byte pages */
++	__be16 schema_entry_count;
++	__u8 reserved3[2];
++	__be16 event_data_offs;
++	__be16 event_data_len;
++	__be16 event_entry_count;
++	__u8 reserved4[2];
++	__be16 group_data_offs; /* in 4096 byte pages */
++	__be16 group_data_len;  /* in 4096 byte pages */
++	__be16 group_entry_count;
++	__u8 reserved5[2];
++	__be16 formula_data_offs; /* in 4096 byte pages */
++	__be16 formula_data_len;  /* in 4096 byte pages */
++	__be16 formula_entry_count;
++	__u8 reserved6[2];
 +} __packed;
 +
-+/*
-+ * counter info version => fw version/reference (spec version)
-+ *
-+ * 8 => power8 (1.07)
-+ * [7 is skipped by spec 1.07]
-+ * 6 => TLBIE (1.07)
-+ * 5 => v7r7m0.phyp (1.05)
-+ * [4 skipped]
-+ * 3 => v7r6m0.phyp (?)
-+ * [1,2 skipped]
-+ * 0 => v7r{2,3,4}m0.phyp (?)
-+ */
-+#define COUNTER_INFO_VERSION_CURRENT 0x8
++#endif
+diff --git a/arch/powerpc/perf/hv-24x7.h b/arch/powerpc/perf/hv-24x7.h
+new file mode 100644
+index 0000000..720ebce
+--- /dev/null
++++ b/arch/powerpc/perf/hv-24x7.h
+@@ -0,0 +1,109 @@
++#ifndef LINUX_POWERPC_PERF_HV_24X7_H_
++#define LINUX_POWERPC_PERF_HV_24X7_H_
 +
-+/*
-+ * These determine the counter_value[] layout and the meaning of starting_index
-+ * and secondary_index.
-+ *
-+ * Unless otherwise noted, @secondary_index is unused and ignored.
-+ */
-+enum counter_info_requests {
++#include <linux/types.h>
 +
-+	/* GENERAL */
++struct hv_24x7_request {
++	/* PHYSICAL domains require enabling via phyp/hmc. */
++#define HV_24X7_PERF_DOMAIN_PHYSICAL_CHIP 0x01
++#define HV_24X7_PERF_DOMAIN_PHYSICAL_CORE 0x02
++#define HV_24X7_PERF_DOMAIN_VIRTUAL_PROCESSOR_HOME_CORE   0x03
++#define HV_24X7_PERF_DOMAIN_VIRTUAL_PROCESSOR_HOME_CHIP   0x04
++#define HV_24X7_PERF_DOMAIN_VIRTUAL_PROCESSOR_HOME_NODE   0x05
++#define HV_24X7_PERF_DOMAIN_VIRTUAL_PROCESSOR_REMOTE_NODE 0x06
++	__u8 performance_domain;
++	__u8 reserved[0x1];
 +
-+	/* @starting_index: must be -1 (to refer to the current partition)
++	/* bytes to read starting at @data_offset. must be a multiple of 8 */
++	__be16 data_size;
++
++	/*
++	 * byte offset within the perf domain to read from. must be 8 byte
++	 * aligned
 +	 */
-+	CIR_SYSTEM_PERFORMANCE_CAPABILITIES = 0X40,
-+};
++	__be32 data_offset;
 +
-+struct cv_system_performance_capabilities {
-+	/* If != 0, allowed to collect data from other partitions */
-+	__u8 perf_collect_privileged;
++	/*
++	 * only valid for VIRTUAL_PROCESSOR domains, ignored for others.
++	 * -1 means "current partition only"
++	 *  Enabling via phyp/hmc required for non-"-1" values. 0 forbidden
++	 *  unless requestor is 0.
++	 */
++	__be16 starting_lpar_ix;
 +
-+	/* These following are only valid if counter_info_version >= 0x3 */
-+#define CV_CM_GA       (1 << 7)
-+#define CV_CM_EXPANDED (1 << 6)
-+#define CV_CM_LAB      (1 << 5)
-+	/* remaining bits are reserved */
-+	__u8 capability_mask;
++	/*
++	 * Ignored when @starting_lpar_ix == -1
++	 * Ignored when @performance_domain is not VIRTUAL_PROCESSOR_*
++	 * -1 means "infinite" or all
++	 */
++	__be16 max_num_lpars;
++
++	/* chip, core, or virtual processor based on @performance_domain */
++	__be16 starting_ix;
++	__be16 max_ix;
++} __packed;
++
++struct hv_24x7_request_buffer {
++	/* 0 - ? */
++	/* 1 - ? */
++#define HV_24X7_IF_VERSION_CURRENT 0x01
++	__u8 interface_version;
++	__u8 num_requests;
 +	__u8 reserved[0xE];
++	struct hv_24x7_request requests[];
++} __packed;
++
++struct hv_24x7_result_element {
++	__be16 lpar_ix;
++
++	/*
++	 * represents the core, chip, or virtual processor based on the
++	 * request's @performance_domain
++	 */
++	__be16 domain_ix;
++
++	/* -1 if @performance_domain does not refer to a virtual processor */
++	__be32 lpar_cfg_instance_id;
++
++	/* size = @result_element_data_size of cointaining result. */
++	__u8 element_data[];
++} __packed;
++
++struct hv_24x7_result {
++	__u8 result_ix;
++
++	/*
++	 * 0 = not all result elements fit into the buffer, additional requests
++	 *     required
++	 * 1 = all result elements were returned
++	 */
++	__u8 results_complete;
++	__be16 num_elements_returned;
++
++	/* This is a copy of @data_size from the coresponding hv_24x7_request */
++	__be16 result_element_data_size;
++	__u8 reserved[0x2];
++
++	/* WARNING: only valid for first result element due to variable sizes
++	 *          of result elements */
++	/* struct hv_24x7_result_element[@num_elements_returned] */
++	struct hv_24x7_result_element elements[];
++} __packed;
++
++struct hv_24x7_data_result_buffer {
++	/* See versioning for request buffer */
++	__u8 interface_version;
++
++	__u8 num_results;
++	__u8 reserved[0x1];
++	__u8 failing_request_ix;
++	__be32 detailed_rc;
++	__be64 cec_cfg_instance_id;
++	__be64 catalog_version_num;
++	__u8 reserved2[0x8];
++	/* WARNING: only valid for the first result due to variable sizes of
++	 *	    results */
++	struct hv_24x7_result results[]; /* [@num_results] */
 +} __packed;
 +
 +#endif
