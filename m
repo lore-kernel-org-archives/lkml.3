@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751210AbaCFFcf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 00:32:35 -0500
-Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:37816 "EHLO
-	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790AbaCFFce (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 00:32:34 -0500
-Message-ID: <1394083528.4524.3.camel@nexus>
-Subject: [PATCH] sched/clock: prevent tracing recursion in sched_clock_cpu()
-From: Fernando Luis =?ISO-8859-1?Q?V=E1zquez?= Cao 
-	<fernando_b1@lab.ntt.co.jp>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, StevenRostedt <rostedt@goodmis.org>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 06 Mar 2014 14:25:28 +0900
-Organization: NTT Open Source Software Center
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
-Mime-Version: 1.0
+	id S1751650AbaCFFdx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 00:33:53 -0500
+Received: from mga03.intel.com ([143.182.124.21]:3232 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750828AbaCFFdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 00:33:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,598,1389772800"; 
+   d="scan'208";a="486962591"
+Message-ID: <531808BD.4070000@linux.intel.com>
+Date: Thu, 06 Mar 2014 13:33:49 +0800
+From: "Li, Aubrey" <aubrey.li@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, mingo@redhat.com,
+        tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        "alan@linux.intel.com" <alan@linux.intel.com>
+Subject: Re: [PATCH] x86: new Intel Atom SoC power management controller driver
+References: <5317EC0C.4010807@linux.intel.com> <5317F044.8080407@linux.intel.com> <531805D4.6040806@linux.intel.com> <5318076C.7080605@linux.intel.com>
+In-Reply-To: <5318076C.7080605@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
+On 2014/3/6 13:28, H. Peter Anvin wrote:
+> On 03/05/2014 09:21 PM, Li, Aubrey wrote:
+>>>
+>>> What is the reason for putting this in debugfs?
+>>
+>> S0ix support on Atom SoC needs all of the devices under south complex to
+>> be quiesced, as well as the devices under north complex. This interface
+>> shows all of the devices states under platform control unit. If the
+>> system is not able to enter S0ix, we have a way to diagnose. Or if the
+>> system entered S0ix, we have counters to show S0ix entered and its
+>> residency.
+>>
+> 
+> I guess the real question is: are you sure this is only for debugging,
+> or is this going to be an interface that applications or daemons will
+> actually use (in which case it should live in sysfs).
 
-Prevent tracing of preempt_disable/enable() in sched_clock_cpu().
-When CONFIG_DEBUG_PREEMPT is enabled, preempt_disable/enable() are
-traced and this causes trace_clock() users (and probably others) to
-go into an infinite recursion. Systems with a stable sched_clock()
-are not affected.
+These interfaces are uncommitted and don't have consumers now, I'd like
+to keep them unstable in debugfs.
 
-This problem is similar to that fixed by upstream commit 95ef1e52922
-("KVM guest: prevent tracing recursion with kvmclock").
+We can change it if we received a requirement to use them later.
 
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
----
+Thanks,
+-Aubrey
 
-diff -urNp linux-3.14-rc5-orig/kernel/sched/clock.c linux-3.14-rc5/kernel/sched/clock.c
---- linux-3.14-rc5-orig/kernel/sched/clock.c	2014-03-06 13:37:43.567720550 +0900
-+++ linux-3.14-rc5/kernel/sched/clock.c	2014-03-06 13:41:56.937100949 +0900
-@@ -301,14 +301,14 @@ u64 sched_clock_cpu(int cpu)
- 	if (unlikely(!sched_clock_running))
- 		return 0ull;
- 
--	preempt_disable();
-+	preempt_disable_notrace();
- 	scd = cpu_sdc(cpu);
- 
- 	if (cpu != smp_processor_id())
- 		clock = sched_clock_remote(scd);
- 	else
- 		clock = sched_clock_local(scd);
--	preempt_enable();
-+	preempt_enable_notrace();
- 
- 	return clock;
- }
-
+> 
+> 	-hpa
+> 
+> 
+> 
+> 
 
