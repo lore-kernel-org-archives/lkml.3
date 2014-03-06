@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752752AbaCFTQM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 14:16:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32550 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751124AbaCFTQL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 14:16:11 -0500
-Message-ID: <5318C961.4000606@redhat.com>
-Date: Thu, 06 Mar 2014 20:15:45 +0100
-From: Nikolay Aleksandrov <nikolay@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752855AbaCFTSE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 14:18:04 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:58719 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752096AbaCFTSB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 14:18:01 -0500
+Date: Thu, 6 Mar 2014 16:17:47 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Andrew Lunn <andrew@lunn.ch>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        devicetree@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
+        Tawfik Bayouk <tawfik@marvell.com>, linux-kernel@vger.kernel.org,
+        Nadav Haklai <nadavh@marvell.com>, Lior Amsalem <alior@marvell.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH] ARM: mvebu: add Device Tree for the Armada 385 RD board
+Message-ID: <20140306191747.GA32655@arch.cereza>
+References: <1394107868-26094-1-git-send-email-gregory.clement@free-electrons.com>
+ <20140306131429.GJ4780@lunn.ch>
+ <5318779C.8030901@free-electrons.com>
+ <20140306142117.GL4780@lunn.ch>
+ <531886B4.2070002@free-electrons.com>
+ <20140306144600.GM4780@lunn.ch>
+ <53188B73.4000109@free-electrons.com>
+ <53189892.5090502@free-electrons.com>
+ <20140306160213.GA4327@arch.cereza>
+ <20140306172339.GP4780@lunn.ch>
 MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>, fubar@us.ibm.com, vfalico@redhat.com,
-        andy@greyhouse.net
-CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] bonding: correctly handle out of range parameters for
- lp_interval
-References: <1394129030-9947-1-git-send-email-sasha.levin@oracle.com>
-In-Reply-To: <1394129030-9947-1-git-send-email-sasha.levin@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140306172339.GP4780@lunn.ch>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/2014 07:03 PM, Sasha Levin wrote:
-> We didn't correctly check cases where the value for lp_interval is not
-> within the legal range due to a missing table terminator.
+On Mar 06, Andrew Lunn wrote:
+> > Can't we fix this so the probe order doesn't affect the name?
+> > 
+> > Is that sane?
 > 
-> This would let userspace trigger a kernel panic by specifying a value out
-> of range:
+> You are not supposed to trust the device name, since probing can
+> happen in parallel, on different buses. udev should have rules to name
+> the interfaces based on the MAC address. On my Debian system i have:
 > 
-> 	echo -1 > /sys/devices/virtual/net/bond0/bonding/lp_interval
+> /etc/udev/rules.d/70-persistent-net.rules
 > 
-> Introduced by commit "bonding: add infrastructure for an option API".
+> So what is important is that the MAC addresses are assigned correctly
+> to the device. And DT does that based on MMIO address, so should be
+> reliable, independent of probe order.
 > 
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> ---
->  drivers/net/bonding/bond_options.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/net/bonding/bond_options.c b/drivers/net/bonding/bond_options.c
-> index 23f3655..4d35cdc 100644
-> --- a/drivers/net/bonding/bond_options.c
-> +++ b/drivers/net/bonding/bond_options.c
-> @@ -124,6 +124,7 @@ static struct bond_opt_value bond_resend_igmp_tbl[] = {
->  static struct bond_opt_value bond_lp_interval_tbl[] = {
->  	{ "minval",  1,       BOND_VALFLAG_MIN | BOND_VALFLAG_DEFAULT},
->  	{ "maxval",  INT_MAX, BOND_VALFLAG_MAX},
-> +	{ NULL,      -1,      0},	
->  };
->  
->  static struct bond_option bond_opts[] = {
-> 
-Thanks!
 
-One note though, the commit that introduces the problem is not that one.
-It's 4325b374f84e59226851636df946f2500d0bfeba ("bonding: convert
-lp_interval to use the new option API"), after that's corrected you
-can add my:
+Right, makes perfect sense!
 
-Acked-by: Nikolay Aleksandrov <nikolay@redhat.com>
+So we can just keep the nodes address-ordered, without caring about the name?
 
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
