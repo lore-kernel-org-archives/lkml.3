@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753564AbaCFUva (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 15:51:30 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:58916 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752824AbaCFUv2 (ORCPT
+	id S1753289AbaCFUwg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 15:52:36 -0500
+Received: from www.linutronix.de ([62.245.132.108]:56872 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751986AbaCFUwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 15:51:28 -0500
+	Thu, 6 Mar 2014 15:52:34 -0500
+Date: Thu, 6 Mar 2014 21:52:42 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: =?ISO-8859-15?Q?Ville_Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
+cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@kernel.org
+Subject: Re: preempt_check_resched() gone?
+In-Reply-To: <20140306202705.GD3852@intel.com>
+Message-ID: <alpine.DEB.2.02.1403062146060.18573@ionos.tec.linutronix.de>
+References: <20140306202705.GD3852@intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20140305214013.GA6287@localhost.localdomain>
-References: <20140305175036.GA23885@localhost.localdomain>
-	<CAK2H+ecJKp+QLJsbGW2tquO5_DuQReJD8nKViHea9tTiJwfn-g@mail.gmail.com>
-	<20140305214013.GA6287@localhost.localdomain>
-Date: Thu, 6 Mar 2014 12:51:27 -0800
-Message-ID: <CAK2H+eesWkK_w66e5BLcA_Ft0FHNTuNYmxF_LceMHVupX8T_xg@mail.gmail.com>
-Subject: Re: Slow I/O performance on SAS1064
-From: Mark Knecht <markknecht@gmail.com>
-To: markus <markus@kola.li>
-Cc: Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>,
-        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>, support@lsi.com,
-        DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
-        Linux Kernel List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-1340362852-1394139163=:18573"
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 5, 2014 at 1:40 PM, markus <markus@kola.li> wrote:
-> On Wed, Mar 05, 2014 at 10:21:07AM -0800, Mark Knecht wrote:
->> On Wed, Mar 5, 2014 at 9:50 AM, Markus <markus@kola.li> wrote:
->> <SNIP>
->>
->> > The hdparm result looks like there is somethink not right . There were no features supported but why ?
->>
->>
->> Does the HDD have S.M.A.R.T. features? Possibly
->>
->> smartctl -a /dev/sda
-> root@outpost:~# smartctl -a /dev/sda
-> smartctl 5.41 2011-06-09 r3365 [sparc64-linux-3.13.5-mar] (local build)
-> Copyright (C) 2002-11 by Bruce Allen, http://smartmontools.sourceforge.net
->
->
-> Probable ATA device behind a SAT layer
-> Try an additional '-d ata' or '-d sat' argument.
->
-> so i try it with scsi.
->
-> root@outpost:~# smartctl -d scsi -a /dev/sda
-> smartctl 5.41 2011-06-09 r3365 [sparc64-linux-3.13.5-mar] (local build)
-> Copyright (C) 2002-11 by Bruce Allen, http://smartmontools.sourceforge.net
->
-> User Capacity:        2,000,398,934,016 bytes [2.00 TB]
-> Logical block size:   512 bytes
-> Logical Unit id:      0x50000394e2380537
-> Serial number:                   7365P4KNT
-> Device type:          disk
-> Local Time is:        Wed Mar  5 22:32:09 2014 CET
-> Device supports SMART and is Disabled
-> Temperature Warning Disabled or Not Supported
-> SMART Health Status: OK
->
-> Error Counter logging not supported
-> Device does not support Self Test logging
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-I am not familiar with this message:
+--8323329-1340362852-1394139163=:18573
+Content-Type: TEXT/PLAIN; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 
-"Device supports SMART and is Disabled"
+On Thu, 6 Mar 2014, Ville Syrjälä wrote:
+> Hi,
+> 
+> It appears preempt_check_resched() is no longer available for modules
+> since [1]. So now I'm left wondering what is one supposed to use after
+> local_irq_enable(). Documentation/preempt-locking.txt still says one
+> should do a check, but the tool to do that was taken away.
 
-but there are lots of posts out there with folks asking about it.
-Possibly you can figure out what's causing smart not to turn on, get
-it turned on and get some info.
+The documentation is slightly misleading. The point is:
 
-Sorry I cannot help more.
+If you have an irq disabled section and you do a wakeup inside this
+section which causes the need resched bit to be set, then
+local_irq_enable/restore wont do an preemption check.
 
-Good luck,
-Mark
+If you merily poke at a few device registers then nothing will set
+need resched and you're good.
+
+Thanks,
+
+	tglx
+
+ 
+--8323329-1340362852-1394139163=:18573--
