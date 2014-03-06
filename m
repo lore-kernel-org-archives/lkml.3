@@ -1,44 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250AbaCFThm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 14:37:42 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:60257 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752090AbaCFThV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 14:37:21 -0500
-Date: Thu, 06 Mar 2014 14:37:19 -0500 (EST)
-Message-Id: <20140306.143719.2217501178599478723.davem@davemloft.net>
-To: dhowells@redhat.com
-Cc: netdev@vger.kernel.org, tim@electronghost.co.uk,
-        linux-afs@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/8] AF_RXRPC fixes and development [ver #2]
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140306124614.16645.50744.stgit@warthog.procyon.org.uk>
-References: <20140306124614.16645.50744.stgit@warthog.procyon.org.uk>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1753290AbaCFTiS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 14:38:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60003 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751124AbaCFTiQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 14:38:16 -0500
+Message-ID: <5318CE31.7000806@redhat.com>
+Date: Thu, 06 Mar 2014 14:36:17 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+CC: Ingo Molnar <mingo@kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 4/6] cputime: Fix jiffies based cputime assumption on
+ steal accounting
+References: <1394128601-26034-1-git-send-email-fweisbec@gmail.com> <1394128601-26034-5-git-send-email-fweisbec@gmail.com>
+In-Reply-To: <1394128601-26034-5-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 06 Mar 2014 11:37:21 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 06 Mar 2014 12:46:15 +0000
+On 03/06/2014 12:56 PM, Frederic Weisbecker wrote:
+> The steal guest time accounting code assumes that cputime_t is based on
+> jiffies. So when CONFIG_NO_HZ_FULL=y, which implies that cputime_t
+> is based on nsecs, steal_account_process_tick() passes the delta in
+> jiffies to account_steal_time() which then accounts it as if it's a
+> value in nsecs.
+>
+> As a result, accounting 1 second of steal time (with HZ=100 that would
+> be 100 jiffies) is spuriously accounted as 100 nsecs.
+>
+> As such /proc/stat may report 0 values of steal time even when two
+> guests have run concurrently for a few seconds on the same host and
+> same CPU.
+>
+> In order to fix this, lets convert the nsecs based steal delta to
+> cputime instead of jiffies by using the right conversion API.
+>
+> Given that the steal time is stored in cputime_t and this type can have
+> a smaller granularity than nsecs, we only account the rounded converted
+> value and leave the remaining nsecs for the next deltas.
+>
+> Reported-by: Huiqingding <huding@redhat.com>
+> Reported-by: Marcelo Tosatti <mtosatti@redhat.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Marcelo Tosatti <mtosatti@redhat.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 
-> Here are some AF_RXRPC fixes (to tag rxrpc-20140226):
- ...
-> And development patches (to tag rxrpc-devel-20140304):
+Acked-by: Rik van Riel <riel@redhat.com>
 
-A mix of both bug fixes and new features....
-
-You don't say at all what tree you are targetting this at, 'net' or
-'net-next'.
-
-> They can be found in this git branch:
-> 
-> 	http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=rxrpc
-
-This is not a git URL I can pull from.
