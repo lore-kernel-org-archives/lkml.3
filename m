@@ -1,104 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753033AbaCFQVg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 11:21:36 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:57374 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752542AbaCFQVe (ORCPT
+	id S1753187AbaCFQ35 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 11:29:57 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:64409 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751015AbaCFQ3z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 11:21:34 -0500
-Message-ID: <1394122879.3622.47.camel@paszta.hi.pengutronix.de>
-Subject: Re: [PATCH v6 0/8] Move device tree graph parsing helpers to
- drivers/of
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        devicetree@vger.kernel.org
-Date: Thu, 06 Mar 2014 17:21:19 +0100
-In-Reply-To: <5318988C.2030004@samsung.com>
-References: <1394011242-16783-1-git-send-email-p.zabel@pengutronix.de>
-	 <53170C00.20200@ti.com> <1394030554.8754.31.camel@paszta.hi.pengutronix.de>
-	 <20140306141657.GB21483@n2100.arm.linux.org.uk>
-	 <20140306121721.6186dafb@samsung.com> <5318988C.2030004@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Thu, 6 Mar 2014 11:29:55 -0500
+Date: Thu, 6 Mar 2014 08:29:51 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Robert Baldyga <r.baldyga@samsung.com>
+Cc: sameo@linux.intel.com, lee.jones@linaro.org, myungjoo.ham@samsung.com,
+        cw00.choi@samsung.com, cooloney@gmail.com, rpurdie@rpsys.net,
+        dbaryshkov@gmail.com, dwmw2@infradead.org, lgirdwood@gmail.com,
+        broonie@kernel.org, a.zummo@towertech.it, paul.gortmaker@windriver.com,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-leds@vger.kernel.org, rtc-linux@googlegroups.com,
+        m.szyprowski@samsung.com, k.kozlowski@samsung.com
+Subject: Re: [PATCH v2] mfd: max8997: use regmap to access registers
+Message-ID: <20140306162951.GA14318@core.coreip.homeip.net>
+References: <1394031497-16648-1-git-send-email-r.baldyga@samsung.com>
+ <20140305185439.GC5453@core.coreip.homeip.net>
+ <531818D6.3080500@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <531818D6.3080500@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, den 06.03.2014, 16:47 +0100 schrieb Sylwester Nawrocki:
-> On 06/03/14 16:17, Mauro Carvalho Chehab wrote:
-> > Em Thu, 06 Mar 2014 14:16:57 +0000
-> > Russell King - ARM Linux <linux@arm.linux.org.uk> escreveu:
-> >> > On Wed, Mar 05, 2014 at 03:42:34PM +0100, Philipp Zabel wrote:
-> >>> > > Am Mittwoch, den 05.03.2014, 13:35 +0200 schrieb Tomi Valkeinen:
-[...]
-> >>>> > > > So, as I've pointed out, I don't agree with the API, as it's too limited
-> >>>> > > > and I can't use it, but as this series is (mostly) about moving the
-> >>>> > > > current API to a common place, it's fine for me.
-> >>>> > > > 
-> >>>> > > > Acked-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
-> >>> > > 
-> >>> > > Thanks. I'll be happy to help expanding the API to parse ports
-> >>> > > individually, once this gets accepted.
-> >>> > > 
-> >>> > > Mauro, Guennadi, are you fine with how this turned out? I'd like to get
-> >>> > > your acks again, for the changed location.
-> >
-> > From my side, there's nothing on such code that is V4L2 specific.
-> > Moving it to drivers/of makes sense on my eyes.
+On Thu, Mar 06, 2014 at 07:42:30AM +0100, Robert Baldyga wrote:
+> Hi,
+> 
+> On 03/05/2014 07:54 PM, Dmitry Torokhov wrote:
+> > Hi Robert,
 > > 
-> > Acked-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+> > On Wed, Mar 05, 2014 at 03:58:17PM +0100, Robert Baldyga wrote:
+> >>  
+> >> -int max8997_write_reg(struct i2c_client *i2c, u8 reg, u8 value)
+> >> +int max8997_write_reg(struct regmap *map, u8 reg, u8 value)
+> > 
+> > Why don't you make read/write reg to take struct max8997_dev as argument
+> > instead of regmap? regmap seems to be the current implementation du jur,
+> > but that is core's detail, functions do not need to care.
+> > 
+> > Thanks.
+> > 
 > 
-> I'm OK with patches 1...5, 8, so for these:
-> 
-> Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-> 
-> Regarding the simplified version of the binding, I thought we should
-> leave 'port' instead of 'endpoint' node. This could cover more hardware
-> configurations. Are there any users of this simplified binding queued
-> for v3.15 ? If not, perhaps we can postpone it and discuss it a bit more
-> (sorry, couldn't find time to comment on that earlier) ?
+> It's because there are few regmaps in max8997_dev, and read/write reg
+> functions has no way to check which regmap should be used. I think it
+> would be clearer if I remove this functions and use regmap_read and
+> regmap_write instead, because there is no particular purpose for them.
 
-Since Tomi needs the separate port/endpoint iteration anyway, 
-postponing the simple bindings shouldn't hurt. I'll (re)submit them
-together in a second series.
+I see.. Then another question - why do the regmaps belong to the core
+of the driver instead of individual functions? Why haptic regmap, for
+example, can not be initialized in haptic code instead?
 
-> >> > I'll need those acks before I can even think about queuing up the
-> >> > imx-drm bits.
-> >> > 
-> >> > Another way to deal with this is if this gets pulled into the V4L tree
-> >> > from Philipp's git tree, I can also pull that in myself.  What mustn't
-> >> > happen is for these to be committed independently as patches.
-> >
-> > If everyone agrees, I actually prefer have this patch applied on my tree,
-> > in order to avoid some potential merge conflicts at the merge window,
-> > as we might have other drivers and changes there touching on those API
-> > calls (I'm aware of a series of patches from Sylwester with some DT
-> > stuff on it. Not sure if it would be affected by such changes or not).
-> 
-> Yes, it's going to conflict with my patch series. I thought it could be
-> put onto a stable a topic branch, e.g. at git://linuxtv.org/media_tree.git,
-> which could be then pulled into the media master branch and anywhere
-> else it is needed ?
+Thanks.
 
-Mauro, are you ok with handling the conflict in the merge, or should I
-rebase on top of the media tree after you merged Sylwester's changes?
-
-regards
-Philipp
-
+-- 
+Dmitry
