@@ -1,107 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824AbaCFKXh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 05:23:37 -0500
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:63795 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752748AbaCFKXb (ORCPT
+	id S1752855AbaCFKYx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 05:24:53 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:36186 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095AbaCFKYs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 05:23:31 -0500
-Message-ID: <1394101408.4592.19.camel@x220>
-Subject: Re: [PATCH v2] [media] v4l: omap4iss: Add DEBUG compiler flag
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Joe Perches <joe@perches.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media@vger.kernel.org
-Date: Thu, 06 Mar 2014 11:23:28 +0100
-In-Reply-To: <20140306044529.GA6466@kroah.com>
-References: <1391958577.25424.22.camel@x220> <3099833.ZhlQFyxhbo@avalon>
-	 <1394065683.12070.32.camel@joe-AO722> <2136780.FIdBGb725A@avalon>
-	 <20140306044529.GA6466@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 06 Mar 2014 10:23:29.0856 (UTC) FILETIME=[1E65C400:01CF3926]
-X-RcptDomain: vger.kernel.org
+	Thu, 6 Mar 2014 05:24:48 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-03-53184cee1020
+From: Kamil Debski <k.debski@samsung.com>
+To: "'Anton Tikhomirov'" <av.tikhomirov@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-usb@vger.kernel.org, devicetree@vger.kernel.org
+Cc: kyungmin.park@samsung.com, kishon@ti.com, Tomasz Figa <t.figa@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>, gautam.vivek@samsung.com,
+        mat.krawczuk@gmail.com, yulgon.kim@samsung.com, p.paneri@samsung.com,
+        jg1.han@samsung.com, galak@codeaurora.org, matt.porter@linaro.org,
+        tjakobi@math.uni-bielefeld.de, stern@rowland.harvard.edu,
+        sander@humilis.net
+References: <1394033288-5551-1-git-send-email-k.debski@samsung.com>
+ <1394033288-5551-4-git-send-email-k.debski@samsung.com>
+ <005c01cf3915$c53476c0$4f9d6440$%tikhomirov@samsung.com>
+In-reply-to: <005c01cf3915$c53476c0$4f9d6440$%tikhomirov@samsung.com>
+Subject: RE: [PATCH v9 3/4] phy: Add new Exynos USB 2.0 PHY driver
+Date: Thu, 06 Mar 2014 11:24:44 +0100
+Message-id: <193a01cf3926$4bef53f0$e3cdfbd0$%debski@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac84h7VFDZ0Y6kzhQc2nfLU7hPJrnwAiULiAAAQU3TA=
+Content-language: pl
+X-Brightmail-Tracker: H4sIAAAAAAAAA02RXUhTYRzGe8/3hoPjaeqLFxoDKw01JehFRESSzoWGMLrxpuZcajg/dlQy
+	oqagTqnNEsROUtm08iMXOs1lRk5RRNT5kRi5UWIMc2Ya0iiSPOxmd8/zvM/v+V+8DM4NEZFM
+	UUmFzlCiKVZRcmL2cHo1/kcWVJ/90ChDnaNrJHoyOU8ii6+DRPUr4zRa7lgikevbXQrN1fqO
+	7Nt2CrUtvMfQs+d1OHo16abRnOUzhe7XttJowd6IoQlfA4leekZp1PzXRSFb2zaB6nt/ksg0
+	N06nK/ll8z2Md4humt/fseL8+uo7ij+covlHbj/gzfYewE+vvcH4XwNRObJceWq+rrioSmdI
+	TLsqL5xZraPKbBE3hv0WwgjsXBOQMZA9Bz+Z+8iADocuj41qAnKGY7sAtB98AQFjxKBjfPfo
+	hWEoNhb2eHgpV7L9AA5tioRkcNaKQ+PiGB4gRgB88MJDSISMzYQTe9elE8fZDOjy1mCSJtgY
+	aH7swaSKgk2HS79xKVawodDfIpGyo804aHNMYwEdDQf7dnCpDtlTcONfvBQr2RQ4YqknAxUl
+	dBu9ZDPgxKAlMWhJDFoSg5CngOgBYbpKbZmQV6BPThA0eqGypCBBW6ofAIGvPhgBXVMpTsAy
+	QBWieH0pQs2RmiqhWu8EkMFVSoU9Cao5Rb6m+qbOUHrFUFmsE5wAY2SRRpCg8M0cXsuybq07
+	wy/0z1q9rRWxK2HdMantNdYok9B+kpj0qf6MZZsWv945OL2Qv3f7co3tzH63UxnysWG7JcOf
+	neOc/z7lSNwpV0dyxsG8YyngxGZ89u7E0K208s7k3LTzQuJDnB6u2uq76MXHNjK1cb2h+J7J
+	vxsd5heXVIRQqEmKww2C5j/mvqrUyAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-03-05 at 20:45 -0800, Greg Kroah-Hartman wrote:
-> On Thu, Mar 06, 2014 at 01:48:29AM +0100, Laurent Pinchart wrote:
-> > Would you recommend to drop driver-specific Kconfig options related to 
-> > debugging and use CONFIG_DYNAMIC_DEBUG instead ?
+Hi Anton, Kishon,
+
+> From: Anton Tikhomirov [mailto:av.tikhomirov@samsung.com]
+> Sent: Thursday, March 06, 2014 9:26 AM
 > 
-> Yes, please do that, no one wants to rebuild drivers and subsystems with
-> different options just for debugging.
+> Hi Kamil,
+> 
+> ...
+> 
+> > +| 3. Supporting SoCs
+> > ++--------------------
+> > +
+> > +To support a new SoC a new file should be added to the drivers/phy
+> > +directory. Each SoC's configuration is stored in an instance of the
+> > +struct samsung_usb2_phy_config.
+> > +
+> > +struct samsung_usb2_phy_config {
+> > +	const struct samsung_usb2_common_phy *phys;
+> > +	unsigned int num_phys;
+> > +	bool has_mode_switch;
+> 
+> You missed rate_to_clk here.
 
-There are 50+ cases of Kconfig options setting the DEBUG flag, so there
-might be room for a series to remove some of those. (Note that Joe says
-there are valid reasons to use a Kconfig option to set this flag, if I'm
-not misunderstanding Joe.) For what it's worth, I've added the list of
-these (for v3.14-rc5) below.
+Thank you for spotting this.
 
+Kishon: I am sorry that this omission was made. I am happy to send an
+updated patchset. However, I want to give some time for any additional
+comments. Do you think that we have for this? Is today evening ok with you?
+> 
+> > +};
+> > +
+> 
+> ...
+> 
+> > diff --git a/drivers/phy/phy-samsung-usb2.c b/drivers/phy/phy-
+> samsung-
+> > usb2.c new file mode 100644 index 0000000..c3b7719
+> > --- /dev/null
+> > +++ b/drivers/phy/phy-samsung-usb2.c
+> > @@ -0,0 +1,222 @@
+> > +/*
+> > + * Samsung SoC USB 1.1/2.0 PHY driver
+> > + *
+> > + * Copyright (C) 2013 Samsung Electronics Co., Ltd.
+> > + * Author: Kamil Debski <k.debski@samsung.com>
+> > + *
+> > + * This program is free software; you can redistribute it and/or
+> > modify
+> > + * it under the terms of the GNU General Public License version 2 as
+> > + * published by the Free Software Foundation.
+> > + */
+> > +
+> > +#include <linux/clk.h>
+> > +#include <linux/mfd/syscon.h>
+> > +#include <linux/module.h>
+> > +#include <linux/of.h>
+> > +#include <linux/of_address.h>
+> > +#include <linux/phy/phy.h>
+> > +#include <linux/platform_device.h>
+> > +#include <linux/spinlock.h>
+> > +#include "phy-samsung-usb2.h"
+> > +
+> > +static int samsung_usb2_phy_power_on(struct phy *phy) {
+> > +	struct samsung_usb2_phy_instance *inst = phy_get_drvdata(phy);
+> > +	struct samsung_usb2_phy_driver *drv = inst->drv;
+> > +	int ret;
+> > +
+> > +	dev_dbg(drv->dev, "Request to power_on \"%s\" usb phy\n",
+> > +		inst->cfg->label);
+> > +	ret = clk_prepare_enable(drv->clk);
+> 
+> clk_prepare_enable() can sleep, and therefore doesn't allow
+> samusng_usb2_phy_power_on() to be used in atomic context (e.g. inside
+> spin_lock-ed area), what sometimes may be desirable.
+> What about to prepare clock in probe, and just enable it here
+> (note: clk_enable() doesn't sleep).
 
-Paul Bolle
+>From the onward discussion between you and Kishon, I draw the conclusion
+that this change is not necessary. Right?
 
-v3.14-rc5:arch/powerpc/platforms/pseries/Makefile:ccflags-$(CONFIG_PPC_PSERIES_DEBUG)	+= -DDEBUG
-v3.14-rc5:drivers/base/Makefile:ccflags-$(CONFIG_DEBUG_DRIVER) := -DDEBUG
-v3.14-rc5:drivers/base/power/Makefile:ccflags-$(CONFIG_DEBUG_DRIVER) := -DDEBUG
-v3.14-rc5:drivers/bcma/Makefile:ccflags-$(CONFIG_BCMA_DEBUG)		:= -DDEBUG
-v3.14-rc5:drivers/dma/Makefile:ccflags-$(CONFIG_DMADEVICES_DEBUG)  := -DDEBUG
-v3.14-rc5:drivers/gpio/Makefile:ccflags-$(CONFIG_DEBUG_GPIO)	+= -DDEBUG
-v3.14-rc5:drivers/gpu/drm/tegra/Makefile:ccflags-$(CONFIG_DRM_TEGRA_DEBUG) += -DDEBUG
-v3.14-rc5:drivers/hwmon/Makefile:ccflags-$(CONFIG_HWMON_DEBUG_CHIP) := -DDEBUG
-v3.14-rc5:drivers/i2c/Makefile:ccflags-$(CONFIG_I2C_DEBUG_CORE) := -DDEBUG
-v3.14-rc5:drivers/i2c/algos/Makefile:ccflags-$(CONFIG_I2C_DEBUG_ALGO) := -DDEBUG
-v3.14-rc5:drivers/i2c/busses/Makefile:ccflags-$(CONFIG_I2C_DEBUG_BUS) := -DDEBUG
-v3.14-rc5:drivers/i2c/muxes/Makefile:ccflags-$(CONFIG_I2C_DEBUG_BUS) := -DDEBUG
-v3.14-rc5:drivers/infiniband/hw/amso1100/Kbuild:ccflags-$(CONFIG_INFINIBAND_AMSO1100_DEBUG) := -DDEBUG
-v3.14-rc5:drivers/infiniband/hw/cxgb3/Makefile:ccflags-$(CONFIG_INFINIBAND_CXGB3_DEBUG) += -DDEBUG
-v3.14-rc5:drivers/media/platform/omap3isp/Makefile:ccflags-$(CONFIG_VIDEO_OMAP3_DEBUG) += -DDEBUG
-v3.14-rc5:drivers/media/platform/ti-vpe/Makefile:ccflags-$(CONFIG_VIDEO_TI_VPE_DEBUG) += -DDEBUG
-v3.14-rc5:drivers/memstick/Makefile:subdir-ccflags-$(CONFIG_MEMSTICK_DEBUG) := -DDEBUG
-v3.14-rc5:drivers/misc/cb710/Makefile:ccflags-$(CONFIG_CB710_DEBUG)	:= -DDEBUG
-v3.14-rc5:drivers/misc/sgi-gru/Makefile:ccflags-$(CONFIG_SGI_GRU_DEBUG)	:= -DDEBUG
-v3.14-rc5:drivers/mmc/Makefile:subdir-ccflags-$(CONFIG_MMC_DEBUG) := -DDEBUG
-v3.14-rc5:drivers/net/caif/Makefile:ccflags-$(CONFIG_CAIF_DEBUG) := -DDEBUG
-v3.14-rc5:drivers/net/can/Makefile:ccflags-$(CONFIG_CAN_DEBUG_DEVICES) := -DDEBUG
-v3.14-rc5:drivers/net/can/c_can/Makefile:ccflags-$(CONFIG_CAN_DEBUG_DEVICES) := -DDEBUG
-v3.14-rc5:drivers/net/can/cc770/Makefile:ccflags-$(CONFIG_CAN_DEBUG_DEVICES) := -DDEBUG
-v3.14-rc5:drivers/net/can/mscan/Makefile:ccflags-$(CONFIG_CAN_DEBUG_DEVICES) := -DDEBUG
-v3.14-rc5:drivers/net/can/sja1000/Makefile:ccflags-$(CONFIG_CAN_DEBUG_DEVICES) := -DDEBUG
-v3.14-rc5:drivers/net/can/softing/Makefile:ccflags-$(CONFIG_CAN_DEBUG_DEVICES) := -DDEBUG
-v3.14-rc5:drivers/net/can/usb/Makefile:ccflags-$(CONFIG_CAN_DEBUG_DEVICES) := -DDEBUG
-v3.14-rc5:drivers/net/ethernet/dec/tulip/Makefile:ccflags-$(CONFIG_NET_TULIP)	:= -DDEBUG
-v3.14-rc5:drivers/net/wireless/brcm80211/Makefile:subdir-ccflags-$(CONFIG_BRCMDBG)	+= -DDEBUG
-v3.14-rc5:drivers/net/wireless/zd1211rw/Makefile:ccflags-$(CONFIG_ZD1211RW_DEBUG) := -DDEBUG
-v3.14-rc5:drivers/nfc/Makefile:ccflags-$(CONFIG_NFC_DEBUG) := -DDEBUG
-v3.14-rc5:drivers/pci/Makefile:ccflags-$(CONFIG_PCI_DEBUG) := -DDEBUG
-v3.14-rc5:drivers/pinctrl/Makefile:ccflags-$(CONFIG_DEBUG_PINCTRL)	+= -DDEBUG
-v3.14-rc5:drivers/power/Makefile:ccflags-$(CONFIG_POWER_SUPPLY_DEBUG) := -DDEBUG
-v3.14-rc5:drivers/pps/Makefile:ccflags-$(CONFIG_PPS_DEBUG) := -DDEBUG
-v3.14-rc5:drivers/pps/clients/Makefile:ccflags-$(CONFIG_PPS_DEBUG) := -DDEBUG
-v3.14-rc5:drivers/rapidio/Makefile:subdir-ccflags-$(CONFIG_RAPIDIO_DEBUG) := -DDEBUG
-v3.14-rc5:drivers/regulator/Makefile:ccflags-$(CONFIG_REGULATOR_DEBUG) += -DDEBUG
-v3.14-rc5:drivers/rtc/Makefile:ccflags-$(CONFIG_RTC_DEBUG)	:= -DDEBUG
-v3.14-rc5:drivers/spi/Makefile:ccflags-$(CONFIG_SPI_DEBUG) := -DDEBUG
-v3.14-rc5:drivers/staging/comedi/Makefile:ccflags-$(CONFIG_COMEDI_DEBUG)		:= -DDEBUG
-v3.14-rc5:drivers/staging/comedi/drivers/Makefile:ccflags-$(CONFIG_COMEDI_DEBUG)		:= -DDEBUG
-v3.14-rc5:drivers/staging/comedi/kcomedilib/Makefile:ccflags-$(CONFIG_COMEDI_DEBUG)		:= -DDEBUG
-v3.14-rc5:drivers/staging/usbip/Makefile:ccflags-$(CONFIG_USBIP_DEBUG) := -DDEBUG
-v3.14-rc5:drivers/usb/chipidea/Makefile:ccflags-$(CONFIG_USB_CHIPIDEA_DEBUG) := -DDEBUG
-v3.14-rc5:drivers/usb/dwc2/Makefile:ccflags-$(CONFIG_USB_DWC2_DEBUG)	+= -DDEBUG
-v3.14-rc5:drivers/usb/dwc3/Makefile:ccflags-$(CONFIG_USB_DWC3_DEBUG)	:= -DDEBUG
-v3.14-rc5:drivers/usb/gadget/Makefile:ccflags-$(CONFIG_USB_GADGET_DEBUG)	:= -DDEBUG
-v3.14-rc5:drivers/usb/wusbcore/Makefile:ccflags-$(CONFIG_USB_WUSB_CBAF_DEBUG) := -DDEBUG
-v3.14-rc5:drivers/video/intelfb/Makefile:ccflags-$(CONFIG_FB_INTEL_DEBUG) := -DDEBUG -DREGDUMP
-v3.14-rc5:drivers/video/omap2/dss/Makefile:ccflags-$(CONFIG_OMAP2_DSS_DEBUG) += -DDEBUG
-v3.14-rc5:fs/ntfs/Makefile:ccflags-$(CONFIG_NTFS_DEBUG)	+= -DDEBUG
-v3.14-rc5:kernel/power/Makefile:ccflags-$(CONFIG_PM_DEBUG)	:= -DDEBUG
-v3.14-rc5:net/caif/Makefile:ccflags-$(CONFIG_CAIF_DEBUG)     :=      -DDEBUG
-v3.14-rc5:net/rds/Makefile:ccflags-$(CONFIG_RDS_DEBUG)	:=	-DDEBUG
+> 
+> > +	if (ret)
+> > +		goto err_main_clk;
+> > +	ret = clk_prepare_enable(drv->ref_clk);
+> > +	if (ret)
+> > +		goto err_instance_clk;
+> > +	if (inst->cfg->power_on) {
+> > +		spin_lock(&drv->lock);
+> > +		ret = inst->cfg->power_on(inst);
+> > +		spin_unlock(&drv->lock);
+> > +	}
+> > +
+> > +	return 0;
+> 
+> Thank you
+
+Best wishes,
+-- 
+Kamil Debski
+Samsung R&D Institute Poland
+
 
