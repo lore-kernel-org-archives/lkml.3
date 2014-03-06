@@ -1,49 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782AbaCFUh0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 15:37:26 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:60408 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751953AbaCFUhY (ORCPT
+	id S1752656AbaCFUnr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 15:43:47 -0500
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:37307 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751276AbaCFUnq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 15:37:24 -0500
+	Thu, 6 Mar 2014 15:43:46 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAGVrzcYQ44fYA0kpRC84Qfe7v0vPGy+euWLfs8xF0XEMnsFmGA@mail.gmail.com>
-References: <20140228230017.GE14970@merlin.infradead.org>
-	<20140303145137.70819698@tukaani.org>
-	<CAGVrzcZ7KU-m9s9KgoigK+WdSqeqwEmm=_pY6qF=ep2vFp6WUg@mail.gmail.com>
-	<20140304202038.03b36109@tukaani.org>
-	<53169123.4020909@lougher.demon.co.uk>
-	<CAGVrzcYQ44fYA0kpRC84Qfe7v0vPGy+euWLfs8xF0XEMnsFmGA@mail.gmail.com>
-Date: Thu, 6 Mar 2014 21:37:23 +0100
-X-Google-Sender-Auth: dtpdrYErhD2kzQzy-HZSdNddRJw
-Message-ID: <CAMuHMdXJ+GKtbCr-fzq2tRf8yUeYmgSA2VpmL2aofybc84Wwog@mail.gmail.com>
-Subject: Re: [PATCH] xz: make XZ_DEC_BCJ filters non-optional
+In-Reply-To: <5316BDB7.5060004@free-electrons.com>
+References: <53063F09.9000102@free-electrons.com>
+	<CAAsK9AGpuxCvQ_m+dJh_T72dHGaU3TU6AgSyWdf5YtzzJx==Vw@mail.gmail.com>
+	<5316BDB7.5060004@free-electrons.com>
+Date: Thu, 6 Mar 2014 21:43:46 +0100
+X-Google-Sender-Auth: SxVpoUTCrSuXRMzr1ByJTUdcNP4
+Message-ID: <CAMuHMdWbgi0gLX9qe6cZVdYtiexLCtrAi=Bim-R02Wc6mLE84Q@mail.gmail.com>
+Subject: Re: How to get rid of IRQF_DISABLED for good?
 From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: Phillip Lougher <phillip@lougher.demon.co.uk>,
-        Lasse Collin <lasse.collin@tukaani.org>,
-        Kyle McMartin <kyle@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Cc: Levente Kurusa <levex@linux.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 5, 2014 at 4:50 AM, Florian Fainelli <f.fainelli@gmail.com> wrote:
-> I am okay with enabling all filters by default as long as there is a
-> knob to allow turning achitecture specific BCJ filters off, as it
-> barely makes sense for embedded systems to have a BCJ filter
-> implementation for anything but the architecture you are running on.
+Hi Michael,
 
-And for x86? (oh no, I started promoting x86 ;-)
+On Wed, Mar 5, 2014 at 7:01 AM, Michael Opdenacker
+<michael.opdenacker@free-electrons.com> wrote:
+>> Maybe once more, if they don't reply, send it to Andrew Morton as well
+>> and CC a few people who know your work is good so that they can ACK it.
+> I sent my patches once more, and will see which ones remain. Then I will
+> send the changes to Andrew Morton as you suggested.
 
-I once tried xz with an initrd on ARM. The kernel complained it couldn't
-decompress the initrd, oops. I didn't investigate it at that time, but probably
-I didn't have the x86 BCJ filter enabled, while I compressed the initrd on\
-amd64.
+Just make sure to CC this round to Andrew Morton. There's no reason to
+keep him out of the loop for one more cycle.
 
 Gr{oetje,eeting}s,
 
