@@ -1,242 +1,486 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756459AbaCFDb3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 22:31:29 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:47200 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755767AbaCFDad (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 22:30:33 -0500
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Hagen Paul Pfeifer <hagen@jauu.net>,
-        Jesse Gross <jesse@nicira.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: [PATCH v6 net-next 3/3] doc: filter: add Extended BPF documentation
-Date: Wed,  5 Mar 2014 19:30:17 -0800
-Message-Id: <1394076617-8108-4-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1394076617-8108-1-git-send-email-ast@plumgrid.com>
-References: <1394076617-8108-1-git-send-email-ast@plumgrid.com>
+	id S1757436AbaCFDb6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 22:31:58 -0500
+Received: from mga11.intel.com ([192.55.52.93]:26538 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753728AbaCFDb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 22:31:56 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,597,1389772800"; 
+   d="scan'208";a="486910044"
+Message-ID: <5317EC0C.4010807@linux.intel.com>
+Date: Thu, 06 Mar 2014 11:31:24 +0800
+From: "Li, Aubrey" <aubrey.li@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Matthew Garrett <mjg59@srcf.ucam.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, mingo@redhat.com,
+        tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        "alan@linux.intel.com" <alan@linux.intel.com>
+Subject: [PATCH] x86: new Intel Atom SoC power management controller driver
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
-Reviewed-by: Daniel Borkmann <dborkman@redhat.com>
+The Power Management Controller (PMC) controls many of the power
+management features present in the SoC. This driver provides
+interface to configure the Power Management Controller (PMC).
+
+This driver exposes PMC device state and sleep state residency
+via debugfs for observation:
+	/sys/kernel/debugfs/pmc_atom/dev_state
+	/sys/kernel/debugfs/pmc_atom/sleep_state
+
+This driver also provides a native power off function via PMC PCI
+IO port.
+
+Signed-off-by: Aubrey Li <aubrey.li@intel.com>
 ---
- Documentation/networking/filter.txt |  181 +++++++++++++++++++++++++++++++++++
- 1 file changed, 181 insertions(+)
+ arch/x86/Kconfig                |    4 +
+ arch/x86/include/asm/pmc_atom.h |   91 ++++++++++++
+ arch/x86/kernel/Makefile        |    1 +
+ arch/x86/kernel/pmc_atom.c      |  301
++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 397 insertions(+)
+ create mode 100644 arch/x86/include/asm/pmc_atom.h
+ create mode 100644 arch/x86/kernel/pmc_atom.c
 
-diff --git a/Documentation/networking/filter.txt b/Documentation/networking/filter.txt
-index a06b48d2f5cc..c3f687bf8e82 100644
---- a/Documentation/networking/filter.txt
-+++ b/Documentation/networking/filter.txt
-@@ -546,6 +546,186 @@ ffffffffa0069c8f + <x>:
- For BPF JIT developers, bpf_jit_disasm, bpf_asm and bpf_dbg provides a useful
- toolchain for developing and testing the kernel's JIT compiler.
- 
-+Extended BPF
-+------------
-+Extended BPF extends BPF in the following ways:
-+- from 2 to 10 registers
-+  Original BPF has two registers (A and X) and hidden frame pointer.
-+  Extended BPF has ten registers and read-only frame pointer.
-+- from 32-bit registers to 64-bit registers
-+  semantics of old 32-bit ALU operations are preserved via 32-bit
-+  subregisters
-+- if (cond) jump_true; else jump_false;
-+  old BPF insns are replaced with:
-+  if (cond) jump_true; /* else fallthrough */
-+- adds signed > and >= insns
-+- 16 4-byte stack slots for register spill-fill replaced with
-+  up to 512 bytes of multi-use stack space
-+- introduces bpf_call insn and register passing convention for zero
-+  overhead calls from/to other kernel functions (not part of this patch)
-+- adds arithmetic right shift insn
-+- adds swab32/swab64 insns
-+- adds atomic_add insn
-+- old tax/txa insns are replaced with 'mov dst,src' insn
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 0af5250..18f7d38 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -2420,6 +2420,10 @@ config IOSF_MBI
+ 	  Fabric (IOSF) Sideband MailBox Interface (MBI). For MBI platforms
+ 	  enumerable by PCI.
+
++config PMC_ATOM
++	def_bool y
++        depends on PCI
 +
-+Extended BPF is designed to be JITed with one to one mapping, which
-+allows GCC/LLVM compilers to generate optimized BPF code that performs
-+almost as fast as natively compiled code
+ source "net/Kconfig"
+
+ source "drivers/Kconfig"
+diff --git a/arch/x86/include/asm/pmc_atom.h
+b/arch/x86/include/asm/pmc_atom.h
+new file mode 100644
+index 0000000..6802d17
+--- /dev/null
++++ b/arch/x86/include/asm/pmc_atom.h
+@@ -0,0 +1,91 @@
++/*
++ * Intel Atom SOC Power Management Controller Header File
++ * Copyright (c) 2014, Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+License for
++ * more details.
++ *
++ */
 +
-+sysctl net.core.bpf_ext_enable=1
-+controls whether filters attached to sockets will be automatically
-+converted to extended BPF or not.
++#ifndef PMC_ATOM_H
++#define PMC_ATOM_H
 +
-+BPF is safe dynamically loadable program that can call fixed set
-+of kernel functions and takes a pointer to data as an input,
-+where data is skb, seccomp_data, kprobe function arguments or else.
++/* ValleyView Power Control Unit PCI Device ID */
++#define	PCI_DEVICE_ID_VLV_PMC	0x0F1C
 +
-+Extended Instruction Set was designed with these goals:
-+- write programs in restricted C and compile into BPF with GCC/LLVM
-+- just-in-time map to modern 64-bit CPU with minimal performance overhead
-+  over two steps: C -> BPF -> native code
-+- guarantee termination and safety of BPF program in kernel
-+  with simple algorithm
++/* PMC Memory mapped IO registers */
++#define	PMC_BASE_ADDR_OFFSET	0x44
++#define	PMC_BASE_ADDR_MASK	0xFFFFFE00
++#define	PMC_MMIO_REG_LEN	0x100
++#define	PMC_REG_BIT_WIDTH	32
 +
-+GCC/LLVM-bpf backend is optional.
-+Extended BPF can be coded with macroses from filter.h just like original BPF,
-+though the same filter done in C is easier to understand.
-+sk_convert_filter() remaps original BPF insns into extended.
++/* BIOS uses FUNC_DIS to disable specific function */
++#define	PMC_FUNC_DIS		0x34
++#define	PMC_FUNC_DIS_2		0x38
++/* The timers acumulate time spent in sleep state */
++#define	PMC_S0IR_TMR		0x80
++#define	PMC_S0I1_TMR		0x84
++#define	PMC_S0I2_TMR		0x88
++#define	PMC_S0I3_TMR		0x8C
++#define	PMC_S0_TMR		0x90
++/* Sleep state counter is in units of of 32us */
++#define	PMC_TMR_SHIFT		5
 +
-+Minimal performance overhead is achieved by having one to one mapping
-+between BPF insns and native insns, and one to one mapping between BPF
-+registers and native registers on 64-bit CPUs
++/* These registers reflect D3 status of functions */
++#define	PMC_D3_STS_0		0xA0
 +
-+Extended BPF may allow jump forward and backward for two reasons:
-+to reduce branch mispredict penalty compiler moves cold basic blocks out of
-+fall-through path and to reduce code duplication that would be hard to avoid
-+if only jump forward was available.
-+To guarantee termination simple non-recursive depth-first-search verifies
-+that there are no back-edges (no loops in the program), program is a DAG
-+with root at the first insn, all branches end at the last RET insn and
-+all instructions are reachable.
-+Original BPF actually allows unreachable insns. Though it's safe, it will be
-+fixed when extended BPF replaces BPF completely.
++#define	BIT_LPSS1_F0_DMA	(1 << 0)
++#define	BIT_LPSS1_F1_PWM1	(1 << 1)
++#define	BIT_LPSS1_F2_PWM2	(1 << 2)
++#define	BIT_LPSS1_F3_HSUART1	(1 << 3)
++#define	BIT_LPSS1_F4_HSUART2	(1 << 4)
++#define	BIT_LPSS1_F5_SPI	(1 << 5)
++#define	BIT_LPSS1_F6_XXX	(1 << 6)
++#define	BIT_LPSS1_F7_XXX	(1 << 7)
++#define	BIT_SCC_EMMC		(1 << 8)
++#define	BIT_SCC_SDIO		(1 << 9)
++#define	BIT_SCC_SDCARD		(1 << 10)
++#define	BIT_SCC_MIPI		(1 << 11)
++#define	BIT_HDA			(1 << 12)
++#define	BIT_LPE			(1 << 13)
++#define	BIT_OTG			(1 << 14)
++#define	BIT_USH			(1 << 15)
++#define	BIT_GBE			(1 << 16)
++#define	BIT_SATA		(1 << 17)
++#define	BIT_USB_EHCI		(1 << 18)
++#define	BIT_SEC			(1 << 19)
++#define	BIT_PCIE_PORT0		(1 << 20)
++#define	BIT_PCIE_PORT1		(1 << 21)
++#define	BIT_PCIE_PORT2		(1 << 22)
++#define	BIT_PCIE_PORT3		(1 << 23)
++#define	BIT_LPSS2_F0_DMA	(1 << 24)
++#define	BIT_LPSS2_F1_I2C1	(1 << 25)
++#define	BIT_LPSS2_F2_I2C2	(1 << 26)
++#define	BIT_LPSS2_F3_I2C3	(1 << 27)
++#define	BIT_LPSS2_F4_I2C4	(1 << 28)
++#define	BIT_LPSS2_F5_I2C5	(1 << 29)
++#define	BIT_LPSS2_F6_I2C6	(1 << 30)
++#define	BIT_LPSS2_F7_I2C7	(1 << 31)
 +
-+Original BPF has two registers (A and X) and hidden frame pointer.
-+Extended BPF has ten registers and read-only frame pointer.
-+Since 64-bit CPUs are passing arguments to the functions via registers
-+the number of args from BPF program to in-kernel function is restricted to 5
-+and one register is used to accept return value from in-kernel function.
-+x86_64 passes first 6 arguments in registers.
-+aarch64/sparcv9/mips64 have 7-8 registers for arguments.
-+x86_64 has 6 callee saved registers.
-+aarch64/sparcv9/mips64 have 11 or more callee saved registers.
++#define	PMC_D3_STS_1		0xA4
++#define	BIT_SMB			(1 << 0)
++#define	BIT_USH_SS_PHY		(1 << 1)
++#define	BIT_OTG_SS_PHY		(1 << 2)
++#define	BIT_DFX			(1 << 3)
 +
-+Therefore extended BPF calling convention is defined as:
-+R0 - return value from in-kernel function
-+R1-R5 - arguments from BPF program to in-kernel function
-+R6-R9 - callee saved registers that in-kernel function will preserve
-+R10 - read-only frame pointer to access stack
++/* PMC I/O Registers */
++#define	ACPI_BASE_ADDR_OFFSET	0x40
++#define	ACPI_BASE_ADDR_MASK	0xFFFFFE00
++#define	ACPI_MMIO_REG_LEN	0x100
 +
-+so that all BPF registers map one to one to HW registers on x86_64,aarch64,etc
-+and BPF calling convention maps directly to ABIs used by kernel on 64-bit
-+architectures.
-+On 32-bit architectures JIT may map programs that use only 32-bit arithmetic
-+and let more complex programs to be interpreted.
++#define	PM1_CNT			0x4
++#define	SLEEP_TYPE_MASK		0xFFFFECFF
++#define	SLEEP_TYPE_S5		0x1C00
++#define	SLEEP_ENABLE		0x2000
++#endif /* PMC_ATOM_H */
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index cb648c8..b71a61a 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -104,6 +104,7 @@ obj-$(CONFIG_EFI)			+= sysfb_efi.o
+ obj-$(CONFIG_PERF_EVENTS)		+= perf_regs.o
+ obj-$(CONFIG_TRACING)			+= tracepoint.o
+ obj-$(CONFIG_IOSF_MBI)			+= iosf_mbi.o
++obj-$(CONFIG_PMC_ATOM)			+= pmc_atom.o
+
+ ###
+ # 64 bit specific files
+diff --git a/arch/x86/kernel/pmc_atom.c b/arch/x86/kernel/pmc_atom.c
+new file mode 100644
+index 0000000..46ece98
+--- /dev/null
++++ b/arch/x86/kernel/pmc_atom.c
+@@ -0,0 +1,301 @@
++/*
++ * Intel Atom SOC Power Management Controller Driver
++ * Copyright (c) 2014, Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+License for
++ * more details.
++ *
++ */
 +
-+R0-R5 are scratch registers and BPF program needs spill/fill them if necessary
-+across calls.
-+Note that there is only one BPF program == one BPF function and it cannot call
-+other BPF functions. It can only call predefined in-kernel functions.
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/pci.h>
++#include <linux/device.h>
++#include <linux/debugfs.h>
++#include <linux/seq_file.h>
++#include <linux/io.h>
 +
-+All BPF registers are 64-bit with 32-bit lower subregister that zero-extends
-+into 64-bit if written to. That behavior maps directly to x86_64 and arm64
-+subregister defintion, but makes other JITs more difficult.
++#include <asm/pmc_atom.h>
 +
-+Original BPF and extended BPF are two operand instructions, which helps
-+to do one-to-one mapping between BPF insn and x86 insn during JIT.
++#define	DRIVER_NAME "pmc_atom"
 +
-+Extended BPF doesn't have pre-defined endianness not to favor one
-+architecture vs another. Therefore bswap insn is available.
-+Original BPF doesn't have such insn and does bswap as part of sk_load_word call
-+which is often unnecessary if we want to compare the value with the constant.
-+Restricted C code might be written differently depending on endianness
-+and GCC/LLVM-bpf will take an endianness flag.
++struct pmc_dev {
++	struct pci_dev *pdev;
++	u32 base_addr;
++	void __iomem *regmap;
++#ifdef CONFIG_DEBUG_FS
++	struct dentry *dbgfs_dir;
++#endif /* CONFIG_DEBUG_FS */
++};
 +
-+32-bit architectures run 64-bit extended BPF programs via interpreter.
-+Their JITs may convert BPF programs that only use 32-bit subregs into native
-+instruction set and let the rest being interpreted.
++static u32 acpi_base_addr;
 +
-+Extended BPF is 64-bit, because on 64-bit architectures, pointers are 64-bit
-+and we want to pass 64-bit values in/out kernel functions, so 32-bit BPF
-+registers would require to define register-pair ABI, there won't be a direct
-+BPF register to HW register mapping and JIT would need to do
-+combine/split/move operations for every register in and out of the function,
-+which is complex, bug prone and slow.
-+Another reason is atomic 64-bit counters
++struct pmc_dev_map {
++	char *name;
++	u32 bit_mask;
++};
 +
-+Just like original BPF, extended BPF is safe, deterministic and kernel can
-+easily prove that. The safety of the program is determined in two steps.
-+First step does depth-first-search to disallow loops and other CFG validation.
-+Second step starts from the first insn and descends all possible paths.
-+It simulates execution of every insn and observes the state change of
-+registers and stack.
-+At the start of the program the register R1 contains a pointer to context
-+and has type PTR_TO_CTX. If checker sees an insn that does R2=R1, then R2 has
-+now type PTR_TO_CTX as well and can be used on right hand side of expression.
-+If R1=PTR_TO_CTX and insn is R2=R1+1, then R2=INVALID_PTR and it is readable.
-+If register was never written to, it's not readable.
-+After kernel function call, R1-R5 are reset to unreadable and R0 has a return
-+type of the function. Since R6-R9 are callee saved, their state is preserved
-+across the call.
-+load/store instructions are allowed only with registers of valid types, which
-+are PTR_TO_CTX, PTR_TO_TABLE, PTR_TO_STACK. They are bounds and alginment
-+checked.
++static struct pmc_dev_map dev_map[] = {
++	{"0  - LPSS1_F0_DMA",		BIT_LPSS1_F0_DMA},
++	{"1  - LPSS1_F1_PWM1",		BIT_LPSS1_F1_PWM1},
++	{"2  - LPSS1_F2_PWM2",		BIT_LPSS1_F2_PWM2},
++	{"3  - LPSS1_F3_HSUART1",	BIT_LPSS1_F3_HSUART1},
++	{"4  - LPSS1_F4_HSUART2",	BIT_LPSS1_F4_HSUART2},
++	{"5  - LPSS1_F5_SPI",		BIT_LPSS1_F5_SPI},
++	{"6  - LPSS1_F6_Reserved",	BIT_LPSS1_F6_XXX},
++	{"7  - LPSS1_F7_Reserved",	BIT_LPSS1_F7_XXX},
++	{"8  - SCC_EMMC",		BIT_SCC_EMMC},
++	{"9  - SCC_SDIO",		BIT_SCC_SDIO},
++	{"10 - SCC_SDCARD",		BIT_SCC_SDCARD},
++	{"11 - SCC_MIPI",		BIT_SCC_MIPI},
++	{"12 - HDA",			BIT_HDA},
++	{"13 - LPE",			BIT_LPE},
++	{"14 - OTG",			BIT_OTG},
++	{"15 - USH",			BIT_USH},
++	{"16 - GBE",			BIT_GBE},
++	{"17 - SATA",			BIT_SATA},
++	{"18 - USB_EHCI",		BIT_USB_EHCI},
++	{"19 - SEC",			BIT_SEC},
++	{"20 - PCIE_PORT0",		BIT_PCIE_PORT0},
++	{"21 - PCIE_PORT1",		BIT_PCIE_PORT1},
++	{"22 - PCIE_PORT2",		BIT_PCIE_PORT2},
++	{"23 - PCIE_PORT3",		BIT_PCIE_PORT3},
++	{"24 - LPSS2_F0_DMA",		BIT_LPSS2_F0_DMA},
++	{"25 - LPSS2_F1_I2C1",		BIT_LPSS2_F1_I2C1},
++	{"26 - LPSS2_F2_I2C2",		BIT_LPSS2_F2_I2C2},
++	{"27 - LPSS2_F3_I2C3",		BIT_LPSS2_F3_I2C3},
++	{"28 - LPSS2_F3_I2C4",		BIT_LPSS2_F4_I2C4},
++	{"29 - LPSS2_F5_I2C5",		BIT_LPSS2_F5_I2C5},
++	{"30 - LPSS2_F6_I2C6",		BIT_LPSS2_F6_I2C6},
++	{"31 - LPSS2_F7_I2C7",		BIT_LPSS2_F7_I2C7},
++	{"32 - SMB",			BIT_SMB},
++	{"33 - USH_SS_PHY",		BIT_OTG_SS_PHY},
++	{"34 - OTG_SS_PHY",		BIT_USH_SS_PHY},
++	{"35 - DFX",			BIT_DFX},
++};
 +
-+Input context pointer is generic. Its contents are defined by specific use case.
-+For seccomp R1 points to seccomp_data
-+For converted BPF filters R1 points to skb
-+Through get_context_access callback BPF checker is customized, so that BPF
-+program can only access certain fields of input context with specified size
-+and alignment.
-+For example, the following insn:
-+  BPF_INSN_LD(BPF_W, R0, R6, 8)
-+intends to load word from address R6 + 8 and store it into R0
-+If R6=PTR_TO_CTX, then get_context_access callback should let the checker know
-+that offset 8 of size 4 bytes can be accessed for reading, otherwise the checker
-+will reject the program.
++static inline u32 pmc_reg_read(struct pmc_dev *pmc, int reg_offset)
++{
++	return readl(pmc->regmap + reg_offset);
++}
 +
-+If R6=PTR_TO_STACK, then access should be aligned and be within stack bounds,
-+which are hard coded to [-480, 0]. In this example offset is 8, so it will fail
-+verification.
-+The checker will allow BPF program to read data from stack only after it wrote
-+into it.
-+Pointer register spill/fill is tracked as well, since four (R6-R9) callee saved
-+registers may not be enough for some programs.
++static void pmc_power_off(void)
++{
++	u16	pm1_cnt_port;
++	u32	pm1_cnt_value;
 +
-+Allowed function calls are customized via get_func_proto callback.
++	printk(KERN_INFO, "PMC: Preparing to enter system sleep state S5\n");
 +
-+One of the useful functions that can be made available to BPF program
-+are bpf_table_lookup/bpf_table_update.
-+They can help tracing filters collect different types of statistics.
-+Example: pc addresses for drop_monitor filter
++	pm1_cnt_port = acpi_base_addr + PM1_CNT;
 +
-+In seccomp and socket filter use cases extended BPF program consists
-+of intructions only, but for tracing filters case BPF program may contain
-+BPF tables as well.
-+There are no special instructions to access BPF tables. The access is done
-+via function calls.
++	pm1_cnt_value = inl(pm1_cnt_port);
++	pm1_cnt_value &= SLEEP_TYPE_MASK;
++	pm1_cnt_value |= SLEEP_TYPE_S5;
++	pm1_cnt_value |= SLEEP_ENABLE;
 +
-+BPF program identifies the table by table_id and accesses it in C like:
-+elem = bpf_table_lookup(ctx, table_id, key);
++	outl(pm1_cnt_value, pm1_cnt_port);
++}
 +
-+BPF checker matches 'table_id' against known tables, verifies that 'key' points
-+to stack and table->key_size bytes are initialized.
-+bpf_table_lookup() is a normal kernel function. It needs to do a lookup and
-+return either valid pointer to the element or NULL.
-+BPF checker will verify that the program accesses the pointer only
-+after comparing it to NULL.
-+It's up to implementation to decide how lookup is done and meaning of the key.
++#ifdef CONFIG_DEBUG_FS
++static int pmc_dev_state_show(struct seq_file *s, void *unused)
++{
++	struct pmc_dev *pmc = (struct pmc_dev *)s->private;
++	u32 func_dis, func_dis_2, func_dis_index;
++	u32 d3_sts_0, d3_sts_1, d3_sts_index;
++	int dev_num, dev_index, reg_index;
 +
-+Just like original, extended BPF is limited to 4096 insns, which means that any
-+program will terminate quickly and will call fixed number of kernel functions.
++	func_dis = pmc_reg_read(pmc, PMC_FUNC_DIS);
++	func_dis_2 = pmc_reg_read(pmc, PMC_FUNC_DIS_2);
++	d3_sts_0 = pmc_reg_read(pmc, PMC_D3_STS_0);
++	d3_sts_1 = pmc_reg_read(pmc, PMC_D3_STS_1);
 +
- Misc
- ----
- 
-@@ -561,3 +741,4 @@ the underlying architecture.
- 
- Jay Schulist <jschlst@samba.org>
- Daniel Borkmann <dborkman@redhat.com>
-+Alexei Starovoitov <ast@plumgrid.com>
++	dev_num = sizeof(dev_map) / sizeof(struct pmc_dev_map);
++
++	for (dev_index = 0; dev_index < dev_num; dev_index++) {
++		reg_index = dev_index / PMC_REG_BIT_WIDTH;
++		if (reg_index) {
++			func_dis_index = func_dis_2;
++			d3_sts_index = d3_sts_1;
++		} else {
++			func_dis_index = func_dis;
++			d3_sts_index = d3_sts_0;
++		}
++
++		if (func_dis_index & dev_map[dev_index].bit_mask) {
++			seq_printf(s, "Dev: %-32s\tState: %s [%s]\n",
++				dev_map[dev_index].name, "Disabled",
++				(d3_sts_index & dev_map[dev_index].bit_mask) ?
++				"D3":"D0");
++		} else {
++			seq_printf(s, "Dev: %-32s\tState: %s [%s]\n",
++				dev_map[dev_index].name, "Enabled ",
++				(d3_sts_index & dev_map[dev_index].bit_mask) ?
++				"D3":"D0");
++		}
++	}
++	return 0;
++}
++
++static int pmc_dev_state_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, pmc_dev_state_show, inode->i_private);
++}
++
++static const struct file_operations pmc_dev_state_ops = {
++	.open		= pmc_dev_state_open,
++	.read		= seq_read,
++	.llseek		= seq_lseek,
++	.release	= single_release,
++};
++
++static int pmc_sleep_tmr_show(struct seq_file *s, void *unused)
++{
++	struct pmc_dev *pmc = (struct pmc_dev *)s->private;
++	u64 s0ir_tmr, s0i1_tmr, s0i2_tmr, s0i3_tmr, s0_tmr;
++
++	s0ir_tmr = pmc_reg_read(pmc, PMC_S0IR_TMR) << PMC_TMR_SHIFT;
++	s0i1_tmr = pmc_reg_read(pmc, PMC_S0I1_TMR) << PMC_TMR_SHIFT;
++	s0i2_tmr = pmc_reg_read(pmc, PMC_S0I2_TMR) << PMC_TMR_SHIFT;
++	s0i3_tmr = pmc_reg_read(pmc, PMC_S0I3_TMR) << PMC_TMR_SHIFT;
++	s0_tmr = pmc_reg_read(pmc, PMC_S0_TMR) << PMC_TMR_SHIFT;
++
++	seq_printf(s, "S0IR Residency:\t%lldus\n", s0ir_tmr);
++	seq_printf(s, "S0I1 Residency:\t%lldus\n", s0i1_tmr);
++	seq_printf(s, "S0I2 Residency:\t%lldus\n", s0i2_tmr);
++	seq_printf(s, "S0I3 Residency:\t%lldus\n", s0i3_tmr);
++	seq_printf(s, "S0   Residency:\t%lldus\n", s0_tmr);
++	return 0;
++}
++
++static int pmc_sleep_tmr_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, pmc_sleep_tmr_show, inode->i_private);
++}
++
++static const struct file_operations pmc_sleep_tmr_ops = {
++	.open		= pmc_sleep_tmr_open,
++	.read		= seq_read,
++	.llseek		= seq_lseek,
++	.release	= single_release,
++};
++
++static void pmc_dbgfs_unregister(struct pmc_dev *pmc)
++{
++	if (!pmc->dbgfs_dir)
++		return;
++
++	debugfs_remove_recursive(pmc->dbgfs_dir);
++	pmc->dbgfs_dir = NULL;
++}
++
++static int pmc_dbgfs_register(struct pmc_dev *pmc)
++{
++	struct dentry *dir, *f;
++
++	dir = debugfs_create_dir("pmc_atom", NULL);
++	if (!dir)
++		return -ENOMEM;
++
++	f = debugfs_create_file("dev_state", S_IFREG | S_IRUGO,
++				dir, pmc, &pmc_dev_state_ops);
++	if (!f) {
++		dev_err(&pmc->pdev->dev, "dev_states register failed\n");
++		goto err;
++	}
++	f = debugfs_create_file("sleep_state", S_IFREG | S_IRUGO,
++				dir, pmc, &pmc_sleep_tmr_ops);
++	if (!f) {
++		dev_err(&pmc->pdev->dev, "sleep_state register failed\n");
++		goto err;
++	}
++	pmc->dbgfs_dir = dir;
++	return 0;
++err:
++	pmc_dbgfs_unregister(pmc);
++	return -ENODEV;
++}
++#endif /* CONFIG_DEBUG_FS */
++
++static int pmc_probe(struct pci_dev *pdev,
++			  const struct pci_device_id *unused)
++{
++	struct pmc_dev *pmc;
++	int ret;
++
++	ret = pci_enable_device(pdev);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "error: could not enable device\n");
++		goto err_enable_device;
++	}
++
++	ret = pci_request_regions(pdev, DRIVER_NAME);
++	if (ret) {
++		dev_err(&pdev->dev, "error: could not request PCI region\n");
++		goto err_request_regions;
++	}
++
++	pmc = devm_kzalloc(&pdev->dev, sizeof(struct pmc_dev), GFP_KERNEL);
++	if (!pmc) {
++		dev_err(&pdev->dev, "error: could not allocate memory\n");
++		ret = -ENOMEM;
++		goto err_devm_kzalloc;
++	}
++
++	pmc->pdev = pci_dev_get(pdev);
++
++	pci_read_config_dword(pdev, PMC_BASE_ADDR_OFFSET, &pmc->base_addr);
++	pmc->base_addr &= PMC_BASE_ADDR_MASK;
++
++	pmc->regmap = devm_ioremap_nocache(&pdev->dev,
++		pmc->base_addr, PMC_MMIO_REG_LEN);
++	if (!pmc->regmap) {
++		dev_err(&pdev->dev, "error: ioremap failed\n");
++		ret = -ENOMEM;
++		goto err_devm_ioremap;
++	}
++	pci_set_drvdata(pdev, pmc);
++#ifdef CONFIG_DEBUG_FS
++	pmc_dbgfs_register(pmc);
++#endif /* CONFIG_DEBUG_FS */
++
++	/* Install power off function */
++	pci_read_config_dword(pdev, ACPI_BASE_ADDR_OFFSET, &acpi_base_addr);
++	acpi_base_addr &= ACPI_BASE_ADDR_MASK;
++	if (acpi_base_addr != 0 && pm_power_off == NULL)
++		pm_power_off = pmc_power_off;
++	return 0;
++err_devm_ioremap:
++	pci_dev_put(pdev);
++err_devm_kzalloc:
++	pci_release_regions(pdev);
++err_request_regions:
++	pci_disable_device(pdev);
++err_enable_device:
++	dev_err(&pdev->dev, "error: probe failed\n");
++	return ret;
++}
++
++static const struct pci_device_id pmc_pci_ids[] = {
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_VLV_PMC) },
++	{ 0, },
++};
++
++MODULE_DEVICE_TABLE(pci, pmc_pci_ids);
++
++static struct pci_driver pmc_pci_driver = {
++	.name		= DRIVER_NAME,
++	.probe		= pmc_probe,
++	.id_table	= pmc_pci_ids,
++};
++
++module_pci_driver(pmc_pci_driver);
++
++MODULE_AUTHOR("Aubrey Li <aubrey.li@linux.intel.com>");
++MODULE_DESCRIPTION("Intel Atom SOC Power Management Controller Interface");
++MODULE_LICENSE("GPL v2");
 -- 
-1.7.9.5
-
+1.7.10.4
