@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491AbaCFULE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 15:11:04 -0500
-Received: from smtprelay0235.hostedemail.com ([216.40.44.235]:39316 "EHLO
+	id S1753514AbaCFULM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 15:11:12 -0500
+Received: from smtprelay0189.hostedemail.com ([216.40.44.189]:39334 "EHLO
 	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753468AbaCFULA (ORCPT
+	by vger.kernel.org with ESMTP id S1752053AbaCFULI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 15:11:00 -0500
+	Thu, 6 Mar 2014 15:11:08 -0500
 X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,::::::::::,RULES_HIT:4:41:69:355:379:541:800:960:968:973:988:989:1260:1345:1359:1437:1605:1730:1747:1777:1792:2198:2199:2393:2559:2562:3138:3139:3140:3141:3142:3622:3865:3866:3867:3868:3870:3871:3872:4250:4321:4605:5007:6117:6119:6261:7903:8603:8957:9592:10004:10026:10848:10954:11026:11473:11658:11914:12043:12296:12438:12517:12519:12555,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: grade82_5fbce7d9f3438
-X-Filterd-Recvd-Size: 19941
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,::::::::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1345:1359:1437:1534:1542:1711:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3352:3866:3867:3868:4321:5007:6119:6261:10004:10026:10848:11026:11473:11658:11914:12296:12438:12517:12519:12555,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: glove79_604d3ba02df43
+X-Filterd-Recvd-Size: 3054
 From: Joe Perches <joe@perches.com>
 To: Steven Whitehouse <swhiteho@redhat.com>
 Cc: Fabian Frederick <fabf@skynet.be>, linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
         Steven Whitehouse <swhiteho@redhat.com>, cluster-devel@redhat.com
-Subject: [PATCH 1/3] gfs2: Use pr_<level> more consistently
-Date: Thu,  6 Mar 2014 12:10:45 -0800
-Message-Id: <c3390c812f63854c756e1ccad4034af4316cbf40.1394136338.git.joe@perches.com>
+Subject: [PATCH 2/3] gfs2: Use fs_<level> more often
+Date: Thu,  6 Mar 2014 12:10:46 -0800
+Message-Id: <03faf31520f7ee9d3cff6e5e98588be7cbf1e5c9.1394136338.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 In-Reply-To: <20140306182724.6754407d4c629085d9fc318e@skynet.be>
 References: <20140306182724.6754407d4c629085d9fc318e@skynet.be>
@@ -28,567 +28,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add pr_fmt, remove embedded "GFS2: " prefixes.
-This now consistently emits lower case "gfs2: " for each message.
-
-Other miscellanea around these changes:
-
-o Add missing newlines
-o Coalesce formats
-o Realign arguments
+Convert a couple of uses of pr_<level> to fs_<level>
+Add and use fs_emerg.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- fs/gfs2/dir.c        | 14 ++++++++------
- fs/gfs2/glock.c      |  8 +++++---
- fs/gfs2/lock_dlm.c   |  9 ++++++---
- fs/gfs2/main.c       |  2 ++
- fs/gfs2/ops_fstype.c | 25 +++++++++++++------------
- fs/gfs2/quota.c      | 10 ++++++----
- fs/gfs2/rgrp.c       | 24 +++++++++++++-----------
- fs/gfs2/super.c      | 16 ++++++++--------
- fs/gfs2/sys.c        |  2 ++
- fs/gfs2/trans.c      | 19 ++++++++++---------
- fs/gfs2/util.c       | 12 ++++++------
- fs/gfs2/util.h       | 25 ++++++++++++-------------
- 12 files changed, 91 insertions(+), 75 deletions(-)
+ fs/gfs2/quota.c | 4 ++--
+ fs/gfs2/util.c  | 6 +++---
+ fs/gfs2/util.h  | 2 ++
+ 3 files changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/fs/gfs2/dir.c b/fs/gfs2/dir.c
-index 39c7081..1a349f9 100644
---- a/fs/gfs2/dir.c
-+++ b/fs/gfs2/dir.c
-@@ -53,6 +53,8 @@
-  * but never before the maximum hash table size has been reached.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/slab.h>
- #include <linux/spinlock.h>
- #include <linux/buffer_head.h>
-@@ -507,8 +509,8 @@ static int gfs2_check_dirent(struct gfs2_dirent *dent, unsigned int offset,
- 		goto error;
- 	return 0;
- error:
--	pr_warn("gfs2_check_dirent: %s (%s)\n", msg,
--	       first ? "first in block" : "not first in block");
-+	pr_warn("%s: %s (%s)\n",
-+		__func__, msg, first ? "first in block" : "not first in block");
- 	return -EIO;
- }
- 
-@@ -531,8 +533,7 @@ static int gfs2_dirent_offset(const void *buf)
- 	}
- 	return offset;
- wrong_type:
--	pr_warn("gfs2_scan_dirent: wrong block type %u\n",
--	        be32_to_cpu(h->mh_type));
-+	pr_warn("%s: wrong block type %u\n", __func__, be32_to_cpu(h->mh_type));
- 	return -1;
- }
- 
-@@ -728,7 +729,7 @@ static int get_leaf(struct gfs2_inode *dip, u64 leaf_no,
- 
- 	error = gfs2_meta_read(dip->i_gl, leaf_no, DIO_WAIT, bhp);
- 	if (!error && gfs2_metatype_check(GFS2_SB(&dip->i_inode), *bhp, GFS2_METATYPE_LF)) {
--		/* printk(KERN_INFO "block num=%llu\n", leaf_no); */
-+		/* pr_info("block num=%llu\n", leaf_no); */
- 		error = -EIO;
- 	}
- 
-@@ -1006,7 +1007,8 @@ static int dir_split_leaf(struct inode *inode, const struct qstr *name)
- 	len = 1 << (dip->i_depth - be16_to_cpu(oleaf->lf_depth));
- 	half_len = len >> 1;
- 	if (!half_len) {
--		pr_warn("i_depth %u lf_depth %u index %u\n", dip->i_depth, be16_to_cpu(oleaf->lf_depth), index);
-+		pr_warn("i_depth %u lf_depth %u index %u\n",
-+			dip->i_depth, be16_to_cpu(oleaf->lf_depth), index);
- 		gfs2_consist_inode(dip);
- 		error = -EIO;
- 		goto fail_brelse;
-diff --git a/fs/gfs2/glock.c b/fs/gfs2/glock.c
-index 329dc80..52f7478 100644
---- a/fs/gfs2/glock.c
-+++ b/fs/gfs2/glock.c
-@@ -7,6 +7,8 @@
-  * of the GNU General Public License version 2.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/sched.h>
- #include <linux/slab.h>
- #include <linux/spinlock.h>
-@@ -468,7 +470,7 @@ retry:
- 			do_xmote(gl, gh, LM_ST_UNLOCKED);
- 			break;
- 		default: /* Everything else */
--			pr_err("GFS2: wanted %u got %u\n", gl->gl_target, state);
-+			pr_err("wanted %u got %u\n", gl->gl_target, state);
- 			GLOCK_BUG_ON(gl, 1);
- 		}
- 		spin_unlock(&gl->gl_spin);
-@@ -542,7 +544,7 @@ __acquires(&gl->gl_spin)
- 		/* lock_dlm */
- 		ret = sdp->sd_lockstruct.ls_ops->lm_lock(gl, target, lck_flags);
- 		if (ret) {
--			pr_err("GFS2: lm_lock ret %d\n", ret);
-+			pr_err("lm_lock ret %d\n", ret);
- 			GLOCK_BUG_ON(gl, 1);
- 		}
- 	} else { /* lock_nolock */
-@@ -935,7 +937,7 @@ void gfs2_print_dbg(struct seq_file *seq, const char *fmt, ...)
- 		vaf.fmt = fmt;
- 		vaf.va = &args;
- 
--		pr_err(" %pV", &vaf);
-+		pr_err("%pV", &vaf);
- 	}
- 
- 	va_end(args);
-diff --git a/fs/gfs2/lock_dlm.c b/fs/gfs2/lock_dlm.c
-index a664ddd..c1eb555 100644
---- a/fs/gfs2/lock_dlm.c
-+++ b/fs/gfs2/lock_dlm.c
-@@ -7,6 +7,8 @@
-  * of the GNU General Public License version 2.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/fs.h>
- #include <linux/dlm.h>
- #include <linux/slab.h>
-@@ -176,7 +178,7 @@ static void gdlm_bast(void *arg, int mode)
- 		gfs2_glock_cb(gl, LM_ST_SHARED);
- 		break;
- 	default:
--		pr_err("unknown bast mode %d", mode);
-+		pr_err("unknown bast mode %d\n", mode);
- 		BUG();
- 	}
- }
-@@ -195,7 +197,7 @@ static int make_mode(const unsigned int lmstate)
- 	case LM_ST_SHARED:
- 		return DLM_LOCK_PR;
- 	}
--	pr_err("unknown LM state %d", lmstate);
-+	pr_err("unknown LM state %d\n", lmstate);
- 	BUG();
- 	return -1;
- }
-@@ -308,7 +310,8 @@ static void gdlm_put_lock(struct gfs2_glock *gl)
- 	error = dlm_unlock(ls->ls_dlm, gl->gl_lksb.sb_lkid, DLM_LKF_VALBLK,
- 			   NULL, gl);
- 	if (error) {
--		pr_err("gdlm_unlock %x,%llx err=%d\n", gl->gl_name.ln_type,
-+		pr_err("gdlm_unlock %x,%llx err=%d\n",
-+		       gl->gl_name.ln_type,
- 		       (unsigned long long)gl->gl_name.ln_number, error);
- 		return;
- 	}
-diff --git a/fs/gfs2/main.c b/fs/gfs2/main.c
-index ae9b02b..82b6ac8 100644
---- a/fs/gfs2/main.c
-+++ b/fs/gfs2/main.c
-@@ -7,6 +7,8 @@
-  * of the GNU General Public License version 2.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/slab.h>
- #include <linux/spinlock.h>
- #include <linux/completion.h>
-diff --git a/fs/gfs2/ops_fstype.c b/fs/gfs2/ops_fstype.c
-index 247ceef..ff78932 100644
---- a/fs/gfs2/ops_fstype.c
-+++ b/fs/gfs2/ops_fstype.c
-@@ -7,6 +7,8 @@
-  * of the GNU General Public License version 2.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/sched.h>
- #include <linux/slab.h>
- #include <linux/spinlock.h>
-@@ -152,7 +154,7 @@ static int gfs2_check_sb(struct gfs2_sbd *sdp, int silent)
- 	if (sb->sb_magic != GFS2_MAGIC ||
- 	    sb->sb_type != GFS2_METATYPE_SB) {
- 		if (!silent)
--			pr_warn("GFS2: not a GFS2 filesystem\n");
-+			pr_warn("not a GFS2 filesystem\n");
- 		return -EINVAL;
- 	}
- 
-@@ -174,7 +176,7 @@ static void end_bio_io_page(struct bio *bio, int error)
- 	if (!error)
- 		SetPageUptodate(page);
- 	else
--		pr_warn("gfs2: error %d reading superblock\n", error);
-+		pr_warn("error %d reading superblock\n", error);
- 	unlock_page(page);
- }
- 
-@@ -553,16 +555,15 @@ static int map_journal_extents(struct gfs2_sbd *sdp)
- 		rc = gfs2_block_map(jd->jd_inode, lb, &bh, 0);
- 		db = bh.b_blocknr;
- 		if (rc || !db) {
--			printk(KERN_INFO "GFS2 journal mapping error %d: lb="
--			       "%u db=%llu\n", rc, lb, (unsigned long long)db);
-+			pr_info("journal mapping error %d: lb=%u db=%llu\n",
-+				rc, lb, (unsigned long long)db);
- 			break;
- 		}
- 		if (!prev_db || db != prev_db + 1) {
- 			jext = kzalloc(sizeof(struct gfs2_journal_extent),
- 				       GFP_KERNEL);
- 			if (!jext) {
--				printk(KERN_INFO "GFS2 error: out of memory "
--				       "mapping journal extents.\n");
-+				pr_info("out of memory mapping journal extents\n");
- 				rc = -ENOMEM;
- 				break;
- 			}
-@@ -1006,7 +1007,7 @@ static int gfs2_lm_mount(struct gfs2_sbd *sdp, int silent)
- 		lm = &gfs2_dlm_ops;
- #endif
- 	} else {
--		pr_info("GFS2: can't find protocol %s\n", proto);
-+		pr_info("can't find protocol %s\n", proto);
- 		return -ENOENT;
- 	}
- 
-@@ -1113,7 +1114,7 @@ static int fill_super(struct super_block *sb, struct gfs2_args *args, int silent
- 
- 	sdp = init_sbd(sb);
- 	if (!sdp) {
--		pr_warn("GFS2: can't alloc struct gfs2_sbd\n");
-+		pr_warn("can't alloc struct gfs2_sbd\n");
- 		return -ENOMEM;
- 	}
- 	sdp->sd_args = *args;
-@@ -1361,7 +1362,7 @@ static struct dentry *gfs2_mount(struct file_system_type *fs_type, int flags,
- 
- 	error = gfs2_mount_args(&args, data);
- 	if (error) {
--		pr_warn("GFS2: can't parse mount arguments\n");
-+		pr_warn("can't parse mount arguments\n");
- 		goto error_super;
- 	}
- 
-@@ -1411,15 +1412,15 @@ static struct dentry *gfs2_mount_meta(struct file_system_type *fs_type,
- 
- 	error = kern_path(dev_name, LOOKUP_FOLLOW, &path);
- 	if (error) {
--		pr_warn("GFS2: path_lookup on %s returned error %d\n",
--		       dev_name, error);
-+		pr_warn("path_lookup on %s returned error %d\n",
-+			dev_name, error);
- 		return ERR_PTR(error);
- 	}
- 	s = sget(&gfs2_fs_type, test_gfs2_super, set_meta_super, flags,
- 		 path.dentry->d_inode->i_sb->s_bdev);
- 	path_put(&path);
- 	if (IS_ERR(s)) {
--		pr_warn("GFS2: gfs2 mount does not exist\n");
-+		pr_warn("gfs2 mount does not exist\n");
- 		return ERR_CAST(s);
- 	}
- 	if ((flags ^ s->s_flags) & MS_RDONLY) {
 diff --git a/fs/gfs2/quota.c b/fs/gfs2/quota.c
-index 6e25ee4..73ed925 100644
+index 73ed925..27f9435 100644
 --- a/fs/gfs2/quota.c
 +++ b/fs/gfs2/quota.c
-@@ -36,6 +36,8 @@
-  * the quota file, so it is not being constantly read.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/sched.h>
- #include <linux/slab.h>
- #include <linux/mm.h>
-@@ -1081,10 +1083,10 @@ static int print_message(struct gfs2_quota_data *qd, char *type)
+@@ -1083,8 +1083,8 @@ static int print_message(struct gfs2_quota_data *qd, char *type)
  {
  	struct gfs2_sbd *sdp = qd->qd_gl->gl_sbd;
  
--	pr_info("GFS2: fsid=%s: quota %s for %s %u\n",
--	       sdp->sd_fsname, type,
--	       (qd->qd_id.type == USRQUOTA) ? "user" : "group",
--	       from_kqid(&init_user_ns, qd->qd_id));
-+	pr_info("fsid=%s: quota %s for %s %u\n",
-+		sdp->sd_fsname, type,
-+		(qd->qd_id.type == USRQUOTA) ? "user" : "group",
-+		from_kqid(&init_user_ns, qd->qd_id));
+-	pr_info("fsid=%s: quota %s for %s %u\n",
+-		sdp->sd_fsname, type,
++	fs_info(sdp, "quota %s for %s %u\n",
++		type,
+ 		(qd->qd_id.type == USRQUOTA) ? "user" : "group",
+ 		from_kqid(&init_user_ns, qd->qd_id));
  
- 	return 0;
- }
-diff --git a/fs/gfs2/rgrp.c b/fs/gfs2/rgrp.c
-index 8d12038..281a771 100644
---- a/fs/gfs2/rgrp.c
-+++ b/fs/gfs2/rgrp.c
-@@ -7,6 +7,8 @@
-  * of the GNU General Public License version 2.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/slab.h>
- #include <linux/spinlock.h>
- #include <linux/completion.h>
-@@ -99,12 +101,12 @@ static inline void gfs2_setbit(const struct gfs2_rbm *rbm, bool do_clone,
- 	cur_state = (*byte1 >> bit) & GFS2_BIT_MASK;
- 
- 	if (unlikely(!valid_change[new_state * 4 + cur_state])) {
--		pr_warn("GFS2: buf_blk = 0x%x old_state=%d, "
--		       "new_state=%d\n", rbm->offset, cur_state, new_state);
--		pr_warn("GFS2: rgrp=0x%llx bi_start=0x%x\n",
--		       (unsigned long long)rbm->rgd->rd_addr, bi->bi_start);
--		pr_warn("GFS2: bi_offset=0x%x bi_len=0x%x\n",
--		       bi->bi_offset, bi->bi_len);
-+		pr_warn("buf_blk = 0x%x old_state=%d, new_state=%d\n",
-+			rbm->offset, cur_state, new_state);
-+		pr_warn("rgrp=0x%llx bi_start=0x%x\n",
-+			(unsigned long long)rbm->rgd->rd_addr, bi->bi_start);
-+		pr_warn("bi_offset=0x%x bi_len=0x%x\n",
-+			bi->bi_offset, bi->bi_len);
- 		dump_stack();
- 		gfs2_consist_rgrpd(rbm->rgd);
- 		return;
-@@ -736,11 +738,11 @@ void gfs2_clear_rgrpd(struct gfs2_sbd *sdp)
- 
- static void gfs2_rindex_print(const struct gfs2_rgrpd *rgd)
- {
--	pr_info("  ri_addr = %llu\n", (unsigned long long)rgd->rd_addr);
--	pr_info("  ri_length = %u\n", rgd->rd_length);
--	pr_info("  ri_data0 = %llu\n", (unsigned long long)rgd->rd_data0);
--	pr_info("  ri_data = %u\n", rgd->rd_data);
--	pr_info("  ri_bitbytes = %u\n", rgd->rd_bitbytes);
-+	pr_info("ri_addr = %llu\n", (unsigned long long)rgd->rd_addr);
-+	pr_info("ri_length = %u\n", rgd->rd_length);
-+	pr_info("ri_data0 = %llu\n", (unsigned long long)rgd->rd_data0);
-+	pr_info("ri_data = %u\n", rgd->rd_data);
-+	pr_info("ri_bitbytes = %u\n", rgd->rd_bitbytes);
- }
- 
- /**
-diff --git a/fs/gfs2/super.c b/fs/gfs2/super.c
-index b8ca74f..39d7e30 100644
---- a/fs/gfs2/super.c
-+++ b/fs/gfs2/super.c
-@@ -7,6 +7,8 @@
-  * of the GNU General Public License version 2.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/bio.h>
- #include <linux/sched.h>
- #include <linux/slab.h>
-@@ -175,8 +177,7 @@ int gfs2_mount_args(struct gfs2_args *args, char *options)
- 			break;
- 		case Opt_debug:
- 			if (args->ar_errors == GFS2_ERRORS_PANIC) {
--				pr_warn("GFS2: -o debug and -o errors=panic "
--				       "are mutually exclusive.\n");
-+				pr_warn("-o debug and -o errors=panic are mutually exclusive\n");
- 				return -EINVAL;
- 			}
- 			args->ar_debug = 1;
-@@ -228,21 +229,21 @@ int gfs2_mount_args(struct gfs2_args *args, char *options)
- 		case Opt_commit:
- 			rv = match_int(&tmp[0], &args->ar_commit);
- 			if (rv || args->ar_commit <= 0) {
--				pr_warn("GFS2: commit mount option requires a positive numeric argument\n");
-+				pr_warn("commit mount option requires a positive numeric argument\n");
- 				return rv ? rv : -EINVAL;
- 			}
- 			break;
- 		case Opt_statfs_quantum:
- 			rv = match_int(&tmp[0], &args->ar_statfs_quantum);
- 			if (rv || args->ar_statfs_quantum < 0) {
--				pr_warn("GFS2: statfs_quantum mount option requires a non-negative numeric argument\n");
-+				pr_warn("statfs_quantum mount option requires a non-negative numeric argument\n");
- 				return rv ? rv : -EINVAL;
- 			}
- 			break;
- 		case Opt_quota_quantum:
- 			rv = match_int(&tmp[0], &args->ar_quota_quantum);
- 			if (rv || args->ar_quota_quantum <= 0) {
--				pr_warn("GFS2: quota_quantum mount option requires a positive numeric argument\n");
-+				pr_warn("quota_quantum mount option requires a positive numeric argument\n");
- 				return rv ? rv : -EINVAL;
- 			}
- 			break;
-@@ -259,8 +260,7 @@ int gfs2_mount_args(struct gfs2_args *args, char *options)
- 			break;
- 		case Opt_err_panic:
- 			if (args->ar_debug) {
--				pr_warn("GFS2: -o debug and -o errors=panic "
--					"are mutually exclusive.\n");
-+				pr_warn("-o debug and -o errors=panic are mutually exclusive\n");
- 				return -EINVAL;
- 			}
- 			args->ar_errors = GFS2_ERRORS_PANIC;
-@@ -279,7 +279,7 @@ int gfs2_mount_args(struct gfs2_args *args, char *options)
- 			break;
- 		case Opt_error:
- 		default:
--			pr_warn("GFS2: invalid mount option: %s\n", o);
-+			pr_warn("invalid mount option: %s\n", o);
- 			return -EINVAL;
- 		}
- 	}
-diff --git a/fs/gfs2/sys.c b/fs/gfs2/sys.c
-index d09f6ed..256354c 100644
---- a/fs/gfs2/sys.c
-+++ b/fs/gfs2/sys.c
-@@ -7,6 +7,8 @@
-  * of the GNU General Public License version 2.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/sched.h>
- #include <linux/spinlock.h>
- #include <linux/completion.h>
-diff --git a/fs/gfs2/trans.c b/fs/gfs2/trans.c
-index 3fe8e34..bead90d 100644
---- a/fs/gfs2/trans.c
-+++ b/fs/gfs2/trans.c
-@@ -7,6 +7,8 @@
-  * of the GNU General Public License version 2.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/sched.h>
- #include <linux/slab.h>
- #include <linux/spinlock.h>
-@@ -99,13 +101,13 @@ static void gfs2_log_release(struct gfs2_sbd *sdp, unsigned int blks)
- 
- static void gfs2_print_trans(const struct gfs2_trans *tr)
- {
--	pr_warn("GFS2: Transaction created at: %pSR\n", (void *)tr->tr_ip);
--	pr_warn("GFS2: blocks=%u revokes=%u reserved=%u touched=%u\n",
--	       tr->tr_blocks, tr->tr_revokes, tr->tr_reserved, tr->tr_touched);
--	pr_warn("GFS2: Buf %u/%u Databuf %u/%u Revoke %u/%u\n",
--	       tr->tr_num_buf_new, tr->tr_num_buf_rm,
--	       tr->tr_num_databuf_new, tr->tr_num_databuf_rm,
--	       tr->tr_num_revoke, tr->tr_num_revoke_rm);
-+	pr_warn("Transaction created at: %pSR\n", (void *)tr->tr_ip);
-+	pr_warn("blocks=%u revokes=%u reserved=%u touched=%u\n",
-+		tr->tr_blocks, tr->tr_revokes, tr->tr_reserved, tr->tr_touched);
-+	pr_warn("Buf %u/%u Databuf %u/%u Revoke %u/%u\n",
-+		tr->tr_num_buf_new, tr->tr_num_buf_rm,
-+		tr->tr_num_databuf_new, tr->tr_num_databuf_rm,
-+		tr->tr_num_revoke, tr->tr_num_revoke_rm);
- }
- 
- void gfs2_trans_end(struct gfs2_sbd *sdp)
-@@ -231,8 +233,7 @@ static void meta_lo_add(struct gfs2_sbd *sdp, struct gfs2_bufdata *bd)
- 	set_bit(GLF_DIRTY, &bd->bd_gl->gl_flags);
- 	mh = (struct gfs2_meta_header *)bd->bd_bh->b_data;
- 	if (unlikely(mh->mh_magic != cpu_to_be32(GFS2_MAGIC))) {
--		pr_err("Attempting to add uninitialised block to journal "
--		       "(inplace block=%lld)\n",
-+		pr_err("Attempting to add uninitialised block to journal (inplace block=%lld)\n",
- 		       (unsigned long long)bd->bd_bh->b_blocknr);
- 		BUG();
- 	}
 diff --git a/fs/gfs2/util.c b/fs/gfs2/util.c
-index e9d7001..02fb38d 100644
+index 02fb38d..84bf853 100644
 --- a/fs/gfs2/util.c
 +++ b/fs/gfs2/util.c
-@@ -7,6 +7,8 @@
-  * of the GNU General Public License version 2.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/spinlock.h>
- #include <linux/completion.h>
- #include <linux/buffer_head.h>
-@@ -30,7 +32,7 @@ mempool_t *gfs2_page_pool __read_mostly;
+@@ -32,7 +32,7 @@ mempool_t *gfs2_page_pool __read_mostly;
  
  void gfs2_assert_i(struct gfs2_sbd *sdp)
  {
--	pr_emerg("GFS2: fsid=%s: fatal assertion failed\n", sdp->sd_fsname);
-+	pr_emerg("fsid=%s: fatal assertion failed\n", sdp->sd_fsname);
+-	pr_emerg("fsid=%s: fatal assertion failed\n", sdp->sd_fsname);
++	fs_emerg(sdp, "fatal assertion failed\n");
  }
  
  int gfs2_lm_withdraw(struct gfs2_sbd *sdp, char *fmt, ...)
-@@ -65,7 +67,7 @@ int gfs2_lm_withdraw(struct gfs2_sbd *sdp, char *fmt, ...)
- 	}
- 
- 	if (sdp->sd_args.ar_errors == GFS2_ERRORS_PANIC)
--		panic("GFS2: fsid=%s: panic requested.\n", sdp->sd_fsname);
-+		panic("GFS2: fsid=%s: panic requested\n", sdp->sd_fsname);
- 
- 	return -1;
- }
-@@ -104,10 +106,8 @@ int gfs2_assert_warn_i(struct gfs2_sbd *sdp, char *assertion,
+@@ -106,8 +106,8 @@ int gfs2_assert_warn_i(struct gfs2_sbd *sdp, char *assertion,
  		return -2;
  
  	if (sdp->sd_args.ar_errors == GFS2_ERRORS_WITHDRAW)
--		pr_warn("GFS2: fsid=%s: warning: assertion \"%s\" failed\n"
--		       "GFS2: fsid=%s:   function = %s, file = %s, line = %u\n",
--		       sdp->sd_fsname, assertion,
--		       sdp->sd_fsname, function, file, line);
-+		pr_warn("fsid=%s: warning: assertion \"%s\" failed at function = %s, file = %s, line = %u\n",
-+			sdp->sd_fsname, assertion, function, file, line);
+-		pr_warn("fsid=%s: warning: assertion \"%s\" failed at function = %s, file = %s, line = %u\n",
+-			sdp->sd_fsname, assertion, function, file, line);
++		fs_warn(sdp, "warning: assertion \"%s\" failed at function = %s, file = %s, line = %u\n",
++			assertion, function, file, line);
  
  	if (sdp->sd_args.ar_debug)
  		BUG();
 diff --git a/fs/gfs2/util.h b/fs/gfs2/util.h
-index b7ffb09..d365733 100644
+index d365733..515cce2 100644
 --- a/fs/gfs2/util.h
 +++ b/fs/gfs2/util.h
-@@ -10,22 +10,21 @@
- #ifndef __UTIL_DOT_H__
- #define __UTIL_DOT_H__
- 
-+#ifdef pr_fmt
-+#undef pr_fmt
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+#endif
-+
- #include <linux/mempool.h>
+@@ -19,6 +19,8 @@
  
  #include "incore.h"
  
--#define fs_printk(level, fs, fmt, arg...) \
--	printk(level "GFS2: fsid=%s: " fmt , (fs)->sd_fsname , ## arg)
--
--#define fs_info(fs, fmt, arg...) \
--	fs_printk(KERN_INFO , fs , fmt , ## arg)
--
--#define fs_warn(fs, fmt, arg...) \
--	fs_printk(KERN_WARNING , fs , fmt , ## arg)
--
--#define fs_err(fs, fmt, arg...) \
--	fs_printk(KERN_ERR, fs , fmt , ## arg)
--
-+#define fs_warn(fs, fmt, ...)						\
-+	pr_warn("fsid=%s: " fmt, (fs)->sd_fsname, ##__VA_ARGS__)
-+#define fs_err(fs, fmt, ...)						\
-+	pr_err("fsid=%s: " fmt, (fs)->sd_fsname, ##__VA_ARGS__)
-+#define fs_info(fs, fmt, ...)						\
-+	pr_info("fsid=%s: " fmt, (fs)->sd_fsname, ##__VA_ARGS__)
- 
- void gfs2_assert_i(struct gfs2_sbd *sdp);
- 
-@@ -85,7 +84,7 @@ static inline int gfs2_meta_check(struct gfs2_sbd *sdp,
- 	struct gfs2_meta_header *mh = (struct gfs2_meta_header *)bh->b_data;
- 	u32 magic = be32_to_cpu(mh->mh_magic);
- 	if (unlikely(magic != GFS2_MAGIC)) {
--		printk(KERN_ERR "GFS2: Magic number missing at %llu\n",
-+		pr_err("Magic number missing at %llu\n",
- 		       (unsigned long long)bh->b_blocknr);
- 		return -EIO;
- 	}
++#define fs_emerg(fs, fmt, ...)						\
++	pr_emerg("fsid=%s: " fmt, (fs)->sd_fsname, ##__VA_ARGS__)
+ #define fs_warn(fs, fmt, ...)						\
+ 	pr_warn("fsid=%s: " fmt, (fs)->sd_fsname, ##__VA_ARGS__)
+ #define fs_err(fs, fmt, ...)						\
 -- 
 1.8.1.2.459.gbcd45b4.dirty
 
