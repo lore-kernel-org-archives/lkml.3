@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751639AbaCFXRS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 18:17:18 -0500
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:53747 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003AbaCFXRR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 18:17:17 -0500
+	id S1752313AbaCFXTJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 18:19:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13901 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751342AbaCFXTF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 18:19:05 -0500
+Subject: [PATCH 0/3] AF_RXRPC fixes [ver #3]
+From: David Howells <dhowells@redhat.com>
+To: netdev@vger.kernel.org
+Cc: dhowells@redhat.com, tim@electronghost.co.uk,
+        linux-afs@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Thu, 06 Mar 2014 23:18:36 +0000
+Message-ID: <20140306231835.11431.50147.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-In-Reply-To: <20140306195716.GD3403@kroah.com>
-References: <2109601.U7a2ESYcJ8@daeseok-laptop.cloud.net>
-	<20140306195716.GD3403@kroah.com>
-Date: Fri, 7 Mar 2014 08:17:16 +0900
-Message-ID: <CAHb8M2A4C-FX0RBuuH8iORi+O-TV8nZCAHc9dmXLW6Rs-ZvC6g@mail.gmail.com>
-Subject: Re: [PATCH 4/7 v3] staging: cxt1e1: fix checkpatch error 'assignment
- in if condition'
-From: DaeSeok Youn <daeseok.youn@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: devel <devel@driverdev.osuosl.org>, Shaun Laing <shaun@xresource.ca>,
-        "sachin.kamat" <sachin.kamat@linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dulshani Gunawardhana <dulshani.gunawardhana89@gmail.com>,
-        David Miller <davem@davemloft.net>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for confusing you.
-Actually 1-3 patches already merged to staging-next branch.
 
-And then I had a request resending the rest of the series.
-So I just sent 4-7 again. Sorry, I should rebase these patches and
-make a series newly.
+Hi Dave,
 
-I will send patches again properly.
-I think this patches need to rebase current staging-next branch.
+Here are some AF_RXRPC fixes:
 
-Thanks.
-Daeseok Youn.
+ (1) Fix to remove incorrect checksum calculation made during recvmsg().  It's
+     unnecessary to try to do this there since we check the checksum before
+     reading the RxRPC header from the packet.
 
-2014-03-07 4:57 GMT+09:00 Greg KH <gregkh@linuxfoundation.org>:
-> On Wed, Mar 05, 2014 at 10:21:01AM +0900, Daeseok Youn wrote:
->>
->> checkpatch.pl error in linux.c:
->>  ERROR: do not use assignment in if condition
->>
->> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
->> ---
->>  drivers/staging/cxt1e1/linux.c |   31 +++++++++++++++++++------------
->>  1 files changed, 19 insertions(+), 12 deletions(-)
->
-> I don't see patches 1-3 here, so I'm dropping this whole series.
->
-> I do not have any short-term, or long-term, memory about patches I've
-> rejected / approved / discussed, as I deal with thousands of them every
-> week.  You need to be explicit as to what is going on, and don't try to
-> confused me.
->
-> Please resend properly.
->
-> greg k-h
+ (2) Fix to prevent the sending of an ABORT packet in response to another
+     ABORT packet and inducing a storm.
+
+ (3) Fix UDP MTU calculation from parsing ICMP_FRAG_NEEDED packets where we
+     don't handle the ICMP packet not specifying an MTU size.
+
+---
+The above changes since commit c88507fbad8055297c1d1e21e599f46960cbee39:
+
+  ipv6: don't set DST_NOCOUNT for remotely added routes (2014-03-06 17:29:27 -0500)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/rxrpc-fixes-20140306
+
+for you to fetch changes up to ddc348e1c88d705b70f8aba0c42876100277c829:
+
+  af_rxrpc: Fix UDP MTU calculation from ICMP_FRAG_NEEDED (2014-03-06 23:01:50 +0000)
+
+David
+---
+David Howells (1):
+      af_rxrpc: Fix UDP MTU calculation from ICMP_FRAG_NEEDED
+
+Tim Smith (2):
+      af_rxrpc: Remove incorrect checksum calculation from rxrpc_recvmsg()
+      af_rxrpc: Prevent RxRPC peers from ABORT-storming one another
+
+
+ net/rxrpc/ar-error.c   |    1 +
+ net/rxrpc/ar-input.c   |   12 ++++++++----
+ net/rxrpc/ar-recvmsg.c |   25 +------------------------
+ 3 files changed, 10 insertions(+), 28 deletions(-)
+
