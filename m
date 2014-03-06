@@ -1,78 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752153AbaCFJpZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 04:45:25 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:39815 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751837AbaCFJpU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 04:45:20 -0500
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Sukadev Bhattiprolu'" <sukadev@linux.vnet.ibm.com>,
-        "Arnaldo Carvalho de Melo" <acme@ghostprotocols.net>
-CC: Michael Ellerman <michaele@au1.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
-        Paul Mackerras <paulus@samba.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: RE: [PATCH 3/3] perf: Use 64-bit value when comparing sample_regs
-Thread-Topic: [PATCH 3/3] perf: Use 64-bit value when comparing sample_regs
-Thread-Index: AQHPOPa0HhCuRKR9rUmCkUl46/2MdZrTzNeQ
-Date: Thu, 6 Mar 2014 09:44:47 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F6D3983@AcuExch.aculab.com>
-References: <1394080919-17957-1-git-send-email-sukadev@linux.vnet.ibm.com>
- <1394080919-17957-4-git-send-email-sukadev@linux.vnet.ibm.com>
-In-Reply-To: <1394080919-17957-4-git-send-email-sukadev@linux.vnet.ibm.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1751663AbaCFJtB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 04:49:01 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:35418 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750805AbaCFJs6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 04:48:58 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-54-53184488816c
+Message-id: <1394099334.25853.1.camel@AMDC1943>
+Subject: Re: [PATCH 2/3] regulator: s2mps11: Add set_suspend_disable for S2MPS14
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>
+Date: Thu, 06 Mar 2014 10:48:54 +0100
+In-reply-to: <20140306093826.GO13126@sirena.org.uk>
+References: <1394011373-4057-1-git-send-email-k.kozlowski@samsung.com>
+ <1394011373-4057-3-git-send-email-k.kozlowski@samsung.com>
+ <20140306093826.GO13126@sirena.org.uk>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.2.3-0ubuntu6
+Content-transfer-encoding: 7bit
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPLMWRmVeSWpSXmKPExsVy+t/xq7odLhLBBif+8FpsnLGe1WLqwyds
+	Fmeb3rBb3P96lNHi25UOJovLu+awWcw4v4/JYu2Ru+wWJ//0Mlqc7ma1uLjiC5PF+hmvWSzm
+	TH/H5MDrsXPWXXaPTas62TzuXNvD5jHvZKBH35ZVjB6fN8kFsEVx2aSk5mSWpRbp2yVwZfyc
+	epa54CRHxcrXlg2MN9i6GDk5JARMJDYfboSyxSQu3FsPZHNxCAksZZRY/vgiC4TzmVFi6/O/
+	zCBVvAL6EleX3WYFsYUFAiTWr/kEFmcTMJbYvHwJ2CQRAWWJq9/3gjUzC7xilniwexJYgkVA
+	VWLJtdVANgcHJ1DDhJWSEAvWMEoc7TgDNohZQF1i0rxFzBAnKUnsbu9kh4jLS2xe8xbqCEGJ
+	H5PvsUxgFJiFpGUWkrJZSMoWMDKvYhRNLU0uKE5KzzXUK07MLS7NS9dLzs/dxAiJlC87GBcf
+	szrEKMDBqMTDu8FPPFiINbGsuDL3EKMEB7OSCO8WQ4lgId6UxMqq1KL8+KLSnNTiQ4xMHJxS
+	DYxl+/6uVfjtK63eIPol7nPyxQa5b8LGDBta1RequHxteJ1w83/Juyemu77ptieu21WoEPNB
+	puj2SstlRfFVU+ILXPZtzNSIlLrJ/dBbXJDpYF/jRnPRrmm5bb339p3qWq95J2ljL78IXw6L
+	xSqGXfEiXPx/c2Wqv1zd37W9g9mu9yObuXjoeiWW4oxEQy3mouJEADByKOdyAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s269jWua024446
 
-From: Sukadev Bhattiprolu
-> When checking whether a bit representing a register is set in
-> sample_regs, a 64-bit mask, use 64-bit value (1LL).
+On Thu, 2014-03-06 at 17:38 +0800, Mark Brown wrote:
+> On Wed, Mar 05, 2014 at 10:22:52AM +0100, Krzysztof Kozlowski wrote:
 > 
-> Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-> ---
->  tools/perf/util/unwind.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+> > +	ret = regmap_read(rdev->regmap, rdev->desc->enable_reg, &data);
+> > +	if (ret < 0)
+> > +		return ret;
+> > +
+> > +	/*
+> > +	 * Don't enable suspend mode if regulator is already disabled because
+> > +	 * this would effectively for a short time turn on the regulator after
+> > +	 * resuming.
+> > +	 */
+> > +	if (!(data & rdev->desc->enable_mask))
+> > +		return 0;
+> > +
+> > +	return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
+> > +			rdev->desc->enable_mask, S2MPS14_ENABLE_SUSPEND);
+> > +}
 > 
-> diff --git a/tools/perf/util/unwind.c b/tools/perf/util/unwind.c
-> index 742f23b..2b888c6 100644
-> --- a/tools/perf/util/unwind.c
-> +++ b/tools/perf/util/unwind.c
-> @@ -396,11 +396,11 @@ static int reg_value(unw_word_t *valp, struct regs_dump *regs, int id,
->  {
->  	int i, idx = 0;
-> 
-> -	if (!(sample_regs & (1 << id)))
-> +	if (!(sample_regs & (1LL << id)))
->  		return -EINVAL;
-> 
->  	for (i = 0; i < id; i++) {
-> -		if (sample_regs & (1 << i))
-> +		if (sample_regs & (1LL << i))
->  			idx++;
->  	}
+> What happens if the regulator gets enabled between this being called
+> and the device suspending?  I'd expect this to be storing the state and
+> then changing what gets written during enable and disable operations (if
+> the hardware does what I think it does).
 
-There are much faster ways to count the number of set bits, especially
-if you might need to check a significant number of bits.
-There might even be a function defined somewhere to do it.
-Basically you just add up the bits, for 16 bit it would be:
-	val = (val & 0x5555) + (val >> 1) & 0x5555;
-	val = (val & 0x3333) + (val >> 2) & 0x3333;
-	val = (val & 0x0f0f) + (val >> 4) & 0x0f0f;
-	val = (val & 0x00ff) + (val >> 8) & 0x00ff;
-As the size of the work increases the improvement is more significant.
-(Some of the later masking can probably be proven unnecessary.)
+Hmmm... you're right. I'll fix this.
 
-	David
+Anyway can you look at other two patches and apply them if they are OK?
+They don't depend on this.
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Best regards,
+Krzysztof
+
