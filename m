@@ -1,80 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751684AbaCFWZQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 17:25:16 -0500
-Received: from mail-we0-f182.google.com ([74.125.82.182]:59068 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751210AbaCFWZP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 17:25:15 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140306.131310.1830419590852091525.davem@davemloft.net>
-References: <1394110536-4532-1-git-send-email-sergey.senozhatsky@gmail.com>
-	<20140306.131310.1830419590852091525.davem@davemloft.net>
-Date: Fri, 7 Mar 2014 01:25:13 +0300
-Message-ID: <CAHqPoqJJL7ddfOyBzGM5tWNV=52W5KDko+iv4W2WzD2MOtUtsw@mail.gmail.com>
-Subject: Re: [PATCH] net: use raw_cpu ops in snmp stats bh
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: David Miller <davem@davemloft.net>, Eric Dumazet <eric.dumazet@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1751612AbaCFWbw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 17:31:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55541 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751004AbaCFWbu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 17:31:50 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20140306.171656.1597596195712774395.davem@davemloft.net>
+References: <20140306.171656.1597596195712774395.davem@davemloft.net> <20140306.143719.2217501178599478723.davem@davemloft.net> <20140306124614.16645.50744.stgit@warthog.procyon.org.uk> <8007.1394144113@warthog.procyon.org.uk>
+To: David Miller <davem@davemloft.net>
+Cc: dhowells@redhat.com, netdev@vger.kernel.org, tim@electronghost.co.uk,
+        linux-afs@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/8] AF_RXRPC fixes and development [ver #2]
+Date: Thu, 06 Mar 2014 22:31:18 +0000
+Message-ID: <8473.1394145078@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+David Miller <davem@davemloft.net> wrote:
 
-On Thu, Mar 6, 2014 at 9:13 PM, David Miller <davem@davemloft.net> wrote:
-> From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> Date: Thu,  6 Mar 2014 15:55:36 +0300
->
->> Commit a25982c15ae52 ("percpu: add preemption checks to __this_cpu
->> ops") added preemption checks to __this_cpu ops, which are used in
->> SNMP_INC_STATS_BH() and SNMP_ADD_STATS_BH(), resulting in following
->> warnings:
->>
->> BUG: using __this_cpu_add() in preemptible [00000000] code: ssh/4661
->> caller is __this_cpu_preempt_check+0x2b/0x2d
->> CPU: 3 PID: 4661 Comm: ssh Not tainted 3.14.0-rc5-next-20140306-dbg-dirty #162
->> Hardware name: Acer             Aspire 5741G    /Aspire 5741G    , BIOS V1.20 02/08/2011
->>  0000000000000000 ffff880094939be0 ffffffff813b8305 0000000000000003
->>  ffff880094939c00 ffffffff8121221f ffff88015130a8c0 0000000000000000
->>  ffff880094939c38 ffffffff8121226b 635f736968745f5f 29286464615f7570
->> Call Trace:
->>  [<ffffffff813b8305>] dump_stack+0x4e/0x7a
->>  [<ffffffff8121221f>] check_preemption_disabled+0xce/0xdd
->>  [<ffffffff8121226b>] __this_cpu_preempt_check+0x2b/0x2d
->>  [<ffffffff81370b5a>] ? tcp_rearm_rto+0x9f/0xa1
->>  [<ffffffff81373456>] tcp_event_new_data_sent+0x6d/0x91
->>  [<ffffffff81374dc6>] tcp_write_xmit+0x3f1/0x935
->>  [<ffffffff813754e4>] __tcp_push_pending_frames+0x28/0x82
->>  [<ffffffff81368109>] tcp_push+0xcc/0x102
->>  [<ffffffff8136a0c1>] tcp_sendmsg+0x8c5/0xb7a
->>  [<ffffffff81207d59>] ? string.isra.6+0x3b/0x9f
->>  [<ffffffff8138a10a>] inet_sendmsg+0x75/0xa0
->>  [<ffffffff81320fb6>] sock_aio_write+0xe7/0xfe
->>  [<ffffffff81207d59>] ? string.isra.6+0x3b/0x9f
->>  [<ffffffff810e08ab>] do_sync_write+0x54/0x73
->>  [<ffffffff810e0df7>] vfs_write+0xc6/0x17c
->>  [<ffffffff810e1603>] SyS_write+0x44/0x78
->>  [<ffffffff813be0a1>] tracesys+0xd4/0xd9
->>
->> use raw_cpu_inc() and raw_cpu_add() instead of __this_cpu_inc()
->> and __this_cpu_add().
->>
->> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
->
-> This is a bug in the TCP code, if this code path can happen outside of
-> software interrupts or BH protected sections, which it can as seen in
-> this trace, it must use the non-_BH-postfixed versions of the SNMP
-> counter bumps.
+> It depends upon whether you want the bug fixes to go into Linus's
+> tree for the current release or not.
 
+The fixes aren't particularly urgent, so if net-next is aimed at the next
+merge window, I would be okay with you putting the whole pile in there at this
+point.
 
-David, Eric, thank you and sorry for the noise.
+Below is a pull request on that basis.
 
+David
+---
+[GIT PULL] net-next: AF_RXRPC fixes and development
 
-p.s. my fetchmail went mad two days ago and became very selective on
-fetching mails from gmail, so I surely missed a lot of emails. have to double
-check using web interface now.
+Here are some AF_RXRPC fixes:
 
--ss
+ (1) Fix to remove incorrect checksum calculation made during recvmsg().  It's
+     unnecessary to try to do this there since we check the checksum before
+     reading the RxRPC header from the packet.
+
+ (2) Fix to prevent the sending of an ABORT packet in response to another
+     ABORT packet and inducing a storm.
+
+ (3) Fix UDP MTU calculation from parsing ICMP_FRAG_NEEDED packets where we
+     don't handle the ICMP packet not specifying an MTU size.
+
+And development patches:
+
+ (4) Add sysctls for configuring RxRPC parameters, specifically various delays
+     pertaining to ACK generation, the time before we resend a packet for
+     which we don't receive an ACK, the maximum time a call is permitted to
+     live and the amount of time transport, connection and dead call
+     information is cached.
+
+ (5) Improve ACK packet production by adjusting the handling of ACK_REQUESTED
+     packets, ignoring the MORE_PACKETS flag, delaying the production of
+     otherwise immediate ACK_IDLE packets and delaying all ACK_IDLE production
+     (barring the call termination) to half a second.
+
+ (6) Add more sysctl parameters to expose the Rx window size, the maximum
+     packet size that we're willing to receive and the number of jumbo rxrpc
+     packets we're willing to handle in a single UDP packet.
+
+ (7) Request ACKs on alternate DATA packets so that the other side doesn't
+     wait till we fill up the Tx window.
+
+ (8) Use a RCU hash table to look up the rxrpc_call for an incoming packet
+     rather than stepping through a hierarchy involving several spinlocks.
+
+The following changes since commit 38dbfb59d1175ef458d006556061adeaa8751b72:
+
+  Linus 3.14-rc1 (2014-02-02 16:42:13 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/rxrpc-devel-20140304
+
+for you to fetch changes up to 7727640cc3c4d03b6a3cb5bf26d48c72e31403ca:
+
+  af_rxrpc: Keep rxrpc_call pointers in a hashtable (2014-03-04 10:36:53 +0000)
+
+----------------------------------------------------------------
+(from the branch description for rxrpc local branch)
+
+RxRPC development
+RxRPC development
+
+----------------------------------------------------------------
+David Howells (5):
+      af_rxrpc: Fix UDP MTU calculation from ICMP_FRAG_NEEDED
+      af_rxrpc: Add sysctls for configuring RxRPC parameters
+      af_rxrpc: Improve ACK production
+      af_rxrpc: Expose more RxRPC parameters via sysctls
+      af_rxrpc: Request an ACK for every alternate DATA packet
+
+Tim Smith (3):
+      af_rxrpc: Remove incorrect checksum calculation from rxrpc_recvmsg()
+      af_rxrpc: Prevent RxRPC peers from ABORT-storming one another
+      af_rxrpc: Keep rxrpc_call pointers in a hashtable
+
+ Documentation/networking/rxrpc.txt |  81 ++++++++++++++
+ net/rxrpc/Makefile                 |   5 +-
+ net/rxrpc/af_rxrpc.c               |   9 ++
+ net/rxrpc/ar-ack.c                 |  61 +++++++++--
+ net/rxrpc/ar-call.c                | 213 +++++++++++++++++++++++++++++++++++--
+ net/rxrpc/ar-connection.c          |  10 +-
+ net/rxrpc/ar-error.c               |   1 +
+ net/rxrpc/ar-input.c               | 190 ++++++++++++++-------------------
+ net/rxrpc/ar-internal.h            |  40 ++++++-
+ net/rxrpc/ar-output.c              |  15 ++-
+ net/rxrpc/ar-recvmsg.c             |  25 +----
+ net/rxrpc/ar-skbuff.c              |   7 +-
+ net/rxrpc/ar-transport.c           |  10 +-
+ net/rxrpc/sysctl.c                 | 146 +++++++++++++++++++++++++
+ 14 files changed, 645 insertions(+), 168 deletions(-)
+ create mode 100644 net/rxrpc/sysctl.c
