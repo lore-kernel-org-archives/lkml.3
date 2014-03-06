@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250AbaCFO25 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 09:28:57 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:58153 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752216AbaCFOYA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 09:24:00 -0500
+	id S1753271AbaCFO3n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 09:29:43 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43986 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752053AbaCFOXq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 09:23:46 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <kishon@ti.comg>, <tony@atomide.com>, <balbi@ti.com>
 CC: <george.cherian@ti.com>, <balajitk@ti.com>, <hdegoede@redhat.com>,
@@ -14,9 +13,9 @@ CC: <george.cherian@ti.com>, <balajitk@ti.com>, <hdegoede@redhat.com>,
         <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, <linux-ide@vger.kernel.org>,
         <rogerq@ti.com>
-Subject: [PATCH v2 06/13] phy: ti-pipe3: Don't get 'wkupclk' and 'refclk' for SATA PHY
-Date: Thu, 6 Mar 2014 16:22:58 +0200
-Message-ID: <1394115785-28301-7-git-send-email-rogerq@ti.com>
+Subject: [PATCH v2 02/13] phy: omap-control: Update DT binding information
+Date: Thu, 6 Mar 2014 16:22:54 +0200
+Message-ID: <1394115785-28301-3-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1394115785-28301-1-git-send-email-rogerq@ti.com>
 References: <1394115785-28301-1-git-send-email-rogerq@ti.com>
@@ -26,50 +25,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SATA PHY doesn't need 'wkupclk; and 'refclk' so don't
-try to get them for SATA PHY.
+Move omap-control binding information to the right location.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- drivers/phy/phy-ti-pipe3.c | 24 +++++++++++++++---------
- 1 file changed, 15 insertions(+), 9 deletions(-)
+ Documentation/devicetree/bindings/phy/ti-phy.txt   | 25 ++++++++++++++++++++++
+ Documentation/devicetree/bindings/usb/omap-usb.txt | 24 ---------------------
+ 2 files changed, 25 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/phy/phy-ti-pipe3.c b/drivers/phy/phy-ti-pipe3.c
-index f141237..baa3f78d 100644
---- a/drivers/phy/phy-ti-pipe3.c
-+++ b/drivers/phy/phy-ti-pipe3.c
-@@ -294,16 +294,22 @@ static int ti_pipe3_probe(struct platform_device *pdev)
+diff --git a/Documentation/devicetree/bindings/phy/ti-phy.txt b/Documentation/devicetree/bindings/phy/ti-phy.txt
+index f671163..5c5b1b0 100644
+--- a/Documentation/devicetree/bindings/phy/ti-phy.txt
++++ b/Documentation/devicetree/bindings/phy/ti-phy.txt
+@@ -1,5 +1,30 @@
+ TI PHY: DT DOCUMENTATION FOR PHYs in TI PLATFORMs
  
- 	phy->dev		= &pdev->dev;
- 
--	phy->wkupclk = devm_clk_get(phy->dev, "wkupclk");
--	if (IS_ERR(phy->wkupclk)) {
--		dev_err(&pdev->dev, "unable to get wkupclk\n");
--		return PTR_ERR(phy->wkupclk);
--	}
-+	if (!of_device_is_compatible(node, "ti,phy-pipe3-sata")) {
++OMAP CONTROL PHY
 +
-+		phy->wkupclk = devm_clk_get(phy->dev, "wkupclk");
-+		if (IS_ERR(phy->wkupclk)) {
-+			dev_err(&pdev->dev, "unable to get wkupclk\n");
-+			return PTR_ERR(phy->wkupclk);
-+		}
++Required properties:
++ - compatible: Should be one of
++ "ti,control-phy-otghs" - if it has otghs_control mailbox register as on OMAP4.
++ "ti,control-phy-usb2" - if it has Power down bit in control_dev_conf register
++                        e.g. USB2_PHY on OMAP5.
++ "ti,control-phy-pipe3" - if it has DPLL and individual Rx & Tx power control
++                        e.g. USB3 PHY and SATA PHY on OMAP5.
++ "ti,control-phy-dra7usb2" - if it has power down register like USB2 PHY on
++                        DRA7 platform.
++ "ti,control-phy-am437usb2" - if it has power down register like USB2 PHY on
++                        AM437 platform.
++ - reg : Address and length of the register set for the device. It contains
++   the address of "otghs_control" for control-phy-otghs or "power" register
++   for other types.
++ - reg-names: should be "otghs_control" control-phy-otghs and "power" for
++   other types.
++
++omap_control_usb: omap-control-usb@4a002300 {
++        compatible = "ti,control-phy-otghs";
++        reg = <0x4a00233c 0x4>;
++        reg-names = "otghs_control";
++};
++
+ OMAP USB2 PHY
  
--	phy->refclk = devm_clk_get(phy->dev, "refclk");
--	if (IS_ERR(phy->refclk)) {
--		dev_err(&pdev->dev, "unable to get refclk\n");
--		return PTR_ERR(phy->refclk);
-+		phy->refclk = devm_clk_get(phy->dev, "refclk");
-+		if (IS_ERR(phy->refclk)) {
-+			dev_err(&pdev->dev, "unable to get refclk\n");
-+			return PTR_ERR(phy->refclk);
-+		}
-+	} else {
-+		phy->wkupclk = ERR_PTR(-ENODEV);
-+		phy->refclk = ERR_PTR(-ENODEV);
- 	}
+ Required properties:
+diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt b/Documentation/devicetree/bindings/usb/omap-usb.txt
+index c495135..38b2fae 100644
+--- a/Documentation/devicetree/bindings/usb/omap-usb.txt
++++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
+@@ -76,27 +76,3 @@ omap_dwc3 {
+ 	ranges;
+ };
  
- 	phy->sys_clk = devm_clk_get(phy->dev, "sysclk");
+-OMAP CONTROL USB
+-
+-Required properties:
+- - compatible: Should be one of
+- "ti,control-phy-otghs" - if it has otghs_control mailbox register as on OMAP4.
+- "ti,control-phy-usb2" - if it has Power down bit in control_dev_conf register
+-			e.g. USB2_PHY on OMAP5.
+- "ti,control-phy-pipe3" - if it has DPLL and individual Rx & Tx power control
+-			e.g. USB3 PHY and SATA PHY on OMAP5.
+- "ti,control-phy-dra7usb2" - if it has power down register like USB2 PHY on
+-			DRA7 platform.
+- "ti,control-phy-am437usb2" - if it has power down register like USB2 PHY on
+-			AM437 platform.
+- - reg : Address and length of the register set for the device. It contains
+-   the address of "otghs_control" for control-phy-otghs or "power" register
+-   for other types.
+- - reg-names: should be "otghs_control" control-phy-otghs and "power" for
+-   other types.
+-
+-omap_control_usb: omap-control-usb@4a002300 {
+-	compatible = "ti,control-phy-otghs";
+-	reg = <0x4a00233c 0x4>;
+-	reg-names = "otghs_control";
+-};
 -- 
 1.8.3.2
 
