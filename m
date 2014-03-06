@@ -1,48 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754719AbaCFDZx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 22:25:53 -0500
-Received: from smtprelay0196.hostedemail.com ([216.40.44.196]:51735 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752886AbaCFDZv (ORCPT
+	id S1755171AbaCFDa2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 22:30:28 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:38962 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752924AbaCFDa0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 22:25:51 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3870:3872:3874:4250:4321:5007:6119:7652:7903:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13071:13311:13357:21060,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: spade56_32c2aab403018
-X-Filterd-Recvd-Size: 1680
-Message-ID: <1394076347.12070.41.camel@joe-AO722>
-Subject: Re: [PATCH v2] [media] v4l: omap4iss: Add DEBUG compiler flag
-From: Joe Perches <joe@perches.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Paul Bolle <pebolle@tiscali.nl>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 05 Mar 2014 19:25:47 -0800
-In-Reply-To: <18589524.VtEDRg43uX@avalon>
-References: <1391958577.25424.22.camel@x220> <3032500.9J1uSX3lel@avalon>
-	 <1394069742.12070.39.camel@joe-AO722> <18589524.VtEDRg43uX@avalon>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 5 Mar 2014 22:30:26 -0500
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Hagen Paul Pfeifer <hagen@jauu.net>,
+        Jesse Gross <jesse@nicira.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: [PATCH v6 net-next 0/3] filter: add Extended BPF interpreter and converter, seccomp
+Date: Wed,  5 Mar 2014 19:30:14 -0800
+Message-Id: <1394076617-8108-1-git-send-email-ast@plumgrid.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-03-06 at 02:52 +0100, Laurent Pinchart wrote:
+Hi All,
 
-Hi again Laurent
+V1 patches:
+http://thread.gmane.org/gmane.linux.kernel/1605783
+V2 patches:
+http://thread.gmane.org/gmane.linux.kernel/1642325
+V3 patches:
+http://thread.gmane.org/gmane.linux.kernel/1656538
 
-> I've thought about that, but it would require iss.h to be included before all 
-> other headers. I've also thought about creating an iss-debug.h header to be 
-> included first just to #define DEBUG, but decided to go for handling the OMAP4 
-> ISS debug option in the Makefile instead. If that's ugly and discouraged as 
-> reported by Mauro I can try to come up with something else.
+V4 summary:
+- addressed Daniel comments
+- RFC for seccomp with extended BPF
+- added extended BPF design doc
 
-Unless debugging logging statements are in system level static inlines,
-adding #define DEBUG to iss.h should otherwise produce the same output
-as -DDEBUG in a Makefile.
+V5 summary:
+- fixed commit one-liner, removed empty line
+- added Hagen's ack
+
+V6 summary:
+- unrolled loop in populate_seccomp_data() to help gcc on arm
+- removed empty line at the end of the file
+- removed redundant (u32) cast in JSET
+- fixed BPF_RVAL instead of BPF_SRC for BPF_RET in sk_convert_filter()
+- updated commit log
+- added Daniel's Reviewed-by
+- added Kees's Reviewed-by
+
+x86_64, i386 and arm32 look clean.
+
+Thanks!
+
+Alexei Starovoitov (3):
+  filter: add Extended BPF interpreter and converter
+  seccomp: convert seccomp to use extended BPF
+  doc: filter: add Extended BPF documentation
+
+ Documentation/networking/filter.txt |  181 ++++++++
+ include/linux/filter.h              |    6 +-
+ include/linux/netdevice.h           |    1 +
+ include/linux/seccomp.h             |    1 -
+ include/uapi/linux/filter.h         |   33 +-
+ kernel/seccomp.c                    |  118 +++--
+ net/core/filter.c                   |  806 ++++++++++++++++++++++++++++++++++-
+ net/core/sysctl_net_core.c          |    7 +
+ 8 files changed, 1063 insertions(+), 90 deletions(-)
+
+-- 
+1.7.9.5
 
