@@ -1,97 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752212AbaCFMqs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 07:46:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30436 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750790AbaCFMqr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 07:46:47 -0500
-Subject: [PATCH 0/8] AF_RXRPC fixes and development [ver #2]
-From: David Howells <dhowells@redhat.com>
-To: netdev@vger.kernel.org
-Cc: dhowells@redhat.com, tim@electronghost.co.uk,
-        linux-afs@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Thu, 06 Mar 2014 12:46:15 +0000
-Message-ID: <20140306124614.16645.50744.stgit@warthog.procyon.org.uk>
-User-Agent: StGit/0.17-dirty
+	id S1751714AbaCFMyg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 07:54:36 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:14216 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714AbaCFMye (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 07:54:34 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18Lst+gpq4vXgW1dKi6cIohrIz9t/egGyI=
+X-DKIM: OpenDKIM Filter v2.0.1 titan A878753B869
+Date: Thu, 6 Mar 2014 07:54:25 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Matt Mackall <mpm@selenic.com>
+Cc: Kees Cook <keescook@chromium.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
+        linux-crypto <linux-crypto@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH][RESEND 3] hwrng: add randomness to system from rng
+ sources
+Message-ID: <20140306125425.GZ1872@titan.lakedaemon.net>
+References: <20140303235148.GA7601@www.outflux.net>
+ <20140304153841.GN1872@titan.lakedaemon.net>
+ <CAGXu5jKqB62ZaD0HEG=vJoROOqvdSYeHYB2h61Kw1-ov5phFww@mail.gmail.com>
+ <20140304195356.GS1872@titan.lakedaemon.net>
+ <CAGXu5jL5JBHL0tqZzA03LY67HZU4jEQ0_V=bJs9TV3g0Bfwr_w@mail.gmail.com>
+ <1393972797.8344.190.camel@calx>
+ <20140305211145.GV1872@titan.lakedaemon.net>
+ <1394067147.17842.45.camel@calx>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394067147.17842.45.camel@calx>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Mar 05, 2014 at 06:52:27PM -0600, Matt Mackall wrote:
+> On Wed, 2014-03-05 at 16:11 -0500, Jason Cooper wrote:
+> > > In other words, if there are 4096 bits of "unknownness" in X to start
+> > > with, and I can get those same 4096 bits of "unknownness" back by
+> > > unmixing X' and Y, then there must still be 4096 bits of "unknownness"
+> > > in X'. If X' is 4096 bits long, then we've just proven that
+> > > reversibility means the attacker can know nothing about the contents of
+> > > X' by his choice of Y.
+> > 
+> > Well, this reinforces my comfortability with loadable modules.  The pool
+> > is already initialized by the point at which the driver is loaded.
+> > 
+> > Unfortunately, any of the drivers in hw_random can be built in.  When
+> > built in, hwrng_register is going to be called during the kernel
+> > initialization process.  In that case, the unknownness in X is not 4096
+> > bits, but far less.  Also, the items that may have seeded X (MAC addr,
+> > time, etc) are discoverable by a potential attacker.  This is also well
+> > before random-seed has been fed in.
+> 
+> To which I would respond.. so?
 
-Hi Dave,
+I only saw this line of context pop on my phone last night, and that led
+me to a train of thought.  In short, I agree with you, and I actually
+now prefer Kees patch in it's original form.
 
-Here are some AF_RXRPC fixes (to tag rxrpc-20140226):
+> If the pool is in an attacker-knowable state at early boot, adding
+> attacker-controlled data does not make the situation any worse. In fact,
+> if the attacker has less-than-perfect control of the inputs, mixing more
+> things in will make things exponentially harder for the attacker.
 
- (1) Fix to remove incorrect checksum calculation made during recvmsg().  It's
-     unnecessary to try to do this there since we check the checksum before
-     reading the RxRPC header from the packet.
+Just to clarify my understanding: Say we have inputs A, B, C, W, X, Y,
+Z.  A, B are known to the attacker (MAC address, etc), C is the attacker
+known hwrng data.  W-Z are small chunks added in from unpredictable
+events.
 
- (2) Fix to prevent the sending of an ABORT packet in response to another
-     ABORT packet and inducing a storm.
+In order to predict a potential set of states at boot, the attacker not
+only has to brute force W-Z, but also the order of A-C,W-Z.
 
- (3) Fix UDP MTU calculation from parsing ICMP_FRAG_NEEDED packets where we
-     don't handle the ICMP packet not specifying an MTU size.
+Without C, the order of the events becomes more deterministic.  Thus
+making the job easier for the attacker.
 
-And development patches (to tag rxrpc-devel-20140304):
+> Put another way: mixing can't ever removes unknownness from the pool, it
+> can only add more. So the only reason you should ever choose not to mix
+> something into the pool is performance.
 
- (4) Add sysctls for configuring RxRPC parameters, specifically various delays
-     pertaining to ACK generation, the time before we resend a packet for
-     which we don't receive an ACK, the maximum time a call is permitted to
-     live and the amount of time transport, connection and dead call
-     information is cached.
+I also need to clarify an assumption I made in this thread.  I focused
+too heavily on Attacker1, who has secret knowledge of the internal
+workings of the hwrng.  As we've established above, his job isn't made
+easier by adding hwrng data during system boot.
 
- (5) Improve ACK packet production by adjusting the handling of ACK_REQUESTED
-     packets, ignoring the MORE_PACKETS flag, delaying the production of
-     otherwise immediate ACK_IDLE packets and delaying all ACK_IDLE production
-     (barring the call termination) to half a second.
+In addition, Attacker2 through AttackerN who _don't_ have the secret
+knowledge of the hwrng, but do know the MAC address and other initial
+inputs are defeated by adding the hwrng during system boot.
 
- (6) Add more sysctl parameters to expose the Rx window size, the maximum
-     packet size that we're willing to receive and the number of jumbo rxrpc
-     packets we're willing to handle in a single UDP packet.
+Matt, thanks for taking the time to come out of retirement to help us
+with this.  Kees, thanks for your patience :)
 
- (7) Request ACKs on alternate DATA packets so that the other side doesn't
-     wait till we fill up the Tx window.
+thx,
 
- (8) Use a RCU hash table to look up the rxrpc_call for an incoming packet
-     rather than stepping through a hierarchy involving several spinlocks.
-
-They can be found in this git branch:
-
-	http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=rxrpc
-
-David
----
-David Howells (5):
-      af_rxrpc: Fix UDP MTU calculation from ICMP_FRAG_NEEDED
-      af_rxrpc: Add sysctls for configuring RxRPC parameters
-      af_rxrpc: Improve ACK production
-      af_rxrpc: Expose more RxRPC parameters via sysctls
-      af_rxrpc: Request an ACK for every alternate DATA packet
-
-Tim Smith (3):
-      af_rxrpc: Remove incorrect checksum calculation from rxrpc_recvmsg()
-      af_rxrpc: Prevent RxRPC peers from ABORT-storming one another
-      af_rxrpc: Keep rxrpc_call pointers in a hashtable
-
-
- Documentation/networking/rxrpc.txt |   81 ++++++++++++++
- net/rxrpc/Makefile                 |    5 -
- net/rxrpc/af_rxrpc.c               |    9 ++
- net/rxrpc/ar-ack.c                 |   61 +++++++++-
- net/rxrpc/ar-call.c                |  213 +++++++++++++++++++++++++++++++++++-
- net/rxrpc/ar-connection.c          |   10 +-
- net/rxrpc/ar-error.c               |    1 
- net/rxrpc/ar-input.c               |  190 ++++++++++++++------------------
- net/rxrpc/ar-internal.h            |   40 ++++++-
- net/rxrpc/ar-output.c              |   15 ++-
- net/rxrpc/ar-recvmsg.c             |   25 ----
- net/rxrpc/ar-skbuff.c              |    7 +
- net/rxrpc/ar-transport.c           |   10 +-
- net/rxrpc/sysctl.c                 |  146 +++++++++++++++++++++++++
- 14 files changed, 645 insertions(+), 168 deletions(-)
- create mode 100644 net/rxrpc/sysctl.c
-
+Jason.
