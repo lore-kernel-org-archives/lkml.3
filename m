@@ -1,61 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753844AbaCFV4w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 16:56:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35923 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752725AbaCFV4g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 16:56:36 -0500
-Date: Thu, 6 Mar 2014 13:56:35 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: stable@kernel.org, riel@redhat.com, mgorman@suse.de, jstancek@redhat.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [merged]
- mm-page_alloc-reset-aging-cycle-with-gfp_thisnode-v2.patch removed from -mm
- tree
-Message-Id: <20140306135635.6999d703429afb7fd3949304@linux-foundation.org>
-In-Reply-To: <20140306214927.GB11171@cmpxchg.org>
-References: <5318dca5.AwhU/92X21JgbpdE%akpm@linux-foundation.org>
-	<20140306214927.GB11171@cmpxchg.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754045AbaCFV5P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 16:57:15 -0500
+Received: from mga09.intel.com ([134.134.136.24]:30666 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751697AbaCFV5M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 16:57:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,603,1389772800"; 
+   d="scan'208";a="495440674"
+Date: Thu, 6 Mar 2014 13:56:46 -0800
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-pci@vger.kernel.org,
+        "Nyman, Mathias" <mathias.nyman@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: Re: [PATCH v2 RESEND 4/4] xhci: Use pci_enable_msix_exact() instead
+ of pci_enable_msix()
+Message-ID: <20140306215646.GA23294@xanatos>
+References: <cover.1394128952.git.agordeev@redhat.com>
+ <606a52afdccf627b6273379b21daffc460b9559a.1394128952.git.agordeev@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <606a52afdccf627b6273379b21daffc460b9559a.1394128952.git.agordeev@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Mar 2014 16:49:27 -0500 Johannes Weiner <hannes@cmpxchg.org> wrote:
-
-> On Thu, Mar 06, 2014 at 12:37:57PM -0800, akpm@linux-foundation.org wrote:
-> > Subject: [merged] mm-page_alloc-reset-aging-cycle-with-gfp_thisnode-v2.patch removed from -mm tree
-> > To: hannes@cmpxchg.org,jstancek@redhat.com,mgorman@suse.de,riel@redhat.com,stable@kernel.org,mm-commits@vger.kernel.org
-> > From: akpm@linux-foundation.org
-> > Date: Thu, 06 Mar 2014 12:37:57 -0800
-> > 
-> > 
-> > The patch titled
-> >      Subject: mm: page_alloc: exempt GFP_THISNODE allocations from zone fairness
-> > has been removed from the -mm tree.  Its filename was
-> >      mm-page_alloc-reset-aging-cycle-with-gfp_thisnode-v2.patch
-> > 
-> > This patch was dropped because it was merged into mainline or a subsystem tree
+On Thu, Mar 06, 2014 at 09:11:24PM +0100, Alexander Gordeev wrote:
+> As result of deprecation of MSI-X/MSI enablement functions
+> pci_enable_msix() and pci_enable_msi_block() all drivers
+> using these two interfaces need to be updated to use the
+> new pci_enable_msi_range()  or pci_enable_msi_exact()
+> and pci_enable_msix_range() or pci_enable_msix_exact()
+> interfaces.
 > 
-> Would it make sense to also merge
+> This update also cleans up a bit xhci_setup_msi() and
+> xhci_setup_msix() returning of success.
+
+What do you mean by this sentence?  Are you fixing some bug in those two
+functions, or just cleaning up how they look?  Either way, this should
+really be two patches.
+
+Sarah Sharp
+
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: linux-usb@vger.kernel.org
+> Cc: linux-pci@vger.kernel.org
+> ---
+>  drivers/usb/host/xhci.c |    7 ++++---
+>  1 files changed, 4 insertions(+), 3 deletions(-)
 > 
-> mm-fix-gfp_thisnode-callers-and-clarify.patch
+> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+> index 6fe577d..dc7cfb5 100644
+> --- a/drivers/usb/host/xhci.c
+> +++ b/drivers/usb/host/xhci.c
+> @@ -232,9 +232,10 @@ static int xhci_setup_msi(struct xhci_hcd *xhci)
+>  		xhci_dbg_trace(xhci, trace_xhci_dbg_init,
+>  				"disable MSI interrupt");
+>  		pci_disable_msi(pdev);
+> +		return ret;
+>  	}
+>  
+> -	return ret;
+> +	return 0;
+>  }
+>  
+>  /*
+> @@ -291,7 +292,7 @@ static int xhci_setup_msix(struct xhci_hcd *xhci)
+>  		xhci->msix_entries[i].vector = 0;
+>  	}
+>  
+> -	ret = pci_enable_msix(pdev, xhci->msix_entries, xhci->msix_count);
+> +	ret = pci_enable_msix_exact(pdev, xhci->msix_entries, xhci->msix_count);
+>  	if (ret) {
+>  		xhci_dbg_trace(xhci, trace_xhci_dbg_init,
+>  				"Failed to enable MSI-X");
+> @@ -307,7 +308,7 @@ static int xhci_setup_msix(struct xhci_hcd *xhci)
+>  	}
+>  
+>  	hcd->msix_enabled = 1;
+> -	return ret;
+> +	return 0;
+>  
+>  disable_msix:
+>  	xhci_dbg_trace(xhci, trace_xhci_dbg_init, "disable MSI-X interrupt");
+> -- 
+> 1.7.7.6
 > 
-> at this point?  It's not as critical as the GFP_THISNODE exemption,
-> which is why I didn't tag it for stable, but it's a bugfix as well.
-
-Changelog fail!
-
-: GFP_THISNODE is for callers that implement their own clever fallback to
-: remote nodes, and so no direct reclaim is invoked.  There are many current
-: users that only want node exclusiveness but still want reclaim to make the
-: allocation happen.  Convert them over to __GFP_THISNODE and update the
-: documentation to clarify GFP_THISNODE semantics.
-
-what bug does it fix and what are the user-visible effects??
