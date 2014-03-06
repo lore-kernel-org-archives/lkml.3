@@ -1,135 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200AbaCFTyH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 14:54:07 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:59626 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753098AbaCFTyE (ORCPT
+	id S1753229AbaCFTza (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 14:55:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35139 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751276AbaCFTz3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 14:54:04 -0500
-From: behanw@converseincode.com
-To: linville@tuxdriver.com, johannes@sipsolutions.net, davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        dwmw2@infradead.org, pageexec@freemail.hu,
-        =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>,
-        Behan Webster <behanw@converseincode.com>,
-        =?UTF-8?q?Vin=C3=ADcius=20Tinti?= <viniciustinti@gmail.com>,
-        Mark Charlebois <charlebm@gmail.com>
-Subject: [PATCH] mac80211: LLVMLinux: Remove VLAIS usage from mac80211
-Date: Thu,  6 Mar 2014 11:52:50 -0800
-Message-Id: <1394135570-26730-1-git-send-email-behanw@converseincode.com>
-X-Mailer: git-send-email 1.8.3.2
+	Thu, 6 Mar 2014 14:55:29 -0500
+Date: Thu, 6 Mar 2014 11:57:16 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: devel@driverdev.osuosl.org, shaun@xresource.ca, sachin.kamat@linaro.org,
+        linux-kernel@vger.kernel.org, dulshani.gunawardhana89@gmail.com,
+        davem@davemloft.net, dan.carpenter@oracle.com
+Subject: Re: [PATCH 4/7 v3] staging: cxt1e1: fix checkpatch error 'assignment
+ in if condition'
+Message-ID: <20140306195716.GD3403@kroah.com>
+References: <2109601.U7a2ESYcJ8@daeseok-laptop.cloud.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2109601.U7a2ESYcJ8@daeseok-laptop.cloud.net>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan-Simon Möller <dl9pf@gmx.de>
+On Wed, Mar 05, 2014 at 10:21:01AM +0900, Daeseok Youn wrote:
+> 
+> checkpatch.pl error in linux.c:
+>  ERROR: do not use assignment in if condition
+> 
+> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+> ---
+>  drivers/staging/cxt1e1/linux.c |   31 +++++++++++++++++++------------
+>  1 files changed, 19 insertions(+), 12 deletions(-)
 
-Replaced the use of a Variable Length Array In Struct (VLAIS) with a C99
-compliant equivalent. This is the original VLAIS struct.
+I don't see patches 1-3 here, so I'm dropping this whole series.
 
-struct {
-	struct aead_request     req;
-	u8                      priv[crypto_aead_reqsize(tfm)];
-} aead_req;
+I do not have any short-term, or long-term, memory about patches I've
+rejected / approved / discussed, as I deal with thousands of them every
+week.  You need to be explicit as to what is going on, and don't try to
+confused me.
 
-This patch instead allocates the appropriate amount of memory using an char
-array.
+Please resend properly.
 
-The new code can be compiled with both gcc and clang.
-
-Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
-Signed-off-by: Behan Webster <behanw@converseincode.com>
-Signed-off-by: Vinícius Tinti <viniciustinti@gmail.com>
-Signed-off-by: Mark Charlebois <charlebm@gmail.com>
----
- net/mac80211/aes_ccm.c | 44 ++++++++++++++++++++++++++------------------
- 1 file changed, 26 insertions(+), 18 deletions(-)
-
-diff --git a/net/mac80211/aes_ccm.c b/net/mac80211/aes_ccm.c
-index 7c7df47..9612e95 100644
---- a/net/mac80211/aes_ccm.c
-+++ b/net/mac80211/aes_ccm.c
-@@ -23,12 +23,16 @@ void ieee80211_aes_ccm_encrypt(struct crypto_aead *tfm, u8 *b_0, u8 *aad,
- 			       u8 *data, size_t data_len, u8 *mic)
- {
- 	struct scatterlist assoc, pt, ct[2];
--	struct {
--		struct aead_request	req;
--		u8			priv[crypto_aead_reqsize(tfm)];
--	} aead_req;
- 
--	memset(&aead_req, 0, sizeof(aead_req));
-+	char aead_req_data[sizeof(struct aead_request)
-+				+ crypto_aead_reqsize(tfm)
-+				+ CRYPTO_MINALIGN] CRYPTO_MINALIGN_ATTR;
-+
-+	struct aead_request *aead_req
-+		= (struct aead_request *) aead_req_data;
-+
-+	memset(&aead_req_data, 0, (sizeof(struct aead_request)+
-+		crypto_aead_reqsize(tfm) + CRYPTO_MINALIGN));
- 
- 	sg_init_one(&pt, data, data_len);
- 	sg_init_one(&assoc, &aad[2], be16_to_cpup((__be16 *)aad));
-@@ -36,23 +40,27 @@ void ieee80211_aes_ccm_encrypt(struct crypto_aead *tfm, u8 *b_0, u8 *aad,
- 	sg_set_buf(&ct[0], data, data_len);
- 	sg_set_buf(&ct[1], mic, IEEE80211_CCMP_MIC_LEN);
- 
--	aead_request_set_tfm(&aead_req.req, tfm);
--	aead_request_set_assoc(&aead_req.req, &assoc, assoc.length);
--	aead_request_set_crypt(&aead_req.req, &pt, ct, data_len, b_0);
-+	aead_request_set_tfm(aead_req, tfm);
-+	aead_request_set_assoc(aead_req, &assoc, assoc.length);
-+	aead_request_set_crypt(aead_req, &pt, ct, data_len, b_0);
- 
--	crypto_aead_encrypt(&aead_req.req);
-+	crypto_aead_encrypt(aead_req);
- }
- 
- int ieee80211_aes_ccm_decrypt(struct crypto_aead *tfm, u8 *b_0, u8 *aad,
- 			      u8 *data, size_t data_len, u8 *mic)
- {
- 	struct scatterlist assoc, pt, ct[2];
--	struct {
--		struct aead_request	req;
--		u8			priv[crypto_aead_reqsize(tfm)];
--	} aead_req;
- 
--	memset(&aead_req, 0, sizeof(aead_req));
-+	char aead_req_data[sizeof(struct aead_request)
-+				+ crypto_aead_reqsize(tfm)
-+				+ CRYPTO_MINALIGN] CRYPTO_MINALIGN_ATTR;
-+
-+	struct aead_request *aead_req
-+		= (struct aead_request *) aead_req_data;
-+
-+	memset(&aead_req_data, 0, (sizeof(struct aead_request)+
-+		crypto_aead_reqsize(tfm) + CRYPTO_MINALIGN));
- 
- 	sg_init_one(&pt, data, data_len);
- 	sg_init_one(&assoc, &aad[2], be16_to_cpup((__be16 *)aad));
-@@ -60,12 +68,12 @@ int ieee80211_aes_ccm_decrypt(struct crypto_aead *tfm, u8 *b_0, u8 *aad,
- 	sg_set_buf(&ct[0], data, data_len);
- 	sg_set_buf(&ct[1], mic, IEEE80211_CCMP_MIC_LEN);
- 
--	aead_request_set_tfm(&aead_req.req, tfm);
--	aead_request_set_assoc(&aead_req.req, &assoc, assoc.length);
--	aead_request_set_crypt(&aead_req.req, ct, &pt,
-+	aead_request_set_tfm(aead_req, tfm);
-+	aead_request_set_assoc(aead_req, &assoc, assoc.length);
-+	aead_request_set_crypt(aead_req, ct, &pt,
- 			       data_len + IEEE80211_CCMP_MIC_LEN, b_0);
- 
--	return crypto_aead_decrypt(&aead_req.req);
-+	return crypto_aead_decrypt(aead_req);
- }
- 
- struct crypto_aead *ieee80211_aes_key_setup_encrypt(const u8 key[])
--- 
-1.8.3.2
-
+greg k-h
