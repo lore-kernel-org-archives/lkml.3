@@ -1,71 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751710AbaCFG0m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 01:26:42 -0500
-Received: from nm6.bullet.mail.bf1.yahoo.com ([98.139.212.165]:42303 "EHLO
-	nm6.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751639AbaCFG0k (ORCPT
+	id S1752116AbaCFG2F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 01:28:05 -0500
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:58096 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751139AbaCFG2C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 01:26:40 -0500
-X-Yahoo-Newman-Id: 778857.40576.bm@smtp215.mail.bf1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: jdW2N.QVM1nX9i8YV2xngY4IgeVSfJrejcasDBYbk6ao5iv
- TvOphYELAR.Ln8FFm1BKj17._YKYJoxSIFDL0jfmnPj6r6dPQd2nRE0S6mUZ
- vhlFVBnh6Mev79EME8DqAQr7fhpCLe1bSjroYJv0qt.ufxBliZqeB5rfuJfs
- 6No9FbI49fDTR6bmcOPqiL7RFAPCgBdkzeTAxQDaLSabu3IIDhpEEtwViTWm
- ipEyCpWGZeqL2X3ytxu05YCcIy933YhlYPDy3shx3zghDQkYIvs6Pfat56yL
- Th5SMGkWtgAhHMbBw7YbcoLWh4mojDAgXmoa4NIy9RofIQN8NNQzYEVcZwVM
- zC4okL1G7VnNL9Mq.RWzdZpXGOKvqQq6vnkywMeeBpI41RxCxSR3mqzokpVd
- syRVi2rpBUvsr2TVULVf.hQdAytB.LeyaunzM.8sQGjo5tMqgPoySHjFZ24H
- EARsp6gEdjXwqdNaU6.CnO7FaL6vVvkesS7BJD8D4W1xUTWf7uXjK8hjD_tI
- W7.xA5Z6sGe9TGNyUJQu_Bt7rf6ikF2iGCL3A5ussBH0Ed_QW4D0_WCPskPQ
- thSZFhKVsISFQlhhV2h6DH17Nm0XAMVZ.9OqdKtmjo3tLVj7bfJZNIHDcLYO
- YfzsQpQ--
-X-Yahoo-SMTP: u9r3j8eswBBsV5z1r5v0bR9cjPS77vatbJK.6sw-
-X-Rocket-Received: from [192.168.1.24] (draconicpenguin1@173.68.253.136 with plain [98.139.211.125])
-        by smtp215.mail.bf1.yahoo.com with SMTP; 05 Mar 2014 22:20:45 -0800 PST
-Message-ID: <531813B4.7060205@yahoo.com>
-Date: Thu, 06 Mar 2014 01:20:36 -0500
-From: Brian Wong <draconicpenguin1@yahoo.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 6 Mar 2014 01:28:02 -0500
+Message-ID: <5318156F.7050904@gmail.com>
+Date: Thu, 06 Mar 2014 00:27:59 -0600
+From: Robert Hancock <hancockrwd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Linux does not use more than the startup RAM under Hyper-V with dynamic
- memory enabled
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux-usb <linux-usb@vger.kernel.org>
+CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: Re: xHCI regression in stable 3.13.5 with USB3 card reader (Bisected)
+References: <531804E7.2040406@gmail.com>
+In-Reply-To: <531804E7.2040406@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm new to LKML, so please don't be too hard on me :)
+On 05/03/14 11:17 PM, Robert Hancock wrote:
+> I have a USB 3.0 multi-card reader device:
+>
+> Bus 004 Device 002: ID 05e3:0743 Genesys Logic, Inc.
+>
+> which seems to work fine in 3.13.4 (Fedora version kernel-3.13.4-200
+> specifically) but fails in 3.13.5 (specifically kernel-3.13.5-202).
+> Below is what I get in dmesg. Essentially there's a bunch of
+> input/output errors making the reader mostly unusable.
+>
+> This is on an Intel Haswell machine with this controller:
+>
+> 00:14.0 USB controller [0c03]: Intel Corporation 8 Series/C220 Series
+> Chipset Family USB xHCI [8086:8c31] (rev 05)
+>
+> It looks like there were some XHCI commits that went into 3.13.5 so it
+> seems likely one of those is the cause. I can try current git if there's
+> anything in there that's likely to fix it. But it does seem like a
+> regression got into the stable kernel in this respect.
 
-I'm running Gentoo Linux under Microsoft Client Hyper-V on Windows 8.1 
-Pro, and I've noticed some odd behavior with respect to dynamic memory 
-(aka memory ballooning). The system will never use more than the startup 
-memory defined in the vitual machine's settings.
+Bisecting between 3.13.4 and 3.13.5 gives me this:
 
-For example, if I set the startup memory to 512 MB, and enable dynamic 
-memory with a minimum of 512 MB and a maximum of 8192 MB, the system 
-will never allocate than 512 MB of physical memory, despite Hyper-V 
-assigning more memory to the VM and the added memory being visible in 
-the output of "free" and "htop". Attempting to use more memory causes 
-the system to start paging to swap, rather than actually allocating the 
-memory above the startup memory assigned to the VM.
+c8f44f98901994832ccecb87c3dd7900274b699a is the first bad commit
+commit c8f44f98901994832ccecb87c3dd7900274b699a
+Author: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Date:   Fri Jan 31 11:26:25 2014 -0800
 
-The kernel is built with the full set of Hyper-V drivers, including the 
-key "Microsoft Hyper-V Balloon Driver" as well as memory hot-add and 
-hot-remove functionality. This is happening with both the Gentoo-patched 
-3.10.32 kernel and the vanilla 3.12.5 kernel. The host machine has a 
-total of 24 GB of memory.
+     xhci 1.0: Limit arbitrarily-aligned scatter gather.
 
-For now, I am working around the issue by starting the VM with the 
-startup memory set to the maximum and letting Hyper-V take the usused 
-memory back when it is not in use. The VM will then get the extra memory 
-when it needs it.
+     commit 247bf557273dd775505fb9240d2d152f4f20d304 upstream.
 
-Have I encountered a bug in the Hyper-V balloon driver?
+     xHCI 1.0 hosts have a set of requirements on how to align transfer
+     buffers on the endpoint rings called "TD fragment" rules.  When the
+     ax88179_178a driver added support for scatter gather in 3.12, with
+     commit 804fad45411b48233b48003e33a78f290d227c8 "USBNET: ax88179_178a:
+     enable tso if usb host supports sg dma", it broke the device under xHCI
+     1.0 hosts.  Under certain network loads, the device would see an
+     unexpected short packet from the host, which would cause the device to
+     stop sending ethernet packets, even through USB packets would still be
+     sent.
 
--- 
-Brian Wong
-http://www.fierydragonlord.com
+     Commit 35773dac5f86 "usb: xhci: Link TRB must not occur within a USB
+     payload burst" attempted to fix this.  It was a quick hack to partially
+     implement the TD fragment rules.  However, it caused regressions in the
+     usb-storage layer and userspace USB drivers using libusb.  The patches
+     to attempt to fix this are too far reaching into the USB core, and we
+     really need to implement the TD fragment rules correctly in the xHCI
+     driver, instead of continuing to wallpaper over the issues.
+
+     Disable arbitrarily-aligned scatter-gather in the xHCI driver for 1.0
+     hosts.  Only the ax88179_178a driver checks the no_sg_constraint flag,
+     so don't set it for 1.0 hosts.  This should not impact usb-storage or
+     usbfs behavior, since they pass down max packet sized aligned sg-list
+     entries (512 for USB 2.0 and 1024 for USB 3.0).
+
+     Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+     Tested-by: Mark Lord <mlord@pobox.com>
+     Cc: David Laight <David.Laight@ACULAB.COM>
+     Cc: Bjørn Mork <bjorn@mork.no>
+     Cc: Freddy Xin <freddy@asix.com.tw>
+     Cc: Ming Lei <ming.lei@canonical.com>
+     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+
+
