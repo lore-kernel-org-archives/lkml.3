@@ -1,67 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751695AbaCFLz4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 06:55:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40655 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750885AbaCFLzx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 06:55:53 -0500
-Message-ID: <53186241.5060106@redhat.com>
-Date: Thu, 06 Mar 2014 12:55:45 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752153AbaCFL5q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 06:57:46 -0500
+Received: from mail-out.m-online.net ([212.18.0.9]:53824 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751978AbaCFL5o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 06:57:44 -0500
+X-Auth-Info: 93fZmhjZ2VJv2wgTc6hFA7vwrGHHQ2GzRaqWEADnYE4=
+From: Marek Vasut <marex@denx.de>
+To: Yao Yuan <yao.yuan@freescale.com>
+Subject: Re: [PATCH v2 1/2] i2c: add DMA support for freescale i2c driver
+Date: Thu, 6 Mar 2014 12:57:42 +0100
+User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.11.3; x86_64; ; )
+Cc: "wsa@the-dreams.de" <wsa@the-dreams.de>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
+References: <1394002352-8380-1-git-send-email-yao.yuan@freescale.com> <201403060541.21665.marex@denx.de> <50e0997786a0459eb08c9d92813253f9@BL2PR03MB338.namprd03.prod.outlook.com>
+In-Reply-To: <50e0997786a0459eb08c9d92813253f9@BL2PR03MB338.namprd03.prod.outlook.com>
 MIME-Version: 1.0
-To: Hannes Reinecke <hare@suse.de>, Fam Zheng <famz@redhat.com>,
-        linux-kernel@vger.kernel.org
-CC: linux-scsi@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH] virtio-scsi: Change sense buffer size to 252
-References: <1394095660-15075-1-git-send-email-famz@redhat.com> <53184962.3080100@redhat.com> <53185A79.9010206@suse.de>
-In-Reply-To: <53185A79.9010206@suse.de>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201403061257.42755.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 06/03/2014 12:22, Hannes Reinecke ha scritto:
-> On 03/06/2014 11:09 AM, Paolo Bonzini wrote:
->> Il 06/03/2014 09:47, Fam Zheng ha scritto:
->>> According to SPC-4, section 4.5.2.1, 252 is the limit of sense
->>> data. So
->>> increase the value.
->>>
->>> Signed-off-by: Fam Zheng <famz@redhat.com>
->>> ---
->>>  include/linux/virtio_scsi.h | 2 +-
->>>  1 file changed, 1 insertion(+), 1 deletion(-)
->>>
->>> diff --git a/include/linux/virtio_scsi.h
->>> b/include/linux/virtio_scsi.h
->>> index 4195b97..a437f7f 100644
->>> --- a/include/linux/virtio_scsi.h
->>> +++ b/include/linux/virtio_scsi.h
->>> @@ -28,7 +28,7 @@
->>>  #define _LINUX_VIRTIO_SCSI_H
->>>
->>>  #define VIRTIO_SCSI_CDB_SIZE   32
->>> -#define VIRTIO_SCSI_SENSE_SIZE 96
->>> +#define VIRTIO_SCSI_SENSE_SIZE 252
->>>
->>>  /* SCSI command request, followed by data-out */
->>>  struct virtio_scsi_cmd_req {
->>>
->>
->> Hi Fam, how did you test this?
->
-> Is there a specific reason _not_ to use the linux default?
-> The SCSI stack typically limits the sense code to
-> SCSI_SENSE_BUFFERSIZE, so using other values have a
-> limited sense.
-> Literally :-)
+On Thursday, March 06, 2014 at 06:02:03 AM, Yao Yuan wrote:
+> On Thu, March 06, 2014 at 12:44:14 PM, Marek Vasut wrote:
+> > On Thursday, March 06, 2014 at 05:36:14 AM, Yao Yuan wrote:
+> > > On Thu, March 06, 2014 at 11:23:50 AM, Marek Vasut wrote:
+> > > > On Wednesday, March 05, 2014 at 07:52:31 AM, Yuan Yao wrote:
+> > > > > Add dma support for i2c. This function depend on DMA driver.
+> > > > > You can turn on it by write both the dmas and dma-name properties
+> > > > > in dts node.
+> > > > > 
+> > > > > Signed-off-by: Yuan Yao <yao.yuan@freescale.com>
+> > > > > ---
+> > > > 
+> > > > [...]
+> > > > 
+> > > > > @@ -601,6 +826,7 @@ static int i2c_imx_probe(struct
+> > > > > platform_device
+> > > > 
+> > > > *pdev)
+> > > > 
+> > > > >  	void __iomem *base;
+> > > > >  	int irq, ret;
+> > > > >  	u32 bitrate;
+> > > > > 
+> > > > > +	u32 phy_addr;
+> > > > > 
+> > > > >  	dev_dbg(&pdev->dev, "<%s>\n", __func__);
+> > > > > 
+> > > > > @@ -611,6 +837,7 @@ static int i2c_imx_probe(struct
+> > > > > platform_device
+> > > > 
+> > > > *pdev)
+> > > > 
+> > > > >  	}
+> > > > >  	
+> > > > >  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> > > > > 
+> > > > > +	phy_addr = res->start;
+> > > > 
+> > > > Uh ... Shawn, I really think I am lost here. Don't you need to map
+> > > > this memory before you can use it for DMA ? The DMA mapping function
+> > > > should give you the physical address and is the right way to go
+> > > > about this instead of pulling the address from here, no ?
+> > > > 
+> > > > I might be wrong here, I am rather uncertain, so please help me out.
+> > > > Thanks!
+> > > 
+> > > Hi, Marek, Thanks for your suggestion.
+> > > Here you can review the code in include/linux/ioport.h The
+> > > resource->start describes the entity on the CPU bus as a starting
+> > > physical address. So I thinks it can used for dma directly.
+> > 
+> > This doesn't feel right for some reason. If this is a register area, you
+> > should
+> > ioremap() it. If it's a memory area you do DMA to/from, you need to make
+> > sure you correctly flush/invalidate caches and properly handle the
+> > effects the write buffer might have. But I have a feeling you actually do
+> > DMA to/from register space here ?
+> 
+> Yes, It's a register area. But I don't know why I should ioremap() it? It's
+> a bus address and DMA can use it directly. Is there some problem for my
+> understanding ?
 
-Indeed I don't think this patch makes a difference.  Though I asked not 
-from the SCSI stack perspective, but because right now both virtio-scsi 
-targets (QEMU and vhost-scsi) are also truncating at 96.
+I am not too sure here, thus I am poking someone who can clearly answer this.
 
-Paolo
+Best regards,
+Marek Vasut
