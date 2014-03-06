@@ -1,69 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751899AbaCFIHl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 03:07:41 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:56696 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751444AbaCFIHj (ORCPT
+	id S1752120AbaCFIKN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 03:10:13 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:40497 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751218AbaCFIKK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 03:07:39 -0500
-Date: Thu, 6 Mar 2014 16:07:20 +0800
-From: Mark Brown <broonie@kernel.org>
-To: Max Filippov <jcmvbkbc@gmail.com>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>
-Message-ID: <20140306080720.GI13126@sirena.org.uk>
-References: <1394091862-13603-1-git-send-email-jcmvbkbc@gmail.com>
+	Thu, 6 Mar 2014 03:10:10 -0500
+Message-ID: <53182D5A.7020600@linaro.org>
+Date: Thu, 06 Mar 2014 03:10:02 -0500
+From: David Long <dave.long@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IcjzwMCQyeqbz4V/"
-Content-Disposition: inline
-In-Reply-To: <1394091862-13603-1-git-send-email-jcmvbkbc@gmail.com>
-X-Cookie: You are always busy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 202.175.88.218
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: tlv320aic23: add support for SPI control mode
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, Rabin Vincent <rabin@rab.in>,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        davem@davemloft.net, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 00/14] uprobes: Add uprobes support for ARM
+References: <1392017945-4507-1-git-send-email-dave.long@linaro.org> <20140301123026.GD21483@n2100.arm.linux.org.uk> <53131DBE.7020500@linaro.org> <20140303205039.GA8949@redhat.com> <20140304005306.GO21483@n2100.arm.linux.org.uk> <20140304173134.GA18830@redhat.com>
+In-Reply-To: <20140304173134.GA18830@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/04/14 12:31, Oleg Nesterov wrote:
+> On 03/04, Russell King - ARM Linux wrote:
+>>
+>> On Mon, Mar 03, 2014 at 09:50:39PM +0100, Oleg Nesterov wrote:
+>>>
+>>> And why CONFIG_UPROBES should depend on PERF_EVENTS? uprobes can be
+>>> used by (say) systemtap without UPROBE_EVENT/PERF_EVENTS.
+>>>
+>>> But as Russell pointed out the events directory is only built if
+>>> CONFIG_PERF_EVENTS=y, so it should depend on it or select...
+>>>
+>>>
+>>> I dunno. Personally I vote for the patch from Srikar in
+>>>
+>>> 	http://article.gmane.org/gmane.linux.kernel/1017186
+>>>
+>>> This is what we currently have, currently CONFIG_UPROBES is not
+>>> user-selectable anyway.
+>>
+>> Yes, me too, but with the proviso that UPROBE_EVENT also sorts itself
+>> out with PERF_EVENTS in some way too (either by selecting it, which
+>> IMHO isn't nice, or by depending on it, or the build dependency itself
+>> gets sorted.)
+>
+> OK... what do you think about the patch below for now?
+>
+>> Maybe a simpler answer would be to change the build stuff (hand-crafted):
+>>
+>> kernel/Makefile
+>> -obj-$(CONFIG_PERF_EVENTS) += events/
+>> +obj-y += events/
+>>
+>> and kernel/events/Makefile:
+>>
+>> -obj-y := core.o ring_buffer.o callchain.o
+>> +perf-y := core.o ring_buffer.o callchain.o
+>>
+>> -obj-$(CONFIG_HAVE_HW_BREAKPOINT) += hw_breakpoint.o
+>> +perf-$(CONFIG_HAVE_HW_BREAKPOINT) += hw_breakpoint.o
+>> +
+>> +obj-${CONFIG_PERF_EVENTS) += $(perf-y)
+>
+> I fully agree. Except I can't review this change ;) But hopefully I
+> can understand what it should do.
+>
+> But personally I'd prefer to start with the simple/safe change which
+> allows us to merge this series. If nothing else, even if I think that
+> kernel/events/uprobes.c doesn't need CONFIG_PERF_EVENTS, this should
+> be verified and discussed with perf maintainers.
+>
+> If you agree with the patch below, how should we route it? I won't
+> argue if you push it along with other patches from David.
+>
 
---IcjzwMCQyeqbz4V/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Oleg, I'll put you down as the author and add a signed-off line for you 
+if that is OK?  Not sure who should ack it.
 
-On Thu, Mar 06, 2014 at 11:44:22AM +0400, Max Filippov wrote:
+> BTW... why UPROBE_EVENT depends on MMU? I think that ARCH_SUPPORTS_UPROBES
+> should not be true if !CONFIG_MMU.
+>
+> Oleg.
+> ---
+>
+> diff --git a/arch/Kconfig b/arch/Kconfig
+> index 80bbb8c..97ff872 100644
+> --- a/arch/Kconfig
+> +++ b/arch/Kconfig
+> @@ -86,9 +86,7 @@ config KPROBES_ON_FTRACE
+>   	 optimize on top of function tracing.
+>
+>   config UPROBES
+> -	bool "Transparent user-space probes (EXPERIMENTAL)"
+> -	depends on UPROBE_EVENT && PERF_EVENTS
+> -	default n
+> +	def_bool n
+>   	select PERCPU_RWSEM
+>   	help
+>   	  Uprobes is the user-space counterpart to kprobes: they
+> @@ -101,8 +99,6 @@ config UPROBES
+>   	    managed by the kernel and kept transparent to the probed
+>   	    application. )
+>
+> -	  If in doubt, say "N".
+> -
+>   config HAVE_64BIT_ALIGNED_ACCESS
+>   	def_bool 64BIT && !HAVE_EFFICIENT_UNALIGNED_ACCESS
+>   	help
+> diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
+> index 015f85a..8639819 100644
+> --- a/kernel/trace/Kconfig
+> +++ b/kernel/trace/Kconfig
+> @@ -424,6 +424,7 @@ config UPROBE_EVENT
+>   	bool "Enable uprobes-based dynamic events"
+>   	depends on ARCH_SUPPORTS_UPROBES
+>   	depends on MMU
+> +	depends on PERF_EVENTS
+>   	select UPROBES
+>   	select PROBE_EVENTS
+>   	select TRACING
+>
 
-> -	select SND_SOC_TLV320AIC23 if I2C
-> +	select SND_SOC_TLV320AIC23 if SND_SOC_I2C_AND_SPI
+Can we agree Oleg's patch above is the best way to go in the short term? 
+  I've tested it and it addresses the problem, although of course one 
+has to know to enable PERF_EVENTS to even see the UPROBE_EVENT option 
+(not a problem on x86 as they always set PERF_EVENTS).
 
-We're moving towards having drivers have separate bus drivers rather
-than in one file - take a look at how drivers like ad193x handle this.
+I'm continuing to test the above with my new include file changes, using 
+Arnd's randconfig patches.  Looks good so far.
 
---IcjzwMCQyeqbz4V/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+-dl
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTGCywAAoJELSic+t+oim9+BAP/3WU574i1RxBs+3Wb8xnE1Qu
-acHRW2c7klNJu/QbnmDFqQAfcWlADt70XID32Udy5srnhaPt0nepGMOd3u+iKSrC
-lsiMQ8pJPLGNMv+K+PL+HCFUfAu39i8euf22URqhzuzWMPBpmg5ThbSXNdaZHhaM
-4Sfz79208ff3kreHW+DhunRd9RczrDw7frXcRMhfeK5rxYHdBb+EdQ9gy/kc/p8N
-G3VhgU8axM1T74U2mcqh7HC03jaKhpmQ0Vw2IHCo5dS5yIx6A49+FSP0cc1F2fwW
-zwsxBenXY7fE4KRzv5ARqoLVvR+RcpPmnZ5zE56bGjYxCesQwlFYfPdc/suhtDtD
-C3gh8eW4HbCLQ7KV/eH6jYoGpPGjlCrAXjS0E6yyNzdMlGv/HFhssjLtrHq5Qwwp
-HMU60w2T2s6An15zjBo05QvV51e8pEyWQyJn86RHiUqqz1Ztatn+jXO2FqnPt7LY
-7FNMw1Rlz4JZI07hFA2VrNt/sehyZ2cPDxDWBbeQPQ4BraHnkz+B4hqP/QCJk4Iq
-MJw7zjijis2xdAuT+JMyOMXapEP5dqOgvrUvipmwAKSb2CWyI23GjbSWhMVC/5+4
-xXimH8LtU4ShkxsTRITengTdzUHzhK1OJJhv7ty9NkCoQMU3fK29QdeyRALPLc+4
-HqG/oCp9cXOZPzi2c/VB
-=XWzH
------END PGP SIGNATURE-----
-
---IcjzwMCQyeqbz4V/--
