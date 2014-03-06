@@ -1,73 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752248AbaCFHKY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 02:10:24 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:39336 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969AbaCFHIe (ORCPT
+	id S1751049AbaCFHTV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 02:19:21 -0500
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:41888 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750790AbaCFHTU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 02:08:34 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s2678VDO024540, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next 2/3] r8152: replace tp->netdev with netdev
-Date: Thu, 6 Mar 2014 15:07:17 +0800
-Message-ID: <1394089638-1580-3-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1394089638-1580-1-git-send-email-hayeswang@realtek.com>
-References: <1393934464-23675-1-git-send-email-hayeswang@realtek.com>
- <1394089638-1580-1-git-send-email-hayeswang@realtek.com>
+	Thu, 6 Mar 2014 02:19:20 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+In-Reply-To: <20140305101320.GH1883@distanz.ch>
+References: <4401309.KAOCJ1Tfb2@daeseok-laptop.cloud.net>
+	<20140305101320.GH1883@distanz.ch>
+Date: Thu, 6 Mar 2014 16:19:19 +0900
+Message-ID: <CAHb8M2C54=bWAE7T0OrTmx2hr4dRiW1R29YgLXRdOfpSioNV-w@mail.gmail.com>
+Subject: Re: [PATCH 7/7] staging: cxt1e1: remove unneeded a value
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: Tobias Klauser <tklauser@distanz.ch>
+Cc: Greg KH <gregkh@linuxfoundation.org>, devel <devel@driverdev.osuosl.org>,
+        Shaun Laing <shaun@xresource.ca>,
+        "sachin.kamat" <sachin.kamat@linaro.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dulshani Gunawardhana <dulshani.gunawardhana89@gmail.com>,
+        "ying.xue" <ying.xue@windriver.com>,
+        David Miller <davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace some tp->netdev with netdev.
+2014-03-05 19:13 GMT+09:00 Tobias Klauser <tklauser@distanz.ch>:
+> On 2014-03-05 at 02:24:22 +0100, Daeseok Youn <daeseok.youn@gmail.com> wrote:
+>>
+>> It doesn't need to assign name array address to np pointer.
+>>
+>> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+>> ---
+>>  drivers/staging/cxt1e1/linux.c |    5 ++---
+>>  1 files changed, 2 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/staging/cxt1e1/linux.c b/drivers/staging/cxt1e1/linux.c
+>> index 5bb42ae..cae8c66 100644
+>> --- a/drivers/staging/cxt1e1/linux.c
+>> +++ b/drivers/staging/cxt1e1/linux.c
+>> @@ -205,15 +205,14 @@ status_t
+>>  c4_wq_port_init(mpi_t *pi)
+>>  {
+>>
+>> -     char        name[16], *np;  /* NOTE: name of the queue limited by system
+>> +     char        name[16];  /* NOTE: name of the queue limited by system
+>>                                    * to 10 characters */
+>>
+>>       if (pi->wq_port)
+>>               return 0;                   /* already initialized */
+>>
+>> -     np = name;
+>>       memset(name, 0, 16);
+>
+> This isn't necessary since s{,n}printf() adds a terminating '\0'.
+Yes, I have looked at lib/vsprintf.c. I found it adds null to a string
+in the end of vsnprintf() function.
+I will remove memset() line.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+>
+>> -     sprintf(np, "%s%d", pi->up->devname, pi->portnum); /* IE pmcc4-01) */
+>> +     sprintf(name, "%s%d", pi->up->devname, pi->portnum); /* IE pmcc4-01) */
+>
+> Better use snprintf() here, even if the comment above claims the name
+> never to be no longer than 10 characters.
+OK. I will replace sprintf with snprintf() and set a string length to "10".
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index c8bad62..151398b 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -1037,6 +1037,7 @@ static void read_bulk_callback(struct urb *urb)
- static void write_bulk_callback(struct urb *urb)
- {
- 	struct net_device_stats *stats;
-+	struct net_device *netdev;
- 	unsigned long flags;
- 	struct tx_agg *agg;
- 	struct r8152 *tp;
-@@ -1050,10 +1051,11 @@ static void write_bulk_callback(struct urb *urb)
- 	if (!tp)
- 		return;
- 
--	stats = rtl8152_get_stats(tp->netdev);
-+	netdev = tp->netdev;
-+	stats = rtl8152_get_stats(netdev);
- 	if (status) {
- 		if (net_ratelimit())
--			netdev_warn(tp->netdev, "Tx status %d\n", status);
-+			netdev_warn(netdev, "Tx status %d\n", status);
- 		stats->tx_errors += agg->skb_num;
- 	} else {
- 		stats->tx_packets += agg->skb_num;
-@@ -1066,7 +1068,7 @@ static void write_bulk_callback(struct urb *urb)
- 
- 	usb_autopm_put_interface_async(tp->intf);
- 
--	if (!netif_carrier_ok(tp->netdev))
-+	if (!netif_carrier_ok(netdev))
- 		return;
- 
- 	if (!test_bit(WORK_ENABLE, &tp->flags))
--- 
-1.8.4.2
-
+Thanks for review.
+Daeseok Youn.
+>
+> Cheers
+> Tobias
