@@ -1,211 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752096AbaCFNMa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 08:12:30 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:54944 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972AbaCFNM2 (ORCPT
+	id S1752125AbaCFNOY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 08:14:24 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48033 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750972AbaCFNOW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 08:12:28 -0500
-Message-ID: <53187429.1000408@ti.com>
-Date: Thu, 6 Mar 2014 15:12:09 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 6 Mar 2014 08:14:22 -0500
+Date: Thu, 6 Mar 2014 13:14:18 +0000
+From: =?iso-8859-1?Q?Lu=EDs?= Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Tony Breeds <tony@bakeyournoodle.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 3.5 61/62] powerpc/le: Ensure that the 'stop-self' RTAS
+ token is handled correctly
+Message-ID: <20140306131418.GB25111@hercules>
+References: <1394030226-26652-1-git-send-email-luis.henriques@canonical.com>
+ <1394030226-26652-62-git-send-email-luis.henriques@canonical.com>
 MIME-Version: 1.0
-To: George Cherian <george.cherian@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-CC: <anatol.pomozov@gmail.com>, <gregkh@linuxfoundation.org>, <balbi@ti.com>,
-        <kishon@ti.com>, <rob@landley.net>, <galak@codeaurora.org>,
-        <ijc+devicetree@hellion.org.uk>, <mark.rutland@arm.com>,
-        <pawel.moll@arm.com>, <robh+dt@kernel.org>, <bcousson@baylibre.com>,
-        <tony@atomide.com>
-Subject: Re: [PATCH 2/5] ARM: dts: AM4372: Add USB nodes
-References: <1393854834-23810-1-git-send-email-george.cherian@ti.com> <1393854834-23810-3-git-send-email-george.cherian@ti.com> <53183699.8070106@ti.com> <531869C2.3070905@ti.com>
-In-Reply-To: <531869C2.3070905@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1394030226-26652-62-git-send-email-luis.henriques@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/2014 02:27 PM, George Cherian wrote:
-> Hi Roger,
-> 
-> On 3/6/2014 2:19 PM, Roger Quadros wrote:
->> Hi George,
->>
->> On 03/03/2014 03:53 PM, George Cherian wrote:
->>> Add nodes for 2 instances each of
->>>     - ocp2scp
->>>     - USB PHY control module
->>>     - USB PHY
->>>     - dwc3_omap
->>>     - USB
->>>
->>> for AM43xx.
->>>
->>> Signed-off-by: George Cherian <george.cherian@ti.com>
->>> ---
->>>   arch/arm/boot/dts/am4372.dtsi | 99 +++++++++++++++++++++++++++++++++++++++++++
->>>   1 file changed, 99 insertions(+)
->>>
->>> diff --git a/arch/arm/boot/dts/am4372.dtsi b/arch/arm/boot/dts/am4372.dtsi
->>> index 5a7cc38..90408b3 100644
->>> --- a/arch/arm/boot/dts/am4372.dtsi
->>> +++ b/arch/arm/boot/dts/am4372.dtsi
->>> @@ -698,6 +698,105 @@
->>>                      <&edma 11>;
->>>               dma-names = "tx", "rx";
->>>           };
->>> +
->>> +        am43xx_control_usb2phy1: control-phy@44e10620 {
->>> +            compatible = "ti,control-phy-am437usb2";
->> Since this is the first usage of this compatible ID, we still have room to
->> change it to be better. Tony's suggestion was to use "ti,control-phy-am437-usb2"
->>
->> Please see
->> http://article.gmane.org/gmane.linux.drivers.devicetree/64833
-> 
-> Okay.
->>> +            reg = <0x44e10620 0x4>;
->>> +            reg-names = "power";
->>> +            status = "disabled";
->> Why disable something that is within the SoC and does not affect board configurations?
->>
->> Question applies for all the nodes in this patch except the ones that come out on the
->> SoC pins. e.g. PHY.
-> Okay
->>> +        };
->>> +
->>> +        am43xx_control_usb2phy2: control-phy@0x44e10628 {
->>> +            compatible = "ti,control-phy-am437usb2";
->>> +            reg = <0x44e10628 0x4>;
->>> +            reg-names = "power";
->>> +            status = "disabled";
->>> +        };
->>> +
->>> +        ocp2scp0: ocp2scp@483a8000 {
->>> +            compatible = "ti,omap-ocp2scp";
->>> +            #address-cells = <1>;
->>> +            #size-cells = <1>;
->>> +            ranges;
->>> +            ti,hwmods = "ocp2scp0";
->>> +            status = "disabled";
->>> +
->>> +            usb2_phy1: usb2phy1@483a8000 {
->> should be
-> okay
->>             usb2_phy1: phy@483a8000 {
->>
->>> +                compatible = "ti,am437x-usb2";
->>> +                reg = <0x483a8000 0x8000>;
->>> +                ctrl-module = <&am43xx_control_usb2phy1>;
->>> +                clocks = <&clk_32768_ck>,
->>> +                     <&usb_otg_ss0_refclk960m>;
->>> +                clock-names = "usb_phy_cm_clk32k",
->>> +                          "usb_otg_ss_refclk960m";
->> clock-names should be platform independent. Better option would be to
->> modify the usb2 driver to use names like "wkupclk" and "refclk"
-> The phy driver still does devm_get_clk using above clock names and not "wkupclk" and "refclk".
+On Wed, Mar 05, 2014 at 02:37:05PM +0000, Luis Henriques wrote:
+> 3.5.7.32 -stable review patch.  If anyone has any objections, please let me know.
 > 
 
-I'll post a patch soon that takes care of both clock names and the compatible ids in
-the phy-omap-usb2.c driver.
+As requested by Tony Breeds, I'm dropping this from the 3.5 kernel.  Looks
+like its applicable only to kernels >= 3.10.
 
->>> +                #phy-cells = <0>;
->>> +                status = "disabled";
->>> +            };
->>> +        };
->>> +
->>> +        ocp2scp1: ocp2scp@483e8000 {
->>> +            compatible = "ti,omap-ocp2scp";
->>> +            #address-cells = <1>;
->>> +            #size-cells = <1>;
->>> +            ranges;
->>> +            ti,hwmods = "ocp2scp1";
->>> +            status = "disabled";
->>> +
->>> +            usb2_phy2: usb2phy2@483e8000 {
->>> +                compatible = "ti,am437x-usb2";
->>> +                reg = <0x483e8000 0x8000>;
->>> +                ctrl-module = <&am43xx_control_usb2phy2>;
->>> +                clocks = <&clk_32768_ck>,
->>> +                     <&usb_otg_ss1_refclk960m>;
->>> +                clock-names = "usb_phy_cm_clk32k",
->>> +                          "usb_otg_ss_refclk960m";
->>> +                #phy-cells = <0>;
->>> +                status = "disabled";
->>> +            };
->>> +        };
->>> +
->>> +        dwc3_1: omap_dwc3_1@48380000 {
->>> +            compatible = "ti,am437x-dwc3";
->>> +            ti,hwmods = "usb_otg_ss0";
->>> +            reg = <0x48380000 0x10000>;
->>> +            interrupts = <GIC_SPI 172 IRQ_TYPE_LEVEL_HIGH>;
->>> +            #address-cells = <1>;
->>> +            #size-cells = <1>;
->>> +            utmi-mode = <1>;
->>> +            ranges;
->>> +            status = "disabled";
->>> +
->>> +            usb1: usb@48390000 {
->>> +                compatible = "synopsys,dwc3";
->>> +                reg = <0x48390000 0x17000>;
->>> +                interrupts = <GIC_SPI 168 IRQ_TYPE_LEVEL_HIGH>;
->>> +                usb-phy = <&usb2_phy1>;
->> shouldn't this be        phys = <&usb2_phy1>;    ?
+Cheers,
+--
+Luís
+
+> ------------------
 > 
-> At the time of writing this patch phys property is still not in.
-> Also generic-phy conversion for dwc3 was recently posted by kishon.
->>> +                phy-names = "usb2-phy";
->> what about
->>     maximum-speed = "high-speed";
->> and
->>     dr_mode = "otg"; ?
+> From: Tony Breeds <tony@bakeyournoodle.com>
 > 
-> Done from board file. Actually maximum-speed I can set here.
-> dr_mode is a board property.
-
-Is it a known standard that dr_mode must come from board dts?
-
-I think dr_mode can be set here by default. Board can always override if it
-needs non otg operation.
-
-cheers,
--roger
-
->>> +                status = "disabled";
->>> +            };
->>> +        };
->>> +
->>> +        dwc3_2: omap_dwc3_2@483c0000 {
->>> +            compatible = "ti,am437x-dwc3";
->>> +            ti,hwmods = "usb_otg_ss1";
->>> +            reg = <0x483c0000 0x10000>;
->>> +            interrupts = <GIC_SPI 178 IRQ_TYPE_LEVEL_HIGH>;
->>> +            #address-cells = <1>;
->>> +            #size-cells = <1>;
->>> +            utmi-mode = <1>;
->>> +            ranges;
->>> +            status = "disabled";
->>> +
->>> +            usb2: usb@483d0000 {
->>> +                compatible = "synopsys,dwc3";
->>> +                reg = <0x483d0000 0x17000>;
->>> +                interrupts = <GIC_SPI 174 IRQ_TYPE_LEVEL_HIGH>;
->>> +                usb-phy = <&usb2_phy2>;
->>> +                phy-names = "usb2-phy";
->>> +                status = "disabled";
->>> +            };
->>> +        };
->>> +
->>>       };
->>>   };
->>>  
->> cheers,
->> -roger
+> commit 41dd03a94c7d408d2ef32530545097f7d1befe5c upstream.
 > 
+> Currently we're storing a host endian RTAS token in
+> rtas_stop_self_args.token.  We then pass that directly to rtas.  This is
+> fine on big endian however on little endian the token is not what we
+> expect.
 > 
-
+> This will typically result in hitting:
+> 	panic("Alas, I survived.\n");
+> 
+> To fix this we always use the stop-self token in host order and always
+> convert it to be32 before passing this to rtas.
+> 
+> Signed-off-by: Tony Breeds <tony@bakeyournoodle.com>
+> Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+> ---
+>  arch/powerpc/platforms/pseries/hotplug-cpu.c | 22 +++++++++++-----------
+>  1 file changed, 11 insertions(+), 11 deletions(-)
+> 
+> diff --git a/arch/powerpc/platforms/pseries/hotplug-cpu.c b/arch/powerpc/platforms/pseries/hotplug-cpu.c
+> index 64c97d8..e8f1b00 100644
+> --- a/arch/powerpc/platforms/pseries/hotplug-cpu.c
+> +++ b/arch/powerpc/platforms/pseries/hotplug-cpu.c
+> @@ -34,12 +34,7 @@
+>  #include "offline_states.h"
+>  
+>  /* This version can't take the spinlock, because it never returns */
+> -static struct rtas_args rtas_stop_self_args = {
+> -	.token = RTAS_UNKNOWN_SERVICE,
+> -	.nargs = 0,
+> -	.nret = 1,
+> -	.rets = &rtas_stop_self_args.args[0],
+> -};
+> +static int rtas_stop_self_token = RTAS_UNKNOWN_SERVICE;
+>  
+>  static DEFINE_PER_CPU(enum cpu_state_vals, preferred_offline_state) =
+>  							CPU_STATE_OFFLINE;
+> @@ -92,15 +87,20 @@ void set_default_offline_state(int cpu)
+>  
+>  static void rtas_stop_self(void)
+>  {
+> -	struct rtas_args *args = &rtas_stop_self_args;
+> +	struct rtas_args args = {
+> +		.token = cpu_to_be32(rtas_stop_self_token),
+> +		.nargs = 0,
+> +		.nret = 1,
+> +		.rets = &args.args[0],
+> +	};
+>  
+>  	local_irq_disable();
+>  
+> -	BUG_ON(args->token == RTAS_UNKNOWN_SERVICE);
+> +	BUG_ON(rtas_stop_self_token == RTAS_UNKNOWN_SERVICE);
+>  
+>  	printk("cpu %u (hwid %u) Ready to die...\n",
+>  	       smp_processor_id(), hard_smp_processor_id());
+> -	enter_rtas(__pa(args));
+> +	enter_rtas(__pa(&args));
+>  
+>  	panic("Alas, I survived.\n");
+>  }
+> @@ -383,10 +383,10 @@ static int __init pseries_cpu_hotplug_init(void)
+>  		}
+>  	}
+>  
+> -	rtas_stop_self_args.token = rtas_token("stop-self");
+> +	rtas_stop_self_token = rtas_token("stop-self");
+>  	qcss_tok = rtas_token("query-cpu-stopped-state");
+>  
+> -	if (rtas_stop_self_args.token == RTAS_UNKNOWN_SERVICE ||
+> +	if (rtas_stop_self_token == RTAS_UNKNOWN_SERVICE ||
+>  			qcss_tok == RTAS_UNKNOWN_SERVICE) {
+>  		printk(KERN_INFO "CPU Hotplug not supported by firmware "
+>  				"- disabling.\n");
+> -- 
+> 1.9.0
+> 
