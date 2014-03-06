@@ -1,95 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753132AbaCFO0n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 09:26:43 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:54966 "EHLO bear.ext.ti.com"
+	id S1753169AbaCFO1F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 09:27:05 -0500
+Received: from mail.lang.hm ([64.81.33.126]:55278 "EHLO bifrost.lang.hm"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752588AbaCFOYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 09:24:17 -0500
-From: Roger Quadros <rogerq@ti.com>
-To: <kishon@ti.comg>, <tony@atomide.com>, <balbi@ti.com>
-CC: <george.cherian@ti.com>, <balajitk@ti.com>, <hdegoede@redhat.com>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-ide@vger.kernel.org>,
-        <rogerq@ti.com>, Benoit Cousson <bcousson@baylibre.com>
-Subject: [PATCH v2 11/13] ARM: dts: omap5: add sata node
-Date: Thu, 6 Mar 2014 16:23:03 +0200
-Message-ID: <1394115785-28301-12-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1394115785-28301-1-git-send-email-rogerq@ti.com>
-References: <1394115785-28301-1-git-send-email-rogerq@ti.com>
+	id S1753109AbaCFO1D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 09:27:03 -0500
+Date: Thu, 6 Mar 2014 06:25:50 -0800 (PST)
+From: David Lang <david@lang.hm>
+X-X-Sender: dlang@asgard.lang.hm
+To: Kevin Easton <kevin@guarana.org>
+cc: Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Khalid Aziz <khalid.aziz@oracle.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        peterz@infradead.org, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, oleg@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] [PATCH] Pre-emption control for userspace
+In-Reply-To: <20140306121333.GA12127@chicago.guarana.org>
+Message-ID: <alpine.DEB.2.02.1403060624150.32171@nftneq.ynat.uz>
+References: <1393870033-31076-1-git-send-email-khalid.aziz@oracle.com> <531641A8.40306@zytor.com> <53164824.3000704@oracle.com> <20140304222356.41c55bbc@alan.etchedpixels.co.uk> <5316574F.6040105@oracle.com> <8738ix5uyk.fsf@tassilo.jf.intel.com>
+ <20140306121333.GA12127@chicago.guarana.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Balaji T K <balajitk@ti.com>
+On Thu, 6 Mar 2014, Kevin Easton wrote:
 
-Add support for sata.
+> On Tue, Mar 04, 2014 at 04:51:15PM -0800, Andi Kleen wrote:
+>> Anything else?
+>
+> If it was possible to make the time remaining in the current timeslice
+> available to userspace through the vdso, the thread could do something like:
+>
+> if (sys_timeleft() < CRITICAL_SECTION_SIZE)
+>    yield();
+> lock();
+>
+> to avoid running out of timeslice in the middle of the critical section.
 
-[Roger Q] Clean up.
+but won't the system call result in context switches? According to Kevin, even a 
+context switch to another thread and back immediatly is bad enough to need to be 
+avoided, so replacing that with the context switch to the kernel and back isn't 
+a subtantial win.
 
-CC: Benoit Cousson <bcousson@baylibre.com>
-CC: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Balaji T K <balajitk@ti.com>
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- arch/arm/boot/dts/omap5.dtsi | 40 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 40 insertions(+)
-
-diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
-index e47601a..b398cff 100644
---- a/arch/arm/boot/dts/omap5.dtsi
-+++ b/arch/arm/boot/dts/omap5.dtsi
-@@ -828,6 +828,46 @@
- 
- 			#thermal-sensor-cells = <1>;
- 		};
-+
-+		omap_control_sata: control-phy@4a002374 {
-+			compatible = "ti,control-phy-pipe3";
-+			reg = <0x4a002374 0x4>;
-+			reg-names = "power";
-+			clocks = <&sys_clkin>;
-+			clock-names = "sysclk";
-+		};
-+
-+		/* OCP2SCP3 */
-+		ocp2scp@4a090000 {
-+			compatible = "ti,omap-ocp2scp";
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			reg = <0x4a090000 0x20>;
-+			ranges;
-+			ti,hwmods = "ocp2scp3";
-+			sata_phy: phy@4a096000 {
-+				compatible = "ti,phy-pipe3-sata";
-+				reg = <0x4A096000 0x80>, /* phy_rx */
-+				      <0x4A096400 0x64>, /* phy_tx */
-+				      <0x4A096800 0x40>; /* pll_ctrl */
-+				reg-names = "phy_rx", "phy_tx", "pll_ctrl";
-+				ctrl-module = <&omap_control_sata>;
-+				clocks = <&sys_clkin>;
-+				clock-names = "sysclk";
-+				#phy-cells = <0>;
-+			};
-+		};
-+
-+		sata: sata@4a141100 {
-+			compatible = "snps,dwc-ahci";
-+			reg = <0x4a140000 0x1100>, <0x4a141100 0x7>;
-+			interrupts = <GIC_SPI 54 IRQ_TYPE_LEVEL_HIGH>;
-+			phys = <&sata_phy>;
-+			phy-names = "sata-phy";
-+			clocks = <&sata_ref_clk>;
-+			ti,hwmods = "sata";
-+		};
-+
- 	};
- };
- 
--- 
-1.8.3.2
-
+David Lang
