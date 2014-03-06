@@ -1,153 +1,376 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855AbaCFKYx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 05:24:53 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:36186 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751095AbaCFKYs (ORCPT
+	id S1752890AbaCFKZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 05:25:27 -0500
+Received: from mail-bl2lp0208.outbound.protection.outlook.com ([207.46.163.208]:51089
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751358AbaCFKYt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 05:24:48 -0500
-X-AuditID: cbfec7f5-b7fc96d000004885-03-53184cee1020
-From: Kamil Debski <k.debski@samsung.com>
-To: "'Anton Tikhomirov'" <av.tikhomirov@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-usb@vger.kernel.org, devicetree@vger.kernel.org
-Cc: kyungmin.park@samsung.com, kishon@ti.com, Tomasz Figa <t.figa@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>, gautam.vivek@samsung.com,
-        mat.krawczuk@gmail.com, yulgon.kim@samsung.com, p.paneri@samsung.com,
-        jg1.han@samsung.com, galak@codeaurora.org, matt.porter@linaro.org,
-        tjakobi@math.uni-bielefeld.de, stern@rowland.harvard.edu,
-        sander@humilis.net
-References: <1394033288-5551-1-git-send-email-k.debski@samsung.com>
- <1394033288-5551-4-git-send-email-k.debski@samsung.com>
- <005c01cf3915$c53476c0$4f9d6440$%tikhomirov@samsung.com>
-In-reply-to: <005c01cf3915$c53476c0$4f9d6440$%tikhomirov@samsung.com>
-Subject: RE: [PATCH v9 3/4] phy: Add new Exynos USB 2.0 PHY driver
-Date: Thu, 06 Mar 2014 11:24:44 +0100
-Message-id: <193a01cf3926$4bef53f0$e3cdfbd0$%debski@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac84h7VFDZ0Y6kzhQc2nfLU7hPJrnwAiULiAAAQU3TA=
-Content-language: pl
-X-Brightmail-Tracker: H4sIAAAAAAAAA02RXUhTYRzGe8/3hoPjaeqLFxoDKw01JehFRESSzoWGMLrxpuZcajg/dlQy
-	oqagTqnNEsROUtm08iMXOs1lRk5RRNT5kRi5UWIMc2Ya0iiSPOxmd8/zvM/v+V+8DM4NEZFM
-	UUmFzlCiKVZRcmL2cHo1/kcWVJ/90ChDnaNrJHoyOU8ii6+DRPUr4zRa7lgikevbXQrN1fqO
-	7Nt2CrUtvMfQs+d1OHo16abRnOUzhe7XttJowd6IoQlfA4leekZp1PzXRSFb2zaB6nt/ksg0
-	N06nK/ll8z2Md4humt/fseL8+uo7ij+covlHbj/gzfYewE+vvcH4XwNRObJceWq+rrioSmdI
-	TLsqL5xZraPKbBE3hv0WwgjsXBOQMZA9Bz+Z+8iADocuj41qAnKGY7sAtB98AQFjxKBjfPfo
-	hWEoNhb2eHgpV7L9AA5tioRkcNaKQ+PiGB4gRgB88MJDSISMzYQTe9elE8fZDOjy1mCSJtgY
-	aH7swaSKgk2HS79xKVawodDfIpGyo804aHNMYwEdDQf7dnCpDtlTcONfvBQr2RQ4YqknAxUl
-	dBu9ZDPgxKAlMWhJDFoSg5CngOgBYbpKbZmQV6BPThA0eqGypCBBW6ofAIGvPhgBXVMpTsAy
-	QBWieH0pQs2RmiqhWu8EkMFVSoU9Cao5Rb6m+qbOUHrFUFmsE5wAY2SRRpCg8M0cXsuybq07
-	wy/0z1q9rRWxK2HdMantNdYok9B+kpj0qf6MZZsWv945OL2Qv3f7co3tzH63UxnysWG7JcOf
-	neOc/z7lSNwpV0dyxsG8YyngxGZ89u7E0K208s7k3LTzQuJDnB6u2uq76MXHNjK1cb2h+J7J
-	vxsd5heXVIRQqEmKww2C5j/mvqrUyAIAAA==
+	Thu, 6 Mar 2014 05:24:49 -0500
+From: KY Srinivasan <kys@microsoft.com>
+To: Victor Miasnikov <vvm@tut.by>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Brian Wong <draconicpenguin1@yahoo.com>
+CC: "Abhishek Gupta (LIS)" <abgupta@microsoft.com>
+Subject: RE: Linux does not use more than the startup RAM under Hyper-V with
+ dynamic memory enabled RE: [PATCH 2/2] Drivers: hv: balloon: Online the
+ hot-added memory "in context" Re: [PATCH 1/1] Drivers: hv:
+Thread-Topic: Linux does not use more than the startup RAM under Hyper-V
+ with dynamic memory enabled RE: [PATCH 2/2] Drivers: hv: balloon: Online the
+ hot-added memory "in context" Re: [PATCH 1/1] Drivers: hv:
+Thread-Index: AQHPOSP5fYjCCuFlTk+SHEx0nTcLNZrT2d3Q
+Date: Thu, 6 Mar 2014 10:23:46 +0000
+Message-ID: <921422bfecda43e9baaa42077509a61d@BY2PR03MB299.namprd03.prod.outlook.com>
+References: <531813B4.7060205@yahoo.com> <53181489.6040000@yahoo.com>
+ <B0EFDC0724C0400DBC0931FD129D1859@local.st.by>
+In-Reply-To: <B0EFDC0724C0400DBC0931FD129D1859@local.st.by>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [117.192.124.81]
+x-forefront-prvs: 0142F22657
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(377454003)(479174003)(189002)(199002)(24454002)(13464003)(51704005)(90146001)(56816005)(65816001)(87936001)(74706001)(47446002)(79102001)(80022001)(63696002)(95666003)(74316001)(97186001)(15202345003)(4396001)(51856001)(81686001)(19580395003)(59766001)(92566001)(54316002)(87266001)(76482001)(94946001)(86612001)(56776001)(19580405001)(74876001)(83322001)(47976001)(54356001)(74502001)(80976001)(69226001)(81542001)(81342001)(76786001)(94316002)(76796001)(46102001)(95416001)(76576001)(53806001)(85852003)(83072002)(15975445006)(50986001)(49866001)(16601075003)(74366001)(66066001)(47736001)(77982001)(2656002)(86362001)(93136001)(85306002)(31966008)(81816001)(74662001)(97336001)(93516002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB223;H:BY2PR03MB299.namprd03.prod.outlook.com;CLIP:117.192.124.81;FPR:AEAFFDC4.A5EE9FC9.72DB7D72.56BCE9FF.20724;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anton, Kishon,
+Victor,
 
-> From: Anton Tikhomirov [mailto:av.tikhomirov@samsung.com]
-> Sent: Thursday, March 06, 2014 9:26 AM
-> 
-> Hi Kamil,
-> 
-> ...
-> 
-> > +| 3. Supporting SoCs
-> > ++--------------------
-> > +
-> > +To support a new SoC a new file should be added to the drivers/phy
-> > +directory. Each SoC's configuration is stored in an instance of the
-> > +struct samsung_usb2_phy_config.
-> > +
-> > +struct samsung_usb2_phy_config {
-> > +	const struct samsung_usb2_common_phy *phys;
-> > +	unsigned int num_phys;
-> > +	bool has_mode_switch;
-> 
-> You missed rate_to_clk here.
+I will try to get my in-context onlining patches accepted upstream.
 
-Thank you for spotting this.
+K. Y
 
-Kishon: I am sorry that this omission was made. I am happy to send an
-updated patchset. However, I want to give some time for any additional
-comments. Do you think that we have for this? Is today evening ok with you?
+> -----Original Message-----
+> From: Victor Miasnikov [mailto:vvm@tut.by]
+> Sent: Thursday, March 6, 2014 3:38 PM
+> To: linux-kernel@vger.kernel.org; Brian Wong
+> Cc: Abhishek Gupta (LIS); KY Srinivasan
+> Subject: Re: Linux does not use more than the startup RAM under Hyper-V
+> with dynamic memory enabled RE: [PATCH 2/2] Drivers: hv: balloon: Online
+> the hot-added memory "in context" Re: [PATCH 1/1] Drivers: hv:
 > 
-> > +};
-> > +
+> Hi!
 > 
-> ...
+>  Short:
 > 
-> > diff --git a/drivers/phy/phy-samsung-usb2.c b/drivers/phy/phy-
-> samsung-
-> > usb2.c new file mode 100644 index 0000000..c3b7719
-> > --- /dev/null
-> > +++ b/drivers/phy/phy-samsung-usb2.c
-> > @@ -0,0 +1,222 @@
-> > +/*
-> > + * Samsung SoC USB 1.1/2.0 PHY driver
-> > + *
-> > + * Copyright (C) 2013 Samsung Electronics Co., Ltd.
-> > + * Author: Kamil Debski <k.debski@samsung.com>
-> > + *
-> > + * This program is free software; you can redistribute it and/or
-> > modify
-> > + * it under the terms of the GNU General Public License version 2 as
-> > + * published by the Free Software Foundation.
-> > + */
-> > +
-> > +#include <linux/clk.h>
-> > +#include <linux/mfd/syscon.h>
-> > +#include <linux/module.h>
-> > +#include <linux/of.h>
-> > +#include <linux/of_address.h>
-> > +#include <linux/phy/phy.h>
-> > +#include <linux/platform_device.h>
-> > +#include <linux/spinlock.h>
-> > +#include "phy-samsung-usb2.h"
-> > +
-> > +static int samsung_usb2_phy_power_on(struct phy *phy) {
-> > +	struct samsung_usb2_phy_instance *inst = phy_get_drvdata(phy);
-> > +	struct samsung_usb2_phy_driver *drv = inst->drv;
-> > +	int ret;
-> > +
-> > +	dev_dbg(drv->dev, "Request to power_on \"%s\" usb phy\n",
-> > +		inst->cfg->label);
-> > +	ret = clk_prepare_enable(drv->clk);
+>  Question to Linux kernel team:
 > 
-> clk_prepare_enable() can sleep, and therefore doesn't allow
-> samusng_usb2_phy_power_on() to be used in atomic context (e.g. inside
-> spin_lock-ed area), what sometimes may be desirable.
-> What about to prepare clock in probe, and just enable it here
-> (note: clk_enable() doesn't sleep).
-
->From the onward discussion between you and Kishon, I draw the conclusion
-that this change is not necessary. Right?
-
+> may be patch
 > 
-> > +	if (ret)
-> > +		goto err_main_clk;
-> > +	ret = clk_prepare_enable(drv->ref_clk);
-> > +	if (ret)
-> > +		goto err_instance_clk;
-> > +	if (inst->cfg->power_on) {
-> > +		spin_lock(&drv->lock);
-> > +		ret = inst->cfg->power_on(inst);
-> > +		spin_unlock(&drv->lock);
-> > +	}
-> > +
-> > +	return 0;
+> >>> [PATCH 2/2] Drivers: hv: balloon: Online the hot-added memory "in
+> context"
 > 
-> Thank you
-
-Best wishes,
--- 
-Kamil Debski
-Samsung R&D Institute Poland
-
+> can solve problems with dynamic memory hot add in Hyper-V VMs with Linux
+> OS ?
+> 
+> 
+> 
+>  Full:
+> 
+> BW>> .., if I set the startup memory to 512 MB, and enable dynamic
+> BW>> memory with a minimum of 512 MB and a maximum of 8192 MB,  the
+> BW>> system will never allocate than 512 MB of physical memory
+> 
+> BW>>
+> BW>> Have I encountered a bug in the Hyper-V balloon driver?
+> BW>>
+> 
+>  Unfortunately,  It's long story . . . :-(
+> 
+> a)
+> 
+>  I already ( on January 09, 2014 2:18 PM )  write about problems with "Online
+> the hot-added memory"  in "user space" see P.P.S.
+> 
+> b)
+> 
+>   See
+> 
+> Bug 979257 -[Hyper-V][RHEL6.5][RFE]in-kernel online support for memory
+> hot-add
+> https://bugzilla.redhat.com/show_bug.cgi?id=979257
+> 
+>  (  Info from this topic may be interessant not only for RedHat users )
+> 
+> 
+> b2)
+> 
+>  Detail about pathes related problem "Online the hot-added memory"  in
+> "user space" :
+> 
+> >>> [PATCH 2/2] Drivers: hv: balloon: Online the hot-added memory "in
+> context"
+> >>>
+> >>>
+> >>> === 0001-Drivers-base-memory-Export-functionality-for-in-kern.patch
+> >>>  . . .
+> >>> +/*
+> >>> + * Given the start pfn of a memory block; bring the memory
+> >>> + * block online. This API would be useful for drivers that may
+> >>> + * want to bring "online" the memory that has been hot-added.
+> >>> + */
+> >>> +
+> >>> +int online_memory_block(unsigned long start_pfn) {  struct
+> >>> +mem_section *cur_section;  struct memory_block
+> *cur_memory_block;
+> >>>
+> >>>  . . .
+> >>> ===
+> >>>
+> >>>
+> >>> ==
+> >>>  . . .
+> >>> == 0002-Drivers-hv-balloon-Online-the-hot-added-memory-in-co.patch
+> >>>   . . .
+> >>>    /*
+> >>> -   * Wait for the memory block to be onlined.
+> >>> -   * Since the hot add has succeeded, it is ok to
+> >>> -   * proceed even if the pages in the hot added region
+> >>> -   * have not been "onlined" within the allowed time.
+> >>> +   * Before proceeding to hot add the next segment,
+> >>> +   * online the segment that has been hot added.
+> >>>     */
+> >>> -  wait_for_completion_timeout(&dm_device.ol_waitevent, 5*HZ);
+> >>> +  online_memory_block(start_pfn);
+> >>>
+> >>>   }
+> 
+> 
+> 
+> 
+> c)
+> 
+>   Before apply patches ( see in P.S. about native udev-script) we are need use
+> one of this methods:
+> 
+> http://social.technet.microsoft.com/Forums/en-US/8e1994b9-9ca1-4411-
+> ad8e-25e6b1ee28e1/dynamic-memory-on-linux-
+> vm?forum=linuxintegrationservices
+> 
+> 
+> 
+> c1)
+> 
+> "/bin/cp method" by Nikolay Pushkarev :
+> 
+> Following udev rule works slightly faster for me (assuming that memory0
+> bank always in online state):
+> 
+> SUBSYSTEM=="memory", ACTION=="add",
+> DEVPATH=="/devices/system/memory/memory[1-9]*",
+> RUN+="/bin/cp /sys$devpath/../memory0/state /sys$devpath/state"}}
+> 
+> ( VVM : of course all need be place in one line, 2 line in this msg. -- only for
+> good visual formating reasons )
+> 
+> 
+> c2)
+> 
+> udev rule using "putarg" by Nikolay Pushkarev :
+> 
+> 
+>  Even "/bin/cp method" udev rule work time to time not as need :-(
+> 
+> 
+> As a result, Nikolay Pushkarev write a program putarg.c, that is even faster
+> than "/bin/cp method" :
+> 
+> ==
+> #include <stdio.h>
+> #include <fcntl.h>
+> #include <sys/ioctl.h>
+> #include <string.h>
+> int main(int argc, char** argv) {
+>   int i, fd;
+>   if (argc < 2) return 0;
+>   if ((fd = open(argv[1], O_RDWR)) < 0) return 1;
+>   for (i = 2; i < argc; i++) {
+>     if (write(fd, argv[i], strlen(argv[i])) < 0) {
+>       close(fd);
+>       return i;
+>     }
+>   }
+>   close(fd);
+>   return 0;
+> }
+> ==
+> 
+>  The first argument - the name of the output file , and argument number 2 (
+> and all subsequent (  if exist ) ) - are text that are wiil be written in output file.
+> 
+> 
+>  Compile source code to executable file by run command:
+> gcc -o putarg -s putarg.c
+> 
+> The resulting binary need be placed an accessible location , such as /usr/bin,
+> or wherever you want.
+> 
+> 
+> Now udev rule using "putarg" can be written as :
+> 
+> SUBSYSTEM=="memory", ACTION=="add", RUN+="/usr/bin/putarg
+> /sys$devpath/state online"
+> 
+> 
+> This complex solutions ( compiled file and udev-rule ) works exceptionally
+> fast.
+> 
+> 
+> 
+> 
+> 
+> Best regards, Victor Miasnikov
+> Blog:  http://vvm.blog.tut.by/
+> 
+> P.S.
+> 
+> Nikolay Pushkarev about standart udev-script :
+> 
+> {{
+> 
+> Strange, that the native udev-script
+> 
+> SUBSYSTEM=="memory", ACTION=="add", ATTR{state}="online"
+> 
+> 
+> triggered somehow through time ( VVM: very often not work as need )
+> 
+> 
+> }}
+> 
+> 
+> 
+> P.P.S.
+> 
+> ----- Original Message -----
+> From: "Victor Miasnikov"
+> To: "Dan Carpenter"; "K. Y. Srinivasan" ; <linux-kernel@vger.kernel.org>
+> Cc: "Greg KH" ; <devel@linuxdriverproject.org>; <olaf (at) aepfle.de>;
+> ""Andy Whitcroft"" <zzzzzzzzzzzz (at) canonical.com>; <jasowang (at)
+> redhat.com>
+> Sent: Thursday, January 09, 2014 2:18 PM
+> Subject: RE: [PATCH 2/2] Drivers: hv: balloon: Online the hot-added memory
+> "in context" Re: [PATCH 1/1] Drivers: hv:
+> Implement the file copy service
+> 
+> 
+> Hi!
+> 
+> > Is there no way we could implement file copying in user space?
+> 
+> 
+>   For "file copy service"  "user space"  may be pretty good
+> 
+> But I ( and other Hyper-V sysadmin)  see non-Ok ( in "political correct"
+> terminalogy) results with "hv: balloon: Online
+> the hot-added memory" in "user space"
+> 
+> 
+> ==
+>  [PATCH 2/2] Drivers: hv: balloon: Online the hot-added memory "in context"
+> ==
+> 
+> 
+>  What news?  Roadmap?
+> 
+> 
+> Best regards, Victor Miasnikov
+> Blog:  http://vvm.blog.tut.by/
+> 
+> 
+> 
+> 
+> P.P.S.
+> 
+> ----- Original Message -----
+> From: "Brian Wong"
+> To: <linux-kernel@vger.kernel.org>
+> Sent: Thursday, March 06, 2014 9:24 AM
+> Subject: Re: Linux does not use more than the startup RAM under Hyper-V
+> with dynamic memory enabled
+> 
+> 
+> On 3/6/2014 1:20 AM, Brian Wong wrote:
+> 
+>    . . .
+> 
+> > The kernel is built with the full set of Hyper-V drivers, including the
+> > key "Microsoft Hyper-V Balloon Driver" as well as memory hot-add and
+> > hot-remove functionality. This is happening with both the Gentoo-patched
+> > 3.10.32 kernel and the vanilla 3.12.5 kernel. The host machine has a
+> > total of 24 GB of memory.
+> >
+> > For now, I am working around the issue by starting the VM with the
+> > startup memory set to the maximum and letting Hyper-V take the usused
+> > memory back when it is not in use. The VM will then get the extra memory
+> > when it needs it.
+> >
+> > Have I encountered a bug in the Hyper-V balloon driver?
+> >
+> 
+> Just a correction: the vanilla kernel version is 3.13.5, not 3.12.5.
+> Sorry for any confusion.
+> 
+> --
+> Brian Wong
+> http://www.fierydragonlord.com
+> --
+> 
+> 
+> 
+> ----- Original Message -----
+> From: "Brian Wong"
+> To: <linux-kernel@vger.kernel.org>
+> Sent: Thursday, March 06, 2014 9:20 AM
+> Subject: Linux does not use more than the startup RAM under Hyper-V with
+> dynamic memory enabled
+> 
+> I'm new to LKML, so please don't be too hard on me :)
+> 
+> I'm running Gentoo Linux under Microsoft Client Hyper-V on Windows 8.1
+> Pro, and I've noticed some odd behavior with respect to dynamic memory
+> (aka memory ballooning). The system will never use more than the startup
+> memory defined in the virtual machine's settings.
+> 
+> ( VVM: typewriting error viRtual fixed by me, for best search in future )
+> 
+> For example, if I set the startup memory to 512 MB, and enable dynamic
+> memory with a minimum of 512 MB and a maximum of 8192 MB, the system
+> will never allocate than 512 MB of physical memory, despite Hyper-V
+> assigning more memory to the VM and the added memory being visible in
+> the output of "free" and "htop". Attempting to use more memory causes
+> the system to start paging to swap, rather than actually allocating the
+> memory above the startup memory assigned to the VM.
+> 
+> The kernel is built with the full set of Hyper-V drivers, including the
+> key "Microsoft Hyper-V Balloon Driver" as well as memory hot-add and
+> hot-remove functionality. This is happening with both the Gentoo-patched
+> 3.10.32 kernel and the vanilla 3.12.5 kernel. The host machine has a
+> total of 24 GB of memory.
+> 
+> (
+>   Brian Wong wrote On 3/6/2014 1:20 AM:
+>  Just a correction: the vanilla kernel version is 3.13.5, not 3.12.5. )
+> )
+> 
+> For now, I am working around the issue by starting the VM with the
+> startup memory set to the maximum and letting Hyper-V take the usused
+> memory back when it is not in use. The VM will then get the extra memory
+> when it needs it.
+> 
+> Have I encountered a bug in the Hyper-V balloon driver?
+> 
+> --
+> Brian Wong
+> http://www.fierydragonlord.com
+> --
+> 
+> 
+> 
 
