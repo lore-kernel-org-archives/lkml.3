@@ -1,112 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752916AbaCFSb1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 13:31:27 -0500
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:61582 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751951AbaCFSbZ convert rfc822-to-8bit (ORCPT
+	id S1753329AbaCFScf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 13:32:35 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:49773 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752368AbaCFScc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 13:31:25 -0500
+	Thu, 6 Mar 2014 13:32:32 -0500
+Date: Thu, 6 Mar 2014 12:29:41 -0600
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>, linux-mm@kvack.org
+Subject: [PATCH -next] slub: Replace __this_cpu_inc usage w/ SLUB_STATS
+Message-ID: <20140306182941.GH18529@joshc.qualcomm.com>
+References: <20140306194821.3715d0b6212cc10415374a68@canb.auug.org.au>
+ <20140306155316.GG18529@joshc.qualcomm.com>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1403061258390.961-100000@iolanthe.rowland.org>
-References: <20140306030511.GA19653@redhat.com>
-	<Pine.LNX.4.44L0.1403061258390.961-100000@iolanthe.rowland.org>
-Date: Thu, 6 Mar 2014 10:31:24 -0800
-Message-ID: <CAPcyv4j-TMuDnT1VxL+5AccZkrSOEyRRcb7Qg5o9cMO1GR4F0w@mail.gmail.com>
-Subject: Re: uhci_hcd: DMA-API: cpu touching an active dma mapped cacheline
-From: Dan Williams <dan.j.williams@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Dave Jones <davej@redhat.com>, Joerg Roedel <joerg.roedel@amd.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140306155316.GG18529@joshc.qualcomm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 6, 2014 at 10:04 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Wed, 5 Mar 2014, Dave Jones wrote:
->
->> WARNING: CPU: 3 PID: 25477 at lib/dma-debug.c:593 debug_dma_assert_idle+0x1ba/0x223()
->> uhci_hcd 0000:00:1d.2: DMA-API: cpu touching an active dma mapped cacheline [cln=0x0000000002355f80]
->> Modules linked in: fuse tun l2tp_ppp l2tp_netlink l2tp_core can_raw can_bcm scsi_transport_iscsi nfc caif_socket caif af_802154 phonet af_rxrpc hidp bluetooth 6lowpan_iphc can pppoe pppox ppp_generic slhc irda crc_ccitt rds rose x25 atm netrom appletalk ipx p8023 p8022 psnap llc ax25 cfg80211 rfkill nouveau video backlight mxm_wmi wmi i2c_algo_bit ttm drm_kms_helper drm tg3 i2c_core ptp pps_core libphy kvm_intel kvm lpc_ich microcode pcspkr mfd_core parport_pc serio_raw parport shpchp rtc_cmos xfs libcrc32c raid0 floppy
->> CPU: 3 PID: 25477 Comm: cc Not tainted 3.14.0-rc5+ #2
->> Hardware name: Dell Inc.                 Precision WorkStation 490    /0DT031, BIOS A08 04/25/2008
->>  00000000 2e7036e5 00000000 db851dbc c15f76ee db851dfc db851dec c1043733
->>  c17ce4b0 db851e1c 00006385 c17ccc7a 00000251 c130a152 c130a152 eef3f650
->>  efb53480 00000000 db851e08 c1043788 00000009 db851dfc c17ce4b0 db851e1c
->> Call Trace:
->>  [<c15f76ee>] dump_stack+0x4b/0x75
->>  [<c1043733>] warn_slowpath_common+0x7e/0x95
->>  [<c130a152>] ? debug_dma_assert_idle+0x1ba/0x223
->>  [<c130a152>] ? debug_dma_assert_idle+0x1ba/0x223
->>  [<c1043788>] warn_slowpath_fmt+0x3e/0x51
->>  [<c130a152>] debug_dma_assert_idle+0x1ba/0x223
->>  [<c1159704>] do_wp_page+0x108/0x8a1
->>  [<c115b790>] ? handle_mm_fault+0x1ba/0xd54
->>  [<c15ff7ea>] ? _raw_spin_lock+0x6b/0x72
->>  [<c115bae2>] handle_mm_fault+0x50c/0xd54
->>  [<c160357c>] ? __do_page_fault+0xee/0x55c
->>  [<c16035da>] __do_page_fault+0x14c/0x55c
->>  [<c16039ea>] ? __do_page_fault+0x55c/0x55c
->>  [<c16039f7>] do_page_fault+0xd/0xf
->>  [<c1600dfc>] error_code+0x6c/0x74
->> ------------[ cut here ]------------
->> WARNING: CPU: 3 PID: 25490 at lib/dma-debug.c:593 debug_dma_assert_idle+0x1ba/0x223()
->> uhci_hcd 0000:00:1d.2: DMA-API: cpu touching an active dma mapped cacheline [cln=0x0000000002355f80]
->> ---[ end trace 3ac75acf24cf0b9e ]---
->> Mapped at:
->>  [<c13081b5>] debug_dma_alloc_coherent+0x2b/0xc3
->> Modules linked in: fuse tun l2tp_ppp l2tp_netlink l2tp_core can_raw can_bcm scsi_transport_iscsi nfc caif_socket caif af_802154 phonet af_rxrpc hidp bluetooth 6lowpan_iphc can pppoe pppox ppp_generic slhc irda crc_ccitt rds rose x25 atm netrom appletalk ipx p8023 p8022 psnap llc ax25 cfg80211 rfkill nouveau video backlight mxm_wmi wmi i2c_algo_bit ttm drm_kms_helper drm tg3 i2c_core ptp pps_core libphy kvm_intel kvm lpc_ich microcode pcspkr mfd_core parport_pc serio_raw parport shpchp rtc_cmos xfs libcrc32c raid0 floppy
->>
->> [<c116fcee>] dma_pool_alloc+0x14f/0x2fd
->>  [<c1456eaa>] uhci_alloc_td.isra.35+0x24/0x60
->>  [<c1457fa6>] uhci_start+0x272/0x56b
->>  [<c142d8fb>] usb_add_hcd+0x252/0x774
->>
->> CPU: 3 PID: 25490 Comm: cc Tainted: G        W    3.14.0-rc5+ #2
->> Hardware name: Dell Inc.                 Precision WorkStation 490    /0DT031, BIOS A08 04/25/2008
->>  00000000 bf79585b 00000000 db81bdbc c15f76ee db81bdfc db81bdec c1043733
->>  c17ce4b0 db81be1c 00006392 c17ccc7a 00000251 c130a152 c130a152 eef3f650
->>  efb53480 00000000 db81be08 c1043788 00000009 db81bdfc c17ce4b0 db81be1c
->> Call Trace:
->>  [<c15f76ee>] dump_stack+0x4b/0x75
->>  [<c1043733>] warn_slowpath_common+0x7e/0x95
->>  [<c130a152>] ? debug_dma_assert_idle+0x1ba/0x223
->>  [<c130a152>] ? debug_dma_assert_idle+0x1ba/0x223
->>  [<c1043788>] warn_slowpath_fmt+0x3e/0x51
->>  [<c130a152>] debug_dma_assert_idle+0x1ba/0x223
->>  [<c1159704>] do_wp_page+0x108/0x8a1
->>  [<c115b790>] ? handle_mm_fault+0x1ba/0xd54
->>  [<c15ff7ea>] ? _raw_spin_lock+0x6b/0x72
->>  [<c115bae2>] handle_mm_fault+0x50c/0xd54
->>  [<c160357c>] ? __do_page_fault+0xee/0x55c
->>  [<c16035da>] __do_page_fault+0x14c/0x55c
->>  [<c1603683>] ? __do_page_fault+0x1f5/0x55c
->>  [<c160065b>] ? restore_all+0xf/0xf
->>  [<c12f0d89>] ? __put_user_4+0x11/0x18
->>  [<c16039ea>] ? __do_page_fault+0x55c/0x55c
->>  [<c16039f7>] do_page_fault+0xd/0xf
->>  [<c1600dfc>] error_code+0x6c/0x74
->> ---[ end trace 3ac75acf24cf0b9f ]---
->> Mapped at:
->>  [<c13081b5>] debug_dma_alloc_coherent+0x2b/0xc3
->>  [<c116fcee>] dma_pool_alloc+0x14f/0x2fd
->>  [<c1456eaa>] uhci_alloc_td.isra.35+0x24/0x60
->>  [<c1457fa6>] uhci_start+0x272/0x56b
->>  [<c142d8fb>] usb_add_hcd+0x252/0x774
->
-> I don't get it.  As the name indicates, debug_dma_alloc_coherent should
-> give us consistent memory -- meaning that the CPU is allowed to access
-> the memory while DMA is in progress, without worrying about caching
-> effects (see Documentation/DMA-API.txt).
->
-> So why should we get a warning when the CPU accesses this memory?  Is
-> this a regression in the DMA debug library?
+On Thu, Mar 06, 2014 at 09:53:16AM -0600, Josh Cartwright wrote:
+> Booting on my Samsung Series 9 laptop gives me loads and loads of BUGs
+> triggered by __this_cpu_add(), making making the system completely
+> unusable:
+> 
+> [    5.808326] BUG: using __this_cpu_add() in preemptible [00000000] code: swapper/0/1
+> [    5.812331] caller is __this_cpu_preempt_check+0x2b/0x30
+> [    5.815654] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.14.0-rc5-next-20140306-joshc-08290-g0ffb2fe #1
+> [    5.819553] Hardware name: SAMSUNG ELECTRONICS CO., LTD. 900X3C/900X3D/900X3E/900X4C/900X4D/NP900X3E-A02US, BIOS P07ABK 04/09/2013
+> [    5.823558]  ffff8801182157c0 ffff880118215790 ffffffff81a64cec 0000000000000000
+> [    5.827177]  ffff8801182157b0 ffffffff81462360 ffff8800c3d553e0 ffffea00030f5500
+> [    5.830744]  ffff8801182157e8 ffffffff814623bb 635f736968745f5f 29286464615f7570
+> [    5.834134] Call Trace:
+> [    5.836848]  [<ffffffff81a64cec>] dump_stack+0x4e/0x7a
+> [    5.839943]  [<ffffffff81462360>] check_preemption_disabled+0xd0/0xe0
+> [    5.842997]  [<ffffffff814623bb>] __this_cpu_preempt_check+0x2b/0x30
+> [    5.846022]  [<ffffffff81a6331d>] __slab_free+0x38/0x590
+> [    5.848863]  [<ffffffff811759dd>] ? get_parent_ip+0xd/0x50
+> [    5.850467] BUG: using __this_cpu_add() in preemptible [00000000] code: khubd/36
+> [    5.850472] caller is __this_cpu_preempt_check+0x2b/0x30
+> [    5.859125]  [<ffffffff81175b3b>] ? preempt_count_sub+0x6b/0xf0
+> [    5.862521]  [<ffffffff81a7175a>] ? _raw_spin_unlock_irqrestore+0x4a/0x80
+> [    5.865599]  [<ffffffff81462e5e>] ? __debug_check_no_obj_freed+0x13e/0x240
+> [    5.868738]  [<ffffffff814623bb>] ? __this_cpu_preempt_check+0x2b/0x30
+> [    5.871799]  [<ffffffff81287327>] kfree+0x2f7/0x300
 
-Yes, it seems so.  alloc_coherent needs to be exempt from active
-mapping tracking.  Fix coming up.
+FWIW, it looks like the magic combination of options are:
+	- CONFIG_DEBUG_PREEMPT=y
+	- CONFIG_SLUB=y
+	- CONFIG_SLUB_STATS=y
 
---
-Dan
+Looks like the new percpu() checks are complaining about SLUB's use of
+__this_cpu_inc() for maintaining it's stat counters.  The below patch
+seems to fix it.
+
+Although, I'm wondering how exact these statistics need to be.  Is
+making them preemption safe even a concern?
+
+Thanks,
+  Josh
+
+--8<--
+Make slub statistics maintenance preemption-safe.
+
+Fixes the following warning when CONFIG_SLUB_STATS and
+CONFIG_DEBUG_PREEMPT:
+
+	BUG: using __this_cpu_add() in preemptible [00000000] code: systemd-journal/226
+	caller is __this_cpu_preempt_check+0x2b/0x30
+	Call Trace:
+	    dump_stack+0x4e/0x7a
+	    check_preemption_disabled+0xd0/0xe0
+	    __this_cpu_preempt_check+0x2b/0x30
+	    __slab_free+0x38/0x590
+	    kmem_cache_free+0x367/0x3a0
+	    jbd2_journal_stop+0x24d/0x500
+	    __ext4_journal_stop+0x37/0x90
+	    ext4_truncate+0x1ab/0x570
+	    ext4_setattr+0x2d3/0x810
+	    notify_change+0x159/0x3a0
+	    do_truncate+0x6f/0xa0
+	    do_sys_ftruncate.constprop.18+0x10e/0x160
+	    SyS_ftruncate+0xe/0x10
+	    system_call_fastpath+0x1a/0x1f
+
+Cc: Christoph Lameter <cl@linux.com>
+Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+---
+ mm/slub.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mm/slub.c b/mm/slub.c
+index c6eb29d..c873e61 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -224,7 +224,7 @@ static inline void memcg_propagate_slab_attrs(struct kmem_cache *s) { }
+ static inline void stat(const struct kmem_cache *s, enum stat_item si)
+ {
+ #ifdef CONFIG_SLUB_STATS
+-	__this_cpu_inc(s->cpu_slab->stat[si]);
++	this_cpu_inc(s->cpu_slab->stat[si]);
+ #endif
+ }
+ 
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
