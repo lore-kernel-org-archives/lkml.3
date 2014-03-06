@@ -1,42 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753047AbaCFJXk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 04:23:40 -0500
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:48855 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753023AbaCFJXi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 04:23:38 -0500
+	id S1752729AbaCFJVA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 04:21:00 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:32975 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751647AbaCFJUz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 04:20:55 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Subject: [PATCH 1/7] device: introduce per device dma_pfn_offset
+Date: Thu, 6 Mar 2014 17:19:52 +0800
+Message-ID: <1394097598-17622-2-git-send-email-santosh.shilimkar@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1394097598-17622-1-git-send-email-santosh.shilimkar@ti.com>
+References: <1394097598-17622-1-git-send-email-santosh.shilimkar@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <3a0fb59a555b40aca5610ef00626fdba@BL2PR03MB226.namprd03.prod.outlook.com>
-References: <CAOAoqGuicMKJ8e6kmQ92fL73UpvBzfXx9kafP4tCbUKkiT2=vA@mail.gmail.com>
-	<Pine.LNX.4.44L0.1403051101430.1629-100000@iolanthe.rowland.org>
-	<975d7885a8b64971923466f9f06a6229@BL2PR03MB226.namprd03.prod.outlook.com>
-	<CAOAoqGvzxsnpopgi4-DtfUp-zXbq6iV0J_y18Q0NgZ1AGzSu2Q@mail.gmail.com>
-	<3a0fb59a555b40aca5610ef00626fdba@BL2PR03MB226.namprd03.prod.outlook.com>
-Date: Thu, 6 Mar 2014 14:53:37 +0530
-Message-ID: <CAOAoqGu4exeZP2wgEWpRyD7+4RVRbB=vOe4Hc+rK3CVVigCWvg@mail.gmail.com>
-Subject: Re: USB remote wakeup through gpio interrupt
-From: Jagdish Gedia <jvgediya@gmail.com>
-To: Peter Chen <Peter.Chen@freescale.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+On few architectures, there are few restrictions on DMAble area of system
+RAM. That also means that devices needs to know about this restrictions so
+that the dma_masks can be updated accordingly and dma address translation
+helpers can add/subtract the dma offset.
 
-As you have told, i have executed pm_request_resume() function from my
-interrupt handler, and it is waking up my USB device. I have
-implemented all this functionality in class driver(cdc-acm.c).
-but what is happening is after 2-3 times, ausosuspend is getting
-disable for my device. I want autosuspend to be enabled for usb device
-forever. Do pm_request_resume function causes this behavior?
+In most of cases DMA addresses can be performed using offset value of
+Bus address space relatively to physical address space as following:
 
+PFN->DMA:  __pfn_to_phys(pfn + [-]dma_pfn_offset)
+DMA->PFN:  __phys_to_pfn(dma_addr) + [-]dma_pfn_offset
 
+So we introduce per device dma_pfn_offset which can be popullated
+by architectures init code while creating the devices.
 
-Thanks,
-Jagdish Gediya
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Olof Johansson <olof@lixom.net>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+---
+ include/linux/device.h |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/include/linux/device.h b/include/linux/device.h
+index 952b010..6940b25 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -688,6 +688,7 @@ struct acpi_dev_node {
+  * @coherent_dma_mask: Like dma_mask, but for alloc_coherent mapping as not all
+  * 		hardware supports 64-bit addresses for consistent allocations
+  * 		such descriptors.
++ * @dma_pfn_offset: offset of DMA memory range relatively of RAM
+  * @dma_parms:	A low level driver may set these to teach IOMMU code about
+  * 		segment limitations.
+  * @dma_pools:	Dma pools (if dma'ble device).
+@@ -753,6 +754,7 @@ struct device {
+ 					     not all hardware supports
+ 					     64 bit addresses for consistent
+ 					     allocations such descriptors. */
++	unsigned long	dma_pfn_offset;
+ 
+ 	struct device_dma_parameters *dma_parms;
+ 
+-- 
+1.7.9.5
+
