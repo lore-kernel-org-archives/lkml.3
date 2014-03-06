@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752523AbaCFIzS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 03:55:18 -0500
-Received: from emh07.mail.saunalahti.fi ([62.142.5.117]:60072 "EHLO
-	emh07.mail.saunalahti.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751590AbaCFIzQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 03:55:16 -0500
-Message-ID: <1394096112.26326.1.camel@dubbel>
-Subject: Re: [PATCH] Drivers:net:wireless:ti:wl1251: Fixed Sparse invalid
- assignment warning
-From: Luca Coelho <luca@coelho.fi>
-To: Surendra Patil <surendra.tux@gmail.com>
-Cc: linville@tuxdriver.com, pavel@ucw.cz, pali.rohar@gmail.com,
-        david.gnedt@davizone.at, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 06 Mar 2014 10:55:12 +0200
-In-Reply-To: <1393921132-15950-1-git-send-email-surendra.tux@gmail.com>
-References: <1393921132-15950-1-git-send-email-surendra.tux@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
-Mime-Version: 1.0
+	id S1752574AbaCFIzd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 03:55:33 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:42523 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751590AbaCFIzb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 03:55:31 -0500
+Message-ID: <531837F0.607@ti.com>
+Date: Thu, 6 Mar 2014 10:55:12 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: George Cherian <george.cherian@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+CC: <anatol.pomozov@gmail.com>, <gregkh@linuxfoundation.org>, <balbi@ti.com>,
+        <kishon@ti.com>, <rob@landley.net>, <galak@codeaurora.org>,
+        <ijc+devicetree@hellion.org.uk>, <mark.rutland@arm.com>,
+        <pawel.moll@arm.com>, <robh+dt@kernel.org>, <bcousson@baylibre.com>,
+        <tony@atomide.com>
+Subject: Re: [PATCH 5/5] doc: Add "ti,am437x-dwc3" comaptible for dwc3 glue
+References: <1393854834-23810-1-git-send-email-george.cherian@ti.com> <1393854834-23810-6-git-send-email-george.cherian@ti.com>
+In-Reply-To: <1393854834-23810-6-git-send-email-george.cherian@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-03-04 at 00:18 -0800, Surendra Patil wrote:
-> Sparse warns about invalid assignment in
-> drivers/net/wireless/ti/wl1251/cmd.c:451:42: warning: invalid assignment: |=
-> drivers/net/wireless/ti/wl1251/cmd.c:451:42:    left side has type restricted __le16
-> drivers/net/wireless/ti/wl1251/cmd.c:451:42:    right side has type int
-> Hence type converted right side to __le16.
+On 03/03/2014 03:53 PM, George Cherian wrote:
+> Add the compatible "ti,am437x-dwc3" for dwc3 glue driver.
 > 
-> Signed-off-by: Surendra Patil <surendra.tux@gmail.com>
+> Signed-off-by: George Cherian <george.cherian@ti.com>
 > ---
->  drivers/net/wireless/ti/wl1251/cmd.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>  Documentation/devicetree/bindings/usb/omap-usb.txt | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+
+The patch order could be the rearranged so that this appears before the
+am437x bindings are used.
+
+cheers,
+-roger
+
 > 
-> diff --git a/drivers/net/wireless/ti/wl1251/cmd.c b/drivers/net/wireless/ti/wl1251/cmd.c
-> index 223649b..bf1fa18 100644
-> --- a/drivers/net/wireless/ti/wl1251/cmd.c
-> +++ b/drivers/net/wireless/ti/wl1251/cmd.c
-> @@ -448,7 +448,7 @@ int wl1251_cmd_scan(struct wl1251 *wl, u8 *ssid, size_t ssid_len,
->  	 * Note: This bug may be caused by the fw's DTIM handling.
->  	 */
->  	if (is_zero_ether_addr(wl->bssid))
-> -		cmd->params.scan_options |= WL1251_SCAN_OPT_PRIORITY_HIGH;
-> +		cmd->params.scan_options |= cpu_to_le16(WL1251_SCAN_OPT_PRIORITY_HIGH);
->  	cmd->params.num_channels = n_channels;
->  	cmd->params.num_probe_requests = n_probes;
->  	cmd->params.tx_rate = cpu_to_le16(1 << 1); /* 2 Mbps */
-
-AFAIR wl1251 is not really endianess-safe.  I think there are lots of
-other places where endianess macros should be added.
-
-Nothing wrong with this patch, I'm just saying that while at it, maybe
-someone could take care of all the endianess issues with wl1251? ;)
-
---
-Luca.
+> diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt b/Documentation/devicetree/bindings/usb/omap-usb.txt
+> index c495135..1d38569 100644
+> --- a/Documentation/devicetree/bindings/usb/omap-usb.txt
+> +++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
+> @@ -44,7 +44,9 @@ Board specific device node entry
+>  };
+>  
+>  OMAP DWC3 GLUE
+> - - compatible : Should be "ti,dwc3"
+> + - compatible : Should be
+> +	* "ti,dwc3" for OMAP5 and DRA7
+> +	* "ti,am437x-dwc3" for AM437x
+>   - ti,hwmods : Should be "usb_otg_ss"
+>   - reg : Address and length of the register set for the device.
+>   - interrupts : The irq number of this device that is used to interrupt the
+> 
 
