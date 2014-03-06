@@ -1,167 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753962AbaCFVxK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 16:53:10 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:64588 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752058AbaCFVtK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 16:49:10 -0500
-X-IronPort-AV: E=Sophos;i="4.97,603,1389744000"; 
-   d="scan'208";a="108916282"
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
-        <xen-devel@lists.xenproject.org>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jonathan.davies@citrix.com>, Zoltan Kiss <zoltan.kiss@citrix.com>
-Subject: [PATCH net-next v7 3/9] xen-netback: Handle foreign mapped pages on the guest RX path
-Date: Thu, 6 Mar 2014 21:48:25 +0000
-Message-ID: <1394142511-14827-4-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1394142511-14827-1-git-send-email-zoltan.kiss@citrix.com>
-References: <1394142511-14827-1-git-send-email-zoltan.kiss@citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
+	id S1753977AbaCFVyF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 16:54:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35912 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753175AbaCFVsu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 16:48:50 -0500
+Date: Thu, 6 Mar 2014 13:48:48 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: linux-next: build failure after merge of the akpm tree
+Message-Id: <20140306134848.7aabdc426fbad30f6e818631@linux-foundation.org>
+In-Reply-To: <20140306192234.62ad3ac104a2adc16752b033@canb.auug.org.au>
+References: <20140306192234.62ad3ac104a2adc16752b033@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-RX path need to know if the SKB fragments are stored on pages from another
-domain.
-Logically this patch should be after introducing the grant mapping itself, as
-it makes sense only after that. But to keep bisectability, I moved it here. It
-shouldn't change any functionality here. xenvif_zerocopy_callback and
-ubuf_to_vif are just stubs here, they will be introduced properly later on.
+On Thu, 6 Mar 2014 19:22:34 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
----
-v4:
-- indentation fixes
+> Hi Andrew,
+> 
+> After merging the akpm tree, today's linux-next build (sparc64 defconfig)
+> failed like this:
+> 
+> arch/sparc/kernel/time_64.c: In function 'timer_interrupt':
+> arch/sparc/kernel/time_64.c:735:28: error: lvalue required as increment operand
+> arch/sparc/kernel/traps_64.c: In function '__cheetah_flush_icache':
+> arch/sparc/kernel/traps_64.c:963:2: error: 'pscr_ret__.icache_size' is used uninitialized in this function [-Werror=uninitialized]
+> arch/sparc/kernel/traps_64.c: In function 'cheetah_flush_dcache':
+> arch/sparc/kernel/traps_64.c:1002:2: error: 'pscr_ret__.dcache_size' is used uninitialized in this function [-Werror=uninitialized]
+> arch/sparc/kernel/traps_64.c: In function 'cheetah_plus_parity_error':
+> arch/sparc/kernel/traps_64.c:1023:2: error: 'pscr_ret__.dcache_size' may be used uninitialized in this function [-Werror=uninitialized]
+> arch/sparc/kernel/traps_64.c:1020:16: note: 'pscr_ret__.dcache_size' was declared here
+> arch/sparc/kernel/traps_64.c:1033:33: error: 'pscr_ret__.dcache_line_size' may be used uninitialized in this function [-Werror=uninitialized]
+> arch/sparc/kernel/traps_64.c:1021:21: note: 'pscr_ret__.dcache_line_size' was declared here
+> cc1: all warnings being treated as errors
+> kernel/softirq.c: In function '__do_softirq':
+> kernel/softirq.c:252:1: error: lvalue required as left operand of assignment
+> kernel/softirq.c: In function '__raise_softirq_irqoff':
+> kernel/softirq.c:427:1: error: lvalue required as left operand of assignment
+> arch/sparc/kernel/ptrace_64.c: In function 'flush_ptrace_access':
+> arch/sparc/kernel/ptrace_64.c:91:20: error: 'pscr_ret__.dcache_line_size' may be used uninitialized in this function [-Werror=uninitialized]
+> arch/sparc/kernel/ptrace_64.c:113:20: error: 'pscr_ret__.icache_line_size' may be used uninitialized in this function [-Werror=uninitialized]
+> 
+> Caused by commit 5aa661aa13d4 ("sparc: replace __get_cpu_var uses").
+> 
+> I have reverted that commit for today.
+> 
+> I suspect that this whole series may need more review and work.
 
-v6:
-- use ubuf_to_vif helper
-- move the patch earlier in the series due to bisectability
+Yes, I've disabled the whole series for now.  Some of these errors
+appear to be caused by compiler mishandling, so it's going to be
+difficult :(
 
-diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
-index 9d35845..8f264df 100644
---- a/drivers/net/xen-netback/common.h
-+++ b/drivers/net/xen-netback/common.h
-@@ -247,6 +247,9 @@ static inline bool xenvif_tx_pending_slots_available(struct xenvif *vif)
- 		< MAX_PENDING_REQS;
- }
- 
-+/* Callback from stack when TX packet can be released */
-+void xenvif_zerocopy_callback(struct ubuf_info *ubuf, bool zerocopy_success);
-+
- extern bool separate_tx_rx_irq;
- 
- #endif /* __XEN_NETBACK__COMMON_H__ */
-diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index 715d810..e9391ba 100644
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -101,6 +101,10 @@ static inline unsigned long idx_to_kaddr(struct xenvif *vif,
- 	return (unsigned long)pfn_to_kaddr(idx_to_pfn(vif, idx));
- }
- 
-+static inline struct xenvif* ubuf_to_vif(struct ubuf_info *ubuf)
-+{
-+	return NULL;
-+}
- /* This is a miniumum size for the linear area to avoid lots of
-  * calls to __pskb_pull_tail() as we set up checksum offsets. The
-  * value 128 was chosen as it covers all IPv4 and most likely
-@@ -221,7 +225,9 @@ static struct xenvif_rx_meta *get_next_rx_buffer(struct xenvif *vif,
- static void xenvif_gop_frag_copy(struct xenvif *vif, struct sk_buff *skb,
- 				 struct netrx_pending_operations *npo,
- 				 struct page *page, unsigned long size,
--				 unsigned long offset, int *head)
-+				 unsigned long offset, int *head,
-+				 struct xenvif *foreign_vif,
-+				 grant_ref_t foreign_gref)
- {
- 	struct gnttab_copy *copy_gop;
- 	struct xenvif_rx_meta *meta;
-@@ -263,8 +269,15 @@ static void xenvif_gop_frag_copy(struct xenvif *vif, struct sk_buff *skb,
- 		copy_gop->flags = GNTCOPY_dest_gref;
- 		copy_gop->len = bytes;
- 
--		copy_gop->source.domid = DOMID_SELF;
--		copy_gop->source.u.gmfn = virt_to_mfn(page_address(page));
-+		if (foreign_vif) {
-+			copy_gop->source.domid = foreign_vif->domid;
-+			copy_gop->source.u.ref = foreign_gref;
-+			copy_gop->flags |= GNTCOPY_source_gref;
-+		} else {
-+			copy_gop->source.domid = DOMID_SELF;
-+			copy_gop->source.u.gmfn =
-+				virt_to_mfn(page_address(page));
-+		}
- 		copy_gop->source.offset = offset;
- 
- 		copy_gop->dest.domid = vif->domid;
-@@ -325,6 +338,9 @@ static int xenvif_gop_skb(struct sk_buff *skb,
- 	int old_meta_prod;
- 	int gso_type;
- 	int gso_size;
-+	struct ubuf_info *ubuf = skb_shinfo(skb)->destructor_arg;
-+	grant_ref_t foreign_grefs[MAX_SKB_FRAGS];
-+	struct xenvif *foreign_vif = NULL;
- 
- 	old_meta_prod = npo->meta_prod;
- 
-@@ -365,6 +381,19 @@ static int xenvif_gop_skb(struct sk_buff *skb,
- 	npo->copy_off = 0;
- 	npo->copy_gref = req->gref;
- 
-+	if ((skb_shinfo(skb)->tx_flags & SKBTX_DEV_ZEROCOPY) &&
-+		 (ubuf->callback == &xenvif_zerocopy_callback)) {
-+		int i = 0;
-+		foreign_vif = ubuf_to_vif(ubuf);
-+
-+		do {
-+			u16 pending_idx = ubuf->desc;
-+			foreign_grefs[i++] =
-+				foreign_vif->pending_tx_info[pending_idx].req.gref;
-+			ubuf = (struct ubuf_info *) ubuf->ctx;
-+		} while (ubuf);
-+	}
-+
- 	data = skb->data;
- 	while (data < skb_tail_pointer(skb)) {
- 		unsigned int offset = offset_in_page(data);
-@@ -374,7 +403,9 @@ static int xenvif_gop_skb(struct sk_buff *skb,
- 			len = skb_tail_pointer(skb) - data;
- 
- 		xenvif_gop_frag_copy(vif, skb, npo,
--				     virt_to_page(data), len, offset, &head);
-+				     virt_to_page(data), len, offset, &head,
-+				     NULL,
-+				     0);
- 		data += len;
- 	}
- 
-@@ -383,7 +414,9 @@ static int xenvif_gop_skb(struct sk_buff *skb,
- 				     skb_frag_page(&skb_shinfo(skb)->frags[i]),
- 				     skb_frag_size(&skb_shinfo(skb)->frags[i]),
- 				     skb_shinfo(skb)->frags[i].page_offset,
--				     &head);
-+				     &head,
-+				     foreign_vif,
-+				     foreign_grefs[i]);
- 	}
- 
- 	return npo->meta_prod - old_meta_prod;
-@@ -1351,6 +1384,11 @@ static int xenvif_tx_submit(struct xenvif *vif)
- 	return work_done;
- }
- 
-+void xenvif_zerocopy_callback(struct ubuf_info *ubuf, bool zerocopy_success)
-+{
-+	return;
-+}
-+
- /* Called after netfront has transmitted */
- int xenvif_tx_action(struct xenvif *vif, int budget)
- {
