@@ -1,95 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751451AbaCFHlK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 02:41:10 -0500
-Received: from mail-yh0-f47.google.com ([209.85.213.47]:53914 "EHLO
-	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750875AbaCFHlH (ORCPT
+	id S1751713AbaCFHpL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 02:45:11 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:63894 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751059AbaCFHpJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 02:41:07 -0500
-MIME-Version: 1.0
-In-Reply-To: <1393223377-5744-7-git-send-email-tuukka.tikkanen@linaro.org>
-References: <1393223377-5744-1-git-send-email-tuukka.tikkanen@linaro.org>
-	<1393223377-5744-7-git-send-email-tuukka.tikkanen@linaro.org>
-Date: Thu, 6 Mar 2014 02:41:06 -0500
-X-Google-Sender-Auth: 0sX8khofPMKivb1gxacAL_i_8nA
-Message-ID: <CAJvTdKneVk_ToJ=Sv4GnMfn5a0r=ynfL4fRLOoKHsqMrDYr8JA@mail.gmail.com>
-Subject: Re: [PATCH 6/7] Cpuidle: Deal with timer expiring in the past
-From: Len Brown <lenb@kernel.org>
-To: Tuukka Tikkanen <tuukka.tikkanen@linaro.org>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 6 Mar 2014 02:45:09 -0500
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: alsa-devel@alsa-project.org
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Max Filippov <jcmvbkbc@gmail.com>
+Subject: [PATCH] ASoC: tlv320aic23: add support for SPI control mode
+Date: Thu,  6 Mar 2014 11:44:22 +0400
+Message-Id: <1394091862-13603-1-git-send-email-jcmvbkbc@gmail.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 24, 2014 at 1:29 AM, Tuukka Tikkanen
-<tuukka.tikkanen@linaro.org> wrote:
-> Sometimes (fairly often) when the cpuidle menu governor is making a decision
-> about idle state to enter the next timer for the cpu appears to expire in
-> the past. The menu governor expects the expiry to always be in the future
-> and in fact stores the time delta in an unsigned variable. However, when
-> the expiry is in the past, the value returned by tick_nohz_get_sleep_length
-> can be negative. This patch prevents using negative values, instead making
-> the governor return immediately similar to having latency requirement set
-> to 0.
->
-> Note: As with latency == 0, the return value is 0 with no check to see if
-> the state 0 has been disabled or not.
->
-> Signed-off-by: Tuukka Tikkanen <tuukka.tikkanen@linaro.org>
-> ---
->  drivers/cpuidle/governors/menu.c |   10 +++++++++-
->  1 file changed, 9 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
-> index 71b5232..c414468 100644
-> --- a/drivers/cpuidle/governors/menu.c
-> +++ b/drivers/cpuidle/governors/menu.c
-> @@ -302,8 +302,16 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
->         if (unlikely(latency_req == 0))
->                 return 0;
->
-> -       /* determine the expected residency time, round up */
-> +       /*
-> +        * Determine the expected residency time. If the time is negative,
-> +        * a timer interrupt has probably just expired after disabling
-> +        * interrupts. Return as quickly as possible in the most shallow
-> +        * state possible. tv_nsec is always positive, so only check the
-> +        * seconds.
-> +        */
->         t = ktime_to_timespec(tick_nohz_get_sleep_length());
-> +       if (t.tv_sec < 0)
-> +               return 0;
->         data->next_timer_us =
->                 t.tv_sec * USEC_PER_SEC + t.tv_nsec / NSEC_PER_USEC;
->
+tlv320aic23 chip control interface may work in either I2C or SPI mode
+depending on the MODE pin state. Functionality and register layout are
+independent of the control mode.
 
-Are there special conditions that are necessary to provoke a negative
-return value?
-I've traced this code on several systems, and never seen a negative
-return value.
+Provide i2c and spi driver entry points when CONFIG_I2C and
+CONFIG_SPI_MASTER are enabled respectively.
 
-However...
-I do see values up to 300.2 seconds, and those large values seem to decay
-at the rate of real-time so that after 5 minutes they are small, and then
-jump back up to 300 seconds.
+Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+---
+ sound/soc/codecs/Kconfig       |  2 +-
+ sound/soc/codecs/tlv320aic23.c | 58 +++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 56 insertions(+), 4 deletions(-)
 
-Some folks at Oracle debugged it down to use of NEXT_TIMER_MAX_DELTA
-when there is _no_ timer currently pending on that CPU.  It seems this is easier
-to observe, the more CPUs a system has -- though I've been able to reproduce
-it on a system as small as a single-package 8-cpu systems.
+diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
+index 983d087a..6d82de5 100644
+--- a/sound/soc/codecs/Kconfig
++++ b/sound/soc/codecs/Kconfig
+@@ -71,7 +71,7 @@ config SND_SOC_ALL_CODECS
+ 	select SND_SOC_STA529 if I2C
+ 	select SND_SOC_STAC9766 if SND_SOC_AC97_BUS
+ 	select SND_SOC_TAS5086 if I2C
+-	select SND_SOC_TLV320AIC23 if I2C
++	select SND_SOC_TLV320AIC23 if SND_SOC_I2C_AND_SPI
+ 	select SND_SOC_TLV320AIC26 if SPI_MASTER
+ 	select SND_SOC_TLV320AIC32X4 if I2C
+ 	select SND_SOC_TLV320AIC3X if I2C
+diff --git a/sound/soc/codecs/tlv320aic23.c b/sound/soc/codecs/tlv320aic23.c
+index 5d430cc..2418260 100644
+--- a/sound/soc/codecs/tlv320aic23.c
++++ b/sound/soc/codecs/tlv320aic23.c
+@@ -26,6 +26,7 @@
+ #include <linux/i2c.h>
+ #include <linux/regmap.h>
+ #include <linux/slab.h>
++#include <linux/spi/spi.h>
+ #include <sound/core.h>
+ #include <sound/pcm.h>
+ #include <sound/pcm_params.h>
+@@ -617,12 +618,13 @@ static struct snd_soc_codec_driver soc_codec_dev_tlv320aic23 = {
+ 	.num_dapm_routes = ARRAY_SIZE(tlv320aic23_intercon),
+ };
+ 
++#ifdef CONFIG_I2C
+ /*
+  * If the i2c layer weren't so broken, we could pass this kind of data
+  * around
+  */
+-static int tlv320aic23_codec_probe(struct i2c_client *i2c,
+-				   const struct i2c_device_id *i2c_id)
++static int tlv320aic23_i2c_probe(struct i2c_client *i2c,
++				 const struct i2c_device_id *i2c_id)
+ {
+ 	struct aic23 *aic23;
+ 	int ret;
+@@ -661,12 +663,62 @@ static struct i2c_driver tlv320aic23_i2c_driver = {
+ 	.driver = {
+ 		   .name = "tlv320aic23-codec",
+ 		   },
+-	.probe = tlv320aic23_codec_probe,
++	.probe = tlv320aic23_i2c_probe,
+ 	.remove = __exit_p(tlv320aic23_i2c_remove),
+ 	.id_table = tlv320aic23_id,
+ };
+ 
+ module_i2c_driver(tlv320aic23_i2c_driver);
++#endif /* CONFIG_I2C */
++
++#ifdef CONFIG_SPI_MASTER
++static int aic23_spi_probe(struct spi_device *spi)
++{
++	struct aic23 *aic23;
++	int ret;
++
++	dev_dbg(&spi->dev, "probing tlv320aic23 spi device\n");
++
++	spi->bits_per_word = 16;
++	spi->mode = SPI_MODE_0;
++	ret = spi_setup(spi);
++	if (ret < 0)
++		return ret;
++
++	/* Allocate driver data */
++	aic23 = devm_kzalloc(&spi->dev, sizeof(struct aic23), GFP_KERNEL);
++	if (!aic23)
++		return -ENOMEM;
++
++	aic23->regmap = devm_regmap_init_spi(spi, &tlv320aic23_regmap);
++	if (IS_ERR(aic23->regmap))
++		return PTR_ERR(aic23->regmap);
++
++	/* Initialize the driver data */
++	dev_set_drvdata(&spi->dev, aic23);
++
++	ret = snd_soc_register_codec(&spi->dev,
++			&soc_codec_dev_tlv320aic23, &tlv320aic23_dai, 1);
++	return ret;
++}
++
++static int aic23_spi_remove(struct spi_device *spi)
++{
++	snd_soc_unregister_codec(&spi->dev);
++	return 0;
++}
++
++static struct spi_driver aic23_spi = {
++	.driver = {
++		.name = "tlv320aic23",
++		.owner = THIS_MODULE,
++	},
++	.probe = aic23_spi_probe,
++	.remove = aic23_spi_remove,
++};
++
++module_spi_driver(aic23_spi);
++#endif /* CONFIG_SPI_MASTER */
+ 
+ MODULE_DESCRIPTION("ASoC TLV320AIC23 codec driver");
+ MODULE_AUTHOR("Arun KS <arunks@mistralsolutions.com>");
+-- 
+1.8.1.4
 
-One proposed way to address this is to cap large values at 1 second.
-However, that will not recognize that for the period when the large
-value decays to under 1 second, all of those are fiction.
-
-Also, if we could identify the case where there is no future timer,
-it seems that re-using dev->last_residency would probably be
-a more useful guess than pretending we'll have a timer expire in 1 second.
-
-thanks,
-Len Brown, Intel Open Source Technology Cente
