@@ -1,82 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757467AbaCFASc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 19:18:32 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:51715 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756472AbaCFASb (ORCPT
+	id S1757350AbaCFA2J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 19:28:09 -0500
+Received: from smtprelay0237.hostedemail.com ([216.40.44.237]:42099 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754865AbaCFA2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 19:18:31 -0500
-Message-ID: <5317BE94.20703@oracle.com>
-Date: Wed, 05 Mar 2014 17:17:24 -0700
-From: Khalid Aziz <khalid.aziz@oracle.com>
-Organization: Oracle Corp
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: David Lang <david@lang.hm>
-CC: Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        peterz@infradead.org, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] [PATCH] Pre-emption control for userspace
-References: <1393870033-31076-1-git-send-email-khalid.aziz@oracle.com> <531641A8.40306@zytor.com> <53164824.3000704@oracle.com> <20140304222356.41c55bbc@alan.etchedpixels.co.uk> <5316574F.6040105@oracle.com> <alpine.DEB.2.02.1403050129570.18573@ionos.tec.linutronix.de> <8738ix5uyk.fsf@tassilo.jf.intel.com> <20140305145420.GA30173@redhat.com> <20140305155601.GF22728@two.firstfloor.org> <20140305163644.GA2824@redhat.com> <53175D54.1020804@oracle.com> <alpine.DEB.2.02.1403051506550.6682@nftneq.ynat.uz> <5317B7D5.2030403@oracle.com> <alpine.DEB.2.02.1403051555360.6682@nftneq.ynat.uz>
-In-Reply-To: <alpine.DEB.2.02.1403051555360.6682@nftneq.ynat.uz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 5 Mar 2014 19:28:07 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3867:3870:3871:3874:4321:5007:6119:6755:7652:7903:10004:10400:10848:11026:11232:11473:11658:11914:12043:12219:12296:12438:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: hall03_639abd0c7cd22
+X-Filterd-Recvd-Size: 1580
+Message-ID: <1394065683.12070.32.camel@joe-AO722>
+Subject: Re: [PATCH v2] [media] v4l: omap4iss: Add DEBUG compiler flag
+From: Joe Perches <joe@perches.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Paul Bolle <pebolle@tiscali.nl>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 05 Mar 2014 16:28:03 -0800
+In-Reply-To: <3099833.ZhlQFyxhbo@avalon>
+References: <1391958577.25424.22.camel@x220> <1600194.93iSF4Yz3E@avalon>
+	 <20140305171006.6243354a@samsung.com> <3099833.ZhlQFyxhbo@avalon>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/2014 04:59 PM, David Lang wrote:
-> what's the cost to setup mmap of this file in /proc. this is sounding
-> like a lot of work.
+On Thu, 2014-03-06 at 00:50 +0100, Laurent Pinchart wrote:
 
-That is a one time cost paid when a thread initializes itself.
+> Please note that -DDEBUG is equivalent to '#define DEBUG', not to '#define 
+> CONFIG_DEBUG'. 'DEBUG' needs to be defined for dev_dbg() to have any effect. 
 
->
->>> is this gain from not giving up the CPU at all? or is it from avoiding
->>> all the delays due to the contending thread trying in turn? the
->>> yield_to() approach avoids all those other threads trying in turn so it
->>> should get fairly close to the same benefits.
->>>
->>
->> The gain is from avoiding contention by giving locking thread a chance
->> to complete its critical section which is expected to be very short
->> (certainly shorter than timeslice). Pre-emption immunity gives it one
->> and only one additional timeslice.
->
-> but the yield_to() does almost the same thing, there is a small bump,
-> but you don't have to wait for thread B to spin, thread C..ZZZ etc to
-> spin before thread A can finish it's work. As soon as the second thread
-> hits the critical section, thread A is going to be able to do more work
-> (and hopefully finish)
->
->> Hope this helps clear things up.
->
-> It doesn't sound like you and I are understanding how the yield_to()
-> approach would work. I hope my comments have helped get us on the same
-> page.
->
+Not quite.  If CONFIG_DYNAMIC_DEBUG is set, these
+dev_dbg statements are compiled in but not by default
+set to emit output.  Output can be enabled by using
+dynamic_debug controls like:
 
-I apologize if I am being dense. My understanding of yield_to() is what 
-Oleg had said in his reply earlier, so I will quote the example he gave:
+# echo -n 'file omap4iss/* +p' > <debugfs>/dynamic_debug/control
 
-	my_lock()
-	{
-		if (!TRY_LOCK()) {
-			yield_to(owner);
-			LOCK();
-		}
+See Documentation/dynamic-debug-howto.txt for more details.
 
-		owner = gettid();
-	}
 
-If thread A had already lost the processor by the time thread B executes 
-above code, wouldn't we have paid the price of two context switches for 
-thread A?
-
-Thanks,
-Khalid
