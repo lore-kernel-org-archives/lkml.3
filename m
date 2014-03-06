@@ -1,75 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924AbaCFVvo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 16:51:44 -0500
-Received: from [207.46.163.141] ([207.46.163.141]:10955 "EHLO
-	na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751697AbaCFVvj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 16:51:39 -0500
-From: KY Srinivasan <kys@microsoft.com>
-To: Brian Wong <draconicpenguin1@yahoo.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: Hyper-V Synthetic Video Frame Buffer Driver may distort top two
- lines of console
-Thread-Topic: Hyper-V Synthetic Video Frame Buffer Driver may distort top
- two lines of console
-Thread-Index: AQHPOXx2W59dN7iRf0OjrtDg+nS0hZrUjJiAgAAMOICAAABSoA==
-Date: Thu, 6 Mar 2014 21:50:51 +0000
-Message-ID: <366171544ed34d909b113328d2ed2e64@BY2PR03MB299.namprd03.prod.outlook.com>
-References: <5318DD7A.2080706@yahoo.com> <5318E311.8000303@yahoo.com>
- <5318ED51.4060400@yahoo.com>
-In-Reply-To: <5318ED51.4060400@yahoo.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [117.192.117.251]
-x-forefront-prvs: 0142F22657
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(199002)(51704005)(377454003)(479174003)(24454002)(189002)(13464003)(69226001)(74316001)(80976001)(19580395003)(87936001)(15975445006)(2656002)(51856001)(47736001)(81686001)(49866001)(81816001)(76576001)(85852003)(50986001)(83072002)(54316002)(81542001)(54356001)(53806001)(90146001)(76482001)(4396001)(74706001)(66066001)(93136001)(94316002)(83322001)(95666003)(56816005)(19580405001)(76796001)(74366001)(81342001)(56776001)(86612001)(63696002)(47446002)(74502001)(15202345003)(86362001)(95416001)(74662001)(87266001)(77982001)(59766001)(65816001)(1511001)(31966008)(79102001)(74876001)(15395725003)(93516002)(92566001)(47976001)(33646001)(46102001)(97186001)(85306002)(76786001)(80022001)(94946001)(97336001)(15519875005)(24736002)(18886065003);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB595;H:BY2PR03MB299.namprd03.prod.outlook.com;CLIP:117.192.117.251;FPR:F81EC501.24F385EA.9BCC720C.44E639D8.20217;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753951AbaCFVwX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 16:52:23 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:64588 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753434AbaCFVtM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 16:49:12 -0500
+X-IronPort-AV: E=Sophos;i="4.97,603,1389744000"; 
+   d="scan'208";a="108916310"
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
+        <xen-devel@lists.xenproject.org>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jonathan.davies@citrix.com>, Zoltan Kiss <zoltan.kiss@citrix.com>
+Subject: [PATCH net-next v7 5/9] xen-netback: Remove old TX grant copy definitons and fix indentations
+Date: Thu, 6 Mar 2014 21:48:27 +0000
+Message-ID: <1394142511-14827-6-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1394142511-14827-1-git-send-email-zoltan.kiss@citrix.com>
+References: <1394142511-14827-1-git-send-email-zoltan.kiss@citrix.com>
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+Content-Type: text/plain
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+These became obsolete with grant mapping. I've left intentionally the
+indentations in this way, to improve readability of previous patches.
 
+NOTE: if bisect brought you here, you should apply the series up until
+"xen-netback: Timeout packets in RX path", otherwise Windows guests can't work
+properly and malicious guests can block other guests by not releasing their sent
+packets.
 
-> -----Original Message-----
-> From: Brian Wong [mailto:draconicpenguin1@yahoo.com]
-> Sent: Friday, March 7, 2014 3:19 AM
-> To: KY Srinivasan; linux-kernel@vger.kernel.org
-> Subject: Re: Hyper-V Synthetic Video Frame Buffer Driver may distort top
-> two lines of console
-> 
-> On 3/6/2014 4:05 PM, Brian Wong wrote:
-> > On 3/6/2014 3:41 PM, Brian Wong wrote:
-> >> I've identified another possible bug in the Hyper-V drivers: When the
-> >> Hyper-V Synthetic Video Frame Buffer Driver is built into the kernel,
-> >> and the VM is paused and continued, the top two lines of the console
-> >> may become distorted. See the image at http://imgur.com/kIExFP3.
-> >>
-> >> Can someone look into it?
-Haiyang (copied here) will look into it.
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+---
+v2:
+- move the indentation fixup patch here
 
-Regards,
+v4:
+- indentation fixes
 
-K. Y
-> >
-> > Just to clarify, I can confirm this bug under both the patched Gentoo
-> > 3.10.32 kernel and the vanilla 3.13.5 kernel (see the image at
-> > http://imgur.com/mYUTzgt). Is the framebuffer somehow getting
-> corrupted?
-> >
-> 
-> The problem also reproduces under Kali Linux with kernel 3.12.6, but only on
-> virtual consoles that are not hosting a graphical X session. The problem does
-> not appear in X.
-> 
-> --
-> Brian Wong
-> http://www.fierydragonlord.com
+diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
+index 8719500..8e59b14 100644
+--- a/drivers/net/xen-netback/common.h
++++ b/drivers/net/xen-netback/common.h
+@@ -48,37 +48,8 @@
+ typedef unsigned int pending_ring_idx_t;
+ #define INVALID_PENDING_RING_IDX (~0U)
+ 
+-/* For the head field in pending_tx_info: it is used to indicate
+- * whether this tx info is the head of one or more coalesced requests.
+- *
+- * When head != INVALID_PENDING_RING_IDX, it means the start of a new
+- * tx requests queue and the end of previous queue.
+- *
+- * An example sequence of head fields (I = INVALID_PENDING_RING_IDX):
+- *
+- * ...|0 I I I|5 I|9 I I I|...
+- * -->|<-INUSE----------------
+- *
+- * After consuming the first slot(s) we have:
+- *
+- * ...|V V V V|5 I|9 I I I|...
+- * -----FREE->|<-INUSE--------
+- *
+- * where V stands for "valid pending ring index". Any number other
+- * than INVALID_PENDING_RING_IDX is OK. These entries are considered
+- * free and can contain any number other than
+- * INVALID_PENDING_RING_IDX. In practice we use 0.
+- *
+- * The in use non-INVALID_PENDING_RING_IDX (say 0, 5 and 9 in the
+- * above example) number is the index into pending_tx_info and
+- * mmap_pages arrays.
+- */
+ struct pending_tx_info {
+-	struct xen_netif_tx_request req; /* coalesced tx request */
+-	pending_ring_idx_t head; /* head != INVALID_PENDING_RING_IDX
+-				  * if it is head of one or more tx
+-				  * reqs
+-				  */
++	struct xen_netif_tx_request req; /* tx request */
+ 	/* Callback data for released SKBs. The callback is always
+ 	 * xenvif_zerocopy_callback, desc contains the pending_idx, which is
+ 	 * also an index in pending_tx_info array. It is initialized in
+@@ -149,11 +120,6 @@ struct xenvif {
+ 	struct pending_tx_info pending_tx_info[MAX_PENDING_REQS];
+ 	grant_handle_t grant_tx_handle[MAX_PENDING_REQS];
+ 
+-	/* Coalescing tx requests before copying makes number of grant
+-	 * copy ops greater or equal to number of slots required. In
+-	 * worst case a tx request consumes 2 gnttab_copy.
+-	 */
+-	struct gnttab_copy tx_copy_ops[2*MAX_PENDING_REQS];
+ 	struct gnttab_map_grant_ref tx_map_ops[MAX_PENDING_REQS];
+ 	struct gnttab_unmap_grant_ref tx_unmap_ops[MAX_PENDING_REQS];
+ 	/* passed to gnttab_[un]map_refs with pages under (un)mapping */
+diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+index 763d49a..bd09028 100644
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -62,16 +62,6 @@ module_param(separate_tx_rx_irq, bool, 0644);
+ static unsigned int fatal_skb_slots = FATAL_SKB_SLOTS_DEFAULT;
+ module_param(fatal_skb_slots, uint, 0444);
+ 
+-/*
+- * If head != INVALID_PENDING_RING_IDX, it means this tx request is head of
+- * one or more merged tx requests, otherwise it is the continuation of
+- * previous tx request.
+- */
+-static inline int pending_tx_is_head(struct xenvif *vif, RING_IDX idx)
+-{
+-	return vif->pending_tx_info[idx].head != INVALID_PENDING_RING_IDX;
+-}
+-
+ static void xenvif_idx_release(struct xenvif *vif, u16 pending_idx,
+ 			       u8 status);
+ 
+@@ -790,19 +780,6 @@ static int xenvif_count_requests(struct xenvif *vif,
+ 	return slots;
+ }
+ 
+-static struct page *xenvif_alloc_page(struct xenvif *vif,
+-				      u16 pending_idx)
+-{
+-	struct page *page;
+-
+-	page = alloc_page(GFP_ATOMIC|__GFP_COLD);
+-	if (!page)
+-		return NULL;
+-	vif->mmap_pages[pending_idx] = page;
+-
+-	return page;
+-}
+-
+ 
+ struct xenvif_tx_cb {
+ 	u16 pending_idx;
+@@ -832,13 +809,9 @@ static struct gnttab_map_grant_ref *xenvif_get_requests(struct xenvif *vif,
+ 	struct skb_shared_info *shinfo = skb_shinfo(skb);
+ 	skb_frag_t *frags = shinfo->frags;
+ 	u16 pending_idx = XENVIF_TX_CB(skb)->pending_idx;
+-	u16 head_idx = 0;
+-	int slot, start;
+-	struct page *page;
+-	pending_ring_idx_t index, start_idx = 0;
+-	uint16_t dst_offset;
++	int start;
++	pending_ring_idx_t index;
+ 	unsigned int nr_slots;
+-	struct pending_tx_info *first = NULL;
+ 
+ 	/* At this point shinfo->nr_frags is in fact the number of
+ 	 * slots, which can be as large as XEN_NETBK_LEGACY_SLOTS_MAX.
+@@ -850,8 +823,8 @@ static struct gnttab_map_grant_ref *xenvif_get_requests(struct xenvif *vif,
+ 
+ 	for (shinfo->nr_frags = start; shinfo->nr_frags < nr_slots;
+ 	     shinfo->nr_frags++, txp++, gop++) {
+-				index = pending_index(vif->pending_cons++);
+-				pending_idx = vif->pending_ring[index];
++		index = pending_index(vif->pending_cons++);
++		pending_idx = vif->pending_ring[index];
+ 		xenvif_tx_create_gop(vif, pending_idx, txp, gop);
+ 		frag_set_pending_idx(&frags[shinfo->nr_frags], pending_idx);
+ 	}
+@@ -859,18 +832,6 @@ static struct gnttab_map_grant_ref *xenvif_get_requests(struct xenvif *vif,
+ 	BUG_ON(shinfo->nr_frags > MAX_SKB_FRAGS);
+ 
+ 	return gop;
+-err:
+-	/* Unwind, freeing all pages and sending error responses. */
+-	while (shinfo->nr_frags-- > start) {
+-		xenvif_idx_release(vif,
+-				frag_get_pending_idx(&frags[shinfo->nr_frags]),
+-				XEN_NETIF_RSP_ERROR);
+-	}
+-	/* The head too, if necessary. */
+-	if (start)
+-		xenvif_idx_release(vif, pending_idx, XEN_NETIF_RSP_ERROR);
+-
+-	return NULL;
+ }
+ 
+ static inline void xenvif_grant_handle_set(struct xenvif *vif,
+@@ -910,7 +871,6 @@ static int xenvif_tx_check_gop(struct xenvif *vif,
+ 	struct pending_tx_info *tx_info;
+ 	int nr_frags = shinfo->nr_frags;
+ 	int i, err, start;
+-	u16 peek; /* peek into next tx request */
+ 
+ 	/* Check status of header. */
+ 	err = gop->status;
+@@ -924,14 +884,12 @@ static int xenvif_tx_check_gop(struct xenvif *vif,
+ 
+ 	for (i = start; i < nr_frags; i++) {
+ 		int j, newerr;
+-		pending_ring_idx_t head;
+ 
+ 		pending_idx = frag_get_pending_idx(&shinfo->frags[i]);
+ 		tx_info = &vif->pending_tx_info[pending_idx];
+-		head = tx_info->head;
+ 
+ 		/* Check error status: if okay then remember grant handle. */
+-			newerr = (++gop)->status;
++		newerr = (++gop)->status;
+ 
+ 		if (likely(!newerr)) {
+ 			xenvif_grant_handle_set(vif, pending_idx , gop->handle);
+@@ -1136,7 +1094,6 @@ static unsigned xenvif_tx_build_gops(struct xenvif *vif, int budget)
+ 	       (skb_queue_len(&vif->tx_queue) < budget)) {
+ 		struct xen_netif_tx_request txreq;
+ 		struct xen_netif_tx_request txfrags[XEN_NETBK_LEGACY_SLOTS_MAX];
+-		struct page *page;
+ 		struct xen_netif_extra_info extras[XEN_NETIF_EXTRA_TYPE_MAX-1];
+ 		u16 pending_idx;
+ 		RING_IDX idx;
+@@ -1507,18 +1464,17 @@ static void xenvif_idx_release(struct xenvif *vif, u16 pending_idx,
+ {
+ 	struct pending_tx_info *pending_tx_info;
+ 	pending_ring_idx_t index;
+-	u16 peek; /* peek into next tx request */
+ 	unsigned long flags;
+ 
+-		pending_tx_info = &vif->pending_tx_info[pending_idx];
+-		spin_lock_irqsave(&vif->response_lock, flags);
+-		make_tx_response(vif, &pending_tx_info->req, status);
+-		index = pending_index(vif->pending_prod);
+-		vif->pending_ring[index] = pending_idx;
+-		/* TX shouldn't use the index before we give it back here */
+-		mb();
+-		vif->pending_prod++;
+-		spin_unlock_irqrestore(&vif->response_lock, flags);
++	pending_tx_info = &vif->pending_tx_info[pending_idx];
++	spin_lock_irqsave(&vif->response_lock, flags);
++	make_tx_response(vif, &pending_tx_info->req, status);
++	index = pending_index(vif->pending_prod);
++	vif->pending_ring[index] = pending_idx;
++	/* TX shouldn't use the index before we give it back here */
++	mb();
++	vif->pending_prod++;
++	spin_unlock_irqrestore(&vif->response_lock, flags);
+ }
+ 
+ 
