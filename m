@@ -1,77 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752439AbaCFXTR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 18:19:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50528 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752340AbaCFXTO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 18:19:14 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 2/3] af_rxrpc: Prevent RxRPC peers from ABORT-storming one
- another [ver #3]
-From: David Howells <dhowells@redhat.com>
-To: netdev@vger.kernel.org
-Cc: dhowells@redhat.com, tim@electronghost.co.uk,
-        linux-afs@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Thu, 06 Mar 2014 23:18:49 +0000
-Message-ID: <20140306231849.11431.66439.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20140306231835.11431.50147.stgit@warthog.procyon.org.uk>
-References: <20140306231835.11431.50147.stgit@warthog.procyon.org.uk>
-User-Agent: StGit/0.17-dirty
+	id S1752235AbaCFXT6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 18:19:58 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:20504 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751697AbaCFXT4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 18:19:56 -0500
+Date: Thu, 6 Mar 2014 18:19:53 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Petr Mladek <pmladek@suse.cz>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH 4/4] x86: Fix order of warning messages when ftrace
+ modifies code
+Message-ID: <20140306181953.25681923@gandalf.local.home>
+In-Reply-To: <1392650573-3390-5-git-send-email-pmladek@suse.cz>
+References: <1392650573-3390-1-git-send-email-pmladek@suse.cz>
+	<1392650573-3390-5-git-send-email-pmladek@suse.cz>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tim Smith <tim@electronghost.co.uk>
 
-When an ABORT is sent, aborting a connection, the sender quite reasonably
-forgets about the connection.  If another frame is received, another ABORT
-will be sent.  When the receiver gets it, it no longer applies to an extant
-connection, so an ABORT is sent, and so on...
+I'm digging through older email, and notice you dropped this patch
+from your last series. It is a rather trivial patch, and I don't really
+care if it gets applied or not. But was there a reason to drop it? Or
+do you not care either?
 
-Prevent this by never sending a rejection for an ABORT packet.
+-- Steve
 
-Signed-off-by: Tim Smith <tim@electronghost.co.uk>
-Signed-off-by: David Howells <dhowells@redhat.com>
----
 
- net/rxrpc/ar-input.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+On Mon, 17 Feb 2014 16:22:53 +0100
+Petr Mladek <pmladek@suse.cz> wrote:
 
-diff --git a/net/rxrpc/ar-input.c b/net/rxrpc/ar-input.c
-index 529572f18d1f..eb7e16276cc1 100644
---- a/net/rxrpc/ar-input.c
-+++ b/net/rxrpc/ar-input.c
-@@ -606,8 +606,10 @@ dead_call:
- 	}
- 
- 	_debug("dead call");
--	skb->priority = RX_CALL_DEAD;
--	rxrpc_reject_packet(conn->trans->local, skb);
-+	if (sp->hdr.type != RXRPC_PACKET_TYPE_ABORT) {
-+		skb->priority = RX_CALL_DEAD;
-+		rxrpc_reject_packet(conn->trans->local, skb);
-+	}
- 	goto done;
- 
- 	/* resend last packet of a completed call
-@@ -790,8 +792,10 @@ cant_route_call:
- 		skb->priority = RX_CALL_DEAD;
- 	}
- 
--	_debug("reject");
--	rxrpc_reject_packet(local, skb);
-+	if (sp->hdr.type != RXRPC_PACKET_TYPE_ABORT) {
-+		_debug("reject type %d",sp->hdr.type);
-+		rxrpc_reject_packet(local, skb);
-+	}
- 	rxrpc_put_local(local);
- 	_leave(" [no call]");
- 	return;
+> The colon at the end of the printk message suggests that it should get printed
+> before the details printed by ftrace_bug().
+> 
+> When touching the line, let's use the preferred pr_warn() macro as suggested
+> by checkpatch.pl.
+> 
+> Signed-off-by: Petr Mladek <pmladek@suse.cz>
+> ---
+>  arch/x86/kernel/ftrace.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
+> index 525a9f954c8b..ad7c38f5206b 100644
+> --- a/arch/x86/kernel/ftrace.c
+> +++ b/arch/x86/kernel/ftrace.c
+> @@ -622,8 +622,8 @@ void ftrace_replace_code(int enable)
+>  	return;
+>  
+>   remove_breakpoints:
+> +	pr_warn("Failed on %s (%d):\n", report, count);
+>  	ftrace_bug(ret, rec ? rec->ip : 0);
+> -	printk(KERN_WARNING "Failed on %s (%d):\n", report, count);
+>  	for_ftrace_rec_iter(iter) {
+>  		int err;
+>  
 
