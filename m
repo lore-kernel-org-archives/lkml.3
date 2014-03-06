@@ -1,100 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752153AbaCFGHo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 01:07:44 -0500
-Received: from exprod5og112.obsmtp.com ([64.18.0.24]:60450 "HELO
-	exprod5og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751785AbaCFGG0 (ORCPT
+	id S1752224AbaCFGH6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 01:07:58 -0500
+Received: from [207.46.163.143] ([207.46.163.143]:19886 "EHLO
+	na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751981AbaCFGH4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 01:06:26 -0500
-From: Tanmay Inamdar <tinamdar@apm.com>
-To: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Rob Landley <rob@landley.net>, Liviu Dudau <liviu.dudau@arm.com>
-Cc: linux-pci@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, patches@apm.com, jcm@redhat.com,
-        Tanmay Inamdar <tinamdar@apm.com>
-Subject: [PATCH v4 3/4] dt-bindings: pci: xgene pcie device tree bindings
-Date: Wed,  5 Mar 2014 22:06:02 -0800
-Message-Id: <1394085963-27553-4-git-send-email-tinamdar@apm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1394085963-27553-1-git-send-email-tinamdar@apm.com>
-References: <1394085963-27553-1-git-send-email-tinamdar@apm.com>
+	Thu, 6 Mar 2014 01:07:56 -0500
+From: Peter Chen <Peter.Chen@freescale.com>
+To: Jagdish Gedia <jvgediya@gmail.com>
+CC: Alan Stern <stern@rowland.harvard.edu>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: USB remote wakeup through gpio interrupt
+Thread-Topic: USB remote wakeup through gpio interrupt
+Thread-Index: AQHPOH5yAmOalqDX80aVtzyyTCiHRJrSqH0AgADUoeCAABOzAIAAAH/w
+Date: Thu, 6 Mar 2014 06:05:13 +0000
+Message-ID: <3a0fb59a555b40aca5610ef00626fdba@BL2PR03MB226.namprd03.prod.outlook.com>
+References: <CAOAoqGuicMKJ8e6kmQ92fL73UpvBzfXx9kafP4tCbUKkiT2=vA@mail.gmail.com>
+	<Pine.LNX.4.44L0.1403051101430.1629-100000@iolanthe.rowland.org>
+	<975d7885a8b64971923466f9f06a6229@BL2PR03MB226.namprd03.prod.outlook.com>
+ <CAOAoqGvzxsnpopgi4-DtfUp-zXbq6iV0J_y18Q0NgZ1AGzSu2Q@mail.gmail.com>
+In-Reply-To: <CAOAoqGvzxsnpopgi4-DtfUp-zXbq6iV0J_y18Q0NgZ1AGzSu2Q@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.50]
+x-forefront-prvs: 0142F22657
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(189002)(51704005)(199002)(81686001)(81816001)(79102001)(74316001)(76576001)(59766001)(95666003)(66066001)(77982001)(81542001)(80022001)(65816001)(77096001)(76786001)(80976001)(74366001)(74706001)(63696002)(33646001)(76796001)(83322001)(81342001)(69226001)(4396001)(53806001)(86362001)(93516002)(47976001)(47446002)(90146001)(85852003)(76482001)(74502001)(93136001)(50986001)(51856001)(83072002)(87266001)(2656002)(46102001)(92566001)(54316002)(49866001)(74876001)(56816005)(87936001)(94946001)(85306002)(31966008)(1411001)(95416001)(47736001)(94316002)(54356001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB419;H:BL2PR03MB226.namprd03.prod.outlook.com;CLIP:123.151.195.50;FPR:F237F3AC.53B01B29.4BEC617C.D4CA8AE0.20185;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the bindings for X-Gene PCIe driver. The driver resides
-under 'drivers/pci/host/pci-xgene.c' file.
 
-Signed-off-by: Tanmay Inamdar <tinamdar@apm.com>
----
- .../devicetree/bindings/pci/xgene-pci.txt          |   52 ++++++++++++++++++++
- 1 file changed, 52 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/pci/xgene-pci.txt
 
-diff --git a/Documentation/devicetree/bindings/pci/xgene-pci.txt b/Documentation/devicetree/bindings/pci/xgene-pci.txt
-new file mode 100644
-index 0000000..e19fdb8
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pci/xgene-pci.txt
-@@ -0,0 +1,52 @@
-+* AppliedMicro X-Gene PCIe interface
-+
-+Required properties:
-+- device_type: set to "pci"
-+- compatible: should contain "apm,xgene-pcie" to identify the core.
-+- reg: A list of physical base address and length for each set of controller
-+       registers. Must contain an entry for each entry in the reg-names
-+       property.
-+- reg-names: Must include the following entries:
-+  "csr": controller configuration registers.
-+  "cfg": pcie configuration space registers.
-+- #address-cells: set to <3>
-+- #size-cells: set to <2>
-+- ranges: ranges for the outbound memory, I/O regions.
-+- dma-ranges: ranges for the inbound memory regions.
-+- #interrupt-cells: set to <1>
-+- interrupt-map-mask and interrupt-map: standard PCI properties
-+	to define the mapping of the PCIe interface to interrupt
-+	numbers.
-+- clocks: from common clock binding: handle to pci clock.
-+
-+Optional properties:
-+- status: Either "ok" or "disabled".
-+
-+Example:
-+
-+SoC specific DT Entry:
-+	pcie0: pcie@1f2b0000 {
-+		status = "disabled";
-+		device_type = "pci";
-+		compatible = "apm,xgene-storm-pcie", "apm,xgene-pcie";
-+		#interrupt-cells = <1>;
-+		#size-cells = <2>;
-+		#address-cells = <3>;
-+		reg = < 0x00 0x1f2b0000 0x0 0x00010000   /* Controller registers */
-+			0xe0 0xd0000000 0x0 0x00200000>; /* PCI config space */
-+		reg-names = "csr", "cfg";
-+		ranges = <0x01000000 0x00 0x00000000 0xe0 0x00000000 0x00 0x00010000   /* io */
-+			  0x02000000 0x00 0x10000000 0xe0 0x10000000 0x00 0x80000000>; /* mem */
-+		dma-ranges = <0x42000000 0x40 0x00000000 0x40 0x00000000 0x40 0x00000000>;
-+		interrupt-map-mask = <0x0 0x0 0x0 0x7>;
-+		interrupt-map = <0x0 0x0 0x0 0x1 &gic 0x0 0xc2 0x1
-+				 0x0 0x0 0x0 0x2 &gic 0x0 0xc3 0x1
-+				 0x0 0x0 0x0 0x3 &gic 0x0 0xc4 0x1
-+				 0x0 0x0 0x0 0x4 &gic 0x0 0xc5 0x1>;
-+		clocks = <&pcie0clk 0>;
-+	};
-+
-+Board specific DT Entry:
-+	&pcie0 {
-+		status = "ok";
-+	};
--- 
-1.7.9.5
+ 
+> 
+> Hi Peter,
+> 
+> Thanks for your reply.
+> 
+> I can use pm_runtime_get in interrupt handler, but i am not getting your
+> idea of using pm_runtime_put in interrupt handler?
+> 
+
+After your device finishes using usb, it may need to toggle gpio to trigger
+interrupt, and you can suspend usb at this interrupt handler using pm_runtime_put.
+
+> My device is usb telephony modem, which will give interrupt through gpio
+> when call comes. so at that time i want to wakeup the usb functionality
+> as remote wakeup is not working properly.
+> 
+> will pm_runtime_put suspend the device immidiately or it will not suspend
+> the device till it is in use?
+> 
+
+It should suspend device immediately if you have not set any timeout value
+for runtime. You call pm_runtime_put, it means you want to stop using device,
+the host will stop sending SOF after it finishes suspending bus routine.
+
+Peter
+ 
 
