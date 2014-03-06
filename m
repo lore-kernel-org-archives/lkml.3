@@ -1,117 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752428AbaCFUDP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 15:03:15 -0500
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:32990
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751650AbaCFUDM (ORCPT
+	id S1752847AbaCFUDl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 15:03:41 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:60669 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752090AbaCFUDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 15:03:12 -0500
-X-Forefront-Antispam-Report: CIP:165.204.84.221;KIP:(null);UIP:(null);IPV:NLI;H:atltwp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(z579ehzbb2dI98dI9371I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh22d0h2336h2438h2461h2487h24ach24d7h2516h2545h255eh25cch25f6h2605h1155h)
-X-WSS-ID: 0N216D1-07-033-02
-X-M-MSG: 
-Message-ID: <5318D475.9040701@amd.com>
-Date: Thu, 6 Mar 2014 14:03:01 -0600
-From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>,
-        <kim.naru@amd.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH 0/3] amd/pci: Add AMD hostbridge supports for newer AMD
- systems
-References: <1394053603-3724-1-git-send-email-suravee.suthikulpanit@amd.com> <CAErSpo4MMJh9b0aivwGSbxCMVw24He1+Vo_LH0R0E+fYM5aThg@mail.gmail.com> <5317D9B0.1080502@amd.com> <5318160D.8070305@amd.com> <CAErSpo59=52bqgyvqk1x7kcgFmRtdZhT6faYTi3wy7KDtk5=Pw@mail.gmail.com>
-In-Reply-To: <CAErSpo59=52bqgyvqk1x7kcgFmRtdZhT6faYTi3wy7KDtk5=Pw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+	Thu, 6 Mar 2014 15:03:40 -0500
+Date: Thu, 06 Mar 2014 15:03:37 -0500 (EST)
+Message-Id: <20140306.150337.187768633462445082.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: sergey.senozhatsky@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: use raw_cpu ops in snmp stats bh
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1394118272.27473.36.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <1394110536-4532-1-git-send-email-sergey.senozhatsky@gmail.com>
+	<1394117074.27473.29.camel@edumazet-glaptop2.roam.corp.google.com>
+	<1394118272.27473.36.camel@edumazet-glaptop2.roam.corp.google.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: amd.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 06 Mar 2014 12:03:39 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/6/2014 11:40 AM, Bjorn Helgaas wrote:
-> [+cc Yinghai, sorry I didn't think of it before]
->
-> On Wed, Mar 5, 2014 at 11:30 PM, Suravee Suthikulpanit
-> <suravee.suthikulpanit@amd.com> wrote:
->> On 3/5/2014 8:13 PM, Suravee Suthikulanit wrote:
->>>
->>> On 3/5/2014 3:24 PM, Bjorn Helgaas wrote:
->>>>
->>>> [+cc linux-acpi]
->>>>
->>>> On Wed, Mar 5, 2014 at 2:06 PM,  <suravee.suthikulpanit@amd.com> wrote:
->>>>>
->>>>> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
->>>>>
->>>>> The current code only supports upto AMD hostbridge for family11h.
->>>>> This causes PCI numa_node information to be reported incorrectly
->>>>> for newer family with multi sockets.
->>>>
->>>>
->>>> Where is the incorrect reporting?  In ACPI tables?  Is this patch a
->>>> way to cover up firmware defects in the ACPI description?  Or is this
->>>> for machines without ACPI (it seems unlikely that machines with new
->>>> AMD processors would not have ACPI)?
->>>
->>>
->>> This is incorrectly reported in the sysfs for each PCI device (e.g.
->>> /devices/pci0000:50/0000:50:00.2/numa_node). Without the patch, they
->>> return -1.
->>>
->>> In file arch/x86/pci/acpi.c, in function pci_acpi_scan_root(), it is
->>> queries the node information as following:
->>>
->>> #ifdef CONFIG_ACPI_NUMA
->>>       pxm = acpi_get_pxm(device->handle);
->>>       if (pxm >= 0)
->>>           node = pxm_to_node(pxm);
->>>       if (node != -1)
->>>           set_mp_bus_to_node(busnum, node);
->>>       else
->>> #endif
->>>           node = get_mp_bus_to_node(busnum);
->>>
->>> In this case, I see that the acpi_get_pxm() returns -1.  Therefore, it
->>> falls back to using the node information in mp_bus_to_node[].  So,
->>> without this patch, it would also returning -1.
->>>
->>> Also, the spec mentioned that the _PXM is optional, so I am not sure if
->>> this is a firmware bug.
->>
->> I am not quite familiar with the ACPI for this part.  However, after taking
->> a look at the code (in driver/acpi/pci_root.c: acpi_pci_root_add()), I
->> believe it's trying to locate _PXM method in the DSDT table, in which I
->> don't see any _PXM methods.
->
-> This sure looks like a firmware bug.  True, _PXM is optional, but if
-> the firmware doesn't provide it, nobody should be surprised that the
-> OS thinks everything is in the same proximity domain.
->
-> I would not endorse extending amd_bus.c for new CPUs.  That just
-> covers up firmware problems like this, and if you ever run a different
-> OS on the box, you'll trip over them again.  And I don't think a patch
-> like this will even be a possibility for Windows.
->
-> Bjorn
->
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Thu, 06 Mar 2014 07:04:32 -0800
 
-I understand and am trying to verify this with the BIOS engineers. 
-However, this is currently affecting family15h servers out in the field. 
-  We can try to fix ACPI for newer generation of machines, but it won't 
-be practical to push this BIOS fix to all the BIOS vendors and system 
-vendors for older platforms, as they tend to.
+> On Thu, 2014-03-06 at 06:44 -0800, Eric Dumazet wrote:
+> 
+>> I think you missed a lot of mails sent by Chrisoph Lameter recently...
+> 
+> s/Chrisoph/Christoph/
+> 
+> Appropriate fix would be the following one, please submit this formally.
+> 
+> 
+> Fixes: f19c29e3e391 ("tcp: snmp stats for Fast Open, SYN rtx, and data pkts")
+> 
+> diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+> index 5286228679bd..df063a32a177 100644
+> --- a/net/ipv4/tcp_output.c
+> +++ b/net/ipv4/tcp_output.c
+> @@ -87,7 +87,7 @@ static void tcp_event_new_data_sent(struct sock *sk, const struct sk_buff *skb)
+>  		tcp_rearm_rto(sk);
+>  	}
+>  
+> -	NET_ADD_STATS_BH(sock_net(sk), LINUX_MIB_TCPORIGDATASENT,
+> +	NET_ADD_STATS(sock_net(sk), LINUX_MIB_TCPORIGDATASENT,
+>  			 tcp_skb_pcount(skb));
+>  }
 
-What if I localize the extension to the changes to access node 
-information in the hostbridge for just the famil15h which is mostly used 
-in our main server products? Would that be acceptable?
+I'll take care of this, as follows:
 
-Suravee
+====================
+>From 2997439191bc16340abcf51b18a7152b372a057e Mon Sep 17 00:00:00 2001
+From: "David S. Miller" <davem@davemloft.net>
+Date: Thu, 6 Mar 2014 15:03:17 -0500
+Subject: [PATCH] tcp: Use NET_ADD_STATS instead of NET_ADD_STATS_BH in
+ tcp_event_new_data_sent()
+
+Can be invoked from non-BH context.
+
+Based upon a patch by Eric Dumazet.
+
+Fixes: f19c29e3e391 ("tcp: snmp stats for Fast Open, SYN rtx, and data pkts")
+Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ include/net/ip.h      | 1 +
+ net/ipv4/tcp_output.c | 4 ++--
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/include/net/ip.h b/include/net/ip.h
+index b885d75..25064c2 100644
+--- a/include/net/ip.h
++++ b/include/net/ip.h
+@@ -187,6 +187,7 @@ void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
+ #define NET_INC_STATS(net, field)	SNMP_INC_STATS((net)->mib.net_statistics, field)
+ #define NET_INC_STATS_BH(net, field)	SNMP_INC_STATS_BH((net)->mib.net_statistics, field)
+ #define NET_INC_STATS_USER(net, field) 	SNMP_INC_STATS_USER((net)->mib.net_statistics, field)
++#define NET_ADD_STATS(net, field, adnd)	SNMP_ADD_STATS((net)->mib.net_statistics, field, adnd)
+ #define NET_ADD_STATS_BH(net, field, adnd) SNMP_ADD_STATS_BH((net)->mib.net_statistics, field, adnd)
+ #define NET_ADD_STATS_USER(net, field, adnd) SNMP_ADD_STATS_USER((net)->mib.net_statistics, field, adnd)
+ 
+diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+index 5286228..a02c884 100644
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -87,8 +87,8 @@ static void tcp_event_new_data_sent(struct sock *sk, const struct sk_buff *skb)
+ 		tcp_rearm_rto(sk);
+ 	}
+ 
+-	NET_ADD_STATS_BH(sock_net(sk), LINUX_MIB_TCPORIGDATASENT,
+-			 tcp_skb_pcount(skb));
++	NET_ADD_STATS(sock_net(sk), LINUX_MIB_TCPORIGDATASENT,
++		      tcp_skb_pcount(skb));
+ }
+ 
+ /* SND.NXT, if window was not shrunk.
+-- 
+1.7.11.7
 
