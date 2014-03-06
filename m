@@ -1,43 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752299AbaCFXcw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 18:32:52 -0500
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:64870 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750829AbaCFXcv (ORCPT
+	id S1752382AbaCFXfd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 18:35:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36520 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751012AbaCFXfb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 18:32:51 -0500
-Message-ID: <5319059E.1010205@gmail.com>
-Date: Fri, 07 Mar 2014 00:32:46 +0100
-From: poma <pomidorabelisima@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: netdev@vger.kernel.org
-CC: Intel Corporation <linux.nics@intel.com>,
-        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        Jamal Hadi Salim <jhs@mojatatu.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Josh Boyer <jwboyer@redhat.com>,
-        "Justin M. Forbes" <jforbes@redhat.com>,
-        Francois Romieu <romieu@fr.zoreil.com>, Dan Williams <dcbw@redhat.com>
-Subject: Re: WARNING: CPU: 0 PID: 0 at net/sched/sch_generic.c:264 dev_watchdog+0x276/0x280()
-References: <530332B7.10909@gmail.com> <53043521.4060206@gmail.com>
-In-Reply-To: <53043521.4060206@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 6 Mar 2014 18:35:31 -0500
+Date: Thu, 6 Mar 2014 15:35:30 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Joe Perches <joe@perches.com>
+Cc: David Miller <davem@davemloft.net>, kys@microsoft.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, apw@canonical.com
+Subject: Re: [PATCH] checkpatch: net and drivers/net: Warn on missing blank
+ line after variable declaration
+Message-Id: <20140306153530.bd61c160ba6f7872d6967b2e@linux-foundation.org>
+In-Reply-To: <1394148520.16156.8.camel@joe-AO722>
+References: <1394104358-23438-1-git-send-email-kys@microsoft.com>
+	<1394104390-23477-1-git-send-email-kys@microsoft.com>
+	<20140306.142919.763823800315842610.davem@davemloft.net>
+	<1394148520.16156.8.camel@joe-AO722>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-...
-After a few dozen tests with the vanilla commits, and with the same
-amount of rawhide kernels ...
-https://bugzilla.redhat.com/attachment.cgi?id=871694
+On Thu, 06 Mar 2014 15:28:40 -0800 Joe Perches <joe@perches.com> wrote:
 
-Dan, Francois you are both welcome with comments!
-Thanks.
+> Networking prefers this style, so warn when it's not used.
+> 
+> Networking uses:
+> 
+> void foo(int bar)
+> {
+> 	int baz;
+> 
+> 	code...
+> }
+> 
+> not
+> 
+> void foo(int bar)
+> {
+> 	int baz;
+> 	code...
+> }
+> 
+> There are a limited number of false positives when using
+> macros to declare variables like:
+> 
+> WARNING: networking uses a blank line after declarations
+> #330: FILE: net/ipv4/inet_hashtables.c:330:
+> +	int dif = sk->sk_bound_dev_if;
+> +	INET_ADDR_COOKIE(acookie, saddr, daddr)
 
-poma
+um wait wut wot.
 
+*All* kernel code uses blank line between end-of-locals and
+start-of-code.  Or if it doesn't it should, thwap.
+
+Why are we special-casing net/?
