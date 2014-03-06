@@ -1,87 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752258AbaCFJSf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 04:18:35 -0500
-Received: from smtp1.macau.ctm.net ([202.175.3.59]:47668 "EHLO
-	smtp1.macau.ctm.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752148AbaCFJS3 (ORCPT
+	id S1752392AbaCFJSs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 04:18:48 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:39541 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752281AbaCFJSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 04:18:29 -0500
-From: Markus Mayer <markus.mayer@linaro.org>
-To: Matt Porter <matt.porter@linaro.org>, Christian Daudt <bcm@fixthebug.org>
-Cc: Device Tree List <devicetree@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Broadcom Kernel Feedback 
-	<bcm-kernel-feedback-list@broadcom.com>
-Subject: [PATCH v2 1/3] ARM: DT: bcm21664: Device tree bindings
-Date: Thu,  6 Mar 2014 17:18:12 +0800
-Message-Id: <1394097494-29899-2-git-send-email-markus.mayer@linaro.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1394097494-29899-1-git-send-email-markus.mayer@linaro.org>
-References: <1394097494-29899-1-git-send-email-markus.mayer@linaro.org>
-X-TM-AS-MML: No
-X-TM-AS-Product-Ver: IMSS-7.1.0.1392-7.5.0.1017-20548.005
-X-TM-AS-Result: No--8.699-7.0-31-10
-X-imss-scan-details: No--8.699-7.0-31-10;No--8.699-7.0-31-10
-X-TMASE-MatchedRID: yvDAzrttxFVPq/mRIxkXvXQEQEU5OIefTJDl9FKHbrm7qpOHKudqcwaT
-	alM8C773o2jEjZ+uot0dYd1SkfqImjYMnpQeGMdCPJAf1AuYU6CbKpAlY2y6SZiNUaT//qDJs2D
-	GWvRdP/dPN9Ds5e3i44Ay6p60ZV62fJ5/bZ6npdg7AFczfjr/7KAGelgqNTPQKnaQSR0h99gkxl
-	yQq4C6DAU+/35fpjN3ssWqFvWN7Ek=
+	Thu, 6 Mar 2014 04:18:38 -0500
+Date: Thu, 6 Mar 2014 17:18:30 +0800
+From: Lee Jones <lee.jones@linaro.org>
+To: Josh Cartwright <joshc@codeaurora.org>
+Cc: Alessandro Zummo <a.zummo@towertech.it>,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-arm-msm@vger.kernel.org,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, devicetree@vger.kernel.org
+Subject: Re: [PATCH 4/6] rtc: pm8xxx: add support for devicetree
+Message-ID: <20140306091830.GB16034@lee--X1>
+References: <1394047776-13827-1-git-send-email-joshc@codeaurora.org>
+ <1394047776-13827-5-git-send-email-joshc@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1394047776-13827-5-git-send-email-joshc@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add binding documents for the Broadcom BCM21664 SoC.
+> Add support for describing the PM8921/PM8058 RTC in device tree.
+> 
+> Additionally:
+>    - drop support for describing the RTC using platform data,
+>      as there are no current in tree users who do so.
+>    - make allow_set_time a device-specific flag, instead of mucking
+>      with the rtc_ops
+> 
+> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+> ---
+>  drivers/rtc/rtc-pm8xxx.c       | 54 +++++++++++++++++++++++-------------------
+>  include/linux/mfd/pm8xxx/rtc.h | 25 -------------------
 
-Signed-off-by: Markus Mayer <markus.mayer@linaro.org>
----
- Documentation/devicetree/bindings/arm/bcm/bcm21664.txt    | 15 +++++++++++++++
- .../devicetree/bindings/arm/bcm/kona-resetmgr.txt         | 14 ++++++++++++++
- 2 files changed, 29 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/bcm/bcm21664.txt
- create mode 100644 Documentation/devicetree/bindings/arm/bcm/kona-resetmgr.txt
+For the MFD changes@:
+  Acked-by: Lee Jones <lee.jones@linaro.org>
 
-diff --git a/Documentation/devicetree/bindings/arm/bcm/bcm21664.txt b/Documentation/devicetree/bindings/arm/bcm/bcm21664.txt
-new file mode 100644
-index 0000000..e077425
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/bcm/bcm21664.txt
-@@ -0,0 +1,15 @@
-+Broadcom BCM21664 device tree bindings
-+--------------------------------------
-+
-+This document describes the device tree bindings for boards with the BCM21664
-+SoC.
-+
-+Required root node property:
-+  - compatible: brcm,bcm21664
-+
-+Example:
-+	/ {
-+		model = "BCM21664 SoC";
-+		compatible = "brcm,bcm21664";
-+		[...]
-+	}
-diff --git a/Documentation/devicetree/bindings/arm/bcm/kona-resetmgr.txt b/Documentation/devicetree/bindings/arm/bcm/kona-resetmgr.txt
-new file mode 100644
-index 0000000..93f31ca
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/bcm/kona-resetmgr.txt
-@@ -0,0 +1,14 @@
-+Broadcom Kona Family Reset Manager
-+----------------------------------
-+
-+The reset manager is used on the Broadcom BCM21664 SoC.
-+
-+Required properties:
-+  - compatible: brcm,bcm21664-resetmgr
-+  - reg: memory address & range
-+
-+Example:
-+	brcm,resetmgr@35001f00 {
-+		compatible = "brcm,bcm21664-resetmgr";
-+		reg = <0x35001f00 0x24>;
-+	};
 -- 
-1.9.0
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
