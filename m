@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977AbaCFVyF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 16:54:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35912 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753175AbaCFVsu (ORCPT
+	id S1753984AbaCFVy0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 16:54:26 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:33862 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753416AbaCFVyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 16:48:50 -0500
-Date: Thu, 6 Mar 2014 13:48:48 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: linux-next: build failure after merge of the akpm tree
-Message-Id: <20140306134848.7aabdc426fbad30f6e818631@linux-foundation.org>
-In-Reply-To: <20140306192234.62ad3ac104a2adc16752b033@canb.auug.org.au>
-References: <20140306192234.62ad3ac104a2adc16752b033@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Thu, 6 Mar 2014 16:54:24 -0500
+Date: Thu, 06 Mar 2014 16:54:21 -0500 (EST)
+Message-Id: <20140306.165421.316751944344722461.davem@davemloft.net>
+To: amirv@mellanox.com
+Cc: netdev@vger.kernel.org, yevgenyp@mellanox.com, ogerlitz@mellanox.com,
+        fengguang.wu@intel.com, linux-kernel@vger.kernel.org,
+        eugenia@mellanox.com
+Subject: Re: [PATCH net-next] net/mlx4_en: mlx4_en_verify_params() can be
+ static
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1394013443-17153-1-git-send-email-amirv@mellanox.com>
+References: <1394013443-17153-1-git-send-email-amirv@mellanox.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 06 Mar 2014 13:54:23 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Mar 2014 19:22:34 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+From: Amir Vadai <amirv@mellanox.com>
+Date: Wed,  5 Mar 2014 11:57:23 +0200
 
-> Hi Andrew,
+> From: Fengguang Wu <fengguang.wu@intel.com>
 > 
-> After merging the akpm tree, today's linux-next build (sparc64 defconfig)
-> failed like this:
+> Fix static error introduced by commit:
+> b97b33a3df0439401f80f041eda507d4fffa0dbf [645/653] net/mlx4_en: Verify
+> mlx4_en module parameters
 > 
-> arch/sparc/kernel/time_64.c: In function 'timer_interrupt':
-> arch/sparc/kernel/time_64.c:735:28: error: lvalue required as increment operand
-> arch/sparc/kernel/traps_64.c: In function '__cheetah_flush_icache':
-> arch/sparc/kernel/traps_64.c:963:2: error: 'pscr_ret__.icache_size' is used uninitialized in this function [-Werror=uninitialized]
-> arch/sparc/kernel/traps_64.c: In function 'cheetah_flush_dcache':
-> arch/sparc/kernel/traps_64.c:1002:2: error: 'pscr_ret__.dcache_size' is used uninitialized in this function [-Werror=uninitialized]
-> arch/sparc/kernel/traps_64.c: In function 'cheetah_plus_parity_error':
-> arch/sparc/kernel/traps_64.c:1023:2: error: 'pscr_ret__.dcache_size' may be used uninitialized in this function [-Werror=uninitialized]
-> arch/sparc/kernel/traps_64.c:1020:16: note: 'pscr_ret__.dcache_size' was declared here
-> arch/sparc/kernel/traps_64.c:1033:33: error: 'pscr_ret__.dcache_line_size' may be used uninitialized in this function [-Werror=uninitialized]
-> arch/sparc/kernel/traps_64.c:1021:21: note: 'pscr_ret__.dcache_line_size' was declared here
-> cc1: all warnings being treated as errors
-> kernel/softirq.c: In function '__do_softirq':
-> kernel/softirq.c:252:1: error: lvalue required as left operand of assignment
-> kernel/softirq.c: In function '__raise_softirq_irqoff':
-> kernel/softirq.c:427:1: error: lvalue required as left operand of assignment
-> arch/sparc/kernel/ptrace_64.c: In function 'flush_ptrace_access':
-> arch/sparc/kernel/ptrace_64.c:91:20: error: 'pscr_ret__.dcache_line_size' may be used uninitialized in this function [-Werror=uninitialized]
-> arch/sparc/kernel/ptrace_64.c:113:20: error: 'pscr_ret__.icache_line_size' may be used uninitialized in this function [-Werror=uninitialized]
+> sparse warnings:
+> drivers/net/ethernet/mellanox/mlx4/en_main.c:335:6: sparse: symbol
+> 'mlx4_en_verify_params' was not declared. Should it be static?
 > 
-> Caused by commit 5aa661aa13d4 ("sparc: replace __get_cpu_var uses").
-> 
-> I have reverted that commit for today.
-> 
-> I suspect that this whole series may need more review and work.
+> CC: netdev@vger.kernel.org
+> CC: linux-kernel@vger.kernel.org
+> CC: Eugenia Emantayev <eugenia@mellanox.com>
+> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+> Signed-off-by: Amir Vadai <amirv@mellanox.com>
 
-Yes, I've disabled the whole series for now.  Some of these errors
-appear to be caused by compiler mishandling, so it's going to be
-difficult :(
-
+Applied, thanks.
