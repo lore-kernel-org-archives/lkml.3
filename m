@@ -1,129 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752550AbaCFI0x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 03:26:53 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:56208 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752504AbaCFI0w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 03:26:52 -0500
-X-AuditID: 9c93017d-b7c89ae000006ae1-dc-531831498e5b
-Date: Thu, 6 Mar 2014 17:26:53 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
-        linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>
-Subject: Re: [PATCH] zram: move comp allocation out of init_lock
-Message-ID: <20140306082653.GC14287@bbox>
-References: <1393927856-23434-1-git-send-email-sergey.senozhatsky@gmail.com>
+	id S1752186AbaCFIaz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 03:30:55 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:41377 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751444AbaCFIav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 03:30:51 -0500
+Message-ID: <53183220.3040606@ti.com>
+Date: Thu, 6 Mar 2014 14:00:24 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393927856-23434-1-git-send-email-sergey.senozhatsky@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: Anton Tikhomirov <av.tikhomirov@samsung.com>,
+        "'Kamil Debski'" <k.debski@samsung.com>,
+        <linux-kernel@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <devicetree@vger.kernel.org>
+CC: <kyungmin.park@samsung.com>, <t.figa@samsung.com>,
+        <s.nawrocki@samsung.com>, <m.szyprowski@samsung.com>,
+        <gautam.vivek@samsung.com>, <mat.krawczuk@gmail.com>,
+        <yulgon.kim@samsung.com>, <p.paneri@samsung.com>,
+        <jg1.han@samsung.com>, <galak@codeaurora.org>,
+        <matt.porter@linaro.org>, <tjakobi@math.uni-bielefeld.de>,
+        <stern@rowland.harvard.edu>, <sander@humilis.net>
+Subject: Re: [PATCH v9 3/4] phy: Add new Exynos USB 2.0 PHY driver
+References: <1394033288-5551-1-git-send-email-k.debski@samsung.com> <1394033288-5551-4-git-send-email-k.debski@samsung.com> <005c01cf3915$c53476c0$4f9d6440$%tikhomirov@samsung.com>
+In-Reply-To: <005c01cf3915$c53476c0$4f9d6440$%tikhomirov@samsung.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Sergey,
-
-On Tue, Mar 04, 2014 at 01:10:56PM +0300, Sergey Senozhatsky wrote:
-> While fixing lockdep spew of ->init_lock reported by Sasha Levin [1], Minchan
-> Kim noted [2] that it's better to move compression backend allocation (using
-> GPF_KERNEL) out of the ->init_lock lock, same way as with zram_meta_alloc(),
-> in order to prevent the same lockdep spew.
-> 
-> [1] https://lkml.org/lkml/2014/2/27/337
-> [2] https://lkml.org/lkml/2014/3/3/32
-> 
-> Cc: Sasha Levin <sasha.levin@oracle.com>
-> Reported-by: Minchan Kim <minchan@kernel.org>
-> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-
-Thanks for looking.
-
-> ---
->  drivers/block/zram/zram_drv.c | 27 +++++++++++++++------------
->  1 file changed, 15 insertions(+), 12 deletions(-)
-> 
-> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> index 15d46f2..e4d536b 100644
-> --- a/drivers/block/zram/zram_drv.c
-> +++ b/drivers/block/zram/zram_drv.c
-> @@ -580,9 +580,10 @@ static ssize_t disksize_store(struct device *dev,
->  		struct device_attribute *attr, const char *buf, size_t len)
->  {
->  	u64 disksize;
-> +	struct zcomp *comp;
->  	struct zram_meta *meta;
->  	struct zram *zram = dev_to_zram(dev);
-> -	int err;
-> +	int err = -EINVAL;
->  
->  	disksize = memparse(buf, NULL);
->  	if (!disksize)
-> @@ -593,30 +594,32 @@ static ssize_t disksize_store(struct device *dev,
->  	if (!meta)
->  		return -ENOMEM;
->  
-> +	comp = zcomp_create(zram->compressor, zram->max_comp_streams);
-> +	if (!comp) {
-> +		pr_info("Cannot initialise %s compressing backend\n",
-> +				zram->compressor);
-
--ENOMEM?
-
-Otherwise,
-Acked-by: Minchan Kim <minchan@kernel.org>
 
 
-> +		goto out_cleanup;
-> +	}
-> +
->  	down_write(&zram->init_lock);
->  	if (init_done(zram)) {
-> +		up_write(&zram->init_lock);
->  		pr_info("Cannot change disksize for initialized device\n");
->  		err = -EBUSY;
-> -		goto out_free_meta;
-> -	}
-> -
-> -	zram->comp = zcomp_create(zram->compressor, zram->max_comp_streams);
-> -	if (!zram->comp) {
-> -		pr_info("Cannot initialise %s compressing backend\n",
-> -				zram->compressor);
-> -		err = -EINVAL;
-> -		goto out_free_meta;
-> +		goto out_cleanup;
->  	}
->  
->  	zram->meta = meta;
-> +	zram->comp = comp;
->  	zram->disksize = disksize;
->  	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
->  	up_write(&zram->init_lock);
->  
->  	return len;
->  
-> -out_free_meta:
-> -	up_write(&zram->init_lock);
-> +out_cleanup:
-> +	if (comp)
-> +		zcomp_destroy(comp);
->  	zram_meta_free(meta);
->  	return err;
->  }
-> -- 
-> 1.9.0.382.g7f3562c
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+On Thursday 06 March 2014 01:56 PM, Anton Tikhomirov wrote:
+> Hi Kamil,
+>
+> ...
+>
+>> +| 3. Supporting SoCs
+>> ++--------------------
+>> +
+>> +To support a new SoC a new file should be added to the drivers/phy
+>> +directory. Each SoC's configuration is stored in an instance of the
+>> +struct samsung_usb2_phy_config.
+>> +
+>> +struct samsung_usb2_phy_config {
+>> +	const struct samsung_usb2_common_phy *phys;
+>> +	unsigned int num_phys;
+>> +	bool has_mode_switch;
+>
+> You missed rate_to_clk here.
+>
+>> +};
+>> +
+>
+> ...
+>
+>> diff --git a/drivers/phy/phy-samsung-usb2.c b/drivers/phy/phy-samsung-
+>> usb2.c
+>> new file mode 100644
+>> index 0000000..c3b7719
+>> --- /dev/null
+>> +++ b/drivers/phy/phy-samsung-usb2.c
+>> @@ -0,0 +1,222 @@
+>> +/*
+>> + * Samsung SoC USB 1.1/2.0 PHY driver
+>> + *
+>> + * Copyright (C) 2013 Samsung Electronics Co., Ltd.
+>> + * Author: Kamil Debski <k.debski@samsung.com>
+>> + *
+>> + * This program is free software; you can redistribute it and/or
+>> modify
+>> + * it under the terms of the GNU General Public License version 2 as
+>> + * published by the Free Software Foundation.
+>> + */
+>> +
+>> +#include <linux/clk.h>
+>> +#include <linux/mfd/syscon.h>
+>> +#include <linux/module.h>
+>> +#include <linux/of.h>
+>> +#include <linux/of_address.h>
+>> +#include <linux/phy/phy.h>
+>> +#include <linux/platform_device.h>
+>> +#include <linux/spinlock.h>
+>> +#include "phy-samsung-usb2.h"
+>> +
+>> +static int samsung_usb2_phy_power_on(struct phy *phy)
+>> +{
+>> +	struct samsung_usb2_phy_instance *inst = phy_get_drvdata(phy);
+>> +	struct samsung_usb2_phy_driver *drv = inst->drv;
+>> +	int ret;
+>> +
+>> +	dev_dbg(drv->dev, "Request to power_on \"%s\" usb phy\n",
+>> +		inst->cfg->label);
+>> +	ret = clk_prepare_enable(drv->clk);
+>
+> clk_prepare_enable() can sleep, and therefore doesn't allow
+> samusng_usb2_phy_power_on() to be used in atomic context
+> (e.g. inside spin_lock-ed area), what sometimes may be desirable.
+> What about to prepare clock in probe, and just enable it here
+> (note: clk_enable() doesn't sleep).
 
--- 
-Kind regards,
-Minchan Kim
+The PHY power-on callback is anyway called with mutex held, so I guess 
+it's fine to have clk_prepare_enable() here.
+
+Thanks
+Kishon
