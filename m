@@ -1,102 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598AbaCFVKW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 16:10:22 -0500
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:63518 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751945AbaCFVKU (ORCPT
+	id S1753633AbaCFVLm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 16:11:42 -0500
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:44611 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751548AbaCFVLk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 16:10:20 -0500
+	Thu, 6 Mar 2014 16:11:40 -0500
+Date: Thu, 6 Mar 2014 16:11:36 -0500
+From: Tejun Heo <tj@kernel.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Oleg Nesterov <oleg@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Jianguo Wu <wujianguo@huawei.com>, Tim Hockin <thockin@google.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [patch 00/11] userspace out of memory handling
+Message-ID: <20140306211136.GA17902@htj.dyndns.org>
+References: <alpine.DEB.2.02.1403041952170.8067@chino.kir.corp.google.com>
+ <20140306204923.GF14033@htj.dyndns.org>
+ <alpine.DEB.2.02.1403061254240.25499@chino.kir.corp.google.com>
+ <20140306205911.GG14033@htj.dyndns.org>
+ <alpine.DEB.2.02.1403061301020.25499@chino.kir.corp.google.com>
 MIME-Version: 1.0
-In-Reply-To: <20140305232513.GA9542@earth.universe>
-References: <1394052739-8589-1-git-send-email-marek@goldelico.com>
-	<1394052739-8589-2-git-send-email-marek@goldelico.com>
-	<20140305232513.GA9542@earth.universe>
-Date: Thu, 6 Mar 2014 22:10:19 +0100
-Message-ID: <CAAfyv34X1naNEyht0q+bD3QUjCxLJribmfWfZkP073WS7ve4kA@mail.gmail.com>
-Subject: Re: [PATCH v2] power: twl4030-madc-battery: Convert to iio consumer.
-From: Belisko Marek <marek.belisko@gmail.com>
-To: Sebastian Reichel <sre@debian.org>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1403061301020.25499@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
+Hello, David.
 
-On Thu, Mar 6, 2014 at 12:25 AM, Sebastian Reichel <sre@debian.org> wrote:
-> Hi Marek,
->
-> I just have one comment:
->
-> On Wed, Mar 05, 2014 at 09:52:17PM +0100, Marek Belisko wrote:
->> [...]
->> -static int madc_read(int index)
->> +static int madc_read(struct iio_channel *channel)
->>  {
->> -     struct twl4030_madc_request req;
->> -     int val;
->> -
->> -     req.channels = index;
->> -     req.method = TWL4030_MADC_SW2;
->> -     req.type = TWL4030_MADC_WAIT;
->> -     req.do_avg = 0;
->> -     req.raw = false;
->> -     req.func_cb = NULL;
->> -
->> -     val = twl4030_madc_conversion(&req);
->> -     if (val < 0)
->> -             return val;
->> -
->> -     return req.rbuf[ffs(index) - 1];
->> +     int val, err;
->> +     err = iio_read_channel_processed(channel, &val);
->> +     if (err < 0) {
->> +             pr_info("Error:%d\n", err);
->
-> This should be "Error: %d\n" (with a space).
-Ups this is remain from debugging messages. I'll remove it and re-post patches.
+On Thu, Mar 06, 2014 at 01:08:10PM -0800, David Rientjes wrote:
+> I'm not sure how you reach that conclusion: it's necessary because any 
+> process handling the oom condition will need memory to do anything useful.  
+> How else would a process that is handling a system oom condition, for 
+> example, be able to obtain a list of processes, check memory usage, issue 
+> a kill, do any logging, collect heap or smaps samples, or signal processes 
+> to throttle incoming requests without having access to memory itself?  The 
+> system is oom.
+
+We're now just re-starting the whole discussion with all context lost.
+How is this a good idea?  We talked about all this previously.  If you
+have something to add, add there *please* so that other people can
+track it too.
+
+> This is going to be discussed at the LSF/mm conference, I believe it would 
+> be helpful to have an actual complete patchset proposed so that it can be 
+> discussed properly.  I feel no need to refer to an older patchset that 
+> would not apply and did not include all the support necessary for handling 
+> oom conditions.
+
+That's completely fine but if that's your intention please at least
+prefix the patchset with RFC and explicitly state that no consensus
+has been reached (well, it was more like negative consensus from what
+I remember) in the description so that it can't be picked up
+accidentally.
+
 Thanks.
->
-> Apart from that you should use dev_info() or dev_err(), so that the
-> message is properly prefixed by the device. Currently there is no
-> hint where this error message is generated.
->
->> +             return err;
->> +     }
->> +     return val;
->>  }
->> [...]
->
-> After fixing this you can add
->
-> Reviewed-By: Sebastian Reichel <sre@debian.org>
->
-> -- Sebastian
-
-BR,
-
-marek
 
 -- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
-
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-twitter: #opennandra
-web: http://open-nandra.com
+tejun
