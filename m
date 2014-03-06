@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753543AbaCFV3o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 16:29:44 -0500
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:37337 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751469AbaCFV3m (ORCPT
+	id S1753329AbaCFVda (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 16:33:30 -0500
+Received: from mail-yh0-f52.google.com ([209.85.213.52]:57585 "EHLO
+	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752556AbaCFVd2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 16:29:42 -0500
-Date: Thu, 6 Mar 2014 16:29:38 -0500
+	Thu, 6 Mar 2014 16:33:28 -0500
+Date: Thu, 6 Mar 2014 16:33:24 -0500
 From: Tejun Heo <tj@kernel.org>
 To: David Rientjes <rientjes@google.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -20,7 +20,7 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         cgroups@vger.kernel.org, linux-doc@vger.kernel.org
 Subject: Re: [patch 00/11] userspace out of memory handling
-Message-ID: <20140306212938.GF17902@htj.dyndns.org>
+Message-ID: <20140306213324.GG17902@htj.dyndns.org>
 References: <alpine.DEB.2.02.1403041952170.8067@chino.kir.corp.google.com>
  <20140306204923.GF14033@htj.dyndns.org>
  <alpine.DEB.2.02.1403061254240.25499@chino.kir.corp.google.com>
@@ -37,25 +37,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+A bit of addition.
+
 On Thu, Mar 06, 2014 at 01:23:57PM -0800, David Rientjes wrote:
-> I'm referring to system oom handling as an example above, in case you 
-> missed my earlier email a few minutes ago: the previous patchset did not 
-> include support for system oom handling.  Nothing that I wrote above was 
-> possible with the first patchset.  This is the complete support.
+> This patchset provides a solution to a real-world problem that is not 
+> solved with any other patchset.  I expect it to be reviewed as any other 
+> patchset, it's not an "RFC" from my perspective: it's a proposal for 
+> inclusion.  Don't worry, Andrew is not going to apply anything 
+> accidentally.
 
-But we were talking about system oom handling.  Yes, the patch didn't
-exist back then but the fundamental premises stay unchanged.  There's
-no point in restarting the whole thread.  You can refer to this
-patchset from that thread.  It's a logical thing to do.  We have all
-the context there.  I don't really understand why you're resisting it.
-It doesn't change the basis of the discussion.  The issues brought up
-before should still be addressed and it only makes sense to retain the
-context.
-
-If you have more to add, including the existence of this
-implementation, let's please talk in the original thread.  It was long
-thread with a lot of points raised.  Let's please not replay that
-whole thread here unnecessarily.
+I can't force it down your throat but I feel somewhat uneasy about how
+this was posted without any reference to the previous discussion as if
+this were just now being proposed especially as the said discussion
+wasn't particularly favorable to this approach.  Prefixing RFC or at
+least pointing back to the original discussion seems like the
+courteous thing to do.
 
 Thanks.
 
