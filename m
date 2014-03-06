@@ -1,118 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751960AbaCFF5v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 00:57:51 -0500
-Received: from mga01.intel.com ([192.55.52.88]:60177 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751190AbaCFF5u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 00:57:50 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,598,1389772800"; 
-   d="scan'208";a="493274586"
-From: Chew Chiau Ee <chiau.ee.chew@intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Darren Hart <dvhart@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] pinctrl-baytrail: add function mux checking in gpio pin request
-Date: Thu,  6 Mar 2014 21:59:49 +0800
-Message-Id: <1394114389-27106-1-git-send-email-chiau.ee.chew@intel.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S1752018AbaCFF6i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 00:58:38 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:53553 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751649AbaCFF6g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 00:58:36 -0500
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        devicetree@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org,
+        Lad Prabhakar <prabhakar.csengg@gmail.com>
+Subject: [PATCH] devicetree: bindings: gpio-davinic: fix documentation
+Date: Thu,  6 Mar 2014 11:28:25 +0530
+Message-Id: <1394085505-11227-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chew, Kean Ho <kean.ho.chew@intel.com>
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 
-The requested gpio pin must has the func_pin_mux field set
-to GPIO function by BIOS/FW in advanced. Else, the gpio pin
-request would fail. This is to ensure that we do not expose
-any gpio pins which shall be used for alternate functions,
-for eg: wakeup pin, I/O interfaces for LPSS, etc.
+This patch adds missing #gpio-cells and also adds a
+usage example for leds.
 
-Signed-off-by: Chew, Kean Ho <kean.ho.chew@intel.com>
-Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
+Reported-by: Alexander Holler <holler@ahsoftware.de>
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 ---
- drivers/pinctrl/pinctrl-baytrail.c |   42 +++++++++++++++++++++++++++++++++--
- 1 files changed, 39 insertions(+), 3 deletions(-)
+ .../devicetree/bindings/gpio/gpio-davinci.txt      |   21 ++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
-diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
-index 665b96b..bf2b3f6 100644
---- a/drivers/pinctrl/pinctrl-baytrail.c
-+++ b/drivers/pinctrl/pinctrl-baytrail.c
-@@ -60,6 +60,10 @@
- #define BYT_NGPIO_NCORE		28
- #define BYT_NGPIO_SUS		44
+diff --git a/Documentation/devicetree/bindings/gpio/gpio-davinci.txt b/Documentation/devicetree/bindings/gpio/gpio-davinci.txt
+index 4ce9862..5079ba7 100644
+--- a/Documentation/devicetree/bindings/gpio/gpio-davinci.txt
++++ b/Documentation/devicetree/bindings/gpio/gpio-davinci.txt
+@@ -8,6 +8,10 @@ Required Properties:
  
-+#define BYT_SCORE_ACPI_UID	"1"
-+#define BYT_NCORE_ACPI_UID	"2"
-+#define BYT_SUS_ACPI_UID	"3"
-+
- /*
-  * Baytrail gpio controller consist of three separate sub-controllers called
-  * SCORE, NCORE and SUS. The sub-controllers are identified by their acpi UID.
-@@ -102,17 +106,17 @@ static unsigned const sus_pins[BYT_NGPIO_SUS] = {
+ - gpio-controller : Marks the device node as a gpio controller.
  
- static struct pinctrl_gpio_range byt_ranges[] = {
- 	{
--		.name = "1", /* match with acpi _UID in probe */
-+		.name = BYT_SCORE_ACPI_UID, /* match with acpi _UID in probe */
- 		.npins = BYT_NGPIO_SCORE,
- 		.pins = score_pins,
- 	},
- 	{
--		.name = "2",
-+		.name = BYT_NCORE_ACPI_UID,
- 		.npins = BYT_NGPIO_NCORE,
- 		.pins = ncore_pins,
- 	},
- 	{
--		.name = "3",
-+		.name = BYT_SUS_ACPI_UID,
- 		.npins = BYT_NGPIO_SUS,
- 		.pins = sus_pins,
- 	},
-@@ -145,9 +149,41 @@ static void __iomem *byt_gpio_reg(struct gpio_chip *chip, unsigned offset,
- 	return vg->reg_base + reg_offset + reg;
- }
++- #gpio-cells : Should be two.
++  - first cell is the pin number
++  - second cell is used to specify optional parameters (unused)
++
+ - interrupt-parent: phandle of the parent interrupt controller.
  
-+static bool is_special_pin(struct byt_gpio *vg, unsigned offset)
-+{
-+	/* SCORE pin 92-93 */
-+	if (!strcmp(vg->range->name, BYT_SCORE_ACPI_UID) &&
-+		offset >= 92 && offset <= 93)
-+		return true;
+ - interrupts: Array of GPIO interrupt number. Only banked or unbanked IRQs are
+@@ -27,6 +31,7 @@ Example:
+ gpio: gpio@1e26000 {
+ 	compatible = "ti,dm6441-gpio";
+ 	gpio-controller;
++	#gpio-cells = <2>;
+ 	reg = <0x226000 0x1000>;
+ 	interrupt-parent = <&intc>;
+ 	interrupts = <42 IRQ_TYPE_EDGE_BOTH 43 IRQ_TYPE_EDGE_BOTH
+@@ -39,3 +44,19 @@ gpio: gpio@1e26000 {
+ 	interrupt-controller;
+ 	#interrupt-cells = <2>;
+ };
 +
-+	/* SUS pin 11-21 */
-+	if (!strcmp(vg->range->name, BYT_SUS_ACPI_UID) &&
-+		offset >= 11 && offset <= 21)
-+		return true;
++leds {
++	compatible = "gpio-leds";
 +
-+	return false;
-+}
++	led1 {
++		label = "davinci:green:usr1";
++		gpios = <&gpio 10 GPIO_ACTIVE_HIGH>;
++		...
++	};
 +
- static int byt_gpio_request(struct gpio_chip *chip, unsigned offset)
- {
- 	struct byt_gpio *vg = to_byt_gpio(chip);
-+	void __iomem *reg = byt_gpio_reg(chip, offset, BYT_CONF0_REG);
-+	u32 value;
-+	bool special;
-+
-+	/*
-+	 * In most cases, func pin mux 000 means GPIO function.
-+	 * But, some pins may have func pin mux 001 represents
-+	 * GPIO function. Only allow user to export pin with
-+	 * func pin mux preset as GPIO function by BIOS/FW.
-+	 */
-+	value = readl(reg) & BYT_PIN_MUX;
-+	special = is_special_pin(vg, offset);
-+	if ((special && value != 1) || (!special && value)) {
-+		dev_err(&vg->pdev->dev,
-+			"pin %u cannot be used as GPIO.\n", offset);
-+		return -EINVAL;
-+	}
- 
- 	pm_runtime_get(&vg->pdev->dev);
- 
++	led2 {
++		label = "davinci:red:debug1";
++		gpios = <&gpio 11 GPIO_ACTIVE_HIGH>;
++		...
++	};
++};
 -- 
-1.7.4.4
+1.7.9.5
 
