@@ -1,74 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757229AbaCFANr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 19:13:47 -0500
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:63977 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752675AbaCFANq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 19:13:46 -0500
+	id S1757408AbaCFAOf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 19:14:35 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38581 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757197AbaCFAOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 19:14:34 -0500
+Message-ID: <5317BDAD.9030805@zytor.com>
+Date: Wed, 05 Mar 2014 16:13:33 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <53162927.4040401@zytor.com>
-References: <CALCETrWbjazg_kAY1uAB+cMTdaJqtyGrTwQWNFCSzZ56B0KEkw@mail.gmail.com>
- <53162927.4040401@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 5 Mar 2014 16:13:25 -0800
-Message-ID: <CALCETrWM2N59+4ao2T1xgX_W0-cHXzYLZUO_fkSRt4O9NrNTow@mail.gmail.com>
-Subject: Re: Making a universal list of syscalls?
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        libseccomp-discuss@lists.sourceforge.net
+To: Khalid Aziz <khalid.aziz@oracle.com>, David Lang <david@lang.hm>
+CC: Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Ingo Molnar <mingo@kernel.org>, peterz@infradead.org,
+        akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] [PATCH] Pre-emption control for userspace
+References: <1393870033-31076-1-git-send-email-khalid.aziz@oracle.com> <531641A8.40306@zytor.com> <53164824.3000704@oracle.com> <20140304222356.41c55bbc@alan.etchedpixels.co.uk> <5316574F.6040105@oracle.com> <alpine.DEB.2.02.1403050129570.18573@ionos.tec.linutronix.de> <8738ix5uyk.fsf@tassilo.jf.intel.com> <20140305145420.GA30173@redhat.com> <20140305155601.GF22728@two.firstfloor.org> <20140305163644.GA2824@redhat.com> <53175D54.1020804@oracle.com> <alpine.DEB.2.02.1403051506550.6682@nftneq.ynat.uz> <5317B7D5.2030403@oracle.com> <5317B9B2.8070205@zytor.com> <5317BB2A.8000703@oracle.com>
+In-Reply-To: <5317BB2A.8000703@oracle.com>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 4, 2014 at 11:27 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 02/27/2014 12:40 PM, Andy Lutomirski wrote:
->> Currently, dealing with Linux syscalls in an architecture-independent
->> way is a mess.  Here are some issues:
->>
->>  1. There's no clean way to map between syscall names and numbers on
->> different architectures.  The kernel contains a number of tables (that
->> work differently for different architectures).  strace has some arcane
->> mechanism.  libseccomp has another.
->>
->>  2. There's no clean way to map between syscall argument registers and
->> logical syscall arguments.  Each architecture knows how to do it, as
->> do strace and glibc, but I suspect that *everyone* else gets it wrong.
->>  Especially on ARM.
->>
->>  3. Determining which architectures have which syscalls is a mess.
->> Recent kernel builds love to warn me that finit_module is missing on
->> x86_64.  This is simply not true.  I have no idea why.
->>
->>  4. Actually issuing a nontrivial syscall is annoying.  syscall(2) can
->> do it for the native architecture (only).
->>
->>  5. Decoding ucontext from SIGSYS is a mess.  I have prototype code
->> for libseccomp that can do it, but it gets the arguments wrong due to
->> ABI issues.  See (2).
->>
->> I'd like to see a master list in the kernel that lists, for every
->> syscall, the name, the number for each architecture that implements it
->> (using the AUDIT_ARCH semantics, probably), and the signature.  The
->> build process could parse this table to replace the current per-arch
->> mess.
->>
->
-> Hi Andy,
->
-> I have brought that up a lot of times, originally dating back from my
-> work on klibc.  I have tried to keep the klibc syscall list in a sane
-> format with architecture annotations, but it doesn't contain all the
-> syscalls in the system.
->
-> Extending that work and making it encompass everything the kernel
-> exports would be highly useful, but it would take a lot of work.
+On 03/05/2014 04:02 PM, Khalid Aziz wrote:
+> 
+> Yes, you had made that suggestion earlier and I like it. It will be in
+> v2 patch. I am thinking of making the penalty be denial of next
+> preemption immunity request if a process fails to yield when it should
+> have. Sounds good?
+> 
 
-I think that SYSCALLS.def won't work as is -- SYSCALLS.def
-references unistd, which ought to be autogenerated from the syscalls
-list.  But a somewhat less magical variant should work.
+That is the minimum penalty possible.  Hopefully that is sufficient.
 
---Andy
+	-hpa
+
+
