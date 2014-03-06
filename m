@@ -1,146 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838AbaCFTFw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 14:05:52 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:56259 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751444AbaCFTFu (ORCPT
+	id S1752526AbaCFTIt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 14:08:49 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:37580 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751415AbaCFTIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 14:05:50 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/i0Ljp2y/xPhpnbb/s2f2Ocs8qgh8Q6NU=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 8DF3553C113
-Date: Thu, 6 Mar 2014 14:05:31 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>
-Subject: Re: [patch 5/5] irqchip: armanda: Sanitize set_irq_affinity()
-Message-ID: <20140306190531.GF1872@titan.lakedaemon.net>
-References: <20140304202425.102779779@linutronix.de>
- <20140304203101.088889302@linutronix.de>
+	Thu, 6 Mar 2014 14:08:48 -0500
+Message-ID: <5318C7B9.8040408@hurleysoftware.com>
+Date: Thu, 06 Mar 2014 14:08:41 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140304203101.088889302@linutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        "kernelnewbies@kernelnewbies.org" <kernelnewbies@kernelnewbies.org>,
+        kernel-janitors@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stoney Wang <song-bo.wang@hp.com>, Yinghai Lu <yinghai@kernel.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Joerg Roedel <joro@8bytes.org>, Jiang Liu <jiang.liu@linux.intel.com>,
+        Linux PM list <linux-pm@vger.kernel.org>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Subject: Re: My Kernel bug is celebrating 2 years. Can you help me fix it?
+References: <CA+MoWDrTNtAHKsiBHz=W4=eJRO=m9EK_HZ7zLxb=4fg5riUQeg@mail.gmail.com> <CAErSpo4wdYDgTUTBDLimbviLh54C9ELXKfQ2y5qeUR1FKN8fpw@mail.gmail.com>
+In-Reply-To: <CAErSpo4wdYDgTUTBDLimbviLh54C9ELXKfQ2y5qeUR1FKN8fpw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas,
+On 03/06/2014 01:27 PM, Bjorn Helgaas wrote:
+> [+cc Stoney, Yinghai, Suresh, Joerg, Jiang, Pavel, Rafael, linux-pm]
+>
+> Let's add some folks who know about x2apic and VT-d.  It's hard for
+> people to magically pick stuff out of the LKML firehose :)
+>
+> On Tue, Mar 4, 2014 at 2:26 PM, Peter Senna Tschudin
+> <peter.senna@gmail.com> wrote:
+>> I have reported a bug more than two years ago and it is still
+>> affecting me. The bug report gives some information:
+>>
+>> https://bugzilla.redhat.com/show_bug.cgi?id=787299
+>>
+>> I have tried basic debug instructions from:
+>> https://www.kernel.org/doc/Documentation/power/basic-pm-debugging.txt
+>>
+>> And everything works as expected when:
+>> # echo freeze > /sys/power/state
+>> # echo disk > /sys/power/state
+>>
+>> I have asked for help for fixing it:
+>> https://lkml.org/lkml/2013/11/1/186
+>>
+>> But I don't have a serial port. How can I debug this issue without a
+>> "real" serial port? Or what else can I try? How can I explore the hint
+>> about the problem only happening with VT-d enabled in BIOS? How can I
+>> explore the hint about the problem not happening if the option
+>> nox2apic is passed to the Kernel?
+>>
+>> Thank you,
+>>
+>> Peter
+>>
+>> P.S Yes, it works on Windows.
 
-nit: s/armanda/armada/ in the patch subject.
+Windows 7 doesn't use x2apic mode.
+Windows 8 does and this same problem happened with this model: see
+http://forums.toshiba.com/t5/Windows-8-8-1/Resume-from-standby-issue-on-R830-PT321A-01K002/td-p/330110
 
-Gregory,
+Seems like your model was recently added to Toshiba's Windows 8
+compatibility list: http://support.toshiba-tie.co.jp/windows8/list_au.htm
 
-Mind providing an Ack on this?
+Check for a more recent BIOS update that may fix this problem.
 
-thx,
+Regards,
+Peter Hurley
 
-Jason.
-
-On Tue, Mar 04, 2014 at 08:43:41PM -0000, Thomas Gleixner wrote:
-> The set_irq_affinity() function has two issues:
-> 
-> 1) It has no protection against selecting an offline cpu from the
->    given mask.
-> 
-> 2) It pointlessly restricts the affinity masks to have a single cpu
->    set. This collides with the irq migration code of arm.
-> 
->    irq affinity is set to core 3
->    core 3 goes offline
-> 
->    migration code sets mask to cpu_online_mask and calls the
->    irq_set_affinity() callback of the irq_chip which fails due to bit
->    0,1,2 set.
-> 
-> So instead of doing silly for_each_cpu() loops just pick any bit of
-> the mask which intersects with the online mask.
-> 
-> The read back of the routing register is pointless as well. We can
-> simply write the new mask as the bits in this register reflect one
-> core.
-> 
-> Get rid of fiddling with the default_irq_affinity as well.
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> 
-> ---
->  drivers/irqchip/irq-armada-370-xp.c |   38 ++++--------------------------------
->  1 file changed, 5 insertions(+), 33 deletions(-)
-> 
-> Index: tip/drivers/irqchip/irq-armada-370-xp.c
-> ===================================================================
-> --- tip.orig/drivers/irqchip/irq-armada-370-xp.c
-> +++ tip/drivers/irqchip/irq-armada-370-xp.c
-> @@ -244,35 +244,16 @@ static DEFINE_RAW_SPINLOCK(irq_controlle
->  static int armada_xp_set_affinity(struct irq_data *d,
->  				  const struct cpumask *mask_val, bool force)
->  {
-> -	unsigned long reg;
-> -	unsigned long new_mask = 0;
-> -	unsigned long online_mask = 0;
-> -	unsigned long count = 0;
->  	irq_hw_number_t hwirq = irqd_to_hwirq(d);
-> +	unsigned long mask;
->  	int cpu;
->  
-> -	for_each_cpu(cpu, mask_val) {
-> -		new_mask |= 1 << cpu_logical_map(cpu);
-> -		count++;
-> -	}
-> -
-> -	/*
-> -	 * Forbid mutlicore interrupt affinity
-> -	 * This is required since the MPIC HW doesn't limit
-> -	 * several CPUs from acknowledging the same interrupt.
-> -	 */
-> -	if (count > 1)
-> -		return -EINVAL;
-> -
-> -	for_each_cpu(cpu, cpu_online_mask)
-> -		online_mask |= 1 << cpu_logical_map(cpu);
-> +	/* Select a single core from the affinity mask which is online */
-> +	cpu = cpumask_any_and(mask_val, cpu_online_mask);
-> +	mask = 1UL << cpu_logical_map(cpu);
->  
->  	raw_spin_lock(&irq_controller_lock);
-> -
-> -	reg = readl(main_int_base + ARMADA_370_XP_INT_SOURCE_CTL(hwirq));
-> -	reg = (reg & (~online_mask)) | new_mask;
-> -	writel(reg, main_int_base + ARMADA_370_XP_INT_SOURCE_CTL(hwirq));
-> -
-> +	writel(mask, main_int_base + ARMADA_370_XP_INT_SOURCE_CTL(hwirq));
->  	raw_spin_unlock(&irq_controller_lock);
->  
->  	return 0;
-> @@ -494,15 +475,6 @@ static int __init armada_370_xp_mpic_of_
->  
->  #ifdef CONFIG_SMP
->  	armada_xp_mpic_smp_cpu_init();
-> -
-> -	/*
-> -	 * Set the default affinity from all CPUs to the boot cpu.
-> -	 * This is required since the MPIC doesn't limit several CPUs
-> -	 * from acknowledging the same interrupt.
-> -	 */
-> -	cpumask_clear(irq_default_affinity);
-> -	cpumask_set_cpu(smp_processor_id(), irq_default_affinity);
-> -
->  #endif
->  
->  	armada_370_xp_msi_init(node, main_int_res.start);
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+PS - kernel bugs are better filed on the kernel bugzilla https://bugzilla.kernel.org/
