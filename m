@@ -1,99 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754422AbaCFDyY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 22:54:24 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:13917 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751457AbaCFDyV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 22:54:21 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvIDAKzwF1Ol5H4JgWdsb2JhbABahky+YoExDgEBFiYogiYBBXkQCElXBxKHec8BF44DTgeEOASYPZVsKIEsIw
-From: Alistair Popple <alistair@popple.id.au>
-To: linux-mmc@vger.kernel.org, chris@printf.net
-Cc: Alistair Popple <alistair@popple.id.au>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: [PATCH 1/5] SDHCI: Add a generic registration to the SDHCI platform driver
-Date: Thu,  6 Mar 2014 14:52:24 +1100
-Message-Id: <1394077948-8395-2-git-send-email-alistair@popple.id.au>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1394077948-8395-1-git-send-email-alistair@popple.id.au>
-References: <1394077948-8395-1-git-send-email-alistair@popple.id.au>
+	id S1754006AbaCFEAS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 23:00:18 -0500
+Received: from ozlabs.org ([203.10.76.45]:46314 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752444AbaCFEAQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 23:00:16 -0500
+Date: Thu, 6 Mar 2014 15:00:10 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: linux-next: build warning after merge of the tip tree
+Message-Id: <20140306150010.e873f440ac5a22d8812268a4@canb.auug.org.au>
+In-Reply-To: <20140224151732.7461213fabef4fc1bbca8213@canb.auug.org.au>
+References: <20140224151732.7461213fabef4fc1bbca8213@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__6_Mar_2014_15_00_10_+1100_/YkSXspJcxo7d8z6"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a generic platform driver registration to the exiting SDHCI
-platform driver using the devicetree compatibility string "generic-sdhci".
+--Signature=_Thu__6_Mar_2014_15_00_10_+1100_/YkSXspJcxo7d8z6
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Alistair Popple <alistair@popple.id.au>
----
- .../devicetree/bindings/mmc/sdhci-pltfm.txt        | 16 +++++++++++++
- drivers/mmc/host/sdhci-pltfm.c                     | 28 ++++++++++++++++++++++
- 2 files changed, 44 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mmc/sdhci-pltfm.txt
+On Mon, 24 Feb 2014 15:17:32 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> Hi all,
+>=20
+> After merging the tip tree, today's linux-next build (arm
+> multi_v7_defconfig) produced this warning:
+>=20
+> drivers/irqchip/irq-armada-370-xp.c:415:1: warning: 'externally_visible' =
+attribute have effect only on public objects [-Wattributes]
+> drivers/irqchip/irq-sun4i.c:39:70: warning: 'externally_visible' attribut=
+e have effect only on public objects [-Wattributes]
+> drivers/irqchip/irq-sun4i.c:140:1: warning: 'externally_visible' attribut=
+e have effect only on public objects [-Wattributes]
+> drivers/irqchip/irq-gic.c:283:1: warning: 'externally_visible' attribute =
+have effect only on public objects [-Wattributes]
+> drivers/irqchip/irq-sirfsoc.c:51:1: warning: 'externally_visible' attribu=
+te have effect only on public objects [-Wattributes]
+> drivers/irqchip/irq-vt8500.c:183:1: warning: 'externally_visible' attribu=
+te have effect only on public objects [-Wattributes]
+>=20
+> Probably introduced by commit 128ea04a9885 ("lto: Make asmlinkage __visib=
+le").
+>=20
+> I guess that there may be more places where "asmlinkage" is used with
+> "static" - I assume that they are all incorrect?
+>=20
+> $ git grep -l 'static.*asmlinkage'
+> arch/x86/crypto/sha1_ssse3_glue.c
+> arch/x86/crypto/sha256_ssse3_glue.c
+> arch/x86/crypto/sha512_ssse3_glue.c
+> drivers/irqchip/irq-armada-370-xp.c
+> drivers/irqchip/irq-bcm2835.c
+> drivers/irqchip/irq-gic.c
+> drivers/irqchip/irq-mmp.c
+> drivers/irqchip/irq-moxart.c
+> drivers/irqchip/irq-orion.c
+> drivers/irqchip/irq-sirfsoc.c
+> drivers/irqchip/irq-sun4i.c
+> drivers/irqchip/irq-vic.c
+> drivers/irqchip/irq-vt8500.c
+> drivers/irqchip/irq-zevio.c
+> drivers/pnp/pnpbios/bioscalls.c
+> scripts/checkpatch.pl
+>=20
+> (the last two don't matter)
 
-diff --git a/Documentation/devicetree/bindings/mmc/sdhci-pltfm.txt b/Documentation/devicetree/bindings/mmc/sdhci-pltfm.txt
-new file mode 100644
-index 0000000..3940659
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mmc/sdhci-pltfm.txt
-@@ -0,0 +1,16 @@
-+Generic SHDCI platform driver
-+
-+The generic SDHCI platform driver should support most SDHCI host
-+controllers. It uses the compatible="generic-sdhci" property and
-+supports the following device tree properties as described in mmc.txt.
-+
-+Supported properties (described in mmc.txt):
-+- reg
-+- interrupts
-+- wp-inverted
-+- broken-cd
-+- no-1-8-v
-+- keep-power-in-suspend
-+- enable-sdio-wakeup
-+- bus-width
-+- clock-frequency
-diff --git a/drivers/mmc/host/sdhci-pltfm.c b/drivers/mmc/host/sdhci-pltfm.c
-index bef250e..696d1f6 100644
---- a/drivers/mmc/host/sdhci-pltfm.c
-+++ b/drivers/mmc/host/sdhci-pltfm.c
-@@ -260,6 +260,34 @@ const struct dev_pm_ops sdhci_pltfm_pmops = {
- EXPORT_SYMBOL_GPL(sdhci_pltfm_pmops);
- #endif	/* CONFIG_PM */
- 
-+static int sdhci_generic_probe(struct platform_device *pdev)
-+{
-+	return sdhci_pltfm_register(pdev, NULL, 0);
-+}
-+
-+static int sdhci_generic_remove(struct platform_device *pdev)
-+{
-+	return sdhci_pltfm_unregister(pdev);
-+}
-+
-+static const struct of_device_id sdhci_generic_of_match[] = {
-+	{ .compatible = "generic-sdhci" },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, sdhci_generic_of_match);
-+
-+static struct platform_driver sdhci_generic_driver = {
-+	.driver = {
-+		.name = "sdhci-generic",
-+		.owner = THIS_MODULE,
-+		.of_match_table = sdhci_generic_of_match,
-+		.pm = SDHCI_PLTFM_PMOPS,
-+	},
-+	.probe = sdhci_generic_probe,
-+	.remove = sdhci_generic_remove,
-+};
-+module_platform_driver(sdhci_generic_driver);
-+
- static int __init sdhci_pltfm_drv_init(void)
- {
- 	pr_info("sdhci-pltfm: SDHCI platform and OF driver helper\n");
--- 
-1.8.3.2
+Any resolution for this?
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__6_Mar_2014_15_00_10_+1100_/YkSXspJcxo7d8z6
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTF/LOAAoJEMDTa8Ir7ZwVONkP/RJR0sGVmDwi4mgCf+4CKe0/
+MNDZhx5HtQnPETgr5Lc1vqsc5B4o0VRUZfgQCoFMVP3KE8VFO8deVnWOjbHIrmpe
+kc5va2Y4WOsUxFbpg2imnhku9Ol+WTrf7QPw1bwrSMnzPR8HmAa/AbKwD1mwMoZE
+H0InqsfKkw5X91FEO78R+VDQ48Hq0ejBEUjzMK7iFVhlQrarK556lKEP9pn3mO+e
+K2tiwyib2i0N9rzpJbEgVjU28dGDPFYkLBfYf1NhI5M7WE4/dS8wVE5ggYXWEziF
+NkPOsvz5jDLor0T6zFj7ez16b5UzfpcT1S4GfU1hNWWCWNfKFVh4L6Ieztip4n+E
+Oh60gyOpl4zWl9deBB6MFob5bE0YjBsfpEw+sJ39fvVYAbsdNxH7wMF6vfzaTbuV
+94Pg6BMu2Gm6lwOZlV/nKPJZPo/BQ0rW5voQEILMVmKRbGgsLJGh1Iv1etNHh05w
+XP1IU3MHm4rC4uWwBeoO2AAzEGmt03z+JhrZI6uan7bwjgsfGWycxPr+N/Q4MLA0
+rT7MTpiSM10R6/71/8lUXB1Ode9mHMpD8Fvt8uolC5CwTfa88gb+6ot7799hFRCl
+LrZx1jdxqqcGkd2q3mkAbBvcTXHkGTJCO//9ewj9Lt3fcVyl0vQniW5zxMdVBH8C
+WUjQ36DFiQWXGzeRT1+x
+=GmrB
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__6_Mar_2014_15_00_10_+1100_/YkSXspJcxo7d8z6--
