@@ -1,36 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506AbaCFWPr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 17:15:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53517 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751805AbaCFWPo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 17:15:44 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20140306.143719.2217501178599478723.davem@davemloft.net>
-References: <20140306.143719.2217501178599478723.davem@davemloft.net> <20140306124614.16645.50744.stgit@warthog.procyon.org.uk>
-To: David Miller <davem@davemloft.net>
-Cc: dhowells@redhat.com, netdev@vger.kernel.org, tim@electronghost.co.uk,
-        linux-afs@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/8] AF_RXRPC fixes and development [ver #2]
-Date: Thu, 06 Mar 2014 22:15:13 +0000
-Message-ID: <8007.1394144113@warthog.procyon.org.uk>
+	id S1752563AbaCFWQW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 17:16:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36031 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750829AbaCFWQU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 17:16:20 -0500
+Date: Thu, 6 Mar 2014 14:18:06 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Cc: Todza Louina <lidza.louina@gmail.com>,
+        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: Re: [PATCH 1/3] staging: dgap: remove unneeded status variables
+Message-ID: <20140306221806.GA30494@kroah.com>
+References: <20140225005154.GA22937@kroah.com>
+ <1393794488-12909-1-git-send-email-khoroshilov@ispras.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393794488-12909-1-git-send-email-khoroshilov@ispras.ru>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Miller <davem@davemloft.net> wrote:
-
-> > Here are some AF_RXRPC fixes (to tag rxrpc-20140226):
->  ...
-> > And development patches (to tag rxrpc-devel-20140304):
+On Mon, Mar 03, 2014 at 01:08:06AM +0400, Alexey Khoroshilov wrote:
+> dgap_driver_start and dgap_Major_Control_Registered are used
+> to keep status of initialization of the driver as a whole and its "Major Control".
+> But the code that checks them is executed once on module init/unload.
+> That makes no sense in these variables as far as their values are predictable
+> at any time.
 > 
-> A mix of both bug fixes and new features....
+> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+> ---
+>  drivers/staging/dgap/dgap.c | 97 ++++++++++++++++++++-------------------------
+>  1 file changed, 42 insertions(+), 55 deletions(-)
 
-I did ask whether you wanted them in one or preferred them separate...
+Due to other recent changes in this driver, none of these patches apply
+anymore :(
 
-David
+Can you please redo them against my latest tree so that I can apply
+them?
+
+thanks,
+
+greg k-h
