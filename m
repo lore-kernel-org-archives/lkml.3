@@ -1,30 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752735AbaCFQwL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 11:52:11 -0500
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.170]:57995 "EHLO
+	id S1752781AbaCFQw0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 11:52:26 -0500
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.174]:57193 "EHLO
 	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751724AbaCFQwI (ORCPT
+	by vger.kernel.org with ESMTP id S1750848AbaCFQwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 11:52:08 -0500
+	Thu, 6 Mar 2014 11:52:09 -0500
 X-Env-Sender: stwiss.opensource@diasemi.com
-X-Msg-Ref: server-16.tower-38.messagelabs.com!1394124684!40521!1
+X-Msg-Ref: server-16.tower-38.messagelabs.com!1394124684!40521!2
 X-Originating-IP: [82.210.246.133]
 X-StarScan-Received: 
 X-StarScan-Version: 6.9.16; banners=-,-,-
 X-VirusChecked: Checked
-Message-ID: <1e3f5e127c375a45b9a8e929fa99fa5c917b1dea.1394124002.git.stwiss.opensource@diasemi.com>
+Message-ID: <93327cde91bcaef9a467adc6c7b34c3231d9e1e7.1394124002.git.stwiss.opensource@diasemi.com>
 In-Reply-To: <cover.1394124002.git.stwiss.opensource@diasemi.com>
 References: <cover.1394124002.git.stwiss.opensource@diasemi.com>
 From: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
 Date: Thu, 6 Mar 2014 16:40:02 +0000
-Subject: [PATCH V1 1/2] mfd: da9063: Upgrade of register definitions to
- support production silicon
-To: Lee Jones <lee.jones@linaro.org>, Mark Brown <broonie@linaro.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [PATCH V1 2/2] rtc: da9063: RTC driver
+To: Alessandro Zummo <a.zummo@towertech.it>
 CC: David Dajun Chen <david.chen@diasemi.com>,
-        LKML <linux-kernel@vger.kernel.org>
+        LKML <linux-kernel@vger.kernel.org>,
+        RTC linux <rtc-linux@googlegroups.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
@@ -33,280 +31,419 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
 
-This patch updates the register definitions for DA9063 to support the
-production silicon variant code ID (0x5). These changes are not backwards
-compatible with the previous register definitions and can only be used
-with the production variant of DA9063.
+Add the RTC driver for DA9063.
 
 Signed-off-by: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
 ---
 Checks performed with next-20140306/scripts/checkpatch.pl
- registers.h               total: 0 errors, 0 warnings, 1032 lines checked
+ Kconfig                   total: 0 errors, 21 warnings, 1344 lines checked
+ Makefile                  total: 0 errors, 0 warnings, 139 lines checked
+ rtc-da9063.c              total: 0 errors, 0 warnings, 332 lines checked
 
-A brief summary of the changes include:
+Although there are 21 warnings in Kconfig, these do not apply to the
+changes made in this patch set.
 
-- Introduction of a new DA9063_REG_ALARM_S register (now appearing at
-  addr=0x46) allowing alarm second resolutions and which causes a shift
-  in the register map for the RTC registers;
-- Two new configuration registers DA9063_REG_CONFIG_M/N at 0x112 & 0x113;
-- Modified register ranges for MON_REG_[1-6] which now appears at the
-  addr=0x114 onwards;
-- New register addresses for the general purpose registers GP_ID_[0-19]
-  (now appearing at 0x121 onwards);
-- Renaming of some definitions to match our hardware design conventions;
-- There are also some bit-pattern additions that define some functionality
-  alterations of the registers. One notable addition is:
-  DA9063_BUCK_SLOWSTART can also be found in the CONTROL_B register and
-  enables a BUCK slow start (reduced inrush current; increased startup
-  time);
+Change History:
+
+Changes made to this driver since previous RFC V1
+Comments by Alessandro Zummo
+- http://www.kernelhub.org/?p=2&msg=426327
+- Use return PTR_ERR(rtc->rtc_dev); instead of goto err; return err.
+- Request the interrupt before the RTC device is registered with the
+  call to devm_rtc_device_register.
+
+Dependencies:
+
+This driver requires the register changes associated with this patch
+set. It requires the changes made to registers.h and in particular,
+the new register DA9063_REG_ALARM_S (now appearing at addr=0x46) and
+DA9063_ALARM_S_MASK 0x3F are required to allow the triggering of
+alarms down to the second resolution level.
 
 This patch applies against kernel version linux-next next-20140306
-
+ 
 Regards,
 Steve Twiss, Dialog Semiconductor Ltd.
 
 
 
- include/linux/mfd/da9063/registers.h |  120 ++++++++++++++++++----------------
- 1 file changed, 62 insertions(+), 58 deletions(-)
+ drivers/rtc/Kconfig      |   10 ++
+ drivers/rtc/Makefile     |    1 +
+ drivers/rtc/rtc-da9063.c |  332 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 343 insertions(+)
+ create mode 100644 drivers/rtc/rtc-da9063.c
 
-diff --git a/include/linux/mfd/da9063/registers.h b/include/linux/mfd/da9063/registers.h
-index 5834813..09a85c6 100644
---- a/include/linux/mfd/da9063/registers.h
-+++ b/include/linux/mfd/da9063/registers.h
-@@ -17,11 +17,7 @@
- #define	_DA9063_REG_H
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index db933de..472a5b9 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -746,6 +746,16 @@ config RTC_DRV_DA9055
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called rtc-da9055
  
- #define DA9063_I2C_PAGE_SEL_SHIFT	1
--
- #define	DA9063_EVENT_REG_NUM		4
--#define	DA9210_EVENT_REG_NUM		2
--#define	DA9063_EXT_EVENT_REG_NUM	(DA9063_EVENT_REG_NUM + \
--						DA9210_EVENT_REG_NUM)
- 
- /* Page selection I2C or SPI always in the begining of any page. */
- /* Page 0 : I2C access 0x000 - 0x0FF	SPI access 0x000 - 0x07F */
-@@ -61,9 +57,9 @@
- #define	DA9063_REG_GPIO_10_11		0x1A
- #define	DA9063_REG_GPIO_12_13		0x1B
- #define	DA9063_REG_GPIO_14_15		0x1C
--#define	DA9063_REG_GPIO_MODE_0_7	0x1D
--#define	DA9063_REG_GPIO_MODE_8_15	0x1E
--#define	DA9063_REG_GPIO_SWITCH_CONT	0x1F
-+#define	DA9063_REG_GPIO_MODE0_7		0x1D
-+#define	DA9063_REG_GPIO_MODE8_15	0x1E
-+#define	DA9063_REG_SWITCH_CONT		0x1F
- 
- /* Regulator Control Registers */
- #define	DA9063_REG_BCORE2_CONT		0x20
-@@ -83,7 +79,7 @@
- #define	DA9063_REG_LDO9_CONT		0x2E
- #define	DA9063_REG_LDO10_CONT		0x2F
- #define	DA9063_REG_LDO11_CONT		0x30
--#define	DA9063_REG_VIB			0x31
-+#define	DA9063_REG_SUPPLIES		0x31
- #define	DA9063_REG_DVC_1		0x32
- #define	DA9063_REG_DVC_2		0x33
- 
-@@ -97,9 +93,9 @@
- #define	DA9063_REG_ADCIN1_RES		0x3A
- #define	DA9063_REG_ADCIN2_RES		0x3B
- #define	DA9063_REG_ADCIN3_RES		0x3C
--#define	DA9063_REG_MON1_RES		0x3D
--#define	DA9063_REG_MON2_RES		0x3E
--#define	DA9063_REG_MON3_RES		0x3F
-+#define	DA9063_REG_MON_A8_RES		0x3D
-+#define	DA9063_REG_MON_A9_RES		0x3E
-+#define	DA9063_REG_MON_A10_RES		0x3F
- 
- /* RTC Calendar and Alarm Registers */
- #define	DA9063_REG_COUNT_S		0x40
-@@ -108,15 +104,16 @@
- #define	DA9063_REG_COUNT_D		0x43
- #define	DA9063_REG_COUNT_MO		0x44
- #define	DA9063_REG_COUNT_Y		0x45
--#define	DA9063_REG_ALARM_MI		0x46
--#define	DA9063_REG_ALARM_H		0x47
--#define	DA9063_REG_ALARM_D		0x48
--#define	DA9063_REG_ALARM_MO		0x49
--#define	DA9063_REG_ALARM_Y		0x4A
--#define	DA9063_REG_SECOND_A		0x4B
--#define	DA9063_REG_SECOND_B		0x4C
--#define	DA9063_REG_SECOND_C		0x4D
--#define	DA9063_REG_SECOND_D		0x4E
-+#define	DA9063_REG_ALARM_S		0x46
-+#define	DA9063_REG_ALARM_MI		0x47
-+#define	DA9063_REG_ALARM_H		0x48
-+#define	DA9063_REG_ALARM_D		0x49
-+#define	DA9063_REG_ALARM_MO		0x4A
-+#define	DA9063_REG_ALARM_Y		0x4B
-+#define	DA9063_REG_SECOND_A		0x4C
-+#define	DA9063_REG_SECOND_B		0x4D
-+#define	DA9063_REG_SECOND_C		0x4E
-+#define	DA9063_REG_SECOND_D		0x4F
- 
- /* Sequencer Control Registers */
- #define	DA9063_REG_SEQ			0x81
-@@ -226,35 +223,37 @@
- #define	DA9063_REG_CONFIG_J		0x10F
- #define	DA9063_REG_CONFIG_K		0x110
- #define	DA9063_REG_CONFIG_L		0x111
--#define	DA9063_REG_MON_REG_1		0x112
--#define	DA9063_REG_MON_REG_2		0x113
--#define	DA9063_REG_MON_REG_3		0x114
--#define	DA9063_REG_MON_REG_4		0x115
--#define	DA9063_REG_MON_REG_5		0x116
--#define	DA9063_REG_MON_REG_6		0x117
--#define	DA9063_REG_TRIM_CLDR		0x118
--
-+#define	DA9063_REG_CONFIG_M		0x112
-+#define	DA9063_REG_CONFIG_N		0x113
++config RTC_DRV_DA9063
++	tristate "Dialog Semiconductor DA9063 RTC"
++	depends on MFD_DA9063
++	help
++	  If you say yes here you will get support for the RTC subsystem
++	  of the Dialog Semiconductor DA9063.
 +
-+#define	DA9063_REG_MON_REG_1		0x114
-+#define	DA9063_REG_MON_REG_2		0x115
-+#define	DA9063_REG_MON_REG_3		0x116
-+#define	DA9063_REG_MON_REG_4		0x117
-+#define	DA9063_REG_MON_REG_5		0x11E
-+#define	DA9063_REG_MON_REG_6		0x11F
-+#define	DA9063_REG_TRIM_CLDR		0x120
- /* General Purpose Registers */
--#define	DA9063_REG_GP_ID_0		0x119
--#define	DA9063_REG_GP_ID_1		0x11A
--#define	DA9063_REG_GP_ID_2		0x11B
--#define	DA9063_REG_GP_ID_3		0x11C
--#define	DA9063_REG_GP_ID_4		0x11D
--#define	DA9063_REG_GP_ID_5		0x11E
--#define	DA9063_REG_GP_ID_6		0x11F
--#define	DA9063_REG_GP_ID_7		0x120
--#define	DA9063_REG_GP_ID_8		0x121
--#define	DA9063_REG_GP_ID_9		0x122
--#define	DA9063_REG_GP_ID_10		0x123
--#define	DA9063_REG_GP_ID_11		0x124
--#define	DA9063_REG_GP_ID_12		0x125
--#define	DA9063_REG_GP_ID_13		0x126
--#define	DA9063_REG_GP_ID_14		0x127
--#define	DA9063_REG_GP_ID_15		0x128
--#define	DA9063_REG_GP_ID_16		0x129
--#define	DA9063_REG_GP_ID_17		0x12A
--#define	DA9063_REG_GP_ID_18		0x12B
--#define	DA9063_REG_GP_ID_19		0x12C
-+#define	DA9063_REG_GP_ID_0		0x121
-+#define	DA9063_REG_GP_ID_1		0x122
-+#define	DA9063_REG_GP_ID_2		0x123
-+#define	DA9063_REG_GP_ID_3		0x124
-+#define	DA9063_REG_GP_ID_4		0x125
-+#define	DA9063_REG_GP_ID_5		0x126
-+#define	DA9063_REG_GP_ID_6		0x127
-+#define	DA9063_REG_GP_ID_7		0x128
-+#define	DA9063_REG_GP_ID_8		0x129
-+#define	DA9063_REG_GP_ID_9		0x12A
-+#define	DA9063_REG_GP_ID_10		0x12B
-+#define	DA9063_REG_GP_ID_11		0x12C
-+#define	DA9063_REG_GP_ID_12		0x12D
-+#define	DA9063_REG_GP_ID_13		0x12E
-+#define	DA9063_REG_GP_ID_14		0x12F
-+#define	DA9063_REG_GP_ID_15		0x130
-+#define	DA9063_REG_GP_ID_16		0x131
-+#define	DA9063_REG_GP_ID_17		0x132
-+#define	DA9063_REG_GP_ID_18		0x133
-+#define	DA9063_REG_GP_ID_19		0x134
- 
- /* Chip ID and variant */
- #define	DA9063_REG_CHIP_ID		0x181
-@@ -405,8 +404,10 @@
- /* DA9063_REG_CONTROL_B (addr=0x0F) */
- #define	DA9063_CHG_SEL				0x01
- #define	DA9063_WATCHDOG_PD			0x02
-+#define	DA9063_RESET_BLINKING			0x04
- #define	DA9063_NRES_MODE			0x08
- #define	DA9063_NONKEY_LOCK			0x10
-+#define	DA9063_BUCK_SLOWSTART			0x80
- 
- /* DA9063_REG_CONTROL_C (addr=0x10) */
- #define	DA9063_DEBOUNCING_MASK			0x07
-@@ -466,6 +467,7 @@
- #define	DA9063_GPADC_PAUSE			0x02
- #define	DA9063_PMIF_DIS				0x04
- #define	DA9063_HS2WIRE_DIS			0x08
-+#define	DA9063_CLDR_PAUSE			0x10
- #define	DA9063_BBAT_DIS				0x20
- #define	DA9063_OUT_32K_PAUSE			0x40
- #define	DA9063_PMCONT_DIS			0x80
-@@ -660,7 +662,7 @@
- #define		DA9063_GPIO15_TYPE_GPO		0x04
- #define	DA9063_GPIO15_NO_WAKEUP			0x80
- 
--/* DA9063_REG_GPIO_MODE_0_7 (addr=0x1D) */
-+/* DA9063_REG_GPIO_MODE0_7 (addr=0x1D) */
- #define	DA9063_GPIO0_MODE			0x01
- #define	DA9063_GPIO1_MODE			0x02
- #define	DA9063_GPIO2_MODE			0x04
-@@ -670,7 +672,7 @@
- #define	DA9063_GPIO6_MODE			0x40
- #define	DA9063_GPIO7_MODE			0x80
- 
--/* DA9063_REG_GPIO_MODE_8_15 (addr=0x1E) */
-+/* DA9063_REG_GPIO_MODE8_15 (addr=0x1E) */
- #define	DA9063_GPIO8_MODE			0x01
- #define	DA9063_GPIO9_MODE			0x02
- #define	DA9063_GPIO10_MODE			0x04
-@@ -702,12 +704,12 @@
- #define		DA9063_SWITCH_SR_5MV		0x10
- #define		DA9063_SWITCH_SR_10MV		0x20
- #define		DA9063_SWITCH_SR_50MV		0x30
--#define	DA9063_SWITCH_SR_DIS			0x40
-+#define	DA9063_CORE_SW_INTERNAL			0x40
- #define	DA9063_CP_EN_MODE			0x80
- 
- /* DA9063_REGL_Bxxxx_CONT common bits (addr=0x20-0x25) */
- #define	DA9063_BUCK_EN				0x01
--#define DA9063_BUCK_GPI_MASK			0x06
-+#define	DA9063_BUCK_GPI_MASK			0x06
- #define		DA9063_BUCK_GPI_OFF		0x00
- #define		DA9063_BUCK_GPI_GPIO1		0x02
- #define		DA9063_BUCK_GPI_GPIO2		0x04
-@@ -841,25 +843,27 @@
- #define DA9063_COUNT_YEAR_MASK			0x3F
- #define DA9063_MONITOR				0x40
- 
--/* DA9063_REG_ALARM_MI (addr=0x46) */
-+/* DA9063_REG_ALARM_S (addr=0x46) */
-+#define DA9063_ALARM_S_MASK			0x3F
- #define DA9063_ALARM_STATUS_ALARM		0x80
- #define DA9063_ALARM_STATUS_TICK		0x40
-+/* DA9063_REG_ALARM_MI (addr=0x47) */
- #define DA9063_ALARM_MIN_MASK			0x3F
- 
--/* DA9063_REG_ALARM_H (addr=0x47) */
-+/* DA9063_REG_ALARM_H (addr=0x48) */
- #define DA9063_ALARM_HOUR_MASK			0x1F
- 
--/* DA9063_REG_ALARM_D (addr=0x48) */
-+/* DA9063_REG_ALARM_D (addr=0x49) */
- #define DA9063_ALARM_DAY_MASK			0x1F
- 
--/* DA9063_REG_ALARM_MO (addr=0x49) */
-+/* DA9063_REG_ALARM_MO (addr=0x4A) */
- #define DA9063_TICK_WAKE			0x20
- #define DA9063_TICK_TYPE			0x10
- #define		DA9063_TICK_TYPE_SEC		0x00
- #define		DA9063_TICK_TYPE_MIN		0x10
- #define DA9063_ALARM_MONTH_MASK			0x0F
- 
--/* DA9063_REG_ALARM_Y (addr=0x4A) */
-+/* DA9063_REG_ALARM_Y (addr=0x4B) */
- #define DA9063_TICK_ON				0x80
- #define DA9063_ALARM_ON				0x40
- #define DA9063_ALARM_YEAR_MASK			0x3F
-@@ -906,7 +910,7 @@
- 
- /* DA9063_REG_Bxxxx_CFG common bits (addr=0x9D-0xA2) */
- #define DA9063_BUCK_FB_MASK			0x07
--#define DA9063_BUCK_PD_DIS_SHIFT		5
-+#define DA9063_BUCK_PD_DIS_MASK		0x20
- #define DA9063_BUCK_MODE_MASK			0xC0
- #define		DA9063_BUCK_MODE_MANUAL		0x00
- #define		DA9063_BUCK_MODE_SLEEP		0x40
++	  This driver can also be built as a module. If so, the module
++	  will be called "rtc-da9063".
++
+ config RTC_DRV_EFI
+ 	tristate "EFI RTC"
+ 	depends on IA64
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index b427bf7..4a4fed9 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -32,6 +32,7 @@ obj-$(CONFIG_RTC_DRV_CMOS)	+= rtc-cmos.o
+ obj-$(CONFIG_RTC_DRV_COH901331)	+= rtc-coh901331.o
+ obj-$(CONFIG_RTC_DRV_DA9052)	+= rtc-da9052.o
+ obj-$(CONFIG_RTC_DRV_DA9055)	+= rtc-da9055.o
++obj-$(CONFIG_RTC_DRV_DA9063)	+= rtc-da9063.o
+ obj-$(CONFIG_RTC_DRV_DAVINCI)	+= rtc-davinci.o
+ obj-$(CONFIG_RTC_DRV_DM355EVM)	+= rtc-dm355evm.o
+ obj-$(CONFIG_RTC_DRV_VRTC)	+= rtc-mrst.o
+diff --git a/drivers/rtc/rtc-da9063.c b/drivers/rtc/rtc-da9063.c
+new file mode 100644
+index 0000000..d7b15e3
+--- /dev/null
++++ b/drivers/rtc/rtc-da9063.c
+@@ -0,0 +1,332 @@
++/* rtc-da9063.c - Real time clock device driver for DA9063
++ * Copyright (C) 2013-14  Dialog Semiconductor Ltd.
++ *
++ * This library is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Library General Public
++ * License as published by the Free Software Foundation; either
++ * version 2 of the License, or (at your option) any later version.
++ *
++ * This library is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Library General Public License for more details.
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/platform_device.h>
++#include <linux/interrupt.h>
++#include <linux/rtc.h>
++#include <linux/slab.h>
++#include <linux/delay.h>
++#include <linux/regmap.h>
++#include <linux/mfd/da9063/registers.h>
++#include <linux/mfd/da9063/core.h>
++
++#define YEARS_TO_DA9063(year)		((year) - 100)
++#define MONTHS_TO_DA9063(month)		((month) + 1)
++#define YEARS_FROM_DA9063(year)		((year) + 100)
++#define MONTHS_FROM_DA9063(month)	((month) - 1)
++
++#define RTC_DATA_LEN	(DA9063_REG_COUNT_Y - DA9063_REG_COUNT_S + 1)
++#define RTC_SEC		0
++#define RTC_MIN		1
++#define RTC_HOUR	2
++#define RTC_DAY		3
++#define RTC_MONTH	4
++#define RTC_YEAR	5
++
++struct da9063_rtc {
++	struct rtc_device	*rtc_dev;
++	struct da9063		*hw;
++	struct rtc_time		alarm_time;
++	bool			rtc_sync;
++};
++
++static void da9063_data_to_tm(u8 *data, struct rtc_time *tm)
++{
++	tm->tm_sec  = data[RTC_SEC]  & DA9063_COUNT_SEC_MASK;
++	tm->tm_min  = data[RTC_MIN]  & DA9063_COUNT_MIN_MASK;
++	tm->tm_hour = data[RTC_HOUR] & DA9063_COUNT_HOUR_MASK;
++	tm->tm_mday = data[RTC_DAY]  & DA9063_COUNT_DAY_MASK;
++	tm->tm_mon  = MONTHS_FROM_DA9063(data[RTC_MONTH] &
++					 DA9063_COUNT_MONTH_MASK);
++	tm->tm_year = YEARS_FROM_DA9063(data[RTC_YEAR] &
++					DA9063_COUNT_YEAR_MASK);
++}
++
++static void da9063_tm_to_data(struct rtc_time *tm, u8 *data)
++{
++	data[RTC_SEC] &= ~DA9063_COUNT_SEC_MASK;
++	data[RTC_SEC] |= tm->tm_sec & DA9063_COUNT_SEC_MASK;
++
++	data[RTC_MIN] &= ~DA9063_COUNT_MIN_MASK;
++	data[RTC_MIN] |= tm->tm_min & DA9063_COUNT_MIN_MASK;
++
++	data[RTC_HOUR] &= ~DA9063_COUNT_HOUR_MASK;
++	data[RTC_HOUR] |= tm->tm_hour & DA9063_COUNT_HOUR_MASK;
++
++	data[RTC_DAY] &= ~DA9063_COUNT_DAY_MASK;
++	data[RTC_DAY] |= tm->tm_mday & DA9063_COUNT_DAY_MASK;
++
++	data[RTC_MONTH] &= ~DA9063_COUNT_MONTH_MASK;
++	data[RTC_MONTH] |= MONTHS_TO_DA9063(tm->tm_mon) &
++				DA9063_COUNT_MONTH_MASK;
++
++	data[RTC_YEAR] &= ~DA9063_COUNT_YEAR_MASK;
++	data[RTC_YEAR] |= YEARS_TO_DA9063(tm->tm_year) &
++				DA9063_COUNT_YEAR_MASK;
++}
++
++static int da9063_rtc_stop_alarm(struct device *dev)
++{
++	struct da9063_rtc *rtc = dev_get_drvdata(dev);
++	return regmap_update_bits(rtc->hw->regmap, DA9063_REG_ALARM_Y,
++				  DA9063_ALARM_ON, 0);
++}
++
++static int da9063_rtc_start_alarm(struct device *dev)
++{
++	struct da9063_rtc *rtc = dev_get_drvdata(dev);
++	return regmap_update_bits(rtc->hw->regmap, DA9063_REG_ALARM_Y,
++				  DA9063_ALARM_ON, DA9063_ALARM_ON);
++}
++
++static int da9063_rtc_read_time(struct device *dev, struct rtc_time *tm)
++{
++	struct da9063_rtc *rtc = dev_get_drvdata(dev);
++	unsigned long tm_secs;
++	unsigned long al_secs;
++	u8 data[RTC_DATA_LEN];
++	int ret;
++
++	ret = regmap_bulk_read(rtc->hw->regmap, DA9063_REG_COUNT_S,
++			       data, RTC_DATA_LEN);
++	if (ret < 0) {
++		dev_err(dev, "Failed to read RTC time data: %d\n", ret);
++		return ret;
++	}
++
++	if (!(data[RTC_SEC] & DA9063_RTC_READ)) {
++		dev_dbg(dev, "RTC not yet ready to be read by the host\n");
++		return -EINVAL;
++	}
++
++	da9063_data_to_tm(data, tm);
++
++	(void)rtc_tm_to_time(tm, &tm_secs);
++	(void)rtc_tm_to_time(&rtc->alarm_time, &al_secs);
++
++	/* handle the rtc synchronisation delay */
++	if (rtc->rtc_sync == true && al_secs - tm_secs == 1)
++		(void)memcpy((void *)tm, (const void *)&rtc->alarm_time,
++			     sizeof(struct rtc_time));
++	else
++		rtc->rtc_sync = false;
++
++	return rtc_valid_tm(tm);
++}
++
++static int da9063_rtc_set_time(struct device *dev, struct rtc_time *tm)
++{
++	struct da9063_rtc *rtc = dev_get_drvdata(dev);
++	u8 data[RTC_DATA_LEN];
++	int ret;
++
++	da9063_tm_to_data(tm, data);
++	ret = regmap_bulk_write(rtc->hw->regmap, DA9063_REG_COUNT_S,
++				data, RTC_DATA_LEN);
++	if (ret < 0)
++		dev_err(dev, "Failed to set RTC time data: %d\n", ret);
++
++	return ret;
++}
++
++static int da9063_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
++{
++	struct da9063_rtc *rtc = dev_get_drvdata(dev);
++	u8 data[RTC_DATA_LEN];
++	int ret;
++	unsigned int val;
++
++	ret = regmap_bulk_read(rtc->hw->regmap, DA9063_REG_ALARM_S,
++			       &data[RTC_SEC], RTC_DATA_LEN);
++	if (ret < 0)
++		return ret;
++
++	da9063_data_to_tm(data, &alrm->time);
++
++	alrm->enabled = !!(data[RTC_YEAR] & DA9063_ALARM_ON);
++
++	ret = regmap_read(rtc->hw->regmap, DA9063_REG_EVENT_A, &val);
++	if (ret < 0)
++		return ret;
++
++	if (val & (DA9063_E_ALARM))
++		alrm->pending = 1;
++	else
++		alrm->pending = 0;
++
++	return 0;
++}
++
++static int da9063_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
++{
++	struct da9063_rtc *rtc = dev_get_drvdata(dev);
++	u8 data[RTC_DATA_LEN];
++	int ret;
++
++	da9063_tm_to_data(&alrm->time, data);
++
++	ret = da9063_rtc_stop_alarm(dev);
++	if (ret < 0) {
++		dev_err(dev, "Failed to stop alarm: %d\n", ret);
++		return ret;
++	}
++
++	ret = regmap_bulk_write(rtc->hw->regmap, DA9063_REG_ALARM_S,
++				data, RTC_DATA_LEN);
++	if (ret < 0) {
++		dev_err(dev, "Failed to write alarm: %d\n", ret);
++		return ret;
++	}
++
++	rtc->alarm_time = alrm->time;
++
++	if (alrm->enabled) {
++		ret = da9063_rtc_start_alarm(dev);
++		if (ret < 0) {
++			dev_err(dev, "Failed to start alarm: %d\n", ret);
++			return ret;
++		}
++	}
++
++	return ret;
++}
++
++static int da9063_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
++{
++	if (enabled)
++		return da9063_rtc_start_alarm(dev);
++	else
++		return da9063_rtc_stop_alarm(dev);
++}
++
++static irqreturn_t da9063_alarm_event(int irq, void *data)
++{
++	struct da9063_rtc *rtc = data;
++
++	regmap_update_bits(rtc->hw->regmap, DA9063_REG_ALARM_Y,
++			   DA9063_ALARM_ON, 0);
++
++	rtc->rtc_sync = true;
++	rtc_update_irq(rtc->rtc_dev, 1, RTC_IRQF | RTC_AF);
++
++	return IRQ_HANDLED;
++}
++
++static const struct rtc_class_ops da9063_rtc_ops = {
++	.read_time = da9063_rtc_read_time,
++	.set_time = da9063_rtc_set_time,
++	.read_alarm = da9063_rtc_read_alarm,
++	.set_alarm = da9063_rtc_set_alarm,
++	.alarm_irq_enable = da9063_rtc_alarm_irq_enable,
++};
++
++static int da9063_rtc_probe(struct platform_device *pdev)
++{
++	struct da9063 *da9063 = dev_get_drvdata(pdev->dev.parent);
++	struct da9063_rtc *rtc;
++	int irq_alarm;
++	u8 data[RTC_DATA_LEN];
++	int ret;
++
++	ret = regmap_update_bits(da9063->regmap, DA9063_REG_CONTROL_E,
++				 DA9063_RTC_EN, DA9063_RTC_EN);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "Failed to enable RTC\n");
++		goto err;
++	}
++
++	ret = regmap_update_bits(da9063->regmap, DA9063_REG_EN_32K,
++				 DA9063_CRYSTAL, DA9063_CRYSTAL);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "Failed to run 32kHz oscillator\n");
++		goto err;
++	}
++
++	ret = regmap_update_bits(da9063->regmap, DA9063_REG_ALARM_S,
++			DA9063_ALARM_STATUS_TICK | DA9063_ALARM_STATUS_ALARM,
++			0);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "Failed to access RTC alarm register\n");
++		goto err;
++	}
++
++	ret = regmap_update_bits(da9063->regmap, DA9063_REG_ALARM_S,
++				 DA9063_ALARM_STATUS_ALARM,
++				 DA9063_ALARM_STATUS_ALARM);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "Failed to access RTC alarm register\n");
++		goto err;
++	}
++
++	ret = regmap_update_bits(da9063->regmap, DA9063_REG_ALARM_Y,
++				 DA9063_TICK_ON, 0);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "Failed to disable TICKs\n");
++		goto err;
++	}
++
++	ret = regmap_bulk_read(da9063->regmap, DA9063_REG_ALARM_S,
++			       data, RTC_DATA_LEN);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "Failed to read initial alarm data: %d\n",
++			ret);
++		goto err;
++	}
++
++	rtc = devm_kzalloc(&pdev->dev, sizeof(*rtc), GFP_KERNEL);
++	if (!rtc)
++		return -ENOMEM;
++
++	platform_set_drvdata(pdev, rtc);
++
++	irq_alarm = platform_get_irq_byname(pdev, "ALARM");
++	ret = devm_request_threaded_irq(&pdev->dev, irq_alarm, NULL,
++					da9063_alarm_event,
++					IRQF_TRIGGER_LOW | IRQF_ONESHOT,
++					"ALARM", rtc);
++	if (ret) {
++		dev_err(&pdev->dev, "Failed to request ALARM IRQ %d: %d\n",
++			irq_alarm, ret);
++		goto err;
++	}
++
++	rtc->hw = da9063;
++	rtc->rtc_dev = devm_rtc_device_register(&pdev->dev, DA9063_DRVNAME_RTC,
++					   &da9063_rtc_ops, THIS_MODULE);
++	if (IS_ERR(rtc->rtc_dev))
++		return PTR_ERR(rtc->rtc_dev);
++
++	da9063_data_to_tm(data, &rtc->alarm_time);
++	rtc->rtc_sync = false;
++err:
++	return ret;
++}
++
++static struct platform_driver da9063_rtc_driver = {
++	.probe		= da9063_rtc_probe,
++	.driver		= {
++		.name	= DA9063_DRVNAME_RTC,
++		.owner	= THIS_MODULE,
++	},
++};
++
++module_platform_driver(da9063_rtc_driver);
++
++MODULE_AUTHOR("S Twiss <stwiss.opensource@diasemi.com>");
++MODULE_DESCRIPTION("Real time clock device driver for Dialog DA9063");
++MODULE_LICENSE("GPL v2");
++MODULE_ALIAS("platform:" DA9063_DRVNAME_RTC);
 -- 
 end-of-patch for PATCH V1
 
