@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752574AbaCFIzd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 03:55:33 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:42523 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751590AbaCFIzb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 03:55:31 -0500
-Message-ID: <531837F0.607@ti.com>
-Date: Thu, 6 Mar 2014 10:55:12 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752602AbaCFIzu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 03:55:50 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:61578 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714AbaCFIzs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 03:55:48 -0500
+Date: Thu, 6 Mar 2014 03:55:43 -0500
+From: Matt Porter <matt.porter@linaro.org>
+To: Markus Mayer <markus.mayer@linaro.org>
+Cc: Christian Daudt <bcm@fixthebug.org>,
+        ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] ARM: bcm281xx: Consolidate code
+Message-ID: <20140306085543.GE25092@beef>
+References: <1393366666-28625-1-git-send-email-markus.mayer@linaro.org>
 MIME-Version: 1.0
-To: George Cherian <george.cherian@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-CC: <anatol.pomozov@gmail.com>, <gregkh@linuxfoundation.org>, <balbi@ti.com>,
-        <kishon@ti.com>, <rob@landley.net>, <galak@codeaurora.org>,
-        <ijc+devicetree@hellion.org.uk>, <mark.rutland@arm.com>,
-        <pawel.moll@arm.com>, <robh+dt@kernel.org>, <bcousson@baylibre.com>,
-        <tony@atomide.com>
-Subject: Re: [PATCH 5/5] doc: Add "ti,am437x-dwc3" comaptible for dwc3 glue
-References: <1393854834-23810-1-git-send-email-george.cherian@ti.com> <1393854834-23810-6-git-send-email-george.cherian@ti.com>
-In-Reply-To: <1393854834-23810-6-git-send-email-george.cherian@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393366666-28625-1-git-send-email-markus.mayer@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/03/2014 03:53 PM, George Cherian wrote:
-> Add the compatible "ti,am437x-dwc3" for dwc3 glue driver.
+On Tue, Feb 25, 2014 at 02:17:42PM -0800, Markus Mayer wrote:
+> This series contains some code consolidation for the Broadcom BCM281xx
+> family of SoCs.
 > 
-> Signed-off-by: George Cherian <george.cherian@ti.com>
-> ---
->  Documentation/devicetree/bindings/usb/omap-usb.txt | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-
-The patch order could be the rearranged so that this appears before the
-am437x bindings are used.
-
-cheers,
--roger
-
+> - Move kona_l2_cache_init() so other platforms can reuse it
+> - Consolidate reboot code and move it to the board specific file
+> - Sort header files in board file alphabetically
+> - Rename the board_init() function to be board specific
 > 
-> diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt b/Documentation/devicetree/bindings/usb/omap-usb.txt
-> index c495135..1d38569 100644
-> --- a/Documentation/devicetree/bindings/usb/omap-usb.txt
-> +++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
-> @@ -44,7 +44,9 @@ Board specific device node entry
->  };
->  
->  OMAP DWC3 GLUE
-> - - compatible : Should be "ti,dwc3"
-> + - compatible : Should be
-> +	* "ti,dwc3" for OMAP5 and DRA7
-> +	* "ti,am437x-dwc3" for AM437x
->   - ti,hwmods : Should be "usb_otg_ss"
->   - reg : Address and length of the register set for the device.
->   - interrupts : The irq number of this device that is used to interrupt the
-> 
+> Markus Mayer (4):
+>   ARM: bcm281xx: Move kona_l2_cache_init() so it can be shared
+>   ARM: bcm281xx: Consolidate reboot code
+>   ARM: bcm281xx: Re-order hearder files
+>   ARM: bcm281xx: Rename board_init() function
 
+Applied to mach-bcm for-3.15/cleanup
+
+-Matt
