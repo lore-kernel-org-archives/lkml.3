@@ -1,147 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752120AbaCFIKN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 03:10:13 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:40497 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751218AbaCFIKK (ORCPT
+	id S1752275AbaCFILh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 03:11:37 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:47199 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752142AbaCFILg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 03:10:10 -0500
-Message-ID: <53182D5A.7020600@linaro.org>
-Date: Thu, 06 Mar 2014 03:10:02 -0500
-From: David Long <dave.long@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, Rabin Vincent <rabin@rab.in>,
-        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        davem@davemloft.net, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+	Thu, 6 Mar 2014 03:11:36 -0500
+X-AuditID: 9c93017e-b7cf9ae000004b4b-52-53182db62080
+Date: Thu, 6 Mar 2014 17:11:37 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 00/14] uprobes: Add uprobes support for ARM
-References: <1392017945-4507-1-git-send-email-dave.long@linaro.org> <20140301123026.GD21483@n2100.arm.linux.org.uk> <53131DBE.7020500@linaro.org> <20140303205039.GA8949@redhat.com> <20140304005306.GO21483@n2100.arm.linux.org.uk> <20140304173134.GA18830@redhat.com>
-In-Reply-To: <20140304173134.GA18830@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCHv9 0/7] add compressing abstraction and multi stream
+ support
+Message-ID: <20140306081137.GA14287@bbox>
+References: <1393609927-22090-1-git-send-email-sergey.senozhatsky@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393609927-22090-1-git-send-email-sergey.senozhatsky@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/14 12:31, Oleg Nesterov wrote:
-> On 03/04, Russell King - ARM Linux wrote:
->>
->> On Mon, Mar 03, 2014 at 09:50:39PM +0100, Oleg Nesterov wrote:
->>>
->>> And why CONFIG_UPROBES should depend on PERF_EVENTS? uprobes can be
->>> used by (say) systemtap without UPROBE_EVENT/PERF_EVENTS.
->>>
->>> But as Russell pointed out the events directory is only built if
->>> CONFIG_PERF_EVENTS=y, so it should depend on it or select...
->>>
->>>
->>> I dunno. Personally I vote for the patch from Srikar in
->>>
->>> 	http://article.gmane.org/gmane.linux.kernel/1017186
->>>
->>> This is what we currently have, currently CONFIG_UPROBES is not
->>> user-selectable anyway.
->>
->> Yes, me too, but with the proviso that UPROBE_EVENT also sorts itself
->> out with PERF_EVENTS in some way too (either by selecting it, which
->> IMHO isn't nice, or by depending on it, or the build dependency itself
->> gets sorted.)
->
-> OK... what do you think about the patch below for now?
->
->> Maybe a simpler answer would be to change the build stuff (hand-crafted):
->>
->> kernel/Makefile
->> -obj-$(CONFIG_PERF_EVENTS) += events/
->> +obj-y += events/
->>
->> and kernel/events/Makefile:
->>
->> -obj-y := core.o ring_buffer.o callchain.o
->> +perf-y := core.o ring_buffer.o callchain.o
->>
->> -obj-$(CONFIG_HAVE_HW_BREAKPOINT) += hw_breakpoint.o
->> +perf-$(CONFIG_HAVE_HW_BREAKPOINT) += hw_breakpoint.o
->> +
->> +obj-${CONFIG_PERF_EVENTS) += $(perf-y)
->
-> I fully agree. Except I can't review this change ;) But hopefully I
-> can understand what it should do.
->
-> But personally I'd prefer to start with the simple/safe change which
-> allows us to merge this series. If nothing else, even if I think that
-> kernel/events/uprobes.c doesn't need CONFIG_PERF_EVENTS, this should
-> be verified and discussed with perf maintainers.
->
-> If you agree with the patch below, how should we route it? I won't
-> argue if you push it along with other patches from David.
->
+Hello Sergey,
 
-Oleg, I'll put you down as the author and add a signed-off line for you 
-if that is OK?  Not sure who should ack it.
+Sorry for the late.
 
-> BTW... why UPROBE_EVENT depends on MMU? I think that ARCH_SUPPORTS_UPROBES
-> should not be true if !CONFIG_MMU.
->
-> Oleg.
-> ---
->
-> diff --git a/arch/Kconfig b/arch/Kconfig
-> index 80bbb8c..97ff872 100644
-> --- a/arch/Kconfig
-> +++ b/arch/Kconfig
-> @@ -86,9 +86,7 @@ config KPROBES_ON_FTRACE
->   	 optimize on top of function tracing.
->
->   config UPROBES
-> -	bool "Transparent user-space probes (EXPERIMENTAL)"
-> -	depends on UPROBE_EVENT && PERF_EVENTS
-> -	default n
-> +	def_bool n
->   	select PERCPU_RWSEM
->   	help
->   	  Uprobes is the user-space counterpart to kprobes: they
-> @@ -101,8 +99,6 @@ config UPROBES
->   	    managed by the kernel and kept transparent to the probed
->   	    application. )
->
-> -	  If in doubt, say "N".
-> -
->   config HAVE_64BIT_ALIGNED_ACCESS
->   	def_bool 64BIT && !HAVE_EFFICIENT_UNALIGNED_ACCESS
->   	help
-> diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
-> index 015f85a..8639819 100644
-> --- a/kernel/trace/Kconfig
-> +++ b/kernel/trace/Kconfig
-> @@ -424,6 +424,7 @@ config UPROBE_EVENT
->   	bool "Enable uprobes-based dynamic events"
->   	depends on ARCH_SUPPORTS_UPROBES
->   	depends on MMU
-> +	depends on PERF_EVENTS
->   	select UPROBES
->   	select PROBE_EVENTS
->   	select TRACING
->
+Today, I tested this patch and confirm that it's really good.
+I send result for the record.
 
-Can we agree Oleg's patch above is the best way to go in the short term? 
-  I've tested it and it addresses the problem, although of course one 
-has to know to enable PERF_EVENTS to even see the UPROBE_EVENT option 
-(not a problem on x86 as they always set PERF_EVENTS).
+In x86(4core and x2 hyper threading, i7, 2.8GHz), I did parallel 4 dd
+test with 200m file like below
 
-I'm continuing to test the above with my new include file changes, using 
-Arnd's randconfig patches.  Looks good so far.
+dd if=./test200m.file of=mnt/file1 bs=512k count=1024 oflag=direct &
+dd if=./test200m.file of=mnt/file2 bs=512k count=1024 oflag=direct &
+dd if=./test200m.file of=mnt/file3 bs=512k count=1024 oflag=direct &
+dd if=./test200m.file of=mnt/file4 bs=512k count=1024 oflag=direct &
+wait all backgroud job
 
--dl
+The result is 
 
+When 1 max_comp_streams, elapsed time is 36.26s
+When 8 max_comp_streams, elapsed time is 4.09s
+
+In ARM(4core, ARMv7, 1.5GHz), I did iozone test.
+
+      1 max_comp_streams,      8 max_comp_streams
+==Initial  write      ==Initial  write
+records:   10         records:   10
+avg:       141964.05  avg:       239632.54
+std:       3532.11    (2.49%)    std:       43863.53  (18.30%)
+max:       147900.45  max:       319046.62
+min:       135363.73  min:       178929.40
+==Rewrite  ==Rewrite
+records:   10         records:   10
+avg:       144757.46  avg:       247410.80
+std:       4019.19    (2.78%)    std:       37378.42  (15.11%)
+max:       150757.72  max:       293284.84
+min:       135127.55  min:       188984.27
+==Read     ==Read
+records:   10         records:   10
+avg:       208325.22  avg:       202894.24
+std:       57072.62   (27.40%)   std:       41099.56  (20.26%)
+max:       293428.96  max:       289581.12
+min:       79445.37   min:       157478.27
+==Re-read  ==Re-read
+records:   10         records:   10
+avg:       204750.36  avg:       237406.96
+std:       36959.99   (18.05%)   std:       41518.36  (17.49%)
+max:       268399.89  max:       286898.13
+min:       154831.28  min:       160326.88
+==Reverse  Read       ==Reverse  Read
+records:   10         records:   10
+avg:       215043.10  avg:       208946.35
+std:       31239.60   (14.53%)   std:       38859.74  (18.60%)
+max:       251564.57  max:       284481.31
+min:       154719.20  min:       155024.33
+==Stride   read       ==Stride   read
+records:   10         records:   10
+avg:       227246.54  avg:       198925.10
+std:       31105.89   (13.69%)   std:       30721.86  (15.44%)
+max:       290020.34  max:       227178.70
+min:       157399.46  min:       153592.91
+==Random   read       ==Random   read
+records:   10         records:   10
+avg:       238239.81  avg:       216298.41
+std:       37276.91   (15.65%)   std:       38194.73  (17.66%)
+max:       291416.20  max:       286345.37
+min:       152734.23  min:       151871.52
+==Mixed    workload   ==Mixed    workload
+records:   10         records:   10
+avg:       208434.11  avg:       234355.66
+std:       31385.40   (15.06%)   std:       22064.02  (9.41%)
+max:       253990.11  max:       270412.58
+min:       162041.47  min:       186052.12
+==Random   write      ==Random   write
+records:   10         records:   10
+avg:       142172.54  avg:       290231.28
+std:       6233.67    (4.38%)    std:       46462.35  (16.01%)
+max:       150652.40  max:       338096.54
+min:       130584.14  min:       183253.25
+==Pwrite   ==Pwrite
+records:   10         records:   10
+avg:       141247.91  avg:       267085.70
+std:       6756.08    (4.78%)    std:       40019.39  (14.98%)
+max:       150239.13  max:       335512.33
+min:       130456.98  min:       180832.45
+==Pread    ==Pread
+records:   10         records:   10
+avg:       214990.26  avg:       208730.94
+std:       40701.79   (18.93%)   std:       50797.78  (24.34%)
+max:       287060.54  max:       300675.25
+min:       157642.17  min:       156763.98
+
+So, all write test both x86 and ARM is really huge win
+and I couldn't find any regression!
+
+Thanks for nice work.
+
+For all patchset,
+
+Acked-by: Minchan Kim <minchan@kernel.org>
+
+On Fri, Feb 28, 2014 at 08:52:00PM +0300, Sergey Senozhatsky wrote:
+> This patchset introduces zcomp compression backend abstraction
+> adding ability to support compression algorithms other than LZO;
+> support for multi compression streams, making parallel compressions
+> possible; adds support for LZ4 compression algorithm.
+> 
+> v8->v9 (reviewed by Andrew Morton):
+> -- add LZ4 backend (+iozone test vs LZO)
+> -- merge patches 'zram: document max_comp_streams' and 'zram: add multi
+>    stream functionality'
+> -- do not extern backend struct from source file
+> -- use find()/release() naming instead of get()/put()
+> -- minor code, commit messages and code comments `nitpicks'
+> -- removed Acked-by Minchan Kim from first two patches, because I've
+>    changed them a bit.
+> 
+> v7->v8 (reviewed by Minchan Kim):
+> -- merge patches 'add multi stream functionality' and 'enable multi
+>    stream compression support in zram'
+> -- return status code from set_max_streams knob and print message on
+>    error
+> -- do not use atomic type for ->avail_strm
+> -- return back: allocate by default only one stream for multi stream backend
+> -- wake sleeping write in zcomp_strm_multi_put() only if we put stream
+>    to idle list
+> -- minor code `nitpicks'
+> 
+> v6->v7 (reviewed by Minchan Kim):
+> -- enable multi and single stream support out of the box (drop
+>    ZRAM_MULTI_STREAM config option)
+> -- add set_max_stream knob, so we can adjust max number of compression
+>    streams in runtime (for multi stream backend at the moment)
+> -- minor code `nitpicks'
+> 
+> v5->v6 (reviewed by Minchan Kim):
+> -- handle single compression stream case separately, using mutex locking,
+>    to address perfomance regression
+> -- handle multi compression stream using spin lock and wait_event()/wake_up()
+> -- make multi compression stream support configurable (ZRAM_MULTI_STREAM
+>    config option)
+> 
+> v4->v5 (reviewed by Minchan Kim):
+> -- renamed zcomp buffer_lock; removed src len and dst len from
+>    compress() and decompress(); not using term `buffer' and
+>    `workmem' in code and documentation; define compress() and
+>    decompress() functions for LZO backend; not using goto's;
+>    do not put idle zcomp_strm to idle list tail.
+> 
+> v3->v4 (reviewed by Minchan Kim):
+> -- renamed compression backend and working memory structs as requested
+>    by Minchan Kim; fixed several issues noted by Minchan Kim.
+> 
+> Sergey Senozhatsky (7):
+>   zram: introduce compressing backend abstraction
+>   zram: use zcomp compressing backends
+>   zram: factor out single stream compression
+>   zram: add multi stream functionality
+>   zram: add set_max_streams knob
+>   zram: make compression algorithm selection possible
+>   zram: add lz4 algorithm backend
+> 
+>  Documentation/ABI/testing/sysfs-block-zram |  17 +-
+>  Documentation/blockdev/zram.txt            |  45 +++-
+>  drivers/block/zram/Kconfig                 |  10 +
+>  drivers/block/zram/Makefile                |   4 +-
+>  drivers/block/zram/zcomp.c                 | 349 +++++++++++++++++++++++++++++
+>  drivers/block/zram/zcomp.h                 |  68 ++++++
+>  drivers/block/zram/zcomp_lz4.c             |  47 ++++
+>  drivers/block/zram/zcomp_lz4.h             |  17 ++
+>  drivers/block/zram/zcomp_lzo.c             |  47 ++++
+>  drivers/block/zram/zcomp_lzo.h             |  17 ++
+>  drivers/block/zram/zram_drv.c              | 131 ++++++++---
+>  drivers/block/zram/zram_drv.h              |  11 +-
+>  12 files changed, 715 insertions(+), 48 deletions(-)
+>  create mode 100644 drivers/block/zram/zcomp.c
+>  create mode 100644 drivers/block/zram/zcomp.h
+>  create mode 100644 drivers/block/zram/zcomp_lz4.c
+>  create mode 100644 drivers/block/zram/zcomp_lz4.h
+>  create mode 100644 drivers/block/zram/zcomp_lzo.c
+>  create mode 100644 drivers/block/zram/zcomp_lzo.h
+> 
+> -- 
+> 1.9.0.359.g5e34a15
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+Kind regards,
+Minchan Kim
