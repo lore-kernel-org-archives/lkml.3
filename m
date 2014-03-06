@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753720AbaCFR7e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 12:59:34 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:44578 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752120AbaCFR7b (ORCPT
+	id S1753754AbaCFR7t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 12:59:49 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:57934 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753735AbaCFR7r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 12:59:31 -0500
-From: behanw@converseincode.com
-To: mmarek@suse.cz
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dwmw2@infradead.org, pageexec@freemail.hu,
-        =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>,
-        Behan Webster <behanw@converseincode.com>,
-        Mark Charlebois <mcharleb@gmail.com>
-Subject: [PATCH 2/5 v2] kbuild: LLVMLinux: Adapt warnings for compilation with clang
-Date: Thu,  6 Mar 2014 09:59:23 -0800
-Message-Id: <1394128763-2976-1-git-send-email-behanw@converseincode.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1393376923-21892-3-git-send-email-behanw@converseincode.com>
-References: <1393376923-21892-3-git-send-email-behanw@converseincode.com>
+	Thu, 6 Mar 2014 12:59:47 -0500
+Message-ID: <5318B790.8090808@wwwdotorg.org>
+Date: Thu, 06 Mar 2014 10:59:44 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Wei Ni <wni@nvidia.com>, khali@linux-fr.org, linux@roeck-us.net
+CC: linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        lm-sensors@lm-sensors.org
+Subject: Re: [PATCH v2 3/3] ARM: tegra: dalmore: add thermal zones for nct1008
+References: <1393932664-13319-1-git-send-email-wni@nvidia.com> <1393932664-13319-4-git-send-email-wni@nvidia.com>
+In-Reply-To: <1393932664-13319-4-git-send-email-wni@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan-Simon Möller <dl9pf@gmx.de>
+On 03/04/2014 04:31 AM, Wei Ni wrote:
+> Add dt node to describe the thermal zone for the nct1008.
 
-When compiling kernel with clang, disable warnings which are too noisy, and
-add the clang flag catch-undefined-behavior.
+> diff --git a/arch/arm/boot/dts/tegra114-dalmore.dts b/arch/arm/boot/dts/tegra114-dalmore.dts
 
-Re-enable warnings for self-assigns due to David Jones removing most of them
-already from the kernel code base.
+> +	thermal-zones {
+> +		nct1008-local {
+> +			polling-delay-passive = <2000>; /* milliseconds */
+> +			polling-delay = <0>; /* milliseconds */
 
-Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
-Signed-off-by: Behan Webster <behanw@converseincode.com>
-Signed-off-by: Mark Charlebois <mcharleb@gmail.com>
-Cc: PaX Team <pageexec@freemail.hu>
----
- scripts/Makefile.build | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+A delay of 0 implies that software continually polls this zone, thus
+consuming an entire CPU. Is this really what you want?
 
-diff --git a/scripts/Makefile.build b/scripts/Makefile.build
-index d5d859c..5cd6651 100644
---- a/scripts/Makefile.build
-+++ b/scripts/Makefile.build
-@@ -65,12 +65,22 @@ warning-  := $(empty)
- warning-1 := -Wextra -Wunused -Wno-unused-parameter
- warning-1 += -Wmissing-declarations
- warning-1 += -Wmissing-format-attribute
--warning-1 += -Wmissing-prototypes
-+warning-1 += $(call cc-option, -Wmissing-prototypes)
- warning-1 += -Wold-style-definition
- warning-1 += $(call cc-option, -Wmissing-include-dirs)
- warning-1 += $(call cc-option, -Wunused-but-set-variable)
- warning-1 += $(call cc-disable-warning, missing-field-initializers)
- 
-+# Clang
-+warning-1 += $(call cc-disable-warning, initializer-overrides)
-+warning-1 += $(call cc-disable-warning, unused-value)
-+warning-1 += $(call cc-disable-warning, format)
-+warning-1 += $(call cc-disable-warning, unknown-warning-option)
-+warning-1 += $(call cc-disable-warning, sign-compare)
-+warning-1 += $(call cc-disable-warning, format-zero-length)
-+warning-1 += $(call cc-disable-warning, uninitialized)
-+warning-1 += $(call cc-option, -fcatch-undefined-behavior)
-+
- warning-2 := -Waggregate-return
- warning-2 += -Wcast-align
- warning-2 += -Wdisabled-optimization
--- 
-1.8.3.2
+> +
+> +			thermal-sensors = <&nct1008 0>;
+> +		};
 
+This zone (and the other) is missing the required (per the binding
+documentation) trips and cooling-maps sub-nodes.
+
+I've also sent a query in response to the thermal-zones binding so see
+whether or not it can be fixed so that software doesn't bind against the
+node name, but rather against a compatible property like almost
+everything else. Let's see what the response is there before reposting
+this patch.
