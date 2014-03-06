@@ -1,66 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755098AbaCFE0o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 23:26:44 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:56570 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753085AbaCFE0m (ORCPT
+	id S1753178AbaCFE3g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 23:29:36 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:14185 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752185AbaCFE3e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 23:26:42 -0500
-Date: Thu, 6 Mar 2014 12:26:31 +0800
-From: Mark Brown <broonie@kernel.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Robin Gong <b38343@freescale.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140306042631.GZ13126@sirena.org.uk>
-References: <1394013763.16890.1.camel@phoenix>
+	Wed, 5 Mar 2014 23:29:34 -0500
+Date: Wed, 5 Mar 2014 23:29:31 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH linux-next] sched: Fix broken setscheduler()
+Message-ID: <20140305232931.449eef8c@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Ts3D3es+1xJsYBr5"
-Content-Disposition: inline
-In-Reply-To: <1394013763.16890.1.camel@phoenix>
-X-Cookie: You are always busy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 202.175.88.218
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: pfuze100: Add PFUZE200 support to Kconfig and
- module description
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I decided to run my tests on linux-next, and my wakeup_rt tracer was
+broken. After running a bisect, I found that the problem commit was:
 
---Ts3D3es+1xJsYBr5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+   linux-next commit c365c292d059
+   "sched: Consider pi boosting in setscheduler()"
 
-On Wed, Mar 05, 2014 at 06:02:43PM +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+And the reason the wake_rt tracer test was failing, was because it had
+no RT task to trace. I first noticed this when running with
+sched_switch event and saw that my RT task still had normal SCHED_OTHER
+priority. Looking at the problem commit, I found:
 
-Applied, thanks.
+ -       p->normal_prio = normal_prio(p);
+ -       p->prio = rt_mutex_getprio(p);
 
---Ts3D3es+1xJsYBr5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+With no
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+ +       p->normal_prio = normal_prio(p);
+ +       p->prio = rt_mutex_getprio(p);
 
-iQIcBAEBAgAGBQJTF/j0AAoJELSic+t+oim9TwEP/RtOGJJ8wkHXoWKmvHoQzSvt
-7EwvPb4PSm+LEAPiRItJEIfENVvIThTctbXbqk0WmKtJ5cwwNdftrsHckKCB/Lcs
-bEaIkW/+7LvosmPouKDIpohAqNk3LIwfsOKjpxUzbHeVGzjmnxm+lG1sYPPvcIk8
-f9nxaRAIREF58LCgQzQUi1f4wKIE8BzIZEy2Iq/RsE3r5OOE8zSQE7bffAFPWPny
-G7NU0Fqqy0/zomkx3Xo/EujhhhBeH3f7XzwrgqYVH+FTVBeYyQqRupsLi9wJ4H5h
-ORFl8iAKqLuAzBACMqL1xtZ5iu0rNC4oPGfGzjX2nD7IdZvSH+XoYQkutsjsmPFO
-DWTqs/AGLffVO/59z9FXzEm0XjyU5qyRbdikzLABE9TabvWFj8U3rdU2yoMOHrYj
-rh8koZjucY9QEXw9FZxMz0xiCtFoecex3+1Qlrh7q0JmDqOZ5UD8zIQ8RXb2vvO/
-8+HeZvsrrB3bXEP+Ea4ZQp5HSQaS17hRek5nPjWk6AdSQMmeiBuWjNirbysWMTmp
-xv5X9K+lyhG77u5aZigkzUojl+FpiwPyBecva3XEm3YsPGIO70ePzPzUooy8EHls
-A/jCACZnA0c9xg/sVQRMsP82EA3LB1ywxLLX3T1j2lVUaNN35mgJWBDwO62V3b4u
-nUxOufMviiqteVRqvJ7B
-=iV9H
------END PGP SIGNATURE-----
+Reading what the commit is suppose to do, I realize that the p->prio
+can't be set if the task is boosted with a higher prio, but the
+p->normal_prio still needs to be set regardless, otherwise, when the
+task is deboosted, it wont get the new priority.
 
---Ts3D3es+1xJsYBr5--
+The p->prio has to be set before "check_class_changed()" is called,
+otherwise the class wont be changed.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 4600bca..b1cc871 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3198,6 +3198,7 @@ static void __setscheduler_params(struct task_struct *p,
+ 	 * getparam()/getattr() don't report silly values for !rt tasks.
+ 	 */
+ 	p->rt_priority = attr->sched_priority;
++	p->normal_prio = normal_prio(p);
+ 	set_load_weight(p);
+ }
+ 
+@@ -3207,6 +3208,8 @@ static void __setscheduler(struct rq *rq, struct task_struct *p,
+ {
+ 	__setscheduler_params(p, attr);
+ 
++	p->prio = rt_mutex_getprio(p);
++
+ 	if (dl_prio(p->prio))
+ 		p->sched_class = &dl_sched_class;
+ 	else if (rt_prio(p->prio))
+
