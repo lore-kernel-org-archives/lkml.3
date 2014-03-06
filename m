@@ -1,91 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752368AbaCFGbG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 01:31:06 -0500
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:23318
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750919AbaCFGbE (ORCPT
+	id S1751574AbaCFGmi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 01:42:38 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:24179 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750972AbaCFGmg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 01:31:04 -0500
-X-Forefront-Antispam-Report: CIP:165.204.84.222;KIP:(null);UIP:(null);IPV:NLI;H:atltwp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(z579ehzbb2dI98dI9371I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h1155h)
-X-WSS-ID: 0N204RG-08-5WO-02
-X-M-MSG: 
-Message-ID: <5318160D.8070305@amd.com>
-Date: Thu, 6 Mar 2014 00:30:37 -0600
-From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>,
-        <kim.naru@amd.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH 0/3] amd/pci: Add AMD hostbridge supports for newer AMD
- systems
-References: <1394053603-3724-1-git-send-email-suravee.suthikulpanit@amd.com> <CAErSpo4MMJh9b0aivwGSbxCMVw24He1+Vo_LH0R0E+fYM5aThg@mail.gmail.com> <5317D9B0.1080502@amd.com>
-In-Reply-To: <5317D9B0.1080502@amd.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: amd.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	Thu, 6 Mar 2014 01:42:36 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-ce-531818d8dc1c
+Message-id: <531818D6.3080500@samsung.com>
+Date: Thu, 06 Mar 2014 07:42:30 +0100
+From: Robert Baldyga <r.baldyga@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.3.0
+MIME-version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: sameo@linux.intel.com, lee.jones@linaro.org, myungjoo.ham@samsung.com,
+        cw00.choi@samsung.com, cooloney@gmail.com, rpurdie@rpsys.net,
+        dbaryshkov@gmail.com, dwmw2@infradead.org, lgirdwood@gmail.com,
+        broonie@kernel.org, a.zummo@towertech.it, paul.gortmaker@windriver.com,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-leds@vger.kernel.org, rtc-linux@googlegroups.com,
+        m.szyprowski@samsung.com, k.kozlowski@samsung.com
+Subject: Re: [PATCH v2] mfd: max8997: use regmap to access registers
+References: <1394031497-16648-1-git-send-email-r.baldyga@samsung.com>
+ <20140305185439.GC5453@core.coreip.homeip.net>
+In-reply-to: <20140305185439.GC5453@core.coreip.homeip.net>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEIsWRmVeSWpSXmKPExsVy+t/xK7o3JCSCDb7ulrdYcvEqu8XUh0/Y
+	LI7unMhkcf3Lc1aLSU/eM1scXvSC0WLiysnMFq9fGFrc/3qU0eLblQ4mi5ufvrFaXN41h81i
+	65t1jBZrj9xlt7jduILN4tre48wWu3c9ZbXY39nBaHG6m9VB2GPnrLvsHnsmnmTz2LxCy2PT
+	qk42jzvX9rB5zDsZ6LFn/g9Wj74tqxg9ps/7yeTxeZOcx/otW5kCuKO4bFJSczLLUov07RK4
+	Mrp2xBTcZ6u4+uQ3ewPjBtYuRk4OCQETiddvlrBD2GISF+6tZ+ti5OIQEljKKDG99RWU85FR
+	4tyffqYuRg4OXgEtiT0LVEBMFgFViff/c0F62QR0JLZ8n8AIYosKREjMnbiZDcTmFRCU+DH5
+	HguILSKgL7F99i9GkJHMAgeZJTZP2AJ2hLCAi8TmO0+ZQWwhgTKJ1R2nwAZxClhLfL70HWwQ
+	M9CC/a3ToGx5ic1r3jJPYBSYhWTHLCRls5CULWBkXsUomlqaXFCclJ5rqFecmFtcmpeul5yf
+	u4kREo9fdjAuPmZ1iFGAg1GJh3eDn3iwEGtiWXFl7iFGCQ5mJRHeh0+AQrwpiZVVqUX58UWl
+	OanFhxiZODilGhhnels/kWp6VntpC8/+jJ8Gf3ret2/1W+o371GMV8ad2Hca5avuV1gy3DZI
+	Zvxvc0ysS2r9q8sMe0PVgnS69xVLC0TzBWerB6c1F7Q/fNbkULEzo7VYeMuB+N3sXvOZW7uL
+	WpUXH6+J1/kumJX9dts15UgGFfu91XWLnD+k6+0/qC3a8KpvpRJLcUaioRZzUXEiANMZHq2l	AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/5/2014 8:13 PM, Suravee Suthikulanit wrote:
-> On 3/5/2014 3:24 PM, Bjorn Helgaas wrote:
->> [+cc linux-acpi]
->>
->> On Wed, Mar 5, 2014 at 2:06 PM,  <suravee.suthikulpanit@amd.com> wrote:
->>> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
->>>
->>> The current code only supports upto AMD hostbridge for family11h.
->>> This causes PCI numa_node information to be reported incorrectly
->>> for newer family with multi sockets.
->>
->> Where is the incorrect reporting?  In ACPI tables?  Is this patch a
->> way to cover up firmware defects in the ACPI description?  Or is this
->> for machines without ACPI (it seems unlikely that machines with new
->> AMD processors would not have ACPI)?
->
-> This is incorrectly reported in the sysfs for each PCI device (e.g.
-> /devices/pci0000:50/0000:50:00.2/numa_node). Without the patch, they
-> return -1.
->
-> In file arch/x86/pci/acpi.c, in function pci_acpi_scan_root(), it is
-> queries the node information as following:
->
-> #ifdef CONFIG_ACPI_NUMA
->      pxm = acpi_get_pxm(device->handle);
->      if (pxm >= 0)
->          node = pxm_to_node(pxm);
->      if (node != -1)
->          set_mp_bus_to_node(busnum, node);
->      else
-> #endif
->          node = get_mp_bus_to_node(busnum);
->
-> In this case, I see that the acpi_get_pxm() returns -1.  Therefore, it
-> falls back to using the node information in mp_bus_to_node[].  So,
-> without this patch, it would also returning -1.
->
-> Also, the spec mentioned that the _PXM is optional, so I am not sure if
-> this is a firmware bug.
->
-> Suravee
+Hi,
 
-I am not quite familiar with the ACPI for this part.  However, after 
-taking a look at the code (in driver/acpi/pci_root.c: 
-acpi_pci_root_add()), I believe it's trying to locate _PXM method in the 
-DSDT table, in which I don't see any _PXM methods.
+On 03/05/2014 07:54 PM, Dmitry Torokhov wrote:
+> Hi Robert,
+> 
+> On Wed, Mar 05, 2014 at 03:58:17PM +0100, Robert Baldyga wrote:
+>>  
+>> -int max8997_write_reg(struct i2c_client *i2c, u8 reg, u8 value)
+>> +int max8997_write_reg(struct regmap *map, u8 reg, u8 value)
+> 
+> Why don't you make read/write reg to take struct max8997_dev as argument
+> instead of regmap? regmap seems to be the current implementation du jur,
+> but that is core's detail, functions do not need to care.
+> 
+> Thanks.
+> 
 
-I'm still trying to debug this issue, any suggestions would be appreciated.
+It's because there are few regmaps in max8997_dev, and read/write reg
+functions has no way to check which regmap should be used. I think it
+would be clearer if I remove this functions and use regmap_read and
+regmap_write instead, because there is no particular purpose for them.
 
-Thank you,
-
-Suravee
-
-
+Best regards
+Robert Baldyga
+Samsung R&D Institute Poland
