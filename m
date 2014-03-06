@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752636AbaCFLSs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 06:18:48 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:42066 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751359AbaCFLSp (ORCPT
+	id S1752721AbaCFLS4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 06:18:56 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:48952 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751878AbaCFLSv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 06:18:45 -0500
+	Thu, 6 Mar 2014 06:18:51 -0500
 From: Srikanth Thokala <sthokal@xilinx.com>
 To: dan.j.williams@intel.com, vinod.koul@intel.com, michal.simek@xilinx.com,
         grant.likely@linaro.org, robh+dt@kernel.org
@@ -14,69 +14,115 @@ Cc: levex@linux.com, lars@metafoo.de, andriy.shevchenko@linux.intel.com,
         jaswinder.singh@linaro.org, dmaengine@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Srikanth Thokala <sthokal@xilinx.com>
-Subject: [PATCH v4 0/2] Add Xilinx AXI Video DMA Engine driver
-Date: Thu,  6 Mar 2014 16:48:35 +0530
-Message-Id: <1394104717-3100-1-git-send-email-sthokal@xilinx.com>
+Subject: [PATCH v4 1/2] dma: Add Xilinx Video DMA DT Binding Documentation
+Date: Thu,  6 Mar 2014 16:48:36 +0530
+Message-Id: <1394104717-3100-2-git-send-email-sthokal@xilinx.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1394104717-3100-1-git-send-email-sthokal@xilinx.com>
+References: <1394104717-3100-1-git-send-email-sthokal@xilinx.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Device-tree binding documentation of Xilinx Video DMA Engine
 
-This is the driver for Xilinx AXI Video Direct Memory Access Engine.
-It is a soft IP core, which provides high-bandwidth direct memory
-access between memory and AXI4-Stream video type target peripherals
-including peripherals which support AXI4-Stream Video Protocol. The
-core provides efficient two dimensional DMA operations with independent
-asynchronous read and write channel operation.
-
-For more information on the IP, please refer to
-http://www.xilinx.com/support/documentation/ip_documentation/axi_vdma/v6_1/pg020_axi_vdma.pdf
-
-This patch also provides a test client, which assumes read and write channels
-of the core are configured in a back-to-back connection.  It transfers
-data on the write channel, read and verify the data on the read channel.
-
-Use cases:
-++++++++++
-1. Xilinx Video Targeted Reference design
-   http://www.wiki.xilinx.com/Zynq+Base+TRD+14.5
-2. Common Display Framework
-   http://events.linuxfoundation.org/sites/events/files/slides/20131024-elce.pdf
-
-Regards,
-Srikanth
-
+Signed-off-by: Srikanth Thokala <sthokal@xilinx.com>
+---
 Changes in v4:
-- Rebased on v3.14.0-rc5
-- Reverted the changes that were done for the earlier patch series,
-  1/3 - 'Support multiple interleaved frames with non-contiguous memory' as
-  suggested by Jaswinder, Thanks.
+None
 
 Changes in v3:
-- Created a separate patch for the DT binding documentation as suggested by
-  Vinod, Thanks.
-- Added support for interleaved frames with non-contiguous memory as suggested
-  by Lars, Thanks.
-- Rebased on v3.14.0-rc2
+None
 
-Srikanth Thokala (2):
-  dma: Add Xilinx Video DMA DT Binding Documentation
-  dma: Add Xilinx AXI Video Direct Memory Access Engine driver support
-
- .../devicetree/bindings/dma/xilinx/xilinx_vdma.txt |   75 ++
- drivers/dma/Kconfig                                |   14 +
- drivers/dma/Makefile                               |    1 +
- drivers/dma/xilinx/Makefile                        |    1 +
- drivers/dma/xilinx/xilinx_vdma.c                   | 1390 ++++++++++++++++++++
- include/linux/amba/xilinx_dma.h                    |   47 +
- 6 files changed, 1528 insertions(+), 0 deletions(-)
+Changes in v2:
+- Removed device-id DT property, as suggested by Arnd Bergmann
+- Properly documented DT bindings as suggested by Arnd Bergmann
+---
+ .../devicetree/bindings/dma/xilinx/xilinx_vdma.txt |   75 ++++++++++++++++++++
+ 1 files changed, 75 insertions(+), 0 deletions(-)
  create mode 100644 Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
- create mode 100644 drivers/dma/xilinx/Makefile
- create mode 100644 drivers/dma/xilinx/xilinx_vdma.c
- create mode 100644 include/linux/amba/xilinx_dma.h
 
+diff --git a/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt b/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
+new file mode 100644
+index 0000000..ab8be1a
+--- /dev/null
++++ b/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
+@@ -0,0 +1,75 @@
++Xilinx AXI VDMA engine, it does transfers between memory and video devices.
++It can be configured to have one channel or two channels. If configured
++as two channels, one is to transmit to the video device and another is
++to receive from the video device.
++
++Required properties:
++- compatible: Should be "xlnx,axi-vdma-1.00.a"
++- #dma-cells: Should be <1>, see "dmas" property below
++- reg: Should contain VDMA registers location and length.
++- xlnx,num-fstores: Should be the number of framebuffers as configured in h/w.
++- dma-channel child node: Should have atleast one channel and can have upto
++	two channels per device. This node specifies the properties of each
++	DMA channel (see child node properties below).
++
++Optional properties:
++- xlnx,include-sg: Tells whether configured for Scatter-mode in
++	the hardware.
++- xlnx,flush-fsync: Tells whether which channel to Flush on Frame sync.
++	It takes following values:
++	{1}, flush both channels
++	{2}, flush mm2s channel
++	{3}, flush s2mm channel
++
++Required child node properties:
++- compatible: It should be either "xlnx,axi-vdma-mm2s-channel" or
++	"xlnx,axi-vdma-s2mm-channel".
++- interrupts: Should contain per channel VDMA interrupts.
++- xlnx,data-width: Should contain the stream data width, take values
++	{32,64...1024}.
++
++Option child node properties:
++- xlnx,include-dre: Tells whether hardware is configured for Data
++	Realignment Engine.
++- xlnx,genlock-mode: Tells whether Genlock synchronization is
++	enabled/disabled in hardware.
++
++Example:
++++++++++
++
++axi_vdma_0: axivdma@40030000 {
++	compatible = "xlnx,axi-vdma-1.00.a";
++	#dma_cells = <1>;
++	reg = < 0x40030000 0x10000 >;
++	xlnx,num-fstores = <0x8>;
++	xlnx,flush-fsync = <0x1>;
++	dma-channel@40030000 {
++		compatible = "xlnx,axi-vdma-mm2s-channel";
++		interrupts = < 0 54 4 >;
++		xlnx,datawidth = <0x40>;
++	} ;
++	dma-channel@40030030 {
++		compatible = "xlnx,axi-vdma-s2mm-channel";
++		interrupts = < 0 53 4 >;
++		xlnx,datawidth = <0x40>;
++	} ;
++} ;
++
++
++* DMA client
++
++Required properties:
++- dmas: a list of <[Video DMA device phandle] [Channel ID]> pairs,
++	where Channel ID is '0' for write/tx and '1' for read/rx
++	channel.
++- dma-names: a list of DMA channel names, one per "dmas" entry
++
++Example:
++++++++++
++
++vdmatest_0: vdmatest@0 {
++	compatible ="xlnx,axi-vdma-test-1.00.a";
++	dmas = <&axi_vdma_0 0
++		&axi_vdma_0 1>;
++	dma-names = "vdma0", "vdma1";
++} ;
 -- 
 1.7.4
 
