@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751953AbaCFJ5F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 04:57:05 -0500
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:60142 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751684AbaCFJ45 (ORCPT
+	id S1752179AbaCFJ5p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 04:57:45 -0500
+Received: from usmamail.tilera.com ([12.216.194.151]:27787 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751741AbaCFJ5n convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 04:56:57 -0500
-Message-ID: <1394099815.4592.8.camel@x220>
-Subject: Re: [PATCH v2] NVMe: silence GCC warning on 32 bit
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Keith Busch <keith.busch@intel.com>
-Cc: Matthew Wilcox <willy@linux.intel.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        linux-nvme@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Thu, 06 Mar 2014 10:56:55 +0100
-In-Reply-To: <alpine.LRH.2.03.1403050803090.2885@AMR>
-References: <1392714172-2712-1-git-send-email-geert@linux-m68k.org>
-	 <1392934261.15264.22.camel@x220> <alpine.LRH.2.03.1402210921010.4656@AMR>
-	 <1393925767.3038.23.camel@x220> <alpine.LRH.2.03.1403050803090.2885@AMR>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 06 Mar 2014 09:56:56.0488 (UTC) FILETIME=[68AD1A80:01CF3922]
-X-RcptDomain: vger.kernel.org
+	Thu, 6 Mar 2014 04:57:43 -0500
+From: Tony Lu <zlu@tilera.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 3/4] tile/perf: Support perf_events on tilegx and tilepro
+Thread-Topic: [PATCH 3/4] tile/perf: Support perf_events on tilegx and
+ tilepro
+Thread-Index: Ac85BPfGeEoTjziCS5uB2wbN7ll6BgAQFy2AAAjjSmA=
+Date: Thu, 6 Mar 2014 09:57:31 +0000
+Message-ID: <BAB94DBB0E89D8409949BC28AC95914C5D67FFB1@USMAExch1.tad.internal.tilera.com>
+References: <BAB94DBB0E89D8409949BC28AC95914C5D67FF3E@USMAExch1.tad.internal.tilera.com>
+ <20140306090655.GF9987@twins.programming.kicks-ass.net>
+In-Reply-To: <20140306090655.GF9987@twins.programming.kicks-ass.net>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-03-05 at 08:09 -0700, Keith Busch wrote:
-> Looks good to me.
+>-----Original Message-----
+>From: Peter Zijlstra [mailto:peterz@infradead.org]
+>Sent: Thursday, March 06, 2014 5:07 PM
+>To: Tony Lu
+>Cc: Paul Mackerras; Ingo Molnar; Arnaldo Carvalho de Melo; Chris Metcalf;
+>linux-kernel@vger.kernel.org
+>Subject: Re: [PATCH 3/4] tile/perf: Support perf_events on tilegx and tilepro
+>
+>On Thu, Mar 06, 2014 at 06:26:11AM +0000, Tony Lu wrote:
+>> +static const int tile_cache_event_map[PERF_COUNT_HW_CACHE_MAX]
+>> +                                    [PERF_COUNT_HW_CACHE_OP_MAX]
+>> +                                    [PERF_COUNT_HW_CACHE_RESULT_MAX] = {
+>> +[C(L1D)] = {
+>> +       [C(OP_READ)] = {
+>> +               [C(RESULT_ACCESS)] = TILE_OP_UNSUPP,
+>> +               [C(RESULT_MISS)] = 0x21, /* RD_MISS */
+>> +       },
+>> +       [C(OP_WRITE)] = {
+>> +               [C(RESULT_ACCESS)] = 0x22, /* WR_MISS */
+>> +               [C(RESULT_MISS)] = TILE_OP_UNSUPP,
+>> +       },
+>
+>If that's the wr_miss event as the comment says, it should probably be
+>listed one down.
 
-Thanks.
-
-> This won't apply in linux-nvme yet and it may be a
-> little while before it does, so this might be considered to go upstream
-> through a different tree if you want this in sooner.
-
-These warnings popped up in v3.14-rc1. (In v3.13 bvprv was a pointer
-initialized to NULL.) This patch is not urgent, but it would still be
-nice if the warnings were silenced in v3.14, since they are so noisy. Is
-there any tree that queues NVMe fixes to be applied during this release
-cycle?
-
-> On Tue, 4 Mar 2014, Paul Bolle wrote:
-> > bvprv? Would that mean bio_vec private? But it looks like some temporary
-> > variable, so something like tmp may make more sense. Anyhow, still
-> > compile tested only (on 32 and 64 bit x86).
-> 
-> bvprv == bio_vec previous
-
-Thanks. So perhaps that variable could be renamed to previous (or its
-more common alias prev),
-
-
-Paul Bolle
+Yes, you are right. Thanks for pointing it out. It should be:
++	[C(OP_WRITE)] = {
++		[C(RESULT_ACCESS)] = TILE_OP_UNSUPP,
++		[C(RESULT_MISS)] = 0x22, /* WR_MISS */
++	},
 
