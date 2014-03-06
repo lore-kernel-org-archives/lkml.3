@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751663AbaCFMnA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 07:43:00 -0500
-Received: from www.linutronix.de ([62.245.132.108]:53199 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751012AbaCFMm7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 07:42:59 -0500
-Message-ID: <53186D4E.4000706@linutronix.de>
-Date: Thu, 06 Mar 2014 13:42:54 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.3.0
+	id S1752004AbaCFMn2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 07:43:28 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:50778 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751808AbaCFMn0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 07:43:26 -0500
+From: George Cherian <george.cherian@ti.com>
+To: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <devicetree@vger.kernel.org>
+CC: <s.nawrocki@samsung.com>, <tony@atomide.com>, <george.cherian@ti.com>,
+        <gregkh@linuxfoundation.org>, <kishon@ti.com>, <rob@landley.net>,
+        <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
+        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>
+Subject: [PATCH v2 0/3] phy-omap-usb2 driver enhancements
+Date: Thu, 6 Mar 2014 18:11:51 +0530
+Message-ID: <1394109714-31228-1-git-send-email-george.cherian@ti.com>
+X-Mailer: git-send-email 1.8.3.1
 MIME-Version: 1.0
-To: Mugunthan V N <mugunthanvnm@ti.com>, bcousson@baylibre.com,
-        tony@atomide.com
-CC: devicetree@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>
-Subject: Re: [RESEND PATCH 1/1] arm: dts: am33xx: correcting dt node unit
- address for usb
-References: <1394109094-19205-1-git-send-email-mugunthanvnm@ti.com>
-In-Reply-To: <1394109094-19205-1-git-send-email-mugunthanvnm@ti.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/2014 01:31 PM, Mugunthan V N wrote:
-> DT node's unit address should be its own register offset address to make it a
-> unique across the system. This patch corrects the incorrect USB entries with
-> correct register offset for unit address.
-> 
-> Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> Cc: Felipe Balbi <balbi@ti.com>
-> Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
 
-Acked-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+This series 
+	* Adds suport for AM437x USB2 PHY driver
+	* Address DRA7 PHY errata for false disconnect
+	* New compatible for OMAP5
 
-Sebastian
+Changelog v1 -> v2 
+	* Refreshed the whole series on top of linux-phy/next
+	* u32 flags changed to u8 flags in Patch1
+	* changed devm_request_and ioremap to devm_ioremap_resource in Patch2
+
+Austin Beam (1):
+  phy: omap-usb2: Provide workaround for USB2PHY false disconnect
+
+George Cherian (2):
+  phy: omap-usb2: Adapt phy-omap-usb2 for AM437x
+  phy: omap-usb2: Add different compatible for OMAP5
+
+ Documentation/devicetree/bindings/usb/usb-phy.txt |   6 +-
+ drivers/phy/phy-omap-usb2.c                       | 102 +++++++++++++++++++---
+ include/linux/phy/omap_usb.h                      |  13 +++
+ 3 files changed, 108 insertions(+), 13 deletions(-)
+
+-- 
+1.8.3.1
+
