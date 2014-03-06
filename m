@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488AbaCFUsp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 15:48:45 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:33111 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752900AbaCFUso (ORCPT
+	id S1753509AbaCFUta (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 15:49:30 -0500
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:38186 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752592AbaCFUt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 15:48:44 -0500
-Date: Thu, 06 Mar 2014 15:48:42 -0500 (EST)
-Message-Id: <20140306.154842.1612603056023919814.davem@davemloft.net>
-To: kys@microsoft.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com
-Subject: Re: [PATCH 5/6] Drivers: net: hyperv: Enable send side checksum
- offload
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <d51892af73814794972736463a686a09@BY2PR03MB299.namprd03.prod.outlook.com>
-References: <1394104390-23477-5-git-send-email-kys@microsoft.com>
-	<20140306.143354.1296864763659469552.davem@davemloft.net>
-	<d51892af73814794972736463a686a09@BY2PR03MB299.namprd03.prod.outlook.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 06 Mar 2014 12:48:44 -0800 (PST)
+	Thu, 6 Mar 2014 15:49:28 -0500
+Date: Thu, 6 Mar 2014 15:49:23 -0500
+From: Tejun Heo <tj@kernel.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Oleg Nesterov <oleg@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Jianguo Wu <wujianguo@huawei.com>, Tim Hockin <thockin@google.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [patch 00/11] userspace out of memory handling
+Message-ID: <20140306204923.GF14033@htj.dyndns.org>
+References: <alpine.DEB.2.02.1403041952170.8067@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1403041952170.8067@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KY Srinivasan <kys@microsoft.com>
-Date: Thu, 6 Mar 2014 20:29:13 +0000
+On Tue, Mar 04, 2014 at 07:58:38PM -0800, David Rientjes wrote:
+> This patchset implements userspace out of memory handling.
+> 
+> It is based on v3.14-rc5.  Individual patches will apply cleanly or you
+> may pull the entire series from
+> 
+> 	git://git.kernel.org/pub/scm/linux/kernel/git/rientjes/linux.git mm/oom
+> 
+> When the system or a memcg is oom, processes running on that system or
+> attached to that memcg cannot allocate memory.  It is impossible for a
+> process to reliably handle the oom condition from userspace.
 
-> 
-> 
->> -----Original Message-----
->> From: David Miller [mailto:davem@davemloft.net]
->> Sent: Friday, March 7, 2014 1:04 AM
->> To: KY Srinivasan
->> Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org;
->> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
->> jasowang@redhat.com
->> Subject: Re: [PATCH 5/6] Drivers: net: hyperv: Enable send side checksum
->> offload
->> 
->> From: "K. Y. Srinivasan" <kys@microsoft.com>
->> Date: Thu,  6 Mar 2014 03:13:09 -0800
->> 
->> > +bool get_net_transport_info(struct sk_buff *skb, bool *is_v4,
->> > +				bool *is_tcp, bool *is_udp, u32 *trans_off) {
->> 
->> Returning so many values like this is awkward, at best.
->> 
->> Why not return a well defined bitmask:
->> 
->> #define TRANSPORT_INFO_SUCCESS	0x00000001
->> #define TRANSPORT_INFO_TCP	0x00000002
->> #define TRANSPORT_INFO_UDP	0x00000004
->> 
->> Then the only value you have to return by reference is trans_off.
-> 
-> I also need information on the IP version as well. If it is ok with you, I will use the return
-> value to get information on the network protocol and return information on transport via
-> reference - protocol and the offset.
+ISTR the conclusion last time was nack on the whole approach.  What
+changed between then and now?  I can't detect any fundamental changes
+from the description.
 
-Just add "TRANSPORT_INFO_IPv4" as another bitmask in the return value.
+Thanks.
+
+-- 
+tejun
