@@ -1,117 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146AbaCFP22 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 10:28:28 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:53815 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751015AbaCFP20 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 10:28:26 -0500
+	id S1753198AbaCFP2o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 10:28:44 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:48708 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752619AbaCFP2l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 10:28:41 -0500
+Date: Thu, 6 Mar 2014 09:26:37 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Mugunthan V N <mugunthanvnm@ti.com>
+CC: <bcousson@baylibre.com>, <tony@atomide.com>, <devicetree@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Felipe Balbi <balbi@ti.com>
+Subject: Re: [RESEND PATCH 1/1] arm: dts: am33xx: correcting dt node unit
+ address for usb
+Message-ID: <20140306152637.GB25648@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1394109094-19205-1-git-send-email-mugunthanvnm@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <CANqRtoSkHWGRypPymh87ikmcEWqMsn=eRoPkc2JpaSZVqP21Lw@mail.gmail.com>
-References: <1393324219-3317-1-git-send-email-geert@linux-m68k.org>
-	<CANqRtoSM-51NRVAtYOOAzZQ-pagC2JteC+M=SKMuBYniLFfhLA@mail.gmail.com>
-	<20140306013824.GF13581@verge.net.au>
-	<CANqRtoSkHWGRypPymh87ikmcEWqMsn=eRoPkc2JpaSZVqP21Lw@mail.gmail.com>
-Date: Thu, 6 Mar 2014 16:28:26 +0100
-X-Google-Sender-Auth: NkegX6NRdO_w5d0whZ722Bbp8RA
-Message-ID: <CAMuHMdX16VGZ=MjCj0St9spWGZo-bnQ6EXuiibZENTWKfASxEg@mail.gmail.com>
-Subject: Re: [PATCH v2 00/11] ARM: shmobile: MSIOF integration on
- r8a7790/lager and r8a7791/koelsch
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: Simon Horman <horms@verge.net.au>, SH-Linux <linux-sh@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="WhfpMioaduB5tiZL"
+Content-Disposition: inline
+In-Reply-To: <1394109094-19205-1-git-send-email-mugunthanvnm@ti.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Magnus, Simon,
+--WhfpMioaduB5tiZL
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Mar 6, 2014 at 3:25 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
-> On Thu, Mar 6, 2014 at 10:38 AM, Simon Horman <horms@verge.net.au> wrote:
->> On Wed, Mar 05, 2014 at 05:31:42PM +0900, Magnus Damm wrote:
->>> On Tue, Feb 25, 2014 at 7:30 PM, Geert Uytterhoeven
->>> <geert@linux-m68k.org> wrote:
->>> >         Hi Simon, Magnus,
->>> >
->>> > This patch series integrates support for the MSIOF module in the Renesas
->>> > R-Car H2 (r8a7790) and M2 (r8a7791) SoCs on the Lager and Koelsch
->>> > development boards.
->>> >
->>> > It was tested on Lager and Koelsch, both legacy and DT, using a dummy
->>> > driver for the Renesas r2a11302ft PMIC that reads out the PMIC's version
->>> > ID.
->>> >
->>> >     [01/11] ARM: shmobile: r8a7790: Add MSIOF clocks
->>> >     [02/11] ARM: shmobile: r8a7791: Add MSIOF clocks
->>> >     [03/11] ARM: shmobile: lager legacy: Add MSIOF support
->>> >     [04/11] ARM: shmobile: koelsch legacy: Add MSIOF support
->>> >     [05/11] ARM: shmobile: r8a7790/lager dts: Rename label spi to qspi, add
->>> >             spi0 alias
->>> >     [06/11] ARM: shmobile: r8a7791/koelsch dts: Rename label spi to qspi,
->>> >             add spi0 alias
->>> >     [07/11] ARM: shmobile: r8a7790 dtsi: Add MSIOF nodes and aliases
->>> >     [08/11] ARM: shmobile: r8a7791 dtsi: Add MSIOF nodes and aliases
->>> >     [09/11] ARM: shmobile: lager dts: Add MSIOF nodes
->>> >     [10/11] ARM: shmobile: koelsch dts: Add MSIOF nodes
->>> >     [11/11] ARM: shmobile: koelsch/lager/multi defconfig: Enable MSIOF
->>> >
->>> > These are (reworked versions of) the remaining patches not taken from v1.
->>> > Changelogs are available in the individual patches.
->>>
->>> Hi Geert,
->>>
->>> Thanks for your efforts. All these look fine to me.
->>>
->>> Acked-by: Magnus Damm <damm@opensource.se>
->>>
->>> Exactly what to merge upstream depends on what the ARM SoC maintainers prefer.
->>
->> I wonder if for now we could move things forwards by merging the
->> non-legacy code. I think that would mean the following:
->>
->>     [05/11] ARM: shmobile: r8a7790/lager dts: Rename label spi to qspi, add
->>             spi0 alias
->>     [06/11] ARM: shmobile: r8a7791/koelsch dts: Rename label spi to qspi,
->>             add spi0 alias
->>     [07/11] ARM: shmobile: r8a7790 dtsi: Add MSIOF nodes and aliases
->>     [08/11] ARM: shmobile: r8a7791 dtsi: Add MSIOF nodes and aliases
->>     [09/11] ARM: shmobile: lager dts: Add MSIOF nodes
->>     [10/11] ARM: shmobile: koelsch dts: Add MSIOF nodes
->>
->> And just the 'multi' portion of:
->>
->>     [11/11] ARM: shmobile: koelsch/lager/multi defconfig: Enable MSIOF
->>
->>
->> Would that result in working MSIOF support for koelsch and lager
->> when using multiplatform?
->
-> I believe so, but I rely on Geert to point out if this assumption is wrong.
+On Thu, Mar 06, 2014 at 06:01:34PM +0530, Mugunthan V N wrote:
+> DT node's unit address should be its own register offset address to make =
+it a
+> unique across the system. This patch corrects the incorrect USB entries w=
+ith
+> correct register offset for unit address.
+>=20
+> Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
 
-Yes, that should work.
+Acked-by: Felipe Balbi <balbi@ti.com>
 
->> Then later, if appropriate, in accordance with discussions with the
->> ARM SoC maintainers, we could merge the remaining changes in
->> this series: the legacy code.
->
-> Sure, sounds good.
+> ---
+> This patch was posted long back (Aug. 30, 2013), below is the archive of =
+the
+> orginal patch.
+> https://patchwork.kernel.org/patch/2852163/
+>=20
+> ---
+>  arch/arm/boot/dts/am33xx.dtsi | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>=20
+> diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+> index 7073429..9770e35 100644
+> --- a/arch/arm/boot/dts/am33xx.dtsi
+> +++ b/arch/arm/boot/dts/am33xx.dtsi
+> @@ -453,7 +453,7 @@
+>  			ti,hwmods =3D "usb_otg_hs";
+>  			status =3D "disabled";
+> =20
+> -			usb_ctrl_mod: control@44e10000 {
+> +			usb_ctrl_mod: control@44e10620 {
+>  				compatible =3D "ti,am335x-usb-ctrl-module";
+>  				reg =3D <0x44e10620 0x10
+>  					0x44e10648 0x4>;
+> @@ -556,7 +556,7 @@
+>  					"tx14", "tx15";
+>  			};
+> =20
+> -			cppi41dma: dma-controller@07402000 {
+> +			cppi41dma: dma-controller@47402000 {
+>  				compatible =3D "ti,am3359-cppi41";
+>  				reg =3D  <0x47400000 0x1000
+>  					0x47402000 0x1000
+> --=20
+> 1.9.0
+>=20
 
-Indeed.
+--=20
+balbi
 
-Thanks a lot!
+--WhfpMioaduB5tiZL
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Gr{oetje,eeting}s,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-                        Geert
+iQIcBAEBAgAGBQJTGJOtAAoJEIaOsuA1yqRErGAP/0c2Z08DjRTUQutZiuYgvp54
+Oas99qOL07xHgZSXnjXNNQGe0mJaa1lKb5EO7iIU/2aVFJYPktmX43bdk7DSsD/b
+U1rplrDdsaHR7RooprBY1JD9/ufs9mtjotvV5gonwpmwb/Bf8WdUgIlRHYTS+ipr
+BDFtLrecyicZuu1AmnDWR1sJrp4SrboOcpO1vjZ49lTDIZfnL+3vj7YjAk+JDbHZ
+DpRRBDJ+MR30/CZfmrxbKwfFf67VcW5pc1dLaIUdWJHQKCSjxStXVwXg+n3mUQ/I
+ipLGmcoa4sgmSASt2vvxjDkONH+i07CZJD02UTIFHrO+06AScTzN6lzFaEeI82Vl
+AIBKK0zD8x0WvvAOOiA0Lwci1MWRtJQ2Q/yeeGvfdvomQi53C/v4KLnLzJhmnpVF
+BhWonKRUgD0F7zTQv+ckqDhuBEdsg7AKRX0/bqYvIR9J/DnKeExJc8++NPdZa1ha
+nW6wXBsC4LJyhv7RavBY8iHXZng1QbOG8q/Ing9tlGn0MlKbtsU6LQPVXSIsulHZ
+keFm+1bSfDWk475XWhFi/VutOzxYM3dkuAx9FdK1A6cvHyOtm+ayJ2eyV41KUli2
+CFr9ohdDO2qfb79SwVsjafeFYUB2BMkmxR2sw1D3KCGta+/ETIRsJmf/tDk5l2xu
++9UweRgVg4ulgqNAQ7K5
+=AYoB
+-----END PGP SIGNATURE-----
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+--WhfpMioaduB5tiZL--
