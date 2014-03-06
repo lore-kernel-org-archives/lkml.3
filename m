@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752992AbaCFJXH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 04:23:07 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:33309 "EHLO comal.ext.ti.com"
+	id S1752957AbaCFJXF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 04:23:05 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:33310 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752760AbaCFJVL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 04:21:11 -0500
+	id S1752763AbaCFJVM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 04:21:12 -0500
 From: Santosh Shilimkar <santosh.shilimkar@ti.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
@@ -18,9 +18,9 @@ CC: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
         Catalin Marinas <catalin.marinas@arm.com>,
         Linus Walleij <linus.walleij@linaro.org>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: [PATCH 4/7] of: configure the platform device dma_mask and dma_pfn_offset
-Date: Thu, 6 Mar 2014 17:19:55 +0800
-Message-ID: <1394097598-17622-5-git-send-email-santosh.shilimkar@ti.com>
+Subject: [PATCH 6/7] ARM: dma: Use dma_pfn_offset for dma address translation
+Date: Thu, 6 Mar 2014 17:19:57 +0800
+Message-ID: <1394097598-17622-7-git-send-email-santosh.shilimkar@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1394097598-17622-1-git-send-email-santosh.shilimkar@ti.com>
 References: <1394097598-17622-1-git-send-email-santosh.shilimkar@ti.com>
@@ -32,20 +32,14 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Grygorii Strashko <grygorii.strashko@ti.com>
 
-Retrieve DMA configuration from DT and setup platform device's DMA
-parameters.
+In most of cases DMA addresses can be performed using offset value of
+ Bus address space relatively to physical address space as following:
 
-The DMA configuration in DT has to be specified using "dma-ranges"
-property if supported. The DMA configuration applied
-by dt_dma_configure() as following:
- - call of_get_dma_range() and get supported DMA range info
-   (dma_addr, cpu_addr, dma_size);
- - if "not found" then fill dma_mask as DMA_BIT_MASK(32)
-   (this is default behaviour);
- - if "failed" then clean up dma_mask (DMA not supported)
- - if ok then update devices DMA configuration:
-      set dma_mask to (dma_addr + dma_size - 1)
-      set dma_pfn_offset to PFN_DOWN(cpu_addr - dma_addr)
+PFN->DMA:
+ __pfn_to_phys(pfn + [-]dma_pfn_offset)
+
+DMA->PFN:
+ __phys_to_pfn(dma_addr) + [-]dma_pfn_offset
 
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Russell King <linux@arm.linux.org.uk>
@@ -58,102 +52,49 @@ Cc: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
 Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
- drivers/of/platform.c |   75 +++++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 72 insertions(+), 3 deletions(-)
+ arch/arm/include/asm/dma-mapping.h |   17 +++++++++++++----
+ 1 file changed, 13 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-index bd080db..53bb12f 100644
---- a/drivers/of/platform.c
-+++ b/drivers/of/platform.c
-@@ -187,6 +187,77 @@ struct platform_device *of_device_alloc(struct device_node *np,
- EXPORT_SYMBOL(of_device_alloc);
+diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
+index e701a4d..8c12149 100644
+--- a/arch/arm/include/asm/dma-mapping.h
++++ b/arch/arm/include/asm/dma-mapping.h
+@@ -58,22 +58,31 @@ static inline int dma_set_mask(struct device *dev, u64 mask)
+ #ifndef __arch_pfn_to_dma
+ static inline dma_addr_t pfn_to_dma(struct device *dev, unsigned long pfn)
+ {
+-	return (dma_addr_t)__pfn_to_bus(pfn);
++	if (!dev)
++		return DMA_ERROR_CODE;
++	return (dma_addr_t)__pfn_to_bus(pfn - dev->dma_pfn_offset);
+ }
  
- /**
-+ * dt_dma_configure - apply default DMA configuration from dt
-+ * @dev:	Device to apply DMA configuration
-+ *
-+ * Try to get devices's DMA configuration from DT and apply it.
-+ * The DMA configuration is represented in DT by "dma-ranges" property.
-+ * It configures:
-+ *	dma_pfn_offset, dma_mask and coherent_dma_mask.
-+ *
-+ * In case if DMA configuration can't be acquired from DT the default one is
-+ * applied:
-+ *	dma_pfn_offset = 0,
-+ *	dma_mask = DMA_BIT_MASK(32)
-+ *	coherent_dma_mask = DMA_BIT_MASK(32).
-+ *
-+ * In case if platform code need to use own DMA configuration - it can use
-+ * Platform bus notifier and handle BUS_NOTIFY_ADD_DEVICE event to fix up
-+ * DMA configuration.
-+ */
-+static void dt_dma_configure(struct device *dev)
-+{
-+	dma_addr_t dma_addr;
-+	phys_addr_t paddr, size;
-+	dma_addr_t dma_mask;
-+	int ret;
-+
-+	/*
-+	 * if dma-ranges property doesn't exist - use 32 bits DMA mask
-+	 * by default and don't set skip archdata.dma_pfn_offset
-+	 */
-+	ret = of_dma_get_range(dev->of_node, &dma_addr, &paddr, &size);
-+	if (ret == -ENODEV) {
-+		dev->coherent_dma_mask = DMA_BIT_MASK(32);
-+		if (!dev->dma_mask)
-+			dev->dma_mask = &dev->coherent_dma_mask;
-+		return;
-+	}
-+
-+	/* if failed - disable DMA for device */
-+	if (ret < 0) {
-+		dev_err(dev, "failed to configure DMA\n");
-+		return;
-+	}
-+
-+	/* DMA ranges found. Calculate and set dma_pfn_offset */
-+	dev->dma_pfn_offset = PFN_DOWN(paddr - dma_addr);
-+
-+	/* Configure DMA mask */
-+	dev->dma_mask = &dev->coherent_dma_mask;
-+	if (!dev->dma_mask)
-+		return;
-+
-+	dma_mask = dma_addr + size - 1;
-+
-+	ret = dma_set_mask(dev, dma_mask);
-+	if (ret < 0) {
-+		dev_err(dev, "failed to set DMA mask %pad\n", &dma_mask);
-+		dev->dma_mask = NULL;
-+		return;
-+	}
-+
-+	dev_dbg(dev, "dma_pfn_offset(%#08lx) dma_mask(%pad)\n",
-+		dev->dma_pfn_offset, dev->dma_mask);
-+
-+	ret = dma_set_coherent_mask(dev, dma_mask);
-+	if (ret < 0) {
-+		dev_err(dev, "failed to set coherent DMA mask %pad\n",
-+			&dma_mask);
-+	}
-+}
-+
-+/**
-  * of_platform_device_create_pdata - Alloc, initialize and register an of_device
-  * @np: pointer to node to create device for
-  * @bus_id: name to assign device
-@@ -214,9 +285,7 @@ static struct platform_device *of_platform_device_create_pdata(
- #if defined(CONFIG_MICROBLAZE)
- 	dev->archdata.dma_mask = 0xffffffffUL;
- #endif
--	dev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
--	if (!dev->dev.dma_mask)
--		dev->dev.dma_mask = &dev->dev.coherent_dma_mask;
-+	dt_dma_configure(&dev->dev);
- 	dev->dev.bus = &platform_bus_type;
- 	dev->dev.platform_data = platform_data;
+ static inline unsigned long dma_to_pfn(struct device *dev, dma_addr_t addr)
+ {
+-	return __bus_to_pfn(addr);
++	if (!dev)
++		return 0;
++	return __bus_to_pfn(addr) + dev->dma_pfn_offset;
+ }
  
+ static inline void *dma_to_virt(struct device *dev, dma_addr_t addr)
+ {
+-	return (void *)__bus_to_virt((unsigned long)addr);
++	if (!dev)
++		return NULL;
++	return (void *)__bus_to_virt(__pfn_to_bus(dma_to_pfn(dev, addr)));
+ }
+ 
+ static inline dma_addr_t virt_to_dma(struct device *dev, void *addr)
+ {
+-	return (dma_addr_t)__virt_to_bus((unsigned long)(addr));
++	if (!dev)
++		return DMA_ERROR_CODE;
++	return pfn_to_dma(dev,
++			   __bus_to_pfn(__virt_to_bus((unsigned long)(addr))));
+ }
+ 
+ #else
 -- 
 1.7.9.5
 
