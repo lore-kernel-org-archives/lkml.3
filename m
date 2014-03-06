@@ -1,189 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751837AbaCFNKn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 08:10:43 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:52971 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751695AbaCFNKk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 08:10:40 -0500
-Message-ID: <1394111433.21007.2.camel@phoenix>
-Subject: [PATCH RFT] regulator: pbias: Convert to use regmap helper functions
-From: Axel Lin <axel.lin@ingics.com>
-To: Chris Ball <chris@printf.net>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>
-Cc: Balaji T K <balajitk@ti.com>, Florian Vaussard <florian.vaussard@epfl.ch>,
-        Stefan Roese <sr@denx.de>, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org
-Date: Thu, 06 Mar 2014 21:10:33 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752004AbaCFNLk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 08:11:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61655 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751884AbaCFNLi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 08:11:38 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Rui Wang <rui.y.wang@intel.com>,
+        Liu Ping Fan <kernelfans@gmail.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Lv Zheng <lv.zheng@intel.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
+        Yang Zhang <yang.z.zhang@intel.com>, Andi Kleen <ak@linux.intel.com>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        Li Fei <fei.li@intel.com>, gong.chen@linux.intel.com
+Subject: [PATCH] x86, fix x86 fixup_irqs() error handling [v2]
+Date: Thu,  6 Mar 2014 08:11:07 -0500
+Message-Id: <1394111467-3351-1-git-send-email-prarit@redhat.com>
+In-Reply-To: <alpine.DEB.2.02.1403061122010.18573@ionos.tec.linutronix.de>
+References: <alpine.DEB.2.02.1403061122010.18573@ionos.tec.linutronix.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts this driver to use the regmap helper functions provided by
-regulator core.
+fixup_irqs() calls chip->set_irq_affinity which eventually calls
+__assign_irq_vector().  Errors are not propogated back from this function call
+and this results in silent irq relocation failures.  This patch fixes this
+issue and prints out a warning if there is a relocation failure.
 
-This fixes a few issues in current implementation:
+[v2]: modified WARN to pr_crit and changed message
 
-1) In original code, the set voltage does not check max_uV,
-   which means if request max_uV < 1800000, it will still set the voltage
-   to 1800000.
-
-2) The is_enable implementation is wrong in some cases:
-   e.g. for pbias_mmc_omap5: emable_mask is : BIT(27) | BIT(25) | BIT(26)
-   However, pbias_regulator_enable() only sets BIT(26) | BIT(22) bits.
-   So is_enable always return false in this case.
-
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Cc: Rui Wang <rui.y.wang@intel.com>
+Cc: Liu Ping Fan <kernelfans@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Lv Zheng <lv.zheng@intel.com>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: Yang Zhang <yang.z.zhang@Intel.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Cc: Li Fei <fei.li@intel.com>
+Cc: gong.chen@linux.intel.com
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
 ---
-Hi Balaji,
-I don't have this h/w, so please test if it works.
-Regards,
-Axel
- drivers/regulator/pbias-regulator.c | 86 ++++++++++---------------------------
- 1 file changed, 23 insertions(+), 63 deletions(-)
+ arch/x86/kernel/apic/io_apic.c |   28 ++++++++++++++++++----------
+ arch/x86/kernel/irq.c          |    9 +++++++--
+ 2 files changed, 25 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/regulator/pbias-regulator.c b/drivers/regulator/pbias-regulator.c
-index ded3b35..f25c91e 100644
---- a/drivers/regulator/pbias-regulator.c
-+++ b/drivers/regulator/pbias-regulator.c
-@@ -38,85 +38,41 @@ struct pbias_reg_info {
- struct pbias_regulator_data {
- 	struct regulator_desc desc;
- 	void __iomem *pbias_addr;
--	unsigned int pbias_reg;
- 	struct regulator_dev *dev;
- 	struct regmap *syscon;
- 	const struct pbias_reg_info *info;
- 	int voltage;
- };
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 6ad4658..b4b21db 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -2312,7 +2312,7 @@ int __ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
+ 	int err;
  
--static int pbias_regulator_set_voltage(struct regulator_dev *dev,
--			int min_uV, int max_uV, unsigned *selector)
-+static int pbias_regulator_list_voltage(struct regulator_dev *rdev,
-+					unsigned int selector)
+ 	if (!config_enabled(CONFIG_SMP))
+-		return -1;
++		return -EPERM;
+ 
+ 	if (!cpumask_intersects(mask, cpu_online_mask))
+ 		return -EINVAL;
+@@ -2343,7 +2343,7 @@ int native_ioapic_set_affinity(struct irq_data *data,
+ 	int ret;
+ 
+ 	if (!config_enabled(CONFIG_SMP))
+-		return -1;
++		return -EPERM;
+ 
+ 	raw_spin_lock_irqsave(&ioapic_lock, flags);
+ 	ret = __ioapic_set_affinity(data, mask, &dest);
+@@ -3075,9 +3075,11 @@ msi_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
+ 	struct irq_cfg *cfg = data->chip_data;
+ 	struct msi_msg msg;
+ 	unsigned int dest;
++	int ret;
+ 
+-	if (__ioapic_set_affinity(data, mask, &dest))
+-		return -1;
++	ret = __ioapic_set_affinity(data, mask, &dest);
++	if (ret)
++		return ret;
+ 
+ 	__get_cached_msi_msg(data->msi_desc, &msg);
+ 
+@@ -3177,9 +3179,11 @@ dmar_msi_set_affinity(struct irq_data *data, const struct cpumask *mask,
+ 	struct irq_cfg *cfg = data->chip_data;
+ 	unsigned int dest, irq = data->irq;
+ 	struct msi_msg msg;
++	int ret;
+ 
+-	if (__ioapic_set_affinity(data, mask, &dest))
+-		return -1;
++	ret = __ioapic_set_affinity(data, mask, &dest);
++	if (ret)
++		return ret;
+ 
+ 	dmar_msi_read(irq, &msg);
+ 
+@@ -3226,9 +3230,11 @@ static int hpet_msi_set_affinity(struct irq_data *data,
+ 	struct irq_cfg *cfg = data->chip_data;
+ 	struct msi_msg msg;
+ 	unsigned int dest;
++	int ret;
+ 
+-	if (__ioapic_set_affinity(data, mask, &dest))
+-		return -1;
++	ret = __ioapic_set_affinity(data, mask, &dest);
++	if (ret)
++		return ret;
+ 
+ 	hpet_msi_read(data->handler_data, &msg);
+ 
+@@ -3295,9 +3301,11 @@ ht_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
  {
--	struct pbias_regulator_data *data = rdev_get_drvdata(dev);
--	const struct pbias_reg_info *info = data->info;
--	int ret, vmode;
--
--	if (min_uV <= 1800000)
--		vmode = 0;
--	else if (min_uV > 1800000)
--		vmode = info->vmode;
--
--	ret = regmap_update_bits(data->syscon, data->pbias_reg,
--						info->vmode, vmode);
--
--	return ret;
--}
--
--static int pbias_regulator_get_voltage(struct regulator_dev *rdev)
--{
--	struct pbias_regulator_data *data = rdev_get_drvdata(rdev);
--	const struct pbias_reg_info *info = data->info;
--	int value, voltage;
--
--	regmap_read(data->syscon, data->pbias_reg, &value);
--	value &= info->vmode;
--
--	voltage = value ? 3000000 : 1800000;
--
--	return voltage;
-+	switch (selector) {
-+	case 0:
-+		return 1800000;
-+	case 1:
-+		return 3000000;
-+	default:
-+		return -EINVAL;
-+	}
- }
+ 	struct irq_cfg *cfg = data->chip_data;
+ 	unsigned int dest;
++	int ret;
  
- static int pbias_regulator_enable(struct regulator_dev *rdev)
- {
- 	struct pbias_regulator_data *data = rdev_get_drvdata(rdev);
- 	const struct pbias_reg_info *info = data->info;
--	int ret;
--
--	ret = regmap_update_bits(data->syscon, data->pbias_reg,
--					info->enable_mask, info->enable);
--
--	return ret;
--}
--
--static int pbias_regulator_disable(struct regulator_dev *rdev)
--{
--	struct pbias_regulator_data *data = rdev_get_drvdata(rdev);
--	const struct pbias_reg_info *info = data->info;
--	int ret;
--
--	ret = regmap_update_bits(data->syscon, data->pbias_reg,
--						info->enable_mask, 0);
--	return ret;
--}
--
--static int pbias_regulator_is_enable(struct regulator_dev *rdev)
--{
--	struct pbias_regulator_data *data = rdev_get_drvdata(rdev);
--	const struct pbias_reg_info *info = data->info;
--	int value;
--
--	regmap_read(data->syscon, data->pbias_reg, &value);
+-	if (__ioapic_set_affinity(data, mask, &dest))
+-		return -1;
++	ret = __ioapic_set_affinity(data, mask, &dest);
++	if (ret)
++		return ret;
  
--	return (value & info->enable_mask) == info->enable_mask;
-+	return regmap_update_bits(data->syscon, rdev->desc->enable_reg,
-+				  info->enable_mask, info->enable);
- }
+ 	target_ht_irq(data->irq, dest, cfg->vector);
+ 	return IRQ_SET_MASK_OK_NOCOPY;
+diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+index d99f31d..32a351d 100644
+--- a/arch/x86/kernel/irq.c
++++ b/arch/x86/kernel/irq.c
+@@ -351,6 +351,7 @@ void fixup_irqs(void)
+ 	struct irq_desc *desc;
+ 	struct irq_data *data;
+ 	struct irq_chip *chip;
++	int ret;
  
- static struct regulator_ops pbias_regulator_voltage_ops = {
--	.set_voltage	= pbias_regulator_set_voltage,
--	.get_voltage	= pbias_regulator_get_voltage,
--	.enable		= pbias_regulator_enable,
--	.disable	= pbias_regulator_disable,
--	.is_enabled	= pbias_regulator_is_enable,
-+	.list_voltage = pbias_regulator_list_voltage,
-+	.get_voltage_sel = regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel = regulator_set_voltage_sel_regmap,
-+	.enable = pbias_regulator_enable,
-+	.disable = regulator_disable_regmap,
-+	.is_enabled = regulator_is_enabled_regmap,
- };
+ 	for_each_irq_desc(irq, desc) {
+ 		int break_affinity = 0;
+@@ -389,8 +390,12 @@ void fixup_irqs(void)
+ 		if (!irqd_can_move_in_process_context(data) && chip->irq_mask)
+ 			chip->irq_mask(data);
  
- static const struct pbias_reg_info pbias_mmc_omap2430 = {
-@@ -192,6 +148,7 @@ static int pbias_regulator_probe(struct platform_device *pdev)
- 	if (IS_ERR(syscon))
- 		return PTR_ERR(syscon);
+-		if (chip->irq_set_affinity)
+-			chip->irq_set_affinity(data, affinity, true);
++		if (chip->irq_set_affinity) {
++			ret = chip->irq_set_affinity(data, affinity, true);
++			if (ret == -ENOSPC)
++				pr_crit("IRQ %d set affinity failed because there are no available vectors.  The device assigned to this IRQ is unstable.\n",
++					irq);
++		}
+ 		else if (!(warned++))
+ 			set_affinity = 0;
  
-+	cfg.regmap = syscon;
- 	cfg.dev = &pdev->dev;
- 
- 	for (idx = 0; idx < PBIAS_NUM_REGS && data_idx < count; idx++) {
-@@ -207,7 +164,6 @@ static int pbias_regulator_probe(struct platform_device *pdev)
- 		if (!res)
- 			return -EINVAL;
- 
--		drvdata[data_idx].pbias_reg = res->start;
- 		drvdata[data_idx].syscon = syscon;
- 		drvdata[data_idx].info = info;
- 		drvdata[data_idx].desc.name = info->name;
-@@ -216,6 +172,10 @@ static int pbias_regulator_probe(struct platform_device *pdev)
- 		drvdata[data_idx].desc.ops = &pbias_regulator_voltage_ops;
- 		drvdata[data_idx].desc.n_voltages = 2;
- 		drvdata[data_idx].desc.enable_time = info->enable_time;
-+		drvdata[data_idx].desc.vsel_reg = res->start;
-+		drvdata[data_idx].desc.vsel_mask = info->vmode;
-+		drvdata[data_idx].desc.enable_reg = res->start;
-+		drvdata[data_idx].desc.enable_mask = info->enable_mask;
- 
- 		cfg.init_data = pbias_matches[idx].init_data;
- 		cfg.driver_data = &drvdata[data_idx];
 -- 
-1.8.1.2
-
-
+1.7.9.3
 
