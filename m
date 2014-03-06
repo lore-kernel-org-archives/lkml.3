@@ -1,156 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753273AbaCFRtt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 12:49:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60035 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751130AbaCFRts (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 12:49:48 -0500
-Date: Thu, 6 Mar 2014 18:49:17 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
-        Stephane Eranian <eranian@google.com>,
-        Michael Ellerman <michaele@au1.ibm.com>,
-        Paul Mackerras <paulus@samba.org>, Jean Pihet <jean.pihet@linaro.org>
-Subject: Re: [PATCH 0/3] powerpc/perf: Enable linking with libunwind
-Message-ID: <20140306174917.GC1269@krava.brq.redhat.com>
-References: <1394080919-17957-1-git-send-email-sukadev@linux.vnet.ibm.com>
+	id S1752969AbaCFRvm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 12:51:42 -0500
+Received: from p3plex2out04.prod.phx3.secureserver.net ([184.168.131.18]:32924
+	"EHLO p3plex2out04.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752512AbaCFRvl convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 12:51:41 -0500
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Chase Southwood <chase.southwood@yahoo.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 5/5] Staging: comedi: addi-data: tidy up counter
+ register map defines in hwdrv_apci1564.c
+Thread-Topic: [PATCH 5/5] Staging: comedi: addi-data: tidy up counter
+ register map defines in hwdrv_apci1564.c
+Thread-Index: AQHPOQ1n0HikxxkhgUC6RAH1f09/EJrUVnrA
+Date: Thu, 6 Mar 2014 17:51:40 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825DA44FA@P3PWEX4MB008.ex4.secureserver.net>
+References: <1394090691-7850-1-git-send-email-chase.southwood@yahoo.com>
+ <1394090783-8030-1-git-send-email-chase.southwood@yahoo.com>
+In-Reply-To: <1394090783-8030-1-git-send-email-chase.southwood@yahoo.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394080919-17957-1-git-send-email-sukadev@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 05, 2014 at 08:41:56PM -0800, Sukadev Bhattiprolu wrote:
-> When we try to create backtraces (call-graphs) with the perf tool
-> 
-> 	perf record -g /tmp/sprintft
-> 
-> we get backtraces with duplicate arcs for sprintft[1]:
-> 
->     14.61%  sprintft  libc-2.18.so       [.] __random                            
->             |
->             --- __random
->                |
->                |--61.09%-- __random
->                |          |
->                |          |--97.18%-- rand
->                |          |          do_my_sprintf
->                |          |          main
->                |          |          generic_start_main.isra.0
->                |          |          __libc_start_main
->                |          |          0x0
->                |          |
->                |           --2.82%-- do_my_sprintf
->                |                     main
->                |                     generic_start_main.isra.0
->                |                     __libc_start_main
->                |                     0x0
->                |
->                 --38.91%-- rand
->                           |          
->                           |--92.90%-- rand
->                           |          |
->                           |          |--99.87%-- do_my_sprintf
->                           |          |          main
->                           |          |          generic_start_main.isra.0
->                           |          |          __libc_start_main
->                           |          |          0x0
->                           |           --0.13%-- [...]
->                           |
->                            --7.10%-- do_my_sprintf
->                                      main
->                                      generic_start_main.isra.0
->                                      __libc_start_main
->                                      0x0
-> 
-> (where the two arcs both have the same backtrace but are not merged).
-> 
-> Linking with libunwind seems to create better backtraces. While x86 and
-> ARM processors have support for linking with libunwind but Power does not.
-> This patchset is an RFC for linking with libunwind.
-> 
-> With this patchset and running:
-> 
-> 	/tmp/perf record --call-graph=dwarf,8192 /tmp/sprintft
-> 
-> the backtrace is:
-> 
->     14.94%  sprintft  libc-2.18.so       [.] __random                            
->             |
->             --- __random
->                 rand
->                 do_my_sprintf
->                 main
->                 generic_start_main.isra.0
->                 __libc_start_main
->                 (nil)
-> 
-> This appears better.
-> 
-> One downside is that we now need the kernel to save the entire user stack
-> (the 8192 in the command line is the default user stack size).
-> 
-> A second issue is that this invocation of perf (with --call-graph=dwarf,8192)
-> seems to fail for backtraces involving tail-calls[2]
-> 
-> 	/tmp/perf record -g ./tailcall
-> gives 
-> 
->     20.00%  tailcall  tailcall           [.] work2
->             |
->             --- work2
->                 work
-> 
-> shows the tail function 'work2' as "called from" 'work()'
-> 
-> But with libunwind:
-> 
-> 	/tmp/perf record --call-graph=dwarf,8192 ./tailcall
-> we get:
-> 
->    20.50%  tailcall  tailcall           [.] work2
->             |
->             --- work2
-> 
-> the caller of 'work' is not shown.
-> 
-> I am debugging this, but would appreciate any feedback/pointers on the
-> patchset/direction:
-> 
-> 	- Does libunwind need the entire user stack to work or are there
-> 	  optimizations we can do to save the minimal entries for it to
-> 	  perform the unwind.
+On Thursday, March 06, 2014 12:26 AM, Chase Southwood wrote:
+> This patch for hwdrv_apci1564.c fixes the register map defines for the
+> digital input registers such that they are all the real offsets to each
+> register, rather than a mix of real offsets and adders to those offsets.
+>
+> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
+> ---
+>  .../comedi/drivers/addi-data/hwdrv_apci1564.c      | 101 +++++++++------------
+>  1 file changed, 44 insertions(+), 57 deletions(-)
 
-AFAIK you dont need to provide whole stack, but the more
-you have the bigger chance you'll get full(er) backtrace
+This one is incomplete and breaks the build.
 
-> 
-> 	- Does libunwind work with tailcalls like the one above ?
+  CC [M]  drivers/staging/comedi/drivers/addi_apci_1564.o
+In file included from drivers/staging/comedi/drivers/addi_apci_1564.c:11:0:
+drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c: In function 'i_APCI1564_ConfigTimerCounterWatchdog':
+drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c:352:4: error: 'APCI1564_TCW_PROG' undeclared (first use in this function)
+drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c:352:4: note: each undeclared identifier is reported only once for each function it appears in
+drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c:359:4: error: 'APCI1564_TCW_RELOAD_VALUE' undeclared (first use in this function)
+drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c: In function 'i_APCI1564_StartStopWriteTimerCounterWatchdog':
+drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c:463:19: error: 'APCI1564_TCW_PROG' undeclared (first use in this function)
+drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c: In function 'i_APCI1564_ReadTimerCounterWatchdog':
+drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c:526:4: error: 'APCI1564_TCW_SYNC_ENABLEDISABLE' undeclared (first use in this function)
+drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c:529:19: error: 'APCI1564_TCW_TRIG_STATUS' undeclared (first use in this function)
+make[4]: *** [drivers/staging/comedi/drivers/addi_apci_1564.o] Error 1
+make[3]: *** [drivers/staging/comedi/drivers] Error 2
+make[2]: *** [drivers/staging/comedi] Error 2
+make[1]: *** [drivers/staging] Error 2
+make: *** [drivers] Error 2
 
-not sure, but if you have x86 alternative to your tailcall (i cannot
-read ppc assembly) I could try on x86 ;-)
+Be sure to do a build after each patch to make sure it works.
 
-CC-ing Jean, as he might have seen this issue..
-
-
-> 
-> 	- Are there benefits to linking with libunwind (even if it does not
-> 	  yet solve the tailcall problem)
-
-provides backtrace for binaries/distros/archs compiled without framepointer
-
-> 
-> 	- Are there any examples of using libdwarf to solve the tailcall
-> 	  issue ?
-
-
-btw there's now remote unwinder in elfutils (version 0.158)
-the perf supprot is in Arnaldo's perf/core tree
-
-jirka
+Regards,
+Hartley
