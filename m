@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752971AbaCFUJl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 15:09:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12144 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751986AbaCFUJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 15:09:35 -0500
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: [PATCH v2 RESEND 1/4] ioat: Use pci_enable_msix_exact() instead of pci_enable_msix()
-Date: Thu,  6 Mar 2014 21:11:21 +0100
-Message-Id: <2ba22558b5db90740d5833c35570c3e7cc1e359e.1394128952.git.agordeev@redhat.com>
-In-Reply-To: <cover.1394128952.git.agordeev@redhat.com>
-References: <cover.1394128952.git.agordeev@redhat.com>
+	id S1753101AbaCFUPe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 15:15:34 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:29632 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751624AbaCFUPc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 15:15:32 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/1ReTUoLonYgruw/NPrE6wtWRqtv2W2us=
+X-DKIM: OpenDKIM Filter v2.0.1 titan D9E6153C21C
+Date: Thu, 6 Mar 2014 15:15:10 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Mark Rutland <mark.rutland@arm.com>, Andrew Lunn <andrew@lunn.ch>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] ARM: dove: drop pinctrl PMU reg property
+Message-ID: <20140306201510.GJ1872@titan.lakedaemon.net>
+References: <1393977790-29110-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1393977790-29110-2-git-send-email-sebastian.hesselbarth@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393977790-29110-2-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of deprecation of MSI-X/MSI enablement functions
-pci_enable_msix() and pci_enable_msi_block() all drivers
-using these two interfaces need to be updated to use the
-new pci_enable_msi_range()  or pci_enable_msi_exact()
-and pci_enable_msix_range() or pci_enable_msix_exact()
-interfaces.
+On Wed, Mar 05, 2014 at 01:03:08AM +0100, Sebastian Hesselbarth wrote:
+> Marvell Dove's pinctrl does require some PMU regs for muxing PMU
+> functions to MPP pins. Recently, a discussion started about consolidating
+> Power Management Unit (PMU) into a single DT node. As we don't want
+> anymore DT ABI in the way, drop the corresponding reg property from
+> pinctrl node now. The driver will derive the registers from existing
+> reg properties.
+> 
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ---
+> Cc: Rob Herring <robh+dt@kernel.org> 
+> Cc: Pawel Moll <pawel.moll@arm.com> 
+> Cc: Mark Rutland <mark.rutland@arm.com> 
+> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk> 
+> Cc: Kumar Gala <galak@codeaurora.org> 
+> Cc: Russell King <linux@arm.linux.org.uk> 
+> Cc: Jason Cooper <jason@lakedaemon.net> 
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: Gregory Clement <gregory.clement@free-electrons.com>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Cc: devicetree@vger.kernel.org 
+> Cc: linux-arm-kernel@lists.infradead.org 
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  arch/arm/boot/dts/dove.dtsi | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: Dan Williams <dan.j.williams@intel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>
-Cc: dmaengine@vger.kernel.org
-Cc: linux-pci@vger.kernel.org
----
- drivers/dma/ioat/dma.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Applied to mvebu/dt
 
-diff --git a/drivers/dma/ioat/dma.c b/drivers/dma/ioat/dma.c
-index 4e3549a..b76c148 100644
---- a/drivers/dma/ioat/dma.c
-+++ b/drivers/dma/ioat/dma.c
-@@ -947,7 +947,7 @@ msix:
- 	for (i = 0; i < msixcnt; i++)
- 		device->msix_entries[i].entry = i;
- 
--	err = pci_enable_msix(pdev, device->msix_entries, msixcnt);
-+	err = pci_enable_msix_exact(pdev, device->msix_entries, msixcnt);
- 	if (err)
- 		goto msi;
- 
--- 
-1.7.7.6
+thx,
 
+Jason.
