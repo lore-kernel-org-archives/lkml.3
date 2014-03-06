@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756197AbaCFEoe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 23:44:34 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:19731 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751573AbaCFEod (ORCPT
+	id S1756547AbaCFEpG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 23:45:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58345 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753932AbaCFEpD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 23:44:33 -0500
-Message-ID: <5317FD2A.9020003@oracle.com>
-Date: Wed, 05 Mar 2014 23:44:26 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 5 Mar 2014 23:45:03 -0500
+Date: Wed, 5 Mar 2014 20:45:29 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Joe Perches <joe@perches.com>, devel@driverdev.osuosl.org,
+        Paul Bolle <pebolle@tiscali.nl>, linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH v2] [media] v4l: omap4iss: Add DEBUG compiler flag
+Message-ID: <20140306044529.GA6466@kroah.com>
+References: <1391958577.25424.22.camel@x220>
+ <3099833.ZhlQFyxhbo@avalon>
+ <1394065683.12070.32.camel@joe-AO722>
+ <2136780.FIdBGb725A@avalon>
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Andrea Arcangeli <aarcange@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: mm: kernel BUG at mm/huge_memory.c:2785!
-References: <530F3F0A.5040304@oracle.com> <20140227150313.3BA27E0098@blue.fi.intel.com> <53166881.1020504@oracle.com> <20140305135232.EC420E0098@blue.fi.intel.com>
-In-Reply-To: <20140305135232.EC420E0098@blue.fi.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2136780.FIdBGb725A@avalon>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/2014 08:52 AM, Kirill A. Shutemov wrote:
-> Sasha Levin wrote:
->> On 02/27/2014 10:03 AM, Kirill A. Shutemov wrote:
->>> Sasha Levin wrote:
->>>>> Hi all,
->>>>>
->>>>> While fuzzing with trinity inside a KVM tools guest running latest -next kernel I've stumbled on the
->>>>> following spew:
->>>>>
->>>>> [ 1428.146261] kernel BUG at mm/huge_memory.c:2785!
->>> Hm, interesting.
->>>
->>> It seems we either failed to split huge page on vma split or it
->>> materialized from under us. I don't see how it can happen:
->>>
->>>     - it seems we do the right thing with vma_adjust_trans_huge() in
->>>       __split_vma();
->>>     - we hold ->mmap_sem all the way from vm_munmap(). At least I don't see
->>>       a place where we could drop it;
->>>
->>> Andrea, any ideas?
->>
->> And a somewhat related issue (please correct me if I'm wrong):
->
-> Yeah. Looks similar. And I still have no idea how it could happened.
->
-> Do you trinity logs for the crash?
+On Thu, Mar 06, 2014 at 01:48:29AM +0100, Laurent Pinchart wrote:
+> Hi Joe,
+> 
+> On Wednesday 05 March 2014 16:28:03 Joe Perches wrote:
+> > On Thu, 2014-03-06 at 00:50 +0100, Laurent Pinchart wrote:
+> > > Please note that -DDEBUG is equivalent to '#define DEBUG', not to '#define
+> > > CONFIG_DEBUG'. 'DEBUG' needs to be defined for dev_dbg() to have any
+> > > effect.
+> >
+> > Not quite.  If CONFIG_DYNAMIC_DEBUG is set, these
+> > dev_dbg statements are compiled in but not by default
+> > set to emit output.  Output can be enabled by using
+> > dynamic_debug controls like:
+> > 
+> > # echo -n 'file omap4iss/* +p' > <debugfs>/dynamic_debug/control
+> > 
+> > See Documentation/dynamic-debug-howto.txt for more details.
+> 
+> Thank you for the additional information.
+> 
+> Would you recommend to drop driver-specific Kconfig options related to 
+> debugging and use CONFIG_DYNAMIC_DEBUG instead ?
 
-I can't get it to reproduce with trinity logging enabled, I guess it makes it harder for
-the race to occur.
+Yes, please do that, no one wants to rebuild drivers and subsystems with
+different options just for debugging.
 
-I'll keep it running through the night but don't really have high hopes.
+thanks,
 
-
-Thanks,
-Sasha
-
+greg k-h
