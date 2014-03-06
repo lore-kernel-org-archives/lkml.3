@@ -1,35 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753087AbaCFSRz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 13:17:55 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:59664 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752750AbaCFSRx (ORCPT
+	id S1752948AbaCFSVJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 13:21:09 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:25912 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751530AbaCFSVG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 13:17:53 -0500
-Date: Thu, 06 Mar 2014 13:17:51 -0500 (EST)
-Message-Id: <20140306.131751.1208829414159301842.davem@davemloft.net>
-To: hayeswang@realtek.com
-Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH net-next 0/3] r8152: cleanups
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1394089638-1580-1-git-send-email-hayeswang@realtek.com>
-References: <1393934464-23675-1-git-send-email-hayeswang@realtek.com>
-	<1394089638-1580-1-git-send-email-hayeswang@realtek.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 06 Mar 2014 10:17:53 -0800 (PST)
+	Thu, 6 Mar 2014 13:21:06 -0500
+Date: Thu, 6 Mar 2014 21:19:36 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: Valentina Manea <valentina.manea.m@gmail.com>, gregkh@linuxfoundation.org,
+        devel@driverdev.osuosl.org, linux-usb@vger.kernel.org,
+        ly80toro@cip.cs.fau.de, tobias.polzer@fau.de,
+        linux-kernel@vger.kernel.org, firefly@lists.rosedu.org,
+        dominik.paulus@fau.de, ihadzic@research.bell-labs.com
+Subject: Re: [PATCH 01/12] staging: usbip: userspace: migrate usbip_bind to
+ libudev
+Message-ID: <20140306181936.GI26722@mwanda>
+References: <1393960252-21247-1-git-send-email-valentina.manea.m@gmail.com>
+ <1393960252-21247-2-git-send-email-valentina.manea.m@gmail.com>
+ <53189F05.8000608@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53189F05.8000608@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hayes Wang <hayeswang@realtek.com>
-Date: Thu, 6 Mar 2014 15:07:15 +0800
+On Thu, Mar 06, 2014 at 09:15:01AM -0700, Shuah Khan wrote:
+> >--- a/drivers/staging/usbip/userspace/libsrc/usbip_common.h
+> >+++ b/drivers/staging/usbip/userspace/libsrc/usbip_common.h
+> >@@ -29,6 +29,15 @@
+> >  #define USBIP_HOST_DRV_NAME	"usbip-host"
+> >  #define USBIP_VHCI_DRV_NAME	"vhci_hcd"
+> >
+> >+/* sysfs constants */
+> >+#define SYSFS_MNT_PATH         "/sys"
+> >+#define SYSFS_BUS_NAME         "bus"
+> >+#define SYSFS_BUS_TYPE         "usb"
+> >+#define SYSFS_DRIVERS_NAME     "drivers"
+> >+
+> >+#define SYSFS_PATH_MAX		256
+> >+#define SYSFS_BUS_ID_SIZE	32
+> 
+> I wish we have some global defines we could use.
 
-> Deal with some empty lines and spaces, replace some tp->netdev with netdev,
-> and remove the unnecessary function.
+Except for the mount point, the rest of the path is part of the kernel
+API.
 
-Series applied, thank you.
+regards,
+dan carpenter
+
