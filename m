@@ -1,78 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753138AbaCFJY5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 04:24:57 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:32976 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751650AbaCFJU4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 04:20:56 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: [PATCH 0/7] of: setup dma parameters using dma-ranges and dma-coherent
-Date: Thu, 6 Mar 2014 17:19:51 +0800
-Message-ID: <1394097598-17622-1-git-send-email-santosh.shilimkar@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753150AbaCFJZZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 04:25:25 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:19780 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751650AbaCFJZW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 04:25:22 -0500
+Date: Thu, 6 Mar 2014 12:24:46 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Fred Akers <knivey@botops.net>
+Cc: greg@kroah.com, abbotti@mev.co.uk, hsweeten@visionengravers.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] Staging: comedi: range: remove unnecessary sanity
+ check
+Message-ID: <20140306092446.GF26722@mwanda>
+References: <20140306062333.GA19862@kroah.com>
+ <1394089039-12408-2-git-send-email-knivey@botops.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394089039-12408-2-git-send-email-knivey@botops.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based on comments from [1] discussion, it seems there is a need to
-have a generic support to configure dma device parameters.
-Series introduces support for setting up dma parameters based on
-device tree properties like 'dma-ranges' and 'dma-coherent'.
+On Thu, Mar 06, 2014 at 01:57:19AM -0500, Fred Akers wrote:
+> This check is unnecessary because range_table will always be
+> initialized to range_unknown by comedi_device_postconfig() for
+> drivers that do not initialize range_table or range_table_list
+> 
+> Signed-off-by: Fred Akers <knivey@botops.net>
 
-The 'dma-ranges' helps to take care of few DMAable system memory restrictions
-by use of dma_pfn_offset which we maintain now per device. Arch code then
-uses it for dma address translations for such cases. We also setup
-dma_mask accordingly during the device creation process.
+Just merge these two into one patch.
 
-The 'dma-coherent' property is used to setup coherent dma_ops. Arches
-which are always coherent can make use of ARCH_IS_DMA_COHERENT to setup
-coherent dma_ops always irrespective of 'dma-coherent' property.
-
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Olof Johansson <olof@lixom.net>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Grygorii Strashko <grygorii.strashko@ti.com>
-
-Grygorii Strashko (3):
-  of: introduce of_dma_get_range() helper
-  of: configure the platform device dma_mask and dma_pfn_offset
-  ARM: dma: Use dma_pfn_offset for dma address translation
-
-Santosh Shilimkar (4):
-  device: introduce per device dma_pfn_offset
-  of: introduce of_dma_is_coherent() helper
-  of: Add set_arch_dma_coherent_ops() and setup coherent dma_ops
-  ARM: dma: implement set_arch_dma_coherent_ops()
-
- arch/arm/include/asm/dma-mapping.h |   24 ++++-
- drivers/of/platform.c              |  196 +++++++++++++++++++++++++++++++++++-
- include/linux/device.h             |    2 +
- include/linux/dma-mapping.h        |    7 ++
- include/linux/of_platform.h        |   14 +++
- 5 files changed, 236 insertions(+), 7 deletions(-)
-
-Regards,
-Santosh
-[1] http://www.spinics.net/lists/arm-kernel/msg311678.html
--- 
-1.7.9.5
+regards,
+dan carpenter
 
