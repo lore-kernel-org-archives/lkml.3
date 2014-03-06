@@ -1,65 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752261AbaCFNcR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 08:32:17 -0500
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:45327 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751683AbaCFNcP (ORCPT
+	id S1751726AbaCFNfM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 08:35:12 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:54790 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750760AbaCFNfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 08:32:15 -0500
-Date: Thu, 6 Mar 2014 14:32:11 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Igor Mammedov <imammedo@redhat.com>
-Cc: linux-kernel@vger.kernel.org, drjones@redhat.com, toshi.kani@hp.com,
-        prarit@redhat.com, kirill.shutemov@linux.intel.com, JBeulich@suse.com,
-        peterz@infradead.org, paul.gortmaker@windriver.com,
-        seiji.aguchi@hds.com, bp@suse.de, hpa@zytor.com, mingo@redhat.com,
-        x86@kernel.org, tglx@linutronix.de, riel@redhat.com
-Subject: Re: [PATCH] abort secondary CPU bring-up gracefully if do_boot_cpu
- timed out on cpu_callin_mask
-Message-ID: <20140306133211.GA2220@gmail.com>
-References: <1394030723-15084-1-git-send-email-imammedo@redhat.com>
- <20140306070832.GA1277@gmail.com>
- <20140306101009.34ba6c3c@nial.usersys.redhat.com>
+	Thu, 6 Mar 2014 08:35:10 -0500
+Date: Thu, 6 Mar 2014 14:34:50 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Khalid Aziz <khalid.aziz@oracle.com>,
+        tglx@linutronix.de, Ingo Molnar <mingo@kernel.org>,
+        akpm@linux-foundation.org, andi.kleen@intel.com, rob@landley.net,
+        viro@zeniv.linux.org.uk, oleg@redhat.com, venki@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] [PATCH] Pre-emption control for userspace
+Message-ID: <20140306133450.GL9987@twins.programming.kicks-ass.net>
+References: <1393870033-31076-1-git-send-email-khalid.aziz@oracle.com>
+ <531641A8.40306@zytor.com>
+ <87ob1jbgtg.fsf@rasmusvillemoes.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140306101009.34ba6c3c@nial.usersys.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87ob1jbgtg.fsf@rasmusvillemoes.dk>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Mar 06, 2014 at 02:24:43PM +0100, Rasmus Villemoes wrote:
+> Is it possible to implement non-sleeping versions of {get,put}_user()?
 
-* Igor Mammedov <imammedo@redhat.com> wrote:
-
-> On Thu, 6 Mar 2014 08:08:32 +0100
-> Ingo Molnar <mingo@kernel.org> wrote:
-> 
-> > 
-> > * Igor Mammedov <imammedo@redhat.com> wrote:
-> > 
-> > > Master CPU may timeout before cpu_callin_mask is set and cancel
-> > > booting CPU, but being onlined CPU still continues to boot, sets
-> > > cpu_active_mask (CPU_STARTING notifiers) and spins in
-> > > check_tsc_sync_target() for master cpu to arrive. Following attempt
-> > > to online another cpu hangs in stop_machine, initiated from here:
-> > 
-> > The changelog needs to prominently contain a description of the 
-> > practical relevance of this patch: has the hang triggered on any 
-> > system and under what circumstances, and did the patch resolve the 
-> > hang, etc.?
-> 
-> Hang is observed on virtual machines during CPU hotplug, especially 
-> in big guests with many CPUs. (It happens more often if host is 
-> over-committed).
-> 
-> Similar patch is carried in RHEL6 since 2012 and it fixes issue 
-> there, when applied to upstream kernel it also fixes issue.
-
-Okay, cool - please update the patch description with that and 
-resubmit.
-
-Thanks,
-
-	Ingo
+__{get,put}_user()
