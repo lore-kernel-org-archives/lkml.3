@@ -1,219 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751723AbaCFOMD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 09:12:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2466 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750829AbaCFOMB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 09:12:01 -0500
-From: Igor Mammedov <imammedo@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        seiji.aguchi@hds.com, bp@suse.de, imammedo@redhat.com,
-        paul.gortmaker@windriver.com, peterz@infradead.org, JBeulich@suse.com,
-        kirill.shutemov@linux.intel.com, prarit@redhat.com, toshi.kani@hp.com,
-        drjones@redhat.com
-Subject: [PATCH v2] abort secondary CPU bring-up gracefully if do_boot_cpu timed out on cpu_callin_mask
-Date: Thu,  6 Mar 2014 15:10:32 +0100
-Message-Id: <1394115032-15858-1-git-send-email-imammedo@redhat.com>
+	id S1752306AbaCFORN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 09:17:13 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:40216 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751597AbaCFORL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 09:17:11 -0500
+Date: Thu, 6 Mar 2014 14:16:57 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v6 0/8] Move device tree graph parsing helpers to
+	drivers/of
+Message-ID: <20140306141657.GB21483@n2100.arm.linux.org.uk>
+References: <1394011242-16783-1-git-send-email-p.zabel@pengutronix.de> <53170C00.20200@ti.com> <1394030554.8754.31.camel@paszta.hi.pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394030554.8754.31.camel@paszta.hi.pengutronix.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hang is observed on virtual machines during CPU hotplug, especially
-in big guests with many CPUs. (It happens more often if host is
-over-committed).
+On Wed, Mar 05, 2014 at 03:42:34PM +0100, Philipp Zabel wrote:
+> Am Mittwoch, den 05.03.2014, 13:35 +0200 schrieb Tomi Valkeinen:
+> > Hi,
+> > 
+> > On 05/03/14 11:20, Philipp Zabel wrote:
+> > > Hi,
+> > > 
+> > > this version of the OF graph helper move series further addresses a few of
+> > > Tomi's and Sylwester's comments.
+> > > 
+> > > Changes since v5:
+> > >  - Fixed spelling errors and a wrong device node name in the link section
+> > >  - Added parentless previous endpoint's full name to warning
+> > >  - Fixed documentation comment for of_graph_parse_endpoint
+> > >  - Unrolled for-loop in of_graph_get_remote_port_parent
+> > > 
+> > > Philipp Zabel (8):
+> > >   [media] of: move graph helpers from drivers/media/v4l2-core to
+> > >     drivers/of
+> > >   Documentation: of: Document graph bindings
+> > >   of: Warn if of_graph_get_next_endpoint is called with the root node
+> > >   of: Reduce indentation in of_graph_get_next_endpoint
+> > >   [media] of: move common endpoint parsing to drivers/of
+> > >   of: Implement simplified graph binding for single port devices
+> > >   of: Document simplified graph binding for single port devices
+> > >   of: Warn if of_graph_parse_endpoint is called with the root node
+> > 
+> > So, as I've pointed out, I don't agree with the API, as it's too limited
+> > and I can't use it, but as this series is (mostly) about moving the
+> > current API to a common place, it's fine for me.
+> > 
+> > Acked-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+> 
+> Thanks. I'll be happy to help expanding the API to parse ports
+> individually, once this gets accepted.
+> 
+> Mauro, Guennadi, are you fine with how this turned out? I'd like to get
+> your acks again, for the changed location.
 
-Patch is present in RHEL6 since 2012 and it fixes issue there,
-it also fixes issue in upstream kernel according to tests.
+I'll need those acks before I can even think about queuing up the
+imx-drm bits.
 
-Below is detailed description of the problem:
------
-Master CPU may timeout before cpu_callin_mask is set and cancel
-booting CPU, but being onlined CPU still continues to boot, sets
-cpu_active_mask (CPU_STARTING notifiers) and spins in
-check_tsc_sync_target() for master cpu to arrive. Following attempt
-to online another cpu hangs in stop_machine, initiated from here:
+Another way to deal with this is if this gets pulled into the V4L tree
+from Philipp's git tree, I can also pull that in myself.  What mustn't
+happen is for these to be committed independently as patches.
 
-smp_callin ->
-  smp_store_cpu_info ->
-    identify_secondary_cpu ->
-      mtrr_ap_init -> set_mtrr_from_inactive_cpu
-
-stop_machine waits on completion of stop_work on all CPUs from
-cpu_active_mask including a failed CPU that spins in check_tsc_sync_target().
-
-Issue is fixed if being onlined CPU continues to boot and calls
-notify_cpu_starting(cpuid) only when master CPU waits for it to
-come online. If master CPU times out on cpu_callin_mask and goes via
-cancel path, the being onlined CPU should gracefully shutdown itself.
-
-Patch introduces cpu_may_complete_boot_mask to notify a being onlined
-CPU that it may call notify_cpu_starting(cpuid) and continue to boot
-when master CPU goes via normal boot path and going to wait till the
-being onlined CPU completes its initialization.
-
-- normal boot sequence will look like:
-    master CPU1                         being onlined CPU2
-
- * wait for CPU2 in cpu_callin_mask
----------------------------------------------------------------------
-                                        * set CPU2 in cpu_callin_mask
-                                        * wait till CPU1 set CPU2 bit
-                                        in cpu_may_complete_boot_mask
----------------------------------------------------------------------
- * set CPU2 bit in
-   cpu_may_complete_boot_mask
- * return from do_boot_cpu() and
-   wait in
-     - check_tsc_sync_source() or
-     - while (!cpu_online(CPU2))
----------------------------------------------------------------------
-                                        * call notify_cpu_starting()
-                                          and continue CPU2 initialization
-                                        * mark itself as ONLINE
----------------------------------------------------------------------
- * return to _cpu_up and call
-   cpu_notify(CPU_ONLINE, ...)
-
-- cancel/error path will look like:
-    master CPU1                         being onlined CPU2
-
- * time out on cpu_callin_mask
----------------------------------------------------------------------
-                                       * set CPU2 in cpu_callin_mask
-                                       * wait till CPU2 is set in
-                                         cpu_may_complete_boot_mask or
-                                         cleared in cpu_callout_mask
----------------------------------------------------------------------
- * clear CPU2 in cpu_callout_mask
- and return with error
----------------------------------------------------------------------
-                                       * do cleanups and play_dead()
-
-Signed-off-by: Igor Mammedov <imammedo@redhat.com>
----
-v2:
- * updated commit message with description of which systems are affected
-   but bug and under which conditions.
----
- arch/x86/include/asm/cpumask.h |    1 +
- arch/x86/kernel/cpu/common.c   |    2 ++
- arch/x86/kernel/smpboot.c      |   37 +++++++++++++++++++++++++++++++++++--
- 3 files changed, 38 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/include/asm/cpumask.h b/arch/x86/include/asm/cpumask.h
-index 61c852f..eacd269 100644
---- a/arch/x86/include/asm/cpumask.h
-+++ b/arch/x86/include/asm/cpumask.h
-@@ -7,6 +7,7 @@ extern cpumask_var_t cpu_callin_mask;
- extern cpumask_var_t cpu_callout_mask;
- extern cpumask_var_t cpu_initialized_mask;
- extern cpumask_var_t cpu_sibling_setup_mask;
-+extern cpumask_var_t cpu_may_complete_boot_mask;
- 
- extern void setup_cpu_local_masks(void);
- 
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 8e28bf2..4797111 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -50,6 +50,7 @@
- cpumask_var_t cpu_initialized_mask;
- cpumask_var_t cpu_callout_mask;
- cpumask_var_t cpu_callin_mask;
-+cpumask_var_t cpu_may_complete_boot_mask;
- 
- /* representing cpus for which sibling maps can be computed */
- cpumask_var_t cpu_sibling_setup_mask;
-@@ -61,6 +62,7 @@ void __init setup_cpu_local_masks(void)
- 	alloc_bootmem_cpumask_var(&cpu_callin_mask);
- 	alloc_bootmem_cpumask_var(&cpu_callout_mask);
- 	alloc_bootmem_cpumask_var(&cpu_sibling_setup_mask);
-+	alloc_bootmem_cpumask_var(&cpu_may_complete_boot_mask);
- }
- 
- static void default_init(struct cpuinfo_x86 *c)
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index a32da80..4e9a63b 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -104,6 +104,8 @@ EXPORT_PER_CPU_SYMBOL(cpu_info);
- 
- atomic_t init_deasserted;
- 
-+static void remove_siblinginfo(int cpu);
-+
- /*
-  * Report back to the Boot Processor during boot time or to the caller processor
-  * during CPU online.
-@@ -202,12 +204,38 @@ static void smp_callin(void)
- 	set_cpu_sibling_map(raw_smp_processor_id());
- 	wmb();
- 
--	notify_cpu_starting(cpuid);
--
- 	/*
- 	 * Allow the master to continue.
- 	 */
- 	cpumask_set_cpu(cpuid, cpu_callin_mask);
-+
-+	/*
-+	* Wait for signal from master CPU to continue or abort.
-+	*/
-+	while (!cpumask_test_cpu(cpuid, cpu_may_complete_boot_mask) &&
-+		cpumask_test_cpu(cpuid, cpu_callout_mask)) {
-+		cpu_relax();
-+	}
-+
-+	/* die if master cancelled cpu_up */
-+	if (!cpumask_test_cpu(cpuid, cpu_may_complete_boot_mask))
-+		goto die;
-+
-+	notify_cpu_starting(cpuid);
-+	return;
-+
-+die:
-+#ifdef CONFIG_HOTPLUG_CPU
-+	/* was set by smp_store_cpu_info->...->numa_add_cpu */
-+	numa_remove_cpu(cpuid);
-+	remove_siblinginfo(cpuid);
-+	clear_local_APIC();
-+	/* was set by cpu_init() */
-+	cpumask_clear_cpu(cpuid, cpu_initialized_mask);
-+	cpumask_clear_cpu(cpuid, cpu_callin_mask);
-+	play_dead();
-+#endif
-+	panic("%s: Failed to online CPU%d!\n", __func__, cpuid);
- }
- 
- static int cpu0_logical_apicid;
-@@ -827,6 +855,8 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
- 		}
- 
- 		if (cpumask_test_cpu(cpu, cpu_callin_mask)) {
-+			/* Signal AP that it may continue to boot */
-+			cpumask_set_cpu(cpu, cpu_may_complete_boot_mask);
- 			print_cpu_msr(&cpu_data(cpu));
- 			pr_debug("CPU%d: has booted.\n", cpu);
- 		} else {
-@@ -1085,6 +1115,7 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
- 	 */
- 	smp_store_boot_cpu_info(); /* Final full version of the data */
- 	cpumask_copy(cpu_callin_mask, cpumask_of(0));
-+	cpumask_copy(cpu_may_complete_boot_mask, cpumask_of(0));
- 	mb();
- 
- 	current_thread_info()->cpu = 0;  /* needed? */
-@@ -1294,6 +1325,8 @@ static void __ref remove_cpu_from_maps(int cpu)
- 	cpumask_clear_cpu(cpu, cpu_callin_mask);
- 	/* was set by cpu_init() */
- 	cpumask_clear_cpu(cpu, cpu_initialized_mask);
-+	/* set by do_boot_cpu() */
-+	cpumask_clear_cpu(cpu, cpu_may_complete_boot_mask);
- 	numa_remove_cpu(cpu);
- }
- 
 -- 
-1.7.1
-
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
