@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752811AbaCFMrS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 07:47:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54847 "EHLO mx1.redhat.com"
+	id S1752895AbaCFMr3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 07:47:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22743 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751365AbaCFMrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 07:47:15 -0500
+	id S1752824AbaCFMrZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 07:47:25 -0500
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 5/8] af_rxrpc: Improve ACK production [ver #2]
+Subject: [PATCH 7/8] af_rxrpc: Request an ACK for every alternate DATA
+ packet [ver #2]
 From: David Howells <dhowells@redhat.com>
 To: netdev@vger.kernel.org
 Cc: dhowells@redhat.com, tim@electronghost.co.uk,
         linux-afs@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Thu, 06 Mar 2014 12:46:50 +0000
-Message-ID: <20140306124650.16645.99916.stgit@warthog.procyon.org.uk>
+Date: Thu, 06 Mar 2014 12:47:04 +0000
+Message-ID: <20140306124704.16645.84887.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20140306124614.16645.50744.stgit@warthog.procyon.org.uk>
 References: <20140306124614.16645.50744.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.17-dirty
@@ -27,79 +28,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Improve ACK production by the following means:
+Set the RxRPC header flag to request an ACK packet for every odd-numbered DATA
+packet unless it's the last one (which implicitly requests an ACK anyway).
+This is similar to how librx appears to work.
 
- (1) Don't send an ACK_REQUESTED ack immediately even if the RXRPC_MORE_PACKETS
-     flag isn't set on a data packet that has also has RXRPC_REQUEST_ACK set.
+If we don't do this, we'll send out a full window of packets and then just sit
+there until the other side gets bored and sends an ACK to indicate that it's
+been idle for a while and has received no new packets.
 
-     MORE_PACKETS just means that the sender just emptied its Tx data buffer.
-     More data will be forthcoming unless RXRPC_LAST_PACKET is also flagged.
+Requesting a lot of ACKs shouldn't be a problem as ACKs should be merged when
+possible.
 
-     It is possible to see runs of DATA packets with MORE_PACKETS unset that
-     aren't waiting for an ACK.
-
-     It is therefore better to wait a small instant to see if we can combine an
-     ACK for several packets.
-
- (2) Don't send an ACK_IDLE ack immediately unless we're responding to the
-     terminal data packet of a call.
-
-     Whilst sending an ACK_IDLE mid-call serves to let the other side know
-     that we won't be asking it to resend certain Tx buffers and that it can
-     discard them, spamming it with loads of acks just because we've
-     temporarily run out of data just distracts it.
-
- (3) Put the ACK_IDLE ack generation timeout up to half a second rather than a
-     single jiffy.  Just because we haven't been given more data immediately
-     doesn't mean that more isn't forthcoming.  The other side may be busily
-     finding the data to send to us.
+As AF_RXRPC currently works, it will schedule an ACK to be generated upon
+receipt of a DATA packet with the ACK-request packet set - and in the time
+taken to schedule this in a work queue, several other packets are likely to
+arrive and then all get ACK'd together.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- net/rxrpc/ar-ack.c    |    2 +-
- net/rxrpc/ar-input.c  |    3 +--
- net/rxrpc/ar-skbuff.c |    2 +-
- 3 files changed, 3 insertions(+), 4 deletions(-)
+ net/rxrpc/ar-output.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/net/rxrpc/ar-ack.c b/net/rxrpc/ar-ack.c
-index 732b82f540c5..1a490d976e7e 100644
---- a/net/rxrpc/ar-ack.c
-+++ b/net/rxrpc/ar-ack.c
-@@ -41,7 +41,7 @@ unsigned rxrpc_soft_ack_delay = 1 * HZ;
-  * further packets aren't immediately received to decide when to send an IDLE
-  * ACK let the other end know that it can free up its Tx buffer space.
-  */
--unsigned rxrpc_idle_ack_delay = 1;
-+unsigned rxrpc_idle_ack_delay = 0.5 * HZ;
+diff --git a/net/rxrpc/ar-output.c b/net/rxrpc/ar-output.c
+index 4814d882bcb4..0b4b9a79f5ab 100644
+--- a/net/rxrpc/ar-output.c
++++ b/net/rxrpc/ar-output.c
+@@ -669,6 +669,7 @@ static int rxrpc_send_data(struct kiocb *iocb,
+ 		/* add the packet to the send queue if it's now full */
+ 		if (sp->remain <= 0 || (segment == 0 && !more)) {
+ 			struct rxrpc_connection *conn = call->conn;
++			uint32_t seq;
+ 			size_t pad;
  
- static const char *rxrpc_acks(u8 reason)
- {
-diff --git a/net/rxrpc/ar-input.c b/net/rxrpc/ar-input.c
-index 540c03d338c9..e449c675c36a 100644
---- a/net/rxrpc/ar-input.c
-+++ b/net/rxrpc/ar-input.c
-@@ -347,8 +347,7 @@ void rxrpc_fast_process_packet(struct rxrpc_call *call, struct sk_buff *skb)
- 	 * it */
- 	if (sp->hdr.flags & RXRPC_REQUEST_ACK) {
- 		_proto("ACK Requested on %%%u", serial);
--		rxrpc_propose_ACK(call, RXRPC_ACK_REQUESTED, sp->hdr.serial,
--				  !(sp->hdr.flags & RXRPC_MORE_PACKETS));
-+		rxrpc_propose_ACK(call, RXRPC_ACK_REQUESTED, sp->hdr.serial, false);
- 	}
+ 			/* pad out if we're using security */
+@@ -681,11 +682,12 @@ static int rxrpc_send_data(struct kiocb *iocb,
+ 					memset(skb_put(skb, pad), 0, pad);
+ 			}
  
- 	switch (sp->hdr.type) {
-diff --git a/net/rxrpc/ar-skbuff.c b/net/rxrpc/ar-skbuff.c
-index af9f4fd2a365..4cfab49e329d 100644
---- a/net/rxrpc/ar-skbuff.c
-+++ b/net/rxrpc/ar-skbuff.c
-@@ -90,7 +90,7 @@ static void rxrpc_hard_ACK_data(struct rxrpc_call *call,
- 		 */
- 		_debug("send Rx idle ACK");
- 		__rxrpc_propose_ACK(call, RXRPC_ACK_IDLE, sp->hdr.serial,
--				    true);
-+				    false);
- 	}
++			seq = atomic_inc_return(&call->sequence);
++
+ 			sp->hdr.epoch = conn->epoch;
+ 			sp->hdr.cid = call->cid;
+ 			sp->hdr.callNumber = call->call_id;
+-			sp->hdr.seq =
+-				htonl(atomic_inc_return(&call->sequence));
++			sp->hdr.seq = htonl(seq);
+ 			sp->hdr.serial =
+ 				htonl(atomic_inc_return(&conn->serial));
+ 			sp->hdr.type = RXRPC_PACKET_TYPE_DATA;
+@@ -700,6 +702,8 @@ static int rxrpc_send_data(struct kiocb *iocb,
+ 			else if (CIRC_SPACE(call->acks_head, call->acks_tail,
+ 					    call->acks_winsz) > 1)
+ 				sp->hdr.flags |= RXRPC_MORE_PACKETS;
++			if (more && seq & 1)
++				sp->hdr.flags |= RXRPC_REQUEST_ACK;
  
- 	spin_unlock_bh(&call->lock);
+ 			ret = rxrpc_secure_packet(
+ 				call, skb, skb->mark,
 
