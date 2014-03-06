@@ -1,66 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752168AbaCFOFQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 09:05:16 -0500
-Received: from www.linutronix.de ([62.245.132.108]:53866 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082AbaCFOFP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 09:05:15 -0500
-Date: Thu, 6 Mar 2014 15:04:47 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-cc: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Khalid Aziz <khalid.aziz@oracle.com>, Ingo Molnar <mingo@kernel.org>,
-        akpm@linux-foundation.org, andi.kleen@intel.com, rob@landley.net,
-        viro@zeniv.linux.org.uk, oleg@redhat.com, venki@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] [PATCH] Pre-emption control for userspace
-In-Reply-To: <87k3c7bfvn.fsf@rasmusvillemoes.dk>
-Message-ID: <alpine.DEB.2.02.1403061459190.18573@ionos.tec.linutronix.de>
-References: <1393870033-31076-1-git-send-email-khalid.aziz@oracle.com> <531641A8.40306@zytor.com> <87ob1jbgtg.fsf@rasmusvillemoes.dk> <20140306133450.GL9987@twins.programming.kicks-ass.net> <87k3c7bfvn.fsf@rasmusvillemoes.dk>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1751723AbaCFOMD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 09:12:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2466 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750829AbaCFOMB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 09:12:01 -0500
+From: Igor Mammedov <imammedo@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        seiji.aguchi@hds.com, bp@suse.de, imammedo@redhat.com,
+        paul.gortmaker@windriver.com, peterz@infradead.org, JBeulich@suse.com,
+        kirill.shutemov@linux.intel.com, prarit@redhat.com, toshi.kani@hp.com,
+        drjones@redhat.com
+Subject: [PATCH v2] abort secondary CPU bring-up gracefully if do_boot_cpu timed out on cpu_callin_mask
+Date: Thu,  6 Mar 2014 15:10:32 +0100
+Message-Id: <1394115032-15858-1-git-send-email-imammedo@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Mar 2014, Rasmus Villemoes wrote:
+Hang is observed on virtual machines during CPU hotplug, especially
+in big guests with many CPUs. (It happens more often if host is
+over-committed).
 
-> Peter Zijlstra <peterz@infradead.org> writes:
-> 
-> > On Thu, Mar 06, 2014 at 02:24:43PM +0100, Rasmus Villemoes wrote:
-> >> Is it possible to implement non-sleeping versions of {get,put}_user()?
-> >
-> > __{get,put}_user()
-> 
-> Huh?
-> 
-> arch/x86/include/asm/uaccess.h:
-> 
-> /**
->  * __get_user: - Get a simple variable from user space, with less checking.
->  * @x:   Variable to store result.
->  * @ptr: Source address, in user space.
->  *
->  * Context: User context only.  This function may sleep.
-> 
-> What am I missing?
+Patch is present in RHEL6 since 2012 and it fixes issue there,
+it also fixes issue in upstream kernel according to tests.
 
-All these variants can sleep, as they might trip a page fault.....
+Below is detailed description of the problem:
+-----
+Master CPU may timeout before cpu_callin_mask is set and cancel
+booting CPU, but being onlined CPU still continues to boot, sets
+cpu_active_mask (CPU_STARTING notifiers) and spins in
+check_tsc_sync_target() for master cpu to arrive. Following attempt
+to online another cpu hangs in stop_machine, initiated from here:
 
-If you want to access user space from a context which cant sleep you
-need to use the __copy_to/from_user_inatomic variants. If the access
-fails then they return -EFAULT and you need to deal with that
-yourself.
+smp_callin ->
+  smp_store_cpu_info ->
+    identify_secondary_cpu ->
+      mtrr_ap_init -> set_mtrr_from_inactive_cpu
 
-Thanks,
+stop_machine waits on completion of stop_work on all CPUs from
+cpu_active_mask including a failed CPU that spins in check_tsc_sync_target().
 
-	tglx
+Issue is fixed if being onlined CPU continues to boot and calls
+notify_cpu_starting(cpuid) only when master CPU waits for it to
+come online. If master CPU times out on cpu_callin_mask and goes via
+cancel path, the being onlined CPU should gracefully shutdown itself.
 
+Patch introduces cpu_may_complete_boot_mask to notify a being onlined
+CPU that it may call notify_cpu_starting(cpuid) and continue to boot
+when master CPU goes via normal boot path and going to wait till the
+being onlined CPU completes its initialization.
 
+- normal boot sequence will look like:
+    master CPU1                         being onlined CPU2
+
+ * wait for CPU2 in cpu_callin_mask
+---------------------------------------------------------------------
+                                        * set CPU2 in cpu_callin_mask
+                                        * wait till CPU1 set CPU2 bit
+                                        in cpu_may_complete_boot_mask
+---------------------------------------------------------------------
+ * set CPU2 bit in
+   cpu_may_complete_boot_mask
+ * return from do_boot_cpu() and
+   wait in
+     - check_tsc_sync_source() or
+     - while (!cpu_online(CPU2))
+---------------------------------------------------------------------
+                                        * call notify_cpu_starting()
+                                          and continue CPU2 initialization
+                                        * mark itself as ONLINE
+---------------------------------------------------------------------
+ * return to _cpu_up and call
+   cpu_notify(CPU_ONLINE, ...)
+
+- cancel/error path will look like:
+    master CPU1                         being onlined CPU2
+
+ * time out on cpu_callin_mask
+---------------------------------------------------------------------
+                                       * set CPU2 in cpu_callin_mask
+                                       * wait till CPU2 is set in
+                                         cpu_may_complete_boot_mask or
+                                         cleared in cpu_callout_mask
+---------------------------------------------------------------------
+ * clear CPU2 in cpu_callout_mask
+ and return with error
+---------------------------------------------------------------------
+                                       * do cleanups and play_dead()
+
+Signed-off-by: Igor Mammedov <imammedo@redhat.com>
+---
+v2:
+ * updated commit message with description of which systems are affected
+   but bug and under which conditions.
+---
+ arch/x86/include/asm/cpumask.h |    1 +
+ arch/x86/kernel/cpu/common.c   |    2 ++
+ arch/x86/kernel/smpboot.c      |   37 +++++++++++++++++++++++++++++++++++--
+ 3 files changed, 38 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/include/asm/cpumask.h b/arch/x86/include/asm/cpumask.h
+index 61c852f..eacd269 100644
+--- a/arch/x86/include/asm/cpumask.h
++++ b/arch/x86/include/asm/cpumask.h
+@@ -7,6 +7,7 @@ extern cpumask_var_t cpu_callin_mask;
+ extern cpumask_var_t cpu_callout_mask;
+ extern cpumask_var_t cpu_initialized_mask;
+ extern cpumask_var_t cpu_sibling_setup_mask;
++extern cpumask_var_t cpu_may_complete_boot_mask;
+ 
+ extern void setup_cpu_local_masks(void);
+ 
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 8e28bf2..4797111 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -50,6 +50,7 @@
+ cpumask_var_t cpu_initialized_mask;
+ cpumask_var_t cpu_callout_mask;
+ cpumask_var_t cpu_callin_mask;
++cpumask_var_t cpu_may_complete_boot_mask;
+ 
+ /* representing cpus for which sibling maps can be computed */
+ cpumask_var_t cpu_sibling_setup_mask;
+@@ -61,6 +62,7 @@ void __init setup_cpu_local_masks(void)
+ 	alloc_bootmem_cpumask_var(&cpu_callin_mask);
+ 	alloc_bootmem_cpumask_var(&cpu_callout_mask);
+ 	alloc_bootmem_cpumask_var(&cpu_sibling_setup_mask);
++	alloc_bootmem_cpumask_var(&cpu_may_complete_boot_mask);
+ }
+ 
+ static void default_init(struct cpuinfo_x86 *c)
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index a32da80..4e9a63b 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -104,6 +104,8 @@ EXPORT_PER_CPU_SYMBOL(cpu_info);
+ 
+ atomic_t init_deasserted;
+ 
++static void remove_siblinginfo(int cpu);
++
+ /*
+  * Report back to the Boot Processor during boot time or to the caller processor
+  * during CPU online.
+@@ -202,12 +204,38 @@ static void smp_callin(void)
+ 	set_cpu_sibling_map(raw_smp_processor_id());
+ 	wmb();
+ 
+-	notify_cpu_starting(cpuid);
+-
+ 	/*
+ 	 * Allow the master to continue.
+ 	 */
+ 	cpumask_set_cpu(cpuid, cpu_callin_mask);
++
++	/*
++	* Wait for signal from master CPU to continue or abort.
++	*/
++	while (!cpumask_test_cpu(cpuid, cpu_may_complete_boot_mask) &&
++		cpumask_test_cpu(cpuid, cpu_callout_mask)) {
++		cpu_relax();
++	}
++
++	/* die if master cancelled cpu_up */
++	if (!cpumask_test_cpu(cpuid, cpu_may_complete_boot_mask))
++		goto die;
++
++	notify_cpu_starting(cpuid);
++	return;
++
++die:
++#ifdef CONFIG_HOTPLUG_CPU
++	/* was set by smp_store_cpu_info->...->numa_add_cpu */
++	numa_remove_cpu(cpuid);
++	remove_siblinginfo(cpuid);
++	clear_local_APIC();
++	/* was set by cpu_init() */
++	cpumask_clear_cpu(cpuid, cpu_initialized_mask);
++	cpumask_clear_cpu(cpuid, cpu_callin_mask);
++	play_dead();
++#endif
++	panic("%s: Failed to online CPU%d!\n", __func__, cpuid);
+ }
+ 
+ static int cpu0_logical_apicid;
+@@ -827,6 +855,8 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
+ 		}
+ 
+ 		if (cpumask_test_cpu(cpu, cpu_callin_mask)) {
++			/* Signal AP that it may continue to boot */
++			cpumask_set_cpu(cpu, cpu_may_complete_boot_mask);
+ 			print_cpu_msr(&cpu_data(cpu));
+ 			pr_debug("CPU%d: has booted.\n", cpu);
+ 		} else {
+@@ -1085,6 +1115,7 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
+ 	 */
+ 	smp_store_boot_cpu_info(); /* Final full version of the data */
+ 	cpumask_copy(cpu_callin_mask, cpumask_of(0));
++	cpumask_copy(cpu_may_complete_boot_mask, cpumask_of(0));
+ 	mb();
+ 
+ 	current_thread_info()->cpu = 0;  /* needed? */
+@@ -1294,6 +1325,8 @@ static void __ref remove_cpu_from_maps(int cpu)
+ 	cpumask_clear_cpu(cpu, cpu_callin_mask);
+ 	/* was set by cpu_init() */
+ 	cpumask_clear_cpu(cpu, cpu_initialized_mask);
++	/* set by do_boot_cpu() */
++	cpumask_clear_cpu(cpu, cpu_may_complete_boot_mask);
+ 	numa_remove_cpu(cpu);
+ }
+ 
+-- 
+1.7.1
 
