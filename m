@@ -1,142 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751723AbaCFLbx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 06:31:53 -0500
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:63231 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751124AbaCFLbv (ORCPT
+	id S1752408AbaCFLdX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 06:33:23 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38828 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750805AbaCFLdW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 06:31:51 -0500
-Date: Thu, 6 Mar 2014 14:31:44 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
-        linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>
-Subject: Re: [PATCH] zram: move comp allocation out of init_lock
-Message-ID: <20140306113144.GB2206@swordfish.minsk.epam.com>
-References: <1393927856-23434-1-git-send-email-sergey.senozhatsky@gmail.com>
- <20140306082653.GC14287@bbox>
+	Thu, 6 Mar 2014 06:33:22 -0500
+Date: Thu, 6 Mar 2014 11:33:15 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Jean Pihet <jean.pihet@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnaldo <acme@ghostprotocols.net>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>,
+        "steve.capper@linaro.org" <steve.capper@linaro.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 1/3] perf tests: Introduce perf_regs_load function on ARM
+Message-ID: <20140306113314.GD5202@mudshark.cambridge.arm.com>
+References: <1393840403-26639-1-git-send-email-jean.pihet@linaro.org>
+ <1393840403-26639-2-git-send-email-jean.pihet@linaro.org>
+ <20140304110042.GD8766@mudshark.cambridge.arm.com>
+ <CAFrcx1=3+zZPErXC7dehwpKHnmwE=cWh1mR0kzN0PONpFZKaUw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140306082653.GC14287@bbox>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <CAFrcx1=3+zZPErXC7dehwpKHnmwE=cWh1mR0kzN0PONpFZKaUw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Minchan,
+On Wed, Mar 05, 2014 at 02:17:00AM +0000, Jean Pihet wrote:
+> On 4 March 2014 12:00, Will Deacon <will.deacon@arm.com> wrote:
+> > On Mon, Mar 03, 2014 at 09:53:21AM +0000, Jean Pihet wrote:
+> >> +     str lr, [r0, #PC]       @ Save caller PC
+> >
+> > This isn't necessarily the `caller PC' (depending on how you define it).
+> > It's the return address, which is probably (but not always) the instruction
+> > following the branch to this function.
+> Agreed. However the perf test code expects a registers buffer filled
+> in with the caller's values.
+> I can change the comment here, is that needed?
 
-On (03/06/14 17:26), Minchan Kim wrote:
-> Hello Sergey,
-> 
-> On Tue, Mar 04, 2014 at 01:10:56PM +0300, Sergey Senozhatsky wrote:
-> > While fixing lockdep spew of ->init_lock reported by Sasha Levin [1], Minchan
-> > Kim noted [2] that it's better to move compression backend allocation (using
-> > GPF_KERNEL) out of the ->init_lock lock, same way as with zram_meta_alloc(),
-> > in order to prevent the same lockdep spew.
-> > 
-> > [1] https://lkml.org/lkml/2014/2/27/337
-> > [2] https://lkml.org/lkml/2014/3/3/32
-> > 
-> > Cc: Sasha Levin <sasha.levin@oracle.com>
-> > Reported-by: Minchan Kim <minchan@kernel.org>
-> > Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> 
-> Thanks for looking.
-> 
-thanks for noting.
+It depends what the perf test code really expects. At the moment, you're not
+providing it with anything consistent which doesn't sound correct.
 
-> > ---
-> >  drivers/block/zram/zram_drv.c | 27 +++++++++++++++------------
-> >  1 file changed, 15 insertions(+), 12 deletions(-)
-> > 
-> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> > index 15d46f2..e4d536b 100644
-> > --- a/drivers/block/zram/zram_drv.c
-> > +++ b/drivers/block/zram/zram_drv.c
-> > @@ -580,9 +580,10 @@ static ssize_t disksize_store(struct device *dev,
-> >  		struct device_attribute *attr, const char *buf, size_t len)
-> >  {
-> >  	u64 disksize;
-> > +	struct zcomp *comp;
-> >  	struct zram_meta *meta;
-> >  	struct zram *zram = dev_to_zram(dev);
-> > -	int err;
-> > +	int err = -EINVAL;
-> >  
-> >  	disksize = memparse(buf, NULL);
-> >  	if (!disksize)
-> > @@ -593,30 +594,32 @@ static ssize_t disksize_store(struct device *dev,
-> >  	if (!meta)
-> >  		return -ENOMEM;
-> >  
-> > +	comp = zcomp_create(zram->compressor, zram->max_comp_streams);
-> > +	if (!comp) {
-> > +		pr_info("Cannot initialise %s compressing backend\n",
-> > +				zram->compressor);
-> 
-> -ENOMEM?
-> 
+What does it use the caller PC for?
 
-yes. patch 'zram: return error-valued pointer from zcomp_create()'
-changed zcomp_create() and it returns ERR_PTR() (-ENOMEM or -EINVAL)
-now.
-
-	-ss
-
-> Otherwise,
-> Acked-by: Minchan Kim <minchan@kernel.org>
-> 
-> 
-> > +		goto out_cleanup;
-> > +	}
-> > +
-> >  	down_write(&zram->init_lock);
-> >  	if (init_done(zram)) {
-> > +		up_write(&zram->init_lock);
-> >  		pr_info("Cannot change disksize for initialized device\n");
-> >  		err = -EBUSY;
-> > -		goto out_free_meta;
-> > -	}
-> > -
-> > -	zram->comp = zcomp_create(zram->compressor, zram->max_comp_streams);
-> > -	if (!zram->comp) {
-> > -		pr_info("Cannot initialise %s compressing backend\n",
-> > -				zram->compressor);
-> > -		err = -EINVAL;
-> > -		goto out_free_meta;
-> > +		goto out_cleanup;
-> >  	}
-> >  
-> >  	zram->meta = meta;
-> > +	zram->comp = comp;
-> >  	zram->disksize = disksize;
-> >  	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
-> >  	up_write(&zram->init_lock);
-> >  
-> >  	return len;
-> >  
-> > -out_free_meta:
-> > -	up_write(&zram->init_lock);
-> > +out_cleanup:
-> > +	if (comp)
-> > +		zcomp_destroy(comp);
-> >  	zram_meta_free(meta);
-> >  	return err;
-> >  }
-> > -- 
-> > 1.9.0.382.g7f3562c
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> -- 
-> Kind regards,
-> Minchan Kim
-> 
+Will
