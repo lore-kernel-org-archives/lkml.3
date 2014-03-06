@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142AbaCFMnh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 07:43:37 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:41223 "EHLO comal.ext.ti.com"
+	id S1752290AbaCFMns (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 07:43:48 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:41239 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751778AbaCFMnc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 07:43:32 -0500
+	id S1751778AbaCFMnq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 07:43:46 -0500
 From: George Cherian <george.cherian@ti.com>
 To: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>, <devicetree@vger.kernel.org>
@@ -13,9 +13,9 @@ CC: <s.nawrocki@samsung.com>, <tony@atomide.com>, <george.cherian@ti.com>,
         <gregkh@linuxfoundation.org>, <kishon@ti.com>, <rob@landley.net>,
         <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
         <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>
-Subject: [PATCH v2 1/3] phy: omap-usb2: Adapt phy-omap-usb2 for AM437x
-Date: Thu, 6 Mar 2014 18:11:52 +0530
-Message-ID: <1394109714-31228-2-git-send-email-george.cherian@ti.com>
+Subject: [PATCH v2 3/3] phy: omap-usb2: Add different compatible for OMAP5
+Date: Thu, 6 Mar 2014 18:11:54 +0530
+Message-ID: <1394109714-31228-4-git-send-email-george.cherian@ti.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1394109714-31228-1-git-send-email-george.cherian@ti.com>
 References: <1394109714-31228-1-git-send-email-george.cherian@ti.com>
@@ -25,145 +25,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adapt phy-omap-usb2 driver for AM437x.
-	- Add new comaptible "ti,am437x-usb2" for AM437x
-	- Pass proper data to differentiate AM437x and others.
-	- AM437x doesnot support  set_vbus and start_srp.
-	- Also update the Documentation to add new compatible.
+Add a new compatible for OMAP5 since it does not use any of the
+OTG operations as of now.
+HAS_SRP and SET_VBUS functionalities are used only for OMAP4.
+
+Update the Documentation also to add new comaptible.
 
 Signed-off-by: George Cherian <george.cherian@ti.com>
 ---
- Documentation/devicetree/bindings/usb/usb-phy.txt |  4 +-
- drivers/phy/phy-omap-usb2.c                       | 49 +++++++++++++++++------
- include/linux/phy/omap_usb.h                      |  9 +++++
- 3 files changed, 49 insertions(+), 13 deletions(-)
+ Documentation/devicetree/bindings/usb/usb-phy.txt | 3 ++-
+ drivers/phy/phy-omap-usb2.c                       | 9 +++++++++
+ 2 files changed, 11 insertions(+), 1 deletion(-)
 
 diff --git a/Documentation/devicetree/bindings/usb/usb-phy.txt b/Documentation/devicetree/bindings/usb/usb-phy.txt
-index c0245c8..b3fa409 100644
+index 03de61a5..ec199a5 100644
 --- a/Documentation/devicetree/bindings/usb/usb-phy.txt
 +++ b/Documentation/devicetree/bindings/usb/usb-phy.txt
-@@ -3,7 +3,9 @@ USB PHY
- OMAP USB2 PHY
+@@ -4,7 +4,8 @@ OMAP USB2 PHY
  
  Required properties:
-- - compatible: Should be "ti,omap-usb2"
-+ - compatible: Should be either of
-+	* "ti,omap-usb2" for OMAP4, OMAP5, DRA7
-+	* "ti,am437x-usb2" for AM437x
+  - compatible: Should be either of
+-	* "ti,omap-usb2" for OMAP4 and OMAP5
++	* "ti,omap-usb2" for OMAP4
++	* "ti,omap5-usb2" for OMAP5
+ 	* "ti,dra7x-usb2" for DRA7
+ 	* "ti,am437x-usb2" for AM437x
   - reg : Address and length of the register set for the device.
-  - #phy-cells: determine the number of cells that should be given in the
-    phandle while referencing this phy.
 diff --git a/drivers/phy/phy-omap-usb2.c b/drivers/phy/phy-omap-usb2.c
-index 9c3f056..0c78f54 100644
+index b220202..3cc4aba 100644
 --- a/drivers/phy/phy-omap-usb2.c
 +++ b/drivers/phy/phy-omap-usb2.c
-@@ -122,6 +122,31 @@ static struct phy_ops ops = {
- 	.owner		= THIS_MODULE,
+@@ -154,6 +154,11 @@ static const struct usb_phy_data omap_usb2_data = {
+ 	.flags = OMAP_USB2_HAS_START_SRP | OMAP_USB2_HAS_SET_VBUS,
  };
  
-+#ifdef CONFIG_OF
-+static const struct usb_phy_data omap_usb2_data = {
-+	.label = "omap_usb2",
-+	.flags = OMAP_USB2_HAS_START_SRP | OMAP_USB2_HAS_SET_VBUS,
++static const struct usb_phy_data omap5_usb2_data = {
++	.label = "omap5_usb2",
++	.flags = 0,
 +};
 +
-+static const struct usb_phy_data am437x_usb2_data = {
-+	.label = "am437x_usb2",
-+	.flags =  0,
-+};
-+
-+static const struct of_device_id omap_usb2_id_table[] = {
-+	{
-+		.compatible = "ti,omap-usb2",
-+		.data = &omap_usb2_data,
+ static const struct usb_phy_data dra7x_usb2_data = {
+ 	.label = "dra7x_usb2",
+ 	.flags = OMAP_USB2_CALIBRATE_FALSE_DISCONNECT,
+@@ -170,6 +175,10 @@ static const struct of_device_id omap_usb2_id_table[] = {
+ 		.data = &omap_usb2_data,
+ 	},
+ 	{
++		.compatible = "ti,omap5-usb2",
++		.data = &omap5_usb2_data,
 +	},
 +	{
-+		.compatible = "ti,am437x-usb2",
-+		.data = &am437x_usb2_data,
-+	},
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, omap_usb2_id_table);
-+#endif
-+
- static int omap_usb2_probe(struct platform_device *pdev)
- {
- 	struct omap_usb	*phy;
-@@ -131,10 +156,16 @@ static int omap_usb2_probe(struct platform_device *pdev)
- 	struct device_node *node = pdev->dev.of_node;
- 	struct device_node *control_node;
- 	struct platform_device *control_pdev;
-+	const struct of_device_id *of_id;
-+	struct usb_phy_data *phy_data;
-+
-+	of_id = of_match_device(of_match_ptr(omap_usb2_id_table), &pdev->dev);
- 
--	if (!node)
-+	if (!of_id)
- 		return -EINVAL;
- 
-+	phy_data = (struct usb_phy_data *)of_id->data;
-+
- 	phy = devm_kzalloc(&pdev->dev, sizeof(*phy), GFP_KERNEL);
- 	if (!phy) {
- 		dev_err(&pdev->dev, "unable to allocate memory for USB2 PHY\n");
-@@ -150,7 +181,7 @@ static int omap_usb2_probe(struct platform_device *pdev)
- 	phy->dev		= &pdev->dev;
- 
- 	phy->phy.dev		= phy->dev;
--	phy->phy.label		= "omap-usb2";
-+	phy->phy.label		= phy_data->label;
- 	phy->phy.otg		= otg;
- 	phy->phy.type		= USB_PHY_TYPE_USB2;
- 
-@@ -171,8 +202,10 @@ static int omap_usb2_probe(struct platform_device *pdev)
- 
- 	otg->set_host		= omap_usb_set_host;
- 	otg->set_peripheral	= omap_usb_set_peripheral;
--	otg->set_vbus		= omap_usb_set_vbus;
--	otg->start_srp		= omap_usb_start_srp;
-+	if (phy_data->flags & OMAP_USB2_HAS_SET_VBUS)
-+		otg->set_vbus		= omap_usb_set_vbus;
-+	if (phy_data->flags & OMAP_USB2_HAS_START_SRP)
-+		otg->start_srp		= omap_usb_start_srp;
- 	otg->phy		= &phy->phy;
- 
- 	platform_set_drvdata(pdev, phy);
-@@ -272,14 +305,6 @@ static const struct dev_pm_ops omap_usb2_pm_ops = {
- #define DEV_PM_OPS     NULL
- #endif
- 
--#ifdef CONFIG_OF
--static const struct of_device_id omap_usb2_id_table[] = {
--	{ .compatible = "ti,omap-usb2" },
--	{}
--};
--MODULE_DEVICE_TABLE(of, omap_usb2_id_table);
--#endif
--
- static struct platform_driver omap_usb2_driver = {
- 	.probe		= omap_usb2_probe,
- 	.remove		= omap_usb2_remove,
-diff --git a/include/linux/phy/omap_usb.h b/include/linux/phy/omap_usb.h
-index 19d343c3..35989a8 100644
---- a/include/linux/phy/omap_usb.h
-+++ b/include/linux/phy/omap_usb.h
-@@ -39,6 +39,15 @@ struct omap_usb {
- 	struct clk		*optclk;
- };
- 
-+struct usb_phy_data {
-+	const char *label;
-+	u8 flags;
-+};
-+
-+/* Driver Flags */
-+#define OMAP_USB2_HAS_START_SRP (1 << 0)
-+#define OMAP_USB2_HAS_SET_VBUS (1 << 1)
-+
- #define	phy_to_omapusb(x)	container_of((x), struct omap_usb, phy)
- 
- #if defined(CONFIG_OMAP_USB2) || defined(CONFIG_OMAP_USB2_MODULE)
+ 		.compatible = "ti,dra7x-usb2",
+ 		.data = &dra7x_usb2_data,
+ 	},
 -- 
 1.8.3.1
 
