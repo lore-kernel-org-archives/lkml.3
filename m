@@ -1,122 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240AbaCFQc5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 11:32:57 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:53490 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839AbaCFQcz (ORCPT
+	id S1752522AbaCFQdS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 11:33:18 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:23475 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750848AbaCFQdO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 11:32:55 -0500
-X-AuditID: cbfec7f5-b7fc96d000004885-fc-5318a332e5f5
-Message-id: <5318A331.2070603@samsung.com>
-Date: Thu, 06 Mar 2014 17:32:49 +0100
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.2.0
-MIME-version: 1.0
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v6 0/8] Move device tree graph parsing helpers to drivers/of
-References: <1394011242-16783-1-git-send-email-p.zabel@pengutronix.de>
- <53170C00.20200@ti.com> <1394030554.8754.31.camel@paszta.hi.pengutronix.de>
- <20140306141657.GB21483@n2100.arm.linux.org.uk>
- <20140306121721.6186dafb@samsung.com> <5318988C.2030004@samsung.com>
- <1394122879.3622.47.camel@paszta.hi.pengutronix.de>
-In-reply-to: <1394122879.3622.47.camel@paszta.hi.pengutronix.de>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGLMWRmVeSWpSXmKPExsVy+t/xa7pGiyWCDX7PVLaYf+Qcq8X7jfOY
-	LA782cFocbbpDbtF58Ql7BaXd81hs+jZsJXV4vZlXouL6+Qt7t47wWLRuvcIu8X6+bfYHHg8
-	Wpp72Dw+fIzzmN0xk9Vj06pONo871/awefT/NfDo27KK0eP4je1MHp83yQVwRnHZpKTmZJal
-	FunbJXBlPH22hrXgl0TFzEucDYwTRLoYOTkkBEwkrmyawARhi0lcuLeeDcQWEljKKDFjcWEX
-	IxeQ/YlR4uy/1YwgCV4BLYkTV/eDNbAIqEpMvHoKLM4mYCjRe7QPzBYViJB4dXYiC0S9oMSP
-	yffAbBGg3qdX7rGBDGUWOMUscfTrXuYuRg4OYYEAiSV7GSGWHWaSeD/pJNgVnAIOEg1TloPZ
-	zALqEpPmLWKGsOUlNq95yzyBUWAWkh2zkJTNQlK2gJF5FaNoamlyQXFSeq6RXnFibnFpXrpe
-	cn7uJkZI3Hzdwbj0mNUhRgEORiUeXoMFEsFCrIllxZW5hxglOJiVRHgr5wKFeFMSK6tSi/Lj
-	i0pzUosPMTJxcEo1MLr9fVJh/of18envP6dtrLjUZm77aS7/vwKN2WdL9YKaml7Llpda8TkU
-	v3gZk3GdXVK08r7J/YNXvHmzK+x/J1ZIXug6EXAn1f25WsvxqarB/zXbeloidz798SZi+8a3
-	25YFHFjY51DsaPfY98vp6izbSVMezU+4ejr6De+TX2+v6t9nskuUUVViKc5INNRiLipOBAB8
-	DIukeQIAAA==
+	Thu, 6 Mar 2014 11:33:14 -0500
+Message-ID: <5318A30B.4020702@oracle.com>
+Date: Thu, 06 Mar 2014 09:32:11 -0700
+From: Khalid Aziz <khalid.aziz@oracle.com>
+Organization: Oracle Corp
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] [PATCH] Pre-emption control for userspace
+References: <1393870033-31076-1-git-send-email-khalid.aziz@oracle.com> <531641A8.40306@zytor.com> <53164824.3000704@oracle.com> <20140304222356.41c55bbc@alan.etchedpixels.co.uk> <5316574F.6040105@oracle.com> <alpine.DEB.2.02.1403050129570.18573@ionos.tec.linutronix.de> <8738ix5uyk.fsf@tassilo.jf.intel.com> <20140305111006.GT9987@twins.programming.kicks-ass.net> <531781E5.8010000@oracle.com> <alpine.DEB.2.02.1403052301160.18573@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1403052301160.18573@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/14 17:21, Philipp Zabel wrote:
-> Am Donnerstag, den 06.03.2014, 16:47 +0100 schrieb Sylwester Nawrocki:
->> On 06/03/14 16:17, Mauro Carvalho Chehab wrote:
->>> Em Thu, 06 Mar 2014 14:16:57 +0000
->>> Russell King - ARM Linux <linux@arm.linux.org.uk> escreveu:
->>>>> On Wed, Mar 05, 2014 at 03:42:34PM +0100, Philipp Zabel wrote:
->>>>>>> Am Mittwoch, den 05.03.2014, 13:35 +0200 schrieb Tomi Valkeinen:
-> [...]
->>>>>>>>> So, as I've pointed out, I don't agree with the API, as it's too limited
->>>>>>>>> and I can't use it, but as this series is (mostly) about moving the
->>>>>>>>> current API to a common place, it's fine for me.
->>>>>>>>>
->>>>>>>>> Acked-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
->>>>>>>
->>>>>>> Thanks. I'll be happy to help expanding the API to parse ports
->>>>>>> individually, once this gets accepted.
->>>>>>>
->>>>>>> Mauro, Guennadi, are you fine with how this turned out? I'd like to get
->>>>>>> your acks again, for the changed location.
->>>
->>> From my side, there's nothing on such code that is V4L2 specific.
->>> Moving it to drivers/of makes sense on my eyes.
->>>
->>> Acked-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
->>
->> I'm OK with patches 1...5, 8, so for these:
->>
->> Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
->>
->> Regarding the simplified version of the binding, I thought we should
->> leave 'port' instead of 'endpoint' node. This could cover more hardware
->> configurations. Are there any users of this simplified binding queued
->> for v3.15 ? If not, perhaps we can postpone it and discuss it a bit more
->> (sorry, couldn't find time to comment on that earlier) ?
-> 
-> Since Tomi needs the separate port/endpoint iteration anyway, 
-> postponing the simple bindings shouldn't hurt. I'll (re)submit them
-> together in a second series.
+On 03/06/2014 04:14 AM, Thomas Gleixner wrote:
+> We understand that you want to avoid preemption in the first place and
+> not getting into the contention handling case.
+>
+> But, what you're trying to do is essentially creating an ABI which we
+> have to support and maintain forever. And that definitely is worth a
+> few serious questions.
 
-Ok, thanks.
+Fair enough. I agree a new ABI should not be created lightly.
 
->>>>> I'll need those acks before I can even think about queuing up the
->>>>> imx-drm bits.
->>>>>
->>>>> Another way to deal with this is if this gets pulled into the V4L tree
->>>>> from Philipp's git tree, I can also pull that in myself.  What mustn't
->>>>> happen is for these to be committed independently as patches.
->>>
->>> If everyone agrees, I actually prefer have this patch applied on my tree,
->>> in order to avoid some potential merge conflicts at the merge window,
->>> as we might have other drivers and changes there touching on those API
->>> calls (I'm aware of a series of patches from Sylwester with some DT
->>> stuff on it. Not sure if it would be affected by such changes or not).
->>
->> Yes, it's going to conflict with my patch series. I thought it could be
->> put onto a stable a topic branch, e.g. at git://linuxtv.org/media_tree.git,
->> which could be then pulled into the media master branch and anywhere
->> else it is needed ?
-> 
-> Mauro, are you ok with handling the conflict in the merge, or should I
-> rebase on top of the media tree after you merged Sylwester's changes?
+>
+> Lets ignore the mm related issues for now as those can be solved. That's
+> the least of my worries.
+>
+> Right now you are using this for a single use case with a well defined
+> environment, where all related threads reside in the same scheduling
+> class (FAIR). But that's one of a gazillion of use cases of Linux.
+>
 
-I could rebase and resolve any conflicts before sending my pull request
-to Mauro. I don't think it's a good idea to rebase this series onto the
-media tree, since it is touching drivers/of.
+Creating a new ABI for a single use case or a special case is something 
+I would argue against as well. I am with you on that. I am stating that 
+databases and JVM happen to be two real world examples of the scenario 
+where CFS can cause convoying problem inadvertently for a well designed 
+critical section that represents a small portion of overall execution 
+thread, simply because of where in the current timeslice the critical 
+section is hit. If there are other examples others have come across, I 
+would love to hear it. If we can indeed say this is a very special case 
+for an uncommon workload, I would completely agree with refusing to 
+create a new ABI.
 
---
-Regards,
-Sylwester
+> If we allow you to special case your database workload then we have no
+> argument why we should not do the same thing for realtime workloads
+> where the SCHED_FAIR housekeeping thread can hold a lock shortly to
+> access some important data in the SCHED_FIFO realtime computation
+> thread. Of course the RT people want to avoid the lock contention as
+> much as you do, just for different reasons.
+>
+> Add SCHED_EDF, cgroups and hierarchical scheduling to the picture and
+> hell breaks lose.
+
+Realtime and deadline scheduler policies are supposed to be higher 
+priority than CFS. A thread running in CFS that can impact threads 
+running with realtime policies is a bad thing, agreed? What I am 
+proposing actually allows a thread running with CFS to get out of the 
+way of threads running with realtime policies quicker. In your specific 
+example, the SCHED_FAIR housekeeping thread gets a chance to get out of 
+SCHED_FIFO threads' way by giving its critical section better chance to 
+complete execution before causing a convoy problem and while its cache 
+is hot by using the exact same mechanism I am proposing. The logic is 
+not onerous. Thread asks for amnesty from one context switch if and only 
+if rescheduling point happens in the middle of its timeslice. If 
+rescheduling point does not occur during its critical section, the 
+thread takes that request back and life goes on as if nothing changed. 
+If rescheduling point happens in the middle of thread's critical 
+section, it gets the amnesty but it yields the processor as soon as it 
+is done with its critical section. Any thread that does not play nice 
+gets penalized next time it wants immunity (as hpa suggested).
+
+Thanks,
+Khalid
 
