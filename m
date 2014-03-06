@@ -1,85 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751969AbaCFM7W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 07:59:22 -0500
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:40477 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750805AbaCFM7U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 07:59:20 -0500
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Subject: [PATCH] net: use raw_cpu ops in snmp stats bh
-Date: Thu,  6 Mar 2014 15:55:36 +0300
-Message-Id: <1394110536-4532-1-git-send-email-sergey.senozhatsky@gmail.com>
-X-Mailer: git-send-email 1.9.0.382.g7f3562c
+	id S1751648AbaCFNK1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 08:10:27 -0500
+Received: from mx2.compro.net ([12.186.155.30]:57298 "HELO mx2.compro.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1750714AbaCFNK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 08:10:26 -0500
+X-Greylist: delayed 788 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Mar 2014 08:10:26 EST
+X-BYPSHEADER: 2739599
+X-SMScore: -1000
+Message-ID: <531870AD.1080403@compro.net>
+Date: Thu, 06 Mar 2014 07:57:17 -0500
+From: Mark Hounschell <markh@compro.net>
+Reply-To: markh@compro.net
+Organization: Compro Computer Svcs.
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Daeseok Youn <daeseok.youn@gmail.com>, lidza.louina@gmail.com,
+        gregkh@linuxfoundation.org
+CC: driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: dgap: remove useless cast on kzalloc()
+References: <920618656.203780.1394086679844.JavaMail.root@mx2.compro.net>
+In-Reply-To: <920618656.203780.1394086679844.JavaMail.root@mx2.compro.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit a25982c15ae52 ("percpu: add preemption checks to __this_cpu
-ops") added preemption checks to __this_cpu ops, which are used in
-SNMP_INC_STATS_BH() and SNMP_ADD_STATS_BH(), resulting in following
-warnings:
+On 03/06/2014 01:17 AM, Daeseok Youn wrote:
+>
+> coccinelle warning:
+> drivers/staging/dgap/dgap.c:782:3-7: WARNING:
+>   casting value returned by k[cmz]alloc to (char *) is useless.
+> drivers/staging/dgap/dgap.c:776:2-16: WARNING:
+>   casting value returned by k[cmz]alloc to (struct board_t *) is useless.
+>
+> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+> ---
+>   drivers/staging/dgap/dgap.c |    4 ++--
+>   1 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
+> index cbce457..1adcd13 100644
+> --- a/drivers/staging/dgap/dgap.c
+> +++ b/drivers/staging/dgap/dgap.c
+> @@ -773,13 +773,13 @@ static int dgap_found_board(struct pci_dev *pdev, int id)
+>
+>   	/* get the board structure and prep it */
+>   	brd = dgap_Board[dgap_NumBoards] =
+> -	(struct board_t *) kzalloc(sizeof(struct board_t), GFP_KERNEL);
+> +		kzalloc(sizeof(struct board_t), GFP_KERNEL);
+>   	if (!brd)
+>   		return -ENOMEM;
+>
+>   	/* make a temporary message buffer for the boot messages */
+>   	brd->msgbuf = brd->msgbuf_head =
+> -		(char *) kzalloc(sizeof(char) * 8192, GFP_KERNEL);
+> +		kzalloc(sizeof(char) * 8192, GFP_KERNEL);
+>   	if (!brd->msgbuf) {
+>   		kfree(brd);
+>   		return -ENOMEM;
+>
 
-BUG: using __this_cpu_add() in preemptible [00000000] code: ssh/4661
-caller is __this_cpu_preempt_check+0x2b/0x2d
-CPU: 3 PID: 4661 Comm: ssh Not tainted 3.14.0-rc5-next-20140306-dbg-dirty #162
-Hardware name: Acer             Aspire 5741G    /Aspire 5741G    , BIOS V1.20 02/08/2011
- 0000000000000000 ffff880094939be0 ffffffff813b8305 0000000000000003
- ffff880094939c00 ffffffff8121221f ffff88015130a8c0 0000000000000000
- ffff880094939c38 ffffffff8121226b 635f736968745f5f 29286464615f7570
-Call Trace:
- [<ffffffff813b8305>] dump_stack+0x4e/0x7a
- [<ffffffff8121221f>] check_preemption_disabled+0xce/0xdd
- [<ffffffff8121226b>] __this_cpu_preempt_check+0x2b/0x2d
- [<ffffffff81370b5a>] ? tcp_rearm_rto+0x9f/0xa1
- [<ffffffff81373456>] tcp_event_new_data_sent+0x6d/0x91
- [<ffffffff81374dc6>] tcp_write_xmit+0x3f1/0x935
- [<ffffffff813754e4>] __tcp_push_pending_frames+0x28/0x82
- [<ffffffff81368109>] tcp_push+0xcc/0x102
- [<ffffffff8136a0c1>] tcp_sendmsg+0x8c5/0xb7a
- [<ffffffff81207d59>] ? string.isra.6+0x3b/0x9f
- [<ffffffff8138a10a>] inet_sendmsg+0x75/0xa0
- [<ffffffff81320fb6>] sock_aio_write+0xe7/0xfe
- [<ffffffff81207d59>] ? string.isra.6+0x3b/0x9f
- [<ffffffff810e08ab>] do_sync_write+0x54/0x73
- [<ffffffff810e0df7>] vfs_write+0xc6/0x17c
- [<ffffffff810e1603>] SyS_write+0x44/0x78
- [<ffffffff813be0a1>] tracesys+0xd4/0xd9
+I'm pretty sure this has already been fixed up in current staging-next.
 
-use raw_cpu_inc() and raw_cpu_add() instead of __this_cpu_inc()
-and __this_cpu_add().
-
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
----
- include/net/snmp.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/include/net/snmp.h b/include/net/snmp.h
-index 36ab852..b549ad6 100644
---- a/include/net/snmp.h
-+++ b/include/net/snmp.h
-@@ -126,7 +126,7 @@ struct linux_xfrm_mib {
- 	extern __typeof__(type) __percpu *name[SNMP_ARRAY_SZ]
- 
- #define SNMP_INC_STATS_BH(mib, field)	\
--			__this_cpu_inc(mib[0]->mibs[field])
-+			raw_cpu_inc(mib[0]->mibs[field])
- 
- #define SNMP_INC_STATS_USER(mib, field)	\
- 			this_cpu_inc(mib[0]->mibs[field])
-@@ -141,7 +141,7 @@ struct linux_xfrm_mib {
- 			this_cpu_dec(mib[0]->mibs[field])
- 
- #define SNMP_ADD_STATS_BH(mib, field, addend)	\
--			__this_cpu_add(mib[0]->mibs[field], addend)
-+			raw_cpu_add(mib[0]->mibs[field], addend)
- 
- #define SNMP_ADD_STATS_USER(mib, field, addend)	\
- 			this_cpu_add(mib[0]->mibs[field], addend)
--- 
-1.9.0.382.g7f3562c
-
+Thanks
+Mark
