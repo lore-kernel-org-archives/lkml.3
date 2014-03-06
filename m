@@ -1,213 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425AbaCFPqc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 10:46:32 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:59245 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752605AbaCFPq3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 10:46:29 -0500
-Message-ID: <53189835.5070905@ti.com>
-Date: Thu, 6 Mar 2014 21:15:57 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>, <tony@atomide.com>, <balbi@ti.com>
-CC: <george.cherian@ti.com>, <balajitk@ti.com>, <hdegoede@redhat.com>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-ide@vger.kernel.org>
-Subject: Re: [PATCH v2 05/13] phy: ti-pipe3: Add SATA DPLL support
-References: <1394116729-28811-1-git-send-email-rogerq@ti.com> <1394116729-28811-6-git-send-email-rogerq@ti.com>
-In-Reply-To: <1394116729-28811-6-git-send-email-rogerq@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753430AbaCFPra (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 10:47:30 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:60193 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750986AbaCFPr2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 10:47:28 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-fa-5318988ec5ad
+Message-id: <5318988C.2030004@samsung.com>
+Date: Thu, 06 Mar 2014 16:47:24 +0100
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.2.0
+MIME-version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v6 0/8] Move device tree graph parsing helpers to drivers/of
+References: <1394011242-16783-1-git-send-email-p.zabel@pengutronix.de>
+ <53170C00.20200@ti.com> <1394030554.8754.31.camel@paszta.hi.pengutronix.de>
+ <20140306141657.GB21483@n2100.arm.linux.org.uk>
+ <20140306121721.6186dafb@samsung.com>
+In-reply-to: <20140306121721.6186dafb@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJLMWRmVeSWpSXmKPExsVy+t/xy7p9MySCDWb/Y7SYf+Qcq8X7jfOY
+	LA782cFocbbpDbtF58Ql7BaXd81hs+jZsJXV4vZlXouL6+Qt7t47wWLRuvcIu8X6+bfYHHg8
+	Wpp72Dw+fIzzmN0xk9Vj06pONo871/awefT/NfDo27KK0eP4je1MHp83yQVwRnHZpKTmZJal
+	FunbJXBlrPx6hLHglGzF/AUdLA2Mk8S7GDk5JARMJD58PcYIYYtJXLi3nq2LkYtDSGApo8Ta
+	H6tYIZxPjBLNe3eAVfEKaEn8f/GBBcRmEVCVmHrzBZjNJmAo0Xu0D6xGVCBC4tXZiSwQ9YIS
+	PybfYwEZJCLQzijR9ukWM4jDLPCaSeLxhNdAGQ4OYYEAiSV7GSG2vWOU2HjxB9gkTgEjibXf
+	NjKB2MwCOhL7W6exQdjyEpvXvGWewCgwC8mSWUjKZiEpW8DIvIpRNLU0uaA4KT3XSK84Mbe4
+	NC9dLzk/dxMjJHq+7mBceszqEKMAB6MSD+8GP/FgIdbEsuLK3EOMEhzMSiK8stUSwUK8KYmV
+	ValF+fFFpTmpxYcYmTg4pRoY9a6XfeUunfLJ40v4WclWtxefd3Qd8bS4pfjm7nXGoz9/VFvc
+	1+qcHTXP+1JkSX3+pzvus58cNtGqNJr2blX47Y4Zu//Nfyvx5t+Gi8Z75j2b2n+Db0qg+/ul
+	AX8vmMx9wRIg8DGOSSL+7cfpLn/ajsvcNlN+80vRY9LcykXHX3xkSbi3jLV6tYcSS3FGoqEW
+	c1FxIgD08a+8fAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/03/14 16:17, Mauro Carvalho Chehab wrote:
+> Em Thu, 06 Mar 2014 14:16:57 +0000
+> Russell King - ARM Linux <linux@arm.linux.org.uk> escreveu:
+> 
+>> > On Wed, Mar 05, 2014 at 03:42:34PM +0100, Philipp Zabel wrote:
+>>> > > Am Mittwoch, den 05.03.2014, 13:35 +0200 schrieb Tomi Valkeinen:
+>>>> > > > Hi,
+>>>> > > > 
+>>>> > > > On 05/03/14 11:20, Philipp Zabel wrote:
+>>>>> > > > > Hi,
+>>>>> > > > > 
+>>>>> > > > > this version of the OF graph helper move series further addresses a few of
+>>>>> > > > > Tomi's and Sylwester's comments.
+>>>>> > > > > 
+>>>>> > > > > Changes since v5:
+>>>>> > > > >  - Fixed spelling errors and a wrong device node name in the link section
+>>>>> > > > >  - Added parentless previous endpoint's full name to warning
+>>>>> > > > >  - Fixed documentation comment for of_graph_parse_endpoint
+>>>>> > > > >  - Unrolled for-loop in of_graph_get_remote_port_parent
+>>>>> > > > > 
+>>>>> > > > > Philipp Zabel (8):
+>>>>> > > > >   [media] of: move graph helpers from drivers/media/v4l2-core to
+>>>>> > > > >     drivers/of
+>>>>> > > > >   Documentation: of: Document graph bindings
+>>>>> > > > >   of: Warn if of_graph_get_next_endpoint is called with the root node
+>>>>> > > > >   of: Reduce indentation in of_graph_get_next_endpoint
+>>>>> > > > >   [media] of: move common endpoint parsing to drivers/of
+>>>>> > > > >   of: Implement simplified graph binding for single port devices
+>>>>> > > > >   of: Document simplified graph binding for single port devices
+>>>>> > > > >   of: Warn if of_graph_parse_endpoint is called with the root node
+>>>> > > > 
+>>>> > > > So, as I've pointed out, I don't agree with the API, as it's too limited
+>>>> > > > and I can't use it, but as this series is (mostly) about moving the
+>>>> > > > current API to a common place, it's fine for me.
+>>>> > > > 
+>>>> > > > Acked-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+>>> > > 
+>>> > > Thanks. I'll be happy to help expanding the API to parse ports
+>>> > > individually, once this gets accepted.
+>>> > > 
+>>> > > Mauro, Guennadi, are you fine with how this turned out? I'd like to get
+>>> > > your acks again, for the changed location.
+>
+> From my side, there's nothing on such code that is V4L2 specific.
+> Moving it to drivers/of makes sense on my eyes.
+> 
+> Acked-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
+I'm OK with patches 1...5, 8, so for these:
 
-On Thursday 06 March 2014 08:08 PM, Roger Quadros wrote:
-> USB and SATA DPLLs need different settings. Provide
-> the SATA DPLL settings and use the proper DPLL settings
-> based on device tree node's compatible_id.
->
-> Update the DT binding information.
->
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> ---
->   Documentation/devicetree/bindings/phy/ti-phy.txt |  3 +-
->   drivers/phy/phy-ti-pipe3.c                       | 76 +++++++++++++++++-------
+Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
 
-same here..
+Regarding the simplified version of the binding, I thought we should
+leave 'port' instead of 'endpoint' node. This could cover more hardware
+configurations. Are there any users of this simplified binding queued
+for v3.15 ? If not, perhaps we can postpone it and discuss it a bit more
+(sorry, couldn't find time to comment on that earlier) ?
 
--Kishon
->   2 files changed, 57 insertions(+), 22 deletions(-)
+>> > I'll need those acks before I can even think about queuing up the
+>> > imx-drm bits.
+>> > 
+>> > Another way to deal with this is if this gets pulled into the V4L tree
+>> > from Philipp's git tree, I can also pull that in myself.  What mustn't
+>> > happen is for these to be committed independently as patches.
 >
-> diff --git a/Documentation/devicetree/bindings/phy/ti-phy.txt b/Documentation/devicetree/bindings/phy/ti-phy.txt
-> index 8d13349..2c2d66a 100644
-> --- a/Documentation/devicetree/bindings/phy/ti-phy.txt
-> +++ b/Documentation/devicetree/bindings/phy/ti-phy.txt
-> @@ -53,7 +53,8 @@ usb2phy@4a0ad080 {
->   TI PIPE3 PHY
->
->   Required properties:
-> - - compatible: Should be "ti,phy-usb3". "ti,omap-usb3" is deprecated.
-> + - compatible: Should be "ti,phy-usb3" or "ti,phy-pipe3-sata".
-> +   "ti,omap-usb3" is deprecated.
->    - reg : Address and length of the register set for the device.
->    - reg-names: The names of the register addresses corresponding to the registers
->      filled in "reg".
-> diff --git a/drivers/phy/phy-ti-pipe3.c b/drivers/phy/phy-ti-pipe3.c
-> index 211703c..f141237 100644
-> --- a/drivers/phy/phy-ti-pipe3.c
-> +++ b/drivers/phy/phy-ti-pipe3.c
-> @@ -66,6 +66,11 @@ struct pipe3_dpll_params {
->   	u32	mf;
->   };
->
-> +struct pipe3_dpll_map {
-> +	unsigned long rate;
-> +	struct pipe3_dpll_params params;
-> +};
-> +
->   struct ti_pipe3 {
->   	void __iomem		*pll_ctrl_base;
->   	struct device		*dev;
-> @@ -73,20 +78,27 @@ struct ti_pipe3 {
->   	struct clk		*wkupclk;
->   	struct clk		*sys_clk;
->   	struct clk		*refclk;
-> +	struct pipe3_dpll_map	*dpll_map;
->   };
->
-> -struct pipe3_dpll_map {
-> -	unsigned long rate;
-> -	struct pipe3_dpll_params params;
-> -};
-> -
-> -static struct pipe3_dpll_map dpll_map[] = {
-> +static struct pipe3_dpll_map dpll_map_usb[] = {
->   	{12000000, {1250, 5, 4, 20, 0} },	/* 12 MHz */
->   	{16800000, {3125, 20, 4, 20, 0} },	/* 16.8 MHz */
->   	{19200000, {1172, 8, 4, 20, 65537} },	/* 19.2 MHz */
->   	{20000000, {1000, 7, 4, 10, 0} },	/* 20 MHz */
->   	{26000000, {1250, 12, 4, 20, 0} },	/* 26 MHz */
->   	{38400000, {3125, 47, 4, 20, 92843} },	/* 38.4 MHz */
-> +	{ },					/* Terminator */
-> +};
-> +
-> +static struct pipe3_dpll_map dpll_map_sata[] = {
-> +	{12000000, {1000, 7, 4, 6, 0} },	/* 12 MHz */
-> +	{16800000, {714, 7, 4, 6, 0} },		/* 16.8 MHz */
-> +	{19200000, {625, 7, 4, 6, 0} },		/* 19.2 MHz */
-> +	{20000000, {600, 7, 4, 6, 0} },		/* 20 MHz */
-> +	{26000000, {461, 7, 4, 6, 0} },		/* 26 MHz */
-> +	{38400000, {312, 7, 4, 6, 0} },		/* 38.4 MHz */
-> +	{ },					/* Terminator */
->   };
->
->   static inline u32 ti_pipe3_readl(void __iomem *addr, unsigned offset)
-> @@ -100,15 +112,20 @@ static inline void ti_pipe3_writel(void __iomem *addr, unsigned offset,
->   	__raw_writel(data, addr + offset);
->   }
->
-> -static struct pipe3_dpll_params *ti_pipe3_get_dpll_params(unsigned long rate)
-> +static struct pipe3_dpll_params *ti_pipe3_get_dpll_params(struct ti_pipe3 *phy)
->   {
-> -	int i;
-> +	unsigned long rate;
-> +	struct pipe3_dpll_map *dpll_map = phy->dpll_map;
->
-> -	for (i = 0; i < ARRAY_SIZE(dpll_map); i++) {
-> -		if (rate == dpll_map[i].rate)
-> -			return &dpll_map[i].params;
-> +	rate = clk_get_rate(phy->sys_clk);
-> +
-> +	for (; dpll_map->rate; dpll_map++) {
-> +		if (rate == dpll_map->rate)
-> +			return &dpll_map->params;
->   	}
->
-> +	dev_err(phy->dev, "No DPLL configuration for %lu Hz SYS CLK\n", rate);
-> +
->   	return NULL;
->   }
->
-> @@ -182,16 +199,11 @@ static void ti_pipe3_dpll_relock(struct ti_pipe3 *phy)
->   static int ti_pipe3_dpll_lock(struct ti_pipe3 *phy)
->   {
->   	u32			val;
-> -	unsigned long		rate;
->   	struct pipe3_dpll_params *dpll_params;
->
-> -	rate = clk_get_rate(phy->sys_clk);
-> -	dpll_params = ti_pipe3_get_dpll_params(rate);
-> -	if (!dpll_params) {
-> -		dev_err(phy->dev,
-> -			  "No DPLL configuration for %lu Hz SYS CLK\n", rate);
-> +	dpll_params = ti_pipe3_get_dpll_params(phy);
-> +	if (!dpll_params)
->   		return -EINVAL;
-> -	}
->
->   	val = ti_pipe3_readl(phy->pll_ctrl_base, PLL_CONFIGURATION1);
->   	val &= ~PLL_REGN_MASK;
-> @@ -244,6 +256,10 @@ static struct phy_ops ops = {
->   	.owner		= THIS_MODULE,
->   };
->
-> +#ifdef CONFIG_OF
-> +static const struct of_device_id ti_pipe3_id_table[];
-> +#endif
-> +
->   static int ti_pipe3_probe(struct platform_device *pdev)
->   {
->   	struct ti_pipe3 *phy;
-> @@ -253,8 +269,10 @@ static int ti_pipe3_probe(struct platform_device *pdev)
->   	struct device_node *node = pdev->dev.of_node;
->   	struct device_node *control_node;
->   	struct platform_device *control_pdev;
-> +	const struct of_device_id *match;
->
-> -	if (!node)
-> +	match = of_match_device(of_match_ptr(ti_pipe3_id_table), &pdev->dev);
-> +	if (!match)
->   		return -EINVAL;
->
->   	phy = devm_kzalloc(&pdev->dev, sizeof(*phy), GFP_KERNEL);
-> @@ -263,6 +281,12 @@ static int ti_pipe3_probe(struct platform_device *pdev)
->   		return -ENOMEM;
->   	}
->
-> +	phy->dpll_map = (struct pipe3_dpll_map *)match->data;
-> +	if (!phy->dpll_map) {
-> +		dev_err(&pdev->dev, "no DPLL data\n");
-> +		return -EINVAL;
-> +	}
-> +
->   	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "pll_ctrl");
->   	phy->pll_ctrl_base = devm_ioremap_resource(&pdev->dev, res);
->   	if (IS_ERR(phy->pll_ctrl_base))
-> @@ -388,8 +412,18 @@ static const struct dev_pm_ops ti_pipe3_pm_ops = {
->
->   #ifdef CONFIG_OF
->   static const struct of_device_id ti_pipe3_id_table[] = {
-> -	{ .compatible = "ti,phy-usb3" },
-> -	{ .compatible = "ti,omap-usb3" },
-> +	{
-> +		.compatible = "ti,phy-usb3",
-> +		.data = dpll_map_usb,
-> +	},
-> +	{
-> +		.compatible = "ti,omap-usb3",
-> +		.data = dpll_map_usb,
-> +	},
-> +	{
-> +		.compatible = "ti,phy-pipe3-sata",
-> +		.data = dpll_map_sata,
-> +	},
->   	{}
->   };
->   MODULE_DEVICE_TABLE(of, ti_pipe3_id_table);
->
+> If everyone agrees, I actually prefer have this patch applied on my tree,
+> in order to avoid some potential merge conflicts at the merge window,
+> as we might have other drivers and changes there touching on those API
+> calls (I'm aware of a series of patches from Sylwester with some DT
+> stuff on it. Not sure if it would be affected by such changes or not).
+
+Yes, it's going to conflict with my patch series. I thought it could be
+put onto a stable a topic branch, e.g. at git://linuxtv.org/media_tree.git,
+which could be then pulled into the media master branch and anywhere
+else it is needed ?
+
+--
+Regards,
+Sylwester
