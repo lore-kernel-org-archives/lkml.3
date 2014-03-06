@@ -1,78 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752368AbaCFTxm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 14:53:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35130 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751726AbaCFTxl (ORCPT
+	id S1753200AbaCFTyH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 14:54:07 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:59626 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753098AbaCFTyE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 14:53:41 -0500
-Date: Thu, 6 Mar 2014 11:55:27 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Valentina Manea <valentina@rosedu.org>
-Cc: "Linux Kernel Community @ ROSEdu" <firefly@lists.rosedu.org>,
-        devel@driverdev.osuosl.org, shuah.kh@samsung.com,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        ly80toro@cip.cs.fau.de, tobias.polzer@fau.de, dominik.paulus@fau.de,
-        ihadzic@research.bell-labs.com
-Subject: Re: [firefly] [PATCH 06/12] staging: usbip: userspace: add new list
- API
-Message-ID: <20140306195527.GC3403@kroah.com>
-References: <1393960252-21247-1-git-send-email-valentina.manea.m@gmail.com>
- <1393960252-21247-7-git-send-email-valentina.manea.m@gmail.com>
- <20140305063539.GB8816@kroah.com>
- <20140305101603.GX27552@mwanda>
- <CAByK=5bzS4R0sGj5w5x8gc8DcKXvnr58WskoShuq6G30YTsOgQ@mail.gmail.com>
+	Thu, 6 Mar 2014 14:54:04 -0500
+From: behanw@converseincode.com
+To: linville@tuxdriver.com, johannes@sipsolutions.net, davem@davemloft.net
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        dwmw2@infradead.org, pageexec@freemail.hu,
+        =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>,
+        Behan Webster <behanw@converseincode.com>,
+        =?UTF-8?q?Vin=C3=ADcius=20Tinti?= <viniciustinti@gmail.com>,
+        Mark Charlebois <charlebm@gmail.com>
+Subject: [PATCH] mac80211: LLVMLinux: Remove VLAIS usage from mac80211
+Date: Thu,  6 Mar 2014 11:52:50 -0800
+Message-Id: <1394135570-26730-1-git-send-email-behanw@converseincode.com>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAByK=5bzS4R0sGj5w5x8gc8DcKXvnr58WskoShuq6G30YTsOgQ@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 06, 2014 at 07:45:27AM +0200, Valentina Manea wrote:
-> 
-> 
-> 
-> On Wed, Mar 5, 2014 at 12:16 PM, Dan Carpenter <dan.carpenter@oracle.com>
-> wrote:
-> 
->     On Tue, Mar 04, 2014 at 10:35:39PM -0800, Greg KH wrote:
->     > On Tue, Mar 04, 2014 at 09:10:46PM +0200, Valentina Manea wrote:
->     > > Add a new list API from CCAN.
->     >
->     > Why can't you just take the one from the kernel, as userspace is GPLv2
->     > code, right?
->     >
->     > And are you sure CC0 is a "valid" license that you can mix with GPLv2
->     > code? †I ask this seriously, as I have heard that CC0 really isn't even
->     > a valid license at all, and if I was to accept this patch, I'm going to
->     > have to go talk to some lawyers, which isn't going to be fun...
->     >
-> 
->     GNU people say it's compitable.
->     https://www.gnu.org/licenses/license-list.html#CC0
-> 
->     It's not a good license because it doesn't say anything about that there
->     is no warranties. †Maybe other reasons as well.
-> 
->     regards,
->     dan carpenter
-> 
-> 
-> 
-> As Dan pointed out, it seems that CC0 is compatible with GPLv2.
-> However, if needed, I can change the lists API.
+From: Jan-Simon M√∂ller <dl9pf@gmx.de>
 
-You only need the list.h file from the kernel source, strip it down to
-just the functions you actually use, and then you should be fine.  Much
-smaller codebase to worry about as well, which is always good.
+Replaced the use of a Variable Length Array In Struct (VLAIS) with a C99
+compliant equivalent. This is the original VLAIS struct.
 
-Just be explicit where you copied the file from.
+struct {
+	struct aead_request     req;
+	u8                      priv[crypto_aead_reqsize(tfm)];
+} aead_req;
 
-thanks,
+This patch instead allocates the appropriate amount of memory using an char
+array.
 
-greg k-h
+The new code can be compiled with both gcc and clang.
+
+Signed-off-by: Jan-Simon M√∂ller <dl9pf@gmx.de>
+Signed-off-by: Behan Webster <behanw@converseincode.com>
+Signed-off-by: Vin√≠cius Tinti <viniciustinti@gmail.com>
+Signed-off-by: Mark Charlebois <charlebm@gmail.com>
+---
+ net/mac80211/aes_ccm.c | 44 ++++++++++++++++++++++++++------------------
+ 1 file changed, 26 insertions(+), 18 deletions(-)
+
+diff --git a/net/mac80211/aes_ccm.c b/net/mac80211/aes_ccm.c
+index 7c7df47..9612e95 100644
+--- a/net/mac80211/aes_ccm.c
++++ b/net/mac80211/aes_ccm.c
+@@ -23,12 +23,16 @@ void ieee80211_aes_ccm_encrypt(struct crypto_aead *tfm, u8 *b_0, u8 *aad,
+ 			       u8 *data, size_t data_len, u8 *mic)
+ {
+ 	struct scatterlist assoc, pt, ct[2];
+-	struct {
+-		struct aead_request	req;
+-		u8			priv[crypto_aead_reqsize(tfm)];
+-	} aead_req;
+ 
+-	memset(&aead_req, 0, sizeof(aead_req));
++	char aead_req_data[sizeof(struct aead_request)
++				+ crypto_aead_reqsize(tfm)
++				+ CRYPTO_MINALIGN] CRYPTO_MINALIGN_ATTR;
++
++	struct aead_request *aead_req
++		= (struct aead_request *) aead_req_data;
++
++	memset(&aead_req_data, 0, (sizeof(struct aead_request)+
++		crypto_aead_reqsize(tfm) + CRYPTO_MINALIGN));
+ 
+ 	sg_init_one(&pt, data, data_len);
+ 	sg_init_one(&assoc, &aad[2], be16_to_cpup((__be16 *)aad));
+@@ -36,23 +40,27 @@ void ieee80211_aes_ccm_encrypt(struct crypto_aead *tfm, u8 *b_0, u8 *aad,
+ 	sg_set_buf(&ct[0], data, data_len);
+ 	sg_set_buf(&ct[1], mic, IEEE80211_CCMP_MIC_LEN);
+ 
+-	aead_request_set_tfm(&aead_req.req, tfm);
+-	aead_request_set_assoc(&aead_req.req, &assoc, assoc.length);
+-	aead_request_set_crypt(&aead_req.req, &pt, ct, data_len, b_0);
++	aead_request_set_tfm(aead_req, tfm);
++	aead_request_set_assoc(aead_req, &assoc, assoc.length);
++	aead_request_set_crypt(aead_req, &pt, ct, data_len, b_0);
+ 
+-	crypto_aead_encrypt(&aead_req.req);
++	crypto_aead_encrypt(aead_req);
+ }
+ 
+ int ieee80211_aes_ccm_decrypt(struct crypto_aead *tfm, u8 *b_0, u8 *aad,
+ 			      u8 *data, size_t data_len, u8 *mic)
+ {
+ 	struct scatterlist assoc, pt, ct[2];
+-	struct {
+-		struct aead_request	req;
+-		u8			priv[crypto_aead_reqsize(tfm)];
+-	} aead_req;
+ 
+-	memset(&aead_req, 0, sizeof(aead_req));
++	char aead_req_data[sizeof(struct aead_request)
++				+ crypto_aead_reqsize(tfm)
++				+ CRYPTO_MINALIGN] CRYPTO_MINALIGN_ATTR;
++
++	struct aead_request *aead_req
++		= (struct aead_request *) aead_req_data;
++
++	memset(&aead_req_data, 0, (sizeof(struct aead_request)+
++		crypto_aead_reqsize(tfm) + CRYPTO_MINALIGN));
+ 
+ 	sg_init_one(&pt, data, data_len);
+ 	sg_init_one(&assoc, &aad[2], be16_to_cpup((__be16 *)aad));
+@@ -60,12 +68,12 @@ int ieee80211_aes_ccm_decrypt(struct crypto_aead *tfm, u8 *b_0, u8 *aad,
+ 	sg_set_buf(&ct[0], data, data_len);
+ 	sg_set_buf(&ct[1], mic, IEEE80211_CCMP_MIC_LEN);
+ 
+-	aead_request_set_tfm(&aead_req.req, tfm);
+-	aead_request_set_assoc(&aead_req.req, &assoc, assoc.length);
+-	aead_request_set_crypt(&aead_req.req, ct, &pt,
++	aead_request_set_tfm(aead_req, tfm);
++	aead_request_set_assoc(aead_req, &assoc, assoc.length);
++	aead_request_set_crypt(aead_req, ct, &pt,
+ 			       data_len + IEEE80211_CCMP_MIC_LEN, b_0);
+ 
+-	return crypto_aead_decrypt(&aead_req.req);
++	return crypto_aead_decrypt(aead_req);
+ }
+ 
+ struct crypto_aead *ieee80211_aes_key_setup_encrypt(const u8 key[])
+-- 
+1.8.3.2
+
