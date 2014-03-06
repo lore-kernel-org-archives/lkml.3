@@ -1,188 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751885AbaCFIx5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 03:53:57 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:44887 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750829AbaCFIxx (ORCPT
+	id S1752327AbaCFIyF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 03:54:05 -0500
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:10859 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751977AbaCFIyA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 03:53:53 -0500
-Message-ID: <53183771.9070501@ti.com>
-Date: Thu, 6 Mar 2014 14:23:05 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
+	Thu, 6 Mar 2014 03:54:00 -0500
+X-IronPort-AV: E=Sophos;i="4.97,598,1389772800"; 
+   d="scan'208";a="18029336"
+Message-ID: <531837A6.8090406@broadcom.com>
+Date: Thu, 6 Mar 2014 09:53:58 +0100
+From: Arend van Spriel <arend@broadcom.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Loc Ho <lho@apm.com>, <tj@kernel.org>
-CC: <olof@lixom.net>, <arnd@arndb.de>, <linux-kernel@vger.kernel.org>,
-        <linux-scsi@vger.kernel.org>, <linux-ide@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <ddutile@redhat.com>, <jcm@redhat.com>, <patches@apm.com>,
-        Tuan Phan <tphan@apm.com>, Suman Tripathi <stripathi@apm.com>
-Subject: Re: [PATCH v13 2/3] PHY: add APM X-Gene SoC 15Gbps Multi-purpose
- PHY driver
-References: <1394059399-30671-1-git-send-email-lho@apm.com> <1394059399-30671-2-git-send-email-lho@apm.com> <1394059399-30671-3-git-send-email-lho@apm.com>
-In-Reply-To: <1394059399-30671-3-git-send-email-lho@apm.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "John W. Linville" <linville@tuxdriver.com>
+CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "Hante Meuleman" <meuleman@broadcom.com>
+Subject: Re: linux-next: build failure after merge of the wireless-next tree
+References: <20140306134332.0c3f12ec6849d1b2ccefda6e@canb.auug.org.au>
+In-Reply-To: <20140306134332.0c3f12ec6849d1b2ccefda6e@canb.auug.org.au>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 03/06/2014 03:43 AM, Stephen Rothwell wrote:
+> Hi John,
+> 
+> After merging the wireless-next tree, today's linux-next build
+> (arm multi_v7_defconfig) failed like this:
+> 
+> drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c: In function
+> 'brcmf_sdio_intr_rstatus': 
+> drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c:2464:3: error:
+> implicit declaration of function 'atomic_set_mask'
+> [-Werror=implicit-function-declaration]
+> 
+> Caused by commit c98db0bec72a ("brcmfmac: Use atomic functions for 
+> intstatus update").  Arm does not seem to provide
+> atomic_set_mask()?
+> 
+> I reverted that commit for today.
 
-On Thursday 06 March 2014 04:13 AM, Loc Ho wrote:
-> This patch adds support for the APM X-Gene SoC 15Gbps Multi-purpose PHY.
-> This is the physical layer interface for the corresponding host
-> controller. Currently, only external clock and Gen3 SATA mode
-> are supported.
->
-> Signed-off-by: Loc Ho <lho@apm.com>
-> Signed-off-by: Tuan Phan <tphan@apm.com>
-> Signed-off-by: Suman Tripathi <stripathi@apm.com>
-> ---
->   drivers/phy/Kconfig     |    7 +
->   drivers/phy/Makefile    |    2 +
->   drivers/phy/phy-xgene.c | 1756 +++++++++++++++++++++++++++++++++++++++++++++++
->   3 files changed, 1765 insertions(+), 0 deletions(-)
->   create mode 100644 drivers/phy/phy-xgene.c
->
-> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-> index afa2354..221a1b7 100644
-> --- a/drivers/phy/Kconfig
-> +++ b/drivers/phy/Kconfig
-> @@ -64,4 +64,11 @@ config BCM_KONA_USB2_PHY
->   	help
->   	  Enable this to support the Broadcom Kona USB 2.0 PHY.
->
-> +config PHY_XGENE
-> +	tristate "APM X-Gene 15Gbps PHY support"
-> +	depends on HAS_IOMEM && OF && (ARM64 || COMPILE_TEST)
-> +	select GENERIC_PHY
-> +	help
-> +	  This option enables support for APM X-Gene SoC multi-purpose PHY.
-> +
->   endmenu
-> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
-> index b57c253..dee70f4 100644
-> --- a/drivers/phy/Makefile
-> +++ b/drivers/phy/Makefile
-> @@ -9,3 +9,5 @@ obj-$(CONFIG_PHY_EXYNOS_MIPI_VIDEO)	+= phy-exynos-mipi-video.o
->   obj-$(CONFIG_PHY_MVEBU_SATA)		+= phy-mvebu-sata.o
->   obj-$(CONFIG_OMAP_USB2)			+= phy-omap-usb2.o
->   obj-$(CONFIG_TWL4030_USB)		+= phy-twl4030-usb.o
-> +obj-$(CONFIG_PHY_XGENE)			+= phy-xgene.o
-> +
-.
-.
-<snip>
-.
-.
+That is fine. The kbuild robot also found issue with this function on
+other archs. I must say I am surprised as this code fragment in
+asm-generic/atomic.h suggests it is needed for SMP to work (?):
 
-> +	int i;
-> +
-> +	rc = xgene_phy_hw_initialize(ctx, CLK_EXT_DIFF, SSC_DISABLE);
-> +	if (rc) {
-> +		dev_err(ctx->dev, "PHY initialize failed %d\n", rc);
-> +		return rc;
-> +	}
-> +
-> +	/* Setup clock properly after PHY configuration */
-> +	if (!IS_ERR(ctx->clk)) {
-> +		/* HW requires an toggle of the clock */
-> +		clk_prepare_enable(ctx->clk);
-> +		clk_disable_unprepare(ctx->clk);
-> +		clk_prepare_enable(ctx->clk);
-> +	}
-> +
-> +	/* Compute average value */
-> +	for (i = 0; i < MAX_LANE; i++)
-> +		xgene_phy_gen_avg_val(ctx, i);
-> +
-> +	dev_dbg(ctx->dev, "PHY initialized\n");
-> +	return 0;
-> +}
-> +
-> +static const struct phy_ops xgene_phy_ops = {
-> +	.init		= xgene_phy_hw_init,
-> +	.owner		= THIS_MODULE,
-> +};
-> +
-> +static struct phy *xgene_phy_xlate(struct device *dev,
-> +				   struct of_phandle_args *args)
-> +{
-> +	struct xgene_phy_ctx *ctx = dev_get_drvdata(dev);
-> +
-> +	if (args->args_count > 0) {
-> +		if (args->args[0] >= MODE_MAX)
-> +			return NULL;
+ 20 #ifdef CONFIG_SMP
+ 21 /* Force people to define core atomics */
+ 22 # if !defined(atomic_add_return) || !defined(atomic_sub_return) || \
+ 23      !defined(atomic_clear_mask) || !defined(atomic_set_mask)
+ 24 #  error "SMP requires a little arch-specific magic"
+ 25 # endif
+ 26 #endif
 
-Are you sure you want to return NULL instead of error? NULL is 
-considered a valid value for optional PHYs.
-> +		ctx->mode = args->args[0];
-> +	}
+Maybe this requirement is no longer valid. Anyway. I will sent revert
+patch and replacement to John.
 
-I think it doesn't make sense to return the phy without the 'mode'. So 
-we should report error here too.
-
-> +	return ctx->phy;
-> +}
-> +
-> +static void xgene_phy_get_param(struct platform_device *pdev,
-> +				const char *name, u32 *buffer,
-> +				int count, u32 *default_val,
-> +				u32 conv_factor)
-> +{
-> +	int i;
-> +
-> +	if (!of_property_read_u32_array(pdev->dev.of_node, name, buffer,
-> +					count)) {
-> +		for (i = 0; i < count; i++)
-> +			buffer[i] /= conv_factor;
-> +		return;
-> +	}
-> +	/* Does not exist, load default */
-> +	for (i = 0; i < count; i++)
-> +		buffer[i] = default_val[i % 3];
-> +}
-> +
-> +static int xgene_phy_probe(struct platform_device *pdev)
-> +{
-> +	struct phy_provider *phy_provider;
-> +	struct xgene_phy_ctx *ctx;
-> +	struct resource *res;
-> +	int rc = 0;
-> +	u32 default_spd[] = DEFAULT_SATA_SPD_SEL;
-> +	u32 default_txboost_gain[] = DEFAULT_SATA_TXBOOST_GAIN;
-> +	u32 default_txeye_direction[] = DEFAULT_SATA_TXEYEDIRECTION;
-> +	u32 default_txeye_tuning[] = DEFAULT_SATA_TXEYETUNING;
-> +	u32 default_txamp[] = DEFAULT_SATA_TXAMP;
-> +	u32 default_txcn1[] = DEFAULT_SATA_TXCN1;
-> +	u32 default_txcn2[] = DEFAULT_SATA_TXCN2;
-> +	u32 default_txcp1[] = DEFAULT_SATA_TXCP1;
-> +	int i;
-> +
-> +	ctx = devm_kzalloc(&pdev->dev, sizeof(*ctx), GFP_KERNEL);
-> +	if (!ctx) {
-> +		dev_err(&pdev->dev, "can't allocate PHY context\n");
-remove dev_err here.. kzalloc will do that for you..
-> +		return -ENOMEM;
-> +	}
-> +	ctx->dev = &pdev->dev;
-> +
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	if (!res) {
-> +		dev_err(&pdev->dev, "no PHY resource address\n");
-
-same here.. you don't have to even check for return value of res. 
-ioremap_resource will take care of that.
-> +		rc = -EINVAL;
-> +		goto error;
-> +	}
-> +	ctx->sds_base = devm_ioremap_resource(&pdev->dev, res);
-> +	if (!ctx->sds_base) {
-> +		dev_err(&pdev->dev, "can't map PHY resource\n");
-
-same here..
-
-Thanks
-Kishon
+Thanks,
+Arend
