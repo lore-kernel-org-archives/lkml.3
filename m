@@ -1,96 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045AbaCFV5P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 16:57:15 -0500
-Received: from mga09.intel.com ([134.134.136.24]:30666 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751697AbaCFV5M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 16:57:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,603,1389772800"; 
-   d="scan'208";a="495440674"
-Date: Thu, 6 Mar 2014 13:56:46 -0800
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-pci@vger.kernel.org,
-        "Nyman, Mathias" <mathias.nyman@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: Re: [PATCH v2 RESEND 4/4] xhci: Use pci_enable_msix_exact() instead
- of pci_enable_msix()
-Message-ID: <20140306215646.GA23294@xanatos>
-References: <cover.1394128952.git.agordeev@redhat.com>
- <606a52afdccf627b6273379b21daffc460b9559a.1394128952.git.agordeev@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <606a52afdccf627b6273379b21daffc460b9559a.1394128952.git.agordeev@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752989AbaCFV7b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 16:59:31 -0500
+Received: from mailout4.w2.samsung.com ([211.189.100.14]:38448 "EHLO
+	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751650AbaCFV73 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 16:59:29 -0500
+X-AuditID: cbfec37d-b7f616d0000059df-bd-5318efc0477a
+Message-id: <5318EFBD.6080803@samsung.com>
+Date: Thu, 06 Mar 2014 14:59:25 -0700
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.2.0
+MIME-version: 1.0
+To: Valentina Manea <valentina.manea.m@gmail.com>, gregkh@linuxfoundation.org
+Cc: tobias.polzer@fau.de, dominik.paulus@fau.de, ly80toro@cip.cs.fau.de,
+        ihadzic@research.bell-labs.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
+        firefly@lists.rosedu.org, Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [PATCH 09/12] staging: usbip: userspace: remove class device
+ infrastructure in vhci_driver
+References: <1393960252-21247-1-git-send-email-valentina.manea.m@gmail.com>
+ <1393960252-21247-10-git-send-email-valentina.manea.m@gmail.com>
+In-reply-to: <1393960252-21247-10-git-send-email-valentina.manea.m@gmail.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.34.5]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42I5/e+wr+6B9xLBBp/PK1vsOfOL3aJ5rbjF
+	qx0vWCyaF69ns7hwN9Li8q45bBaLlrUyWzy7lmOx5+k7Fot3l+ayO3B5LLlwh8nj3r7DLB7n
+	22ezeOycdZfdY//cNewe99o2M3o8XXaD0ePzJrkAjigum5TUnMyy1CJ9uwSujEUr3rAUnGGt
+	2HrlDHsD4zGWLkZODgkBE4nLh9qYIGwxiQv31rN1MXJxCAksY5S413iEHcLpZZLYfvUGK4Sz
+	gVHizrXlYO28AloSv/r/gNksAqoSM/fdArPZBNQlPr/ewQ5iCwnISTQtWc0MYosKREi8OjsR
+	qldQ4sfke2C2iICvxP8JuxlBFjAL/GeUmHZjDyNIQlggU2JmYzfUGX2MEu8f9bKCJDiBOu4c
+	vANWxCxgLbFy0jYoW15i85q3zBCblSX+XD4F9ZyCxI2Fy1gnMIrMQrJ8FpL2WUjaFzAyr2IU
+	Ky1OLihOSk+tMNErTswtLs1L10vOz93ECInC2h2M97/aHGIU4GBU4uHtWCQRLMSaWFZcmXuI
+	UYKDWUmE1/QlUIg3JbGyKrUoP76oNCe1+BAjEwenVANj5jRHKffdAZcsWay1G2ctkbsy8+fS
+	OwJPFi0tVfk3rc9j/auTKqXmFfuuSBnPOTd58X7lWb/WWT3eeke3LneOngJ/4ZbgP3a2/+zP
+	rD+prysqkpwenHRsWvPlkwfe8jH4rC05piJRO/2Ro1nxt/Xdu/mmlz0MfeKy8c2POYy/Hh/j
+	Mj+id3HpdSWW4oxEQy3mouJEAPI6v5agAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 06, 2014 at 09:11:24PM +0100, Alexander Gordeev wrote:
-> As result of deprecation of MSI-X/MSI enablement functions
-> pci_enable_msix() and pci_enable_msi_block() all drivers
-> using these two interfaces need to be updated to use the
-> new pci_enable_msi_range()  or pci_enable_msi_exact()
-> and pci_enable_msix_range() or pci_enable_msix_exact()
-> interfaces.
-> 
-> This update also cleans up a bit xhci_setup_msi() and
-> xhci_setup_msix() returning of success.
-
-What do you mean by this sentence?  Are you fixing some bug in those two
-functions, or just cleaning up how they look?  Either way, this should
-really be two patches.
-
-Sarah Sharp
-
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: linux-usb@vger.kernel.org
-> Cc: linux-pci@vger.kernel.org
+On 03/04/2014 12:10 PM, Valentina Manea wrote:
+> The class device lists were used only when being initialized,
+> being populated and being destroyed. They had no real meaning
+> and thus the code was useless.
+>
+> Signed-off-by: Valentina Manea <valentina.manea.m@gmail.com>
 > ---
->  drivers/usb/host/xhci.c |    7 ++++---
->  1 files changed, 4 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-> index 6fe577d..dc7cfb5 100644
-> --- a/drivers/usb/host/xhci.c
-> +++ b/drivers/usb/host/xhci.c
-> @@ -232,9 +232,10 @@ static int xhci_setup_msi(struct xhci_hcd *xhci)
->  		xhci_dbg_trace(xhci, trace_xhci_dbg_init,
->  				"disable MSI interrupt");
->  		pci_disable_msi(pdev);
-> +		return ret;
->  	}
->  
-> -	return ret;
-> +	return 0;
->  }
->  
->  /*
-> @@ -291,7 +292,7 @@ static int xhci_setup_msix(struct xhci_hcd *xhci)
->  		xhci->msix_entries[i].vector = 0;
->  	}
->  
-> -	ret = pci_enable_msix(pdev, xhci->msix_entries, xhci->msix_count);
-> +	ret = pci_enable_msix_exact(pdev, xhci->msix_entries, xhci->msix_count);
->  	if (ret) {
->  		xhci_dbg_trace(xhci, trace_xhci_dbg_init,
->  				"Failed to enable MSI-X");
-> @@ -307,7 +308,7 @@ static int xhci_setup_msix(struct xhci_hcd *xhci)
->  	}
->  
->  	hcd->msix_enabled = 1;
-> -	return ret;
-> +	return 0;
->  
->  disable_msix:
->  	xhci_dbg_trace(xhci, trace_xhci_dbg_init, "disable MSI-X interrupt");
-> -- 
-> 1.7.7.6
-> 
+>   .../staging/usbip/userspace/libsrc/vhci_driver.c   | 178 ---------------------
+>   .../staging/usbip/userspace/libsrc/vhci_driver.h   |   4 -
+>   2 files changed, 182 deletions(-)
+>
+
+
+After these changes, is there a need for struct usbip_class_device ??
+
+-- Shuah
+
+
+-- 
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
