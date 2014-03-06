@@ -1,54 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757950AbaCFC5o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 21:57:44 -0500
-Received: from ozlabs.org ([203.10.76.45]:47701 "EHLO ozlabs.org"
+	id S1757330AbaCFDFX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 22:05:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49323 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757379AbaCFC5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 21:57:41 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Jean Delvare <khali@linux-fr.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>, Jon Mason <jon.mason@intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [RFC] Taint the kernel for unsafe module options
-In-Reply-To: <1394011994-30604-1-git-send-email-daniel.vetter@ffwll.ch>
-References: <1394011994-30604-1-git-send-email-daniel.vetter@ffwll.ch>
-User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
-Date: Thu, 06 Mar 2014 11:19:54 +1030
-Message-ID: <87r46gywul.fsf@rustcorp.com.au>
+	id S1755769AbaCFDFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 22:05:21 -0500
+Date: Wed, 5 Mar 2014 22:05:11 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: dan.j.williams@intel.com, linux-usb@vger.kernel.org
+Subject: uhci_hcd: DMA-API: cpu touching an active dma mapped cacheline
+Message-ID: <20140306030511.GA19653@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	dan.j.williams@intel.com, linux-usb@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel Vetter <daniel.vetter@ffwll.ch> writes:
-> Users just love to set random piles of options since surely enabling
-> all the experimental stuff helps. Later on we get bug reports because
-> it all fell apart.
->
-> Even more fun when it's labelled a regression when some change only
-> just made the feature possible (e.g. stolen memory fixes suddenly
-> making fbc possible).
->
-> Make it clear that users are playing with fire here. In drm/i915 all
-> these options follow the same pattern of using -1 as the per-machine
-> default, and any other value being used for force the parameter.
->
-> Adding a pile of cc's to solicit input and figure out whether this
-> would be generally useful - this quick rfc is just for drm/i915.
+WARNING: CPU: 3 PID: 25477 at lib/dma-debug.c:593 debug_dma_assert_idle+0x1ba/0x223()
+uhci_hcd 0000:00:1d.2: DMA-API: cpu touching an active dma mapped cacheline [cln=0x0000000002355f80]
+Modules linked in: fuse tun l2tp_ppp l2tp_netlink l2tp_core can_raw can_bcm scsi_transport_iscsi nfc caif_socket caif af_802154 phonet af_rxrpc hidp bluetooth 6lowpan_iphc can pppoe pppox ppp_generic slhc irda crc_ccitt rds rose x25 atm netrom appletalk ipx p8023 p8022 psnap llc ax25 cfg80211 rfkill nouveau video backlight mxm_wmi wmi i2c_algo_bit ttm drm_kms_helper drm tg3 i2c_core ptp pps_core libphy kvm_intel kvm lpc_ich microcode pcspkr mfd_core parport_pc serio_raw parport shpchp rtc_cmos xfs libcrc32c raid0 floppy
+CPU: 3 PID: 25477 Comm: cc Not tainted 3.14.0-rc5+ #2 
+Hardware name: Dell Inc.                 Precision WorkStation 490    /0DT031, BIOS A08 04/25/2008
+ 00000000 2e7036e5 00000000 db851dbc c15f76ee db851dfc db851dec c1043733
+ c17ce4b0 db851e1c 00006385 c17ccc7a 00000251 c130a152 c130a152 eef3f650
+ efb53480 00000000 db851e08 c1043788 00000009 db851dfc c17ce4b0 db851e1c
+Call Trace:
+ [<c15f76ee>] dump_stack+0x4b/0x75
+ [<c1043733>] warn_slowpath_common+0x7e/0x95
+ [<c130a152>] ? debug_dma_assert_idle+0x1ba/0x223
+ [<c130a152>] ? debug_dma_assert_idle+0x1ba/0x223
+ [<c1043788>] warn_slowpath_fmt+0x3e/0x51
+ [<c130a152>] debug_dma_assert_idle+0x1ba/0x223
+ [<c1159704>] do_wp_page+0x108/0x8a1
+ [<c115b790>] ? handle_mm_fault+0x1ba/0xd54
+ [<c15ff7ea>] ? _raw_spin_lock+0x6b/0x72
+ [<c115bae2>] handle_mm_fault+0x50c/0xd54
+ [<c160357c>] ? __do_page_fault+0xee/0x55c
+ [<c16035da>] __do_page_fault+0x14c/0x55c
+ [<c16039ea>] ? __do_page_fault+0x55c/0x55c
+ [<c16039f7>] do_page_fault+0xd/0xf
+ [<c1600dfc>] error_code+0x6c/0x74
+------------[ cut here ]------------
+WARNING: CPU: 3 PID: 25490 at lib/dma-debug.c:593 debug_dma_assert_idle+0x1ba/0x223()
+uhci_hcd 0000:00:1d.2: DMA-API: cpu touching an active dma mapped cacheline [cln=0x0000000002355f80]
+---[ end trace 3ac75acf24cf0b9e ]---
+Mapped at:
+ [<c13081b5>] debug_dma_alloc_coherent+0x2b/0xc3
+Modules linked in: fuse tun l2tp_ppp l2tp_netlink l2tp_core can_raw can_bcm scsi_transport_iscsi nfc caif_socket caif af_802154 phonet af_rxrpc hidp bluetooth 6lowpan_iphc can pppoe pppox ppp_generic slhc irda crc_ccitt rds rose x25 atm netrom appletalk ipx p8023 p8022 psnap llc ax25 cfg80211 rfkill nouveau video backlight mxm_wmi wmi i2c_algo_bit ttm drm_kms_helper drm tg3 i2c_core ptp pps_core libphy kvm_intel kvm lpc_ich microcode pcspkr mfd_core parport_pc serio_raw parport shpchp rtc_cmos xfs libcrc32c raid0 floppy
+ 
+[<c116fcee>] dma_pool_alloc+0x14f/0x2fd
+ [<c1456eaa>] uhci_alloc_td.isra.35+0x24/0x60
+ [<c1457fa6>] uhci_start+0x272/0x56b
+ [<c142d8fb>] usb_add_hcd+0x252/0x774
 
-If this is a good idea, you can write a macro module_param_unsafe_named
-which is a general wrapper.
-
-> -module_param_named(modeset, i915.modeset, int, 0400);
-
-Wait, WTF?  Why do you prefix i915 here manually?  That means that
-the commandline parameter would be "i915.i915.modeset=" and the
-module parameter would be "i915.modeset="...
-
-Confused,
-Rusty.
+CPU: 3 PID: 25490 Comm: cc Tainted: G        W    3.14.0-rc5+ #2 
+Hardware name: Dell Inc.                 Precision WorkStation 490    /0DT031, BIOS A08 04/25/2008
+ 00000000 bf79585b 00000000 db81bdbc c15f76ee db81bdfc db81bdec c1043733
+ c17ce4b0 db81be1c 00006392 c17ccc7a 00000251 c130a152 c130a152 eef3f650
+ efb53480 00000000 db81be08 c1043788 00000009 db81bdfc c17ce4b0 db81be1c
+Call Trace:
+ [<c15f76ee>] dump_stack+0x4b/0x75
+ [<c1043733>] warn_slowpath_common+0x7e/0x95
+ [<c130a152>] ? debug_dma_assert_idle+0x1ba/0x223
+ [<c130a152>] ? debug_dma_assert_idle+0x1ba/0x223
+ [<c1043788>] warn_slowpath_fmt+0x3e/0x51
+ [<c130a152>] debug_dma_assert_idle+0x1ba/0x223
+ [<c1159704>] do_wp_page+0x108/0x8a1
+ [<c115b790>] ? handle_mm_fault+0x1ba/0xd54
+ [<c15ff7ea>] ? _raw_spin_lock+0x6b/0x72
+ [<c115bae2>] handle_mm_fault+0x50c/0xd54
+ [<c160357c>] ? __do_page_fault+0xee/0x55c
+ [<c16035da>] __do_page_fault+0x14c/0x55c
+ [<c1603683>] ? __do_page_fault+0x1f5/0x55c
+ [<c160065b>] ? restore_all+0xf/0xf
+ [<c12f0d89>] ? __put_user_4+0x11/0x18
+ [<c16039ea>] ? __do_page_fault+0x55c/0x55c
+ [<c16039f7>] do_page_fault+0xd/0xf
+ [<c1600dfc>] error_code+0x6c/0x74
+---[ end trace 3ac75acf24cf0b9f ]---
+Mapped at:
+ [<c13081b5>] debug_dma_alloc_coherent+0x2b/0xc3
+ [<c116fcee>] dma_pool_alloc+0x14f/0x2fd
+ [<c1456eaa>] uhci_alloc_td.isra.35+0x24/0x60
+ [<c1457fa6>] uhci_start+0x272/0x56b
+ [<c142d8fb>] usb_add_hcd+0x252/0x774
