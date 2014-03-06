@@ -1,136 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370AbaCFQRT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 11:17:19 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:49276 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751647AbaCFQRQ convert rfc822-to-8bit (ORCPT
+	id S1753033AbaCFQVg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 11:21:36 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:57374 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752542AbaCFQVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 11:17:16 -0500
-Date: Thu, 6 Mar 2014 16:17:13 +0000
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Tanmay Inamdar <tinamdar@apm.com>
-Subject: Re: [PATCH v5 3/3] arm64: Add architecture support for PCI
-Message-ID: <20140306161713.GH6457@e106497-lin.cambridge.arm.com>
-Mail-Followup-To: Arnd Bergmann <arnd@arndb.de>,
-	linux-pci <linux-pci@vger.kernel.org>,
-	Bjorn Helgaas <bhelgaas@google.com>,
-	Catalin Marinas <Catalin.Marinas@arm.com>,
-	Will Deacon <Will.Deacon@arm.com>,
-	linaro-kernel <linaro-kernel@lists.linaro.org>,
-	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-	LAKML <linux-arm-kernel@lists.infradead.org>,
-	Tanmay Inamdar <tinamdar@apm.com>
-References: <1393948216-11599-1-git-send-email-Liviu.Dudau@arm.com>
- <1393948216-11599-4-git-send-email-Liviu.Dudau@arm.com>
- <201403042328.51361.arnd@arndb.de>
-MIME-Version: 1.0
-In-Reply-To: <201403042328.51361.arnd@arndb.de>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 06 Mar 2014 16:17:14.0482 (UTC) FILETIME=[8942AD20:01CF3957]
-X-MC-Unique: 114030616171500601
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	Thu, 6 Mar 2014 11:21:34 -0500
+Message-ID: <1394122879.3622.47.camel@paszta.hi.pengutronix.de>
+Subject: Re: [PATCH v6 0/8] Move device tree graph parsing helpers to
+ drivers/of
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        devicetree@vger.kernel.org
+Date: Thu, 06 Mar 2014 17:21:19 +0100
+In-Reply-To: <5318988C.2030004@samsung.com>
+References: <1394011242-16783-1-git-send-email-p.zabel@pengutronix.de>
+	 <53170C00.20200@ti.com> <1394030554.8754.31.camel@paszta.hi.pengutronix.de>
+	 <20140306141657.GB21483@n2100.arm.linux.org.uk>
+	 <20140306121721.6186dafb@samsung.com> <5318988C.2030004@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 04, 2014 at 10:28:51PM +0000, Arnd Bergmann wrote:
-> On Tuesday 04 March 2014, Liviu Dudau wrote:
+Am Donnerstag, den 06.03.2014, 16:47 +0100 schrieb Sylwester Nawrocki:
+> On 06/03/14 16:17, Mauro Carvalho Chehab wrote:
+> > Em Thu, 06 Mar 2014 14:16:57 +0000
+> > Russell King - ARM Linux <linux@arm.linux.org.uk> escreveu:
+> >> > On Wed, Mar 05, 2014 at 03:42:34PM +0100, Philipp Zabel wrote:
+> >>> > > Am Mittwoch, den 05.03.2014, 13:35 +0200 schrieb Tomi Valkeinen:
+[...]
+> >>>> > > > So, as I've pointed out, I don't agree with the API, as it's too limited
+> >>>> > > > and I can't use it, but as this series is (mostly) about moving the
+> >>>> > > > current API to a common place, it's fine for me.
+> >>>> > > > 
+> >>>> > > > Acked-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+> >>> > > 
+> >>> > > Thanks. I'll be happy to help expanding the API to parse ports
+> >>> > > individually, once this gets accepted.
+> >>> > > 
+> >>> > > Mauro, Guennadi, are you fine with how this turned out? I'd like to get
+> >>> > > your acks again, for the changed location.
+> >
+> > From my side, there's nothing on such code that is V4L2 specific.
+> > Moving it to drivers/of makes sense on my eyes.
+> > 
+> > Acked-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 > 
-> > +extern int isa_dma_bridge_buggy;
+> I'm OK with patches 1...5, 8, so for these:
 > 
-> As commented before, I still think we can hardcode this to off
-
-Unfortunately that doesn't work when you have CONFIG_PCI=y. drivers/pci/pci.c has:
-
-drivers/pci/pci.c:int isa_dma_bridge_buggy;
-drivers/pci/pci.c:EXPORT_SYMBOL(isa_dma_bridge_buggy);
-
-and drivers/pci/quirks.c does:
-
-drivers/pci/quirks.c:   if (!isa_dma_bridge_buggy) {
-drivers/pci/quirks.c:           isa_dma_bridge_buggy=1;
-drivers/pci/quirks.c-           dev_info(&dev->dev, "Activating ISA DMA hang workarounds\n");
-drivers/pci/quirks.c-   }
-
-
+> Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
 > 
-> > +unsigned long pci_address_to_pio(phys_addr_t address)
-> > +{
-> > +	struct ioresource *res;
-> > +
-> > +	list_for_each_entry(res, &io_list, list) {
-> > +		if (address >= res->start &&
-> > +			address < res->start + res->size) {
-> > +			return res->start - address;
-> > +		}
-> > +	}
-> > +
-> > +	return (unsigned long)-1;
-> > +}
-> > +EXPORT_SYMBOL_GPL(pci_address_to_pio);
+> Regarding the simplified version of the binding, I thought we should
+> leave 'port' instead of 'endpoint' node. This could cover more hardware
+> configurations. Are there any users of this simplified binding queued
+> for v3.15 ? If not, perhaps we can postpone it and discuss it a bit more
+> (sorry, couldn't find time to comment on that earlier) ?
+
+Since Tomi needs the separate port/endpoint iteration anyway, 
+postponing the simple bindings shouldn't hurt. I'll (re)submit them
+together in a second series.
+
+> >> > I'll need those acks before I can even think about queuing up the
+> >> > imx-drm bits.
+> >> > 
+> >> > Another way to deal with this is if this gets pulled into the V4L tree
+> >> > from Philipp's git tree, I can also pull that in myself.  What mustn't
+> >> > happen is for these to be committed independently as patches.
+> >
+> > If everyone agrees, I actually prefer have this patch applied on my tree,
+> > in order to avoid some potential merge conflicts at the merge window,
+> > as we might have other drivers and changes there touching on those API
+> > calls (I'm aware of a series of patches from Sylwester with some DT
+> > stuff on it. Not sure if it would be affected by such changes or not).
 > 
-> This has two problems:
-> 
-> - You return the address in bus space not the logical Linux
->   port number as powerpc and microblaze do.
-> - You imply that the window starts at bus address zero, which
->   might not be the case.
+> Yes, it's going to conflict with my patch series. I thought it could be
+> put onto a stable a topic branch, e.g. at git://linuxtv.org/media_tree.git,
+> which could be then pulled into the media master branch and anywhere
+> else it is needed ?
 
-That's definitely not the intention here. I want to return the
-logical port number and I want that port number to start from
-zero for every registered IO range. 
+Mauro, are you ok with handling the conflict in the merge, or should I
+rebase on top of the media tree after you merged Sylwester's changes?
 
-> 
-> > +EXPORT_SYMBOL(pcibios_fixup_bus);
-> 
-> no need for this export.
-
-OK.
-
-> 
-> > +/*
-> > + * We don't have to worry about legacy ISA devices, so nothing to do here
-> > + */
-> > +resource_size_t pcibios_align_resource(void *data, const struct resource *res,
-> > +				resource_size_t size, resource_size_t align)
-> > +{
-> > +	return ALIGN(res->start, align);
-> > +}
-> > +EXPORT_SYMBOL(pcibios_align_resource);
-> 
-> or this one. Also, the ALIGN() is already done by the PCI core.
-
-This has been fix in v6 already.
-
-Thanks for reviewing this!
-
-Liviu
-
-> 
-> 	Arnd
-> 
-
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
+regards
+Philipp
 
