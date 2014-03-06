@@ -1,72 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669AbaCFVLy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 16:11:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42919 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753646AbaCFVLx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 16:11:53 -0500
-Date: Thu, 6 Mar 2014 16:11:41 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: linux-mm@kvack.org, cl@linux-foundation.org, penberg@kernel.org
-Subject: slub: fix leak of 'name' in sysfs_slab_add
-Message-ID: <20140306211141.GA17009@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-	cl@linux-foundation.org, penberg@kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753696AbaCFVL7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 16:11:59 -0500
+Received: from mailout4.w2.samsung.com ([211.189.100.14]:36676 "EHLO
+	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753110AbaCFVL4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 16:11:56 -0500
+X-AuditID: cbfec37b-b7f8f6d000007030-96-5318e49be8bd
+Message-id: <5318E498.2090800@samsung.com>
+Date: Thu, 06 Mar 2014 14:11:52 -0700
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.2.0
+MIME-version: 1.0
+To: Valentina Manea <valentina.manea.m@gmail.com>, gregkh@linuxfoundation.org
+Cc: tobias.polzer@fau.de, dominik.paulus@fau.de, ly80toro@cip.cs.fau.de,
+        ihadzic@research.bell-labs.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
+        firefly@lists.rosedu.org, Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [PATCH 05/12] staging: usbip: userspace: re-add interface
+ information listing
+References: <1393960252-21247-1-git-send-email-valentina.manea.m@gmail.com>
+ <1393960252-21247-6-git-send-email-valentina.manea.m@gmail.com>
+In-reply-to: <1393960252-21247-6-git-send-email-valentina.manea.m@gmail.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.34.8]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupikeLIzCtJLcpLzFFi42I5/e+wr+7sJxLBBufWa1vsOfOL3aJ5rbjF
+	qx0vWCyaF69ns7hwN9Li8q45bBaLlrUyWzy7lmOx5+k7Fot3l+ayO3B5LLlwh8nj3r7DLB7n
+	22ezeOycdZfdY//cNewe99o2M3o8XXaD0ePzJrkAjigum5TUnMyy1CJ9uwSujEtPFrMXXJaq
+	+H8rq4FxtmgXIyeHhICJxM9ly1kgbDGJC/fWs3UxcnEICSxjlLixuwMsISTQyyTxd5kFRGID
+	o0RD9xpGkASvgJbErZ1dYDaLgKpE0+0VrCA2m4C6xOfXO9ghmuUkmpasZgaxRQUiJF6dncgC
+	0Sso8WPyPTBbRMBX4v+E3YwgC5gF/jNKTLuxB2yosECMxLQdXSwQm3sZJXbe+cwEkuAU8JE4
+	9mEVWDezgLXEyknbGCFseYnNa94yQ2xWlvhz+RRQPQfQbwoSX3scJjCKzEKyexaS7llIuhcw
+	Mq9iFCstTi4oTkpPrTDSK07MLS7NS9dLzs/dxAiJv+odjHe/2hxiFOBgVOLhNVggESzEmlhW
+	XJl7iFGCg1lJhNf4IFCINyWxsiq1KD++qDQntfgQIxMHp1QDY6DpjGj2ypIvns1trY0qmtwm
+	87iP/dnnIfb4RfKUvDPT5+0u9PLvX/zt+dMNT+XYVPWuzjbZcz2N8TbDzQNb2D818J0tWxbc
+	8lA0OKRrK/eVW9ddr079X3xzx5sO/peVB65fzmr+sSRrQY65ZWvFbjYOuak/3883XyFppOsi
+	Lvjn16/nVbkvbiuxFGckGmoxFxUnAgA3tABHnQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The failure paths of sysfs_slab_add don't release the allocation of 'name'
-made by create_unique_id() a few lines above the context of the diff below.
-Create a common exit path to make it more obvious what needs freeing.
+On 03/04/2014 12:10 PM, Valentina Manea wrote:
+> This was deleted in the driver conversion patch. It didn't need
+> to be deleted; showing more information is ok.
+>
+> Signed-off-by: Valentina Manea <valentina.manea.m@gmail.com>
+> ---
+>   drivers/staging/usbip/userspace/src/usbip_list.c | 20 +++++++++++++++++++-
+>   drivers/staging/usbip/userspace/src/usbipd.c     | 16 +++++++++++++++-
+>   2 files changed, 34 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/staging/usbip/userspace/src/usbip_list.c b/drivers/staging/usbip/userspace/src/usbip_list.c
+> index 2255107..7e1820a 100644
+> --- a/drivers/staging/usbip/userspace/src/usbip_list.c
+> +++ b/drivers/staging/usbip/userspace/src/usbip_list.c
+> @@ -52,8 +52,9 @@ static int get_exported_devices(char *host, int sockfd)
+>   	struct op_devlist_reply reply;
+>   	uint16_t code = OP_REP_DEVLIST;
+>   	struct usbip_usb_device udev;
+> +	struct usbip_usb_interface uintf;
+>   	unsigned int i;
+> -	int rc;
+> +	int rc, j;
+>
+>   	rc = usbip_net_send_op_common(sockfd, OP_REQ_DEVLIST, 0);
+>   	if (rc < 0) {
+> @@ -103,6 +104,23 @@ static int get_exported_devices(char *host, int sockfd)
+>   		printf("%11s: %s\n", "", udev.path);
+>   		printf("%11s: %s\n", "", class_name);
+>
+> +		for (j = 0; j < udev.bNumInterfaces; j++) {
+> +			rc = usbip_net_recv(sockfd, &uintf, sizeof(uintf));
+> +			if (rc < 0) {
+> +				dbg("usbip_net_recv failed: usbip_usb_intf[%d]",
+> +						j);
 
-Signed-off-by: Dave Jones <davej@fedoraproject.org>
+Please use err() instead of dbg() so this error is reported when it 
+happens, not just when usbip_use_debug is enabled.
 
-diff --git a/mm/slub.c b/mm/slub.c
-index 25f14ad8f817..b2181d2682ac 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -5197,17 +5197,13 @@ static int sysfs_slab_add(struct kmem_cache *s)
- 
- 	s->kobj.kset = slab_kset;
- 	err = kobject_init_and_add(&s->kobj, &slab_ktype, NULL, "%s", name);
--	if (err) {
--		kobject_put(&s->kobj);
--		return err;
--	}
-+	if (err)
-+		goto err_out;
- 
- 	err = sysfs_create_group(&s->kobj, &slab_attr_group);
--	if (err) {
--		kobject_del(&s->kobj);
--		kobject_put(&s->kobj);
--		return err;
--	}
-+	if (err)
-+		goto err_sysfs;
-+
- 	kobject_uevent(&s->kobj, KOBJ_ADD);
- 	if (!unmergeable) {
- 		/* Setup first alias */
-@@ -5215,6 +5211,13 @@ static int sysfs_slab_add(struct kmem_cache *s)
- 		kfree(name);
- 	}
- 	return 0;
-+
-+err_sysfs:
-+	kobject_del(&s->kobj);
-+err_out:
-+	kobject_put(&s->kobj);
-+	kfree(name);
-+	return err;
- }
- 
- static void sysfs_slab_remove(struct kmem_cache *s)
+> +
+> +				return -1;
+> +			}
+> +			usbip_net_pack_usb_interface(0, &uintf);
+> +
+> +			usbip_names_get_class(class_name, sizeof(class_name),
+> +					uintf.bInterfaceClass,
+> +					uintf.bInterfaceSubClass,
+> +					uintf.bInterfaceProtocol);
+> +			printf("%11s: %2d - %s\n", "", j, class_name);
+> +		}
+> +
+>   		printf("\n");
+>   	}
+>
+> diff --git a/drivers/staging/usbip/userspace/src/usbipd.c b/drivers/staging/usbip/userspace/src/usbipd.c
+> index c2b3ced..b2230f7 100644
+> --- a/drivers/staging/usbip/userspace/src/usbipd.c
+> +++ b/drivers/staging/usbip/userspace/src/usbipd.c
+> @@ -159,8 +159,9 @@ static int send_reply_devlist(int connfd)
+>   {
+>   	struct usbip_exported_device *edev;
+>   	struct usbip_usb_device pdu_udev;
+> +	struct usbip_usb_interface pdu_uinf;
+>   	struct op_devlist_reply reply;
+> -	int rc;
+> +	int rc, i;
+>
+>   	reply.ndev = 0;
+>   	/* number of exported devices */
+> @@ -194,6 +195,19 @@ static int send_reply_devlist(int connfd)
+>   			dbg("usbip_net_send failed: pdu_udev");
+
+Same comment as above.
+
+>   			return -1;
+>   		}
+> +
+> +		for (i = 0; i < edev->udev.bNumInterfaces; i++) {
+> +			dump_usb_interface(&edev->uinf[i]);
+> +			memcpy(&pdu_uinf, &edev->uinf[i], sizeof(pdu_uinf));
+> +			usbip_net_pack_usb_interface(1, &pdu_uinf);
+> +
+> +			rc = usbip_net_send(connfd, &pdu_uinf,
+> +					sizeof(pdu_uinf));
+> +			if (rc < 0) {
+> +				dbg("usbip_net_send failed: pdu_uinf");
+
+Same comment as above.
+
+> +				return -1;
+> +			}
+> +		}
+>   	}
+>
+>   	return 0;
+>
+
+You have my Reviewed-by after making the recommended changes.
+
+Reviewed-by: Shuah Khan <shuah.kh@samsung.com>
+
+-- Shuah
+
+-- 
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
