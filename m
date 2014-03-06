@@ -1,75 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752525AbaCFJlg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 04:41:36 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:56767 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751049AbaCFJlf (ORCPT
+	id S1751721AbaCFJpA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 04:45:00 -0500
+Received: from msa01.smtpout.orange.fr ([193.252.23.210]:54352 "EHLO
+	msa.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750919AbaCFJo5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 04:41:35 -0500
-Date: Thu, 6 Mar 2014 17:41:29 +0800
-From: Mark Brown <broonie@kernel.org>
-To: Nenghua Cao <nhcao@marvell.com>
-Cc: Liam Girdwood <liam.r.girdwood@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140306094129.GP13126@sirena.org.uk>
-References: <1392806653-29604-1-git-send-email-nhcao@marvell.com>
+	Thu, 6 Mar 2014 04:44:57 -0500
+X-Greylist: delayed 472 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Mar 2014 04:44:56 EST
+Date: Thu, 6 Mar 2014 10:36:59 +0100
+From: Marc van der Wal <x0r+kernel@x0r.fr>
+To: Wim Van Sebroeck <wim@iguana.be>
+Cc: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] it87_wdt: Work around non-working CIR interrupts
+Message-ID: <20140306093659.GA24854@freyja>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OZBeERS9UGv+teaY"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1392806653-29604-1-git-send-email-nhcao@marvell.com>
-X-Cookie: You are always busy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 202.175.88.218
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] driver: regmap: add regmap_parse_val api
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Marc van der Wal <x0r+kernel@x0r.fr>
 
---OZBeERS9UGv+teaY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On some hardware platforms, the it87_wdt watchdog resets the machine
+despite the watchdog daemon running and writing to /dev/watchdog.
 
-On Wed, Feb 19, 2014 at 06:44:13PM +0800, Nenghua Cao wrote:
-> From: Nenghua Cao <nhcao@marvell.com>
->=20
->     In some cases, we need regmap's format parse_val function
-> to do be/le translation according to the bus configuration.
-> For example, snd_soc_bytes_put() uses regmap to write/read values,
-> and use cpu_to_be() directly to covert MASK into big endian. This
-> is a defect, and should use regmap's format function to do it according
-> to bus configuration.
+This is due to Consumer IR buffer underrun interrupts being used as
+triggers to reset the timer.  On some buggy hardware implementations
+such as the iEi AFL-12A-N270 single-board computer, this method does 
+not work.
 
-Applied, thanks.  Please use subject lines matching the style for the
-subsystem.
+However, resetting the timer by writing its original timeout value in
+its configuration register over and over again suppresses the unwanted
+reboots.
 
---OZBeERS9UGv+teaY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Add a module option (nocir), 0 by default in order not to break existing
+setups.  Setting it to 1 enables the workaround.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Fixes bug #42801 <https://bugzilla.kernel.org/show_bug.cgi?id=42801>.
+Tested primarily on Linux 3.5.7, applies cleanly on Linux 3.13.5.
 
-iQIcBAEBAgAGBQJTGELGAAoJELSic+t+oim99h0P/05Cm5ePGx28ZUeF9B8KJBMy
-c2fQOZ0QTDWnSjfza2UUjiuavxU5xHn5bokNvEIna7JY8thu6/vg+nB8q+Auz5KT
-hlVi2EBVHoRQO5G1DLbzEpoYnNqPCu2YsfHxh5wB2szQGbguI7JxeLfkCLjeO16d
-dNog0E0O6rs1BdBvb6TAHfqsu2jR+aYlHK4zS2uIzs1WFWMKAis8oHR50/ErNv+K
-dUhFyJZyHb0RNTtpOzqN0jtqU0vsEKgOhvovWRCLO1T5wzmHyQf+ez1ro6LUXPGY
-2PfbvsZjxGK0RsDQgh3fpasBaE3yOkUdgskOzx9693JTIZ/gRNe87hiyhaAT+dE0
-qRcRk9WRxmZmowxAOALYgjcM4F5n+y4EvSI9WeGlEXg+15s9B88LlN2a79tOlB/O
-bcQck08/ftP9tVq+PojHyXRUvEU/iOckT6IXR+NhnyZWtloUQCS38F8aRb3zpCDB
-bJfrUImuGshPK6Z7itOQ0BBcSt94B2EcfXnQcvme0qNBrUXtyOuyxHhVXFf7/1cy
-bttcumwow03dPqBfhYYBcrC9c19v68qeKK/d1c6jyYViOrXVXX1COXCHJn5c3+d2
-ys2+OTP4FBfdNDZR4JX2inDACAFWZTeYiEk9WNMZmCBQ3iXlAmGJv2bujNrhz4Bj
-JganHd3uH44UzpAXt/ps
-=zuNo
------END PGP SIGNATURE-----
+Signed-off-by: Marc van der Wal <x0r+kernel@x0r.fr>
+---
 
---OZBeERS9UGv+teaY--
+diff -rupN -X linux-3.13.5.orig/Documentation/dontdiff linux-3.13.5.orig/Documentation/watchdog/watchdog-parameters.txt linux-3.13.5/Documentation/watchdog/watchdog-parameters.txt
+--- linux-3.13.5.orig/Documentation/watchdog/watchdog-parameters.txt	2014-02-22 22:35:30.000000000 +0100
++++ linux-3.13.5/Documentation/watchdog/watchdog-parameters.txt	2014-03-06 09:51:36.330134802 +0100
+@@ -150,6 +150,8 @@ nowayout: Disable watchdog shutdown on c
+ -------------------------------------------------
+ it87_wdt:
+ nogameport: Forbid the activation of game port, default=0
++nocir: Forbid the use of CIR (workaround for some buggy setups); set to 1 if
++system resets despite watchdog daemon running, default=0
+ exclusive: Watchdog exclusive device open, default=1
+ timeout: Watchdog timeout in seconds, default=60
+ testmode: Watchdog test mode (1 = no reboot), default=0
+diff -rupN -X linux-3.13.5.orig/Documentation/dontdiff linux-3.13.5.orig/drivers/watchdog/it87_wdt.c linux-3.13.5/drivers/watchdog/it87_wdt.c
+--- linux-3.13.5.orig/drivers/watchdog/it87_wdt.c	2014-02-22 22:35:30.000000000 +0100
++++ linux-3.13.5/drivers/watchdog/it87_wdt.c	2014-03-06 10:17:34.429991556 +0100
+@@ -54,6 +54,7 @@
+ 
+ /* Defaults for Module Parameter */
+ #define DEFAULT_NOGAMEPORT	0
++#define DEFAULT_NOCIR		0
+ #define DEFAULT_EXCLUSIVE	1
+ #define DEFAULT_TIMEOUT		60
+ #define DEFAULT_TESTMODE	0
+@@ -136,11 +137,13 @@
+ #define WDTS_LOCKED	3
+ #define WDTS_USE_GP	4
+ #define WDTS_EXPECTED	5
++#define WDTS_USE_CIR	6
+ 
+ static	unsigned int base, gpact, ciract, max_units, chip_type;
+ static	unsigned long wdt_status;
+ 
+ static	int nogameport = DEFAULT_NOGAMEPORT;
++static int nocir      = DEFAULT_NOCIR;
+ static	int exclusive  = DEFAULT_EXCLUSIVE;
+ static	int timeout    = DEFAULT_TIMEOUT;
+ static	int testmode   = DEFAULT_TESTMODE;
+@@ -149,6 +152,9 @@ static	bool nowayout   = DEFAULT_NOWAYOU
+ module_param(nogameport, int, 0);
+ MODULE_PARM_DESC(nogameport, "Forbid the activation of game port, default="
+ 		__MODULE_STRING(DEFAULT_NOGAMEPORT));
++module_param(nocir, int, 0);
++MODULE_PARM_DESC(nocir, "Forbid the use of Consumer IR interrupts to reset timer, default="
++		__MODULE_STRING(DEFAULT_NOCIR));
+ module_param(exclusive, int, 0);
+ MODULE_PARM_DESC(exclusive, "Watchdog exclusive device open, default="
+ 		__MODULE_STRING(DEFAULT_EXCLUSIVE));
+@@ -258,9 +264,17 @@ static void wdt_keepalive(void)
+ {
+ 	if (test_bit(WDTS_USE_GP, &wdt_status))
+ 		inb(base);
+-	else
++	else if (test_bit(WDTS_USE_CIR, &wdt_status))
+ 		/* The timer reloads with around 5 msec delay */
+ 		outb(0x55, CIR_DR(base));
++	else {
++		if (superio_enter())
++			return;
++
++		superio_select(GPIO);
++		wdt_update_timeout();
++		superio_exit();
++	}
+ 	set_bit(WDTS_KEEPALIVE, &wdt_status);
+ }
+ 
+@@ -273,7 +287,7 @@ static int wdt_start(void)
+ 	superio_select(GPIO);
+ 	if (test_bit(WDTS_USE_GP, &wdt_status))
+ 		superio_outb(WDT_GAMEPORT, WDTCTRL);
+-	else
++	else if (test_bit(WDTS_USE_CIR, &wdt_status))
+ 		superio_outb(WDT_CIRINT, WDTCTRL);
+ 	wdt_update_timeout();
+ 
+@@ -660,7 +674,7 @@ static int __init it87_wdt_init(void)
+ 	}
+ 
+ 	/* If we haven't Gameport support, try to get CIR support */
+-	if (!test_bit(WDTS_USE_GP, &wdt_status)) {
++	if (!nocir && !test_bit(WDTS_USE_GP, &wdt_status)) {
+ 		if (!request_region(CIR_BASE, 8, WATCHDOG_NAME)) {
+ 			if (gp_rreq_fail)
+ 				pr_err("I/O Address 0x%04x and 0x%04x already in use\n",
+@@ -682,6 +696,7 @@ static int __init it87_wdt_init(void)
+ 			superio_select(GAMEPORT);
+ 			superio_outb(gpact, ACTREG);
+ 		}
++		set_bit(WDTS_USE_CIR, &wdt_status);
+ 	}
+ 
+ 	if (timeout < 1 || timeout > max_units * 60) {
+@@ -707,7 +722,7 @@ static int __init it87_wdt_init(void)
+ 	}
+ 
+ 	/* Initialize CIR to use it as keepalive source */
+-	if (!test_bit(WDTS_USE_GP, &wdt_status)) {
++	if (test_bit(WDTS_USE_CIR, &wdt_status)) {
+ 		outb(0x00, CIR_RCR(base));
+ 		outb(0xc0, CIR_TCR1(base));
+ 		outb(0x5c, CIR_TCR2(base));
+@@ -717,9 +732,9 @@ static int __init it87_wdt_init(void)
+ 		outb(0x09, CIR_IER(base));
+ 	}
+ 
+-	pr_info("Chip IT%04x revision %d initialized. timeout=%d sec (nowayout=%d testmode=%d exclusive=%d nogameport=%d)\n",
++	pr_info("Chip IT%04x revision %d initialized. timeout=%d sec (nowayout=%d testmode=%d exclusive=%d nogameport=%d nocir=%d)\n",
+ 		chip_type, chip_rev, timeout,
+-		nowayout, testmode, exclusive, nogameport);
++		nowayout, testmode, exclusive, nogameport, nocir);
+ 
+ 	superio_exit();
+ 	return 0;
+@@ -727,8 +742,10 @@ static int __init it87_wdt_init(void)
+ err_out_reboot:
+ 	unregister_reboot_notifier(&wdt_notifier);
+ err_out_region:
+-	release_region(base, test_bit(WDTS_USE_GP, &wdt_status) ? 1 : 8);
+-	if (!test_bit(WDTS_USE_GP, &wdt_status)) {
++	if (test_bit(WDTS_USE_GP, &wdt_status))
++		release_region(base, 1);
++	else if (test_bit(WDTS_USE_CIR, &wdt_status)) {
++		release_region(base, 8);
+ 		superio_select(CIR);
+ 		superio_outb(ciract, ACTREG);
+ 	}
+@@ -754,7 +771,7 @@ static void __exit it87_wdt_exit(void)
+ 		if (test_bit(WDTS_USE_GP, &wdt_status)) {
+ 			superio_select(GAMEPORT);
+ 			superio_outb(gpact, ACTREG);
+-		} else {
++		} else if (test_bit(WDTS_USE_CIR, &wdt_status)) {
+ 			superio_select(CIR);
+ 			superio_outb(ciract, ACTREG);
+ 		}
+@@ -763,7 +780,11 @@ static void __exit it87_wdt_exit(void)
+ 
+ 	misc_deregister(&wdt_miscdev);
+ 	unregister_reboot_notifier(&wdt_notifier);
+-	release_region(base, test_bit(WDTS_USE_GP, &wdt_status) ? 1 : 8);
++
++	if (test_bit(WDTS_USE_GP, &wdt_status))
++		release_region(base, 1);
++	else if (test_bit(WDTS_USE_CIR, &wdt_status))
++		release_region(base, 8);
+ }
+ 
+ module_init(it87_wdt_init);
