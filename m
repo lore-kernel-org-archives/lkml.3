@@ -1,86 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757902AbaCFCka (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 21:40:30 -0500
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:33854 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757087AbaCFCjt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 21:39:49 -0500
-MIME-Version: 1.0
-Date: Thu, 6 Mar 2014 10:39:49 +0800
-Message-ID: <CACRpkdZZ8aeuz15FNZ5uzOwuhKs7ktatQd-XbTSDXtYZPPLUnQ@mail.gmail.com>
-Subject: [GIT PULL] pin control fixes, take two
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757917AbaCFCnj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 21:43:39 -0500
+Received: from ozlabs.org ([203.10.76.45]:41978 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756064AbaCFCnh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 21:43:37 -0500
+Date: Thu, 6 Mar 2014 13:43:32 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hante Meuleman <meuleman@broadcom.com>,
+        Arend van Spriel <arend@broadcom.com>
+Subject: linux-next: build failure after merge of the wireless-next tree
+Message-Id: <20140306134332.0c3f12ec6849d1b2ccefda6e@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__6_Mar_2014_13_43_32_+1100_yQPDdRXmVATb.IL/"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+--Signature=_Thu__6_Mar_2014_13_43_32_+1100_yQPDdRXmVATb.IL/
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-this is a set of pin control fixes I have collected over the last few days.
-Some have rotated more than others in linux-next, but they were
-rebased on v3.14-rc5 due to sloppy commit messages. I am quite
-convinced that they are all good fixes that only hit this or that
-individual driver and not the entire subsystem.
+Hi John,
 
-Please pull this in!
+After merging the wireless-next tree, today's linux-next build (arm
+multi_v7_defconfig) failed like this:
 
-Yours,
-Linus Walleij
+drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c: In function 'brcmf_sdio=
+_intr_rstatus':
+drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c:2464:3: error: implicit =
+declaration of function 'atomic_set_mask' [-Werror=3Dimplicit-function-decl=
+aration]
 
+Caused by commit c98db0bec72a ("brcmfmac: Use atomic functions for
+intstatus update").  Arm does not seem to provide atomic_set_mask()?
 
-The following changes since commit 0414855fdc4a40da05221fc6062cccbc0c30f169:
+I reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-  Linux 3.14-rc5 (2014-03-02 18:56:16 -0800)
+--Signature=_Thu__6_Mar_2014_13_43_32_+1100_yQPDdRXmVATb.IL/
+Content-Type: application/pgp-signature
 
-are available in the git repository at:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl.git
-tags/pinctrl-v3.14-3
+iQIcBAEBCAAGBQJTF+DYAAoJEMDTa8Ir7ZwV/LcP/25XA+sSESm4S2Kno45SeZ5T
+0Lpjv4sevCMF2gPI2bE3Xczy52YqTMPm1bdDbDSnEGdjgUWQGsRuCyQS+i/m2EM9
+TkFcURSDgbAocw1Sdu0kKmuqDe8mpZVICQKMaouqjdZP0p5WCRVwlX6ss0jjCqL1
+z5n4QA0RD6H8P07G02ceyjwQWju9x7EWSqfitJWU2VXvZ1CW76VuFV8JwnrO3GaY
+d4XaC26Zxn+b9tss5SsI6IdNEuvK2MFi47s6AY6X7teyGTHtwF9/tJKmRn9shNBb
+hG2f66MzxrUWgDA6YuPJ9w6f8lQnx1t89x/aelY9iRMxFtF8wWElA0lBJjVPrNpX
+2ghlabfULk2fY6d2s3iL4/DGLcv5qeNO1A44go48wjQr7rShpDoTnN496yItEFvm
+XuBUcbDc5/suMxVxykSvz12S9Dh35vEH6ZS/VSS3VBmebftvEMlar+QzdLyNPScc
+JQT1/p56mlgHvN3Pvq+VGidZJgjfs8F3nndCUAVmM/kbU8ftV7gpJeBCQZHqQtZJ
+j37qHIyt7PS1uC2oBY22nScrftUplog9X9xoszYDxBPzrzneiBYJfyEfrrR6g6Xh
+C/qiGm4KYtLkoulrHXCzs8Aztfok9y84MqiaCiN22TVmDoRpURqKreup3wBLgfFD
+Zq49U5i6ZXMrVrNHdL8e
+=+Z3z
+-----END PGP SIGNATURE-----
 
-for you to fetch changes up to e291fd20ef0870ed527470ca9c2402ba6f44d31c:
-
-  pinctrl: sirf: fix kernel panic in gpio_lock_as_irq (2014-03-05
-17:11:47 +0800)
-
-----------------------------------------------------------------
-A set of pin control fixes for the v3.14 series:
-
-- Fix chained interrupts, interrupt masking and register offset
-  calculation for the sunxi driver.
-
-- Make MSM a bool rather than a tristate to stop build problems
-  to happen - chained interrupt controllers cannot currently be
-  defined in modules.
-
-- Fix a clock in the PFC driver.
-
-- Fix a kernel panic in the sirf driver.
-
-----------------------------------------------------------------
-Barry Song (1):
-      pinctrl: sirf: fix kernel panic in gpio_lock_as_irq
-
-Chen-Yu Tsai (1):
-      pinctrl: sunxi: use chained_irq_{enter, exit} for GIC compatibility
-
-Hans de Goede (2):
-      pinctrl: sunxi: Fix masking when setting irq type
-      pinctrl: sunxi: Fix interrupt register offset calculation
-
-Josh Cartwright (1):
-      pinctrl: msm: make PINCTRL_MSM bool instead of tristate
-
-Magnus Damm (1):
-      pinctrl: sh-pfc: r8a7791: SD1_CLK fix
-
- drivers/pinctrl/Kconfig              | 2 +-
- drivers/pinctrl/pinctrl-sunxi.c      | 6 +++++-
- drivers/pinctrl/pinctrl-sunxi.h      | 6 +++---
- drivers/pinctrl/sh-pfc/pfc-r8a7791.c | 6 ++++--
- drivers/pinctrl/sirf/pinctrl-sirf.c  | 4 ++--
- 5 files changed, 15 insertions(+), 9 deletions(-)
+--Signature=_Thu__6_Mar_2014_13_43_32_+1100_yQPDdRXmVATb.IL/--
