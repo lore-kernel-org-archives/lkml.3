@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753AbaCFTt4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 14:49:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35113 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751124AbaCFTtz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 14:49:55 -0500
-Date: Thu, 6 Mar 2014 11:51:42 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: "Maxin B. John" <maxin.john@gmail.com>, devel@driverdev.osuosl.org,
-        andreas.dilger@intel.com, bergwolf@gmail.com,
-        alexey.zhuravlev@intel.com, linux-kernel@vger.kernel.org,
-        dulshani.gunawardhana89@gmail.com, josh@joshtriplett.org,
-        jinshan.xiong@intel.com, "Maxin B. John" <maxin.john@enea.com>
-Subject: Re: [PATCH 1/2] lustre/mdc_lib: fix possible null pointer dereference
-Message-ID: <20140306195142.GA3403@kroah.com>
-References: <1394024676-35160-1-git-send-email-maxin.john@enea.com>
- <20140305185048.GC26722@mwanda>
+	id S1752848AbaCFTvS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 14:51:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48761 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750924AbaCFTvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 14:51:17 -0500
+Date: Thu, 6 Mar 2014 14:51:06 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Bad page map during process exit. (ext4_file_mmap)
+Message-ID: <20140306195106.GA9470@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+	Linus Torvalds <torvalds@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140305185048.GC26722@mwanda>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 05, 2014 at 09:53:06PM +0300, Dan Carpenter wrote:
-> On Wed, Mar 05, 2014 at 02:04:35PM +0100, Maxin B. John wrote:
-> > From: "Maxin B. John" <maxin.john@enea.com>
-> > 
-> > cppcheck reported possible null pointer dereference in mdc_lib.c
-> > 
-> > [lustre/lustre/mdc/mdc_lib.c:233]: (error) Possible null pointer dereference
-> > : op_data - otherwise it is redundant to check if op_data is null at line 226
-> > 
-> 
-> There is only one caller and "op_data" is not NULL.
+Just hit this while building a kernel on 3.14rc5
 
-I agree, John, please fix your tools.  Or check the result and fix the
-code so that there isn't false-positives (by not checking for NULL at
-all here...)
+[60602.562954] BUG: Bad page map in process systemd-udevd  pte:ffff88005d47e270 pmd:148048067
+[60602.563792] addr:00007fcf338e8000 vm_flags:08000070 anon_vma:          (null) mapping:ffff88009f2622f0 index:12c
+[60602.564613] vma->vm_ops->fault: filemap_fault+0x0/0x420
+[60602.565426] vma->vm_file->f_op->mmap: ext4_file_mmap+0x0/0x70
+[60602.566245] CPU: 1 PID: 7946 Comm: systemd-udevd Not tainted 3.14.0-rc5+ #130 
+[60602.567939]  ffff8801a5915200 0000000001ae188a ffff880199503c78 ffffffffa672edd8
+[60602.568783]  00007fcf338e8000 ffff880199503cc0 ffffffffa617cfb4 ffff88005d47e270
+[60602.569626]  000000000000012c ffff880148048740 00007fcf33800000 ffff880199503df0
+[60602.570486] Call Trace:
+[60602.571358]  [<ffffffffa672edd8>] dump_stack+0x4e/0x7a
+[60602.572244]  [<ffffffffa617cfb4>] print_bad_pte+0x184/0x230
+[60602.573116]  [<ffffffffa617ea58>] unmap_single_vma+0x738/0x8a0
+[60602.573974]  [<ffffffffa617fce9>] unmap_vmas+0x49/0x90
+[60602.574815]  [<ffffffffa6189095>] exit_mmap+0xe5/0x1a0
+[60602.575655]  [<ffffffffa6068d13>] mmput+0x73/0x110
+[60602.576495]  [<ffffffffa606d022>] do_exit+0x2a2/0xb50
+[60602.577340]  [<ffffffffa60aa0a1>] ? vtime_account_user+0x91/0xa0
+[60602.578193]  [<ffffffffa615213b>] ? context_tracking_user_exit+0x9b/0x100
+[60602.579067]  [<ffffffffa606e8cc>] do_group_exit+0x4c/0xc0
+[60602.579939]  [<ffffffffa606e954>] SyS_exit_group+0x14/0x20
+[60602.580818]  [<ffffffffa67429ea>] tracesys+0xd4/0xd9
 
-thanks,
+It's possible that the damage had been done by an earlier fuzzing run, and we never
+touched that memory until the kernel install caused us to trip over it.
+Only seen this one once so far.
 
-greg k-h
+	Dave
+
