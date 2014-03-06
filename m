@@ -1,105 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457AbaCFOoP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 09:44:15 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:44656 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752570AbaCFOj2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 09:39:28 -0500
-From: Roger Quadros <rogerq@ti.com>
-To: <kishon@ti.com>, <tony@atomide.com>, <balbi@ti.com>
-CC: <george.cherian@ti.com>, <balajitk@ti.com>, <hdegoede@redhat.com>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-ide@vger.kernel.org>,
-        <rogerq@ti.com>
-Subject: [PATCH v2 02/13] phy: omap-control: Update DT binding information
-Date: Thu, 6 Mar 2014 16:38:38 +0200
-Message-ID: <1394116729-28811-3-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1394116729-28811-1-git-send-email-rogerq@ti.com>
-References: <1394116729-28811-1-git-send-email-rogerq@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753465AbaCFOoj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 09:44:39 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:41273 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750829AbaCFOog (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 09:44:36 -0500
+Message-ID: <1394117074.27473.29.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH] net: use raw_cpu ops in snmp stats bh
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 06 Mar 2014 06:44:34 -0800
+In-Reply-To: <1394110536-4532-1-git-send-email-sergey.senozhatsky@gmail.com>
+References: <1394110536-4532-1-git-send-email-sergey.senozhatsky@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move omap-control binding information to the right location.
+On Thu, 2014-03-06 at 15:55 +0300, Sergey Senozhatsky wrote:
+> Commit a25982c15ae52 ("percpu: add preemption checks to __this_cpu
+> ops") added preemption checks to __this_cpu ops, which are used in
+> SNMP_INC_STATS_BH() and SNMP_ADD_STATS_BH(), resulting in following
+> warnings:
+> 
+> BUG: using __this_cpu_add() in preemptible [00000000] code: ssh/4661
+> caller is __this_cpu_preempt_check+0x2b/0x2d
+> CPU: 3 PID: 4661 Comm: ssh Not tainted 3.14.0-rc5-next-20140306-dbg-dirty #162
+> Hardware name: Acer             Aspire 5741G    /Aspire 5741G    , BIOS V1.20 02/08/2011
+>  0000000000000000 ffff880094939be0 ffffffff813b8305 0000000000000003
+>  ffff880094939c00 ffffffff8121221f ffff88015130a8c0 0000000000000000
+>  ffff880094939c38 ffffffff8121226b 635f736968745f5f 29286464615f7570
+> Call Trace:
+>  [<ffffffff813b8305>] dump_stack+0x4e/0x7a
+>  [<ffffffff8121221f>] check_preemption_disabled+0xce/0xdd
+>  [<ffffffff8121226b>] __this_cpu_preempt_check+0x2b/0x2d
+>  [<ffffffff81370b5a>] ? tcp_rearm_rto+0x9f/0xa1
+>  [<ffffffff81373456>] tcp_event_new_data_sent+0x6d/0x91
+>  [<ffffffff81374dc6>] tcp_write_xmit+0x3f1/0x935
+>  [<ffffffff813754e4>] __tcp_push_pending_frames+0x28/0x82
+>  [<ffffffff81368109>] tcp_push+0xcc/0x102
+>  [<ffffffff8136a0c1>] tcp_sendmsg+0x8c5/0xb7a
+>  [<ffffffff81207d59>] ? string.isra.6+0x3b/0x9f
+>  [<ffffffff8138a10a>] inet_sendmsg+0x75/0xa0
+>  [<ffffffff81320fb6>] sock_aio_write+0xe7/0xfe
+>  [<ffffffff81207d59>] ? string.isra.6+0x3b/0x9f
+>  [<ffffffff810e08ab>] do_sync_write+0x54/0x73
+>  [<ffffffff810e0df7>] vfs_write+0xc6/0x17c
+>  [<ffffffff810e1603>] SyS_write+0x44/0x78
+>  [<ffffffff813be0a1>] tracesys+0xd4/0xd9
+> 
+> use raw_cpu_inc() and raw_cpu_add() instead of __this_cpu_inc()
+> and __this_cpu_add().
+> 
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> ---
+>  include/net/snmp.h | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- Documentation/devicetree/bindings/phy/ti-phy.txt   | 25 ++++++++++++++++++++++
- Documentation/devicetree/bindings/usb/omap-usb.txt | 24 ---------------------
- 2 files changed, 25 insertions(+), 24 deletions(-)
+I think you missed a lot of mails sent by Chrisoph Lameter recently...
 
-diff --git a/Documentation/devicetree/bindings/phy/ti-phy.txt b/Documentation/devicetree/bindings/phy/ti-phy.txt
-index f671163..5c5b1b0 100644
---- a/Documentation/devicetree/bindings/phy/ti-phy.txt
-+++ b/Documentation/devicetree/bindings/phy/ti-phy.txt
-@@ -1,5 +1,30 @@
- TI PHY: DT DOCUMENTATION FOR PHYs in TI PLATFORMs
- 
-+OMAP CONTROL PHY
-+
-+Required properties:
-+ - compatible: Should be one of
-+ "ti,control-phy-otghs" - if it has otghs_control mailbox register as on OMAP4.
-+ "ti,control-phy-usb2" - if it has Power down bit in control_dev_conf register
-+                        e.g. USB2_PHY on OMAP5.
-+ "ti,control-phy-pipe3" - if it has DPLL and individual Rx & Tx power control
-+                        e.g. USB3 PHY and SATA PHY on OMAP5.
-+ "ti,control-phy-dra7usb2" - if it has power down register like USB2 PHY on
-+                        DRA7 platform.
-+ "ti,control-phy-am437usb2" - if it has power down register like USB2 PHY on
-+                        AM437 platform.
-+ - reg : Address and length of the register set for the device. It contains
-+   the address of "otghs_control" for control-phy-otghs or "power" register
-+   for other types.
-+ - reg-names: should be "otghs_control" control-phy-otghs and "power" for
-+   other types.
-+
-+omap_control_usb: omap-control-usb@4a002300 {
-+        compatible = "ti,control-phy-otghs";
-+        reg = <0x4a00233c 0x4>;
-+        reg-names = "otghs_control";
-+};
-+
- OMAP USB2 PHY
- 
- Required properties:
-diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt b/Documentation/devicetree/bindings/usb/omap-usb.txt
-index c495135..38b2fae 100644
---- a/Documentation/devicetree/bindings/usb/omap-usb.txt
-+++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
-@@ -76,27 +76,3 @@ omap_dwc3 {
- 	ranges;
- };
- 
--OMAP CONTROL USB
--
--Required properties:
-- - compatible: Should be one of
-- "ti,control-phy-otghs" - if it has otghs_control mailbox register as on OMAP4.
-- "ti,control-phy-usb2" - if it has Power down bit in control_dev_conf register
--			e.g. USB2_PHY on OMAP5.
-- "ti,control-phy-pipe3" - if it has DPLL and individual Rx & Tx power control
--			e.g. USB3 PHY and SATA PHY on OMAP5.
-- "ti,control-phy-dra7usb2" - if it has power down register like USB2 PHY on
--			DRA7 platform.
-- "ti,control-phy-am437usb2" - if it has power down register like USB2 PHY on
--			AM437 platform.
-- - reg : Address and length of the register set for the device. It contains
--   the address of "otghs_control" for control-phy-otghs or "power" register
--   for other types.
-- - reg-names: should be "otghs_control" control-phy-otghs and "power" for
--   other types.
--
--omap_control_usb: omap-control-usb@4a002300 {
--	compatible = "ti,control-phy-otghs";
--	reg = <0x4a00233c 0x4>;
--	reg-names = "otghs_control";
--};
--- 
-1.8.3.2
+
 
