@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752425AbaCFOkK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 09:40:10 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:58880 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752349AbaCFOkB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 09:40:01 -0500
+	id S1753349AbaCFOkW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 09:40:22 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:55664 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752349AbaCFOkS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 09:40:18 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <kishon@ti.com>, <tony@atomide.com>, <balbi@ti.com>
 CC: <george.cherian@ti.com>, <balajitk@ti.com>, <hdegoede@redhat.com>,
         <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, <linux-ide@vger.kernel.org>,
-        <rogerq@ti.com>, Benoit Cousson <bcousson@baylibre.com>,
-        Paul Walmsley <paul@pwsan.com>, Nikhil Devshatwar <nikhil.nd@ti.com>
-Subject: [PATCH v2 12/13] ARM: DRA7: hwmod: Add ocp2scp3 and sata hwmods
-Date: Thu, 6 Mar 2014 16:38:48 +0200
-Message-ID: <1394116729-28811-13-git-send-email-rogerq@ti.com>
+        <rogerq@ti.com>, Benoit Cousson <bcousson@baylibre.com>
+Subject: [PATCH v2 13/13] ARM: dts: dra7: add OCP2SCP3 and SATA nodes
+Date: Thu, 6 Mar 2014 16:38:49 +0200
+Message-ID: <1394116729-28811-14-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1394116729-28811-1-git-send-email-rogerq@ti.com>
 References: <1394116729-28811-1-git-send-email-rogerq@ti.com>
@@ -27,91 +25,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nikhil Devshatwar <nikhil.nd@ti.com>
+From: Balaji T K <balajitk@ti.com>
 
-Add hwmods for ocp2scp3 and sata modules.
+Add nodes for OCP2SCP3 bus, SATA controller and SATA PHY.
 
 [Roger Q] Clean up.
 
 CC: Benoit Cousson <bcousson@baylibre.com>
-CC: Paul Walmsley <paul@pwsan.com>
 Signed-off-by: Balaji T K <balajitk@ti.com>
-Signed-off-by: Nikhil Devshatwar <nikhil.nd@ti.com>
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- arch/arm/mach-omap2/omap_hwmod_7xx_data.c | 31 ++++++++++++++++++++++++++-----
- 1 file changed, 26 insertions(+), 5 deletions(-)
+ arch/arm/boot/dts/dra7.dtsi | 39 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
-index 18f333c..3c9a430 100644
---- a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
-@@ -1215,6 +1215,30 @@ static struct omap_hwmod dra7xx_ocp2scp1_hwmod = {
- 	},
+diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+index 9e3caf3..597979b 100644
+--- a/arch/arm/boot/dts/dra7.dtsi
++++ b/arch/arm/boot/dts/dra7.dtsi
+@@ -772,6 +772,45 @@
+ 			dma-names = "tx0", "rx0";
+ 			status = "disabled";
+ 		};
++
++		omap_control_sata: control-phy@4a002374 {
++			compatible = "ti,control-phy-pipe3";
++			reg = <0x4a002374 0x4>;
++			reg-names = "power";
++			clocks = <&sys_clkin1>;
++			clock-names = "sysclk";
++		};
++
++		/* OCP2SCP3 */
++		ocp2scp@4a090000 {
++			compatible = "ti,omap-ocp2scp";
++			#address-cells = <1>;
++			#size-cells = <1>;
++			ranges;
++			reg = <0x4a090000 0x20>;
++			ti,hwmods = "ocp2scp3";
++			sata_phy: phy@4A096000 {
++				compatible = "ti,phy-pipe3-sata";
++				reg = <0x4A096000 0x80>, /* phy_rx */
++				      <0x4A096400 0x64>, /* phy_tx */
++				      <0x4A096800 0x40>; /* pll_ctrl */
++				reg-names = "phy_rx", "phy_tx", "pll_ctrl";
++				ctrl-module = <&omap_control_sata>;
++				clocks = <&sys_clkin1>;
++				clock-names = "sysclk";
++				#phy-cells = <0>;
++			};
++		};
++
++		sata: sata@4a141100 {
++			compatible = "snps,dwc-ahci";
++			reg = <0x4a140000 0x1100>, <0x4a141100 0x7>;
++			interrupts = <GIC_SPI 54 IRQ_TYPE_LEVEL_HIGH>;
++			phys = <&sata_phy>;
++			phy-names = "sata-phy";
++			clocks = <&sata_ref_clk>;
++			ti,hwmods = "sata";
++		};
+ 	};
  };
  
-+/* ocp2scp3 */
-+static struct omap_hwmod dra7xx_ocp2scp3_hwmod;
-+
-+/* l4_cfg -> ocp2scp3 */
-+static struct omap_hwmod_ocp_if dra7xx_l4_cfg__ocp2scp3 = {
-+	.master		= &dra7xx_l4_cfg_hwmod,
-+	.slave		= &dra7xx_ocp2scp3_hwmod,
-+	.clk		= "l4_root_clk_div",
-+	.user		= OCP_USER_MPU | OCP_USER_SDMA,
-+};
-+
-+static struct omap_hwmod dra7xx_ocp2scp3_hwmod = {
-+	.name		= "ocp2scp3",
-+	.class		= &dra7xx_ocp2scp_hwmod_class,
-+	.clkdm_name	= "l3init_clkdm",
-+	.prcm = {
-+		.omap4 = {
-+			.clkctrl_offs = DRA7XX_CM_L3INIT_OCP2SCP3_CLKCTRL_OFFSET,
-+			.context_offs = DRA7XX_RM_L3INIT_OCP2SCP3_CONTEXT_OFFSET,
-+			.modulemode   = MODULEMODE_HWCTRL,
-+		},
-+	},
-+};
-+
- /*
-  * 'qspi' class
-  *
-@@ -1268,9 +1292,6 @@ static struct omap_hwmod_class dra7xx_sata_hwmod_class = {
- };
- 
- /* sata */
--static struct omap_hwmod_opt_clk sata_opt_clks[] = {
--	{ .role = "ref_clk", .clk = "sata_ref_clk" },
--};
- 
- static struct omap_hwmod dra7xx_sata_hwmod = {
- 	.name		= "sata",
-@@ -1278,6 +1299,7 @@ static struct omap_hwmod dra7xx_sata_hwmod = {
- 	.clkdm_name	= "l3init_clkdm",
- 	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
- 	.main_clk	= "func_48m_fclk",
-+	.mpu_rt_idx	= 1,
- 	.prcm = {
- 		.omap4 = {
- 			.clkctrl_offs = DRA7XX_CM_L3INIT_SATA_CLKCTRL_OFFSET,
-@@ -1285,8 +1307,6 @@ static struct omap_hwmod dra7xx_sata_hwmod = {
- 			.modulemode   = MODULEMODE_SWCTRL,
- 		},
- 	},
--	.opt_clks	= sata_opt_clks,
--	.opt_clks_cnt	= ARRAY_SIZE(sata_opt_clks),
- };
- 
- /*
-@@ -2683,6 +2703,7 @@ static struct omap_hwmod_ocp_if *dra7xx_hwmod_ocp_ifs[] __initdata = {
- 	&dra7xx_l4_per1__mmc4,
- 	&dra7xx_l4_cfg__mpu,
- 	&dra7xx_l4_cfg__ocp2scp1,
-+	&dra7xx_l4_cfg__ocp2scp3,
- 	&dra7xx_l3_main_1__qspi,
- 	&dra7xx_l4_cfg__sata,
- 	&dra7xx_l4_cfg__smartreflex_core,
 -- 
 1.8.3.2
 
