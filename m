@@ -1,50 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751674AbaCFG6B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 01:58:01 -0500
-Received: from [172.245.23.124] ([172.245.23.124]:44940 "EHLO
-	w1-ca.frizzlehost.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908AbaCFG6A (ORCPT
+	id S1751755AbaCFHAz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 02:00:55 -0500
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:50202 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750790AbaCFHAy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 01:58:00 -0500
-From: Fred Akers <knivey@botops.net>
-To: greg@kroah.com, abbotti@mev.co.uk, hsweeten@visionengravers.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Fred Akers <knivey@botops.net>
-Subject: [PATCH v2 2/2] Staging: comedi: range: remove unnecessary sanity check
-Date: Thu,  6 Mar 2014 01:57:19 -0500
-Message-Id: <1394089039-12408-2-git-send-email-knivey@botops.net>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <20140306062333.GA19862@kroah.com>
-References: <20140306062333.GA19862@kroah.com>
+	Thu, 6 Mar 2014 02:00:54 -0500
+Date: Thu, 6 Mar 2014 09:00:47 +0200
+From: Muli Ben-Yehuda <muli@cs.technion.ac.il>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: WANG Chao <chaowang@redhat.com>, "Jon D. Mason" <jdmason@kudzu.us>,
+        Thomas Gleixner <tglx@linutronix.de>, Vivek Goyal <vgoyal@redhat.com>,
+        Yinghai Lu <yinghai@kernel.org>, Baoquan He <bhe@redhat.com>,
+        kexec@lists.infradead.org, discuss@x86-64.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: How could we get rid of saved_max_pfn for calgary iommu?
+Message-ID: <20140306070047.GF16859@needle.mulix.org>
+References: <20140219061824.GA29703@dhcp-17-89.nay.redhat.com>
+ <20140305053617.GE26240@dhcp-17-89.nay.redhat.com>
+ <20140306064756.GB16859@needle.mulix.org>
+ <53181AC1.2020807@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53181AC1.2020807@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This check is unnecessary because range_table will always be
-initialized to range_unknown by comedi_device_postconfig() for
-drivers that do not initialize range_table or range_table_list
+On Wed, Mar 05, 2014 at 10:50:41PM -0800, H. Peter Anvin wrote:
 
-Signed-off-by: Fred Akers <knivey@botops.net>
----
- drivers/staging/comedi/range.c | 4 ----
- 1 file changed, 4 deletions(-)
+> OK, second question... is it time to axe Calgary?
 
-diff --git a/drivers/staging/comedi/range.c b/drivers/staging/comedi/range.c
-index c4bb13b..b684954 100644
---- a/drivers/staging/comedi/range.c
-+++ b/drivers/staging/comedi/range.c
-@@ -143,10 +143,6 @@ int comedi_check_chanlist(struct comedi_subdevice *s, int n,
- 	unsigned int chanspec;
- 	int chan, range_len, i;
- 
--	if (!s->range_table && !s->range_table_list) {
--		dev_err(dev->class_dev, "(bug) no range type list!\n");
--		return -EINVAL;
--	}
- 	for (i = 0; i < n; i++) {
- 		chanspec = chanlist[i];
- 		chan = CR_CHAN(chanspec);
--- 
-1.8.5.3
+I don't know of anyone still using it, but it's not
+impossible. Calgary and CalIOC2 machines would now be ~5-8 years old.
 
+Cheers,
+Muli
