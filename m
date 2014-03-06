@@ -1,58 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752408AbaCFLdX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 06:33:23 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38828 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750805AbaCFLdW (ORCPT
+	id S1752078AbaCFLe6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 06:34:58 -0500
+Received: from villa.puc.rediris.es ([130.206.18.7]:58594 "EHLO
+	villa.puc.rediris.es" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751210AbaCFLe5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 06:33:22 -0500
-Date: Thu, 6 Mar 2014 11:33:15 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Jean Pihet <jean.pihet@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnaldo <acme@ghostprotocols.net>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>,
-        "steve.capper@linaro.org" <steve.capper@linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 1/3] perf tests: Introduce perf_regs_load function on ARM
-Message-ID: <20140306113314.GD5202@mudshark.cambridge.arm.com>
-References: <1393840403-26639-1-git-send-email-jean.pihet@linaro.org>
- <1393840403-26639-2-git-send-email-jean.pihet@linaro.org>
- <20140304110042.GD8766@mudshark.cambridge.arm.com>
- <CAFrcx1=3+zZPErXC7dehwpKHnmwE=cWh1mR0kzN0PONpFZKaUw@mail.gmail.com>
+	Thu, 6 Mar 2014 06:34:57 -0500
+X-Envelope-From: paubert@iram.es
+Date: Thu, 6 Mar 2014 12:33:32 +0100
+From: Gabriel Paubert <paubert@iram.es>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: "'Sukadev Bhattiprolu'" <sukadev@linux.vnet.ibm.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Michael Ellerman <michaele@au1.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
+        Paul Mackerras <paulus@samba.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 3/3] perf: Use 64-bit value when comparing sample_regs
+Message-ID: <20140306113332.GA7827@visitor2.iram.es>
+References: <1394080919-17957-1-git-send-email-sukadev@linux.vnet.ibm.com>
+ <1394080919-17957-4-git-send-email-sukadev@linux.vnet.ibm.com>
+ <063D6719AE5E284EB5DD2968C1650D6D0F6D3983@AcuExch.aculab.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAFrcx1=3+zZPErXC7dehwpKHnmwE=cWh1mR0kzN0PONpFZKaUw@mail.gmail.com>
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D0F6D3983@AcuExch.aculab.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spamina-Bogosity: Ham
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 05, 2014 at 02:17:00AM +0000, Jean Pihet wrote:
-> On 4 March 2014 12:00, Will Deacon <will.deacon@arm.com> wrote:
-> > On Mon, Mar 03, 2014 at 09:53:21AM +0000, Jean Pihet wrote:
-> >> +     str lr, [r0, #PC]       @ Save caller PC
-> >
-> > This isn't necessarily the `caller PC' (depending on how you define it).
-> > It's the return address, which is probably (but not always) the instruction
-> > following the branch to this function.
-> Agreed. However the perf test code expects a registers buffer filled
-> in with the caller's values.
-> I can change the comment here, is that needed?
+On Thu, Mar 06, 2014 at 09:44:47AM +0000, David Laight wrote:
+> From: Sukadev Bhattiprolu
+> > When checking whether a bit representing a register is set in
+> > sample_regs, a 64-bit mask, use 64-bit value (1LL).
+> > 
+> > Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+> > ---
+> >  tools/perf/util/unwind.c |    4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/tools/perf/util/unwind.c b/tools/perf/util/unwind.c
+> > index 742f23b..2b888c6 100644
+> > --- a/tools/perf/util/unwind.c
+> > +++ b/tools/perf/util/unwind.c
+> > @@ -396,11 +396,11 @@ static int reg_value(unw_word_t *valp, struct regs_dump *regs, int id,
+> >  {
+> >  	int i, idx = 0;
+> > 
+> > -	if (!(sample_regs & (1 << id)))
+> > +	if (!(sample_regs & (1LL << id)))
+> >  		return -EINVAL;
+> > 
+> >  	for (i = 0; i < id; i++) {
+> > -		if (sample_regs & (1 << i))
+> > +		if (sample_regs & (1LL << i))
+> >  			idx++;
+> >  	}
+> 
+> There are much faster ways to count the number of set bits, especially
+> if you might need to check a significant number of bits.
+> There might even be a function defined somewhere to do it.
 
-It depends what the perf test code really expects. At the moment, you're not
-providing it with anything consistent which doesn't sound correct.
+Indeed, look for Hamming weight (hweight family of functions)
+in asm/hweight.h and what is included from there.
 
-What does it use the caller PC for?
+Besides that, many modern processors also have a machine instruction
+to perform this task. In the processor manuals the instruction is 
+described as population count and the mnemonic starts with "popcnt"
+on x86 and ppc.
 
-Will
+	Gabriel
+
+> Basically you just add up the bits, for 16 bit it would be:
+> 	val = (val & 0x5555) + (val >> 1) & 0x5555;
+> 	val = (val & 0x3333) + (val >> 2) & 0x3333;
+> 	val = (val & 0x0f0f) + (val >> 4) & 0x0f0f;
+> 	val = (val & 0x00ff) + (val >> 8) & 0x00ff;
+> As the size of the work increases the improvement is more significant.
+> (Some of the later masking can probably be proven unnecessary.)
+> 
+> 	David
+> 
+> _______________________________________________
+> Linuxppc-dev mailing list
+> Linuxppc-dev@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/linuxppc-dev
