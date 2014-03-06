@@ -1,178 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751992AbaCFJCc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 04:02:32 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:13196 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828AbaCFJC0 (ORCPT
+	id S1751147AbaCFJFa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 04:05:30 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:56029 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714AbaCFJFS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 04:02:26 -0500
-X-AuditID: cbfee691-b7efc6d0000039d3-2e-5318399f84dc
-From: Anton Tikhomirov <av.tikhomirov@samsung.com>
-To: "'Kishon Vijay Abraham I'" <kishon@ti.com>,
-        "'Kamil Debski'" <k.debski@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-usb@vger.kernel.org,
-        devicetree@vger.kernel.org
-Cc: kyungmin.park@samsung.com, t.figa@samsung.com, s.nawrocki@samsung.com,
-        m.szyprowski@samsung.com, gautam.vivek@samsung.com,
-        mat.krawczuk@gmail.com, yulgon.kim@samsung.com, p.paneri@samsung.com,
-        jg1.han@samsung.com, galak@codeaurora.org, matt.porter@linaro.org,
-        tjakobi@math.uni-bielefeld.de, stern@rowland.harvard.edu,
-        sander@humilis.net
-References: <1394033288-5551-1-git-send-email-k.debski@samsung.com>
- <1394033288-5551-4-git-send-email-k.debski@samsung.com>
- <005c01cf3915$c53476c0$4f9d6440$%tikhomirov@samsung.com>
- <53183220.3040606@ti.com>
- <006201cf3919$5f760750$1e6215f0$%tikhomirov@samsung.com>
- <5318384B.7020009@ti.com>
-In-reply-to: <5318384B.7020009@ti.com>
-Subject: RE: [PATCH v9 3/4] phy: Add new Exynos USB 2.0 PHY driver
-Date: Thu, 06 Mar 2014 18:02:22 +0900
-Message-id: <006301cf391a$c99c7280$5cd55780$%tikhomirov@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=Windows-1252
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac85GgmZfoxLgW4rTLqFe8gqPp77bwAACVdg
-Content-language: en-us
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBKsWRmVeSWpSXmKPExsVy+t8zY935lhLBBk0XVCzmHznHatH/ZiGr
-	RduVg+wWlxdeYrX48foCm8WFpz1sFmeb3gDFds1hs5hxfh+TxaJlrcwWa4/cZbc423+bzWJi
-	0zR2i/NbOpksDr9pZ7VYcW83u8WE30C962e8ZrFoW/2B1aLj7EF2BxGPy329TB47Z91l9/j0
-	djGzx51re9g8/h1j95h99wejR9+WVYwex29sZ/L4vEkugDOKyyYlNSezLLVI3y6BK2PhrUVs
-	BU8kK2ZP+87cwLhPpIuRk0NCwERiw8I1jBC2mMSFe+vZuhi5OIQEljFKLNr5nR2maM2NPWBF
-	QgLTGSVOftCGKPrHKPHx9ApWkASbgJHEy4MbmUESIgIXGSWmTt/LCOIwC9xhkvgyfx8TRMtq
-	Jom3y6YzgbRwCqhJHNxwlgXEFhZwkrjwvBEsziKgKnFz2iWwfbwCLhKveldD2YISPybfA6tn
-	FtCT+PjnNiOELS+xec1boNUcQLeqSzz6qwsSFgG66PjeOcwQJeISkx48ZAe5QULgDYfEzD6I
-	+SwCAhLfJh9igeiVldh0gBniZUmJgytusExglJiFZPMsJJtnIdk8C8mKBYwsqxhFUwuSC4qT
-	0otM9YoTc4tL89L1kvNzNzFCUs3EHYz3D1gfYkwGWj+RWUo0OR+YqvJK4g2NzYwsTE1MjY3M
-	Lc1IE1YS501/lBQkJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgTF4XtmBbw7BaR1nb66X8bP9
-	pZMSy2xTMy3f7OTCBpOav8vPv9wZEMkjHMnudf5xa8S2Nbs2OPF1HmUzkf6id9f1VgG/cnm4
-	2oRpHvcFIg13u62d/1VgjebVkggPiaRb13QZ6tgfrtwRGZd+cY2tSsA1tg2yV7lenW9V70vc
-	66Nvc0fo3aYn9UosxRmJhlrMRcWJADAl1tNLAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKJsWRmVeSWpSXmKPExsVy+t9jQd35lhLBBksPyVnMP3KO1aL/zUJW
-	i7YrB9ktLi+8xGrx4/UFNosLT3vYLM42vQGK7ZrDZjHj/D4mi0XLWpkt1h65y25xtv82m8XE
-	pmnsFue3dDJZHH7Tzmqx4t5udosJv4F61894zWLRtvoDq0XH2YPsDiIel/t6mTx2zrrL7vHp
-	7WJmjzvX9rB5/DvG7jH77g9Gj74tqxg9jt/YzuTxeZNcAGdUA6NNRmpiSmqRQmpecn5KZl66
-	rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBvSgpliTmlQKGAxOJiJX07TBNCQ9x0
-	LWAaI3R9Q4LgeowM0EDCOsaMhbcWsRU8kayYPe07cwPjPpEuRk4OCQETiTU39jBC2GISF+6t
-	ZwOxhQSmM0qc/KDdxcgFZP9jlPh4egUrSIJNwEji5cGNzCAJEYGLjBJTp+9lBHGYBe4wSXyZ
-	v48JomU1k8TbZdOZQFo4BdQkDm44ywJiCws4SVx43ggWZxFQlbg57RLYbl4BF4lXvauhbEGJ
-	H5PvgdUzC+hJfPxzmxHClpfYvOYt0GoOoFvVJR791QUJiwBddHzvHGaIEnGJSQ8esk9gFJqF
-	ZNIsJJNmIZk0C0nLAkaWVYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjBieyZ9A7GVQ0WhxgF
-	OBiVeHg3+IkHC7EmlhVX5h5ilOBgVhLh3WIoESzEm5JYWZValB9fVJqTWnyIMRno0YnMUqLJ
-	+cAkm1cSb2hsYmZkaWRmYWRibk6asJI478FW60AhgfTEktTs1NSC1CKYLUwcnFINjC1dKt0q
-	3RPi6wVLglVOv9yXuv5I/4X8iL6MTStWnJ//hvVj7cbzU19OjM6qujhzikXzJfkylYuT/OWC
-	Nf+90twQ9Psyz5N9jeru1vMMy75+ydnMFm/jH/hzSsOBRaw6hZ0bjY1ft70uuPtzz5XNR4yb
-	j9R9e6i08vJyM9kTOofOCXwrt7Uyy1BiKc5INNRiLipOBACguJMCqAMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 6 Mar 2014 04:05:18 -0500
+MIME-Version: 1.0
+In-Reply-To: <5317B092.7070805@arm.com>
+References: <1394003906-11630-1-git-send-email-vincent.guittot@linaro.org> <5317B092.7070805@arm.com>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Thu, 6 Mar 2014 17:04:57 +0800
+Message-ID: <CAKfTPtDGbT717Y5F1GoBgr4pnvApG5Gphu2Me_bAFrM0+qsfAg@mail.gmail.com>
+Subject: Re: [RFC 0/6] rework sched_domain topology description
+To: Dietmar Eggemann <dietmar.eggemann@arm.com>
+Cc: "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 6 March 2014 07:17, Dietmar Eggemann <dietmar.eggemann@arm.com> wrote:
+> On 05/03/14 07:18, Vincent Guittot wrote:
+>>
+>> This patchset was previously part of the larger tasks packing patchset
+>> [1].
+>> I have splitted the latter in 3 different patchsets (at least) to make the
+>> thing easier.
+>> -configuration of sched_domain topology (this patchset)
+>> -update and consolidation of cpu_power
+>> -tasks packing algorithm
+>>
+>> Based on Peter Z's proposal [2][3], this patchset modifies the way to
+>> configure
+>> the sched_domain level in order to let architectures to add specific level
+>> like
+>> the current BOOK level or the proposed power gating level for ARM
+>> architecture.
+>>
+>> [1] https://lkml.org/lkml/2013/10/18/121
+>> [2] https://lkml.org/lkml/2013/11/5/239
+>> [3] https://lkml.org/lkml/2013/11/5/449
+>>
+>> Vincent Guittot (6):
+>>    sched: remove unused SCHED_INIT_NODE
+>>    sched: rework of sched_domain topology definition
+>>    sched: s390: create a dedicated topology table
+>>    sched: powerpc: create a dedicated topology table
+>>    sched: add a new SD_SHARE_POWERDOMAIN for sched_domain
+>>    sched: ARM: create a dedicated scheduler topology table
+>>
+>>   arch/arm/kernel/topology.c        |   26 ++++
+>>   arch/ia64/include/asm/topology.h  |   24 ----
+>>   arch/metag/include/asm/topology.h |   27 -----
+>>   arch/powerpc/kernel/smp.c         |   35 ++++--
+>>   arch/s390/include/asm/topology.h  |   13 +-
+>>   arch/s390/kernel/topology.c       |   25 ++++
+>>   arch/tile/include/asm/topology.h  |   33 ------
+>>   include/linux/sched.h             |   30 +++++
+>>   include/linux/topology.h          |  128 ++------------------
+>>   kernel/sched/core.c               |  235
+>> ++++++++++++++++++-------------------
+>>   10 files changed, 237 insertions(+), 339 deletions(-)
+>>
+>
+> Hi Vincent,
+>
+> I reviewed your patch-set carefully (including test runs on TC2), especially
+> due to the fact that we want to build our sd_energy stuff on top of it.
 
-> Subject: Re: [PATCH v9 3/4] phy: Add new Exynos USB 2.0 PHY driver
-> 
-> Hi,
-> 
-> On Thursday 06 March 2014 02:22 PM, Anton Tikhomirov wrote:
-> > Hello,
-> >
-> >> Subject: Re: [PATCH v9 3/4] phy: Add new Exynos USB 2.0 PHY driver
-> >>
-> >>
-> >>
-> >> On Thursday 06 March 2014 01:56 PM, Anton Tikhomirov wrote:
-> >>> Hi Kamil,
-> >>>
-> >>> ...
-> >>>
-> >>>> +| 3. Supporting SoCs
-> >>>> ++--------------------
-> >>>> +
-> >>>> +To support a new SoC a new file should be added to the
-> drivers/phy
-> >>>> +directory. Each SoC's configuration is stored in an instance of
-> the
-> >>>> +struct samsung_usb2_phy_config.
-> >>>> +
-> >>>> +struct samsung_usb2_phy_config {
-> >>>> +	const struct samsung_usb2_common_phy *phys;
-> >>>> +	unsigned int num_phys;
-> >>>> +	bool has_mode_switch;
-> >>>
-> >>> You missed rate_to_clk here.
-> >>>
-> >>>> +};
-> >>>> +
-> >>>
-> >>> ...
-> >>>
-> >>>> diff --git a/drivers/phy/phy-samsung-usb2.c b/drivers/phy/phy-
-> >> samsung-
-> >>>> usb2.c
-> >>>> new file mode 100644
-> >>>> index 0000000..c3b7719
-> >>>> --- /dev/null
-> >>>> +++ b/drivers/phy/phy-samsung-usb2.c
-> >>>> @@ -0,0 +1,222 @@
-> >>>> +/*
-> >>>> + * Samsung SoC USB 1.1/2.0 PHY driver
-> >>>> + *
-> >>>> + * Copyright (C) 2013 Samsung Electronics Co., Ltd.
-> >>>> + * Author: Kamil Debski <k.debski@samsung.com>
-> >>>> + *
-> >>>> + * This program is free software; you can redistribute it and/or
-> >>>> modify
-> >>>> + * it under the terms of the GNU General Public License version 2
-> >> as
-> >>>> + * published by the Free Software Foundation.
-> >>>> + */
-> >>>> +
-> >>>> +#include <linux/clk.h>
-> >>>> +#include <linux/mfd/syscon.h>
-> >>>> +#include <linux/module.h>
-> >>>> +#include <linux/of.h>
-> >>>> +#include <linux/of_address.h>
-> >>>> +#include <linux/phy/phy.h>
-> >>>> +#include <linux/platform_device.h>
-> >>>> +#include <linux/spinlock.h>
-> >>>> +#include "phy-samsung-usb2.h"
-> >>>> +
-> >>>> +static int samsung_usb2_phy_power_on(struct phy *phy)
-> >>>> +{
-> >>>> +	struct samsung_usb2_phy_instance *inst =
-> phy_get_drvdata(phy);
-> >>>> +	struct samsung_usb2_phy_driver *drv = inst->drv;
-> >>>> +	int ret;
-> >>>> +
-> >>>> +	dev_dbg(drv->dev, "Request to power_on \"%s\" usb phy\n",
-> >>>> +		inst->cfg->label);
-> >>>> +	ret = clk_prepare_enable(drv->clk);
-> >>>
-> >>> clk_prepare_enable() can sleep, and therefore doesn't allow
-> >>> samusng_usb2_phy_power_on() to be used in atomic context
-> >>> (e.g. inside spin_lock-ed area), what sometimes may be desirable.
-> >>> What about to prepare clock in probe, and just enable it here
-> >>> (note: clk_enable() doesn't sleep).
-> >>
-> >> The PHY power-on callback is anyway called with mutex held, so I
-> guess
-> >> it's fine to have clk_prepare_enable() here.
-> >
-> > If we rely totally on generic PHY functions such as phy_power_on()
-> > and friends, why do we need to use locking in callbacks at all.
-> 
-> Didn't get you.. We don't want to invoke power_on when init is getting
-> executed or you don't want power on or power off to get executed
-> simultaneously right? So we need to protect it.
+Thanks
 
-I mean callbacks such as samsung_usb2_phy_power_on() which uses spin_lock.
-It's already protected by mutex in phy_power_on().
+>
+>
+> One thing I'm still not convinced of is the fact that specifying additional
+> sd levels in the struct sched_domain_topology_level table has an advantage
+> over a function pointer for sd topology flags similar to the one we're
+> already using for the cpu mask in struct sched_domain_topology_level.
+>
+>   int (*sched_domain_flags_f)(int cpu);
+>
 
-> 
-> Cheers
-> Kishon
+We have to create additional level for some kind of topology as
+described in my trial https://lkml.org/lkml/2013/12/18/279 which is
+not possible with function pointer.
 
+Have you got a situation in mind where it will be necessary to use the
+function pointer with cpu number as an argument ?
+
+In the current example of this patchset, the flags are statically set
+in the table but nothing prevents an architecture to update the flags
+value before being given to the scheduler
+
+> This function pointer would be simply another member of struct
+> sched_domain_topology_level and would replace int sd_flags.  AFAICS, you
+> have to create additional cpu mask functions anyway for the additional sd
+> levels, like cpu_corepower_mask() for the  GMC level in the ARM case.  There
+> could be a set of standard sd topology flags function for the default sd
+> layer and archs which want to pass in something special define those
+> function locally since they will use them only in their arch specific struct
+> sched_domain_topology_level table anyway.  I know that you use the existing
+> sd degenerate functionality for this and that the freeing of the redundant
+> data structures (sched_domain, sched_group and sched_group_power) is there
+> too but it still doesn't seem to me to be the right thing to do.
+>
+> The problem that we now expose internal data structures (struct sd_data and
+> struct sched_domain_topology_level) could be dealt with later.
+>
+> -- Dietmar
+>
