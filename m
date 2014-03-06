@@ -1,74 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323AbaCFRwv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 12:52:51 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48380 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752833AbaCFRwt (ORCPT
+	id S1753060AbaCFRyS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 12:54:18 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:59515 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751655AbaCFRyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 12:52:49 -0500
-Date: Thu, 6 Mar 2014 09:51:56 -0800
-From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
-Message-ID: <tip-7ed5ee279499a02bf35c77f0a91d657c24f6474e@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, luto@amacapital.net, hpa@zytor.com,
-        mingo@kernel.org, stefani@seibold.net, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, luto@amacapital.net,
-        linux-kernel@vger.kernel.org, stefani@seibold.net, tglx@linutronix.de,
-        hpa@linux.intel.com
-In-Reply-To: <1393881143-3569-13-git-send-email-stefani@seibold.net>
-References: <1393881143-3569-13-git-send-email-stefani@seibold.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/vdso] x86, vdso32: Disable stack protector,
-  adjust optimizations
-Git-Commit-ID: 7ed5ee279499a02bf35c77f0a91d657c24f6474e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Thu, 6 Mar 2014 12:54:14 -0500
+Date: Thu, 06 Mar 2014 12:54:12 -0500 (EST)
+Message-Id: <20140306.125412.1583267049751920093.davem@davemloft.net>
+To: markos.chandras@imgtec.com
+Cc: linux-kernel@vger.kernel.org, dborkman@redhat.com
+Subject: Re: [PATCH] tools/net/Makefile: Define PACKAGE to fix bfd build
+ problems
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1394097354-5290-1-git-send-email-markos.chandras@imgtec.com>
+References: <1394097354-5290-1-git-send-email-markos.chandras@imgtec.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 06 Mar 2014 09:54:14 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7ed5ee279499a02bf35c77f0a91d657c24f6474e
-Gitweb:     http://git.kernel.org/tip/7ed5ee279499a02bf35c77f0a91d657c24f6474e
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Thu, 6 Mar 2014 09:47:20 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 6 Mar 2014 09:47:20 -0800
+From: Markos Chandras <markos.chandras@imgtec.com>
+Date: Thu, 6 Mar 2014 09:15:54 +0000
 
-x86, vdso32: Disable stack protector, adjust optimizations
+> Fixes the following build problem with binutils-2.24
+> 
+> gcc -Wall -O2   -c -o bpf_jit_disasm.o bpf_jit_disasm.c
+> In file included from bpf_jit_disasm.c:25:0:
+> /usr/include/bfd.h:35:2: error: #error config.h must be included
+> before this header
+>  #error config.h must be included before this header
+> 
+> This is similar to commit 3ce711a6abc27abce1554e1d671a8762b7187690
+> "perf tools: bfd.h/libbfd detection fails with recent binutils"
+> 
+> See: https://sourceware.org/bugzilla/show_bug.cgi?id=14243
+> 
+> CC: David S. Miller <davem@davemloft.net>
+> CC: Daniel Borkmann <dborkman@redhat.com>
+> Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
 
-For the 32-bit VDSO, match the 64-bit VDSO in:
-
-1. Disable the stack protector.
-2. Use -fno-omit-frame-pointer for user space debugging sanity.
-3. Use -foptimize-sibling-calls like the 64-bit VDSO does.
-
-Reported-by: Ingo Molnar <mingo@kernel.org>
-Cc: Stefani Seibold <stefani@seibold.net>
-Cc: Andy Lutomirski <luto@amacapital.net>
-Link: http://lkml.kernel.org/r/1393881143-3569-13-git-send-email-stefani@seibold.net
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/vdso/Makefile | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
-index 6cef7a1..55e76eb 100644
---- a/arch/x86/vdso/Makefile
-+++ b/arch/x86/vdso/Makefile
-@@ -151,6 +151,9 @@ KBUILD_CFLAGS_32 := $(filter-out -mcmodel=kernel,$(KBUILD_CFLAGS_32))
- KBUILD_CFLAGS_32 := $(filter-out -fno-pic,$(KBUILD_CFLAGS_32))
- KBUILD_CFLAGS_32 := $(filter-out -mfentry,$(KBUILD_CFLAGS_32))
- KBUILD_CFLAGS_32 += -m32 -msoft-float -mregparm=0 -fpic
-+KBUILD_CFLAGS_32 += $(call cc-option, -fno-stack-protector) 
-+KBUILD_CFLAGS_32 += $(call cc-option, -foptimize-sibling-calls)
-+KBUILD_CFLAGS_32 += -fno-omit-frame-pointer
- $(vdso32-images:%=$(obj)/%.dbg): KBUILD_CFLAGS = $(KBUILD_CFLAGS_32)
- 
- $(vdso32-images:%=$(obj)/%.dbg): $(obj)/vdso32-%.so.dbg: FORCE \
+I think your subject needs to be adjusted, this patch doesn't fix a "bfd"
+build problem.
