@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753730AbaCFVMG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 16:12:06 -0500
-Received: from nm17-vm1.bullet.mail.bf1.yahoo.com ([98.139.213.55]:32976 "EHLO
-	nm17-vm1.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753705AbaCFVMD (ORCPT
+	id S1753772AbaCFVMh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 16:12:37 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:42700 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753750AbaCFVMd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 16:12:03 -0500
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Mar 2014 16:12:03 EST
-X-Yahoo-Newman-Id: 831957.37080.bm@smtp214.mail.bf1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: aIMk.w4VM1nam37bQY6aVLTuW0x9w81OWO0x192mceW6ayV
- gWio7RlqEKOktHdrjbQVvIu9ixSpGrd1WULLJqw2UN3PpGUykjA_Ecllo1nL
- hr3OkaludgjUG4XE4UDDbYd2LPdDdUDPCmpSvmCCo7eb0hOrS0oL93h75Mtt
- 6YGgb4W5YVxVsGU..kbOaGsFp2Ykamc1mQocO8f96Yowk0YKlNoe_UiG.1r6
- mOijg15hWooNXG7SVT5pLzMHTpa6yYhkb8v8NE822izkLMQwb.KA2eNrd4X7
- Hyu5806Z3UV2xEcRw9pA1_cP6txGV5jM3bwAb2vLL_mf9h0hbibwcPzlvGMT
- zqIZuRdsK_vrQS8i5woWt5.2A5Njmocj0wtGlldsUD962JNFo7F08vqdPN26
- G8vm8emG_8VHZAks3ABt5cV8MGiF6AoHqkIS7OgXPEPO8_6VxinN1py.mq_e
- v2SPWbPuPd076UN6PiE3SFgBDI7EkDBlhvQvPO5O_cC7QPADZmLARr5MIaG9
- Gzv0Qnz7SPNPBuyZAA97mKlnMadlxXbMW2z9d3uK56aFPxL8R_CT6C9vUffD
- m7lNxih4NjZZSUgWoT08rWjlBpprcAcEhjezTSJeHF4e5WVR.Jfxa1P4YlxO
- N1K2DZp6i8EGe1cpTQuqAxl.IYCKoxo4yAS62QXBELEdgmNwviciCFhs-
-X-Yahoo-SMTP: u9r3j8eswBBsV5z1r5v0bR9cjPS77vatbJK.6sw-
-X-Rocket-Received: from [163.238.113.35] (draconicpenguin1@163.238.113.35 with plain [98.139.211.125])
-        by smtp214.mail.bf1.yahoo.com with SMTP; 06 Mar 2014 13:05:21 -0800 PST
-Message-ID: <5318E311.8000303@yahoo.com>
-Date: Thu, 06 Mar 2014 16:05:21 -0500
-From: Brian Wong <draconicpenguin1@yahoo.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 6 Mar 2014 16:12:33 -0500
+Message-ID: <5318E4BC.50301@oracle.com>
+Date: Thu, 06 Mar 2014 16:12:28 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: KY Srinivasan <kys@microsoft.com>, linux-kernel@vger.kernel.org
-Subject: Re: Hyper-V Synthetic Video Frame Buffer Driver may distort top two
- lines of console
-References: <5318DD7A.2080706@yahoo.com>
-In-Reply-To: <5318DD7A.2080706@yahoo.com>
+To: Rik van Riel <riel@redhat.com>
+CC: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: mm: kernel BUG at mm/mprotect.c:149
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/6/2014 3:41 PM, Brian Wong wrote:
-> I've identified another possible bug in the Hyper-V drivers: When the
-> Hyper-V Synthetic Video Frame Buffer Driver is built into the kernel,
-> and the VM is paused and continued, the top two lines of the console may
-> become distorted. See the image at http://imgur.com/kIExFP3.
->
-> Can someone look into it?
+Hi Rik,
 
-Just to clarify, I can confirm this bug under both the patched Gentoo 
-3.10.32 kernel and the vanilla 3.13.5 kernel (see the image at 
-http://imgur.com/mYUTzgt). Is the framebuffer somehow getting corrupted?
+While fuzzing with trinity inside a KVM tools guest running latest -next kernel I've hit the
+following spew. This seems to be introduced by your patch "mm,numa: reorganize change_pmd_range()".
 
--- 
-Brian Wong
-http://www.fierydragonlord.com
+[  886.745765] kernel BUG at mm/mprotect.c:149!
+[  886.746831] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[  886.748511] Dumping ftrace buffer:
+[  886.749998]    (ftrace buffer empty)
+[  886.750110] Modules linked in:
+[  886.751396] CPU: 20 PID: 26219 Comm: trinity-c216 Tainted: G        W    3.14.0-rc5-next-20140305-sasha-00011-ge06f5f3-dirty #105
+[  886.751396] task: ffff8800b6c80000 ti: ffff880228436000 task.ti: ffff880228436000
+[  886.751396] RIP: 0010:[<ffffffff812aab33>]  [<ffffffff812aab33>] change_protection_range+0x3b3/0x500
+[  886.751396] RSP: 0000:ffff880228437da8  EFLAGS: 00010282
+[  886.751396] RAX: 8000000527c008e5 RBX: 00007f647916e000 RCX: 0000000000000000
+[  886.751396] RDX: ffff8802ef488e40 RSI: 00007f6479000000 RDI: 8000000527c008e5
+[  886.751396] RBP: ffff880228437e78 R08: 0000000000000000 R09: 0000000000000000
+[  886.751396] R10: 0000000000000001 R11: 0000000000000000 R12: ffff8802ef488e40
+[  886.751396] R13: 00007f6479000000 R14: 00007f647916e000 R15: 00007f646e34e000
+[  886.751396] FS:  00007f64b28d4700(0000) GS:ffff88052ba00000(0000) knlGS:0000000000000000
+[  886.751396] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  886.751396] CR2: 00007f64aed83af8 CR3: 0000000206e52000 CR4: 00000000000006a0
+[  886.751396] Stack:
+[  886.751396]  ffff880200000001 ffffffff8447f152 ffff880228437dd8 ffff880228af3000
+[  886.769142]  00007f646e34e000 00007f647916dfff 0000000000000000 00007f647916e000
+[  886.769142]  ffff880206e527f0 00007f647916dfff 0000000000000000 0000000000000000
+[  886.769142] Call Trace:
+[  886.769142]  [<ffffffff8447f152>] ? preempt_count_sub+0xe2/0x120
+[  886.769142]  [<ffffffff812aaca5>] change_protection+0x25/0x30
+[  886.769142]  [<ffffffff812c3eeb>] change_prot_numa+0x1b/0x30
+[  886.769142]  [<ffffffff8118df49>] task_numa_work+0x279/0x360
+[  886.769142]  [<ffffffff8116c57e>] task_work_run+0xae/0xf0
+[  886.769142]  [<ffffffff8106ffbe>] do_notify_resume+0x8e/0xe0
+[  886.769142]  [<ffffffff8447a93b>] retint_signal+0x4d/0x92
+[  886.769142] Code: 49 8b 3c 24 48 83 3d fc 2e ba 04 00 75 12 0f 0b 0f 1f 84 00 00 00 00 00 eb fe 66 0f 1f 44 00 00 48 89 f8 66 66 66 90 84 c0 79 0d <0f> 0b 0f 1f 00 eb fe 66 0f 1f 44 00 00 8b 4d 9c 44 8b 4d 98 89
+[  886.769142] RIP  [<ffffffff812aab33>] change_protection_range+0x3b3/0x500
+[  886.769142]  RSP <ffff880228437da8>
+
+
+Thanks,
+Sasha
