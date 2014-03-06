@@ -1,45 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618AbaCFOqr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 09:46:47 -0500
-Received: from mail-we0-f171.google.com ([74.125.82.171]:53241 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751124AbaCFOqp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 09:46:45 -0500
+	id S1752863AbaCFOrO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 09:47:14 -0500
+Received: from vps0.lunn.ch ([178.209.37.122]:39663 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752368AbaCFOrL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 09:47:11 -0500
+Date: Thu, 6 Mar 2014 15:46:00 +0100
+From: Andrew Lunn <andrew@lunn.ch>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: mvebu: add Device Tree for the Armada 385 RD board
+Message-ID: <20140306144600.GM4780@lunn.ch>
+References: <1394107868-26094-1-git-send-email-gregory.clement@free-electrons.com>
+ <20140306131429.GJ4780@lunn.ch>
+ <5318779C.8030901@free-electrons.com>
+ <20140306142117.GL4780@lunn.ch>
+ <531886B4.2070002@free-electrons.com>
 MIME-Version: 1.0
-In-Reply-To: <20140306070047.GF16859@needle.mulix.org>
-References: <20140219061824.GA29703@dhcp-17-89.nay.redhat.com>
-	<20140305053617.GE26240@dhcp-17-89.nay.redhat.com>
-	<20140306064756.GB16859@needle.mulix.org>
-	<53181AC1.2020807@zytor.com>
-	<20140306070047.GF16859@needle.mulix.org>
-Date: Thu, 6 Mar 2014 07:46:44 -0700
-Message-ID: <CAPoiz9yhAeoWDANus6=O_5AomKFEAzzR1pR4F0rN2HnDWwYAMg@mail.gmail.com>
-Subject: Re: How could we get rid of saved_max_pfn for calgary iommu?
-From: Jon Mason <jdmason@kudzu.us>
-To: Muli Ben-Yehuda <muli@cs.technion.ac.il>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, WANG Chao <chaowang@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Vivek Goyal <vgoyal@redhat.com>,
-        Yinghai Lu <yinghai@kernel.org>, Baoquan He <bhe@redhat.com>,
-        kexec@lists.infradead.org, discuss@x86-64.org, x86@kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <531886B4.2070002@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 6, 2014 at 12:00 AM, Muli Ben-Yehuda <muli@cs.technion.ac.il> wrote:
-> On Wed, Mar 05, 2014 at 10:50:41PM -0800, H. Peter Anvin wrote:
->
->> OK, second question... is it time to axe Calgary?
->
-> I don't know of anyone still using it, but it's not
-> impossible. Calgary and CalIOC2 machines would now be ~5-8 years old.
+> >>> I think you can use aliases to get the order correct, independent of
+> >>> how you list them in DT. That should be a lot safer than assuming
+> >>> things are instantiated from top to bottom.
+> >>
+> >> It sounds interesting, how would you do this?
+> > 
+> > As there already is in armada-370-xp.dtsi
+> > 
+> >         aliases {
+> >                 eth0 = &eth0;
+> >                 eth1 = &eth1;
+> >         };
+> > 
+> > 
+> > 	eth0: ethernet@70000 {
+> > 	}
+> >         eth1: ethernet@74000 {
+> > 	}
+> > 
+> > This at least works for i2c devices. The pdev->id is set using the
+> > alias number.
+> 
+> Well I think it doesn't work with ethernet devices because we already do
+> this in aramda-38x.dtsi:
+> 
+> 	aliases {
+> 		gpio0 = &gpio0;
+> 		gpio1 = &gpio1;
+> 		eth0 = &eth0;
+> 		eth1 = &eth1;
+> 		eth2 = &eth2;
+> 	};
+> 
+> 	eth1: ethernet@30000 {
+> 	}
+> 	eth2: ethernet@34000 {
+> 	}
+> 	eth0: ethernet@70000 {
+> 	}
 
-It is getting a bit crufty in arch/x86.  Would it be better to move it
-to drivers/iommu?
+Ah, Erm, O.K. 
 
->
-> Cheers,
-> Muli
+It seems to be an i2c thing. Take a look at i2c_add_adapter().
+
+        if (dev->of_node) {
+                id = of_alias_get_id(dev->of_node, "i2c");
+ 
+You could put something similar into the ethernet driver.
+
+    Andrew
