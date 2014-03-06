@@ -1,88 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752179AbaCFNbX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 08:31:23 -0500
-Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:35945 "EHLO
-	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751055AbaCFNbV (ORCPT
+	id S1752261AbaCFNcR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 08:32:17 -0500
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:45327 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751683AbaCFNcP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 08:31:21 -0500
-Message-ID: <5318789B.1040402@mellanox.com>
-Date: Thu, 6 Mar 2014 15:31:07 +0200
-From: Or Gerlitz <ogerlitz@mellanox.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 6 Mar 2014 08:32:15 -0500
+Date: Thu, 6 Mar 2014 14:32:11 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Igor Mammedov <imammedo@redhat.com>
+Cc: linux-kernel@vger.kernel.org, drjones@redhat.com, toshi.kani@hp.com,
+        prarit@redhat.com, kirill.shutemov@linux.intel.com, JBeulich@suse.com,
+        peterz@infradead.org, paul.gortmaker@windriver.com,
+        seiji.aguchi@hds.com, bp@suse.de, hpa@zytor.com, mingo@redhat.com,
+        x86@kernel.org, tglx@linutronix.de, riel@redhat.com
+Subject: Re: [PATCH] abort secondary CPU bring-up gracefully if do_boot_cpu
+ timed out on cpu_callin_mask
+Message-ID: <20140306133211.GA2220@gmail.com>
+References: <1394030723-15084-1-git-send-email-imammedo@redhat.com>
+ <20140306070832.GA1277@gmail.com>
+ <20140306101009.34ba6c3c@nial.usersys.redhat.com>
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: Roland Dreier <roland@kernel.org>, Amir Vadai <amirv@mellanox.com>,
-        Eli Cohen <eli@dev.mellanox.co.il>,
-        Eugenia Emantayev <eugenia@mellanox.com>,
-        "David S. Miller" <davem@davemloft.net>, Mel Gorman <mgorman@suse.de>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Saeed Mahameed <saeedm@mellanox.com>,
-        Sagi Grimberg <sagig@mellanox.com>,
-        Shlomo Pongratz <shlomop@mellanox.com>
-Subject: Re: [PATCH] mlx4: Use GFP_NOFS calls during the ipoib TX path when
- creating the QP
-References: <alpine.LNX.2.00.1402211450410.1192@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1402211450410.1192@pobox.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.222.66.109]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140306101009.34ba6c3c@nial.usersys.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/02/2014 23:53, Jiri Kosina wrote:
-> This was originally a patch from Matthew Finlay<matt@mellanox.com>  that
-> addressed a problem whereby NFS writes would enter uninterruptible sleep
-> forever.  The issue happened when using NFS over IPoIB. This is not a
-> recommended configuration as RDMA is preferred but it is still a valid
-> configuration and is important to have in situations where the NFS server
-> does not support RDMA. The problem encountered was described as follows:
->
-> 	It's not memory reclamation that is the problem as such. There is
-> 	an indirect dependency between network filesystems writing back
-> 	pages and ipoib_cm_tx_init() due to how a kworker is used. Page
-> 	reclaim cannot make forward progress until ipoib_cm_tx_init()
-> 	succeeds and it is stuck in page reclaim itself waiting for network
-> 	transmission. Ordinarily this sitaution may be avoided by having
-> 	the caller use GFP_NOFS but ipoib_cm_tx_init() does not have that information.
->
 
-Hi Jiri,
+* Igor Mammedov <imammedo@redhat.com> wrote:
 
-Reading again (*) the problem description, the team here would be happy 
-to clarify with you some details (possibly
-few MM newbie questions, but it will help us):
+> On Thu, 6 Mar 2014 08:08:32 +0100
+> Ingo Molnar <mingo@kernel.org> wrote:
+> 
+> > 
+> > * Igor Mammedov <imammedo@redhat.com> wrote:
+> > 
+> > > Master CPU may timeout before cpu_callin_mask is set and cancel
+> > > booting CPU, but being onlined CPU still continues to boot, sets
+> > > cpu_active_mask (CPU_STARTING notifiers) and spins in
+> > > check_tsc_sync_target() for master cpu to arrive. Following attempt
+> > > to online another cpu hangs in stop_machine, initiated from here:
+> > 
+> > The changelog needs to prominently contain a description of the 
+> > practical relevance of this patch: has the hang triggered on any 
+> > system and under what circumstances, and did the patch resolve the 
+> > hang, etc.?
+> 
+> Hang is observed on virtual machines during CPU hotplug, especially 
+> in big guests with many CPUs. (It happens more often if host is 
+> over-committed).
+> 
+> Similar patch is carried in RHEL6 since 2012 and it fixes issue 
+> there, when applied to upstream kernel it also fixes issue.
 
-1. just to make sure, the problem happen on the NFS client, not the NFS 
-server, right? so writing-back means client
-writing over the NFS mount --> network
+Okay, cool - please update the patch description with that and 
+resubmit.
 
-2. you wrote "due to how a kworker is used", can you clarify if/why 
-things go wrong b/c of the kworker usage, or this is matter of phrasing?
+Thanks,
 
-in earlier post over this thread you wrote "There was a problem with 
-swapping over NFS, as writeback was deadlocked with memory reclaim 
-(memory needs to be allocated so that > swap could be accessed to 
-reclaim memory). That's fixed by allocating the buffers from PF_MEMALLOC 
-reserve, introduced by Mel's and Peter's patchset back in 3.9 or so. Oh, 
-and the same has been done for swapping over NBD, btw", in that respect:
-
-3. you mentioned that the memory allocations in ipoib_cm_tx_init() and 
-ib_create_qp() --> mlx4 driver requires
-page reclaim and waits for network transmission, so this client node put 
-their swap over that NFS partition?
-
-4. Can you shed more light, why the problem hits also for kmalloc based 
-allocations and not only for vmalloc
-based allocation e.g not only b/c of the vzalloc call in 
-ipoib_cm_tx_init but rather also b/c of misc kmalloc calls within
-the HW (here mlx4) driver?
-
-thanks,
-
-Or.
-
-(*) and sorry for my stupid question from yesterday, sometimes it's bad 
-idea to ask questions on mailing lists when you are very tired
+	Ingo
