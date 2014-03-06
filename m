@@ -1,77 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750AbaCFOgP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 09:36:15 -0500
-Received: from lvk-gate.cs.msu.ru ([188.44.42.233]:53693 "EHLO
-	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751082AbaCFOgN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 09:36:13 -0500
-X-Greylist: delayed 665 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Mar 2014 09:36:12 EST
-X-Spam-ASN: 
-From: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
-To: kexec@lists.infradead.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        Hari Bathini <hbathini@linux.vnet.ibm.com>,
-        Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org
-Cc: linux-kernel@vger.kernel.org, nyushchenko@dev.rtsoft.ru,
-        lugovskoy@dev.rtsoft.ru, yadviga@dev.rtsoft.ru
-Subject: [PATCH] kexec/powerpc: fix exporting memory limit
-Date: Thu,  6 Mar 2014 18:24:14 +0400
-Message-Id: <1394115854-11709-1-git-send-email-nyushchenko@dev.rtsoft.ru>
-X-Mailer: git-send-email 1.7.10.4
-X-AV-Checked: ClamAV using ClamSMTP
+	id S1752671AbaCFOj2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 09:39:28 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:55604 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752382AbaCFOj0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 09:39:26 -0500
+From: Roger Quadros <rogerq@ti.com>
+To: <kishon@ti.com>, <tony@atomide.com>, <balbi@ti.com>
+CC: <george.cherian@ti.com>, <balajitk@ti.com>, <hdegoede@redhat.com>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-ide@vger.kernel.org>,
+        <rogerq@ti.com>
+Subject: [PATCH v2 00/13][RESEND] ARM: OMAP: SATA support for OMAP5 & DRA7
+Date: Thu, 6 Mar 2014 16:38:36 +0200
+Message-ID: <1394116729-28811-1-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.8.3.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When preparing dump-capturing kernel, kexec userspace tool needs to know
-actual amount of memory used by the running kernel. This may differ from
-extire available DRAM for a couple of reasons. To address this issue,
-kdump kernel support code injects several attributes into device tree that
-are later captured by userspace kexec tool via /proc interface.
+Hi,
 
-One such attrubute is 'chosen/linux,memory_limit' that is used to pass
-memory limit of the running kernel.
+[Resending cause I messed up Kishon's email ID in the original v2.]
 
-This was initialized using kernel's 'memory_limit' variable, that is set
-by early init code based on mem= kernel parameter and other reasons.
+This series adds SATA support for OMAP5 uevm and DRA7-evm boards.
 
-But there are cases when memory_limit variable does not contain proper
-information. One such case is when !CONFIG_HIGHMEM kernel runs on system
-with memory large enough not to fit into lowmem.
+- Cleans up the ti-pipe3 PHY driver
+- Adds SATA DPLL support to ti-pipe3 PHY driver
+- Adds SATA nodes to hwmod and SoC DT data
 
-This patch fixes initialization of 'chosen/linux,memory_limit' to use
-values from memblock subsystem. These are adjusted at kernel memory
-management init and thus always contain values that match reality.
+Patches are based on 3.14-rc4 with balbi/next, linux-phy/next and
+omap-for-v3.15/dt merged on top..
 
-Signed-off-by: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
+To test SATA you will also need [1].
+
+[1] - http://article.gmane.org/gmane.comp.hardware.netbook.arm.sunxi/7285
+
+Changelog:
+
+v2
+- use 'depends on' instead of 'select' OCP2SCP bus driver.
+- Changed DT bindings for dra7-usb2 and am437-usb2 phy.
+
+cheers,
+-roger
+
 ---
- arch/powerpc/kernel/machine_kexec.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+Balaji T K (2):
+  ARM: dts: omap5: add sata node
+  ARM: dts: dra7: add OCP2SCP3 and SATA nodes
 
-diff --git a/arch/powerpc/kernel/machine_kexec.c b/arch/powerpc/kernel/machine_kexec.c
-index 015ae55..372cda5 100644
---- a/arch/powerpc/kernel/machine_kexec.c
-+++ b/arch/powerpc/kernel/machine_kexec.c
-@@ -250,8 +250,14 @@ static void __init export_crashk_values(struct device_node *node)
- 	/*
- 	 * memory_limit is required by the kexec-tools to limit the
- 	 * crash regions to the actual memory used.
-+	 *
-+	 * There are cases when memory_limit variable does not hold actual
-+	 * limit, for example when memory was limited by no kernel support
-+	 * for HIGHMEM. Reliable information is known by memblock because
-+	 * memory management init adjusts it.
- 	 */
--	mem_limit = cpu_to_be_ulong(memory_limit);
-+	mem_limit = cpu_to_be_ulong(memblock_end_of_DRAM() -
-+					memblock_start_of_DRAM());
- 	of_update_property(node, &memory_limit_prop);
- }
- 
+Keshava Munegowda (1):
+  ARM: OMAP5: hwmod: Add ocp2scp3 and sata hwmods
+
+Kishon Vijay Abraham I (1):
+  phy: rename struct omap_control_usb to struct omap_control_phy
+
+Nikhil Devshatwar (1):
+  ARM: DRA7: hwmod: Add ocp2scp3 and sata hwmods
+
+Roger Quadros (8):
+  phy: omap-control: Update DT binding information
+  phy: omap-control: update dra7 and am437 usb2 bindings
+  phy: ti-pipe3: cleanup clock handling
+  phy: ti-pipe3: Add SATA DPLL support
+  phy: ti-pipe3: Don't get 'wkupclk' and 'refclk' for SATA PHY
+  phy: ti-pipe3: streamline PHY operations
+  phy: ti-pipe3: Fix suspend/resume and module reload
+  phy: omap: Depend on OMAP_OCP2SCP bus driver
+
+ Documentation/devicetree/bindings/phy/ti-phy.txt   |  40 ++-
+ Documentation/devicetree/bindings/usb/omap-usb.txt |  24 --
+ arch/arm/boot/dts/dra7.dtsi                        |  39 +++
+ arch/arm/boot/dts/omap5.dtsi                       |  47 +++-
+ arch/arm/mach-omap2/omap_hwmod_54xx_data.c         |  73 ++++++
+ arch/arm/mach-omap2/omap_hwmod_7xx_data.c          |  31 ++-
+ drivers/phy/Kconfig                                |  16 +-
+ drivers/phy/Makefile                               |   1 +
+ drivers/{usb => }/phy/phy-omap-control.c           | 169 ++++++-------
+ drivers/phy/phy-omap-usb2.c                        |   8 +-
+ drivers/phy/phy-ti-pipe3.c                         | 269 +++++++++++++--------
+ drivers/usb/musb/omap2430.c                        |   2 +-
+ drivers/usb/phy/Kconfig                            |  10 -
+ drivers/usb/phy/Makefile                           |   1 -
+ .../omap_control_usb.h => phy/omap_control_phy.h}  |  36 +--
+ 15 files changed, 509 insertions(+), 257 deletions(-)
+ rename drivers/{usb => }/phy/phy-omap-control.c (53%)
+ rename include/linux/{usb/omap_control_usb.h => phy/omap_control_phy.h} (68%)
+
 -- 
-1.7.10.4
+1.8.3.2
 
