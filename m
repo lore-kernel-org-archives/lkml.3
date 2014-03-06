@@ -1,57 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752948AbaCFSVJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 13:21:09 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:25912 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751530AbaCFSVG (ORCPT
+	id S1753256AbaCFSVi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 13:21:38 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:49035 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752582AbaCFSVh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 13:21:06 -0500
-Date: Thu, 6 Mar 2014 21:19:36 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Shuah Khan <shuah.kh@samsung.com>
-Cc: Valentina Manea <valentina.manea.m@gmail.com>, gregkh@linuxfoundation.org,
-        devel@driverdev.osuosl.org, linux-usb@vger.kernel.org,
-        ly80toro@cip.cs.fau.de, tobias.polzer@fau.de,
-        linux-kernel@vger.kernel.org, firefly@lists.rosedu.org,
-        dominik.paulus@fau.de, ihadzic@research.bell-labs.com
-Subject: Re: [PATCH 01/12] staging: usbip: userspace: migrate usbip_bind to
- libudev
-Message-ID: <20140306181936.GI26722@mwanda>
-References: <1393960252-21247-1-git-send-email-valentina.manea.m@gmail.com>
- <1393960252-21247-2-git-send-email-valentina.manea.m@gmail.com>
- <53189F05.8000608@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53189F05.8000608@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Thu, 6 Mar 2014 13:21:37 -0500
+From: Laura Abbott <lauraa@codeaurora.org>
+To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Vlastimil Babka <vbabka@suse.cz>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Laura Abbott <lauraa@codeaurora.org>
+Subject: [PATCHv2] mm/compaction: Break out of loop on !PageBuddy in isolate_freepages_block
+Date: Thu,  6 Mar 2014 10:21:32 -0800
+Message-Id: <1394130092-25440-1-git-send-email-lauraa@codeaurora.org>
+X-Mailer: git-send-email 1.7.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 06, 2014 at 09:15:01AM -0700, Shuah Khan wrote:
-> >--- a/drivers/staging/usbip/userspace/libsrc/usbip_common.h
-> >+++ b/drivers/staging/usbip/userspace/libsrc/usbip_common.h
-> >@@ -29,6 +29,15 @@
-> >  #define USBIP_HOST_DRV_NAME	"usbip-host"
-> >  #define USBIP_VHCI_DRV_NAME	"vhci_hcd"
-> >
-> >+/* sysfs constants */
-> >+#define SYSFS_MNT_PATH         "/sys"
-> >+#define SYSFS_BUS_NAME         "bus"
-> >+#define SYSFS_BUS_TYPE         "usb"
-> >+#define SYSFS_DRIVERS_NAME     "drivers"
-> >+
-> >+#define SYSFS_PATH_MAX		256
-> >+#define SYSFS_BUS_ID_SIZE	32
-> 
-> I wish we have some global defines we could use.
+We received several reports of bad page state when freeing CMA pages
+previously allocated with alloc_contig_range:
 
-Except for the mount point, the rest of the path is part of the kernel
-API.
+<1>[ 1258.084111] BUG: Bad page state in process Binder_A  pfn:63202
+<1>[ 1258.089763] page:d21130b0 count:0 mapcount:1 mapping:  (null) index:0x7dfbf
+<1>[ 1258.096109] page flags: 0x40080068(uptodate|lru|active|swapbacked)
 
-regards,
-dan carpenter
+Based on the page state, it looks like the page was still in use. The page
+flags do not make sense for the use case though. Further debugging showed
+that despite alloc_contig_range returning success, at least one page in the
+range still remained in the buddy allocator.
+
+There is an issue with isolate_freepages_block. In strict mode (which CMA
+uses), if any pages in the range cannot be isolated,
+isolate_freepages_block should return failure 0. The current check keeps
+track of the total number of isolated pages and compares against the size
+of the range:
+
+        if (strict && nr_strict_required > total_isolated)
+                total_isolated = 0;
+
+After taking the zone lock, if one of the pages in the range is not
+in the buddy allocator, we continue through the loop and do not
+increment total_isolated. If in the last iteration of the loop we isolate
+more than one page (e.g. last page needed is a higher order page), the
+check for total_isolated may pass and we fail to detect that a page was
+skipped. The fix is to bail out if the loop immediately if we are in
+strict mode. There's no benfit to continuing anyway since we need all
+pages to be isolated. Additionally, drop the error checking based on
+nr_strict_required and just check the pfn ranges. This matches with
+what isolate_freepages_range does.
+
+Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+---
+v2: Addressed several comments by Vlastimil
+
+ mm/compaction.c |   20 +++++++++++++-------
+ 1 files changed, 13 insertions(+), 7 deletions(-)
+
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 5142920..054c28b 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -242,7 +242,6 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+ {
+ 	int nr_scanned = 0, total_isolated = 0;
+ 	struct page *cursor, *valid_page = NULL;
+-	unsigned long nr_strict_required = end_pfn - blockpfn;
+ 	unsigned long flags;
+ 	bool locked = false;
+ 	bool checked_pageblock = false;
+@@ -256,11 +255,12 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+ 
+ 		nr_scanned++;
+ 		if (!pfn_valid_within(blockpfn))
+-			continue;
++			goto isolate_fail;
++
+ 		if (!valid_page)
+ 			valid_page = page;
+ 		if (!PageBuddy(page))
+-			continue;
++			goto isolate_fail;
+ 
+ 		/*
+ 		 * The zone lock must be held to isolate freepages.
+@@ -289,12 +289,10 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+ 
+ 		/* Recheck this is a buddy page under lock */
+ 		if (!PageBuddy(page))
+-			continue;
++			goto isolate_fail;
+ 
+ 		/* Found a free page, break it into order-0 pages */
+ 		isolated = split_free_page(page);
+-		if (!isolated && strict)
+-			break;
+ 		total_isolated += isolated;
+ 		for (i = 0; i < isolated; i++) {
+ 			list_add(&page->lru, freelist);
+@@ -305,7 +303,15 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+ 		if (isolated) {
+ 			blockpfn += isolated - 1;
+ 			cursor += isolated - 1;
++			continue;
+ 		}
++
++isolate_fail:
++		if (strict)
++			break;
++		else
++			continue;
++
+ 	}
+ 
+ 	trace_mm_compaction_isolate_freepages(nr_scanned, total_isolated);
+@@ -315,7 +321,7 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+ 	 * pages requested were isolated. If there were any failures, 0 is
+ 	 * returned and CMA will fail.
+ 	 */
+-	if (strict && nr_strict_required > total_isolated)
++	if (strict && blockpfn < end_pfn)
+ 		total_isolated = 0;
+ 
+ 	if (locked)
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
