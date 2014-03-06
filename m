@@ -1,57 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752060AbaCFF7W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 00:59:22 -0500
-Received: from mga01.intel.com ([192.55.52.88]:61072 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750988AbaCFF7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 00:59:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,598,1389772800"; 
-   d="scan'208";a="486974025"
-Message-ID: <53180E98.9000608@linux.intel.com>
-Date: Thu, 06 Mar 2014 13:58:48 +0800
-From: "Li, Aubrey" <aubrey.li@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, mingo@redhat.com,
-        tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        "alan@linux.intel.com" <alan@linux.intel.com>
-Subject: Re: [PATCH] x86: new Intel Atom SoC power management controller driver
-References: <5317EC0C.4010807@linux.intel.com> <5317F044.8080407@linux.intel.com> <531805D4.6040806@linux.intel.com> <5318076C.7080605@linux.intel.com> <531808BD.4070000@linux.intel.com> <53180D39.7050207@linux.intel.com>
-In-Reply-To: <53180D39.7050207@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1751590AbaCFGGW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 01:06:22 -0500
+Received: from exprod5og102.obsmtp.com ([64.18.0.143]:36812 "HELO
+	exprod5og102.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750972AbaCFGGS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 01:06:18 -0500
+From: Tanmay Inamdar <tinamdar@apm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rob Landley <rob@landley.net>, Liviu Dudau <liviu.dudau@arm.com>
+Cc: linux-pci@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@apm.com, jcm@redhat.com,
+        Tanmay Inamdar <tinamdar@apm.com>
+Subject: [PATCH v4 0/4] APM X-Gene PCIe controller
+Date: Wed,  5 Mar 2014 22:05:59 -0800
+Message-Id: <1394085963-27553-1-git-send-email-tinamdar@apm.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/3/6 13:52, H. Peter Anvin wrote:
-> On 03/05/2014 09:33 PM, Li, Aubrey wrote:
->>
->> These interfaces are uncommitted and don't have consumers now, I'd like
->> to keep them unstable in debugfs.
->>
->> We can change it if we received a requirement to use them later.
->>
-> 
-> What we absolutely don't want to happen is someone starting to use these
-> unstable interfaces for something other than debugging.  If debugfs ever
-> needs to be mounted in a system for full functionality, that is a bug.
-> 
+This patch adds support for AppliedMicro X-Gene PCIe host controller. The
+driver is tested on X-Gene platform with different gen1/2/3 PCIe endpoint
+cards.
 
-Understood. But we don't have a plan to use it now. Just for observation
-and diagnosis purpose only.
+X-Gene PCIe controller driver has depedency on the pcie arm64 arch support.
+Liviu Dudau from ARM has sent a patch set for pcie arm64 arch support and
+support for creating generic pcie bridge from device tree. Liviu's patches
+are available here
+1. https://lkml.org/lkml/2014/3/5/179
+2. https://lkml.org/lkml/2014/3/5/41
 
-Are you suggesting we should put them into sysfs now?
+If someone wishes to test PCIe on X-Gene with this patch set, above mentioned
+patches from Liviu must be applied before the patches in this patch set.
 
-Thanks,
--Aubrey
+changes since V3:
+1. remove 'struct hw_pci' and supporting ops in hw_pci
+2. add code to create the host bridge from dts
+3. add code to scan the the host bridge
+4. modify outbound windows setup function to get resource information from
+   'bridge->windows'
+5. add compatible string in pcie dts node with current X-Gene SOC name.
 
-> 	-hpa
-> 
-> 
-> 
-> 
+changes since V2:
+1. redefined each PCI port in different PCI domain correctly.
+2. removed setup_lane and setup_link functions from driver.
+3. removed scan_bus wrapper and set_primary_bus hack.
+4. added pci_ioremap_io for io resources.
+
+changes since V1:
+1. added PCI domain support
+2. reading cpu and pci addresses from device tree to configure regions.
+3. got rid of unnecessary wrappers for readl and writel.
+4. got rid of endpoint configuration code.
+5. added 'dma-ranges' property support to read inbound region configuration.
+6. renamed host driver file to 'pci-xgene.c' from 'pcie-xgene.c'
+7. dropped 'clock-names' property from bindings
+8. added comments whereever requested.
+
+Tanmay Inamdar (4):
+  pci: APM X-Gene PCIe controller driver
+  arm64: dts: APM X-Gene PCIe device tree nodes
+  dt-bindings: pci: xgene pcie device tree bindings
+  MAINTAINERS: entry for APM X-Gene PCIe host driver
+
+ .../devicetree/bindings/pci/xgene-pci.txt          |   52 ++
+ MAINTAINERS                                        |    7 +
+ arch/arm64/boot/dts/apm-mustang.dts                |    8 +
+ arch/arm64/boot/dts/apm-storm.dtsi                 |  155 ++++
+ drivers/pci/host/Kconfig                           |   10 +
+ drivers/pci/host/Makefile                          |    1 +
+ drivers/pci/host/pci-xgene.c                       |  739 ++++++++++++++++++++
+ 7 files changed, 972 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pci/xgene-pci.txt
+ create mode 100644 drivers/pci/host/pci-xgene.c
+
+-- 
+1.7.9.5
 
