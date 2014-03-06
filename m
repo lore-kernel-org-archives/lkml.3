@@ -1,105 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757968AbaCFC0q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 21:26:46 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:34048 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756826AbaCFC0p (ORCPT
+	id S1757144AbaCFCe4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 21:34:56 -0500
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:34012 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755704AbaCFCez (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 21:26:45 -0500
-From: Laura Abbott <lauraa@codeaurora.org>
-To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Vlastimil Babka <vbabka@suse.cz>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Laura Abbott <lauraa@codeaurora.org>
-Subject: [PATCH] mm/compaction: Break out of loop on !PageBuddy in isolate_freepages_block
-Date: Wed,  5 Mar 2014 18:26:40 -0800
-Message-Id: <1394072800-11776-1-git-send-email-lauraa@codeaurora.org>
-X-Mailer: git-send-email 1.7.8.3
+	Wed, 5 Mar 2014 21:34:55 -0500
+Message-ID: <5317DEC6.4060103@linaro.org>
+Date: Thu, 06 Mar 2014 11:34:46 +0900
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Will Deacon <will.deacon@arm.com>
+CC: "wad@chromium.org" <wad@chromium.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 2/3] arm64: Add seccomp support
+References: <1391767892-5395-1-git-send-email-takahiro.akashi@linaro.org> <1393320025-2855-1-git-send-email-takahiro.akashi@linaro.org> <1393320025-2855-3-git-send-email-takahiro.akashi@linaro.org> <20140228172006.GF30996@mudshark.cambridge.arm.com>
+In-Reply-To: <20140228172006.GF30996@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We received several reports of bad page state when freeing CMA pages
-previously allocated with alloc_contig_range:
+On 03/01/2014 02:20 AM, Will Deacon wrote:
+> On Tue, Feb 25, 2014 at 09:20:24AM +0000, AKASHI Takahiro wrote:
+>> secure_computing() should always be called first in syscall_trace(), and
+>> if it returns non-zero, we should stop further handling. Then that system
+>> call may eventually fail, be trapped or the process itself be killed
+>> depending on loaded rules.
+>
+> [...]
+>
+>> diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
+>> index d4ce70e..f2a74bc 100644
+>> --- a/arch/arm64/kernel/ptrace.c
+>> +++ b/arch/arm64/kernel/ptrace.c
+>> @@ -20,12 +20,14 @@
+>>    */
+>>
+>>   #include <linux/audit.h>
+>> +#include <linux/errno.h>
+>>   #include <linux/kernel.h>
+>>   #include <linux/sched.h>
+>>   #include <linux/mm.h>
+>>   #include <linux/smp.h>
+>>   #include <linux/ptrace.h>
+>>   #include <linux/user.h>
+>> +#include <linux/seccomp.h>
+>>   #include <linux/security.h>
+>>   #include <linux/init.h>
+>>   #include <linux/signal.h>
+>> @@ -1064,6 +1066,10 @@ asmlinkage int syscall_trace(int dir, struct pt_regs *regs)
+>>   {
+>>   	unsigned long saved_reg;
+>>
+>> +	if (!dir && secure_computing((int)regs->syscallno))
+>
+> Why do you need this cast to (int)?
 
-<1>[ 1258.084111] BUG: Bad page state in process Binder_A  pfn:63202
-<1>[ 1258.089763] page:d21130b0 count:0 mapcount:1 mapping:  (null) index:0x7dfbf
-<1>[ 1258.096109] page flags: 0x40080068(uptodate|lru|active|swapbacked)
+OK. I will remove it because gcc doesn't complain about it anyway.
 
-Based on the page state, it looks like the page was still in use. The page
-flags do not make sense for the use case though. Further debugging showed
-that despite alloc_contig_range returning success, at least one page in the
-range still remained in the buddy allocator.
+> Also, it's probably better to check for
+> -1 explicitly here.
 
-There is an issue with isolate_freepages_block. In strict mode (which CMA
-uses), if any pages in the range cannot be isolated, isolate_freepages_block
-should return failure 0. The current check keeps track of the total number
-of isolated pages and compares against the size of the range:
+I wil fix it.
 
-        if (strict && nr_strict_required > total_isolated)
-                total_isolated = 0;
+> I'm slightly surprised that we do the secure computing check first. Doesn't
+> this allow a debugger to change the syscall to something else after we've
+> decided that it's ok?
 
-After taking the zone lock, if one of the pages in the range is not
-in the buddy allocator, we continue through the loop and do not
-increment total_isolated. If we end up over isolating by more than
-one page (e.g. last since page needed is a higher order page), it
-is not possible to detect that the page was skipped. The fix is to
-bail out if the loop immediately if we are in strict mode. There's
-no benfit to continuing anyway since we need all pages to be
-isolated.
+To be honest, I just followed other architectures' implementation.
+Can you elaborate any use case that you have in your mind?
 
-Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
----
- mm/compaction.c |   25 +++++++++++++++++++------
- 1 files changed, 19 insertions(+), 6 deletions(-)
+-Takahiro AKASHI
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index b48c525..3190cef 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -263,12 +263,21 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
- 		struct page *page = cursor;
- 
- 		nr_scanned++;
--		if (!pfn_valid_within(blockpfn))
--			continue;
-+		if (!pfn_valid_within(blockpfn)) {
-+			if (strict)
-+				break;
-+			else
-+				continue;
-+		}
-+
- 		if (!valid_page)
- 			valid_page = page;
--		if (!PageBuddy(page))
--			continue;
-+		if (!PageBuddy(page)) {
-+			if (strict)
-+				break;
-+			else
-+				continue;
-+		}
- 
- 		/*
- 		 * The zone lock must be held to isolate freepages.
-@@ -288,8 +297,12 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
- 			break;
- 
- 		/* Recheck this is a buddy page under lock */
--		if (!PageBuddy(page))
--			continue;
-+		if (!PageBuddy(page)) {
-+			if (strict)
-+				break;
-+			else
-+				continue;
-+		}
- 
- 		/* Found a free page, break it into order-0 pages */
- 		isolated = split_free_page(page);
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+> Will
+>
