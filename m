@@ -1,165 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004AbaCFNLk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 08:11:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61655 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751884AbaCFNLi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 08:11:38 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Rui Wang <rui.y.wang@intel.com>,
-        Liu Ping Fan <kernelfans@gmail.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Lv Zheng <lv.zheng@intel.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
-        Yang Zhang <yang.z.zhang@intel.com>, Andi Kleen <ak@linux.intel.com>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        Li Fei <fei.li@intel.com>, gong.chen@linux.intel.com
-Subject: [PATCH] x86, fix x86 fixup_irqs() error handling [v2]
-Date: Thu,  6 Mar 2014 08:11:07 -0500
-Message-Id: <1394111467-3351-1-git-send-email-prarit@redhat.com>
-In-Reply-To: <alpine.DEB.2.02.1403061122010.18573@ionos.tec.linutronix.de>
-References: <alpine.DEB.2.02.1403061122010.18573@ionos.tec.linutronix.de>
+	id S1752096AbaCFNMa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 08:12:30 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:54944 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750972AbaCFNM2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 08:12:28 -0500
+Message-ID: <53187429.1000408@ti.com>
+Date: Thu, 6 Mar 2014 15:12:09 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: George Cherian <george.cherian@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+CC: <anatol.pomozov@gmail.com>, <gregkh@linuxfoundation.org>, <balbi@ti.com>,
+        <kishon@ti.com>, <rob@landley.net>, <galak@codeaurora.org>,
+        <ijc+devicetree@hellion.org.uk>, <mark.rutland@arm.com>,
+        <pawel.moll@arm.com>, <robh+dt@kernel.org>, <bcousson@baylibre.com>,
+        <tony@atomide.com>
+Subject: Re: [PATCH 2/5] ARM: dts: AM4372: Add USB nodes
+References: <1393854834-23810-1-git-send-email-george.cherian@ti.com> <1393854834-23810-3-git-send-email-george.cherian@ti.com> <53183699.8070106@ti.com> <531869C2.3070905@ti.com>
+In-Reply-To: <531869C2.3070905@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fixup_irqs() calls chip->set_irq_affinity which eventually calls
-__assign_irq_vector().  Errors are not propogated back from this function call
-and this results in silent irq relocation failures.  This patch fixes this
-issue and prints out a warning if there is a relocation failure.
+On 03/06/2014 02:27 PM, George Cherian wrote:
+> Hi Roger,
+> 
+> On 3/6/2014 2:19 PM, Roger Quadros wrote:
+>> Hi George,
+>>
+>> On 03/03/2014 03:53 PM, George Cherian wrote:
+>>> Add nodes for 2 instances each of
+>>>     - ocp2scp
+>>>     - USB PHY control module
+>>>     - USB PHY
+>>>     - dwc3_omap
+>>>     - USB
+>>>
+>>> for AM43xx.
+>>>
+>>> Signed-off-by: George Cherian <george.cherian@ti.com>
+>>> ---
+>>>   arch/arm/boot/dts/am4372.dtsi | 99 +++++++++++++++++++++++++++++++++++++++++++
+>>>   1 file changed, 99 insertions(+)
+>>>
+>>> diff --git a/arch/arm/boot/dts/am4372.dtsi b/arch/arm/boot/dts/am4372.dtsi
+>>> index 5a7cc38..90408b3 100644
+>>> --- a/arch/arm/boot/dts/am4372.dtsi
+>>> +++ b/arch/arm/boot/dts/am4372.dtsi
+>>> @@ -698,6 +698,105 @@
+>>>                      <&edma 11>;
+>>>               dma-names = "tx", "rx";
+>>>           };
+>>> +
+>>> +        am43xx_control_usb2phy1: control-phy@44e10620 {
+>>> +            compatible = "ti,control-phy-am437usb2";
+>> Since this is the first usage of this compatible ID, we still have room to
+>> change it to be better. Tony's suggestion was to use "ti,control-phy-am437-usb2"
+>>
+>> Please see
+>> http://article.gmane.org/gmane.linux.drivers.devicetree/64833
+> 
+> Okay.
+>>> +            reg = <0x44e10620 0x4>;
+>>> +            reg-names = "power";
+>>> +            status = "disabled";
+>> Why disable something that is within the SoC and does not affect board configurations?
+>>
+>> Question applies for all the nodes in this patch except the ones that come out on the
+>> SoC pins. e.g. PHY.
+> Okay
+>>> +        };
+>>> +
+>>> +        am43xx_control_usb2phy2: control-phy@0x44e10628 {
+>>> +            compatible = "ti,control-phy-am437usb2";
+>>> +            reg = <0x44e10628 0x4>;
+>>> +            reg-names = "power";
+>>> +            status = "disabled";
+>>> +        };
+>>> +
+>>> +        ocp2scp0: ocp2scp@483a8000 {
+>>> +            compatible = "ti,omap-ocp2scp";
+>>> +            #address-cells = <1>;
+>>> +            #size-cells = <1>;
+>>> +            ranges;
+>>> +            ti,hwmods = "ocp2scp0";
+>>> +            status = "disabled";
+>>> +
+>>> +            usb2_phy1: usb2phy1@483a8000 {
+>> should be
+> okay
+>>             usb2_phy1: phy@483a8000 {
+>>
+>>> +                compatible = "ti,am437x-usb2";
+>>> +                reg = <0x483a8000 0x8000>;
+>>> +                ctrl-module = <&am43xx_control_usb2phy1>;
+>>> +                clocks = <&clk_32768_ck>,
+>>> +                     <&usb_otg_ss0_refclk960m>;
+>>> +                clock-names = "usb_phy_cm_clk32k",
+>>> +                          "usb_otg_ss_refclk960m";
+>> clock-names should be platform independent. Better option would be to
+>> modify the usb2 driver to use names like "wkupclk" and "refclk"
+> The phy driver still does devm_get_clk using above clock names and not "wkupclk" and "refclk".
+> 
 
-[v2]: modified WARN to pr_crit and changed message
+I'll post a patch soon that takes care of both clock names and the compatible ids in
+the phy-omap-usb2.c driver.
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Cc: Rui Wang <rui.y.wang@intel.com>
-Cc: Liu Ping Fan <kernelfans@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: Lv Zheng <lv.zheng@intel.com>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: Yang Zhang <yang.z.zhang@Intel.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-Cc: Li Fei <fei.li@intel.com>
-Cc: gong.chen@linux.intel.com
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
----
- arch/x86/kernel/apic/io_apic.c |   28 ++++++++++++++++++----------
- arch/x86/kernel/irq.c          |    9 +++++++--
- 2 files changed, 25 insertions(+), 12 deletions(-)
+>>> +                #phy-cells = <0>;
+>>> +                status = "disabled";
+>>> +            };
+>>> +        };
+>>> +
+>>> +        ocp2scp1: ocp2scp@483e8000 {
+>>> +            compatible = "ti,omap-ocp2scp";
+>>> +            #address-cells = <1>;
+>>> +            #size-cells = <1>;
+>>> +            ranges;
+>>> +            ti,hwmods = "ocp2scp1";
+>>> +            status = "disabled";
+>>> +
+>>> +            usb2_phy2: usb2phy2@483e8000 {
+>>> +                compatible = "ti,am437x-usb2";
+>>> +                reg = <0x483e8000 0x8000>;
+>>> +                ctrl-module = <&am43xx_control_usb2phy2>;
+>>> +                clocks = <&clk_32768_ck>,
+>>> +                     <&usb_otg_ss1_refclk960m>;
+>>> +                clock-names = "usb_phy_cm_clk32k",
+>>> +                          "usb_otg_ss_refclk960m";
+>>> +                #phy-cells = <0>;
+>>> +                status = "disabled";
+>>> +            };
+>>> +        };
+>>> +
+>>> +        dwc3_1: omap_dwc3_1@48380000 {
+>>> +            compatible = "ti,am437x-dwc3";
+>>> +            ti,hwmods = "usb_otg_ss0";
+>>> +            reg = <0x48380000 0x10000>;
+>>> +            interrupts = <GIC_SPI 172 IRQ_TYPE_LEVEL_HIGH>;
+>>> +            #address-cells = <1>;
+>>> +            #size-cells = <1>;
+>>> +            utmi-mode = <1>;
+>>> +            ranges;
+>>> +            status = "disabled";
+>>> +
+>>> +            usb1: usb@48390000 {
+>>> +                compatible = "synopsys,dwc3";
+>>> +                reg = <0x48390000 0x17000>;
+>>> +                interrupts = <GIC_SPI 168 IRQ_TYPE_LEVEL_HIGH>;
+>>> +                usb-phy = <&usb2_phy1>;
+>> shouldn't this be        phys = <&usb2_phy1>;    ?
+> 
+> At the time of writing this patch phys property is still not in.
+> Also generic-phy conversion for dwc3 was recently posted by kishon.
+>>> +                phy-names = "usb2-phy";
+>> what about
+>>     maximum-speed = "high-speed";
+>> and
+>>     dr_mode = "otg"; ?
+> 
+> Done from board file. Actually maximum-speed I can set here.
+> dr_mode is a board property.
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 6ad4658..b4b21db 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -2312,7 +2312,7 @@ int __ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 	int err;
- 
- 	if (!config_enabled(CONFIG_SMP))
--		return -1;
-+		return -EPERM;
- 
- 	if (!cpumask_intersects(mask, cpu_online_mask))
- 		return -EINVAL;
-@@ -2343,7 +2343,7 @@ int native_ioapic_set_affinity(struct irq_data *data,
- 	int ret;
- 
- 	if (!config_enabled(CONFIG_SMP))
--		return -1;
-+		return -EPERM;
- 
- 	raw_spin_lock_irqsave(&ioapic_lock, flags);
- 	ret = __ioapic_set_affinity(data, mask, &dest);
-@@ -3075,9 +3075,11 @@ msi_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
- 	struct irq_cfg *cfg = data->chip_data;
- 	struct msi_msg msg;
- 	unsigned int dest;
-+	int ret;
- 
--	if (__ioapic_set_affinity(data, mask, &dest))
--		return -1;
-+	ret = __ioapic_set_affinity(data, mask, &dest);
-+	if (ret)
-+		return ret;
- 
- 	__get_cached_msi_msg(data->msi_desc, &msg);
- 
-@@ -3177,9 +3179,11 @@ dmar_msi_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 	struct irq_cfg *cfg = data->chip_data;
- 	unsigned int dest, irq = data->irq;
- 	struct msi_msg msg;
-+	int ret;
- 
--	if (__ioapic_set_affinity(data, mask, &dest))
--		return -1;
-+	ret = __ioapic_set_affinity(data, mask, &dest);
-+	if (ret)
-+		return ret;
- 
- 	dmar_msi_read(irq, &msg);
- 
-@@ -3226,9 +3230,11 @@ static int hpet_msi_set_affinity(struct irq_data *data,
- 	struct irq_cfg *cfg = data->chip_data;
- 	struct msi_msg msg;
- 	unsigned int dest;
-+	int ret;
- 
--	if (__ioapic_set_affinity(data, mask, &dest))
--		return -1;
-+	ret = __ioapic_set_affinity(data, mask, &dest);
-+	if (ret)
-+		return ret;
- 
- 	hpet_msi_read(data->handler_data, &msg);
- 
-@@ -3295,9 +3301,11 @@ ht_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
- {
- 	struct irq_cfg *cfg = data->chip_data;
- 	unsigned int dest;
-+	int ret;
- 
--	if (__ioapic_set_affinity(data, mask, &dest))
--		return -1;
-+	ret = __ioapic_set_affinity(data, mask, &dest);
-+	if (ret)
-+		return ret;
- 
- 	target_ht_irq(data->irq, dest, cfg->vector);
- 	return IRQ_SET_MASK_OK_NOCOPY;
-diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-index d99f31d..32a351d 100644
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@ -351,6 +351,7 @@ void fixup_irqs(void)
- 	struct irq_desc *desc;
- 	struct irq_data *data;
- 	struct irq_chip *chip;
-+	int ret;
- 
- 	for_each_irq_desc(irq, desc) {
- 		int break_affinity = 0;
-@@ -389,8 +390,12 @@ void fixup_irqs(void)
- 		if (!irqd_can_move_in_process_context(data) && chip->irq_mask)
- 			chip->irq_mask(data);
- 
--		if (chip->irq_set_affinity)
--			chip->irq_set_affinity(data, affinity, true);
-+		if (chip->irq_set_affinity) {
-+			ret = chip->irq_set_affinity(data, affinity, true);
-+			if (ret == -ENOSPC)
-+				pr_crit("IRQ %d set affinity failed because there are no available vectors.  The device assigned to this IRQ is unstable.\n",
-+					irq);
-+		}
- 		else if (!(warned++))
- 			set_affinity = 0;
- 
--- 
-1.7.9.3
+Is it a known standard that dr_mode must come from board dts?
+
+I think dr_mode can be set here by default. Board can always override if it
+needs non otg operation.
+
+cheers,
+-roger
+
+>>> +                status = "disabled";
+>>> +            };
+>>> +        };
+>>> +
+>>> +        dwc3_2: omap_dwc3_2@483c0000 {
+>>> +            compatible = "ti,am437x-dwc3";
+>>> +            ti,hwmods = "usb_otg_ss1";
+>>> +            reg = <0x483c0000 0x10000>;
+>>> +            interrupts = <GIC_SPI 178 IRQ_TYPE_LEVEL_HIGH>;
+>>> +            #address-cells = <1>;
+>>> +            #size-cells = <1>;
+>>> +            utmi-mode = <1>;
+>>> +            ranges;
+>>> +            status = "disabled";
+>>> +
+>>> +            usb2: usb@483d0000 {
+>>> +                compatible = "synopsys,dwc3";
+>>> +                reg = <0x483d0000 0x17000>;
+>>> +                interrupts = <GIC_SPI 174 IRQ_TYPE_LEVEL_HIGH>;
+>>> +                usb-phy = <&usb2_phy2>;
+>>> +                phy-names = "usb2-phy";
+>>> +                status = "disabled";
+>>> +            };
+>>> +        };
+>>> +
+>>>       };
+>>>   };
+>>>  
+>> cheers,
+>> -roger
+> 
+> 
 
