@@ -1,107 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752176AbaCFGRo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 01:17:44 -0500
-Received: from usmamail.tilera.com ([12.216.194.151]:45407 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752053AbaCFGRn convert rfc822-to-8bit (ORCPT
+	id S1752257AbaCFGRy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 01:17:54 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:47636 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751417AbaCFGRw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 01:17:43 -0500
-From: Tony Lu <zlu@tilera.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Chris Metcalf <cmetcalf@tilera.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tony Lu <zlu@tilera.com>
-Subject: [PATCH 2/4] tile: Enable NMIs on return from handle_nmi() without
- errors
-Thread-Topic: [PATCH 2/4] tile: Enable NMIs on return from handle_nmi()
- without errors
-Thread-Index: Ac85A8H6L7BVmmzDSZmNaWV+kLNGKw==
-Date: Thu, 6 Mar 2014 06:17:31 +0000
-Message-ID: <BAB94DBB0E89D8409949BC28AC95914C5D67FF29@USMAExch1.tad.internal.tilera.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 6 Mar 2014 01:17:52 -0500
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: lidza.louina@gmail.com, gregkh@linuxfoundation.org
+Cc: driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: dgap: remove useless cast on kzalloc()
+Date: Thu, 06 Mar 2014 15:17:47 +0900
+Message-ID: <5148119.7kyCp0YkBT@daeseok-laptop.cloud.net>
+User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NMI interrupts mask ALL interrupts before calling the handler,
-so we need to unmask NMIs according to the value handle_nmi() returns.
-If it returns zero, the NMIs should be re-enabled; if it returns
-a non-zero error, the NMIs should be disabled.
 
-Signed-off-by: Zhigang Lu <zlu@tilera.com>
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+coccinelle warning:
+drivers/staging/dgap/dgap.c:782:3-7: WARNING:
+ casting value returned by k[cmz]alloc to (char *) is useless.
+drivers/staging/dgap/dgap.c:776:2-16: WARNING:
+ casting value returned by k[cmz]alloc to (struct board_t *) is useless.
+
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
 ---
- arch/tile/kernel/intvec_32.S | 11 +++++++++++
- arch/tile/kernel/intvec_64.S | 11 ++++++++++-
- 2 files changed, 21 insertions(+), 1 deletion(-)
+ drivers/staging/dgap/dgap.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/tile/kernel/intvec_32.S b/arch/tile/kernel/intvec_32.S
-index 605ffbd..cdbda45 100644
---- a/arch/tile/kernel/intvec_32.S
-+++ b/arch/tile/kernel/intvec_32.S
-@@ -946,6 +946,13 @@ STD_ENTRY(interrupt_return)
- 	bzt     r30, .Lrestore_regs
- 3:
+diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
+index cbce457..1adcd13 100644
+--- a/drivers/staging/dgap/dgap.c
++++ b/drivers/staging/dgap/dgap.c
+@@ -773,13 +773,13 @@ static int dgap_found_board(struct pci_dev *pdev, int id)
  
-+	/* We are relying on INT_PERF_COUNT at 33, and AUX_PERF_COUNT at 48 */
-+	{
-+	 moveli r0, lo16(1 << (INT_PERF_COUNT - 32))
-+	 bz     r31, .Lrestore_regs
-+	}
-+	auli    r0, r0, ha16(1 << (INT_AUX_PERF_COUNT - 32))
-+	mtspr   SPR_INTERRUPT_MASK_RESET_K_1, r0
+ 	/* get the board structure and prep it */
+ 	brd = dgap_Board[dgap_NumBoards] =
+-	(struct board_t *) kzalloc(sizeof(struct board_t), GFP_KERNEL);
++		kzalloc(sizeof(struct board_t), GFP_KERNEL);
+ 	if (!brd)
+ 		return -ENOMEM;
  
- 	/*
- 	 * We now commit to returning from this interrupt, since we will be
-@@ -1171,6 +1178,10 @@ handle_nmi:
- 	 PTREGS_PTR(r0, PTREGS_OFFSET_BASE)
- 	}
- 	FEEDBACK_REENTER(handle_nmi)
-+	{
-+	 movei  r30, 1
-+	 seq    r31, r0, zero
-+	}
- 	j       interrupt_return
- 	STD_ENDPROC(handle_nmi)
- 
-diff --git a/arch/tile/kernel/intvec_64.S b/arch/tile/kernel/intvec_64.S
-index 8f892a5..5b67efc 100644
---- a/arch/tile/kernel/intvec_64.S
-+++ b/arch/tile/kernel/intvec_64.S
-@@ -971,6 +971,15 @@ STD_ENTRY(interrupt_return)
- 	beqzt   r30, .Lrestore_regs
- 3:
- 
-+#if INT_PERF_COUNT + 1 != INT_AUX_PERF_COUNT
-+# error Bad interrupt assumption
-+#endif
-+	{
-+	 movei  r0, 3   /* two adjacent bits for the PERF_COUNT mask */
-+	 beqz   r31, .Lrestore_regs
-+	}
-+	shli    r0, r0, INT_PERF_COUNT
-+	mtspr   SPR_INTERRUPT_MASK_RESET_K, r0
- 
- 	/*
- 	 * We now commit to returning from this interrupt, since we will be
-@@ -1187,7 +1196,7 @@ handle_nmi:
- 	FEEDBACK_REENTER(handle_nmi)
- 	{
- 	 movei  r30, 1
--	 move   r31, r0
-+	 cmpeq  r31, r0, zero
- 	}
- 	j       interrupt_return
- 	STD_ENDPROC(handle_nmi)
+ 	/* make a temporary message buffer for the boot messages */
+ 	brd->msgbuf = brd->msgbuf_head =
+-		(char *) kzalloc(sizeof(char) * 8192, GFP_KERNEL);
++		kzalloc(sizeof(char) * 8192, GFP_KERNEL);
+ 	if (!brd->msgbuf) {
+ 		kfree(brd);
+ 		return -ENOMEM;
 -- 
-1.8.3.1
+1.7.4.4
+
 
