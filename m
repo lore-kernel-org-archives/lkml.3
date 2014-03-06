@@ -1,69 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752640AbaCFQgh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 11:36:37 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:45714 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750972AbaCFQgg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 11:36:36 -0500
-Message-ID: <5318A3C8.2020903@mm-sol.com>
-Date: Thu, 06 Mar 2014 18:35:20 +0200
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751986AbaCFQnX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 11:43:23 -0500
+Received: from p3plex2out02.prod.phx3.secureserver.net ([184.168.131.14]:33304
+	"EHLO p3plex2out02.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751695AbaCFQnW convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 11:43:22 -0500
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Fred Akers <knivey@botops.net>, "greg@kroah.com" <greg@kroah.com>,
+        "abbotti@mev.co.uk" <abbotti@mev.co.uk>
+CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v2 1/2] Staging: comedi: range: tidy up
+ comedi_check_chanlist()
+Thread-Topic: [PATCH v2 1/2] Staging: comedi: range: tidy up
+ comedi_check_chanlist()
+Thread-Index: AQHPOQlWs6T6ox3k+EKbxspwZf6EQJrUQ9vQ
+Date: Thu, 6 Mar 2014 16:43:21 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825DA4031@P3PWEX4MB008.ex4.secureserver.net>
+References: <20140306062333.GA19862@kroah.com>
+ <1394089039-12408-1-git-send-email-knivey@botops.net>
+In-Reply-To: <1394089039-12408-1-git-send-email-knivey@botops.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Felipe Balbi <balbi@ti.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v5 10/14] usb: phy: msm: Use reset framework for LINK
- and PHY resets
-References: <1394014430-26485-1-git-send-email-iivanov@mm-sol.com> <1394014430-26485-11-git-send-email-iivanov@mm-sol.com> <531719C2.3070708@cogentembedded.com>
-In-Reply-To: <531719C2.3070708@cogentembedded.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 03/05/14 14:34, Sergei Shtylyov wrote:
-> Hello.
-> 
-
->> --- a/drivers/usb/phy/phy-msm-usb.c
->> +++ b/drivers/usb/phy/phy-msm-usb.c
-> [...]
->> @@ -235,12 +236,16 @@ static void ulpi_init(struct msm_otg *motg)
->>
->>   static int msm_otg_link_clk_reset(struct msm_otg *motg, bool assert)
->>   {
->> -    int ret = 0;
->> +    int ret;
->>
->> -    if (!motg->pdata->link_clk_reset)
->> -        return ret;
->> +    if (motg->pdata->link_clk_reset)
->> +        ret = motg->pdata->link_clk_reset(motg->clk, assert);
->> +    else
->> +        if (assert)
-> 
->    Kernel style assumes:
-> 
->     else if (assert)
-
-Thanks. will fix it.
-
-Regards,
-Ivan
-
-> 
->> +            ret = reset_control_assert(motg->link_rst);
->> +        else
->> +            ret = reset_control_deassert(motg->link_rst);
->>
-> [...]
-> 
-> WBR, Sergei
-> 
+On Wednesday, March 05, 2014 11:57 PM, Fred Akers wrote:
 >
+> Refactor this function to remove an extra indent level
+>
+> Signed-off-by: Fred Akers <knivey@botops.net>
+
+Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+
+Thanks
