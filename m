@@ -1,154 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753193AbaCFJ04 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 04:26:56 -0500
-Received: from smtp1.macau.ctm.net ([202.175.3.59]:47703 "EHLO
-	smtp1.macau.ctm.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752327AbaCFJSm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 04:18:42 -0500
-From: Markus Mayer <markus.mayer@linaro.org>
-To: Matt Porter <matt.porter@linaro.org>, Christian Daudt <bcm@fixthebug.org>
-Cc: Device Tree List <devicetree@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Broadcom Kernel Feedback 
-	<bcm-kernel-feedback-list@broadcom.com>
-Subject: [PATCH v2 2/3] ARM: bcm21664: Add board support.
-Date: Thu,  6 Mar 2014 17:18:13 +0800
-Message-Id: <1394097494-29899-3-git-send-email-markus.mayer@linaro.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1394097494-29899-1-git-send-email-markus.mayer@linaro.org>
-References: <1394097494-29899-1-git-send-email-markus.mayer@linaro.org>
-X-TM-AS-MML: No
-X-TM-AS-Product-Ver: IMSS-7.1.0.1392-7.5.0.1017-20548.005
-X-TM-AS-Result: No--17.900-7.0-31-10
-X-imss-scan-details: No--17.900-7.0-31-10;No--17.900-7.0-31-10
-X-TMASE-MatchedRID: 9nkzMtsPLI44Yc1OODXsU37siEtWY367f2g6KJZtxl0BOMBsCslSyJkC
-	erFMaabiCM3xCXbfIgLzbylrK86ZaulVfYNOXGqmHOx1Vder/0uWWNQZZplrArt4BAaULwAVeR3
-	t+BJt1Fk6FnBjnFmaspaZO/nIoe7vBrU1duOq6zSiI3xhOar5y+gVdBvdmCRRRi9INZ1ZpGHCe/
-	czMaGEHuXj/YyU9oG67qEZpoAUsFSB3AuymGAHROKXavbHY/C1JD5ItWH4fSJ+YesuCgkiXI35b
-	htr3DJimt59lr1z+lCkJtuPrq1VVUsKIxV/Fggw3fn7n/ZHGqb4uJ1REX4MHRcYcP1TU65HpQps
-	xy6nnn4NWdlmVcmSLYAy6p60ZV62fJ5/bZ6npdiQZS2ujCtcuA==
+	id S1752879AbaCFJ2O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 04:28:14 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:33612 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751635AbaCFJ2L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 04:28:11 -0500
+Message-ID: <53183F98.1060100@ti.com>
+Date: Thu, 6 Mar 2014 14:57:52 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Anton Tikhomirov <av.tikhomirov@samsung.com>,
+        "'Kamil Debski'" <k.debski@samsung.com>,
+        <linux-kernel@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <devicetree@vger.kernel.org>
+CC: <kyungmin.park@samsung.com>, <t.figa@samsung.com>,
+        <s.nawrocki@samsung.com>, <m.szyprowski@samsung.com>,
+        <gautam.vivek@samsung.com>, <mat.krawczuk@gmail.com>,
+        <yulgon.kim@samsung.com>, <p.paneri@samsung.com>,
+        <jg1.han@samsung.com>, <galak@codeaurora.org>,
+        <matt.porter@linaro.org>, <tjakobi@math.uni-bielefeld.de>,
+        <stern@rowland.harvard.edu>, <sander@humilis.net>
+Subject: Re: [PATCH v9 3/4] phy: Add new Exynos USB 2.0 PHY driver
+References: <1394033288-5551-1-git-send-email-k.debski@samsung.com> <1394033288-5551-4-git-send-email-k.debski@samsung.com> <005c01cf3915$c53476c0$4f9d6440$%tikhomirov@samsung.com> <53183220.3040606@ti.com> <006201cf3919$5f760750$1e6215f0$%tikhomirov@samsung.com> <5318384B.7020009@ti.com> <006301cf391a$c99c7280$5cd55780$%tikhomirov@samsung.com> <006501cf391d$335fb9a0$9a1f2ce0$%tikhomirov@samsung.com>
+In-Reply-To: <006501cf391d$335fb9a0$9a1f2ce0$%tikhomirov@samsung.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for the Broadcom BCM21664 mobile SoC. It has two Cortex-A9
-cores like the BCM281xx family of chips. BCM21664 and BCM281xx share
-many IP blocks in addition to the ARM cores.
+Hi,
 
-Signed-off-by: Markus Mayer <markus.mayer@linaro.org>
----
- arch/arm/mach-bcm/Makefile         |  6 ++-
- arch/arm/mach-bcm/board_bcm21664.c | 78 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 82 insertions(+), 2 deletions(-)
- create mode 100644 arch/arm/mach-bcm/board_bcm21664.c
+On Thursday 06 March 2014 02:49 PM, Anton Tikhomirov wrote:
+> Hi,
+>
+>> Subject: RE: [PATCH v9 3/4] phy: Add new Exynos USB 2.0 PHY driver
+>>
+>> Hi,
+>>
+>>> Subject: Re: [PATCH v9 3/4] phy: Add new Exynos USB 2.0 PHY driver
+>>>
+>>> Hi,
+>>>
+>>> On Thursday 06 March 2014 02:22 PM, Anton Tikhomirov wrote:
+>>>> Hello,
+>>>>
+>>>>> Subject: Re: [PATCH v9 3/4] phy: Add new Exynos USB 2.0 PHY driver
+>>>>>
+>>>>>
+>>>>>
+>>>>> On Thursday 06 March 2014 01:56 PM, Anton Tikhomirov wrote:
+>>>>>> Hi Kamil,
+>>>>>>
+>>>>>> ...
+>>>>>>
+>>>>>>> +| 3. Supporting SoCs
+>>>>>>> ++--------------------
+>>>>>>> +
+>>>>>>> +To support a new SoC a new file should be added to the
+>>> drivers/phy
+>>>>>>> +directory. Each SoC's configuration is stored in an instance of
+>>> the
+>>>>>>> +struct samsung_usb2_phy_config.
+>>>>>>> +
+>>>>>>> +struct samsung_usb2_phy_config {
+>>>>>>> +	const struct samsung_usb2_common_phy *phys;
+>>>>>>> +	unsigned int num_phys;
+>>>>>>> +	bool has_mode_switch;
+>>>>>>
+>>>>>> You missed rate_to_clk here.
+>>>>>>
+>>>>>>> +};
+>>>>>>> +
+>>>>>>
+>>>>>> ...
+>>>>>>
+>>>>>>> diff --git a/drivers/phy/phy-samsung-usb2.c b/drivers/phy/phy-
+>>>>> samsung-
+>>>>>>> usb2.c
+>>>>>>> new file mode 100644
+>>>>>>> index 0000000..c3b7719
+>>>>>>> --- /dev/null
+>>>>>>> +++ b/drivers/phy/phy-samsung-usb2.c
+>>>>>>> @@ -0,0 +1,222 @@
+>>>>>>> +/*
+>>>>>>> + * Samsung SoC USB 1.1/2.0 PHY driver
+>>>>>>> + *
+>>>>>>> + * Copyright (C) 2013 Samsung Electronics Co., Ltd.
+>>>>>>> + * Author: Kamil Debski <k.debski@samsung.com>
+>>>>>>> + *
+>>>>>>> + * This program is free software; you can redistribute it
+>> and/or
+>>>>>>> modify
+>>>>>>> + * it under the terms of the GNU General Public License version
+>> 2
+>>>>> as
+>>>>>>> + * published by the Free Software Foundation.
+>>>>>>> + */
+>>>>>>> +
+>>>>>>> +#include <linux/clk.h>
+>>>>>>> +#include <linux/mfd/syscon.h>
+>>>>>>> +#include <linux/module.h>
+>>>>>>> +#include <linux/of.h>
+>>>>>>> +#include <linux/of_address.h>
+>>>>>>> +#include <linux/phy/phy.h>
+>>>>>>> +#include <linux/platform_device.h>
+>>>>>>> +#include <linux/spinlock.h>
+>>>>>>> +#include "phy-samsung-usb2.h"
+>>>>>>> +
+>>>>>>> +static int samsung_usb2_phy_power_on(struct phy *phy)
+>>>>>>> +{
+>>>>>>> +	struct samsung_usb2_phy_instance *inst =
+>>> phy_get_drvdata(phy);
+>>>>>>> +	struct samsung_usb2_phy_driver *drv = inst->drv;
+>>>>>>> +	int ret;
+>>>>>>> +
+>>>>>>> +	dev_dbg(drv->dev, "Request to power_on \"%s\" usb phy\n",
+>>>>>>> +		inst->cfg->label);
+>>>>>>> +	ret = clk_prepare_enable(drv->clk);
+>>>>>>
+>>>>>> clk_prepare_enable() can sleep, and therefore doesn't allow
+>>>>>> samusng_usb2_phy_power_on() to be used in atomic context
+>>>>>> (e.g. inside spin_lock-ed area), what sometimes may be desirable.
+>>>>>> What about to prepare clock in probe, and just enable it here
+>>>>>> (note: clk_enable() doesn't sleep).
+>>>>>
+>>>>> The PHY power-on callback is anyway called with mutex held, so I
+>>> guess
+>>>>> it's fine to have clk_prepare_enable() here.
+>>>>
+>>>> If we rely totally on generic PHY functions such as phy_power_on()
+>>>> and friends, why do we need to use locking in callbacks at all.
+>>>
+>>> Didn't get you.. We don't want to invoke power_on when init is
+>> getting
+>>> executed or you don't want power on or power off to get executed
+>>> simultaneously right? So we need to protect it.
+>>
+>> I mean callbacks such as samsung_usb2_phy_power_on() which uses
+>> spin_lock.
+>> It's already protected by mutex in phy_power_on().
+>
+> Well... phy_power_on() uses mutex to protect power_on() callback.
+> power_on() is samsung_usb2_phy_power_on() in our case.
+> samsung_usb2_phy_power_on() uses spinlock.
+> My question is why do we need to use spinlock _inside_ callback
+> if it is already protected by mutex.
 
-diff --git a/arch/arm/mach-bcm/Makefile b/arch/arm/mach-bcm/Makefile
-index c2ccd5a..0e2e52e 100644
---- a/arch/arm/mach-bcm/Makefile
-+++ b/arch/arm/mach-bcm/Makefile
-@@ -1,5 +1,5 @@
- #
--# Copyright (C) 2012-2013 Broadcom Corporation
-+# Copyright (C) 2012-2014 Broadcom Corporation
- #
- # This program is free software; you can redistribute it and/or
- # modify it under the terms of the GNU General Public License as
-@@ -10,6 +10,8 @@
- # of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- # GNU General Public License for more details.
- 
--obj-$(CONFIG_ARCH_BCM_MOBILE)	:= board_bcm281xx.o bcm_kona_smc.o bcm_kona_smc_asm.o kona.o
-+obj-$(CONFIG_ARCH_BCM_MOBILE)	:= board_bcm281xx.o board_bcm21664.o \
-+				bcm_kona_smc.o bcm_kona_smc_asm.o kona.o
-+
- plus_sec := $(call as-instr,.arch_extension sec,+sec)
- AFLAGS_bcm_kona_smc_asm.o	:=-Wa,-march=armv7-a$(plus_sec)
-diff --git a/arch/arm/mach-bcm/board_bcm21664.c b/arch/arm/mach-bcm/board_bcm21664.c
-new file mode 100644
-index 0000000..acc1573
---- /dev/null
-+++ b/arch/arm/mach-bcm/board_bcm21664.c
-@@ -0,0 +1,78 @@
-+/*
-+ * Copyright (C) 2014 Broadcom Corporation
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation version 2.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/clocksource.h>
-+#include <linux/of_address.h>
-+#include <linux/of_platform.h>
-+
-+#include <asm/mach/arch.h>
-+
-+#include "bcm_kona_smc.h"
-+#include "kona.h"
-+
-+#define RSTMGR_DT_STRING		"brcm,bcm21664-resetmgr"
-+
-+#define RSTMGR_REG_WR_ACCESS_OFFSET	0
-+#define RSTMGR_REG_CHIP_SOFT_RST_OFFSET	4
-+
-+#define RSTMGR_WR_PASSWORD		0xa5a5
-+#define RSTMGR_WR_PASSWORD_SHIFT	8
-+#define RSTMGR_WR_ACCESS_ENABLE		1
-+
-+static void bcm21664_restart(enum reboot_mode mode, const char *cmd)
-+{
-+	void __iomem *base;
-+	struct device_node *resetmgr;
-+
-+	resetmgr = of_find_compatible_node(NULL, NULL, RSTMGR_DT_STRING);
-+	if (!resetmgr) {
-+		pr_emerg("Couldn't find " RSTMGR_DT_STRING "\n");
-+		return;
-+	}
-+	base = of_iomap(resetmgr, 0);
-+	if (!base) {
-+		pr_emerg("Couldn't map " RSTMGR_DT_STRING "\n");
-+		return;
-+	}
-+
-+	/*
-+	 * A soft reset is triggered by writing a 0 to bit 0 of the soft reset
-+	 * register. To write to that register we must first write the password
-+	 * and the enable bit in the write access enable register.
-+	 */
-+	writel((RSTMGR_WR_PASSWORD << RSTMGR_WR_PASSWORD_SHIFT) |
-+		RSTMGR_WR_ACCESS_ENABLE,
-+		base + RSTMGR_REG_WR_ACCESS_OFFSET);
-+	writel(0, base + RSTMGR_REG_CHIP_SOFT_RST_OFFSET);
-+
-+	/* Wait for reset */
-+	while (1);
-+}
-+
-+static void __init bcm21664_init(void)
-+{
-+	of_platform_populate(NULL, of_default_bus_match_table, NULL,
-+		&platform_bus);
-+	kona_l2_cache_init();
-+}
-+
-+static const char * const bcm21664_dt_compat[] = {
-+	"brcm,bcm21664",
-+	NULL,
-+};
-+
-+DT_MACHINE_START(BCM21664_DT, "BCM21664 Broadcom Application Processor")
-+	.init_machine = bcm21664_init,
-+	.restart = bcm21664_restart,
-+	.dt_compat = bcm21664_dt_compat,
-+MACHINE_END
--- 
-1.9.0
+It is needed when the same PHY provider implements multiple PHYs. 
+phy-core can protect phy-ops of same PHY. However if the PHY provider 
+implements multiple PHYs, phy-core won't be able to protect.
 
+Cheers
+Kishon
