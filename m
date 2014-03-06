@@ -1,390 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751817AbaCFWH1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 17:07:27 -0500
-Received: from mailout3.w2.samsung.com ([211.189.100.13]:42566 "EHLO
-	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003AbaCFWHV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 17:07:21 -0500
-X-AuditID: cbfec37b-b7f8f6d000007030-6a-5318f197883f
-Message-id: <5318F18E.7000204@samsung.com>
-Date: Thu, 06 Mar 2014 15:07:10 -0700
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.2.0
-MIME-version: 1.0
-To: Valentina Manea <valentina.manea.m@gmail.com>, gregkh@linuxfoundation.org
-Cc: tobias.polzer@fau.de, dominik.paulus@fau.de, ly80toro@cip.cs.fau.de,
-        ihadzic@research.bell-labs.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
-        firefly@lists.rosedu.org, Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH 10/12] staging: usbip: userspace: migrate vhci_driver to
- libudev
-References: <1393960252-21247-1-git-send-email-valentina.manea.m@gmail.com>
- <1393960252-21247-11-git-send-email-valentina.manea.m@gmail.com>
-In-reply-to: <1393960252-21247-11-git-send-email-valentina.manea.m@gmail.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.34.5]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphkeLIzCtJLcpLzFFi42I5/e+wn+70jxLBBo+OaVjsOfOL3aJ5rbjF
-	qx0vWCyaF69ns7hwN9Li8q45bBaLlrUyWzy7lmOx5+k7Fot3l+ayO3B5LLlwh8nj3r7DLB7n
-	22ezeOycdZfdY//cNewe99o2M3o8XXaD0ePzJrkAjigum5TUnMyy1CJ9uwSujPsLHrAXnAis
-	WD3hEGMD4yLHLkZODgkBE4kJV/czQthiEhfurWfrYuTiEBJYxiixYu1NsISQQC+TxMuLBhCJ
-	DYwSl2a1soIkeAW0JKbc/sUMYrMIqEqc3nGFDcRmE1CX+Px6BztEs5xE05LVYDWiAhESr85O
-	ZIHoFZT4MfkemC0i4Cvxf8JuRpAFzAL/GSWm3dgDtllYIEzi08ZlUCf1MUo8PfocLMEJ1PHp
-	1S+wbmYBa4mVk7YxQtjyEpvXvGWG2Kws8efyKSaI3xQkbixcxjqBUWQWkuWzkLTPQtK+gJF5
-	FaNYaXFyQXFSemqFkV5xYm5xaV66XnJ+7iZGSAxW72C8+9XmEKMAB6MSD6/BAolgIdbEsuLK
-	3EOMEhzMSiK8pi+BQrwpiZVVqUX58UWlOanFhxiZODilGhjjzJTeuOiynSuK9ubTLG1OPXOE
-	fyVfOW/5vANJNbGNm2L01JM17B+cf//BL6CBp1taw527VaP36tef8S8qVtisbOF/W/LyD+PR
-	sq2yXmaP6rYK1N44zz5DcVqix1vZwuKUuXNO7RM7o/fs5w6LHvaTk98oaJd6RM/wUK1fsuPD
-	09XRf7Z23FBiKc5INNRiLipOBACQ4BbJnwIAAA==
+	id S1752149AbaCFWIs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 17:08:48 -0500
+Received: from na01-sn2-obe.ptr.o365filtering.com ([157.55.158.29]:50069 "EHLO
+	na01-sn2-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751650AbaCFWIq convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 17:08:46 -0500
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: KY Srinivasan <kys@microsoft.com>, Brian Wong <draconicpenguin1@yahoo.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: Hyper-V Synthetic Video Frame Buffer Driver may distort top two
+ lines of console
+Thread-Topic: Hyper-V Synthetic Video Frame Buffer Driver may distort top
+ two lines of console
+Thread-Index: AQHPOXx2W59dN7iRf0OjrtDg+nS0hZrUjJiAgAAMOICAAABSoIAAA+pg
+Date: Thu, 6 Mar 2014 22:08:19 +0000
+Message-ID: <129cf9d54a4c4ba68f4f70725299b9c8@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+References: <5318DD7A.2080706@yahoo.com> <5318E311.8000303@yahoo.com>
+ <5318ED51.4060400@yahoo.com>
+ <366171544ed34d909b113328d2ed2e64@BY2PR03MB299.namprd03.prod.outlook.com>
+In-Reply-To: <366171544ed34d909b113328d2ed2e64@BY2PR03MB299.namprd03.prod.outlook.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: =?us-ascii?Q?CIP:131.107.147.100;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10?=
+ =?us-ascii?Q?009001)(13464003)(189002)(199002)(164054003)(24454002)(47917?=
+ =?us-ascii?Q?4003)(377454003)(51704005)(46102001)(97186001)(66066001)(336?=
+ =?us-ascii?Q?46001)(2656002)(74876001)(87266001)(77982001)(59766001)(6581?=
+ =?us-ascii?Q?6001)(80022001)(15395725004)(46406003)(84676001)(74366001)(7?=
+ =?us-ascii?Q?4662001)(74502001)(47446002)(23726002)(31966008)(4396001)(54?=
+ =?us-ascii?Q?316002)(76796001)(76786001)(56776001)(56816005)(51856001)(90?=
+ =?us-ascii?Q?146001)(50986001)(95666003)(74706001)(85306002)(50466002)(92?=
+ =?us-ascii?Q?566001)(97336001)(44976005)(93886001)(6806004)(81542001)(818?=
+ =?us-ascii?Q?16001)(83322001)(19580395003)(19580405001)(93516002)(4797600?=
+ =?us-ascii?Q?1)(95416001)(69226001)(83072002)(93136001)(49866001)(8585200?=
+ =?us-ascii?Q?3)(87936001)(94946001)(81342001)(63696002)(54356001)(2077600?=
+ =?us-ascii?Q?3)(47776003)(53806001)(79102001)(47736001)(81686001)(1520234?=
+ =?us-ascii?Q?5003)(86612001)(80976001)(1511001)(94316002)(76482001)(15975?=
+ =?us-ascii?Q?445006)(15519875005)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:B?=
+ =?us-ascii?Q?LUSR01MB590;H:hybrid.exchange.microsoft.com;FPR:791EC526.2CE?=
+ =?us-ascii?Q?385FA.BB6C7B9F.54E2B9DC.201B6;PTR:InfoDomainNonexistent;MX:1?=
+ =?us-ascii?Q?;A:1;LANG:en;?=
+X-Forefront-PRVS: 0142F22657
+X-OriginatorOrg: msft.ccsctp.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/2014 12:10 PM, Valentina Manea wrote:
-> This patch migrates vhci_driver to libudev.
->
-> Signed-off-by: Valentina Manea <valentina.manea.m@gmail.com>
-> ---
->   .../staging/usbip/userspace/libsrc/usbip_common.h  |   1 -
->   .../staging/usbip/userspace/libsrc/vhci_driver.c   | 154 ++++++---------------
->   .../staging/usbip/userspace/libsrc/vhci_driver.h   |   5 +-
->   3 files changed, 44 insertions(+), 116 deletions(-)
->
-> diff --git a/drivers/staging/usbip/userspace/libsrc/usbip_common.h b/drivers/staging/usbip/userspace/libsrc/usbip_common.h
-> index 9c11060..c4a72c3 100644
-> --- a/drivers/staging/usbip/userspace/libsrc/usbip_common.h
-> +++ b/drivers/staging/usbip/userspace/libsrc/usbip_common.h
-> @@ -5,7 +5,6 @@
->   #ifndef __USBIP_COMMON_H
->   #define __USBIP_COMMON_H
->
-> -#include <sysfs/libsysfs.h>
->   #include <libudev.h>
->
->   #include <stdint.h>
-> diff --git a/drivers/staging/usbip/userspace/libsrc/vhci_driver.c b/drivers/staging/usbip/userspace/libsrc/vhci_driver.c
-> index 73a163aa..e7839a0 100644
-> --- a/drivers/staging/usbip/userspace/libsrc/vhci_driver.c
-> +++ b/drivers/staging/usbip/userspace/libsrc/vhci_driver.c
-> @@ -7,6 +7,7 @@
->   #include <limits.h>
->   #include <netdb.h>
->   #include <libudev.h>
-> +#include "sysfs_utils.h"
->
->   #undef  PROGNAME
->   #define PROGNAME "libusbip"
-> @@ -36,7 +37,7 @@ err:
->
->
->
-> -static int parse_status(char *value)
-> +static int parse_status(const char *value)
->   {
->   	int ret = 0;
->   	char *c;
-> @@ -108,42 +109,33 @@ static int parse_status(char *value)
->
->   static int refresh_imported_device_list(void)
->   {
-> -	struct sysfs_attribute *attr_status;
-> +	const char *attr_status;
->
-> -
-> -	attr_status = sysfs_get_device_attr(vhci_driver->hc_device, "status");
-> +	attr_status = udev_device_get_sysattr_value(vhci_driver->hc_device,
-> +					       "status");
->   	if (!attr_status) {
-> -		dbg("sysfs_get_device_attr(\"status\") failed: %s",
-> -		    vhci_driver->hc_device->name);
-> +		dbg("udev_device_get_sysattr_value failed");
 
-I am afraid you are going to be tired of me saying this :) err() please. 
-I have had to run usbip userspace tools with strace a few times to 
-figure out where it failed. Hence this insistence on err() where it is 
-makes sense.
 
->   		return -1;
->   	}
->
-> -	dbg("name: %s  path: %s  len: %d  method: %d  value: %s",
-> -	    attr_status->name, attr_status->path, attr_status->len,
-> -	    attr_status->method, attr_status->value);
-> -
-> -	return parse_status(attr_status->value);
-> +	return parse_status(attr_status);
->   }
->
->   static int get_nports(void)
->   {
->   	char *c;
->   	int nports = 0;
-> -	struct sysfs_attribute *attr_status;
-> +	const char *attr_status;
->
-> -	attr_status = sysfs_get_device_attr(vhci_driver->hc_device, "status");
-> +	attr_status = udev_device_get_sysattr_value(vhci_driver->hc_device,
-> +					       "status");
->   	if (!attr_status) {
-> -		dbg("sysfs_get_device_attr(\"status\") failed: %s",
-> -		    vhci_driver->hc_device->name);
-> +		dbg("udev_device_get_sysattr_value failed");
+> -----Original Message-----
+> From: KY Srinivasan
+> Sent: Thursday, March 6, 2014 4:51 PM
+> To: Brian Wong; linux-kernel@vger.kernel.org; Haiyang Zhang
+> Subject: RE: Hyper-V Synthetic Video Frame Buffer Driver may distort top
+> two lines of console
+> 
+> 
+> 
+> > -----Original Message-----
+> > From: Brian Wong [mailto:draconicpenguin1@yahoo.com]
+> > Sent: Friday, March 7, 2014 3:19 AM
+> > To: KY Srinivasan; linux-kernel@vger.kernel.org
+> > Subject: Re: Hyper-V Synthetic Video Frame Buffer Driver may distort
+> > top two lines of console
+> >
+> > On 3/6/2014 4:05 PM, Brian Wong wrote:
+> > > On 3/6/2014 3:41 PM, Brian Wong wrote:
+> > >> I've identified another possible bug in the Hyper-V drivers: When
+> > >> the Hyper-V Synthetic Video Frame Buffer Driver is built into the
+> > >> kernel, and the VM is paused and continued, the top two lines of
+> > >> the console may become distorted. See the image at
+> http://imgur.com/kIExFP3.
+> > >>
+> > >> Can someone look into it?
+> Haiyang (copied here) will look into it.
+> 
 
-Same here err()
+It's a known issue. The root cause is not very clear yet.
+It doesn't affect system functions. But we will look into it 
+further.
 
->   		return -1;
->   	}
->
-> -	dbg("name: %s  path: %s  len: %d  method: %d  value: %s",
-> -	    attr_status->name, attr_status->path, attr_status->len,
-> -	    attr_status->method, attr_status->value);
-> -
->   	/* skip a header line */
-> -	c = strchr(attr_status->value, '\n');
-> +	c = strchr(attr_status, '\n');
->   	if (!c)
->   		return 0;
->   	c++;
-> @@ -160,50 +152,6 @@ static int get_nports(void)
->   	return nports;
->   }
->
-> -static int get_hc_busid(char *sysfs_mntpath, char *hc_busid)
-> -{
-> -	struct sysfs_driver *sdriver;
-> -	char sdriver_path[SYSFS_PATH_MAX];
-> -
-> -	struct sysfs_device *hc_dev;
-> -	struct dlist *hc_devs;
-> -
-> -	int found = 0;
-> -
-> -	snprintf(sdriver_path, SYSFS_PATH_MAX, "%s/%s/%s/%s/%s", sysfs_mntpath,
-> -	SYSFS_BUS_NAME, USBIP_VHCI_BUS_TYPE, SYSFS_DRIVERS_NAME,
-> -	USBIP_VHCI_DRV_NAME);
-> -
-> -	sdriver = sysfs_open_driver_path(sdriver_path);
-> -	if (!sdriver) {
-> -		dbg("sysfs_open_driver_path failed: %s", sdriver_path);
-> -		dbg("make sure " USBIP_CORE_MOD_NAME ".ko and "
-> -		    USBIP_VHCI_DRV_NAME ".ko are loaded!");
-> -		return -1;
-> -	}
-> -
-> -	hc_devs = sysfs_get_driver_devices(sdriver);
-> -	if (!hc_devs) {
-> -		dbg("sysfs_get_driver failed");
-> -		goto err;
-> -	}
-> -
-> -	/* assume only one vhci_hcd */
-> -	dlist_for_each_data(hc_devs, hc_dev, struct sysfs_device) {
-> -		strncpy(hc_busid, hc_dev->bus_id, SYSFS_BUS_ID_SIZE);
-> -		found = 1;
-> -	}
-> -
-> -err:
-> -	sysfs_close_driver(sdriver);
-> -
-> -	if (found)
-> -		return 0;
-> -
-> -	dbg("%s not found", hc_busid);
-> -	return -1;
-> -}
-> -
->   /*
->    * Read the given port's record.
->    *
-> @@ -215,7 +163,6 @@ err:
->    */
->   static int read_record(int rhport, char *host, unsigned long host_len,
->   		char *port, unsigned long port_len, char *busid)
-> -
->   {
->   	int part;
->   	FILE *file;
-> @@ -272,36 +219,21 @@ static int read_record(int rhport, char *host, unsigned long host_len,
->
->   int usbip_vhci_driver_open(void)
->   {
-> -	int ret;
-> -	char hc_busid[SYSFS_BUS_ID_SIZE];
-> -
->   	udev_context = udev_new();
->   	if (!udev_context) {
->   		dbg("udev_new failed");
->   		return -1;
->   	}
->
-> -	vhci_driver = (struct usbip_vhci_driver *) calloc(1, sizeof(*vhci_driver));
-> -	if (!vhci_driver) {
-> -		dbg("calloc failed");
-> -		return -1;
-> -	}
-> -
-> -	ret = sysfs_get_mnt_path(vhci_driver->sysfs_mntpath, SYSFS_PATH_MAX);
-> -	if (ret < 0) {
-> -		dbg("sysfs_get_mnt_path failed");
-> -		goto err;
-> -	}
-> -
-> -	ret = get_hc_busid(vhci_driver->sysfs_mntpath, hc_busid);
-> -	if (ret < 0)
-> -		goto err;
-> +	vhci_driver = calloc(1, sizeof(struct usbip_vhci_driver));
->
->   	/* will be freed in usbip_driver_close() */
-> -	vhci_driver->hc_device = sysfs_open_device(USBIP_VHCI_BUS_TYPE,
-> -						   hc_busid);
-> +	vhci_driver->hc_device =
-> +		udev_device_new_from_subsystem_sysname(udev_context,
-> +						       USBIP_VHCI_BUS_TYPE,
-> +						       USBIP_VHCI_DRV_NAME);
->   	if (!vhci_driver->hc_device) {
-> -		dbg("sysfs_open_device failed");
-> +		dbg("udev_device_new_from_subsystem_sysname");
+Thanks,
+- Haiyang
 
-Same comment about error
-
->   		goto err;
->   	}
->
-> @@ -312,13 +244,11 @@ int usbip_vhci_driver_open(void)
->   	if (refresh_imported_device_list())
->   		goto err;
->
-> -
->   	return 0;
->
-> -
->   err:
-> -	if (vhci_driver->hc_device)
-> -		sysfs_close_device(vhci_driver->hc_device);
-> +	udev_device_unref(vhci_driver->hc_device);
-> +
->   	if (vhci_driver)
->   		free(vhci_driver);
->
-> @@ -335,8 +265,8 @@ void usbip_vhci_driver_close()
->   	if (!vhci_driver)
->   		return;
->
-> -	if (vhci_driver->hc_device)
-> -		sysfs_close_device(vhci_driver->hc_device);
-> +	udev_device_unref(vhci_driver->hc_device);
-> +
->   	free(vhci_driver);
->
->   	vhci_driver = NULL;
-> @@ -370,24 +300,24 @@ int usbip_vhci_get_free_port(void)
->
->   int usbip_vhci_attach_device2(uint8_t port, int sockfd, uint32_t devid,
->   		uint32_t speed) {
-> -	struct sysfs_attribute *attr_attach;
->   	char buff[200]; /* what size should be ? */
-> +	char attach_attr_path[SYSFS_PATH_MAX];
-> +	char attr_attach[] = "attach";
-> +	const char *path;
->   	int ret;
->
-> -	attr_attach = sysfs_get_device_attr(vhci_driver->hc_device, "attach");
-> -	if (!attr_attach) {
-> -		dbg("sysfs_get_device_attr(\"attach\") failed: %s",
-> -		    vhci_driver->hc_device->name);
-> -		return -1;
-> -	}
-> -
->   	snprintf(buff, sizeof(buff), "%u %d %u %u",
->   			port, sockfd, devid, speed);
->   	dbg("writing: %s", buff);
->
-> -	ret = sysfs_write_attribute(attr_attach, buff, strlen(buff));
-> +	path = udev_device_get_syspath(vhci_driver->hc_device);
-> +	snprintf(attach_attr_path, sizeof(attach_attr_path), "%s/%s",
-> +		 path, attr_attach);
-> +	dbg("attach attribute path: %s", attach_attr_path);
-> +
-> +	ret = write_sysfs_attribute(attach_attr_path, buff, strlen(buff));
->   	if (ret < 0) {
-> -		dbg("sysfs_write_attribute failed");
-> +		dbg("write_sysfs_attribute failed");
->   		return -1;
->   	}
->
-> @@ -412,23 +342,23 @@ int usbip_vhci_attach_device(uint8_t port, int sockfd, uint8_t busnum,
->
->   int usbip_vhci_detach_device(uint8_t port)
->   {
-> -	struct sysfs_attribute  *attr_detach;
-> +	char detach_attr_path[SYSFS_PATH_MAX];
-> +	char attr_detach[] = "detach";
->   	char buff[200]; /* what size should be ? */
-> +	const char *path;
->   	int ret;
->
-> -	attr_detach = sysfs_get_device_attr(vhci_driver->hc_device, "detach");
-> -	if (!attr_detach) {
-> -		dbg("sysfs_get_device_attr(\"detach\") failed: %s",
-> -		    vhci_driver->hc_device->name);
-> -		return -1;
-> -	}
-> -
->   	snprintf(buff, sizeof(buff), "%u", port);
->   	dbg("writing: %s", buff);
->
-> -	ret = sysfs_write_attribute(attr_detach, buff, strlen(buff));
-> +	path = udev_device_get_syspath(vhci_driver->hc_device);
-> +	snprintf(detach_attr_path, sizeof(detach_attr_path), "%s/%s",
-> +		 path, attr_detach);
-> +	dbg("detach attribute path: %s", detach_attr_path);
-> +
-> +	ret = write_sysfs_attribute(detach_attr_path, buff, strlen(buff));
->   	if (ret < 0) {
-> -		dbg("sysfs_write_attribute failed");
-> +		dbg("write_sysfs_attribute failed");
->   		return -1;
->   	}
->
-> diff --git a/drivers/staging/usbip/userspace/libsrc/vhci_driver.h b/drivers/staging/usbip/userspace/libsrc/vhci_driver.h
-> index e72baa0..8a84fdf 100644
-> --- a/drivers/staging/usbip/userspace/libsrc/vhci_driver.h
-> +++ b/drivers/staging/usbip/userspace/libsrc/vhci_driver.h
-> @@ -5,7 +5,7 @@
->   #ifndef __VHCI_DRIVER_H
->   #define __VHCI_DRIVER_H
->
-> -#include <sysfs/libsysfs.h>
-> +#include <libudev.h>
->   #include <stdint.h>
->
->   #include "usbip_common.h"
-> @@ -32,10 +32,9 @@ struct usbip_imported_device {
->   };
->
->   struct usbip_vhci_driver {
-> -	char sysfs_mntpath[SYSFS_PATH_MAX];
->
->   	/* /sys/devices/platform/vhci_hcd */
-> -	struct sysfs_device *hc_device;
-> +	struct udev_device *hc_device;
->
->   	int nports;
->   	struct usbip_imported_device idev[MAXNPORT];
->
-
-You have my Reviewed-by after making the recommended changes.
-
-Reviewed-by: Shuah Khan <shuah.kh@samsung.com>
-
--- Shuah
-
--- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
