@@ -1,109 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753388AbaCFDvB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 22:51:01 -0500
-Received: from tundra.namei.org ([65.99.196.166]:48699 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752727AbaCFDu7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 22:50:59 -0500
-Date: Thu, 6 Mar 2014 14:51:30 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: David Howells <dhowells@redhat.com>
-cc: torvalds@linux-foundation.org, tt.rantala@gmail.com,
-        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, trinity@vger.kernel.org,
-        Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH] KEYS: Make the keyring cycle detector ignore other
- keyrings of the same name
-In-Reply-To: <15425.1393949449@warthog.procyon.org.uk>
-Message-ID: <alpine.LRH.2.02.1403061451070.10002@tundra.namei.org>
-References: <15425.1393949449@warthog.procyon.org.uk>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754709AbaCFDy0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 22:54:26 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:13911 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751573AbaCFDyW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 22:54:22 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvEDAKzwF1Ol5H4JgWdsb2JhbABahky+YoExDgEBFiYogyUYgSeIC88BF45RhD8EmD2VbCg
+From: Alistair Popple <alistair@popple.id.au>
+To: benh@kernel.crashing.org, netdev@vger.kernel.org,
+        linux-mmc@vger.kernel.org, chris@printf.net,
+        linuxppc-dev@lists.ozlabs.org, davem@davemloft.net
+Cc: Alistair Popple <alistair@popple.id.au>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: [PATCH 0/5] V2 IBM Akebono/PPC46GTR Support
+Date: Thu,  6 Mar 2014 14:52:23 +1100
+Message-Id: <1394077948-8395-1-git-send-email-alistair@popple.id.au>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: James Morris <james.l.morris@oracle.com>
+The IBM Akebono board is a development board for the new PPC476GTR
+system on chip (SoC).
 
+This version of the series updates the device tree and drops the USB
+patches as the equivalent functionality is already in linux-next. It
+also addresses feedback from the previous submission.
 
-On Tue, 4 Mar 2014, David Howells wrote:
+Alistair Popple (5):
+  SDHCI: Add a generic registration to the SDHCI platform driver
+  IBM Akebono: Add support for a new PHY interface to the IBM emac
+    driver
+  IBM Currituck: Clean up board specific code before adding Akebono code
+  IBM Akebono: Add the Akebono platform
+  powerpc: Added PCI MSI support using the HSTA module
 
-> 
-> This fixes CVE-2014-0102.
-> 
-> The following command sequence produces an oops:
-> 
-> 	keyctl new_session
-> 	i=`keyctl newring _ses @s`
-> 	keyctl link @s $i
-> 
-> The problem is that search_nested_keyrings() sees two keyrings that have
-> matching type and description, so keyring_compare_object() returns true.
-> s_n_k() then passes the key to the iterator function -
-> keyring_detect_cycle_iterator() - which *should* check to see whether this is
-> the keyring of interest, not just one with the same name.
-> 
-> Because assoc_array_find() will return one and only one match, I assumed that
-> the iterator function would only see an exact match or never be called - but
-> the iterator isn't only called from assoc_array_find()...
-> 
-> The oops looks something like this:
-> 
-> 	kernel BUG at /data/fs/linux-2.6-fscache/security/keys/keyring.c:1003!
-> 	invalid opcode: 0000 [#1] SMP
-> 	...
-> 	RIP: 0010:[<ffffffff811d39c3>] keyring_detect_cycle_iterator+0xe/0x1f
-> 	...
-> 	Stack:
-> 	...
-> 	Call Trace:
-> 	 [<ffffffff811d3706>] search_nested_keyrings+0x76/0x2aa
-> 	 [<ffffffff810fa7f4>] ? kmem_cache_alloc_trace+0xdd/0x159
-> 	 [<ffffffff81235669>] ? assoc_array_insert+0xab/0x929
-> 	 [<ffffffff811e226d>] ? selinux_key_permission+0x2d/0x2f
-> 	 [<ffffffff811dc94c>] ? security_key_permission+0x11/0x13
-> 	 [<ffffffff811d3e36>] __key_link_check_live_key+0x50/0x5f
-> 	 [<ffffffff811d39b5>] ? keyring_describe+0x7b/0x7b
-> 	 [<ffffffff811d3f2b>] key_link+0x4e/0x85
-> 	 [<ffffffff811d463a>] keyctl_keyring_link+0x60/0x81
-> 	 [<ffffffff811d553d>] SyS_keyctl+0x65/0xe4
-> 	 [<ffffffff81452edb>] tracesys+0xdd/0xe2
-> 
-> The fix is to make keyring_detect_cycle_iterator() check that the key it has
-> is the key it was actually looking for rather than calling BUG_ON().
-> 
-> A testcase has been included in the keyutils testsuite for this:
-> 
-> 	http://git.kernel.org/cgit/linux/kernel/git/dhowells/keyutils.git/commit/?id=891f3365d07f1996778ade0e3428f01878a1790b
-> 
-> Reported-by: Tommi Rantala <tt.rantala@gmail.com>
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> ---
-> diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-> index d46cbc5e335e..2fb2576dc644 100644
-> --- a/security/keys/keyring.c
-> +++ b/security/keys/keyring.c
-> @@ -1000,7 +1000,11 @@ static int keyring_detect_cycle_iterator(const void *object,
->  
->  	kenter("{%d}", key->serial);
->  
-> -	BUG_ON(key != ctx->match_data);
-> +	/* We might get a keyring with matching index-key that is nonetheless a
-> +	 * different keyring. */
-> +	if (key != ctx->match_data)
-> +		return 0;
-> +
->  	ctx->result = ERR_PTR(-EDEADLK);
->  	return 1;
->  }
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+ .../devicetree/bindings/mmc/sdhci-pltfm.txt        |  16 +
+ .../devicetree/bindings/powerpc/4xx/akebono.txt    |  54 +++
+ .../devicetree/bindings/powerpc/4xx/emac.txt       |   9 +
+ .../devicetree/bindings/powerpc/4xx/hsta.txt       |  19 +
+ arch/powerpc/boot/Makefile                         |   3 +
+ arch/powerpc/boot/dcr.h                            |   4 +
+ arch/powerpc/boot/dts/akebono.dts                  | 415 +++++++++++++++++++++
+ arch/powerpc/boot/treeboot-akebono.c               | 163 ++++++++
+ arch/powerpc/boot/wrapper                          |   3 +
+ arch/powerpc/configs/44x/akebono_defconfig         | 148 ++++++++
+ arch/powerpc/platforms/44x/Kconfig                 |  28 ++
+ arch/powerpc/platforms/44x/Makefile                |   3 +-
+ arch/powerpc/platforms/44x/currituck.c             | 233 ------------
+ arch/powerpc/platforms/44x/ppc476.c                | 299 +++++++++++++++
+ arch/powerpc/sysdev/Kconfig                        |   6 +
+ arch/powerpc/sysdev/Makefile                       |   1 +
+ arch/powerpc/sysdev/ppc4xx_hsta_msi.c              | 215 +++++++++++
+ arch/powerpc/sysdev/ppc4xx_pci.c                   |  21 +-
+ drivers/mmc/host/sdhci-pltfm.c                     |  28 ++
+ drivers/net/ethernet/ibm/emac/Kconfig              |   4 +
+ drivers/net/ethernet/ibm/emac/Makefile             |   1 +
+ drivers/net/ethernet/ibm/emac/core.c               |  50 ++-
+ drivers/net/ethernet/ibm/emac/core.h               |  12 +
+ drivers/net/ethernet/ibm/emac/rgmii_wol.c          | 244 ++++++++++++
+ drivers/net/ethernet/ibm/emac/rgmii_wol.h          |  62 +++
+ 25 files changed, 1796 insertions(+), 245 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mmc/sdhci-pltfm.txt
+ create mode 100644 Documentation/devicetree/bindings/powerpc/4xx/akebono.txt
+ create mode 100644 Documentation/devicetree/bindings/powerpc/4xx/hsta.txt
+ create mode 100644 arch/powerpc/boot/dts/akebono.dts
+ create mode 100644 arch/powerpc/boot/treeboot-akebono.c
+ create mode 100644 arch/powerpc/configs/44x/akebono_defconfig
+ delete mode 100644 arch/powerpc/platforms/44x/currituck.c
+ create mode 100644 arch/powerpc/platforms/44x/ppc476.c
+ create mode 100644 arch/powerpc/sysdev/ppc4xx_hsta_msi.c
+ create mode 100644 drivers/net/ethernet/ibm/emac/rgmii_wol.c
+ create mode 100644 drivers/net/ethernet/ibm/emac/rgmii_wol.h
 
 -- 
-James Morris
-<jmorris@namei.org>
+1.8.3.2
+
