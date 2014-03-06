@@ -1,56 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758031AbaCFArE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 19:47:04 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:41631 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754326AbaCFArB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 19:47:01 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Joe Perches <joe@perches.com>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Paul Bolle <pebolle@tiscali.nl>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] [media] v4l: omap4iss: Add DEBUG compiler flag
-Date: Thu, 06 Mar 2014 01:48:29 +0100
-Message-ID: <2136780.FIdBGb725A@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1394065683.12070.32.camel@joe-AO722>
-References: <1391958577.25424.22.camel@x220> <3099833.ZhlQFyxhbo@avalon> <1394065683.12070.32.camel@joe-AO722>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1757709AbaCFApZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 19:45:25 -0500
+Received: from mga01.intel.com ([192.55.52.88]:22070 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757640AbaCFApW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 19:45:22 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,596,1389772800"; 
+   d="scan'208";a="493138106"
+Subject: [PATCH 1/7] x86: mm: clean up tlb flushing code
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, ak@linux.intel.com,
+        kirill.shutemov@linux.intel.com, mgorman@suse.de, alex.shi@linaro.org,
+        x86@kernel.org, linux-mm@kvack.org, Dave Hansen <dave@sr71.net>,
+        dave.hansen@linux.intel.com
+From: Dave Hansen <dave@sr71.net>
+Date: Wed, 05 Mar 2014 16:45:21 -0800
+References: <20140306004519.BBD70A1A@viggo.jf.intel.com>
+In-Reply-To: <20140306004519.BBD70A1A@viggo.jf.intel.com>
+Message-Id: <20140306004521.5D13DC05@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
 
-On Wednesday 05 March 2014 16:28:03 Joe Perches wrote:
-> On Thu, 2014-03-06 at 00:50 +0100, Laurent Pinchart wrote:
-> > Please note that -DDEBUG is equivalent to '#define DEBUG', not to '#define
-> > CONFIG_DEBUG'. 'DEBUG' needs to be defined for dev_dbg() to have any
-> > effect.
->
-> Not quite.  If CONFIG_DYNAMIC_DEBUG is set, these
-> dev_dbg statements are compiled in but not by default
-> set to emit output.  Output can be enabled by using
-> dynamic_debug controls like:
-> 
-> # echo -n 'file omap4iss/* +p' > <debugfs>/dynamic_debug/control
-> 
-> See Documentation/dynamic-debug-howto.txt for more details.
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
-Thank you for the additional information.
+The
 
-Would you recommend to drop driver-specific Kconfig options related to 
-debugging and use CONFIG_DYNAMIC_DEBUG instead ?
+	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
 
--- 
-Regards,
+line of code is not exactly the easiest to audit, especially when
+it ends up at two different indentation levels.  This eliminates
+one of the the copy-n-paste versions.  It also gives us a unified
+exit point for each path through this function.  We need this in
+a minute for our tracepoint.
 
-Laurent Pinchart
 
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+---
+
+ b/arch/x86/mm/tlb.c |   23 +++++++++++------------
+ 1 file changed, 11 insertions(+), 12 deletions(-)
+
+diff -puN arch/x86/mm/tlb.c~simplify-tlb-code arch/x86/mm/tlb.c
+--- a/arch/x86/mm/tlb.c~simplify-tlb-code	2014-03-05 16:10:09.607047728 -0800
++++ b/arch/x86/mm/tlb.c	2014-03-05 16:10:09.610047866 -0800
+@@ -161,23 +161,24 @@ void flush_tlb_current_task(void)
+ void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
+ 				unsigned long end, unsigned long vmflag)
+ {
++	int need_flush_others_all = 1;
+ 	unsigned long addr;
+ 	unsigned act_entries, tlb_entries = 0;
+ 	unsigned long nr_base_pages;
+ 
+ 	preempt_disable();
+ 	if (current->active_mm != mm)
+-		goto flush_all;
++		goto out;
+ 
+ 	if (!current->mm) {
+ 		leave_mm(smp_processor_id());
+-		goto flush_all;
++		goto out;
+ 	}
+ 
+ 	if (end == TLB_FLUSH_ALL || tlb_flushall_shift == -1
+ 					|| vmflag & VM_HUGETLB) {
+ 		local_flush_tlb();
+-		goto flush_all;
++		goto out;
+ 	}
+ 
+ 	/* In modern CPU, last level tlb used for both data/ins */
+@@ -196,22 +197,20 @@ void flush_tlb_mm_range(struct mm_struct
+ 		count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
+ 		local_flush_tlb();
+ 	} else {
++		need_flush_others_all = 0;
+ 		/* flush range by one by one 'invlpg' */
+ 		for (addr = start; addr < end;	addr += PAGE_SIZE) {
+ 			count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ONE);
+ 			__flush_tlb_single(addr);
+ 		}
+-
+-		if (cpumask_any_but(mm_cpumask(mm),
+-				smp_processor_id()) < nr_cpu_ids)
+-			flush_tlb_others(mm_cpumask(mm), mm, start, end);
+-		preempt_enable();
+-		return;
+ 	}
+-
+-flush_all:
++out:
++	if (need_flush_others_all) {
++		start = 0UL;
++		end = TLB_FLUSH_ALL;
++	}
+ 	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
+-		flush_tlb_others(mm_cpumask(mm), mm, 0UL, TLB_FLUSH_ALL);
++		flush_tlb_others(mm_cpumask(mm), mm, start, end);
+ 	preempt_enable();
+ }
+ 
+_
