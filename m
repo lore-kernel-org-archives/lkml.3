@@ -1,224 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752948AbaCFOmH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 09:42:07 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:55634 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752366AbaCFOjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 09:39:47 -0500
-From: Roger Quadros <rogerq@ti.com>
-To: <kishon@ti.com>, <tony@atomide.com>, <balbi@ti.com>
-CC: <george.cherian@ti.com>, <balajitk@ti.com>, <hdegoede@redhat.com>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-ide@vger.kernel.org>,
-        <rogerq@ti.com>
-Subject: [PATCH v2 07/13] phy: ti-pipe3: streamline PHY operations
-Date: Thu, 6 Mar 2014 16:38:43 +0200
-Message-ID: <1394116729-28811-8-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1394116729-28811-1-git-send-email-rogerq@ti.com>
-References: <1394116729-28811-1-git-send-email-rogerq@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753353AbaCFOmb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 09:42:31 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:52030 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752936AbaCFOm1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 09:42:27 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-8a-531889505af4
+Message-id: <1394116942.25853.14.camel@AMDC1943>
+Subject: Re: [PATCH 2/3] regulator: s2mps11: Add set_suspend_disable for S2MPS14
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>
+Date: Thu, 06 Mar 2014 15:42:22 +0100
+In-reply-to: <20140306093826.GO13126@sirena.org.uk>
+References: <1394011373-4057-1-git-send-email-k.kozlowski@samsung.com>
+ <1394011373-4057-3-git-send-email-k.kozlowski@samsung.com>
+ <20140306093826.GO13126@sirena.org.uk>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.2.3-0ubuntu6
+Content-transfer-encoding: 7bit
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPLMWRmVeSWpSXmKPExsVy+t/xK7oBnRLBBiue6llsnLGe1WLqwyds
+	Fmeb3rBb3P96lNHi25UOJovLu+awWcw4v4/JYu2Ru+wWJ//0Mlqc7ma1uLjiC5PF+hmvWSzm
+	TH/H5MDrsXPWXXaPTas62TzuXNvD5jHvZKBH35ZVjB6fN8kFsEVx2aSk5mSWpRbp2yVwZRza
+	t5Cx4LpAxYHtm1kbGFfwdjFyckgImEgsbtrKCmGLSVy4t56ti5GLQ0hgKaPErY5ZLBDOZ0aJ
+	3k8LgDIcHLwCBhKv1sSDNAgLBEisX/OJGcRmEzCW2Lx8CRuILSKgLHH1+16wXmaBV8wSD3ZP
+	AkuwCKhKnNtzjBFkDidQw4SVkhDz1zBKHO04AzaIWUBdYtK8RcwQFylJ7G7vZIeIy0tsXvMW
+	LM4rICjxY/I9lgmMArOQtMxCUjYLSdkCRuZVjKKppckFxUnpuYZ6xYm5xaV56XrJ+bmbGCGR
+	8mUH4+JjVocYBTgYlXh4N/iJBwuxJpYVV+YeYpTgYFYS4ZWtlggW4k1JrKxKLcqPLyrNSS0+
+	xMjEwSnVwMhbE1p54dj5JZdsJ4WJNJY3rrrnnjLFLamiylxhTsWcfcu6Ox3LbrnXvrjGyRam
+	Eq5zcfE0idBlwYJL9qz8svS4x2/WbzqhXTw8QobbC6cY+ObYblBbd/i86F3tnQYKy56c7A28
+	/e+kbruE+ZK1oRMW3xDYNCt1/1Y+Zi1GM4YnD5dH2593Wq3EUpyRaKjFXFScCACool26cgIA	AA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Limit .power_on() and .power_off() to just control the
-PHY power and not the DPLL. The DPLL will be enabled
-in .init() and idled in .exit().
+On Thu, 2014-03-06 at 17:38 +0800, Mark Brown wrote:
+> On Wed, Mar 05, 2014 at 10:22:52AM +0100, Krzysztof Kozlowski wrote:
+> 
+> > +	ret = regmap_read(rdev->regmap, rdev->desc->enable_reg, &data);
+> > +	if (ret < 0)
+> > +		return ret;
+> > +
+> > +	/*
+> > +	 * Don't enable suspend mode if regulator is already disabled because
+> > +	 * this would effectively for a short time turn on the regulator after
+> > +	 * resuming.
+> > +	 */
+> > +	if (!(data & rdev->desc->enable_mask))
+> > +		return 0;
+> > +
+> > +	return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
+> > +			rdev->desc->enable_mask, S2MPS14_ENABLE_SUSPEND);
+> > +}
+> 
+> What happens if the regulator gets enabled between this being called
+> and the device suspending?  I'd expect this to be storing the state and
+> then changing what gets written during enable and disable operations (if
+> the hardware does what I think it does).
 
-Don't reprogram the DPLL if it has been already locked
-by the bootloader. This fixes a problem with SATA, where
-it fails if SATA was used by the bootloader.
+It seems that none of the regulators implementing set_suspend_disable()
+work that way. They just write the suspend value to device. Of course
+this is not an issue - the S2MPS14 may be the first :).
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- drivers/phy/phy-ti-pipe3.c | 114 +++++++++++++++++++++++++--------------------
- 1 file changed, 63 insertions(+), 51 deletions(-)
+However in that case the driver won't be able later to change that value
+back to "normal enable" (enable_mask). Consider such flow:
+1. System is going to suspend.
+2. Some regulator has "rstate->disabled" so set_suspend_disable() is
+called on it.
+3. The "suspend" value is written to the device for given regulator and
+it is stored as "enable" value.
+4. If regulator is enabled during here then the same "suspend" value
+will be written.
+5. System is suspended.
+6. After resuming regulator_suspend_finish() calls
+_regulator_do_enable() on the regulator... which will write the
+"suspend" value because the driver cannot differentiate between this
+enable and previous.
 
-diff --git a/drivers/phy/phy-ti-pipe3.c b/drivers/phy/phy-ti-pipe3.c
-index baa3f78d..12cc900 100644
---- a/drivers/phy/phy-ti-pipe3.c
-+++ b/drivers/phy/phy-ti-pipe3.c
-@@ -47,7 +47,8 @@
- #define	PLL_SD_MASK		0x0003FC00
- #define	PLL_SD_SHIFT		10
- #define	SET_PLL_GO		0x1
--#define	PLL_TICOPWDN		0x10000
-+#define PLL_LDOPWDN		BIT(15)
-+#define PLL_TICOPWDN		BIT(16)
- #define	PLL_LOCK		0x2
- #define	PLL_IDLE		0x1
- 
-@@ -56,7 +57,8 @@
-  * value required for the PIPE3PHY_PLL_CONFIGURATION2.PLL_IDLE status
-  * to be correctly reflected in the PIPE3PHY_PLL_STATUS register.
-  */
--# define PLL_IDLE_TIME  100;
-+#define PLL_IDLE_TIME	100	/* in milliseconds */
-+#define PLL_LOCK_TIME	100	/* in milliseconds */
- 
- struct pipe3_dpll_params {
- 	u16	m;
-@@ -132,24 +134,6 @@ static struct pipe3_dpll_params *ti_pipe3_get_dpll_params(struct ti_pipe3 *phy)
- static int ti_pipe3_power_off(struct phy *x)
- {
- 	struct ti_pipe3 *phy = phy_get_drvdata(x);
--	int val;
--	int timeout = PLL_IDLE_TIME;
--
--	val = ti_pipe3_readl(phy->pll_ctrl_base, PLL_CONFIGURATION2);
--	val |= PLL_IDLE;
--	ti_pipe3_writel(phy->pll_ctrl_base, PLL_CONFIGURATION2, val);
--
--	do {
--		val = ti_pipe3_readl(phy->pll_ctrl_base, PLL_STATUS);
--		if (val & PLL_TICOPWDN)
--			break;
--		udelay(5);
--	} while (--timeout);
--
--	if (!timeout) {
--		dev_err(phy->dev, "power off failed\n");
--		return -EBUSY;
--	}
- 
- 	omap_control_phy_power(phy->control_dev, 0);
- 
-@@ -159,44 +143,34 @@ static int ti_pipe3_power_off(struct phy *x)
- static int ti_pipe3_power_on(struct phy *x)
- {
- 	struct ti_pipe3 *phy = phy_get_drvdata(x);
--	int val;
--	int timeout = PLL_IDLE_TIME;
--
--	val = ti_pipe3_readl(phy->pll_ctrl_base, PLL_CONFIGURATION2);
--	val &= ~PLL_IDLE;
--	ti_pipe3_writel(phy->pll_ctrl_base, PLL_CONFIGURATION2, val);
- 
--	do {
--		val = ti_pipe3_readl(phy->pll_ctrl_base, PLL_STATUS);
--		if (!(val & PLL_TICOPWDN))
--			break;
--		udelay(5);
--	} while (--timeout);
--
--	if (!timeout) {
--		dev_err(phy->dev, "power on failed\n");
--		return -EBUSY;
--	}
-+	omap_control_phy_power(phy->control_dev, 1);
- 
- 	return 0;
- }
- 
--static void ti_pipe3_dpll_relock(struct ti_pipe3 *phy)
-+static int ti_pipe3_dpll_wait_lock(struct ti_pipe3 *phy)
- {
- 	u32		val;
- 	unsigned long	timeout;
- 
--	ti_pipe3_writel(phy->pll_ctrl_base, PLL_GO, SET_PLL_GO);
--
--	timeout = jiffies + msecs_to_jiffies(20);
-+	timeout = jiffies + msecs_to_jiffies(PLL_LOCK_TIME);
- 	do {
-+		cpu_relax();
- 		val = ti_pipe3_readl(phy->pll_ctrl_base, PLL_STATUS);
- 		if (val & PLL_LOCK)
- 			break;
--	} while (!WARN_ON(time_after(jiffies, timeout)));
-+	} while (!time_after(jiffies, timeout));
-+
-+	if (!(val & PLL_LOCK)) {
-+		dev_err(phy->dev, "DPLL failed to lock\n");
-+		return -EBUSY;
-+	}
-+
-+	return 0;
- }
- 
--static int ti_pipe3_dpll_lock(struct ti_pipe3 *phy)
-+static int ti_pipe3_dpll_program(struct ti_pipe3 *phy)
- {
- 	u32			val;
- 	struct pipe3_dpll_params *dpll_params;
-@@ -230,27 +204,65 @@ static int ti_pipe3_dpll_lock(struct ti_pipe3 *phy)
- 	val |= dpll_params->sd << PLL_SD_SHIFT;
- 	ti_pipe3_writel(phy->pll_ctrl_base, PLL_CONFIGURATION3, val);
- 
--	ti_pipe3_dpll_relock(phy);
-+	ti_pipe3_writel(phy->pll_ctrl_base, PLL_GO, SET_PLL_GO);
- 
--	return 0;
-+	return ti_pipe3_dpll_wait_lock(phy);
- }
- 
- static int ti_pipe3_init(struct phy *x)
- {
- 	struct ti_pipe3 *phy = phy_get_drvdata(x);
--	int ret;
-+	u32 val;
-+	int ret = 0;
- 
--	ret = ti_pipe3_dpll_lock(phy);
--	if (ret)
--		return ret;
-+	/* Bring it out of IDLE if it is IDLE */
-+	val = ti_pipe3_readl(phy->pll_ctrl_base, PLL_CONFIGURATION2);
-+	if (val & PLL_IDLE) {
-+		val &= ~PLL_IDLE;
-+		ti_pipe3_writel(phy->pll_ctrl_base, PLL_CONFIGURATION2, val);
-+		ret = ti_pipe3_dpll_wait_lock(phy);
-+	}
- 
--	omap_control_phy_power(phy->control_dev, 1);
-+	/* Program the DPLL only if not locked */
-+	val = ti_pipe3_readl(phy->pll_ctrl_base, PLL_STATUS);
-+	if (!(val & PLL_LOCK))
-+		if (ti_pipe3_dpll_program(phy))
-+			return -EINVAL;
- 
--	return 0;
-+	return ret;
- }
- 
-+static int ti_pipe3_exit(struct phy *x)
-+{
-+	struct ti_pipe3 *phy = phy_get_drvdata(x);
-+	u32 val;
-+	unsigned long timeout;
-+
-+	/* Put DPLL in IDLE mode */
-+	val = ti_pipe3_readl(phy->pll_ctrl_base, PLL_CONFIGURATION2);
-+	val |= PLL_IDLE;
-+	ti_pipe3_writel(phy->pll_ctrl_base, PLL_CONFIGURATION2, val);
-+
-+	/* wait for LDO and Oscillator to power down */
-+	timeout = jiffies + msecs_to_jiffies(PLL_IDLE_TIME);
-+	do {
-+		cpu_relax();
-+		val = ti_pipe3_readl(phy->pll_ctrl_base, PLL_STATUS);
-+		if ((val & PLL_TICOPWDN) && (val & PLL_LDOPWDN))
-+			break;
-+	} while (!time_after(jiffies, timeout));
-+
-+	if (!(val & PLL_TICOPWDN) || !(val & PLL_LDOPWDN)) {
-+		dev_err(phy->dev, "Failed to power down: PLL_STATUS 0x%x\n",
-+			val);
-+		return -EBUSY;
-+	}
-+
-+	return 0;
-+}
- static struct phy_ops ops = {
- 	.init		= ti_pipe3_init,
-+	.exit		= ti_pipe3_exit,
- 	.power_on	= ti_pipe3_power_on,
- 	.power_off	= ti_pipe3_power_off,
- 	.owner		= THIS_MODULE,
--- 
-1.8.3.2
+I assume that this may not be a problem because:
+1. Regulator will be still turned on (the "suspend" value tells PMIC to
+enable the regulator when SoC enables power).
+2. The first disable of regulator may bring back "enable" value back to
+normal mode.
+
+Am I thinking here correctly? 
+
+
+Best regards,
+Krzysztof
+
 
