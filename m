@@ -1,66 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508AbaCFMcL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 07:32:11 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:50411 "EHLO bear.ext.ti.com"
+	id S1751169AbaCFMlz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 07:41:55 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:59450 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751440AbaCFMcJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 07:32:09 -0500
-From: Mugunthan V N <mugunthanvnm@ti.com>
-To: <bcousson@baylibre.com>, <tony@atomide.com>
-CC: <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Mugunthan V N <mugunthanvnm@ti.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [RESEND PATCH 1/1] arm: dts: am33xx: correcting dt node unit address for usb
-Date: Thu, 6 Mar 2014 18:01:34 +0530
-Message-ID: <1394109094-19205-1-git-send-email-mugunthanvnm@ti.com>
-X-Mailer: git-send-email 1.9.0
+	id S1750760AbaCFMlx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 07:41:53 -0500
+X-IronPort-AV: E=Sophos;i="4.97,599,1389744000"; 
+   d="scan'208";a="108714823"
+Message-ID: <53186D0D.3010402@citrix.com>
+Date: Thu, 6 Mar 2014 12:41:49 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Wei Liu <wei.liu2@citrix.com>
+CC: <ian.campbell@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jonathan.davies@citrix.com>
+Subject: Re: [PATCH net-next v6 8/10] xen-netback: Add stat counters for frag_list
+ skbs
+References: <1393972341-21135-1-git-send-email-zoltan.kiss@citrix.com> <1393972341-21135-9-git-send-email-zoltan.kiss@citrix.com> <20140305123546.GI19620@zion.uk.xensource.com>
+In-Reply-To: <20140305123546.GI19620@zion.uk.xensource.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DT node's unit address should be its own register offset address to make it a
-unique across the system. This patch corrects the incorrect USB entries with
-correct register offset for unit address.
+On 05/03/14 12:35, Wei Liu wrote:
+> On Tue, Mar 04, 2014 at 10:32:19PM +0000, Zoltan Kiss wrote:
+>> These counters help determine how often the guest sends a packet with more
+>> than MAX_SKB_FRAGS frags.
+>>
+>> NOTE: if bisect brought you here, you should apply the series up until #9,
+>> otherwise malicious guests can block other guests by not releasing their sent
+>> packets.
+>>
+>> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+>> ---
+>>   drivers/net/xen-netback/common.h    |    1 +
+>>   drivers/net/xen-netback/interface.c |    7 +++++++
+>>   drivers/net/xen-netback/netback.c   |    1 +
+>>   3 files changed, 9 insertions(+)
+>>
+>> diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
+>> index eac171e..d8a2298 100644
+>> --- a/drivers/net/xen-netback/common.h
+>> +++ b/drivers/net/xen-netback/common.h
+>> @@ -170,6 +170,7 @@ struct xenvif {
+>>   	unsigned long tx_zerocopy_sent;
+>>   	unsigned long tx_zerocopy_success;
+>>   	unsigned long tx_zerocopy_fail;
+>> +	unsigned long tx_frag_overflow;
+>>
+>>   	/* Miscellaneous private stuff. */
+>>   	struct net_device *dev;
+>> diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
+>> index adfed30..ba5be2f 100644
+>> --- a/drivers/net/xen-netback/interface.c
+>> +++ b/drivers/net/xen-netback/interface.c
+>> @@ -252,6 +252,13 @@ static const struct xenvif_stat {
+>>   		"tx_zerocopy_fail",
+>>   		offsetof(struct xenvif, tx_zerocopy_fail)
+>>   	},
+>> +	/* Number of packets exceeding MAX_SKB_FRAG slots. You should use
+>> +	 * a guest with the same MAX_SKB_FRAG
+>> +	 */
+>> +	{
+>> +		"tx_frag_overflow",
+>> +		offsetof(struct xenvif, tx_frag_overflow)
+>> +	},
+>
+> This patch break bisection with a cause different than "unable to handle
+> too many frags", because previous patch makes use of this
+> tx_frag_overflow. It's harmless to merge this one into previous one.
+Ok
 
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
----
-This patch was posted long back (Aug. 30, 2013), below is the archive of the
-orginal patch.
-https://patchwork.kernel.org/patch/2852163/
-
----
- arch/arm/boot/dts/am33xx.dtsi | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-index 7073429..9770e35 100644
---- a/arch/arm/boot/dts/am33xx.dtsi
-+++ b/arch/arm/boot/dts/am33xx.dtsi
-@@ -453,7 +453,7 @@
- 			ti,hwmods = "usb_otg_hs";
- 			status = "disabled";
- 
--			usb_ctrl_mod: control@44e10000 {
-+			usb_ctrl_mod: control@44e10620 {
- 				compatible = "ti,am335x-usb-ctrl-module";
- 				reg = <0x44e10620 0x10
- 					0x44e10648 0x4>;
-@@ -556,7 +556,7 @@
- 					"tx14", "tx15";
- 			};
- 
--			cppi41dma: dma-controller@07402000 {
-+			cppi41dma: dma-controller@47402000 {
- 				compatible = "ti,am3359-cppi41";
- 				reg =  <0x47400000 0x1000
- 					0x47402000 0x1000
--- 
-1.9.0
+>
+>>   };
+>>
+>>   static int xenvif_get_sset_count(struct net_device *dev, int
+>>   string_set)
 
