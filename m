@@ -1,115 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753329AbaCFScf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 13:32:35 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:49773 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752368AbaCFScc (ORCPT
+	id S1753245AbaCFScd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 13:32:33 -0500
+Received: from smtprelay0047.hostedemail.com ([216.40.44.47]:55824 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751817AbaCFScc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 6 Mar 2014 13:32:32 -0500
-Date: Thu, 6 Mar 2014 12:29:41 -0600
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>, linux-mm@kvack.org
-Subject: [PATCH -next] slub: Replace __this_cpu_inc usage w/ SLUB_STATS
-Message-ID: <20140306182941.GH18529@joshc.qualcomm.com>
-References: <20140306194821.3715d0b6212cc10415374a68@canb.auug.org.au>
- <20140306155316.GG18529@joshc.qualcomm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140306155316.GG18529@joshc.qualcomm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2693:2828:2895:3138:3139:3140:3141:3142:3622:3865:3866:3867:3870:3871:3873:3874:4321:5007:6119:7652:7903:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: boats34_6d07f7c57a149
+X-Filterd-Recvd-Size: 1335
+Message-ID: <1394130747.12070.75.camel@joe-AO722>
+Subject: Re: [PATCH 1/1] fs: gfs2: global conversion to pr_foo()
+From: Joe Perches <joe@perches.com>
+To: Steven Whitehouse <swhiteho@redhat.com>
+Cc: Fabian Frederick <fabf@skynet.be>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        akpm <akpm@linux-foundation.org>
+Date: Thu, 06 Mar 2014 10:32:27 -0800
+In-Reply-To: <1394128779.2729.25.camel@menhir>
+References: <20140305220642.9405a88f040c5d5f183e1119@skynet.be>
+	 <1394120644.2729.21.camel@menhir>  <1394128025.12070.73.camel@joe-AO722>
+	 <1394128779.2729.25.camel@menhir>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 06, 2014 at 09:53:16AM -0600, Josh Cartwright wrote:
-> Booting on my Samsung Series 9 laptop gives me loads and loads of BUGs
-> triggered by __this_cpu_add(), making making the system completely
-> unusable:
-> 
-> [    5.808326] BUG: using __this_cpu_add() in preemptible [00000000] code: swapper/0/1
-> [    5.812331] caller is __this_cpu_preempt_check+0x2b/0x30
-> [    5.815654] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.14.0-rc5-next-20140306-joshc-08290-g0ffb2fe #1
-> [    5.819553] Hardware name: SAMSUNG ELECTRONICS CO., LTD. 900X3C/900X3D/900X3E/900X4C/900X4D/NP900X3E-A02US, BIOS P07ABK 04/09/2013
-> [    5.823558]  ffff8801182157c0 ffff880118215790 ffffffff81a64cec 0000000000000000
-> [    5.827177]  ffff8801182157b0 ffffffff81462360 ffff8800c3d553e0 ffffea00030f5500
-> [    5.830744]  ffff8801182157e8 ffffffff814623bb 635f736968745f5f 29286464615f7570
-> [    5.834134] Call Trace:
-> [    5.836848]  [<ffffffff81a64cec>] dump_stack+0x4e/0x7a
-> [    5.839943]  [<ffffffff81462360>] check_preemption_disabled+0xd0/0xe0
-> [    5.842997]  [<ffffffff814623bb>] __this_cpu_preempt_check+0x2b/0x30
-> [    5.846022]  [<ffffffff81a6331d>] __slab_free+0x38/0x590
-> [    5.848863]  [<ffffffff811759dd>] ? get_parent_ip+0xd/0x50
-> [    5.850467] BUG: using __this_cpu_add() in preemptible [00000000] code: khubd/36
-> [    5.850472] caller is __this_cpu_preempt_check+0x2b/0x30
-> [    5.859125]  [<ffffffff81175b3b>] ? preempt_count_sub+0x6b/0xf0
-> [    5.862521]  [<ffffffff81a7175a>] ? _raw_spin_unlock_irqrestore+0x4a/0x80
-> [    5.865599]  [<ffffffff81462e5e>] ? __debug_check_no_obj_freed+0x13e/0x240
-> [    5.868738]  [<ffffffff814623bb>] ? __this_cpu_preempt_check+0x2b/0x30
-> [    5.871799]  [<ffffffff81287327>] kfree+0x2f7/0x300
+On Thu, 2014-03-06 at 17:59 +0000, Steven Whitehouse wrote:
+> Ok, I think I've got all of Fabian's patch now. Can you send me an
+> updated patch that I can put into my tree based on top of whats in the
+> -nmw tree now? Otherwise I think things will be a bit too confusing,
 
-FWIW, it looks like the magic combination of options are:
-	- CONFIG_DEBUG_PREEMPT=y
-	- CONFIG_SLUB=y
-	- CONFIG_SLUB_STATS=y
+No worries, but maybe you need to push the change?
+As far as I can tell, what's there now is the same.
 
-Looks like the new percpu() checks are complaining about SLUB's use of
-__this_cpu_inc() for maintaining it's stat counters.  The below patch
-seems to fix it.
 
-Although, I'm wondering how exact these statistics need to be.  Is
-making them preemption safe even a concern?
-
-Thanks,
-  Josh
-
---8<--
-Make slub statistics maintenance preemption-safe.
-
-Fixes the following warning when CONFIG_SLUB_STATS and
-CONFIG_DEBUG_PREEMPT:
-
-	BUG: using __this_cpu_add() in preemptible [00000000] code: systemd-journal/226
-	caller is __this_cpu_preempt_check+0x2b/0x30
-	Call Trace:
-	    dump_stack+0x4e/0x7a
-	    check_preemption_disabled+0xd0/0xe0
-	    __this_cpu_preempt_check+0x2b/0x30
-	    __slab_free+0x38/0x590
-	    kmem_cache_free+0x367/0x3a0
-	    jbd2_journal_stop+0x24d/0x500
-	    __ext4_journal_stop+0x37/0x90
-	    ext4_truncate+0x1ab/0x570
-	    ext4_setattr+0x2d3/0x810
-	    notify_change+0x159/0x3a0
-	    do_truncate+0x6f/0xa0
-	    do_sys_ftruncate.constprop.18+0x10e/0x160
-	    SyS_ftruncate+0xe/0x10
-	    system_call_fastpath+0x1a/0x1f
-
-Cc: Christoph Lameter <cl@linux.com>
-Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
----
- mm/slub.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/mm/slub.c b/mm/slub.c
-index c6eb29d..c873e61 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -224,7 +224,7 @@ static inline void memcg_propagate_slab_attrs(struct kmem_cache *s) { }
- static inline void stat(const struct kmem_cache *s, enum stat_item si)
- {
- #ifdef CONFIG_SLUB_STATS
--	__this_cpu_inc(s->cpu_slab->stat[si]);
-+	this_cpu_inc(s->cpu_slab->stat[si]);
- #endif
- }
- 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
