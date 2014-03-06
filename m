@@ -1,83 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855AbaCFQxJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 11:53:09 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:64848 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751577AbaCFQxF (ORCPT
+	id S1752903AbaCFQxY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 11:53:24 -0500
+Received: from usmamail.tilera.com ([12.216.194.151]:26959 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751577AbaCFQxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 11:53:05 -0500
-Date: Thu, 6 Mar 2014 09:53:02 -0700
-From: Jens Axboe <axboe@fb.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Final block fixes for 3.14
-Message-ID: <20140306165302.GA26301@kernel.dk>
+	Thu, 6 Mar 2014 11:53:20 -0500
+Message-ID: <5318A7FF.8010502@tilera.com>
+Date: Thu, 6 Mar 2014 11:53:19 -0500
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-03-06_05:2014-03-05,2014-03-06,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
- kscore.compositescore=0 circleOfTrustscore=7.0302659978126
- compositescore=0.998049563855454 urlsuspect_oldscore=0.998049563855454
- suspectscore=2 recipient_domain_to_sender_totalscore=0 phishscore=0
- bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=64355
- rbsscore=0.998049563855454 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1305240000
- definitions=main-1403060077
-X-FB-Internal: deliver
+To: Henrik Austad <henrik@austad.us>
+CC: LKML <linux-kernel@vger.kernel.org>, John Stultz <johnstul@us.ibm.com>,
+        Mike Galbraith <bitbucket@online.de>, Salman Qazi <sqazi@google.com>
+Subject: Re: [PATCH] tile: avoid overflow in ns2cycles
+References: <1393921253-23396-1-git-send-email-henrik@austad.us>
+In-Reply-To: <1393921253-23396-1-git-send-email-henrik@austad.us>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 3/4/2014 3:20 AM, Henrik Austad wrote:
+> In commit 4cecf6d401a ("sched, x86: Avoid unnecessary overflow in
+> sched_clock") and in recent patch "clocksource: avoid unnecessary
+> overflow in cyclecounter_cyc2ns()" https://lkml.org/lkml/2014/3/4/17,
+> the mult-shift approach is replaced by 2 steps to avoid storing a large,
+> intermediate value that could overflow.
+>
+> arch/tile/kernel/time.c has a similar pattern in cycles2ns, and this
+> copies the same pattern in this function
+>
+> CC: John Stultz <johnstul@us.ibm.com>
+> CC: Mike Galbraith <bitbucket@online.de>
+> CC: Salman Qazi <sqazi@google.com>
+> Signed-off-by: Henrik Austad <henrik@austad.us>
+> ---
+>  arch/tile/kernel/time.c |   10 +++++++++-
+>  1 file changed, 9 insertions(+), 1 deletion(-)
 
-Small collection of fixes for 3.14-rc. It contains:
-
-- Three minor update to blk-mq from Christoph.
-
-- Reduce number of unaligned (< 4kb) in-flight writes on mtip32xx to 2.
-  From Micron.
-
-- Make the blk-mq CPU notify spinlock raw, since it can't be a sleeper
-  spinlock on RT. From Mike Galbraith.
-
-- Drop now bogus BUG_ON() for bio iteration with blk integrity. From Nic
-  Bellinger.
-
-Please pull!
-
-  git://git.kernel.dk/linux-block.git for-linus
-
-----------------------------------------------------------------
-Asai Thambi S P (1):
-      mtip32xx: Reduce the number of unaligned writes to 2
-
-Christoph Hellwig (3):
-      blk-mq: remove blk_mq_alloc_rq
-      blk-mq: merge blk_mq_insert_request and blk_mq_run_request
-      blk-mq: support partial I/O completions
-
-Mike Galbraith (1):
-      rt,blk,mq: Make blk_mq_cpu_notify_lock a raw spinlock
-
-Nicholas Bellinger (1):
-      bio-integrity: Drop bio_integrity_verify BUG_ON in post bip->bip_iter world
-
- block/blk-exec.c                  |   2 +-
- block/blk-flush.c                 |   4 +-
- block/blk-mq-cpu.c                |  14 +++---
- block/blk-mq.c                    | 100 +++++++-------------------------------
- block/blk-mq.h                    |   1 -
- drivers/block/mtip32xx/mtip32xx.h |   2 +-
- fs/bio-integrity.c                |   5 +-
- include/linux/blk-mq.h            |  11 +++--
- 8 files changed, 37 insertions(+), 102 deletions(-)
+Thanks; taken into the tile tree (with some minor whitespace formatting tweaks).
 
 -- 
-Jens Axboe
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
