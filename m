@@ -1,100 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757931AbaCFCZJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 21:25:09 -0500
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:38278 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757230AbaCFCZE (ORCPT
+	id S1757968AbaCFC0q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 21:26:46 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:34048 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756826AbaCFC0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 21:25:04 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140306013824.GF13581@verge.net.au>
-References: <1393324219-3317-1-git-send-email-geert@linux-m68k.org>
-	<CANqRtoSM-51NRVAtYOOAzZQ-pagC2JteC+M=SKMuBYniLFfhLA@mail.gmail.com>
-	<20140306013824.GF13581@verge.net.au>
-Date: Thu, 6 Mar 2014 11:25:03 +0900
-Message-ID: <CANqRtoSkHWGRypPymh87ikmcEWqMsn=eRoPkc2JpaSZVqP21Lw@mail.gmail.com>
-Subject: Re: [PATCH v2 00/11] ARM: shmobile: MSIOF integration on
- r8a7790/lager and r8a7791/koelsch
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Simon Horman <horms@verge.net.au>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 5 Mar 2014 21:26:45 -0500
+From: Laura Abbott <lauraa@codeaurora.org>
+To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Vlastimil Babka <vbabka@suse.cz>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Laura Abbott <lauraa@codeaurora.org>
+Subject: [PATCH] mm/compaction: Break out of loop on !PageBuddy in isolate_freepages_block
+Date: Wed,  5 Mar 2014 18:26:40 -0800
+Message-Id: <1394072800-11776-1-git-send-email-lauraa@codeaurora.org>
+X-Mailer: git-send-email 1.7.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 6, 2014 at 10:38 AM, Simon Horman <horms@verge.net.au> wrote:
-> On Wed, Mar 05, 2014 at 05:31:42PM +0900, Magnus Damm wrote:
->> On Tue, Feb 25, 2014 at 7:30 PM, Geert Uytterhoeven
->> <geert@linux-m68k.org> wrote:
->> >         Hi Simon, Magnus,
->> >
->> > This patch series integrates support for the MSIOF module in the Renesas
->> > R-Car H2 (r8a7790) and M2 (r8a7791) SoCs on the Lager and Koelsch
->> > development boards.
->> >
->> > It was tested on Lager and Koelsch, both legacy and DT, using a dummy
->> > driver for the Renesas r2a11302ft PMIC that reads out the PMIC's version
->> > ID.
->> >
->> >     [01/11] ARM: shmobile: r8a7790: Add MSIOF clocks
->> >     [02/11] ARM: shmobile: r8a7791: Add MSIOF clocks
->> >     [03/11] ARM: shmobile: lager legacy: Add MSIOF support
->> >     [04/11] ARM: shmobile: koelsch legacy: Add MSIOF support
->> >     [05/11] ARM: shmobile: r8a7790/lager dts: Rename label spi to qspi, add
->> >             spi0 alias
->> >     [06/11] ARM: shmobile: r8a7791/koelsch dts: Rename label spi to qspi,
->> >             add spi0 alias
->> >     [07/11] ARM: shmobile: r8a7790 dtsi: Add MSIOF nodes and aliases
->> >     [08/11] ARM: shmobile: r8a7791 dtsi: Add MSIOF nodes and aliases
->> >     [09/11] ARM: shmobile: lager dts: Add MSIOF nodes
->> >     [10/11] ARM: shmobile: koelsch dts: Add MSIOF nodes
->> >     [11/11] ARM: shmobile: koelsch/lager/multi defconfig: Enable MSIOF
->> >
->> > These are (reworked versions of) the remaining patches not taken from v1.
->> > Changelogs are available in the individual patches.
->>
->> Hi Geert,
->>
->> Thanks for your efforts. All these look fine to me.
->>
->> Acked-by: Magnus Damm <damm@opensource.se>
->>
->> Exactly what to merge upstream depends on what the ARM SoC maintainers prefer.
->
-> I wonder if for now we could move things forwards by merging the
-> non-legacy code. I think that would mean the following:
->
->     [05/11] ARM: shmobile: r8a7790/lager dts: Rename label spi to qspi, add
->             spi0 alias
->     [06/11] ARM: shmobile: r8a7791/koelsch dts: Rename label spi to qspi,
->             add spi0 alias
->     [07/11] ARM: shmobile: r8a7790 dtsi: Add MSIOF nodes and aliases
->     [08/11] ARM: shmobile: r8a7791 dtsi: Add MSIOF nodes and aliases
->     [09/11] ARM: shmobile: lager dts: Add MSIOF nodes
->     [10/11] ARM: shmobile: koelsch dts: Add MSIOF nodes
->
-> And just the 'multi' portion of:
->
->     [11/11] ARM: shmobile: koelsch/lager/multi defconfig: Enable MSIOF
->
->
-> Would that result in working MSIOF support for koelsch and lager
-> when using multiplatform?
+We received several reports of bad page state when freeing CMA pages
+previously allocated with alloc_contig_range:
 
-I believe so, but I rely on Geert to point out if this assumption is wrong.
+<1>[ 1258.084111] BUG: Bad page state in process Binder_A  pfn:63202
+<1>[ 1258.089763] page:d21130b0 count:0 mapcount:1 mapping:  (null) index:0x7dfbf
+<1>[ 1258.096109] page flags: 0x40080068(uptodate|lru|active|swapbacked)
 
-> Then later, if appropriate, in accordance with discussions with the
-> ARM SoC maintainers, we could merge the remaining changes in
-> this series: the legacy code.
+Based on the page state, it looks like the page was still in use. The page
+flags do not make sense for the use case though. Further debugging showed
+that despite alloc_contig_range returning success, at least one page in the
+range still remained in the buddy allocator.
 
-Sure, sounds good.
+There is an issue with isolate_freepages_block. In strict mode (which CMA
+uses), if any pages in the range cannot be isolated, isolate_freepages_block
+should return failure 0. The current check keeps track of the total number
+of isolated pages and compares against the size of the range:
 
-Thanks,
+        if (strict && nr_strict_required > total_isolated)
+                total_isolated = 0;
 
-/ magnus
+After taking the zone lock, if one of the pages in the range is not
+in the buddy allocator, we continue through the loop and do not
+increment total_isolated. If we end up over isolating by more than
+one page (e.g. last since page needed is a higher order page), it
+is not possible to detect that the page was skipped. The fix is to
+bail out if the loop immediately if we are in strict mode. There's
+no benfit to continuing anyway since we need all pages to be
+isolated.
+
+Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+---
+ mm/compaction.c |   25 +++++++++++++++++++------
+ 1 files changed, 19 insertions(+), 6 deletions(-)
+
+diff --git a/mm/compaction.c b/mm/compaction.c
+index b48c525..3190cef 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -263,12 +263,21 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+ 		struct page *page = cursor;
+ 
+ 		nr_scanned++;
+-		if (!pfn_valid_within(blockpfn))
+-			continue;
++		if (!pfn_valid_within(blockpfn)) {
++			if (strict)
++				break;
++			else
++				continue;
++		}
++
+ 		if (!valid_page)
+ 			valid_page = page;
+-		if (!PageBuddy(page))
+-			continue;
++		if (!PageBuddy(page)) {
++			if (strict)
++				break;
++			else
++				continue;
++		}
+ 
+ 		/*
+ 		 * The zone lock must be held to isolate freepages.
+@@ -288,8 +297,12 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+ 			break;
+ 
+ 		/* Recheck this is a buddy page under lock */
+-		if (!PageBuddy(page))
+-			continue;
++		if (!PageBuddy(page)) {
++			if (strict)
++				break;
++			else
++				continue;
++		}
+ 
+ 		/* Found a free page, break it into order-0 pages */
+ 		isolated = split_free_page(page);
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
