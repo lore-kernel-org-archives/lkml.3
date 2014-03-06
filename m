@@ -1,210 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751055AbaCFFLh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 00:11:37 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:51395 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750760AbaCFFLf (ORCPT
+	id S1751052AbaCFFRc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 00:17:32 -0500
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:49884 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750760AbaCFFRb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 00:11:35 -0500
-X-Sasl-enc: RYC+TdDPhz6jizbof/iX7ZMm1r20mmQvAFHbfqUgYYp9 1394082692
-Date: Wed, 5 Mar 2014 21:11:58 -0800
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?iso-8859-1?Q?=22Salva_Peir=F3=22?= <speiro@ai2.upv.es>,
-        Daeseok Youn <daeseok.youn@gmail.com>
-Subject: Re: linux-next: manual merge of the staging tree with the
- staging.current tree
-Message-ID: <20140306051158.GA11456@kroah.com>
-References: <20140306160649.9564c40b8deaaf3b1e261a5b@canb.auug.org.au>
+	Thu, 6 Mar 2014 00:17:31 -0500
+Message-ID: <531804E7.2040406@gmail.com>
+Date: Wed, 05 Mar 2014 23:17:27 -0600
+From: Robert Hancock <hancockrwd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140306160649.9564c40b8deaaf3b1e261a5b@canb.auug.org.au>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux-usb <linux-usb@vger.kernel.org>
+CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: xHCI regression in stable 3.13.5 with USB3 card reader
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 06, 2014 at 04:06:49PM +1100, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> Today's linux-next merge of the staging tree got a conflict in
-> drivers/staging/cxt1e1/linux.c between commit 084b6e7765b9
-> ("staging/cxt1e1/linux.c: Correct arbitrary memory write in c4_ioctl()")
-> from the staging.current tree and commit 922b81b835c4 ("staging: cxt1e1:
-> remove space between function name and parenthesis") and a couple of
-> others from the staging tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+I have a USB 3.0 multi-card reader device:
 
-Thanks, that looks good.
+Bus 004 Device 002: ID 05e3:0743 Genesys Logic, Inc.
 
-greg k-h
+which seems to work fine in 3.13.4 (Fedora version kernel-3.13.4-200 
+specifically) but fails in 3.13.5 (specifically kernel-3.13.5-202). 
+Below is what I get in dmesg. Essentially there's a bunch of 
+input/output errors making the reader mostly unusable.
 
-> 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> diff --cc drivers/staging/cxt1e1/linux.c
-> index 79206cb3fb94,579e68e3dece..000000000000
-> --- a/drivers/staging/cxt1e1/linux.c
-> +++ b/drivers/staging/cxt1e1/linux.c
-> @@@ -861,79 -876,78 +876,80 @@@ c4_ioctl(struct net_device *ndev, struc
->   #endif
->   
->   #if 0
-> -     pr_info("c4_ioctl: iocmd %x, dir %x type %x nr %x iolen %d.\n", iocmd,
-> -             _IOC_DIR (iocmd), _IOC_TYPE (iocmd), _IOC_NR (iocmd),
-> -             _IOC_SIZE (iocmd));
-> + 	pr_info("c4_ioctl: iocmd %x, dir %x type %x nr %x iolen %d.\n", iocmd,
-> + 		_IOC_DIR(iocmd), _IOC_TYPE(iocmd), _IOC_NR(iocmd),
-> + 		_IOC_SIZE(iocmd));
->   #endif
-> -     iolen = _IOC_SIZE (iocmd);
-> -     if (iolen > sizeof(arg))
-> -         return -EFAULT;
-> -     data = ifr->ifr_data + sizeof (iocmd);
-> -     if (copy_from_user (&arg, data, iolen))
-> -         return -EFAULT;
-> - 
-> -     ret = 0;
-> -     switch (iocmd)
-> -     {
-> -     case SBE_IOC_PORT_GET:
-> -         //pr_info(">> SBE_IOC_PORT_GET Ioctl...\n");
-> -         ret = do_get_port (ndev, data);
-> -         break;
-> -     case SBE_IOC_PORT_SET:
-> -         //pr_info(">> SBE_IOC_PORT_SET Ioctl...\n");
-> -         ret = do_set_port (ndev, data);
-> -         break;
-> -     case SBE_IOC_CHAN_GET:
-> -         //pr_info(">> SBE_IOC_CHAN_GET Ioctl...\n");
-> -         ret = do_get_chan (ndev, data);
-> -         break;
-> -     case SBE_IOC_CHAN_SET:
-> -         //pr_info(">> SBE_IOC_CHAN_SET Ioctl...\n");
-> -         ret = do_set_chan (ndev, data);
-> -         break;
-> -     case C4_DEL_CHAN:
-> -         //pr_info(">> C4_DEL_CHAN Ioctl...\n");
-> -         ret = do_del_chan (ndev, data);
-> -         break;
-> -     case SBE_IOC_CHAN_NEW:
-> -         ret = do_create_chan (ndev, data);
-> -         break;
-> -     case SBE_IOC_CHAN_GET_STAT:
-> -         ret = do_get_chan_stats (ndev, data);
-> -         break;
-> -     case SBE_IOC_LOGLEVEL:
-> -         ret = do_set_loglevel (ndev, data);
-> -         break;
-> -     case SBE_IOC_RESET_DEV:
-> -         ret = do_reset (ndev, data);
-> -         break;
-> -     case SBE_IOC_CHAN_DEL_STAT:
-> -         ret = do_reset_chan_stats (ndev, data);
-> -         break;
-> -     case C4_LOOP_PORT:
-> -         ret = do_port_loop (ndev, data);
-> -         break;
-> -     case C4_RW_FRMR:
-> -         ret = do_framer_rw (ndev, data);
-> -         break;
-> -     case C4_RW_MSYC:
-> -         ret = do_musycc_rw (ndev, data);
-> -         break;
-> -     case C4_RW_PLD:
-> -         ret = do_pld_rw (ndev, data);
-> -         break;
-> -     case SBE_IOC_IID_GET:
-> -         ret = (iolen == sizeof (struct sbe_iid_info)) ? c4_get_iidinfo (ci, &arg.u.iip) : -EFAULT;
-> -         if (ret == 0)               /* no error, copy data */
-> -             if (copy_to_user (data, &arg, iolen))
-> -                 return -EFAULT;
-> -         break;
-> -     default:
-> -         //pr_info(">> c4_ioctl: EINVAL - unknown iocmd <%x>\n", iocmd);
-> -         ret = -EINVAL;
-> -         break;
-> -     }
-> -     return mkret (ret);
-> + 	iolen = _IOC_SIZE(iocmd);
-> ++	if (iolen > sizeof(arg))
-> ++		return -EFAULT;
-> + 	data = ifr->ifr_data + sizeof(iocmd);
-> + 	if (copy_from_user(&arg, data, iolen))
-> + 		return -EFAULT;
-> + 
-> + 	ret = 0;
-> + 	switch (iocmd)
-> + 	{
-> + 	case SBE_IOC_PORT_GET:
-> + 		//pr_info(">> SBE_IOC_PORT_GET Ioctl...\n");
-> + 		ret = do_get_port(ndev, data);
-> + 		break;
-> + 	case SBE_IOC_PORT_SET:
-> + 		//pr_info(">> SBE_IOC_PORT_SET Ioctl...\n");
-> + 		ret = do_set_port(ndev, data);
-> + 		break;
-> + 	case SBE_IOC_CHAN_GET:
-> + 		//pr_info(">> SBE_IOC_CHAN_GET Ioctl...\n");
-> + 		ret = do_get_chan(ndev, data);
-> + 		break;
-> + 	case SBE_IOC_CHAN_SET:
-> + 		//pr_info(">> SBE_IOC_CHAN_SET Ioctl...\n");
-> + 		ret = do_set_chan(ndev, data);
-> + 		break;
-> + 	case C4_DEL_CHAN:
-> + 		//pr_info(">> C4_DEL_CHAN Ioctl...\n");
-> + 		ret = do_del_chan(ndev, data);
-> + 		break;
-> + 	case SBE_IOC_CHAN_NEW:
-> + 		ret = do_create_chan(ndev, data);
-> + 		break;
-> + 	case SBE_IOC_CHAN_GET_STAT:
-> + 		ret = do_get_chan_stats(ndev, data);
-> + 		break;
-> + 	case SBE_IOC_LOGLEVEL:
-> + 		ret = do_set_loglevel(ndev, data);
-> + 		break;
-> + 	case SBE_IOC_RESET_DEV:
-> + 		ret = do_reset(ndev, data);
-> + 		break;
-> + 	case SBE_IOC_CHAN_DEL_STAT:
-> + 		ret = do_reset_chan_stats(ndev, data);
-> + 		break;
-> + 	case C4_LOOP_PORT:
-> + 		ret = do_port_loop(ndev, data);
-> + 		break;
-> + 	case C4_RW_FRMR:
-> + 		ret = do_framer_rw(ndev, data);
-> + 		break;
-> + 	case C4_RW_MSYC:
-> + 		ret = do_musycc_rw(ndev, data);
-> + 		break;
-> + 	case C4_RW_PLD:
-> + 		ret = do_pld_rw(ndev, data);
-> + 		break;
-> + 	case SBE_IOC_IID_GET:
-> + 		ret = (iolen == sizeof(struct sbe_iid_info)) ?
-> + 		       c4_get_iidinfo(ci, &arg.u.iip) : -EFAULT;
-> + 		if (ret == 0)               /* no error, copy data */
-> + 			if (copy_to_user(data, &arg, iolen))
-> + 				return -EFAULT;
-> + 		break;
-> + 	default:
-> + 		//pr_info(">> c4_ioctl: EINVAL - unknown iocmd <%x>\n", iocmd);
-> + 		ret = -EINVAL;
-> + 		break;
-> + 	}
-> + 	return mkret(ret);
->   }
->   
->   static const struct net_device_ops c4_ops = {
+This is on an Intel Haswell machine with this controller:
 
+00:14.0 USB controller [0c03]: Intel Corporation 8 Series/C220 Series 
+Chipset Family USB xHCI [8086:8c31] (rev 05)
 
+It looks like there were some XHCI commits that went into 3.13.5 so it 
+seems likely one of those is the cause. I can try current git if there's 
+anything in there that's likely to fix it. But it does seem like a 
+regression got into the stable kernel in this respect.
+
+[   25.177926] usb 4-2: Disable of device-initiated U1 failed.
+[   26.906531] usb 4-2: reset SuperSpeed USB device number 2 using xhci_hcd
+[   26.918439] xhci_hcd 0000:00:14.0: xHCI xhci_drop_endpoint called 
+with disabled ep ffff88003f912a00
+[   26.918441] xhci_hcd 0000:00:14.0: xHCI xhci_drop_endpoint called 
+with disabled ep ffff88003f912a40
+[   26.921116] sd 6:0:0:0: [sdc] Unhandled error code
+[   26.921118] sd 6:0:0:0: [sdc]
+[   26.921120] Result: hostbyte=DID_ERROR driverbyte=DRIVER_OK
+[   26.921120] sd 6:0:0:0: [sdc] CDB:
+[   26.921121] Read(10): 28 00 00 00 08 23 00 00 f0 00
+[   26.921126] end_request: I/O error, dev sdc, sector 2083
+[   27.208871] sd 6:0:0:0: [sdc] Media Changed
+[   27.208874] sd 6:0:0:0: [sdc]
+[   27.208875] Result: hostbyte=DID_OK driverbyte=DRIVER_SENSE
+[   27.208876] sd 6:0:0:0: [sdc]
+[   27.208877] Sense Key : Unit Attention [current]
+[   27.208878] sd 6:0:0:0: [sdc]
+[   27.208880] Add. Sense: Not ready to ready change, medium may have 
+changed
+[   27.208880] sd 6:0:0:0: [sdc] CDB:
+[   27.208881] Read(10): 28 00 00 00 08 24 00 00 ef 00
+[   27.208886] end_request: I/O error, dev sdc, sector 2084
+[   27.210467] FAT-fs (sdc1): FAT read failed (blocknr 35)
+[   49.420334] usb 4-2: Disable of device-initiated U1 failed.
+[   51.139080] usb 4-2: reset SuperSpeed USB device number 2 using xhci_hcd
+[   51.150979] xhci_hcd 0000:00:14.0: xHCI xhci_drop_endpoint called 
+with disabled ep ffff88003f912a00
+[   51.150981] xhci_hcd 0000:00:14.0: xHCI xhci_drop_endpoint called 
+with disabled ep ffff88003f912a40
+[   51.153663] sd 6:0:0:0: [sdc] Unhandled error code
+[   51.153665] sd 6:0:0:0: [sdc]
+[   51.153666] Result: hostbyte=DID_ERROR driverbyte=DRIVER_OK
+[   51.153667] sd 6:0:0:0: [sdc] CDB:
+[   51.153668] Read(10): 28 00 00 00 08 25 00 00 ee 00
+[   51.153672] end_request: I/O error, dev sdc, sector 2085
+[   51.441377] sd 6:0:0:0: [sdc] Media Changed
+[   51.441379] sd 6:0:0:0: [sdc]
+[   51.441380] Result: hostbyte=DID_OK driverbyte=DRIVER_SENSE
+[   51.441381] sd 6:0:0:0: [sdc]
+[   51.441382] Sense Key : Unit Attention [current]
+[   51.441384] sd 6:0:0:0: [sdc]
+[   51.441385] Add. Sense: Not ready to ready change, medium may have 
+changed
+[   51.441386] sd 6:0:0:0: [sdc] CDB:
+[   51.441386] Read(10): 28 00 00 00 08 26 00 00 ed 00
+[   51.441391] end_request: I/O error, dev sdc, sector 2086
+[   51.441454] FAT-fs (sdc1): FAT read failed (blocknr 37)
+[   51.442083] FAT-fs (sdc1): FAT read failed (blocknr 37)
+[   51.442570] FAT-fs (sdc1): FAT read failed (blocknr 235)
+[  164.219227] usb 4-2: Disable of device-initiated U1 failed.
+[  165.938731] usb 4-2: reset SuperSpeed USB device number 2 using xhci_hcd
+[  165.950669] xhci_hcd 0000:00:14.0: xHCI xhci_drop_endpoint called 
+with disabled ep ffff88003f912a00
+[  165.950672] xhci_hcd 0000:00:14.0: xHCI xhci_drop_endpoint called 
+with disabled ep ffff88003f912a40
+[  165.953366] sd 6:0:0:0: [sdc] Unhandled error code
+[  165.953368] sd 6:0:0:0: [sdc]
+[  165.953369] Result: hostbyte=DID_ERROR driverbyte=DRIVER_OK
+[  165.953370] sd 6:0:0:0: [sdc] CDB:
+[  165.953371] Read(10): 28 00 00 00 08 27 00 00 ec 00
+[  165.953375] end_request: I/O error, dev sdc, sector 2087
+[  166.240995] sd 6:0:0:0: [sdc] Media Changed
+[  166.240997] sd 6:0:0:0: [sdc]
+[  166.240999] Result: hostbyte=DID_OK driverbyte=DRIVER_SENSE
+[  166.241000] sd 6:0:0:0: [sdc]
+[  166.241000] Sense Key : Unit Attention [current]
+[  166.241002] sd 6:0:0:0: [sdc]
+[  166.241003] Add. Sense: Not ready to ready change, medium may have 
+changed
+[  166.241004] sd 6:0:0:0: [sdc] CDB:
+[  166.241005] Read(10): 28 00 00 00 08 28 00 00 eb 00
+[  166.241010] end_request: I/O error, dev sdc, sector 2088
+[  166.241055] FAT-fs (sdc1): FAT read failed (blocknr 39)
