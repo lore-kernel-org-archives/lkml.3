@@ -1,195 +1,364 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753787AbaCFVth (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 16:49:37 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:33643 "EHLO zene.cmpxchg.org"
+	id S1753641AbaCFVtQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 16:49:16 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:64588 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753733AbaCFVte (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 16:49:34 -0500
-Date: Thu, 6 Mar 2014 16:49:27 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: akpm@linux-foundation.org
-Cc: mm-commits@vger.kernel.org, stable@kernel.org, riel@redhat.com,
-        mgorman@suse.de, jstancek@redhat.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [merged]
- mm-page_alloc-reset-aging-cycle-with-gfp_thisnode-v2.patch removed from -mm
- tree
-Message-ID: <20140306214927.GB11171@cmpxchg.org>
-References: <5318dca5.AwhU/92X21JgbpdE%akpm@linux-foundation.org>
+	id S1753518AbaCFVtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 16:49:14 -0500
+X-IronPort-AV: E=Sophos;i="4.97,603,1389744000"; 
+   d="scan'208";a="108916366"
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
+        <xen-devel@lists.xenproject.org>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jonathan.davies@citrix.com>, Zoltan Kiss <zoltan.kiss@citrix.com>
+Subject: [PATCH net-next v7 7/9] xen-netback: Handle guests with too many frags
+Date: Thu, 6 Mar 2014 21:48:29 +0000
+Message-ID: <1394142511-14827-8-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1394142511-14827-1-git-send-email-zoltan.kiss@citrix.com>
+References: <1394142511-14827-1-git-send-email-zoltan.kiss@citrix.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5318dca5.AwhU/92X21JgbpdE%akpm@linux-foundation.org>
+Content-Type: text/plain
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Andrew,
+Xen network protocol had implicit dependency on MAX_SKB_FRAGS. Netback has to
+handle guests sending up to XEN_NETBK_LEGACY_SLOTS_MAX slots. To achieve that:
+- create a new skb
+- map the leftover slots to its frags (no linear buffer here!)
+- chain it to the previous through skb_shinfo(skb)->frag_list
+- map them
+- copy and coalesce the frags into a brand new one and send it to the stack
+- unmap the 2 old skb's pages
 
-On Thu, Mar 06, 2014 at 12:37:57PM -0800, akpm@linux-foundation.org wrote:
-> Subject: [merged] mm-page_alloc-reset-aging-cycle-with-gfp_thisnode-v2.patch removed from -mm tree
-> To: hannes@cmpxchg.org,jstancek@redhat.com,mgorman@suse.de,riel@redhat.com,stable@kernel.org,mm-commits@vger.kernel.org
-> From: akpm@linux-foundation.org
-> Date: Thu, 06 Mar 2014 12:37:57 -0800
-> 
-> 
-> The patch titled
->      Subject: mm: page_alloc: exempt GFP_THISNODE allocations from zone fairness
-> has been removed from the -mm tree.  Its filename was
->      mm-page_alloc-reset-aging-cycle-with-gfp_thisnode-v2.patch
-> 
-> This patch was dropped because it was merged into mainline or a subsystem tree
+It's also introduces new stat counters, which help determine how often the guest
+sends a packet with more than MAX_SKB_FRAGS frags.
 
-Would it make sense to also merge
+NOTE: if bisect brought you here, you should apply the series up until
+"xen-netback: Timeout packets in RX path", otherwise malicious guests can block
+other guests by not releasing their sent packets.
 
-mm-fix-gfp_thisnode-callers-and-clarify.patch
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+---
+v3:
+- adding extra check for frag number
+- consolidate alloc_skb's into xenvif_alloc_skb()
+- BUG_ON(frag_overflow > MAX_SKB_FRAGS)
 
-at this point?  It's not as critical as the GFP_THISNODE exemption,
-which is why I didn't tag it for stable, but it's a bugfix as well.
+v4:
+- handle error of skb_copy_expand()
 
-> ------------------------------------------------------
-> From: Johannes Weiner <hannes@cmpxchg.org>
-> Subject: mm: page_alloc: exempt GFP_THISNODE allocations from zone fairness
-> 
-> Jan Stancek reports manual page migration encountering allocation failures
-> after some pages when there is still plenty of memory free, and bisected
-> the problem down to 81c0a2bb515f ("mm: page_alloc: fair zone allocator
-> policy").
-> 
-> The problem is that GFP_THISNODE obeys the zone fairness allocation
-> batches on one hand, but doesn't reset them and wake kswapd on the other
-> hand.  After a few of those allocations, the batches are exhausted and the
-> allocations fail.
-> 
-> Fixing this means either having GFP_THISNODE wake up kswapd, or
-> GFP_THISNODE not participating in zone fairness at all.  The latter seems
-> safer as an acute bugfix, we can clean up later.
-> 
-> Reported-by: Jan Stancek <jstancek@redhat.com>
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> Acked-by: Mel Gorman <mgorman@suse.de>
-> Cc: <stable@kernel.org>		[3.12+]
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> ---
-> 
->  mm/page_alloc.c |   26 ++++++++++++++++++++++----
->  1 file changed, 22 insertions(+), 4 deletions(-)
-> 
-> diff -puN mm/page_alloc.c~mm-page_alloc-reset-aging-cycle-with-gfp_thisnode-v2 mm/page_alloc.c
-> --- a/mm/page_alloc.c~mm-page_alloc-reset-aging-cycle-with-gfp_thisnode-v2
-> +++ a/mm/page_alloc.c
-> @@ -1238,6 +1238,15 @@ void drain_zone_pages(struct zone *zone,
->  	}
->  	local_irq_restore(flags);
->  }
-> +static bool gfp_thisnode_allocation(gfp_t gfp_mask)
-> +{
-> +	return (gfp_mask & GFP_THISNODE) == GFP_THISNODE;
-> +}
-> +#else
-> +static bool gfp_thisnode_allocation(gfp_t gfp_mask)
-> +{
-> +	return false;
-> +}
->  #endif
->  
->  /*
-> @@ -1574,7 +1583,13 @@ again:
->  					  get_pageblock_migratetype(page));
->  	}
->  
-> -	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
-> +	/*
-> +	 * NOTE: GFP_THISNODE allocations do not partake in the kswapd
-> +	 * aging protocol, so they can't be fair.
-> +	 */
-> +	if (!gfp_thisnode_allocation(gfp_flags))
-> +		__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
-> +
->  	__count_zone_vm_events(PGALLOC, zone, 1 << order);
->  	zone_statistics(preferred_zone, zone, gfp_flags);
->  	local_irq_restore(flags);
-> @@ -1946,8 +1961,12 @@ zonelist_scan:
->  		 * ultimately fall back to remote zones that do not
->  		 * partake in the fairness round-robin cycle of this
->  		 * zonelist.
-> +		 *
-> +		 * NOTE: GFP_THISNODE allocations do not partake in
-> +		 * the kswapd aging protocol, so they can't be fair.
->  		 */
-> -		if (alloc_flags & ALLOC_WMARK_LOW) {
-> +		if ((alloc_flags & ALLOC_WMARK_LOW) &&
-> +		    !gfp_thisnode_allocation(gfp_mask)) {
->  			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
->  				continue;
->  			if (!zone_local(preferred_zone, zone))
-> @@ -2503,8 +2522,7 @@ __alloc_pages_slowpath(gfp_t gfp_mask, u
->  	 * allowed per node queues are empty and that nodes are
->  	 * over allocated.
->  	 */
-> -	if (IS_ENABLED(CONFIG_NUMA) &&
-> -			(gfp_mask & GFP_THISNODE) == GFP_THISNODE)
-> +	if (gfp_thisnode_allocation(gfp_mask))
->  		goto nopage;
->  
->  restart:
-> _
-> 
-> Patches currently in -mm which might be from hannes@cmpxchg.org are
-> 
-> origin.patch
-> mm-vmscan-respect-numa-policy-mask-when-shrinking-slab-on-direct-reclaim.patch
-> mm-vmscan-move-call-to-shrink_slab-to-shrink_zones.patch
-> mm-vmscan-remove-shrink_control-arg-from-do_try_to_free_pages.patch
-> mm-vmstat-fix-up-zone-state-accounting.patch
-> mm-vmstat-fix-up-zone-state-accounting-fix.patch
-> fs-cachefiles-use-add_to_page_cache_lru.patch
-> lib-radix-tree-radix_tree_delete_item.patch
-> mm-shmem-save-one-radix-tree-lookup-when-truncating-swapped-pages.patch
-> mm-filemap-move-radix-tree-hole-searching-here.patch
-> mm-fs-prepare-for-non-page-entries-in-page-cache-radix-trees.patch
-> mm-fs-prepare-for-non-page-entries-in-page-cache-radix-trees-fix.patch
-> mm-fs-store-shadow-entries-in-page-cache.patch
-> mm-thrash-detection-based-file-cache-sizing.patch
-> lib-radix_tree-tree-node-interface.patch
-> lib-radix_tree-tree-node-interface-fix.patch
-> mm-keep-page-cache-radix-tree-nodes-in-check.patch
-> mm-keep-page-cache-radix-tree-nodes-in-check-fix.patch
-> mm-keep-page-cache-radix-tree-nodes-in-check-fix-fix.patch
-> mm-keep-page-cache-radix-tree-nodes-in-check-fix-fix-fix.patch
-> pagewalk-update-page-table-walker-core.patch
-> pagewalk-add-walk_page_vma.patch
-> smaps-redefine-callback-functions-for-page-table-walker.patch
-> clear_refs-redefine-callback-functions-for-page-table-walker.patch
-> pagemap-redefine-callback-functions-for-page-table-walker.patch
-> numa_maps-redefine-callback-functions-for-page-table-walker.patch
-> memcg-redefine-callback-functions-for-page-table-walker.patch
-> madvise-redefine-callback-functions-for-page-table-walker.patch
-> arch-powerpc-mm-subpage-protc-use-walk_page_vma-instead-of-walk_page_range.patch
-> pagewalk-remove-argument-hmask-from-hugetlb_entry.patch
-> mempolicy-apply-page-table-walker-on-queue_pages_range.patch
-> drop_caches-add-some-documentation-and-info-message.patch
-> memcg-slab-never-try-to-merge-memcg-caches.patch
-> memcg-slab-cleanup-memcg-cache-creation.patch
-> memcg-slab-separate-memcg-vs-root-cache-creation-paths.patch
-> memcg-slab-unregister-cache-from-memcg-before-starting-to-destroy-it.patch
-> memcg-slab-do-not-destroy-children-caches-if-parent-has-aliases.patch
-> slub-adjust-memcg-caches-when-creating-cache-alias.patch
-> slub-rework-sysfs-layout-for-memcg-caches.patch
-> mm-fix-gfp_thisnode-callers-and-clarify.patch
-> mm-revert-thp-make-madv_hugepage-check-for-mm-def_flags.patch
-> mm-thp-add-vm_init_def_mask-and-prctl_thp_disable.patch
-> exec-kill-the-unnecessary-mm-def_flags-setting-in-load_elf_binary.patch
-> fork-collapse-copy_flags-into-copy_process.patch
-> mm-mempolicy-rename-slab_node-for-clarity.patch
-> mm-mempolicy-remove-per-process-flag.patch
-> res_counter-remove-interface-for-locked-charging-and-uncharging.patch
-> linux-next.patch
-> debugging-keep-track-of-page-owners.patch
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe mm-commits" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+v5:
+- ratelimit error messages
+- remove a tx_flags setting from xenvif_tx_submit 
+
+v6:
+- move out handling from tx_submit into a new funciont, as it became quite long
+- skb_copy[_expand] allocate a new skb with a huge linear buffer, which is bad
+  in times of memory pressure. Just make a new frags array and do the copy and
+  coalesce with skb_copy_bits
+
+v7:
+- remove obsolate BUG_ON
+- remove stale idx_release
+- merge the next patch about stats here
+
+diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
+index 917dbb0..aaa3d17 100644
+--- a/drivers/net/xen-netback/common.h
++++ b/drivers/net/xen-netback/common.h
+@@ -183,6 +183,7 @@ struct xenvif {
+ 	unsigned long tx_zerocopy_sent;
+ 	unsigned long tx_zerocopy_success;
+ 	unsigned long tx_zerocopy_fail;
++	unsigned long tx_frag_overflow;
+ 
+ 	/* Miscellaneous private stuff. */
+ 	struct net_device *dev;
+diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
+index 44df858..b646039 100644
+--- a/drivers/net/xen-netback/interface.c
++++ b/drivers/net/xen-netback/interface.c
+@@ -253,6 +253,13 @@ static const struct xenvif_stat {
+ 		"tx_zerocopy_fail",
+ 		offsetof(struct xenvif, tx_zerocopy_fail)
+ 	},
++	/* Number of packets exceeding MAX_SKB_FRAG slots. You should use
++	 * a guest with the same MAX_SKB_FRAG
++	 */
++	{
++		"tx_frag_overflow",
++		offsetof(struct xenvif, tx_frag_overflow)
++	},
+ };
+ 
+ static int xenvif_get_sset_count(struct net_device *dev, int string_set)
+diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+index fa4b53f..61f0fb2 100644
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -37,6 +37,7 @@
+ #include <linux/kthread.h>
+ #include <linux/if_vlan.h>
+ #include <linux/udp.h>
++#include <linux/highmem.h>
+ 
+ #include <net/tcp.h>
+ 
+@@ -801,6 +802,23 @@ static inline void xenvif_tx_create_gop(struct xenvif *vif,
+ 	       sizeof(*txp));
+ }
+ 
++static inline struct sk_buff *xenvif_alloc_skb(unsigned int size)
++{
++	struct sk_buff *skb =
++		alloc_skb(size + NET_SKB_PAD + NET_IP_ALIGN,
++			  GFP_ATOMIC | __GFP_NOWARN);
++	if (unlikely(skb == NULL))
++		return NULL;
++
++	/* Packets passed to netif_rx() must have some headroom. */
++	skb_reserve(skb, NET_SKB_PAD + NET_IP_ALIGN);
++
++	/* Initialize it here to avoid later surprises */
++	skb_shinfo(skb)->destructor_arg = NULL;
++
++	return skb;
++}
++
+ static struct gnttab_map_grant_ref *xenvif_get_requests(struct xenvif *vif,
+ 							struct sk_buff *skb,
+ 							struct xen_netif_tx_request *txp,
+@@ -811,11 +829,16 @@ static struct gnttab_map_grant_ref *xenvif_get_requests(struct xenvif *vif,
+ 	u16 pending_idx = XENVIF_TX_CB(skb)->pending_idx;
+ 	int start;
+ 	pending_ring_idx_t index;
+-	unsigned int nr_slots;
++	unsigned int nr_slots, frag_overflow = 0;
+ 
+ 	/* At this point shinfo->nr_frags is in fact the number of
+ 	 * slots, which can be as large as XEN_NETBK_LEGACY_SLOTS_MAX.
+ 	 */
++	if (shinfo->nr_frags > MAX_SKB_FRAGS) {
++		frag_overflow = shinfo->nr_frags - MAX_SKB_FRAGS;
++		BUG_ON(frag_overflow > MAX_SKB_FRAGS);
++		shinfo->nr_frags = MAX_SKB_FRAGS;
++	}
+ 	nr_slots = shinfo->nr_frags;
+ 
+ 	/* Skip first skb fragment if it is on same page as header fragment. */
+@@ -829,7 +852,29 @@ static struct gnttab_map_grant_ref *xenvif_get_requests(struct xenvif *vif,
+ 		frag_set_pending_idx(&frags[shinfo->nr_frags], pending_idx);
+ 	}
+ 
+-	BUG_ON(shinfo->nr_frags > MAX_SKB_FRAGS);
++	if (frag_overflow) {
++		struct sk_buff *nskb = xenvif_alloc_skb(0);
++		if (unlikely(nskb == NULL)) {
++			if (net_ratelimit())
++				netdev_err(vif->dev,
++					   "Can't allocate the frag_list skb.\n");
++			return NULL;
++		}
++
++		shinfo = skb_shinfo(nskb);
++		frags = shinfo->frags;
++
++		for (shinfo->nr_frags = 0; shinfo->nr_frags < frag_overflow;
++		     shinfo->nr_frags++, txp++, gop++) {
++			index = pending_index(vif->pending_cons++);
++			pending_idx = vif->pending_ring[index];
++			xenvif_tx_create_gop(vif, pending_idx, txp, gop);
++			frag_set_pending_idx(&frags[shinfo->nr_frags],
++					     pending_idx);
++		}
++
++		skb_shinfo(skb)->frag_list = nskb;
++	}
+ 
+ 	return gop;
+ }
+@@ -871,6 +916,7 @@ static int xenvif_tx_check_gop(struct xenvif *vif,
+ 	struct pending_tx_info *tx_info;
+ 	int nr_frags = shinfo->nr_frags;
+ 	int i, err, start;
++	struct sk_buff *first_skb = NULL;
+ 
+ 	/* Check status of header. */
+ 	err = gop->status;
+@@ -882,6 +928,7 @@ static int xenvif_tx_check_gop(struct xenvif *vif,
+ 	/* Skip first skb fragment if it is on same page as header fragment. */
+ 	start = (frag_get_pending_idx(&shinfo->frags[0]) == pending_idx);
+ 
++check_frags:
+ 	for (i = start; i < nr_frags; i++) {
+ 		int j, newerr;
+ 
+@@ -905,9 +952,11 @@ static int xenvif_tx_check_gop(struct xenvif *vif,
+ 		/* Not the first error? Preceding frags already invalidated. */
+ 		if (err)
+ 			continue;
+-
+ 		/* First error: invalidate header and preceding fragments. */
+-		pending_idx = XENVIF_TX_CB(skb)->pending_idx;
++		if (!first_skb)
++			pending_idx = XENVIF_TX_CB(skb)->pending_idx;
++		else
++			pending_idx = XENVIF_TX_CB(skb)->pending_idx;
+ 		xenvif_idx_unmap(vif, pending_idx);
+ 		for (j = start; j < i; j++) {
+ 			pending_idx = frag_get_pending_idx(&shinfo->frags[j]);
+@@ -918,6 +967,30 @@ static int xenvif_tx_check_gop(struct xenvif *vif,
+ 		err = newerr;
+ 	}
+ 
++	if (skb_has_frag_list(skb)) {
++		first_skb = skb;
++		skb = shinfo->frag_list;
++		shinfo = skb_shinfo(skb);
++		nr_frags = shinfo->nr_frags;
++		start = 0;
++
++		goto check_frags;
++	}
++
++	/* There was a mapping error in the frag_list skb. We have to unmap
++	 * the first skb's frags
++	 */
++	if (first_skb && err) {
++		int j;
++		shinfo = skb_shinfo(first_skb);
++		pending_idx = XENVIF_TX_CB(skb)->pending_idx;
++		start = (frag_get_pending_idx(&shinfo->frags[0]) == pending_idx);
++		for (j = start; j < shinfo->nr_frags; j++) {
++			pending_idx = frag_get_pending_idx(&shinfo->frags[j]);
++			xenvif_idx_unmap(vif, pending_idx);
++		}
++	}
++
+ 	*gopp = gop + 1;
+ 	return err;
+ }
+@@ -1169,8 +1242,7 @@ static unsigned xenvif_tx_build_gops(struct xenvif *vif, int budget)
+ 			    ret < XEN_NETBK_LEGACY_SLOTS_MAX) ?
+ 			PKT_PROT_LEN : txreq.size;
+ 
+-		skb = alloc_skb(data_len + NET_SKB_PAD + NET_IP_ALIGN,
+-				GFP_ATOMIC | __GFP_NOWARN);
++		skb = xenvif_alloc_skb(data_len);
+ 		if (unlikely(skb == NULL)) {
+ 			netdev_dbg(vif->dev,
+ 				   "Can't allocate a skb in start_xmit.\n");
+@@ -1178,9 +1250,6 @@ static unsigned xenvif_tx_build_gops(struct xenvif *vif, int budget)
+ 			break;
+ 		}
+ 
+-		/* Packets passed to netif_rx() must have some headroom. */
+-		skb_reserve(skb, NET_SKB_PAD + NET_IP_ALIGN);
+-
+ 		if (extras[XEN_NETIF_EXTRA_TYPE_GSO - 1].type) {
+ 			struct xen_netif_extra_info *gso;
+ 			gso = &extras[XEN_NETIF_EXTRA_TYPE_GSO - 1];
+@@ -1231,6 +1300,71 @@ static unsigned xenvif_tx_build_gops(struct xenvif *vif, int budget)
+ 	return gop - vif->tx_map_ops;
+ }
+ 
++/* Consolidate skb with a frag_list into a brand new one with local pages on
++ * frags. Returns 0 or -ENOMEM if can't allocate new pages.
++ */
++static int xenvif_handle_frag_list(struct xenvif *vif, struct sk_buff *skb)
++{
++	unsigned int offset = skb_headlen(skb);
++	skb_frag_t frags[MAX_SKB_FRAGS];
++	int i;
++	struct ubuf_info *uarg;
++	struct sk_buff *nskb = skb_shinfo(skb)->frag_list;
++
++	vif->tx_zerocopy_sent += 2;
++	vif->tx_frag_overflow++;
++
++	xenvif_fill_frags(vif, nskb);
++	/* Subtract frags size, we will correct it later */
++	skb->truesize -= skb->data_len;
++	skb->len += nskb->len;
++	skb->data_len += nskb->len;
++
++	/* create a brand new frags array and coalesce there */
++	for (i = 0; offset < skb->len; i++) {
++		struct page *page;
++		unsigned int len;
++
++		BUG_ON(i >= MAX_SKB_FRAGS);
++		page = alloc_page(GFP_ATOMIC|__GFP_COLD);
++		if (!page) {
++			int j;
++			skb->truesize += skb->data_len;
++			for (j = 0; j < i; j++)
++				put_page(frags[j].page.p);
++			return -ENOMEM;
++		}
++
++		if (offset + PAGE_SIZE < skb->len)
++			len = PAGE_SIZE;
++		else
++			len = skb->len - offset;
++		if (skb_copy_bits(skb, offset, page_address(page), len))
++			BUG();
++
++		offset += len;
++		frags[i].page.p = page;
++		frags[i].page_offset = 0;
++		skb_frag_size_set(&frags[i], len);
++	}
++	/* swap out with old one */
++	memcpy(skb_shinfo(skb)->frags,
++	       frags,
++	       i * sizeof(skb_frag_t));
++	skb_shinfo(skb)->nr_frags = i;
++	skb->truesize += i * PAGE_SIZE;
++
++	/* remove traces of mapped pages and frag_list */
++	skb_frag_list_init(skb);
++	uarg = skb_shinfo(skb)->destructor_arg;
++	uarg->callback(uarg, true);
++	skb_shinfo(skb)->destructor_arg = NULL;
++
++	skb_shinfo(nskb)->tx_flags |= SKBTX_DEV_ZEROCOPY;
++	kfree_skb(nskb);
++
++	return 0;
++}
+ 
+ static int xenvif_tx_submit(struct xenvif *vif)
+ {
+@@ -1267,7 +1401,6 @@ static int xenvif_tx_submit(struct xenvif *vif)
+ 				&vif->pending_tx_info[pending_idx].callback_struct;
+ 		} else {
+ 			/* Schedule a response immediately. */
+-			skb_shinfo(skb)->destructor_arg = NULL;
+ 			xenvif_idx_unmap(vif, pending_idx);
+ 		}
+ 
+@@ -1278,6 +1411,17 @@ static int xenvif_tx_submit(struct xenvif *vif)
+ 
+ 		xenvif_fill_frags(vif, skb);
+ 
++		if (unlikely(skb_has_frag_list(skb))) {
++			if (xenvif_handle_frag_list(vif, skb)) {
++				if (net_ratelimit())
++					netdev_err(vif->dev,
++						   "Not enough memory to consolidate frag_list!\n");
++				skb_shinfo(skb)->tx_flags |= SKBTX_DEV_ZEROCOPY;
++				kfree_skb(skb);
++				continue;
++			}
++		}
++
+ 		if (skb_is_nonlinear(skb) && skb_headlen(skb) < PKT_PROT_LEN) {
+ 			int target = min_t(int, skb->len, PKT_PROT_LEN);
+ 			__pskb_pull_tail(skb, target - skb_headlen(skb));
