@@ -1,79 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751992AbaCFRNl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 12:13:41 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49293 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750829AbaCFRNk (ORCPT
+	id S1752692AbaCFROG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 12:14:06 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38458 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752256AbaCFROE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 12:13:40 -0500
-Message-ID: <1394126000.3622.66.camel@paszta.hi.pengutronix.de>
-Subject: [GIT PULL] Move device tree graph parsing helpers to drivers/of
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Rob Herring <robh+dt@kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Date: Thu, 06 Mar 2014 18:13:20 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Thu, 6 Mar 2014 12:14:04 -0500
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: broonie@kernel.org, ks.giri@samsung.com
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] spi/s3c64xx: Update DT binding documentation to match code
+Date: Thu,  6 Mar 2014 17:05:39 +0000
+Message-Id: <1394125539-28062-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mauro, Russell,
+The following patch added support for spi controllers with a dedicated
+chip select pin:
 
-I have temporarily removed the simplified bindings at Sylwester's
-request and updated the branch with the acks. The following changes
-since commit 0414855fdc4a40da05221fc6062cccbc0c30f169:
+commit 3146beec21b64f4551fcf0ac148381d54dc41b1b
+spi: s3c64xx: Added provision for dedicated cs pin
 
-  Linux 3.14-rc5 (2014-03-02 18:56:16 -0800)
+It updated the device tree binding to require a "cs-gpio" property to be
+specified on the spi controller node if chip selects will be given as
+GPIOs per slave, rather than the controller having a dedicated internal
+chip select pin.
 
-are available in the git repository at:
+This patch updates the device tree binding documentation to match this.
 
-  git://git.pengutronix.de/git/pza/linux.git topic/of-graph
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+---
 
-for you to fetch changes up to d484700a36952c6675aa47dec4d7a536929aa922:
+Hi,
 
-  of: Warn if of_graph_parse_endpoint is called with the root node (2014-03-06 17:41:54 +0100)
+Apologies if I missed something but there are a couple of
+things I am not sure about in the original patch, there
+seems to be no special handling for the dedicated case, like
+set a bit that enables this or some such, which implies that
+parts with dedicated cs pins will always update them even
+if cs-gpio is specified. In which case wasn't what existed
+before reasonable?
 
-----------------------------------------------------------------
-Philipp Zabel (6):
-      [media] of: move graph helpers from drivers/media/v4l2-core to drivers/of
-      Documentation: of: Document graph bindings
-      of: Warn if of_graph_get_next_endpoint is called with the root node
-      of: Reduce indentation in of_graph_get_next_endpoint
-      [media] of: move common endpoint parsing to drivers/of
-      of: Warn if of_graph_parse_endpoint is called with the root node
+If the concern is that someone would try to use both the
+internal chip select and a GPIO for two slaves on the same
+controller, causing the first slave to always get chip
+selected wouldn't a better solution be to require all slaves
+to give a chip select GPIO if one does?
 
- Documentation/devicetree/bindings/graph.txt   | 129 ++++++++++++++++++++++
- drivers/media/i2c/adv7343.c                   |   4 +-
- drivers/media/i2c/mt9p031.c                   |   4 +-
- drivers/media/i2c/s5k5baf.c                   |   3 +-
- drivers/media/i2c/tvp514x.c                   |   3 +-
- drivers/media/i2c/tvp7002.c                   |   3 +-
- drivers/media/platform/exynos4-is/fimc-is.c   |   6 +-
- drivers/media/platform/exynos4-is/media-dev.c |  13 ++-
- drivers/media/platform/exynos4-is/mipi-csis.c |   5 +-
- drivers/media/v4l2-core/v4l2-of.c             | 133 +----------------------
- drivers/of/base.c                             | 151 ++++++++++++++++++++++++++
- include/linux/of_graph.h                      |  66 +++++++++++
- include/media/v4l2-of.h                       |  33 +-----
- 13 files changed, 375 insertions(+), 178 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/graph.txt
- create mode 100644 include/linux/of_graph.h
+Finally, if we really want to specify in the DT for the
+controller that it has an internal chip select wouldn't it
+be better to invert the logic and  call it something like
+"dedicated-cs" as then older bindings that currently use
+GPIOs wouldn't break.
 
+I thought it better to do a patch to update the
+documentation rather than change the binding again, but
+personally I would lean on the side of updating the binding
+if others are in favour of it?
+
+Thanks,
+Charles
+
+ .../devicetree/bindings/spi/spi-samsung.txt        |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/spi/spi-samsung.txt b/Documentation/devicetree/bindings/spi/spi-samsung.txt
+index 86aa061..2f0167d 100644
+--- a/Documentation/devicetree/bindings/spi/spi-samsung.txt
++++ b/Documentation/devicetree/bindings/spi/spi-samsung.txt
+@@ -42,6 +42,11 @@ Optional Board Specific Properties:
+ - num-cs: Specifies the number of chip select lines supported. If
+   not specified, the default number of chip select lines is set to 1.
+ 
++- cs-gpio: Specifies that the spi controller will give a chip select gpio
++  for each slave node. Absence of this indicates that the controller has a
++  dedicated chip internal select pin and any GPIOs specified on the slaves
++  will be ignored.
++
+ SPI Controller specific data in SPI slave nodes:
+ 
+ - The spi slave nodes should provide the following information which is required
+@@ -85,6 +90,7 @@ Example:
+ 		#size-cells = <0>;
+ 		pinctrl-names = "default";
+ 		pinctrl-0 = <&spi0_bus>;
++		cs-gpio;
+ 
+ 		w25q80bw@0 {
+ 			#address-cells = <1>;
+-- 
+1.7.2.5
 
