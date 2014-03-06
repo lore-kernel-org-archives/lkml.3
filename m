@@ -1,28 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751811AbaCFW4j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 17:56:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36339 "EHLO
+	id S1752126AbaCFW6a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 17:58:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36354 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751574AbaCFW4h (ORCPT
+	with ESMTP id S1751639AbaCFW62 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 17:56:37 -0500
-Date: Thu, 6 Mar 2014 14:56:36 -0800
+	Thu, 6 Mar 2014 17:58:28 -0500
+Date: Thu, 6 Mar 2014 14:58:26 -0800
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Davidlohr Bueso <davidlohr@hp.com>, Rik van Riel <riel@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, aswin@hp.com,
-        scott.norton@hp.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4] mm: per-thread vma caching
-Message-Id: <20140306145636.092dc60215aea0925e47e41b@linux-foundation.org>
-In-Reply-To: <1393894778.30648.29.camel@buesod1.americas.hpqcorp.net>
-References: <1393537704.2899.3.camel@buesod1.americas.hpqcorp.net>
-	<20140303164002.02df915e12d05bb98762407f@linux-foundation.org>
-	<1393894778.30648.29.camel@buesod1.americas.hpqcorp.net>
+        Michel Lespinasse <walken@google.com>
+Subject: Re: linux-next: build failure after merge of the akpm-current tree
+Message-Id: <20140306145826.4453a8edbfcf18cd2e9fa8c1@linux-foundation.org>
+In-Reply-To: <20140306180852.b1515db3cccc1622172524c0@canb.auug.org.au>
+References: <20140306180852.b1515db3cccc1622172524c0@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -31,28 +26,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 03 Mar 2014 16:59:38 -0800 Davidlohr Bueso <davidlohr@hp.com> wrote:
+On Thu, 6 Mar 2014 18:08:52 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-> > > --- a/include/linux/sched.h
-> > > +++ b/include/linux/sched.h
-> > > @@ -23,6 +23,7 @@ struct sched_param {
-> > >  #include <linux/errno.h>
-> > >  #include <linux/nodemask.h>
-> > >  #include <linux/mm_types.h>
-> > > +#include <linux/vmacache.h>
-> > 
-> > This might be awkward - vmacache.h drags in mm.h and we have had tangly
-> > problems with these major header files in the past.  I'd be inclined to
-> > remove this inclusion and just forward-declare vm_area_struct, but we
-> > still need VMACACHE_SIZE, sigh.  Wait and see what happens, I guess.
+> Hi Andrew,
 > 
-> Yeah, I wasn't sure what to do about that and was expecting it to come
-> up in the review process. Let me know if you want me to change/update
-> this.
+> After merging the akpm-current tree, today's linux-next build (arm
+> multi_v7_defconfig) failed like this:
+> 
+> ...
+>
+> and on and on ...
+> 
+> Caused by commit 0d9ad4220e6d ("mm: per-thread vma caching") which adds
+> the include of linux/vmacache.h (which includes linux/mm.h) into
+> linux/sched.h ... There is a reason that we did not include linux/mm.h
+> into sched.h.
 
-OK, so the include graph has blown up in our faces.
+Yeah.
 
-This is what I came up with.  Haven't tested it a lot yet.  Thoughts?
+> --- /dev/null
+> +++ b/include/linux/vmacachedefs.h
+> @@ -0,0 +1,9 @@
+> +
+> +#ifndef __LINUX_VMACACHEDEFS_H
+> +#define __LINUX_VMACACHEDEFS_H
+> +
+> +#define VMACACHE_BITS 2
+> +#define VMACACHE_SIZE (1U << VMACACHE_BITS)
+> +#define VMACACHE_MASK (VMACACHE_SIZE - 1)
+> +
+> +#endif /* __LINUX_VMACACHEDEFS_H */
+
+I just did pretty much the same thing:
 
 
 From: Andrew Morton <akpm@linux-foundation.org>
@@ -79,9 +84,9 @@ vmacache.h requires (and includes) sched.h
 To do all this, the three "#define VMACACHE_foo" lines were moved to
 sched.h.
 
-The inclusions of sched.h and mm.h into vmacache.h are actually
-unrequired because the .c files include mm.h and sched.h directly, but
-I put them in there for cargo-cult reasons.
+The inclusions of sched.h and mm.h into vmacache.h are actually unrequired
+because the .c files include mm.h and sched.h directly, but I put them in
+there for cargo-cult reasons.
 
 vmacache_flush() no longer needs to be implemented in cpp - make it so.
 
