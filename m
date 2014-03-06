@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753044AbaCFLVL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 06:21:11 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:59670 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751640AbaCFLTC (ORCPT
+	id S1752248AbaCFLWX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 06:22:23 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:56857 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751084AbaCFLWV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 06:19:02 -0500
+	Thu, 6 Mar 2014 06:22:21 -0500
 MIME-Version: 1.0
-In-Reply-To: <1394104657-8495-1-git-send-email-geert@linux-m68k.org>
-References: <1394104657-8495-1-git-send-email-geert@linux-m68k.org>
-Date: Thu, 6 Mar 2014 12:19:01 +0100
-X-Google-Sender-Auth: fDQ1uohtU5jBKwYWeX2HQz-5-Mo
-Message-ID: <CAMuHMdUJ_2ixNuEQrYy7uCCEoKkADw5ueUcGMH=jNsi0JOuFHQ@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.14-rc5
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1394102406.25853.4.camel@AMDC1943>
+References: <1394100057-32677-1-git-send-email-sachin.kamat@linaro.org>
+	<1394100057-32677-2-git-send-email-sachin.kamat@linaro.org>
+	<1394102406.25853.4.camel@AMDC1943>
+Date: Thu, 6 Mar 2014 16:52:21 +0530
+Message-ID: <CAK9yfHyv+PhLCfy131KCS4GWaAEgQ9qmS5X27bTYHWYUspkYjA@mail.gmail.com>
+Subject: Re: [PATCH v3 Resend 2/3] regulator: Add support for S2MPA01 regulator
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Lee Jones <lee.jones@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 6, 2014 at 12:17 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> JFYI, when comparing v3.14-rc5[1]  to v3.14-rc4[3], the summaries are:
->   - build errors: +2/-3
+Hi Krzysztof,
 
-  + error: No rule to make target /etc/sound/msndinit.bin:  => N/A
-  + error: No rule to make target /etc/sound/msndperm.bin:  => N/A
+On 6 March 2014 16:10, Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
+> On Thu, 2014-03-06 at 15:30 +0530, Sachin Kamat wrote:
+>> Add support for S2MPA01 voltage and current regulator.
 
-i386-randconfig
+>> +
+>> +struct s2mpa01_info {
+>> +     struct regulator_dev *rdev[S2MPA01_REGULATOR_MAX];
+>
+> Hi,
+>
+> It seems that s2mpa01_info->rdev is not used anywhere, except as return
+> value of devm_regulator_register. I think you can remove it completely.
 
-> [1] http://kisskb.ellerman.id.au/kisskb/head/7236/ (all 119 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/7212/ (all 119 configs)
+Yes. I will send a follow up patch for this.
 
-Gr{oetje,eeting}s,
+>
+> Beside that, can this driver be merged into existing s2mps11 regulator
+> driver?
 
-                        Geert
+Haven't analyzed this yet. Will look into the possibility of consolidation
+later.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Thank you for your feedback.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+With warm regards,
+Sachin
