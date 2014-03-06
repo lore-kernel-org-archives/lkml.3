@@ -1,157 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752879AbaCFJ2O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 04:28:14 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:33612 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751635AbaCFJ2L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 04:28:11 -0500
-Message-ID: <53183F98.1060100@ti.com>
-Date: Thu, 6 Mar 2014 14:57:52 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752930AbaCFJ2z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 04:28:55 -0500
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:55148 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751548AbaCFJ2w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 04:28:52 -0500
 MIME-Version: 1.0
-To: Anton Tikhomirov <av.tikhomirov@samsung.com>,
-        "'Kamil Debski'" <k.debski@samsung.com>,
-        <linux-kernel@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <devicetree@vger.kernel.org>
-CC: <kyungmin.park@samsung.com>, <t.figa@samsung.com>,
-        <s.nawrocki@samsung.com>, <m.szyprowski@samsung.com>,
-        <gautam.vivek@samsung.com>, <mat.krawczuk@gmail.com>,
-        <yulgon.kim@samsung.com>, <p.paneri@samsung.com>,
-        <jg1.han@samsung.com>, <galak@codeaurora.org>,
-        <matt.porter@linaro.org>, <tjakobi@math.uni-bielefeld.de>,
-        <stern@rowland.harvard.edu>, <sander@humilis.net>
-Subject: Re: [PATCH v9 3/4] phy: Add new Exynos USB 2.0 PHY driver
-References: <1394033288-5551-1-git-send-email-k.debski@samsung.com> <1394033288-5551-4-git-send-email-k.debski@samsung.com> <005c01cf3915$c53476c0$4f9d6440$%tikhomirov@samsung.com> <53183220.3040606@ti.com> <006201cf3919$5f760750$1e6215f0$%tikhomirov@samsung.com> <5318384B.7020009@ti.com> <006301cf391a$c99c7280$5cd55780$%tikhomirov@samsung.com> <006501cf391d$335fb9a0$9a1f2ce0$%tikhomirov@samsung.com>
-In-Reply-To: <006501cf391d$335fb9a0$9a1f2ce0$%tikhomirov@samsung.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAOAoqGu4exeZP2wgEWpRyD7+4RVRbB=vOe4Hc+rK3CVVigCWvg@mail.gmail.com>
+References: <CAOAoqGuicMKJ8e6kmQ92fL73UpvBzfXx9kafP4tCbUKkiT2=vA@mail.gmail.com>
+	<Pine.LNX.4.44L0.1403051101430.1629-100000@iolanthe.rowland.org>
+	<975d7885a8b64971923466f9f06a6229@BL2PR03MB226.namprd03.prod.outlook.com>
+	<CAOAoqGvzxsnpopgi4-DtfUp-zXbq6iV0J_y18Q0NgZ1AGzSu2Q@mail.gmail.com>
+	<3a0fb59a555b40aca5610ef00626fdba@BL2PR03MB226.namprd03.prod.outlook.com>
+	<CAOAoqGu4exeZP2wgEWpRyD7+4RVRbB=vOe4Hc+rK3CVVigCWvg@mail.gmail.com>
+Date: Thu, 6 Mar 2014 14:58:52 +0530
+Message-ID: <CAOAoqGtiNe9QE+Bu3inva51qp1STKNOsEDG9b6Q7JBh7atQQrA@mail.gmail.com>
+Subject: Re: USB remote wakeup through gpio interrupt
+From: Jagdish Gedia <jvgediya@gmail.com>
+To: Peter Chen <Peter.Chen@freescale.com>
+Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Peter,
 
-On Thursday 06 March 2014 02:49 PM, Anton Tikhomirov wrote:
-> Hi,
+My usb device is not capable of giving interrupt when it finishes
+using usb. So i dont have any idea where can i call pm_runtime_put for
+my usb device?
+
+the other thing is that, earlier you have told, waking up usb device
+through interrupt is same as writing "on" to ../power/control , but i
+think writing "on" to ../power/control will disable the autosuspend
+for usb device in future, but i want autosuspend to be enabled for my
+usb device always. Will using pm_runtime_get and pm_runtime_put cause
+the disable of autosuspend for usb device?
+
+
+
+Thanks,
+Jagdish Gediya
+
+On Thu, Mar 6, 2014 at 2:53 PM, Jagdish Gedia <jvgediya@gmail.com> wrote:
+> Hi Alan,
 >
->> Subject: RE: [PATCH v9 3/4] phy: Add new Exynos USB 2.0 PHY driver
->>
->> Hi,
->>
->>> Subject: Re: [PATCH v9 3/4] phy: Add new Exynos USB 2.0 PHY driver
->>>
->>> Hi,
->>>
->>> On Thursday 06 March 2014 02:22 PM, Anton Tikhomirov wrote:
->>>> Hello,
->>>>
->>>>> Subject: Re: [PATCH v9 3/4] phy: Add new Exynos USB 2.0 PHY driver
->>>>>
->>>>>
->>>>>
->>>>> On Thursday 06 March 2014 01:56 PM, Anton Tikhomirov wrote:
->>>>>> Hi Kamil,
->>>>>>
->>>>>> ...
->>>>>>
->>>>>>> +| 3. Supporting SoCs
->>>>>>> ++--------------------
->>>>>>> +
->>>>>>> +To support a new SoC a new file should be added to the
->>> drivers/phy
->>>>>>> +directory. Each SoC's configuration is stored in an instance of
->>> the
->>>>>>> +struct samsung_usb2_phy_config.
->>>>>>> +
->>>>>>> +struct samsung_usb2_phy_config {
->>>>>>> +	const struct samsung_usb2_common_phy *phys;
->>>>>>> +	unsigned int num_phys;
->>>>>>> +	bool has_mode_switch;
->>>>>>
->>>>>> You missed rate_to_clk here.
->>>>>>
->>>>>>> +};
->>>>>>> +
->>>>>>
->>>>>> ...
->>>>>>
->>>>>>> diff --git a/drivers/phy/phy-samsung-usb2.c b/drivers/phy/phy-
->>>>> samsung-
->>>>>>> usb2.c
->>>>>>> new file mode 100644
->>>>>>> index 0000000..c3b7719
->>>>>>> --- /dev/null
->>>>>>> +++ b/drivers/phy/phy-samsung-usb2.c
->>>>>>> @@ -0,0 +1,222 @@
->>>>>>> +/*
->>>>>>> + * Samsung SoC USB 1.1/2.0 PHY driver
->>>>>>> + *
->>>>>>> + * Copyright (C) 2013 Samsung Electronics Co., Ltd.
->>>>>>> + * Author: Kamil Debski <k.debski@samsung.com>
->>>>>>> + *
->>>>>>> + * This program is free software; you can redistribute it
->> and/or
->>>>>>> modify
->>>>>>> + * it under the terms of the GNU General Public License version
->> 2
->>>>> as
->>>>>>> + * published by the Free Software Foundation.
->>>>>>> + */
->>>>>>> +
->>>>>>> +#include <linux/clk.h>
->>>>>>> +#include <linux/mfd/syscon.h>
->>>>>>> +#include <linux/module.h>
->>>>>>> +#include <linux/of.h>
->>>>>>> +#include <linux/of_address.h>
->>>>>>> +#include <linux/phy/phy.h>
->>>>>>> +#include <linux/platform_device.h>
->>>>>>> +#include <linux/spinlock.h>
->>>>>>> +#include "phy-samsung-usb2.h"
->>>>>>> +
->>>>>>> +static int samsung_usb2_phy_power_on(struct phy *phy)
->>>>>>> +{
->>>>>>> +	struct samsung_usb2_phy_instance *inst =
->>> phy_get_drvdata(phy);
->>>>>>> +	struct samsung_usb2_phy_driver *drv = inst->drv;
->>>>>>> +	int ret;
->>>>>>> +
->>>>>>> +	dev_dbg(drv->dev, "Request to power_on \"%s\" usb phy\n",
->>>>>>> +		inst->cfg->label);
->>>>>>> +	ret = clk_prepare_enable(drv->clk);
->>>>>>
->>>>>> clk_prepare_enable() can sleep, and therefore doesn't allow
->>>>>> samusng_usb2_phy_power_on() to be used in atomic context
->>>>>> (e.g. inside spin_lock-ed area), what sometimes may be desirable.
->>>>>> What about to prepare clock in probe, and just enable it here
->>>>>> (note: clk_enable() doesn't sleep).
->>>>>
->>>>> The PHY power-on callback is anyway called with mutex held, so I
->>> guess
->>>>> it's fine to have clk_prepare_enable() here.
->>>>
->>>> If we rely totally on generic PHY functions such as phy_power_on()
->>>> and friends, why do we need to use locking in callbacks at all.
->>>
->>> Didn't get you.. We don't want to invoke power_on when init is
->> getting
->>> executed or you don't want power on or power off to get executed
->>> simultaneously right? So we need to protect it.
->>
->> I mean callbacks such as samsung_usb2_phy_power_on() which uses
->> spin_lock.
->> It's already protected by mutex in phy_power_on().
+> As you have told, i have executed pm_request_resume() function from my
+> interrupt handler, and it is waking up my USB device. I have
+> implemented all this functionality in class driver(cdc-acm.c).
+> but what is happening is after 2-3 times, ausosuspend is getting
+> disable for my device. I want autosuspend to be enabled for usb device
+> forever. Do pm_request_resume function causes this behavior?
 >
-> Well... phy_power_on() uses mutex to protect power_on() callback.
-> power_on() is samsung_usb2_phy_power_on() in our case.
-> samsung_usb2_phy_power_on() uses spinlock.
-> My question is why do we need to use spinlock _inside_ callback
-> if it is already protected by mutex.
-
-It is needed when the same PHY provider implements multiple PHYs. 
-phy-core can protect phy-ops of same PHY. However if the PHY provider 
-implements multiple PHYs, phy-core won't be able to protect.
-
-Cheers
-Kishon
+>
+>
+> Thanks,
+> Jagdish Gediya
