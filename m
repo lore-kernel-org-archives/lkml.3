@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753080AbaCFQEu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 11:04:50 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:39517 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751013AbaCFQEr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 11:04:47 -0500
-Date: Thu, 6 Mar 2014 16:04:42 +0000
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Tanmay Inamdar <tinamdar@apm.com>
-Subject: Re: [PATCH v5 1/7] pci: Introduce pci_register_io_range() helper
- function.
-Message-ID: <20140306160442.GG6457@e106497-lin.cambridge.arm.com>
-Mail-Followup-To: Arnd Bergmann <arnd@arndb.de>,
-	linux-pci <linux-pci@vger.kernel.org>,
-	Bjorn Helgaas <bhelgaas@google.com>,
-	Catalin Marinas <Catalin.Marinas@arm.com>,
-	Will Deacon <Will.Deacon@arm.com>,
-	linaro-kernel <linaro-kernel@lists.linaro.org>,
-	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-	LAKML <linux-arm-kernel@lists.infradead.org>,
-	Tanmay Inamdar <tinamdar@apm.com>
-References: <1393948204-11555-1-git-send-email-Liviu.Dudau@arm.com>
- <1393948204-11555-2-git-send-email-Liviu.Dudau@arm.com>
- <201403042330.09607.arnd@arndb.de>
+	id S1753279AbaCFQFw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 11:05:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15321 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752656AbaCFQFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 11:05:50 -0500
+Date: Thu, 6 Mar 2014 11:05:08 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Muli Ben-Yehuda <muli@cs.technion.ac.il>
+Cc: WANG Chao <chaowang@redhat.com>, "Jon D. Mason" <jdmason@kudzu.us>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Yinghai Lu <yinghai@kernel.org>, Baoquan He <bhe@redhat.com>,
+        kexec@lists.infradead.org, discuss@x86-64.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: How could we get rid of saved_max_pfn for calgary iommu?
+Message-ID: <20140306160508.GA23025@redhat.com>
+References: <20140219061824.GA29703@dhcp-17-89.nay.redhat.com>
+ <20140305053617.GE26240@dhcp-17-89.nay.redhat.com>
+ <20140306064756.GB16859@needle.mulix.org>
 MIME-Version: 1.0
-In-Reply-To: <201403042330.09607.arnd@arndb.de>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 06 Mar 2014 16:04:43.0415 (UTC) FILETIME=[C996F270:01CF3955]
-X-MC-Unique: 114030616044600101
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140306064756.GB16859@needle.mulix.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 04, 2014 at 10:30:09PM +0000, Arnd Bergmann wrote:
-> On Tuesday 04 March 2014, Liviu Dudau wrote:
-> > +int __weak pci_register_io_range(phys_addr_t addr, resource_size_t size)
-> > +{
-> > +       return 0;
-> > +}
-> > +
+On Thu, Mar 06, 2014 at 08:47:56AM +0200, Muli Ben-Yehuda wrote:
+> On Wed, Mar 05, 2014 at 01:36:17PM +0800, WANG Chao wrote:
 > 
-> How about returning an error here? You don't actually register the range.
-
-That's not the intention here. I basically want a nop, as by default (read x86)
-we do nothing with the IO range.
-
-Best regards,
-Liviu
-
+> > Hi, Muli
+> > 
+> > saved_max_pfn is becoming a setback for kexec-tools. Ideally calgary
+> > could get rid of saved_max_pfn at all. But If this can't work, how
+> > about exporting a calgary tce table size to user space, so that
+> > kexec-tools can simply pass calgary=xxx cmdline to 2nd kernel.
 > 
-> 	Arnd
-> 
+> As Jon noted, this code is used to so that the TCE table remains
+> consistent between the original and the kexec'd kernel. I see two
+> options: either we hard code the TCE table size to the max so that
+> this bit of code becomes redundant, or we explicitly pass the original
+> table size (or the original max_pfn) to the kexec'd kernel. The first
+> option is more appealing, because I don't think anyone is actually
+> using the TCE table size -- we mostly added it for debugging the IOMMU
+> TCE code at the time -- but since I don't have a Calgary machine
+> anymore, I don't have any way to test it. The second option is uglier
+> but would be fully backward-compatible and less likely to break
+> things. Given that very few people are likely running the latest
+> upstream kernel on Calgary/CalIOC2 machines, I'm inclined towards the
+> first option.
 
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
+I like the first idea too. If we always use the max table size, then
+we don't have to pass table size around.
 
+This is not fully backward compatible in the sense if people are running
+newer kernel but use an older kernel for dump capture. But that's a real
+corner case. And there will be a workaround for that corner case too.
+One will be able to specify a command line option to kexec-tools to switch
+to old behavior. 
+
+Majority of users use same kernel for dump capture as first kernel and
+they should be just fine with this change.
+
+Thanks
+Vivek
