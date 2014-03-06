@@ -1,91 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757387AbaCFBMn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 20:12:43 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:60845 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756643AbaCFBMl (ORCPT
+	id S1757421AbaCFBO3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 20:14:29 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:5743 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754511AbaCFBO2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 20:12:41 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Saravana Kannan <skannan@codeaurora.org>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, linaro-kernel@lists.linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com
-Subject: Re: [PATCH V2 3/3] cpufreq: initialize governor for a new policy under policy->rwsem
-Date: Thu, 06 Mar 2014 02:27:51 +0100
-Message-ID: <8531650.WA9Z5RdLht@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5317CAE9.5090107@codeaurora.org>
-References: <98b7ae22d936456bf830aa749556a115969cfa47.1393904428.git.viresh.kumar@linaro.org> <1571634.sBIk9PhU1o@vostro.rjw.lan> <5317CAE9.5090107@codeaurora.org>
+	Wed, 5 Mar 2014 20:14:28 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 05 Mar 2014 17:11:25 -0800
+Message-ID: <5317CBF2.40908@nvidia.com>
+Date: Wed, 5 Mar 2014 17:14:26 -0800
+From: Aaron Plattner <aplattner@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+CC: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] cpufreq: use cpufreq_cpu_get to avoid cpufreq_get race
+ conditions
+References: <1393965735-15610-1-git-send-email-aplattner@nvidia.com> <2327882.a9zobM63G6@vostro.rjw.lan>
+In-Reply-To: <2327882.a9zobM63G6@vostro.rjw.lan>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, March 05, 2014 05:10:01 PM Saravana Kannan wrote:
-> On 03/05/2014 05:06 PM, Rafael J. Wysocki wrote:
-> > On Thursday, March 06, 2014 02:04:39 AM Rafael J. Wysocki wrote:
-> >> On Tuesday, March 04, 2014 11:44:01 AM Viresh Kumar wrote:
-> >>> policy->rwsem is used to lock access to all parts of code modifying struct
-> >>> cpufreq_policy but wasn't used on a new policy created from __cpufreq_add_dev().
-> >>>
-> >>> Because of which if we call cpufreq_update_policy() repeatedly on one CPU and do
-> >>> offline/online of another CPU then we might see these crashes:
-> >>>
-> >>> Unable to handle kernel NULL pointer dereference at virtual address 00000020
-> >>> pgd = c0003000
-> >>> [00000020] *pgd=80000000004003, *pmd=00000000
-> >>> Internal error: Oops: 206 [#1] PREEMPT SMP ARM
-> >>>
-> >>> PC is at __cpufreq_governor+0x10/0x1ac
-> >>> LR is at cpufreq_update_policy+0x114/0x150
-> >>>
-> >>> ---[ end trace f23a8defea6cd706 ]---
-> >>> Kernel panic - not syncing: Fatal exception
-> >>> CPU0: stopping
-> >>> CPU: 0 PID: 7136 Comm: mpdecision Tainted: G      D W    3.10.0-gd727407-00074-g979ede8 #396
-> >>>
-> >>> [<c0afe180>] (notifier_call_chain+0x40/0x68) from [<c02a23ac>] (__blocking_notifier_call_chain+0x40/0x58)
-> >>> [<c02a23ac>] (__blocking_notifier_call_chain+0x40/0x58) from [<c02a23d8>] (blocking_notifier_call_chain+0x14/0x1c)
-> >>> [<c02a23d8>] (blocking_notifier_call_chain+0x14/0x1c) from [<c0803c68>] (cpufreq_set_policy+0xd4/0x2b8)
-> >>> [<c0803c68>] (cpufreq_set_policy+0xd4/0x2b8) from [<c0803e7c>] (cpufreq_init_policy+0x30/0x98)
-> >>> [<c0803e7c>] (cpufreq_init_policy+0x30/0x98) from [<c0805a18>] (__cpufreq_add_dev.isra.17+0x4dc/0x7a4)
-> >>> [<c0805a18>] (__cpufreq_add_dev.isra.17+0x4dc/0x7a4) from [<c0805d38>] (cpufreq_cpu_callback+0x58/0x84)
-> >>> [<c0805d38>] (cpufreq_cpu_callback+0x58/0x84) from [<c0afe180>] (notifier_call_chain+0x40/0x68)
-> >>> [<c0afe180>] (notifier_call_chain+0x40/0x68) from [<c02812dc>] (__cpu_notify+0x28/0x44)
-> >>> [<c02812dc>] (__cpu_notify+0x28/0x44) from [<c0aeed90>] (_cpu_up+0xf4/0x1dc)
-> >>> [<c0aeed90>] (_cpu_up+0xf4/0x1dc) from [<c0aeeed4>] (cpu_up+0x5c/0x78)
-> >>> [<c0aeeed4>] (cpu_up+0x5c/0x78) from [<c0aec808>] (store_online+0x44/0x74)
-> >>> [<c0aec808>] (store_online+0x44/0x74) from [<c03a40f4>] (sysfs_write_file+0x108/0x14c)
-> >>> [<c03a40f4>] (sysfs_write_file+0x108/0x14c) from [<c03517d4>] (vfs_write+0xd0/0x180)
-> >>> [<c03517d4>] (vfs_write+0xd0/0x180) from [<c0351ca8>] (SyS_write+0x38/0x68)
-> >>> [<c0351ca8>] (SyS_write+0x38/0x68) from [<c0205de0>] (ret_fast_syscall+0x0/0x30)
-> >>>
-> >>> Fix these by taking locks at appropriate places in __cpufreq_add_dev() as well.
-> >>>
-> >>> Reported-by: Saravana Kannan <skannan@codeaurora.org>
-> >>> Suggested-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> >>> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> >>
-> >> I've rebased this one on top of 3.14-rc5 and queued it up for 3.14-rc6.
-> >>
-> >> Please check the bleeding-edge branch for the result.
-> >
-> > Actually, I think I'll queue up [2-3/3] for 3.14-rc6 instead.
-> >
-> 
-> Pretty close to having this tested and reported back. So, if you can 
-> wait, that would be better. Should probably see an email by Fri evening PST.
+On 03/05/14 17:23, Rafael J. Wysocki wrote:
+> On Tuesday, March 04, 2014 12:42:15 PM Aaron Plattner wrote:
+>> If a module calls cpufreq_get while cpufreq is initializing, it's possible for
+>> it to be called after cpufreq_driver is set but before cpufreq_cpu_data is
+>> written during subsys_interface_register.  This happens because cpufreq_get
+>> doesn't take the cpufreq_driver_lock around its use of cpufreq_cpu_data.
+>
+> Is this a theoretical race, or can you actually reproduce it?  If so, on what
+> system/driver?  Or are there any bug reports related to this you can point me
+> to?
 
-OK
+It reproduces on my Arch Linux system at home with the nvidia driver, 
+and there has been at least one bug report that looks like the same thing:
 
-It won't hurt if they stay in bleeding-edge/linux-next till then, though.
+https://bbs.archlinux.org/viewtopic.php?id=177934
 
-Thanks!
+I reproduced the problem with v3.13.5, then applied this change and was 
+able to boot successfully 10/10 times.  So I guess that means you can add
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Tested-by: Aaron Plattner <aplattner@nvidia.com>
+
+to the commit.
+
+-- Aaron
+
+>> Fix this by using cpufreq_cpu_get(cpu) to look up the policy rather than reading
+>> it out of cpufreq_cpu_data directly.  cpufreq_cpu_get takes the appropriate
+>> locks to prevent this race from happening.
+>>
+>> Since it's possible for policy to be NULL if the caller passes in an invalid CPU
+>> number or calls the function before cpufreq is initialized, delete the
+>> BUG_ON(!policy) and simply return 0.  Don't try to return -ENOENT because that's
+>> negative and the function returns an unsigned integer.
+>>
+>> Signed-off-by: Aaron Plattner <aplattner@nvidia.com>
+>
+> Viresh, have you seen this?
+>
+>> ---
+>>   drivers/cpufreq/cpufreq.c | 21 +++++++--------------
+>>   1 file changed, 7 insertions(+), 14 deletions(-)
+>>
+>> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+>> index 8d19f7c..158d0b5 100644
+>> --- a/drivers/cpufreq/cpufreq.c
+>> +++ b/drivers/cpufreq/cpufreq.c
+>> @@ -1447,23 +1447,16 @@ static unsigned int __cpufreq_get(unsigned int cpu)
+>>    */
+>>   unsigned int cpufreq_get(unsigned int cpu)
+>>   {
+>> -	struct cpufreq_policy *policy = per_cpu(cpufreq_cpu_data, cpu);
+>> +	struct cpufreq_policy *policy = cpufreq_cpu_get(cpu);
+>>   	unsigned int ret_freq = 0;
+>>
+>> -	if (cpufreq_disabled() || !cpufreq_driver)
+>> -		return -ENOENT;
+>> -
+>> -	BUG_ON(!policy);
+>> -
+>> -	if (!down_read_trylock(&cpufreq_rwsem))
+>> -		return 0;
+>> -
+>> -	down_read(&policy->rwsem);
+>> -
+>> -	ret_freq = __cpufreq_get(cpu);
+>> +	if (policy) {
+>> +		down_read(&policy->rwsem);
+>> +		ret_freq = __cpufreq_get(cpu);
+>> +		up_read(&policy->rwsem);
+>>
+>> -	up_read(&policy->rwsem);
+>> -	up_read(&cpufreq_rwsem);
+>> +		cpufreq_cpu_put(policy);
+>> +	}
+>>
+>>   	return ret_freq;
+>>   }
+>>
+>
+
