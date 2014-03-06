@@ -1,120 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370AbaCFT4p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 14:56:45 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:48941 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753358AbaCFT4m (ORCPT
+	id S1752428AbaCFUDP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 15:03:15 -0500
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:32990
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751650AbaCFUDM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 14:56:42 -0500
-From: behanw@converseincode.com
-To: davem@davemloft.net
-Cc: pablo@netfilter.org, kaber@trash.net, kadlec@blackhole.kfki.hu,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        dwmw2@infradead.org, pageexec@freemail.hu,
-        Mark Charlebois <charlebm@gmail.com>,
-        Behan Webster <behanw@converseincode.com>,
-        =?UTF-8?q?Vin=C3=ADcius=20Tinti?= <viniciustinti@gmail.com>
-Subject: [PATCH] net: inetfilter: LLVMLinux: vlais-netfilter
-Date: Thu,  6 Mar 2014 11:56:08 -0800
-Message-Id: <1394135768-27621-1-git-send-email-behanw@converseincode.com>
-X-Mailer: git-send-email 1.8.3.2
+	Thu, 6 Mar 2014 15:03:12 -0500
+X-Forefront-Antispam-Report: CIP:165.204.84.221;KIP:(null);UIP:(null);IPV:NLI;H:atltwp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(z579ehzbb2dI98dI9371I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh22d0h2336h2438h2461h2487h24ach24d7h2516h2545h255eh25cch25f6h2605h1155h)
+X-WSS-ID: 0N216D1-07-033-02
+X-M-MSG: 
+Message-ID: <5318D475.9040701@amd.com>
+Date: Thu, 6 Mar 2014 14:03:01 -0600
+From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>,
+        <kim.naru@amd.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH 0/3] amd/pci: Add AMD hostbridge supports for newer AMD
+ systems
+References: <1394053603-3724-1-git-send-email-suravee.suthikulpanit@amd.com> <CAErSpo4MMJh9b0aivwGSbxCMVw24He1+Vo_LH0R0E+fYM5aThg@mail.gmail.com> <5317D9B0.1080502@amd.com> <5318160D.8070305@amd.com> <CAErSpo59=52bqgyvqk1x7kcgFmRtdZhT6faYTi3wy7KDtk5=Pw@mail.gmail.com>
+In-Reply-To: <CAErSpo59=52bqgyvqk1x7kcgFmRtdZhT6faYTi3wy7KDtk5=Pw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: amd.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Charlebois <charlebm@gmail.com>
+On 3/6/2014 11:40 AM, Bjorn Helgaas wrote:
+> [+cc Yinghai, sorry I didn't think of it before]
+>
+> On Wed, Mar 5, 2014 at 11:30 PM, Suravee Suthikulpanit
+> <suravee.suthikulpanit@amd.com> wrote:
+>> On 3/5/2014 8:13 PM, Suravee Suthikulanit wrote:
+>>>
+>>> On 3/5/2014 3:24 PM, Bjorn Helgaas wrote:
+>>>>
+>>>> [+cc linux-acpi]
+>>>>
+>>>> On Wed, Mar 5, 2014 at 2:06 PM,  <suravee.suthikulpanit@amd.com> wrote:
+>>>>>
+>>>>> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+>>>>>
+>>>>> The current code only supports upto AMD hostbridge for family11h.
+>>>>> This causes PCI numa_node information to be reported incorrectly
+>>>>> for newer family with multi sockets.
+>>>>
+>>>>
+>>>> Where is the incorrect reporting?  In ACPI tables?  Is this patch a
+>>>> way to cover up firmware defects in the ACPI description?  Or is this
+>>>> for machines without ACPI (it seems unlikely that machines with new
+>>>> AMD processors would not have ACPI)?
+>>>
+>>>
+>>> This is incorrectly reported in the sysfs for each PCI device (e.g.
+>>> /devices/pci0000:50/0000:50:00.2/numa_node). Without the patch, they
+>>> return -1.
+>>>
+>>> In file arch/x86/pci/acpi.c, in function pci_acpi_scan_root(), it is
+>>> queries the node information as following:
+>>>
+>>> #ifdef CONFIG_ACPI_NUMA
+>>>       pxm = acpi_get_pxm(device->handle);
+>>>       if (pxm >= 0)
+>>>           node = pxm_to_node(pxm);
+>>>       if (node != -1)
+>>>           set_mp_bus_to_node(busnum, node);
+>>>       else
+>>> #endif
+>>>           node = get_mp_bus_to_node(busnum);
+>>>
+>>> In this case, I see that the acpi_get_pxm() returns -1.  Therefore, it
+>>> falls back to using the node information in mp_bus_to_node[].  So,
+>>> without this patch, it would also returning -1.
+>>>
+>>> Also, the spec mentioned that the _PXM is optional, so I am not sure if
+>>> this is a firmware bug.
+>>
+>> I am not quite familiar with the ACPI for this part.  However, after taking
+>> a look at the code (in driver/acpi/pci_root.c: acpi_pci_root_add()), I
+>> believe it's trying to locate _PXM method in the DSDT table, in which I
+>> don't see any _PXM methods.
+>
+> This sure looks like a firmware bug.  True, _PXM is optional, but if
+> the firmware doesn't provide it, nobody should be surprised that the
+> OS thinks everything is in the same proximity domain.
+>
+> I would not endorse extending amd_bus.c for new CPUs.  That just
+> covers up firmware problems like this, and if you ever run a different
+> OS on the box, you'll trip over them again.  And I don't think a patch
+> like this will even be a possibility for Windows.
+>
+> Bjorn
+>
 
-Replaced non-standard C use of Variable Length Arrays In Structs (VLAIS) in
-xt_repldata.h with a C99 compliant flexible array member and then calculated
-offsets to the other struct members. These other members aren't referenced by
-name in this code, however this patch maintains the same memory layout and
-padding as was previously accomplished using VLAIS.
+I understand and am trying to verify this with the BIOS engineers. 
+However, this is currently affecting family15h servers out in the field. 
+  We can try to fix ACPI for newer generation of machines, but it won't 
+be practical to push this BIOS fix to all the BIOS vendors and system 
+vendors for older platforms, as they tend to.
 
-Had the original structure been ordered differently, with the entries VLA at
-the end, then it could have been a flexible member, and this patch would have
-been a lot simpler. However since the data stored in this structure is
-ultimately exported to userspace, the order of this structure can't be changed.
+What if I localize the extension to the changes to access node 
+information in the hostbridge for just the famil15h which is mostly used 
+in our main server products? Would that be acceptable?
 
-This patch makes no attempt to change the existing behavior, merely the way in
-which the current layout is accomplished using standard C99 constructs. As such
-the code can now be compiled with either gcc or clang.
-
-Author: Mark Charlebois <charlebm@gmail.com>
-Signed-off-by: Mark Charlebois <charlebm@gmail.com>
-Signed-off-by: Behan Webster <behanw@converseincode.com>
-Signed-off-by: Vinícius Tinti <viniciustinti@gmail.com>
----
- net/netfilter/xt_repldata.h | 34 ++++++++++++++++++++++++++++------
- 1 file changed, 28 insertions(+), 6 deletions(-)
-
-diff --git a/net/netfilter/xt_repldata.h b/net/netfilter/xt_repldata.h
-index 6efe4e5..c138fea 100644
---- a/net/netfilter/xt_repldata.h
-+++ b/net/netfilter/xt_repldata.h
-@@ -5,29 +5,51 @@
-  * they serve as the hanging-off data accessed through repl.data[].
-  */
- 
-+#define padbytes(offset, type) ((-offset) & (__alignof__(type)-1))
-+
-+/* tbl has the following structure equivalent, but is C99 compliant:
-+ * struct {
-+ *	struct type##_replace repl;
-+ *	struct type##_standard entries[nhooks];
-+ *	struct type##_error term;
-+ * } *tbl;
-+ */
-+
- #define xt_alloc_initial_table(type, typ2) ({ \
- 	unsigned int hook_mask = info->valid_hooks; \
- 	unsigned int nhooks = hweight32(hook_mask); \
- 	unsigned int bytes = 0, hooknum = 0, i = 0; \
- 	struct { \
- 		struct type##_replace repl; \
--		struct type##_standard entries[nhooks]; \
--		struct type##_error term; \
--	} *tbl = kzalloc(sizeof(*tbl), GFP_KERNEL); \
-+		char data[0]; \
-+	} *tbl; \
-+	struct type##_standard *entries; \
-+	struct type##_error *term; \
-+	size_t entries_offset = padbytes(sizeof(tbl->repl), *entries); \
-+	size_t entries_end = entries_offset + nhooks * sizeof(*entries); \
-+	size_t term_offset = entries_end \
-+		+ padbytes(sizeof(tbl->repl) + entries_end, *term); \
-+	size_t term_end = term_offset + sizeof(*term); \
-+	size_t data_sz = term_end \
-+		+ padbytes(sizeof(tbl->repl) + term_end, tbl->repl); \
-+	size_t tbl_sz = sizeof(tbl->repl) + data_sz; \
-+	tbl = kzalloc(tbl_sz, GFP_KERNEL); \
- 	if (tbl == NULL) \
- 		return NULL; \
-+	entries = (struct type##_standard *)&tbl->data[entries_offset]; \
-+	term = (struct type##_error *)&tbl->data[term_offset]; \
- 	strncpy(tbl->repl.name, info->name, sizeof(tbl->repl.name)); \
--	tbl->term = (struct type##_error)typ2##_ERROR_INIT;  \
-+	*term = (struct type##_error)typ2##_ERROR_INIT;  \
- 	tbl->repl.valid_hooks = hook_mask; \
- 	tbl->repl.num_entries = nhooks + 1; \
- 	tbl->repl.size = nhooks * sizeof(struct type##_standard) + \
--	                 sizeof(struct type##_error); \
-+			 sizeof(struct type##_error); \
- 	for (; hook_mask != 0; hook_mask >>= 1, ++hooknum) { \
- 		if (!(hook_mask & 1)) \
- 			continue; \
- 		tbl->repl.hook_entry[hooknum] = bytes; \
- 		tbl->repl.underflow[hooknum]  = bytes; \
--		tbl->entries[i++] = (struct type##_standard) \
-+		entries[i++] = (struct type##_standard) \
- 			typ2##_STANDARD_INIT(NF_ACCEPT); \
- 		bytes += sizeof(struct type##_standard); \
- 	} \
--- 
-1.8.3.2
+Suravee
 
