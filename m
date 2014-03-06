@@ -1,82 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752522AbaCFNlU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 08:41:20 -0500
-Received: from retry101.mer-nm.internl.net ([217.149.192.105]:36498 "EHLO
-	retry101.mer-nm.internl.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750760AbaCFNlS convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 08:41:18 -0500
-X-Greylist: delayed 560 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Mar 2014 08:41:18 EST
-X-Spam-scanned: scanned by InterNLnet Mail Scan System
-X-Spam-Flag: NO
-X-Spam-Score: -4.4
-X-Spam-Languages: en
-Message-ID: <531878C8.2020001@topic.nl>
-Date: Thu, 6 Mar 2014 14:31:52 +0100
-From: Mike Looijmans <mike.looijmans@topic.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752142AbaCFNpH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 08:45:07 -0500
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:34488 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751169AbaCFNpF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 08:45:05 -0500
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Khalid Aziz <khalid.aziz@oracle.com>,
+        tglx@linutronix.de, Ingo Molnar <mingo@kernel.org>,
+        akpm@linux-foundation.org, andi.kleen@intel.com, rob@landley.net,
+        viro@zeniv.linux.org.uk, oleg@redhat.com, venki@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] [PATCH] Pre-emption control for userspace
+Organization: D03
+References: <1393870033-31076-1-git-send-email-khalid.aziz@oracle.com>
+	<531641A8.40306@zytor.com> <87ob1jbgtg.fsf@rasmusvillemoes.dk>
+	<20140306133450.GL9987@twins.programming.kicks-ass.net>
+X-Hashcash: 1:20:140306:linux-kernel@vger.kernel.org::g5KzUNjbXjlqUZLK:0000000000000000000000000000000000JyD
+X-Hashcash: 1:20:140306:venki@google.com::YB2zYC1AHaLxCV+5:00ZV0
+X-Hashcash: 1:20:140306:viro@zeniv.linux.org.uk::EL+6OcJu5tfGcTK0:000000000000000000000000000000000000000GTN
+X-Hashcash: 1:20:140306:mingo@kernel.org::KJFYFaeeOuI0QNPj:01B2P
+X-Hashcash: 1:20:140306:rob@landley.net::V4wAO0giI0c412Df:001AE4
+X-Hashcash: 1:20:140306:peterz@infradead.org::Fh6RB8J0eqGXwnbM:000000000000000000000000000000000000000001IMV
+X-Hashcash: 1:20:140306:tglx@linutronix.de::wgHe5Y4irBFiTODH:00000000000000000000000000000000000000000003qq+
+X-Hashcash: 1:20:140306:oleg@redhat.com::F3MJeIXqeBi3tV1i:004ROR
+X-Hashcash: 1:20:140306:andi.kleen@intel.com::CcE5Iu/f5GSsF/EY:000000000000000000000000000000000000000004Ho5
+X-Hashcash: 1:20:140306:akpm@linux-foundation.org::OpmurtwyW3pNo98x:0000000000000000000000000000000000005PyB
+X-Hashcash: 1:20:140306:khalid.aziz@oracle.com::OS7JYKzbLELW2xax:00000000000000000000000000000000000000082jO
+X-Hashcash: 1:20:140306:hpa@zytor.com::Yx05qzpT1p7aZSyb:0000NQqD
+Date: Thu, 06 Mar 2014 14:45:00 +0100
+In-Reply-To: <20140306133450.GL9987@twins.programming.kicks-ass.net> (Peter
+	Zijlstra's message of "Thu, 6 Mar 2014 14:34:50 +0100")
+Message-ID: <87k3c7bfvn.fsf@rasmusvillemoes.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>,
-        Eli Billauer <eli.billauer@gmail.com>
-CC: <chris@printf.net>, <michal.simek@xilinx.com>, <linux-mmc@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] mmc: sdhci: add quirk for broken write protect detection
-References: <1393759200-22819-1-git-send-email-eli.billauer@gmail.com> <74003aec-1707-4f43-b947-df148d573fa1@TX2EHSMHS038.ehs.local> <53163247.8000904@gmail.com> <ae0f71ac-c5f7-4af7-a9ba-c019cec19ebf@AM1EHSMHS017.ehs.local>
-In-Reply-To: <ae0f71ac-c5f7-4af7-a9ba-c019cec19ebf@AM1EHSMHS017.ehs.local>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [192.168.80.45]
-X-EXCLAIMER-MD-CONFIG: 9833cda7-5b21-4d34-9a38-8d025ddc3664
-X-EXCLAIMER-MD-BIFURCATION-INSTANCE: 0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-﻿On 03/04/2014 10:00 PM, Sören Brinkmann wrote:
-> On Tue, 2014-03-04 at 10:06PM +0200, Eli Billauer wrote:
->> Hello Sören,
->>
->> wp-inverted solves the practical problem indeed, and fools the
->> driver into thinking that the card has an inverted write protection
->> sensor, and the logic zero that it finds in the hardware register
->> means that the card isn't write protected.
->>
->> I'm insisting on this patch, because I think that the device tree
->> should describe the hardware as it is, and not fool the driver into
->> behaving the way we want it to. These tricks always bite back later
->> on.
-> Well, why is broken-wp more accurate than wp-inverted? Strictly
-> speaking the WP is there and working, it's just tied off to some value
-> you want to have interpreted the other way.
-> Anyway, seems like this is solvable with wp-inverted and whether the
-> additional quirk is needed I leave to others do decide.
+Peter Zijlstra <peterz@infradead.org> writes:
 
-I've begged for this patch - or a similar one - to be included too, because on 
-our boards, the "wp" value appears to be sort of random. Out of 5 prototype 
-boards, 3 would only boot with wp-inverted while the other 2 wouldn't boot 
-with wp-inverted set.
+> On Thu, Mar 06, 2014 at 02:24:43PM +0100, Rasmus Villemoes wrote:
+>> Is it possible to implement non-sleeping versions of {get,put}_user()?
+>
+> __{get,put}_user()
 
-In our case I really don't know (and I don't care either) to which logic level 
-the wp happens to think it's wired. I just want to be able to tell the driver 
-that the WP line is 
-free-floating-and-might-have-any-random-value-at-any-given-moment which is a 
-bit long, so I'd go for disable-wp instead.
+Huh?
 
-Mike.
+arch/x86/include/asm/uaccess.h:
 
+/**
+ * __get_user: - Get a simple variable from user space, with less checking.
+ * @x:   Variable to store result.
+ * @ptr: Source address, in user space.
+ *
+ * Context: User context only.  This function may sleep.
 
-Met vriendelijke groet / kind regards,
+What am I missing?
 
-Mike Looijmans
-
-TOPIC Embedded Systems
-Eindhovenseweg 32-C, NL-5683 KH Best
-Postbus 440, NL-5680 AK Best
-Telefoon: (+31) (0) 499 33 69 79
-Telefax:  (+31) (0) 499 33 69 70
-E-mail: mike.looijmans@topic.nl
-Website: www.topic.nl
-
-Please consider the environment before printing this e-mail
+Rasmus
 
