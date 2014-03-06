@@ -1,125 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847AbaCFKpF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 05:45:05 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:46826 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751791AbaCFKpB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 05:45:01 -0500
-Message-ID: <53185199.3090103@ti.com>
-Date: Thu, 6 Mar 2014 16:14:41 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752915AbaCFKpM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 05:45:12 -0500
+Received: from www.linutronix.de ([62.245.132.108]:51775 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751791AbaCFKpG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 05:45:06 -0500
+Date: Thu, 6 Mar 2014 11:45:11 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT Pull] irq updates for 3.14
+Message-ID: <alpine.DEB.2.02.1403061142130.18573@ionos.tec.linutronix.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Kamil Debski <k.debski@samsung.com>,
-        "'Anton Tikhomirov'" <av.tikhomirov@samsung.com>,
-        <linux-kernel@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <devicetree@vger.kernel.org>
-CC: <kyungmin.park@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        <gautam.vivek@samsung.com>, <mat.krawczuk@gmail.com>,
-        <yulgon.kim@samsung.com>, <p.paneri@samsung.com>,
-        <jg1.han@samsung.com>, <galak@codeaurora.org>,
-        <matt.porter@linaro.org>, <tjakobi@math.uni-bielefeld.de>,
-        <stern@rowland.harvard.edu>, <sander@humilis.net>
-Subject: Re: [PATCH v9 3/4] phy: Add new Exynos USB 2.0 PHY driver
-References: <1394033288-5551-1-git-send-email-k.debski@samsung.com> <1394033288-5551-4-git-send-email-k.debski@samsung.com> <005c01cf3915$c53476c0$4f9d6440$%tikhomirov@samsung.com> <193a01cf3926$4bef53f0$e3cdfbd0$%debski@samsung.com>
-In-Reply-To: <193a01cf3926$4bef53f0$e3cdfbd0$%debski@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Linus,
 
-On Thursday 06 March 2014 03:54 PM, Kamil Debski wrote:
-> Hi Anton, Kishon,
->
->> From: Anton Tikhomirov [mailto:av.tikhomirov@samsung.com]
->> Sent: Thursday, March 06, 2014 9:26 AM
->>
->> Hi Kamil,
->>
->> ...
->>
->>> +| 3. Supporting SoCs
->>> ++--------------------
->>> +
->>> +To support a new SoC a new file should be added to the drivers/phy
->>> +directory. Each SoC's configuration is stored in an instance of the
->>> +struct samsung_usb2_phy_config.
->>> +
->>> +struct samsung_usb2_phy_config {
->>> +	const struct samsung_usb2_common_phy *phys;
->>> +	unsigned int num_phys;
->>> +	bool has_mode_switch;
->>
->> You missed rate_to_clk here.
->
-> Thank you for spotting this.
->
-> Kishon: I am sorry that this omission was made. I am happy to send an
-> updated patchset. However, I want to give some time for any additional
-> comments. Do you think that we have for this? Is today evening ok with you?
+please pull the latest irq-urgent-for-linus git tree from:
 
-Would be great if you can send the patch in 2-3 hrs.. I'd like to give 
-enough time for auto build to detect any errors.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git irq-urgent-for-linus
 
->>
->>> +};
->>> +
->>
->> ...
->>
->>> diff --git a/drivers/phy/phy-samsung-usb2.c b/drivers/phy/phy-
->> samsung-
->>> usb2.c new file mode 100644 index 0000000..c3b7719
->>> --- /dev/null
->>> +++ b/drivers/phy/phy-samsung-usb2.c
->>> @@ -0,0 +1,222 @@
->>> +/*
->>> + * Samsung SoC USB 1.1/2.0 PHY driver
->>> + *
->>> + * Copyright (C) 2013 Samsung Electronics Co., Ltd.
->>> + * Author: Kamil Debski <k.debski@samsung.com>
->>> + *
->>> + * This program is free software; you can redistribute it and/or
->>> modify
->>> + * it under the terms of the GNU General Public License version 2 as
->>> + * published by the Free Software Foundation.
->>> + */
->>> +
->>> +#include <linux/clk.h>
->>> +#include <linux/mfd/syscon.h>
->>> +#include <linux/module.h>
->>> +#include <linux/of.h>
->>> +#include <linux/of_address.h>
->>> +#include <linux/phy/phy.h>
->>> +#include <linux/platform_device.h>
->>> +#include <linux/spinlock.h>
->>> +#include "phy-samsung-usb2.h"
->>> +
->>> +static int samsung_usb2_phy_power_on(struct phy *phy) {
->>> +	struct samsung_usb2_phy_instance *inst = phy_get_drvdata(phy);
->>> +	struct samsung_usb2_phy_driver *drv = inst->drv;
->>> +	int ret;
->>> +
->>> +	dev_dbg(drv->dev, "Request to power_on \"%s\" usb phy\n",
->>> +		inst->cfg->label);
->>> +	ret = clk_prepare_enable(drv->clk);
->>
->> clk_prepare_enable() can sleep, and therefore doesn't allow
->> samusng_usb2_phy_power_on() to be used in atomic context (e.g. inside
->> spin_lock-ed area), what sometimes may be desirable.
->> What about to prepare clock in probe, and just enable it here
->> (note: clk_enable() doesn't sleep).
->
->  From the onward discussion between you and Kishon, I draw the conclusion
-> that this change is not necessary. Right?
+This contains:
+     * A bugfix for a long standing waitqueue race
+     * A trivial fix for a missing include
 
-right.
+Thanks,
 
-Cheers
-Kishon
+	tglx
+
+------------------>
+Chuansheng Liu (1):
+      genirq: Remove racy waitqueue_active check
+
+Rashika Kheria (1):
+      genirq: Include missing header file in irqdomain.c
+
+
+ kernel/irq/irqdomain.c |    1 +
+ kernel/irq/manage.c    |    3 +--
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+index cf68bb3..f140337 100644
+--- a/kernel/irq/irqdomain.c
++++ b/kernel/irq/irqdomain.c
+@@ -10,6 +10,7 @@
+ #include <linux/mutex.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
++#include <linux/of_irq.h>
+ #include <linux/topology.h>
+ #include <linux/seq_file.h>
+ #include <linux/slab.h>
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 481a13c..d3bf660 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -802,8 +802,7 @@ static irqreturn_t irq_thread_fn(struct irq_desc *desc,
+ 
+ static void wake_threads_waitq(struct irq_desc *desc)
+ {
+-	if (atomic_dec_and_test(&desc->threads_active) &&
+-	    waitqueue_active(&desc->wait_for_threads))
++	if (atomic_dec_and_test(&desc->threads_active))
+ 		wake_up(&desc->wait_for_threads);
+ }
+ 
