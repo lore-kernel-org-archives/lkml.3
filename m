@@ -1,123 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757775AbaCFAD3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Mar 2014 19:03:29 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:57831 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757748AbaCFADZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Mar 2014 19:03:25 -0500
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-To: Linux PPC <linuxppc-dev@lists.ozlabs.org>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Michael Ellerman <michael@ellerman.id.au>, scottwood@freescale.com,
-        Peter Zijlstra <peterz@infradead.org>, linux-doc@vger.kernel.org,
-        Rob Landley <rob@landley.net>
-Subject: [PATCH v4 11/11] powerpc/perf/hv_{gpci,24x7}: add documentation of device attributes
-Date: Wed,  5 Mar 2014 16:01:10 -0800
-Message-Id: <1394064082-6242-12-git-send-email-cody@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1394064082-6242-1-git-send-email-cody@linux.vnet.ibm.com>
-References: <1394064082-6242-1-git-send-email-cody@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14030600-5806-0000-0000-00002448903A
+	id S1757852AbaCFADt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Mar 2014 19:03:49 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:53215 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757820AbaCFADq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Mar 2014 19:03:46 -0500
+Date: Wed, 5 Mar 2014 18:00:58 -0600
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH 6/6] documentation: bindings: document PMIC8921/8058 RTC
+Message-ID: <20140306000058.GE18529@joshc.qualcomm.com>
+References: <1394047776-13827-1-git-send-email-joshc@codeaurora.org>
+ <1394047776-13827-7-git-send-email-joshc@codeaurora.org>
+ <5317900F.5030803@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5317900F.5030803@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-gpci and 24x7 expose some device specific attributes. Add some
-documentation for them.
+On Wed, Mar 05, 2014 at 12:58:55PM -0800, Stephen Boyd wrote:
+> On 03/05/14 11:29, Josh Cartwright wrote:
+> > diff --git a/Documentation/devicetree/bindings/rtc/qcom,pm8xxx-rtc.txt b/Documentation/devicetree/bindings/rtc/qcom,pm8xxx-rtc.txt
+> > new file mode 100644
+> > index 0000000..699bd30
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/rtc/qcom,pm8xxx-rtc.txt
+> > @@ -0,0 +1,29 @@
+> > +* Real-Time Clock for Qualcomm 8058/8921 PMICs
+> > +
+> > +Required properties:
+> > +- compatible: should be one of the following.
+> > +    * "qcom,pm8058-rtc"
+> > +    * "qcom,pm8921-rtc"
+> > +- reg: base address of the register region
+> > +- reg-names: corresponding reg names for the regions listed in the 'reg'
+> > +             property, must contain:
+> > +     "rtc_base" - base of the RTC register region
+> 
+> optional reg-names?
+> 
+> > +- interrupts: interrupt list for the RTC, must contain a single interrupt
+> > +              specifier for the alarm interrupt
+> > +- interrupt-names: corresponding interrupt names for the interrupts listed in
+> > +                   the 'interrupts' property, must contain:
+> > +     "alarm" - summary interrupt for PMIC peripherals
+> 
+> optional interrupt-names?
 
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
----
- .../testing/sysfs-bus-event_source-devices-hv_24x7 | 23 ++++++++++++
- .../testing/sysfs-bus-event_source-devices-hv_gpci | 43 ++++++++++++++++++++++
- 2 files changed, 66 insertions(+)
- create mode 100644 Documentation/ABI/testing/sysfs-bus-event_source-devices-hv_24x7
- create mode 100644 Documentation/ABI/testing/sysfs-bus-event_source-devices-hv_gpci
+It isn't clear to me why these should be made optional, I hope Rob
+provides some clarification in the sdhci-msm thread.
 
-diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-hv_24x7 b/Documentation/ABI/testing/sysfs-bus-event_source-devices-hv_24x7
-new file mode 100644
-index 0000000..e78ee79
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-hv_24x7
-@@ -0,0 +1,23 @@
-+What:		/sys/bus/event_source/devices/hv_24x7/interface/catalog
-+Date:		February 2014
-+Contact:	Cody P Schafer <cody@linux.vnet.ibm.com>
-+Description:
-+		Provides access to the binary "24x7 catalog" provided by the
-+		hypervisor on POWER7 and 8 systems. This catalog lists events
-+		avaliable from the powerpc "hv_24x7" pmu. Its format is
-+		documented here:
-+		https://raw.githubusercontent.com/jmesmon/catalog-24x7/master/hv-24x7-catalog.h
-+
-+What:		/sys/bus/event_source/devices/hv_24x7/interface/catalog_length
-+Date:		February 2014
-+Contact:	Cody P Schafer <cody@linux.vnet.ibm.com>
-+Description:
-+		A number equal to the length in bytes of the catalog. This is
-+		also extractable from the provided binary "catalog" sysfs entry.
-+
-+What:		/sys/bus/event_source/devices/hv_24x7/interface/catalog_version
-+Date:		February 2014
-+Contact:	Cody P Schafer <cody@linux.vnet.ibm.com>
-+Description:
-+		Exposes the "version" field of the 24x7 catalog. This is also
-+		extractable from the provided binary "catalog" sysfs entry.
-diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-hv_gpci b/Documentation/ABI/testing/sysfs-bus-event_source-devices-hv_gpci
-new file mode 100644
-index 0000000..3fa58c2
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-hv_gpci
-@@ -0,0 +1,43 @@
-+What:		/sys/bus/event_source/devices/hv_gpci/interface/collect_privileged
-+Date:		February 2014
-+Contact:	Cody P Schafer <cody@linux.vnet.ibm.com>
-+Description:
-+		'0' if the hypervisor is configured to forbid access to event
-+		counters being accumulated by other guests and to physical
-+		domain event counters.
-+		'1' if that access is allowed.
-+
-+What:		/sys/bus/event_source/devices/hv_gpci/interface/ga
-+Date:		February 2014
-+Contact:	Cody P Schafer <cody@linux.vnet.ibm.com>
-+Description:
-+		0 or 1. Indicates whether we have access to "GA" events (listed
-+		in arch/powerpc/perf/hv-gpci.h).
-+
-+What:		/sys/bus/event_source/devices/hv_gpci/interface/expanded
-+Date:		February 2014
-+Contact:	Cody P Schafer <cody@linux.vnet.ibm.com>
-+Description:
-+		0 or 1. Indicates whether we have access to "EXPANDED" events (listed
-+		in arch/powerpc/perf/hv-gpci.h).
-+
-+What:		/sys/bus/event_source/devices/hv_gpci/interface/lab
-+Date:		February 2014
-+Contact:	Cody P Schafer <cody@linux.vnet.ibm.com>
-+Description:
-+		0 or 1. Indicates whether we have access to "LAB" events (listed
-+		in arch/powerpc/perf/hv-gpci.h).
-+
-+What:		/sys/bus/event_source/devices/hv_gpci/interface/version
-+Date:		February 2014
-+Contact:	Cody P Schafer <cody@linux.vnet.ibm.com>
-+Description:
-+		A number indicating the version of the gpci interface that the
-+		hypervisor reports supporting.
-+
-+What:		/sys/bus/event_source/devices/hv_gpci/interface/kernel_version
-+Date:		February 2014
-+Contact:	Cody P Schafer <cody@linux.vnet.ibm.com>
-+Description:
-+		A number indicating the latest version of the gpci interface
-+		that the kernel is aware of.
+> > +
+> > +Option properties:
+
+Woops, this should be "Optional" :).
+
+> > +- linux,allow-set-time: indicates that the setting of RTC time is allowed by
+> > +                        the host CPU
+> 
+> Is this a "linux" property? It seems like something that other OSes
+> would want to know about and doesn't require any explicit knowledge
+> about operating  system things (like keymaps for example).
+
+Yeah, I wasn't quite sure how to name this property.  It's
+Linux-specific in the sense that the underlying operation method is
+"set_time", but I agree this should be named something else...
+
+How do you feel about simply "allow-set-time"?
+
+> 
+> > +
+> > +Example:
+> > +
+> > +	rtc {
+> 
+> rtc@11d
+
+Yep, thanks.
+
+> > +		compatible = "qcom,pm8921-rtc";
+> > +		reg = <0x11D>;
+> > +		reg-names = "rtc_base";
+> > +		interrupts = <0x27 0>;
+> > +		interrupt-names = "alarm";
+> > +	};
+> >
+
 -- 
-1.9.0
-
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
