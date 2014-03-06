@@ -1,49 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668AbaCFWRF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 17:17:05 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:34102 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082AbaCFWQ6 (ORCPT
+	id S1751684AbaCFWZQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 17:25:16 -0500
+Received: from mail-we0-f182.google.com ([74.125.82.182]:59068 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751210AbaCFWZP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 17:16:58 -0500
-Date: Thu, 06 Mar 2014 17:16:56 -0500 (EST)
-Message-Id: <20140306.171656.1597596195712774395.davem@davemloft.net>
-To: dhowells@redhat.com
-Cc: netdev@vger.kernel.org, tim@electronghost.co.uk,
-        linux-afs@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/8] AF_RXRPC fixes and development [ver #2]
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <8007.1394144113@warthog.procyon.org.uk>
-References: <20140306.143719.2217501178599478723.davem@davemloft.net>
-	<20140306124614.16645.50744.stgit@warthog.procyon.org.uk>
-	<8007.1394144113@warthog.procyon.org.uk>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 06 Mar 2014 14:16:58 -0800 (PST)
+	Thu, 6 Mar 2014 17:25:15 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140306.131310.1830419590852091525.davem@davemloft.net>
+References: <1394110536-4532-1-git-send-email-sergey.senozhatsky@gmail.com>
+	<20140306.131310.1830419590852091525.davem@davemloft.net>
+Date: Fri, 7 Mar 2014 01:25:13 +0300
+Message-ID: <CAHqPoqJJL7ddfOyBzGM5tWNV=52W5KDko+iv4W2WzD2MOtUtsw@mail.gmail.com>
+Subject: Re: [PATCH] net: use raw_cpu ops in snmp stats bh
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: David Miller <davem@davemloft.net>, Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 06 Mar 2014 22:15:13 +0000
+Hello,
 
-> David Miller <davem@davemloft.net> wrote:
-> 
->> > Here are some AF_RXRPC fixes (to tag rxrpc-20140226):
->>  ...
->> > And development patches (to tag rxrpc-devel-20140304):
->> 
->> A mix of both bug fixes and new features....
-> 
-> I did ask whether you wanted them in one or preferred them separate...
+On Thu, Mar 6, 2014 at 9:13 PM, David Miller <davem@davemloft.net> wrote:
+> From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> Date: Thu,  6 Mar 2014 15:55:36 +0300
+>
+>> Commit a25982c15ae52 ("percpu: add preemption checks to __this_cpu
+>> ops") added preemption checks to __this_cpu ops, which are used in
+>> SNMP_INC_STATS_BH() and SNMP_ADD_STATS_BH(), resulting in following
+>> warnings:
+>>
+>> BUG: using __this_cpu_add() in preemptible [00000000] code: ssh/4661
+>> caller is __this_cpu_preempt_check+0x2b/0x2d
+>> CPU: 3 PID: 4661 Comm: ssh Not tainted 3.14.0-rc5-next-20140306-dbg-dirty #162
+>> Hardware name: Acer             Aspire 5741G    /Aspire 5741G    , BIOS V1.20 02/08/2011
+>>  0000000000000000 ffff880094939be0 ffffffff813b8305 0000000000000003
+>>  ffff880094939c00 ffffffff8121221f ffff88015130a8c0 0000000000000000
+>>  ffff880094939c38 ffffffff8121226b 635f736968745f5f 29286464615f7570
+>> Call Trace:
+>>  [<ffffffff813b8305>] dump_stack+0x4e/0x7a
+>>  [<ffffffff8121221f>] check_preemption_disabled+0xce/0xdd
+>>  [<ffffffff8121226b>] __this_cpu_preempt_check+0x2b/0x2d
+>>  [<ffffffff81370b5a>] ? tcp_rearm_rto+0x9f/0xa1
+>>  [<ffffffff81373456>] tcp_event_new_data_sent+0x6d/0x91
+>>  [<ffffffff81374dc6>] tcp_write_xmit+0x3f1/0x935
+>>  [<ffffffff813754e4>] __tcp_push_pending_frames+0x28/0x82
+>>  [<ffffffff81368109>] tcp_push+0xcc/0x102
+>>  [<ffffffff8136a0c1>] tcp_sendmsg+0x8c5/0xb7a
+>>  [<ffffffff81207d59>] ? string.isra.6+0x3b/0x9f
+>>  [<ffffffff8138a10a>] inet_sendmsg+0x75/0xa0
+>>  [<ffffffff81320fb6>] sock_aio_write+0xe7/0xfe
+>>  [<ffffffff81207d59>] ? string.isra.6+0x3b/0x9f
+>>  [<ffffffff810e08ab>] do_sync_write+0x54/0x73
+>>  [<ffffffff810e0df7>] vfs_write+0xc6/0x17c
+>>  [<ffffffff810e1603>] SyS_write+0x44/0x78
+>>  [<ffffffff813be0a1>] tracesys+0xd4/0xd9
+>>
+>> use raw_cpu_inc() and raw_cpu_add() instead of __this_cpu_inc()
+>> and __this_cpu_add().
+>>
+>> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+>
+> This is a bug in the TCP code, if this code path can happen outside of
+> software interrupts or BH protected sections, which it can as seen in
+> this trace, it must use the non-_BH-postfixed versions of the SNMP
+> counter bumps.
 
-It depends upon whether you want the bug fixes to go into Linus's
-tree for the current release or not.
 
-If you do, submit just the bug fixes against 'net'
+David, Eric, thank you and sorry for the noise.
 
-Then when I next merge 'net' into 'net-next', submit the feature
-patches.
+
+p.s. my fetchmail went mad two days ago and became very selective on
+fetching mails from gmail, so I surely missed a lot of emails. have to double
+check using web interface now.
+
+-ss
