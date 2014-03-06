@@ -1,130 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753696AbaCFVtR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 16:49:17 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:51425 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752823AbaCFVtP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 16:49:15 -0500
-X-IronPort-AV: E=Sophos;i="4.97,603,1389744000"; 
-   d="scan'208";a="107408837"
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
-        <xen-devel@lists.xenproject.org>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jonathan.davies@citrix.com>, Zoltan Kiss <zoltan.kiss@citrix.com>
-Subject: [PATCH net-next v7 9/9] xen-netback: Aggregate TX unmap operations
-Date: Thu, 6 Mar 2014 21:48:31 +0000
-Message-ID: <1394142511-14827-10-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1394142511-14827-1-git-send-email-zoltan.kiss@citrix.com>
-References: <1394142511-14827-1-git-send-email-zoltan.kiss@citrix.com>
+	id S1753787AbaCFVth (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 16:49:37 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:33643 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753733AbaCFVte (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 16:49:34 -0500
+Date: Thu, 6 Mar 2014 16:49:27 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: akpm@linux-foundation.org
+Cc: mm-commits@vger.kernel.org, stable@kernel.org, riel@redhat.com,
+        mgorman@suse.de, jstancek@redhat.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [merged]
+ mm-page_alloc-reset-aging-cycle-with-gfp_thisnode-v2.patch removed from -mm
+ tree
+Message-ID: <20140306214927.GB11171@cmpxchg.org>
+References: <5318dca5.AwhU/92X21JgbpdE%akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5318dca5.AwhU/92X21JgbpdE%akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unmapping causes TLB flushing, therefore we should make it in the largest
-possible batches. However we shouldn't starve the guest for too long. So if
-the guest has space for at least two big packets and we don't have at least a
-quarter ring to unmap, delay it for at most 1 milisec.
+Hey Andrew,
 
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
----
-v4:
-- use bool for tx_dealloc_work_todo
+On Thu, Mar 06, 2014 at 12:37:57PM -0800, akpm@linux-foundation.org wrote:
+> Subject: [merged] mm-page_alloc-reset-aging-cycle-with-gfp_thisnode-v2.patch removed from -mm tree
+> To: hannes@cmpxchg.org,jstancek@redhat.com,mgorman@suse.de,riel@redhat.com,stable@kernel.org,mm-commits@vger.kernel.org
+> From: akpm@linux-foundation.org
+> Date: Thu, 06 Mar 2014 12:37:57 -0800
+> 
+> 
+> The patch titled
+>      Subject: mm: page_alloc: exempt GFP_THISNODE allocations from zone fairness
+> has been removed from the -mm tree.  Its filename was
+>      mm-page_alloc-reset-aging-cycle-with-gfp_thisnode-v2.patch
+> 
+> This patch was dropped because it was merged into mainline or a subsystem tree
 
-v6:
-- rebase tx_dealloc_work_todo due to missing ;
+Would it make sense to also merge
 
-diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
-index d1cd8ce..95498c8 100644
---- a/drivers/net/xen-netback/common.h
-+++ b/drivers/net/xen-netback/common.h
-@@ -118,6 +118,8 @@ struct xenvif {
- 	u16 dealloc_ring[MAX_PENDING_REQS];
- 	struct task_struct *dealloc_task;
- 	wait_queue_head_t dealloc_wq;
-+	struct timer_list dealloc_delay;
-+	bool dealloc_delay_timed_out;
- 
- 	/* Use kthread for guest RX */
- 	struct task_struct *task;
-diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
-index 40aa500..f925af5 100644
---- a/drivers/net/xen-netback/interface.c
-+++ b/drivers/net/xen-netback/interface.c
-@@ -407,6 +407,7 @@ struct xenvif *xenvif_alloc(struct device *parent, domid_t domid,
- 			  .desc = i };
- 		vif->grant_tx_handle[i] = NETBACK_INVALID_HANDLE;
- 	}
-+	init_timer(&vif->dealloc_delay);
- 
- 	/*
- 	 * Initialise a dummy MAC address. We choose the numerically
-@@ -557,6 +558,7 @@ void xenvif_disconnect(struct xenvif *vif)
- 	}
- 
- 	if (vif->dealloc_task) {
-+		del_timer_sync(&vif->dealloc_delay);
- 		kthread_stop(vif->dealloc_task);
- 		vif->dealloc_task = NULL;
- 	}
-diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index bb65c7c..c098276 100644
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -135,6 +135,11 @@ static inline pending_ring_idx_t nr_pending_reqs(struct xenvif *vif)
- 		vif->pending_prod + vif->pending_cons;
- }
- 
-+static inline pending_ring_idx_t nr_free_slots(struct xen_netif_tx_back_ring *ring)
-+{
-+	return ring->nr_ents -	(ring->sring->req_prod - ring->rsp_prod_pvt);
-+}
-+
- bool xenvif_rx_ring_slots_available(struct xenvif *vif, int needed)
- {
- 	RING_IDX prod, cons;
-@@ -1932,9 +1937,36 @@ static inline int tx_work_todo(struct xenvif *vif)
- 	return 0;
- }
- 
-+static void xenvif_dealloc_delay(unsigned long data)
-+{
-+	struct xenvif *vif = (struct xenvif *)data;
-+
-+	vif->dealloc_delay_timed_out = true;
-+	wake_up(&vif->dealloc_wq);
-+}
-+
- static inline bool tx_dealloc_work_todo(struct xenvif *vif)
- {
--	return vif->dealloc_cons != vif->dealloc_prod;
-+	if (vif->dealloc_cons != vif->dealloc_prod) {
-+		if ((nr_free_slots(&vif->tx) > 2 * XEN_NETBK_LEGACY_SLOTS_MAX) &&
-+		    (vif->dealloc_prod - vif->dealloc_cons < MAX_PENDING_REQS / 4) &&
-+		    !vif->dealloc_delay_timed_out) {
-+			if (!timer_pending(&vif->dealloc_delay)) {
-+				vif->dealloc_delay.function =
-+					xenvif_dealloc_delay;
-+				vif->dealloc_delay.data = (unsigned long)vif;
-+				mod_timer(&vif->dealloc_delay,
-+					  jiffies + msecs_to_jiffies(1));
-+
-+			}
-+			return false;
-+		}
-+		del_timer_sync(&vif->dealloc_delay);
-+		vif->dealloc_delay_timed_out = false;
-+		return true;
-+	}
-+
-+	return false;
- }
- 
- void xenvif_unmap_frontend_rings(struct xenvif *vif)
+mm-fix-gfp_thisnode-callers-and-clarify.patch
+
+at this point?  It's not as critical as the GFP_THISNODE exemption,
+which is why I didn't tag it for stable, but it's a bugfix as well.
+
+> ------------------------------------------------------
+> From: Johannes Weiner <hannes@cmpxchg.org>
+> Subject: mm: page_alloc: exempt GFP_THISNODE allocations from zone fairness
+> 
+> Jan Stancek reports manual page migration encountering allocation failures
+> after some pages when there is still plenty of memory free, and bisected
+> the problem down to 81c0a2bb515f ("mm: page_alloc: fair zone allocator
+> policy").
+> 
+> The problem is that GFP_THISNODE obeys the zone fairness allocation
+> batches on one hand, but doesn't reset them and wake kswapd on the other
+> hand.  After a few of those allocations, the batches are exhausted and the
+> allocations fail.
+> 
+> Fixing this means either having GFP_THISNODE wake up kswapd, or
+> GFP_THISNODE not participating in zone fairness at all.  The latter seems
+> safer as an acute bugfix, we can clean up later.
+> 
+> Reported-by: Jan Stancek <jstancek@redhat.com>
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Acked-by: Rik van Riel <riel@redhat.com>
+> Acked-by: Mel Gorman <mgorman@suse.de>
+> Cc: <stable@kernel.org>		[3.12+]
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> ---
+> 
+>  mm/page_alloc.c |   26 ++++++++++++++++++++++----
+>  1 file changed, 22 insertions(+), 4 deletions(-)
+> 
+> diff -puN mm/page_alloc.c~mm-page_alloc-reset-aging-cycle-with-gfp_thisnode-v2 mm/page_alloc.c
+> --- a/mm/page_alloc.c~mm-page_alloc-reset-aging-cycle-with-gfp_thisnode-v2
+> +++ a/mm/page_alloc.c
+> @@ -1238,6 +1238,15 @@ void drain_zone_pages(struct zone *zone,
+>  	}
+>  	local_irq_restore(flags);
+>  }
+> +static bool gfp_thisnode_allocation(gfp_t gfp_mask)
+> +{
+> +	return (gfp_mask & GFP_THISNODE) == GFP_THISNODE;
+> +}
+> +#else
+> +static bool gfp_thisnode_allocation(gfp_t gfp_mask)
+> +{
+> +	return false;
+> +}
+>  #endif
+>  
+>  /*
+> @@ -1574,7 +1583,13 @@ again:
+>  					  get_pageblock_migratetype(page));
+>  	}
+>  
+> -	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
+> +	/*
+> +	 * NOTE: GFP_THISNODE allocations do not partake in the kswapd
+> +	 * aging protocol, so they can't be fair.
+> +	 */
+> +	if (!gfp_thisnode_allocation(gfp_flags))
+> +		__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
+> +
+>  	__count_zone_vm_events(PGALLOC, zone, 1 << order);
+>  	zone_statistics(preferred_zone, zone, gfp_flags);
+>  	local_irq_restore(flags);
+> @@ -1946,8 +1961,12 @@ zonelist_scan:
+>  		 * ultimately fall back to remote zones that do not
+>  		 * partake in the fairness round-robin cycle of this
+>  		 * zonelist.
+> +		 *
+> +		 * NOTE: GFP_THISNODE allocations do not partake in
+> +		 * the kswapd aging protocol, so they can't be fair.
+>  		 */
+> -		if (alloc_flags & ALLOC_WMARK_LOW) {
+> +		if ((alloc_flags & ALLOC_WMARK_LOW) &&
+> +		    !gfp_thisnode_allocation(gfp_mask)) {
+>  			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
+>  				continue;
+>  			if (!zone_local(preferred_zone, zone))
+> @@ -2503,8 +2522,7 @@ __alloc_pages_slowpath(gfp_t gfp_mask, u
+>  	 * allowed per node queues are empty and that nodes are
+>  	 * over allocated.
+>  	 */
+> -	if (IS_ENABLED(CONFIG_NUMA) &&
+> -			(gfp_mask & GFP_THISNODE) == GFP_THISNODE)
+> +	if (gfp_thisnode_allocation(gfp_mask))
+>  		goto nopage;
+>  
+>  restart:
+> _
+> 
+> Patches currently in -mm which might be from hannes@cmpxchg.org are
+> 
+> origin.patch
+> mm-vmscan-respect-numa-policy-mask-when-shrinking-slab-on-direct-reclaim.patch
+> mm-vmscan-move-call-to-shrink_slab-to-shrink_zones.patch
+> mm-vmscan-remove-shrink_control-arg-from-do_try_to_free_pages.patch
+> mm-vmstat-fix-up-zone-state-accounting.patch
+> mm-vmstat-fix-up-zone-state-accounting-fix.patch
+> fs-cachefiles-use-add_to_page_cache_lru.patch
+> lib-radix-tree-radix_tree_delete_item.patch
+> mm-shmem-save-one-radix-tree-lookup-when-truncating-swapped-pages.patch
+> mm-filemap-move-radix-tree-hole-searching-here.patch
+> mm-fs-prepare-for-non-page-entries-in-page-cache-radix-trees.patch
+> mm-fs-prepare-for-non-page-entries-in-page-cache-radix-trees-fix.patch
+> mm-fs-store-shadow-entries-in-page-cache.patch
+> mm-thrash-detection-based-file-cache-sizing.patch
+> lib-radix_tree-tree-node-interface.patch
+> lib-radix_tree-tree-node-interface-fix.patch
+> mm-keep-page-cache-radix-tree-nodes-in-check.patch
+> mm-keep-page-cache-radix-tree-nodes-in-check-fix.patch
+> mm-keep-page-cache-radix-tree-nodes-in-check-fix-fix.patch
+> mm-keep-page-cache-radix-tree-nodes-in-check-fix-fix-fix.patch
+> pagewalk-update-page-table-walker-core.patch
+> pagewalk-add-walk_page_vma.patch
+> smaps-redefine-callback-functions-for-page-table-walker.patch
+> clear_refs-redefine-callback-functions-for-page-table-walker.patch
+> pagemap-redefine-callback-functions-for-page-table-walker.patch
+> numa_maps-redefine-callback-functions-for-page-table-walker.patch
+> memcg-redefine-callback-functions-for-page-table-walker.patch
+> madvise-redefine-callback-functions-for-page-table-walker.patch
+> arch-powerpc-mm-subpage-protc-use-walk_page_vma-instead-of-walk_page_range.patch
+> pagewalk-remove-argument-hmask-from-hugetlb_entry.patch
+> mempolicy-apply-page-table-walker-on-queue_pages_range.patch
+> drop_caches-add-some-documentation-and-info-message.patch
+> memcg-slab-never-try-to-merge-memcg-caches.patch
+> memcg-slab-cleanup-memcg-cache-creation.patch
+> memcg-slab-separate-memcg-vs-root-cache-creation-paths.patch
+> memcg-slab-unregister-cache-from-memcg-before-starting-to-destroy-it.patch
+> memcg-slab-do-not-destroy-children-caches-if-parent-has-aliases.patch
+> slub-adjust-memcg-caches-when-creating-cache-alias.patch
+> slub-rework-sysfs-layout-for-memcg-caches.patch
+> mm-fix-gfp_thisnode-callers-and-clarify.patch
+> mm-revert-thp-make-madv_hugepage-check-for-mm-def_flags.patch
+> mm-thp-add-vm_init_def_mask-and-prctl_thp_disable.patch
+> exec-kill-the-unnecessary-mm-def_flags-setting-in-load_elf_binary.patch
+> fork-collapse-copy_flags-into-copy_process.patch
+> mm-mempolicy-rename-slab_node-for-clarity.patch
+> mm-mempolicy-remove-per-process-flag.patch
+> res_counter-remove-interface-for-locked-charging-and-uncharging.patch
+> linux-next.patch
+> debugging-keep-track-of-page-owners.patch
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe mm-commits" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
