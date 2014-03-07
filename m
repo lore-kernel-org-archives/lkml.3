@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753324AbaCGNPK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 08:15:10 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35062 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752342AbaCGNPH (ORCPT
+	id S1753356AbaCGNQE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 08:16:04 -0500
+Received: from www.linutronix.de ([62.245.132.108]:37455 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752126AbaCGNQB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 08:15:07 -0500
+	Fri, 7 Mar 2014 08:16:01 -0500
+Date: Fri, 7 Mar 2014 14:15:55 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>, John Kacur <jkacur@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 3.12.9-rt13: BUG: soft lockup
+Message-ID: <20140307131555.GD8637@linutronix.de>
+References: <52FBF2F1.8040504@localhost>
+ <alpine.DEB.2.02.1402132324230.21991@ionos.tec.linutronix.de>
+ <52FD4D89.2000207@localhost>
+ <alpine.DEB.2.02.1402140053000.21991@ionos.tec.linutronix.de>
+ <52FDB71F.2020000@ccrma.stanford.edu>
+ <alpine.DEB.2.02.1402141040460.21991@ionos.tec.linutronix.de>
+ <52FE6681.8090807@ccrma.stanford.edu>
+ <alpine.DEB.2.02.1402191049260.4468@ionos.tec.linutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <1394197299-17528-6-git-send-email-ben.dooks@codethink.co.uk>
-References: <1394197299-17528-1-git-send-email-ben.dooks@codethink.co.uk>
-	<1394197299-17528-6-git-send-email-ben.dooks@codethink.co.uk>
-Date: Fri, 7 Mar 2014 14:15:06 +0100
-X-Google-Sender-Auth: THTtf1uOaG1PGjBbR2dAbBTKrKE
-Message-ID: <CAMuHMdVrkWi=ar2dGPER=j90JSA6DQQ6=Fyw5OsAup88eS7WOA@mail.gmail.com>
-Subject: Re: [PATCH 5/5] rcar_vin: add devicetree support
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Ben Dooks <ben.dooks@codethink.co.uk>
-Cc: Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        magnus.damm@opensource.se, Linux-sh list <linux-sh@vger.kernel.org>,
-        linux-kernel@lists.codethink.co.uk
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1402191049260.4468@ionos.tec.linutronix.de>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 7, 2014 at 2:01 PM, Ben Dooks <ben.dooks@codethink.co.uk> wrote:
-> +++ b/Documentation/devicetree/bindings/media/rcar_vin.txt
+* Thomas Gleixner | 2014-02-19 10:50:29 [+0100]:
 
-> +family of devices. The current blocks are always slaves and suppot one input
+>On Fri, 14 Feb 2014, Fernando Lopez-Lezcano wrote:
+>> I could try to boot one of the machines into 3.12.xrtyy, replicate the
+>> conditions and wait. What should I look for if I can catch this in the act?
+>
+>dmesg and sysrq-t output would be a good start I guess.
 
-support
+Yeah. Is it possible to use a serial console? It might happen that the
+kernel throws something out before it dies but it does not manage to
+write it to disk anymore.
 
-Gr{oetje,eeting}s,
+>Thanks,
+>
+>	tglx
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Sebastian
