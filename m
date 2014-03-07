@@ -1,93 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721AbaCGOuF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 09:50:05 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:39138 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751330AbaCGOuD (ORCPT
+	id S1751951AbaCGOw1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 09:52:27 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:40067 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750958AbaCGOw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 09:50:03 -0500
-Date: Fri, 7 Mar 2014 15:48:44 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        zhuzhenhua@allwinnertech.com, linux@arm.linux.org.uk
-Subject: Re: [PATCH] i2c: mv64xxx: Fix circular dependencies warning and
- compilation breakage
-Message-ID: <20140307144844.GS607@lukather>
-References: <20140307111858.GB12274@katana>
- <1394199795-5516-1-git-send-email-maxime.ripard@free-electrons.com>
- <20140307142405.GB28943@katana>
+	Fri, 7 Mar 2014 09:52:26 -0500
+Date: Fri, 7 Mar 2014 09:52:23 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        stable-rt@vger.kernel.org
+Subject: Re: [PATCH RT 3/6] rt: Make cpu_chill() use hrtimer instead of
+ msleep()
+Message-ID: <20140307095223.2f412a1a@gandalf.local.home>
+In-Reply-To: <531996BB.2050401@linutronix.de>
+References: <20140305003333.402759240@goodmis.org>
+	<20140305003346.602499217@goodmis.org>
+	<531996BB.2050401@linutronix.de>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zLyS04J6vPP3Ub3W"
-Content-Disposition: inline
-In-Reply-To: <20140307142405.GB28943@katana>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 07 Mar 2014 10:51:55 +0100
+Sebastian Andrzej Siewior <bigeasy@linutronix.de> wrote:
 
---zLyS04J6vPP3Ub3W
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On 03/05/2014 01:33 AM, Steven Rostedt wrote:
+> > 3.2.55-rt79-rc1 stable review patch.
+> > If anyone has any objections, please let me know.
+> 
+> Now that you posted "cpu_chill: Add a UNINTERRUPTIBLE
+> hrtimer_nanosleep" wouldn't it make sense to delay this patches from
+> the stable series until we get them all in one go?
 
-On Fri, Mar 07, 2014 at 03:24:05PM +0100, Wolfram Sang wrote:
->=20
-> New patch -> new thread, please.
->=20
-> > This patch fixes the circular dependency introduced by commit 370136bc6=
-7c3
-> > ("i2c: mv64xxx: Add reset deassert call"):
-> >=20
-> > drivers/video/Kconfig:42:error: recursive dependency detected!
->=20
-> Please base it on i2c-next. I already applied my patch.
-> Your patch fixes the build error discovered by it.
+Sure, say this on the day I'm about to release ;-)
 
-I didn't realise that. I will.
+Nah, I'll release these today anyway. Otherwise I can't update to the
+mainline stables. When the rc candidates are out, it holds up any new
+updates to the versions.
 
-> > Since the reset framework doesn't define dummy stubs whenever
-> > CONFIG_RESET_CONTROLLER is not defined, it's the only sane way to have =
-a driver
-> > that compiles in any cases.
->=20
-> Paragraph needs reformat. And please drop "sane". #ifdefs are not sane.
-> Fixing the reset framework would be sane.
+Also, the stable 3.10 has this bug already. Might as well update all
+the stables with the same fix. It makes it easier on my side, as the
+way I do the updates is to use the same quilt queue for all releases. I
+start with 3.10, and get them working, and then apply the same queue to
+3.8. Any conflicts in the patch I do a quilt fork, with a -v3.8
+appended, and then after getting that working I go to 3.4, and so on.
+This also lets me drop patches that are not applicable for earlier
+releases.
 
-Ok..
+If I delay this for a new update, then 3.10 will be out of sync. I'm
+just going to release these, and then we can start a new one right away.
 
-Maxime
+Thanks!
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---zLyS04J6vPP3Ub3W
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTGdxMAAoJEBx+YmzsjxAgYMkQAIMO1TZWN9/Y13I67W877Ppa
-IXxzpP/jTUBMpegE7wZNBleUjHT26wd06p5FbuFJkewQbSDk4h0ooKnupJfrEaj5
-+oEkb430vFKxK5f+8b2soKW7sZJoJ2zYDn6k+jLT0FhOJtbWYo++SicAe24kYosP
-E92nDXdOid4dOH/ed5Jam3ySyk7oR57I/LHs/kEu9M931uIgU2oNUl9uRk3HfHkP
-Ub40HCiq+xOCoeXvPMFfbJfSbK1Jrt6/8A3JoU4y2g4ZmAkqm4FWlICE5ttF8cZ7
-mobdVoMtFt3uvnp4HEXC6H91TLsReChjXYHWVe/Vrzl4hZQZcVM0ATBwsA1VTe5e
-mIs/K9RcgL7uRPjU++4PoMCK6PxKm880yBRzJlRCggfuEFDcQ99GRp4RnQ61M1kk
-Oj9ek81dbZT3v4LGuBQ0ZLxeeMbdL4rTZqh3iDx3c/Y4wdNRQL4oyG9CjSwqD3DR
-BlKIKGWoEvFUzwMPyQePMHopOpoh6cEK490q2Qlqu4+oFP71/ecDgKhskNdC0D2m
-jULHwBVZFRxGMUiQxCTZ86+gqA9PNs2dcaSo2NBrReonWqUcj/GO8cdltVvcRzhz
-G4jOhwRVyDMUGLy2TNj571A4XXxUjW80Rvd/VFuCUDoyw8lgw8WiKRqVLkwJmRtC
-xi7f7PggIlZ33vx8ujb0
-=vane
------END PGP SIGNATURE-----
-
---zLyS04J6vPP3Ub3W--
+-- Steve
