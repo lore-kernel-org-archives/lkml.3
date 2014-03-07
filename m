@@ -1,315 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752716AbaCGNB2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 08:01:28 -0500
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.137]:30431 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751684AbaCGNB0 (ORCPT
+	id S1753245AbaCGNB6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 08:01:58 -0500
+Received: from 82-68-191-81.dsl.posilan.com ([82.68.191.81]:59413 "EHLO
+	rainbowdash.ducie.codethink.co.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752762AbaCGNBs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 08:01:26 -0500
-X-Env-Sender: stwiss.opensource@diasemi.com
-X-Msg-Ref: server-2.tower-178.messagelabs.com!1394197283!22969930!1
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.16; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <ce5a43ad4c028b1553206ee51a27822a614f3404.1394195865.git.stwiss.opensource@diasemi.com>
-In-Reply-To: <cover.1394195865.git.stwiss.opensource@diasemi.com>
-References: <cover.1394195865.git.stwiss.opensource@diasemi.com>
-From: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
-Date: Fri, 7 Mar 2014 12:37:45 +0000
-Subject: [RFC V1 2/2] input: misc: da9063: OnKey driver
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: David Dajun Chen <david.chen@diasemi.com>,
-        LKML-INPUT <linux-input@vger.kernel.org>,
-        LKML-KERNEL <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 7 Mar 2014 08:01:48 -0500
+From: Ben Dooks <ben.dooks@codethink.co.uk>
+To: linux-media@vger.kernel.org
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-kernel@vger.kernel.org, magnus.damm@opensource.se,
+        linux-sh@vger.kernel.org, linux-kernel@lists.codethink.co.uk,
+        Ben Dooks <ben.dooks@codethink.co.uk>
+Subject: [PATCH 5/5] rcar_vin: add devicetree support
+Date: Fri,  7 Mar 2014 13:01:39 +0000
+Message-Id: <1394197299-17528-6-git-send-email-ben.dooks@codethink.co.uk>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1394197299-17528-1-git-send-email-ben.dooks@codethink.co.uk>
+References: <1394197299-17528-1-git-send-email-ben.dooks@codethink.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
+Add support for devicetree probe for the rcar-vin
+driver.
 
-Add the OnKey driver for DA9063.
-
-
-Signed-off-by: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
+Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
 ---
-Checks performed with next-20140307/scripts/checkpatch.pl
- da9063-onkey.c            total: 0 errors, 0 warnings, 202 lines checked
- Kconfig                   total: 0 errors, 11 warnings, 679 lines checked
- Makefile                  total: 0 errors, 0 warnings, 66 lines checked
+ .../devicetree/bindings/media/rcar_vin.txt         | 79 ++++++++++++++++++++++
+ drivers/media/platform/soc_camera/rcar_vin.c       | 67 ++++++++++++++++--
+ 2 files changed, 140 insertions(+), 6 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/media/rcar_vin.txt
 
-Hello,
-
-This is a RFC for the Dialog DA9063 Onkey driver.
-
-Dependencies:
-
-This driver makes use of the name field "ONKEY" as part of the
-function call: platform_get_irq_byname();
-
-This driver is therefore dependent on this change to the name field
-in the properties of the the OnKey IORESOURCE_IRQ resource structure
-(part of the mfd_cell Onkey resource inside da9063-core.c). This
-change will be added as part of the final set when I submit all patches
-as a single PATCH set.
-
-This patch applies against kernel version linux-next next-20140307
- 
-Regards,
-Steve Twiss, Dialog Semiconductor Ltd.
-
-
-
- drivers/input/misc/Kconfig        |   10 ++
- drivers/input/misc/Makefile       |    1 +
- drivers/input/misc/da9063-onkey.c |  202 +++++++++++++++++++++++++++++++++++++
- 3 files changed, 213 insertions(+)
- create mode 100644 drivers/input/misc/da9063-onkey.c
-
-diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
-index 762e6d2..3deb008 100644
---- a/drivers/input/misc/Kconfig
-+++ b/drivers/input/misc/Kconfig
-@@ -522,6 +522,16 @@ config INPUT_DA9055_ONKEY
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called da9055_onkey.
- 
-+config INPUT_DA9063_ONKEY
-+	tristate "Dialog DA9063 OnKey"
-+	depends on MFD_DA9063
-+	help
-+	  Support the ONKEY of Dialog DA9063 Power Management IC as an
-+	  input device reporting power button statue.
-+
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called da9063-onkey.
-+
- config INPUT_DM355EVM
- 	tristate "TI DaVinci DM355 EVM Keypad and IR Remote"
- 	depends on MFD_DM355EVM_MSP
-diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
-index cda71fc..f40caa7 100644
---- a/drivers/input/misc/Makefile
-+++ b/drivers/input/misc/Makefile
-@@ -25,6 +25,7 @@ obj-$(CONFIG_INPUT_CMA3000_I2C)		+= cma3000_d0x_i2c.o
- obj-$(CONFIG_INPUT_COBALT_BTNS)		+= cobalt_btns.o
- obj-$(CONFIG_INPUT_DA9052_ONKEY)	+= da9052_onkey.o
- obj-$(CONFIG_INPUT_DA9055_ONKEY)	+= da9055_onkey.o
-+obj-$(CONFIG_INPUT_DA9063_ONKEY)	+= da9063-onkey.o
- obj-$(CONFIG_INPUT_DM355EVM)		+= dm355evm_keys.o
- obj-$(CONFIG_INPUT_GP2A)		+= gp2ap002a00f.o
- obj-$(CONFIG_INPUT_GPIO_BEEPER)		+= gpio-beeper.o
-diff --git a/drivers/input/misc/da9063-onkey.c b/drivers/input/misc/da9063-onkey.c
+diff --git a/Documentation/devicetree/bindings/media/rcar_vin.txt b/Documentation/devicetree/bindings/media/rcar_vin.txt
 new file mode 100644
-index 0000000..654f52b
+index 0000000..105b8de
 --- /dev/null
-+++ b/drivers/input/misc/da9063-onkey.c
-@@ -0,0 +1,202 @@
-+/* da9063-onkey.c - Onkey device driver for DA9063
-+ * Copyright (C) 2013  Dialog Semiconductor Ltd.
-+ *
-+ * This library is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU Library General Public
-+ * License as published by the Free Software Foundation; either
-+ * version 2 of the License, or (at your option) any later version.
-+ *
-+ * This library is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * Library General Public License for more details.
-+ */
++++ b/Documentation/devicetree/bindings/media/rcar_vin.txt
+@@ -0,0 +1,79 @@
++Renesas RCar Video Input driver (rcar_vin)
++------------------------------------------
 +
-+#include <linux/module.h>
-+#include <linux/errno.h>
-+#include <linux/input.h>
-+#include <linux/interrupt.h>
-+#include <linux/platform_device.h>
-+#include <linux/workqueue.h>
-+#include <linux/regmap.h>
++The rcar_vin device provides video input capabilities for the Renesas R-Car
++family of devices. The current blocks are always slaves and suppot one input
++channel which can be either RGB, YUYV or BT656.
 +
-+#include <linux/mfd/da9063/core.h>
-+#include <linux/mfd/da9063/pdata.h>
-+#include <linux/mfd/da9063/registers.h>
++ - compatible: Must be one of the following
++   - "renesas,vin-r8a7791" for the R8A7791 device
++   - "renesas,vin-r8a7790" for the R8A7790 device
++   - "renesas,vin-r8a7779" for the R8A7779 device
++   - "renesas,vin-r8a7778" for the R8A7778 device
++ - reg: the register base and size for the device registers
++ - interrupts: the interrupt for the device
++ - clocks: Reference to the parent clock
 +
-+struct da9063_onkey {
-+	struct	da9063 *hw;
-+	struct delayed_work work;
-+	struct	input_dev *input;
-+	bool key_power;
++The per-board settings:
++ - port sub-node describing a single endpoint connected to the vin
++   as described in video-interfaces.txt[1]. Only the first one will
++   be considered as each vin interface has one input port.
++
++   These settings are used to work out video input format and widths
++   into the system.
++
++
++Device node example
++-------------------
++
++        vin0: vin@0xe6ef0000 {
++                compatible = "renesas,vin-r8a7790";
++                clocks = <&mstp8_clks R8A7790_CLK_VIN0>;
++                reg = <0 0xe6ef0000 0 0x1000>;
++                interrupts = <0 188 IRQ_TYPE_LEVEL_HIGH>;
++                status = "disabled";
++        };
++
++Board setup example (vin1 composite video input)
++------------------------------------------------
++
++&i2c2   {
++        status = "ok";
++        pinctrl-0 = <&i2c2_pins>;
++        pinctrl-names = "default";
++
++        adv7180: adv7180@0x20 {
++                compatible = "adi,adv7180";
++                reg = <0x20>;
++                remote = <&vin1>;
++
++                port {
++                        adv7180_1: endpoint {
++                                bus-width = <8>;
++                                remote-endpoint = <&vin1ep0>;
++                        };
++                };
++        };
 +};
 +
-+static void da9063_poll_on(struct work_struct *work)
-+{
-+	struct da9063_onkey *onkey = container_of(work, struct da9063_onkey,
-+						  work.work);
-+	unsigned int val;
-+	int poll = 1;
-+	int ret;
++/* composite video input */
++&vin1 {
++        pinctrl-0 = <&vin1_pins>;
++        pinctrl-names = "default";
 +
-+	/* poll to see when the pin is deasserted */
-+	ret = regmap_read(onkey->hw->regmap, DA9063_REG_STATUS_A, &val);
-+	if (ret < 0) {
-+		dev_err(&onkey->input->dev,
-+			"Failed to read ON status: %d\n", ret);
-+		goto err_poll;
-+	}
++        status = "ok";
 +
-+	if (!(val & DA9063_NONKEY)) {
-+		ret = regmap_update_bits(onkey->hw->regmap,
-+					 DA9063_REG_CONTROL_B,
-+					 DA9063_NONKEY_LOCK, 0);
-+		if (ret < 0) {
-+			dev_err(&onkey->input->dev,
-+				"Failed to reset the Key Delay %d\n", ret);
-+			goto err_poll;
++        port {
++                #address-cells = <1>;
++                #size-cells = <0>;
++
++                vin1ep0: endpoint {
++                        remote-endpoint = <&adv7180_1>;
++                        bus-width = <8>;
++                };
++        };
++};
++
++
++
++[1] video-interfaces.txt common video media interface
+diff --git a/drivers/media/platform/soc_camera/rcar_vin.c b/drivers/media/platform/soc_camera/rcar_vin.c
+index 47516df..73c56c7 100644
+--- a/drivers/media/platform/soc_camera/rcar_vin.c
++++ b/drivers/media/platform/soc_camera/rcar_vin.c
+@@ -24,6 +24,8 @@
+ #include <linux/pm_runtime.h>
+ #include <linux/slab.h>
+ #include <linux/videodev2.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
+ 
+ #include <media/soc_camera.h>
+ #include <media/soc_mediabus.h>
+@@ -32,6 +34,7 @@
+ #include <media/v4l2-device.h>
+ #include <media/v4l2-mediabus.h>
+ #include <media/v4l2-subdev.h>
++#include <media/v4l2-of.h>
+ #include <media/videobuf2-dma-contig.h>
+ 
+ #include "soc_scale_crop.h"
+@@ -1392,6 +1395,17 @@ static struct soc_camera_host_ops rcar_vin_host_ops = {
+ 	.init_videobuf2	= rcar_vin_init_videobuf2,
+ };
+ 
++#ifdef CONFIG_OF
++static struct of_device_id rcar_vin_of_table[] = {
++	{ .compatible = "renesas,vin-r8a7791", .data = (void *)RCAR_GEN2 },
++	{ .compatible = "renesas,vin-r8a7790", .data = (void *)RCAR_GEN2 },
++	{ .compatible = "renesas,vin-r8a7779", .data = (void *)RCAR_H1 },
++	{ .compatible = "renesas,vin-r8a7778", .data = (void *)RCAR_M1 },
++	{ },
++};
++MODULE_DEVICE_TABLE(of, rcar_vin_of_table);
++#endif
++
+ static struct platform_device_id rcar_vin_id_table[] = {
+ 	{ "r8a7791-vin",  RCAR_GEN2 },
+ 	{ "r8a7790-vin",  RCAR_GEN2 },
+@@ -1404,15 +1418,50 @@ MODULE_DEVICE_TABLE(platform, rcar_vin_id_table);
+ 
+ static int rcar_vin_probe(struct platform_device *pdev)
+ {
++	const struct of_device_id *match = NULL;
+ 	struct rcar_vin_priv *priv;
+ 	struct resource *mem;
+ 	struct rcar_vin_platform_data *pdata;
++	unsigned int pdata_flags;
+ 	int irq, ret;
+ 
+-	pdata = pdev->dev.platform_data;
+-	if (!pdata || !pdata->flags) {
+-		dev_err(&pdev->dev, "platform data not set\n");
+-		return -EINVAL;
++	if (pdev->dev.of_node) {
++		struct v4l2_of_endpoint ep;
++		struct device_node *np;
++
++		match = of_match_device(of_match_ptr(rcar_vin_of_table),
++					&pdev->dev);
++
++		np = v4l2_of_get_next_endpoint(pdev->dev.of_node, NULL);
++		if (!np) {
++			dev_err(&pdev->dev, "could not find endpoint\n");
++			return -EINVAL;
 +		}
 +
-+		input_report_key(onkey->input, KEY_POWER, 0);
-+		input_sync(onkey->input);
-+
-+		/* unmask the onkey interrupt again */
-+		ret = regmap_update_bits(onkey->hw->regmap,
-+					 DA9063_REG_IRQ_MASK_A,
-+					 DA9063_NONKEY, 0);
-+		if (ret < 0) {
-+			dev_err(&onkey->input->dev,
-+				"Failed to unmask the onkey IRQ: %d\n", ret);
-+			goto err_poll;
++		ret = v4l2_of_parse_endpoint(np, &ep);
++		if (ret) {
++			dev_err(&pdev->dev, "could not parse endpoint\n");
++			return ret;
 +		}
 +
-+		poll = 0;
-+	}
++		if (ep.bus_type == V4L2_MBUS_BT656)
++			pdata_flags = RCAR_VIN_BT656;
++		else {
++			pdata_flags = 0;
++			if (ep.bus.parallel.flags & V4L2_MBUS_HSYNC_ACTIVE_LOW)
++				pdata_flags |= RCAR_VIN_HSYNC_ACTIVE_LOW;
++			if (ep.bus.parallel.flags & V4L2_MBUS_VSYNC_ACTIVE_LOW)
++				pdata_flags |= RCAR_VIN_VSYNC_ACTIVE_LOW;
++		}
 +
-+err_poll:
-+	if (poll)
-+		schedule_delayed_work(&onkey->work, 50);
-+}
-+
-+static irqreturn_t da9063_onkey_irq_handler(int irq, void *data)
-+{
-+	struct da9063_onkey *onkey = data;
-+	unsigned int val;
-+	int ret;
-+
-+	ret = regmap_read(onkey->hw->regmap, DA9063_REG_STATUS_A, &val);
-+	if (onkey->key_power && (ret >= 0) && (val & DA9063_NONKEY)) {
-+		ret = regmap_update_bits(onkey->hw->regmap,
-+					 DA9063_REG_IRQ_MASK_A,
-+					 DA9063_NONKEY, 1);
-+		if (ret < 0)
-+			dev_err(&onkey->input->dev,
-+				"Failed to mask the onkey IRQ: %d\n", ret);
-+
-+		input_report_key(onkey->input, KEY_POWER, 1);
-+		input_sync(onkey->input);
-+
-+		schedule_delayed_work(&onkey->work, 0);
-+		dev_dbg(&onkey->input->dev, "KEY_POWER pressed.\n");
++		dev_dbg(&pdev->dev, "pdata_flags = %08x\n", pdata_flags);
 +	} else {
-+		input_report_key(onkey->input, KEY_SLEEP, 1);
-+		input_report_key(onkey->input, KEY_SLEEP, 0);
-+		input_sync(onkey->input);
-+		dev_dbg(&onkey->input->dev, "KEY_SLEEP pressed.\n");
-+	}
++		pdata = pdev->dev.platform_data;
++		if (!pdata || !pdata->flags) {
++			dev_err(&pdev->dev, "platform data not set\n");
++			return -EINVAL;
++		}
++		pdata_flags = pdata->flags;
+ 	}
+ 
+ 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+@@ -1447,8 +1496,13 @@ static int rcar_vin_probe(struct platform_device *pdev)
+ 	priv->ici.drv_name = dev_name(&pdev->dev);
+ 	priv->ici.ops = &rcar_vin_host_ops;
+ 
+-	priv->pdata_flags = pdata->flags;
+-	priv->chip = pdev->id_entry->driver_data;
++	priv->pdata_flags = pdata_flags;
++	if (!match)
++		priv->chip = pdev->id_entry->driver_data;
++	else
++		priv->chip = (enum chip_id)match->data;
 +
-+	return IRQ_HANDLED;
-+}
 +
-+static int da9063_onkey_probe(struct platform_device *pdev)
-+{
-+	struct da9063 *da9063 = dev_get_drvdata(pdev->dev.parent);
-+	struct da9063_pdata *pdata = dev_get_platdata(da9063->dev);
-+	struct da9063_onkey *onkey;
-+	bool kp_tmp = true;
-+	int ret = 0;
-+	int irq;
-+
-+	if (pdata)
-+		kp_tmp = pdata->key_power;
-+
-+	if (!kp_tmp)
-+		dev_err(&pdev->dev,
-+			"Software power down key is not set.\n");
-+
-+	onkey = devm_kzalloc(&pdev->dev, sizeof(struct da9063_onkey),
-+			     GFP_KERNEL);
-+	if (!onkey) {
-+		dev_err(&pdev->dev, "Failed to allocate memory.\n");
-+		return -ENOMEM;
-+	}
-+
-+	INIT_DELAYED_WORK(&onkey->work, da9063_poll_on);
-+
-+	onkey->input = devm_input_allocate_device(&pdev->dev);
-+	if (!onkey->input) {
-+		dev_err(&pdev->dev, "Failed to allocated input device.\n");
-+		return -ENOMEM;
-+	}
-+
-+	irq = platform_get_irq_byname(pdev, "ONKEY");
-+	if (irq < 0) {
-+		dev_err(&pdev->dev, "Failed to get platform IRQ.\n");
-+		return irq;
-+	}
-+
-+	ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
-+					da9063_onkey_irq_handler,
-+					IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-+					"ONKEY", onkey);
-+	if (ret) {
-+		dev_err(&pdev->dev,
-+			"Failed to request input device IRQ.\n");
-+		return ret;
-+	}
-+
-+	onkey->hw = da9063;
-+	onkey->key_power = kp_tmp;
-+	onkey->input->evbit[0] = BIT_MASK(EV_KEY);
-+	onkey->input->name = DA9063_DRVNAME_ONKEY;
-+	onkey->input->phys = DA9063_DRVNAME_ONKEY "/input0";
-+	onkey->input->dev.parent = &pdev->dev;
-+
-+	if (onkey->key_power)
-+		input_set_capability(onkey->input, EV_KEY, KEY_POWER);
-+	input_set_capability(onkey->input, EV_KEY, KEY_SLEEP);
-+
-+	ret = input_register_device(onkey->input);
-+	if (ret) {
-+		dev_err(&pdev->dev,
-+			"Failed to register input device.\n");
-+		return ret;
-+	}
-+
-+	platform_set_drvdata(pdev, onkey);
-+	return ret;
-+}
-+
-+static int da9063_onkey_remove(struct platform_device *pdev)
-+{
-+	struct	da9063_onkey *onkey = platform_get_drvdata(pdev);
-+	cancel_delayed_work_sync(&onkey->work);
-+	input_unregister_device(onkey->input);
-+	return 0;
-+}
-+
-+static struct platform_driver da9063_onkey_driver = {
-+	.probe	= da9063_onkey_probe,
-+	.remove	= da9063_onkey_remove,
-+	.driver	= {
-+		.name	= DA9063_DRVNAME_ONKEY,
-+		.owner	= THIS_MODULE,
-+	},
-+};
-+
-+module_platform_driver(da9063_onkey_driver);
-+
-+MODULE_AUTHOR("S Twiss <stwiss.opensource@diasemi.com>");
-+MODULE_DESCRIPTION("Onkey device driver for Dialog DA9063");
-+MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:" DA9063_DRVNAME_ONKEY);
+ 	spin_lock_init(&priv->lock);
+ 	INIT_LIST_HEAD(&priv->capture);
+ 
+@@ -1489,6 +1543,7 @@ static struct platform_driver rcar_vin_driver = {
+ 	.driver		= {
+ 		.name		= DRV_NAME,
+ 		.owner		= THIS_MODULE,
++		.of_match_table	= of_match_ptr(rcar_vin_of_table),
+ 	},
+ 	.id_table	= rcar_vin_id_table,
+ };
 -- 
-end-of-patch for RFC V1
+1.9.0
 
