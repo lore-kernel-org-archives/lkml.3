@@ -1,78 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752801AbaCGKwU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 05:52:20 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:23066 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752503AbaCGKwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 05:52:17 -0500
-X-IronPort-AV: E=Sophos;i="4.97,607,1389715200"; 
-   d="scan'208";a="9660335"
-Message-ID: <5319A2D5.6060201@cn.fujitsu.com>
-Date: Fri, 07 Mar 2014 18:43:33 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1752256AbaCGKyc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 05:54:32 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:58758 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750958AbaCGKya (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 05:54:30 -0500
 MIME-Version: 1.0
-To: Kim <jaegeuk.kim@samsung.com>
-CC: f2fs <linux-f2fs-devel@lists.sourceforge.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/5] f2fs: format segment_info's show for better legibility
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/07 18:49:39,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/07 18:49:39,
-	Serialize complete at 2014/03/07 18:49:39
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CANq1E4SbA5jCh+5UqyJ=oxdiYdbfkUcfrbB=jGjKRZJ-LAuaXg@mail.gmail.com>
+References: <1394187271-5857-1-git-send-email-dh.herrmann@gmail.com>
+	<CAMuHMdVxE2jXQE11swi8sM251GcWcdDYpgE37pCoxpb7oF1-Rg@mail.gmail.com>
+	<CANq1E4SbA5jCh+5UqyJ=oxdiYdbfkUcfrbB=jGjKRZJ-LAuaXg@mail.gmail.com>
+Date: Fri, 7 Mar 2014 11:54:29 +0100
+X-Google-Sender-Auth: xzyJRK4Ima42AO-zn7MoA0Kws3U
+Message-ID: <CAMuHMdUheaE00m289h=x0gxf+PAbPjhhdAKATAHGgOgk9YROVQ@mail.gmail.com>
+Subject: Re: [PATCH] lib: remove FBCON dependency for fonts
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The original segment_info's show is a bit out-of-format:
+On Fri, Mar 7, 2014 at 11:47 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+>> Without the "depends on FRAMEBUFFER_CONSOLE", people who don't
+>> have FRAMEBUFFER_CONSOLE set, but have set any of these:
+>>
+>> config EARLY_PRINTK_EFI
+>>     select FONT_SUPPORT
+>>
+>> config VIDEO_VIVI
+>>     select FONT_SUPPORT
+>>     select FONT_8x16
+>>
+>> config SOLO6X10
+>>     select FONT_SUPPORT
+>>     select FONT_8x16
+>>
+>> config USB_SISUSBVGA
+>>     select FONT_SUPPORT
+>>     ...
+>>     select FONT_8x16
+>>
+>> config SGI_NEWPORT_CONSOLE
+>>     select FONT_SUPPORT
+>>
+>> config STI_CONSOLE
+>>     select FONT_SUPPORT
+>>
+>> will now get more (unused) fonts in their kernel image.
+>
+> Why would they get more unused fonts? All those fonts are "default n"
+> (except for some arch-specific stuff and 8x8 and obviously 8x16). I
 
-[root@guz Demoes]# cat /proc/fs/f2fs/loop0/segment_info
-0 0 0 0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0 0 0
-......
-0 0 0 0 0 0 0 0 0 0
-0 0 1 0 0 1 [root@guz Demoes]#
+So they get the 8x8 and the arch-specific ones by default (FONTS=n).
 
-so we fix it here for better legibility.
-[root@guz Demoes]# cat /proc/fs/f2fs/loop0/segment_info
-0 0 0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0 0 0
-......
-0 0 0 0 0 0 0 0 0 0
-0 0 1 0 0 1
-[root@guz Demoes]#
+> don't mind if we drop this, but it makes font-selection impossible if
+> fbcon is disabled, which is kinda unexpected.
 
-Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
----
- fs/f2fs/super.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+IIRC, drivers that "select FONT_8x16" have the font name hardcoded in
+the driver, so allowing to select more fonts doesn't gain anything for them.
 
-diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-index 72df734..6e4851c 100644
---- a/fs/f2fs/super.c
-+++ b/fs/f2fs/super.c
-@@ -546,11 +546,12 @@ static int segment_info_seq_show(struct seq_file *seq, void *offset)
- 
- 	for (i = 0; i < total_segs; i++) {
- 		seq_printf(seq, "%u", get_valid_blocks(sbi, i, 1));
--		if (i != 0 && (i % 10) == 0)
--			seq_puts(seq, "\n");
-+		if ((i % 10) == 9 || i == (total_segs - 1))
-+			seq_putc(seq, '\n');
- 		else
--			seq_puts(seq, " ");
-+			seq_putc(seq, ' ');
- 	}
-+
- 	return 0;
- }
- 
--- 
-1.7.7
+Gr{oetje,eeting}s,
 
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
