@@ -1,73 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004AbaCGDcK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 22:32:10 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:39858 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082AbaCGDcI (ORCPT
+	id S1752023AbaCGDeS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 22:34:18 -0500
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:38926 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457AbaCGDeP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 22:32:08 -0500
-Date: Fri, 7 Mar 2014 11:32:01 +0800
-From: Lee Jones <lee.jones@linaro.org>
-To: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
-Cc: Mark Brown <broonie@linaro.org>, Philipp Zabel <p.zabel@pengutronix.de>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V1 1/2] mfd: da9063: Upgrade of register definitions to
- support production silicon
-Message-ID: <20140307033201.GA17063@lee--X1>
-References: <cover.1394124002.git.stwiss.opensource@diasemi.com>
- <1e3f5e127c375a45b9a8e929fa99fa5c917b1dea.1394124002.git.stwiss.opensource@diasemi.com>
+	Thu, 6 Mar 2014 22:34:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1e3f5e127c375a45b9a8e929fa99fa5c917b1dea.1394124002.git.stwiss.opensource@diasemi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140228030727.GB27921@jenny-desktop>
+References: <1391490780-6141-1-git-send-email-jenny.tc@intel.com>
+	<1391490780-6141-4-git-send-email-jenny.tc@intel.com>
+	<CACRpkdbppewuSSJu=Y=1T7oOCxz_ynhNspyPT=S894KoUB6H6g@mail.gmail.com>
+	<20140228030727.GB27921@jenny-desktop>
+Date: Fri, 7 Mar 2014 11:34:14 +0800
+Message-ID: <CACRpkdanZ2NiwAkd2nTXQ1=bqqmatbGXxK8t9TGSYfjG8cvJZQ@mail.gmail.com>
+Subject: Re: [PATCH 3/4] power_supply: Introduce PSE compliant algorithm
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Jenny Tc <jenny.tc@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Kim Milo <Milo.Kim@ti.com>, Lee Jones <lee.jones@linaro.org>,
+        Jingoo Han <jg1.han@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
+        Rhyland Klein <rklein@nvidia.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sebastian Reichel <sre@ring0.de>, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
+        =?windows-1251?B?yOLg6evuIMTo7Ojy8O7i?= <freemangordon@abv.bg>,
+        Linux-OMAP <linux-omap@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
-> 
-> This patch updates the register definitions for DA9063 to support the
-> production silicon variant code ID (0x5). These changes are not backwards
-> compatible with the previous register definitions and can only be used
-> with the production variant of DA9063.
-> 
-> Signed-off-by: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
-> ---
-> Checks performed with next-20140306/scripts/checkpatch.pl
->  registers.h               total: 0 errors, 0 warnings, 1032 lines checked
-> 
-> A brief summary of the changes include:
-> 
-> - Introduction of a new DA9063_REG_ALARM_S register (now appearing at
->   addr=0x46) allowing alarm second resolutions and which causes a shift
->   in the register map for the RTC registers;
-> - Two new configuration registers DA9063_REG_CONFIG_M/N at 0x112 & 0x113;
-> - Modified register ranges for MON_REG_[1-6] which now appears at the
->   addr=0x114 onwards;
-> - New register addresses for the general purpose registers GP_ID_[0-19]
->   (now appearing at 0x121 onwards);
-> - Renaming of some definitions to match our hardware design conventions;
-> - There are also some bit-pattern additions that define some functionality
->   alterations of the registers. One notable addition is:
->   DA9063_BUCK_SLOWSTART can also be found in the CONTROL_B register and
->   enables a BUCK slow start (reduced inrush current; increased startup
->   time);
-> 
-> This patch applies against kernel version linux-next next-20140306
-> 
->  include/linux/mfd/da9063/registers.h |  120 ++++++++++++++++++----------------
->  1 file changed, 62 insertions(+), 58 deletions(-)
+On Fri, Feb 28, 2014 at 11:07 AM, Jenny Tc <jenny.tc@intel.com> wrote:
+> On Thu, Feb 27, 2014 at 09:18:57PM +0100, Linus Walleij wrote:
+>> On Tue, Feb 4, 2014 at 6:12 AM, Jenny TC <jenny.tc@intel.com> wrote:
+>>
+>> > +static inline bool __is_battery_full
+>> > +       (long volt, long cur, long iterm, unsigned long cv)
+>>
+>> Overall I wonder if you've run checkpatch on these patches, but why
+>> are you naming this one function with a double __underscore?
+>> Just is_battery_full_check() or something would work fine I guess?
+>
+> Just to convey that is_battery_full is a local function and not generic. You
+> can find similar usage in power_supply_core.c (__power_supply_changed_work)
+> and in other drivers. Isn't it advised to have __ prefixes?
 
-What's the difference between this patch and the one you sent 2 days
-ago?
+The preference is different, usually __ is for compiler things, but
+while I dislike it (disturbs my perception) I can sure live with it.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+>> Why are you packing these structs? If no real reason, remove it.
+>> The compiler will pack what it thinks is appropriate anyway.
+>
+> The structure is part of the  battery charging profile which can be read directly
+> from an EEPROM or from secondary storage (emmc). So it should be packed to keep
+> it align with the stored format.
+
+OK I buy that. Make sure this is noted somewhere (or maybe I missed it).
+
+Yours,
+Linus Walleij
