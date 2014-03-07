@@ -1,47 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753696AbaCGRQZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 12:16:25 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:52722 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752508AbaCGRQY (ORCPT
+	id S1753796AbaCGRQw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 12:16:52 -0500
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:55358 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751647AbaCGRQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 12:16:24 -0500
-Message-ID: <1394212581.9487.23.camel@marge.simpson.net>
-Subject: Re: [patch] rt,blk,mq: Make blk_mq_cpu_notify_lock a raw spinlock
-From: Mike Galbraith <bitbucket@online.de>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Jens Axboe <axboe@kernel.dk>, LKML <linux-kernel@vger.kernel.org>,
-        RT <linux-rt-users@vger.kernel.org>
-Date: Fri, 07 Mar 2014 18:16:21 +0100
-In-Reply-To: <20140307160002.GB18441@linutronix.de>
-References: <1393822646.5816.4.camel@marge.simpson.net>
-	 <20140307160002.GB18441@linutronix.de>
+	Fri, 7 Mar 2014 12:16:51 -0500
+Message-ID: <1394212609.1987.6.camel@x41>
+Subject: Re: [Intel-gfx] agp/intel: can't ioremap flush page - no chipset
+ flushing
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Steven Newbury <steve@snewbury.org.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>
+Date: Fri, 07 Mar 2014 18:16:49 +0100
+In-Reply-To: <CAErSpo4jiq38P3TNuGLGS--nbV9NtUAmiuK=cwWyFAneY-=eOA@mail.gmail.com>
+References: <1391886379.2669.11.camel@x41>
+	 <CAKMK7uE6Gaq-ghgWJ+6Qyn7hrGzAMOHyGT9KQQJ+ij7omPV2Ew@mail.gmail.com>
+	 <1391890927.1882.5.camel@x41>
+	 <CAKMK7uFx2kksGgnuy9e0xiQRKpt=_+44O1V4wbX5yNBocvjBkg@mail.gmail.com>
+	 <1391951759.6036.7.camel@artifact> <1391952344.25424.4.camel@x220>
+	 <CAErSpo6uj_Kuk0_F97nRsnM1Pss4C7=HeEaVu6D-NwFFK=1cvA@mail.gmail.com>
+	 <1394185698.5608.5.camel@x41>
+	 <CAErSpo4jiq38P3TNuGLGS--nbV9NtUAmiuK=cwWyFAneY-=eOA@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
 Mime-Version: 1.0
-X-Provags-ID: V02:K0:DPU0YaPTSG5b1Sj7ohfCFN74u28XeYyi/MCRGfj3S6E
- 9426Dtf2BpMlQVERMyT/1aeoCpppUKg+Dm9X40PrcBds2Mhp5D
- v9dCFOrR0p7B3TUtlOi7DplamBXnL/QPkhcMnTdxAU8XsRiFPI
- J/z1lOLL6tELZgFO/WFUr3UKCPPmGwRpNOAElEScSlCH3hAtkk
- eB4C/eIA6rnFqHTsxVwrUpecUsEGPlLvDpRvfvCUwdxG4tTm5+
- B6ADuSubfoGKAMtEb0EPa0KNn4RoJd2fmTlIB8tzofBYoi9DoV
- ZRWkBSFJo2N3QqMFn6U4RqQ1OlD8cZKb18XIoPpeP83Ps74pEZ
- O+g/cn8aRTpRnf0T2lDp/DEyHdFiXml9R0jZDFgfH
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 07 Mar 2014 17:16:50.0483 (UTC) FILETIME=[0722E030:01CF3A29]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-03-07 at 17:00 +0100, Sebastian Andrzej Siewior wrote: 
-> * Mike Galbraith | 2014-03-03 05:57:26 [+0100]:
+Bjorn Helgaas schreef op vr 07-03-2014 om 09:55 [-0700]:
+> On Fri, Mar 7, 2014 at 2:48 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> > This might end up not being relevant. And this is surely documented
+> > somewhere, but anyhow:
+> > - what git magic returns the hashes of the 15 commits that merge commit
+> >   96702be56037 added to the tree; and
 > 
-> > block/blk-mq-cpu.c |   14 +++++++-------
+> "git show 96702be56037" gives:
 > 
-> This got in v3.13-rc1, are you running some kind of backported version
-> of this in v3.12 or do you have your own v3.13-rt?
+>     commit 96702be560374ee7e7139a34cab03554129abbb4
+>     Merge: 04f982beb900 d56dbf5bab8c
+>     ...
+> 
+> 04f982beb900 is the previous HEAD, d56dbf5bab8c is the head of the
+> branch merged by this commit.  "git log 04f982beb900..96702be56037"
+> shows the commits merged.
 
-It's 3.12, but with a few (koff) backports.
+Thanks. Fairly obvious, actually. Not sure why I didn't think of this
+myself.
 
--Mike
+> > - how can I use the list of those hashes to limit the range of commits
+> >   to do a git bisect?
+> 
+> I'm not a git bisect expert, but I *think* you should be able to do
+> something like this:
+> 
+>     git bisect start
+>     git bisect bad 96702be56037
+>     git bisect good 04f982beb900
+> 
+> (assuming you've verified that 96702be56037 really *is* bad and
+> 04f982beb900 really *is* good), and git should checkout something in
+> the middle and you can build and test it, then use "git bisect good"
+> or "git bisect bad" depending on the result.
+
+Makes sense. Thanks again. 04f982beb900 appears to be good. So if
+96702be56037 turns out to be bad bisecting might not turn into the
+ordeal it usually is. (On this machine, with my workflow, bisecting an
+v3.x..v3.x+1-rcy range takes a few days.)
+
+
+Paul Bolle
 
