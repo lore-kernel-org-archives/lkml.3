@@ -1,88 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754142AbaCGQz0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 11:55:26 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:38158 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751840AbaCGQzX (ORCPT
+	id S1754117AbaCGQzW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 11:55:22 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:63562 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751840AbaCGQzU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 11:55:23 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19FJRdEPLj6q2NRVH1tHKX0
-Date: Fri, 7 Mar 2014 08:55:14 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Tero Kristo <t-kristo@ti.com>
-Cc: Roger Quadros <rogerq@ti.com>, balbi@ti.com, kishon@ti.com,
-        george.cherian@ti.com, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-usb@vger.kernel.org,
-        Mike Turquette <mturquette@linaro.org>
-Subject: Re: [PATCH 1/8] CLK: ti: dra7: Initialize USB_DPLL
-Message-ID: <20140307165513.GD3789@atomide.com>
-References: <1394197751-28984-1-git-send-email-rogerq@ti.com>
- <1394197751-28984-2-git-send-email-rogerq@ti.com>
- <5319CCF2.8090902@ti.com>
+	Fri, 7 Mar 2014 11:55:20 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5319CCF2.8090902@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Fri, 7 Mar 2014 17:55:19 +0100
+X-Google-Sender-Auth: -WgZfBpYhfDi2JdGmKZBkVeAveM
+Message-ID: <CAMuHMdVV_NrQ3PPJwPNx7MoM9TWLdk02d+10zNipNcC7VC0HAA@mail.gmail.com>
+Subject: serial core: crash / race condition on unbind
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-serial@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tero Kristo <t-kristo@ti.com> [140307 05:46]:
-> On 03/07/2014 03:09 PM, Roger Quadros wrote:
-> >USB_DPLL must be initialized and locked at boot so that
-> >USB modules can work.
-> >
-> >Also program USB_DLL_M2 output to half rate.
-> >
-> >CC: Mike Turquette <mturquette@linaro.org>
-> >CC: Tero Kristo <t-kristo@ti.com>
-> >Signed-off-by: Roger Quadros <rogerq@ti.com>
-> >---
-> >  drivers/clk/ti/clk-7xx.c | 11 +++++++++++
-> >  1 file changed, 11 insertions(+)
-> >
-> >diff --git a/drivers/clk/ti/clk-7xx.c b/drivers/clk/ti/clk-7xx.c
-> >index 9977653..f89f3c2 100644
-> >--- a/drivers/clk/ti/clk-7xx.c
-> >+++ b/drivers/clk/ti/clk-7xx.c
-> >@@ -18,6 +18,7 @@
-> >
-> >  #define DRA7_DPLL_ABE_DEFFREQ				361267200
-> >  #define DRA7_DPLL_GMAC_DEFFREQ				1000000000
-> >+#define DRA7_DPLL_USB_DEFFREQ				960000000
-> >
-> >
-> >  static struct ti_dt_clk dra7xx_clks[] = {
-> >@@ -328,5 +329,15 @@ int __init dra7xx_dt_clk_init(void)
-> >  	if (rc)
-> >  		pr_err("%s: failed to configure GMAC DPLL!\n", __func__);
-> >
-> >+	dpll_ck = clk_get_sys(NULL, "dpll_usb_ck");
-> >+	rc = clk_set_rate(dpll_ck, DRA7_DPLL_USB_DEFFREQ);
-> >+	if (rc)
-> >+		pr_err("%s: failed to configure USB DPLL!\n", __func__);
-> >+
-> >+	dpll_ck = clk_get_sys(NULL, "dpll_usb_m2_ck");
-> >+	rc = clk_set_rate(dpll_ck, DRA7_DPLL_USB_DEFFREQ/2);
-> >+	if (rc)
-> >+		pr_err("%s: failed to set USB_DPLL M2 OUT\n", __func__);
-> >+
-> 
-> I would rather see this done using the default-rate mechanism provided here:
-> 
-> https://www.mail-archive.com/linux-omap@vger.kernel.org/msg101300.html
-> 
-> However, this remains to be commented by Mike whether the patch is
-> okay or not.
+When unbinding a serial driver, uart_remove_one_port() clears
+uart_state.uart_port:
 
-Yes let's wait for that and not add hacks for new features.
+        state->uart_port = NULL;
 
-Regards,
+If the serial port is still in use (e.g. by getty), uart_close() will be
+called later:
 
-Tony
+        static void uart_close(struct tty_struct *tty, struct file *filp)
+        {
+                struct uart_state *state = tty->driver_data;
+                struct uart_port *uport;
+
+                ...
+
+                if (!state)
+                        return;
+
+                uport = state->uart_port;
+
+uport is NULL
+
+                ...
+
+                pr_debug("uart_close(%d) called\n", uport->line);
+
+If debugging is enabled, it will already crash here while dereferencing uport
+(this one is easily fixed)
+
+                if (tty_port_close_start(port, tty, filp) == 0)
+                        return;
+
+                ...
+
+                uart_flush_buffer(tty);
+
+uart_flush_buffer() will try to obtain the port's spinlock:
+
+        static void uart_flush_buffer(struct tty_struct *tty)
+        {
+                struct uart_state *state = tty->driver_data;
+                struct uart_port *port;
+
+                ...
+
+                port = state->uart_port;
+
+port is NULL
+
+                ...
+
+                spin_lock_irqsave(&port->lock, flags);
+
+Crash!!
+
+It doesn't always crash, though.
+
+Sometimes uart_close() returns after the tty_port_close_start() above,
+without a crash (bypassing e.g. the call to uart_change_pm() :-(
+Sometimes it crashs in uart_chars_in_buffer(), which also tries to take the
+spinlock:
+    tty_port_close_start()
+        tty_wait_until_sent_from_close()
+            tty_wait_until_sent()
+                tty_chars_in_buffer()
+                    uart_chars_in_buffer()
+                        spin_lock_irqsave(&state->uart_port->lock, flags);
+
+I'm not that familiar with the internals of the serial core. Perhaps
+uart_close()
+should return early if uport is NULL, just like if state is NULL?
+However, that means the uart_change_pm(state, UART_PM_STATE_OFF)
+is bypassed again.
+
+This is with sh-sci, but I don't think the driver matters.
+
+Thanks for your comments and suggestions!
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
