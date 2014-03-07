@@ -1,71 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752502AbaCGRie (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 12:38:34 -0500
-Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:38651 "HELO
-	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751975AbaCGRid (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 12:38:33 -0500
+	id S1752866AbaCGRiq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 12:38:46 -0500
+Received: from p3plex2out01.prod.phx3.secureserver.net ([184.168.131.12]:43213
+	"EHLO p3plex2out01.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752558AbaCGRin convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 12:38:43 -0500
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Chase Southwood <chase.southwood@yahoo.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v2 5/5] Staging: comedi: addi-data: tidy up counter
+ register map defines in hwdrv_apci1564.c
+Thread-Topic: [PATCH v2 5/5] Staging: comedi: addi-data: tidy up counter
+ register map defines in hwdrv_apci1564.c
+Thread-Index: AQHPOeCV9DNjRc3B2UCeO8iaoS1qYZrV4oiw
+Date: Fri, 7 Mar 2014 17:38:41 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825DA712C@P3PWEX4MB008.ex4.secureserver.net>
+References: <1394090691-7850-1-git-send-email-chase.southwood@yahoo.com>
+ <1394181476-17153-1-git-send-email-chase.southwood@yahoo.com>
+In-Reply-To: <1394181476-17153-1-git-send-email-chase.southwood@yahoo.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <5319BBAE.7030109@citrix.com>
-References: <1393615016-9187-1-git-send-email-zoltan.kiss@citrix.com>
-	<5318ABC0.4040307@citrix.com>
-	<CALnjE+rWc=n_F+1jSLQtPrgKSvvxONEkkYxWEHon2_KVNG9z3Q@mail.gmail.com>
-	<5319BBAE.7030109@citrix.com>
-Date: Fri, 7 Mar 2014 09:38:31 -0800
-Message-ID: <CALnjE+pkTyHycgH+xZ+Uv=SXmoWmeUJBYa6uqWjy0L_3xG3FZg@mail.gmail.com>
-Subject: Re: [PATCH] openvswitch: Orphan frags before sending to userspace via
- Netlink to avoid guest stall
-From: Pravin Shelar <pshelar@nicira.com>
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-Cc: Jesse Gross <jesse@nicira.com>, Thomas Graf <tgraf@redhat.com>,
-        "dev@openvswitch.org" <dev@openvswitch.org>,
-        xen-devel@lists.xenproject.org, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 7, 2014 at 4:29 AM, Zoltan Kiss <zoltan.kiss@citrix.com> wrote:
-> On 07/03/14 04:46, Pravin Shelar wrote:
->>
->> On Thu, Mar 6, 2014 at 9:09 AM, Zoltan Kiss <zoltan.kiss@citrix.com>
->> wrote:
->>>
->>> Do you have any feedback on this? I'm also adding KVM list as they might
->>> be
->>> interested in this.
->>>
->>> Zoli
->>>
->>>
->>> On 28/02/14 19:16, Zoltan Kiss wrote:
->>>>
->>>>
->>>> The kernel datapath now switched to zerocopy Netlink messages, but that
->>>> also
->>>> means that the pages on frags array are sent straight to userspace. If
->>>> those
->>>> pages came outside the kernel, we have to swap them out with local
->>>> copies.
->>>>
->>>> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
->>
->>
->> I do not think this is required, netlink zero copy only maps
->> pre-allocated buffers to user-space.
+On Friday, March 07, 2014 1:38 AM, Chase Southwood wrote:
+> This patch fixes the register map defines for the counter registers such
+> that they are all the real offsets to each register, rather than a mix of
+> real offsets and adders to those offsets.
 >
-> How do you mean "pre-allocated"? By who?
+> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
+> ---
 >
-by netlink, ref. netlink_alloc_skb().
+> 2: Simplified commit message, fixed indentation and whitespace damage.
+> I have test applied this patch, it should work now.
+> v2 also fixes several build breakages, and I have compile tested as well.
+> Everything should be fixed.
 
-> As far as I've seen the skb in this function came straight from the device
-> (vif in our case), and skb_zerocopy just copy the frags to user_skb, which
-> is sent to the userspace. Those frags contain pages from guest, and it's a
-> bad idea to pass them to userspace: e.g if userspace dies in the meantime,
-> what happens with them? Also, in Xen's case they are actually not mapped to
-> userspace, so accessing them can lead to garbage.
->
-AFAIK Netlink does not handle skb-frags for zero-copy case.
+Chase,
+
+Looks better, the patches apply now.
+
+The register map whitespace is still a bit of a mess. This is what it looks like
+after applying all 5 patches:
+
+/*
+ * devpriv->i_IobaseAmcc Register Map
+ */
+#define APCI1564_DI_REG						0x04
+#define APCI1564_DI_INT_MODE1_REG				0x08
+#define APCI1564_DI_INT_MODE2_REG				0x0c
+#define APCI1564_DI_INT_STATUS_REG				0x10
+#define APCI1564_DI_IRQ_REG					0x14
+#define APCI1564_DO_REG						0x18
+#define APCI1564_DO_INT_CTRL_REG				0x1c
+#define APCI1564_DO_INT_STATUS_REG				0x20
+#define APCI1564_DO_IRQ_REG					0x24
+#define APCI1564_WDOG_REG						0x28
+#define APCI1564_WDOG_RELOAD_REG				0x2c
+#define APCI1564_WDOG_TIMEBASE_REG				0x30
+#define APCI1564_WDOG_CTRL_REG					0x34
+#define APCI1564_WDOG_STATUS_REG				0x38
+#define APCI1564_WDOG_IRQ_REG					0x3c
+#define APCI1564_WDOG_WARN_TIMEVAL_REG			0x40
+#define APCI1564_WDOG_WARN_TIMEBASE_REG		0x44
+#define APCI1564_TIMER_REG						0x48
+#define APCI1564_TIMER_RELOAD_REG				0x4c
+#define APCI1564_TIMER_TIMEBASE_REG			0x50
+#define APCI1564_TIMER_CTRL_REG				0x54
+#define APCI1564_TIMER_STATUS_REG				0x58
+#define APCI1564_TIMER_IRQ_REG					0x5c
+#define APCI1564_TIMER_WARN_TIMEVAL_REG		0x60
+#define APCI1564_TIMER_WARN_TIMEBASE_REG		0x64
+
+/*
+ * devpriv->iobase Register Map
+ */
+#define APCI1564_TCW_REG(x)					(0x00 + ((x) * 0x20))
+#define APCI1564_TCW_RELOAD_REG(x)				(0x04 + ((x) * 0x20))
+#define APCI1564_TCW_TIMEBASE_REG(x)			(0x08 + ((x) * 0x20))
+#define APCI1564_TCW_CTRL_REG(x)				(0x0c + ((x) * 0x20))
+#define APCI1564_TCW_STATUS_REG(x)				(0x10 + ((x) * 0x20))
+#define APCI1564_TCW_IRQ_REG(x)				(0x14 + ((x) * 0x20))
+#define APCI1564_TCW_WARN_TIMEVAL_REG(x)		(0x18 + ((x) * 0x20))
+#define APCI1564_TCW_WARN_TIMEBASE_REG(x)		(0x1c + ((x) * 0x20))
+
+Check your tab settings in your editor. Normal tab spacing is 8 characters.
+It looks like all the defines align properly at column 49 which is one tab after
+the define on this line:
+
+#define APCI1564_TCW_WARN_TIMEBASE_REG(x)	(0x1c + ((x) * 0x20))
+
+Other than that the patches look good.
+
+Regards,
+Hartley
