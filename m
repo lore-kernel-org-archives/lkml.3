@@ -1,172 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337AbaCGNEf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 08:04:35 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:30646 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752640AbaCGNEc (ORCPT
+	id S1753351AbaCGNFa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 08:05:30 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:40622 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752027AbaCGNF2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 08:04:32 -0500
-X-AuditID: cbfee61a-b7fb26d00000724f-48-5319c3dec91d
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>, Russell King <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Tomasz Figa <t.figa@samsung.com>, Mark Brown <broonie@kernel.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH v2 03/11] ARM: exynos: Move to generic power domain bindings
-Date: Fri, 07 Mar 2014 14:04:16 +0100
-Message-id: <19118595.DYTBeEpFjL@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <53174EB5.1090803@gmail.com>
-References: <1393862536-9842-1-git-send-email-tomasz.figa@gmail.com>
- <1713847.uSatLFRtJj@amdc1032> <53174EB5.1090803@gmail.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=ISO-8859-1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLIsWRmVeSWpSXmKPExsVy+t9jAd17hyWDDZ736ltMffiEzWL+kXOs
-	Fv1vFrJaNC9ez2Zx7tVKRoveBVfZLGZN2ctksenxNVaLy7vmsFl87j3CaDHj/D4mi9uXeS3e
-	/H7BbrH2yF12i6XXLzJZ3D11lM1iwvS1LBZnTl9itWjde4Td4seZbhaLVwfbWCzWz3jNYrFq
-	1x9Gi+Nrwx0kPNbMW8Po0dLcw+Zxua+XyWPnrLvsHiuXf2HzWLznJZPHplWdbB53ru1h89g/
-	dw27x+Yl9R5brrazePRtWcXosWL1d3aPz5vkPDbODQ3gj+KySUnNySxLLdK3S+DK2LLxCmvB
-	QqWK81/9Ghi7pLsYOTkkBEwkDn3/xw5hi0lcuLeerYuRi0NIYBGjxLZznxkhnBYmiVn/DzGD
-	VLEJWElMbF/FCGKLCKhLfJvSzw5SxCzwnE3i2uE1QO0cHMICARKdO7lATBYBVYkb751BTF4B
-	LYm9vUIgnaICnhI7tq9kA7E5BTQlmr51QO1tZJSY2PEUbDyvgKDEj8n3WEBsZgF5iX37p7JC
-	2DoS+1unsU1gFJiFpGwWkrJZSMoWMDKvYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAiO9GdS
-	OxhXNlgcYhTgYFTi4e1YJBEsxJpYVlyZe4hRgoNZSYSXZ7VksBBvSmJlVWpRfnxRaU5q8SFG
-	aQ4WJXHeA63WgUIC6YklqdmpqQWpRTBZJg5OqQbGsx8+ZaZWrfETqe2cY3uhJ7XEJfPwj23C
-	+w2bGFpdXMMWhrLxvJmSWGz7vF3zUMZtDqcVMUsF7K/F5Eu51Hy2jmDxVzsUJ2yn5BntspRb
-	Ozz5V+k22yDj84c+y5dtD5R89T7I0Ks9eU9n08wpqtxvJ/gdVX+0btZcjknKE+8sNOp55e1y
-	3VmJpTgj0VCLuag4EQBHgn5X8AIAAA==
+	Fri, 7 Mar 2014 08:05:28 -0500
+MIME-Version: 1.0
+In-Reply-To: <5319BF40.70305@ti.com>
+References: <1390486503-1504-1-git-send-email-dh.herrmann@gmail.com>
+	<53145591.4070004@ti.com>
+	<CANq1E4QJqB0CSNeSh2jsp90ZtcLwFwfSG=qjodSLdV_aGbL3BQ@mail.gmail.com>
+	<53145D42.9080806@ti.com>
+	<CANq1E4QYuMsj3W80jiyOfeYr+Xm=J096idyvgCUpFhADWR1ZvA@mail.gmail.com>
+	<531465FF.1000201@ti.com>
+	<CANq1E4TmACNwyANaUsWufJL1ne4pk4Gv+g4y7b6xeO=Po-SN9g@mail.gmail.com>
+	<5319BF40.70305@ti.com>
+Date: Fri, 7 Mar 2014 14:05:27 +0100
+Message-ID: <CANq1E4QXWYQE5DWOA7F39oHFd2ZnV5Ny4ykOw1=aJT+B_umy3Q@mail.gmail.com>
+Subject: Re: [PATCH 00/11] SimpleDRM & Sysfb
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        Dave Airlie <airlied@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Tom Gundersen <teg@jklm.no>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi
 
-On Wednesday, March 05, 2014 05:20:05 PM Tomasz Figa wrote:
-> Hi Bartek,
-> 
-> On 05.03.2014 17:15, Bartlomiej Zolnierkiewicz wrote:
-> >
-> > Hi Tomek,
-> >
-> > On Monday, March 03, 2014 05:02:08 PM Tomasz Figa wrote:
-> >> This patch moves Exynos power domain code to use the new generic power
-> >> domain look-up framework introduced by previous patch, allowing the new
-> >> code to be compiled with CONFIG_ARCH_EXYNOS selected as well.
-> >>
-> >> Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
-> >> ---
-> >>   .../bindings/arm/exynos/power_domain.txt           | 12 ++--
-> >>   arch/arm/mach-exynos/pm_domains.c                  | 80 +---------------------
-> >>   kernel/power/Kconfig                               |  2 +-
-> >>   3 files changed, 7 insertions(+), 87 deletions(-)
-> >>
-> >> diff --git a/Documentation/devicetree/bindings/arm/exynos/power_domain.txt b/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
-> >> index 5216b41..60f26a8 100644
-> >> --- a/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
-> >> +++ b/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
-> >> @@ -8,6 +8,8 @@ Required Properties:
-> >>       * samsung,exynos4210-pd - for exynos4210 type power domain.
-> >>   - reg: physical base address of the controller and length of memory mapped
-> >>       region.
-> >> +- #power-domain-cells: number of cells in power domain specifier;
-> >> +    must be 0.
-> >>
-> >>   Node of a device using power domains must have a samsung,power-domain property
-> >>   defined with a phandle to respective power domain.
-> >> @@ -17,12 +19,8 @@ Example:
-> >>   	lcd0: power-domain-lcd0 {
-> >>   		compatible = "samsung,exynos4210-pd";
-> >>   		reg = <0x10023C00 0x10>;
-> >> +		#power-domain-cells = <0>;
-> >>   	};
-> >>
-> >> -Example of the node using power domain:
-> >> -
-> >> -	node {
-> >> -		/* ... */
-> >> -		samsung,power-domain = <&lcd0>;
-> >> -		/* ... */
-> >> -	};
-> >> +See Documentation/devicetree/bindings/power/power_domain.txt for description
-> >> +of consumer-side bindings.
-> >> diff --git a/arch/arm/mach-exynos/pm_domains.c b/arch/arm/mach-exynos/pm_domains.c
-> >> index 8fd2488..48ee6c9 100644
-> >> --- a/arch/arm/mach-exynos/pm_domains.c
-> >> +++ b/arch/arm/mach-exynos/pm_domains.c
-> >> @@ -75,78 +75,6 @@ static int exynos_pd_power_off(struct generic_pm_domain *domain)
-> >>   	return exynos_pd_power(domain, false);
-> >>   }
-> >>
-> >> -static void exynos_add_device_to_domain(struct exynos_pm_domain *pd,
-> >> -					 struct device *dev)
-> >> -{
-> >> -	int ret;
-> >> -
-> >> -	dev_dbg(dev, "adding to power domain %s\n", pd->pd.name);
-> >> -
-> >> -	while (1) {
-> >> -		ret = pm_genpd_add_device(&pd->pd, dev);
-> >> -		if (ret != -EAGAIN)
-> >> -			break;
-> >> -		cond_resched();
-> >> -	}
-> >> -
-> >> -	pm_genpd_dev_need_restore(dev, true);
-> >> -}
-> >> -
-> >> -static void exynos_remove_device_from_domain(struct device *dev)
-> >> -{
-> >> -	struct generic_pm_domain *genpd = dev_to_genpd(dev);
-> >> -	int ret;
-> >> -
-> >> -	dev_dbg(dev, "removing from power domain %s\n", genpd->name);
-> >> -
-> >> -	while (1) {
-> >> -		ret = pm_genpd_remove_device(genpd, dev);
-> >> -		if (ret != -EAGAIN)
-> >> -			break;
-> >> -		cond_resched();
-> >> -	}
-> >> -}
-> >> -
-> >> -static void exynos_read_domain_from_dt(struct device *dev)
-> >> -{
-> >> -	struct platform_device *pd_pdev;
-> >> -	struct exynos_pm_domain *pd;
-> >> -	struct device_node *node;
-> >> -
-> >> -	node = of_parse_phandle(dev->of_node, "samsung,power-domain", 0);
-> >
-> > This removes "samsung,power-domain" phandle handling but I cannot find
-> > in your patch series updates to existing EXYNOS dts files converting
-> > them to use the new "power-domain" property.  Am I missing something?
-> 
-> Patch 01/11 adds generic parsing code along with fallback to the legacy 
-> "samsung,power-domain" property, if the generic one is not present, as 
-> it was pretty straightforward to implement it there.
+On Fri, Mar 7, 2014 at 1:44 PM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
+> On 06/03/14 14:16, David Herrmann wrote:
+>> Hi Tomi
+>>
+>> On Mon, Mar 3, 2014 at 12:22 PM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
+>>> On 03/03/14 13:09, David Herrmann wrote:
+>>>
+>>>>> What do you think, would it be possible to keep the sysfb stuff in
+>>>>> arch/x86, and still be able to do the rest of the stuff here? And then
+>>>>> move the sysfs from arch/x86 to drivers/video later?
+>>>>
+>>>> I don't think there's any need for that. Linus does conflict
+>>>> resolution all day long, so a short hint in Dave's pull-request (plus
+>>>> an example merge) should be enough. Same is true for -next, I think.
+>>>
+>>> True, but, well, the conflict with this one is not a few lines. "git
+>>> diff |wc -l" gives 2494 lines for the conflict. It's not really complex
+>>> to resolve that one, though, as it's really about copying all the stuff
+>>> into its new place.
+>>>
+>>> So I'm not sure if that makes Linus think "this is simple one, 30 secs
+>>> and done" or "who the f*** sends me this crap" ;). Especially for two
+>>> reasons:
+>>>
+>>> - The fb-reogranization is not very critical, and often clean-ups are
+>>> not worth it (although I think this one is good one, of course).
+>>> - Conflicting fbdev changes coming from another tree
+>>>
+>>>> And this is really just a mechanical thing, nothing hard to do. But of
+>>>> course, it's your decision. However, keeping the code in x86 is the
+>>>> wrong thing to do. As discussed with Ingo, the patch that extends
+>>>
+>>> Yes, I didn't mean keeping the code in x86 for good, but just for one
+>>> kernel version to make merging easier.
+>>>
+>>>> x86/sysfb is only provided for easier backporting. The followup patch
+>>>> immediately removes it again and adds proper video/sysfb. I'd dislike
+>>>> splitting these just to avoid merge conflicts. I can also maintain a
+>>>> merge-fixup branch in my tree, if anyone wants that.
+>>>
+>>> You can have a try at merging. If you think it's trivial, maybe it is
+>>> and we can just let Linus handle it:
+>>>
+>>> git://git.kernel.org/pub/scm/linux/kernel/git/tomba/linux.git
+>>> work/fb-reorder
+>>
+>> Ok, I'm fine with delaying this one more merge-window. However, to
+>> make things easier, could you pick up the two fbdev cleanups? These
+>> are:
+>>   fbdev: efifb: add dev->remove() callback
+>>   fbdev: vesafb: add dev->remove() callback
+>>
+>> They only add ->remove() callbacks which are never triggered currently
+>> except with my sysfb series. But I'd like to drop both to make the
+>> series smaller.
+>
+> Yes, I can take them if they work fine without the rest of the patches.
+>
+> I could also take all the patches up to patch #6 via fbdev tree. Some of
+> the patches are for arch x86, but they seem to be still about
+> framebuffers. But maybe that causes conflicts with x86 tree, then =).
+>
+> Then again, maybe we should just go forward and let Linus handle the
+> conflict. I'm planning to send the "normal" fbdev changes and the
+> fbdev-reorg separately (just in case Linus doesn't like the reorg), and
+> that already causes conflicts, very similar to what this series causes.
+>
+> So in any case Linus has to handle that conflict, or use a resolution
+> offered by me. So if fbdev changes and this series are merged in
+> relatively early phase, I can then send the reorg series a bit later and
+> offer a conflict resolution that solves the conflicts for both series.
+>
+> That way this series doesn't get delayed needlessly in the case that
+> Linus rejects the reorg series.
 
-Ah, silly me, I should have looked more closely at patch #1.  Anyway,
-I tested your patchset on Exynos4412 Trats2 target and it works fine
-(BTW it also seems that your patchset fixed the issue of device not
-being removed from power domain on ->probe failure).
+If you can take these two patches, that's fine. They're not strictly
+needed by the series and I'd be happy to see them upstream. The other
+sysfb patches should be merged together, so I don't think there's much
+gain in applying them through fbdev.
 
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
+The DRM tree is usually merged late, anyway, so I'll see whether we
+will merge simpledrm through drm-next or not. If not, it'll be 3.16
+then. If you can get the fbdev merge in early, that should be enough
+for us to figure it out and provide a conflict-resolution. Btw., do
+you want the generic sysfb-helper in drivers/video/ or
+driver/video/fbdev? It's not limited to fbdev, so I'd put it in
+drivers/video/.
 
+Thanks
+David
