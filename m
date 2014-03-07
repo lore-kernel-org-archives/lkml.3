@@ -1,42 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753459AbaCGVZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 16:25:58 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55962 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751624AbaCGVZ5 (ORCPT
+	id S1753602AbaCGV1g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 16:27:36 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:43588 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751624AbaCGV1e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 16:25:57 -0500
-Date: Fri, 7 Mar 2014 21:25:45 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Jean Delvare <jdelvare@suse.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH] mfd: Fix cs5535 dependencies
-Message-ID: <20140307212545.6c1dab79@alan.etchedpixels.co.uk>
-In-Reply-To: <20140307220051.0b004abf@endymion.delvare>
-References: <20140307220051.0b004abf@endymion.delvare>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+	Fri, 7 Mar 2014 16:27:34 -0500
+Date: Fri, 07 Mar 2014 16:27:32 -0500 (EST)
+Message-Id: <20140307.162732.1801095905509663010.davem@davemloft.net>
+To: hayeswang@realtek.com
+Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH net-next 0/7] r8152: tx/rx improvement
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1394161480-2918-1-git-send-email-hayeswang@realtek.com>
+References: <1393934464-23675-1-git-send-email-hayeswang@realtek.com>
+	<1394161480-2918-1-git-send-email-hayeswang@realtek.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 07 Mar 2014 13:27:34 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 Mar 2014 22:00:51 +0100
-Jean Delvare <jdelvare@suse.de> wrote:
+From: Hayes Wang <hayeswang@realtek.com>
+Date: Fri, 7 Mar 2014 11:04:33 +0800
 
-> As far as I know, the CS5535 and CS5536 chipsets are companions of the
-> Geode series of processors, which are 32-bit only. So the CS5535
-> drivers are not needed on x86-64, except for build testing purpose.
-> 
-> This aligns the dependencies to what FB_GEODE already uses.
-> 
-> Signed-off-by: Jean Delvare <jdelvare@suse.de>
+>  - Select the suitable spin lock for each function.
+>  - Add additional check to reduce the spin lock.
+>  - Up the priority of the tx to avoid interrupted by rx.
+>  - Support rx checksum, large send, and IPv6 hw checksum.
 
-This looks correct to me. Also true for the ATA driver and a few others
-plus for the CS5510 and 5520.
+Series applied, thanks.
 
-Alan
+Note that if you ever add ->ndo_poll_controller support to this driver,
+you will have to revert your spin_lock_irq{save,restore}() changes to
+your ->ndo_start_xmit.
+
+Because the transmit function can indeed be invoked from hard IRQ
+context once you support netpoll.
