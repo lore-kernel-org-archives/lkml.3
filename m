@@ -1,146 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753192AbaCGDJw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 22:09:52 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:43374 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751986AbaCGDE4 (ORCPT
+	id S1753197AbaCGDKq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 22:10:46 -0500
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:46990 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751986AbaCGDKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 22:04:56 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s2734rKn029682, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next 1/7] r8152: replace spin_lock_irqsave and spin_unlock_irqrestore
-Date: Fri, 7 Mar 2014 11:04:34 +0800
-Message-ID: <1394161480-2918-2-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1394161480-2918-1-git-send-email-hayeswang@realtek.com>
-References: <1393934464-23675-1-git-send-email-hayeswang@realtek.com>
- <1394161480-2918-1-git-send-email-hayeswang@realtek.com>
+	Thu, 6 Mar 2014 22:10:44 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+In-Reply-To: <1393589841-6634-4-git-send-email-maxime.coquelin@st.com>
+References: <1393589841-6634-1-git-send-email-maxime.coquelin@st.com>
+	<1393589841-6634-4-git-send-email-maxime.coquelin@st.com>
+Date: Fri, 7 Mar 2014 11:10:43 +0800
+Message-ID: <CACRpkdYczgJiDQEfkiiJdXVtm-42_rRSedf6HGd7Eoq0ttWJ3A@mail.gmail.com>
+Subject: Re: [PATCH 3/5] pinctrl: st: Enhance the controller to manage
+ unavailable registers
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Maxime COQUELIN <maxime.coquelin@st.com>
+Cc: Rob Landley <rob@landley.net>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use spin_lock and spin_unlock in interrupt context.
+On Fri, Feb 28, 2014 at 8:17 PM, Maxime COQUELIN <maxime.coquelin@st.com> wrote:
 
-The ndo_start_xmit would not be called in interrupt context, so
-replace the relative spin_lock_irqsave and spin_unlock_irqrestore
-with spin_lock_bh and spin_unlock_bh.
+> From: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+>
+> This patch adds a new logic inside the st pinctrl to manage
+> an unsupported scenario: some sysconfig are not available!
+>
+> This is the case of STiH407 where, although documented, the
+> following registers from SYSCFG_FLASH have been removed from the SoC.
+>
+> SYSTEM_CONFIG3040
+>    Output Enable pad control for all PIO Alternate Functions
+> and
+> SYSTEM_ CONFIG3050
+>    Pull Up pad control for all PIO Alternate Functions
+>
+> Without managing this condition an imprecise external abort
+> will be detect.
+>
+> To do this the patch also reviews the st_parse_syscfgs
+> and other routines to manipulate the registers only if
+> actually available.
+> In any case, for example the st_parse_syscfgs detected
+> an error condition but no action was made in the
+> st_pctl_probe_dt.
+>
+> Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+> Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 28 ++++++++++++----------------
- 1 file changed, 12 insertions(+), 16 deletions(-)
+Hm this does not apply to my tree at all. It appears this is not
+a stand-alone, patch, so it depends on some other patch to
+pinctrl-sti?
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index b8eee36..8ecb41b 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -963,7 +963,6 @@ static int rtl8152_set_mac_address(struct net_device *netdev, void *p)
- static void read_bulk_callback(struct urb *urb)
- {
- 	struct net_device *netdev;
--	unsigned long flags;
- 	int status = urb->status;
- 	struct rx_agg *agg;
- 	struct r8152 *tp;
-@@ -997,9 +996,9 @@ static void read_bulk_callback(struct urb *urb)
- 		if (urb->actual_length < ETH_ZLEN)
- 			break;
- 
--		spin_lock_irqsave(&tp->rx_lock, flags);
-+		spin_lock(&tp->rx_lock);
- 		list_add_tail(&agg->list, &tp->rx_done);
--		spin_unlock_irqrestore(&tp->rx_lock, flags);
-+		spin_unlock(&tp->rx_lock);
- 		tasklet_schedule(&tp->tl);
- 		return;
- 	case -ESHUTDOWN:
-@@ -1022,9 +1021,9 @@ static void read_bulk_callback(struct urb *urb)
- 	if (result == -ENODEV) {
- 		netif_device_detach(tp->netdev);
- 	} else if (result) {
--		spin_lock_irqsave(&tp->rx_lock, flags);
-+		spin_lock(&tp->rx_lock);
- 		list_add_tail(&agg->list, &tp->rx_done);
--		spin_unlock_irqrestore(&tp->rx_lock, flags);
-+		spin_unlock(&tp->rx_lock);
- 		tasklet_schedule(&tp->tl);
- 	}
- }
-@@ -1033,7 +1032,6 @@ static void write_bulk_callback(struct urb *urb)
- {
- 	struct net_device_stats *stats;
- 	struct net_device *netdev;
--	unsigned long flags;
- 	struct tx_agg *agg;
- 	struct r8152 *tp;
- 	int status = urb->status;
-@@ -1057,9 +1055,9 @@ static void write_bulk_callback(struct urb *urb)
- 		stats->tx_bytes += agg->skb_len;
- 	}
- 
--	spin_lock_irqsave(&tp->tx_lock, flags);
-+	spin_lock(&tp->tx_lock);
- 	list_add_tail(&agg->list, &tp->tx_free);
--	spin_unlock_irqrestore(&tp->tx_lock, flags);
-+	spin_unlock(&tp->tx_lock);
- 
- 	usb_autopm_put_interface_async(tp->intf);
- 
-@@ -1330,14 +1328,13 @@ r8152_tx_csum(struct r8152 *tp, struct tx_desc *desc, struct sk_buff *skb)
- static int r8152_tx_agg_fill(struct r8152 *tp, struct tx_agg *agg)
- {
- 	struct sk_buff_head skb_head, *tx_queue = &tp->tx_queue;
--	unsigned long flags;
- 	int remain, ret;
- 	u8 *tx_data;
- 
- 	__skb_queue_head_init(&skb_head);
--	spin_lock_irqsave(&tx_queue->lock, flags);
-+	spin_lock_bh(&tx_queue->lock);
- 	skb_queue_splice_init(tx_queue, &skb_head);
--	spin_unlock_irqrestore(&tx_queue->lock, flags);
-+	spin_unlock_bh(&tx_queue->lock);
- 
- 	tx_data = agg->head;
- 	agg->skb_num = agg->skb_len = 0;
-@@ -1374,9 +1371,9 @@ static int r8152_tx_agg_fill(struct r8152 *tp, struct tx_agg *agg)
- 	}
- 
- 	if (!skb_queue_empty(&skb_head)) {
--		spin_lock_irqsave(&tx_queue->lock, flags);
-+		spin_lock_bh(&tx_queue->lock);
- 		skb_queue_splice(&skb_head, tx_queue);
--		spin_unlock_irqrestore(&tx_queue->lock, flags);
-+		spin_unlock_bh(&tx_queue->lock);
- 	}
- 
- 	netif_tx_lock_bh(tp->netdev);
-@@ -1551,16 +1548,15 @@ static void rtl_drop_queued_tx(struct r8152 *tp)
- {
- 	struct net_device_stats *stats = &tp->netdev->stats;
- 	struct sk_buff_head skb_head, *tx_queue = &tp->tx_queue;
--	unsigned long flags;
- 	struct sk_buff *skb;
- 
- 	if (skb_queue_empty(tx_queue))
- 		return;
- 
- 	__skb_queue_head_init(&skb_head);
--	spin_lock_irqsave(&tx_queue->lock, flags);
-+	spin_lock_bh(&tx_queue->lock);
- 	skb_queue_splice_init(tx_queue, &skb_head);
--	spin_unlock_irqrestore(&tx_queue->lock, flags);
-+	spin_unlock_bh(&tx_queue->lock);
- 
- 	while ((skb = __skb_dequeue(&skb_head))) {
- 		dev_kfree_skb(skb);
--- 
-1.8.4.2
-
+Yours,
+Linus Walleij
