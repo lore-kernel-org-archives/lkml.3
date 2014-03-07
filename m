@@ -1,82 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751571AbaCGIKx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 03:10:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61017 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751012AbaCGIKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 03:10:52 -0500
-From: WANG Chao <chaowang@redhat.com>
-To: Muli Ben-Yehuda <muli@cs.technion.ac.il>,
-        "Jon D. Mason" <jdmason@kudzu.us>, "H. Peter Anvin" <hpa@zytor.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Baoquan He <bhe@redhat.com>
-Cc: kexec@lists.infradead.org, x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] x86, calgary: use 8M TCE table size by default
-Date: Fri,  7 Mar 2014 16:10:16 +0800
-Message-Id: <1394179816-15435-1-git-send-email-chaowang@redhat.com>
+	id S1751581AbaCGIPA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 03:15:00 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:40369 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750958AbaCGIO7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 03:14:59 -0500
+Date: Fri, 7 Mar 2014 11:14:41 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: gregkh@linuxfoundation.org, d@teklibre.com, paul.gortmaker@windriver.com,
+        sara.bird.iar@gmail.com, standby24x7@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: frontier: fix memory leak in
+ usb_alphatrack_probe()
+Message-ID: <20140307081441.GD4774@mwanda>
+References: <2118769.zIlmIgrC0S@daeseok-laptop.cloud.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2118769.zIlmIgrC0S@daeseok-laptop.cloud.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kexec-tools wants to pass kdump kernel needed memmap via E820 directly,
-instead of memmap=exactmap. That'll make saved_max_pfn totally useless.
+On Fri, Mar 07, 2014 at 05:02:25PM +0900, Daeseok Youn wrote:
+> 
+> oldi_buffer and write_buffer need to free when usb_alphatrack_delete()
+> is called.
+> 
+> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+> ---
+>  drivers/staging/frontier/alphatrack.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/staging/frontier/alphatrack.c b/drivers/staging/frontier/alphatrack.c
+> index edd5cef..4d630da 100644
+> --- a/drivers/staging/frontier/alphatrack.c
+> +++ b/drivers/staging/frontier/alphatrack.c
+> @@ -208,6 +208,8 @@ static void usb_alphatrack_delete(struct usb_alphatrack *dev)
+>  	kfree(dev->ring_buffer);
+>  	kfree(dev->interrupt_in_buffer);
+>  	kfree(dev->interrupt_out_buffer);
+> +	kfree(dev->oldi_buffer);
+> +	kfree(dev->write_buffer);
+>  	kfree(dev);		/* fixme oldi_buffer */
+                                   ^^^^^^^^^^^^^^^^^
+Remove this comment now?
 
-Muli suggest to hard code TCE table size to max (8M) so that kdump
-kernel could use this default size and kexec-tools doesn't need to pass
-saved_max_pfn to kdump kernel in any way.
-
-Signed-off-by: WANG Chao <chaowang@redhat.com>
----
- arch/x86/kernel/pci-calgary_64.c | 25 ++++++++-----------------
- 1 file changed, 8 insertions(+), 17 deletions(-)
-
-diff --git a/arch/x86/kernel/pci-calgary_64.c b/arch/x86/kernel/pci-calgary_64.c
-index 299d493..b26ab94 100644
---- a/arch/x86/kernel/pci-calgary_64.c
-+++ b/arch/x86/kernel/pci-calgary_64.c
-@@ -1207,25 +1207,17 @@ error:
- 	return ret;
- }
- 
--static inline int __init determine_tce_table_size(u64 ram)
-+static inline int __init determine_tce_table_size(void)
- {
--	int ret;
--
- 	if (specified_table_size != TCE_TABLE_SIZE_UNSPECIFIED)
- 		return specified_table_size;
-+	else
-+		/*
-+		 * Use 8M by default to get rid of saved_max_pfn,
-+		 * suggested by Muli
-+		 */
-+		return TCE_TABLE_SIZE_8M;
- 
--	/*
--	 * Table sizes are from 0 to 7 (TCE_TABLE_SIZE_64K to
--	 * TCE_TABLE_SIZE_8M). Table size 0 has 8K entries and each
--	 * larger table size has twice as many entries, so shift the
--	 * max ram address by 13 to divide by 8K and then look at the
--	 * order of the result to choose between 0-7.
--	 */
--	ret = get_order(ram >> 13);
--	if (ret > TCE_TABLE_SIZE_8M)
--		ret = TCE_TABLE_SIZE_8M;
--
--	return ret;
- }
- 
- static int __init build_detail_arrays(void)
-@@ -1418,8 +1410,7 @@ int __init detect_calgary(void)
- 		return -ENOMEM;
- 	}
- 
--	specified_table_size = determine_tce_table_size((is_kdump_kernel() ?
--					saved_max_pfn : max_pfn) * PAGE_SIZE);
-+	specified_table_size = determine_tce_table_size();
- 
- 	for (bus = 0; bus < MAX_PHB_BUS_NUM; bus++) {
- 		struct calgary_bus_info *info = &bus_info[bus];
--- 
-1.8.5.3
+regards,
+dan carpenter
 
