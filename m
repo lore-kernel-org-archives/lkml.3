@@ -1,72 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753840AbaCGVF4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 16:05:56 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:43456 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752107AbaCGVFy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 16:05:54 -0500
-Date: Fri, 07 Mar 2014 16:05:52 -0500 (EST)
-Message-Id: <20140307.160552.282750558679341658.davem@davemloft.net>
-To: zoltan.kiss@citrix.com
-Cc: ian.campbell@citrix.com, wei.liu2@citrix.com,
-        xen-devel@lists.xenproject.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jonathan.davies@citrix.com
-Subject: Re: [PATCH net-next v7 0/9] xen-netback: TX grant mapping with
- SKBTX_DEV_ZEROCOPY instead of copy
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1394142511-14827-1-git-send-email-zoltan.kiss@citrix.com>
-References: <1394142511-14827-1-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1753068AbaCGVGd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 16:06:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54967 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752046AbaCGVGc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 16:06:32 -0500
+Date: Fri, 7 Mar 2014 22:06:29 +0100
+From: Jean Delvare <jdelvare@suse.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH] cs5535-mfgpt: Simplify dependencies
+Message-ID: <20140307220629.10903b1b@endymion.delvare>
+Organization: SUSE Linux
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 07 Mar 2014 13:05:54 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-Date: Thu, 6 Mar 2014 21:48:22 +0000
+The bus and architecture dependencies are already on MFD_CS5535, so
+there is no need to repeat them here.
 
-> A long known problem of the upstream netback implementation that on the TX
-> path (from guest to Dom0) it copies the whole packet from guest memory into
-> Dom0. That simply became a bottleneck with 10Gb NICs, and generally it's a
-> huge perfomance penalty. The classic kernel version of netback used grant
-> mapping, and to get notified when the page can be unmapped, it used page
-> destructors. Unfortunately that destructor is not an upstreamable solution.
-> Ian Campbell's skb fragment destructor patch series [1] tried to solve this
-> problem, however it seems to be very invasive on the network stack's code,
-> and therefore haven't progressed very well.
-> This patch series use SKBTX_DEV_ZEROCOPY flags to tell the stack it needs to
-> know when the skb is freed up. That is the way KVM solved the same problem,
-> and based on my initial tests it can do the same for us. Avoiding the extra
-> copy boosted up TX throughput from 6.8 Gbps to 7.9 (I used a slower AMD
-> Interlagos box, both Dom0 and guest on upstream kernel, on the same NUMA node,
-> running iperf 2.0.5, and the remote end was a bare metal box on the same 10Gb
-> switch)
-> Based on my investigations the packet get only copied if it is delivered to
-> Dom0 IP stack through deliver_skb, which is due to this [2] patch. This affects
-> DomU->Dom0 IP traffic and when Dom0 does routing/NAT for the guest. That's a bit
-> unfortunate, but luckily it doesn't cause a major regression for this usecase.
-> In the future we should try to eliminate that copy somehow.
-> There are a few spinoff tasks which will be addressed in separate patches:
-> - grant copy the header directly instead of map and memcpy. This should help
->   us avoiding TLB flushing
-> - use something else than ballooned pages
-> - fix grant map to use page->index properly
-> I've tried to broke it down to smaller patches, with mixed results, so I
-> welcome suggestions on that part as well:
-> 1: Use skb->cb to store pending_idx
-> 2: Some refactoring
-> 3: Change RX path for mapped SKB fragments (moved here to keep bisectability,
-> review it after #4)
-> 4: Introduce TX grant mapping
-> 5: Remove old TX grant copy definitons and fix indentations
-> 6: Add stat counters for zerocopy
-> 7: Handle guests with too many frags
-> 8: Timeout packets in RX path
-> 9: Aggregate TX unmap operations
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/misc/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Series applied, thanks.
+--- linux-3.14-rc5.orig/drivers/misc/Kconfig	2014-03-07 21:57:53.905525392 +0100
++++ linux-3.14-rc5/drivers/misc/Kconfig	2014-03-07 22:04:25.704880611 +0100
+@@ -235,7 +235,7 @@ config SGI_XP
+ 
+ config CS5535_MFGPT
+ 	tristate "CS5535/CS5536 Geode Multi-Function General Purpose Timer (MFGPT) support"
+-	depends on PCI && X86 && MFD_CS5535
++	depends on MFD_CS5535
+ 	default n
+ 	help
+ 	  This driver provides access to MFGPT functionality for other
+
+-- 
+Jean Delvare
+SUSE L3 Support
