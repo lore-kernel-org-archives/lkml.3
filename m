@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753835AbaCGR36 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 12:29:58 -0500
-Received: from sauhun.de ([89.238.76.85]:55464 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752925AbaCGR35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 12:29:57 -0500
-Date: Fri, 7 Mar 2014 18:29:49 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        zhuzhenhua@allwinnertech.com
-Subject: Re: [PATCH] i2c: mv64xxx: Fix compilation breakage
-Message-ID: <20140307172949.GL28943@katana>
-References: <1394204370-22979-1-git-send-email-maxime.ripard@free-electrons.com>
- <20140307160836.GM21483@n2100.arm.linux.org.uk>
- <20140307171932.GU607@lukather>
+	id S1752502AbaCGRie (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 12:38:34 -0500
+Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:38651 "HELO
+	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751975AbaCGRid (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 12:38:33 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xjamM5M9kpPM/bcu"
-Content-Disposition: inline
-In-Reply-To: <20140307171932.GU607@lukather>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5319BBAE.7030109@citrix.com>
+References: <1393615016-9187-1-git-send-email-zoltan.kiss@citrix.com>
+	<5318ABC0.4040307@citrix.com>
+	<CALnjE+rWc=n_F+1jSLQtPrgKSvvxONEkkYxWEHon2_KVNG9z3Q@mail.gmail.com>
+	<5319BBAE.7030109@citrix.com>
+Date: Fri, 7 Mar 2014 09:38:31 -0800
+Message-ID: <CALnjE+pkTyHycgH+xZ+Uv=SXmoWmeUJBYa6uqWjy0L_3xG3FZg@mail.gmail.com>
+Subject: Re: [PATCH] openvswitch: Orphan frags before sending to userspace via
+ Netlink to avoid guest stall
+From: Pravin Shelar <pshelar@nicira.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+Cc: Jesse Gross <jesse@nicira.com>, Thomas Graf <tgraf@redhat.com>,
+        "dev@openvswitch.org" <dev@openvswitch.org>,
+        xen-devel@lists.xenproject.org, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Mar 7, 2014 at 4:29 AM, Zoltan Kiss <zoltan.kiss@citrix.com> wrote:
+> On 07/03/14 04:46, Pravin Shelar wrote:
+>>
+>> On Thu, Mar 6, 2014 at 9:09 AM, Zoltan Kiss <zoltan.kiss@citrix.com>
+>> wrote:
+>>>
+>>> Do you have any feedback on this? I'm also adding KVM list as they might
+>>> be
+>>> interested in this.
+>>>
+>>> Zoli
+>>>
+>>>
+>>> On 28/02/14 19:16, Zoltan Kiss wrote:
+>>>>
+>>>>
+>>>> The kernel datapath now switched to zerocopy Netlink messages, but that
+>>>> also
+>>>> means that the pages on frags array are sent straight to userspace. If
+>>>> those
+>>>> pages came outside the kernel, we have to swap them out with local
+>>>> copies.
+>>>>
+>>>> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+>>
+>>
+>> I do not think this is required, netlink zero copy only maps
+>> pre-allocated buffers to user-space.
+>
+> How do you mean "pre-allocated"? By who?
+>
+by netlink, ref. netlink_alloc_skb().
 
---xjamM5M9kpPM/bcu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-
-> > Another question is... why do we need to check pd->dev.of_node here?
-> > If CONFIG_RESET_CONTROLLER is set, we always try to get the reset
-> > controller node, so drv_data->rstc is either going to be a valid
-> > pointer, or it's going to be an error pointer - neither
-> > reset_control_get() nor devm_reset_control_get return NULL.
->=20
-> Hmmm, right. I'll fix this in a later version.
->=20
-> Wolfram, do you want me to respin the patch making use of
-> reset_get_optional introduced by Philip in its other mail?
-
-I think I'd prefer both issues fixed with one patch like in "fixing up
-reset controller handling".
-
-And you might want to give a Tested- or Reviewed-by tag to Philipp's
-patch if you are going to use it.
-
-
---xjamM5M9kpPM/bcu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTGgINAAoJEBQN5MwUoCm2BNYP/RDKi/NN9cXVrxTXi/wtuXU6
-acD/7rFzVmF/C+uGEnYTx8Gck5R/um1WG/p9XXxms5D4zfeXqlzwJDuYHAXaR8pm
-onlfPvQ3I4rFkD/wLl4nmpJGSs2CO23xZbSSvZFMBX4e8ckMNBkT5QHEE50Zsz/H
-Gg/Kp3ykLcYK2QQKJZ5qHRMyGgCESi1/cYcWQFKO4GSNCiyboP+uDyTS7cHmEczx
-awuG1U9A66Jnhak51LonOWKMDPvYwUC+GG8BFe32DzxTbWQTLkNHhDoOTI+NRXtr
-Kzp6bYvyhbzLXpZrMeOr+hr9SRgvA2WF0zrRimYQsMfQA6rVU7Wmhty3ycKfXXw7
-PyBRpG9fgrnDB9mePhWmzuectsizdgwxkWnlhULvXuRdEsdW+ZyIr5XGeszVJ1Cf
-nCMTBd0ADdShsIJJ8XyaPtL65nVQ8t2BaRmBU6FyCIIyswiiFaQZ9VWFtEAvY2Wz
-wGmU6F+NpB8iFZFdnWLW6J4cU5hxrqlisuQH7LRvhh2guSekpWAEHTFpeI1gfpIm
-RSKeu6flBtuXz2nBLTnoxy7jj6AZ3Yykto4jveNED4hVB34jaD4Z+BPkT4ng/BBr
-jpoNODuySLROhFglyExTLaLn4fkCNutJBaItwQvW+UzxpcljM/VMuCJucA/YHpDO
-2z9QVJJZqX+Ralypdrye
-=V+vU
------END PGP SIGNATURE-----
-
---xjamM5M9kpPM/bcu--
+> As far as I've seen the skb in this function came straight from the device
+> (vif in our case), and skb_zerocopy just copy the frags to user_skb, which
+> is sent to the userspace. Those frags contain pages from guest, and it's a
+> bad idea to pass them to userspace: e.g if userspace dies in the meantime,
+> what happens with them? Also, in Xen's case they are actually not mapped to
+> userspace, so accessing them can lead to garbage.
+>
+AFAIK Netlink does not handle skb-frags for zero-copy case.
