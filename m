@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752337AbaCGDlP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 22:41:15 -0500
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:41327 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751130AbaCGDlM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 22:41:12 -0500
+	id S1752083AbaCGDkn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 22:40:43 -0500
+Received: from ozlabs.org ([203.10.76.45]:49209 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751710AbaCGDkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 22:40:41 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        Jean Delvare <khali@linux-fr.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>, Jon Mason <jon.mason@intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [RFC] Taint the kernel for unsafe module options
+In-Reply-To: <20140306075835.GC17001@phenom.ffwll.local>
+References: <1394011994-30604-1-git-send-email-daniel.vetter@ffwll.ch> <87r46gywul.fsf@rustcorp.com.au> <20140306075835.GC17001@phenom.ffwll.local>
+User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
+Date: Fri, 07 Mar 2014 13:58:21 +1030
+Message-ID: <8738iuznze.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-In-Reply-To: <53169304.9080002@wwwdotorg.org>
-References: <1393330950-7283-1-git-send-email-heikki.krogerus@linux.intel.com>
-	<1393330950-7283-4-git-send-email-heikki.krogerus@linux.intel.com>
-	<530D218E.9010007@wwwdotorg.org>
-	<CACRpkdZF4-rWs1WkOp3t0x77fgSCE71E=wdrxiDuGZ8eBu_p_Q@mail.gmail.com>
-	<53168976.7000008@wwwdotorg.org>
-	<CACRpkdYfQoDmPX0He4J2Sn2wgQn2hHoHyPqnStLRVqrvi=M+-w@mail.gmail.com>
-	<53169304.9080002@wwwdotorg.org>
-Date: Fri, 7 Mar 2014 11:41:11 +0800
-Message-ID: <CACRpkdaYuZ5bXo7djOv04oyHPAFbO=pKfR7L7UBY+kZqZUHfmQ@mail.gmail.com>
-Subject: Re: [PATCHv2 3/5] net: rfkill: gpio: remove gpio names
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "David S. Miller" <davem@davemloft.net>, Chen-Yu Tsai <wens@csie.org>,
-        Rhyland Klein <rklein@nvidia.com>, Marc Dietrich <marvin24@gmx.de>,
-        Arnd Bergmann <arnd@arndb.de>, Alexandre Courbot <gnurou@gmail.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 5, 2014 at 10:59 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 03/04/2014 07:37 PM, Linus Walleij wrote:
->> On Wed, Mar 5, 2014 at 10:18 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->>> On 03/04/2014 06:43 PM, Linus Walleij wrote:
->>
->>>> If I understand the situation correctly it's like ACPI does not have named
->>>> GPIOs so keeping specifying this in DT GPIO bindings is counter-productive
->>>> to the work of abstracting the access to GPIO handlers so that drivers
->>>> need not know whether ACPI or DT is used for describing the hardware.
->>>
->>> For devices that already have both ACPI and DT bindings, we can't
->>> pretend they can be the same; they are already potentially different. We
->>> simply need to parse DT and ACPI differently, since that's the sway
->>> their bindings are defined.
->>>
->>> For any devices that don't have both ACPI and DT bindings, I agree we
->>> should certainly strive to make any new bindings aligned so we don't
->>> have to deal with this for them.
->>>
->>> However, we can't change the past.
->>
->> Yeah, right, so for this very driver there are no bindings defined (yet)
->> and the only device tree I can find referencing it is the Tegra20-paz00
->> and it just use gpios = <>;
->>
->> So in this case I think this patch is the right way forward, but I admit
->> I'm really uncertain in the general case.
+Daniel Vetter <daniel@ffwll.ch> writes:
+> On Thu, Mar 06, 2014 at 11:19:54AM +1030, Rusty Russell wrote:
+>> Daniel Vetter <daniel.vetter@ffwll.ch> writes:
+>> > Users just love to set random piles of options since surely enabling
+>> > all the experimental stuff helps. Later on we get bug reports because
+>> > it all fell apart.
+>> >
+>> > Even more fun when it's labelled a regression when some change only
+>> > just made the feature possible (e.g. stolen memory fixes suddenly
+>> > making fbc possible).
+>> >
+>> > Make it clear that users are playing with fire here. In drm/i915 all
+>> > these options follow the same pattern of using -1 as the per-machine
+>> > default, and any other value being used for force the parameter.
+>> >
+>> > Adding a pile of cc's to solicit input and figure out whether this
+>> > would be generally useful - this quick rfc is just for drm/i915.
+>> 
+>> If this is a good idea, you can write a macro module_param_unsafe_named
+>> which is a general wrapper.
 >
-> If there are no bindings defined at all yet, then we can define both DT
-> and ACPI bindings to use name-based GPIOs. Index-based lookups aren't a
-> good way forward.
+> For this to work I need to somehow store the safe default value somewhere.
+> since with bools or strings there really isn't such a thing, even less
+> than with integers where my fairly abitrary -1 choice is already
+> restricting. But I don't have a good idea how to do that, since creating a
+> local static struct in the macro to store the default + the pointer to the
+> storage location feels a bit ugly.
 
-After Mark clarifying that ACPI is going to have named GPIOs I'm
-totally aligned on this, so OK!
+I was thinking that if use the parameter, they get marked unsafe.  If
+they use it to set it to the default, Don't Do That.
 
-Yours,
-Linus Walleij
+>> > -module_param_named(modeset, i915.modeset, int, 0400);
+>> 
+>> Wait, WTF?  Why do you prefix i915 here manually?  That means that
+>> the commandline parameter would be "i915.i915.modeset=" and the
+>> module parameter would be "i915.modeset="...
+>
+> Nope, this is the named macro. The name of the param is the first
+> parameter to the macro "modeset", "i915.modeset" is just the variable
+> it'll get stored in. We've specifically switched to the _named version to
+> avoid ugly i915.i915* paramters ;-)
+
+Oh, oops, my bad reading!  I'll shut up now :)
+
+Thanks,
+Rusty.
