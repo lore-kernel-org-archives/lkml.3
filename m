@@ -1,66 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088AbaCGQtL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 11:49:11 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:56886 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752191AbaCGQtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 11:49:09 -0500
-Message-ID: <5319F87B.8080400@ti.com>
-Date: Fri, 7 Mar 2014 22:18:59 +0530
-From: Balaji T K <balajitk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1754112AbaCGQti (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 11:49:38 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:42594 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752191AbaCGQtg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 11:49:36 -0500
+Date: Fri, 7 Mar 2014 11:49:35 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: David Laight <David.Laight@ACULAB.COM>
+cc: "'Mathias Nyman'" <mathias.nyman@linux.intel.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "sarah.a.sharp@linux.intel.com" <sarah.a.sharp@linux.intel.com>,
+        stable <stable@vger.kernel.org>
+Subject: RE: [PATCH 2/2] Revert "USBNET: ax88179_178a: enable tso if usb host
+ supports sg dma"
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D0F6D78EA@AcuExch.aculab.com>
+Message-ID: <Pine.LNX.4.44L0.1403071139320.1246-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@ingics.com>
-CC: Chris Ball <chris@printf.net>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>,
-        Florian Vaussard <florian.vaussard@epfl.ch>, Stefan Roese <sr@denx.de>,
-        <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>
-Subject: Re: [PATCH 1/3] regulator: pbias: Fix is_enabled callback implementation
-References: <1394206897.17867.1.camel@phoenix>
-In-Reply-To: <1394206897.17867.1.camel@phoenix>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 07 March 2014 09:11 PM, Axel Lin wrote:
-> The is_enabled implementation is wrong in some cases:
-> e.g. for pbias_mmc_omap5: emable_mask is : BIT(27) | BIT(25) | BIT(26)
-Hi Axel,
+On Fri, 7 Mar 2014, David Laight wrote:
 
-s/emable_mask/enable_mask
+> From: Alan Stern 
+> > On Fri, 7 Mar 2014, David Laight wrote:
+> > 
+> > > From: Mathias Nyman
+> > > > This reverts commit 3804fad45411b48233b48003e33a78f290d227c8.
+> > > >
+> > > > This commit, together with commit 247bf557273dd775505fb9240d2d152f4f20d304
+> > > > "xhci 1.0: Limit arbitrarily-aligned scatter gather." were
+> > > > origially added to get xHCI 1.0 hosts and usb ethernet ax88179_178a devices
+> > > > working together with scatter gather. xHCI 1.0 hosts pose some requirement on how transfer
+> > > > buffers are aligned, setting this requirement for 1.0 hosts caused USB 3.0 mass
+> > > > storage devices to fail more frequently.
+> > >
+> > > This patch doesn't need to be reverted.
+> > 
+> > Yes, it does.
+> > 
+> > > Provided the xhci driver doesn't set the flag to say that arbitrary scatter
+> > > gather is supported (ie usb_device_no_sg_constraint(dev->udev)) is false)
+> > > the ax88179_178a driver won't request transmits that need fragmenting.
+> > 
+> > True.  But xhci-hcd _will_ set the flag, because of patch 1 in this
+> > series.  In other words, patch 1 makes patch 2 necessary.
+> 
+> I was reading patch 2 first.
+> It would seem to be better to modify patch 1 - so it doesn't set the flag.
+> Then the changes are limited to the usb tree, and the change to net wouldn't
+> need to be reapplied in order to test scatter-gather when it is properly fixed.
 
-> However, pbias_regulator_enable() only sets BIT(26) | BIT(22) bits.
+> The point is that the no_sg_constraint was added in order to allow
+> the ax88179_178a driver to send arbitrarily aligned transfers.
+> Nothing else looks at it (well didn't when I scanned the tree a while back).
+>
+> In effect all the other transfer requests were assumed to be suitably
+> aligned.   
+>
+> The check that caused things to fail was the one added to xhci relatively
+> recently that verified the alignment of the fragments.
 
-You mixed up enable_mask of omap5 with .enable of omap4 :-)
-above comment should be
-"However, pbias_regulator_enable() only sets BIT(27) | BIT(26) bits"
-Other than that
-Acked-by: Balaji T K <balajitk@ti.com>
+(Actually the check was added to usbcore, not to xhci-hcd.)
 
-> So is_enabled callback will always return false in this case.
-> Fix the logic to compare the register value with info->enable rather than
-> info->enable_mask.
->
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> ---
->   drivers/regulator/pbias-regulator.c | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/regulator/pbias-regulator.c b/drivers/regulator/pbias-regulator.c
-> index ded3b35..d89a1d8 100644
-> --- a/drivers/regulator/pbias-regulator.c
-> +++ b/drivers/regulator/pbias-regulator.c
-> @@ -108,7 +108,7 @@ static int pbias_regulator_is_enable(struct regulator_dev *rdev)
->
->   	regmap_read(data->syscon, data->pbias_reg, &value);
->
-> -	return (value & info->enable_mask) == info->enable_mask;
-> +	return (value & info->enable_mask) == info->enable;
->   }
->
->   static struct regulator_ops pbias_regulator_voltage_ops = {
->
+The _real_ problem here seems to be that "no_sg_constraint" is
+ambiguous.  Originally it was meant to refer to the constraint that all
+SG elements except the last must be a multiple of the maxpacket size.  
+For that purpose, the check added to usbcore was entirely appropriate,
+as was setting the flag in xhci-hcd.
+
+But now it turns out that the ax88179 driver is violating a _different_
+constraint: that Link TRBs must occur only at 1-KB boundaries.  The 
+"no_sg_constraint" flag was never meant to describe this.  In other 
+words, the flag issue is separate from the problem facing ax88179.
+
+The appropriate way to address this new problem for the future is to
+remove the second constraint by adding correct support for TD
+fragments into xhci-hcd.  The appropriate way to address the problem
+right now in the -stable kernels is to prevent ax88179 from using SG -- 
+and not by abusing the "no_sg_constraint" flag, which is not directly 
+related to the TD fragment problem.
+
+Alan Stern
 
