@@ -1,56 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752174AbaCGDEY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 22:04:24 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:22224 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751266AbaCGDEV (ORCPT
+	id S1752778AbaCGDFE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 22:05:04 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:43381 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752729AbaCGDFA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 22:04:21 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX188U9bT8JHR7UemC001JFxGDNzPRBwuIxs=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 1A41C53C651
-Date: Thu, 6 Mar 2014 22:03:59 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Yoshiyuki Ito <yoshiyuki.ito.ub@renesas.com>
-Cc: linus.walleij@linaro.org, mark.rutland@arm.com, andrew@lunn.ch,
-        linux@arm.linux.org.uk, pawel.moll@arm.com, linux-doc@vger.kernel.org,
-        ijc+devicetree@hellion.org.uk, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, robh+dt@kernel.org, rob@landley.net,
-        galak@codeaurora.org, gregory.clement@free-electrons.com,
-        linux-arm-kernel@lists.infradead.org, sebastian.hesselbarth@gmail.com
-Subject: Re: [PATCH 00/10] pinctrl: mvebu: remove hard-coded addresses from
- Dove pinctrl
-Message-ID: <20140307030359.GO1872@titan.lakedaemon.net>
-References: <1393231382-11078-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <20140224181023.GA1010@titan.lakedaemon.net>
- <CACRpkdZ+YGTyDj6i8c198MdRtz3GY-YBmVO9LysPCcmT4EC0cg@mail.gmail.com>
- <20140226000940.GF1872@titan.lakedaemon.net>
- <CACRpkdYQa2BG_qxf5zY=7rks6O31ZF-BX0af3_u1MOgwfwxFSQ@mail.gmail.com>
- <20140226145345.GG1872@titan.lakedaemon.net>
- <CACRpkdZRJG-TzN4c3NSH9PqcQzpo6EbEn5_bM-P3sh4_vSjtaA@mail.gmail.com>
- <20140307021633.GN1872@titan.lakedaemon.net>
- <20140307.115709.525573020409548427.yoshiyuki.ito.ub@renesas.com>
+	Thu, 6 Mar 2014 22:05:00 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s2734v9U029717, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net-next 5/7] r8152: support rx checksum
+Date: Fri, 7 Mar 2014 11:04:38 +0800
+Message-ID: <1394161480-2918-6-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1394161480-2918-1-git-send-email-hayeswang@realtek.com>
+References: <1393934464-23675-1-git-send-email-hayeswang@realtek.com>
+ <1394161480-2918-1-git-send-email-hayeswang@realtek.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140307.115709.525573020409548427.yoshiyuki.ito.ub@renesas.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yoshiyuki,
+Support hw rx checksum for TCP and UDP packets.
 
-Umm, I'm pretty sure you didn't send this to who you thought you did. :)
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/usb/r8152.c | 41 +++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 39 insertions(+), 2 deletions(-)
 
-thx,
+diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+index 08f4e870..8bb8782 100644
+--- a/drivers/net/usb/r8152.c
++++ b/drivers/net/usb/r8152.c
+@@ -467,8 +467,17 @@ enum rtl8152_flags {
+ struct rx_desc {
+ 	__le32 opts1;
+ #define RX_LEN_MASK			0x7fff
++
+ 	__le32 opts2;
++#define RD_UDP_CS			(1 << 23)
++#define RD_TCP_CS			(1 << 22)
++#define RD_IPV4_CS			(1 << 19)
++
+ 	__le32 opts3;
++#define IPF				(1 << 23) /* IP checksum fail */
++#define UDPF				(1 << 22) /* UDP checksum fail */
++#define TCPF				(1 << 21) /* TCP checksum fail */
++
+ 	__le32 opts4;
+ 	__le32 opts5;
+ 	__le32 opts6;
+@@ -1404,6 +1413,32 @@ out_tx_fill:
+ 	return ret;
+ }
+ 
++static u8 r8152_rx_csum(struct r8152 *tp, struct rx_desc *rx_desc)
++{
++	u8 checksum = CHECKSUM_NONE;
++	u32 opts2, opts3;
++
++	if (tp->version == RTL_VER_01)
++		goto return_result;
++
++	opts2 = le32_to_cpu(rx_desc->opts2);
++	opts3 = le32_to_cpu(rx_desc->opts3);
++
++	if (opts2 & RD_IPV4_CS) {
++		if (opts3 & IPF)
++			checksum = CHECKSUM_NONE;
++		else if ((opts2 & RD_UDP_CS) && (opts3 & UDPF))
++			checksum = CHECKSUM_NONE;
++		else if ((opts2 & RD_TCP_CS) && (opts3 & TCPF))
++			checksum = CHECKSUM_NONE;
++		else
++			checksum = CHECKSUM_UNNECESSARY;
++	}
++
++return_result:
++	return checksum;
++}
++
+ static void rx_bottom(struct r8152 *tp)
+ {
+ 	unsigned long flags;
+@@ -1458,6 +1493,8 @@ static void rx_bottom(struct r8152 *tp)
+ 				stats->rx_dropped++;
+ 				goto find_next_rx;
+ 			}
++
++			skb->ip_summed = r8152_rx_csum(tp, rx_desc);
+ 			memcpy(skb->data, rx_data, pkt_len);
+ 			skb_put(skb, pkt_len);
+ 			skb->protocol = eth_type_trans(skb, netdev);
+@@ -3103,8 +3140,8 @@ static int rtl8152_probe(struct usb_interface *intf,
+ 	netdev->netdev_ops = &rtl8152_netdev_ops;
+ 	netdev->watchdog_timeo = RTL8152_TX_TIMEOUT;
+ 
+-	netdev->features |= NETIF_F_IP_CSUM;
+-	netdev->hw_features = NETIF_F_IP_CSUM;
++	netdev->features |= NETIF_F_RXCSUM | NETIF_F_IP_CSUM;
++	netdev->hw_features = NETIF_F_RXCSUM | NETIF_F_IP_CSUM;
+ 
+ 	SET_ETHTOOL_OPS(netdev, &ops);
+ 
+-- 
+1.8.4.2
 
-Jason.
-
-On Fri, Mar 07, 2014 at 11:57:09AM +0900, Yoshiyuki Ito wrote:
-> 
-> ... something which might have been private but I don't speak Japanese
-> (?) ...
