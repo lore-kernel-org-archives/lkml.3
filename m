@@ -1,78 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754002AbaCGPSa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 10:18:30 -0500
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:57643 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753219AbaCGPSY (ORCPT
+	id S1754019AbaCGPSt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 10:18:49 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:33839 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753219AbaCGPSp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 10:18:24 -0500
-Date: Fri, 7 Mar 2014 10:18:20 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: laijs@cn.fujitsu.com, linux-kernel@vger.kernel.org,
-        linux1394-devel@lists.sourceforge.net
-Subject: Re: [PATCH 4/9] firewire: don't use PREPARE_DELAYED_WORK
-Message-ID: <20140307151820.GD30778@htj.dyndns.org>
-References: <1392929071-16555-1-git-send-email-tj@kernel.org>
- <1392929071-16555-5-git-send-email-tj@kernel.org>
- <20140221214548.4dd6373c@stein>
- <20140305223432.61b79278@stein>
+	Fri, 7 Mar 2014 10:18:45 -0500
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Mathias Nyman'" <mathias.nyman@linux.intel.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "sarah.a.sharp@linux.intel.com" <sarah.a.sharp@linux.intel.com>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        stable <stable@vger.kernel.org>
+Subject: RE: [PATCH 1/2] Revert "xhci 1.0: Limit arbitrarily-aligned scatter
+ gather."
+Thread-Topic: [PATCH 1/2] Revert "xhci 1.0: Limit arbitrarily-aligned
+ scatter gather."
+Thread-Index: AQHPOhWgbeh2OUSVo0Cyj0vVCN9CQ5rVu4bw
+Date: Fri, 7 Mar 2014 15:18:06 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F6D771D@AcuExch.aculab.com>
+References: <1394204818-25323-1-git-send-email-mathias.nyman@linux.intel.com>
+ <1394204818-25323-2-git-send-email-mathias.nyman@linux.intel.com>
+In-Reply-To: <1394204818-25323-2-git-send-email-mathias.nyman@linux.intel.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140305223432.61b79278@stein>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 05, 2014 at 10:34:32PM +0100, Stefan Richter wrote:
-> On Feb 21 Stefan Richter wrote:
-> > On Feb 20 Tejun Heo wrote:
-> > > PREPARE_[DELAYED_]WORK() are being phased out.  They have few users
-> > > and a nasty surprise in terms of reentrancy guarantee as workqueue
-> > > considers work items to be different if they don't have the same work
-> > > function.
-> > > 
-> > > firewire core-device and sbp2 have been been multiplexing work items
-> > > with multiple work functions.  Introduce fw_device_workfn() and
-> > > sbp2_lu_workfn() which invoke fw_device->workfn and
-> > > sbp2_logical_unit->workfn respectively and always use the two
-> > > functions as the work functions and update the users to set the
-> > > ->workfn fields instead of overriding work functions using
-> > > PREPARE_DELAYED_WORK().
-> > > 
-> > > It would probably be best to route this with other related updates
-> > > through the workqueue tree.
-> > > 
-> > > Compile tested.
-> > > 
-> > > Signed-off-by: Tejun Heo <tj@kernel.org>
-> > > Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
-> > > Cc: linux1394-devel@lists.sourceforge.net
-> > 
-> > Acked-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
-> 
-> Actually, there is something missing in the changelog:
-> 
->    This fixes a variety of possible regressions since a2c1c57be8d9
->    "workqueue: consider work function when searching for busy work items"
->    due to which fw_workqueue lost its required non-reentrancy property.
-> 
->    Cc: stable@kernel.org # v3.9+
->    Cc: stable@kernel.org # v3.8.2+
->    Cc: stable@kernel.org # v3.4.60+
->    Cc: stable@kernel.org # v3.2.40+
-> 
-> Tejun, will you be adding these and push the patch at the latest before
-> v3.15-rc1?  Otherwise, I will take over the patch and push it still this
-> week, i.e. before v3.14-rc6.
+From: Mathias Nyman
+> This reverts commit 247bf557273dd775505fb9240d2d152f4f20d304.
 
-I'll push this one through wq/for-3.14-fixes and route the others
-through wq/for-3.15.
+You need to revert further.
+Just don’t set hcd->self.no_sg_constraint ever - since it just
+doesn't work.
+That will stop the ax88179_178a driver sending fragmented packets.
 
-Thanks.
+With the check for aligned non-terminal fragments removed the 
+code will be as bad as the earlier releases.
 
--- 
-tejun
+> This commit, together with commit 3804fad45411b48233b48003e33a78f290d227c8
+> "USBNET: ax88179_178a: enable tso if usb host supports sg dma" were
+> origially added to get xHCI 1.0 hosts and usb ethernet ax88179_178a devices
+> working together with scatter gather. xHCI 1.0 hosts pose some requirement on how transfer
+> buffers are aligned, setting this requirement for 1.0 hosts caused USB 3.0 mass
+> storage devices to fail more frequently.
+> 
+> USB 3.0 mass storage devices used to work before 3.14-rc1.  Theoretically,
+> the TD fragment rules could have caused an occasional disk glitch.
+> Now the devices *will* fail, instead of theoretically failing.
+> From a user perspective, this looks like a regression; the USB device obviously
+> fails on 3.14-rc1, and may sometimes silently fail on prior kernels.
+> 
+> The proper soluition is to implement the TD fragment rules required, but for now
+> this patch needs to be reverted to get USB 3.0 mass storage devices working at the
+> level they used to.
+> 
+> Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+> Cc: stable <stable@vger.kernel.org>
+> ---
+>  drivers/usb/host/xhci.c | 14 +++-----------
+>  1 file changed, 3 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+> index 6fe577d..924a6cc 100644
+> --- a/drivers/usb/host/xhci.c
+> +++ b/drivers/usb/host/xhci.c
+> @@ -4733,6 +4733,9 @@ int xhci_gen_setup(struct usb_hcd *hcd, xhci_get_quirks_t get_quirks)
+>  	/* Accept arbitrarily long scatter-gather lists */
+>  	hcd->self.sg_tablesize = ~0;
+> 
+> +	/* support to build packet from discontinuous buffers */
+> +	hcd->self.no_sg_constraint = 1;
+> +
+
+Don't add the above - it only looked at by the usbnet code
+and in particular the ax88179_178a driver
+
+>  	/* XHCI controllers don't stop the ep queue on short packets :| */
+>  	hcd->self.no_stop_on_short = 1;
+> 
+> @@ -4757,14 +4760,6 @@ int xhci_gen_setup(struct usb_hcd *hcd, xhci_get_quirks_t get_quirks)
+>  		/* xHCI private pointer was set in xhci_pci_probe for the second
+>  		 * registered roothub.
+>  		 */
+> -		xhci = hcd_to_xhci(hcd);
+> -		/*
+> -		 * Support arbitrarily aligned sg-list entries on hosts without
+> -		 * TD fragment rules (which are currently unsupported).
+> -		 */
+> -		if (xhci->hci_version < 0x100)
+> -			hcd->self.no_sg_constraint = 1;
+> -
+>  		return 0;
+>  	}
+> 
+> @@ -4793,9 +4788,6 @@ int xhci_gen_setup(struct usb_hcd *hcd, xhci_get_quirks_t get_quirks)
+>  	if (xhci->hci_version > 0x96)
+>  		xhci->quirks |= XHCI_SPURIOUS_SUCCESS;
+> 
+> -	if (xhci->hci_version < 0x100)
+> -		hcd->self.no_sg_constraint = 1;
+> -
+>  	/* Make sure the HC is halted. */
+>  	retval = xhci_halt(xhci);
+>  	if (retval)
+> --
+> 1.8.1.2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
