@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689AbaCGS4X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 13:56:23 -0500
-Received: from mga11.intel.com ([192.55.52.93]:31185 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751138AbaCGS4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 13:56:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,609,1389772800"; 
-   d="scan'208";a="488097994"
-Message-ID: <531A164B.8040402@linux.intel.com>
-Date: Fri, 07 Mar 2014 10:56:11 -0800
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752866AbaCGS4j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 13:56:39 -0500
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:59594 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138AbaCGS4i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 13:56:38 -0500
 MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Ingo Molnar <mingo@kernel.org>, Borislav Petkov <bp@alien8.de>,
-        Yinghai Lu <yhlu.kernel@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [qemu64,+smep,+smap] WARNING: CPU: 1 PID: 0 at arch/x86/kernel/cpu/amd.c:220
- init_amd()
-References: <20140307015833.GA10048@localhost> <53195336.9080606@linux.intel.com> <20140307055035.GA5230@localhost>
-In-Reply-To: <20140307055035.GA5230@localhost>
+In-Reply-To: <1394176888.1018.3.camel@wall-e.seibold.net>
+References: <20140307013833.GD8427@localhost> <1394176888.1018.3.camel@wall-e.seibold.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 7 Mar 2014 10:56:17 -0800
+Message-ID: <CALCETrVCwZWvd78urw+O4zD3PoNZTQxg8FMzTrUi4+5w9rC5=A@mail.gmail.com>
+Subject: Re: [x86, vdso] BUG: unable to handle kernel paging request at d34bd000
+To: Stefani Seibold <stefani@seibold.net>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/2014 09:50 PM, Fengguang Wu wrote:
->>
->> Unfortunately these things are hard to fix in Qemu.
-> 
-> OK. As an alternative, is it possible to pass one of the below CPUID flags in
-> the Qemu command line, so as to quiet the warning?
-> 
+On Thu, Mar 6, 2014 at 11:21 PM, Stefani Seibold <stefani@seibold.net> wrote:
+> Hi Fengguang,
+>
+> i have build a kernel with the config, but my kvm is unable to start it.
+> I will try to find a way to test your kernek config.
+>
+> One thing is the crash point:
+>
+> The function sysenter_setup was modified by Andy, maybe he has an idea
+> what fails.
 
-I don't see the AMD SMP CPUID flag in there.
+*sigh*
 
-Boris, could you help?  The problem is that "qemu -cpu
-qemu64,+smep,+smap" identifies as an AMD CPU which triggers a
-warning/taint because the SMP flag isn't set.
+My host kernel is currently fscked up and won't run KVM.  Also, I want
+to confirm that I'm reproducing exactly what you're seeing, and I
+think it depends on the toolchain.  Can you (Fenguang) do:
 
-> 
-> Recognized CPUID flags:
->   pbe ia64 tm ht ss sse2 sse fxsr mmx acpi ds clflush pn pse36 pat cmov mca pge mtrr sep apic cx8 mce pae msr tsc pse de vme fpu
->   hypervisor rdrand f16c avx osxsave xsave aes tsc-deadline popcnt movbe x2apic sse4.2|sse4_2 sse4.1|sse4_1 dca pcid pdcm xtpr cx16 fma cid ssse3 tm2 est smx vmx ds_cpl monitor dtes64 pclmulqdq|pclmuldq pni|sse3
->   smap adx rdseed rtm invpcid erms bmi2 smep avx2 hle bmi1 fsgsbase
->   3dnow 3dnowext lm|i64 rdtscp pdpe1gb fxsr_opt|ffxsr mmxext nx|xd syscall
->   perfctr_nb perfctr_core topoext tbm nodeid_msr tce fma4 lwp wdt skinit xop ibs osvw 3dnowprefetch misalignsse sse4a abm cr8legacy extapic svm cmp_legacy lahf_lm
->   pmm-en pmm phe-en phe ace2-en ace2 xcrypt-en xcrypt xstore-en xstore
->   kvm_pv_eoi kvm_steal_time kvm_asyncpf kvmclock kvm_mmu kvm_nopiodelay kvmclock
->   pfthreshold pause_filter decodeassists flushbyasid vmcb_clean tsc_scale nrip_save svm_lock lbrv npt
-> 
+$ ls -l arch/x86/vdso/vdso32*.so
+-rwxrwxr-x. 1 luto luto 4096 Mar  7 10:19 arch/x86/vdso/vdso32-int80.so
+-rwxrwxr-x. 1 luto luto 4116 Mar  7 10:19 arch/x86/vdso/vdso32-sysenter.so
 
-	-hpa
+(Of course, triggering this depends on which image gets selected.)
 
+Note that we have a .so file that exceeds 4k, i.e. one page.  Then
+read the relevant code and wonder what everyone was smoking when they
+wrote it.  There are so many buffer overflows, screwed up
+initializations, unnecessary and incorrect copies, etc, that I don't
+even want to speculate on what the first failure will be when the
+image is bigger than a page.
 
+It's easy enough to fix, but someone should figure out what the impact
+will be on the compat vdso case.
+
+I wonder how hard it would be to change the compat vdso do be a dummy
+image a la the x86_64 fake vsyscall page so that old code can keep
+working (maybe with a performance hit) and new code can use a sane
+image.
+
+--Andy
