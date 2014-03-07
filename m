@@ -1,455 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752802AbaCGJv2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 04:51:28 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:56803 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752081AbaCGJvV (ORCPT
+	id S1752900AbaCGJvn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 04:51:43 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:60034 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752466AbaCGJvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 04:51:21 -0500
-Message-ID: <8B88CF1FBC3B4B77AE46AE9CEEC28C5E@local.st.by>
-From: "Victor Miasnikov" <vvm@tut.by>
-To: "Jeff Leung" <jleung@v10networks.ca>,
-        "Brian Wong" <draconicpenguin1@yahoo.com>,
-        "KY Srinivasan" <kys@microsoft.com>, <linux-kernel@vger.kernel.org>
-Cc: "Abhishek Gupta \(LIS\)" <abgupta@microsoft.com>
-References: <531813B4.7060205@yahoo.com> <53181489.6040000@yahoo.com> <B0EFDC0724C0400DBC0931FD129D1859@local.st.by> <921422bfecda43e9baaa42077509a61d@BY2PR03MB299.namprd03.prod.outlook.com> <A1DA03FDF9C54AD3BCD66D02EA8CA68A@local.st.by> <5318BA6F.3080604@yahoo.com> <A70AC0C1B7E7FD478A6BF19705461AA0014B05@IMBER.smb.curriegrad2004.ca>
-Subject: Re: Linux does not use more than the startup RAM under Hyper-V with dynamic memory enabled RE: [PATCH 2/2] Drivers: hv: balloon: Online the hot-added memory "in context" Re: [PATCH 1/1] Drivers: hv:
-Date: Fri, 7 Mar 2014 12:51:17 +0300
+	Fri, 7 Mar 2014 04:51:36 -0500
+X-AuditID: 9c93017d-b7c89ae000006ae1-23-531996a5dbb9
+Date: Fri, 7 Mar 2014 18:51:34 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Nitin Gupta <ngupta@vflare.org>, Jerome Marchand <jmarchan@redhat.com>
+Subject: Re: [PATCH] zram: propagate error to user
+Message-ID: <20140307095134.GG3787@bbox>
+References: <1394157378-7718-1-git-send-email-minchan@kernel.org>
+ <20140307092045.GA2571@swordfish.minsk.epam.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.3790.4548
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140307092045.GA2571@swordfish.minsk.epam.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Hello Sergey!
 
-VVM>>>>
-VVM>>>>  Question to Linux kernel team: may be patch
-VVM>>>> >>> [PATCH 2/2] Drivers: hv: balloon: Online the hot-added memory "in context"
-VVM>>>> can solve problems with dynamic memory hot add in Hyper-V VMs with Linux OS ?
-VVM>>>>
-K.Y.S>>>
-K.Y.S>>>  I will try to get my in-context onlining patches accepted upstream.
-K.Y.S>>>
+On Fri, Mar 07, 2014 at 12:20:45PM +0300, Sergey Senozhatsky wrote:
+> On (03/07/14 10:56), Minchan Kim wrote:
+> > When we initialized zcomp with single, we couldn't change
+> > max_comp_streams without zram reset but current interface doesn't
+> > show any error to user and even it changes max_comp_streams's value
+> > without any effect so it would make user very confusing.
+> > 
+> > This patch prevents max_comp_streams's change when zcomp was
+> > initialized as single zcomp and emit the error to user(ex, echo).
+> > 
+> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> > ---
+> >  Documentation/blockdev/zram.txt |  9 +++++----
+> >  drivers/block/zram/zcomp.c      | 10 +++++-----
+> >  drivers/block/zram/zcomp.h      |  4 ++--
+> >  drivers/block/zram/zram_drv.c   | 15 +++++++++++----
+> >  4 files changed, 23 insertions(+), 15 deletions(-)
+> > 
+> > diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
+> > index 2604ffed51db..0595c3f56ccf 100644
+> > --- a/Documentation/blockdev/zram.txt
+> > +++ b/Documentation/blockdev/zram.txt
+> > @@ -37,10 +37,11 @@ Note:
+> >  In order to enable compression backend's multi stream support max_comp_streams
+> >  must be initially set to desired concurrency level before ZRAM device
+> >  initialisation. Once the device initialised as a single stream compression
+> > -backend (max_comp_streams equals to 0) changing the value of max_comp_streams
+> > -will not take any effect, because single stream compression backend implemented
+> > -as a special case and does not support dynamic max_comp_streams. Only multi
+> > -stream backend supports dynamic max_comp_streams adjustment.
+> > +backend (max_comp_streams equals to 1), you will see error if you try to change
+> > +the value of max_comp_streams because single stream compression backend
+> > +implemented as a special case by lock overhead issue and does not support
+> > +dynamic max_comp_streams. Only multi stream backend supports dynamic
+> > +max_comp_streams adjustment.
+> >  
+> >  3) Select compression algorithm
+> >  	Using comp_algorithm device attribute one can see available and
+> > diff --git a/drivers/block/zram/zcomp.c b/drivers/block/zram/zcomp.c
+> > index 92a83df40a27..15fe6a27781b 100644
+> > --- a/drivers/block/zram/zcomp.c
+> > +++ b/drivers/block/zram/zcomp.c
+> > @@ -152,7 +152,7 @@ static void zcomp_strm_multi_release(struct zcomp *comp, struct zcomp_strm *zstr
+> >  }
+> >  
+> >  /* change max_strm limit */
+> > -static int zcomp_strm_multi_set_max_streams(struct zcomp *comp, int num_strm)
+> > +static bool zcomp_strm_multi_set_max_streams(struct zcomp *comp, int num_strm)
+> >  {
+> >  	struct zcomp_strm_multi *zs = comp->stream;
+> >  	struct zcomp_strm *zstrm;
+> > @@ -171,7 +171,7 @@ static int zcomp_strm_multi_set_max_streams(struct zcomp *comp, int num_strm)
+> >  		zs->avail_strm--;
+> >  	}
+> >  	spin_unlock(&zs->strm_lock);
+> > -	return 0;
+> > +	return true;
+> >  }
+> >  
+> >  static void zcomp_strm_multi_destroy(struct zcomp *comp)
+> > @@ -231,10 +231,10 @@ static void zcomp_strm_single_release(struct zcomp *comp,
+> >  	mutex_unlock(&zs->strm_lock);
+> >  }
+> >  
+> > -static int zcomp_strm_single_set_max_streams(struct zcomp *comp, int num_strm)
+> > +static bool zcomp_strm_single_set_max_streams(struct zcomp *comp, int num_strm)
+> >  {
+> >  	/* zcomp_strm_single support only max_comp_streams == 1 */
+> > -	return -ENOTSUPP;
+> > +	return 0;
+> >  }
+> 
+> IMHO, -ENOTSUPP for unsupported operation fits better than `false'.
+> yes, currently there are only two possible returns:
+> 	0 -- success
+> 	-ENOTSUPP - not supported operation
+> 
+> though, we can extend functions later and return additional codes, other
+> than `false' and `true'.
 
-VVM>>
-VVM>> Thanks! Feature dynamic memory hot add in Hyper-V VMs with Linux OS  -- is very usefull for Hyper-V sysadmins
-VVM> Stable work for this feature -- must be hi-priority task for developers
-VVM>
-  +
-B.W.>>
-B.W.>> So can I expect to see this patched by the next kernel version?
-B.W.>>
+Thing to expose to user isn't true and false but EINVAL.
 
+> 
+> for example, -E2BIG if user requested extremly large number of streams,
+> like 5000 streams.
 
-J.L.>
-J.L.> I would hold your breath on this one.
-J.L.>
+I'm not sure it's right example for E2BIG.
+When I read the comment, it says "argument list too long".
+Anyway, when I tried ENOTSUPP, echo doesn't show meaningful error to user
+and I dont' know it's casual err number for userspace.
+Pz, comment about that.
 
+> 
+> >  
+> >  static void zcomp_strm_single_destroy(struct zcomp *comp)
+> > @@ -283,7 +283,7 @@ ssize_t zcomp_available_show(const char *comp, char *buf)
+> >  	return sz;
+> >  }
+> >  
+> > -int zcomp_set_max_streams(struct zcomp *comp, int num_strm)
+> > +bool zcomp_set_max_streams(struct zcomp *comp, int num_strm)
+> >  {
+> >  	return comp->set_max_streams(comp, num_strm);
+> >  }
+> > diff --git a/drivers/block/zram/zcomp.h b/drivers/block/zram/zcomp.h
+> > index 8b8997f8613b..c59d1fca72c0 100644
+> > --- a/drivers/block/zram/zcomp.h
+> > +++ b/drivers/block/zram/zcomp.h
+> > @@ -46,7 +46,7 @@ struct zcomp {
+> >  
+> >  	struct zcomp_strm *(*strm_find)(struct zcomp *comp);
+> >  	void (*strm_release)(struct zcomp *comp, struct zcomp_strm *zstrm);
+> > -	int (*set_max_streams)(struct zcomp *comp, int num_strm);
+> > +	bool (*set_max_streams)(struct zcomp *comp, int num_strm);
+> >  	void (*destroy)(struct zcomp *comp);
+> >  };
+> >  
+> > @@ -64,5 +64,5 @@ int zcomp_compress(struct zcomp *comp, struct zcomp_strm *zstrm,
+> >  int zcomp_decompress(struct zcomp *comp, const unsigned char *src,
+> >  		size_t src_len, unsigned char *dst);
+> >  
+> > -int zcomp_set_max_streams(struct zcomp *comp, int num_strm);
+> > +bool zcomp_set_max_streams(struct zcomp *comp, int num_strm);
+> >  #endif /* _ZCOMP_H_ */
+> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> > index 7631ef0cbc41..eead9db9b100 100644
+> > --- a/drivers/block/zram/zram_drv.c
+> > +++ b/drivers/block/zram/zram_drv.c
+> > @@ -128,17 +128,24 @@ static ssize_t max_comp_streams_store(struct device *dev,
+> >  	struct zram *zram = dev_to_zram(dev);
+> >  
+> >  	if (kstrtoint(buf, 0, &num))
+> > -		return -EINVAL;
+> > +		goto out;
+> >  	if (num < 1)
+> > -		return -EINVAL;
+> > +		goto out;
+> > +
+> >  	down_write(&zram->init_lock);
+> >  	if (init_done(zram)) {
+> > -		if (zcomp_set_max_streams(zram->comp, num))
+> > +		if (!zcomp_set_max_streams(zram->comp, num)) {
+> >  			pr_info("Cannot change max compression streams\n");
+> > +			goto out_unlock;
+> > +		}
+> >  	}
+> > +
+> >  	zram->max_comp_streams = num;
+> 
+> agree, better to avoid this for a single stream.
 
-J.L.>
-J.L.> The maintainers of the memory subsystem has rejected the patch exposing certain functions
-J.L.>
-
-  When?
-
-Please resend to me message from maintainer with "reject"
-
-(
-  I again search in my archive of messages from this mail list, and not found message[s],
-about Brian Wong write
-)
-
-J.L.>
-J.L.> so hv_balloon can online the newly added memory to the system.
-J.L.> They think that having udev to handle such events is a better place.
-J.L.>
-
-  Look like You read "Bug 979257" . . .
-
-
-J.L.> And in case if somebody hasn't posted it here, this is the udev rule that KY has given to me in the past:
-==
-SUBSYSTEM=="memory", ACTION=="add", RUN+="/bin/sh -c '[ -f /sys$devpath/state ] && echo online > /sys$devpath/state'"
-==
-
-  Add to Youre collection of udev rules:
-
-http://social.technet.microsoft.com/Forums/windowsserver/en-US/21519c00-47d4-44a4-b2d3-64cd3098849e/rhel-70-centos-70-rhel-65-centos-65-rhel-64-centos-64-include-support-for-hyperv?forum=linuxintegrationservices
-==
-Michael Kelley:
-The VM crash   . . . ( VVM: some details skipped by me ) should be fixed by adding the udev rule. The udev rule looks
-like:
-SUBSYSTEM=="memory", ACTION=="add", DEVPATH=="/devices/system/memory/memory*[0-9]", TEST=="/sys$devpath/state",
-RUN+="/bin/sh -c 'echo online > /sys$devpath/state'"
-
-
-Nikolay Pushkarev:
-Following rule works slightly faster for me (assuming that memory0 bank always in online state):
-
-SUBSYSTEM=="memory", ACTION=="add", DEVPATH=="/devices/system/memory/memory[1-9]*", RUN+="/bin/cp
-/sys$devpath/../memory0/state /sys$devpath/state"
-==
-
-
- And another topic in russian:
-http://social.technet.microsoft.com/Forums/ru-RU/addd8d0a-fe38-4679-b0be-c355e12b5b32/centos-65-?forum=virtualizationru
-( But You can use Google translate service or vice versa )
-
-
-
-Best regards, Victor Miasnikov
-Blog:  http://vvm.blog.tut.by/
-
-
------ Original Message ----- 
-From: "Jeff Leung"
-To: "Brian Wong"; "Victor Miasnikov" ; "KY Srinivasan" ( zzzzzzzzzz (at) microsoft.com ); linux-kernel@vger.kernel.org
-Cc: "Abhishek Gupta (LIS)" ( zzzzzzzzz (at) microsoft.com)
-Sent: Thursday, March 06, 2014 9:25 PM
-Subject: RE: Linux does not use more than the startup RAM under Hyper-V with dynamic memory enabled RE: [PATCH 2/2]
-Drivers: hv: balloon: Online the hot-added memory "in context" Re: [PATCH 1/1] Drivers: hv:
-
-
-B.W.> So can I expect to see this patched by the next kernel version?
-
-I would hold your breath on this one.
-The maintainers of the memory subsystem has rejected the patch exposing certain functions
-so hv_balloon can online the newly added memory to the system.
-They think that having udev to handle such events is a better place.
-
-And in case if somebody hasn't posted it here, this is the udev rule that KY has given to me in the past:
-
-SUBSYSTEM=="memory", ACTION=="add", RUN+="/bin/sh -c '[ -f
-/sys$devpath/state ] && echo online > /sys$devpath/state'"
-
-> --
-
-
-
-
------ Original Message ----- 
-From: "Brian Wong"
-To: "Victor Miasnikov"; "KY Srinivasan" ( zzzzzzzzzz (at) microsoft.com ); linux-kernel@vger.kernel.org
-Cc: "Abhishek Gupta (LIS)"  ( zzzzzzzzz (at) microsoft.com)
-Sent: Thursday, March 06, 2014 9:11 PM
-Subject: Re: Linux does not use more than the startup RAM under Hyper-V with dynamic memory enabled RE: [PATCH 2/2]
-Drivers: hv: balloon: Online the hot-added memory "in context" Re: [PATCH 1/1] Drivers: hv:
-
-
-  . . .
-
-VVM>>>
-VVM>>>  Question to Linux kernel team: may be patch
-VVM>>> >>> [PATCH 2/2] Drivers: hv: balloon: Online the hot-added memory "in context"
-VVM>>> can solve problems with dynamic memory hot add in Hyper-V VMs with Linux OS ?
-VVM>>>
- K.Y.S>>
- K.Y.S>>  I will try to get my in-context onlining patches accepted upstream.
- K.Y.S>>
-VVM>
-VVM> Thanks!
-VVM>
-VVM> Feature dynamic memory hot add in Hyper-V VMs with Linux OS  -- is very usefull for Hyper-V sysadmins
-VVM> Stable work for this feature -- must be hi-priority task for developers
-VVM>
-
-
-So can I expect to see this patched by the next kernel version?
+Yeb.
 
 -- 
-Brian Wong
-http://www.fierydragonlord.com
---
-
-
-
-
-
------ Original Message ----- 
-From: "KY Srinivasan"
-To: "Victor Miasnikov"; linux-kernel@vger.kernel.org; "Brian Wong"
-Cc: "Abhishek Gupta (LIS)"
-Sent: Thursday, March 06, 2014 1:23 PM
-Subject: RE: Linux does not use more than the startup RAM under Hyper-V with dynamic memory enabled RE: [PATCH 2/2]
-Drivers: hv: balloon: Online the hot-added memory "in context" Re: [PATCH 1/1] Drivers: hv:
-
-
-Victor,
-
-I will try to get my in-context onlining patches accepted upstream.
-
-K. Y
-
-> -----Original Message-----
-> From: Victor Miasnikov [mailto:vvm@tut.by]
-> Sent: Thursday, March 6, 2014 3:38 PM
-> To: linux-kernel@vger.kernel.org; Brian Wong
-> Cc: Abhishek Gupta (LIS); KY Srinivasan
-> Subject: Re: Linux does not use more than the startup RAM under Hyper-V
-> with dynamic memory enabled RE: [PATCH 2/2] Drivers: hv: balloon: Online
-> the hot-added memory "in context" Re: [PATCH 1/1] Drivers: hv:
->
-
-
------ Original Message ----- 
-From: "Victor Miasnikov"
-To:  linux-kernel@vger.kernel.org; "Brian Wong"
-Cc: "Abhishek Gupta (LIS)" ( zzzzzzzzzzzzzzz (at) microsoft.com>; "KY Srinivasan" zzzzzzzzzzz (at) microsoft.com
-Sent: Thursday, March 06, 2014 1:07 PM
-Subject: Re: Linux does not use more than the startup RAM under Hyper-V with dynamic memory enabled RE: [PATCH 2/2]
-Drivers: hv: balloon: Online the hot-added memory "in context" Re: [PATCH 1/1] Drivers: hv:
-
-Hi!
-
- Short:
-
- Question to Linux kernel team:
-
-may be patch
-
->>> [PATCH 2/2] Drivers: hv: balloon: Online the hot-added memory "in context"
-
-can solve problems with dynamic memory hot add in Hyper-V VMs with Linux OS ?
-
-
-
- Full:
-
-BW>> .., if I set the startup memory to 512 MB, and enable dynamic
-BW>> memory with a minimum of 512 MB and a maximum of 8192 MB,
-BW>>  the system will never allocate than 512 MB of physical memory
-
-BW>>
-BW>> Have I encountered a bug in the Hyper-V balloon driver?
-BW>>
-
- Unfortunately,  It's long story . . . :-(
-
-a)
-
- I already ( on January 09, 2014 2:18 PM )  write about problems with "Online the hot-added memory"  in "user space" see
-P.P.S.
-
-b)
-
-  See
-
-Bug 979257 -[Hyper-V][RHEL6.5][RFE]in-kernel online support for memory hot-add
-https://bugzilla.redhat.com/show_bug.cgi?id=979257
-
- (  Info from this topic may be interessant not only for RedHat users )
-
-
-b2)
-
- Detail about pathes related problem "Online the hot-added memory"  in "user space" :
-
->>> [PATCH 2/2] Drivers: hv: balloon: Online the hot-added memory "in context"
->>>
->>>
->>> === 0001-Drivers-base-memory-Export-functionality-for-in-kern.patch
->>>  . . .
->>> +/*
->>> + * Given the start pfn of a memory block; bring the memory
->>> + * block online. This API would be useful for drivers that may
->>> + * want to bring "online" the memory that has been hot-added.
->>> + */
->>> +
->>> +int online_memory_block(unsigned long start_pfn) {  struct mem_section
->>> +*cur_section;  struct memory_block *cur_memory_block;
->>>
->>>  . . .
->>> ===
->>>
->>>
->>> ==
->>>  . . .
->>> == 0002-Drivers-hv-balloon-Online-the-hot-added-memory-in-co.patch
->>>   . . .
->>>    /*
->>> -   * Wait for the memory block to be onlined.
->>> -   * Since the hot add has succeeded, it is ok to
->>> -   * proceed even if the pages in the hot added region
->>> -   * have not been "onlined" within the allowed time.
->>> +   * Before proceeding to hot add the next segment,
->>> +   * online the segment that has been hot added.
->>>     */
->>> -  wait_for_completion_timeout(&dm_device.ol_waitevent, 5*HZ);
->>> +  online_memory_block(start_pfn);
->>>
->>>   }
-
-
-
-
-c)
-
-  Before apply patches ( see in P.S. about native udev-script) we are need use one of this methods:
-
-http://social.technet.microsoft.com/Forums/en-US/8e1994b9-9ca1-4411-ad8e-25e6b1ee28e1/dynamic-memory-on-linux-vm?forum=linuxintegrationservices
-
-
-
-c1)
-
-"/bin/cp method" by Nikolay Pushkarev :
-
-Following udev rule works slightly faster for me (assuming that memory0 bank always in online state):
-
-SUBSYSTEM=="memory", ACTION=="add", DEVPATH=="/devices/system/memory/memory[1-9]*",
-RUN+="/bin/cp /sys$devpath/../memory0/state /sys$devpath/state"}}
-
-( VVM : of course all need be place in one line, 2 line in this msg. -- only for good visual formating reasons )
-
-
-c2)
-
-udev rule using "putarg" by Nikolay Pushkarev :
-
-
- Even "/bin/cp method" udev rule work time to time not as need :-(
-
-
-As a result, Nikolay Pushkarev write a program putarg.c, that is even faster than "/bin/cp method" :
-
-==
-#include <stdio.h>
-#include <fcntl.h>
-#include <sys/ioctl.h>
-#include <string.h>
-int main(int argc, char** argv) {
-  int i, fd;
-  if (argc < 2) return 0;
-  if ((fd = open(argv[1], O_RDWR)) < 0) return 1;
-  for (i = 2; i < argc; i++) {
-    if (write(fd, argv[i], strlen(argv[i])) < 0) {
-      close(fd);
-      return i;
-    }
-  }
-  close(fd);
-  return 0;
-}
-==
-
- The first argument - the name of the output file ,
-and argument number 2 ( and all subsequent (  if exist ) ) - are text that are wiil be written in output file.
-
-
- Compile source code to executable file by run command:
-gcc -o putarg -s putarg.c
-
-The resulting binary need be placed an accessible location , such as /usr/bin, or wherever you want.
-
-
-Now udev rule using "putarg" can be written as :
-
-SUBSYSTEM=="memory", ACTION=="add", RUN+="/usr/bin/putarg /sys$devpath/state online"
-
-
-This complex solutions ( compiled file and udev-rule ) works exceptionally fast.
-
-
-
-
-
-Best regards, Victor Miasnikov
-Blog:  http://vvm.blog.tut.by/
-
-P.S.
-
-Nikolay Pushkarev about standart udev-script :
-
-{{
-
-Strange, that the native udev-script
-
-SUBSYSTEM=="memory", ACTION=="add", ATTR{state}="online"
-
-
-triggered somehow through time ( VVM: very often not work as need )
-
-
-}}
-
-
-
-P.P.S.
-
------ Original Message ----- 
-From: "Victor Miasnikov"
-To: "Dan Carpenter"; "K. Y. Srinivasan" ; <linux-kernel@vger.kernel.org>
-Cc: "Greg KH" ; <devel@linuxdriverproject.org>; <olaf (at) aepfle.de>; ""Andy Whitcroft"" <zzzzzzzzzzzz (at)
-canonical.com>;
-<jasowang (at) redhat.com>
-Sent: Thursday, January 09, 2014 2:18 PM
-Subject: RE: [PATCH 2/2] Drivers: hv: balloon: Online the hot-added memory "in context" Re: [PATCH 1/1] Drivers: hv:
-Implement the file copy service
-
-
-Hi!
-
-> Is there no way we could implement file copying in user space?
-
-
-  For "file copy service"  "user space"  may be pretty good
-
-But I ( and other Hyper-V sysadmin)  see non-Ok ( in "political correct" terminalogy) results with "hv: balloon: Online
-the hot-added memory" in "user space"
-
-
-==
- [PATCH 2/2] Drivers: hv: balloon: Online the hot-added memory "in context"
-==
-
-
- What news?  Roadmap?
-
-
-Best regards, Victor Miasnikov
-Blog:  http://vvm.blog.tut.by/
-
-
-
-
-P.P.S.
-
------ Original Message ----- 
-From: "Brian Wong"
-To: <linux-kernel@vger.kernel.org>
-Sent: Thursday, March 06, 2014 9:24 AM
-Subject: Re: Linux does not use more than the startup RAM under Hyper-V with dynamic memory enabled
-
-
-On 3/6/2014 1:20 AM, Brian Wong wrote:
-
-   . . .
-
-> The kernel is built with the full set of Hyper-V drivers, including the
-> key "Microsoft Hyper-V Balloon Driver" as well as memory hot-add and
-> hot-remove functionality. This is happening with both the Gentoo-patched
-> 3.10.32 kernel and the vanilla 3.13.5 kernel. The host machine has a
-> total of 24 GB of memory.
->
-> For now, I am working around the issue by starting the VM with the
-> startup memory set to the maximum and letting Hyper-V take the usused
-> memory back when it is not in use. The VM will then get the extra memory
-> when it needs it.
->
-> Have I encountered a bug in the Hyper-V balloon driver?
->
-
-  . . .
-
-
-
+Kind regards,
+Minchan Kim
