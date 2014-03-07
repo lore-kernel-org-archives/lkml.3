@@ -1,71 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753528AbaCGOTM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 09:19:12 -0500
-Received: from atl4mhfb03.myregisteredsite.com ([209.17.115.61]:60890 "EHLO
-	atl4mhfb03.myregisteredsite.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753064AbaCGOTJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 09:19:09 -0500
-X-TCPREMOTEIP: 88.159.208.100
-X-Authenticated-UID: mike@milosoftware.com
-From: Mike Looijmans <mike.looijmans@topic.nl>
-To: cjb@laptop.org, linux-mmc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, git@xilinx.com,
-        Mike Looijmans <mike.looijmans@topic.nl>
-Subject: [PATCH] sdhci: Forward EPROBE_DEFER on vmmc and vqmmc regulators
-Date: Fri,  7 Mar 2014 15:18:43 +0100
-Message-Id: <1394201923-27345-1-git-send-email-mike.looijmans@topic.nl>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753458AbaCGOYM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 09:24:12 -0500
+Received: from sauhun.de ([89.238.76.85]:50054 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752366AbaCGOYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 09:24:11 -0500
+Date: Fri, 7 Mar 2014 15:24:05 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        zhuzhenhua@allwinnertech.com, linux@arm.linux.org.uk
+Subject: Re: [PATCH] i2c: mv64xxx: Fix circular dependencies warning and
+ compilation breakage
+Message-ID: <20140307142405.GB28943@katana>
+References: <20140307111858.GB12274@katana>
+ <1394199795-5516-1-git-send-email-maxime.ripard@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="kORqDWCi7qDJ0mEj"
+Content-Disposition: inline
+In-Reply-To: <1394199795-5516-1-git-send-email-maxime.ripard@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If vmmc or vqmmc regulators are controlled by an I2C device, the
-request for the regulator is likely to fail because the I2C bus has
-not been probed yet. The sdhci then incorrectly assumes that the user
-never wanted to use a regulator anyway and continues without ever
-enabling or configuring the required regulator.
 
-To solve this, when a required voltage regulator returns
-EPROBE_DEFER, signalling that the regulator exists but is not
-available yet, forward this error to the probe method instead
-of simply assuming that the user never wanted to use a regulator
-anyway.
+--kORqDWCi7qDJ0mEj
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Tested on a custom board that has an I2C regulator for one of the sdhcis
-and no regulators at all for the other. This patch enables such a system
-to work correctly.
----
- drivers/mmc/host/sdhci.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index 34aef81..43b90c1 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -2972,6 +2972,8 @@ int sdhci_add_host(struct sdhci_host *host)
- 	host->vqmmc = regulator_get_optional(mmc_dev(mmc), "vqmmc");
- 	if (IS_ERR_OR_NULL(host->vqmmc)) {
- 		if (PTR_ERR(host->vqmmc) < 0) {
-+			if (PTR_ERR(host->vqmmc) == -EPROBE_DEFER)
-+				return -EPROBE_DEFER;
- 			pr_info("%s: no vqmmc regulator found\n",
- 				mmc_hostname(mmc));
- 			host->vqmmc = NULL;
-@@ -3048,8 +3050,10 @@ int sdhci_add_host(struct sdhci_host *host)
- 	host->vmmc = regulator_get_optional(mmc_dev(mmc), "vmmc");
- 	if (IS_ERR_OR_NULL(host->vmmc)) {
- 		if (PTR_ERR(host->vmmc) < 0) {
--			pr_info("%s: no vmmc regulator found\n",
--				mmc_hostname(mmc));
-+			if (PTR_ERR(host->vmmc) == -EPROBE_DEFER)
-+				return -EPROBE_DEFER;
-+			pr_info("%s: no vmmc regulator found (%d)\n",
-+				mmc_hostname(mmc), PTR_ERR(host->vmmc));
- 			host->vmmc = NULL;
- 		}
- 	}
--- 
-1.7.9.5
+New patch -> new thread, please.
 
+> This patch fixes the circular dependency introduced by commit 370136bc67c3
+> ("i2c: mv64xxx: Add reset deassert call"):
+>=20
+> drivers/video/Kconfig:42:error: recursive dependency detected!
+
+Please base it on i2c-next. I already applied my patch.
+Your patch fixes the build error discovered by it.
+
+> Since the reset framework doesn't define dummy stubs whenever
+> CONFIG_RESET_CONTROLLER is not defined, it's the only sane way to have a =
+driver
+> that compiles in any cases.
+
+Paragraph needs reformat. And please drop "sane". #ifdefs are not sane.
+Fixing the reset framework would be sane.
+
+> @@ -900,7 +902,8 @@ mv64xxx_i2c_probe(struct platform_device *pd)
+>  exit_free_irq:
+>  	free_irq(drv_data->irq, drv_data);
+>  exit_reset:
+> -	if (pd->dev.of_node && !IS_ERR(drv_data->rstc))
+> +	if (pd->dev.of_node && IS_ENABLED(CONFIG_RESET_CONTROLLER) &&
+> +	    !IS_ERR(drv_data->rstc))
+
+Why don't you simply set rstc to some ERR_PTR above if not
+RESET_CONTROLLER?
+
+
+--kORqDWCi7qDJ0mEj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTGdaFAAoJEBQN5MwUoCm2IWkP/0Br+9EdpPTwXb6yBDl8Zt7g
+qcbGp2cw7D9+n2FN0vKfCw89TZFYRDp2YrUAtRE4i/Fa9mAGbc45jyhjSekHmUOY
+D6hcSNxN2wvuwUo1JkJdoqcEMBoH1gDCvtxUFdmKuyoCnb+TnO7B9q4EHqfs2SqV
+Fxpq41tyPdH26zvpcfPp9OazBTT/etNWTffefURHb+szUmtIw9ZVownP6n0weGr8
+CixgDhELp8Ka4A2rZIJI3EDZb9TtMGf21uEIcqZq8paMiFKYEC4RLfV9OU0IEKAM
+YRmOi+6Nex1tSGcICaqGGmRR9gZNrc7Tkw4W+39J9eUQWSq6DR8S+0LV+3HjO2Yh
+7Vsot+Tf8+Bn/uwe+dv5slY5t5Ab/sUcJIED6WXG6zbfurGUQRQX8GfQjJsmDWrY
+RqKMUQ66jrWjm8St1mejZMX8XrIFfTALaPKFNan2CAhehpx45/ntoqE2gAJcPi7N
+iP/wty1Vhd1emLxRHvFIkAz6VGbe+F0HWWXdBCORhzp+3QT/ljjZDdvdPJWg8gBf
+IAjW1WMeHRjusPqkE3Hsk1QtTg1uyOpL9mttaZY9geesxHNlyCMtUuVVOGBcTxu7
+hoRBuW7h3SqzMdjCNXCsp+EPHUWIclcS/HlbuZSkmOvhyPNBGTUuAKD/DpnB8LCn
+vIC9865B1zjQ94Uk3ztJ
+=h30J
+-----END PGP SIGNATURE-----
+
+--kORqDWCi7qDJ0mEj--
