@@ -1,251 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753622AbaCHFcm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 00:32:42 -0500
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:43616 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752438AbaCHFa0 (ORCPT
+	id S1753683AbaCHFcy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 00:32:54 -0500
+Received: from mail-we0-f181.google.com ([74.125.82.181]:51991 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753648AbaCHFcv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 00:30:26 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v6 5/8] [media] of: move common endpoint parsing to drivers/of
-To: Philipp Zabel <p.zabel@pengutronix.de>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        devicetree@vger.kernel.org, Philipp Zabel <p.zabel@pengutronix.de>
-In-Reply-To: <1394011242-16783-6-git-send-email-p.zabel@pengutronix.de>
-References: <1394011242-16783-1-git-send-email-p.zabel@pengutronix.de> < 1394011242-16783-6-git-send-email-p.zabel@pengutronix.de>
-Date: Fri, 07 Mar 2014 18:32:00 +0000
-Message-Id: <20140307183200.9C9E8C40C5C@trevor.secretlab.ca>
+	Sat, 8 Mar 2014 00:32:51 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v6 2/6] pci: OF: Fix the conversion of IO ranges into IO resources.
+To: Liviu Dudau <Liviu.Dudau@arm.com>, linux-pci <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        LKML <linux-kernel@vger.kernel.org>, Tanmay Inamdar <tinamdar@apm.com>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <1394020137-1830-3-git-send-email-Liviu.Dudau@arm.com>
+References: <1394020137-1830-1-git-send-email-Liviu.Dudau@arm.com> < 1394020137-1830-3-git-send-email-Liviu.Dudau@arm.com>
+Date: Fri, 07 Mar 2014 21:06:41 +0000
+Message-Id: <20140307210641.11762C40DCB@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  5 Mar 2014 10:20:39 +0100, Philipp Zabel <p.zabel@pengutronix.de> wrote:
-> This patch adds a new struct of_endpoint which is then embedded in struct
-> v4l2_of_endpoint and contains the endpoint properties that are not V4L2
-> (or even media) specific: the port number, endpoint id, local device tree
-> node and remote endpoint phandle. of_graph_parse_endpoint parses those
-> properties and is used by v4l2_of_parse_endpoint, which just adds the
-> V4L2 MBUS information to the containing v4l2_of_endpoint structure.
+On Wed,  5 Mar 2014 11:48:53 +0000, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+> The ranges property for a host bridge controller in DT describes
+> the mapping between the PCI bus address and the CPU physical address.
+> The resources framework however expects that the IO resources start
+> at a pseudo "port" address 0 (zero) and have a maximum size of IO_SPACE_LIMIT.
+> The conversion from pci ranges to resources failed to take that into account.
 > 
-> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> In the process move the function into drivers/of/address.c as it
+> now depends on pci_address_to_pio() code.
+> 
+> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+> Tested-by: Tanmay Inamdar <tinamdar@apm.com>
 
-Seems okay.
+I think this is okay, but I'll need an ack from Arnd or Ben.
 
-Acked-by: Grant Likely <grant.likely@linaro.org>
+g.
 
 > ---
-> Changes since v5:
->  - Fixed documentation comment for of_graph_parse_endpoint
-> ---
->  drivers/media/platform/exynos4-is/media-dev.c | 10 +++++-----
->  drivers/media/platform/exynos4-is/mipi-csis.c |  2 +-
->  drivers/media/v4l2-core/v4l2-of.c             | 16 +++------------
->  drivers/of/base.c                             | 28 +++++++++++++++++++++++++++
->  include/linux/of_graph.h                      | 20 +++++++++++++++++++
->  include/media/v4l2-of.h                       |  8 ++------
->  6 files changed, 59 insertions(+), 25 deletions(-)
+>  drivers/of/address.c       | 34 ++++++++++++++++++++++++++++++++++
+>  include/linux/of_address.h | 13 ++-----------
+>  2 files changed, 36 insertions(+), 11 deletions(-)
 > 
-> diff --git a/drivers/media/platform/exynos4-is/media-dev.c b/drivers/media/platform/exynos4-is/media-dev.c
-> index d0f82da..04d6ecd 100644
-> --- a/drivers/media/platform/exynos4-is/media-dev.c
-> +++ b/drivers/media/platform/exynos4-is/media-dev.c
-> @@ -469,10 +469,10 @@ static int fimc_md_parse_port_node(struct fimc_md *fmd,
->  		return 0;
->  
->  	v4l2_of_parse_endpoint(ep, &endpoint);
-> -	if (WARN_ON(endpoint.port == 0) || index >= FIMC_MAX_SENSORS)
-> +	if (WARN_ON(endpoint.base.port == 0) || index >= FIMC_MAX_SENSORS)
->  		return -EINVAL;
->  
-> -	pd->mux_id = (endpoint.port - 1) & 0x1;
-> +	pd->mux_id = (endpoint.base.port - 1) & 0x1;
->  
->  	rem = of_graph_get_remote_port_parent(ep);
->  	of_node_put(ep);
-> @@ -494,13 +494,13 @@ static int fimc_md_parse_port_node(struct fimc_md *fmd,
->  		return -EINVAL;
->  	}
->  
-> -	if (fimc_input_is_parallel(endpoint.port)) {
-> +	if (fimc_input_is_parallel(endpoint.base.port)) {
->  		if (endpoint.bus_type == V4L2_MBUS_PARALLEL)
->  			pd->sensor_bus_type = FIMC_BUS_TYPE_ITU_601;
->  		else
->  			pd->sensor_bus_type = FIMC_BUS_TYPE_ITU_656;
->  		pd->flags = endpoint.bus.parallel.flags;
-> -	} else if (fimc_input_is_mipi_csi(endpoint.port)) {
-> +	} else if (fimc_input_is_mipi_csi(endpoint.base.port)) {
->  		/*
->  		 * MIPI CSI-2: only input mux selection and
->  		 * the sensor's clock frequency is needed.
-> @@ -508,7 +508,7 @@ static int fimc_md_parse_port_node(struct fimc_md *fmd,
->  		pd->sensor_bus_type = FIMC_BUS_TYPE_MIPI_CSI2;
->  	} else {
->  		v4l2_err(&fmd->v4l2_dev, "Wrong port id (%u) at node %s\n",
-> -			 endpoint.port, rem->full_name);
-> +			 endpoint.base.port, rem->full_name);
->  	}
->  	/*
->  	 * For FIMC-IS handled sensors, that are placed under i2c-isp device
-> diff --git a/drivers/media/platform/exynos4-is/mipi-csis.c b/drivers/media/platform/exynos4-is/mipi-csis.c
-> index fd1ae65..3678ba5 100644
-> --- a/drivers/media/platform/exynos4-is/mipi-csis.c
-> +++ b/drivers/media/platform/exynos4-is/mipi-csis.c
-> @@ -772,7 +772,7 @@ static int s5pcsis_parse_dt(struct platform_device *pdev,
->  	/* Get port node and validate MIPI-CSI channel id. */
->  	v4l2_of_parse_endpoint(node, &endpoint);
->  
-> -	state->index = endpoint.port - FIMC_INPUT_MIPI_CSI2_0;
-> +	state->index = endpoint.base.port - FIMC_INPUT_MIPI_CSI2_0;
->  	if (state->index < 0 || state->index >= CSIS_MAX_ENTITIES)
->  		return -ENXIO;
->  
-> diff --git a/drivers/media/v4l2-core/v4l2-of.c b/drivers/media/v4l2-core/v4l2-of.c
-> index f919db3..b4ed9a9 100644
-> --- a/drivers/media/v4l2-core/v4l2-of.c
-> +++ b/drivers/media/v4l2-core/v4l2-of.c
-> @@ -127,17 +127,9 @@ static void v4l2_of_parse_parallel_bus(const struct device_node *node,
->  int v4l2_of_parse_endpoint(const struct device_node *node,
->  			   struct v4l2_of_endpoint *endpoint)
->  {
-> -	struct device_node *port_node = of_get_parent(node);
-> -
-> -	memset(endpoint, 0, offsetof(struct v4l2_of_endpoint, head));
-> -
-> -	endpoint->local_node = node;
-> -	/*
-> -	 * It doesn't matter whether the two calls below succeed.
-> -	 * If they don't then the default value 0 is used.
-> -	 */
-> -	of_property_read_u32(port_node, "reg", &endpoint->port);
-> -	of_property_read_u32(node, "reg", &endpoint->id);
-> +	of_graph_parse_endpoint(node, &endpoint->base);
-> +	endpoint->bus_type = 0;
-> +	memset(&endpoint->bus, 0, sizeof(endpoint->bus));
->  
->  	v4l2_of_parse_csi_bus(node, endpoint);
->  	/*
-> @@ -147,8 +139,6 @@ int v4l2_of_parse_endpoint(const struct device_node *node,
->  	if (endpoint->bus.mipi_csi2.flags == 0)
->  		v4l2_of_parse_parallel_bus(node, endpoint);
->  
-> -	of_node_put(port_node);
-> -
->  	return 0;
+> diff --git a/drivers/of/address.c b/drivers/of/address.c
+> index d1bb30f..d595d98 100644
+> --- a/drivers/of/address.c
+> +++ b/drivers/of/address.c
+> @@ -724,3 +724,37 @@ void __iomem *of_iomap(struct device_node *np, int index)
+>  	return ioremap(res.start, resource_size(&res));
 >  }
->  EXPORT_SYMBOL(v4l2_of_parse_endpoint);
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index a8e47d3..715144af 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -1985,6 +1985,34 @@ struct device_node *of_find_next_cache_node(const struct device_node *np)
->  }
->  
->  /**
-> + * of_graph_parse_endpoint() - parse common endpoint node properties
-> + * @node: pointer to endpoint device_node
-> + * @endpoint: pointer to the OF endpoint data structure
-> + *
-> + * The caller should hold a reference to @node.
-> + */
-> +int of_graph_parse_endpoint(const struct device_node *node,
-> +			    struct of_endpoint *endpoint)
-> +{
-> +	struct device_node *port_node = of_get_parent(node);
-> +
-> +	memset(endpoint, 0, sizeof(*endpoint));
-> +
-> +	endpoint->local_node = node;
-> +	/*
-> +	 * It doesn't matter whether the two calls below succeed.
-> +	 * If they don't then the default value 0 is used.
-> +	 */
-> +	of_property_read_u32(port_node, "reg", &endpoint->port);
-> +	of_property_read_u32(node, "reg", &endpoint->id);
-> +
-> +	of_node_put(port_node);
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(of_graph_parse_endpoint);
+>  EXPORT_SYMBOL(of_iomap);
 > +
 > +/**
->   * of_graph_get_next_endpoint() - get next endpoint node
->   * @parent: pointer to the parent device node
->   * @prev: previous endpoint node, or NULL to get first
-> diff --git a/include/linux/of_graph.h b/include/linux/of_graph.h
-> index 3bbeb60..2b233db 100644
-> --- a/include/linux/of_graph.h
-> +++ b/include/linux/of_graph.h
-> @@ -14,7 +14,21 @@
->  #ifndef __LINUX_OF_GRAPH_H
->  #define __LINUX_OF_GRAPH_H
->  
-> +/**
-> + * struct of_endpoint - the OF graph endpoint data structure
-> + * @port: identifier (value of reg property) of a port this endpoint belongs to
-> + * @id: identifier (value of reg property) of this endpoint
-> + * @local_node: pointer to device_node of this endpoint
+> + * of_pci_range_to_resource - Create a resource from an of_pci_range
+> + * @range:	the PCI range that describes the resource
+> + * @np:		device node where the range belongs to
+> + * @res:	pointer to a valid resource that will be updated to
+> + *              reflect the values contained in the range.
+> + * Note that if the range is an IO range, the resource will be converted
+> + * using pci_address_to_pio() which can fail if it is called too early or
+> + * if the range cannot be matched to any host bridge IO space (our case here).
+> + * To guard against that we try to register the IO range first.
+> + * If that fails we know that pci_address_to_pio() will do too.
 > + */
-> +struct of_endpoint {
-> +	unsigned int port;
-> +	unsigned int id;
-> +	const struct device_node *local_node;
-> +};
-> +
->  #ifdef CONFIG_OF
-> +int of_graph_parse_endpoint(const struct device_node *node,
-> +				struct of_endpoint *endpoint);
->  struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
->  					struct device_node *previous);
->  struct device_node *of_graph_get_remote_port_parent(
-> @@ -22,6 +36,12 @@ struct device_node *of_graph_get_remote_port_parent(
->  struct device_node *of_graph_get_remote_port(const struct device_node *node);
->  #else
->  
-> +static inline int of_graph_parse_endpoint(const struct device_node *node,
-> +					struct of_endpoint *endpoint);
+> +void of_pci_range_to_resource(struct of_pci_range *range,
+> +	struct device_node *np, struct resource *res)
 > +{
-> +	return -ENOSYS;
+> +	res->flags = range->flags;
+> +	if (res->flags & IORESOURCE_IO) {
+> +		unsigned long port = -1;
+> +		if (!pci_register_io_range(range->cpu_addr, range->size))
+> +			port = pci_address_to_pio(range->cpu_addr);
+> +		if (port == (unsigned long)-1) {
+> +			res->start = (resource_size_t)OF_BAD_ADDR;
+> +			res->end = (resource_size_t)OF_BAD_ADDR;
+> +			return;
+> +		}
+> +		res->start = port;
+> +	} else {
+> +		res->start = range->cpu_addr;
+> +	}
+> +	res->end = res->start + range->size - 1;
+> +	res->parent = res->child = res->sibling = NULL;
+> +	res->name = np->full_name;
 > +}
-> +
->  static inline struct device_node *of_graph_get_next_endpoint(
->  					const struct device_node *parent,
->  					struct device_node *previous)
-> diff --git a/include/media/v4l2-of.h b/include/media/v4l2-of.h
-> index 3a49735..70fa7b7 100644
-> --- a/include/media/v4l2-of.h
-> +++ b/include/media/v4l2-of.h
-> @@ -51,17 +51,13 @@ struct v4l2_of_bus_parallel {
+> diff --git a/include/linux/of_address.h b/include/linux/of_address.h
+> index 40c418d..3fe500a 100644
+> --- a/include/linux/of_address.h
+> +++ b/include/linux/of_address.h
+> @@ -23,17 +23,8 @@ struct of_pci_range {
+>  #define for_each_of_pci_range(parser, range) \
+>  	for (; of_pci_range_parser_one(parser, range);)
 >  
->  /**
->   * struct v4l2_of_endpoint - the endpoint data structure
-> - * @port: identifier (value of reg property) of a port this endpoint belongs to
-> - * @id: identifier (value of reg property) of this endpoint
-> - * @local_node: pointer to device_node of this endpoint
-> + * @base: struct of_endpoint containing port, id, and local of_node
->   * @bus_type: bus type
->   * @bus: bus configuration data structure
->   * @head: list head for this structure
->   */
->  struct v4l2_of_endpoint {
-> -	unsigned int port;
-> -	unsigned int id;
-> -	const struct device_node *local_node;
-> +	struct of_endpoint base;
->  	enum v4l2_mbus_type bus_type;
->  	union {
->  		struct v4l2_of_bus_parallel parallel;
+> -static inline void of_pci_range_to_resource(struct of_pci_range *range,
+> -					    struct device_node *np,
+> -					    struct resource *res)
+> -{
+> -	res->flags = range->flags;
+> -	res->start = range->cpu_addr;
+> -	res->end = range->cpu_addr + range->size - 1;
+> -	res->parent = res->child = res->sibling = NULL;
+> -	res->name = np->full_name;
+> -}
+> -
+> +extern void of_pci_range_to_resource(struct of_pci_range *range,
+> +		struct device_node *np, struct resource *res);
+>  /* Translate a DMA address from device space to CPU space */
+>  extern u64 of_translate_dma_address(struct device_node *dev,
+>  				    const __be32 *in_addr);
 > -- 
-> 1.9.0.rc3
+> 1.9.0
 > 
+> 
+> _______________________________________________
+> linaro-kernel mailing list
+> linaro-kernel@lists.linaro.org
+> http://lists.linaro.org/mailman/listinfo/linaro-kernel
 
