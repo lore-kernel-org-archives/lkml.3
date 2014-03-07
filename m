@@ -1,129 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752496AbaCGMiw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 07:38:52 -0500
-Received: from smtp4.epfl.ch ([128.178.224.219]:37127 "EHLO smtp4.epfl.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751669AbaCGMiu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 07:38:50 -0500
-From: Florian Vaussard <florian.vaussard@epfl.ch>
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] of: add missing major vendors
-Date: Fri,  7 Mar 2014 13:38:37 +0100
-Message-Id: <1394195917-25166-1-git-send-email-florian.vaussard@epfl.ch>
-X-Mailer: git-send-email 1.8.5.3
+	id S1752699AbaCGMjv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 07:39:51 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:54561 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082AbaCGMju (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 07:39:50 -0500
+Message-ID: <5319BE19.5000607@gmail.com>
+Date: Fri, 07 Mar 2014 07:39:53 -0500
+From: Austin S Hemmelgarn <ahferroin7@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Richard Weinberger <richard.weinberger@gmail.com>,
+        Jon Ringle <jringle@gridpoint.com>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        "Ringle, Jonathan" <Jonathan.Ringle@gridpoint.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Add option to build with -O3
+References: <1393977709-9809-1-git-send-email-jringle@gridpoint.com>	<20140305050927.GA8534@kroah.com>	<alpine.DEB.2.02.1403050019300.22601@jringle-ubuntu> <CAFLxGvyB0r2RgeFhKoWqgWHLKEMF=BEM8ThRr8Mq6nGtJWQm1w@mail.gmail.com>
+In-Reply-To: <CAFLxGvyB0r2RgeFhKoWqgWHLKEMF=BEM8ThRr8Mq6nGtJWQm1w@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looking at the current vendor strings used in the kernel's .dts/.dtsi
-files, some vendors are used a high number of times without
-being documented. Document the ones that are used more than 10 times.
-
-Note: a few inconsistencies were found, and thus not documented.
-Here is the list:
-- mrvl: duplicates "marvell"
-- st-ericsson: duplicates "ste" _and_ "stericsson"
-- pci8086: seems to be a unfortunate alias for "intel"
-- pnpPNP: used on PowerPC?
-
-Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
----
- Documentation/devicetree/bindings/vendor-prefixes.txt | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
-
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index 40ce2df..b5e7485 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -3,6 +3,7 @@ Device tree binding vendor prefix registry.  Keep list in alphabetical order.
- This isn't an exhaustive list, but you should add new prefixes to it before
- using them to avoid name-space collisions.
- 
-+abilis	Abilis Systems
- active-semi	Active-Semi International Inc
- ad	Avionic Design GmbH
- adi	Analog Devices, Inc.
-@@ -11,14 +12,17 @@ ak	Asahi Kasei Corp.
- allwinner	Allwinner Technology Co., Ltd.
- altr	Altera Corp.
- amcc	Applied Micro Circuits Corporation (APM, formally AMCC)
-+amd	Advanced Micro Devices (AMD), Inc.
- amstaos	AMS-Taos Inc.
- apm	Applied Micro Circuits Corporation (APM)
- arm	ARM Ltd.
-+armadeus	ARMadeus Systems SARL
- atmel	Atmel Corporation
- auo	AU Optronics Corporation
- avago	Avago Technologies
- bosch	Bosch Sensortec GmbH
- brcm	Broadcom Corporation
-+calxeda	Calxeda
- capella	Capella Microsystems, Inc
- cavium	Cavium, Inc.
- cdns	Cadence Design Systems Inc.
-@@ -26,8 +30,10 @@ chrp	Common Hardware Reference Platform
- chunghwa	Chunghwa Picture Tubes Ltd.
- cirrus	Cirrus Logic, Inc.
- cortina	Cortina Systems, Inc.
-+crystalfontz	Crystalfontz America, Inc.
- dallas	Maxim Integrated Products (formerly Dallas Semiconductor)
- davicom	DAVICOM Semiconductor, Inc.
-+dlink	D-Link Systems, Inc.
- denx	Denx Software Engineering
- edt	Emerging Display Technologies
- emmicro	EM Microelectronic
-@@ -37,7 +43,9 @@ est	ESTeem Wireless Modems
- fsl	Freescale Semiconductor
- GEFanuc	GE Fanuc Intelligent Platforms Embedded Systems, Inc.
- gef	GE Fanuc Intelligent Platforms Embedded Systems, Inc.
-+globalscale	Globalscale Technologies, Inc.
- gmt	Global Mixed-mode Technology, Inc.
-+google	Google, Inc.
- gumstix	Gumstix, Inc.
- haoyu	Haoyu Microelectronic Co. Ltd.
- hisilicon	Hisilicon Limited.
-@@ -46,9 +54,12 @@ hp	Hewlett Packard
- ibm	International Business Machines (IBM)
- idt	Integrated Device Technologies, Inc.
- img	Imagination Technologies Ltd.
-+intel	Intel Corporation
- intercontrol	Inter Control Group
- isl	Intersil
- karo	Ka-Ro electronics GmbH
-+lacie	LaCie
-+lantiq	Lantiq Semiconductor
- lg	LG Corporation
- linux	Linux-specific binding
- lsi	LSI Corp. (LSI Logic)
-@@ -56,12 +67,16 @@ marvell	Marvell Technology Group Ltd.
- maxim	Maxim Integrated Products
- microchip	Microchip Technology Inc.
- mosaixtech	Mosaix Technologies, Inc.
-+moxa	Moxa
- national	National Semiconductor
- neonode		Neonode Inc.
-+netgear	NETGEAR
- nintendo	Nintendo
-+nokia	Nokia
- nvidia	NVIDIA
- nxp	NXP Semiconductors
- onnn	ON Semiconductor Corp.
-+opencores	OpenCores.org
- panasonic	Panasonic Corporation
- phytec	PHYTEC Messtechnik GmbH
- picochip	Picochip Ltd
-@@ -94,4 +109,5 @@ via	VIA Technologies, Inc.
- winbond Winbond Electronics corp.
- wlf	Wolfson Microelectronics
- wm	Wondermedia Technologies, Inc.
-+xes	Extreme Engineering Solutions (X-ES)
- xlnx	Xilinx
--- 
-1.8.5.3
-
+On 2014-03-06 08:28, Richard Weinberger wrote:
+> On Wed, Mar 5, 2014 at 6:37 AM, Jon Ringle <jringle@gridpoint.com>
+> wrote:
+>> 
+>> 
+>> On Wed, 5 Mar 2014, Greg KH wrote:
+>> 
+>>> On Tue, Mar 04, 2014 at 07:01:49PM -0500, Jon Ringle wrote:
+>>>> +config CC_OPTIMIZE_FOR_SPEED +    bool "Optimze for speed
+>>>> (-O3)" +    help +      Enabling this option will pass "-O3"
+>>>> to gcc +      resulting in a larger kernel (but possibly
+>>>> faster)
+>>> 
+>>> Are you sure about that?  Have you measured it?
+>> 
+>> I do know that there is an improvement performance-wise for my
+>> particular use-case.
+>> 
+>> My target is an ARM board being built with gcc-4.8.2. My board
+>> has on it a sc16is740 that is used as an RS-485 port. The
+>> sc16is740 is on the i2c bus, so when an interrupt comes in to
+>> indicate that there is data available to be read, I need to get
+>> the data over the i2c bus. I do this on a kthread to do this
+>> work. The i2c transactions (using i2c-davinci driver) are also 
+>> interrupt driven. I was seeing a lot of lost packets when
+>> receiving data at only 19200. Adding the -O3 compile option
+>> helped in this regard in that I am now rarely seeing packet
+>> loss.
+> 
+> Please also see: 
+> http://www.gossamer-threads.com/lists/linux/kernel/1835761?do=post_view_threaded#1835761
+>
+> 
+Ironically, combining these might achieve a significant performance
+improvement over CONFIG_GENERIC_CPU and -O2.
