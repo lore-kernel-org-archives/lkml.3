@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753495AbaCGNLo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 08:11:44 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:40481 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753080AbaCGNJw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753382AbaCGNJw (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 7 Mar 2014 08:09:52 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:55863 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753080AbaCGNJp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 08:09:45 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <balbi@ti.com>, <tony@atomide.com>
 CC: <kishon@ti.com>, <george.cherian@ti.com>, <linux-omap@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <rogerq@ti.com>
-Subject: [PATCH 3/8] ARM: DRA7: hwmod: Add SYSCONFIG for usb_otg_ss
-Date: Fri, 7 Mar 2014 15:09:06 +0200
-Message-ID: <1394197751-28984-4-git-send-email-rogerq@ti.com>
+        <rogerq@ti.com>, Mike Turquette <mturquette@linaro.org>,
+        Tero Kristo <t-kristo@ti.com>
+Subject: [PATCH 1/8] CLK: ti: dra7: Initialize USB_DPLL
+Date: Fri, 7 Mar 2014 15:09:04 +0200
+Message-ID: <1394197751-28984-2-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1394197751-28984-1-git-send-email-rogerq@ti.com>
 References: <1394197751-28984-1-git-send-email-rogerq@ti.com>
@@ -24,39 +25,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the sysconfig class bits for the Super Speed USB
-controllers
+USB_DPLL must be initialized and locked at boot so that
+USB modules can work.
 
+Also program USB_DLL_M2 output to half rate.
+
+CC: Mike Turquette <mturquette@linaro.org>
+CC: Tero Kristo <t-kristo@ti.com>
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- arch/arm/mach-omap2/omap_hwmod_7xx_data.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/clk/ti/clk-7xx.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
-index 3c9a430..cca24ad 100644
---- a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
-@@ -1752,8 +1752,20 @@ static struct omap_hwmod dra7xx_uart6_hwmod = {
-  *
-  */
+diff --git a/drivers/clk/ti/clk-7xx.c b/drivers/clk/ti/clk-7xx.c
+index 9977653..f89f3c2 100644
+--- a/drivers/clk/ti/clk-7xx.c
++++ b/drivers/clk/ti/clk-7xx.c
+@@ -18,6 +18,7 @@
  
-+static struct omap_hwmod_class_sysconfig dra7xx_usb_otg_ss_sysc = {
-+	.rev_offs	= 0x0000,
-+	.sysc_offs	= 0x0010,
-+	.sysc_flags	= (SYSC_HAS_DMADISABLE | SYSC_HAS_MIDLEMODE |
-+			   SYSC_HAS_SIDLEMODE),
-+	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
-+			   SIDLE_SMART_WKUP | MSTANDBY_FORCE | MSTANDBY_NO |
-+			   MSTANDBY_SMART | MSTANDBY_SMART_WKUP),
-+	.sysc_fields	= &omap_hwmod_sysc_type2,
-+};
+ #define DRA7_DPLL_ABE_DEFFREQ				361267200
+ #define DRA7_DPLL_GMAC_DEFFREQ				1000000000
++#define DRA7_DPLL_USB_DEFFREQ				960000000
+ 
+ 
+ static struct ti_dt_clk dra7xx_clks[] = {
+@@ -328,5 +329,15 @@ int __init dra7xx_dt_clk_init(void)
+ 	if (rc)
+ 		pr_err("%s: failed to configure GMAC DPLL!\n", __func__);
+ 
++	dpll_ck = clk_get_sys(NULL, "dpll_usb_ck");
++	rc = clk_set_rate(dpll_ck, DRA7_DPLL_USB_DEFFREQ);
++	if (rc)
++		pr_err("%s: failed to configure USB DPLL!\n", __func__);
 +
- static struct omap_hwmod_class dra7xx_usb_otg_ss_hwmod_class = {
- 	.name	= "usb_otg_ss",
-+	.sysc	= &dra7xx_usb_otg_ss_sysc,
- };
- 
- /* usb_otg_ss1 */
++	dpll_ck = clk_get_sys(NULL, "dpll_usb_m2_ck");
++	rc = clk_set_rate(dpll_ck, DRA7_DPLL_USB_DEFFREQ/2);
++	if (rc)
++		pr_err("%s: failed to set USB_DPLL M2 OUT\n", __func__);
++
+ 	return rc;
+ }
 -- 
 1.8.3.2
 
