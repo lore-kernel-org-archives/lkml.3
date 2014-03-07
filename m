@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752247AbaCGM3l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 07:29:41 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:33519 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751330AbaCGM3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 07:29:38 -0500
-X-IronPort-AV: E=Sophos;i="4.97,607,1389744000"; 
-   d="scan'208";a="109088231"
-Message-ID: <5319BBAE.7030109@citrix.com>
-Date: Fri, 7 Mar 2014 12:29:34 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752397AbaCGMai (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 07:30:38 -0500
+Received: from mail-yh0-f42.google.com ([209.85.213.42]:43246 "EHLO
+	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751487AbaCGMag (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 07:30:36 -0500
+Date: Fri, 7 Mar 2014 07:30:32 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Stephen Tweedie <sct@redhat.com>,
+        Jeremy Eder <jeder@redhat.com>
+Subject: Re: [PATCH 1/5][RFC][CFT] percpu fixes, part 1
+Message-ID: <20140307123032.GB30778@htj.dyndns.org>
+References: <20140305034751.GW18016@ZenIV.linux.org.uk>
+ <20140305034919.GA26528@ZenIV.linux.org.uk>
+ <20140306192026.GA14033@htj.dyndns.org>
+ <20140306203030.GA18016@ZenIV.linux.org.uk>
+ <20140306204726.GE14033@htj.dyndns.org>
+ <20140307025206.GB18016@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: Pravin Shelar <pshelar@nicira.com>
-CC: Jesse Gross <jesse@nicira.com>, Thomas Graf <tgraf@redhat.com>,
-        "dev@openvswitch.org" <dev@openvswitch.org>,
-        <xen-devel@lists.xenproject.org>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, <kvm@vger.kernel.org>
-Subject: Re: [PATCH] openvswitch: Orphan frags before sending to userspace
- via Netlink to avoid guest stall
-References: <1393615016-9187-1-git-send-email-zoltan.kiss@citrix.com>	<5318ABC0.4040307@citrix.com> <CALnjE+rWc=n_F+1jSLQtPrgKSvvxONEkkYxWEHon2_KVNG9z3Q@mail.gmail.com>
-In-Reply-To: <CALnjE+rWc=n_F+1jSLQtPrgKSvvxONEkkYxWEHon2_KVNG9z3Q@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140307025206.GB18016@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/03/14 04:46, Pravin Shelar wrote:
-> On Thu, Mar 6, 2014 at 9:09 AM, Zoltan Kiss <zoltan.kiss@citrix.com> wrote:
->> Do you have any feedback on this? I'm also adding KVM list as they might be
->> interested in this.
->>
->> Zoli
->>
->>
->> On 28/02/14 19:16, Zoltan Kiss wrote:
->>>
->>> The kernel datapath now switched to zerocopy Netlink messages, but that
->>> also
->>> means that the pages on frags array are sent straight to userspace. If
->>> those
->>> pages came outside the kernel, we have to swap them out with local copies.
->>>
->>> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
->
-> I do not think this is required, netlink zero copy only maps
-> pre-allocated buffers to user-space.
-How do you mean "pre-allocated"? By who?
+On Fri, Mar 07, 2014 at 02:52:06AM +0000, Al Viro wrote:
+> On Thu, Mar 06, 2014 at 03:47:26PM -0500, Tejun Heo wrote:
+> 
+> > Not much, but it should at least help bisection if something goes
+> > wrong, I think.
+> 
+> OK.  It looks better when folding pcpu_split_block() into the caller
+> is done as the first step.  See the attached 3 patches - combination
+> is the same, modulo comment addition and switching seen_free to bool.
 
-As far as I've seen the skb in this function came straight from the 
-device (vif in our case), and skb_zerocopy just copy the frags to 
-user_skb, which is sent to the userspace. Those frags contain pages from 
-guest, and it's a bad idea to pass them to userspace: e.g if userspace 
-dies in the meantime, what happens with them? Also, in Xen's case they 
-are actually not mapped to userspace, so accessing them can lead to garbage.
+All look good to me.  Applying them to percpu/for-3.15.
 
-Zoli
+Thanks.
+
+-- 
+tejun
