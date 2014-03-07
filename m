@@ -1,87 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753524AbaCGSKH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 13:10:07 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:45430 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330AbaCGSKE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 13:10:04 -0500
-Date: Fri, 7 Mar 2014 12:08:29 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: <balbi@ti.com>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH v6] phy: omap-usb2: move omap_usb.h from linux/usb/ to
- linux/phy/
-Message-ID: <20140307180828.GE23885@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1393846695-14644-1-git-send-email-kishon@ti.com>
- <1394210888-1587-1-git-send-email-kishon@ti.com>
- <20140307165043.GC23885@saruman.home>
- <531A0436.3080201@ti.com>
- <20140307174059.GD23885@saruman.home>
- <531A05E2.8080706@ti.com>
+	id S1752668AbaCGSPp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 13:15:45 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:65260 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751330AbaCGSPo convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 13:15:44 -0500
+Date: Fri, 7 Mar 2014 13:15:39 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Petr =?UTF-8?B?TWzDoWRlaw==?= <pmladek@suse.cz>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH 4/4] x86: Fix order of warning messages when ftrace
+ modifies code
+Message-ID: <20140307131539.6e224a6c@gandalf.local.home>
+In-Reply-To: <20140307084329.GD19132@pathway.suse.cz>
+References: <1392650573-3390-1-git-send-email-pmladek@suse.cz>
+	<1392650573-3390-5-git-send-email-pmladek@suse.cz>
+	<20140306181953.25681923@gandalf.local.home>
+	<20140307084329.GD19132@pathway.suse.cz>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tVmo9FyGdCe4F4YN"
-Content-Disposition: inline
-In-Reply-To: <531A05E2.8080706@ti.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---tVmo9FyGdCe4F4YN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 7 Mar 2014 09:43:29 +0100
+Petr Mládek <pmladek@suse.cz> wrote:
 
-On Fri, Mar 07, 2014 at 11:16:10PM +0530, Kishon Vijay Abraham I wrote:
-> On Friday 07 March 2014 11:10 PM, Felipe Balbi wrote:
-> >On Fri, Mar 07, 2014 at 11:09:02PM +0530, Kishon Vijay Abraham I wrote:
-> >>On Friday 07 March 2014 10:20 PM, Felipe Balbi wrote:
-> >>>On Fri, Mar 07, 2014 at 10:18:08PM +0530, Kishon Vijay Abraham I wrote:
-> >>>>No functional change. Moved omap_usb.h from linux/usb/ to linux/phy/.
-> >>>>Also removed the unused members of struct omap_usb (after phy-omap-pi=
-pe3
-> >>>>started using it's own header file)
-> >>>
-> >>>does this depend in any other patch ? I get the following when applying
-> >>>*only* this patch on top of v3.14-rc5:
-> >>
-> >>yeah.. this is for linux-phy tree. I'll take this patch.
-> >
-> >looks like you're doing two things at once (renaming the header and
-> >removing some unnecessary fields). At least mention the second thing.
->=20
-> The second line of the commit message mentions just that ;-)
+ 
+> This patch is nice to have but it is rather cosmetic. I do not mind
+> that much about it. Feel free to drop, accept, or just merge into
+> any other commit.
+> 
 
-hmmm, my parser didn't read that, nevermind ;-)
+OK, I just added it to my 3.16 queue.
 
---=20
-balbi
-
---tVmo9FyGdCe4F4YN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTGgscAAoJEIaOsuA1yqRED08QAKdEZtQXH6Y7Zv1v2XUiTyh7
-dDsq6Gu7kVrvwwP940ATXLQ6WcxeDPsK0tVRrhfr6SXAy/FByzZx1Lr2NcqciB4B
-SsZSAsv0DQT8auJgUr7f/w1TXa1dgWgW1fEo00vT3Byz758Whadr3ltXVvQfgmvP
-w6LrBdx4w1YmBxJF3qSFcZPiWnCLjaxpz0bgYVhpPqyUWI5MMdZKVS+XXW9KuBBN
-7JRWCmnZYcbDqtPLV/+zD2JVguUJpKy0f+TLgSDgPzzvrgch464lKiJ3+W2QZ92V
-ITS2kzh8kn2tAPmXU6B9sbcByD7bL5oPDhrmBWJPhhU5Jl9jZh5yvu4o6AO2DyTe
-0oRM2GzS0gokh7LWW1J7sb16tXuq0t3y+q7R5xk0oN3+fXOzXFj2Jl52Z0ZgoYPX
-uoPNrEr32BzaP4FG1PkZMKKwjlmqajk/JYyO6VDZkwaHYux2C0mbaYcTPdeT7rWy
-44AzzyrHfjyvovWfWG6Sgbkh7MR7VrbAoVdFMHCUGeRMdEyKQaqivBQjKYTDnsq8
-HW+924KWc7hcM+dFFHSpt/JPISEshJj4er6KvpB31EWxyxmiljo5dKo6T47+2coQ
-W2PP5F4I2qPD494jzOHCzXOiEyJiu7aA7t8tTyWUamlNOS23Av1wZkWeWnLfy2DQ
-OGOd+z/0ZkOeGXsiKtFM
-=zQ3L
------END PGP SIGNATURE-----
-
---tVmo9FyGdCe4F4YN--
+-- Steve
