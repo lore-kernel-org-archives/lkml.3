@@ -1,69 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751885AbaCGC5R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 21:57:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1452 "EHLO mx1.redhat.com"
+	id S1752012AbaCGC6u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 21:58:50 -0500
+Received: from mga01.intel.com ([192.55.52.88]:21693 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751065AbaCGC5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 21:57:16 -0500
-Date: Thu, 6 Mar 2014 21:57:03 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, linux-mm@kvack.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: oops in slab/leaks_show
-Message-ID: <20140307025703.GA30770@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Christoph Lameter <cl@linux-foundation.org>,
-	Pekka Enberg <penberg@kernel.org>, linux-mm@kvack.org,
-	Al Viro <viro@zeniv.linux.org.uk>
+	id S1751100AbaCGC6t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 21:58:49 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,605,1389772800"; 
+   d="scan'208";a="493898835"
+Date: Fri, 7 Mar 2014 10:58:43 +0800
+From: Liu ShuoX <shuox.liu@intel.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Colin Cross <ccross@android.com>, Anton Vorontsov <anton@enomsg.org>,
+        yanmin_zhang@linux.intel.com, akpm@linux-foundation.org
+Subject: Re: [PATCH] pstore: reset ftrace_read_cnt at ramoops_pstore_open
+Message-ID: <20140307025842.GA6435@lskakaxi-intel>
+References: <1393569464-14904-1-git-send-email-shuox.liu@intel.com>
+ <CAGXu5jLFq-FqXsw4SWuhE-JPzCCecvMdUHbF0_B=S-GODFU1pg@mail.gmail.com>
+ <20140304014002.GA10071@lskakaxi-intel>
+ <CAGXu5j+5CXKJ7+vaWgZXVJgFGHFzcwO6-D1iE+wyDcpr+g8jdw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Disposition: inline
+In-Reply-To: <CAGXu5j+5CXKJ7+vaWgZXVJgFGHFzcwO6-D1iE+wyDcpr+g8jdw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I pretty much always use SLUB for my fuzzing boxes, but thought I'd give SLAB a try
-for a change.. It blew up when something tried to read /proc/slab_allocators
-(Just cat it, and you should see the oops below)
+On Tue  4.Mar'14 at 11:11:11 -0800, Kees Cook wrote:
+>On Mon, Mar 3, 2014 at 5:40 PM, Liu ShuoX <shuox.liu@intel.com> wrote:
+>> On Mon  3.Mar'14 at 11:45:59 -0800, Kees Cook wrote:
+>>>
+>>> On Thu, Feb 27, 2014 at 10:37 PM,  <shuox.liu@intel.com> wrote:
+>>>>
+>>>> From: Liu ShuoX <shuox.liu@intel.com>
+>>>>
+>>>> ftrace_read_cnt need to be reset in open to support mutli times
+>>>> getting the records.
+>>>>
+>>>> Signed-off-by: Liu ShuoX <shuox.liu@intel.com>
+>>>> ---
+>>>>  fs/pstore/ram.c | 1 +
+>>>>  1 file changed, 1 insertion(+)
+>>>>
+>>>> diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+>>>> index fa8cef2..a5d0cab 100644
+>>>> --- a/fs/pstore/ram.c
+>>>> +++ b/fs/pstore/ram.c
+>>>> @@ -101,6 +101,7 @@ static int ramoops_pstore_open(struct pstore_info
+>>>> *psi)
+>>>>
+>>>>         cxt->dump_read_cnt = 0;
+>>>>         cxt->console_read_cnt = 0;
+>>>> +       cxt->ftrace_read_cnt = 0;
+>>>>         return 0;
+>>>>  }
+>>>
+>>>
+>>> I think we need a separate function for "clear" for the
+>>> ramoops_context struct. IIUC, we're missing a similar initialization
+>>> in ramoops_probe, which lacks both console_read_cnt=0 and
+>>> ftrace_read_cnt=0. Then both places could call this?
+>>
+>> Hi Kees,
+>> Currently, we have only one static ramoops_context named oops_cxt.
+>> *_read_cnt should be initialized to 0 as default. Need we still add
+>> such function for 'clear'?
+>
+>We have the pstore-global "oops_cxt" context. It is "initialized" only
+>once in ramoops_probe (and seems to needlessly set dump_read_cnt to
+>0). Otherwise, the context is initialized via ramoops_register_dummy
+>from module parameters (and initialized to zero with kzalloc).
+>
+>So, I think my initial comment about "clear" is probably not right,
+>but that ramoops_pstore_open should be doing that (i.e. your original
+>patch is close). However, I think I'd like to see the needless zeroing
+>in ramoops_probe removed, and the "variables that need clearing on
+>open" documented in comments in "struct ramoops_context". That should
+>make this code more clear to read next time. :)
+Sorry for delay reply. How about below patch?
 
-Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-Modules linked in: fuse hidp snd_seq_dummy tun rfcomm bnep llc2 af_key can_raw ipt_ULOG can_bcm nfnetlink scsi_transport_iscsi nfc caif_socket caif af_802154 phonet af_rxrpc can pppoe pppox ppp_generic slhc irda crc_ccitt rds rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 cfg80211 xfs coretemp hwmon x86_pkg_temp_thermal kvm_intel kvm crct10dif_pclmul crc32c_intel ghash_clmulni_intel libcrc32c usb_debug microcode snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_codec_generic pcspkr btusb bluetooth 6lowpan_iphc rfkill snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm snd_timer e1000e snd ptp shpchp soundcore pps_core serio_raw
-CPU: 1 PID: 9386 Comm: trinity-c33 Not tainted 3.14.0-rc5+ #131 
-task: ffff8801aa46e890 ti: ffff880076924000 task.ti: ffff880076924000
-RIP: 0010:[<ffffffffaa1a8f4a>]  [<ffffffffaa1a8f4a>] handle_slab+0x8a/0x180
-RSP: 0018:ffff880076925de0  EFLAGS: 00010002
-RAX: 0000000000001000 RBX: 0000000000000000 RCX: 000000005ce85ce7
-RDX: ffffea00079be100 RSI: 0000000000001000 RDI: ffff880107458000
-RBP: ffff880076925e18 R08: 0000000000000001 R09: 0000000000000000
-R10: 0000000000000000 R11: 000000000000000f R12: ffff8801e6f84000
-R13: ffffea00079be100 R14: ffff880107458000 R15: ffff88022bb8d2c0
-FS:  00007fb769e45740(0000) GS:ffff88024d040000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: ffff8801e6f84ff8 CR3: 00000000a22db000 CR4: 00000000001407e0
-DR0: 0000000002695000 DR1: 0000000002695000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000070602
-Stack:
- ffff8802339dcfc0 ffff88022bb8d2c0 ffff880107458000 ffff88022bb8d2c0
- ffff8802339dd008 ffff8802339dcfc0 ffffea00079be100 ffff880076925e68
- ffffffffaa1ad9be ffff880203fe4f00 ffff88022bb8d318 0000000076925e98
-Call Trace:
- [<ffffffffaa1ad9be>] leaks_show+0xce/0x240
- [<ffffffffaa1e6c0e>] seq_read+0x28e/0x490
- [<ffffffffaa23008d>] proc_reg_read+0x3d/0x80
- [<ffffffffaa1c026b>] vfs_read+0x9b/0x160
- [<ffffffffaa1c0d88>] SyS_read+0x58/0xb0
- [<ffffffffaa7420aa>] tracesys+0xd4/0xd9
-Code: f5 00 00 00 0f 1f 44 00 00 48 63 c8 44 3b 0c 8a 0f 84 e3 00 00 00 83 c0 01 44 39 c0 72 eb 41 f6 47 1a 01 0f 84 e9 00 00 00 89 f0 <4d> 8b 4c 04 f8 4d 85 c9 0f 84 88 00 00 00 49 8b 7e 08 4d 8d 46 
-RIP  [<ffffffffaa1a8f4a>] handle_slab+0x8a/0x180
- RSP <ffff880076925de0>
-CR2: ffff8801e6f84ff8
+From: Liu ShuoX <shuox.liu@intel.com>
 
+ftrace_read_cnt need to be reset in open to support mutli times
+getting the records.
 
-  2b:*	4d 8b 4c 04 f8       	mov    -0x8(%r12,%rax,1),%r9     <-- trapping instruction
+Signed-off-by: Liu ShuoX <shuox.liu@intel.com>
+---
+  fs/pstore/ram.c | 3 ++-
+  1 file changed, 2 insertions(+), 1 deletion(-)
 
+diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+index fa8cef2..9fe5b13 100644
+--- a/fs/pstore/ram.c
++++ b/fs/pstore/ram.c
+@@ -86,6 +86,7 @@ struct ramoops_context {
+  	struct persistent_ram_ecc_info ecc_info;
+  	unsigned int max_dump_cnt;
+  	unsigned int dump_write_cnt;
++	/* _read_cnt need clear on ramoops_pstore_open */
+  	unsigned int dump_read_cnt;
+  	unsigned int console_read_cnt;
+  	unsigned int ftrace_read_cnt;
+@@ -101,6 +102,7 @@ static int ramoops_pstore_open(struct pstore_info *psi)
+  
+  	cxt->dump_read_cnt = 0;
+  	cxt->console_read_cnt = 0;
++	cxt->ftrace_read_cnt = 0;
+  	return 0;
+  }
+  
+@@ -428,7 +430,6 @@ static int ramoops_probe(struct platform_device *pdev)
+  	if (pdata->ftrace_size && !is_power_of_2(pdata->ftrace_size))
+  		pdata->ftrace_size = rounddown_pow_of_two(pdata->ftrace_size);
+  
+-	cxt->dump_read_cnt = 0;
+  	cxt->size = pdata->mem_size;
+  	cxt->phys_addr = pdata->mem_address;
+  	cxt->record_size = pdata->record_size;
+-- 
+1.8.3.2
 
