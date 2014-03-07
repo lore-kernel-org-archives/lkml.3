@@ -1,36 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753771AbaCGV2E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 16:28:04 -0500
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:42706 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752875AbaCGV2A (ORCPT
+	id S1753879AbaCGV3N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 16:29:13 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55971 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752238AbaCGV3M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 16:28:00 -0500
-From: Christian Lamparter <chunkeey@googlemail.com>
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Subject: Re: [PATCH] p54usb: fix leaks at failure path in p54u_probe()
-Date: Fri, 07 Mar 2014 22:27:34 +0100
-Message-ID: <2146611.esrnhmtufH@debian64>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc4-wl+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1394226709-10763-1-git-send-email-khoroshilov@ispras.ru>
-References: <1394226709-10763-1-git-send-email-khoroshilov@ispras.ru>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Fri, 7 Mar 2014 16:29:12 -0500
+Date: Fri, 7 Mar 2014 21:28:16 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Arnd Bergmann <arnd@arndb.de>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-serial@vger.kernel.org
+Subject: Re: [PATCH RFC v2 04/11] tty: xuartps: Remove bogus comment and
+ register write
+Message-ID: <20140307212816.715e5e19@alan.etchedpixels.co.uk>
+In-Reply-To: <1394219614-3197-5-git-send-email-soren.brinkmann@xilinx.com>
+References: <1394219614-3197-1-git-send-email-soren.brinkmann@xilinx.com>
+	<1394219614-3197-5-git-send-email-soren.brinkmann@xilinx.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, March 08, 2014 01:11:49 AM Alexey Khoroshilov wrote:
-> If p54u_load_firmware() fails, p54u_probe() does not deallocate
-> already allocated resources. The patch adds proper failure handling.
-> 
-> Found by Linux Driver Verification project (linuxtesting.org).
-> 
-> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Acked-by: Christian Lamparter <chunkeey@googlemail.com>
+On Fri,  7 Mar 2014 11:13:27 -0800
+Soren Brinkmann <soren.brinkmann@xilinx.com> wrote:
 
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> ---
+>  drivers/tty/serial/xilinx_uartps.c | 6 +-----
+>  1 file changed, 1 insertion(+), 5 deletions(-)
+> 
+> diff --git a/drivers/tty/serial/xilinx_uartps.c b/drivers/tty/serial/xilinx_uartps.c
+> index a4bd6242e72d..a39c2d290902 100644
+> --- a/drivers/tty/serial/xilinx_uartps.c
+> +++ b/drivers/tty/serial/xilinx_uartps.c
+> @@ -1082,11 +1082,7 @@ static void xuartps_console_write(struct console *co, const char *s,
+>  
+>  	xuartps_writel(ctrl, XUARTPS_CR_OFFSET);
+>  
+> -	/* restore interrupt state, it seems like there may be a h/w bug
+> -	 * in that the interrupt enable register should not need to be
+> -	 * written based on the data sheet
+> -	 */
+> -	xuartps_writel(~imr, XUARTPS_IDR_OFFSET);
+> +	/* restore interrupt state */
+
+It would be appropriate for the changelog at least to explain why the
+note about the data sheet differing is going away !
