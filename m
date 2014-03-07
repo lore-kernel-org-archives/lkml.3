@@ -1,68 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181AbaCGUpl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 15:45:41 -0500
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:59838 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197AbaCGUpj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 15:45:39 -0500
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: [systemd-devel] Suspending access to opened/active /dev/nodes during application runtime
-From: Lukasz Pawelczyk <havner@gmail.com>
-In-Reply-To: <20140307190939.GA8082@kroah.com>
-Date: Fri, 7 Mar 2014 21:45:28 +0100
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        libvir-list@redhat.com, lxc-devel@lists.linuxcontainers.org,
-        systemd-devel@lists.freedesktop.org,
-        David Herrmann <dh.herrmann@gmail.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <93871091-7845-4BCC-A841-F724BEDF6E4B@gmail.com>
-References: <E7B2439D-FF36-4353-8E1A-C58E5C33A89F@gmail.com> <20140307190939.GA8082@kroah.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-X-Mailer: Apple Mail (2.1874)
+	id S1753752AbaCGUpq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 15:45:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24230 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752591AbaCGUpk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 15:45:40 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Shaohua Li <shli@fusionio.com>,
+        linux-kernel@vger.kernel.org, msnitzer@redhat.com
+Subject: Re: [PATCH 1/1] block: rework flush sequencing for blk-mq
+References: <20140130132620.GA6031@infradead.org>
+	<20140130132630.GB6031@infradead.org>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Fri, 07 Mar 2014 15:45:09 -0500
+In-Reply-To: <20140130132630.GB6031@infradead.org> (Christoph Hellwig's
+	message of "Thu, 30 Jan 2014 05:26:30 -0800")
+Message-ID: <x49iorp3fhm.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Christoph Hellwig <hch@infradead.org> writes:
 
-On 7 Mar 2014, at 20:09, Greg KH <gregkh@linuxfoundation.org> wrote:
+> Witch to using a preallocated flush_rq for blk-mq similar to what's done
+> with the old request path.  This allows us to set up the request properly
+> with a tag from the actually allowed range and ->rq_disk as needed by
+> some drivers.  To make life easier we also switch to dynamic allocation
+> of ->flush_rq for the old path.
+>
+> This effectively reverts most of
+>
+>     "blk-mq: fix for flush deadlock"
+>
+> and
+>
+>     "blk-mq: Don't reserve a tag for flush request"
+>
+> Signed-off-by: Christoph Hellwig <hch@lst.de>
 
-> On Fri, Mar 07, 2014 at 07:46:44PM +0100, Lukasz Pawelczyk wrote:
->> Problem:
->> Has anyone thought about a mechanism to limit/remove an access to a
->> device during an application runtime? Meaning we have an application
->> that has an open file descriptor to some /dev/node and depending on
->> *something* it gains or looses the access to it gracefully (with or
->> without a notification, but without any fatal consequences).
->> 
->> Example:
->> LXC. Imagine we have 2 separate containers. Both running full operating
->> systems. Specifically with 2 X servers. Both running concurrently of
->> course. Both need the same input devices (e.g. we have just one mouse).
-> 
-> Stop right there.
-> 
-> If they "both" need an input device, then they should use the "shared"
-> input device stream, i.e. evdev.
-> 
-> And it goes the same for every type of device the kernel is exposing to
-> userspace, if you want to "share" them, then you need to work on
-> changing the kernel to be able to handle shared devices.
+[snip]
 
-I think you might have misunderstood me. They are using a shared input stream (evdev in this case). The problem is I don’t want them to eavesdrop on each other. So it’s not about making it to work. It’s about making them to work „in turns”.
+> -static void blk_mq_flush_data_insert(struct request *rq)
+> +static bool blk_flush_queue_rq(struct request *rq)
+>  {
+> -	INIT_WORK(&rq->mq_flush_data, mq_flush_data_run);
+> -	kblockd_schedule_work(rq->q, &rq->mq_flush_data);
+> +	if (rq->q->mq_ops) {
+> +		INIT_WORK(&rq->mq_flush_work, mq_flush_run);
+> +		kblockd_schedule_work(rq->q, &rq->mq_flush_work);
+> +		return false;
+> +	} else {
+> +		list_add_tail(&rq->queuelist, &rq->q->queue_head);
+> +		return true;
+> +	}
+>  }
+>  
+>  /**
+> @@ -187,12 +193,7 @@ static bool blk_flush_complete_seq(struct request *rq, unsigned int seq,
+>  
+>  	case REQ_FSEQ_DATA:
+>  		list_move_tail(&rq->flush.list, &q->flush_data_in_flight);
+> -		if (q->mq_ops)
+> -			blk_mq_flush_data_insert(rq);
+> -		else {
+> -			list_add(&rq->queuelist, &q->queue_head);
+> -			queued = true;
+> -		}
+> +		queued = blk_flush_queue_rq(rq);
+>  		break;
 
-> And odds are, you will get back a big "as-if" comment from the kernel
-> developers, as for almost all devices, they can't be shared, for very
-> good reasons.
+Hi, Christoph,
 
-Evdev devices can.
+Did you mean to switch from list_add to list_add_tail?  That seems like
+a change that warrants mention.
 
-
--- 
-Regards,
-Havner
-
-
-
+Cheers,
+Jeff
