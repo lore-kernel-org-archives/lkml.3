@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668AbaCGSPp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 13:15:45 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:65260 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751330AbaCGSPo convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 13:15:44 -0500
-Date: Fri, 7 Mar 2014 13:15:39 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Petr =?UTF-8?B?TWzDoWRlaw==?= <pmladek@suse.cz>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: [PATCH 4/4] x86: Fix order of warning messages when ftrace
- modifies code
-Message-ID: <20140307131539.6e224a6c@gandalf.local.home>
-In-Reply-To: <20140307084329.GD19132@pathway.suse.cz>
-References: <1392650573-3390-1-git-send-email-pmladek@suse.cz>
-	<1392650573-3390-5-git-send-email-pmladek@suse.cz>
-	<20140306181953.25681923@gandalf.local.home>
-	<20140307084329.GD19132@pathway.suse.cz>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	id S1752910AbaCGSQu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 13:16:50 -0500
+Received: from qmta02.emeryville.ca.mail.comcast.net ([76.96.30.24]:42841 "EHLO
+	qmta02.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751545AbaCGSQs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 13:16:48 -0500
+Date: Fri, 7 Mar 2014 12:16:45 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@nuc
+To: Mike Travis <travis@sgi.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Hedi Berriche <hedi@sgi.com>,
+        Dimitri Sivanich <sivanich@sgi.com>
+Subject: Re: [PATCH 31/48] uv: Replace __get_cpu_var
+In-Reply-To: <5317E33F.5000206@sgi.com>
+Message-ID: <alpine.DEB.2.10.1403071214560.22377@nuc>
+References: <20140214201841.826179349@linux.com> <20140214201907.228035121@linux.com> <20140304150217.ac9d364008a3c95cb2a79b34@linux-foundation.org> <alpine.DEB.2.10.1403042130250.3742@nuc> <20140304200023.7b991909.akpm@linux-foundation.org>
+ <alpine.DEB.2.10.1403051547140.16786@nuc> <5317E33F.5000206@sgi.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 Mar 2014 09:43:29 +0100
-Petr Mládek <pmladek@suse.cz> wrote:
+On Wed, 5 Mar 2014, Mike Travis wrote:
 
- 
-> This patch is nice to have but it is rather cosmetic. I do not mind
-> that much about it. Feel free to drop, accept, or just merge into
-> any other commit.
-> 
+> I haven't had much chance yet to look over your proposed changes but
+> FYI, the counters are strictly feedback to insure that there are not
+> unhandled NMI events from the perf subsystem.  The exact count is
+> irrelevant.  IOW, counts in the double or triple digits is okay,
+> counts > 100,000 is definitely not okay (there are multiple millions
+> of perf events every 'perf top' refresh.)
+>
+> I'm not sure if this alters how you want to approach the changes.
 
-OK, I just added it to my 3.16 queue.
+Gotta patch here that converts all the atomic per cpu counters to int but
+the local64_t definitions look very strange to me. I have never seen a
+local64_t definition that is global and used for a counters. That can only
+work if there is only one and exactly one processor that is modifying the
+count.
 
--- Steve
