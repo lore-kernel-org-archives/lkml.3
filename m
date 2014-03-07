@@ -1,65 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752211AbaCGC6y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 21:58:54 -0500
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:34344 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752062AbaCGC6w (ORCPT
+	id S1752306AbaCGC7J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 21:59:09 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56523 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752083AbaCGC6y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 21:58:52 -0500
+	Thu, 6 Mar 2014 21:58:54 -0500
+X-Original-SENDERIP: 10.177.222.157
+X-Original-MAILFROM: minchan@kernel.org
+Date: Fri, 7 Mar 2014 11:58:52 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Laura Abbott <lauraa@codeaurora.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Vlastimil Babka <vbabka@suse.cz>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCHv2] mm/compaction: Break out of loop on !PageBuddy in
+ isolate_freepages_block
+Message-ID: <20140307025852.GC3787@bbox>
+References: <1394130092-25440-1-git-send-email-lauraa@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <BD75D217E5BAC84080F8EFB2582976378B327178@ORSMSX109.amr.corp.intel.com>
-References: <1392900697-27577-1-git-send-email-heikki.krogerus@linux.intel.com>
-	<1392900697-27577-3-git-send-email-heikki.krogerus@linux.intel.com>
-	<53062F97.3050407@wwwdotorg.org>
-	<CAGb2v66-tDZhrm9dnXe+PdQTaLZbw20sw3uYzLor2eXpVWmPMA@mail.gmail.com>
-	<5306E599.7020605@wwwdotorg.org>
-	<CACRpkdZBvKU31EDX=6=wVLXaQDAqD6VHtaE_mGnFLr1UYQAH9g@mail.gmail.com>
-	<BD75D217E5BAC84080F8EFB2582976378B327178@ORSMSX109.amr.corp.intel.com>
-Date: Fri, 7 Mar 2014 10:58:51 +0800
-Message-ID: <CACRpkdaU3OCa1qDojcBK4Ci+YfOC7YfqLWqqBiwzh9vfEasH+g@mail.gmail.com>
-Subject: Re: [PATCH 2/4] net: rfkill: gpio: remove gpio names
-From: Linus Walleij <linus.walleij@linaro.org>
-To: "Gross, Mark" <mark.gross@intel.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Chen-Yu Tsai <wens@csie.org>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Rhyland Klein <rklein@nvidia.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "Westerberg, Mika" <mika.westerberg@intel.com>,
-        "mgross@linux.intel.com" <mgross@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394130092-25440-1-git-send-email-lauraa@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 28, 2014 at 1:38 AM, Gross, Mark <mark.gross@intel.com> wrote:
+On Thu, Mar 06, 2014 at 10:21:32AM -0800, Laura Abbott wrote:
+> We received several reports of bad page state when freeing CMA pages
+> previously allocated with alloc_contig_range:
+> 
+> <1>[ 1258.084111] BUG: Bad page state in process Binder_A  pfn:63202
+> <1>[ 1258.089763] page:d21130b0 count:0 mapcount:1 mapping:  (null) index:0x7dfbf
+> <1>[ 1258.096109] page flags: 0x40080068(uptodate|lru|active|swapbacked)
+> 
+> Based on the page state, it looks like the page was still in use. The page
+> flags do not make sense for the use case though. Further debugging showed
+> that despite alloc_contig_range returning success, at least one page in the
+> range still remained in the buddy allocator.
+> 
+> There is an issue with isolate_freepages_block. In strict mode (which CMA
+> uses), if any pages in the range cannot be isolated,
+> isolate_freepages_block should return failure 0. The current check keeps
+> track of the total number of isolated pages and compares against the size
+> of the range:
+> 
+>         if (strict && nr_strict_required > total_isolated)
+>                 total_isolated = 0;
+> 
+> After taking the zone lock, if one of the pages in the range is not
+> in the buddy allocator, we continue through the loop and do not
+> increment total_isolated. If in the last iteration of the loop we isolate
+> more than one page (e.g. last page needed is a higher order page), the
+> check for total_isolated may pass and we fail to detect that a page was
+> skipped. The fix is to bail out if the loop immediately if we are in
+> strict mode. There's no benfit to continuing anyway since we need all
+> pages to be isolated. Additionally, drop the error checking based on
+> nr_strict_required and just check the pfn ranges. This matches with
+> what isolate_freepages_range does.
+> 
+> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
 
-> So if you have the luxury of being able to influence (file bugs against or write)
-> the platform enumeration ABI then with ACPI you can have a named gpio today.
-> Note: there is an expectation that the _PRP feature to go into the next version
-> of ACPI and that should enable a trivial 1-1 mapping (when _prp is used by the
-> ACPI platform) between the different platform enumeration API's (DT and ACPI).
+Nice catch! stable stuff?
+Acked-by: Minchan Kim <minchan@kernel.org>
 
-Oh I wasn't aware. This makes things better, and gives con_id a clear usecase
-in the ACPI probe path as well.
-
-[Stephen]
->> If there were ever an (upstream?) ACPI "binding"(?) for the Tegra SDHCI
->> controller, I would hope it would use the exact same names for the GPIO
->> signals.
->
-> me to!
-
-Amen to that.
-
-Yours,
-Linus Walleij
+-- 
+Kind regards,
+Minchan Kim
