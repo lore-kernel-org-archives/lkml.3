@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751945AbaCGBQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 20:16:58 -0500
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:55490 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003AbaCGBQz (ORCPT
+	id S1751451AbaCGBSN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 20:18:13 -0500
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:63548 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751438AbaCGBSL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 20:16:55 -0500
+	Thu, 6 Mar 2014 20:18:11 -0500
 MIME-Version: 1.0
-In-Reply-To: <1394134180-23208-1-git-send-email-delicious.quinoa@gmail.com>
-References: <1394134180-23208-1-git-send-email-delicious.quinoa@gmail.com>
-Date: Fri, 7 Mar 2014 09:16:54 +0800
-Message-ID: <CACRpkdY8tXpah5DNUKMEqHTRKY-y8U=stH6wJOEcR8hK7dpniw@mail.gmail.com>
-Subject: Re: [PATCH] fix build error in gpio-dwapb patch
+In-Reply-To: <CANk1AXTZFKH45qmGip8sc5KYxHNwfZqogrPfXOzz+sz-xyuosw@mail.gmail.com>
+References: <1393369261-17469-1-git-send-email-delicious.quinoa@gmail.com>
+	<20140306135019.GF18529@joshc.qualcomm.com>
+	<CANk1AXTZFKH45qmGip8sc5KYxHNwfZqogrPfXOzz+sz-xyuosw@mail.gmail.com>
+Date: Fri, 7 Mar 2014 09:18:10 +0800
+Message-ID: <CACRpkdZNLtdRjQ1bgQR7MULtovY0awOC+CuFF26NHcFtMc71xw@mail.gmail.com>
+Subject: Re: [PATCH v12] gpio: add a driver for the Synopsys DesignWare APB
+ GPIO block
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Alan Tull <delicious.quinoa@gmail.com>
-Cc: Linus Walleij <linus.walleij@linaro.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+To: delicious quinoa <delicious.quinoa@gmail.com>
+Cc: Josh Cartwright <joshc@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
         "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
         "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
         Jamie Iles <jamie@jamieiles.com>,
@@ -35,19 +38,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 7, 2014 at 3:29 AM, Alan Tull <delicious.quinoa@gmail.com> wrote:
+On Thu, Mar 6, 2014 at 11:58 PM, delicious quinoa
+<delicious.quinoa@gmail.com> wrote:
 
-> From: Alan Tull <atull@altera.com>
+> The fix is:
 >
-> fix build error with this message:
-> kernel/irq/Kconfig:41:error: recursive dependency detected!
-> kernel/irq/Kconfig:41:  symbol GENERIC_IRQ_CHIP is selected by GPIO_DWAPB
-> drivers/gpio/Kconfig:131:       symbol GPIO_DWAPB depends on IRQ_DOMAIN
-> kernel/irq/Kconfig:46:  symbol IRQ_DOMAIN is selected by GENERIC_IRQ_CHIP
->
-> Signed-off-by: Alan Tull <atull@altera.com>
+> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+> index 9979017..0e524d7 100644
+> --- a/drivers/gpio/Kconfig
+> +++ b/drivers/gpio/Kconfig
+> @@ -132,7 +132,7 @@ config GPIO_DWAPB
+>         tristate "Synopsys DesignWare APB GPIO driver"
+>         select GPIO_GENERIC
+>         select GENERIC_IRQ_CHIP
+> -       depends on OF_GPIO && IRQ_DOMAIN
+> +       depends on OF_GPIO
+>         help
+>           Say Y or M here to build support for the Synopsys DesignWare APB
+>           GPIO block.
 
-Patch applied, thanks a lot Alan!
+OK I got this as a patch from Alan so it's fixed now.
 
 Yours,
 Linus Walleij
