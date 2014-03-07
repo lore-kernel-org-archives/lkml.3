@@ -1,194 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751680AbaCGGOL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 01:14:11 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:43584 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830AbaCGGOI (ORCPT
+	id S1751451AbaCGGQV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 01:16:21 -0500
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:38773 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750896AbaCGGQU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 01:14:08 -0500
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>
-CC: <rogerq@ti.com>, <kishon@ti.com>, <balbi@ti.com>
-Subject: [PATCH v3] phy: ti-pipe3: Add SATA DPLL support
-Date: Fri, 7 Mar 2014 11:43:39 +0530
-Message-ID: <1394172819-14225-1-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 7 Mar 2014 01:16:20 -0500
+Message-ID: <531963D9.5040701@linux.vnet.ibm.com>
+Date: Fri, 07 Mar 2014 11:44:49 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Sudeep Holla <sudeep.holla@arm.com>
+CC: linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH RFC/RFT v3 6/9] powerpc: move cacheinfo sysfs to generic
+ cacheinfo infrastructure
+References: <1392825976-17633-1-git-send-email-sudeep.holla@arm.com> <1392825976-17633-7-git-send-email-sudeep.holla@arm.com> <531945D1.7010503@linux.vnet.ibm.com>
+In-Reply-To: <531945D1.7010503@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14030706-9574-0000-0000-00000C4E0160
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roger Quadros <rogerq@ti.com>
+On 03/07/2014 09:36 AM, Anshuman Khandual wrote:
+> On 02/19/2014 09:36 PM, Sudeep Holla wrote:
+>> From: Sudeep Holla <sudeep.holla@arm.com>
+>>
+>> This patch removes the redundant sysfs cacheinfo code by making use of
+>> the newly introduced generic cacheinfo infrastructure.
+>>
+>> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+>> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>> Cc: Paul Mackerras <paulus@samba.org>
+>> Cc: linuxppc-dev@lists.ozlabs.org
+>> ---
+>>  arch/powerpc/kernel/cacheinfo.c | 831 ++++++----------------------------------
+>>  arch/powerpc/kernel/cacheinfo.h |   8 -
+>>  arch/powerpc/kernel/sysfs.c     |   4 -
+>>  3 files changed, 109 insertions(+), 734 deletions(-)
+>>  delete mode 100644 arch/powerpc/kernel/cacheinfo.h
+>>
+>> diff --git a/arch/powerpc/kernel/cacheinfo.c b/arch/powerpc/kernel/cacheinfo.c
+>> index 2912b87..05b7580 100644
+>> --- a/arch/powerpc/kernel/cacheinfo.c
+>> +++ b/arch/powerpc/kernel/cacheinfo.c
+>> @@ -10,38 +10,10 @@
+>>   * 2 as published by the Free Software Foundation.
+>>   */
+>>
+>> +#include <linux/cacheinfo.h>
+>>  #include <linux/cpu.h>
+>> -#include <linux/cpumask.h>
+>>  #include <linux/kernel.h>
+>> -#include <linux/kobject.h>
+>> -#include <linux/list.h>
+>> -#include <linux/notifier.h>
+>>  #include <linux/of.h>
+>> -#include <linux/percpu.h>
+>> -#include <linux/slab.h>
+>> -#include <asm/prom.h>
+>> -
+>> -#include "cacheinfo.h"
+>> -
+>> -/* per-cpu object for tracking:
+>> - * - a "cache" kobject for the top-level directory
+>> - * - a list of "index" objects representing the cpu's local cache hierarchy
+>> - */
+>> -struct cache_dir {
+>> -	struct kobject *kobj; /* bare (not embedded) kobject for cache
+>> -			       * directory */
+>> -	struct cache_index_dir *index; /* list of index objects */
+>> -};
+>> -
+>> -/* "index" object: each cpu's cache directory has an index
+>> - * subdirectory corresponding to a cache object associated with the
+>> - * cpu.  This object's lifetime is managed via the embedded kobject.
+>> - */
+>> -struct cache_index_dir {
+>> -	struct kobject kobj;
+>> -	struct cache_index_dir *next; /* next index in parent directory */
+>> -	struct cache *cache;
+>> -};
+>>
+>>  /* Template for determining which OF properties to query for a given
+>>   * cache type */
+>> @@ -60,11 +32,6 @@ struct cache_type_info {
+>>  	const char *nr_sets_prop;
+>>  };
+>>
+>> -/* These are used to index the cache_type_info array. */
+>> -#define CACHE_TYPE_UNIFIED     0
+>> -#define CACHE_TYPE_INSTRUCTION 1
+>> -#define CACHE_TYPE_DATA        2
+>> -
+>>  static const struct cache_type_info cache_type_info[] = {
+>>  	{
+>>  		/* PowerPC Processor binding says the [di]-cache-*
+>> @@ -77,246 +44,115 @@ static const struct cache_type_info cache_type_info[] = {
+>>  		.nr_sets_prop    = "d-cache-sets",
+>>  	},
+>>  	{
+>> -		.name            = "Instruction",
+>> -		.size_prop       = "i-cache-size",
+>> -		.line_size_props = { "i-cache-line-size",
+>> -				     "i-cache-block-size", },
+>> -		.nr_sets_prop    = "i-cache-sets",
+>> -	},
+>> -	{
+>>  		.name            = "Data",
+>>  		.size_prop       = "d-cache-size",
+>>  		.line_size_props = { "d-cache-line-size",
+>>  				     "d-cache-block-size", },
+>>  		.nr_sets_prop    = "d-cache-sets",
+>>  	},
+>> +	{
+>> +		.name            = "Instruction",
+>> +		.size_prop       = "i-cache-size",
+>> +		.line_size_props = { "i-cache-line-size",
+>> +				     "i-cache-block-size", },
+>> +		.nr_sets_prop    = "i-cache-sets",
+>> +	},
+>>  };
+> 
+> 
+> Hey Sudeep,
+> 
+> After applying this patch, the cache_type_info array looks like this.
+> 
+> static const struct cache_type_info cache_type_info[] = {
+>         {
+>                 /* 
+>                  * PowerPC Processor binding says the [di]-cache-*
+>                  * must be equal on unified caches, so just use
+>                  * d-cache properties.
+>                  */
+>                 .name            = "Unified",
+>                 .size_prop       = "d-cache-size",
+>                 .line_size_props = { "d-cache-line-size",
+>                                      "d-cache-block-size", },
+>                 .nr_sets_prop    = "d-cache-sets",
+>         },
+>         {
+>                 .name            = "Data",
+>                 .size_prop       = "d-cache-size",
+>                 .line_size_props = { "d-cache-line-size",
+>                                      "d-cache-block-size", },
+>                 .nr_sets_prop    = "d-cache-sets",
+>         },
+>         {
+>                 .name            = "Instruction",
+>                 .size_prop       = "i-cache-size",
+>                 .line_size_props = { "i-cache-line-size",
+>                                      "i-cache-block-size", },
+>                 .nr_sets_prop    = "i-cache-sets",
+>         },
+> };
+> 
+> and this function computes the the array index for any given cache type
+> define for PowerPC.
+> 
+> static inline int get_cacheinfo_idx(enum cache_type type)
+> {
+>         if (type == CACHE_TYPE_UNIFIED)
+>                 return 0;
+>         else
+>                 return type;
+> }
+> 
+> These types are define in include/linux/cacheinfo.h as
+> 
+> enum cache_type {
+>         CACHE_TYPE_NOCACHE = 0,
+>         CACHE_TYPE_INST = BIT(0),		---> 1
+>         CACHE_TYPE_DATA = BIT(1),		---> 2
+>         CACHE_TYPE_SEPARATE = CACHE_TYPE_INST | CACHE_TYPE_DATA,
+>         CACHE_TYPE_UNIFIED = BIT(2),
+> };
+> 
+> When it is UNIFIED we return index 0, which is correct. But the index
+> for instruction and data cache seems to be swapped which wrong. This
+> will fetch invalid properties for any given cache type.
+> 
+> I have done some initial review and testing for this patch's impact on
+> PowerPC (ppc64 POWER specifically). I am trying to do some code clean-up
+> and re-arrangements. Will post out soon. Thanks !
 
-USB and SATA DPLLs need different settings. Provide
-the SATA DPLL settings and use the proper DPLL settings
-based on device tree node's compatible_id.
+It does not work correctly on POWER.
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
-Changes from v2:
-* kept only the drivers/phy part
+The new patchset adds some more attributes for every cache entry apart from
+what we used to have on PowerPC before. From the ABI perspective, the old ones
+should reflect the correct value in the same manner as before. Looks like
+the generic code will make any attribute as "Unknown" if the arch code does
+not populate them in the respective callback.
 
- drivers/phy/phy-ti-pipe3.c |   76 ++++++++++++++++++++++++++++++++------------
- 1 file changed, 55 insertions(+), 21 deletions(-)
+Here are some problems found on a POWER7 system
 
-diff --git a/drivers/phy/phy-ti-pipe3.c b/drivers/phy/phy-ti-pipe3.c
-index 211703c..f141237 100644
---- a/drivers/phy/phy-ti-pipe3.c
-+++ b/drivers/phy/phy-ti-pipe3.c
-@@ -66,6 +66,11 @@ struct pipe3_dpll_params {
- 	u32	mf;
- };
- 
-+struct pipe3_dpll_map {
-+	unsigned long rate;
-+	struct pipe3_dpll_params params;
-+};
-+
- struct ti_pipe3 {
- 	void __iomem		*pll_ctrl_base;
- 	struct device		*dev;
-@@ -73,20 +78,27 @@ struct ti_pipe3 {
- 	struct clk		*wkupclk;
- 	struct clk		*sys_clk;
- 	struct clk		*refclk;
-+	struct pipe3_dpll_map	*dpll_map;
- };
- 
--struct pipe3_dpll_map {
--	unsigned long rate;
--	struct pipe3_dpll_params params;
--};
--
--static struct pipe3_dpll_map dpll_map[] = {
-+static struct pipe3_dpll_map dpll_map_usb[] = {
- 	{12000000, {1250, 5, 4, 20, 0} },	/* 12 MHz */
- 	{16800000, {3125, 20, 4, 20, 0} },	/* 16.8 MHz */
- 	{19200000, {1172, 8, 4, 20, 65537} },	/* 19.2 MHz */
- 	{20000000, {1000, 7, 4, 10, 0} },	/* 20 MHz */
- 	{26000000, {1250, 12, 4, 20, 0} },	/* 26 MHz */
- 	{38400000, {3125, 47, 4, 20, 92843} },	/* 38.4 MHz */
-+	{ },					/* Terminator */
-+};
-+
-+static struct pipe3_dpll_map dpll_map_sata[] = {
-+	{12000000, {1000, 7, 4, 6, 0} },	/* 12 MHz */
-+	{16800000, {714, 7, 4, 6, 0} },		/* 16.8 MHz */
-+	{19200000, {625, 7, 4, 6, 0} },		/* 19.2 MHz */
-+	{20000000, {600, 7, 4, 6, 0} },		/* 20 MHz */
-+	{26000000, {461, 7, 4, 6, 0} },		/* 26 MHz */
-+	{38400000, {312, 7, 4, 6, 0} },		/* 38.4 MHz */
-+	{ },					/* Terminator */
- };
- 
- static inline u32 ti_pipe3_readl(void __iomem *addr, unsigned offset)
-@@ -100,15 +112,20 @@ static inline void ti_pipe3_writel(void __iomem *addr, unsigned offset,
- 	__raw_writel(data, addr + offset);
- }
- 
--static struct pipe3_dpll_params *ti_pipe3_get_dpll_params(unsigned long rate)
-+static struct pipe3_dpll_params *ti_pipe3_get_dpll_params(struct ti_pipe3 *phy)
- {
--	int i;
-+	unsigned long rate;
-+	struct pipe3_dpll_map *dpll_map = phy->dpll_map;
- 
--	for (i = 0; i < ARRAY_SIZE(dpll_map); i++) {
--		if (rate == dpll_map[i].rate)
--			return &dpll_map[i].params;
-+	rate = clk_get_rate(phy->sys_clk);
-+
-+	for (; dpll_map->rate; dpll_map++) {
-+		if (rate == dpll_map->rate)
-+			return &dpll_map->params;
- 	}
- 
-+	dev_err(phy->dev, "No DPLL configuration for %lu Hz SYS CLK\n", rate);
-+
- 	return NULL;
- }
- 
-@@ -182,16 +199,11 @@ static void ti_pipe3_dpll_relock(struct ti_pipe3 *phy)
- static int ti_pipe3_dpll_lock(struct ti_pipe3 *phy)
- {
- 	u32			val;
--	unsigned long		rate;
- 	struct pipe3_dpll_params *dpll_params;
- 
--	rate = clk_get_rate(phy->sys_clk);
--	dpll_params = ti_pipe3_get_dpll_params(rate);
--	if (!dpll_params) {
--		dev_err(phy->dev,
--			  "No DPLL configuration for %lu Hz SYS CLK\n", rate);
-+	dpll_params = ti_pipe3_get_dpll_params(phy);
-+	if (!dpll_params)
- 		return -EINVAL;
--	}
- 
- 	val = ti_pipe3_readl(phy->pll_ctrl_base, PLL_CONFIGURATION1);
- 	val &= ~PLL_REGN_MASK;
-@@ -244,6 +256,10 @@ static struct phy_ops ops = {
- 	.owner		= THIS_MODULE,
- };
- 
-+#ifdef CONFIG_OF
-+static const struct of_device_id ti_pipe3_id_table[];
-+#endif
-+
- static int ti_pipe3_probe(struct platform_device *pdev)
- {
- 	struct ti_pipe3 *phy;
-@@ -253,8 +269,10 @@ static int ti_pipe3_probe(struct platform_device *pdev)
- 	struct device_node *node = pdev->dev.of_node;
- 	struct device_node *control_node;
- 	struct platform_device *control_pdev;
-+	const struct of_device_id *match;
- 
--	if (!node)
-+	match = of_match_device(of_match_ptr(ti_pipe3_id_table), &pdev->dev);
-+	if (!match)
- 		return -EINVAL;
- 
- 	phy = devm_kzalloc(&pdev->dev, sizeof(*phy), GFP_KERNEL);
-@@ -263,6 +281,12 @@ static int ti_pipe3_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
-+	phy->dpll_map = (struct pipe3_dpll_map *)match->data;
-+	if (!phy->dpll_map) {
-+		dev_err(&pdev->dev, "no DPLL data\n");
-+		return -EINVAL;
-+	}
-+
- 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "pll_ctrl");
- 	phy->pll_ctrl_base = devm_ioremap_resource(&pdev->dev, res);
- 	if (IS_ERR(phy->pll_ctrl_base))
-@@ -388,8 +412,18 @@ static const struct dev_pm_ops ti_pipe3_pm_ops = {
- 
- #ifdef CONFIG_OF
- static const struct of_device_id ti_pipe3_id_table[] = {
--	{ .compatible = "ti,phy-usb3" },
--	{ .compatible = "ti,omap-usb3" },
-+	{
-+		.compatible = "ti,phy-usb3",
-+		.data = dpll_map_usb,
-+	},
-+	{
-+		.compatible = "ti,omap-usb3",
-+		.data = dpll_map_usb,
-+	},
-+	{
-+		.compatible = "ti,phy-pipe3-sata",
-+		.data = dpll_map_sata,
-+	},
- 	{}
- };
- MODULE_DEVICE_TABLE(of, ti_pipe3_id_table);
--- 
-1.7.9.5
+(1) L1 instruction cache (cpu<N>/cache/index1/)
+
+	====== Before patch ======
+
+	coherency_line_size: 	128
+	level:			1
+	shared_cpu_map:		00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,
+        			00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,
+				00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,
+				00000000,00000000,00000000,00000000,00000f00
+	size:			32K
+	type:			Instruction 
+
+	===== After patch ========
+
+	coherency_line_size:	Unknown						----> Wrong
+	level:			1
+	shared_cpu_map:		00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,
+        			00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,
+				00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,
+				00000000,00000000,00000000,00000000,00ffffff	----> Wrong
+	size:			0K						----> Wrong
+	type:			Instruction	
+
+(2) L3 cache (cpu<N>/cache/index3/)
+
+	====== Before patch ======
+
+	number_of_sets:		1
+	size:			4096K
+	ways_of_associativity:	0
+
+	===== After patch ========
+
+	number_of_sets:		1
+	size:			4096K
+	ways_of_associativity:	Unknown		----> Wrong
+
+Need to revisit this implementation on PowerPC and figure out the cause of these problems.
 
