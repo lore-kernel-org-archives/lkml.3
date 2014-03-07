@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753128AbaCGUJx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 15:09:53 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:49319 "EHLO
+	id S1753039AbaCGUKm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 15:10:42 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:49360 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751899AbaCGUJv (ORCPT
+	with ESMTP id S1751197AbaCGUKk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 15:09:51 -0500
-Date: Fri, 7 Mar 2014 21:09:50 +0100
+	Fri, 7 Mar 2014 15:10:40 -0500
+Date: Fri, 7 Mar 2014 21:10:39 +0100
 From: Pavel Machek <pavel@ucw.cz>
 To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Jenny Tc <jenny.tc@intel.com>,
+Cc: Jenny TC <jenny.tc@intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
         Anton Vorontsov <cbouatmailru@gmail.com>,
@@ -31,23 +31,26 @@ Cc: Jenny Tc <jenny.tc@intel.com>,
 	<freemangordon@abv.bg>,
         Linux-OMAP <linux-omap@vger.kernel.org>
 Subject: Re: [PATCH 2/4] power_supply: Introduce generic psy charging driver
-Message-ID: <20140307200949.GA27645@amd.pavel.ucw.cz>
+Message-ID: <20140307201039.GB27645@amd.pavel.ucw.cz>
 References: <1392875640-29230-1-git-send-email-jenny.tc@intel.com>
  <1392875640-29230-3-git-send-email-jenny.tc@intel.com>
  <CACRpkdaU44iinj2iDNdYm62J+4jQbg+XJ=Zq4GmJryPeu7GfTQ@mail.gmail.com>
- <20140228042753.GC27921@jenny-desktop>
- <CACRpkdbuCC=-aYmyeaGW0GfkhRU8SEc=1+2f6k3tA7TygiZRJA@mail.gmail.com>
+ <20140228100114.GA13189@amd.pavel.ucw.cz>
+ <CACRpkdaZ2moqGWx2BpfEeKoW6doXg67TkJKY+mbg4hrFHDr16Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACRpkdbuCC=-aYmyeaGW0GfkhRU8SEc=1+2f6k3tA7TygiZRJA@mail.gmail.com>
+In-Reply-To: <CACRpkdaZ2moqGWx2BpfEeKoW6doXg67TkJKY+mbg4hrFHDr16Q@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
+On Fri 2014-03-07 11:04:59, Linus Walleij wrote:
+> On Fri, Feb 28, 2014 at 6:01 PM, Pavel Machek <pavel@ucw.cz> wrote:
+> > On Thu 2014-02-27 21:08:01, Linus Walleij wrote:
+> >> On Thu, Feb 20, 2014 at 6:53 AM, Jenny TC <jenny.tc@intel.com> wrote:
+> >>
 > >> > +++ b/include/linux/power/power_supply_charger.h
 > >>
 > >> > +#define MAX_CUR_VOLT_SAMPLES 3
@@ -57,19 +60,17 @@ Hi!
 > >> etc? This will vary with the current operating frequency of the system,
 > >> why should physical measurements do that?
 > >
-> > Is it fine if I use msecs_to_jiffies(30000)?
+> > It is actually ok. The define is relative to jiffies, and that's what
+> > interface expects.
 > 
-> Keep the
-> #define DEF_CUR_VOLT_SAMPLE_PERIOD 30000
+> So consider the option that the interface is wrong.
 > 
-> Then use msecs_to_jiffies(DEF_CUR_VOLT_SAMPLE_PERIOD)
-> in the call site.
+> Stating something like a sample period in system-specific jiffies
+> instead of period time T is just weird. What control systems
+> guy would understand this?
 
-Actually, I do not think this is good suggestion. 30*HZ -- is pretty
-clearly 30 seconds. 30000 may be 30sec or 30msec ... hard to tell.
-
-If the constant is used in just one place, maybe you don't need the
-define?
+30*HZ means 30 seconds in the kernel... what is hard to understand
+about it?
 									Pavel
 -- 
 (english) http://www.livejournal.com/~pavelmachek
