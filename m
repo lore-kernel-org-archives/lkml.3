@@ -1,79 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752749AbaCGO6W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 09:58:22 -0500
-Received: from mga02.intel.com ([134.134.136.20]:9102 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752382AbaCGO57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 09:57:59 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,608,1389772800"; 
-   d="scan'208";a="468423623"
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-To: <gregkh@linuxfoundation.org>
-Cc: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <sarah.a.sharp@linux.intel.com>, <stern@rowland.harvard.edu>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        stable <stable@vger.kernel.org>
-Subject: [PATCH 2/2] Revert "USBNET: ax88179_178a: enable tso if usb host supports sg dma"
-Date: Fri,  7 Mar 2014 17:06:58 +0200
-Message-Id: <1394204818-25323-3-git-send-email-mathias.nyman@linux.intel.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1394204818-25323-1-git-send-email-mathias.nyman@linux.intel.com>
-References: <1394204818-25323-1-git-send-email-mathias.nyman@linux.intel.com>
+	id S1752884AbaCGPAG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 10:00:06 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:39194 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751570AbaCGPAD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 10:00:03 -0500
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        zhuzhenhua@allwinnertech.com, linux@arm.linux.org.uk,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH] i2c: mv64xxx: Fix compilation breakage
+Date: Fri,  7 Mar 2014 15:59:30 +0100
+Message-Id: <1394204370-22979-1-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 3804fad45411b48233b48003e33a78f290d227c8.
+Commit 370136bc67c3 ("i2c: mv64xxx: Add reset deassert call"), introduced a
+recursive dependency, which was fixed by commit 80c69915e5fb ("i2c: mv64xxx:
+fix circular Kconfig dependency", that in turn, by dropping the dependency on
+RESET_CONTROLLER, introduced a compilation breakage whenever this option wasn't
+set.
 
-This commit, together with commit 247bf557273dd775505fb9240d2d152f4f20d304
-"xhci 1.0: Limit arbitrarily-aligned scatter gather." were
-origially added to get xHCI 1.0 hosts and usb ethernet ax88179_178a devices
-working together with scatter gather. xHCI 1.0 hosts pose some requirement on how transfer
-buffers are aligned, setting this requirement for 1.0 hosts caused USB 3.0 mass
-storage devices to fail more frequently.
+drivers/i2c/busses/i2c-mv64xxx.c:924: undefined reference to `reset_control_assert'
+drivers/i2c/busses/i2c-mv64xxx.c:904: undefined reference to `reset_control_assert'
+drivers/i2c/busses/i2c-mv64xxx.c:771: undefined reference to `devm_reset_control_get'
+drivers/i2c/busses/i2c-mv64xxx.c:778: undefined reference to `reset_control_deassert'
 
-USB 3.0 mass storage devices used to work before 3.14-rc1.  Theoretically,
-the TD fragment rules could have caused an occasional disk glitch.
-Now the devices *will* fail, instead of theoretically failing.
->From a user perspective, this looks like a regression; the USB device obviously
-fails on 3.14-rc1, and may sometimes silently fail on prior kernels.
+Since the reset framework doesn't define dummy stubs whenever
+CONFIG_RESET_CONTROLLER is not defined, protect the reset framework calls by
+IS_ENABLED tests to make sure it won't be compiled in.
 
-The proper soluition is to implement the TD fragment rules for xHCI 1.0 hosts,
-but for now, revert this patch until scatter gather can be properly supported.
-
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/net/usb/ax88179_178a.c | 8 --------
- 1 file changed, 8 deletions(-)
+ drivers/i2c/busses/i2c-mv64xxx.c | 22 +++++++++++++---------
+ 1 file changed, 13 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/net/usb/ax88179_178a.c b/drivers/net/usb/ax88179_178a.c
-index 955df81..42085e6 100644
---- a/drivers/net/usb/ax88179_178a.c
-+++ b/drivers/net/usb/ax88179_178a.c
-@@ -1029,20 +1029,12 @@ static int ax88179_bind(struct usbnet *dev, struct usb_interface *intf)
- 	dev->mii.phy_id = 0x03;
- 	dev->mii.supports_gmii = 1;
+diff --git a/drivers/i2c/busses/i2c-mv64xxx.c b/drivers/i2c/busses/i2c-mv64xxx.c
+index 203a548..a1dc99b 100644
+--- a/drivers/i2c/busses/i2c-mv64xxx.c
++++ b/drivers/i2c/busses/i2c-mv64xxx.c
+@@ -768,14 +768,16 @@ mv64xxx_of_config(struct mv64xxx_i2c_data *drv_data,
+ 	}
+ 	drv_data->irq = irq_of_parse_and_map(np, 0);
  
--	if (usb_device_no_sg_constraint(dev->udev))
--		dev->can_dma_sg = 1;
--
- 	dev->net->features |= NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM |
- 			      NETIF_F_RXCSUM;
+-	drv_data->rstc = devm_reset_control_get(dev, NULL);
+-	if (IS_ERR(drv_data->rstc)) {
+-		if (PTR_ERR(drv_data->rstc) == -EPROBE_DEFER) {
+-			rc = -EPROBE_DEFER;
+-			goto out;
++	if (IS_ENABLED(CONFIG_RESET_CONTROLLER)) {
++		drv_data->rstc = devm_reset_control_get(dev, NULL);
++		if (IS_ERR(drv_data->rstc)) {
++			if (PTR_ERR(drv_data->rstc) == -EPROBE_DEFER) {
++				rc = -EPROBE_DEFER;
++				goto out;
++			}
++		} else {
++			reset_control_deassert(drv_data->rstc);
+ 		}
+-	} else {
+-		reset_control_deassert(drv_data->rstc);
+ 	}
  
- 	dev->net->hw_features |= NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM |
- 				 NETIF_F_RXCSUM;
+ 	/* Its not yet defined how timeouts will be specified in device tree.
+@@ -900,7 +902,8 @@ mv64xxx_i2c_probe(struct platform_device *pd)
+ exit_free_irq:
+ 	free_irq(drv_data->irq, drv_data);
+ exit_reset:
+-	if (pd->dev.of_node && !IS_ERR(drv_data->rstc))
++	if (pd->dev.of_node && IS_ENABLED(CONFIG_RESET_CONTROLLER) &&
++	    !IS_ERR(drv_data->rstc))
+ 		reset_control_assert(drv_data->rstc);
+ exit_clk:
+ #if defined(CONFIG_HAVE_CLK)
+@@ -920,7 +923,8 @@ mv64xxx_i2c_remove(struct platform_device *dev)
  
--	if (dev->can_dma_sg) {
--		dev->net->features |= NETIF_F_SG | NETIF_F_TSO;
--		dev->net->hw_features |= NETIF_F_SG | NETIF_F_TSO;
--	}
--
- 	/* Enable checksum offload */
- 	*tmp = AX_RXCOE_IP | AX_RXCOE_TCP | AX_RXCOE_UDP |
- 	       AX_RXCOE_TCPV6 | AX_RXCOE_UDPV6;
+ 	i2c_del_adapter(&drv_data->adapter);
+ 	free_irq(drv_data->irq, drv_data);
+-	if (dev->dev.of_node && !IS_ERR(drv_data->rstc))
++	if (dev->dev.of_node && IS_ENABLED(CONFIG_RESET_CONTROLLER) &&
++	    !IS_ERR(drv_data->rstc))
+ 		reset_control_assert(drv_data->rstc);
+ #if defined(CONFIG_HAVE_CLK)
+ 	/* Not all platforms have a clk */
 -- 
-1.8.1.2
+1.9.0
 
