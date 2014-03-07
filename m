@@ -1,91 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753714AbaCGVpe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 16:45:34 -0500
-Received: from smtprelay0048.hostedemail.com ([216.40.44.48]:35438 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751143AbaCGVpc (ORCPT
+	id S1753600AbaCGVsB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 16:48:01 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:43706 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751016AbaCGVr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 16:45:32 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2553:2559:2562:2693:2828:3138:3139:3140:3141:3142:3354:3622:3653:3865:3866:3867:3868:3870:3872:3874:4078:4081:4321:5007:6120:7576:7652:7901:8957:10004:10226:10400:10471:10848:10967:11026:11232:11473:11658:11914:12043:12517:12519:12740:13255,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,
-X-HE-Tag: frame13_69f7b5d76822c
-X-Filterd-Recvd-Size: 3268
-Message-ID: <1394228725.16156.102.camel@joe-AO722>
-Subject: Re: rfc: checkpatch logical line continuations (was IBM Akebono:
- Add support for a new PHY interface to the IBM emac driver)
-From: Joe Perches <joe@perches.com>
-To: josh@joshtriplett.org
-Cc: David Miller <davem@davemloft.net>, alistair@popple.id.au,
-        netdev@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Carpenter <error27@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>
-Date: Fri, 07 Mar 2014 13:45:25 -0800
-In-Reply-To: <20140307213017.GA18769@cloud>
-References: <1394077948-8395-1-git-send-email-alistair@popple.id.au>
-	 <1394077948-8395-3-git-send-email-alistair@popple.id.au>
-	 <20140307.154142.488351276799532264.davem@davemloft.net>
-	 <1394226164.16156.96.camel@joe-AO722> <20140307213017.GA18769@cloud>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
+	Fri, 7 Mar 2014 16:47:59 -0500
+Date: Fri, 07 Mar 2014 16:47:56 -0500 (EST)
+Message-Id: <20140307.164756.1488071770631289333.davem@davemloft.net>
+To: kys@microsoft.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com
+Subject: Re: [PATCH V2 1/6] Drivers: net: hyperv: Enable scatter gather I/O
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1394170361-1043-1-git-send-email-kys@microsoft.com>
+References: <1394170320-1002-1-git-send-email-kys@microsoft.com>
+	<1394170361-1043-1-git-send-email-kys@microsoft.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 07 Mar 2014 13:47:59 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-03-07 at 13:30 -0800, josh@joshtriplett.org wrote:
-> On Fri, Mar 07, 2014 at 01:02:44PM -0800, Joe Perches wrote:
-> > On Fri, 2014-03-07 at 15:41 -0500, David Miller wrote:
-> > > From: Alistair Popple <alistair@popple.id.au>
-> > > Date: Thu,  6 Mar 2014 14:52:25 +1100
-> > > 
-> > > > +	out_be32(dev->reg, in_be32(dev->reg) | WKUP_ETH_RGMIIEN
-> > > > +		 | WKUP_ETH_TX_OE | WKUP_ETH_RX_IE);
-> > > 
-> > > When an expression spans multiple lines, the lines should end with
-> > > operators rather than begin with them.
-> > 
-> > That's not in CodingStyle currently.
-> 
-> It's also not even remotely consistent across existing kernel code, and
-> it isn't obvious that there's a general developer consensus on the
-> "right" way to write it.
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+Date: Thu,  6 Mar 2014 21:32:36 -0800
 
-I agree with that.  Stuff that's not in CodingStyle generally
-doesn't have a developer consensus.
+> +static u32 fill_pg_buf(struct page *page, u32 offset, u32 len,
+> +			struct hv_page_buffer *pb)
+> +{
+> +	int j = 0;
+> +
+> +	/* Deal with compund pages by ignoring unused part
+> +	 * of the page.
+> +	 */
+> +	page += offset  >> PAGE_SHIFT;
 
-> > Right now, checkpatch emits a --strict only warning on "&&" or "||"
-> > at the beginning of line but that could be changed to any "$Operators"
-> > 
-> > our $Arithmetic = qr{\+|-|\*|\/|%};
-> > our $Operators	= qr{
-> > 			<=|>=|==|!=|
-> > 			=>|->|<<|>>|<|>|!|~|
-> > 			&&|\|\||,|\^|\+\+|--|&|\||$Arithmetic
-> > 		  }x;
-> > 
-> > The ones that likely have a too high false positive rates
-> > are the negation "!" and bitwise "~".
-> 
-> I don't think warning about operators at start of line seems like a good
-> idea at all.  There are plenty of cases where putting the operator at
-> the start of the line will produce a better result.  (I'd actually
-> suggest that in *most* cases.)
-> 
-> > Also, using perl, it's hard to distinguish between a
-> > logical "&" and the address-of "&" as well as the
-> > multiplication "*" and indirection "*" so maybe those
-> > should be excluded too.
-> > 
-> > And I think it should only be added as a --strict test.
-> 
-> Agreed, if even that.
+Please only one space between "offset" and ">>"
 
-And probably made specific to net/ and drivers/net like
-a few other comment style tests until such time as a
-consensus exists.
+> +	offset &= ~PAGE_MASK;
+> +
+> +	while (len > 0) {
+> +		unsigned long bytes;
+> +
+> +		bytes = PAGE_SIZE - offset;
+> +		if (bytes > len)
+> +			bytes = len;
+> +		pb[j].pfn = page_to_pfn(page);
+> +		pb[j].offset = offset;
+> +		pb[j].len = bytes;
+> +
+> +		offset += bytes;
+> +		len -= bytes;
+> +
+> +		if (offset == PAGE_SIZE && len) {
+> +			page++;
+> +			offset = 0;
+> +			j++;
+> +		}
+> +	}
+> +
+> +	return j + 1;
+> +}
 
+I think this function has some edge case errors.
 
+As I understand it, this function returns how many page buffer entries
+were filled in.
+
+But if we fill exactly the end of a page, we will report one too many
+in the return value.
+
+Consider an "offset" of X, where X is smaller than PAGE_SIZE.  And a
+"len" which is exactly "PAGE_SIZE - offset".
+
+We will fill in exactly one page buffer entry, however we will
+erroneously return 2 from this function.
+
+I believe the fix is to first replace the test at the end of the loop
+with:
+
+	page++;
+	offset = 0;
+	j++;
+
+And subsequently change the function to just return plain "j".
