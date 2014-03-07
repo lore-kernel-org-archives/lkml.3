@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751697AbaCGIEZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 03:04:25 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:36424 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750930AbaCGIEY (ORCPT
+	id S1751929AbaCGIFt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 03:05:49 -0500
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:39501 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750956AbaCGIFr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 03:04:24 -0500
-Date: Fri, 7 Mar 2014 11:04:11 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: "Wang, Xiaoming" <xiaoming.wang@intel.com>
-Cc: gregkh@linuxfoundation.org, valentina.manea.m@gmail.com,
-        standby24x7@gmail.com, devel@driverdev.osuosl.org,
-        chuansheng.liu@intel.com, dongxing.zhang@intel.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [staging][r8188eu]: memory leak in rtw_free_cmd_obj if
- command is (_Set_Drv_Extra)
-Message-ID: <20140307080411.GB29018@mwanda>
-References: <1394222494.26112.32.camel@wxm-ubuntu>
+	Fri, 7 Mar 2014 03:05:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394222494.26112.32.camel@wxm-ubuntu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Originating-IP: [84.73.67.144]
+In-Reply-To: <8738iuznze.fsf@rustcorp.com.au>
+References: <1394011994-30604-1-git-send-email-daniel.vetter@ffwll.ch>
+	<87r46gywul.fsf@rustcorp.com.au>
+	<20140306075835.GC17001@phenom.ffwll.local>
+	<8738iuznze.fsf@rustcorp.com.au>
+Date: Fri, 7 Mar 2014 09:05:46 +0100
+X-Google-Sender-Auth: qMa0Vr_wo8FjDO1QRzuDvchBkJQ
+Message-ID: <CAKMK7uGDGd11SrnB5ErGTSpDka9H3HkZzG+kHp3CfNtoWADMWQ@mail.gmail.com>
+Subject: Re: [PATCH] [RFC] Taint the kernel for unsafe module options
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        Jean Delvare <khali@linux-fr.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>, Jon Mason <jon.mason@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 07, 2014 at 03:01:34PM -0500, Wang, Xiaoming wrote:
-> pcmd->parmbuf->pbuf has been allocated if command is GEN_CMD_CODE(_Set_Drv_Extra),
-> and it enqueued by rtw_enqueue_cmd. rtw_cmd_thread dequeue pcmd by rtw_dequeue_cmd.
-> The memory leak happened on this branch "if( _FAIL == rtw_cmd_filter(pcmdpriv, pcmd) )"
-> which goto post_process directly against freeing pcmd->parmbuf->pbuf in
-> rtw_drvextra_cmd_hdl which is the cmd_hdl if command is (_Set_Drv_Extra).
-> This patch free pcmd->parmbuf->pbuf on forgotten branch to avoid memory leak.
-> 
-> Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
-> Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
+On Fri, Mar 7, 2014 at 4:28 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>>> If this is a good idea, you can write a macro module_param_unsafe_named
+>>> which is a general wrapper.
+>>
+>> For this to work I need to somehow store the safe default value somewhere.
+>> since with bools or strings there really isn't such a thing, even less
+>> than with integers where my fairly abitrary -1 choice is already
+>> restricting. But I don't have a good idea how to do that, since creating a
+>> local static struct in the macro to store the default + the pointer to the
+>> storage location feels a bit ugly.
+>
+> I was thinking that if use the parameter, they get marked unsafe.  If
+> they use it to set it to the default, Don't Do That.
 
-This code looks completely different in linux-next.  Please redo on top
-of linux-next if it's still needed.
-
-regards,
-dan carpenter
-
+Makes sense. I'll try to come up with something more polished which
+addresses your's and Andrew's comments somewhen next week. Presuming
+the (here one week later than everywhere else) carnival doesn't
+interfere too badly ;-)
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
