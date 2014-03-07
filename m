@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004AbaCGDz7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 22:55:59 -0500
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:35337 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751276AbaCGDz5 (ORCPT
+	id S1752144AbaCGD4O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 22:56:14 -0500
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:45916 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751276AbaCGD4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 22:55:57 -0500
+	Thu, 6 Mar 2014 22:56:11 -0500
 MIME-Version: 1.0
-In-Reply-To: <53194092.7010809@ti.com>
-References: <1394097598-17622-1-git-send-email-santosh.shilimkar@ti.com>
-	<1394097598-17622-4-git-send-email-santosh.shilimkar@ti.com>
-	<CAL_JsqJnG1c0=+UgOmNOGs7a5jv2f3O074-TsXibiHsXapXhcQ@mail.gmail.com>
-	<53194092.7010809@ti.com>
-Date: Thu, 6 Mar 2014 21:55:56 -0600
-Message-ID: <CAL_JsqJ3QhRRNVAsvAPP=Ex_ptQcbpCXh7pf44K1xh+scFqiug@mail.gmail.com>
-Subject: Re: [PATCH 3/7] of: introduce of_dma_is_coherent() helper
-From: Rob Herring <robherring2@gmail.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+In-Reply-To: <20140307035056.GQ1872@titan.lakedaemon.net>
+References: <1393977790-29110-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<1393977790-29110-4-git-send-email-sebastian.hesselbarth@gmail.com>
+	<20140306201803.GL1872@titan.lakedaemon.net>
+	<CACRpkda0JCLZUv_KPmwucDh3ko2YbtG2ukMMscSodAbBpiY+zw@mail.gmail.com>
+	<20140307035056.GQ1872@titan.lakedaemon.net>
+Date: Fri, 7 Mar 2014 11:56:11 +0800
+Message-ID: <CACRpkdbEQSj7jLWT2BFR22m7phwmyKCByhQuFFgHvHoKvQFD5g@mail.gmail.com>
+Subject: Re: [PATCH 3/3] pinctrl: mvebu: silence WARN to dev_warn
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 6, 2014 at 9:44 PM, Santosh Shilimkar
-<santosh.shilimkar@ti.com> wrote:
-> On Friday 07 March 2014 11:13 AM, Rob Herring wrote:
->> On Thu, Mar 6, 2014 at 3:19 AM, Santosh Shilimkar
->> <santosh.shilimkar@ti.com> wrote:
->>> The of_dma_is_coherent() helper parses the given DT device
->>> node to see if the "dma-coherent" property is supported and
->>> returns true or false accordingly.
->>>
->>> For the architectures which are fully dma coherent and don't need per device
->>> property, it can enable CONFIG_ARCH_IS_DMA_COHERENT config option which
->>> enables DMA coherent for all devices by default.
+On Fri, Mar 7, 2014 at 11:50 AM, Jason Cooper <jason@lakedaemon.net> wrote:
+> On Fri, Mar 07, 2014 at 11:48:25AM +0800, Linus Walleij wrote:
+>> On Fri, Mar 7, 2014 at 4:18 AM, Jason Cooper <jason@lakedaemon.net> wrote:
+>> > On Wed, Mar 05, 2014 at 01:03:10AM +0100, Sebastian Hesselbarth wrote:
+>> >> Pinctrl will WARN on missing DT resources, which is a little bit too
+>> >> noisy. Use dev_warn with FW_BUG instead.
+>> >>
+>> >> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>> >> ---
+>> >> Cc: Russell King <linux@arm.linux.org.uk>
+>> >> Cc: Jason Cooper <jason@lakedaemon.net>
+>> >> Cc: Andrew Lunn <andrew@lunn.ch>
+>> >> Cc: Gregory Clement <gregory.clement@free-electrons.com>
+>> >> Cc: Linus Walleij <linus.walleij@linaro.org>
+>> >> Cc: devicetree@vger.kernel.org
+>> >> Cc: linux-arm-kernel@lists.infradead.org
+>> >> Cc: linux-kernel@vger.kernel.org
+>> >> ---
+>> >>  drivers/pinctrl/mvebu/pinctrl-dove.c | 3 ++-
+>> >>  1 file changed, 2 insertions(+), 1 deletion(-)
+>> >
+>> > Applied to mvebu/pinctrl
 >>
->> This worries me. I killed off arch_is_coherent() for arm. Now we're
->> adding something back. Also, we already have HAVE_GENERIC_DMA_COHERENT
->> which is different, but the names will be confusing. MIPS also has
->> DMA_NONCOHERENT.
+>> So are you carrying this patch, or shall I apply it to my tree?
 >>
-> Thanks for comments Rob. I will address them in next version.
-> Specifically about ARCH_IS_DMA_COHERENT, I wasn't very comfortable either
-> while adding it. But as Arnd mentioned, there is a need to have a way
-> for the arch's which are fully coherent to use coherent ops by default.
+>> In the former case: Acked-by: Linus Walleij <linus.walleij@linaro.org>
 >
-> Am not sure whats the best way to have such support without imposing
-> any special updates on such arches.
+> I'll send you a pull tomorrow.
 
-Thinking about this some more, if the arch is always coherent or
-always non-coherent, then the default ops are always fine. In that
-case set_arch_dma_coherent_ops is always a nop and of_dma_is_coherent
-is a don't care.
+For a single patch?
 
-Rob
+Remember I want the DTS changes to go to ARM SoC on some different
+pull...
+
+Yours,
+Linus Walleij
