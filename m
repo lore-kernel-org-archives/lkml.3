@@ -1,63 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754059AbaCGQKI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 11:10:08 -0500
-Received: from moutng.kundenserver.de ([212.227.126.130]:52492 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753601AbaCGQKF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 11:10:05 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: Re: [PATCH 3/7] of: introduce of_dma_is_coherent() helper
-Date: Fri, 7 Mar 2014 17:09:11 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Rob Herring <robherring2@gmail.com>,
+	id S1754064AbaCGQKu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 11:10:50 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:36366 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752591AbaCGQKr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 11:10:47 -0500
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Alan Stern'" <stern@rowland.harvard.edu>
+CC: "'Mathias Nyman'" <mathias.nyman@linux.intel.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-References: <1394097598-17622-1-git-send-email-santosh.shilimkar@ti.com> <CAL_JsqJ3QhRRNVAsvAPP=Ex_ptQcbpCXh7pf44K1xh+scFqiug@mail.gmail.com> <531948A8.9040106@ti.com>
-In-Reply-To: <531948A8.9040106@ti.com>
+        "sarah.a.sharp@linux.intel.com" <sarah.a.sharp@linux.intel.com>,
+        stable <stable@vger.kernel.org>
+Subject: RE: [PATCH 1/2] Revert "xhci 1.0: Limit arbitrarily-aligned scatter
+ gather."
+Thread-Topic: [PATCH 1/2] Revert "xhci 1.0: Limit arbitrarily-aligned
+ scatter gather."
+Thread-Index: AQHPOhWgbeh2OUSVo0Cyj0vVCN9CQ5rVu4bwgAAIbACAAAYsMA==
+Date: Fri, 7 Mar 2014 16:10:09 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F6D796D@AcuExch.aculab.com>
+References: <063D6719AE5E284EB5DD2968C1650D6D0F6D771D@AcuExch.aculab.com>
+ <Pine.LNX.4.44L0.1403071043020.1246-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1403071043020.1246-100000@iolanthe.rowland.org>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201403071709.11568.arnd@arndb.de>
-X-Provags-ID: V02:K0:9JxmDDPxE2bB6rZjZQz1pvx9l+CfAl1Z56i/ZNkQGOe
- Rg7KjPJTgYCvsvI7vF78X7+HzOKK4OqA0EvcD/E4DXvVLLXOKN
- ZFWUkZA9cpjoAnEybrVA/D9CFMqJynwnC8YG2MstRqPCrMSVXY
- GNYgsWfga4YrHT6/ACRd9zSBgfpL4Z4+DVGkYaT05P2QRQoCz8
- 8LRf21COYukbLwNOIXGn3YM2cJvQo/D1DemkNNwkeJrus54FIu
- R8Sc1waQI9EkCwqKvwx/V+DOZJxo8hsXG/0UBbqp4DtMZHx9vY
- vvwD6TAy8nSElVGHi++TFt9Ck6zpoIFbvGzjYutP80QpMC8spS
- MQxXDFQff4tRVaZ4ZPV0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s27GB0Yl002785
 
-On Friday 07 March 2014, Santosh Shilimkar wrote:
-> On Friday 07 March 2014 11:55 AM, Rob Herring wrote:
->
-> > Thinking about this some more, if the arch is always coherent or
-> > always non-coherent, then the default ops are always fine. In that
-> > case set_arch_dma_coherent_ops is always a nop and of_dma_is_coherent
-> > is a don't care.
-> > 
-> Hmmm.. I guess you are right. In that case we can drop the need of
-> config option.
+From: Alan Stern
+> On Fri, 7 Mar 2014, David Laight wrote:
+> 
+> > From: Mathias Nyman
+> > > This reverts commit 247bf557273dd775505fb9240d2d152f4f20d304.
+> >
+> > You need to revert further.
+> > Just don?t set hcd->self.no_sg_constraint ever - since it just
+> > doesn't work.
+> 
+> No; it does work most of the time.
+> 
+> If hcd->self.no_sg_constraint wasn't sent, then certain commands would
+> fail always, instead of failing occasionally.
 
-A compile-time config option clearly would not work here, because it
-breaks multiplatform support when some platforms are different from
-others. I can still see the possible need for a global run-time setting
-though, to give some platform init code the ability to override the
-DT flags when it knows better. That is probably what you want to do
-on keystone without LPAE.
+The point is that the no_sg_constraint was added in order to allow
+the ax88179_178a driver to send arbitrarily aligned transfers.
+Nothing else looks at it (well didn't when I scanned the tree a while back).
 
-	Arnd
+In effect all the other transfer requests were assumed to be suitably
+aligned.
+
+The check that caused things to fail was the one added to xhci relatively
+recently that verified the alignment of the fragments.
+
+	David
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
