@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752120AbaCGE6s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 23:58:48 -0500
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:50757
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751763AbaCGE6o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 23:58:44 -0500
+	id S1752262AbaCGE7g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 23:59:36 -0500
+Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:28544
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751817AbaCGE6j convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 23:58:39 -0500
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
 X-SpamScore: 3
-X-BigFish: VS3(zze0eahc8kzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h1354h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h1155h)
+X-BigFish: VS3(z3e12hzc89bhe0eahc8kzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839h93fhd24he5bhf0ah1288h12a5h12a9h12bdh1354h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h1155h)
 From: Chenhui Zhao <chenhui.zhao@freescale.com>
 To: <linuxppc-dev@lists.ozlabs.org>
 CC: <linux-kernel@vger.kernel.org>, <scottwood@freescale.com>,
         <leoli@freescale.com>, <Jason.Jin@freescale.com>
-Subject: [PATCH 8/9] powerpc/85xx: add save/restore functions for core registers
-Date: Fri, 7 Mar 2014 12:58:04 +0800
-Message-ID: <1394168285-32275-8-git-send-email-chenhui.zhao@freescale.com>
+Subject: =?UTF-8?q?=5BPATCH=207/9=5D=20fsl=3A=20add=20EPU=20FSM=20configuration=20for=20deep=20sleep?=
+Date: Fri, 7 Mar 2014 12:58:03 +0800
+Message-ID: <1394168285-32275-7-git-send-email-chenhui.zhao@freescale.com>
 X-Mailer: git-send-email 1.7.3
 In-Reply-To: <1394168285-32275-1-git-send-email-chenhui.zhao@freescale.com>
 References: <1394168285-32275-1-git-send-email-chenhui.zhao@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
 X-OriginatorOrg: freescale.com
 X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
@@ -29,504 +30,526 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wang Dongsheng <dongsheng.wang@freescale.com>
+From: Hongbo Zhang <hongbo.zhang@freescale.com>
 
-Add booke_cpu_state_save() and booke_cpu_state_restore() functions which can be
-used to save/restore CPU's registers in the case of deep sleep and hibernation.
+In the last stage of deep sleep, software will trigger a Finite
+State Machine (FSM) to control the hardware precedure, such as
+board isolation, killing PLLs, removing power, and so on.
 
-Supported processors: E6500, E5500, E500MC, E500v2 and E500v1.
+When the system is waked up by an interrupt, the FSM controls the
+hardware to complete the early resume precedure.
 
-Signed-off-by: Wang Dongsheng <dongsheng.wang@freescale.com>
+This patch configure the EPU FSM preparing for deep sleep.
+
+Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
 Signed-off-by: Chenhui Zhao <chenhui.zhao@freescale.com>
 ---
- arch/powerpc/include/asm/booke_save_regs.h |   96 ++++++++
- arch/powerpc/kernel/Makefile               |    1 +
- arch/powerpc/kernel/booke_save_regs.S      |  361 ++++++++++++++++++++++++++++
- 3 files changed, 458 insertions(+), 0 deletions(-)
- create mode 100644 arch/powerpc/include/asm/booke_save_regs.h
- create mode 100644 arch/powerpc/kernel/booke_save_regs.S
+ arch/powerpc/platforms/85xx/Kconfig |    1 +
+ arch/powerpc/sysdev/fsl_soc.h       |    3 +
+ drivers/platform/Kconfig            |    4 +
+ drivers/platform/Makefile           |    1 +
+ drivers/platform/fsl/Kconfig        |   10 +
+ drivers/platform/fsl/Makefile       |    5 +
+ drivers/platform/fsl/sleep_fsm.c    |  415 +++++++++++++++++++++++++++++++++++
+ 7 files changed, 439 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/platform/fsl/Kconfig
+ create mode 100644 drivers/platform/fsl/Makefile
+ create mode 100644 drivers/platform/fsl/sleep_fsm.c
 
-diff --git a/arch/powerpc/include/asm/booke_save_regs.h b/arch/powerpc/include/asm/booke_save_regs.h
+diff --git a/arch/powerpc/platforms/85xx/Kconfig b/arch/powerpc/platforms/85xx/Kconfig
+index 54d8843..27e2174 100644
+--- a/arch/powerpc/platforms/85xx/Kconfig
++++ b/arch/powerpc/platforms/85xx/Kconfig
+@@ -261,6 +261,7 @@ config CORENET_GENERIC
+ 	select GPIO_MPC8XXX
+ 	select HAS_RAPIDIO
+ 	select PPC_EPAPR_HV_PIC
++	select FSL_SLEEP_FSM if SUSPEND
+ 	help
+ 	  This option enables support for the FSL CoreNet based boards.
+ 	  For 32bit kernel, the following boards are supported:
+diff --git a/arch/powerpc/sysdev/fsl_soc.h b/arch/powerpc/sysdev/fsl_soc.h
+index 9b9a34a..eb83a30 100644
+--- a/arch/powerpc/sysdev/fsl_soc.h
++++ b/arch/powerpc/sysdev/fsl_soc.h
+@@ -69,5 +69,8 @@ extern const struct fsl_pm_ops *qoriq_pm_ops;
+ 
+ extern int fsl_rcpm_init(void);
+ 
++extern void fsl_dp_fsm_setup(void *dcsr_base);
++extern void fsl_dp_fsm_clean(void *dcsr_base);
++
+ #endif
+ #endif
+diff --git a/drivers/platform/Kconfig b/drivers/platform/Kconfig
+index 09fde58..6539e6d 100644
+--- a/drivers/platform/Kconfig
++++ b/drivers/platform/Kconfig
+@@ -6,3 +6,7 @@ source "drivers/platform/goldfish/Kconfig"
+ endif
+ 
+ source "drivers/platform/chrome/Kconfig"
++
++if FSL_SOC
++source "drivers/platform/fsl/Kconfig"
++endif
+diff --git a/drivers/platform/Makefile b/drivers/platform/Makefile
+index 3656b7b..37c6f72 100644
+--- a/drivers/platform/Makefile
++++ b/drivers/platform/Makefile
+@@ -6,3 +6,4 @@ obj-$(CONFIG_X86)		+= x86/
+ obj-$(CONFIG_OLPC)		+= olpc/
+ obj-$(CONFIG_GOLDFISH)		+= goldfish/
+ obj-$(CONFIG_CHROME_PLATFORMS)	+= chrome/
++obj-$(CONFIG_FSL_SOC)		+= fsl/
+diff --git a/drivers/platform/fsl/Kconfig b/drivers/platform/fsl/Kconfig
 new file mode 100644
-index 0000000..87c357a
+index 0000000..72ed053
 --- /dev/null
-+++ b/arch/powerpc/include/asm/booke_save_regs.h
-@@ -0,0 +1,96 @@
++++ b/drivers/platform/fsl/Kconfig
+@@ -0,0 +1,10 @@
++#
++# Freescale Specific Power Management Drivers
++#
++
++config FSL_SLEEP_FSM
++	bool
++	help
++	  This driver configures a hardware FSM (Finite State Machine) for deep sleep.
++	  The FSM is used to finish clean-ups at the last stage of system entering deep
++	  sleep, and also wakes up system when a wake up event happens.
+diff --git a/drivers/platform/fsl/Makefile b/drivers/platform/fsl/Makefile
+new file mode 100644
+index 0000000..d99ca0e
+--- /dev/null
++++ b/drivers/platform/fsl/Makefile
+@@ -0,0 +1,5 @@
++#
++# Makefile for linux/drivers/platform/fsl
++# Freescale Specific Power Management Drivers
++#
++obj-$(CONFIG_FSL_SLEEP_FSM)	+= sleep_fsm.o
+diff --git a/drivers/platform/fsl/sleep_fsm.c b/drivers/platform/fsl/sleep_fsm.c
+new file mode 100644
+index 0000000..1033332
+--- /dev/null
++++ b/drivers/platform/fsl/sleep_fsm.c
+@@ -0,0 +1,415 @@
 +/*
-+ *  Save/restore e500 series core registers
-+ *
-+ * Author: Wang Dongsheng <dongsheng.wang@freescale.com>
++ * Freescale deep sleep FSM (finite-state machine) configuration
 + *
 + * Copyright 2014 Freescale Semiconductor Inc.
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef __ASM_FSL_SLEEP_H
-+#define __ASM_FSL_SLEEP_H
-+
-+/*
-+ * 8 bytes for each register, which is compatible with
-+ * both 32-bit and 64-bit registers
++ * Author: Hongbo Zhang <hongbo.zhang@freescale.com>
++ *         Chenhui Zhao <chenhui.zhao@freescale.com>
 + *
-+ * Acronyms:
-+ *	dw(data width)	0x08
-+ *
-+ * Map:
-+ * General-Purpose Registers
-+ *	GPR1(sp)		0
-+ *	GPR2			0x8		(dw * 1)
-+ *	GPR13 - GPR31		0x10 ~ 0xa0	(dw * 2 ~ dw * 20)
-+ * Foating-point registers
-+ *	FPR14 - FPR31		0xa8 ~ 0x130	(dw * 21 ~ dw * 38)
-+ * Registers for Branch Operations
-+ *	CR			0x138		(dw * 39)
-+ *	LR			0x140		(dw * 40)
-+ * Processor Control Registers
-+ *	MSR			0x148		(dw * 41)
-+ *	EPCR			0x150		(dw * 42)
-+ *
-+ *	Only e500, e500v2 need to save HID0 - HID1
-+ *	HID0 - HID1		0x158 ~ 0x160 (dw * 43 ~ dw * 44)
-+ * Timer Registers
-+ *	TCR			0x168		(dw * 45)
-+ *	TB(64bit)		0x170		(dw * 46)
-+ *	TBU(32bit)		0x178		(dw * 47)
-+ *	TBL(32bit)		0x180		(dw * 48)
-+ * Interrupt Registers
-+ *	IVPR			0x188		(dw * 49)
-+ *	IVOR0 - IVOR15		0x190 ~ 0x208	(dw * 50 ~ dw * 65)
-+ *	IVOR32 - IVOR41		0x210 ~ 0x258	(dw * 66 ~ dw * 75)
-+ * Software-Use Registers
-+ *	SPRG1			0x260		(dw * 76), 64-bit need to save.
-+ *	SPRG3			0x268		(dw * 77), 32-bit need to save.
-+ * MMU Registers
-+ *	PID0 - PID2		0x270 ~ 0x280	(dw * 78 ~ dw * 80)
-+ * Debug Registers
-+ *	DBCR0 - DBCR2		0x288 ~ 0x298	(dw * 81 ~ dw * 83)
-+ *	IAC1 - IAC4		0x2a0 ~ 0x2b8	(dw * 84 ~ dw * 87)
-+ *	DAC1 - DAC2		0x2c0 ~ 0x2c8	(dw * 88 ~ dw * 89)
-+ *
++ * This program is free software; you can redistribute  it and/or modify it
++ * under  the terms of  the GNU General  Public License as published by the
++ * Free Software Foundation;  either version 2 of the  License, or (at your
++ * option) any later version.
 + */
 +
-+#define SR_GPR1			0x000
-+#define SR_GPR2			0x008
-+#define SR_GPR13		0x010
-+#define SR_FPR14		0x0a8
-+#define SR_CR			0x138
-+#define SR_LR			0x140
-+#define SR_MSR			0x148
-+#define SR_EPCR			0x150
-+#define SR_HID0			0x158
-+#define SR_TCR			0x168
-+#define SR_TB			0x170
-+#define SR_TBU			0x178
-+#define SR_TBL			0x180
-+#define SR_IVPR			0x188
-+#define SR_IVOR0		0x190
-+#define SR_IVOR32		0x210
-+#define SR_SPRG1		0x260
-+#define SR_SPRG3		0x268
-+#define SR_PID0			0x270
-+#define SR_DBCR0		0x288
-+#define SR_IAC1			0x2a0
-+#define SR_DAC1			0x2c0
-+#define REGS_BUFFER_SIZE	(SR_DAC1 + 0x10)
++#include <linux/io.h>
++#include <linux/types.h>
 +
-+/*
-+ * hibernation and deepsleep save/restore different number of registers,
-+ * use these flags to indicate.
++#define FSL_STRIDE_4B	4
++#define FSL_STRIDE_8B	8
++
++/* Event Processor Global Control Register */
++#define	EPGCR		0x000
++
++/* Event Processor EVT Pin Control Registers */
++#define	EPEVTCR0	0x050
++#define	EPEVTCR1	0x054
++#define	EPEVTCR2	0x058
++#define	EPEVTCR3	0x05C
++#define	EPEVTCR4	0x060
++#define	EPEVTCR5	0x064
++#define	EPEVTCR6	0x068
++#define	EPEVTCR7	0x06C
++#define	EPEVTCR8	0x070
++#define	EPEVTCR9	0x074
++
++/* Event Processor Crosstrigger Control Register */
++#define	EPXTRIGCR	0x090
++
++/* Event Processor Input Mux Control Registers */
++#define	EPIMCR0		0x100
++#define	EPIMCR1		0x104
++#define	EPIMCR2		0x108
++#define	EPIMCR3		0x10C
++#define	EPIMCR4		0x110
++#define	EPIMCR5		0x114
++#define	EPIMCR6		0x118
++#define	EPIMCR7		0x11C
++#define	EPIMCR8		0x120
++#define	EPIMCR9		0x124
++#define	EPIMCR10	0x128
++#define	EPIMCR11	0x12C
++#define	EPIMCR12	0x130
++#define	EPIMCR13	0x134
++#define	EPIMCR14	0x138
++#define	EPIMCR15	0x13C
++#define	EPIMCR16	0x140
++#define	EPIMCR17	0x144
++#define	EPIMCR18	0x148
++#define	EPIMCR19	0x14C
++#define	EPIMCR20	0x150
++#define	EPIMCR21	0x154
++#define	EPIMCR22	0x158
++#define	EPIMCR23	0x15C
++#define	EPIMCR24	0x160
++#define	EPIMCR25	0x164
++#define	EPIMCR26	0x168
++#define	EPIMCR27	0x16C
++#define	EPIMCR28	0x170
++#define	EPIMCR29	0x174
++#define	EPIMCR30	0x178
++#define	EPIMCR31	0x17C
++
++/* Event Processor SCU Mux Control Registers */
++#define	EPSMCR0		0x200
++#define	EPSMCR1		0x208
++#define	EPSMCR2		0x210
++#define	EPSMCR3		0x218
++#define	EPSMCR4		0x220
++#define	EPSMCR5		0x228
++#define	EPSMCR6		0x230
++#define	EPSMCR7		0x238
++#define	EPSMCR8		0x240
++#define	EPSMCR9		0x248
++#define	EPSMCR10	0x250
++#define	EPSMCR11	0x258
++#define	EPSMCR12	0x260
++#define	EPSMCR13	0x268
++#define	EPSMCR14	0x270
++#define	EPSMCR15	0x278
++
++/* Event Processor Event Control Registers */
++#define	EPECR0		0x300
++#define	EPECR1		0x304
++#define	EPECR2		0x308
++#define	EPECR3		0x30C
++#define	EPECR4		0x310
++#define	EPECR5		0x314
++#define	EPECR6		0x318
++#define	EPECR7		0x31C
++#define	EPECR8		0x320
++#define	EPECR9		0x324
++#define	EPECR10		0x328
++#define	EPECR11		0x32C
++#define	EPECR12		0x330
++#define	EPECR13		0x334
++#define	EPECR14		0x338
++#define	EPECR15		0x33C
++
++/* Event Processor Action Control Registers */
++#define	EPACR0		0x400
++#define	EPACR1		0x404
++#define	EPACR2		0x408
++#define	EPACR3		0x40C
++#define	EPACR4		0x410
++#define	EPACR5		0x414
++#define	EPACR6		0x418
++#define	EPACR7		0x41C
++#define	EPACR8		0x420
++#define	EPACR9		0x424
++#define	EPACR10		0x428
++#define	EPACR11		0x42C
++#define	EPACR12		0x430
++#define	EPACR13		0x434
++#define	EPACR14		0x438
++#define	EPACR15		0x43C
++
++/* Event Processor Counter Control Registers */
++#define	EPCCR0		0x800
++#define	EPCCR1		0x804
++#define	EPCCR2		0x808
++#define	EPCCR3		0x80C
++#define	EPCCR4		0x810
++#define	EPCCR5		0x814
++#define	EPCCR6		0x818
++#define	EPCCR7		0x81C
++#define	EPCCR8		0x820
++#define	EPCCR9		0x824
++#define	EPCCR10		0x828
++#define	EPCCR11		0x82C
++#define	EPCCR12		0x830
++#define	EPCCR13		0x834
++#define	EPCCR14		0x838
++#define	EPCCR15		0x83C
++
++/* Event Processor Counter Compare Registers */
++#define	EPCMPR0		0x900
++#define	EPCMPR1		0x904
++#define	EPCMPR2		0x908
++#define	EPCMPR3		0x90C
++#define	EPCMPR4		0x910
++#define	EPCMPR5		0x914
++#define	EPCMPR6		0x918
++#define	EPCMPR7		0x91C
++#define	EPCMPR8		0x920
++#define	EPCMPR9		0x924
++#define	EPCMPR10	0x928
++#define	EPCMPR11	0x92C
++#define	EPCMPR12	0x930
++#define	EPCMPR13	0x934
++#define	EPCMPR14	0x938
++#define	EPCMPR15	0x93C
++
++/* Event Processor Counter Register */
++#define EPCTR0		0xA00
++#define EPCTR1		0xA04
++#define EPCTR2		0xA08
++#define EPCTR3		0xA0C
++#define EPCTR4		0xA10
++#define EPCTR5		0xA14
++#define EPCTR6		0xA18
++#define EPCTR7		0xA1C
++#define EPCTR8		0xA20
++#define EPCTR9		0xA24
++#define EPCTR10		0xA28
++#define EPCTR11		0xA2C
++#define EPCTR12		0xA30
++#define EPCTR13		0xA34
++#define EPCTR14		0xA38
++#define EPCTR15		0xA3C
++#define EPCTR16		0xA40
++#define EPCTR17		0xA44
++#define EPCTR18		0xA48
++#define EPCTR19		0xA4C
++#define EPCTR20		0xA50
++#define EPCTR21		0xA54
++#define EPCTR22		0xA58
++#define EPCTR23		0xA5C
++#define EPCTR24		0xA60
++#define EPCTR25		0xA64
++#define EPCTR26		0xA68
++#define EPCTR27		0xA6C
++#define EPCTR28		0xA70
++#define EPCTR29		0xA74
++#define EPCTR30		0xA78
++#define EPCTR31		0xA7C
++
++/* NPC triggered Memory-Mapped Access Registers */
++#define	NCR		0x000
++#define MCCR1		0x0CC
++#define	MCSR1		0x0D0
++#define	MMAR1LO		0x0D4
++#define	MMAR1HI		0x0D8
++#define	MMDR1		0x0DC
++#define	MCSR2		0x0E0
++#define	MMAR2LO		0x0E4
++#define	MMAR2HI		0x0E8
++#define	MMDR2		0x0EC
++#define	MCSR3		0x0F0
++#define	MMAR3LO		0x0F4
++#define	MMAR3HI		0x0F8
++#define	MMDR3		0x0FC
++
++/* RCPM Core State Action Control Register 0 */
++#define	CSTTACR0	0xB00
++
++/* RCPM Core Group 1 Configuration Register 0 */
++#define	CG1CR0		0x31C
++
++/* Block offsets */
++#define	RCPM_BLOCK_OFFSET	0x00022000
++#define	EPU_BLOCK_OFFSET	0x00000000
++#define	NPC_BLOCK_OFFSET	0x00001000
++
++static void *g_dcsr_base;
++
++static inline void rcpm_write(u32 offset, u32 val)
++{
++	out_be32(g_dcsr_base + RCPM_BLOCK_OFFSET + offset, val);
++}
++
++static inline void epu_write(u32 offset, u32 val)
++{
++	out_be32(g_dcsr_base + EPU_BLOCK_OFFSET + offset, val);
++}
++
++static inline void npc_write(u32 offset, u32 val)
++{
++	out_be32(g_dcsr_base + NPC_BLOCK_OFFSET + offset, val);
++}
++
++/**
++ * fsl_dp_fsm_setup - Configure EPU's FSM
++ * @dcsr_base: the base address of DCSR registers
 + */
-+#define HIBERNATION_FLAG	1
-+#define DEEPSLEEP_FLAG		2
-+
-+#ifndef __ASSEMBLY__
-+extern void booke_cpu_state_save(void *buf, int type);
-+extern void *booke_cpu_state_restore(void *buf, int type);
-+#endif
-+#endif
-+
-diff --git a/arch/powerpc/kernel/Makefile b/arch/powerpc/kernel/Makefile
-index fcc9a89..64acae6 100644
---- a/arch/powerpc/kernel/Makefile
-+++ b/arch/powerpc/kernel/Makefile
-@@ -73,6 +73,7 @@ obj-$(CONFIG_HIBERNATION)	+= swsusp_booke.o
- else
- obj-$(CONFIG_HIBERNATION)	+= swsusp_$(CONFIG_WORD_SIZE).o
- endif
-+obj-$(CONFIG_E500)		+= booke_save_regs.o
- obj64-$(CONFIG_HIBERNATION)	+= swsusp_asm64.o
- obj-$(CONFIG_MODULES)		+= module.o module_$(CONFIG_WORD_SIZE).o
- obj-$(CONFIG_44x)		+= cpu_setup_44x.o
-diff --git a/arch/powerpc/kernel/booke_save_regs.S b/arch/powerpc/kernel/booke_save_regs.S
-new file mode 100644
-index 0000000..9ccd576
---- /dev/null
-+++ b/arch/powerpc/kernel/booke_save_regs.S
-@@ -0,0 +1,361 @@
-+/*
-+ * Freescale Power Management, Save/Restore core state
-+ *
-+ * Copyright 2014 Freescale Semiconductor, Inc.
-+ * Author: Wang Dongsheng <dongsheng.wang@freescale.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
-+ */
-+
-+#include <asm/ppc_asm.h>
-+#include <asm/booke_save_regs.h>
-+
-+/*
-+ * Supported Core List:
-+ * E500v1, E500v2, E500MC, E5500, E6500.
-+ */
-+
-+/* Save/Restore register operation define */
-+#define do_save_gpr_reg(reg, addr) \
-+	PPC_STL reg, addr(r10)
-+
-+#define do_save_fpr_reg(reg, addr) \
-+	stfd	reg, addr(r10)
-+
-+#define do_save_spr_reg(reg, addr) \
-+	mfspr	r0, SPRN_##reg ;\
-+	PPC_STL r0, addr(r10)
-+
-+#define do_save_special_reg(special, addr) \
-+	mf##special	r0 ;\
-+	PPC_STL r0, addr(r10)
-+
-+#define do_restore_gpr_reg(reg, addr) \
-+	PPC_LL reg, addr(r10)
-+
-+#define do_restore_fpr_reg(reg, addr) \
-+	lfd	reg, addr(r10)
-+
-+#define do_restore_spr_reg(reg, addr) \
-+	PPC_LL r0, addr(r10) ;\
-+	mtspr	SPRN_##reg, r0
-+
-+#define do_restore_special_reg(special, addr) \
-+	PPC_LL r0, addr(r10) ;\
-+	mt##special	r0
-+
-+#define do_sr_general_gpr_regs(func) \
-+	do_##func##_gpr_reg(r1, SR_GPR1) ;\
-+	do_##func##_gpr_reg(r2, SR_GPR2) ;\
-+	do_##func##_gpr_reg(r13, SR_GPR13 + 0x00) ;\
-+	do_##func##_gpr_reg(r14, SR_GPR13 + 0x08) ;\
-+	do_##func##_gpr_reg(r15, SR_GPR13 + 0x10) ;\
-+	do_##func##_gpr_reg(r16, SR_GPR13 + 0x18) ;\
-+	do_##func##_gpr_reg(r17, SR_GPR13 + 0x20) ;\
-+	do_##func##_gpr_reg(r18, SR_GPR13 + 0x28) ;\
-+	do_##func##_gpr_reg(r19, SR_GPR13 + 0x30) ;\
-+	do_##func##_gpr_reg(r20, SR_GPR13 + 0x38) ;\
-+	do_##func##_gpr_reg(r21, SR_GPR13 + 0x40) ;\
-+	do_##func##_gpr_reg(r22, SR_GPR13 + 0x48) ;\
-+	do_##func##_gpr_reg(r23, SR_GPR13 + 0x50) ;\
-+	do_##func##_gpr_reg(r24, SR_GPR13 + 0x58) ;\
-+	do_##func##_gpr_reg(r25, SR_GPR13 + 0x60) ;\
-+	do_##func##_gpr_reg(r26, SR_GPR13 + 0x68) ;\
-+	do_##func##_gpr_reg(r27, SR_GPR13 + 0x70) ;\
-+	do_##func##_gpr_reg(r28, SR_GPR13 + 0x78) ;\
-+	do_##func##_gpr_reg(r29, SR_GPR13 + 0x80) ;\
-+	do_##func##_gpr_reg(r30, SR_GPR13 + 0x88) ;\
-+	do_##func##_gpr_reg(r31, SR_GPR13 + 0x90)
-+
-+#define do_sr_general_pcr_regs(func) \
-+	do_##func##_spr_reg(EPCR, SR_EPCR) ;\
-+	do_##func##_spr_reg(HID0, SR_HID0 + 0x00)
-+
-+#define do_sr_e500_pcr_regs(func) \
-+	do_##func##_spr_reg(HID1, SR_HID0 + 0x08)
-+
-+#define do_sr_save_tb_regs \
-+	do_save_spr_reg(TBRU, SR_TBU) ;\
-+	do_save_spr_reg(TBRL, SR_TBL)
-+
-+#define do_sr_restore_tb_regs \
-+	do_restore_spr_reg(TBWU, SR_TBU) ;\
-+	do_restore_spr_reg(TBWL, SR_TBL)
-+
-+#define do_sr_general_time_regs(func) \
-+	do_sr_##func##_tb_regs	;\
-+	do_##func##_spr_reg(TCR, SR_TCR)
-+
-+#define do_sr_interrupt_regs(func) \
-+	do_##func##_spr_reg(IVPR, SR_IVPR) ;\
-+	do_##func##_spr_reg(IVOR0, SR_IVOR0 + 0x00) ;\
-+	do_##func##_spr_reg(IVOR1, SR_IVOR0 + 0x08) ;\
-+	do_##func##_spr_reg(IVOR2, SR_IVOR0 + 0x10) ;\
-+	do_##func##_spr_reg(IVOR3, SR_IVOR0 + 0x18) ;\
-+	do_##func##_spr_reg(IVOR4, SR_IVOR0 + 0x20) ;\
-+	do_##func##_spr_reg(IVOR5, SR_IVOR0 + 0x28) ;\
-+	do_##func##_spr_reg(IVOR6, SR_IVOR0 + 0x30) ;\
-+	do_##func##_spr_reg(IVOR7, SR_IVOR0 + 0x38) ;\
-+	do_##func##_spr_reg(IVOR8, SR_IVOR0 + 0x40) ;\
-+	do_##func##_spr_reg(IVOR10, SR_IVOR0 + 0x50) ;\
-+	do_##func##_spr_reg(IVOR11, SR_IVOR0 + 0x58) ;\
-+	do_##func##_spr_reg(IVOR12, SR_IVOR0 + 0x60) ;\
-+	do_##func##_spr_reg(IVOR13, SR_IVOR0 + 0x68) ;\
-+	do_##func##_spr_reg(IVOR14, SR_IVOR0 + 0x70) ;\
-+	do_##func##_spr_reg(IVOR15, SR_IVOR0 + 0x78)
-+
-+#define do_e500_sr_interrupt_regs(func) \
-+	do_##func##_spr_reg(IVOR32, SR_IVOR32 + 0x00) ;\
-+	do_##func##_spr_reg(IVOR33, SR_IVOR32 + 0x08) ;\
-+	do_##func##_spr_reg(IVOR34, SR_IVOR32 + 0x10)
-+
-+#define do_e500mc_sr_interrupt_regs(func) \
-+	do_##func##_spr_reg(IVOR9, SR_IVOR0 + 0x48) ;\
-+	do_##func##_spr_reg(IVOR35, SR_IVOR32 + 0x18) ;\
-+	do_##func##_spr_reg(IVOR36, SR_IVOR32 + 0x20) ;\
-+	do_##func##_spr_reg(IVOR37, SR_IVOR32 + 0x28) ;\
-+	do_##func##_spr_reg(IVOR38, SR_IVOR32 + 0x30) ;\
-+	do_##func##_spr_reg(IVOR39, SR_IVOR32 + 0x38) ;\
-+	do_##func##_spr_reg(IVOR40, SR_IVOR32 + 0x40) ;\
-+	do_##func##_spr_reg(IVOR41, SR_IVOR32 + 0x48)
-+
-+#define do_e5500_sr_interrupt_regs(func) \
-+	do_e500mc_sr_interrupt_regs(func)
-+
-+#define do_e6500_sr_interrupt_regs(func) \
-+	do_##func##_spr_reg(IVOR32, SR_IVOR32 + 0x00) ;\
-+	do_##func##_spr_reg(IVOR33, SR_IVOR32 + 0x08) ;\
-+	do_e5500_sr_interrupt_regs(func)
-+
-+#define do_sr_general_software_regs(func) \
-+	do_##func##_spr_reg(SPRG1, SR_SPRG1) ;\
-+	do_##func##_spr_reg(SPRG3, SR_SPRG3) ;\
-+	do_##func##_spr_reg(PID0, SR_PID0)
-+
-+#define do_sr_e500_mmu_regs(func) \
-+	do_##func##_spr_reg(PID1, SR_PID0 + 0x08) ;\
-+	do_##func##_spr_reg(PID2, SR_PID0 + 0x10)
-+
-+#define do_sr_debug_regs(func) \
-+	do_##func##_spr_reg(DBCR0, SR_DBCR0 + 0x00) ;\
-+	do_##func##_spr_reg(DBCR1, SR_DBCR0 + 0x08) ;\
-+	do_##func##_spr_reg(DBCR2, SR_DBCR0 + 0x10) ;\
-+	do_##func##_spr_reg(IAC1, SR_IAC1 + 0x00) ;\
-+	do_##func##_spr_reg(IAC2, SR_IAC1 + 0x08) ;\
-+	do_##func##_spr_reg(DAC1, SR_DAC1 + 0x00) ;\
-+	do_##func##_spr_reg(DAC2, SR_DAC1 + 0x08)
-+
-+#define do_e6500_sr_debug_regs(func) \
-+	do_##func##_spr_reg(IAC3, SR_IAC1 + 0x10) ;\
-+	do_##func##_spr_reg(IAC4, SR_IAC1 + 0x18)
-+
-+	.section .text
-+	.align	5
-+booke_cpu_base_save:
-+	do_sr_general_gpr_regs(save)
-+	do_sr_general_pcr_regs(save)
-+	do_sr_general_software_regs(save)
-+1:
-+	mfspr	r5, SPRN_TBRU
-+	do_sr_general_time_regs(save)
-+	mfspr	r6, SPRN_TBRU
-+	cmpw	r5, r6
-+	bne	1b
-+
-+	blr
-+
-+booke_cpu_base_restore:
-+	do_sr_general_gpr_regs(restore)
-+	do_sr_general_pcr_regs(restore)
-+	do_sr_general_software_regs(restore)
-+
-+	isync
-+
-+	/* Restore Time registers, clear tb lower to avoid wrap */
-+	li	r0, 0
-+	mtspr	SPRN_TBWL, r0
-+	do_sr_general_time_regs(restore)
-+
-+	/* clear out status */
-+	mfspr   r0,SPRN_TSR
-+	mtspr   SPRN_TSR, r0
-+
-+	blr
-+
-+/* Base registers, e500v1, e500v2 need to do some special save/restore */
-+e500_base_special_save:
-+	lis	r12, 0
-+	ori	r12, r12, PVR_VER_E500V1@l
-+	cmpw	r11, r12
-+	beq	1f
-+
-+	lis	r12, 0
-+	ori	r12, r12, PVR_VER_E500V2@l
-+	cmpw	r11, r12
-+	bne	2f
-+1:
-+	do_sr_e500_pcr_regs(save)
-+	do_sr_e500_mmu_regs(save)
-+2:
-+	blr
-+
-+e500_base_special_restore:
-+	lis	r12, 0
-+	ori	r12, r12, PVR_VER_E500V1@l
-+	cmpw	r11, r12
-+	beq	1f
-+
-+	lis	r12, 0
-+	ori	r12, r12, PVR_VER_E500V2@l
-+	cmpw	r11, r12
-+	bne	2f
-+1:
-+	do_sr_e500_pcr_regs(save)
-+	do_sr_e500_mmu_regs(save)
-+2:
-+	blr
-+
-+booke_cpu_append_save:
-+	mfspr	r0, SPRN_PVR
-+	rlwinm	r11, r0, 16, 16, 31
-+
-+	lis	r12, 0
-+	ori	r12, r12, PVR_VER_E6500@l
-+	cmpw	r11, r12
-+	beq	e6500_append_save
-+
-+	lis	r12, 0
-+	ori	r12, r12, PVR_VER_E5500@l
-+	cmpw	r11, r12
-+	beq	e5500_append_save
-+
-+	lis	r12, 0
-+	ori	r12, r12, PVR_VER_E500MC@l
-+	cmpw	r11, r12
-+	beq	e500mc_append_save
-+
-+	lis	r12, 0
-+	ori	r12, r12, PVR_VER_E500V2@l
-+	cmpw	r11, r12
-+	beq	e500v2_append_save
-+
-+	lis	r12, 0
-+	ori	r12, r12, PVR_VER_E500V1@l
-+	cmpw	r11, r12
-+	beq	e500v1_append_save
-+	b	1f
-+
-+e6500_append_save:
-+	do_e6500_sr_interrupt_regs(save)
-+	do_e6500_sr_debug_regs(save)
-+	b	1f
-+
-+e5500_append_save:
-+	do_e5500_sr_interrupt_regs(save)
-+	b	1f
-+
-+e500mc_append_save:
-+	do_e500mc_sr_interrupt_regs(save)
-+	b	1f
-+
-+e500v2_append_save:
-+e500v1_append_save:
-+	do_e500_sr_interrupt_regs(save)
-+1:
-+	do_sr_interrupt_regs(save)
-+	do_sr_debug_regs(save)
-+
-+	blr
-+
-+booke_cpu_append_restore:
-+	mfspr	r0, SPRN_PVR
-+	rlwinm	r11, r0, 16, 16, 31
-+
-+	lis	r12, 0
-+	ori	r12, r12, PVR_VER_E6500@l
-+	cmpw	r11, r12
-+	beq	e6500_append_restore
-+
-+	lis	r12, 0
-+	ori	r12, r12, PVR_VER_E5500@l
-+	cmpw	r11, r12
-+	beq	e5500_append_restore
-+
-+	lis	r12, 0
-+	ori	r12, r12, PVR_VER_E500MC@l
-+	cmpw	r11, r12
-+	beq	e500mc_append_restore
-+
-+	lis	r12, 0
-+	ori	r12, r12, PVR_VER_E500V2@l
-+	cmpw	r11, r12
-+	beq	e500v2_append_restore
-+
-+	lis	r12, 0
-+	ori	r12, r12, PVR_VER_E500V1@l
-+	cmpw	r11, r12
-+	beq	e500v1_append_restore
-+	b	1f
-+
-+e6500_append_restore:
-+	do_e6500_sr_interrupt_regs(restore)
-+	do_e6500_sr_debug_regs(restore)
-+	b	1f
-+
-+e5500_append_restore:
-+	do_e5500_sr_interrupt_regs(restore)
-+	b	1f
-+
-+e500mc_append_restore:
-+	do_e500mc_sr_interrupt_regs(restore)
-+	b	1f
-+
-+e500v2_append_restore:
-+e500v1_append_restore:
-+	do_e500_sr_interrupt_regs(restore)
-+1:
-+	do_sr_interrupt_regs(restore)
-+	do_sr_debug_regs(restore)
-+	sync
-+
-+	blr
-+
-+/*
-+ * r3 = the address of buffer
-+ * r4 = type: HIBERNATION_FLAG or DEEPSLEEP_FLAG
-+ */
-+_GLOBAL(booke_cpu_state_save)
-+	mflr	r9
-+	mr	r10, r3
-+
-+	cmpwi	r4, HIBERNATION_FLAG
-+	beq	1f
-+	bl	booke_cpu_append_save
-+1:
-+	bl	e500_base_special_save
-+	bl	booke_cpu_base_save
-+
-+	mtlr	r9
-+	blr
-+
-+/*
-+ * r3 = the address of buffer
-+ * r4 = type: HIBERNATION_FLAG or DEEPSLEEP_FLAG
-+ */
-+_GLOBAL(booke_cpu_state_restore)
-+	mflr	r9
-+	mr	r10, r3
-+
-+	cmpwi	r4, HIBERNATION_FLAG
-+	beq	1f
-+
-+	bl	booke_cpu_append_restore
-+1:
-+	bl	e500_base_special_restore
-+	bl	booke_cpu_base_restore
-+
-+	mtlr	r9
-+	blr
++void fsl_dp_fsm_setup(void *dcsr_base)
++{
++	u32 offset;
++
++	/*
++	 * Globle static variable is safe here, becsuse this function is only
++	 * called once at the last stage of suspend, when there is only one CPU
++	 * running and task switching is also disabled.
++	 */
++	g_dcsr_base = dcsr_base;
++
++	/* Disable All SCU Actions */
++	for (offset = EPACR0; offset <= EPACR15; offset += FSL_STRIDE_4B)
++		epu_write(offset, 0);
++
++	/* Clear EPEVTCRn */
++	for (offset = EPEVTCR0; offset <= EPEVTCR9; offset += FSL_STRIDE_4B)
++		epu_write(offset, 0);
++
++	/* Clear Event Processor Global Control Register */
++	epu_write(EPGCR, 0);
++
++	/* Clear EPSMCRn */
++	for (offset = EPSMCR0; offset <= EPSMCR15; offset += FSL_STRIDE_8B)
++		epu_write(offset, 0);
++
++	/* Clear EPCCRn */
++	for (offset = EPCCR0; offset <= EPCCR15; offset += FSL_STRIDE_4B)
++		epu_write(offset, 0);
++
++	/* Clear EPCMPRn */
++	for (offset = EPCMPR0; offset <= EPCMPR15; offset += FSL_STRIDE_4B)
++		epu_write(offset, 0);
++
++	/*
++	 * Clear EPCTRn
++	 * Warm Device Reset does NOT reset these counter, so clear them
++	 * explicitly. Or, the second time entering deep sleep will fail.
++	 */
++	for (offset = EPCTR0; offset <= EPCTR31; offset += FSL_STRIDE_4B)
++		epu_write(offset, 0);
++
++	/* Clear EPIMCRn */
++	for (offset = EPIMCR0; offset <= EPIMCR31; offset += FSL_STRIDE_4B)
++		epu_write(offset, 0);
++
++	/* Clear EPXTRIGCRn */
++	epu_write(EPXTRIGCR, 0);
++
++	/* Disable all SCUs EPECRn */
++	for (offset = EPECR0; offset <= EPECR15; offset += FSL_STRIDE_4B)
++		epu_write(offset, 0);
++
++	/* Set up the SCU chaining */
++	epu_write(EPECR15, 0x00000004);
++	epu_write(EPECR14, 0x02000084);
++	epu_write(EPECR13, 0x08000084);
++	epu_write(EPECR12, 0x80000084);
++	epu_write(EPECR11, 0x90000084);
++	epu_write(EPECR10, 0x42000084);
++	epu_write(EPECR9, 0x08000084);
++	epu_write(EPECR8, 0x60000084);
++	epu_write(EPECR7, 0x80000084);
++	epu_write(EPECR6, 0x80000084);
++	epu_write(EPECR5, 0x08000004);
++	epu_write(EPECR4, 0x20000084);
++	epu_write(EPECR3, 0x80000084);
++	epu_write(EPECR2, 0xF0004004);
++
++	/* EVT Pin Configuration. SCU8 triger EVT2, and SCU11 triger EVT9 */
++	epu_write(EPEVTCR2, 0x80000001);
++	epu_write(EPEVTCR9, 0xB0000001);
++
++	/* Configure the EPU Counter Values */
++	epu_write(EPCMPR15, 0x000000FF);
++	epu_write(EPCMPR14, 0x000000FF);
++	epu_write(EPCMPR12, 0x000000FF);
++	epu_write(EPCMPR11, 0x000000FF);
++	epu_write(EPCMPR10, 0x000000FF);
++	epu_write(EPCMPR9, 0x000000FF);
++	epu_write(EPCMPR8, 0x000000FF);
++	epu_write(EPCMPR5, 0x00000020);
++	epu_write(EPCMPR4, 0x000000FF);
++	epu_write(EPCMPR2, 0x000000FF);
++
++	/* Configure the EPU Counters */
++	epu_write(EPCCR15, 0x92840000);
++	epu_write(EPCCR14, 0x92840000);
++	epu_write(EPCCR12, 0x92840000);
++	epu_write(EPCCR11, 0x92840000);
++	epu_write(EPCCR10, 0x92840000);
++	epu_write(EPCCR9, 0x92840000);
++	epu_write(EPCCR8, 0x92840000);
++	epu_write(EPCCR5, 0x92840000);
++	epu_write(EPCCR4, 0x92840000);
++	epu_write(EPCCR2, 0x92840000);
++
++	/* Configure the SCUs Inputs */
++	epu_write(EPSMCR15, 0x76000000);
++	epu_write(EPSMCR14, 0x00000031);
++	epu_write(EPSMCR13, 0x00003100);
++	epu_write(EPSMCR12, 0x7F000000);
++	epu_write(EPSMCR11, 0x31740000);
++	epu_write(EPSMCR10, 0x65000030);
++	epu_write(EPSMCR9, 0x00003000);
++	epu_write(EPSMCR8, 0x64300000);
++	epu_write(EPSMCR7, 0x30000000);
++	epu_write(EPSMCR6, 0x7C000000);
++	epu_write(EPSMCR5, 0x00002E00);
++	epu_write(EPSMCR4, 0x002F0000);
++	epu_write(EPSMCR3, 0x2F000000);
++	epu_write(EPSMCR2, 0x6C700000);
++
++	/* Configure the SCUs Actions */
++	epu_write(EPACR15, 0x02000000);
++	epu_write(EPACR14, 0x04000000);
++	epu_write(EPACR13, 0x06000000);
++	epu_write(EPACR12, 0x00000003);
++	epu_write(EPACR10, 0x00000020);
++	epu_write(EPACR9, 0x0000001C);
++	epu_write(EPACR5, 0x00000040);
++	epu_write(EPACR3, 0x00000080);
++
++	/* Configure the SCUs and Timers Mux */
++	epu_write(EPIMCR31, 0x76000000);
++	epu_write(EPIMCR28, 0x76000000);
++	epu_write(EPIMCR22, 0x6C000000);
++	epu_write(EPIMCR20, 0x48000000);
++	epu_write(EPIMCR16, 0x6A000000);
++	epu_write(EPIMCR12, 0x44000000);
++	epu_write(EPIMCR5, 0x40000000);
++	epu_write(EPIMCR4, 0x44000000);
++
++	/* Configure pulse or level triggers */
++	epu_write(EPXTRIGCR, 0x0000FFDF);
++
++	/* Configure the NPC tMMA registers*/
++	npc_write(NCR, 0x80000000);
++	npc_write(MCCR1, 0);
++	npc_write(MCSR1, 0);
++	npc_write(MMAR1LO, 0);
++	npc_write(MMAR1HI, 0);
++	npc_write(MMDR1, 0);
++	npc_write(MCSR2, 0);
++	npc_write(MMAR2LO, 0);
++	npc_write(MMAR2HI, 0);
++	npc_write(MMDR2, 0);
++	npc_write(MCSR3, 0x80000000);
++	npc_write(MMAR3LO, 0x000E2130);
++	npc_write(MMAR3HI, 0x00030000);
++	npc_write(MMDR3, 0x00020000);
++
++	/* Configure RCPM for detecting Core0’s PH15 state */
++	rcpm_write(CSTTACR0, 0x00001001);
++	rcpm_write(CG1CR0, 0x00000001);
++
++}
++
++void fsl_dp_fsm_clean(void *dcsr_base)
++{
++
++	epu_write(EPEVTCR2, 0);
++	epu_write(EPEVTCR9, 0);
++
++	epu_write(EPGCR, 0);
++	epu_write(EPECR15, 0);
++
++	rcpm_write(CSTTACR0, 0);
++	rcpm_write(CG1CR0, 0);
++
++}
 -- 
 1.7.3
 
