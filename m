@@ -1,150 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752744AbaCGKwQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 05:52:16 -0500
+	id S1752868AbaCGKwX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 05:52:23 -0500
 Received: from cn.fujitsu.com ([222.73.24.84]:23066 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752589AbaCGKwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 05:52:14 -0500
+	id S1752589AbaCGKwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 05:52:20 -0500
 X-IronPort-AV: E=Sophos;i="4.97,607,1389715200"; 
-   d="scan'208";a="9660334"
-Message-ID: <5319A2D0.7010306@cn.fujitsu.com>
-Date: Fri, 07 Mar 2014 18:43:28 +0800
+   d="scan'208";a="9660336"
+Message-ID: <5319A2D8.70409@cn.fujitsu.com>
+Date: Fri, 07 Mar 2014 18:43:36 +0800
 From: Gu Zheng <guz.fnst@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
 To: Kim <jaegeuk.kim@samsung.com>
 CC: f2fs <linux-f2fs-devel@lists.sourceforge.net>,
         linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/5] f2fs: remove the unused ctor argument of f2fs_kmem_cache_create()
+Subject: [PATCH 4/5] f2fs: optimize restore_node_summary slightly
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/07 18:49:33,
+ 2014/03/07 18:49:42,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/07 18:49:35,
-	Serialize complete at 2014/03/07 18:49:35
+ 2014/03/07 18:49:42,
+	Serialize complete at 2014/03/07 18:49:42
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Previously, we ra_sum_pages to pre-read contiguous pages as more
+as possible, and if we fail to alloc more pages, an ENOMEM error
+will be reported upstream, even though we have alloced some pages
+yet. In fact, we can use the available pages to do the job partly,
+and continue the rest in the following circle. Only reporting ENOMEM
+upstream if we really can not alloc any available page.
+
+And another fix is ignoring dealing with the following pages if an
+EIO occurs when reading page from page_list.
 
 Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
 ---
- fs/f2fs/checkpoint.c |    4 ++--
- fs/f2fs/f2fs.h       |    4 ++--
- fs/f2fs/gc.c         |    2 +-
- fs/f2fs/node.c       |    4 ++--
- fs/f2fs/recovery.c   |    2 +-
- fs/f2fs/segment.c    |    2 +-
- fs/f2fs/super.c      |    2 +-
- 7 files changed, 10 insertions(+), 10 deletions(-)
+ fs/f2fs/node.c    |   44 ++++++++++++++++++++------------------------
+ fs/f2fs/segment.c |    7 +++++--
+ 2 files changed, 25 insertions(+), 26 deletions(-)
 
-diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-index f069249..911b6f9 100644
---- a/fs/f2fs/checkpoint.c
-+++ b/fs/f2fs/checkpoint.c
-@@ -939,11 +939,11 @@ void init_orphan_info(struct f2fs_sb_info *sbi)
- int __init create_checkpoint_caches(void)
- {
- 	orphan_entry_slab = f2fs_kmem_cache_create("f2fs_orphan_entry",
--			sizeof(struct orphan_inode_entry), NULL);
-+			sizeof(struct orphan_inode_entry));
- 	if (!orphan_entry_slab)
- 		return -ENOMEM;
- 	inode_entry_slab = f2fs_kmem_cache_create("f2fs_dirty_dir_entry",
--			sizeof(struct dir_inode_entry), NULL);
-+			sizeof(struct dir_inode_entry));
- 	if (!inode_entry_slab) {
- 		kmem_cache_destroy(orphan_entry_slab);
- 		return -ENOMEM;
-diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index 8b2cb82..f845e92 100644
---- a/fs/f2fs/f2fs.h
-+++ b/fs/f2fs/f2fs.h
-@@ -852,9 +852,9 @@ static inline void f2fs_put_dnode(struct dnode_of_data *dn)
- }
- 
- static inline struct kmem_cache *f2fs_kmem_cache_create(const char *name,
--					size_t size, void (*ctor)(void *))
-+					size_t size)
- {
--	return kmem_cache_create(name, size, 0, SLAB_RECLAIM_ACCOUNT, ctor);
-+	return kmem_cache_create(name, size, 0, SLAB_RECLAIM_ACCOUNT, NULL);
- }
- 
- static inline void *f2fs_kmem_cache_alloc(struct kmem_cache *cachep,
-diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
-index d94acbc..b90dbe5 100644
---- a/fs/f2fs/gc.c
-+++ b/fs/f2fs/gc.c
-@@ -742,7 +742,7 @@ void build_gc_manager(struct f2fs_sb_info *sbi)
- int __init create_gc_caches(void)
- {
- 	winode_slab = f2fs_kmem_cache_create("f2fs_gc_inodes",
--			sizeof(struct inode_entry), NULL);
-+			sizeof(struct inode_entry));
- 	if (!winode_slab)
- 		return -ENOMEM;
- 	return 0;
 diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-index 9653096..8787469 100644
+index 8787469..4b7861d 100644
 --- a/fs/f2fs/node.c
 +++ b/fs/f2fs/node.c
-@@ -1896,12 +1896,12 @@ void destroy_node_manager(struct f2fs_sb_info *sbi)
- int __init create_node_manager_caches(void)
- {
- 	nat_entry_slab = f2fs_kmem_cache_create("nat_entry",
--			sizeof(struct nat_entry), NULL);
-+			sizeof(struct nat_entry));
- 	if (!nat_entry_slab)
- 		return -ENOMEM;
+@@ -1588,15 +1588,8 @@ static int ra_sum_pages(struct f2fs_sb_info *sbi, struct list_head *pages,
+ 	for (; page_idx < start + nrpages; page_idx++) {
+ 		/* alloc temporal page for read node summary info*/
+ 		page = alloc_page(GFP_F2FS_ZERO);
+-		if (!page) {
+-			struct page *tmp;
+-			list_for_each_entry_safe(page, tmp, pages, lru) {
+-				list_del(&page->lru);
+-				unlock_page(page);
+-				__free_pages(page, 0);
+-			}
+-			return -ENOMEM;
+-		}
++		if (!page)
++			break;
  
- 	free_nid_slab = f2fs_kmem_cache_create("free_nid",
--			sizeof(struct free_nid), NULL);
-+			sizeof(struct free_nid));
- 	if (!free_nid_slab) {
- 		kmem_cache_destroy(nat_entry_slab);
- 		return -ENOMEM;
-diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
-index aef7768..03b28ec 100644
---- a/fs/f2fs/recovery.c
-+++ b/fs/f2fs/recovery.c
-@@ -436,7 +436,7 @@ int recover_fsync_data(struct f2fs_sb_info *sbi)
- 	bool need_writecp = false;
+ 		lock_page(page);
+ 		page->index = page_idx;
+@@ -1607,7 +1600,8 @@ static int ra_sum_pages(struct f2fs_sb_info *sbi, struct list_head *pages,
+ 		f2fs_submit_page_mbio(sbi, page, page->index, &fio);
  
- 	fsync_entry_slab = f2fs_kmem_cache_create("f2fs_fsync_inode_entry",
--			sizeof(struct fsync_inode_entry), NULL);
-+			sizeof(struct fsync_inode_entry));
- 	if (!fsync_entry_slab)
- 		return -ENOMEM;
+ 	f2fs_submit_merged_bio(sbi, META, READ);
+-	return 0;
++
++	return page_idx - start;
+ }
+ 
+ int restore_node_summary(struct f2fs_sb_info *sbi,
+@@ -1630,28 +1624,30 @@ int restore_node_summary(struct f2fs_sb_info *sbi,
+ 		nrpages = min(last_offset - i, bio_blocks);
+ 
+ 		/* read ahead node pages */
+-		err = ra_sum_pages(sbi, &page_list, addr, nrpages);
+-		if (err)
+-			return err;
++		nrpages = ra_sum_pages(sbi, &page_list, addr, nrpages);
++		if (!nrpages)
++			return -ENOMEM;
+ 
+ 		list_for_each_entry_safe(page, tmp, &page_list, lru) {
+-
+-			lock_page(page);
+-			if (unlikely(!PageUptodate(page))) {
+-				err = -EIO;
+-			} else {
+-				rn = F2FS_NODE(page);
+-				sum_entry->nid = rn->footer.nid;
+-				sum_entry->version = 0;
+-				sum_entry->ofs_in_node = 0;
+-				sum_entry++;
++			if (!err) {
++				lock_page(page);
++				if (unlikely(!PageUptodate(page))) {
++					err = -EIO;
++				} else {
++					rn = F2FS_NODE(page);
++					sum_entry->nid = rn->footer.nid;
++					sum_entry->version = 0;
++					sum_entry->ofs_in_node = 0;
++					sum_entry++;
++				}
++				unlock_page(page);
+ 			}
+ 
+ 			list_del(&page->lru);
+-			unlock_page(page);
+ 			__free_pages(page, 0);
+ 		}
+ 	}
++
+ 	return err;
+ }
  
 diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-index fbb41ba..199c964 100644
+index 199c964..b3f8431 100644
 --- a/fs/f2fs/segment.c
 +++ b/fs/f2fs/segment.c
-@@ -1878,7 +1878,7 @@ void destroy_segment_manager(struct f2fs_sb_info *sbi)
- int __init create_segment_manager_caches(void)
- {
- 	discard_entry_slab = f2fs_kmem_cache_create("discard_entry",
--			sizeof(struct discard_entry), NULL);
-+			sizeof(struct discard_entry));
- 	if (!discard_entry_slab)
- 		return -ENOMEM;
- 	return 0;
-diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-index 1bd9153..72df734 100644
---- a/fs/f2fs/super.c
-+++ b/fs/f2fs/super.c
-@@ -1089,7 +1089,7 @@ MODULE_ALIAS_FS("f2fs");
- static int __init init_inodecache(void)
- {
- 	f2fs_inode_cachep = f2fs_kmem_cache_create("f2fs_inode_cache",
--			sizeof(struct f2fs_inode_info), NULL);
-+			sizeof(struct f2fs_inode_info));
- 	if (!f2fs_inode_cachep)
- 		return -ENOMEM;
- 	return 0;
+@@ -1160,9 +1160,12 @@ static int read_normal_summaries(struct f2fs_sb_info *sbi, int type)
+ 				ns->ofs_in_node = 0;
+ 			}
+ 		} else {
+-			if (restore_node_summary(sbi, segno, sum)) {
++			int err;
++
++			err = restore_node_summary(sbi, segno, sum);
++			if (err) {
+ 				f2fs_put_page(new, 1);
+-				return -EINVAL;
++				return err;
+ 			}
+ 		}
+ 	}
 -- 
 1.7.7
 
