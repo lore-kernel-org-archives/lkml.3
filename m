@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752932AbaCGDGx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 22:06:53 -0500
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:55265 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752717AbaCGDE7 (ORCPT
+	id S1752898AbaCGDGw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 22:06:52 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:43380 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752701AbaCGDE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 6 Mar 2014 22:04:59 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s2734vLJ029710, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net-next 4/7] r8152: calculate the dropped packets for rx
+Date: Fri, 7 Mar 2014 11:04:37 +0800
+Message-ID: <1394161480-2918-5-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1394161480-2918-1-git-send-email-hayeswang@realtek.com>
+References: <1393934464-23675-1-git-send-email-hayeswang@realtek.com>
+ <1394161480-2918-1-git-send-email-hayeswang@realtek.com>
 MIME-Version: 1.0
-In-Reply-To: <20140228100114.GA13189@amd.pavel.ucw.cz>
-References: <1392875640-29230-1-git-send-email-jenny.tc@intel.com>
-	<1392875640-29230-3-git-send-email-jenny.tc@intel.com>
-	<CACRpkdaU44iinj2iDNdYm62J+4jQbg+XJ=Zq4GmJryPeu7GfTQ@mail.gmail.com>
-	<20140228100114.GA13189@amd.pavel.ucw.cz>
-Date: Fri, 7 Mar 2014 11:04:59 +0800
-Message-ID: <CACRpkdaZ2moqGWx2BpfEeKoW6doXg67TkJKY+mbg4hrFHDr16Q@mail.gmail.com>
-Subject: Re: [PATCH 2/4] power_supply: Introduce generic psy charging driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Jenny TC <jenny.tc@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Kim Milo <Milo.Kim@ti.com>, Lee Jones <lee.jones@linaro.org>,
-        Jingoo Han <jg1.han@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
-        Rhyland Klein <rklein@nvidia.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sebastian Reichel <sre@ring0.de>, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
-        =?windows-1251?B?yOLg6evuIMTo7Ojy8O7i?= <freemangordon@abv.bg>,
-        Linux-OMAP <linux-omap@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 28, 2014 at 6:01 PM, Pavel Machek <pavel@ucw.cz> wrote:
-> On Thu 2014-02-27 21:08:01, Linus Walleij wrote:
->> On Thu, Feb 20, 2014 at 6:53 AM, Jenny TC <jenny.tc@intel.com> wrote:
->>
->> > +++ b/include/linux/power/power_supply_charger.h
->>
->> > +#define MAX_CUR_VOLT_SAMPLES 3
->> > +#define DEF_CUR_VOLT_SAMPLE_JIFF (30*HZ)
->>
->> Why are things defined in Jiffies like this insead of seconds, milliseconds
->> etc? This will vary with the current operating frequency of the system,
->> why should physical measurements do that?
->
-> It is actually ok. The define is relative to jiffies, and that's what
-> interface expects.
+Continue dealing with the remain rx packets, even though the allocation
+of the skb fail. This could calculate the correct dropped packets.
 
-So consider the option that the interface is wrong.
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/usb/r8152.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Stating something like a sample period in system-specific jiffies
-instead of period time T is just weird. What control systems
-guy would understand this?
+diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+index f1eaa18..08f4e870 100644
+--- a/drivers/net/usb/r8152.c
++++ b/drivers/net/usb/r8152.c
+@@ -1456,7 +1456,7 @@ static void rx_bottom(struct r8152 *tp)
+ 			skb = netdev_alloc_skb_ip_align(netdev, pkt_len);
+ 			if (!skb) {
+ 				stats->rx_dropped++;
+-				break;
++				goto find_next_rx;
+ 			}
+ 			memcpy(skb->data, rx_data, pkt_len);
+ 			skb_put(skb, pkt_len);
+@@ -1465,6 +1465,7 @@ static void rx_bottom(struct r8152 *tp)
+ 			stats->rx_packets++;
+ 			stats->rx_bytes += pkt_len;
+ 
++find_next_rx:
+ 			rx_data = rx_agg_align(rx_data + pkt_len + CRC_SIZE);
+ 			rx_desc = (struct rx_desc *)rx_data;
+ 			len_used = (int)(rx_data - (u8 *)agg->head);
+-- 
+1.8.4.2
 
-Yours,
-Linus Walleij
