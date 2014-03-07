@@ -1,94 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372AbaCGNgh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 08:36:37 -0500
-Received: from www.meduna.org ([92.240.244.38]:34623 "EHLO meduna.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752229AbaCGNgf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 08:36:35 -0500
-Message-ID: <5319CB58.4070708@meduna.org>
-Date: Fri, 07 Mar 2014 14:36:24 +0100
-From: Stanislav Meduna <stano@meduna.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753425AbaCGNg6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 08:36:58 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:60249 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752232AbaCGNg4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 08:36:56 -0500
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>
+CC: <dmaengine@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
+        <tony@atomide.com>
+Subject: [PATCH] dma: omap-dma: Implement device_slave_caps callback
+Date: Fri, 7 Mar 2014 15:36:44 +0200
+Message-ID: <1394199404-7870-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.9.0
 MIME-Version: 1.0
-To: Marc Kleine-Budde <mkl@pengutronix.de>, wg@grandegger.com,
-        linux-can@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>
-Subject: Re: FlexCAN on i.MX28 interrupt flooding retrying send
-References: <53197E8A.5050409@meduna.org> <53198753.8000900@pengutronix.de>
-In-Reply-To: <53198753.8000900@pengutronix.de>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: stano@meduna.org
-X-Authenticator: dovecot_plain
-X-Spam-Score: -6.9
-X-Spam-Score-Int: -68
-X-Exim-Version: 4.72 (build at 25-Oct-2012 18:35:58)
-X-Date: 2014-03-07 14:36:30
-X-Connected-IP: 95.105.163.217:11789
-X-Message-Linecount: 67
-X-Body-Linecount: 51
-X-Message-Size: 2614
-X-Body-Size: 1875
-X-Received-Count: 1
-X-Recipient-Count: 5
-X-Local-Recipient-Count: 5
-X-Local-Recipient-Defer-Count: 0
-X-Local-Recipient-Fail-Count: 0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07.03.2014 09:46, Marc Kleine-Budde wrote:
+With the callback implemented omap-dma can provide information to client
+drivers regarding to supported address widths, directions, residue
+granularity, etc.
 
-> Adding the linux-can mailinglist to Cc.
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+---
+ drivers/dma/omap-dma.c | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
-I am not subscribed so maybe that's why the original mail
-did not get through - I did Cc: linux-can@vger.kernel.org
-
-> Your kernel is missing the patch:
-> 
-> e358784 can: flexcan: fix mx28 detection by rearanging OF match table
-> 
-> With this patch the CAN core properly detected as an mx28, so that bus
-> errors stay disabled (unless you enable them). If you need bus errors to
-> detect not connected CAN busses, you need another patchset berr_limit,
-> which is not yet mainline. I can repost it here, if you need it.
-
-Ah ok.
-
-Thank you, this probably points me to the right direction - I'll try
-to implement this behaviour in my kernel (unfortunately
-I cannot move to more recent one at the moment).
-
-On 07.03.2014 09:40, Wolfgang Grandegger wrote:
-
-> Maybe there is something wrong with you platform code or DTS file. What
-> kernel are you using and how is the DTS can node defined in your DTS file?
-
-This is a the 3.4.77 kernel with the realtime patches and without
-the device tree, so these settings are missing and the patch does
-not apply.
-
-On 07.03.2014 09:32, Matthias Klein wrote:
-
-> I made a similar observation on an i.MX537 with the 3.12.12-rt19
-> kernel: I see the same interrupt flooed when the bus is
-> disconnected.
->
-> What do you mean with "kills the machine"? I have a high interrupt
-> load, but the machine is still responsive.
-
-In my case the ssh connection became hung or updated once per several
-seconds etc. In one case it was even necessary to ifconfig down/up
-the ethernet interface (NAPI overload? - no idea). The exact behaviour
-might be related to the realtime patches - we need guaranteed response
-times and runaway interrupt processing hogging the CPU at the realtime
-priority is a problem.
-
-Many thanks
+diff --git a/drivers/dma/omap-dma.c b/drivers/dma/omap-dma.c
+index 64ceca2920b8..b19f04f4390b 100644
+--- a/drivers/dma/omap-dma.c
++++ b/drivers/dma/omap-dma.c
+@@ -1088,6 +1088,23 @@ static void omap_dma_free(struct omap_dmadev *od)
+ 	}
+ }
+ 
++#define OMAP_DMA_BUSWIDTHS	(BIT(DMA_SLAVE_BUSWIDTH_1_BYTE) | \
++				 BIT(DMA_SLAVE_BUSWIDTH_2_BYTES) | \
++				 BIT(DMA_SLAVE_BUSWIDTH_4_BYTES))
++
++static int omap_dma_device_slave_caps(struct dma_chan *dchan,
++				      struct dma_slave_caps *caps)
++{
++	caps->src_addr_widths = OMAP_DMA_BUSWIDTHS;
++	caps->dstn_addr_widths = OMAP_DMA_BUSWIDTHS;
++	caps->directions = BIT(DMA_DEV_TO_MEM) | BIT(DMA_MEM_TO_DEV);
++	caps->cmd_pause = true;
++	caps->cmd_terminate = true;
++	caps->residue_granularity = DMA_RESIDUE_GRANULARITY_BURST;
++
++	return 0;
++}
++
+ static int omap_dma_probe(struct platform_device *pdev)
+ {
+ 	struct omap_dmadev *od;
+@@ -1118,6 +1135,7 @@ static int omap_dma_probe(struct platform_device *pdev)
+ 	od->ddev.device_prep_slave_sg = omap_dma_prep_slave_sg;
+ 	od->ddev.device_prep_dma_cyclic = omap_dma_prep_dma_cyclic;
+ 	od->ddev.device_control = omap_dma_control;
++	od->ddev.device_slave_caps = omap_dma_device_slave_caps;
+ 	od->ddev.dev = &pdev->dev;
+ 	INIT_LIST_HEAD(&od->ddev.channels);
+ 	INIT_LIST_HEAD(&od->pending);
 -- 
-                                      Stano
+1.9.0
 
