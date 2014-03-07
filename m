@@ -1,47 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753640AbaCGR76 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 12:59:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35202 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751975AbaCGR74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 12:59:56 -0500
-Message-ID: <531A0911.4040304@redhat.com>
-Date: Fri, 07 Mar 2014 18:59:45 +0100
-From: Thomas Graf <tgraf@redhat.com>
-Organization: Red Hat, Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753681AbaCGSAL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 13:00:11 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:40446 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753651AbaCGSAD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 13:00:03 -0500
+Date: Fri, 7 Mar 2014 18:57:14 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
+        Chen-Yu Tsai <wens@csie.org>, "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Barry Song <Baohua.Song@csr.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, Pavel Machek <pavel@ucw.cz>,
+        Shawn Guo <shawn.guo@linaro.org>, Marek Vasut <marex@denx.de>,
+        Stephen Warren <swarren@nvidia.com>, kernel@pengutronix.de
+Subject: Re: [PATCH] reset: Add optional resets and stubs
+Message-ID: <20140307175714.GX607@lukather>
+References: <1394202623-20229-1-git-send-email-p.zabel@pengutronix.de>
 MIME-Version: 1.0
-To: Pravin Shelar <pshelar@nicira.com>
-CC: Zoltan Kiss <zoltan.kiss@citrix.com>, Jesse Gross <jesse@nicira.com>,
-        "dev@openvswitch.org" <dev@openvswitch.org>,
-        xen-devel@lists.xenproject.org, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] openvswitch: Orphan frags before sending to userspace
- via Netlink to avoid guest stall
-References: <1393615016-9187-1-git-send-email-zoltan.kiss@citrix.com>	<5319F272.1070101@redhat.com> <CALnjE+q=fejHPsjVj9+jnypJCUHfCDFc553U48WR48Tjcf3FZw@mail.gmail.com>
-In-Reply-To: <CALnjE+q=fejHPsjVj9+jnypJCUHfCDFc553U48WR48Tjcf3FZw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jtEtYGE75hrP1CgP"
+Content-Disposition: inline
+In-Reply-To: <1394202623-20229-1-git-send-email-p.zabel@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/2014 06:28 PM, Pravin Shelar wrote:
-> Problem is mapping SKBTX_DEV_ZEROCOPY pages to userspace. skb_zerocopy
-> is not doing that.
->
-> Unless I missing something, Current netlink code can not handle
-> skb-frags with zero copy. So we have to copy skb anyways and no need
-> to orphan-frags here.
-> If you are planning on handling skb-frags without copying then
-> skb_orphan_frags should be done in netlink.
 
-If you look at the second part of skb_zerocopy() this is exactly what
-it is doing unless the target skb has sufficient linear space
-preallocated. At least unless mmap is enabled in which case we would
-have to copy again until we have implemented a way to pass page refs
-via the nl ring buffer.
+--jtEtYGE75hrP1CgP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-So I think Zoltan is correct in orphaning frags that come from f.e.
-a tun device via zerocopy_sg_from_iovec().
+Hi Philipp,=20
+
+On Fri, Mar 07, 2014 at 03:30:23PM +0100, Philipp Zabel wrote:
+> This patch adds device_reset_optional and (devm_)reset_control_get_option=
+al
+> variants that drivers can use to indicate they can function without contr=
+ol
+> over the reset line. For those functions, stubs are added so the drivers =
+can
+> be compiled with CONFIG_RESET_CONTROLLER disabled.
+> Also, device_reset is annotated with __must_check. Drivers ignoring the r=
+eturn
+> value should use device_reset_optional instead.
+>=20
+> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+
+Reviewed-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+
+Thanks!
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--jtEtYGE75hrP1CgP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTGgh6AAoJEBx+YmzsjxAgRgkQAKmYcLlDgE1NhZSr/kjgITl7
+5L23N2oxDiZOtJi0vRhBzbQALG3eohY6ifWqYhnvbiOQvS3ZePDlg3YOkXMeIJTH
+8c6hpZ9XFlk0/UcPD3fg8zdZV0s+xRnIwafRCXf+vLv3R76QlZ9lxFLjE1N5r+lk
+8xDE637RnriI8RsZbYDfNNb9T+c+o4npEmTpian+uWwWSf5Dx1IUOSp6crF3YkoW
+K/slePhbnW85ww0PwvJl2V7HWXGQqLO+5QDPwtbtoV7Kd8Ucwfi/SFTyznr/IJYR
+bYM1HCExB94tVSEMC0RpLACEfGK4F/dFLsRIoB6vvNgEe1FKPrqXnLXZCxEb2tsd
+8i3lF1bnXcs4J3dGJ7dFnDDHisoOLq/my7H65/UbLR8GXVEZrwUSbKVgWX5BhxAf
+IwJXykHEoN/kiwRy/samx4/xWV6lwO7ZwWH0w3q4h4QdyD7xYo0A7UmuyA3TAGVF
+m4AwrbVxirXspqvGiy/CCfJvb58S/iX80a2+1+IHEgYqyKPMtsL4VHhdSfr4K0D1
+1ObZPO1dNHY1JyMmdtHVzFhZfh8KmDPVT9t+A+tghsquJn48xkC98K5nOYBmoIA9
+eeXPL1dtEJpaj7E/YnVvshKxxF6UHc28A30g1JPK789RexvhBS3Fge0uwykXz5oF
+XpBPCIX3YwV8DGmheiLB
+=Kp9q
+-----END PGP SIGNATURE-----
+
+--jtEtYGE75hrP1CgP--
