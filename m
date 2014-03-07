@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752397AbaCGJRu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 04:17:50 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:47211 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752247AbaCGJRq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 04:17:46 -0500
-From: George Cherian <george.cherian@ti.com>
-To: <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>
-CC: <balbi@ti.com>, <rogerq@ti.com>, <kishon@ti.com>, <rob@landley.net>,
-        <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
-        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>,
-        <tony@atomide.com>, <anatol.pomozov@gmail.com>,
-        <bcousson@baylibre.com>, George Cherian <george.cherian@ti.com>
-Subject: [PATCH v2 2/5] ARM: dts: am43xx clock data
-Date: Fri, 7 Mar 2014 14:45:55 +0530
-Message-ID: <1394183758-3821-3-git-send-email-george.cherian@ti.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1394183758-3821-1-git-send-email-george.cherian@ti.com>
-References: <1394183758-3821-1-git-send-email-george.cherian@ti.com>
+	id S1752745AbaCGJVM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 04:21:12 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:40752 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082AbaCGJVH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 04:21:07 -0500
+Date: Fri, 7 Mar 2014 12:20:38 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Include the limit on the number
+ of pfns we can handle
+Message-ID: <20140307092038.GG4774@mwanda>
+References: <1394176508-1439-1-git-send-email-kys@microsoft.com>
+ <20140307081627.GC29018@mwanda>
+ <9037d4ef9c174fb280f00f22912c3d12@BY2PR03MB299.namprd03.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <9037d4ef9c174fb280f00f22912c3d12@BY2PR03MB299.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add USB reference clock data
+On Fri, Mar 07, 2014 at 09:07:42AM +0000, KY Srinivasan wrote:
+> 
+> 
+> > -----Original Message-----
+> > From: Dan Carpenter [mailto:dan.carpenter@oracle.com]
+> > Sent: Friday, March 7, 2014 1:46 PM
+> > To: KY Srinivasan
+> > Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> > devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> > jasowang@redhat.com
+> > Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Include the limit on the number
+> > of pfns we can handle
+> > 
+> > On Thu, Mar 06, 2014 at 11:15:08PM -0800, K. Y. Srinivasan wrote:
+> > > Increase the maximum number of pfns we can handle is a single vmbus
+> > packet.
+> >                                                     ^^ in
+> 
+> Thanks Dan. I am traveling in India and it shows. I have already sent a corrected patch.
+> 
 
-Signed-off-by: George Cherian <george.cherian@ti.com>
----
- arch/arm/boot/dts/am43xx-clocks.dtsi | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+Yeah.  I saw that.  Thanks.
 
-diff --git a/arch/arm/boot/dts/am43xx-clocks.dtsi b/arch/arm/boot/dts/am43xx-clocks.dtsi
-index 142009c..506d036 100644
---- a/arch/arm/boot/dts/am43xx-clocks.dtsi
-+++ b/arch/arm/boot/dts/am43xx-clocks.dtsi
-@@ -653,4 +653,21 @@
- 		clocks = <&clk_32768_ck>, <&clk_32k_tpm_ck>;
- 		reg = <0x4260>;
- 	};
-+
-+	usb_otg_ss0_refclk960m: usb_otg_ss0_refclk960m {
-+		#clock-cells = <0>;
-+	        compatible = "ti,gate-clock";
-+		clocks = <&dpll_per_clkdcoldo>;
-+	        ti,bit-shift = <8>;
-+	        reg = <0x8a60>;
-+	};
-+
-+	usb_otg_ss1_refclk960m: usb_otg_ss1_refclk960m {
-+		#clock-cells = <0>;
-+	        compatible = "ti,gate-clock";
-+		clocks = <&dpll_per_clkdcoldo>;
-+	        ti,bit-shift = <8>;
-+		reg = <0x8a68>;
-+	};
-+
- };
--- 
-1.8.3.1
+> > >
+> > 
+> > What are the user visible effects of this patch?
+> The current code will drop these packets that have more PFNs than the limit.
+> Upping the limit will mitigate this problem.
+> 
+
+Meanwhile, the revised patch says that it is not a bugfix.  It sort of
+sounds like upping the limit does improve performance for some people?
+
+I am confused now.
+
+regards,
+dan carpenter
 
