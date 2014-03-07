@@ -1,121 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752888AbaCGALJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 19:11:09 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:48871 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751296AbaCGALH (ORCPT
+	id S1752840AbaCGALI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 19:11:08 -0500
+Received: from smtprelay0199.hostedemail.com ([216.40.44.199]:53577 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751190AbaCGALG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 19:11:07 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v6 4/8] of: Reduce indentation in of_graph_get_next_endpoint
-Date: Fri, 07 Mar 2014 01:12:37 +0100
-Message-ID: <31687163.hgTkcLrn0Z@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1394011242-16783-5-git-send-email-p.zabel@pengutronix.de>
-References: <1394011242-16783-1-git-send-email-p.zabel@pengutronix.de> <1394011242-16783-5-git-send-email-p.zabel@pengutronix.de>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Thu, 6 Mar 2014 19:11:06 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3865:3866:3873:3874:4321:4605:5007:7652:10004:10400:10450:10455:10848:11232:11658:11914:12043:12517:12519:12555:13019:13069:13095:13255:13311:13357:19904:19999,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: top65_935621f7db5c
+X-Filterd-Recvd-Size: 2636
+Message-ID: <1394151061.16156.16.camel@joe-AO722>
+Subject: [PATCH] checkpatch: Always warn on missing blank line after
+ variable declaration block
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Miller <davem@davemloft.net>, kys@microsoft.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, apw@canonical.com
+Date: Thu, 06 Mar 2014 16:11:01 -0800
+In-Reply-To: <20140306155517.0b3976316b0335d16ab25e38@linux-foundation.org>
+References: <1394104358-23438-1-git-send-email-kys@microsoft.com>
+	 <1394104390-23477-1-git-send-email-kys@microsoft.com>
+	 <20140306.142919.763823800315842610.davem@davemloft.net>
+	 <1394148520.16156.8.camel@joe-AO722>
+	 <20140306153530.bd61c160ba6f7872d6967b2e@linux-foundation.org>
+	 <1394149350.16156.13.camel@joe-AO722>
+	 <20140306155517.0b3976316b0335d16ab25e38@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Philipp,
+Make the test system wide, modify the message too.
 
-Thank you for the patch.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+> OK, let's do this for now.  Could you please cook up a followon patch
+> which makes this kernel-wide?  I'll play with that for a while then I'll
+> decide how much I feel like irritating people.
 
-I've submitted a fix for the of_graph_get_next_endpoint() function, but it 
-hasn't been applied yet due to the patch series that contained it needing more 
-work.
+ scripts/checkpatch.pl | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-The patch is available at https://patchwork.linuxtv.org/patch/21946/. I can 
-rebase it on top of this series, but I still wanted to let you know about it 
-in case you would like to integrate it.
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index a6e3048..37a94f1 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -2249,8 +2249,7 @@ sub process {
+ 		}
+ 
+ # check for missing blank lines after declarations
+-		if ($realfile =~ m@^(drivers/net/|net/)@ &&
+-		    $prevline =~ /^\+\s+$Declare\s+$Ident/ &&
++		if ($prevline =~ /^\+\s+$Declare\s+$Ident/ &&
+ 		    !($prevline =~ /(?:$Compare|$Assignment|$Operators)\s*$/ ||
+ 		      $prevline =~ /(?:\{\s*|\\)$/) &&		#extended lines
+ 		    $sline =~ /^\+\s+/ &&			#Not at char 1
+@@ -2260,7 +2259,7 @@ sub process {
+ 		      $sline =~ /^\+\s+(?:$|[\{\}\.\#\"\?\:\(])/ ||
+ 		      $sline =~ /^\+\s+\(?\s*(?:$Compare|$Assignment|$Operators)/)) {
+ 			WARN("SPACING",
+-			     "networking uses a blank line after declarations\n" . $hereprev);
++			     "Missing a blank line after declarations\n" . $hereprev);
+ 		}
+ 
+ # check for spaces at the beginning of a line.
 
-On Wednesday 05 March 2014 10:20:38 Philipp Zabel wrote:
-> A 'return endpoint;' at the end of the (!prev) case allows to
-> reduce the indentation level of the (prev) case.
-> 
-> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-> ---
->  drivers/of/base.c | 42 ++++++++++++++++++++++--------------------
->  1 file changed, 22 insertions(+), 20 deletions(-)
-> 
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index b5e690b..a8e47d3 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -2026,32 +2026,34 @@ struct device_node *of_graph_get_next_endpoint(const
-> struct device_node *parent, pr_err("%s(): no endpoint nodes specified for
-> %s\n",
->  			       __func__, parent->full_name);
->  		of_node_put(node);
-> -	} else {
-> -		port = of_get_parent(prev);
-> -		if (WARN_ONCE(!port, "%s(): endpoint %s has no parent node\n",
-> -			      __func__, prev->full_name))
-> -			return NULL;
-> 
-> -		/* Avoid dropping prev node refcount to 0. */
-> -		of_node_get(prev);
-> -		endpoint = of_get_next_child(port, prev);
-> -		if (endpoint) {
-> -			of_node_put(port);
-> -			return endpoint;
-> -		}
-> +		return endpoint;
-> +	}
-> 
-> -		/* No more endpoints under this port, try the next one. */
-> -		do {
-> -			port = of_get_next_child(parent, port);
-> -			if (!port)
-> -				return NULL;
-> -		} while (of_node_cmp(port->name, "port"));
-> +	port = of_get_parent(prev);
-> +	if (WARN_ONCE(!port, "%s(): endpoint %s has no parent node\n",
-> +		      __func__, prev->full_name))
-> +		return NULL;
-> 
-> -		/* Pick up the first endpoint in this port. */
-> -		endpoint = of_get_next_child(port, NULL);
-> +	/* Avoid dropping prev node refcount to 0. */
-> +	of_node_get(prev);
-> +	endpoint = of_get_next_child(port, prev);
-> +	if (endpoint) {
->  		of_node_put(port);
-> +		return endpoint;
->  	}
-> 
-> +	/* No more endpoints under this port, try the next one. */
-> +	do {
-> +		port = of_get_next_child(parent, port);
-> +		if (!port)
-> +			return NULL;
-> +	} while (of_node_cmp(port->name, "port"));
-> +
-> +	/* Pick up the first endpoint in this port. */
-> +	endpoint = of_get_next_child(port, NULL);
-> +	of_node_put(port);
-> +
->  	return endpoint;
->  }
->  EXPORT_SYMBOL(of_graph_get_next_endpoint);
 
--- 
-Regards,
-
-Laurent Pinchart
 
