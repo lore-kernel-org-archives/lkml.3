@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753650AbaCGPuH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 10:50:07 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:41946 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751573AbaCGPuF (ORCPT
+	id S1753735AbaCGPuW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 10:50:22 -0500
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:60760 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753672AbaCGPuR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 10:50:05 -0500
-Date: Fri, 7 Mar 2014 15:49:53 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, kernel@pengutronix.de
-Subject: Re: [PATCH] of: Fix of_graph_parse_endpoint stub for !CONFIG_OF
-	builds
-Message-ID: <20140307154953.GL21483@n2100.arm.linux.org.uk>
-References: <1394204235-28706-1-git-send-email-p.zabel@pengutronix.de> <1394204770.16309.16.camel@paszta.hi.pengutronix.de>
+	Fri, 7 Mar 2014 10:50:17 -0500
+Message-ID: <5319F8D1.5050608@cogentembedded.com>
+Date: Fri, 07 Mar 2014 19:50:25 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394204770.16309.16.camel@paszta.hi.pengutronix.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Ben Dooks <ben.dooks@codethink.co.uk>, linux-media@vger.kernel.org
+CC: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-kernel@vger.kernel.org, magnus.damm@opensource.se,
+        linux-sh@vger.kernel.org, linux-kernel@lists.codethink.co.uk
+Subject: Re: [PATCH 2/5] ARM: lager: add vin1 node
+References: <1394197299-17528-1-git-send-email-ben.dooks@codethink.co.uk> <1394197299-17528-3-git-send-email-ben.dooks@codethink.co.uk>
+In-Reply-To: <1394197299-17528-3-git-send-email-ben.dooks@codethink.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 07, 2014 at 04:06:10PM +0100, Philipp Zabel wrote:
-> I have also updated the git branch. The following changes since commit
-> d484700a36952c6675aa47dec4d7a536929aa922:
-> 
->   of: Warn if of_graph_parse_endpoint is called with the root node
-> (2014-03-06 17:41:54 +0100)
-> 
-> are available in the git repository at:
-> 
->   git://git.pengutronix.de/git/pza/linux.git topic/of-graph
-> 
-> for you to fetch changes up to 00fd9619120db1d6a19be2f9e3df6f76234b311b:
-> 
->   of: Fix of_graph_parse_endpoint stub for !CONFIG_OF builds (2014-03-07
-> 16:02:46 +0100)
+Hello.
 
-Thanks, I'll re-pull it shortly.  The other good news is that I've thrown
-your patches on top of the previous pull, merged them into my test tree
-and everything seems to work as it should on the SolidRun Hummingboard.
+On 03/07/2014 04:01 PM, Ben Dooks wrote:
 
-What base have you used for those imx-drm patches?  I assume it would
-be something like a merge of my imx-drm commits and the of-graph branch?
+> Add device-tree for vin1 (composite video in) on the
+> lager board.
 
-Let me put this a different way: I'd be happy to pull those changes if
-they're sensibly based in your git tree.
+> Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
 
-Thanks.
+    This patch should have been preceded by the VIN driver patch and bindings 
+description, don't you think?
 
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+> diff --git a/arch/arm/boot/dts/r8a7790-lager.dts b/arch/arm/boot/dts/r8a7790-lager.dts
+> index a087421..7528cfc 100644
+> --- a/arch/arm/boot/dts/r8a7790-lager.dts
+> +++ b/arch/arm/boot/dts/r8a7790-lager.dts
+[...]
+> @@ -239,8 +244,41 @@
+>   	status = "ok";
+>   	pinctrl-0 = <&i2c2_pins>;
+>   	pinctrl-names = "default";
+> +
+> +	adv7180: adv7180@0x20 {
+
+    ePAPR standard [1] tells us that:
+
+"The name of a node should be somewhat generic, reflecting the function of the 
+device and not its precise programming model."
+
+    So, I would suggest something like "video-decoder" instead. And remove 
+"0x" from the address part of the node name please.
+
+[1] http://www.power.org/resources/downloads/Power_ePAPR_APPROVED_v1.0.pdf
+
+WBR, Sergei
+
