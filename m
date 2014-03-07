@@ -1,77 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753039AbaCGUKm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 15:10:42 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:49360 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197AbaCGUKk (ORCPT
+	id S1753416AbaCGUKz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 15:10:55 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:63659 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753299AbaCGUKw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 15:10:40 -0500
-Date: Fri, 7 Mar 2014 21:10:39 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Jenny TC <jenny.tc@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Kim Milo <Milo.Kim@ti.com>, Lee Jones <lee.jones@linaro.org>,
-        Jingoo Han <jg1.han@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Rhyland Klein <rklein@nvidia.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sebastian Reichel <sre@ring0.de>, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        Linux-OMAP <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 2/4] power_supply: Introduce generic psy charging driver
-Message-ID: <20140307201039.GB27645@amd.pavel.ucw.cz>
-References: <1392875640-29230-1-git-send-email-jenny.tc@intel.com>
- <1392875640-29230-3-git-send-email-jenny.tc@intel.com>
- <CACRpkdaU44iinj2iDNdYm62J+4jQbg+XJ=Zq4GmJryPeu7GfTQ@mail.gmail.com>
- <20140228100114.GA13189@amd.pavel.ucw.cz>
- <CACRpkdaZ2moqGWx2BpfEeKoW6doXg67TkJKY+mbg4hrFHDr16Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdaZ2moqGWx2BpfEeKoW6doXg67TkJKY+mbg4hrFHDr16Q@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 7 Mar 2014 15:10:52 -0500
+From: David Long <dave.long@linaro.org>
+To: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>
+Cc: Rabin Vincent <rabin@rab.in>, "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        <davem@davemloft.net>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v7 00/15] uprobes: Add uprobes support for ARM
+Date: Fri,  7 Mar 2014 15:10:25 -0500
+Message-Id: <1394223040-17129-1-git-send-email-dave.long@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 2014-03-07 11:04:59, Linus Walleij wrote:
-> On Fri, Feb 28, 2014 at 6:01 PM, Pavel Machek <pavel@ucw.cz> wrote:
-> > On Thu 2014-02-27 21:08:01, Linus Walleij wrote:
-> >> On Thu, Feb 20, 2014 at 6:53 AM, Jenny TC <jenny.tc@intel.com> wrote:
-> >>
-> >> > +++ b/include/linux/power/power_supply_charger.h
-> >>
-> >> > +#define MAX_CUR_VOLT_SAMPLES 3
-> >> > +#define DEF_CUR_VOLT_SAMPLE_JIFF (30*HZ)
-> >>
-> >> Why are things defined in Jiffies like this insead of seconds, milliseconds
-> >> etc? This will vary with the current operating frequency of the system,
-> >> why should physical measurements do that?
-> >
-> > It is actually ok. The define is relative to jiffies, and that's what
-> > interface expects.
-> 
-> So consider the option that the interface is wrong.
-> 
-> Stating something like a sample period in system-specific jiffies
-> instead of period time T is just weird. What control systems
-> guy would understand this?
+From: "David A. Long" <dave.long@linaro.org>
 
-30*HZ means 30 seconds in the kernel... what is hard to understand
-about it?
-									Pavel
+This patch series adds basic uprobes support to ARM. It is based on patches
+developed earlier by Rabin Vincent. That approach of adding hooks into
+the kprobes instruction parsing code was not well received. This approach
+separates the ARM instruction parsing code in kprobes out into a separate set
+of functions which can be used by both kprobes and uprobes. Both kprobes and
+uprobes then provide their own semantic action tables to process the results of
+the parsing.
+
+Changes for v7:
+1) Fix uprobes dependencies in Kconfig's.
+2) Fix incomplete include's in kprobes/uprobes.
+3) Now based on v3.14-rc5.
+
+David A. Long (15):
+  uprobes: Kconfig dependency fix
+  ARM: Fix missing includes in kprobes sources
+  uprobes: allow ignoring of probe hits
+  ARM: move shared uprobe/kprobe definitions into new include file
+  ARM: Move generic arm instruction parsing code to new files for
+    sharing between features
+  ARM: move generic thumb instruction parsing code to new files for use
+    by other feature
+  ARM: use a function table for determining instruction interpreter
+    action
+  ARM: Remove use of struct kprobe from generic probes code
+  ARM: Make the kprobes condition_check symbol names more generic
+  ARM: Change more ARM kprobes symbol names to something more generic
+  ARM: Rename the shared kprobes/uprobe return value enum
+  ARM: Change the remaining shared kprobes/uprobes symbols to something
+    generic
+  ARM: Add an emulate flag to the kprobes/uprobes instruction decode
+    functions
+  ARM: Make arch_specific_insn a define for new arch_probes_insn
+    structure
+  ARM: add uprobes support
+
+ arch/Kconfig                                       |    6 +-
+ arch/arm/Kconfig                                   |    3 +
+ arch/arm/include/asm/kprobes.h                     |   17 +-
+ arch/arm/include/asm/probes.h                      |   43 +
+ arch/arm/include/asm/ptrace.h                      |    6 +
+ arch/arm/include/asm/thread_info.h                 |    5 +-
+ arch/arm/include/asm/uprobes.h                     |   45 +
+ arch/arm/kernel/Makefile                           |    7 +-
+ arch/arm/kernel/kprobes-arm.c                      |  806 ++------------
+ arch/arm/kernel/kprobes-common.c                   |  469 +-------
+ arch/arm/kernel/kprobes-test-arm.c                 |    1 +
+ arch/arm/kernel/kprobes-test.c                     |   12 +-
+ arch/arm/kernel/kprobes-thumb.c                    | 1145 +++-----------------
+ arch/arm/kernel/kprobes.c                          |   25 +-
+ arch/arm/kernel/kprobes.h                          |  400 +------
+ arch/arm/kernel/{kprobes-arm.c => probes-arm.c}    |  441 ++------
+ arch/arm/kernel/probes-arm.h                       |   73 ++
+ .../arm/kernel/{kprobes-thumb.c => probes-thumb.c} |  771 ++-----------
+ arch/arm/kernel/probes-thumb.h                     |   97 ++
+ arch/arm/kernel/{kprobes-common.c => probes.c}     |  207 +---
+ arch/arm/kernel/{kprobes.h => probes.h}            |  127 +--
+ arch/arm/kernel/signal.c                           |    4 +
+ arch/arm/kernel/uprobes-arm.c                      |  234 ++++
+ arch/arm/kernel/uprobes.c                          |  210 ++++
+ arch/arm/kernel/uprobes.h                          |   35 +
+ include/linux/uprobes.h                            |    1 +
+ kernel/events/uprobes.c                            |    9 +
+ kernel/trace/Kconfig                               |    1 +
+ 28 files changed, 1354 insertions(+), 3846 deletions(-)
+ create mode 100644 arch/arm/include/asm/probes.h
+ create mode 100644 arch/arm/include/asm/uprobes.h
+ copy arch/arm/kernel/{kprobes-arm.c => probes-arm.c} (65%)
+ create mode 100644 arch/arm/kernel/probes-arm.h
+ copy arch/arm/kernel/{kprobes-thumb.c => probes-thumb.c} (56%)
+ create mode 100644 arch/arm/kernel/probes-thumb.h
+ copy arch/arm/kernel/{kprobes-common.c => probes.c} (67%)
+ copy arch/arm/kernel/{kprobes.h => probes.h} (80%)
+ create mode 100644 arch/arm/kernel/uprobes-arm.c
+ create mode 100644 arch/arm/kernel/uprobes.c
+ create mode 100644 arch/arm/kernel/uprobes.h
+
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.8.1.2
+
