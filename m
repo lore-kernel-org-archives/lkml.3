@@ -1,167 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752232AbaCGAcw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 19:32:52 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:48001 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752550AbaCGAc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 19:32:26 -0500
-From: Kees Cook <keescook@chromium.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrew Honig <ahonig@google.com>, Michal Marek <mmarek@suse.cz>,
-        "x86@kernel.org" <x86@kernel.org>, Tejun Heo <tj@kernel.org>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-ia64@vger.kernel.org, keescook@chromium.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] kallsyms: generalize address range checking
-Date: Thu,  6 Mar 2014 16:32:03 -0800
-Message-Id: <1394152324-26304-2-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1394152324-26304-1-git-send-email-keescook@chromium.org>
-References: <1394152324-26304-1-git-send-email-keescook@chromium.org>
-X-HELO: www.outflux.net
+	id S1752392AbaCGAdw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 19:33:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36861 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457AbaCGAdv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 19:33:51 -0500
+Date: Thu, 6 Mar 2014 16:33:49 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Laura Abbott <lauraa@codeaurora.org>
+Cc: Mel Gorman <mgorman@suse.de>, Vlastimil Babka <vbabka@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCHv2] mm/compaction: Break out of loop on !PageBuddy in
+ isolate_freepages_block
+Message-Id: <20140306163349.d1f25dac8bc97f0cf89a82b5@linux-foundation.org>
+In-Reply-To: <1394130092-25440-1-git-send-email-lauraa@codeaurora.org>
+References: <1394130092-25440-1-git-send-email-lauraa@codeaurora.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This refactors the address range checks to be generalized instead of
-specific to text range checks, in preparation for other range checks.
-Also extracts logic for "is the symbol absolute" into a function.
+On Thu,  6 Mar 2014 10:21:32 -0800 Laura Abbott <lauraa@codeaurora.org> wrote:
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- scripts/kallsyms.c |   53 +++++++++++++++++++++++++++++++---------------------
- 1 file changed, 32 insertions(+), 21 deletions(-)
+> We received several reports of bad page state when freeing CMA pages
+> previously allocated with alloc_contig_range:
+> 
+> <1>[ 1258.084111] BUG: Bad page state in process Binder_A  pfn:63202
+> <1>[ 1258.089763] page:d21130b0 count:0 mapcount:1 mapping:  (null) index:0x7dfbf
+> <1>[ 1258.096109] page flags: 0x40080068(uptodate|lru|active|swapbacked)
+> 
+> Based on the page state, it looks like the page was still in use. The page
+> flags do not make sense for the use case though. Further debugging showed
+> that despite alloc_contig_range returning success, at least one page in the
+> range still remained in the buddy allocator.
+> 
+> There is an issue with isolate_freepages_block. In strict mode (which CMA
+> uses), if any pages in the range cannot be isolated,
+> isolate_freepages_block should return failure 0. The current check keeps
+> track of the total number of isolated pages and compares against the size
+> of the range:
+> 
+>         if (strict && nr_strict_required > total_isolated)
+>                 total_isolated = 0;
+> 
+> After taking the zone lock, if one of the pages in the range is not
+> in the buddy allocator, we continue through the loop and do not
+> increment total_isolated. If in the last iteration of the loop we isolate
+> more than one page (e.g. last page needed is a higher order page), the
+> check for total_isolated may pass and we fail to detect that a page was
+> skipped. The fix is to bail out if the loop immediately if we are in
+> strict mode. There's no benfit to continuing anyway since we need all
+> pages to be isolated. Additionally, drop the error checking based on
+> nr_strict_required and just check the pfn ranges. This matches with
+> what isolate_freepages_range does.
+> 
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -242,7 +242,6 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+>  {
+>  	int nr_scanned = 0, total_isolated = 0;
+>  	struct page *cursor, *valid_page = NULL;
+> -	unsigned long nr_strict_required = end_pfn - blockpfn;
+>  	unsigned long flags;
+>  	bool locked = false;
+>  	bool checked_pageblock = false;
+> @@ -256,11 +255,12 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+>  
+>  		nr_scanned++;
+>  		if (!pfn_valid_within(blockpfn))
+> -			continue;
+> +			goto isolate_fail;
+> +
+>  		if (!valid_page)
+>  			valid_page = page;
+>  		if (!PageBuddy(page))
+> -			continue;
+> +			goto isolate_fail;
+>  
+>  		/*
+>  		 * The zone lock must be held to isolate freepages.
+> @@ -289,12 +289,10 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+>  
+>  		/* Recheck this is a buddy page under lock */
+>  		if (!PageBuddy(page))
+> -			continue;
+> +			goto isolate_fail;
+>  
+>  		/* Found a free page, break it into order-0 pages */
+>  		isolated = split_free_page(page);
+> -		if (!isolated && strict)
+> -			break;
+>  		total_isolated += isolated;
+>  		for (i = 0; i < isolated; i++) {
+>  			list_add(&page->lru, freelist);
+> @@ -305,7 +303,15 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+>  		if (isolated) {
+>  			blockpfn += isolated - 1;
+>  			cursor += isolated - 1;
+> +			continue;
+>  		}
 
-diff --git a/scripts/kallsyms.c b/scripts/kallsyms.c
-index 276e84b8a8e5..3c6224728960 100644
---- a/scripts/kallsyms.c
-+++ b/scripts/kallsyms.c
-@@ -36,13 +36,13 @@ struct sym_entry {
- 	unsigned char *sym;
- };
+We can make the code a little more efficient and (I think) clearer by
+moving that `if (isolated)' test.
+
+> +
+> +isolate_fail:
+> +		if (strict)
+> +			break;
+> +		else
+> +			continue;
+> +
+
+And I don't think this `continue' has any benefit.
+
+
+--- a/mm/compaction.c~mm-compaction-break-out-of-loop-on-pagebuddy-in-isolate_freepages_block-fix
++++ a/mm/compaction.c
+@@ -293,14 +293,14 @@ static unsigned long isolate_freepages_b
  
--struct text_range {
--	const char *stext, *etext;
-+struct addr_range {
-+	const char *start_sym, *end_sym;
- 	unsigned long long start, end;
- };
- 
- static unsigned long long _text;
--static struct text_range text_ranges[] = {
-+static struct addr_range text_ranges[] = {
- 	{ "_stext",     "_etext"     },
- 	{ "_sinittext", "_einittext" },
- 	{ "_stext_l1",  "_etext_l1"  },	/* Blackfin on-chip L1 inst SRAM */
-@@ -83,19 +83,20 @@ static inline int is_arm_mapping_symbol(const char *str)
- 	       && (str[2] == '\0' || str[2] == '.');
- }
- 
--static int read_symbol_tr(const char *sym, unsigned long long addr)
-+static int check_symbol_range(const char *sym, unsigned long long addr,
-+			      struct addr_range *ranges, int entries)
- {
- 	size_t i;
--	struct text_range *tr;
-+	struct addr_range *ar;
- 
--	for (i = 0; i < ARRAY_SIZE(text_ranges); ++i) {
--		tr = &text_ranges[i];
-+	for (i = 0; i < entries; ++i) {
-+		ar = &ranges[i];
- 
--		if (strcmp(sym, tr->stext) == 0) {
--			tr->start = addr;
-+		if (strcmp(sym, ar->start_sym) == 0) {
-+			ar->start = addr;
- 			return 0;
--		} else if (strcmp(sym, tr->etext) == 0) {
--			tr->end = addr;
-+		} else if (strcmp(sym, ar->end_sym) == 0) {
-+			ar->end = addr;
- 			return 0;
- 		}
- 	}
-@@ -130,7 +131,8 @@ static int read_symbol(FILE *in, struct sym_entry *s)
- 	/* Ignore most absolute/undefined (?) symbols. */
- 	if (strcmp(sym, "_text") == 0)
- 		_text = s->addr;
--	else if (read_symbol_tr(sym, s->addr) == 0)
-+	else if (check_symbol_range(sym, s->addr, text_ranges,
-+				    ARRAY_SIZE(text_ranges)) == 0)
- 		/* nothing to do */;
- 	else if (toupper(stype) == 'A')
- 	{
-@@ -167,15 +169,16 @@ static int read_symbol(FILE *in, struct sym_entry *s)
- 	return 0;
- }
- 
--static int symbol_valid_tr(struct sym_entry *s)
-+static int symbol_in_range(struct sym_entry *s, struct addr_range *ranges,
-+			   int entries)
- {
- 	size_t i;
--	struct text_range *tr;
-+	struct addr_range *ar;
- 
--	for (i = 0; i < ARRAY_SIZE(text_ranges); ++i) {
--		tr = &text_ranges[i];
-+	for (i = 0; i < entries; ++i) {
-+		ar = &ranges[i];
- 
--		if (s->addr >= tr->start && s->addr <= tr->end)
-+		if (s->addr >= ar->start && s->addr <= ar->end)
- 			return 1;
- 	}
- 
-@@ -214,7 +217,8 @@ static int symbol_valid(struct sym_entry *s)
- 	/* if --all-symbols is not specified, then symbols outside the text
- 	 * and inittext sections are discarded */
- 	if (!all_symbols) {
--		if (symbol_valid_tr(s) == 0)
-+		if (symbol_in_range(s, text_ranges,
-+				    ARRAY_SIZE(text_ranges)) == 0)
- 			return 0;
- 		/* Corner case.  Discard any symbols with the same value as
- 		 * _etext _einittext; they can move between pass 1 and 2 when
-@@ -223,9 +227,11 @@ static int symbol_valid(struct sym_entry *s)
- 		 * rules.
- 		 */
- 		if ((s->addr == text_range_text->end &&
--				strcmp((char *)s->sym + offset, text_range_text->etext)) ||
-+				strcmp((char *)s->sym + offset,
-+				       text_range_text->end_sym)) ||
- 		    (s->addr == text_range_inittext->end &&
--				strcmp((char *)s->sym + offset, text_range_inittext->etext)))
-+				strcmp((char *)s->sym + offset,
-+				       text_range_inittext->end_sym)))
- 			return 0;
- 	}
- 
-@@ -298,6 +304,11 @@ static int expand_symbol(unsigned char *data, int len, char *result)
- 	return total;
- }
- 
-+static int symbol_absolute(struct sym_entry *s)
-+{
-+	return toupper(s->sym[0]) == 'A';
-+}
+ 		/* Found a free page, break it into order-0 pages */
+ 		isolated = split_free_page(page);
+-		total_isolated += isolated;
+-		for (i = 0; i < isolated; i++) {
+-			list_add(&page->lru, freelist);
+-			page++;
+-		}
+-
+-		/* If a page was split, advance to the end of it */
+ 		if (isolated) {
++			total_isolated += isolated;
++			for (i = 0; i < isolated; i++) {
++				list_add(&page->lru, freelist);
++				page++;
++			}
 +
- static void write_src(void)
- {
- 	unsigned int i, k, off;
-@@ -325,7 +336,7 @@ static void write_src(void)
- 	 */
- 	output_label("kallsyms_addresses");
- 	for (i = 0; i < table_cnt; i++) {
--		if (toupper(table[i].sym[0]) != 'A') {
-+		if (!symbol_absolute(&table[i])) {
- 			if (_text <= table[i].addr)
- 				printf("\tPTR\t_text + %#llx\n",
- 					table[i].addr - _text);
--- 
-1.7.9.5
++			/* If a page was split, advance to the end of it */
+ 			blockpfn += isolated - 1;
+ 			cursor += isolated - 1;
+ 			continue;
+@@ -309,9 +309,6 @@ static unsigned long isolate_freepages_b
+ isolate_fail:
+ 		if (strict)
+ 			break;
+-		else
+-			continue;
+-
+ 	}
+ 
+ 	trace_mm_compaction_isolate_freepages(nr_scanned, total_isolated);
+
+
+Problem is, I can't be bothered testing this.
 
