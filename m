@@ -1,103 +1,493 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752235AbaCGB7Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 20:59:16 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:51852 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750924AbaCGB7P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 20:59:15 -0500
-Message-ID: <531927EF.1080706@linaro.org>
-Date: Fri, 07 Mar 2014 09:59:11 +0800
-From: Alex Shi <alex.shi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1751811AbaCGCJE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 21:09:04 -0500
+Received: from mga14.intel.com ([143.182.124.37]:38247 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750924AbaCGCJC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 21:09:02 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,605,1389772800"; 
+   d="scan'208";a="487633175"
+Message-ID: <53192A39.5030309@linux.intel.com>
+Date: Fri, 07 Mar 2014 10:08:57 +0800
+From: "Li, Aubrey" <aubrey.li@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [sched/balance] INFO: possible recursive locking detected
-References: <20140303142526.GA8517@localhost>
-In-Reply-To: <20140303142526.GA8517@localhost>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Joe Perches <joe@perches.com>
+CC: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, mingo@redhat.com,
+        tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        "alan@linux.intel.com" <alan@linux.intel.com>
+Subject: Re: [PATCH] x86: new Intel Atom SoC power management controller driver
+References: <5317EC0C.4010807@linux.intel.com>	 <5317F044.8080407@linux.intel.com> <531805D4.6040806@linux.intel.com>	 <5318076C.7080605@linux.intel.com> <531808BD.4070000@linux.intel.com>	 <53180D39.7050207@linux.intel.com> <53180E98.9000608@linux.intel.com>	 <5318A2BE.2070707@linux.intel.com> <53191222.2000904@linux.intel.com> <1394152871.16156.32.camel@joe-AO722>
+In-Reply-To: <1394152871.16156.32.camel@joe-AO722>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks a lot!
-I am working on fix.
+On 2014/3/7 8:41, Joe Perches wrote:
+> On Fri, 2014-03-07 at 08:26 +0800, Li, Aubrey wrote:
+> 
+>> my patch is word wrapped while I was not aware, hope this one work.
+> 
+> trivial notes:
+> 
+Thanks for your comments, Joe. Patch refined as below:
 
+-Aubrey
 
-On 03/03/2014 10:25 PM, Fengguang Wu wrote:
-> Greetings,
-> 
-> I got the below dmesg and the first bad commit is
-> 
-> https://github.com/alexshi/power-scheduling.git single-balance.bak
-> commit 2adc591a5cb6768ad11e63be9011906aa171148d
-> Author:     Alex Shi <alex.shi@linaro.org>
-> AuthorDate: Fri Feb 28 15:25:09 2014 +0800
-> Commit:     Alex Shi <alex.shi@linaro.org>
-> CommitDate: Sun Mar 2 09:16:38 2014 +0800
-> 
->     sched/balance: replace new_idle_balance
->     
->     Curren idle_balance will pull task on half of this group. That is
->     not needed in central balance.
-> 
-> +-------------------------------------------------------------------------------+--------------+--------------+
-> |                                                                               | a15ed8afe32b | 4242b70d68f8 |
-> +-------------------------------------------------------------------------------+--------------+--------------+
-> | boot_successes                                                                | 73           | 0            |
-> | boot_failures                                                                 | 7            | 19           |
-> | WARNING:CPU:PID:at/kernel-tests/linux/kernel/events/core.c:perf_swevent_add() | 4            |              |
-> | WARNING:CPU:PID:at/kernel-tests/linux/arch/x86/kernel/cpu/amd.c:init_amd()    | 3            |              |
-> | backtrace:init_amd                                                            | 3            |              |
-> | backtrace:warn_slowpath_fmt                                                   | 3            |              |
-> | INFO:possible_recursive_locking_detected                                      | 0            | 19           |
-> | BUG:spinlock_lockup_suspected_on_CPU                                          | 0            | 7            |
-> | EIP_is_at_default_send_IPI_mask_logical                                       | 0            | 7            |
-> | EIP_is_at_try_to_wake_up                                                      | 0            | 4            |
-> | backtrace:__alloc_workqueue_key                                               | 0            | 4            |
-> | backtrace:cgroup_wq_init                                                      | 0            | 2            |
-> | backtrace:kernel_init_freeable                                                | 0            | 4            |
-> | BUG:kernel_boot_hang                                                          | 0            | 12           |
-> | backtrace:smpboot_thread_fn                                                   | 0            | 6            |
-> | backtrace:md_init                                                             | 0            | 2            |
-> | backtrace:complete                                                            | 0            | 2            |
-> | EIP_is_at_native_safe_halt                                                    | 0            | 1            |
-> | backtrace:rescuer_thread                                                      | 0            | 1            |
-> | EIP_is_at_delay_tsc                                                           | 0            | 1            |
-> | EIP_is_at_do_raw_spin_lock                                                    | 0            | 2            |
-> | backtrace:do_fork                                                             | 0            | 1            |
-> | backtrace:kthreadd                                                            | 0            | 1            |
-> | backtrace:cpu_startup_entry                                                   | 0            | 1            |
-> +-------------------------------------------------------------------------------+--------------+--------------+
-> 
-> [    0.214781] 
-> [    0.214783] =============================================
-> [    0.214783] =============================================
-> [    0.214784] [ INFO: possible recursive locking detected ]
-> 
-> git bisect start 4242b70d68f8ba165f125b9b264ae27d51ace686 cfbf8d4857c26a8a307fb7cd258074c9dcd8c691 --
-> git bisect good 9b87ea06889c0c0a2541bddaeae745c0942d7bb7  # 20:30     20+      1  Merge 'tip/perf/urgent' into devel-roam-i386-201403021704
-> git bisect good 99a980e45f688d10422c02f5783cc709a0c9d9da  # 20:35     20+      0  Merge 'nfs/testing' into devel-roam-i386-201403021704
-> git bisect  bad 5ae8a8971fe8ffd78ef2eb0e0e8b6ef6795c8c6e  # 20:42      0-      1  Merge 'alexshi/single-balance.bak' into devel-roam-i386-201403021704
-> git bisect good bc575710efe937e26d2bd541d92362b240ef0559  # 20:49     20+      1  sched: clean up task_hot function
-> git bisect good 0e32dab5df39cfb1be9a937d67c877404b964324  # 20:53     20+      0  sched/balance: rebuild ovutil tree after task moving
-> git bisect  bad 2adc591a5cb6768ad11e63be9011906aa171148d  # 20:58      0-      1  sched/balance: replace new_idle_balance
-> git bisect good a15ed8afe32bf743621639b7df2c87ffc47d730a  # 21:01     20+      2  sched/balance: add balance_interval to tuning top level balance frequency
-> # first bad commit: [2adc591a5cb6768ad11e63be9011906aa171148d] sched/balance: replace new_idle_balance
-> git bisect good a15ed8afe32bf743621639b7df2c87ffc47d730a  # 21:14     60+      7  sched/balance: add balance_interval to tuning top level balance frequency
-> git bisect  bad 4242b70d68f8ba165f125b9b264ae27d51ace686  # 21:14      0-     19  0day head guard for 'devel-roam-i386-201403021704'
-> git bisect good 0414855fdc4a40da05221fc6062cccbc0c30f169  # 21:29     60+      6  Linux 3.14-rc5
-> git bisect good dab765ebd307ac40af1a556c0b08e26938a1c9cf  # 21:43     60+      5  Add linux-next specific files for 20140303
-> 
-> Thanks,
-> Fengguang
-> 
-> 
-> 
-> _______________________________________________
-> LKP mailing list
-> LKP@linux.intel.com
-> 
+[PATCH] X86 platform: New Intel Atom SOC power management controller driver
+
+The Power Management Controller (PMC) controls many of the power
+management features present in the SoC. This driver provides
+interface to configure the Power Management Controller (PMC).
+
+This driver exposes PMC device state and sleep state residency
+via debugfs:
+	/sys/kernel/debugfs/pmc_atom/dev_state
+	/sys/kernel/debugfs/pmc_atom/sleep_state
+
+This driver also provides a native power off function via PMC PCI
+IO port.
+
+Signed-off-by: Aubrey Li <aubrey.li@intel.com>
+Reviewed-by: Joe Perches <joe@perches.com>
+---
+ arch/x86/Kconfig                |    4 +
+ arch/x86/include/asm/pmc_atom.h |   91 ++++++++++++
+ arch/x86/kernel/Makefile        |    1 +
+ arch/x86/kernel/pmc_atom.c      |  295 +++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 391 insertions(+)
+ create mode 100644 arch/x86/include/asm/pmc_atom.h
+ create mode 100644 arch/x86/kernel/pmc_atom.c
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 0af5250..18f7d38 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -2420,6 +2420,10 @@ config IOSF_MBI
+ 	  Fabric (IOSF) Sideband MailBox Interface (MBI). For MBI platforms
+ 	  enumerable by PCI.
+ 
++config PMC_ATOM
++	def_bool y
++        depends on PCI
++
+ source "net/Kconfig"
+ 
+ source "drivers/Kconfig"
+diff --git a/arch/x86/include/asm/pmc_atom.h b/arch/x86/include/asm/pmc_atom.h
+new file mode 100644
+index 0000000..43b68fc
+--- /dev/null
++++ b/arch/x86/include/asm/pmc_atom.h
+@@ -0,0 +1,91 @@
++/*
++ * Intel Atom SOC Power Management Controller Header File
++ * Copyright (c) 2014, Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ */
++
++#ifndef PMC_ATOM_H
++#define PMC_ATOM_H
++
++/* ValleyView Power Control Unit PCI Device ID */
++#define	PCI_DEVICE_ID_VLV_PMC	0x0F1C
++
++/* PMC Memory mapped IO registers */
++#define	PMC_BASE_ADDR_OFFSET	0x44
++#define	PMC_BASE_ADDR_MASK	0xFFFFFE00
++#define	PMC_MMIO_REG_LEN	0x100
++#define	PMC_REG_BIT_WIDTH	32
++
++/* BIOS uses FUNC_DIS to disable specific function */
++#define	PMC_FUNC_DIS		0x34
++#define	PMC_FUNC_DIS_2		0x38
++/* The timers acumulate time spent in sleep state */
++#define	PMC_S0IR_TMR		0x80
++#define	PMC_S0I1_TMR		0x84
++#define	PMC_S0I2_TMR		0x88
++#define	PMC_S0I3_TMR		0x8C
++#define	PMC_S0_TMR		0x90
++/* Sleep state counter is in units of of 32us */
++#define	PMC_TMR_SHIFT		5
++
++/* These registers reflect D3 status of functions */
++#define	PMC_D3_STS_0		0xA0
++
++#define	BIT_LPSS1_F0_DMA	BIT(0)
++#define	BIT_LPSS1_F1_PWM1	BIT(1)
++#define	BIT_LPSS1_F2_PWM2	BIT(2)
++#define	BIT_LPSS1_F3_HSUART1	BIT(3)
++#define	BIT_LPSS1_F4_HSUART2	BIT(4)
++#define	BIT_LPSS1_F5_SPI	BIT(5)
++#define	BIT_LPSS1_F6_XXX	BIT(6)
++#define	BIT_LPSS1_F7_XXX	BIT(7)
++#define	BIT_SCC_EMMC		BIT(8)
++#define	BIT_SCC_SDIO		BIT(9)
++#define	BIT_SCC_SDCARD		BIT(10)
++#define	BIT_SCC_MIPI		BIT(11)
++#define	BIT_HDA			BIT(12)
++#define	BIT_LPE			BIT(13)
++#define	BIT_OTG			BIT(14)
++#define	BIT_USH			BIT(15)
++#define	BIT_GBE			BIT(16)
++#define	BIT_SATA		BIT(17)
++#define	BIT_USB_EHCI		BIT(18)
++#define	BIT_SEC			BIT(19)
++#define	BIT_PCIE_PORT0		BIT(20)
++#define	BIT_PCIE_PORT1		BIT(21)
++#define	BIT_PCIE_PORT2		BIT(22)
++#define	BIT_PCIE_PORT3		BIT(23)
++#define	BIT_LPSS2_F0_DMA	BIT(24)
++#define	BIT_LPSS2_F1_I2C1	BIT(25)
++#define	BIT_LPSS2_F2_I2C2	BIT(26)
++#define	BIT_LPSS2_F3_I2C3	BIT(27)
++#define	BIT_LPSS2_F4_I2C4	BIT(28)
++#define	BIT_LPSS2_F5_I2C5	BIT(29)
++#define	BIT_LPSS2_F6_I2C6	BIT(30)
++#define	BIT_LPSS2_F7_I2C7	BIT(31)
++
++#define	PMC_D3_STS_1		0xA4
++#define	BIT_SMB			BIT(0)
++#define	BIT_USH_SS_PHY		BIT(1)
++#define	BIT_OTG_SS_PHY		BIT(2)
++#define	BIT_DFX			BIT(3)
++
++/* PMC I/O Registers */
++#define	ACPI_BASE_ADDR_OFFSET	0x40
++#define	ACPI_BASE_ADDR_MASK	0xFFFFFE00
++#define	ACPI_MMIO_REG_LEN	0x100
++
++#define	PM1_CNT			0x4
++#define	SLEEP_TYPE_MASK		0xFFFFECFF
++#define	SLEEP_TYPE_S5		0x1C00
++#define	SLEEP_ENABLE		0x2000
++#endif /* PMC_ATOM_H */
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index cb648c8..b71a61a 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -104,6 +104,7 @@ obj-$(CONFIG_EFI)			+= sysfb_efi.o
+ obj-$(CONFIG_PERF_EVENTS)		+= perf_regs.o
+ obj-$(CONFIG_TRACING)			+= tracepoint.o
+ obj-$(CONFIG_IOSF_MBI)			+= iosf_mbi.o
++obj-$(CONFIG_PMC_ATOM)			+= pmc_atom.o
+ 
+ ###
+ # 64 bit specific files
+diff --git a/arch/x86/kernel/pmc_atom.c b/arch/x86/kernel/pmc_atom.c
+new file mode 100644
+index 0000000..695bbd3
+--- /dev/null
++++ b/arch/x86/kernel/pmc_atom.c
+@@ -0,0 +1,295 @@
++/*
++ * Intel Atom SOC Power Management Controller Driver
++ * Copyright (c) 2014, Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/pci.h>
++#include <linux/device.h>
++#include <linux/debugfs.h>
++#include <linux/seq_file.h>
++#include <linux/io.h>
++
++#include <asm/pmc_atom.h>
++
++#define	DRIVER_NAME "pmc_atom"
++
++struct pmc_dev {
++	struct pci_dev *pdev;
++	u32 base_addr;
++	void __iomem *regmap;
++#ifdef CONFIG_DEBUG_FS
++	struct dentry *dbgfs_dir;
++#endif /* CONFIG_DEBUG_FS */
++};
++
++static u32 acpi_base_addr;
++
++struct pmc_dev_map {
++	char *name;
++	u32 bit_mask;
++};
++
++static struct pmc_dev_map dev_map[] = {
++	{"0  - LPSS1_F0_DMA",		BIT_LPSS1_F0_DMA},
++	{"1  - LPSS1_F1_PWM1",		BIT_LPSS1_F1_PWM1},
++	{"2  - LPSS1_F2_PWM2",		BIT_LPSS1_F2_PWM2},
++	{"3  - LPSS1_F3_HSUART1",	BIT_LPSS1_F3_HSUART1},
++	{"4  - LPSS1_F4_HSUART2",	BIT_LPSS1_F4_HSUART2},
++	{"5  - LPSS1_F5_SPI",		BIT_LPSS1_F5_SPI},
++	{"6  - LPSS1_F6_Reserved",	BIT_LPSS1_F6_XXX},
++	{"7  - LPSS1_F7_Reserved",	BIT_LPSS1_F7_XXX},
++	{"8  - SCC_EMMC",		BIT_SCC_EMMC},
++	{"9  - SCC_SDIO",		BIT_SCC_SDIO},
++	{"10 - SCC_SDCARD",		BIT_SCC_SDCARD},
++	{"11 - SCC_MIPI",		BIT_SCC_MIPI},
++	{"12 - HDA",			BIT_HDA},
++	{"13 - LPE",			BIT_LPE},
++	{"14 - OTG",			BIT_OTG},
++	{"15 - USH",			BIT_USH},
++	{"16 - GBE",			BIT_GBE},
++	{"17 - SATA",			BIT_SATA},
++	{"18 - USB_EHCI",		BIT_USB_EHCI},
++	{"19 - SEC",			BIT_SEC},
++	{"20 - PCIE_PORT0",		BIT_PCIE_PORT0},
++	{"21 - PCIE_PORT1",		BIT_PCIE_PORT1},
++	{"22 - PCIE_PORT2",		BIT_PCIE_PORT2},
++	{"23 - PCIE_PORT3",		BIT_PCIE_PORT3},
++	{"24 - LPSS2_F0_DMA",		BIT_LPSS2_F0_DMA},
++	{"25 - LPSS2_F1_I2C1",		BIT_LPSS2_F1_I2C1},
++	{"26 - LPSS2_F2_I2C2",		BIT_LPSS2_F2_I2C2},
++	{"27 - LPSS2_F3_I2C3",		BIT_LPSS2_F3_I2C3},
++	{"28 - LPSS2_F3_I2C4",		BIT_LPSS2_F4_I2C4},
++	{"29 - LPSS2_F5_I2C5",		BIT_LPSS2_F5_I2C5},
++	{"30 - LPSS2_F6_I2C6",		BIT_LPSS2_F6_I2C6},
++	{"31 - LPSS2_F7_I2C7",		BIT_LPSS2_F7_I2C7},
++	{"32 - SMB",			BIT_SMB},
++	{"33 - USH_SS_PHY",		BIT_OTG_SS_PHY},
++	{"34 - OTG_SS_PHY",		BIT_USH_SS_PHY},
++	{"35 - DFX",			BIT_DFX},
++};
++
++static inline u32 pmc_reg_read(struct pmc_dev *pmc, int reg_offset)
++{
++	return readl(pmc->regmap + reg_offset);
++}
++
++static void pmc_power_off(void)
++{
++	u16	pm1_cnt_port;
++	u32	pm1_cnt_value;
++
++	pr_info("%s: Preparing to enter system sleep state S5\n", DRIVER_NAME);
++
++	pm1_cnt_port = acpi_base_addr + PM1_CNT;
++
++	pm1_cnt_value = inl(pm1_cnt_port);
++	pm1_cnt_value &= SLEEP_TYPE_MASK;
++	pm1_cnt_value |= SLEEP_TYPE_S5;
++	pm1_cnt_value |= SLEEP_ENABLE;
++
++	outl(pm1_cnt_value, pm1_cnt_port);
++}
++
++#ifdef CONFIG_DEBUG_FS
++static int pmc_dev_state_show(struct seq_file *s, void *unused)
++{
++	struct pmc_dev *pmc = (struct pmc_dev *)s->private;
++	u32 func_dis, func_dis_2, func_dis_index;
++	u32 d3_sts_0, d3_sts_1, d3_sts_index;
++	int dev_num, dev_index, reg_index;
++
++	func_dis = pmc_reg_read(pmc, PMC_FUNC_DIS);
++	func_dis_2 = pmc_reg_read(pmc, PMC_FUNC_DIS_2);
++	d3_sts_0 = pmc_reg_read(pmc, PMC_D3_STS_0);
++	d3_sts_1 = pmc_reg_read(pmc, PMC_D3_STS_1);
++
++	dev_num = sizeof(dev_map) / sizeof(struct pmc_dev_map);
++
++	for (dev_index = 0; dev_index < dev_num; dev_index++) {
++		reg_index = dev_index / PMC_REG_BIT_WIDTH;
++		if (reg_index) {
++			func_dis_index = func_dis_2;
++			d3_sts_index = d3_sts_1;
++		} else {
++			func_dis_index = func_dis;
++			d3_sts_index = d3_sts_0;
++		}
++
++		seq_printf(s, "Dev: %-32s\tState: %s [%s]\n",
++			dev_map[dev_index].name,
++			dev_map[dev_index].bit_mask & func_dis_index ?
++			"Disabled" : "Enabled ",
++			(d3_sts_index & dev_map[dev_index].bit_mask) ?
++			"D3" : "D0");
++	}
++	return 0;
++}
++
++static int pmc_dev_state_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, pmc_dev_state_show, inode->i_private);
++}
++
++static const struct file_operations pmc_dev_state_ops = {
++	.open		= pmc_dev_state_open,
++	.read		= seq_read,
++	.llseek		= seq_lseek,
++	.release	= single_release,
++};
++
++static int pmc_sleep_tmr_show(struct seq_file *s, void *unused)
++{
++	struct pmc_dev *pmc = (struct pmc_dev *)s->private;
++	u64 s0ir_tmr, s0i1_tmr, s0i2_tmr, s0i3_tmr, s0_tmr;
++
++	s0ir_tmr = pmc_reg_read(pmc, PMC_S0IR_TMR) << PMC_TMR_SHIFT;
++	s0i1_tmr = pmc_reg_read(pmc, PMC_S0I1_TMR) << PMC_TMR_SHIFT;
++	s0i2_tmr = pmc_reg_read(pmc, PMC_S0I2_TMR) << PMC_TMR_SHIFT;
++	s0i3_tmr = pmc_reg_read(pmc, PMC_S0I3_TMR) << PMC_TMR_SHIFT;
++	s0_tmr = pmc_reg_read(pmc, PMC_S0_TMR) << PMC_TMR_SHIFT;
++
++	seq_printf(s, "S0IR Residency:\t%lldus\n", s0ir_tmr);
++	seq_printf(s, "S0I1 Residency:\t%lldus\n", s0i1_tmr);
++	seq_printf(s, "S0I2 Residency:\t%lldus\n", s0i2_tmr);
++	seq_printf(s, "S0I3 Residency:\t%lldus\n", s0i3_tmr);
++	seq_printf(s, "S0   Residency:\t%lldus\n", s0_tmr);
++	return 0;
++}
++
++static int pmc_sleep_tmr_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, pmc_sleep_tmr_show, inode->i_private);
++}
++
++static const struct file_operations pmc_sleep_tmr_ops = {
++	.open		= pmc_sleep_tmr_open,
++	.read		= seq_read,
++	.llseek		= seq_lseek,
++	.release	= single_release,
++};
++
++static void pmc_dbgfs_unregister(struct pmc_dev *pmc)
++{
++	if (!pmc->dbgfs_dir)
++		return;
++
++	debugfs_remove_recursive(pmc->dbgfs_dir);
++	pmc->dbgfs_dir = NULL;
++}
++
++static int pmc_dbgfs_register(struct pmc_dev *pmc)
++{
++	struct dentry *dir, *f;
++
++	dir = debugfs_create_dir("pmc_atom", NULL);
++	if (!dir)
++		return -ENOMEM;
++
++	f = debugfs_create_file("dev_state", S_IFREG | S_IRUGO,
++				dir, pmc, &pmc_dev_state_ops);
++	if (!f) {
++		dev_err(&pmc->pdev->dev, "dev_states register failed\n");
++		goto err;
++	}
++	f = debugfs_create_file("sleep_state", S_IFREG | S_IRUGO,
++				dir, pmc, &pmc_sleep_tmr_ops);
++	if (!f) {
++		dev_err(&pmc->pdev->dev, "sleep_state register failed\n");
++		goto err;
++	}
++	pmc->dbgfs_dir = dir;
++	return 0;
++err:
++	pmc_dbgfs_unregister(pmc);
++	return -ENODEV;
++}
++#endif /* CONFIG_DEBUG_FS */
++
++static int pmc_probe(struct pci_dev *pdev,
++			  const struct pci_device_id *unused)
++{
++	struct pmc_dev *pmc;
++	int ret;
++
++	ret = pci_enable_device(pdev);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "error: could not enable device\n");
++		goto err_enable_device;
++	}
++
++	ret = pci_request_regions(pdev, DRIVER_NAME);
++	if (ret) {
++		dev_err(&pdev->dev, "error: could not request PCI region\n");
++		goto err_request_regions;
++	}
++
++	pmc = devm_kzalloc(&pdev->dev, sizeof(struct pmc_dev), GFP_KERNEL);
++	if (!pmc) {
++		ret = -ENOMEM;
++		goto err_devm_kzalloc;
++	}
++
++	pmc->pdev = pci_dev_get(pdev);
++
++	pci_read_config_dword(pdev, PMC_BASE_ADDR_OFFSET, &pmc->base_addr);
++	pmc->base_addr &= PMC_BASE_ADDR_MASK;
++
++	pmc->regmap = devm_ioremap_nocache(&pdev->dev,
++		pmc->base_addr, PMC_MMIO_REG_LEN);
++	if (!pmc->regmap) {
++		dev_err(&pdev->dev, "error: ioremap failed\n");
++		ret = -ENOMEM;
++		goto err_devm_ioremap;
++	}
++	pci_set_drvdata(pdev, pmc);
++#ifdef CONFIG_DEBUG_FS
++	pmc_dbgfs_register(pmc);
++#endif /* CONFIG_DEBUG_FS */
++
++	/* Install power off function */
++	pci_read_config_dword(pdev, ACPI_BASE_ADDR_OFFSET, &acpi_base_addr);
++	acpi_base_addr &= ACPI_BASE_ADDR_MASK;
++	if (acpi_base_addr != 0 && pm_power_off == NULL)
++		pm_power_off = pmc_power_off;
++	return 0;
++err_devm_ioremap:
++	pci_dev_put(pdev);
++err_devm_kzalloc:
++	pci_release_regions(pdev);
++err_request_regions:
++	pci_disable_device(pdev);
++err_enable_device:
++	dev_err(&pdev->dev, "error: probe failed\n");
++	return ret;
++}
++
++static const struct pci_device_id pmc_pci_ids[] = {
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_VLV_PMC) },
++	{ 0, },
++};
++
++MODULE_DEVICE_TABLE(pci, pmc_pci_ids);
++
++static struct pci_driver pmc_pci_driver = {
++	.name		= DRIVER_NAME,
++	.probe		= pmc_probe,
++	.id_table	= pmc_pci_ids,
++};
++
++module_pci_driver(pmc_pci_driver);
++
++MODULE_AUTHOR("Aubrey Li <aubrey.li@linux.intel.com>");
++MODULE_DESCRIPTION("Intel Atom SOC Power Management Controller Interface");
++MODULE_LICENSE("GPL v2");
+-- 
+1.7.10.4
