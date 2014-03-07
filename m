@@ -1,59 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753769AbaCGP6S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 10:58:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45499 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751033AbaCGP6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 10:58:16 -0500
-Message-ID: <5319EC8E.2010606@redhat.com>
-Date: Fri, 07 Mar 2014 16:58:06 +0100
-From: Thomas Graf <tgraf@redhat.com>
-Organization: Red Hat, Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753500AbaCGQAG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 11:00:06 -0500
+Received: from www.linutronix.de ([62.245.132.108]:38522 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752116AbaCGQAE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 11:00:04 -0500
+Date: Fri, 7 Mar 2014 17:00:02 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Mike Galbraith <bitbucket@online.de>
+Cc: Jens Axboe <axboe@kernel.dk>, LKML <linux-kernel@vger.kernel.org>,
+        RT <linux-rt-users@vger.kernel.org>
+Subject: Re: [patch] rt,blk,mq: Make blk_mq_cpu_notify_lock a raw spinlock
+Message-ID: <20140307160002.GB18441@linutronix.de>
+References: <1393822646.5816.4.camel@marge.simpson.net>
 MIME-Version: 1.0
-To: Pravin Shelar <pshelar@nicira.com>, Zoltan Kiss <zoltan.kiss@citrix.com>
-CC: Jesse Gross <jesse@nicira.com>,
-        "dev@openvswitch.org" <dev@openvswitch.org>,
-        xen-devel@lists.xenproject.org, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org
-Subject: Re: [PATCH] openvswitch: Orphan frags before sending to userspace
- via Netlink to avoid guest stall
-References: <1393615016-9187-1-git-send-email-zoltan.kiss@citrix.com>	<5318ABC0.4040307@citrix.com> <CALnjE+rWc=n_F+1jSLQtPrgKSvvxONEkkYxWEHon2_KVNG9z3Q@mail.gmail.com>
-In-Reply-To: <CALnjE+rWc=n_F+1jSLQtPrgKSvvxONEkkYxWEHon2_KVNG9z3Q@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1393822646.5816.4.camel@marge.simpson.net>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/2014 05:46 AM, Pravin Shelar wrote:
-> But I found bug in datapath user-space queue code. I am not sure how
-> this can work with skb fragments and MMAP-netlink socket.
-> Here is what happens, OVS allocates netlink skb and adds fragments to
-> skb using skb_zero_copy(), then calls genlmsg_unicast().
-> But if netlink sock is mmped then netlink-send queues netlink
-> allocated skb->head (linear data of skb) and ignore skb frags.
->
-> Currently this is not problem with OVS vswitchd since it does not use
-> netlink MMAP sockets. But if vswitchd stats using MMAP-netlink socket,
-> it can break it.
+* Mike Galbraith | 2014-03-03 05:57:26 [+0100]:
 
-The secret is out ;-)
+> block/blk-mq-cpu.c |   14 +++++++-------
 
-I was very surprised too when I noticed that it worked. It's not just
-OVS, it's nfqueue as well. The reason is that an netlink mmaped skb is
-setup with a giant tailroom in netlink_ring_setup_skb():
+This got in v3.13-rc1, are you running some kind of backported version
+of this in v3.12 or do you have your own v3.13-rt?
 
-	skb->end	= skb->tail + size;
-
-and skb_zerocopy() will consume whatever tailroom is available first:
-
-	/* dont bother with small payloads */
-	if (len <= skb_tailroom(to)) {
-		skb_copy_bits(from, 0, skb_put(to, len), len);
-		return;
-	}
-
-I was planning to fix this while adding GSO support to the upcall as
-that is the moment when this bug would really surface.
+Sebastian
