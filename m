@@ -1,82 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753164AbaCGNUA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 08:20:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24764 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752734AbaCGNT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 08:19:58 -0500
-Date: Fri, 7 Mar 2014 14:19:40 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: acme@redhat.com, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        eranian@google.com, namhyung@kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 3/8] perf, tools: Add --branch-history option to report v2
-Message-ID: <20140307131940.GB13974@krava.brq.redhat.com>
-References: <1393561352-23448-1-git-send-email-andi@firstfloor.org>
- <1393561352-23448-4-git-send-email-andi@firstfloor.org>
+	id S1753403AbaCGNWL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 08:22:11 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:33270 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753166AbaCGNWK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 08:22:10 -0500
+Message-ID: <5319C7FE.3090300@codeaurora.org>
+Date: Fri, 07 Mar 2014 08:22:06 -0500
+From: Christopher Covington <cov@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393561352-23448-4-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] arm64: Fix __addr_ok and __range_ok macros
+References: <1394059289-3972-1-git-send-email-cov@codeaurora.org> <20140306082023.GA4160@redhat.com>
+In-Reply-To: <20140306082023.GA4160@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 08:22:27PM -0800, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> Add a --branch-history option to perf report that changes all
-> the settings necessary for using the branches in callstacks.
-> 
-> This is just a short cut to make this nicer to use, it does
-> not enable any functionality by itself.
-> 
-> v2: Change sort order. Rename option to --branch-history to
-> be less confusing.
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  tools/perf/Documentation/perf-report.txt |  5 +++++
->  tools/perf/builtin-report.c              | 28 +++++++++++++++++++++++++---
->  2 files changed, 30 insertions(+), 3 deletions(-)
-> 
-> diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-> index 349cd2a..5b270fe 100644
-> --- a/tools/perf/Documentation/perf-report.txt
-> +++ b/tools/perf/Documentation/perf-report.txt
-> @@ -228,6 +228,11 @@ OPTIONS
->  	branch stacks and it will automatically switch to the branch view mode,
->  	unless --no-branch-stack is used.
->  
-> +--branch-history::
-> +	Add the addresses of sampled taken branches to the callstack.
-> +	This allows to examine the path the program took to each sample.
-> +	The data collection must have used -b (or -j) and -g.
-> +
->  --objdump=<path>::
->          Path to objdump binary.
->  
-> diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-> index f7a9e3d..302c4e8 100644
-> --- a/tools/perf/builtin-report.c
-> +++ b/tools/perf/builtin-report.c
-> @@ -691,6 +691,16 @@ parse_branch_mode(const struct option *opt __maybe_unused,
->  }
->  
->  static int
-> +parse_branch_call_mode(const struct option *opt __maybe_unused,
-> +		  const char *str __maybe_unused, int unset)
-> +{
-> +	int *branch_mode = opt->value;
-> +
-> +	*branch_mode = !unset;
-> +	return 0;
-> +}
+Hi Michael,
 
-this is *same* as parse_branch_mode function and seems to be not needed,
-I think both branch-stack and branch-history options could be handled
-by OPT_BOOLEAN
+Thanks for the comments.
 
-jirka
+On 03/06/2014 03:20 AM, Michael S. Tsirkin wrote:
+> On Wed, Mar 05, 2014 at 05:41:28PM -0500, Christopher Covington wrote:
+>> Without this, the following scenario is incorrectly determined
+>> to be invalid.
+>>
+>> addr 0x7f_ffffe000 size 8192 addr_limit 0x80_00000000
+>>
+>> This behavior was observed while trying to vmsplice the stack
+>> as part of a CRIU dump of a process.
+>>
+>> Signed-off-by: Christopher Covington <cov@codeaurora.org>
+>> ---
+>>  arch/arm64/include/asm/uaccess.h | 8 ++++----
+>>  1 file changed, 4 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/arch/arm64/include/asm/uaccess.h b/arch/arm64/include/asm/uaccess.h
+>> index edb3d5c..9309024 100644
+>> --- a/arch/arm64/include/asm/uaccess.h
+>> +++ b/arch/arm64/include/asm/uaccess.h
+>> @@ -66,12 +66,12 @@ static inline void set_fs(mm_segment_t fs)
+>>  #define segment_eq(a,b)	((a) == (b))
+>>  
+>>  /*
+>> - * Return 1 if addr < current->addr_limit, 0 otherwise.
+>> + * Return 1 if addr <= current->addr_limit, 0 otherwise.
+>>   */
+>>  #define __addr_ok(addr)							\
+>>  ({									\
+>>  	unsigned long flag;						\
+>> -	asm("cmp %1, %0; cset %0, lo"					\
+>> +	asm("cmp %1, %0; cset %0, ls"					\
+>>  		: "=&r" (flag)						\
+>>  		: "r" (addr), "0" (current_thread_info()->addr_limit)	\
+>>  		: "cc");						\
+> 
+> 
+> BTW can this use mov %0, #0 like arch/arm/include/asm/uaccess.h does?
+
+The A32 implementation uses "movlo", a conditional move instruction. My
+reading of section 3.2 Conditional Instructions of the ARMv8 ISA overview [1]
+and other documentation has led me to believe conditional move instructions as
+such are not available in A64, hence the choice of "cset".
+
+1.
+http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.genc010197a/index.html
+
+Christopher
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by the Linux Foundation.
