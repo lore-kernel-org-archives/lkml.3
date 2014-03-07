@@ -1,230 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752201AbaCGElD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 23:41:03 -0500
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:53602
-	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751663AbaCGEkT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 23:40:19 -0500
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH V2 1/6] Drivers: net: hyperv: Enable scatter gather I/O
-Date: Thu,  6 Mar 2014 21:32:36 -0800
-Message-Id: <1394170361-1043-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1394170320-1002-1-git-send-email-kys@microsoft.com>
-References: <1394170320-1002-1-git-send-email-kys@microsoft.com>
+	id S1752531AbaCGEmt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 23:42:49 -0500
+Received: from mail-pb0-f74.google.com ([209.85.160.74]:51012 "EHLO
+	mail-pb0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752137AbaCGEmr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 23:42:47 -0500
+From: Venkatesh Srinivas <venkateshs@google.com>
+To: eranian@google.com, linux-kernel@vger.kernel.org
+Cc: Venkatesh Srinivas <venkateshs@google.com>
+Subject: [PATCH] perf/x86/intel: Use rdmsrl_safe when initializing RAPL PMU.
+Date: Thu,  6 Mar 2014 20:42:44 -0800
+Message-Id: <1394167364-2389-1-git-send-email-venkateshs@google.com>
+X-Mailer: git-send-email 1.9.0.279.gdc9e3eb
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleanup the code and enable scatter gather I/O.
+CPUs which should support the RAPL counters according to
+Family/Model/Stepping may still issue #GP when attempting to access
+the RAPL MSRs. This may happen when Linux is running under KVM and
+we are passing-through host F/M/S data, for example. Use rdmsrl_safe
+to first access the RAPL_POWER_UNIT MSR; if this fails, do not
+attempt to use this PMU.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Venkatesh Srinivas <venkateshs@google.com>
 ---
- drivers/net/hyperv/netvsc_drv.c |  153 +++++++++++++++++++++++++++++----------
- 1 files changed, 114 insertions(+), 39 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_rapl.c | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-index 9ef6be9..94271bf 100644
---- a/drivers/net/hyperv/netvsc_drv.c
-+++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -140,21 +140,123 @@ static void netvsc_xmit_completion(void *context)
- 		dev_kfree_skb_any(skb);
- }
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_rapl.c b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
+index 5ad35ad..95700e5 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_rapl.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
+@@ -511,6 +511,7 @@ static int rapl_cpu_prepare(int cpu)
+ 	struct rapl_pmu *pmu = per_cpu(rapl_pmu, cpu);
+ 	int phys_id = topology_physical_package_id(cpu);
+ 	u64 ms;
++	u64 msr_rapl_power_unit_bits;
  
-+static u32 fill_pg_buf(struct page *page, u32 offset, u32 len,
-+			struct hv_page_buffer *pb)
-+{
-+	int j = 0;
-+
-+	/* Deal with compund pages by ignoring unused part
-+	 * of the page.
-+	 */
-+	page += offset  >> PAGE_SHIFT;
-+	offset &= ~PAGE_MASK;
-+
-+	while (len > 0) {
-+		unsigned long bytes;
-+
-+		bytes = PAGE_SIZE - offset;
-+		if (bytes > len)
-+			bytes = len;
-+		pb[j].pfn = page_to_pfn(page);
-+		pb[j].offset = offset;
-+		pb[j].len = bytes;
-+
-+		offset += bytes;
-+		len -= bytes;
-+
-+		if (offset == PAGE_SIZE && len) {
-+			page++;
-+			offset = 0;
-+			j++;
-+		}
-+	}
-+
-+	return j + 1;
-+}
-+
-+static void init_page_array(void *hdr, u32 len, struct sk_buff *skb,
-+			    struct hv_page_buffer *pb)
-+{
-+	u32 slots_used = 0;
-+	char *data = skb->data;
-+	int frags = skb_shinfo(skb)->nr_frags;
-+	int i;
-+
-+	/* The packet is laid out thus:
-+	 * 1. hdr
-+	 * 2. skb linear data
-+	 * 3. skb fragment data
-+	 */
-+	if (hdr != NULL)
-+		slots_used += fill_pg_buf(virt_to_page(hdr),
-+					offset_in_page(hdr),
-+					len, &pb[slots_used]);
-+
-+	slots_used += fill_pg_buf(virt_to_page(data),
-+				offset_in_page(data),
-+				skb_headlen(skb), &pb[slots_used]);
-+
-+	for (i = 0; i < frags; i++) {
-+		skb_frag_t *frag = skb_shinfo(skb)->frags + i;
-+
-+		slots_used += fill_pg_buf(skb_frag_page(frag),
-+					frag->page_offset,
-+					skb_frag_size(frag), &pb[slots_used]);
-+	}
-+}
-+
-+static int count_skb_frag_slots(struct sk_buff *skb)
-+{
-+	int i, frags = skb_shinfo(skb)->nr_frags;
-+	int pages = 0;
-+
-+	for (i = 0; i < frags; i++) {
-+		skb_frag_t *frag = skb_shinfo(skb)->frags + i;
-+		unsigned long size = skb_frag_size(frag);
-+		unsigned long offset = frag->page_offset;
-+
-+		/* Skip unused frames from start of page */
-+		offset &= ~PAGE_MASK;
-+		pages += PFN_UP(offset + size);
-+	}
-+	return pages;
-+}
-+
-+static int netvsc_get_slots(struct sk_buff *skb)
-+{
-+	char *data = skb->data;
-+	unsigned int offset = offset_in_page(data);
-+	unsigned int len = skb_headlen(skb);
-+	int slots;
-+	int frag_slots;
-+
-+	slots = DIV_ROUND_UP(offset + len, PAGE_SIZE);
-+	frag_slots = count_skb_frag_slots(skb);
-+	return slots + frag_slots;
-+}
-+
- static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
- {
- 	struct net_device_context *net_device_ctx = netdev_priv(net);
- 	struct hv_netvsc_packet *packet;
- 	int ret;
--	unsigned int i, num_pages, npg_data;
-+	unsigned int num_data_pages;
+ 	if (pmu)
+ 		return 0;
+@@ -518,6 +519,9 @@ static int rapl_cpu_prepare(int cpu)
+ 	if (phys_id < 0)
+ 		return -1;
  
--	/* Add multipages for skb->data and additional 2 for RNDIS */
--	npg_data = (((unsigned long)skb->data + skb_headlen(skb) - 1)
--		>> PAGE_SHIFT) - ((unsigned long)skb->data >> PAGE_SHIFT) + 1;
--	num_pages = skb_shinfo(skb)->nr_frags + npg_data + 2;
-+	/* We will atmost need two pages to describe the rndis
-+	 * header. We can only transmit MAX_PAGE_BUFFER_COUNT number
-+	 * of pages in a single packet.
-+	 */
-+	num_data_pages = netvsc_get_slots(skb) + 2;
-+	if (num_data_pages > MAX_PAGE_BUFFER_COUNT) {
-+		netdev_err(net, "Packet too big: %u\n", skb->len);
-+		dev_kfree_skb(skb);
-+		net->stats.tx_dropped++;
-+		return NETDEV_TX_OK;
-+	}
++	if (!rdmsrl_safe(MSR_RAPL_POWER_UNIT, &msr_rapl_power_unit_bits))
++		return -1;
++
+ 	pmu = kzalloc_node(sizeof(*pmu), GFP_KERNEL, cpu_to_node(cpu));
+ 	if (!pmu)
+ 		return -1;
+@@ -531,8 +535,7 @@ static int rapl_cpu_prepare(int cpu)
+ 	 *
+ 	 * we cache in local PMU instance
+ 	 */
+-	rdmsrl(MSR_RAPL_POWER_UNIT, pmu->hw_unit);
+-	pmu->hw_unit = (pmu->hw_unit >> 8) & 0x1FULL;
++	pmu->hw_unit = (msr_rapl_power_unit_bits >> 8) & 0x1FULL;
+ 	pmu->pmu = &rapl_pmu_class;
  
- 	/* Allocate a netvsc packet based on # of frags. */
- 	packet = kzalloc(sizeof(struct hv_netvsc_packet) +
--			 (num_pages * sizeof(struct hv_page_buffer)) +
-+			 (num_data_pages * sizeof(struct hv_page_buffer)) +
- 			 sizeof(struct rndis_message) +
- 			 NDIS_VLAN_PPI_SIZE, GFP_ATOMIC);
- 	if (!packet) {
-@@ -169,44 +271,17 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
- 	packet->vlan_tci = skb->vlan_tci;
+ 	/*
+@@ -649,7 +652,9 @@ static int __init rapl_pmu_init(void)
+ 	get_online_cpus();
  
- 	packet->extension = (void *)(unsigned long)packet +
--				sizeof(struct hv_netvsc_packet) +
--				    (num_pages * sizeof(struct hv_page_buffer));
-+			sizeof(struct hv_netvsc_packet) +
-+			(num_data_pages * sizeof(struct hv_page_buffer));
+ 	for_each_online_cpu(cpu) {
+-		rapl_cpu_prepare(cpu);
++		ret = rapl_cpu_prepare(cpu);
++		if (ret)
++			goto out;
+ 		rapl_cpu_init(cpu);
+ 	}
  
- 	/* If the rndis msg goes beyond 1 page, we will add 1 later */
--	packet->page_buf_cnt = num_pages - 1;
-+	packet->page_buf_cnt = num_data_pages - 1;
+@@ -672,6 +677,7 @@ static int __init rapl_pmu_init(void)
+ 		hweight32(rapl_cntr_mask),
+ 		ktime_to_ms(pmu->timer_interval));
  
- 	/* Initialize it from the skb */
- 	packet->total_data_buflen = skb->len;
++out:
+ 	put_online_cpus();
  
- 	/* Start filling in the page buffers starting after RNDIS buffer. */
--	packet->page_buf[1].pfn = virt_to_phys(skb->data) >> PAGE_SHIFT;
--	packet->page_buf[1].offset
--		= (unsigned long)skb->data & (PAGE_SIZE - 1);
--	if (npg_data == 1)
--		packet->page_buf[1].len = skb_headlen(skb);
--	else
--		packet->page_buf[1].len = PAGE_SIZE
--			- packet->page_buf[1].offset;
--
--	for (i = 2; i <= npg_data; i++) {
--		packet->page_buf[i].pfn = virt_to_phys(skb->data
--			+ PAGE_SIZE * (i-1)) >> PAGE_SHIFT;
--		packet->page_buf[i].offset = 0;
--		packet->page_buf[i].len = PAGE_SIZE;
--	}
--	if (npg_data > 1)
--		packet->page_buf[npg_data].len = (((unsigned long)skb->data
--			+ skb_headlen(skb) - 1) & (PAGE_SIZE - 1)) + 1;
--
--	/* Additional fragments are after SKB data */
--	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
--		const skb_frag_t *f = &skb_shinfo(skb)->frags[i];
--
--		packet->page_buf[i+npg_data+1].pfn =
--			page_to_pfn(skb_frag_page(f));
--		packet->page_buf[i+npg_data+1].offset = f->page_offset;
--		packet->page_buf[i+npg_data+1].len = skb_frag_size(f);
--	}
-+	init_page_array(NULL, 0, skb, &packet->page_buf[1]);
- 
- 	/* Set the completion routine */
- 	packet->completion.send.send_completion = netvsc_xmit_completion;
-@@ -451,8 +526,8 @@ static int netvsc_probe(struct hv_device *dev,
- 	net->netdev_ops = &device_ops;
- 
- 	/* TODO: Add GSO and Checksum offload */
--	net->hw_features = 0;
--	net->features = NETIF_F_HW_VLAN_CTAG_TX;
-+	net->hw_features = NETIF_F_SG;
-+	net->features = NETIF_F_HW_VLAN_CTAG_TX | NETIF_F_SG;
- 
- 	SET_ETHTOOL_OPS(net, &ethtool_ops);
- 	SET_NETDEV_DEV(net, &dev->device);
+ 	return 0;
 -- 
-1.7.4.1
+1.9.0.279.gdc9e3eb
 
