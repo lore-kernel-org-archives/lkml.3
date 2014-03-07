@@ -1,72 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752826AbaCGMmw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 07:42:52 -0500
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751581AbaCGMmu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 07:42:50 -0500
-Message-ID: <5319BEC0.4050006@nod.at>
-Date: Fri, 07 Mar 2014 13:42:40 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1752543AbaCGMoY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 07:44:24 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:51149 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751624AbaCGMoX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 07:44:23 -0500
+Message-ID: <5319BF21.6080400@oracle.com>
+Date: Fri, 07 Mar 2014 13:44:17 +0100
+From: Vegard Nossum <vegard.nossum@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Austin S Hemmelgarn <ahferroin7@gmail.com>, Borislav Petkov <bp@alien8.de>,
-        Jon Ringle <jringle@gridpoint.com>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        "Ringle, Jonathan" <Jonathan.Ringle@gridpoint.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Add option to build with -O3
-References: <1393977709-9809-1-git-send-email-jringle@gridpoint.com>	<20140305050927.GA8534@kroah.com>	<alpine.DEB.2.02.1403050019300.22601@jringle-ubuntu> <CAFLxGvyB0r2RgeFhKoWqgWHLKEMF=BEM8ThRr8Mq6nGtJWQm1w@mail.gmail.com> <5319BE19.5000607@gmail.com>
-In-Reply-To: <5319BE19.5000607@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] isdnloop: NUL-terminate strings from userspace
+References: <1394189764-21754-1-git-send-email-vegard.nossum@oracle.com> <20140307112655.GJ4774@mwanda> <5319B094.7060709@oracle.com> <20140307115253.GL4774@mwanda>
+In-Reply-To: <20140307115253.GL4774@mwanda>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Am 07.03.2014 13:39, schrieb Austin S Hemmelgarn:
-> On 2014-03-06 08:28, Richard Weinberger wrote:
->> On Wed, Mar 5, 2014 at 6:37 AM, Jon Ringle <jringle@gridpoint.com>
->> wrote:
+On 03/07/2014 12:52 PM, Dan Carpenter wrote:
+> On Fri, Mar 07, 2014 at 12:42:12PM +0100, Vegard Nossum wrote:
+>> On 03/07/2014 12:26 PM, Dan Carpenter wrote:
+>>> On Fri, Mar 07, 2014 at 11:56:04AM +0100, Vegard Nossum wrote:
+>>>> Both the in-kernel and BSD strlcpy() require that the source string is
+>>>> NUL terminated.
 >>>
->>>
->>> On Wed, 5 Mar 2014, Greg KH wrote:
->>>
->>>> On Tue, Mar 04, 2014 at 07:01:49PM -0500, Jon Ringle wrote:
->>>>> +config CC_OPTIMIZE_FOR_SPEED +    bool "Optimze for speed
->>>>> (-O3)" +    help +      Enabling this option will pass "-O3"
->>>>> to gcc +      resulting in a larger kernel (but possibly
->>>>> faster)
->>>>
->>>> Are you sure about that?  Have you measured it?
->>>
->>> I do know that there is an improvement performance-wise for my
->>> particular use-case.
->>>
->>> My target is an ARM board being built with gcc-4.8.2. My board
->>> has on it a sc16is740 that is used as an RS-485 port. The
->>> sc16is740 is on the i2c bus, so when an interrupt comes in to
->>> indicate that there is data available to be read, I need to get
->>> the data over the i2c bus. I do this on a kthread to do this
->>> work. The i2c transactions (using i2c-davinci driver) are also 
->>> interrupt driven. I was seeing a lot of lost packets when
->>> receiving data at only 19200. Adding the -O3 compile option
->>> helped in this regard in that I am now rarely seeing packet
->>> loss.
+>>> No.  You're obviously wrong.  What on earth?
 >>
->> Please also see: 
->> http://www.gossamer-threads.com/lists/linux/kernel/1835761?do=post_view_threaded#1835761
+>> Well, from lib/string.c:
 >>
+>> size_t strlcpy(char *dest, const char *src, size_t size)
+>> {
+>>          size_t ret = strlen(src);
 >>
-> Ironically, combining these might achieve a significant performance
-> improvement over CONFIG_GENERIC_CPU and -O2.
+>
+> Ah...  So you mean that we could read far beyond the end of the string
+> and it would be a DoS because there would be 4 gigs of memory before we
+> hit a NUL character.  That won't happen in this case because the user
+> only controls a small buffer.  Normal memory is full of NUL chars.
 
-*might*
-We still need a sane proof.
+Well, that's true, but what happens if you accidentally read from an 
+unmapped page or an mmio page?
 
-Thanks,
-//richard
+I agree that it's not likely to happen in practice, but that's true for 
+a lot of kernel bugs that we nevertheless want to fix. Are you saying 
+that the patch is bad or wrong?
+
+> I don't know the speed impact of changing the strlen() there to
+> strnlen().
+
+I don't think we could or should do that, because it changes the 
+semantics of the function.  I think C string operations are probably 
+confusing enough already without breaking compatibility with existing 
+documentation and other implementations.
+
+Also, the size parameter is the size of the destination buffer, not the 
+source string. So even if we could make it safe to use strnlen() in this 
+case, it still wouldn't be safe in other cases where the source string 
+is shorter than the destination.
+
+>
+>> The BSD man page:
+>>
+>> "Also note that strlcpy() and strlcat() only operate on true ``C''
+>> strings.  This means that for strlcpy() src must be NUL-terminated
+>> and for strlcat() both src and dst must be NUL-terminated."
+>
+> It's talking about the kind of strings.  If it's a string which includes
+> NUL characters the strlcpy() won't work for that.  Or if it is not
+> *supposed* to end in a NUL character then it won't work for that.
+>
+> We are using C strings here.
+
+I think the man page is quite clear: "for strlcpy() src must be 
+NUL-terminated". Without the patch, this is not necessarily the case.
+
+
+Vegard
