@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751680AbaCGD1j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 22:27:39 -0500
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:6234 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751055AbaCGD1h (ORCPT
+	id S1751741AbaCGDbS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 22:31:18 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:35196 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750924AbaCGDbQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 22:27:37 -0500
-Date: Thu, 6 Mar 2014 19:26:49 -0800
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: Josh Cartwright <joshc@codeaurora.org>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] pinctrl: msm: drop wake_irqs bitmap
-Message-ID: <20140307032635.GF21801@sonymobile.com>
-References: <1394047988-14081-1-git-send-email-joshc@codeaurora.org>
+	Thu, 6 Mar 2014 22:31:16 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1394047988-14081-1-git-send-email-joshc@codeaurora.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1393842463-5206-1-git-send-email-thloh@altera.com>
+References: <1393842463-5206-1-git-send-email-thloh@altera.com>
+Date: Fri, 7 Mar 2014 11:31:15 +0800
+Message-ID: <CACRpkdbwKuaTucbHbuXsKpRAg+kN27K6uN212TT1-h8wxY9YzA@mail.gmail.com>
+Subject: Re: [PATCH V7 1/1] drivers/gpio: Altera soft IP GPIO driver and
+ devicetree binding
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Tien Hock Loh <thloh@altera.com>, Gerhard Sittig <gsi@denx.de>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        "lftan@altera.com" <lftan@altera.com>,
+        Tien Hock Loh <thloh.linux@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 05 Mar 11:33 PST 2014, Josh Cartwright wrote:
+On Mon, Mar 3, 2014 at 6:27 PM,  <thloh@altera.com> wrote:
 
-> Currently, the wake_irqs bitmap is used to track whether there are any
-> gpio's which are configured as wake irqs, and uses this to determine
-> whether or not to call enable_irq_wake()/disable_irq_wake() on the
-> summary interrupt.
-> 
-> However, the genirq core already handles this case, by maintaining a
-> 'wake_count' per irq_desc, and only calling into the controlling
-> irq_chip when wake_count transitions 0 <-> 1.
-> 
-> Drop this bitmap, and unconditionally call irq_set_irq_wake() on the
-> summary interrupt.
+> From: Tien Hock Loh <thloh@altera.com>
+>
+> Add driver support for Altera GPIO soft IP, including interrupts and I/O.
+> Tested on Altera CV SoC board using dipsw and LED using LED framework.
+>
+> Signed-off-by: Tien Hock Loh <thloh@altera.com>
 
-I wasn't aware of that, change looks good!
+Can I get some ACKs on this? Like from Gerhard, DT folks?
 
-Acked-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Or is there still more things to do?
 
+Yours,
+Linus Walleij
