@@ -1,67 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509AbaCGO0T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 09:26:19 -0500
-Received: from sauhun.de ([89.238.76.85]:50073 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752366AbaCGO0S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 09:26:18 -0500
-Date: Fri, 7 Mar 2014 15:26:14 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        zhuzhenhua@allwinnertech.com, linux@arm.linux.org.uk
-Subject: Re: [PATCH] i2c: mv64xxx: Fix circular dependencies warning and
- compilation breakage
-Message-ID: <20140307142614.GC28943@katana>
-References: <20140307111858.GB12274@katana>
- <1394199795-5516-1-git-send-email-maxime.ripard@free-electrons.com>
- <20140307142405.GB28943@katana>
+	id S1753543AbaCGO01 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 09:26:27 -0500
+Received: from ihemail1.lucent.com ([135.245.0.33]:60267 "EHLO
+	ihemail1.lucent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752826AbaCGO0Y convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 09:26:24 -0500
+From: "Li, Bin (Bin)" <bin.bl.li@alcatel-lucent.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Paolo Bonzini <pbonzini@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "Jatania, Neel (Neel)" <Neel.Jatania@alcatel-lucent.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: Enhancement for PLE handler in KVM
+Thread-Topic: Enhancement for PLE handler in KVM
+Thread-Index: AQHPNw3F4lhzD8AlbUmUFBaMt3tdkZrQESCAgAJ5ASCAAF+xgP//5v4AgAJ5Z4CAAGTSoA==
+Date: Fri, 7 Mar 2014 14:26:19 +0000
+Message-ID: <72F5E0D8DB6D83469579E473AD72DB23779F63B3@US70UWXCHMBA01.zam.alcatel-lucent.com>
+References: <53061044.2000009@alcatel-lucent.com>
+ <530B9637.6030708@alcatel-lucent.com> <5314C8C3.3090607@alcatel-lucent.com>
+ <5314D61B.9050407@redhat.com>
+ <72F5E0D8DB6D83469579E473AD72DB23779EFF64@US70UWXCHMBA01.zam.alcatel-lucent.com>
+ <53173961.6080301@redhat.com>
+ <72F5E0D8DB6D83469579E473AD72DB23779F1B6B@US70UWXCHMBA01.zam.alcatel-lucent.com>
+ <20140307030636.GA13701@amt.cnet>
+In-Reply-To: <20140307030636.GA13701@amt.cnet>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [135.5.27.17]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ctP54qlpMx3WjD+/"
-Content-Disposition: inline
-In-Reply-To: <20140307142405.GB28943@katana>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Can we have "per-VM PLE values"?
 
---ctP54qlpMx3WjD+/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+My understanding is that the ple values are kvm module setting which applying to all VMs in the system.
+And all vms must be stopped first, then unload kvm-intel, reload kvm-intel with new ple setting.
+
+/sbin/modprobe -r kvm-intel
+/sbin/modprobe kvm-intel ple_window=16384
+
+Regards
+Bin
+
+-----Original Message-----
+From: Marcelo Tosatti [mailto:mtosatti@redhat.com] 
+Sent: Thursday, March 06, 2014 10:07 PM
+To: Li, Bin (Bin)
+Cc: Paolo Bonzini; kvm@vger.kernel.org; Jatania, Neel (Neel); linux-kernel@vger.kernel.org; Peter Zijlstra; Mike Galbraith; Chris Wright; ttracy@redhat.com; Nakajima, Jun; riel@redhat.com
+Subject: Re: Enhancement for PLE handler in KVM
+
+On Wed, Mar 05, 2014 at 09:16:45PM +0000, Li, Bin (Bin) wrote:
+> Did you also find out here why this is the case?
+> 
+> Binl:
+> Yes. The application running in our customized embedded OS is also real time application which is timing sensitive. 
+> The timing sensitive level varies among the applications.
+> When I talking about different threshold, the assumption is using default 4096 ple_window setting.
+> If I set up the ple_window to 16384 or higher, there will be no problem for our application. But the finial user could also run linux or window VM on same hypervisor which would prefer default 4096 setting for linux and windows.
+
+Then have per-VM PLE values?
+
+> We are looking for a solution to be good for both linux / window and real time application.
+> The enhancement patch we proposed will satisfy both linux/window application and real time embedded applications.
+> 
+> Paolo
 
 
-> Why don't you simply set rstc to some ERR_PTR above if not
-> RESET_CONTROLLER?
-
-I know why. Sorry for the noise.
-
-
-
---ctP54qlpMx3WjD+/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTGdcGAAoJEBQN5MwUoCm2sPcQAJw8eV5th8WRozVoBjQiDdKA
-al3HTXFAu9VugGb2TtxzjKmhYSjQaBtfwfSNvuLzyEDK1gYSOFKndgkq27PCvNWe
-Ze844w31j/b5XAW4R0v8g5E1cEB0RtXIlTXHc/eOl4k0Je+SVRSDWTWauXYt660c
-/i+haEXpt2SaNLGzAKRddV/tTUTbW7Wa5Kt1GStZLTPF7oskg9nuUJeKqzR6zuk4
-jP1eTLk5S+iWug1eFCNeOEq5IA3Kf69w1BUhLFRymOPBkG7RdrgR1301LLBnVjGH
-CAs+6d65JCf1zGoGJk7DwFqS3E6qVLik2/S0PZ/faRxHj5myhGVDzjV07pkCrqJB
-2yuOYgZwirTK8vvOiH1fbeWLc77jvmeV5wOPEnHMK3g2P27hl595dpHbRGPbS0Ys
-8jhI9jTT5KpJpvuMySUZDsmyBcQZ2lb/B99USyqzH3T0MLEk5+Jkyr5+cmIhdgAu
-z6dG41xRSFqo1fqr9P82h8di1/LrP9gFU6RX/6W2s1fChJhFEoF4QrYE/EzCrB6w
-13yMJGMoGf+UjLJ5c22IDYz/YhVtSeW7ZcUOdi4SJtB0cR5OgbdUpVhfnuUIA1F6
-E6WeNW2RG+kymveH6zoKstiPJ9ms+r95hCEOY/jkplKlNRfpWtSu5zMwBDIbE6H4
-1JfHjR8OIJBMyk7zb9mz
-=rs11
------END PGP SIGNATURE-----
-
---ctP54qlpMx3WjD+/--
