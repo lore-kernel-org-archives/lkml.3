@@ -1,146 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858AbaCGTju (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 14:39:50 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:55135 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751506AbaCGTjt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 14:39:49 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAErSpo5fkaFNq_qTZ+gTDMV554f4diOXQ7_4bsHqj06iAGTpHg@mail.gmail.com>
-References: <CAMxnaaXd9-VbxSYa9q1YVT+fwfDFYKGG2Hq-1jkc-awLX-HwtQ@mail.gmail.com>
-	<CAErSpo5fkaFNq_qTZ+gTDMV554f4diOXQ7_4bsHqj06iAGTpHg@mail.gmail.com>
-Date: Fri, 7 Mar 2014 11:39:48 -0800
-X-Google-Sender-Auth: xy9MTxTpmgTukB7lIzSxSARcKn0
-Message-ID: <CAE9FiQVNFqTw+92qy8zcwG1haiSZzU+KE3oh4YnjNc_aE6KUnA@mail.gmail.com>
-Subject: Re: [Bug] PCI: Enable INTx if BIOS left them disabled - triggers
- during rescan
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Andreas Noever <andreas.noever@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Rajat Jain <rajatxjain@gmail.com>
-Content-Type: multipart/mixed; boundary=001a11c323bcac305404f4096af5
+	id S1753215AbaCGTj5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 14:39:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2793 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752144AbaCGTjy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 14:39:54 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: hpa@zytor.com
+Cc: LKML <linux-kernel@vger.kernel.org>, x86@kernel.org, vgoyal@redhat.com,
+        ebiederm@xmission.com, Don Zickus <dzickus@redhat.com>
+Subject: [PATCH] x86: Skip latched NMIs on early boot in kdump
+Date: Fri,  7 Mar 2014 14:39:03 -0500
+Message-Id: <1394221143-29713-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001a11c323bcac305404f4096af5
-Content-Type: text/plain; charset=ISO-8859-1
+A customer generated an external NMI using their iLO to test kdump worked.
+Unfortunately, the machine hung.  Disabling the nmi_watchdog made things work.
 
-On Fri, Mar 7, 2014 at 8:45 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->
-> I opened a bugzilla report at https://bugzilla.kernel.org/show_bug.cgi?id=71691
->
-> It seems like clearing DisINTx has some effect on MSI.  I don't see
-> anything in the spec that would suggest this (I'm looking at the PCIe
-> r3.0 spec, sec 7.5.1.1).
->
-> Can somebody point out a connection between DisINTx and MSI?  If not,
-> maybe we'll need some sort of quirk to deal with this.
+I speculated the external NMI fired, caused the machine to panic (as expected)
+and the perf NMI from the watchdog came in and was latched.  My guess was this
+somehow caused the hang.
 
-I had different impression: if you disable INTx in some chipset, MSI will not
-work anymore.
+Debugging this with outb's and debug_putstr, I learned the following
 
-so we have
+- the machine hung during the first memcpy in copy_bootdata (in
+arch/x86/kernel/head64.c)
+- early_make_pgtable was called during this memcpy
+- after early_make_pgtable, an exception vector 2 (NMI) came in
+- the IP of this vector was in copy_bootdata's range
+- because there was no fixup associated with this IP, the machine
+  is sitting in a 'hlt' instruction (in arch/x86/kernel/head_64.S)
 
-static void pci_intx_for_msi(struct pci_dev *dev, int enable)
-{
-        if (!(dev->dev_flags & PCI_DEV_FLAGS_MSI_INTX_DISABLE_BUG))
-                pci_intx(dev, enable);
-}
+(copy and paste from arch/x86/kernel/head_64.S)
+/* This is global to keep gas from relaxing the jumps */
+ENTRY(early_idt_handler)
 
-and have quirks for ati and broadcom chip to set that FLAG.
+<snip>
 
-regarding the regression: i would suggest move out
-do_pci_enable_intx() from re-enable path.
+        cmpl $14,72(%rsp)       # Page fault?
+        jnz 10f
+        GET_CR2_INTO(%rdi)      # can clobber any volatile register if pv
+        call early_make_pgtable
+        andl %eax,%eax
+        jz 20f                  # All good
 
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 5a24cb3..92718c9 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -1190,11 +1190,22 @@ int __weak pcibios_enable_device(struct
-pci_dev *dev, int bars)
-     return pci_enable_resources(dev, bars);
- }
+10:
+        leaq 88(%rsp),%rdi      # Pointer to %rip
+        call early_fixup_exception
+        andl %eax,%eax
+        jnz 20f                 # Found an exception entry
 
-+static void do_pci_enable_intx(struct pci_dev *dev)
-+{
-+    u8 pin;
-+    pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
-+    if (pin) {
-+        pci_read_config_word(dev, PCI_COMMAND, &cmd);
-+        if (cmd & PCI_COMMAND_INTX_DISABLE)
-+            pci_write_config_word(dev, PCI_COMMAND,
-+                          cmd & ~PCI_COMMAND_INTX_DISABLE);
-+    }
-+}
-+
- static int do_pci_enable_device(struct pci_dev *dev, int bars)
- {
-     int err;
-     u16 cmd;
--    u8 pin;
+11:
+	<snip>
+1:      hlt
+	^^^^^^^^^^^^ sitting here
 
-     err = pci_set_power_state(dev, PCI_D0);
-     if (err < 0 && err != -EIO)
-@@ -1204,14 +1215,6 @@ static int do_pci_enable_device(struct pci_dev
-*dev, int bars)
-         return err;
-     pci_fixup_device(pci_fixup_enable, dev);
+        jmp 1b
 
--    pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
--    if (pin) {
--        pci_read_config_word(dev, PCI_COMMAND, &cmd);
--        if (cmd & PCI_COMMAND_INTX_DISABLE)
--            pci_write_config_word(dev, PCI_COMMAND,
--                          cmd & ~PCI_COMMAND_INTX_DISABLE);
--    }
--
-     return 0;
- }
+I added the below hack, which says if the exception is an NMI just return and
+things seem to work.
 
-@@ -1287,6 +1290,8 @@ static int pci_enable_device_flags(struct
-pci_dev *dev, unsigned long flags)
-     err = do_pci_enable_device(dev, bars);
-     if (err < 0)
-         atomic_dec(&dev->enable_cnt);
-+    else
-+        do_pci_enable_intx(dev);
-     return err;
- }
+Now, I don't expect this to be the correct solution.  Nor do I fully understand
+what this early boot code is doing, so hopefully folks wiser than me can
+provide me a better patch to test. :-)
 
---001a11c323bcac305404f4096af5
-Content-Type: text/x-patch; charset=US-ASCII; name="do_not_enable_intx_again.patch"
-Content-Disposition: attachment; filename="do_not_enable_intx_again.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hshvcb3i0
+I also do not fully understand why the latched NMI is not happening immediately
+after the load idt call or why it comes after a page fault (the
+early_make_pgtable).  Further adding to my confusion is why the early printk
+magic didn't dump a stack as I believe I had that setup on my commandline.
+But I figured I would just report what I have observed.
 
-ZGlmZiAtLWdpdCBhL2RyaXZlcnMvcGNpL3BjaS5jIGIvZHJpdmVycy9wY2kvcGNpLmMKaW5kZXgg
-NWEyNGNiMy4uOTI3MThjOSAxMDA2NDQKLS0tIGEvZHJpdmVycy9wY2kvcGNpLmMKKysrIGIvZHJp
-dmVycy9wY2kvcGNpLmMKQEAgLTExOTAsMTEgKzExOTAsMjIgQEAgaW50IF9fd2VhayBwY2liaW9z
-X2VuYWJsZV9kZXZpY2Uoc3RydWN0IHBjaV9kZXYgKmRldiwgaW50IGJhcnMpCiAJcmV0dXJuIHBj
-aV9lbmFibGVfcmVzb3VyY2VzKGRldiwgYmFycyk7CiB9CiAKK3N0YXRpYyB2b2lkIGRvX3BjaV9l
-bmFibGVfaW50eChzdHJ1Y3QgcGNpX2RldiAqZGV2KQoreworCXU4IHBpbjsKKwlwY2lfcmVhZF9j
-b25maWdfYnl0ZShkZXYsIFBDSV9JTlRFUlJVUFRfUElOLCAmcGluKTsKKwlpZiAocGluKSB7CisJ
-CXBjaV9yZWFkX2NvbmZpZ193b3JkKGRldiwgUENJX0NPTU1BTkQsICZjbWQpOworCQlpZiAoY21k
-ICYgUENJX0NPTU1BTkRfSU5UWF9ESVNBQkxFKQorCQkJcGNpX3dyaXRlX2NvbmZpZ193b3JkKGRl
-diwgUENJX0NPTU1BTkQsCisJCQkJCSAgICAgIGNtZCAmIH5QQ0lfQ09NTUFORF9JTlRYX0RJU0FC
-TEUpOworCX0KK30KKwogc3RhdGljIGludCBkb19wY2lfZW5hYmxlX2RldmljZShzdHJ1Y3QgcGNp
-X2RldiAqZGV2LCBpbnQgYmFycykKIHsKIAlpbnQgZXJyOwogCXUxNiBjbWQ7Ci0JdTggcGluOwog
-CiAJZXJyID0gcGNpX3NldF9wb3dlcl9zdGF0ZShkZXYsIFBDSV9EMCk7CiAJaWYgKGVyciA8IDAg
-JiYgZXJyICE9IC1FSU8pCkBAIC0xMjA0LDE0ICsxMjE1LDYgQEAgc3RhdGljIGludCBkb19wY2lf
-ZW5hYmxlX2RldmljZShzdHJ1Y3QgcGNpX2RldiAqZGV2LCBpbnQgYmFycykKIAkJcmV0dXJuIGVy
-cjsKIAlwY2lfZml4dXBfZGV2aWNlKHBjaV9maXh1cF9lbmFibGUsIGRldik7CiAKLQlwY2lfcmVh
-ZF9jb25maWdfYnl0ZShkZXYsIFBDSV9JTlRFUlJVUFRfUElOLCAmcGluKTsKLQlpZiAocGluKSB7
-Ci0JCXBjaV9yZWFkX2NvbmZpZ193b3JkKGRldiwgUENJX0NPTU1BTkQsICZjbWQpOwotCQlpZiAo
-Y21kICYgUENJX0NPTU1BTkRfSU5UWF9ESVNBQkxFKQotCQkJcGNpX3dyaXRlX2NvbmZpZ193b3Jk
-KGRldiwgUENJX0NPTU1BTkQsCi0JCQkJCSAgICAgIGNtZCAmIH5QQ0lfQ09NTUFORF9JTlRYX0RJ
-U0FCTEUpOwotCX0KLQogCXJldHVybiAwOwogfQogCkBAIC0xMjg3LDYgKzEyOTAsOCBAQCBzdGF0
-aWMgaW50IHBjaV9lbmFibGVfZGV2aWNlX2ZsYWdzKHN0cnVjdCBwY2lfZGV2ICpkZXYsIHVuc2ln
-bmVkIGxvbmcgZmxhZ3MpCiAJZXJyID0gZG9fcGNpX2VuYWJsZV9kZXZpY2UoZGV2LCBiYXJzKTsK
-IAlpZiAoZXJyIDwgMCkKIAkJYXRvbWljX2RlYygmZGV2LT5lbmFibGVfY250KTsKKwllbHNlCisJ
-CWRvX3BjaV9lbmFibGVfaW50eChkZXYpOwogCXJldHVybiBlcnI7CiB9CiAK
---001a11c323bcac305404f4096af5--
+My testing and debugging were based off a 3.10 kernel (RHEL-7) but has included
+Seiji's tracepoint cleanups to arch/x86/kernel/head_64.S|head64.c.  Not much
+has changed upstream here.  Also 3.14-rc4 still has the same hang.
+
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ arch/x86/kernel/head_64.S |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
+index 77e6d3e..05306c8 100644
+--- a/arch/x86/kernel/head_64.S
++++ b/arch/x86/kernel/head_64.S
+@@ -368,6 +368,8 @@ ENTRY(early_idt_handler)
+ 	jz 20f			# All good
+ 
+ 10:
++	cmpl $2,72(%rsp)	# NMI?
++	jz 20f			# skip NMIs
+ 	leaq 88(%rsp),%rdi	# Pointer to %rip
+ 	call early_fixup_exception
+ 	andl %eax,%eax
+-- 
+1.7.1
+
