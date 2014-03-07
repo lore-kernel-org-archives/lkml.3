@@ -1,202 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219AbaCGPZu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 10:25:50 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:33540 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751065AbaCGPZs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 10:25:48 -0500
-Message-ID: <5319E4E9.5010207@ti.com>
-Date: Fri, 7 Mar 2014 20:55:29 +0530
-From: Balaji T K <balajitk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1753383AbaCGP0N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 10:26:13 -0500
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:34934 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753132AbaCGP0K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 10:26:10 -0500
+Date: Fri, 7 Mar 2014 10:26:06 -0500
+From: Tejun Heo <tj@kernel.org>
+To: laijs@cn.fujitsu.com
+Cc: linux-kernel@vger.kernel.org, Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        linux1394-devel@lists.sourceforge.net, Chris Boot <bootc@bootc.net>,
+        linux-scsi@vger.kernel.org, target-devel@vger.kernel.org
+Subject: [PATCH UPDATED 4/9] firewire: don't use PREPARE_DELAYED_WORK
+Message-ID: <20140307152606.GE30778@htj.dyndns.org>
+References: <1392929071-16555-1-git-send-email-tj@kernel.org>
+ <1392929071-16555-5-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@ingics.com>
-CC: Chris Ball <chris@printf.net>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>,
-        Florian Vaussard <florian.vaussard@epfl.ch>, Stefan Roese <sr@denx.de>,
-        <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>
-Subject: Re: [PATCH RFT] regulator: pbias: Convert to use regmap helper functions
-References: <1394111433.21007.2.camel@phoenix>
-In-Reply-To: <1394111433.21007.2.camel@phoenix>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392929071-16555-5-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 06 March 2014 06:40 PM, Axel Lin wrote:
-> This patch converts this driver to use the regmap helper functions provided by
-> regulator core.
->
-> This fixes a few issues in current implementation:
->
-> 1) In original code, the set voltage does not check max_uV,
->     which means if request max_uV < 1800000, it will still set the voltage
->     to 1800000.
->
+PREPARE_[DELAYED_]WORK() are being phased out.  They have few users
+and a nasty surprise in terms of reentrancy guarantee as workqueue
+considers work items to be different if they don't have the same work
+function.
 
-Hi Axel,
+firewire core-device and sbp2 have been been multiplexing work items
+with multiple work functions.  Introduce fw_device_workfn() and
+sbp2_lu_workfn() which invoke fw_device->workfn and
+sbp2_logical_unit->workfn respectively and always use the two
+functions as the work functions and update the users to set the
+->workfn fields instead of overriding work functions using
+PREPARE_DELAYED_WORK().
 
-May be I am not getting your logic here, why would max_uV be less than min_uV
+This fixes a variety of possible regressions since a2c1c57be8d9
+"workqueue: consider work function when searching for busy work items"
+due to which fw_workqueue lost its required non-reentrancy property.
 
-The intention was to set vmode to 0 for any voltage request lesser than 1.8V.
-With regmap conversion, set voltage of 0V will become invalid. However
-since pbias is not set to 0V anywhere, I think it shouldn't be an issue.
-Will test and confirm.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: linux1394-devel@lists.sourceforge.net
+Cc: stable@vger.kernel.org # v3.9+
+Cc: stable@vger.kernel.org # v3.8.2+
+Cc: stable@vger.kernel.org # v3.4.60+
+Cc: stable@vger.kernel.org # v3.2.40+
+---
+Applied to wq/for-3.14-fixes.
 
+Thanks.
 
-Thanks and Regards
-Balaji T K
+ drivers/firewire/core-device.c | 22 +++++++++++++++-------
+ drivers/firewire/sbp2.c        | 17 +++++++++++++----
+ include/linux/firewire.h       |  1 +
+ 3 files changed, 29 insertions(+), 11 deletions(-)
 
-> 2) The is_enable implementation is wrong in some cases:
->     e.g. for pbias_mmc_omap5: emable_mask is : BIT(27) | BIT(25) | BIT(26)
->     However, pbias_regulator_enable() only sets BIT(26) | BIT(22) bits.
->     So is_enable always return false in this case.
->
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> ---
-> Hi Balaji,
-> I don't have this h/w, so please test if it works.
-> Regards,
-> Axel
->   drivers/regulator/pbias-regulator.c | 86 ++++++++++---------------------------
->   1 file changed, 23 insertions(+), 63 deletions(-)
->
-> diff --git a/drivers/regulator/pbias-regulator.c b/drivers/regulator/pbias-regulator.c
-> index ded3b35..f25c91e 100644
-> --- a/drivers/regulator/pbias-regulator.c
-> +++ b/drivers/regulator/pbias-regulator.c
-> @@ -38,85 +38,41 @@ struct pbias_reg_info {
->   struct pbias_regulator_data {
->   	struct regulator_desc desc;
->   	void __iomem *pbias_addr;
-> -	unsigned int pbias_reg;
->   	struct regulator_dev *dev;
->   	struct regmap *syscon;
->   	const struct pbias_reg_info *info;
->   	int voltage;
->   };
->
-> -static int pbias_regulator_set_voltage(struct regulator_dev *dev,
-> -			int min_uV, int max_uV, unsigned *selector)
-> +static int pbias_regulator_list_voltage(struct regulator_dev *rdev,
-> +					unsigned int selector)
->   {
-> -	struct pbias_regulator_data *data = rdev_get_drvdata(dev);
-> -	const struct pbias_reg_info *info = data->info;
-> -	int ret, vmode;
-> -
-> -	if (min_uV <= 1800000)
-> -		vmode = 0;
-> -	else if (min_uV > 1800000)
-> -		vmode = info->vmode;
-> -
-> -	ret = regmap_update_bits(data->syscon, data->pbias_reg,
-> -						info->vmode, vmode);
-> -
-> -	return ret;
-> -}
-> -
-> -static int pbias_regulator_get_voltage(struct regulator_dev *rdev)
-> -{
-> -	struct pbias_regulator_data *data = rdev_get_drvdata(rdev);
-> -	const struct pbias_reg_info *info = data->info;
-> -	int value, voltage;
-> -
-> -	regmap_read(data->syscon, data->pbias_reg, &value);
-> -	value &= info->vmode;
-> -
-> -	voltage = value ? 3000000 : 1800000;
-> -
-> -	return voltage;
-> +	switch (selector) {
-> +	case 0:
-> +		return 1800000;
-> +	case 1:
-> +		return 3000000;
-> +	default:
-> +		return -EINVAL;
-> +	}
->   }
->
->   static int pbias_regulator_enable(struct regulator_dev *rdev)
->   {
->   	struct pbias_regulator_data *data = rdev_get_drvdata(rdev);
->   	const struct pbias_reg_info *info = data->info;
-> -	int ret;
-> -
-> -	ret = regmap_update_bits(data->syscon, data->pbias_reg,
-> -					info->enable_mask, info->enable);
-> -
-> -	return ret;
-> -}
-> -
-> -static int pbias_regulator_disable(struct regulator_dev *rdev)
-> -{
-> -	struct pbias_regulator_data *data = rdev_get_drvdata(rdev);
-> -	const struct pbias_reg_info *info = data->info;
-> -	int ret;
-> -
-> -	ret = regmap_update_bits(data->syscon, data->pbias_reg,
-> -						info->enable_mask, 0);
-> -	return ret;
-> -}
-> -
-> -static int pbias_regulator_is_enable(struct regulator_dev *rdev)
-> -{
-> -	struct pbias_regulator_data *data = rdev_get_drvdata(rdev);
-> -	const struct pbias_reg_info *info = data->info;
-> -	int value;
-> -
-> -	regmap_read(data->syscon, data->pbias_reg, &value);
->
-> -	return (value & info->enable_mask) == info->enable_mask;
-> +	return regmap_update_bits(data->syscon, rdev->desc->enable_reg,
-> +				  info->enable_mask, info->enable);
->   }
->
->   static struct regulator_ops pbias_regulator_voltage_ops = {
-> -	.set_voltage	= pbias_regulator_set_voltage,
-> -	.get_voltage	= pbias_regulator_get_voltage,
-> -	.enable		= pbias_regulator_enable,
-> -	.disable	= pbias_regulator_disable,
-> -	.is_enabled	= pbias_regulator_is_enable,
-> +	.list_voltage = pbias_regulator_list_voltage,
-> +	.get_voltage_sel = regulator_get_voltage_sel_regmap,
-> +	.set_voltage_sel = regulator_set_voltage_sel_regmap,
-> +	.enable = pbias_regulator_enable,
-> +	.disable = regulator_disable_regmap,
-> +	.is_enabled = regulator_is_enabled_regmap,
->   };
->
->   static const struct pbias_reg_info pbias_mmc_omap2430 = {
-> @@ -192,6 +148,7 @@ static int pbias_regulator_probe(struct platform_device *pdev)
->   	if (IS_ERR(syscon))
->   		return PTR_ERR(syscon);
->
-> +	cfg.regmap = syscon;
->   	cfg.dev = &pdev->dev;
->
->   	for (idx = 0; idx < PBIAS_NUM_REGS && data_idx < count; idx++) {
-> @@ -207,7 +164,6 @@ static int pbias_regulator_probe(struct platform_device *pdev)
->   		if (!res)
->   			return -EINVAL;
->
-> -		drvdata[data_idx].pbias_reg = res->start;
->   		drvdata[data_idx].syscon = syscon;
->   		drvdata[data_idx].info = info;
->   		drvdata[data_idx].desc.name = info->name;
-> @@ -216,6 +172,10 @@ static int pbias_regulator_probe(struct platform_device *pdev)
->   		drvdata[data_idx].desc.ops = &pbias_regulator_voltage_ops;
->   		drvdata[data_idx].desc.n_voltages = 2;
->   		drvdata[data_idx].desc.enable_time = info->enable_time;
-> +		drvdata[data_idx].desc.vsel_reg = res->start;
-> +		drvdata[data_idx].desc.vsel_mask = info->vmode;
-> +		drvdata[data_idx].desc.enable_reg = res->start;
-> +		drvdata[data_idx].desc.enable_mask = info->enable_mask;
->
->   		cfg.init_data = pbias_matches[idx].init_data;
->   		cfg.driver_data = &drvdata[data_idx];
->
+diff --git a/drivers/firewire/core-device.c b/drivers/firewire/core-device.c
+index de4aa40..2c6d5e1 100644
+--- a/drivers/firewire/core-device.c
++++ b/drivers/firewire/core-device.c
+@@ -916,7 +916,7 @@ static int lookup_existing_device(struct device *dev, void *data)
+ 		old->config_rom_retries = 0;
+ 		fw_notice(card, "rediscovered device %s\n", dev_name(dev));
+ 
+-		PREPARE_DELAYED_WORK(&old->work, fw_device_update);
++		old->workfn = fw_device_update;
+ 		fw_schedule_device_work(old, 0);
+ 
+ 		if (current_node == card->root_node)
+@@ -1075,7 +1075,7 @@ static void fw_device_init(struct work_struct *work)
+ 	if (atomic_cmpxchg(&device->state,
+ 			   FW_DEVICE_INITIALIZING,
+ 			   FW_DEVICE_RUNNING) == FW_DEVICE_GONE) {
+-		PREPARE_DELAYED_WORK(&device->work, fw_device_shutdown);
++		device->workfn = fw_device_shutdown;
+ 		fw_schedule_device_work(device, SHUTDOWN_DELAY);
+ 	} else {
+ 		fw_notice(card, "created device %s: GUID %08x%08x, S%d00\n",
+@@ -1196,13 +1196,20 @@ static void fw_device_refresh(struct work_struct *work)
+ 		  dev_name(&device->device), fw_rcode_string(ret));
+  gone:
+ 	atomic_set(&device->state, FW_DEVICE_GONE);
+-	PREPARE_DELAYED_WORK(&device->work, fw_device_shutdown);
++	device->workfn = fw_device_shutdown;
+ 	fw_schedule_device_work(device, SHUTDOWN_DELAY);
+  out:
+ 	if (node_id == card->root_node->node_id)
+ 		fw_schedule_bm_work(card, 0);
+ }
+ 
++static void fw_device_workfn(struct work_struct *work)
++{
++	struct fw_device *device = container_of(to_delayed_work(work),
++						struct fw_device, work);
++	device->workfn(work);
++}
++
+ void fw_node_event(struct fw_card *card, struct fw_node *node, int event)
+ {
+ 	struct fw_device *device;
+@@ -1252,7 +1259,8 @@ void fw_node_event(struct fw_card *card, struct fw_node *node, int event)
+ 		 * power-up after getting plugged in.  We schedule the
+ 		 * first config rom scan half a second after bus reset.
+ 		 */
+-		INIT_DELAYED_WORK(&device->work, fw_device_init);
++		device->workfn = fw_device_init;
++		INIT_DELAYED_WORK(&device->work, fw_device_workfn);
+ 		fw_schedule_device_work(device, INITIAL_DELAY);
+ 		break;
+ 
+@@ -1268,7 +1276,7 @@ void fw_node_event(struct fw_card *card, struct fw_node *node, int event)
+ 		if (atomic_cmpxchg(&device->state,
+ 			    FW_DEVICE_RUNNING,
+ 			    FW_DEVICE_INITIALIZING) == FW_DEVICE_RUNNING) {
+-			PREPARE_DELAYED_WORK(&device->work, fw_device_refresh);
++			device->workfn = fw_device_refresh;
+ 			fw_schedule_device_work(device,
+ 				device->is_local ? 0 : INITIAL_DELAY);
+ 		}
+@@ -1283,7 +1291,7 @@ void fw_node_event(struct fw_card *card, struct fw_node *node, int event)
+ 		smp_wmb();  /* update node_id before generation */
+ 		device->generation = card->generation;
+ 		if (atomic_read(&device->state) == FW_DEVICE_RUNNING) {
+-			PREPARE_DELAYED_WORK(&device->work, fw_device_update);
++			device->workfn = fw_device_update;
+ 			fw_schedule_device_work(device, 0);
+ 		}
+ 		break;
+@@ -1308,7 +1316,7 @@ void fw_node_event(struct fw_card *card, struct fw_node *node, int event)
+ 		device = node->data;
+ 		if (atomic_xchg(&device->state,
+ 				FW_DEVICE_GONE) == FW_DEVICE_RUNNING) {
+-			PREPARE_DELAYED_WORK(&device->work, fw_device_shutdown);
++			device->workfn = fw_device_shutdown;
+ 			fw_schedule_device_work(device,
+ 				list_empty(&card->link) ? 0 : SHUTDOWN_DELAY);
+ 		}
+diff --git a/drivers/firewire/sbp2.c b/drivers/firewire/sbp2.c
+index 281029d..7aef911 100644
+--- a/drivers/firewire/sbp2.c
++++ b/drivers/firewire/sbp2.c
+@@ -146,6 +146,7 @@ struct sbp2_logical_unit {
+ 	 */
+ 	int generation;
+ 	int retries;
++	work_func_t workfn;
+ 	struct delayed_work work;
+ 	bool has_sdev;
+ 	bool blocked;
+@@ -864,7 +865,7 @@ static void sbp2_login(struct work_struct *work)
+ 	/* set appropriate retry limit(s) in BUSY_TIMEOUT register */
+ 	sbp2_set_busy_timeout(lu);
+ 
+-	PREPARE_DELAYED_WORK(&lu->work, sbp2_reconnect);
++	lu->workfn = sbp2_reconnect;
+ 	sbp2_agent_reset(lu);
+ 
+ 	/* This was a re-login. */
+@@ -918,7 +919,7 @@ static void sbp2_login(struct work_struct *work)
+ 	 * If a bus reset happened, sbp2_update will have requeued
+ 	 * lu->work already.  Reset the work from reconnect to login.
+ 	 */
+-	PREPARE_DELAYED_WORK(&lu->work, sbp2_login);
++	lu->workfn = sbp2_login;
+ }
+ 
+ static void sbp2_reconnect(struct work_struct *work)
+@@ -952,7 +953,7 @@ static void sbp2_reconnect(struct work_struct *work)
+ 		    lu->retries++ >= 5) {
+ 			dev_err(tgt_dev(tgt), "failed to reconnect\n");
+ 			lu->retries = 0;
+-			PREPARE_DELAYED_WORK(&lu->work, sbp2_login);
++			lu->workfn = sbp2_login;
+ 		}
+ 		sbp2_queue_work(lu, DIV_ROUND_UP(HZ, 5));
+ 
+@@ -972,6 +973,13 @@ static void sbp2_reconnect(struct work_struct *work)
+ 	sbp2_conditionally_unblock(lu);
+ }
+ 
++static void sbp2_lu_workfn(struct work_struct *work)
++{
++	struct sbp2_logical_unit *lu = container_of(to_delayed_work(work),
++						struct sbp2_logical_unit, work);
++	lu->workfn(work);
++}
++
+ static int sbp2_add_logical_unit(struct sbp2_target *tgt, int lun_entry)
+ {
+ 	struct sbp2_logical_unit *lu;
+@@ -998,7 +1006,8 @@ static int sbp2_add_logical_unit(struct sbp2_target *tgt, int lun_entry)
+ 	lu->blocked  = false;
+ 	++tgt->dont_block;
+ 	INIT_LIST_HEAD(&lu->orb_list);
+-	INIT_DELAYED_WORK(&lu->work, sbp2_login);
++	lu->workfn = sbp2_login;
++	INIT_DELAYED_WORK(&lu->work, sbp2_lu_workfn);
+ 
+ 	list_add_tail(&lu->link, &tgt->lu_list);
+ 	return 0;
+diff --git a/include/linux/firewire.h b/include/linux/firewire.h
+index 5d7782e..c3683bd 100644
+--- a/include/linux/firewire.h
++++ b/include/linux/firewire.h
+@@ -200,6 +200,7 @@ struct fw_device {
+ 	unsigned irmc:1;
+ 	unsigned bc_implemented:2;
+ 
++	work_func_t workfn;
+ 	struct delayed_work work;
+ 	struct fw_attribute_group attribute_group;
+ };
+-- 
+1.8.5.3
 
