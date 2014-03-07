@@ -1,59 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751988AbaCGF4Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 00:56:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17897 "EHLO mx1.redhat.com"
+	id S1752113AbaCGF5m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 00:57:42 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:38813 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750833AbaCGF4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 00:56:23 -0500
-Date: Fri, 7 Mar 2014 13:56:36 +0800
-From: Fam Zheng <famz@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH] virtio-scsi: Change sense buffer size to 252
-Message-ID: <20140307055636.GA2514@T430.nay.redhat.com>
-References: <1394095660-15075-1-git-send-email-famz@redhat.com>
- <53184962.3080100@redhat.com>
+	id S1751040AbaCGF5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 00:57:39 -0500
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>
+CC: <rogerq@ti.com>, <kishon@ti.com>, <balbi@ti.com>
+Subject: [PATCH v3] phy: ti-pipe3: cleanup clock handling
+Date: Fri, 7 Mar 2014 11:27:09 +0530
+Message-ID: <1394171829-13577-1-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53184962.3080100@redhat.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 03/06 11:09, Paolo Bonzini wrote:
-> Il 06/03/2014 09:47, Fam Zheng ha scritto:
-> >According to SPC-4, section 4.5.2.1, 252 is the limit of sense data. So
-> >increase the value.
-> >
-> >Signed-off-by: Fam Zheng <famz@redhat.com>
-> >---
-> > include/linux/virtio_scsi.h | 2 +-
-> > 1 file changed, 1 insertion(+), 1 deletion(-)
-> >
-> >diff --git a/include/linux/virtio_scsi.h b/include/linux/virtio_scsi.h
-> >index 4195b97..a437f7f 100644
-> >--- a/include/linux/virtio_scsi.h
-> >+++ b/include/linux/virtio_scsi.h
-> >@@ -28,7 +28,7 @@
-> > #define _LINUX_VIRTIO_SCSI_H
-> >
-> > #define VIRTIO_SCSI_CDB_SIZE   32
-> >-#define VIRTIO_SCSI_SENSE_SIZE 96
-> >+#define VIRTIO_SCSI_SENSE_SIZE 252
-> >
-> > /* SCSI command request, followed by data-out */
-> > struct virtio_scsi_cmd_req {
-> >
-> 
-> Hi Fam, how did you test this?
-> 
+From: Roger Quadros <rogerq@ti.com>
 
-I only tested the basic functionality of virtio-scsi. I'm doing more testing on
-this and your fix on QEMU side now.
+As this driver is no longer USB specific, use generic clock names.
+- Fix PLL_SD_SHIFT from 9 to 10
+- Don't separate prepare/unprepare clock from enable/disable. This
+  ensures optimal power savings.
 
-Thanks,
-Fam
+Signed-off-by: Roger Quadros <rogerq@ti.com> 
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+Changes from v2:
+* Kept only the drivers/phy part in this patch
+
+ drivers/phy/phy-ti-pipe3.c |   55 ++++++++++++++++++++++----------------------
+ 1 file changed, 28 insertions(+), 27 deletions(-)
+
+diff --git a/drivers/phy/phy-ti-pipe3.c b/drivers/phy/phy-ti-pipe3.c
+index fd029b1..211703c 100644
+--- a/drivers/phy/phy-ti-pipe3.c
++++ b/drivers/phy/phy-ti-pipe3.c
+@@ -45,7 +45,7 @@
+ #define	PLL_SELFREQDCO_MASK	0x0000000E
+ #define	PLL_SELFREQDCO_SHIFT	0x1
+ #define	PLL_SD_MASK		0x0003FC00
+-#define	PLL_SD_SHIFT		0x9
++#define	PLL_SD_SHIFT		10
+ #define	SET_PLL_GO		0x1
+ #define	PLL_TICOPWDN		0x10000
+ #define	PLL_LOCK		0x2
+@@ -72,7 +72,7 @@ struct ti_pipe3 {
+ 	struct device		*control_dev;
+ 	struct clk		*wkupclk;
+ 	struct clk		*sys_clk;
+-	struct clk		*optclk;
++	struct clk		*refclk;
+ };
+ 
+ struct pipe3_dpll_map {
+@@ -270,23 +270,21 @@ static int ti_pipe3_probe(struct platform_device *pdev)
+ 
+ 	phy->dev		= &pdev->dev;
+ 
+-	phy->wkupclk = devm_clk_get(phy->dev, "usb_phy_cm_clk32k");
++	phy->wkupclk = devm_clk_get(phy->dev, "wkupclk");
+ 	if (IS_ERR(phy->wkupclk)) {
+-		dev_err(&pdev->dev, "unable to get usb_phy_cm_clk32k\n");
++		dev_err(&pdev->dev, "unable to get wkupclk\n");
+ 		return PTR_ERR(phy->wkupclk);
+ 	}
+-	clk_prepare(phy->wkupclk);
+ 
+-	phy->optclk = devm_clk_get(phy->dev, "usb_otg_ss_refclk960m");
+-	if (IS_ERR(phy->optclk)) {
+-		dev_err(&pdev->dev, "unable to get usb_otg_ss_refclk960m\n");
+-		return PTR_ERR(phy->optclk);
++	phy->refclk = devm_clk_get(phy->dev, "refclk");
++	if (IS_ERR(phy->refclk)) {
++		dev_err(&pdev->dev, "unable to get refclk\n");
++		return PTR_ERR(phy->refclk);
+ 	}
+-	clk_prepare(phy->optclk);
+ 
+-	phy->sys_clk = devm_clk_get(phy->dev, "sys_clkin");
++	phy->sys_clk = devm_clk_get(phy->dev, "sysclk");
+ 	if (IS_ERR(phy->sys_clk)) {
+-		pr_err("%s: unable to get sys_clkin\n", __func__);
++		dev_err(&pdev->dev, "unable to get sysclk\n");
+ 		return -EINVAL;
+ 	}
+ 
+@@ -326,10 +324,6 @@ static int ti_pipe3_probe(struct platform_device *pdev)
+ 
+ static int ti_pipe3_remove(struct platform_device *pdev)
+ {
+-	struct ti_pipe3 *phy = platform_get_drvdata(pdev);
+-
+-	clk_unprepare(phy->wkupclk);
+-	clk_unprepare(phy->optclk);
+ 	if (!pm_runtime_suspended(&pdev->dev))
+ 		pm_runtime_put(&pdev->dev);
+ 	pm_runtime_disable(&pdev->dev);
+@@ -343,8 +337,10 @@ static int ti_pipe3_runtime_suspend(struct device *dev)
+ {
+ 	struct ti_pipe3	*phy = dev_get_drvdata(dev);
+ 
+-	clk_disable(phy->wkupclk);
+-	clk_disable(phy->optclk);
++	if (!IS_ERR(phy->wkupclk))
++		clk_disable_unprepare(phy->wkupclk);
++	if (!IS_ERR(phy->refclk))
++		clk_disable_unprepare(phy->refclk);
+ 
+ 	return 0;
+ }
+@@ -354,22 +350,27 @@ static int ti_pipe3_runtime_resume(struct device *dev)
+ 	u32 ret = 0;
+ 	struct ti_pipe3	*phy = dev_get_drvdata(dev);
+ 
+-	ret = clk_enable(phy->optclk);
+-	if (ret) {
+-		dev_err(phy->dev, "Failed to enable optclk %d\n", ret);
+-		goto err1;
++	if (!IS_ERR(phy->refclk)) {
++		ret = clk_prepare_enable(phy->refclk);
++		if (ret) {
++			dev_err(phy->dev, "Failed to enable refclk %d\n", ret);
++			goto err1;
++		}
+ 	}
+ 
+-	ret = clk_enable(phy->wkupclk);
+-	if (ret) {
+-		dev_err(phy->dev, "Failed to enable wkupclk %d\n", ret);
+-		goto err2;
++	if (!IS_ERR(phy->wkupclk)) {
++		ret = clk_prepare_enable(phy->wkupclk);
++		if (ret) {
++			dev_err(phy->dev, "Failed to enable wkupclk %d\n", ret);
++			goto err2;
++		}
+ 	}
+ 
+ 	return 0;
+ 
+ err2:
+-	clk_disable(phy->optclk);
++	if (!IS_ERR(phy->refclk))
++		clk_disable_unprepare(phy->refclk);
+ 
+ err1:
+ 	return ret;
+-- 
+1.7.9.5
+
