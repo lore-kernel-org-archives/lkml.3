@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751827AbaCGK4R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 05:56:17 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:40012 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751011AbaCGK4P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 05:56:15 -0500
-X-IronPort-AV: E=Sophos;i="4.97,607,1389715200"; 
-   d="scan'208";a="9660344"
-Message-ID: <5319A3C2.8080001@cn.fujitsu.com>
-Date: Fri, 07 Mar 2014 18:47:30 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
+	id S1752397AbaCGK4d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 05:56:33 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:35610 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751935AbaCGK4a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 05:56:30 -0500
+From: Vegard Nossum <vegard.nossum@oracle.com>
 To: "David S. Miller" <davem@davemloft.net>
-CC: netdev@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] netlink: switch net_ns only if net is not init_net
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/07 18:53:36,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/07 18:53:36,
-	Serialize complete at 2014/03/07 18:53:36
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: linux-kernel@vger.kernel.org, Vegard Nossum <vegard.nossum@oracle.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>, stable@vger.kernel.org
+Subject: [PATCH] isdnloop: NUL-terminate strings from userspace
+Date: Fri,  7 Mar 2014 11:56:04 +0100
+Message-Id: <1394189764-21754-1-git-send-email-vegard.nossum@oracle.com>
+X-Mailer: git-send-email 1.7.10.4
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many netlink users create netlink sock in the init_net, and the
-switching nes_ns(init_net-->net) is needless in this case. So here
-we add a pre-check to avoid this.
+Both the in-kernel and BSD strlcpy() require that the source string is
+NUL terminated. We could use strncpy() + explicitly terminate the result,
+but this relies on src and dest having the same size, so the safest thing
+to do seems to explicitly terminate the source string before doing the
+strlcpy().
 
-Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Fixes: f9a23c84486ed35 ("isdnloop: use strlcpy() instead of strcpy()")
+Cc: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: stable@vger.kernel.org
+Signed-off-by: Vegard Nossum <vegard.nossum@oracle.com>
 ---
- net/netlink/af_netlink.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ drivers/isdn/isdnloop/isdnloop.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
-index fdf5135..e9e4be9 100644
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -2429,7 +2429,8 @@ __netlink_kernel_create(struct net *net, int unit, struct module *module,
- 		goto out_sock_release_nosk;
- 
- 	sk = sock->sk;
--	sk_change_net(sk, net);
-+	if (!net_eq(net, &init_net))
-+		sk_change_net(sk, net);
- 
- 	if (!cfg || cfg->groups < 32)
- 		groups = 32;
+diff --git a/drivers/isdn/isdnloop/isdnloop.c b/drivers/isdn/isdnloop/isdnloop.c
+index 02125e6..50cd348 100644
+--- a/drivers/isdn/isdnloop/isdnloop.c
++++ b/drivers/isdn/isdnloop/isdnloop.c
+@@ -1070,6 +1070,14 @@ isdnloop_start(isdnloop_card *card, isdnloop_sdef *sdefp)
+ 		return -EBUSY;
+ 	if (copy_from_user((char *) &sdef, (char *) sdefp, sizeof(sdef)))
+ 		return -EFAULT;
++
++	/*
++	 * Null terminate strings from userspace so we don't have to worry
++	 * about this later on.
++	 */
++	for (i = 0; i < 3; i++)
++		sdef.num[i][sizeof(sdef.num[0]) - 1] = '\0';
++
+ 	spin_lock_irqsave(&card->isdnloop_lock, flags);
+ 	switch (sdef.ptype) {
+ 	case ISDN_PTYPE_EURO:
 -- 
-1.7.7
+1.7.10.4
 
