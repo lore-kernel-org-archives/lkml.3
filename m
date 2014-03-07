@@ -1,155 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751057AbaCGF25 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 00:28:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12504 "EHLO mx1.redhat.com"
+	id S1751590AbaCGF3r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 00:29:47 -0500
+Received: from mga09.intel.com ([134.134.136.24]:50798 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750905AbaCGF2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 00:28:55 -0500
-From: Jason Wang <jasowang@redhat.com>
-To: mst@redhat.com, kvm@vger.kernel.org, virtio-dev@lists.oasis-open.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Jason Wang <jasowang@redhat.com>, Qin Chuanyu <qinchuanyu@huawei.com>
-Subject: [PATCH net V2] vhost: net: switch to use data copy if pending DMAs exceed the limit
-Date: Fri,  7 Mar 2014 13:28:27 +0800
-Message-Id: <1394170107-12018-1-git-send-email-jasowang@redhat.com>
+	id S1751438AbaCGF3p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 00:29:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,605,1389772800"; 
+   d="scan'208";a="468199194"
+From: Jenny TC <jenny.tc@intel.com>
+To: linux-kernel@vger.kernel.org,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Jenny TC <jenny.tc@intel.com>, Kim Milo <Milo.Kim@ti.com>,
+        Lee Jones <lee.jones@linaro.org>, Jingoo Han <jg1.han@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
+        Rhyland Klein <rklein@nvidia.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sebastian Reichel <sre@ring0.de>, aaro.koskinen@iki.fi,
+        Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
+        freemangordon@abv.bg, linux-omap@vger.kernel.org
+Subject: [PATCHv8 0/4] power_supply: Introduce power supply charging driver
+Date: Fri,  7 Mar 2014 10:59:30 +0530
+Message-Id: <1394170174-21959-1-git-send-email-jenny.tc@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We used to stop the handling of tx when the number of pending DMAs
-exceeds VHOST_MAX_PEND. This is used to reduce the memory occupation
-of both host and guest. But it was too aggressive in some cases, since
-any delay or blocking of a single packet may delay or block the guest
-transmission. Consider the following setup:
+v1: introduced feature as a framework within power supply class driver with
+	separate files for battid framework and charging framework
+v2: fixed review comments, moved macros and inline functions to power_supply.h
+v3: moved the feature as a separate driver, combined battid framework and
+	charging framework inside the power supply charging driver. Moved
+	charger specific properties to power_supply_charger.h and plugged the
+	driver with power supply subsystem using power_supply_notifier
+	introduced in my previous patch. Also a sample charger chip driver
+	(bq24261) patch added to give more idea on the psy charging driver
+	usage
+v4: Fixed review comments, no major design changes.
+v5: Fixed makefile inconsistencies, removed unused pdata callbacks
+v6: Fixed nested loops, commenting style
+v7: added kerneldocs for structs and minor fixes
+v8: used msecs_to_jiffies instead of HZ directly, modified Kconfig help text
+    for POWER_SUPPLY_CHARGING_ALGO_PSE
 
-    +-----+        +-----+
-    | VM1 |        | VM2 |
-    +--+--+        +--+--+
-       |              |
-    +--+--+        +--+--+
-    | tap0|        | tap1|
-    +--+--+        +--+--+
-       |              |
-    pfifo_fast   htb(10Mbit/s)
-       |              |
-    +--+--------------+---+
-    |     bridge          |
-    +--+------------------+
-       |
-    pfifo_fast
-       |
-    +-----+
-    | eth0|(100Mbit/s)
-    +-----+
+The Power Supply charging driver connects multiple subsystems
+to do charging in a generic way. The subsystems involves power_supply,
+thermal and battery communication subsystems (1wire).With this the charging is
+handled in a generic way.
 
-- start two VMs and connect them to a bridge
-- add an physical card (100Mbit/s) to that bridge
-- setup htb on tap1 and limit its throughput to 10Mbit/s
-- run two netperfs in the same time, one is from VM1 to VM2. Another is
-  from VM1 to an external host through eth0.
-- result shows that not only the VM1 to VM2 traffic were throttled but
-  also the VM1 to external host through eth0 is also throttled somehow.
+The driver makes use of different new features - Battery Identification
+interfaces, pluggable charging algorithms, charger cable arbitrations etc.
+The patch also introduces generic interface for charger cable notifications.
+Charger cable events and capabilities can be notified using the generic
+power_supply_notifier chain.
 
-This is because the delay added by htb may lead the delay the finish
-of DMAs and cause the pending DMAs for tap0 exceeds the limit
-(VHOST_MAX_PEND). In this case vhost stop handling tx request until
-htb send some packets. The problem here is all of the packets
-transmission were blocked even if it does not go to VM2.
+Overall this driver removes the charging logic out of the charger chip driver
+and the charger chip driver can just listen to the request from the power
+supply charging driver to set the charger properties. This can be implemented
+by exposing get_property and set property callbacks.
 
-We can solve this issue by relaxing it a little bit: switching to use
-data copy instead of stopping tx when the number of pending DMAs
-exceed half of the vq size. This is safe because:
+Jenny TC (4):
+  power_supply: Add inlmt,iterm, min/max temp props
+  power_supply: Introduce generic psy charging driver
+  power_supply: Introduce PSE compliant algorithm
+  power_supply: bq24261 charger driver
 
-- The number of pending DMAs were still limited (half of the vq size)
-- The out of order completion during mode switch can make sure that
-  most of the tx buffers were freed in time in guest.
+ Documentation/power/power_supply_charger.txt |  353 +++++++
+ Documentation/power/power_supply_class.txt   |    6 +
+ drivers/power/Kconfig                        |   31 +
+ drivers/power/Makefile                       |    3 +
+ drivers/power/bq24261-charger.c              | 1350 ++++++++++++++++++++++++++
+ drivers/power/charging_algo_pse.c            |  204 ++++
+ drivers/power/power_supply_charger.c         | 1186 ++++++++++++++++++++++
+ drivers/power/power_supply_charger.h         |  218 +++++
+ drivers/power/power_supply_core.c            |    3 +
+ drivers/power/power_supply_sysfs.c           |    4 +
+ include/linux/power/bq24261-charger.h        |   25 +
+ include/linux/power/power_supply_charger.h   |  341 +++++++
+ include/linux/power_supply.h                 |  164 ++++
+ 13 files changed, 3888 insertions(+)
+ create mode 100644 Documentation/power/power_supply_charger.txt
+ create mode 100644 drivers/power/bq24261-charger.c
+ create mode 100644 drivers/power/charging_algo_pse.c
+ create mode 100644 drivers/power/power_supply_charger.c
+ create mode 100644 drivers/power/power_supply_charger.h
+ create mode 100644 include/linux/power/bq24261-charger.h
+ create mode 100644 include/linux/power/power_supply_charger.h
 
-So even if about 50% packets were delayed in zero-copy case, vhost
-could continue to do the transmission through data copy in this case.
-
-Test result:
-
-Before this patch:
-VM1 to VM2 throughput is 9.3Mbit/s
-VM1 to External throughput is 40Mbit/s
-CPU utilization is 7%
-
-After this patch:
-VM1 to VM2 throughput is 9.3Mbit/s
-Vm1 to External throughput is 93Mbit/s
-CPU utilization is 16%
-
-Completed performance test on 40gbe shows no obvious changes in both
-throughput and cpu utilization with this patch.
-
-The patch only solve this issue when unlimited sndbuf. We still need a
-solution for limited sndbuf.
-
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Cc: Qin Chuanyu <qinchuanyu@huawei.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
-Changes from V1:
-- Remove VHOST_MAX_PEND and switch to use half of the vq size as the limit
-- Add cpu utilization in commit log
----
- drivers/vhost/net.c | 19 +++++++------------
- 1 file changed, 7 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index a0fa5de..2925e9a 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -38,8 +38,6 @@ MODULE_PARM_DESC(experimental_zcopytx, "Enable Zero Copy TX;"
-  * Using this limit prevents one virtqueue from starving others. */
- #define VHOST_NET_WEIGHT 0x80000
- 
--/* MAX number of TX used buffers for outstanding zerocopy */
--#define VHOST_MAX_PEND 128
- #define VHOST_GOODCOPY_LEN 256
- 
- /*
-@@ -345,7 +343,7 @@ static void handle_tx(struct vhost_net *net)
- 		.msg_flags = MSG_DONTWAIT,
- 	};
- 	size_t len, total_len = 0;
--	int err;
-+	int err, num_pends;
- 	size_t hdr_size;
- 	struct socket *sock;
- 	struct vhost_net_ubuf_ref *uninitialized_var(ubufs);
-@@ -366,13 +364,6 @@ static void handle_tx(struct vhost_net *net)
- 		if (zcopy)
- 			vhost_zerocopy_signal_used(net, vq);
- 
--		/* If more outstanding DMAs, queue the work.
--		 * Handle upend_idx wrap around
--		 */
--		if (unlikely((nvq->upend_idx + vq->num - VHOST_MAX_PEND)
--			      % UIO_MAXIOV == nvq->done_idx))
--			break;
--
- 		head = vhost_get_vq_desc(&net->dev, vq, vq->iov,
- 					 ARRAY_SIZE(vq->iov),
- 					 &out, &in,
-@@ -405,9 +396,13 @@ static void handle_tx(struct vhost_net *net)
- 			break;
- 		}
- 
-+		num_pends = likely(nvq->upend_idx >= nvq->done_idx) ?
-+			    (nvq->upend_idx - nvq->done_idx) :
-+			    (nvq->upend_idx + UIO_MAXIOV -
-+			     nvq->done_idx);
-+
- 		zcopy_used = zcopy && len >= VHOST_GOODCOPY_LEN
--				   && (nvq->upend_idx + 1) % UIO_MAXIOV !=
--				      nvq->done_idx
-+				   && num_pends <= vq->num >> 1
- 				   && vhost_net_tx_select_zcopy(net);
- 
- 		/* use msg_control to pass vhost zerocopy ubuf info to skb */
 -- 
-1.8.3.2
+1.7.9.5
 
