@@ -1,108 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752866AbaCGRiq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 12:38:46 -0500
-Received: from p3plex2out01.prod.phx3.secureserver.net ([184.168.131.12]:43213
-	"EHLO p3plex2out01.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752558AbaCGRin convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 12:38:43 -0500
-From: Hartley Sweeten <HartleyS@visionengravers.com>
-To: Chase Southwood <chase.southwood@yahoo.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v2 5/5] Staging: comedi: addi-data: tidy up counter
- register map defines in hwdrv_apci1564.c
-Thread-Topic: [PATCH v2 5/5] Staging: comedi: addi-data: tidy up counter
- register map defines in hwdrv_apci1564.c
-Thread-Index: AQHPOeCV9DNjRc3B2UCeO8iaoS1qYZrV4oiw
-Date: Fri, 7 Mar 2014 17:38:41 +0000
-Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825DA712C@P3PWEX4MB008.ex4.secureserver.net>
-References: <1394090691-7850-1-git-send-email-chase.southwood@yahoo.com>
- <1394181476-17153-1-git-send-email-chase.southwood@yahoo.com>
-In-Reply-To: <1394181476-17153-1-git-send-email-chase.southwood@yahoo.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [184.183.19.121]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753053AbaCGRjO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 12:39:14 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:44052 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752930AbaCGRjN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 12:39:13 -0500
+Message-ID: <531A0436.3080201@ti.com>
+Date: Fri, 7 Mar 2014 23:09:02 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
+To: <balbi@ti.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH v6] phy: omap-usb2: move omap_usb.h from linux/usb/ to
+ linux/phy/
+References: <1393846695-14644-1-git-send-email-kishon@ti.com> <1394210888-1587-1-git-send-email-kishon@ti.com> <20140307165043.GC23885@saruman.home>
+In-Reply-To: <20140307165043.GC23885@saruman.home>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, March 07, 2014 1:38 AM, Chase Southwood wrote:
-> This patch fixes the register map defines for the counter registers such
-> that they are all the real offsets to each register, rather than a mix of
-> real offsets and adders to those offsets.
+On Friday 07 March 2014 10:20 PM, Felipe Balbi wrote:
+> On Fri, Mar 07, 2014 at 10:18:08PM +0530, Kishon Vijay Abraham I wrote:
+>> No functional change. Moved omap_usb.h from linux/usb/ to linux/phy/.
+>> Also removed the unused members of struct omap_usb (after phy-omap-pipe3
+>> started using it's own header file)
 >
-> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
-> ---
+> does this depend in any other patch ? I get the following when applying
+> *only* this patch on top of v3.14-rc5:
+
+yeah.. this is for linux-phy tree. I'll take this patch.
+
+Thanks
+Kishon
+
 >
-> 2: Simplified commit message, fixed indentation and whitespace damage.
-> I have test applied this patch, it should work now.
-> v2 also fixes several build breakages, and I have compile tested as well.
-> Everything should be fixed.
+> drivers/phy/phy-omap-usb2.c: In function ‘omap_usb2_suspend’:
+> drivers/phy/phy-omap-usb2.c:106:21: error: ‘struct omap_usb’ has no member named ‘is_suspended’
+>    if (suspend && !phy->is_suspended) {
+>                       ^
+> drivers/phy/phy-omap-usb2.c:109:6: error: ‘struct omap_usb’ has no member named ‘is_suspended’
+>     phy->is_suspended = 1;
+>        ^
+> drivers/phy/phy-omap-usb2.c:110:28: error: ‘struct omap_usb’ has no member named ‘is_suspended’
+>    } else if (!suspend && phy->is_suspended) {
+>                              ^
+> drivers/phy/phy-omap-usb2.c:117:6: error: ‘struct omap_usb’ has no member named ‘is_suspended’
+>     phy->is_suspended = 0;
+>        ^
+> drivers/phy/phy-omap-usb2.c: In function ‘omap_usb2_probe’:
+> drivers/phy/phy-omap-usb2.c:194:5: error: ‘struct omap_usb’ has no member named ‘is_suspended’
+>    phy->is_suspended = 1;
+>       ^
+> make[1]: *** [drivers/phy/phy-omap-usb2.o] Error 1
+> make: *** [drivers/phy/] Error 2
+> make: *** Waiting for unfinished jobs....
+>    CC [M]  drivers/usb/phy/phy-mxs-usb.o
+> drivers/usb/phy/phy-omap-usb3.c:22:32: fatal error: linux/usb/omap_usb.h: No such file or directory
+>   #include <linux/usb/omap_usb.h>
+>                                  ^
+> compilation terminated.
+> make[1]: *** [drivers/usb/phy/phy-omap-usb3.o] Error 1
+> make[1]: *** Waiting for unfinished jobs....
+> make: *** [drivers/usb/phy/] Error 2
+>
 
-Chase,
-
-Looks better, the patches apply now.
-
-The register map whitespace is still a bit of a mess. This is what it looks like
-after applying all 5 patches:
-
-/*
- * devpriv->i_IobaseAmcc Register Map
- */
-#define APCI1564_DI_REG						0x04
-#define APCI1564_DI_INT_MODE1_REG				0x08
-#define APCI1564_DI_INT_MODE2_REG				0x0c
-#define APCI1564_DI_INT_STATUS_REG				0x10
-#define APCI1564_DI_IRQ_REG					0x14
-#define APCI1564_DO_REG						0x18
-#define APCI1564_DO_INT_CTRL_REG				0x1c
-#define APCI1564_DO_INT_STATUS_REG				0x20
-#define APCI1564_DO_IRQ_REG					0x24
-#define APCI1564_WDOG_REG						0x28
-#define APCI1564_WDOG_RELOAD_REG				0x2c
-#define APCI1564_WDOG_TIMEBASE_REG				0x30
-#define APCI1564_WDOG_CTRL_REG					0x34
-#define APCI1564_WDOG_STATUS_REG				0x38
-#define APCI1564_WDOG_IRQ_REG					0x3c
-#define APCI1564_WDOG_WARN_TIMEVAL_REG			0x40
-#define APCI1564_WDOG_WARN_TIMEBASE_REG		0x44
-#define APCI1564_TIMER_REG						0x48
-#define APCI1564_TIMER_RELOAD_REG				0x4c
-#define APCI1564_TIMER_TIMEBASE_REG			0x50
-#define APCI1564_TIMER_CTRL_REG				0x54
-#define APCI1564_TIMER_STATUS_REG				0x58
-#define APCI1564_TIMER_IRQ_REG					0x5c
-#define APCI1564_TIMER_WARN_TIMEVAL_REG		0x60
-#define APCI1564_TIMER_WARN_TIMEBASE_REG		0x64
-
-/*
- * devpriv->iobase Register Map
- */
-#define APCI1564_TCW_REG(x)					(0x00 + ((x) * 0x20))
-#define APCI1564_TCW_RELOAD_REG(x)				(0x04 + ((x) * 0x20))
-#define APCI1564_TCW_TIMEBASE_REG(x)			(0x08 + ((x) * 0x20))
-#define APCI1564_TCW_CTRL_REG(x)				(0x0c + ((x) * 0x20))
-#define APCI1564_TCW_STATUS_REG(x)				(0x10 + ((x) * 0x20))
-#define APCI1564_TCW_IRQ_REG(x)				(0x14 + ((x) * 0x20))
-#define APCI1564_TCW_WARN_TIMEVAL_REG(x)		(0x18 + ((x) * 0x20))
-#define APCI1564_TCW_WARN_TIMEBASE_REG(x)		(0x1c + ((x) * 0x20))
-
-Check your tab settings in your editor. Normal tab spacing is 8 characters.
-It looks like all the defines align properly at column 49 which is one tab after
-the define on this line:
-
-#define APCI1564_TCW_WARN_TIMEBASE_REG(x)	(0x1c + ((x) * 0x20))
-
-Other than that the patches look good.
-
-Regards,
-Hartley
