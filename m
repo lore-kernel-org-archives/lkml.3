@@ -1,68 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752447AbaCGBHf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 20:07:35 -0500
-Received: from ozlabs.org ([203.10.76.45]:49017 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751359AbaCGBHd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 20:07:33 -0500
-Date: Fri, 7 Mar 2014 12:07:27 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the wireless-next tree with the
- net-next tree
-Message-Id: <20140307120727.a4436ad2afc4b834db6b0641@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__7_Mar_2014_12_07_27_+1100_cL0D6DlT5Ejy393+"
+	id S1752688AbaCGBKG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 20:10:06 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:41238 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751612AbaCGBKE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 20:10:04 -0500
+Date: Fri, 7 Mar 2014 01:09:50 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>, linux-pci <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        LKML <linux-kernel@vger.kernel.org>, Tanmay Inamdar <tinamdar@apm.com>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v6 1/3] Fix ioport_map() for !CONFIG_GENERIC_IOMAP
+	cases.
+Message-ID: <20140307010950.GE21483@n2100.arm.linux.org.uk>
+References: <1394020150-1875-1-git-send-email-Liviu.Dudau@arm.com> <1394020150-1875-2-git-send-email-Liviu.Dudau@arm.com> <20140305233135.GZ21483@n2100.arm.linux.org.uk> <201403070137.38621.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201403070137.38621.arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__7_Mar_2014_12_07_27_+1100_cL0D6DlT5Ejy393+
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Mar 07, 2014 at 01:37:38AM +0100, Arnd Bergmann wrote:
+> On Thursday 06 March 2014, Russell King - ARM Linux wrote:
+> > On Wed, Mar 05, 2014 at 11:49:08AM +0000, Liviu Dudau wrote:
+> > > The inline version of ioport_map() that gets used when !CONFIG_GENERIC_IOMAP
+> > > is wrong. It returns a mapped (i.e. virtual) address that can start from
+> > > zero and completely ignores the PCI_IOBASE and IO_SPACE_LIMIT that most
+> > > architectures that use !CONFIG_GENERIC_MAP define.
+> > 
+> > What value does PCI_IOBASE and IO_SPACE_LIMIT have on other architectures
+> > who make use of asm-generic/io.h ?
+> > 
+> > $ git grep asm-generic/io.h arch/
+> > arch/arc/include/asm/io.h:#include <asm-generic/io.h>
+> 
+> PCI support hasn't been upstreamed.
+> 
+> > arch/blackfin/include/asm/io.h:#include <asm-generic/io.h>
+> > arch/metag/include/asm/io.h:#include <asm-generic/io.h>
+> 
+> No PCI support
+> 
+> > arch/microblaze/include/asm/io.h:/* from asm-generic/io.h */
+> 
+> PCI_IOBASE=0, IO_SPACE_LIMIT=0xffffffff, so no change.
 
-Hi John,
+Seems to define _IO_BASE not PCI_IOBASE.
 
-Today's linux-next merge of the wireless-next tree got a conflict in
-drivers/net/wireless/ath/ath9k/recv.c between commit 67ddc87f162e ("Merge
-git://git.kernel.org/pub/scm/linux/kernel/git/davem/net") from the
-net-next tree and commit f3b6a488a670 ("Merge branch 'master' of
-git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless") from
-the wireless-next tree.
+> > arch/openrisc/include/asm/io.h:#include <asm-generic/io.h>
+> 
+> No PCI support
+> 
+> > arch/s390/include/asm/io.h:#include <asm-generic/io.h>
+> 
+> s390 supports PCI but no I/O space
+> 
+> > arch/score/include/asm/io.h:#include <asm-generic/io.h>
+> 
+> No PCI support
+> 
+> > arch/unicore32/include/asm/io.h:#include <asm-generic/io.h>
+> 
+> unicore32 is broken currently, the patch fixes it.
+> 
+> > arch/xtensa/include/asm/io.h:#include <asm-generic/io.h>
+> 
+> PCI_IOBASE=0, IO_SPACE_LIMIT=0xffffffff, so no change.
 
-I fixed it up (I used the version from the wireless-next tree) and can
-carry the fix as necessary (no action is required).
+Doesn't appear to define PCI_IOBASE.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Maybe there's other patches required for these?
 
---Signature=_Fri__7_Mar_2014_12_07_27_+1100_cL0D6DlT5Ejy393+
-Content-Type: application/pgp-signature
+> For most of these, I assume we actually want to remove support
+> for inb/outb as they don't support I/O space accesses. The other
+> ones look correct to me.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Right, so:
 
-iQIcBAEBCAAGBQJTGRvTAAoJEMDTa8Ir7ZwVzR0QAIwZyZ65Jtk+rdkYEqU7XURH
-VA8SDW9SE5GfZKFFaZQ1mcU6ii2R1GsbNLbeBp9FYwcKdy9zOLsCR1n7rhLNKPqV
-e5ZfU7WyyRJrYaSRJ0dQBba3GQnWe7pLcUTFkQ3KEj9zMOPUGQLijkWoZxDRHEir
-Xxuzr3ZJF78McmxD76+IpdOwq9nf8+cm01Jh2BxXL0YGBzRaeWNeZXSRWHtnnlgi
-DwLFNr7W/h0zX2MMP4riymK2Kx0VniV9CUPZQsC9wIV2InhAlqRImdK9eSQHsqGD
-bwL6Sqz3lveCq9EaoWl97ks25E9N3bZ21LSqs0hGC3uIFdrZdW4EgHhSib3Gr7B+
-344aGjqWSaXC3u/QxGuTwv3nsw05P75M1UJvVu2l06W3cHEhWdB2g1387NVBZ45v
-gvztO/gfVAuxiOL82OnRg0hB3xDrZ6e9WzACFX6KjNPkinZvxwYVboBGkOnvim58
-zNdClG0MZKyibP4dCGTbYvMTWbGYqTX+8Su9hElbzRpQwBq1J1d+o5Zu7d+nKtav
-dEpRCP3nmx31icR0Vkto72kUMm1pW6lUqye//Ue0cTlcGW9hGRMPrWcW7HZjGE3e
-auPTeTF/Jt4D++i7CfYWi19deoJXOAswnpL/bNWk8zwkjps0/Rtv+Jp5c2eEtbe2
-S1saqFOPinxLabxeM4Cs
-=QyYm
------END PGP SIGNATURE-----
+#ifdef CONFIG_HAS_IOPORT
+#ifndef CONFIG_GENERIC_IOMAP
+static inline void __iomem *ioport_map(unsigned long port, unsigned int nr)
+{
+        return (void __iomem *) port;
+}
 
---Signature=_Fri__7_Mar_2014_12_07_27_+1100_cL0D6DlT5Ejy393+--
+changing that to include PCI_IOBASE in there will result in a build
+failure if the C compiler sees that.  In other words, when HAS_IOPORT=y
+and GENERIC_IOMAP=n.
+
+HAS_IOPORT is set when HAS_IOMEM is also set and NO_IOPORT unset.
+
+It looks to me like blackfin doesn't set NO_IOPORT nor NO_IOMEM, so
+this would have HAS_IOPORT set, and from what I can see doesn't set
+GENERIC_IOMAP.  So, this change probably breaks blackfin.
+
+I haven't looked deeply at the others.
+
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
