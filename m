@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338AbaCGElI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 23:41:08 -0500
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:58118
-	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
+	id S1752023AbaCGElF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 23:41:05 -0500
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:53603
+	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751650AbaCGEkS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 23:40:18 -0500
+	id S1751610AbaCGEkT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 23:40:19 -0500
 x-originating-ip: 72.167.245.219
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
         jasowang@redhat.com
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH V2 4/6] Drivers: net: hyperv: Enable receive side IP checksum offload
-Date: Thu,  6 Mar 2014 21:32:39 -0800
-Message-Id: <1394170361-1043-4-git-send-email-kys@microsoft.com>
+Subject: [PATCH V2 5/6] Drivers: net: hyperv: Enable send side checksum offload
+Date: Thu,  6 Mar 2014 21:32:40 -0800
+Message-Id: <1394170361-1043-5-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1394170361-1043-1-git-send-email-kys@microsoft.com>
 References: <1394170320-1002-1-git-send-email-kys@microsoft.com>
@@ -24,143 +24,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable receive side checksum offload.
+Enable send side checksum offload.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/net/hyperv/hyperv_net.h   |   33 ++++++++++++++++++++++++++++++++-
- drivers/net/hyperv/netvsc_drv.c   |   19 +++++++++++++++----
- drivers/net/hyperv/rndis_filter.c |    4 +++-
- 3 files changed, 50 insertions(+), 6 deletions(-)
+ drivers/net/hyperv/hyperv_net.h |   10 ++++++
+ drivers/net/hyperv/netvsc_drv.c |   69 +++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 77 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/net/hyperv/hyperv_net.h b/drivers/net/hyperv/hyperv_net.h
-index 8bc4e76..faeb746 100644
+index faeb746..4cf2382 100644
 --- a/drivers/net/hyperv/hyperv_net.h
 +++ b/drivers/net/hyperv/hyperv_net.h
-@@ -30,6 +30,7 @@
+@@ -1035,6 +1035,16 @@ struct rndis_message {
+ #define NDIS_PACKET_TYPE_FUNCTIONAL	0x00000400
+ #define NDIS_PACKET_TYPE_MAC_FRAME	0x00000800
  
- /* Fwd declaration */
- struct hv_netvsc_packet;
-+struct ndis_tcp_ip_checksum_info;
- 
- /* Represent the xfer page packet which contains 1 or more netvsc packet */
- struct xferpage_packet {
-@@ -117,7 +118,8 @@ int netvsc_send(struct hv_device *device,
- void netvsc_linkstatus_callback(struct hv_device *device_obj,
- 				unsigned int status);
- int netvsc_recv_callback(struct hv_device *device_obj,
--			struct hv_netvsc_packet *packet);
-+			struct hv_netvsc_packet *packet,
-+			struct ndis_tcp_ip_checksum_info *csum_info);
- int rndis_filter_open(struct hv_device *dev);
- int rndis_filter_close(struct hv_device *dev);
- int rndis_filter_device_add(struct hv_device *dev,
-@@ -776,9 +778,38 @@ struct ndis_offload_params {
- 	};
- };
- 
-+struct ndis_tcp_ip_checksum_info {
-+	union {
-+		struct {
-+			u32 is_ipv4:1;
-+			u32 is_ipv6:1;
-+			u32 tcp_checksum:1;
-+			u32 udp_checksum:1;
-+			u32 ip_header_checksum:1;
-+			u32 reserved:11;
-+			u32 tcp_header_offset:10;
-+		} transmit;
-+		struct {
-+			u32 tcp_checksum_failed:1;
-+			u32 udp_checksum_failed:1;
-+			u32 ip_checksum_failed:1;
-+			u32 tcp_checksum_succeeded:1;
-+			u32 udp_checksum_succeeded:1;
-+			u32 ip_checksum_succeeded:1;
-+			u32 loopback:1;
-+			u32 tcp_checksum_value_invalid:1;
-+			u32 ip_checksum_value_invalid:1;
-+		} receive;
-+		u32  value;
-+	};
-+};
++#define INFO_IPV4       2
++#define INFO_IPV6       4
++#define INFO_TCP        2
++#define INFO_UDP        4
 +
- #define NDIS_VLAN_PPI_SIZE (sizeof(struct rndis_per_packet_info) + \
- 		sizeof(struct ndis_pkt_8021q_info))
++#define TRANSPORT_INFO_NOT_IP   0
++#define TRANSPORT_INFO_IPV4_TCP ((INFO_IPV4 << 16) | INFO_TCP)
++#define TRANSPORT_INFO_IPV4_UDP ((INFO_IPV4 << 16) | INFO_UDP)
++#define TRANSPORT_INFO_IPV6_TCP ((INFO_IPV6 << 16) | INFO_TCP)
++#define TRANSPORT_INFO_IPV6_UDP ((INFO_IPV6 << 16) | INFO_UDP)
  
-+#define NDIS_CSUM_PPI_SIZE (sizeof(struct rndis_per_packet_info) + \
-+		sizeof(struct ndis_tcp_ip_checksum_info))
-+
- /* Format of Information buffer passed in a SetRequest for the OID */
- /* OID_GEN_RNDIS_CONFIG_PARAMETER. */
- struct rndis_config_parameter_info {
+ 
+ #endif /* _HYPERV_NET_H */
 diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-index 5769f65..467bb3c 100644
+index 467bb3c..affee1b 100644
 --- a/drivers/net/hyperv/netvsc_drv.c
 +++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -391,7 +391,8 @@ void netvsc_linkstatus_callback(struct hv_device *device_obj,
-  * "wire" on the specified device.
-  */
- int netvsc_recv_callback(struct hv_device *device_obj,
--				struct hv_netvsc_packet *packet)
-+				struct hv_netvsc_packet *packet,
-+				struct ndis_tcp_ip_checksum_info *csum_info)
- {
- 	struct net_device *net;
- 	struct sk_buff *skb;
-@@ -418,7 +419,17 @@ int netvsc_recv_callback(struct hv_device *device_obj,
- 		packet->total_data_buflen);
+@@ -257,6 +257,35 @@ static int netvsc_get_slots(struct sk_buff *skb)
+ 	return slots + frag_slots;
+ }
  
- 	skb->protocol = eth_type_trans(skb, net);
--	skb->ip_summed = CHECKSUM_NONE;
-+	if (csum_info) {
-+		/* We only look at the IP checksum here.
-+		 * Should we be dropping the packet if checksum
-+		 * failed? How do we deal with other checksums - TCP/UDP?
-+		 */
-+		if (csum_info->receive.ip_checksum_succeeded)
-+			skb->ip_summed = CHECKSUM_UNNECESSARY;
-+		else
-+			skb->ip_summed = CHECKSUM_NONE;
++static u32 get_net_transport_info(struct sk_buff *skb, u32 *trans_off)
++{
++	u32 ret_val = TRANSPORT_INFO_NOT_IP;
++
++	if ((eth_hdr(skb)->h_proto != htons(ETH_P_IP)) &&
++		(eth_hdr(skb)->h_proto != htons(ETH_P_IPV6))) {
++		goto not_ip;
 +	}
 +
- 	if (packet->vlan_tci & VLAN_TAG_PRESENT)
- 		__vlan_hwaccel_put_tag(skb, htons(ETH_P_8021Q),
- 				       packet->vlan_tci);
-@@ -578,8 +589,8 @@ static int netvsc_probe(struct hv_device *dev,
++	*trans_off = skb_transport_offset(skb);
++
++	if ((eth_hdr(skb)->h_proto == htons(ETH_P_IP))) {
++		struct iphdr *iphdr = ip_hdr(skb);
++
++		if (iphdr->protocol == IPPROTO_TCP)
++			ret_val = TRANSPORT_INFO_IPV4_TCP;
++		else if (iphdr->protocol == IPPROTO_UDP)
++			ret_val = TRANSPORT_INFO_IPV4_UDP;
++	} else {
++		if (ipv6_hdr(skb)->nexthdr == IPPROTO_TCP)
++			ret_val = TRANSPORT_INFO_IPV6_TCP;
++		else if (ipv6_hdr(skb)->nexthdr == IPPROTO_UDP)
++			ret_val = TRANSPORT_INFO_IPV6_UDP;
++	}
++
++not_ip:
++	return ret_val;
++}
++
+ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
+ {
+ 	struct net_device_context *net_device_ctx = netdev_priv(net);
+@@ -268,6 +297,10 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
+ 	u32 rndis_msg_size;
+ 	bool isvlan;
+ 	struct rndis_per_packet_info *ppi;
++	struct ndis_tcp_ip_checksum_info *csum_info;
++	int  hdr_offset;
++	u32 net_trans_info;
++
+ 
+ 	/* We will atmost need two pages to describe the rndis
+ 	 * header. We can only transmit MAX_PAGE_BUFFER_COUNT number
+@@ -335,6 +368,37 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
+ 				VLAN_PRIO_SHIFT;
+ 	}
+ 
++	net_trans_info = get_net_transport_info(skb, &hdr_offset);
++	if (net_trans_info == TRANSPORT_INFO_NOT_IP)
++		goto do_send;
++
++	/*
++	 * Setup the sendside checksum offload only if this is not a
++	 * GSO packet.
++	 */
++	if (skb_is_gso(skb))
++		goto do_send;
++
++	rndis_msg_size += NDIS_CSUM_PPI_SIZE;
++	ppi = init_ppi_data(rndis_msg, NDIS_CSUM_PPI_SIZE,
++			    TCPIP_CHKSUM_PKTINFO);
++
++	csum_info = (struct ndis_tcp_ip_checksum_info *)((void *)ppi +
++			ppi->ppi_offset);
++
++	if (net_trans_info & (INFO_IPV4 << 16))
++		csum_info->transmit.is_ipv4 = 1;
++	else
++		csum_info->transmit.is_ipv6 = 1;
++
++	if (net_trans_info & INFO_TCP) {
++		csum_info->transmit.tcp_checksum = 1;
++		csum_info->transmit.tcp_header_offset = hdr_offset;
++	} else if (net_trans_info & INFO_UDP) {
++		csum_info->transmit.udp_checksum = 1;
++	}
++
++do_send:
+ 	/* Start filling in the page buffers with the rndis hdr */
+ 	rndis_msg->msg_len += rndis_msg_size;
+ 	packet->page_buf_cnt = init_page_array(rndis_msg, rndis_msg_size,
+@@ -589,8 +653,9 @@ static int netvsc_probe(struct hv_device *dev,
  	net->netdev_ops = &device_ops;
  
  	/* TODO: Add GSO and Checksum offload */
--	net->hw_features = NETIF_F_SG;
--	net->features = NETIF_F_HW_VLAN_CTAG_TX | NETIF_F_SG;
-+	net->hw_features = NETIF_F_RXCSUM | NETIF_F_SG;
-+	net->features = NETIF_F_HW_VLAN_CTAG_TX | NETIF_F_SG | NETIF_F_RXCSUM;
+-	net->hw_features = NETIF_F_RXCSUM | NETIF_F_SG;
+-	net->features = NETIF_F_HW_VLAN_CTAG_TX | NETIF_F_SG | NETIF_F_RXCSUM;
++	net->hw_features = NETIF_F_RXCSUM | NETIF_F_SG | NETIF_F_IP_CSUM;
++	net->features = NETIF_F_HW_VLAN_CTAG_TX | NETIF_F_SG | NETIF_F_RXCSUM |
++			NETIF_F_IP_CSUM;
  
  	SET_ETHTOOL_OPS(net, &ethtool_ops);
  	SET_NETDEV_DEV(net, &dev->device);
-diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
-index 9b02f21..4a37e3d 100644
---- a/drivers/net/hyperv/rndis_filter.c
-+++ b/drivers/net/hyperv/rndis_filter.c
-@@ -370,6 +370,7 @@ static void rndis_filter_receive_data(struct rndis_device *dev,
- 	struct rndis_packet *rndis_pkt;
- 	u32 data_offset;
- 	struct ndis_pkt_8021q_info *vlan;
-+	struct ndis_tcp_ip_checksum_info *csum_info;
- 
- 	rndis_pkt = &msg->msg.pkt;
- 
-@@ -408,7 +409,8 @@ static void rndis_filter_receive_data(struct rndis_device *dev,
- 		pkt->vlan_tci = 0;
- 	}
- 
--	netvsc_recv_callback(dev->net_dev->dev, pkt);
-+	csum_info = rndis_get_ppi(rndis_pkt, TCPIP_CHKSUM_PKTINFO);
-+	netvsc_recv_callback(dev->net_dev->dev, pkt, csum_info);
- }
- 
- int rndis_filter_receive(struct hv_device *dev,
 -- 
 1.7.4.1
 
