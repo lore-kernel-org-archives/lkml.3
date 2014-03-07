@@ -1,117 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753416AbaCGWwg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 17:52:36 -0500
-Received: from mail-pb0-f67.google.com ([209.85.160.67]:62030 "EHLO
-	mail-pb0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752640AbaCGWwe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 17:52:34 -0500
-Date: Fri, 7 Mar 2014 14:52:30 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Manuel Krause <manuelkrause@netscape.net>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        lm-sensors@lm-sensors.org
-Subject: Re: 3.13.?: Strange / dangerous fan policy...
-Message-ID: <20140307225230.GA31135@roeck-us.net>
-References: <531A1EEE.9090101@netscape.net>
- <20140307205506.GA6870@roeck-us.net>
- <531A426D.6080100@netscape.net>
+	id S1753571AbaCGWzE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 17:55:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2642 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751464AbaCGWzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 17:55:01 -0500
+Date: Fri, 7 Mar 2014 17:54:58 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, x86@kernel.org, vgoyal@redhat.com,
+        ebiederm@xmission.com
+Subject: Re: [PATCH] x86: Skip latched NMIs on early boot in kdump
+Message-ID: <20140307225458.GZ25953@redhat.com>
+References: <1394221143-29713-1-git-send-email-dzickus@redhat.com>
+ <531A36F7.6020101@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <531A426D.6080100@netscape.net>
+In-Reply-To: <531A36F7.6020101@zytor.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 07, 2014 at 11:04:29PM +0100, Manuel Krause wrote:
-> On 2014-03-07 21:55, Guenter Roeck wrote:
-> >On Fri, Mar 07, 2014 at 08:33:02PM +0100, Manuel Krause wrote:
-> >>Please have a short look at the following BUG report + the comments
-> >>-- this message here is a kind of FWD-ing it:
-> >>https://bugs.archlinux.org/task/39005
-> >>
-> >>I came late to test kernel 3.13 with the .5 one, as it was the time
-> >>that the related -CK/BFS patch became available.
-> >>
-> >>I'm not using Archlinux, but openSUSE, and my problems are quite the
-> >>same. Especially these with smelling melting plastics.
-> >>
-> >>My own reports went to Con Kolivas' Blog first:
-> >>"I get weird temperatures and abrupt 100% fan actions with vanilla
-> >>3.13.5 with this CK and most recent BFQ at my HP Notebook.
-> >>In gkrellm the highest T had been @74°C, so far (3.12.13), and is
-> >>now growing to 94°C. Then, the fan goes to 100% for 10~30secs
-> >>cooling it to approx. 82°C.
-> >>That is not good, if I compare 74 to 94 °C.
-> >>Have I missed a .CONFIG option for 3.13, especially?"
-> >>
-> >>I'd get the same without (Con's && BFQ's) patches.
-> >>
-> >>Machine:           HP Notebook with Core2Duo CPU (Penryn)
-> >>Distro:            openSUSE 13.1, 64bit, continuously updated
-> >>Desktop:           KDE 4.12.3
-> >>MESA & drm & Xorg: most recent ones from:
-> >>http://download.opensuse.org/repositories/home:/pontostroy:/X11/openSUSE_13.1/x86_64/
-> >>
-> >>Current kernel:    3.13.6 vanilla from openSUSE repos, with
-> >>                    -ck1 and BFQ patches
-> >>Same behaviour:    without these patches
-> >>
-> >>Last good kernel:  3.12.13 vanilla + CK2 + BFQ
-> >>
-> >
-> >Can you add more information about your fan control policy ?
-> >Do you rely on the hardware for automatic fan speed control,
-> >or do you run the fancontrol script ?
-> >
-> >What is the output from the 'sensors' command ?
-> >
-> >Thanks,
-> >Guenter
-> >
+On Fri, Mar 07, 2014 at 01:15:35PM -0800, H. Peter Anvin wrote:
+> On 03/07/2014 11:39 AM, Don Zickus wrote:
+> > A customer generated an external NMI using their iLO to test kdump worked.
+> > Unfortunately, the machine hung.  Disabling the nmi_watchdog made things work.
+> > 
+> > I speculated the external NMI fired, caused the machine to panic (as expected)
+> > and the perf NMI from the watchdog came in and was latched.  My guess was this
+> > somehow caused the hang.
+> > 
 > 
-> Hi, and thanks for the quick response!
-> No special fancy "fan control policy". 'fancontrol' isn't up or
-> running.
-> Vanilla kernels 3.11.* and 3.12.* had been working on here without
-> any extra work.
-> --
-> # sensors
-> acpitz-virtual-0
-> Adapter: Virtual device
-> temp1:        +71.0°C  (crit = +256.0°C)
-> temp2:        +69.0°C  (crit = +110.0°C)
-> temp3:        +52.0°C  (crit = +105.0°C)
-> temp4:        +25.0°C  (crit = +110.0°C)
-> temp5:        +58.0°C  (crit = +110.0°C)
+> ... as any other unexpected exception would.
 > 
-> coretemp-isa-0000
-> Adapter: ISA adapter
-> Core 0:       +62.0°C  (high = +105.0°C, crit = +105.0°C)
-> Core 1:       +60.0°C  (high = +105.0°C, crit = +105.0°C)
-> --
-> My notebook (HP/Compaq 6730b) does not have a seperate fan sensor.
-> This is with 3.12.13 with my normal workload.
+> > 
+> > I also do not fully understand why the latched NMI is not happening immediately
+> > after the load idt call or why it comes after a page fault (the
+> > early_make_pgtable).  Further adding to my confusion is why the early printk
+> > magic didn't dump a stack as I believe I had that setup on my commandline.
+> > But I figured I would just report what I have observed.
+> > 
 > 
-> Please, trust my above mentionned values of 94 °C vs. 74°C as I
-> don't like to boot 3.13.6 anymore, to avoid harm to the notebook's
-> casing.
-> 
-Understood. Unfortunately, we'll need to get information
-from the new kernel to be able to track down the problem.
+> If the kdump is initiated from NMI context, I'm wondering if it might be
+> possible that we haven't actually executed an IRET until this one
+> happens, and the IRET re-enables NMI.
 
-> But I'd do to test any improvement-patch.
+Ah makes sense then.
+
 > 
-So far I have no idea what is going on. I don't see anything in the
-drivers providing above data that would explain the behavior,
-but I might be missing something.
+> > My testing and debugging were based off a 3.10 kernel (RHEL-7) but has included
+> > Seiji's tracepoint cleanups to arch/x86/kernel/head_64.S|head64.c.  Not much
+> > has changed upstream here.  Also 3.14-rc4 still has the same hang.
+> > 
+> > Signed-off-by: Don Zickus <dzickus@redhat.com>
+> 
+> We really shouldn't be doing the fixup lookup for NMI, either.  Probably
+> it makes more sense to just IRET on NMI until we have the real interrupt
+> vectors set up, but it needs to be done a little earlier.
+> 
+> How does this patch work for you?
 
-Of course, if output is different in 3.13, that would be important
-to know. Maybe someone else can post related information for both
-kernel versions on an affected system.
+I tested it on 64 bit and it works good.  Thanks!
 
-Guenter
+Cheers,
+Don
+
+> 
+> 	-hpa
+> 
+
+> diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
+> index 81ba276..d2a2159 100644
+> --- a/arch/x86/kernel/head_32.S
+> +++ b/arch/x86/kernel/head_32.S
+> @@ -544,6 +544,10 @@ ENDPROC(early_idt_handlers)
+>  	/* This is global to keep gas from relaxing the jumps */
+>  ENTRY(early_idt_handler)
+>  	cld
+> +
+> +	cmpl $X86_TRAP_NMI,(%esp)
+> +	je is_nmi		# Ignore NMI
+> +
+>  	cmpl $2,%ss:early_recursion_flag
+>  	je hlt_loop
+>  	incl %ss:early_recursion_flag
+> @@ -594,8 +598,9 @@ ex_entry:
+>  	pop %edx
+>  	pop %ecx
+>  	pop %eax
+> -	addl $8,%esp		/* drop vector number and error code */
+>  	decl %ss:early_recursion_flag
+> +is_nmi:
+> +	addl $8,%esp		/* drop vector number and error code */
+>  	iret
+>  ENDPROC(early_idt_handler)
+>  
+> diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
+> index e1aabdb..33f36c7 100644
+> --- a/arch/x86/kernel/head_64.S
+> +++ b/arch/x86/kernel/head_64.S
+> @@ -343,6 +343,9 @@ early_idt_handlers:
+>  ENTRY(early_idt_handler)
+>  	cld
+>  
+> +	cmpl $X86_TRAP_NMI,(%rsp)
+> +	je is_nmi		# Ignore NMI
+> +
+>  	cmpl $2,early_recursion_flag(%rip)
+>  	jz  1f
+>  	incl early_recursion_flag(%rip)
+> @@ -405,8 +408,9 @@ ENTRY(early_idt_handler)
+>  	popq %rdx
+>  	popq %rcx
+>  	popq %rax
+> -	addq $16,%rsp		# drop vector number and error code
+>  	decl early_recursion_flag(%rip)
+> +is_nmi:
+> +	addq $16,%rsp		# drop vector number and error code
+>  	INTERRUPT_RETURN
+>  ENDPROC(early_idt_handler)
+>  
+
