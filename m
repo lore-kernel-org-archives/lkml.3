@@ -1,425 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752800AbaCGKMv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 05:12:51 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:20994 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752412AbaCGKLG (ORCPT
+	id S1752306AbaCGKO5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 05:14:57 -0500
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:47942 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027AbaCGKOx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 05:11:06 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-50-53199b3761ab
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v2 1/3] regulator: s2mps11: Add support for S2MPS14 regulators
-Date: Fri, 07 Mar 2014 11:10:50 +0100
-Message-id: <1394187052-591-2-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1394187052-591-1-git-send-email-k.kozlowski@samsung.com>
-References: <1394187052-591-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphluLIzCtJLcpLzFFi42I5/e/4NV2L2ZLBBlubGC02zljPajH14RM2
-	i9cvDC3ONr1ht/h2pYPJ4vKuOWwWM87vY7JYe+Quu8XFFV+YLNbPeM1iMWf6OyYHbo+ds+6y
-	e2xa1cnm0bdlFaPH501yASxRXDYpqTmZZalF+nYJXBm3b11kLJibXbFq903mBsbbkV2MHBwS
-	AiYS35aldzFyApliEhfurWfrYuTiEBJYyijR/uwKE4TTxySx8PZJJpAqNgFjic3Ll4BViQhs
-	ZJQ4uP8wK4jDLDCTSeLPzQdgVcICfhIrvm9iAbFZBFQlNs97D2bzCrhKbLh8lQlitYLEnEk2
-	IGFOATeJR8fusoPYQiAlC14xTWDkXcDIsIpRNLU0uaA4KT3XUK84Mbe4NC9dLzk/dxMjJOS+
-	7GBcfMzqEKMAB6MSD6/BAolgIdbEsuLK3EOMEhzMSiK8Xc2SwUK8KYmVValF+fFFpTmpxYcY
-	mTg4pRoY2ftuzuxbc0EhePLhY7evfr63uKLAVPhdru0NIwWTW+zxJlwLLtwWqZ8VsjV97t+j
-	z3fN2pMZXP7Bke9573x/biXlw6mF3TdnHNpUssqPK/mU0OTcPbVLOVwTrT6+adnusfw8/4nl
-	QRaMKxh/sabNXKOU+v7ihDnmv7Qz0sIja07vO6AQlT5JS4mlOCPRUIu5qDgRAP3Qtx0XAgAA
+	Fri, 7 Mar 2014 05:14:53 -0500
+From: David Herrmann <dh.herrmann@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-fbdev@vger.kernel.org,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        David Herrmann <dh.herrmann@gmail.com>
+Subject: [PATCH] lib: remove FBCON dependency for fonts
+Date: Fri,  7 Mar 2014 11:14:31 +0100
+Message-Id: <1394187271-5857-1-git-send-email-dh.herrmann@gmail.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for S2MPS14 PMIC regulators to s2mps11 driver. The S2MPS14
-has fewer BUCK-s and LDO-s than S2MPS11. It also does not support
-controlling the BUCK ramp delay.
+Fonts don't depend on CONFIG_FRAMEBUFFER_CONSOLE at all. Remove that.
+Besides, CONFIG_FONT_SUPPORT is 'select'ed anyway, so the dependencies
+aren't checked by most higher-level options.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>
-Reviewed-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
+It's a relict of the times when fonts where exclusive to the VT layer and
+fbcon.
+
+Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
 ---
- drivers/regulator/Kconfig   |    9 +-
- drivers/regulator/s2mps11.c |  252 ++++++++++++++++++++++++++++++++-----------
- 2 files changed, 196 insertions(+), 65 deletions(-)
+ lib/fonts/Kconfig | 11 ++---------
+ 1 file changed, 2 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index 4ddfb6c065c7..14ff714a25fb 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -426,12 +426,13 @@ config REGULATOR_RC5T583
- 	  outputs which can be controlled by i2c communication.
+diff --git a/lib/fonts/Kconfig b/lib/fonts/Kconfig
+index 4dc1b99..0ca66a3 100644
+--- a/lib/fonts/Kconfig
++++ b/lib/fonts/Kconfig
+@@ -9,7 +9,6 @@ if FONT_SUPPORT
  
- config REGULATOR_S2MPS11
--	tristate "Samsung S2MPS11 voltage regulator"
-+	tristate "Samsung S2MPS11/S2MPS14 voltage regulator"
- 	depends on MFD_SEC_CORE
+ config FONTS
+ 	bool "Select compiled-in fonts"
+-	depends on FRAMEBUFFER_CONSOLE
  	help
--	 This driver supports a Samsung S2MPS11 voltage output regulator
--	 via I2C bus. S2MPS11 is comprised of high efficient Buck converters
--	 including Dual-Phase Buck converter, Buck-Boost converter, various LDOs.
-+	 This driver supports a Samsung S2MPS11/S2MPS14 voltage output
-+	 regulator via I2C bus. The chip is comprised of high efficient Buck
-+	 converters including Dual-Phase Buck converter, Buck-Boost converter,
-+	 various LDOs.
+ 	  Say Y here if you would like to use fonts other than the default
+ 	  your frame buffer console usually use.
+@@ -22,7 +21,6 @@ config FONTS
  
- config REGULATOR_S5M8767
- 	tristate "Samsung S5M8767A voltage regulator"
-diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
-index b51ccf534a7c..1a732e54cd70 100644
---- a/drivers/regulator/s2mps11.c
-+++ b/drivers/regulator/s2mps11.c
-@@ -1,13 +1,18 @@
- /*
-  * s2mps11.c
-  *
-- * Copyright (c) 2012 Samsung Electronics Co., Ltd
-+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd
-  *              http://www.samsung.com
-  *
-- *  This program is free software; you can redistribute  it and/or modify it
-- *  under  the terms of  the GNU General  Public License as published by the
-- *  Free Software Foundation;  either version 2 of the  License, or (at your
-- *  option) any later version.
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-  *
-  */
+ config FONT_8x8
+ 	bool "VGA 8x8 font" if FONTS
+-	depends on FRAMEBUFFER_CONSOLE
+ 	default y if !SPARC && !FONTS
+ 	help
+ 	  This is the "high resolution" font for the VGA frame buffer (the one
+@@ -45,7 +43,6 @@ config FONT_8x16
  
-@@ -24,6 +29,7 @@
- #include <linux/regulator/of_regulator.h>
- #include <linux/mfd/samsung/core.h>
- #include <linux/mfd/samsung/s2mps11.h>
-+#include <linux/mfd/samsung/s2mps14.h>
+ config FONT_6x11
+ 	bool "Mac console 6x11 font (not supported by all drivers)" if FONTS
+-	depends on FRAMEBUFFER_CONSOLE
+ 	default y if !SPARC && !FONTS && MAC
+ 	help
+ 	  Small console font with Macintosh-style high-half glyphs.  Some Mac
+@@ -53,7 +50,6 @@ config FONT_6x11
  
- struct s2mps11_info {
- 	unsigned int rdev_num;
-@@ -233,7 +239,7 @@ static struct regulator_ops s2mps11_buck_ops = {
- 	.set_ramp_delay		= s2mps11_set_ramp_delay,
- };
+ config FONT_7x14
+ 	bool "console 7x14 font (not supported by all drivers)" if FONTS
+-	depends on FRAMEBUFFER_CONSOLE
+ 	help
+ 	  Console font with characters just a bit smaller than the default.
+ 	  If the standard 8x16 font is a little too big for you, say Y.
+@@ -61,7 +57,6 @@ config FONT_7x14
  
--#define regulator_desc_ldo1(num)	{		\
-+#define regulator_desc_s2mps11_ldo1(num)	{		\
- 	.name		= "LDO"#num,			\
- 	.id		= S2MPS11_LDO##num,		\
- 	.ops		= &s2mps11_ldo_ops,		\
-@@ -247,7 +253,7 @@ static struct regulator_ops s2mps11_buck_ops = {
- 	.enable_reg	= S2MPS11_REG_L1CTRL + num - 1,	\
- 	.enable_mask	= S2MPS11_ENABLE_MASK		\
- }
--#define regulator_desc_ldo2(num)	{		\
-+#define regulator_desc_s2mps11_ldo2(num) {		\
- 	.name		= "LDO"#num,			\
- 	.id		= S2MPS11_LDO##num,		\
- 	.ops		= &s2mps11_ldo_ops,		\
-@@ -262,7 +268,7 @@ static struct regulator_ops s2mps11_buck_ops = {
- 	.enable_mask	= S2MPS11_ENABLE_MASK		\
- }
+ config FONT_PEARL_8x8
+ 	bool "Pearl (old m68k) console 8x8 font" if FONTS
+-	depends on FRAMEBUFFER_CONSOLE
+ 	default y if !SPARC && !FONTS && AMIGA
+ 	help
+ 	  Small console font with PC-style control-character and high-half
+@@ -69,7 +64,6 @@ config FONT_PEARL_8x8
  
--#define regulator_desc_buck1_4(num)	{			\
-+#define regulator_desc_s2mps11_buck1_4(num) {			\
- 	.name		= "BUCK"#num,				\
- 	.id		= S2MPS11_BUCK##num,			\
- 	.ops		= &s2mps11_buck_ops,			\
-@@ -278,7 +284,7 @@ static struct regulator_ops s2mps11_buck_ops = {
- 	.enable_mask	= S2MPS11_ENABLE_MASK			\
- }
+ config FONT_ACORN_8x8
+ 	bool "Acorn console 8x8 font" if FONTS
+-	depends on FRAMEBUFFER_CONSOLE
+ 	default y if !SPARC && !FONTS && ARM && ARCH_ACORN
+ 	help
+ 	  Small console font with PC-style control characters and high-half
+@@ -81,13 +75,13 @@ config FONT_MINI_4x6
  
--#define regulator_desc_buck5	{				\
-+#define regulator_desc_s2mps11_buck5 {				\
- 	.name		= "BUCK5",				\
- 	.id		= S2MPS11_BUCK5,			\
- 	.ops		= &s2mps11_buck_ops,			\
-@@ -294,7 +300,7 @@ static struct regulator_ops s2mps11_buck_ops = {
- 	.enable_mask	= S2MPS11_ENABLE_MASK			\
- }
+ config FONT_SUN8x16
+ 	bool "Sparc console 8x16 font"
+-	depends on FRAMEBUFFER_CONSOLE && (!SPARC && FONTS || SPARC)
++	depends on !SPARC && FONTS || SPARC
+ 	help
+ 	  This is the high resolution console font for Sun machines. Say Y.
  
--#define regulator_desc_buck6_8(num)	{			\
-+#define regulator_desc_s2mps11_buck6_8(num) {			\
- 	.name		= "BUCK"#num,				\
- 	.id		= S2MPS11_BUCK##num,			\
- 	.ops		= &s2mps11_buck_ops,			\
-@@ -310,7 +316,7 @@ static struct regulator_ops s2mps11_buck_ops = {
- 	.enable_mask	= S2MPS11_ENABLE_MASK			\
- }
+ config FONT_SUN12x22
+ 	bool "Sparc console 12x22 font (not supported by all drivers)"
+-	depends on FRAMEBUFFER_CONSOLE && (!SPARC && FONTS || SPARC)
++	depends on !SPARC && FONTS || SPARC
+ 	help
+ 	  This is the high resolution console font for Sun machines with very
+ 	  big letters (like the letters used in the SPARC PROM). If the
+@@ -95,7 +89,6 @@ config FONT_SUN12x22
  
--#define regulator_desc_buck9	{				\
-+#define regulator_desc_s2mps11_buck9 {				\
- 	.name		= "BUCK9",				\
- 	.id		= S2MPS11_BUCK9,			\
- 	.ops		= &s2mps11_buck_ops,			\
-@@ -326,7 +332,7 @@ static struct regulator_ops s2mps11_buck_ops = {
- 	.enable_mask	= S2MPS11_ENABLE_MASK			\
- }
- 
--#define regulator_desc_buck10	{				\
-+#define regulator_desc_s2mps11_buck10 {				\
- 	.name		= "BUCK10",				\
- 	.id		= S2MPS11_BUCK10,			\
- 	.ops		= &s2mps11_buck_ops,			\
-@@ -343,54 +349,173 @@ static struct regulator_ops s2mps11_buck_ops = {
- }
- 
- static const struct regulator_desc s2mps11_regulators[] = {
--	regulator_desc_ldo2(1),
--	regulator_desc_ldo1(2),
--	regulator_desc_ldo1(3),
--	regulator_desc_ldo1(4),
--	regulator_desc_ldo1(5),
--	regulator_desc_ldo2(6),
--	regulator_desc_ldo1(7),
--	regulator_desc_ldo1(8),
--	regulator_desc_ldo1(9),
--	regulator_desc_ldo1(10),
--	regulator_desc_ldo2(11),
--	regulator_desc_ldo1(12),
--	regulator_desc_ldo1(13),
--	regulator_desc_ldo1(14),
--	regulator_desc_ldo1(15),
--	regulator_desc_ldo1(16),
--	regulator_desc_ldo1(17),
--	regulator_desc_ldo1(18),
--	regulator_desc_ldo1(19),
--	regulator_desc_ldo1(20),
--	regulator_desc_ldo1(21),
--	regulator_desc_ldo2(22),
--	regulator_desc_ldo2(23),
--	regulator_desc_ldo1(24),
--	regulator_desc_ldo1(25),
--	regulator_desc_ldo1(26),
--	regulator_desc_ldo2(27),
--	regulator_desc_ldo1(28),
--	regulator_desc_ldo1(29),
--	regulator_desc_ldo1(30),
--	regulator_desc_ldo1(31),
--	regulator_desc_ldo1(32),
--	regulator_desc_ldo1(33),
--	regulator_desc_ldo1(34),
--	regulator_desc_ldo1(35),
--	regulator_desc_ldo1(36),
--	regulator_desc_ldo1(37),
--	regulator_desc_ldo1(38),
--	regulator_desc_buck1_4(1),
--	regulator_desc_buck1_4(2),
--	regulator_desc_buck1_4(3),
--	regulator_desc_buck1_4(4),
--	regulator_desc_buck5,
--	regulator_desc_buck6_8(6),
--	regulator_desc_buck6_8(7),
--	regulator_desc_buck6_8(8),
--	regulator_desc_buck9,
--	regulator_desc_buck10,
-+	regulator_desc_s2mps11_ldo2(1),
-+	regulator_desc_s2mps11_ldo1(2),
-+	regulator_desc_s2mps11_ldo1(3),
-+	regulator_desc_s2mps11_ldo1(4),
-+	regulator_desc_s2mps11_ldo1(5),
-+	regulator_desc_s2mps11_ldo2(6),
-+	regulator_desc_s2mps11_ldo1(7),
-+	regulator_desc_s2mps11_ldo1(8),
-+	regulator_desc_s2mps11_ldo1(9),
-+	regulator_desc_s2mps11_ldo1(10),
-+	regulator_desc_s2mps11_ldo2(11),
-+	regulator_desc_s2mps11_ldo1(12),
-+	regulator_desc_s2mps11_ldo1(13),
-+	regulator_desc_s2mps11_ldo1(14),
-+	regulator_desc_s2mps11_ldo1(15),
-+	regulator_desc_s2mps11_ldo1(16),
-+	regulator_desc_s2mps11_ldo1(17),
-+	regulator_desc_s2mps11_ldo1(18),
-+	regulator_desc_s2mps11_ldo1(19),
-+	regulator_desc_s2mps11_ldo1(20),
-+	regulator_desc_s2mps11_ldo1(21),
-+	regulator_desc_s2mps11_ldo2(22),
-+	regulator_desc_s2mps11_ldo2(23),
-+	regulator_desc_s2mps11_ldo1(24),
-+	regulator_desc_s2mps11_ldo1(25),
-+	regulator_desc_s2mps11_ldo1(26),
-+	regulator_desc_s2mps11_ldo2(27),
-+	regulator_desc_s2mps11_ldo1(28),
-+	regulator_desc_s2mps11_ldo1(29),
-+	regulator_desc_s2mps11_ldo1(30),
-+	regulator_desc_s2mps11_ldo1(31),
-+	regulator_desc_s2mps11_ldo1(32),
-+	regulator_desc_s2mps11_ldo1(33),
-+	regulator_desc_s2mps11_ldo1(34),
-+	regulator_desc_s2mps11_ldo1(35),
-+	regulator_desc_s2mps11_ldo1(36),
-+	regulator_desc_s2mps11_ldo1(37),
-+	regulator_desc_s2mps11_ldo1(38),
-+	regulator_desc_s2mps11_buck1_4(1),
-+	regulator_desc_s2mps11_buck1_4(2),
-+	regulator_desc_s2mps11_buck1_4(3),
-+	regulator_desc_s2mps11_buck1_4(4),
-+	regulator_desc_s2mps11_buck5,
-+	regulator_desc_s2mps11_buck6_8(6),
-+	regulator_desc_s2mps11_buck6_8(7),
-+	regulator_desc_s2mps11_buck6_8(8),
-+	regulator_desc_s2mps11_buck9,
-+	regulator_desc_s2mps11_buck10,
-+};
-+
-+static struct regulator_ops s2mps14_reg_ops = {
-+	.list_voltage		= regulator_list_voltage_linear,
-+	.map_voltage		= regulator_map_voltage_linear,
-+	.is_enabled		= regulator_is_enabled_regmap,
-+	.enable			= regulator_enable_regmap,
-+	.disable		= regulator_disable_regmap,
-+	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
-+	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
-+};
-+
-+#define regulator_desc_s2mps14_ldo1(num) {		\
-+	.name		= "LDO"#num,			\
-+	.id		= S2MPS14_LDO##num,		\
-+	.ops		= &s2mps14_reg_ops,		\
-+	.type		= REGULATOR_VOLTAGE,		\
-+	.owner		= THIS_MODULE,			\
-+	.min_uV		= S2MPS14_LDO_MIN_800MV,	\
-+	.uV_step	= S2MPS14_LDO_STEP_25MV,	\
-+	.n_voltages	= S2MPS14_LDO_N_VOLTAGES,	\
-+	.vsel_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
-+	.vsel_mask	= S2MPS14_LDO_VSEL_MASK,	\
-+	.enable_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
-+	.enable_mask	= S2MPS14_ENABLE_MASK		\
-+}
-+#define regulator_desc_s2mps14_ldo2(num) {		\
-+	.name		= "LDO"#num,			\
-+	.id		= S2MPS14_LDO##num,		\
-+	.ops		= &s2mps14_reg_ops,		\
-+	.type		= REGULATOR_VOLTAGE,		\
-+	.owner		= THIS_MODULE,			\
-+	.min_uV		= S2MPS14_LDO_MIN_1800MV,	\
-+	.uV_step	= S2MPS14_LDO_STEP_25MV,	\
-+	.n_voltages	= S2MPS14_LDO_N_VOLTAGES,	\
-+	.vsel_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
-+	.vsel_mask	= S2MPS14_LDO_VSEL_MASK,	\
-+	.enable_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
-+	.enable_mask	= S2MPS14_ENABLE_MASK		\
-+}
-+#define regulator_desc_s2mps14_ldo3(num) {		\
-+	.name		= "LDO"#num,			\
-+	.id		= S2MPS14_LDO##num,		\
-+	.ops		= &s2mps14_reg_ops,		\
-+	.type		= REGULATOR_VOLTAGE,		\
-+	.owner		= THIS_MODULE,			\
-+	.min_uV		= S2MPS14_LDO_MIN_800MV,	\
-+	.uV_step	= S2MPS14_LDO_STEP_12_5MV,	\
-+	.n_voltages	= S2MPS14_LDO_N_VOLTAGES,	\
-+	.vsel_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
-+	.vsel_mask	= S2MPS14_LDO_VSEL_MASK,	\
-+	.enable_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
-+	.enable_mask	= S2MPS14_ENABLE_MASK		\
-+}
-+#define regulator_desc_s2mps14_buck1235(num) {			\
-+	.name		= "BUCK"#num,				\
-+	.id		= S2MPS14_BUCK##num,			\
-+	.ops		= &s2mps14_reg_ops,			\
-+	.type		= REGULATOR_VOLTAGE,			\
-+	.owner		= THIS_MODULE,				\
-+	.min_uV		= S2MPS14_BUCK1235_MIN_600MV,		\
-+	.uV_step	= S2MPS14_BUCK1235_STEP_6_25MV,		\
-+	.n_voltages	= S2MPS14_BUCK_N_VOLTAGES,		\
-+	.linear_min_sel = S2MPS14_BUCK1235_START_SEL,		\
-+	.ramp_delay	= S2MPS14_BUCK_RAMP_DELAY,		\
-+	.vsel_reg	= S2MPS14_REG_B1CTRL2 + (num - 1) * 2,	\
-+	.vsel_mask	= S2MPS14_BUCK_VSEL_MASK,		\
-+	.enable_reg	= S2MPS14_REG_B1CTRL1 + (num - 1) * 2,	\
-+	.enable_mask	= S2MPS14_ENABLE_MASK			\
-+}
-+#define regulator_desc_s2mps14_buck4(num) {			\
-+	.name		= "BUCK"#num,				\
-+	.id		= S2MPS14_BUCK##num,			\
-+	.ops		= &s2mps14_reg_ops,			\
-+	.type		= REGULATOR_VOLTAGE,			\
-+	.owner		= THIS_MODULE,				\
-+	.min_uV		= S2MPS14_BUCK4_MIN_1400MV,		\
-+	.uV_step	= S2MPS14_BUCK4_STEP_12_5MV,		\
-+	.n_voltages	= S2MPS14_BUCK_N_VOLTAGES,		\
-+	.linear_min_sel = S2MPS14_BUCK4_START_SEL,		\
-+	.ramp_delay	= S2MPS14_BUCK_RAMP_DELAY,		\
-+	.vsel_reg	= S2MPS14_REG_B1CTRL2 + (num - 1) * 2,	\
-+	.vsel_mask	= S2MPS14_BUCK_VSEL_MASK,		\
-+	.enable_reg	= S2MPS14_REG_B1CTRL1 + (num - 1) * 2,	\
-+	.enable_mask	= S2MPS14_ENABLE_MASK			\
-+}
-+
-+static const struct regulator_desc s2mps14_regulators[] = {
-+	regulator_desc_s2mps14_ldo3(1),
-+	regulator_desc_s2mps14_ldo3(2),
-+	regulator_desc_s2mps14_ldo1(3),
-+	regulator_desc_s2mps14_ldo1(4),
-+	regulator_desc_s2mps14_ldo3(5),
-+	regulator_desc_s2mps14_ldo3(6),
-+	regulator_desc_s2mps14_ldo1(7),
-+	regulator_desc_s2mps14_ldo2(8),
-+	regulator_desc_s2mps14_ldo3(9),
-+	regulator_desc_s2mps14_ldo3(10),
-+	regulator_desc_s2mps14_ldo1(11),
-+	regulator_desc_s2mps14_ldo2(12),
-+	regulator_desc_s2mps14_ldo2(13),
-+	regulator_desc_s2mps14_ldo2(14),
-+	regulator_desc_s2mps14_ldo2(15),
-+	regulator_desc_s2mps14_ldo2(16),
-+	regulator_desc_s2mps14_ldo2(17),
-+	regulator_desc_s2mps14_ldo2(18),
-+	regulator_desc_s2mps14_ldo1(19),
-+	regulator_desc_s2mps14_ldo1(20),
-+	regulator_desc_s2mps14_ldo1(21),
-+	regulator_desc_s2mps14_ldo3(22),
-+	regulator_desc_s2mps14_ldo1(23),
-+	regulator_desc_s2mps14_ldo2(24),
-+	regulator_desc_s2mps14_ldo2(25),
-+	regulator_desc_s2mps14_buck1235(1),
-+	regulator_desc_s2mps14_buck1235(2),
-+	regulator_desc_s2mps14_buck1235(3),
-+	regulator_desc_s2mps14_buck4(4),
-+	regulator_desc_s2mps14_buck1235(5),
- };
- 
- static int s2mps11_pmic_probe(struct platform_device *pdev)
-@@ -416,6 +541,10 @@ static int s2mps11_pmic_probe(struct platform_device *pdev)
- 		s2mps11->rdev_num = ARRAY_SIZE(s2mps11_regulators);
- 		regulators = s2mps11_regulators;
- 		break;
-+	case S2MPS14X:
-+		s2mps11->rdev_num = ARRAY_SIZE(s2mps14_regulators);
-+		regulators = s2mps14_regulators;
-+		break;
- 	default:
- 		dev_err(&pdev->dev, "Invalid device type: %u\n", dev_type);
- 		return -EINVAL;
-@@ -482,6 +611,7 @@ out:
- 
- static const struct platform_device_id s2mps11_pmic_id[] = {
- 	{ "s2mps11-pmic", S2MPS11X},
-+	{ "s2mps14-pmic", S2MPS14X},
- 	{ },
- };
- MODULE_DEVICE_TABLE(platform, s2mps11_pmic_id);
-@@ -509,5 +639,5 @@ module_exit(s2mps11_pmic_exit);
- 
- /* Module information */
- MODULE_AUTHOR("Sangbeom Kim <sbkim73@samsung.com>");
--MODULE_DESCRIPTION("SAMSUNG S2MPS11 Regulator Driver");
-+MODULE_DESCRIPTION("SAMSUNG S2MPS11/S2MPS14 Regulator Driver");
- MODULE_LICENSE("GPL");
+ config FONT_10x18
+ 	bool "console 10x18 font (not supported by all drivers)" if FONTS
+-	depends on FRAMEBUFFER_CONSOLE
+ 	help
+ 	  This is a high resolution console font for machines with very
+ 	  big letters. It fits between the sun 12x22 and the normal 8x16 font.
 -- 
-1.7.9.5
+1.9.0
 
