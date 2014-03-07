@@ -1,107 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489AbaCGWFd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 17:05:33 -0500
-Received: from omr-m10.mx.aol.com ([64.12.143.86]:58467 "EHLO
-	omr-m10.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752718AbaCGWEz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 17:04:55 -0500
-Message-ID: <531A426D.6080100@netscape.net>
-Date: Fri, 07 Mar 2014 23:04:29 +0100
-From: Manuel Krause <manuelkrause@netscape.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753594AbaCGWH0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 17:07:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38798 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752748AbaCGWHY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 17:07:24 -0500
+Date: Fri, 7 Mar 2014 17:06:55 -0500
+From: Dave Jones <davej@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Fengguang Wu <fengguang.wu@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Yinghai Lu <yhlu.kernel@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: Re: [qemu64,+smep,+smap] WARNING: CPU: 1 PID: 0 at
+ arch/x86/kernel/cpu/amd.c:220 init_amd()
+Message-ID: <20140307220655.GA580@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Borislav Petkov <bp@alien8.de>,
+	"H. Peter Anvin" <hpa@linux.intel.com>,
+	Fengguang Wu <fengguang.wu@intel.com>,
+	Ingo Molnar <mingo@kernel.org>, Yinghai Lu <yhlu.kernel@gmail.com>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Paolo Bonzini <pbonzini@redhat.com>
+References: <20140307015833.GA10048@localhost>
+ <53195336.9080606@linux.intel.com>
+ <20140307055035.GA5230@localhost>
+ <531A164B.8040402@linux.intel.com>
+ <20140307191050.GA10961@redhat.com>
+ <531A33A2.5030706@linux.intel.com>
+ <20140307213856.GF5255@pd.tnic>
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        lm-sensors@lm-sensors.org
-Subject: Re: 3.13.?: Strange / dangerous fan policy...
-References: <531A1EEE.9090101@netscape.net> <20140307205506.GA6870@roeck-us.net>
-In-Reply-To: <20140307205506.GA6870@roeck-us.net>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 8BIT
-x-aol-global-disposition: G
-x-aol-sid: 3039ac1afc0d531a428514fe
-X-AOL-IP: 93.218.253.155
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140307213856.GF5255@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-03-07 21:55, Guenter Roeck wrote:
-> On Fri, Mar 07, 2014 at 08:33:02PM +0100, Manuel Krause wrote:
->> Please have a short look at the following BUG report + the comments
->> -- this message here is a kind of FWD-ing it:
->> https://bugs.archlinux.org/task/39005
->>
->> I came late to test kernel 3.13 with the .5 one, as it was the time
->> that the related -CK/BFS patch became available.
->>
->> I'm not using Archlinux, but openSUSE, and my problems are quite the
->> same. Especially these with smelling melting plastics.
->>
->> My own reports went to Con Kolivas' Blog first:
->> "I get weird temperatures and abrupt 100% fan actions with vanilla
->> 3.13.5 with this CK and most recent BFQ at my HP Notebook.
->> In gkrellm the highest T had been @74°C, so far (3.12.13), and is
->> now growing to 94°C. Then, the fan goes to 100% for 10~30secs
->> cooling it to approx. 82°C.
->> That is not good, if I compare 74 to 94 °C.
->> Have I missed a .CONFIG option for 3.13, especially?"
->>
->> I'd get the same without (Con's && BFQ's) patches.
->>
->> Machine:           HP Notebook with Core2Duo CPU (Penryn)
->> Distro:            openSUSE 13.1, 64bit, continuously updated
->> Desktop:           KDE 4.12.3
->> MESA & drm & Xorg: most recent ones from:
->> http://download.opensuse.org/repositories/home:/pontostroy:/X11/openSUSE_13.1/x86_64/
->>
->> Current kernel:    3.13.6 vanilla from openSUSE repos, with
->>                     -ck1 and BFQ patches
->> Same behaviour:    without these patches
->>
->> Last good kernel:  3.12.13 vanilla + CK2 + BFQ
->>
->
-> Can you add more information about your fan control policy ?
-> Do you rely on the hardware for automatic fan speed control,
-> or do you run the fancontrol script ?
->
-> What is the output from the 'sensors' command ?
->
-> Thanks,
-> Guenter
->
+On Fri, Mar 07, 2014 at 10:38:56PM +0100, Borislav Petkov wrote:
 
-Hi, and thanks for the quick response!
-No special fancy "fan control policy". 'fancontrol' isn't up or 
-running.
-Vanilla kernels 3.11.* and 3.12.* had been working on here 
-without any extra work.
---
-# sensors
-acpitz-virtual-0
-Adapter: Virtual device
-temp1:        +71.0°C  (crit = +256.0°C)
-temp2:        +69.0°C  (crit = +110.0°C)
-temp3:        +52.0°C  (crit = +105.0°C)
-temp4:        +25.0°C  (crit = +110.0°C)
-temp5:        +58.0°C  (crit = +110.0°C)
+ > * Another option would be if we change the f/m/s of "qemu64" so that
+ > the test doesn't fire.
+ > 
+ > What also makes me wonder is why is this thing even called qemu64?? AMD
+ > family 6 was 32-bit only CPUs so 64 is kinda wrong IMO. I mean, the
+ > kernel code is in "ifdef CONFIG_X86_32" block so "qemu64" is patently
+ > wrong naming.
 
-coretemp-isa-0000
-Adapter: ISA adapter
-Core 0:       +62.0°C  (high = +105.0°C, crit = +105.0°C)
-Core 1:       +60.0°C  (high = +105.0°C, crit = +105.0°C)
---
-My notebook (HP/Compaq 6730b) does not have a seperate fan sensor.
-This is with 3.12.13 with my normal workload.
+Additionally, fam:6 model:6 stepping 3 never existed in the real world afaict.
+I used to keep x86info's stepping db pretty up to date, and that only has knowledge
+of stepping 1 & 2.[*]  Modelling qemu on something from the real world might be
+a better idea than inventing new special cases.
 
-Please, trust my above mentionned values of 94 °C vs. 74°C as I 
-don't like to boot 3.13.6 anymore, to avoid harm to the 
-notebook's casing.
+ > Oh, and the thing has CPUID_EXT2_LM which is also a WTH moment for me.
+ > Paolo, what's going on here?
 
-But I'd do to test any improvement-patch.
+Yeah, this is a mess, there should be no family < 0xf with LM set.
 
-Manuel Krause
+	Dave
 
+[*] It's possible I somehow missed it, or the AMD rev docs never mentioned it
+for some reason, but it seems unlikely.
 
