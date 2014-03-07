@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356AbaCGNQE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 08:16:04 -0500
-Received: from www.linutronix.de ([62.245.132.108]:37455 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752126AbaCGNQB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 08:16:01 -0500
-Date: Fri, 7 Mar 2014 14:15:55 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, John Kacur <jkacur@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 3.12.9-rt13: BUG: soft lockup
-Message-ID: <20140307131555.GD8637@linutronix.de>
-References: <52FBF2F1.8040504@localhost>
- <alpine.DEB.2.02.1402132324230.21991@ionos.tec.linutronix.de>
- <52FD4D89.2000207@localhost>
- <alpine.DEB.2.02.1402140053000.21991@ionos.tec.linutronix.de>
- <52FDB71F.2020000@ccrma.stanford.edu>
- <alpine.DEB.2.02.1402141040460.21991@ionos.tec.linutronix.de>
- <52FE6681.8090807@ccrma.stanford.edu>
- <alpine.DEB.2.02.1402191049260.4468@ionos.tec.linutronix.de>
+	id S1752843AbaCGNTu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 08:19:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62518 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751818AbaCGNTt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 08:19:49 -0500
+Date: Fri, 7 Mar 2014 14:19:28 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>, acme@redhat.com, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, eranian@google.com, namhyung@kernel.org
+Subject: Re: [PATCH 2/8] perf, tools: Support handling complete branch stacks
+ as histograms v4
+Message-ID: <20140307131928.GA13974@krava.brq.redhat.com>
+References: <1393561352-23448-1-git-send-email-andi@firstfloor.org>
+ <1393561352-23448-3-git-send-email-andi@firstfloor.org>
+ <20140305102948.GB1835@krava.brq.redhat.com>
+ <20140305153149.GQ12219@tassilo.jf.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1402191049260.4468@ionos.tec.linutronix.de>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+In-Reply-To: <20140305153149.GQ12219@tassilo.jf.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Thomas Gleixner | 2014-02-19 10:50:29 [+0100]:
+On Wed, Mar 05, 2014 at 07:31:49AM -0800, Andi Kleen wrote:
+> > segfaults here..
+> > 
+> > [jolsa@krava perf]$ ./perf record -g sleep 1
+> > [ perf record: Woken up 1 times to write data ]
+> > [ perf record: Captured and wrote 0.013 MB perf.data (~567 samples) ]
+> > [jolsa@krava perf]$ ./perf report
+> > perf: Segmentation fault
+> > [jolsa@krava perf]$ 
+> 
+> Thanks. Fixed with this patch:
+> 
+> commit 124014960a8fb09043914fb79ea86e0444408ab0
+> Author: Andi Kleen <ak@linux.intel.com>
+> Date:   Wed Mar 5 07:28:56 2014 -0800
+> 
+>     perf, tools, report: Fix perf report without -b
+>     
+>     Fix report crash when -b is not used. Reported by Jiri Olsa.
+>     
+>     Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
->On Fri, 14 Feb 2014, Fernando Lopez-Lezcano wrote:
->> I could try to boot one of the machines into 3.12.xrtyy, replicate the
->> conditions and wait. What should I look for if I can catch this in the act?
->
->dmesg and sysrq-t output would be a good start I guess.
+you need to merge it with the original one,
+so we dont have broken build.. git bisect wise
 
-Yeah. Is it possible to use a serial console? It might happen that the
-kernel throws something out before it dies but it does not manage to
-write it to disk anymore.
+same for the gtk stuff
 
->Thanks,
->
->	tglx
-
-Sebastian
+jirka
