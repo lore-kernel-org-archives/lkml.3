@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753905AbaCGW7N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 17:59:13 -0500
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:48405
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753810AbaCGW7K convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 17:59:10 -0500
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(z551biz98dIc89bh936eI1432I4015Izz1f42h2148h208ch1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2fh95h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24d7h2516h2545h255eh25f6h2605h906i1155h)
-Date: Fri, 7 Mar 2014 14:59:04 -0800
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Arnd Bergmann <arnd@arndb.de>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-serial@vger.kernel.org>
-Subject: Re: [PATCH RFC v2 08/11] tty: xuartps: Rename Kconfig symbols
-References: <1394219614-3197-1-git-send-email-soren.brinkmann@xilinx.com>
- <1394219614-3197-9-git-send-email-soren.brinkmann@xilinx.com>
- <20140307213058.702ff194@alan.etchedpixels.co.uk>
+	id S1753437AbaCGXFB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 18:05:01 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:27874 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751880AbaCGXE7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 18:04:59 -0500
+Date: Sat, 8 Mar 2014 02:04:21 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: josh@joshtriplett.org
+Cc: Joe Perches <joe@perches.com>, David Miller <davem@davemloft.net>,
+        alistair@popple.id.au, netdev@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Dan Carpenter <error27@gmail.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>
+Subject: Re: rfc: checkpatch logical line continuations (was IBM Akebono: Add
+ support for a new PHY interface to the IBM emac driver)
+Message-ID: <20140307230420.GH29018@mwanda>
+References: <1394077948-8395-1-git-send-email-alistair@popple.id.au>
+ <1394077948-8395-3-git-send-email-alistair@popple.id.au>
+ <20140307.154142.488351276799532264.davem@davemloft.net>
+ <1394226164.16156.96.camel@joe-AO722>
+ <20140307213017.GA18769@cloud>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140307213058.702ff194@alan.etchedpixels.co.uk>
+In-Reply-To: <20140307213017.GA18769@cloud>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <a588bea6-d402-4a87-ada0-cdf13f13ba59@CH1EHSMHS033.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-03-07 at 09:30PM +0000, One Thousand Gnomes wrote:
-> On Fri,  7 Mar 2014 11:13:31 -0800
-> Soren Brinkmann <soren.brinkmann@xilinx.com> wrote:
+On Fri, Mar 07, 2014 at 01:30:17PM -0800, josh@joshtriplett.org wrote:
+> On Fri, Mar 07, 2014 at 01:02:44PM -0800, Joe Perches wrote:
+> > On Fri, 2014-03-07 at 15:41 -0500, David Miller wrote:
+> > > From: Alistair Popple <alistair@popple.id.au>
+> > > Date: Thu,  6 Mar 2014 14:52:25 +1100
+> > > 
+> > > > +	out_be32(dev->reg, in_be32(dev->reg) | WKUP_ETH_RGMIIEN
+> > > > +		 | WKUP_ETH_TX_OE | WKUP_ETH_RX_IE);
+> > > 
+> > > When an expression spans multiple lines, the lines should end with
+> > > operators rather than begin with them.
+> > 
+> > That's not in CodingStyle currently.
 > 
-> > Rename the config symbols for the Cadence UART to reflect the driver
-> > rebranding:
-> >   SERIAL_XILINX_PS_UART(_CONSOLE) -> SERIAL_CADENCE_UART(_CONSOLE)
+> It's also not even remotely consistent across existing kernel code, and
+> it isn't obvious that there's a general developer consensus on the
+> "right" way to write it.
 > 
-> This breaks all those setups people have with pre-packed .config files
-> that have worked for a long time and now randomly need changing for this
-> kernel.
 
-And this will be dropped as well.
+We just had this discussion in staging and Greg modified the patch to
+put the operator at the end.
 
-	Thanks,
-	Sören
+https://lkml.org/lkml/2014/2/25/125
 
+It's like logical && and || operators which go at the end these days.
+I don't really want to have a lot of checkpatch churn to convert
+everything...
+
+regards,
+dan carpenter
 
