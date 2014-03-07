@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753582AbaCGULD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 15:11:03 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:62587 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753299AbaCGULB (ORCPT
+	id S1753648AbaCGULL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 15:11:11 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:64885 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753299AbaCGULF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 15:11:01 -0500
+	Fri, 7 Mar 2014 15:11:05 -0500
 From: David Long <dave.long@linaro.org>
 To: linux-arm-kernel@lists.infradead.org,
         Russell King <linux@arm.linux.org.uk>
@@ -21,9 +21,9 @@ Cc: Rabin Vincent <rabin@rab.in>, "Jon Medhurst (Tixy)" <tixy@linaro.org>,
         Paul Mackerras <paulus@samba.org>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v7 02/15] ARM: Fix missing includes in kprobes sources
-Date: Fri,  7 Mar 2014 15:10:27 -0500
-Message-Id: <1394223040-17129-3-git-send-email-dave.long@linaro.org>
+Subject: [PATCH v7 03/15] uprobes: allow ignoring of probe hits
+Date: Fri,  7 Mar 2014 15:10:28 -0500
+Message-Id: <1394223040-17129-4-git-send-email-dave.long@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1394223040-17129-1-git-send-email-dave.long@linaro.org>
 References: <1394223040-17129-1-git-send-email-dave.long@linaro.org>
@@ -33,86 +33,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David A. Long" <dave.long@linaro.org>
 
-Make sure includes in ARM kprobes sources are done explicitly. Do not
-rely on includes from other includes.
+Allow arches to decided to ignore a probe hit.  ARM will use this to
+only call handlers if the conditions to execute a conditionally executed
+instruction are satisfied.
 
 Signed-off-by: David A. Long <dave.long@linaro.org>
-Acked-by: Jon Medhurst <tixy@linaro.org>
+Acked-by: Oleg Nesterov <oleg@redhat.com>
 ---
- arch/arm/include/asm/kprobes.h     | 2 +-
- arch/arm/kernel/kprobes-common.c   | 3 +++
- arch/arm/kernel/kprobes-test-arm.c | 1 +
- arch/arm/kernel/kprobes-test.c     | 4 +++-
- arch/arm/kernel/kprobes.c          | 2 ++
- 5 files changed, 10 insertions(+), 2 deletions(-)
+ include/linux/uprobes.h | 1 +
+ kernel/events/uprobes.c | 9 +++++++++
+ 2 files changed, 10 insertions(+)
 
-diff --git a/arch/arm/include/asm/kprobes.h b/arch/arm/include/asm/kprobes.h
-index f82ec22..fd2e5ca 100644
---- a/arch/arm/include/asm/kprobes.h
-+++ b/arch/arm/include/asm/kprobes.h
-@@ -18,7 +18,7 @@
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index e32251e..edff2b9 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -126,6 +126,7 @@ extern bool arch_uprobe_xol_was_trapped(struct task_struct *tsk);
+ extern int  arch_uprobe_exception_notify(struct notifier_block *self, unsigned long val, void *data);
+ extern void arch_uprobe_abort_xol(struct arch_uprobe *aup, struct pt_regs *regs);
+ extern unsigned long arch_uretprobe_hijack_return_addr(unsigned long trampoline_vaddr, struct pt_regs *regs);
++extern bool __weak arch_uprobe_ignore(struct arch_uprobe *aup, struct pt_regs *regs);
+ #else /* !CONFIG_UPROBES */
+ struct uprobes_state {
+ };
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index 307d87c..04709b6 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -1804,6 +1804,11 @@ static bool handle_trampoline(struct pt_regs *regs)
+ 	return true;
+ }
  
- #include <linux/types.h>
- #include <linux/ptrace.h>
--#include <linux/percpu.h>
-+#include <linux/notifier.h>
++bool __weak arch_uprobe_ignore(struct arch_uprobe *aup, struct pt_regs *regs)
++{
++	return false;
++}
++
+ /*
+  * Run handler and ask thread to singlestep.
+  * Ensure all non-fatal signals cannot interrupt thread while it singlesteps.
+@@ -1858,7 +1863,11 @@ static void handle_swbp(struct pt_regs *regs)
+ 	if (!get_utask())
+ 		goto out;
  
- #define __ARCH_WANT_KPROBES_INSN_SLOT
- #define MAX_INSN_SIZE			2
-diff --git a/arch/arm/kernel/kprobes-common.c b/arch/arm/kernel/kprobes-common.c
-index 18a7628..455c800 100644
---- a/arch/arm/kernel/kprobes-common.c
-+++ b/arch/arm/kernel/kprobes-common.c
-@@ -14,6 +14,9 @@
- #include <linux/kernel.h>
- #include <linux/kprobes.h>
- #include <asm/system_info.h>
-+#include <linux/types.h>
-+#include <linux/stddef.h>
-+#include <linux/bug.h>
++	if (arch_uprobe_ignore(&uprobe->arch, regs))
++		goto out;
++
+ 	handler_chain(uprobe, regs);
++
+ 	if (can_skip_sstep(uprobe, regs))
+ 		goto out;
  
- #include "kprobes.h"
- 
-diff --git a/arch/arm/kernel/kprobes-test-arm.c b/arch/arm/kernel/kprobes-test-arm.c
-index 8393129..87839de 100644
---- a/arch/arm/kernel/kprobes-test-arm.c
-+++ b/arch/arm/kernel/kprobes-test-arm.c
-@@ -10,6 +10,7 @@
- 
- #include <linux/kernel.h>
- #include <linux/module.h>
-+#include <asm/system_info.h>
- 
- #include "kprobes-test.h"
- 
-diff --git a/arch/arm/kernel/kprobes-test.c b/arch/arm/kernel/kprobes-test.c
-index 0cd63d0..4a774d4 100644
---- a/arch/arm/kernel/kprobes-test.c
-+++ b/arch/arm/kernel/kprobes-test.c
-@@ -201,7 +201,9 @@
- #include <linux/module.h>
- #include <linux/slab.h>
- #include <linux/kprobes.h>
--
-+#include <linux/errno.h>
-+#include <linux/stddef.h>
-+#include <linux/bug.h>
- #include <asm/opcodes.h>
- 
- #include "kprobes.h"
-diff --git a/arch/arm/kernel/kprobes.c b/arch/arm/kernel/kprobes.c
-index a7b621e..54e7b46 100644
---- a/arch/arm/kernel/kprobes.c
-+++ b/arch/arm/kernel/kprobes.c
-@@ -27,6 +27,8 @@
- #include <linux/stringify.h>
- #include <asm/traps.h>
- #include <asm/cacheflush.h>
-+#include <linux/percpu.h>
-+#include <linux/bug.h>
- 
- #include "kprobes.h"
- #include "patch.h"
 -- 
 1.8.1.2
 
