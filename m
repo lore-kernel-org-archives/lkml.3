@@ -1,132 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753118AbaCGVBg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 16:01:36 -0500
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:60460 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197AbaCGVBD (ORCPT
+	id S1753607AbaCGVCv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 16:02:51 -0500
+Received: from smtprelay0105.hostedemail.com ([216.40.44.105]:42179 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752553AbaCGVCs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 16:01:03 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAMbOQaUDWGBHLAjFzVSZtU3NJzu5mgcpm34g=dARADDaZB9Ryw@mail.gmail.com>
-References: <CAMbOQaUW7K=FBESVeo=BOXfYU6cuqthjnmMR6jmeNFnx8PcvuQ@mail.gmail.com>
-	<CAMbOQaU-jX8Dvmjj_iQJGBhDesMyFj02epaROFfW+ae+BDg_tA@mail.gmail.com>
-	<20140307040028.GA17965@thunk.org>
-	<CAMbOQaUDWGBHLAjFzVSZtU3NJzu5mgcpm34g=dARADDaZB9Ryw@mail.gmail.com>
-Date: Sat, 8 Mar 2014 02:25:43 +0530
-Message-ID: <CAMbOQaXsQeKoPZnKfkkmtMF2k-qdatT6q9XAvkjCWs-s8CHYuA@mail.gmail.com>
-Subject: Re: Reporting a bug - Memory corruption in Linux kernel
-From: Nilesh More <nilesh99999@gmail.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 7 Mar 2014 16:02:48 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:355:379:541:800:960:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3653:3865:3866:3867:3868:3870:3872:3874:4078:4081:4321:5007:6120:7576:7652:7901:8957:10004:10400:10471:10848:10967:11026:11232:11473:11658:11914:12043:12517:12519:12740:13019:13069:13161:13229:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache
+X-HE-Tag: smell43_1820e24102000
+X-Filterd-Recvd-Size: 2314
+Message-ID: <1394226164.16156.96.camel@joe-AO722>
+Subject: rfc: checkpatch logical line continuations (was IBM Akebono: Add
+ support for a new PHY interface to the IBM emac driver)
+From: Joe Perches <joe@perches.com>
+To: David Miller <davem@davemloft.net>
+Cc: alistair@popple.id.au, netdev@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Dan Carpenter <error27@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>
+Date: Fri, 07 Mar 2014 13:02:44 -0800
+In-Reply-To: <20140307.154142.488351276799532264.davem@davemloft.net>
+References: <1394077948-8395-1-git-send-email-alistair@popple.id.au>
+	 <1394077948-8395-3-git-send-email-alistair@popple.id.au>
+	 <20140307.154142.488351276799532264.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding three more findings -
+(added some cc's)
 
-4. The memory pages thar are getting allocated in blkdev_get call in
-step#1 are in msdos_partition() (1 page is alloacted here) and in
-efi_partition() (2 pages are allocated here) function calls. I traced
-the 'bdev->bd_inode->i_mapping->nrpages' to track the page
-allocations. I could see this getting updated in above two function
-calls. The call stack for reference:
-blkdev_get->__blkdev_get->rescan_partitions-> check_partition->
-check_part[i++](state)->efi_partition/msdos_partition
+On Fri, 2014-03-07 at 15:41 -0500, David Miller wrote:
+> From: Alistair Popple <alistair@popple.id.au>
+> Date: Thu,  6 Mar 2014 14:52:25 +1100
+> 
+> > +	out_be32(dev->reg, in_be32(dev->reg) | WKUP_ETH_RGMIIEN
+> > +		 | WKUP_ETH_TX_OE | WKUP_ETH_RX_IE);
+> 
+> When an expression spans multiple lines, the lines should end with
+> operators rather than begin with them.
 
-5. Now if I prevent the page allocations in efi_partition call by
-doing an early return(anyway USB drive does not have efi compliant
-partition table), then I could see the No-repro for this issue. This
-suggests that page allocations from efi_partition function call are
-running into already allocated ext4 fs allocations.
+That's not in CodingStyle currently.
 
-6. One more thing that I noticed is even with prevention of page
-allocations in efi_partition, In valid access to FAT prints are
-present. These pritnts won't be there if pages are not invalidated.
-This means, even msdos_partition function call does not allocate the
-correct/clean pages and when these pages are written back in while
-invalidating them, incorrect data gets written to fat disk
-inodes(directory inodes) which results in the "invalid access to FAT"
-error prints.
+Right now, checkpatch emits a --strict only warning on "&&" or "||"
+at the beginning of line but that could be changed to any "$Operators"
+
+our $Arithmetic = qr{\+|-|\*|\/|%};
+our $Operators	= qr{
+			<=|>=|==|!=|
+			=>|->|<<|>>|<|>|!|~|
+			&&|\|\||,|\^|\+\+|--|&|\||$Arithmetic
+		  }x;
+
+The ones that likely have a too high false positive rates
+are the negation "!" and bitwise "~".
+
+Also, using perl, it's hard to distinguish between a
+logical "&" and the address-of "&" as well as the
+multiplication "*" and indirection "*" so maybe those
+should be excluded too.
+
+And I think it should only be added as a --strict test.
 
 
-I guess next step would be to try and understand the page allocations
-in efi_partition and msdos_partition calls.
 
-Thank you,
-Nilesh
-
-On Sat, Mar 8, 2014 at 1:48 AM, Nilesh More <nilesh99999@gmail.com> wrote:
-> Thanks Theodore for your quick reply.
->
-> To make few things clear, USB drive has FAT file system in it. And the
-> ext4 file system is of internal sdcard present in android device. The
-> ext4 corruption in /data partition occurs when USB drive is
-> hotplugged/hotunplugged. The bug may repro with first hotplug or with
-> couple of hotplug/unplugs.
->
-> The main concern here is even if USB drive is corrupted, that should
-> not result into the native file system corruption.
->
-> Today, I digged in further to see if I can get some more clues.
-> Following are my findngs -
->
-> 1. When the USB is hotplugged, in the call stack of add_disk( ),
-> while registering disk blkdev_get(bdev, FMODE_READ, NULL) gets called
-> which I guess scans the partition table, initializes part array and
-> registers the partitions in the driver model.
->
-> 2. To release the ownership of bdev obtained in step#1,
-> blkdev_put(bdev, FMODE_READ) is called. This invalidates the pages
-> cached for bdev in above blkdev_get call by first doing a writeback of
-> these pages to disk.
->
-> 3. Now if I prevent the invalidate page call in step# 2, I see that
-> ext4 file system remains intact without any correction. That suggests,
-> some part of cached pages obtained in step#1 blkdev_get call is
-> already being used by ext4 file system and once these pages are
-> invalidated we have a corruption in ext4 file system.
->
-> My query now is, has anybody seen similar kind of issue before ? Could
-> this be a known bug ?
->
-> Thank you,
-> Nilesh
->
->
-> On Fri, Mar 7, 2014 at 9:30 AM, Theodore Ts'o <tytso@mit.edu> wrote:
->> On Fri, Mar 07, 2014 at 01:39:45AM +0530, Nilesh More wrote:
->>> Hi all,
->>>
->>> I am working on android bug wherein directory entries of ext4 file
->>> system get corrupted when USB is hotplugged (with auto mount support
->>> enabled).
->>>
->>> The logs as below:
->>> [ 413.607849] usb 2-1.1: USB disconnect, device number 12
->>                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
->>
->> Hot plugged or hot unplugged?  It looks like the problem is that the
->> block device disappeared out from under ext4.  Maybe you have a flaky
->> SD/MMC drive (i.e., funky contacts, etc.)?  Or maybe when you plug in
->> one USB device, the eMMC device where you have the mounted file system
->> disappeared?
->>
->>> If I prevent kill_bdev from invalidating pages, I see a No-Repro for
->>> this bug. Also there are no prints saying invalid access to FAT
->>> entry(which were present when bug reproduces). Earlier we had no-repro
->>> when added delay(1) before _getblk.
->>>
->>> This points out to the loss of sync between _getblk and kill_bdev and
->>> ALSO looks like kill_bdev inadvertently invalidates pages which are
->>> Ext4 owned.
->>
->> This looks like it's much more of a hardware issue than a software
->> issue.  If you are plugging in a USB device, you should *not* be
->> getting a USB disconnect message.  And the fact that the pages being
->> used by ext4 are getting invalidated would be consistent with the
->> theory that the USB device on which the ext4 file system was on is
->> somehow getting disconnected, per the message in you've shown in the
->> logs.
->>
->>                                                 - Ted
