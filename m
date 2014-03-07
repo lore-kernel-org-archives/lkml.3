@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753416AbaCGUxz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 15:53:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43746 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752107AbaCGUxx (ORCPT
+	id S1753513AbaCGUzN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 15:55:13 -0500
+Received: from mail-pb0-f67.google.com ([209.85.160.67]:44988 "EHLO
+	mail-pb0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752410AbaCGUzL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 15:53:53 -0500
-Date: Fri, 7 Mar 2014 12:55:40 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Lukasz Pawelczyk <havner@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        libvir-list@redhat.com, lxc-devel@lists.linuxcontainers.org,
-        systemd-devel@lists.freedesktop.org,
-        David Herrmann <dh.herrmann@gmail.com>
-Subject: Re: [systemd-devel] Suspending access to opened/active /dev/nodes
- during application runtime
-Message-ID: <20140307205540.GA6354@kroah.com>
-References: <E7B2439D-FF36-4353-8E1A-C58E5C33A89F@gmail.com>
- <20140307190939.GA8082@kroah.com>
- <93871091-7845-4BCC-A841-F724BEDF6E4B@gmail.com>
+	Fri, 7 Mar 2014 15:55:11 -0500
+Date: Fri, 7 Mar 2014 12:55:06 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Manuel Krause <manuelkrause@netscape.net>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        lm-sensors@lm-sensors.org
+Subject: Re: 3.13.?: Strange / dangerous fan policy...
+Message-ID: <20140307205506.GA6870@roeck-us.net>
+References: <531A1EEE.9090101@netscape.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <93871091-7845-4BCC-A841-F724BEDF6E4B@gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <531A1EEE.9090101@netscape.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 07, 2014 at 09:45:28PM +0100, Lukasz Pawelczyk wrote:
+On Fri, Mar 07, 2014 at 08:33:02PM +0100, Manuel Krause wrote:
+> Please have a short look at the following BUG report + the comments
+> -- this message here is a kind of FWD-ing it:
+> https://bugs.archlinux.org/task/39005
 > 
-> On 7 Mar 2014, at 20:09, Greg KH <gregkh@linuxfoundation.org> wrote:
+> I came late to test kernel 3.13 with the .5 one, as it was the time
+> that the related -CK/BFS patch became available.
 > 
-> > On Fri, Mar 07, 2014 at 07:46:44PM +0100, Lukasz Pawelczyk wrote:
-> >> Problem:
-> >> Has anyone thought about a mechanism to limit/remove an access to a
-> >> device during an application runtime? Meaning we have an application
-> >> that has an open file descriptor to some /dev/node and depending on
-> >> *something* it gains or looses the access to it gracefully (with or
-> >> without a notification, but without any fatal consequences).
-> >> 
-> >> Example:
-> >> LXC. Imagine we have 2 separate containers. Both running full operating
-> >> systems. Specifically with 2 X servers. Both running concurrently of
-> >> course. Both need the same input devices (e.g. we have just one mouse).
-> > 
-> > Stop right there.
-> > 
-> > If they "both" need an input device, then they should use the "shared"
-> > input device stream, i.e. evdev.
-> > 
-> > And it goes the same for every type of device the kernel is exposing to
-> > userspace, if you want to "share" them, then you need to work on
-> > changing the kernel to be able to handle shared devices.
+> I'm not using Archlinux, but openSUSE, and my problems are quite the
+> same. Especially these with smelling melting plastics.
 > 
-> I think you might have misunderstood me. They are using a shared input
-> stream (evdev in this case). The problem is I donâ€™t want them to
-> eavesdrop on each other. So itâ€™s not about making it to work. Itâ€™s
-> about making them to work â€žin turnsâ€.
+> My own reports went to Con Kolivas' Blog first:
+> "I get weird temperatures and abrupt 100% fan actions with vanilla
+> 3.13.5 with this CK and most recent BFQ at my HP Notebook.
+> In gkrellm the highest T had been @74°C, so far (3.12.13), and is
+> now growing to 94°C. Then, the fan goes to 100% for 10~30secs
+> cooling it to approx. 82°C.
+> That is not good, if I compare 74 to 94 °C.
+> Have I missed a .CONFIG option for 3.13, especially?"
+> 
+> I'd get the same without (Con's && BFQ's) patches.
+> 
+> Machine:           HP Notebook with Core2Duo CPU (Penryn)
+> Distro:            openSUSE 13.1, 64bit, continuously updated
+> Desktop:           KDE 4.12.3
+> MESA & drm & Xorg: most recent ones from:
+> http://download.opensuse.org/repositories/home:/pontostroy:/X11/openSUSE_13.1/x86_64/
+> 
+> Current kernel:    3.13.6 vanilla from openSUSE repos, with
+>                    -ck1 and BFQ patches
+> Same behaviour:    without these patches
+> 
+> Last good kernel:  3.12.13 vanilla + CK2 + BFQ
+> 
 
-See Lennart's comment about namespaces for devices, and how the kernel
-doesn't support it, for the answer to this.
+Can you add more information about your fan control policy ?
+Do you rely on the hardware for automatic fan speed control,
+or do you run the fancontrol script ?
 
-Sorry, not going to happen, use real virtual machines if you want to do
-this.
+What is the output from the 'sensors' command ?
 
-greg k-h
+Thanks,
+Guenter
