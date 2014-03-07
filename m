@@ -1,96 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751697AbaCGKbl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 05:31:41 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35540 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751302AbaCGKbj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 05:31:39 -0500
-Message-ID: <53199FEC.4020009@ti.com>
-Date: Fri, 7 Mar 2014 16:01:08 +0530
-From: George Cherian <george.cherian@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752126AbaCGKel (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 05:34:41 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:41618 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751074AbaCGKek (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 05:34:40 -0500
+Date: Fri, 7 Mar 2014 10:34:33 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, linux-kernel@vger.kernel.org,
+        zhuzhenhua@allwinnertech.com, linux-sunxi@googlegroups.com,
+        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
+        shuge@allwinnertech.com, linux-arm-kernel@lists.infradead.org,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH v3 1/5] i2c: mv64xxx: Add reset deassert call
+Message-ID: <20140307103433.GH21483@n2100.arm.linux.org.uk>
+References: <1393950521-4173-1-git-send-email-maxime.ripard@free-electrons.com> <1393950521-4173-2-git-send-email-maxime.ripard@free-electrons.com> <20140307095222.GG21483@n2100.arm.linux.org.uk> <20140307100751.GN607@lukather>
 MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>, <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-CC: <balbi@ti.com>, <kishon@ti.com>, <rob@landley.net>, <galak@codeaurora.org>,
-        <ijc+devicetree@hellion.org.uk>, <mark.rutland@arm.com>,
-        <pawel.moll@arm.com>, <robh+dt@kernel.org>, <tony@atomide.com>,
-        <anatol.pomozov@gmail.com>, <bcousson@baylibre.com>
-Subject: Re: [PATCH v2 4/5] ARM: dts: am437x-gp-evm: Enable USB
-References: <1394183758-3821-1-git-send-email-george.cherian@ti.com> <1394183758-3821-5-git-send-email-george.cherian@ti.com> <53199E88.8000800@ti.com>
-In-Reply-To: <53199E88.8000800@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140307100751.GN607@lukather>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/7/2014 3:55 PM, Roger Quadros wrote:
-> Hi George,
->
-> On 03/07/2014 11:15 AM, George Cherian wrote:
->> Enable
->> 	- ocp2scp
->> 	- USB PHY control module
->> 	- USB PHY
->> 	- dwc3_omap
->> 	- USB
->> for am437x-gp-evm
->>
->> Signed-off-by: George Cherian <george.cherian@ti.com>
->> ---
->>   arch/arm/boot/dts/am437x-gp-evm.dts | 28 ++++++++++++++++++++++++++++
->>   1 file changed, 28 insertions(+)
->>
->> diff --git a/arch/arm/boot/dts/am437x-gp-evm.dts b/arch/arm/boot/dts/am437x-gp-evm.dts
->> index 4eb72b8..1d516a7 100644
->> --- a/arch/arm/boot/dts/am437x-gp-evm.dts
->> +++ b/arch/arm/boot/dts/am437x-gp-evm.dts
->> @@ -98,3 +98,31 @@
->>   &gpio4 {
->>   	status = "okay";
->>   };
->> +
->> +
->> +&usb2_phy1 {
->> +	status = "okay";
->> +};
->> +
->> +&dwc3_1 {
->> +	status = "okay";
->> +};
-> Do you need to explicitly enable dwc3_1 nand dwc3_2?
+On Fri, Mar 07, 2014 at 11:07:51AM +0100, Maxime Ripard wrote:
+> Hi Russell,
+> 
+> On Fri, Mar 07, 2014 at 09:52:23AM +0000, Russell King - ARM Linux wrote:
+> > On Tue, Mar 04, 2014 at 05:28:37PM +0100, Maxime Ripard wrote:
+> > > The Allwinner A31 SoC using that IP has a reset controller maintaining
+> > > it reset unless told otherwise.
+> > > 
+> > > Add some optional reset support to the driver.
+> > > 
+> > > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> > > Reviewed-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> > > Tested-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> > 
+> > This appears to be causing some build errors in Olof's next builder
+> > for many of the ARM platforms which make use of this:
+> > 
+> > drivers/i2c/busses/i2c-mv64xxx.c:924: undefined reference to `reset_control_assert'
+> > drivers/i2c/busses/i2c-mv64xxx.c:904: undefined reference to `reset_control_assert'
+> > drivers/i2c/busses/i2c-mv64xxx.c:771: undefined reference to `devm_reset_control_get'
+> > drivers/i2c/busses/i2c-mv64xxx.c:778: undefined reference to `reset_control_deassert'
+> 
+> The reset framework doesn't define its functions when its not
+> selected, and somehow I think it was not here. What's odd is that
+> there is an explicit select on RESET_CONTROLLER in the Kconfig. Maybe
+> it's the circular dependency issue that has been reported that cause
+> this and Wolfram sent a patch for: http://patchwork.ozlabs.org/patch/327573/
 
-Ahhh... Fixed only in am4372.dtsi
-Same with patch 5, I will resend the series fixing it.
+If that patch has been taken, then yes, it will have caused the above -
+because now we have Dove and Kirkwood platforms trying to build this
+driver without RESET_CONTROLLER being set.
 
->
->> +
->> +&usb1 {
->> +	dr_mode = "peripheral";
->> +	status = "okay";
->> +};
->> +
->> +
->> +&usb2_phy2 {
->> +	status = "okay";
->> +};
->> +
->> +&dwc3_2 {
->> +	status = "okay";
->> +};
->> +
->> +&usb2 {
->> +	dr_mode = "host";
->> +	status = "okay";
->> +};
->>
-> cheers,
-> -roger
+The problem with depending on RESET_CONTROLLER is that then these
+platforms end up without their I2C controller - because there's nothing
+which enables RESET_CONTROLLER in their configuration.
 
+Since RESET_CONTROLLER is not required for those platforms, it really
+should be optional - and I think the real fix is for the reset controller
+support to provide stub functions.
 
 -- 
--George
-
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
