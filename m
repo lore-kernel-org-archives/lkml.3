@@ -1,69 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052AbaCGWlN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 17:41:13 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:34244 "EHLO mail.skyhub.de"
+	id S1753503AbaCGWsa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 17:48:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55742 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752472AbaCGWlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 17:41:11 -0500
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>
-Subject: [PATCH] x86, boot: Correct max ramdisk size name
-Date: Fri,  7 Mar 2014 23:40:57 +0100
-Message-Id: <1394232057-31359-1-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.9.0
+	id S1752060AbaCGWs3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 17:48:29 -0500
+Message-ID: <531A4CBB.4070208@suse.cz>
+Date: Fri, 07 Mar 2014 23:48:27 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Laura Abbott <lauraa@codeaurora.org>
+CC: Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCHv2] mm/compaction: Break out of loop on !PageBuddy in isolate_freepages_block
+References: <1394130092-25440-1-git-send-email-lauraa@codeaurora.org> <20140306163349.d1f25dac8bc97f0cf89a82b5@linux-foundation.org>
+In-Reply-To: <20140306163349.d1f25dac8bc97f0cf89a82b5@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+On 7.3.2014 1:33, Andrew Morton wrote:
+> On Thu,  6 Mar 2014 10:21:32 -0800 Laura Abbott <lauraa@codeaurora.org> wrote:
+>
+>> We received several reports of bad page state when freeing CMA pages
+>> previously allocated with alloc_contig_range:
+>>
+>> <1>[ 1258.084111] BUG: Bad page state in process Binder_A  pfn:63202
+>> <1>[ 1258.089763] page:d21130b0 count:0 mapcount:1 mapping:  (null) index:0x7dfbf
+>> <1>[ 1258.096109] page flags: 0x40080068(uptodate|lru|active|swapbacked)
+>>
+>> Based on the page state, it looks like the page was still in use. The page
+>> flags do not make sense for the use case though. Further debugging showed
+>> that despite alloc_contig_range returning success, at least one page in the
+>> range still remained in the buddy allocator.
+>>
+>> There is an issue with isolate_freepages_block. In strict mode (which CMA
+>> uses), if any pages in the range cannot be isolated,
+>> isolate_freepages_block should return failure 0. The current check keeps
+>> track of the total number of isolated pages and compares against the size
+>> of the range:
+>>
+>>          if (strict && nr_strict_required > total_isolated)
+>>                  total_isolated = 0;
+>>
+>> After taking the zone lock, if one of the pages in the range is not
+>> in the buddy allocator, we continue through the loop and do not
+>> increment total_isolated. If in the last iteration of the loop we isolate
+>> more than one page (e.g. last page needed is a higher order page), the
+>> check for total_isolated may pass and we fail to detect that a page was
+>> skipped. The fix is to bail out if the loop immediately if we are in
+>> strict mode. There's no benfit to continuing anyway since we need all
+>> pages to be isolated. Additionally, drop the error checking based on
+>> nr_strict_required and just check the pfn ranges. This matches with
+>> what isolate_freepages_range does.
+>>
+>> --- a/mm/compaction.c
+>> +++ b/mm/compaction.c
+>> @@ -242,7 +242,6 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+>>   {
+>>   	int nr_scanned = 0, total_isolated = 0;
+>>   	struct page *cursor, *valid_page = NULL;
+>> -	unsigned long nr_strict_required = end_pfn - blockpfn;
+>>   	unsigned long flags;
+>>   	bool locked = false;
+>>   	bool checked_pageblock = false;
+>> @@ -256,11 +255,12 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+>>   
+>>   		nr_scanned++;
+>>   		if (!pfn_valid_within(blockpfn))
+>> -			continue;
+>> +			goto isolate_fail;
+>> +
+>>   		if (!valid_page)
+>>   			valid_page = page;
+>>   		if (!PageBuddy(page))
+>> -			continue;
+>> +			goto isolate_fail;
+>>   
+>>   		/*
+>>   		 * The zone lock must be held to isolate freepages.
+>> @@ -289,12 +289,10 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+>>   
+>>   		/* Recheck this is a buddy page under lock */
+>>   		if (!PageBuddy(page))
+>> -			continue;
+>> +			goto isolate_fail;
+>>   
+>>   		/* Found a free page, break it into order-0 pages */
+>>   		isolated = split_free_page(page);
+>> -		if (!isolated && strict)
+>> -			break;
+>>   		total_isolated += isolated;
+>>   		for (i = 0; i < isolated; i++) {
+>>   			list_add(&page->lru, freelist);
+>> @@ -305,7 +303,15 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+>>   		if (isolated) {
+>>   			blockpfn += isolated - 1;
+>>   			cursor += isolated - 1;
+>> +			continue;
+>>   		}
+> We can make the code a little more efficient and (I think) clearer by
+> moving that `if (isolated)' test.
+>
+>> +
+>> +isolate_fail:
+>> +		if (strict)
+>> +			break;
+>> +		else
+>> +			continue;
+>> +
+> And I don't think this `continue' has any benefit.
 
-The name in struct bootparam is ->initrd_addr_max and not ramdisk_max.
-Fix that.
+Oops, missed that in my suggestion.
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- Documentation/x86/boot.txt | 4 ++--
- arch/x86/boot/header.S     | 2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+>
+> --- a/mm/compaction.c~mm-compaction-break-out-of-loop-on-pagebuddy-in-isolate_freepages_block-fix
+> +++ a/mm/compaction.c
+> @@ -293,14 +293,14 @@ static unsigned long isolate_freepages_b
+>   
+>   		/* Found a free page, break it into order-0 pages */
+>   		isolated = split_free_page(page);
+> -		total_isolated += isolated;
+> -		for (i = 0; i < isolated; i++) {
+> -			list_add(&page->lru, freelist);
+> -			page++;
+> -		}
+> -
+> -		/* If a page was split, advance to the end of it */
+>   		if (isolated) {
+> +			total_isolated += isolated;
+> +			for (i = 0; i < isolated; i++) {
+> +				list_add(&page->lru, freelist);
+> +				page++;
+> +			}
+> +
+> +			/* If a page was split, advance to the end of it */
+>   			blockpfn += isolated - 1;
+>   			cursor += isolated - 1;
+>   			continue;
+> @@ -309,9 +309,6 @@ static unsigned long isolate_freepages_b
+>   isolate_fail:
+>   		if (strict)
+>   			break;
+> -		else
+> -			continue;
+> -
+>   	}
+>   
+>   	trace_mm_compaction_isolate_freepages(nr_scanned, total_isolated);
+>
+>
+> Problem is, I can't be bothered testing this.
+>
 
-diff --git a/Documentation/x86/boot.txt b/Documentation/x86/boot.txt
-index cb81741d3b0b..a75e3adaa39d 100644
---- a/Documentation/x86/boot.txt
-+++ b/Documentation/x86/boot.txt
-@@ -182,7 +182,7 @@ Offset	Proto	Name		Meaning
- 0226/1	2.02+(3 ext_loader_ver	Extended boot loader version
- 0227/1	2.02+(3	ext_loader_type	Extended boot loader ID
- 0228/4	2.02+	cmd_line_ptr	32-bit pointer to the kernel command line
--022C/4	2.03+	ramdisk_max	Highest legal initrd address
-+022C/4	2.03+	initrd_addr_max	Highest legal initrd address
- 0230/4	2.05+	kernel_alignment Physical addr alignment required for kernel
- 0234/1	2.05+	relocatable_kernel Whether kernel is relocatable or not
- 0235/1	2.10+	min_alignment	Minimum alignment, as a power of two
-@@ -534,7 +534,7 @@ Protocol:	2.02+
-   zero, the kernel will assume that your boot loader does not support
-   the 2.02+ protocol.
- 
--Field name:	ramdisk_max
-+Field name:	initrd_addr_max
- Type:		read
- Offset/size:	0x22c/4
- Protocol:	2.03+
-diff --git a/arch/x86/boot/header.S b/arch/x86/boot/header.S
-index ec3b8ba68096..46f5a220b0ad 100644
---- a/arch/x86/boot/header.S
-+++ b/arch/x86/boot/header.S
-@@ -350,7 +350,7 @@ cmd_line_ptr:	.long	0		# (Header version 0x0202 or later)
- 					# can be located anywhere in
- 					# low memory 0x10000 or higher.
- 
--ramdisk_max:	.long 0x7fffffff
-+initrd_addr_max: .long 0x7fffffff
- 					# (Header version 0x0203 or later)
- 					# The highest safe address for
- 					# the contents of an initrd
--- 
-1.9.0
-
+I don't think it's necessary, or that the better efficiency would show :)
