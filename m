@@ -1,54 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753570AbaCGWeX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 17:34:23 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:41586 "EHLO mail.skyhub.de"
+	id S1754011AbaCGWgc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 17:36:32 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55682 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751945AbaCGWeW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 17:34:22 -0500
-Date: Fri, 7 Mar 2014 23:34:07 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Dave Jones <davej@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Yinghai Lu <yhlu.kernel@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: [qemu64,+smep,+smap] WARNING: CPU: 1 PID: 0 at
- arch/x86/kernel/cpu/amd.c:220 init_amd()
-Message-ID: <20140307223407.GH5255@pd.tnic>
-References: <20140307015833.GA10048@localhost>
- <53195336.9080606@linux.intel.com>
- <20140307055035.GA5230@localhost>
- <531A164B.8040402@linux.intel.com>
- <20140307191050.GA10961@redhat.com>
- <531A33A2.5030706@linux.intel.com>
- <20140307213856.GF5255@pd.tnic>
- <20140307220655.GA580@redhat.com>
- <531A4426.30504@linux.intel.com>
- <20140307222750.GA10867@localhost>
+	id S1752966AbaCGWgb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 17:36:31 -0500
+Message-ID: <531A49ED.4020302@suse.cz>
+Date: Fri, 07 Mar 2014 23:36:29 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140307222750.GA10867@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Laura Abbott <lauraa@codeaurora.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCHv2] mm/compaction: Break out of loop on !PageBuddy in isolate_freepages_block
+References: <1394130092-25440-1-git-send-email-lauraa@codeaurora.org>
+In-Reply-To: <1394130092-25440-1-git-send-email-lauraa@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 08, 2014 at 06:27:50AM +0800, Fengguang Wu wrote:
-> Yeah I confirmed that it works w/o the warning!
-> 
-> [    0.575854] smpboot: CPU0: Intel Core Processor (Haswell) (fam: 06, model: 3c, stepping: 01)
+On 6.3.2014 19:21, Laura Abbott wrote:
+> We received several reports of bad page state when freeing CMA pages
+> previously allocated with alloc_contig_range:
+>
+> <1>[ 1258.084111] BUG: Bad page state in process Binder_A  pfn:63202
+> <1>[ 1258.089763] page:d21130b0 count:0 mapcount:1 mapping:  (null) index:0x7dfbf
+> <1>[ 1258.096109] page flags: 0x40080068(uptodate|lru|active|swapbacked)
+>
+> Based on the page state, it looks like the page was still in use. The page
+> flags do not make sense for the use case though. Further debugging showed
+> that despite alloc_contig_range returning success, at least one page in the
+> range still remained in the buddy allocator.
+>
+> There is an issue with isolate_freepages_block. In strict mode (which CMA
+> uses), if any pages in the range cannot be isolated,
+> isolate_freepages_block should return failure 0. The current check keeps
+> track of the total number of isolated pages and compares against the size
+> of the range:
+>
+>          if (strict && nr_strict_required > total_isolated)
+>                  total_isolated = 0;
+>
+> After taking the zone lock, if one of the pages in the range is not
+> in the buddy allocator, we continue through the loop and do not
+> increment total_isolated. If in the last iteration of the loop we isolate
+> more than one page (e.g. last page needed is a higher order page), the
+> check for total_isolated may pass and we fail to detect that a page was
+> skipped. The fix is to bail out if the loop immediately if we are in
+> strict mode. There's no benfit to continuing anyway since we need all
+> pages to be isolated. Additionally, drop the error checking based on
+> nr_strict_required and just check the pfn ranges. This matches with
+> what isolate_freepages_range does.
+>
+> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
 
-Hahah, Haswell is just a couple models away from K7: model 6 vs
-model 3c, same family 6 though. So shouldn't be a big difference
-performance-wise.
+Acked-by: Vlastimil Babka <vbabka@suse.cz>
 
-Wohahahahha... :-))))))
+> ---
+> v2: Addressed several comments by Vlastimil
+>
+>   mm/compaction.c |   20 +++++++++++++-------
+>   1 files changed, 13 insertions(+), 7 deletions(-)
+>
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 5142920..054c28b 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -242,7 +242,6 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+>   {
+>   	int nr_scanned = 0, total_isolated = 0;
+>   	struct page *cursor, *valid_page = NULL;
+> -	unsigned long nr_strict_required = end_pfn - blockpfn;
+>   	unsigned long flags;
+>   	bool locked = false;
+>   	bool checked_pageblock = false;
+> @@ -256,11 +255,12 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+>   
+>   		nr_scanned++;
+>   		if (!pfn_valid_within(blockpfn))
+> -			continue;
+> +			goto isolate_fail;
+> +
+>   		if (!valid_page)
+>   			valid_page = page;
+>   		if (!PageBuddy(page))
+> -			continue;
+> +			goto isolate_fail;
+>   
+>   		/*
+>   		 * The zone lock must be held to isolate freepages.
+> @@ -289,12 +289,10 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+>   
+>   		/* Recheck this is a buddy page under lock */
+>   		if (!PageBuddy(page))
+> -			continue;
+> +			goto isolate_fail;
+>   
+>   		/* Found a free page, break it into order-0 pages */
+>   		isolated = split_free_page(page);
+> -		if (!isolated && strict)
+> -			break;
+>   		total_isolated += isolated;
+>   		for (i = 0; i < isolated; i++) {
+>   			list_add(&page->lru, freelist);
+> @@ -305,7 +303,15 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+>   		if (isolated) {
+>   			blockpfn += isolated - 1;
+>   			cursor += isolated - 1;
+> +			continue;
+>   		}
+> +
+> +isolate_fail:
+> +		if (strict)
+> +			break;
+> +		else
+> +			continue;
+> +
+>   	}
+>   
+>   	trace_mm_compaction_isolate_freepages(nr_scanned, total_isolated);
+> @@ -315,7 +321,7 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+>   	 * pages requested were isolated. If there were any failures, 0 is
+>   	 * returned and CMA will fail.
+>   	 */
+> -	if (strict && nr_strict_required > total_isolated)
+> +	if (strict && blockpfn < end_pfn)
+>   		total_isolated = 0;
+>   
+>   	if (locked)
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
