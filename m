@@ -1,97 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191AbaCGMgv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 07:36:51 -0500
-Received: from smtp0.epfl.ch ([128.178.224.218]:56925 "EHLO smtp0.epfl.ch"
+	id S1752496AbaCGMiw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 07:38:52 -0500
+Received: from smtp4.epfl.ch ([128.178.224.219]:37127 "EHLO smtp4.epfl.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751818AbaCGMgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 07:36:50 -0500
+	id S1751669AbaCGMiu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 07:38:50 -0500
 From: Florian Vaussard <florian.vaussard@epfl.ch>
 To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>
-Cc: Joe Perches <joe@perches.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Documentation: dt: Reduce fragmentation of <..> placeholders
-Date: Fri,  7 Mar 2014 13:36:15 +0100
-Message-Id: <1394195775-25043-1-git-send-email-florian.vaussard@epfl.ch>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] of: add missing major vendors
+Date: Fri,  7 Mar 2014 13:38:37 +0100
+Message-Id: <1394195917-25166-1-git-send-email-florian.vaussard@epfl.ch>
 X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Placeholders <..> are sometimes used in the devicetree documentation
-to define family-wide compatible strings (like fsl,<chip>-ipu where
-chip can be any Freescale SoC).
+Looking at the current vendor strings used in the kernel's .dts/.dtsi
+files, some vendors are used a high number of times without
+being documented. Document the ones that are used more than 10 times.
 
-These placeholders are loosly defined. This lead to some
-fragmentation. Looking at the current placeholders, we have:
+Note: a few inconsistencies were found, and thus not documented.
+Here is the list:
+- mrvl: duplicates "marvell"
+- st-ericsson: duplicates "ste" _and_ "stericsson"
+- pci8086: seems to be a unfortunate alias for "intel"
+- pnpPNP: used on PowerPC?
 
-      3 <board>
-     32 <chip>
-      1 <chip name>
-      1 <mcu-chip>
-      1 <processor>
-     30 <soc>
-      1 <SOC>
-      1 <soc-family>
-
-This patch consolidates this to:
-
-      3 <board>
-     33 <chip>
-      1 <mcu-chip>
-      1 <processor>
-     32 <soc>
-
-Reported-by: Joe Perches <joe@perches.com>
 Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
 ---
- Documentation/devicetree/bindings/arm/samsung/sysreg.txt | 2 +-
- Documentation/devicetree/bindings/pinctrl/pinctrl-st.txt | 2 +-
- Documentation/devicetree/bindings/watchdog/sunxi-wdt.txt | 2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ Documentation/devicetree/bindings/vendor-prefixes.txt | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/arm/samsung/sysreg.txt b/Documentation/devicetree/bindings/arm/samsung/sysreg.txt
-index 0ab3251..b945b23 100644
---- a/Documentation/devicetree/bindings/arm/samsung/sysreg.txt
-+++ b/Documentation/devicetree/bindings/arm/samsung/sysreg.txt
-@@ -1,7 +1,7 @@
- SAMSUNG S5P/Exynos SoC series System Registers (SYSREG)
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index 40ce2df..b5e7485 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -3,6 +3,7 @@ Device tree binding vendor prefix registry.  Keep list in alphabetical order.
+ This isn't an exhaustive list, but you should add new prefixes to it before
+ using them to avoid name-space collisions.
  
- Properties:
-- - compatible : should contain "samsung,<chip name>-sysreg", "syscon";
-+ - compatible : should contain "samsung,<chip>-sysreg", "syscon";
-    For Exynos4 SoC series it should be "samsung,exynos4-sysreg", "syscon";
-  - reg : offset and length of the register set.
- 
-diff --git a/Documentation/devicetree/bindings/pinctrl/pinctrl-st.txt b/Documentation/devicetree/bindings/pinctrl/pinctrl-st.txt
-index 05bf82a..393a53a 100644
---- a/Documentation/devicetree/bindings/pinctrl/pinctrl-st.txt
-+++ b/Documentation/devicetree/bindings/pinctrl/pinctrl-st.txt
-@@ -12,7 +12,7 @@ ST pinctrl driver controls PIO multiplexing block and also interacts with
- gpio driver to configure a pin.
- 
- Required properties: (PIO multiplexing block)
--- compatible	: should be "st,<SOC>-<pio-block>-pinctrl"
-+- compatible	: should be "st,<soc>-<pio-block>-pinctrl"
- 	like st,stih415-sbc-pinctrl, st,stih415-front-pinctrl and so on.
- - gpio-controller : Indicates this device is a GPIO controller
- - #gpio-cells	  : Should be one. The first cell is the pin number.
-diff --git a/Documentation/devicetree/bindings/watchdog/sunxi-wdt.txt b/Documentation/devicetree/bindings/watchdog/sunxi-wdt.txt
-index e39cb26..a7bee35 100644
---- a/Documentation/devicetree/bindings/watchdog/sunxi-wdt.txt
-+++ b/Documentation/devicetree/bindings/watchdog/sunxi-wdt.txt
-@@ -2,7 +2,7 @@ Allwinner SoCs Watchdog timer
- 
- Required properties:
- 
--- compatible : should be "allwinner,<soc-family>-wdt", the currently supported
-+- compatible : should be "allwinner,<soc>-wdt", the currently supported
-   SoC families being sun4i and sun6i
- - reg : Specifies base physical address and size of the registers.
- 
++abilis	Abilis Systems
+ active-semi	Active-Semi International Inc
+ ad	Avionic Design GmbH
+ adi	Analog Devices, Inc.
+@@ -11,14 +12,17 @@ ak	Asahi Kasei Corp.
+ allwinner	Allwinner Technology Co., Ltd.
+ altr	Altera Corp.
+ amcc	Applied Micro Circuits Corporation (APM, formally AMCC)
++amd	Advanced Micro Devices (AMD), Inc.
+ amstaos	AMS-Taos Inc.
+ apm	Applied Micro Circuits Corporation (APM)
+ arm	ARM Ltd.
++armadeus	ARMadeus Systems SARL
+ atmel	Atmel Corporation
+ auo	AU Optronics Corporation
+ avago	Avago Technologies
+ bosch	Bosch Sensortec GmbH
+ brcm	Broadcom Corporation
++calxeda	Calxeda
+ capella	Capella Microsystems, Inc
+ cavium	Cavium, Inc.
+ cdns	Cadence Design Systems Inc.
+@@ -26,8 +30,10 @@ chrp	Common Hardware Reference Platform
+ chunghwa	Chunghwa Picture Tubes Ltd.
+ cirrus	Cirrus Logic, Inc.
+ cortina	Cortina Systems, Inc.
++crystalfontz	Crystalfontz America, Inc.
+ dallas	Maxim Integrated Products (formerly Dallas Semiconductor)
+ davicom	DAVICOM Semiconductor, Inc.
++dlink	D-Link Systems, Inc.
+ denx	Denx Software Engineering
+ edt	Emerging Display Technologies
+ emmicro	EM Microelectronic
+@@ -37,7 +43,9 @@ est	ESTeem Wireless Modems
+ fsl	Freescale Semiconductor
+ GEFanuc	GE Fanuc Intelligent Platforms Embedded Systems, Inc.
+ gef	GE Fanuc Intelligent Platforms Embedded Systems, Inc.
++globalscale	Globalscale Technologies, Inc.
+ gmt	Global Mixed-mode Technology, Inc.
++google	Google, Inc.
+ gumstix	Gumstix, Inc.
+ haoyu	Haoyu Microelectronic Co. Ltd.
+ hisilicon	Hisilicon Limited.
+@@ -46,9 +54,12 @@ hp	Hewlett Packard
+ ibm	International Business Machines (IBM)
+ idt	Integrated Device Technologies, Inc.
+ img	Imagination Technologies Ltd.
++intel	Intel Corporation
+ intercontrol	Inter Control Group
+ isl	Intersil
+ karo	Ka-Ro electronics GmbH
++lacie	LaCie
++lantiq	Lantiq Semiconductor
+ lg	LG Corporation
+ linux	Linux-specific binding
+ lsi	LSI Corp. (LSI Logic)
+@@ -56,12 +67,16 @@ marvell	Marvell Technology Group Ltd.
+ maxim	Maxim Integrated Products
+ microchip	Microchip Technology Inc.
+ mosaixtech	Mosaix Technologies, Inc.
++moxa	Moxa
+ national	National Semiconductor
+ neonode		Neonode Inc.
++netgear	NETGEAR
+ nintendo	Nintendo
++nokia	Nokia
+ nvidia	NVIDIA
+ nxp	NXP Semiconductors
+ onnn	ON Semiconductor Corp.
++opencores	OpenCores.org
+ panasonic	Panasonic Corporation
+ phytec	PHYTEC Messtechnik GmbH
+ picochip	Picochip Ltd
+@@ -94,4 +109,5 @@ via	VIA Technologies, Inc.
+ winbond Winbond Electronics corp.
+ wlf	Wolfson Microelectronics
+ wm	Wondermedia Technologies, Inc.
++xes	Extreme Engineering Solutions (X-ES)
+ xlnx	Xilinx
 -- 
 1.8.5.3
 
