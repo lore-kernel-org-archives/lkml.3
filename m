@@ -1,78 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778AbaCGUdd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 15:33:33 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:48954 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751899AbaCGUdc (ORCPT
+	id S1753279AbaCGUiS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 15:38:18 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:43216 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751899AbaCGUiQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 15:33:32 -0500
-MIME-Version: 1.0
-In-Reply-To: <1394137532.2682.5.camel@x41>
-References: <1391886379.2669.11.camel@x41> <CAKMK7uE6Gaq-ghgWJ+6Qyn7hrGzAMOHyGT9KQQJ+ij7omPV2Ew@mail.gmail.com>
- <1391890927.1882.5.camel@x41> <CAKMK7uFx2kksGgnuy9e0xiQRKpt=_+44O1V4wbX5yNBocvjBkg@mail.gmail.com>
- <1391951759.6036.7.camel@artifact> <1391952344.25424.4.camel@x220>
- <CAErSpo6uj_Kuk0_F97nRsnM1Pss4C7=HeEaVu6D-NwFFK=1cvA@mail.gmail.com> <1394137532.2682.5.camel@x41>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 7 Mar 2014 13:33:11 -0700
-Message-ID: <CAErSpo7_oSXoze+33yPce0tmUuwOEYK_XBkMrQ+H3vC=hiLfAg@mail.gmail.com>
-Subject: Re: [Intel-gfx] agp/intel: can't ioremap flush page - no chipset flushing
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Steven Newbury <steve@snewbury.org.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 7 Mar 2014 15:38:16 -0500
+Date: Fri, 07 Mar 2014 15:38:08 -0500 (EST)
+Message-Id: <20140307.153808.649644634357014854.davem@davemloft.net>
+To: ast@plumgrid.com
+Cc: dborkman@redhat.com, mingo@kernel.org, wad@chromium.org,
+        rostedt@goodmis.org, a.p.zijlstra@chello.nl, hpa@zytor.com,
+        hagen@jauu.net, jesse@nicira.com, tglx@linutronix.de,
+        masami.hiramatsu.pt@hitachi.com, tom.zanussi@linux.intel.com,
+        jovi.zhangwei@gmail.com, edumazet@google.com,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        fweisbec@gmail.com, acme@infradead.org, penberg@iki.fi,
+        arjan@infradead.org, hch@infradead.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v6 net-next 1/3] filter: add Extended BPF interpreter
+ and converter
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1394076617-8108-2-git-send-email-ast@plumgrid.com>
+References: <1394076617-8108-1-git-send-email-ast@plumgrid.com>
+	<1394076617-8108-2-git-send-email-ast@plumgrid.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 07 Mar 2014 12:38:15 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 6, 2014 at 1:25 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> Bjorn Helgaas schreef op ma 10-02-2014 om 14:33 [-0700]:
->> Can you open a kernel.org bugzilla report and attach complete dmesg
->> logs of the working and broken kernels to it?  There might be more
->> useful resource-related messages from the PCI core.
->
-> That took me quite a bit longer than I hoped, but I finally opened a
-> report at
-> https://bugzilla.kernel.org/show_bug.cgi?id=71611 .
->
-> Note that the dmesg's are identical (up to that error). Are you still
-> interested?
+From: Alexei Starovoitov <ast@plumgrid.com>
+Date: Wed,  5 Mar 2014 19:30:15 -0800
 
-Thanks for attaching the dmesg log.  I also attached the iomem
-contents you previously posted.
+> Extended BPF extends old BPF in the following ways:
+> - from 2 to 10 registers
+>   Original BPF has two registers (A and X) and hidden frame pointer.
+>   Extended BPF has ten registers and read-only frame pointer.
+> - from 32-bit registers to 64-bit registers
+>   semantics of old 32-bit ALU operations are preserved via 32-bit
+>   subregisters
+> - if (cond) jump_true; else jump_false;
+>   old BPF insns are replaced with:
+>   if (cond) jump_true; /* else fallthrough */
+> - adds signed > and >= insns
+> - 16 4-byte stack slots for register spill-fill replaced with
+>   up to 512 bytes of multi-use stack space
+> - introduces bpf_call insn and register passing convention for zero
+>   overhead calls from/to other kernel functions (not part of this patch)
+> - adds arithmetic right shift insn
+> - adds swab32/swab64 insns
+> - adds atomic_add insn
+> - old tax/txa insns are replaced with 'mov dst,src' insn
+> 
+> Extended BPF is designed to be JITed with one to one mapping, which
+> allows GCC/LLVM backends to generate optimized BPF code that performs
+> almost as fast as natively compiled code
 
-This is likely a tangent from the AGP issue, but I don't understand
-this iomem diff between v3.13.2 and v3.14-rc1:
+I have no fundamental objections to this work, but these patches still
+need some adjustments.
 
-  -80000000-801fffff : PCI Bus 0000:02
-  -80200000-8027ffff : 0000:00:02.1
+> @@ -637,6 +641,10 @@ void sk_filter_release_rcu(struct rcu_head *rcu)
+>  {
+>  	struct sk_filter *fp = container_of(rcu, struct sk_filter, rcu);
+>  
+> +	if ((void *)fp->bpf_func == (void *)sk_run_filter_ext)
+> +		/* arch specific jit_free are expecting this value */
+> +		fp->bpf_func = sk_run_filter;
+> +
 
-The first line is a bridge window to [bus 02], and the second is an
-MMIO region for one of your AGP devices (00:02.0 is VGA and 00:02.1
-seems to be some related device).
+You should never need to cast ->bpf_func for any reason, the types have
+to be correct on both sides of assignments and tests.
 
-The bridge to [bus 02] is 00:1c.0, and your dmesg shows:
+Furthermore, for this case, I think we should not continue to use
+ad-hoc mechanisms for the JIT implementations to test this condition.
 
-  pci 0000:00:1c.0: PCI bridge to [bus 02]
-  pci 0000:00:1c.0:   bridge window [io  0x6000-0x6fff]
-  pci 0000:00:1c.0:   bridge window [mem 0xa0100000-0xa01fffff]
+Rather, make some explicit piece of state for this, and have the JITs
+test that instead.
 
-The [mem 0xa0100000-0xa01fffff] window appears in the dmesg log and in
-both iomem captures; that makes good sense.  The 80000000-801fffff
-window is in only the v3.13.2 iomem, and it *should* appear in the
-v3.13.2 dmesg log but apparently doesn't?
+> +	/* sock_filter_ext insns must be executed by sk_run_filter_ext */
+> +	fp->bpf_func = (typeof(fp->bpf_func))sk_run_filter_ext;
 
-Likewise, the 00:02.1 resource appears only in the v3.13.2 iomem, and
-it should also be mentioned in the v3.13.2 dmesg log.  The v3.14-rc5
-dmesg log shows an unassigned resource there:
+Likewise.
 
-  pci 0000:00:02.1: reg 0x10: [mem 0x00000000-0x0007ffff]
+'ctx' is an sk_buff pointer, you keep casting back and forth between void and
+sk_buff * in sk_run_filter_ext, please do not do this.
 
-and says we were unable to assign anything.  But apparently v3.13.2
-*did* assign something, and the dmesg log should show that.
+You cannot make this thing opaque, the interpreter must operate in an environment
+where the type of the memory behind 'ctx' is not ambiguous.  Therefore using a
+void pointer and all these casts is not appropriate at all.
 
-Bjorn
+> @@ -676,6 +759,9 @@ int sk_unattached_filter_create(struct sk_filter **pfp,
+>  	if (fprog->filter == NULL)
+>  		return -EINVAL;
+>  
+> +	if (bpf_ext_enable)
+> +		return sk_prepare_filter_ext(pfp, fprog, NULL);
+> +
+>  	fp = kmalloc(sk_filter_size(fprog->len), GFP_KERNEL);
+>  	if (!fp)
+>  		return -ENOMEM;
+
+To me this is the wrong priority, if the user has JIT enabled it should
+take priority over translation into extended BPF.
+
+> @@ -726,21 +812,27 @@ int sk_attach_filter(struct sock_fprog *fprog, struct sock *sk)
+>  	if (fprog->filter == NULL)
+>  		return -EINVAL;
+>  
+> -	fp = sock_kmalloc(sk, sk_fsize, GFP_KERNEL);
+> -	if (!fp)
+> -		return -ENOMEM;
+> -	if (copy_from_user(fp->insns, fprog->filter, fsize)) {
+> -		sock_kfree_s(sk, fp, sk_fsize);
+> -		return -EFAULT;
+> -	}
+> +	if (bpf_ext_enable) {
+> +		err = sk_prepare_filter_ext(&fp, fprog, sk);
+> +		if (err)
+> +			return err;
+
+Likewise.
+
+> +#ifdef __x86_64
+> +#define LOAD_IMM /**/
+> +#define K insn->imm
+> +#else
+> +#define LOAD_IMM (K = insn->imm)
+> +	s32 K = insn->imm;
+> +#endif
+
+There is no way we should have a cpu type ifdef in this code.  Please pick one
+way or the other and get rid of the CPP test entirely.
