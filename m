@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751951AbaCGIc5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 03:32:57 -0500
-Received: from eu1sys200aog123.obsmtp.com ([207.126.144.155]:50137 "EHLO
-	eu1sys200aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750896AbaCGIcy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 03:32:54 -0500
-Message-ID: <531983D1.7030606@st.com>
-Date: Fri, 7 Mar 2014 09:31:13 +0100
-From: Maxime Coquelin <maxime.coquelin@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752058AbaCGIdb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 03:33:31 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:35896 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751011AbaCGId2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 03:33:28 -0500
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <rogerq@ti.com>, <balbi@ti.com>
+CC: <kishon@ti.com>
+Subject: [PATCH v4] phy: omap-control: update dra7 and am437 usb2 bindings
+Date: Fri, 7 Mar 2014 14:02:55 +0530
+Message-ID: <1394181175-16112-1-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Rob Landley <rob@landley.net>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        <kernel@stlinux.com>, Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 0/5] Add STiH407 SoC and reference board support
-References: <1393589841-6634-1-git-send-email-maxime.coquelin@st.com> <CACRpkdbztgbWn3kmm4gv6OLcX+bPnyK5BCt0SJJcWo+iyGsWvA@mail.gmail.com>
-In-Reply-To: <CACRpkdbztgbWn3kmm4gv6OLcX+bPnyK5BCt0SJJcWo+iyGsWvA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.80]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus
+From: Roger Quadros <rogerq@ti.com>
 
-On 03/07/2014 04:11 AM, Linus Walleij wrote:
-> On Fri, Feb 28, 2014 at 8:17 PM, Maxime COQUELIN <maxime.coquelin@st.com> wrote:
->
->> This series adds basic support to the STMicroelectronics STiH407 SoC and its
->> B2120 reference board. The STiH407 is a dual-core ARM Cortex-A9 CPU aimed at
->> STB market.
->>
->> Giuseppe Cavallaro (2):
->>    ARM: STi: add pinctrl support for the STiH407 SoC
->>    pinctrl: st: Enhance the controller to manage unavailable registers
->>
->> Maxime Coquelin (3):
->>    ARM: STi: Add STiH407 SoC support
->>    ARM: dts: Add STiH407 SoC support
->>    ARM: dts: STiH407: Add B2120 board support
->
-> So I'd like to take the pinctrl patch through my tree and the rest through
-> ARM SoC but it seems it does not apply :-/
+The dra7-usb2 and am437-usb2 bindings have not yet been used.
+Change them to be more elegant.
 
-Sorry, the series was based on v3.14-rc4.
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+Changes from v3:
+Changed the compatible value to that suggested by Tony.
+ti,control-phy-usb2-dra7 and ti,control-phy-usb2-am437.
 
-I split the series in two:
-	- pinctrl patches based on the linux-pinctrl/devel branch
-	- ARM patches on arm_soc
+Changes from v2:
+Kept only the drivers/phy part in this patch
 
-Regards,
-Maxime
+ drivers/phy/phy-omap-control.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
->
-> Yours,
-> Linus Walleij
->
+diff --git a/drivers/phy/phy-omap-control.c b/drivers/phy/phy-omap-control.c
+index 17fc200..a7e2d7f 100644
+--- a/drivers/phy/phy-omap-control.c
++++ b/drivers/phy/phy-omap-control.c
+@@ -228,11 +228,11 @@ static const struct of_device_id omap_control_phy_id_table[] = {
+ 		.data = &pipe3_data,
+ 	},
+ 	{
+-		.compatible = "ti,control-phy-dra7usb2",
++		.compatible = "ti,control-phy-usb2-dra7",
+ 		.data = &dra7usb2_data,
+ 	},
+ 	{
+-		.compatible = "ti,control-phy-am437usb2",
++		.compatible = "ti,control-phy-usb2-am437",
+ 		.data = &am437usb2_data,
+ 	},
+ 	{},
+-- 
+1.7.9.5
+
