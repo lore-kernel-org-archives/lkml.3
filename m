@@ -1,75 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527AbaCGQio (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 11:38:44 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54770 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751645AbaCGQin (ORCPT
+	id S1753454AbaCGQqP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 11:46:15 -0500
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:54654 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753024AbaCGQqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 11:38:43 -0500
-Message-ID: <1394210312.16309.22.camel@paszta.hi.pengutronix.de>
-Subject: Re: [PATCH] of: Fix of_graph_parse_endpoint stub for !CONFIG_OF
- builds
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, kernel@pengutronix.de
-Date: Fri, 07 Mar 2014 17:38:32 +0100
-In-Reply-To: <20140307154953.GL21483@n2100.arm.linux.org.uk>
-References: <1394204235-28706-1-git-send-email-p.zabel@pengutronix.de>
-	 <1394204770.16309.16.camel@paszta.hi.pengutronix.de>
-	 <20140307154953.GL21483@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 7 Mar 2014 11:46:13 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAMxnaaXd9-VbxSYa9q1YVT+fwfDFYKGG2Hq-1jkc-awLX-HwtQ@mail.gmail.com>
+References: <CAMxnaaXd9-VbxSYa9q1YVT+fwfDFYKGG2Hq-1jkc-awLX-HwtQ@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 7 Mar 2014 09:45:53 -0700
+Message-ID: <CAErSpo5fkaFNq_qTZ+gTDMV554f4diOXQ7_4bsHqj06iAGTpHg@mail.gmail.com>
+Subject: Re: [Bug] PCI: Enable INTx if BIOS left them disabled - triggers
+ during rescan
+To: Andreas Noever <andreas.noever@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, Rajat Jain <rajatxjain@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+[+cc Yinghai, Rajat]
 
-Am Freitag, den 07.03.2014, 15:49 +0000 schrieb Russell King - ARM
-Linux:
-> On Fri, Mar 07, 2014 at 04:06:10PM +0100, Philipp Zabel wrote:
-> > I have also updated the git branch. The following changes since commit
-> > d484700a36952c6675aa47dec4d7a536929aa922:
-> > 
-> >   of: Warn if of_graph_parse_endpoint is called with the root node
-> > (2014-03-06 17:41:54 +0100)
-> > 
-> > are available in the git repository at:
-> > 
-> >   git://git.pengutronix.de/git/pza/linux.git topic/of-graph
-> > 
-> > for you to fetch changes up to 00fd9619120db1d6a19be2f9e3df6f76234b311b:
-> > 
-> >   of: Fix of_graph_parse_endpoint stub for !CONFIG_OF builds (2014-03-07
-> > 16:02:46 +0100)
-> 
-> Thanks, I'll re-pull it shortly.  The other good news is that I've thrown
-> your patches on top of the previous pull, merged them into my test tree
-> and everything seems to work as it should on the SolidRun Hummingboard.
+On Fri, Mar 7, 2014 at 7:33 AM, Andreas Noever <andreas.noever@gmail.com> wrote:
+> Hi,
 >
-> What base have you used for those imx-drm patches?  I assume it would
-> be something like a merge of my imx-drm commits and the of-graph branch?
+> After upgrading to the latest RC I noticed that suprise removal
+> stopped working. Linux did not notice that the devices where gone.
+> Bisection points to
+>
+> 1f42db786b14a31bf807fc41ee5583a00c08fcb1 PCI: Enable INTx if BIOS left
+> them disabled
+> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=1f42db786b14a31bf807fc41ee5583a00c08fcb1
+>
+> It seems that the above patch is triggered on the bridge itself (!)
+> when a new device is added below it. At this point the hotplug driver
+> for the bridge has already enabled MSI. Reenabling INTX kills MSI and
+> prevents later suprise removal notifications.
+>
+> The following stacktrace is from a "echo 1 > rescan" on the bridge:
+> do_pci_enable_device+0x59/0x140
+> pci_reenable_device+0x1f/0x30
+> pci_assign_unassigned_bridge_resources+0x123/0x160
+> pci_rescan_bus_bridge_resize+0x28/0x40
+> dev_bus_rescan_store+0x85/0xa0
+> dev_attr_store+0x18/0x30
+> sysfs_kf_write+0x3d/0x50
+> kernfs_fop_write+0xd2/0x140
+> vfs_write+0xba/0x1e0
+> SyS_write+0x49/0xa0
+> system_call_fastpath+0x1a/0x1f
+>
+> Similarly for a hotplug event:
+> do_pci_enable_device+0x59/0x140
+> pci_reenable_device+0x1f/0x30
+> pci_assign_unassigned_bridge_resources+0x123/0x160
+> pciehp_configure_device+0x90/0x160
+> pciehp_enable_slot+0x163/0x280
+> pciehp_power_thread+0xb8/0xe0
+> process_one_work+0x167/0x420
+> worker_thread+0x121/0x3a0
+>
+> In both cases DisINTx is turned off and the hotplug driver stops
+> reacting to events.
 
-I have based the topic/imx-drm-dt branch on the staging-next branch of
-the staging tree, at the time it was created:
-    17b02809cfa77abcab155ce3afbb1467e7f0744f "Merge 3.14-rc5 into staging-next"
+Thanks a lot for noticing and bisecting this!
 
-The topic/imx-drm-dt branch is not based on topic/of-graph at all.
+I opened a bugzilla report at https://bugzilla.kernel.org/show_bug.cgi?id=71691
 
-> Let me put this a different way: I'd be happy to pull those changes if
-> they're sensibly based in your git tree.
+It seems like clearing DisINTx has some effect on MSI.  I don't see
+anything in the spec that would suggest this (I'm looking at the PCIe
+r3.0 spec, sec 7.5.1.1).
 
-Thanks!
+Can somebody point out a connection between DisINTx and MSI?  If not,
+maybe we'll need some sort of quirk to deal with this.
 
-regards
-Philipp
+Andrea, can you attach a complete dmesg log and "lspci -vv" output to
+the bugzilla?
 
+Thanks again!
+
+Bjorn
