@@ -1,39 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753164AbaCGDJU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 22:09:20 -0500
-Received: from mail-yh0-f47.google.com ([209.85.213.47]:43392 "EHLO
-	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753128AbaCGDJS (ORCPT
+	id S1753192AbaCGDJw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 22:09:52 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:43374 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751986AbaCGDE4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 22:09:18 -0500
+	Thu, 6 Mar 2014 22:04:56 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s2734rKn029682, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net-next 1/7] r8152: replace spin_lock_irqsave and spin_unlock_irqrestore
+Date: Fri, 7 Mar 2014 11:04:34 +0800
+Message-ID: <1394161480-2918-2-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1394161480-2918-1-git-send-email-hayeswang@realtek.com>
+References: <1393934464-23675-1-git-send-email-hayeswang@realtek.com>
+ <1394161480-2918-1-git-send-email-hayeswang@realtek.com>
 MIME-Version: 1.0
-In-Reply-To: <CAJvTdKneVk_ToJ=Sv4GnMfn5a0r=ynfL4fRLOoKHsqMrDYr8JA@mail.gmail.com>
-References: <1393223377-5744-1-git-send-email-tuukka.tikkanen@linaro.org>
-	<1393223377-5744-7-git-send-email-tuukka.tikkanen@linaro.org>
-	<CAJvTdKneVk_ToJ=Sv4GnMfn5a0r=ynfL4fRLOoKHsqMrDYr8JA@mail.gmail.com>
-Date: Thu, 6 Mar 2014 22:09:17 -0500
-X-Google-Sender-Auth: U7kjK__8mE2GKjJG5vGVbLNKSmc
-Message-ID: <CAJvTdKms3LNZfQ82CofNdtPKtFyEz6XtJGEfMWQDVLEvurkijw@mail.gmail.com>
-Subject: Re: [PATCH 6/7] Cpuidle: Deal with timer expiring in the past
-From: Len Brown <lenb@kernel.org>
-To: Tuukka Tikkanen <tuukka.tikkanen@linaro.org>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NAK
+Use spin_lock and spin_unlock in interrupt context.
 
-tick_nohz_get_sleep_length() has exactly 1 consumer -- cpuidle.
+The ndo_start_xmit would not be called in interrupt context, so
+replace the relative spin_lock_irqsave and spin_unlock_irqrestore
+with spin_lock_bh and spin_unlock_bh.
 
-Rather than have cpuidle second guess what is returned,
-tick_nohz_get_sleep_length() should be updated to return a value
-that makes sense to cpuidle.
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/usb/r8152.c | 28 ++++++++++++----------------
+ 1 file changed, 12 insertions(+), 16 deletions(-)
 
-thanks,
-Len Brown, Intel Open Source Technology Cent
+diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+index b8eee36..8ecb41b 100644
+--- a/drivers/net/usb/r8152.c
++++ b/drivers/net/usb/r8152.c
+@@ -963,7 +963,6 @@ static int rtl8152_set_mac_address(struct net_device *netdev, void *p)
+ static void read_bulk_callback(struct urb *urb)
+ {
+ 	struct net_device *netdev;
+-	unsigned long flags;
+ 	int status = urb->status;
+ 	struct rx_agg *agg;
+ 	struct r8152 *tp;
+@@ -997,9 +996,9 @@ static void read_bulk_callback(struct urb *urb)
+ 		if (urb->actual_length < ETH_ZLEN)
+ 			break;
+ 
+-		spin_lock_irqsave(&tp->rx_lock, flags);
++		spin_lock(&tp->rx_lock);
+ 		list_add_tail(&agg->list, &tp->rx_done);
+-		spin_unlock_irqrestore(&tp->rx_lock, flags);
++		spin_unlock(&tp->rx_lock);
+ 		tasklet_schedule(&tp->tl);
+ 		return;
+ 	case -ESHUTDOWN:
+@@ -1022,9 +1021,9 @@ static void read_bulk_callback(struct urb *urb)
+ 	if (result == -ENODEV) {
+ 		netif_device_detach(tp->netdev);
+ 	} else if (result) {
+-		spin_lock_irqsave(&tp->rx_lock, flags);
++		spin_lock(&tp->rx_lock);
+ 		list_add_tail(&agg->list, &tp->rx_done);
+-		spin_unlock_irqrestore(&tp->rx_lock, flags);
++		spin_unlock(&tp->rx_lock);
+ 		tasklet_schedule(&tp->tl);
+ 	}
+ }
+@@ -1033,7 +1032,6 @@ static void write_bulk_callback(struct urb *urb)
+ {
+ 	struct net_device_stats *stats;
+ 	struct net_device *netdev;
+-	unsigned long flags;
+ 	struct tx_agg *agg;
+ 	struct r8152 *tp;
+ 	int status = urb->status;
+@@ -1057,9 +1055,9 @@ static void write_bulk_callback(struct urb *urb)
+ 		stats->tx_bytes += agg->skb_len;
+ 	}
+ 
+-	spin_lock_irqsave(&tp->tx_lock, flags);
++	spin_lock(&tp->tx_lock);
+ 	list_add_tail(&agg->list, &tp->tx_free);
+-	spin_unlock_irqrestore(&tp->tx_lock, flags);
++	spin_unlock(&tp->tx_lock);
+ 
+ 	usb_autopm_put_interface_async(tp->intf);
+ 
+@@ -1330,14 +1328,13 @@ r8152_tx_csum(struct r8152 *tp, struct tx_desc *desc, struct sk_buff *skb)
+ static int r8152_tx_agg_fill(struct r8152 *tp, struct tx_agg *agg)
+ {
+ 	struct sk_buff_head skb_head, *tx_queue = &tp->tx_queue;
+-	unsigned long flags;
+ 	int remain, ret;
+ 	u8 *tx_data;
+ 
+ 	__skb_queue_head_init(&skb_head);
+-	spin_lock_irqsave(&tx_queue->lock, flags);
++	spin_lock_bh(&tx_queue->lock);
+ 	skb_queue_splice_init(tx_queue, &skb_head);
+-	spin_unlock_irqrestore(&tx_queue->lock, flags);
++	spin_unlock_bh(&tx_queue->lock);
+ 
+ 	tx_data = agg->head;
+ 	agg->skb_num = agg->skb_len = 0;
+@@ -1374,9 +1371,9 @@ static int r8152_tx_agg_fill(struct r8152 *tp, struct tx_agg *agg)
+ 	}
+ 
+ 	if (!skb_queue_empty(&skb_head)) {
+-		spin_lock_irqsave(&tx_queue->lock, flags);
++		spin_lock_bh(&tx_queue->lock);
+ 		skb_queue_splice(&skb_head, tx_queue);
+-		spin_unlock_irqrestore(&tx_queue->lock, flags);
++		spin_unlock_bh(&tx_queue->lock);
+ 	}
+ 
+ 	netif_tx_lock_bh(tp->netdev);
+@@ -1551,16 +1548,15 @@ static void rtl_drop_queued_tx(struct r8152 *tp)
+ {
+ 	struct net_device_stats *stats = &tp->netdev->stats;
+ 	struct sk_buff_head skb_head, *tx_queue = &tp->tx_queue;
+-	unsigned long flags;
+ 	struct sk_buff *skb;
+ 
+ 	if (skb_queue_empty(tx_queue))
+ 		return;
+ 
+ 	__skb_queue_head_init(&skb_head);
+-	spin_lock_irqsave(&tx_queue->lock, flags);
++	spin_lock_bh(&tx_queue->lock);
+ 	skb_queue_splice_init(tx_queue, &skb_head);
+-	spin_unlock_irqrestore(&tx_queue->lock, flags);
++	spin_unlock_bh(&tx_queue->lock);
+ 
+ 	while ((skb = __skb_dequeue(&skb_head))) {
+ 		dev_kfree_skb(skb);
+-- 
+1.8.4.2
+
