@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741AbaCGSF2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 13:05:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50696 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751330AbaCGSF0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 13:05:26 -0500
-Message-ID: <531A0A5B.2000104@redhat.com>
-Date: Fri, 07 Mar 2014 19:05:15 +0100
-From: Thomas Graf <tgraf@redhat.com>
-Organization: Red Hat, Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Pravin Shelar <pshelar@nicira.com>
-CC: Zoltan Kiss <zoltan.kiss@citrix.com>, Jesse Gross <jesse@nicira.com>,
-        "dev@openvswitch.org" <dev@openvswitch.org>,
-        xen-devel@lists.xenproject.org, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org
-Subject: Re: [PATCH] openvswitch: Orphan frags before sending to userspace
- via Netlink to avoid guest stall
-References: <1393615016-9187-1-git-send-email-zoltan.kiss@citrix.com>	<5318ABC0.4040307@citrix.com>	<CALnjE+rWc=n_F+1jSLQtPrgKSvvxONEkkYxWEHon2_KVNG9z3Q@mail.gmail.com>	<5319EC8E.2010606@redhat.com> <CALnjE+oDM=ga_C6T_-9i2UNwv=K4g-+y-LJA04nh+=WmoeuNXw@mail.gmail.com>
-In-Reply-To: <CALnjE+oDM=ga_C6T_-9i2UNwv=K4g-+y-LJA04nh+=WmoeuNXw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753426AbaCGSJx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 13:09:53 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:42324 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752060AbaCGSJw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 13:09:52 -0500
+Date: Fri, 07 Mar 2014 13:09:50 -0500 (EST)
+Message-Id: <20140307.130950.1797371137100057531.davem@davemloft.net>
+To: Markos.Chandras@imgtec.com
+Cc: linux-kernel@vger.kernel.org, dborkman@redhat.com
+Subject: Re: [PATCH] tools/net/Makefile: Define PACKAGE to fix bfd build
+ problems
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <53198EE4.8030103@imgtec.com>
+References: <1394097354-5290-1-git-send-email-markos.chandras@imgtec.com>
+	<20140306.125412.1583267049751920093.davem@davemloft.net>
+	<53198EE4.8030103@imgtec.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 07 Mar 2014 10:09:52 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/2014 06:19 PM, Pravin Shelar wrote:
-> On Fri, Mar 7, 2014 at 7:58 AM, Thomas Graf <tgraf@redhat.com> wrote:
->> On 03/07/2014 05:46 AM, Pravin Shelar wrote:
->>>
->>> But I found bug in datapath user-space queue code. I am not sure how
->>> this can work with skb fragments and MMAP-netlink socket.
->>> Here is what happens, OVS allocates netlink skb and adds fragments to
->>> skb using skb_zero_copy(), then calls genlmsg_unicast().
->>> But if netlink sock is mmped then netlink-send queues netlink
->>> allocated skb->head (linear data of skb) and ignore skb frags.
->>>
->>> Currently this is not problem with OVS vswitchd since it does not use
->>> netlink MMAP sockets. But if vswitchd stats using MMAP-netlink socket,
->>> it can break it.
->>
->>
->> The secret is out ;-)
->>
->> I was very surprised too when I noticed that it worked. It's not just
->> OVS, it's nfqueue as well. The reason is that an netlink mmaped skb is
->> setup with a giant tailroom in netlink_ring_setup_skb():
->>
->>          skb->end        = skb->tail + size;
->>
-> For OVS use-case, the size is linear part of skb. so I think for
-> mmap-netlink socket it will fail.
+From: Markos Chandras <Markos.Chandras@imgtec.com>
+Date: Fri, 7 Mar 2014 09:18:28 +0000
 
-Could you rephrase? I'm not sure I understand correctly.
+> On 03/06/2014 05:54 PM, David Miller wrote:
+>> From: Markos Chandras <markos.chandras@imgtec.com>
+>> Date: Thu, 6 Mar 2014 09:15:54 +0000
+>>
+>>> Fixes the following build problem with binutils-2.24
+>>>
+>>> gcc -Wall -O2   -c -o bpf_jit_disasm.o bpf_jit_disasm.c
+>>> In file included from bpf_jit_disasm.c:25:0:
+>>> /usr/include/bfd.h:35:2: error: #error config.h must be included
+>>> before this header
+>>>   #error config.h must be included before this header
+>>>
+>>> This is similar to commit 3ce711a6abc27abce1554e1d671a8762b7187690
+>>> "perf tools: bfd.h/libbfd detection fails with recent binutils"
+>>>
+>>> See: https://sourceware.org/bugzilla/show_bug.cgi?id=14243
+>>>
+>>> CC: David S. Miller <davem@davemloft.net>
+>>> CC: Daniel Borkmann <dborkman@redhat.com>
+>>> Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+>>
+>> I think your subject needs to be adjusted, this patch doesn't fix a
+>> "bfd"
+>> build problem.
+>>
+> Hi David,
+> 
+> Thanks for the comment. Well it's problem caused by the bfd
+> header. However, I suppose you can remove the 'bfd' word from the
+> subject as I understand it's confusing. Would you be able to fix this
+> before you apply this patch or should I send a new patch?
 
-The tailroom size equals to the configured frame payload size of
-the ring buffer. So as long as the frame size chosen is large
-enough to hold whatever pieces comes out of skb_gso_segment() we are
-fine. That said, I agree that we should fix this properly before we
-enable mmap on the OVS user space side.
+Please send a new patch, thanks.
