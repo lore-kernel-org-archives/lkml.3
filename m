@@ -1,112 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754117AbaCGQzW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 11:55:22 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:63562 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751840AbaCGQzU (ORCPT
+	id S1754148AbaCGQ4G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 11:56:06 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:50786 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752008AbaCGQ4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 11:55:20 -0500
+	Fri, 7 Mar 2014 11:56:03 -0500
 MIME-Version: 1.0
-Date: Fri, 7 Mar 2014 17:55:19 +0100
-X-Google-Sender-Auth: -WgZfBpYhfDi2JdGmKZBkVeAveM
-Message-ID: <CAMuHMdVV_NrQ3PPJwPNx7MoM9TWLdk02d+10zNipNcC7VC0HAA@mail.gmail.com>
-Subject: serial core: crash / race condition on unbind
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-serial@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>
+In-Reply-To: <1394185698.5608.5.camel@x41>
+References: <1391886379.2669.11.camel@x41> <CAKMK7uE6Gaq-ghgWJ+6Qyn7hrGzAMOHyGT9KQQJ+ij7omPV2Ew@mail.gmail.com>
+ <1391890927.1882.5.camel@x41> <CAKMK7uFx2kksGgnuy9e0xiQRKpt=_+44O1V4wbX5yNBocvjBkg@mail.gmail.com>
+ <1391951759.6036.7.camel@artifact> <1391952344.25424.4.camel@x220>
+ <CAErSpo6uj_Kuk0_F97nRsnM1Pss4C7=HeEaVu6D-NwFFK=1cvA@mail.gmail.com> <1394185698.5608.5.camel@x41>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 7 Mar 2014 09:55:43 -0700
+Message-ID: <CAErSpo4jiq38P3TNuGLGS--nbV9NtUAmiuK=cwWyFAneY-=eOA@mail.gmail.com>
+Subject: Re: [Intel-gfx] agp/intel: can't ioremap flush page - no chipset flushing
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Steven Newbury <steve@snewbury.org.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When unbinding a serial driver, uart_remove_one_port() clears
-uart_state.uart_port:
+On Fri, Mar 7, 2014 at 2:48 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> Bjorn Helgaas schreef op ma 10-02-2014 om 14:33 [-0700]:
+>> I wouldn't start bisecting yet, but if you're in the mood, this
+>> commit: 96702be56037 "Merge branch 'pci/resource' into next" looks
+>> like a good place to start, so you could try the pre-merge commit:
+>> 04f982beb900 "Merge branch 'pci/msi' into next".  If 04f982beb900 is
+>> good, there are only about 15 commits on the pci/resource branch to
+>> look at.
+>
+> This might end up not being relevant. And this is surely documented
+> somewhere, but anyhow:
+> - what git magic returns the hashes of the 15 commits that merge commit
+>   96702be56037 added to the tree; and
 
-        state->uart_port = NULL;
+"git show 96702be56037" gives:
 
-If the serial port is still in use (e.g. by getty), uart_close() will be
-called later:
+    commit 96702be560374ee7e7139a34cab03554129abbb4
+    Merge: 04f982beb900 d56dbf5bab8c
+    ...
 
-        static void uart_close(struct tty_struct *tty, struct file *filp)
-        {
-                struct uart_state *state = tty->driver_data;
-                struct uart_port *uport;
+04f982beb900 is the previous HEAD, d56dbf5bab8c is the head of the
+branch merged by this commit.  "git log 04f982beb900..96702be56037"
+shows the commits merged.
 
-                ...
+> - how can I use the list of those hashes to limit the range of commits
+>   to do a git bisect?
 
-                if (!state)
-                        return;
+I'm not a git bisect expert, but I *think* you should be able to do
+something like this:
 
-                uport = state->uart_port;
+    git bisect start
+    git bisect bad 96702be56037
+    git bisect good 04f982beb900
 
-uport is NULL
+(assuming you've verified that 96702be56037 really *is* bad and
+04f982beb900 really *is* good), and git should checkout something in
+the middle and you can build and test it, then use "git bisect good"
+or "git bisect bad" depending on the result.
 
-                ...
-
-                pr_debug("uart_close(%d) called\n", uport->line);
-
-If debugging is enabled, it will already crash here while dereferencing uport
-(this one is easily fixed)
-
-                if (tty_port_close_start(port, tty, filp) == 0)
-                        return;
-
-                ...
-
-                uart_flush_buffer(tty);
-
-uart_flush_buffer() will try to obtain the port's spinlock:
-
-        static void uart_flush_buffer(struct tty_struct *tty)
-        {
-                struct uart_state *state = tty->driver_data;
-                struct uart_port *port;
-
-                ...
-
-                port = state->uart_port;
-
-port is NULL
-
-                ...
-
-                spin_lock_irqsave(&port->lock, flags);
-
-Crash!!
-
-It doesn't always crash, though.
-
-Sometimes uart_close() returns after the tty_port_close_start() above,
-without a crash (bypassing e.g. the call to uart_change_pm() :-(
-Sometimes it crashs in uart_chars_in_buffer(), which also tries to take the
-spinlock:
-    tty_port_close_start()
-        tty_wait_until_sent_from_close()
-            tty_wait_until_sent()
-                tty_chars_in_buffer()
-                    uart_chars_in_buffer()
-                        spin_lock_irqsave(&state->uart_port->lock, flags);
-
-I'm not that familiar with the internals of the serial core. Perhaps
-uart_close()
-should return early if uport is NULL, just like if state is NULL?
-However, that means the uart_change_pm(state, UART_PM_STATE_OFF)
-is bypassed again.
-
-This is with sh-sci, but I don't think the driver matters.
-
-Thanks for your comments and suggestions!
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Bjorn
