@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753916AbaCGXkP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 18:40:15 -0500
-Received: from smtp0.epfl.ch ([128.178.224.218]:47876 "EHLO smtp0.epfl.ch"
+	id S1753590AbaCGXoP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 18:44:15 -0500
+Received: from mga03.intel.com ([143.182.124.21]:64842 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752499AbaCGXjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 18:39:01 -0500
-From: Florian Vaussard <florian.vaussard@epfl.ch>
-To: Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rob Herring <robh@kernel.org>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v4 1/4] checkpatch: check vendor compatible with dashes
-Date: Sat,  8 Mar 2014 00:38:44 +0100
-Message-Id: <1394235527-8999-2-git-send-email-florian.vaussard@epfl.ch>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1394235527-8999-1-git-send-email-florian.vaussard@epfl.ch>
-References: <1394235527-8999-1-git-send-email-florian.vaussard@epfl.ch>
+	id S1751581AbaCGXoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 18:44:14 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,610,1389772800"; 
+   d="scan'208";a="488234922"
+Date: Sat, 8 Mar 2014 07:44:11 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Stefani Seibold <stefani@seibold.net>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [x86, vdso]  BUG: unable to handle kernel paging request at
+ d34bd000
+Message-ID: <20140307234411.GA14886@localhost>
+References: <20140307013833.GD8427@localhost>
+ <1394182034.21684.6.camel@wall-e.seibold.net>
+ <20140307091515.GA8888@localhost>
+ <1394186248.28066.42.camel@wall-e.seibold.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394186248.28066.42.camel@wall-e.seibold.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current vendor compatible check will not match vendors with
-dashes, like:
+Hi Stefani,
 
-compatible="asahi-kasei"
+> So i tried my best, but without support it is impossible to find all
+> issues. But mostly what i get was bureaucracy afflictions
+> 
+> I complied, but now it is time to help finding the issues. And not only
+> do a complain, sit back and wait.
 
-Reported-by: Joe Perches <joe@perches.com>
-Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
----
- scripts/checkpatch.pl | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I feel sorry if that's what you perceived. But I'm just submitting
+test results rather than complaining. I should actually be glad if my
+test system catches more bugs. ;-) And there is no way for me to sit
+back - I'm actually overloaded. Yesterday I wrote 63 emails, which is
+one per 10 minutes _assuming_ I'm working 8hours. You can imagine the
+works required behind all these emails.
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 464dcef..e304e77 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2058,7 +2058,7 @@ sub process {
- 				my $vendor = $compat;
- 				my $vendor_path = $dt_path . "vendor-prefixes.txt";
- 				next if (! -f $vendor_path);
--				$vendor =~ s/^([a-zA-Z0-9]+)\,.*/$1/;
-+				$vendor =~ s/^([a-zA-Z0-9\-]+)\,.*/$1/;
- 				`grep -Eq "$vendor" $vendor_path`;
- 				if ( $? >> 8 ) {
- 					WARN("UNDOCUMENTED_DT_STRING",
--- 
-1.8.5.3
+> If i haed a  8192 core i7 XEON machine i would be able to test all
+> mutations of kernels. But i have not (despite i cannot pay the invoice).
+> 
+> Also i get no support by people who ask me to do this work. I am really
+> pissed of.
 
+We tried hard to build the test infrastructure for the good of Linux
+community. And if you like, I'd be happy to add your git tree to our
+test pool - currently it already includes 300+ kernel git trees from
+various developers. It'd feel more at home to find bugs in one's own
+tree, rather than in the maintainers'. :-)
+
+Thanks,
+Fengguang
