@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753803AbaCGQJi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 11:09:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61299 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751935AbaCGQJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 11:09:37 -0500
-Date: Fri, 7 Mar 2014 11:09:06 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: WANG Chao <chaowang@redhat.com>
-Cc: Muli Ben-Yehuda <muli@cs.technion.ac.il>,
-        "Jon D. Mason" <jdmason@kudzu.us>, "H. Peter Anvin" <hpa@zytor.com>,
-        Baoquan He <bhe@redhat.com>, kexec@lists.infradead.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, calgary: use 8M TCE table size by default
-Message-ID: <20140307160906.GH1326@redhat.com>
-References: <1394179816-15435-1-git-send-email-chaowang@redhat.com>
- <20140307141413.GF1326@redhat.com>
- <20140307155204.GC30641@dhcp-17-89.nay.redhat.com>
+	id S1754059AbaCGQKI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 11:10:08 -0500
+Received: from moutng.kundenserver.de ([212.227.126.130]:52492 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753601AbaCGQKF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 11:10:05 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: Re: [PATCH 3/7] of: introduce of_dma_is_coherent() helper
+Date: Fri, 7 Mar 2014 17:09:11 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Rob Herring <robherring2@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+References: <1394097598-17622-1-git-send-email-santosh.shilimkar@ti.com> <CAL_JsqJ3QhRRNVAsvAPP=Ex_ptQcbpCXh7pf44K1xh+scFqiug@mail.gmail.com> <531948A8.9040106@ti.com>
+In-Reply-To: <531948A8.9040106@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140307155204.GC30641@dhcp-17-89.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201403071709.11568.arnd@arndb.de>
+X-Provags-ID: V02:K0:9JxmDDPxE2bB6rZjZQz1pvx9l+CfAl1Z56i/ZNkQGOe
+ Rg7KjPJTgYCvsvI7vF78X7+HzOKK4OqA0EvcD/E4DXvVLLXOKN
+ ZFWUkZA9cpjoAnEybrVA/D9CFMqJynwnC8YG2MstRqPCrMSVXY
+ GNYgsWfga4YrHT6/ACRd9zSBgfpL4Z4+DVGkYaT05P2QRQoCz8
+ 8LRf21COYukbLwNOIXGn3YM2cJvQo/D1DemkNNwkeJrus54FIu
+ R8Sc1waQI9EkCwqKvwx/V+DOZJxo8hsXG/0UBbqp4DtMZHx9vY
+ vvwD6TAy8nSElVGHi++TFt9Ck6zpoIFbvGzjYutP80QpMC8spS
+ MQxXDFQff4tRVaZ4ZPV0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 07, 2014 at 11:52:04PM +0800, WANG Chao wrote:
-> Hi, Vivek
-> 
-> On 03/07/14 at 09:14am, Vivek Goyal wrote:
-> > On Fri, Mar 07, 2014 at 04:10:16PM +0800, WANG Chao wrote:
+On Friday 07 March 2014, Santosh Shilimkar wrote:
+> On Friday 07 March 2014 11:55 AM, Rob Herring wrote:
+>
+> > Thinking about this some more, if the arch is always coherent or
+> > always non-coherent, then the default ops are always fine. In that
+> > case set_arch_dma_coherent_ops is always a nop and of_dma_is_coherent
+> > is a don't care.
 > > 
-> > [..]
-> > >  	}
-> > >  
-> > > -	specified_table_size = determine_tce_table_size((is_kdump_kernel() ?
-> > > -					saved_max_pfn : max_pfn) * PAGE_SIZE);
-> > > +	specified_table_size = determine_tce_table_size();
-> > 
-> > I don't think you can get rid of saved_max_pfn right away. What if
-> > somebody is using old first kernel and new second kernel. Then old kernel
-> > will still be using a table size which is smaller than 8M.
-> 
-> If TCE table size is hard coded to 8M, the new 1st kernel can never be
-> compatible with the old 2nd kernel.
+> Hmmm.. I guess you are right. In that case we can drop the need of
+> config option.
 
-I gave example of old first kernel and new second kernel, and not
-vice-versa.
+A compile-time config option clearly would not work here, because it
+breaks multiplatform support when some platforms are different from
+others. I can still see the possible need for a global run-time setting
+though, to give some platform init code the ability to override the
+DT flags when it knows better. That is probably what you want to do
+on keystone without LPAE.
 
-So we have two scenarios.
-
-- Old first kernel and new second kernel.
-- New first kernel and old second kernel.
-
-If we want to make these two scenarios work with calgary, we need to
-use kexec-tools with --pass-memmap option. And also in new kernel we
-need to retain saved_max_pfn. Only difference will be, that we will
-set saved_max_pfn only if it is kdump kernel and if user passed a 
-memory map on kernel command line.
-
-So it is doable if it want to do it.
-
-Now the real question is, is it worth introducing all this complication
-and confusion given the fact most of the people use same first and second
-kernel and given the fact that calgary is old hardware. What are the
-chances somebody will run into it.
-
-I would say it is not very complicated to maintain backward compatibility
-in this case. So let us keep saved_max_pfn for some time and make
-kexec-tools changes. Some time down the line, one can get rid of
-saved_max_pfn completely.
-
-Thanks
-Vivek
+	Arnd
