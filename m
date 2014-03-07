@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753894AbaCGRRK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 12:17:10 -0500
-Received: from www.linutronix.de ([62.245.132.108]:40037 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752928AbaCGRRJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 12:17:09 -0500
-Date: Fri, 7 Mar 2014 18:17:15 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-cc: Jason Cooper <jason@lakedaemon.net>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [patch 5/5] irqchip: armanda: Sanitize set_irq_affinity()
-In-Reply-To: <5319ED86.2050707@free-electrons.com>
-Message-ID: <alpine.DEB.2.02.1403071816340.18573@ionos.tec.linutronix.de>
-References: <20140304202425.102779779@linutronix.de> <20140304203101.088889302@linutronix.de> <20140306190531.GF1872@titan.lakedaemon.net> <5319ED86.2050707@free-electrons.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753958AbaCGRRY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 12:17:24 -0500
+Received: from mga11.intel.com ([192.55.52.93]:30712 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752504AbaCGRRV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 12:17:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,608,1389772800"; 
+   d="scan'208";a="494279612"
+From: Andi Kleen <andi@firstfloor.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Stephen Tweedie <sct@redhat.com>,
+        Jeremy Eder <jeder@redhat.com>
+Subject: Re: [PATCH 5/5][RFC][CFT] resizable namespace.c hashes
+References: <20140305034751.GW18016@ZenIV.linux.org.uk>
+	<20140305035219.GE26528@ZenIV.linux.org.uk>
+Date: Fri, 07 Mar 2014 09:17:19 -0800
+In-Reply-To: <20140305035219.GE26528@ZenIV.linux.org.uk> (Al Viro's message of
+	"Wed, 5 Mar 2014 03:52:19 +0000")
+Message-ID: <87bnxi6i8w.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 Mar 2014, Gregory CLEMENT wrote:
+Al Viro <viro@ZenIV.linux.org.uk> writes:
 
-> On 06/03/2014 20:05, Jason Cooper wrote:
-> > Thomas,
-> > 
-> > nit: s/armanda/armada/ in the patch subject.
-> > 
-> > Gregory,
-> > 
-> > Mind providing an Ack on this?
-> 
-> Well sorry but with this patch the kernel doesn't
-> work anymore.
-> 
-> I am investigating to find if some part could be kept.
+> * switch allocation to alloc_large_system_hash()
+> * make sizes overridable by boot parameters (mhash_entries=, mphash_entries=)
+> * switch mountpoint_hashtable from list_head to hlist_head
 
-It might be the readback of the routing register. I don't have the
-datasheet of this.
- 
-Thanks,
+So how much memory does this use on a standard system (<4GB memory)?
+How much memory does it use on a large system (0.5TB)?
 
-	tglx
+How good is your hash function. Would jhash be more appropiate
+and allow smaller hash tables?
+
+Perhaps just want a tree here.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
