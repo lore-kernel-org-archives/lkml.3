@@ -1,172 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522AbaCHFck (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 00:32:40 -0500
-Received: from mail-we0-f169.google.com ([74.125.82.169]:42608 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751512AbaCHFcf (ORCPT
+	id S1752154AbaCHFaW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 00:30:22 -0500
+Received: from mail-we0-f181.google.com ([74.125.82.181]:52606 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751098AbaCHFaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 00:32:35 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v6 4/6] pci: Introduce a domain number for pci_host_bridge.
-To: Liviu Dudau <Liviu.Dudau@arm.com>, linux-pci <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        LKML <linux-kernel@vger.kernel.org>, Tanmay Inamdar <tinamdar@apm.com>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-In-Reply-To: <1394020137-1830-5-git-send-email-Liviu.Dudau@arm.com>
-References: <1394020137-1830-1-git-send-email-Liviu.Dudau@arm.com> < 1394020137-1830-5-git-send-email-Liviu.Dudau@arm.com>
-Date: Fri, 07 Mar 2014 21:09:17 +0000
-Message-Id: <20140307210917.152E8C40F14@trevor.secretlab.ca>
+	Sat, 8 Mar 2014 00:30:17 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v6 1/8] [media] of: move graph helpers from drivers/media/v4l2-core to drivers/of
+To: Philipp Zabel <p.zabel@pengutronix.de>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        devicetree@vger.kernel.org, Philipp Zabel <p.zabel@pengutronix.de>
+In-Reply-To: <1394011242-16783-2-git-send-email-p.zabel@pengutronix.de>
+References: <1394011242-16783-1-git-send-email-p.zabel@pengutronix.de> < 1394011242-16783-2-git-send-email-p.zabel@pengutronix.de>
+Date: Fri, 07 Mar 2014 18:25:37 +0000
+Message-Id: <20140307182537.C2CC5C40B10@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  5 Mar 2014 11:48:55 +0000, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> Make it easier to discover the domain number of a bus by storing
-> the number in pci_host_bridge for the root bus. Several architectures
-> have their own way of storing this information, so it makes sense
-> to try to unify the code. While at this, add a new function that
-> creates a root bus in a given domain and make pci_create_root_bus()
-> a wrapper around this function.
+On Wed,  5 Mar 2014 10:20:35 +0100, Philipp Zabel <p.zabel@pengutronix.de> wrote:
+> This patch moves the parsing helpers used to parse connected graphs
+> in the device tree, like the video interface bindings documented in
+> Documentation/devicetree/bindings/media/video-interfaces.txt, from
+> drivers/media/v4l2-core/v4l2-of.c into drivers/of/base.c.
 > 
-> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> Tested-by: Tanmay Inamdar <tinamdar@apm.com>
+> This allows to reuse the same parser code from outside the V4L2
+> framework, most importantly from display drivers.
+> The functions v4l2_of_get_next_endpoint, v4l2_of_get_remote_port,
+> and v4l2_of_get_remote_port_parent are moved. They are renamed to
+> of_graph_get_next_endpoint, of_graph_get_remote_port, and
+> of_graph_get_remote_port_parent, respectively.
+> Since there are not that many current users yet, switch all of
+> them to the new functions right away.
+> 
+> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
 
-Looks okay to me structure wise, again I'd like an ack from Ben or Arnd.
+This patch is fine because it only moves code, but I'm not providing an
+ack yet.  I'll supply one when I'm happy with the collection of fixups.
 
 g.
-
-> ---
->  drivers/pci/probe.c | 41 +++++++++++++++++++++++++++++++++--------
->  include/linux/pci.h |  4 ++++
->  2 files changed, 37 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index fd11c12..172c615 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -1714,8 +1714,9 @@ void __weak pcibios_remove_bus(struct pci_bus *bus)
->  {
->  }
->  
-> -struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
-> -		struct pci_ops *ops, void *sysdata, struct list_head *resources)
-> +struct pci_bus *pci_create_root_bus_in_domain(struct device *parent,
-> +		int domain, int bus, struct pci_ops *ops, void *sysdata,
-> +		struct list_head *resources)
->  {
->  	int error;
->  	struct pci_host_bridge *bridge;
-> @@ -1728,30 +1729,34 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
->  
->  	bridge = pci_alloc_host_bridge();
->  	if (!bridge)
-> -		return NULL;
-> +		return ERR_PTR(-ENOMEM);
->  
->  	bridge->dev.parent = parent;
->  	bridge->dev.release = pci_release_host_bridge_dev;
-> +	bridge->domain_nr = domain;
->  	error = pcibios_root_bridge_prepare(bridge);
->  	if (error)
->  		goto err_out;
->  
->  	b = pci_alloc_bus();
-> -	if (!b)
-> +	if (!b) {
-> +		error = -ENOMEM;
->  		goto err_out;
-> +	}
->  
->  	b->sysdata = sysdata;
->  	b->ops = ops;
->  	b->number = b->busn_res.start = bus;
-> -	b2 = pci_find_bus(pci_domain_nr(b), bus);
-> +	b2 = pci_find_bus(bridge->domain_nr, bus);
->  	if (b2) {
->  		/* If we already got to this bus through a different bridge, ignore it */
->  		dev_dbg(&b2->dev, "bus already known\n");
-> +		error = -EEXIST;
->  		goto err_bus_out;
->  	}
->  
->  	bridge->bus = b;
-> -	dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
-> +	dev_set_name(&bridge->dev, "pci%04x:%02x", bridge->domain_nr, bus);
->  	error = device_register(&bridge->dev);
->  	if (error) {
->  		put_device(&bridge->dev);
-> @@ -1766,7 +1771,7 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
->  
->  	b->dev.class = &pcibus_class;
->  	b->dev.parent = b->bridge;
-> -	dev_set_name(&b->dev, "%04x:%02x", pci_domain_nr(b), bus);
-> +	dev_set_name(&b->dev, "%04x:%02x", bridge->domain_nr, bus);
->  	error = device_register(&b->dev);
->  	if (error)
->  		goto class_dev_reg_err;
-> @@ -1816,7 +1821,27 @@ err_bus_out:
->  	kfree(b);
->  err_out:
->  	kfree(bridge);
-> -	return NULL;
-> +	return ERR_PTR(error);
-> +}
-> +
-> +struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
-> +		struct pci_ops *ops, void *sysdata, struct list_head *resources)
-> +{
-> +	int domain_nr;
-> +	struct pci_bus *b = pci_alloc_bus();
-> +	if (!b)
-> +		return NULL;
-> +
-> +	b->sysdata = sysdata;
-> +	domain_nr = pci_domain_nr(b);
-> +	kfree(b);
-> +
-> +	b = pci_create_root_bus_in_domain(parent, domain_nr, bus,
-> +				ops, sysdata, resources);
-> +	if (IS_ERR(b))
-> +		return NULL;
-> +
-> +	return b;
->  }
->  
->  int pci_bus_insert_busn_res(struct pci_bus *b, int bus, int bus_max)
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index 33aa2ca..1eed009 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -394,6 +394,7 @@ struct pci_host_bridge_window {
->  struct pci_host_bridge {
->  	struct device dev;
->  	struct pci_bus *bus;		/* root bus */
-> +	int domain_nr;
->  	struct list_head windows;	/* pci_host_bridge_windows */
->  	void (*release_fn)(struct pci_host_bridge *);
->  	void *release_data;
-> @@ -747,6 +748,9 @@ struct pci_bus *pci_scan_bus(int bus, struct pci_ops *ops, void *sysdata);
->  struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
->  				    struct pci_ops *ops, void *sysdata,
->  				    struct list_head *resources);
-> +struct pci_bus *pci_create_root_bus_in_domain(struct device *parent,
-> +			int domain, int bus, struct pci_ops *ops,
-> +			void *sysdata, struct list_head *resources);
->  int pci_bus_insert_busn_res(struct pci_bus *b, int bus, int busmax);
->  int pci_bus_update_busn_res_end(struct pci_bus *b, int busmax);
->  void pci_bus_release_busn_res(struct pci_bus *b);
-> -- 
-> 1.9.0
-> 
-> 
-> _______________________________________________
-> linaro-kernel mailing list
-> linaro-kernel@lists.linaro.org
-> http://lists.linaro.org/mailman/listinfo/linaro-kernel
 
