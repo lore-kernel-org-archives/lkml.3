@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754017AbaCGWjk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 17:39:40 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:34200 "EHLO mail.skyhub.de"
+	id S1754052AbaCGWlN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 17:41:13 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:34244 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752582AbaCGWjj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 17:39:39 -0500
-Date: Fri, 7 Mar 2014 23:39:29 +0100
+	id S1752472AbaCGWlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 17:41:11 -0500
 From: Borislav Petkov <bp@alien8.de>
-To: Dave Jones <davej@redhat.com>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Fengguang Wu <fengguang.wu@intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Yinghai Lu <yhlu.kernel@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: [qemu64,+smep,+smap] WARNING: CPU: 1 PID: 0 at
- arch/x86/kernel/cpu/amd.c:220 init_amd()
-Message-ID: <20140307223929.GI5255@pd.tnic>
-References: <20140307015833.GA10048@localhost>
- <53195336.9080606@linux.intel.com>
- <20140307055035.GA5230@localhost>
- <531A164B.8040402@linux.intel.com>
- <20140307191050.GA10961@redhat.com>
- <531A33A2.5030706@linux.intel.com>
- <20140307213856.GF5255@pd.tnic>
- <20140307220655.GA580@redhat.com>
- <20140307222018.GG5255@pd.tnic>
- <20140307222743.GC580@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140307222743.GC580@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>
+Subject: [PATCH] x86, boot: Correct max ramdisk size name
+Date: Fri,  7 Mar 2014 23:40:57 +0100
+Message-Id: <1394232057-31359-1-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 07, 2014 at 05:27:43PM -0500, Dave Jones wrote:
-> When I wrote it 10 years or so back it made more sense than it
-> probably does now, so I'd be ok with just dropping it all too tbh.
-> Machines of that vintage probably have bigger problems now anyway.
+From: Borislav Petkov <bp@suse.de>
 
-Yeah.
+The name in struct bootparam is ->initrd_addr_max and not ramdisk_max.
+Fix that.
 
-> I don't recall seeing a report of the taint flag being set ever in
-> a Red Hat bug report, but we've seen countless problems from machines
-> of that era with dying ram or motherboard capacitors or..
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ Documentation/x86/boot.txt | 4 ++--
+ arch/x86/boot/header.S     | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-Right, this should be a sufficient indicator that those machines won't
-be running modern kernels anymore :-)
-
-Oh, and besides, this really frees up that taint bit TAINT_UNSAFE_SMP
-for the forcepae thing. Let me cook up a patch - it looks like 3.14
-will be the release where we're getting rid of old platforms - look at
-tip/x86/nuke-platforms. :-)
-
-> I still have NexGen docs somewhere ;)
-
-Uuuh, more than ancient, make sure to hold on to those :-)
-
+diff --git a/Documentation/x86/boot.txt b/Documentation/x86/boot.txt
+index cb81741d3b0b..a75e3adaa39d 100644
+--- a/Documentation/x86/boot.txt
++++ b/Documentation/x86/boot.txt
+@@ -182,7 +182,7 @@ Offset	Proto	Name		Meaning
+ 0226/1	2.02+(3 ext_loader_ver	Extended boot loader version
+ 0227/1	2.02+(3	ext_loader_type	Extended boot loader ID
+ 0228/4	2.02+	cmd_line_ptr	32-bit pointer to the kernel command line
+-022C/4	2.03+	ramdisk_max	Highest legal initrd address
++022C/4	2.03+	initrd_addr_max	Highest legal initrd address
+ 0230/4	2.05+	kernel_alignment Physical addr alignment required for kernel
+ 0234/1	2.05+	relocatable_kernel Whether kernel is relocatable or not
+ 0235/1	2.10+	min_alignment	Minimum alignment, as a power of two
+@@ -534,7 +534,7 @@ Protocol:	2.02+
+   zero, the kernel will assume that your boot loader does not support
+   the 2.02+ protocol.
+ 
+-Field name:	ramdisk_max
++Field name:	initrd_addr_max
+ Type:		read
+ Offset/size:	0x22c/4
+ Protocol:	2.03+
+diff --git a/arch/x86/boot/header.S b/arch/x86/boot/header.S
+index ec3b8ba68096..46f5a220b0ad 100644
+--- a/arch/x86/boot/header.S
++++ b/arch/x86/boot/header.S
+@@ -350,7 +350,7 @@ cmd_line_ptr:	.long	0		# (Header version 0x0202 or later)
+ 					# can be located anywhere in
+ 					# low memory 0x10000 or higher.
+ 
+-ramdisk_max:	.long 0x7fffffff
++initrd_addr_max: .long 0x7fffffff
+ 					# (Header version 0x0203 or later)
+ 					# The highest safe address for
+ 					# the contents of an initrd
 -- 
-Regards/Gruss,
-    Boris.
+1.9.0
 
-Sent from a fat crate under my desk. Formatting is fine.
---
