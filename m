@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062AbaCHFhz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 00:37:55 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:36606 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217AbaCHFaS (ORCPT
+	id S1754039AbaCHFhx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 00:37:53 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:59053 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751764AbaCHFaS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 8 Mar 2014 00:30:18 -0500
 From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH] MAINTAINERS: add maintainers for arm64 acpi
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        Graeme Gregory <graeme@xora.org.uk>
-Cc: "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        Will Deacon <Will.Deacon@arm.com>,
+Subject: Re: [RFC PATCH] [media]: of: move graph helpers from drivers/media/v4l2-core to drivers/of
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>, Rob Herring <robherring2@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "lenb@kernel.org" <lenb@kernel.org>
-In-Reply-To: <20140304235044.GB11418@arm.com>
-References: <1393899345-7397-1-git-send-email-graeme.gregory@linaro.org> < 1393899345-7397-2-git-send-email-graeme.gregory@linaro.org> <20140304102316 .GG30596@arm.com> <20140304190318.GE28736@xora-yoga13> <20140304235044. GB11418@arm.com>
-Date: Fri, 07 Mar 2014 20:40:21 +0800
-Message-Id: <20140307124021.BB567C40928@trevor.secretlab.ca>
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Philipp Zabel <philipp.zabel@gmail.com>
+In-Reply-To: <530EF914.3000407@ti.com>
+References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de>	 < CAL_Jsq+U9zU1i+STLHMBjY5BeEP6djYnJVE5X1ix-D2q_zWztQ@mail.gmail.com>	 < 20140217181451.7EB7FC4044D@trevor.secretlab.ca>	 <20140218070624.GP17250@ pengutronix.de>	 <20140218162627.32BA4C40517@trevor.secretlab.ca>	 < 1393263389.3091.82.camel@pizza.hi.pengutronix.de>	 <20140226110114. CF2C7C40A89@trevor.secretlab.ca> <1393426129.3248.64.camel@paszta.hi. pengutronix.de> <530EF914.3000407@ti.com>
+Date: Sat, 08 Mar 2014 01:06:45 +0800
+Message-Id: <20140307170645.CE50DC40A1B@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 Mar 2014 23:50:44 +0000, Catalin Marinas <catalin.marinas@arm.com> wrote:
-> On Tue, Mar 04, 2014 at 07:03:18PM +0000, Graeme Gregory wrote:
-> > On Tue, Mar 04, 2014 at 10:23:16AM +0000, Catalin Marinas wrote:
-> > > On Tue, Mar 04, 2014 at 02:15:45AM +0000, Graeme Gregory wrote:
-> > > > +ACPI ARM64
-> > > 
-> > > That's a pretty broad statement for a single file. Is it core support,
-> > > architected peripherals, SoC?
-> > > 
-> > Hi Catalin would changing the title to ACPI ARM64 Core Support be better
-> > in your mind. I do intend for the maintainership to cover just the
-> > plat/arm-core.c file.
+On Thu, 27 Feb 2014 10:36:36 +0200, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
+> On 26/02/14 16:48, Philipp Zabel wrote:
 > 
-> See my reply to Grant. If that's the only thing you guys are aiming for,
-> who's in charge of the other bits? Face-to-face meeting in 3 hours
-> anyway, so we can get back here with the conclusion.
+> >> I would like the document to acknowledge the difference from the
+> >> phandle+args pattern used elsewhere and a description of when it would
+> >> be appropriate to use this instead of a simpler binding.
+> > 
+> > Alright. The main point of this binding is that the devices may have
+> > multiple distinct ports that each can be connected to other devices.
+> 
+> The other main point with this binding are multiple endpoints per port.
+> So you can have, say, a display controller, with single port, which has
+> two endpoints going to two separate LCD panels.
+> 
+> In physical level that would usually mean that the same pins from the
+> display controller are connected to two panels. Most likely this would
+> mean that only one panel can be used at a time, possibly with different
+> settings (say, 16 RGB pins for one panel, 24 RGB pins for the other).
 
-Update for the benefit of those who weren't at Connect. I really think
-Hanjun and Graeme can do an excellent job here, but I appreciate that
-they are new to maintainership. To help them along, I'll mentor them in
-the maintainer process. I'm encouraging them to take the lead, but I'll
-be reading all the patches and I'll jump into the conversation if I
-think it is going off the rails. I'll also ack patches when I think they
-are in good shape and there is it is well defined what the boundaries
-need to be.
-
-We all agree that the current patches are not ready to be merged and
-there is feedback to be addressed before the next merge request. We will
-not attempt to merge without acks from Catalin.
-
-Also missing is a clear statement of how ACPI works on ARM. There needs
-to be a straight forward description of how ACPI PM works and how it is
-different from using FDT. That document will be written in short
-order and posted for review.
+What device is in control in that scenario?
 
 g.
