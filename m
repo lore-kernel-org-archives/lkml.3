@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454AbaCGNtI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 08:49:08 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:59950 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752992AbaCGNtG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 08:49:06 -0500
-Date: Fri, 7 Mar 2014 14:48:56 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Austin S Hemmelgarn <ahferroin7@gmail.com>
-Cc: Richard Weinberger <richard@nod.at>, Jon Ringle <jringle@gridpoint.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "Ringle, Jonathan" <Jonathan.Ringle@gridpoint.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Add option to build with -O3
-Message-ID: <20140307134856.GB5255@pd.tnic>
-References: <1393977709-9809-1-git-send-email-jringle@gridpoint.com>
- <20140305050927.GA8534@kroah.com>
- <alpine.DEB.2.02.1403050019300.22601@jringle-ubuntu>
- <CAFLxGvyB0r2RgeFhKoWqgWHLKEMF=BEM8ThRr8Mq6nGtJWQm1w@mail.gmail.com>
- <5319BE19.5000607@gmail.com>
- <5319BEC0.4050006@nod.at>
- <5319C0EC.3040606@gmail.com>
+	id S1753283AbaCGNvN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 08:51:13 -0500
+Received: from relay.parallels.com ([195.214.232.42]:54824 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752438AbaCGNvM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 08:51:12 -0500
+Message-ID: <5319CEC7.6090009@parallels.com>
+Date: Fri, 7 Mar 2014 17:51:03 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <5319C0EC.3040606@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Cyrill Gorcunov <gorcunov@gmail.com>, Andrew Vagin <avagin@gmail.com>,
+        Aditya Kali <adityakali@google.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Oleg Nesterov <oleg@redhat.com>, <linux-kernel@vger.kernel.org>,
+        <criu@openvz.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [CRIU] [PATCH 1/3] prctl: reduce permissions to change boundaries
+ of data, brk and stack
+References: <1392387209-330-1-git-send-email-avagin@openvz.org> <1392387209-330-2-git-send-email-avagin@openvz.org> <874n41znl5.fsf@xmission.com> <20140214174314.GA5518@gmail.com> <20140214180129.GK13358@moon> <8761ohqzc6.fsf@xmission.com> <52FE72C1.9090100@parallels.com> <87txc1pibc.fsf@xmission.com> <5301C984.40904@parallels.com>
+In-Reply-To: <5301C984.40904@parallels.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.16.114]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 07, 2014 at 07:51:56AM -0500, Austin S Hemmelgarn wrote:
-> I'm not arguing that, I just don't have the time to test it at the
-> moment; and, "performance improvement" also can mean different things
-> to different people (a lot of RT folks for example don't care if
-> things run faster if it makes them much less deterministic).
+Hi, Eric,
 
-You people never seem to learn: numbers talk, bullshit walks. It is
-*that* simple.
+>>>> Why can't you have the process of interest do:
+>>>> 	ptrace(PTRACE_ATTACHME);
+>>>> 	execve(executable, args, ...);
+>>>>         
+>>>>         /* Have the ptracer inject the recovery/fixup code */
+>>>> 	/* Fix up the mostly correct process to look like it has been
+>>>>          * executing for a while.
+>>>>          */
 
--- 
-Regards/Gruss,
-    Boris.
+> 2. What you propose means we have to effectively strace and execve-ing task. As
+> compared with plain prlctl this is up to ~600 times slower. I've made such an experiment.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Have you had time to think on the issue? If the prctl restrictions do not work,
+what else can it be?
+
+Thanks,
+Pavel
