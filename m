@@ -1,50 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753008AbaCGJwm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 04:52:42 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:41583 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752982AbaCGJwe (ORCPT
+	id S1753036AbaCGJxs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 04:53:48 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:37458 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751648AbaCGJxo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 04:52:34 -0500
-Date: Fri, 7 Mar 2014 09:52:23 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-kernel@vger.kernel.org, zhuzhenhua@allwinnertech.com,
-        linux-sunxi@googlegroups.com, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        linux-arm-kernel@lists.infradead.org, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v3 1/5] i2c: mv64xxx: Add reset deassert call
-Message-ID: <20140307095222.GG21483@n2100.arm.linux.org.uk>
-References: <1393950521-4173-1-git-send-email-maxime.ripard@free-electrons.com> <1393950521-4173-2-git-send-email-maxime.ripard@free-electrons.com>
+	Fri, 7 Mar 2014 04:53:44 -0500
+Message-ID: <53199726.4080300@free-electrons.com>
+Date: Fri, 07 Mar 2014 10:53:42 +0100
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393950521-4173-2-git-send-email-maxime.ripard@free-electrons.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>
+CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        devicetree@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
+        Tawfik Bayouk <tawfik@marvell.com>, linux-kernel@vger.kernel.org,
+        Nadav Haklai <nadavh@marvell.com>, Lior Amsalem <alior@marvell.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH] ARM: mvebu: add Device Tree for the Armada 385 RD board
+References: <1394107868-26094-1-git-send-email-gregory.clement@free-electrons.com> <20140306131429.GJ4780@lunn.ch> <5318779C.8030901@free-electrons.com> <20140306142117.GL4780@lunn.ch> <531886B4.2070002@free-electrons.com> <20140306144600.GM4780@lunn.ch> <53188B73.4000109@free-electrons.com> <53189892.5090502@free-electrons.com> <20140306160213.GA4327@arch.cereza> <20140306172339.GP4780@lunn.ch> <20140306191747.GA32655@arch.cereza>
+In-Reply-To: <20140306191747.GA32655@arch.cereza>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 04, 2014 at 05:28:37PM +0100, Maxime Ripard wrote:
-> The Allwinner A31 SoC using that IP has a reset controller maintaining
-> it reset unless told otherwise.
-> 
-> Add some optional reset support to the driver.
-> 
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> Reviewed-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-> Tested-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+On 06/03/2014 20:17, Ezequiel Garcia wrote:
+> On Mar 06, Andrew Lunn wrote:
+>>> Can't we fix this so the probe order doesn't affect the name?
+>>>
+>>> Is that sane?
+>>
+>> You are not supposed to trust the device name, since probing can
+>> happen in parallel, on different buses. udev should have rules to name
+>> the interfaces based on the MAC address. On my Debian system i have:
+>>
+>> /etc/udev/rules.d/70-persistent-net.rules
+>>
+>> So what is important is that the MAC addresses are assigned correctly
+>> to the device. And DT does that based on MMIO address, so should be
+>> reliable, independent of probe order.
+>>
 
-This appears to be causing some build errors in Olof's next builder
-for many of the ARM platforms which make use of this:
+I was aware of this solution, and indeed for the end user it is the thing
+to do.
 
-drivers/i2c/busses/i2c-mv64xxx.c:924: undefined reference to `reset_control_assert'
-drivers/i2c/busses/i2c-mv64xxx.c:904: undefined reference to `reset_control_assert'
-drivers/i2c/busses/i2c-mv64xxx.c:771: undefined reference to `devm_reset_control_get'
-drivers/i2c/busses/i2c-mv64xxx.c:778: undefined reference to `reset_control_deassert'
+However my concern was more about the people testing the kernel early or for
+people bringing up a new board. I fear that we will have many false bug report
+about it.
+
+For the second category, I think we should at least point this in the dtsi.
+
+
+Thanks,
+
+Gregory
+
+
+> 
+> Right, makes perfect sense!
+> 
+> So we can just keep the nodes address-ordered, without caring about the name?
+> 
+
+
+
 
 -- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
