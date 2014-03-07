@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682AbaCGJSg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 04:18:36 -0500
-Received: from mailapp01.imgtec.com ([195.89.28.114]:41386 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752137AbaCGJS3 (ORCPT
+	id S1752716AbaCGJTQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 04:19:16 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50905 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752137AbaCGJTL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 04:18:29 -0500
-Message-ID: <53198EE4.8030103@imgtec.com>
-Date: Fri, 7 Mar 2014 09:18:28 +0000
-From: Markos Chandras <Markos.Chandras@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Fri, 7 Mar 2014 04:19:11 -0500
+Date: Fri, 7 Mar 2014 09:19:08 +0000
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: ks.giri@samsung.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] spi/s3c64xx: Update DT binding documentation to match
+	code
+Message-ID: <20140307091908.GJ8570@opensource.wolfsonmicro.com>
+References: <1394125539-28062-1-git-send-email-ckeepax@opensource.wolfsonmicro.com> <20140307024841.GV13126@sirena.org.uk>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <linux-kernel@vger.kernel.org>, <dborkman@redhat.com>
-Subject: Re: [PATCH] tools/net/Makefile: Define PACKAGE to fix bfd build problems
-References: <1394097354-5290-1-git-send-email-markos.chandras@imgtec.com> <20140306.125412.1583267049751920093.davem@davemloft.net>
-In-Reply-To: <20140306.125412.1583267049751920093.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.47]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140307024841.GV13126@sirena.org.uk>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/2014 05:54 PM, David Miller wrote:
-> From: Markos Chandras <markos.chandras@imgtec.com>
-> Date: Thu, 6 Mar 2014 09:15:54 +0000
->
->> Fixes the following build problem with binutils-2.24
->>
->> gcc -Wall -O2   -c -o bpf_jit_disasm.o bpf_jit_disasm.c
->> In file included from bpf_jit_disasm.c:25:0:
->> /usr/include/bfd.h:35:2: error: #error config.h must be included
->> before this header
->>   #error config.h must be included before this header
->>
->> This is similar to commit 3ce711a6abc27abce1554e1d671a8762b7187690
->> "perf tools: bfd.h/libbfd detection fails with recent binutils"
->>
->> See: https://sourceware.org/bugzilla/show_bug.cgi?id=14243
->>
->> CC: David S. Miller <davem@davemloft.net>
->> CC: Daniel Borkmann <dborkman@redhat.com>
->> Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
->
-> I think your subject needs to be adjusted, this patch doesn't fix a "bfd"
-> build problem.
->
-Hi David,
+On Fri, Mar 07, 2014 at 10:48:41AM +0800, Mark Brown wrote:
+> On Thu, Mar 06, 2014 at 05:05:39PM +0000, Charles Keepax wrote:
+> 
+> > The following patch added support for spi controllers with a dedicated
+> > chip select pin:
+> > 
+> > commit 3146beec21b64f4551fcf0ac148381d54dc41b1b
+> > spi: s3c64xx: Added provision for dedicated cs pin
+> > 
+> > It updated the device tree binding to require a "cs-gpio" property to be
+> > specified on the spi controller node if chip selects will be given as
+> > GPIOs per slave, rather than the controller having a dedicated internal
+> > chip select pin.
+> 
+> No, it doesn't - it's saying that if the device has a "cs-gpio" property
+> then to use that as the chip select.  It's not a boolean, it's a GPIO
+> specifier.  Looking at the code it looks like the intention is to search
+> all children for a cs-gpio during the controller probe, it's possible
+> that this isn't working correctly.
 
-Thanks for the comment. Well it's problem caused by the bfd header. 
-However, I suppose you can remove the 'bfd' word from the subject as I 
-understand it's confusing. Would you be able to fix this before you 
-apply this patch or should I send a new patch?
+That is basically part of my question is the current setup doing
+what it is intended to? The Samsung binding has controller-data
+blocks on each of the slaves that specify the gpio for that
+slave.
 
--- 
-markos
+@@ -1326,7 +1340,11 @@ static int s3c64xx_spi_probe(struct platform_device *pdev)
+        sdd->cntrlr_info = sci;
+        sdd->pdev = pdev;
+        sdd->sfr_start = mem_res->start;
++       sdd->cs_gpio = true;
+        if (pdev->dev.of_node) {
++               if (!of_find_property(pdev->dev.of_node, "cs-gpio", NULL))
++                       sdd->cs_gpio = false;
+
+This part of the original patch adds the check, I guess the
+mistake could be an assumption that of_find_property will
+recursively check all the children, which it won't. This will
+just check the controller node itself for a cs-gpio property but
+as these are specified within sub-nodes they won't be found.
+Hence currently you need to add one at the controller level.
+
+Thanks,
+Charles
