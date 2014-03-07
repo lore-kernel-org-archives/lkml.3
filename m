@@ -1,65 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752940AbaCGJwJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 04:52:09 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:41760 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752690AbaCGJwE (ORCPT
+	id S1753008AbaCGJwm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 04:52:42 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:41583 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752982AbaCGJwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 04:52:04 -0500
+	Fri, 7 Mar 2014 04:52:34 -0500
+Date: Fri, 7 Mar 2014 09:52:23 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-kernel@vger.kernel.org, zhuzhenhua@allwinnertech.com,
+        linux-sunxi@googlegroups.com, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        linux-arm-kernel@lists.infradead.org, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH v3 1/5] i2c: mv64xxx: Add reset deassert call
+Message-ID: <20140307095222.GG21483@n2100.arm.linux.org.uk>
+References: <1393950521-4173-1-git-send-email-maxime.ripard@free-electrons.com> <1393950521-4173-2-git-send-email-maxime.ripard@free-electrons.com>
 MIME-Version: 1.0
-In-Reply-To: <1394054334-20438-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1394054334-20438-1-git-send-email-benjamin.tissoires@redhat.com>
-Date: Fri, 7 Mar 2014 10:52:02 +0100
-Message-ID: <CANq1E4QRc+cwAJYFJg2F8WpSOrx2xXuPeiZYF6np_2C5CoqRqA@mail.gmail.com>
-Subject: Re: [PATCH v2 0/4] HID: ll transport cleanup: final round
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>,
-        David Barksdale <dbarksdale@uplogix.com>, Antonio Ospite <ao2@ao2.it>,
-        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393950521-4173-2-git-send-email-maxime.ripard@free-electrons.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Tue, Mar 04, 2014 at 05:28:37PM +0100, Maxime Ripard wrote:
+> The Allwinner A31 SoC using that IP has a reset controller maintaining
+> it reset unless told otherwise.
+> 
+> Add some optional reset support to the driver.
+> 
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> Reviewed-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> Tested-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 
-On Wed, Mar 5, 2014 at 10:18 PM, Benjamin Tissoires
-<benjamin.tissoires@redhat.com> wrote:
-> Alright, this is the re-spin of the last round of transport cleanup.
->
-> Some minor but important modifications are here, but nothing very enthousiastic.
->
-> Thanks for the reviews and the tests so far.
+This appears to be causing some build errors in Olof's next builder
+for many of the ARM platforms which make use of this:
 
-Apart from some minor comments on #1 and #2, this is:
+drivers/i2c/busses/i2c-mv64xxx.c:924: undefined reference to `reset_control_assert'
+drivers/i2c/busses/i2c-mv64xxx.c:904: undefined reference to `reset_control_assert'
+drivers/i2c/busses/i2c-mv64xxx.c:771: undefined reference to `devm_reset_control_get'
+drivers/i2c/busses/i2c-mv64xxx.c:778: undefined reference to `reset_control_deassert'
 
-Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
-
-Thanks
-David
-
-> Cheers,
-> Benjamin
->
-> Benjamin Tissoires (4):
->   HID: cp2112: remove various hid_out_raw_report calls
->   HID: cp2112: remove the last hid_output_raw_report() call
->   HID: sony: do not rely on hid_output_raw_report
->   HID: remove hid_output_raw_report transport implementations
->
->  drivers/hid/hid-cp2112.c      | 19 +++++++++-----
->  drivers/hid/hid-sony.c        | 60 ++++++++++---------------------------------
->  drivers/hid/hidraw.c          |  3 ++-
->  drivers/hid/i2c-hid/i2c-hid.c | 14 ----------
->  drivers/hid/uhid.c            |  1 -
->  drivers/hid/usbhid/hid-core.c | 19 +++++---------
->  include/linux/hid.h           | 21 ++-------------
->  net/bluetooth/hidp/core.c     | 14 ----------
->  8 files changed, 36 insertions(+), 115 deletions(-)
->
-> --
-> 1.8.5.3
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
