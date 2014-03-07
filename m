@@ -1,98 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753128AbaCGUvP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 15:51:15 -0500
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:49560 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197AbaCGUvN convert rfc822-to-8bit (ORCPT
+	id S1753416AbaCGUxz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 15:53:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43746 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752107AbaCGUxx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 15:51:13 -0500
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: [systemd-devel] Suspending access to opened/active /dev/nodes during application runtime
-From: Lukasz Pawelczyk <havner@gmail.com>
-In-Reply-To: <20140307192410.GA24453@tango.0pointer.de>
-Date: Fri, 7 Mar 2014 21:51:04 +0100
+	Fri, 7 Mar 2014 15:53:53 -0500
+Date: Fri, 7 Mar 2014 12:55:40 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Lukasz Pawelczyk <havner@gmail.com>
 Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         libvir-list@redhat.com, lxc-devel@lists.linuxcontainers.org,
         systemd-devel@lists.freedesktop.org,
         David Herrmann <dh.herrmann@gmail.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <9E972401-6FA3-439B-9531-49D1FCC8D61D@gmail.com>
-References: <9D7BA6C9-9F1F-4D09-8F4F-E7DA4720FF97@gmail.com> <20140307192410.GA24453@tango.0pointer.de>
-To: Lennart Poettering <mzerqung@0pointer.de>
-X-Mailer: Apple Mail (2.1874)
+Subject: Re: [systemd-devel] Suspending access to opened/active /dev/nodes
+ during application runtime
+Message-ID: <20140307205540.GA6354@kroah.com>
+References: <E7B2439D-FF36-4353-8E1A-C58E5C33A89F@gmail.com>
+ <20140307190939.GA8082@kroah.com>
+ <93871091-7845-4BCC-A841-F724BEDF6E4B@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <93871091-7845-4BCC-A841-F724BEDF6E4B@gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 7 Mar 2014, at 20:24, Lennart Poettering <mzerqung@0pointer.de> wrote:
-
-> On Fri, 07.03.14 19:45, Lukasz Pawelczyk (havner@gmail.com) wrote:
+On Fri, Mar 07, 2014 at 09:45:28PM +0100, Lukasz Pawelczyk wrote:
 > 
->> Problem:
->> Has anyone thought about a mechanism to limit/remove an access to a
->> device during an application runtime? Meaning we have an application
->> that has an open file descriptor to some /dev/node and depending on
->> *something* it gains or looses the access to it gracefully (with or
->> without a notification, but without any fatal consequences).
+> On 7 Mar 2014, at 20:09, Greg KH <gregkh@linuxfoundation.org> wrote:
 > 
-> logind can mute input devices as sessions are switched, to enable
-> unpriviliged X11 and wayland compositors.
-
-Would you please elaborate on this? Where is this mechanism? How does it work without kernel space support? Is there some kernel space support I’m not aware of?
-
->> Example:
->> LXC. Imagine we have 2 separate containers. Both running full operating
->> systems. Specifically with 2 X servers. Both running concurrently of
+> > On Fri, Mar 07, 2014 at 07:46:44PM +0100, Lukasz Pawelczyk wrote:
+> >> Problem:
+> >> Has anyone thought about a mechanism to limit/remove an access to a
+> >> device during an application runtime? Meaning we have an application
+> >> that has an open file descriptor to some /dev/node and depending on
+> >> *something* it gains or looses the access to it gracefully (with or
+> >> without a notification, but without any fatal consequences).
+> >> 
+> >> Example:
+> >> LXC. Imagine we have 2 separate containers. Both running full operating
+> >> systems. Specifically with 2 X servers. Both running concurrently of
+> >> course. Both need the same input devices (e.g. we have just one mouse).
+> > 
+> > Stop right there.
+> > 
+> > If they "both" need an input device, then they should use the "shared"
+> > input device stream, i.e. evdev.
+> > 
+> > And it goes the same for every type of device the kernel is exposing to
+> > userspace, if you want to "share" them, then you need to work on
+> > changing the kernel to be able to handle shared devices.
 > 
-> Well, devices are not namespaced on Linux (with the single exception of
-> network devices). An X server needs device access, hence this doesn't
-> fly at all.
-> 
-> When you enumerate devices with libudev in a container they will never
-> be marked as "initialized" and you do not get any udev hotplug events in
-> containers, and you don#t have the host's udev db around, nor would it
-> make any sense to you if you had. X11 and friends rely on udev
-> however...
-> 
-> Before you think about doing something like this, you need to fix the
-> kernel to provide namespaced devices (good luck!)
+> I think you might have misunderstood me. They are using a shared input
+> stream (evdev in this case). The problem is I donâ€™t want them to
+> eavesdrop on each other. So itâ€™s not about making it to work. Itâ€™s
+> about making them to work â€žin turnsâ€.
 
-Precisly! That’s the generic idea. I’m not for implementing it though at this moment. I just wanted to know whether anybody actually though about it or maybe someone is interested in starting such a work, etc.
+See Lennart's comment about namespaces for devices, and how the kernel
+doesn't support it, for the answer to this.
 
->> course. Both need the same input devices (e.g. we have just one mouse).
->> This creates a security problem when we want to have completely separate
->> environments. One container is active (being displayed on a monitor and
->> controlled with a mouse) while the other container runs evtest
->> /dev/input/something and grabs the secret password user typed in the
->> other.
-> 
-> logind can do this for you between sessions. But such a container setup
-> will never work without proper device namespacing.
+Sorry, not going to happen, use real virtual machines if you want to do
+this.
 
-So how can it do it when there is no kernel support? You mean it could be doing this if the support were there?
-
->> Solutions:
->> The complete solution would comprise of 2 parts:
->> - a mechanism that would allow to temporally "hide" a device from an
->> open file descriptor.
->> - a mechanism for deciding whether application/process/namespace should
->> have an access to a specific device at a specific moment
-> 
-> Well, there's no point in inventing any "mechanisms" like this, as long
-> as devices are not namespaced in the kernel, so that userspace in
-> containers can enumerate/probe/identify/... things correctly…
-
-True. My point is about kernel space implementation. Like I wrote. I haven’t seen anything like this in kernel source and I’m well away it should be done there.
-I would just like to know if anybody is interested in this, if anybody started or would like to start such a thing.
-
-I do understand that systemd/logind would only provide a mechanism for determining who should have an access and who shouldn’t (or to be more specific it would utilize some kernel space configuration like cgroups). But the work itself has to be done in kernel space.
-
--- 
-Regards,
-Havner
-
-
-
+greg k-h
