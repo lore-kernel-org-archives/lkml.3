@@ -1,63 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033AbaCGQGl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 11:06:41 -0500
-Received: from www84.your-server.de ([213.133.104.84]:49662 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752619AbaCGQGi (ORCPT
+	id S1753836AbaCGQIP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 11:08:15 -0500
+Received: from smtprelay0234.hostedemail.com ([216.40.44.234]:43846 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751578AbaCGQIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 11:06:38 -0500
-Message-ID: <1394208388.1012.2.camel@wall-e.seibold.net>
-Subject: Re: [x86, vdso]  BUG: unable to handle kernel paging request at
- d34bd000
-From: Stefani Seibold <stefani@seibold.net>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Fri, 07 Mar 2014 17:06:28 +0100
-In-Reply-To: <20140307102107.GA21656@localhost>
-References: <20140307013833.GD8427@localhost>
-	 <1394182034.21684.6.camel@wall-e.seibold.net>
-	 <20140307091515.GA8888@localhost>
-	 <1394186248.28066.42.camel@wall-e.seibold.net>
-	 <20140307102107.GA21656@localhost>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
+	Fri, 7 Mar 2014 11:08:13 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1538:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3866:3867:3868:3871:3873:4250:4321:4362:5007:7652:7903:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: dogs73_474762121e85c
+X-Filterd-Recvd-Size: 1363
+Message-ID: <1394208487.16156.62.camel@joe-AO722>
+Subject: Re: [PATCH v3 0/4] checkpatch: enhance compatible string checking
+From: Joe Perches <joe@perches.com>
+To: Florian Vaussard <florian.vaussard@epfl.ch>
+Cc: Andy Whitcroft <apw@canonical.com>, Rob Herring <robh@kernel.org>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 07 Mar 2014 08:08:07 -0800
+In-Reply-To: <1394198771-25913-1-git-send-email-florian.vaussard@epfl.ch>
+References: <1394198771-25913-1-git-send-email-florian.vaussard@epfl.ch>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, den 07.03.2014, 18:21 +0800 schrieb Fengguang Wu:
-> Hi Stefani,
-> 
-> On Fri, Mar 07, 2014 at 10:57:28AM +0100, Stefani Seibold wrote:
-> > Hi Fengguang,
-> > 
-> > did you test the config i had sent to you?
-> > 
-> > My test was all done with current 3.14-rc tree. And with this i have no
-> > problem. 
-> 
-> The regression is found on commit 4dea8e4824b363c53f320d328040d7c6c5921419
-> ("x86, vdso: Add 32 bit VDSO time support for 32 bit kernel") in tip tree.
-> 
-> In the bisect log, you can see that next-20140306 is GOOD. So there's
-> no way you can find the bug in 3.14-rcX.
-> 
-> > I just cloned the tip tree and i figured out that the patch was dropped
-> > again (BTW: git log does not show that it was ever applied).
-> 
-> You can still access that specific commit:
-> 
-> wfg@bee /tmp% git clone --reference /c/linux git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git
+On Fri, 2014-03-07 at 14:26 +0100, Florian Vaussard wrote:
+> Joe: I have split your patch to perform atomic changes. I also
+> merged one part into one of my patch. I added your S-o-B on the
+> corresponding patches, I let you check if you are OK with the changes.
 
-As i wrote i already cloned the tip tree!!!!!!
+Could you please send a clean V4 without my SOB and add
+Andrew Morton <akpm@linux-foundation.org> to the cc's?
 
-But i cannot see the changeset, there is also no VDSO changes set in the
-git log.
+Andrew is generally the path to get checkpatch changes
+upstream.
 
-
+Thanks. Joe
 
