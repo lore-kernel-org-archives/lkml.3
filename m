@@ -1,55 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751757AbaCGI0A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 03:26:00 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:32990 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027AbaCGIZ7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 03:25:59 -0500
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: d@teklibre.com, paul.gortmaker@windriver.com, sara.bird.iar@gmail.com,
-        dan.carpenter@oracle.com, standby24x7@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] staging: frontier: fix memory leak in usb_alphatrack_probe()
-Date: Fri, 07 Mar 2014 17:25:55 +0900
-Message-ID: <1569666.TNMhHTO1Tb@daeseok-laptop.cloud.net>
-User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
+	id S1751923AbaCGI1Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 03:27:24 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:35637 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751097AbaCGI1X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 03:27:23 -0500
+Message-ID: <531982CF.3040004@ti.com>
+Date: Fri, 7 Mar 2014 13:56:55 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <rogerq@ti.com>, <balbi@ti.com>
+Subject: Re: [PATCH v4] phy: omap-control: update dra7 and am437 usb2 Documentation
+ bindings
+References: <53189742.3060705@ti.com> <1394121786-28193-1-git-send-email-balbi@ti.com>
+In-Reply-To: <1394121786-28193-1-git-send-email-balbi@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-oldi_buffer and write_buffer need to free when usb_alphatrack_delete()
-is called.
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
----
-v2: remove the unneeded comment.
+On Friday 07 March 2014 01:55 PM, Kishon Vijay Abraham I wrote:
+> From: Felipe Balbi <balbi@ti.com>
+>
+> From: Roger Quadros <rogerq@ti.com>
 
- drivers/staging/frontier/alphatrack.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+There seems to be some problem with this patch. Pls ignore this.
 
-diff --git a/drivers/staging/frontier/alphatrack.c b/drivers/staging/frontier/alphatrack.c
-index edd5cef..e59ee51 100644
---- a/drivers/staging/frontier/alphatrack.c
-+++ b/drivers/staging/frontier/alphatrack.c
-@@ -208,7 +208,9 @@ static void usb_alphatrack_delete(struct usb_alphatrack *dev)
- 	kfree(dev->ring_buffer);
- 	kfree(dev->interrupt_in_buffer);
- 	kfree(dev->interrupt_out_buffer);
--	kfree(dev);		/* fixme oldi_buffer */
-+	kfree(dev->oldi_buffer);
-+	kfree(dev->write_buffer);
-+	kfree(dev);
- }
- 
- /** usb_alphatrack_interrupt_in_callback */
--- 
-1.7.4.4
-
-
+Thanks
+Kishon
+>
+> The dra7-usb2 and am437-usb2 bindings have not yet been used.
+> Change them to be more elegant.
+>
+> Acked-by: Kishon Vijay Abraham I <kishon@ti.com>
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> Signed-off-by: Felipe Balbi <balbi@ti.com>
+> ---
+> Changes from v3:
+> * changed the compatible name to 'ti,control-phy-usb2-dra7' and
+>    'ti,control-phy-usb2-am437'
+>
+>   Documentation/devicetree/bindings/phy/ti-phy.txt | 4 ++--
+>   1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/Documentation/devicetree/bindings/phy/ti-phy.txt b/Documentation/devicetree/bindings/phy/ti-phy.txt
+> index 41dc132..8694aae 100644
+> --- a/Documentation/devicetree/bindings/phy/ti-phy.txt
+> +++ b/Documentation/devicetree/bindings/phy/ti-phy.txt
+> @@ -9,9 +9,9 @@ Required properties:
+>                           e.g. USB2_PHY on OMAP5.
+>    "ti,control-phy-pipe3" - if it has DPLL and individual Rx & Tx power control
+>                           e.g. USB3 PHY and SATA PHY on OMAP5.
+> - "ti,control-phy-dra7usb2" - if it has power down register like USB2 PHY on
+> + "ti,control-phy-usb2-dra7" - if it has power down register like USB2 PHY on
+>                           DRA7 platform.
+> - "ti,control-phy-am437usb2" - if it has power down register like USB2 PHY on
+> + "ti,control-phy-usb2-am437" - if it has power down register like USB2 PHY on
+>                           AM437 platform.
+>    - reg : Address and length of the register set for the device. It contains
+>      the address of "otghs_control" for control-phy-otghs or "power" register
+>
