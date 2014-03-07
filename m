@@ -1,76 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752442AbaCGJrN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 04:47:13 -0500
-Received: from smtprelay.synopsys.com ([198.182.44.111]:36703 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981AbaCGJrK (ORCPT
+	id S1752862AbaCGJrv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 04:47:51 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:61619 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752487AbaCGJrs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 04:47:10 -0500
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: <torvalds@linux-foundation.org>
-CC: Vineet Gupta <Vineet.Gupta1@synopsys.com>, <linux-kernel@vger.kernel.org>,
-        <arc-linux-dev@synopsys.com>
-Subject: 
-Date: Fri, 7 Mar 2014 15:16:15 +0530
-Message-ID: <1394185596-29471-1-git-send-email-vgupta@synopsys.com>
-X-Mailer: git-send-email 1.8.3.2
+	Fri, 7 Mar 2014 04:47:48 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.12.197.50]
+In-Reply-To: <1394054334-20438-2-git-send-email-benjamin.tissoires@redhat.com>
+References: <1394054334-20438-1-git-send-email-benjamin.tissoires@redhat.com>
+	<1394054334-20438-2-git-send-email-benjamin.tissoires@redhat.com>
+Date: Fri, 7 Mar 2014 10:47:47 +0100
+Message-ID: <CANq1E4T_Xm7xCb5vGKBsb1EH-h6g4V-L9mrjZxThWa-GdtbPhQ@mail.gmail.com>
+Subject: Re: [PATCH v2 1/4] HID: cp2112: remove various hid_out_raw_report calls
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        David Barksdale <dbarksdale@uplogix.com>, Antonio Ospite <ao2@ao2.it>,
+        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi
 
-This patch fixes a subtle issue with cache flush which could potentially
-cause random userspace crashes because of stale icache lines.
+On Wed, Mar 5, 2014 at 10:18 PM, Benjamin Tissoires
+<benjamin.tissoires@redhat.com> wrote:
+> hid_out_raw_report is going to be obsoleted as it is not part of the
+> unified HID low level transport documentation
+> (Documentation/hid/hid-transport.txt)
+>
+>   hid_output_raw_report(hdev, buf, sizeof(buf), HID_FEATURE_REPORT);
+> is strictly equivalent to:
+>   hid_hw_raw_request(hdev, buf[0], buf, sizeof(buf),
+>                 HID_FEATURE_REPORT, HID_REQ_SET_REPORT);
 
-Please apply for 3.14, it's marked for stable as well.
+This time you might be right that feature-reports always put the
+report-id into the first byte, but I'd still prefer if we avoid using
+this. Besides, the code is much nicer imho if we pass the ID directly,
+see below..
 
-Thx,
--Vineet
+>
+> So use the new api.
+>
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> ---
+>
+> no changes since v1
+>
+>  drivers/hid/hid-cp2112.c | 12 ++++++------
+>  1 file changed, 6 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/hid/hid-cp2112.c b/drivers/hid/hid-cp2112.c
+> index 1025982..860db694 100644
+> --- a/drivers/hid/hid-cp2112.c
+> +++ b/drivers/hid/hid-cp2112.c
+> @@ -185,8 +185,8 @@ static int cp2112_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
+>         buf[1] &= ~(1 << offset);
+>         buf[2] = gpio_push_pull;
+>
+> -       ret = hdev->hid_output_raw_report(hdev, buf, sizeof(buf),
+> -                                         HID_FEATURE_REPORT);
+> +       ret = hid_hw_raw_request(hdev, buf[0], buf, sizeof(buf),
+> +                                HID_FEATURE_REPORT, HID_REQ_SET_REPORT);
 
--------------->8------------
->From 036837642ed6df39f6a063ad10327787b60d4a0f Mon Sep 17 00:00:00 2001
-From: Vineet Gupta <vgupta@synopsys.com>
-Date: Fri, 7 Mar 2014 13:22:22 +0530
-Subject: [PATCH] ARC: Use correct PTAG register for icache flush
+buf[0] => CP2112_GPIO_CONFIG
 
-This error crept in when consolidating the cache flush code
+>         if (ret < 0) {
+>                 hid_err(hdev, "error setting GPIO config: %d\n", ret);
+>                 return ret;
+> @@ -207,8 +207,8 @@ static void cp2112_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
+>         buf[1] = value ? 0xff : 0;
+>         buf[2] = 1 << offset;
+>
+> -       ret = hdev->hid_output_raw_report(hdev, buf, sizeof(buf),
+> -                                         HID_FEATURE_REPORT);
+> +       ret = hid_hw_raw_request(hdev, buf[0], buf, sizeof(buf),
+> +                                HID_FEATURE_REPORT, HID_REQ_SET_REPORT);
 
-Fixes: bd12976c3664 (ARC: cacheflush refactor #3: Unify the {d,i}cache)
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Cc: linux-kernel@vger.kernel.org
-Cc: stable@vger.kernel.org  # 3.13
-Cc: arc-linux-dev@synopsys.com
----
- arch/arc/mm/cache_arc700.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Here buf[0] seems fine as it is set explicitly just 3 lines above to
+CP2112_GPIO_SET.
 
-diff --git a/arch/arc/mm/cache_arc700.c b/arch/arc/mm/cache_arc700.c
-index 6b58c1de7577..400c663b21c2 100644
---- a/arch/arc/mm/cache_arc700.c
-+++ b/arch/arc/mm/cache_arc700.c
-@@ -282,7 +282,7 @@ static inline void __cache_line_loop(unsigned long paddr, unsigned long vaddr,
- #else
- 	/* if V-P const for loop, PTAG can be written once outside loop */
- 	if (full_page_op)
--		write_aux_reg(ARC_REG_DC_PTAG, paddr);
-+		write_aux_reg(aux_tag, paddr);
- #endif
- 
- 	while (num_lines-- > 0) {
-@@ -296,7 +296,7 @@ static inline void __cache_line_loop(unsigned long paddr, unsigned long vaddr,
- 		write_aux_reg(aux_cmd, vaddr);
- 		vaddr += L1_CACHE_BYTES;
- #else
--		write_aux_reg(aux, paddr);
-+		write_aux_reg(aux_cmd, paddr);
- 		paddr += L1_CACHE_BYTES;
- #endif
- 	}
--- 
-1.8.3.2
+>         if (ret < 0)
+>                 hid_err(hdev, "error setting GPIO values: %d\n", ret);
+>  }
+> @@ -253,8 +253,8 @@ static int cp2112_gpio_direction_output(struct gpio_chip *chip,
+>         buf[1] |= 1 << offset;
+>         buf[2] = gpio_push_pull;
+>
+> -       ret = hdev->hid_output_raw_report(hdev, buf, sizeof(buf),
+> -                                         HID_FEATURE_REPORT);
+> +       ret = hid_hw_raw_request(hdev, buf[0], buf, sizeof(buf),
+> +                                HID_FEATURE_REPORT, HID_REQ_SET_REPORT);
 
+Here an explicit CP2112_GPIO_CONFIG seems nicer, imho.
+
+Thanks
+David
+
+>         if (ret < 0) {
+>                 hid_err(hdev, "error setting GPIO config: %d\n", ret);
+>                 return ret;
+> --
+> 1.8.5.3
+>
