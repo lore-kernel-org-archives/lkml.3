@@ -1,216 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752496AbaCGMUR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 07:20:17 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:54030 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752739AbaCGMR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 07:17:29 -0500
-From: Sricharan R <r.sricharan@ti.com>
-To: <r.sricharan@ti.com>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <dmaengine@vger.kernel.org>
-CC: <santosh.shilimkar@ti.com>, <rnayak@ti.com>, <nsekhar@ti.com>,
-        <tony@atomide.com>, <linux@arm.linux.org.uk>, <vinod.koul@intel.com>,
-        <dan.j.williams@intel.com>, <nm@ti.com>
-Subject: [RFC PATCH 2/9] drivers: dma: of-dma: Add support for dma-request line routers
-Date: Fri, 7 Mar 2014 17:46:09 +0530
-Message-ID: <1394194576-23741-3-git-send-email-r.sricharan@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1394194576-23741-1-git-send-email-r.sricharan@ti.com>
-References: <1394194576-23741-1-git-send-email-r.sricharan@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752903AbaCGMUp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 07:20:45 -0500
+Received: from mailout4.w2.samsung.com ([211.189.100.14]:52619 "EHLO
+	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752595AbaCGMUl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 07:20:41 -0500
+X-AuditID: cbfec372-b7fa96d000006a7b-9b-5319b997c6c5
+Date: Fri, 07 Mar 2014 09:20:31 -0300
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Philipp Zabel <p.zabel@pengutronix.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Rob Herring <robh+dt@kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Subject: Re: [GIT PULL] Move device tree graph parsing helpers to drivers/of
+Message-id: <20140307092031.68cd985d@samsung.com>
+In-reply-to: <20140307115517.GI21483@n2100.arm.linux.org.uk>
+References: <1394126000.3622.66.camel@paszta.hi.pengutronix.de>
+ <20140307115517.GI21483@n2100.arm.linux.org.uk>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBLMWRmVeSWpSXmKPExsVy+t/hIN3pOyWDDa7t4rCYf+Qcq8X7jfOY
+	LA782cFocbbpDbtF58Ql7BaXd81hs+jZsJXV4vZlXou7906wWLTuPcJucfhNO6vF+vm32Bx4
+	PFqae9g8PnyM85jdMZPVY9OqTjaPO9f2sHn0/zXw6NuyitHj+I3tTB6fN8kFcEZx2aSk5mSW
+	pRbp2yVwZcze18ZWsJGjYu33HcwNjJfZuhg5OSQETCTubmtggbDFJC7cWw8U5+IQEljCKLGs
+	exYzhNPNJDFh+0GgKg4OFgFViZfTCkAa2ASMJF41trCC2CICphLXHj0Dq2cWOMAs8efXabCE
+	sICPROfxm+wgNq+AocTbqw+YQWxOARuJT9N/gNUICRRKTDu2F+oiJ4lXryczQdQLSvyYfA/s
+	OmYBLYnN25pYIWx5ic1r3jJPYBSYhaRsFpKyWUjKFjAyr2IULS1OLihOSs811CtOzC0uzUvX
+	S87P3cQIiZ2iHYzPNlgdYhTgYFTi4TVYIBEsxJpYVlyZe4hRgoNZSYSXZ7VksBBvSmJlVWpR
+	fnxRaU5q8SFGJg5OqQZGjXc+H1gC2h5Jr1u98gGvpvyscJX/M2xP5NgxRB5UeiMudiho/ddZ
+	ii68ChO+Kr/6YOwm/Vztd1T+1NeZHxz315xdPyvQZFHwOoat65ZOuxf8LjHgG++36fvPTVGu
+	NjudH8x7bOuex8pxdoG1oo8bisTyU/tfvQrdwlWt9HO2qf/UjB6pwgxdJZbijERDLeai4kQA
+	FYIaQnsCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In some socs dma requests lines from the peripherals to the
-dma controller can be connected either directly or through
-a crossbar router. The crossbar in turn maps the peripheral
-request line to a free dma-controller request line. In such
-cases the crossbar associated with the particular request lines
-has to configured.
+Em Fri, 07 Mar 2014 11:55:17 +0000
+Russell King - ARM Linux <linux@arm.linux.org.uk> escreveu:
 
-This add two APIS, one to register the crossbar router and other
-to retrieve the router associated with a dma request line. The
-peripheral's dma-specs mentions the dma-controller, request-line and
-also the IP to which it is connected to via DT.
+> On Thu, Mar 06, 2014 at 06:13:20PM +0100, Philipp Zabel wrote:
+> > Hi Mauro, Russell,
+> > 
+> > I have temporarily removed the simplified bindings at Sylwester's
+> > request and updated the branch with the acks. The following changes
+> > since commit 0414855fdc4a40da05221fc6062cccbc0c30f169:
+> > 
+> >   Linux 3.14-rc5 (2014-03-02 18:56:16 -0800)
+> > 
+> > are available in the git repository at:
+> > 
+> >   git://git.pengutronix.de/git/pza/linux.git topic/of-graph
+> 
+> Okay, this has all gone wrong.  Mauro has applied your changes as patches,
+> and I've pulled this set of changes.  So we're going to be all set for
+> merge conflicts....... just fscking great.
+> 
+> I really don't know why I bother trying to do the right thing sometimes.
+> 
 
-The dma-controller will have to check if a request line is routed
-and then use that router's map/unmap function to configure the
-request line.
+I just reverted my tree to the previous state before applying the patches
+and did a git pull instead, in order to avoid merge conflicts when the
+imx-drm patches arrive via staging tree.
 
-Signed-off-by: Sricharan R <r.sricharan@ti.com>
----
- drivers/dma/of-dma.c   |   82 ++++++++++++++++++++++++++++++++++++++++++++++--
- include/linux/of_dma.h |   22 +++++++++++++
- 2 files changed, 102 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/dma/of-dma.c b/drivers/dma/of-dma.c
-index e8fe9dc..86129ef 100644
---- a/drivers/dma/of-dma.c
-+++ b/drivers/dma/of-dma.c
-@@ -19,7 +19,29 @@
- #include <linux/of_dma.h>
- 
- static LIST_HEAD(of_dma_list);
-+static LIST_HEAD(of_dma_router_list);
- static DEFINE_MUTEX(of_dma_lock);
-+static DEFINE_MUTEX(of_dma_router_lock);
-+
-+/**
-+ * of_dma_get_router_data - Get a DMA router in DT DMA routers list
-+ * @phandle:	phandle to the dma router
-+ *
-+ * Finds a DMA router using matching phandle and returns the router
-+ * specific data. Should be called from dma-controller xlate callback.
-+ */
-+void *of_dma_get_router_data(phandle router)
-+{
-+	struct of_dma_router *ofrouter;
-+
-+	list_for_each_entry(ofrouter, &of_dma_router_list, of_dma_routers) {
-+		if (ofrouter->of_node->phandle == router)
-+			return ofrouter->of_router_data;
-+	}
-+
-+	return NULL;
-+}
-+EXPORT_SYMBOL(of_dma_get_router_data);
- 
- /**
-  * of_dma_find_controller - Get a DMA controller in DT DMA helpers list
-@@ -45,6 +67,39 @@ static struct of_dma *of_dma_find_controller(struct of_phandle_args *dma_spec)
- }
- 
- /**
-+ * of_dma_router_register - Register a DMA router to DT DMA helpers
-+ * @np:			device node of DMA controller
-+ * @data		pointer to controller specific data to be used by
-+ *			dma-controller
-+ *
-+ * Returns 0 on success or appropriate errno value on error.
-+ *
-+ * Allocated memory should be freed with appropriate of_dma_router_free()
-+ * call.
-+ */
-+int of_dma_router_register(struct device_node *np, void *data)
-+{
-+	struct of_dma_router *ofrouter;
-+
-+	if (!np || !data)
-+		return -EINVAL;
-+
-+	ofrouter = kzalloc(sizeof(*ofrouter), GFP_KERNEL);
-+	if (!ofrouter)
-+		return -ENOMEM;
-+
-+	ofrouter->of_node = np;
-+	ofrouter->of_router_data = data;
-+
-+	mutex_lock(&of_dma_router_lock);
-+	list_add_tail(&ofrouter->of_dma_routers, &of_dma_router_list);
-+	mutex_unlock(&of_dma_router_lock);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(of_dma_router_register);
-+
-+/**
-  * of_dma_controller_register - Register a DMA controller to DT DMA helpers
-  * @np:			device node of DMA controller
-  * @of_dma_xlate:	translation function which converts a phandle
-@@ -87,10 +142,10 @@ int of_dma_controller_register(struct device_node *np,
- EXPORT_SYMBOL_GPL(of_dma_controller_register);
- 
- /**
-- * of_dma_controller_free - Remove a DMA controller from DT DMA helpers list
-+ * of_dma_router_free - Remove a DMA router from DT DMA routers list
-  * @np:		device node of DMA controller
-  *
-- * Memory allocated by of_dma_controller_register() is freed here.
-+ * Memory allocated by of_dma_router_register() is freed here.
-  */
- void of_dma_controller_free(struct device_node *np)
- {
-@@ -110,6 +165,29 @@ void of_dma_controller_free(struct device_node *np)
- EXPORT_SYMBOL_GPL(of_dma_controller_free);
- 
- /**
-+ * of_dma_controller_free - Remove a DMA controller from DT DMA helpers list
-+ * @np:		device node of DMA controller
-+ *
-+ * Memory allocated by of_dma_router_register() is freed here.
-+ */
-+void of_dma_router_free(struct device_node *np)
-+{
-+	struct of_dma_router *ofrouter;
-+
-+	mutex_lock(&of_dma_router_lock);
-+
-+	list_for_each_entry(ofrouter, &of_dma_router_list, of_dma_routers)
-+		if (ofrouter->of_node == np) {
-+			list_del(&ofrouter->of_dma_routers);
-+			kfree(ofrouter);
-+			break;
-+		}
-+
-+	mutex_unlock(&of_dma_router_lock);
-+}
-+EXPORT_SYMBOL_GPL(of_dma_router_free);
-+
-+/**
-  * of_dma_match_channel - Check if a DMA specifier matches name
-  * @np:		device node to look for DMA channels
-  * @name:	channel name to be matched
-diff --git a/include/linux/of_dma.h b/include/linux/of_dma.h
-index ae36298..50962a0 100644
---- a/include/linux/of_dma.h
-+++ b/include/linux/of_dma.h
-@@ -26,6 +26,12 @@ struct of_dma {
- 	void			*of_dma_data;
- };
- 
-+struct of_dma_router {
-+	struct list_head	of_dma_routers;
-+	struct device_node	*of_node;
-+	void			*of_router_data;
-+};
-+
- struct of_dma_filter_info {
- 	dma_cap_mask_t	dma_cap;
- 	dma_filter_fn	filter_fn;
-@@ -41,6 +47,9 @@ extern struct dma_chan *of_dma_request_slave_channel(struct device_node *np,
- 						     const char *name);
- extern struct dma_chan *of_dma_simple_xlate(struct of_phandle_args *dma_spec,
- 		struct of_dma *ofdma);
-+extern void *of_dma_get_router_data(phandle router);
-+extern int of_dma_router_register(struct device_node *np, void *data);
-+extern void of_dma_router_free(struct device_node *np);
- #else
- static inline int of_dma_controller_register(struct device_node *np,
- 		struct dma_chan *(*of_dma_xlate)
-@@ -66,6 +75,19 @@ static inline struct dma_chan *of_dma_simple_xlate(struct of_phandle_args *dma_s
- 	return NULL;
- }
- 
-+static inline void *of_dma_get_router_data(phandle router)
-+{
-+	return NULL;
-+}
-+
-+static inline int of_dma_router_register(struct device_node *np, void *data)
-+{
-+	return NULL;
-+}
-+
-+static void of_dma_router_free(struct device_node *np)
-+{
-+}
- #endif
- 
- #endif /* __LINUX_OF_DMA_H */
--- 
-1.7.9.5
-
+Regards,
+Mauro
