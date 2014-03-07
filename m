@@ -1,71 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753508AbaCGNiU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 08:38:20 -0500
-Received: from smtp4.epfl.ch ([128.178.224.219]:34554 "EHLO smtp4.epfl.ch"
+	id S1753477AbaCGNjO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 08:39:14 -0500
+Received: from mga02.intel.com ([134.134.136.20]:41106 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753209AbaCGNiQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 08:38:16 -0500
-From: Florian Vaussard <florian.vaussard@epfl.ch>
-To: Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>
-Cc: Rob Herring <robh@kernel.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3 4/4] checkpatch: improve the compatible vendor match
-Date: Fri,  7 Mar 2014 14:38:03 +0100
-Message-Id: <1394199483-26147-1-git-send-email-florian.vaussard@epfl.ch>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1394198771-25913-5-git-send-email-florian.vaussard@epfl.ch>
-References: <1394198771-25913-5-git-send-email-florian.vaussard@epfl.ch>
+	id S1752533AbaCGNjN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 08:39:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,607,1389772800"; 
+   d="scan'208";a="468389988"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH] [RFC] perf: Fix a race between ring_buffer_detach() and ring_buffer_wakeup()
+Date: Fri,  7 Mar 2014 15:38:46 +0200
+Message-Id: <1394199526-6400-1-git-send-email-alexander.shishkin@linux.intel.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
+This is more of a problem description than an actual bugfix, but currently
+ring_buffer_detach() can kick in while ring_buffer_wakeup() is traversing
+the ring buffer's event list, leading to cpu stalls.
 
-Improve the vendor name match in vendor-prefix.txt
-by only matching the exact vendor name at the beginning of lines.
+What this patch does is crude, but fixes the problem, which is: one rcu
+grace period has to elapse between ring_buffer_detach() and subsequent
+ring_buffer_attach(), otherwise either the attach will fail or the wakeup
+will misbehave. Also, making it a call_rcu() callback will make it race
+with attach().
 
-Signed-off-by: Joe Perches <joe@perches.com>
-[florian.vaussard@epfl.ch: split patch, commit log]
-Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
+Another solution that I see is to check for list_empty(&event->rb_entry)
+before wake_up_all() in ring_buffer_wakeup() and restart the list
+traversal if it is indeed empty, but that is ugly too as there will be
+extra wakeups on some events.
+
+Anything that I'm missing here? Any better ideas?
+
+Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
 ---
- scripts/checkpatch.pl | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ kernel/events/core.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 9205153..5bda9f7 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2047,9 +2047,11 @@ sub process {
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 661951a..bce41e0 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -3861,7 +3861,7 @@ static void ring_buffer_attach(struct perf_event *event,
  
- 			my @compats = $rawline =~ /\"([a-zA-Z0-9\-\,\.\+_]+)\"/g;
+ 	spin_lock_irqsave(&rb->event_lock, flags);
+ 	if (list_empty(&event->rb_entry))
+-		list_add(&event->rb_entry, &rb->event_list);
++		list_add_rcu(&event->rb_entry, &rb->event_list);
+ 	spin_unlock_irqrestore(&rb->event_lock, flags);
+ }
  
-+			my $dt_path = $root . "/Documentation/devicetree/bindings/";
-+			my $vp_file = $dt_path . "vendor-prefixes.txt";
-+
- 			foreach my $compat (@compats) {
- 				my $compat2 = $compat;
--				my $dt_path =  $root . "/Documentation/devicetree/bindings/";
- 				$compat2 =~ s/\,[a-z]*\-/\,<\.\*>\-/;
- 				`grep -Erq "$compat|$compat2" $dt_path`;
- 				if ( $? >> 8 ) {
-@@ -2057,14 +2059,12 @@ sub process {
- 					     "DT compatible string \"$compat\" appears un-documented -- check $dt_path\n" . $herecurr);
- 				}
+@@ -3873,9 +3873,11 @@ static void ring_buffer_detach(struct perf_event *event, struct ring_buffer *rb)
+ 		return;
  
--				my $vendor_path = $dt_path . "vendor-prefixes.txt";
--				next if (! -f $vendor_path);
- 				next if $compat !~ /^([a-zA-Z0-9\-]+)\,/;
- 				my $vendor = $1;
--				`grep -Eq "$vendor" $vendor_path`;
-+				`grep -Eq "^$vendor\\b" $vp_file`;
- 				if ( $? >> 8 ) {
- 					WARN("UNDOCUMENTED_DT_STRING",
--					     "DT compatible string vendor \"$vendor\" appears un-documented -- check $vendor_path\n" . $herecurr);
-+					     "DT compatible string vendor \"$vendor\" appears un-documented -- check $vp_file\n" . $herecurr);
- 				}
- 			}
- 		}
+ 	spin_lock_irqsave(&rb->event_lock, flags);
+-	list_del_init(&event->rb_entry);
++	list_del_rcu(&event->rb_entry);
+ 	wake_up_all(&event->waitq);
+ 	spin_unlock_irqrestore(&rb->event_lock, flags);
++	synchronize_rcu();
++	INIT_LIST_HEAD(&event->rb_entry);
+ }
+ 
+ static void ring_buffer_wakeup(struct perf_event *event)
 -- 
-1.8.5.3
+1.9.0
 
