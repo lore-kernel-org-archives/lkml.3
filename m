@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955AbaCGULz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 15:11:55 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:49075 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752721AbaCGULv (ORCPT
+	id S1753831AbaCGULe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 15:11:34 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:41964 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753796AbaCGULc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 15:11:51 -0500
+	Fri, 7 Mar 2014 15:11:32 -0500
 From: David Long <dave.long@linaro.org>
 To: linux-arm-kernel@lists.infradead.org,
         Russell King <linux@arm.linux.org.uk>
@@ -21,9 +21,9 @@ Cc: Rabin Vincent <rabin@rab.in>, "Jon Medhurst (Tixy)" <tixy@linaro.org>,
         Paul Mackerras <paulus@samba.org>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v7 13/15] ARM: Add an emulate flag to the kprobes/uprobes instruction decode functions
-Date: Fri,  7 Mar 2014 15:10:38 -0500
-Message-Id: <1394223040-17129-14-git-send-email-dave.long@linaro.org>
+Subject: [PATCH v7 09/15] ARM: Make the kprobes condition_check symbol names more generic
+Date: Fri,  7 Mar 2014 15:10:34 -0500
+Message-Id: <1394223040-17129-10-git-send-email-dave.long@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1394223040-17129-1-git-send-email-dave.long@linaro.org>
 References: <1394223040-17129-1-git-send-email-dave.long@linaro.org>
@@ -33,197 +33,822 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David A. Long" <dave.long@linaro.org>
 
-Add an emulate flag into the instruction interpreter, primarily for uprobes
-support.
+In preparation for sharing the ARM kprobes instruction interpreting
+code with uprobes, make the symbols names less kprobes-specific.
 
 Signed-off-by: David A. Long <dave.long@linaro.org>
 Acked-by: Jon Medhurst <tixy@linaro.org>
 ---
- arch/arm/kernel/kprobes.c      |  2 +-
- arch/arm/kernel/kprobes.h      |  1 +
- arch/arm/kernel/probes-arm.c   |  4 ++--
- arch/arm/kernel/probes-arm.h   |  2 +-
- arch/arm/kernel/probes-thumb.c |  8 ++++----
- arch/arm/kernel/probes-thumb.h |  4 ++--
- arch/arm/kernel/probes.c       | 18 +++++++++++++-----
- arch/arm/kernel/probes.h       |  2 +-
- 8 files changed, 25 insertions(+), 16 deletions(-)
+ arch/arm/include/asm/probes.h    | 11 +++---
+ arch/arm/kernel/kprobes-arm.c    | 16 ++++-----
+ arch/arm/kernel/kprobes-common.c | 14 ++++----
+ arch/arm/kernel/kprobes-thumb.c  | 76 ++++++++++++++++++++--------------------
+ arch/arm/kernel/kprobes.h        |  8 ++---
+ arch/arm/kernel/probes-arm.c     | 16 ++++-----
+ arch/arm/kernel/probes-arm.h     | 10 +++---
+ arch/arm/kernel/probes-thumb.c   | 10 +++---
+ arch/arm/kernel/probes.c         | 22 ++++++------
+ arch/arm/kernel/probes.h         | 12 +++----
+ 10 files changed, 98 insertions(+), 97 deletions(-)
 
-diff --git a/arch/arm/kernel/kprobes.c b/arch/arm/kernel/kprobes.c
-index 468d4a9..8795f9f 100644
---- a/arch/arm/kernel/kprobes.c
-+++ b/arch/arm/kernel/kprobes.c
-@@ -89,7 +89,7 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
- 	p->opcode = insn;
- 	p->ainsn.insn = tmp_insn;
+diff --git a/arch/arm/include/asm/probes.h b/arch/arm/include/asm/probes.h
+index 4d014c4..c4acf6c 100644
+--- a/arch/arm/include/asm/probes.h
++++ b/arch/arm/include/asm/probes.h
+@@ -20,22 +20,23 @@
+ #define _ASM_PROBES_H
  
--	switch ((*decode_insn)(insn, &p->ainsn, actions)) {
-+	switch ((*decode_insn)(insn, &p->ainsn, true, actions)) {
- 	case INSN_REJECTED:	/* not supported */
- 		return -EINVAL;
+ struct kprobe;
++typedef u32 probes_opcode_t;
  
+ struct arch_specific_insn;
+-typedef void (kprobe_insn_handler_t)(kprobe_opcode_t,
++typedef void (kprobe_insn_handler_t)(probes_opcode_t,
+ 				     struct arch_specific_insn *,
+ 				     struct pt_regs *);
+-typedef unsigned long (kprobe_check_cc)(unsigned long);
+-typedef void (kprobe_insn_singlestep_t)(kprobe_opcode_t,
++typedef unsigned long (probes_check_cc)(unsigned long);
++typedef void (kprobe_insn_singlestep_t)(probes_opcode_t,
+ 					struct arch_specific_insn *,
+ 					struct pt_regs *);
+ typedef void (kprobe_insn_fn_t)(void);
+ 
+ /* Architecture specific copy of original instruction. */
+ struct arch_specific_insn {
+-	kprobe_opcode_t			*insn;
++	probes_opcode_t			*insn;
+ 	kprobe_insn_handler_t		*insn_handler;
+-	kprobe_check_cc			*insn_check_cc;
++	probes_check_cc			*insn_check_cc;
+ 	kprobe_insn_singlestep_t	*insn_singlestep;
+ 	kprobe_insn_fn_t		*insn_fn;
+ };
+diff --git a/arch/arm/kernel/kprobes-arm.c b/arch/arm/kernel/kprobes-arm.c
+index 4a232e6..09a7b1e 100644
+--- a/arch/arm/kernel/kprobes-arm.c
++++ b/arch/arm/kernel/kprobes-arm.c
+@@ -73,7 +73,7 @@
+ #endif
+ 
+ static void __kprobes
+-emulate_ldrdstrd(kprobe_opcode_t insn,
++emulate_ldrdstrd(probes_opcode_t insn,
+ 	struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	unsigned long pc = regs->ARM_pc + 4;
+@@ -102,7 +102,7 @@ emulate_ldrdstrd(kprobe_opcode_t insn,
+ }
+ 
+ static void __kprobes
+-emulate_ldr(kprobe_opcode_t insn,
++emulate_ldr(probes_opcode_t insn,
+ 	struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	unsigned long pc = regs->ARM_pc + 4;
+@@ -132,7 +132,7 @@ emulate_ldr(kprobe_opcode_t insn,
+ }
+ 
+ static void __kprobes
+-emulate_str(kprobe_opcode_t insn,
++emulate_str(probes_opcode_t insn,
+ 	struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	unsigned long rtpc = regs->ARM_pc - 4 + str_pc_offset;
+@@ -159,7 +159,7 @@ emulate_str(kprobe_opcode_t insn,
+ }
+ 
+ static void __kprobes
+-emulate_rd12rn16rm0rs8_rwflags(kprobe_opcode_t insn,
++emulate_rd12rn16rm0rs8_rwflags(probes_opcode_t insn,
+ 	struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	unsigned long pc = regs->ARM_pc + 4;
+@@ -194,7 +194,7 @@ emulate_rd12rn16rm0rs8_rwflags(kprobe_opcode_t insn,
+ }
+ 
+ static void __kprobes
+-emulate_rd12rn16rm0_rwflags_nopc(kprobe_opcode_t insn,
++emulate_rd12rn16rm0_rwflags_nopc(probes_opcode_t insn,
+ 	struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	int rd = (insn >> 12) & 0xf;
+@@ -221,7 +221,7 @@ emulate_rd12rn16rm0_rwflags_nopc(kprobe_opcode_t insn,
+ }
+ 
+ static void __kprobes
+-emulate_rd16rn12rm0rs8_rwflags_nopc(kprobe_opcode_t insn,
++emulate_rd16rn12rm0rs8_rwflags_nopc(probes_opcode_t insn,
+ 	struct arch_specific_insn *asi,
+ 	struct pt_regs *regs)
+ {
+@@ -251,7 +251,7 @@ emulate_rd16rn12rm0rs8_rwflags_nopc(kprobe_opcode_t insn,
+ }
+ 
+ static void __kprobes
+-emulate_rd12rm0_noflags_nopc(kprobe_opcode_t insn,
++emulate_rd12rm0_noflags_nopc(probes_opcode_t insn,
+ 	struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	int rd = (insn >> 12) & 0xf;
+@@ -271,7 +271,7 @@ emulate_rd12rm0_noflags_nopc(kprobe_opcode_t insn,
+ }
+ 
+ static void __kprobes
+-emulate_rdlo12rdhi16rn0rm8_rwflags_nopc(kprobe_opcode_t insn,
++emulate_rdlo12rdhi16rn0rm8_rwflags_nopc(probes_opcode_t insn,
+ 	struct arch_specific_insn *asi,
+ 	struct pt_regs *regs)
+ {
+diff --git a/arch/arm/kernel/kprobes-common.c b/arch/arm/kernel/kprobes-common.c
+index abe0389..08b5560 100644
+--- a/arch/arm/kernel/kprobes-common.c
++++ b/arch/arm/kernel/kprobes-common.c
+@@ -17,7 +17,7 @@
+ #include "kprobes.h"
+ 
+ 
+-static void __kprobes simulate_ldm1stm1(kprobe_opcode_t insn,
++static void __kprobes simulate_ldm1stm1(probes_opcode_t insn,
+ 		struct arch_specific_insn *asi,
+ 		struct pt_regs *regs)
+ {
+@@ -59,7 +59,7 @@ static void __kprobes simulate_ldm1stm1(kprobe_opcode_t insn,
+ 	}
+ }
+ 
+-static void __kprobes simulate_stm1_pc(kprobe_opcode_t insn,
++static void __kprobes simulate_stm1_pc(probes_opcode_t insn,
+ 	struct arch_specific_insn *asi,
+ 	struct pt_regs *regs)
+ {
+@@ -70,7 +70,7 @@ static void __kprobes simulate_stm1_pc(kprobe_opcode_t insn,
+ 	regs->ARM_pc = (long)addr + 4;
+ }
+ 
+-static void __kprobes simulate_ldm1_pc(kprobe_opcode_t insn,
++static void __kprobes simulate_ldm1_pc(probes_opcode_t insn,
+ 	struct arch_specific_insn *asi,
+ 	struct pt_regs *regs)
+ {
+@@ -79,7 +79,7 @@ static void __kprobes simulate_ldm1_pc(kprobe_opcode_t insn,
+ }
+ 
+ static void __kprobes
+-emulate_generic_r0_12_noflags(kprobe_opcode_t insn,
++emulate_generic_r0_12_noflags(probes_opcode_t insn,
+ 	struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	register void *rregs asm("r1") = regs;
+@@ -107,7 +107,7 @@ emulate_generic_r0_12_noflags(kprobe_opcode_t insn,
+ }
+ 
+ static void __kprobes
+-emulate_generic_r2_14_noflags(kprobe_opcode_t insn,
++emulate_generic_r2_14_noflags(probes_opcode_t insn,
+ 	struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	emulate_generic_r0_12_noflags(insn, asi,
+@@ -115,7 +115,7 @@ emulate_generic_r2_14_noflags(kprobe_opcode_t insn,
+ }
+ 
+ static void __kprobes
+-emulate_ldm_r3_15(kprobe_opcode_t insn,
++emulate_ldm_r3_15(probes_opcode_t insn,
+ 	struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	emulate_generic_r0_12_noflags(insn, asi,
+@@ -124,7 +124,7 @@ emulate_ldm_r3_15(kprobe_opcode_t insn,
+ }
+ 
+ enum kprobe_insn __kprobes
+-kprobe_decode_ldmstm(kprobe_opcode_t insn, struct arch_specific_insn *asi,
++kprobe_decode_ldmstm(probes_opcode_t insn, struct arch_specific_insn *asi,
+ 		const struct decode_header *h)
+ {
+ 	kprobe_insn_handler_t *handler = 0;
+diff --git a/arch/arm/kernel/kprobes-thumb.c b/arch/arm/kernel/kprobes-thumb.c
+index adc08f8..610d693 100644
+--- a/arch/arm/kernel/kprobes-thumb.c
++++ b/arch/arm/kernel/kprobes-thumb.c
+@@ -23,7 +23,7 @@
+ /* t32 thumb actions */
+ 
+ static void __kprobes
+-t32_simulate_table_branch(kprobe_opcode_t insn,
++t32_simulate_table_branch(probes_opcode_t insn,
+ 		struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	unsigned long pc = regs->ARM_pc;
+@@ -43,7 +43,7 @@ t32_simulate_table_branch(kprobe_opcode_t insn,
+ }
+ 
+ static void __kprobes
+-t32_simulate_mrs(kprobe_opcode_t insn,
++t32_simulate_mrs(probes_opcode_t insn,
+ 		struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	int rd = (insn >> 8) & 0xf;
+@@ -52,7 +52,7 @@ t32_simulate_mrs(kprobe_opcode_t insn,
+ }
+ 
+ static void __kprobes
+-t32_simulate_cond_branch(kprobe_opcode_t insn,
++t32_simulate_cond_branch(probes_opcode_t insn,
+ 		struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	unsigned long pc = regs->ARM_pc;
+@@ -67,17 +67,17 @@ t32_simulate_cond_branch(kprobe_opcode_t insn,
+ }
+ 
+ static enum kprobe_insn __kprobes
+-t32_decode_cond_branch(kprobe_opcode_t insn, struct arch_specific_insn *asi,
++t32_decode_cond_branch(probes_opcode_t insn, struct arch_specific_insn *asi,
+ 		const struct decode_header *d)
+ {
+ 	int cc = (insn >> 22) & 0xf;
+-	asi->insn_check_cc = kprobe_condition_checks[cc];
++	asi->insn_check_cc = probes_condition_checks[cc];
+ 	asi->insn_handler = t32_simulate_cond_branch;
+ 	return INSN_GOOD_NO_SLOT;
+ }
+ 
+ static void __kprobes
+-t32_simulate_branch(kprobe_opcode_t insn,
++t32_simulate_branch(probes_opcode_t insn,
+ 		    struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	unsigned long pc = regs->ARM_pc;
+@@ -105,7 +105,7 @@ t32_simulate_branch(kprobe_opcode_t insn,
+ }
+ 
+ static void __kprobes
+-t32_simulate_ldr_literal(kprobe_opcode_t insn,
++t32_simulate_ldr_literal(probes_opcode_t insn,
+ 		struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	unsigned long addr = regs->ARM_pc & ~3;
+@@ -143,7 +143,7 @@ t32_simulate_ldr_literal(kprobe_opcode_t insn,
+ }
+ 
+ static enum kprobe_insn __kprobes
+-t32_decode_ldmstm(kprobe_opcode_t insn, struct arch_specific_insn *asi,
++t32_decode_ldmstm(probes_opcode_t insn, struct arch_specific_insn *asi,
+ 		const struct decode_header *d)
+ {
+ 	enum kprobe_insn ret = kprobe_decode_ldmstm(insn, asi, d);
+@@ -157,7 +157,7 @@ t32_decode_ldmstm(kprobe_opcode_t insn, struct arch_specific_insn *asi,
+ }
+ 
+ static void __kprobes
+-t32_emulate_ldrdstrd(kprobe_opcode_t insn,
++t32_emulate_ldrdstrd(probes_opcode_t insn,
+ 		struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	unsigned long pc = regs->ARM_pc & ~3;
+@@ -184,7 +184,7 @@ t32_emulate_ldrdstrd(kprobe_opcode_t insn,
+ }
+ 
+ static void __kprobes
+-t32_emulate_ldrstr(kprobe_opcode_t insn,
++t32_emulate_ldrstr(probes_opcode_t insn,
+ 		struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	int rt = (insn >> 12) & 0xf;
+@@ -210,7 +210,7 @@ t32_emulate_ldrstr(kprobe_opcode_t insn,
+ }
+ 
+ static void __kprobes
+-t32_emulate_rd8rn16rm0_rwflags(kprobe_opcode_t insn,
++t32_emulate_rd8rn16rm0_rwflags(probes_opcode_t insn,
+ 		struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	int rd = (insn >> 8) & 0xf;
+@@ -237,7 +237,7 @@ t32_emulate_rd8rn16rm0_rwflags(kprobe_opcode_t insn,
+ }
+ 
+ static void __kprobes
+-t32_emulate_rd8pc16_noflags(kprobe_opcode_t insn,
++t32_emulate_rd8pc16_noflags(probes_opcode_t insn,
+ 		struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	unsigned long pc = regs->ARM_pc;
+@@ -257,7 +257,7 @@ t32_emulate_rd8pc16_noflags(kprobe_opcode_t insn,
+ }
+ 
+ static void __kprobes
+-t32_emulate_rd8rn16_noflags(kprobe_opcode_t insn,
++t32_emulate_rd8rn16_noflags(probes_opcode_t insn,
+ 		struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	int rd = (insn >> 8) & 0xf;
+@@ -277,7 +277,7 @@ t32_emulate_rd8rn16_noflags(kprobe_opcode_t insn,
+ }
+ 
+ static void __kprobes
+-t32_emulate_rdlo12rdhi8rn16rm0_noflags(kprobe_opcode_t insn,
++t32_emulate_rdlo12rdhi8rn16rm0_noflags(probes_opcode_t insn,
+ 		struct arch_specific_insn *asi,
+ 		struct pt_regs *regs)
+ {
+@@ -305,7 +305,7 @@ t32_emulate_rdlo12rdhi8rn16rm0_noflags(kprobe_opcode_t insn,
+ /* t16 thumb actions */
+ 
+ static void __kprobes
+-t16_simulate_bxblx(kprobe_opcode_t insn,
++t16_simulate_bxblx(probes_opcode_t insn,
+ 		struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	unsigned long pc = regs->ARM_pc + 2;
+@@ -319,7 +319,7 @@ t16_simulate_bxblx(kprobe_opcode_t insn,
+ }
+ 
+ static void __kprobes
+-t16_simulate_ldr_literal(kprobe_opcode_t insn,
++t16_simulate_ldr_literal(probes_opcode_t insn,
+ 		struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	unsigned long *base = (unsigned long *)((regs->ARM_pc + 2) & ~3);
+@@ -329,7 +329,7 @@ t16_simulate_ldr_literal(kprobe_opcode_t insn,
+ }
+ 
+ static void __kprobes
+-t16_simulate_ldrstr_sp_relative(kprobe_opcode_t insn,
++t16_simulate_ldrstr_sp_relative(probes_opcode_t insn,
+ 		struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	unsigned long* base = (unsigned long *)regs->ARM_sp;
+@@ -342,7 +342,7 @@ t16_simulate_ldrstr_sp_relative(kprobe_opcode_t insn,
+ }
+ 
+ static void __kprobes
+-t16_simulate_reladr(kprobe_opcode_t insn,
++t16_simulate_reladr(probes_opcode_t insn,
+ 		struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	unsigned long base = (insn & 0x800) ? regs->ARM_sp
+@@ -353,7 +353,7 @@ t16_simulate_reladr(kprobe_opcode_t insn,
+ }
+ 
+ static void __kprobes
+-t16_simulate_add_sp_imm(kprobe_opcode_t insn,
++t16_simulate_add_sp_imm(probes_opcode_t insn,
+ 		struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	long imm = insn & 0x7f;
+@@ -364,11 +364,11 @@ t16_simulate_add_sp_imm(kprobe_opcode_t insn,
+ }
+ 
+ static void __kprobes
+-t16_simulate_cbz(kprobe_opcode_t insn,
++t16_simulate_cbz(probes_opcode_t insn,
+ 		struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	int rn = insn & 0x7;
+-	kprobe_opcode_t nonzero = regs->uregs[rn] ? insn : ~insn;
++	probes_opcode_t nonzero = regs->uregs[rn] ? insn : ~insn;
+ 	if (nonzero & 0x800) {
+ 		long i = insn & 0x200;
+ 		long imm5 = insn & 0xf8;
+@@ -378,7 +378,7 @@ t16_simulate_cbz(kprobe_opcode_t insn,
+ }
+ 
+ static void __kprobes
+-t16_simulate_it(kprobe_opcode_t insn,
++t16_simulate_it(probes_opcode_t insn,
+ 		struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	/*
+@@ -395,7 +395,7 @@ t16_simulate_it(kprobe_opcode_t insn,
+ }
+ 
+ static void __kprobes
+-t16_singlestep_it(kprobe_opcode_t insn,
++t16_singlestep_it(probes_opcode_t insn,
+ 		  struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	regs->ARM_pc += 2;
+@@ -403,7 +403,7 @@ t16_singlestep_it(kprobe_opcode_t insn,
+ }
+ 
+ static enum kprobe_insn __kprobes
+-t16_decode_it(kprobe_opcode_t insn, struct arch_specific_insn *asi,
++t16_decode_it(probes_opcode_t insn, struct arch_specific_insn *asi,
+ 		const struct decode_header *d)
+ {
+ 	asi->insn_singlestep = t16_singlestep_it;
+@@ -411,7 +411,7 @@ t16_decode_it(kprobe_opcode_t insn, struct arch_specific_insn *asi,
+ }
+ 
+ static void __kprobes
+-t16_simulate_cond_branch(kprobe_opcode_t insn,
++t16_simulate_cond_branch(probes_opcode_t insn,
+ 		struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	unsigned long pc = regs->ARM_pc + 2;
+@@ -421,17 +421,17 @@ t16_simulate_cond_branch(kprobe_opcode_t insn,
+ }
+ 
+ static enum kprobe_insn __kprobes
+-t16_decode_cond_branch(kprobe_opcode_t insn, struct arch_specific_insn *asi,
++t16_decode_cond_branch(probes_opcode_t insn, struct arch_specific_insn *asi,
+ 		const struct decode_header *d)
+ {
+ 	int cc = (insn >> 8) & 0xf;
+-	asi->insn_check_cc = kprobe_condition_checks[cc];
++	asi->insn_check_cc = probes_condition_checks[cc];
+ 	asi->insn_handler = t16_simulate_cond_branch;
+ 	return INSN_GOOD_NO_SLOT;
+ }
+ 
+ static void __kprobes
+-t16_simulate_branch(kprobe_opcode_t insn,
++t16_simulate_branch(probes_opcode_t insn,
+ 		   struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	unsigned long pc = regs->ARM_pc + 2;
+@@ -441,7 +441,7 @@ t16_simulate_branch(kprobe_opcode_t insn,
+ }
+ 
+ static unsigned long __kprobes
+-t16_emulate_loregs(kprobe_opcode_t insn,
++t16_emulate_loregs(probes_opcode_t insn,
+ 		   struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	unsigned long oldcpsr = regs->ARM_cpsr;
+@@ -464,14 +464,14 @@ t16_emulate_loregs(kprobe_opcode_t insn,
+ }
+ 
+ static void __kprobes
+-t16_emulate_loregs_rwflags(kprobe_opcode_t insn,
++t16_emulate_loregs_rwflags(probes_opcode_t insn,
+ 		struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	regs->ARM_cpsr = t16_emulate_loregs(insn, asi, regs);
+ }
+ 
+ static void __kprobes
+-t16_emulate_loregs_noitrwflags(kprobe_opcode_t insn,
++t16_emulate_loregs_noitrwflags(probes_opcode_t insn,
+ 		struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	unsigned long cpsr = t16_emulate_loregs(insn, asi, regs);
+@@ -480,7 +480,7 @@ t16_emulate_loregs_noitrwflags(kprobe_opcode_t insn,
+ }
+ 
+ static void __kprobes
+-t16_emulate_hiregs(kprobe_opcode_t insn,
++t16_emulate_hiregs(probes_opcode_t insn,
+ 		struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	unsigned long pc = regs->ARM_pc + 2;
+@@ -511,7 +511,7 @@ t16_emulate_hiregs(kprobe_opcode_t insn,
+ }
+ 
+ static enum kprobe_insn __kprobes
+-t16_decode_hiregs(kprobe_opcode_t insn, struct arch_specific_insn *asi,
++t16_decode_hiregs(probes_opcode_t insn, struct arch_specific_insn *asi,
+ 		const struct decode_header *d)
+ {
+ 	insn &= ~0x00ff;
+@@ -522,7 +522,7 @@ t16_decode_hiregs(kprobe_opcode_t insn, struct arch_specific_insn *asi,
+ }
+ 
+ static void __kprobes
+-t16_emulate_push(kprobe_opcode_t insn,
++t16_emulate_push(probes_opcode_t insn,
+ 		struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	__asm__ __volatile__ (
+@@ -539,7 +539,7 @@ t16_emulate_push(kprobe_opcode_t insn,
+ }
+ 
+ static enum kprobe_insn __kprobes
+-t16_decode_push(kprobe_opcode_t insn, struct arch_specific_insn *asi,
++t16_decode_push(probes_opcode_t insn, struct arch_specific_insn *asi,
+ 		const struct decode_header *d)
+ {
+ 	/*
+@@ -554,7 +554,7 @@ t16_decode_push(kprobe_opcode_t insn, struct arch_specific_insn *asi,
+ }
+ 
+ static void __kprobes
+-t16_emulate_pop_nopc(kprobe_opcode_t insn,
++t16_emulate_pop_nopc(probes_opcode_t insn,
+ 		struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	__asm__ __volatile__ (
+@@ -571,7 +571,7 @@ t16_emulate_pop_nopc(kprobe_opcode_t insn,
+ }
+ 
+ static void __kprobes
+-t16_emulate_pop_pc(kprobe_opcode_t insn,
++t16_emulate_pop_pc(probes_opcode_t insn,
+ 		struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	register unsigned long pc asm("r8");
+@@ -592,7 +592,7 @@ t16_emulate_pop_pc(kprobe_opcode_t insn,
+ }
+ 
+ static enum kprobe_insn __kprobes
+-t16_decode_pop(kprobe_opcode_t insn, struct arch_specific_insn *asi,
++t16_decode_pop(probes_opcode_t insn, struct arch_specific_insn *asi,
+ 		const struct decode_header *d)
+ {
+ 	/*
 diff --git a/arch/arm/kernel/kprobes.h b/arch/arm/kernel/kprobes.h
-index eee8089..d0a24b7 100644
+index 7798035..d0530b1 100644
 --- a/arch/arm/kernel/kprobes.h
 +++ b/arch/arm/kernel/kprobes.h
-@@ -35,6 +35,7 @@ kprobe_decode_ldmstm(kprobe_opcode_t insn, struct arch_specific_insn *asi,
+@@ -36,22 +36,22 @@ enum kprobe_insn {
+ 	INSN_GOOD_NO_SLOT
+ };
  
- typedef enum probes_insn (kprobe_decode_insn_t)(probes_opcode_t,
+-typedef enum kprobe_insn (kprobe_decode_insn_t)(kprobe_opcode_t,
++typedef enum kprobe_insn (kprobe_decode_insn_t)(probes_opcode_t,
  						struct arch_specific_insn *,
-+						bool,
  						const union decode_action *);
  
  #ifdef CONFIG_THUMB2_KERNEL
+ 
+-enum kprobe_insn thumb16_kprobe_decode_insn(kprobe_opcode_t,
++enum kprobe_insn thumb16_kprobe_decode_insn(probes_opcode_t,
+ 					    struct arch_specific_insn *,
+ 					    const union decode_action *);
+-enum kprobe_insn thumb32_kprobe_decode_insn(kprobe_opcode_t,
++enum kprobe_insn thumb32_kprobe_decode_insn(probes_opcode_t,
+ 					    struct arch_specific_insn *,
+ 					    const union decode_action *);
+ 
+ #else /* !CONFIG_THUMB2_KERNEL */
+ 
+-enum kprobe_insn arm_kprobe_decode_insn(kprobe_opcode_t,
++enum kprobe_insn arm_kprobe_decode_insn(probes_opcode_t,
+ 					struct arch_specific_insn *,
+ 					const union decode_action *);
+ 
 diff --git a/arch/arm/kernel/probes-arm.c b/arch/arm/kernel/probes-arm.c
-index 738e5fc..8e7fde8 100644
+index 36002e5..3357a07 100644
 --- a/arch/arm/kernel/probes-arm.c
 +++ b/arch/arm/kernel/probes-arm.c
-@@ -725,10 +725,10 @@ static void __kprobes arm_singlestep(probes_opcode_t insn,
+@@ -57,7 +57,7 @@
+  * read and write of flags.
   */
- enum probes_insn __kprobes
- arm_probes_decode_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
--		       const union decode_action *actions)
-+		       bool emulate, const union decode_action *actions)
+ 
+-void __kprobes simulate_bbl(kprobe_opcode_t insn,
++void __kprobes simulate_bbl(probes_opcode_t insn,
+ 		struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	long iaddr = (long) regs->ARM_pc - 4;
+@@ -69,7 +69,7 @@ void __kprobes simulate_bbl(kprobe_opcode_t insn,
+ 	regs->ARM_pc = iaddr + 8 + disp;
+ }
+ 
+-void __kprobes simulate_blx1(kprobe_opcode_t insn,
++void __kprobes simulate_blx1(probes_opcode_t insn,
+ 		struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	long iaddr = (long) regs->ARM_pc - 4;
+@@ -80,7 +80,7 @@ void __kprobes simulate_blx1(kprobe_opcode_t insn,
+ 	regs->ARM_cpsr |= PSR_T_BIT;
+ }
+ 
+-void __kprobes simulate_blx2bx(kprobe_opcode_t insn,
++void __kprobes simulate_blx2bx(probes_opcode_t insn,
+ 		struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	int rm = insn & 0xf;
+@@ -95,7 +95,7 @@ void __kprobes simulate_blx2bx(kprobe_opcode_t insn,
+ 		regs->ARM_cpsr |= PSR_T_BIT;
+ }
+ 
+-void __kprobes simulate_mrs(kprobe_opcode_t insn,
++void __kprobes simulate_mrs(probes_opcode_t insn,
+ 		struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	int rd = (insn >> 12) & 0xf;
+@@ -103,7 +103,7 @@ void __kprobes simulate_mrs(kprobe_opcode_t insn,
+ 	regs->uregs[rd] = regs->ARM_cpsr & mask;
+ }
+ 
+-void __kprobes simulate_mov_ipsp(kprobe_opcode_t insn,
++void __kprobes simulate_mov_ipsp(probes_opcode_t insn,
+ 		struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	regs->uregs[12] = regs->uregs[13];
+@@ -704,7 +704,7 @@ const union decode_item kprobe_decode_arm_table[] = {
+ EXPORT_SYMBOL_GPL(kprobe_decode_arm_table);
+ #endif
+ 
+-static void __kprobes arm_singlestep(kprobe_opcode_t insn,
++static void __kprobes arm_singlestep(probes_opcode_t insn,
+ 		struct arch_specific_insn *asi, struct pt_regs *regs)
+ {
+ 	regs->ARM_pc += 4;
+@@ -724,11 +724,11 @@ static void __kprobes arm_singlestep(kprobe_opcode_t insn,
+  *   should also be very rare.
+  */
+ enum kprobe_insn __kprobes
+-arm_kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
++arm_kprobe_decode_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
+ 		       const union decode_action *actions)
  {
  	asi->insn_singlestep = arm_singlestep;
- 	asi->insn_check_cc = probes_condition_checks[insn>>28];
- 	return probes_decode_insn(insn, asi, probes_decode_arm_table, false,
--				  actions);
-+				  emulate, actions);
+-	asi->insn_check_cc = kprobe_condition_checks[insn>>28];
++	asi->insn_check_cc = probes_condition_checks[insn>>28];
+ 	return kprobe_decode_insn(insn, asi, kprobe_decode_arm_table, false,
+ 				  actions);
  }
 diff --git a/arch/arm/kernel/probes-arm.h b/arch/arm/kernel/probes-arm.h
-index 7a5cce4..ea614dc 100644
+index d0ac8a4..9a9d379d 100644
 --- a/arch/arm/kernel/probes-arm.h
 +++ b/arch/arm/kernel/probes-arm.h
-@@ -67,7 +67,7 @@ void __kprobes simulate_mov_ipsp(probes_opcode_t opcode,
- extern const union decode_item probes_decode_arm_table[];
+@@ -53,15 +53,15 @@ enum probes_arm_action {
+ 	NUM_PROBES_ARM_ACTIONS
+ };
  
- enum probes_insn arm_probes_decode_insn(probes_opcode_t,
--		struct arch_specific_insn *,
-+		struct arch_specific_insn *, bool emulate,
- 		const union decode_action *actions);
+-void __kprobes simulate_bbl(kprobe_opcode_t opcode,
++void __kprobes simulate_bbl(probes_opcode_t opcode,
+ 	struct arch_specific_insn *asi, struct pt_regs *regs);
+-void __kprobes simulate_blx1(kprobe_opcode_t opcode,
++void __kprobes simulate_blx1(probes_opcode_t opcode,
+ 	struct arch_specific_insn *asi, struct pt_regs *regs);
+-void __kprobes simulate_blx2bx(kprobe_opcode_t opcode,
++void __kprobes simulate_blx2bx(probes_opcode_t opcode,
+ 	struct arch_specific_insn *asi, struct pt_regs *regs);
+-void __kprobes simulate_mrs(kprobe_opcode_t opcode,
++void __kprobes simulate_mrs(probes_opcode_t opcode,
+ 	struct arch_specific_insn *asi, struct pt_regs *regs);
+-void __kprobes simulate_mov_ipsp(kprobe_opcode_t opcode,
++void __kprobes simulate_mov_ipsp(probes_opcode_t opcode,
+ 	struct arch_specific_insn *asi, struct pt_regs *regs);
  
  #endif
 diff --git a/arch/arm/kernel/probes-thumb.c b/arch/arm/kernel/probes-thumb.c
-index eab440f..23e2cbd 100644
+index aa3176d..a15a79b 100644
 --- a/arch/arm/kernel/probes-thumb.c
 +++ b/arch/arm/kernel/probes-thumb.c
-@@ -863,20 +863,20 @@ static void __kprobes thumb32_singlestep(probes_opcode_t opcode,
+@@ -839,11 +839,11 @@ EXPORT_SYMBOL_GPL(kprobe_decode_thumb16_table);
+ static unsigned long __kprobes thumb_check_cc(unsigned long cpsr)
+ {
+ 	if (unlikely(in_it_block(cpsr)))
+-		return kprobe_condition_checks[current_cond(cpsr)](cpsr);
++		return probes_condition_checks[current_cond(cpsr)](cpsr);
+ 	return true;
+ }
  
- enum probes_insn __kprobes
- thumb16_probes_decode_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
--			   const union decode_action *actions)
-+			   bool emulate, const union decode_action *actions)
+-static void __kprobes thumb16_singlestep(kprobe_opcode_t opcode,
++static void __kprobes thumb16_singlestep(probes_opcode_t opcode,
+ 		struct arch_specific_insn *asi,
+ 		struct pt_regs *regs)
+ {
+@@ -852,7 +852,7 @@ static void __kprobes thumb16_singlestep(kprobe_opcode_t opcode,
+ 	regs->ARM_cpsr = it_advance(regs->ARM_cpsr);
+ }
+ 
+-static void __kprobes thumb32_singlestep(kprobe_opcode_t opcode,
++static void __kprobes thumb32_singlestep(probes_opcode_t opcode,
+ 		struct arch_specific_insn *asi,
+ 		struct pt_regs *regs)
+ {
+@@ -862,7 +862,7 @@ static void __kprobes thumb32_singlestep(kprobe_opcode_t opcode,
+ }
+ 
+ enum kprobe_insn __kprobes
+-thumb16_kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
++thumb16_kprobe_decode_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
+ 			   const union decode_action *actions)
  {
  	asi->insn_singlestep = thumb16_singlestep;
- 	asi->insn_check_cc = thumb_check_cc;
- 	return probes_decode_insn(insn, asi, probes_decode_thumb16_table, true,
--				  actions);
-+				  emulate, actions);
+@@ -872,7 +872,7 @@ thumb16_kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
  }
  
- enum probes_insn __kprobes
- thumb32_probes_decode_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
--			   const union decode_action *actions)
-+			   bool emulate, const union decode_action *actions)
+ enum kprobe_insn __kprobes
+-thumb32_kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
++thumb32_kprobe_decode_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
+ 			   const union decode_action *actions)
  {
  	asi->insn_singlestep = thumb32_singlestep;
- 	asi->insn_check_cc = thumb_check_cc;
- 	return probes_decode_insn(insn, asi, probes_decode_thumb32_table, true,
--				  actions);
-+				  emulate, actions);
- }
-diff --git a/arch/arm/kernel/probes-thumb.h b/arch/arm/kernel/probes-thumb.h
-index d6f67c1d..65e4250 100644
---- a/arch/arm/kernel/probes-thumb.h
-+++ b/arch/arm/kernel/probes-thumb.h
-@@ -89,9 +89,9 @@ extern const union decode_item probes_decode_thumb16_table[];
- 
- enum probes_insn __kprobes
- thumb16_probes_decode_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
--		const union decode_action *actions);
-+		bool emulate, const union decode_action *actions);
- enum probes_insn __kprobes
- thumb32_probes_decode_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
--		const union decode_action *actions);
-+		bool emulate, const union decode_action *actions);
- 
- #endif
 diff --git a/arch/arm/kernel/probes.c b/arch/arm/kernel/probes.c
-index b6d9b85..f9dff12 100644
+index f2ab885..c1cdc0d 100644
 --- a/arch/arm/kernel/probes.c
 +++ b/arch/arm/kernel/probes.c
-@@ -257,7 +257,7 @@ set_emulated_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
+@@ -167,7 +167,7 @@ static unsigned long __kprobes __check_al(unsigned long cpsr)
+ 	return true;
+ }
+ 
+-kprobe_check_cc * const kprobe_condition_checks[16] = {
++probes_check_cc * const probes_condition_checks[16] = {
+ 	&__check_eq, &__check_ne, &__check_cs, &__check_cc,
+ 	&__check_mi, &__check_pl, &__check_vs, &__check_vc,
+ 	&__check_hi, &__check_ls, &__check_ge, &__check_lt,
+@@ -175,13 +175,13 @@ kprobe_check_cc * const kprobe_condition_checks[16] = {
+ };
+ 
+ 
+-void __kprobes kprobe_simulate_nop(kprobe_opcode_t opcode,
++void __kprobes kprobe_simulate_nop(probes_opcode_t opcode,
+ 	struct arch_specific_insn *asi,
+ 	struct pt_regs *regs)
+ {
+ }
+ 
+-void __kprobes kprobe_emulate_none(kprobe_opcode_t opcode,
++void __kprobes kprobe_emulate_none(probes_opcode_t opcode,
+ 	struct arch_specific_insn *asi,
+ 	struct pt_regs *regs)
+ {
+@@ -195,8 +195,8 @@ void __kprobes kprobe_emulate_none(kprobe_opcode_t opcode,
+  * unconditional as the condition code will already be checked before any
+  * emulation handler is called.
+  */
+-static kprobe_opcode_t __kprobes
+-prepare_emulated_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
++static probes_opcode_t __kprobes
++prepare_emulated_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
+ 		      bool thumb)
+ {
+ #ifdef CONFIG_THUMB2_KERNEL
+@@ -221,7 +221,7 @@ prepare_emulated_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
+  * prepare_emulated_insn
+  */
+ static void  __kprobes
+-set_emulated_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
++set_emulated_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
+ 		  bool thumb)
+ {
+ #ifdef CONFIG_THUMB2_KERNEL
+@@ -257,14 +257,14 @@ set_emulated_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
   * non-zero value, the corresponding nibble in pinsn is validated and modified
   * according to the type.
   */
--static bool __kprobes decode_regs(probes_opcode_t *pinsn, u32 regs)
-+static bool __kprobes decode_regs(probes_opcode_t *pinsn, u32 regs, bool modify)
+-static bool __kprobes decode_regs(kprobe_opcode_t *pinsn, u32 regs)
++static bool __kprobes decode_regs(probes_opcode_t *pinsn, u32 regs)
  {
- 	probes_opcode_t insn = *pinsn;
- 	probes_opcode_t mask = 0xf; /* Start at least significant nibble */
-@@ -323,7 +323,9 @@ static bool __kprobes decode_regs(probes_opcode_t *pinsn, u32 regs)
- 		insn |= new_bits & mask;
- 	}
+-	kprobe_opcode_t insn = *pinsn;
+-	kprobe_opcode_t mask = 0xf; /* Start at least significant nibble */
++	probes_opcode_t insn = *pinsn;
++	probes_opcode_t mask = 0xf; /* Start at least significant nibble */
  
--	*pinsn = insn;
-+	if (modify)
-+		*pinsn = insn;
-+
- 	return true;
+ 	for (; regs != 0; regs >>= 4, mask <<= 4) {
  
- reject:
-@@ -385,13 +387,14 @@ static const int decode_struct_sizes[NUM_DECODE_TYPES] = {
+-		kprobe_opcode_t new_bits = INSN_NEW_BITS;
++		probes_opcode_t new_bits = INSN_NEW_BITS;
+ 
+ 		switch (regs & 0xf) {
+ 
+@@ -383,7 +383,7 @@ static const int decode_struct_sizes[NUM_DECODE_TYPES] = {
+  *
+  */
  int __kprobes
- probes_decode_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
+-kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
++kprobe_decode_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
  		   const union decode_item *table, bool thumb,
--		   const union decode_action *actions)
-+		   bool emulate, const union decode_action *actions)
+ 		   const union decode_action *actions)
  {
- 	const struct decode_header *h = (struct decode_header *)table;
- 	const struct decode_header *next;
- 	bool matched = false;
- 
--	insn = prepare_emulated_insn(insn, asi, thumb);
-+	if (emulate)
-+		insn = prepare_emulated_insn(insn, asi, thumb);
- 
- 	for (;; h = next) {
- 		enum decode_type type = h->type_regs.bits & DECODE_TYPE_MASK;
-@@ -406,7 +409,7 @@ probes_decode_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
- 		if (!matched && (insn & h->mask.bits) != h->value.bits)
- 			continue;
- 
--		if (!decode_regs(&insn, regs))
-+		if (!decode_regs(&insn, regs, emulate))
- 			return INSN_REJECTED;
- 
- 		switch (type) {
-@@ -430,6 +433,11 @@ probes_decode_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
- 
- 		case DECODE_TYPE_EMULATE: {
- 			struct decode_emulate *d = (struct decode_emulate *)h;
-+
-+			if (!emulate)
-+				return actions[d->handler.action].decoder(insn,
-+					asi, h);
-+
- 			asi->insn_handler = actions[d->handler.action].handler;
- 			set_emulated_insn(insn, asi, thumb);
- 			return INSN_GOOD;
 diff --git a/arch/arm/kernel/probes.h b/arch/arm/kernel/probes.h
-index 0c72e54..33cc30c 100644
+index efea63c..5a0497f 100644
 --- a/arch/arm/kernel/probes.h
 +++ b/arch/arm/kernel/probes.h
-@@ -401,7 +401,7 @@ probes_insn_handler_t probes_emulate_none;
+@@ -131,13 +131,13 @@ static inline void __kprobes alu_write_pc(long pcv, struct pt_regs *regs)
+ }
  
- int __kprobes
- probes_decode_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
--		const union decode_item *table, bool thumb,
-+		const union decode_item *table, bool thumb, bool emulate,
- 		const union decode_action *actions);
  
+-void __kprobes kprobe_simulate_nop(kprobe_opcode_t, struct arch_specific_insn *,
++void __kprobes kprobe_simulate_nop(probes_opcode_t, struct arch_specific_insn *,
+ 		struct pt_regs *regs);
+-void __kprobes kprobe_emulate_none(kprobe_opcode_t, struct arch_specific_insn *,
++void __kprobes kprobe_emulate_none(probes_opcode_t, struct arch_specific_insn *,
+ 		struct pt_regs *regs);
+ 
+ enum kprobe_insn __kprobes
+-kprobe_decode_ldmstm(kprobe_opcode_t insn, struct arch_specific_insn *asi,
++kprobe_decode_ldmstm(probes_opcode_t insn, struct arch_specific_insn *asi,
+ 		const struct decode_header *h);
+ 
+ /*
+@@ -311,7 +311,7 @@ union decode_item {
+ 	int			action;
+ };
+ 
+-typedef enum kprobe_insn (probes_custom_decode_t)(kprobe_opcode_t,
++typedef enum kprobe_insn (probes_custom_decode_t)(probes_opcode_t,
+ 						  struct arch_specific_insn *,
+ 						  const struct decode_header *);
+ 
+@@ -408,10 +408,10 @@ extern const union decode_item kprobe_decode_arm_table[];
+ extern const union decode_action kprobes_arm_actions[];
  #endif
+ 
+-extern kprobe_check_cc * const kprobe_condition_checks[16];
++extern probes_check_cc * const probes_condition_checks[16];
+ 
+ 
+-int kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
++int kprobe_decode_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
+ 		       const union decode_item *table, bool thumb16,
+ 		       const union decode_action *actions);
+ 
 -- 
 1.8.1.2
 
