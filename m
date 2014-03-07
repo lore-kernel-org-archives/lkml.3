@@ -1,105 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752232AbaCGCQz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 21:16:55 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:59922 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003AbaCGCQx (ORCPT
+	id S1752496AbaCGCVi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 21:21:38 -0500
+Received: from smtprelay0178.hostedemail.com ([216.40.44.178]:39140 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751735AbaCGCVg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 21:16:53 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/j0eXBsS+lzha9S745Tjw5PSVVydwvXoc=
-X-DKIM: OpenDKIM Filter v2.0.1 titan D21CB53C5A1
-Date: Thu, 6 Mar 2014 21:16:33 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Mark Rutland <mark.rutland@arm.com>, Andrew Lunn <andrew@lunn.ch>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Rob Landley <rob@landley.net>,
-        Kumar Gala <galak@codeaurora.org>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH 00/10] pinctrl: mvebu: remove hard-coded addresses from
- Dove pinctrl
-Message-ID: <20140307021633.GN1872@titan.lakedaemon.net>
-References: <1393231382-11078-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <20140224181023.GA1010@titan.lakedaemon.net>
- <CACRpkdZ+YGTyDj6i8c198MdRtz3GY-YBmVO9LysPCcmT4EC0cg@mail.gmail.com>
- <20140226000940.GF1872@titan.lakedaemon.net>
- <CACRpkdYQa2BG_qxf5zY=7rks6O31ZF-BX0af3_u1MOgwfwxFSQ@mail.gmail.com>
- <20140226145345.GG1872@titan.lakedaemon.net>
- <CACRpkdZRJG-TzN4c3NSH9PqcQzpo6EbEn5_bM-P3sh4_vSjtaA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdZRJG-TzN4c3NSH9PqcQzpo6EbEn5_bM-P3sh4_vSjtaA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 6 Mar 2014 21:21:36 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2559:2562:2731:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3874:4321:4605:5007:6119:7652:7875:10004:10400:10848:11026:11232:11473:11658:11914:12294:12296:12517:12519:12740:13069:13311:13357:21063,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: ocean82_822a67b26e013
+X-Filterd-Recvd-Size: 3209
+Message-ID: <1394158890.16156.46.camel@joe-AO722>
+Subject: Re: [PATCH] x86: new Intel Atom SoC power management controller
+ driver
+From: Joe Perches <joe@perches.com>
+To: "Li, Aubrey" <aubrey.li@linux.intel.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, mingo@redhat.com,
+        tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        "alan@linux.intel.com" <alan@linux.intel.com>
+Date: Thu, 06 Mar 2014 18:21:30 -0800
+In-Reply-To: <53192A39.5030309@linux.intel.com>
+References: <5317EC0C.4010807@linux.intel.com>
+	 <5317F044.8080407@linux.intel.com> <531805D4.6040806@linux.intel.com>
+	 <5318076C.7080605@linux.intel.com> <531808BD.4070000@linux.intel.com>
+	 <53180D39.7050207@linux.intel.com> <53180E98.9000608@linux.intel.com>
+	 <5318A2BE.2070707@linux.intel.com> <53191222.2000904@linux.intel.com>
+	 <1394152871.16156.32.camel@joe-AO722> <53192A39.5030309@linux.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 07, 2014 at 09:26:48AM +0800, Linus Walleij wrote:
-> On Wed, Feb 26, 2014 at 10:53 PM, Jason Cooper <jason@lakedaemon.net> wrote:
-> > On Wed, Feb 26, 2014 at 10:43:45AM +0100, Linus Walleij wrote:
+On Fri, 2014-03-07 at 10:08 +0800, Li, Aubrey wrote:
+
+> The Power Management Controller (PMC) controls many of the power
+> management features present in the SoC. This driver provides
+> interface to configure the Power Management Controller (PMC).
+
+More trivial notes.
+
+Nothing really that should stop this from being applied.
+
+> diff --git a/arch/x86/kernel/pmc_atom.c b/arch/x86/kernel/pmc_atom.c
+
+I still think that
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+is useful here.
+
+> +#include <linux/module.h>
+> +#include <linux/init.h>
+[]
+> +#define	DRIVER_NAME "pmc_atom"
+
+Maybe
+
+#define DRIVER_NAME KBUILD_MODNAME
+
+too
+
+> +struct pmc_dev_map {
+> +       char *name;
+> +       u32 bit_mask;
+> +};
 > 
-> >> Actually, I'd prefer to pull it in, rebase and sign off each patch
-> >> individually in my tree if that is not causing you problems.
-> >
-> > Actually, that would mess us up pretty badly. :(
-> 
-> OK so I didn't do this, I just pulled it in :-)
+> +static struct pmc_dev_map dev_map[] = {
 
-I could tell, Stephen would have had a heart attack :)
+static const to reduce data?
 
-> >> That way it is visible that the patches were funneled through pin
-> >> control.
-> >
-> > I'm a little confused by this.  Once you merge the branch into one of
-> > yours, that merge commit is a part of the history.
-> 
-> Yes this has been discussed in the past.
+struct pmc_dev_map {
+	const char *name;
+	u32 bit_mask;
+};
 
-Would you have a link handy?  My first thought was to create a tag, eg
-"Sent-through: subsystem <maintainer@example.com>" that I would add to
-patches as I pull them in.  After all, I know where I'm sending them.
-Or should at any rate.
+> +static struct pmc_dev_map dev_map[] = {
 
-> But when a developer bisects down to a certain commit and just looks
-> at it with git log there is no telling which subsystem this thing came
-> from and who actually funnelled it to Torvalds.
+static const struct pmc_dev_map dev_map[] = {
 
-True.
+> +	{"0  - LPSS1_F0_DMA",		BIT_LPSS1_F0_DMA},
+> +	{"1  - LPSS1_F1_PWM1",		BIT_LPSS1_F1_PWM1},
 
-> I do know you *can* find that out with some git magic, the problem
-> is that it is so magic that most developers don't know it and just
-> look at the signoffs.
+[]
 
-It would be helpful if there were a complement to 'git merge-base', say
-'git merge-tip' to point to the merge commit that joined the branch
-containing commit X.
+> +static void pmc_power_off(void)
+> +{
+[]
+> +	pr_info("%s: Preparing to enter system sleep state S5\n", DRIVER_NAME);
 
-Run in succession, it would yield committers me (I merged pinctrl-dove
-into pinctrl), you, Torvalds.
+This is larger code than using pr_fmt
 
-> But it's not like I care super-much.
+> +#ifdef CONFIG_DEBUG_FS
+> +static int pmc_dev_state_show(struct seq_file *s, void *unused)
+> +{
+[]
+> +		seq_printf(s, "Dev: %-32s\tState: %s [%s]\n",
+> +			dev_map[dev_index].name,
+> +			dev_map[dev_index].bit_mask & func_dis_index ?
+> +			"Disabled" : "Enabled ",
+> +			(d3_sts_index & dev_map[dev_index].bit_mask) ?
+> +			"D3" : "D0");
 
-Well, if the code is perfect, we don't have to worry about a lazy
-developer bisecting down to one of our commits. ;-)
+This reverses the order of the 1st and 2nd trigraph test
+and to me would be easier to read like:
 
-btw - I have one last pull request I'll be sending tomorrow that's a
-couple of commits on top of what you currently have.  It's very small,
-but we're avoiding locking ourselves into supporting a bad DT ABI.  The
-real code change just downgrades a WARN().  The rest is correcting the
-binding doc.
+		seq_printf(s, "Dev: %-32s\tState: %s [%s]\n",
+			dev_map[dev_index].name,
+			dev_map[dev_index].bit_mask & func_dis_index ?
+			"Disabled" : "Enabled ",
+			dev_map[dev_index].bit_mask & d3_sts_index ?
+			"D3" : "D0");
 
-thx,
 
-Jason.
