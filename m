@@ -1,43 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752960AbaCGJwK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 04:52:10 -0500
-Received: from www.linutronix.de ([62.245.132.108]:35290 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752673AbaCGJwD (ORCPT
+	id S1752940AbaCGJwJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 04:52:09 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:41760 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752690AbaCGJwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 04:52:03 -0500
-Message-ID: <531996BB.2050401@linutronix.de>
-Date: Fri, 07 Mar 2014 10:51:55 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.3.0
+	Fri, 7 Mar 2014 04:52:04 -0500
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        stable-rt@vger.kernel.org
-Subject: Re: [PATCH RT 3/6] rt: Make cpu_chill() use hrtimer instead of msleep()
-References: <20140305003333.402759240@goodmis.org> <20140305003346.602499217@goodmis.org>
-In-Reply-To: <20140305003346.602499217@goodmis.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <1394054334-20438-1-git-send-email-benjamin.tissoires@redhat.com>
+References: <1394054334-20438-1-git-send-email-benjamin.tissoires@redhat.com>
+Date: Fri, 7 Mar 2014 10:52:02 +0100
+Message-ID: <CANq1E4QRc+cwAJYFJg2F8WpSOrx2xXuPeiZYF6np_2C5CoqRqA@mail.gmail.com>
+Subject: Re: [PATCH v2 0/4] HID: ll transport cleanup: final round
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        David Barksdale <dbarksdale@uplogix.com>, Antonio Ospite <ao2@ao2.it>,
+        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/2014 01:33 AM, Steven Rostedt wrote:
-> 3.2.55-rt79-rc1 stable review patch.
-> If anyone has any objections, please let me know.
+Hi
 
-Now that you posted "cpu_chill: Add a UNINTERRUPTIBLE
-hrtimer_nanosleep" wouldn't it make sense to delay this patches from
-the stable series until we get them all in one go?
+On Wed, Mar 5, 2014 at 10:18 PM, Benjamin Tissoires
+<benjamin.tissoires@redhat.com> wrote:
+> Alright, this is the re-spin of the last round of transport cleanup.
+>
+> Some minor but important modifications are here, but nothing very enthousiastic.
+>
+> Thanks for the reviews and the tests so far.
 
-Sebastian
+Apart from some minor comments on #1 and #2, this is:
 
+Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+
+Thanks
+David
+
+> Cheers,
+> Benjamin
+>
+> Benjamin Tissoires (4):
+>   HID: cp2112: remove various hid_out_raw_report calls
+>   HID: cp2112: remove the last hid_output_raw_report() call
+>   HID: sony: do not rely on hid_output_raw_report
+>   HID: remove hid_output_raw_report transport implementations
+>
+>  drivers/hid/hid-cp2112.c      | 19 +++++++++-----
+>  drivers/hid/hid-sony.c        | 60 ++++++++++---------------------------------
+>  drivers/hid/hidraw.c          |  3 ++-
+>  drivers/hid/i2c-hid/i2c-hid.c | 14 ----------
+>  drivers/hid/uhid.c            |  1 -
+>  drivers/hid/usbhid/hid-core.c | 19 +++++---------
+>  include/linux/hid.h           | 21 ++-------------
+>  net/bluetooth/hidp/core.c     | 14 ----------
+>  8 files changed, 36 insertions(+), 115 deletions(-)
+>
+> --
+> 1.8.5.3
