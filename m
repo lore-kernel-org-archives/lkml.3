@@ -1,71 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148AbaCGQ4G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 11:56:06 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:50786 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752008AbaCGQ4D (ORCPT
+	id S1752553AbaCGRCv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 12:02:51 -0500
+Received: from qmta02.emeryville.ca.mail.comcast.net ([76.96.30.24]:59796 "EHLO
+	qmta02.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751899AbaCGRCt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 11:56:03 -0500
-MIME-Version: 1.0
-In-Reply-To: <1394185698.5608.5.camel@x41>
-References: <1391886379.2669.11.camel@x41> <CAKMK7uE6Gaq-ghgWJ+6Qyn7hrGzAMOHyGT9KQQJ+ij7omPV2Ew@mail.gmail.com>
- <1391890927.1882.5.camel@x41> <CAKMK7uFx2kksGgnuy9e0xiQRKpt=_+44O1V4wbX5yNBocvjBkg@mail.gmail.com>
- <1391951759.6036.7.camel@artifact> <1391952344.25424.4.camel@x220>
- <CAErSpo6uj_Kuk0_F97nRsnM1Pss4C7=HeEaVu6D-NwFFK=1cvA@mail.gmail.com> <1394185698.5608.5.camel@x41>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 7 Mar 2014 09:55:43 -0700
-Message-ID: <CAErSpo4jiq38P3TNuGLGS--nbV9NtUAmiuK=cwWyFAneY-=eOA@mail.gmail.com>
-Subject: Re: [Intel-gfx] agp/intel: can't ioremap flush page - no chipset flushing
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Steven Newbury <steve@snewbury.org.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 7 Mar 2014 12:02:49 -0500
+Date: Fri, 7 Mar 2014 11:02:47 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@nuc
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the akpm tree
+In-Reply-To: <20140306192234.62ad3ac104a2adc16752b033@canb.auug.org.au>
+Message-ID: <alpine.DEB.2.10.1403071100470.21846@nuc>
+References: <20140306192234.62ad3ac104a2adc16752b033@canb.auug.org.au>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 7, 2014 at 2:48 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> Bjorn Helgaas schreef op ma 10-02-2014 om 14:33 [-0700]:
->> I wouldn't start bisecting yet, but if you're in the mood, this
->> commit: 96702be56037 "Merge branch 'pci/resource' into next" looks
->> like a good place to start, so you could try the pre-merge commit:
->> 04f982beb900 "Merge branch 'pci/msi' into next".  If 04f982beb900 is
->> good, there are only about 15 commits on the pci/resource branch to
->> look at.
+On Thu, 6 Mar 2014, Stephen Rothwell wrote:
+
 >
-> This might end up not being relevant. And this is surely documented
-> somewhere, but anyhow:
-> - what git magic returns the hashes of the 15 commits that merge commit
->   96702be56037 added to the tree; and
+> I have reverted that commit for today.
+>
+> I suspect that this whole series may need more review and work.
 
-"git show 96702be56037" gives:
+Toss the bits that do not build for now. These can then be handled in
+individual patches since the overall framework is present.
 
-    commit 96702be560374ee7e7139a34cab03554129abbb4
-    Merge: 04f982beb900 d56dbf5bab8c
-    ...
-
-04f982beb900 is the previous HEAD, d56dbf5bab8c is the head of the
-branch merged by this commit.  "git log 04f982beb900..96702be56037"
-shows the commits merged.
-
-> - how can I use the list of those hashes to limit the range of commits
->   to do a git bisect?
-
-I'm not a git bisect expert, but I *think* you should be able to do
-something like this:
-
-    git bisect start
-    git bisect bad 96702be56037
-    git bisect good 04f982beb900
-
-(assuming you've verified that 96702be56037 really *is* bad and
-04f982beb900 really *is* good), and git should checkout something in
-the middle and you can build and test it, then use "git bisect good"
-or "git bisect bad" depending on the result.
-
-Bjorn
