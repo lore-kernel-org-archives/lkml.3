@@ -1,49 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458AbaCGN1i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 08:27:38 -0500
-Received: from smtp0.epfl.ch ([128.178.224.218]:38688 "EHLO smtp0.epfl.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752740AbaCGN00 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 08:26:26 -0500
-From: Florian Vaussard <florian.vaussard@epfl.ch>
-To: Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>
-Cc: Rob Herring <robh@kernel.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3 1/4] checkpatch: check vendor compatible with dashes
-Date: Fri,  7 Mar 2014 14:26:08 +0100
-Message-Id: <1394198771-25913-2-git-send-email-florian.vaussard@epfl.ch>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1394198771-25913-1-git-send-email-florian.vaussard@epfl.ch>
-References: <1394198771-25913-1-git-send-email-florian.vaussard@epfl.ch>
+	id S1753283AbaCGN3W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 08:29:22 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:41822 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752011AbaCGN3U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 08:29:20 -0500
+Date: Fri, 7 Mar 2014 13:29:02 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Philipp Zabel <p.zabel@pengutronix.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Rob Herring <robh+dt@kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Subject: Re: [GIT PULL] Move device tree graph parsing helpers to drivers/of
+Message-ID: <20140307132902.GK21483@n2100.arm.linux.org.uk>
+References: <1394126000.3622.66.camel@paszta.hi.pengutronix.de> <20140307115517.GI21483@n2100.arm.linux.org.uk> <20140307092031.68cd985d@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140307092031.68cd985d@samsung.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current vendor compatible check will not match vendors with
-dashes, like:
+On Fri, Mar 07, 2014 at 09:20:31AM -0300, Mauro Carvalho Chehab wrote:
+> Em Fri, 07 Mar 2014 11:55:17 +0000
+> Russell King - ARM Linux <linux@arm.linux.org.uk> escreveu:
+> 
+> > On Thu, Mar 06, 2014 at 06:13:20PM +0100, Philipp Zabel wrote:
+> > > Hi Mauro, Russell,
+> > > 
+> > > I have temporarily removed the simplified bindings at Sylwester's
+> > > request and updated the branch with the acks. The following changes
+> > > since commit 0414855fdc4a40da05221fc6062cccbc0c30f169:
+> > > 
+> > >   Linux 3.14-rc5 (2014-03-02 18:56:16 -0800)
+> > > 
+> > > are available in the git repository at:
+> > > 
+> > >   git://git.pengutronix.de/git/pza/linux.git topic/of-graph
+> > 
+> > Okay, this has all gone wrong.  Mauro has applied your changes as patches,
+> > and I've pulled this set of changes.  So we're going to be all set for
+> > merge conflicts....... just fscking great.
+> > 
+> > I really don't know why I bother trying to do the right thing sometimes.
+> > 
+> 
+> I just reverted my tree to the previous state before applying the patches
+> and did a git pull instead, in order to avoid merge conflicts when the
+> imx-drm patches arrive via staging tree.
 
-compatible="asahi-kasei"
+Thank you, that will work much better, and will avoid flames from Linus
+at the next merge window.
 
-Reported-by: Joe Perches <joe@perches.com>
-Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
----
- scripts/checkpatch.pl | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 464dcef..e304e77 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2058,7 +2058,7 @@ sub process {
- 				my $vendor = $compat;
- 				my $vendor_path = $dt_path . "vendor-prefixes.txt";
- 				next if (! -f $vendor_path);
--				$vendor =~ s/^([a-zA-Z0-9]+)\,.*/$1/;
-+				$vendor =~ s/^([a-zA-Z0-9\-]+)\,.*/$1/;
- 				`grep -Eq "$vendor" $vendor_path`;
- 				if ( $? >> 8 ) {
- 					WARN("UNDOCUMENTED_DT_STRING",
 -- 
-1.8.5.3
-
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
