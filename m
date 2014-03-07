@@ -1,76 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752928AbaCGPhW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 10:37:22 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50596 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751033AbaCGPhU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 10:37:20 -0500
-Date: Fri, 7 Mar 2014 16:37:17 +0100
-From: Jean Delvare <jdelvare@suse.de>
-To: Laszlo Papp <lpapp@kde.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, lm-sensors@lm-sensors.org,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: Re: Tachometer speed returned rather than absolute fan speed?
-Message-ID: <20140307163717.336873f5@endymion.delvare>
-In-Reply-To: <CAOMwXhOB=1HA57jwKCx3-hU8A_ypjrm0J3R9huO25xa4B_gw8w@mail.gmail.com>
-References: <CAOMwXhPXPN+21N11cHBENvw0QZ1qPvo9GTbM9V2SwDmgBQZssw@mail.gmail.com>
-	<20140307162524.6abd34be@endymion.delvare>
-	<CAOMwXhOB=1HA57jwKCx3-hU8A_ypjrm0J3R9huO25xa4B_gw8w@mail.gmail.com>
-Organization: SUSE Linux
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S1753289AbaCGPjH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 10:39:07 -0500
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:54626 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752395AbaCGPjE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 10:39:04 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [218.164.134.110]
+In-Reply-To: <5318922D.5090508@ti.com>
+References: <1394111433.21007.2.camel@phoenix>
+	<5318922D.5090508@ti.com>
+Date: Fri, 7 Mar 2014 23:39:02 +0800
+Message-ID: <CAFRkauC87Om2kqQDu1ZXkCWA0xqDkqv5ygzOPcexR3goQ3wvEA@mail.gmail.com>
+Subject: Re: [PATCH RFT] regulator: pbias: Convert to use regmap helper functions
+From: Axel Lin <axel.lin@ingics.com>
+To: Balaji T K <balajitk@ti.com>
+Cc: Chris Ball <chris@printf.net>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>,
+        Florian Vaussard <florian.vaussard@epfl.ch>, Stefan Roese <sr@denx.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 Mar 2014 15:31:44 +0000, Laszlo Papp wrote:
-> On Fri, Mar 7, 2014 at 3:25 PM, Jean Delvare <jdelvare@suse.de> wrote:
-> > Hi Laszlo,
-> >
-> > On Fri, 7 Mar 2014 14:48:01 +0000, Laszlo Papp wrote:
-> >> In medias res, I find this interface cumbersome:
-> >> http://lxr.free-electrons.com/source/Documentation/hwmon/max6650#L31
-> >>
-> >> It returns tachometer speed rather than actual fan speed when you deal
-> >> with the fan1_target interface. That would be way more convenient for
-> >> end users like me.
-> >>
-> >> Is there any reason for not returning absolute fan speed? I guess,
-> >> this would break the behavior now. However, that would be a really
-> >> useful convenient feature. Is it possible to add a new interface for
-> >> that?
-> >
-> > I'm quite confused. While I admit that the term "tachometer speed" is
-> > awkward, the max6650 driver is reporting fan speeds in RPM as every
-> > other hwmon driver. So I really have no idea what you think is wrong.
-> > What did you think "tachometer speed" was, if not the fan speed? Does
-> > the max6650 driver not return correct fan speeds for you?
-> 
-> I was just writing a patch to improve the documentation. Tachometer
-> value is not equal to the fan speed, and using the terms together is
-> confusing. It should probably read as follows:
-> 
-> "absolute fan speed in RPM based on the corresponding tachometer
-> value" or something similar. I just did not get the meaning of two
-> different values together, and I think that confused me, especially
-> since get_fan and get_target are doing slightly different
-> computations, so it took me a while to figure this out from the
-> datasheet.
-> 
-> Better wording would have definitely helped in here. Fwiw, I asked
-> another kernel hacker person who also got confused telling me that he
-> would not know without reading the source code. I think that it is an
-> indication to improve the documentation. There might be better
-> alternatives than the one I am proposing, but at least that one clears
-> up that for me.
+2014-03-06 23:20 GMT+08:00 Balaji T K <balajitk@ti.com>:
+> On Thursday 06 March 2014 06:40 PM, Axel Lin wrote:
+>>
+>> This patch converts this driver to use the regmap helper functions
+>> provided by
+>> regulator core.
+>>
+>> This fixes a few issues in current implementation:
+>>
+>> 1) In original code, the set voltage does not check max_uV,
+>>     which means if request max_uV < 1800000, it will still set the voltage
+>>     to 1800000.
+>>
+>> 2) The is_enable implementation is wrong in some cases:
+>>     e.g. for pbias_mmc_omap5: emable_mask is : BIT(27) | BIT(25) | BIT(26)
+>>     However, pbias_regulator_enable() only sets BIT(26) | BIT(22) bits.
+>>     So is_enable always return false in this case.
+>>
+>> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+>> ---
+>> Hi Balaji,
+>> I don't have this h/w, so please test if it works.
+>
+>
+> Hi Axel,
+>
+> There were few issues when I tried using regmap helper,
+> will check on this.
 
-I agree. I think I would just go with "measured fan speed in RPM", as
-tachometer is quite a technical term and the user doesn't need to know.
-Care to send a patch?
+Hi Balaji,
 
--- 
-Jean Delvare
-SUSE L3 Support
+I decide to break this patch to 3 pathes as below:
+
+[PATCH 1/3] regulator: pbias: Fix is_enabled callback implementation
+  This is pure bug fix for is_enabled logic
+
+[PATCH 2/3] regulator: pbias: Convert to use regmap helper functions
+  This simply convert to use regmap.
+
+[PATCH 3/3] regulator: pbias: Convert to use
+regulator_[enable|is_enabled]_regmap
+  This one depends on commit ca5d1b3524b4d
+ "regulator: helpers: Modify helpers enabling multi-bit control"
+  which is currently only available on regulator tree.
+  I sent it for review and test now, if it works, I'll resend it once
+3.5-rc1 is release.
+
+I'm sending the patches right away.
+
+Regards,
+Axel
