@@ -1,162 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506AbaCGLfH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 06:35:07 -0500
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:56518 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330AbaCGLfE (ORCPT
+	id S1752595AbaCGLgZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 06:36:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:54701 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752521AbaCGLgX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 06:35:04 -0500
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: David Miller <davem@davemloft.net>, Rob Landley <rob@landley.net>,
-        Andrew Lunn <andrew@lunn.ch>, Florian Fainelli <f.fainelli@gmail.com>,
-        netdev@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] net: phy: Add sysfs attribute to prevent PHY suspend
-Date: Fri,  7 Mar 2014 12:34:52 +0100
-Message-Id: <1394192092-27461-1-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1393174719-20806-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1393174719-20806-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Fri, 7 Mar 2014 06:36:23 -0500
+Message-ID: <5319AF2D.2060004@canonical.com>
+Date: Fri, 07 Mar 2014 12:36:13 +0100
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>
+CC: linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org,
+        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
+        John Kacur <jkacur@redhat.com>
+Subject: Re: nouveau crash due to missing channel (WAS: Re: [ANNOUNCE] 3.12.12-rt19)
+References: <20140223184727.GA12442@linutronix.de> <53128DED.1000402@localhost> <20140307111848.GA8637@linutronix.de>
+In-Reply-To: <20140307111848.GA8637@linutronix.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 1211ce53077164e0d34641d0ca5fb4d4a7574498
-  ("net: phy: resume/suspend PHYs on attach/detach")
-introduced a feature to suspend PHYs when entering halted state.
+op 07-03-14 12:18, Sebastian Andrzej Siewior schreef:
+> * Fernando Lopez-Lezcano | 2014-03-01 17:48:29 [-0800]:
+>
+>> On 02/23/2014 10:47 AM, Sebastian Andrzej Siewior wrote:
+>>> Dear RT folks!
+>>>
+>>> I'm pleased to announce the v3.12.12-rt19 patch set.
+>> Just hit this Oops in my desktop at home:
+>>
+>> [22328.388996] BUG: unable to handle kernel NULL pointer dereference
+>> at 0000000000000008
+>> [22328.389013] IP: [<ffffffffa011a912>]
+>> nouveau_fence_wait_uevent.isra.2+0x22/0x440 [nouveau]
+> This is
+>
+> | static int
+> | nouveau_fence_wait_uevent(struct nouveau_fence *fence, bool intr)
+> |
+> | {
+> |         struct nouveau_channel *chan = fence->channel;
+> |         struct nouveau_fifo *pfifo = nouveau_fifo(chan->drm->device);
+>
+> and chan is NULL.
+>
+>> [22328.389046] RAX: 0000000000000000 RBX: ffff8807a68f8fa8 RCX:
+>> 0000000000000000
+>> [22328.389046] RDX: 0000000000000001 RSI: ffff8807a68f8fb0 RDI:
+>> ffff8807a68f8fa8
+>> [22328.389047] RBP: ffff8807c09bdca0 R08: 000000000000045e R09:
+>> 000000000000e200
+>> [22328.389047] R10: ffffffffa0157d80 R11: ffff8807c09bdde0 R12:
+>> 0000000000000001
+>> [22328.389047] R13: 0000000000000000 R14: ffff8807d8493a80 R15:
+>> ffff8807a68f8fb0
+>> [22328.389053] Call Trace:
+>> [22328.389069]  [<ffffffffa011af56>] nouveau_fence_wait+0x86/0x1a0 [nouveau]
+>> [22328.389081]  [<ffffffffa011ca35>] nouveau_bo_fence_wait+0x15/0x20
+>> [nouveau]
+>> [22328.389084]  [<ffffffffa00867c6>] ttm_bo_wait+0x96/0x1a0 [ttm]
+>> [22328.389095]  [<ffffffffa0121dac>]
+>> nouveau_gem_ioctl_cpu_prep+0x5c/0xf0 [nouveau]
+>> [22328.389101]  [<ffffffffa002cd42>] drm_ioctl+0x502/0x630 [drm]
+>> [22328.389114]  [<ffffffffa01180a1>] nouveau_drm_ioctl+0x51/0x90 [nouveau]
+> I can't find any kind of locking so my question is what ensures that chan is
+> not set to NULL between nouveau_fence_done() and
+> nouveau_fence_wait_uevent()? There are just a few opcodes in between but
+> nothing that pauses nouveau_fence_signal().
+Absolutely nothing. :-) Worse still, there's no guarantee that channel isn't freed, but hopefully that is less likely to be an issue.
 
-Unfortunately, not all bootloaders properly power-up PHYs on reset
-and fail to access ethernet because the PHY is still powered down.
-
-Therefore, this adds code and documentation for a sysfs attribute to
-allow/deny PHYs to be suspended on a per-PHY basis. Disabling that
-attribute prevents PHYs from being suspended when entering halted state.
-
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Reported-by: Andrew Lunn <andrew@lunn.ch>
----
-David,
-
-I know I am late, but I still consider this as a fix for v3.14, therefore
-this is based on v3.14-rc1. If you are already done with taking fixes for
-v3.14, I can, of course, rebase this upon net-next.
-
-Cc: David Miller <davem@davemloft.net>
-Cc: Rob Landley <rob@landley.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Florian Fainelli <f.fainelli@gmail.com>
-Cc: netdev@vger.kernel.org
-Cc: linux-doc@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- Documentation/ABI/testing/sysfs-bus-mdio | 10 ++++++++++
- drivers/net/phy/mdio_bus.c               | 26 ++++++++++++++++++++++++++
- drivers/net/phy/phy_device.c             |  5 +++++
- include/linux/phy.h                      |  2 ++
- 4 files changed, 43 insertions(+)
-
-diff --git a/Documentation/ABI/testing/sysfs-bus-mdio b/Documentation/ABI/testing/sysfs-bus-mdio
-index 6349749ebc29..e85a3d350cb1 100644
---- a/Documentation/ABI/testing/sysfs-bus-mdio
-+++ b/Documentation/ABI/testing/sysfs-bus-mdio
-@@ -7,3 +7,13 @@ Description:
- 		by the device during bus enumeration, encoded in hexadecimal.
- 		This ID is used to match the device with the appropriate
- 		driver.
-+
-+What:		/sys/bus/mdio_bus/devices/.../phy_allow_suspend
-+Date:		March 2014
-+KernelVersion:	3.14
-+Contact:	netdev@vger.kernel.org
-+Description:
-+		This attribute contains a boolean parameter to allow (1) or
-+		deny (0) MDIO bus attached PHYs to be suspended. Some
-+		bootloaders fail to properly resume a suspended PHY, so this
-+		can be used to prevent the PHY from being suspended.
-diff --git a/drivers/net/phy/mdio_bus.c b/drivers/net/phy/mdio_bus.c
-index 71e49000fbf3..811d35185596 100644
---- a/drivers/net/phy/mdio_bus.c
-+++ b/drivers/net/phy/mdio_bus.c
-@@ -432,8 +432,34 @@ phy_id_show(struct device *dev, struct device_attribute *attr, char *buf)
- }
- static DEVICE_ATTR_RO(phy_id);
- 
-+static ssize_t phy_allow_suspend_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	struct phy_device *phydev = to_phy_device(dev);
-+
-+	return sprintf(buf, "%d\n", phydev->allow_suspend);
-+}
-+
-+static ssize_t phy_allow_suspend_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t count)
-+{
-+	struct phy_device *phydev = to_phy_device(dev);
-+	bool val;
-+	int ret;
-+
-+	ret = strtobool(buf, &val);
-+	if (ret < 0)
-+		return ret;
-+
-+	phydev->allow_suspend = val;
-+
-+	return count;
-+}
-+static DEVICE_ATTR_RW(phy_allow_suspend);
-+
- static struct attribute *mdio_dev_attrs[] = {
- 	&dev_attr_phy_id.attr,
-+	&dev_attr_phy_allow_suspend.attr,
- 	NULL,
- };
- ATTRIBUTE_GROUPS(mdio_dev);
-diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
-index 4b03e63639b7..1c83d34d848b 100644
---- a/drivers/net/phy/phy_device.c
-+++ b/drivers/net/phy/phy_device.c
-@@ -173,6 +173,7 @@ struct phy_device *phy_device_create(struct mii_bus *bus, int addr, int phy_id,
- 	dev->phy_id = phy_id;
- 	if (c45_ids)
- 		dev->c45_ids = *c45_ids;
-+	dev->allow_suspend = true;
- 	dev->bus = bus;
- 	dev->dev.parent = bus->parent;
- 	dev->dev.bus = &mdio_bus_type;
-@@ -685,6 +686,10 @@ int phy_suspend(struct phy_device *phydev)
- 	struct phy_driver *phydrv = to_phy_driver(phydev->dev.driver);
- 	struct ethtool_wolinfo wol;
- 
-+	/* Do not suspend PHYs, if user disabled it */
-+	if (!phydev->allow_suspend)
-+		return -ENOSYS;
-+
- 	/* If the device has WOL enabled, we cannot suspend the PHY */
- 	wol.cmd = ETHTOOL_GWOL;
- 	phy_ethtool_get_wol(phydev, &wol);
-diff --git a/include/linux/phy.h b/include/linux/phy.h
-index 565188ca328f..c472e750c023 100644
---- a/include/linux/phy.h
-+++ b/include/linux/phy.h
-@@ -272,6 +272,7 @@ struct phy_c45_device_ids {
-  * c45_ids: 802.3-c45 Device Identifers if is_c45.
-  * is_c45:  Set to true if this phy uses clause 45 addressing.
-  * is_internal: Set to true if this phy is internal to a MAC.
-+ * allow_suspend: Set to false to prevent PHY suspend.
-  * state: state of the PHY for management purposes
-  * dev_flags: Device-specific flags used by the PHY driver.
-  * addr: Bus address of PHY
-@@ -308,6 +309,7 @@ struct phy_device {
- 	struct phy_c45_device_ids c45_ids;
- 	bool is_c45;
- 	bool is_internal;
-+	bool allow_suspend;
- 
- 	enum phy_state state;
- 
--- 
-1.8.5.3
+~Maarten
 
