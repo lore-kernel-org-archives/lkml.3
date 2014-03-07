@@ -1,75 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753193AbaCGTEI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 14:04:08 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:60691 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752679AbaCGTEF (ORCPT
+	id S1752969AbaCGTHy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 14:07:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43143 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751978AbaCGTHx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 14:04:05 -0500
-Date: Fri, 7 Mar 2014 13:01:14 -0600
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH 6/6] documentation: bindings: document PMIC8921/8058 RTC
-Message-ID: <20140307190114.GJ18529@joshc.qualcomm.com>
-References: <1394047776-13827-1-git-send-email-joshc@codeaurora.org>
- <1394047776-13827-7-git-send-email-joshc@codeaurora.org>
- <5317900F.5030803@codeaurora.org>
- <20140306000058.GE18529@joshc.qualcomm.com>
- <5317CFEF.1060003@codeaurora.org>
+	Fri, 7 Mar 2014 14:07:53 -0500
+Date: Fri, 7 Mar 2014 11:09:39 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Lukasz Pawelczyk <havner@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        libvir-list@redhat.com, lxc-devel@lists.linuxcontainers.org,
+        systemd-devel@lists.freedesktop.org,
+        David Herrmann <dh.herrmann@gmail.com>
+Subject: Re: [systemd-devel] Suspending access to opened/active /dev/nodes
+ during application runtime
+Message-ID: <20140307190939.GA8082@kroah.com>
+References: <E7B2439D-FF36-4353-8E1A-C58E5C33A89F@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5317CFEF.1060003@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <E7B2439D-FF36-4353-8E1A-C58E5C33A89F@gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 05, 2014 at 05:31:27PM -0800, Stephen Boyd wrote:
-> On 03/05/14 16:00, Josh Cartwright wrote:
-> > On Wed, Mar 05, 2014 at 12:58:55PM -0800, Stephen Boyd wrote:
-> >> On 03/05/14 11:29, Josh Cartwright wrote:
-> >>> diff --git a/Documentation/devicetree/bindings/rtc/qcom,pm8xxx-rtc.txt b/Documentation/devicetree/bindings/rtc/qcom,pm8xxx-rtc.txt
-> >>> new file mode 100644
-> >>> index 0000000..699bd30
-> >>> --- /dev/null
-> >>> +++ b/Documentation/devicetree/bindings/rtc/qcom,pm8xxx-rtc.txt
-> >>> @@ -0,0 +1,29 @@
-> >>> +* Real-Time Clock for Qualcomm 8058/8921 PMICs
-> >>> +
-> >>> +Required properties:
-> >>> +- compatible: should be one of the following.
-> >>> +    * "qcom,pm8058-rtc"
-> >>> +    * "qcom,pm8921-rtc"
-> >>> +- reg: base address of the register region
-> >>> +- reg-names: corresponding reg names for the regions listed in the 'reg'
-> >>> +             property, must contain:
-> >>> +     "rtc_base" - base of the RTC register region
-> >> optional reg-names?
-> >>
-> >>> +- interrupts: interrupt list for the RTC, must contain a single interrupt
-> >>> +              specifier for the alarm interrupt
-> >>> +- interrupt-names: corresponding interrupt names for the interrupts listed in
-> >>> +                   the 'interrupts' property, must contain:
-> >>> +     "alarm" - summary interrupt for PMIC peripherals
-> >> optional interrupt-names?
-> > It isn't clear to me why these should be made optional, I hope Rob
-> > provides some clarification in the sdhci-msm thread.
+On Fri, Mar 07, 2014 at 07:46:44PM +0100, Lukasz Pawelczyk wrote:
+> Problem:
+> Has anyone thought about a mechanism to limit/remove an access to a
+> device during an application runtime? Meaning we have an application
+> that has an open file descriptor to some /dev/node and depending on
+> *something* it gains or looses the access to it gracefully (with or
+> without a notification, but without any fatal consequences).
 > 
-> Looks like the driver isn't using either of these properties, so I'm not
-> sure why they're needed. Maybe they should just be removed.
+> Example:
+> LXC. Imagine we have 2 separate containers. Both running full operating
+> systems. Specifically with 2 X servers. Both running concurrently of
+> course. Both need the same input devices (e.g. we have just one mouse).
 
-The driver does make use of platform_get_irq_byname(pdev, "alarm"), and
-I expect to make use of platform_get_resource_byname(pdev, IORESOURCE_REG, "rtc_base")
-in the near future.
+Stop right there.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+If they "both" need an input device, then they should use the "shared"
+input device stream, i.e. evdev.
+
+And it goes the same for every type of device the kernel is exposing to
+userspace, if you want to "share" them, then you need to work on
+changing the kernel to be able to handle shared devices.
+
+And odds are, you will get back a big "as-if" comment from the kernel
+developers, as for almost all devices, they can't be shared, for very
+good reasons.
+
+So work down the list of devices you really need access to, and either
+work to provide a way for the kernel to mediate them, or, work to only
+have one "container" access to one device, and not have all containers
+access to it at the same time.
+
+This has been discussed many times in the past, on mailing lists and in
+person at the Linux Plumbers conference last year.  This isn't a systemd
+issue, it is a "you are using the kernel in ways it was not designed to
+be used" issue.
+
+good luck, you will need it...
+
+greg k-h
