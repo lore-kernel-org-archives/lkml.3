@@ -1,45 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526AbaCGBzK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 20:55:10 -0500
-Received: from g5t1625.atlanta.hp.com ([15.192.137.8]:41602 "EHLO
-	g5t1625.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751573AbaCGBzJ (ORCPT
+	id S1752715AbaCGB4Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 20:56:25 -0500
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:65376 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751624AbaCGB4Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 20:55:09 -0500
-Message-ID: <1394157304.2555.21.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 6/7] x86: mm: set TLB flush tunable to sane value
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Dave Hansen <dave@sr71.net>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        ak@linux.intel.com, kirill.shutemov@linux.intel.com, mgorman@suse.de,
-        alex.shi@linaro.org, x86@kernel.org, linux-mm@kvack.org,
-        dave.hansen@linux.intel.com
-Date: Thu, 06 Mar 2014 17:55:04 -0800
-In-Reply-To: <20140306004529.5510B23D@viggo.jf.intel.com>
-References: <20140306004519.BBD70A1A@viggo.jf.intel.com>
-	 <20140306004529.5510B23D@viggo.jf.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 6 Mar 2014 20:56:24 -0500
+X-Original-SENDERIP: 10.177.222.157
+X-Original-MAILFROM: minchan@kernel.org
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: [PATCH] zram: propagate error to user
+Date: Fri,  7 Mar 2014 10:56:18 +0900
+Message-Id: <1394157378-7718-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-03-05 at 16:45 -0800, Dave Hansen wrote:
-> From: Dave Hansen <dave.hansen@linux.intel.com>
-> 
-> Now that we have some shiny new tracepoints, we can actually
-> figure out what the heck is going on.
-> 
-> During a kernel compile, 60% of the flush_tlb_mm_range() calls
-> are for a single page.  It breaks down like this:
+When we initialized zcomp with single, we couldn't change
+max_comp_streams without zram reset but current interface doesn't
+show any error to user and even it changes max_comp_streams's value
+without any effect so it would make user very confusing.
 
-It would be interesting to see similar data for opposite workloads with
-more random access patterns. That's normally when things start getting
-fun in the tlb world.
+This patch prevents max_comp_streams's change when zcomp was
+initialized as single zcomp and emit the error to user(ex, echo).
 
-Thanks,
-Davidlohr
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ Documentation/blockdev/zram.txt |  9 +++++----
+ drivers/block/zram/zcomp.c      | 10 +++++-----
+ drivers/block/zram/zcomp.h      |  4 ++--
+ drivers/block/zram/zram_drv.c   | 15 +++++++++++----
+ 4 files changed, 23 insertions(+), 15 deletions(-)
+
+diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
+index 2604ffed51db..0595c3f56ccf 100644
+--- a/Documentation/blockdev/zram.txt
++++ b/Documentation/blockdev/zram.txt
+@@ -37,10 +37,11 @@ Note:
+ In order to enable compression backend's multi stream support max_comp_streams
+ must be initially set to desired concurrency level before ZRAM device
+ initialisation. Once the device initialised as a single stream compression
+-backend (max_comp_streams equals to 0) changing the value of max_comp_streams
+-will not take any effect, because single stream compression backend implemented
+-as a special case and does not support dynamic max_comp_streams. Only multi
+-stream backend supports dynamic max_comp_streams adjustment.
++backend (max_comp_streams equals to 1), you will see error if you try to change
++the value of max_comp_streams because single stream compression backend
++implemented as a special case by lock overhead issue and does not support
++dynamic max_comp_streams. Only multi stream backend supports dynamic
++max_comp_streams adjustment.
+ 
+ 3) Select compression algorithm
+ 	Using comp_algorithm device attribute one can see available and
+diff --git a/drivers/block/zram/zcomp.c b/drivers/block/zram/zcomp.c
+index 92a83df40a27..15fe6a27781b 100644
+--- a/drivers/block/zram/zcomp.c
++++ b/drivers/block/zram/zcomp.c
+@@ -152,7 +152,7 @@ static void zcomp_strm_multi_release(struct zcomp *comp, struct zcomp_strm *zstr
+ }
+ 
+ /* change max_strm limit */
+-static int zcomp_strm_multi_set_max_streams(struct zcomp *comp, int num_strm)
++static bool zcomp_strm_multi_set_max_streams(struct zcomp *comp, int num_strm)
+ {
+ 	struct zcomp_strm_multi *zs = comp->stream;
+ 	struct zcomp_strm *zstrm;
+@@ -171,7 +171,7 @@ static int zcomp_strm_multi_set_max_streams(struct zcomp *comp, int num_strm)
+ 		zs->avail_strm--;
+ 	}
+ 	spin_unlock(&zs->strm_lock);
+-	return 0;
++	return true;
+ }
+ 
+ static void zcomp_strm_multi_destroy(struct zcomp *comp)
+@@ -231,10 +231,10 @@ static void zcomp_strm_single_release(struct zcomp *comp,
+ 	mutex_unlock(&zs->strm_lock);
+ }
+ 
+-static int zcomp_strm_single_set_max_streams(struct zcomp *comp, int num_strm)
++static bool zcomp_strm_single_set_max_streams(struct zcomp *comp, int num_strm)
+ {
+ 	/* zcomp_strm_single support only max_comp_streams == 1 */
+-	return -ENOTSUPP;
++	return 0;
+ }
+ 
+ static void zcomp_strm_single_destroy(struct zcomp *comp)
+@@ -283,7 +283,7 @@ ssize_t zcomp_available_show(const char *comp, char *buf)
+ 	return sz;
+ }
+ 
+-int zcomp_set_max_streams(struct zcomp *comp, int num_strm)
++bool zcomp_set_max_streams(struct zcomp *comp, int num_strm)
+ {
+ 	return comp->set_max_streams(comp, num_strm);
+ }
+diff --git a/drivers/block/zram/zcomp.h b/drivers/block/zram/zcomp.h
+index 8b8997f8613b..c59d1fca72c0 100644
+--- a/drivers/block/zram/zcomp.h
++++ b/drivers/block/zram/zcomp.h
+@@ -46,7 +46,7 @@ struct zcomp {
+ 
+ 	struct zcomp_strm *(*strm_find)(struct zcomp *comp);
+ 	void (*strm_release)(struct zcomp *comp, struct zcomp_strm *zstrm);
+-	int (*set_max_streams)(struct zcomp *comp, int num_strm);
++	bool (*set_max_streams)(struct zcomp *comp, int num_strm);
+ 	void (*destroy)(struct zcomp *comp);
+ };
+ 
+@@ -64,5 +64,5 @@ int zcomp_compress(struct zcomp *comp, struct zcomp_strm *zstrm,
+ int zcomp_decompress(struct zcomp *comp, const unsigned char *src,
+ 		size_t src_len, unsigned char *dst);
+ 
+-int zcomp_set_max_streams(struct zcomp *comp, int num_strm);
++bool zcomp_set_max_streams(struct zcomp *comp, int num_strm);
+ #endif /* _ZCOMP_H_ */
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index 7631ef0cbc41..eead9db9b100 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -128,17 +128,24 @@ static ssize_t max_comp_streams_store(struct device *dev,
+ 	struct zram *zram = dev_to_zram(dev);
+ 
+ 	if (kstrtoint(buf, 0, &num))
+-		return -EINVAL;
++		goto out;
+ 	if (num < 1)
+-		return -EINVAL;
++		goto out;
++
+ 	down_write(&zram->init_lock);
+ 	if (init_done(zram)) {
+-		if (zcomp_set_max_streams(zram->comp, num))
++		if (!zcomp_set_max_streams(zram->comp, num)) {
+ 			pr_info("Cannot change max compression streams\n");
++			goto out_unlock;
++		}
+ 	}
++
+ 	zram->max_comp_streams = num;
+-	up_write(&zram->init_lock);
+ 	return len;
++out_unlock:
++	up_write(&zram->init_lock);
++out:
++	return -EINVAL;
+ }
+ 
+ static ssize_t comp_algorithm_show(struct device *dev,
+-- 
+1.9.0
 
