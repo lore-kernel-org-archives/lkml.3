@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753787AbaCGVFJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 16:05:09 -0500
-Received: from gate.crashing.org ([63.228.1.57]:45670 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752382AbaCGVFI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 16:05:08 -0500
-Message-ID: <1394226295.14642.28.camel@pasglop>
-Subject: [git pull] Please pull powerpc.git merge branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Sat, 08 Mar 2014 08:04:55 +1100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.11.90 
+	id S1753840AbaCGVF4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 16:05:56 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:43456 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752107AbaCGVFy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 16:05:54 -0500
+Date: Fri, 07 Mar 2014 16:05:52 -0500 (EST)
+Message-Id: <20140307.160552.282750558679341658.davem@davemloft.net>
+To: zoltan.kiss@citrix.com
+Cc: ian.campbell@citrix.com, wei.liu2@citrix.com,
+        xen-devel@lists.xenproject.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jonathan.davies@citrix.com
+Subject: Re: [PATCH net-next v7 0/9] xen-netback: TX grant mapping with
+ SKBTX_DEV_ZEROCOPY instead of copy
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1394142511-14827-1-git-send-email-zoltan.kiss@citrix.com>
+References: <1394142511-14827-1-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 07 Mar 2014 13:05:54 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus !
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+Date: Thu, 6 Mar 2014 21:48:22 +0000
 
-Here are a couple of powerpc fixes for 3.14. One is (another !) nasty TM
-problem, we can crash the kernel by forking inside a transaction. The
-other one is a simple fix for an alignment issue which can hurt in LE
-mode.
+> A long known problem of the upstream netback implementation that on the TX
+> path (from guest to Dom0) it copies the whole packet from guest memory into
+> Dom0. That simply became a bottleneck with 10Gb NICs, and generally it's a
+> huge perfomance penalty. The classic kernel version of netback used grant
+> mapping, and to get notified when the page can be unmapped, it used page
+> destructors. Unfortunately that destructor is not an upstreamable solution.
+> Ian Campbell's skb fragment destructor patch series [1] tried to solve this
+> problem, however it seems to be very invasive on the network stack's code,
+> and therefore haven't progressed very well.
+> This patch series use SKBTX_DEV_ZEROCOPY flags to tell the stack it needs to
+> know when the skb is freed up. That is the way KVM solved the same problem,
+> and based on my initial tests it can do the same for us. Avoiding the extra
+> copy boosted up TX throughput from 6.8 Gbps to 7.9 (I used a slower AMD
+> Interlagos box, both Dom0 and guest on upstream kernel, on the same NUMA node,
+> running iperf 2.0.5, and the remote end was a bare metal box on the same 10Gb
+> switch)
+> Based on my investigations the packet get only copied if it is delivered to
+> Dom0 IP stack through deliver_skb, which is due to this [2] patch. This affects
+> DomU->Dom0 IP traffic and when Dom0 does routing/NAT for the guest. That's a bit
+> unfortunate, but luckily it doesn't cause a major regression for this usecase.
+> In the future we should try to eliminate that copy somehow.
+> There are a few spinoff tasks which will be addressed in separate patches:
+> - grant copy the header directly instead of map and memcpy. This should help
+>   us avoiding TLB flushing
+> - use something else than ballooned pages
+> - fix grant map to use page->index properly
+> I've tried to broke it down to smaller patches, with mixed results, so I
+> welcome suggestions on that part as well:
+> 1: Use skb->cb to store pending_idx
+> 2: Some refactoring
+> 3: Change RX path for mapped SKB fragments (moved here to keep bisectability,
+> review it after #4)
+> 4: Introduce TX grant mapping
+> 5: Remove old TX grant copy definitons and fix indentations
+> 6: Add stat counters for zerocopy
+> 7: Handle guests with too many frags
+> 8: Timeout packets in RX path
+> 9: Aggregate TX unmap operations
 
-Cheers,
-Ben.
-
-The following changes since commit e0cf957614976896111e676e5134ac98ee227d3d:
-
-  powerpc/powernv: Fix indirect XSCOM unmangling (2014-02-28 19:15:49 +1100)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
-
-for you to fetch changes up to a5b2cf5b1af424ee3dd9e3ce6d5cea18cb927e67:
-
-  powerpc: Align p_dyn, p_rela and p_st symbols (2014-03-07 13:50:19 +1100)
-
-----------------------------------------------------------------
-Anton Blanchard (1):
-      powerpc: Align p_dyn, p_rela and p_st symbols
-
-Michael Neuling (1):
-      powerpc/tm: Fix crash when forking inside a transaction
-
- arch/powerpc/kernel/process.c  | 9 +++++++++
- arch/powerpc/kernel/reloc_64.S | 1 +
- 2 files changed, 10 insertions(+)
-
-
+Series applied, thanks.
