@@ -1,115 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752306AbaCGKO5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 05:14:57 -0500
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:47942 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027AbaCGKOx (ORCPT
+	id S1752825AbaCGKPN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 05:15:13 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:37551 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752268AbaCGKPI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 05:14:53 -0500
-From: David Herrmann <dh.herrmann@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-fbdev@vger.kernel.org,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        David Herrmann <dh.herrmann@gmail.com>
-Subject: [PATCH] lib: remove FBCON dependency for fonts
-Date: Fri,  7 Mar 2014 11:14:31 +0100
-Message-Id: <1394187271-5857-1-git-send-email-dh.herrmann@gmail.com>
-X-Mailer: git-send-email 1.9.0
+	Fri, 7 Mar 2014 05:15:08 -0500
+Date: Fri, 7 Mar 2014 11:13:48 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
+        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
+        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com
+Subject: Re: [PATCH v3 2/5] i2c: mv64xxx: Add support for the Allwinner A31
+ I2C driver
+Message-ID: <20140307101348.GO607@lukather>
+References: <1393950521-4173-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1393950521-4173-3-git-send-email-maxime.ripard@free-electrons.com>
+ <20140305163430.GC9228@katana>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gBPpwzKX54beUJMp"
+Content-Disposition: inline
+In-Reply-To: <20140305163430.GC9228@katana>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fonts don't depend on CONFIG_FRAMEBUFFER_CONSOLE at all. Remove that.
-Besides, CONFIG_FONT_SUPPORT is 'select'ed anyway, so the dependencies
-aren't checked by most higher-level options.
 
-It's a relict of the times when fonts where exclusive to the VT layer and
-fbcon.
+--gBPpwzKX54beUJMp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
----
- lib/fonts/Kconfig | 11 ++---------
- 1 file changed, 2 insertions(+), 9 deletions(-)
+Hi Wolfram,
 
-diff --git a/lib/fonts/Kconfig b/lib/fonts/Kconfig
-index 4dc1b99..0ca66a3 100644
---- a/lib/fonts/Kconfig
-+++ b/lib/fonts/Kconfig
-@@ -9,7 +9,6 @@ if FONT_SUPPORT
- 
- config FONTS
- 	bool "Select compiled-in fonts"
--	depends on FRAMEBUFFER_CONSOLE
- 	help
- 	  Say Y here if you would like to use fonts other than the default
- 	  your frame buffer console usually use.
-@@ -22,7 +21,6 @@ config FONTS
- 
- config FONT_8x8
- 	bool "VGA 8x8 font" if FONTS
--	depends on FRAMEBUFFER_CONSOLE
- 	default y if !SPARC && !FONTS
- 	help
- 	  This is the "high resolution" font for the VGA frame buffer (the one
-@@ -45,7 +43,6 @@ config FONT_8x16
- 
- config FONT_6x11
- 	bool "Mac console 6x11 font (not supported by all drivers)" if FONTS
--	depends on FRAMEBUFFER_CONSOLE
- 	default y if !SPARC && !FONTS && MAC
- 	help
- 	  Small console font with Macintosh-style high-half glyphs.  Some Mac
-@@ -53,7 +50,6 @@ config FONT_6x11
- 
- config FONT_7x14
- 	bool "console 7x14 font (not supported by all drivers)" if FONTS
--	depends on FRAMEBUFFER_CONSOLE
- 	help
- 	  Console font with characters just a bit smaller than the default.
- 	  If the standard 8x16 font is a little too big for you, say Y.
-@@ -61,7 +57,6 @@ config FONT_7x14
- 
- config FONT_PEARL_8x8
- 	bool "Pearl (old m68k) console 8x8 font" if FONTS
--	depends on FRAMEBUFFER_CONSOLE
- 	default y if !SPARC && !FONTS && AMIGA
- 	help
- 	  Small console font with PC-style control-character and high-half
-@@ -69,7 +64,6 @@ config FONT_PEARL_8x8
- 
- config FONT_ACORN_8x8
- 	bool "Acorn console 8x8 font" if FONTS
--	depends on FRAMEBUFFER_CONSOLE
- 	default y if !SPARC && !FONTS && ARM && ARCH_ACORN
- 	help
- 	  Small console font with PC-style control characters and high-half
-@@ -81,13 +75,13 @@ config FONT_MINI_4x6
- 
- config FONT_SUN8x16
- 	bool "Sparc console 8x16 font"
--	depends on FRAMEBUFFER_CONSOLE && (!SPARC && FONTS || SPARC)
-+	depends on !SPARC && FONTS || SPARC
- 	help
- 	  This is the high resolution console font for Sun machines. Say Y.
- 
- config FONT_SUN12x22
- 	bool "Sparc console 12x22 font (not supported by all drivers)"
--	depends on FRAMEBUFFER_CONSOLE && (!SPARC && FONTS || SPARC)
-+	depends on !SPARC && FONTS || SPARC
- 	help
- 	  This is the high resolution console font for Sun machines with very
- 	  big letters (like the letters used in the SPARC PROM). If the
-@@ -95,7 +89,6 @@ config FONT_SUN12x22
- 
- config FONT_10x18
- 	bool "console 10x18 font (not supported by all drivers)" if FONTS
--	depends on FRAMEBUFFER_CONSOLE
- 	help
- 	  This is a high resolution console font for machines with very
- 	  big letters. It fits between the sun 12x22 and the normal 8x16 font.
--- 
-1.9.0
+On Wed, Mar 05, 2014 at 05:34:30PM +0100, Wolfram Sang wrote:
+> On Tue, Mar 04, 2014 at 05:28:38PM +0100, Maxime Ripard wrote:
+> > The Allwinner A31 I2C controller is almost identical to the one used in=
+ the
+> > other Allwinner SoCs, except for the fact that it needs to clear the in=
+terrupt
+> > by setting the INT_FLAGS bit in the control register, instead of cleari=
+ng it.
+> >=20
+> > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> > Reviewed-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> > Tested-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+>=20
+> Applied to for-next, thanks!
+>=20
+> Still...
+>=20
+> > +	if (of_device_is_compatible(np, "allwinner,sun6i-a31-i2c"))
+> > +		drv_data->irq_clear_inverted =3D true;
+>=20
+> ... next time an errata is needed, I think it makes sense to refactor all
+> these checks into one struct which can be used as match->data directly.
 
+Yep, it makes sense. Thanks!
+
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--gBPpwzKX54beUJMp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTGZvcAAoJEBx+YmzsjxAg2K4QALNEOnLIurQOKVJ+HBIhem9Z
+JwbhrAj2OYRAPc9ywqUQNN1W7d+6Vz2nuD6sZ3D9xOqsWTzHNlGz0CSNxY0iRNL0
+3LNbVkgb8rKlg7y/huIuuM9CG81LWhvXwhHBh3nmxi5gpgUPmV+eEF0DZwhOv6nd
+3V93g2NciTleqcZ50fDAeufCmJTlhMpahxUjY0sNzh1xDPq5xnsbANu2FdfmbHrU
+dS2NGY5kRTOgD4xjno+zvbPo9AG5v1n9Np2Gj9wOC+rMT56vmKufEgKqyy0BrTHa
+273k9nHu9/KqbHhuQdeOu/imROXSW61gmEp5HT8uHzqWh6O7lA78ve8r59qyljHt
+3p+Xh47ybVD3SrVOpXoZdn6DX3+HYQ8Gb5r1oyuf89gXwrm2QRx/rfmaw5vaBz5U
+BL0DL0ew54zdXrX5A7izyB9erxb0zJUAkxdTl3VyFkkqX0nBuMiwIexEEnJKcoqZ
+slhOsSVt+n6Pm+AGCzRyGzWnnmftqm1ipPVr51EV6T7X/SEpLSzS+mKq22JcwX6A
+RZqO5mxb/YAqpgqDos6zv7UJa3npHZhly9YsFaoA5A8z4elK+ItT4heUcoPAzFiw
+ypZeRRAZTzH6xUuVwzJe5sYoYGB++4WVb46/BXveXyscS5LGtjU7R2QiJ85c6z34
+U5/UAOzQwtr850JNclz7
+=wmcm
+-----END PGP SIGNATURE-----
+
+--gBPpwzKX54beUJMp--
