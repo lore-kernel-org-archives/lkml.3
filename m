@@ -1,43 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753672AbaCGUlr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 15:41:47 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:43237 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752411AbaCGUlp (ORCPT
+	id S1753181AbaCGUpl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 15:45:41 -0500
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:59838 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197AbaCGUpj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 15:41:45 -0500
-Date: Fri, 07 Mar 2014 15:41:42 -0500 (EST)
-Message-Id: <20140307.154142.488351276799532264.davem@davemloft.net>
-To: alistair@popple.id.au
-Cc: netdev@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH 2/5] IBM Akebono: Add support for a new PHY interface
- to the IBM emac driver
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1394077948-8395-3-git-send-email-alistair@popple.id.au>
-References: <1394077948-8395-1-git-send-email-alistair@popple.id.au>
-	<1394077948-8395-3-git-send-email-alistair@popple.id.au>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 07 Mar 2014 12:41:45 -0800 (PST)
+	Fri, 7 Mar 2014 15:45:39 -0500
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
+Subject: Re: [systemd-devel] Suspending access to opened/active /dev/nodes during application runtime
+From: Lukasz Pawelczyk <havner@gmail.com>
+In-Reply-To: <20140307190939.GA8082@kroah.com>
+Date: Fri, 7 Mar 2014 21:45:28 +0100
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        libvir-list@redhat.com, lxc-devel@lists.linuxcontainers.org,
+        systemd-devel@lists.freedesktop.org,
+        David Herrmann <dh.herrmann@gmail.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <93871091-7845-4BCC-A841-F724BEDF6E4B@gmail.com>
+References: <E7B2439D-FF36-4353-8E1A-C58E5C33A89F@gmail.com> <20140307190939.GA8082@kroah.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+X-Mailer: Apple Mail (2.1874)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alistair Popple <alistair@popple.id.au>
-Date: Thu,  6 Mar 2014 14:52:25 +1100
 
-> +	out_be32(dev->reg, in_be32(dev->reg) | WKUP_ETH_RGMIIEN
-> +		 | WKUP_ETH_TX_OE | WKUP_ETH_RX_IE);
+On 7 Mar 2014, at 20:09, Greg KH <gregkh@linuxfoundation.org> wrote:
 
-When an expression spans multiple lines, the lines should end with
-operators rather than begin with them.
+> On Fri, Mar 07, 2014 at 07:46:44PM +0100, Lukasz Pawelczyk wrote:
+>> Problem:
+>> Has anyone thought about a mechanism to limit/remove an access to a
+>> device during an application runtime? Meaning we have an application
+>> that has an open file descriptor to some /dev/node and depending on
+>> *something* it gains or looses the access to it gracefully (with or
+>> without a notification, but without any fatal consequences).
+>> 
+>> Example:
+>> LXC. Imagine we have 2 separate containers. Both running full operating
+>> systems. Specifically with 2 X servers. Both running concurrently of
+>> course. Both need the same input devices (e.g. we have just one mouse).
+> 
+> Stop right there.
+> 
+> If they "both" need an input device, then they should use the "shared"
+> input device stream, i.e. evdev.
+> 
+> And it goes the same for every type of device the kernel is exposing to
+> userspace, if you want to "share" them, then you need to work on
+> changing the kernel to be able to handle shared devices.
 
-Also, it would be easier to read this call if parenthesis were put
-around the third argument and then indented to match, f.e.:
+I think you might have misunderstood me. They are using a shared input stream (evdev in this case). The problem is I don’t want them to eavesdrop on each other. So it’s not about making it to work. It’s about making them to work „in turns”.
 
-	out_be32(dev->reg, (in_be32(dev->reg) | WKUP_ETH_RGMIIEN |
-			    WKUP_ETH_TX_OE | WKUP_ETH_RX_IE));
+> And odds are, you will get back a big "as-if" comment from the kernel
+> developers, as for almost all devices, they can't be shared, for very
+> good reasons.
+
+Evdev devices can.
+
+
+-- 
+Regards,
+Havner
+
+
+
