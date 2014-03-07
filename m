@@ -1,86 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753681AbaCGSAL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 13:00:11 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:40446 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753651AbaCGSAD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 13:00:03 -0500
-Date: Fri, 7 Mar 2014 18:57:14 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
-        Chen-Yu Tsai <wens@csie.org>, "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Barry Song <Baohua.Song@csr.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, Pavel Machek <pavel@ucw.cz>,
-        Shawn Guo <shawn.guo@linaro.org>, Marek Vasut <marex@denx.de>,
-        Stephen Warren <swarren@nvidia.com>, kernel@pengutronix.de
-Subject: Re: [PATCH] reset: Add optional resets and stubs
-Message-ID: <20140307175714.GX607@lukather>
-References: <1394202623-20229-1-git-send-email-p.zabel@pengutronix.de>
+	id S1752741AbaCGSF2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 13:05:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50696 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751330AbaCGSF0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 13:05:26 -0500
+Message-ID: <531A0A5B.2000104@redhat.com>
+Date: Fri, 07 Mar 2014 19:05:15 +0100
+From: Thomas Graf <tgraf@redhat.com>
+Organization: Red Hat, Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jtEtYGE75hrP1CgP"
-Content-Disposition: inline
-In-Reply-To: <1394202623-20229-1-git-send-email-p.zabel@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Pravin Shelar <pshelar@nicira.com>
+CC: Zoltan Kiss <zoltan.kiss@citrix.com>, Jesse Gross <jesse@nicira.com>,
+        "dev@openvswitch.org" <dev@openvswitch.org>,
+        xen-devel@lists.xenproject.org, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org
+Subject: Re: [PATCH] openvswitch: Orphan frags before sending to userspace
+ via Netlink to avoid guest stall
+References: <1393615016-9187-1-git-send-email-zoltan.kiss@citrix.com>	<5318ABC0.4040307@citrix.com>	<CALnjE+rWc=n_F+1jSLQtPrgKSvvxONEkkYxWEHon2_KVNG9z3Q@mail.gmail.com>	<5319EC8E.2010606@redhat.com> <CALnjE+oDM=ga_C6T_-9i2UNwv=K4g-+y-LJA04nh+=WmoeuNXw@mail.gmail.com>
+In-Reply-To: <CALnjE+oDM=ga_C6T_-9i2UNwv=K4g-+y-LJA04nh+=WmoeuNXw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/07/2014 06:19 PM, Pravin Shelar wrote:
+> On Fri, Mar 7, 2014 at 7:58 AM, Thomas Graf <tgraf@redhat.com> wrote:
+>> On 03/07/2014 05:46 AM, Pravin Shelar wrote:
+>>>
+>>> But I found bug in datapath user-space queue code. I am not sure how
+>>> this can work with skb fragments and MMAP-netlink socket.
+>>> Here is what happens, OVS allocates netlink skb and adds fragments to
+>>> skb using skb_zero_copy(), then calls genlmsg_unicast().
+>>> But if netlink sock is mmped then netlink-send queues netlink
+>>> allocated skb->head (linear data of skb) and ignore skb frags.
+>>>
+>>> Currently this is not problem with OVS vswitchd since it does not use
+>>> netlink MMAP sockets. But if vswitchd stats using MMAP-netlink socket,
+>>> it can break it.
+>>
+>>
+>> The secret is out ;-)
+>>
+>> I was very surprised too when I noticed that it worked. It's not just
+>> OVS, it's nfqueue as well. The reason is that an netlink mmaped skb is
+>> setup with a giant tailroom in netlink_ring_setup_skb():
+>>
+>>          skb->end        = skb->tail + size;
+>>
+> For OVS use-case, the size is linear part of skb. so I think for
+> mmap-netlink socket it will fail.
 
---jtEtYGE75hrP1CgP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Could you rephrase? I'm not sure I understand correctly.
 
-Hi Philipp,=20
-
-On Fri, Mar 07, 2014 at 03:30:23PM +0100, Philipp Zabel wrote:
-> This patch adds device_reset_optional and (devm_)reset_control_get_option=
-al
-> variants that drivers can use to indicate they can function without contr=
-ol
-> over the reset line. For those functions, stubs are added so the drivers =
-can
-> be compiled with CONFIG_RESET_CONTROLLER disabled.
-> Also, device_reset is annotated with __must_check. Drivers ignoring the r=
-eturn
-> value should use device_reset_optional instead.
->=20
-> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-
-Reviewed-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-
-Thanks!
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---jtEtYGE75hrP1CgP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTGgh6AAoJEBx+YmzsjxAgRgkQAKmYcLlDgE1NhZSr/kjgITl7
-5L23N2oxDiZOtJi0vRhBzbQALG3eohY6ifWqYhnvbiOQvS3ZePDlg3YOkXMeIJTH
-8c6hpZ9XFlk0/UcPD3fg8zdZV0s+xRnIwafRCXf+vLv3R76QlZ9lxFLjE1N5r+lk
-8xDE637RnriI8RsZbYDfNNb9T+c+o4npEmTpian+uWwWSf5Dx1IUOSp6crF3YkoW
-K/slePhbnW85ww0PwvJl2V7HWXGQqLO+5QDPwtbtoV7Kd8Ucwfi/SFTyznr/IJYR
-bYM1HCExB94tVSEMC0RpLACEfGK4F/dFLsRIoB6vvNgEe1FKPrqXnLXZCxEb2tsd
-8i3lF1bnXcs4J3dGJ7dFnDDHisoOLq/my7H65/UbLR8GXVEZrwUSbKVgWX5BhxAf
-IwJXykHEoN/kiwRy/samx4/xWV6lwO7ZwWH0w3q4h4QdyD7xYo0A7UmuyA3TAGVF
-m4AwrbVxirXspqvGiy/CCfJvb58S/iX80a2+1+IHEgYqyKPMtsL4VHhdSfr4K0D1
-1ObZPO1dNHY1JyMmdtHVzFhZfh8KmDPVT9t+A+tghsquJn48xkC98K5nOYBmoIA9
-eeXPL1dtEJpaj7E/YnVvshKxxF6UHc28A30g1JPK789RexvhBS3Fge0uwykXz5oF
-XpBPCIX3YwV8DGmheiLB
-=Kp9q
------END PGP SIGNATURE-----
-
---jtEtYGE75hrP1CgP--
+The tailroom size equals to the configured frame payload size of
+the ring buffer. So as long as the frame size chosen is large
+enough to hold whatever pieces comes out of skb_gso_segment() we are
+fine. That said, I agree that we should fix this properly before we
+enable mmap on the OVS user space side.
