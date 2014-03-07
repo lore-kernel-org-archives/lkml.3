@@ -1,100 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808AbaCGPBm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 10:01:42 -0500
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:65222 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751156AbaCGPBk (ORCPT
+	id S1752471AbaCGPCV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 10:02:21 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:44701 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751206AbaCGPCT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 10:01:40 -0500
+	Fri, 7 Mar 2014 10:02:19 -0500
+Message-ID: <5319DF72.6090408@oracle.com>
+Date: Fri, 07 Mar 2014 10:02:10 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <5318C7B9.8040408@hurleysoftware.com>
-References: <CA+MoWDrTNtAHKsiBHz=W4=eJRO=m9EK_HZ7zLxb=4fg5riUQeg@mail.gmail.com>
-	<CAErSpo4wdYDgTUTBDLimbviLh54C9ELXKfQ2y5qeUR1FKN8fpw@mail.gmail.com>
-	<5318C7B9.8040408@hurleysoftware.com>
-Date: Fri, 7 Mar 2014 16:01:39 +0100
-Message-ID: <CA+MoWDpN7qK6m8fdhjjO7J6zNPm+NQSkZipQn5vmHSELXu3D_w@mail.gmail.com>
-Subject: Re: My Kernel bug is celebrating 2 years. Can you help me fix it?
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "kernelnewbies@kernelnewbies.org" <kernelnewbies@kernelnewbies.org>,
-        kernel-janitors@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stoney Wang <song-bo.wang@hp.com>, Yinghai Lu <yinghai@kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Joerg Roedel <joro@8bytes.org>, Jiang Liu <jiang.liu@linux.intel.com>,
-        Linux PM list <linux-pm@vger.kernel.org>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+CC: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: mm: kernel BUG at mm/filemap.c:202
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 6, 2014 at 8:08 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
-> On 03/06/2014 01:27 PM, Bjorn Helgaas wrote:
->>
->> [+cc Stoney, Yinghai, Suresh, Joerg, Jiang, Pavel, Rafael, linux-pm]
->>
->> Let's add some folks who know about x2apic and VT-d.  It's hard for
->> people to magically pick stuff out of the LKML firehose :)
->>
->> On Tue, Mar 4, 2014 at 2:26 PM, Peter Senna Tschudin
->> <peter.senna@gmail.com> wrote:
->>>
->>> I have reported a bug more than two years ago and it is still
->>> affecting me. The bug report gives some information:
->>>
->>> https://bugzilla.redhat.com/show_bug.cgi?id=787299
->>>
->>> I have tried basic debug instructions from:
->>> https://www.kernel.org/doc/Documentation/power/basic-pm-debugging.txt
->>>
->>> And everything works as expected when:
->>> # echo freeze > /sys/power/state
->>> # echo disk > /sys/power/state
->>>
->>> I have asked for help for fixing it:
->>> https://lkml.org/lkml/2013/11/1/186
->>>
->>> But I don't have a serial port. How can I debug this issue without a
->>> "real" serial port? Or what else can I try? How can I explore the hint
->>> about the problem only happening with VT-d enabled in BIOS? How can I
->>> explore the hint about the problem not happening if the option
->>> nox2apic is passed to the Kernel?
->>>
->>> Thank you,
->>>
->>> Peter
->>>
->>> P.S Yes, it works on Windows.
->
->
-> Windows 7 doesn't use x2apic mode.
-> Windows 8 does and this same problem happened with this model: see
-> http://forums.toshiba.com/t5/Windows-8-8-1/Resume-from-standby-issue-on-R830-PT321A-01K002/td-p/330110
-Thank you for the information. The model is similar to mine, probably
-the same motherboard. My tests were with Windows 7.
+Hi all,
 
->
-> Seems like your model was recently added to Toshiba's Windows 8
-> compatibility list: http://support.toshiba-tie.co.jp/windows8/list_au.htm
->
-> Check for a more recent BIOS update that may fix this problem.
-I do that weekly since February last year, and there are no updates
-available. The bad news is that the model was discontinued, so it is
-possible that there will be no more BIOS updates. I'll write to
-Toshiba Europe GmbH asking for a fix, by my hopes in getting an answer
-are low.
+While fuzzing with trinity inside a KVM tools guest running latest -next kernel I've stumbled on
+the following spew:
 
->
-> Regards,
-> Peter Hurley
->
-> PS - kernel bugs are better filed on the kernel bugzilla
-> https://bugzilla.kernel.org/
-Thank you!
+[  567.833881] kernel BUG at mm/filemap.c:202!
+[  567.834485] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[  567.835522] Dumping ftrace buffer:
+[  567.836752]    (ftrace buffer empty)
+[  567.837307] Modules linked in:
+[  567.837796] CPU: 23 PID: 14457 Comm: trinity-c323 Tainted: G        W    3.14.0-rc5-next-20140307-sasha-00010-gb6b571d-dirty #111
+[  567.839449] task: ffff88021afa8000 ti: ffff88071f290000 task.ti: ffff88071f290000
+[  567.840489] RIP: 0010:[<ffffffff8126b3f0>]  [<ffffffff8126b3f0>] __delete_from_page_cache+0x150/0x270
+[  567.841649] RSP: 0018:ffff88071f291b78  EFLAGS: 00010046
+[  567.841649] RAX: 0000000000000000 RBX: ffffea0002c4ac40 RCX: 00000000ffffffb8
+[  567.841649] RDX: 00000000001dc1a8 RSI: 0000000000000018 RDI: ffff88012ffd2000
+[  567.841649] RBP: ffff88071f291b98 R08: 0000000000000048 R09: 00000000ffffffff
+[  567.841649] R10: 0000000000000001 R11: 0000000000000001 R12: ffff880627f2bd30
+[  567.841649] R13: ffff880627f2bd18 R14: 0000000000000000 R15: 0000000000000000
+[  567.841649] FS:  00007f15b504d700(0000) GS:ffff88082ba00000(0000) knlGS:0000000000000000
+[  567.841649] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  567.841649] CR2: 0000000002eef848 CR3: 000000071fce7000 CR4: 00000000000006a0
+[  567.841649] DR0: 0000000000900870 DR1: 00007f15b505a000 DR2: 0000000000000000
+[  567.841649] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000602
+[  567.841649] Stack:
+[  567.841649]  ffffea0002c4ac40 ffff880627f2bd30 0000000000000000
+[  567.859673]  0000000000000200
+[  567.859673]  ffff88071f291bc8 ffffffff8126b56a ffff880627f2bd18 ffffea0002c4ac40
+[  567.859673]  ffff880627f2bd18 ffff88071f291c48 ffff88071f291be8 ffffffff8127fb94
+[  567.859673] Call Trace:
+[  567.859673]  [<ffffffff8126b56a>] delete_from_page_cache+0x5a/0x90
+[  567.859673]  [<ffffffff8127fb94>] truncate_inode_page+0x74/0x90
+[  567.859673]  [<ffffffff8128c875>] shmem_undo_range+0x245/0x770
+[  567.859673]  [<ffffffff812a01b8>] ? unmap_mapping_range+0x168/0x180
+[  567.859673]  [<ffffffff8128cdb8>] shmem_truncate_range+0x18/0x40
+[  567.859673]  [<ffffffff8128d0c9>] shmem_fallocate+0x99/0x2f0
+[  567.859673]  [<ffffffff8129b7be>] ? madvise_vma+0xde/0x1c0
+[  567.859673]  [<ffffffff811ad632>] ? __lock_release+0x1e2/0x200
+[  567.859673]  [<ffffffff812f87da>] do_fallocate+0x14a/0x1a0
+[  567.859673]  [<ffffffff8129b7d4>] madvise_vma+0xf4/0x1c0
+[  567.859673]  [<ffffffff812a765f>] ? find_vma+0x6f/0x90
+[  567.859673]  [<ffffffff8129ba28>] SyS_madvise+0x188/0x250
+[  567.859673]  [<ffffffff844b1650>] tracesys+0xdd/0xe2
+[  567.859673] Code: be 0a 00 00 00 48 89 df e8 8e 55 02 00 48 8b 03 a9 00 00 08 00 74 0d be 18 00 00 00 48 89 df e8 77 55 02 00 8b 43 18 85 c0 78 10 <0f> 0b 66 0f 1f 44 00 00 eb fe 66 0f 1f 44 00 00 48 8b 03 a8 10
+[  567.859673] RIP  [<ffffffff8126b3f0>] __delete_from_page_cache+0x150/0x270
+[  567.859673]  RSP <ffff88071f291b78>
 
 
--- 
-Peter
+Thanks,
+Sasha
