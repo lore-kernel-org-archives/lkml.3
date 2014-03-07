@@ -1,119 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149AbaCGLS4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 06:18:56 -0500
-Received: from www.linutronix.de ([62.245.132.108]:36564 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751811AbaCGLSy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 06:18:54 -0500
-Date: Fri, 7 Mar 2014 12:18:49 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org,
-        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
-        John Kacur <jkacur@redhat.com>
-Subject: nouveau crash due to missing channel (WAS: Re: [ANNOUNCE]
- 3.12.12-rt19)
-Message-ID: <20140307111848.GA8637@linutronix.de>
-References: <20140223184727.GA12442@linutronix.de>
- <53128DED.1000402@localhost>
+	id S1752282AbaCGLTI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 06:19:08 -0500
+Received: from sauhun.de ([89.238.76.85]:50041 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751811AbaCGLTC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 06:19:02 -0500
+Date: Fri, 7 Mar 2014 12:18:58 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Chen-Yu Tsai <wens@csie.org>
+Cc: linux-sunxi <linux-sunxi@googlegroups.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        zhuzhenhua@allwinnertech.com, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-i2c@vger.kernel.org, Philipp Zabel <p.zabel@pengutronix.de>
+Subject: Re: [linux-sunxi] Re: [PATCH v3 1/5] i2c: mv64xxx: Add reset
+ deassert call
+Message-ID: <20140307111858.GB12274@katana>
+References: <1393950521-4173-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1393950521-4173-2-git-send-email-maxime.ripard@free-electrons.com>
+ <20140307095222.GG21483@n2100.arm.linux.org.uk>
+ <20140307100751.GN607@lukather>
+ <20140307103433.GH21483@n2100.arm.linux.org.uk>
+ <CAGb2v66xViOx+DdnuDwad0HsCx2YiYfxqBDAEwYdLHrSydOj0w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="rJwd6BRFiFCcLxzm"
 Content-Disposition: inline
-In-Reply-To: <53128DED.1000402@localhost>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+In-Reply-To: <CAGb2v66xViOx+DdnuDwad0HsCx2YiYfxqBDAEwYdLHrSydOj0w@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Fernando Lopez-Lezcano | 2014-03-01 17:48:29 [-0800]:
 
->On 02/23/2014 10:47 AM, Sebastian Andrzej Siewior wrote:
->>Dear RT folks!
->>
->>I'm pleased to announce the v3.12.12-rt19 patch set.
->
->Just hit this Oops in my desktop at home:
->
->[22328.388996] BUG: unable to handle kernel NULL pointer dereference
->at 0000000000000008
->[22328.389013] IP: [<ffffffffa011a912>]
->nouveau_fence_wait_uevent.isra.2+0x22/0x440 [nouveau]
+--rJwd6BRFiFCcLxzm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This is
 
-| static int
-| nouveau_fence_wait_uevent(struct nouveau_fence *fence, bool intr)
-| 
-| {
-|         struct nouveau_channel *chan = fence->channel;
-|         struct nouveau_fifo *pfifo = nouveau_fifo(chan->drm->device);
+> > Since RESET_CONTROLLER is not required for those platforms, it really
+> > should be optional - and I think the real fix is for the reset controll=
+er
+> > support to provide stub functions.
+>=20
+> Philipp Zabel suggested that adding a _optional variant that provides stu=
+bs
+> and doesn't depend on RESET_CONTROLLER is probably better. This keeps the
+> compile time checks for drivers requiring it.
+>=20
+> See: https://lkml.org/lkml/2014/1/10/220
+>=20
+> I ended up dropping my patch though.
 
-and chan is NULL. 
+Thanks for the pointer. Well, looks like I need to revert the offending
+i2c patches then until this issue is fixed? We can't have
+RESET_CONTROLLER (circular dependency) and we can't skip it (build
+failures).
 
->[22328.389046] RAX: 0000000000000000 RBX: ffff8807a68f8fa8 RCX:
->0000000000000000
->[22328.389046] RDX: 0000000000000001 RSI: ffff8807a68f8fb0 RDI:
->ffff8807a68f8fa8
->[22328.389047] RBP: ffff8807c09bdca0 R08: 000000000000045e R09:
->000000000000e200
->[22328.389047] R10: ffffffffa0157d80 R11: ffff8807c09bdde0 R12:
->0000000000000001
->[22328.389047] R13: 0000000000000000 R14: ffff8807d8493a80 R15:
->ffff8807a68f8fb0
->[22328.389053] Call Trace:
->[22328.389069]  [<ffffffffa011af56>] nouveau_fence_wait+0x86/0x1a0 [nouveau]
->[22328.389081]  [<ffffffffa011ca35>] nouveau_bo_fence_wait+0x15/0x20
->[nouveau]
->[22328.389084]  [<ffffffffa00867c6>] ttm_bo_wait+0x96/0x1a0 [ttm]
->[22328.389095]  [<ffffffffa0121dac>]
->nouveau_gem_ioctl_cpu_prep+0x5c/0xf0 [nouveau]
->[22328.389101]  [<ffffffffa002cd42>] drm_ioctl+0x502/0x630 [drm]
->[22328.389114]  [<ffffffffa01180a1>] nouveau_drm_ioctl+0x51/0x90 [nouveau]
 
-I can't find any kind of locking so my question is what ensures that chan is
-not set to NULL between nouveau_fence_done() and
-nouveau_fence_wait_uevent()? There are just a few opcodes in between but
-nothing that pauses nouveau_fence_signal().
+--rJwd6BRFiFCcLxzm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Fernando, can you please check the patch below and test if the warning
-or the crash appears?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
 
-diff --git a/drivers/gpu/drm/nouveau/nouveau_fence.c b/drivers/gpu/drm/nouveau/nouveau_fence.c
---- a/drivers/gpu/drm/nouveau/nouveau_fence.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_fence.c
-@@ -184,14 +184,20 @@ nouveau_fence_wait_uevent(struct nouveau_fence *fence, bool intr)
- 
- {
- 	struct nouveau_channel *chan = fence->channel;
--	struct nouveau_fifo *pfifo = nouveau_fifo(chan->drm->device);
--	struct nouveau_fence_priv *priv = chan->drm->fence;
-+	struct nouveau_fifo *pfifo;
-+	struct nouveau_fence_priv *priv;
- 	struct nouveau_fence_uevent uevent = {
- 		.handler.func = nouveau_fence_wait_uevent_handler,
--		.priv = priv,
- 	};
- 	int ret = 0;
- 
-+	if (WARN_ON_ONCE(!chan))
-+		return 0;
-+
-+	pfifo = nouveau_fifo(chan->drm->device);
-+	priv = chan->drm->fence;
-+	uevent.priv = priv;
-+
- 	nouveau_event_get(pfifo->uevent, 0, &uevent.handler);
- 
- 	if (fence->timeout) {
+iQIcBAEBAgAGBQJTGasiAAoJEBQN5MwUoCm2iWAP/3SWpY0qK8YWK3nROv2UKSaA
+1Kd404aSuloiCqXQB6/5ql5Hd3ocj0DgzT3Iahm73kSG78lShft2NZP+a0xgm9PP
+hqi7wCFX8M2pFooG8qclki4KQR7BM5NVqtOHZYwM2FEQVbn+oyad8pBNWsKF8qCR
+ffYg+NLb7a/aiwzWPGPFqpDxQHFTqfNnvZV076VqoOFmAGGFPdx7bt3UHnX4+2WW
+QUq3wyz1okexJTZrgCsT7T0+Ziyayr+d+3cTe00j6/QMJE1bD1oiaGBhP3QXPFIB
+G4D1SuCU0uo8w8D2mHS7uR3OYY19NYIE9swKtrsjYS1efP1lNbpsmvo0zkG5k3iH
+84cmybq9yisSe29HxYr4fYtuUx4OWoky/M+dCXiTr32wdhBtw8jFrZP9wKIe1yHg
+I4o4QjC9C5uup6jhg2zJNylMZN5XPN9NkdTSAQkTzqGT5TjrGhJA7f7VZWtzbO2m
+f7IMrV+33xe8tfa6Na6ilFjWqQK62c7Ieg3yDMPo9RsAkznk7zKSHc+jitt6dDs9
+3MyBqEd2VpMEiIFAtPrktYIBfwP+Oe1U0to2o/bdLq3mnLuyMT2AAUX2rePFSmf5
+Msj4wwkE2owgSDeLD3tUEOJl9RJd+65GdqYz9jEjt1sWnX/OlKZDla0bCrBy1q+/
+MKaUOAMp1cLIGHOOxK4J
+=YO/K
+-----END PGP SIGNATURE-----
 
->-- Fernando
-
-Sebastian
+--rJwd6BRFiFCcLxzm--
