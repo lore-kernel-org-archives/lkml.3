@@ -1,126 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752012AbaCGC6u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 21:58:50 -0500
-Received: from mga01.intel.com ([192.55.52.88]:21693 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751100AbaCGC6t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 21:58:49 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,605,1389772800"; 
-   d="scan'208";a="493898835"
-Date: Fri, 7 Mar 2014 10:58:43 +0800
-From: Liu ShuoX <shuox.liu@intel.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
-        Colin Cross <ccross@android.com>, Anton Vorontsov <anton@enomsg.org>,
-        yanmin_zhang@linux.intel.com, akpm@linux-foundation.org
-Subject: Re: [PATCH] pstore: reset ftrace_read_cnt at ramoops_pstore_open
-Message-ID: <20140307025842.GA6435@lskakaxi-intel>
-References: <1393569464-14904-1-git-send-email-shuox.liu@intel.com>
- <CAGXu5jLFq-FqXsw4SWuhE-JPzCCecvMdUHbF0_B=S-GODFU1pg@mail.gmail.com>
- <20140304014002.GA10071@lskakaxi-intel>
- <CAGXu5j+5CXKJ7+vaWgZXVJgFGHFzcwO6-D1iE+wyDcpr+g8jdw@mail.gmail.com>
+	id S1752211AbaCGC6y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 21:58:54 -0500
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:34344 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752062AbaCGC6w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 21:58:52 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <CAGXu5j+5CXKJ7+vaWgZXVJgFGHFzcwO6-D1iE+wyDcpr+g8jdw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <BD75D217E5BAC84080F8EFB2582976378B327178@ORSMSX109.amr.corp.intel.com>
+References: <1392900697-27577-1-git-send-email-heikki.krogerus@linux.intel.com>
+	<1392900697-27577-3-git-send-email-heikki.krogerus@linux.intel.com>
+	<53062F97.3050407@wwwdotorg.org>
+	<CAGb2v66-tDZhrm9dnXe+PdQTaLZbw20sw3uYzLor2eXpVWmPMA@mail.gmail.com>
+	<5306E599.7020605@wwwdotorg.org>
+	<CACRpkdZBvKU31EDX=6=wVLXaQDAqD6VHtaE_mGnFLr1UYQAH9g@mail.gmail.com>
+	<BD75D217E5BAC84080F8EFB2582976378B327178@ORSMSX109.amr.corp.intel.com>
+Date: Fri, 7 Mar 2014 10:58:51 +0800
+Message-ID: <CACRpkdaU3OCa1qDojcBK4Ci+YfOC7YfqLWqqBiwzh9vfEasH+g@mail.gmail.com>
+Subject: Re: [PATCH 2/4] net: rfkill: gpio: remove gpio names
+From: Linus Walleij <linus.walleij@linaro.org>
+To: "Gross, Mark" <mark.gross@intel.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Chen-Yu Tsai <wens@csie.org>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Rhyland Klein <rklein@nvidia.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "Westerberg, Mika" <mika.westerberg@intel.com>,
+        "mgross@linux.intel.com" <mgross@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue  4.Mar'14 at 11:11:11 -0800, Kees Cook wrote:
->On Mon, Mar 3, 2014 at 5:40 PM, Liu ShuoX <shuox.liu@intel.com> wrote:
->> On Mon  3.Mar'14 at 11:45:59 -0800, Kees Cook wrote:
->>>
->>> On Thu, Feb 27, 2014 at 10:37 PM,  <shuox.liu@intel.com> wrote:
->>>>
->>>> From: Liu ShuoX <shuox.liu@intel.com>
->>>>
->>>> ftrace_read_cnt need to be reset in open to support mutli times
->>>> getting the records.
->>>>
->>>> Signed-off-by: Liu ShuoX <shuox.liu@intel.com>
->>>> ---
->>>>  fs/pstore/ram.c | 1 +
->>>>  1 file changed, 1 insertion(+)
->>>>
->>>> diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
->>>> index fa8cef2..a5d0cab 100644
->>>> --- a/fs/pstore/ram.c
->>>> +++ b/fs/pstore/ram.c
->>>> @@ -101,6 +101,7 @@ static int ramoops_pstore_open(struct pstore_info
->>>> *psi)
->>>>
->>>>         cxt->dump_read_cnt = 0;
->>>>         cxt->console_read_cnt = 0;
->>>> +       cxt->ftrace_read_cnt = 0;
->>>>         return 0;
->>>>  }
->>>
->>>
->>> I think we need a separate function for "clear" for the
->>> ramoops_context struct. IIUC, we're missing a similar initialization
->>> in ramoops_probe, which lacks both console_read_cnt=0 and
->>> ftrace_read_cnt=0. Then both places could call this?
->>
->> Hi Kees,
->> Currently, we have only one static ramoops_context named oops_cxt.
->> *_read_cnt should be initialized to 0 as default. Need we still add
->> such function for 'clear'?
+On Fri, Feb 28, 2014 at 1:38 AM, Gross, Mark <mark.gross@intel.com> wrote:
+
+> So if you have the luxury of being able to influence (file bugs against or write)
+> the platform enumeration ABI then with ACPI you can have a named gpio today.
+> Note: there is an expectation that the _PRP feature to go into the next version
+> of ACPI and that should enable a trivial 1-1 mapping (when _prp is used by the
+> ACPI platform) between the different platform enumeration API's (DT and ACPI).
+
+Oh I wasn't aware. This makes things better, and gives con_id a clear usecase
+in the ACPI probe path as well.
+
+[Stephen]
+>> If there were ever an (upstream?) ACPI "binding"(?) for the Tegra SDHCI
+>> controller, I would hope it would use the exact same names for the GPIO
+>> signals.
 >
->We have the pstore-global "oops_cxt" context. It is "initialized" only
->once in ramoops_probe (and seems to needlessly set dump_read_cnt to
->0). Otherwise, the context is initialized via ramoops_register_dummy
->from module parameters (and initialized to zero with kzalloc).
->
->So, I think my initial comment about "clear" is probably not right,
->but that ramoops_pstore_open should be doing that (i.e. your original
->patch is close). However, I think I'd like to see the needless zeroing
->in ramoops_probe removed, and the "variables that need clearing on
->open" documented in comments in "struct ramoops_context". That should
->make this code more clear to read next time. :)
-Sorry for delay reply. How about below patch?
+> me to!
 
-From: Liu ShuoX <shuox.liu@intel.com>
+Amen to that.
 
-ftrace_read_cnt need to be reset in open to support mutli times
-getting the records.
-
-Signed-off-by: Liu ShuoX <shuox.liu@intel.com>
----
-  fs/pstore/ram.c | 3 ++-
-  1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
-index fa8cef2..9fe5b13 100644
---- a/fs/pstore/ram.c
-+++ b/fs/pstore/ram.c
-@@ -86,6 +86,7 @@ struct ramoops_context {
-  	struct persistent_ram_ecc_info ecc_info;
-  	unsigned int max_dump_cnt;
-  	unsigned int dump_write_cnt;
-+	/* _read_cnt need clear on ramoops_pstore_open */
-  	unsigned int dump_read_cnt;
-  	unsigned int console_read_cnt;
-  	unsigned int ftrace_read_cnt;
-@@ -101,6 +102,7 @@ static int ramoops_pstore_open(struct pstore_info *psi)
-  
-  	cxt->dump_read_cnt = 0;
-  	cxt->console_read_cnt = 0;
-+	cxt->ftrace_read_cnt = 0;
-  	return 0;
-  }
-  
-@@ -428,7 +430,6 @@ static int ramoops_probe(struct platform_device *pdev)
-  	if (pdata->ftrace_size && !is_power_of_2(pdata->ftrace_size))
-  		pdata->ftrace_size = rounddown_pow_of_two(pdata->ftrace_size);
-  
--	cxt->dump_read_cnt = 0;
-  	cxt->size = pdata->mem_size;
-  	cxt->phys_addr = pdata->mem_address;
-  	cxt->record_size = pdata->record_size;
--- 
-1.8.3.2
-
+Yours,
+Linus Walleij
