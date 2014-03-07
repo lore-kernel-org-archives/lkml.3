@@ -1,91 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751724AbaCGGoy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 01:44:54 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:37897 "EHLO
+	id S1751645AbaCGGox (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 01:44:53 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:37883 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751087AbaCGGov (ORCPT
+	with ESMTP id S1751027AbaCGGou (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 01:44:51 -0500
+	Fri, 7 Mar 2014 01:44:50 -0500
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: Linus Walleij <linus.walleij@linaro.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Subject: [PATCH 1/7] pinctrl: msm: Silence recursive lockdep warning
-Date: Thu,  6 Mar 2014 22:44:40 -0800
-Message-Id: <1394174686-8358-2-git-send-email-sboyd@codeaurora.org>
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 0/7] pinctrl-msm cleanups
+Date: Thu,  6 Mar 2014 22:44:39 -0800
+Message-Id: <1394174686-8358-1-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
-In-Reply-To: <1394174686-8358-1-git-send-email-sboyd@codeaurora.org>
-References: <1394174686-8358-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a driver calls enable_irq_wake() on a gpio turned interrupt
-from the msm pinctrl driver we'll get a lockdep warning like so:
+Here are some small fixes and cleanups for the msm pinctrl
+driver.
 
-=============================================
-[ INFO: possible recursive locking detected ]
-3.14.0-rc3 #2 Not tainted
----------------------------------------------
-modprobe/52 is trying to acquire lock:
- (&irq_desc_lock_class){-.....}, at: [<c026aea0>] __irq_get_desc_lock+0x48/0x88
+Stephen Boyd (7):
+  pinctrl: msm: Silence recursive lockdep warning
+  pinctrl: msm: Check for ngpios > MAX_NR_GPIO
+  pinctrl: msm: Drop unused includes
+  pinctrl: msm: Drop OF_IRQ dependency
+  pinctrl: msm: Replace lookup tables with math
+  pinctrl: msm: Remove impossible WARN_ON()s
+  pinctrl: msm: Simplify msm_config_reg() and callers
 
-but task is already holding lock:
- (&irq_desc_lock_class){-.....}, at: [<c026aea0>] __irq_get_desc_lock+0x48/0x88
+ drivers/pinctrl/Kconfig           |  2 +-
+ drivers/pinctrl/pinctrl-msm.c     | 73 ++++++++++++++-------------------------
+ drivers/pinctrl/pinctrl-msm.h     |  5 +--
+ drivers/pinctrl/pinctrl-msm8x74.c |  1 -
+ 4 files changed, 27 insertions(+), 54 deletions(-)
 
-other info that might help us debug this:
- Possible unsafe locking scenario:
-
-       CPU0
-       ----
-  lock(&irq_desc_lock_class);
-  lock(&irq_desc_lock_class);
-
- *** DEADLOCK ***
-
- May be due to missing lock nesting notation
-
-4 locks held by modprobe/52:
- #0:  (&__lockdep_no_validate__){......}, at: [<c04f2864>] __driver_attach+0x48/0x98
- #1:  (&__lockdep_no_validate__){......}, at: [<c04f2874>] __driver_attach+0x58/0x98
- #2:  (&irq_desc_lock_class){-.....}, at: [<c026aea0>] __irq_get_desc_lock+0x48/0x88
- #3:  (&(&pctrl->lock)->rlock){......}, at: [<c04bb4b8>] msm_gpio_irq_set_wake+0x20/0xa8
-
-Silence it by putting the gpios into their own lock class.
-
-Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/pinctrl/pinctrl-msm.c | 7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/drivers/pinctrl/pinctrl-msm.c b/drivers/pinctrl/pinctrl-msm.c
-index ef2bf3126da6..ac7223dab4a3 100644
---- a/drivers/pinctrl/pinctrl-msm.c
-+++ b/drivers/pinctrl/pinctrl-msm.c
-@@ -869,6 +869,12 @@ static void msm_gpio_irq_handler(unsigned int irq, struct irq_desc *desc)
- 	chained_irq_exit(chip, desc);
- }
- 
-+/*
-+ * This lock class tells lockdep that GPIO irqs are in a different
-+ * category than their parents, so it won't report false recursion.
-+ */
-+static struct lock_class_key gpio_lock_class;
-+
- static int msm_gpio_init(struct msm_pinctrl *pctrl)
- {
- 	struct gpio_chip *chip;
-@@ -907,6 +913,7 @@ static int msm_gpio_init(struct msm_pinctrl *pctrl)
- 
- 	for (i = 0; i < chip->ngpio; i++) {
- 		irq = irq_create_mapping(pctrl->domain, i);
-+		irq_set_lockdep_class(irq, &gpio_lock_class);
- 		irq_set_chip_and_handler(irq, &msm_gpio_irq_chip, handle_edge_irq);
- 		irq_set_chip_data(irq, pctrl);
- 	}
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
