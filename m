@@ -1,73 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751533AbaCGGI1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 01:08:27 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54089 "EHLO arroyo.ext.ti.com"
+	id S1751785AbaCGGKy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 01:10:54 -0500
+Received: from mga01.intel.com ([192.55.52.88]:51678 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750830AbaCGGIZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 01:08:25 -0500
-Message-ID: <5319623D.5030909@ti.com>
-Date: Fri, 7 Mar 2014 11:37:57 +0530
-From: George Cherian <george.cherian@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>
-CC: <rogerq@ti.com>, <balbi@ti.com>
-Subject: Re: [PATCH v3] phy: omap-control: update dra7 and am437 usb2 bindings
-References: <1394171280-13359-1-git-send-email-kishon@ti.com>
-In-Reply-To: <1394171280-13359-1-git-send-email-kishon@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1750896AbaCGGKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 01:10:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,605,1389772800"; 
+   d="scan'208";a="493970252"
+From: Chew Chiau Ee <chiau.ee.chew@intel.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] i2c: designware-pci: set ideal HCNT, LCNT and SDA hold time value
+Date: Fri,  7 Mar 2014 22:12:51 +0800
+Message-Id: <1394201571-11681-3-git-send-email-chiau.ee.chew@intel.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1394201571-11681-1-git-send-email-chiau.ee.chew@intel.com>
+References: <1394201571-11681-1-git-send-email-chiau.ee.chew@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/7/2014 11:18 AM, Kishon Vijay Abraham I wrote:
-> From: Roger Quadros <rogerq@ti.com>
->
-> The dra7-usb2 and am437-usb2 bindings have not yet been used.
-> Change them to be more elegant.
->
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> ---
-> Changes from v2:
-> Kept only the drivers/phy part in this patch
->
->   drivers/phy/phy-omap-control.c |    4 ++--
->   1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/phy/phy-omap-control.c b/drivers/phy/phy-omap-control.c
-> index 17fc200..a7e2d7f 100644
-> --- a/drivers/phy/phy-omap-control.c
-> +++ b/drivers/phy/phy-omap-control.c
-> @@ -228,11 +228,11 @@ static const struct of_device_id omap_control_phy_id_table[] = {
->   		.data = &pipe3_data,
->   	},
->   	{
-> -		.compatible = "ti,control-phy-dra7usb2",
-> +		.compatible = "ti,control-phy-dra7-usb2",
->   		.data = &dra7usb2_data,
->   	},
->   	{
-> -		.compatible = "ti,control-phy-am437usb2",
-> +		.compatible = "ti,control-phy-am437-usb2",
+From: Chew, Chiau Ee <chiau.ee.chew@intel.com>
 
-Tony suggested to keep the compatible
+On Intel BayTrail, there was case whereby the resulting fast mode
+bus speed becomes slower (~20% slower compared to expected speed)
+if using the HCNT/LCNT calculated in the core layer. Thus, this
+patch is added to allow pci glue layer to pass in optimal
+HCNT/LCNT/SDA hold time values to core layer since the core
+layer supports cofigurable HCNT/LCNT/SDA hold time values now.
 
-ti,control-phy-usb2-dra7 and ti,control-phy-usb2-am437
+Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
+---
+ drivers/i2c/busses/i2c-designware-pcidrv.c |   34 ++++++++++++++++++++++++++++
+ 1 files changed, 34 insertions(+), 0 deletions(-)
 
-http://www.spinics.net/lists/linux-omap/msg104040.html
-
-Since we already have a ti,control-phy-usb2 I think it make sense to keep the new comaptible for dra7 and am437 as above.
-
->   		.data = &am437usb2_data,
->   	},
->   	{},
-
-
+diff --git a/drivers/i2c/busses/i2c-designware-pcidrv.c b/drivers/i2c/busses/i2c-designware-pcidrv.c
+index 87f2fc4..96417ca 100644
+--- a/drivers/i2c/busses/i2c-designware-pcidrv.c
++++ b/drivers/i2c/busses/i2c-designware-pcidrv.c
+@@ -58,6 +58,14 @@ enum dw_pci_ctl_id_t {
+ 	baytrail,
+ };
+ 
++struct scl_sda_cfg {
++	u32 ss_hcnt;
++	u32 fs_hcnt;
++	u32 ss_lcnt;
++	u32 fs_lcnt;
++	u32 sda_hold;
++};
++
+ struct dw_pci_controller {
+ 	u32 bus_num;
+ 	u32 bus_cfg;
+@@ -65,6 +73,7 @@ struct dw_pci_controller {
+ 	u32 rx_fifo_depth;
+ 	u32 clk_khz;
+ 	u32 functionality;
++	struct scl_sda_cfg *scl_sda_cfg;
+ };
+ 
+ #define INTEL_MID_STD_CFG  (DW_IC_CON_MASTER |			\
+@@ -77,6 +86,21 @@ struct dw_pci_controller {
+ 					I2C_FUNC_SMBUS_WORD_DATA |	\
+ 					I2C_FUNC_SMBUS_I2C_BLOCK)
+ 
++/* BayTrail HCNT/LCNT/SDA_HOLD */
++#define BYT_STD_MODE_HCNT	0x200
++#define BYT_STD_MODE_LCNT	BYT_STD_MODE_HCNT
++#define BYT_FAST_MODE_HCNT	0x55
++#define BYT_FAST_MODE_LCNT	0x99
++#define BYT_SDA_HOLD		0x6
++
++static struct scl_sda_cfg byt_config = {
++	.ss_hcnt	= BYT_STD_MODE_HCNT,
++	.fs_hcnt	= BYT_FAST_MODE_HCNT,
++	.ss_lcnt	= BYT_STD_MODE_LCNT,
++	.fs_lcnt	= BYT_FAST_MODE_LCNT,
++	.sda_hold	= BYT_SDA_HOLD,
++};
++
+ static struct  dw_pci_controller  dw_pci_controllers[] = {
+ 	[moorestown_0] = {
+ 		.bus_num     = 0,
+@@ -148,6 +172,7 @@ static struct  dw_pci_controller  dw_pci_controllers[] = {
+ 		.rx_fifo_depth = 32,
+ 		.clk_khz = 100000,
+ 		.functionality = I2C_FUNC_10BIT_ADDR,
++		.scl_sda_cfg = &byt_config,
+ 	},
+ };
+ static struct i2c_algorithm i2c_dw_algo = {
+@@ -231,6 +256,7 @@ static int i2c_dw_pci_probe(struct pci_dev *pdev,
+ 	struct i2c_adapter *adap;
+ 	int r;
+ 	struct  dw_pci_controller *controller;
++	struct scl_sda_cfg *cfg;
+ 
+ 	if (id->driver_data >= ARRAY_SIZE(dw_pci_controllers)) {
+ 		dev_err(&pdev->dev, "%s: invalid driver data %ld\n", __func__,
+@@ -268,6 +294,14 @@ static int i2c_dw_pci_probe(struct pci_dev *pdev,
+ 				DW_DEFAULT_FUNCTIONALITY;
+ 
+ 	dev->master_cfg =  controller->bus_cfg;
++	if (controller->scl_sda_cfg) {
++		cfg = controller->scl_sda_cfg;
++		dev->ss_hcnt = cfg->ss_hcnt;
++		dev->fs_hcnt = cfg->fs_hcnt;
++		dev->ss_lcnt = cfg->ss_lcnt;
++		dev->fs_lcnt = cfg->fs_lcnt;
++		dev->sda_hold_time = cfg->sda_hold;
++	}
+ 
+ 	pci_set_drvdata(pdev, dev);
+ 
 -- 
--George
+1.7.4.4
 
