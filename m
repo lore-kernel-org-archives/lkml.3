@@ -1,70 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752942AbaCGPyL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 10:54:11 -0500
-Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:52523 "EHLO
-	ducie-dc1.codethink.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751033AbaCGPyJ (ORCPT
+	id S1753594AbaCGPzP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 10:55:15 -0500
+Received: from ngcobalt02.manitu.net ([217.11.48.102]:58912 "EHLO
+	ngcobalt02.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752553AbaCGPzM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 10:54:09 -0500
-Message-ID: <5319EB9E.7020900@codethink.co.uk>
-Date: Fri, 07 Mar 2014 15:54:06 +0000
-From: Ben Dooks <ben.dooks@codethink.co.uk>
-Organization: Codethink Limited.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Fri, 7 Mar 2014 10:55:12 -0500
+Message-ID: <5319EBDD.5050100@grandegger.com>
+Date: Fri, 07 Mar 2014 16:55:09 +0100
+From: Wolfgang Grandegger <wg@grandegger.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-CC: linux-media@vger.kernel.org, Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-kernel@vger.kernel.org, magnus.damm@opensource.se,
-        linux-sh@vger.kernel.org, linux-kernel@lists.codethink.co.uk
-Subject: Re: [PATCH 1/5] r8a7790.dtsi: add vin[0-3] nodes
-References: <1394197299-17528-1-git-send-email-ben.dooks@codethink.co.uk> <1394197299-17528-2-git-send-email-ben.dooks@codethink.co.uk> <5319F7AA.7040305@cogentembedded.com>
-In-Reply-To: <5319F7AA.7040305@cogentembedded.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Stanislav Meduna <stano@meduna.org>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>
+Subject: Re: FlexCAN on i.MX28 interrupt flooding retrying send
+References: <53197E8A.5050409@meduna.org> <53198753.8000900@pengutronix.de> <5319CB58.4070708@meduna.org>
+In-Reply-To: <5319CB58.4070708@meduna.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/03/14 16:45, Sergei Shtylyov wrote:
-> Hello.
->
-> On 03/07/2014 04:01 PM, Ben Dooks wrote:
->
->> Add nodes for the four video input channels on the R8A7790.
->
->> Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
->
->     This patch should have been preceded by the VIN driver patch and
-> bindings description, don't you think?
-
-Given this is a pretty standard device and video input binding
-as already described in the relevant documentation, didn't really
-think it was necessary.
-
->> diff --git a/arch/arm/boot/dts/r8a7790.dtsi
->> b/arch/arm/boot/dts/r8a7790.dtsi
->> index a1e7c39..4c3eafb 100644
->> --- a/arch/arm/boot/dts/r8a7790.dtsi
->> +++ b/arch/arm/boot/dts/r8a7790.dtsi
->> @@ -395,6 +395,38 @@
->>           status = "disabled";
->>       };
+On 03/07/2014 02:36 PM, Stanislav Meduna wrote:
+> On 07.03.2014 09:46, Marc Kleine-Budde wrote:
+> 
+>> Adding the linux-can mailinglist to Cc.
+> 
+> I am not subscribed so maybe that's why the original mail
+> did not get through - I did Cc: linux-can@vger.kernel.org
+> 
+>> Your kernel is missing the patch:
 >>
->> +    vin0: vin@0xe6ef0000 {
->
->     ePAPR standard [1] tells us that:
->
-> The name of a node should be somewhat generic, reflecting the function
-> of the device and not its precise programming model.
->
->     So, I would suggest something like "video". And remove "0x" from the
-> address part of the node name please.
+>> e358784 can: flexcan: fix mx28 detection by rearanging OF match table
+>>
+>> With this patch the CAN core properly detected as an mx28, so that bus
+>> errors stay disabled (unless you enable them). If you need bus errors to
+>> detect not connected CAN busses, you need another patchset berr_limit,
+>> which is not yet mainline. I can repost it here, if you need it.
+> 
+> Ah ok.
+> 
+> Thank you, this probably points me to the right direction - I'll try
+> to implement this behaviour in my kernel (unfortunately
+> I cannot move to more recent one at the moment).
 
-vin is a reasonable contraction of video-input.
+The following hack should fix the problem:
 
+diff --git a/drivers/net/can/flexcan.c b/drivers/net/can/flexcan.c
+index eb4014a..a6be018 100644
+--- a/drivers/net/can/flexcan.c
++++ b/drivers/net/can/flexcan.c
+@@ -727,7 +727,16 @@ static int flexcan_chip_start(struct net_device *dev)
+ 	reg_ctrl = flexcan_read(&regs->ctrl);
+ 	reg_ctrl &= ~FLEXCAN_CTRL_TSYN;
+ 	reg_ctrl |= FLEXCAN_CTRL_BOFF_REC | FLEXCAN_CTRL_LBUF |
+-		FLEXCAN_CTRL_ERR_STATE | FLEXCAN_CTRL_ERR_MSK;
++		FLEXCAN_CTRL_ERR_STATE;
++
++	/*
++	 * Quick and dirty hack to enable the "error interrupt"
++	 * (FLEXCAN_CTRL_ERR_MSK) for the i.MX8. Warning: this
++	 * does not work on most other Flexcan cores. There, we
++	 * then don't get any error warning or passive interrupts.
++	 */
++	if (priv->can.ctrlmode & CAN_CTRLMODE_BERR_REPORTING)
++		reg_ctrl |= FLEXCAN_CTRL_ERR_MSK;
+ 
+ 	/* save for later use */
+ 	priv->reg_ctrl_default = reg_ctrl;
 
--- 
-Ben Dooks				http://www.codethink.co.uk/
-Senior Engineer				Codethink - Providing Genius
+Anyway, you should check if there are other important improvement and
+fixes a pending.
+
+Wolfgang.
