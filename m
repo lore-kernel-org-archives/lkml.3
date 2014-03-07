@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751764AbaCGO51 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 09:57:27 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38505 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750958AbaCGO50 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 09:57:26 -0500
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, kernel@pengutronix.de,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH] of: Fix of_graph_parse_endpoint stub for !CONFIG_OF builds
-Date: Fri,  7 Mar 2014 15:57:15 +0100
-Message-Id: <1394204235-28706-1-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 1.9.0
-X-SA-Exim-Connect-IP: 10.1.0.120
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1752328AbaCGO54 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 09:57:56 -0500
+Received: from mga02.intel.com ([134.134.136.20]:9102 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751953AbaCGO5z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 09:57:55 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,608,1389772800"; 
+   d="scan'208";a="468423422"
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+To: <gregkh@linuxfoundation.org>
+Cc: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <sarah.a.sharp@linux.intel.com>, <stern@rowland.harvard.edu>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [PATCH 0/2] xhci, usbnet: fixes for 3.14 
+Date: Fri,  7 Mar 2014 17:06:56 +0200
+Message-Id: <1394204818-25323-1-git-send-email-mathias.nyman@linux.intel.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the following build error:
+Hi Greg,
 
-   In file included from drivers/media/i2c/adv7343.c:29:0:
->> include/linux/of_graph.h:41:1: error: expected identifier or '(' before '{' token
-    {
-    ^
-   include/linux/of_graph.h:39:19: warning: 'of_graph_parse_endpoint' declared 'static' but never defined [-Wunused-function]
-    static inline int of_graph_parse_endpoint(const struct device_node *node,
-                      ^
+These two xhci scatter-gather related patches should be reverted to avoid
+USB 3.0 mass storage regression for users.
+Sarah and Alan concluded that this the best choice until proper TD fragmentation
+rules are implemented, discussion is here:  
 
-vim +41 include/linux/of_graph.h
+http://marc.info/?l=linux-usb&m=139395884021971&w=2
 
-    35                                          const struct device_node *node);
-    36  struct device_node *of_graph_get_remote_port(const struct device_node *node);
-    37  #else
-    38
-    39  static inline int of_graph_parse_endpoint(const struct device_node *node,
-    40                                          struct of_endpoint *endpoint);
-  > 41  {
-    42          return -ENOSYS;
-    43  }
-    44
+The patch xhci 1.0: "Limit arbitrarily-aligned scatter gather." was added
+to 3.14-rc1 and stable, both patches should be reverted from stable and 3.14
 
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
----
- include/linux/of_graph.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+A few mass storage regression cases:
+http://marc.info/?l=linux-usb&m=139413069718354&w=2
+http://marc.info/?l=linux-usb&m=139411871213253&w=2
+http://marc.info/?l=linux-usb&m=139361293103188&w=2
 
-diff --git a/include/linux/of_graph.h b/include/linux/of_graph.h
-index 17f28eb..46795b3 100644
---- a/include/linux/of_graph.h
-+++ b/include/linux/of_graph.h
-@@ -45,7 +45,7 @@ struct device_node *of_graph_get_remote_port(const struct device_node *node);
- #else
- 
- static inline int of_graph_parse_endpoint(const struct device_node *node,
--					struct of_endpoint *endpoint);
-+					struct of_endpoint *endpoint)
- {
- 	return -ENOSYS;
- }
+-Mathias
+
+Mathias Nyman (2):
+  Revert "xhci 1.0: Limit arbitrarily-aligned scatter gather."
+  Revert "USBNET: ax88179_178a: enable tso if usb host supports sg dma"
+
+ drivers/net/usb/ax88179_178a.c |  8 --------
+ drivers/usb/host/xhci.c        | 14 +++-----------
+ 2 files changed, 3 insertions(+), 19 deletions(-)
+
 -- 
-1.9.0
+1.8.1.2
 
