@@ -1,84 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508AbaCGPFo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 10:05:44 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37958 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751648AbaCGPFm (ORCPT
+	id S1752873AbaCGPGU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 10:06:20 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:55266 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138AbaCGPGS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 10:05:42 -0500
-From: Will Deacon <will.deacon@arm.com>
-To: linux-kernel@vger.kernel.org
-Cc: Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH] asm-generic: rwsem: de-PPCify rwsem.h
-Date: Fri,  7 Mar 2014 15:05:24 +0000
-Message-Id: <1394204724-18898-1-git-send-email-will.deacon@arm.com>
-X-Mailer: git-send-email 1.8.2.2
+	Fri, 7 Mar 2014 10:06:18 -0500
+Message-ID: <1394204770.16309.16.camel@paszta.hi.pengutronix.de>
+Subject: Re: [PATCH] of: Fix of_graph_parse_endpoint stub for !CONFIG_OF
+ builds
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, kernel@pengutronix.de
+Date: Fri, 07 Mar 2014 16:06:10 +0100
+In-Reply-To: <1394204235-28706-1-git-send-email-p.zabel@pengutronix.de>
+References: <1394204235-28706-1-git-send-email-p.zabel@pengutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-asm-generic/rwsem.h used to live under arch/powerpc. During its
-liberation to common code, a few references to its former home where
-preserved, in particular the definition of RWSEM_ACTIVE_MASK is
-predicated on CONFIG_PPC64.
+Am Freitag, den 07.03.2014, 15:57 +0100 schrieb Philipp Zabel:
+> This patch fixes the following build error:
+> 
+>    In file included from drivers/media/i2c/adv7343.c:29:0:
+> >> include/linux/of_graph.h:41:1: error: expected identifier or '(' before '{' token
+>     {
+>     ^
+>    include/linux/of_graph.h:39:19: warning: 'of_graph_parse_endpoint' declared 'static' but never defined [-Wunused-function]
+>     static inline int of_graph_parse_endpoint(const struct device_node *node,
+>                       ^
+> 
+> vim +41 include/linux/of_graph.h
+> 
+>     35                                          const struct device_node *node);
+>     36  struct device_node *of_graph_get_remote_port(const struct device_node *node);
+>     37  #else
+>     38
+>     39  static inline int of_graph_parse_endpoint(const struct device_node *node,
+>     40                                          struct of_endpoint *endpoint);
+>   > 41  {
+>     42          return -ENOSYS;
+>     43  }
+>     44
+> 
+> Reported-by: kbuild test robot <fengguang.wu@intel.com>
+> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> ---
+>  include/linux/of_graph.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/include/linux/of_graph.h b/include/linux/of_graph.h
+> index 17f28eb..46795b3 100644
+> --- a/include/linux/of_graph.h
+> +++ b/include/linux/of_graph.h
+> @@ -45,7 +45,7 @@ struct device_node *of_graph_get_remote_port(const struct device_node *node);
+>  #else
+>  
+>  static inline int of_graph_parse_endpoint(const struct device_node *node,
+> -					struct of_endpoint *endpoint);
+> +					struct of_endpoint *endpoint)
+>  {
+>  	return -ENOSYS;
+>  }
 
-This patch updates the ifdefs and comments to architecturally neutral
-versions.
+I have also updated the git branch. The following changes since commit
+d484700a36952c6675aa47dec4d7a536929aa922:
 
-Cc: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Richard Kuo <rkuo@codeaurora.org>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
----
+  of: Warn if of_graph_parse_endpoint is called with the root node
+(2014-03-06 17:41:54 +0100)
 
-Hi Arnd,
+are available in the git repository at:
 
-Any chance you could queue this for 3.15 please? It means I can easily
-move arm64 over to the asm-generic rwsem implementation afterwards.
+  git://git.pengutronix.de/git/pza/linux.git topic/of-graph
 
-Cheers,
+for you to fetch changes up to 00fd9619120db1d6a19be2f9e3df6f76234b311b:
 
-Will
+  of: Fix of_graph_parse_endpoint stub for !CONFIG_OF builds (2014-03-07
+16:02:46 +0100)
 
- include/asm-generic/rwsem.h | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+----------------------------------------------------------------
+Philipp Zabel (1):
+      of: Fix of_graph_parse_endpoint stub for !CONFIG_OF builds
 
-diff --git a/include/asm-generic/rwsem.h b/include/asm-generic/rwsem.h
-index bb1e2cdeb9bf..d48bf5a95cc1 100644
---- a/include/asm-generic/rwsem.h
-+++ b/include/asm-generic/rwsem.h
-@@ -1,5 +1,5 @@
--#ifndef _ASM_POWERPC_RWSEM_H
--#define _ASM_POWERPC_RWSEM_H
-+#ifndef _ASM_GENERIC_RWSEM_H
-+#define _ASM_GENERIC_RWSEM_H
- 
- #ifndef _LINUX_RWSEM_H
- #error "Please don't include <asm/rwsem.h> directly, use <linux/rwsem.h> instead."
-@@ -8,7 +8,7 @@
- #ifdef __KERNEL__
- 
- /*
-- * R/W semaphores for PPC using the stuff in lib/rwsem.c.
-+ * R/W semaphores originally for PPC using the stuff in lib/rwsem.c.
-  * Adapted largely from include/asm-i386/rwsem.h
-  * by Paul Mackerras <paulus@samba.org>.
-  */
-@@ -16,7 +16,7 @@
- /*
-  * the semaphore definition
-  */
--#ifdef CONFIG_PPC64
-+#ifdef CONFIG_64BIT
- # define RWSEM_ACTIVE_MASK		0xffffffffL
- #else
- # define RWSEM_ACTIVE_MASK		0x0000ffffL
-@@ -129,4 +129,4 @@ static inline long rwsem_atomic_update(long delta, struct rw_semaphore *sem)
- }
- 
- #endif	/* __KERNEL__ */
--#endif	/* _ASM_POWERPC_RWSEM_H */
-+#endif	/* _ASM_GENERIC_RWSEM_H */
--- 
-1.8.2.2
+ include/linux/of_graph.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+regards
+Philipp
 
