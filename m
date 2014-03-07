@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931AbaCGWJA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 17:09:00 -0500
-Received: from ihemail3.lucent.com ([135.245.0.37]:33300 "EHLO
-	ihemail3.lucent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752060AbaCGWI6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 17:08:58 -0500
-From: "Li, Bin (Bin)" <bin.bl.li@alcatel-lucent.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Paolo Bonzini <pbonzini@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "Jatania, Neel (Neel)" <Neel.Jatania@alcatel-lucent.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: Enhancement for PLE handler in KVM
-Thread-Topic: Enhancement for PLE handler in KVM
-Thread-Index: AQHPNw3F4lhzD8AlbUmUFBaMt3tdkZrQESCAgAJ5ASCAAF+xgP//5v4AgAJ5Z4CAAGTSoIAAj6mA///vIRA=
-Date: Fri, 7 Mar 2014 22:08:52 +0000
-Message-ID: <72F5E0D8DB6D83469579E473AD72DB23779F88CA@US70UWXCHMBA01.zam.alcatel-lucent.com>
-References: <53061044.2000009@alcatel-lucent.com>
- <530B9637.6030708@alcatel-lucent.com> <5314C8C3.3090607@alcatel-lucent.com>
- <5314D61B.9050407@redhat.com>
- <72F5E0D8DB6D83469579E473AD72DB23779EFF64@US70UWXCHMBA01.zam.alcatel-lucent.com>
- <53173961.6080301@redhat.com>
- <72F5E0D8DB6D83469579E473AD72DB23779F1B6B@US70UWXCHMBA01.zam.alcatel-lucent.com>
- <20140307030636.GA13701@amt.cnet>
- <72F5E0D8DB6D83469579E473AD72DB23779F63B3@US70UWXCHMBA01.zam.alcatel-lucent.com>
- <20140307174139.GB30738@amt.cnet>
-In-Reply-To: <20140307174139.GB30738@amt.cnet>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [135.5.27.17]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754000AbaCGWMd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 17:12:33 -0500
+Received: from mga09.intel.com ([134.134.136.24]:54695 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751945AbaCGWMc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 17:12:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,610,1389772800"; 
+   d="scan'208";a="488190157"
+Message-ID: <531A4426.30504@linux.intel.com>
+Date: Fri, 07 Mar 2014 14:11:50 -0800
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
+To: Dave Jones <davej@redhat.com>, Borislav Petkov <bp@alien8.de>,
+        Fengguang Wu <fengguang.wu@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Yinghai Lu <yhlu.kernel@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: Re: [qemu64,+smep,+smap] WARNING: CPU: 1 PID: 0 at arch/x86/kernel/cpu/amd.c:220
+ init_amd()
+References: <20140307015833.GA10048@localhost> <53195336.9080606@linux.intel.com> <20140307055035.GA5230@localhost> <531A164B.8040402@linux.intel.com> <20140307191050.GA10961@redhat.com> <531A33A2.5030706@linux.intel.com> <20140307213856.GF5255@pd.tnic> <20140307220655.GA580@redhat.com>
+In-Reply-To: <20140307220655.GA580@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fully agree.
-It will be a very helpful feature to make ple setting per VM. 
-This feature will provide more flexible control to the VM user. All KVM user will love to have it.
-
-The enhancement we proposed is neither overlapping nor conflicting with this feature. The enhancement is targeting to provide the best real time performance to the guest OS.
-There will be more and more embedded system migrating to KVM. Especially in the telecom industry. And a lot of existing system will be running on top of customized embedded OS which significant different from generic OS (either linux  or windows ).
-
-Is there any concern regarding to the enhancement we need to address? Or more work need to be done?
-
-Regards
-Bin
-
------Original Message-----
-From: Marcelo Tosatti [mailto:mtosatti@redhat.com] 
-Sent: Friday, March 07, 2014 12:42 PM
-To: Li, Bin (Bin)
-Cc: Paolo Bonzini; kvm@vger.kernel.org; Jatania, Neel (Neel); linux-kernel@vger.kernel.org
-Subject: Re: Enhancement for PLE handler in KVM
-
-On Fri, Mar 07, 2014 at 02:26:19PM +0000, Li, Bin (Bin) wrote:
-> Can we have "per-VM PLE values"?
+On 03/07/2014 02:06 PM, Dave Jones wrote:
+> On Fri, Mar 07, 2014 at 10:38:56PM +0100, Borislav Petkov wrote:
 > 
-> My understanding is that the ple values are kvm module setting which applying to all VMs in the system.
-> And all vms must be stopped first, then unload kvm-intel, reload kvm-intel with new ple setting.
+>  > * Another option would be if we change the f/m/s of "qemu64" so that
+>  > the test doesn't fire.
+>  > 
+>  > What also makes me wonder is why is this thing even called qemu64?? AMD
+>  > family 6 was 32-bit only CPUs so 64 is kinda wrong IMO. I mean, the
+>  > kernel code is in "ifdef CONFIG_X86_32" block so "qemu64" is patently
+>  > wrong naming.
 > 
-> /sbin/modprobe -r kvm-intel
-> /sbin/modprobe kvm-intel ple_window=16384
+> Additionally, fam:6 model:6 stepping 3 never existed in the real world afaict.
+> I used to keep x86info's stepping db pretty up to date, and that only has knowledge
+> of stepping 1 & 2.[*]  Modelling qemu on something from the real world might be
+> a better idea than inventing new special cases.
 > 
-> Regards
-> Bin
+>  > Oh, and the thing has CPUID_EXT2_LM which is also a WTH moment for me.
+>  > Paolo, what's going on here?
+> 
+> Yeah, this is a mess, there should be no family < 0xf with LM set.
+> 
+> 	Dave
 
-Yes, but it can be made per-VM (its a VMCS field).
+For AMD, at least.  Intel obviously have a bunch of chips with family ==
+6 and LM.
+
+Perhaps Fengguang should switch from "qemu64,+smep,+smap" to something
+like "Haswell,+smep,+smap" instead for the time being at least?
+
+	-hpa
 
