@@ -1,79 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753477AbaCGNjO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 08:39:14 -0500
-Received: from mga02.intel.com ([134.134.136.20]:41106 "EHLO mga02.intel.com"
+	id S1752981AbaCGNnp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 08:43:45 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:57170 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752533AbaCGNjN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 08:39:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,607,1389772800"; 
-   d="scan'208";a="468389988"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH] [RFC] perf: Fix a race between ring_buffer_detach() and ring_buffer_wakeup()
-Date: Fri,  7 Mar 2014 15:38:46 +0200
-Message-Id: <1394199526-6400-1-git-send-email-alexander.shishkin@linux.intel.com>
-X-Mailer: git-send-email 1.9.0
+	id S1751545AbaCGNnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 08:43:43 -0500
+Message-ID: <5319CCF2.8090902@ti.com>
+Date: Fri, 7 Mar 2014 15:43:14 +0200
+From: Tero Kristo <t-kristo@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Roger Quadros <rogerq@ti.com>, <balbi@ti.com>, <tony@atomide.com>
+CC: <kishon@ti.com>, <george.cherian@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: Re: [PATCH 1/8] CLK: ti: dra7: Initialize USB_DPLL
+References: <1394197751-28984-1-git-send-email-rogerq@ti.com> <1394197751-28984-2-git-send-email-rogerq@ti.com>
+In-Reply-To: <1394197751-28984-2-git-send-email-rogerq@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is more of a problem description than an actual bugfix, but currently
-ring_buffer_detach() can kick in while ring_buffer_wakeup() is traversing
-the ring buffer's event list, leading to cpu stalls.
+On 03/07/2014 03:09 PM, Roger Quadros wrote:
+> USB_DPLL must be initialized and locked at boot so that
+> USB modules can work.
+>
+> Also program USB_DLL_M2 output to half rate.
+>
+> CC: Mike Turquette <mturquette@linaro.org>
+> CC: Tero Kristo <t-kristo@ti.com>
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> ---
+>   drivers/clk/ti/clk-7xx.c | 11 +++++++++++
+>   1 file changed, 11 insertions(+)
+>
+> diff --git a/drivers/clk/ti/clk-7xx.c b/drivers/clk/ti/clk-7xx.c
+> index 9977653..f89f3c2 100644
+> --- a/drivers/clk/ti/clk-7xx.c
+> +++ b/drivers/clk/ti/clk-7xx.c
+> @@ -18,6 +18,7 @@
+>
+>   #define DRA7_DPLL_ABE_DEFFREQ				361267200
+>   #define DRA7_DPLL_GMAC_DEFFREQ				1000000000
+> +#define DRA7_DPLL_USB_DEFFREQ				960000000
+>
+>
+>   static struct ti_dt_clk dra7xx_clks[] = {
+> @@ -328,5 +329,15 @@ int __init dra7xx_dt_clk_init(void)
+>   	if (rc)
+>   		pr_err("%s: failed to configure GMAC DPLL!\n", __func__);
+>
+> +	dpll_ck = clk_get_sys(NULL, "dpll_usb_ck");
+> +	rc = clk_set_rate(dpll_ck, DRA7_DPLL_USB_DEFFREQ);
+> +	if (rc)
+> +		pr_err("%s: failed to configure USB DPLL!\n", __func__);
+> +
+> +	dpll_ck = clk_get_sys(NULL, "dpll_usb_m2_ck");
+> +	rc = clk_set_rate(dpll_ck, DRA7_DPLL_USB_DEFFREQ/2);
+> +	if (rc)
+> +		pr_err("%s: failed to set USB_DPLL M2 OUT\n", __func__);
+> +
 
-What this patch does is crude, but fixes the problem, which is: one rcu
-grace period has to elapse between ring_buffer_detach() and subsequent
-ring_buffer_attach(), otherwise either the attach will fail or the wakeup
-will misbehave. Also, making it a call_rcu() callback will make it race
-with attach().
+I would rather see this done using the default-rate mechanism provided here:
 
-Another solution that I see is to check for list_empty(&event->rb_entry)
-before wake_up_all() in ring_buffer_wakeup() and restart the list
-traversal if it is indeed empty, but that is ugly too as there will be
-extra wakeups on some events.
+https://www.mail-archive.com/linux-omap@vger.kernel.org/msg101300.html
 
-Anything that I'm missing here? Any better ideas?
+However, this remains to be commented by Mike whether the patch is okay 
+or not.
 
-Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
----
- kernel/events/core.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+-Tero
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 661951a..bce41e0 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -3861,7 +3861,7 @@ static void ring_buffer_attach(struct perf_event *event,
- 
- 	spin_lock_irqsave(&rb->event_lock, flags);
- 	if (list_empty(&event->rb_entry))
--		list_add(&event->rb_entry, &rb->event_list);
-+		list_add_rcu(&event->rb_entry, &rb->event_list);
- 	spin_unlock_irqrestore(&rb->event_lock, flags);
- }
- 
-@@ -3873,9 +3873,11 @@ static void ring_buffer_detach(struct perf_event *event, struct ring_buffer *rb)
- 		return;
- 
- 	spin_lock_irqsave(&rb->event_lock, flags);
--	list_del_init(&event->rb_entry);
-+	list_del_rcu(&event->rb_entry);
- 	wake_up_all(&event->waitq);
- 	spin_unlock_irqrestore(&rb->event_lock, flags);
-+	synchronize_rcu();
-+	INIT_LIST_HEAD(&event->rb_entry);
- }
- 
- static void ring_buffer_wakeup(struct perf_event *event)
--- 
-1.9.0
+>   	return rc;
+>   }
+>
 
