@@ -1,129 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751663AbaCGItc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 03:49:32 -0500
-Received: from ngcobalt02.manitu.net ([217.11.48.102]:57564 "EHLO
-	ngcobalt02.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750834AbaCGItb (ORCPT
+	id S1751533AbaCGJHu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 04:07:50 -0500
+Received: from mail-bn1blp0181.outbound.protection.outlook.com ([207.46.163.181]:38573
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751013AbaCGJHq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 03:49:31 -0500
-X-Greylist: delayed 527 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Mar 2014 03:49:31 EST
-Message-ID: <53198609.3010605@grandegger.com>
-Date: Fri, 07 Mar 2014 09:40:41 +0100
-From: Wolfgang Grandegger <wg@grandegger.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Stanislav Meduna <stano@meduna.org>, linux-can@vger.kernel.org,
+	Fri, 7 Mar 2014 04:07:46 -0500
+From: KY Srinivasan <kys@microsoft.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>
-CC: Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: Re: FlexCAN on i.MX28 interrupt flooding retrying send
-References: <53197E8A.5050409@meduna.org> <5319806A.6050809@pengutronix.de>
-In-Reply-To: <5319806A.6050809@pengutronix.de>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: RE: [PATCH 1/1] Drivers: hv: vmbus: Include the limit on the number
+ of pfns we can handle
+Thread-Topic: [PATCH 1/1] Drivers: hv: vmbus: Include the limit on the
+ number of pfns we can handle
+Thread-Index: AQHPOc2oQ3eOFqZTbkO5srnGB9wLTZrVR3eAgAAMhPA=
+Date: Fri, 7 Mar 2014 09:07:42 +0000
+Message-ID: <9037d4ef9c174fb280f00f22912c3d12@BY2PR03MB299.namprd03.prod.outlook.com>
+References: <1394176508-1439-1-git-send-email-kys@microsoft.com>
+ <20140307081627.GC29018@mwanda>
+In-Reply-To: <20140307081627.GC29018@mwanda>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [117.192.103.21]
+x-forefront-prvs: 014304E855
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(189002)(199002)(377454003)(24454002)(13464003)(51704005)(56816005)(90146001)(33646001)(74706001)(87936001)(56776001)(95666003)(74316001)(97336001)(97186001)(4396001)(77982001)(94946001)(69226001)(19580405001)(81686001)(19580395003)(83322001)(49866001)(74876001)(54316002)(81342001)(51856001)(86612001)(80976001)(50986001)(81542001)(66066001)(54356001)(2656002)(92566001)(76786001)(94316002)(76796001)(46102001)(95416001)(76576001)(53806001)(85852003)(83072002)(76482001)(47446002)(79102001)(59766001)(74502001)(65816001)(87266001)(47736001)(47976001)(80022001)(63696002)(74366001)(81816001)(93136001)(86362001)(31966008)(85306002)(93516002)(74662001)(29543002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB596;H:BY2PR03MB299.namprd03.prod.outlook.com;CLIP:117.192.103.21;FPR:8AFECDF2.9CD3AFEA.F360B3BC.C4ACB9C8.201BF;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/2014 09:16 AM, Marc Kleine-Budde wrote:
-> Adding the linux-can mailinglist to Cc.
+
+
+> -----Original Message-----
+> From: Dan Carpenter [mailto:dan.carpenter@oracle.com]
+> Sent: Friday, March 7, 2014 1:46 PM
+> To: KY Srinivasan
+> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> jasowang@redhat.com
+> Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Include the limit on the number
+> of pfns we can handle
 > 
-> Marc
+> On Thu, Mar 06, 2014 at 11:15:08PM -0800, K. Y. Srinivasan wrote:
+> > Increase the maximum number of pfns we can handle is a single vmbus
+> packet.
+>                                                     ^^ in
+
+Thanks Dan. I am traveling in India and it shows. I have already sent a corrected patch.
+
+> >
 > 
-> On 03/07/2014 09:08 AM, Stanislav Meduna wrote:
->> Hi,
->>
->> I am using a FlexCAN CAN controller on a Freescale i.MX28 platform [1].
->> If a packet is being sent when the bus is disconnected, I am getting
->> an interrupt flooed that basically kills the machine.
->>
->> This is _not_ the same problem as [2] - my kernel already has
->> the fix.
->>
->> The first interrupt comes with ESR 0x00028652, i.e.
->>
->> TXWRN_INT
->> BIT1_ERR
->> STF_ERR
->> TX_WRN
->> TXRX
->> FLT_CONF error passive
->> ERR_INT
->>
->> The next ones come the same without the acked TXWRN_INT.
->> Reading the ESR again immediately after acking gives
->> 0x00000250, i.e.
->>
->> TX_WRN
->> TXRX
->> FLT_CONF error passive
->>
->> so everything ackable has actually been acked.
->>
->> I think that the problem is that the FlexCAN tries to retransmit
->> the frame indefinitely. Each retry senses the bus in the invalid
->> state (BIT1_ERR) and immediately fires a new ERR_INT. To verify
->> this I aborted the transmitted frame in the error state in the
->> interrupt handler
->>
->> #define FLEXCAN_ESR_ERR_TRANSMIT \
->> 	(FLEXCAN_ESR_BIT1_ERR | FLEXCAN_ESR_BIT0_ERR | FLEXCAN_ESR_ACK_ERR)
->>
->> if (reg_esr & FLEXCAN_ESR_ERR_TRANSMIT) {
->>
->> 	/* In case of a transmission error the packet is retried and
->> 	 * if the error persists, we will get another interrupt right
->> 	 * away. Abort the transmission - a lost packet is better than
->> 	 * an irq storm.
->> 	 */
->> 	if(printk_ratelimit())
->> 		netdev_err(dev, "Aborted transmission, ESR %08x\n", reg_esr);
->>
->> 	can_get_echo_skb(dev, 0);
->> 	flexcan_write(FLEXCAN_MB_CNT_CODE(0x4),
->> 		&regs->cantxfg[FLEXCAN_TX_BUF_ID].can_ctrl);
->> 	netif_wake_queue(dev);
->> }
->>
->> and the problem disappeared as expected. However, the correct
->> way is probably to retry during some reasonable (configurable?)
->> time interval.
->>
->> What puzzles me is that I did not found any other instance
->> of this problem in the relevant mailing lists, only the original [2].
->>
->> I am using the 3.4.77 kernel with the realtime patches, but the
->> code in the latest mainline looks the same in this respect.
->> Maybe the realtime patches change some bevaviour, but I don't
->> think they affect the core problem. I am not really an expert
->> in the network devices, NAPI etc - maybe in that case the error
->> interrupt should be disabled and re-enabled only if the
->> error condition goes away? - I don't know...
->>
->> Please Cc: me when answering to the list.
->>
->> [1] http://www.tq-group.com/en/products/product-details/prod/embedded-modul-tqma28/extb/Main/productdetail/
->> [2] https://gitorious.org/linux-can/wg-linux-can-next/commit/8ad94fa
+> What are the user visible effects of this patch?
+The current code will drop these packets that have more PFNs than the limit.
+Upping the limit will mitigate this problem.
 
-If bus-error reporting is enabled, you will get an interrupt for each
-TX retry. That's normal behavior. But for the i.MX28 it should not be
-enabled:
+Regards,
 
-  $ cat flexcan.c
-  ...
-        /*
-         * enable the "error interrupt" (FLEXCAN_CTRL_ERR_MSK),
-         * on most Flexcan cores, too. Otherwise we don't get
-         * any error warning or passive interrupts.
-         */
-        if (priv->devtype_data->features & FLEXCAN_HAS_BROKEN_ERR_STATE ||
-            priv->can.ctrlmode & CAN_CTRLMODE_BERR_REPORTING)
-                reg_ctrl |= FLEXCAN_CTRL_ERR_MSK;
+K. Y
 
-Maybe there is something wrong with you platform code or DTS file. What
-kernel are you using and how is the DTS can node defined in your DTS file?
-
-Wolfgang.
+> 
+> regards,
+> dan carpenter
 
