@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033AbaCGXLM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 18:11:12 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:51940 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751880AbaCGXLK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 18:11:10 -0500
-Date: Fri, 7 Mar 2014 17:11:08 -0600
-From: Andy Gross <agross@codeaurora.org>
-To: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
-Cc: "Koul, Vinod" <vinod.koul@intel.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [Patch v8 2/2] dmaengine: add Qualcomm BAM dma driver
-Message-ID: <20140307231108.GD3241@qualcomm.com>
-References: <1393828245-18766-1-git-send-email-agross@codeaurora.org>
- <1393828245-18766-3-git-send-email-agross@codeaurora.org>
- <1393839482.28803.118.camel@smile.fi.intel.com>
+	id S1754117AbaCGXMD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 18:12:03 -0500
+Received: from mga03.intel.com ([143.182.124.21]:61239 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753283AbaCGXMC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 18:12:02 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,610,1389772800"; 
+   d="scan'208";a="488217631"
+Message-ID: <531A5240.4070108@linux.intel.com>
+Date: Fri, 07 Mar 2014 15:12:00 -0800
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393839482.28803.118.camel@smile.fi.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Stefani Seibold <stefani@seibold.net>,
+        Fengguang Wu <fengguang.wu@intel.com>
+CC: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [x86, vdso]  BUG: unable to handle kernel paging request at d34bd000
+References: <20140307013833.GD8427@localhost>	 <1394182034.21684.6.camel@wall-e.seibold.net>	 <20140307091515.GA8888@localhost>	 <1394186248.28066.42.camel@wall-e.seibold.net>	 <20140307102107.GA21656@localhost> <1394208388.1012.2.camel@wall-e.seibold.net>
+In-Reply-To: <1394208388.1012.2.camel@wall-e.seibold.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 03, 2014 at 09:38:03AM +0000, Shevchenko, Andriy wrote:
-
-<snip>
-
-> > +	if (IS_ERR(bdev->bamclk))
-> > +		return PTR_ERR(bdev->bamclk);
-> > +
-> > +	ret = clk_prepare_enable(bdev->bamclk);
-> > +	if (ret) {
-> > +		dev_err(bdev->dev, "failed to prepare/enable clock\n");
-> > +		return ret;
-> > +	}
-> > +
-> > +	ret = of_property_read_u32(pdev->dev.of_node, "qcom,ee", &bdev->ee);
-> > +	if (ret) {
-> > +		dev_err(bdev->dev, "Execution environment unspecified\n");
-> > +		return ret;
+On 03/07/2014 08:06 AM, Stefani Seibold wrote:
+>>
+>> wfg@bee /tmp% git clone --reference /c/linux git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git
 > 
-> goto err_disable_clk; ?
+> As i wrote i already cloned the tip tree!!!!!!
 > 
-> > 
-> > +	}
-> > +
-> > +	ret = bam_init(bdev);
-> > +	if (ret)
-> > +		return ret;
-> 
-> Ditto.
+> But i cannot see the changeset, there is also no VDSO changes set in the
+> git log.
 > 
 
-Good catch.  I'll fix both of those.
+It isn't on the master branch because it hasn't been stable enough to merge.
 
--- 
-sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+You need to do:
+
+	git checkout x86/vdso
+
+	-hpa
+
+
