@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752898AbaCGDGw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 22:06:52 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:43380 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752701AbaCGDE7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 22:04:59 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s2734vLJ029710, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next 4/7] r8152: calculate the dropped packets for rx
-Date: Fri, 7 Mar 2014 11:04:37 +0800
-Message-ID: <1394161480-2918-5-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1394161480-2918-1-git-send-email-hayeswang@realtek.com>
-References: <1393934464-23675-1-git-send-email-hayeswang@realtek.com>
- <1394161480-2918-1-git-send-email-hayeswang@realtek.com>
+	id S1752989AbaCGDHg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 22:07:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26686 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752327AbaCGDHa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 22:07:30 -0500
+Date: Fri, 7 Mar 2014 00:06:37 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: "Li, Bin (Bin)" <bin.bl.li@alcatel-lucent.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "Jatania, Neel (Neel)" <Neel.Jatania@alcatel-lucent.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>,
+        "ttracy@redhat.com" <ttracy@redhat.com>,
+        "Nakajima, Jun" <jun.nakajima@intel.com>,
+        "riel@redhat.com" <riel@redhat.com>
+Subject: Re: Enhancement for PLE handler in KVM
+Message-ID: <20140307030636.GA13701@amt.cnet>
+References: <53061044.2000009@alcatel-lucent.com>
+ <530B9637.6030708@alcatel-lucent.com>
+ <5314C8C3.3090607@alcatel-lucent.com>
+ <5314D61B.9050407@redhat.com>
+ <72F5E0D8DB6D83469579E473AD72DB23779EFF64@US70UWXCHMBA01.zam.alcatel-lucent.com>
+ <53173961.6080301@redhat.com>
+ <72F5E0D8DB6D83469579E473AD72DB23779F1B6B@US70UWXCHMBA01.zam.alcatel-lucent.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <72F5E0D8DB6D83469579E473AD72DB23779F1B6B@US70UWXCHMBA01.zam.alcatel-lucent.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Continue dealing with the remain rx packets, even though the allocation
-of the skb fail. This could calculate the correct dropped packets.
+On Wed, Mar 05, 2014 at 09:16:45PM +0000, Li, Bin (Bin) wrote:
+> Did you also find out here why this is the case?
+> 
+> Binl:
+> Yes. The application running in our customized embedded OS is also real time application which is timing sensitive. 
+> The timing sensitive level varies among the applications.
+> When I talking about different threshold, the assumption is using default 4096 ple_window setting.
+> If I set up the ple_window to 16384 or higher, there will be no problem for our application. But the finial user could also run linux or window VM on same hypervisor which would prefer default 4096 setting for linux and windows.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Then have per-VM PLE values?
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index f1eaa18..08f4e870 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -1456,7 +1456,7 @@ static void rx_bottom(struct r8152 *tp)
- 			skb = netdev_alloc_skb_ip_align(netdev, pkt_len);
- 			if (!skb) {
- 				stats->rx_dropped++;
--				break;
-+				goto find_next_rx;
- 			}
- 			memcpy(skb->data, rx_data, pkt_len);
- 			skb_put(skb, pkt_len);
-@@ -1465,6 +1465,7 @@ static void rx_bottom(struct r8152 *tp)
- 			stats->rx_packets++;
- 			stats->rx_bytes += pkt_len;
- 
-+find_next_rx:
- 			rx_data = rx_agg_align(rx_data + pkt_len + CRC_SIZE);
- 			rx_desc = (struct rx_desc *)rx_data;
- 			len_used = (int)(rx_data - (u8 *)agg->head);
--- 
-1.8.4.2
+> We are looking for a solution to be good for both linux / window and real time application.
+> The enhancement patch we proposed will satisfy both linux/window application and real time embedded applications.
+> 
+> Paolo
+
 
