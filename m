@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753865AbaCGQaV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 11:30:21 -0500
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:52214 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751840AbaCGQaT (ORCPT
+	id S1753449AbaCGQel (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 11:34:41 -0500
+Received: from palahniuk.acksyn.org ([5.9.7.26]:44288 "EHLO
+	palahniuk.acksyn.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751935AbaCGQek (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 11:30:19 -0500
-Message-ID: <5319F40F.4040304@gmail.com>
-Date: Fri, 07 Mar 2014 17:30:07 +0100
-From: poma <pomidorabelisima@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: netdev@vger.kernel.org
-CC: Intel Corporation <linux.nics@intel.com>,
-        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        Jamal Hadi Salim <jhs@mojatatu.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Josh Boyer <jwboyer@redhat.com>,
-        "Justin M. Forbes" <jforbes@redhat.com>,
-        Francois Romieu <romieu@fr.zoreil.com>, Dan Williams <dcbw@redhat.com>,
-        Thomas Haller <thaller@redhat.com>
-Subject: Re: WARNING: CPU: 0 PID: 0 at net/sched/sch_generic.c:264 dev_watchdog+0x276/0x280()
-References: <530332B7.10909@gmail.com> <53043521.4060206@gmail.com> <5319059E.1010205@gmail.com>
-In-Reply-To: <5319059E.1010205@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Fri, 7 Mar 2014 11:34:40 -0500
+From: Michele Baldessari <michele@acksyn.org>
+To: linux-ide@vger.kernel.org
+Cc: tj@kernel.org, linux-kernel@vger.kernel.org, guilherme.amadio@gmail.com,
+        arealityfarbetween@googlemail.com,
+        Michele Baldessari <michele@acksyn.org>
+Subject: [PATCH] libata: add ATA_HORKAGE_BROKEN_FPDMA_AA quirk for Seagate Momentus SpinPoint M8 (2BA30001)
+Date: Fri,  7 Mar 2014 16:34:29 +0000
+Message-Id: <1394210069-26977-1-git-send-email-michele@acksyn.org>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07.03.2014 00:32, poma wrote:
-> ...
-> After a few dozen tests with the vanilla commits, and with the same
-> amount of rawhide kernels ...
-> https://bugzilla.redhat.com/attachment.cgi?id=871694
-> 
-> Dan, Francois you are both welcome with comments!
-> Thanks.
+Via commit 87809942d3fa "libata: add ATA_HORKAGE_BROKEN_FPDMA_AA quirk
+for Seagate Momentus SpinPoint M8" we added a quirk for disks named
+"ST1000LM024 HN-M101MBB" with firmware revision "2AR10001".
 
-Thomas U2. :)
+As reported on https://bugzilla.redhat.com/show_bug.cgi?id=1073901,
+we need to also add firmware revision 2BA30001 as it is broken as well.
 
-No barking w-dog, but now the network traffic is totally busted!
-https://bugzilla.redhat.com/attachment.cgi?id=871947
-"ping: sendmsg: No buffer space available ..."
+Reported-by: Nicholas <arealityfarbetween@googlemail.com>
+Signed-off-by: Michele Baldessari <michele@acksyn.org>
+Tested-by: Guilherme Amadio <guilherme.amadio@gmail.com>
+---
+ drivers/ata/libata-core.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-
-poma
-
-
+diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+index 1a3dbd1b196e..87a489a22306 100644
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -4175,6 +4175,7 @@ static const struct ata_blacklist_entry ata_device_blacklist [] = {
+ 
+ 	/* Seagate Momentus SpinPoint M8 seem to have FPMDA_AA issues */
+ 	{ "ST1000LM024 HN-M101MBB", "2AR10001",	ATA_HORKAGE_BROKEN_FPDMA_AA },
++	{ "ST1000LM024 HN-M101MBB", "2BA30001",	ATA_HORKAGE_BROKEN_FPDMA_AA },
+ 
+ 	/* Blacklist entries taken from Silicon Image 3124/3132
+ 	   Windows driver .inf file - also several Linux problem reports */
+-- 
+1.8.5.3
 
