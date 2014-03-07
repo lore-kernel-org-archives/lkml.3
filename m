@@ -1,74 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752412AbaCGBrm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 20:47:42 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:57119 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751147AbaCGBrk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 20:47:40 -0500
-Date: Thu, 6 Mar 2014 17:46:53 +0800
-From: Mark Brown <broonie@kernel.org>
-To: Nenghua Cao <nhcao@marvell.com>
-Cc: Liam Girdwood <liam.r.girdwood@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140306094653.GQ13126@sirena.org.uk>
-References: <1392806698-29638-1-git-send-email-nhcao@marvell.com>
+	id S1752640AbaCGBsW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 20:48:22 -0500
+Received: from dliviu.plus.com ([80.229.23.120]:40806 "EHLO smtp.dudau.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752533AbaCGBsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 20:48:07 -0500
+Date: Fri, 7 Mar 2014 01:44:52 +0000
+From: Liviu Dudau <liviu@dudau.co.uk>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>, Liviu Dudau <Liviu.Dudau@arm.com>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        LKML <linux-kernel@vger.kernel.org>, Tanmay Inamdar <tinamdar@apm.com>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v6 1/3] Fix ioport_map() for !CONFIG_GENERIC_IOMAP cases.
+Message-ID: <20140307014452.GI13582@bart.dudau.co.uk>
+Mail-Followup-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+	Arnd Bergmann <arnd@arndb.de>, Liviu Dudau <Liviu.Dudau@arm.com>,
+	linux-pci <linux-pci@vger.kernel.org>,
+	Bjorn Helgaas <bhelgaas@google.com>,
+	Catalin Marinas <Catalin.Marinas@arm.com>,
+	Will Deacon <Will.Deacon@arm.com>,
+	linaro-kernel <linaro-kernel@lists.linaro.org>,
+	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Tanmay Inamdar <tinamdar@apm.com>,
+	LAKML <linux-arm-kernel@lists.infradead.org>
+References: <1394020150-1875-1-git-send-email-Liviu.Dudau@arm.com>
+ <1394020150-1875-2-git-send-email-Liviu.Dudau@arm.com>
+ <20140305233135.GZ21483@n2100.arm.linux.org.uk>
+ <201403070137.38621.arnd@arndb.de>
+ <20140307010950.GE21483@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fUETZ9jfdlrBCYso"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1392806698-29638-1-git-send-email-nhcao@marvell.com>
-X-Cookie: You are always busy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 202.175.88.218
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/2] asoc: soc-core: use regmap's parse_val to do endian
- translation
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20140307010950.GE21483@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-DSPAM-Result: Innocent
+X-DSPAM-Processed: Fri Mar  7 01:48:04 2014
+X-DSPAM-Confidence: 0.9899
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 531925543191942457687
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Mar 07, 2014 at 01:09:50AM +0000, Russell King - ARM Linux wrote:
+> On Fri, Mar 07, 2014 at 01:37:38AM +0100, Arnd Bergmann wrote:
+> > On Thursday 06 March 2014, Russell King - ARM Linux wrote:
+> > > On Wed, Mar 05, 2014 at 11:49:08AM +0000, Liviu Dudau wrote:
+> > > > The inline version of ioport_map() that gets used when !CONFIG_GENERIC_IOMAP
+> > > > is wrong. It returns a mapped (i.e. virtual) address that can start from
+> > > > zero and completely ignores the PCI_IOBASE and IO_SPACE_LIMIT that most
+> > > > architectures that use !CONFIG_GENERIC_MAP define.
+> > > 
+> > > What value does PCI_IOBASE and IO_SPACE_LIMIT have on other architectures
+> > > who make use of asm-generic/io.h ?
+> > > 
+> > > $ git grep asm-generic/io.h arch/
+> > > arch/arc/include/asm/io.h:#include <asm-generic/io.h>
+> > 
+> > PCI support hasn't been upstreamed.
+> > 
+> > > arch/blackfin/include/asm/io.h:#include <asm-generic/io.h>
+> > > arch/metag/include/asm/io.h:#include <asm-generic/io.h>
+> > 
+> > No PCI support
+> > 
+> > > arch/microblaze/include/asm/io.h:/* from asm-generic/io.h */
+> > 
+> > PCI_IOBASE=0, IO_SPACE_LIMIT=0xffffffff, so no change.
+> 
+> Seems to define _IO_BASE not PCI_IOBASE.
+> 
+> > > arch/openrisc/include/asm/io.h:#include <asm-generic/io.h>
+> > 
+> > No PCI support
+> > 
+> > > arch/s390/include/asm/io.h:#include <asm-generic/io.h>
+> > 
+> > s390 supports PCI but no I/O space
+> > 
+> > > arch/score/include/asm/io.h:#include <asm-generic/io.h>
+> > 
+> > No PCI support
+> > 
+> > > arch/unicore32/include/asm/io.h:#include <asm-generic/io.h>
+> > 
+> > unicore32 is broken currently, the patch fixes it.
+> > 
+> > > arch/xtensa/include/asm/io.h:#include <asm-generic/io.h>
+> > 
+> > PCI_IOBASE=0, IO_SPACE_LIMIT=0xffffffff, so no change.
+> 
+> Doesn't appear to define PCI_IOBASE.
+> 
+> Maybe there's other patches required for these?
+> 
+> > For most of these, I assume we actually want to remove support
+> > for inb/outb as they don't support I/O space accesses. The other
+> > ones look correct to me.
+> 
+> Right, so:
+> 
+> #ifdef CONFIG_HAS_IOPORT
+> #ifndef CONFIG_GENERIC_IOMAP
+> static inline void __iomem *ioport_map(unsigned long port, unsigned int nr)
+> {
+>         return (void __iomem *) port;
+> }
+> 
+> changing that to include PCI_IOBASE in there will result in a build
+> failure if the C compiler sees that.  In other words, when HAS_IOPORT=y
+> and GENERIC_IOMAP=n.
+> 
+> HAS_IOPORT is set when HAS_IOMEM is also set and NO_IOPORT unset.
+> 
+> It looks to me like blackfin doesn't set NO_IOPORT nor NO_IOMEM, so
+> this would have HAS_IOPORT set, and from what I can see doesn't set
+> GENERIC_IOMAP.  So, this change probably breaks blackfin.
+> 
+> I haven't looked deeply at the others.
 
---fUETZ9jfdlrBCYso
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Maybe I'm missing something obvious, but line 118 in include/asm-generic/io.h has:
 
-On Wed, Feb 19, 2014 at 06:44:58PM +0800, Nenghua Cao wrote:
-> From: Nenghua Cao <nhcao@marvell.com>
->=20
->     In snd_soc_bytes_put function, it forces cpu to do cpu_to_be translat=
-ion,
-> but for mmio bus which uses REGMAP_ENDIAN_NATIVE, it doesn't need to do
-> endian translation. So it is better to use regmap's api which can decide
-> if this translation is needed according to bus configuration.
+#ifndef PCI_IOBASE
+#define PCI_IOBASE ((void __iomem *)0)
+#endif
 
-Applied, thanks.
+That doesn't seem to be guarded by any other #ifdef (other than the overall
+__ASM_GENERIC_IO_H), so PCI_IOBASE is defined regardless of CONFIG_HAS_IOPORT and 
+CONFIG_GENERIC_IOMAP values.
 
---fUETZ9jfdlrBCYso
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Best regards,
+Liviu
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+> 
+> -- 
+> FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+> improving, and getting towards what was expected from it.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-iQIcBAEBAgAGBQJTGEQKAAoJELSic+t+oim9GsQP/RhbFwi3AILapJ1PFmqPsE2v
-HWYTXrELzByMedvdxtwGo8j5twxiUVhVkvgWQQIVsxieDKK9rtn2534ZNt2HBDyI
-gdfXP/pGzPXQFxs/FRR1nDz223dVQ3TUd1GpmdLu1wcv0HsXerhscxv61xlmfRag
-lvWyvx9zkklX2Zk2N8Euz5Vos6AG8FxOL2zhO+PEuOf5//L+erfeTgorvVUnaDfr
-mk5GWGF8WgReRWUKFGmr9TiajMmQ8Ldgsbh4gVyitS2uJAogEKuNIrzqyUIDe7/4
-bYiKLUXR0N4/e3OgFqN8r15WneT5X4Dxitkd9nZo9Gin2Km4zYiLcZLRKCEa6gva
-MRKfdvDQZjddx9VM795gGRHalQhh9Ef10RelLhghPIr70ryQMHl6+/hGflxFzP/j
-3u3tEjsZT0Kjbf3eKPn2brVh+XhVgOlgRyzLeR3BzMVgIaStocwbZOb2280xBfCO
-KYEkWUGipbymy9fkeFbZZf0weT41vU30/B8zKNNAwraw/RO/kOMGXHmNYYtFz6D/
-XtZ4LFPyFRTk3EJkEC8Jzuo9beHlUM8kyX/QglmWl7bmg3hHINb5tGhy88kUY3fz
-Q36b2WzzeG7YCZOem1xHkQBdlFKwbAX1pwoCrkAQMOL55zZibETwrqRQk8KuYdJN
-SHR8DzikdPqdv3zm+pjC
-=WWnA
------END PGP SIGNATURE-----
+-- 
+-------------------
+   .oooO
+   (   )
+    \ (  Oooo.
+     \_) (   )
+          ) /
+         (_/
 
---fUETZ9jfdlrBCYso--
+ One small step
+   for me ...
+
