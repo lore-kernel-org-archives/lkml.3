@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144AbaCGD4O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 22:56:14 -0500
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:45916 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751276AbaCGD4L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 22:56:11 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140307035056.GQ1872@titan.lakedaemon.net>
-References: <1393977790-29110-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1393977790-29110-4-git-send-email-sebastian.hesselbarth@gmail.com>
-	<20140306201803.GL1872@titan.lakedaemon.net>
-	<CACRpkda0JCLZUv_KPmwucDh3ko2YbtG2ukMMscSodAbBpiY+zw@mail.gmail.com>
-	<20140307035056.GQ1872@titan.lakedaemon.net>
-Date: Fri, 7 Mar 2014 11:56:11 +0800
-Message-ID: <CACRpkdbEQSj7jLWT2BFR22m7phwmyKCByhQuFFgHvHoKvQFD5g@mail.gmail.com>
-Subject: Re: [PATCH 3/3] pinctrl: mvebu: silence WARN to dev_warn
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751822AbaCGD7c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 22:59:32 -0500
+Received: from ozlabs.org ([203.10.76.45]:53211 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751004AbaCGD7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 22:59:31 -0500
+Date: Fri, 7 Mar 2014 14:59:25 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jamie Iles <jamie@jamieiles.com>, Alan Tull <atull@altera.com>
+Subject: linux-next: build warning after merge of the gpio tree
+Message-Id: <20140307145925.8f09601ffcefcc65e7837e72@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__7_Mar_2014_14_59_25_+1100_pO.DTO9dSu0t/gAT"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 7, 2014 at 11:50 AM, Jason Cooper <jason@lakedaemon.net> wrote:
-> On Fri, Mar 07, 2014 at 11:48:25AM +0800, Linus Walleij wrote:
->> On Fri, Mar 7, 2014 at 4:18 AM, Jason Cooper <jason@lakedaemon.net> wrote:
->> > On Wed, Mar 05, 2014 at 01:03:10AM +0100, Sebastian Hesselbarth wrote:
->> >> Pinctrl will WARN on missing DT resources, which is a little bit too
->> >> noisy. Use dev_warn with FW_BUG instead.
->> >>
->> >> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->> >> ---
->> >> Cc: Russell King <linux@arm.linux.org.uk>
->> >> Cc: Jason Cooper <jason@lakedaemon.net>
->> >> Cc: Andrew Lunn <andrew@lunn.ch>
->> >> Cc: Gregory Clement <gregory.clement@free-electrons.com>
->> >> Cc: Linus Walleij <linus.walleij@linaro.org>
->> >> Cc: devicetree@vger.kernel.org
->> >> Cc: linux-arm-kernel@lists.infradead.org
->> >> Cc: linux-kernel@vger.kernel.org
->> >> ---
->> >>  drivers/pinctrl/mvebu/pinctrl-dove.c | 3 ++-
->> >>  1 file changed, 2 insertions(+), 1 deletion(-)
->> >
->> > Applied to mvebu/pinctrl
->>
->> So are you carrying this patch, or shall I apply it to my tree?
->>
->> In the former case: Acked-by: Linus Walleij <linus.walleij@linaro.org>
->
-> I'll send you a pull tomorrow.
+--Signature=_Fri__7_Mar_2014_14_59_25_+1100_pO.DTO9dSu0t/gAT
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-For a single patch?
+Hi Linus,
 
-Remember I want the DTS changes to go to ARM SoC on some different
-pull...
+After merging the gpio tree, today's (and yesterday's) linux-next build
+(x86_64 allmodconfig among others) produced this warning:
 
-Yours,
-Linus Walleij
+kernel/irq/Kconfig:41:error: recursive dependency detected!
+kernel/irq/Kconfig:41:	symbol GENERIC_IRQ_CHIP is selected by GPIO_DWAPB
+drivers/gpio/Kconfig:131:	symbol GPIO_DWAPB depends on IRQ_DOMAIN
+kernel/irq/Kconfig:46:	symbol IRQ_DOMAIN is selected by GENERIC_IRQ_CHIP
+
+Caused by commit 7779b3455697 ("gpio: add a driver for the Synopsys
+DesignWare APB GPIO block").
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__7_Mar_2014_14_59_25_+1100_pO.DTO9dSu0t/gAT
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTGUQhAAoJEMDTa8Ir7ZwVknUP/0jMkIVdcA58DBRYW0Gt7yMb
+hzLXiQi7PNdJf6dyA3dZSCCAp46FcshLCXmJuIGdj27Yf3rEaOL6xJ1U7qz/Jp6I
+nY6ZM5dnxekmCZO4QjATu5dIg3zLFEgJ79kjNJ1Za3j8P74f7dCsJUD4wL4atBk+
+uCbKE+hlsYL/8ksjSZC6htytAqPUySzixYawdLO4vQ8OhEUP3BthvmxZVqI/V2r+
+2rBdYJOL+M1c+ijpzw5pGQ0YQiWMj6tmYeemomjkd6hAt6FpfS6EBNt/xLh5dHmB
+5oz8oDjAq/IPzwzwGQijEtKvUPQ8lwH9jfgOetMDeVw6WHwtqM3DgLVJ8/g+v5CR
+bsPF+wUVjoy2bdnTCkbJlnnOD8rsT46R9Mb7qozkSTKk3TR2cnKn/ADo2WRWwwX3
+WToieBtmmnYwIdsOT0Q+sPkHOLozeLaFzq63IkSXAQcl/hGbihUL0E38kT7uEQOm
+mVVvkoR4J9nv/cZEuXna796viyWb+y7JC0m/t1J8uyAeU69BrGWQbgXWHUqzM/Tr
+1o6+P2AMuxc02BvDtBBp421qxcbW6ymkka+WUgJYLq/LesB9LPSOaKIBX06uEe+1
+M2vcT59uYK14Mgs/CAHSzHZR0d7Gs41nUqwm+X4kovNwCTHZd1DxPax1VFRnxNE2
+g/qudGUS+Glxop7JeG3k
+=sJk/
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__7_Mar_2014_14_59_25_+1100_pO.DTO9dSu0t/gAT--
