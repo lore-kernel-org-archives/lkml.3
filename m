@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753211AbaCGMAc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 07:00:32 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:38162 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752842AbaCGL64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 06:58:56 -0500
-From: George Cherian <george.cherian@ti.com>
-To: <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>
-CC: <balbi@ti.com>, <rogerq@ti.com>, <kishon@ti.com>, <rob@landley.net>,
-        <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
-        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>,
-        <tony@atomide.com>, <anatol.pomozov@gmail.com>,
-        <bcousson@baylibre.com>, George Cherian <george.cherian@ti.com>
-Subject: [PATCH v3 5/5] ARM: dts: am43x-epos-evm: Enable USB
-Date: Fri, 7 Mar 2014 17:27:02 +0530
-Message-ID: <1394193422-18242-6-git-send-email-george.cherian@ti.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1394193422-18242-1-git-send-email-george.cherian@ti.com>
-References: <1394193422-18242-1-git-send-email-george.cherian@ti.com>
+	id S1752740AbaCGMBh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 07:01:37 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:48228 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751840AbaCGMBf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 07:01:35 -0500
+Date: Fri, 7 Mar 2014 04:01:27 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Vlastimil Babka <vbabka@suse.cz>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [patch] mm, compaction: determine isolation mode only once
+Message-ID: <alpine.DEB.2.02.1403070358120.13046@chino.kir.corp.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable
-	- ocp2scp
-	- USB PHY control module
-	- USB PHY
-	- dwc3_omap
-	- USB
+The conditions that control the isolation mode in 
+isolate_migratepages_range() do not change during the iteration, so 
+extract them out and only define the value once.
 
-for am43x-epos-evm
+This actually does have an effect, gcc doesn't optimize it itself because 
+of cc->sync.
 
-Signed-off-by: George Cherian <george.cherian@ti.com>
+Signed-off-by: David Rientjes <rientjes@google.com>
 ---
- arch/arm/boot/dts/am43x-epos-evm.dts | 18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+ mm/compaction.c | 9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
 
-diff --git a/arch/arm/boot/dts/am43x-epos-evm.dts b/arch/arm/boot/dts/am43x-epos-evm.dts
-index a7d0db1..0ced342 100644
---- a/arch/arm/boot/dts/am43x-epos-evm.dts
-+++ b/arch/arm/boot/dts/am43x-epos-evm.dts
-@@ -251,3 +251,21 @@
- 	pinctrl-0 = <&spi1_pins>;
- 	status = "okay";
- };
-+
-+&usb2_phy1 {
-+	status = "okay";
-+};
-+
-+&usb1 {
-+	dr_mode = "peripheral";
-+	status = "okay";
-+};
-+
-+&usb2_phy2 {
-+	status = "okay";
-+};
-+
-+&usb2 {
-+	dr_mode = "host";
-+	status = "okay";
-+};
--- 
-1.8.3.1
-
+diff --git a/mm/compaction.c b/mm/compaction.c
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -454,12 +454,13 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+ 	unsigned long last_pageblock_nr = 0, pageblock_nr;
+ 	unsigned long nr_scanned = 0, nr_isolated = 0;
+ 	struct list_head *migratelist = &cc->migratepages;
+-	isolate_mode_t mode = 0;
+ 	struct lruvec *lruvec;
+ 	unsigned long flags;
+ 	bool locked = false;
+ 	struct page *page = NULL, *valid_page = NULL;
+ 	bool skipped_async_unsuitable = false;
++	const isolate_mode_t mode = (!cc->sync ? ISOLATE_ASYNC_MIGRATE : 0) |
++				    (unevictable ? ISOLATE_UNEVICTABLE : 0);
+ 
+ 	/*
+ 	 * Ensure that there are not too many pages isolated from the LRU
+@@ -592,12 +593,6 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+ 			continue;
+ 		}
+ 
+-		if (!cc->sync)
+-			mode |= ISOLATE_ASYNC_MIGRATE;
+-
+-		if (unevictable)
+-			mode |= ISOLATE_UNEVICTABLE;
+-
+ 		lruvec = mem_cgroup_page_lruvec(page, zone);
+ 
+ 		/* Try isolate the page */
