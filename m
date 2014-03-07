@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752356AbaCGLmT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 06:42:19 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:18245 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751969AbaCGLmS (ORCPT
+	id S1752612AbaCGLnD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 06:43:03 -0500
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:40887 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751487AbaCGLnA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 06:42:18 -0500
-Message-ID: <5319B094.7060709@oracle.com>
-Date: Fri, 07 Mar 2014 12:42:12 +0100
-From: Vegard Nossum <vegard.nossum@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] isdnloop: NUL-terminate strings from userspace
-References: <1394189764-21754-1-git-send-email-vegard.nossum@oracle.com> <20140307112655.GJ4774@mwanda>
-In-Reply-To: <20140307112655.GJ4774@mwanda>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Fri, 7 Mar 2014 06:43:00 -0500
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: kvm@vger.kernel.org, alex.williamson@redhat.com, mtosatti@redhat.com,
+        gleb@kernel.org, jan.kiszka@siemens.com
+Subject: [PATCH 0/7] KVM: x86: Let the guest write to multiple debug registers with one vmexit
+Date: Fri,  7 Mar 2014 12:42:44 +0100
+Message-Id: <1394192571-11056-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/2014 12:26 PM, Dan Carpenter wrote:
-> On Fri, Mar 07, 2014 at 11:56:04AM +0100, Vegard Nossum wrote:
->> Both the in-kernel and BSD strlcpy() require that the source string is
->> NUL terminated.
->
-> No.  You're obviously wrong.  What on earth?
+Alex Williamson reported that a Windows game does something weird that
+makes the guest save and restore debug registers on each context switch.
+This cause several hundred thousands vmexits per second, and basically
+cuts performance in half when running under KVM.
 
-Well, from lib/string.c:
+However, when not running in guest-debug mode, the guest controls the
+debug registers and having to take an exit for each DR access is a waste
+of time.  We just need one vmexit to load any stale values of DR0-DR6,
+and then we can let the guest run freely.  On the next vmexit (whatever
+the reason) we will read out whatever changes the guest made to the
+debug registers.
 
-size_t strlcpy(char *dest, const char *src, size_t size)
-{
-         size_t ret = strlen(src);
+Tested with x86/debug.flat on both Intel and AMD, both direct and
+nested virtualization.
 
-The BSD man page:
+Changes from RFC: changed get_dr7 callback to sync_dirty_debug_regs,
+	new patches 5-7.
 
-"Also note that strlcpy() and strlcat() only operate on true ``C'' 
-strings.  This means that for strlcpy() src must be NUL-terminated and 
-for strlcat() both src and dst must be NUL-terminated."
+Paolo Bonzini (7):
+  KVM: vmx: we do rely on loading DR7 on entry
+  KVM: x86: change vcpu->arch.switch_db_regs to a bit mask
+  KVM: x86: Allow the guest to run with dirty debug registers
+  KVM: vmx: Allow the guest to run with dirty debug registers
+  KVM: nVMX: Allow nested guests to run with dirty debug registers
+  KVM: svm: set/clear all DR intercepts in one swoop
+  KVM: svm: Allow the guest to run with dirty debug registers
 
+ arch/x86/include/asm/kvm_host.h |  8 ++++-
+ arch/x86/kvm/svm.c              | 68 ++++++++++++++++++++++++++++-------------
+ arch/x86/kvm/vmx.c              | 43 ++++++++++++++++++++++++--
+ arch/x86/kvm/x86.c              | 20 +++++++++++-
+ 4 files changed, 114 insertions(+), 25 deletions(-)
 
-Vegard
+-- 
+1.8.3.1
+
