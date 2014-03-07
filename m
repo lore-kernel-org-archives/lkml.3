@@ -1,58 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751810AbaCGAal (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 19:30:41 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:47405 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919AbaCGAak (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 19:30:40 -0500
-Date: Thu, 6 Mar 2014 16:30:36 -0800
-From: John de la Garza <john@jjdev.com>
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, hsweeten@visionengravers.com
-Subject: [PATCH] comedi:drivers:poc.c: unnecessary space before function
- pointer arguments
-Message-ID: <20140307003034.GA4943@vega.jjdev.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753005AbaCGAc3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 19:32:29 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:37011 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752608AbaCGAc1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 19:32:27 -0500
+From: Kees Cook <keescook@chromium.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrew Honig <ahonig@google.com>, Michal Marek <mmarek@suse.cz>,
+        "x86@kernel.org" <x86@kernel.org>, Tejun Heo <tj@kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-ia64@vger.kernel.org, keescook@chromium.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] kallsyms: handle special absolute symbols
+Date: Thu,  6 Mar 2014 16:32:04 -0800
+Message-Id: <1394152324-26304-3-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1394152324-26304-1-git-send-email-keescook@chromium.org>
+References: <1394152324-26304-1-git-send-email-keescook@chromium.org>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed unnecessary space before function pointer arguments.
+This forces the entire per_cpu range to be reported as absolute without
+losing their linker symbol types. Without this, the variables are
+incorrectly shown as relocated under kASLR.
 
-Signed-off-by: John de la Garza <john@jjdev.com>
+Several kallsyms output in different boot states for comparison of
+various symbols:
+
+$ egrep ' (gdt_|_(stext|_per_cpu_))' /root/kallsyms.nokaslr
+0000000000000000 D __per_cpu_start
+0000000000004000 D gdt_page
+0000000000014280 D __per_cpu_end
+ffffffff810001c8 T _stext
+ffffffff81ee53c0 D __per_cpu_offset
+$ egrep ' (gdt_|_(stext|_per_cpu_))' /root/kallsyms.kaslr1
+000000001f200000 D __per_cpu_start
+000000001f204000 D gdt_page
+000000001f214280 D __per_cpu_end
+ffffffffa02001c8 T _stext
+ffffffffa10e53c0 D __per_cpu_offset
+$ egrep ' (gdt_|_(stext|_per_cpu_))' /root/kallsyms.kaslr2
+000000000d400000 D __per_cpu_start
+000000000d404000 D gdt_page
+000000000d414280 D __per_cpu_end
+ffffffff8e4001c8 T _stext
+ffffffff8f2e53c0 D __per_cpu_offset
+$ egrep ' (gdt_|_(stext|_per_cpu_))' /root/kallsyms.kaslr-fixed
+0000000000000000 D __per_cpu_start
+0000000000004000 D gdt_page
+0000000000014280 D __per_cpu_end
+ffffffffadc001c8 T _stext
+ffffffffaeae53c0 D __per_cpu_offset
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/staging/comedi/drivers/poc.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ scripts/kallsyms.c |   15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/staging/comedi/drivers/poc.c b/drivers/staging/comedi/drivers/poc.c
-index 2ae4ee1..22c7392 100644
---- a/drivers/staging/comedi/drivers/poc.c
-+++ b/drivers/staging/comedi/drivers/poc.c
-@@ -36,15 +36,15 @@ Configuration options:
- struct boarddef_struct {
- 	const char *name;
- 	unsigned int iosize;
--	int (*setup) (struct comedi_device *);
-+	int (*setup)(struct comedi_device *);
- 	int type;
- 	int n_chan;
- 	int n_bits;
--	int (*winsn) (struct comedi_device *, struct comedi_subdevice *,
-+	int (*winsn)(struct comedi_device *, struct comedi_subdevice *,
- 		      struct comedi_insn *, unsigned int *);
--	int (*rinsn) (struct comedi_device *, struct comedi_subdevice *,
-+	int (*rinsn)(struct comedi_device *, struct comedi_subdevice *,
- 		      struct comedi_insn *, unsigned int *);
--	int (*insnbits) (struct comedi_device *, struct comedi_subdevice *,
-+	int (*insnbits)(struct comedi_device *, struct comedi_subdevice *,
- 			 struct comedi_insn *, unsigned int *);
- 	const struct comedi_lrange *range;
+diff --git a/scripts/kallsyms.c b/scripts/kallsyms.c
+index 3c6224728960..4dcda98427cb 100644
+--- a/scripts/kallsyms.c
++++ b/scripts/kallsyms.c
+@@ -34,6 +34,7 @@ struct sym_entry {
+ 	unsigned int len;
+ 	unsigned int start_pos;
+ 	unsigned char *sym;
++	int force_absolute;
  };
+ 
+ struct addr_range {
+@@ -51,6 +52,10 @@ static struct addr_range text_ranges[] = {
+ #define text_range_text     (&text_ranges[0])
+ #define text_range_inittext (&text_ranges[1])
+ 
++static struct addr_range abs_ranges[] = {
++	{ "__per_cpu_start",	"__per_cpu_end", -1ULL, 0 },
++};
++
+ static struct sym_entry *table;
+ static unsigned int table_size, table_cnt;
+ static int all_symbols = 0;
+@@ -165,6 +170,10 @@ static int read_symbol(FILE *in, struct sym_entry *s)
+ 	}
+ 	strcpy((char *)s->sym + 1, str);
+ 	s->sym[0] = stype;
++	s->force_absolute = 0;
++
++	/* Check if we've found special absolute symbol range. */
++	check_symbol_range(sym, s->addr, abs_ranges, ARRAY_SIZE(abs_ranges));
+ 
+ 	return 0;
+ }
+@@ -210,6 +219,10 @@ static int symbol_valid(struct sym_entry *s)
+ 	if (s->addr < kernel_start_addr)
+ 		return 0;
+ 
++	/* Force special absolute symbols into being absolute. */
++	if (symbol_in_range(s, abs_ranges, ARRAY_SIZE(abs_ranges)) == 1)
++		s->force_absolute = 1;
++
+ 	/* skip prefix char */
+ 	if (symbol_prefix_char && *(s->sym + 1) == symbol_prefix_char)
+ 		offset++;
+@@ -306,7 +319,7 @@ static int expand_symbol(unsigned char *data, int len, char *result)
+ 
+ static int symbol_absolute(struct sym_entry *s)
+ {
+-	return toupper(s->sym[0]) == 'A';
++	return s->force_absolute || toupper(s->sym[0]) == 'A';
+ }
+ 
+ static void write_src(void)
 -- 
-1.7.10.4
+1.7.9.5
 
