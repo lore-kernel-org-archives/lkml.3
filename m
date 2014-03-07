@@ -1,150 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752480AbaCGS1v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 13:27:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53505 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751302AbaCGS1u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 13:27:50 -0500
-Date: Fri, 7 Mar 2014 18:27:45 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Rik van Riel <riel@redhat.com>, Sasha Levin <sasha.levin@oracle.com>
-Cc: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, hhuang@redhat.com,
-        knoel@redhat.com, aarcange@redhat.com
-Subject: Re: [PATCH -mm] mm,numa,mprotect: always continue after finding a
- stable thp page
-Message-ID: <20140307182745.GD1931@suse.de>
-References: <5318E4BC.50301@oracle.com>
- <20140306173137.6a23a0b2@cuia.bos.redhat.com>
- <5318FC3F.4080204@redhat.com>
- <20140307140650.GA1931@suse.de>
- <20140307150923.GB1931@suse.de>
+	id S1752824AbaCGScd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 13:32:33 -0500
+Received: from exprod5og104.obsmtp.com ([64.18.0.178]:49379 "HELO
+	exprod5og104.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752080AbaCGSca (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 13:32:30 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20140307150923.GB1931@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <005901cf39e0$81ceb960$856c2c20$%han@samsung.com>
+References: <1394085963-27553-1-git-send-email-tinamdar@apm.com>
+	<1394085963-27553-2-git-send-email-tinamdar@apm.com>
+	<005901cf39e0$81ceb960$856c2c20$%han@samsung.com>
+Date: Fri, 7 Mar 2014 10:32:29 -0800
+Message-ID: <CACoXjcmPu9JL0Xrd8uYce2wRrqYbJPO=EoVsuVAJQgPL=diKLQ@mail.gmail.com>
+Subject: Re: [PATCH v4 1/4] pci: APM X-Gene PCIe controller driver
+From: Tanmay Inamdar <tinamdar@apm.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches <patches@apm.com>,
+        Jon Masters <jcm@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rob Landley <rob@landley.net>, Liviu Dudau <liviu.dudau@arm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 07, 2014 at 03:09:23PM +0000, Mel Gorman wrote:
-> On Fri, Mar 07, 2014 at 02:06:50PM +0000, Mel Gorman wrote:
-> > On Thu, Mar 06, 2014 at 05:52:47PM -0500, Rik van Riel wrote:
-> > > On 03/06/2014 05:31 PM, Rik van Riel wrote:
-> > > >On Thu, 06 Mar 2014 16:12:28 -0500
-> > > >Sasha Levin <sasha.levin@oracle.com> wrote:
-> > > >
-> > > >>While fuzzing with trinity inside a KVM tools guest running latest -next kernel I've hit the
-> > > >>following spew. This seems to be introduced by your patch "mm,numa: reorganize change_pmd_range()".
-> > > >
-> > > >That patch should not introduce any functional changes, except for
-> > > >the VM_BUG_ON that catches the fact that we fell through to the 4kB
-> > > >pte handling code, despite having just handled a THP pmd...
-> > > >
-> > > >Does this patch fix the issue?
-> > > >
-> > > >Mel, am I overlooking anything obvious? :)
-> > > >
-> > > >---8<---
-> > > >
-> > > >Subject: mm,numa,mprotect: always continue after finding a stable thp page
-> > > >
-> > > >When turning a thp pmds into a NUMA one, change_huge_pmd will
-> > > >return 0 when the pmd already is a NUMA pmd.
-> > > 
-> > > I did miss something obvious.  In this case, the code returns 1.
-> > > 
-> > > >However, change_pmd_range would fall through to the code that
-> > > >handles 4kB pages, instead of continuing on to the next pmd.
-> > > 
-> > > Maybe the case that I missed is when khugepaged is in the
-> > > process of collapsing pages into a transparent huge page?
-> > > 
-> > > If the virtual CPU gets de-scheduled by the host for long
-> > > enough, it would be possible for khugepaged to run on
-> > > another virtual CPU, and turn the pmd into a THP pmd,
-> > > before that VM_BUG_ON test.
-> > > 
-> > > I see that khugepaged takes the mmap_sem for writing in the
-> > > collapse code, and it looks like task_numa_work takes the
-> > > mmap_sem for reading, so I guess that may not be possible?
-> > > 
-> > 
-> > mmap_sem will prevent a parallel collapse but what prevents something
-> > like the following?
-> > 
-> > 							do_huge_pmd_wp_page
-> > change_pmd_range
-> > if (!pmd_trans_huge(*pmd) && pmd_none_or_clear_bad(pmd))
-> > 	continue;
-> > 							pmdp_clear_flush(vma, haddr, pmd);
-> > if (pmd_trans_huge(*pmd)) {
-> > 	.... path not taken ....
-> > }
-> > 							page_add_new_anon_rmap(new_page, vma, haddr);
-> > 							set_pmd_at(mm, haddr, pmd, entry);
-> > VM_BUG_ON(pmd_trans_huge(*pmd));
-> > 
-> > We do not hold the page table lock during the pmd_trans_huge check and we
-> > do not recheck it under PTF lock in change_pte_range()
-> > 
-> 
-> This is a completely untested prototype. It rechecks pmd_trans_huge
-> under the lock and falls through if it hit a parallel split. It's not
-> perfect because it could decide to fall through just because there was
-> no prot_numa work to do but it's for illustration purposes. Secondly,
-> I noted that you are calling invalidate for every pmd range. Is that not
-> a lot of invalidations? We could do the same by just tracking the address
-> of the first invalidation.
-> 
+Thanks for reviewing and the comments. I will surely include them in
+next version.
 
-And there were other minor issues. This is still untested but Sasha,
-can you try it out please? I discussed this with Rik on IRC for a bit and
-reckon this should be sufficient if the correct race has been identified.
+-Tanmay
 
-The race can only really happen for prot_numa updates and it's ok to bail on
-those updates if a race occurs because all we miss is a few hinting faults.
-That simplifies the patch considerably but throw in some comments to
-explain it
-
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index 2afc40e..72061a2 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -46,6 +46,17 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
- 	unsigned long pages = 0;
- 
- 	pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
-+
-+	/*
-+	 * For a prot_numa update we only hold mmap_sem for read so there is a
-+	 * potential race with faulting where a pmd was temporarily none so
-+	 * recheck it under the lock and bail if we race
-+	 */
-+	if (prot_numa && unlikely(pmd_trans_huge(*pmd))) {
-+		pte_unmap_unlock(pte, ptl);
-+		return 0;
-+	}
-+
- 	arch_enter_lazy_mmu_mode();
- 	do {
- 		oldpte = *pte;
-@@ -141,12 +152,13 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
- 						pages += HPAGE_PMD_NR;
- 						nr_huge_updates++;
- 					}
-+
-+					/* huge pmd was handled */
- 					continue;
- 				}
- 			}
- 			/* fall through, the trans huge pmd just split */
- 		}
--		VM_BUG_ON(pmd_trans_huge(*pmd));
- 		this_pages = change_pte_range(vma, pmd, addr, next, newprot,
- 				 dirty_accountable, prot_numa);
- 		pages += this_pages;
+On Fri, Mar 7, 2014 at 12:37 AM, Jingoo Han <jg1.han@samsung.com> wrote:
+> On Thursday, March 06, 2014 3:06 PM, Tanmay Inamdar wrote:
+>>
+>
+> Hi Tanmay Inamdar,
+>
+> I added some minor comments. :-)
+>
+>> This patch adds the AppliedMicro X-Gene SOC PCIe controller driver.
+>> X-Gene PCIe controller supports maxmum upto 8 lanes and GEN3 speed.
+>
+> Would you fix the followings?
+>
+> s/maxmum/maximum
+> s/upto/up to
+>
+>> X-Gene SOC supports maximum 5 PCIe ports.
+>>
+>> Signed-off-by: Tanmay Inamdar <tinamdar@apm.com>
+>> ---
+>>  drivers/pci/host/Kconfig     |   10 +
+>>  drivers/pci/host/Makefile    |    1 +
+>>  drivers/pci/host/pci-xgene.c |  739 ++++++++++++++++++++++++++++++++++++++++++
+>>  3 files changed, 750 insertions(+)
+>>  create mode 100644 drivers/pci/host/pci-xgene.c
+>
+> [.....]
+>
+>> --- /dev/null
+>> +++ b/drivers/pci/host/pci-xgene.c
+>
+> [.....]
+>
+>> +
+>> +static int xgene_pcie_parse_map_dma_ranges(struct xgene_pcie_port *port)
+>> +{
+>> +     struct device_node *np = port->node;
+>> +     struct of_pci_range range;
+>> +     struct of_pci_range_parser parser;
+>> +     struct device *dev = port->dev;
+>> +     u8 ib_reg_mask = 0;
+>> +
+>> +     if (pci_dma_range_parser_init(&parser, np)) {
+>> +             dev_err(dev, "missing dma-ranges property\n");
+>> +             return -EINVAL;
+>> +     }
+>> +
+>> +     /* Get the dma-ranges from DT */
+>> +     for_each_of_pci_range(&parser, &range) {
+>> +             u64 end = range.cpu_addr + range.size - 1;
+>> +             dev_dbg(port->dev, "0x%08x 0x%016llx..0x%016llx -> 0x%016llx\n",
+>> +                     range.flags, range.cpu_addr, end, range.pci_addr);
+>> +             xgene_pcie_setup_ib_reg(port, &range, &ib_reg_mask);
+>> +     }
+>> +     return 0;
+>> +}
+>> +
+>> +static int __init xgene_pcie_probe_bridge(struct platform_device *pdev)
+>
+> Please, remove '__init' marker in order to fix section mismatch
+> warning.
+>
+>> +{
+>> +     struct device_node *np = of_node_get(pdev->dev.of_node);
+>> +     struct xgene_pcie_port *port;
+>> +     struct pci_host_bridge *bridge;
+>> +     resource_size_t lastbus;
+>> +     u32 lanes = 0, speed = 0;
+>> +     u64 cfg_addr = 0;
+>> +     int ret;
+>> +
+>> +     port = devm_kzalloc(&pdev->dev, sizeof(*port), GFP_KERNEL);
+>> +     if (!port)
+>> +             return -ENOMEM;
+>> +     port->node = np;
+>> +     port->dev = &pdev->dev;
+>> +
+>> +     ret = xgene_pcie_map_reg(port, pdev, &cfg_addr);
+>> +     if (ret)
+>> +             return ret;
+>> +
+>> +     ret = xgene_pcie_init_port(port);
+>> +     if (ret)
+>> +             return ret;
+>> +     xgene_pcie_program_core(port->csr_base);
+>> +     xgene_pcie_setup_root_complex(port);
+>> +
+>> +     bridge = of_create_pci_host_bridge(&pdev->dev, &xgene_pcie_ops, port);
+>> +     if (IS_ERR_OR_NULL(bridge))
+>> +             return PTR_ERR(bridge);
+>> +
+>> +     ret = xgene_pcie_map_ranges(port, bridge, cfg_addr);
+>> +     if (ret)
+>> +             return ret;
+>> +
+>> +     ret = xgene_pcie_parse_map_dma_ranges(port);
+>> +     if (ret)
+>> +             return ret;
+>> +
+>> +     xgene_pcie_poll_linkup(port, &lanes, &speed);
+>> +     if (!port->link_up)
+>> +             dev_info(port->dev, "(rc) link down\n");
+>> +     else
+>> +             dev_info(port->dev, "(rc) x%d gen-%d link up\n",
+>> +                             lanes, speed + 1);
+>> +     platform_set_drvdata(pdev, port);
+>> +     lastbus = pci_rescan_bus(bridge->bus);
+>> +     pci_bus_update_busn_res_end(bridge->bus, lastbus);
+>> +     return 0;
+>> +}
+>> +
+>> +static const struct of_device_id xgene_pcie_match_table[] __initconst = {
+>
+> Please, remove '__initconst' marker in order to fix section mismatch
+> warning.
+>
+>> +     {.compatible = "apm,xgene-pcie",},
+>> +     {},
+>> +};
+>> +
+>> +static struct platform_driver xgene_pcie_driver = {
+>> +     .driver = {
+>> +                .name = "xgene-pcie",
+>> +                .owner = THIS_MODULE,
+>> +                .of_match_table = of_match_ptr(xgene_pcie_match_table),
+>> +               },
+>
+> Please fix this indent style, as below:
+>
+> +       },
+>
+> See you later. :-)
+>
+> Best regards,
+> Jingoo Han
+>
+>> +     .probe = xgene_pcie_probe_bridge,
+>> +};
+>> +module_platform_driver(xgene_pcie_driver);
+>> +
+>> +MODULE_AUTHOR("Tanmay Inamdar <tinamdar@apm.com>");
+>> +MODULE_DESCRIPTION("APM X-Gene PCIe driver");
+>> +MODULE_LICENSE("GPL v2");
+>> --
+>> 1.7.9.5
+>
