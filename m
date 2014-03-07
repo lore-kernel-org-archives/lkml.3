@@ -1,71 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753053AbaCGRjO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 12:39:14 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:44052 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752930AbaCGRjN (ORCPT
+	id S1753325AbaCGRlO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 12:41:14 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:47611 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751792AbaCGRlN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 12:39:13 -0500
-Message-ID: <531A0436.3080201@ti.com>
-Date: Fri, 7 Mar 2014 23:09:02 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH v6] phy: omap-usb2: move omap_usb.h from linux/usb/ to
- linux/phy/
-References: <1393846695-14644-1-git-send-email-kishon@ti.com> <1394210888-1587-1-git-send-email-kishon@ti.com> <20140307165043.GC23885@saruman.home>
-In-Reply-To: <20140307165043.GC23885@saruman.home>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
+	Fri, 7 Mar 2014 12:41:13 -0500
+Message-ID: <1394214054.16309.45.camel@paszta.hi.pengutronix.de>
+Subject: Re: [PATCH v6 4/8] of: Reduce indentation in
+ of_graph_get_next_endpoint
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        devicetree@vger.kernel.org
+Date: Fri, 07 Mar 2014 18:40:54 +0100
+In-Reply-To: <31687163.hgTkcLrn0Z@avalon>
+References: <1394011242-16783-1-git-send-email-p.zabel@pengutronix.de>
+	 <1394011242-16783-5-git-send-email-p.zabel@pengutronix.de>
+	 <31687163.hgTkcLrn0Z@avalon>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 07 March 2014 10:20 PM, Felipe Balbi wrote:
-> On Fri, Mar 07, 2014 at 10:18:08PM +0530, Kishon Vijay Abraham I wrote:
->> No functional change. Moved omap_usb.h from linux/usb/ to linux/phy/.
->> Also removed the unused members of struct omap_usb (after phy-omap-pipe3
->> started using it's own header file)
->
-> does this depend in any other patch ? I get the following when applying
-> *only* this patch on top of v3.14-rc5:
+Hi Laurent,
 
-yeah.. this is for linux-phy tree. I'll take this patch.
-
-Thanks
-Kishon
-
+Am Freitag, den 07.03.2014, 01:12 +0100 schrieb Laurent Pinchart:
+> Hi Philipp,
+> 
+> Thank you for the patch.
+> 
+> I've submitted a fix for the of_graph_get_next_endpoint() function, but it 
+> hasn't been applied yet due to the patch series that contained it needing more 
+> work.
 >
-> drivers/phy/phy-omap-usb2.c: In function ‘omap_usb2_suspend’:
-> drivers/phy/phy-omap-usb2.c:106:21: error: ‘struct omap_usb’ has no member named ‘is_suspended’
->    if (suspend && !phy->is_suspended) {
->                       ^
-> drivers/phy/phy-omap-usb2.c:109:6: error: ‘struct omap_usb’ has no member named ‘is_suspended’
->     phy->is_suspended = 1;
->        ^
-> drivers/phy/phy-omap-usb2.c:110:28: error: ‘struct omap_usb’ has no member named ‘is_suspended’
->    } else if (!suspend && phy->is_suspended) {
->                              ^
-> drivers/phy/phy-omap-usb2.c:117:6: error: ‘struct omap_usb’ has no member named ‘is_suspended’
->     phy->is_suspended = 0;
->        ^
-> drivers/phy/phy-omap-usb2.c: In function ‘omap_usb2_probe’:
-> drivers/phy/phy-omap-usb2.c:194:5: error: ‘struct omap_usb’ has no member named ‘is_suspended’
->    phy->is_suspended = 1;
->       ^
-> make[1]: *** [drivers/phy/phy-omap-usb2.o] Error 1
-> make: *** [drivers/phy/] Error 2
-> make: *** Waiting for unfinished jobs....
->    CC [M]  drivers/usb/phy/phy-mxs-usb.o
-> drivers/usb/phy/phy-omap-usb3.c:22:32: fatal error: linux/usb/omap_usb.h: No such file or directory
->   #include <linux/usb/omap_usb.h>
->                                  ^
-> compilation terminated.
-> make[1]: *** [drivers/usb/phy/phy-omap-usb3.o] Error 1
-> make[1]: *** Waiting for unfinished jobs....
-> make: *** [drivers/usb/phy/] Error 2
->
+> The patch is available at https://patchwork.linuxtv.org/patch/21946/. I can 
+> rebase it on top of this series, but I still wanted to let you know about it 
+> in case you would like to integrate it.
+
+Thank you for the pointer. A pity about the timing, this will mostly
+revert my indentation patch. I'd be glad if you could rebase on top of
+the merged series.
+
+While we look at of_graph_get_next_endpoint(), could you explain the
+reason behind the extra reference count increase on the prev node:
+	/*
+	 * Avoid dropping prev node refcount to 0 when getting the next
+	 * child below.
+	 */
+	of_node_get(prev);
+This unfortunately makes using the function in for_each style macros a
+hassle. If that part wasn't there and all users that want to keep using
+prev after the call were expected to increase refcount themselves,
+we could have a
+#define of_graph_for_each_endpoint(parent, endpoint) \
+	for (endpoint = of_graph_get_next_endpoint(parent, NULL); \
+	     endpoint != NULL; \
+	     endpoint = of_graph_get_next_endpoint(parent, endpoint))
+
+regards
+Philipp
 
