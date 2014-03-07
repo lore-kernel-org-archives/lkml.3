@@ -1,88 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751680AbaCGFus (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 00:50:48 -0500
-Received: from mga09.intel.com ([134.134.136.24]:40447 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750903AbaCGFuq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 00:50:46 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,605,1389772800"; 
-   d="scan'208";a="487721111"
-Date: Fri, 7 Mar 2014 13:50:35 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Andreas Herrmann <andreas.herrmann3@amd.com>, Ingo Molnar <mingo@elte.hu>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Yinghai Lu <yhlu.kernel@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [qemu64,+smep,+smap] WARNING: CPU: 1 PID: 0 at
- arch/x86/kernel/cpu/amd.c:220 init_amd()
-Message-ID: <20140307055035.GA5230@localhost>
-References: <20140307015833.GA10048@localhost>
- <53195336.9080606@linux.intel.com>
+	id S1751810AbaCGFwF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 00:52:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38623 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750833AbaCGFwC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 00:52:02 -0500
+Date: Thu, 6 Mar 2014 21:52:31 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: jon@ringle.org
+Cc: jslaby@suse.cz, linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Jon Ringle <jringle@gridpoint.com>
+Subject: Re: [PATCH] RFC: WIP: sc16is7xx.c
+Message-ID: <20140307055231.GA32019@kroah.com>
+References: <1394159746-1729-1-git-send-email-jon@ringle.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53195336.9080606@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1394159746-1729-1-git-send-email-jon@ringle.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 06, 2014 at 09:03:50PM -0800, H. Peter Anvin wrote:
-> On 03/06/2014 05:58 PM, Fengguang Wu wrote:
-> > Hi all,
-> > 
-> > I find the below WARNING shows up only in
-> > 
-> >         qemu-system-x86_64 -cpu qemu64,+smep,+smap
-> > 
+On Thu, Mar 06, 2014 at 09:35:46PM -0500, jon@ringle.org wrote:
+> From: Jon Ringle <jringle@gridpoint.com>
 > 
-> Yes, it is because Qemu doesn't show the AMD-specific SMP CPUID bit.
-> It's harmless in that sense.
+> I am requesting comments on this serial driver.
+> I am currently having some latency issues with it where I experience
+> packet loss at speed of 19200.
 > 
-> Unfortunately these things are hard to fix in Qemu.
+> I welcome any and all comments.
 
-OK. As an alternative, is it possible to pass one of the below CPUID flags in
-the Qemu command line, so as to quiet the warning?
+The basic coding style problems make it hard to read to be able to help
+review it, sorry.
 
-% qemu-system-x86_64 -cpu help
-x86           qemu64  QEMU Virtual CPU version 1.6.1                  
-x86           phenom  AMD Phenom(tm) 9550 Quad-Core Processor         
-x86         core2duo  Intel(R) Core(TM)2 Duo CPU     T7700  @ 2.40GHz 
-x86            kvm64  Common KVM processor                            
-x86           qemu32  QEMU Virtual CPU version 1.6.1                  
-x86            kvm32  Common 32-bit KVM processor                     
-x86          coreduo  Genuine Intel(R) CPU           T2600  @ 2.16GHz 
-x86              486                                                  
-x86          pentium                                                  
-x86         pentium2                                                  
-x86         pentium3                                                  
-x86           athlon  QEMU Virtual CPU version 1.6.1                  
-x86             n270  Intel(R) Atom(TM) CPU N270   @ 1.60GHz          
-x86           Conroe  Intel Celeron_4x0 (Conroe/Merom Class Core 2)   
-x86           Penryn  Intel Core 2 Duo P9xxx (Penryn Class Core 2)    
-x86          Nehalem  Intel Core i7 9xx (Nehalem Class Core i7)       
-x86         Westmere  Westmere E56xx/L56xx/X56xx (Nehalem-C)          
-x86      SandyBridge  Intel Xeon E312xx (Sandy Bridge)                
-x86          Haswell  Intel Core Processor (Haswell)                  
-x86       Opteron_G1  AMD Opteron 240 (Gen 1 Class Opteron)           
-x86       Opteron_G2  AMD Opteron 22xx (Gen 2 Class Opteron)          
-x86       Opteron_G3  AMD Opteron 23xx (Gen 3 Class Opteron)          
-x86       Opteron_G4  AMD Opteron 62xx class CPU                      
-x86       Opteron_G5  AMD Opteron 63xx class CPU                      
-x86             host  KVM processor with all supported host features (only available in KVM mode)
+Yes, brains have patterns, you want to follow the same patterns as
+others, it matters.
 
-Recognized CPUID flags:
-  pbe ia64 tm ht ss sse2 sse fxsr mmx acpi ds clflush pn pse36 pat cmov mca pge mtrr sep apic cx8 mce pae msr tsc pse de vme fpu
-  hypervisor rdrand f16c avx osxsave xsave aes tsc-deadline popcnt movbe x2apic sse4.2|sse4_2 sse4.1|sse4_1 dca pcid pdcm xtpr cx16 fma cid ssse3 tm2 est smx vmx ds_cpl monitor dtes64 pclmulqdq|pclmuldq pni|sse3
-  smap adx rdseed rtm invpcid erms bmi2 smep avx2 hle bmi1 fsgsbase
-  3dnow 3dnowext lm|i64 rdtscp pdpe1gb fxsr_opt|ffxsr mmxext nx|xd syscall
-  perfctr_nb perfctr_core topoext tbm nodeid_msr tce fma4 lwp wdt skinit xop ibs osvw 3dnowprefetch misalignsse sse4a abm cr8legacy extapic svm cmp_legacy lahf_lm
-  pmm-en pmm phe-en phe ace2-en ace2 xcrypt-en xcrypt xstore-en xstore
-  kvm_pv_eoi kvm_steal_time kvm_asyncpf kvmclock kvm_mmu kvm_nopiodelay kvmclock
-  pfthreshold pause_filter decodeassists flushbyasid vmcb_clean tsc_scale nrip_save svm_lock lbrv npt
+thanks,
 
-Thanks,
-Fengguang
+greg k-h
