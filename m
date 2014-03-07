@@ -1,50 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283AbaCGV6T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 16:58:19 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:56021 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330AbaCGV6S (ORCPT
+	id S1753489AbaCGWFd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 17:05:33 -0500
+Received: from omr-m10.mx.aol.com ([64.12.143.86]:58467 "EHLO
+	omr-m10.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752718AbaCGWEz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 16:58:18 -0500
-Date: Fri, 7 Mar 2014 21:58:08 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: dri-devel@lists.freedesktop.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dave Airlie <airlied@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] drm: add kernel-log renderer
-Message-ID: <20140307215808.3755f855@alan.etchedpixels.co.uk>
-In-Reply-To: <1394131242-29567-1-git-send-email-dh.herrmann@gmail.com>
-References: <1394131242-29567-1-git-send-email-dh.herrmann@gmail.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 7 Mar 2014 17:04:55 -0500
+Message-ID: <531A426D.6080100@netscape.net>
+Date: Fri, 07 Mar 2014 23:04:29 +0100
+From: Manuel Krause <manuelkrause@netscape.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Guenter Roeck <linux@roeck-us.net>
+CC: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        lm-sensors@lm-sensors.org
+Subject: Re: 3.13.?: Strange / dangerous fan policy...
+References: <531A1EEE.9090101@netscape.net> <20140307205506.GA6870@roeck-us.net>
+In-Reply-To: <20140307205506.GA6870@roeck-us.net>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 8BIT
+x-aol-global-disposition: G
+x-aol-sid: 3039ac1afc0d531a428514fe
+X-AOL-IP: 93.218.253.155
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->  - The renderer supports *any* RGB target, from 8bit to 32bit with
->    big-endian and little-endian support. The related pixel-renderer will
->    probably never win a beauty-contest, but it works.. Again, who cares
->    for debug-log rendering speed?
+On 2014-03-07 21:55, Guenter Roeck wrote:
+> On Fri, Mar 07, 2014 at 08:33:02PM +0100, Manuel Krause wrote:
+>> Please have a short look at the following BUG report + the comments
+>> -- this message here is a kind of FWD-ing it:
+>> https://bugs.archlinux.org/task/39005
+>>
+>> I came late to test kernel 3.13 with the .5 one, as it was the time
+>> that the related -CK/BFS patch became available.
+>>
+>> I'm not using Archlinux, but openSUSE, and my problems are quite the
+>> same. Especially these with smelling melting plastics.
+>>
+>> My own reports went to Con Kolivas' Blog first:
+>> "I get weird temperatures and abrupt 100% fan actions with vanilla
+>> 3.13.5 with this CK and most recent BFQ at my HP Notebook.
+>> In gkrellm the highest T had been @74°C, so far (3.12.13), and is
+>> now growing to 94°C. Then, the fan goes to 100% for 10~30secs
+>> cooling it to approx. 82°C.
+>> That is not good, if I compare 74 to 94 °C.
+>> Have I missed a .CONFIG option for 3.13, especially?"
+>>
+>> I'd get the same without (Con's && BFQ's) patches.
+>>
+>> Machine:           HP Notebook with Core2Duo CPU (Penryn)
+>> Distro:            openSUSE 13.1, 64bit, continuously updated
+>> Desktop:           KDE 4.12.3
+>> MESA & drm & Xorg: most recent ones from:
+>> http://download.opensuse.org/repositories/home:/pontostroy:/X11/openSUSE_13.1/x86_64/
+>>
+>> Current kernel:    3.13.6 vanilla from openSUSE repos, with
+>>                     -ck1 and BFQ patches
+>> Same behaviour:    without these patches
+>>
+>> Last good kernel:  3.12.13 vanilla + CK2 + BFQ
+>>
+>
+> Can you add more information about your fan control policy ?
+> Do you rely on the hardware for automatic fan speed control,
+> or do you run the fancontrol script ?
+>
+> What is the output from the 'sensors' command ?
+>
+> Thanks,
+> Guenter
+>
 
-Debug log writing performance is extremely important when you are using
-the log for debugging work rather than for panic display. I don't think
-that is a show stopper because having a logger makes sense and someone
-can write a better render engine if they care.
+Hi, and thanks for the quick response!
+No special fancy "fan control policy". 'fancontrol' isn't up or 
+running.
+Vanilla kernels 3.11.* and 3.12.* had been working on here 
+without any extra work.
+--
+# sensors
+acpitz-virtual-0
+Adapter: Virtual device
+temp1:        +71.0°C  (crit = +256.0°C)
+temp2:        +69.0°C  (crit = +110.0°C)
+temp3:        +52.0°C  (crit = +105.0°C)
+temp4:        +25.0°C  (crit = +110.0°C)
+temp5:        +58.0°C  (crit = +110.0°C)
 
-Supporting any target is also going to be useful but you do need to
-support non linear framebuffers. A GMA500 with something like an X
-display in use for example does not have a linear mapping of the
-framebuffer memory. I don't believe its exactly unique in this.
+coretemp-isa-0000
+Adapter: ISA adapter
+Core 0:       +62.0°C  (high = +105.0°C, crit = +105.0°C)
+Core 1:       +60.0°C  (high = +105.0°C, crit = +105.0°C)
+--
+My notebook (HP/Compaq 6730b) does not have a seperate fan sensor.
+This is with 3.12.13 with my normal workload.
 
-What I am more dubious about is tying it to DRM. Yes it uses DRM
-constants but it doesn't appear functionally to have a single tie to
-either DRM or even framebuffer.
+Please, trust my above mentionned values of 94 °C vs. 74°C as I 
+don't like to boot 3.13.6 anymore, to avoid harm to the 
+notebook's casing.
 
-It's potentially useful in cases where neither framebuffer or DRM are
-compiled into the system.
+But I'd do to test any improvement-patch.
 
-Alan
+Manuel Krause
+
+
