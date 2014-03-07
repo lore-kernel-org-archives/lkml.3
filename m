@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752619AbaCGJn6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 04:43:58 -0500
-Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:47978 "EHLO
-	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751977AbaCGJnd (ORCPT
+	id S1752442AbaCGJrN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 04:47:13 -0500
+Received: from smtprelay.synopsys.com ([198.182.44.111]:36703 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751981AbaCGJrK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 04:43:33 -0500
-From: Maxime COQUELIN <maxime.coquelin@st.com>
-To: Rob Landley <rob@landley.net>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        Maxime Coquelin <maxime.coquelin@st.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kernel@stlinux.com
-Cc: lee.jones@linaro.org
-Subject: [PATCH v2 0/5] Add STiH407 SoC and reference board support
-Date: Fri,  7 Mar 2014 10:41:07 +0100
-Message-Id: <1394185272-26054-1-git-send-email-maxime.coquelin@st.com>
-X-Mailer: git-send-email 1.9.0
+	Fri, 7 Mar 2014 04:47:10 -0500
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: <torvalds@linux-foundation.org>
+CC: Vineet Gupta <Vineet.Gupta1@synopsys.com>, <linux-kernel@vger.kernel.org>,
+        <arc-linux-dev@synopsys.com>
+Subject: 
+Date: Fri, 7 Mar 2014 15:16:15 +0530
+Message-ID: <1394185596-29471-1-git-send-email-vgupta@synopsys.com>
+X-Mailer: git-send-email 1.8.3.2
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.12.197.50]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series adds basic support to the STMicroelectronics STiH407 SoC and its
-B2120 reference board. The STiH407 is a dual-core ARM Cortex-A9 CPU aimed at
-STB market.
+Hi Linus,
 
-Changes since v1:
------------------
-	- Changed patch 2 commit title
-	- Rebased pinctrl patches to linux-pinctrl/devel
-	- Rebased ARM patches to arm_soc/for-next
+This patch fixes a subtle issue with cache flush which could potentially
+cause random userspace crashes because of stale icache lines.
 
-Giuseppe Cavallaro (2):
-  pinctrl: st: add pinctrl support for the STiH407 SoC
-  pinctrl: st: Enhance the controller to manage unavailable registers
+Please apply for 3.14, it's marked for stable as well.
 
-Maxime Coquelin (3):
-  ARM: STi: Add STiH407 SoC support
-  ARM: dts: Add STiH407 SoC support
-  ARM: dts: STiH407: Add B2120 board support
+Thx,
+-Vineet
 
- Documentation/arm/sti/stih407-overview.txt    |  18 +
- Documentation/devicetree/bindings/arm/sti.txt |  15 +
- arch/arm/boot/dts/Makefile                    |   3 +-
- arch/arm/boot/dts/stih407-b2120.dts           |  78 ++++
- arch/arm/boot/dts/stih407-clock.dtsi          |  41 ++
- arch/arm/boot/dts/stih407-pinctrl.dtsi        | 618 ++++++++++++++++++++++++++
- arch/arm/boot/dts/stih407.dtsi                | 250 +++++++++++
- arch/arm/mach-sti/Kconfig                     |   9 +
- arch/arm/mach-sti/board-dt.c                  |   1 +
- drivers/pinctrl/pinctrl-st.c                  | 123 +++--
- 10 files changed, 1110 insertions(+), 46 deletions(-)
- create mode 100644 Documentation/arm/sti/stih407-overview.txt
- create mode 100644 Documentation/devicetree/bindings/arm/sti.txt
- create mode 100644 arch/arm/boot/dts/stih407-b2120.dts
- create mode 100644 arch/arm/boot/dts/stih407-clock.dtsi
- create mode 100644 arch/arm/boot/dts/stih407-pinctrl.dtsi
- create mode 100644 arch/arm/boot/dts/stih407.dtsi
+-------------->8------------
+>From 036837642ed6df39f6a063ad10327787b60d4a0f Mon Sep 17 00:00:00 2001
+From: Vineet Gupta <vgupta@synopsys.com>
+Date: Fri, 7 Mar 2014 13:22:22 +0530
+Subject: [PATCH] ARC: Use correct PTAG register for icache flush
 
+This error crept in when consolidating the cache flush code
+
+Fixes: bd12976c3664 (ARC: cacheflush refactor #3: Unify the {d,i}cache)
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Cc: linux-kernel@vger.kernel.org
+Cc: stable@vger.kernel.org  # 3.13
+Cc: arc-linux-dev@synopsys.com
+---
+ arch/arc/mm/cache_arc700.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arc/mm/cache_arc700.c b/arch/arc/mm/cache_arc700.c
+index 6b58c1de7577..400c663b21c2 100644
+--- a/arch/arc/mm/cache_arc700.c
++++ b/arch/arc/mm/cache_arc700.c
+@@ -282,7 +282,7 @@ static inline void __cache_line_loop(unsigned long paddr, unsigned long vaddr,
+ #else
+ 	/* if V-P const for loop, PTAG can be written once outside loop */
+ 	if (full_page_op)
+-		write_aux_reg(ARC_REG_DC_PTAG, paddr);
++		write_aux_reg(aux_tag, paddr);
+ #endif
+ 
+ 	while (num_lines-- > 0) {
+@@ -296,7 +296,7 @@ static inline void __cache_line_loop(unsigned long paddr, unsigned long vaddr,
+ 		write_aux_reg(aux_cmd, vaddr);
+ 		vaddr += L1_CACHE_BYTES;
+ #else
+-		write_aux_reg(aux, paddr);
++		write_aux_reg(aux_cmd, paddr);
+ 		paddr += L1_CACHE_BYTES;
+ #endif
+ 	}
 -- 
-1.9.0
+1.8.3.2
 
