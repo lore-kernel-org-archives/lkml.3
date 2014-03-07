@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506AbaCGKLJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 05:11:09 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:17166 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752410AbaCGKLF (ORCPT
+	id S1752679AbaCGKLW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 05:11:22 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:25815 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752428AbaCGKLI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 05:11:05 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-4e-53199b37c171
+	Fri, 7 Mar 2014 05:11:08 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-58-53199b39e8cb
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
         Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
@@ -17,59 +17,87 @@ Cc: Kyungmin Park <kyungmin.park@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Tomasz Figa <t.figa@samsung.com>,
         Yadwinder Singh Brar <yadi.brar@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v2 0/3] regulator: s2mps11: Add support for S2MPS14 regulators
-Date: Fri, 07 Mar 2014 11:10:49 +0100
-Message-id: <1394187052-591-1-git-send-email-k.kozlowski@samsung.com>
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: [PATCH v2 3/3] Documentation: mfd: s2mps11: Document support for
+ S2MPS14
+Date: Fri, 07 Mar 2014 11:10:52 +0100
+Message-id: <1394187052-591-4-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDJMWRmVeSWpSXmKPExsVy+t/xa7rmsyWDDXa2yFpsnLGe1WLqwyds
-	Fq9fGFqcbXrDbvHtSgeTxeVdc9gsZpzfx2Sx9shddouLK74wWayf8ZrFYs70d0wO3B47Z91l
-	99i0qpPNo2/LKkaPz5vkAliiuGxSUnMyy1KL9O0SuDImrDvKVrCJs2LmolmsDYzr2LsYOTkk
-	BEwkHm+YzwZhi0lcuLceyObiEBJYyijRNKefEcLpY5JYePskE0gVm4CxxOblS8CqRAQ2Mkoc
-	3H+YFcRhFpjJJPHn5gOwKmEBP4mGxg8sIDaLgKrEzn1XgGwODl4BV4lTz1NBTAkBBYk5k2wm
-	MHIvYGRYxSiaWppcUJyUnmuoV5yYW1yal66XnJ+7iRESQl92MC4+ZnWIUYCDUYmH12CBRLAQ
-	a2JZcWXuIUYJDmYlEd6uZslgId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYzl03UKZN47KhWdym06
-	6NGTd52Bb0p49aRzP561Ovco3L00dZdExudsqZMl7+8I3p+9yGq/dFRC6u8lJQXxXTWax492
-	mpS6mDq1pB+Z9+rGFeUZSZ+nHn6w6km4rmP9GusehpTX0TZL/8z49Uwty6RL5D7HkTklW6ZE
-	HX/IfkN1Zbsa41MdcS0lluKMREMt5qLiRADqjVEy/wEAAA==
+In-reply-to: <1394187052-591-1-git-send-email-k.kozlowski@samsung.com>
+References: <1394187052-591-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrALMWRmVeSWpSXmKPExsVy+t/xa7qWsyWDDVo281lsnLGe1WLqwyds
+	FvOPnGO16H+zkNXi3KuVjBavXxhanG16w27x7UoHk8XlXXPYLGac38dksfbIXXaLpdcvMllM
+	mL6WxaJ17xF2i4srvjBZrJ/xmsVizvR3TA6CHmvmrWH0uNzXy+Sxc9Zddo+Vy7+weWxa1cnm
+	0bdlFaPH501yAexRXDYpqTmZZalF+nYJXBmzLl9hKrgkUPHyw0+WBsbTvF2MnBwSAiYScxdt
+	YISwxSQu3FvP1sXIxSEksJRRYtvKWcwgCSGBPiaJVcejQGw2AWOJzcuXgBWJCGxklDi4/zAr
+	iMMs8IVZYvbfBqAODg5hgWCJr/PrQRpYBFQl/hyZwgJi8wq4ShzZ3ssKUiIhoCAxZ5INSJhT
+	wE3i0bG77BC7XCU2LHjFNIGRdwEjwypG0dTS5ILipPRcQ73ixNzi0rx0veT83E2MkFD+soNx
+	8TGrQ4wCHIxKPLwGCySChVgTy4orcw8xSnAwK4nwdjVLBgvxpiRWVqUW5ccXleakFh9iZOLg
+	lGpg7Lyy8Jb219d7jT/mCPiGnTd+ZvHkXA3zZ8bVzMd5F3vJTXRS+SAQP2XbsUzXWz2HZi/W
+	+btmySqZ5UZBUYf7LoopxgfFn3PtcVJg+e5w7UeL72SXn5kTv08QsEh/dszUOFzVpkfOmlcy
+	qWvFg5tfd/lXm7NPeGo/aeFyxtXr7n2Q1mwM6tdpUWIpzkg01GIuKk4EADuBUI9DAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Add bindings documentation for S2MPS14 device to the s2mps11 driver.
 
-This patchset adds support for the S2MPS14 device to the s2mps11 regulator
-driver. It's a subset of previously sent patches for S2MPS14 device:
-http://thread.gmane.org/gmane.linux.kernel.samsung-soc/27194/focus=1649217
-along with one new patch:
- - PATCH 2/3: regulator: s2mps11: Add set_suspend_disable for S2MPS14
-which replaces previous "opmode" idea.
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>
+Cc: Tomasz Figa <t.figa@samsung.com>
+Cc: devicetree@vger.kernel.org
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Kumar Gala <galak@codeaurora.org>
+Acked-by: Tomasz Figa <t.figa@samsung.com>
+---
+ Documentation/devicetree/bindings/mfd/s2mps11.txt |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-
-These patches are rebased against linux-next tree (next-20140305) because
-they depend on changes in main MFD sec-core and s2mps11 regulator driver.
-
-
-Changes since v1
-================
-1. Patch 2/3: Store information that regulator was suspended.
-
-
-Best regards,
-Krzysztof
-
-
-Krzysztof Kozlowski (3):
-  regulator: s2mps11: Add support for S2MPS14 regulators
-  regulator: s2mps11: Add set_suspend_disable for S2MPS14
-  Documentation: mfd: s2mps11: Document support for S2MPS14
-
- Documentation/devicetree/bindings/mfd/s2mps11.txt |   12 +-
- drivers/regulator/Kconfig                         |    9 +-
- drivers/regulator/s2mps11.c                       |  301 ++++++++++++++++-----
- include/linux/mfd/samsung/s2mps14.h               |    2 +
- 4 files changed, 255 insertions(+), 69 deletions(-)
-
+diff --git a/Documentation/devicetree/bindings/mfd/s2mps11.txt b/Documentation/devicetree/bindings/mfd/s2mps11.txt
+index 15ee89c3cc7b..f69bec294f02 100644
+--- a/Documentation/devicetree/bindings/mfd/s2mps11.txt
++++ b/Documentation/devicetree/bindings/mfd/s2mps11.txt
+@@ -1,5 +1,5 @@
+ 
+-* Samsung S2MPS11 Voltage and Current Regulator
++* Samsung S2MPS11 and S2MPS14 Voltage and Current Regulator
+ 
+ The Samsung S2MPS11 is a multi-function device which includes voltage and
+ current regulators, RTC, charger controller and other sub-blocks. It is
+@@ -7,7 +7,7 @@ interfaced to the host controller using an I2C interface. Each sub-block is
+ addressed by the host system using different I2C slave addresses.
+ 
+ Required properties:
+-- compatible: Should be "samsung,s2mps11-pmic".
++- compatible: Should be "samsung,s2mps11-pmic" or "samsung,s2mps14-pmic".
+ - reg: Specifies the I2C slave address of the pmic block. It should be 0x66.
+ 
+ Optional properties:
+@@ -59,10 +59,14 @@ supports. Note: The 'n' in LDOn and BUCKn represents the LDO or BUCK number
+ as per the datasheet of s2mps11.
+ 
+ 	- LDOn
+-		  - valid values for n are 1 to 38
++		  - valid values for n are:
++			- S2MPS11: 1 to 38
++			- S2MPS14: 1 to 25
+ 		  - Example: LDO1, LD02, LDO28
+ 	- BUCKn
+-		  - valid values for n are 1 to 10.
++		  - valid values for n are:
++			- S2MPS11: 1 to 10
++			- S2MPS14: 1 to 5
+ 		  - Example: BUCK1, BUCK2, BUCK9
+ 
+ Example:
 -- 
 1.7.9.5
 
