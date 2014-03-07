@@ -1,58 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751206AbaCGFsc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 00:48:32 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:38464 "EHLO bear.ext.ti.com"
+	id S1751680AbaCGFus (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 00:50:48 -0500
+Received: from mga09.intel.com ([134.134.136.24]:40447 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750830AbaCGFsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 00:48:30 -0500
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>
-CC: <rogerq@ti.com>, <kishon@ti.com>, <balbi@ti.com>
-Subject: [PATCH v3] phy: omap-control: update dra7 and am437 usb2 bindings
-Date: Fri, 7 Mar 2014 11:18:00 +0530
-Message-ID: <1394171280-13359-1-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1750903AbaCGFuq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 00:50:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,605,1389772800"; 
+   d="scan'208";a="487721111"
+Date: Fri, 7 Mar 2014 13:50:35 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Andreas Herrmann <andreas.herrmann3@amd.com>, Ingo Molnar <mingo@elte.hu>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Yinghai Lu <yhlu.kernel@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [qemu64,+smep,+smap] WARNING: CPU: 1 PID: 0 at
+ arch/x86/kernel/cpu/amd.c:220 init_amd()
+Message-ID: <20140307055035.GA5230@localhost>
+References: <20140307015833.GA10048@localhost>
+ <53195336.9080606@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53195336.9080606@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roger Quadros <rogerq@ti.com>
+On Thu, Mar 06, 2014 at 09:03:50PM -0800, H. Peter Anvin wrote:
+> On 03/06/2014 05:58 PM, Fengguang Wu wrote:
+> > Hi all,
+> > 
+> > I find the below WARNING shows up only in
+> > 
+> >         qemu-system-x86_64 -cpu qemu64,+smep,+smap
+> > 
+> 
+> Yes, it is because Qemu doesn't show the AMD-specific SMP CPUID bit.
+> It's harmless in that sense.
+> 
+> Unfortunately these things are hard to fix in Qemu.
 
-The dra7-usb2 and am437-usb2 bindings have not yet been used.
-Change them to be more elegant.
+OK. As an alternative, is it possible to pass one of the below CPUID flags in
+the Qemu command line, so as to quiet the warning?
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
-Changes from v2:
-Kept only the drivers/phy part in this patch
+% qemu-system-x86_64 -cpu help
+x86           qemu64  QEMU Virtual CPU version 1.6.1                  
+x86           phenom  AMD Phenom(tm) 9550 Quad-Core Processor         
+x86         core2duo  Intel(R) Core(TM)2 Duo CPU     T7700  @ 2.40GHz 
+x86            kvm64  Common KVM processor                            
+x86           qemu32  QEMU Virtual CPU version 1.6.1                  
+x86            kvm32  Common 32-bit KVM processor                     
+x86          coreduo  Genuine Intel(R) CPU           T2600  @ 2.16GHz 
+x86              486                                                  
+x86          pentium                                                  
+x86         pentium2                                                  
+x86         pentium3                                                  
+x86           athlon  QEMU Virtual CPU version 1.6.1                  
+x86             n270  Intel(R) Atom(TM) CPU N270   @ 1.60GHz          
+x86           Conroe  Intel Celeron_4x0 (Conroe/Merom Class Core 2)   
+x86           Penryn  Intel Core 2 Duo P9xxx (Penryn Class Core 2)    
+x86          Nehalem  Intel Core i7 9xx (Nehalem Class Core i7)       
+x86         Westmere  Westmere E56xx/L56xx/X56xx (Nehalem-C)          
+x86      SandyBridge  Intel Xeon E312xx (Sandy Bridge)                
+x86          Haswell  Intel Core Processor (Haswell)                  
+x86       Opteron_G1  AMD Opteron 240 (Gen 1 Class Opteron)           
+x86       Opteron_G2  AMD Opteron 22xx (Gen 2 Class Opteron)          
+x86       Opteron_G3  AMD Opteron 23xx (Gen 3 Class Opteron)          
+x86       Opteron_G4  AMD Opteron 62xx class CPU                      
+x86       Opteron_G5  AMD Opteron 63xx class CPU                      
+x86             host  KVM processor with all supported host features (only available in KVM mode)
 
- drivers/phy/phy-omap-control.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Recognized CPUID flags:
+  pbe ia64 tm ht ss sse2 sse fxsr mmx acpi ds clflush pn pse36 pat cmov mca pge mtrr sep apic cx8 mce pae msr tsc pse de vme fpu
+  hypervisor rdrand f16c avx osxsave xsave aes tsc-deadline popcnt movbe x2apic sse4.2|sse4_2 sse4.1|sse4_1 dca pcid pdcm xtpr cx16 fma cid ssse3 tm2 est smx vmx ds_cpl monitor dtes64 pclmulqdq|pclmuldq pni|sse3
+  smap adx rdseed rtm invpcid erms bmi2 smep avx2 hle bmi1 fsgsbase
+  3dnow 3dnowext lm|i64 rdtscp pdpe1gb fxsr_opt|ffxsr mmxext nx|xd syscall
+  perfctr_nb perfctr_core topoext tbm nodeid_msr tce fma4 lwp wdt skinit xop ibs osvw 3dnowprefetch misalignsse sse4a abm cr8legacy extapic svm cmp_legacy lahf_lm
+  pmm-en pmm phe-en phe ace2-en ace2 xcrypt-en xcrypt xstore-en xstore
+  kvm_pv_eoi kvm_steal_time kvm_asyncpf kvmclock kvm_mmu kvm_nopiodelay kvmclock
+  pfthreshold pause_filter decodeassists flushbyasid vmcb_clean tsc_scale nrip_save svm_lock lbrv npt
 
-diff --git a/drivers/phy/phy-omap-control.c b/drivers/phy/phy-omap-control.c
-index 17fc200..a7e2d7f 100644
---- a/drivers/phy/phy-omap-control.c
-+++ b/drivers/phy/phy-omap-control.c
-@@ -228,11 +228,11 @@ static const struct of_device_id omap_control_phy_id_table[] = {
- 		.data = &pipe3_data,
- 	},
- 	{
--		.compatible = "ti,control-phy-dra7usb2",
-+		.compatible = "ti,control-phy-dra7-usb2",
- 		.data = &dra7usb2_data,
- 	},
- 	{
--		.compatible = "ti,control-phy-am437usb2",
-+		.compatible = "ti,control-phy-am437-usb2",
- 		.data = &am437usb2_data,
- 	},
- 	{},
--- 
-1.7.9.5
-
+Thanks,
+Fengguang
