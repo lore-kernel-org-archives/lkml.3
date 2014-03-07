@@ -1,125 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855AbaCGAii (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 19:38:38 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:44884 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752582AbaCGAih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 19:38:37 -0500
-Date: Fri, 7 Mar 2014 00:38:34 +0000 (GMT)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1403070036170.25778@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-1493505853-1394152714=:25778"
+	id S1752204AbaCGAlQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 19:41:16 -0500
+Received: from smtprelay0150.hostedemail.com ([216.40.44.150]:57995 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751065AbaCGAlP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 19:41:15 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3353:3622:3867:3871:4250:4321:5007:6119:7652:7903:10004:10400:10848:11026:11473:11657:11658:11914:12043:12296:12517:12519:12740:13069:13095:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: pipe13_7f0836e75f928
+X-Filterd-Recvd-Size: 3210
+Message-ID: <1394152871.16156.32.camel@joe-AO722>
+Subject: Re: [PATCH] x86: new Intel Atom SoC power management controller
+ driver
+From: Joe Perches <joe@perches.com>
+To: "Li, Aubrey" <aubrey.li@linux.intel.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, mingo@redhat.com,
+        tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        "alan@linux.intel.com" <alan@linux.intel.com>
+Date: Thu, 06 Mar 2014 16:41:11 -0800
+In-Reply-To: <53191222.2000904@linux.intel.com>
+References: <5317EC0C.4010807@linux.intel.com>
+	 <5317F044.8080407@linux.intel.com> <531805D4.6040806@linux.intel.com>
+	 <5318076C.7080605@linux.intel.com> <531808BD.4070000@linux.intel.com>
+	 <53180D39.7050207@linux.intel.com> <53180E98.9000608@linux.intel.com>
+	 <5318A2BE.2070707@linux.intel.com> <53191222.2000904@linux.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Fri, 2014-03-07 at 08:26 +0800, Li, Aubrey wrote:
 
---29444707-1493505853-1394152714=:25778
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+> my patch is word wrapped while I was not aware, hope this one work.
+
+trivial notes:
+
+> diff --git a/arch/x86/include/asm/pmc_atom.h b/arch/x86/include/asm/pmc_atom.h
+[]
+> +#define	BIT_LPSS1_F0_DMA	(1 << 0)
+> +#define	BIT_LPSS1_F1_PWM1	(1 << 1)
+
+These could use BIT(foo)
+
+#define	BIT_LPSS1_F0_DMA	BIT(0)
+#define	BIT_LPSS1_F1_PWM1	BIT(1)
+
+etc..
+
+> +#define	BIT_SMB			(1 << 0)
+> +#define	BIT_USH_SS_PHY		(1 << 1)
+> +#define	BIT_OTG_SS_PHY		(1 << 2)
+> +#define	BIT_DFX			(1 << 3)
+
+here too.
+
+> diff --git a/arch/x86/kernel/pmc_atom.c b/arch/x86/kernel/pmc_atom.c
+[]
+> @@ -0,0 +1,301 @@
+> +/*
+> + * Intel Atom SOC Power Management Controller Driver
+[]
+> + */
+
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+
+> +static void pmc_power_off(void)
+> +{
+[]
+> +	printk(KERN_INFO, "PMC: Preparing to enter system sleep state S5\n");
+
+	pr_info("Preparing to enter system sleep state S5\n");
+
+> +		if (func_dis_index & dev_map[dev_index].bit_mask) {
+> +			seq_printf(s, "Dev: %-32s\tState: %s [%s]\n",
+> +				dev_map[dev_index].name, "Disabled",
+> +				(d3_sts_index & dev_map[dev_index].bit_mask) ?
+> +				"D3":"D0");
+> +		} else {
+> +			seq_printf(s, "Dev: %-32s\tState: %s [%s]\n",
+> +				dev_map[dev_index].name, "Enabled ",
+> +				(d3_sts_index & dev_map[dev_index].bit_mask) ?
+> +				"D3":"D0");
+> +		}
+
+Maybe better with a single seq_printf
+
+		seq_printf(s, "Dev: %-32s\tState: %s [%s]\n",
+			   dev_map[dev_index].name,
+			   dev_map[dev_index].bit_mask & func_dis_index ?
+			   "Disabled" : " Enabled ",
+			   dev_map[dev_index].bit_mask & d3_sts_index ?
+			   "D3" : "D0");
+
+> +static int pmc_probe(struct pci_dev *pdev,
+> +			  const struct pci_device_id *unused)
+> +{
+
+> +	pmc = devm_kzalloc(&pdev->dev, sizeof(struct pmc_dev), GFP_KERNEL);
+> +	if (!pmc) {
+> +		dev_err(&pdev->dev, "error: could not allocate memory\n");
+
+Unnecessary OOM message, kzalloc will dump_stack()
 
 
-Hi Linus,
-
-mostly intel and radeon fixes, one tda998x, one kconfig dep fix and two 
-more MAINTAINERS updates,
-
-All pretty run of the mill for this stage,
-
-Dave.
-
-The following changes since commit 0414855fdc4a40da05221fc6062cccbc0c30f169:
-
-  Linux 3.14-rc5 (2014-03-02 18:56:16 -0800)
-
-are available in the git repository at:
-
-  git://people.freedesktop.org/~airlied/linux drm-fixes
-
-for you to fetch changes up to 45db98e54242f3ae94bdcfbfe754e743252eb168:
-
-  Merge branch 'drm-fixes-3.14' of git://people.freedesktop.org/~agd5f/linux into drm-fixes (2014-03-07 09:27:22 +1000)
-
-----------------------------------------------------------------
-
-Akash Goel (1):
-      drm/i915: Resolving the memory region conflict for Stolen area
-
-Alex Deucher (4):
-      drm/radeon: resume old pm late
-      drm/radeon/cik: fix typo in documentation
-      drm/radeon/dpm: fix typo in EVERGREEN_SMC_FIRMWARE_HEADER_softRegisters
-      drm/radeon/atom: select the proper number of lanes in transmitter setup
-
-Dave Airlie (5):
-      MAINTAINERS: update AGP tree to point at drm tree
-      Merge tag 'drm-intel-fixes-2014-03-04' of ssh://git.freedesktop.org/git/drm-intel into drm-fixes
-      Merge branch 'drm-fixes-3.14' of git://people.freedesktop.org/~agd5f/linux into drm-fixes
-      Merge branch 'drm-armada-fixes' of git://ftp.arm.linux.org.uk/~rmk/linux-cubox into drm-fixes
-      Merge branch 'drm-fixes-3.14' of git://people.freedesktop.org/~agd5f/linux into drm-fixes
-
-Gerd Hoffmann (1):
-      drm: fix bochs kconfig dependencies
-
-Imre Deak (2):
-      drm/i915: fix pch pci device enumeration
-      drm/i915: vlv: reserve GT power context early
-
-Jani Nikula (1):
-      drm/i915: use backlight legacy combination mode also for i915gm/i945gm
-
-Lauri Kasanen (1):
-      drm/radeon: TTM must be init with cpu-visible VRAM, v2
-
-Paul Bolle (1):
-      drm/radeon: silence GCC warning on 32 bit
-
-Paulo Zanoni (1):
-      drm/i915: fix assert_cursor on BDW
-
-Russell King (2):
-      DRM: armada: fix use of kfifo_put()
-      MAINTAINERS: add maintainer entry for TDA998x driver
-
-Ville Syrjälä (1):
-      drm/i915: Reject >165MHz modes w/ DVI monitors
-
- MAINTAINERS                                |  8 +++++++-
- drivers/gpu/drm/armada/armada_drv.c        | 10 +---------
- drivers/gpu/drm/bochs/Kconfig              |  1 +
- drivers/gpu/drm/i915/i915_drv.c            | 23 +++++++++--------------
- drivers/gpu/drm/i915/i915_gem_stolen.c     | 19 ++++++++++++++++---
- drivers/gpu/drm/i915/intel_display.c       |  8 ++++----
- drivers/gpu/drm/i915/intel_hdmi.c          |  6 +++---
- drivers/gpu/drm/i915/intel_panel.c         |  4 ++--
- drivers/gpu/drm/i915/intel_pm.c            |  6 ++++--
- drivers/gpu/drm/radeon/atombios_encoders.c |  2 +-
- drivers/gpu/drm/radeon/cik.c               |  5 +++--
- drivers/gpu/drm/radeon/evergreen.c         |  3 ++-
- drivers/gpu/drm/radeon/evergreen_smc.h     |  2 +-
- drivers/gpu/drm/radeon/ni.c                |  3 ++-
- drivers/gpu/drm/radeon/r100.c              |  2 --
- drivers/gpu/drm/radeon/r300.c              |  2 --
- drivers/gpu/drm/radeon/r420.c              |  2 --
- drivers/gpu/drm/radeon/r520.c              |  2 --
- drivers/gpu/drm/radeon/r600.c              |  3 ++-
- drivers/gpu/drm/radeon/radeon_device.c     |  5 ++++-
- drivers/gpu/drm/radeon/radeon_ttm.c        |  5 ++++-
- drivers/gpu/drm/radeon/rs400.c             |  2 --
- drivers/gpu/drm/radeon/rs600.c             |  2 --
- drivers/gpu/drm/radeon/rs690.c             |  2 --
- drivers/gpu/drm/radeon/rv515.c             |  2 --
- drivers/gpu/drm/radeon/rv770.c             |  3 ++-
- drivers/gpu/drm/radeon/si.c                |  3 ++-
- 27 files changed, 70 insertions(+), 65 deletions(-)
---29444707-1493505853-1394152714=:25778--
