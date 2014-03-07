@@ -1,64 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753844AbaCGWIV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 17:08:21 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:51500 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752299AbaCGWIU (ORCPT
+	id S1753931AbaCGWJA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 17:09:00 -0500
+Received: from ihemail3.lucent.com ([135.245.0.37]:33300 "EHLO
+	ihemail3.lucent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752060AbaCGWI6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 17:08:20 -0500
+	Fri, 7 Mar 2014 17:08:58 -0500
+From: "Li, Bin (Bin)" <bin.bl.li@alcatel-lucent.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Paolo Bonzini <pbonzini@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "Jatania, Neel (Neel)" <Neel.Jatania@alcatel-lucent.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: Enhancement for PLE handler in KVM
+Thread-Topic: Enhancement for PLE handler in KVM
+Thread-Index: AQHPNw3F4lhzD8AlbUmUFBaMt3tdkZrQESCAgAJ5ASCAAF+xgP//5v4AgAJ5Z4CAAGTSoIAAj6mA///vIRA=
+Date: Fri, 7 Mar 2014 22:08:52 +0000
+Message-ID: <72F5E0D8DB6D83469579E473AD72DB23779F88CA@US70UWXCHMBA01.zam.alcatel-lucent.com>
+References: <53061044.2000009@alcatel-lucent.com>
+ <530B9637.6030708@alcatel-lucent.com> <5314C8C3.3090607@alcatel-lucent.com>
+ <5314D61B.9050407@redhat.com>
+ <72F5E0D8DB6D83469579E473AD72DB23779EFF64@US70UWXCHMBA01.zam.alcatel-lucent.com>
+ <53173961.6080301@redhat.com>
+ <72F5E0D8DB6D83469579E473AD72DB23779F1B6B@US70UWXCHMBA01.zam.alcatel-lucent.com>
+ <20140307030636.GA13701@amt.cnet>
+ <72F5E0D8DB6D83469579E473AD72DB23779F63B3@US70UWXCHMBA01.zam.alcatel-lucent.com>
+ <20140307174139.GB30738@amt.cnet>
+In-Reply-To: <20140307174139.GB30738@amt.cnet>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [135.5.27.17]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1394226207.7470.15.camel@x220>
-References: <1391886379.2669.11.camel@x41> <CAKMK7uE6Gaq-ghgWJ+6Qyn7hrGzAMOHyGT9KQQJ+ij7omPV2Ew@mail.gmail.com>
- <1391890927.1882.5.camel@x41> <CAKMK7uFx2kksGgnuy9e0xiQRKpt=_+44O1V4wbX5yNBocvjBkg@mail.gmail.com>
- <1391951759.6036.7.camel@artifact> <1391952344.25424.4.camel@x220>
- <CAErSpo6uj_Kuk0_F97nRsnM1Pss4C7=HeEaVu6D-NwFFK=1cvA@mail.gmail.com>
- <1394185698.5608.5.camel@x41> <CAErSpo4jiq38P3TNuGLGS--nbV9NtUAmiuK=cwWyFAneY-=eOA@mail.gmail.com>
- <1394212609.1987.6.camel@x41> <20140307204021.GA9822@google.com> <1394226207.7470.15.camel@x220>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 7 Mar 2014 15:07:59 -0700
-Message-ID: <CAErSpo6frh_2Yi4pFBEcvsyneUvJQy2V6WVnACP3iaRcF1MR-A@mail.gmail.com>
-Subject: Re: [Intel-gfx] agp/intel: can't ioremap flush page - no chipset flushing
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Steven Newbury <steve@snewbury.org.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 7, 2014 at 2:03 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> On Fri, 2014-03-07 at 13:40 -0700, Bjorn Helgaas wrote:
->> It seems quite possible that I broke pci_bus_alloc_resource(), which could
->> cause an allocation failure like this.
->>
->> If you have a chance to try it, here's a debug patch against v3.14-rc5.  It
->> should apply cleanly to 96702be56037.  If you can try it, please attach the
->> dmesg log to the bugzilla.
->
-> That ThinkPad X41 is now building 96702be56037. Once that build is
-> finished and tested I'll try your debug patch (on top of v3.14-rc5, see
-> later). It might take some time to finish both builds and test boots.
+Fully agree.
+It will be a very helpful feature to make ple setting per VM. 
+This feature will provide more flexible control to the VM user. All KVM user will love to have it.
 
-> My v3.13 based builds don't have INTEL_GTT set! My v3.14-rcy based
-> builds do. I have not yet investigated why that is.
+The enhancement we proposed is neither overlapping nor conflicting with this feature. The enhancement is targeting to provide the best real time performance to the guest OS.
+There will be more and more embedded system migrating to KVM. Especially in the telecom industry. And a lot of existing system will be running on top of customized embedded OS which significant different from generic OS (either linux  or windows ).
 
-I think that's OK.  CONFIG_INTEL_GTT was added after v3.13
-(00fe639a56b4 "drm/i915: Make AGP support optional").  It looks like
-in v3.13, intel-gtt.o was built if CONFIG_AGP_INTEL=y (or =m), which
-you probably do have (see drivers/char/agp/Makefile).
+Is there any concern regarding to the enhancement we need to address? Or more work need to be done?
 
-> Too bad drivers/pci/bus.o is built in by definition. If only one could
-> build a kernel without rebuilding all modules. Or is there some way to
-> actually do that?
+Regards
+Bin
 
-You should be able to "make bzImage" and get just the kernel.  But
-there might be module loading issues if the modules don't exactly
-match the kernel.  I think it's possible to turn that checking off,
-but I don't do it often enough to remember details.
+-----Original Message-----
+From: Marcelo Tosatti [mailto:mtosatti@redhat.com] 
+Sent: Friday, March 07, 2014 12:42 PM
+To: Li, Bin (Bin)
+Cc: Paolo Bonzini; kvm@vger.kernel.org; Jatania, Neel (Neel); linux-kernel@vger.kernel.org
+Subject: Re: Enhancement for PLE handler in KVM
 
-Bjorn
+On Fri, Mar 07, 2014 at 02:26:19PM +0000, Li, Bin (Bin) wrote:
+> Can we have "per-VM PLE values"?
+> 
+> My understanding is that the ple values are kvm module setting which applying to all VMs in the system.
+> And all vms must be stopped first, then unload kvm-intel, reload kvm-intel with new ple setting.
+> 
+> /sbin/modprobe -r kvm-intel
+> /sbin/modprobe kvm-intel ple_window=16384
+> 
+> Regards
+> Bin
+
+Yes, but it can be made per-VM (its a VMCS field).
+
