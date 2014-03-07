@@ -1,144 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753064AbaCHFgp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 00:36:45 -0500
-Received: from mail-we0-f179.google.com ([74.125.82.179]:36726 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751978AbaCHFaV (ORCPT
+	id S1754062AbaCHFhz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 00:37:55 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:36606 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217AbaCHFaS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 00:30:21 -0500
+	Sat, 8 Mar 2014 00:30:18 -0500
 From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v6 6/8] of: Implement simplified graph binding for single port devices
-To: Philipp Zabel <p.zabel@pengutronix.de>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        devicetree@vger.kernel.org, Philipp Zabel <p.zabel@pengutronix.de>
-In-Reply-To: <1394011242-16783-7-git-send-email-p.zabel@pengutronix.de>
-References: <1394011242-16783-1-git-send-email-p.zabel@pengutronix.de> < 1394011242-16783-7-git-send-email-p.zabel@pengutronix.de>
-Date: Fri, 07 Mar 2014 18:38:02 +0000
-Message-Id: <20140307183802.B6E90C40C6F@trevor.secretlab.ca>
+Subject: Re: [PATCH] MAINTAINERS: add maintainers for arm64 acpi
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        Graeme Gregory <graeme@xora.org.uk>
+Cc: "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "lenb@kernel.org" <lenb@kernel.org>
+In-Reply-To: <20140304235044.GB11418@arm.com>
+References: <1393899345-7397-1-git-send-email-graeme.gregory@linaro.org> < 1393899345-7397-2-git-send-email-graeme.gregory@linaro.org> <20140304102316 .GG30596@arm.com> <20140304190318.GE28736@xora-yoga13> <20140304235044. GB11418@arm.com>
+Date: Fri, 07 Mar 2014 20:40:21 +0800
+Message-Id: <20140307124021.BB567C40928@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  5 Mar 2014 10:20:40 +0100, Philipp Zabel <p.zabel@pengutronix.de> wrote:
-> For simple devices with only one port, it can be made implicit.
-> The endpoint node can be a direct child of the device node.
+On Tue, 4 Mar 2014 23:50:44 +0000, Catalin Marinas <catalin.marinas@arm.com> wrote:
+> On Tue, Mar 04, 2014 at 07:03:18PM +0000, Graeme Gregory wrote:
+> > On Tue, Mar 04, 2014 at 10:23:16AM +0000, Catalin Marinas wrote:
+> > > On Tue, Mar 04, 2014 at 02:15:45AM +0000, Graeme Gregory wrote:
+> > > > +ACPI ARM64
+> > > 
+> > > That's a pretty broad statement for a single file. Is it core support,
+> > > architected peripherals, SoC?
+> > > 
+> > Hi Catalin would changing the title to ACPI ARM64 Core Support be better
+> > in your mind. I do intend for the maintainership to cover just the
+> > plat/arm-core.c file.
 > 
-> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> See my reply to Grant. If that's the only thing you guys are aiming for,
+> who's in charge of the other bits? Face-to-face meeting in 3 hours
+> anyway, so we can get back here with the conclusion.
 
-Ergh... I think this is too loosely defined. The caller really should be
-explicit about which behaviour it needs. I'll listen to arguments
-though if you can make a strong argument.
+Update for the benefit of those who weren't at Connect. I really think
+Hanjun and Graeme can do an excellent job here, but I appreciate that
+they are new to maintainership. To help them along, I'll mentor them in
+the maintainer process. I'm encouraging them to take the lead, but I'll
+be reading all the patches and I'll jump into the conversation if I
+think it is going off the rails. I'll also ack patches when I think they
+are in good shape and there is it is well defined what the boundaries
+need to be.
+
+We all agree that the current patches are not ready to be merged and
+there is feedback to be addressed before the next merge request. We will
+not attempt to merge without acks from Catalin.
+
+Also missing is a clear statement of how ACPI works on ARM. There needs
+to be a straight forward description of how ACPI PM works and how it is
+different from using FDT. That document will be written in short
+order and posted for review.
 
 g.
-
-> --- > Changes since v5:
->  - Unrolled for-loop in of_graph_get_remote_port_parent
-> ---
->  drivers/of/base.c | 42 +++++++++++++++++++++++++++++-------------
->  1 file changed, 29 insertions(+), 13 deletions(-)
-> 
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index 715144af..ffd0217 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -2003,7 +2003,8 @@ int of_graph_parse_endpoint(const struct device_node *node,
->  	 * It doesn't matter whether the two calls below succeed.
->  	 * If they don't then the default value 0 is used.
->  	 */
-> -	of_property_read_u32(port_node, "reg", &endpoint->port);
-> +	if (port_node && !of_node_cmp(port_node->name, "port"))
-> +		of_property_read_u32(port_node, "reg", &endpoint->port);
->  	of_property_read_u32(node, "reg", &endpoint->id);
->  
->  	of_node_put(port_node);
-> @@ -2034,8 +2035,13 @@ struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
->  		struct device_node *node;
->  		/*
->  		 * It's the first call, we have to find a port subnode
-> -		 * within this node or within an optional 'ports' node.
-> +		 * within this node or within an optional 'ports' node,
-> +		 * or at least a single endpoint.
->  		 */
-> +		endpoint = of_get_child_by_name(parent, "endpoint");
-> +		if (endpoint)
-> +			return endpoint;
-> +
->  		node = of_get_child_by_name(parent, "ports");
->  		if (node)
->  			parent = node;
-> @@ -2046,8 +2052,6 @@ struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
->  			/* Found a port, get an endpoint. */
->  			endpoint = of_get_next_child(port, NULL);
->  			of_node_put(port);
-> -		} else {
-> -			endpoint = NULL;
->  		}
->  
->  		if (!endpoint)
-> @@ -2062,6 +2066,10 @@ struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
->  	if (WARN_ONCE(!port, "%s(): endpoint %s has no parent node\n",
->  		      __func__, prev->full_name))
->  		return NULL;
-> +	if (port == parent) {
-> +		of_node_put(port);
-> +		return NULL;
-> +	}
->  
->  	/* Avoid dropping prev node refcount to 0. */
->  	of_node_get(prev);
-> @@ -2097,18 +2105,21 @@ struct device_node *of_graph_get_remote_port_parent(
->  			       const struct device_node *node)
->  {
->  	struct device_node *np;
-> -	unsigned int depth;
->  
->  	/* Get remote endpoint node. */
->  	np = of_parse_phandle(node, "remote-endpoint", 0);
-> +	if (!np)
-> +		return NULL;
->  
-> -	/* Walk 3 levels up only if there is 'ports' node. */
-> -	for (depth = 3; depth && np; depth--) {
-> -		np = of_get_next_parent(np);
-> -		if (depth == 2 && of_node_cmp(np->name, "ports"))
-> -			break;
-> -	}
-> -	return np;
-> +	np = of_get_next_parent(np);
-> +	if (!np || of_node_cmp(np->name, "port") != 0)
-> +		return np;
-> +
-> +	np = of_get_next_parent(np);
-> +	if (!np || of_node_cmp(np->name, "ports") != 0)
-> +		return np;
-> +
-> +	return of_get_next_parent(np);
->  }
->  EXPORT_SYMBOL(of_graph_get_remote_port_parent);
->  
-> @@ -2127,6 +2138,11 @@ struct device_node *of_graph_get_remote_port(const struct device_node *node)
->  	np = of_parse_phandle(node, "remote-endpoint", 0);
->  	if (!np)
->  		return NULL;
-> -	return of_get_next_parent(np);
-> +	np = of_get_next_parent(np);
-> +	if (of_node_cmp(np->name, "port")) {
-> +		of_node_put(np);
-> +		return NULL;
-> +	}
-> +	return np;
->  }
->  EXPORT_SYMBOL(of_graph_get_remote_port);
-> -- 
-> 1.9.0.rc3
-> 
-
