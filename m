@@ -1,82 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754140AbaCGXM1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 18:12:27 -0500
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:49555 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751951AbaCGXMY (ORCPT
+	id S1753209AbaCGXPo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 18:15:44 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41844 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752060AbaCGXPn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 18:12:24 -0500
+	Fri, 7 Mar 2014 18:15:43 -0500
+Date: Fri, 7 Mar 2014 15:15:28 -0800
+From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
+Message-ID: <tip-5fa10196bdb5f190f595ebd048490ee52dddea0f@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com, dzickus@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com, dzickus@redhat.com
+In-Reply-To: <1394221143-29713-1-git-send-email-dzickus@redhat.com>
+References: <1394221143-29713-1-git-send-email-dzickus@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86: Ignore NMIs that come in during early boot
+Git-Commit-ID: 5fa10196bdb5f190f595ebd048490ee52dddea0f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <20140307215808.3755f855@alan.etchedpixels.co.uk>
-References: <1394131242-29567-1-git-send-email-dh.herrmann@gmail.com>
-	<20140307215808.3755f855@alan.etchedpixels.co.uk>
-Date: Sat, 8 Mar 2014 00:12:24 +0100
-Message-ID: <CANq1E4Q07SYZVEZ4Xfbc=wwTO2aNqahLU4Bo-0Awj7TUKwESYw@mail.gmail.com>
-Subject: Re: [RFC] drm: add kernel-log renderer
-From: David Herrmann <dh.herrmann@gmail.com>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dave Airlie <airlied@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Commit-ID:  5fa10196bdb5f190f595ebd048490ee52dddea0f
+Gitweb:     http://git.kernel.org/tip/5fa10196bdb5f190f595ebd048490ee52dddea0f
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Fri, 7 Mar 2014 15:05:20 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 7 Mar 2014 15:08:14 -0800
 
-On Fri, Mar 7, 2014 at 10:58 PM, One Thousand Gnomes
-<gnomes@lxorguk.ukuu.org.uk> wrote:
->>  - The renderer supports *any* RGB target, from 8bit to 32bit with
->>    big-endian and little-endian support. The related pixel-renderer will
->>    probably never win a beauty-contest, but it works.. Again, who cares
->>    for debug-log rendering speed?
->
-> Debug log writing performance is extremely important when you are using
-> the log for debugging work rather than for panic display. I don't think
-> that is a show stopper because having a logger makes sense and someone
-> can write a better render engine if they care.
+x86: Ignore NMIs that come in during early boot
 
-I don't do damage-based rendering (useless if you don't do
-hw-scrolling), therefore you can easily configure the higher-level API
-to render in a 50ms (or even 500ms) interval if anything changed. This
-should be suitable for other use-cases and avoids hogging the CPU like
-VTs do. Furthermore, you can just avoid rendering until something
-useful happened that you *want* to see. Last but not least, when
-something goes wrong, the panic-handler will always print the latest
-log, so that should contain all useful information.
-Anyhow, I need specific use-cases to comment on that.
+Don Zickus reports:
 
-> Supporting any target is also going to be useful but you do need to
-> support non linear framebuffers. A GMA500 with something like an X
-> display in use for example does not have a linear mapping of the
-> framebuffer memory. I don't believe its exactly unique in this.
+A customer generated an external NMI using their iLO to test kdump
+worked.  Unfortunately, the machine hung.  Disabling the nmi_watchdog
+made things work.
 
-Should be fairly easy to do. But as long as you can atomically flip to
-a linear FB, that's not needed as you can use a separate FB for the
-render-log (which is also what we currently do for fbdev-fallbacks).
-But imho most drivers allow you to easily map it linearly via the GTT,
-so I haven't bothered supported tiled setups. If drivers need that,
-they can tell me what formats exactly to support and I can add that.
+I speculated the external NMI fired, caused the machine to panic (as
+expected) and the perf NMI from the watchdog came in and was latched.
+My guess was this somehow caused the hang.
 
-> What I am more dubious about is tying it to DRM. Yes it uses DRM
-> constants but it doesn't appear functionally to have a single tie to
-> either DRM or even framebuffer.
->
-> It's potentially useful in cases where neither framebuffer or DRM are
-> compiled into the system.
+   ----
 
-Using the four-cc constants makes sense, imho. Apart from that,
-drm_log.c will stay generic as it is now. There is nothing
-DRM-specific in there. All the higher-level helpers are separate in
-drm_log_helpers.c (which is not posted here). However, I've spent
-enough time trying to get the attention of core maintainers for simple
-fixes, I really don't want to waste my time pinging on feature-patches
-every 5 days to get any attention. If someone outside of DRM wants to
-use it, I'd be happy to discuss any code-sharing. Until then, I'd like
-to keep it here as people are willing to take it through their tree.
+It appears that the latched NMI stays latched until the early page
+table generation on 64 bits, which causes exceptions to happen which
+end in IRET, which re-enable NMI.  Therefore, ignore NMIs that come in
+during early execution, until we have proper exception handling.
 
-Cheers
-David
+Reported-and-tested-by: Don Zickus <dzickus@redhat.com>
+Link: http://lkml.kernel.org/r/1394221143-29713-1-git-send-email-dzickus@redhat.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: <stable@vger.kernel.org> # v3.5+, older with some backport effort
+---
+ arch/x86/kernel/head_32.S | 7 ++++++-
+ arch/x86/kernel/head_64.S | 6 +++++-
+ 2 files changed, 11 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
+index 81ba276..d2a2159 100644
+--- a/arch/x86/kernel/head_32.S
++++ b/arch/x86/kernel/head_32.S
+@@ -544,6 +544,10 @@ ENDPROC(early_idt_handlers)
+ 	/* This is global to keep gas from relaxing the jumps */
+ ENTRY(early_idt_handler)
+ 	cld
++
++	cmpl $X86_TRAP_NMI,(%esp)
++	je is_nmi		# Ignore NMI
++
+ 	cmpl $2,%ss:early_recursion_flag
+ 	je hlt_loop
+ 	incl %ss:early_recursion_flag
+@@ -594,8 +598,9 @@ ex_entry:
+ 	pop %edx
+ 	pop %ecx
+ 	pop %eax
+-	addl $8,%esp		/* drop vector number and error code */
+ 	decl %ss:early_recursion_flag
++is_nmi:
++	addl $8,%esp		/* drop vector number and error code */
+ 	iret
+ ENDPROC(early_idt_handler)
+ 
+diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
+index e1aabdb..33f36c7 100644
+--- a/arch/x86/kernel/head_64.S
++++ b/arch/x86/kernel/head_64.S
+@@ -343,6 +343,9 @@ early_idt_handlers:
+ ENTRY(early_idt_handler)
+ 	cld
+ 
++	cmpl $X86_TRAP_NMI,(%rsp)
++	je is_nmi		# Ignore NMI
++
+ 	cmpl $2,early_recursion_flag(%rip)
+ 	jz  1f
+ 	incl early_recursion_flag(%rip)
+@@ -405,8 +408,9 @@ ENTRY(early_idt_handler)
+ 	popq %rdx
+ 	popq %rcx
+ 	popq %rax
+-	addq $16,%rsp		# drop vector number and error code
+ 	decl early_recursion_flag(%rip)
++is_nmi:
++	addq $16,%rsp		# drop vector number and error code
+ 	INTERRUPT_RETURN
+ ENDPROC(early_idt_handler)
+ 
