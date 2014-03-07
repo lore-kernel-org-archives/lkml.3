@@ -1,75 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753543AbaCGO01 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 09:26:27 -0500
-Received: from ihemail1.lucent.com ([135.245.0.33]:60267 "EHLO
-	ihemail1.lucent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752826AbaCGO0Y convert rfc822-to-8bit (ORCPT
+	id S1753164AbaCGO3S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 09:29:18 -0500
+Received: from relay.parallels.com ([195.214.232.42]:33224 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751453AbaCGO3Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 09:26:24 -0500
-From: "Li, Bin (Bin)" <bin.bl.li@alcatel-lucent.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Paolo Bonzini <pbonzini@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "Jatania, Neel (Neel)" <Neel.Jatania@alcatel-lucent.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: Enhancement for PLE handler in KVM
-Thread-Topic: Enhancement for PLE handler in KVM
-Thread-Index: AQHPNw3F4lhzD8AlbUmUFBaMt3tdkZrQESCAgAJ5ASCAAF+xgP//5v4AgAJ5Z4CAAGTSoA==
-Date: Fri, 7 Mar 2014 14:26:19 +0000
-Message-ID: <72F5E0D8DB6D83469579E473AD72DB23779F63B3@US70UWXCHMBA01.zam.alcatel-lucent.com>
-References: <53061044.2000009@alcatel-lucent.com>
- <530B9637.6030708@alcatel-lucent.com> <5314C8C3.3090607@alcatel-lucent.com>
- <5314D61B.9050407@redhat.com>
- <72F5E0D8DB6D83469579E473AD72DB23779EFF64@US70UWXCHMBA01.zam.alcatel-lucent.com>
- <53173961.6080301@redhat.com>
- <72F5E0D8DB6D83469579E473AD72DB23779F1B6B@US70UWXCHMBA01.zam.alcatel-lucent.com>
- <20140307030636.GA13701@amt.cnet>
-In-Reply-To: <20140307030636.GA13701@amt.cnet>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [135.5.27.17]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 7 Mar 2014 09:29:16 -0500
+Message-ID: <5319D7B9.6050000@parallels.com>
+Date: Fri, 7 Mar 2014 18:29:13 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
+To: Artem Fetishev <artem_fetishev@epam.com>, <akpm@linux-foundation.org>
+CC: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <wiebittewas@googlemail.com>, <alexandr_terekhov@epam.com>
+Subject: Re: [PATCH] proc: #68991 Fix GPF in /proc/$PID/map_files
+References: <20140308022033.GC5690@owamsq.epam.com>
+In-Reply-To: <20140308022033.GC5690@owamsq.epam.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.16.114]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Can we have "per-VM PLE values"?
-
-My understanding is that the ple values are kvm module setting which applying to all VMs in the system.
-And all vms must be stopped first, then unload kvm-intel, reload kvm-intel with new ple setting.
-
-/sbin/modprobe -r kvm-intel
-/sbin/modprobe kvm-intel ple_window=16384
-
-Regards
-Bin
-
------Original Message-----
-From: Marcelo Tosatti [mailto:mtosatti@redhat.com] 
-Sent: Thursday, March 06, 2014 10:07 PM
-To: Li, Bin (Bin)
-Cc: Paolo Bonzini; kvm@vger.kernel.org; Jatania, Neel (Neel); linux-kernel@vger.kernel.org; Peter Zijlstra; Mike Galbraith; Chris Wright; ttracy@redhat.com; Nakajima, Jun; riel@redhat.com
-Subject: Re: Enhancement for PLE handler in KVM
-
-On Wed, Mar 05, 2014 at 09:16:45PM +0000, Li, Bin (Bin) wrote:
-> Did you also find out here why this is the case?
+On 03/08/2014 06:20 AM, Artem Fetishev wrote:
+> https://bugzilla.kernel.org/show_bug.cgi?id=68991
 > 
-> Binl:
-> Yes. The application running in our customized embedded OS is also real time application which is timing sensitive. 
-> The timing sensitive level varies among the applications.
-> When I talking about different threshold, the assumption is using default 4096 ple_window setting.
-> If I set up the ple_window to 16384 or higher, there will be no problem for our application. But the finial user could also run linux or window VM on same hypervisor which would prefer default 4096 setting for linux and windows.
-
-Then have per-VM PLE values?
-
-> We are looking for a solution to be good for both linux / window and real time application.
-> The enhancement patch we proposed will satisfy both linux/window application and real time embedded applications.
+> The expected logic of proc_map_files_get_link() is either to return 0 and
+> initialize 'path' or return an error and leave 'path' uninitialized. By the time
+> dname_to_vma_addr() returns 0 the corresponding vma may have already be gone. In
+> this case the path is not initialized but the return value is still 0. This
+> results in 'general protection fault' inside d_path().
 > 
-> Paolo
+> Steps to reproduce:
+> CONFIG_CHECKPOINT_RESTORE=y
+> 
+> fd = open(...);
+> while (1) {
+> 	mmap(fd, ...);
+> 	munmap(fd, ...);
+> }
+> 
+> ls -la /proc/$PID/map_files
+> 
+> Signed-off-by: Artem Fetishev <artem_fetishev@epam.com>
+> Signed-off-by: Aleksandr Terekhov <aleksandr_terekhov@epam.com>
+
+Acked-by: Pavel Emelyanov <xemul@parallels.com>
+
+
+> ---
+> diff --git a/fs/proc/base.c b/fs/proc/base.c
+> index 5150706..b976062 100644
+> --- a/fs/proc/base.c
+> +++ b/fs/proc/base.c
+> @@ -1824,6 +1824,7 @@ static int proc_map_files_get_link(struct dentry *dentry, struct path *path)
+>  	if (rc)
+>  		goto out_mmput;
+>  
+> +	rc = -ENOENT;
+>  	down_read(&mm->mmap_sem);
+>  	vma = find_exact_vma(mm, vm_start, vm_end);
+>  	if (vma && vma->vm_file) {
+> .
+> 
 
 
