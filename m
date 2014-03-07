@@ -1,64 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751099AbaCHFb4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 00:31:56 -0500
-Received: from mail-we0-f180.google.com ([74.125.82.180]:58768 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752752AbaCHFa2 (ORCPT
+	id S1753383AbaCHFby (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 00:31:54 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:61595 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752793AbaCHFaa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 00:30:28 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v6 3/8] of: Warn if of_graph_get_next_endpoint is called with the root node
-To: Philipp Zabel <p.zabel@pengutronix.de>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        devicetree@vger.kernel.org, Philipp Zabel <p.zabel@pengutronix.de>
-In-Reply-To: <1394011242-16783-4-git-send-email-p.zabel@pengutronix.de>
-References: <1394011242-16783-1-git-send-email-p.zabel@pengutronix.de> < 1394011242-16783-4-git-send-email-p.zabel@pengutronix.de>
-Date: Fri, 07 Mar 2014 18:28:03 +0000
-Message-Id: <20140307182803.A565BC40B63@trevor.secretlab.ca>
+	Sat, 8 Mar 2014 00:30:30 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v6 3/6] pci: Create pci_host_bridge before its associated bus in pci_create_root_bus.
+To: Liviu Dudau <Liviu.Dudau@arm.com>, linux-pci <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        LKML <linux-kernel@vger.kernel.org>, Tanmay Inamdar <tinamdar@apm.com>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <1394020137-1830-4-git-send-email-Liviu.Dudau@arm.com>
+References: <1394020137-1830-1-git-send-email-Liviu.Dudau@arm.com> < 1394020137-1830-4-git-send-email-Liviu.Dudau@arm.com>
+Date: Fri, 07 Mar 2014 21:07:48 +0000
+Message-Id: <20140307210748.A20EFC40E11@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  5 Mar 2014 10:20:37 +0100, Philipp Zabel <p.zabel@pengutronix.de> wrote:
-> If of_graph_get_next_endpoint is given a parentless node instead of an
-> endpoint node, it is clearly a bug.
+On Wed,  5 Mar 2014 11:48:54 +0000, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+> Before commit 7b5436635800 the pci_host_bridge was created before the root bus.
+> As that commit has added a needless dependency on the bus for pci_alloc_host_bridge()
+> the creation order has been changed for no good reason. Revert the order of
+> creation as we are going to depend on the pci_host_bridge structure to retrieve the
+> domain number of the root bus.
 > 
-> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+> Tested-by: Tanmay Inamdar <tinamdar@apm.com>
 
 Acked-by: Grant Likely <grant.likely@linaro.org>
 
 > ---
-> Changes since v5:
->  - Added parentless previous endpoint's full name to warning
-> ---
->  drivers/of/base.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+>  drivers/pci/probe.c | 36 ++++++++++++++++++------------------
+>  1 file changed, 18 insertions(+), 18 deletions(-)
 > 
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index b2f223f..b5e690b 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -2028,8 +2028,8 @@ struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
->  		of_node_put(node);
->  	} else {
->  		port = of_get_parent(prev);
-> -		if (!port)
-> -			/* Hm, has someone given us the root node ?... */
-> +		if (WARN_ONCE(!port, "%s(): endpoint %s has no parent node\n",
-> +			      __func__, prev->full_name))
->  			return NULL;
+> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> index 6e34498..fd11c12 100644
+> --- a/drivers/pci/probe.c
+> +++ b/drivers/pci/probe.c
+> @@ -505,7 +505,7 @@ static void pci_release_host_bridge_dev(struct device *dev)
+>  	kfree(bridge);
+>  }
 >  
->  		/* Avoid dropping prev node refcount to 0. */
+> -static struct pci_host_bridge *pci_alloc_host_bridge(struct pci_bus *b)
+> +static struct pci_host_bridge *pci_alloc_host_bridge(void)
+>  {
+>  	struct pci_host_bridge *bridge;
+>  
+> @@ -514,7 +514,6 @@ static struct pci_host_bridge *pci_alloc_host_bridge(struct pci_bus *b)
+>  		return NULL;
+>  
+>  	INIT_LIST_HEAD(&bridge->windows);
+> -	bridge->bus = b;
+>  	return bridge;
+>  }
+>  
+> @@ -1727,9 +1726,19 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+>  	char bus_addr[64];
+>  	char *fmt;
+>  
+> +	bridge = pci_alloc_host_bridge();
+> +	if (!bridge)
+> +		return NULL;
+> +
+> +	bridge->dev.parent = parent;
+> +	bridge->dev.release = pci_release_host_bridge_dev;
+> +	error = pcibios_root_bridge_prepare(bridge);
+> +	if (error)
+> +		goto err_out;
+> +
+>  	b = pci_alloc_bus();
+>  	if (!b)
+> -		return NULL;
+> +		goto err_out;
+>  
+>  	b->sysdata = sysdata;
+>  	b->ops = ops;
+> @@ -1738,26 +1747,15 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+>  	if (b2) {
+>  		/* If we already got to this bus through a different bridge, ignore it */
+>  		dev_dbg(&b2->dev, "bus already known\n");
+> -		goto err_out;
+> +		goto err_bus_out;
+>  	}
+>  
+> -	bridge = pci_alloc_host_bridge(b);
+> -	if (!bridge)
+> -		goto err_out;
+> -
+> -	bridge->dev.parent = parent;
+> -	bridge->dev.release = pci_release_host_bridge_dev;
+> +	bridge->bus = b;
+>  	dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
+> -	error = pcibios_root_bridge_prepare(bridge);
+> -	if (error) {
+> -		kfree(bridge);
+> -		goto err_out;
+> -	}
+> -
+>  	error = device_register(&bridge->dev);
+>  	if (error) {
+>  		put_device(&bridge->dev);
+> -		goto err_out;
+> +		goto err_bus_out;
+>  	}
+>  	b->bridge = get_device(&bridge->dev);
+>  	device_enable_async_suspend(b->bridge);
+> @@ -1814,8 +1812,10 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+>  class_dev_reg_err:
+>  	put_device(&bridge->dev);
+>  	device_unregister(&bridge->dev);
+> -err_out:
+> +err_bus_out:
+>  	kfree(b);
+> +err_out:
+> +	kfree(bridge);
+>  	return NULL;
+>  }
+>  
 > -- 
-> 1.9.0.rc3
+> 1.9.0
 > 
+> 
+> _______________________________________________
+> linaro-kernel mailing list
+> linaro-kernel@lists.linaro.org
+> http://lists.linaro.org/mailman/listinfo/linaro-kernel
 
