@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425AbaCGNg6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 08:36:58 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:60249 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752232AbaCGNg4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 08:36:56 -0500
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>
-CC: <dmaengine@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
-        <tony@atomide.com>
-Subject: [PATCH] dma: omap-dma: Implement device_slave_caps callback
-Date: Fri, 7 Mar 2014 15:36:44 +0200
-Message-ID: <1394199404-7870-1-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.9.0
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753508AbaCGNiU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 08:38:20 -0500
+Received: from smtp4.epfl.ch ([128.178.224.219]:34554 "EHLO smtp4.epfl.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753209AbaCGNiQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 08:38:16 -0500
+From: Florian Vaussard <florian.vaussard@epfl.ch>
+To: Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>
+Cc: Rob Herring <robh@kernel.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3 4/4] checkpatch: improve the compatible vendor match
+Date: Fri,  7 Mar 2014 14:38:03 +0100
+Message-Id: <1394199483-26147-1-git-send-email-florian.vaussard@epfl.ch>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1394198771-25913-5-git-send-email-florian.vaussard@epfl.ch>
+References: <1394198771-25913-5-git-send-email-florian.vaussard@epfl.ch>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the callback implemented omap-dma can provide information to client
-drivers regarding to supported address widths, directions, residue
-granularity, etc.
+From: Joe Perches <joe@perches.com>
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Improve the vendor name match in vendor-prefix.txt
+by only matching the exact vendor name at the beginning of lines.
+
+Signed-off-by: Joe Perches <joe@perches.com>
+[florian.vaussard@epfl.ch: split patch, commit log]
+Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
 ---
- drivers/dma/omap-dma.c | 18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+ scripts/checkpatch.pl | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/dma/omap-dma.c b/drivers/dma/omap-dma.c
-index 64ceca2920b8..b19f04f4390b 100644
---- a/drivers/dma/omap-dma.c
-+++ b/drivers/dma/omap-dma.c
-@@ -1088,6 +1088,23 @@ static void omap_dma_free(struct omap_dmadev *od)
- 	}
- }
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 9205153..5bda9f7 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -2047,9 +2047,11 @@ sub process {
  
-+#define OMAP_DMA_BUSWIDTHS	(BIT(DMA_SLAVE_BUSWIDTH_1_BYTE) | \
-+				 BIT(DMA_SLAVE_BUSWIDTH_2_BYTES) | \
-+				 BIT(DMA_SLAVE_BUSWIDTH_4_BYTES))
+ 			my @compats = $rawline =~ /\"([a-zA-Z0-9\-\,\.\+_]+)\"/g;
+ 
++			my $dt_path = $root . "/Documentation/devicetree/bindings/";
++			my $vp_file = $dt_path . "vendor-prefixes.txt";
 +
-+static int omap_dma_device_slave_caps(struct dma_chan *dchan,
-+				      struct dma_slave_caps *caps)
-+{
-+	caps->src_addr_widths = OMAP_DMA_BUSWIDTHS;
-+	caps->dstn_addr_widths = OMAP_DMA_BUSWIDTHS;
-+	caps->directions = BIT(DMA_DEV_TO_MEM) | BIT(DMA_MEM_TO_DEV);
-+	caps->cmd_pause = true;
-+	caps->cmd_terminate = true;
-+	caps->residue_granularity = DMA_RESIDUE_GRANULARITY_BURST;
-+
-+	return 0;
-+}
-+
- static int omap_dma_probe(struct platform_device *pdev)
- {
- 	struct omap_dmadev *od;
-@@ -1118,6 +1135,7 @@ static int omap_dma_probe(struct platform_device *pdev)
- 	od->ddev.device_prep_slave_sg = omap_dma_prep_slave_sg;
- 	od->ddev.device_prep_dma_cyclic = omap_dma_prep_dma_cyclic;
- 	od->ddev.device_control = omap_dma_control;
-+	od->ddev.device_slave_caps = omap_dma_device_slave_caps;
- 	od->ddev.dev = &pdev->dev;
- 	INIT_LIST_HEAD(&od->ddev.channels);
- 	INIT_LIST_HEAD(&od->pending);
+ 			foreach my $compat (@compats) {
+ 				my $compat2 = $compat;
+-				my $dt_path =  $root . "/Documentation/devicetree/bindings/";
+ 				$compat2 =~ s/\,[a-z]*\-/\,<\.\*>\-/;
+ 				`grep -Erq "$compat|$compat2" $dt_path`;
+ 				if ( $? >> 8 ) {
+@@ -2057,14 +2059,12 @@ sub process {
+ 					     "DT compatible string \"$compat\" appears un-documented -- check $dt_path\n" . $herecurr);
+ 				}
+ 
+-				my $vendor_path = $dt_path . "vendor-prefixes.txt";
+-				next if (! -f $vendor_path);
+ 				next if $compat !~ /^([a-zA-Z0-9\-]+)\,/;
+ 				my $vendor = $1;
+-				`grep -Eq "$vendor" $vendor_path`;
++				`grep -Eq "^$vendor\\b" $vp_file`;
+ 				if ( $? >> 8 ) {
+ 					WARN("UNDOCUMENTED_DT_STRING",
+-					     "DT compatible string vendor \"$vendor\" appears un-documented -- check $vendor_path\n" . $herecurr);
++					     "DT compatible string vendor \"$vendor\" appears un-documented -- check $vp_file\n" . $herecurr);
+ 				}
+ 			}
+ 		}
 -- 
-1.9.0
+1.8.5.3
 
