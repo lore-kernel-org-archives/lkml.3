@@ -1,78 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753277AbaCGMS1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 07:18:27 -0500
-Received: from mta-out.inet.fi ([195.156.147.13]:52377 "EHLO jenni1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751330AbaCGMSX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 07:18:23 -0500
-Date: Fri, 7 Mar 2014 14:18:10 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Bob Liu <lliubbo@gmail.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: mm: kernel BUG at mm/huge_memory.c:2785!
-Message-ID: <20140307121810.GA6740@node.dhcp.inet.fi>
-References: <530F3F0A.5040304@oracle.com>
- <20140227150313.3BA27E0098@blue.fi.intel.com>
- <CAA_GA1c02iSmkmCLHFkrK4b4W+JppZ4CSMUJ-Wn1rCs-c=dV6g@mail.gmail.com>
- <53169FC5.4080006@oracle.com>
- <531921C0.3030904@oracle.com>
+	id S1753294AbaCGMSu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 07:18:50 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:57338 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753196AbaCGMRw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 07:17:52 -0500
+From: Sricharan R <r.sricharan@ti.com>
+To: <r.sricharan@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <dmaengine@vger.kernel.org>
+CC: <santosh.shilimkar@ti.com>, <rnayak@ti.com>, <nsekhar@ti.com>,
+        <tony@atomide.com>, <linux@arm.linux.org.uk>, <vinod.koul@intel.com>,
+        <dan.j.williams@intel.com>, <nm@ti.com>
+Subject: [RFC PATCH 8/9] arm: dra: Enable dma crossbar support on dra7xx
+Date: Fri, 7 Mar 2014 17:46:15 +0530
+Message-ID: <1394194576-23741-9-git-send-email-r.sricharan@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1394194576-23741-1-git-send-email-r.sricharan@ti.com>
+References: <1394194576-23741-1-git-send-email-r.sricharan@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <531921C0.3030904@oracle.com>
-User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 06, 2014 at 08:32:48PM -0500, Sasha Levin wrote:
-> On 03/04/2014 10:53 PM, Sasha Levin wrote:
-> >On 03/04/2014 10:16 PM, Bob Liu wrote:
-> >>On Thu, Feb 27, 2014 at 11:03 PM, Kirill A. Shutemov
-> >><kirill.shutemov@linux.intel.com> wrote:
-> >>>Sasha Levin wrote:
-> >>>>Hi all,
-> >>>>
-> >>>>While fuzzing with trinity inside a KVM tools guest running latest -next kernel I've stumbled on the
-> >>>>following spew:
-> >>>>
-> >>>>[ 1428.146261] kernel BUG at mm/huge_memory.c:2785!
-> >>>
-> >>>Hm, interesting.
-> >>>
-> >>>It seems we either failed to split huge page on vma split or it
-> >>>materialized from under us. I don't see how it can happen:
-> >>>
-> >>>   - it seems we do the right thing with vma_adjust_trans_huge() in
-> >>>     __split_vma();
-> >>>   - we hold ->mmap_sem all the way from vm_munmap(). At least I don't see
-> >>>     a place where we could drop it;
-> >>>
-> >>
-> >>Enable CONFIG_DEBUG_VM may show some useful information, at least we
-> >>can confirm weather rwsem_is_locked(&tlb->mm->mmap_sem) before
-> >>split_huge_page_pmd().
-> >
-> >I have CONFIG_DEBUG_VM enabled and that code you're talking is not triggering, so mmap_sem
-> >is locked.
-> 
-> Guess what. I've just hit it.
+Enable dma crossbar support on dra7xx
 
-I think this particular traceback is not a real problem: by time of
-exit_mm() we shouldn't race with anybody for the mm_struct.
+Signed-off-by: Sricharan R <r.sricharan@ti.com>
+---
+ arch/arm/configs/omap2plus_defconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-We probably could drop ->mmap_sem later in mmput() rather then in
-exit_mm() to fix this false positive.
-
-> It's worth keeping in mind that this is the first time I see it.
-
-Hm. That's strange exit_mmap() is called without holding ->mmap_sem.
-
+diff --git a/arch/arm/configs/omap2plus_defconfig b/arch/arm/configs/omap2plus_defconfig
+index 3a0b53d..1cf8277 100644
+--- a/arch/arm/configs/omap2plus_defconfig
++++ b/arch/arm/configs/omap2plus_defconfig
+@@ -295,3 +295,4 @@ CONFIG_LIBCRC32C=y
+ CONFIG_FONTS=y
+ CONFIG_FONT_8x8=y
+ CONFIG_FONT_8x16=y
++CONFIG_OMAP_DMA_CROSSBAR=y
 -- 
- Kirill A. Shutemov
+1.7.9.5
+
