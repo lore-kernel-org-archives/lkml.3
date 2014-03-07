@@ -1,177 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753421AbaCGORS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 09:17:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49044 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752826AbaCGORQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 09:17:16 -0500
-Date: Fri, 7 Mar 2014 15:17:14 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Hugh Dickins <hughd@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Filipe Brandenburger <filbranden@google.com>,
-        Greg Thelen <gthelen@google.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH -mm] memcg: reparent only LRUs during
- mem_cgroup_css_offline
-Message-ID: <20140307141714.GD28816@dhcp22.suse.cz>
-References: <1392821509-976-1-git-send-email-mhocko@suse.cz>
- <alpine.LSU.2.11.1402261755230.975@eggly.anvils>
+	id S1753492AbaCGOTG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 09:19:06 -0500
+Received: from mail-yk0-f170.google.com ([209.85.160.170]:41300 "EHLO
+	mail-yk0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753064AbaCGOTE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 09:19:04 -0500
+Date: Fri, 7 Mar 2014 11:18:57 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Joseph Schuchart <joseph.schuchart@tu-dresden.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Thomas Ilsche <thomas.ilsche@tu-dresden.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Provide additional sample information to Python scripts
+Message-ID: <20140307141857.GA3153@ghostprotocols.net>
+References: <53031D2C.2050009@tu-dresden.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1402261755230.975@eggly.anvils>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53031D2C.2050009@tu-dresden.de>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 26-02-14 18:49:10, Hugh Dickins wrote:
-> On Wed, 19 Feb 2014, Michal Hocko wrote:
+Em Tue, Feb 18, 2014 at 09:43:24AM +0100, Joseph Schuchart escreveu:
+> Good morning,
 > 
-> > css_offline callback exported by the cgroup core is not intended to get
-> > rid of all the charges but rather to get rid of cached charges for the
-> > soon destruction. For the memory controller we have 2 different types of
-> > "cached" charges which prevent from the memcg destruction (because they
-> > pin memcg by css reference). Swapped out pages (when swap accounting is
-> > enabled) and kmem charges. None of them are dealt with in the current
-> > code.
-> > 
-> > What we do instead is that we are reducing res counter charges (reduced
-> > by kmem charges) to 0. And this hard down-to-0 requirement has led to
-> > several issues in the past when the css_offline loops without any way
-> > out e.g. memcg: reparent charges of children before processing parent.
-> > 
-> > The important thing is that we actually do not have to drop all the
-> > charges. Instead we want to reduce LRU pages (which do not pin memcg) as
-> > much as possible because they are not reachable by memcg iterators after
-> > css_offline code returns, thus they are not reclaimable anymore.
+> We have developed a patch for the perf Python scripting interface to
+> provide additional information about the pid, tid, and cpu of generic
+> events as well as information about the call-stack and resolved symbol
+> names. This provides scripts with a greater level of detail. The
+> mentioned information is already available to the scripting engine and
+> just has to be handed down. This is done by the attached patch. The
+> patch is based on Linux-3.13.3.
 > 
-> That worries me.
+> Please let me know if you have any questions on this.
+
+Can you please resend, against the perf/core branch in
+git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git, and as an
+attachement or making sure that the patch is not mangled?
+
+- Arnaldo
+ 
+> Thanks
+> Joseph
+> -- 
+> Dipl. Inf. Joseph Schuchart
+> Computer Scientist
 > 
-> > 
-> > This patch simply extracts LRU reparenting into mem_cgroup_reparent_lrus
-> > which doesn't care about charges and it is called from css_offline
-> > callback and the original mem_cgroup_reparent_charges stays in
-> > css_offline callback. The original workaround for the endless loop is no
-> > longer necessary because child vs. parent ordering is no longer and
-> > issue. The only requirement is that the parent has be still online at
-> > the time of css_offline.
+> Technische Universität Dresden
+> Center for Information Services and High Performance Computing (ZIH)
+> 01062 Dresden, Germany
 > 
-> But isn't that precisely what we just found is not guaranteed?
+> Phone: +49 351 463-36494
+> Fax: +49 351 463-3773
+> E-Mail: joseph.schuchart@tu-dresden.de
 
-OK, this implicitly relies on cgroup_mutex and later when cgroup_mutex
-is away we would need our own lock around reparenting.
-
-> And in fact your patch has the necessary loop up to find the
-> first ancestor it can successfully css_tryget.  Maybe you meant
-> to say "still there" rather than "still online".
-
-I meant online because we have to make sure that the reparented pages
-have to to be reachable by iterators.
-
-> (Tangential, I don't think you rely on this any more than we do
-> at present, and I may be wrong to suggest any problem: but I would
-> feel more comfortable if kernel/cgroup.c's css_free_work_fn() did
-> parent = css->parent; css->ss->css_free(css); css_put(parent);
-> instead of putting the parent before freeing the child.)
-
-that makes sense to me.
-
-> > mem_cgroup_reparent_charges also doesn't have to exclude kmem charges
-> > because there shouldn't be any at the css_free stage. Let's add BUG_ON
-> > to make sure we haven't screwed anything.
-> > 
-> > mem_cgroup_reparent_lrus is racy but this is tolerable as the inflight
-> > pages which will eventually get back to the memcg's LRU shouldn't
-> > constitute a lot of memory.
-> > 
-> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> > ---
-> > This is on top of memcg-reparent-charges-of-children-before-processing-parent.patch
-> > and I am not suggesting to replace it (I think Filipe's patch is more
-> > appropriate for the stable tree).
-> > Nevertheless I find this approach slightly better because it makes
-> > semantical difference between offline and free more obvious and we can
-> > build on top of it later (when offlining is no longer synchronized by
-> > cgroup_mutex). But if you think that it is not worth touching this area
-> > until we find a good way to reparent swapped out and kmem pages then I
-> > am OK with it and stay with Filipe's patch.
+> Perf: Provide sample information and call-chain to Python script
 > 
-> I'm ambivalent about it.  I like it, and I like very much that the loop
-> waiting for RES_USAGE to go down to 0 is without cgroup_mutex held; but
-> I dislike that any pages temporarily off LRU at the time of css_offline's
-> list_empty check, will then go AWOL (unreachable by reclaim), until
-> css_free later gets around to reparenting them.
-
-Yes it is not nice but my impression is that we are not talking about
-too many pages. Maybe I am underestimating this.
-
-> It's conceivable that some code could be added to mem_cgroup_page_lruvec()
-> (near my "Surreptitiously" comment), to reparent when they're put back on
-> LRU; but more probably not, that's already tricky, and probably bad to
-> make it any trickier, even if it turned out to be possible.
-
-That would work, but as you write, it would make this code even
-trickier.
-
-> So  I'm inclined to wait until the swap and kmem situation is sorted out
-
-Vladimir Davydov has already posted kmem reparenting patchset but I
-didn't get to read through it. Swap reparenting has already been posted
-by you and Johannes.
-
-I am not planning to push this patch, it was more an example what I was
-referring to earlier in discussion.
-
-> (when the delay between offline and free should become much briefer);
-> but would be happy if you found a good way to make the missing pages
-> reclaimable in the meantime.
+> Provide additional sample information on generic events to Python 
+> scripts, including pid, tid, and cpu for which the event was recorded.
+> Additionally, provide the call-stack recorded at each event with 
+> resolved symbols. At the moment, the pointer to the sample struct
+> is passed to scripts, which seems to be of little use. The patch
+> puts this information in dictionaries for easy access by Python
+> scripts. 
 > 
-> A couple of un-comments below.
-[...]
-> > @@ -6613,13 +6614,20 @@ static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
-> >  	kmem_cgroup_css_offline(memcg);
-> >  
-> >  	mem_cgroup_invalidate_reclaim_iterators(memcg);
-> > -
-> >  	/*
-> >  	 * This requires that offlining is serialized.  Right now that is
-> >  	 * guaranteed because css_killed_work_fn() holds the cgroup_mutex.
-> >  	 */
+> Signed-off-by: Joseph Schuchart <joseph.schuchart@tu-dresden.de>
+> Acked-by: Thomas Ilsche <thomas.ilsche@tu-dresden.de>
 > 
-> And that comment belongs to the code you're removing, doesn't it?
-> So should be removed along with it.
+> @@ -359,7 +359,7 @@ static void python_process_general_event
+>  					 struct thread *thread,
+>  					 struct addr_location *al)
+>  {
+> -	PyObject *handler, *retval, *t, *dict;
+> +	PyObject *handler, *retval, *t, *dict, *dict_sample;
+>  	static char handler_name[64];
+>  	unsigned n = 0;
+>  
+> @@ -375,6 +375,10 @@ static void python_process_general_event
+>  	if (!dict)
+>  		Py_FatalError("couldn't create Python dictionary");
+>  
+> +	dict_sample = PyDict_New();
+> +	if (!dict_sample)
+> +		Py_FatalError("couldn't create Python dictionary");
+> +
+>  	snprintf(handler_name, sizeof(handler_name), "%s", "process_event");
+>  
+>  	handler = PyDict_GetItemString(main_dict, handler_name);
+> @@ -384,8 +388,76 @@ static void python_process_general_event
+>  	pydict_set_item_string_decref(dict, "ev_name", PyString_FromString(perf_evsel__name(evsel)));
+>  	pydict_set_item_string_decref(dict, "attr", PyString_FromStringAndSize(
+>  			(const char *)&evsel->attr, sizeof(evsel->attr)));
+> -	pydict_set_item_string_decref(dict, "sample", PyString_FromStringAndSize(
+> -			(const char *)sample, sizeof(*sample)));
+> +
+> +	/* PID/TIDs are limited to 2^29, so we can safely use PyInt */
+> +	pydict_set_item_string_decref(dict_sample, "pid", PyInt_FromLong(sample->pid));
+> +	pydict_set_item_string_decref(dict_sample, "tid", PyInt_FromLong(sample->tid));
+> +	pydict_set_item_string_decref(dict_sample, "cpu", PyInt_FromLong(sample->cpu));
+> +	pydict_set_item_string_decref(dict_sample, "time", PyLong_FromUnsignedLongLong(sample->time));
+> +	pydict_set_item_string_decref(dict, "sample", dict_sample);
+> +
+> +	/* ip unwinding */
+> +
+> +	if (symbol_conf.use_callchain && sample->callchain) {
+> +		PyObject *pylist;
+> +
+> +		if (machine__resolve_callchain(machine, evsel, al->thread,
+> +						   sample, NULL, NULL, PERF_MAX_STACK_DEPTH) != 0) {
+> +			pr_err("Failed to resolve callchain. Skipping\n");
+> +			goto exit;
+> +		}
+> +		callchain_cursor_commit(&callchain_cursor);
+> +
+> +		pylist = PyList_New(0);
+> +		if (!pylist)
+> +			Py_FatalError("couldn't create Python list");
+> +
+> +		while (1) {
+> +			PyObject *pyelem;
+> +			struct callchain_cursor_node *node;
+> +			node = callchain_cursor_current(&callchain_cursor);
+> +			if (!node)
+> +				break;
+> +
+> +			pyelem = PyDict_New();
+> +			if (!pyelem)
+> +				Py_FatalError("couldn't create Python dictionary");
+> +
+> +
+> +			pydict_set_item_string_decref(pyelem, "ip", PyInt_FromLong(node->ip));
+> +
+> +			if (node->sym) {
+> +				PyObject *pysym  = PyDict_New();
+> +				if (!pysym)
+> +					Py_FatalError("couldn't create Python dictionary");
+> +				pydict_set_item_string_decref(pysym, "start",   PyInt_FromLong(node->sym->start));
+> +				pydict_set_item_string_decref(pysym, "end",     PyInt_FromLong(node->sym->end));
+> +				pydict_set_item_string_decref(pysym, "binding", PyInt_FromLong(node->sym->binding));
+> +				pydict_set_item_string_decref(pysym, "name",    PyString_FromStringAndSize(node->sym->name, node->sym->namelen));
+> +				pydict_set_item_string_decref(pyelem, "sym", pysym);
+> +				Py_DECREF(pysym);
+> +			}
+> +
+> +			if (node->map) {
+> +				struct map *map = node->map;
+> +				const char *dsoname = "[unknown]";
+> +				if (map && map->dso && (map->dso->name || map->dso->long_name)) {
+> +					if (symbol_conf.show_kernel_path && map->dso->long_name)
+> +						dsoname = map->dso->long_name;
+> +					else if (map->dso->name)
+> +						dsoname = map->dso->name;
+> +				}
+> +				pydict_set_item_string_decref(pyelem, "dso", PyString_FromString(dsoname));
+> +			}
+> +
+> +			callchain_cursor_advance(&callchain_cursor);
+> +			PyList_Append(pylist, pyelem);
+> +			Py_DECREF(pyelem);
+> +		}
+> +		PyDict_SetItemString(dict, "callstack", pylist);
+> +		Py_DECREF(pylist);
+> +	}
+> +
+>  	pydict_set_item_string_decref(dict, "raw_buf", PyString_FromStringAndSize(
+>  			(const char *)sample->raw_data, sample->raw_size));
+>  	pydict_set_item_string_decref(dict, "comm",
+> @@ -407,6 +479,7 @@ static void python_process_general_event
+>  	if (retval == NULL)
+>  		handler_call_die(handler_name);
+>  exit:
+> +	Py_DECREF(dict_sample);
+>  	Py_DECREF(dict);
+>  	Py_DECREF(t);
+>  }
 
-We still rely on the serialization because we have to be sure that the
-parent is not offlined in parallel because we could end up reparenting
-into a parent which goes offline right after css_tryget and pages
-wouldn't be reachable. This is guaranteed by the cgroup_mutex currently
-but if that changes in the cgroup core we need our own synchronization
-here.
 
-> > -	css_for_each_descendant_post(iter, css)
-> > -		mem_cgroup_reparent_charges(mem_cgroup_from_css(iter));
-> > +	do {
-> > +		parent = parent_mem_cgroup(parent);
-> > +		/*
-> > +		 * If no parent, move charges to root cgroup.
-> > +		 */
-> > +		if (!parent)
-> > +			parent = root_mem_cgroup;
-> > +	} while (!css_tryget(&parent->css));
-> > +	mem_cgroup_reparent_lrus(memcg, parent);
-> > +	css_put(&parent->css);
-> >  
-> >  	mem_cgroup_destroy_all_caches(memcg);
-> >  	vmpressure_cleanup(&memcg->vmpressure);
-> > -- 
-> > 1.9.0.rc3
 
--- 
-Michal Hocko
-SUSE Labs
