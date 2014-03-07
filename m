@@ -1,87 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751655AbaCGGKw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 01:10:52 -0500
+	id S1751451AbaCGGKv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 01:10:51 -0500
 Received: from mga01.intel.com ([192.55.52.88]:51678 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751012AbaCGGKu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 01:10:50 -0500
+	id S1750896AbaCGGKt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 01:10:49 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,605,1389772800"; 
-   d="scan'208";a="493970237"
+   d="scan'208";a="493970227"
 From: Chew Chiau Ee <chiau.ee.chew@intel.com>
 To: Wolfram Sang <wsa@the-dreams.de>
 Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
         linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] i2c: designware-pci: add 10-bit addressing mode functionality for BYT I2C
-Date: Fri,  7 Mar 2014 22:12:50 +0800
-Message-Id: <1394201571-11681-2-git-send-email-chiau.ee.chew@intel.com>
+Subject: [PATCH 0/2] i2c: designware-pci: extra features for PCI mode LPSS I2C
+Date: Fri,  7 Mar 2014 22:12:49 +0800
+Message-Id: <1394201571-11681-1-git-send-email-chiau.ee.chew@intel.com>
 X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1394201571-11681-1-git-send-email-chiau.ee.chew@intel.com>
-References: <1394201571-11681-1-git-send-email-chiau.ee.chew@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Chew, Chiau Ee <chiau.ee.chew@intel.com>
 
-All the I2C controllers on Intel BayTrail LPSS subsystem able
-to support 10-bit addressing mode functionality.
+These two patches contains the additional changes required for BayTrail LPSS
+I2C on top of the patch that Mika Westerberg has submitted previously which
+is still in the pending queue:
+"[PATCH v2] i2c: designware-pci: Add Baytrail PCI IDs"
+http://www.spinics.net/lists/linux-i2c/msg14709.html
 
-Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
-Signed-off-by: Ong, Boon Leong <boon.leong.ong@intel.com>
----
- drivers/i2c/busses/i2c-designware-pcidrv.c |   17 +++++++++++------
- 1 files changed, 11 insertions(+), 6 deletions(-)
+Basically, the changes inclusive of:
+i.	enable the pci glue layer to pass in target HCNT, LCNT
+	and SDA hold time values to core layer if they are known
+	beforehand, eg: for BayTrail.
+ii.	declare the BayTrail LPSS I2C controllers are capable of
+	supporting 10-bit addressing mode functionality.
 
-diff --git a/drivers/i2c/busses/i2c-designware-pcidrv.c b/drivers/i2c/busses/i2c-designware-pcidrv.c
-index f1dabee..87f2fc4 100644
---- a/drivers/i2c/busses/i2c-designware-pcidrv.c
-+++ b/drivers/i2c/busses/i2c-designware-pcidrv.c
-@@ -64,12 +64,19 @@ struct dw_pci_controller {
- 	u32 tx_fifo_depth;
- 	u32 rx_fifo_depth;
- 	u32 clk_khz;
-+	u32 functionality;
- };
- 
- #define INTEL_MID_STD_CFG  (DW_IC_CON_MASTER |			\
- 				DW_IC_CON_SLAVE_DISABLE |	\
- 				DW_IC_CON_RESTART_EN)
- 
-+#define DW_DEFAULT_FUNCTIONALITY (I2C_FUNC_I2C |			\
-+					I2C_FUNC_SMBUS_BYTE |		\
-+					I2C_FUNC_SMBUS_BYTE_DATA |	\
-+					I2C_FUNC_SMBUS_WORD_DATA |	\
-+					I2C_FUNC_SMBUS_I2C_BLOCK)
-+
- static struct  dw_pci_controller  dw_pci_controllers[] = {
- 	[moorestown_0] = {
- 		.bus_num     = 0,
-@@ -140,6 +147,7 @@ static struct  dw_pci_controller  dw_pci_controllers[] = {
- 		.tx_fifo_depth = 32,
- 		.rx_fifo_depth = 32,
- 		.clk_khz = 100000,
-+		.functionality = I2C_FUNC_10BIT_ADDR,
- 	},
- };
- static struct i2c_algorithm i2c_dw_algo = {
-@@ -256,12 +264,9 @@ static int i2c_dw_pci_probe(struct pci_dev *pdev,
- 	dev->get_clk_rate_khz = i2c_dw_get_clk_rate_khz;
- 	dev->base = pcim_iomap_table(pdev)[0];
- 	dev->dev = &pdev->dev;
--	dev->functionality =
--		I2C_FUNC_I2C |
--		I2C_FUNC_SMBUS_BYTE |
--		I2C_FUNC_SMBUS_BYTE_DATA |
--		I2C_FUNC_SMBUS_WORD_DATA |
--		I2C_FUNC_SMBUS_I2C_BLOCK;
-+	dev->functionality = controller->functionality |
-+				DW_DEFAULT_FUNCTIONALITY;
-+
- 	dev->master_cfg =  controller->bus_cfg;
- 
- 	pci_set_drvdata(pdev, dev);
+Chew, Chiau Ee (2):
+  i2c: designware-pci: add 10-bit addressing mode functionality for BYT
+    I2C
+  i2c: designware-pci: set ideal HCNT, LCNT and SDA hold time value
+
+ drivers/i2c/busses/i2c-designware-pcidrv.c |   51 ++++++++++++++++++++++++---
+ 1 files changed, 45 insertions(+), 6 deletions(-)
+
 -- 
 1.7.4.4
 
