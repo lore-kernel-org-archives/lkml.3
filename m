@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751683AbaCGDig (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 22:38:36 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:57831 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003AbaCGDie (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 22:38:34 -0500
+	id S1752238AbaCGDkq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 22:40:46 -0500
+Received: from ozlabs.org ([203.10.76.45]:53326 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751724AbaCGDkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 22:40:41 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] tracing/module: Replace include of tracepoint.h with jump_label.h in module.h
+In-Reply-To: <20140306103414.15ab227a@gandalf.local.home>
+References: <20140306103414.15ab227a@gandalf.local.home>
+User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
+Date: Fri, 07 Mar 2014 14:02:56 +1030
+Message-ID: <87txbay97b.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-In-Reply-To: <53188E50.70808@gmail.com>
-References: <53022DB1.4070805@gmail.com> <CA+55aFxjAp23=ySEe8e8bTPbVw8Uh8d03zirg4TdHXGYiyjmwA@mail.gmail.com>
- <CA+55aFy4GvpFcboBiKdreU_Zh1RzynPoLxhvC9hijn60hkEZ3g@mail.gmail.com> <53188E50.70808@gmail.com>
-From: Yongzhi Pan <panyongzhi@gmail.com>
-Date: Fri, 7 Mar 2014 11:38:14 +0800
-Message-ID: <CACu+fTYSsmAMiV8w=BzYLEbf2WtiRO78=cy_G+1e5sk0p46vKg@mail.gmail.com>
-Subject: Re: Update of file offset on write() etc. is non-atomic with I/O
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <miklos@szeredi.hu>, "Theodore T'so" <tytso@mit.edu>,
-        Christoph Hellwig <hch@lst.de>, Chris Mason <clm@fb.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "J. Bruce Fields" <bfields@citi.umich.edu>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-03-06 23:03 GMT+08:00 Michael Kerrisk (man-pages) <mtk.manpages@gmail.com>:
+Steven Rostedt <rostedt@goodmis.org> writes:
+> Rusty,
 >
-> The original code (where Yongzhi Pan reported an issue) and
-> the multi_writer.c test code where both mine actually. Anyway,
-> I applied the patch to 3.14-rc5, and I (not withstanding the other
-> points raised by Al about the patch) I confirm that this patch makes
-> the  problem that I'm seeing go away.
+> Can you give an Acked-by for this patch so that I can include it in my
+> 3.15 queue. I have some patches there that need to be added before this
+> change can go in.
+
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+
+Thanks,
+Rusty.
+
 >
-> Thanks for looking at this, Linus.
+> Thanks,
 >
-> Cheers,
+> -- Steve
 >
-> Michael
-
-
-I tested the original patch on 3.13.5, the multi_writer.c test code
-and the code in your book both run flawlessly.
-
-
-Best Regards,
-Yongzhi Pan
+>
+> ----
+> There's nothing in the module.h header that requires tracepoint.h to be
+> included, and there may be cases that tracepoint.h may need to include
+> module.h, which will cause recursive header issues.
+>
+> But module.h requires seeing HAVE_JUMP_LABEL which is set in
+> jump_label.h which it just coincidentally gets from tracepoint.h.
+>
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  include/linux/module.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/include/linux/module.h b/include/linux/module.h
+> index eaf60ff..5a50539 100644
+> --- a/include/linux/module.h
+> +++ b/include/linux/module.h
+> @@ -15,7 +15,7 @@
+>  #include <linux/stringify.h>
+>  #include <linux/kobject.h>
+>  #include <linux/moduleparam.h>
+> -#include <linux/tracepoint.h>
+> +#include <linux/jump_label.h>
+>  #include <linux/export.h>
+>  
+>  #include <linux/percpu.h>
+> -- 
+> 1.8.5.3
