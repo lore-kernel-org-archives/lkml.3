@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752935AbaCGMRd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 07:17:33 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:54028 "EHLO bear.ext.ti.com"
+	id S1753039AbaCGMRh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 07:17:37 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38885 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751785AbaCGMR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 07:17:28 -0500
+	id S1752961AbaCGMRe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 07:17:34 -0500
 From: Sricharan R <r.sricharan@ti.com>
 To: <r.sricharan@ti.com>, <devicetree@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
@@ -13,9 +13,9 @@ To: <r.sricharan@ti.com>, <devicetree@vger.kernel.org>,
 CC: <santosh.shilimkar@ti.com>, <rnayak@ti.com>, <nsekhar@ti.com>,
         <tony@atomide.com>, <linux@arm.linux.org.uk>, <vinod.koul@intel.com>,
         <dan.j.williams@intel.com>, <nm@ti.com>
-Subject: [RFC PATCH 3/9] drivers: dma: omap-dma: Add a seperate xlate function to get router data
-Date: Fri, 7 Mar 2014 17:46:10 +0530
-Message-ID: <1394194576-23741-4-git-send-email-r.sricharan@ti.com>
+Subject: [RFC PATCH 4/9] drivers: omap-dma: Add crossbar line as a resource to omap_chan structure
+Date: Fri, 7 Mar 2014 17:46:11 +0530
+Message-ID: <1394194576-23741-5-git-send-email-r.sricharan@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1394194576-23741-1-git-send-email-r.sricharan@ti.com>
 References: <1394194576-23741-1-git-send-email-r.sricharan@ti.com>
@@ -25,114 +25,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Each dma-request channel can be connected to the dma-controller either
-directly or through a crossbar router. In such cases request lines
-should be routed to the dma-controller. Adding a xlate function
-which would retrieve and store the router data associated with a particular
-channel in the dma-channel specific structure. This is used to map/unmap
-the dma request lines.
+In socs which have crossbar to route the peripheral dma request
+line to the dma controller, only the peripheral crossbar request line
+number is fixed and this is passed through the DT nodes. The dma request
+channel to be used is allocated dynamically.
+
+The total number of crossbar channels are registered during probe a
+the dma request line free is mapped using the registered router's map function
+during the device_alloc_chan_resource callback and freed with free_resource.
+When a router is not registered, the dma request number is same as the
+crossbar number.
 
 Signed-off-by: Sricharan R <r.sricharan@ti.com>
 ---
- drivers/dma/omap-dma.c |   47 ++++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 44 insertions(+), 3 deletions(-)
+ drivers/dma/omap-dma.c |   21 ++++++++++++++++-----
+ 1 file changed, 16 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/dma/omap-dma.c b/drivers/dma/omap-dma.c
-index a0d6639..38407f9 100644
+index 38407f9..05ac480 100644
 --- a/drivers/dma/omap-dma.c
 +++ b/drivers/dma/omap-dma.c
-@@ -44,6 +44,8 @@ struct omap_chan {
- 	uint32_t ccr;
+@@ -47,6 +47,7 @@ struct omap_chan {
+ 	struct dma_xbar_device *router;
  
- 	struct dma_slave_config	cfg;
-+	struct dma_xbar_device *router;
-+
  	unsigned dma_sig;
++	unsigned dma_xbar;
  	bool cyclic;
  	bool paused;
-@@ -75,6 +77,11 @@ struct omap_desc {
- 	struct omap_sg sg[0];
- };
  
-+struct omap_dma_filter_args {
-+	void *router_data;
-+	unsigned chan;
-+};
+@@ -530,6 +531,11 @@ static int omap_dma_alloc_chan_resources(struct dma_chan *chan)
+ 	struct omap_chan *c = to_omap_dma_chan(chan);
+ 	int ret;
+ 
++	if (c->router)
++		c->dma_sig = c->router->ops->map(c->dma_xbar, c->router);
++	else
++		c->dma_sig = c->dma_xbar;
 +
- enum {
- 	CCR_FS			= BIT(5),
- 	CCR_READ_PRIORITY	= BIT(6),
-@@ -586,6 +593,7 @@ static void omap_dma_free_chan_resources(struct dma_chan *chan)
- 	c->channel_base = NULL;
+ 	if (od->legacy) {
+ 		ret = omap_request_dma(c->dma_sig, "DMA engine",
+ 				       omap_dma_callback, c, &c->dma_ch);
+@@ -539,7 +545,7 @@ static int omap_dma_alloc_chan_resources(struct dma_chan *chan)
+ 	}
+ 
+ 	dev_dbg(od->ddev.dev, "allocating channel %u for %u\n",
+-		c->dma_ch, c->dma_sig);
++		c->dma_ch, c->dma_xbar);
+ 
+ 	if (ret >= 0) {
+ 		omap_dma_assign(od, c, c->dma_ch);
+@@ -594,9 +600,14 @@ static void omap_dma_free_chan_resources(struct dma_chan *chan)
  	od->lch_map[c->dma_ch] = NULL;
  	vchan_free_chan_resources(&c->vc);
+ 
++	if (c->router) {
++		c->router->ops->unmap(c->dma_sig, c->router);
++		c->dma_sig = 0;
++	}
 +
  	omap_free_dma(c->dma_ch);
  
- 	dev_dbg(od->ddev.dev, "freeing channel for %u\n", c->dma_sig);
-@@ -1088,6 +1096,34 @@ static void omap_dma_free(struct omap_dmadev *od)
- 	}
+-	dev_dbg(od->ddev.dev, "freeing channel for %u\n", c->dma_sig);
++	dev_dbg(od->ddev.dev, "freeing channel for %u\n", c->dma_xbar);
  }
  
-+static struct dma_chan *of_omap_dma_xlate(struct of_phandle_args *dma_spec,
-+						 struct of_dma *ofdma)
-+{
-+	int count = dma_spec->args_count;
-+	struct of_dma_filter_info *info = ofdma->of_dma_data;
-+	struct omap_dma_filter_args args;
-+	struct dma_xbar_device *c = NULL;
-+
-+	if (!info || !info->filter_fn)
-+		return NULL;
-+
-+	if ((count != 1) && (count != 2))
-+		return NULL;
-+
-+	args.chan = dma_spec->args[0];
-+	args.router_data = NULL;
-+
-+	if (count == 2) {
-+		c = of_dma_get_router_data(dma_spec->args[1]);
-+
-+		if (c && c->ops && c->ops->map && c->ops->unmap)
-+			args.router_data = c;
-+	}
-+
-+	return dma_request_channel(info->dma_cap, info->filter_fn,
-+			&args);
-+}
-+
- static int omap_dma_probe(struct platform_device *pdev)
- {
- 	struct omap_dmadev *od;
-@@ -1167,7 +1203,7 @@ static int omap_dma_probe(struct platform_device *pdev)
+ static size_t omap_dma_sg_size(struct omap_sg *sg)
+@@ -1064,7 +1075,7 @@ static int omap_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+ 	return ret;
+ }
  
- 		/* Device-tree DMA controller registration */
- 		rc = of_dma_controller_register(pdev->dev.of_node,
--				of_dma_simple_xlate, &omap_dma_info);
-+				of_omap_dma_xlate, &omap_dma_info);
- 		if (rc) {
- 			pr_warn("OMAP-DMA: failed to register DMA controller\n");
- 			dma_async_device_unregister(&od->ddev);
-@@ -1221,11 +1257,16 @@ static struct platform_driver omap_dma_driver = {
- 
- bool omap_dma_filter_fn(struct dma_chan *chan, void *param)
+-static int omap_dma_chan_init(struct omap_dmadev *od, int dma_sig)
++static int omap_dma_chan_init(struct omap_dmadev *od, int dma_xbar)
  {
-+	struct omap_dma_filter_args *args = param;
-+
- 	if (chan->device->dev->driver == &omap_dma_driver.driver) {
+ 	struct omap_chan *c;
+ 
+@@ -1073,7 +1084,7 @@ static int omap_dma_chan_init(struct omap_dmadev *od, int dma_sig)
+ 		return -ENOMEM;
+ 
+ 	c->reg_map = od->reg_map;
+-	c->dma_sig = dma_sig;
++	c->dma_xbar = dma_xbar;
+ 	c->vc.desc_free = omap_dma_desc_free;
+ 	vchan_init(&c->vc, &od->ddev);
+ 	INIT_LIST_HEAD(&c->node);
+@@ -1263,7 +1274,7 @@ bool omap_dma_filter_fn(struct dma_chan *chan, void *param)
  		struct omap_chan *c = to_omap_dma_chan(chan);
--		unsigned req = *(unsigned *)param;
-+		unsigned req = args->chan;
+ 		unsigned req = args->chan;
  
--		return req == c->dma_sig;
-+		if (req == c->dma_sig) {
-+			c->router = args->router_data;
-+			return true;
-+		}
- 	}
- 	return false;
- }
+-		if (req == c->dma_sig) {
++		if (req == c->dma_xbar) {
+ 			c->router = args->router_data;
+ 			return true;
+ 		}
 -- 
 1.7.9.5
 
