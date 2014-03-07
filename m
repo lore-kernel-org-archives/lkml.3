@@ -1,107 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751767AbaCGEVf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 23:21:35 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:33180 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908AbaCGEVd convert rfc822-to-8bit (ORCPT
+	id S1752096AbaCGEW3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 23:22:29 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:55797 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751649AbaCGEW1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 23:21:33 -0500
-Message-ID: <5319494b.0ac5440a.6abf.60c9@mx.google.com>
-Content-Type: text/plain; charset="utf-8"
+	Thu, 6 Mar 2014 23:22:27 -0500
+Message-ID: <5319497F.9080003@wwwdotorg.org>
+Date: Thu, 06 Mar 2014 21:22:23 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Sebastian Capella <sebastian.capella@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
-        "Stephen Boyd" <sboyd@codeaurora.org>
-From: Sebastian Capella <sebastian.capella@linaro.org>
-In-Reply-To: <1394016605-24120-3-git-send-email-sebastian.capella@linaro.org>
-Cc: "Russ Dill" <Russ.Dill@ti.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        "Len Brown" <len.brown@intel.com>, "Nicolas Pitre" <nico@linaro.org>,
-        "Santosh Shilimkar" <santosh.shilimkar@ti.com>,
-        "Will Deacon" <will.deacon@arm.com>,
-        "Jonathan Austin" <jonathan.austin@arm.com>,
-        "Catalin Marinas" <catalin.marinas@arm.com>,
-        =?utf-8?q?=22Uwe_Kleine-K=C3=B6nig=22?= 
-	<u.kleine-koenig@pengutronix.de>,
-        "Stephen Boyd" <sboyd@codeaurora.org>,
-        "Laura Abbott" <lauraa@codeaurora.org>, "Jiang Liu" <liuj97@gmail.com>,
-        "Sricharan R" <r.sricharan@ti.com>,
-        "Victor Kamensky" <victor.kamensky@linaro.org>,
-        "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
-        "Ben Dooks" <ben.dooks@codethink.co.uk>,
-        "Charles Baylis" <charles.baylis@linaro.org>
-References: <1394016605-24120-1-git-send-email-sebastian.capella@linaro.org>
- <1394016605-24120-3-git-send-email-sebastian.capella@linaro.org>
-User-Agent: alot/0.3.4
-Subject: Re: [PATCH v7 2/2] ARM hibernation / suspend-to-disk
-Date: Thu, 06 Mar 2014 20:21:23 -0800
+To: Chen-Yu Tsai <wens@csie.org>, Linus Walleij <linus.walleij@linaro.org>
+CC: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Rhyland Klein <rklein@nvidia.com>, Marc Dietrich <marvin24@gmx.de>,
+        Arnd Bergmann <arnd@arndb.de>, Alexandre Courbot <gnurou@gmail.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCHv2 3/5] net: rfkill: gpio: remove gpio names
+References: <1393330950-7283-1-git-send-email-heikki.krogerus@linux.intel.com> <1393330950-7283-4-git-send-email-heikki.krogerus@linux.intel.com> <530D218E.9010007@wwwdotorg.org> <CACRpkdZF4-rWs1WkOp3t0x77fgSCE71E=wdrxiDuGZ8eBu_p_Q@mail.gmail.com> <53168976.7000008@wwwdotorg.org> <CACRpkdYfQoDmPX0He4J2Sn2wgQn2hHoHyPqnStLRVqrvi=M+-w@mail.gmail.com> <53169304.9080002@wwwdotorg.org> <CACRpkdaYuZ5bXo7djOv04oyHPAFbO=pKfR7L7UBY+kZqZUHfmQ@mail.gmail.com> <CAGb2v65UQZoDJhjpX+kfa6HppXdhrCHG=A5m_WaQ_DimW-Lsbg@mail.gmail.com>
+In-Reply-To: <CAGb2v65UQZoDJhjpX+kfa6HppXdhrCHG=A5m_WaQ_DimW-Lsbg@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry to those receiving repeated emails, I'm having an issue with some
-of the special characters names.
+On 03/06/2014 08:43 PM, Chen-Yu Tsai wrote:
+> On Fri, Mar 7, 2014 at 11:41 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+>> On Wed, Mar 5, 2014 at 10:59 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>>> On 03/04/2014 07:37 PM, Linus Walleij wrote:
+>>>> On Wed, Mar 5, 2014 at 10:18 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>>>>> On 03/04/2014 06:43 PM, Linus Walleij wrote:
+>>>>
+>>>>>> If I understand the situation correctly it's like ACPI does not have named
+>>>>>> GPIOs so keeping specifying this in DT GPIO bindings is counter-productive
+>>>>>> to the work of abstracting the access to GPIO handlers so that drivers
+>>>>>> need not know whether ACPI or DT is used for describing the hardware.
+>>>>>
+>>>>> For devices that already have both ACPI and DT bindings, we can't
+>>>>> pretend they can be the same; they are already potentially different. We
+>>>>> simply need to parse DT and ACPI differently, since that's the sway
+>>>>> their bindings are defined.
+>>>>>
+>>>>> For any devices that don't have both ACPI and DT bindings, I agree we
+>>>>> should certainly strive to make any new bindings aligned so we don't
+>>>>> have to deal with this for them.
+>>>>>
+>>>>> However, we can't change the past.
+>>>>
+>>>> Yeah, right, so for this very driver there are no bindings defined (yet)
+>>>> and the only device tree I can find referencing it is the Tegra20-paz00
+>>>> and it just use gpios = <>;
+>>>>
+>>>> So in this case I think this patch is the right way forward, but I admit
+>>>> I'm really uncertain in the general case.
+>>>
+>>> If there are no bindings defined at all yet, then we can define both DT
+>>> and ACPI bindings to use name-based GPIOs. Index-based lookups aren't a
+>>> good way forward.
+>>
+>> After Mark clarifying that ACPI is going to have named GPIOs I'm
+>> totally aligned on this, so OK!
+> 
+> Glad to hear this, but is it possible to get rid of the index in current
+> drivers? Or change the behavior to name-based OR index-based lookups.
+> This might break any DTs that have multiple GPIOs defined under one
+> property though.
 
-Quoting Sebastian Capella (2014-03-05 02:50:05)
-> From: Russ Dill <Russ.Dill@ti.com>
-> Enable hibernation for ARM architectures and provide ARM
-> architecture specific calls used during hibernation.
-...
-Quoting Stephen Boyd (2014-02-27 18:19:49)
-> On 02/27/14 17:47, Russ Dill wrote:
-> > On 02/27/2014 04:09 PM, Stephen Boyd wrote:
-> >> On 02/27/14 15:57, Sebastian Capella wrote:
-> >>> diff --git a/arch/arm/include/asm/memory.h
-> >>> b/arch/arm/include/asm/memory.h index 8756e4b..1079ea8
-> >>> 100644 ---
-> >>> a/arch/arm/include/asm/memory.h +++
-> >>> b/arch/arm/include/asm/memory.h @@ -291,6 +291,7 @@ static
-> >>> inline
-> >>> void *phys_to_virt(phys_addr_t x) */ #define __pa(x)
-> >>> __virt_to_phys((unsigned long)(x)) #define __va(x)
-> >>> ((void
-> >>> *)__phys_to_virt((phys_addr_t)(x)))
-> >>> +#define __pa_symbol(x)
-> >>> __pa(RELOC_HIDE((unsigned long)(x), 0))
-> >> Just curious, is there a reason for the RELOC_HIDE() here?
-> >> Or
-> >> __pa_symbol() for that matter? It looks like only x86 uses
-> >> this on
-> >> the __nosave_{begin,end} symbol. Maybe it's copy-pasta?
-> > From my understanding this needs to stick around so long as
-> > gcc 3.x is
-> > supported (did it get dropped yet?) on ARM Linux since it
-> > doesn't
-> > support -fno-strict-overflow.
->
-> I don't think it's been dropped yet but I wonder if anyone has
-> tried
-> recent kernels with such a compiler?
-
-Hi Stephen,
-
-I was wondering if you had any objections or additional comments on
-the current patch.
-
-I've basically dropped the RELOC_HIDE.  It hasn't proven to be an issue
-with the current compiler, and I was unable to revert back to 3.x
-compiler on the cortex-v7 platforms I'm using.
-
-Since this is being used on Hibernation, we would not be breaking any
-existing functionality in any event, and it sounds like this is unlikely
-to be an issue.
-
-I spoke informally to a friend who works on toolchains at Linaro and
-he suggested this may be related to the the strict-aliasing feature
-which appears to be disabled by default in the kernel
-(-fno-strict-aliasing) and generally not well liked.
-
-Unless someone objects, I'll plan to add this to Russell's patch system.
-
-Thanks,
-
-Sebastian
+For any bindings that are already defined to use index-based lookups, I
+think we have to continue using them, for backwards-compatibility with
+old DTs (and I assume old ACPI databases need the same thing).
 
