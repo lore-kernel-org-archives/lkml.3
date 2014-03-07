@@ -1,107 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753579AbaCGPOF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 10:14:05 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49995 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753559AbaCGPOC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 10:14:02 -0500
-Date: Fri, 7 Mar 2014 15:13:57 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Rik van Riel <riel@redhat.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>, David Rientjes <rientjes@google.com>,
+	id S1753524AbaCGPN7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 10:13:59 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:49575 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753109AbaCGPMH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 10:12:07 -0500
+Message-Id: <20140307151203.687696356@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Fri, 07 Mar 2014 10:09:37 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, hhuang@redhat.com,
-        knoel@redhat.com, aarcange@redhat.com
-Subject: Re: [PATCH -mm] mm,numa,mprotect: always continue after finding a
- stable thp page
-Message-ID: <20140307151357.GC1931@suse.de>
-References: <5318E4BC.50301@oracle.com>
- <20140306173137.6a23a0b2@cuia.bos.redhat.com>
- <5318FC3F.4080204@redhat.com>
- <20140307140650.GA1931@suse.de>
- <20140307150923.GB1931@suse.de>
+        Ingo Molnar <mingo@redhat.com>, <linux-arch@vger.kernel.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [for-next][PATCH 17/20] ftrace: Do not pass data to ftrace_dyn_arch_init
+References: <20140307150920.881849073@goodmis.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20140307150923.GB1931@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=0017-ftrace-Do-not-pass-data-to-ftrace_dyn_arch_init.patch
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 07, 2014 at 03:09:23PM +0000, Mel Gorman wrote:
-> On Fri, Mar 07, 2014 at 02:06:50PM +0000, Mel Gorman wrote:
-> > On Thu, Mar 06, 2014 at 05:52:47PM -0500, Rik van Riel wrote:
-> > > On 03/06/2014 05:31 PM, Rik van Riel wrote:
-> > > >On Thu, 06 Mar 2014 16:12:28 -0500
-> > > >Sasha Levin <sasha.levin@oracle.com> wrote:
-> > > >
-> > > >>While fuzzing with trinity inside a KVM tools guest running latest -next kernel I've hit the
-> > > >>following spew. This seems to be introduced by your patch "mm,numa: reorganize change_pmd_range()".
-> > > >
-> > > >That patch should not introduce any functional changes, except for
-> > > >the VM_BUG_ON that catches the fact that we fell through to the 4kB
-> > > >pte handling code, despite having just handled a THP pmd...
-> > > >
-> > > >Does this patch fix the issue?
-> > > >
-> > > >Mel, am I overlooking anything obvious? :)
-> > > >
-> > > >---8<---
-> > > >
-> > > >Subject: mm,numa,mprotect: always continue after finding a stable thp page
-> > > >
-> > > >When turning a thp pmds into a NUMA one, change_huge_pmd will
-> > > >return 0 when the pmd already is a NUMA pmd.
-> > > 
-> > > I did miss something obvious.  In this case, the code returns 1.
-> > > 
-> > > >However, change_pmd_range would fall through to the code that
-> > > >handles 4kB pages, instead of continuing on to the next pmd.
-> > > 
-> > > Maybe the case that I missed is when khugepaged is in the
-> > > process of collapsing pages into a transparent huge page?
-> > > 
-> > > If the virtual CPU gets de-scheduled by the host for long
-> > > enough, it would be possible for khugepaged to run on
-> > > another virtual CPU, and turn the pmd into a THP pmd,
-> > > before that VM_BUG_ON test.
-> > > 
-> > > I see that khugepaged takes the mmap_sem for writing in the
-> > > collapse code, and it looks like task_numa_work takes the
-> > > mmap_sem for reading, so I guess that may not be possible?
-> > > 
-> > 
-> > mmap_sem will prevent a parallel collapse but what prevents something
-> > like the following?
-> > 
-> > 							do_huge_pmd_wp_page
-> > change_pmd_range
-> > if (!pmd_trans_huge(*pmd) && pmd_none_or_clear_bad(pmd))
-> > 	continue;
-> > 							pmdp_clear_flush(vma, haddr, pmd);
-> > if (pmd_trans_huge(*pmd)) {
-> > 	.... path not taken ....
-> > }
-> > 							page_add_new_anon_rmap(new_page, vma, haddr);
-> > 							set_pmd_at(mm, haddr, pmd, entry);
-> > VM_BUG_ON(pmd_trans_huge(*pmd));
-> > 
-> > We do not hold the page table lock during the pmd_trans_huge check and we
-> > do not recheck it under PTF lock in change_pte_range()
-> > 
-> 
-> This is a completely untested prototype. It rechecks pmd_trans_huge
-> under the lock and falls through if it hit a parallel split. It's not
-> perfect because it could decide to fall through just because there was
-> no prot_numa work to do but it's for illustration purposes.
+From: Jiri Slaby <jslaby@suse.cz>
 
-Nope, if there was no prot_numa work to do, it returns 1 so the check is
-ok. It's only if 0 is returned we need to fall through and really handle
-ptes.
+As the data parameter is not really used by any ftrace_dyn_arch_init,
+remove that from ftrace_dyn_arch_init. This also removes the addr
+local variable from ftrace_init which is now unused.
 
+Note the documentation was imprecise as it did not suggest to set
+(*data) to 0.
+
+Link: http://lkml.kernel.org/r/1393268401-24379-4-git-send-email-jslaby@suse.cz
+
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: linux-arch@vger.kernel.org
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ Documentation/trace/ftrace-design.txt | 2 +-
+ arch/arm/kernel/ftrace.c              | 2 +-
+ arch/blackfin/kernel/ftrace.c         | 2 +-
+ arch/ia64/kernel/ftrace.c             | 2 +-
+ arch/metag/kernel/ftrace.c            | 2 +-
+ arch/microblaze/kernel/ftrace.c       | 2 +-
+ arch/mips/kernel/ftrace.c             | 2 +-
+ arch/powerpc/kernel/ftrace.c          | 2 +-
+ arch/s390/kernel/ftrace.c             | 2 +-
+ arch/sh/kernel/ftrace.c               | 2 +-
+ arch/sparc/kernel/ftrace.c            | 2 +-
+ arch/tile/kernel/ftrace.c             | 2 +-
+ arch/x86/kernel/ftrace.c              | 2 +-
+ include/linux/ftrace.h                | 2 +-
+ kernel/trace/ftrace.c                 | 7 ++-----
+ 15 files changed, 16 insertions(+), 19 deletions(-)
+
+diff --git a/Documentation/trace/ftrace-design.txt b/Documentation/trace/ftrace-design.txt
+index 1171688..3f669b9 100644
+--- a/Documentation/trace/ftrace-design.txt
++++ b/Documentation/trace/ftrace-design.txt
+@@ -358,7 +358,7 @@ Every arch has an init callback function.  If you need to do something early on
+ to initialize some state, this is the time to do that.  Otherwise, this simple
+ function below should be sufficient for most people:
+ 
+-int __init ftrace_dyn_arch_init(void *data)
++int __init ftrace_dyn_arch_init(void)
+ {
+ 	return 0;
+ }
+diff --git a/arch/arm/kernel/ftrace.c b/arch/arm/kernel/ftrace.c
+index 5cd0d05..c108ddc 100644
+--- a/arch/arm/kernel/ftrace.c
++++ b/arch/arm/kernel/ftrace.c
+@@ -156,7 +156,7 @@ int ftrace_make_nop(struct module *mod,
+ 	return ret;
+ }
+ 
+-int __init ftrace_dyn_arch_init(void *data)
++int __init ftrace_dyn_arch_init(void)
+ {
+ 	return 0;
+ }
+diff --git a/arch/blackfin/kernel/ftrace.c b/arch/blackfin/kernel/ftrace.c
+index f74c5ae..095de0f 100644
+--- a/arch/blackfin/kernel/ftrace.c
++++ b/arch/blackfin/kernel/ftrace.c
+@@ -65,7 +65,7 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
+ 	return ftrace_modify_code(ip, call, sizeof(call));
+ }
+ 
+-int __init ftrace_dyn_arch_init(void *data)
++int __init ftrace_dyn_arch_init(void)
+ {
+ 	return 0;
+ }
+diff --git a/arch/ia64/kernel/ftrace.c b/arch/ia64/kernel/ftrace.c
+index cfaa93a..3b0c2aa 100644
+--- a/arch/ia64/kernel/ftrace.c
++++ b/arch/ia64/kernel/ftrace.c
+@@ -198,7 +198,7 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
+ }
+ 
+ /* run from kstop_machine */
+-int __init ftrace_dyn_arch_init(void *data)
++int __init ftrace_dyn_arch_init(void)
+ {
+ 	return 0;
+ }
+diff --git a/arch/metag/kernel/ftrace.c b/arch/metag/kernel/ftrace.c
+index bf59393..ed1d685 100644
+--- a/arch/metag/kernel/ftrace.c
++++ b/arch/metag/kernel/ftrace.c
+@@ -117,7 +117,7 @@ int ftrace_make_call(struct dyn_ftrace *rec, unsigned long addr)
+ }
+ 
+ /* run from kstop_machine */
+-int __init ftrace_dyn_arch_init(void *data)
++int __init ftrace_dyn_arch_init(void)
+ {
+ 	return 0;
+ }
+diff --git a/arch/microblaze/kernel/ftrace.c b/arch/microblaze/kernel/ftrace.c
+index ffa595c..bbcd253 100644
+--- a/arch/microblaze/kernel/ftrace.c
++++ b/arch/microblaze/kernel/ftrace.c
+@@ -171,7 +171,7 @@ int ftrace_make_call(struct dyn_ftrace *rec, unsigned long addr)
+ 	return ret;
+ }
+ 
+-int __init ftrace_dyn_arch_init(void *data)
++int __init ftrace_dyn_arch_init(void)
+ {
+ 	return 0;
+ }
+diff --git a/arch/mips/kernel/ftrace.c b/arch/mips/kernel/ftrace.c
+index 013016b..1ba7afe 100644
+--- a/arch/mips/kernel/ftrace.c
++++ b/arch/mips/kernel/ftrace.c
+@@ -198,7 +198,7 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
+ 	return ftrace_modify_code(FTRACE_CALL_IP, new);
+ }
+ 
+-int __init ftrace_dyn_arch_init(void *data)
++int __init ftrace_dyn_arch_init(void)
+ {
+ 	/* Encode the instructions when booting */
+ 	ftrace_dyn_arch_init_insns();
+diff --git a/arch/powerpc/kernel/ftrace.c b/arch/powerpc/kernel/ftrace.c
+index d059664..71ce4cb 100644
+--- a/arch/powerpc/kernel/ftrace.c
++++ b/arch/powerpc/kernel/ftrace.c
+@@ -531,7 +531,7 @@ void arch_ftrace_update_code(int command)
+ 		ftrace_disable_ftrace_graph_caller();
+ }
+ 
+-int __init ftrace_dyn_arch_init(void *data)
++int __init ftrace_dyn_arch_init(void)
+ {
+ 	return 0;
+ }
+diff --git a/arch/s390/kernel/ftrace.c b/arch/s390/kernel/ftrace.c
+index 77b2f3a..54d6493 100644
+--- a/arch/s390/kernel/ftrace.c
++++ b/arch/s390/kernel/ftrace.c
+@@ -130,7 +130,7 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
+ 	return 0;
+ }
+ 
+-int __init ftrace_dyn_arch_init(void *data)
++int __init ftrace_dyn_arch_init(void)
+ {
+ 	return 0;
+ }
+diff --git a/arch/sh/kernel/ftrace.c b/arch/sh/kernel/ftrace.c
+index 4939975..3c74f53 100644
+--- a/arch/sh/kernel/ftrace.c
++++ b/arch/sh/kernel/ftrace.c
+@@ -272,7 +272,7 @@ int ftrace_make_call(struct dyn_ftrace *rec, unsigned long addr)
+ 	return ftrace_modify_code(rec->ip, old, new);
+ }
+ 
+-int __init ftrace_dyn_arch_init(void *data)
++int __init ftrace_dyn_arch_init(void)
+ {
+ 	return 0;
+ }
+diff --git a/arch/sparc/kernel/ftrace.c b/arch/sparc/kernel/ftrace.c
+index ee813b8..0a2d2dd 100644
+--- a/arch/sparc/kernel/ftrace.c
++++ b/arch/sparc/kernel/ftrace.c
+@@ -82,7 +82,7 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
+ 	return ftrace_modify_code(ip, old, new);
+ }
+ 
+-int __init ftrace_dyn_arch_init(void *data)
++int __init ftrace_dyn_arch_init(void)
+ {
+ 	return 0;
+ }
+diff --git a/arch/tile/kernel/ftrace.c b/arch/tile/kernel/ftrace.c
+index 34d9ea0..8d52d83 100644
+--- a/arch/tile/kernel/ftrace.c
++++ b/arch/tile/kernel/ftrace.c
+@@ -167,7 +167,7 @@ int ftrace_make_nop(struct module *mod,
+ 	return ret;
+ }
+ 
+-int __init ftrace_dyn_arch_init(void *data)
++int __init ftrace_dyn_arch_init(void)
+ {
+ 	return 0;
+ }
+diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
+index bbe5a5b8..4b66adf 100644
+--- a/arch/x86/kernel/ftrace.c
++++ b/arch/x86/kernel/ftrace.c
+@@ -668,7 +668,7 @@ void arch_ftrace_update_code(int command)
+ 	atomic_dec(&modifying_ftrace_code);
+ }
+ 
+-int __init ftrace_dyn_arch_init(void *data)
++int __init ftrace_dyn_arch_init(void)
+ {
+ 	return 0;
+ }
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index e6141be..1bbb2cd 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -423,7 +423,7 @@ ftrace_set_early_filter(struct ftrace_ops *ops, char *buf, int enable);
+ 
+ /* defined in arch */
+ extern int ftrace_ip_converted(unsigned long ip);
+-extern int ftrace_dyn_arch_init(void *data);
++extern int ftrace_dyn_arch_init(void);
+ extern void ftrace_replace_code(int enable);
+ extern int ftrace_update_ftrace_func(ftrace_func_t func);
+ extern void ftrace_caller(void);
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 083c6d5..5bd70e8 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -4372,14 +4372,11 @@ void __init ftrace_init(void)
+ {
+ 	extern unsigned long __start_mcount_loc[];
+ 	extern unsigned long __stop_mcount_loc[];
+-	unsigned long count, addr, flags;
++	unsigned long count, flags;
+ 	int ret;
+ 
+-	/* Keep the ftrace pointer to the stub */
+-	addr = (unsigned long)ftrace_stub;
+-
+ 	local_irq_save(flags);
+-	ret = ftrace_dyn_arch_init(&addr);
++	ret = ftrace_dyn_arch_init();
+ 	local_irq_restore(flags);
+ 	if (ret)
+ 		goto failed;
 -- 
-Mel Gorman
-SUSE Labs
+1.8.5.3
+
+
