@@ -1,121 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051AbaCGKsl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 05:48:41 -0500
-Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:56350 "EHLO
-	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751143AbaCGKsj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 05:48:39 -0500
-Message-ID: <5319A263.6020201@st.com>
-Date: Fri, 7 Mar 2014 10:41:39 +0000
-From: srinivas kandagatla <srinivas.kandagatla@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752168AbaCGKuY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 05:50:24 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:27049 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751156AbaCGKuX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 05:50:23 -0500
+X-IronPort-AV: E=Sophos;i="4.97,607,1389715200"; 
+   d="scan'208";a="9660328"
+Message-ID: <5319A25C.6090308@cn.fujitsu.com>
+Date: Fri, 07 Mar 2014 18:41:32 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Maxime COQUELIN <maxime.coquelin@st.com>, Rob Landley <rob@landley.net>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <kernel@stlinux.com>
-Cc: <lee.jones@linaro.org>
-Subject: Re: [PATCH v2 3/5] pinctrl: st: Enhance the controller to manage
- unavailable registers
-References: <1394185272-26054-1-git-send-email-maxime.coquelin@st.com> <1394185272-26054-4-git-send-email-maxime.coquelin@st.com>
-In-Reply-To: <1394185272-26054-4-git-send-email-maxime.coquelin@st.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Benjamin <bcrl@kvack.org>
+CC: Kent <kmo@daterainc.com>, Jens <axboe@kernel.dk>, linux-aio@kvack.org,
+        linux-kernel <linux-kernel@vger.kernel.org>, miaox@cn.fujitsu.com
+Subject: Re: [RESEND PATCH 1/2] aio: simplify fetching ioctx_table pointer
+ from, mm_struct
+References: <53106480.4020900@cn.fujitsu.com>
+In-Reply-To: <53106480.4020900@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/07 18:47:38,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/07 18:47:38,
+	Serialize complete at 2014/03/07 18:47:38
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.65.51.147]
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peppe/Maxime,
-I missed a comment... :-)
+ping...
 
+On 02/28/2014 06:27 PM, Gu Zheng wrote:
 
-On 07/03/14 09:41, Maxime COQUELIN wrote:
-> From: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+> Using rcu_dereference_protected() rather than the "rcu_read_lock-->
+> rcu_dereference-->rcu_read_unlock" group to simplify fetching the
+> ioctx_table pointer in ioctx_add_table and kill_ioctx, because it
+> is protected by the ioctx_lock.
+> And in the exit_aio(), there are no other users manipulating ioctx_table
+> at this stage, so we can use rcu_access_pointer directly.
 > 
-> This patch adds a new logic inside the st pinctrl to manage
-> an unsupported scenario: some sysconfig are not available!
-> 
-> This is the case of STiH407 where, although documented, the
-> following registers from SYSCFG_FLASH have been removed from the SoC.
-> 
-> SYSTEM_CONFIG3040
->    Output Enable pad control for all PIO Alternate Functions
-> and
-> SYSTEM_ CONFIG3050
->    Pull Up pad control for all PIO Alternate Functions
-> 
-> Without managing this condition an imprecise external abort
-> will be detect.
-> 
-> To do this the patch also reviews the st_parse_syscfgs
-> and other routines to manipulate the registers only if
-> actually available.
-> In any case, for example the st_parse_syscfgs detected
-> an error condition but no action was made in the
-> st_pctl_probe_dt.
-> 
-> Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
-> Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
 > ---
->  drivers/pinctrl/pinctrl-st.c | 121 +++++++++++++++++++++++++++----------------
->  1 file changed, 75 insertions(+), 46 deletions(-)
+>  fs/aio.c |   42 ++++++++++++++++--------------------------
+>  1 files changed, 16 insertions(+), 26 deletions(-)
 > 
-> diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
-> index 9e9b6ea..d1886b4 100644
-> --- a/drivers/pinctrl/pinctrl-st.c
-> +++ b/drivers/pinctrl/pinctrl-st.c
-> @@ -390,6 +390,19 @@ static const struct st_pctl_data  stih416_data = {
->  	.alt = 0, .oe = 40, .pu = 50, .od = 60, .rt = 100,
->  };
+> diff --git a/fs/aio.c b/fs/aio.c
+> index 062a5f6..7eaa631 100644
+> --- a/fs/aio.c
+> +++ b/fs/aio.c
+> @@ -544,8 +544,8 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
+>  	struct aio_ring *ring;
 >  
-> +static const struct st_pctl_data  stih407_flashdata = {
-> +	.rt_style	= st_retime_style_none,
-> +	.input_delays	= stih416_delays,
-> +	.ninput_delays	= 14,
-> +	.output_delays	= stih416_delays,
-> +	.noutput_delays = 14,
-> +	.alt = 0,
-> +	.oe = -1, /* Not Available */
-> +	.pu = -1, /* Not Available */
-> +	.od = 60,
-> +	.rt = 100,
-> +};
+>  	spin_lock(&mm->ioctx_lock);
+> -	rcu_read_lock();
+> -	table = rcu_dereference(mm->ioctx_table);
+> +	table = rcu_dereference_protected(mm->ioctx_table,
+> +					lockdep_is_held(&mm->ioctx_lock));
+>  
+>  	while (1) {
+>  		if (table)
+> @@ -553,7 +553,6 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
+>  				if (!table->table[i]) {
+>  					ctx->id = i;
+>  					table->table[i] = ctx;
+> -					rcu_read_unlock();
+>  					spin_unlock(&mm->ioctx_lock);
+>  
+>  					ring = kmap_atomic(ctx->ring_pages[0]);
+> @@ -564,7 +563,6 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
+>  
+>  		new_nr = (table ? table->nr : 1) * 4;
+>  
+> -		rcu_read_unlock();
+>  		spin_unlock(&mm->ioctx_lock);
+>  
+>  		table = kzalloc(sizeof(*table) + sizeof(struct kioctx *) *
+> @@ -575,8 +573,8 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
+>  		table->nr = new_nr;
+>  
+>  		spin_lock(&mm->ioctx_lock);
+> -		rcu_read_lock();
+> -		old = rcu_dereference(mm->ioctx_table);
+> +		old = rcu_dereference_protected(mm->ioctx_table,
+> +					lockdep_is_held(&mm->ioctx_lock));
+>  
+>  		if (!old) {
+>  			rcu_assign_pointer(mm->ioctx_table, table);
+> @@ -711,12 +709,11 @@ static void kill_ioctx(struct mm_struct *mm, struct kioctx *ctx)
+>  		struct kioctx_table *table;
+>  
+>  		spin_lock(&mm->ioctx_lock);
+> -		rcu_read_lock();
+> -		table = rcu_dereference(mm->ioctx_table);
+> +		table = rcu_dereference_protected(mm->ioctx_table,
+> +					lockdep_is_held(&mm->ioctx_lock));
+>  
+>  		WARN_ON(ctx != table->table[ctx->id]);
+>  		table->table[ctx->id] = NULL;
+> -		rcu_read_unlock();
+>  		spin_unlock(&mm->ioctx_lock);
+>  
+>  		/* percpu_ref_kill() will do the necessary call_rcu() */
+> @@ -765,27 +762,17 @@ EXPORT_SYMBOL(wait_on_sync_kiocb);
+>  void exit_aio(struct mm_struct *mm)
+>  {
+>  	struct kioctx_table *table;
+> -	struct kioctx *ctx;
+>  	unsigned i = 0;
+>  
+> -	while (1) {
+> -		rcu_read_lock();
+> -		table = rcu_dereference(mm->ioctx_table);
+> -
+> -		do {
+> -			if (!table || i >= table->nr) {
+> -				rcu_read_unlock();
+> -				rcu_assign_pointer(mm->ioctx_table, NULL);
+> -				if (table)
+> -					kfree(table);
+> -				return;
+> -			}
+> -
+> -			ctx = table->table[i++];
+> -		} while (!ctx);
+> +	table = rcu_access_pointer(mm->ioctx_table);
+> +	if (!table)
+> +		return;
+>  
+> -		rcu_read_unlock();
+> +	while (i < table->nr) {
+> +		struct kioctx *ctx = table->table[i++];
+>  
+> +		if (!ctx)
+> +			continue;
+>  		/*
+>  		 * We don't need to bother with munmap() here -
+>  		 * exit_mmap(mm) is coming and it'll unmap everything.
+> @@ -798,6 +785,9 @@ void exit_aio(struct mm_struct *mm)
+>  
+>  		kill_ioctx(mm, ctx);
+>  	}
 > +
-
-I think this stih407_flashdata go with the previous patch "pinctrl: st:
-add pinctrl support for the STiH407 SoC"
-
-So that this patch just adds new checks to pinctrl-driver and not
-stih407 related stuff.
-
-Other than that the patch looks good to me.
-
+> +	rcu_assign_pointer(mm->ioctx_table, NULL);
+> +	kfree(table);
 >  }
 >  
->  /*
-> @@ -1583,7 +1612,7 @@ static struct of_device_id st_pctl_of_match[] = {
->  	{ .compatible = "st,stih407-sbc-pinctrl", .data = &stih416_data},
->  	{ .compatible = "st,stih407-front-pinctrl", .data = &stih416_data},
->  	{ .compatible = "st,stih407-rear-pinctrl", .data = &stih416_data},
-> -	{ .compatible = "st,stih407-flash-pinctrl", .data = &stih416_data},
-> +	{ .compatible = "st,stih407-flash-pinctrl", .data = &stih407_flashdata},
-Same as first comment.
->  	{ /* sentinel */ }
->  };
->  
-> 
+>  static void put_reqs_available(struct kioctx *ctx, unsigned nr)
 
 
-Thanks,
-srini
