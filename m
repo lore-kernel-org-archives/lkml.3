@@ -1,76 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752471AbaCGPCV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 10:02:21 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:44701 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206AbaCGPCT (ORCPT
+	id S1752508AbaCGPFo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 10:05:44 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37958 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751648AbaCGPFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 10:02:19 -0500
-Message-ID: <5319DF72.6090408@oracle.com>
-Date: Fri, 07 Mar 2014 10:02:10 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: "linux-mm@kvack.org" <linux-mm@kvack.org>
-CC: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: mm: kernel BUG at mm/filemap.c:202
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Fri, 7 Mar 2014 10:05:42 -0500
+From: Will Deacon <will.deacon@arm.com>
+To: linux-kernel@vger.kernel.org
+Cc: Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH] asm-generic: rwsem: de-PPCify rwsem.h
+Date: Fri,  7 Mar 2014 15:05:24 +0000
+Message-Id: <1394204724-18898-1-git-send-email-will.deacon@arm.com>
+X-Mailer: git-send-email 1.8.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+asm-generic/rwsem.h used to live under arch/powerpc. During its
+liberation to common code, a few references to its former home where
+preserved, in particular the definition of RWSEM_ACTIVE_MASK is
+predicated on CONFIG_PPC64.
 
-While fuzzing with trinity inside a KVM tools guest running latest -next kernel I've stumbled on
-the following spew:
+This patch updates the ifdefs and comments to architecturally neutral
+versions.
 
-[  567.833881] kernel BUG at mm/filemap.c:202!
-[  567.834485] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[  567.835522] Dumping ftrace buffer:
-[  567.836752]    (ftrace buffer empty)
-[  567.837307] Modules linked in:
-[  567.837796] CPU: 23 PID: 14457 Comm: trinity-c323 Tainted: G        W    3.14.0-rc5-next-20140307-sasha-00010-gb6b571d-dirty #111
-[  567.839449] task: ffff88021afa8000 ti: ffff88071f290000 task.ti: ffff88071f290000
-[  567.840489] RIP: 0010:[<ffffffff8126b3f0>]  [<ffffffff8126b3f0>] __delete_from_page_cache+0x150/0x270
-[  567.841649] RSP: 0018:ffff88071f291b78  EFLAGS: 00010046
-[  567.841649] RAX: 0000000000000000 RBX: ffffea0002c4ac40 RCX: 00000000ffffffb8
-[  567.841649] RDX: 00000000001dc1a8 RSI: 0000000000000018 RDI: ffff88012ffd2000
-[  567.841649] RBP: ffff88071f291b98 R08: 0000000000000048 R09: 00000000ffffffff
-[  567.841649] R10: 0000000000000001 R11: 0000000000000001 R12: ffff880627f2bd30
-[  567.841649] R13: ffff880627f2bd18 R14: 0000000000000000 R15: 0000000000000000
-[  567.841649] FS:  00007f15b504d700(0000) GS:ffff88082ba00000(0000) knlGS:0000000000000000
-[  567.841649] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  567.841649] CR2: 0000000002eef848 CR3: 000000071fce7000 CR4: 00000000000006a0
-[  567.841649] DR0: 0000000000900870 DR1: 00007f15b505a000 DR2: 0000000000000000
-[  567.841649] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000602
-[  567.841649] Stack:
-[  567.841649]  ffffea0002c4ac40 ffff880627f2bd30 0000000000000000
-[  567.859673]  0000000000000200
-[  567.859673]  ffff88071f291bc8 ffffffff8126b56a ffff880627f2bd18 ffffea0002c4ac40
-[  567.859673]  ffff880627f2bd18 ffff88071f291c48 ffff88071f291be8 ffffffff8127fb94
-[  567.859673] Call Trace:
-[  567.859673]  [<ffffffff8126b56a>] delete_from_page_cache+0x5a/0x90
-[  567.859673]  [<ffffffff8127fb94>] truncate_inode_page+0x74/0x90
-[  567.859673]  [<ffffffff8128c875>] shmem_undo_range+0x245/0x770
-[  567.859673]  [<ffffffff812a01b8>] ? unmap_mapping_range+0x168/0x180
-[  567.859673]  [<ffffffff8128cdb8>] shmem_truncate_range+0x18/0x40
-[  567.859673]  [<ffffffff8128d0c9>] shmem_fallocate+0x99/0x2f0
-[  567.859673]  [<ffffffff8129b7be>] ? madvise_vma+0xde/0x1c0
-[  567.859673]  [<ffffffff811ad632>] ? __lock_release+0x1e2/0x200
-[  567.859673]  [<ffffffff812f87da>] do_fallocate+0x14a/0x1a0
-[  567.859673]  [<ffffffff8129b7d4>] madvise_vma+0xf4/0x1c0
-[  567.859673]  [<ffffffff812a765f>] ? find_vma+0x6f/0x90
-[  567.859673]  [<ffffffff8129ba28>] SyS_madvise+0x188/0x250
-[  567.859673]  [<ffffffff844b1650>] tracesys+0xdd/0xe2
-[  567.859673] Code: be 0a 00 00 00 48 89 df e8 8e 55 02 00 48 8b 03 a9 00 00 08 00 74 0d be 18 00 00 00 48 89 df e8 77 55 02 00 8b 43 18 85 c0 78 10 <0f> 0b 66 0f 1f 44 00 00 eb fe 66 0f 1f 44 00 00 48 8b 03 a8 10
-[  567.859673] RIP  [<ffffffff8126b3f0>] __delete_from_page_cache+0x150/0x270
-[  567.859673]  RSP <ffff88071f291b78>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Richard Kuo <rkuo@codeaurora.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+---
 
+Hi Arnd,
 
-Thanks,
-Sasha
+Any chance you could queue this for 3.15 please? It means I can easily
+move arm64 over to the asm-generic rwsem implementation afterwards.
+
+Cheers,
+
+Will
+
+ include/asm-generic/rwsem.h | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/include/asm-generic/rwsem.h b/include/asm-generic/rwsem.h
+index bb1e2cdeb9bf..d48bf5a95cc1 100644
+--- a/include/asm-generic/rwsem.h
++++ b/include/asm-generic/rwsem.h
+@@ -1,5 +1,5 @@
+-#ifndef _ASM_POWERPC_RWSEM_H
+-#define _ASM_POWERPC_RWSEM_H
++#ifndef _ASM_GENERIC_RWSEM_H
++#define _ASM_GENERIC_RWSEM_H
+ 
+ #ifndef _LINUX_RWSEM_H
+ #error "Please don't include <asm/rwsem.h> directly, use <linux/rwsem.h> instead."
+@@ -8,7 +8,7 @@
+ #ifdef __KERNEL__
+ 
+ /*
+- * R/W semaphores for PPC using the stuff in lib/rwsem.c.
++ * R/W semaphores originally for PPC using the stuff in lib/rwsem.c.
+  * Adapted largely from include/asm-i386/rwsem.h
+  * by Paul Mackerras <paulus@samba.org>.
+  */
+@@ -16,7 +16,7 @@
+ /*
+  * the semaphore definition
+  */
+-#ifdef CONFIG_PPC64
++#ifdef CONFIG_64BIT
+ # define RWSEM_ACTIVE_MASK		0xffffffffL
+ #else
+ # define RWSEM_ACTIVE_MASK		0x0000ffffL
+@@ -129,4 +129,4 @@ static inline long rwsem_atomic_update(long delta, struct rw_semaphore *sem)
+ }
+ 
+ #endif	/* __KERNEL__ */
+-#endif	/* _ASM_POWERPC_RWSEM_H */
++#endif	/* _ASM_GENERIC_RWSEM_H */
+-- 
+1.8.2.2
+
