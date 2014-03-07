@@ -1,158 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753424AbaCGSWn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 13:22:43 -0500
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:51982 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752574AbaCGSWl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 13:22:41 -0500
-Message-ID: <531A0E6C.2070203@gmail.com>
-Date: Fri, 07 Mar 2014 10:22:36 -0800
-From: "Peter F. Patel-Schneider" <pfpschneider@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752480AbaCGS1v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 13:27:51 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53505 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751302AbaCGS1u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 13:27:50 -0500
+Date: Fri, 7 Mar 2014 18:27:45 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Rik van Riel <riel@redhat.com>, Sasha Levin <sasha.levin@oracle.com>
+Cc: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, hhuang@redhat.com,
+        knoel@redhat.com, aarcange@redhat.com
+Subject: Re: [PATCH -mm] mm,numa,mprotect: always continue after finding a
+ stable thp page
+Message-ID: <20140307182745.GD1931@suse.de>
+References: <5318E4BC.50301@oracle.com>
+ <20140306173137.6a23a0b2@cuia.bos.redhat.com>
+ <5318FC3F.4080204@redhat.com>
+ <20140307140650.GA1931@suse.de>
+ <20140307150923.GB1931@suse.de>
 MIME-Version: 1.0
-To: ike.pan@canonical.com, matthew.garrett@nebula.com,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: proposed patch to ideapad-laptop module for Yoga 2 Pro
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20140307150923.GB1931@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Lenovo Ideapad Yoga laptops have a VPC2004 ACPI device, so the
-ideapad-laptop module loads for them.  The module enables the Airplane Mode
-and Novo keys of the laptop.  Most of the other features of this module
-are harmless for these laptops.  However, the laptops do not have hardware
-RF kill switches and when the module loads it turns off the WiFi.
+On Fri, Mar 07, 2014 at 03:09:23PM +0000, Mel Gorman wrote:
+> On Fri, Mar 07, 2014 at 02:06:50PM +0000, Mel Gorman wrote:
+> > On Thu, Mar 06, 2014 at 05:52:47PM -0500, Rik van Riel wrote:
+> > > On 03/06/2014 05:31 PM, Rik van Riel wrote:
+> > > >On Thu, 06 Mar 2014 16:12:28 -0500
+> > > >Sasha Levin <sasha.levin@oracle.com> wrote:
+> > > >
+> > > >>While fuzzing with trinity inside a KVM tools guest running latest -next kernel I've hit the
+> > > >>following spew. This seems to be introduced by your patch "mm,numa: reorganize change_pmd_range()".
+> > > >
+> > > >That patch should not introduce any functional changes, except for
+> > > >the VM_BUG_ON that catches the fact that we fell through to the 4kB
+> > > >pte handling code, despite having just handled a THP pmd...
+> > > >
+> > > >Does this patch fix the issue?
+> > > >
+> > > >Mel, am I overlooking anything obvious? :)
+> > > >
+> > > >---8<---
+> > > >
+> > > >Subject: mm,numa,mprotect: always continue after finding a stable thp page
+> > > >
+> > > >When turning a thp pmds into a NUMA one, change_huge_pmd will
+> > > >return 0 when the pmd already is a NUMA pmd.
+> > > 
+> > > I did miss something obvious.  In this case, the code returns 1.
+> > > 
+> > > >However, change_pmd_range would fall through to the code that
+> > > >handles 4kB pages, instead of continuing on to the next pmd.
+> > > 
+> > > Maybe the case that I missed is when khugepaged is in the
+> > > process of collapsing pages into a transparent huge page?
+> > > 
+> > > If the virtual CPU gets de-scheduled by the host for long
+> > > enough, it would be possible for khugepaged to run on
+> > > another virtual CPU, and turn the pmd into a THP pmd,
+> > > before that VM_BUG_ON test.
+> > > 
+> > > I see that khugepaged takes the mmap_sem for writing in the
+> > > collapse code, and it looks like task_numa_work takes the
+> > > mmap_sem for reading, so I guess that may not be possible?
+> > > 
+> > 
+> > mmap_sem will prevent a parallel collapse but what prevents something
+> > like the following?
+> > 
+> > 							do_huge_pmd_wp_page
+> > change_pmd_range
+> > if (!pmd_trans_huge(*pmd) && pmd_none_or_clear_bad(pmd))
+> > 	continue;
+> > 							pmdp_clear_flush(vma, haddr, pmd);
+> > if (pmd_trans_huge(*pmd)) {
+> > 	.... path not taken ....
+> > }
+> > 							page_add_new_anon_rmap(new_page, vma, haddr);
+> > 							set_pmd_at(mm, haddr, pmd, entry);
+> > VM_BUG_ON(pmd_trans_huge(*pmd));
+> > 
+> > We do not hold the page table lock during the pmd_trans_huge check and we
+> > do not recheck it under PTF lock in change_pte_range()
+> > 
+> 
+> This is a completely untested prototype. It rechecks pmd_trans_huge
+> under the lock and falls through if it hit a parallel split. It's not
+> perfect because it could decide to fall through just because there was
+> no prot_numa work to do but it's for illustration purposes. Secondly,
+> I noted that you are calling invalidate for every pmd range. Is that not
+> a lot of invalidations? We could do the same by just tracking the address
+> of the first invalidation.
+> 
 
-This patch adds a flag (rfkill_present) to the ideapad_private data
-indicating whether the laptop has an RF kill switch.   On initialization,
-there is a check whether the laptop is a Yoga 2 Pro by matching against the
-DMI product version of the system information.  If there is a match the flag
-is set to false, otherwise it is set to true.  All manipulations of the
-rfkill structures are conditioned on this flag being true.
+And there were other minor issues. This is still untested but Sasha,
+can you try it out please? I discussed this with Rik on IRC for a bit and
+reckon this should be sufficient if the correct race has been identified.
 
-This is a minimal change to make the ideapad-laptop module work correctly
-for Yoga 2 Pro Ideapads.  The initialization check should be generalized for
-other Ideapads that do not have RF kill switches, particularly other Yogas,
-but I do not have precise information on their DMI version information.
+The race can only really happen for prot_numa updates and it's ok to bail on
+those updates if a race occurs because all we miss is a few hinting faults.
+That simplifies the patch considerably but throw in some comments to
+explain it
 
-What should be done to get this patchapplied?
-
-Peter F. Patel-Schneider
-
----
-
---- a/drivers/platform/x86/ideapad-laptop.c
-+++ b/drivers/platform/x86/ideapad-laptop.c
-@@ -27,6 +27,7 @@
-  #include <linux/init.h>
-  #include <linux/types.h>
-  #include <linux/acpi.h>
-+#include <linux/dmi.h>
-  #include <linux/rfkill.h>
-  #include <linux/platform_device.h>
-  #include <linux/input.h>
-@@ -84,6 +85,7 @@ struct ideapad_private {
-      struct input_dev *inputdev;
-      struct backlight_device *blightdev;
-      struct dentry *debug;
-+        bool rfkill_present;
-      unsigned long cfg;
-  };
-
-@@ -474,13 +476,15 @@ static void ideapad_sync_rfk_state(struct 
-ideapad_private *priv)
-      unsigned long hw_blocked;
-      int i;
-
--    if (read_ec_data(priv->adev->handle, VPCCMD_R_RF, &hw_blocked))
--        return;
--    hw_blocked = !hw_blocked;
-+    if (priv->rfkill_present) {
-+        if (read_ec_data(priv->adev->handle, VPCCMD_R_RF, &hw_blocked))
-+            return;
-+        hw_blocked = !hw_blocked;
-
--    for (i = 0; i < IDEAPAD_RFKILL_DEV_NUM; i++)
--        if (priv->rfk[i])
--            rfkill_set_hw_state(priv->rfk[i], hw_blocked);
-+        for (i = 0; i < IDEAPAD_RFKILL_DEV_NUM; i++)
-+            if (priv->rfk[i])
-+                rfkill_set_hw_state(priv->rfk[i], hw_blocked);
-+    }
-  }
-
-  static int ideapad_register_rfkill(struct ideapad_private *priv, int dev)
-@@ -825,6 +829,7 @@ static int ideapad_acpi_add(struct platform_device *pdev)
-      int cfg;
-      struct ideapad_private *priv;
-      struct acpi_device *adev;
-+    char const *s;
-
-      ret = acpi_bus_get_device(ACPI_HANDLE(&pdev->dev), &adev);
-      if (ret)
-@@ -842,6 +847,15 @@ static int ideapad_acpi_add(struct platform_device *pdev)
-      priv->adev = adev;
-      priv->platform_device = pdev;
-
-+    /*  check for Yoga 2 Pro, which has no rfkill switches */
-+    s = dmi_get_system_info(DMI_PRODUCT_VERSION);
-+    if (s && !(strncmp(s, "Lenovo Yoga 2 Pro", 17)) ) {
-+        priv->rfkill_present = false;
-+    } else {
-+        priv->rfkill_present = true;
-+    }
+diff --git a/mm/mprotect.c b/mm/mprotect.c
+index 2afc40e..72061a2 100644
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
+@@ -46,6 +46,17 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+ 	unsigned long pages = 0;
+ 
+ 	pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
 +
++	/*
++	 * For a prot_numa update we only hold mmap_sem for read so there is a
++	 * potential race with faulting where a pmd was temporarily none so
++	 * recheck it under the lock and bail if we race
++	 */
++	if (prot_numa && unlikely(pmd_trans_huge(*pmd))) {
++		pte_unmap_unlock(pte, ptl);
++		return 0;
++	}
 +
-      ret = ideapad_sysfs_init(priv);
-      if (ret)
-          goto sysfs_failed;
-@@ -854,11 +868,13 @@ static int ideapad_acpi_add(struct platform_device *pdev)
-      if (ret)
-          goto input_failed;
-
--    for (i = 0; i < IDEAPAD_RFKILL_DEV_NUM; i++) {
--        if (test_bit(ideapad_rfk_data[i].cfgbit, &priv->cfg))
--            ideapad_register_rfkill(priv, i);
--        else
--            priv->rfk[i] = NULL;
-+    if (priv->rfkill_present) {
-+        for (i = 0; i < IDEAPAD_RFKILL_DEV_NUM; i++) {
-+            if (test_bit(ideapad_rfk_data[i].cfgbit, &priv->cfg))
-+                ideapad_register_rfkill(priv, i);
-+            else
-+                priv->rfk[i] = NULL;
-+        }
-      }
-      ideapad_sync_rfk_state(priv);
-      ideapad_sync_touchpad_state(priv);
-@@ -877,8 +893,10 @@ static int ideapad_acpi_add(struct platform_device *pdev)
-  notification_failed:
-      ideapad_backlight_exit(priv);
-  backlight_failed:
--    for (i = 0; i < IDEAPAD_RFKILL_DEV_NUM; i++)
--        ideapad_unregister_rfkill(priv, i);
-+    if (priv->rfkill_present) {
-+        for (i = 0; i < IDEAPAD_RFKILL_DEV_NUM; i++)
-+            ideapad_unregister_rfkill(priv, i);
-+    }
-      ideapad_input_exit(priv);
-  input_failed:
-      ideapad_debugfs_exit(priv);
-@@ -897,8 +915,10 @@ static int ideapad_acpi_remove(struct platform_device *pdev)
-      acpi_remove_notify_handler(priv->adev->handle,
-          ACPI_DEVICE_NOTIFY, ideapad_acpi_notify);
-      ideapad_backlight_exit(priv);
--    for (i = 0; i < IDEAPAD_RFKILL_DEV_NUM; i++)
--        ideapad_unregister_rfkill(priv, i);
-+    if (priv->rfkill_present) {
-+        for (i = 0; i < IDEAPAD_RFKILL_DEV_NUM; i++)
-+            ideapad_unregister_rfkill(priv, i);
-+    }
-      ideapad_input_exit(priv);
-      ideapad_debugfs_exit(priv);
-      ideapad_sysfs_exit(priv);
-
+ 	arch_enter_lazy_mmu_mode();
+ 	do {
+ 		oldpte = *pte;
+@@ -141,12 +152,13 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
+ 						pages += HPAGE_PMD_NR;
+ 						nr_huge_updates++;
+ 					}
++
++					/* huge pmd was handled */
+ 					continue;
+ 				}
+ 			}
+ 			/* fall through, the trans huge pmd just split */
+ 		}
+-		VM_BUG_ON(pmd_trans_huge(*pmd));
+ 		this_pages = change_pte_range(vma, pmd, addr, next, newprot,
+ 				 dirty_accountable, prot_numa);
+ 		pages += this_pages;
