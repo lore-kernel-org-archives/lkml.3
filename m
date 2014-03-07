@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752582AbaCGLxF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 06:53:05 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:21994 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752471AbaCGLxC (ORCPT
+	id S1752623AbaCGLyH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 06:54:07 -0500
+Received: from www.linutronix.de ([62.245.132.108]:36877 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751490AbaCGLyE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 06:53:02 -0500
-Date: Fri, 7 Mar 2014 14:52:54 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Vegard Nossum <vegard.nossum@oracle.com>
-Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] isdnloop: NUL-terminate strings from userspace
-Message-ID: <20140307115253.GL4774@mwanda>
-References: <1394189764-21754-1-git-send-email-vegard.nossum@oracle.com>
- <20140307112655.GJ4774@mwanda>
- <5319B094.7060709@oracle.com>
+	Fri, 7 Mar 2014 06:54:04 -0500
+Date: Fri, 7 Mar 2014 12:53:57 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Cc: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org,
+        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
+        John Kacur <jkacur@redhat.com>
+Subject: Re: nouveau crash due to missing channel (WAS: Re: [ANNOUNCE]
+ 3.12.12-rt19)
+Message-ID: <20140307115357.GB8637@linutronix.de>
+References: <20140223184727.GA12442@linutronix.de>
+ <53128DED.1000402@localhost>
+ <20140307111848.GA8637@linutronix.de>
+ <5319AF2D.2060004@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <5319B094.7060709@oracle.com>
+In-Reply-To: <5319AF2D.2060004@canonical.com>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 07, 2014 at 12:42:12PM +0100, Vegard Nossum wrote:
-> On 03/07/2014 12:26 PM, Dan Carpenter wrote:
-> >On Fri, Mar 07, 2014 at 11:56:04AM +0100, Vegard Nossum wrote:
-> >>Both the in-kernel and BSD strlcpy() require that the source string is
-> >>NUL terminated.
-> >
-> >No.  You're obviously wrong.  What on earth?
-> 
-> Well, from lib/string.c:
-> 
-> size_t strlcpy(char *dest, const char *src, size_t size)
-> {
->         size_t ret = strlen(src);
->
+* Maarten Lankhorst | 2014-03-07 12:36:13 [+0100]:
 
-Ah...  So you mean that we could read far beyond the end of the string
-and it would be a DoS because there would be 4 gigs of memory before we
-hit a NUL character.  That won't happen in this case because the user
-only controls a small buffer.  Normal memory is full of NUL chars.
+>>I can't find any kind of locking so my question is what ensures that chan is
+>>not set to NULL between nouveau_fence_done() and
+>>nouveau_fence_wait_uevent()? There are just a few opcodes in between but
+>>nothing that pauses nouveau_fence_signal().
+>Absolutely nothing. :-) Worse still, there's no guarantee that channel isn't freed, but hopefully that is less likely to be an issue.
 
-I don't know the speed impact of changing the strlen() there to
-strnlen().
+Okay, so I hit the correct spot. What do we do here? Do you want the
+patch I posted without the WARN_ON() or do you prefer to fix this in an
+other way?
 
-> The BSD man page:
-> 
-> "Also note that strlcpy() and strlcat() only operate on true ``C''
-> strings.  This means that for strlcpy() src must be NUL-terminated
-> and for strlcat() both src and dst must be NUL-terminated."
+>~Maarten
 
-It's talking about the kind of strings.  If it's a string which includes
-NUL characters the strlcpy() won't work for that.  Or if it is not
-*supposed* to end in a NUL character then it won't work for that.
-
-We are using C strings here.
-
-regards,
-dan carpenter
-
+Sebastian
