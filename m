@@ -1,91 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752864AbaCGKPS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 05:15:18 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:26024 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752268AbaCGKPO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 05:15:14 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-03-53199c30dacb
-Message-id: <1394187310.30396.0.camel@AMDC1943>
-Subject: Re: [PATCH 2/3] regulator: s2mps11: Add set_suspend_disable for S2MPS14
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>
-Date: Fri, 07 Mar 2014 11:15:10 +0100
-In-reply-to: <20140307023747.GT13126@sirena.org.uk>
-References: <1394011373-4057-1-git-send-email-k.kozlowski@samsung.com>
- <1394011373-4057-3-git-send-email-k.kozlowski@samsung.com>
- <20140306093826.GO13126@sirena.org.uk> <1394116942.25853.14.camel@AMDC1943>
- <20140307023747.GT13126@sirena.org.uk>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Content-transfer-encoding: 7bit
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrALMWRmVeSWpSXmKPExsVy+t/xK7oGcySDDZbuVbLYOGM9q8XUh0/Y
-	LM42vWG3uP/1KKPFtysdTBaXd81hs5hxfh+Txdojd9ktTv7pZbQ43c1qcXHFFyaL9TNes1jM
-	mf6OyYHXY+esu+wem1Z1snncubaHzWPeyUCPvi2rGD0+b5ILYIvisklJzcksSy3St0vgyrjb
-	vZu9oIGv4uGfY2wNjA3cXYycHBICJhLPnjxkh7DFJC7cW88GYgsJLGWUuDVJuYuRC8j+zCjx
-	vmMaE0iCV0Bf4sX5ZrAGYYEAifVrPjGD2GwCxhKbly8BaxYRUJa4+n0vC0gzs8ArZokHuyeB
-	JVgEVCU+X57FAmJzAjV86V3DCrHhF6PEiqO9YBuYBdQlJs1bxAxxkpLE7vZOdoi4vMTmNW+Z
-	Ia4QlPgx+R7LBEaBWUhaZiEpm4WkbAEj8ypG0dTS5ILipPRcQ73ixNzi0rx0veT83E2MkFj5
-	soNx8TGrQ4wCHIxKPLwGCySChVgTy4orcw8xSnAwK4nwdjVLBgvxpiRWVqUW5ccXleakFh9i
-	ZOLglGpgdHPKcy2r/LBa726xyMa2NwfSXq9uE/ZUiKidqKi21l46Kqsrs1M9afqaGw+TT7LG
-	aC9/ybz1uuvPn5NWn7bauSgv6XBf/Ikbdd+lWZZWpX9+ev3NxZmfztp4rTJ1selZWHqRYe2n
-	dyLfDtnWiX3ytJ5o5iWW/EhMJOra5ZXi0p+MmvcWzp2toMRSnJFoqMVcVJwIACyMVWZzAgAA
+	id S1751969AbaCGKPq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 05:15:46 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:49529 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751055AbaCGKPl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 05:15:41 -0500
+From: Roger Quadros <rogerq@ti.com>
+To: <balbi@ti.com>, <tony@atomide.com>
+CC: <kishon@ti.com>, <george.cherian@ti.com>, <balajitk@ti.com>,
+        <hdegoede@redhat.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <rogerq@ti.com>
+Subject: [PATCH v3 0/8] ARM: OMAP: SATA support for OMAP5 & DRA7
+Date: Fri, 7 Mar 2014 12:15:00 +0200
+Message-ID: <1394187308-19622-1-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.8.3.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-03-07 at 10:37 +0800, Mark Brown wrote:
-> On Thu, Mar 06, 2014 at 03:42:22PM +0100, Krzysztof Kozlowski wrote:
-> 
-> > However in that case the driver won't be able later to change that value
-> > back to "normal enable" (enable_mask). Consider such flow:
-> > 1. System is going to suspend.
-> > 2. Some regulator has "rstate->disabled" so set_suspend_disable() is
-> > called on it.
-> > 3. The "suspend" value is written to the device for given regulator and
-> > it is stored as "enable" value.
-> > 4. If regulator is enabled during here then the same "suspend" value
-> > will be written.
-> > 5. System is suspended.
-> > 6. After resuming regulator_suspend_finish() calls
-> > _regulator_do_enable() on the regulator... which will write the
-> > "suspend" value because the driver cannot differentiate between this
-> > enable and previous.
-> 
-> > I assume that this may not be a problem because:
-> > 1. Regulator will be still turned on (the "suspend" value tells PMIC to
-> > enable the regulator when SoC enables power).
-> > 2. The first disable of regulator may bring back "enable" value back to
-> > normal mode.
-> 
-> > Am I thinking here correctly? 
-> 
-> I'm not entirely sure I follow here.  Why would a disable reset the
-> enable value?  My understanding is that this is a bitfield with several
-> values, off, on always and on when they system is active.  The suspend
-> state is being tracked with a variable so I'm not sure why disabling
-> would reset it?
-> 
-> There is a bit of an issue if the regulator is disabled during runtime
-> but enabled in suspend but that's hard to resolve and I'm not sure that
-> it's a realistic issue.
+Hi Tony & Felipe,
 
-OK, I think I understand it... I sent v2 of the set_suspend_disable
-patch.
+Kishon has pulled in the relevant PHY patches into his tree.
+These are the remaining patches from the series.
 
-Best regards,
-Krzysztof
+Patches 1 to 3 need to go through Felipe's USB tree.
+Patches 4 to 8 need to go through Tony's OMAP tree.
 
+Thanks.
+
+Patches are based on 3.14-rc4 with balbi/next, linux-phy/next and
+omap-for-v3.15/dt merged on top.
+
+To test SATA you will also need [1].
+
+[1] - http://article.gmane.org/gmane.comp.hardware.netbook.arm.sunxi/7285
+
+Changelog:
+v3
+- Removed PHY patches and rebased.
+
+v2
+- use 'depends on' instead of 'select' OCP2SCP bus driver.
+- Changed DT bindings for dra7-usb2 and am437-usb2 phy.
+
+cheers,
+-roger
+
+---
+Balaji T K (2):
+  ARM: dts: omap5: add sata node
+  ARM: dts: dra7: add OCP2SCP3 and SATA nodes
+
+Keshava Munegowda (1):
+  ARM: OMAP5: hwmod: Add ocp2scp3 and sata hwmods
+
+Nikhil Devshatwar (1):
+  ARM: DRA7: hwmod: Add ocp2scp3 and sata hwmods
+
+Roger Quadros (4):
+  phy: omap-control: update dra7 and am437 usb2 Documentation bindings
+  phy: ti-pipe3: Add clocks to PIPE3 PHY Documentation binding
+  phy: ti-pipe3: Add SATA compatible to Documentation binding
+  ARM: dts: omap5: Add clocks to USB3 PHY node
+
+ Documentation/devicetree/bindings/phy/ti-phy.txt | 19 +++++-
+ arch/arm/boot/dts/dra7.dtsi                      | 39 +++++++++++++
+ arch/arm/boot/dts/omap5.dtsi                     | 46 +++++++++++++++
+ arch/arm/mach-omap2/omap_hwmod_54xx_data.c       | 73 ++++++++++++++++++++++++
+ arch/arm/mach-omap2/omap_hwmod_7xx_data.c        | 31 ++++++++--
+ 5 files changed, 200 insertions(+), 8 deletions(-)
+
+-- 
+1.8.3.2
 
