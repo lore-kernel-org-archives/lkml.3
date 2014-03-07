@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319AbaCGNK4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 08:10:56 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:46377 "EHLO comal.ext.ti.com"
+	id S1753495AbaCGNLo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 08:11:44 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:40481 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753442AbaCGNKC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 08:10:02 -0500
+	id S1753080AbaCGNJw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 08:09:52 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <balbi@ti.com>, <tony@atomide.com>
 CC: <kishon@ti.com>, <george.cherian@ti.com>, <linux-omap@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>,
         <rogerq@ti.com>
-Subject: [PATCH 8/8] dts: dra7-evm: add USB support
-Date: Fri, 7 Mar 2014 15:09:11 +0200
-Message-ID: <1394197751-28984-9-git-send-email-rogerq@ti.com>
+Subject: [PATCH 3/8] ARM: DRA7: hwmod: Add SYSCONFIG for usb_otg_ss
+Date: Fri, 7 Mar 2014 15:09:06 +0200
+Message-ID: <1394197751-28984-4-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1394197751-28984-1-git-send-email-rogerq@ti.com>
 References: <1394197751-28984-1-git-send-email-rogerq@ti.com>
@@ -24,53 +24,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add USB pinmux information and USB modes
-for the first 2 USB controllers.
+Add the sysconfig class bits for the Super Speed USB
+controllers
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- arch/arm/boot/dts/dra7-evm.dts | 24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+ arch/arm/mach-omap2/omap_hwmod_7xx_data.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/arch/arm/boot/dts/dra7-evm.dts b/arch/arm/boot/dts/dra7-evm.dts
-index 5babba0..41c600b 100644
---- a/arch/arm/boot/dts/dra7-evm.dts
-+++ b/arch/arm/boot/dts/dra7-evm.dts
-@@ -93,6 +93,18 @@
- 			0x24c (PIN_INPUT_SLEW | MUX_MODE0) /* uart3_txd */
- 		>;
- 	};
+diff --git a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+index 3c9a430..cca24ad 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+@@ -1752,8 +1752,20 @@ static struct omap_hwmod dra7xx_uart6_hwmod = {
+  *
+  */
+ 
++static struct omap_hwmod_class_sysconfig dra7xx_usb_otg_ss_sysc = {
++	.rev_offs	= 0x0000,
++	.sysc_offs	= 0x0010,
++	.sysc_flags	= (SYSC_HAS_DMADISABLE | SYSC_HAS_MIDLEMODE |
++			   SYSC_HAS_SIDLEMODE),
++	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
++			   SIDLE_SMART_WKUP | MSTANDBY_FORCE | MSTANDBY_NO |
++			   MSTANDBY_SMART | MSTANDBY_SMART_WKUP),
++	.sysc_fields	= &omap_hwmod_sysc_type2,
++};
 +
-+	usb1_pins: pinmux_usb1_pins {
-+                pinctrl-single,pins = <
-+			0x280	0xc0000	/* usb1_drvvbus, SLOW_SLEW | PULLUPEN | MODE0 */
-+                >;
-+        };
-+
-+	usb2_pins: pinmux_usb2_pins {
-+                pinctrl-single,pins = <
-+			0x284	0xc0000 /* usb2_drvvbus, SLOW_SLEW | PULLUPEN | MODE0 */
-+                >;
-+        };
+ static struct omap_hwmod_class dra7xx_usb_otg_ss_hwmod_class = {
+ 	.name	= "usb_otg_ss",
++	.sysc	= &dra7xx_usb_otg_ss_sysc,
  };
  
- &i2c1 {
-@@ -273,3 +285,15 @@
- &cpu0 {
- 	cpu0-supply = <&smps123_reg>;
- };
-+
-+&usb1 {
-+	dr_mode = "otg";
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&usb1_pins>;
-+};
-+
-+&usb2 {
-+	dr_mode = "otg";
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&usb2_pins>;
-+};
+ /* usb_otg_ss1 */
 -- 
 1.8.3.2
 
