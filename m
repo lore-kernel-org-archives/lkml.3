@@ -1,36 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753276AbaCGOEK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 09:04:10 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:39738 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752306AbaCGOEI (ORCPT
+	id S1753434AbaCGOGn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 09:06:43 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:47055 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753138AbaCGOGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 09:04:08 -0500
-Date: Fri, 7 Mar 2014 15:04:03 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: "Jason A. Donenfeld" <Jason@zx2c4.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: atkbd - add LED triggers for keyboard state
-Message-ID: <20140307140403.GB17576@Nokia-N900>
-References: <1393794356-1754-1-git-send-email-Jason@zx2c4.com>
+	Fri, 7 Mar 2014 09:06:41 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393794356-1754-1-git-send-email-Jason@zx2c4.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <5319CF23.6090103@ti.com>
+References: <1390486503-1504-1-git-send-email-dh.herrmann@gmail.com>
+	<53145591.4070004@ti.com>
+	<CANq1E4QJqB0CSNeSh2jsp90ZtcLwFwfSG=qjodSLdV_aGbL3BQ@mail.gmail.com>
+	<53145D42.9080806@ti.com>
+	<CANq1E4QYuMsj3W80jiyOfeYr+Xm=J096idyvgCUpFhADWR1ZvA@mail.gmail.com>
+	<531465FF.1000201@ti.com>
+	<CANq1E4TmACNwyANaUsWufJL1ne4pk4Gv+g4y7b6xeO=Po-SN9g@mail.gmail.com>
+	<5319BF40.70305@ti.com>
+	<CANq1E4QXWYQE5DWOA7F39oHFd2ZnV5Ny4ykOw1=aJT+B_umy3Q@mail.gmail.com>
+	<5319CF23.6090103@ti.com>
+Date: Fri, 7 Mar 2014 15:06:40 +0100
+Message-ID: <CANq1E4RO5d1AFEdp3Ya5TFNSht87vARtk8nag7qCnKVU54ZYSg@mail.gmail.com>
+Subject: Re: [PATCH 00/11] SimpleDRM & Sysfb
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 2014-03-02 22:05:56, Jason A. Donenfeld wrote:
-> Many new laptop keyboards aren't shipping with LEDs in the keys for
-> caps lock, num lock, and scroll lock. They do, however, ship with many LEDs
-> for specialized functions that mostly go non-utilized by any current
-> Linux drivers. Having a caps lock LED is very helpful in early boot full
-> disk encryption, where a fancy GUI is not available to show that caps
-> lock is activated.
+Hi Tomi
 
-There's already patch in akpm tree that does this... and more.
+On Fri, Mar 7, 2014 at 2:52 PM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
+> On 07/03/14 15:05, David Herrmann wrote:
+>
+>> If you can take these two patches, that's fine. They're not strictly
+>> needed by the series and I'd be happy to see them upstream. The other
+>> sysfb patches should be merged together, so I don't think there's much
+>> gain in applying them through fbdev.
+>
+> Ok, I've applied them to fbdev tree.
 
-Please help improving it.
+Thanks!
+
+>> The DRM tree is usually merged late, anyway, so I'll see whether we
+>> will merge simpledrm through drm-next or not. If not, it'll be 3.16
+>> then. If you can get the fbdev merge in early, that should be enough
+>> for us to figure it out and provide a conflict-resolution. Btw., do
+>> you want the generic sysfb-helper in drivers/video/ or
+>> driver/video/fbdev? It's not limited to fbdev, so I'd put it in
+>> drivers/video/.
+>
+> With a quick glance, it doesn't seem to depend on fbdev in any way,
+> right? That makes me think drivers/video/.
+
+Right! I will keep them in drivers/video/ then.
+
+Thanks
+David
