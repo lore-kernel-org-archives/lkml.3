@@ -1,161 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503AbaCGWsa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 17:48:30 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55742 "EHLO mx2.suse.de"
+	id S1753916AbaCGWwJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 17:52:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16245 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752060AbaCGWs3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 17:48:29 -0500
-Message-ID: <531A4CBB.4070208@suse.cz>
-Date: Fri, 07 Mar 2014 23:48:27 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Laura Abbott <lauraa@codeaurora.org>
-CC: Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCHv2] mm/compaction: Break out of loop on !PageBuddy in isolate_freepages_block
-References: <1394130092-25440-1-git-send-email-lauraa@codeaurora.org> <20140306163349.d1f25dac8bc97f0cf89a82b5@linux-foundation.org>
-In-Reply-To: <20140306163349.d1f25dac8bc97f0cf89a82b5@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1752048AbaCGWwF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 17:52:05 -0500
+Message-ID: <1394232722.17779.57.camel@flatline.rdu.redhat.com>
+Subject: Re: [RFC][PATCH] audit: Simplify by assuming the callers socket
+ buffer is large enough
+From: Eric Paris <eparis@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Steve Grubb <sgrubb@redhat.com>, rgb@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-audit@redhat.com,
+        akpm@linux-foundation.org, David Miller <davem@davemloft.net>
+Date: Fri, 07 Mar 2014 17:52:02 -0500
+In-Reply-To: <87wqg8zfj4.fsf@xmission.com>
+References: <20140304133004.b565820f60f595a48e621e58@linux-foundation.org>
+	 <87mwh5d1tf.fsf@xmission.com>
+	 <20140304.192152.1234652192226780071.davem@davemloft.net>
+	 <7457128.6VP2v68V93@x2> <87wqg8zfj4.fsf@xmission.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7.3.2014 1:33, Andrew Morton wrote:
-> On Thu,  6 Mar 2014 10:21:32 -0800 Laura Abbott <lauraa@codeaurora.org> wrote:
->
->> We received several reports of bad page state when freeing CMA pages
->> previously allocated with alloc_contig_range:
->>
->> <1>[ 1258.084111] BUG: Bad page state in process Binder_A  pfn:63202
->> <1>[ 1258.089763] page:d21130b0 count:0 mapcount:1 mapping:  (null) index:0x7dfbf
->> <1>[ 1258.096109] page flags: 0x40080068(uptodate|lru|active|swapbacked)
->>
->> Based on the page state, it looks like the page was still in use. The page
->> flags do not make sense for the use case though. Further debugging showed
->> that despite alloc_contig_range returning success, at least one page in the
->> range still remained in the buddy allocator.
->>
->> There is an issue with isolate_freepages_block. In strict mode (which CMA
->> uses), if any pages in the range cannot be isolated,
->> isolate_freepages_block should return failure 0. The current check keeps
->> track of the total number of isolated pages and compares against the size
->> of the range:
->>
->>          if (strict && nr_strict_required > total_isolated)
->>                  total_isolated = 0;
->>
->> After taking the zone lock, if one of the pages in the range is not
->> in the buddy allocator, we continue through the loop and do not
->> increment total_isolated. If in the last iteration of the loop we isolate
->> more than one page (e.g. last page needed is a higher order page), the
->> check for total_isolated may pass and we fail to detect that a page was
->> skipped. The fix is to bail out if the loop immediately if we are in
->> strict mode. There's no benfit to continuing anyway since we need all
->> pages to be isolated. Additionally, drop the error checking based on
->> nr_strict_required and just check the pfn ranges. This matches with
->> what isolate_freepages_range does.
->>
->> --- a/mm/compaction.c
->> +++ b/mm/compaction.c
->> @@ -242,7 +242,6 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
->>   {
->>   	int nr_scanned = 0, total_isolated = 0;
->>   	struct page *cursor, *valid_page = NULL;
->> -	unsigned long nr_strict_required = end_pfn - blockpfn;
->>   	unsigned long flags;
->>   	bool locked = false;
->>   	bool checked_pageblock = false;
->> @@ -256,11 +255,12 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
->>   
->>   		nr_scanned++;
->>   		if (!pfn_valid_within(blockpfn))
->> -			continue;
->> +			goto isolate_fail;
->> +
->>   		if (!valid_page)
->>   			valid_page = page;
->>   		if (!PageBuddy(page))
->> -			continue;
->> +			goto isolate_fail;
->>   
->>   		/*
->>   		 * The zone lock must be held to isolate freepages.
->> @@ -289,12 +289,10 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
->>   
->>   		/* Recheck this is a buddy page under lock */
->>   		if (!PageBuddy(page))
->> -			continue;
->> +			goto isolate_fail;
->>   
->>   		/* Found a free page, break it into order-0 pages */
->>   		isolated = split_free_page(page);
->> -		if (!isolated && strict)
->> -			break;
->>   		total_isolated += isolated;
->>   		for (i = 0; i < isolated; i++) {
->>   			list_add(&page->lru, freelist);
->> @@ -305,7 +303,15 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
->>   		if (isolated) {
->>   			blockpfn += isolated - 1;
->>   			cursor += isolated - 1;
->> +			continue;
->>   		}
-> We can make the code a little more efficient and (I think) clearer by
-> moving that `if (isolated)' test.
->
->> +
->> +isolate_fail:
->> +		if (strict)
->> +			break;
->> +		else
->> +			continue;
->> +
-> And I don't think this `continue' has any benefit.
+As usual Eric, your commentary is anything but useful.  However your
+technical thoughts are not off the mark.  Can we stick to those?
 
-Oops, missed that in my suggestion.
+On Wed, 2014-03-05 at 10:06 -0800, Eric W. Biederman wrote:
+> Steve Grubb <sgrubb@redhat.com> writes:
+> 
+> > On Tuesday, March 04, 2014 07:21:52 PM David Miller wrote:
+> >> From: ebiederm@xmission.com (Eric W. Biederman)
+> >> Date: Tue, 04 Mar 2014 14:41:16 -0800
+> >> 
+> >> > If we really want the ability to always appened to the queue of skb's
+> >> > is to just have a version of netlink_send_skb that ignores the queued
+> >> > limits.  Of course an evil program then could force the generation of
+> >> > enough audit records to DOS the kernel, but we seem to be in that
+> >> > situation now.  Shrug.
+> >> 
+> >> There is never a valid reason to bypass the socket limits.
 
->
-> --- a/mm/compaction.c~mm-compaction-break-out-of-loop-on-pagebuddy-in-isolate_freepages_block-fix
-> +++ a/mm/compaction.c
-> @@ -293,14 +293,14 @@ static unsigned long isolate_freepages_b
->   
->   		/* Found a free page, break it into order-0 pages */
->   		isolated = split_free_page(page);
-> -		total_isolated += isolated;
-> -		for (i = 0; i < isolated; i++) {
-> -			list_add(&page->lru, freelist);
-> -			page++;
-> -		}
-> -
-> -		/* If a page was split, advance to the end of it */
->   		if (isolated) {
-> +			total_isolated += isolated;
-> +			for (i = 0; i < isolated; i++) {
-> +				list_add(&page->lru, freelist);
-> +				page++;
-> +			}
-> +
-> +			/* If a page was split, advance to the end of it */
->   			blockpfn += isolated - 1;
->   			cursor += isolated - 1;
->   			continue;
-> @@ -309,9 +309,6 @@ static unsigned long isolate_freepages_b
->   isolate_fail:
->   		if (strict)
->   			break;
-> -		else
-> -			continue;
-> -
->   	}
->   
->   	trace_mm_compaction_isolate_freepages(nr_scanned, total_isolated);
->
->
-> Problem is, I can't be bothered testing this.
->
+Audit does have some pretty crazy/wacky/dumb ways of doing things.  And
+they've worked really well.  I'm the first to agree that doesn't make
+them right.  But also that I don't know how to do them better.  I'm
+happy to try if I know how.  Audit is non-tolerant to failure and loss.
+Many users of audit would prefer the system panic() than lose a message.
+If someone shows me how to do it better I'll happily admit there are
+likely places where what we do is just a 'little' too
+strong/foolish/crazy.  Note that ALL users of these functions must have
+at least 1 capability (CAP_AUDIT_CONTROL).  So if there is a malicious
+app, it is a root malicious app...
 
-I don't think it's necessary, or that the better efficiency would show :)
+The kernel audit has 3 different 'things' that send skbs to userspace.
+All of them work a little crazy, but similar crazy.  The current task
+calls into the kernel via netlink, and the kernel then builds one or
+more skb(s) and passes those skb(s) (via differing mechanisms) to a
+kthread which in turn calls netlink_unicast(,,,0) sending the response
+back to the current task in 2 of the three cases.  In all cases, since
+the timeout is infinite, we assume that the only possible reason this
+call to netlink_unicast() will fail is because the other end of the
+socket went away.  Simple drawing of 2 of the 3 cases.
+     +------------------------------------------------------------------+
+     |                                                                  |
+     |               auditctl (audit tool run by root)                  |
+     |         netlink send                         netlink receive     |
+     +------------------------------------------------------------------+
+                    +                                        ^
+                    |                                        |
+                    v                                        +
+        +----------------------------+        +------------------------+
+        | kernel audit generate skbs |        | send skbs to userspace |
+        +----------------------------+        +------------------------+
+                    +                                        ^
+                    |        +------------------------+      |
+                    +------->| send skbs to a kthread |+-----+
+                             +------------------------+
+The most important of the 3 cases and the one that people care the
+absolute most about 'things cannot be lost' is the actual audit
+messages.  Messages like 'process A just did action B to object C'.
+These are handled by means of the current process generating an skb and
+passing those to an audit specific queue.  This audit internal queue
+depth is controllable by userspace.  If we overflow this queue we may
+call panic() (admin choice, obviously non-default).  Again, the kthread
+on the other end of that queue assumes that all calls to
+netlink_unicast(,,,0) will eventually succeed (unless the receiving task
+died).  It is actually imperative that the current process be blocked
+until the message is on track to userspace.  Even Eric isn't trying to
+change this one case in his patch.  This is the one case where the task
+receiving the skb is not (likely) the current task (but could be)
+
+The other two, the ones Eric patched, are much more flexible.  In both
+cases a userspace task ask the kernel for a specific piece of
+information (by sending a netlink message).  current is going to be the
+task draining the netlink queue.  This is the reason the send is being
+punted to a kthread.  So current can read from the netlink socket.  In
+one case audit_send_reply_thread() the response is small and can't
+really grow without bound.  Converting to a nonblocking socket might
+well make sense here.
+
+The second user Eric patched, audit_send_list(), can grow without bound.
+The number of skb's is going to be the size of the number of audit rules
+that root loaded.  We run the list of rules, generate an skb per rule,
+and add all of them to an skb_buff_head.  We then pass the skb_buff_head
+to a kthread so that current will be able to read/drain the socket.
+There really is no limit to how big the skb_buff_head could possibly
+grow.  This doesn't necessarily absolutely have to be lossless but it
+can actually quite reasonably be a whole lot of data that needs to get
+sent.  I know of no way to deliver unbounded lengths of data to the
+current task via netlink without blocking on more space in the socket.
+Even if the socket rmem was MAX_INT, how can we deliver more?  The rule
+size is unbounded.  How do I get an unbounded amount of data onto this
+side of the socket when I have to generate it all during the request...
+
+Tell me how to architect it better and I'll look at it.
+
