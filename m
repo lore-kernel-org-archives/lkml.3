@@ -1,113 +1,500 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778AbaCGDFE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 22:05:04 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:43381 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752729AbaCGDFA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 22:05:00 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s2734v9U029717, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next 5/7] r8152: support rx checksum
-Date: Fri, 7 Mar 2014 11:04:38 +0800
-Message-ID: <1394161480-2918-6-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1394161480-2918-1-git-send-email-hayeswang@realtek.com>
-References: <1393934464-23675-1-git-send-email-hayeswang@realtek.com>
- <1394161480-2918-1-git-send-email-hayeswang@realtek.com>
+	id S1752848AbaCGDFT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 22:05:19 -0500
+Received: from mga09.intel.com ([134.134.136.24]:40844 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752786AbaCGDFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Mar 2014 22:05:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,605,1389772800"; 
+   d="scan'208";a="487654839"
+Message-ID: <5319374A.60308@linux.intel.com>
+Date: Fri, 07 Mar 2014 11:04:42 +0800
+From: "Li, Aubrey" <aubrey.li@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+To: Joe Perches <joe@perches.com>
+CC: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, mingo@redhat.com,
+        tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        "alan@linux.intel.com" <alan@linux.intel.com>
+Subject: Re: [PATCH] x86: new Intel Atom SoC power management controller driver
+References: <5317EC0C.4010807@linux.intel.com>	 <5317F044.8080407@linux.intel.com> <531805D4.6040806@linux.intel.com>	 <5318076C.7080605@linux.intel.com> <531808BD.4070000@linux.intel.com>	 <53180D39.7050207@linux.intel.com> <53180E98.9000608@linux.intel.com>	 <5318A2BE.2070707@linux.intel.com> <53191222.2000904@linux.intel.com>	 <1394152871.16156.32.camel@joe-AO722> <53192A39.5030309@linux.intel.com> <1394158890.16156.46.camel@joe-AO722>
+In-Reply-To: <1394158890.16156.46.camel@joe-AO722>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support hw rx checksum for TCP and UDP packets.
+On 2014/3/7 10:21, Joe Perches wrote:
+> On Fri, 2014-03-07 at 10:08 +0800, Li, Aubrey wrote:
+> 
+>> The Power Management Controller (PMC) controls many of the power
+>> management features present in the SoC. This driver provides
+>> interface to configure the Power Management Controller (PMC).
+> 
+> More trivial notes.
+> 
+> Nothing really that should stop this from being applied.
+>
+All make sense to me. Welcome your more comments, Joe!
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+Thanks,
+-Aubrey
+
+[PATCH] X86 platform: New Intel Atom SOC power management controller driver
+
+The Power Management Controller (PMC) controls many of the power
+management features present in the SoC. This driver provides
+interface to configure the Power Management Controller (PMC).
+
+This driver exposes PMC device state and sleep state residency
+via debugfs:
+	/sys/kernel/debugfs/pmc_atom/dev_state
+	/sys/kernel/debugfs/pmc_atom/sleep_state
+
+This driver also provides a native power off function via PMC PCI
+IO port.
+
+Signed-off-by: Aubrey Li <aubrey.li@intel.com>
+Reviewed-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/usb/r8152.c | 41 +++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 39 insertions(+), 2 deletions(-)
+ arch/x86/Kconfig                |    4 +
+ arch/x86/include/asm/pmc_atom.h |   91 ++++++++++++
+ arch/x86/kernel/Makefile        |    1 +
+ arch/x86/kernel/pmc_atom.c      |  297 +++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 393 insertions(+)
+ create mode 100644 arch/x86/include/asm/pmc_atom.h
+ create mode 100644 arch/x86/kernel/pmc_atom.c
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index 08f4e870..8bb8782 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -467,8 +467,17 @@ enum rtl8152_flags {
- struct rx_desc {
- 	__le32 opts1;
- #define RX_LEN_MASK			0x7fff
-+
- 	__le32 opts2;
-+#define RD_UDP_CS			(1 << 23)
-+#define RD_TCP_CS			(1 << 22)
-+#define RD_IPV4_CS			(1 << 19)
-+
- 	__le32 opts3;
-+#define IPF				(1 << 23) /* IP checksum fail */
-+#define UDPF				(1 << 22) /* UDP checksum fail */
-+#define TCPF				(1 << 21) /* TCP checksum fail */
-+
- 	__le32 opts4;
- 	__le32 opts5;
- 	__le32 opts6;
-@@ -1404,6 +1413,32 @@ out_tx_fill:
- 	return ret;
- }
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 0af5250..18f7d38 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -2420,6 +2420,10 @@ config IOSF_MBI
+ 	  Fabric (IOSF) Sideband MailBox Interface (MBI). For MBI platforms
+ 	  enumerable by PCI.
  
-+static u8 r8152_rx_csum(struct r8152 *tp, struct rx_desc *rx_desc)
++config PMC_ATOM
++	def_bool y
++        depends on PCI
++
+ source "net/Kconfig"
+ 
+ source "drivers/Kconfig"
+diff --git a/arch/x86/include/asm/pmc_atom.h b/arch/x86/include/asm/pmc_atom.h
+new file mode 100644
+index 0000000..43b68fc
+--- /dev/null
++++ b/arch/x86/include/asm/pmc_atom.h
+@@ -0,0 +1,91 @@
++/*
++ * Intel Atom SOC Power Management Controller Header File
++ * Copyright (c) 2014, Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ */
++
++#ifndef PMC_ATOM_H
++#define PMC_ATOM_H
++
++/* ValleyView Power Control Unit PCI Device ID */
++#define	PCI_DEVICE_ID_VLV_PMC	0x0F1C
++
++/* PMC Memory mapped IO registers */
++#define	PMC_BASE_ADDR_OFFSET	0x44
++#define	PMC_BASE_ADDR_MASK	0xFFFFFE00
++#define	PMC_MMIO_REG_LEN	0x100
++#define	PMC_REG_BIT_WIDTH	32
++
++/* BIOS uses FUNC_DIS to disable specific function */
++#define	PMC_FUNC_DIS		0x34
++#define	PMC_FUNC_DIS_2		0x38
++/* The timers acumulate time spent in sleep state */
++#define	PMC_S0IR_TMR		0x80
++#define	PMC_S0I1_TMR		0x84
++#define	PMC_S0I2_TMR		0x88
++#define	PMC_S0I3_TMR		0x8C
++#define	PMC_S0_TMR		0x90
++/* Sleep state counter is in units of of 32us */
++#define	PMC_TMR_SHIFT		5
++
++/* These registers reflect D3 status of functions */
++#define	PMC_D3_STS_0		0xA0
++
++#define	BIT_LPSS1_F0_DMA	BIT(0)
++#define	BIT_LPSS1_F1_PWM1	BIT(1)
++#define	BIT_LPSS1_F2_PWM2	BIT(2)
++#define	BIT_LPSS1_F3_HSUART1	BIT(3)
++#define	BIT_LPSS1_F4_HSUART2	BIT(4)
++#define	BIT_LPSS1_F5_SPI	BIT(5)
++#define	BIT_LPSS1_F6_XXX	BIT(6)
++#define	BIT_LPSS1_F7_XXX	BIT(7)
++#define	BIT_SCC_EMMC		BIT(8)
++#define	BIT_SCC_SDIO		BIT(9)
++#define	BIT_SCC_SDCARD		BIT(10)
++#define	BIT_SCC_MIPI		BIT(11)
++#define	BIT_HDA			BIT(12)
++#define	BIT_LPE			BIT(13)
++#define	BIT_OTG			BIT(14)
++#define	BIT_USH			BIT(15)
++#define	BIT_GBE			BIT(16)
++#define	BIT_SATA		BIT(17)
++#define	BIT_USB_EHCI		BIT(18)
++#define	BIT_SEC			BIT(19)
++#define	BIT_PCIE_PORT0		BIT(20)
++#define	BIT_PCIE_PORT1		BIT(21)
++#define	BIT_PCIE_PORT2		BIT(22)
++#define	BIT_PCIE_PORT3		BIT(23)
++#define	BIT_LPSS2_F0_DMA	BIT(24)
++#define	BIT_LPSS2_F1_I2C1	BIT(25)
++#define	BIT_LPSS2_F2_I2C2	BIT(26)
++#define	BIT_LPSS2_F3_I2C3	BIT(27)
++#define	BIT_LPSS2_F4_I2C4	BIT(28)
++#define	BIT_LPSS2_F5_I2C5	BIT(29)
++#define	BIT_LPSS2_F6_I2C6	BIT(30)
++#define	BIT_LPSS2_F7_I2C7	BIT(31)
++
++#define	PMC_D3_STS_1		0xA4
++#define	BIT_SMB			BIT(0)
++#define	BIT_USH_SS_PHY		BIT(1)
++#define	BIT_OTG_SS_PHY		BIT(2)
++#define	BIT_DFX			BIT(3)
++
++/* PMC I/O Registers */
++#define	ACPI_BASE_ADDR_OFFSET	0x40
++#define	ACPI_BASE_ADDR_MASK	0xFFFFFE00
++#define	ACPI_MMIO_REG_LEN	0x100
++
++#define	PM1_CNT			0x4
++#define	SLEEP_TYPE_MASK		0xFFFFECFF
++#define	SLEEP_TYPE_S5		0x1C00
++#define	SLEEP_ENABLE		0x2000
++#endif /* PMC_ATOM_H */
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index cb648c8..b71a61a 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -104,6 +104,7 @@ obj-$(CONFIG_EFI)			+= sysfb_efi.o
+ obj-$(CONFIG_PERF_EVENTS)		+= perf_regs.o
+ obj-$(CONFIG_TRACING)			+= tracepoint.o
+ obj-$(CONFIG_IOSF_MBI)			+= iosf_mbi.o
++obj-$(CONFIG_PMC_ATOM)			+= pmc_atom.o
+ 
+ ###
+ # 64 bit specific files
+diff --git a/arch/x86/kernel/pmc_atom.c b/arch/x86/kernel/pmc_atom.c
+new file mode 100644
+index 0000000..5991030
+--- /dev/null
++++ b/arch/x86/kernel/pmc_atom.c
+@@ -0,0 +1,297 @@
++/*
++ * Intel Atom SOC Power Management Controller Driver
++ * Copyright (c) 2014, Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ */
++
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/pci.h>
++#include <linux/device.h>
++#include <linux/debugfs.h>
++#include <linux/seq_file.h>
++#include <linux/io.h>
++
++#include <asm/pmc_atom.h>
++
++#define	DRIVER_NAME	KBUILD_MODNAME
++
++struct pmc_dev {
++	struct pci_dev *pdev;
++	u32 base_addr;
++	void __iomem *regmap;
++#ifdef CONFIG_DEBUG_FS
++	struct dentry *dbgfs_dir;
++#endif /* CONFIG_DEBUG_FS */
++};
++
++static u32 acpi_base_addr;
++
++struct pmc_dev_map {
++	const char *name;
++	u32 bit_mask;
++};
++
++static const struct pmc_dev_map dev_map[] = {
++	{"0  - LPSS1_F0_DMA",		BIT_LPSS1_F0_DMA},
++	{"1  - LPSS1_F1_PWM1",		BIT_LPSS1_F1_PWM1},
++	{"2  - LPSS1_F2_PWM2",		BIT_LPSS1_F2_PWM2},
++	{"3  - LPSS1_F3_HSUART1",	BIT_LPSS1_F3_HSUART1},
++	{"4  - LPSS1_F4_HSUART2",	BIT_LPSS1_F4_HSUART2},
++	{"5  - LPSS1_F5_SPI",		BIT_LPSS1_F5_SPI},
++	{"6  - LPSS1_F6_Reserved",	BIT_LPSS1_F6_XXX},
++	{"7  - LPSS1_F7_Reserved",	BIT_LPSS1_F7_XXX},
++	{"8  - SCC_EMMC",		BIT_SCC_EMMC},
++	{"9  - SCC_SDIO",		BIT_SCC_SDIO},
++	{"10 - SCC_SDCARD",		BIT_SCC_SDCARD},
++	{"11 - SCC_MIPI",		BIT_SCC_MIPI},
++	{"12 - HDA",			BIT_HDA},
++	{"13 - LPE",			BIT_LPE},
++	{"14 - OTG",			BIT_OTG},
++	{"15 - USH",			BIT_USH},
++	{"16 - GBE",			BIT_GBE},
++	{"17 - SATA",			BIT_SATA},
++	{"18 - USB_EHCI",		BIT_USB_EHCI},
++	{"19 - SEC",			BIT_SEC},
++	{"20 - PCIE_PORT0",		BIT_PCIE_PORT0},
++	{"21 - PCIE_PORT1",		BIT_PCIE_PORT1},
++	{"22 - PCIE_PORT2",		BIT_PCIE_PORT2},
++	{"23 - PCIE_PORT3",		BIT_PCIE_PORT3},
++	{"24 - LPSS2_F0_DMA",		BIT_LPSS2_F0_DMA},
++	{"25 - LPSS2_F1_I2C1",		BIT_LPSS2_F1_I2C1},
++	{"26 - LPSS2_F2_I2C2",		BIT_LPSS2_F2_I2C2},
++	{"27 - LPSS2_F3_I2C3",		BIT_LPSS2_F3_I2C3},
++	{"28 - LPSS2_F3_I2C4",		BIT_LPSS2_F4_I2C4},
++	{"29 - LPSS2_F5_I2C5",		BIT_LPSS2_F5_I2C5},
++	{"30 - LPSS2_F6_I2C6",		BIT_LPSS2_F6_I2C6},
++	{"31 - LPSS2_F7_I2C7",		BIT_LPSS2_F7_I2C7},
++	{"32 - SMB",			BIT_SMB},
++	{"33 - USH_SS_PHY",		BIT_OTG_SS_PHY},
++	{"34 - OTG_SS_PHY",		BIT_USH_SS_PHY},
++	{"35 - DFX",			BIT_DFX},
++};
++
++static inline u32 pmc_reg_read(struct pmc_dev *pmc, int reg_offset)
 +{
-+	u8 checksum = CHECKSUM_NONE;
-+	u32 opts2, opts3;
-+
-+	if (tp->version == RTL_VER_01)
-+		goto return_result;
-+
-+	opts2 = le32_to_cpu(rx_desc->opts2);
-+	opts3 = le32_to_cpu(rx_desc->opts3);
-+
-+	if (opts2 & RD_IPV4_CS) {
-+		if (opts3 & IPF)
-+			checksum = CHECKSUM_NONE;
-+		else if ((opts2 & RD_UDP_CS) && (opts3 & UDPF))
-+			checksum = CHECKSUM_NONE;
-+		else if ((opts2 & RD_TCP_CS) && (opts3 & TCPF))
-+			checksum = CHECKSUM_NONE;
-+		else
-+			checksum = CHECKSUM_UNNECESSARY;
-+	}
-+
-+return_result:
-+	return checksum;
++	return readl(pmc->regmap + reg_offset);
 +}
 +
- static void rx_bottom(struct r8152 *tp)
- {
- 	unsigned long flags;
-@@ -1458,6 +1493,8 @@ static void rx_bottom(struct r8152 *tp)
- 				stats->rx_dropped++;
- 				goto find_next_rx;
- 			}
++static void pmc_power_off(void)
++{
++	u16	pm1_cnt_port;
++	u32	pm1_cnt_value;
 +
-+			skb->ip_summed = r8152_rx_csum(tp, rx_desc);
- 			memcpy(skb->data, rx_data, pkt_len);
- 			skb_put(skb, pkt_len);
- 			skb->protocol = eth_type_trans(skb, netdev);
-@@ -3103,8 +3140,8 @@ static int rtl8152_probe(struct usb_interface *intf,
- 	netdev->netdev_ops = &rtl8152_netdev_ops;
- 	netdev->watchdog_timeo = RTL8152_TX_TIMEOUT;
- 
--	netdev->features |= NETIF_F_IP_CSUM;
--	netdev->hw_features = NETIF_F_IP_CSUM;
-+	netdev->features |= NETIF_F_RXCSUM | NETIF_F_IP_CSUM;
-+	netdev->hw_features = NETIF_F_RXCSUM | NETIF_F_IP_CSUM;
- 
- 	SET_ETHTOOL_OPS(netdev, &ops);
- 
++	pr_info("Preparing to enter system sleep state S5\n");
++
++	pm1_cnt_port = acpi_base_addr + PM1_CNT;
++
++	pm1_cnt_value = inl(pm1_cnt_port);
++	pm1_cnt_value &= SLEEP_TYPE_MASK;
++	pm1_cnt_value |= SLEEP_TYPE_S5;
++	pm1_cnt_value |= SLEEP_ENABLE;
++
++	outl(pm1_cnt_value, pm1_cnt_port);
++}
++
++#ifdef CONFIG_DEBUG_FS
++static int pmc_dev_state_show(struct seq_file *s, void *unused)
++{
++	struct pmc_dev *pmc = (struct pmc_dev *)s->private;
++	u32 func_dis, func_dis_2, func_dis_index;
++	u32 d3_sts_0, d3_sts_1, d3_sts_index;
++	int dev_num, dev_index, reg_index;
++
++	func_dis = pmc_reg_read(pmc, PMC_FUNC_DIS);
++	func_dis_2 = pmc_reg_read(pmc, PMC_FUNC_DIS_2);
++	d3_sts_0 = pmc_reg_read(pmc, PMC_D3_STS_0);
++	d3_sts_1 = pmc_reg_read(pmc, PMC_D3_STS_1);
++
++	dev_num = sizeof(dev_map) / sizeof(struct pmc_dev_map);
++
++	for (dev_index = 0; dev_index < dev_num; dev_index++) {
++		reg_index = dev_index / PMC_REG_BIT_WIDTH;
++		if (reg_index) {
++			func_dis_index = func_dis_2;
++			d3_sts_index = d3_sts_1;
++		} else {
++			func_dis_index = func_dis;
++			d3_sts_index = d3_sts_0;
++		}
++
++		seq_printf(s, "Dev: %-32s\tState: %s [%s]\n",
++			dev_map[dev_index].name,
++			dev_map[dev_index].bit_mask & func_dis_index ?
++			"Disabled" : "Enabled ",
++			dev_map[dev_index].bit_mask & d3_sts_index ?
++			"D3" : "D0");
++	}
++	return 0;
++}
++
++static int pmc_dev_state_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, pmc_dev_state_show, inode->i_private);
++}
++
++static const struct file_operations pmc_dev_state_ops = {
++	.open		= pmc_dev_state_open,
++	.read		= seq_read,
++	.llseek		= seq_lseek,
++	.release	= single_release,
++};
++
++static int pmc_sleep_tmr_show(struct seq_file *s, void *unused)
++{
++	struct pmc_dev *pmc = (struct pmc_dev *)s->private;
++	u64 s0ir_tmr, s0i1_tmr, s0i2_tmr, s0i3_tmr, s0_tmr;
++
++	s0ir_tmr = pmc_reg_read(pmc, PMC_S0IR_TMR) << PMC_TMR_SHIFT;
++	s0i1_tmr = pmc_reg_read(pmc, PMC_S0I1_TMR) << PMC_TMR_SHIFT;
++	s0i2_tmr = pmc_reg_read(pmc, PMC_S0I2_TMR) << PMC_TMR_SHIFT;
++	s0i3_tmr = pmc_reg_read(pmc, PMC_S0I3_TMR) << PMC_TMR_SHIFT;
++	s0_tmr = pmc_reg_read(pmc, PMC_S0_TMR) << PMC_TMR_SHIFT;
++
++	seq_printf(s, "S0IR Residency:\t%lldus\n", s0ir_tmr);
++	seq_printf(s, "S0I1 Residency:\t%lldus\n", s0i1_tmr);
++	seq_printf(s, "S0I2 Residency:\t%lldus\n", s0i2_tmr);
++	seq_printf(s, "S0I3 Residency:\t%lldus\n", s0i3_tmr);
++	seq_printf(s, "S0   Residency:\t%lldus\n", s0_tmr);
++	return 0;
++}
++
++static int pmc_sleep_tmr_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, pmc_sleep_tmr_show, inode->i_private);
++}
++
++static const struct file_operations pmc_sleep_tmr_ops = {
++	.open		= pmc_sleep_tmr_open,
++	.read		= seq_read,
++	.llseek		= seq_lseek,
++	.release	= single_release,
++};
++
++static void pmc_dbgfs_unregister(struct pmc_dev *pmc)
++{
++	if (!pmc->dbgfs_dir)
++		return;
++
++	debugfs_remove_recursive(pmc->dbgfs_dir);
++	pmc->dbgfs_dir = NULL;
++}
++
++static int pmc_dbgfs_register(struct pmc_dev *pmc)
++{
++	struct dentry *dir, *f;
++
++	dir = debugfs_create_dir("pmc_atom", NULL);
++	if (!dir)
++		return -ENOMEM;
++
++	f = debugfs_create_file("dev_state", S_IFREG | S_IRUGO,
++				dir, pmc, &pmc_dev_state_ops);
++	if (!f) {
++		dev_err(&pmc->pdev->dev, "dev_states register failed\n");
++		goto err;
++	}
++	f = debugfs_create_file("sleep_state", S_IFREG | S_IRUGO,
++				dir, pmc, &pmc_sleep_tmr_ops);
++	if (!f) {
++		dev_err(&pmc->pdev->dev, "sleep_state register failed\n");
++		goto err;
++	}
++	pmc->dbgfs_dir = dir;
++	return 0;
++err:
++	pmc_dbgfs_unregister(pmc);
++	return -ENODEV;
++}
++#endif /* CONFIG_DEBUG_FS */
++
++static int pmc_probe(struct pci_dev *pdev,
++			  const struct pci_device_id *unused)
++{
++	struct pmc_dev *pmc;
++	int ret;
++
++	ret = pci_enable_device(pdev);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "error: could not enable device\n");
++		goto err_enable_device;
++	}
++
++	ret = pci_request_regions(pdev, DRIVER_NAME);
++	if (ret) {
++		dev_err(&pdev->dev, "error: could not request PCI region\n");
++		goto err_request_regions;
++	}
++
++	pmc = devm_kzalloc(&pdev->dev, sizeof(struct pmc_dev), GFP_KERNEL);
++	if (!pmc) {
++		ret = -ENOMEM;
++		goto err_devm_kzalloc;
++	}
++
++	pmc->pdev = pci_dev_get(pdev);
++
++	pci_read_config_dword(pdev, PMC_BASE_ADDR_OFFSET, &pmc->base_addr);
++	pmc->base_addr &= PMC_BASE_ADDR_MASK;
++
++	pmc->regmap = devm_ioremap_nocache(&pdev->dev,
++		pmc->base_addr, PMC_MMIO_REG_LEN);
++	if (!pmc->regmap) {
++		dev_err(&pdev->dev, "error: ioremap failed\n");
++		ret = -ENOMEM;
++		goto err_devm_ioremap;
++	}
++	pci_set_drvdata(pdev, pmc);
++#ifdef CONFIG_DEBUG_FS
++	pmc_dbgfs_register(pmc);
++#endif /* CONFIG_DEBUG_FS */
++
++	/* Install power off function */
++	pci_read_config_dword(pdev, ACPI_BASE_ADDR_OFFSET, &acpi_base_addr);
++	acpi_base_addr &= ACPI_BASE_ADDR_MASK;
++	if (acpi_base_addr != 0 && pm_power_off == NULL)
++		pm_power_off = pmc_power_off;
++	return 0;
++err_devm_ioremap:
++	pci_dev_put(pdev);
++err_devm_kzalloc:
++	pci_release_regions(pdev);
++err_request_regions:
++	pci_disable_device(pdev);
++err_enable_device:
++	dev_err(&pdev->dev, "error: probe failed\n");
++	return ret;
++}
++
++static const struct pci_device_id pmc_pci_ids[] = {
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_VLV_PMC) },
++	{ 0, },
++};
++
++MODULE_DEVICE_TABLE(pci, pmc_pci_ids);
++
++static struct pci_driver pmc_pci_driver = {
++	.name		= DRIVER_NAME,
++	.probe		= pmc_probe,
++	.id_table	= pmc_pci_ids,
++};
++
++module_pci_driver(pmc_pci_driver);
++
++MODULE_AUTHOR("Aubrey Li <aubrey.li@linux.intel.com>");
++MODULE_DESCRIPTION("Intel Atom SOC Power Management Controller Interface");
++MODULE_LICENSE("GPL v2");
 -- 
-1.8.4.2
-
+1.7.10.4
