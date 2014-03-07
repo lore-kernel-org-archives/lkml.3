@@ -1,161 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715AbaCGB4Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 20:56:25 -0500
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:65376 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751624AbaCGB4Y (ORCPT
+	id S1752235AbaCGB7Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 20:59:16 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:51852 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750924AbaCGB7P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 20:56:24 -0500
-X-Original-SENDERIP: 10.177.222.157
-X-Original-MAILFROM: minchan@kernel.org
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: [PATCH] zram: propagate error to user
-Date: Fri,  7 Mar 2014 10:56:18 +0900
-Message-Id: <1394157378-7718-1-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.9.0
+	Thu, 6 Mar 2014 20:59:15 -0500
+Message-ID: <531927EF.1080706@linaro.org>
+Date: Fri, 07 Mar 2014 09:59:11 +0800
+From: Alex Shi <alex.shi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [sched/balance] INFO: possible recursive locking detected
+References: <20140303142526.GA8517@localhost>
+In-Reply-To: <20140303142526.GA8517@localhost>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we initialized zcomp with single, we couldn't change
-max_comp_streams without zram reset but current interface doesn't
-show any error to user and even it changes max_comp_streams's value
-without any effect so it would make user very confusing.
+Thanks a lot!
+I am working on fix.
 
-This patch prevents max_comp_streams's change when zcomp was
-initialized as single zcomp and emit the error to user(ex, echo).
 
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- Documentation/blockdev/zram.txt |  9 +++++----
- drivers/block/zram/zcomp.c      | 10 +++++-----
- drivers/block/zram/zcomp.h      |  4 ++--
- drivers/block/zram/zram_drv.c   | 15 +++++++++++----
- 4 files changed, 23 insertions(+), 15 deletions(-)
-
-diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
-index 2604ffed51db..0595c3f56ccf 100644
---- a/Documentation/blockdev/zram.txt
-+++ b/Documentation/blockdev/zram.txt
-@@ -37,10 +37,11 @@ Note:
- In order to enable compression backend's multi stream support max_comp_streams
- must be initially set to desired concurrency level before ZRAM device
- initialisation. Once the device initialised as a single stream compression
--backend (max_comp_streams equals to 0) changing the value of max_comp_streams
--will not take any effect, because single stream compression backend implemented
--as a special case and does not support dynamic max_comp_streams. Only multi
--stream backend supports dynamic max_comp_streams adjustment.
-+backend (max_comp_streams equals to 1), you will see error if you try to change
-+the value of max_comp_streams because single stream compression backend
-+implemented as a special case by lock overhead issue and does not support
-+dynamic max_comp_streams. Only multi stream backend supports dynamic
-+max_comp_streams adjustment.
- 
- 3) Select compression algorithm
- 	Using comp_algorithm device attribute one can see available and
-diff --git a/drivers/block/zram/zcomp.c b/drivers/block/zram/zcomp.c
-index 92a83df40a27..15fe6a27781b 100644
---- a/drivers/block/zram/zcomp.c
-+++ b/drivers/block/zram/zcomp.c
-@@ -152,7 +152,7 @@ static void zcomp_strm_multi_release(struct zcomp *comp, struct zcomp_strm *zstr
- }
- 
- /* change max_strm limit */
--static int zcomp_strm_multi_set_max_streams(struct zcomp *comp, int num_strm)
-+static bool zcomp_strm_multi_set_max_streams(struct zcomp *comp, int num_strm)
- {
- 	struct zcomp_strm_multi *zs = comp->stream;
- 	struct zcomp_strm *zstrm;
-@@ -171,7 +171,7 @@ static int zcomp_strm_multi_set_max_streams(struct zcomp *comp, int num_strm)
- 		zs->avail_strm--;
- 	}
- 	spin_unlock(&zs->strm_lock);
--	return 0;
-+	return true;
- }
- 
- static void zcomp_strm_multi_destroy(struct zcomp *comp)
-@@ -231,10 +231,10 @@ static void zcomp_strm_single_release(struct zcomp *comp,
- 	mutex_unlock(&zs->strm_lock);
- }
- 
--static int zcomp_strm_single_set_max_streams(struct zcomp *comp, int num_strm)
-+static bool zcomp_strm_single_set_max_streams(struct zcomp *comp, int num_strm)
- {
- 	/* zcomp_strm_single support only max_comp_streams == 1 */
--	return -ENOTSUPP;
-+	return 0;
- }
- 
- static void zcomp_strm_single_destroy(struct zcomp *comp)
-@@ -283,7 +283,7 @@ ssize_t zcomp_available_show(const char *comp, char *buf)
- 	return sz;
- }
- 
--int zcomp_set_max_streams(struct zcomp *comp, int num_strm)
-+bool zcomp_set_max_streams(struct zcomp *comp, int num_strm)
- {
- 	return comp->set_max_streams(comp, num_strm);
- }
-diff --git a/drivers/block/zram/zcomp.h b/drivers/block/zram/zcomp.h
-index 8b8997f8613b..c59d1fca72c0 100644
---- a/drivers/block/zram/zcomp.h
-+++ b/drivers/block/zram/zcomp.h
-@@ -46,7 +46,7 @@ struct zcomp {
- 
- 	struct zcomp_strm *(*strm_find)(struct zcomp *comp);
- 	void (*strm_release)(struct zcomp *comp, struct zcomp_strm *zstrm);
--	int (*set_max_streams)(struct zcomp *comp, int num_strm);
-+	bool (*set_max_streams)(struct zcomp *comp, int num_strm);
- 	void (*destroy)(struct zcomp *comp);
- };
- 
-@@ -64,5 +64,5 @@ int zcomp_compress(struct zcomp *comp, struct zcomp_strm *zstrm,
- int zcomp_decompress(struct zcomp *comp, const unsigned char *src,
- 		size_t src_len, unsigned char *dst);
- 
--int zcomp_set_max_streams(struct zcomp *comp, int num_strm);
-+bool zcomp_set_max_streams(struct zcomp *comp, int num_strm);
- #endif /* _ZCOMP_H_ */
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index 7631ef0cbc41..eead9db9b100 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -128,17 +128,24 @@ static ssize_t max_comp_streams_store(struct device *dev,
- 	struct zram *zram = dev_to_zram(dev);
- 
- 	if (kstrtoint(buf, 0, &num))
--		return -EINVAL;
-+		goto out;
- 	if (num < 1)
--		return -EINVAL;
-+		goto out;
-+
- 	down_write(&zram->init_lock);
- 	if (init_done(zram)) {
--		if (zcomp_set_max_streams(zram->comp, num))
-+		if (!zcomp_set_max_streams(zram->comp, num)) {
- 			pr_info("Cannot change max compression streams\n");
-+			goto out_unlock;
-+		}
- 	}
-+
- 	zram->max_comp_streams = num;
--	up_write(&zram->init_lock);
- 	return len;
-+out_unlock:
-+	up_write(&zram->init_lock);
-+out:
-+	return -EINVAL;
- }
- 
- static ssize_t comp_algorithm_show(struct device *dev,
--- 
-1.9.0
-
+On 03/03/2014 10:25 PM, Fengguang Wu wrote:
+> Greetings,
+> 
+> I got the below dmesg and the first bad commit is
+> 
+> https://github.com/alexshi/power-scheduling.git single-balance.bak
+> commit 2adc591a5cb6768ad11e63be9011906aa171148d
+> Author:     Alex Shi <alex.shi@linaro.org>
+> AuthorDate: Fri Feb 28 15:25:09 2014 +0800
+> Commit:     Alex Shi <alex.shi@linaro.org>
+> CommitDate: Sun Mar 2 09:16:38 2014 +0800
+> 
+>     sched/balance: replace new_idle_balance
+>     
+>     Curren idle_balance will pull task on half of this group. That is
+>     not needed in central balance.
+> 
+> +-------------------------------------------------------------------------------+--------------+--------------+
+> |                                                                               | a15ed8afe32b | 4242b70d68f8 |
+> +-------------------------------------------------------------------------------+--------------+--------------+
+> | boot_successes                                                                | 73           | 0            |
+> | boot_failures                                                                 | 7            | 19           |
+> | WARNING:CPU:PID:at/kernel-tests/linux/kernel/events/core.c:perf_swevent_add() | 4            |              |
+> | WARNING:CPU:PID:at/kernel-tests/linux/arch/x86/kernel/cpu/amd.c:init_amd()    | 3            |              |
+> | backtrace:init_amd                                                            | 3            |              |
+> | backtrace:warn_slowpath_fmt                                                   | 3            |              |
+> | INFO:possible_recursive_locking_detected                                      | 0            | 19           |
+> | BUG:spinlock_lockup_suspected_on_CPU                                          | 0            | 7            |
+> | EIP_is_at_default_send_IPI_mask_logical                                       | 0            | 7            |
+> | EIP_is_at_try_to_wake_up                                                      | 0            | 4            |
+> | backtrace:__alloc_workqueue_key                                               | 0            | 4            |
+> | backtrace:cgroup_wq_init                                                      | 0            | 2            |
+> | backtrace:kernel_init_freeable                                                | 0            | 4            |
+> | BUG:kernel_boot_hang                                                          | 0            | 12           |
+> | backtrace:smpboot_thread_fn                                                   | 0            | 6            |
+> | backtrace:md_init                                                             | 0            | 2            |
+> | backtrace:complete                                                            | 0            | 2            |
+> | EIP_is_at_native_safe_halt                                                    | 0            | 1            |
+> | backtrace:rescuer_thread                                                      | 0            | 1            |
+> | EIP_is_at_delay_tsc                                                           | 0            | 1            |
+> | EIP_is_at_do_raw_spin_lock                                                    | 0            | 2            |
+> | backtrace:do_fork                                                             | 0            | 1            |
+> | backtrace:kthreadd                                                            | 0            | 1            |
+> | backtrace:cpu_startup_entry                                                   | 0            | 1            |
+> +-------------------------------------------------------------------------------+--------------+--------------+
+> 
+> [    0.214781] 
+> [    0.214783] =============================================
+> [    0.214783] =============================================
+> [    0.214784] [ INFO: possible recursive locking detected ]
+> 
+> git bisect start 4242b70d68f8ba165f125b9b264ae27d51ace686 cfbf8d4857c26a8a307fb7cd258074c9dcd8c691 --
+> git bisect good 9b87ea06889c0c0a2541bddaeae745c0942d7bb7  # 20:30     20+      1  Merge 'tip/perf/urgent' into devel-roam-i386-201403021704
+> git bisect good 99a980e45f688d10422c02f5783cc709a0c9d9da  # 20:35     20+      0  Merge 'nfs/testing' into devel-roam-i386-201403021704
+> git bisect  bad 5ae8a8971fe8ffd78ef2eb0e0e8b6ef6795c8c6e  # 20:42      0-      1  Merge 'alexshi/single-balance.bak' into devel-roam-i386-201403021704
+> git bisect good bc575710efe937e26d2bd541d92362b240ef0559  # 20:49     20+      1  sched: clean up task_hot function
+> git bisect good 0e32dab5df39cfb1be9a937d67c877404b964324  # 20:53     20+      0  sched/balance: rebuild ovutil tree after task moving
+> git bisect  bad 2adc591a5cb6768ad11e63be9011906aa171148d  # 20:58      0-      1  sched/balance: replace new_idle_balance
+> git bisect good a15ed8afe32bf743621639b7df2c87ffc47d730a  # 21:01     20+      2  sched/balance: add balance_interval to tuning top level balance frequency
+> # first bad commit: [2adc591a5cb6768ad11e63be9011906aa171148d] sched/balance: replace new_idle_balance
+> git bisect good a15ed8afe32bf743621639b7df2c87ffc47d730a  # 21:14     60+      7  sched/balance: add balance_interval to tuning top level balance frequency
+> git bisect  bad 4242b70d68f8ba165f125b9b264ae27d51ace686  # 21:14      0-     19  0day head guard for 'devel-roam-i386-201403021704'
+> git bisect good 0414855fdc4a40da05221fc6062cccbc0c30f169  # 21:29     60+      6  Linux 3.14-rc5
+> git bisect good dab765ebd307ac40af1a556c0b08e26938a1c9cf  # 21:43     60+      5  Add linux-next specific files for 20140303
+> 
+> Thanks,
+> Fengguang
+> 
+> 
+> 
+> _______________________________________________
+> LKP mailing list
+> LKP@linux.intel.com
+> 
