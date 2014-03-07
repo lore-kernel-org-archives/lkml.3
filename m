@@ -1,80 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752594AbaCGJSG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 04:18:06 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:32905 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752138AbaCGJSC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 04:18:02 -0500
-From: George Cherian <george.cherian@ti.com>
-To: <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>
-CC: <balbi@ti.com>, <rogerq@ti.com>, <kishon@ti.com>, <rob@landley.net>,
-        <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
-        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>,
-        <tony@atomide.com>, <anatol.pomozov@gmail.com>,
-        <bcousson@baylibre.com>, George Cherian <george.cherian@ti.com>
-Subject: [PATCH v2 4/5] ARM: dts: am437x-gp-evm: Enable USB
-Date: Fri, 7 Mar 2014 14:45:57 +0530
-Message-ID: <1394183758-3821-5-git-send-email-george.cherian@ti.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1394183758-3821-1-git-send-email-george.cherian@ti.com>
-References: <1394183758-3821-1-git-send-email-george.cherian@ti.com>
+	id S1752682AbaCGJSg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 04:18:36 -0500
+Received: from mailapp01.imgtec.com ([195.89.28.114]:41386 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752137AbaCGJS3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 04:18:29 -0500
+Message-ID: <53198EE4.8030103@imgtec.com>
+Date: Fri, 7 Mar 2014 09:18:28 +0000
+From: Markos Chandras <Markos.Chandras@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: David Miller <davem@davemloft.net>
+CC: <linux-kernel@vger.kernel.org>, <dborkman@redhat.com>
+Subject: Re: [PATCH] tools/net/Makefile: Define PACKAGE to fix bfd build problems
+References: <1394097354-5290-1-git-send-email-markos.chandras@imgtec.com> <20140306.125412.1583267049751920093.davem@davemloft.net>
+In-Reply-To: <20140306.125412.1583267049751920093.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.47]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable
-	- ocp2scp
-	- USB PHY control module
-	- USB PHY
-	- dwc3_omap
-	- USB
-for am437x-gp-evm
+On 03/06/2014 05:54 PM, David Miller wrote:
+> From: Markos Chandras <markos.chandras@imgtec.com>
+> Date: Thu, 6 Mar 2014 09:15:54 +0000
+>
+>> Fixes the following build problem with binutils-2.24
+>>
+>> gcc -Wall -O2   -c -o bpf_jit_disasm.o bpf_jit_disasm.c
+>> In file included from bpf_jit_disasm.c:25:0:
+>> /usr/include/bfd.h:35:2: error: #error config.h must be included
+>> before this header
+>>   #error config.h must be included before this header
+>>
+>> This is similar to commit 3ce711a6abc27abce1554e1d671a8762b7187690
+>> "perf tools: bfd.h/libbfd detection fails with recent binutils"
+>>
+>> See: https://sourceware.org/bugzilla/show_bug.cgi?id=14243
+>>
+>> CC: David S. Miller <davem@davemloft.net>
+>> CC: Daniel Borkmann <dborkman@redhat.com>
+>> Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+>
+> I think your subject needs to be adjusted, this patch doesn't fix a "bfd"
+> build problem.
+>
+Hi David,
 
-Signed-off-by: George Cherian <george.cherian@ti.com>
----
- arch/arm/boot/dts/am437x-gp-evm.dts | 28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
+Thanks for the comment. Well it's problem caused by the bfd header. 
+However, I suppose you can remove the 'bfd' word from the subject as I 
+understand it's confusing. Would you be able to fix this before you 
+apply this patch or should I send a new patch?
 
-diff --git a/arch/arm/boot/dts/am437x-gp-evm.dts b/arch/arm/boot/dts/am437x-gp-evm.dts
-index 4eb72b8..1d516a7 100644
---- a/arch/arm/boot/dts/am437x-gp-evm.dts
-+++ b/arch/arm/boot/dts/am437x-gp-evm.dts
-@@ -98,3 +98,31 @@
- &gpio4 {
- 	status = "okay";
- };
-+
-+
-+&usb2_phy1 {
-+	status = "okay";
-+};
-+
-+&dwc3_1 {
-+	status = "okay";
-+};
-+
-+&usb1 {
-+	dr_mode = "peripheral";
-+	status = "okay";
-+};
-+
-+
-+&usb2_phy2 {
-+	status = "okay";
-+};
-+
-+&dwc3_2 {
-+	status = "okay";
-+};
-+
-+&usb2 {
-+	dr_mode = "host";
-+	status = "okay";
-+};
 -- 
-1.8.3.1
-
+markos
