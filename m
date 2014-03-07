@@ -1,54 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752328AbaCGO54 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 09:57:56 -0500
+	id S1752506AbaCGO6A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 09:58:00 -0500
 Received: from mga02.intel.com ([134.134.136.20]:9102 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751953AbaCGO5z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 09:57:55 -0500
+	id S1752363AbaCGO56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 09:57:58 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,608,1389772800"; 
-   d="scan'208";a="468423422"
+   d="scan'208";a="468423560"
 From: Mathias Nyman <mathias.nyman@linux.intel.com>
 To: <gregkh@linuxfoundation.org>
 Cc: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <sarah.a.sharp@linux.intel.com>, <stern@rowland.harvard.edu>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [PATCH 0/2] xhci, usbnet: fixes for 3.14 
-Date: Fri,  7 Mar 2014 17:06:56 +0200
-Message-Id: <1394204818-25323-1-git-send-email-mathias.nyman@linux.intel.com>
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        stable <stable@vger.kernel.org>
+Subject: [PATCH 1/2] Revert "xhci 1.0: Limit arbitrarily-aligned scatter gather."
+Date: Fri,  7 Mar 2014 17:06:57 +0200
+Message-Id: <1394204818-25323-2-git-send-email-mathias.nyman@linux.intel.com>
 X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1394204818-25323-1-git-send-email-mathias.nyman@linux.intel.com>
+References: <1394204818-25323-1-git-send-email-mathias.nyman@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+This reverts commit 247bf557273dd775505fb9240d2d152f4f20d304.
 
-These two xhci scatter-gather related patches should be reverted to avoid
-USB 3.0 mass storage regression for users.
-Sarah and Alan concluded that this the best choice until proper TD fragmentation
-rules are implemented, discussion is here:  
+This commit, together with commit 3804fad45411b48233b48003e33a78f290d227c8
+"USBNET: ax88179_178a: enable tso if usb host supports sg dma" were
+origially added to get xHCI 1.0 hosts and usb ethernet ax88179_178a devices
+working together with scatter gather. xHCI 1.0 hosts pose some requirement on how transfer
+buffers are aligned, setting this requirement for 1.0 hosts caused USB 3.0 mass
+storage devices to fail more frequently.
 
-http://marc.info/?l=linux-usb&m=139395884021971&w=2
+USB 3.0 mass storage devices used to work before 3.14-rc1.  Theoretically,
+the TD fragment rules could have caused an occasional disk glitch.
+Now the devices *will* fail, instead of theoretically failing.
+>From a user perspective, this looks like a regression; the USB device obviously
+fails on 3.14-rc1, and may sometimes silently fail on prior kernels.
 
-The patch xhci 1.0: "Limit arbitrarily-aligned scatter gather." was added
-to 3.14-rc1 and stable, both patches should be reverted from stable and 3.14
+The proper soluition is to implement the TD fragment rules required, but for now
+this patch needs to be reverted to get USB 3.0 mass storage devices working at the
+level they used to.
 
-A few mass storage regression cases:
-http://marc.info/?l=linux-usb&m=139413069718354&w=2
-http://marc.info/?l=linux-usb&m=139411871213253&w=2
-http://marc.info/?l=linux-usb&m=139361293103188&w=2
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Cc: stable <stable@vger.kernel.org>
+---
+ drivers/usb/host/xhci.c | 14 +++-----------
+ 1 file changed, 3 insertions(+), 11 deletions(-)
 
--Mathias
-
-Mathias Nyman (2):
-  Revert "xhci 1.0: Limit arbitrarily-aligned scatter gather."
-  Revert "USBNET: ax88179_178a: enable tso if usb host supports sg dma"
-
- drivers/net/usb/ax88179_178a.c |  8 --------
- drivers/usb/host/xhci.c        | 14 +++-----------
- 2 files changed, 3 insertions(+), 19 deletions(-)
-
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index 6fe577d..924a6cc 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -4733,6 +4733,9 @@ int xhci_gen_setup(struct usb_hcd *hcd, xhci_get_quirks_t get_quirks)
+ 	/* Accept arbitrarily long scatter-gather lists */
+ 	hcd->self.sg_tablesize = ~0;
+ 
++	/* support to build packet from discontinuous buffers */
++	hcd->self.no_sg_constraint = 1;
++
+ 	/* XHCI controllers don't stop the ep queue on short packets :| */
+ 	hcd->self.no_stop_on_short = 1;
+ 
+@@ -4757,14 +4760,6 @@ int xhci_gen_setup(struct usb_hcd *hcd, xhci_get_quirks_t get_quirks)
+ 		/* xHCI private pointer was set in xhci_pci_probe for the second
+ 		 * registered roothub.
+ 		 */
+-		xhci = hcd_to_xhci(hcd);
+-		/*
+-		 * Support arbitrarily aligned sg-list entries on hosts without
+-		 * TD fragment rules (which are currently unsupported).
+-		 */
+-		if (xhci->hci_version < 0x100)
+-			hcd->self.no_sg_constraint = 1;
+-
+ 		return 0;
+ 	}
+ 
+@@ -4793,9 +4788,6 @@ int xhci_gen_setup(struct usb_hcd *hcd, xhci_get_quirks_t get_quirks)
+ 	if (xhci->hci_version > 0x96)
+ 		xhci->quirks |= XHCI_SPURIOUS_SUCCESS;
+ 
+-	if (xhci->hci_version < 0x100)
+-		hcd->self.no_sg_constraint = 1;
+-
+ 	/* Make sure the HC is halted. */
+ 	retval = xhci_halt(xhci);
+ 	if (retval)
 -- 
 1.8.1.2
 
