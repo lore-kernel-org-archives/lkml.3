@@ -1,122 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752512AbaCGAev (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Mar 2014 19:34:51 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:35899 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919AbaCGAet (ORCPT
+	id S1752229AbaCGAiY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Mar 2014 19:38:24 -0500
+Received: from moutng.kundenserver.de ([212.227.126.131]:56704 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750924AbaCGAiW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Mar 2014 19:34:49 -0500
-X-AuditID: cbfee691-b7efc6d0000039d3-1c-531914272319
-Message-id: <53191428.1090900@samsung.com>
-Date: Fri, 07 Mar 2014 09:34:48 +0900
-From: Beomho Seo <beomho.seo@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.3.0
-MIME-version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Lars-Peter Clausen <lars@metafoo.de>
-Subject: Re: [PATCH] iio: cm36651: Fix i2c client leak and possible NULL
- pointer dereference
-References: <1394098390-11213-1-git-send-email-k.kozlowski@samsung.com>
-In-reply-to: <1394098390-11213-1-git-send-email-k.kozlowski@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPIsWRmVeSWpSXmKPExsWyRsSkQFddRDLYYMFHNYsHTauYLF6/MLRY
-	Mnk+q8W8I+9YLC7vmsPmwOqxaVUnm8eSN4dYPfq2rGL0+LxJLoAlissmJTUnsyy1SN8ugSvj
-	1OFXrAVfBCv6zmxkbGD8wtfFyMkhIWAi0fTkCwuELSZx4d56ti5GLg4hgaWMEhN/72GDKfr9
-	voEVIrGIUWLZ7++MEM5rRokX73ezg1TxCmhJtLx8CWazCKhKbN7wmhXEZhPQlHg/5QrYClGB
-	CIm5EzezQdQLSvyYfA8sLiIwmVHi0gFeEJtZQENiyv9tYHFhgTiJ9V8uM4LYQgLuEjta3jOB
-	2JwCHhKXmx6zQNTrSOxvncYGYctLbF7zlhnkOAmBbewS3Z+mMkMcJCDxbfIhoAYOoISsxKYD
-	zBCfSUocXHGDZQKj2CwkJ81CMnYWkrELGJlXMYqmFiQXFCelF5nqFSfmFpfmpesl5+duYgRG
-	1ul/zybuYLx/wPoQYzLQyonMUqLJ+cDIzCuJNzQ2M7IwNTE1NjK3NCNNWEmcN/1RUpCQQHpi
-	SWp2ampBalF8UWlOavEhRiYOTqkGxoTnlamMzA31jvI7lFesu/F2Q6ip7nfBoF9yt1/FeCSL
-	ry3fObFSvebdzRtfN25o2Zx14qvbs+grfar/lGeprmt77eBmZeS6llmr4vGV2//rDj7xOfbe
-	im320XvnLz3fwVwSwiOaOaWvVNpm8dH9zA/YY89bs3x+25tRwPRJdsOKSrmK+dMCnyqxFGck
-	GmoxFxUnAgCQ2iYEwgIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphleLIzCtJLcpLzFFi42I5/e+xgK66iGSwwZ618hYPmlYxWbx+YWix
-	ZPJ8Vot5R96xWFzeNYfNgdVj06pONo8lbw6xevRtWcXo8XmTXABLVAOjTUZqYkpqkUJqXnJ+
-	SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QXiWFssScUqBQQGJxsZK+HaYJ
-	oSFuuhYwjRG6viFBcD1GBmggYQ1jxqnDr1gLvghW9J3ZyNjA+IWvi5GTQ0LAROL3+wZWCFtM
-	4sK99WxdjFwcQgKLGCWW/f7OCOG8ZpR48X43O0gVr4CWRMvLl2A2i4CqxOYNr8G62QQ0Jd5P
-	ucICYosKREjMnbiZDaJeUOLH5HtgcRGByYwSlw7wgtjMAhoSU/5vA4sLC8RJrP9ymRHEFhJw
-	l9jR8p4JxOYU8JC43PSYBaJeR2J/6zQ2CFteYvOat8wTGAVmIVkxC0nZLCRlCxiZVzGKphYk
-	FxQnpeca6hUn5haX5qXrJefnbmIEx+0zqR2MKxssDjEKcDAq8fB2LJIIFmJNLCuuzD3EKMHB
-	rCTC6/8dKMSbklhZlVqUH19UmpNafIgxGRgCE5mlRJPzgSklryTe0NjEzMjSyNzQwsjYnDRh
-	JXHeA63WgUIC6YklqdmpqQWpRTBbmDg4pRoYkzPuvpnLHrcj2kn7jex9NuOIwI19/R2yl+J/
-	Mx86Mu3Wf5USj4+6Vvdl4zQd2W3E1x5bdKXM7o+dfYMN47Yby3T5JmUoeOd9OCZyPHnh9x0e
-	rmvyJPf8qN8vohZTrv6rcmO39fJjn3nvH3+99BR3pUV7TPqmF3Ny7CZ4dFZz8SR3q3ouX8us
-	xFKckWioxVxUnAgAz6vAwB8DAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 6 Mar 2014 19:38:22 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v6 1/3] Fix ioport_map() for !CONFIG_GENERIC_IOMAP cases.
+Date: Fri, 7 Mar 2014 01:37:38 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>, "linux-pci" <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linaro-kernel" <linaro-kernel@lists.linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        LKML <linux-kernel@vger.kernel.org>, Tanmay Inamdar <tinamdar@apm.com>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+References: <1394020150-1875-1-git-send-email-Liviu.Dudau@arm.com> <1394020150-1875-2-git-send-email-Liviu.Dudau@arm.com> <20140305233135.GZ21483@n2100.arm.linux.org.uk>
+In-Reply-To: <20140305233135.GZ21483@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201403070137.38621.arnd@arndb.de>
+X-Provags-ID: V02:K0:Rd7BpcFcB+8GQFd0NabR6q8rS4KInIlaIkDL2jOJ4Fc
+ mq6Twi2ZsWGQgf5/KJ0VMOxlL9xkY68icr7juaNtx2IzkFtxJn
+ LM/Ap76sQ5qgVWr/eghd1anH1TKrA721s3WMi3/wm87YePfhAg
+ Kl51XRx9eFHou94S2cvPHFrnOqfCHhHbNENK/3Fu97WlDJVkQb
+ fV0g/Y4NzZ9uYI4zdVNVZ1eN2wWuagwY8zdGrdhxh9dP2IZnOy
+ 9fW13cjgy+JWqYXXIMAXRKYYQG6ufP6DzOSlFa/T28ol83Jf1B
+ Vrup+YFnKyeHdTugmR19SmPGqaqgdHcZ8iCevF9G7rI4+2KEsK
+ DPoLRCePhSvcefO7DNmOVjLVz7Gt2cuBQf1higi5w
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/2014 06:33 PM, Krzysztof Kozlowski wrote:
-> During probe the driver allocates dummy I2C devices (i2c_new_dummy())
-> but they aren't unregistered during driver remove or probe failure.
+On Thursday 06 March 2014, Russell King - ARM Linux wrote:
+> On Wed, Mar 05, 2014 at 11:49:08AM +0000, Liviu Dudau wrote:
+> > The inline version of ioport_map() that gets used when !CONFIG_GENERIC_IOMAP
+> > is wrong. It returns a mapped (i.e. virtual) address that can start from
+> > zero and completely ignores the PCI_IOBASE and IO_SPACE_LIMIT that most
+> > architectures that use !CONFIG_GENERIC_MAP define.
 > 
-> Additionally driver does not check the return value of i2c_new_dummy().
-> In case of error (i2c_new_device(): memory allocation failure or I2C
-> address cannot be used) this function returns NULL which is later
-> dereferenced by i2c_smbus_{read,write}_data() functions.
+> What value does PCI_IOBASE and IO_SPACE_LIMIT have on other architectures
+> who make use of asm-generic/io.h ?
 > 
-> Fix issues by properly checking for i2c_new_dummy() return value and
-> unregistering I2C devices on driver remove or probe failure.
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> $ git grep asm-generic/io.h arch/
+> arch/arc/include/asm/io.h:#include <asm-generic/io.h>
 
-Thanks,
+PCI support hasn't been upstreamed.
 
-Acked-by: Beomho Seo <beomho.seo@samsung.com>
+> arch/blackfin/include/asm/io.h:#include <asm-generic/io.h>
+> arch/metag/include/asm/io.h:#include <asm-generic/io.h>
 
-> ---
->  drivers/iio/light/cm36651.c |   12 ++++++++++++
->  1 file changed, 12 insertions(+)
-> 
-> diff --git a/drivers/iio/light/cm36651.c b/drivers/iio/light/cm36651.c
-> index a45e07492db3..e7e9a597159f 100644
-> --- a/drivers/iio/light/cm36651.c
-> +++ b/drivers/iio/light/cm36651.c
-> @@ -653,6 +653,11 @@ static int cm36651_probe(struct i2c_client *client,
->  	cm36651->ps_client = i2c_new_dummy(client->adapter,
->  						     CM36651_I2C_ADDR_PS);
->  	cm36651->ara_client = i2c_new_dummy(client->adapter, CM36651_ARA);
-> +	if (!cm36651->ps_client || !cm36651->ara_client) {
-> +		dev_err(&client->dev, "%s: new i2c device failed\n", __func__);
-> +		ret = -ENODEV;
-> +		goto error_i2c_unregister;
-> +	}
->  	mutex_init(&cm36651->lock);
->  	indio_dev->dev.parent = &client->dev;
->  	indio_dev->channels = cm36651_channels;
-> @@ -687,6 +692,11 @@ error_free_irq:
->  	free_irq(client->irq, indio_dev);
->  error_disable_reg:
->  	regulator_disable(cm36651->vled_reg);
-> +error_i2c_unregister:
-> +	if (cm36651->ps_client)
-> +		i2c_unregister_device(cm36651->ps_client);
-> +	if (cm36651->ara_client)
-> +		i2c_unregister_device(cm36651->ara_client);
->  	return ret;
->  }
->  
-> @@ -698,6 +708,8 @@ static int cm36651_remove(struct i2c_client *client)
->  	iio_device_unregister(indio_dev);
->  	regulator_disable(cm36651->vled_reg);
->  	free_irq(client->irq, indio_dev);
-> +	i2c_unregister_device(cm36651->ps_client);
-> +	i2c_unregister_device(cm36651->ara_client);
->  
->  	return 0;
->  }
-> 
+No PCI support
 
+> arch/microblaze/include/asm/io.h:/* from asm-generic/io.h */
 
--- 
-Best Regards,
+PCI_IOBASE=0, IO_SPACE_LIMIT=0xffffffff, so no change.
+
+> arch/openrisc/include/asm/io.h:#include <asm-generic/io.h>
+
+No PCI support
+
+> arch/s390/include/asm/io.h:#include <asm-generic/io.h>
+
+s390 supports PCI but no I/O space
+
+> arch/score/include/asm/io.h:#include <asm-generic/io.h>
+
+No PCI support
+
+> arch/unicore32/include/asm/io.h:#include <asm-generic/io.h>
+
+unicore32 is broken currently, the patch fixes it.
+
+> arch/xtensa/include/asm/io.h:#include <asm-generic/io.h>
+
+PCI_IOBASE=0, IO_SPACE_LIMIT=0xffffffff, so no change.
+
+For most of these, I assume we actually want to remove support
+for inb/outb as they don't support I/O space accesses. The other
+ones look correct to me.
+
+	Arnd
