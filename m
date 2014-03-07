@@ -1,189 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870AbaCGPQL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 10:16:11 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:56534 "EHLO
+	id S1753848AbaCGPQI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 10:16:08 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:48460 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752592AbaCGPMF (ORCPT
+	by vger.kernel.org with ESMTP id S1752689AbaCGPMF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Mar 2014 10:12:05 -0500
-Message-Id: <20140307151201.881183550@goodmis.org>
+Message-Id: <20140307151202.210588176@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Fri, 07 Mar 2014 10:09:26 -0500
+Date: Fri, 07 Mar 2014 10:09:28 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [for-next][PATCH 06/20] tracing: Move event storage for array from macro to standalone
- function
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [for-next][PATCH 08/20] tracing: Warn if a tracepoint is not set via debugfs
 References: <20140307150920.881849073@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0006-tracing-Move-event-storage-for-array-from-macro-to-s.patch
+Content-Disposition: inline; filename=0008-tracing-Warn-if-a-tracepoint-is-not-set-via-debugfs.patch
 X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Steven Rostedt <rostedt@goodmis.org>
 
-The code that shows array fields for events is defined for all events.
-This can add up quite a bit when you have over 500 events.
+Tracepoints were made to allow enabling a tracepoint in a module before that
+module was loaded. When a tracepoint is enabled and it does not exist, the
+name is stored and will be enabled when the tracepoint is created.
 
-By making helper functions in the core kernel to do the work
-instead, we can shrink the size of the kernel down a bit.
+The problem with this approach is that when a tracepoint is enabled when
+it expects to be there, it gives no warning that it does not exist.
 
-With a kernel configured with 502 events, the change in size was:
+To add salt to the wound, if a module is added and sets the FORCED flag, which
+can happen if it isn't signed properly, the tracepoint code will not enabled
+the tracepoints, but they will be created in the debugfs system! When a user
+goes to enable the tracepoint, the tracepoint code will not see it existing
+and will think it is to be enabled later AND WILL NOT GIVE A WARNING.
 
-   text    data     bss     dec     hex filename
-12990946        1913568 9785344 24689858        178bcc2 /tmp/vmlinux
-12987390        1913504 9785344 24686238        178ae9e /tmp/vmlinux.patched
+The tracing will look like it succeeded but will actually be doing nothing.
+This will cause lots of confusion and headaches for developers trying to
+figure out why they are not seeing their tracepoints.
 
-That's a total of 3556 bytes, which comes down to 7 bytes per event.
-Although it's not much, this code is just called at initialization of
-the events.
+Link: http://lkml.kernel.org/r/20140213154507.4040fb06@gandalf.local.home
 
-Link: http://lkml.kernel.org/r/20120810034708.084036335@goodmis.org
-
+Reported-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Reported-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/ftrace_event.h |  8 ++++----
- include/trace/ftrace.h       | 12 ++++--------
- kernel/trace/trace_events.c  |  6 ------
- kernel/trace/trace_export.c  | 12 ++++--------
- kernel/trace/trace_output.c  | 21 +++++++++++++++++++++
- 5 files changed, 33 insertions(+), 26 deletions(-)
+ kernel/tracepoint.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index a91ab93..ffe642e 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -202,6 +202,10 @@ extern int ftrace_event_reg(struct ftrace_event_call *event,
- int ftrace_output_event(struct trace_iterator *iter, struct ftrace_event_call *event,
- 			char *fmt, ...);
- 
-+int ftrace_event_define_field(struct ftrace_event_call *call,
-+			      char *type, int len, char *item, int offset,
-+			      int field_size, int sign, int filter);
-+
- enum {
- 	TRACE_EVENT_FL_FILTERED_BIT,
- 	TRACE_EVENT_FL_CAP_ANY_BIT,
-@@ -500,10 +504,6 @@ enum {
- 	FILTER_TRACE_FN,
+diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+index 0d4ef26..0058f33 100644
+--- a/kernel/tracepoint.c
++++ b/kernel/tracepoint.c
+@@ -62,6 +62,7 @@ struct tracepoint_entry {
+ 	struct hlist_node hlist;
+ 	struct tracepoint_func *funcs;
+ 	int refcount;	/* Number of times armed. 0 if disarmed. */
++	int enabled;	/* Tracepoint enabled */
+ 	char name[0];
  };
  
--#define EVENT_STORAGE_SIZE 128
--extern struct mutex event_storage_mutex;
--extern char event_storage[EVENT_STORAGE_SIZE];
--
- extern int trace_event_raw_init(struct ftrace_event_call *call);
- extern int trace_define_field(struct ftrace_event_call *call, const char *type,
- 			      const char *name, int offset, int size,
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 3873d6e..54928fa 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -302,15 +302,11 @@ static struct trace_event_functions ftrace_event_type_funcs_##call = {	\
- #undef __array
- #define __array(type, item, len)					\
- 	do {								\
--		mutex_lock(&event_storage_mutex);			\
- 		BUILD_BUG_ON(len > MAX_FILTER_STR_VAL);			\
--		snprintf(event_storage, sizeof(event_storage),		\
--			 "%s[%d]", #type, len);				\
--		ret = trace_define_field(event_call, event_storage, #item, \
--				 offsetof(typeof(field), item),		\
--				 sizeof(field.item),			\
--				 is_signed_type(type), FILTER_OTHER);	\
--		mutex_unlock(&event_storage_mutex);			\
-+		ret = ftrace_event_define_field(event_call, #type, len,	\
-+				#item, offsetof(typeof(field), item),   \
-+				sizeof(field.item),			\
-+			 	is_signed_type(type), FILTER_OTHER); \
- 		if (ret)						\
- 			return ret;					\
- 	} while (0);
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index e71ffd4..22826c7 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -27,12 +27,6 @@
- 
- DEFINE_MUTEX(event_mutex);
- 
--DEFINE_MUTEX(event_storage_mutex);
--EXPORT_SYMBOL_GPL(event_storage_mutex);
--
--char event_storage[EVENT_STORAGE_SIZE];
--EXPORT_SYMBOL_GPL(event_storage);
--
- LIST_HEAD(ftrace_events);
- static LIST_HEAD(ftrace_common_fields);
- 
-diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
-index 7c3e3e7..39c746c 100644
---- a/kernel/trace/trace_export.c
-+++ b/kernel/trace/trace_export.c
-@@ -96,14 +96,10 @@ static void __always_unused ____ftrace_check_##name(void)		\
- #define __array(type, item, len)					\
- 	do {								\
- 		BUILD_BUG_ON(len > MAX_FILTER_STR_VAL);			\
--		mutex_lock(&event_storage_mutex);			\
--		snprintf(event_storage, sizeof(event_storage),		\
--			 "%s[%d]", #type, len);				\
--		ret = trace_define_field(event_call, event_storage, #item, \
--				 offsetof(typeof(field), item),		\
--				 sizeof(field.item),			\
--				 is_signed_type(type), filter_type);	\
--		mutex_unlock(&event_storage_mutex);			\
-+		ret = ftrace_event_define_field(event_call, #type, len,	\
-+				#item, offsetof(typeof(field), item),   \
-+				sizeof(field.item),			\
-+			 	is_signed_type(type), filter_type);	\
- 		if (ret)						\
- 			return ret;					\
- 	} while (0);
-diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
-index ca0e79e2..ee8d748 100644
---- a/kernel/trace/trace_output.c
-+++ b/kernel/trace/trace_output.c
-@@ -20,6 +20,10 @@ static struct hlist_head event_hash[EVENT_HASHSIZE] __read_mostly;
- 
- static int next_event_type = __TRACE_LAST_TYPE + 1;
- 
-+#define EVENT_STORAGE_SIZE 128
-+static DEFINE_MUTEX(event_storage_mutex);
-+static char event_storage[EVENT_STORAGE_SIZE];
-+
- int trace_print_seq(struct seq_file *m, struct trace_seq *s)
- {
- 	int len = s->len >= PAGE_SIZE ? PAGE_SIZE - 1 : s->len;
-@@ -470,6 +474,23 @@ int ftrace_output_call(struct trace_iterator *iter, char *name, char *fmt, ...)
+@@ -237,6 +238,7 @@ static struct tracepoint_entry *add_tracepoint(const char *name)
+ 	memcpy(&e->name[0], name, name_len);
+ 	e->funcs = NULL;
+ 	e->refcount = 0;
++	e->enabled = 0;
+ 	hlist_add_head(&e->hlist, head);
+ 	return e;
  }
- EXPORT_SYMBOL_GPL(ftrace_output_call);
- 
-+int ftrace_event_define_field(struct ftrace_event_call *call,
-+			      char *type, int len, char *item, int offset,
-+			      int field_size, int sign, int filter)
-+{
-+	int ret;
-+
-+	mutex_lock(&event_storage_mutex);
-+	snprintf(event_storage, sizeof(event_storage),
-+		 "%s[%d]", type, len);
-+	ret = trace_define_field(call, event_storage, item, offset,
-+				 field_size, sign, filter);
-+	mutex_unlock(&event_storage_mutex);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(ftrace_event_define_field);
-+
- #ifdef CONFIG_KRETPROBES
- static inline const char *kretprobed(const char *name)
+@@ -316,6 +318,7 @@ static void tracepoint_update_probe_range(struct tracepoint * const *begin,
+ 		if (mark_entry) {
+ 			set_tracepoint(&mark_entry, *iter,
+ 					!!mark_entry->refcount);
++			mark_entry->enabled = !!mark_entry->refcount;
+ 		} else {
+ 			disable_tracepoint(*iter);
+ 		}
+@@ -380,6 +383,8 @@ tracepoint_add_probe(const char *name, void *probe, void *data)
+ int tracepoint_probe_register(const char *name, void *probe, void *data)
  {
+ 	struct tracepoint_func *old;
++	struct tracepoint_entry *entry;
++	int ret = 0;
+ 
+ 	mutex_lock(&tracepoints_mutex);
+ 	old = tracepoint_add_probe(name, probe, data);
+@@ -388,9 +393,13 @@ int tracepoint_probe_register(const char *name, void *probe, void *data)
+ 		return PTR_ERR(old);
+ 	}
+ 	tracepoint_update_probes();		/* may update entry */
++	entry = get_tracepoint(name);
++	/* Make sure the entry was enabled */
++	if (!entry || !entry->enabled)
++		ret = -ENODEV;
+ 	mutex_unlock(&tracepoints_mutex);
+ 	release_probes(old);
+-	return 0;
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(tracepoint_probe_register);
+ 
 -- 
 1.8.5.3
 
