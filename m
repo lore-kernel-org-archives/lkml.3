@@ -1,85 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752543AbaCGMoY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 07:44:24 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:51149 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751624AbaCGMoX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 07:44:23 -0500
-Message-ID: <5319BF21.6080400@oracle.com>
-Date: Fri, 07 Mar 2014 13:44:17 +0100
-From: Vegard Nossum <vegard.nossum@oracle.com>
+	id S1753005AbaCGMo7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 07:44:59 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39646 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752895AbaCGMo5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 07:44:57 -0500
+Message-ID: <5319BF40.70305@ti.com>
+Date: Fri, 7 Mar 2014 14:44:48 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] isdnloop: NUL-terminate strings from userspace
-References: <1394189764-21754-1-git-send-email-vegard.nossum@oracle.com> <20140307112655.GJ4774@mwanda> <5319B094.7060709@oracle.com> <20140307115253.GL4774@mwanda>
-In-Reply-To: <20140307115253.GL4774@mwanda>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: David Herrmann <dh.herrmann@gmail.com>
+CC: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        Dave Airlie <airlied@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Tom Gundersen <teg@jklm.no>
+Subject: Re: [PATCH 00/11] SimpleDRM & Sysfb
+References: <1390486503-1504-1-git-send-email-dh.herrmann@gmail.com>	<53145591.4070004@ti.com>	<CANq1E4QJqB0CSNeSh2jsp90ZtcLwFwfSG=qjodSLdV_aGbL3BQ@mail.gmail.com>	<53145D42.9080806@ti.com>	<CANq1E4QYuMsj3W80jiyOfeYr+Xm=J096idyvgCUpFhADWR1ZvA@mail.gmail.com>	<531465FF.1000201@ti.com> <CANq1E4TmACNwyANaUsWufJL1ne4pk4Gv+g4y7b6xeO=Po-SN9g@mail.gmail.com>
+In-Reply-To: <CANq1E4TmACNwyANaUsWufJL1ne4pk4Gv+g4y7b6xeO=Po-SN9g@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="C6qausoGgW38blqKUTrj8lJQFoDkmUw90"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/2014 12:52 PM, Dan Carpenter wrote:
-> On Fri, Mar 07, 2014 at 12:42:12PM +0100, Vegard Nossum wrote:
->> On 03/07/2014 12:26 PM, Dan Carpenter wrote:
->>> On Fri, Mar 07, 2014 at 11:56:04AM +0100, Vegard Nossum wrote:
->>>> Both the in-kernel and BSD strlcpy() require that the source string is
->>>> NUL terminated.
+--C6qausoGgW38blqKUTrj8lJQFoDkmUw90
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+On 06/03/14 14:16, David Herrmann wrote:
+> Hi Tomi
+>=20
+> On Mon, Mar 3, 2014 at 12:22 PM, Tomi Valkeinen <tomi.valkeinen@ti.com>=
+ wrote:
+>> On 03/03/14 13:09, David Herrmann wrote:
+>>
+>>>> What do you think, would it be possible to keep the sysfb stuff in
+>>>> arch/x86, and still be able to do the rest of the stuff here? And th=
+en
+>>>> move the sysfs from arch/x86 to drivers/video later?
 >>>
->>> No.  You're obviously wrong.  What on earth?
+>>> I don't think there's any need for that. Linus does conflict
+>>> resolution all day long, so a short hint in Dave's pull-request (plus=
+
+>>> an example merge) should be enough. Same is true for -next, I think.
 >>
->> Well, from lib/string.c:
+>> True, but, well, the conflict with this one is not a few lines. "git
+>> diff |wc -l" gives 2494 lines for the conflict. It's not really comple=
+x
+>> to resolve that one, though, as it's really about copying all the stuf=
+f
+>> into its new place.
 >>
->> size_t strlcpy(char *dest, const char *src, size_t size)
->> {
->>          size_t ret = strlen(src);
+>> So I'm not sure if that makes Linus think "this is simple one, 30 secs=
+
+>> and done" or "who the f*** sends me this crap" ;). Especially for two
+>> reasons:
 >>
->
-> Ah...  So you mean that we could read far beyond the end of the string
-> and it would be a DoS because there would be 4 gigs of memory before we
-> hit a NUL character.  That won't happen in this case because the user
-> only controls a small buffer.  Normal memory is full of NUL chars.
-
-Well, that's true, but what happens if you accidentally read from an 
-unmapped page or an mmio page?
-
-I agree that it's not likely to happen in practice, but that's true for 
-a lot of kernel bugs that we nevertheless want to fix. Are you saying 
-that the patch is bad or wrong?
-
-> I don't know the speed impact of changing the strlen() there to
-> strnlen().
-
-I don't think we could or should do that, because it changes the 
-semantics of the function.  I think C string operations are probably 
-confusing enough already without breaking compatibility with existing 
-documentation and other implementations.
-
-Also, the size parameter is the size of the destination buffer, not the 
-source string. So even if we could make it safe to use strnlen() in this 
-case, it still wouldn't be safe in other cases where the source string 
-is shorter than the destination.
-
->
->> The BSD man page:
+>> - The fb-reogranization is not very critical, and often clean-ups are
+>> not worth it (although I think this one is good one, of course).
+>> - Conflicting fbdev changes coming from another tree
 >>
->> "Also note that strlcpy() and strlcat() only operate on true ``C''
->> strings.  This means that for strlcpy() src must be NUL-terminated
->> and for strlcat() both src and dst must be NUL-terminated."
->
-> It's talking about the kind of strings.  If it's a string which includes
-> NUL characters the strlcpy() won't work for that.  Or if it is not
-> *supposed* to end in a NUL character then it won't work for that.
->
-> We are using C strings here.
+>>> And this is really just a mechanical thing, nothing hard to do. But o=
+f
+>>> course, it's your decision. However, keeping the code in x86 is the
+>>> wrong thing to do. As discussed with Ingo, the patch that extends
+>>
+>> Yes, I didn't mean keeping the code in x86 for good, but just for one
+>> kernel version to make merging easier.
+>>
+>>> x86/sysfb is only provided for easier backporting. The followup patch=
 
-I think the man page is quite clear: "for strlcpy() src must be 
-NUL-terminated". Without the patch, this is not necessarily the case.
+>>> immediately removes it again and adds proper video/sysfb. I'd dislike=
+
+>>> splitting these just to avoid merge conflicts. I can also maintain a
+>>> merge-fixup branch in my tree, if anyone wants that.
+>>
+>> You can have a try at merging. If you think it's trivial, maybe it is
+>> and we can just let Linus handle it:
+>>
+>> git://git.kernel.org/pub/scm/linux/kernel/git/tomba/linux.git
+>> work/fb-reorder
+>=20
+> Ok, I'm fine with delaying this one more merge-window. However, to
+> make things easier, could you pick up the two fbdev cleanups? These
+> are:
+>   fbdev: efifb: add dev->remove() callback
+>   fbdev: vesafb: add dev->remove() callback
+>=20
+> They only add ->remove() callbacks which are never triggered currently
+> except with my sysfb series. But I'd like to drop both to make the
+> series smaller.
+
+Yes, I can take them if they work fine without the rest of the patches.
+
+I could also take all the patches up to patch #6 via fbdev tree. Some of
+the patches are for arch x86, but they seem to be still about
+framebuffers. But maybe that causes conflicts with x86 tree, then =3D).
+
+Then again, maybe we should just go forward and let Linus handle the
+conflict. I'm planning to send the "normal" fbdev changes and the
+fbdev-reorg separately (just in case Linus doesn't like the reorg), and
+that already causes conflicts, very similar to what this series causes.
+
+So in any case Linus has to handle that conflict, or use a resolution
+offered by me. So if fbdev changes and this series are merged in
+relatively early phase, I can then send the reorg series a bit later and
+offer a conflict resolution that solves the conflicts for both series.
+
+That way this series doesn't get delayed needlessly in the case that
+Linus rejects the reorg series.
+
+ Tomi
 
 
-Vegard
+
+--C6qausoGgW38blqKUTrj8lJQFoDkmUw90
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJTGb9AAAoJEPo9qoy8lh71a/oQAI5TfidrnZVh+QGcJg+3/YHh
+CuhT7kQBZVW0qH/nBMnfgSefXAQl+yDtS7aqiL8HUcQVTGKuJbY9jouHN8ONy6Ix
+sChadrUjLWJGJkZR68CILOeK1f96PH6q44Z+gxP1BsTrpKohgTokOXl3e2Or8iBs
+/Fc8qds+cGGbDXTD+8zsKKs1enNw0XIn5RTose96gtuD3+IeOrBafmkGOdjjhuIF
+RV5adEcpS/v7gJshwLsnPdgpvbmtX5CVS98dfr8cv1wL7YRfFHvCsl7GA6FQwgOw
+DlxFoRqolDI/rjoXVpJusFYs8/zhDCG+jaTRA7GdRqigdXAdp49YRTLQhpJTw36s
+IGdGdF3WREAv4VrPskG9DmRKjCJl8I8yWnZz1K3FUG5LYdWW0SsCin5GnlBm9UmT
+Pl9cBDXXR3P2RqIS6+j9FXtZu4ro7DhzHs0X2E56UVEGHP2GfrTPKuWUrpM06/nq
+VtWv8iZFqCAggrwNTI8Nqw66cxkYBrh0I1UaJNu0Afk7sp9f/gMldkUZexX2CmDM
+khPuKzuFnlA2v7SoMIuQp5QncVW/FNxPEuip9nanm720vNWqGQ53ndYKdNFDDkK6
+Kk8/Aq8APSofhlW+Hv44CK3v/YQ5K/13bZy74Jh3+UT2BEjPmUhyMuyafOgRjXRi
+Al3FGT1ToUYhf5hVHMM1
+=OJD3
+-----END PGP SIGNATURE-----
+
+--C6qausoGgW38blqKUTrj8lJQFoDkmUw90--
