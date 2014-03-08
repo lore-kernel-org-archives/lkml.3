@@ -1,47 +1,444 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752628AbaCHJhx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 04:37:53 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:37475 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751099AbaCHJho (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 04:37:44 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sat, 8 Mar 2014 10:37:32 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net
-Subject: [git pull] FireWire fixes
-Message-ID: <20140308103732.5cdb47af@stein>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753238AbaCHJhd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 04:37:33 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52763 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752023AbaCHJ3n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Mar 2014 04:29:43 -0500
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <gregkh@linuxfoundation.org>, <kishon@ti.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH 07/28] PHY: sunxi: Add driver for sunxi usb phy
+Date: Sat, 8 Mar 2014 14:59:08 +0530
+Message-ID: <1394270969-11851-8-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1394270969-11851-1-git-send-email-kishon@ti.com>
+References: <1394270969-11851-1-git-send-email-kishon@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+From: Hans de Goede <hdegoede@redhat.com>
 
-please pull from the tag "firewire-fixes" at
+The Allwinner A1x / A2x SoCs have 2 or 3 usb phys which are all accessed
+through a single set of registers. Besides this there are also some other
+phy related bits which need poking, which are per phy, but shared between the
+ohci and ehci controllers, so these are also controlled from this new phy
+driver.
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394.git firewire-fixes
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ .../devicetree/bindings/phy/sun4i-usb-phy.txt      |   26 ++
+ drivers/phy/Kconfig                                |   11 +
+ drivers/phy/Makefile                               |    1 +
+ drivers/phy/phy-sun4i-usb.c                        |  331 ++++++++++++++++++++
+ 4 files changed, 369 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/phy/sun4i-usb-phy.txt
+ create mode 100644 drivers/phy/phy-sun4i-usb.c
 
-to receive the following IEEE 1394 (FireWire) subsystem changes.
-These fix a use-after-free regression since v3.4 and an initialization
-regression since v3.10.
-
-Stefan Richter (2):
-      firewire: net: fix use after free
-      firewire: ohci: fix probe failure with Agere/LSI controllers
-
- drivers/firewire/net.c  |  6 +++---
- drivers/firewire/ohci.c | 15 ++-------------
- 2 files changed, 5 insertions(+), 16 deletions(-)
-
-Thanks.  
+diff --git a/Documentation/devicetree/bindings/phy/sun4i-usb-phy.txt b/Documentation/devicetree/bindings/phy/sun4i-usb-phy.txt
+new file mode 100644
+index 0000000..a82361b
+--- /dev/null
++++ b/Documentation/devicetree/bindings/phy/sun4i-usb-phy.txt
+@@ -0,0 +1,26 @@
++Allwinner sun4i USB PHY
++-----------------------
++
++Required properties:
++- compatible : should be one of "allwinner,sun4i-a10-usb-phy",
++  "allwinner,sun5i-a13-usb-phy" or "allwinner,sun7i-a20-usb-phy"
++- reg : a list of offset + length pairs
++- reg-names : "phy_ctrl", "pmu1" and for sun4i or sun7i "pmu2"
++- #phy-cells : from the generic phy bindings, must be 1
++- clocks : phandle + clock specifier for the phy clock
++- clock-names : "usb_phy"
++- resets : a list of phandle + reset specifier pairs
++- reset-names : "usb0_reset", "usb1_reset" and for sun4i or sun7i "usb2_reset"
++
++Example:
++	usbphy: phy@0x01c13400 {
++		#phy-cells = <1>;
++		compatible = "allwinner,sun4i-a10-usb-phy";
++		/* phy base regs, phy1 pmu reg, phy2 pmu reg */
++		reg = <0x01c13400 0x10 0x01c14800 0x4 0x01c1c800 0x4>;
++		reg-names = "phy_ctrl", "pmu1", "pmu2";
++		clocks = <&usb_clk 8>;
++		clock-names = "usb_phy";
++		resets = <&usb_clk 1>, <&usb_clk 2>;
++		reset-names = "usb1_reset", "usb2_reset";
++	};
+diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+index 0431284..e677ee0 100644
+--- a/drivers/phy/Kconfig
++++ b/drivers/phy/Kconfig
+@@ -85,4 +85,15 @@ config PHY_EXYNOS5250_SATA
+ 	  SATA 3.0 Gb/s, SATA 6.0 Gb/s speeds. It supports one SATA host
+ 	  port to accept one SATA device.
+ 
++config PHY_SUN4I_USB
++	tristate "Allwinner sunxi SoC USB PHY driver"
++	depends on ARCH_SUNXI && HAS_IOMEM && OF
++	select GENERIC_PHY
++	help
++	  Enable this to support the transceiver that is part of Allwinner
++	  sunxi SoCs.
++
++	  This driver controls the entire USB PHY block, both the USB OTG
++	  parts, as well as the 2 regular USB 2 host PHYs.
++
+ endmenu
+diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+index 0d03822..5d0b59e 100644
+--- a/drivers/phy/Makefile
++++ b/drivers/phy/Makefile
+@@ -10,3 +10,4 @@ obj-$(CONFIG_PHY_MVEBU_SATA)		+= phy-mvebu-sata.o
+ obj-$(CONFIG_OMAP_USB2)			+= phy-omap-usb2.o
+ obj-$(CONFIG_TWL4030_USB)		+= phy-twl4030-usb.o
+ obj-$(CONFIG_PHY_EXYNOS5250_SATA)	+= phy-exynos5250-sata.o
++obj-$(CONFIG_PHY_SUN4I_USB)		+= phy-sun4i-usb.o
+diff --git a/drivers/phy/phy-sun4i-usb.c b/drivers/phy/phy-sun4i-usb.c
+new file mode 100644
+index 0000000..e6e6c4b
+--- /dev/null
++++ b/drivers/phy/phy-sun4i-usb.c
+@@ -0,0 +1,331 @@
++/*
++ * Allwinner sun4i USB phy driver
++ *
++ * Copyright (C) 2014 Hans de Goede <hdegoede@redhat.com>
++ *
++ * Based on code from
++ * Allwinner Technology Co., Ltd. <www.allwinnertech.com>
++ *
++ * Modelled after: Samsung S5P/EXYNOS SoC series MIPI CSIS/DSIM DPHY driver
++ * Copyright (C) 2013 Samsung Electronics Co., Ltd.
++ * Author: Sylwester Nawrocki <s.nawrocki@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/clk.h>
++#include <linux/io.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/mutex.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/phy/phy.h>
++#include <linux/platform_device.h>
++#include <linux/regulator/consumer.h>
++#include <linux/reset.h>
++
++#define REG_ISCR			0x00
++#define REG_PHYCTL			0x04
++#define REG_PHYBIST			0x08
++#define REG_PHYTUNE			0x0c
++
++#define PHYCTL_DATA			BIT(7)
++
++#define SUNXI_AHB_ICHR8_EN		BIT(10)
++#define SUNXI_AHB_INCR4_BURST_EN	BIT(9)
++#define SUNXI_AHB_INCRX_ALIGN_EN	BIT(8)
++#define SUNXI_ULPI_BYPASS_EN		BIT(0)
++
++/* Common Control Bits for Both PHYs */
++#define PHY_PLL_BW			0x03
++#define PHY_RES45_CAL_EN		0x0c
++
++/* Private Control Bits for Each PHY */
++#define PHY_TX_AMPLITUDE_TUNE		0x20
++#define PHY_TX_SLEWRATE_TUNE		0x22
++#define PHY_VBUSVALID_TH_SEL		0x25
++#define PHY_PULLUP_RES_SEL		0x27
++#define PHY_OTG_FUNC_EN			0x28
++#define PHY_VBUS_DET_EN			0x29
++#define PHY_DISCON_TH_SEL		0x2a
++
++#define MAX_PHYS			3
++
++struct sun4i_usb_phy_data {
++	struct clk *clk;
++	void __iomem *base;
++	struct mutex mutex;
++	int num_phys;
++	u32 disc_thresh;
++	struct sun4i_usb_phy {
++		struct phy *phy;
++		void __iomem *pmu;
++		struct regulator *vbus;
++		struct reset_control *reset;
++		int index;
++	} phys[MAX_PHYS];
++};
++
++#define to_sun4i_usb_phy_data(phy) \
++	container_of((phy), struct sun4i_usb_phy_data, phys[(phy)->index])
++
++static void sun4i_usb_phy_write(struct sun4i_usb_phy *phy, u32 addr, u32 data,
++				int len)
++{
++	struct sun4i_usb_phy_data *phy_data = to_sun4i_usb_phy_data(phy);
++	u32 temp, usbc_bit = BIT(phy->index * 2);
++	int i;
++
++	mutex_lock(&phy_data->mutex);
++
++	for (i = 0; i < len; i++) {
++		temp = readl(phy_data->base + REG_PHYCTL);
++
++		/* clear the address portion */
++		temp &= ~(0xff << 8);
++
++		/* set the address */
++		temp |= ((addr + i) << 8);
++		writel(temp, phy_data->base + REG_PHYCTL);
++
++		/* set the data bit and clear usbc bit*/
++		temp = readb(phy_data->base + REG_PHYCTL);
++		if (data & 0x1)
++			temp |= PHYCTL_DATA;
++		else
++			temp &= ~PHYCTL_DATA;
++		temp &= ~usbc_bit;
++		writeb(temp, phy_data->base + REG_PHYCTL);
++
++		/* pulse usbc_bit */
++		temp = readb(phy_data->base + REG_PHYCTL);
++		temp |= usbc_bit;
++		writeb(temp, phy_data->base + REG_PHYCTL);
++
++		temp = readb(phy_data->base + REG_PHYCTL);
++		temp &= ~usbc_bit;
++		writeb(temp, phy_data->base + REG_PHYCTL);
++
++		data >>= 1;
++	}
++	mutex_unlock(&phy_data->mutex);
++}
++
++static void sun4i_usb_phy_passby(struct sun4i_usb_phy *phy, int enable)
++{
++	u32 bits, reg_value;
++
++	if (!phy->pmu)
++		return;
++
++	bits = SUNXI_AHB_ICHR8_EN | SUNXI_AHB_INCR4_BURST_EN |
++		SUNXI_AHB_INCRX_ALIGN_EN | SUNXI_ULPI_BYPASS_EN;
++
++	reg_value = readl(phy->pmu);
++
++	if (enable)
++		reg_value |= bits;
++	else
++		reg_value &= ~bits;
++
++	writel(reg_value, phy->pmu);
++}
++
++static int sun4i_usb_phy_init(struct phy *_phy)
++{
++	struct sun4i_usb_phy *phy = phy_get_drvdata(_phy);
++	struct sun4i_usb_phy_data *data = to_sun4i_usb_phy_data(phy);
++	int ret;
++
++	ret = clk_prepare_enable(data->clk);
++	if (ret)
++		return ret;
++
++	ret = reset_control_deassert(phy->reset);
++	if (ret) {
++		clk_disable_unprepare(data->clk);
++		return ret;
++	}
++
++	/* Adjust PHY's magnitude and rate */
++	sun4i_usb_phy_write(phy, PHY_TX_AMPLITUDE_TUNE, 0x14, 5);
++
++	/* Disconnect threshold adjustment */
++	sun4i_usb_phy_write(phy, PHY_DISCON_TH_SEL, data->disc_thresh, 2);
++
++	sun4i_usb_phy_passby(phy, 1);
++
++	return 0;
++}
++
++static int sun4i_usb_phy_exit(struct phy *_phy)
++{
++	struct sun4i_usb_phy *phy = phy_get_drvdata(_phy);
++	struct sun4i_usb_phy_data *data = to_sun4i_usb_phy_data(phy);
++
++	sun4i_usb_phy_passby(phy, 0);
++	reset_control_assert(phy->reset);
++	clk_disable_unprepare(data->clk);
++
++	return 0;
++}
++
++static int sun4i_usb_phy_power_on(struct phy *_phy)
++{
++	struct sun4i_usb_phy *phy = phy_get_drvdata(_phy);
++	int ret = 0;
++
++	if (phy->vbus)
++		ret = regulator_enable(phy->vbus);
++
++	return ret;
++}
++
++static int sun4i_usb_phy_power_off(struct phy *_phy)
++{
++	struct sun4i_usb_phy *phy = phy_get_drvdata(_phy);
++
++	if (phy->vbus)
++		regulator_disable(phy->vbus);
++
++	return 0;
++}
++
++static struct phy_ops sun4i_usb_phy_ops = {
++	.init		= sun4i_usb_phy_init,
++	.exit		= sun4i_usb_phy_exit,
++	.power_on	= sun4i_usb_phy_power_on,
++	.power_off	= sun4i_usb_phy_power_off,
++	.owner		= THIS_MODULE,
++};
++
++static struct phy *sun4i_usb_phy_xlate(struct device *dev,
++					struct of_phandle_args *args)
++{
++	struct sun4i_usb_phy_data *data = dev_get_drvdata(dev);
++
++	if (WARN_ON(args->args[0] == 0 || args->args[0] >= data->num_phys))
++		return ERR_PTR(-ENODEV);
++
++	return data->phys[args->args[0]].phy;
++}
++
++static int sun4i_usb_phy_probe(struct platform_device *pdev)
++{
++	struct sun4i_usb_phy_data *data;
++	struct device *dev = &pdev->dev;
++	struct device_node *np = dev->of_node;
++	void __iomem *pmu = NULL;
++	struct phy_provider *phy_provider;
++	struct reset_control *reset;
++	struct regulator *vbus;
++	struct resource *res;
++	struct phy *phy;
++	char name[16];
++	int i;
++
++	data = devm_kzalloc(dev, sizeof(*data), GFP_KERNEL);
++	if (!data)
++		return -ENOMEM;
++
++	mutex_init(&data->mutex);
++
++	if (of_device_is_compatible(np, "allwinner,sun5i-a13-usb-phy"))
++		data->num_phys = 2;
++	else
++		data->num_phys = 3;
++
++	if (of_device_is_compatible(np, "allwinner,sun4i-a10-usb-phy"))
++		data->disc_thresh = 3;
++	else
++		data->disc_thresh = 2;
++
++	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "phy_ctrl");
++	data->base = devm_ioremap_resource(dev, res);
++	if (IS_ERR(data->base))
++		return PTR_ERR(data->base);
++
++	data->clk = devm_clk_get(dev, "usb_phy");
++	if (IS_ERR(data->clk)) {
++		dev_err(dev, "could not get usb_phy clock\n");
++		return PTR_ERR(data->clk);
++	}
++
++	/* Skip 0, 0 is the phy for otg which is not yet supported. */
++	for (i = 1; i < data->num_phys; i++) {
++		snprintf(name, sizeof(name), "usb%d_vbus", i);
++		vbus = devm_regulator_get_optional(dev, name);
++		if (IS_ERR(vbus)) {
++			if (PTR_ERR(vbus) == -EPROBE_DEFER)
++				return -EPROBE_DEFER;
++			vbus = NULL;
++		}
++
++		snprintf(name, sizeof(name), "usb%d_reset", i);
++		reset = devm_reset_control_get(dev, name);
++		if (IS_ERR(reset)) {
++			dev_err(dev, "failed to get reset %s\n", name);
++			return PTR_ERR(reset);
++		}
++
++		if (i) { /* No pmu for usbc0 */
++			snprintf(name, sizeof(name), "pmu%d", i);
++			res = platform_get_resource_byname(pdev,
++							IORESOURCE_MEM, name);
++			pmu = devm_ioremap_resource(dev, res);
++			if (IS_ERR(pmu))
++				return PTR_ERR(pmu);
++		}
++
++		phy = devm_phy_create(dev, &sun4i_usb_phy_ops, NULL);
++		if (IS_ERR(phy)) {
++			dev_err(dev, "failed to create PHY %d\n", i);
++			return PTR_ERR(phy);
++		}
++
++		data->phys[i].phy = phy;
++		data->phys[i].pmu = pmu;
++		data->phys[i].vbus = vbus;
++		data->phys[i].reset = reset;
++		data->phys[i].index = i;
++		phy_set_drvdata(phy, &data->phys[i]);
++	}
++
++	dev_set_drvdata(dev, data);
++	phy_provider = devm_of_phy_provider_register(dev, sun4i_usb_phy_xlate);
++	if (IS_ERR(phy_provider))
++		return PTR_ERR(phy_provider);
++
++	return 0;
++}
++
++static const struct of_device_id sun4i_usb_phy_of_match[] = {
++	{ .compatible = "allwinner,sun4i-a10-usb-phy" },
++	{ .compatible = "allwinner,sun5i-a13-usb-phy" },
++	{ .compatible = "allwinner,sun7i-a20-usb-phy" },
++	{ },
++};
++MODULE_DEVICE_TABLE(of, sun4i_usb_phy_of_match);
++
++static struct platform_driver sun4i_usb_phy_driver = {
++	.probe	= sun4i_usb_phy_probe,
++	.driver = {
++		.of_match_table	= sun4i_usb_phy_of_match,
++		.name  = "sun4i-usb-phy",
++		.owner = THIS_MODULE,
++	}
++};
++module_platform_driver(sun4i_usb_phy_driver);
++
++MODULE_DESCRIPTION("Allwinner sun4i USB phy driver");
++MODULE_AUTHOR("Hans de Goede <hdegoede@redhat.com>");
++MODULE_LICENSE("GPL v2");
 -- 
-Stefan Richter
--=====-====- --== -=---
-http://arcgraph.de/sr/
+1.7.9.5
+
