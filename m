@@ -1,93 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751757AbaCHOCi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 09:02:38 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:40722 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751130AbaCHOCe (ORCPT
+	id S1751710AbaCHOMm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 09:12:42 -0500
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:49923 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751130AbaCHOMk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 09:02:34 -0500
-Message-ID: <531B230E.7050809@gmail.com>
-Date: Sat, 08 Mar 2014 22:02:54 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Sat, 8 Mar 2014 09:12:40 -0500
 MIME-Version: 1.0
-To: Luis Henriques <luis.henriques@canonical.com>
-CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Subject: Re: [PATCH 3.11 042/131] avr32: Makefile: add '-D__linux__' flag
- for gcc-4.4.7 use
-References: <1394029455-23128-1-git-send-email-luis.henriques@canonical.com> <1394029455-23128-43-git-send-email-luis.henriques@canonical.com>
-In-Reply-To: <1394029455-23128-43-git-send-email-luis.henriques@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140307204021.GA9822@google.com>
+References: <1391886379.2669.11.camel@x41> <CAKMK7uE6Gaq-ghgWJ+6Qyn7hrGzAMOHyGT9KQQJ+ij7omPV2Ew@mail.gmail.com>
+ <1391890927.1882.5.camel@x41> <CAKMK7uFx2kksGgnuy9e0xiQRKpt=_+44O1V4wbX5yNBocvjBkg@mail.gmail.com>
+ <1391951759.6036.7.camel@artifact> <1391952344.25424.4.camel@x220>
+ <CAErSpo6uj_Kuk0_F97nRsnM1Pss4C7=HeEaVu6D-NwFFK=1cvA@mail.gmail.com>
+ <1394185698.5608.5.camel@x41> <CAErSpo4jiq38P3TNuGLGS--nbV9NtUAmiuK=cwWyFAneY-=eOA@mail.gmail.com>
+ <1394212609.1987.6.camel@x41> <20140307204021.GA9822@google.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Sat, 8 Mar 2014 07:12:19 -0700
+Message-ID: <CAErSpo7Np8oju1ENQA5EgEpN4=Vv7f3s4E823ecbyp6FCWPL_Q@mail.gmail.com>
+Subject: Re: [Intel-gfx] agp/intel: can't ioremap flush page - no chipset flushing
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Steven Newbury <steve@snewbury.org.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Mar 7, 2014 at 1:40 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> It seems quite possible that I broke pci_bus_alloc_resource(), which could
+> cause an allocation failure like this.
+>
+> If you have a chance to try it, here's a debug patch against v3.14-rc5.  It
+> should apply cleanly to 96702be56037.  If you can try it, please attach the
+> dmesg log to the bugzilla.
 
-Thanks.
+Paul verified that I *did* break this.  More details in the bugzilla:
+https://bugzilla.kernel.org/show_bug.cgi?id=71691
 
-I generated "avr32-linux-" cross compiler, and will use it to compile
-kernel again, and try to let it pass allmodconfig (originally, I use
-"avr32-" to compile kernel, which has generated various another issues).
+The problem is basically that I used resource_size() to figure out
+whether there's any available space.  resource_size() is res->end -
+res->start + 1, so applying it to [mem 0x00000000-0xffffffff] returns
+zero in a kernel 32-bit resource addresses, i.e., with
+CONFIG_PHYS_ADDR_T_64BIT=n.
 
-Thanks.
+Paul, I assume you have CONFIG_PHYS_ADDR_T_64BIT=n (which is perfectly
+legal); let me know if otherwise.
 
-On 03/05/2014 10:22 PM, Luis Henriques wrote:
-> 3.11.10.6 -stable review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> From: Chen Gang <gang.chen.5i5j@gmail.com>
-> 
-> commit 8d80390cfc9434d5aa4fb9e5f9768a66b30cb8a6 upstream.
-> 
-> For avr32 cross compiler, do not define '__linux__' internally, so it
-> will cause issue with allmodconfig.
-> 
-> The related error:
-> 
->     CC [M]  fs/coda/psdev.o
->   In file included from include/linux/coda.h:64,
->                    from fs/coda/psdev.c:45:
->   include/uapi/linux/coda.h:221: error: expected specifier-qualifier-list before 'u_quad_t'
-> 
-> The related toolchain version (which only download, not re-compile):
-> 
->   [root@gchen linux-next]# /upstream/toolchain/download/avr32-gnu-toolchain-linux_x86/bin/avr32-gcc -v
->   Using built-in specs.
->   Target: avr32
->   Configured with: /data2/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/src/gcc/configure --target=avr32 --host=i686-pc-linux-gnu --build=x86_64-pc-linux-gnu --prefix=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --enable-languages=c,c++ --disable-nls --disable-libssp --disable-libstdcxx-pch --with-dwarf2 --enable-version-specific-runtime-libs --disable-shared --enable-doc --with-mpfr-lib=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86/lib --with-mpfr-include=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86/include --with-gmp=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --with-mpc=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --enable-__cxa_atexit --disable-shared --with-newlib --with-pkgversion=AVR_32_bit_GNU_Toolchain_3.4.2_435 --with-bugurl=http://w
-ww
-> .atmel.com/avr
->   Thread model: single
->   gcc version 4.4.7 (AVR_32_bit_GNU_Toolchain_3.4.2_435)
-> 
-> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-> Acked-by: Hans-Christian Egtvedt <hegtvedt@cisco.com>
-> Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
-> ---
->  arch/avr32/Makefile | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/avr32/Makefile b/arch/avr32/Makefile
-> index 22fb665..dba48a5 100644
-> --- a/arch/avr32/Makefile
-> +++ b/arch/avr32/Makefile
-> @@ -11,7 +11,7 @@ all: uImage vmlinux.elf
->  
->  KBUILD_DEFCONFIG	:= atstk1002_defconfig
->  
-> -KBUILD_CFLAGS	+= -pipe -fno-builtin -mno-pic
-> +KBUILD_CFLAGS	+= -pipe -fno-builtin -mno-pic -D__linux__
->  KBUILD_AFLAGS	+= -mrelax -mno-pic
->  KBUILD_CFLAGS_MODULE += -mno-relax
->  LDFLAGS_vmlinux	+= --relax
-> 
+  pci_bus 0000:00: pci_bus_alloc_from_region: alloc [mem 0x00000000]
+size 0x1000 from bus region [0x00000000-0xffffffff]
+  pci_bus 0000:00: pci_bus_alloc_from_region: [mem
+0x00000000-0xffffffff]: no space (avail [mem 0x00000000-0xffffffff])
 
-
--- 
-Chen Gang
-
-Open, share and attitude like air, water and life which God blessed
+Bjorn
