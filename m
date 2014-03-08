@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754974AbaCHBSl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:18:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46574 "EHLO
+	id S1755025AbaCHBTA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:19:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46561 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754299AbaCHBHn (ORCPT
+	with ESMTP id S1754290AbaCHBHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:07:43 -0500
+	Fri, 7 Mar 2014 20:07:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Jan Beulich <jbeulich@suse.com>, Ben Hutchings <ben@decadent.org.uk>,
         Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 3.4 76/99] xen/events: mask events when changing their VCPU binding
-Date: Fri,  7 Mar 2014 17:08:12 -0800
-Message-Id: <20140308010614.027843071@linuxfoundation.org>
+Subject: [PATCH 3.4 75/99] xen/blkback: Check for insane amounts of request on the ring (v6).
+Date: Fri,  7 Mar 2014 17:08:11 -0800
+Message-Id: <20140308010613.996761716@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
 References: <20140308010611.468206150@linuxfoundation.org>
@@ -31,72 +30,207 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit 5e72fdb8d827560893642e85a251d339109a00f4 upstream.
+commit 9371cadbbcc7c00c81753b9727b19fb3bc74d458 upstream.
 
-commit 4704fe4f03a5ab27e3c36184af85d5000e0f8a48 upstream.
+commit 8e3f8755545cc4a7f4da8e9ef76d6d32e0dca576 upstream.
 
-When a event is being bound to a VCPU there is a window between the
-EVTCHNOP_bind_vpcu call and the adjustment of the local per-cpu masks
-where an event may be lost.  The hypervisor upcalls the new VCPU but
-the kernel thinks that event is still bound to the old VCPU and
-ignores it.
+Check that the ring does not have an insane amount of requests
+(more than there could fit on the ring).
 
-There is even a problem when the event is being bound to the same VCPU
-as there is a small window beween the clear_bit() and set_bit() calls
-in bind_evtchn_to_cpu().  When scanning for pending events, the kernel
-may read the bit when it is momentarily clear and ignore the event.
+If we detect this case we will stop processing the requests
+and wait until the XenBus disconnects the ring.
 
-Avoid this by masking the event during the whole bind operation.
+The existing check RING_REQUEST_CONS_OVERFLOW which checks for how
+many responses we have created in the past (rsp_prod_pvt) vs
+requests consumed (req_cons) and whether said difference is greater or
+equal to the size of the ring, does not catch this case.
 
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Wha the condition does check if there is a need to process more
+as we still have a backlog of responses to finish. Note that both
+of those values (rsp_prod_pvt and req_cons) are not exposed on the
+shared ring.
+
+To understand this problem a mini crash course in ring protocol
+response/request updates is in place.
+
+There are four entries: req_prod and rsp_prod; req_event and rsp_event
+to track the ring entries. We are only concerned about the first two -
+which set the tone of this bug.
+
+The req_prod is a value incremented by frontend for each request put
+on the ring. Conversely the rsp_prod is a value incremented by the backend
+for each response put on the ring (rsp_prod gets set by rsp_prod_pvt when
+pushing the responses on the ring).  Both values can
+wrap and are modulo the size of the ring (in block case that is 32).
+Please see RING_GET_REQUEST and RING_GET_RESPONSE for the more details.
+
+The culprit here is that if the difference between the
+req_prod and req_cons is greater than the ring size we have a problem.
+Fortunately for us, the '__do_block_io_op' loop:
+
+	rc = blk_rings->common.req_cons;
+	rp = blk_rings->common.sring->req_prod;
+
+	while (rc != rp) {
+
+		..
+		blk_rings->common.req_cons = ++rc; /* before make_response() */
+
+	}
+
+will loop up to the point when rc == rp. The macros inside of the
+loop (RING_GET_REQUEST) is smart and is indexing based on the modulo
+of the ring size. If the frontend has provided a bogus req_prod value
+we will loop until the 'rc == rp' - which means we could be processing
+already processed requests (or responses) often.
+
+The reason the RING_REQUEST_CONS_OVERFLOW is not helping here is
+b/c it only tracks how many responses we have internally produced
+and whether we would should process more. The astute reader will
+notice that the macro RING_REQUEST_CONS_OVERFLOW provides two
+arguments - more on this later.
+
+For example, if we were to enter this function with these values:
+
+       	blk_rings->common.sring->req_prod =  X+31415 (X is the value from
+		the last time __do_block_io_op was called).
+        blk_rings->common.req_cons = X
+        blk_rings->common.rsp_prod_pvt = X
+
+The RING_REQUEST_CONS_OVERFLOW(&blk_rings->common, blk_rings->common.req_cons)
+is doing:
+
+	req_cons - rsp_prod_pvt >= 32
+
+Which is,
+	X - X >= 32 or 0 >= 32
+
+And that is false, so we continue on looping (this bug).
+
+If we re-use said macro RING_REQUEST_CONS_OVERFLOW and pass in the rp
+instead (sring->req_prod) of rc, the this macro can do the check:
+
+     req_prod - rsp_prov_pvt >= 32
+
+Which is,
+       X + 31415 - X >= 32 , or 31415 >= 32
+
+which is true, so we can error out and break out of the function.
+
+Unfortunatly the difference between rsp_prov_pvt and req_prod can be
+at 32 (which would error out in the macro). This condition exists when
+the backend is lagging behind with the responses and still has not finished
+responding to all of them (so make_response has not been called), and
+the rsp_prov_pvt + 32 == req_cons. This ends up with us not being able
+to use said macro.
+
+Hence introducing a new macro called RING_REQUEST_PROD_OVERFLOW which does
+a simple check of:
+
+    req_prod - rsp_prod_pvt > RING_SIZE
+
+And with the X values from above:
+
+   X + 31415 - X > 32
+
+Returns true. Also not that if the ring is full (which is where
+the RING_REQUEST_CONS_OVERFLOW triggered), we would not hit the
+same condition:
+
+   X + 32 - X > 32
+
+Which is false.
+
+Lets use that macro.
+Note that in v5 of this patchset the macro was different - we used an
+earlier version.
+
+[v1: Move the check outside the loop]
+[v2: Add a pr_warn as suggested by David]
+[v3: Use RING_REQUEST_CONS_OVERFLOW as suggested by Jan]
+[v4: Move wake_up after kthread_stop as suggested by Jan]
+[v5: Use RING_REQUEST_PROD_OVERFLOW instead]
+[v6: Use RING_REQUEST_PROD_OVERFLOW - Jan's version]
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Reviewed-by: Jan Beulich <jbeulich@suse.com>
-[bwh: Backported to 3.2: remove the BM() cast]
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Yijing Wang <wangyijing@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/xen/events.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/block/xen-blkback/blkback.c |   13 ++++++++++++-
+ drivers/block/xen-blkback/common.h  |    2 ++
+ drivers/block/xen-blkback/xenbus.c  |    2 ++
+ 3 files changed, 16 insertions(+), 1 deletion(-)
 
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -1422,8 +1422,10 @@ void rebind_evtchn_irq(int evtchn, int i
- /* Rebind an evtchn so that it gets delivered to a specific cpu */
- static int rebind_irq_to_cpu(unsigned irq, unsigned tcpu)
+--- a/drivers/block/xen-blkback/blkback.c
++++ b/drivers/block/xen-blkback/blkback.c
+@@ -274,6 +274,7 @@ int xen_blkif_schedule(void *arg)
  {
-+	struct shared_info *s = HYPERVISOR_shared_info;
- 	struct evtchn_bind_vcpu bind_vcpu;
- 	int evtchn = evtchn_from_irq(irq);
-+	int masked;
+ 	struct xen_blkif *blkif = arg;
+ 	struct xen_vbd *vbd = &blkif->vbd;
++	int ret;
  
- 	if (!VALID_EVTCHN(evtchn))
- 		return -1;
-@@ -1440,6 +1442,12 @@ static int rebind_irq_to_cpu(unsigned ir
- 	bind_vcpu.vcpu = tcpu;
+ 	xen_blkif_get(blkif);
  
- 	/*
-+	 * Mask the event while changing the VCPU binding to prevent
-+	 * it being delivered on an unexpected VCPU.
-+	 */
-+	masked = sync_test_and_set_bit(evtchn, s->evtchn_mask);
-+
-+	/*
- 	 * If this fails, it usually just indicates that we're dealing with a
- 	 * virq or IPI channel, which don't actually need to be rebound. Ignore
- 	 * it, but don't do the xenlinux-level rebind in that case.
-@@ -1447,6 +1455,9 @@ static int rebind_irq_to_cpu(unsigned ir
- 	if (HYPERVISOR_event_channel_op(EVTCHNOP_bind_vcpu, &bind_vcpu) >= 0)
- 		bind_evtchn_to_cpu(evtchn, tcpu);
+@@ -294,8 +295,12 @@ int xen_blkif_schedule(void *arg)
+ 		blkif->waiting_reqs = 0;
+ 		smp_mb(); /* clear flag *before* checking for work */
  
-+	if (!masked)
-+		unmask_evtchn(evtchn);
-+
- 	return 0;
+-		if (do_block_io_op(blkif))
++		ret = do_block_io_op(blkif);
++		if (ret > 0)
+ 			blkif->waiting_reqs = 1;
++		if (ret == -EACCES)
++			wait_event_interruptible(blkif->shutdown_wq,
++						 kthread_should_stop());
+ 
+ 		if (log_stats && time_after(jiffies, blkif->st_print))
+ 			print_stats(blkif);
+@@ -531,6 +536,12 @@ __do_block_io_op(struct xen_blkif *blkif
+ 	rp = blk_rings->common.sring->req_prod;
+ 	rmb(); /* Ensure we see queued requests up to 'rp'. */
+ 
++	if (RING_REQUEST_PROD_OVERFLOW(&blk_rings->common, rp)) {
++		rc = blk_rings->common.rsp_prod_pvt;
++		pr_warn(DRV_PFX "Frontend provided bogus ring requests (%d - %d = %d). Halting ring processing on dev=%04x\n",
++			rp, rc, rp - rc, blkif->vbd.pdevice);
++		return -EACCES;
++	}
+ 	while (rc != rp) {
+ 
+ 		if (RING_REQUEST_CONS_OVERFLOW(&blk_rings->common, rc))
+--- a/drivers/block/xen-blkback/common.h
++++ b/drivers/block/xen-blkback/common.h
+@@ -216,6 +216,8 @@ struct xen_blkif {
+ 	int			st_wr_sect;
+ 
+ 	wait_queue_head_t	waiting_to_free;
++	/* Thread shutdown wait queue. */
++	wait_queue_head_t	shutdown_wq;
+ };
+ 
+ 
+--- a/drivers/block/xen-blkback/xenbus.c
++++ b/drivers/block/xen-blkback/xenbus.c
+@@ -118,6 +118,7 @@ static struct xen_blkif *xen_blkif_alloc
+ 	atomic_set(&blkif->drain, 0);
+ 	blkif->st_print = jiffies;
+ 	init_waitqueue_head(&blkif->waiting_to_free);
++	init_waitqueue_head(&blkif->shutdown_wq);
+ 
+ 	return blkif;
  }
+@@ -178,6 +179,7 @@ static void xen_blkif_disconnect(struct
+ {
+ 	if (blkif->xenblkd) {
+ 		kthread_stop(blkif->xenblkd);
++		wake_up(&blkif->shutdown_wq);
+ 		blkif->xenblkd = NULL;
+ 	}
  
 
 
