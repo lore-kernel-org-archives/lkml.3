@@ -1,114 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751663AbaCHSNc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 13:13:32 -0500
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:56946 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751057AbaCHSNb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 13:13:31 -0500
-MIME-Version: 1.0
-In-Reply-To: <531B74B6.4070004@suse.de>
-References: <20140130132620.GA6031@infradead.org> <20140130132630.GB6031@infradead.org>
- <x49iorp3fhm.fsf@segfault.boston.devel.redhat.com> <20140308155240.GA32297@infradead.org>
- <CAMM=eLewbtK7LiNZCXo=hm-sjVU2+MN+xTFuxb89mDA1iS3r0w@mail.gmail.com> <531B74B6.4070004@suse.de>
-From: Mike Snitzer <snitzer@gmail.com>
-Date: Sat, 8 Mar 2014 13:13:10 -0500
-Message-ID: <CAMM=eLfVpc=B7ZzxBDbKW4GZ_E5rOqrcbyppNBSz_brQaH4VNw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] block: rework flush sequencing for blk-mq
-To: Hannes Reinecke <hare@suse.de>
-Cc: Christoph Hellwig <hch@infradead.org>, Jeff Moyer <jmoyer@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>, Shaohua Li <shli@fusionio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        msnitzer <msnitzer@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751721AbaCHSsO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 13:48:14 -0500
+Received: from mga11.intel.com ([192.55.52.93]:14423 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751530AbaCHSsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Mar 2014 13:48:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,615,1389772800"; 
+   d="scan'208";a="494726049"
+From: sagar.a.kamble@intel.com
+To: intel-gfx@lists.freedesktop.org
+Cc: Sagar Kamble <sagar.a.kamble@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, "G, Pallavi" <pallavi.g@intel.com>
+Subject: [PATCH v3 1/1] drm/i915: Enabling 128x128 and 256x256 ARGB Cursor Support
+Date: Sun,  9 Mar 2014 00:19:06 +0530
+Message-Id: <1394304546-19433-1-git-send-email-sagar.a.kamble@intel.com>
+X-Mailer: git-send-email 1.8.5
+In-Reply-To: <20140224160628.GU3852@intel.com>
+References: <20140224160628.GU3852@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 8, 2014 at 2:51 PM, Hannes Reinecke <hare@suse.de> wrote:
-> On 03/08/2014 06:33 PM, Mike Snitzer wrote:
->>
->> On Sat, Mar 8, 2014 at 10:52 AM, Christoph Hellwig <hch@infradead.org>
->> wrote:
->>>
->>> On Fri, Mar 07, 2014 at 03:45:09PM -0500, Jeff Moyer wrote:
->>>>
->>>> Hi, Christoph,
->>>>
->>>> Did you mean to switch from list_add to list_add_tail?  That seems like
->>>> a change that warrants mention.
->>>
->>>
->>> No, that wasn't intentional and should be fixed.  Btw, there was another
->>> issue with that commit, in that dm-multipath also needs to allocate
->>> ->flush_rq.  I saw a patch from Hannes fixing it in the SuSE tree, and
->>> would really love to see him submit that for mainline as well.
->>
->>
->> Ugh, rq-based DM calls blk_init_allocated_queue.. (ah, looks like best
->> to move q->flush_rq allocation from blk_init_queue_node to
->> blk_alloc_queue_node?).
+From: Sagar Kamble <sagar.a.kamble@intel.com>
 
-The above suggestion would work.  But we'd lose the side-effect
-benefit to bio-based DM not needing q->flush_rq allocated at all.
+With this patch we allow larger cursor planes of sizes 128x128
+and 256x256.
 
-But I'm not immediately seeing a clean way to get that benefit (of not
-allocating for bio-based request_queue) while always allocating it for
-request-based queues.
+v2: Added more precise check on size while setting cursor plane.
 
-Actually, how about moving the flush_rq allocation to
-blk_init_allocated_queue(), it'd accomplish both.. what do others
-think of that?
+v3: Changes related to restructuring cursor size restrictions
+and DRM_DEBUG usage.
 
->>> Unfortunately SuSE seems to have lots of block and dm fixes and even
->>> features that they don't submit upstream.
->>
->>
->> Yeah, it is certainly disturbing.  No excuse for sitting on fixes like
->> this.
->>
->> Hannes, _please_ get this dm-mpath flush_rq fix for 3.14 posted ASAP.
->> Jens or I will need to get it to Linus next week.
->>
-> Hey, calm down.
+Testcase: igt/kms_cursor_crc
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Jani Nikula <jani.nikula@linux.intel.com>
+Cc: David Airlie <airlied@linux.ie>
+Cc: dri-devel@lists.freedesktop.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: G, Pallavi <pallavi.g@intel.com>
+Signed-off-by: Sagar Kamble <sagar.a.kamble@intel.com>
+---
+ drivers/gpu/drm/i915/i915_reg.h      |  4 ++++
+ drivers/gpu/drm/i915/intel_display.c | 36 +++++++++++++++++++++++++++++++-----
+ 2 files changed, 35 insertions(+), 5 deletions(-)
 
-I'm calm.. was just a bit frustrated.  But this isn't a big deal.
-I'll make an effort to reach out to relevant people sooner when
-similar stuff is reported against recently upstreamed code.  Would be
-cool if you did the same.  I can relate to needing to have the distro
-vendor hat on (first needing to determine/answer "is this issue
-specific to our hacked distro kernel?", etc).
+diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
+index 146609a..aee8258 100644
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -3551,7 +3551,11 @@ enum punit_power_well {
+ /* New style CUR*CNTR flags */
+ #define   CURSOR_MODE		0x27
+ #define   CURSOR_MODE_DISABLE   0x00
++#define   CURSOR_MODE_128_32B_AX 0x02
++#define   CURSOR_MODE_256_32B_AX 0x03
+ #define   CURSOR_MODE_64_32B_AX 0x07
++#define   CURSOR_MODE_128_ARGB_AX ((1 << 5) | CURSOR_MODE_128_32B_AX)
++#define   CURSOR_MODE_256_ARGB_AX ((1 << 5) | CURSOR_MODE_256_32B_AX)
+ #define   CURSOR_MODE_64_ARGB_AX ((1 << 5) | CURSOR_MODE_64_32B_AX)
+ #define   MCURSOR_PIPE_SELECT	(1 << 28)
+ #define   MCURSOR_PIPE_A	0x00
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 0868afb..e59e8fd 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -7440,10 +7440,22 @@ static void i9xx_update_cursor(struct drm_crtc *crtc, u32 base)
+ 	bool visible = base != 0;
+ 
+ 	if (intel_crtc->cursor_visible != visible) {
++		int16_t width = intel_crtc->cursor_width;
+ 		uint32_t cntl = I915_READ(CURCNTR(pipe));
+ 		if (base) {
+ 			cntl &= ~(CURSOR_MODE | MCURSOR_PIPE_SELECT);
+-			cntl |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
++
++			switch (width) {
++				case 64:
++					cntl |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
++					break;
++				case 128:
++					cntl |= CURSOR_MODE_128_ARGB_AX | MCURSOR_GAMMA_ENABLE;
++					break;
++				case 256:
++					cntl |= CURSOR_MODE_256_ARGB_AX | MCURSOR_GAMMA_ENABLE;
++					break;
++			}
+ 			cntl |= pipe << 28; /* Connect to correct pipe */
+ 		} else {
+ 			cntl &= ~(CURSOR_MODE | MCURSOR_GAMMA_ENABLE);
+@@ -7468,10 +7480,22 @@ static void ivb_update_cursor(struct drm_crtc *crtc, u32 base)
+ 	bool visible = base != 0;
+ 
+ 	if (intel_crtc->cursor_visible != visible) {
++		int16_t width = intel_crtc->cursor_width;
+ 		uint32_t cntl = I915_READ(CURCNTR_IVB(pipe));
+ 		if (base) {
+ 			cntl &= ~CURSOR_MODE;
+-			cntl |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
++
++			switch (width) {
++				case 64:
++					cntl |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
++					break;
++				case 128:
++					cntl |= CURSOR_MODE_128_ARGB_AX | MCURSOR_GAMMA_ENABLE;
++					break;
++				case 256:
++					cntl |= CURSOR_MODE_256_ARGB_AX | MCURSOR_GAMMA_ENABLE;
++					break;
++			}
+ 		} else {
+ 			cntl &= ~(CURSOR_MODE | MCURSOR_GAMMA_ENABLE);
+ 			cntl |= CURSOR_MODE_DISABLE;
+@@ -7567,9 +7591,11 @@ static int intel_crtc_cursor_set(struct drm_crtc *crtc,
+ 		goto finish;
+ 	}
+ 
+-	/* Currently we only support 64x64 cursors */
+-	if (width != 64 || height != 64) {
+-		DRM_ERROR("we currently only support 64x64 cursors\n");
++	/* Check for which cursor types we support */
++	if (!((width == 64 && height == 64) ||
++			(width == 128 && height == 128 && !IS_GEN2(dev)) ||
++			(width == 256 && height == 256 && !IS_GEN2(dev)))) {
++		DRM_DEBUG("Cursor dimension not supported\n");
+ 		return -EINVAL;
+ 	}
+ 
+-- 
+1.8.5
 
-> I've made the fix just two days ago. And was quite surprised that I've been
-> the first hitting that; should've crashed for everybody using dm-multipath.
-
-Yeah, it is surprising that we haven't had any upstream reports.
-
-> And given the pushback I've gotten recently from patches I would have
-> thought that it would work for most users; sure the author would've done due
-> diligence on the original patchset ...
-> Plus I've gotten the reports from S/390, so I put it down to mainframe
-> weirdness.
->
-> BTW, it not _my_ decision to sit on tons of SUSE specific patches.
-
-I'll take the bait.. this isn't a SUSE specific patch we're talking about. ;)
-
-> I really try to get things upstream. But I cannot do more than sending
-> patches upstream, answer patiently any questions, and redo the patchset.
-> Which I did. Frequently, But, alas, it's up to the maintainer to apply them.
-> And I can only ask and hope. The usual story...
-
-Guess I'm missing context for which patches you're saying people are
-sitting on.  (I doubt you're referring to your dm-mpath patchset on
-dm-devel.. since it has gone 9ish iterations.  Now that everything is
-sorted out I'll be getting it reviewed and staged for 3.15 next week).
-
-> I'll be sending the patch soon, Monday at latest.
-
-OK, looking forward to seeing it.  Would appreciate your feedback on
-the questions/suggestions I posed above.
-
-Thanks,
-Mike
