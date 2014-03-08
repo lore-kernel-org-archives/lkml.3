@@ -1,194 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752363AbaCHTmr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 14:42:47 -0500
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:48449 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752305AbaCHTmo (ORCPT
+	id S1752012AbaCHTxt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 14:53:49 -0500
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:49301 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751530AbaCHTxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 14:42:44 -0500
-From: Richard Cochran <richardcochran@gmail.com>
-To: <netdev@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>, Ben Hutchings <bhutchings@solarflare.com>,
-        Christian Riesch <christian.riesch@omicron.at>,
-        David Miller <davem@davemloft.net>,
-        =?UTF-8?q?Stefan=20S=C3=B8rensen?= 
-	<stefan.sorensen@spectralink.com>
-Subject: [PATCH RFC net-next v1 4/9] ptp: drivers: set the number of programmable pins.
-Date: Sat,  8 Mar 2014 20:42:04 +0100
-Message-Id: <0eb88f2a89788f4f1da4b2c013713c2b63dd69e6.1394307304.git.richardcochran@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1394307303.git.richardcochran@gmail.com>
-References: <cover.1394307303.git.richardcochran@gmail.com>
+	Sat, 8 Mar 2014 14:53:46 -0500
+MIME-Version: 1.0
+In-Reply-To: <1394194576-23741-1-git-send-email-r.sricharan@ti.com>
+References: <1394194576-23741-1-git-send-email-r.sricharan@ti.com>
+Date: Sat, 8 Mar 2014 13:53:45 -0600
+Message-ID: <CAL_JsqLF6Ey1t1BV4tnFcFK-KmOU9H2nQE+ZHoZRq2r_nRTxNw@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/9] drivers: dma: Add support for dma-channel router
+From: Rob Herring <robherring2@gmail.com>
+To: Sricharan R <r.sricharan@ti.com>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-omap <linux-omap@vger.kernel.org>, dmaengine@vger.kernel.org,
+        Nishanth Menon <nm@ti.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, rnayak@ti.com,
+        Sekhar Nori <nsekhar@ti.com>, Vinod Koul <vinod.koul@intel.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch updates the many PTP Hardware Clock drivers with the
-newly introduced field that advertises the number of programmable
-pins. Some of these devices do have programmable pins, but the
-implementation will have to wait for follow on patches.
+On Fri, Mar 7, 2014 at 6:16 AM, Sricharan R <r.sricharan@ti.com> wrote:
+> In some SoCs the dma request lines from the peripherals are
+> routed to the dma-controller through a crossbar. With this the
+> dma controller's available request lines are shared between the
+> peripherals.
+>
+> This adds support to register the crossbar router associated with
+> a dma-channel and let the dma-controller driver map/unmap
+> the peripheral dma crossbar line to dma-controller's request
+> line.
 
-Signed-off-by: Richard Cochran <richardcochran@gmail.com>
----
- drivers/net/ethernet/adi/bfin_mac.c              |    1 +
- drivers/net/ethernet/broadcom/tg3.c              |    1 +
- drivers/net/ethernet/freescale/fec_ptp.c         |    1 +
- drivers/net/ethernet/freescale/gianfar_ptp.c     |    1 +
- drivers/net/ethernet/intel/e1000e/ptp.c          |    1 +
- drivers/net/ethernet/mellanox/mlx4/en_clock.c    |    1 +
- drivers/net/ethernet/sfc/ptp.c                   |    1 +
- drivers/net/ethernet/stmicro/stmmac/stmmac_ptp.c |    1 +
- drivers/net/ethernet/ti/cpts.c                   |    1 +
- drivers/net/ethernet/tile/tilegx.c               |    1 +
- drivers/ptp/ptp_ixp46x.c                         |    1 +
- drivers/ptp/ptp_pch.c                            |    1 +
- 12 files changed, 12 insertions(+)
+This is not a unique concept and should follow some existing pattern.
+Perhaps something like interrupt-map. For the dmas property, the
+parent should be the crossbar and then the crossbar block has to
+translate that into the DMA controller request. All the DMA ctrlr
+request connections should be described in the crossbar node. In
+theory, you could have chained crossbars. This should be documented as
+part of the generic DMA binding.
 
-diff --git a/drivers/net/ethernet/adi/bfin_mac.c b/drivers/net/ethernet/adi/bfin_mac.c
-index c0f68dc..83a8cdb 100644
---- a/drivers/net/ethernet/adi/bfin_mac.c
-+++ b/drivers/net/ethernet/adi/bfin_mac.c
-@@ -1040,6 +1040,7 @@ static struct ptp_clock_info bfin_ptp_caps = {
- 	.n_alarm	= 0,
- 	.n_ext_ts	= 0,
- 	.n_per_out	= 0,
-+	.n_pins		= 0,
- 	.pps		= 0,
- 	.adjfreq	= bfin_ptp_adjfreq,
- 	.adjtime	= bfin_ptp_adjtime,
-diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-index e12735f..5130c58 100644
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -6322,6 +6322,7 @@ static const struct ptp_clock_info tg3_ptp_caps = {
- 	.n_alarm	= 0,
- 	.n_ext_ts	= 0,
- 	.n_per_out	= 1,
-+	.n_pins		= 0,
- 	.pps		= 0,
- 	.adjfreq	= tg3_ptp_adjfreq,
- 	.adjtime	= tg3_ptp_adjtime,
-diff --git a/drivers/net/ethernet/freescale/fec_ptp.c b/drivers/net/ethernet/freescale/fec_ptp.c
-index 89ccb5b..82386b2 100644
---- a/drivers/net/ethernet/freescale/fec_ptp.c
-+++ b/drivers/net/ethernet/freescale/fec_ptp.c
-@@ -372,6 +372,7 @@ void fec_ptp_init(struct platform_device *pdev)
- 	fep->ptp_caps.n_alarm = 0;
- 	fep->ptp_caps.n_ext_ts = 0;
- 	fep->ptp_caps.n_per_out = 0;
-+	fep->ptp_caps.n_pins = 0;
- 	fep->ptp_caps.pps = 0;
- 	fep->ptp_caps.adjfreq = fec_ptp_adjfreq;
- 	fep->ptp_caps.adjtime = fec_ptp_adjtime;
-diff --git a/drivers/net/ethernet/freescale/gianfar_ptp.c b/drivers/net/ethernet/freescale/gianfar_ptp.c
-index abc28da..bb56800 100644
---- a/drivers/net/ethernet/freescale/gianfar_ptp.c
-+++ b/drivers/net/ethernet/freescale/gianfar_ptp.c
-@@ -414,6 +414,7 @@ static struct ptp_clock_info ptp_gianfar_caps = {
- 	.n_alarm	= 0,
- 	.n_ext_ts	= N_EXT_TS,
- 	.n_per_out	= 0,
-+	.n_pins		= 0,
- 	.pps		= 1,
- 	.adjfreq	= ptp_gianfar_adjfreq,
- 	.adjtime	= ptp_gianfar_adjtime,
-diff --git a/drivers/net/ethernet/intel/e1000e/ptp.c b/drivers/net/ethernet/intel/e1000e/ptp.c
-index 065f8c8..299ab50 100644
---- a/drivers/net/ethernet/intel/e1000e/ptp.c
-+++ b/drivers/net/ethernet/intel/e1000e/ptp.c
-@@ -191,6 +191,7 @@ static const struct ptp_clock_info e1000e_ptp_clock_info = {
- 	.n_alarm	= 0,
- 	.n_ext_ts	= 0,
- 	.n_per_out	= 0,
-+	.n_pins		= 0,
- 	.pps		= 0,
- 	.adjfreq	= e1000e_phc_adjfreq,
- 	.adjtime	= e1000e_phc_adjtime,
-diff --git a/drivers/net/ethernet/mellanox/mlx4/en_clock.c b/drivers/net/ethernet/mellanox/mlx4/en_clock.c
-index abaf6bb..57dda95 100644
---- a/drivers/net/ethernet/mellanox/mlx4/en_clock.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/en_clock.c
-@@ -276,6 +276,7 @@ static const struct ptp_clock_info mlx4_en_ptp_clock_info = {
- 	.n_alarm	= 0,
- 	.n_ext_ts	= 0,
- 	.n_per_out	= 0,
-+	.n_pins		= 0,
- 	.pps		= 0,
- 	.adjfreq	= mlx4_en_phc_adjfreq,
- 	.adjtime	= mlx4_en_phc_adjtime,
-diff --git a/drivers/net/ethernet/sfc/ptp.c b/drivers/net/ethernet/sfc/ptp.c
-index 722344f..6b861e3 100644
---- a/drivers/net/ethernet/sfc/ptp.c
-+++ b/drivers/net/ethernet/sfc/ptp.c
-@@ -1194,6 +1194,7 @@ static const struct ptp_clock_info efx_phc_clock_info = {
- 	.n_alarm	= 0,
- 	.n_ext_ts	= 0,
- 	.n_per_out	= 0,
-+	.n_pins		= 0,
- 	.pps		= 1,
- 	.adjfreq	= efx_phc_adjfreq,
- 	.adjtime	= efx_phc_adjtime,
-diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_ptp.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_ptp.c
-index 7680581..b7ad356 100644
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac_ptp.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_ptp.c
-@@ -164,6 +164,7 @@ static struct ptp_clock_info stmmac_ptp_clock_ops = {
- 	.n_alarm = 0,
- 	.n_ext_ts = 0,
- 	.n_per_out = 0,
-+	.n_pins = 0,
- 	.pps = 0,
- 	.adjfreq = stmmac_adjust_freq,
- 	.adjtime = stmmac_adjust_time,
-diff --git a/drivers/net/ethernet/ti/cpts.c b/drivers/net/ethernet/ti/cpts.c
-index 8c351f1..372cb19 100644
---- a/drivers/net/ethernet/ti/cpts.c
-+++ b/drivers/net/ethernet/ti/cpts.c
-@@ -217,6 +217,7 @@ static struct ptp_clock_info cpts_info = {
- 	.name		= "CTPS timer",
- 	.max_adj	= 1000000,
- 	.n_ext_ts	= 0,
-+	.n_pins		= 0,
- 	.pps		= 0,
- 	.adjfreq	= cpts_ptp_adjfreq,
- 	.adjtime	= cpts_ptp_adjtime,
-diff --git a/drivers/net/ethernet/tile/tilegx.c b/drivers/net/ethernet/tile/tilegx.c
-index 17503da..298d1c3 100644
---- a/drivers/net/ethernet/tile/tilegx.c
-+++ b/drivers/net/ethernet/tile/tilegx.c
-@@ -870,6 +870,7 @@ static struct ptp_clock_info ptp_mpipe_caps = {
- 	.name		= "mPIPE clock",
- 	.max_adj	= 999999999,
- 	.n_ext_ts	= 0,
-+	.n_pins		= 0,
- 	.pps		= 0,
- 	.adjfreq	= ptp_mpipe_adjfreq,
- 	.adjtime	= ptp_mpipe_adjtime,
-diff --git a/drivers/ptp/ptp_ixp46x.c b/drivers/ptp/ptp_ixp46x.c
-index 4a08727..604d340 100644
---- a/drivers/ptp/ptp_ixp46x.c
-+++ b/drivers/ptp/ptp_ixp46x.c
-@@ -244,6 +244,7 @@ static struct ptp_clock_info ptp_ixp_caps = {
- 	.name		= "IXP46X timer",
- 	.max_adj	= 66666655,
- 	.n_ext_ts	= N_EXT_TS,
-+	.n_pins		= 0,
- 	.pps		= 0,
- 	.adjfreq	= ptp_ixp_adjfreq,
- 	.adjtime	= ptp_ixp_adjtime,
-diff --git a/drivers/ptp/ptp_pch.c b/drivers/ptp/ptp_pch.c
-index 71a2559..90a1063 100644
---- a/drivers/ptp/ptp_pch.c
-+++ b/drivers/ptp/ptp_pch.c
-@@ -514,6 +514,7 @@ static struct ptp_clock_info ptp_pch_caps = {
- 	.name		= "PCH timer",
- 	.max_adj	= 50000000,
- 	.n_ext_ts	= N_EXT_TS,
-+	.n_pins		= 0,
- 	.pps		= 0,
- 	.adjfreq	= ptp_pch_adjfreq,
- 	.adjtime	= ptp_pch_adjtime,
--- 
-1.7.10.4
+There are also other similar IP like CoreSight CTI which are just
+signal routers. So there is probably some possibility of common code
+here.
 
+Rob
