@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755245AbaCHBWa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:22:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46472 "EHLO
+	id S1755228AbaCHBW2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:22:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46513 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754200AbaCHBHa (ORCPT
+	with ESMTP id S1754212AbaCHBHd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:07:30 -0500
+	Fri, 7 Mar 2014 20:07:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans-Christoph Schemmel <hans-christoph.schemmel@gemalto.com>,
-        Christian Schmiedl <christian.schmiedl@gemalto.com>,
-        Nicolaus Colberg <nicolaus.colberg@gemalto.com>,
-        David McCullough <david.mccullough@accelecon.com>,
-        Aleksander Morgado <aleksander@aleksander.es>
-Subject: [PATCH 3.4 34/99] USB: serial: option: blacklist interface 4 for Cinterion PHS8 and PXS8
-Date: Fri,  7 Mar 2014 17:07:30 -0800
-Message-Id: <20140308010612.714430154@linuxfoundation.org>
+        Jianpeng Ma <majianpeng@gmail.com>, Sage Weil <sage@inktank.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Rui Xiang <rui.xiang@huawei.com>
+Subject: [PATCH 3.4 57/99] libceph: unregister request in __map_request failed and nofail == false
+Date: Fri,  7 Mar 2014 17:07:53 -0800
+Message-Id: <20140308010613.433172153@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
 References: <20140308010611.468206150@linuxfoundation.org>
@@ -32,34 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aleksander Morgado <aleksander@aleksander.es>
+From: majianpeng <majianpeng@gmail.com>
 
-commit 12df84d4a80278a5b1abfec3206795291da52fc9 upstream.
+commit 73d9f7eef3d98c3920e144797cc1894c6b005a1e upstream.
 
-This interface is to be handled by the qmi_wwan driver.
+For nofail == false request, if __map_request failed, the caller does
+cleanup work, like releasing the relative pages.  It doesn't make any sense
+to retry this request.
 
-CC: Hans-Christoph Schemmel <hans-christoph.schemmel@gemalto.com>
-CC: Christian Schmiedl <christian.schmiedl@gemalto.com>
-CC: Nicolaus Colberg <nicolaus.colberg@gemalto.com>
-CC: David McCullough <david.mccullough@accelecon.com>
-Signed-off-by: Aleksander Morgado <aleksander@aleksander.es>
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
+[bwh: Backported to 3.2: adjust indentation]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/ceph/osd_client.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -1546,7 +1546,8 @@ static const struct usb_device_id option
- 	/* Cinterion */
- 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_E) },
- 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_P) },
--	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PH8) },
-+	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PH8),
-+		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_AHXX) },
- 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PLXX),
- 		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+--- a/net/ceph/osd_client.c
++++ b/net/ceph/osd_client.c
+@@ -1721,6 +1721,8 @@ int ceph_osdc_start_request(struct ceph_
+ 				dout("osdc_start_request failed map, "
+ 				     " will retry %lld\n", req->r_tid);
+ 				rc = 0;
++			} else {
++				__unregister_request(osdc, req);
+ 			}
+ 			goto out_unlock;
+ 		}
 
 
