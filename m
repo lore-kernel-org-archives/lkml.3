@@ -1,69 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752105AbaCHPbj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 10:31:39 -0500
-Received: from smtprelay-h22.telenor.se ([195.54.99.197]:35828 "EHLO
-	smtprelay-h22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751086AbaCHPbh (ORCPT
+	id S1752154AbaCHPcP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 10:32:15 -0500
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:43567 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751206AbaCHPcN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 10:31:37 -0500
-X-Greylist: delayed 1452 seconds by postgrey-1.27 at vger.kernel.org; Sat, 08 Mar 2014 10:31:37 EST
-X-SENDER-IP: [85.230.168.69]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApMBAKYxG1NV5qhF/2dsb2JhbAANTcVJgSGDGQEBAQECASdRAQULCyEWDwkDAgECAUUGAQwBBwEBh20NrUeiKheOWweEOAEDoxuLBQ
-X-IPAS-Result: ApMBAKYxG1NV5qhF/2dsb2JhbAANTcVJgSGDGQEBAQECASdRAQULCyEWDwkDAgECAUUGAQwBBwEBh20NrUeiKheOWweEOAEDoxuLBQ
-X-IronPort-AV: E=Sophos;i="4.97,614,1389740400"; 
-   d="scan'208";a="615149335"
-Message-ID: <531B3331.9050008@euromail.se>
-Date: Sat, 08 Mar 2014 16:11:45 +0100
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Sat, 8 Mar 2014 10:32:13 -0500
+Date: Sat, 8 Mar 2014 10:32:09 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
+Subject: [GIT PULL] cgroup fixes for v3.14-rc5
+Message-ID: <20140308153209.GC25021@htj.dyndns.org>
 MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>, dmitry.torokhov@gmail.com
-CC: jcbian@pixcir.com.cn, balbi@ti.com, dmurphy@ti.com, mugunthanvnm@ti.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v2 4/8] Input: pixcir_i2c_ts: Use Type-B Multi-Touch protocol
-References: <1393428486-15001-1-git-send-email-rogerq@ti.com> <1393428486-15001-5-git-send-email-rogerq@ti.com>
-In-Reply-To: <1393428486-15001-5-git-send-email-rogerq@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Roger,
+Hello, Linus.
 
-the MT implementation seems mostly fine, just one curiosity:
+Two cpuset locking fixes from Li.  Both tagged for -stable.
 
->  static irqreturn_t pixcir_ts_isr(int irq, void *dev_id)
->  {
->  	struct pixcir_i2c_ts_data *tsdata = dev_id;
->  	const struct pixcir_ts_platform_data *pdata = tsdata->chip;
-> +	struct pixcir_report_data report;
->  
->  	while (!tsdata->exiting) {
-> -		pixcir_ts_poscheck(tsdata);
-> -
-> -		if (gpio_get_value(pdata->gpio_attb))
-> +		/* parse packet */
-> +		pixcir_ts_parse(tsdata, &report);
-> +
-> +		/* report it */
-> +		pixcir_ts_report(tsdata, &report);
-> +
-> +		if (gpio_get_value(pdata->gpio_attb)) {
-> +			if (report.num_touches) {
-> +				/*
-> +				 * Last report with no finger up?
-> +				 * Do it now then.
-> +				 */
-> +				input_mt_sync_frame(tsdata->input);
-> +				input_sync(tsdata->input);
+The following changes since commit 532de3fc72adc2a6525c4d53c07bf81e1732083d:
 
-Why is this special handling needed?
+  cgroup: update cgroup_enable_task_cg_lists() to grab siglock (2014-02-18 18:23:18 -0500)
 
-Thanks,
-Henrik
+are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.14-fixes
+
+for you to fetch changes up to 99afb0fd5f05aac467ffa85c36778fec4396209b:
+
+  cpuset: fix a race condition in __cpuset_node_allowed_softwall() (2014-02-27 09:39:54 -0500)
+
+Thanks.
+
+----------------------------------------------------------------
+Li Zefan (2):
+      cpuset: fix a locking issue in cpuset_migrate_mm()
+      cpuset: fix a race condition in __cpuset_node_allowed_softwall()
+
+ kernel/cpuset.c | 10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
+
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 4410ac6..e6b1b66 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -974,12 +974,6 @@ static int update_cpumask(struct cpuset *cs, struct cpuset *trialcs,
+  *    Temporarilly set tasks mems_allowed to target nodes of migration,
+  *    so that the migration code can allocate pages on these nodes.
+  *
+- *    Call holding cpuset_mutex, so current's cpuset won't change
+- *    during this call, as manage_mutex holds off any cpuset_attach()
+- *    calls.  Therefore we don't need to take task_lock around the
+- *    call to guarantee_online_mems(), as we know no one is changing
+- *    our task's cpuset.
+- *
+  *    While the mm_struct we are migrating is typically from some
+  *    other task, the task_struct mems_allowed that we are hacking
+  *    is for our current task, which must allocate new pages for that
+@@ -996,8 +990,10 @@ static void cpuset_migrate_mm(struct mm_struct *mm, const nodemask_t *from,
+ 
+ 	do_migrate_pages(mm, from, to, MPOL_MF_MOVE_ALL);
+ 
++	rcu_read_lock();
+ 	mems_cs = effective_nodemask_cpuset(task_cs(tsk));
+ 	guarantee_online_mems(mems_cs, &tsk->mems_allowed);
++	rcu_read_unlock();
+ }
+ 
+ /*
+@@ -2486,9 +2482,9 @@ int __cpuset_node_allowed_softwall(int node, gfp_t gfp_mask)
+ 
+ 	task_lock(current);
+ 	cs = nearest_hardwall_ancestor(task_cs(current));
++	allowed = node_isset(node, cs->mems_allowed);
+ 	task_unlock(current);
+ 
+-	allowed = node_isset(node, cs->mems_allowed);
+ 	mutex_unlock(&callback_mutex);
+ 	return allowed;
+ }
