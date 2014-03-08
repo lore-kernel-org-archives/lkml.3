@@ -1,75 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138AbaCHWR3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 17:17:29 -0500
-Received: from cassarossa.samfundet.no ([193.35.52.29]:38634 "EHLO
-	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751724AbaCHWRY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 17:17:24 -0500
-Date: Sat, 8 Mar 2014 23:17:22 +0100
-From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: =?iso-8859-1?Q?H=E5vard?= Skinnemoen <hskinnemoen@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arch/avr32/mm/cache.c: export symbol
- flush_icache_range() for module using
-Message-ID: <20140308221721.GA30934@samfundet.no>
-References: <531B8D32.6000000@gmail.com>
- <531B8FD8.6040704@gmail.com>
+	id S1751914AbaCHWeh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 17:34:37 -0500
+Received: from sauhun.de ([89.238.76.85]:55873 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751676AbaCHWeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Mar 2014 17:34:36 -0500
+Date: Sat, 8 Mar 2014 23:34:28 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, Chen-Yu Tsai <wens@csie.org>,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Barry Song <Baohua.Song@csr.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, Pavel Machek <pavel@ucw.cz>,
+        Shawn Guo <shawn.guo@linaro.org>, Marek Vasut <marex@denx.de>,
+        Stephen Warren <swarren@nvidia.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        kernel@pengutronix.de
+Subject: Re: [PATCH] reset: Add optional resets and stubs
+Message-ID: <20140308223428.GA3197@katana>
+References: <1394202623-20229-1-git-send-email-p.zabel@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EVF5PPMfhYS0aIcm"
 Content-Disposition: inline
-In-Reply-To: <531B8FD8.6040704@gmail.com>
+In-Reply-To: <1394202623-20229-1-git-send-email-p.zabel@pengutronix.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Around Sun 09 Mar 2014 05:47:04 +0800 or thereabout, Chen Gang wrote:
-> 
-> After this patch, our linux kernel can pass "avr32-linux-" allmodconfig
-> (it contents quite a few of warnings, but after check, I guess they are
-> not kernel's issue).
 
-That sounds great, I am a bit surprised however that the lkdtm module need
-flush_icache_range. Would have been interesting to look into what causes this
-dependency.
+--EVF5PPMfhYS0aIcm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I will pull this into my for-linus branch, and push during the next merge
-window.
+On Fri, Mar 07, 2014 at 03:30:23PM +0100, Philipp Zabel wrote:
+> This patch adds device_reset_optional and (devm_)reset_control_get_option=
+al
+> variants that drivers can use to indicate they can function without contr=
+ol
+> over the reset line. For those functions, stubs are added so the drivers =
+can
+> be compiled with CONFIG_RESET_CONTROLLER disabled.
+> Also, device_reset is annotated with __must_check. Drivers ignoring the r=
+eturn
+> value should use device_reset_optional instead.
+>=20
+> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
 
-> On 03/09/2014 05:35 AM, Chen Gang wrote:
->> Need export symbol flush_icache_range() to modules, just like another
->> platforms have done, or can not pass compiling.
->> 
->> The related error (with allmodconfig under avr32):
->> 
->>   ERROR: "flush_icache_range" [drivers/misc/lkdtm.ko] undefined!
->>   make[1]: *** [__modpost] Error 1
->>   make: *** [modules] Error 2
->> 
->> 
->> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+Acked-by: Wolfram Sang <wsa@the-dreams.de>
 
-Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
 
->> ---
->>  arch/avr32/mm/cache.c | 1 +
->>  1 file changed, 1 insertion(+)
->> 
->> diff --git a/arch/avr32/mm/cache.c b/arch/avr32/mm/cache.c
->> index 6a46ecd..85d635c 100644
->> --- a/arch/avr32/mm/cache.c
->> +++ b/arch/avr32/mm/cache.c
->> @@ -111,6 +111,7 @@ void flush_icache_range(unsigned long start, unsigned long end)
->>  	__flush_icache_range(start & ~(linesz - 1),
->>  			     (end + linesz - 1) & ~(linesz - 1));
->>  }
->> +EXPORT_SYMBOL(flush_icache_range);
->>  
->>  /*
->>   * This one is called from __do_fault() and do_swap_page().
--- 
-mvh
-Hans-Christian Egtvedt
+--EVF5PPMfhYS0aIcm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTG5r0AAoJEBQN5MwUoCm2K/UP/jLEc+qsLjMjpBo845a05nYZ
+fIBGZYdf6b5lZJm9UX6Pe0ocCBX/mQXoUZabJfgZB86vmJf6tCAQWOaM20qq0zyC
+UZo7N/tinU7KsiYjHAUK9Wc7I4aNGnoAc50ygBRtdiRjgAvUcZLNI0i4477A2VVq
+cp5Xy0q0u6+gOHq5r8AzyjyrpFksHOQI5RX4vdIhcfoqazrTYau1QYT+8x3TvYFL
+qHjHSHxDNfM3cX+AAj7XueOcU1cyDfT6gLAjODVgygdf6a5xcd8ztp8GWwsqaI4x
+WZ5JahHBo6mlrRZ2OQ3imFEiPcUYVQGbhYVZ2BKOdrPa4y6oD6rj3Zg52d7gkYK5
+5S7GHlsCzGwgqP7IfaadbywV41Ispi00eYcNjzOqVNpvYbBn32RMRVV+LcODS+pW
+dy22JoSx6/kQoeZVnfx27uQqWSOhBcCk+SiDeBacws4oMMfk4tXtUbAOzjl1Khk6
+/Z07MTUry/pW7GAoqy2cycriLHyun/twazrfZLNvxMvS5qXGutVrzV4axSdNzlVb
+Y/PP0N9dZV0xNVhLJcxN3OTbOkUguWSk+Fe+gELErcrzU5Y6NTHeHuqadUqtoiIO
+8qbRS5k3n7d0YEPoDMsE4R4ivVjpF3lgQLGOqlfTMCNo3bFDZo+E6LAwSU4T2hZw
+d7b2Zf/y566n7FzSYhid
+=clmM
+-----END PGP SIGNATURE-----
+
+--EVF5PPMfhYS0aIcm--
