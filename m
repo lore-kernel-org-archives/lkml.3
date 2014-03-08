@@ -1,89 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751785AbaCHMVr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 07:21:47 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:57160 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751099AbaCHMVn convert rfc822-to-8bit (ORCPT
+	id S1751999AbaCHMXc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 07:23:32 -0500
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:34164 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751116AbaCHMX3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 07:21:43 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Jean Delvare <jdelvare@suse.de>, Manuel Krause <manuelkrause@netscape.net>
-Cc: Guenter Roeck <linux@roeck-us.net>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [lm-sensors] 3.13.?: Strange / dangerous fan policy...
-Date: Sat, 08 Mar 2014 13:36:58 +0100
-Message-ID: <1423969.TQuRFJ3izd@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140308120831.328e0179@endymion.delvare>
-References: <531A1EEE.9090101@netscape.net> <20140307225230.GA31135@roeck-us.net> <20140308120831.328e0179@endymion.delvare>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+	Sat, 8 Mar 2014 07:23:29 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v4 1/3] [media] of: move graph helpers from drivers/media/v4l2-core to drivers/of
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Philipp Zabel <philipp.zabel@gmail.com>
+In-Reply-To: <531AF4ED.5020608@ti.com>
+References: <1393340304-19005-1-git-send-email-p.zabel@pengutronix.de> < 1393340304-19005-2-git-send-email-p.zabel@pengutronix.de> <20140226113729. A9D5AC40A89@trevor.secretlab.ca> <1393428297.3248.92.camel@paszta.hi. pengutronix.de> <20140307171804.EF245C40A32@trevor.secretlab.ca> <531AF4ED. 5020608@ti.com>
+Date: Sat, 08 Mar 2014 12:23:21 +0000
+Message-Id: <20140308122321.9D433C40612@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, March 08, 2014 12:08:31 PM Jean Delvare wrote:
-> On Fri, 7 Mar 2014 14:52:30 -0800, Guenter Roeck wrote:
-> > On Fri, Mar 07, 2014 at 11:04:29PM +0100, Manuel Krause wrote:
-> > > Hi, and thanks for the quick response!
-> > > No special fancy "fan control policy". 'fancontrol' isn't up or
-> > > running.
-> > > Vanilla kernels 3.11.* and 3.12.* had been working on here without
-> > > any extra work.
-> > > --
-> > > # sensors
-> > > acpitz-virtual-0
-> > > Adapter: Virtual device
-> > > temp1:        +71.0°C  (crit = +256.0°C)
-> > > temp2:        +69.0°C  (crit = +110.0°C)
-> > > temp3:        +52.0°C  (crit = +105.0°C)
-> > > temp4:        +25.0°C  (crit = +110.0°C)
-> > > temp5:        +58.0°C  (crit = +110.0°C)
-> > > 
-> > > coretemp-isa-0000
-> > > Adapter: ISA adapter
-> > > Core 0:       +62.0°C  (high = +105.0°C, crit = +105.0°C)
-> > > Core 1:       +60.0°C  (high = +105.0°C, crit = +105.0°C)
-> > > --
-> > > My notebook (HP/Compaq 6730b) does not have a seperate fan sensor.
-> > > This is with 3.12.13 with my normal workload.
-> > > 
-> > > Please, trust my above mentionned values of 94 °C vs. 74°C as I
-> > > don't like to boot 3.13.6 anymore, to avoid harm to the notebook's
-> > > casing.
-> > 
-> > Understood. Unfortunately, we'll need to get information
-> > from the new kernel to be able to track down the problem.
+On Sat, 8 Mar 2014 12:46:05 +0200, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
+> On 07/03/14 19:18, Grant Likely wrote:
 > 
-> Indeed. Not only the run-time temperatures, but also the high and crit
-> limits.
+> > From a pattern perspective I have no problem with that.... From an
+> > individual driver binding perspective that is just dumb! It's fine for
+> > the ports node to be optional, but an individual driver using the
+> > binding should be explicit about which it will accept. Please use either
+> > a flag or a separate wrapper so that the driver can select the
+> > behaviour.
 > 
-> > > But I'd do to test any improvement-patch.
-> > 
-> > So far I have no idea what is going on. I don't see anything in the
-> > drivers providing above data that would explain the behavior,
-> > but I might be missing something.
-> 
-> Looks like a regression in the acpi subsystem or in power management,
-> not hwmon. Hwmon is merely reporting the temperatures, it's not
-> responsible for the actual temperatures.
-> 
-> A bisection would certainly help, but of course that would require
-> booting to a bad kernel half of the time, which I understand Manual
-> wouldn't enjoy.
-> 
-> The only two components which I think can reach such high temperatures
-> in a laptop are the CPU and the GPU. I suppose that the "94 °C vs.
-> 74°C" refers to acpitz's temp1? If the the temperatures reported by
-> coretemp remain the same, then I can only suppose that temp1 is the GPU
-> temperature. Please tell us which GPU is in this laptop, and which
-> driver you're using.
+> Why is that? The meaning of the DT data stays the same, regardless of
+> the existence of the 'ports' node. The driver uses the graph helpers to
+> parse the port/endpoint data, so individual drivers don't even have to
+> care about the format used.
 
-Also it would be good to know which cpufreq and cpuidle drivers are in use
-and whether or not 3.14-rc5 has the problem.
+You don't want to give options to the device tree writer. It should work
+one way and one way only. Every different combination is a different
+permutation to get wrong. The only time we should be allowing for more
+than one way to do it is when there is an existing binding that has
+proven to be insufficient and it needs to be extended, such as was done
+with interrupts-extended to deal with deficiencies in the interrupts
+property.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> As I see it, the graph helpers should allow the drivers to iterate the
+> ports and the endpoints for a port. These should work the same way, no
+> matter which abbreviated format is used in the dts.
+>
+> >> The helper should find the two endpoints in both cases.
+> >> Tomi suggests an even more compact form for devices with just one port:
+> >>
+> >> 	device {
+> >> 		endpoint { ... };
+> >>
+> >> 		some-other-child { ... };
+> >> 	};
+> > 
+> > That's fine. In that case the driver would specifically require the
+> > endpoint to be that one node.... although the above looks a little weird
+> 
+> The driver can't require that. It's up to the board designer to decide
+> how many endpoints are used. A driver may say that it has a single input
+> port. But the number of endpoints for that port is up to the use case.
+
+Come now, when you're writing a driver you know if it will ever be
+possible to have more than one port. If that is the case then the
+binding should be specifically laid out for that. If there will never be
+multiple ports and the binding is unambiguous, then, and only then,
+should the shortcut be used, and only the shortcut should be accepted.
+
+> > to me. I would recommend that if there are other non-port child nodes
+> > then the ports should still be encapsulated by a ports node.  The device
+> > binding should not be ambiguous about which nodes are ports.
+> 
+> Hmm, ambiguous in what way?
+
+Parsing the binding now consists of a ladder of 'ifs' that gives three
+distinct different behaviours for no benefit. You don't want that in
+bindings because it makes it more difficult to get the parsing right in
+the first place, and to make sure that all users parse it in the same
+way (Linux, U-Boot, BSD, etc). Bindings should be as absolutely simple
+as possible.
+
+Just to be clear, I have no problem with having the option in the
+pattern, but the driver needs to be specific about what layout it
+expects.
+
+g.
