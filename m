@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754528AbaCHBIM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:08:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46718 "EHLO
+	id S1754509AbaCHBIK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:08:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46708 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754475AbaCHBIE (ORCPT
+	with ESMTP id S1754388AbaCHBID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:08:04 -0500
+	Fri, 7 Mar 2014 20:08:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Gregory Greenman <gregory.greenman@intel.com>,
         Johannes Berg <johannes.berg@intel.com>,
         Ben Hutchings <ben@decadent.org.uk>, Jianguo Wu <wujianguo@huawei.com>
-Subject: [PATCH 3.4 93/99] iwlwifi: always copy first 16 bytes of commands
-Date: Fri,  7 Mar 2014 17:08:29 -0800
-Message-Id: <20140308010614.545650590@linuxfoundation.org>
+Subject: [PATCH 3.4 91/99] iwlwifi: dont handle masked interrupt
+Date: Fri,  7 Mar 2014 17:08:27 -0800
+Message-Id: <20140308010614.484624887@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
 References: <20140308010611.468206150@linuxfoundation.org>
@@ -31,179 +32,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 8a964f44e01ad3bbc208c3e80d931ba91b9ea786 upstream.
+commit 25a172655f837bdb032e451f95441bb4acec51bb upstream.
 
-The FH hardware will always write back to the scratch field
-in commands, even host commands not just TX commands, which
-can overwrite parts of the command. This is problematic if
-the command is re-used (with IWL_HCMD_DFL_NOCOPY) and can
-cause calibration issues.
+This can lead to a panic if the driver isn't ready to
+handle them. Since our interrupt line is shared, we can get
+an interrupt at any time (and CONFIG_DEBUG_SHIRQ checks
+that even when the interrupt is being freed).
 
-Address this problem by always putting at least the first
-16 bytes into the buffer we also use for the command header
-and therefore make the DMA engine write back into this.
+If the op_mode has gone away, we musn't call it. To avoid
+this the transport disables the interrupts when the hw is
+stopped and the op_mode is leaving.
+If there is an event that would cause an interrupt the INTA
+register is updated regardless of the enablement of the
+interrupts: even if the interrupts are disabled, the INTA
+will be changed, but the device won't issue an interrupt.
+But the ISR can be called at any time, so we ought ignore
+the value in the INTA otherwise we can call the op_mode
+after it was freed.
 
-For commands that are smaller than 16 bytes also always map
-enough memory for the DMA engine to write back to.
+I found this bug when the op_mode_start failed, and called
+iwl_trans_stop_hw(trans, true). Then I played with the
+RFKILL button, and removed the module.
+While removing the module, the IRQ is freed, and the ISR is
+called (CONFIG_DEBUG_SHIRQ enabled). Panic.
 
-Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Reviewed-by: Gregory Greenman <gregory.greenman@intel.com>
 Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 [bwh: Backported to 3.2:
  - Adjust context
- - Drop the IWL_HCMD_DFL_DUP handling
- - Fix descriptor addresses and lengths for tracepoint, but otherwise
-   leave it unchanged]
+ - Pass bus(trans), not trans, to iwl_{read,write}32()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-[wujg: Backported to 3.4: adjust context]
+[wujg: Backported to 3.4:
+ - adjust context
+ - Pass trans to iwl_{read,write}32()}]
 Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/wireless/iwlwifi/iwl-trans-pcie-int.h |    9 +++
- drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c  |   65 +++++++++++++++++-----
- 2 files changed, 62 insertions(+), 12 deletions(-)
+ drivers/net/wireless/iwlwifi/iwl-trans-pcie-rx.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-trans-pcie-int.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-trans-pcie-int.h
-@@ -209,6 +209,15 @@ struct iwl_queue {
- #define TFD_TX_CMD_SLOTS 256
- #define TFD_CMD_SLOTS 32
+--- a/drivers/net/wireless/iwlwifi/iwl-trans-pcie-rx.c
++++ b/drivers/net/wireless/iwlwifi/iwl-trans-pcie-rx.c
+@@ -1264,12 +1264,20 @@ static irqreturn_t iwl_isr(int irq, void
+ 	 *    back-to-back ISRs and sporadic interrupts from our NIC.
+ 	 * If we have something to service, the tasklet will re-enable ints.
+ 	 * If we *don't* have something, we'll re-enable before leaving here. */
+-	inta_mask = iwl_read32(trans, CSR_INT_MASK);  /* just for debug */
++	inta_mask = iwl_read32(trans, CSR_INT_MASK);
+ 	iwl_write32(trans, CSR_INT_MASK, 0x00000000);
  
-+/*
-+ * The FH will write back to the first TB only, so we need
-+ * to copy some data into the buffer regardless of whether
-+ * it should be mapped or not. This indicates how much to
-+ * copy, even for HCMDs it must be big enough to fit the
-+ * DRAM scratch from the TX cmd, at least 16 bytes.
-+ */
-+#define IWL_HCMD_MIN_COPY_SIZE	16
-+
- struct iwl_tx_queue {
- 	struct iwl_queue q;
- 	struct iwl_tfd *tfds;
---- a/drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c
-@@ -677,10 +677,12 @@ static int iwl_enqueue_hcmd(struct iwl_t
- 	struct iwl_cmd_meta *out_meta;
- 	dma_addr_t phys_addr;
- 	u32 idx;
--	u16 copy_size, cmd_size;
-+	u16 copy_size, cmd_size, dma_size;
- 	bool had_nocopy = false;
- 	int i;
- 	u8 *cmd_dest;
-+	const u8 *cmddata[IWL_MAX_CMD_TFDS];
-+	u16 cmdlen[IWL_MAX_CMD_TFDS];
- #ifdef CONFIG_IWLWIFI_DEVICE_TRACING
- 	const void *trace_bufs[IWL_MAX_CMD_TFDS + 1] = {};
- 	int trace_lens[IWL_MAX_CMD_TFDS + 1] = {};
-@@ -699,15 +701,30 @@ static int iwl_enqueue_hcmd(struct iwl_t
- 	BUILD_BUG_ON(IWL_MAX_CMD_TFDS > IWL_NUM_OF_TBS - 1);
+ 	/* Discover which interrupts are active/pending */
+ 	inta = iwl_read32(trans, CSR_INT);
  
- 	for (i = 0; i < IWL_MAX_CMD_TFDS; i++) {
-+		cmddata[i] = cmd->data[i];
-+		cmdlen[i] = cmd->len[i];
++	if (inta & (~inta_mask)) {
++		IWL_DEBUG_ISR(trans,
++			      "We got a masked interrupt (0x%08x)...Ack and ignore\n",
++			      inta & (~inta_mask));
++		iwl_write32(trans, CSR_INT, inta & (~inta_mask));
++		inta &= inta_mask;
++	}
 +
- 		if (!cmd->len[i])
- 			continue;
-+
-+		/* need at least IWL_HCMD_MIN_COPY_SIZE copied */
-+		if (copy_size < IWL_HCMD_MIN_COPY_SIZE) {
-+			int copy = IWL_HCMD_MIN_COPY_SIZE - copy_size;
-+
-+			if (copy > cmdlen[i])
-+				copy = cmdlen[i];
-+			cmdlen[i] -= copy;
-+			cmddata[i] += copy;
-+			copy_size += copy;
-+		}
-+
- 		if (cmd->dataflags[i] & IWL_HCMD_DFL_NOCOPY) {
- 			had_nocopy = true;
- 		} else {
- 			/* NOCOPY must not be followed by normal! */
- 			if (WARN_ON(had_nocopy))
- 				return -EINVAL;
--			copy_size += cmd->len[i];
-+			copy_size += cmdlen[i];
- 		}
- 		cmd_size += cmd->len[i];
- 	}
-@@ -750,13 +767,30 @@ static int iwl_enqueue_hcmd(struct iwl_t
- 	/* and copy the data that needs to be copied */
+ 	/* Ignore interrupt if there's nothing in NIC to service.
+ 	 * This may be due to IRQ shared with another device,
+ 	 * or due to sporadic interrupts thrown from our NIC. */
+@@ -1353,7 +1361,7 @@ irqreturn_t iwl_isr_ict(int irq, void *d
+ 	 * If we have something to service, the tasklet will re-enable ints.
+ 	 * If we *don't* have something, we'll re-enable before leaving here.
+ 	 */
+-	inta_mask = iwl_read32(trans, CSR_INT_MASK);  /* just for debug */
++	inta_mask = iwl_read32(trans, CSR_INT_MASK);
+ 	iwl_write32(trans, CSR_INT_MASK, 0x00000000);
  
- 	cmd_dest = out_cmd->payload;
-+	copy_size = sizeof(out_cmd->hdr);
- 	for (i = 0; i < IWL_MAX_CMD_TFDS; i++) {
--		if (!cmd->len[i])
-+		int copy = 0;
-+
-+		if (!cmd->len)
- 			continue;
--		if (cmd->dataflags[i] & IWL_HCMD_DFL_NOCOPY)
--			break;
--		memcpy(cmd_dest, cmd->data[i], cmd->len[i]);
--		cmd_dest += cmd->len[i];
-+
-+		/* need at least IWL_HCMD_MIN_COPY_SIZE copied */
-+		if (copy_size < IWL_HCMD_MIN_COPY_SIZE) {
-+			copy = IWL_HCMD_MIN_COPY_SIZE - copy_size;
-+
-+			if (copy > cmd->len[i])
-+				copy = cmd->len[i];
-+		}
-+
-+		/* copy everything if not nocopy/dup */
-+		if (!(cmd->dataflags[i] & IWL_HCMD_DFL_NOCOPY))
-+			copy = cmd->len[i];
-+
-+		if (copy) {
-+			memcpy(cmd_dest, cmd->data[i], copy);
-+			cmd_dest += copy;
-+			copy_size += copy;
-+		}
- 	}
  
- 	IWL_DEBUG_HC(trans, "Sending command %s (#%x), seq: 0x%04X, "
-@@ -766,7 +800,14 @@ static int iwl_enqueue_hcmd(struct iwl_t
- 			le16_to_cpu(out_cmd->hdr.sequence), cmd_size,
- 			q->write_ptr, idx, trans_pcie->cmd_queue);
- 
--	phys_addr = dma_map_single(trans->dev, &out_cmd->hdr, copy_size,
-+	/*
-+	 * If the entire command is smaller than IWL_HCMD_MIN_COPY_SIZE, we must
-+	 * still map at least that many bytes for the hardware to write back to.
-+	 * We have enough space, so that's not a problem.
-+	 */
-+	dma_size = max_t(u16, copy_size, IWL_HCMD_MIN_COPY_SIZE);
-+
-+	phys_addr = dma_map_single(trans->dev, &out_cmd->hdr, dma_size,
- 				DMA_BIDIRECTIONAL);
- 	if (unlikely(dma_mapping_error(trans->dev, phys_addr))) {
- 		idx = -ENOMEM;
-@@ -774,7 +815,7 @@ static int iwl_enqueue_hcmd(struct iwl_t
- 	}
- 
- 	dma_unmap_addr_set(out_meta, mapping, phys_addr);
--	dma_unmap_len_set(out_meta, len, copy_size);
-+	dma_unmap_len_set(out_meta, len, dma_size);
- 
- 	iwlagn_txq_attach_buf_to_tfd(trans, txq,
- 					phys_addr, copy_size, 1);
-@@ -801,10 +842,10 @@ static int iwl_enqueue_hcmd(struct iwl_t
- 		}
- 
- 		iwlagn_txq_attach_buf_to_tfd(trans, txq, phys_addr,
--					     cmd->len[i], 0);
-+					     cmdlen[i], 0);
- #ifdef CONFIG_IWLWIFI_DEVICE_TRACING
--		trace_bufs[trace_idx] = cmd->data[i];
--		trace_lens[trace_idx] = cmd->len[i];
-+		trace_bufs[trace_idx] = cmddata[i];
-+		trace_lens[trace_idx] = cmdlen[i];
- 		trace_idx++;
- #endif
- 	}
 
 
