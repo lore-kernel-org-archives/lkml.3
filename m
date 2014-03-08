@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559AbaCHBJP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:09:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46723 "EHLO
+	id S1754567AbaCHBJj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:09:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46704 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753817AbaCHBIF (ORCPT
+	with ESMTP id S1754463AbaCHBIC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:08:05 -0500
+	Fri, 7 Mar 2014 20:08:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Ben Hutchings <ben@decadent.org.uk>, Jianguo Wu <wujianguo@huawei.com>
-Subject: [PATCH 3.4 94/99] iwlwifi: dvm: dont send BT_CONFIG on devices w/o Bluetooth
-Date: Fri,  7 Mar 2014 17:08:30 -0800
-Message-Id: <20140308010614.574314708@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Jianguo Wu <wujianguo@huawei.com>
+Subject: [PATCH 3.4 90/99] iwlwifi: protect SRAM debugfs
+Date: Fri,  7 Mar 2014 17:08:26 -0800
+Message-Id: <20140308010614.456317088@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
 References: <20140308010611.468206150@linuxfoundation.org>
@@ -33,40 +33,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johannes Berg <johannes.berg@intel.com>
 
-commit 707aee401d2467baa785a697f40a6e2d9ee79ad5 upstream.
+commit 4fc79db178f0a0ede479b4713e00df2d106028b3 upstream.
 
-The BT_CONFIG command that is sent to the device during
-startup will enable BT coex unless the module parameter
-turns it off, but on devices without Bluetooth this may
-cause problems, as reported in Redhat BZ 885407.
+If the device is not started, we can't read its
+SRAM and attempting to do so will cause issues.
+Protect the debugfs read.
 
-Fix this by sending the BT_CONFIG command only when the
-device has Bluetooth.
-
-Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes@sipsolutions.net>
-[bwh: Backported to 3.2:
- - Adjust filename
- - s/priv->lib/priv->cfg/]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-[wujg: Backported to 3.4:
- - s/priv->cfg/priv->shrd->cfg/]
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+[wujg: Backported to 3.4: adjust context]
 Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/wireless/iwlwifi/iwl-agn.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/iwlwifi/iwl-debugfs.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/net/wireless/iwlwifi/iwl-agn.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn.c
-@@ -680,7 +680,7 @@ int iwl_alive_start(struct iwl_priv *pri
- 					 BT_COEX_PRIO_TBL_EVT_INIT_CALIB2);
- 		if (ret)
- 			return ret;
--	} else {
-+	} else if (priv->shrd->cfg->bt_params) {
- 		/*
- 		 * default is 2-wire BT coexexistence support
- 		 */
+--- a/drivers/net/wireless/iwlwifi/iwl-debugfs.c
++++ b/drivers/net/wireless/iwlwifi/iwl-debugfs.c
+@@ -227,6 +227,9 @@ static ssize_t iwl_dbgfs_sram_read(struc
+ 	const struct fw_img *img;
+ 	size_t bufsz;
+ 
++	if (!iwl_is_ready_rf(priv))
++		return -EAGAIN;
++
+ 	/* default is to dump the entire data segment */
+ 	if (!priv->dbgfs_sram_offset && !priv->dbgfs_sram_len) {
+ 		priv->dbgfs_sram_offset = 0x800000;
 
 
