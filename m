@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755481AbaCHBeh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:34:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46276 "EHLO
+	id S1755462AbaCHBeg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:34:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46281 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753800AbaCHBHB (ORCPT
+	with ESMTP id S1753811AbaCHBHC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:07:01 -0500
+	Fri, 7 Mar 2014 20:07:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.4 23/99] ASoC: wm8958-dsp: Fix firmware block loading
-Date: Fri,  7 Mar 2014 17:07:19 -0800
-Message-Id: <20140308010612.360514775@linuxfoundation.org>
+        Neil Brown <neilb@suse.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.4 24/99] SUNRPC: Fix races in xs_nospace()
+Date: Fri,  7 Mar 2014 17:07:20 -0800
+Message-Id: <20140308010612.392518072@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
 References: <20140308010611.468206150@linuxfoundation.org>
@@ -28,35 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit 548da08fc1e245faf9b0d7c41ecd8e07984fc332 upstream.
+commit 06ea0bfe6e6043cb56a78935a19f6f8ebc636226 upstream.
 
-The codec->control_data contains a pointer to the device's regmap struct. But
-wm8994_bulk_write() expects a pointer to the parent wm8998 device.
+When a send failure occurs due to the socket being out of buffer space,
+we call xs_nospace() in order to have the RPC task wait until the
+socket has drained enough to make it worth while trying again.
+The current patch fixes a race in which the socket is drained before
+we get round to setting up the machinery in xs_nospace(), and which
+is reported to cause hangs.
 
-The issue was introduced in commit d9a7666f ("ASoC: Remove ASoC-specific
-WM8994 I/O code").
-
-Fixes: d9a7666f ("ASoC: Remove ASoC-specific WM8994 I/O code")
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Link: http://lkml.kernel.org/r/20140210170315.33dfc621@notabene.brown
+Fixes: a9a6b52ee1ba (SUNRPC: Don't start the retransmission timer...)
+Reported-by: Neil Brown <neilb@suse.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm8958-dsp2.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/sunrpc/xprtsock.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/sound/soc/codecs/wm8958-dsp2.c
-+++ b/sound/soc/codecs/wm8958-dsp2.c
-@@ -153,7 +153,7 @@ static int wm8958_dsp2_fw(struct snd_soc
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -501,6 +501,7 @@ static int xs_nospace(struct rpc_task *t
+ 	struct rpc_rqst *req = task->tk_rqstp;
+ 	struct rpc_xprt *xprt = req->rq_xprt;
+ 	struct sock_xprt *transport = container_of(xprt, struct sock_xprt, xprt);
++	struct sock *sk = transport->inet;
+ 	int ret = -EAGAIN;
  
- 			data32 &= 0xffffff;
+ 	dprintk("RPC: %5u xmit incomplete (%u left of %u)\n",
+@@ -518,7 +519,7 @@ static int xs_nospace(struct rpc_task *t
+ 			 * window size
+ 			 */
+ 			set_bit(SOCK_NOSPACE, &transport->sock->flags);
+-			transport->inet->sk_write_pending++;
++			sk->sk_write_pending++;
+ 			/* ...and wait for more buffer space */
+ 			xprt_wait_for_buffer_space(task, xs_nospace_callback);
+ 		}
+@@ -528,6 +529,9 @@ static int xs_nospace(struct rpc_task *t
+ 	}
  
--			wm8994_bulk_write(codec->control_data,
-+			wm8994_bulk_write(wm8994->wm8994,
- 					  data32 & 0xffffff,
- 					  block_len / 2,
- 					  (void *)(data + 8));
+ 	spin_unlock_bh(&xprt->transport_lock);
++
++	/* Race breaker in case memory is freed before above code is called */
++	sk->sk_write_space(sk);
+ 	return ret;
+ }
+ 
 
 
