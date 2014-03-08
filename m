@@ -1,38 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556AbaCHD1d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 22:27:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54864 "EHLO mx1.redhat.com"
+	id S1752612AbaCHDg1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 22:36:27 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44898 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750925AbaCHD1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 22:27:32 -0500
-From: Steve Grubb <sgrubb@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: eparis@redhat.com, ebiederm@xmission.com, rgb@redhat.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-audit@redhat.com, akpm@linux-foundation.org
-Subject: Re: [RFC][PATCH] audit: Simplify by assuming the callers socket buffer is large enough
-Date: Fri, 07 Mar 2014 22:27:28 -0500
-Message-ID: <5147229.ivUnbSCGlH@x2>
-Organization: Red Hat
-User-Agent: KMail/4.12.2 (Linux/3.13.5-202.fc20.x86_64; KDE/4.12.2; x86_64; ; )
-In-Reply-To: <20140307.194801.1893514114998807038.davem@davemloft.net>
-References: <7457128.6VP2v68V93@x2> <1394232722.17779.57.camel@flatline.rdu.redhat.com> <20140307.194801.1893514114998807038.davem@davemloft.net>
+	id S1751296AbaCHDg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 22:36:26 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CA+55aFxpy_soEgGE3oap1N9+RucYCxOjfgvuRzhRqfC7zEm6PA@mail.gmail.com>
+References: <201403072325.s27NPvlt003528@terminus.zytor.com> <CA+55aFxpy_soEgGE3oap1N9+RucYCxOjfgvuRzhRqfC7zEm6PA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [GIT PULL] x86 fixes for v3.14-rc6
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Fri, 07 Mar 2014 19:34:03 -0800
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Borislav Petkov <bp@suse.de>, Don Zickus <dzickus@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>, Russ Anderson <rja@sgi.com>,
+        Steven Rostedt <rostedt@goodmis.org>, seiji.aguchi@hds.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Vince Weaver <vincent.weaver@maine.edu>
+Message-ID: <4ac825d6-a2c7-4ab3-a554-37e02af61fa7@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, March 07, 2014 07:48:01 PM David Miller wrote:
-> From: Eric Paris <eparis@redhat.com>
-> Date: Fri, 07 Mar 2014 17:52:02 -0500
-> 
-> > Audit is non-tolerant to failure and loss.
-> 
-> Netlink is not a loss-less transport.
+Bloody hell.  Friday afternoon malfunction (thought I checked the output and apparently missed.)
 
-Perhaps. But in all our testing over the years its been very good.
+On March 7, 2014 7:03:09 PM PST, Linus Torvalds <torvalds@linux-foundation.org> wrote:
+>Oww, oww, oww.
+>
+>DAMMIT.
+>
+>On Fri, Mar 7, 2014 at 3:25 PM, H. Peter Anvin <hpa@linux.intel.com>
+>wrote:
+>>
+>> A small collection of minor fixes.  The FPU stuff is still pending, I
+>> fear.  I haven't heard anything from Suresh so I suspect I'm going to
+>> have to dig into the init specifics myself and fix up the patchset.
+>
+>I pulled this and then pushed out without test-compiling, because I'm
+>not used to the x86 trees causing problems. Usually they've gone
+>through a lot of build tests etc.
+>
+>But dammit, it's broken:
+>
+>  arch/x86/kernel/head_64.o: In function `early_idt_handler':
+>  (.init.text+0x124): undefined reference to `X86_TRAP_NMI'
+>
+>because X86_TRAP_NMI is an enum, not a #define.
+>
+>This can not have worked in your tree either, because that thing has
+>never been anything *but* an enum. So I'm pissed off. This patch was
+>clearly never tested anywhere. Why was it sent to me?
+>
+>Grr. Consider yourself cursed at. Saatana.
+>
+>              Linus
 
--Steve
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
