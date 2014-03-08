@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753641AbaCHBG4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:06:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46212 "EHLO
+	id S1754069AbaCHBHQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:07:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46311 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753437AbaCHBGu (ORCPT
+	with ESMTP id S1753762AbaCHBHG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:06:50 -0500
+	Fri, 7 Mar 2014 20:07:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vegard Nossum <vegard.nossum@oracle.com>,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [PATCH 3.4 03/99] ext4: dont leave i_crtime.tv_sec uninitialized
-Date: Fri,  7 Mar 2014 17:06:59 -0800
-Message-Id: <20140308010611.725604599@linuxfoundation.org>
+        Jiri Bohac <jbohac@suse.cz>, Veaceslav Falico <vfalico@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.4 14/99] bonding: 802.3ad: make aggregator_identifier bond-private
+Date: Fri,  7 Mar 2014 17:07:10 -0800
+Message-Id: <20140308010612.077294734@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
 References: <20140308010611.468206150@linuxfoundation.org>
@@ -29,33 +29,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Jiri Bohac <jiri@boha.cz>
 
-commit 19ea80603715d473600cd993b9987bc97d042e02 upstream.
+[ Upstream commit 163c8ff30dbe473abfbb24a7eac5536c87f3baa9 ]
 
-If the i_crtime field is not present in the inode, don't leave the
-field uninitialized.
+aggregator_identifier is used to assign unique aggregator identifiers
+to aggregators of a bond during device enslaving.
 
-Fixes: ef7f38359 ("ext4: Add nanosecond timestamps")
-Reported-by: Vegard Nossum <vegard.nossum@oracle.com>
-Tested-by: Vegard Nossum <vegard.nossum@oracle.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+aggregator_identifier is currently a global variable that is zeroed in
+bond_3ad_initialize().
+
+This sequence will lead to duplicate aggregator identifiers for eth1 and eth3:
+
+create bond0
+change bond0 mode to 802.3ad
+enslave eth0 to bond0 		//eth0 gets agg id 1
+enslave eth1 to bond0 		//eth1 gets agg id 2
+create bond1
+change bond1 mode to 802.3ad
+enslave eth2 to bond1		//aggregator_identifier is reset to 0
+				//eth2 gets agg id 1
+enslave eth3 to bond0 		//eth3 gets agg id 2
+
+Fix this by making aggregator_identifier private to the bond.
+
+Signed-off-by: Jiri Bohac <jbohac@suse.cz>
+Acked-by: Veaceslav Falico <vfalico@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/ext4/ext4.h |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/bonding/bond_3ad.c |    6 ++----
+ drivers/net/bonding/bond_3ad.h |    1 +
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -751,6 +751,8 @@ do {									       \
- 	if (EXT4_FITS_IN_INODE(raw_inode, einode, xtime))		       \
- 		(einode)->xtime.tv_sec = 				       \
- 			(signed)le32_to_cpu((raw_inode)->xtime);	       \
-+	else								       \
-+		(einode)->xtime.tv_sec = 0;				       \
- 	if (EXT4_FITS_IN_INODE(raw_inode, einode, xtime ## _extra))	       \
- 		ext4_decode_extra_time(&(einode)->xtime,		       \
- 				       raw_inode->xtime ## _extra);	       \
+--- a/drivers/net/bonding/bond_3ad.c
++++ b/drivers/net/bonding/bond_3ad.c
+@@ -1854,8 +1854,6 @@ void bond_3ad_initiate_agg_selection(str
+ 	BOND_AD_INFO(bond).agg_select_timer = timeout;
+ }
+ 
+-static u16 aggregator_identifier;
+-
+ /**
+  * bond_3ad_initialize - initialize a bond's 802.3ad parameters and structures
+  * @bond: bonding struct to work on
+@@ -1869,7 +1867,7 @@ void bond_3ad_initialize(struct bonding
+ 	if (MAC_ADDRESS_COMPARE(&(BOND_AD_INFO(bond).system.sys_mac_addr),
+ 				bond->dev->dev_addr)) {
+ 
+-		aggregator_identifier = 0;
++		BOND_AD_INFO(bond).aggregator_identifier = 0;
+ 
+ 		BOND_AD_INFO(bond).system.sys_priority = 0xFFFF;
+ 		BOND_AD_INFO(bond).system.sys_mac_addr = *((struct mac_addr *)bond->dev->dev_addr);
+@@ -1941,7 +1939,7 @@ int bond_3ad_bind_slave(struct slave *sl
+ 		ad_initialize_agg(aggregator);
+ 
+ 		aggregator->aggregator_mac_address = *((struct mac_addr *)bond->dev->dev_addr);
+-		aggregator->aggregator_identifier = (++aggregator_identifier);
++		aggregator->aggregator_identifier = ++BOND_AD_INFO(bond).aggregator_identifier;
+ 		aggregator->slave = slave;
+ 		aggregator->is_active = 0;
+ 		aggregator->num_of_ports = 0;
+--- a/drivers/net/bonding/bond_3ad.h
++++ b/drivers/net/bonding/bond_3ad.h
+@@ -253,6 +253,7 @@ struct ad_system {
+ struct ad_bond_info {
+ 	struct ad_system system;	    /* 802.3ad system structure */
+ 	u32 agg_select_timer;	    // Timer to select aggregator after all adapter's hand shakes
++	u16 aggregator_identifier;
+ };
+ 
+ struct ad_slave_info {
 
 
