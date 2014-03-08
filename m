@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753175AbaCHBAs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:00:48 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:49157 "EHLO smtp.outflux.net"
+	id S1752793AbaCHBAp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:00:45 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:36057 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752328AbaCHBAn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752246AbaCHBAn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Mar 2014 20:00:43 -0500
 From: Kees Cook <keescook@chromium.org>
 To: Rusty Russell <rusty@rustcorp.com.au>
@@ -15,9 +15,9 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
         linux-ia64@vger.kernel.org, keescook@chromium.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/2] kallsyms: generalize address range checking
-Date: Fri,  7 Mar 2014 17:00:24 -0800
-Message-Id: <1394240425-11647-2-git-send-email-keescook@chromium.org>
+Subject: [PATCH v2 2/2] kallsyms: handle special absolute symbols
+Date: Fri,  7 Mar 2014 17:00:25 -0800
+Message-Id: <1394240425-11647-3-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1394240425-11647-1-git-send-email-keescook@chromium.org>
 References: <1394240425-11647-1-git-send-email-keescook@chromium.org>
@@ -26,152 +26,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This refactors the address range checks to be generalized instead of
-specific to text range checks, in preparation for other range checks.
-Also extracts logic for "is the symbol absolute" into a function.
+This forces the entire per_cpu range to be reported as absolute
+without losing their linker symbol types, when the per_cpu area is
+0-based. Without this, the variables are incorrectly shown as relocated
+under kASLR on x86_64.
+
+Several kallsyms output in different boot states for comparison of
+various symbols:
+
+$ egrep ' (gdt_|_(stext|_per_cpu_))' /root/kallsyms.nokaslr
+0000000000000000 D __per_cpu_start
+0000000000004000 D gdt_page
+0000000000014280 D __per_cpu_end
+ffffffff810001c8 T _stext
+ffffffff81ee53c0 D __per_cpu_offset
+$ egrep ' (gdt_|_(stext|_per_cpu_))' /root/kallsyms.kaslr1
+000000001f200000 D __per_cpu_start
+000000001f204000 D gdt_page
+000000001f214280 D __per_cpu_end
+ffffffffa02001c8 T _stext
+ffffffffa10e53c0 D __per_cpu_offset
+$ egrep ' (gdt_|_(stext|_per_cpu_))' /root/kallsyms.kaslr2
+000000000d400000 D __per_cpu_start
+000000000d404000 D gdt_page
+000000000d414280 D __per_cpu_end
+ffffffff8e4001c8 T _stext
+ffffffff8f2e53c0 D __per_cpu_offset
+$ egrep ' (gdt_|_(stext|_per_cpu_))' /root/kallsyms.kaslr-fixed
+0000000000000000 D __per_cpu_start
+0000000000004000 D gdt_page
+0000000000014280 D __per_cpu_end
+ffffffffadc001c8 T _stext
+ffffffffaeae53c0 D __per_cpu_offset
 
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
 v2:
- - return which range entry index an address was found in.
+ - only force absolute when per_cpu starts at 0.
 ---
- scripts/kallsyms.c |   58 +++++++++++++++++++++++++++++++---------------------
- 1 file changed, 35 insertions(+), 23 deletions(-)
+ scripts/kallsyms.c |   20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
 
 diff --git a/scripts/kallsyms.c b/scripts/kallsyms.c
-index 276e84b8a8e5..08f30ac5b07d 100644
+index 08f30ac5b07d..d3f93b8eb277 100644
 --- a/scripts/kallsyms.c
 +++ b/scripts/kallsyms.c
-@@ -36,13 +36,13 @@ struct sym_entry {
+@@ -34,6 +34,7 @@ struct sym_entry {
+ 	unsigned int len;
+ 	unsigned int start_pos;
  	unsigned char *sym;
++	int force_absolute;
  };
  
--struct text_range {
--	const char *stext, *etext;
-+struct addr_range {
-+	const char *start_sym, *end_sym;
- 	unsigned long long start, end;
- };
+ struct addr_range {
+@@ -51,6 +52,14 @@ static struct addr_range text_ranges[] = {
+ #define text_range_text     (&text_ranges[0])
+ #define text_range_inittext (&text_ranges[1])
  
- static unsigned long long _text;
--static struct text_range text_ranges[] = {
-+static struct addr_range text_ranges[] = {
- 	{ "_stext",     "_etext"     },
- 	{ "_sinittext", "_einittext" },
- 	{ "_stext_l1",  "_etext_l1"  },	/* Blackfin on-chip L1 inst SRAM */
-@@ -83,19 +83,20 @@ static inline int is_arm_mapping_symbol(const char *str)
- 	       && (str[2] == '\0' || str[2] == '.');
- }
- 
--static int read_symbol_tr(const char *sym, unsigned long long addr)
-+static int check_symbol_range(const char *sym, unsigned long long addr,
-+			      struct addr_range *ranges, int entries)
- {
- 	size_t i;
--	struct text_range *tr;
-+	struct addr_range *ar;
- 
--	for (i = 0; i < ARRAY_SIZE(text_ranges); ++i) {
--		tr = &text_ranges[i];
-+	for (i = 0; i < entries; ++i) {
-+		ar = &ranges[i];
- 
--		if (strcmp(sym, tr->stext) == 0) {
--			tr->start = addr;
-+		if (strcmp(sym, ar->start_sym) == 0) {
-+			ar->start = addr;
- 			return 0;
--		} else if (strcmp(sym, tr->etext) == 0) {
--			tr->end = addr;
-+		} else if (strcmp(sym, ar->end_sym) == 0) {
-+			ar->end = addr;
- 			return 0;
- 		}
++/*
++ * Variables in these ranges, when the start is 0 based, will be forced to
++ * be handled as absolute addresses.
++ */
++static struct addr_range abs_ranges[] = {
++	{ "__per_cpu_start",	"__per_cpu_end", -1ULL, 0 },
++};
++
+ static struct sym_entry *table;
+ static unsigned int table_size, table_cnt;
+ static int all_symbols = 0;
+@@ -165,6 +174,10 @@ static int read_symbol(FILE *in, struct sym_entry *s)
  	}
-@@ -130,7 +131,8 @@ static int read_symbol(FILE *in, struct sym_entry *s)
- 	/* Ignore most absolute/undefined (?) symbols. */
- 	if (strcmp(sym, "_text") == 0)
- 		_text = s->addr;
--	else if (read_symbol_tr(sym, s->addr) == 0)
-+	else if (check_symbol_range(sym, s->addr, text_ranges,
-+				    ARRAY_SIZE(text_ranges)) == 0)
- 		/* nothing to do */;
- 	else if (toupper(stype) == 'A')
- 	{
-@@ -167,19 +169,21 @@ static int read_symbol(FILE *in, struct sym_entry *s)
+ 	strcpy((char *)s->sym + 1, str);
+ 	s->sym[0] = stype;
++	s->force_absolute = 0;
++
++	/* Check if we've found special absolute symbol range. */
++	check_symbol_range(sym, s->addr, abs_ranges, ARRAY_SIZE(abs_ranges));
+ 
  	return 0;
  }
+@@ -211,6 +224,11 @@ static int symbol_valid(struct sym_entry *s)
+ 	if (s->addr < kernel_start_addr)
+ 		return 0;
  
--static int symbol_valid_tr(struct sym_entry *s)
-+/* Return which addr_range index an entry matches, or -1 if not found. */
-+static int symbol_in_range(struct sym_entry *s, struct addr_range *ranges,
-+			   int entries)
- {
- 	size_t i;
--	struct text_range *tr;
-+	struct addr_range *ar;
- 
--	for (i = 0; i < ARRAY_SIZE(text_ranges); ++i) {
--		tr = &text_ranges[i];
-+	for (i = 0; i < entries; ++i) {
-+		ar = &ranges[i];
- 
--		if (s->addr >= tr->start && s->addr <= tr->end)
--			return 1;
-+		if (s->addr >= ar->start && s->addr <= ar->end)
-+			return i;
- 	}
- 
--	return 0;
-+	return -1;
- }
- 
- static int symbol_valid(struct sym_entry *s)
-@@ -214,7 +218,8 @@ static int symbol_valid(struct sym_entry *s)
- 	/* if --all-symbols is not specified, then symbols outside the text
- 	 * and inittext sections are discarded */
- 	if (!all_symbols) {
--		if (symbol_valid_tr(s) == 0)
-+		if (symbol_in_range(s, text_ranges,
-+				    ARRAY_SIZE(text_ranges)) < 0)
- 			return 0;
- 		/* Corner case.  Discard any symbols with the same value as
- 		 * _etext _einittext; they can move between pass 1 and 2 when
-@@ -223,9 +228,11 @@ static int symbol_valid(struct sym_entry *s)
- 		 * rules.
- 		 */
- 		if ((s->addr == text_range_text->end &&
--				strcmp((char *)s->sym + offset, text_range_text->etext)) ||
-+				strcmp((char *)s->sym + offset,
-+				       text_range_text->end_sym)) ||
- 		    (s->addr == text_range_inittext->end &&
--				strcmp((char *)s->sym + offset, text_range_inittext->etext)))
-+				strcmp((char *)s->sym + offset,
-+				       text_range_inittext->end_sym)))
- 			return 0;
- 	}
- 
-@@ -298,6 +305,11 @@ static int expand_symbol(unsigned char *data, int len, char *result)
- 	return total;
- }
- 
-+static int symbol_absolute(struct sym_entry *s)
-+{
-+	return toupper(s->sym[0]) == 'A';
-+}
++	/* Force zero-based range special symbols into being absolute. */
++	i = symbol_in_range(s, abs_ranges, ARRAY_SIZE(abs_ranges));
++	if (i >= 0 && abs_ranges[i].start == 0)
++		s->force_absolute = 1;
 +
- static void write_src(void)
+ 	/* skip prefix char */
+ 	if (symbol_prefix_char && *(s->sym + 1) == symbol_prefix_char)
+ 		offset++;
+@@ -307,7 +325,7 @@ static int expand_symbol(unsigned char *data, int len, char *result)
+ 
+ static int symbol_absolute(struct sym_entry *s)
  {
- 	unsigned int i, k, off;
-@@ -325,7 +337,7 @@ static void write_src(void)
- 	 */
- 	output_label("kallsyms_addresses");
- 	for (i = 0; i < table_cnt; i++) {
--		if (toupper(table[i].sym[0]) != 'A') {
-+		if (!symbol_absolute(&table[i])) {
- 			if (_text <= table[i].addr)
- 				printf("\tPTR\t_text + %#llx\n",
- 					table[i].addr - _text);
+-	return toupper(s->sym[0]) == 'A';
++	return s->force_absolute || toupper(s->sym[0]) == 'A';
+ }
+ 
+ static void write_src(void)
 -- 
 1.7.9.5
 
