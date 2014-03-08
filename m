@@ -1,54 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751890AbaCHOok (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 09:44:40 -0500
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:60685 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751460AbaCHOoj (ORCPT
+	id S1751577AbaCHPE1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 10:04:27 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:48867 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750991AbaCHPE0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 09:44:39 -0500
-Message-ID: <1394289877.31006.2.camel@x41>
-Subject: Re: [Intel-gfx] agp/intel: can't ioremap flush page - no chipset
- flushing
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Steven Newbury <steve@snewbury.org.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>
-Date: Sat, 08 Mar 2014 15:44:37 +0100
-In-Reply-To: <CAErSpo7Np8oju1ENQA5EgEpN4=Vv7f3s4E823ecbyp6FCWPL_Q@mail.gmail.com>
-References: <1391886379.2669.11.camel@x41>
-	 <CAKMK7uE6Gaq-ghgWJ+6Qyn7hrGzAMOHyGT9KQQJ+ij7omPV2Ew@mail.gmail.com>
-	 <1391890927.1882.5.camel@x41>
-	 <CAKMK7uFx2kksGgnuy9e0xiQRKpt=_+44O1V4wbX5yNBocvjBkg@mail.gmail.com>
-	 <1391951759.6036.7.camel@artifact> <1391952344.25424.4.camel@x220>
-	 <CAErSpo6uj_Kuk0_F97nRsnM1Pss4C7=HeEaVu6D-NwFFK=1cvA@mail.gmail.com>
-	 <1394185698.5608.5.camel@x41>
-	 <CAErSpo4jiq38P3TNuGLGS--nbV9NtUAmiuK=cwWyFAneY-=eOA@mail.gmail.com>
-	 <1394212609.1987.6.camel@x41> <20140307204021.GA9822@google.com>
-	 <CAErSpo7Np8oju1ENQA5EgEpN4=Vv7f3s4E823ecbyp6FCWPL_Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
+	Sat, 8 Mar 2014 10:04:26 -0500
+Message-ID: <531B3178.8000804@infradead.org>
+Date: Sat, 08 Mar 2014 07:04:24 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Chen Gang <gang.chen.5i5j@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Suggestion] Makefile: about allmodconfig issue.
+References: <531B1603.6080106@gmail.com>
+In-Reply-To: <531B1603.6080106@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 08 Mar 2014 14:44:37.0461 (UTC) FILETIME=[EDD81050:01CF3ADC]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bjorn Helgaas schreef op za 08-03-2014 om 07:12 [-0700]:
-> I assume you have CONFIG_PHYS_ADDR_T_64BIT=n (which is perfectly
-> legal); let me know if otherwise.
+On 03/08/2014 05:07 AM, Chen Gang wrote:
+> Hello All:
+> 
+> "A module selects GENERIC_IRQ_CHIP and depend on IRQ_DOMAIN". For me,
+> it is a reasonable selection and dependency, but "make allmodconfig"
+> will report error. I guess it is the "Makefile allmodconfig" issue.
+> 
+> The related error report:
+> 
+>   [root@gchen linux-next]# make ARCH=avr32 CROSS_COMPILE=/usr/local/bin/avr32-linux-  allmodconfig
+>     HOSTCC  scripts/basic/fixdep
+>     HOSTCC  scripts/kconfig/conf.o
+>     SHIPPED scripts/kconfig/zconf.tab.c
+>     SHIPPED scripts/kconfig/zconf.lex.c
+>     SHIPPED scripts/kconfig/zconf.hash.c
+>     HOSTCC  scripts/kconfig/zconf.tab.o
+>     HOSTLD  scripts/kconfig/conf
+>   scripts/kconfig/conf --allmodconfig Kconfig
+>   kernel/time/Kconfig:162:warning: range is invalid
+>   kernel/irq/Kconfig:41:error: recursive dependency detected!
+>   kernel/irq/Kconfig:41:  symbol GENERIC_IRQ_CHIP is selected by GPIO_DWAPB
+>   drivers/gpio/Kconfig:131:       symbol GPIO_DWAPB depends on IRQ_DOMAIN
+>   kernel/irq/Kconfig:46:  symbol IRQ_DOMAIN is selected by GENERIC_IRQ_CHIP
+>   
+> 
+> The related commit (7779b34 gpio: add a driver for the Synopsys DesignWare APB GPIO block):  
+> 
+>   +config GPIO_DWAPB
+>   +       tristate "Synopsys DesignWare APB GPIO driver"
+>   +       select GPIO_GENERIC
+>   +       select GENERIC_IRQ_CHIP
+>   +       depends on OF_GPIO && IRQ_DOMAIN
+> 
+> 
+> 
+> Welcome any suggestions, discussions and completions.
+> 
+> Thanks.
+> 
 
-$ grep CONFIG_PHYS_ADDR_T_64BIT /boot/config-3.14.0-0.rc5.1.local2.fc20.i686 
-# CONFIG_PHYS_ADDR_T_64BIT is not set
+A patch has already been submitted and applied by the subsystem maintainer.
 
-So, yes, CONFIG_PHYS_ADDR_T_64BIT=n here.
+http://marc.info/?l=linux-gpio&m=139413626320431&w=2
 
 
-Paul Bolle
-
+-- 
+~Randy
