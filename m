@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752612AbaCHDg1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 22:36:27 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44898 "EHLO mail.zytor.com"
+	id S1752825AbaCHDiJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 22:38:09 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44919 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751296AbaCHDg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 22:36:26 -0500
+	id S1752076AbaCHDiH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 22:38:07 -0500
 User-Agent: K-9 Mail for Android
 In-Reply-To: <CA+55aFxpy_soEgGE3oap1N9+RucYCxOjfgvuRzhRqfC7zEm6PA@mail.gmail.com>
 References: <201403072325.s27NPvlt003528@terminus.zytor.com> <CA+55aFxpy_soEgGE3oap1N9+RucYCxOjfgvuRzhRqfC7zEm6PA@mail.gmail.com>
@@ -15,7 +15,7 @@ Content-Type: text/plain;
  charset=UTF-8
 Subject: Re: [GIT PULL] x86 fixes for v3.14-rc6
 From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Fri, 07 Mar 2014 19:34:03 -0800
+Date: Fri, 07 Mar 2014 19:36:57 -0800
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         "H. Peter Anvin" <hpa@linux.intel.com>
 CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -29,12 +29,12 @@ CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>, seiji.aguchi@hds.com,
         Thomas Gleixner <tglx@linutronix.de>,
         Vince Weaver <vincent.weaver@maine.edu>
-Message-ID: <4ac825d6-a2c7-4ab3-a554-37e02af61fa7@email.android.com>
+Message-ID: <c50e6761-e1f4-4d18-8c02-64c542dd9beb@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bloody hell.  Friday afternoon malfunction (thought I checked the output and apparently missed.)
+And yes, of course the change from hardcoded 2 to X86_TRAP_NMI was an afterthought.
 
 On March 7, 2014 7:03:09 PM PST, Linus Torvalds <torvalds@linux-foundation.org> wrote:
 >Oww, oww, oww.
