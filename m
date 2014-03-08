@@ -1,109 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755442AbaCHBdq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:33:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46285 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753822AbaCHBHD (ORCPT
+	id S1755458AbaCHBd5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:33:57 -0500
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:56829 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754257AbaCHBdy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:07:03 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tony Breeds <tony@bakeyournoodle.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.4 25/99] powerpc/le: Ensure that the stop-self RTAS token is handled correctly
-Date: Fri,  7 Mar 2014 17:07:21 -0800
-Message-Id: <20140308010612.425643961@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
-References: <20140308010611.468206150@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Fri, 7 Mar 2014 20:33:54 -0500
+Message-ID: <531A737E.4010200@gmail.com>
+Date: Sat, 08 Mar 2014 02:33:50 +0100
+From: poma <pomidorabelisima@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
+To: Francois Romieu <romieu@fr.zoreil.com>
+CC: netdev@vger.kernel.org, Intel Corporation <linux.nics@intel.com>,
+        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        Jamal Hadi Salim <jhs@mojatatu.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Josh Boyer <jwboyer@redhat.com>,
+        "Justin M. Forbes" <jforbes@redhat.com>,
+        Dan Williams <dcbw@redhat.com>, Thomas Haller <thaller@redhat.com>
+Subject: Re: WARNING: CPU: 0 PID: 0 at net/sched/sch_generic.c:264 dev_watchdog+0x276/0x280()
+References: <530332B7.10909@gmail.com> <53043521.4060206@gmail.com> <5319059E.1010205@gmail.com> <5319F40F.4040304@gmail.com>
+In-Reply-To: <5319F40F.4040304@gmail.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On 07.03.2014 17:30, poma wrote:
+> On 07.03.2014 00:32, poma wrote:
+>> ...
+>> After a few dozen tests with the vanilla commits, and with the same
+>> amount of rawhide kernels ...
+>> https://bugzilla.redhat.com/attachment.cgi?id=871694
+>>
+>> Dan, Francois you are both welcome with comments!
+>> Thanks.
+> 
+> Thomas U2. :)
+> 
+> No barking w-dog, but now the network traffic is totally busted!
+> https://bugzilla.redhat.com/attachment.cgi?id=871947
+> "ping: sendmsg: No buffer space available ..."
 
-------------------
+Francois, do you have this[1] patch applicable for the recent 'r8169.c'?
 
-From: Tony Breeds <tony@bakeyournoodle.com>
+$ patch -p5 < r8169-xmit.patch
+patching file r8169.c
+Hunk #1 FAILED at 5870.
+Hunk #2 succeeded at 5540 with fuzz 2 (offset -482 lines).
+Hunk #3 succeeded at 5641 (offset -494 lines).
+1 out of 3 hunks FAILED -- saving rejects to file r8169.c.rej
 
-commit 41dd03a94c7d408d2ef32530545097f7d1befe5c upstream.
 
-Currently we're storing a host endian RTAS token in
-rtas_stop_self_args.token.  We then pass that directly to rtas.  This is
-fine on big endian however on little endian the token is not what we
-expect.
+poma
 
-This will typically result in hitting:
-	panic("Alas, I survived.\n");
 
-To fix this we always use the stop-self token in host order and always
-convert it to be32 before passing this to rtas.
-
-Signed-off-by: Tony Breeds <tony@bakeyournoodle.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/powerpc/platforms/pseries/hotplug-cpu.c |   22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
-
---- a/arch/powerpc/platforms/pseries/hotplug-cpu.c
-+++ b/arch/powerpc/platforms/pseries/hotplug-cpu.c
-@@ -34,12 +34,7 @@
- #include "offline_states.h"
- 
- /* This version can't take the spinlock, because it never returns */
--static struct rtas_args rtas_stop_self_args = {
--	.token = RTAS_UNKNOWN_SERVICE,
--	.nargs = 0,
--	.nret = 1,
--	.rets = &rtas_stop_self_args.args[0],
--};
-+static int rtas_stop_self_token = RTAS_UNKNOWN_SERVICE;
- 
- static DEFINE_PER_CPU(enum cpu_state_vals, preferred_offline_state) =
- 							CPU_STATE_OFFLINE;
-@@ -92,15 +87,20 @@ void set_default_offline_state(int cpu)
- 
- static void rtas_stop_self(void)
- {
--	struct rtas_args *args = &rtas_stop_self_args;
-+	struct rtas_args args = {
-+		.token = cpu_to_be32(rtas_stop_self_token),
-+		.nargs = 0,
-+		.nret = 1,
-+		.rets = &args.args[0],
-+	};
- 
- 	local_irq_disable();
- 
--	BUG_ON(args->token == RTAS_UNKNOWN_SERVICE);
-+	BUG_ON(rtas_stop_self_token == RTAS_UNKNOWN_SERVICE);
- 
- 	printk("cpu %u (hwid %u) Ready to die...\n",
- 	       smp_processor_id(), hard_smp_processor_id());
--	enter_rtas(__pa(args));
-+	enter_rtas(__pa(&args));
- 
- 	panic("Alas, I survived.\n");
- }
-@@ -383,10 +383,10 @@ static int __init pseries_cpu_hotplug_in
- 		}
- 	}
- 
--	rtas_stop_self_args.token = rtas_token("stop-self");
-+	rtas_stop_self_token = rtas_token("stop-self");
- 	qcss_tok = rtas_token("query-cpu-stopped-state");
- 
--	if (rtas_stop_self_args.token == RTAS_UNKNOWN_SERVICE ||
-+	if (rtas_stop_self_token == RTAS_UNKNOWN_SERVICE ||
- 			qcss_tok == RTAS_UNKNOWN_SERVICE) {
- 		printk(KERN_INFO "CPU Hotplug not supported by firmware "
- 				"- disabling.\n");
+[1] https://bugzilla.kernel.org/attachment.cgi?id=125961
+https://bugzilla.kernel.org/show_bug.cgi?id=14962#c37
 
 
