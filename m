@@ -1,131 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752793AbaCHBAp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:00:45 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:36057 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752246AbaCHBAn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:00:43 -0500
-From: Kees Cook <keescook@chromium.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrew Honig <ahonig@google.com>, Michal Marek <mmarek@suse.cz>,
-        "x86@kernel.org" <x86@kernel.org>, Tejun Heo <tj@kernel.org>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-ia64@vger.kernel.org, keescook@chromium.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/2] kallsyms: handle special absolute symbols
-Date: Fri,  7 Mar 2014 17:00:25 -0800
-Message-Id: <1394240425-11647-3-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1394240425-11647-1-git-send-email-keescook@chromium.org>
-References: <1394240425-11647-1-git-send-email-keescook@chromium.org>
-X-HELO: www.outflux.net
+	id S1752936AbaCHBFD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:05:03 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:47138 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751818AbaCHBFA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 20:05:00 -0500
+Date: Fri, 7 Mar 2014 18:04:56 -0700
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Andreas Noever <andreas.noever@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Rajat Jain <rajatxjain@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Subject: Re: [Bug] PCI: Enable INTx if BIOS left them disabled - triggers
+ during rescan
+Message-ID: <20140308010456.GA30660@google.com>
+References: <CAMxnaaXd9-VbxSYa9q1YVT+fwfDFYKGG2Hq-1jkc-awLX-HwtQ@mail.gmail.com>
+ <CAErSpo5fkaFNq_qTZ+gTDMV554f4diOXQ7_4bsHqj06iAGTpHg@mail.gmail.com>
+ <CAE9FiQVNFqTw+92qy8zcwG1haiSZzU+KE3oh4YnjNc_aE6KUnA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQVNFqTw+92qy8zcwG1haiSZzU+KE3oh4YnjNc_aE6KUnA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This forces the entire per_cpu range to be reported as absolute
-without losing their linker symbol types, when the per_cpu area is
-0-based. Without this, the variables are incorrectly shown as relocated
-under kASLR on x86_64.
+[+cc Rafael]
 
-Several kallsyms output in different boot states for comparison of
-various symbols:
+On Fri, Mar 07, 2014 at 11:39:48AM -0800, Yinghai Lu wrote:
+> On Fri, Mar 7, 2014 at 8:45 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> >
+> > I opened a bugzilla report at https://bugzilla.kernel.org/show_bug.cgi?id=71691
+> >
+> > It seems like clearing DisINTx has some effect on MSI.  I don't see
+> > anything in the spec that would suggest this (I'm looking at the PCIe
+> > r3.0 spec, sec 7.5.1.1).
+> >
+> > Can somebody point out a connection between DisINTx and MSI?  If not,
+> > maybe we'll need some sort of quirk to deal with this.
+> 
+> I had different impression: if you disable INTx in some chipset, MSI will not
+> work anymore.
+> 
+> so we have
+> 
+> static void pci_intx_for_msi(struct pci_dev *dev, int enable)
+> {
+>         if (!(dev->dev_flags & PCI_DEV_FLAGS_MSI_INTX_DISABLE_BUG))
+>                 pci_intx(dev, enable);
+> }
+> 
+> and have quirks for ati and broadcom chip to set that FLAG.
 
-$ egrep ' (gdt_|_(stext|_per_cpu_))' /root/kallsyms.nokaslr
-0000000000000000 D __per_cpu_start
-0000000000004000 D gdt_page
-0000000000014280 D __per_cpu_end
-ffffffff810001c8 T _stext
-ffffffff81ee53c0 D __per_cpu_offset
-$ egrep ' (gdt_|_(stext|_per_cpu_))' /root/kallsyms.kaslr1
-000000001f200000 D __per_cpu_start
-000000001f204000 D gdt_page
-000000001f214280 D __per_cpu_end
-ffffffffa02001c8 T _stext
-ffffffffa10e53c0 D __per_cpu_offset
-$ egrep ' (gdt_|_(stext|_per_cpu_))' /root/kallsyms.kaslr2
-000000000d400000 D __per_cpu_start
-000000000d404000 D gdt_page
-000000000d414280 D __per_cpu_end
-ffffffff8e4001c8 T _stext
-ffffffff8f2e53c0 D __per_cpu_offset
-$ egrep ' (gdt_|_(stext|_per_cpu_))' /root/kallsyms.kaslr-fixed
-0000000000000000 D __per_cpu_start
-0000000000004000 D gdt_page
-0000000000014280 D __per_cpu_end
-ffffffffadc001c8 T _stext
-ffffffffaeae53c0 D __per_cpu_offset
+Setting INTX_DISABLE on some chipsets seems to disable MSI, and that
+behavior seems to be a hardware defect (see ba698ad4b7e4 "PCI: Add
+quirk for devices which disable MSI when INTX_DISABLE is set.")
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
-v2:
- - only force absolute when per_cpu starts at 0.
----
- scripts/kallsyms.c |   20 +++++++++++++++++++-
- 1 file changed, 19 insertions(+), 1 deletion(-)
+Andreas has a device where *clearing* INTX_DISABLE seems to disable
+MSI.  Do you think that's also a hardware defect?  If it's not a
+defect, is there something in the spec that explains why that happens?
 
-diff --git a/scripts/kallsyms.c b/scripts/kallsyms.c
-index 08f30ac5b07d..d3f93b8eb277 100644
---- a/scripts/kallsyms.c
-+++ b/scripts/kallsyms.c
-@@ -34,6 +34,7 @@ struct sym_entry {
- 	unsigned int len;
- 	unsigned int start_pos;
- 	unsigned char *sym;
-+	int force_absolute;
- };
- 
- struct addr_range {
-@@ -51,6 +52,14 @@ static struct addr_range text_ranges[] = {
- #define text_range_text     (&text_ranges[0])
- #define text_range_inittext (&text_ranges[1])
- 
-+/*
-+ * Variables in these ranges, when the start is 0 based, will be forced to
-+ * be handled as absolute addresses.
-+ */
-+static struct addr_range abs_ranges[] = {
-+	{ "__per_cpu_start",	"__per_cpu_end", -1ULL, 0 },
-+};
-+
- static struct sym_entry *table;
- static unsigned int table_size, table_cnt;
- static int all_symbols = 0;
-@@ -165,6 +174,10 @@ static int read_symbol(FILE *in, struct sym_entry *s)
- 	}
- 	strcpy((char *)s->sym + 1, str);
- 	s->sym[0] = stype;
-+	s->force_absolute = 0;
-+
-+	/* Check if we've found special absolute symbol range. */
-+	check_symbol_range(sym, s->addr, abs_ranges, ARRAY_SIZE(abs_ranges));
- 
- 	return 0;
- }
-@@ -211,6 +224,11 @@ static int symbol_valid(struct sym_entry *s)
- 	if (s->addr < kernel_start_addr)
- 		return 0;
- 
-+	/* Force zero-based range special symbols into being absolute. */
-+	i = symbol_in_range(s, abs_ranges, ARRAY_SIZE(abs_ranges));
-+	if (i >= 0 && abs_ranges[i].start == 0)
-+		s->force_absolute = 1;
-+
- 	/* skip prefix char */
- 	if (symbol_prefix_char && *(s->sym + 1) == symbol_prefix_char)
- 		offset++;
-@@ -307,7 +325,7 @@ static int expand_symbol(unsigned char *data, int len, char *result)
- 
- static int symbol_absolute(struct sym_entry *s)
- {
--	return toupper(s->sym[0]) == 'A';
-+	return s->force_absolute || toupper(s->sym[0]) == 'A';
- }
- 
- static void write_src(void)
--- 
-1.7.9.5
+> regarding the regression: i would suggest move out
+> do_pci_enable_intx() from re-enable path.
+
+Today we have this:
+
+  pcie_portdrv_probe
+    pci_enable_device		# clears INTX_DISABLE
+    pci_enable_msi		# sets INTX_DISABLE
+
+  pciehp_configure_device
+    pci_reenable_device		# clears INTX_DISABLE again
+
+This is clearly not the intent; we set INTX_DISABLE when MSI was
+enabled, then we clear it again later even though MSI is still
+enabled.  Maybe we should just leave INTX_DISABLE alone if
+(dev->msi_enabled || dev->msix_enabled).
+
+pci_reenable_device() is also used in the device resume path.  I don't
+know what should happen there.
+
+But I'm curious about why we set INTX_DISABLE when enabling MSI/MSI-X
+in the first place.  Per the PCI 3.0 spec, sec 6.8.3.3:
+
+  While enabled for MSI or MSI-X operation, a function is prohibited
+  from using its INTx# pin (if implemented) to request service (MSI,
+  MSI-X, and INTx# are mutually exclusive).
+
+This suggests that we might not need to touch INTX_DISABLE when we're
+enabling MSI/MSI-X.  I looked at these commits related to it:
+
+  ba698ad4b7e4 PCI: Add quirk for devices which disable MSI when INTX_DISABLE is set.
+  b1cbf4e4dddd msi: fix up the msi enable/disable logic
+  1769b46a3ed9 PCI MSI: always toggle legacy-INTx-enable bit upon MSI entry/exit
+  986162d3239a ia32 Message Signalled Interrupt support
+
+and none of them mentions a problem that requires us to set
+INTX_DISABLE.  It's possible that we're causing ourselves trouble by
+being overly defensive.  I wonder what would happen if we stopped
+fiddling with it in the MSI/MSI-X paths, e.g., something like this
+(just as an experiment, of course):
+
+  diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+  index 7a0fec6ce571..9ef7bd608add 100644
+  --- a/drivers/pci/msi.c
+  +++ b/drivers/pci/msi.c
+  @@ -442,8 +442,6 @@ static struct msi_desc *alloc_msi_entry(struct pci_dev *dev)
+   
+   static void pci_intx_for_msi(struct pci_dev *dev, int enable)
+   {
+  -	if (!(dev->dev_flags & PCI_DEV_FLAGS_MSI_INTX_DISABLE_BUG))
+  -		pci_intx(dev, enable);
+   }
+   
+   static void __pci_restore_msi_state(struct pci_dev *dev)
+
+If we did that, INTX_DISABLE would be cleared by the first
+pci_enable_device() and pci_reenable_device() wouldn't do anything,
+leaving it cleared.  The resulting state (cleared) would be the same,
+but the transitions would be gone, and maybe those are important.
+
+The thing I don't like about the patch below is that it's magical: the
+code doesn't have any obvious connection with the problem.  How would
+one deduce that this is necessary, or explain why it's necessary?  A
+changelog like "this makes things work" is not really very useful.  If
+we make a change like this, it needs to be connected with MSI/MSI-X
+somehow so a reader can figure out why we twiddle INTX_DISABLE in the
+enable path but not the reenable path.
+
+Bjorn
+
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index 5a24cb3..92718c9 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -1190,11 +1190,22 @@ int __weak pcibios_enable_device(struct
+> pci_dev *dev, int bars)
+>      return pci_enable_resources(dev, bars);
+>  }
+> 
+> +static void do_pci_enable_intx(struct pci_dev *dev)
+> +{
+> +    u8 pin;
+> +    pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
+> +    if (pin) {
+> +        pci_read_config_word(dev, PCI_COMMAND, &cmd);
+> +        if (cmd & PCI_COMMAND_INTX_DISABLE)
+> +            pci_write_config_word(dev, PCI_COMMAND,
+> +                          cmd & ~PCI_COMMAND_INTX_DISABLE);
+> +    }
+> +}
+> +
+>  static int do_pci_enable_device(struct pci_dev *dev, int bars)
+>  {
+>      int err;
+>      u16 cmd;
+> -    u8 pin;
+> 
+>      err = pci_set_power_state(dev, PCI_D0);
+>      if (err < 0 && err != -EIO)
+> @@ -1204,14 +1215,6 @@ static int do_pci_enable_device(struct pci_dev
+> *dev, int bars)
+>          return err;
+>      pci_fixup_device(pci_fixup_enable, dev);
+> 
+> -    pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
+> -    if (pin) {
+> -        pci_read_config_word(dev, PCI_COMMAND, &cmd);
+> -        if (cmd & PCI_COMMAND_INTX_DISABLE)
+> -            pci_write_config_word(dev, PCI_COMMAND,
+> -                          cmd & ~PCI_COMMAND_INTX_DISABLE);
+> -    }
+> -
+>      return 0;
+>  }
+> 
+> @@ -1287,6 +1290,8 @@ static int pci_enable_device_flags(struct
+> pci_dev *dev, unsigned long flags)
+>      err = do_pci_enable_device(dev, bars);
+>      if (err < 0)
+>          atomic_dec(&dev->enable_cnt);
+> +    else
+> +        do_pci_enable_intx(dev);
+>      return err;
+>  }
+
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index 5a24cb3..92718c9 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -1190,11 +1190,22 @@ int __weak pcibios_enable_device(struct pci_dev *dev, int bars)
+>  	return pci_enable_resources(dev, bars);
+>  }
+>  
+> +static void do_pci_enable_intx(struct pci_dev *dev)
+> +{
+> +	u8 pin;
+> +	pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
+> +	if (pin) {
+> +		pci_read_config_word(dev, PCI_COMMAND, &cmd);
+> +		if (cmd & PCI_COMMAND_INTX_DISABLE)
+> +			pci_write_config_word(dev, PCI_COMMAND,
+> +					      cmd & ~PCI_COMMAND_INTX_DISABLE);
+> +	}
+> +}
+> +
+>  static int do_pci_enable_device(struct pci_dev *dev, int bars)
+>  {
+>  	int err;
+>  	u16 cmd;
+> -	u8 pin;
+>  
+>  	err = pci_set_power_state(dev, PCI_D0);
+>  	if (err < 0 && err != -EIO)
+> @@ -1204,14 +1215,6 @@ static int do_pci_enable_device(struct pci_dev *dev, int bars)
+>  		return err;
+>  	pci_fixup_device(pci_fixup_enable, dev);
+>  
+> -	pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
+> -	if (pin) {
+> -		pci_read_config_word(dev, PCI_COMMAND, &cmd);
+> -		if (cmd & PCI_COMMAND_INTX_DISABLE)
+> -			pci_write_config_word(dev, PCI_COMMAND,
+> -					      cmd & ~PCI_COMMAND_INTX_DISABLE);
+> -	}
+> -
+>  	return 0;
+>  }
+>  
+> @@ -1287,6 +1290,8 @@ static int pci_enable_device_flags(struct pci_dev *dev, unsigned long flags)
+>  	err = do_pci_enable_device(dev, bars);
+>  	if (err < 0)
+>  		atomic_dec(&dev->enable_cnt);
+> +	else
+> +		do_pci_enable_intx(dev);
+>  	return err;
+>  }
+>  
 
