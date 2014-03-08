@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754447AbaCHBIA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:08:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46634 "EHLO
+	id S1754695AbaCHBLx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:11:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46676 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754385AbaCHBHw (ORCPT
+	with ESMTP id S1753037AbaCHBH6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:07:52 -0500
+	Fri, 7 Mar 2014 20:07:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Carlos Maiolino <cmaiolino@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
-        Jan Kara <jack@suse.cz>, "Theodore Tso" <tytso@mit.edu>,
-        Ben Hutchings <ben@decadent.org.uk>, Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 3.4 62/99] ext4: fix possible use-after-free with AIO
-Date: Fri,  7 Mar 2014 17:07:58 -0800
-Message-Id: <20140308010613.585618263@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Jianguo Wu <wujianguo@huawei.com>
+Subject: [PATCH 3.4 97/99] rtlwifi: Fix endian error in extracting packet type
+Date: Fri,  7 Mar 2014 17:08:33 -0800
+Message-Id: <20140308010614.679235829@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
 References: <20140308010611.468206150@linuxfoundation.org>
@@ -30,62 +31,164 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
 
-commit 091e26dfc156aeb3b73bc5c5f277e433ad39331c upstream.
+From: Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>
 
-Running AIO is pinning inode in memory using file reference. Once AIO
-is completed using aio_complete(), file reference is put and inode can
-be freed from memory. So we have to be sure that calling aio_complete()
-is the last thing we do with the inode.
+commit 0c5d63f0ab6728f05ddefa25aff55e31297f95e6 upstream.
 
-Reviewed-by: Carlos Maiolino <cmaiolino@redhat.com>
-Acked-by: Jeff Moyer <jmoyer@redhat.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-[bwh: Backported to 3.2: adjust context]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Rui Xiang <rui.xiang@huawei.com>
+All of the rtlwifi drivers have an error in the routine that tests if
+the data is "special". If it is, the subsequant transmission will be
+at the lowest rate to enhance reliability. The 16-bit quantity is
+big-endian, but was being extracted in native CPU mode. One of the
+effects of this bug is to inhibit association under some conditions
+as the TX rate is too high.
+
+Based on suggestions by Joe Perches, the entire routine is rewritten.
+
+One of the local headers contained duplicates of some of the ETH_P_XXX
+definitions. These are deleted.
+
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+[wujg: Backported to 3.4:
+ - adjust context
+ - remove rtlpriv->enter_ps = false
+ - use schedule_work(&rtlpriv->works.lps_leave_work)]
+Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/ext4/inode.c   |    2 +-
- fs/ext4/page-io.c |    9 ++++-----
- 2 files changed, 5 insertions(+), 6 deletions(-)
+ drivers/net/wireless/rtlwifi/base.c |   93 ++++++++++++++++--------------------
+ drivers/net/wireless/rtlwifi/wifi.h |    6 --
+ 2 files changed, 43 insertions(+), 56 deletions(-)
 
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -2800,9 +2800,9 @@ static void ext4_end_io_dio(struct kiocb
- 	if (!(io_end->flag & EXT4_IO_END_UNWRITTEN)) {
- 		ext4_free_io_end(io_end);
- out:
-+		inode_dio_done(inode);
- 		if (is_async)
- 			aio_complete(iocb, ret, 0);
--		inode_dio_done(inode);
- 		return;
- 	}
+--- a/drivers/net/wireless/rtlwifi/base.c
++++ b/drivers/net/wireless/rtlwifi/base.c
+@@ -37,6 +37,7 @@
  
---- a/fs/ext4/page-io.c
-+++ b/fs/ext4/page-io.c
-@@ -107,14 +107,13 @@ int ext4_end_io_nolock(ext4_io_end_t *io
- 			 inode->i_ino, offset, size, ret);
- 	}
+ #include <linux/ip.h>
+ #include <linux/module.h>
++#include <linux/udp.h>
  
--	if (io->iocb)
--		aio_complete(io->iocb, io->result, 0);
+ /*
+  *NOTICE!!!: This file will be very big, we should
+@@ -957,61 +958,51 @@ u8 rtl_is_special_data(struct ieee80211_
+ 	if (!ieee80211_is_data(fc))
+ 		return false;
+ 
++	ip = (const struct iphdr *)(skb->data + mac_hdr_len +
++				    SNAP_SIZE + PROTOC_TYPE_SIZE);
++	ether_type = be16_to_cpup((__be16 *)
++				  (skb->data + mac_hdr_len + SNAP_SIZE));
++
++	switch (ether_type) {
++	case ETH_P_IP: {
++		struct udphdr *udp;
++		u16 src;
++		u16 dst;
++
++		if (ip->protocol != IPPROTO_UDP)
++			return false;
++		udp = (struct udphdr *)((u8 *)ip + (ip->ihl << 2));
++		src = be16_to_cpu(udp->source);
++		dst = be16_to_cpu(udp->dest);
++
++		/* If this case involves port 68 (UDP BOOTP client) connecting
++		 * with port 67 (UDP BOOTP server), then return true so that
++		 * the lowest speed is used.
++		 */
++		if (!((src == 68 && dst == 67) || (src == 67 && dst == 68)))
++			return false;
+ 
+-	ip = (struct iphdr *)((u8 *) skb->data + mac_hdr_len +
+-			      SNAP_SIZE + PROTOC_TYPE_SIZE);
+-	ether_type = *(u16 *) ((u8 *) skb->data + mac_hdr_len + SNAP_SIZE);
+-	/*	ether_type = ntohs(ether_type); */
 -
--	if (io->flag & EXT4_IO_END_DIRECT)
--		inode_dio_done(inode);
- 	/* Wake up anyone waiting on unwritten extent conversion */
- 	if (atomic_dec_and_test(&EXT4_I(inode)->i_aiodio_unwritten))
- 		wake_up_all(ext4_ioend_wq(io->inode));
-+	if (io->flag & EXT4_IO_END_DIRECT)
-+		inode_dio_done(inode);
-+	if (io->iocb)
-+		aio_complete(io->iocb, io->result, 0);
- 	return ret;
+-	if (ETH_P_IP == ether_type) {
+-		if (IPPROTO_UDP == ip->protocol) {
+-			struct udphdr *udp = (struct udphdr *)((u8 *) ip +
+-							       (ip->ihl << 2));
+-			if (((((u8 *) udp)[1] == 68) &&
+-			     (((u8 *) udp)[3] == 67)) ||
+-			    ((((u8 *) udp)[1] == 67) &&
+-			     (((u8 *) udp)[3] == 68))) {
+-				/*
+-				 * 68 : UDP BOOTP client
+-				 * 67 : UDP BOOTP server
+-				 */
+-				RT_TRACE(rtlpriv, (COMP_SEND | COMP_RECV),
+-					 DBG_DMESG, "dhcp %s !!\n",
+-					 is_tx ? "Tx" : "Rx");
+-
+-				if (is_tx) {
+-					schedule_work(&rtlpriv->
+-						      works.lps_leave_work);
+-					ppsc->last_delaylps_stamp_jiffies =
+-					    jiffies;
+-				}
+-
+-				return true;
+-			}
+-		}
+-	} else if (ETH_P_ARP == ether_type) {
+-		if (is_tx) {
+-			schedule_work(&rtlpriv->works.lps_leave_work);
+-			ppsc->last_delaylps_stamp_jiffies = jiffies;
+-		}
+-
+-		return true;
+-	} else if (ETH_P_PAE == ether_type) {
++		RT_TRACE(rtlpriv, (COMP_SEND | COMP_RECV), DBG_DMESG,
++			 "dhcp %s !!\n", is_tx ? "Tx" : "Rx");
++		break;
++	}
++	case ETH_P_ARP:
++		break;
++	case ETH_P_PAE:
+ 		RT_TRACE(rtlpriv, (COMP_SEND | COMP_RECV), DBG_DMESG,
+ 			 "802.1X %s EAPOL pkt!!\n", is_tx ? "Tx" : "Rx");
+-
+-		if (is_tx) {
+-			schedule_work(&rtlpriv->works.lps_leave_work);
+-			ppsc->last_delaylps_stamp_jiffies = jiffies;
+-		}
+-
+-		return true;
+-	} else if (ETH_P_IPV6 == ether_type) {
+-		/* IPv6 */
+-		return true;
++		break;
++	case ETH_P_IPV6:
++		/* TODO: Is this right? */
++		return false;
++	default:
++		return false;
+ 	}
+-
+-	return false;
++	if (is_tx) {
++		schedule_work(&rtlpriv->works.lps_leave_work);
++		ppsc->last_delaylps_stamp_jiffies = jiffies;
++	}
++	return true;
  }
+ 
+ /*********************************************************
+--- a/drivers/net/wireless/rtlwifi/wifi.h
++++ b/drivers/net/wireless/rtlwifi/wifi.h
+@@ -77,11 +77,7 @@
+ #define RTL_SLOT_TIME_9				9
+ #define RTL_SLOT_TIME_20			20
+ 
+-/*related with tcp/ip. */
+-/*if_ehther.h*/
+-#define ETH_P_PAE		0x888E	/*Port Access Entity (IEEE 802.1X) */
+-#define ETH_P_IP		0x0800	/*Internet Protocol packet */
+-#define ETH_P_ARP		0x0806	/*Address Resolution packet */
++/*related to tcp/ip. */
+ #define SNAP_SIZE		6
+ #define PROTOC_TYPE_SIZE	2
  
 
 
