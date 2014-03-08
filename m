@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752262AbaCHJ35 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 04:29:57 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52766 "EHLO arroyo.ext.ti.com"
+	id S1752592AbaCHJa3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 04:30:29 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:43001 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752099AbaCHJ3u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 04:29:50 -0500
+	id S1752382AbaCHJaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Mar 2014 04:30:08 -0500
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <gregkh@linuxfoundation.org>, <kishon@ti.com>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH 11/28] phy: omap-usb2: move omap_usb.h from linux/usb/ to linux/phy/
-Date: Sat, 8 Mar 2014 14:59:12 +0530
-Message-ID: <1394270969-11851-12-git-send-email-kishon@ti.com>
+Subject: [PATCH 23/28] phy: ti-pipe3: Don't get 'wkupclk' and 'refclk' for SATA PHY
+Date: Sat, 8 Mar 2014 14:59:24 +0530
+Message-ID: <1394270969-11851-24-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1394270969-11851-1-git-send-email-kishon@ti.com>
 References: <1394270969-11851-1-git-send-email-kishon@ti.com>
@@ -21,65 +21,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No functional change. Moved omap_usb.h from linux/usb/ to linux/phy/.
-Also removed the unused members of struct omap_usb (after phy-omap-pipe3
-started using it's own header file)
+From: Roger Quadros <rogerq@ti.com>
 
+SATA PHY doesn't need 'wkupclk; and 'refclk' so don't
+try to get them for SATA PHY.
+
+Signed-off-by: Roger Quadros <rogerq@ti.com>
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- drivers/phy/phy-omap-usb2.c           |    2 +-
- drivers/usb/phy/phy-twl6030-usb.c     |    2 +-
- include/linux/{usb => phy}/omap_usb.h |    3 ---
- 3 files changed, 2 insertions(+), 5 deletions(-)
- rename include/linux/{usb => phy}/omap_usb.h (95%)
+ drivers/phy/phy-ti-pipe3.c |   24 +++++++++++++++---------
+ 1 file changed, 15 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/phy/phy-omap-usb2.c b/drivers/phy/phy-omap-usb2.c
-index 705af5a..9c3f056 100644
---- a/drivers/phy/phy-omap-usb2.c
-+++ b/drivers/phy/phy-omap-usb2.c
-@@ -21,7 +21,7 @@
- #include <linux/slab.h>
- #include <linux/of.h>
- #include <linux/io.h>
--#include <linux/usb/omap_usb.h>
-+#include <linux/phy/omap_usb.h>
- #include <linux/usb/phy_companion.h>
- #include <linux/clk.h>
- #include <linux/err.h>
-diff --git a/drivers/usb/phy/phy-twl6030-usb.c b/drivers/usb/phy/phy-twl6030-usb.c
-index 214172b..04778cf 100644
---- a/drivers/usb/phy/phy-twl6030-usb.c
-+++ b/drivers/usb/phy/phy-twl6030-usb.c
-@@ -27,7 +27,7 @@
- #include <linux/io.h>
- #include <linux/usb/musb-omap.h>
- #include <linux/usb/phy_companion.h>
--#include <linux/usb/omap_usb.h>
-+#include <linux/phy/omap_usb.h>
- #include <linux/i2c/twl.h>
- #include <linux/regulator/consumer.h>
- #include <linux/err.h>
-diff --git a/include/linux/usb/omap_usb.h b/include/linux/phy/omap_usb.h
-similarity index 95%
-rename from include/linux/usb/omap_usb.h
-rename to include/linux/phy/omap_usb.h
-index 6ae2936..19d343c3 100644
---- a/include/linux/usb/omap_usb.h
-+++ b/include/linux/phy/omap_usb.h
-@@ -33,13 +33,10 @@ struct usb_dpll_params {
- struct omap_usb {
- 	struct usb_phy		phy;
- 	struct phy_companion	*comparator;
--	void __iomem		*pll_ctrl_base;
- 	struct device		*dev;
- 	struct device		*control_dev;
- 	struct clk		*wkupclk;
--	struct clk		*sys_clk;
- 	struct clk		*optclk;
--	u8			is_suspended:1;
- };
+diff --git a/drivers/phy/phy-ti-pipe3.c b/drivers/phy/phy-ti-pipe3.c
+index f141237..baa3f78d 100644
+--- a/drivers/phy/phy-ti-pipe3.c
++++ b/drivers/phy/phy-ti-pipe3.c
+@@ -294,16 +294,22 @@ static int ti_pipe3_probe(struct platform_device *pdev)
  
- #define	phy_to_omapusb(x)	container_of((x), struct omap_usb, phy)
+ 	phy->dev		= &pdev->dev;
+ 
+-	phy->wkupclk = devm_clk_get(phy->dev, "wkupclk");
+-	if (IS_ERR(phy->wkupclk)) {
+-		dev_err(&pdev->dev, "unable to get wkupclk\n");
+-		return PTR_ERR(phy->wkupclk);
+-	}
++	if (!of_device_is_compatible(node, "ti,phy-pipe3-sata")) {
++
++		phy->wkupclk = devm_clk_get(phy->dev, "wkupclk");
++		if (IS_ERR(phy->wkupclk)) {
++			dev_err(&pdev->dev, "unable to get wkupclk\n");
++			return PTR_ERR(phy->wkupclk);
++		}
+ 
+-	phy->refclk = devm_clk_get(phy->dev, "refclk");
+-	if (IS_ERR(phy->refclk)) {
+-		dev_err(&pdev->dev, "unable to get refclk\n");
+-		return PTR_ERR(phy->refclk);
++		phy->refclk = devm_clk_get(phy->dev, "refclk");
++		if (IS_ERR(phy->refclk)) {
++			dev_err(&pdev->dev, "unable to get refclk\n");
++			return PTR_ERR(phy->refclk);
++		}
++	} else {
++		phy->wkupclk = ERR_PTR(-ENODEV);
++		phy->refclk = ERR_PTR(-ENODEV);
+ 	}
+ 
+ 	phy->sys_clk = devm_clk_get(phy->dev, "sysclk");
 -- 
 1.7.9.5
 
