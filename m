@@ -1,89 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752002AbaCHLIj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 06:08:39 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60631 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751880AbaCHLIf convert rfc822-to-8bit (ORCPT
+	id S1751999AbaCHLS7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 06:18:59 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:43008 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751013AbaCHLS6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 06:08:35 -0500
-Date: Sat, 8 Mar 2014 12:08:31 +0100
-From: Jean Delvare <jdelvare@suse.de>
-To: Manuel Krause <manuelkrause@netscape.net>
-Cc: Guenter Roeck <linux@roeck-us.net>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [lm-sensors] 3.13.?: Strange / dangerous fan policy...
-Message-ID: <20140308120831.328e0179@endymion.delvare>
-In-Reply-To: <20140307225230.GA31135@roeck-us.net>
-References: <531A1EEE.9090101@netscape.net>
-	<20140307205506.GA6870@roeck-us.net>
-	<531A426D.6080100@netscape.net>
-	<20140307225230.GA31135@roeck-us.net>
-Organization: SUSE Linux
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	Sat, 8 Mar 2014 06:18:58 -0500
+Date: Sat, 8 Mar 2014 11:18:38 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: David Long <dave.long@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, Rabin Vincent <rabin@rab.in>,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        davem@davemloft.net, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7 00/15] uprobes: Add uprobes support for ARM
+Message-ID: <20140308111838.GV21483@n2100.arm.linux.org.uk>
+References: <1394223040-17129-1-git-send-email-dave.long@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394223040-17129-1-git-send-email-dave.long@linaro.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 Mar 2014 14:52:30 -0800, Guenter Roeck wrote:
-> On Fri, Mar 07, 2014 at 11:04:29PM +0100, Manuel Krause wrote:
-> > Hi, and thanks for the quick response!
-> > No special fancy "fan control policy". 'fancontrol' isn't up or
-> > running.
-> > Vanilla kernels 3.11.* and 3.12.* had been working on here without
-> > any extra work.
-> > --
-> > # sensors
-> > acpitz-virtual-0
-> > Adapter: Virtual device
-> > temp1:        +71.0°C  (crit = +256.0°C)
-> > temp2:        +69.0°C  (crit = +110.0°C)
-> > temp3:        +52.0°C  (crit = +105.0°C)
-> > temp4:        +25.0°C  (crit = +110.0°C)
-> > temp5:        +58.0°C  (crit = +110.0°C)
-> > 
-> > coretemp-isa-0000
-> > Adapter: ISA adapter
-> > Core 0:       +62.0°C  (high = +105.0°C, crit = +105.0°C)
-> > Core 1:       +60.0°C  (high = +105.0°C, crit = +105.0°C)
-> > --
-> > My notebook (HP/Compaq 6730b) does not have a seperate fan sensor.
-> > This is with 3.12.13 with my normal workload.
-> > 
-> > Please, trust my above mentionned values of 94 °C vs. 74°C as I
-> > don't like to boot 3.13.6 anymore, to avoid harm to the notebook's
-> > casing.
+On Fri, Mar 07, 2014 at 03:10:25PM -0500, David Long wrote:
+> From: "David A. Long" <dave.long@linaro.org>
 > 
-> Understood. Unfortunately, we'll need to get information
-> from the new kernel to be able to track down the problem.
+> This patch series adds basic uprobes support to ARM. It is based on patches
+> developed earlier by Rabin Vincent. That approach of adding hooks into
+> the kprobes instruction parsing code was not well received. This approach
+> separates the ARM instruction parsing code in kprobes out into a separate set
+> of functions which can be used by both kprobes and uprobes. Both kprobes and
+> uprobes then provide their own semantic action tables to process the results of
+> the parsing.
 
-Indeed. Not only the run-time temperatures, but also the high and crit
-limits.
-
-> > But I'd do to test any improvement-patch.
-> 
-> So far I have no idea what is going on. I don't see anything in the
-> drivers providing above data that would explain the behavior,
-> but I might be missing something.
-
-Looks like a regression in the acpi subsystem or in power management,
-not hwmon. Hwmon is merely reporting the temperatures, it's not
-responsible for the actual temperatures.
-
-A bisection would certainly help, but of course that would require
-booting to a bad kernel half of the time, which I understand Manual
-wouldn't enjoy.
-
-The only two components which I think can reach such high temperatures
-in a laptop are the CPU and the GPU. I suppose that the "94 °C vs.
-74°C" refers to acpitz's temp1? If the the temperatures reported by
-coretemp remain the same, then I can only suppose that temp1 is the GPU
-temperature. Please tell us which GPU is in this laptop, and which
-driver you're using.
+When you eventually get around to resubmitting this (with all the acks)
+please submit as a git pull, rather than a series of patches.  Thanks.
 
 -- 
-Jean Delvare
-SUSE L3 Support
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
