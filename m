@@ -1,82 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753705AbaCHFhw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 00:37:52 -0500
-Received: from mail-we0-f169.google.com ([74.125.82.169]:35598 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751664AbaCHFaU (ORCPT
+	id S1751217AbaCHGSa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 01:18:30 -0500
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:44942 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750792AbaCHGS2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 00:30:20 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v4 3/3] Documentation: of: Document graph bindings
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-In-Reply-To: <530DFF4C.8080807@ti.com>
-References: <1393340304-19005-1-git-send-email-p.zabel@pengutronix.de>	 < 1393340304-19005-4-git-send-email-p.zabel@pengutronix.de>	 <530DE8A9. 9050809@ti.com> <1393426623.3248.70.camel@paszta.hi.pengutronix.de> < 530DFF4C.8080807@ti.com>
-Date: Fri, 07 Mar 2014 18:11:32 +0000
-Message-Id: <20140307181132.B2D71C40A88@trevor.secretlab.ca>
+	Sat, 8 Mar 2014 01:18:28 -0500
+MIME-Version: 1.0
+In-Reply-To: <531A53CF.2000604@zytor.com>
+References: <alpine.DEB.2.10.1401301442170.2769@minerva.lan>
+	<CA+55aFz_CYQGxukpRb5zF5SZ9ZWqpvohoUzqdEb-3+bR_FMnWA@mail.gmail.com>
+	<CALmL7E9LRZCPH5EuS_Jm-iJzpKnWj4OsXmS44VYDpLoDKPfVxA@mail.gmail.com>
+	<CA+55aFz-=9L=K2O-yB5f9R-w40PzXJ5xEXcinnUdUF1QHO7KMQ@mail.gmail.com>
+	<CALmL7E9j5Rv8ZqUZXZh-dfNu_-7XWK_EoNjZHpuAwtG7jpk9+g@mail.gmail.com>
+	<1391325599.6481.5.camel@europa>
+	<530FCDD6.3060701@zytor.com>
+	<531A53CF.2000604@zytor.com>
+Date: Fri, 7 Mar 2014 22:18:27 -0800
+Message-ID: <CALmL7E84ge7YyT5ooGM2n63J98jYCyPqD3vLpEQXKqo=r+2Zug@mail.gmail.com>
+Subject: Re: [PATCH] Make math_state_restore() save and restore the interrupt flag
+From: Suresh Siddha <sbsiddha@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Nate Eldredge <nate@thatsmathematics.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        stable <stable@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Maarten Baert <maarten-baert@hotmail.com>, Jan Kara <jack@suse.cz>,
+        George Spelvin <linux@horizon.com>, Pekka Riikonen <priikone@iki.fi>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Feb 2014 16:50:52 +0200, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
-> On 26/02/14 16:57, Philipp Zabel wrote:
-> > Hi Tomi,
-> > 
-> > Am Mittwoch, den 26.02.2014, 15:14 +0200 schrieb Tomi Valkeinen:
-> >> On 25/02/14 16:58, Philipp Zabel wrote:
-> >>
-> >>> +Optional endpoint properties
-> >>> +----------------------------
-> >>> +
-> >>> +- remote-endpoint: phandle to an 'endpoint' subnode of a remote device node.
-> >>
-> >> Why is that optional? What use is an endpoint, if it's not connected to
-> >> something?
-> > 
-> > This allows to include the an empty endpoint template in a SoC dtsi for
-> > the convenience of board dts writers. Also, the same property is
-> > currently listed as optional in video-interfaces.txt.
-> > 
-> >   soc.dtsi:
-> > 	display-controller {
-> > 		port {
-> > 			disp0: endpoint { };
-> > 		};
-> > 	};
-> > 
-> >   board.dts:
-> > 	#include "soc.dtsi"
-> > 	&disp0 {
-> > 		remote-endpoint = <&panel_input>;
-> > 	};
-> > 	panel {
-> > 		port {
-> > 			panel_in: endpoint {
-> > 				remote-endpoint = <&disp0>;
-> > 			};
-> > 		};
-> > 	};
-> > 
-> > Any board not using that port can just leave the endpoint disconnected.
-> 
-> Hmm I see. I'm against that.
-> 
-> I think the SoC dtsi should not contain endpoint node, or even port node
-> (at least usually). It doesn't know how many endpoints, if any, a
-> particular board has. That part should be up to the board dts.
+On Fri, Mar 7, 2014 at 3:18 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>
+> Hi Suresh,
+>
+> Any thoughts on this?
 
-Why? We have established precedence for unused devices still being in
-the tree. I really see no issue with it.
+hi Peter,
 
-g.
+Can you please pickup the second short patch
+(https://lkml.org/lkml/2014/2/3/21) which actually fixes the reported
+problem at hand. And tested and acked by all the problem reporters.
 
+I will respond shortly about the first patch (which is more of a cleanup).
+
+thanks,
+suresh
