@@ -1,82 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753013AbaCHCQk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 21:16:40 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:30447 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752116AbaCHCQi (ORCPT
+	id S1753364AbaCHCSA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 21:18:00 -0500
+Received: from smtprelay0035.hostedemail.com ([216.40.44.35]:50881 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751609AbaCHCR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 21:16:38 -0500
-Message-ID: <531A7CFD.9030603@oracle.com>
-Date: Fri, 07 Mar 2014 21:14:21 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: fs: gpf in simple_setattr
-References: <52B23CEA.7090405@oracle.com> <52CD762B.7020600@oracle.com> <53123D81.6080003@oracle.com> <20140303214040.GA15265@quack.suse.cz> <53166920.709@oracle.com> <20140305124536.GA32371@quack.suse.cz> <53189BF8.1010308@oracle.com>
-In-Reply-To: <53189BF8.1010308@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 7 Mar 2014 21:17:59 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:800:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3871:3872:3874:4250:4321:5007:7652:10004:10400:10848:11232:11658:11914:12296:12517:12519:12740:13069:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: girl52_b1d56ada2a43
+X-Filterd-Recvd-Size: 1724
+Message-ID: <1394245074.6972.7.camel@joe-AO722>
+Subject: Re: [PATCH v2] module: LLVMLinux: Remove unused function warning
+ from __param_check macro
+From: Joe Perches <joe@perches.com>
+To: behanw@converseincode.com
+Cc: khali@linux-fr.org, rostedt@goodmis.org, rusty@rustcorp.com.au,
+        linux-kernel@vger.kernel.org, dwmw2@infradead.org,
+        pageexec@freemail.hu, Mark Charlebois <charlebm@gmail.com>
+Date: Fri, 07 Mar 2014 18:17:54 -0800
+In-Reply-To: <1394244623-25623-1-git-send-email-behanw@converseincode.com>
+References: <531A73EB.6060403@codeaurora.org>
+	 <1394244623-25623-1-git-send-email-behanw@converseincode.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/2014 11:02 AM, Sasha Levin wrote:
-> On 03/05/2014 07:45 AM, Jan Kara wrote:
->> On Tue 04-03-14 19:00:32, Sasha Levin wrote:
->>> On 03/03/2014 04:40 PM, Jan Kara wrote:
->>>> On Sat 01-03-14 15:05:21, Sasha Levin wrote:
->>>>>> ping again?
->>>>>>
->>>>>> I've been working on it, but don't see an obvious issue.
->>>>>>
->>>>>> It does look like an access to invalid memory easily doable from
->>>>>> userspace, so it should probably get fixed soon...
->>>>    Hum, can you maybe dump the name in dentry passed to simple_setattr()? Or
->>>> maybe even the whole path using dentry_path() (but not sure if that will
->>>> be workable on half-torn-down fs)? Maybe it will give us a hint at which
->>>> filesystem to look...
->>>
->>> It's just garbage, this is why I'm having a hard time making any progress with
->>> this bug.
->>    OK, but that is strange because we hold a reference to the dentry so
->> noone should free it. So dentry->d_name should be valid... Is the rest of
->> the dentry also garbage? E.g. does dentry->d_inode still point to the inode
->> we call __mark_inode_dirty() on? Is dentry->d_sb == dentry->d_inode->i_sb?
->> Also if the inode isn't completely garbage, we can maybe infer something
->> from inode->i_op - that should point to some statically allocated
->> operations struct so we should be able to guess fs type from that.
->
-> It's actually pretty tricky. This issue being a race makes catching it at the right time
-> difficult.
->
-> I've tried catching it in simple_setattr() before calling mark_inode_dirty() by testing
-> for the poison values inside inode, but they seem to be perfectly fine there and still
-> show up as bad within mark_inode_dirty().
->
-> Then I tried trapping it inside mark_inode_dirty(), but at that point I usually get garbage
-> inside inode, and have no way to go back to dentry.
->
-> Right now I'm just trying to dump everything that goes through simple_setattr() in hopes that
-> I could easily figure out what went wrong by looking at the log, but that just stops the bug
-> from reproducing.
+On Fri, 2014-03-07 at 18:10 -0800, behanw@converseincode.com wrote:
+> This code makes a compile time type check that is optimized away. Clang
+> complains that it generates an unused function.
+[]
+> diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
+[]
+> @@ -346,7 +346,7 @@ static inline void destroy_params(const struct kernel_param *params,
+>  /* The macros to do compile-time type checking stolen from Jakub
+>     Jelinek, who IIRC came up with this idea for the 2.4 module init code. */
+>  #define __param_check(name, p, type) \
+> -	static inline type *__check_##name(void) { return(p); }
+> +	static inline __always_unused type *__check_##name(void) { return(p); }
 
-I've tried the following code in simple_setattr() right before the call to mark_inode_dirty():
+Perhaps __maybe_unused ?
 
-         p = dentry_path(dentry, pth, 200);
-         printk(KERN_ERR "doh: %s %s\n", p, inode->i_sb->s_type->name);
-
-but it seems that while 'p' ends up being "/", inode->i_sb is garbage and we can't pull out anything
-about the file system.
-
-Any way I could get anything useful any other way?
-
-
-Thanks,
-Sasha
 
