@@ -1,162 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751517AbaCHMgE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 07:36:04 -0500
-Received: from violet.fr.zoreil.com ([92.243.8.30]:60200 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751097AbaCHMgC (ORCPT
+	id S1751938AbaCHMlL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 07:41:11 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:48933 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751097AbaCHMlF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 07:36:02 -0500
-Date: Sat, 8 Mar 2014 13:35:28 +0100
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: poma <pomidorabelisima@gmail.com>
-Cc: netdev@vger.kernel.org,
-        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        Jamal Hadi Salim <jhs@mojatatu.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Josh Boyer <jwboyer@redhat.com>,
-        "Justin M. Forbes" <jforbes@redhat.com>,
-        Dan Williams <dcbw@redhat.com>, Thomas Haller <thaller@redhat.com>
-Subject: Re: WARNING: CPU: 0 PID: 0 at net/sched/sch_generic.c:264
- dev_watchdog+0x276/0x280()
-Message-ID: <20140308123528.GA2052@electric-eye.fr.zoreil.com>
-References: <530332B7.10909@gmail.com>
- <53043521.4060206@gmail.com>
- <5319059E.1010205@gmail.com>
- <5319F40F.4040304@gmail.com>
- <531A737E.4010200@gmail.com>
+	Sat, 8 Mar 2014 07:41:05 -0500
+Message-ID: <531B0FDA.2040302@arm.com>
+Date: Sat, 08 Mar 2014 12:40:58 +0000
+From: Dietmar Eggemann <dietmar.eggemann@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <531A737E.4010200@gmail.com>
-X-Organisation: Land of Sunshine Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vincent Guittot <vincent.guittot@linaro.org>,
+        "peterz@infradead.org" <peterz@infradead.org>
+CC: "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Subject: Re: [RFC 0/6] rework sched_domain topology description
+References: <1394003906-11630-1-git-send-email-vincent.guittot@linaro.org> <5317B092.7070805@arm.com> <CAKfTPtDGbT717Y5F1GoBgr4pnvApG5Gphu2Me_bAFrM0+qsfAg@mail.gmail.com> <53186A8A.9060406@arm.com> <CAKfTPtCspVk+X3O23ikTt3MZUHVrrp21PyhmrcLF-GwW3OjOqA@mail.gmail.com>
+In-Reply-To: <CAKfTPtCspVk+X3O23ikTt3MZUHVrrp21PyhmrcLF-GwW3OjOqA@mail.gmail.com>
+X-OriginalArrivalTime: 08 Mar 2014 12:41:09.0157 (UTC) FILETIME=[AE269550:01CF3ACB]
+X-MC-Unique: 114030812410200201
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(linux.nics@intel.com removed from the Cc: list)
+On 07/03/14 02:47, Vincent Guittot wrote:
+> On 6 March 2014 20:31, Dietmar Eggemann <dietmar.eggemann@arm.com> wrote:
+>> On 06/03/14 09:04, Vincent Guittot wrote:
+>>>
+>>> On 6 March 2014 07:17, Dietmar Eggemann <dietmar.eggemann@arm.com> wrote:
+>>>>
+>>>> On 05/03/14 07:18, Vincent Guittot wrote:
+>>>>>
+>>>>>
+>>>>> This patchset was previously part of the larger tasks packing patchset
+>>>>> [1].
+>>>>> I have splitted the latter in 3 different patchsets (at least) to make
+>>>>> the
+>>>>> thing easier.
+>>>>> -configuration of sched_domain topology (this patchset)
+>>>>> -update and consolidation of cpu_power
+>>>>> -tasks packing algorithm
+>>>>>
+>>>>> Based on Peter Z's proposal [2][3], this patchset modifies the way to
+>>>>> configure
+>>>>> the sched_domain level in order to let architectures to add specific
+>>>>> level
+>>>>> like
+>>>>> the current BOOK level or the proposed power gating level for ARM
+>>>>> architecture.
+>>>>>
+>>>>> [1] https://lkml.org/lkml/2013/10/18/121
+>>>>> [2] https://lkml.org/lkml/2013/11/5/239
+>>>>> [3] https://lkml.org/lkml/2013/11/5/449
+>>>>>
+>>>>> Vincent Guittot (6):
+>>>>>      sched: remove unused SCHED_INIT_NODE
+>>>>>      sched: rework of sched_domain topology definition
+>>>>>      sched: s390: create a dedicated topology table
+>>>>>      sched: powerpc: create a dedicated topology table
+>>>>>      sched: add a new SD_SHARE_POWERDOMAIN for sched_domain
+>>>>>      sched: ARM: create a dedicated scheduler topology table
+>>>>>
+>>>>>     arch/arm/kernel/topology.c        |   26 ++++
+>>>>>     arch/ia64/include/asm/topology.h  |   24 ----
+>>>>>     arch/metag/include/asm/topology.h |   27 -----
+>>>>>     arch/powerpc/kernel/smp.c         |   35 ++++--
+>>>>>     arch/s390/include/asm/topology.h  |   13 +-
+>>>>>     arch/s390/kernel/topology.c       |   25 ++++
+>>>>>     arch/tile/include/asm/topology.h  |   33 ------
+>>>>>     include/linux/sched.h             |   30 +++++
+>>>>>     include/linux/topology.h          |  128 ++------------------
+>>>>>     kernel/sched/core.c               |  235
+>>>>> ++++++++++++++++++-------------------
+>>>>>     10 files changed, 237 insertions(+), 339 deletions(-)
+>>>>>
+>>>>
+>>>> Hi Vincent,
+>>>>
+>>>> I reviewed your patch-set carefully (including test runs on TC2),
+>>>> especially
+>>>> due to the fact that we want to build our sd_energy stuff on top of it.
+>>>
+>>>
+>>> Thanks
+>>>
+>>>>
+>>>>
+>>>> One thing I'm still not convinced of is the fact that specifying
+>>>> additional
+>>>> sd levels in the struct sched_domain_topology_level table has an
+>>>> advantage
+>>>> over a function pointer for sd topology flags similar to the one we're
+>>>> already using for the cpu mask in struct sched_domain_topology_level.
+>>>>
+>>>>     int (*sched_domain_flags_f)(int cpu);
+>>>>
+>>>
+>>> We have to create additional level for some kind of topology as
+>>> described in my trial https://lkml.org/lkml/2013/12/18/279 which is
+>>> not possible with function pointer.
+>>
+>>
+>> This is what I don't understand at the moment. In your example in the link
+>> above, (2 cluster of 4 cores with SMT), cpu 0-7 can powergate while cpu 8-15
+>> can't). Why can't we have
+>
+> The 2nd example is a bit more complicated and needs an additional
+> level to describe the topology
 
-poma <pomidorabelisima@gmail.com> :
-[...]
-> Francois, do you have this[1] patch applicable for the recent 'r8169.c'?
-> 
-> $ patch -p5 < r8169-xmit.patch
-> patching file r8169.c
-> Hunk #1 FAILED at 5870.
-> Hunk #2 succeeded at 5540 with fuzz 2 (offset -482 lines).
-> Hunk #3 succeeded at 5641 (offset -494 lines).
-> 1 out of 3 hunks FAILED -- saving rejects to file r8169.c.rej
-[...]
-> [1] https://bugzilla.kernel.org/attachment.cgi?id=125961
+I see. In the 2. example you want to have an additional MC level for cpu 
+2-7 because you want to do load balance between those cpus more often 
+than for cpu 0-7 for dst cpus from the set (2-7). Not sure if such 
+topologies (only a subset of cpus inside a cluster can't be powergated) 
+exists today in the real world though?
 
-It applies fine against b01d4e68933ec23e43b1046fa35d593cefcf37d1 but
-a bug hides behind the 'start' variable. You may replace it with the
-patch below. The "netif_info(..., "frags ..." debug statement is noisy
-when enabled. Don't use it.
+from https://lkml.org/lkml/2013/12/18/279:
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index 91a67ae..b5c7810 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -5811,7 +5811,7 @@ static void rtl8169_unmap_tx_skb(struct device *d, struct ring_info *tx_skb,
- 
- 	dma_unmap_single(d, le64_to_cpu(desc->addr), len, DMA_TO_DEVICE);
- 
--	desc->opts1 = 0x00;
-+	desc->opts1 &= cpu_to_le32(RingEnd);
- 	desc->opts2 = 0x00;
- 	desc->addr = 0x00;
- 	tx_skb->len = 0;
-@@ -5870,10 +5870,42 @@ static void rtl_reset_work(struct rtl8169_private *tp)
- 	rtl8169_check_link_status(dev, tp, tp->mmio_addr);
- }
- 
-+static void rtl_desc_trace(struct rtl8169_private *tp, int start, u32 *data)
-+{
-+	netif_info(tp, drv, tp->dev,
-+		   "%02x: %08x %08x %08x %08x %08x %08x %08x %08x\n",
-+		   start,
-+		   data[ 0], data[ 4], data[ 8], data[12],
-+		   data[16], data[20], data[24], data[28]);
-+}
-+
-+static void rtl_tx_ring_trace(struct rtl8169_private *tp)
-+{
-+	int i, start = 0;
-+
-+	netif_info(tp, drv, tp->dev,
-+		   "Tx dirty: %08x (%02x), Tx current: %08x (%02x)\n",
-+		   tp->dirty_tx, tp->dirty_tx % NUM_TX_DESC,
-+		   tp->cur_tx, tp->cur_tx % NUM_TX_DESC);
-+
-+	for (i = 0; i < NUM_TX_DESC / 8; i++) {
-+		u32 *data = &tp->TxDescArray[start].opts1;
-+		int j;
-+
-+		for (j = 0; j < 4; j++)
-+			rtl_desc_trace(tp, start, data++);
-+		netif_info(tp, drv, tp->dev, "\n");
-+
-+		start += 8;
-+	}
-+}
-+
- static void rtl8169_tx_timeout(struct net_device *dev)
- {
- 	struct rtl8169_private *tp = netdev_priv(dev);
- 
-+	rtl_tx_ring_trace(tp);
-+
- 	rtl_schedule_task(tp, RTL_FLAG_TASK_RESET_PENDING);
- }
- 
-@@ -6009,6 +6041,7 @@ static netdev_tx_t rtl8169_start_xmit(struct sk_buff *skb,
- 	txd->addr = cpu_to_le64(mapping);
- 
- 	frags = rtl8169_xmit_frags(tp, skb, opts);
-+	// netif_info(tp, drv, tp->dev, "frags: %d\n", frags);
- 	if (frags < 0)
- 		goto err_dma_1;
- 	else if (frags)
-@@ -6022,14 +6055,14 @@ static netdev_tx_t rtl8169_start_xmit(struct sk_buff *skb,
- 
- 	skb_tx_timestamp(skb);
- 
--	wmb();
-+	tp->cur_tx += frags + 1;
-+
-+	smp_wmb();
- 
- 	/* Anti gcc 2.95.3 bugware (sic) */
- 	status = opts[0] | len | (RingEnd * !((entry + 1) % NUM_TX_DESC));
- 	txd->opts1 = cpu_to_le32(status);
- 
--	tp->cur_tx += frags + 1;
--
- 	wmb();
- 
- 	RTL_W8(TxPoll, NPQ);
-@@ -6135,6 +6168,11 @@ static void rtl_tx(struct net_device *dev, struct rtl8169_private *tp)
- 		if (status & DescOwn)
- 			break;
- 
-+		if (!status) {
-+			netif_info(tp, tx_done, dev, "Tx miss: %03d\n", entry);
-+			break;
-+		}
-+
- 		rtl8169_unmap_tx_skb(&tp->pci_dev->dev, tx_skb,
- 				     tp->TxDescArray + entry);
- 		if (status & LastFrag) {
-@@ -6552,6 +6590,8 @@ static int rtl_open(struct net_device *dev)
- 
- 	rtl_hw_start(dev);
- 
-+	rtl_tx_ring_trace(tp);
-+
- 	netif_start_queue(dev);
- 
- 	rtl_unlock_work(tp);
+CPU2:
+domain 0: span 2-3 level: SMT
+     flags: SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES | 
+SD_SHARE_POWERDOMAIN
+     groups: 0 1              <-- Doesn't this have to be 'groups: 2 3'
+   domain 1: span 2-7 level: MC
+       flags: SD_SHARE_PKG_RESOURCES | SD_SHARE_POWERDOMAIN
+       groups: 2-7 4-5 6-7
+     domain 2: span 0-7 level: MC
+         flags: SD_SHARE_PKG_RESOURCES
+         groups: 2-7 0-1
+       domain 3: span 0-15 level: CPU
+           flags:
+           groups: 0-7 8-15
+
+>
+>>
+>> static inline int cpu_coregroup_flags(int cpu)
+>> {
+>>      int flags = SD_SHARE_PKG_RESOURCES;
+>>
+>>      if (cpu >= 8)
+>>          flags |= SD_SHARE_POWERDOMAIN;
+>>
+>>      return flags;
+>> }
+>>
+>> inside the arch specific topology file and use it in the MC level as the int
+>> (*sched_domain_flags_f)(int cpu) member of struct
+>> sched_domain_topology_level?
+>>
+>>
+>>>
+>>> Have you got a situation in mind where it will be necessary to use the
+>>> function pointer with cpu number as an argument ?
+>>
+>>
+>> The one above. Fundamentally all situations where you want to set sd
+>> topology flags differently for different cpus in the same sd level.
+>> big.LITTLE is another example but it's the same as powergated/!powergated in
+>> this perspective.
+>
+> You see the flag of a level as something that can be changed per cpu
+> whereas the proposal is to define a number of level with interesting
+> properties for the scheduler and to associate a mask of cpus to this
+> properties.
+
+That's right.
+
+>
+> I don't have a strong opinion about using or not a cpu argument for
+> setting the flags of a level (it was part of the initial proposal
+> before we start to completely rework the build of sched_domain)
+> Nevertheless, I see one potential concern that you can have completely
+> different flags configuration of the same sd level of 2 cpus.
+
+Could you elaborate a little bit further regarding the last sentence? Do 
+you think that those completely different flags configuration would make 
+it impossible, that the load-balance code could work at all at this sd?
+
+>
+> Peter,
+>
+> Was the use of the cpu as a parameter in the initialization of
+> sched_domain's flag a reason for asking for reworking the
+> initialization of sched_domain ?
+>
+>>
+>>
+>>>
+>>> In the current example of this patchset, the flags are statically set
+>>> in the table but nothing prevents an architecture to update the flags
+>>> value before being given to the scheduler
+>>
+>>
+>> What will be the infrastructure if the arch wants to do so?
+>
+> I'm not sure to catch your point. The arch is now able to defines its
+> own table and fill it before giving it to the scheduler so nothing
+> prevents to set/update the flags field according the system
+> configuration during boot sequence.
+
+Sorry, misunderstanding from my side in the first place. You just said 
+that the arch is able to change those flags (due to the arch specific 
+topology table) and I related it to the possibility for the arch to set 
+the topology flags per cpu.
+
+>
+> Thanks,
+> Vincent
+>>
+>> Thanks,
+>>
+>> -- Dietmar
+>>
+>>
+>>>
+>>>> This function pointer would be simply another member of struct
+>>>> sched_domain_topology_level and would replace int sd_flags.  AFAICS, you
+>>>> have to create additional cpu mask functions anyway for the additional sd
+>>>> levels, like cpu_corepower_mask() for the  GMC level in the ARM case.
+>>>> There
+>>>> could be a set of standard sd topology flags function for the default sd
+>>>> layer and archs which want to pass in something special define those
+>>>> function locally since they will use them only in their arch specific
+>>>> struct
+>>>> sched_domain_topology_level table anyway.  I know that you use the
+>>>> existing
+>>>> sd degenerate functionality for this and that the freeing of the
+>>>> redundant
+>>>> data structures (sched_domain, sched_group and sched_group_power) is
+>>>> there
+>>>> too but it still doesn't seem to me to be the right thing to do.
+>>>>
+>>>> The problem that we now expose internal data structures (struct sd_data
+>>>> and
+>>>> struct sched_domain_topology_level) could be dealt with later.
+>>>>
+>>>> -- Dietmar
+>>>>
+>>>
+>>
+>>
+>
+
+
