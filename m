@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754130AbaCHBHW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:07:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46379 "EHLO
+	id S1754684AbaCHB1T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:27:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46415 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752718AbaCHBHR (ORCPT
+	with ESMTP id S1754117AbaCHBHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:07:17 -0500
+	Fri, 7 Mar 2014 20:07:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        George Spelvin <linux@horizon.com>,
-        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        Tomas Racek <tracek@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Qiang Huang <h.huangqiang@huawei.com>
-Subject: [PATCH 3.4 43/99] mm: vmscan: fix endless loop in kswapd balancing
-Date: Fri,  7 Mar 2014 17:07:39 -0800
-Message-Id: <20140308010612.992492841@linuxfoundation.org>
+        Jean Delvare <jdelvare@suse.de>, Alan Cox <alan@linux.intel.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Doug Thompson <dougthompson@xmission.com>,
+        Borislav Petkov <bp@suse.de>
+Subject: [PATCH 3.4 31/99] i7core_edac: Fix PCI device reference count
+Date: Fri,  7 Mar 2014 17:07:27 -0800
+Message-Id: <20140308010612.617529345@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
 References: <20140308010611.468206150@linuxfoundation.org>
@@ -34,107 +31,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Weiner <hannes@cmpxchg.org>
+From: Jean Delvare <jdelvare@suse.de>
 
-commit 60cefed485a02bd99b6299dad70666fe49245da7 upstream.
+commit c0f5eeed0f4cef4f05b74883a7160e7edde58b6a upstream.
 
-Kswapd does not in all places have the same criteria for a balanced
-zone.  Zones are only being reclaimed when their high watermark is
-breached, but compaction checks loop over the zonelist again when the
-zone does not meet the low watermark plus two times the size of the
-allocation.  This gets kswapd stuck in an endless loop over a small
-zone, like the DMA zone, where the high watermark is smaller than the
-compaction requirement.
+The reference count changes done by pci_get_device can be a little
+misleading when the usage diverges from the most common scheme. The
+reference count of the device passed as the last parameter is always
+decreased, even if the function returns no new device. So if we are
+going to try alternative device IDs, we must manually increment the
+device reference count before each retry. If we don't, we end up
+decreasing the reference count, and after a few modprobe/rmmod cycles
+the PCI devices will vanish.
 
-Add a function, zone_balanced(), that checks the watermark, and, for
-higher order allocations, if compaction has enough free memory.  Then
-use it uniformly to check for balanced zones.
+In other words and as Alan put it: without this fix the EDAC code
+corrupts the PCI device list.
 
-This makes sure that when the compaction watermark is not met, at least
-reclaim happens and progress is made - or the zone is declared
-unreclaimable at some point and skipped entirely.
+This fixes kernel bug #50491:
+https://bugzilla.kernel.org/show_bug.cgi?id=50491
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Reported-by: George Spelvin <linux@horizon.com>
-Reported-by: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
-Reported-by: Tomas Racek <tracek@redhat.com>
-Tested-by: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[hq: Backported to 3.4: adjust context]
-Signed-off-by: Qiang Huang <h.huangqiang@huawei.com>
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Link: http://lkml.kernel.org/r/20140224093927.7659dd9d@endymion.delvare
+Reviewed-by: Alan Cox <alan@linux.intel.com>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Doug Thompson <dougthompson@xmission.com>
+Signed-off-by: Borislav Petkov <bp@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- mm/vmscan.c |   27 ++++++++++++++++++---------
- 1 file changed, 18 insertions(+), 9 deletions(-)
+ drivers/edac/i7core_edac.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2569,6 +2569,19 @@ static void age_active_anon(struct zone
- 	} while (memcg);
- }
+--- a/drivers/edac/i7core_edac.c
++++ b/drivers/edac/i7core_edac.c
+@@ -1365,14 +1365,19 @@ static int i7core_get_onedevice(struct p
+ 	 * is at addr 8086:2c40, instead of 8086:2c41. So, we need
+ 	 * to probe for the alternate address in case of failure
+ 	 */
+-	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_I7_NONCORE && !pdev)
++	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_I7_NONCORE && !pdev) {
++		pci_dev_get(*prev);	/* pci_get_device will put it */
+ 		pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
+ 				      PCI_DEVICE_ID_INTEL_I7_NONCORE_ALT, *prev);
++	}
  
-+static bool zone_balanced(struct zone *zone, int order,
-+			  unsigned long balance_gap, int classzone_idx)
-+{
-+	if (!zone_watermark_ok_safe(zone, order, high_wmark_pages(zone) +
-+				    balance_gap, classzone_idx, 0))
-+		return false;
-+
-+	if (COMPACTION_BUILD && order && !compaction_suitable(zone, order))
-+		return false;
-+
-+	return true;
-+}
-+
- /*
-  * pgdat_balanced is used when checking if a node is balanced for high-order
-  * allocations. Only zones that meet watermarks and are in a zone allowed
-@@ -2628,8 +2641,7 @@ static bool sleeping_prematurely(pg_data
- 			continue;
- 		}
+-	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE && !pdev)
++	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE &&
++	    !pdev) {
++		pci_dev_get(*prev);	/* pci_get_device will put it */
+ 		pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
+ 				      PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE_ALT,
+ 				      *prev);
++	}
  
--		if (!zone_watermark_ok_safe(zone, order, high_wmark_pages(zone),
--							i, 0))
-+		if (!zone_balanced(zone, order, 0, i))
- 			all_zones_ok = false;
- 		else
- 			balanced += zone->present_pages;
-@@ -2741,8 +2753,7 @@ loop_again:
- 				break;
- 			}
- 
--			if (!zone_watermark_ok_safe(zone, order,
--					high_wmark_pages(zone), 0, 0)) {
-+			if (!zone_balanced(zone, order, 0, 0)) {
- 				end_zone = i;
- 				break;
- 			} else {
-@@ -2817,9 +2828,8 @@ loop_again:
- 				testorder = 0;
- 
- 			if ((buffer_heads_over_limit && is_highmem_idx(i)) ||
--				    !zone_watermark_ok_safe(zone, testorder,
--					high_wmark_pages(zone) + balance_gap,
--					end_zone, 0)) {
-+			    !zone_balanced(zone, testorder,
-+					   balance_gap, end_zone)) {
- 				shrink_zone(priority, zone, &sc);
- 
- 				reclaim_state->reclaimed_slab = 0;
-@@ -2846,8 +2856,7 @@ loop_again:
- 				continue;
- 			}
- 
--			if (!zone_watermark_ok_safe(zone, testorder,
--					high_wmark_pages(zone), end_zone, 0)) {
-+			if (!zone_balanced(zone, testorder, 0, end_zone)) {
- 				all_zones_ok = 0;
- 				/*
- 				 * We are still under min water mark.  This
+ 	if (!pdev) {
+ 		if (*prev) {
 
 
