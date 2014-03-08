@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754423AbaCHBH4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:07:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46641 "EHLO
+	id S1754724AbaCHBMe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:12:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46665 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754386AbaCHBHx (ORCPT
+	with ESMTP id S1754424AbaCHBH4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:07:53 -0500
+	Fri, 7 Mar 2014 20:07:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tim Perry <tdparmor-sambabugs@yahoo.com>,
-        Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>,
-        Ben Hutchings <ben@decadent.org.uk>, Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 3.4 63/99] cifs: adjust sequence number downward after signing NT_CANCEL request
-Date: Fri,  7 Mar 2014 17:07:59 -0800
-Message-Id: <20140308010613.621347365@linuxfoundation.org>
+        Lukasz Jagiello <jagiello.lukasz@gmail.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Jianguo Wu <wujianguo@huawei.com>
+Subject: [PATCH 3.4 95/99] iwlwifi: dvm: fix calling ieee80211_chswitch_done() with NULL
+Date: Fri,  7 Mar 2014 17:08:31 -0800
+Message-Id: <20140308010614.610475672@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
 References: <20140308010611.468206150@linuxfoundation.org>
@@ -30,44 +32,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
 
-commit 31efee60f489c759c341454d755a9fd13de8c03d upstream.
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-When a call goes out, the signing code adjusts the sequence number
-upward by two to account for the request and the response. An NT_CANCEL
-however doesn't get a response of its own, it just hurries the server
-along to get it to respond to the original request more quickly.
-Therefore, we must adjust the sequence number back down by one after
-signing a NT_CANCEL request.
+commit 9186a1fd9ed190739423db84bc344d258ef3e3d7 upstream.
 
-Reported-by: Tim Perry <tdparmor-sambabugs@yahoo.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <smfrench@gmail.com>
-[bwh: Backported to 3.2: adjust filename]
+If channel switch is pending and we remove interface we can
+crash like showed below due to passing NULL vif to mac80211:
+
+BUG: unable to handle kernel paging request at fffffffffffff8cc
+IP: [<ffffffff8130924d>] strnlen+0xd/0x40
+Call Trace:
+ [<ffffffff8130ad2e>] string.isra.3+0x3e/0xd0
+ [<ffffffff8130bf99>] vsnprintf+0x219/0x640
+ [<ffffffff8130c481>] vscnprintf+0x11/0x30
+ [<ffffffff81061585>] vprintk_emit+0x115/0x4f0
+ [<ffffffff81657bd5>] printk+0x61/0x63
+ [<ffffffffa048987f>] ieee80211_chswitch_done+0xaf/0xd0 [mac80211]
+ [<ffffffffa04e7b34>] iwl_chswitch_done+0x34/0x40 [iwldvm]
+ [<ffffffffa04f83c3>] iwlagn_commit_rxon+0x2a3/0xdc0 [iwldvm]
+ [<ffffffffa04ebc50>] ? iwlagn_set_rxon_chain+0x180/0x2c0 [iwldvm]
+ [<ffffffffa04e5e76>] iwl_set_mode+0x36/0x40 [iwldvm]
+ [<ffffffffa04e5f0d>] iwlagn_mac_remove_interface+0x8d/0x1b0 [iwldvm]
+ [<ffffffffa0459b3d>] ieee80211_do_stop+0x29d/0x7f0 [mac80211]
+
+This is because we nulify ctx->vif in iwlagn_mac_remove_interface()
+before calling some other functions that teardown interface. To fix
+just check ctx->vif on iwl_chswitch_done(). We should not call
+ieee80211_chswitch_done() as channel switch works were already canceled
+by mac80211 in ieee80211_do_stop() -> ieee80211_mgd_stop().
+
+Resolve:
+https://bugzilla.redhat.com/show_bug.cgi?id=979581
+
+Reported-by: Lukasz Jagiello <jagiello.lukasz@gmail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+[bwh: Backported to 3.2: adjust context, filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Rui Xiang <rui.xiang@huawei.com>
+[wujg: Backported to 3.4: - adjust context]
+Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/cifs/transport.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/net/wireless/iwlwifi/iwl-core.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/fs/cifs/transport.c
-+++ b/fs/cifs/transport.c
-@@ -511,6 +511,13 @@ send_nt_cancel(struct TCP_Server_Info *s
- 		mutex_unlock(&server->srv_mutex);
- 		return rc;
- 	}
+--- a/drivers/net/wireless/iwlwifi/iwl-core.c
++++ b/drivers/net/wireless/iwlwifi/iwl-core.c
+@@ -801,7 +801,10 @@ void iwl_chswitch_done(struct iwl_priv *
+ 	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
+ 		return;
+ 
+-	if (test_and_clear_bit(STATUS_CHANNEL_SWITCH_PENDING, &priv->status))
++	if (!test_and_clear_bit(STATUS_CHANNEL_SWITCH_PENDING, &priv->status))
++		return;
 +
-+	/*
-+	 * The response to this call was already factored into the sequence
-+	 * number when the call went out, so we must adjust it back downward
-+	 * after signing here.
-+	 */
-+	--server->sequence_number;
- 	rc = smb_send(server, in_buf, be32_to_cpu(in_buf->smb_buf_length));
- 	mutex_unlock(&server->srv_mutex);
++	if (ctx->vif)
+ 		ieee80211_chswitch_done(ctx->vif, is_success);
+ }
  
 
 
