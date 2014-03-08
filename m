@@ -1,75 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752076AbaCHPFQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 10:05:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43968 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751664AbaCHPFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 10:05:13 -0500
-Date: Sat, 8 Mar 2014 15:53:10 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Behan Webster <behanw@converseincode.com>
-Cc: Joe Perches <joe@perches.com>, linville@tuxdriver.com,
-        johannes@sipsolutions.net, davem@davemloft.net,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dwmw2@infradead.org,
-        pageexec@freemail.hu,
-        Jan-Simon =?iso-8859-1?Q?M=F6ller?= <dl9pf@gmx.de>,
-        =?iso-8859-1?Q?Vin=EDcius?= Tinti <viniciustinti@gmail.com>,
-        Mark Charlebois <charlebm@gmail.com>
-Subject: Re: [PATCH v2] mac80211: LLVMLinux: Remove VLAIS usage from mac80211
-Message-ID: <20140308145309.GA1615@redhat.com>
-References: <1394177091.4653.1.camel@jlt4.sipsolutions.net>
- <1394241960-1764-1-git-send-email-behanw@converseincode.com>
- <1394243809.6972.4.camel@joe-AO722>
- <531A7D4F.7090303@converseincode.com>
+	id S1751517AbaCHP0Q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 10:26:16 -0500
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:41057 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901AbaCHP0O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Mar 2014 10:26:14 -0500
+Date: Sat, 8 Mar 2014 10:26:10 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [GIT PULL] workqueue fixes for v3.14-rc5
+Message-ID: <20140308152610.GA25021@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <531A7D4F.7090303@converseincode.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 07, 2014 at 06:15:43PM -0800, Behan Webster wrote:
-> On 03/07/14 17:56, Joe Perches wrote:
-> >On Fri, 2014-03-07 at 17:26 -0800, behanw@converseincode.com wrote:
-> >>From: Jan-Simon Möller <dl9pf@gmx.de>
-> >>
-> >>Replaced the use of a Variable Length Array In Struct (VLAIS) with a C99
-> >>compliant equivalent. This is the original VLAIS struct.
-> >[]
-> >>diff --git a/net/mac80211/aes_ccm.c b/net/mac80211/aes_ccm.c
-> >[]
-> >>@@ -23,12 +23,14 @@ void ieee80211_aes_ccm_encrypt(struct crypto_aead *tfm, u8 *b_0, u8 *aad,
-> >>  			       u8 *data, size_t data_len, u8 *mic)
-> >>  {
-> >>  	struct scatterlist assoc, pt, ct[2];
-> >>-	struct {
-> >>-		struct aead_request	req;
-> >>-		u8			priv[crypto_aead_reqsize(tfm)];
-> >>-	} aead_req;
-> >>-	memset(&aead_req, 0, sizeof(aead_req));
-> >>+	char aead_req_data[sizeof(struct aead_request) +
-> >>+				crypto_aead_reqsize(tfm) +
-> >>+				CRYPTO_MINALIGN] CRYPTO_MINALIGN_ATTR;
-> >Can this be a too large amount of stack?
-> >
-> >Is crypto_aead_reqsize() limited to < ~1k?
-> >
-> >Perhaps it'd be better to use kzalloc for this
-> >or another reserved pool
-> No more stack being used than with the the original code. The stack
-> memory use is identical.
+Hello, Linus.
 
-Could you explain that? It looks like aead_req_data can be bigger than
-original struct aead_req up to CRYPTO_MINALIGN bytes. IOW adding
-CRYPTO_MINALIGN to size seems unneeded as aead_request->__ctx alignment
-requirement should by assured by proper sizeof(struct aead_request).
+This pull request contains a workqueue usage fix for firewire.  For
+quite a long time now, workqueue only treats two work items identical
+iff both their addresses and callbacks match.  This is to avoid
+introducing false dependency through the work item being recycled
+while being executed.  This changes non-reentrancy guarantee for the
+users of PREPARE[_DELAYED]_WORK() - if the function changes,
+reentrancy isn't guaranteed against the previous instance.  Firewire
+depended on such nonreentrancy guarantee.  This is fixed by doing the
+work item multiplexing from firewire proper while keeping the work
+function unchanged.
 
-Besides, why not add VLAIS feature to llvm instead of fixing all
-programs that use it?
+The following changes since commit 5bdfff96c69a4d5ab9c49e60abf9e070ecd2acbb:
 
-Stanislaw
+  workqueue: ensure @task is valid across kthread_stop() (2014-02-18 16:35:20 -0500)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.14-fixes
+
+for you to fetch changes up to 70044d71d31d6973665ced5be04ef39ac1c09a48:
+
+  firewire: don't use PREPARE_DELAYED_WORK (2014-03-07 10:19:57 -0500)
+
+Thanks.
+
+----------------------------------------------------------------
+Tejun Heo (1):
+      firewire: don't use PREPARE_DELAYED_WORK
+
+ drivers/firewire/core-device.c | 22 +++++++++++++++-------
+ drivers/firewire/sbp2.c        | 17 +++++++++++++----
+ include/linux/firewire.h       |  1 +
+ 3 files changed, 29 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/firewire/core-device.c b/drivers/firewire/core-device.c
+index de4aa40..2c6d5e1 100644
+--- a/drivers/firewire/core-device.c
++++ b/drivers/firewire/core-device.c
+@@ -916,7 +916,7 @@ static int lookup_existing_device(struct device *dev, void *data)
+ 		old->config_rom_retries = 0;
+ 		fw_notice(card, "rediscovered device %s\n", dev_name(dev));
+ 
+-		PREPARE_DELAYED_WORK(&old->work, fw_device_update);
++		old->workfn = fw_device_update;
+ 		fw_schedule_device_work(old, 0);
+ 
+ 		if (current_node == card->root_node)
+@@ -1075,7 +1075,7 @@ static void fw_device_init(struct work_struct *work)
+ 	if (atomic_cmpxchg(&device->state,
+ 			   FW_DEVICE_INITIALIZING,
+ 			   FW_DEVICE_RUNNING) == FW_DEVICE_GONE) {
+-		PREPARE_DELAYED_WORK(&device->work, fw_device_shutdown);
++		device->workfn = fw_device_shutdown;
+ 		fw_schedule_device_work(device, SHUTDOWN_DELAY);
+ 	} else {
+ 		fw_notice(card, "created device %s: GUID %08x%08x, S%d00\n",
+@@ -1196,13 +1196,20 @@ static void fw_device_refresh(struct work_struct *work)
+ 		  dev_name(&device->device), fw_rcode_string(ret));
+  gone:
+ 	atomic_set(&device->state, FW_DEVICE_GONE);
+-	PREPARE_DELAYED_WORK(&device->work, fw_device_shutdown);
++	device->workfn = fw_device_shutdown;
+ 	fw_schedule_device_work(device, SHUTDOWN_DELAY);
+  out:
+ 	if (node_id == card->root_node->node_id)
+ 		fw_schedule_bm_work(card, 0);
+ }
+ 
++static void fw_device_workfn(struct work_struct *work)
++{
++	struct fw_device *device = container_of(to_delayed_work(work),
++						struct fw_device, work);
++	device->workfn(work);
++}
++
+ void fw_node_event(struct fw_card *card, struct fw_node *node, int event)
+ {
+ 	struct fw_device *device;
+@@ -1252,7 +1259,8 @@ void fw_node_event(struct fw_card *card, struct fw_node *node, int event)
+ 		 * power-up after getting plugged in.  We schedule the
+ 		 * first config rom scan half a second after bus reset.
+ 		 */
+-		INIT_DELAYED_WORK(&device->work, fw_device_init);
++		device->workfn = fw_device_init;
++		INIT_DELAYED_WORK(&device->work, fw_device_workfn);
+ 		fw_schedule_device_work(device, INITIAL_DELAY);
+ 		break;
+ 
+@@ -1268,7 +1276,7 @@ void fw_node_event(struct fw_card *card, struct fw_node *node, int event)
+ 		if (atomic_cmpxchg(&device->state,
+ 			    FW_DEVICE_RUNNING,
+ 			    FW_DEVICE_INITIALIZING) == FW_DEVICE_RUNNING) {
+-			PREPARE_DELAYED_WORK(&device->work, fw_device_refresh);
++			device->workfn = fw_device_refresh;
+ 			fw_schedule_device_work(device,
+ 				device->is_local ? 0 : INITIAL_DELAY);
+ 		}
+@@ -1283,7 +1291,7 @@ void fw_node_event(struct fw_card *card, struct fw_node *node, int event)
+ 		smp_wmb();  /* update node_id before generation */
+ 		device->generation = card->generation;
+ 		if (atomic_read(&device->state) == FW_DEVICE_RUNNING) {
+-			PREPARE_DELAYED_WORK(&device->work, fw_device_update);
++			device->workfn = fw_device_update;
+ 			fw_schedule_device_work(device, 0);
+ 		}
+ 		break;
+@@ -1308,7 +1316,7 @@ void fw_node_event(struct fw_card *card, struct fw_node *node, int event)
+ 		device = node->data;
+ 		if (atomic_xchg(&device->state,
+ 				FW_DEVICE_GONE) == FW_DEVICE_RUNNING) {
+-			PREPARE_DELAYED_WORK(&device->work, fw_device_shutdown);
++			device->workfn = fw_device_shutdown;
+ 			fw_schedule_device_work(device,
+ 				list_empty(&card->link) ? 0 : SHUTDOWN_DELAY);
+ 		}
+diff --git a/drivers/firewire/sbp2.c b/drivers/firewire/sbp2.c
+index 281029d..7aef911 100644
+--- a/drivers/firewire/sbp2.c
++++ b/drivers/firewire/sbp2.c
+@@ -146,6 +146,7 @@ struct sbp2_logical_unit {
+ 	 */
+ 	int generation;
+ 	int retries;
++	work_func_t workfn;
+ 	struct delayed_work work;
+ 	bool has_sdev;
+ 	bool blocked;
+@@ -864,7 +865,7 @@ static void sbp2_login(struct work_struct *work)
+ 	/* set appropriate retry limit(s) in BUSY_TIMEOUT register */
+ 	sbp2_set_busy_timeout(lu);
+ 
+-	PREPARE_DELAYED_WORK(&lu->work, sbp2_reconnect);
++	lu->workfn = sbp2_reconnect;
+ 	sbp2_agent_reset(lu);
+ 
+ 	/* This was a re-login. */
+@@ -918,7 +919,7 @@ static void sbp2_login(struct work_struct *work)
+ 	 * If a bus reset happened, sbp2_update will have requeued
+ 	 * lu->work already.  Reset the work from reconnect to login.
+ 	 */
+-	PREPARE_DELAYED_WORK(&lu->work, sbp2_login);
++	lu->workfn = sbp2_login;
+ }
+ 
+ static void sbp2_reconnect(struct work_struct *work)
+@@ -952,7 +953,7 @@ static void sbp2_reconnect(struct work_struct *work)
+ 		    lu->retries++ >= 5) {
+ 			dev_err(tgt_dev(tgt), "failed to reconnect\n");
+ 			lu->retries = 0;
+-			PREPARE_DELAYED_WORK(&lu->work, sbp2_login);
++			lu->workfn = sbp2_login;
+ 		}
+ 		sbp2_queue_work(lu, DIV_ROUND_UP(HZ, 5));
+ 
+@@ -972,6 +973,13 @@ static void sbp2_reconnect(struct work_struct *work)
+ 	sbp2_conditionally_unblock(lu);
+ }
+ 
++static void sbp2_lu_workfn(struct work_struct *work)
++{
++	struct sbp2_logical_unit *lu = container_of(to_delayed_work(work),
++						struct sbp2_logical_unit, work);
++	lu->workfn(work);
++}
++
+ static int sbp2_add_logical_unit(struct sbp2_target *tgt, int lun_entry)
+ {
+ 	struct sbp2_logical_unit *lu;
+@@ -998,7 +1006,8 @@ static int sbp2_add_logical_unit(struct sbp2_target *tgt, int lun_entry)
+ 	lu->blocked  = false;
+ 	++tgt->dont_block;
+ 	INIT_LIST_HEAD(&lu->orb_list);
+-	INIT_DELAYED_WORK(&lu->work, sbp2_login);
++	lu->workfn = sbp2_login;
++	INIT_DELAYED_WORK(&lu->work, sbp2_lu_workfn);
+ 
+ 	list_add_tail(&lu->link, &tgt->lu_list);
+ 	return 0;
+diff --git a/include/linux/firewire.h b/include/linux/firewire.h
+index 5d7782e..c3683bd 100644
+--- a/include/linux/firewire.h
++++ b/include/linux/firewire.h
+@@ -200,6 +200,7 @@ struct fw_device {
+ 	unsigned irmc:1;
+ 	unsigned bc_implemented:2;
+ 
++	work_func_t workfn;
+ 	struct delayed_work work;
+ 	struct fw_attribute_group attribute_group;
+ };
