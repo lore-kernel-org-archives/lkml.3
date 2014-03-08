@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752656AbaCHJaf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 04:30:35 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:43007 "EHLO bear.ext.ti.com"
+	id S1752563AbaCHJaY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 04:30:24 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52779 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752099AbaCHJaL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 04:30:11 -0500
+	id S1752363AbaCHJaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Mar 2014 04:30:07 -0500
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <gregkh@linuxfoundation.org>, <kishon@ti.com>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH 25/28] phy: ti-pipe3: Fix suspend/resume and module reload
-Date: Sat, 8 Mar 2014 14:59:26 +0530
-Message-ID: <1394270969-11851-26-git-send-email-kishon@ti.com>
+Subject: [PATCH 21/28] phy: ti-pipe3: cleanup clock handling
+Date: Sat, 8 Mar 2014 14:59:22 +0530
+Message-ID: <1394270969-11851-22-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1394270969-11851-1-git-send-email-kishon@ti.com>
 References: <1394270969-11851-1-git-send-email-kishon@ti.com>
@@ -23,32 +23,132 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Roger Quadros <rogerq@ti.com>
 
-Due to Errata i783, SATA breaks if its DPLL is idled. The recommeded
-workaround to issue a softreset to the SATA controller doesn't seem to
-work. Here we just prevent SATA DPLL from Idling and hence avoid
-the issue altogether.
+As this driver is no longer USB specific, use generic clock names.
+- Fix PLL_SD_SHIFT from 9 to 10
+- Don't separate prepare/unprepare clock from enable/disable. This
+  ensures optimal power savings.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- drivers/phy/phy-ti-pipe3.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/phy/phy-ti-pipe3.c |   55 ++++++++++++++++++++++----------------------
+ 1 file changed, 28 insertions(+), 27 deletions(-)
 
 diff --git a/drivers/phy/phy-ti-pipe3.c b/drivers/phy/phy-ti-pipe3.c
-index 12cc900..5913676 100644
+index fd029b1..211703c 100644
 --- a/drivers/phy/phy-ti-pipe3.c
 +++ b/drivers/phy/phy-ti-pipe3.c
-@@ -238,6 +238,10 @@ static int ti_pipe3_exit(struct phy *x)
- 	u32 val;
- 	unsigned long timeout;
+@@ -45,7 +45,7 @@
+ #define	PLL_SELFREQDCO_MASK	0x0000000E
+ #define	PLL_SELFREQDCO_SHIFT	0x1
+ #define	PLL_SD_MASK		0x0003FC00
+-#define	PLL_SD_SHIFT		0x9
++#define	PLL_SD_SHIFT		10
+ #define	SET_PLL_GO		0x1
+ #define	PLL_TICOPWDN		0x10000
+ #define	PLL_LOCK		0x2
+@@ -72,7 +72,7 @@ struct ti_pipe3 {
+ 	struct device		*control_dev;
+ 	struct clk		*wkupclk;
+ 	struct clk		*sys_clk;
+-	struct clk		*optclk;
++	struct clk		*refclk;
+ };
  
-+	/* SATA DPLL can't be powered down due to Errata i783 */
-+	if (of_device_is_compatible(phy->dev->of_node, "ti,phy-pipe3-sata"))
-+		return 0;
-+
- 	/* Put DPLL in IDLE mode */
- 	val = ti_pipe3_readl(phy->pll_ctrl_base, PLL_CONFIGURATION2);
- 	val |= PLL_IDLE;
+ struct pipe3_dpll_map {
+@@ -270,23 +270,21 @@ static int ti_pipe3_probe(struct platform_device *pdev)
+ 
+ 	phy->dev		= &pdev->dev;
+ 
+-	phy->wkupclk = devm_clk_get(phy->dev, "usb_phy_cm_clk32k");
++	phy->wkupclk = devm_clk_get(phy->dev, "wkupclk");
+ 	if (IS_ERR(phy->wkupclk)) {
+-		dev_err(&pdev->dev, "unable to get usb_phy_cm_clk32k\n");
++		dev_err(&pdev->dev, "unable to get wkupclk\n");
+ 		return PTR_ERR(phy->wkupclk);
+ 	}
+-	clk_prepare(phy->wkupclk);
+ 
+-	phy->optclk = devm_clk_get(phy->dev, "usb_otg_ss_refclk960m");
+-	if (IS_ERR(phy->optclk)) {
+-		dev_err(&pdev->dev, "unable to get usb_otg_ss_refclk960m\n");
+-		return PTR_ERR(phy->optclk);
++	phy->refclk = devm_clk_get(phy->dev, "refclk");
++	if (IS_ERR(phy->refclk)) {
++		dev_err(&pdev->dev, "unable to get refclk\n");
++		return PTR_ERR(phy->refclk);
+ 	}
+-	clk_prepare(phy->optclk);
+ 
+-	phy->sys_clk = devm_clk_get(phy->dev, "sys_clkin");
++	phy->sys_clk = devm_clk_get(phy->dev, "sysclk");
+ 	if (IS_ERR(phy->sys_clk)) {
+-		pr_err("%s: unable to get sys_clkin\n", __func__);
++		dev_err(&pdev->dev, "unable to get sysclk\n");
+ 		return -EINVAL;
+ 	}
+ 
+@@ -326,10 +324,6 @@ static int ti_pipe3_probe(struct platform_device *pdev)
+ 
+ static int ti_pipe3_remove(struct platform_device *pdev)
+ {
+-	struct ti_pipe3 *phy = platform_get_drvdata(pdev);
+-
+-	clk_unprepare(phy->wkupclk);
+-	clk_unprepare(phy->optclk);
+ 	if (!pm_runtime_suspended(&pdev->dev))
+ 		pm_runtime_put(&pdev->dev);
+ 	pm_runtime_disable(&pdev->dev);
+@@ -343,8 +337,10 @@ static int ti_pipe3_runtime_suspend(struct device *dev)
+ {
+ 	struct ti_pipe3	*phy = dev_get_drvdata(dev);
+ 
+-	clk_disable(phy->wkupclk);
+-	clk_disable(phy->optclk);
++	if (!IS_ERR(phy->wkupclk))
++		clk_disable_unprepare(phy->wkupclk);
++	if (!IS_ERR(phy->refclk))
++		clk_disable_unprepare(phy->refclk);
+ 
+ 	return 0;
+ }
+@@ -354,22 +350,27 @@ static int ti_pipe3_runtime_resume(struct device *dev)
+ 	u32 ret = 0;
+ 	struct ti_pipe3	*phy = dev_get_drvdata(dev);
+ 
+-	ret = clk_enable(phy->optclk);
+-	if (ret) {
+-		dev_err(phy->dev, "Failed to enable optclk %d\n", ret);
+-		goto err1;
++	if (!IS_ERR(phy->refclk)) {
++		ret = clk_prepare_enable(phy->refclk);
++		if (ret) {
++			dev_err(phy->dev, "Failed to enable refclk %d\n", ret);
++			goto err1;
++		}
+ 	}
+ 
+-	ret = clk_enable(phy->wkupclk);
+-	if (ret) {
+-		dev_err(phy->dev, "Failed to enable wkupclk %d\n", ret);
+-		goto err2;
++	if (!IS_ERR(phy->wkupclk)) {
++		ret = clk_prepare_enable(phy->wkupclk);
++		if (ret) {
++			dev_err(phy->dev, "Failed to enable wkupclk %d\n", ret);
++			goto err2;
++		}
+ 	}
+ 
+ 	return 0;
+ 
+ err2:
+-	clk_disable(phy->optclk);
++	if (!IS_ERR(phy->refclk))
++		clk_disable_unprepare(phy->refclk);
+ 
+ err1:
+ 	return ret;
 -- 
 1.7.9.5
 
