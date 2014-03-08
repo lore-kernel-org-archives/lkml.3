@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755507AbaCHBgP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:36:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46257 "EHLO
+	id S1755537AbaCHBgw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:36:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46249 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753701AbaCHBG6 (ORCPT
+	with ESMTP id S1753437AbaCHBG4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:06:58 -0500
+	Fri, 7 Mar 2014 20:06:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pavel Shilovsky <piastry@etersoft.ru>,
-        Al Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
-        Steve French <smfrench@gmail.com>
-Subject: [PATCH 3.4 08/99] cifs: ensure that uncached writes handle unmapped areas correctly
-Date: Fri,  7 Mar 2014 17:07:04 -0800
-Message-Id: <20140308010611.877968466@linuxfoundation.org>
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Sergei Trofimovich <slyfox@gentoo.org>
+Subject: [PATCH 3.4 06/99] avr32: fix missing module.h causing build failure in mimc200/fram.c
+Date: Fri,  7 Mar 2014 17:07:02 -0800
+Message-Id: <20140308010611.815381391@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
 References: <20140308010611.468206150@linuxfoundation.org>
@@ -30,98 +32,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-commit 5d81de8e8667da7135d3a32a964087c0faf5483f upstream.
+commit 5745d6a41a4f4aec29e2ccd591c6fb09ed73a955 upstream.
 
-It's possible for userland to pass down an iovec via writev() that has a
-bogus user pointer in it. If that happens and we're doing an uncached
-write, then we can end up getting less bytes than we expect from the
-call to iov_iter_copy_from_user. This is CVE-2014-0069
+Causing this:
 
-cifs_iovec_write isn't set up to handle that situation however. It'll
-blindly keep chugging through the page array and not filling those pages
-with anything useful. Worse yet, we'll later end up with a negative
-number in wdata->tailsz, which will confuse the sending routines and
-cause an oops at the very least.
+In file included from arch/avr32/boards/mimc200/fram.c:13:
+include/linux/miscdevice.h:51: error: field 'list' has incomplete type
+include/linux/miscdevice.h:55: error: expected specifier-qualifier-list before 'mode_t'
+arch/avr32/boards/mimc200/fram.c:42: error: 'THIS_MODULE' undeclared here (not in a function)
 
-Fix this by having the copy phase of cifs_iovec_write stop copying data
-in this situation and send the last write as a short one. At the same
-time, we want to avoid sending a zero-length write to the server, so
-break out of the loop and set rc to -EFAULT if that happens. This also
-allows us to handle the case where no address in the iovec is valid.
-
-[Note: Marking this for stable on v3.4+ kernels, but kernels as old as
-       v2.6.38 may have a similar problem and may need similar fix]
-
-Reviewed-by: Pavel Shilovsky <piastry@etersoft.ru>
-Reported-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <smfrench@gmail.com>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
+Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
+Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/file.c |   37 ++++++++++++++++++++++++++++++++++---
- 1 file changed, 34 insertions(+), 3 deletions(-)
+ arch/avr32/boards/mimc200/fram.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/cifs/file.c
-+++ b/fs/cifs/file.c
-@@ -2185,7 +2185,7 @@ cifs_iovec_write(struct file *file, cons
- 		 unsigned long nr_segs, loff_t *poffset)
- {
- 	unsigned long nr_pages, i;
--	size_t copied, len, cur_len;
-+	size_t bytes, copied, len, cur_len;
- 	ssize_t total_written = 0;
- 	loff_t offset;
- 	struct iov_iter it;
-@@ -2236,14 +2236,45 @@ cifs_iovec_write(struct file *file, cons
+--- a/arch/avr32/boards/mimc200/fram.c
++++ b/arch/avr32/boards/mimc200/fram.c
+@@ -11,6 +11,7 @@
+ #define FRAM_VERSION	"1.0"
  
- 		save_len = cur_len;
- 		for (i = 0; i < nr_pages; i++) {
--			copied = min_t(const size_t, cur_len, PAGE_SIZE);
-+			bytes = min_t(const size_t, cur_len, PAGE_SIZE);
- 			copied = iov_iter_copy_from_user(wdata->pages[i], &it,
--							 0, copied);
-+							 0, bytes);
- 			cur_len -= copied;
- 			iov_iter_advance(&it, copied);
-+			/*
-+			 * If we didn't copy as much as we expected, then that
-+			 * may mean we trod into an unmapped area. Stop copying
-+			 * at that point. On the next pass through the big
-+			 * loop, we'll likely end up getting a zero-length
-+			 * write and bailing out of it.
-+			 */
-+			if (copied < bytes)
-+				break;
- 		}
- 		cur_len = save_len - cur_len;
- 
-+		/*
-+		 * If we have no data to send, then that probably means that
-+		 * the copy above failed altogether. That's most likely because
-+		 * the address in the iovec was bogus. Set the rc to -EFAULT,
-+		 * free anything we allocated and bail out.
-+		 */
-+		if (!cur_len) {
-+			for (i = 0; i < nr_pages; i++)
-+				put_page(wdata->pages[i]);
-+			kfree(wdata);
-+			rc = -EFAULT;
-+			break;
-+		}
-+
-+		/*
-+		 * i + 1 now represents the number of pages we actually used in
-+		 * the copy phase above. Bring nr_pages down to that, and free
-+		 * any pages that we didn't use.
-+		 */
-+		for ( ; nr_pages > i + 1; nr_pages--)
-+			put_page(wdata->pages[nr_pages - 1]);
-+
- 		wdata->sync_mode = WB_SYNC_ALL;
- 		wdata->nr_pages = nr_pages;
- 		wdata->offset = (__u64)offset;
+ #include <linux/miscdevice.h>
++#include <linux/module.h>
+ #include <linux/proc_fs.h>
+ #include <linux/mm.h>
+ #include <linux/io.h>
 
 
