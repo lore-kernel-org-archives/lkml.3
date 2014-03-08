@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755462AbaCHBeg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:34:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46281 "EHLO
+	id S1755091AbaCHBfR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:35:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46272 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753811AbaCHBHC (ORCPT
+	with ESMTP id S1753777AbaCHBHB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:07:02 -0500
+	Fri, 7 Mar 2014 20:07:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Neil Brown <neilb@suse.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.4 24/99] SUNRPC: Fix races in xs_nospace()
-Date: Fri,  7 Mar 2014 17:07:20 -0800
-Message-Id: <20140308010612.392518072@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>,
+        Liam Girdwood <liam.r.girdwood@linux.intel.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.4 22/99] ASoC: sta32x: Fix array access overflow
+Date: Fri,  7 Mar 2014 17:07:18 -0800
+Message-Id: <20140308010612.332553815@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
 References: <20140308010611.468206150@linuxfoundation.org>
@@ -29,55 +30,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 06ea0bfe6e6043cb56a78935a19f6f8ebc636226 upstream.
+commit 025c3fa9256d4c54506b7a29dc3befac54f5c68d upstream.
 
-When a send failure occurs due to the socket being out of buffer space,
-we call xs_nospace() in order to have the RPC task wait until the
-socket has drained enough to make it worth while trying again.
-The current patch fixes a race in which the socket is drained before
-we get round to setting up the machinery in xs_nospace(), and which
-is reported to cause hangs.
+Preset EQ enum of sta32x codec driver declares too many number of
+items and it may lead to the access over the actual array size.
 
-Link: http://lkml.kernel.org/r/20140210170315.33dfc621@notabene.brown
-Fixes: a9a6b52ee1ba (SUNRPC: Don't start the retransmission timer...)
-Reported-by: Neil Brown <neilb@suse.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Use SOC_ENUM_SINGLE_DECL() helper and it's automatically fixed.
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Acked-by: Liam Girdwood <liam.r.girdwood@linux.intel.com>
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/xprtsock.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ sound/soc/codecs/sta32x.c |   72 +++++++++++++++++++++++-----------------------
+ 1 file changed, 36 insertions(+), 36 deletions(-)
 
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -501,6 +501,7 @@ static int xs_nospace(struct rpc_task *t
- 	struct rpc_rqst *req = task->tk_rqstp;
- 	struct rpc_xprt *xprt = req->rq_xprt;
- 	struct sock_xprt *transport = container_of(xprt, struct sock_xprt, xprt);
-+	struct sock *sk = transport->inet;
- 	int ret = -EAGAIN;
+--- a/sound/soc/codecs/sta32x.c
++++ b/sound/soc/codecs/sta32x.c
+@@ -147,42 +147,42 @@ static const unsigned int sta32x_limiter
+ 	13, 16, TLV_DB_SCALE_ITEM(-1500, 300, 0),
+ };
  
- 	dprintk("RPC: %5u xmit incomplete (%u left of %u)\n",
-@@ -518,7 +519,7 @@ static int xs_nospace(struct rpc_task *t
- 			 * window size
- 			 */
- 			set_bit(SOCK_NOSPACE, &transport->sock->flags);
--			transport->inet->sk_write_pending++;
-+			sk->sk_write_pending++;
- 			/* ...and wait for more buffer space */
- 			xprt_wait_for_buffer_space(task, xs_nospace_callback);
- 		}
-@@ -528,6 +529,9 @@ static int xs_nospace(struct rpc_task *t
- 	}
+-static const struct soc_enum sta32x_drc_ac_enum =
+-	SOC_ENUM_SINGLE(STA32X_CONFD, STA32X_CONFD_DRC_SHIFT,
+-			2, sta32x_drc_ac);
+-static const struct soc_enum sta32x_auto_eq_enum =
+-	SOC_ENUM_SINGLE(STA32X_AUTO1, STA32X_AUTO1_AMEQ_SHIFT,
+-			3, sta32x_auto_eq_mode);
+-static const struct soc_enum sta32x_auto_gc_enum =
+-	SOC_ENUM_SINGLE(STA32X_AUTO1, STA32X_AUTO1_AMGC_SHIFT,
+-			4, sta32x_auto_gc_mode);
+-static const struct soc_enum sta32x_auto_xo_enum =
+-	SOC_ENUM_SINGLE(STA32X_AUTO2, STA32X_AUTO2_XO_SHIFT,
+-			16, sta32x_auto_xo_mode);
+-static const struct soc_enum sta32x_preset_eq_enum =
+-	SOC_ENUM_SINGLE(STA32X_AUTO3, STA32X_AUTO3_PEQ_SHIFT,
+-			32, sta32x_preset_eq_mode);
+-static const struct soc_enum sta32x_limiter_ch1_enum =
+-	SOC_ENUM_SINGLE(STA32X_C1CFG, STA32X_CxCFG_LS_SHIFT,
+-			3, sta32x_limiter_select);
+-static const struct soc_enum sta32x_limiter_ch2_enum =
+-	SOC_ENUM_SINGLE(STA32X_C2CFG, STA32X_CxCFG_LS_SHIFT,
+-			3, sta32x_limiter_select);
+-static const struct soc_enum sta32x_limiter_ch3_enum =
+-	SOC_ENUM_SINGLE(STA32X_C3CFG, STA32X_CxCFG_LS_SHIFT,
+-			3, sta32x_limiter_select);
+-static const struct soc_enum sta32x_limiter1_attack_rate_enum =
+-	SOC_ENUM_SINGLE(STA32X_L1AR, STA32X_LxA_SHIFT,
+-			16, sta32x_limiter_attack_rate);
+-static const struct soc_enum sta32x_limiter2_attack_rate_enum =
+-	SOC_ENUM_SINGLE(STA32X_L2AR, STA32X_LxA_SHIFT,
+-			16, sta32x_limiter_attack_rate);
+-static const struct soc_enum sta32x_limiter1_release_rate_enum =
+-	SOC_ENUM_SINGLE(STA32X_L1AR, STA32X_LxR_SHIFT,
+-			16, sta32x_limiter_release_rate);
+-static const struct soc_enum sta32x_limiter2_release_rate_enum =
+-	SOC_ENUM_SINGLE(STA32X_L2AR, STA32X_LxR_SHIFT,
+-			16, sta32x_limiter_release_rate);
++static SOC_ENUM_SINGLE_DECL(sta32x_drc_ac_enum,
++			    STA32X_CONFD, STA32X_CONFD_DRC_SHIFT,
++			    sta32x_drc_ac);
++static SOC_ENUM_SINGLE_DECL(sta32x_auto_eq_enum,
++			    STA32X_AUTO1, STA32X_AUTO1_AMEQ_SHIFT,
++			    sta32x_auto_eq_mode);
++static SOC_ENUM_SINGLE_DECL(sta32x_auto_gc_enum,
++			    STA32X_AUTO1, STA32X_AUTO1_AMGC_SHIFT,
++			    sta32x_auto_gc_mode);
++static SOC_ENUM_SINGLE_DECL(sta32x_auto_xo_enum,
++			    STA32X_AUTO2, STA32X_AUTO2_XO_SHIFT,
++			    sta32x_auto_xo_mode);
++static SOC_ENUM_SINGLE_DECL(sta32x_preset_eq_enum,
++			    STA32X_AUTO3, STA32X_AUTO3_PEQ_SHIFT,
++			    sta32x_preset_eq_mode);
++static SOC_ENUM_SINGLE_DECL(sta32x_limiter_ch1_enum,
++			    STA32X_C1CFG, STA32X_CxCFG_LS_SHIFT,
++			    sta32x_limiter_select);
++static SOC_ENUM_SINGLE_DECL(sta32x_limiter_ch2_enum,
++			    STA32X_C2CFG, STA32X_CxCFG_LS_SHIFT,
++			    sta32x_limiter_select);
++static SOC_ENUM_SINGLE_DECL(sta32x_limiter_ch3_enum,
++			    STA32X_C3CFG, STA32X_CxCFG_LS_SHIFT,
++			    sta32x_limiter_select);
++static SOC_ENUM_SINGLE_DECL(sta32x_limiter1_attack_rate_enum,
++			    STA32X_L1AR, STA32X_LxA_SHIFT,
++			    sta32x_limiter_attack_rate);
++static SOC_ENUM_SINGLE_DECL(sta32x_limiter2_attack_rate_enum,
++			    STA32X_L2AR, STA32X_LxA_SHIFT,
++			    sta32x_limiter_attack_rate);
++static SOC_ENUM_SINGLE_DECL(sta32x_limiter1_release_rate_enum,
++			    STA32X_L1AR, STA32X_LxR_SHIFT,
++			    sta32x_limiter_release_rate);
++static SOC_ENUM_SINGLE_DECL(sta32x_limiter2_release_rate_enum,
++			    STA32X_L2AR, STA32X_LxR_SHIFT,
++			    sta32x_limiter_release_rate);
  
- 	spin_unlock_bh(&xprt->transport_lock);
-+
-+	/* Race breaker in case memory is freed before above code is called */
-+	sk->sk_write_space(sk);
- 	return ret;
- }
- 
+ /* byte array controls for setting biquad, mixer, scaling coefficients;
+  * for biquads all five coefficients need to be set in one go,
 
 
