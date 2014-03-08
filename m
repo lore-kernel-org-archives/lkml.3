@@ -1,75 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752125AbaCHVsD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 16:48:03 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:53970 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751096AbaCHVsA (ORCPT
+	id S1751938AbaCHV62 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 16:58:28 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:52624 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751645AbaCHV61 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 16:48:00 -0500
-Message-ID: <1394315505.11448.30.camel@haakon3.risingtidesystems.com>
-Subject: [GIT PULL] target fixes for v3.14-rc6
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Sat, 08 Mar 2014 13:51:45 -0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	Sat, 8 Mar 2014 16:58:27 -0500
+Message-ID: <531B9281.1080500@infradead.org>
+Date: Sat, 08 Mar 2014 13:58:25 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Suggestion] Makefile: about allmodconfig issue.
+References: <531B1603.6080106@gmail.com> <531B3178.8000804@infradead.org> <531B8F2C.8080302@gmail.com>
+In-Reply-To: <531B8F2C.8080302@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 03/08/2014 01:44 PM, Chen Gang wrote:
+> On 03/08/2014 11:04 PM, Randy Dunlap wrote:
+>> On 03/08/2014 05:07 AM, Chen Gang wrote:
+> [...]
+>>> Welcome any suggestions, discussions and completions.
+>>>
+>>> Thanks.
+>>>
+>>
+>> A patch has already been submitted and applied by the subsystem maintainer.
+>>
+>> http://marc.info/?l=linux-gpio&m=139413626320431&w=2
+>>
+>>
+> 
+> OK, Thanks.  And excuse me, I can not connect to this web site in China.
+> 
+> Could you please past the patch contents in the reply mail? (or just let
+> me know whether it is "make allmodconfig" issue, or only gpio driver's
+> issue)
+> 
+> 
+> Thanks.
 
-Here are the target-pending fixes for v3.14-rc6.
+It's a gpio driver Kconfig patch -- not an allmodconfig issue.
 
-Please pull from:
+Here is the patch:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git master
+From: Alan Tull <atull@altera.com>
 
-This series addresses a number of outstanding issues wrt to active I/O
-shutdown using iser-target.  This includes:
+fix build error with this message:
+kernel/irq/Kconfig:41:error: recursive dependency detected!
+kernel/irq/Kconfig:41:  symbol GENERIC_IRQ_CHIP is selected by GPIO_DWAPB
+drivers/gpio/Kconfig:131:       symbol GPIO_DWAPB depends on IRQ_DOMAIN
+kernel/irq/Kconfig:46:  symbol IRQ_DOMAIN is selected by GENERIC_IRQ_CHIP
 
-- Fix a long standing tpg_state bug where a tpg could be referenced
-  during explicit shutdown (v3.1+ stable)
-- Use list_del_init for iscsi_cmd->i_conn_node so list_empty checks
-  work as expected (v3.10+ stable)
-- Fix a isert_conn->state related hung task bug + ensure outstanding
-  I/O completes during session shutdown. (v3.10+ stable)
-- Fix isert_conn->post_send_buf_count accounting for RDMA READ/WRITEs
-  (v3.10+ stable)
-- Ignore FRWR completions during active I/O shutdown (v3.12+ stable)
-- Fix command leakage for interrupt coalescing during active I/O 
-  shutdown (v3.13+ stable)
+Signed-off-by: Alan Tull <atull@altera.com>
+---
+ drivers/gpio/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Also included is another DIF emulation fix from Sagi specific to
-v3.14-rc code.
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index 9979017..0e524d7 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -132,7 +132,7 @@ config GPIO_DWAPB
+ 	tristate "Synopsys DesignWare APB GPIO driver"
+ 	select GPIO_GENERIC
+ 	select GENERIC_IRQ_CHIP
+-	depends on OF_GPIO && IRQ_DOMAIN
++	depends on OF_GPIO
+ 	help
+ 	  Say Y or M here to build support for the Synopsys DesignWare APB
+ 	  GPIO block.
+-- 
 
-Thank you,
 
---nab
 
-Nicholas Bellinger (6):
-  iscsi-target: Fix iscsit_get_tpg_from_np tpg_state bug
-  iscsi/iser-target: Use list_del_init for ->i_conn_node
-  iscsi/iser-target: Fix isert_conn->state hung shutdown issues
-  iser-target: Fix post_send_buf_count for RDMA READ/WRITE
-  iser-target: Ignore completions for FRWRs in isert_cq_tx_work
-  iser-target: Fix command leak for tx_desc->comp_llnode_batch
-
-Sagi Grimberg (1):
-  Target/sbc: Fix sbc_copy_prot for offset scatters
-
- drivers/infiniband/ulp/isert/ib_isert.c  |  180 ++++++++++++++++++------------
- drivers/infiniband/ulp/isert/ib_isert.h  |    7 +-
- drivers/target/iscsi/iscsi_target.c      |   10 +-
- drivers/target/iscsi/iscsi_target_erl2.c |   16 +--
- drivers/target/iscsi/iscsi_target_tpg.c  |    2 +-
- drivers/target/target_core_sbc.c         |   38 ++++---
- include/target/iscsi/iscsi_transport.h   |    1 +
- 7 files changed, 151 insertions(+), 103 deletions(-)
-
+-- 
+~Randy
