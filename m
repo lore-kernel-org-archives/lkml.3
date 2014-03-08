@@ -1,79 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751137AbaCHGew (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 01:34:52 -0500
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:53800 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750792AbaCHGev (ORCPT
+	id S1751875AbaCHGfo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 01:35:44 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:47490 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751330AbaCHGez (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 01:34:51 -0500
-MIME-Version: 1.0
-In-Reply-To: <1394256390-10603-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1386567192-19924-1-git-send-email-michael.opdenacker@free-electrons.com>
-	<1394256390-10603-1-git-send-email-michael.opdenacker@free-electrons.com>
-Date: Sat, 8 Mar 2014 14:34:50 +0800
-Message-ID: <CAF0htA5OyL=cm7z5BMy1r7OcW_a-4WGEUbLzveR4fWgAC5av0Q@mail.gmail.com>
-Subject: Re: [PATCH] [RESEND] score: remove unused CPU_SCORE7 Kconfig parameter
-From: Lennox Wu <lennox.wu@gmail.com>
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 8 Mar 2014 01:34:55 -0500
+Date: Sat, 08 Mar 2014 01:34:51 -0500 (EST)
+Message-Id: <20140308.013451.1713896236113364692.davem@davemloft.net>
+To: sgrubb@redhat.com
+Cc: eparis@redhat.com, ebiederm@xmission.com, rgb@redhat.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-audit@redhat.com, akpm@linux-foundation.org
+Subject: Re: [RFC][PATCH] audit: Simplify by assuming the callers socket
+ buffer is large enough
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <5147229.ivUnbSCGlH@x2>
+References: <1394232722.17779.57.camel@flatline.rdu.redhat.com>
+	<20140307.194801.1893514114998807038.davem@davemloft.net>
+	<5147229.ivUnbSCGlH@x2>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 07 Mar 2014 22:34:54 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HI Michael,
-According to my record, I had told you we have another
-processor(2013/11/4), hence, we need the parameter.
-We just wirte it done first. Do you remember it?
+From: Steve Grubb <sgrubb@redhat.com>
+Date: Fri, 07 Mar 2014 22:27:28 -0500
 
-Best,
-Lennox
+> On Friday, March 07, 2014 07:48:01 PM David Miller wrote:
+>> From: Eric Paris <eparis@redhat.com>
+>> Date: Fri, 07 Mar 2014 17:52:02 -0500
+>> 
+>> > Audit is non-tolerant to failure and loss.
+>> 
+>> Netlink is not a loss-less transport.
+> 
+> Perhaps. But in all our testing over the years its been very good.
 
+What I really meant by that was that there is flow control.
 
-2014-03-08 13:26 GMT+08:00 Michael Opdenacker
-<michael.opdenacker@free-electrons.com>:
-> This removes the CPU_SCORE7 Kconfig parameter,
-> which is no longer used anywhere in the source code
-> and Makefiles.
->
-> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-> ---
->  arch/score/Kconfig | 6 ------
->  1 file changed, 6 deletions(-)
->
-> diff --git a/arch/score/Kconfig b/arch/score/Kconfig
-> index c75d06aa27c3..4ac8cae5727c 100644
-> --- a/arch/score/Kconfig
-> +++ b/arch/score/Kconfig
-> @@ -22,27 +22,21 @@ choice
->  config ARCH_SCORE7
->         bool "SCORE7 processor"
->         select SYS_SUPPORTS_32BIT_KERNEL
-> -       select CPU_SCORE7
->         select GENERIC_HAS_IOMAP
->
->  config MACH_SPCT6600
->         bool "SPCT6600 series based machines"
->         select SYS_SUPPORTS_32BIT_KERNEL
-> -       select CPU_SCORE7
->         select GENERIC_HAS_IOMAP
->
->  config SCORE_SIM
->         bool "Score simulator"
->         select SYS_SUPPORTS_32BIT_KERNEL
-> -       select CPU_SCORE7
->         select GENERIC_HAS_IOMAP
->  endchoice
->
->  endmenu
->
-> -config CPU_SCORE7
-> -       bool
-> -
->  config NO_DMA
->         bool
->         default y
-> --
-> 1.8.3.2
->
+You can push as much data reliably over it as you want, but you have
+to block when the socket limits are hit.
+
+And I'd say you might as well make the creator of the event do the
+blocking rather than making other threads do this.
