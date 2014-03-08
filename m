@@ -1,57 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751815AbaCHLHw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 06:07:52 -0500
-Received: from moutng.kundenserver.de ([212.227.17.24]:59154 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751156AbaCHLHu (ORCPT
+	id S1752002AbaCHLIj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 06:08:39 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60631 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751880AbaCHLIf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 06:07:50 -0500
-Date: Sat, 8 Mar 2014 12:07:40 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Ben Dooks <ben.dooks@codethink.co.uk>
-cc: linux-media@vger.kernel.org, Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-kernel@vger.kernel.org, magnus.damm@opensource.se,
-        linux-sh@vger.kernel.org, linux-kernel@lists.codethink.co.uk
-Subject: Re: [PATCH 5/5] rcar_vin: add devicetree support
-In-Reply-To: <1394197299-17528-6-git-send-email-ben.dooks@codethink.co.uk>
-Message-ID: <Pine.LNX.4.64.1403081148050.18310@axis700.grange>
-References: <1394197299-17528-1-git-send-email-ben.dooks@codethink.co.uk>
- <1394197299-17528-6-git-send-email-ben.dooks@codethink.co.uk>
+	Sat, 8 Mar 2014 06:08:35 -0500
+Date: Sat, 8 Mar 2014 12:08:31 +0100
+From: Jean Delvare <jdelvare@suse.de>
+To: Manuel Krause <manuelkrause@netscape.net>
+Cc: Guenter Roeck <linux@roeck-us.net>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [lm-sensors] 3.13.?: Strange / dangerous fan policy...
+Message-ID: <20140308120831.328e0179@endymion.delvare>
+In-Reply-To: <20140307225230.GA31135@roeck-us.net>
+References: <531A1EEE.9090101@netscape.net>
+	<20140307205506.GA6870@roeck-us.net>
+	<531A426D.6080100@netscape.net>
+	<20140307225230.GA31135@roeck-us.net>
+Organization: SUSE Linux
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:O+CiuVzjI9Bkp1GzQdytNXiI5Ieca+g50bysiE3xKAL
- xQphIw3z+/WgfJfiXQWwEsScuiY90Mly3dw0qmbCBVxlAcsytD
- +7sjuaUgPgcfN2sJeqefoWWb00mWpdkTvck9kHtnxdeBLDXBpt
- A/zwp6qvrV56ex4eHRtqMEa18R6eqK4rYtdM72Dal9hmg74Eym
- EmGb7OU8LYadDmOW8gDXqwqi0sbnym9YjoreKL6wbbNeXjEWVZ
- EmIlWprAdfzuVIHWzQ0PiKL4MnxiY/4XmJUye54MT4cHK26o/N
- hMPtBQt45bdeCEFb3PSBRCNO0S8UMsOV1NWsiFiTBL+8PPnjox
- jlOP4lV4vzvwaigZF5vAqeKySC2Q9G9HAZ6IEv8mVrs5Wsn+46
- s8s/YarmPZ0Ig==
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ben,
+On Fri, 7 Mar 2014 14:52:30 -0800, Guenter Roeck wrote:
+> On Fri, Mar 07, 2014 at 11:04:29PM +0100, Manuel Krause wrote:
+> > Hi, and thanks for the quick response!
+> > No special fancy "fan control policy". 'fancontrol' isn't up or
+> > running.
+> > Vanilla kernels 3.11.* and 3.12.* had been working on here without
+> > any extra work.
+> > --
+> > # sensors
+> > acpitz-virtual-0
+> > Adapter: Virtual device
+> > temp1:        +71.0°C  (crit = +256.0°C)
+> > temp2:        +69.0°C  (crit = +110.0°C)
+> > temp3:        +52.0°C  (crit = +105.0°C)
+> > temp4:        +25.0°C  (crit = +110.0°C)
+> > temp5:        +58.0°C  (crit = +110.0°C)
+> > 
+> > coretemp-isa-0000
+> > Adapter: ISA adapter
+> > Core 0:       +62.0°C  (high = +105.0°C, crit = +105.0°C)
+> > Core 1:       +60.0°C  (high = +105.0°C, crit = +105.0°C)
+> > --
+> > My notebook (HP/Compaq 6730b) does not have a seperate fan sensor.
+> > This is with 3.12.13 with my normal workload.
+> > 
+> > Please, trust my above mentionned values of 94 °C vs. 74°C as I
+> > don't like to boot 3.13.6 anymore, to avoid harm to the notebook's
+> > casing.
+> 
+> Understood. Unfortunately, we'll need to get information
+> from the new kernel to be able to track down the problem.
 
-On Fri, 7 Mar 2014, Ben Dooks wrote:
+Indeed. Not only the run-time temperatures, but also the high and crit
+limits.
 
-> Add support for devicetree probe for the rcar-vin
-> driver.
+> > But I'd do to test any improvement-patch.
+> 
+> So far I have no idea what is going on. I don't see anything in the
+> drivers providing above data that would explain the behavior,
+> but I might be missing something.
 
-Thanks for the patch. I'm afraid I don't quite understand how it is 
-supposed to work though. AFAICS, the rcar_vin driver currently doesn't 
-support asynchronous probing, so, your code is relying on a specific 
-probing order? Besides, as of now soc-camera doesn't support OF probing. 
-You mentioned, that you have a patch for soc-camera to add OF support. I 
-think that and async probing for rcar_vin should be committed before this 
-patch becomes meaningful.
+Looks like a regression in the acpi subsystem or in power management,
+not hwmon. Hwmon is merely reporting the temperatures, it's not
+responsible for the actual temperatures.
 
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+A bisection would certainly help, but of course that would require
+booting to a bad kernel half of the time, which I understand Manual
+wouldn't enjoy.
+
+The only two components which I think can reach such high temperatures
+in a laptop are the CPU and the GPU. I suppose that the "94 °C vs.
+74°C" refers to acpitz's temp1? If the the temperatures reported by
+coretemp remain the same, then I can only suppose that temp1 is the GPU
+temperature. Please tell us which GPU is in this laptop, and which
+driver you're using.
+
+-- 
+Jean Delvare
+SUSE L3 Support
