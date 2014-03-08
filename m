@@ -1,370 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752543AbaCHXQd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 18:16:33 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:43122 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752257AbaCHXPl (ORCPT
+	id S1751981AbaCHXZQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 18:25:16 -0500
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:51773 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751669AbaCHXZN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 18:15:41 -0500
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Daniel Borkmann <dborkman@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Hagen Paul Pfeifer <hagen@jauu.net>,
-        Jesse Gross <jesse@nicira.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: [PATCH v7 net-next 2/3] seccomp: convert seccomp to use extended BPF
-Date: Sat,  8 Mar 2014 15:15:29 -0800
-Message-Id: <1394320530-3508-3-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1394320530-3508-1-git-send-email-ast@plumgrid.com>
-References: <1394320530-3508-1-git-send-email-ast@plumgrid.com>
+	Sat, 8 Mar 2014 18:25:13 -0500
+Message-ID: <531BA6D3.4030004@gmail.com>
+Date: Sun, 09 Mar 2014 00:25:07 +0100
+From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Grant Likely <grant.likely@linaro.org>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+CC: Philipp Zabel <p.zabel@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Rob Herring <robherring2@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Philipp Zabel <philipp.zabel@gmail.com>
+Subject: Re: [RFC PATCH] [media]: of: move graph helpers from drivers/media/v4l2-core
+ to drivers/of
+References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de> < CAL_Jsq+U9zU1i+STLHMBjY5BeEP6djYnJVE5X1ix-D2q_zWztQ@mail.gmail.com> < 20140217181451.7EB7FC4044D@trevor.secretlab.ca> <20140218070624.GP17250@ pengutronix.de> <20140218162627.32BA4C40517@trevor.secretlab.ca> < 1393263389.3091.82.camel@pizza.hi.pengutronix.de> <20140226110114. CF2C7C40A89@trevor.secretlab.ca> <1393426129.3248.64.camel@paszta.hi. pengutronix.de> <20140307170550.1DFB2C40A0D@trevor.secretlab.ca> <531AF1E8. 50606@ti.com> <20140308114115.BB08EC40612@trevor.secretlab.ca>
+In-Reply-To: <20140308114115.BB08EC40612@trevor.secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-use sk_convert_filter() to convert seccomp BPF into extended BPF
+On 03/08/2014 12:41 PM, Grant Likely wrote:
+>>> Another thought. In terms of the pattern, I would add a recommendation
+>>> >  >  that there should be a way to identify ports of a particular type. ie.
+>>> >  >  If I were using the pattern to implement an patch bay of DSP filters,
+>>> >  >  where each input and output, then each target node should have a unique
+>>> >  >  identifier property analogous to "interrupt-controller" or
+>>> >  >  "gpio-controller". In this fictitious example I would probably choose
+>>> >  >  "audiostream-input-port" and "audiostream-output-port" as empty
+>>> >  >  properties in the port nodes. (I'm not suggesting a change to the
+>>> >  >  existing binding, but making a recommendation to new users).
+>> >
+>> >  I don't see any harm in that, but I don't right away see what could be
+>> >  done with them? Did you have something in mind?
+>
+> It would help with schema validation and allow ports of the same
+> interface to get grouped together.
+>
+>> >  I guess those could be used to study the graph before the drivers have
+>> >  been loaded. After the drivers have been loaded, the drivers should
+>> >  somehow register themselves and the ports/endpoints. And as the driver
+>> >  knows what kind of ports they are, it can supply this information in the
+>> >  runtime data structures.
+>> >
+>> >  If we do that, would it be better to have two pieces of data:
+>> >  input/output/bi-directional, and the port type (say, mipi-dpi, lvds, etc.)?
 
-05-sim-long_jumps.c of libseccomp was used as micro-benchmark:
-  seccomp_rule_add_exact(ctx,...
-  seccomp_rule_add_exact(ctx,...
-  rc = seccomp_load(ctx);
-  for (i = 0; i < 10000000; i++)
-     syscall(199, 100);
+I'm not sure about the direction information (it also came up when we
+originally discussed this binding), but the port type information would
+be useful. As it turns out, it is not always possible to describe a data
+bus interface type/data transmission protocol with a set of primitive
+properties in an endpoint node. Especially in cases when the physical
+layer is basically identical, for instance in case of MIPI CSI-2 and
+SMIA CCP2, or in future MIPI CSI-3 and MIPI CSI-2.
 
-'short filter' has 2 rules
-'large filter' has 200 rules
+In general there could likely be more than one supported, if both the
+transmitter and the receiver are sufficiently configurable.
 
-'short filter' performance is slightly better on x86_64,i386,arm32
-'large filter' is much faster on x86_64 and i386
-and shows no difference on arm32
+Then, to be able to fully describe a data port, perhaps we could
+add a property like 'interface-type' or 'bus-type' with values like
+"mipi-dbi", mipi-dsi", "mipi-csi2", "smia-ccp2", "hdmi", etc.
 
---x86_64-- short filter
-old BPF: 2.7 sec
- 39.12%  bench  libc-2.15.so       [.] syscall
-  8.10%  bench  [kernel.kallsyms]  [k] sk_run_filter
-  6.31%  bench  [kernel.kallsyms]  [k] system_call
-  5.59%  bench  [kernel.kallsyms]  [k] trace_hardirqs_on_caller
-  4.37%  bench  [kernel.kallsyms]  [k] trace_hardirqs_off_caller
-  3.70%  bench  [kernel.kallsyms]  [k] __secure_computing
-  3.67%  bench  [kernel.kallsyms]  [k] lock_is_held
-  3.03%  bench  [kernel.kallsyms]  [k] seccomp_bpf_load
-new BPF: 2.58 sec
- 42.05%  bench  libc-2.15.so       [.] syscall
-  6.91%  bench  [kernel.kallsyms]  [k] system_call
-  6.25%  bench  [kernel.kallsyms]  [k] trace_hardirqs_on_caller
-  6.07%  bench  [kernel.kallsyms]  [k] __secure_computing
-  5.08%  bench  [kernel.kallsyms]  [k] sk_run_filter_ext
-
---arm32-- short filter
-old BPF: 4.0 sec
- 39.92%  bench  [kernel.kallsyms]  [k] vector_swi
- 16.60%  bench  [kernel.kallsyms]  [k] sk_run_filter
- 14.66%  bench  libc-2.17.so       [.] syscall
-  5.42%  bench  [kernel.kallsyms]  [k] seccomp_bpf_load
-  5.10%  bench  [kernel.kallsyms]  [k] __secure_computing
-new BPF: 3.7 sec
- 35.93%  bench  [kernel.kallsyms]  [k] vector_swi
- 21.89%  bench  libc-2.17.so       [.] syscall
- 13.45%  bench  [kernel.kallsyms]  [k] sk_run_filter_ext
-  6.25%  bench  [kernel.kallsyms]  [k] __secure_computing
-  3.96%  bench  [kernel.kallsyms]  [k] syscall_trace_exit
-
---x86_64-- large filter
-old BPF: 8.6 seconds
-    73.38%    bench  [kernel.kallsyms]  [k] sk_run_filter
-    10.70%    bench  libc-2.15.so       [.] syscall
-     5.09%    bench  [kernel.kallsyms]  [k] seccomp_bpf_load
-     1.97%    bench  [kernel.kallsyms]  [k] system_call
-ext BPF: 5.7 seconds
-    66.20%    bench  [kernel.kallsyms]  [k] sk_run_filter_ext
-    16.75%    bench  libc-2.15.so       [.] syscall
-     3.31%    bench  [kernel.kallsyms]  [k] system_call
-     2.88%    bench  [kernel.kallsyms]  [k] __secure_computing
-
---i386-- large filter
-old BPF: 5.4 sec
-ext BPF: 3.8 sec
-
---arm32-- large filter
-old BPF: 13.5 sec
- 73.88%  bench  [kernel.kallsyms]  [k] sk_run_filter
- 10.29%  bench  [kernel.kallsyms]  [k] vector_swi
-  6.46%  bench  libc-2.17.so       [.] syscall
-  2.94%  bench  [kernel.kallsyms]  [k] seccomp_bpf_load
-  1.19%  bench  [kernel.kallsyms]  [k] __secure_computing
-  0.87%  bench  [kernel.kallsyms]  [k] sys_getuid
-new BPF: 13.5 sec
- 76.08%  bench  [kernel.kallsyms]  [k] sk_run_filter_ext
- 10.98%  bench  [kernel.kallsyms]  [k] vector_swi
-  5.87%  bench  libc-2.17.so       [.] syscall
-  1.77%  bench  [kernel.kallsyms]  [k] __secure_computing
-  0.93%  bench  [kernel.kallsyms]  [k] sys_getuid
-
-BPF filters generated by seccomp are very branchy, so ext BPF
-performance is better than old BPF.
-
-Performance gains will be even higher when extended BPF JIT
-is committed.
-
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
-Reviewed-by: Kees Cook <keescook@chromium.org>
----
- include/linux/seccomp.h |    1 -
- kernel/seccomp.c        |  118 ++++++++++++++++++++++-------------------------
- net/core/filter.c       |    5 --
- 3 files changed, 56 insertions(+), 68 deletions(-)
-
-diff --git a/include/linux/seccomp.h b/include/linux/seccomp.h
-index 6f19cfd1840e..4054b0994071 100644
---- a/include/linux/seccomp.h
-+++ b/include/linux/seccomp.h
-@@ -76,7 +76,6 @@ static inline int seccomp_mode(struct seccomp *s)
- #ifdef CONFIG_SECCOMP_FILTER
- extern void put_seccomp_filter(struct task_struct *tsk);
- extern void get_seccomp_filter(struct task_struct *tsk);
--extern u32 seccomp_bpf_load(int off);
- #else  /* CONFIG_SECCOMP_FILTER */
- static inline void put_seccomp_filter(struct task_struct *tsk)
- {
-diff --git a/kernel/seccomp.c b/kernel/seccomp.c
-index b7a10048a32c..2a18f43acbd6 100644
---- a/kernel/seccomp.c
-+++ b/kernel/seccomp.c
-@@ -55,60 +55,31 @@ struct seccomp_filter {
- 	atomic_t usage;
- 	struct seccomp_filter *prev;
- 	unsigned short len;  /* Instruction count */
--	struct sock_filter insns[];
-+	struct sock_filter_ext insns[];
- };
- 
- /* Limit any path through the tree to 256KB worth of instructions. */
- #define MAX_INSNS_PER_PATH ((1 << 18) / sizeof(struct sock_filter))
- 
--/**
-- * get_u32 - returns a u32 offset into data
-- * @data: a unsigned 64 bit value
-- * @index: 0 or 1 to return the first or second 32-bits
-- *
-- * This inline exists to hide the length of unsigned long.  If a 32-bit
-- * unsigned long is passed in, it will be extended and the top 32-bits will be
-- * 0. If it is a 64-bit unsigned long, then whatever data is resident will be
-- * properly returned.
-- *
-+/*
-  * Endianness is explicitly ignored and left for BPF program authors to manage
-  * as per the specific architecture.
-  */
--static inline u32 get_u32(u64 data, int index)
-+static void populate_seccomp_data(struct seccomp_data *sd)
- {
--	return ((u32 *)&data)[index];
--}
--
--/* Helper for bpf_load below. */
--#define BPF_DATA(_name) offsetof(struct seccomp_data, _name)
--/**
-- * bpf_load: checks and returns a pointer to the requested offset
-- * @off: offset into struct seccomp_data to load from
-- *
-- * Returns the requested 32-bits of data.
-- * seccomp_check_filter() should assure that @off is 32-bit aligned
-- * and not out of bounds.  Failure to do so is a BUG.
-- */
--u32 seccomp_bpf_load(int off)
--{
--	struct pt_regs *regs = task_pt_regs(current);
--	if (off == BPF_DATA(nr))
--		return syscall_get_nr(current, regs);
--	if (off == BPF_DATA(arch))
--		return syscall_get_arch(current, regs);
--	if (off >= BPF_DATA(args[0]) && off < BPF_DATA(args[6])) {
--		unsigned long value;
--		int arg = (off - BPF_DATA(args[0])) / sizeof(u64);
--		int index = !!(off % sizeof(u64));
--		syscall_get_arguments(current, regs, arg, 1, &value);
--		return get_u32(value, index);
--	}
--	if (off == BPF_DATA(instruction_pointer))
--		return get_u32(KSTK_EIP(current), 0);
--	if (off == BPF_DATA(instruction_pointer) + sizeof(u32))
--		return get_u32(KSTK_EIP(current), 1);
--	/* seccomp_check_filter should make this impossible. */
--	BUG();
-+	struct task_struct *task = current;
-+	struct pt_regs *regs = task_pt_regs(task);
-+
-+	sd->nr = syscall_get_nr(task, regs);
-+	sd->arch = syscall_get_arch(task, regs);
-+	/* unroll syscall_get_args to help gcc on arm */
-+	syscall_get_arguments(task, regs, 0, 1, (unsigned long *)&sd->args[0]);
-+	syscall_get_arguments(task, regs, 1, 1, (unsigned long *)&sd->args[1]);
-+	syscall_get_arguments(task, regs, 2, 1, (unsigned long *)&sd->args[2]);
-+	syscall_get_arguments(task, regs, 3, 1, (unsigned long *)&sd->args[3]);
-+	syscall_get_arguments(task, regs, 4, 1, (unsigned long *)&sd->args[4]);
-+	syscall_get_arguments(task, regs, 5, 1, (unsigned long *)&sd->args[5]);
-+	sd->instruction_pointer = KSTK_EIP(task);
- }
- 
- /**
-@@ -133,17 +104,17 @@ static int seccomp_check_filter(struct sock_filter *filter, unsigned int flen)
- 
- 		switch (code) {
- 		case BPF_S_LD_W_ABS:
--			ftest->code = BPF_S_ANC_SECCOMP_LD_W;
-+			ftest->code = BPF_LDX | BPF_W | BPF_ABS;
- 			/* 32-bit aligned and not out of bounds. */
- 			if (k >= sizeof(struct seccomp_data) || k & 3)
- 				return -EINVAL;
- 			continue;
- 		case BPF_S_LD_W_LEN:
--			ftest->code = BPF_S_LD_IMM;
-+			ftest->code = BPF_LD | BPF_IMM;
- 			ftest->k = sizeof(struct seccomp_data);
- 			continue;
- 		case BPF_S_LDX_W_LEN:
--			ftest->code = BPF_S_LDX_IMM;
-+			ftest->code = BPF_LDX | BPF_IMM;
- 			ftest->k = sizeof(struct seccomp_data);
- 			continue;
- 		/* Explicitly include allowed calls. */
-@@ -185,6 +156,7 @@ static int seccomp_check_filter(struct sock_filter *filter, unsigned int flen)
- 		case BPF_S_JMP_JGT_X:
- 		case BPF_S_JMP_JSET_K:
- 		case BPF_S_JMP_JSET_X:
-+			sk_decode_filter(ftest, ftest);
- 			continue;
- 		default:
- 			return -EINVAL;
-@@ -202,18 +174,21 @@ static int seccomp_check_filter(struct sock_filter *filter, unsigned int flen)
- static u32 seccomp_run_filters(int syscall)
- {
- 	struct seccomp_filter *f;
-+	struct seccomp_data sd;
- 	u32 ret = SECCOMP_RET_ALLOW;
- 
- 	/* Ensure unexpected behavior doesn't result in failing open. */
- 	if (WARN_ON(current->seccomp.filter == NULL))
- 		return SECCOMP_RET_KILL;
- 
-+	populate_seccomp_data(&sd);
-+
- 	/*
- 	 * All filters in the list are evaluated and the lowest BPF return
- 	 * value always takes priority (ignoring the DATA).
- 	 */
- 	for (f = current->seccomp.filter; f; f = f->prev) {
--		u32 cur_ret = sk_run_filter(NULL, f->insns);
-+		u32 cur_ret = sk_run_filter_ext(&sd, f->insns);
- 		if ((cur_ret & SECCOMP_RET_ACTION) < (ret & SECCOMP_RET_ACTION))
- 			ret = cur_ret;
- 	}
-@@ -231,6 +206,8 @@ static long seccomp_attach_filter(struct sock_fprog *fprog)
- 	struct seccomp_filter *filter;
- 	unsigned long fp_size = fprog->len * sizeof(struct sock_filter);
- 	unsigned long total_insns = fprog->len;
-+	struct sock_filter *fp;
-+	int new_len;
- 	long ret;
- 
- 	if (fprog->len == 0 || fprog->len > BPF_MAXINSNS)
-@@ -252,28 +229,42 @@ static long seccomp_attach_filter(struct sock_fprog *fprog)
- 				     CAP_SYS_ADMIN) != 0)
- 		return -EACCES;
- 
--	/* Allocate a new seccomp_filter */
--	filter = kzalloc(sizeof(struct seccomp_filter) + fp_size,
--			 GFP_KERNEL|__GFP_NOWARN);
--	if (!filter)
-+	fp = kzalloc(fp_size, GFP_KERNEL|__GFP_NOWARN);
-+	if (!fp)
- 		return -ENOMEM;
--	atomic_set(&filter->usage, 1);
--	filter->len = fprog->len;
- 
- 	/* Copy the instructions from fprog. */
- 	ret = -EFAULT;
--	if (copy_from_user(filter->insns, fprog->filter, fp_size))
--		goto fail;
-+	if (copy_from_user(fp, fprog->filter, fp_size))
-+		goto free_prog;
- 
- 	/* Check and rewrite the fprog via the skb checker */
--	ret = sk_chk_filter(filter->insns, filter->len);
-+	ret = sk_chk_filter(fp, fprog->len);
- 	if (ret)
--		goto fail;
-+		goto free_prog;
- 
- 	/* Check and rewrite the fprog for seccomp use */
--	ret = seccomp_check_filter(filter->insns, filter->len);
-+	ret = seccomp_check_filter(fp, fprog->len);
- 	if (ret)
--		goto fail;
-+		goto free_prog;
-+
-+	/* convert 'sock_filter' insns to 'sock_filter_ext' insns */
-+	ret = sk_convert_filter(fp, fprog->len, NULL, &new_len);
-+	if (ret)
-+		goto free_prog;
-+
-+	/* Allocate a new seccomp_filter */
-+	filter = kzalloc(sizeof(struct seccomp_filter) +
-+			 sizeof(struct sock_filter_ext) * new_len,
-+			 GFP_KERNEL|__GFP_NOWARN);
-+	if (!filter)
-+		goto free_prog;
-+
-+	ret = sk_convert_filter(fp, fprog->len, filter->insns, &new_len);
-+	if (ret)
-+		goto free_filter;
-+	atomic_set(&filter->usage, 1);
-+	filter->len = new_len;
- 
- 	/*
- 	 * If there is an existing filter, make it the prev and don't drop its
-@@ -282,8 +273,11 @@ static long seccomp_attach_filter(struct sock_fprog *fprog)
- 	filter->prev = current->seccomp.filter;
- 	current->seccomp.filter = filter;
- 	return 0;
--fail:
-+
-+free_filter:
- 	kfree(filter);
-+free_prog:
-+	kfree(fp);
- 	return ret;
- }
- 
-diff --git a/net/core/filter.c b/net/core/filter.c
-index ad6f7546ce64..71dc257641f2 100644
---- a/net/core/filter.c
-+++ b/net/core/filter.c
-@@ -384,11 +384,6 @@ load_b:
- 				A = 0;
- 			continue;
- 		}
--#ifdef CONFIG_SECCOMP_FILTER
--		case BPF_S_ANC_SECCOMP_LD_W:
--			A = seccomp_bpf_load(fentry->k);
--			continue;
--#endif
- 		default:
- 			WARN_RATELIMIT(1, "Unknown code:%u jt:%u tf:%u k:%u\n",
- 				       fentry->code, fentry->jt,
--- 
-1.7.9.5
-
+> Sure. That's worth considering.
