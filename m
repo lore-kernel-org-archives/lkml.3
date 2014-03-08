@@ -1,101 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751935AbaCHMvg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 07:51:36 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:60435 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751130AbaCHMvf (ORCPT
+	id S1752096AbaCHMx6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 07:53:58 -0500
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:63929 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751506AbaCHMxx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 07:51:35 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140307064402.GA13420@norris-Latitude-E6410>
-References: <1388593281-22613-1-git-send-email-r.peniaev@gmail.com>
-	<20140307064402.GA13420@norris-Latitude-E6410>
-Date: Sat, 8 Mar 2014 21:44:06 +0900
-Message-ID: <CACZ9PQWbE4UF+1XydqEnpTVZiBmLDrPH6qHt-Lcfx+NnYrLLOQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] mtd: mtd_blkdevs: handle REQ_FLUSH request and do
- explicit flush of writeback buffer
-From: Roman Peniaev <r.peniaev@gmail.com>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: linux-mtd@lists.infradead.org, David Woodhouse <dwmw2@infradead.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 8 Mar 2014 07:53:53 -0500
+From: Valentina Manea <valentina.manea.m@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: tobias.polzer@fau.de, dominik.paulus@fau.de, ly80toro@cip.cs.fau.de,
+        shuah.kh@samsung.com, ihadzic@research.bell-labs.com,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        devel@driverdev.osuosl.org, firefly@lists.rosedu.org,
+        andy.grover@gmail.com, Valentina Manea <valentina.manea.m@gmail.com>
+Subject: [PATCH 00/18] Resend of usbip-utils migration patches and various other fixes
+Date: Sat,  8 Mar 2014 14:53:18 +0200
+Message-Id: <1394283216-1277-1-git-send-email-valentina.manea.m@gmail.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 7, 2014 at 3:44 PM, Brian Norris
-<computersforpeace@gmail.com> wrote:
-> On Thu, Jan 02, 2014 at 01:21:21AM +0900, Roman Pen wrote:
->> From: Roman Peniaev <r.peniaev@gmail.com>
->>
->> mtd_blkdevs is device with volatile cache (writeback buffer), so it should support
->> REQ_FLUSH to do explicit flush.
->>
->> Without this patch 'sync' does not guarantee that writeback buffer will be flushed
->> on disk in case of power off, e.g.:
->>
->>   $ cp some_file /mnt
->>   $ sync
->>
->>   ### POWER OFF
->>
->> In case of this sequence writeback buffer will not be flushed on disk.
->>
->> This patch fixes this behaviour and explicitly reports to block layer that flush
->> requests are being supported.
->>
->> Signed-off-by: Roman Peniaev <r.peniaev@gmail.com>
->> CC: David Woodhouse <dwmw2@infradead.org>
->> CC: linux-mtd@lists.infradead.org
->> CC: linux-kernel@vger.kernel.org
->> ---
->>  drivers/mtd/mtd_blkdevs.c | 8 ++++++++
->>  1 file changed, 8 insertions(+)
->>
->> diff --git a/drivers/mtd/mtd_blkdevs.c b/drivers/mtd/mtd_blkdevs.c
->> index 5073cbc..feafe5c 100644
->> --- a/drivers/mtd/mtd_blkdevs.c
->> +++ b/drivers/mtd/mtd_blkdevs.c
->> @@ -89,6 +89,12 @@ static int do_blktrans_request(struct mtd_blktrans_ops *tr,
->>       if (req->cmd_type != REQ_TYPE_FS)
->>               return -EIO;
->>
->> +     if (req->cmd_flags & REQ_FLUSH) {
->> +             if (tr->flush)
->> +                     return tr->flush(dev);
->> +             return 0;
->> +     }
->> +
->>       if (blk_rq_pos(req) + blk_rq_cur_sectors(req) >
->>           get_capacity(req->rq_disk))
->>               return -EIO;
->> @@ -409,6 +415,8 @@ int add_mtd_blktrans_dev(struct mtd_blktrans_dev *new)
->>       if (!new->rq)
->>               goto error3;
->>
->> +     blk_queue_flush(new->rq, REQ_FLUSH);
->
-> How about only registering the flush command if we support it? So:
->
->         if (tr->flush)
->                 blk_queue_flush(new->rq, REQ_FLUSH);
+This is a resend of the patches sent a few days ago, including
+the migration of USB/IP userspace side to use libudev instead
+of libsysfs and various other fixes, all ordered in a big patch
+series.
 
-Yep, that's better.
-Will send v2.
+The patches have been modified according to received feedback.
 
---
-Roman
+Valentina Manea (18):
+  staging: usbip: userspace: migrate usbip_bind to libudev
+  staging: usbip: userspace: remove useless libsysfs includes
+  staging: usbip: userspace: migrate usbip_unbind to libudev
+  staging: usbip: userspace: migrate usbip_list to libudev
+  staging: usbip: userspace: re-add interface information listing
+  staging: usbip: userspace: add new list API
+  staging: usbip: userspace: move sysfs_utils to libsrc
+  staging: usbip: userspace: migrate usbip_host_driver to libudev
+  staging: usbip: userspace: remove class device infrastructure in
+    vhci_driver
+  staging: usbip: userspace: migrate vhci_driver to libudev
+  staging: usbip: userspace: remove libsysfs flag and autoconf check
+  staging: usbip: userspace: update dependencies in README
+  staging: usbip: userspace: increase version to 2.0
+  staging: usbip: let client choose device configuration
+  staging: usbip: trigger driver probing after unbinding from usbip-host
+  staging: usbip: claim ports used by shared devices
+  staging: usbip: userspace: don't throw error when trying to read
+    configuration specific attributes
+  staging: usbip: userspace: add hwdata as optional dependency in README
 
->
-> Then you can probably also change the earlier hunk to the following, no?
->
->         if (req->cmd_flags & REQ_FLUSH)
->                 return tr->flush(dev);
->
->> +
->>       new->rq->queuedata = new;
->>       blk_queue_logical_block_size(new->rq, tr->blksize);
->>
->
-> Brian
+ drivers/staging/usbip/stub.h                       |   1 +
+ drivers/staging/usbip/stub_dev.c                   |  33 +-
+ drivers/staging/usbip/stub_main.c                  |  39 +++
+ drivers/staging/usbip/stub_rx.c                    |  26 +-
+ drivers/staging/usbip/userspace/README             |   8 +-
+ drivers/staging/usbip/userspace/configure.ac       |  12 +-
+ drivers/staging/usbip/userspace/libsrc/Makefile.am |   3 +-
+ drivers/staging/usbip/userspace/libsrc/list.h      | 136 ++++++++
+ .../staging/usbip/userspace/libsrc/sysfs_utils.c   |  31 ++
+ .../staging/usbip/userspace/libsrc/sysfs_utils.h   |   8 +
+ .../staging/usbip/userspace/libsrc/usbip_common.c  |  91 +++---
+ .../staging/usbip/userspace/libsrc/usbip_common.h  |  15 +-
+ .../usbip/userspace/libsrc/usbip_host_driver.c     | 285 +++++------------
+ .../usbip/userspace/libsrc/usbip_host_driver.h     |   7 +-
+ .../staging/usbip/userspace/libsrc/vhci_driver.c   | 346 ++++-----------------
+ .../staging/usbip/userspace/libsrc/vhci_driver.h   |  14 +-
+ drivers/staging/usbip/userspace/src/Makefile.am    |   1 -
+ drivers/staging/usbip/userspace/src/usbip_attach.c |   1 -
+ drivers/staging/usbip/userspace/src/usbip_bind.c   | 149 ++++-----
+ drivers/staging/usbip/userspace/src/usbip_detach.c |   2 -
+ drivers/staging/usbip/userspace/src/usbip_list.c   | 153 ++++-----
+ .../staging/usbip/userspace/src/usbip_network.h    |   1 -
+ drivers/staging/usbip/userspace/src/usbip_unbind.c | 110 +++----
+ drivers/staging/usbip/userspace/src/usbipd.c       |  30 +-
+ drivers/staging/usbip/userspace/src/utils.c        |  48 +--
+ drivers/usb/core/hub.c                             |   2 +
+ drivers/usb/core/usb.h                             |   4 -
+ include/linux/usb.h                                |   7 +
+ 28 files changed, 676 insertions(+), 887 deletions(-)
+ create mode 100644 drivers/staging/usbip/userspace/libsrc/list.h
+ create mode 100644 drivers/staging/usbip/userspace/libsrc/sysfs_utils.c
+ create mode 100644 drivers/staging/usbip/userspace/libsrc/sysfs_utils.h
+
+-- 
+1.8.1.2
+
