@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445AbaCHBGv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:06:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46205 "EHLO
+	id S1753641AbaCHBG4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:06:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46212 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752107AbaCHBGt (ORCPT
+	with ESMTP id S1753437AbaCHBGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:06:49 -0500
+	Fri, 7 Mar 2014 20:06:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Vegard Nossum <vegard.nossum@oracle.com>,
         "Theodore Tso" <tytso@mit.edu>
-Subject: [PATCH 3.4 01/99] ext4: dont try to modify s_flags if the the file system is read-only
-Date: Fri,  7 Mar 2014 17:06:57 -0800
-Message-Id: <20140308010611.612580700@linuxfoundation.org>
+Subject: [PATCH 3.4 03/99] ext4: dont leave i_crtime.tv_sec uninitialized
+Date: Fri,  7 Mar 2014 17:06:59 -0800
+Message-Id: <20140308010611.725604599@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
 References: <20140308010611.468206150@linuxfoundation.org>
@@ -30,53 +31,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Theodore Ts'o <tytso@mit.edu>
 
-commit 23301410972330c0ae9a8afc379ba2005e249cc6 upstream.
+commit 19ea80603715d473600cd993b9987bc97d042e02 upstream.
 
-If an ext4 file system is created by some tool other than mke2fs
-(perhaps by someone who has a pathalogical fear of the GPL) that
-doesn't set one or the other of the EXT2_FLAGS_{UN}SIGNED_HASH flags,
-and that file system is then mounted read-only, don't try to modify
-the s_flags field.  Otherwise, if dm_verity is in use, the superblock
-will change, causing an dm_verity failure.
+If the i_crtime field is not present in the inode, don't leave the
+field uninitialized.
 
+Fixes: ef7f38359 ("ext4: Add nanosecond timestamps")
+Reported-by: Vegard Nossum <vegard.nossum@oracle.com>
+Tested-by: Vegard Nossum <vegard.nossum@oracle.com>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/super.c |   20 +++++++++++++-------
- 1 file changed, 13 insertions(+), 7 deletions(-)
+ fs/ext4/ext4.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -3370,16 +3370,22 @@ static int ext4_fill_super(struct super_
- 	for (i = 0; i < 4; i++)
- 		sbi->s_hash_seed[i] = le32_to_cpu(es->s_hash_seed[i]);
- 	sbi->s_def_hash_version = es->s_def_hash_version;
--	i = le32_to_cpu(es->s_flags);
--	if (i & EXT2_FLAGS_UNSIGNED_HASH)
--		sbi->s_hash_unsigned = 3;
--	else if ((i & EXT2_FLAGS_SIGNED_HASH) == 0) {
-+	if (EXT4_HAS_COMPAT_FEATURE(sb, EXT4_FEATURE_COMPAT_DIR_INDEX)) {
-+		i = le32_to_cpu(es->s_flags);
-+		if (i & EXT2_FLAGS_UNSIGNED_HASH)
-+			sbi->s_hash_unsigned = 3;
-+		else if ((i & EXT2_FLAGS_SIGNED_HASH) == 0) {
- #ifdef __CHAR_UNSIGNED__
--		es->s_flags |= cpu_to_le32(EXT2_FLAGS_UNSIGNED_HASH);
--		sbi->s_hash_unsigned = 3;
-+			if (!(sb->s_flags & MS_RDONLY))
-+				es->s_flags |=
-+					cpu_to_le32(EXT2_FLAGS_UNSIGNED_HASH);
-+			sbi->s_hash_unsigned = 3;
- #else
--		es->s_flags |= cpu_to_le32(EXT2_FLAGS_SIGNED_HASH);
-+			if (!(sb->s_flags & MS_RDONLY))
-+				es->s_flags |=
-+					cpu_to_le32(EXT2_FLAGS_SIGNED_HASH);
- #endif
-+		}
- 	}
- 
- 	/* Handle clustersize */
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -751,6 +751,8 @@ do {									       \
+ 	if (EXT4_FITS_IN_INODE(raw_inode, einode, xtime))		       \
+ 		(einode)->xtime.tv_sec = 				       \
+ 			(signed)le32_to_cpu((raw_inode)->xtime);	       \
++	else								       \
++		(einode)->xtime.tv_sec = 0;				       \
+ 	if (EXT4_FITS_IN_INODE(raw_inode, einode, xtime ## _extra))	       \
+ 		ext4_decode_extra_time(&(einode)->xtime,		       \
+ 				       raw_inode->xtime ## _extra);	       \
 
 
