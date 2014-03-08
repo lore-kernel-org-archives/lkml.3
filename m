@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754866AbaCHBQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:16:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46604 "EHLO
+	id S1754339AbaCHBHq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:07:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46539 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754210AbaCHBHr (ORCPT
+	with ESMTP id S1754253AbaCHBHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:07:47 -0500
+	Fri, 7 Mar 2014 20:07:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>, Ben Hutchings <ben@decadent.org.uk>,
-        Weng Meiling <wengmeiling.weng@huawei.com>
-Subject: [PATCH 3.4 82/99] ALSA: 6fire: Fix unlocked snd_pcm_stop() call
-Date: Fri,  7 Mar 2014 17:08:18 -0800
-Message-Id: <20140308010614.216527121@linuxfoundation.org>
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Yijing Wang <wangyijing@huawei.com>
+Subject: [PATCH 3.4 70/99] xen/smp/spinlock: Fix leakage of the spinlock interrupt line for every CPU online/offline
+Date: Fri,  7 Mar 2014 17:08:06 -0800
+Message-Id: <20140308010613.836276459@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
 References: <20140308010611.468206150@linuxfoundation.org>
@@ -29,50 +30,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit 5b9ab3f7324a1b94a5a5a76d44cf92dfeb3b5e80 upstream.
+commit 66ff0fe9e7bda8aec99985b24daad03652f7304e upstream.
 
-snd_pcm_stop() must be called in the PCM substream lock context.
+While we don't use the spinlock interrupt line (see for details
+commit f10cd522c5fbfec9ae3cc01967868c9c2401ed23 -
+xen: disable PV spinlocks on HVM) - we should still do the proper
+init / deinit sequence. We did not do that correctly and for the
+CPU init for PVHVM guest we would allocate an interrupt line - but
+failed to deallocate the old interrupt line.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+This resulted in leakage of an irq_desc but more importantly this splat
+as we online an offlined CPU:
+
+genirq: Flags mismatch irq 71. 0002cc20 (spinlock1) vs. 0002cc20 (spinlock1)
+Pid: 2542, comm: init.late Not tainted 3.9.0-rc6upstream #1
+Call Trace:
+ [<ffffffff811156de>] __setup_irq+0x23e/0x4a0
+ [<ffffffff81194191>] ? kmem_cache_alloc_trace+0x221/0x250
+ [<ffffffff811161bb>] request_threaded_irq+0xfb/0x160
+ [<ffffffff8104c6f0>] ? xen_spin_trylock+0x20/0x20
+ [<ffffffff813a8423>] bind_ipi_to_irqhandler+0xa3/0x160
+ [<ffffffff81303758>] ? kasprintf+0x38/0x40
+ [<ffffffff8104c6f0>] ? xen_spin_trylock+0x20/0x20
+ [<ffffffff810cad35>] ? update_max_interval+0x15/0x40
+ [<ffffffff816605db>] xen_init_lock_cpu+0x3c/0x78
+ [<ffffffff81660029>] xen_hvm_cpu_notify+0x29/0x33
+ [<ffffffff81676bdd>] notifier_call_chain+0x4d/0x70
+ [<ffffffff810bb2a9>] __raw_notifier_call_chain+0x9/0x10
+ [<ffffffff8109402b>] __cpu_notify+0x1b/0x30
+ [<ffffffff8166834a>] _cpu_up+0xa0/0x14b
+ [<ffffffff816684ce>] cpu_up+0xd9/0xec
+ [<ffffffff8165f754>] store_online+0x94/0xd0
+ [<ffffffff8141d15b>] dev_attr_store+0x1b/0x20
+ [<ffffffff81218f44>] sysfs_write_file+0xf4/0x170
+ [<ffffffff811a2864>] vfs_write+0xb4/0x130
+ [<ffffffff811a302a>] sys_write+0x5a/0xa0
+ [<ffffffff8167ada9>] system_call_fastpath+0x16/0x1b
+cpu 1 spinlock event irq -16
+smpboot: Booting Node 0 Processor 1 APIC 0x2
+
+And if one looks at the /proc/interrupts right after
+offlining (CPU1):
+
+  70:          0          0  xen-percpu-ipi       spinlock0
+  71:          0          0  xen-percpu-ipi       spinlock1
+  77:          0          0  xen-percpu-ipi       spinlock2
+
+There is the oddity of the 'spinlock1' still being present.
+
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Weng Meiling <wengmeiling.weng@huawei.com>
+Cc: Yijing Wang <wangyijing@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/6fire/pcm.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ arch/x86/xen/smp.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/sound/usb/6fire/pcm.c
-+++ b/sound/usb/6fire/pcm.c
-@@ -639,17 +639,25 @@ int __devinit usb6fire_pcm_init(struct s
- void usb6fire_pcm_abort(struct sfire_chip *chip)
- {
- 	struct pcm_runtime *rt = chip->pcm;
-+	unsigned long flags;
- 	int i;
- 
- 	if (rt) {
- 		rt->panic = true;
- 
--		if (rt->playback.instance)
-+		if (rt->playback.instance) {
-+			snd_pcm_stream_lock_irqsave(rt->playback.instance, flags);
- 			snd_pcm_stop(rt->playback.instance,
- 					SNDRV_PCM_STATE_XRUN);
--		if (rt->capture.instance)
-+			snd_pcm_stream_unlock_irqrestore(rt->playback.instance, flags);
-+		}
-+
-+		if (rt->capture.instance) {
-+			snd_pcm_stream_lock_irqsave(rt->capture.instance, flags);
- 			snd_pcm_stop(rt->capture.instance,
- 					SNDRV_PCM_STATE_XRUN);
-+			snd_pcm_stream_unlock_irqrestore(rt->capture.instance, flags);
-+		}
- 
- 		for (i = 0; i < PCM_N_URBS; i++) {
- 			usb_poison_urb(&rt->in_urbs[i].instance);
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -576,6 +576,7 @@ static void xen_hvm_cpu_die(unsigned int
+ 	unbind_from_irqhandler(per_cpu(xen_callfunc_irq, cpu), NULL);
+ 	unbind_from_irqhandler(per_cpu(xen_debug_irq, cpu), NULL);
+ 	unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu), NULL);
++	xen_uninit_lock_cpu(cpu);
+ 	xen_teardown_timer(cpu);
+ 	native_cpu_die(cpu);
+ }
 
 
