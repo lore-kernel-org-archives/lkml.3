@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752940AbaCHJeR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 04:34:17 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:35327 "EHLO comal.ext.ti.com"
+	id S1753008AbaCHJeq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 04:34:46 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52770 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752290AbaCHJaC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 04:30:02 -0500
+	id S1752078AbaCHJ34 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Mar 2014 04:29:56 -0500
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <gregkh@linuxfoundation.org>, <kishon@ti.com>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH 19/28] phy: rename struct omap_control_usb to struct omap_control_phy
-Date: Sat, 8 Mar 2014 14:59:20 +0530
-Message-ID: <1394270969-11851-20-git-send-email-kishon@ti.com>
+Subject: [PATCH 15/28] phy: Add Exynos 5250 support to the Exynos USB 2.0 PHY driver
+Date: Sat, 8 Mar 2014 14:59:16 +0530
+Message-ID: <1394270969-11851-16-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1394270969-11851-1-git-send-email-kishon@ti.com>
 References: <1394270969-11851-1-git-send-email-kishon@ti.com>
@@ -21,645 +21,501 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename struct omap_control_usb to struct omap_control_phy since it can
-be used to control PHY of USB, SATA and PCIE. Also move the driver and
-include files under *phy* and made the corresponding changes in the users
-of phy-omap-control.
+From: Kamil Debski <k.debski@samsung.com>
 
+Add support for Exynos 5250. This driver is to replace the old
+USB 2.0 PHY driver.
+
+Signed-off-by: Kamil Debski <k.debski@samsung.com>
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Acked-by: Felipe Balbi <balbi@ti.com>
 ---
- drivers/phy/Kconfig                                |   14 +-
+ .../devicetree/bindings/phy/samsung-phy.txt        |    1 +
+ drivers/phy/Kconfig                                |   11 +
  drivers/phy/Makefile                               |    1 +
- drivers/{usb => }/phy/phy-omap-control.c           |  165 ++++++++++----------
- drivers/phy/phy-omap-usb2.c                        |    8 +-
- drivers/phy/phy-ti-pipe3.c                         |    8 +-
- drivers/usb/musb/omap2430.c                        |    2 +-
- drivers/usb/phy/Kconfig                            |   10 --
- drivers/usb/phy/Makefile                           |    1 -
- .../omap_control_usb.h => phy/omap_control_phy.h}  |   36 ++---
- 9 files changed, 123 insertions(+), 122 deletions(-)
- rename drivers/{usb => }/phy/phy-omap-control.c (55%)
- rename include/linux/{usb/omap_control_usb.h => phy/omap_control_phy.h} (68%)
+ drivers/phy/phy-exynos5250-usb2.c                  |  404 ++++++++++++++++++++
+ drivers/phy/phy-samsung-usb2.c                     |    6 +
+ drivers/phy/phy-samsung-usb2.h                     |    1 +
+ 6 files changed, 424 insertions(+)
+ create mode 100644 drivers/phy/phy-exynos5250-usb2.c
 
+diff --git a/Documentation/devicetree/bindings/phy/samsung-phy.txt b/Documentation/devicetree/bindings/phy/samsung-phy.txt
+index bf955ab..28f9edb 100644
+--- a/Documentation/devicetree/bindings/phy/samsung-phy.txt
++++ b/Documentation/devicetree/bindings/phy/samsung-phy.txt
+@@ -28,6 +28,7 @@ Required properties:
+ - compatible : should be one of the listed compatibles:
+ 	- "samsung,exynos4210-usb2-phy"
+ 	- "samsung,exynos4x12-usb2-phy"
++	- "samsung,exynos5250-usb2-phy"
+ - reg : a list of registers used by phy driver
+ 	- first and obligatory is the location of phy modules registers
+ - samsung,sysreg-phandle - handle to syscon used to control the system registers
 diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-index 1b607d7..fe8c009 100644
+index 3374836..1b607d7 100644
 --- a/drivers/phy/Kconfig
 +++ b/drivers/phy/Kconfig
-@@ -31,12 +31,22 @@ config PHY_MVEBU_SATA
- 	depends on OF
- 	select GENERIC_PHY
- 
-+config OMAP_CONTROL_PHY
-+	tristate "OMAP CONTROL PHY Driver"
-+	help
-+	  Enable this to add support for the PHY part present in the control
-+	  module. This driver has API to power on the USB2 PHY and to write to
-+	  the mailbox. The mailbox is present only in omap4 and the register to
-+	  power on the USB2 PHY is present in OMAP4 and OMAP5. OMAP5 has an
-+	  additional register to power on USB3 PHY/SATA PHY/PCIE PHY
-+	  (PIPE3 PHY).
+@@ -136,4 +136,15 @@ config PHY_EXYNOS4X12_USB2
+ 	  Samsung USB 2.0 PHY driver is enabled and means that support for this
+ 	  particular SoC is compiled in the driver. In case of Exynos 4x12 four
+ 	  phys are available - device, host, HSIC0 and HSIC1.
 +
- config OMAP_USB2
- 	tristate "OMAP USB2 PHY Driver"
- 	depends on ARCH_OMAP2PLUS
- 	depends on USB_PHY
- 	select GENERIC_PHY
--	select OMAP_CONTROL_USB
-+	select OMAP_CONTROL_PHY
- 	help
- 	  Enable this to support the transceiver that is part of SOC. This
- 	  driver takes care of all the PHY functionality apart from comparator.
-@@ -47,7 +57,7 @@ config TI_PIPE3
- 	tristate "TI PIPE3 PHY Driver"
- 	depends on ARCH_OMAP2PLUS || COMPILE_TEST
- 	select GENERIC_PHY
--	select OMAP_CONTROL_USB
-+	select OMAP_CONTROL_PHY
- 	help
- 	  Enable this to support the PIPE3 PHY that is part of TI SOCs. This
- 	  driver takes care of all the PHY functionality apart from comparator.
++config PHY_EXYNOS5250_USB2
++	bool "Support for Exynos 5250"
++	depends on PHY_SAMSUNG_USB2
++	depends on SOC_EXYNOS5250
++	help
++	  Enable USB PHY support for Exynos 5250. This option requires that
++	  Samsung USB 2.0 PHY driver is enabled and means that support for this
++	  particular SoC is compiled in the driver. In case of Exynos 5250 four
++	  phys are available - device, host, HSIC0 and HSIC.
++
+ endmenu
 diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
-index ecf0d3f..8da05a8 100644
+index c4ddd23..ecf0d3f 100644
 --- a/drivers/phy/Makefile
 +++ b/drivers/phy/Makefile
-@@ -7,6 +7,7 @@ obj-$(CONFIG_BCM_KONA_USB2_PHY)		+= phy-bcm-kona-usb2.o
- obj-$(CONFIG_PHY_EXYNOS_DP_VIDEO)	+= phy-exynos-dp-video.o
- obj-$(CONFIG_PHY_EXYNOS_MIPI_VIDEO)	+= phy-exynos-mipi-video.o
- obj-$(CONFIG_PHY_MVEBU_SATA)		+= phy-mvebu-sata.o
-+obj-$(CONFIG_OMAP_CONTROL_PHY)		+= phy-omap-control.o
- obj-$(CONFIG_OMAP_USB2)			+= phy-omap-usb2.o
- obj-$(CONFIG_TI_PIPE3)			+= phy-ti-pipe3.o
- obj-$(CONFIG_TWL4030_USB)		+= phy-twl4030-usb.o
-diff --git a/drivers/usb/phy/phy-omap-control.c b/drivers/phy/phy-omap-control.c
-similarity index 55%
-rename from drivers/usb/phy/phy-omap-control.c
-rename to drivers/phy/phy-omap-control.c
-index e725318..17fc200 100644
---- a/drivers/usb/phy/phy-omap-control.c
-+++ b/drivers/phy/phy-omap-control.c
-@@ -1,5 +1,5 @@
- /*
-- * omap-control-usb.c - The USB part of control module.
-+ * omap-control-phy.c - The PHY part of control module.
-  *
-  * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com
-  * This program is free software; you can redistribute it and/or modify
-@@ -24,36 +24,36 @@
- #include <linux/err.h>
- #include <linux/io.h>
- #include <linux/clk.h>
--#include <linux/usb/omap_control_usb.h>
-+#include <linux/phy/omap_control_phy.h>
- 
- /**
-- * omap_control_usb_phy_power - power on/off the phy using control module reg
-+ * omap_control_phy_power - power on/off the phy using control module reg
-  * @dev: the control module device
-  * @on: 0 or 1, based on powering on or off the PHY
-  */
--void omap_control_usb_phy_power(struct device *dev, int on)
-+void omap_control_phy_power(struct device *dev, int on)
- {
- 	u32 val;
- 	unsigned long rate;
--	struct omap_control_usb	*control_usb;
-+	struct omap_control_phy	*control_phy;
- 
- 	if (IS_ERR(dev) || !dev) {
- 		pr_err("%s: invalid device\n", __func__);
- 		return;
- 	}
- 
--	control_usb = dev_get_drvdata(dev);
--	if (!control_usb) {
--		dev_err(dev, "%s: invalid control usb device\n", __func__);
-+	control_phy = dev_get_drvdata(dev);
-+	if (!control_phy) {
-+		dev_err(dev, "%s: invalid control phy device\n", __func__);
- 		return;
- 	}
- 
--	if (control_usb->type == OMAP_CTRL_TYPE_OTGHS)
-+	if (control_phy->type == OMAP_CTRL_TYPE_OTGHS)
- 		return;
- 
--	val = readl(control_usb->power);
-+	val = readl(control_phy->power);
- 
--	switch (control_usb->type) {
-+	switch (control_phy->type) {
- 	case OMAP_CTRL_TYPE_USB2:
- 		if (on)
- 			val &= ~OMAP_CTRL_DEV_PHY_PD;
-@@ -62,19 +62,20 @@ void omap_control_usb_phy_power(struct device *dev, int on)
- 		break;
- 
- 	case OMAP_CTRL_TYPE_PIPE3:
--		rate = clk_get_rate(control_usb->sys_clk);
-+		rate = clk_get_rate(control_phy->sys_clk);
- 		rate = rate/1000000;
- 
- 		if (on) {
--			val &= ~(OMAP_CTRL_USB_PWRCTL_CLK_CMD_MASK |
--					OMAP_CTRL_USB_PWRCTL_CLK_FREQ_MASK);
--			val |= OMAP_CTRL_USB3_PHY_TX_RX_POWERON <<
--				OMAP_CTRL_USB_PWRCTL_CLK_CMD_SHIFT;
--			val |= rate << OMAP_CTRL_USB_PWRCTL_CLK_FREQ_SHIFT;
-+			val &= ~(OMAP_CTRL_PIPE3_PHY_PWRCTL_CLK_CMD_MASK |
-+				OMAP_CTRL_PIPE3_PHY_PWRCTL_CLK_FREQ_MASK);
-+			val |= OMAP_CTRL_PIPE3_PHY_TX_RX_POWERON <<
-+				OMAP_CTRL_PIPE3_PHY_PWRCTL_CLK_CMD_SHIFT;
-+			val |= rate <<
-+				OMAP_CTRL_PIPE3_PHY_PWRCTL_CLK_FREQ_SHIFT;
- 		} else {
--			val &= ~OMAP_CTRL_USB_PWRCTL_CLK_CMD_MASK;
--			val |= OMAP_CTRL_USB3_PHY_TX_RX_POWEROFF <<
--				OMAP_CTRL_USB_PWRCTL_CLK_CMD_SHIFT;
-+			val &= ~OMAP_CTRL_PIPE3_PHY_PWRCTL_CLK_CMD_MASK;
-+			val |= OMAP_CTRL_PIPE3_PHY_TX_RX_POWEROFF <<
-+				OMAP_CTRL_PIPE3_PHY_PWRCTL_CLK_CMD_SHIFT;
- 		}
- 		break;
- 
-@@ -100,66 +101,66 @@ void omap_control_usb_phy_power(struct device *dev, int on)
- 		break;
- 	default:
- 		dev_err(dev, "%s: type %d not recognized\n",
--					__func__, control_usb->type);
-+			__func__, control_phy->type);
- 		break;
- 	}
- 
--	writel(val, control_usb->power);
-+	writel(val, control_phy->power);
- }
--EXPORT_SYMBOL_GPL(omap_control_usb_phy_power);
-+EXPORT_SYMBOL_GPL(omap_control_phy_power);
- 
- /**
-  * omap_control_usb_host_mode - set AVALID, VBUSVALID and ID pin in grounded
-- * @ctrl_usb: struct omap_control_usb *
-+ * @ctrl_phy: struct omap_control_phy *
-  *
-  * Writes to the mailbox register to notify the usb core that a usb
-  * device has been connected.
-  */
--static void omap_control_usb_host_mode(struct omap_control_usb *ctrl_usb)
-+static void omap_control_usb_host_mode(struct omap_control_phy *ctrl_phy)
- {
- 	u32 val;
- 
--	val = readl(ctrl_usb->otghs_control);
-+	val = readl(ctrl_phy->otghs_control);
- 	val &= ~(OMAP_CTRL_DEV_IDDIG | OMAP_CTRL_DEV_SESSEND);
- 	val |= OMAP_CTRL_DEV_AVALID | OMAP_CTRL_DEV_VBUSVALID;
--	writel(val, ctrl_usb->otghs_control);
-+	writel(val, ctrl_phy->otghs_control);
- }
- 
- /**
-  * omap_control_usb_device_mode - set AVALID, VBUSVALID and ID pin in high
-  * impedance
-- * @ctrl_usb: struct omap_control_usb *
-+ * @ctrl_phy: struct omap_control_phy *
-  *
-  * Writes to the mailbox register to notify the usb core that it has been
-  * connected to a usb host.
-  */
--static void omap_control_usb_device_mode(struct omap_control_usb *ctrl_usb)
-+static void omap_control_usb_device_mode(struct omap_control_phy *ctrl_phy)
- {
- 	u32 val;
- 
--	val = readl(ctrl_usb->otghs_control);
-+	val = readl(ctrl_phy->otghs_control);
- 	val &= ~OMAP_CTRL_DEV_SESSEND;
- 	val |= OMAP_CTRL_DEV_IDDIG | OMAP_CTRL_DEV_AVALID |
- 		OMAP_CTRL_DEV_VBUSVALID;
--	writel(val, ctrl_usb->otghs_control);
-+	writel(val, ctrl_phy->otghs_control);
- }
- 
- /**
-  * omap_control_usb_set_sessionend - Enable SESSIONEND and IDIG to high
-  * impedance
-- * @ctrl_usb: struct omap_control_usb *
-+ * @ctrl_phy: struct omap_control_phy *
-  *
-  * Writes to the mailbox register to notify the usb core it's now in
-  * disconnected state.
-  */
--static void omap_control_usb_set_sessionend(struct omap_control_usb *ctrl_usb)
-+static void omap_control_usb_set_sessionend(struct omap_control_phy *ctrl_phy)
- {
- 	u32 val;
- 
--	val = readl(ctrl_usb->otghs_control);
-+	val = readl(ctrl_phy->otghs_control);
- 	val &= ~(OMAP_CTRL_DEV_AVALID | OMAP_CTRL_DEV_VBUSVALID);
- 	val |= OMAP_CTRL_DEV_IDDIG | OMAP_CTRL_DEV_SESSEND;
--	writel(val, ctrl_usb->otghs_control);
-+	writel(val, ctrl_phy->otghs_control);
- }
- 
- /**
-@@ -174,30 +175,30 @@ static void omap_control_usb_set_sessionend(struct omap_control_usb *ctrl_usb)
- void omap_control_usb_set_mode(struct device *dev,
- 	enum omap_control_usb_mode mode)
- {
--	struct omap_control_usb	*ctrl_usb;
-+	struct omap_control_phy	*ctrl_phy;
- 
- 	if (IS_ERR(dev) || !dev)
- 		return;
- 
--	ctrl_usb = dev_get_drvdata(dev);
-+	ctrl_phy = dev_get_drvdata(dev);
- 
--	if (!ctrl_usb) {
--		dev_err(dev, "Invalid control usb device\n");
-+	if (!ctrl_phy) {
-+		dev_err(dev, "Invalid control phy device\n");
- 		return;
- 	}
- 
--	if (ctrl_usb->type != OMAP_CTRL_TYPE_OTGHS)
-+	if (ctrl_phy->type != OMAP_CTRL_TYPE_OTGHS)
- 		return;
- 
- 	switch (mode) {
- 	case USB_MODE_HOST:
--		omap_control_usb_host_mode(ctrl_usb);
-+		omap_control_usb_host_mode(ctrl_phy);
- 		break;
- 	case USB_MODE_DEVICE:
--		omap_control_usb_device_mode(ctrl_usb);
-+		omap_control_usb_device_mode(ctrl_phy);
- 		break;
- 	case USB_MODE_DISCONNECT:
--		omap_control_usb_set_sessionend(ctrl_usb);
-+		omap_control_usb_set_sessionend(ctrl_phy);
- 		break;
- 	default:
- 		dev_vdbg(dev, "invalid omap control usb mode\n");
-@@ -207,13 +208,13 @@ EXPORT_SYMBOL_GPL(omap_control_usb_set_mode);
- 
- #ifdef CONFIG_OF
- 
--static const enum omap_control_usb_type otghs_data = OMAP_CTRL_TYPE_OTGHS;
--static const enum omap_control_usb_type usb2_data = OMAP_CTRL_TYPE_USB2;
--static const enum omap_control_usb_type pipe3_data = OMAP_CTRL_TYPE_PIPE3;
--static const enum omap_control_usb_type dra7usb2_data = OMAP_CTRL_TYPE_DRA7USB2;
--static const enum omap_control_usb_type am437usb2_data = OMAP_CTRL_TYPE_AM437USB2;
-+static const enum omap_control_phy_type otghs_data = OMAP_CTRL_TYPE_OTGHS;
-+static const enum omap_control_phy_type usb2_data = OMAP_CTRL_TYPE_USB2;
-+static const enum omap_control_phy_type pipe3_data = OMAP_CTRL_TYPE_PIPE3;
-+static const enum omap_control_phy_type dra7usb2_data = OMAP_CTRL_TYPE_DRA7USB2;
-+static const enum omap_control_phy_type am437usb2_data = OMAP_CTRL_TYPE_AM437USB2;
- 
--static const struct of_device_id omap_control_usb_id_table[] = {
-+static const struct of_device_id omap_control_phy_id_table[] = {
- 	{
- 		.compatible = "ti,control-phy-otghs",
- 		.data = &otghs_data,
-@@ -236,84 +237,84 @@ static const struct of_device_id omap_control_usb_id_table[] = {
+@@ -15,3 +15,4 @@ obj-$(CONFIG_PHY_SUN4I_USB)		+= phy-sun4i-usb.o
+ obj-$(CONFIG_PHY_SAMSUNG_USB2)		+= phy-samsung-usb2.o
+ obj-$(CONFIG_PHY_EXYNOS4210_USB2)	+= phy-exynos4210-usb2.o
+ obj-$(CONFIG_PHY_EXYNOS4X12_USB2)	+= phy-exynos4x12-usb2.o
++obj-$(CONFIG_PHY_EXYNOS5250_USB2)	+= phy-exynos5250-usb2.o
+diff --git a/drivers/phy/phy-exynos5250-usb2.c b/drivers/phy/phy-exynos5250-usb2.c
+new file mode 100644
+index 0000000..94179af
+--- /dev/null
++++ b/drivers/phy/phy-exynos5250-usb2.c
+@@ -0,0 +1,404 @@
++/*
++ * Samsung SoC USB 1.1/2.0 PHY driver - Exynos 5250 support
++ *
++ * Copyright (C) 2013 Samsung Electronics Co., Ltd.
++ * Author: Kamil Debski <k.debski@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/delay.h>
++#include <linux/io.h>
++#include <linux/phy/phy.h>
++#include <linux/regmap.h>
++#include "phy-samsung-usb2.h"
++
++/* Exynos USB PHY registers */
++#define EXYNOS_5250_REFCLKSEL_CRYSTAL	0x0
++#define EXYNOS_5250_REFCLKSEL_XO	0x1
++#define EXYNOS_5250_REFCLKSEL_CLKCORE	0x2
++
++#define EXYNOS_5250_FSEL_9MHZ6		0x0
++#define EXYNOS_5250_FSEL_10MHZ		0x1
++#define EXYNOS_5250_FSEL_12MHZ		0x2
++#define EXYNOS_5250_FSEL_19MHZ2		0x3
++#define EXYNOS_5250_FSEL_20MHZ		0x4
++#define EXYNOS_5250_FSEL_24MHZ		0x5
++#define EXYNOS_5250_FSEL_50MHZ		0x7
++
++/* Normal host */
++#define EXYNOS_5250_HOSTPHYCTRL0			0x0
++
++#define EXYNOS_5250_HOSTPHYCTRL0_PHYSWRSTALL		BIT(31)
++#define EXYNOS_5250_HOSTPHYCTRL0_REFCLKSEL_SHIFT	19
++#define EXYNOS_5250_HOSTPHYCTRL0_REFCLKSEL_MASK	\
++		(0x3 << EXYNOS_5250_HOSTPHYCTRL0_REFCLKSEL_SHIFT)
++#define EXYNOS_5250_HOSTPHYCTRL0_FSEL_SHIFT		16
++#define EXYNOS_5250_HOSTPHYCTRL0_FSEL_MASK \
++		(0x7 << EXYNOS_5250_HOSTPHYCTRL0_FSEL_SHIFT)
++#define EXYNOS_5250_HOSTPHYCTRL0_TESTBURNIN		BIT(11)
++#define EXYNOS_5250_HOSTPHYCTRL0_RETENABLE		BIT(10)
++#define EXYNOS_5250_HOSTPHYCTRL0_COMMON_ON_N		BIT(9)
++#define EXYNOS_5250_HOSTPHYCTRL0_VATESTENB_MASK		(0x3 << 7)
++#define EXYNOS_5250_HOSTPHYCTRL0_VATESTENB_DUAL		(0x0 << 7)
++#define EXYNOS_5250_HOSTPHYCTRL0_VATESTENB_ID0		(0x1 << 7)
++#define EXYNOS_5250_HOSTPHYCTRL0_VATESTENB_ANALOGTEST	(0x2 << 7)
++#define EXYNOS_5250_HOSTPHYCTRL0_SIDDQ			BIT(6)
++#define EXYNOS_5250_HOSTPHYCTRL0_FORCESLEEP		BIT(5)
++#define EXYNOS_5250_HOSTPHYCTRL0_FORCESUSPEND		BIT(4)
++#define EXYNOS_5250_HOSTPHYCTRL0_WORDINTERFACE		BIT(3)
++#define EXYNOS_5250_HOSTPHYCTRL0_UTMISWRST		BIT(2)
++#define EXYNOS_5250_HOSTPHYCTRL0_LINKSWRST		BIT(1)
++#define EXYNOS_5250_HOSTPHYCTRL0_PHYSWRST		BIT(0)
++
++/* HSIC0 & HSIC1 */
++#define EXYNOS_5250_HSICPHYCTRL1			0x10
++#define EXYNOS_5250_HSICPHYCTRL2			0x20
++
++#define EXYNOS_5250_HSICPHYCTRLX_REFCLKSEL_MASK		(0x3 << 23)
++#define EXYNOS_5250_HSICPHYCTRLX_REFCLKSEL_DEFAULT	(0x2 << 23)
++#define EXYNOS_5250_HSICPHYCTRLX_REFCLKDIV_MASK		(0x7f << 16)
++#define EXYNOS_5250_HSICPHYCTRLX_REFCLKDIV_12		(0x24 << 16)
++#define EXYNOS_5250_HSICPHYCTRLX_REFCLKDIV_15		(0x1c << 16)
++#define EXYNOS_5250_HSICPHYCTRLX_REFCLKDIV_16		(0x1a << 16)
++#define EXYNOS_5250_HSICPHYCTRLX_REFCLKDIV_19_2		(0x15 << 16)
++#define EXYNOS_5250_HSICPHYCTRLX_REFCLKDIV_20		(0x14 << 16)
++#define EXYNOS_5250_HSICPHYCTRLX_SIDDQ			BIT(6)
++#define EXYNOS_5250_HSICPHYCTRLX_FORCESLEEP		BIT(5)
++#define EXYNOS_5250_HSICPHYCTRLX_FORCESUSPEND		BIT(4)
++#define EXYNOS_5250_HSICPHYCTRLX_WORDINTERFACE		BIT(3)
++#define EXYNOS_5250_HSICPHYCTRLX_UTMISWRST		BIT(2)
++#define EXYNOS_5250_HSICPHYCTRLX_PHYSWRST		BIT(0)
++
++/* EHCI control */
++#define EXYNOS_5250_HOSTEHCICTRL			0x30
++#define EXYNOS_5250_HOSTEHCICTRL_ENAINCRXALIGN		BIT(29)
++#define EXYNOS_5250_HOSTEHCICTRL_ENAINCR4		BIT(28)
++#define EXYNOS_5250_HOSTEHCICTRL_ENAINCR8		BIT(27)
++#define EXYNOS_5250_HOSTEHCICTRL_ENAINCR16		BIT(26)
++#define EXYNOS_5250_HOSTEHCICTRL_AUTOPPDONOVRCUREN	BIT(25)
++#define EXYNOS_5250_HOSTEHCICTRL_FLADJVAL0_SHIFT	19
++#define EXYNOS_5250_HOSTEHCICTRL_FLADJVAL0_MASK	\
++		(0x3f << EXYNOS_5250_HOSTEHCICTRL_FLADJVAL0_SHIFT)
++#define EXYNOS_5250_HOSTEHCICTRL_FLADJVAL1_SHIFT	13
++#define EXYNOS_5250_HOSTEHCICTRL_FLADJVAL1_MASK	\
++		(0x3f << EXYNOS_5250_HOSTEHCICTRL_FLADJVAL1_SHIFT)
++#define EXYNOS_5250_HOSTEHCICTRL_FLADJVAL2_SHIFT	7
++#define EXYNOS_5250_HOSTEHCICTRL_FLADJVAL0_MASK	\
++		(0x3f << EXYNOS_5250_HOSTEHCICTRL_FLADJVAL0_SHIFT)
++#define EXYNOS_5250_HOSTEHCICTRL_FLADJVALHOST_SHIFT	1
++#define EXYNOS_5250_HOSTEHCICTRL_FLADJVALHOST_MASK \
++		(0x1 << EXYNOS_5250_HOSTEHCICTRL_FLADJVALHOST_SHIFT)
++#define EXYNOS_5250_HOSTEHCICTRL_SIMULATIONMODE		BIT(0)
++
++/* OHCI control */
++#define EXYNOS_5250_HOSTOHCICTRL                        0x34
++#define EXYNOS_5250_HOSTOHCICTRL_FRAMELENVAL_SHIFT	1
++#define EXYNOS_5250_HOSTOHCICTRL_FRAMELENVAL_MASK \
++		(0x3ff << EXYNOS_5250_HOSTOHCICTRL_FRAMELENVAL_SHIFT)
++#define EXYNOS_5250_HOSTOHCICTRL_FRAMELENVALEN		BIT(0)
++
++/* USBOTG */
++#define EXYNOS_5250_USBOTGSYS				0x38
++#define EXYNOS_5250_USBOTGSYS_PHYLINK_SW_RESET		BIT(14)
++#define EXYNOS_5250_USBOTGSYS_LINK_SW_RST_UOTG		BIT(13)
++#define EXYNOS_5250_USBOTGSYS_PHY_SW_RST		BIT(12)
++#define EXYNOS_5250_USBOTGSYS_REFCLKSEL_SHIFT		9
++#define EXYNOS_5250_USBOTGSYS_REFCLKSEL_MASK \
++		(0x3 << EXYNOS_5250_USBOTGSYS_REFCLKSEL_SHIFT)
++#define EXYNOS_5250_USBOTGSYS_ID_PULLUP			BIT(8)
++#define EXYNOS_5250_USBOTGSYS_COMMON_ON			BIT(7)
++#define EXYNOS_5250_USBOTGSYS_FSEL_SHIFT		4
++#define EXYNOS_5250_USBOTGSYS_FSEL_MASK \
++		(0x3 << EXYNOS_5250_USBOTGSYS_FSEL_SHIFT)
++#define EXYNOS_5250_USBOTGSYS_FORCE_SLEEP		BIT(3)
++#define EXYNOS_5250_USBOTGSYS_OTGDISABLE		BIT(2)
++#define EXYNOS_5250_USBOTGSYS_SIDDQ_UOTG		BIT(1)
++#define EXYNOS_5250_USBOTGSYS_FORCE_SUSPEND		BIT(0)
++
++/* Isolation, configured in the power management unit */
++#define EXYNOS_5250_USB_ISOL_OTG_OFFSET		0x704
++#define EXYNOS_5250_USB_ISOL_OTG		BIT(0)
++#define EXYNOS_5250_USB_ISOL_HOST_OFFSET	0x708
++#define EXYNOS_5250_USB_ISOL_HOST		BIT(0)
++
++/* Mode swtich register */
++#define EXYNOS_5250_MODE_SWITCH_OFFSET		0x230
++#define EXYNOS_5250_MODE_SWITCH_MASK		1
++#define EXYNOS_5250_MODE_SWITCH_DEVICE		0
++#define EXYNOS_5250_MODE_SWITCH_HOST		1
++
++enum exynos4x12_phy_id {
++	EXYNOS5250_DEVICE,
++	EXYNOS5250_HOST,
++	EXYNOS5250_HSIC0,
++	EXYNOS5250_HSIC1,
++	EXYNOS5250_NUM_PHYS,
++};
++
++/*
++ * exynos5250_rate_to_clk() converts the supplied clock rate to the value that
++ * can be written to the phy register.
++ */
++static int exynos5250_rate_to_clk(unsigned long rate, u32 *reg)
++{
++	/* EXYNOS_5250_FSEL_MASK */
++
++	switch (rate) {
++	case 9600 * KHZ:
++		*reg = EXYNOS_5250_FSEL_9MHZ6;
++		break;
++	case 10 * MHZ:
++		*reg = EXYNOS_5250_FSEL_10MHZ;
++		break;
++	case 12 * MHZ:
++		*reg = EXYNOS_5250_FSEL_12MHZ;
++		break;
++	case 19200 * KHZ:
++		*reg = EXYNOS_5250_FSEL_19MHZ2;
++		break;
++	case 20 * MHZ:
++		*reg = EXYNOS_5250_FSEL_20MHZ;
++		break;
++	case 24 * MHZ:
++		*reg = EXYNOS_5250_FSEL_24MHZ;
++		break;
++	case 50 * MHZ:
++		*reg = EXYNOS_5250_FSEL_50MHZ;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++static void exynos5250_isol(struct samsung_usb2_phy_instance *inst, bool on)
++{
++	struct samsung_usb2_phy_driver *drv = inst->drv;
++	u32 offset;
++	u32 mask;
++
++	switch (inst->cfg->id) {
++	case EXYNOS5250_DEVICE:
++		offset = EXYNOS_5250_USB_ISOL_OTG_OFFSET;
++		mask = EXYNOS_5250_USB_ISOL_OTG;
++		break;
++	case EXYNOS5250_HOST:
++		offset = EXYNOS_5250_USB_ISOL_HOST_OFFSET;
++		mask = EXYNOS_5250_USB_ISOL_HOST;
++		break;
++	default:
++		return;
++	};
++
++	regmap_update_bits(drv->reg_pmu, offset, mask, on ? 0 : mask);
++}
++
++static int exynos5250_power_on(struct samsung_usb2_phy_instance *inst)
++{
++	struct samsung_usb2_phy_driver *drv = inst->drv;
++	u32 ctrl0;
++	u32 otg;
++	u32 ehci;
++	u32 ohci;
++	u32 hsic;
++
++	switch (inst->cfg->id) {
++	case EXYNOS5250_DEVICE:
++		regmap_update_bits(drv->reg_sys,
++				   EXYNOS_5250_MODE_SWITCH_OFFSET,
++				   EXYNOS_5250_MODE_SWITCH_MASK,
++				   EXYNOS_5250_MODE_SWITCH_DEVICE);
++
++		/* OTG configuration */
++		otg = readl(drv->reg_phy + EXYNOS_5250_USBOTGSYS);
++		/* The clock */
++		otg &= ~EXYNOS_5250_USBOTGSYS_FSEL_MASK;
++		otg |= drv->ref_reg_val << EXYNOS_5250_USBOTGSYS_FSEL_SHIFT;
++		/* Reset */
++		otg &= ~(EXYNOS_5250_USBOTGSYS_FORCE_SUSPEND |
++			EXYNOS_5250_USBOTGSYS_FORCE_SLEEP |
++			EXYNOS_5250_USBOTGSYS_SIDDQ_UOTG);
++		otg |=	EXYNOS_5250_USBOTGSYS_PHY_SW_RST |
++			EXYNOS_5250_USBOTGSYS_PHYLINK_SW_RESET |
++			EXYNOS_5250_USBOTGSYS_LINK_SW_RST_UOTG |
++			EXYNOS_5250_USBOTGSYS_OTGDISABLE;
++		/* Ref clock */
++		otg &=	~EXYNOS_5250_USBOTGSYS_REFCLKSEL_MASK;
++		otg |=  EXYNOS_5250_REFCLKSEL_CLKCORE <<
++					EXYNOS_5250_USBOTGSYS_REFCLKSEL_SHIFT;
++		writel(otg, drv->reg_phy + EXYNOS_5250_USBOTGSYS);
++		udelay(100);
++		otg &= ~(EXYNOS_5250_USBOTGSYS_PHY_SW_RST |
++			EXYNOS_5250_USBOTGSYS_LINK_SW_RST_UOTG |
++			EXYNOS_5250_USBOTGSYS_PHYLINK_SW_RESET |
++			EXYNOS_5250_USBOTGSYS_OTGDISABLE);
++		writel(otg, drv->reg_phy + EXYNOS_5250_USBOTGSYS);
++
++
++		break;
++	case EXYNOS5250_HOST:
++	case EXYNOS5250_HSIC0:
++	case EXYNOS5250_HSIC1:
++		/* Host registers configuration */
++		ctrl0 = readl(drv->reg_phy + EXYNOS_5250_HOSTPHYCTRL0);
++		/* The clock */
++		ctrl0 &= ~EXYNOS_5250_HOSTPHYCTRL0_FSEL_MASK;
++		ctrl0 |= drv->ref_reg_val <<
++					EXYNOS_5250_HOSTPHYCTRL0_FSEL_SHIFT;
++
++		/* Reset */
++		ctrl0 &=	~(EXYNOS_5250_HOSTPHYCTRL0_PHYSWRST |
++				EXYNOS_5250_HOSTPHYCTRL0_PHYSWRSTALL |
++				EXYNOS_5250_HOSTPHYCTRL0_SIDDQ |
++				EXYNOS_5250_HOSTPHYCTRL0_FORCESUSPEND |
++				EXYNOS_5250_HOSTPHYCTRL0_FORCESLEEP);
++		ctrl0 |=	EXYNOS_5250_HOSTPHYCTRL0_LINKSWRST |
++				EXYNOS_5250_HOSTPHYCTRL0_UTMISWRST |
++				EXYNOS_5250_HOSTPHYCTRL0_COMMON_ON_N;
++		writel(ctrl0, drv->reg_phy + EXYNOS_5250_HOSTPHYCTRL0);
++		udelay(10);
++		ctrl0 &=	~(EXYNOS_5250_HOSTPHYCTRL0_LINKSWRST |
++				EXYNOS_5250_HOSTPHYCTRL0_UTMISWRST);
++		writel(ctrl0, drv->reg_phy + EXYNOS_5250_HOSTPHYCTRL0);
++
++		/* OTG configuration */
++		otg = readl(drv->reg_phy + EXYNOS_5250_USBOTGSYS);
++		/* The clock */
++		otg &= ~EXYNOS_5250_USBOTGSYS_FSEL_MASK;
++		otg |= drv->ref_reg_val << EXYNOS_5250_USBOTGSYS_FSEL_SHIFT;
++		/* Reset */
++		otg &= ~(EXYNOS_5250_USBOTGSYS_FORCE_SUSPEND |
++			EXYNOS_5250_USBOTGSYS_FORCE_SLEEP |
++			EXYNOS_5250_USBOTGSYS_SIDDQ_UOTG);
++		otg |=	EXYNOS_5250_USBOTGSYS_PHY_SW_RST |
++			EXYNOS_5250_USBOTGSYS_PHYLINK_SW_RESET |
++			EXYNOS_5250_USBOTGSYS_LINK_SW_RST_UOTG |
++			EXYNOS_5250_USBOTGSYS_OTGDISABLE;
++		/* Ref clock */
++		otg &=	~EXYNOS_5250_USBOTGSYS_REFCLKSEL_MASK;
++		otg |=  EXYNOS_5250_REFCLKSEL_CLKCORE <<
++					EXYNOS_5250_USBOTGSYS_REFCLKSEL_SHIFT;
++		writel(otg, drv->reg_phy + EXYNOS_5250_USBOTGSYS);
++		udelay(10);
++		otg &= ~(EXYNOS_5250_USBOTGSYS_PHY_SW_RST |
++			EXYNOS_5250_USBOTGSYS_LINK_SW_RST_UOTG |
++			EXYNOS_5250_USBOTGSYS_PHYLINK_SW_RESET);
++
++		/* HSIC phy configuration */
++		hsic = (EXYNOS_5250_HSICPHYCTRLX_REFCLKDIV_12 |
++				EXYNOS_5250_HSICPHYCTRLX_REFCLKSEL_DEFAULT |
++				EXYNOS_5250_HSICPHYCTRLX_PHYSWRST);
++		writel(hsic, drv->reg_phy + EXYNOS_5250_HSICPHYCTRL1);
++		writel(hsic, drv->reg_phy + EXYNOS_5250_HSICPHYCTRL2);
++		udelay(10);
++		hsic &= ~EXYNOS_5250_HSICPHYCTRLX_PHYSWRST;
++		writel(hsic, drv->reg_phy + EXYNOS_5250_HSICPHYCTRL1);
++		writel(hsic, drv->reg_phy + EXYNOS_5250_HSICPHYCTRL2);
++		/* The following delay is necessary for the reset sequence to be
++		 * completed */
++		udelay(80);
++
++		/* Enable EHCI DMA burst */
++		ehci = readl(drv->reg_phy + EXYNOS_5250_HOSTEHCICTRL);
++		ehci |=	EXYNOS_5250_HOSTEHCICTRL_ENAINCRXALIGN |
++			EXYNOS_5250_HOSTEHCICTRL_ENAINCR4 |
++			EXYNOS_5250_HOSTEHCICTRL_ENAINCR8 |
++			EXYNOS_5250_HOSTEHCICTRL_ENAINCR16;
++		writel(ehci, drv->reg_phy + EXYNOS_5250_HOSTEHCICTRL);
++
++		/* OHCI settings */
++		ohci = readl(drv->reg_phy + EXYNOS_5250_HOSTOHCICTRL);
++		/* Following code is based on the old driver */
++		ohci |=	0x1 << 3;
++		writel(ohci, drv->reg_phy + EXYNOS_5250_HOSTOHCICTRL);
++
++		break;
++	}
++	inst->enabled = 1;
++	exynos5250_isol(inst, 0);
++
++	return 0;
++}
++
++static int exynos5250_power_off(struct samsung_usb2_phy_instance *inst)
++{
++	struct samsung_usb2_phy_driver *drv = inst->drv;
++	u32 ctrl0;
++	u32 otg;
++	u32 hsic;
++
++	inst->enabled = 0;
++	exynos5250_isol(inst, 1);
++
++	switch (inst->cfg->id) {
++	case EXYNOS5250_DEVICE:
++		otg = readl(drv->reg_phy + EXYNOS_5250_USBOTGSYS);
++		otg |= (EXYNOS_5250_USBOTGSYS_FORCE_SUSPEND |
++			EXYNOS_5250_USBOTGSYS_SIDDQ_UOTG |
++			EXYNOS_5250_USBOTGSYS_FORCE_SLEEP);
++		writel(otg, drv->reg_phy + EXYNOS_5250_USBOTGSYS);
++		break;
++	case EXYNOS5250_HOST:
++		ctrl0 = readl(drv->reg_phy + EXYNOS_5250_HOSTPHYCTRL0);
++		ctrl0 |= (EXYNOS_5250_HOSTPHYCTRL0_SIDDQ |
++				EXYNOS_5250_HOSTPHYCTRL0_FORCESUSPEND |
++				EXYNOS_5250_HOSTPHYCTRL0_FORCESLEEP |
++				EXYNOS_5250_HOSTPHYCTRL0_PHYSWRST |
++				EXYNOS_5250_HOSTPHYCTRL0_PHYSWRSTALL);
++		writel(ctrl0, drv->reg_phy + EXYNOS_5250_HOSTPHYCTRL0);
++		break;
++	case EXYNOS5250_HSIC0:
++	case EXYNOS5250_HSIC1:
++		hsic = (EXYNOS_5250_HSICPHYCTRLX_REFCLKDIV_12 |
++				EXYNOS_5250_HSICPHYCTRLX_REFCLKSEL_DEFAULT |
++				EXYNOS_5250_HSICPHYCTRLX_SIDDQ |
++				EXYNOS_5250_HSICPHYCTRLX_FORCESLEEP |
++				EXYNOS_5250_HSICPHYCTRLX_FORCESUSPEND
++				);
++		writel(hsic, drv->reg_phy + EXYNOS_5250_HSICPHYCTRL1);
++		writel(hsic, drv->reg_phy + EXYNOS_5250_HSICPHYCTRL2);
++		break;
++	}
++
++	return 0;
++}
++
++
++static const struct samsung_usb2_common_phy exynos5250_phys[] = {
++	{
++		.label		= "device",
++		.id		= EXYNOS5250_DEVICE,
++		.power_on	= exynos5250_power_on,
++		.power_off	= exynos5250_power_off,
++	},
++	{
++		.label		= "host",
++		.id		= EXYNOS5250_HOST,
++		.power_on	= exynos5250_power_on,
++		.power_off	= exynos5250_power_off,
++	},
++	{
++		.label		= "hsic0",
++		.id		= EXYNOS5250_HSIC0,
++		.power_on	= exynos5250_power_on,
++		.power_off	= exynos5250_power_off,
++	},
++	{
++		.label		= "hsic1",
++		.id		= EXYNOS5250_HSIC1,
++		.power_on	= exynos5250_power_on,
++		.power_off	= exynos5250_power_off,
++	},
++	{},
++};
++
++const struct samsung_usb2_phy_config exynos5250_usb2_phy_config = {
++	.has_mode_switch	= 1,
++	.num_phys		= EXYNOS5250_NUM_PHYS,
++	.phys			= exynos5250_phys,
++	.rate_to_clk		= exynos5250_rate_to_clk,
++};
+diff --git a/drivers/phy/phy-samsung-usb2.c b/drivers/phy/phy-samsung-usb2.c
+index c3b7719..8a8c6bc 100644
+--- a/drivers/phy/phy-samsung-usb2.c
++++ b/drivers/phy/phy-samsung-usb2.c
+@@ -99,6 +99,12 @@ static const struct of_device_id samsung_usb2_phy_of_match[] = {
+ 		.data = &exynos4x12_usb2_phy_config,
  	},
- 	{},
- };
--MODULE_DEVICE_TABLE(of, omap_control_usb_id_table);
-+MODULE_DEVICE_TABLE(of, omap_control_phy_id_table);
  #endif
- 
- 
--static int omap_control_usb_probe(struct platform_device *pdev)
-+static int omap_control_phy_probe(struct platform_device *pdev)
- {
- 	struct resource	*res;
- 	const struct of_device_id *of_id;
--	struct omap_control_usb *control_usb;
-+	struct omap_control_phy *control_phy;
- 
--	of_id = of_match_device(of_match_ptr(omap_control_usb_id_table),
--								&pdev->dev);
-+	of_id = of_match_device(of_match_ptr(omap_control_phy_id_table),
-+				&pdev->dev);
- 	if (!of_id)
- 		return -EINVAL;
- 
--	control_usb = devm_kzalloc(&pdev->dev, sizeof(*control_usb),
-+	control_phy = devm_kzalloc(&pdev->dev, sizeof(*control_phy),
- 		GFP_KERNEL);
--	if (!control_usb) {
--		dev_err(&pdev->dev, "unable to alloc memory for control usb\n");
-+	if (!control_phy) {
-+		dev_err(&pdev->dev, "unable to alloc memory for control phy\n");
- 		return -ENOMEM;
- 	}
- 
--	control_usb->dev = &pdev->dev;
--	control_usb->type = *(enum omap_control_usb_type *)of_id->data;
-+	control_phy->dev = &pdev->dev;
-+	control_phy->type = *(enum omap_control_phy_type *)of_id->data;
- 
--	if (control_usb->type == OMAP_CTRL_TYPE_OTGHS) {
-+	if (control_phy->type == OMAP_CTRL_TYPE_OTGHS) {
- 		res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
- 			"otghs_control");
--		control_usb->otghs_control = devm_ioremap_resource(
-+		control_phy->otghs_control = devm_ioremap_resource(
- 			&pdev->dev, res);
--		if (IS_ERR(control_usb->otghs_control))
--			return PTR_ERR(control_usb->otghs_control);
-+		if (IS_ERR(control_phy->otghs_control))
-+			return PTR_ERR(control_phy->otghs_control);
- 	} else {
- 		res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
- 				"power");
--		control_usb->power = devm_ioremap_resource(&pdev->dev, res);
--		if (IS_ERR(control_usb->power)) {
-+		control_phy->power = devm_ioremap_resource(&pdev->dev, res);
-+		if (IS_ERR(control_phy->power)) {
- 			dev_err(&pdev->dev, "Couldn't get power register\n");
--			return PTR_ERR(control_usb->power);
-+			return PTR_ERR(control_phy->power);
- 		}
- 	}
- 
--	if (control_usb->type == OMAP_CTRL_TYPE_PIPE3) {
--		control_usb->sys_clk = devm_clk_get(control_usb->dev,
-+	if (control_phy->type == OMAP_CTRL_TYPE_PIPE3) {
-+		control_phy->sys_clk = devm_clk_get(control_phy->dev,
- 			"sys_clkin");
--		if (IS_ERR(control_usb->sys_clk)) {
-+		if (IS_ERR(control_phy->sys_clk)) {
- 			pr_err("%s: unable to get sys_clkin\n", __func__);
- 			return -EINVAL;
- 		}
- 	}
- 
--	dev_set_drvdata(control_usb->dev, control_usb);
-+	dev_set_drvdata(control_phy->dev, control_phy);
- 
- 	return 0;
- }
- 
--static struct platform_driver omap_control_usb_driver = {
--	.probe		= omap_control_usb_probe,
-+static struct platform_driver omap_control_phy_driver = {
-+	.probe		= omap_control_phy_probe,
- 	.driver		= {
--		.name	= "omap-control-usb",
-+		.name	= "omap-control-phy",
- 		.owner	= THIS_MODULE,
--		.of_match_table = of_match_ptr(omap_control_usb_id_table),
-+		.of_match_table = of_match_ptr(omap_control_phy_id_table),
- 	},
++#ifdef CONFIG_PHY_EXYNOS5250_USB2
++	{
++		.compatible = "samsung,exynos5250-usb2-phy",
++		.data = &exynos5250_usb2_phy_config,
++	},
++#endif
+ 	{ },
  };
  
--static int __init omap_control_usb_init(void)
-+static int __init omap_control_phy_init(void)
- {
--	return platform_driver_register(&omap_control_usb_driver);
-+	return platform_driver_register(&omap_control_phy_driver);
- }
--subsys_initcall(omap_control_usb_init);
-+subsys_initcall(omap_control_phy_init);
+diff --git a/drivers/phy/phy-samsung-usb2.h b/drivers/phy/phy-samsung-usb2.h
+index 51a1601..45b3170 100644
+--- a/drivers/phy/phy-samsung-usb2.h
++++ b/drivers/phy/phy-samsung-usb2.h
+@@ -63,4 +63,5 @@ struct samsung_usb2_phy_config {
  
--static void __exit omap_control_usb_exit(void)
-+static void __exit omap_control_phy_exit(void)
- {
--	platform_driver_unregister(&omap_control_usb_driver);
-+	platform_driver_unregister(&omap_control_phy_driver);
- }
--module_exit(omap_control_usb_exit);
-+module_exit(omap_control_phy_exit);
- 
--MODULE_ALIAS("platform: omap_control_usb");
-+MODULE_ALIAS("platform: omap_control_phy");
- MODULE_AUTHOR("Texas Instruments Inc.");
--MODULE_DESCRIPTION("OMAP Control Module USB Driver");
-+MODULE_DESCRIPTION("OMAP Control Module PHY Driver");
- MODULE_LICENSE("GPL v2");
-diff --git a/drivers/phy/phy-omap-usb2.c b/drivers/phy/phy-omap-usb2.c
-index 3cc4aba..a2205a8 100644
---- a/drivers/phy/phy-omap-usb2.c
-+++ b/drivers/phy/phy-omap-usb2.c
-@@ -27,7 +27,7 @@
- #include <linux/err.h>
- #include <linux/pm_runtime.h>
- #include <linux/delay.h>
--#include <linux/usb/omap_control_usb.h>
-+#include <linux/phy/omap_control_phy.h>
- #include <linux/phy/phy.h>
- #include <linux/of_platform.h>
- 
-@@ -105,7 +105,7 @@ static int omap_usb_power_off(struct phy *x)
- {
- 	struct omap_usb *phy = phy_get_drvdata(x);
- 
--	omap_control_usb_phy_power(phy->control_dev, 0);
-+	omap_control_phy_power(phy->control_dev, 0);
- 
- 	return 0;
- }
-@@ -114,7 +114,7 @@ static int omap_usb_power_on(struct phy *x)
- {
- 	struct omap_usb *phy = phy_get_drvdata(x);
- 
--	omap_control_usb_phy_power(phy->control_dev, 1);
-+	omap_control_phy_power(phy->control_dev, 1);
- 
- 	return 0;
- }
-@@ -251,7 +251,7 @@ static int omap_usb2_probe(struct platform_device *pdev)
- 	}
- 
- 	phy->control_dev = &control_pdev->dev;
--	omap_control_usb_phy_power(phy->control_dev, 0);
-+	omap_control_phy_power(phy->control_dev, 0);
- 
- 	otg->set_host		= omap_usb_set_host;
- 	otg->set_peripheral	= omap_usb_set_peripheral;
-diff --git a/drivers/phy/phy-ti-pipe3.c b/drivers/phy/phy-ti-pipe3.c
-index c8d1674..fd029b1 100644
---- a/drivers/phy/phy-ti-pipe3.c
-+++ b/drivers/phy/phy-ti-pipe3.c
-@@ -26,7 +26,7 @@
- #include <linux/io.h>
- #include <linux/pm_runtime.h>
- #include <linux/delay.h>
--#include <linux/usb/omap_control_usb.h>
-+#include <linux/phy/omap_control_phy.h>
- #include <linux/of_platform.h>
- 
- #define	PLL_STATUS		0x00000004
-@@ -134,7 +134,7 @@ static int ti_pipe3_power_off(struct phy *x)
- 		return -EBUSY;
- 	}
- 
--	omap_control_usb_phy_power(phy->control_dev, 0);
-+	omap_control_phy_power(phy->control_dev, 0);
- 
- 	return 0;
- }
-@@ -232,7 +232,7 @@ static int ti_pipe3_init(struct phy *x)
- 	if (ret)
- 		return ret;
- 
--	omap_control_usb_phy_power(phy->control_dev, 1);
-+	omap_control_phy_power(phy->control_dev, 1);
- 
- 	return 0;
- }
-@@ -304,7 +304,7 @@ static int ti_pipe3_probe(struct platform_device *pdev)
- 
- 	phy->control_dev = &control_pdev->dev;
- 
--	omap_control_usb_phy_power(phy->control_dev, 0);
-+	omap_control_phy_power(phy->control_dev, 0);
- 
- 	platform_set_drvdata(pdev, phy);
- 	pm_runtime_enable(phy->dev);
-diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
-index 8aa59a2..d341c14 100644
---- a/drivers/usb/musb/omap2430.c
-+++ b/drivers/usb/musb/omap2430.c
-@@ -37,7 +37,7 @@
- #include <linux/err.h>
- #include <linux/delay.h>
- #include <linux/usb/musb-omap.h>
--#include <linux/usb/omap_control_usb.h>
-+#include <linux/phy/omap_control_phy.h>
- #include <linux/of_platform.h>
- 
- #include "musb_core.h"
-diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
-index c337ba2..416e0c8 100644
---- a/drivers/usb/phy/Kconfig
-+++ b/drivers/usb/phy/Kconfig
-@@ -75,16 +75,6 @@ config NOP_USB_XCEIV
- 	  built-in with usb ip or which are autonomous and doesn't require any
- 	  phy programming such as ISP1x04 etc.
- 
--config OMAP_CONTROL_USB
--	tristate "OMAP CONTROL USB Driver"
--	depends on ARCH_OMAP2PLUS || COMPILE_TEST
--	help
--	  Enable this to add support for the USB part present in the control
--	  module. This driver has API to power on the USB2 PHY and to write to
--	  the mailbox. The mailbox is present only in omap4 and the register to
--	  power on the USB2 PHY is present in OMAP4 and OMAP5. OMAP5 has an
--	  additional register to power on USB3 PHY.
--
- config AM335X_CONTROL_USB
- 	tristate
- 
-diff --git a/drivers/usb/phy/Makefile b/drivers/usb/phy/Makefile
-index 15f1878..f8fa719 100644
---- a/drivers/usb/phy/Makefile
-+++ b/drivers/usb/phy/Makefile
-@@ -13,7 +13,6 @@ obj-$(CONFIG_ISP1301_OMAP)		+= phy-isp1301-omap.o
- obj-$(CONFIG_MV_U3D_PHY)		+= phy-mv-u3d-usb.o
- obj-$(CONFIG_NOP_USB_XCEIV)		+= phy-generic.o
- obj-$(CONFIG_TAHVO_USB)			+= phy-tahvo.o
--obj-$(CONFIG_OMAP_CONTROL_USB)		+= phy-omap-control.o
- obj-$(CONFIG_AM335X_CONTROL_USB)	+= phy-am335x-control.o
- obj-$(CONFIG_AM335X_PHY_USB)		+= phy-am335x.o
- obj-$(CONFIG_OMAP_OTG)			+= phy-omap-otg.o
-diff --git a/include/linux/usb/omap_control_usb.h b/include/linux/phy/omap_control_phy.h
-similarity index 68%
-rename from include/linux/usb/omap_control_usb.h
-rename to include/linux/phy/omap_control_phy.h
-index 69ae383..5450403 100644
---- a/include/linux/usb/omap_control_usb.h
-+++ b/include/linux/phy/omap_control_phy.h
-@@ -1,5 +1,5 @@
- /*
-- * omap_control_usb.h - Header file for the USB part of control module.
-+ * omap_control_phy.h - Header file for the PHY part of control module.
-  *
-  * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com
-  * This program is free software; you can redistribute it and/or modify
-@@ -16,10 +16,10 @@
-  *
-  */
- 
--#ifndef __OMAP_CONTROL_USB_H__
--#define __OMAP_CONTROL_USB_H__
-+#ifndef __OMAP_CONTROL_PHY_H__
-+#define __OMAP_CONTROL_PHY_H__
- 
--enum omap_control_usb_type {
-+enum omap_control_phy_type {
- 	OMAP_CTRL_TYPE_OTGHS = 1,	/* Mailbox OTGHS_CONTROL */
- 	OMAP_CTRL_TYPE_USB2,	/* USB2_PHY, power down in CONTROL_DEV_CONF */
- 	OMAP_CTRL_TYPE_PIPE3,	/* PIPE3 PHY, DPLL & seperate Rx/Tx power */
-@@ -27,7 +27,7 @@ enum omap_control_usb_type {
- 	OMAP_CTRL_TYPE_AM437USB2, /* USB2 PHY, power e.g. AM437x */
- };
- 
--struct omap_control_usb {
-+struct omap_control_phy {
- 	struct device *dev;
- 
- 	u32 __iomem *otghs_control;
-@@ -36,7 +36,7 @@ struct omap_control_usb {
- 
- 	struct clk *sys_clk;
- 
--	enum omap_control_usb_type type;
-+	enum omap_control_phy_type type;
- };
- 
- enum omap_control_usb_mode {
-@@ -54,14 +54,14 @@ enum omap_control_usb_mode {
- #define	OMAP_CTRL_DEV_SESSEND		BIT(3)
- #define	OMAP_CTRL_DEV_IDDIG		BIT(4)
- 
--#define	OMAP_CTRL_USB_PWRCTL_CLK_CMD_MASK	0x003FC000
--#define	OMAP_CTRL_USB_PWRCTL_CLK_CMD_SHIFT	0xE
-+#define	OMAP_CTRL_PIPE3_PHY_PWRCTL_CLK_CMD_MASK		0x003FC000
-+#define	OMAP_CTRL_PIPE3_PHY_PWRCTL_CLK_CMD_SHIFT	0xE
- 
--#define	OMAP_CTRL_USB_PWRCTL_CLK_FREQ_MASK	0xFFC00000
--#define	OMAP_CTRL_USB_PWRCTL_CLK_FREQ_SHIFT	0x16
-+#define	OMAP_CTRL_PIPE3_PHY_PWRCTL_CLK_FREQ_MASK	0xFFC00000
-+#define	OMAP_CTRL_PIPE3_PHY_PWRCTL_CLK_FREQ_SHIFT	0x16
- 
--#define	OMAP_CTRL_USB3_PHY_TX_RX_POWERON	0x3
--#define	OMAP_CTRL_USB3_PHY_TX_RX_POWEROFF	0x0
-+#define	OMAP_CTRL_PIPE3_PHY_TX_RX_POWERON	0x3
-+#define	OMAP_CTRL_PIPE3_PHY_TX_RX_POWEROFF	0x0
- 
- #define OMAP_CTRL_USB2_PHY_PD		BIT(28)
- 
-@@ -70,13 +70,13 @@ enum omap_control_usb_mode {
- #define AM437X_CTRL_USB2_OTGVDET_EN	BIT(19)
- #define AM437X_CTRL_USB2_OTGSESSEND_EN	BIT(20)
- 
--#if IS_ENABLED(CONFIG_OMAP_CONTROL_USB)
--extern void omap_control_usb_phy_power(struct device *dev, int on);
--extern void omap_control_usb_set_mode(struct device *dev,
--	enum omap_control_usb_mode mode);
-+#if IS_ENABLED(CONFIG_OMAP_CONTROL_PHY)
-+void omap_control_phy_power(struct device *dev, int on);
-+void omap_control_usb_set_mode(struct device *dev,
-+			       enum omap_control_usb_mode mode);
- #else
- 
--static inline void omap_control_usb_phy_power(struct device *dev, int on)
-+static inline void omap_control_phy_power(struct device *dev, int on)
- {
- }
- 
-@@ -86,4 +86,4 @@ static inline void omap_control_usb_set_mode(struct device *dev,
- }
+ extern const struct samsung_usb2_phy_config exynos4210_usb2_phy_config;
+ extern const struct samsung_usb2_phy_config exynos4x12_usb2_phy_config;
++extern const struct samsung_usb2_phy_config exynos5250_usb2_phy_config;
  #endif
- 
--#endif	/* __OMAP_CONTROL_USB_H__ */
-+#endif	/* __OMAP_CONTROL_PHY_H__ */
 -- 
 1.7.9.5
 
