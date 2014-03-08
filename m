@@ -1,134 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755091AbaCHBfR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:35:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46272 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753777AbaCHBHB (ORCPT
+	id S1755485AbaCHBfm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:35:42 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:33662 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754793AbaCHBfk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:07:01 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>,
-        Liam Girdwood <liam.r.girdwood@linux.intel.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.4 22/99] ASoC: sta32x: Fix array access overflow
-Date: Fri,  7 Mar 2014 17:07:18 -0800
-Message-Id: <20140308010612.332553815@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
-References: <20140308010611.468206150@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Fri, 7 Mar 2014 20:35:40 -0500
+Message-ID: <531A73EB.6060403@codeaurora.org>
+Date: Fri, 07 Mar 2014 17:35:39 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: pageexec@freemail.hu
+CC: khali@linux-fr.org, rostedt@goodmis.org,
+        Behan Webster <behanw@converseincode.com>, rusty@rustcorp.com.au,
+        linux-kernel@vger.kernel.org, dwmw2@infradead.org,
+        Mark Charlebois <charlebm@gmail.com>
+Subject: Re: [PATCH] module: LLVMLinux: Remove unused function warning from
+ __param_check macro
+References: <1394219327-5591-1-git-send-email-behanw@converseincode.com>, <531A4E84.9996.3260AF06@pageexec.freemail.hu>, <531A69E0.3000407@converseincode.com> <531A719C.19855.32E9C505@pageexec.freemail.hu>
+In-Reply-To: <531A719C.19855.32E9C505@pageexec.freemail.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On 03/07/14 17:25, PaX Team wrote:
+> On 7 Mar 2014 at 16:52, Behan Webster wrote:
+>
+>> On 03/07/14 14:56, PaX Team wrote:
+>>> why can't you have the attr on the definition itself:
+>>>
+>>> static inline __unused type *__check_##name(void) { return(p); }
+>>>
+>>>
+>>>
+>> "__unused" isn't defined anywhere I can find, except in:
+>>
+>> src/linux/drivers/net/ethernet/amd/declance.c:#define __unused 
+>> __attribute__ ((unused))
+> oh i forgot about that, you'd of course place this #define
+> into the appropriate compiler*.h files so that other code
+> can make use of it in the future as well ;).
+>
 
-------------------
+It looks like it already exists, __always_unused.
 
-From: Takashi Iwai <tiwai@suse.de>
-
-commit 025c3fa9256d4c54506b7a29dc3befac54f5c68d upstream.
-
-Preset EQ enum of sta32x codec driver declares too many number of
-items and it may lead to the access over the actual array size.
-
-Use SOC_ENUM_SINGLE_DECL() helper and it's automatically fixed.
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Acked-by: Liam Girdwood <liam.r.girdwood@linux.intel.com>
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- sound/soc/codecs/sta32x.c |   72 +++++++++++++++++++++++-----------------------
- 1 file changed, 36 insertions(+), 36 deletions(-)
-
---- a/sound/soc/codecs/sta32x.c
-+++ b/sound/soc/codecs/sta32x.c
-@@ -147,42 +147,42 @@ static const unsigned int sta32x_limiter
- 	13, 16, TLV_DB_SCALE_ITEM(-1500, 300, 0),
- };
- 
--static const struct soc_enum sta32x_drc_ac_enum =
--	SOC_ENUM_SINGLE(STA32X_CONFD, STA32X_CONFD_DRC_SHIFT,
--			2, sta32x_drc_ac);
--static const struct soc_enum sta32x_auto_eq_enum =
--	SOC_ENUM_SINGLE(STA32X_AUTO1, STA32X_AUTO1_AMEQ_SHIFT,
--			3, sta32x_auto_eq_mode);
--static const struct soc_enum sta32x_auto_gc_enum =
--	SOC_ENUM_SINGLE(STA32X_AUTO1, STA32X_AUTO1_AMGC_SHIFT,
--			4, sta32x_auto_gc_mode);
--static const struct soc_enum sta32x_auto_xo_enum =
--	SOC_ENUM_SINGLE(STA32X_AUTO2, STA32X_AUTO2_XO_SHIFT,
--			16, sta32x_auto_xo_mode);
--static const struct soc_enum sta32x_preset_eq_enum =
--	SOC_ENUM_SINGLE(STA32X_AUTO3, STA32X_AUTO3_PEQ_SHIFT,
--			32, sta32x_preset_eq_mode);
--static const struct soc_enum sta32x_limiter_ch1_enum =
--	SOC_ENUM_SINGLE(STA32X_C1CFG, STA32X_CxCFG_LS_SHIFT,
--			3, sta32x_limiter_select);
--static const struct soc_enum sta32x_limiter_ch2_enum =
--	SOC_ENUM_SINGLE(STA32X_C2CFG, STA32X_CxCFG_LS_SHIFT,
--			3, sta32x_limiter_select);
--static const struct soc_enum sta32x_limiter_ch3_enum =
--	SOC_ENUM_SINGLE(STA32X_C3CFG, STA32X_CxCFG_LS_SHIFT,
--			3, sta32x_limiter_select);
--static const struct soc_enum sta32x_limiter1_attack_rate_enum =
--	SOC_ENUM_SINGLE(STA32X_L1AR, STA32X_LxA_SHIFT,
--			16, sta32x_limiter_attack_rate);
--static const struct soc_enum sta32x_limiter2_attack_rate_enum =
--	SOC_ENUM_SINGLE(STA32X_L2AR, STA32X_LxA_SHIFT,
--			16, sta32x_limiter_attack_rate);
--static const struct soc_enum sta32x_limiter1_release_rate_enum =
--	SOC_ENUM_SINGLE(STA32X_L1AR, STA32X_LxR_SHIFT,
--			16, sta32x_limiter_release_rate);
--static const struct soc_enum sta32x_limiter2_release_rate_enum =
--	SOC_ENUM_SINGLE(STA32X_L2AR, STA32X_LxR_SHIFT,
--			16, sta32x_limiter_release_rate);
-+static SOC_ENUM_SINGLE_DECL(sta32x_drc_ac_enum,
-+			    STA32X_CONFD, STA32X_CONFD_DRC_SHIFT,
-+			    sta32x_drc_ac);
-+static SOC_ENUM_SINGLE_DECL(sta32x_auto_eq_enum,
-+			    STA32X_AUTO1, STA32X_AUTO1_AMEQ_SHIFT,
-+			    sta32x_auto_eq_mode);
-+static SOC_ENUM_SINGLE_DECL(sta32x_auto_gc_enum,
-+			    STA32X_AUTO1, STA32X_AUTO1_AMGC_SHIFT,
-+			    sta32x_auto_gc_mode);
-+static SOC_ENUM_SINGLE_DECL(sta32x_auto_xo_enum,
-+			    STA32X_AUTO2, STA32X_AUTO2_XO_SHIFT,
-+			    sta32x_auto_xo_mode);
-+static SOC_ENUM_SINGLE_DECL(sta32x_preset_eq_enum,
-+			    STA32X_AUTO3, STA32X_AUTO3_PEQ_SHIFT,
-+			    sta32x_preset_eq_mode);
-+static SOC_ENUM_SINGLE_DECL(sta32x_limiter_ch1_enum,
-+			    STA32X_C1CFG, STA32X_CxCFG_LS_SHIFT,
-+			    sta32x_limiter_select);
-+static SOC_ENUM_SINGLE_DECL(sta32x_limiter_ch2_enum,
-+			    STA32X_C2CFG, STA32X_CxCFG_LS_SHIFT,
-+			    sta32x_limiter_select);
-+static SOC_ENUM_SINGLE_DECL(sta32x_limiter_ch3_enum,
-+			    STA32X_C3CFG, STA32X_CxCFG_LS_SHIFT,
-+			    sta32x_limiter_select);
-+static SOC_ENUM_SINGLE_DECL(sta32x_limiter1_attack_rate_enum,
-+			    STA32X_L1AR, STA32X_LxA_SHIFT,
-+			    sta32x_limiter_attack_rate);
-+static SOC_ENUM_SINGLE_DECL(sta32x_limiter2_attack_rate_enum,
-+			    STA32X_L2AR, STA32X_LxA_SHIFT,
-+			    sta32x_limiter_attack_rate);
-+static SOC_ENUM_SINGLE_DECL(sta32x_limiter1_release_rate_enum,
-+			    STA32X_L1AR, STA32X_LxR_SHIFT,
-+			    sta32x_limiter_release_rate);
-+static SOC_ENUM_SINGLE_DECL(sta32x_limiter2_release_rate_enum,
-+			    STA32X_L2AR, STA32X_LxR_SHIFT,
-+			    sta32x_limiter_release_rate);
- 
- /* byte array controls for setting biquad, mixer, scaling coefficients;
-  * for biquads all five coefficients need to be set in one go,
-
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
