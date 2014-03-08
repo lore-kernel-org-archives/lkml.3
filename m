@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121AbaCHT5U (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 14:57:20 -0500
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:45966 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751577AbaCHT5T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 14:57:19 -0500
+	id S1752179AbaCHT6D (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 14:58:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:11659 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751639AbaCHT6B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Mar 2014 14:58:01 -0500
+Date: Sat, 8 Mar 2014 20:57:05 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Davidlohr Bueso <davidlohr@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Davidlohr Bueso <davi@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] mm: per-thread vma caching
+Message-ID: <20140308195705.GA588@redhat.com>
+References: <1393537704.2899.3.camel@buesod1.americas.hpqcorp.net> <20140308184040.GA29602@redhat.com> <CA+55aFw88xiY+o5FE6VtHNkpUZDK3FPt31oCpNsgn1BH7wAPZw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140308152854.GB25021@htj.dyndns.org>
-References: <20140308152854.GB25021@htj.dyndns.org>
-Date: Sat, 8 Mar 2014 11:57:18 -0800
-X-Google-Sender-Auth: sf9082wQDiVGtw6OAcp9BRxxp4U
-Message-ID: <CA+55aFzgg4hicXQ-cwHZdDrGRPSoeUVeMzPRAmoEYrujLjt1_A@mail.gmail.com>
-Subject: Re: [GIT PULL] libata fixes for v3.14-rc5
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        IDE-ML <linux-ide@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFw88xiY+o5FE6VtHNkpUZDK3FPt31oCpNsgn1BH7wAPZw@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 8, 2014 at 7:28 AM, Tejun Heo <tj@kernel.org> wrote:
+looks like I removed lkml somehow, resend...
+
+On 03/08, Linus Torvalds wrote:
 >
-> Just a couple patches blacklisting more broken devices.
+> On Sat, Mar 8, 2014 at 10:40 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >
+> > It seems this should be moved into copy_mm(), CLONE_VM needs to invalidate
+> > ->vmacache too.
+>
+> No it doesn't. CLONE_VM doesn't change any of the vma lists,
 
-Pulled. However:
+Sure. But another thread or CLONE_VM task can do vmacache_invalidate(),
+hit vmacache_seqnum == 0 and call vmacache_flush_all() to solve the
+problem with potential overflow.
 
->         /* devices that don't properly handle queued TRIM commands */
->         { "Micron_M500*",               NULL,   ATA_HORKAGE_NO_NCQ_TRIM, },
->         { "Crucial_CT???M500SSD1",      NULL,   ATA_HORKAGE_NO_NCQ_TRIM, },
-> +       { "Crucial_CT???M500SSD3",      NULL,   ATA_HORKAGE_NO_NCQ_TRIM, },
+> so
+> there's no reason to invalidate anything.
+>
+> > dup_task_struct() also copies vmacache_seqnum/vmacache, but the new thread
+> > is not yet visible to vmacache_flush_all().
+>
+> So either the new task struct will share the mm, in which case the
+> cache entries are fine
 
-If we know M500SSD1 and M500SSD3 are both broken the same way, and the
-Micron_M500* is too (which is, as far as I know, the same device), why
-the heck do we make the test that specific?
+Not if they should be flushed by vmacache_flush_all() above.
 
-Why not just use Crucial_CT???M500* or something? The likelihood of
-some new version of the same broken device coming up is small, and if
-it does, we don't even care. Why would we risk it?
+Oleg.
 
-            Linus
