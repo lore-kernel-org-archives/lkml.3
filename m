@@ -1,87 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752612AbaCHA2Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 19:28:25 -0500
-Received: from g2t2353.austin.hp.com ([15.217.128.52]:32774 "EHLO
-	g2t2353.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751490AbaCHA2X (ORCPT
+	id S1753021AbaCHAbh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 19:31:37 -0500
+Received: from smtprelay0069.hostedemail.com ([216.40.44.69]:44736 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751820AbaCHAbg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 19:28:23 -0500
-Message-ID: <1394238498.11969.22.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 6/7] x86: mm: set TLB flush tunable to sane value
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Dave Hansen <dave@sr71.net>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        ak@linux.intel.com, kirill.shutemov@linux.intel.com, mgorman@suse.de,
-        alex.shi@linaro.org, x86@kernel.org, linux-mm@kvack.org,
-        dave.hansen@linux.intel.com
-Date: Fri, 07 Mar 2014 16:28:18 -0800
-In-Reply-To: <5319FEA1.50107@sr71.net>
-References: <20140306004519.BBD70A1A@viggo.jf.intel.com>
-		 <20140306004529.5510B23D@viggo.jf.intel.com>
-	 <1394157304.2555.21.camel@buesod1.americas.hpqcorp.net>
-	 <5319FEA1.50107@sr71.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	Fri, 7 Mar 2014 19:31:36 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1539:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3865:3867:3870:3871:5007:7652:7903:10004:10400:10848:11026:11473:11657:11658:11914:12043:12296:12438:12517:12519:12555:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: key26_650cb690aa43e
+X-Filterd-Recvd-Size: 1485
+Message-ID: <1394238692.16156.115.camel@joe-AO722>
+Subject: [PATCH] eeh_pseries: Missing break?
+From: Joe Perches <joe@perches.com>
+To: Gavin Shan <shangw@linux.vnet.ibm.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Date: Fri, 07 Mar 2014 16:31:32 -0800
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-03-07 at 09:15 -0800, Dave Hansen wrote:
-> On 03/06/2014 05:55 PM, Davidlohr Bueso wrote:
-> > On Wed, 2014-03-05 at 16:45 -0800, Dave Hansen wrote:
-> >> From: Dave Hansen <dave.hansen@linux.intel.com>
-> >>
-> >> Now that we have some shiny new tracepoints, we can actually
-> >> figure out what the heck is going on.
-> >>
-> >> During a kernel compile, 60% of the flush_tlb_mm_range() calls
-> >> are for a single page.  It breaks down like this:
-> > 
-> > It would be interesting to see similar data for opposite workloads with
-> > more random access patterns. That's normally when things start getting
-> > fun in the tlb world.
-> 
-> First of all, thanks for testing.  It's much appreciated!
-> 
-> Any suggestions for opposite workloads?
+Looks like this is unintentional as the
+result = EEH_STATE_UNAVAILABLE is being
+overwritten by EEH_STATE_NOT_SUPPORT in the
+fallthrough to the default case.
+---
+diff --git a/arch/powerpc/platforms/pseries/eeh_pseries.c b/arch/powerpc/platforms/pseries/eeh_pseries.c
+index 8a8f047..83da53f 100644
+--- a/arch/powerpc/platforms/pseries/eeh_pseries.c
++++ b/arch/powerpc/platforms/pseries/eeh_pseries.c
+@@ -460,14 +460,15 @@ static int pseries_eeh_get_state(struct eeh_pe *pe, int *state)
+ 		case 5:
+ 			if (rets[2]) {
+ 				if (state) *state = rets[2];
+ 				result = EEH_STATE_UNAVAILABLE;
+ 			} else {
+ 				result = EEH_STATE_NOT_SUPPORT;
+ 			}
++			break;
+ 		default:
+ 			result = EEH_STATE_NOT_SUPPORT;
+ 		}
+ 	} else {
+ 		result = EEH_STATE_NOT_SUPPORT;
+ 	}
+ 
 
-I was actually thinking of ebizzy as well.
-
-> I've seen this tunable have really heavy effects on ebizzy.  It fits
-> almost entirely within the itlb and if we are doing full flushes, it
-> eats the itlb and increases the misses about 10x.  Even putting this
-> tunable above 500 pages (which is pretty insane) didn't help it.
-
-Interesting, I didn't expect the misses to be as severe. So I guess what
-you say is that this issue is seen even with how we currently have
-things.
-
-
-> Things that thrash the TLB don't really care if someone invalidates
-> their TLB since they're thrashing it anyway.
-
-That's a really good point.
-
-> I've had a really hard time finding workloads that _care_ or are
-> affected by small changes in this tunable.  That's one of the reasons I
-> tried to simplify it: it's just not worth the complexity.
-
-I agree, since we aren't seeing much performance differences anyway I
-guess it simply doesn't matter. I can see it perhaps as a factor for
-virtualized workloads in the pre-tagged tlb era but not so much
-nowadays. In any case I've also asked a colleague to see if he can
-produce any interesting results with this patchset on his kvm workloads
-but don't expect much surprises.
-
-So all in all I definitely like this cleanup, and things are simplified
-significantly without any apparent performance hits. The justification
-for the ceiling being 33 seems pretty prudent, and heck, it can be
-modified anyway by users. An additional suggestion would be to comment
-this magic number, in the code.
-
-Thanks,
-Davidlohr
 
