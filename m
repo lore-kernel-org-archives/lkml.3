@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751577AbaCHPE1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 10:04:27 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:48867 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750991AbaCHPE0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 10:04:26 -0500
-Message-ID: <531B3178.8000804@infradead.org>
-Date: Sat, 08 Mar 2014 07:04:24 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1752076AbaCHPFQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 10:05:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43968 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751664AbaCHPFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Mar 2014 10:05:13 -0500
+Date: Sat, 8 Mar 2014 15:53:10 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Behan Webster <behanw@converseincode.com>
+Cc: Joe Perches <joe@perches.com>, linville@tuxdriver.com,
+        johannes@sipsolutions.net, davem@davemloft.net,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dwmw2@infradead.org,
+        pageexec@freemail.hu,
+        Jan-Simon =?iso-8859-1?Q?M=F6ller?= <dl9pf@gmx.de>,
+        =?iso-8859-1?Q?Vin=EDcius?= Tinti <viniciustinti@gmail.com>,
+        Mark Charlebois <charlebm@gmail.com>
+Subject: Re: [PATCH v2] mac80211: LLVMLinux: Remove VLAIS usage from mac80211
+Message-ID: <20140308145309.GA1615@redhat.com>
+References: <1394177091.4653.1.camel@jlt4.sipsolutions.net>
+ <1394241960-1764-1-git-send-email-behanw@converseincode.com>
+ <1394243809.6972.4.camel@joe-AO722>
+ <531A7D4F.7090303@converseincode.com>
 MIME-Version: 1.0
-To: Chen Gang <gang.chen.5i5j@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Suggestion] Makefile: about allmodconfig issue.
-References: <531B1603.6080106@gmail.com>
-In-Reply-To: <531B1603.6080106@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <531A7D4F.7090303@converseincode.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/2014 05:07 AM, Chen Gang wrote:
-> Hello All:
-> 
-> "A module selects GENERIC_IRQ_CHIP and depend on IRQ_DOMAIN". For me,
-> it is a reasonable selection and dependency, but "make allmodconfig"
-> will report error. I guess it is the "Makefile allmodconfig" issue.
-> 
-> The related error report:
-> 
->   [root@gchen linux-next]# make ARCH=avr32 CROSS_COMPILE=/usr/local/bin/avr32-linux-  allmodconfig
->     HOSTCC  scripts/basic/fixdep
->     HOSTCC  scripts/kconfig/conf.o
->     SHIPPED scripts/kconfig/zconf.tab.c
->     SHIPPED scripts/kconfig/zconf.lex.c
->     SHIPPED scripts/kconfig/zconf.hash.c
->     HOSTCC  scripts/kconfig/zconf.tab.o
->     HOSTLD  scripts/kconfig/conf
->   scripts/kconfig/conf --allmodconfig Kconfig
->   kernel/time/Kconfig:162:warning: range is invalid
->   kernel/irq/Kconfig:41:error: recursive dependency detected!
->   kernel/irq/Kconfig:41:  symbol GENERIC_IRQ_CHIP is selected by GPIO_DWAPB
->   drivers/gpio/Kconfig:131:       symbol GPIO_DWAPB depends on IRQ_DOMAIN
->   kernel/irq/Kconfig:46:  symbol IRQ_DOMAIN is selected by GENERIC_IRQ_CHIP
->   
-> 
-> The related commit (7779b34 gpio: add a driver for the Synopsys DesignWare APB GPIO block):  
-> 
->   +config GPIO_DWAPB
->   +       tristate "Synopsys DesignWare APB GPIO driver"
->   +       select GPIO_GENERIC
->   +       select GENERIC_IRQ_CHIP
->   +       depends on OF_GPIO && IRQ_DOMAIN
-> 
-> 
-> 
-> Welcome any suggestions, discussions and completions.
-> 
-> Thanks.
-> 
+On Fri, Mar 07, 2014 at 06:15:43PM -0800, Behan Webster wrote:
+> On 03/07/14 17:56, Joe Perches wrote:
+> >On Fri, 2014-03-07 at 17:26 -0800, behanw@converseincode.com wrote:
+> >>From: Jan-Simon Möller <dl9pf@gmx.de>
+> >>
+> >>Replaced the use of a Variable Length Array In Struct (VLAIS) with a C99
+> >>compliant equivalent. This is the original VLAIS struct.
+> >[]
+> >>diff --git a/net/mac80211/aes_ccm.c b/net/mac80211/aes_ccm.c
+> >[]
+> >>@@ -23,12 +23,14 @@ void ieee80211_aes_ccm_encrypt(struct crypto_aead *tfm, u8 *b_0, u8 *aad,
+> >>  			       u8 *data, size_t data_len, u8 *mic)
+> >>  {
+> >>  	struct scatterlist assoc, pt, ct[2];
+> >>-	struct {
+> >>-		struct aead_request	req;
+> >>-		u8			priv[crypto_aead_reqsize(tfm)];
+> >>-	} aead_req;
+> >>-	memset(&aead_req, 0, sizeof(aead_req));
+> >>+	char aead_req_data[sizeof(struct aead_request) +
+> >>+				crypto_aead_reqsize(tfm) +
+> >>+				CRYPTO_MINALIGN] CRYPTO_MINALIGN_ATTR;
+> >Can this be a too large amount of stack?
+> >
+> >Is crypto_aead_reqsize() limited to < ~1k?
+> >
+> >Perhaps it'd be better to use kzalloc for this
+> >or another reserved pool
+> No more stack being used than with the the original code. The stack
+> memory use is identical.
 
-A patch has already been submitted and applied by the subsystem maintainer.
+Could you explain that? It looks like aead_req_data can be bigger than
+original struct aead_req up to CRYPTO_MINALIGN bytes. IOW adding
+CRYPTO_MINALIGN to size seems unneeded as aead_request->__ctx alignment
+requirement should by assured by proper sizeof(struct aead_request).
 
-http://marc.info/?l=linux-gpio&m=139413626320431&w=2
+Besides, why not add VLAIS feature to llvm instead of fixing all
+programs that use it?
 
-
--- 
-~Randy
+Stanislaw
