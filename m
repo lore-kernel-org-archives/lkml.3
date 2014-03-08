@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751250AbaCHFYO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 00:24:14 -0500
-Received: from science.horizon.com ([71.41.210.146]:59991 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750953AbaCHFYN (ORCPT
+	id S1751575AbaCHF0j (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 00:26:39 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:42782 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750792AbaCHF0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 00:24:13 -0500
-Date: 8 Mar 2014 00:24:10 -0500
-Message-ID: <20140308052410.14411.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: hpa@zytor.com
-Subject: Re: [GIT PULL] x86 fixes for v3.14-rc6
-Cc: linux@horizon.com, linux-kernel@vger.kernel.org, sbsiddha@gmail.com
+	Sat, 8 Mar 2014 00:26:38 -0500
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: liqin.linux@gmail.com, lennox.wu@gmail.com
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH] [RESEND] score: remove unused CPU_SCORE7 Kconfig parameter
+Date: Sat,  8 Mar 2014 06:26:30 +0100
+Message-Id: <1394256390-10603-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1386567192-19924-1-git-send-email-michael.opdenacker@free-electrons.com>
+References: <1386567192-19924-1-git-send-email-michael.opdenacker@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The FPU stuff is still pending, I fear.  I haven't heard anything from
-> Suresh so I suspect I'm going to have to dig into the init specifics
-> myself and fix up the patchset.
+This removes the CPU_SCORE7 Kconfig parameter,
+which is no longer used anywhere in the source code
+and Makefiles.
 
-As I mentioned a couple of weeks ago in the "[PATCH] Make
-math_state_restore() save and restore the interrupt flag" thread,
-I've been running with just Suresh's second patch for the last month,
-and it's cured all my symptoms.
+Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+---
+ arch/score/Kconfig | 6 ------
+ 1 file changed, 6 deletions(-)
 
-Although, just as a minor style point, I might reduce the
-number of levels if indentation by rewriting it as:
+diff --git a/arch/score/Kconfig b/arch/score/Kconfig
+index c75d06aa27c3..4ac8cae5727c 100644
+--- a/arch/score/Kconfig
++++ b/arch/score/Kconfig
+@@ -22,27 +22,21 @@ choice
+ config ARCH_SCORE7
+ 	bool "SCORE7 processor"
+ 	select SYS_SUPPORTS_32BIT_KERNEL
+-	select CPU_SCORE7
+ 	select GENERIC_HAS_IOMAP
+ 
+ config MACH_SPCT6600
+ 	bool "SPCT6600 series based machines"
+ 	select SYS_SUPPORTS_32BIT_KERNEL
+-	select CPU_SCORE7
+ 	select GENERIC_HAS_IOMAP
+ 
+ config SCORE_SIM
+ 	bool "Score simulator"
+ 	select SYS_SUPPORTS_32BIT_KERNEL
+-	select CPU_SCORE7
+ 	select GENERIC_HAS_IOMAP
+ endchoice
+ 
+ endmenu
+ 
+-config CPU_SCORE7
+-	bool
+-
+ config NO_DMA
+ 	bool
+ 	default y
+-- 
+1.8.3.2
 
- void __kernel_fpu_end(void)
- {
--	if (use_eager_fpu())
--		math_state_restore();
--	else
-+	if (!use_eager_fpu()) {
- 		stts();
-+	} else if (likely(tsk_used_math(current)))
-+		math_state_restore();
-+	}
-+	/*
-+	 * When using eager fpu, tsk_used_math() is almost always true,
-+	 * and we restore the user math state eagerly. In some special
-+	 * cases during thread exit, signal handling etc, tsk_used_math()
-+	 * is false. Those few places will take proper actions, so we
-+	 * don't need to restore the math here.
-+	 */
- }
- EXPORT_SYMBOL(__kernel_fpu_end);
-
-Truthfully, the idea I like best is Linus's proposal to postpone all
-such adjustments to the processor state until the return to user space,
-so multiple kernel_fpu_begin()/_end() pairs become much cheaper:
-http://marc.info/?l=linux-kernel&m=139128398717816
-
-Hoerver, that deep into Here Be Dragons code is somewhere I fear to tread,
-so I'm hoping someone braver than I is inspired.
