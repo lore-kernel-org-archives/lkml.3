@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754024AbaCHBHM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:07:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46296 "EHLO
+	id S1755354AbaCHBaj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:30:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46352 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753878AbaCHBHE (ORCPT
+	with ESMTP id S1754017AbaCHBHM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:07:04 -0500
+	Fri, 7 Mar 2014 20:07:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Stephane Eranian <eranian@google.com>, Dave Jones <davej@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.4 27/99] perf/x86: Fix event scheduling
-Date: Fri,  7 Mar 2014 17:07:23 -0800
-Message-Id: <20140308010612.494332755@linuxfoundation.org>
+        Chris Cheng <chris.cheng@atrustcorp.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [PATCH 3.4 30/99] PCI: Enable INTx if BIOS left them disabled
+Date: Fri,  7 Mar 2014 17:07:26 -0800
+Message-Id: <20140308010612.589034591@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
 References: <20140308010611.468206150@linuxfoundation.org>
@@ -32,116 +30,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
 
-commit 26e61e8939b1fe8729572dabe9a9e97d930dd4f6 upstream.
+commit 1f42db786b14a31bf807fc41ee5583a00c08fcb1 upstream.
 
-Vince "Super Tester" Weaver reported a new round of syscall fuzzing (Trinity) failures,
-with perf WARN_ON()s triggering. He also provided traces of the failures.
+Some firmware leaves the Interrupt Disable bit set even if the device uses
+INTx interrupts.  Clear Interrupt Disable so we get those interrupts.
 
-This is I think the relevant bit:
+Based on the report mentioned below, if the user selects the "EHCI only"
+option in the Intel Baytrail BIOS, the EHCI device is handed off to the OS
+with the PCI_COMMAND_INTX_DISABLE bit set.
 
-	>    pec_1076_warn-2804  [000] d...   147.926153: x86_pmu_disable: x86_pmu_disable
-	>    pec_1076_warn-2804  [000] d...   147.926153: x86_pmu_state: Events: {
-	>    pec_1076_warn-2804  [000] d...   147.926156: x86_pmu_state:   0: state: .R config: ffffffffffffffff (          (null))
-	>    pec_1076_warn-2804  [000] d...   147.926158: x86_pmu_state:   33: state: AR config: 0 (ffff88011ac99800)
-	>    pec_1076_warn-2804  [000] d...   147.926159: x86_pmu_state: }
-	>    pec_1076_warn-2804  [000] d...   147.926160: x86_pmu_state: n_events: 1, n_added: 0, n_txn: 1
-	>    pec_1076_warn-2804  [000] d...   147.926161: x86_pmu_state: Assignment: {
-	>    pec_1076_warn-2804  [000] d...   147.926162: x86_pmu_state:   0->33 tag: 1 config: 0 (ffff88011ac99800)
-	>    pec_1076_warn-2804  [000] d...   147.926163: x86_pmu_state: }
-	>    pec_1076_warn-2804  [000] d...   147.926166: collect_events: Adding event: 1 (ffff880119ec8800)
-
-So we add the insn:p event (fd[23]).
-
-At this point we should have:
-
-  n_events = 2, n_added = 1, n_txn = 1
-
-	>    pec_1076_warn-2804  [000] d...   147.926170: collect_events: Adding event: 0 (ffff8800c9e01800)
-	>    pec_1076_warn-2804  [000] d...   147.926172: collect_events: Adding event: 4 (ffff8800cbab2c00)
-
-We try and add the {BP,cycles,br_insn} group (fd[3], fd[4], fd[15]).
-These events are 0:cycles and 4:br_insn, the BP event isn't x86_pmu so
-that's not visible.
-
-	group_sched_in()
-	  pmu->start_txn() /* nop - BP pmu */
-	  event_sched_in()
-	     event->pmu->add()
-
-So here we should end up with:
-
-  0: n_events = 3, n_added = 2, n_txn = 2
-  4: n_events = 4, n_added = 3, n_txn = 3
-
-But seeing the below state on x86_pmu_enable(), the must have failed,
-because the 0 and 4 events aren't there anymore.
-
-Looking at group_sched_in(), since the BP is the leader, its
-event_sched_in() must have succeeded, for otherwise we would not have
-seen the sibling adds.
-
-But since neither 0 or 4 are in the below state; their event_sched_in()
-must have failed; but I don't see why, the complete state: 0,0,1:p,4
-fits perfectly fine on a core2.
-
-However, since we try and schedule 4 it means the 0 event must have
-succeeded!  Therefore the 4 event must have failed, its failure will
-have put group_sched_in() into the fail path, which will call:
-
-	event_sched_out()
-	  event->pmu->del()
-
-on 0 and the BP event.
-
-Now x86_pmu_del() will reduce n_events; but it will not reduce n_added;
-giving what we see below:
-
- n_event = 2, n_added = 2, n_txn = 2
-
-	>    pec_1076_warn-2804  [000] d...   147.926177: x86_pmu_enable: x86_pmu_enable
-	>    pec_1076_warn-2804  [000] d...   147.926177: x86_pmu_state: Events: {
-	>    pec_1076_warn-2804  [000] d...   147.926179: x86_pmu_state:   0: state: .R config: ffffffffffffffff (          (null))
-	>    pec_1076_warn-2804  [000] d...   147.926181: x86_pmu_state:   33: state: AR config: 0 (ffff88011ac99800)
-	>    pec_1076_warn-2804  [000] d...   147.926182: x86_pmu_state: }
-	>    pec_1076_warn-2804  [000] d...   147.926184: x86_pmu_state: n_events: 2, n_added: 2, n_txn: 2
-	>    pec_1076_warn-2804  [000] d...   147.926184: x86_pmu_state: Assignment: {
-	>    pec_1076_warn-2804  [000] d...   147.926186: x86_pmu_state:   0->33 tag: 1 config: 0 (ffff88011ac99800)
-	>    pec_1076_warn-2804  [000] d...   147.926188: x86_pmu_state:   1->0 tag: 1 config: 1 (ffff880119ec8800)
-	>    pec_1076_warn-2804  [000] d...   147.926188: x86_pmu_state: }
-	>    pec_1076_warn-2804  [000] d...   147.926190: x86_pmu_enable: S0: hwc->idx: 33, hwc->last_cpu: 0, hwc->last_tag: 1 hwc->state: 0
-
-So the problem is that x86_pmu_del(), when called from a
-group_sched_in() that fails (for whatever reason), and without x86_pmu
-TXN support (because the leader is !x86_pmu), will corrupt the n_added
-state.
-
-Reported-and-Tested-by: Vince Weaver <vincent.weaver@maine.edu>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Dave Jones <davej@redhat.com>
-Link: http://lkml.kernel.org/r/20140221150312.GF3104@twins.programming.kicks-ass.net
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Link: http://lkml.kernel.org/r/20140114181721.GC12126@xanatos
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=70601
+Reported-by: Chris Cheng <chris.cheng@atrustcorp.com>
+Reported-and-tested-by: Jamie Chen <jamie.chen@intel.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/perf_event.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/pci/pci.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1165,6 +1165,9 @@ static void x86_pmu_del(struct perf_even
- 	for (i = 0; i < cpuc->n_events; i++) {
- 		if (event == cpuc->event_list[i]) {
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -1133,6 +1133,8 @@ EXPORT_SYMBOL_GPL(pci_load_and_free_save
+ static int do_pci_enable_device(struct pci_dev *dev, int bars)
+ {
+ 	int err;
++	u16 cmd;
++	u8 pin;
  
-+			if (i >= cpuc->n_events - cpuc->n_added)
-+				--cpuc->n_added;
+ 	err = pci_set_power_state(dev, PCI_D0);
+ 	if (err < 0 && err != -EIO)
+@@ -1142,6 +1144,14 @@ static int do_pci_enable_device(struct p
+ 		return err;
+ 	pci_fixup_device(pci_fixup_enable, dev);
+ 
++	pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
++	if (pin) {
++		pci_read_config_word(dev, PCI_COMMAND, &cmd);
++		if (cmd & PCI_COMMAND_INTX_DISABLE)
++			pci_write_config_word(dev, PCI_COMMAND,
++					      cmd & ~PCI_COMMAND_INTX_DISABLE);
++	}
 +
- 			if (x86_pmu.put_event_constraints)
- 				x86_pmu.put_event_constraints(cpuc, event);
+ 	return 0;
+ }
  
 
 
