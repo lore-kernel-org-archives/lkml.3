@@ -1,58 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751885AbaCHTin (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 14:38:43 -0500
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:63212 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149AbaCHTil (ORCPT
+	id S1752126AbaCHTmZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 14:42:25 -0500
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:58683 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751639AbaCHTmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 14:38:41 -0500
-Date: Sat, 8 Mar 2014 14:38:38 -0500
-From: Conrad Meyer <cemeyer@uw.edu>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Staging: comedi: Fix 80-char line limit style issue in
- addi_apci_1500.c
-Message-ID: <20140308143838.19e2a640@m>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 8 Mar 2014 14:42:24 -0500
+From: Richard Cochran <richardcochran@gmail.com>
+To: <netdev@vger.kernel.org>
+Cc: <linux-kernel@vger.kernel.org>, Ben Hutchings <bhutchings@solarflare.com>,
+        Christian Riesch <christian.riesch@omicron.at>,
+        David Miller <davem@davemloft.net>,
+        =?UTF-8?q?Stefan=20S=C3=B8rensen?= 
+	<stefan.sorensen@spectralink.com>
+Subject: [PATCH RFC net-next v1 0/9] ptp: dynamic pin control
+Date: Sat,  8 Mar 2014 20:42:00 +0100
+Message-Id: <cover.1394307303.git.richardcochran@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix minor checkpatch.pl style issues (80-char line limits) in
-addi_apci_1500.c.
+This patch series introduces a way of changing the auxiliary PTP
+Hardware Clock functions (periodic output signals and time stamping
+external signals) at run time. In the past on the netdev list, we have
+discussed other ways to handle this, such as module parameters and
+ethtool. This series implements a new PHC ioctl because that is the
+most natural way. Users already activate the auxiliary functions via
+the ioctls. The sysfs interface has also been expanded so that the pin
+configuration can be programmed using shell scripts.
 
-Signed-off-by: Conrad Meyer <cse.cem@gmail.com>
----
- drivers/staging/comedi/drivers/addi_apci_1500.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+The first patch adds the new ioctls. The PHC subsystem does most of
+the work of maintaining the function-to-pin mapping. Drivers will only
+need to allocate and initialize a pin configuration table and also
+provide a new method that validates a particular assignment.
 
-diff --git a/drivers/staging/comedi/drivers/addi_apci_1500.c b/drivers/staging/comedi/drivers/addi_apci_1500.c
-index 74f7ace..f23ca3d 100644
---- a/drivers/staging/comedi/drivers/addi_apci_1500.c
-+++ b/drivers/staging/comedi/drivers/addi_apci_1500.c
-@@ -26,11 +26,13 @@ static const struct addi_board apci1500_boardtypes[] = {
-                .di_read                = i_APCI1500_Initialisation,
-                .di_write               = i_APCI1500_StartStopInputEvent,
-                .di_bits                = apci1500_di_insn_bits,
--               .do_config              = i_APCI1500_ConfigDigitalOutputErrorInterrupt,
-+               .do_config              =
-+                       i_APCI1500_ConfigDigitalOutputErrorInterrupt,
-                .do_write               = i_APCI1500_WriteDigitalOutput,
-                .do_bits                = i_APCI1500_ConfigureInterrupt,
-                .timer_config           = i_APCI1500_ConfigCounterTimerWatchdog,
--               .timer_write            = i_APCI1500_StartStopTriggerTimerCounterWatchdog,
-+               .timer_write            =
-+                       i_APCI1500_StartStopTriggerTimerCounterWatchdog,
-                .timer_read             = i_APCI1500_ReadInterruptMask,
-                .timer_bits             = i_APCI1500_ReadCounterTimerWatchdog,
-        },
---
-1.8.5.3
+Patches 5 and 6 just clean up a couple of issues in the phyter driver,
+and the remaining patches actually hook the phyter's pins into the new
+system.
 
+Comments and questions are most welcome.
+
+Thanks,
+Richard
+
+
+Richard Cochran (9):
+  ptp: introduce programmable pins.
+  ptp: add the pin GET/SETFUNC ioctls to the testptp program.
+  ptp: expose the programmable pins via sysfs
+  ptp: drivers: set the number of programmable pins.
+  dp83640: trivial fixes
+  dp83640: correct the periodic output frequency
+  dp83640: implement programmable pin functions.
+  dp83640: let external input pins from the module parameters be
+    defaults.
+  dp83640: let the periodic pin from the module parameter be a default.
+
+ Documentation/ABI/testing/sysfs-ptp              |   20 ++++
+ Documentation/ptp/testptp.c                      |   58 +++++++++-
+ drivers/net/ethernet/adi/bfin_mac.c              |    1 +
+ drivers/net/ethernet/broadcom/tg3.c              |    1 +
+ drivers/net/ethernet/freescale/fec_ptp.c         |    1 +
+ drivers/net/ethernet/freescale/gianfar_ptp.c     |    1 +
+ drivers/net/ethernet/intel/e1000e/ptp.c          |    1 +
+ drivers/net/ethernet/mellanox/mlx4/en_clock.c    |    1 +
+ drivers/net/ethernet/sfc/ptp.c                   |    1 +
+ drivers/net/ethernet/stmicro/stmmac/stmmac_ptp.c |    1 +
+ drivers/net/ethernet/ti/cpts.c                   |    1 +
+ drivers/net/ethernet/tile/tilegx.c               |    1 +
+ drivers/net/phy/dp83640.c                        |   93 ++++++++++++---
+ drivers/ptp/ptp_chardev.c                        |  133 +++++++++++++++++++++-
+ drivers/ptp/ptp_clock.c                          |   23 ++++
+ drivers/ptp/ptp_ixp46x.c                         |    1 +
+ drivers/ptp/ptp_pch.c                            |    1 +
+ drivers/ptp/ptp_private.h                        |    7 ++
+ drivers/ptp/ptp_sysfs.c                          |  109 ++++++++++++++++++
+ include/linux/ptp_clock_kernel.h                 |   33 ++++++
+ include/uapi/linux/ptp_clock.h                   |   39 ++++++-
+ 21 files changed, 507 insertions(+), 20 deletions(-)
+
+-- 
+1.7.10.4
 
