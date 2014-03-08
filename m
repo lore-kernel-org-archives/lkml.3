@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754902AbaCHBRh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:17:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46589 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754162AbaCHBHp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754320AbaCHBHp (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 7 Mar 2014 20:07:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46499 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754162AbaCHBHa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 20:07:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Markus Pargmann <mpa@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Weng Meiling <wengmeiling.weng@huawei.com>
-Subject: [PATCH 3.4 79/99] ASoC: imx-ssi: Fix occasional AC97 reset failure
-Date: Fri,  7 Mar 2014 17:08:15 -0800
-Message-Id: <20140308010614.123986025@linuxfoundation.org>
+        Joerg Dorchain <joerg@dorchain.net>
+Subject: [PATCH 3.4 35/99] USB: ftdi_sio: add Cressi Leonardo PID
+Date: Fri,  7 Mar 2014 17:07:31 -0800
+Message-Id: <20140308010612.743625421@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
 References: <20140308010611.468206150@linuxfoundation.org>
@@ -32,42 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sascha Hauer <s.hauer@pengutronix.de>
+From: Joerg Dorchain <joerg@dorchain.net>
 
-commit b6e51600f4e983e757b1b6942becaa1ae7d82e67 upstream.
+commit 6dbd46c849e071e6afc1e0cad489b0175bca9318 upstream.
 
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-[bwh: Backported to 3.2: adjust filename]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Weng Meiling <wengmeiling.weng@huawei.com>
+Hello,
+
+the following patch adds an entry for the PID of a Cressi Leonardo
+diving computer interface to kernel 3.13.0.
+It is detected as FT232RL.
+Works with subsurface.
+
+Signed-off-by: Joerg Dorchain <joerg@dorchain.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/imx/imx-ssi.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     |    2 ++
+ drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
+ 2 files changed, 8 insertions(+)
 
---- a/sound/soc/imx/imx-ssi.c
-+++ b/sound/soc/imx/imx-ssi.c
-@@ -497,6 +497,8 @@ static void imx_ssi_ac97_reset(struct sn
- 
- 	if (imx_ssi->ac97_reset)
- 		imx_ssi->ac97_reset(ac97);
-+	/* First read sometimes fails, do a dummy read */
-+	imx_ssi_ac97_read(ac97, 0);
- }
- 
- static void imx_ssi_ac97_warm_reset(struct snd_ac97 *ac97)
-@@ -505,6 +507,9 @@ static void imx_ssi_ac97_warm_reset(stru
- 
- 	if (imx_ssi->ac97_warm_reset)
- 		imx_ssi->ac97_warm_reset(ac97);
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -920,6 +920,8 @@ static struct usb_device_id id_table_com
+ 	/* Crucible Devices */
+ 	{ USB_DEVICE(FTDI_VID, FTDI_CT_COMET_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_Z3X_PID) },
++	/* Cressi Devices */
++	{ USB_DEVICE(FTDI_VID, FTDI_CRESSI_PID) },
+ 	{ },					/* Optional parameter entry */
+ 	{ }					/* Terminating entry */
+ };
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -1320,3 +1320,9 @@
+  * Manufacturer: Smart GSM Team
+  */
+ #define FTDI_Z3X_PID		0x0011
 +
-+	/* First read sometimes fails, do a dummy read */
-+	imx_ssi_ac97_read(ac97, 0);
- }
- 
- struct snd_ac97_bus_ops soc_ac97_ops = {
++/*
++ * Product: Cressi PC Interface
++ * Manufacturer: Cressi
++ */
++#define FTDI_CRESSI_PID		0x87d0
 
 
