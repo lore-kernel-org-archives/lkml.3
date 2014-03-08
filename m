@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755354AbaCHBaj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:30:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46352 "EHLO
+	id S1755374AbaCHBbL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:31:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46341 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754017AbaCHBHM (ORCPT
+	with ESMTP id S1753884AbaCHBHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:07:12 -0500
+	Fri, 7 Mar 2014 20:07:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Cheng <chris.cheng@atrustcorp.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [PATCH 3.4 30/99] PCI: Enable INTx if BIOS left them disabled
-Date: Fri,  7 Mar 2014 17:07:26 -0800
-Message-Id: <20140308010612.589034591@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>,
+        Liam Girdwood <liam.r.girdwood@linux.intel.com>,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.4 20/99] ASoC: wm8770: Fix wrong number of enum items
+Date: Fri,  7 Mar 2014 17:07:16 -0800
+Message-Id: <20140308010612.271823878@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
 References: <20140308010611.468206150@linuxfoundation.org>
@@ -30,54 +31,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjorn Helgaas <bhelgaas@google.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 1f42db786b14a31bf807fc41ee5583a00c08fcb1 upstream.
+commit 7a6c0a58dc824523966f212c76322d47c5b0e6fe upstream.
 
-Some firmware leaves the Interrupt Disable bit set even if the device uses
-INTx interrupts.  Clear Interrupt Disable so we get those interrupts.
+wm8770 codec driver defines ain_enum with a wrong number of items.
 
-Based on the report mentioned below, if the user selects the "EHCI only"
-option in the Intel Baytrail BIOS, the EHCI device is handed off to the OS
-with the PCI_COMMAND_INTX_DISABLE bit set.
+Use SOC_ENUM_DOUBLE_DECL() macro and it's automatically fixed.
 
-Link: http://lkml.kernel.org/r/20140114181721.GC12126@xanatos
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=70601
-Reported-by: Chris Cheng <chris.cheng@atrustcorp.com>
-Reported-and-tested-by: Jamie Chen <jamie.chen@intel.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Acked-by: Liam Girdwood <liam.r.girdwood@linux.intel.com>
+Acked-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/pci.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ sound/soc/codecs/wm8770.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -1133,6 +1133,8 @@ EXPORT_SYMBOL_GPL(pci_load_and_free_save
- static int do_pci_enable_device(struct pci_dev *dev, int bars)
- {
- 	int err;
-+	u16 cmd;
-+	u8 pin;
+--- a/sound/soc/codecs/wm8770.c
++++ b/sound/soc/codecs/wm8770.c
+@@ -162,8 +162,8 @@ static const char *ain_text[] = {
+ 	"AIN5", "AIN6", "AIN7", "AIN8"
+ };
  
- 	err = pci_set_power_state(dev, PCI_D0);
- 	if (err < 0 && err != -EIO)
-@@ -1142,6 +1144,14 @@ static int do_pci_enable_device(struct p
- 		return err;
- 	pci_fixup_device(pci_fixup_enable, dev);
+-static const struct soc_enum ain_enum =
+-	SOC_ENUM_DOUBLE(WM8770_ADCMUX, 0, 4, 8, ain_text);
++static SOC_ENUM_DOUBLE_DECL(ain_enum,
++			    WM8770_ADCMUX, 0, 4, ain_text);
  
-+	pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
-+	if (pin) {
-+		pci_read_config_word(dev, PCI_COMMAND, &cmd);
-+		if (cmd & PCI_COMMAND_INTX_DISABLE)
-+			pci_write_config_word(dev, PCI_COMMAND,
-+					      cmd & ~PCI_COMMAND_INTX_DISABLE);
-+	}
-+
- 	return 0;
- }
- 
+ static const struct snd_kcontrol_new ain_mux =
+ 	SOC_DAPM_ENUM("Capture Mux", ain_enum);
 
 
