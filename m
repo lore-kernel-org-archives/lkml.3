@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755185AbaCHBUx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:20:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46535 "EHLO
+	id S1755192AbaCHBVN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:21:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46528 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754242AbaCHBHg (ORCPT
+	with ESMTP id S1754240AbaCHBHg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Mar 2014 20:07:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jan Beulich <jbeulich@suse.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Ben Hutchings <ben@decadent.org.uk>,
         Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 3.4 69/99] xen/smp: Fix leakage of timer interrupt line for every CPU online/offline.
-Date: Fri,  7 Mar 2014 17:08:05 -0800
-Message-Id: <20140308010613.807239296@linuxfoundation.org>
+Subject: [PATCH 3.4 68/99] xen/boot: Disable BIOS SMP MP table search.
+Date: Fri,  7 Mar 2014 17:08:04 -0800
+Message-Id: <20140308010613.773554610@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
 References: <20140308010611.468206150@linuxfoundation.org>
@@ -32,41 +33,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit 888b65b4bc5e7fcbbb967023300cd5d44dba1950 upstream.
+commit bd49940a35ec7d488ae63bd625639893b3385b97 upstream.
 
-In the PVHVM path when we do CPU online/offline path we would
-leak the timer%d IRQ line everytime we do a offline event. The
-online path (xen_hvm_setup_cpu_clockevents via
-x86_cpuinit.setup_percpu_clockev) would allocate a new interrupt
-line for the timer%d.
+As the initial domain we are able to search/map certain regions
+of memory to harvest configuration data. For all low-level we
+use ACPI tables - for interrupts we use exclusively ACPI _PRT
+(so DSDT) and MADT for INT_SRC_OVR.
 
-But we would still use the old interrupt line leading to:
+The SMP MP table is not used at all. As a matter of fact we do
+not even support machines that only have SMP MP but no ACPI tables.
 
-kernel BUG at /home/konrad/ssd/konrad/linux/kernel/hrtimer.c:1261!
-invalid opcode: 0000 [#1] SMP
-RIP: 0010:[<ffffffff810b9e21>]  [<ffffffff810b9e21>] hrtimer_interrupt+0x261/0x270
+Lets follow how Moorestown does it and just disable searching
+for BIOS SMP tables.
+
+This also fixes an issue on HP Proliant BL680c G5 and DL380 G6:
+
+9f->100 for 1:1 PTE
+Freeing 9f-100 pfn range: 97 pages freed
+1-1 mapping on 9f->100
 .. snip..
- <IRQ>
- [<ffffffff810445ef>] xen_timer_interrupt+0x2f/0x1b0
- [<ffffffff81104825>] ? stop_machine_cpu_stop+0xb5/0xf0
- [<ffffffff8111434c>] handle_irq_event_percpu+0x7c/0x240
- [<ffffffff811175b9>] handle_percpu_irq+0x49/0x70
- [<ffffffff813a74a3>] __xen_evtchn_do_upcall+0x1c3/0x2f0
- [<ffffffff813a760a>] xen_evtchn_do_upcall+0x2a/0x40
- [<ffffffff8167c26d>] xen_hvm_callback_vector+0x6d/0x80
- <EOI>
- [<ffffffff81666d01>] ? start_secondary+0x193/0x1a8
- [<ffffffff81666cfd>] ? start_secondary+0x18f/0x1a8
+e820: BIOS-provided physical RAM map:
+Xen: [mem 0x0000000000000000-0x000000000009efff] usable
+Xen: [mem 0x000000000009f400-0x00000000000fffff] reserved
+Xen: [mem 0x0000000000100000-0x00000000cfd1dfff] usable
+.. snip..
+Scan for SMP in [mem 0x00000000-0x000003ff]
+Scan for SMP in [mem 0x0009fc00-0x0009ffff]
+Scan for SMP in [mem 0x000f0000-0x000fffff]
+found SMP MP-table at [mem 0x000f4fa0-0x000f4faf] mapped at [ffff8800000f4fa0]
+(XEN) mm.c:908:d0 Error getting mfn 100 (pfn 5555555555555555) from L1 entry 0000000000100461 for l1e_owner=0, pg_owner=0
+(XEN) mm.c:4995:d0 ptwr_emulate: could not get_page_from_l1e()
+BUG: unable to handle kernel NULL pointer dereference at           (null)
+IP: [<ffffffff81ac07e2>] xen_set_pte_init+0x66/0x71
+. snip..
+Pid: 0, comm: swapper Not tainted 3.6.0-rc6upstream-00188-gb6fb969-dirty #2 HP ProLiant BL680c G5
+.. snip..
+Call Trace:
+ [<ffffffff81ad31c6>] __early_ioremap+0x18a/0x248
+ [<ffffffff81624731>] ? printk+0x48/0x4a
+ [<ffffffff81ad32ac>] early_ioremap+0x13/0x15
+ [<ffffffff81acc140>] get_mpc_size+0x2f/0x67
+ [<ffffffff81acc284>] smp_scan_config+0x10c/0x136
+ [<ffffffff81acc2e4>] default_find_smp_config+0x36/0x5a
+ [<ffffffff81ac3085>] setup_arch+0x5b3/0xb5b
+ [<ffffffff81624731>] ? printk+0x48/0x4a
+ [<ffffffff81abca7f>] start_kernel+0x90/0x390
+ [<ffffffff81abc356>] x86_64_start_reservations+0x131/0x136
+ [<ffffffff81abfa83>] xen_start_kernel+0x65f/0x661
+(XEN) Domain 0 crashed: 'noreboot' set - not rebooting.
 
-There is also the oddity (timer1) in the /proc/interrupts after
-offlining CPU1:
+which is that ioremap would end up mapping 0xff using _PAGE_IOMAP
+(which is what early_ioremap sticks as a flag) - which meant
+we would get MFN 0xFF (pte ff461, which is OK), and then it would
+also map 0x100 (b/c ioremap tries to get page aligned request, and
+it was trying to map 0xf4fa0 + PAGE_SIZE - so it mapped the next page)
+as _PAGE_IOMAP. Since 0x100 is actually a RAM page, and the _PAGE_IOMAP
+bypasses the P2M lookup we would happily set the PTE to 1000461.
+Xen would deny the request since we do not have access to the
+Machine Frame Number (MFN) of 0x100. The P2M[0x100] is for example
+0x80140.
 
-  64:       1121          0  xen-percpu-virq      timer0
-  78:          0          0  xen-percpu-virq      timer1
-  84:          0       2483  xen-percpu-virq      timer2
-
-This patch fixes it.
-
+Fixes-Oracle-Bugzilla: https://bugzilla.oracle.com/bugzilla/show_bug.cgi?id=13665
+Acked-by: Jan Beulich <jbeulich@suse.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 [bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
@@ -74,18 +102,21 @@ Cc: Yijing Wang <wangyijing@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/xen/smp.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/xen/enlighten.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -576,6 +576,7 @@ static void xen_hvm_cpu_die(unsigned int
- 	unbind_from_irqhandler(per_cpu(xen_callfunc_irq, cpu), NULL);
- 	unbind_from_irqhandler(per_cpu(xen_debug_irq, cpu), NULL);
- 	unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu), NULL);
-+	xen_teardown_timer(cpu);
- 	native_cpu_die(cpu);
- }
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1448,6 +1448,10 @@ asmlinkage void __init xen_start_kernel(
  
+ 		/* Make sure ACS will be enabled */
+ 		pci_request_acs();
++
++		/* Avoid searching for BIOS MP tables */
++		x86_init.mpparse.find_smp_config = x86_init_noop;
++		x86_init.mpparse.get_smp_config = x86_init_uint_noop;
+ 	}
+ #ifdef CONFIG_PCI
+ 	/* PCI BIOS service won't work from a PV guest. */
 
 
