@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752012AbaCHU14 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 15:27:56 -0500
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:53308 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751052AbaCHU1z (ORCPT
+	id S1752106AbaCHUaA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 15:30:00 -0500
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:51196 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751639AbaCHU36 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 15:27:55 -0500
+	Sat, 8 Mar 2014 15:29:58 -0500
 MIME-Version: 1.0
-In-Reply-To: <1394308828.431.5.camel@x220>
-References: <1386567192-19924-1-git-send-email-michael.opdenacker@free-electrons.com>
-	<1394256390-10603-1-git-send-email-michael.opdenacker@free-electrons.com>
-	<CAF0htA5OyL=cm7z5BMy1r7OcW_a-4WGEUbLzveR4fWgAC5av0Q@mail.gmail.com>
-	<1394308828.431.5.camel@x220>
-Date: Sun, 9 Mar 2014 04:27:54 +0800
-Message-ID: <CAF0htA7TeuKjQzU9EE5_RWUkznf+Xp=CsGd=TA6qB0COQxUYQg@mail.gmail.com>
-Subject: Re: [PATCH] [RESEND] score: remove unused CPU_SCORE7 Kconfig parameter
-From: Lennox Wu <lennox.wu@gmail.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1394241960-1764-1-git-send-email-behanw@converseincode.com>
+References: <1394177091.4653.1.camel@jlt4.sipsolutions.net>
+	<1394241960-1764-1-git-send-email-behanw@converseincode.com>
+Date: Sat, 8 Mar 2014 21:29:57 +0100
+Message-ID: <CABikg9y_j-SDOsMj1C5uogP0HNj6bsB_ySVFtAh_oNgZ0swd=g@mail.gmail.com>
+Subject: Re: [PATCH v2] mac80211: LLVMLinux: Remove VLAIS usage from mac80211
+From: Sergei Antonov <saproj@gmail.com>
+To: behanw@converseincode.com
+Cc: linville@tuxdriver.com, johannes@sipsolutions.net, davem@davemloft.net,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dwmw2@infradead.org, pageexec@freemail.hu,
+        =?UTF-8?Q?Jan=2DSimon_M=C3=B6ller?= <dl9pf@gmx.de>,
+        =?UTF-8?Q?Vin=C3=ADcius_Tinti?= <viniciustinti@gmail.com>,
+        Mark Charlebois <charlebm@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because I don't think droping it is meaningful, since it will be used.
-Moreover, the symbol never affect other architectures or subsystems.
-I feel that is not good to brother people to process the unimportant patch.
+On 8 March 2014 02:26,  <behanw@converseincode.com> wrote:
+> diff --git a/net/mac80211/aes_ccm.c b/net/mac80211/aes_ccm.c
+> index 7c7df47..3317578 100644
+> --- a/net/mac80211/aes_ccm.c
+> +++ b/net/mac80211/aes_ccm.c
+> @@ -23,12 +23,14 @@ void ieee80211_aes_ccm_encrypt(struct crypto_aead *tfm, u8 *b_0, u8 *aad,
+>                                u8 *data, size_t data_len, u8 *mic)
+>  {
+>         struct scatterlist assoc, pt, ct[2];
+> -       struct {
+> -               struct aead_request     req;
+> -               u8                      priv[crypto_aead_reqsize(tfm)];
+> -       } aead_req;
+>
+> -       memset(&aead_req, 0, sizeof(aead_req));
+> +       char aead_req_data[sizeof(struct aead_request) +
+> +                               crypto_aead_reqsize(tfm) +
+> +                               CRYPTO_MINALIGN] CRYPTO_MINALIGN_ATTR;
+> +
+> +       struct aead_request *aead_req = (void *) aead_req_data;
 
-Best,
-Lennox
-
-
-2014-03-09 4:00 GMT+08:00 Paul Bolle <pebolle@tiscali.nl>:
-> Lennox,
->
-> On Sat, 2014-03-08 at 14:34 +0800, Lennox Wu wrote:
->> According to my record, I had told you we have another
->> processor(2013/11/4), hence, we need the parameter.
->> We just wirte it done first. Do you remember it?
->
-> In https://lkml.org/lkml/2011/11/12/76 I already reported that this
-> Kconfig symbol was unused. Why can't it be dropped and re-added when
-> code is added to the tree that actually uses it?
->
->
-> Paul Bolle
->
+Bad trick with regards to alignment.
+The alignment requirement for struct aead_request is stronger than
+what an array of chars may have.
