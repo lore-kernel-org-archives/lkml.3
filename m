@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755140AbaCHB3t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:29:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46362 "EHLO
+	id S1755349AbaCHBaM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:30:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46356 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754045AbaCHBHO (ORCPT
+	with ESMTP id S1753878AbaCHBHN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:07:14 -0500
+	Fri, 7 Mar 2014 20:07:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>, Stephen Smalley <sds@tycho.nsa.gov>,
-        Paul Moore <pmoore@redhat.com>
-Subject: [PATCH 3.4 39/99] SELinux: bigendian problems with filename trans rules
-Date: Fri,  7 Mar 2014 17:07:35 -0800
-Message-Id: <20140308010612.867089283@linuxfoundation.org>
+        Drew Richardson <drew.richardson@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Will Deacon <will.deacon@arm.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.4 38/99] perf: Fix hotplug splat
+Date: Fri,  7 Mar 2014 17:07:34 -0800
+Message-Id: <20140308010612.832175647@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
 References: <20140308010611.468206150@linuxfoundation.org>
@@ -29,42 +30,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Paris <eparis@redhat.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit 9085a6422900092886da8c404e1c5340c4ff1cbf upstream.
+commit e3703f8cdfcf39c25c4338c3ad8e68891cca3731 upstream.
 
-When writing policy via /sys/fs/selinux/policy I wrote the type and class
-of filename trans rules in CPU endian instead of little endian.  On
-x86_64 this works just fine, but it means that on big endian arch's like
-ppc64 and s390 userspace reads the policy and converts it from
-le32_to_cpu.  So the values are all screwed up.  Write the values in le
-format like it should have been to start.
+Drew Richardson reported that he could make the kernel go *boom* when hotplugging
+while having perf events active.
 
-Signed-off-by: Eric Paris <eparis@redhat.com>
-Acked-by:  Stephen Smalley <sds@tycho.nsa.gov>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+It turned out that when you have a group event, the code in
+__perf_event_exit_context() fails to remove the group siblings from
+the context.
+
+We then proceed with destroying and freeing the event, and when you
+re-plug the CPU and try and add another event to that CPU, things go
+*boom* because you've still got dead entries there.
+
+Reported-by: Drew Richardson <drew.richardson@arm.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Will Deacon <will.deacon@arm.com>
+Link: http://lkml.kernel.org/n/tip-k6v5wundvusvcseqj1si0oz0@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- security/selinux/ss/policydb.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ kernel/events/core.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/security/selinux/ss/policydb.c
-+++ b/security/selinux/ss/policydb.c
-@@ -3214,10 +3214,10 @@ static int filename_write_helper(void *k
- 	if (rc)
- 		return rc;
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -7149,14 +7149,14 @@ static void perf_pmu_rotate_stop(struct
+ static void __perf_event_exit_context(void *__info)
+ {
+ 	struct perf_event_context *ctx = __info;
+-	struct perf_event *event, *tmp;
++	struct perf_event *event;
  
--	buf[0] = ft->stype;
--	buf[1] = ft->ttype;
--	buf[2] = ft->tclass;
--	buf[3] = otype->otype;
-+	buf[0] = cpu_to_le32(ft->stype);
-+	buf[1] = cpu_to_le32(ft->ttype);
-+	buf[2] = cpu_to_le32(ft->tclass);
-+	buf[3] = cpu_to_le32(otype->otype);
+ 	perf_pmu_rotate_stop(ctx->pmu);
  
- 	rc = put_entry(buf, sizeof(u32), 4, fp);
- 	if (rc)
+-	list_for_each_entry_safe(event, tmp, &ctx->pinned_groups, group_entry)
+-		__perf_remove_from_context(event);
+-	list_for_each_entry_safe(event, tmp, &ctx->flexible_groups, group_entry)
++	rcu_read_lock();
++	list_for_each_entry_rcu(event, &ctx->event_list, event_entry)
+ 		__perf_remove_from_context(event);
++	rcu_read_unlock();
+ }
+ 
+ static void perf_event_exit_cpu_context(int cpu)
+@@ -7180,11 +7180,11 @@ static void perf_event_exit_cpu(int cpu)
+ {
+ 	struct swevent_htable *swhash = &per_cpu(swevent_htable, cpu);
+ 
++	perf_event_exit_cpu_context(cpu);
++
+ 	mutex_lock(&swhash->hlist_mutex);
+ 	swevent_hlist_release(swhash);
+ 	mutex_unlock(&swhash->hlist_mutex);
+-
+-	perf_event_exit_cpu_context(cpu);
+ }
+ #else
+ static inline void perf_event_exit_cpu(int cpu) { }
 
 
