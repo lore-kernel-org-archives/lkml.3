@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754381AbaCHBHv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:07:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46554 "EHLO
+	id S1754807AbaCHBOh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:14:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46622 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752582AbaCHBHj (ORCPT
+	with ESMTP id S1754373AbaCHBHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:07:39 -0500
+	Fri, 7 Mar 2014 20:07:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 3.4 73/99] xen-netback: dont disconnect frontend when seeing oversize packet
-Date: Fri,  7 Mar 2014 17:08:09 -0800
-Message-Id: <20140308010613.931433446@linuxfoundation.org>
+        "Theodore Tso" <tytso@mit.edu>, Ben Hutchings <ben@decadent.org.uk>,
+        George Barnett <gbarnett@atlassian.com>,
+        Rui Xiang <rui.xiang@huawei.com>
+Subject: [PATCH 3.4 60/99] ext4/jbd2: dont wait (forever) for stale tid caused by wraparound
+Date: Fri,  7 Mar 2014 17:07:56 -0800
+Message-Id: <20140308010613.516854000@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
 References: <20140308010611.468206150@linuxfoundation.org>
@@ -32,63 +30,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Liu <wei.liu2@citrix.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 03393fd5cc2b6cdeec32b704ecba64dbb0feae3c upstream.
+commit d76a3a77113db020d9bb1e894822869410450bd9 upstream.
 
-Some frontend drivers are sending packets > 64 KiB in length. This length
-overflows the length field in the first slot making the following slots have
-an invalid length.
+In the case where an inode has a very stale transaction id (tid) in
+i_datasync_tid or i_sync_tid, it's possible that after a very large
+(2**31) number of transactions, that the tid number space might wrap,
+causing tid_geq()'s calculations to fail.
 
-Turn this error back into a non-fatal error by dropping the packet. To avoid
-having the following slots having fatal errors, consume all slots in the
-packet.
+Commit deeeaf13 "jbd2: fix fsync() tid wraparound bug", later modified
+by commit e7b04ac0 "jbd2: don't wake kjournald unnecessarily",
+attempted to fix this problem, but it only avoided kjournald spinning
+forever by fixing the logic in jbd2_log_start_commit().
 
-This does not reopen the security hole in XSA-39 as if the packet as an
-invalid number of slots it will still hit fatal error case.
+Unfortunately, in the codepaths in fs/ext4/fsync.c and fs/ext4/inode.c
+that might call jbd2_log_start_commit() with a stale tid, those
+functions will subsequently call jbd2_log_wait_commit() with the same
+stale tid, and then wait for a very long time.  To fix this, we
+replace the calls to jbd2_log_start_commit() and
+jbd2_log_wait_commit() with a call to a new function,
+jbd2_complete_transaction(), which will correctly handle stale tid's.
 
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Wei Liu <wei.liu2@citrix.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+As a bonus, jbd2_complete_transaction() will avoid locking
+j_state_lock for writing unless a commit needs to be started.  This
+should have a small (but probably not measurable) improvement for
+ext4's scalability.
+
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reported-by: Ben Hutchings <ben@decadent.org.uk>
+Reported-by: George Barnett <gbarnett@atlassian.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Yijing Wang <wangyijing@huawei.com>
+Cc: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/xen-netback/netback.c |   22 ++++++++++++++++------
- 1 file changed, 16 insertions(+), 6 deletions(-)
+ fs/ext4/fsync.c      |    3 +--
+ fs/ext4/inode.c      |    3 +--
+ fs/jbd2/journal.c    |   31 +++++++++++++++++++++++++++++++
+ include/linux/jbd2.h |    1 +
+ 4 files changed, 34 insertions(+), 4 deletions(-)
 
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -947,12 +947,22 @@ static int netbk_count_requests(struct x
+--- a/fs/ext4/fsync.c
++++ b/fs/ext4/fsync.c
+@@ -260,8 +260,7 @@ int ext4_sync_file(struct file *file, lo
+ 	if (journal->j_flags & JBD2_BARRIER &&
+ 	    !jbd2_trans_will_send_data_barrier(journal, commit_tid))
+ 		needs_barrier = true;
+-	jbd2_log_start_commit(journal, commit_tid);
+-	ret = jbd2_log_wait_commit(journal, commit_tid);
++	ret = jbd2_complete_transaction(journal, commit_tid);
+ 	if (needs_barrier)
+ 		blkdev_issue_flush(inode->i_sb->s_bdev, GFP_KERNEL, NULL);
+  out:
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -149,8 +149,7 @@ void ext4_evict_inode(struct inode *inod
+ 			journal_t *journal = EXT4_SB(inode->i_sb)->s_journal;
+ 			tid_t commit_tid = EXT4_I(inode)->i_datasync_tid;
  
- 		memcpy(txp, RING_GET_REQUEST(&vif->tx, cons + slots),
- 		       sizeof(*txp));
--		if (txp->size > first->size) {
--			netdev_err(vif->dev,
--				   "Invalid tx request, slot size %u > remaining size %u\n",
--				   txp->size, first->size);
--			netbk_fatal_tx_err(vif);
--			return -EIO;
-+
-+		/* If the guest submitted a frame >= 64 KiB then
-+		 * first->size overflowed and following slots will
-+		 * appear to be larger than the frame.
-+		 *
-+		 * This cannot be fatal error as there are buggy
-+		 * frontends that do this.
-+		 *
-+		 * Consume all slots and drop the packet.
-+		 */
-+		if (!drop_err && txp->size > first->size) {
-+			if (net_ratelimit())
-+				netdev_dbg(vif->dev,
-+					   "Invalid tx request, slot size %u > remaining size %u\n",
-+					   txp->size, first->size);
-+			drop_err = -EIO;
+-			jbd2_log_start_commit(journal, commit_tid);
+-			jbd2_log_wait_commit(journal, commit_tid);
++			jbd2_complete_transaction(journal, commit_tid);
+ 			filemap_write_and_wait(&inode->i_data);
  		}
+ 		truncate_inode_pages(&inode->i_data, 0);
+--- a/fs/jbd2/journal.c
++++ b/fs/jbd2/journal.c
+@@ -662,6 +662,37 @@ int jbd2_log_wait_commit(journal_t *jour
+ }
  
- 		first->size -= txp->size;
+ /*
++ * When this function returns the transaction corresponding to tid
++ * will be completed.  If the transaction has currently running, start
++ * committing that transaction before waiting for it to complete.  If
++ * the transaction id is stale, it is by definition already completed,
++ * so just return SUCCESS.
++ */
++int jbd2_complete_transaction(journal_t *journal, tid_t tid)
++{
++	int	need_to_wait = 1;
++
++	read_lock(&journal->j_state_lock);
++	if (journal->j_running_transaction &&
++	    journal->j_running_transaction->t_tid == tid) {
++		if (journal->j_commit_request != tid) {
++			/* transaction not yet started, so request it */
++			read_unlock(&journal->j_state_lock);
++			jbd2_log_start_commit(journal, tid);
++			goto wait_commit;
++		}
++	} else if (!(journal->j_committing_transaction &&
++		     journal->j_committing_transaction->t_tid == tid))
++		need_to_wait = 0;
++	read_unlock(&journal->j_state_lock);
++	if (!need_to_wait)
++		return 0;
++wait_commit:
++	return jbd2_log_wait_commit(journal, tid);
++}
++EXPORT_SYMBOL(jbd2_complete_transaction);
++
++/*
+  * Log buffer allocation routines:
+  */
+ 
+--- a/include/linux/jbd2.h
++++ b/include/linux/jbd2.h
+@@ -1178,6 +1178,7 @@ int __jbd2_log_start_commit(journal_t *j
+ int jbd2_journal_start_commit(journal_t *journal, tid_t *tid);
+ int jbd2_journal_force_commit_nested(journal_t *journal);
+ int jbd2_log_wait_commit(journal_t *journal, tid_t tid);
++int jbd2_complete_transaction(journal_t *journal, tid_t tid);
+ int jbd2_log_do_checkpoint(journal_t *journal);
+ int jbd2_trans_will_send_data_barrier(journal_t *journal, tid_t tid);
+ 
 
 
