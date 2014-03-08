@@ -1,58 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751716AbaCHTOh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 14:14:37 -0500
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:58301 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751149AbaCHTOg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 14:14:36 -0500
-Message-ID: <1394306073.32104.4.camel@x220>
-Subject: Re: [PATCH 4/4] raid6: Add severity levels to raid6 initialization
- messages
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: linux-kernel@vger.kernel.org, trivial@kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Ken Steele <ken@tilera.com>, Nicolas Pitre <nico@linaro.org>
-Date: Sat, 08 Mar 2014 20:14:33 +0100
-In-Reply-To: <16072d10240583debb7d303136c507c32c4d4b5d.1394304585.git.luto@amacapital.net>
-References: <cover.1394304585.git.luto@amacapital.net>
-	 <16072d10240583debb7d303136c507c32c4d4b5d.1394304585.git.luto@amacapital.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 08 Mar 2014 19:14:34.0008 (UTC) FILETIME=[A3BD0180:01CF3B02]
-X-RcptDomain: vger.kernel.org
+	id S1751914AbaCHTak (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 14:30:40 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37075 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751695AbaCHTaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Mar 2014 14:30:39 -0500
+Message-ID: <531B8CB1.2010502@suse.de>
+Date: Sat, 08 Mar 2014 22:33:37 +0100
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Mike Snitzer <snitzer@gmail.com>
+CC: Christoph Hellwig <hch@infradead.org>, Jeff Moyer <jmoyer@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>, Shaohua Li <shli@fusionio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        msnitzer <msnitzer@redhat.com>
+Subject: Re: [PATCH 1/1] block: rework flush sequencing for blk-mq
+References: <20140130132620.GA6031@infradead.org> <20140130132630.GB6031@infradead.org> <x49iorp3fhm.fsf@segfault.boston.devel.redhat.com> <20140308155240.GA32297@infradead.org> <CAMM=eLewbtK7LiNZCXo=hm-sjVU2+MN+xTFuxb89mDA1iS3r0w@mail.gmail.com> <531B74B6.4070004@suse.de> <CAMM=eLfVpc=B7ZzxBDbKW4GZ_E5rOqrcbyppNBSz_brQaH4VNw@mail.gmail.com>
+In-Reply-To: <CAMM=eLfVpc=B7ZzxBDbKW4GZ_E5rOqrcbyppNBSz_brQaH4VNw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-03-08 at 10:58 -0800, Andy Lutomirski wrote:
-> Some of them are errors; some are not.  Annotate them accordingly.
-> 
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
->  lib/raid6/algos.c | 13 +++++++------
->  1 file changed, 7 insertions(+), 6 deletions(-)
-> 
-> diff --git a/lib/raid6/algos.c b/lib/raid6/algos.c
-> [...]
-> @@ -194,7 +195,7 @@ int __init raid6_select_algo(void)
->  	syndromes = (void *) __get_free_pages(GFP_KERNEL, 1);
->  
->  	if (!syndromes) {
-> -		printk("raid6: Yikes!  No memory available.\n");
-> +		printk(KERN_ERR "raid6: Yikes!  No memory available.\n");
->  		return -ENOMEM;
->  	}
->  
+On 03/08/2014 07:13 PM, Mike Snitzer wrote:
+> On Sat, Mar 8, 2014 at 2:51 PM, Hannes Reinecke <hare@suse.de> wrote:
+>> On 03/08/2014 06:33 PM, Mike Snitzer wrote:
+>>>
+>>> On Sat, Mar 8, 2014 at 10:52 AM, Christoph Hellwig <hch@infradead.org>
+>>> wrote:
+>>>>
+>>>> On Fri, Mar 07, 2014 at 03:45:09PM -0500, Jeff Moyer wrote:
+>>>>>
+>>>>> Hi, Christoph,
+>>>>>
+>>>>> Did you mean to switch from list_add to list_add_tail?  That seems like
+>>>>> a change that warrants mention.
+>>>>
+>>>>
+>>>> No, that wasn't intentional and should be fixed.  Btw, there was another
+>>>> issue with that commit, in that dm-multipath also needs to allocate
+>>>> ->flush_rq.  I saw a patch from Hannes fixing it in the SuSE tree, and
+>>>> would really love to see him submit that for mainline as well.
+>>>
+>>>
+>>> Ugh, rq-based DM calls blk_init_allocated_queue.. (ah, looks like best
+>>> to move q->flush_rq allocation from blk_init_queue_node to
+>>> blk_alloc_queue_node?).
+>
+> The above suggestion would work.  But we'd lose the side-effect
+> benefit to bio-based DM not needing q->flush_rq allocated at all.
+>
+> But I'm not immediately seeing a clean way to get that benefit (of not
+> allocating for bio-based request_queue) while always allocating it for
+> request-based queues.
+>
+> Actually, how about moving the flush_rq allocation to
+> blk_init_allocated_queue(), it'd accomplish both.. what do others
+> think of that?
+>
+>>>> Unfortunately SuSE seems to have lots of block and dm fixes and even
+>>>> features that they don't submit upstream.
+>>>
+>>>
+>>> Yeah, it is certainly disturbing.  No excuse for sitting on fixes like
+>>> this.
+>>>
+>>> Hannes, _please_ get this dm-mpath flush_rq fix for 3.14 posted ASAP.
+>>> Jens or I will need to get it to Linus next week.
+>>>
+>> Hey, calm down.
+>
+> I'm calm.. was just a bit frustrated.  But this isn't a big deal.
+> I'll make an effort to reach out to relevant people sooner when
+> similar stuff is reported against recently upstreamed code.  Would be
+> cool if you did the same.  I can relate to needing to have the distro
+> vendor hat on (first needing to determine/answer "is this issue
+> specific to our hacked distro kernel?", etc).
+>
+The patch I made wasn't in the context of 'recently upstreamed code', it 
+was due to a backport Jan Kara did for our next distro kernels (3.12-based).
+I then made a fix just by code inspection, which _looked_ as if should 
+work, and the asked the reporter to test.
+I figured that the same issue would be upstream, too, that's right.
+But as of now I'm still waiting for feedback on that patch.
 
-Does __get_free_pages() print and error (or similar) when it fails? If
-so, this printk() could be dropped, couldn't it?
+I was about to test the patch next week and check for upstream 
+application. But surely _NOT_ before I've got any proof that the patch 
+fixes the issue.
 
+Due diligence and all that.
 
-Paul Bolle
+I've just applied the code to our kernel tree because it
+a) looks as if it would fix the issue
+and
+b) we're still in beta testing, so having the patch in-kernel makes 
+thing easier for testing.
 
+Cheers,
+
+Hannes
+-- 
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
