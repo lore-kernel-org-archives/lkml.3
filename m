@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142AbaCHRSF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 12:18:05 -0500
-Received: from moutng.kundenserver.de ([212.227.17.13]:52066 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751896AbaCHRSD (ORCPT
+	id S1751695AbaCHRdm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 12:33:42 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:41199 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901AbaCHRdl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 12:18:03 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Subject: Re: [PATCH v6 2/6] pci: OF: Fix the conversion of IO ranges into IO resources.
-Date: Sat, 8 Mar 2014 18:17:39 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: "linux-pci" <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linaro-kernel" <linaro-kernel@lists.linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Tanmay Inamdar <tinamdar@apm.com>
-References: <1394020137-1830-1-git-send-email-Liviu.Dudau@arm.com> <1394020137-1830-3-git-send-email-Liviu.Dudau@arm.com>
-In-Reply-To: <1394020137-1830-3-git-send-email-Liviu.Dudau@arm.com>
+	Sat, 8 Mar 2014 12:33:41 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201403081817.39810.arnd@arndb.de>
-X-Provags-ID: V02:K0:fA3fhnTGXqBHlF0pGeFW6hSKlDDYYe1ijm6optHCNj8
- Ha5GjhHgQdGz0ArVJAYjpD9FEo63rI4LUBIrrRa0tHj7MY/Him
- Czm2FW2rxFAPY+PTKIZg9C3v7lcqXq5Y52igQjNcQLIxKL8+v9
- ndpXHz0OPKMRRwfDKTetJmZ2V0IaRQySndRVOi/sXfiwhyohhv
- 0wc6DhWEAZXUb59ZKDzqsZ6JFgiL+se7/HeBdeKD+euxcAEOCU
- OpyYFtyyPOHMMV+hqPd4r2EkICnW8m9sgMYiQY+66ix24ySikP
- hYpEzg5tzyIW+wjRDEGTPiicZPxpjzQdT8b8c6nYH7ABoDnCWf
- 5d9EpXCTwr2xXfydOPW8ISdfGIWy1sAU6PoJKlGCq
+In-Reply-To: <20140308155240.GA32297@infradead.org>
+References: <20140130132620.GA6031@infradead.org> <20140130132630.GB6031@infradead.org>
+ <x49iorp3fhm.fsf@segfault.boston.devel.redhat.com> <20140308155240.GA32297@infradead.org>
+From: Mike Snitzer <snitzer@redhat.com>
+Date: Sat, 8 Mar 2014 12:33:20 -0500
+X-Google-Sender-Auth: YBpmdNYqHKp6kbJfjxH8HVfciW0
+Message-ID: <CAMM=eLewbtK7LiNZCXo=hm-sjVU2+MN+xTFuxb89mDA1iS3r0w@mail.gmail.com>
+Subject: Re: [PATCH 1/1] block: rework flush sequencing for blk-mq
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jeff Moyer <jmoyer@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Shaohua Li <shli@fusionio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        msnitzer <msnitzer@redhat.com>, Hannes Reinecke <hare@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 05 March 2014, Liviu Dudau wrote:
-> +               unsigned long port = -1;
-> +               if (!pci_register_io_range(range->cpu_addr, range->size))
-> +                       port = pci_address_to_pio(range->cpu_addr);
+On Sat, Mar 8, 2014 at 10:52 AM, Christoph Hellwig <hch@infradead.org> wrote:
+> On Fri, Mar 07, 2014 at 03:45:09PM -0500, Jeff Moyer wrote:
+>> Hi, Christoph,
+>>
+>> Did you mean to switch from list_add to list_add_tail?  That seems like
+>> a change that warrants mention.
+>
+> No, that wasn't intentional and should be fixed.  Btw, there was another
+> issue with that commit, in that dm-multipath also needs to allocate
+> ->flush_rq.  I saw a patch from Hannes fixing it in the SuSE tree, and
+> would really love to see him submit that for mainline as well.
 
-I don't remember the outcome of my suggestion to just return 'port' from
-pci_register_io_range(). In my mind that would be much simpler than
-adding the range in a data structure just so we can look it up in the very
-next line.
+Ugh, rq-based DM calls blk_init_allocated_queue.. (ah, looks like best
+to move q->flush_rq allocation from blk_init_queue_node to
+blk_alloc_queue_node?).  Anyway, this all makes sense given the
+crashes we've been dealing with.. we couldn't immediately understand
+how the q->flush_rq would be NULL... grr.  I guess I should've checked
+with you sooner.  I reverted commit 1874198 "blk-mq: rework flush
+sequencing logic" from RHEL7 just yesterday because we were seeing
+crashes on flush with dm-mpath.  But can easily re-apply for RHEL7.1
+(since the request_queue's embedded flush_rq takes up so much space we
+get ample kABI padding).
 
-	Arnd
+Not overly proud of the revert, but I deemed easier to revert than
+hunt down the fix given RHEL7 won't actually be providing any blk-mq
+enabled drivers.  That'll change for RHEL7.1.
+
+> Unfortunately SuSE seems to have lots of block and dm fixes and even
+> features that they don't submit upstream.
+
+Yeah, it is certainly disturbing.  No excuse for sitting on fixes like this.
+
+Hannes, _please_ get this dm-mpath flush_rq fix for 3.14 posted ASAP.
+Jens or I will need to get it to Linus next week.
+
+Thanks,
+Mike
