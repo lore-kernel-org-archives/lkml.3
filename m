@@ -1,51 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752107AbaCHUC3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 15:02:29 -0500
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:65526 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751805AbaCHUC2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 15:02:28 -0500
+	id S1752004AbaCHUJW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 15:09:22 -0500
+Received: from sonne.alt-f4.ch ([95.128.33.42]:57013 "EHLO sonne.alt-f4.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751626AbaCHUJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Mar 2014 15:09:20 -0500
+Date: Sat, 8 Mar 2014 21:14:50 +0100
+From: markus <markus@kola.li>
+To: Purush Gupta <purush.gupta@nutanix.com>
+Cc: Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>,
+        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>, support@lsi.com,
+        DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
+        Linux Kernel List <linux-kernel@vger.kernel.org>
+Subject: Re: Slow I/O performance on SAS1064
+Message-ID: <20140308201450.GA18581@localhost.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <20140308194405.GA32403@redhat.com>
-References: <1393537704.2899.3.camel@buesod1.americas.hpqcorp.net>
-	<20140308184040.GA29602@redhat.com>
-	<CA+55aFw88xiY+o5FE6VtHNkpUZDK3FPt31oCpNsgn1BH7wAPZw@mail.gmail.com>
-	<20140308194405.GA32403@redhat.com>
-Date: Sat, 8 Mar 2014 12:02:27 -0800
-X-Google-Sender-Auth: WoJwC8l_gNW3mdjqIjFKJ5cnNuw
-Message-ID: <CA+55aFzk=XtRFPQM4rGgTXj8AD2RLrm5pfAsKwGOZPHLgb+Ziw@mail.gmail.com>
-Subject: Re: [PATCH v4] mm: per-thread vma caching
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Davidlohr Bueso <davi@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3V7upXqbjpZ4EhLz"
+Content-Disposition: inline
+In-Reply-To: <CAN7X1Umb_wyTCk9w590AnSTFgL=3CC5x8zGNiGZoAdNEej9TCQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 8, 2014 at 11:44 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->
-> Sure. But another thread or CLONE_VM task can do vmacache_invalidate(),
-> hit vmacache_seqnum == 0 and call vmacache_flush_all() to solve the
-> problem with potential overflow.
 
-How?
+--3V7upXqbjpZ4EhLz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Any invalidation is supposed to hold the mm semaphore for writing. And
-we should have it for reading.
+On Fri, Mar 07, 2014 at 08:24:48AM -0800, Purush Gupta wrote:
+> I noticed you had benchmarked only sda target, is the behavior same on
+> other targets?
+>=20
+Yes the other disk are equal to sda , but they are used with zfs and there =
+were other preformance problems because of the multible disk access.
+config:
 
-That said, maybe we don't. Maybe we only get it in the dup_mm() path,
-I didn't check. In that case, we should probably either get it, or do
-some silly memory barrier thing ("check that the sequence number
-didn't change between copying the cache and exposing the new thread").
+        NAME        STATE     READ WRITE CKSUM
+        home        ONLINE       0     0     0
+          raidz1-0  ONLINE       0     0     0
+            sdb     ONLINE       0     0     3
+            sdc     ONLINE       0     0     0
+            sdd     ONLINE       0     0     0
 
-            Linus
+
+
+> Since they are SCSI targets, have you explored sg_utils [
+> http://sg.danny.cz/sg/uu_index.html]
+>=20
+> And for benchmarking I also recommend FIO https://github.com/axboe/fio
+>=20
+Thanks for the tips.
+> Good luck,
+> Purush
+>=20
+
+--3V7upXqbjpZ4EhLz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTG3o5AAoJENNjYPi2hQIw2SEQAIaoXDMfl3+tJsG1mCzCdp9t
+84bBZ3IBYyvR3efF54VJs/RxX3bWnerLiljSz7WXz5Y9O/BmzeuDVN55LTMEMbPo
+DmI6Z177SHZgkRw3xYJDwSHX/t8eyfC1sdBH2NgnpNOL4Uw+wEVHdY5ZKRW8nJ7u
+C9uAHfLPNnwCfv9PkBeZlRyWk/KHGY6UQC8iJu7ORB1pkNs+MZmq1KCxXLyJGFIh
+M197//ax+pcqoRXrsQSbIa4tN633in4LKcE+6UKjQZkXq27AQR6b5bn/Tf0mFOIE
+d2SHN8SL/AHIshoq3etzjVbNtpj35SRVjwjqlFl6/ZT0bhDMrGQW7tRg9alLLUG0
+bl68BEfEQP1aU2OcXkyW/X5x8yCnt//rBUtN7XTp3UkE5UAtc9u8YY9ZCuHNqWHL
+dt+C+OghSG/0mHwdeEltZr4JF4jwJuhB6zbnWS/ZB/Y10IzbdH6i5AOJd4yLJ6e9
+TxmVUQDga+K9gr5xMTn5F2uxdYyZsALW4Ss+eOe+e5RGHNhMWNbyw2CuGIw/964v
+ksJKg6Dh10ZeIM/C05TPelr8g6l9Pw/k/9q1czMRf0VElnJmQi6NmtRqFNE6l6Uh
+xJQ90kYAM3DNSn9f8xJQPMaoeaVeC4KlRXYO9aeYUzr5frierEEk0eEoS4pYvI4N
+PYtqW7LUGgGVXFZq17gh
+=/jiA
+-----END PGP SIGNATURE-----
+
+--3V7upXqbjpZ4EhLz--
