@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754236AbaCHBHf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:07:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46510 "EHLO
+	id S1755206AbaCHBVn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:21:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46525 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754211AbaCHBHd (ORCPT
+	with ESMTP id S1754219AbaCHBHf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:07:33 -0500
+	Fri, 7 Mar 2014 20:07:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, matson <lists-matsonpa@luxsci.me>
-Subject: [PATCH 3.4 29/99] sata_sil: apply MOD15WRITE quirk to TOSHIBA MK2561GSYN
-Date: Fri,  7 Mar 2014 17:07:25 -0800
-Message-Id: <20140308010612.555895231@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>,
+        Weng Meiling <wengmeiling.weng@huawei.com>
+Subject: [PATCH 3.4 67/99] [media] saa7134: Fix unlocked snd_pcm_stop() call
+Date: Fri,  7 Mar 2014 17:08:03 -0800
+Message-Id: <20140308010613.744992125@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
 References: <20140308010611.468206150@linuxfoundation.org>
@@ -28,36 +29,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 9f9c47f00ce99329b1a82e2ac4f70f0fe3db549c upstream.
+commit e6355ad7b1c6f70e2f48ae159f5658b441ccff95 upstream.
 
-It's a bit odd to see a newer device showing mod15write; however, the
-reported behavior is highly consistent and other factors which could
-contribute seem to have been verified well enough.  Also, both
-sata_sil itself and the drive are fairly outdated at this point making
-the risk of this change fairly low.  It is possible, probably likely,
-that other drive models in the same family have the same problem;
-however, for now, let's just add the specific model which was tested.
+snd_pcm_stop() must be called in the PCM substream lock context.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: matson <lists-matsonpa@luxsci.me>
-References: http://lkml.kernel.org/g/201401211912.s0LJCk7F015058@rs103.luxsci.com
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+[wml: Backported to 3.4: Adjust filename]
+Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/ata/sata_sil.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/media/video/saa7134/saa7134-alsa.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/ata/sata_sil.c
-+++ b/drivers/ata/sata_sil.c
-@@ -157,6 +157,7 @@ static const struct sil_drivelist {
- 	{ "ST380011ASL",	SIL_QUIRK_MOD15WRITE },
- 	{ "ST3120022ASL",	SIL_QUIRK_MOD15WRITE },
- 	{ "ST3160021ASL",	SIL_QUIRK_MOD15WRITE },
-+	{ "TOSHIBA MK2561GSYN",	SIL_QUIRK_MOD15WRITE },
- 	{ "Maxtor 4D060H3",	SIL_QUIRK_UDMA5MAX },
- 	{ }
- };
+--- a/drivers/media/video/saa7134/saa7134-alsa.c
++++ b/drivers/media/video/saa7134/saa7134-alsa.c
+@@ -172,7 +172,9 @@ static void saa7134_irq_alsa_done(struct
+ 		dprintk("irq: overrun [full=%d/%d] - Blocks in %d\n",dev->dmasound.read_count,
+ 			dev->dmasound.bufsize, dev->dmasound.blocks);
+ 		spin_unlock(&dev->slock);
++		snd_pcm_stream_lock(dev->dmasound.substream);
+ 		snd_pcm_stop(dev->dmasound.substream,SNDRV_PCM_STATE_XRUN);
++		snd_pcm_stream_unlock(dev->dmasound.substream);
+ 		return;
+ 	}
+ 
 
 
