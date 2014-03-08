@@ -1,90 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754684AbaCHB1T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:27:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46415 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754117AbaCHBHV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:07:21 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jean Delvare <jdelvare@suse.de>, Alan Cox <alan@linux.intel.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Doug Thompson <dougthompson@xmission.com>,
-        Borislav Petkov <bp@suse.de>
-Subject: [PATCH 3.4 31/99] i7core_edac: Fix PCI device reference count
-Date: Fri,  7 Mar 2014 17:07:27 -0800
-Message-Id: <20140308010612.617529345@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
-References: <20140308010611.468206150@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	id S1755331AbaCHB10 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:27:26 -0500
+Received: from r00tworld.com ([212.85.137.150]:53317 "EHLO r00tworld.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754117AbaCHB1W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 20:27:22 -0500
+From: "PaX Team" <pageexec@freemail.hu>
+To: khali@linux-fr.org, rostedt@goodmis.org,
+        Behan Webster <behanw@converseincode.com>
+Date: Sat, 08 Mar 2014 02:25:48 +0100
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [PATCH] module: LLVMLinux: Remove unused function warning from __param_check macro
+Reply-to: pageexec@freemail.hu
+CC: rusty@rustcorp.com.au, linux-kernel@vger.kernel.org, dwmw2@infradead.org,
+        Mark Charlebois <charlebm@gmail.com>
+Message-ID: <531A719C.19855.32E9C505@pageexec.freemail.hu>
+In-reply-to: <531A69E0.3000407@converseincode.com>
+References: <1394219327-5591-1-git-send-email-behanw@converseincode.com>, <531A4E84.9996.3260AF06@pageexec.freemail.hu>, <531A69E0.3000407@converseincode.com>
+X-mailer: Pegasus Mail for Windows (4.63)
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7BIT
+Content-description: Mail message body
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (r00tworld.com [212.85.137.150]); Sat, 08 Mar 2014 02:25:50 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On 7 Mar 2014 at 16:52, Behan Webster wrote:
 
-------------------
+> On 03/07/14 14:56, PaX Team wrote:
+> > why can't you have the attr on the definition itself:
+> >
+> > static inline __unused type *__check_##name(void) { return(p); }
+> >
+> >
+> >
+> "__unused" isn't defined anywhere I can find, except in:
+> 
+> src/linux/drivers/net/ethernet/amd/declance.c:#define __unused 
+> __attribute__ ((unused))
 
-From: Jean Delvare <jdelvare@suse.de>
-
-commit c0f5eeed0f4cef4f05b74883a7160e7edde58b6a upstream.
-
-The reference count changes done by pci_get_device can be a little
-misleading when the usage diverges from the most common scheme. The
-reference count of the device passed as the last parameter is always
-decreased, even if the function returns no new device. So if we are
-going to try alternative device IDs, we must manually increment the
-device reference count before each retry. If we don't, we end up
-decreasing the reference count, and after a few modprobe/rmmod cycles
-the PCI devices will vanish.
-
-In other words and as Alan put it: without this fix the EDAC code
-corrupts the PCI device list.
-
-This fixes kernel bug #50491:
-https://bugzilla.kernel.org/show_bug.cgi?id=50491
-
-Signed-off-by: Jean Delvare <jdelvare@suse.de>
-Link: http://lkml.kernel.org/r/20140224093927.7659dd9d@endymion.delvare
-Reviewed-by: Alan Cox <alan@linux.intel.com>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Doug Thompson <dougthompson@xmission.com>
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/edac/i7core_edac.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
-
---- a/drivers/edac/i7core_edac.c
-+++ b/drivers/edac/i7core_edac.c
-@@ -1365,14 +1365,19 @@ static int i7core_get_onedevice(struct p
- 	 * is at addr 8086:2c40, instead of 8086:2c41. So, we need
- 	 * to probe for the alternate address in case of failure
- 	 */
--	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_I7_NONCORE && !pdev)
-+	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_I7_NONCORE && !pdev) {
-+		pci_dev_get(*prev);	/* pci_get_device will put it */
- 		pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
- 				      PCI_DEVICE_ID_INTEL_I7_NONCORE_ALT, *prev);
-+	}
- 
--	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE && !pdev)
-+	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE &&
-+	    !pdev) {
-+		pci_dev_get(*prev);	/* pci_get_device will put it */
- 		pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
- 				      PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE_ALT,
- 				      *prev);
-+	}
- 
- 	if (!pdev) {
- 		if (*prev) {
-
+oh i forgot about that, you'd of course place this #define
+into the appropriate compiler*.h files so that other code
+can make use of it in the future as well ;).
 
