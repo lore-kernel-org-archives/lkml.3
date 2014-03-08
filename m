@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752615AbaCHAwx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 19:52:53 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:58537 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751016AbaCHAww (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 19:52:52 -0500
-Message-ID: <531A69E0.3000407@converseincode.com>
-Date: Fri, 07 Mar 2014 16:52:48 -0800
-From: Behan Webster <behanw@converseincode.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752270AbaCHA6g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 19:58:36 -0500
+Received: from p3plex2out04.prod.phx3.secureserver.net ([184.168.131.18]:60418
+	"EHLO p3plex2out04.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751197AbaCHA6f convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 19:58:35 -0500
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Chase Southwood <chase.southwood@yahoo.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v3 1/5] Staging: comedi: addi-data: tidy up digital
+ input register map defines in hwdrv_apci1564.c
+Thread-Topic: [PATCH v3 1/5] Staging: comedi: addi-data: tidy up digital
+ input register map defines in hwdrv_apci1564.c
+Thread-Index: AQHPOmctfIhLONjgIEOzkA+N7ZSBeJrWXa2w
+Date: Sat, 8 Mar 2014 00:58:34 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825DA8189@P3PWEX4MB008.ex4.secureserver.net>
+References: <1394090691-7850-1-git-send-email-chase.southwood@yahoo.com>
+ <1394239297-25885-1-git-send-email-chase.southwood@yahoo.com>
+In-Reply-To: <1394239297-25885-1-git-send-email-chase.southwood@yahoo.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: pageexec@freemail.hu, khali@linux-fr.org, rostedt@goodmis.org
-CC: rusty@rustcorp.com.au, linux-kernel@vger.kernel.org, dwmw2@infradead.org,
-        Mark Charlebois <charlebm@gmail.com>
-Subject: Re: [PATCH] module: LLVMLinux: Remove unused function warning from
- __param_check macro
-References: <1394219327-5591-1-git-send-email-behanw@converseincode.com> <531A4E84.9996.3260AF06@pageexec.freemail.hu>
-In-Reply-To: <531A4E84.9996.3260AF06@pageexec.freemail.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/14 14:56, PaX Team wrote:
-> On 7 Mar 2014 at 11:08, behanw@converseincode.com wrote:
+On Friday, March 07, 2014 5:42 PM, Chase Southwood wrote:
 >
->> diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
->> index c3eb102..5ce1f67 100644
->> --- a/include/linux/moduleparam.h
->> +++ b/include/linux/moduleparam.h
->> @@ -346,6 +346,7 @@ static inline void destroy_params(const struct kernel_param *params,
->>   /* The macros to do compile-time type checking stolen from Jakub
->>      Jelinek, who IIRC came up with this idea for the 2.4 module init code. */
->>   #define __param_check(name, p, type) \
->> +	static inline type *__check_##name(void) __attribute__ ((unused)); \
->>   	static inline type *__check_##name(void) { return(p); }
-> why can't you have the attr on the definition itself:
+> This patch fixes the register map defines for the digital input registers
+> such that they are all the real offsets to each register, rather than a
+> mix of real offsets and adders to those offsets.
 >
-> static inline __unused type *__check_##name(void) { return(p); }
+> Further, some of the old defines were being used incorrectly in the
+> i_APCI1564_Reset() function.  Upon swapping the old defines out for the
+> new ones in this function, their use has been corrected.
 >
->
->
-"__unused" isn't defined anywhere I can find, except in:
+> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
+> ---
 
-src/linux/drivers/net/ethernet/amd/declance.c:#define __unused 
-__attribute__ ((unused))
+Much better, thanks!
 
-But this does work.
-
--       static inline type *__check_##name(void) { return(p); }
-+       static inline __attribute__((unused)) \
-+               type *__check_##name(void) { return(p); }
-
-If this is preferred, I will resubmit.
-
-Behan
-
--- 
-Behan Webster
-behanw@converseincode.com
+For the 5 patch series:
+Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
