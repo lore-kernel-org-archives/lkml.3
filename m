@@ -1,35 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752238AbaCHBnO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:43:14 -0500
-Received: from nm29-vm7.bullet.mail.gq1.yahoo.com ([98.136.216.182]:34273 "EHLO
-	nm29-vm7.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751487AbaCHBnM (ORCPT
+	id S1752780AbaCHBn1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:43:27 -0500
+Received: from nm27-vm4.bullet.mail.gq1.yahoo.com ([98.136.216.147]:27801 "EHLO
+	nm27-vm4.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752113AbaCHBnZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:43:12 -0500
-X-Yahoo-Newman-Id: 720128.97053.bm@smtp233.mail.gq1.yahoo.com
+	Fri, 7 Mar 2014 20:43:25 -0500
+X-Yahoo-Newman-Id: 111235.94853.bm@smtp212.mail.gq1.yahoo.com
 X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: V2NQO9gVM1kvg1RlEsfZPBq_IAwpbAe6EFvROfQ4o_TEouG
- ZWuLDdFBUqo3yrqvUlPtenIJdwthWcBvoTWcon2CIeBux.PhukrR55cWyfb0
- brA3KzJGavC3_hMxJiq9JYUfrbG7enwQYL7uI.scbz0M6TunfXGXkjecKQnQ
- OOhBPS2n.s.NCZv3uMrxuXMPscJxTzyZzrM3PbsJNKw5iU1eGzpxO_UM3NBQ
- QzAbRRAk8sblBvB46X3hGfKUJyoyzwwLUs7cmTv_sq.MQkQvoOlR95QYvXhT
- pRzNdReg87bnTzjWvmjshUWOjYX0vFzElcsoxH9D3nk_VOCJD8ObKP_GRI5m
- 5uTSxXclVy9vcVVa1UTySP0UsG1Gn0tEu4Ukhmmb9ZgrLqgh.yzraBRclen4
- NX989AUi.1ggFsExxFPbGpu9Q3P9ov0bLz332bLx_ry5yXOvP6lGkac0hk.2
- 11EFRI6SSmERFVkQDQ3EsGgGYJ0UbE0smhkGfCcviEKJE950Tf2lrOYZbtiZ
- z.FY4F4npm87JFYY6IUuXcJETtQBivjvq62W7GA--
+X-YMail-OSG: b3svKoAVM1nDMfVkIgjW1sMxBVqhFtwni6hOhQc_ztcykBz
+ LAuAoElHdaulBCvNRXlELfY1iVKuFuMm2FClOk8FjF1S5e_KWnhwxlbEOTPe
+ rCgv43P89FTSMAsxjMmsq6yhkdt90hvIcH11BUii_OufUB.j7erNxFPqTdAC
+ NA_BtVOb2mK9v.uurViHalSpKpIcPbGTeyAmU7xcoyej_k_9iHuxlOKiW6Lz
+ H7nVeBbGUyvq0MIM0HH25jz.ubr7Wy7x.IOukYdvmKzvFWfzUgLygFxxvqa.
+ lT22CB6Xs7jFGkdnI3zXirJu_Nj0IZOaQJInKW6ZDvSDy65WuQVn4wfFoWD.
+ 21MKLtMbWyzWebtJkOkpKlpVZZermBid1Idd4Q6qBcP92uQg194F8rns8vE6
+ kLR5BwWpliltJaK_TZMCY5jXLeiwmMtgSN0I6kRsmW2kfN4k_m3H8Fw5ohpm
+ B8YcK5Hf53cn1yfPBK.6ktb.AUcP2juxoxBTImcecv3RE_kE_Il3vjASDlyy
+ YXEFXAz9uIcxCBBANhy27dy_jhQkWtyWwsI4EoQ--
 X-Yahoo-SMTP: Ua.BYCGswBCLcNpMqiQEtkMTjL08M6XQy5ZdmA--
-X-Rocket-Received: from localhost.localdomain (chase.southwood@50.129.102.163 with plain [98.138.105.21])
-        by smtp233.mail.gq1.yahoo.com with SMTP; 08 Mar 2014 01:43:11 +0000 UTC
+X-Rocket-Received: from localhost.localdomain (chase.southwood@50.129.102.163 with plain [98.139.211.125])
+        by smtp212.mail.gq1.yahoo.com with SMTP; 07 Mar 2014 17:43:25 -0800 PST
 From: Chase Southwood <chase.southwood@yahoo.com>
 To: gregkh@linuxfoundation.org
 Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Chase Southwood <chase.southwood@yahoo.com>
-Subject: [PATCH v3 1/2] Staging: comedi: convert while loops to timeouts in
-Date: Fri,  7 Mar 2014 19:43:04 -0600
-Message-Id: <1394242984-32567-1-git-send-email-chase.southwood@yahoo.com>
+Subject: [PATCH v3 2/2] Staging: comedi: propagate timeout errors in s626.c
+Date: Fri,  7 Mar 2014 19:43:17 -0600
+Message-Id: <1394242997-32612-1-git-send-email-chase.southwood@yahoo.com>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1393922628-27903-1-git-send-email-chase.southwood@yahoo.com>
 References: <1393922628-27903-1-git-send-email-chase.southwood@yahoo.com>
@@ -37,178 +37,208 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes a handful of while loops to timeouts to prevent
-infinite looping on hardware failure. A couple such loops are in a
-function (s626_debi_transfer()) which is called from critical sections,
-so comedi_timeout() is unusable for them, and an iterative timeout is
-used instead. For the while loops in a context where comedi_timeout() is
-allowed, a new callback function, s626_send_dac_eoc(), has been defined
-to evaluate the conditions that the while loops are testing.  The new
-callback employs a switch statement based on a simple new enum so that
-it is usable for all of the different conditions tested in while loops
-in s626_send_dac().  The proper comedi_timeout() calls are then used.
+This patch for s626.c propagates the errors from the newly introduced
+calls to comedi_timeout() as far as possible.
 
 Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
 ---
-Ian, here is a version of this patchset employing the enum you recommended.
-The second patch has been rebased on top of this one.
+Compile tested.
 
-2: Used comedi_timeout() where appropriate, introduce callback function
+2: This patch was introduced in v2 of this set.
 
-3: Updated callback to switch on new enum.
+3: Rebased on top of PATCH 1/2 edits.
 
- drivers/staging/comedi/drivers/s626.c | 87 ++++++++++++++++++++++++++++++-----
- 1 file changed, 75 insertions(+), 12 deletions(-)
+ drivers/staging/comedi/drivers/s626.c | 63 +++++++++++++++++++++++++----------
+ 1 file changed, 45 insertions(+), 18 deletions(-)
 
 diff --git a/drivers/staging/comedi/drivers/s626.c b/drivers/staging/comedi/drivers/s626.c
-index 5ba4b4a..ff9dde1 100644
+index fab8ccf..6518a4c 100644
 --- a/drivers/staging/comedi/drivers/s626.c
 +++ b/drivers/staging/comedi/drivers/s626.c
-@@ -209,6 +209,8 @@ static const struct comedi_lrange s626_range_table = {
- static void s626_debi_transfer(struct comedi_device *dev)
- {
- 	struct s626_private *devpriv = dev->private;
-+	static const int timeout = 10000;
-+	int i;
- 
- 	/* Initiate upload of shadow RAM to DEBI control register */
- 	s626_mc_enable(dev, S626_MC2_UPLD_DEBI, S626_P_MC2);
-@@ -217,12 +219,22 @@ static void s626_debi_transfer(struct comedi_device *dev)
- 	 * Wait for completion of upload from shadow RAM to
- 	 * DEBI control register.
- 	 */
--	while (!s626_mc_test(dev, S626_MC2_UPLD_DEBI, S626_P_MC2))
--		;
-+	for (i = 0; i < timeout; i++) {
-+		if (s626_mc_test(dev, S626_MC2_UPLD_DEBI, S626_P_MC2))
-+			break;
-+		udelay(1);
-+	}
-+	if (i == timeout)
-+		comedi_error(dev, "Timeout while uploading to DEBI control register.");
- 
- 	/* Wait until DEBI transfer is done */
--	while (readl(devpriv->mmio + S626_P_PSR) & S626_PSR_DEBI_S)
--		;
-+	for (i = 0; i < timeout; i++) {
-+		if (!(readl(devpriv->mmio + S626_P_PSR) & S626_PSR_DEBI_S))
-+			break;
-+		udelay(1);
-+	}
-+	if (i == timeout)
-+		comedi_error(dev, "DEBI transfer timeout.");
- }
- 
- /*
-@@ -351,6 +363,48 @@ static const uint8_t s626_trimadrs[] = {
- 	0x40, 0x41, 0x42, 0x50, 0x51, 0x52, 0x53, 0x60, 0x61, 0x62, 0x63
- };
- 
-+enum {
-+	s626_send_dac_wait_not_mc1_a2out,
-+	s626_send_dac_wait_ssr_af2_out,
-+	s626_send_dac_wait_fb_buffer2_msb_00,
-+	s626_send_dac_wait_fb_buffer2_msb_ff
-+};
-+
-+static int s626_send_dac_eoc(struct comedi_device *dev,
-+			     struct comedi_subdevice *s,
-+			     struct comedi_insn *insn,
-+			     unsigned long context)
-+{
-+	struct s626_private *devpriv = dev->private;
-+	unsigned int status;
-+
-+	switch (context) {
-+	case s626_send_dac_wait_not_mc1_a2out:
-+		status = readl(devpriv->mmio + S626_P_MC1);
-+		if (!(status & S626_MC1_A2OUT))
-+			return 0;
-+		break;
-+	case s626_send_dac_wait_ssr_af2_out:
-+		status = readl(devpriv->mmio + S626_P_SSR);
-+		if (status & S626_SSR_AF2_OUT)
-+			return 0;
-+		break;
-+	case s626_send_dac_wait_fb_buffer2_msb_00:
-+		status = readl(devpriv->mmio + S626_P_FB_BUFFER2);
-+		if (!(status & 0xff000000))
-+			return 0;
-+		break;
-+	case s626_send_dac_wait_fb_buffer2_msb_ff:
-+		status = readl(devpriv->mmio + S626_P_FB_BUFFER2);
-+		if (status & 0xff000000)
-+			return 0;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+	return -EBUSY;
-+}
-+
- /*
-  * Private helper function: Transmit serial data to DAC via Audio
+@@ -410,7 +410,7 @@ static int s626_send_dac_eoc(struct comedi_device *dev,
   * channel 2.  Assumes: (1) TSL2 slot records initialized, and (2)
-@@ -359,6 +413,7 @@ static const uint8_t s626_trimadrs[] = {
- static void s626_send_dac(struct comedi_device *dev, uint32_t val)
+  * dacpol contains valid target image.
+  */
+-static void s626_send_dac(struct comedi_device *dev, uint32_t val)
++static int s626_send_dac(struct comedi_device *dev, uint32_t val)
  {
  	struct s626_private *devpriv = dev->private;
-+	int ret;
- 
- 	/* START THE SERIAL CLOCK RUNNING ------------- */
- 
-@@ -404,8 +459,10 @@ static void s626_send_dac(struct comedi_device *dev, uint32_t val)
- 	 * Done by polling the DMAC enable flag; this flag is automatically
- 	 * cleared when the transfer has finished.
+ 	int ret;
+@@ -461,8 +461,10 @@ static void s626_send_dac(struct comedi_device *dev, uint32_t val)
  	 */
--	while (readl(devpriv->mmio + S626_P_MC1) & S626_MC1_A2OUT)
--		;
-+	ret = comedi_timeout(dev, NULL, NULL, s626_send_dac_eoc,
-+			     s626_send_dac_wait_not_mc1_a2out);
-+	if (ret)
-+		comedi_error(dev, "DMA transfer timeout.");
+ 	ret = comedi_timeout(dev, NULL, NULL, s626_send_dac_eoc,
+ 			     s626_send_dac_wait_not_mc1_a2out);
+-	if (ret)
++	if (ret) {
+ 		comedi_error(dev, "DMA transfer timeout.");
++		return ret;
++	}
  
  	/* START THE OUTPUT STREAM TO THE TARGET DAC -------------------- */
  
-@@ -425,8 +482,10 @@ static void s626_send_dac(struct comedi_device *dev, uint32_t val)
- 	 * finished transferring the DAC's data DWORD from the output FIFO
- 	 * to the output buffer register.
+@@ -484,8 +486,10 @@ static void s626_send_dac(struct comedi_device *dev, uint32_t val)
  	 */
--	while (!(readl(devpriv->mmio + S626_P_SSR) & S626_SSR_AF2_OUT))
--		;
-+	ret = comedi_timeout(dev, NULL, NULL, s626_send_dac_eoc,
-+			     s626_send_dac_wait_ssr_af2_out);
-+	if (ret)
-+		comedi_error(dev, "TSL timeout waiting for slot 1 to execute.");
+ 	ret = comedi_timeout(dev, NULL, NULL, s626_send_dac_eoc,
+ 			     s626_send_dac_wait_ssr_af2_out);
+-	if (ret)
++	if (ret) {
+ 		comedi_error(dev, "TSL timeout waiting for slot 1 to execute.");
++		return ret;
++	}
  
  	/*
  	 * Set up to trap execution at slot 0 when the TSL sequencer cycles
-@@ -466,8 +525,10 @@ static void s626_send_dac(struct comedi_device *dev, uint32_t val)
- 		 * from 0xFF to 0x00, which slot 0 causes to happen by shifting
- 		 * out/in on SD2 the 0x00 that is always referenced by slot 5.
+@@ -527,8 +531,10 @@ static void s626_send_dac(struct comedi_device *dev, uint32_t val)
  		 */
--		while (readl(devpriv->mmio + S626_P_FB_BUFFER2) & 0xff000000)
--			;
-+		ret = comedi_timeout(dev, NULL, NULL, s626_send_dac_eoc,
-+				     s626_send_dac_wait_fb_buffer2_msb_00);
-+		if (ret)
-+			comedi_error(dev, "TSL timeout waiting for slot 0 to execute.");
+ 		ret = comedi_timeout(dev, NULL, NULL, s626_send_dac_eoc,
+ 				     s626_send_dac_wait_fb_buffer2_msb_00);
+-		if (ret)
++		if (ret) {
+ 			comedi_error(dev, "TSL timeout waiting for slot 0 to execute.");
++			return ret;
++		}
  	}
  	/*
  	 * Either (1) we were too late setting the slot 0 trap; the TSL
-@@ -486,8 +547,10 @@ static void s626_send_dac(struct comedi_device *dev, uint32_t val)
- 	 * the next DAC write.  This is detected when FB_BUFFER2 MSB changes
- 	 * from 0x00 to 0xFF.
+@@ -549,14 +555,17 @@ static void s626_send_dac(struct comedi_device *dev, uint32_t val)
  	 */
--	while (!(readl(devpriv->mmio + S626_P_FB_BUFFER2) & 0xff000000))
--		;
-+	ret = comedi_timeout(dev, NULL, NULL, s626_send_dac_eoc,
-+			     s626_send_dac_wait_fb_buffer2_msb_ff);
-+	if (ret)
-+		comedi_error(dev, "TSL timeout waiting for slot 0 to execute.");
+ 	ret = comedi_timeout(dev, NULL, NULL, s626_send_dac_eoc,
+ 			     s626_send_dac_wait_fb_buffer2_msb_ff);
+-	if (ret)
++	if (ret) {
+ 		comedi_error(dev, "TSL timeout waiting for slot 0 to execute.");
++		return ret;
++	}
++	return 0;
  }
  
  /*
+  * Private helper function: Write setpoint to an application DAC channel.
+  */
+-static void s626_set_dac(struct comedi_device *dev, uint16_t chan,
++static int s626_set_dac(struct comedi_device *dev, uint16_t chan,
+ 			 int16_t dacdata)
+ {
+ 	struct s626_private *devpriv = dev->private;
+@@ -619,10 +628,10 @@ static void s626_set_dac(struct comedi_device *dev, uint16_t chan,
+ 	val |= ((uint32_t)(chan & 1) << 15);	/* Address the DAC channel
+ 						 * within the device. */
+ 	val |= (uint32_t)dacdata;	/* Include DAC setpoint data. */
+-	s626_send_dac(dev, val);
++	return s626_send_dac(dev, val);
+ }
+ 
+-static void s626_write_trim_dac(struct comedi_device *dev, uint8_t logical_chan,
++static int s626_write_trim_dac(struct comedi_device *dev, uint8_t logical_chan,
+ 				uint8_t dac_data)
+ {
+ 	struct s626_private *devpriv = dev->private;
+@@ -669,17 +678,22 @@ static void s626_write_trim_dac(struct comedi_device *dev, uint8_t logical_chan,
+ 	 * Address the DAC channel within the trimdac device.
+ 	 * Include DAC setpoint data.
+ 	 */
+-	s626_send_dac(dev, (chan << 8) | dac_data);
++	return s626_send_dac(dev, (chan << 8) | dac_data);
+ }
+ 
+-static void s626_load_trim_dacs(struct comedi_device *dev)
++static int s626_load_trim_dacs(struct comedi_device *dev)
+ {
+ 	uint8_t i;
++	int ret;
+ 
+ 	/* Copy TrimDac setpoint values from EEPROM to TrimDacs. */
+-	for (i = 0; i < ARRAY_SIZE(s626_trimchan); i++)
+-		s626_write_trim_dac(dev, i,
++	for (i = 0; i < ARRAY_SIZE(s626_trimchan); i++) {
++		ret = s626_write_trim_dac(dev, i,
+ 				    s626_i2c_read(dev, s626_trimadrs[i]));
++		if (ret)
++			return ret;
++	}
++	return 0;
+ }
+ 
+ /* ******  COUNTER FUNCTIONS  ******* */
+@@ -2378,6 +2392,7 @@ static int s626_ao_winsn(struct comedi_device *dev, struct comedi_subdevice *s,
+ {
+ 	struct s626_private *devpriv = dev->private;
+ 	int i;
++	int ret;
+ 	uint16_t chan = CR_CHAN(insn->chanspec);
+ 	int16_t dacdata;
+ 
+@@ -2386,7 +2401,9 @@ static int s626_ao_winsn(struct comedi_device *dev, struct comedi_subdevice *s,
+ 		devpriv->ao_readback[CR_CHAN(insn->chanspec)] = data[i];
+ 		dacdata -= (0x1fff);
+ 
+-		s626_set_dac(dev, chan, dacdata);
++		ret = s626_set_dac(dev, chan, dacdata);
++		if (ret)
++			return ret;
+ 	}
+ 
+ 	return i;
+@@ -2622,12 +2639,13 @@ static int s626_allocate_dma_buffers(struct comedi_device *dev)
+ 	return 0;
+ }
+ 
+-static void s626_initialize(struct comedi_device *dev)
++static int s626_initialize(struct comedi_device *dev)
+ {
+ 	struct s626_private *devpriv = dev->private;
+ 	dma_addr_t phys_buf;
+ 	uint16_t chan;
+ 	int i;
++	int ret;
+ 
+ 	/* Enable DEBI and audio pins, enable I2C interface */
+ 	s626_mc_enable(dev, S626_MC1_DEBI | S626_MC1_AUDIO | S626_MC1_I2C,
+@@ -2828,7 +2846,9 @@ static void s626_initialize(struct comedi_device *dev)
+ 	 * sometimes causes the first few TrimDAC writes to malfunction.
+ 	 */
+ 	s626_load_trim_dacs(dev);
+-	s626_load_trim_dacs(dev);
++	ret = s626_load_trim_dacs(dev);
++	if (ret)
++		return ret;
+ 
+ 	/*
+ 	 * Manually init all gate array hardware in case this is a soft
+@@ -2842,8 +2862,11 @@ static void s626_initialize(struct comedi_device *dev)
+ 	 * Init all DAC outputs to 0V and init all DAC setpoint and
+ 	 * polarity images.
+ 	 */
+-	for (chan = 0; chan < S626_DAC_CHANNELS; chan++)
+-		s626_set_dac(dev, chan, 0);
++	for (chan = 0; chan < S626_DAC_CHANNELS; chan++) {
++		ret = s626_set_dac(dev, chan, 0);
++		if (ret)
++			return ret;
++	}
+ 
+ 	/* Init counters */
+ 	s626_counters_init(dev);
+@@ -2859,6 +2882,8 @@ static void s626_initialize(struct comedi_device *dev)
+ 
+ 	/* Initialize the digital I/O subsystem */
+ 	s626_dio_init(dev);
++
++	return 0;
+ }
+ 
+ static int s626_auto_attach(struct comedi_device *dev,
+@@ -2979,7 +3004,9 @@ static int s626_auto_attach(struct comedi_device *dev,
+ 	s->insn_read	= s626_enc_insn_read;
+ 	s->insn_write	= s626_enc_insn_write;
+ 
+-	s626_initialize(dev);
++	ret = s626_initialize(dev);
++	if (ret)
++		return ret;
+ 
+ 	return 0;
+ }
 -- 
 1.8.5.3
 
