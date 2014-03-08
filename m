@@ -1,26 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754208AbaCHBHa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:07:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46461 "EHLO
+	id S1754528AbaCHBIM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:08:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46718 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754162AbaCHBH0 (ORCPT
+	with ESMTP id S1754475AbaCHBIE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:07:26 -0500
+	Fri, 7 Mar 2014 20:08:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joel Uckelman <joel@lightboxtechnologies.com>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Vinson Lee <vlee@twopensource.com>
-Subject: [PATCH 3.4 53/99] perf tools: Fix cache event name generation
-Date: Fri,  7 Mar 2014 17:07:49 -0800
-Message-Id: <20140308010613.310796412@linuxfoundation.org>
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Jianguo Wu <wujianguo@huawei.com>
+Subject: [PATCH 3.4 93/99] iwlwifi: always copy first 16 bytes of commands
+Date: Fri,  7 Mar 2014 17:08:29 -0800
+Message-Id: <20140308010614.545650590@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
 References: <20140308010611.468206150@linuxfoundation.org>
@@ -35,44 +30,180 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Olsa <jolsa@redhat.com>
 
-commit 275ef3878f698941353780440fec6926107a320b upstream.
+From: Johannes Berg <johannes.berg@intel.com>
 
-If the event name is specified with all 3 components, the last one
-overwrites the previous one during the name composing within the
-parse_events_add_cache function.
+commit 8a964f44e01ad3bbc208c3e80d931ba91b9ea786 upstream.
 
-Fixing this by properly adjusting the string index.
+The FH hardware will always write back to the scratch field
+in commands, even host commands not just TX commands, which
+can overwrite parts of the command. This is problematic if
+the command is re-used (with IWL_HCMD_DFL_NOCOPY) and can
+cause calibration issues.
 
-Reported-by: Joel Uckelman <joel@lightboxtechnologies.com>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Joel Uckelman <joel@lightboxtechnologies.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LPU-Reference: 20120905175133.GA18352@krava.brq.redhat.com
-[ committer note: Remove the newline fix, done already in 42e1fb7 ]
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Vinson Lee <vlee@twopensource.com>
+Address this problem by always putting at least the first
+16 bytes into the buffer we also use for the command header
+and therefore make the DMA engine write back into this.
+
+For commands that are smaller than 16 bytes also always map
+enough memory for the DMA engine to write back to.
+
+Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Drop the IWL_HCMD_DFL_DUP handling
+ - Fix descriptor addresses and lengths for tracepoint, but otherwise
+   leave it unchanged]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+[wujg: Backported to 3.4: adjust context]
+Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- tools/perf/util/parse-events.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/iwlwifi/iwl-trans-pcie-int.h |    9 +++
+ drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c  |   65 +++++++++++++++++-----
+ 2 files changed, 62 insertions(+), 12 deletions(-)
 
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -413,7 +413,7 @@ int parse_events_add_cache(struct list_h
- 	for (i = 0; (i < 2) && (op_result[i]); i++) {
- 		char *str = op_result[i];
+--- a/drivers/net/wireless/iwlwifi/iwl-trans-pcie-int.h
++++ b/drivers/net/wireless/iwlwifi/iwl-trans-pcie-int.h
+@@ -209,6 +209,15 @@ struct iwl_queue {
+ #define TFD_TX_CMD_SLOTS 256
+ #define TFD_CMD_SLOTS 32
  
--		snprintf(name + n, MAX_NAME_LEN - n, "-%s", str);
-+		n += snprintf(name + n, MAX_NAME_LEN - n, "-%s", str);
++/*
++ * The FH will write back to the first TB only, so we need
++ * to copy some data into the buffer regardless of whether
++ * it should be mapped or not. This indicates how much to
++ * copy, even for HCMDs it must be big enough to fit the
++ * DRAM scratch from the TX cmd, at least 16 bytes.
++ */
++#define IWL_HCMD_MIN_COPY_SIZE	16
++
+ struct iwl_tx_queue {
+ 	struct iwl_queue q;
+ 	struct iwl_tfd *tfds;
+--- a/drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c
++++ b/drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c
+@@ -677,10 +677,12 @@ static int iwl_enqueue_hcmd(struct iwl_t
+ 	struct iwl_cmd_meta *out_meta;
+ 	dma_addr_t phys_addr;
+ 	u32 idx;
+-	u16 copy_size, cmd_size;
++	u16 copy_size, cmd_size, dma_size;
+ 	bool had_nocopy = false;
+ 	int i;
+ 	u8 *cmd_dest;
++	const u8 *cmddata[IWL_MAX_CMD_TFDS];
++	u16 cmdlen[IWL_MAX_CMD_TFDS];
+ #ifdef CONFIG_IWLWIFI_DEVICE_TRACING
+ 	const void *trace_bufs[IWL_MAX_CMD_TFDS + 1] = {};
+ 	int trace_lens[IWL_MAX_CMD_TFDS + 1] = {};
+@@ -699,15 +701,30 @@ static int iwl_enqueue_hcmd(struct iwl_t
+ 	BUILD_BUG_ON(IWL_MAX_CMD_TFDS > IWL_NUM_OF_TBS - 1);
  
- 		if (cache_op == -1) {
- 			cache_op = parse_aliases(str, hw_cache_op,
+ 	for (i = 0; i < IWL_MAX_CMD_TFDS; i++) {
++		cmddata[i] = cmd->data[i];
++		cmdlen[i] = cmd->len[i];
++
+ 		if (!cmd->len[i])
+ 			continue;
++
++		/* need at least IWL_HCMD_MIN_COPY_SIZE copied */
++		if (copy_size < IWL_HCMD_MIN_COPY_SIZE) {
++			int copy = IWL_HCMD_MIN_COPY_SIZE - copy_size;
++
++			if (copy > cmdlen[i])
++				copy = cmdlen[i];
++			cmdlen[i] -= copy;
++			cmddata[i] += copy;
++			copy_size += copy;
++		}
++
+ 		if (cmd->dataflags[i] & IWL_HCMD_DFL_NOCOPY) {
+ 			had_nocopy = true;
+ 		} else {
+ 			/* NOCOPY must not be followed by normal! */
+ 			if (WARN_ON(had_nocopy))
+ 				return -EINVAL;
+-			copy_size += cmd->len[i];
++			copy_size += cmdlen[i];
+ 		}
+ 		cmd_size += cmd->len[i];
+ 	}
+@@ -750,13 +767,30 @@ static int iwl_enqueue_hcmd(struct iwl_t
+ 	/* and copy the data that needs to be copied */
+ 
+ 	cmd_dest = out_cmd->payload;
++	copy_size = sizeof(out_cmd->hdr);
+ 	for (i = 0; i < IWL_MAX_CMD_TFDS; i++) {
+-		if (!cmd->len[i])
++		int copy = 0;
++
++		if (!cmd->len)
+ 			continue;
+-		if (cmd->dataflags[i] & IWL_HCMD_DFL_NOCOPY)
+-			break;
+-		memcpy(cmd_dest, cmd->data[i], cmd->len[i]);
+-		cmd_dest += cmd->len[i];
++
++		/* need at least IWL_HCMD_MIN_COPY_SIZE copied */
++		if (copy_size < IWL_HCMD_MIN_COPY_SIZE) {
++			copy = IWL_HCMD_MIN_COPY_SIZE - copy_size;
++
++			if (copy > cmd->len[i])
++				copy = cmd->len[i];
++		}
++
++		/* copy everything if not nocopy/dup */
++		if (!(cmd->dataflags[i] & IWL_HCMD_DFL_NOCOPY))
++			copy = cmd->len[i];
++
++		if (copy) {
++			memcpy(cmd_dest, cmd->data[i], copy);
++			cmd_dest += copy;
++			copy_size += copy;
++		}
+ 	}
+ 
+ 	IWL_DEBUG_HC(trans, "Sending command %s (#%x), seq: 0x%04X, "
+@@ -766,7 +800,14 @@ static int iwl_enqueue_hcmd(struct iwl_t
+ 			le16_to_cpu(out_cmd->hdr.sequence), cmd_size,
+ 			q->write_ptr, idx, trans_pcie->cmd_queue);
+ 
+-	phys_addr = dma_map_single(trans->dev, &out_cmd->hdr, copy_size,
++	/*
++	 * If the entire command is smaller than IWL_HCMD_MIN_COPY_SIZE, we must
++	 * still map at least that many bytes for the hardware to write back to.
++	 * We have enough space, so that's not a problem.
++	 */
++	dma_size = max_t(u16, copy_size, IWL_HCMD_MIN_COPY_SIZE);
++
++	phys_addr = dma_map_single(trans->dev, &out_cmd->hdr, dma_size,
+ 				DMA_BIDIRECTIONAL);
+ 	if (unlikely(dma_mapping_error(trans->dev, phys_addr))) {
+ 		idx = -ENOMEM;
+@@ -774,7 +815,7 @@ static int iwl_enqueue_hcmd(struct iwl_t
+ 	}
+ 
+ 	dma_unmap_addr_set(out_meta, mapping, phys_addr);
+-	dma_unmap_len_set(out_meta, len, copy_size);
++	dma_unmap_len_set(out_meta, len, dma_size);
+ 
+ 	iwlagn_txq_attach_buf_to_tfd(trans, txq,
+ 					phys_addr, copy_size, 1);
+@@ -801,10 +842,10 @@ static int iwl_enqueue_hcmd(struct iwl_t
+ 		}
+ 
+ 		iwlagn_txq_attach_buf_to_tfd(trans, txq, phys_addr,
+-					     cmd->len[i], 0);
++					     cmdlen[i], 0);
+ #ifdef CONFIG_IWLWIFI_DEVICE_TRACING
+-		trace_bufs[trace_idx] = cmd->data[i];
+-		trace_lens[trace_idx] = cmd->len[i];
++		trace_bufs[trace_idx] = cmddata[i];
++		trace_lens[trace_idx] = cmdlen[i];
+ 		trace_idx++;
+ #endif
+ 	}
 
 
