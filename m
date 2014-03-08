@@ -1,59 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752760AbaCHJcB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 04:32:01 -0500
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:61274 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751900AbaCHJbq (ORCPT
+	id S1752793AbaCHJc2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 04:32:28 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:46945 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752475AbaCHJaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 04:31:46 -0500
-From: Max Filippov <jcmvbkbc@gmail.com>
-To: alsa-devel@alsa-project.org
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        Max Filippov <jcmvbkbc@gmail.com>
-Subject: [PATCH] ASoC: tlv320aic23: add missing EXPORT_SYMBOLs
-Date: Sat,  8 Mar 2014 13:31:06 +0400
-Message-Id: <1394271066-25380-1-git-send-email-jcmvbkbc@gmail.com>
-X-Mailer: git-send-email 1.8.1.4
+	Sat, 8 Mar 2014 04:30:14 -0500
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <gregkh@linuxfoundation.org>, <kishon@ti.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH 27/28] Documentation: Add APM X-Gene SoC 15Gbps Multi-purpose PHY driver binding documentation
+Date: Sat, 8 Mar 2014 14:59:28 +0530
+Message-ID: <1394270969-11851-28-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1394270969-11851-1-git-send-email-kishon@ti.com>
+References: <1394270969-11851-1-git-send-email-kishon@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes the following build errors when aic23 is configured as
-module:
+From: Loc Ho <lho@apm.com>
 
->> ERROR: "tlv320aic23_probe"
->> [sound/soc/codecs/snd-soc-tlv320aic23-i2c.ko] undefined!
->> ERROR: "tlv320aic23_regmap"
->> [sound/soc/codecs/snd-soc-tlv320aic23-i2c.ko] undefined!
+This patch adds the APM X-Gene SoC 15Gbps Multi-purpose PHY driver binding
+documentation.
 
-Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+Signed-off-by: Loc Ho <lho@apm.com>
+Signed-off-by: Tuan Phan <tphan@apm.com>
+Signed-off-by: Suman Tripathi <stripathi@apm.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- sound/soc/codecs/tlv320aic23.c | 2 ++
- 1 file changed, 2 insertions(+)
+ .../devicetree/bindings/phy/apm-xgene-phy.txt      |   79 ++++++++++++++++++++
+ 1 file changed, 79 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/phy/apm-xgene-phy.txt
 
-diff --git a/sound/soc/codecs/tlv320aic23.c b/sound/soc/codecs/tlv320aic23.c
-index 455250f..a934add 100644
---- a/sound/soc/codecs/tlv320aic23.c
-+++ b/sound/soc/codecs/tlv320aic23.c
-@@ -59,6 +59,7 @@ const struct regmap_config tlv320aic23_regmap = {
- 	.num_reg_defaults = ARRAY_SIZE(tlv320aic23_reg),
- 	.cache_type = REGCACHE_RBTREE,
- };
-+EXPORT_SYMBOL(tlv320aic23_regmap);
- 
- static const char *rec_src_text[] = { "Line", "Mic" };
- static const char *deemph_text[] = {"None", "32Khz", "44.1Khz", "48Khz"};
-@@ -634,6 +635,7 @@ int tlv320aic23_probe(struct device *dev, struct regmap *regmap)
- 	return snd_soc_register_codec(dev, &soc_codec_dev_tlv320aic23,
- 				      &tlv320aic23_dai, 1);
- }
-+EXPORT_SYMBOL(tlv320aic23_probe);
- 
- MODULE_DESCRIPTION("ASoC TLV320AIC23 codec driver");
- MODULE_AUTHOR("Arun KS <arunks@mistralsolutions.com>");
+diff --git a/Documentation/devicetree/bindings/phy/apm-xgene-phy.txt b/Documentation/devicetree/bindings/phy/apm-xgene-phy.txt
+new file mode 100644
+index 0000000..5f3a65a
+--- /dev/null
++++ b/Documentation/devicetree/bindings/phy/apm-xgene-phy.txt
+@@ -0,0 +1,79 @@
++* APM X-Gene 15Gbps Multi-purpose PHY nodes
++
++PHY nodes are defined to describe on-chip 15Gbps Multi-purpose PHY. Each
++PHY (pair of lanes) has its own node.
++
++Required properties:
++- compatible		: Shall be "apm,xgene-phy".
++- reg			: PHY memory resource is the SDS PHY access resource.
++- #phy-cells		: Shall be 1 as it expects one argument for setting
++			  the mode of the PHY. Possible values are 0 (SATA),
++			  1 (SGMII), 2 (PCIe), 3 (USB), and 4 (XFI).
++
++Optional properties:
++- status		: Shall be "ok" if enabled or "disabled" if disabled.
++			  Default is "ok".
++- clocks		: Reference to the clock entry.
++- apm,tx-eye-tuning	: Manual control to fine tune the capture of the serial
++			  bit lines from the automatic calibrated position.
++			  Two set of 3-tuple setting for each (up to 3)
++			  supported link speed on the host. Range from 0 to
++			  127 in unit of one bit period. Default is 10.
++- apm,tx-eye-direction	: Eye tuning manual control direction. 0 means sample
++			  data earlier than the nominal sampling point. 1 means
++			  sample data later than the nominal sampling point.
++			  Two set of 3-tuple setting for each (up to 3)
++			  supported link speed on the host. Default is 0.
++- apm,tx-boost-gain	: Frequency boost AC (LSB 3-bit) and DC (2-bit)
++			  gain control. Two set of 3-tuple setting for each
++			  (up to 3) supported link speed on the host. Range is
++			  between 0 to 31 in unit of dB. Default is 3.
++- apm,tx-amplitude	: Amplitude control. Two set of 3-tuple setting for
++			  each (up to 3) supported link speed on the host.
++			  Range is between 0 to 199500 in unit of uV.
++			  Default is 199500 uV.
++- apm,tx-pre-cursor1	: 1st pre-cursor emphasis taps control. Two set of
++			  3-tuple setting for each (up to 3) supported link
++			  speed on the host. Range is 0 to 273000 in unit of
++			  uV. Default is 0.
++- apm,tx-pre-cursor2	: 2st pre-cursor emphasis taps control. Two set of
++			  3-tuple setting for each (up to 3) supported link
++			  speed on the host. Range is 0 to 127400 in unit uV.
++			  Default is 0x0.
++- apm,tx-post-cursor	: Post-cursor emphasis taps control. Two set of
++			  3-tuple setting for Gen1, Gen2, and Gen3. Range is
++			  between 0 to 0x1f in unit of 18.2mV. Default is 0xf.
++- apm,tx-speed		: Tx operating speed. One set of 3-tuple for each
++			  supported link speed on the host.
++			   0 = 1-2Gbps
++			   1 = 2-4Gbps (1st tuple default)
++			   2 = 4-8Gbps
++			   3 = 8-15Gbps (2nd tuple default)
++			   4 = 2.5-4Gbps
++			   5 = 4-5Gbps
++			   6 = 5-6Gbps
++			   7 = 6-16Gbps (3rd tuple default)
++
++NOTE: PHY override parameters are board specific setting.
++
++Example:
++		phy1: phy@1f21a000 {
++			compatible = "apm,xgene-phy";
++			reg = <0x0 0x1f21a000 0x0 0x100>;
++			#phy-cells = <1>;
++			status = "disabled";
++		};
++
++		phy2: phy@1f22a000 {
++			compatible = "apm,xgene-phy";
++			reg = <0x0 0x1f22a000 0x0 0x100>;
++			#phy-cells = <1>;
++			status = "ok";
++		};
++
++		phy3: phy@1f23a000 {
++			compatible = "apm,xgene-phy";
++			reg = <0x0 0x1f23a000 0x0 0x100>;
++			#phy-cells = <1>;
++			status = "ok";
++		};
 -- 
-1.8.1.4
+1.7.9.5
 
