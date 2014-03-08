@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697AbaCHCPt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 21:15:49 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:39119 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751581AbaCHCPr (ORCPT
+	id S1753013AbaCHCQk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 21:16:40 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:30447 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752116AbaCHCQi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 21:15:47 -0500
-Message-ID: <531A7D4F.7090303@converseincode.com>
-Date: Fri, 07 Mar 2014 18:15:43 -0800
-From: Behan Webster <behanw@converseincode.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Fri, 7 Mar 2014 21:16:38 -0500
+Message-ID: <531A7CFD.9030603@oracle.com>
+Date: Fri, 07 Mar 2014 21:14:21 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: linville@tuxdriver.com, johannes@sipsolutions.net, davem@davemloft.net,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dwmw2@infradead.org,
-        pageexec@freemail.hu,
-        =?ISO-8859-1?Q?Jan-Simon_M=F6?= =?ISO-8859-1?Q?ller?= 
-	<dl9pf@gmx.de>,
-        =?ISO-8859-1?Q?Vin=EDcius_Tinti?= <viniciustinti@gmail.com>,
-        Mark Charlebois <charlebm@gmail.com>
-Subject: Re: [PATCH v2] mac80211: LLVMLinux: Remove VLAIS usage from mac80211
-References: <1394177091.4653.1.camel@jlt4.sipsolutions.net>	 <1394241960-1764-1-git-send-email-behanw@converseincode.com> <1394243809.6972.4.camel@joe-AO722>
-In-Reply-To: <1394243809.6972.4.camel@joe-AO722>
+To: Jan Kara <jack@suse.cz>
+CC: Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: fs: gpf in simple_setattr
+References: <52B23CEA.7090405@oracle.com> <52CD762B.7020600@oracle.com> <53123D81.6080003@oracle.com> <20140303214040.GA15265@quack.suse.cz> <53166920.709@oracle.com> <20140305124536.GA32371@quack.suse.cz> <53189BF8.1010308@oracle.com>
+In-Reply-To: <53189BF8.1010308@oracle.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/14 17:56, Joe Perches wrote:
-> On Fri, 2014-03-07 at 17:26 -0800, behanw@converseincode.com wrote:
->> From: Jan-Simon Möller <dl9pf@gmx.de>
->>
->> Replaced the use of a Variable Length Array In Struct (VLAIS) with a C99
->> compliant equivalent. This is the original VLAIS struct.
-> []
->> diff --git a/net/mac80211/aes_ccm.c b/net/mac80211/aes_ccm.c
-> []
->> @@ -23,12 +23,14 @@ void ieee80211_aes_ccm_encrypt(struct crypto_aead *tfm, u8 *b_0, u8 *aad,
->>   			       u8 *data, size_t data_len, u8 *mic)
->>   {
->>   	struct scatterlist assoc, pt, ct[2];
->> -	struct {
->> -		struct aead_request	req;
->> -		u8			priv[crypto_aead_reqsize(tfm)];
->> -	} aead_req;
->>   
->> -	memset(&aead_req, 0, sizeof(aead_req));
->> +	char aead_req_data[sizeof(struct aead_request) +
->> +				crypto_aead_reqsize(tfm) +
->> +				CRYPTO_MINALIGN] CRYPTO_MINALIGN_ATTR;
-> Can this be a too large amount of stack?
+On 03/06/2014 11:02 AM, Sasha Levin wrote:
+> On 03/05/2014 07:45 AM, Jan Kara wrote:
+>> On Tue 04-03-14 19:00:32, Sasha Levin wrote:
+>>> On 03/03/2014 04:40 PM, Jan Kara wrote:
+>>>> On Sat 01-03-14 15:05:21, Sasha Levin wrote:
+>>>>>> ping again?
+>>>>>>
+>>>>>> I've been working on it, but don't see an obvious issue.
+>>>>>>
+>>>>>> It does look like an access to invalid memory easily doable from
+>>>>>> userspace, so it should probably get fixed soon...
+>>>>    Hum, can you maybe dump the name in dentry passed to simple_setattr()? Or
+>>>> maybe even the whole path using dentry_path() (but not sure if that will
+>>>> be workable on half-torn-down fs)? Maybe it will give us a hint at which
+>>>> filesystem to look...
+>>>
+>>> It's just garbage, this is why I'm having a hard time making any progress with
+>>> this bug.
+>>    OK, but that is strange because we hold a reference to the dentry so
+>> noone should free it. So dentry->d_name should be valid... Is the rest of
+>> the dentry also garbage? E.g. does dentry->d_inode still point to the inode
+>> we call __mark_inode_dirty() on? Is dentry->d_sb == dentry->d_inode->i_sb?
+>> Also if the inode isn't completely garbage, we can maybe infer something
+>> from inode->i_op - that should point to some statically allocated
+>> operations struct so we should be able to guess fs type from that.
 >
-> Is crypto_aead_reqsize() limited to < ~1k?
+> It's actually pretty tricky. This issue being a race makes catching it at the right time
+> difficult.
 >
-> Perhaps it'd be better to use kzalloc for this
-> or another reserved pool
-No more stack being used than with the the original code. The stack 
-memory use is identical.
+> I've tried catching it in simple_setattr() before calling mark_inode_dirty() by testing
+> for the poison values inside inode, but they seem to be perfectly fine there and still
+> show up as bad within mark_inode_dirty().
+>
+> Then I tried trapping it inside mark_inode_dirty(), but at that point I usually get garbage
+> inside inode, and have no way to go back to dentry.
+>
+> Right now I'm just trying to dump everything that goes through simple_setattr() in hopes that
+> I could easily figure out what went wrong by looking at the log, but that just stops the bug
+> from reproducing.
 
-Behan
+I've tried the following code in simple_setattr() right before the call to mark_inode_dirty():
 
--- 
-Behan Webster
-behanw@converseincode.com
+         p = dentry_path(dentry, pth, 200);
+         printk(KERN_ERR "doh: %s %s\n", p, inode->i_sb->s_type->name);
+
+but it seems that while 'p' ends up being "/", inode->i_sb is garbage and we can't pull out anything
+about the file system.
+
+Any way I could get anything useful any other way?
+
+
+Thanks,
+Sasha
 
