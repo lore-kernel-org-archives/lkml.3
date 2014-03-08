@@ -1,102 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752125AbaCHUL6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 15:11:58 -0500
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:43931 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751710AbaCHUL4 (ORCPT
+	id S1751831AbaCHURl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 15:17:41 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:64454 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052AbaCHURj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 15:11:56 -0500
+	Sat, 8 Mar 2014 15:17:39 -0500
+Message-ID: <531B7ADF.7030606@converseincode.com>
+Date: Sat, 08 Mar 2014 12:17:35 -0800
+From: Behan Webster <behanw@converseincode.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <201403071702.41716.arnd@arndb.de>
-References: <1394097598-17622-1-git-send-email-santosh.shilimkar@ti.com>
-	<CAL_Jsq+Y8w0sLLdh5vcWMnW3ohEafAFRWubtCK66P1axsf1wRA@mail.gmail.com>
-	<53194817.70802@ti.com>
-	<201403071702.41716.arnd@arndb.de>
-Date: Sat, 8 Mar 2014 14:11:55 -0600
-Message-ID: <CAL_JsqLu_16p-8FLjBYt7xQA2eAyiprPML2q5R3fnivZPrvPug@mail.gmail.com>
-Subject: Re: [PATCH 4/7] of: configure the platform device dma_mask and dma_pfn_offset
-From: Rob Herring <robherring2@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Joe Perches <joe@perches.com>
+CC: linville@tuxdriver.com, johannes@sipsolutions.net, davem@davemloft.net,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dwmw2@infradead.org,
+        pageexec@freemail.hu,
+        =?ISO-8859-1?Q?Jan-Simon_M=F6?= =?ISO-8859-1?Q?ller?= 
+	<dl9pf@gmx.de>,
+        =?ISO-8859-1?Q?Vin=EDcius_Tinti?= <viniciustinti@gmail.com>,
+        Mark Charlebois <charlebm@gmail.com>
+Subject: Re: [PATCH v2] mac80211: LLVMLinux: Remove VLAIS usage from mac80211
+References: <1394177091.4653.1.camel@jlt4.sipsolutions.net>	 <1394241960-1764-1-git-send-email-behanw@converseincode.com>	 <1394243809.6972.4.camel@joe-AO722> <531A7D4F.7090303@converseincode.com> <1394245662.6972.12.camel@joe-AO722>
+In-Reply-To: <1394245662.6972.12.camel@joe-AO722>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 7, 2014 at 10:02 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Friday 07 March 2014, Santosh Shilimkar wrote:
->> >> +
->> >> +       ret = dma_set_mask(dev, dma_mask);
->> >> +       if (ret < 0) {
->> >> +               dev_err(dev, "failed to set DMA mask %pad\n", &dma_mask);
->> >> +               dev->dma_mask = NULL;
->> >> +               return;
->> >> +       }
->> >> +
->> >> +       dev_dbg(dev, "dma_pfn_offset(%#08lx) dma_mask(%pad)\n",
->> >> +               dev->dma_pfn_offset, dev->dma_mask);
->> >> +
->> >> +       ret = dma_set_coherent_mask(dev, dma_mask);
->> >
->> > I think these 2 calls belong in the drivers, not here.
->> >
->> I also had same initial thought but Arnd mentioned that its a
->> shared responsibility between ARCH and drivers. Driver which
->> could be common between arches not always have the correct
->> mask information and it can change based on which arch it
->> is running.
->>
->> With some discussion back and forth, we thought updating
->> the dma_mask while the device getting created, would be
->> better place since we can find the arch capability at
->> this centralise code and update it.
->>
->> Ofcourse its bit debatable as the question you asked is
->> bit obvious as well. I let Arnd give his view here.
+On 03/07/14 18:27, Joe Perches wrote:
+> On Fri, 2014-03-07 at 18:15 -0800, Behan Webster wrote:
+>> On 03/07/14 17:56, Joe Perches wrote:
+>>> On Fri, 2014-03-07 at 17:26 -0800, behanw@converseincode.com wrote:
+>>>> From: Jan-Simon Möller <dl9pf@gmx.de>
+>>>>
+>>>> Replaced the use of a Variable Length Array In Struct (VLAIS) with a C99
+>>>> compliant equivalent. This is the original VLAIS struct.
+>>> []
+>>>> diff --git a/net/mac80211/aes_ccm.c b/net/mac80211/aes_ccm.c
+>>> []
+>>>> @@ -23,12 +23,14 @@ void ieee80211_aes_ccm_encrypt(struct crypto_aead *tfm, u8 *b_0, u8 *aad,
+>>>>    			       u8 *data, size_t data_len, u8 *mic)
+>>>>    {
+>>>>    	struct scatterlist assoc, pt, ct[2];
+>>>> -	struct {
+>>>> -		struct aead_request	req;
+>>>> -		u8			priv[crypto_aead_reqsize(tfm)];
+>>>> -	} aead_req;
+>>>>    
+>>>> -	memset(&aead_req, 0, sizeof(aead_req));
+>>>> +	char aead_req_data[sizeof(struct aead_request) +
+>>>> +				crypto_aead_reqsize(tfm) +
+>>>> +				CRYPTO_MINALIGN] CRYPTO_MINALIGN_ATTR;
+>>> Can this be a too large amount of stack?
+>>>
+>>> Is crypto_aead_reqsize() limited to < ~1k?
+>>>
+>>> Perhaps it'd be better to use kzalloc for this
+>>> or another reserved pool
+>> No more stack being used than with the the original code. The stack
+>> memory use is identical.
+> I do understand that, but that's not my question.
 >
-> If we set the mask *here*, we probably don't want to call 'dma_set_mask', but
-> write to the mask directly, or we could call dma_coerce_mask_and_coherent(),
-> which is really for overriding the mask pointer and value at once in cases
-> where you absolutely know what it should be.
+> I appreciate you're getting this to compile for llvm.
 >
-> We do need to decide what interface we want to use in platform device drivers,
-> and I'm hoping that Russell has some idea which one he prefers:
->
-> a) Follow what we do for PCI devices: assume that we can do DMA_MASK(32)
-> on any device, and have drivers call dma_set_mask(DMA_MASK(64)) on devices
-> that would like to do more than that, or call e.g. dma_set_mask(DMA_MASK(28))
-> for devices that can do less than 32 bit, as given in the argument. This
-> approach would be most consistent with the way PCI works, but it doesn't
-> really work well for the case where the mask is less than 32-bit and the
-> device driver doesn't know that.
->
-> b) Never have to call dma_set_mask() for platform devices and assume that the
-> platform code sets it up correctly. This would probably be the simpler
-> solution, and I can't think of any downsides at the moment.
+> Any idea of the max value of crypto_aead_reqsize?
+And I understand your question, as well as why it is important.
 
-I don't think we want this. In the case of setting up 64-bit masters,
-it is typically the device that knows if it can do 64-bit DMA either
-thru a capabilities register or compatible value. That device specific
-knowledge should really stay within the device's driver.
+Moving it from being stack based to alloacted memory may or may not be a 
+good thing, but is orthogonal to the intention of this particular patch 
+(which is just to remove the use of VLAIS from this code).
 
-Rob
+> $ grep-2.5.4 -rP --include=*.[ch] "(?:->|\.)\s*\breqsize\s*=[^=][^;]+;" *
+Very clever. I'm going to use this. :)
 
->
-> In either case we probably want to call something like dt_dma_configure()
-> from dma_set_mask() again to make sure that we stay within the limits
-> imposed by the bus structure.
->
->         Arnd
->
+Behan
+
+-- 
+Behan Webster
+behanw@converseincode.com
+
