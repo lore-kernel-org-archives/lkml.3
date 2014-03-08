@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709AbaCHBMc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:12:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46646 "EHLO
+	id S1754752AbaCHBNI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:13:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46656 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754430AbaCHBH5 (ORCPT
+	with ESMTP id S1754405AbaCHBHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:07:57 -0500
+	Fri, 7 Mar 2014 20:07:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Ben Hutchings <ben@decadent.org.uk>, Jianguo Wu <wujianguo@huawei.com>
-Subject: [PATCH 3.4 96/99] iwlwifi: pcie: add SKUs for 6000, 6005 and 6235 series
-Date: Fri,  7 Mar 2014 17:08:32 -0800
-Message-Id: <20140308010614.643041314@linuxfoundation.org>
+        Maxim Patlasov <mpatlasov@parallels.com>,
+        Miklos Szeredi <mszeredi@suse.cz>, Ben Hutchings <ben@decadent.org.uk>,
+        Rui Xiang <rui.xiang@huawei.com>
+Subject: [PATCH 3.4 56/99] fuse: hotfix truncate_pagecache() issue
+Date: Fri,  7 Mar 2014 17:07:52 -0800
+Message-Id: <20140308010613.398968534@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
 References: <20140308010611.468206150@linuxfoundation.org>
@@ -30,102 +30,194 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Maxim Patlasov <MPatlasov@parallels.com>
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+commit 06a7c3c2781409af95000c60a5df743fd4e2f8b4 upstream.
 
-commit 08a5dd3842f2ac61c6d69661d2d96022df8ae359 upstream.
+The way how fuse calls truncate_pagecache() from fuse_change_attributes()
+is completely wrong. Because, w/o i_mutex held, we never sure whether
+'oldsize' and 'attr->size' are valid by the time of execution of
+truncate_pagecache(inode, oldsize, attr->size). In fact, as soon as we
+released fc->lock in the middle of fuse_change_attributes(), we completely
+loose control of actions which may happen with given inode until we reach
+truncate_pagecache. The list of potentially dangerous actions includes
+mmap-ed reads and writes, ftruncate(2) and write(2) extending file size.
 
-Add some new PCI IDs to the table for 6000, 6005 and 6235 series.
+The typical outcome of doing truncate_pagecache() with outdated arguments
+is data corruption from user point of view. This is (in some sense)
+acceptable in cases when the issue is triggered by a change of the file on
+the server (i.e. externally wrt fuse operation), but it is absolutely
+intolerable in scenarios when a single fuse client modifies a file without
+any external intervention. A real life case I discovered by fsx-linux
+looked like this:
 
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-[bwh: Backported to 3.2:
- - Adjust filenames
- - Drop const from struct iwl_cfg]
+1. Shrinking ftruncate(2) comes to fuse_do_setattr(). The latter sends
+FUSE_SETATTR to the server synchronously, but before getting fc->lock ...
+2. fuse_dentry_revalidate() is asynchronously called. It sends FUSE_LOOKUP
+to the server synchronously, then calls fuse_change_attributes(). The
+latter updates i_size, releases fc->lock, but before comparing oldsize vs
+attr->size..
+3. fuse_do_setattr() from the first step proceeds by acquiring fc->lock and
+updating attributes and i_size, but now oldsize is equal to
+outarg.attr.size because i_size has just been updated (step 2). Hence,
+fuse_do_setattr() returns w/o calling truncate_pagecache().
+4. As soon as ftruncate(2) completes, the user extends file size by
+write(2) making a hole in the middle of file, then reads data from the hole
+either by read(2) or mmap-ed read. The user expects to get zero data from
+the hole, but gets stale data because truncate_pagecache() is not executed
+yet.
+
+The scenario above illustrates one side of the problem: not truncating the
+page cache even though we should. Another side corresponds to truncating
+page cache too late, when the state of inode changed significantly.
+Theoretically, the following is possible:
+
+1. As in the previous scenario fuse_dentry_revalidate() discovered that
+i_size changed (due to our own fuse_do_setattr()) and is going to call
+truncate_pagecache() for some 'new_size' it believes valid right now. But
+by the time that particular truncate_pagecache() is called ...
+2. fuse_do_setattr() returns (either having called truncate_pagecache() or
+not -- it doesn't matter).
+3. The file is extended either by write(2) or ftruncate(2) or fallocate(2).
+4. mmap-ed write makes a page in the extended region dirty.
+
+The result will be the lost of data user wrote on the fourth step.
+
+The patch is a hotfix resolving the issue in a simplistic way: let's skip
+dangerous i_size update and truncate_pagecache if an operation changing
+file size is in progress. This simplistic approach looks correct for the
+cases w/o external changes. And to handle them properly, more sophisticated
+and intrusive techniques (e.g. NFS-like one) would be required. I'd like to
+postpone it until the issue is well discussed on the mailing list(s).
+
+Changed in v2:
+ - improved patch description to cover both sides of the issue.
+
+Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+[bwh: Backported to 3.2: add the fuse_inode::state field which we didn't have]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-[wujg: Backported to 3.4:
- - Adjust context
- - Do not drop const from struct iwl_cfg]
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+Cc: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/wireless/iwlwifi/iwl-6000.c |    6 ++++++
- drivers/net/wireless/iwlwifi/iwl-cfg.h  |    1 +
- drivers/net/wireless/iwlwifi/iwl-pci.c  |   10 ++++++++++
- 3 files changed, 17 insertions(+)
 
---- a/drivers/net/wireless/iwlwifi/iwl-6000.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-6000.c
-@@ -459,6 +459,12 @@ const struct iwl_cfg iwl6035_2agn_cfg =
- 	.ht_params = &iwl6000_ht_params,
- };
+---
+ fs/fuse/dir.c    |    7 ++++++-
+ fs/fuse/file.c   |    8 +++++++-
+ fs/fuse/fuse_i.h |    9 +++++++++
+ fs/fuse/inode.c  |    4 +++-
+ 4 files changed, 25 insertions(+), 3 deletions(-)
+
+--- a/fs/fuse/dir.c
++++ b/fs/fuse/dir.c
+@@ -1348,6 +1348,7 @@ static int fuse_do_setattr(struct dentry
+ {
+ 	struct inode *inode = entry->d_inode;
+ 	struct fuse_conn *fc = get_fuse_conn(inode);
++	struct fuse_inode *fi = get_fuse_inode(inode);
+ 	struct fuse_req *req;
+ 	struct fuse_setattr_in inarg;
+ 	struct fuse_attr_out outarg;
+@@ -1378,8 +1379,10 @@ static int fuse_do_setattr(struct dentry
+ 	if (IS_ERR(req))
+ 		return PTR_ERR(req);
  
-+const struct iwl_cfg iwl6035_2agn_sff_cfg = {
-+	.name = "Intel(R) Centrino(R) Ultimate-N 6235 AGN",
-+	IWL_DEVICE_6035,
-+	.ht_params = &iwl6000_ht_params,
+-	if (is_truncate)
++	if (is_truncate) {
+ 		fuse_set_nowrite(inode);
++		set_bit(FUSE_I_SIZE_UNSTABLE, &fi->state);
++	}
+ 
+ 	memset(&inarg, 0, sizeof(inarg));
+ 	memset(&outarg, 0, sizeof(outarg));
+@@ -1441,12 +1444,14 @@ static int fuse_do_setattr(struct dentry
+ 		invalidate_inode_pages2(inode->i_mapping);
+ 	}
+ 
++	clear_bit(FUSE_I_SIZE_UNSTABLE, &fi->state);
+ 	return 0;
+ 
+ error:
+ 	if (is_truncate)
+ 		fuse_release_nowrite(inode);
+ 
++	clear_bit(FUSE_I_SIZE_UNSTABLE, &fi->state);
+ 	return err;
+ }
+ 
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -515,7 +515,8 @@ static void fuse_read_update_size(struct
+ 	struct fuse_inode *fi = get_fuse_inode(inode);
+ 
+ 	spin_lock(&fc->lock);
+-	if (attr_ver == fi->attr_version && size < inode->i_size) {
++	if (attr_ver == fi->attr_version && size < inode->i_size &&
++	    !test_bit(FUSE_I_SIZE_UNSTABLE, &fi->state)) {
+ 		fi->attr_version = ++fc->attr_version;
+ 		i_size_write(inode, size);
+ 	}
+@@ -877,12 +878,16 @@ static ssize_t fuse_perform_write(struct
+ {
+ 	struct inode *inode = mapping->host;
+ 	struct fuse_conn *fc = get_fuse_conn(inode);
++	struct fuse_inode *fi = get_fuse_inode(inode);
+ 	int err = 0;
+ 	ssize_t res = 0;
+ 
+ 	if (is_bad_inode(inode))
+ 		return -EIO;
+ 
++	if (inode->i_size < pos + iov_iter_count(ii))
++		set_bit(FUSE_I_SIZE_UNSTABLE, &fi->state);
++
+ 	do {
+ 		struct fuse_req *req;
+ 		ssize_t count;
+@@ -917,6 +922,7 @@ static ssize_t fuse_perform_write(struct
+ 	if (res > 0)
+ 		fuse_write_update_size(inode, pos);
+ 
++	clear_bit(FUSE_I_SIZE_UNSTABLE, &fi->state);
+ 	fuse_invalidate_attr(inode);
+ 
+ 	return res > 0 ? res : err;
+--- a/fs/fuse/fuse_i.h
++++ b/fs/fuse/fuse_i.h
+@@ -103,6 +103,15 @@ struct fuse_inode {
+ 
+ 	/** List of writepage requestst (pending or sent) */
+ 	struct list_head writepages;
++
++	/** Miscellaneous bits describing inode state */
++	unsigned long state;
 +};
 +
- const struct iwl_cfg iwl1030_bgn_cfg = {
- 	.name = "Intel(R) Centrino(R) Wireless-N 1030 BGN",
- 	IWL_DEVICE_6030,
---- a/drivers/net/wireless/iwlwifi/iwl-cfg.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-cfg.h
-@@ -106,6 +106,7 @@ extern const struct iwl_cfg iwl2000_2bgn
- extern const struct iwl_cfg iwl2000_2bgn_d_cfg;
- extern const struct iwl_cfg iwl2030_2bgn_cfg;
- extern const struct iwl_cfg iwl6035_2agn_cfg;
-+extern const struct iwl_cfg iwl6035_2agn_sff_cfg;
- extern const struct iwl_cfg iwl105_bgn_cfg;
- extern const struct iwl_cfg iwl105_bgn_d_cfg;
- extern const struct iwl_cfg iwl135_bgn_cfg;
---- a/drivers/net/wireless/iwlwifi/iwl-pci.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-pci.c
-@@ -138,13 +138,16 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_ca
++/** FUSE inode state bits */
++enum {
++	/** An operation changing file size is in progress  */
++	FUSE_I_SIZE_UNSTABLE,
+ };
  
- /* 6x00 Series */
- 	{IWL_PCI_DEVICE(0x422B, 0x1101, iwl6000_3agn_cfg)},
-+	{IWL_PCI_DEVICE(0x422B, 0x1108, iwl6000_3agn_cfg)},
- 	{IWL_PCI_DEVICE(0x422B, 0x1121, iwl6000_3agn_cfg)},
-+	{IWL_PCI_DEVICE(0x422B, 0x1128, iwl6000_3agn_cfg)},
- 	{IWL_PCI_DEVICE(0x422C, 0x1301, iwl6000i_2agn_cfg)},
- 	{IWL_PCI_DEVICE(0x422C, 0x1306, iwl6000i_2abg_cfg)},
- 	{IWL_PCI_DEVICE(0x422C, 0x1307, iwl6000i_2bg_cfg)},
- 	{IWL_PCI_DEVICE(0x422C, 0x1321, iwl6000i_2agn_cfg)},
- 	{IWL_PCI_DEVICE(0x422C, 0x1326, iwl6000i_2abg_cfg)},
- 	{IWL_PCI_DEVICE(0x4238, 0x1111, iwl6000_3agn_cfg)},
-+	{IWL_PCI_DEVICE(0x4238, 0x1118, iwl6000_3agn_cfg)},
- 	{IWL_PCI_DEVICE(0x4239, 0x1311, iwl6000i_2agn_cfg)},
- 	{IWL_PCI_DEVICE(0x4239, 0x1316, iwl6000i_2abg_cfg)},
+ struct fuse_conn;
+--- a/fs/fuse/inode.c
++++ b/fs/fuse/inode.c
+@@ -92,6 +92,7 @@ static struct inode *fuse_alloc_inode(st
+ 	fi->attr_version = 0;
+ 	fi->writectr = 0;
+ 	fi->orig_ino = 0;
++	fi->state = 0;
+ 	INIT_LIST_HEAD(&fi->write_files);
+ 	INIT_LIST_HEAD(&fi->queued_writes);
+ 	INIT_LIST_HEAD(&fi->writepages);
+@@ -199,7 +200,8 @@ void fuse_change_attributes(struct inode
+ 	loff_t oldsize;
  
-@@ -152,12 +155,16 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_ca
- 	{IWL_PCI_DEVICE(0x0082, 0x1301, iwl6005_2agn_cfg)},
- 	{IWL_PCI_DEVICE(0x0082, 0x1306, iwl6005_2abg_cfg)},
- 	{IWL_PCI_DEVICE(0x0082, 0x1307, iwl6005_2bg_cfg)},
-+	{IWL_PCI_DEVICE(0x0082, 0x1308, iwl6005_2agn_cfg)},
- 	{IWL_PCI_DEVICE(0x0082, 0x1321, iwl6005_2agn_cfg)},
- 	{IWL_PCI_DEVICE(0x0082, 0x1326, iwl6005_2abg_cfg)},
-+	{IWL_PCI_DEVICE(0x0082, 0x1328, iwl6005_2agn_cfg)},
- 	{IWL_PCI_DEVICE(0x0085, 0x1311, iwl6005_2agn_cfg)},
-+	{IWL_PCI_DEVICE(0x0085, 0x1318, iwl6005_2agn_cfg)},
- 	{IWL_PCI_DEVICE(0x0085, 0x1316, iwl6005_2abg_cfg)},
- 	{IWL_PCI_DEVICE(0x0082, 0xC020, iwl6005_2agn_sff_cfg)},
- 	{IWL_PCI_DEVICE(0x0085, 0xC220, iwl6005_2agn_sff_cfg)},
-+	{IWL_PCI_DEVICE(0x0085, 0xC228, iwl6005_2agn_sff_cfg)},
- 	{IWL_PCI_DEVICE(0x0082, 0x4820, iwl6005_2agn_d_cfg)},
- 	{IWL_PCI_DEVICE(0x0082, 0x1304, iwl6005_2agn_mow1_cfg)},/* low 5GHz active */
- 	{IWL_PCI_DEVICE(0x0082, 0x1305, iwl6005_2agn_mow2_cfg)},/* high 5GHz active */
-@@ -239,8 +246,11 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_ca
- 
- /* 6x35 Series */
- 	{IWL_PCI_DEVICE(0x088E, 0x4060, iwl6035_2agn_cfg)},
-+	{IWL_PCI_DEVICE(0x088E, 0x406A, iwl6035_2agn_sff_cfg)},
- 	{IWL_PCI_DEVICE(0x088F, 0x4260, iwl6035_2agn_cfg)},
-+	{IWL_PCI_DEVICE(0x088F, 0x426A, iwl6035_2agn_sff_cfg)},
- 	{IWL_PCI_DEVICE(0x088E, 0x4460, iwl6035_2agn_cfg)},
-+	{IWL_PCI_DEVICE(0x088E, 0x446A, iwl6035_2agn_sff_cfg)},
- 	{IWL_PCI_DEVICE(0x088E, 0x4860, iwl6035_2agn_cfg)},
- 
- /* 105 Series */
+ 	spin_lock(&fc->lock);
+-	if (attr_version != 0 && fi->attr_version > attr_version) {
++	if ((attr_version != 0 && fi->attr_version > attr_version) ||
++	    test_bit(FUSE_I_SIZE_UNSTABLE, &fi->state)) {
+ 		spin_unlock(&fc->lock);
+ 		return;
+ 	}
 
 
