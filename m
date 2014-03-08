@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751403AbaCHFPW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 00:15:22 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:42769 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750905AbaCHFPV (ORCPT
+	id S1751250AbaCHFYO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 00:24:14 -0500
+Received: from science.horizon.com ([71.41.210.146]:59991 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750953AbaCHFYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 00:15:21 -0500
-Message-ID: <531AA766.3050309@free-electrons.com>
-Date: Sat, 08 Mar 2014 06:15:18 +0100
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Johannes Thumshirn <johannes.thumshirn@men.de>, dougthompson@xmission.com,
-        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] EDAC: remove deprecated IRQF_DISABLED
-References: <1381641477-7373-1-git-send-email-michael.opdenacker@free-electrons.com> <20131014095602.GA14274@jtlinux> <5316B065.7070104@free-electrons.com> <20140305064915.GA28317@pd.tnic>
-In-Reply-To: <20140305064915.GA28317@pd.tnic>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Sat, 8 Mar 2014 00:24:13 -0500
+Date: 8 Mar 2014 00:24:10 -0500
+Message-ID: <20140308052410.14411.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: hpa@zytor.com
+Subject: Re: [GIT PULL] x86 fixes for v3.14-rc6
+Cc: linux@horizon.com, linux-kernel@vger.kernel.org, sbsiddha@gmail.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/2014 07:49 AM, Borislav Petkov wrote:
-> On Wed, Mar 05, 2014 at 06:04:37AM +0100, Michael Opdenacker wrote:
->> My patch still applies to 3.14-rc5, which means that mpc85xx_edac is
->> still there.
->>
->> I'd like to get rid of this patch for good ;)
-> Something like that, right:
->
-> https://git.kernel.org/cgit/linux/kernel/git/bp/bp.git/commit/?id=e245e3b25f9ef33b166f0f01d19d6418f52ae726
->
-> ?
->
-> Its on its way upstream.
-Great, thank you for the good news!
+> The FPU stuff is still pending, I fear.  I haven't heard anything from
+> Suresh so I suspect I'm going to have to dig into the init specifics
+> myself and fix up the patchset.
 
-Cheers,
+As I mentioned a couple of weeks ago in the "[PATCH] Make
+math_state_restore() save and restore the interrupt flag" thread,
+I've been running with just Suresh's second patch for the last month,
+and it's cured all my symptoms.
 
-Michael.
+Although, just as a minor style point, I might reduce the
+number of levels if indentation by rewriting it as:
 
--- 
-Michael Opdenacker, CEO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-+33 484 258 098
+ void __kernel_fpu_end(void)
+ {
+-	if (use_eager_fpu())
+-		math_state_restore();
+-	else
++	if (!use_eager_fpu()) {
+ 		stts();
++	} else if (likely(tsk_used_math(current)))
++		math_state_restore();
++	}
++	/*
++	 * When using eager fpu, tsk_used_math() is almost always true,
++	 * and we restore the user math state eagerly. In some special
++	 * cases during thread exit, signal handling etc, tsk_used_math()
++	 * is false. Those few places will take proper actions, so we
++	 * don't need to restore the math here.
++	 */
+ }
+ EXPORT_SYMBOL(__kernel_fpu_end);
 
+Truthfully, the idea I like best is Linus's proposal to postpone all
+such adjustments to the processor state until the return to user space,
+so multiple kernel_fpu_begin()/_end() pairs become much cheaper:
+http://marc.info/?l=linux-kernel&m=139128398717816
+
+Hoerver, that deep into Here Be Dragons code is somewhere I fear to tread,
+so I'm hoping someone braver than I is inspired.
