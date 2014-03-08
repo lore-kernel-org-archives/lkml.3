@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752840AbaCHM4K (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 07:56:10 -0500
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:55984 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752362AbaCHMyP (ORCPT
+	id S1752305AbaCHMyL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 07:54:11 -0500
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:56281 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752158AbaCHMyE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 07:54:15 -0500
+	Sat, 8 Mar 2014 07:54:04 -0500
 From: Valentina Manea <valentina.manea.m@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: tobias.polzer@fau.de, dominik.paulus@fau.de, ly80toro@cip.cs.fau.de,
@@ -14,9 +14,9 @@ Cc: tobias.polzer@fau.de, dominik.paulus@fau.de, ly80toro@cip.cs.fau.de,
         linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
         devel@driverdev.osuosl.org, firefly@lists.rosedu.org,
         andy.grover@gmail.com, Valentina Manea <valentina.manea.m@gmail.com>
-Subject: [PATCH 12/18] staging: usbip: userspace: update dependencies in README
-Date: Sat,  8 Mar 2014 14:53:30 +0200
-Message-Id: <1394283216-1277-13-git-send-email-valentina.manea.m@gmail.com>
+Subject: [PATCH 06/18] staging: usbip: userspace: add new list API
+Date: Sat,  8 Mar 2014 14:53:24 +0200
+Message-Id: <1394283216-1277-7-git-send-email-valentina.manea.m@gmail.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1394283216-1277-1-git-send-email-valentina.manea.m@gmail.com>
 References: <1394283216-1277-1-git-send-email-valentina.manea.m@gmail.com>
@@ -24,28 +24,157 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add libudev as dependency and remove libsysfs.
+Take the linked list implementation from the Linux Kernel
+and strip it down to what it is needed.
 
 Signed-off-by: Valentina Manea <valentina.manea.m@gmail.com>
 ---
- drivers/staging/usbip/userspace/README | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/staging/usbip/userspace/libsrc/list.h | 136 ++++++++++++++++++++++++++
+ 1 file changed, 136 insertions(+)
+ create mode 100644 drivers/staging/usbip/userspace/libsrc/list.h
 
-diff --git a/drivers/staging/usbip/userspace/README b/drivers/staging/usbip/userspace/README
-index 00a1658..6ead290 100644
---- a/drivers/staging/usbip/userspace/README
-+++ b/drivers/staging/usbip/userspace/README
-@@ -9,8 +9,8 @@
-     - USB/IP device drivers
- 	Found in the staging directory of the Linux kernel.
- 
--    - sysfsutils >= 2.0.0
--	sysfsutils library
-+    - libudev >= 2.0
-+	libudev library
- 
-     - libwrap0-dev
- 	tcp wrapper library
+diff --git a/drivers/staging/usbip/userspace/libsrc/list.h b/drivers/staging/usbip/userspace/libsrc/list.h
+new file mode 100644
+index 0000000..8d0c936
+--- /dev/null
++++ b/drivers/staging/usbip/userspace/libsrc/list.h
+@@ -0,0 +1,136 @@
++#ifndef _LIST_H
++#define _LIST_H
++
++/* Stripped down implementation of linked list taken
++ * from the Linux Kernel.
++ */
++
++/*
++ * Simple doubly linked list implementation.
++ *
++ * Some of the internal functions ("__xxx") are useful when
++ * manipulating whole lists rather than single entries, as
++ * sometimes we already know the next/prev entries and we can
++ * generate better code by using them directly rather than
++ * using the generic single-entry routines.
++ */
++
++struct list_head {
++	struct list_head *next, *prev;
++};
++
++#define LIST_HEAD_INIT(name) { &(name), &(name) }
++
++#define LIST_HEAD(name) \
++	struct list_head name = LIST_HEAD_INIT(name)
++
++static inline void INIT_LIST_HEAD(struct list_head *list)
++{
++	list->next = list;
++	list->prev = list;
++}
++
++/*
++ * Insert a new entry between two known consecutive entries.
++ *
++ * This is only for internal list manipulation where we know
++ * the prev/next entries already!
++ */
++static inline void __list_add(struct list_head *new,
++			      struct list_head *prev,
++			      struct list_head *next)
++{
++	next->prev = new;
++	new->next = next;
++	new->prev = prev;
++	prev->next = new;
++}
++
++/**
++ * list_add - add a new entry
++ * @new: new entry to be added
++ * @head: list head to add it after
++ *
++ * Insert a new entry after the specified head.
++ * This is good for implementing stacks.
++ */
++static inline void list_add(struct list_head *new, struct list_head *head)
++{
++	__list_add(new, head, head->next);
++}
++
++/*
++ * Delete a list entry by making the prev/next entries
++ * point to each other.
++ *
++ * This is only for internal list manipulation where we know
++ * the prev/next entries already!
++ */
++static inline void __list_del(struct list_head * prev, struct list_head * next)
++{
++	next->prev = prev;
++	prev->next = next;
++}
++
++#define POISON_POINTER_DELTA 0
++#define LIST_POISON1  ((void *) 0x00100100 + POISON_POINTER_DELTA)
++#define LIST_POISON2  ((void *) 0x00200200 + POISON_POINTER_DELTA)
++
++/**
++ * list_del - deletes entry from list.
++ * @entry: the element to delete from the list.
++ * Note: list_empty() on entry does not return true after this, the entry is
++ * in an undefined state.
++ */
++static inline void __list_del_entry(struct list_head *entry)
++{
++	__list_del(entry->prev, entry->next);
++}
++
++static inline void list_del(struct list_head *entry)
++{
++	__list_del(entry->prev, entry->next);
++	entry->next = LIST_POISON1;
++	entry->prev = LIST_POISON2;
++}
++
++/**
++ * list_entry - get the struct for this entry
++ * @ptr:	the &struct list_head pointer.
++ * @type:	the type of the struct this is embedded in.
++ * @member:	the name of the list_struct within the struct.
++ */
++#define list_entry(ptr, type, member) \
++	container_of(ptr, type, member)
++/**
++ * list_for_each	-	iterate over a list
++ * @pos:	the &struct list_head to use as a loop cursor.
++ * @head:	the head for your list.
++ */
++#define list_for_each(pos, head) \
++	for (pos = (head)->next; pos != (head); pos = pos->next)
++
++/**
++ * list_for_each_safe - iterate over a list safe against removal of list entry
++ * @pos:	the &struct list_head to use as a loop cursor.
++ * @n:		another &struct list_head to use as temporary storage
++ * @head:	the head for your list.
++ */
++#define list_for_each_safe(pos, n, head) \
++	for (pos = (head)->next, n = pos->next; pos != (head); \
++		pos = n, n = pos->next)
++
++#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
++
++/**
++ * container_of - cast a member of a structure out to the containing structure
++ * @ptr:	the pointer to the member.
++ * @type:	the type of the container struct this is embedded in.
++ * @member:	the name of the member within the struct.
++ *
++ */
++#define container_of(ptr, type, member) ({			\
++	const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
++	(type *)( (char *)__mptr - offsetof(type,member) );})
++
++#endif
 -- 
 1.8.1.2
 
