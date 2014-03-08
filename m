@@ -1,72 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752752AbaCHEAS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 23:00:18 -0500
-Received: from smtprelay0213.hostedemail.com ([216.40.44.213]:41634 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751296AbaCHEAR (ORCPT
+	id S1752928AbaCHEJI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 23:09:08 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:38177 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752153AbaCHEJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 23:00:17 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3871:3873:4321:5007:6119:7652:8603:10004:10400:10848:11026:11658:11914:12043:12438:12517:12519:12740:13069:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: pigs56_1f68d8d483327
-X-Filterd-Recvd-Size: 2182
-Message-ID: <1394251214.6972.20.camel@joe-AO722>
-Subject: Re: [PATCH 2/2] mm: Changed pr_warning() to pr_warn()
-From: Joe Perches <joe@perches.com>
-To: Choi Gi-yong <yong@gnoy.org>
-Cc: tj@kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 07 Mar 2014 20:00:14 -0800
-In-Reply-To: <1394250681-5258-1-git-send-email-yong@gnoy.org>
-References: <1394250681-5258-1-git-send-email-yong@gnoy.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 7 Mar 2014 23:09:06 -0500
+Date: Sat, 8 Mar 2014 12:09:04 +0800
+From: Liu Shuo <shuox.liu@gmail.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Liu ShuoX <shuox.liu@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Colin Cross <ccross@android.com>, Anton Vorontsov <anton@enomsg.org>,
+        yanmin_zhang@linux.intel.com
+Subject: [PATCH] pstore: clarify clearing of _read_cnt in ramoops_context
+Message-ID: <20140308040901.GA8339@shuo-gentoo>
+References: <1393569464-14904-1-git-send-email-shuox.liu@intel.com>
+ <CAGXu5jLFq-FqXsw4SWuhE-JPzCCecvMdUHbF0_B=S-GODFU1pg@mail.gmail.com>
+ <20140304014002.GA10071@lskakaxi-intel>
+ <CAGXu5j+5CXKJ7+vaWgZXVJgFGHFzcwO6-D1iE+wyDcpr+g8jdw@mail.gmail.com>
+ <20140307025842.GA6435@lskakaxi-intel>
+ <20140307132514.b6c596879f78478cad190e65@linux-foundation.org>
+ <CAGXu5jLiAi9Yofimw5tUvz2HELRWAJBaj3XXWaN-EHK_wANZDA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <CAGXu5jLiAi9Yofimw5tUvz2HELRWAJBaj3XXWaN-EHK_wANZDA@mail.gmail.com>
+X-Mailer: Mutt 1.5.x/OS X 10.7.x
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-03-08 at 12:51 +0900, Choi Gi-yong wrote:
+On Fri  7.Mar'14 at 16:23:29 -0800, Kees Cook wrote:
+>On Fri, Mar 7, 2014 at 1:25 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+>> On Fri, 7 Mar 2014 10:58:43 +0800 Liu ShuoX <shuox.liu@intel.com> wrote:
+>>
+>>>
+>>> ftrace_read_cnt need to be reset in open to support mutli times
+>>> getting the records.
+>>>
+>>> Signed-off-by: Liu ShuoX <shuox.liu@intel.com>
+>>> ---
+>>>   fs/pstore/ram.c | 3 ++-
+>>>   1 file changed, 2 insertions(+), 1 deletion(-)
+>>> ...
+>>
+>> The dump_read_cnt changes appear to be unrelated to the actual bugfix?
+>
+>I recommended this change since it is being cleared during open, and
+>this zeroing was confusing.
+>
+>> If so, please send this along as a separate patch.  With a full
+>> changelog - this one doesn't explain the dump_read_cnt changes at all.
+>
+>Liu, I would recommend a changelog along the lines of:
+>
+>Clarify which variables need to be cleared during pstore_open. Added
+>missed ftrace_read_cnt clearing and removed duplicate clearing in
+>ramoops_probe.
+>
+>-Kees
+Thanks. It's more clearly. I copied some of your comments into changelog. :)
+Re-sent the patch with the new changelog. The subject also changed.
 
-> diff --git a/mm/percpu.c b/mm/percpu.c
-[]
-> @@ -813,7 +813,7 @@ fail_unlock:
->  fail_unlock_mutex:
->  	mutex_unlock(&pcpu_alloc_mutex);
->  	if (warn_limit) {
-> -		pr_warning("PERCPU: allocation failed, size=%zu align=%zu, "
-> +		pr_warn("PERCPU: allocation failed, size=%zu align=%zu, "
->  			   "%s\n", size, align, err);
+----
+From: Liu ShuoX <shuox.liu@intel.com>
 
-If you're going do to this, please coalesce
-the format fragments.
+*_read_cnt in ramoops_context need to be cleared during pstore ->open
+to support mutli times getting the records. The patch added missed
+ftrace_read_cnt clearing and removed duplicate clearing in ramoops_probe.
 
-		pr_warn("PERCPU: allocation failed, size=%zu align=%zu, %s\n",
-			size, align, err);
+Signed-off-by: Liu ShuoX <shuox.liu@intel.com>
+---
+ fs/pstore/ram.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-> @@ -1690,7 +1690,7 @@ int __init pcpu_embed_first_chunk(size_t reserved_size, size_t dyn_size,
->  
->  	/* warn if maximum distance is further than 75% of vmalloc space */
->  	if (max_distance > VMALLOC_TOTAL * 3 / 4) {
-> -		pr_warning("PERCPU: max_distance=0x%zx too large for vmalloc "
-> +		pr_warn("PERCPU: max_distance=0x%zx too large for vmalloc "
->  			   "space 0x%lx\n", max_distance,
->  			   VMALLOC_TOTAL);
-
-here too
-
-		pr_warn("PERCPU: max_distance=0x%zx too large for vmalloc space 0x%lx\n",
-			max_distance, VMALLOC_TOTAL);
-
-> @@ -1774,7 +1774,7 @@ int __init pcpu_page_first_chunk(size_t reserved_size,
->  
->  			ptr = alloc_fn(cpu, PAGE_SIZE, PAGE_SIZE);
->  			if (!ptr) {
-> -				pr_warning("PERCPU: failed to allocate %s page "
-> +				pr_warn("PERCPU: failed to allocate %s page "
->  					   "for cpu%u\n", psize_str, cpu);
-
-etc.
-
-
+diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+index fa8cef2..9fe5b13 100644
+--- a/fs/pstore/ram.c
++++ b/fs/pstore/ram.c
+@@ -86,6 +86,7 @@ struct ramoops_context {
+ 	struct persistent_ram_ecc_info ecc_info;
+ 	unsigned int max_dump_cnt;
+ 	unsigned int dump_write_cnt;
++	/* _read_cnt need clear on ramoops_pstore_open */
+ 	unsigned int dump_read_cnt;
+ 	unsigned int console_read_cnt;
+ 	unsigned int ftrace_read_cnt;
+@@ -101,6 +102,7 @@ static int ramoops_pstore_open(struct pstore_info *psi)
+ 
+ 	cxt->dump_read_cnt = 0;
+ 	cxt->console_read_cnt = 0;
++	cxt->ftrace_read_cnt = 0;
+ 	return 0;
+ }
+ 
+@@ -428,7 +430,6 @@ static int ramoops_probe(struct platform_device *pdev)
+ 	if (pdata->ftrace_size && !is_power_of_2(pdata->ftrace_size))
+ 		pdata->ftrace_size = rounddown_pow_of_two(pdata->ftrace_size);
+ 
+-	cxt->dump_read_cnt = 0;
+ 	cxt->size = pdata->mem_size;
+ 	cxt->phys_addr = pdata->mem_address;
+ 	cxt->record_size = pdata->record_size;
+-- 
+1.8.3.2
