@@ -1,216 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751517AbaCHP0Q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 10:26:16 -0500
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:41057 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901AbaCHP0O (ORCPT
+	id S1751676AbaCHP0n (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 10:26:43 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:58258 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751558AbaCHP0l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 10:26:14 -0500
-Date: Sat, 8 Mar 2014 10:26:10 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [GIT PULL] workqueue fixes for v3.14-rc5
-Message-ID: <20140308152610.GA25021@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 8 Mar 2014 10:26:41 -0500
+Date: Sun, 9 Mar 2014 02:26:30 +1100
+From: Austin Boyle <boyle.austin@gmail.com>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mtd: m25p80: Flash protection support for STmicro chips
+Message-Id: <20140309022630.690bb2502ba890fdbf6eb6d9@gmail.com>
+In-Reply-To: <20140305083153.GR13420@norris-Latitude-E6410>
+References: <1357257748.31023.12.camel@pc786-ubu.GNET.GLOBAL.VPN>
+	<528D15B6.2030800@keymile.com>
+	<530F4CDE.7010205@keymile.com>
+	<20140305081008.GP13420@norris-Latitude-E6410>
+	<20140305083153.GR13420@norris-Latitude-E6410>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
-
-This pull request contains a workqueue usage fix for firewire.  For
-quite a long time now, workqueue only treats two work items identical
-iff both their addresses and callbacks match.  This is to avoid
-introducing false dependency through the work item being recycled
-while being executed.  This changes non-reentrancy guarantee for the
-users of PREPARE[_DELAYED]_WORK() - if the function changes,
-reentrancy isn't guaranteed against the previous instance.  Firewire
-depended on such nonreentrancy guarantee.  This is fixed by doing the
-work item multiplexing from firewire proper while keeping the work
-function unchanged.
-
-The following changes since commit 5bdfff96c69a4d5ab9c49e60abf9e070ecd2acbb:
-
-  workqueue: ensure @task is valid across kthread_stop() (2014-02-18 16:35:20 -0500)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.14-fixes
-
-for you to fetch changes up to 70044d71d31d6973665ced5be04ef39ac1c09a48:
-
-  firewire: don't use PREPARE_DELAYED_WORK (2014-03-07 10:19:57 -0500)
-
-Thanks.
-
-----------------------------------------------------------------
-Tejun Heo (1):
-      firewire: don't use PREPARE_DELAYED_WORK
-
- drivers/firewire/core-device.c | 22 +++++++++++++++-------
- drivers/firewire/sbp2.c        | 17 +++++++++++++----
- include/linux/firewire.h       |  1 +
- 3 files changed, 29 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/firewire/core-device.c b/drivers/firewire/core-device.c
-index de4aa40..2c6d5e1 100644
---- a/drivers/firewire/core-device.c
-+++ b/drivers/firewire/core-device.c
-@@ -916,7 +916,7 @@ static int lookup_existing_device(struct device *dev, void *data)
- 		old->config_rom_retries = 0;
- 		fw_notice(card, "rediscovered device %s\n", dev_name(dev));
+Hi all,
  
--		PREPARE_DELAYED_WORK(&old->work, fw_device_update);
-+		old->workfn = fw_device_update;
- 		fw_schedule_device_work(old, 0);
+I am very sorry I missed this discussion, that was my previous work email address. Thanks for finding me Brian!
  
- 		if (current_node == card->root_node)
-@@ -1075,7 +1075,7 @@ static void fw_device_init(struct work_struct *work)
- 	if (atomic_cmpxchg(&device->state,
- 			   FW_DEVICE_INITIALIZING,
- 			   FW_DEVICE_RUNNING) == FW_DEVICE_GONE) {
--		PREPARE_DELAYED_WORK(&device->work, fw_device_shutdown);
-+		device->workfn = fw_device_shutdown;
- 		fw_schedule_device_work(device, SHUTDOWN_DELAY);
- 	} else {
- 		fw_notice(card, "created device %s: GUID %08x%08x, S%d00\n",
-@@ -1196,13 +1196,20 @@ static void fw_device_refresh(struct work_struct *work)
- 		  dev_name(&device->device), fw_rcode_string(ret));
-  gone:
- 	atomic_set(&device->state, FW_DEVICE_GONE);
--	PREPARE_DELAYED_WORK(&device->work, fw_device_shutdown);
-+	device->workfn = fw_device_shutdown;
- 	fw_schedule_device_work(device, SHUTDOWN_DELAY);
-  out:
- 	if (node_id == card->root_node->node_id)
- 		fw_schedule_bm_work(card, 0);
- }
+> On Thu, Feb 27, 2014 at 03:34:06PM +0100, Gerlando Falauto wrote:
+> > >2) While I believe this might work on m25p32, m25p64 and m25p128 (i.e.
+> > >flashes with 64 blocks or more), it looks incorrect for smaller chips
+> > >(namely our m25p80, with just 16 blocks). There, the 1/64 logic scales
+> > >down to 1/16, e.g.
  
-+static void fw_device_workfn(struct work_struct *work)
-+{
-+	struct fw_device *device = container_of(to_delayed_work(work),
-+						struct fw_device, work);
-+	device->workfn(work);
-+}
-+
- void fw_node_event(struct fw_card *card, struct fw_node *node, int event)
- {
- 	struct fw_device *device;
-@@ -1252,7 +1259,8 @@ void fw_node_event(struct fw_card *card, struct fw_node *node, int event)
- 		 * power-up after getting plugged in.  We schedule the
- 		 * first config rom scan half a second after bus reset.
- 		 */
--		INIT_DELAYED_WORK(&device->work, fw_device_init);
-+		device->workfn = fw_device_init;
-+		INIT_DELAYED_WORK(&device->work, fw_device_workfn);
- 		fw_schedule_device_work(device, INITIAL_DELAY);
- 		break;
- 
-@@ -1268,7 +1276,7 @@ void fw_node_event(struct fw_card *card, struct fw_node *node, int event)
- 		if (atomic_cmpxchg(&device->state,
- 			    FW_DEVICE_RUNNING,
- 			    FW_DEVICE_INITIALIZING) == FW_DEVICE_RUNNING) {
--			PREPARE_DELAYED_WORK(&device->work, fw_device_refresh);
-+			device->workfn = fw_device_refresh;
- 			fw_schedule_device_work(device,
- 				device->is_local ? 0 : INITIAL_DELAY);
- 		}
-@@ -1283,7 +1291,7 @@ void fw_node_event(struct fw_card *card, struct fw_node *node, int event)
- 		smp_wmb();  /* update node_id before generation */
- 		device->generation = card->generation;
- 		if (atomic_read(&device->state) == FW_DEVICE_RUNNING) {
--			PREPARE_DELAYED_WORK(&device->work, fw_device_update);
-+			device->workfn = fw_device_update;
- 			fw_schedule_device_work(device, 0);
- 		}
- 		break;
-@@ -1308,7 +1316,7 @@ void fw_node_event(struct fw_card *card, struct fw_node *node, int event)
- 		device = node->data;
- 		if (atomic_xchg(&device->state,
- 				FW_DEVICE_GONE) == FW_DEVICE_RUNNING) {
--			PREPARE_DELAYED_WORK(&device->work, fw_device_shutdown);
-+			device->workfn = fw_device_shutdown;
- 			fw_schedule_device_work(device,
- 				list_empty(&card->link) ? 0 : SHUTDOWN_DELAY);
- 		}
-diff --git a/drivers/firewire/sbp2.c b/drivers/firewire/sbp2.c
-index 281029d..7aef911 100644
---- a/drivers/firewire/sbp2.c
-+++ b/drivers/firewire/sbp2.c
-@@ -146,6 +146,7 @@ struct sbp2_logical_unit {
- 	 */
- 	int generation;
- 	int retries;
-+	work_func_t workfn;
- 	struct delayed_work work;
- 	bool has_sdev;
- 	bool blocked;
-@@ -864,7 +865,7 @@ static void sbp2_login(struct work_struct *work)
- 	/* set appropriate retry limit(s) in BUSY_TIMEOUT register */
- 	sbp2_set_busy_timeout(lu);
- 
--	PREPARE_DELAYED_WORK(&lu->work, sbp2_reconnect);
-+	lu->workfn = sbp2_reconnect;
- 	sbp2_agent_reset(lu);
- 
- 	/* This was a re-login. */
-@@ -918,7 +919,7 @@ static void sbp2_login(struct work_struct *work)
- 	 * If a bus reset happened, sbp2_update will have requeued
- 	 * lu->work already.  Reset the work from reconnect to login.
- 	 */
--	PREPARE_DELAYED_WORK(&lu->work, sbp2_login);
-+	lu->workfn = sbp2_login;
- }
- 
- static void sbp2_reconnect(struct work_struct *work)
-@@ -952,7 +953,7 @@ static void sbp2_reconnect(struct work_struct *work)
- 		    lu->retries++ >= 5) {
- 			dev_err(tgt_dev(tgt), "failed to reconnect\n");
- 			lu->retries = 0;
--			PREPARE_DELAYED_WORK(&lu->work, sbp2_login);
-+			lu->workfn = sbp2_login;
- 		}
- 		sbp2_queue_work(lu, DIV_ROUND_UP(HZ, 5));
- 
-@@ -972,6 +973,13 @@ static void sbp2_reconnect(struct work_struct *work)
- 	sbp2_conditionally_unblock(lu);
- }
- 
-+static void sbp2_lu_workfn(struct work_struct *work)
-+{
-+	struct sbp2_logical_unit *lu = container_of(to_delayed_work(work),
-+						struct sbp2_logical_unit, work);
-+	lu->workfn(work);
-+}
-+
- static int sbp2_add_logical_unit(struct sbp2_target *tgt, int lun_entry)
- {
- 	struct sbp2_logical_unit *lu;
-@@ -998,7 +1006,8 @@ static int sbp2_add_logical_unit(struct sbp2_target *tgt, int lun_entry)
- 	lu->blocked  = false;
- 	++tgt->dont_block;
- 	INIT_LIST_HEAD(&lu->orb_list);
--	INIT_DELAYED_WORK(&lu->work, sbp2_login);
-+	lu->workfn = sbp2_login;
-+	INIT_DELAYED_WORK(&lu->work, sbp2_lu_workfn);
- 
- 	list_add_tail(&lu->link, &tgt->lu_list);
- 	return 0;
-diff --git a/include/linux/firewire.h b/include/linux/firewire.h
-index 5d7782e..c3683bd 100644
---- a/include/linux/firewire.h
-+++ b/include/linux/firewire.h
-@@ -200,6 +200,7 @@ struct fw_device {
- 	unsigned irmc:1;
- 	unsigned bc_implemented:2;
- 
-+	work_func_t workfn;
- 	struct delayed_work work;
- 	struct fw_attribute_group attribute_group;
- };
+Gerlando, I agree that the logic for calculating the protection bits doesn't work for chips with fewer than 64 sectors. I was only testing the m25p64 at the time.
+
+I don't think there is an issue with some bootloaders not supporting this feature, it is already optional.
+
+It is a good idea to add another flag for flash protection to be explicitly clear which devices support this. (I previously made the assumption that writing to those status bits when unused was harmless, from the datasheets I found they seem to be don't cares.)
+
+The following logic for calculating the block protect bits applies to the majority of the STmicro devices that support protection (m25p10, p20, p40, p80, p16, pe16, p32, p64, p128):
+
+SR_BPs	| Protected (upper)	| Unprotected (lower)
+=====================================================
+0	| 0/n			| n - 0/n
+1	| 1/n			| n - 1/n
+2	| 2/n			| n - 2/n
+3	| 3/n			| n - 4/n
+4	| 4/n			| n - 8/n
+5	| 5/n			| n - 16/n
+6	| 6/n			| n - 32/n
+7	| 7/n			| n - 64/n
+
+Where n is number of sectors if less than 64.
+
+Some special cases:
+- m25p64 has 128 sectors but only supports protection to 64 sector resolution.
+- m25p05 uses SR=1/2 for protect Block Erase, and SR=3 for protect Block Erase, Page Program, Sector Erase.
+- m25px32 has an additional bit for locking the lower sections. 
+
+A patch with this implementation follows. Let me know what you think. I have a spreadsheet summarising the block protect bits for the STmicro devices I can share if it will help.
+
+Thanks,
+Austin.
