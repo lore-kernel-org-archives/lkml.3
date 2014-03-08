@@ -1,120 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751278AbaCHJxm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 04:53:42 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:65469 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901AbaCHJxi (ORCPT
+	id S1751558AbaCHJzx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 04:55:53 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:45093 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751168AbaCHJzp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 04:53:38 -0500
-From: Linyongting <linyongting@huawei.com>
-To: "harryxiyou@gmail.com" <harryxiyou@gmail.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "linux-kernel@zh-kernel.org" <linux-kernel@zh-kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "linyongting@gmail.com" <linyongting@gmail.com>
-Subject: [PATCH] Chinese: add translation of io_ordering.txt
-Thread-Topic: [PATCH] Chinese: add translation of io_ordering.txt
-Thread-Index: Ac86tDp9BRHeukExQliiUC7puEtJEg==
-Date: Sat, 8 Mar 2014 09:53:17 +0000
-Message-ID: <42719C9A3BC7524EB9C1B67FB83BF30C82600E9F@SZXEMA501-MBS.china.huawei.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.66.68.239]
-Content-Type: text/plain; charset="gb2312"
+	Sat, 8 Mar 2014 04:55:45 -0500
 MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+In-Reply-To: <20140308010456.GA30660@google.com>
+References: <CAMxnaaXd9-VbxSYa9q1YVT+fwfDFYKGG2Hq-1jkc-awLX-HwtQ@mail.gmail.com>
+ <CAErSpo5fkaFNq_qTZ+gTDMV554f4diOXQ7_4bsHqj06iAGTpHg@mail.gmail.com>
+ <CAE9FiQVNFqTw+92qy8zcwG1haiSZzU+KE3oh4YnjNc_aE6KUnA@mail.gmail.com> <20140308010456.GA30660@google.com>
+From: Andreas Noever <andreas.noever@gmail.com>
+Date: Sat, 8 Mar 2014 10:55:23 +0100
+Message-ID: <CAMxnaaVfpJCW7e-b80y4wmVWcRDK5t7qY+pNn71CsLPRN2ojnA@mail.gmail.com>
+Subject: Re: [Bug] PCI: Enable INTx if BIOS left them disabled - triggers
+ during rescan
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Rajat Jain <rajatxjain@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s289rljA008107
 
-This is a Chinese translated version of Documentation/io_ordering.txt
+On Sat, Mar 8, 2014 at 2:04 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> [+cc Rafael]
+>
+> On Fri, Mar 07, 2014 at 11:39:48AM -0800, Yinghai Lu wrote:
+>> On Fri, Mar 7, 2014 at 8:45 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> >
+>> > I opened a bugzilla report at https://bugzilla.kernel.org/show_bug.cgi?id=71691
+>> >
+>> > It seems like clearing DisINTx has some effect on MSI.  I don't see
+>> > anything in the spec that would suggest this (I'm looking at the PCIe
+>> > r3.0 spec, sec 7.5.1.1).
+>> >
+>> > Can somebody point out a connection between DisINTx and MSI?  If not,
+>> > maybe we'll need some sort of quirk to deal with this.
+>>
+>> I had different impression: if you disable INTx in some chipset, MSI will not
+>> work anymore.
+>>
+>> so we have
+>>
+>> static void pci_intx_for_msi(struct pci_dev *dev, int enable)
+>> {
+>>         if (!(dev->dev_flags & PCI_DEV_FLAGS_MSI_INTX_DISABLE_BUG))
+>>                 pci_intx(dev, enable);
+>> }
+>>
+>> and have quirks for ati and broadcom chip to set that FLAG.
+>
+> Setting INTX_DISABLE on some chipsets seems to disable MSI, and that
+> behavior seems to be a hardware defect (see ba698ad4b7e4 "PCI: Add
+> quirk for devices which disable MSI when INTX_DISABLE is set.")
+>
+> Andreas has a device where *clearing* INTX_DISABLE seems to disable
+> MSI.  Do you think that's also a hardware defect?  If it's not a
+> defect, is there something in the spec that explains why that happens?
+>
+>> regarding the regression: i would suggest move out
+>> do_pci_enable_intx() from re-enable path.
+>
+> Today we have this:
+>
+>   pcie_portdrv_probe
+>     pci_enable_device           # clears INTX_DISABLE
+>     pci_enable_msi              # sets INTX_DISABLE
+>
+>   pciehp_configure_device
+>     pci_reenable_device         # clears INTX_DISABLE again
+>
+> This is clearly not the intent; we set INTX_DISABLE when MSI was
+> enabled, then we clear it again later even though MSI is still
+> enabled.  Maybe we should just leave INTX_DISABLE alone if
+> (dev->msi_enabled || dev->msix_enabled).
+>
+> pci_reenable_device() is also used in the device resume path.  I don't
+> know what should happen there.
+>
+> But I'm curious about why we set INTX_DISABLE when enabling MSI/MSI-X
+> in the first place.  Per the PCI 3.0 spec, sec 6.8.3.3:
+>
+>   While enabled for MSI or MSI-X operation, a function is prohibited
+>   from using its INTx# pin (if implemented) to request service (MSI,
+>   MSI-X, and INTx# are mutually exclusive).
+>
+> This suggests that we might not need to touch INTX_DISABLE when we're
+> enabling MSI/MSI-X.  I looked at these commits related to it:
+>
+>   ba698ad4b7e4 PCI: Add quirk for devices which disable MSI when INTX_DISABLE is set.
+>   b1cbf4e4dddd msi: fix up the msi enable/disable logic
+>   1769b46a3ed9 PCI MSI: always toggle legacy-INTx-enable bit upon MSI entry/exit
+>   986162d3239a ia32 Message Signalled Interrupt support
+>
+> and none of them mentions a problem that requires us to set
+> INTX_DISABLE.  It's possible that we're causing ourselves trouble by
+> being overly defensive.  I wonder what would happen if we stopped
+> fiddling with it in the MSI/MSI-X paths, e.g., something like this
+> (just as an experiment, of course):
+>
+>   diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+>   index 7a0fec6ce571..9ef7bd608add 100644
+>   --- a/drivers/pci/msi.c
+>   +++ b/drivers/pci/msi.c
+>   @@ -442,8 +442,6 @@ static struct msi_desc *alloc_msi_entry(struct pci_dev *dev)
+>
+>    static void pci_intx_for_msi(struct pci_dev *dev, int enable)
+>    {
+>   -     if (!(dev->dev_flags & PCI_DEV_FLAGS_MSI_INTX_DISABLE_BUG))
+>   -             pci_intx(dev, enable);
+>    }
+>
+>    static void __pci_restore_msi_state(struct pci_dev *dev)
+>
+> If we did that, INTX_DISABLE would be cleared by the first
+> pci_enable_device() and pci_reenable_device() wouldn't do anything,
+> leaving it cleared.  The resulting state (cleared) would be the same,
+> but the transitions would be gone, and maybe those are important.
+Just a quick note: With pci_intx_for_msi removed no hotplug events are
+ever delivered. Everything else still works though. So it is either a
+problem specific to Thunderbolt bridges or maybe it just affects
+hotplug (and PME?) interrupts.
 
-Signed-off-by: Lin Yongting <linyongting@gmail.com>
----
- Documentation/zh_CN/io_ordering.txt |   67 +++++++++++++++++++++++++++++++++++
- 1 file changed, 67 insertions(+)
- create mode 100644 Documentation/zh_CN/io_ordering.txt
+I also attempted booting with pcie_hp=nomsi and now everything works.
+Interestingly pciehp now also  gets an interrupt from 09 (event though
+that card has just been removed). I suspect this is just pciehp not
+noticing that it itself is gone.
+pciehp 0000:06:03.0:pcie24: Card not present on Slot(3-1)
+pciehp 0000:09:00.0:pcie24: Latch open on Slot(9)
+pciehp 0000:09:00.0:pcie24: Button pressed on Slot(9)
+pciehp 0000:09:00.0:pcie24: Card present on Slot(9)
+pciehp 0000:09:00.0:pcie24: Power fault on slot 9
+pciehp 0000:09:00.0:pcie24: Power fault bit 0 set
+pciehp 0000:09:00.0:pcie24: PCI slot #9 - powering on due to button press.
+pciehp 0000:09:00.0:pcie24: unloading service driver pciehp
+pciehp 0000:09:00.0:pcie24: Link Training Error occurs
+pciehp 0000:09:00.0:pcie24: Failed to check link status
 
-diff --git a/Documentation/zh_CN/io_ordering.txt b/Documentation/zh_CN/io_ordering.txt
-new file mode 100644
-index 0000000..e592daf
---- /dev/null
-+++ b/Documentation/zh_CN/io_ordering.txt
-@@ -0,0 +1,67 @@
-+Chinese translated version of Documentation/io_orderings.txt
-+
-+If you have any comment or update to the content, please contact the
-+original document maintainer directly.  However, if you have a problem
-+communicating in English you can also ask the Chinese maintainer for
-+help.  Contact the Chinese maintainer if this translation is outdated
-+or if there is a problem with the translation.
-+
-+Chinese maintainer: Lin Yongting <linyongting@gmail.com>
-+---------------------------------------------------------------------
-+Documentation/io_ordering.txt µÄÖĞÎÄ·­Òë
-+
-+Èç¹ûÏëÆÀÂÛ»ò¸üĞÂ±¾ÎÄµÄÄÚÈİ£¬ÇëÖ±½ÓÁªÏµÔ­ÎÄµµµÄÎ¬»¤Õß¡£Èç¹ûÄãÊ¹ÓÃÓ¢ÎÄ
-+½»Á÷ÓĞÀ§ÄÑµÄ»°£¬Ò²¿ÉÒÔÏòÖĞÎÄ°æÎ¬»¤ÕßÇóÖú¡£Èç¹û±¾·­Òë¸üĞÂ²»¼°Ê±»òÕß·­
-+Òë´æÔÚÎÊÌâ£¬ÇëÁªÏµÖĞÎÄ°æÎ¬»¤Õß¡£
-+
-+ÖĞÎÄ°æÎ¬»¤Õß£º ÁÖÓÀÌı Lin Yongting <linyongting@gmail.com>
-+ÖĞÎÄ°æ·­ÒëÕß£º ÁÖÓÀÌı Lin Yongting <linyongting@gmail.com>
-+ÖĞÎÄ°æĞ£ÒëÕß£º ÁÖÓÀÌı Lin Yongting <linyongting@gmail.com>
-+
-+
-+ÒÔÏÂÎªÕıÎÄ
-+---------------------------------------------------------------------
-+
-+ÔÚÄ³Ğ©Æ½Ì¨ÉÏ£¬ËùÎ½µÄÄÚ´æÓ³ÉäI/OÊÇÈõË³Ğò¡£ÔÚÕâĞ©Æ½Ì¨ÉÏ£¬Çı¶¯¿ª·¢ÕßÓĞÔğÈÎ
-+±£Ö¤I/OÄÚ´æÓ³ÉäµØÖ·µÄĞ´²Ù×÷°´³ÌĞòÍ¼ÒâµÄË³Ğò´ïµ½Éè±¸¡£Í¨³£¶ÁÈ¡Ò»¸ö¡°°²È«¡±
-+Éè±¸¼Ä´æÆ÷»òÇÅ¼Ä´æÆ÷£¬´¥·¢IOĞ¾Æ¬ÇåË¢Î´´¦ÀíµÄĞ´²Ù×÷µ½´ïÉè±¸ºó²Å´¦Àí¶Á²Ù×÷£¬
-+¶ø´ïµ½±£Ö¤Ä¿µÄ¡£Çı¶¯³ÌĞòÍ¨³£ÔÚspinlock±£»¤µÄÁÙ½çÇøÍË³öÖ®Ç°Ê¹ÓÃÕâÖÖ¼¼Êõ¡£
-+ÕâÒ²¿ÉÒÔ±£Ö¤ºóÃæµÄĞ´²Ù×÷Ö»ÔÚÇ°ÃæµÄĞ´²Ù×÷Ö®ºóµ½´ïÉè±¸£¨Õâ·Ç³£ÀàËÆÓÚÄÚ´æ
-+ÆÁÕÏ²Ù×÷£¬mb()£¬²»¹ı½öÊÊÓÃÓÚI/O£©¡£
-+
-+¼ÙÉèÒ»¸öÉè±¸Çı¶¯³ÌµÄ¾ßÌåÀı×Ó£º
-+
-+        ...
-+CPU A:  spin_lock_irqsave(&dev_lock, flags)
-+CPU A:  val = readl(my_status);
-+CPU A:  ...
-+CPU A:  writel(newval, ring_ptr);
-+CPU A:  spin_unlock_irqrestore(&dev_lock, flags)
-+        ...
-+CPU B:  spin_lock_irqsave(&dev_lock, flags)
-+CPU B:  val = readl(my_status);
-+CPU B:  ...
-+CPU B:  writel(newval2, ring_ptr);
-+CPU B:  spin_unlock_irqrestore(&dev_lock, flags)
-+        ...
-+
-+ÉÏÊöÀı×ÓÖĞ£¬Éè±¸¿ÉÄÜ»áÏÈ½ÓÊÕµ½newval2µÄÖµ£¬È»ºó½ÓÊÕµ½newvalµÄÖµ£¬ÎÊÌâ¾Í
-+·¢ÉúÁË¡£²»¹ıºÜÈİÒ×Í¨¹ıÏÂÃæ·½·¨À´ĞŞ¸´£º
-+
-+        ...
-+CPU A:  spin_lock_irqsave(&dev_lock, flags)
-+CPU A:  val = readl(my_status);
-+CPU A:  ...
-+CPU A:  writel(newval, ring_ptr);
-+CPU A:  (void)readl(safe_register); /* ÅäÖÃ¼Ä´æÆ÷£¿*/
-+CPU A:  spin_unlock_irqrestore(&dev_lock, flags)
-+        ...
-+CPU B:  spin_lock_irqsave(&dev_lock, flags)
-+CPU B:  val = readl(my_status);
-+CPU B:  ...
-+CPU B:  writel(newval2, ring_ptr);
-+CPU B:  (void)readl(safe_register); /* ÅäÖÃ¼Ä´æÆ÷£¿*/
-+CPU B:  spin_unlock_irqrestore(&dev_lock, flags)
-+
-+ÔÚ½â¾ö·½°¸ÖĞ£¬¶ÁÈ¡safe_register¼Ä´æÆ÷£¬´¥·¢IOĞ¾Æ¬ÇåË¢Î´´¦ÀíµÄĞ´²Ù×÷£¬
-+ÔÙ´¦ÀíºóÃæµÄ¶Á²Ù×÷£¬·ÀÖ¹Òı·¢Êı¾İ²»Ò»ÖÂÎÊÌâ¡£
--- 
-1.7.9.5
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> The thing I don't like about the patch below is that it's magical: the
+> code doesn't have any obvious connection with the problem.  How would
+> one deduce that this is necessary, or explain why it's necessary?  A
+> changelog like "this makes things work" is not really very useful.  If
+> we make a change like this, it needs to be connected with MSI/MSI-X
+> somehow so a reader can figure out why we twiddle INTX_DISABLE in the
+> enable path but not the reenable path.
+>
+> Bjorn
+>
+>> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+>> index 5a24cb3..92718c9 100644
+>> --- a/drivers/pci/pci.c
+>> +++ b/drivers/pci/pci.c
+>> @@ -1190,11 +1190,22 @@ int __weak pcibios_enable_device(struct
+>> pci_dev *dev, int bars)
+>>      return pci_enable_resources(dev, bars);
+>>  }
+>>
+>> +static void do_pci_enable_intx(struct pci_dev *dev)
+>> +{
+>> +    u8 pin;
+>> +    pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
+>> +    if (pin) {
+>> +        pci_read_config_word(dev, PCI_COMMAND, &cmd);
+>> +        if (cmd & PCI_COMMAND_INTX_DISABLE)
+>> +            pci_write_config_word(dev, PCI_COMMAND,
+>> +                          cmd & ~PCI_COMMAND_INTX_DISABLE);
+>> +    }
+>> +}
+>> +
+>>  static int do_pci_enable_device(struct pci_dev *dev, int bars)
+>>  {
+>>      int err;
+>>      u16 cmd;
+>> -    u8 pin;
+>>
+>>      err = pci_set_power_state(dev, PCI_D0);
+>>      if (err < 0 && err != -EIO)
+>> @@ -1204,14 +1215,6 @@ static int do_pci_enable_device(struct pci_dev
+>> *dev, int bars)
+>>          return err;
+>>      pci_fixup_device(pci_fixup_enable, dev);
+>>
+>> -    pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
+>> -    if (pin) {
+>> -        pci_read_config_word(dev, PCI_COMMAND, &cmd);
+>> -        if (cmd & PCI_COMMAND_INTX_DISABLE)
+>> -            pci_write_config_word(dev, PCI_COMMAND,
+>> -                          cmd & ~PCI_COMMAND_INTX_DISABLE);
+>> -    }
+>> -
+>>      return 0;
+>>  }
+>>
+>> @@ -1287,6 +1290,8 @@ static int pci_enable_device_flags(struct
+>> pci_dev *dev, unsigned long flags)
+>>      err = do_pci_enable_device(dev, bars);
+>>      if (err < 0)
+>>          atomic_dec(&dev->enable_cnt);
+>> +    else
+>> +        do_pci_enable_intx(dev);
+>>      return err;
+>>  }
+>
+>> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+>> index 5a24cb3..92718c9 100644
+>> --- a/drivers/pci/pci.c
+>> +++ b/drivers/pci/pci.c
+>> @@ -1190,11 +1190,22 @@ int __weak pcibios_enable_device(struct pci_dev *dev, int bars)
+>>       return pci_enable_resources(dev, bars);
+>>  }
+>>
+>> +static void do_pci_enable_intx(struct pci_dev *dev)
+>> +{
+>> +     u8 pin;
+>> +     pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
+>> +     if (pin) {
+>> +             pci_read_config_word(dev, PCI_COMMAND, &cmd);
+>> +             if (cmd & PCI_COMMAND_INTX_DISABLE)
+>> +                     pci_write_config_word(dev, PCI_COMMAND,
+>> +                                           cmd & ~PCI_COMMAND_INTX_DISABLE);
+>> +     }
+>> +}
+>> +
+>>  static int do_pci_enable_device(struct pci_dev *dev, int bars)
+>>  {
+>>       int err;
+>>       u16 cmd;
+>> -     u8 pin;
+>>
+>>       err = pci_set_power_state(dev, PCI_D0);
+>>       if (err < 0 && err != -EIO)
+>> @@ -1204,14 +1215,6 @@ static int do_pci_enable_device(struct pci_dev *dev, int bars)
+>>               return err;
+>>       pci_fixup_device(pci_fixup_enable, dev);
+>>
+>> -     pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
+>> -     if (pin) {
+>> -             pci_read_config_word(dev, PCI_COMMAND, &cmd);
+>> -             if (cmd & PCI_COMMAND_INTX_DISABLE)
+>> -                     pci_write_config_word(dev, PCI_COMMAND,
+>> -                                           cmd & ~PCI_COMMAND_INTX_DISABLE);
+>> -     }
+>> -
+>>       return 0;
+>>  }
+>>
+>> @@ -1287,6 +1290,8 @@ static int pci_enable_device_flags(struct pci_dev *dev, unsigned long flags)
+>>       err = do_pci_enable_device(dev, bars);
+>>       if (err < 0)
+>>               atomic_dec(&dev->enable_cnt);
+>> +     else
+>> +             do_pci_enable_intx(dev);
+>>       return err;
+>>  }
+>>
+>
