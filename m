@@ -1,66 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752261AbaCHXmJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 18:42:09 -0500
-Received: from mout.gmx.net ([212.227.17.22]:63184 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751669AbaCHXmH convert rfc822-to-8bit (ORCPT
+	id S1752371AbaCHXu6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 18:50:58 -0500
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.218]:60394 "EHLO
+	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751946AbaCHXux (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 18:42:07 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CABikg9x+Z95bHcDc6iu5hBvRNO-ibM8-34_qA+OA_FjB52SPMw@mail.gmail.com>
-References: <1394177091.4653.1.camel@jlt4.sipsolutions.net> <1394241960-1764-1-git-send-email-behanw@converseincode.com> <CABikg9y_j-SDOsMj1C5uogP0HNj6bsB_ySVFtAh_oNgZ0swd=g@mail.gmail.com> <531B934C.31666.37555A14@pageexec.freemail.hu> <CABikg9x+Z95bHcDc6iu5hBvRNO-ibM8-34_qA+OA_FjB52SPMw@mail.gmail.com>
+	Sat, 8 Mar 2014 18:50:53 -0500
+X-RZG-AUTH: :P2ERcEykfu11Y98lp/T7+hdri+uKZK8QS9ij0PRv0OgBX++PB3K3G/7rbhwz
+X-RZG-CLASS-ID: mo00
+From: Stephan Mueller <smueller@chronox.de>
+To: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
+Cc: aquini@redhat.com, jeremy.wayne.powell@gmail.com
+Subject: [PATCH 0/6] SP800-90A Deterministic Random Bit Generator
+Date: Sun, 09 Mar 2014 00:43:33 +0100
+Message-ID: <2396177.vxvG2ljJL8@myon.chronox.de>
+User-Agent: KMail/4.12.2 (Linux/3.13.5-200.fc20.x86_64; KDE/4.12.2; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Subject: Re: [PATCH v2] mac80211: LLVMLinux: Remove VLAIS usage from mac80211
-From: =?ISO-8859-1?Q?Jan-Simon_M=F6ller?= <dl9pf@gmx.de>
-Date: Sun, 09 Mar 2014 00:41:41 +0100
-To: Sergei Antonov <saproj@gmail.com>, pageexec@freemail.hu
-CC: behanw@converseincode.com, John Linville <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>, davem@davemloft.net,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Woodhouse <dwmw2@infradead.org>,
-        =?ISO-8859-1?Q?Vin=EDcius_Tinti?= <viniciustinti@gmail.com>,
-        Mark Charlebois <charlebm@gmail.com>
-Message-ID: <fcb4c551-996e-42e4-a9ff-ac3c8f3bc5ea@email.android.com>
-X-Provags-ID: V03:K0:CXLgCq04deFPX3DxzCewa+shHTPdb7QLJy6HJrk7hbXEaiP3lW5
- 8x2d4dD0BfIUyJEMrDhCh6IPwyKGEaf83DvFO/ha1rzN1Fb4TcF7wsAd2lsi4vfFHTfNH+8
- +ZAjuBd5fDBHRQQnXqaXGGINFzT+Ny8GR1YTbZQFEvt5D5n82pRKFj1cwisOgTJGYCGcJDi
- iAYD6HSBkfS9yVZ64iaxQ==
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
+the following set of patches implements the deterministic random bit generator
+(DRBG) specified by SP800-90A.
 
-On 9. März 2014 00:00:19 MEZ, Sergei Antonov <saproj@gmail.com> wrote:
->On 8 March 2014 23:01, PaX Team <pageexec@freemail.hu> wrote:
->> On 8 Mar 2014 at 21:29, Sergei Antonov wrote:
->>
->>> > -       memset(&aead_req, 0, sizeof(aead_req));
->>> > +       char aead_req_data[sizeof(struct aead_request) +
->>> > +                               crypto_aead_reqsize(tfm) +
->>> > +                               CRYPTO_MINALIGN]
->CRYPTO_MINALIGN_ATTR;
->>                                                     
->^^^^^^^^^^^^^^^^^^^^
->> wouldn't the underlined attribute ensure the required alignment?
->Yes. Sorry, I overlooked it.
->
->I would remove unneeded CRYPTO_MINALIGN and get the alignment from the
->target structure:
->        char aead_req_data[sizeof(struct aead_request) +
->                           crypto_aead_reqsize(tfm)]
->        __attribute__((__aligned__(__alignof__(struct aead_request))));
+The DRBG implementation offers the following:
 
+	* All three DRBG types are implemented with a derivation function.
+	* All DRBG types are available with and without prediction resistance.
+	* All SHA types of SHA-1, SHA-256, SHA-384, SHA-512 are available
+	  for the HMAC and Hash DRBGs.
+	* All AES types of AES-128, AES-192 and AES-256 are available for the
+	  CTR DRBG.
+	* A self test is implemented with drbg_healthcheck().
+	* The FIPS 140-2 continuous self test is implemented.
+	* Additional cipher primitives, such as Serpent or Twofish, can be
+	  added to the DRBG without changing the implementation. The only
+	  change necessary is to the DRBG definition given in the cores[]
+	  array.
 
+As defined in SP800-131A, the ANSI X9.31 DRNG is to be sunset by the end of 
+this year for official uses, including FIPS 140-2 compliance.
 
-LGTM
+Additional tests are available at [1].
 
+[1] http://www.chronox.de/drbg.html
 
+Stephan Mueller (6):
+  SP800-90A Deterministic Random Bit Generator
+  header file for DRBG
+  DRBG kernel configuration options
+  compile the DRBG code
+  DRBG testmgr test vectors
+  Add DRBG test code to testmgr
+
+ crypto/Kconfig        |   36 +-
+ crypto/Makefile       |    1 +
+ crypto/drbg.c         | 1941 +++++++++++++++++++++++++++++++++++++++++++++++++
+ crypto/testmgr.c      |  269 +++++++
+ crypto/testmgr.h      |  877 ++++++++++++++++++++++
+ include/crypto/drbg.h |  340 +++++++++
+ 6 files changed, 3463 insertions(+), 1 deletion(-)
+ create mode 100644 crypto/drbg.c
+ create mode 100644 include/crypto/drbg.h
 
 -- 
-Diese Nachricht wurde von meinem Android-Mobiltelefon mit K-9 Mail gesendet.
+1.8.5.3
+
+,
+
+
+
+Ciao
+Stephan
+-- 
+| Cui bono? |
