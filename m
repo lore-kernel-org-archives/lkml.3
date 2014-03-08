@@ -1,92 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752793AbaCHAXc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 19:23:32 -0500
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:50134 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751490AbaCHAXa (ORCPT
+	id S1752612AbaCHA2Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 19:28:25 -0500
+Received: from g2t2353.austin.hp.com ([15.217.128.52]:32774 "EHLO
+	g2t2353.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751490AbaCHA2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 19:23:30 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140307132514.b6c596879f78478cad190e65@linux-foundation.org>
-References: <1393569464-14904-1-git-send-email-shuox.liu@intel.com>
-	<CAGXu5jLFq-FqXsw4SWuhE-JPzCCecvMdUHbF0_B=S-GODFU1pg@mail.gmail.com>
-	<20140304014002.GA10071@lskakaxi-intel>
-	<CAGXu5j+5CXKJ7+vaWgZXVJgFGHFzcwO6-D1iE+wyDcpr+g8jdw@mail.gmail.com>
-	<20140307025842.GA6435@lskakaxi-intel>
-	<20140307132514.b6c596879f78478cad190e65@linux-foundation.org>
-Date: Fri, 7 Mar 2014 16:23:29 -0800
-X-Google-Sender-Auth: hw_z0Jnecq13dTBi8kZxh6PswOM
-Message-ID: <CAGXu5jLiAi9Yofimw5tUvz2HELRWAJBaj3XXWaN-EHK_wANZDA@mail.gmail.com>
-Subject: Re: [PATCH] pstore: reset ftrace_read_cnt at ramoops_pstore_open
-From: Kees Cook <keescook@chromium.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Liu ShuoX <shuox.liu@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Tony Luck <tony.luck@intel.com>, Colin Cross <ccross@android.com>,
-        Anton Vorontsov <anton@enomsg.org>, yanmin_zhang@linux.intel.com
-Content-Type: text/plain; charset=UTF-8
+	Fri, 7 Mar 2014 19:28:23 -0500
+Message-ID: <1394238498.11969.22.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 6/7] x86: mm: set TLB flush tunable to sane value
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Dave Hansen <dave@sr71.net>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        ak@linux.intel.com, kirill.shutemov@linux.intel.com, mgorman@suse.de,
+        alex.shi@linaro.org, x86@kernel.org, linux-mm@kvack.org,
+        dave.hansen@linux.intel.com
+Date: Fri, 07 Mar 2014 16:28:18 -0800
+In-Reply-To: <5319FEA1.50107@sr71.net>
+References: <20140306004519.BBD70A1A@viggo.jf.intel.com>
+		 <20140306004529.5510B23D@viggo.jf.intel.com>
+	 <1394157304.2555.21.camel@buesod1.americas.hpqcorp.net>
+	 <5319FEA1.50107@sr71.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 7, 2014 at 1:25 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Fri, 7 Mar 2014 10:58:43 +0800 Liu ShuoX <shuox.liu@intel.com> wrote:
->
->>
->> ftrace_read_cnt need to be reset in open to support mutli times
->> getting the records.
->>
->> Signed-off-by: Liu ShuoX <shuox.liu@intel.com>
->> ---
->>   fs/pstore/ram.c | 3 ++-
->>   1 file changed, 2 insertions(+), 1 deletion(-)
->>
->> diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
->> index fa8cef2..9fe5b13 100644
->> --- a/fs/pstore/ram.c
->> +++ b/fs/pstore/ram.c
->> @@ -86,6 +86,7 @@ struct ramoops_context {
->>       struct persistent_ram_ecc_info ecc_info;
->>       unsigned int max_dump_cnt;
->>       unsigned int dump_write_cnt;
->> +     /* _read_cnt need clear on ramoops_pstore_open */
->>       unsigned int dump_read_cnt;
->>       unsigned int console_read_cnt;
->>       unsigned int ftrace_read_cnt;
->> @@ -101,6 +102,7 @@ static int ramoops_pstore_open(struct pstore_info *psi)
->>
->>       cxt->dump_read_cnt = 0;
->>       cxt->console_read_cnt = 0;
->> +     cxt->ftrace_read_cnt = 0;
->>       return 0;
->>   }
->>
->> @@ -428,7 +430,6 @@ static int ramoops_probe(struct platform_device *pdev)
->>       if (pdata->ftrace_size && !is_power_of_2(pdata->ftrace_size))
->>               pdata->ftrace_size = rounddown_pow_of_two(pdata->ftrace_size);
->>
->> -     cxt->dump_read_cnt = 0;
->>       cxt->size = pdata->mem_size;
->>       cxt->phys_addr = pdata->mem_address;
->>       cxt->record_size = pdata->record_size;
->
-> The dump_read_cnt changes appear to be unrelated to the actual bugfix?
+On Fri, 2014-03-07 at 09:15 -0800, Dave Hansen wrote:
+> On 03/06/2014 05:55 PM, Davidlohr Bueso wrote:
+> > On Wed, 2014-03-05 at 16:45 -0800, Dave Hansen wrote:
+> >> From: Dave Hansen <dave.hansen@linux.intel.com>
+> >>
+> >> Now that we have some shiny new tracepoints, we can actually
+> >> figure out what the heck is going on.
+> >>
+> >> During a kernel compile, 60% of the flush_tlb_mm_range() calls
+> >> are for a single page.  It breaks down like this:
+> > 
+> > It would be interesting to see similar data for opposite workloads with
+> > more random access patterns. That's normally when things start getting
+> > fun in the tlb world.
+> 
+> First of all, thanks for testing.  It's much appreciated!
+> 
+> Any suggestions for opposite workloads?
 
-I recommended this change since it is being cleared during open, and
-this zeroing was confusing.
+I was actually thinking of ebizzy as well.
 
-> If so, please send this along as a separate patch.  With a full
-> changelog - this one doesn't explain the dump_read_cnt changes at all.
+> I've seen this tunable have really heavy effects on ebizzy.  It fits
+> almost entirely within the itlb and if we are doing full flushes, it
+> eats the itlb and increases the misses about 10x.  Even putting this
+> tunable above 500 pages (which is pretty insane) didn't help it.
 
-Liu, I would recommend a changelog along the lines of:
-
-Clarify which variables need to be cleared during pstore_open. Added
-missed ftrace_read_cnt clearing and removed duplicate clearing in
-ramoops_probe.
-
--Kees
+Interesting, I didn't expect the misses to be as severe. So I guess what
+you say is that this issue is seen even with how we currently have
+things.
 
 
--- 
-Kees Cook
-Chrome OS Security
+> Things that thrash the TLB don't really care if someone invalidates
+> their TLB since they're thrashing it anyway.
+
+That's a really good point.
+
+> I've had a really hard time finding workloads that _care_ or are
+> affected by small changes in this tunable.  That's one of the reasons I
+> tried to simplify it: it's just not worth the complexity.
+
+I agree, since we aren't seeing much performance differences anyway I
+guess it simply doesn't matter. I can see it perhaps as a factor for
+virtualized workloads in the pre-tagged tlb era but not so much
+nowadays. In any case I've also asked a colleague to see if he can
+produce any interesting results with this patchset on his kvm workloads
+but don't expect much surprises.
+
+So all in all I definitely like this cleanup, and things are simplified
+significantly without any apparent performance hits. The justification
+for the ceiling being 33 seems pretty prudent, and heck, it can be
+modified anyway by users. An additional suggestion would be to comment
+this magic number, in the code.
+
+Thanks,
+Davidlohr
+
