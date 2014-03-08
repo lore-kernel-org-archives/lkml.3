@@ -1,100 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751464AbaCHLri (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 06:47:38 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:57737 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851AbaCHLrf (ORCPT
+	id S1751652AbaCHLuw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 06:50:52 -0500
+Received: from mail-out.m-online.net ([212.18.0.10]:37423 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751015AbaCHLuu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 06:47:35 -0500
-X-AuditID: cbfee61b-b7f456d000006dfd-f2-531b035615e2
-From: Chao Yu <chao2.yu@samsung.com>
-To: "'Gu Zheng'" <guz.fnst@cn.fujitsu.com>, "'Kim'" <jaegeuk.kim@samsung.com>
-Cc: "'linux-kernel'" <linux-kernel@vger.kernel.org>,
-        "'f2fs'" <linux-f2fs-devel@lists.sourceforge.net>
-References: <5319A2CC.3090206@cn.fujitsu.com>
-In-reply-to: <5319A2CC.3090206@cn.fujitsu.com>
-Subject: RE: [f2fs-dev] [PATCH 1/5] f2fs: update start nid only once each circle
-Date: Sat, 08 Mar 2014 19:46:35 +0800
-Message-id: <001301cf3ac4$3220b8c0$96622a40$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQHEbXlHbUtYU5soaumMUpeUQDOhV5rsFyoQ
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBLMWRmVeSWpSXmKPExsVy+t9jQd0wZulgg8YPchbP2w8wW1zf9ZfJ
-	4tIid4vLu+awObB4/D84idlj94LPTB59W1YxenzeJBfAEsVlk5Kak1mWWqRvl8CVcWHDL5aC
-	a3wVM+/+Z21g/MndxcjJISFgIjFx9RVmCFtM4sK99WxdjFwcQgLTGSWOv/nFCuH8YJS4Mukw
-	I0gVm4CKxPKO/0wgtoiAp8Sdi71AcQ4OZoEUieVdtiBhIQFdieMd05hBwpwCehKdr2JBwsIC
-	ARJP1p8F62QRUJVY2ryQHaSEV8BS4u9RG5Awr4CgxI/J91hAbGYBLYn1O48zQdjyEpvXvIU6
-	U0Fix9nXjBAHGEk8f/CDFaJGXGLjkVssExiFZiEZNQvJqFlIRs1C0rKAkWUVo2hqQXJBcVJ6
-	rpFecWJucWleul5yfu4mRnD4P5PewbiqweIQowAHoxIPb8ALyWAh1sSy4srcQ4wSHMxKIryP
-	X0oFC/GmJFZWpRblxxeV5qQWH2KU5mBREuc92GodKCSQnliSmp2aWpBaBJNl4uCUamBkueTl
-	EWJhvKHQVfj3QQV7jxtXT50/19B8ZsryB2G7dR7tF553c4nr13l3pM2YfIUMI3sDd71f296x
-	3155Wtuyj+mXNs1j2cKrOkej4Zb4ygdPo9Y9PbkzTv2RoMrRHJfGuRFXJh5fc3aWEv+Hzaf/
-	JX6fXMNnZrLAWzHJ52D+3pr3B+ysliW9UWIpzkg01GIuKk4EANXfZIF7AgAA
+	Sat, 8 Mar 2014 06:50:50 -0500
+X-Auth-Info: Esxst9IRlkXAn1Z/+cRmpgfHda42Z3ljTLrxU602vjQ=
+Date: Sat, 8 Mar 2014 12:50:45 +0100
+From: Gerhard Sittig <gsi@denx.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Tien Hock Loh <thloh@altera.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        "lftan@altera.com" <lftan@altera.com>,
+        Tien Hock Loh <thloh.linux@gmail.com>
+Subject: Re: [PATCH V7 1/1] drivers/gpio: Altera soft IP GPIO driver and
+ devicetree binding
+Message-ID: <20140308115045.GL3327@book.gsilab.sittig.org>
+References: <1393842463-5206-1-git-send-email-thloh@altera.com>
+ <CACRpkdbwKuaTucbHbuXsKpRAg+kN27K6uN212TT1-h8wxY9YzA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdbwKuaTucbHbuXsKpRAg+kN27K6uN212TT1-h8wxY9YzA@mail.gmail.com>
+Organization: DENX Software Engineering GmbH
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gu,
-
-> -----Original Message-----
-> From: Gu Zheng [mailto:guz.fnst@cn.fujitsu.com]
-> Sent: Friday, March 07, 2014 6:43 PM
-> To: Kim
-> Cc: linux-kernel; f2fs
-> Subject: [f2fs-dev] [PATCH 1/5] f2fs: update start nid only once each circle
+On Fri, Mar 07, 2014 at 11:31 +0800, Linus Walleij wrote:
 > 
+> On Mon, Mar 3, 2014 at 6:27 PM,  <thloh@altera.com> wrote:
 > 
-> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-
-Reviewed-by: Chao Yu <chao2.yu@samsung.com>
-
-> ---
->  fs/f2fs/node.c |    6 +++++-
->  1 files changed, 5 insertions(+), 1 deletions(-)
+> > From: Tien Hock Loh <thloh@altera.com>
+> >
+> > Add driver support for Altera GPIO soft IP, including interrupts and I/O.
+> > Tested on Altera CV SoC board using dipsw and LED using LED framework.
+> >
+> > Signed-off-by: Tien Hock Loh <thloh@altera.com>
 > 
-> diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-> index 8c14110..9653096 100644
-> --- a/fs/f2fs/node.c
-> +++ b/fs/f2fs/node.c
-> @@ -1875,11 +1875,15 @@ void destroy_node_manager(struct f2fs_sb_info *sbi)
->  	while ((found = __gang_lookup_nat_cache(nm_i,
->  					nid, NATVEC_SIZE, natvec))) {
->  		unsigned idx;
-> +
-> +		nid = nat_get_nid(natvec[found - 1]) + 1;
-> +
->  		for (idx = 0; idx < found; idx++) {
->  			struct nat_entry *e = natvec[idx];
-
-Could we replace argument 'e' with 'natvec[idx]'? then we could remove 'e' and
-brace here.
-
-Thanks.
-
-> -			nid = nat_get_nid(e) + 1;
-> +
->  			__del_from_nat_cache(nm_i, e);
->  		}
-> +
->  	}
->  	f2fs_bug_on(nm_i->nat_cnt);
->  	write_unlock(&nm_i->nat_tree_lock);
-> --
-> 1.7.7
+> Can I get some ACKs on this? Like from Gerhard, DT folks?
 > 
-> 
-> ------------------------------------------------------------------------------
-> Subversion Kills Productivity. Get off Subversion & Make the Move to Perforce.
-> With Perforce, you get hassle-free workflows. Merge that actually works.
-> Faster operations. Version large binaries.  Built-in WAN optimization and the
-> freedom to use Git, Perforce or both. Make the move to Perforce.
-> http://pubads.g.doubleclick.net/gampad/clk?id=122218951&iu=/4140/ostg.clktrk
-> _______________________________________________
-> Linux-f2fs-devel mailing list
-> Linux-f2fs-devel@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
+> Or is there still more things to do?
 
+Sorry, had flagged the patch for review, but did not get around
+to respond earlier.  No ACK from me for v7 as it is.
+
+Am I supposed to provide ACKs at all, given that I'm a reviewer
+and fellow developer.  I always understood that Acked-By is
+something more formal, where one maintainer signals to another
+maintainer that it's OK to go though a different tree.
+
+
+virtually yours
+Gerhard Sittig
+-- 
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr. 5, D-82194 Groebenzell, Germany
+Phone: +49-8142-66989-0 Fax: +49-8142-66989-80  Email: office@denx.de
