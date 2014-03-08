@@ -1,84 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755309AbaCHB0H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:26:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46425 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754134AbaCHBHX (ORCPT
+	id S1754666AbaCHB0h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:26:37 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:61027 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755299AbaCHB0G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:07:23 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>, Evgeniy Polyakov <zbr@ioremap.net>,
-        Matt Helsley <matthltc@us.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Qiang Huang <h.huangqiang@huawei.com>
-Subject: [PATCH 3.4 49/99] proc connector: reject unprivileged listener bumps
-Date: Fri,  7 Mar 2014 17:07:45 -0800
-Message-Id: <20140308010613.180842254@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
-References: <20140308010611.468206150@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Fri, 7 Mar 2014 20:26:06 -0500
+From: behanw@converseincode.com
+To: linville@tuxdriver.com, johannes@sipsolutions.net, davem@davemloft.net
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dwmw2@infradead.org,
+        pageexec@freemail.hu,
+        =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>,
+        Behan Webster <behanw@converseincode.com>,
+        =?UTF-8?q?Vin=C3=ADcius=20Tinti?= <viniciustinti@gmail.com>,
+        Mark Charlebois <charlebm@gmail.com>
+Subject: [PATCH v2] mac80211: LLVMLinux: Remove VLAIS usage from mac80211
+Date: Fri,  7 Mar 2014 17:26:00 -0800
+Message-Id: <1394241960-1764-1-git-send-email-behanw@converseincode.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1394177091.4653.1.camel@jlt4.sipsolutions.net>
+References: <1394177091.4653.1.camel@jlt4.sipsolutions.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+From: Jan-Simon Möller <dl9pf@gmx.de>
 
-------------------
+Replaced the use of a Variable Length Array In Struct (VLAIS) with a C99
+compliant equivalent. This is the original VLAIS struct.
 
-From: Kees Cook <keescook@chromium.org>
+struct {
+	struct aead_request     req;
+	u8                      priv[crypto_aead_reqsize(tfm)];
+} aead_req;
 
-commit e70ab977991964a5a7ad1182799451d067e62669 upstream.
+This patch instead allocates the appropriate amount of memory using an char
+array.
 
-While PROC_CN_MCAST_LISTEN/IGNORE is entirely advisory, it was possible
-for an unprivileged user to turn off notifications for all listeners by
-sending PROC_CN_MCAST_IGNORE. Instead, require the same privileges as
-required for a multicast bind.
+The new code can be compiled with both gcc and clang.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Evgeniy Polyakov <zbr@ioremap.net>
-Cc: Matt Helsley <matthltc@us.ibm.com>
-Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
-Acked-by: Matt Helsley <matthltc@us.ibm.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[bwh: Backported to 3.2: adjust context]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Qiang Huang <h.huangqiang@huawei.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
+Signed-off-by: Behan Webster <behanw@converseincode.com>
+Signed-off-by: Vinícius Tinti <viniciustinti@gmail.com>
+Signed-off-by: Mark Charlebois <charlebm@gmail.com>
 ---
- drivers/connector/cn_proc.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ net/mac80211/aes_ccm.c | 40 ++++++++++++++++++++++------------------
+ 1 file changed, 22 insertions(+), 18 deletions(-)
 
---- a/drivers/connector/cn_proc.c
-+++ b/drivers/connector/cn_proc.c
-@@ -331,6 +331,12 @@ static void cn_proc_mcast_ctl(struct cn_
- 	if (msg->len != sizeof(*mc_op))
- 		return;
+diff --git a/net/mac80211/aes_ccm.c b/net/mac80211/aes_ccm.c
+index 7c7df47..3317578 100644
+--- a/net/mac80211/aes_ccm.c
++++ b/net/mac80211/aes_ccm.c
+@@ -23,12 +23,14 @@ void ieee80211_aes_ccm_encrypt(struct crypto_aead *tfm, u8 *b_0, u8 *aad,
+ 			       u8 *data, size_t data_len, u8 *mic)
+ {
+ 	struct scatterlist assoc, pt, ct[2];
+-	struct {
+-		struct aead_request	req;
+-		u8			priv[crypto_aead_reqsize(tfm)];
+-	} aead_req;
  
-+	/* Can only change if privileged. */
-+	if (!capable(CAP_NET_ADMIN)) {
-+		err = EPERM;
-+		goto out;
-+	}
+-	memset(&aead_req, 0, sizeof(aead_req));
++	char aead_req_data[sizeof(struct aead_request) +
++				crypto_aead_reqsize(tfm) +
++				CRYPTO_MINALIGN] CRYPTO_MINALIGN_ATTR;
 +
- 	mc_op = (enum proc_cn_mcast_op*)msg->data;
- 	switch (*mc_op) {
- 	case PROC_CN_MCAST_LISTEN:
-@@ -343,6 +349,8 @@ static void cn_proc_mcast_ctl(struct cn_
- 		err = EINVAL;
- 		break;
- 	}
++	struct aead_request *aead_req = (void *) aead_req_data;
 +
-+out:
- 	cn_proc_ack(err, msg->seq, msg->ack);
++	memset(aead_req, 0, sizeof(aead_req_data));
+ 
+ 	sg_init_one(&pt, data, data_len);
+ 	sg_init_one(&assoc, &aad[2], be16_to_cpup((__be16 *)aad));
+@@ -36,23 +38,25 @@ void ieee80211_aes_ccm_encrypt(struct crypto_aead *tfm, u8 *b_0, u8 *aad,
+ 	sg_set_buf(&ct[0], data, data_len);
+ 	sg_set_buf(&ct[1], mic, IEEE80211_CCMP_MIC_LEN);
+ 
+-	aead_request_set_tfm(&aead_req.req, tfm);
+-	aead_request_set_assoc(&aead_req.req, &assoc, assoc.length);
+-	aead_request_set_crypt(&aead_req.req, &pt, ct, data_len, b_0);
++	aead_request_set_tfm(aead_req, tfm);
++	aead_request_set_assoc(aead_req, &assoc, assoc.length);
++	aead_request_set_crypt(aead_req, &pt, ct, data_len, b_0);
+ 
+-	crypto_aead_encrypt(&aead_req.req);
++	crypto_aead_encrypt(aead_req);
  }
  
-
+ int ieee80211_aes_ccm_decrypt(struct crypto_aead *tfm, u8 *b_0, u8 *aad,
+ 			      u8 *data, size_t data_len, u8 *mic)
+ {
+ 	struct scatterlist assoc, pt, ct[2];
+-	struct {
+-		struct aead_request	req;
+-		u8			priv[crypto_aead_reqsize(tfm)];
+-	} aead_req;
+ 
+-	memset(&aead_req, 0, sizeof(aead_req));
++	char aead_req_data[sizeof(struct aead_request) +
++				crypto_aead_reqsize(tfm) +
++				CRYPTO_MINALIGN] CRYPTO_MINALIGN_ATTR;
++
++	struct aead_request *aead_req = (void *) aead_req_data;
++
++	memset(aead_req, 0, sizeof(aead_req_data));
+ 
+ 	sg_init_one(&pt, data, data_len);
+ 	sg_init_one(&assoc, &aad[2], be16_to_cpup((__be16 *)aad));
+@@ -60,12 +64,12 @@ int ieee80211_aes_ccm_decrypt(struct crypto_aead *tfm, u8 *b_0, u8 *aad,
+ 	sg_set_buf(&ct[0], data, data_len);
+ 	sg_set_buf(&ct[1], mic, IEEE80211_CCMP_MIC_LEN);
+ 
+-	aead_request_set_tfm(&aead_req.req, tfm);
+-	aead_request_set_assoc(&aead_req.req, &assoc, assoc.length);
+-	aead_request_set_crypt(&aead_req.req, ct, &pt,
++	aead_request_set_tfm(aead_req, tfm);
++	aead_request_set_assoc(aead_req, &assoc, assoc.length);
++	aead_request_set_crypt(aead_req, ct, &pt,
+ 			       data_len + IEEE80211_CCMP_MIC_LEN, b_0);
+ 
+-	return crypto_aead_decrypt(&aead_req.req);
++	return crypto_aead_decrypt(aead_req);
+ }
+ 
+ struct crypto_aead *ieee80211_aes_key_setup_encrypt(const u8 key[])
+-- 
+1.8.3.2
 
