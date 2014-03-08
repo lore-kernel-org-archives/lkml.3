@@ -1,54 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485AbaCHBfm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:35:42 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:33662 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754793AbaCHBfk (ORCPT
+	id S1755527AbaCHBgQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:36:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46243 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753665AbaCHBG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:35:40 -0500
-Message-ID: <531A73EB.6060403@codeaurora.org>
-Date: Fri, 07 Mar 2014 17:35:39 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Fri, 7 Mar 2014 20:06:58 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Chen Gang <gang.chen.5i5j@gmail.com>,
+        Hans-Christian Egtvedt <hegtvedt@cisco.com>
+Subject: [PATCH 3.4 07/99] avr32: Makefile: add -D__linux__ flag for gcc-4.4.7 use
+Date: Fri,  7 Mar 2014 17:07:03 -0800
+Message-Id: <20140308010611.844400508@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
+References: <20140308010611.468206150@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-To: pageexec@freemail.hu
-CC: khali@linux-fr.org, rostedt@goodmis.org,
-        Behan Webster <behanw@converseincode.com>, rusty@rustcorp.com.au,
-        linux-kernel@vger.kernel.org, dwmw2@infradead.org,
-        Mark Charlebois <charlebm@gmail.com>
-Subject: Re: [PATCH] module: LLVMLinux: Remove unused function warning from
- __param_check macro
-References: <1394219327-5591-1-git-send-email-behanw@converseincode.com>, <531A4E84.9996.3260AF06@pageexec.freemail.hu>, <531A69E0.3000407@converseincode.com> <531A719C.19855.32E9C505@pageexec.freemail.hu>
-In-Reply-To: <531A719C.19855.32E9C505@pageexec.freemail.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/14 17:25, PaX Team wrote:
-> On 7 Mar 2014 at 16:52, Behan Webster wrote:
->
->> On 03/07/14 14:56, PaX Team wrote:
->>> why can't you have the attr on the definition itself:
->>>
->>> static inline __unused type *__check_##name(void) { return(p); }
->>>
->>>
->>>
->> "__unused" isn't defined anywhere I can find, except in:
->>
->> src/linux/drivers/net/ethernet/amd/declance.c:#define __unused 
->> __attribute__ ((unused))
-> oh i forgot about that, you'd of course place this #define
-> into the appropriate compiler*.h files so that other code
-> can make use of it in the future as well ;).
->
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-It looks like it already exists, __always_unused.
+------------------
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+
+commit 8d80390cfc9434d5aa4fb9e5f9768a66b30cb8a6 upstream.
+
+For avr32 cross compiler, do not define '__linux__' internally, so it
+will cause issue with allmodconfig.
+
+The related error:
+
+    CC [M]  fs/coda/psdev.o
+  In file included from include/linux/coda.h:64,
+                   from fs/coda/psdev.c:45:
+  include/uapi/linux/coda.h:221: error: expected specifier-qualifier-list before 'u_quad_t'
+
+The related toolchain version (which only download, not re-compile):
+
+  [root@gchen linux-next]# /upstream/toolchain/download/avr32-gnu-toolchain-linux_x86/bin/avr32-gcc -v
+  Using built-in specs.
+  Target: avr32
+  Configured with: /data2/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/src/gcc/configure --target=avr32 --host=i686-pc-linux-gnu --build=x86_64-pc-linux-gnu --prefix=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --enable-languages=c,c++ --disable-nls --disable-libssp --disable-libstdcxx-pch --with-dwarf2 --enable-version-specific-runtime-libs --disable-shared --enable-doc --with-mpfr-lib=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86/lib
+--with-mpfr-include=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86/include --with-gmp=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --with-mpc=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --enable-__cxa_atexit --disable-shared --with-newlib --with-pkgversion=AVR_32_bit_GNU_Toolchain_3.4.2_435 --with-bugurl=http://www
+.atmel.com/avr
+  Thread model: single
+  gcc version 4.4.7 (AVR_32_bit_GNU_Toolchain_3.4.2_435)
+
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+Acked-by: Hans-Christian Egtvedt <hegtvedt@cisco.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/avr32/Makefile |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/arch/avr32/Makefile
++++ b/arch/avr32/Makefile
+@@ -11,7 +11,7 @@ all: uImage vmlinux.elf
+ 
+ KBUILD_DEFCONFIG	:= atstk1002_defconfig
+ 
+-KBUILD_CFLAGS	+= -pipe -fno-builtin -mno-pic
++KBUILD_CFLAGS	+= -pipe -fno-builtin -mno-pic -D__linux__
+ KBUILD_AFLAGS	+= -mrelax -mno-pic
+ KBUILD_CFLAGS_MODULE += -mno-relax
+ LDFLAGS_vmlinux	+= --relax
+
 
