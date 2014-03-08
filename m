@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755374AbaCHBbL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:31:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46341 "EHLO
+	id S1753970AbaCHBHK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:07:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46304 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753884AbaCHBHL (ORCPT
+	with ESMTP id S1753732AbaCHBHF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:07:11 -0500
+	Fri, 7 Mar 2014 20:07:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>,
-        Liam Girdwood <liam.r.girdwood@linux.intel.com>,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.4 20/99] ASoC: wm8770: Fix wrong number of enum items
-Date: Fri,  7 Mar 2014 17:07:16 -0800
-Message-Id: <20140308010612.271823878@linuxfoundation.org>
+        "Denis V. Lunev" <den@openvz.org>, Tejun Heo <tj@kernel.org>,
+        linux-ide@vger.kernel.org
+Subject: [PATCH 3.4 28/99] ata: enable quirk from jmicron JMB350 for JMB394
+Date: Fri,  7 Mar 2014 17:07:24 -0800
+Message-Id: <20140308010612.523560636@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
 References: <20140308010611.468206150@linuxfoundation.org>
@@ -31,37 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: "Denis V. Lunev" <den@openvz.org>
 
-commit 7a6c0a58dc824523966f212c76322d47c5b0e6fe upstream.
+commit efb9e0f4f43780f0ae0c6428d66bd03e805c7539 upstream.
 
-wm8770 codec driver defines ain_enum with a wrong number of items.
+Without the patch the kernel generates the following error.
 
-Use SOC_ENUM_DOUBLE_DECL() macro and it's automatically fixed.
+ ata11.15: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ ata11.15: Port Multiplier vendor mismatch '0x197b' != '0x123'
+ ata11.15: PMP revalidation failed (errno=-19)
+ ata11.15: failed to recover PMP after 5 tries, giving up
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Acked-by: Liam Girdwood <liam.r.girdwood@linux.intel.com>
-Acked-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+This patch helps to bypass this error and the device becomes
+functional.
+
+Signed-off-by: Denis V. Lunev <den@openvz.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: <linux-ide@vger.kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm8770.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/ata/libata-pmp.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/sound/soc/codecs/wm8770.c
-+++ b/sound/soc/codecs/wm8770.c
-@@ -162,8 +162,8 @@ static const char *ain_text[] = {
- 	"AIN5", "AIN6", "AIN7", "AIN8"
- };
- 
--static const struct soc_enum ain_enum =
--	SOC_ENUM_DOUBLE(WM8770_ADCMUX, 0, 4, 8, ain_text);
-+static SOC_ENUM_DOUBLE_DECL(ain_enum,
-+			    WM8770_ADCMUX, 0, 4, ain_text);
- 
- static const struct snd_kcontrol_new ain_mux =
- 	SOC_DAPM_ENUM("Capture Mux", ain_enum);
+--- a/drivers/ata/libata-pmp.c
++++ b/drivers/ata/libata-pmp.c
+@@ -447,8 +447,11 @@ static void sata_pmp_quirks(struct ata_p
+ 		 * otherwise.  Don't try hard to recover it.
+ 		 */
+ 		ap->pmp_link[ap->nr_pmp_links - 1].flags |= ATA_LFLAG_NO_RETRY;
+-	} else if (vendor == 0x197b && devid == 0x2352) {
+-		/* chip found in Thermaltake BlackX Duet, jmicron JMB350? */
++	} else if (vendor == 0x197b && (devid == 0x2352 || devid == 0x0325)) {
++		/*
++		 * 0x2352: found in Thermaltake BlackX Duet, jmicron JMB350?
++		 * 0x0325: jmicron JMB394.
++		 */
+ 		ata_for_each_link(link, ap, EDGE) {
+ 			/* SRST breaks detection and disks get misclassified
+ 			 * LPM disabled to avoid potential problems
 
 
