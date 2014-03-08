@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754567AbaCHBJj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:09:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46704 "EHLO
+	id S1754579AbaCHBJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:09:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46699 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754463AbaCHBIC (ORCPT
+	with ESMTP id S1754459AbaCHBIB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:08:02 -0500
+	Fri, 7 Mar 2014 20:08:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Johannes Berg <johannes.berg@intel.com>,
         "John W. Linville" <linville@tuxdriver.com>,
-        Jianguo Wu <wujianguo@huawei.com>
-Subject: [PATCH 3.4 90/99] iwlwifi: protect SRAM debugfs
-Date: Fri,  7 Mar 2014 17:08:26 -0800
-Message-Id: <20140308010614.456317088@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>, Jianguo Wu <wujianguo@huawei.com>
+Subject: [PATCH 3.4 89/99] iwlwifi: fix flow handler debug code
+Date: Fri,  7 Mar 2014 17:08:25 -0800
+Message-Id: <20140308010614.427246397@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
 References: <20140308010611.468206150@linuxfoundation.org>
@@ -30,35 +31,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-
 From: Johannes Berg <johannes.berg@intel.com>
 
-commit 4fc79db178f0a0ede479b4713e00df2d106028b3 upstream.
+commit 94543a8d4fb302817014981489f15cb3b92ec3c2 upstream.
 
-If the device is not started, we can't read its
-SRAM and attempting to do so will cause issues.
-Protect the debugfs read.
+iwl_dbgfs_fh_reg_read() can cause crashes and/or
+BUG_ON in slub because the ifdefs are wrong, the
+code in iwl_dump_fh() should use DEBUGFS, not
+DEBUG to protect the buffer writing code.
 
+Also, while at it, clean up the arguments to the
+function, some code and make it generally safer.
+
+Reported-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
+[bwh: Backported to 3.2: adjust filenames and context]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 [wujg: Backported to 3.4: adjust context]
 Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/wireless/iwlwifi/iwl-debugfs.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/wireless/iwlwifi/iwl-trans-pcie-int.h |    2 -
+ drivers/net/wireless/iwlwifi/iwl-trans-pcie-rx.c  |    2 -
+ drivers/net/wireless/iwlwifi/iwl-trans-pcie.c     |   27 +++++++++++-----------
+ 3 files changed, 16 insertions(+), 15 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-debugfs.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-debugfs.c
-@@ -227,6 +227,9 @@ static ssize_t iwl_dbgfs_sram_read(struc
- 	const struct fw_img *img;
- 	size_t bufsz;
+--- a/drivers/net/wireless/iwlwifi/iwl-trans-pcie-int.h
++++ b/drivers/net/wireless/iwlwifi/iwl-trans-pcie-int.h
+@@ -352,7 +352,7 @@ int iwl_queue_space(const struct iwl_que
+ ******************************************************/
+ int iwl_dump_nic_event_log(struct iwl_trans *trans, bool full_log,
+ 			    char **buf, bool display);
+-int iwl_dump_fh(struct iwl_trans *trans, char **buf, bool display);
++int iwl_dump_fh(struct iwl_trans *trans, char **buf);
+ void iwl_dump_csr(struct iwl_trans *trans);
  
-+	if (!iwl_is_ready_rf(priv))
-+		return -EAGAIN;
+ /*****************************************************
+--- a/drivers/net/wireless/iwlwifi/iwl-trans-pcie-rx.c
++++ b/drivers/net/wireless/iwlwifi/iwl-trans-pcie-rx.c
+@@ -695,7 +695,7 @@ static void iwl_irq_handle_error(struct
+ 
+ 	iwl_dump_nic_error_log(trans);
+ 	iwl_dump_csr(trans);
+-	iwl_dump_fh(trans, NULL, false);
++	iwl_dump_fh(trans, NULL);
+ 	iwl_dump_nic_event_log(trans, false, NULL, false);
+ 
+ 	iwl_op_mode_nic_error(trans->op_mode);
+--- a/drivers/net/wireless/iwlwifi/iwl-trans-pcie.c
++++ b/drivers/net/wireless/iwlwifi/iwl-trans-pcie.c
+@@ -1768,13 +1768,9 @@ static const char *get_fh_string(int cmd
+ 	}
+ }
+ 
+-int iwl_dump_fh(struct iwl_trans *trans, char **buf, bool display)
++int iwl_dump_fh(struct iwl_trans *trans, char **buf)
+ {
+ 	int i;
+-#ifdef CONFIG_IWLWIFI_DEBUG
+-	int pos = 0;
+-	size_t bufsz = 0;
+-#endif
+ 	static const u32 fh_tbl[] = {
+ 		FH_RSCSR_CHNL0_STTS_WPTR_REG,
+ 		FH_RSCSR_CHNL0_RBDCB_BASE_REG,
+@@ -1786,29 +1782,34 @@ int iwl_dump_fh(struct iwl_trans *trans,
+ 		FH_TSSR_TX_STATUS_REG,
+ 		FH_TSSR_TX_ERROR_REG
+ 	};
+-#ifdef CONFIG_IWLWIFI_DEBUG
+-	if (display) {
 +
- 	/* default is to dump the entire data segment */
- 	if (!priv->dbgfs_sram_offset && !priv->dbgfs_sram_len) {
- 		priv->dbgfs_sram_offset = 0x800000;
++#ifdef CONFIG_IWLWIFI_DEBUGFS
++	if (buf) {
++		int pos = 0;
++		size_t bufsz = ARRAY_SIZE(fh_tbl) * 48 + 40;
++
+ 		bufsz = ARRAY_SIZE(fh_tbl) * 48 + 40;
+ 		*buf = kmalloc(bufsz, GFP_KERNEL);
+ 		if (!*buf)
+ 			return -ENOMEM;
+ 		pos += scnprintf(*buf + pos, bufsz - pos,
+ 				"FH register values:\n");
+-		for (i = 0; i < ARRAY_SIZE(fh_tbl); i++) {
++
++		for (i = 0; i < ARRAY_SIZE(fh_tbl); i++)
+ 			pos += scnprintf(*buf + pos, bufsz - pos,
+ 				"  %34s: 0X%08x\n",
+ 				get_fh_string(fh_tbl[i]),
+ 				iwl_read_direct32(trans, fh_tbl[i]));
+-		}
++
+ 		return pos;
+ 	}
+ #endif
+ 	IWL_ERR(trans, "FH register values:\n");
+-	for (i = 0; i <  ARRAY_SIZE(fh_tbl); i++) {
++	for (i = 0; i <  ARRAY_SIZE(fh_tbl); i++)
+ 		IWL_ERR(trans, "  %34s: 0X%08x\n",
+ 			get_fh_string(fh_tbl[i]),
+ 			iwl_read_direct32(trans, fh_tbl[i]));
+-	}
++
+ 	return 0;
+ }
+ 
+@@ -2152,11 +2153,11 @@ static ssize_t iwl_dbgfs_fh_reg_read(str
+ 					 size_t count, loff_t *ppos)
+ {
+ 	struct iwl_trans *trans = file->private_data;
+-	char *buf;
++	char *buf = NULL;
+ 	int pos = 0;
+ 	ssize_t ret = -EFAULT;
+ 
+-	ret = pos = iwl_dump_fh(trans, &buf, true);
++	ret = pos = iwl_dump_fh(trans, &buf);
+ 	if (buf) {
+ 		ret = simple_read_from_buffer(user_buf,
+ 					      count, ppos, buf, pos);
 
 
