@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752153AbaCHCKf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 21:10:35 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:57669 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751302AbaCHCKe (ORCPT
+	id S1752697AbaCHCPt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 21:15:49 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:39119 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751581AbaCHCPr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 21:10:34 -0500
-From: behanw@converseincode.com
-To: khali@linux-fr.org, rostedt@goodmis.org
-Cc: rusty@rustcorp.com.au, linux-kernel@vger.kernel.org, dwmw2@infradead.org,
-        pageexec@freemail.hu, Mark Charlebois <charlebm@gmail.com>,
-        Behan Webster <behanw@converseincode.com>
-Subject: [PATCH v2] module: LLVMLinux: Remove unused function warning from __param_check macro
-Date: Fri,  7 Mar 2014 18:10:23 -0800
-Message-Id: <1394244623-25623-1-git-send-email-behanw@converseincode.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <531A73EB.6060403@codeaurora.org>
-References: <531A73EB.6060403@codeaurora.org>
+	Fri, 7 Mar 2014 21:15:47 -0500
+Message-ID: <531A7D4F.7090303@converseincode.com>
+Date: Fri, 07 Mar 2014 18:15:43 -0800
+From: Behan Webster <behanw@converseincode.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: linville@tuxdriver.com, johannes@sipsolutions.net, davem@davemloft.net,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dwmw2@infradead.org,
+        pageexec@freemail.hu,
+        =?ISO-8859-1?Q?Jan-Simon_M=F6?= =?ISO-8859-1?Q?ller?= 
+	<dl9pf@gmx.de>,
+        =?ISO-8859-1?Q?Vin=EDcius_Tinti?= <viniciustinti@gmail.com>,
+        Mark Charlebois <charlebm@gmail.com>
+Subject: Re: [PATCH v2] mac80211: LLVMLinux: Remove VLAIS usage from mac80211
+References: <1394177091.4653.1.camel@jlt4.sipsolutions.net>	 <1394241960-1764-1-git-send-email-behanw@converseincode.com> <1394243809.6972.4.camel@joe-AO722>
+In-Reply-To: <1394243809.6972.4.camel@joe-AO722>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Charlebois <charlebm@gmail.com>
+On 03/07/14 17:56, Joe Perches wrote:
+> On Fri, 2014-03-07 at 17:26 -0800, behanw@converseincode.com wrote:
+>> From: Jan-Simon Möller <dl9pf@gmx.de>
+>>
+>> Replaced the use of a Variable Length Array In Struct (VLAIS) with a C99
+>> compliant equivalent. This is the original VLAIS struct.
+> []
+>> diff --git a/net/mac80211/aes_ccm.c b/net/mac80211/aes_ccm.c
+> []
+>> @@ -23,12 +23,14 @@ void ieee80211_aes_ccm_encrypt(struct crypto_aead *tfm, u8 *b_0, u8 *aad,
+>>   			       u8 *data, size_t data_len, u8 *mic)
+>>   {
+>>   	struct scatterlist assoc, pt, ct[2];
+>> -	struct {
+>> -		struct aead_request	req;
+>> -		u8			priv[crypto_aead_reqsize(tfm)];
+>> -	} aead_req;
+>>   
+>> -	memset(&aead_req, 0, sizeof(aead_req));
+>> +	char aead_req_data[sizeof(struct aead_request) +
+>> +				crypto_aead_reqsize(tfm) +
+>> +				CRYPTO_MINALIGN] CRYPTO_MINALIGN_ATTR;
+> Can this be a too large amount of stack?
+>
+> Is crypto_aead_reqsize() limited to < ~1k?
+>
+> Perhaps it'd be better to use kzalloc for this
+> or another reserved pool
+No more stack being used than with the the original code. The stack 
+memory use is identical.
 
-This code makes a compile time type check that is optimized away. Clang
-complains that it generates an unused function.
+Behan
 
-I believe GCC won't complain for a static inline fuction but would if it
-was just a static function.
-
-Adding the unused attribute to the function definition removes the warning.
-
-This code works for both gcc and clang.
-
-Signed-off-by: Mark Charlebois <charlebm@gmail.com>
-Signed-off-by: Behan Webster <behanw@converseincode.com>
----
- include/linux/moduleparam.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
-index c3eb102..7f2a726 100644
---- a/include/linux/moduleparam.h
-+++ b/include/linux/moduleparam.h
-@@ -346,7 +346,7 @@ static inline void destroy_params(const struct kernel_param *params,
- /* The macros to do compile-time type checking stolen from Jakub
-    Jelinek, who IIRC came up with this idea for the 2.4 module init code. */
- #define __param_check(name, p, type) \
--	static inline type *__check_##name(void) { return(p); }
-+	static inline __always_unused type *__check_##name(void) { return(p); }
- 
- extern struct kernel_param_ops param_ops_byte;
- extern int param_set_byte(const char *val, const struct kernel_param *kp);
 -- 
-1.8.3.2
+Behan Webster
+behanw@converseincode.com
 
