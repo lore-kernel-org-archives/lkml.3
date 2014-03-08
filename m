@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752096AbaCHMx6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 07:53:58 -0500
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:63929 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751506AbaCHMxx (ORCPT
+	id S1752179AbaCHMyE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 07:54:04 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:45738 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752076AbaCHMx7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 07:53:53 -0500
+	Sat, 8 Mar 2014 07:53:59 -0500
 From: Valentina Manea <valentina.manea.m@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: tobias.polzer@fau.de, dominik.paulus@fau.de, ly80toro@cip.cs.fau.de,
@@ -14,76 +14,165 @@ Cc: tobias.polzer@fau.de, dominik.paulus@fau.de, ly80toro@cip.cs.fau.de,
         linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
         devel@driverdev.osuosl.org, firefly@lists.rosedu.org,
         andy.grover@gmail.com, Valentina Manea <valentina.manea.m@gmail.com>
-Subject: [PATCH 00/18] Resend of usbip-utils migration patches and various other fixes
-Date: Sat,  8 Mar 2014 14:53:18 +0200
-Message-Id: <1394283216-1277-1-git-send-email-valentina.manea.m@gmail.com>
+Subject: [PATCH 03/18] staging: usbip: userspace: migrate usbip_unbind to libudev
+Date: Sat,  8 Mar 2014 14:53:21 +0200
+Message-Id: <1394283216-1277-4-git-send-email-valentina.manea.m@gmail.com>
 X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1394283216-1277-1-git-send-email-valentina.manea.m@gmail.com>
+References: <1394283216-1277-1-git-send-email-valentina.manea.m@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a resend of the patches sent a few days ago, including
-the migration of USB/IP userspace side to use libudev instead
-of libsysfs and various other fixes, all ordered in a big patch
-series.
+This patch modifies usbip_unbind to use libudev.
 
-The patches have been modified according to received feedback.
+Signed-off-by: Valentina Manea <valentina.manea.m@gmail.com>
+Reviewed-by: Shuah Khan <shuah.kh@samsung.com>
+---
+ drivers/staging/usbip/userspace/src/usbip_unbind.c | 93 +++++++---------------
+ 1 file changed, 29 insertions(+), 64 deletions(-)
 
-Valentina Manea (18):
-  staging: usbip: userspace: migrate usbip_bind to libudev
-  staging: usbip: userspace: remove useless libsysfs includes
-  staging: usbip: userspace: migrate usbip_unbind to libudev
-  staging: usbip: userspace: migrate usbip_list to libudev
-  staging: usbip: userspace: re-add interface information listing
-  staging: usbip: userspace: add new list API
-  staging: usbip: userspace: move sysfs_utils to libsrc
-  staging: usbip: userspace: migrate usbip_host_driver to libudev
-  staging: usbip: userspace: remove class device infrastructure in
-    vhci_driver
-  staging: usbip: userspace: migrate vhci_driver to libudev
-  staging: usbip: userspace: remove libsysfs flag and autoconf check
-  staging: usbip: userspace: update dependencies in README
-  staging: usbip: userspace: increase version to 2.0
-  staging: usbip: let client choose device configuration
-  staging: usbip: trigger driver probing after unbinding from usbip-host
-  staging: usbip: claim ports used by shared devices
-  staging: usbip: userspace: don't throw error when trying to read
-    configuration specific attributes
-  staging: usbip: userspace: add hwdata as optional dependency in README
-
- drivers/staging/usbip/stub.h                       |   1 +
- drivers/staging/usbip/stub_dev.c                   |  33 +-
- drivers/staging/usbip/stub_main.c                  |  39 +++
- drivers/staging/usbip/stub_rx.c                    |  26 +-
- drivers/staging/usbip/userspace/README             |   8 +-
- drivers/staging/usbip/userspace/configure.ac       |  12 +-
- drivers/staging/usbip/userspace/libsrc/Makefile.am |   3 +-
- drivers/staging/usbip/userspace/libsrc/list.h      | 136 ++++++++
- .../staging/usbip/userspace/libsrc/sysfs_utils.c   |  31 ++
- .../staging/usbip/userspace/libsrc/sysfs_utils.h   |   8 +
- .../staging/usbip/userspace/libsrc/usbip_common.c  |  91 +++---
- .../staging/usbip/userspace/libsrc/usbip_common.h  |  15 +-
- .../usbip/userspace/libsrc/usbip_host_driver.c     | 285 +++++------------
- .../usbip/userspace/libsrc/usbip_host_driver.h     |   7 +-
- .../staging/usbip/userspace/libsrc/vhci_driver.c   | 346 ++++-----------------
- .../staging/usbip/userspace/libsrc/vhci_driver.h   |  14 +-
- drivers/staging/usbip/userspace/src/Makefile.am    |   1 -
- drivers/staging/usbip/userspace/src/usbip_attach.c |   1 -
- drivers/staging/usbip/userspace/src/usbip_bind.c   | 149 ++++-----
- drivers/staging/usbip/userspace/src/usbip_detach.c |   2 -
- drivers/staging/usbip/userspace/src/usbip_list.c   | 153 ++++-----
- .../staging/usbip/userspace/src/usbip_network.h    |   1 -
- drivers/staging/usbip/userspace/src/usbip_unbind.c | 110 +++----
- drivers/staging/usbip/userspace/src/usbipd.c       |  30 +-
- drivers/staging/usbip/userspace/src/utils.c        |  48 +--
- drivers/usb/core/hub.c                             |   2 +
- drivers/usb/core/usb.h                             |   4 -
- include/linux/usb.h                                |   7 +
- 28 files changed, 676 insertions(+), 887 deletions(-)
- create mode 100644 drivers/staging/usbip/userspace/libsrc/list.h
- create mode 100644 drivers/staging/usbip/userspace/libsrc/sysfs_utils.c
- create mode 100644 drivers/staging/usbip/userspace/libsrc/sysfs_utils.h
-
+diff --git a/drivers/staging/usbip/userspace/src/usbip_unbind.c b/drivers/staging/usbip/userspace/src/usbip_unbind.c
+index cace878..7180dbe 100644
+--- a/drivers/staging/usbip/userspace/src/usbip_unbind.c
++++ b/drivers/staging/usbip/userspace/src/usbip_unbind.c
+@@ -16,7 +16,7 @@
+  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-#include <sysfs/libsysfs.h>
++#include <libudev.h>
+ 
+ #include <errno.h>
+ #include <stdio.h>
+@@ -27,6 +27,7 @@
+ #include "usbip_common.h"
+ #include "utils.h"
+ #include "usbip.h"
++#include "sysfs_utils.h"
+ 
+ static const char usbip_unbind_usage_string[] =
+ 	"usbip unbind <args>\n"
+@@ -41,92 +42,56 @@ void usbip_unbind_usage(void)
+ static int unbind_device(char *busid)
+ {
+ 	char bus_type[] = "usb";
+-	struct sysfs_driver *usbip_host_drv;
+-	struct sysfs_device *dev;
+-	struct dlist *devlist;
+-	int verified = 0;
+ 	int rc, ret = -1;
+ 
+ 	char attr_name[] = "unbind";
+-	char sysfs_mntpath[SYSFS_PATH_MAX];
+ 	char unbind_attr_path[SYSFS_PATH_MAX];
+-	struct sysfs_attribute *unbind_attr;
+-
+-	/* verify the busid device is using usbip-host */
+-	usbip_host_drv = sysfs_open_driver(bus_type, USBIP_HOST_DRV_NAME);
+-	if (!usbip_host_drv) {
+-		err("could not open %s driver: %s", USBIP_HOST_DRV_NAME,
+-		    strerror(errno));
+-		return -1;
+-	}
+ 
+-	devlist = sysfs_get_driver_devices(usbip_host_drv);
+-	if (!devlist) {
+-		err("%s is not in use by any devices", USBIP_HOST_DRV_NAME);
+-		goto err_close_usbip_host_drv;
+-	}
++	struct udev *udev;
++	struct udev_device *dev;
++	const char *driver;
+ 
+-	dlist_for_each_data(devlist, dev, struct sysfs_device) {
+-		if (!strncmp(busid, dev->name, strlen(busid)) &&
+-		    !strncmp(dev->driver_name, USBIP_HOST_DRV_NAME,
+-			     strlen(USBIP_HOST_DRV_NAME))) {
+-			verified = 1;
+-			break;
+-		}
+-	}
++	/* Create libudev context. */
++	udev = udev_new();
+ 
+-	if (!verified) {
+-		err("device on busid %s is not using %s", busid,
+-		    USBIP_HOST_DRV_NAME);
+-		goto err_close_usbip_host_drv;
++	/* Check whether the device with this bus ID exists. */
++	dev = udev_device_new_from_subsystem_sysname(udev, "usb", busid);
++	if (!dev) {
++		err("device with the specified bus ID does not exist");
++		goto err_close_udev;
+ 	}
+ 
+-	/*
+-	 * NOTE: A read and write of an attribute value of the device busid
+-	 * refers to must be done to start probing. That way a rebind of the
+-	 * default driver for the device occurs.
+-	 *
+-	 * This seems very hackish and adds a lot of pointless code. I think it
+-	 * should be done in the kernel by the driver after del_match_busid is
+-	 * finished!
+-	 */
+-
+-	rc = sysfs_get_mnt_path(sysfs_mntpath, SYSFS_PATH_MAX);
+-	if (rc < 0) {
+-		err("sysfs must be mounted: %s", strerror(errno));
+-		return -1;
++	/* Check whether the device is using usbip-host driver. */
++	driver = udev_device_get_driver(dev);
++	if (!driver || strcmp(driver, "usbip-host")) {
++		err("device is not bound to usbip-host driver");
++		goto err_close_udev;
+ 	}
+ 
++	/* Unbind device from driver. */
+ 	snprintf(unbind_attr_path, sizeof(unbind_attr_path), "%s/%s/%s/%s/%s/%s",
+-		 sysfs_mntpath, SYSFS_BUS_NAME, bus_type, SYSFS_DRIVERS_NAME,
++		 SYSFS_MNT_PATH, SYSFS_BUS_NAME, bus_type, SYSFS_DRIVERS_NAME,
+ 		 USBIP_HOST_DRV_NAME, attr_name);
+ 
+-	/* read a device attribute */
+-	unbind_attr = sysfs_open_attribute(unbind_attr_path);
+-	if (!unbind_attr) {
+-		err("could not open %s/%s: %s", busid, attr_name,
+-		    strerror(errno));
+-		return -1;
++	rc = write_sysfs_attribute(unbind_attr_path, busid, strlen(busid));
++	if (rc < 0) {
++		err("error unbinding device %s from driver", busid);
++		goto err_close_udev;
+ 	}
+ 
+-	/* notify driver of unbind */
++	/* Notify driver of unbind. */
+ 	rc = modify_match_busid(busid, 0);
+ 	if (rc < 0) {
+ 		err("unable to unbind device on %s", busid);
++		goto err_close_udev;
+ 	}
+ 
+-	rc = sysfs_write_attribute(unbind_attr, busid,
+-				   SYSFS_BUS_ID_SIZE);
+-		if (rc < 0) {
+-			dbg("bind driver at %s failed", busid);
+-		}
+-	sysfs_close_attribute(unbind_attr);
+-
+ 	ret = 0;
+-	printf("unbind device on busid %s: complete\n", busid);
++	info("unbind device on busid %s: complete", busid);
+ 
+-err_close_usbip_host_drv:
+-	sysfs_close_driver(usbip_host_drv);
++err_close_udev:
++	udev_device_unref(dev);
++	udev_unref(udev);
+ 
+ 	return ret;
+ }
 -- 
 1.8.1.2
 
