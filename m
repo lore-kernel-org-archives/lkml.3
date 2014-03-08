@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754734AbaCHBNG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:13:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46646 "EHLO
+	id S1754775AbaCHBNu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:13:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46651 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754413AbaCHBHz (ORCPT
+	with ESMTP id S1754394AbaCHBHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:07:55 -0500
+	Fri, 7 Mar 2014 20:07:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Brown <broonie@linaro.org>, Takashi Iwai <tiwai@suse.de>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Weng Meiling <wengmeiling.weng@huawei.com>
-Subject: [PATCH 3.4 86/99] ASoC: s6000: Fix unlocked snd_pcm_stop() call
-Date: Fri,  7 Mar 2014 17:08:22 -0800
-Message-Id: <20140308010614.343991223@linuxfoundation.org>
+        Roland Dreier <roland@purestorage.com>, Jens Axboe <axboe@kernel.dk>,
+        Rui Xiang <rui.xiang@huawei.com>
+Subject: [PATCH 3.4 65/99] block: Dont access request after it might be freed
+Date: Fri,  7 Mar 2014 17:08:01 -0800
+Message-Id: <20140308010613.682595687@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
 References: <20140308010611.468206150@linuxfoundation.org>
@@ -30,33 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Roland Dreier <roland@purestorage.com>
 
-commit 61be2b9a18ec70f3cbe3deef7a5f77869c71b5ae upstream.
+commit 893d290f1d7496db97c9471bc352ad4a11dc8a25 upstream.
 
-snd_pcm_stop() must be called in the PCM substream lock context.
+After we've done __elv_add_request() and __blk_run_queue() in
+blk_execute_rq_nowait(), the request might finish and be freed
+immediately.  Therefore checking if the type is REQ_TYPE_PM_RESUME
+isn't safe afterwards, because if it isn't, rq might be gone.
+Instead, check beforehand and stash the result in a temporary.
 
-Acked-by: Mark Brown <broonie@linaro.org>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Weng Meiling <wengmeiling.weng@huawei.com>
+This fixes crashes in blk_execute_rq_nowait() I get occasionally when
+running with lots of memory debugging options enabled -- I think this
+race is usually harmless because the window for rq to be reallocated
+is so small.
+
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+[xr: Backported to 3.4: adjust context]
+Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/s6000/s6000-pcm.c |    2 ++
- 1 file changed, 2 insertions(+)
+ block/blk-exec.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
---- a/sound/soc/s6000/s6000-pcm.c
-+++ b/sound/soc/s6000/s6000-pcm.c
-@@ -128,7 +128,9 @@ static irqreturn_t s6000_pcm_irq(int irq
- 		    substream->runtime &&
- 		    snd_pcm_running(substream)) {
- 			dev_dbg(pcm->dev, "xrun\n");
-+			snd_pcm_stream_lock(substream);
- 			snd_pcm_stop(substream, SNDRV_PCM_STATE_XRUN);
-+			snd_pcm_stream_unlock(substream);
- 			ret = IRQ_HANDLED;
- 		}
+--- a/block/blk-exec.c
++++ b/block/blk-exec.c
+@@ -49,8 +49,18 @@ void blk_execute_rq_nowait(struct reques
+ 			   rq_end_io_fn *done)
+ {
+ 	int where = at_head ? ELEVATOR_INSERT_FRONT : ELEVATOR_INSERT_BACK;
++	bool is_pm_resume;
  
+ 	WARN_ON(irqs_disabled());
++
++	rq->rq_disk = bd_disk;
++	rq->end_io = done;
++	/*
++	 * need to check this before __blk_run_queue(), because rq can
++	 * be freed before that returns.
++	 */
++	is_pm_resume = rq->cmd_type == REQ_TYPE_PM_RESUME;
++
+ 	spin_lock_irq(q->queue_lock);
+ 
+ 	if (unlikely(blk_queue_dead(q))) {
+@@ -66,7 +76,7 @@ void blk_execute_rq_nowait(struct reques
+ 	__elv_add_request(q, rq, where);
+ 	__blk_run_queue(q);
+ 	/* the queue is stopped so it won't be run */
+-	if (rq->cmd_type == REQ_TYPE_PM_RESUME)
++	if (is_pm_resume)
+ 		q->request_fn(q);
+ 	spin_unlock_irq(q->queue_lock);
+ }
 
 
