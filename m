@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751953AbaCHL5p (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 06:57:45 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:64955 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103AbaCHL5m (ORCPT
+	id S1751878AbaCHMAA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 07:00:00 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:43037 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751130AbaCHL76 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 06:57:42 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,7370"; a="110443417"
-X-IronPort-AV: E=Sophos;i="4.97,613,1389772800"; 
-   d="scan'208";a="629510424"
-From: Kalle Valo <kvalo@qca.qualcomm.com>
-To: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-CC: Hui Liu <Hui.Liu@freescale.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linville@tuxdriver.com" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <ath6kl@lists.infradead.org>
-Subject: Re: [PATCH] ath6kl: sdio: fix system panic when doing wifi stress test
-References: <1384221185-8645-1-git-send-email-r64343@freescale.com>
-	<87k3fvjvjg.fsf@kamboji.qca.qualcomm.com>
-	<AD13664F485EE54694E29A7F9D5BE1AFC0AD96@039-SN2MPN1-022.039d.mgd.msft.net>
-	<20140307093813.GA28728@pengutronix.de>
-Date: Sat, 8 Mar 2014 13:57:36 +0200
-In-Reply-To: <20140307093813.GA28728@pengutronix.de> (Steffen Trumtrar's
-	message of "Fri, 7 Mar 2014 10:38:13 +0100")
-Message-ID: <87a9d0oqbz.fsf@kamboji.qca.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Sat, 8 Mar 2014 06:59:58 -0500
+Date: Sat, 8 Mar 2014 11:59:48 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>, gregkh@linuxfoundation.org,
+        robh+dt@kernel.org, gregory.clement@free-electrons.com,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2] dt: platform driver: Fill the resources before
+	probe and defer if needed
+Message-ID: <20140308115948.GX21483@n2100.arm.linux.org.uk>
+References: <20140220153042.DF053C4050F@trevor.secretlab.ca> <1392988720-20976-1-git-send-email-jjhiblot@traphandler.com> <20140308073758.DA63FC408EC@trevor.secretlab.ca>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-X-Originating-IP: [172.30.48.1]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140308073758.DA63FC408EC@trevor.secretlab.ca>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steffen,
+On Sat, Mar 08, 2014 at 07:37:58AM +0000, Grant Likely wrote:
+> I believe we already talked about the above test. This function must
+> only process devices created by of_platform_populate(). Merely checking
+> the of_node pointer is not a sufficient test because there are other
+> paths in the kernel for creating platform_devices that might get a node
+> pointer attached to it.
 
-Steffen Trumtrar <s.trumtrar@pengutronix.de> writes:
+There definitely are: there are a number of platform device drivers
+which create a new platform device structure, and copy the of_node
+pointer across.
 
->> > Does the patch below help? It would also fix the corruption with
->> > scat_q_depth. Please note that I have only compile tested it. And I might
->> > have also missed something important, so please review it carefully.
->> 
->> Yes, Firstly, I have looked at the asm code and the compiler(gcc 4.8.1) works correctly after applying
->> the following patch. Secondly, I have tested the patch with compiler(gcc 4.8.1) on the real HW, and it
->> works fine too. Without the patch, the kernel crash will happen 100%.
->> 
->> Thus, for the patch:
->> 
->> Acked-by: Jason Liu <r64343@freescale.com>
->> Tested-by: Jason Liu <r64343@freescale.com>
-
-[...]
-
-> What happend with this? If I look in mainline, I don't find it. At
-> least the reording of the struct fields looks as if one definitely
-> wants to have that.
-
-It seems that I forgot to submit this properly, sorry about that. I did
-it now:
-
-http://lists.infradead.org/pipermail/ath6kl/2014-March/000000.html
+However, that's really sick code, and can result in the platform device
+driver probing the device it just created... this practise should be
+outlawed.
 
 -- 
-Kalle Valo
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
