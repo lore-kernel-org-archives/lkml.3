@@ -1,156 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154AbaCHVCA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 16:02:00 -0500
-Received: from mail.ispras.ru ([83.149.199.45]:35337 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751716AbaCHVB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 16:01:59 -0500
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Todza Louina <lidza.louina@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Subject: [PATCH 1/2] staging: dgap: remove unneeded status variables
-Date: Sun,  9 Mar 2014 01:01:33 +0400
-Message-Id: <1394312494-17083-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <20140306221806.GA30494@kroah.com>
-References: <20140306221806.GA30494@kroah.com>
+	id S1752248AbaCHVCS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 16:02:18 -0500
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:49500 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751716AbaCHVCQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Mar 2014 16:02:16 -0500
+Message-ID: <1394312534.2040.18.camel@x220>
+Subject: Re: [PATCH] [RESEND] score: remove unused CPU_SCORE7 Kconfig
+ parameter
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Lennox Wu <lennox.wu@gmail.com>
+Cc: Michael Opdenacker <michael.opdenacker@free-electrons.com>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Sat, 08 Mar 2014 22:02:14 +0100
+In-Reply-To: <CAF0htA7TeuKjQzU9EE5_RWUkznf+Xp=CsGd=TA6qB0COQxUYQg@mail.gmail.com>
+References: <1386567192-19924-1-git-send-email-michael.opdenacker@free-electrons.com>
+	 <1394256390-10603-1-git-send-email-michael.opdenacker@free-electrons.com>
+	 <CAF0htA5OyL=cm7z5BMy1r7OcW_a-4WGEUbLzveR4fWgAC5av0Q@mail.gmail.com>
+	 <1394308828.431.5.camel@x220>
+	 <CAF0htA7TeuKjQzU9EE5_RWUkznf+Xp=CsGd=TA6qB0COQxUYQg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 08 Mar 2014 21:02:15.0324 (UTC) FILETIME=[AEFB95C0:01CF3B11]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dgap_driver_start and dgap_Major_Control_Registered are used
-to keep status of initialization of the driver as a whole and its "Major Control".
-But the code that checks them is executed once on module init/unload.
-That makes no sense in these variables as far as their values are predictable
-at any time.
+On Sun, 2014-03-09 at 04:27 +0800, Lennox Wu wrote:
+> 2014-03-09 4:00 GMT+08:00 Paul Bolle <pebolle@tiscali.nl>:
+> > In https://lkml.org/lkml/2011/11/12/76 I already reported that this
+> > Kconfig symbol was unused. Why can't it be dropped and re-added when
+> > code is added to the tree that actually uses it?
+>
+> Because I don't think droping it is meaningful, since it will be used.
 
-Also "dgap_downld" device was removed, while
-device_destroy(MKDEV(DIGI_DGAP_MAJOR, 1)) is still in dgap_cleanup_module().
-The patch removes it by the way.
+But, again, it isn't used now and hasn't actually been used in years.
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/staging/dgap/dgap.c | 81 ++++++++++++++++++---------------------------
- 1 file changed, 33 insertions(+), 48 deletions(-)
+> Moreover, the symbol never affect other architectures or subsystems.
+> I feel that is not good to brother people to process the unimportant patch.
 
-diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
-index d00283a..ad5afbc 100644
---- a/drivers/staging/dgap/dgap.c
-+++ b/drivers/staging/dgap/dgap.c
-@@ -254,9 +254,6 @@ static int dgap_poll_tick = 20;	/* Poll interval - 20 ms */
- /*
-  * Static vars.
-  */
--static int dgap_Major_Control_Registered = FALSE;
--static uint dgap_driver_start = FALSE;
--
- static struct class *dgap_class;
- 
- static struct board_t *dgap_BoardsByMajor[256];
-@@ -551,52 +548,44 @@ static int dgap_start(void)
- 	int rc = 0;
- 	unsigned long flags;
- 
--	if (dgap_driver_start == FALSE) {
-+	/*
-+	 * make sure that the globals are
-+	 * init'd before we do anything else
-+	 */
-+	dgap_init_globals();
- 
--		dgap_driver_start = TRUE;
-+	dgap_NumBoards = 0;
- 
--		/*
--		 * make sure that the globals are
--		 * init'd before we do anything else
--		 */
--		dgap_init_globals();
-+	pr_info("For the tools package please visit http://www.digi.com\n");
- 
--		dgap_NumBoards = 0;
-+	/*
-+	 * Register our base character device into the kernel.
-+	 */
- 
--		pr_info("For the tools package please visit http://www.digi.com\n");
-+	/*
-+	 * Register management/dpa devices
-+	 */
-+	rc = register_chrdev(DIGI_DGAP_MAJOR, "dgap", &DgapBoardFops);
-+	if (rc < 0)
-+		return rc;
- 
--		/*
--		 * Register our base character device into the kernel.
--		 */
--		if (!dgap_Major_Control_Registered) {
--			/*
--			 * Register management/dpa devices
--			 */
--			rc = register_chrdev(DIGI_DGAP_MAJOR, "dgap",
--						 &DgapBoardFops);
--			if (rc < 0)
--				return rc;
--
--			dgap_class = class_create(THIS_MODULE, "dgap_mgmt");
--			device_create(dgap_class, NULL,
--				MKDEV(DIGI_DGAP_MAJOR, 0),
--				NULL, "dgap_mgmt");
--			dgap_Major_Control_Registered = TRUE;
--		}
-+	dgap_class = class_create(THIS_MODULE, "dgap_mgmt");
-+	device_create(dgap_class, NULL,
-+		MKDEV(DIGI_DGAP_MAJOR, 0),
-+		NULL, "dgap_mgmt");
- 
--		/* Start the poller */
--		DGAP_LOCK(dgap_poll_lock, flags);
--		init_timer(&dgap_poll_timer);
--		dgap_poll_timer.function = dgap_poll_handler;
--		dgap_poll_timer.data = 0;
--		dgap_poll_time = jiffies + dgap_jiffies_from_ms(dgap_poll_tick);
--		dgap_poll_timer.expires = dgap_poll_time;
--		DGAP_UNLOCK(dgap_poll_lock, flags);
-+	/* Start the poller */
-+	DGAP_LOCK(dgap_poll_lock, flags);
-+	init_timer(&dgap_poll_timer);
-+	dgap_poll_timer.function = dgap_poll_handler;
-+	dgap_poll_timer.data = 0;
-+	dgap_poll_time = jiffies + dgap_jiffies_from_ms(dgap_poll_tick);
-+	dgap_poll_timer.expires = dgap_poll_time;
-+	DGAP_UNLOCK(dgap_poll_lock, flags);
- 
--		add_timer(&dgap_poll_timer);
-+	add_timer(&dgap_poll_timer);
- 
--		dgap_driver_state = DRIVER_NEED_CONFIG_LOAD;
--	}
-+	dgap_driver_state = DRIVER_NEED_CONFIG_LOAD;
- 
- 	return rc;
- }
-@@ -658,13 +647,9 @@ static void dgap_cleanup_module(void)
- 
- 	dgap_remove_driver_sysfiles(&dgap_driver);
- 
--
--	if (dgap_Major_Control_Registered) {
--		device_destroy(dgap_class, MKDEV(DIGI_DGAP_MAJOR, 0));
--		device_destroy(dgap_class, MKDEV(DIGI_DGAP_MAJOR, 1));
--		class_destroy(dgap_class);
--		unregister_chrdev(DIGI_DGAP_MAJOR, "dgap");
--	}
-+	device_destroy(dgap_class, MKDEV(DIGI_DGAP_MAJOR, 0));
-+	class_destroy(dgap_class);
-+	unregister_chrdev(DIGI_DGAP_MAJOR, "dgap");
- 
- 	kfree(dgap_config_buf);
- 
--- 
-1.8.3.2
+Sure, this is just a small cleanup. But the scripts people use to see
+whether more serious Kconfig related issues have entered the tree will
+likely notice CPU_SCORE7. (And those people will have to investigate why
+that symbol is unused - which might take quite a bit of work - to
+determine what needs to be done about it.) So whenever someone, not
+following this thread, runs a script like that the score maintainers
+might receive a similar patch again.
+
+And I don't believe that handling a single cleanup patch is particularly
+burdensome for the score maintainers.
+
+
+Paul Bolle
 
