@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755014AbaCHB23 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:28:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46376 "EHLO
+	id S1754874AbaCHB21 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:28:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46402 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754071AbaCHBHQ (ORCPT
+	with ESMTP id S1754088AbaCHBHT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:07:16 -0500
+	Fri, 7 Mar 2014 20:07:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hannes Reinecke <hare@suse.de>, Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.4 42/99] dm mpath: fix stalls when handling invalid ioctls
-Date: Fri,  7 Mar 2014 17:07:38 -0800
-Message-Id: <20140308010612.964588885@linuxfoundation.org>
+        Alex Graf <agraf@suse.de>, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Qiang Huang <h.huangqiang@huawei.com>
+Subject: [PATCH 3.4 46/99] s390/kvm: dont announce RRBM support
+Date: Fri,  7 Mar 2014 17:07:42 -0800
+Message-Id: <20140308010613.081075990@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
 References: <20140308010611.468206150@linuxfoundation.org>
@@ -28,42 +32,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Reinecke <hare@suse.de>
+From: Christian Borntraeger <borntraeger@de.ibm.com>
 
-commit a1989b330093578ea5470bea0a00f940c444c466 upstream.
+commit 87cac8f879a5ecd7109dbe688087e8810b3364eb upstream.
 
-An invalid ioctl will never be valid, irrespective of whether multipath
-has active paths or not.  So for invalid ioctls we do not have to wait
-for multipath to activate any paths, but can rather return an error
-code immediately.  This fix resolves numerous instances of:
+Newer kernels (linux-next with the transparent huge page patches)
+use rrbm if the feature is announced via feature bit 66.
+RRBM will cause intercepts, so KVM does not handle it right now,
+causing an illegal instruction in the guest.
+The  easy solution is to disable the feature bit for the guest.
 
- udevd[]: worker [] unexpectedly returned with status 0x0100
+This fixes bugs like:
+Kernel BUG at 0000000000124c2a [verbose debug info unavailable]
+illegal operation: 0001 [#1] SMP
+Modules linked in: virtio_balloon virtio_net ipv6 autofs4
+CPU: 0 Not tainted 3.5.4 #1
+Process fmempig (pid: 659, task: 000000007b712fd0, ksp: 000000007bed3670)
+Krnl PSW : 0704d00180000000 0000000000124c2a (pmdp_clear_flush_young+0x5e/0x80)
+     R:0 T:1 IO:1 EX:1 Key:0 M:1 W:0 P:0 AS:3 CC:1 PM:0 EA:3
+     00000000003cc000 0000000000000004 0000000000000000 0000000079800000
+     0000000000040000 0000000000000000 000000007bed3918 000000007cf40000
+     0000000000000001 000003fff7f00000 000003d281a94000 000000007bed383c
+     000000007bed3918 00000000005ecbf8 00000000002314a6 000000007bed36e0
+ Krnl Code:>0000000000124c2a: b9810025          ogr     %r2,%r5
+           0000000000124c2e: 41343000           la      %r3,0(%r4,%r3)
+           0000000000124c32: a716fffa           brct    %r1,124c26
+           0000000000124c36: b9010022           lngr    %r2,%r2
+           0000000000124c3a: e3d0f0800004       lg      %r13,128(%r15)
+           0000000000124c40: eb22003f000c       srlg    %r2,%r2,63
+[ 2150.713198] Call Trace:
+[ 2150.713223] ([<00000000002312c4>] page_referenced_one+0x6c/0x27c)
+[ 2150.713749]  [<0000000000233812>] page_referenced+0x32a/0x410
+[...]
 
-that have been seen during testing.
-
-Signed-off-by: Hannes Reinecke <hare@suse.de>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+CC: Alex Graf <agraf@suse.de>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Qiang Huang <h.huangqiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-mpath.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ arch/s390/kvm/kvm-s390.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/md/dm-mpath.c
-+++ b/drivers/md/dm-mpath.c
-@@ -1541,8 +1541,11 @@ static int multipath_ioctl(struct dm_tar
- 	/*
- 	 * Only pass ioctls through if the device sizes match exactly.
- 	 */
--	if (!r && ti->len != i_size_read(bdev->bd_inode) >> SECTOR_SHIFT)
--		r = scsi_verify_blk_ioctl(NULL, cmd);
-+	if (!bdev || ti->len != i_size_read(bdev->bd_inode) >> SECTOR_SHIFT) {
-+		int err = scsi_verify_blk_ioctl(NULL, cmd);
-+		if (err)
-+			r = err;
-+	}
- 
- 	return r ? : __blkdev_driver_ioctl(bdev, mode, cmd, arg);
+--- a/arch/s390/kvm/kvm-s390.c
++++ b/arch/s390/kvm/kvm-s390.c
+@@ -904,7 +904,7 @@ static int __init kvm_s390_init(void)
+ 	}
+ 	memcpy(facilities, S390_lowcore.stfle_fac_list, 16);
+ 	facilities[0] &= 0xff00fff3f47c0000ULL;
+-	facilities[1] &= 0x201c000000000000ULL;
++	facilities[1] &= 0x001c000000000000ULL;
+ 	return 0;
  }
+ 
 
 
