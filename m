@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752387AbaCHMyQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 07:54:16 -0500
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:55087 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752076AbaCHMyG (ORCPT
+	id S1752471AbaCHMyV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 07:54:21 -0500
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:36775 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752076AbaCHMyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 07:54:06 -0500
+	Sat, 8 Mar 2014 07:54:17 -0500
 From: Valentina Manea <valentina.manea.m@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: tobias.polzer@fau.de, dominik.paulus@fau.de, ly80toro@cip.cs.fau.de,
@@ -14,9 +14,9 @@ Cc: tobias.polzer@fau.de, dominik.paulus@fau.de, ly80toro@cip.cs.fau.de,
         linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
         devel@driverdev.osuosl.org, firefly@lists.rosedu.org,
         andy.grover@gmail.com, Valentina Manea <valentina.manea.m@gmail.com>
-Subject: [PATCH 07/18] staging: usbip: userspace: move sysfs_utils to libsrc
-Date: Sat,  8 Mar 2014 14:53:25 +0200
-Message-Id: <1394283216-1277-8-git-send-email-valentina.manea.m@gmail.com>
+Subject: [PATCH 13/18] staging: usbip: userspace: increase version to 2.0
+Date: Sat,  8 Mar 2014 14:53:31 +0200
+Message-Id: <1394283216-1277-14-git-send-email-valentina.manea.m@gmail.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1394283216-1277-1-git-send-email-valentina.manea.m@gmail.com>
 References: <1394283216-1277-1-git-send-email-valentina.manea.m@gmail.com>
@@ -24,150 +24,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since it offers a API to both usbip tools and libusbip,
-it is more appropriate to be place in the library.
-
 Signed-off-by: Valentina Manea <valentina.manea.m@gmail.com>
 ---
- drivers/staging/usbip/userspace/libsrc/Makefile.am |  3 ++-
- .../staging/usbip/userspace/libsrc/sysfs_utils.c   | 31 ++++++++++++++++++++++
- .../staging/usbip/userspace/libsrc/sysfs_utils.h   |  8 ++++++
- drivers/staging/usbip/userspace/src/Makefile.am    |  4 +--
- drivers/staging/usbip/userspace/src/sysfs_utils.c  | 31 ----------------------
- drivers/staging/usbip/userspace/src/sysfs_utils.h  |  8 ------
- 6 files changed, 42 insertions(+), 43 deletions(-)
- create mode 100644 drivers/staging/usbip/userspace/libsrc/sysfs_utils.c
- create mode 100644 drivers/staging/usbip/userspace/libsrc/sysfs_utils.h
- delete mode 100644 drivers/staging/usbip/userspace/src/sysfs_utils.c
- delete mode 100644 drivers/staging/usbip/userspace/src/sysfs_utils.h
+ drivers/staging/usbip/userspace/configure.ac | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/usbip/userspace/libsrc/Makefile.am b/drivers/staging/usbip/userspace/libsrc/Makefile.am
-index 4921189..7c8f8a4 100644
---- a/drivers/staging/usbip/userspace/libsrc/Makefile.am
-+++ b/drivers/staging/usbip/userspace/libsrc/Makefile.am
-@@ -4,4 +4,5 @@ libusbip_la_LDFLAGS  = -version-info @LIBUSBIP_VERSION@
+diff --git a/drivers/staging/usbip/userspace/configure.ac b/drivers/staging/usbip/userspace/configure.ac
+index 25bf160..607d05c 100644
+--- a/drivers/staging/usbip/userspace/configure.ac
++++ b/drivers/staging/usbip/userspace/configure.ac
+@@ -1,7 +1,7 @@
+ dnl Process this file with autoconf to produce a configure script.
  
- lib_LTLIBRARIES := libusbip.la
- libusbip_la_SOURCES := names.c names.h usbip_host_driver.c usbip_host_driver.h \
--		       usbip_common.c usbip_common.h vhci_driver.c vhci_driver.h
-+		       usbip_common.c usbip_common.h vhci_driver.c vhci_driver.h \
-+		       sysfs_utils.c sysfs_utils.h
-diff --git a/drivers/staging/usbip/userspace/libsrc/sysfs_utils.c b/drivers/staging/usbip/userspace/libsrc/sysfs_utils.c
-new file mode 100644
-index 0000000..36ac88e
---- /dev/null
-+++ b/drivers/staging/usbip/userspace/libsrc/sysfs_utils.c
-@@ -0,0 +1,31 @@
-+#include <sys/types.h>
-+#include <sys/stat.h>
-+#include <fcntl.h>
-+#include <errno.h>
-+
-+#include "sysfs_utils.h"
-+#include "usbip_common.h"
-+
-+int write_sysfs_attribute(const char *attr_path, const char *new_value,
-+			  size_t len)
-+{
-+	int fd;
-+	int length;
-+
-+	fd = open(attr_path, O_WRONLY);
-+	if (fd < 0) {
-+		dbg("error opening attribute %s", attr_path);
-+		return -1;
-+	}
-+
-+	length = write(fd, new_value, len);
-+	if (length < 0) {
-+		dbg("error writing to attribute %s", attr_path);
-+		close(fd);
-+		return -1;
-+	}
-+
-+	close(fd);
-+
-+	return 0;
-+}
-diff --git a/drivers/staging/usbip/userspace/libsrc/sysfs_utils.h b/drivers/staging/usbip/userspace/libsrc/sysfs_utils.h
-new file mode 100644
-index 0000000..32ac1d1
---- /dev/null
-+++ b/drivers/staging/usbip/userspace/libsrc/sysfs_utils.h
-@@ -0,0 +1,8 @@
-+
-+#ifndef __SYSFS_UTILS_H
-+#define __SYSFS_UTILS_H
-+
-+int write_sysfs_attribute(const char *attr_path, const char *new_value,
-+			  size_t len);
-+
-+#endif
-diff --git a/drivers/staging/usbip/userspace/src/Makefile.am b/drivers/staging/usbip/userspace/src/Makefile.am
-index 6c91bcb..e81a4eb 100644
---- a/drivers/staging/usbip/userspace/src/Makefile.am
-+++ b/drivers/staging/usbip/userspace/src/Makefile.am
-@@ -6,8 +6,6 @@ sbin_PROGRAMS := usbip usbipd
+ AC_PREREQ(2.59)
+-AC_INIT([usbip-utils], [1.1.1], [linux-usb@vger.kernel.org])
++AC_INIT([usbip-utils], [2.0], [linux-usb@vger.kernel.org])
+ AC_DEFINE([USBIP_VERSION], [0x00000111], [binary-coded decimal version number])
  
- usbip_SOURCES := usbip.h utils.h usbip.c utils.c usbip_network.c \
- 		 usbip_attach.c usbip_detach.c usbip_list.c \
--		 usbip_bind.c usbip_unbind.c usbip_port.c \
--		 sysfs_utils.c
--
-+		 usbip_bind.c usbip_unbind.c usbip_port.c
- 
- usbipd_SOURCES := usbip_network.h usbipd.c usbip_network.c
-diff --git a/drivers/staging/usbip/userspace/src/sysfs_utils.c b/drivers/staging/usbip/userspace/src/sysfs_utils.c
-deleted file mode 100644
-index 36ac88e..0000000
---- a/drivers/staging/usbip/userspace/src/sysfs_utils.c
-+++ /dev/null
-@@ -1,31 +0,0 @@
--#include <sys/types.h>
--#include <sys/stat.h>
--#include <fcntl.h>
--#include <errno.h>
--
--#include "sysfs_utils.h"
--#include "usbip_common.h"
--
--int write_sysfs_attribute(const char *attr_path, const char *new_value,
--			  size_t len)
--{
--	int fd;
--	int length;
--
--	fd = open(attr_path, O_WRONLY);
--	if (fd < 0) {
--		dbg("error opening attribute %s", attr_path);
--		return -1;
--	}
--
--	length = write(fd, new_value, len);
--	if (length < 0) {
--		dbg("error writing to attribute %s", attr_path);
--		close(fd);
--		return -1;
--	}
--
--	close(fd);
--
--	return 0;
--}
-diff --git a/drivers/staging/usbip/userspace/src/sysfs_utils.h b/drivers/staging/usbip/userspace/src/sysfs_utils.h
-deleted file mode 100644
-index 32ac1d1..0000000
---- a/drivers/staging/usbip/userspace/src/sysfs_utils.h
-+++ /dev/null
-@@ -1,8 +0,0 @@
--
--#ifndef __SYSFS_UTILS_H
--#define __SYSFS_UTILS_H
--
--int write_sysfs_attribute(const char *attr_path, const char *new_value,
--			  size_t len);
--
--#endif
+ CURRENT=0
 -- 
 1.8.1.2
 
