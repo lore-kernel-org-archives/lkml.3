@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755349AbaCHBaM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:30:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46356 "EHLO
+	id S1754024AbaCHBHM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:07:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46296 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753878AbaCHBHN (ORCPT
+	with ESMTP id S1753878AbaCHBHE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:07:13 -0500
+	Fri, 7 Mar 2014 20:07:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Drew Richardson <drew.richardson@arm.com>,
         Peter Zijlstra <peterz@infradead.org>,
-        Will Deacon <will.deacon@arm.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.4 38/99] perf: Fix hotplug splat
-Date: Fri,  7 Mar 2014 17:07:34 -0800
-Message-Id: <20140308010612.832175647@linuxfoundation.org>
+        Paul Mackerras <paulus@samba.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Stephane Eranian <eranian@google.com>, Dave Jones <davej@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.4 27/99] perf/x86: Fix event scheduling
+Date: Fri,  7 Mar 2014 17:07:23 -0800
+Message-Id: <20140308010612.494332755@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
 References: <20140308010611.468206150@linuxfoundation.org>
@@ -32,64 +34,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Peter Zijlstra <peterz@infradead.org>
 
-commit e3703f8cdfcf39c25c4338c3ad8e68891cca3731 upstream.
+commit 26e61e8939b1fe8729572dabe9a9e97d930dd4f6 upstream.
 
-Drew Richardson reported that he could make the kernel go *boom* when hotplugging
-while having perf events active.
+Vince "Super Tester" Weaver reported a new round of syscall fuzzing (Trinity) failures,
+with perf WARN_ON()s triggering. He also provided traces of the failures.
 
-It turned out that when you have a group event, the code in
-__perf_event_exit_context() fails to remove the group siblings from
-the context.
+This is I think the relevant bit:
 
-We then proceed with destroying and freeing the event, and when you
-re-plug the CPU and try and add another event to that CPU, things go
-*boom* because you've still got dead entries there.
+	>    pec_1076_warn-2804  [000] d...   147.926153: x86_pmu_disable: x86_pmu_disable
+	>    pec_1076_warn-2804  [000] d...   147.926153: x86_pmu_state: Events: {
+	>    pec_1076_warn-2804  [000] d...   147.926156: x86_pmu_state:   0: state: .R config: ffffffffffffffff (          (null))
+	>    pec_1076_warn-2804  [000] d...   147.926158: x86_pmu_state:   33: state: AR config: 0 (ffff88011ac99800)
+	>    pec_1076_warn-2804  [000] d...   147.926159: x86_pmu_state: }
+	>    pec_1076_warn-2804  [000] d...   147.926160: x86_pmu_state: n_events: 1, n_added: 0, n_txn: 1
+	>    pec_1076_warn-2804  [000] d...   147.926161: x86_pmu_state: Assignment: {
+	>    pec_1076_warn-2804  [000] d...   147.926162: x86_pmu_state:   0->33 tag: 1 config: 0 (ffff88011ac99800)
+	>    pec_1076_warn-2804  [000] d...   147.926163: x86_pmu_state: }
+	>    pec_1076_warn-2804  [000] d...   147.926166: collect_events: Adding event: 1 (ffff880119ec8800)
 
-Reported-by: Drew Richardson <drew.richardson@arm.com>
+So we add the insn:p event (fd[23]).
+
+At this point we should have:
+
+  n_events = 2, n_added = 1, n_txn = 1
+
+	>    pec_1076_warn-2804  [000] d...   147.926170: collect_events: Adding event: 0 (ffff8800c9e01800)
+	>    pec_1076_warn-2804  [000] d...   147.926172: collect_events: Adding event: 4 (ffff8800cbab2c00)
+
+We try and add the {BP,cycles,br_insn} group (fd[3], fd[4], fd[15]).
+These events are 0:cycles and 4:br_insn, the BP event isn't x86_pmu so
+that's not visible.
+
+	group_sched_in()
+	  pmu->start_txn() /* nop - BP pmu */
+	  event_sched_in()
+	     event->pmu->add()
+
+So here we should end up with:
+
+  0: n_events = 3, n_added = 2, n_txn = 2
+  4: n_events = 4, n_added = 3, n_txn = 3
+
+But seeing the below state on x86_pmu_enable(), the must have failed,
+because the 0 and 4 events aren't there anymore.
+
+Looking at group_sched_in(), since the BP is the leader, its
+event_sched_in() must have succeeded, for otherwise we would not have
+seen the sibling adds.
+
+But since neither 0 or 4 are in the below state; their event_sched_in()
+must have failed; but I don't see why, the complete state: 0,0,1:p,4
+fits perfectly fine on a core2.
+
+However, since we try and schedule 4 it means the 0 event must have
+succeeded!  Therefore the 4 event must have failed, its failure will
+have put group_sched_in() into the fail path, which will call:
+
+	event_sched_out()
+	  event->pmu->del()
+
+on 0 and the BP event.
+
+Now x86_pmu_del() will reduce n_events; but it will not reduce n_added;
+giving what we see below:
+
+ n_event = 2, n_added = 2, n_txn = 2
+
+	>    pec_1076_warn-2804  [000] d...   147.926177: x86_pmu_enable: x86_pmu_enable
+	>    pec_1076_warn-2804  [000] d...   147.926177: x86_pmu_state: Events: {
+	>    pec_1076_warn-2804  [000] d...   147.926179: x86_pmu_state:   0: state: .R config: ffffffffffffffff (          (null))
+	>    pec_1076_warn-2804  [000] d...   147.926181: x86_pmu_state:   33: state: AR config: 0 (ffff88011ac99800)
+	>    pec_1076_warn-2804  [000] d...   147.926182: x86_pmu_state: }
+	>    pec_1076_warn-2804  [000] d...   147.926184: x86_pmu_state: n_events: 2, n_added: 2, n_txn: 2
+	>    pec_1076_warn-2804  [000] d...   147.926184: x86_pmu_state: Assignment: {
+	>    pec_1076_warn-2804  [000] d...   147.926186: x86_pmu_state:   0->33 tag: 1 config: 0 (ffff88011ac99800)
+	>    pec_1076_warn-2804  [000] d...   147.926188: x86_pmu_state:   1->0 tag: 1 config: 1 (ffff880119ec8800)
+	>    pec_1076_warn-2804  [000] d...   147.926188: x86_pmu_state: }
+	>    pec_1076_warn-2804  [000] d...   147.926190: x86_pmu_enable: S0: hwc->idx: 33, hwc->last_cpu: 0, hwc->last_tag: 1 hwc->state: 0
+
+So the problem is that x86_pmu_del(), when called from a
+group_sched_in() that fails (for whatever reason), and without x86_pmu
+TXN support (because the leader is !x86_pmu), will corrupt the n_added
+state.
+
+Reported-and-Tested-by: Vince Weaver <vincent.weaver@maine.edu>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Will Deacon <will.deacon@arm.com>
-Link: http://lkml.kernel.org/n/tip-k6v5wundvusvcseqj1si0oz0@git.kernel.org
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Dave Jones <davej@redhat.com>
+Link: http://lkml.kernel.org/r/20140221150312.GF3104@twins.programming.kicks-ass.net
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/events/core.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -7149,14 +7149,14 @@ static void perf_pmu_rotate_stop(struct
- static void __perf_event_exit_context(void *__info)
- {
- 	struct perf_event_context *ctx = __info;
--	struct perf_event *event, *tmp;
-+	struct perf_event *event;
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1165,6 +1165,9 @@ static void x86_pmu_del(struct perf_even
+ 	for (i = 0; i < cpuc->n_events; i++) {
+ 		if (event == cpuc->event_list[i]) {
  
- 	perf_pmu_rotate_stop(ctx->pmu);
- 
--	list_for_each_entry_safe(event, tmp, &ctx->pinned_groups, group_entry)
--		__perf_remove_from_context(event);
--	list_for_each_entry_safe(event, tmp, &ctx->flexible_groups, group_entry)
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(event, &ctx->event_list, event_entry)
- 		__perf_remove_from_context(event);
-+	rcu_read_unlock();
- }
- 
- static void perf_event_exit_cpu_context(int cpu)
-@@ -7180,11 +7180,11 @@ static void perf_event_exit_cpu(int cpu)
- {
- 	struct swevent_htable *swhash = &per_cpu(swevent_htable, cpu);
- 
-+	perf_event_exit_cpu_context(cpu);
++			if (i >= cpuc->n_events - cpuc->n_added)
++				--cpuc->n_added;
 +
- 	mutex_lock(&swhash->hlist_mutex);
- 	swevent_hlist_release(swhash);
- 	mutex_unlock(&swhash->hlist_mutex);
--
--	perf_event_exit_cpu_context(cpu);
- }
- #else
- static inline void perf_event_exit_cpu(int cpu) { }
+ 			if (x86_pmu.put_event_constraints)
+ 				x86_pmu.put_event_constraints(cpuc, event);
+ 
 
 
