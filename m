@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339AbaCHBHq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:07:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46539 "EHLO
+	id S1754895AbaCHBRG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:17:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46594 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754253AbaCHBHh (ORCPT
+	with ESMTP id S1754327AbaCHBHq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:07:37 -0500
+	Fri, 7 Mar 2014 20:07:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 3.4 70/99] xen/smp/spinlock: Fix leakage of the spinlock interrupt line for every CPU online/offline
-Date: Fri,  7 Mar 2014 17:08:06 -0800
-Message-Id: <20140308010613.836276459@linuxfoundation.org>
+        Oskar Schirmer <oskar@scara.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Mark Brown <broonie@linaro.org>, Ben Hutchings <ben@decadent.org.uk>,
+        Weng Meiling <wengmeiling.weng@huawei.com>
+Subject: [PATCH 3.4 80/99] ASoC: sglt5000: Fix the default value of CHIP_SSS_CTRL
+Date: Fri,  7 Mar 2014 17:08:16 -0800
+Message-Id: <20140308010614.158807052@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
 References: <20140308010611.468206150@linuxfoundation.org>
@@ -30,75 +31,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-commit 66ff0fe9e7bda8aec99985b24daad03652f7304e upstream.
+commit 016fcab8ff46fca29375d484226ec91932aa4a07 upstream.
 
-While we don't use the spinlock interrupt line (see for details
-commit f10cd522c5fbfec9ae3cc01967868c9c2401ed23 -
-xen: disable PV spinlocks on HVM) - we should still do the proper
-init / deinit sequence. We did not do that correctly and for the
-CPU init for PVHVM guest we would allocate an interrupt line - but
-failed to deallocate the old interrupt line.
+According to the sgtl5000 reference manual, the default value of CHIP_SSS_CTRL
+is 0x10.
 
-This resulted in leakage of an irq_desc but more importantly this splat
-as we online an offlined CPU:
-
-genirq: Flags mismatch irq 71. 0002cc20 (spinlock1) vs. 0002cc20 (spinlock1)
-Pid: 2542, comm: init.late Not tainted 3.9.0-rc6upstream #1
-Call Trace:
- [<ffffffff811156de>] __setup_irq+0x23e/0x4a0
- [<ffffffff81194191>] ? kmem_cache_alloc_trace+0x221/0x250
- [<ffffffff811161bb>] request_threaded_irq+0xfb/0x160
- [<ffffffff8104c6f0>] ? xen_spin_trylock+0x20/0x20
- [<ffffffff813a8423>] bind_ipi_to_irqhandler+0xa3/0x160
- [<ffffffff81303758>] ? kasprintf+0x38/0x40
- [<ffffffff8104c6f0>] ? xen_spin_trylock+0x20/0x20
- [<ffffffff810cad35>] ? update_max_interval+0x15/0x40
- [<ffffffff816605db>] xen_init_lock_cpu+0x3c/0x78
- [<ffffffff81660029>] xen_hvm_cpu_notify+0x29/0x33
- [<ffffffff81676bdd>] notifier_call_chain+0x4d/0x70
- [<ffffffff810bb2a9>] __raw_notifier_call_chain+0x9/0x10
- [<ffffffff8109402b>] __cpu_notify+0x1b/0x30
- [<ffffffff8166834a>] _cpu_up+0xa0/0x14b
- [<ffffffff816684ce>] cpu_up+0xd9/0xec
- [<ffffffff8165f754>] store_online+0x94/0xd0
- [<ffffffff8141d15b>] dev_attr_store+0x1b/0x20
- [<ffffffff81218f44>] sysfs_write_file+0xf4/0x170
- [<ffffffff811a2864>] vfs_write+0xb4/0x130
- [<ffffffff811a302a>] sys_write+0x5a/0xa0
- [<ffffffff8167ada9>] system_call_fastpath+0x16/0x1b
-cpu 1 spinlock event irq -16
-smpboot: Booting Node 0 Processor 1 APIC 0x2
-
-And if one looks at the /proc/interrupts right after
-offlining (CPU1):
-
-  70:          0          0  xen-percpu-ipi       spinlock0
-  71:          0          0  xen-percpu-ipi       spinlock1
-  77:          0          0  xen-percpu-ipi       spinlock2
-
-There is the oddity of the 'spinlock1' still being present.
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-[bwh: Backported to 3.2: adjust context]
+Reported-by: Oskar Schirmer <oskar@scara.com>
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
+[bwh: Backported to 3.2: format of register defaults array is different]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Yijing Wang <wangyijing@huawei.com>
+Cc: Weng Meiling <wengmeiling.weng@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/xen/smp.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/soc/codecs/sgtl5000.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -576,6 +576,7 @@ static void xen_hvm_cpu_die(unsigned int
- 	unbind_from_irqhandler(per_cpu(xen_callfunc_irq, cpu), NULL);
- 	unbind_from_irqhandler(per_cpu(xen_debug_irq, cpu), NULL);
- 	unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu), NULL);
-+	xen_uninit_lock_cpu(cpu);
- 	xen_teardown_timer(cpu);
- 	native_cpu_die(cpu);
- }
+--- a/sound/soc/codecs/sgtl5000.c
++++ b/sound/soc/codecs/sgtl5000.c
+@@ -37,7 +37,7 @@
+ static const u16 sgtl5000_regs[SGTL5000_MAX_REG_OFFSET] =  {
+ 	[SGTL5000_CHIP_CLK_CTRL] = 0x0008,
+ 	[SGTL5000_CHIP_I2S_CTRL] = 0x0010,
+-	[SGTL5000_CHIP_SSS_CTRL] = 0x0008,
++	[SGTL5000_CHIP_SSS_CTRL] = 0x0010,
+ 	[SGTL5000_CHIP_DAC_VOL] = 0x3c3c,
+ 	[SGTL5000_CHIP_PAD_STRENGTH] = 0x015f,
+ 	[SGTL5000_CHIP_ANA_HP_CTRL] = 0x1818,
 
 
