@@ -1,31 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754468AbaCHBZC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:25:02 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46446 "EHLO
+	id S1755293AbaCHBZn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:25:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46433 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754153AbaCHBHY (ORCPT
+	with ESMTP id S1754138AbaCHBHX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:07:24 -0500
+	Fri, 7 Mar 2014 20:07:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jianguo Wu <wujianguo@huawei.com>, Jiang Liu <liuj97@gmail.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        Minchan Kim <minchan@kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, Yinghai Lu <yinghai@kernel.org>,
-        Tony Luck <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Keping Chen <chenkeping@huawei.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>,
+        Tejun Heo <tj@kernel.org>, Fengguang Wu <fengguang.wu@intel.com>,
+        Li Zefan <lizefan@huawei.com>, Ben Hutchings <ben@decadent.org.uk>,
         Qiang Huang <h.huangqiang@huawei.com>
-Subject: [PATCH 3.4 51/99] mm/hotplug: correctly add new zone to all other nodes zone lists
-Date: Fri,  7 Mar 2014 17:07:47 -0800
-Message-Id: <20140308010613.241225956@linuxfoundation.org>
+Subject: [PATCH 3.4 50/99] cgroup: fix RCU accesses to task->cgroups
+Date: Fri,  7 Mar 2014 17:07:46 -0800
+Message-Id: <20140308010613.210603947@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
 References: <20140308010611.468206150@linuxfoundation.org>
@@ -40,86 +30,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiang Liu <jiang.liu@huawei.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 08dff7b7d629807dbb1f398c68dd9cd58dd657a1 upstream.
+commit 14611e51a57df10240817d8ada510842faf0ec51 upstream.
 
-When online_pages() is called to add new memory to an empty zone, it
-rebuilds all zone lists by calling build_all_zonelists().  But there's a
-bug which prevents the new zone to be added to other nodes' zone lists.
+task->cgroups is a RCU pointer pointing to struct css_set.  A task
+switches to a different css_set on cgroup migration but a css_set
+doesn't change once created and its pointers to cgroup_subsys_states
+aren't RCU protected.
 
-online_pages() {
-	build_all_zonelists()
-	.....
-	node_set_state(zone_to_nid(zone), N_HIGH_MEMORY)
-}
+task_subsys_state[_check]() is the macro to acquire css given a task
+and subsys_id pair.  It RCU-dereferences task->cgroups->subsys[] not
+task->cgroups, so the RCU pointer task->cgroups ends up being
+dereferenced without read_barrier_depends() after it.  It's broken.
 
-Here the node of the zone is put into N_HIGH_MEMORY state after calling
-build_all_zonelists(), but build_all_zonelists() only adds zones from
-nodes in N_HIGH_MEMORY state to the fallback zone lists.
-build_all_zonelists()
+Fix it by introducing task_css_set[_check]() which does
+RCU-dereference on task->cgroups.  task_subsys_state[_check]() is
+reimplemented to directly dereference ->subsys[] of the css_set
+returned from task_css_set[_check]().
 
-    ->__build_all_zonelists()
-	->build_zonelists()
-	    ->find_next_best_node()
-		->for_each_node_state(n, N_HIGH_MEMORY)
+This removes some of sparse RCU warnings in cgroup.
 
-So memory in the new zone will never be used by other nodes, and it may
-cause strange behavor when system is under memory pressure.  So put node
-into N_HIGH_MEMORY state before calling build_all_zonelists().
+v2: Fixed unbalanced parenthsis and there's no need to use
+    rcu_dereference_raw() when !CONFIG_PROVE_RCU.  Both spotted by Li.
 
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-Signed-off-by: Jiang Liu <liuj97@gmail.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Keping Chen <chenkeping@huawei.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Acked-by: Li Zefan <lizefan@huawei.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Remove CONFIG_PROVE_RCU condition
+ - s/lockdep_is_held(&cgroup_mutex)/cgroup_lock_is_held()/]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Qiang Huang <h.huangqiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memory_hotplug.c |   15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
+ include/linux/cgroup.h |   52 ++++++++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 45 insertions(+), 7 deletions(-)
 
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -515,19 +515,20 @@ int __ref online_pages(unsigned long pfn
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -513,16 +513,54 @@ static inline struct cgroup_subsys_state
+ 	return cgrp->subsys[subsys_id];
+ }
  
- 	zone->present_pages += onlined_pages;
- 	zone->zone_pgdat->node_present_pages += onlined_pages;
--	if (need_zonelists_rebuild)
--		build_all_zonelists(zone);
--	else
--		zone_pcp_update(zone);
-+	if (onlined_pages) {
-+		node_set_state(zone_to_nid(zone), N_HIGH_MEMORY);
-+		if (need_zonelists_rebuild)
-+			build_all_zonelists(zone);
-+		else
-+			zone_pcp_update(zone);
-+	}
+-/*
+- * function to get the cgroup_subsys_state which allows for extra
+- * rcu_dereference_check() conditions, such as locks used during the
+- * cgroup_subsys::attach() methods.
++/**
++ * task_css_set_check - obtain a task's css_set with extra access conditions
++ * @task: the task to obtain css_set for
++ * @__c: extra condition expression to be passed to rcu_dereference_check()
++ *
++ * A task's css_set is RCU protected, initialized and exited while holding
++ * task_lock(), and can only be modified while holding both cgroup_mutex
++ * and task_lock() while the task is alive.  This macro verifies that the
++ * caller is inside proper critical section and returns @task's css_set.
++ *
++ * The caller can also specify additional allowed conditions via @__c, such
++ * as locks used during the cgroup_subsys::attach() methods.
++ */
++#define task_css_set_check(task, __c)					\
++	rcu_dereference_check((task)->cgroups,				\
++		lockdep_is_held(&(task)->alloc_lock) ||			\
++		cgroup_lock_is_held() || (__c))
++
++/**
++ * task_subsys_state_check - obtain css for (task, subsys) w/ extra access conds
++ * @task: the target task
++ * @subsys_id: the target subsystem ID
++ * @__c: extra condition expression to be passed to rcu_dereference_check()
++ *
++ * Return the cgroup_subsys_state for the (@task, @subsys_id) pair.  The
++ * synchronization rules are the same as task_css_set_check().
+  */
+ #define task_subsys_state_check(task, subsys_id, __c)			\
+-	rcu_dereference_check(task->cgroups->subsys[subsys_id],		\
+-			      lockdep_is_held(&task->alloc_lock) ||	\
+-			      cgroup_lock_is_held() || (__c))
++	task_css_set_check((task), (__c))->subsys[(subsys_id)]
  
- 	mutex_unlock(&zonelists_mutex);
- 
- 	init_per_zone_wmark_min();
- 
--	if (onlined_pages) {
-+	if (onlined_pages)
- 		kswapd_run(zone_to_nid(zone));
--		node_set_state(zone_to_nid(zone), N_HIGH_MEMORY);
--	}
- 
- 	vm_total_pages = nr_free_pagecache_pages();
- 
++/**
++ * task_css_set - obtain a task's css_set
++ * @task: the task to obtain css_set for
++ *
++ * See task_css_set_check().
++ */
++static inline struct css_set *task_css_set(struct task_struct *task)
++{
++	return task_css_set_check(task, false);
++}
++
++/**
++ * task_subsys_state - obtain css for (task, subsys)
++ * @task: the target task
++ * @subsys_id: the target subsystem ID
++ *
++ * See task_subsys_state_check().
++ */
+ static inline struct cgroup_subsys_state *
+ task_subsys_state(struct task_struct *task, int subsys_id)
+ {
 
 
