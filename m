@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752624AbaCHTnH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 14:43:07 -0500
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:51785 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751689AbaCHTnD (ORCPT
+	id S1752679AbaCHTnm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 14:43:42 -0500
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:50553 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752525AbaCHTm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 14:43:03 -0500
+	Sat, 8 Mar 2014 14:42:58 -0500
 From: Richard Cochran <richardcochran@gmail.com>
 To: <netdev@vger.kernel.org>
 Cc: <linux-kernel@vger.kernel.org>, Ben Hutchings <bhutchings@solarflare.com>,
@@ -14,9 +14,9 @@ Cc: <linux-kernel@vger.kernel.org>, Ben Hutchings <bhutchings@solarflare.com>,
         David Miller <davem@davemloft.net>,
         =?UTF-8?q?Stefan=20S=C3=B8rensen?= 
 	<stefan.sorensen@spectralink.com>
-Subject: [PATCH RFC net-next v1 9/9] dp83640: let the periodic pin from the module parameter be a default.
-Date: Sat,  8 Mar 2014 20:42:09 +0100
-Message-Id: <97ab5827d526c4e763ad202841b3b7640c93f42d.1394307304.git.richardcochran@gmail.com>
+Subject: [PATCH RFC net-next v1 8/9] dp83640: let external input pins from the module parameters be defaults.
+Date: Sat,  8 Mar 2014 20:42:08 +0100
+Message-Id: <15717348d8d80ac471563cf811ffc8db41dea3cb.1394307304.git.richardcochran@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1394307303.git.richardcochran@gmail.com>
 References: <cover.1394307303.git.richardcochran@gmail.com>
@@ -24,71 +24,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes the driver use the new pin configuration method when
-programming the periodic output signal.
+This patch changes the driver to use the new pin configuration method when
+programming the external time stamp input signals.
 
 Signed-off-by: Richard Cochran <richardcochran@gmail.com>
 ---
- drivers/net/phy/dp83640.c |   19 +++++++++++++------
- 1 file changed, 13 insertions(+), 6 deletions(-)
+ drivers/net/phy/dp83640.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/net/phy/dp83640.c b/drivers/net/phy/dp83640.c
-index d60b90c..a829fd5 100644
+index f98998f..d60b90c 100644
 --- a/drivers/net/phy/dp83640.c
 +++ b/drivers/net/phy/dp83640.c
-@@ -298,15 +298,22 @@ static u64 phy2txts(struct phy_txts *p)
- 	return ns;
- }
- 
--static void periodic_output(struct dp83640_clock *clock,
--			    struct ptp_clock_request *clkreq, bool on)
-+static int periodic_output(struct dp83640_clock *clock,
-+			   struct ptp_clock_request *clkreq, bool on)
- {
- 	struct dp83640_private *dp83640 = clock->chosen;
- 	struct phy_device *phydev = dp83640->phydev;
- 	u32 sec, nsec, pwidth;
- 	u16 gpio, ptp_trig, trigger, val;
- 
--	gpio = on ? gpio_tab[PEROUT_GPIO] : 0;
-+	if (on) {
-+		gpio = 1 + ptp_find_pin(clock->ptp_clock, PTP_PF_PEROUT, 0);
-+		if (gpio < 1)
-+			return -EINVAL;
-+	} else {
-+		gpio = 0;
-+	}
-+
- 	trigger = PER_TRIGGER;
- 
- 	ptp_trig = TRIG_WR |
-@@ -323,7 +330,7 @@ static void periodic_output(struct dp83640_clock *clock,
- 		ext_write(0, phydev, PAGE5, PTP_TRIG, ptp_trig);
- 		ext_write(0, phydev, PAGE4, PTP_CTL, val);
- 		mutex_unlock(&clock->extreg_lock);
--		return;
-+		return 0;
- 	}
- 
- 	sec = clkreq->perout.start.sec;
-@@ -352,6 +359,7 @@ static void periodic_output(struct dp83640_clock *clock,
- 	ext_write(0, phydev, PAGE4, PTP_CTL, val);
- 
- 	mutex_unlock(&clock->extreg_lock);
-+	return 0;
- }
- 
- /* ptp clock methods */
-@@ -484,8 +492,7 @@ static int ptp_dp83640_enable(struct ptp_clock_info *ptp,
- 	case PTP_CLK_REQ_PEROUT:
- 		if (rq->perout.index != 0)
- 			return -EINVAL;
--		periodic_output(clock, rq, on);
--		return 0;
-+		return periodic_output(clock, rq, on);
- 
- 	default:
- 		break;
+@@ -468,7 +468,10 @@ static int ptp_dp83640_enable(struct ptp_clock_info *ptp,
+ 		event_num = EXT_EVENT + index;
+ 		evnt = EVNT_WR | (event_num & EVNT_SEL_MASK) << EVNT_SEL_SHIFT;
+ 		if (on) {
+-			gpio_num = gpio_tab[EXTTS0_GPIO + index];
++			gpio_num = 1 + ptp_find_pin(clock->ptp_clock,
++						    PTP_PF_EXTTS, index);
++			if (gpio_num < 1)
++				return -EINVAL;
+ 			evnt |= (gpio_num & EVNT_GPIO_MASK) << EVNT_GPIO_SHIFT;
+ 			if (rq->extts.flags & PTP_FALLING_EDGE)
+ 				evnt |= EVNT_FALL;
 -- 
 1.7.10.4
 
