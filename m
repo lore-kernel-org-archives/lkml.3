@@ -1,305 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751896AbaCHKcg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 05:32:36 -0500
-Received: from dliviu.plus.com ([80.229.23.120]:48062 "EHLO smtp.dudau.co.uk"
+	id S1752011AbaCHKdo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 05:33:44 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:54032 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751111AbaCHKcf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 05:32:35 -0500
-Date: Sat, 8 Mar 2014 10:29:45 +0000
-From: Liviu Dudau <liviu@dudau.co.uk>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Liviu Dudau <Liviu.Dudau@arm.com>, linux-pci <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Tanmay Inamdar <tinamdar@apm.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v6 6/6] pci: Add support for creating a generic
- host_bridge from device tree
-Message-ID: <20140308102944.GD29057@bart.dudau.co.uk>
-Mail-Followup-To: Grant Likely <grant.likely@secretlab.ca>,
-	Liviu Dudau <Liviu.Dudau@arm.com>,
-	linux-pci <linux-pci@vger.kernel.org>,
-	Bjorn Helgaas <bhelgaas@google.com>,
-	Catalin Marinas <Catalin.Marinas@arm.com>,
-	Will Deacon <Will.Deacon@arm.com>,
-	linaro-kernel <linaro-kernel@lists.linaro.org>,
-	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-	LAKML <linux-arm-kernel@lists.infradead.org>,
-	Tanmay Inamdar <tinamdar@apm.com>, Arnd Bergmann <arnd@arndb.de>
-References: <1394020137-1830-1-git-send-email-Liviu.Dudau@arm.com>
- <1394020137-1830-7-git-send-email-Liviu.Dudau@arm.com>
- <20140307211427.0D92DC40F30@trevor.secretlab.ca>
+	id S1751113AbaCHKdk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Mar 2014 05:33:40 -0500
+Message-ID: <531AF1E8.50606@ti.com>
+Date: Sat, 8 Mar 2014 12:33:12 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140307211427.0D92DC40F30@trevor.secretlab.ca>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Sat Mar  8 10:32:34 2014
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 531af1c23191681115085
+To: Grant Likely <grant.likely@linaro.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>
+CC: Sascha Hauer <s.hauer@pengutronix.de>, Rob Herring <robherring2@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Philipp Zabel <philipp.zabel@gmail.com>
+Subject: Re: [RFC PATCH] [media]: of: move graph helpers from drivers/media/v4l2-core
+ to drivers/of
+References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de> < CAL_Jsq+U9zU1i+STLHMBjY5BeEP6djYnJVE5X1ix-D2q_zWztQ@mail.gmail.com> < 20140217181451.7EB7FC4044D@trevor.secretlab.ca> <20140218070624.GP17250@ pengutronix.de> <20140218162627.32BA4C40517@trevor.secretlab.ca> < 1393263389.3091.82.camel@pizza.hi.pengutronix.de> <20140226110114. CF2C7C40A89@trevor.secretlab.ca> <1393426129.3248.64.camel@paszta.hi. pengutronix.de> <20140307170550.1DFB2C40A0D@trevor.secretlab.ca>
+In-Reply-To: <20140307170550.1DFB2C40A0D@trevor.secretlab.ca>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="cnoPqmmUwkTkq4naa3Apwcn2sU5IbeXRp"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 07, 2014 at 09:14:27PM +0000, Grant Likely wrote:
-> On Wed,  5 Mar 2014 11:48:57 +0000, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> > Several platforms use a rather generic version of parsing
-> > the device tree to find the host bridge ranges. Move the common code
-> > into the generic PCI code and use it to create a pci_host_bridge
-> > structure that can be used by arch code.
-> > 
-> > Based on early attempts by Andrew Murray to unify the code.
-> > Used powerpc and microblaze PCI code as starting point.
-> > 
-> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> > Tested-by: Tanmay Inamdar <tinamdar@apm.com>
-> 
-> Tentative ack for the whole series conditional on Arnd or Ben
+--cnoPqmmUwkTkq4naa3Apwcn2sU5IbeXRp
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Thanks Grant!
+On 07/03/14 19:05, Grant Likely wrote:
+> On Wed, 26 Feb 2014 15:48:49 +0100, Philipp Zabel <p.zabel@pengutronix.=
+de> wrote:
+>> Hi Grant,
+>>
+>> thank you for the comments.
+>=20
+> Hi Philipp,
+>=20
+> I've got lots of comments and quesitons below, but I must say thank you=
 
-Liviu
+> for doing this. It is a helpful description.
 
-> 
-> g.
-> 
-> > ---
-> >  drivers/pci/host-bridge.c | 156 ++++++++++++++++++++++++++++++++++++
-> >  include/linux/pci.h       |  13 +++
-> >  2 files changed, 169 insertions(+)
-> > 
-> > diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
-> > index 8708b652..db9f51a 100644
-> > --- a/drivers/pci/host-bridge.c
-> > +++ b/drivers/pci/host-bridge.c
-> > @@ -6,9 +6,14 @@
-> >  #include <linux/init.h>
-> >  #include <linux/pci.h>
-> >  #include <linux/module.h>
-> > +#include <linux/of_address.h>
-> > +#include <linux/of_pci.h>
-> > +#include <linux/slab.h>
-> >  
-> >  #include "pci.h"
-> >  
-> > +static atomic_t domain_nr = ATOMIC_INIT(-1);
-> > +
-> >  static struct pci_bus *find_pci_root_bus(struct pci_bus *bus)
-> >  {
-> >  	while (bus->parent)
-> > @@ -92,3 +97,154 @@ void pcibios_bus_to_resource(struct pci_bus *bus, struct resource *res,
-> >  	res->end = region->end + offset;
-> >  }
-> >  EXPORT_SYMBOL(pcibios_bus_to_resource);
-> > +
-> > +#ifdef CONFIG_OF
-> > +/**
-> > + * Simple version of the platform specific code for filtering the list
-> > + * of resources obtained from the ranges declaration in DT.
-> > + *
-> > + * Platforms can override this function in order to impose stronger
-> > + * constraints onto the list of resources that a host bridge can use.
-> > + * The filtered list will then be used to create a root bus and associate
-> > + * it with the host bridge.
-> > + *
-> > + */
-> > +int __weak pcibios_fixup_bridge_ranges(struct list_head *resources)
-> > +{
-> > +	return 0;
-> > +}
-> > +
-> > +/**
-> > + * pci_host_bridge_of_get_ranges - Parse PCI host bridge resources from DT
-> > + * @dev: device node of the host bridge having the range property
-> > + * @resources: list where the range of resources will be added after DT parsing
-> > + * @io_base: pointer to a variable that will contain the physical address for
-> > + * the start of the I/O range.
-> > + *
-> > + * It is the callers job to free the @resources list if an error is returned.
-> > + *
-> > + * This function will parse the "ranges" property of a PCI host bridge device
-> > + * node and setup the resource mapping based on its content. It is expected
-> > + * that the property conforms with the Power ePAPR document.
-> > + *
-> > + * Each architecture is then offered the chance of applying their own
-> > + * filtering of pci_host_bridge_windows based on their own restrictions by
-> > + * calling pcibios_fixup_bridge_ranges(). The filtered list of windows
-> > + * can then be used when creating a pci_host_bridge structure.
-> > + */
-> > +static int pci_host_bridge_of_get_ranges(struct device_node *dev,
-> > +		struct list_head *resources, resource_size_t *io_base)
-> > +{
-> > +	struct resource *res;
-> > +	struct of_pci_range range;
-> > +	struct of_pci_range_parser parser;
-> > +	int err;
-> > +
-> > +	pr_info("PCI host bridge %s ranges:\n", dev->full_name);
-> > +
-> > +	/* Check for ranges property */
-> > +	err = of_pci_range_parser_init(&parser, dev);
-> > +	if (err)
-> > +		return err;
-> > +
-> > +	pr_debug("Parsing ranges property...\n");
-> > +	for_each_of_pci_range(&parser, &range) {
-> > +		/* Read next ranges element */
-> > +		pr_debug("pci_space: 0x%08x pci_addr:0x%016llx ",
-> > +				range.pci_space, range.pci_addr);
-> > +		pr_debug("cpu_addr:0x%016llx size:0x%016llx\n",
-> > +					range.cpu_addr, range.size);
-> > +
-> > +		/*
-> > +		 * If we failed translation or got a zero-sized region
-> > +		 * then skip this range
-> > +		 */
-> > +		if (range.cpu_addr == OF_BAD_ADDR || range.size == 0)
-> > +			continue;
-> > +
-> > +		res = kzalloc(sizeof(struct resource), GFP_KERNEL);
-> > +		if (!res)
-> > +			return -ENOMEM;
-> > +
-> > +		of_pci_range_to_resource(&range, dev, res);
-> > +
-> > +		if (resource_type(res) == IORESOURCE_IO)
-> > +			*io_base = range.cpu_addr;
-> > +
-> > +		pci_add_resource_offset(resources, res,
-> > +				res->start - range.pci_addr);
-> > +	}
-> > +
-> > +	/* Apply architecture specific fixups for the ranges */
-> > +	return pcibios_fixup_bridge_ranges(resources);
-> > +}
-> > +
-> > +/**
-> > + * of_create_pci_host_bridge - Create a PCI host bridge structure using
-> > + * information passed in the DT.
-> > + * @parent: device owning this host bridge
-> > + * @ops: pci_ops associated with the host controller
-> > + * @host_data: opaque data structure used by the host controller.
-> > + *
-> > + * returns a pointer to the newly created pci_host_bridge structure, or
-> > + * NULL if the call failed.
-> > + *
-> > + * This function will try to obtain the host bridge domain number by
-> > + * using of_alias_get_id() call with "pci-domain" as a stem. If that
-> > + * fails, a local allocator will be used that will put each host bridge
-> > + * in a new domain.
-> > + */
-> > +struct pci_host_bridge *
-> > +of_create_pci_host_bridge(struct device *parent, struct pci_ops *ops, void *host_data)
-> > +{
-> > +	int err, domain, busno;
-> > +	struct resource *bus_range;
-> > +	struct pci_bus *root_bus;
-> > +	struct pci_host_bridge *bridge;
-> > +	resource_size_t io_base;
-> > +	LIST_HEAD(res);
-> > +
-> > +	bus_range = kzalloc(sizeof(*bus_range), GFP_KERNEL);
-> > +	if (!bus_range)
-> > +		return ERR_PTR(-ENOMEM);
-> > +
-> > +	domain = of_alias_get_id(parent->of_node, "pci-domain");
-> > +	if (domain == -ENODEV)
-> > +		domain = atomic_inc_return(&domain_nr);
-> > +
-> > +	err = of_pci_parse_bus_range(parent->of_node, bus_range);
-> > +	if (err) {
-> > +		dev_info(parent, "No bus range for %s, using default [0-255]\n",
-> > +			parent->of_node->full_name);
-> > +		bus_range->start = 0;
-> > +		bus_range->end = 255;
-> > +		bus_range->flags = IORESOURCE_BUS;
-> > +	}
-> > +	busno = bus_range->start;
-> > +	pci_add_resource(&res, bus_range);
-> > +
-> > +	/* now parse the rest of host bridge bus ranges */
-> > +	err = pci_host_bridge_of_get_ranges(parent->of_node, &res, &io_base);
-> > +	if (err)
-> > +		goto err_create;
-> > +
-> > +	/* then create the root bus */
-> > +	root_bus = pci_create_root_bus_in_domain(parent, domain, busno,
-> > +						ops, host_data, &res);
-> > +	if (IS_ERR(root_bus)) {
-> > +		err = PTR_ERR(root_bus);
-> > +		goto err_create;
-> > +	}
-> > +
-> > +	bridge = to_pci_host_bridge(root_bus->bridge);
-> > +	bridge->io_base = io_base;
-> > +
-> > +	return bridge;
-> > +
-> > +err_create:
-> > +	pci_free_resource_list(&res);
-> > +	return ERR_PTR(err);
-> > +}
-> > +EXPORT_SYMBOL_GPL(of_create_pci_host_bridge);
-> > +
-> > +#endif /* CONFIG_OF */
-> > diff --git a/include/linux/pci.h b/include/linux/pci.h
-> > index 1eed009..40ddd3d 100644
-> > --- a/include/linux/pci.h
-> > +++ b/include/linux/pci.h
-> > @@ -395,6 +395,7 @@ struct pci_host_bridge {
-> >  	struct device dev;
-> >  	struct pci_bus *bus;		/* root bus */
-> >  	int domain_nr;
-> > +	resource_size_t io_base;	/* physical address for the start of I/O area */
-> >  	struct list_head windows;	/* pci_host_bridge_windows */
-> >  	void (*release_fn)(struct pci_host_bridge *);
-> >  	void *release_data;
-> > @@ -1786,11 +1787,23 @@ static inline struct device_node *pci_bus_to_OF_node(struct pci_bus *bus)
-> >  	return bus ? bus->dev.of_node : NULL;
-> >  }
-> >  
-> > +struct pci_host_bridge *
-> > +of_create_pci_host_bridge(struct device *parent, struct pci_ops *ops,
-> > +			void *host_data);
-> > +
-> > +int pcibios_fixup_bridge_ranges(struct list_head *resources);
-> >  #else /* CONFIG_OF */
-> >  static inline void pci_set_of_node(struct pci_dev *dev) { }
-> >  static inline void pci_release_of_node(struct pci_dev *dev) { }
-> >  static inline void pci_set_bus_of_node(struct pci_bus *bus) { }
-> >  static inline void pci_release_bus_of_node(struct pci_bus *bus) { }
-> > +
-> > +static inline struct pci_host_bridge *
-> > +of_create_pci_host_bridge(struct device *parent, struct pci_ops *ops,
-> > +			void *host_data)
-> > +{
-> > +	return NULL;
-> > +}
-> >  #endif  /* CONFIG_OF */
-> >  
-> >  #ifdef CONFIG_EEH
-> > -- 
-> > 1.9.0
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Thanks for the comments. I'll answer from my point of view, which may be
+different than Philipp's.
 
+> Bear with me, I'm going to comment on each point. I'm not criticizing,
+> but I do want to understand the HW design. In particular I want to
+> understand why the linkage is treated as bidirectional instead of one
+> device being the master.
+>=20
+> In this specific example, what would be managing the transfer? Is there=
+
+> an overarching driver that assembles the pieces, or would you expect
+> individual drivers to find each other?
+
+The direction of the dataflow depends on the case. For camera, the data
+flows from external components towards the SoC. For display, vice versa.
+I don't know much about camera, but for display there are bi-directional
+buses, like MIPI DBI and MIPI DSI. However, in those cases, the main
+flow direction is clear, towards the display.
+
+Then again, these are meant to be generic graph bindings, and the
+dataflow could be fully bi-directional.
+
+As for the driver model (does it matter when we are talking about DT
+bindings?), I think there are very different opinions. My thought for
+display is that there is always an overarching driver, something that
+manages the video pipeline as a whole.
+
+However, each of the individual drivers in the video pipeline will
+control its input ports. So, say, a panel driver gets a command from the
+overarching control driver to enable the panel device. The panel driver
+reacts by calling the encoder (i.e. the one that outputs pixels to the
+panel), commanding it to enable the video stream.
+
+I know some (many?) people think the other way around, that the encoder
+commands the panel to enable itself. I don't think that's versatile
+enough. As a theoretical, slightly exaggerated, example, we could have a
+panel that wants the pixel clock to be enabled for a short while before
+enabling the actual pixel stream. And maybe the panel driver needs to do
+something before the pixel stream is enabled (say, send a command to the
+panel).
+
+The above is very easy to do if the panel driver is in control of the
+received video stream. It's rather difficult to do if the encoder is in
+control.
+
+Also, I think a panel (or any encoder) can be compared to a display
+controller: a display controller uses DMA to transfer pixel data from
+the memory to the display controller. A panel or encoder uses the
+incoming video bus to transfer pixel data from the previous display
+component to the panel or encoder device. And I don't think anyone says
+the DMA driver should be in control of the display controller.
+
+But this is going quite a bit into the SW architecture. Does it matter
+when we are talking about the representation of HW in the DT data?
+
+> In all of the above examples I see a unidirectional data flow. There ar=
+e
+> producer ports and consumer ports. Is there any (reasonable) possibilit=
+y
+> of peer ports that are bidirectional?
+
+Yes, as I mentioned above. However, I do believe that at the moment all
+the cases have a clear a main direction. But then, if these are generic
+bindings, do we want to rely on that?
+
+>> According to video-interfaces.txt, it is expected that endpoints conta=
+in
+>> phandles pointing to the remote endpoint on both sides. I'd like to
+>> leave this up to the more specialized bindings, but I can see that thi=
+s
+>> makes enumerating the connections starting from each device tree node
+>> easier, for example at probe time.
+>=20
+> This has come up in the past. That approach comes down to premature
+> optimization at the expense of making the data structure more prone to
+> inconsistency. I consider it to be a bad pattern.
+>=20
+> Backlinks are good for things like dynamically linked lists that need t=
+o
+> be fast and the software fully manages the links. For a data structure =
+like
+> the FDT it is better to have the data in one place, and one place only.=
+
+> Besides, computers are *good* at parsing data structures. :-)
+>=20
+> I appreciate that existing drivers may be using the backlinks, but I
+> strongly recommend not doing it for new users.
+
+Ok. If we go for single directional link, the question is then: which
+way? And is the direction different for display and camera, which are
+kind of reflections of each other?
+
+> Another thought. In terms of the pattern, I would add a recommendation
+> that there should be a way to identify ports of a particular type. ie.
+> If I were using the pattern to implement an patch bay of DSP filters,
+> where each input and output, then each target node should have a unique=
+
+> identifier property analogous to "interrupt-controller" or
+> "gpio-controller". In this fictitious example I would probably choose
+> "audiostream-input-port" and "audiostream-output-port" as empty
+> properties in the port nodes. (I'm not suggesting a change to the
+> existing binding, but making a recommendation to new users).
+
+I don't see any harm in that, but I don't right away see what could be
+done with them? Did you have something in mind?
+
+I guess those could be used to study the graph before the drivers have
+been loaded. After the drivers have been loaded, the drivers should
+somehow register themselves and the ports/endpoints. And as the driver
+knows what kind of ports they are, it can supply this information in the
+runtime data structures.
+
+If we do that, would it be better to have two pieces of data:
+input/output/bi-directional, and the port type (say, mipi-dpi, lvds, etc.=
+)?
+
+ Tomi
+
+
+
+--cnoPqmmUwkTkq4naa3Apwcn2sU5IbeXRp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJTGvHoAAoJEPo9qoy8lh71znwP+wUlBdokuXfe2j0reIpKNwe+
+HFShJwkAYDcWchoX1KizPqgecigqRt0/3LUyBdQBTj9FEkTAkfTNbRhZKObl5V12
+B8QOyNGrTT4Ti9uG6Ae0NIX9wfZL+DKKJKZggJYoRXGU2kRVlqiOajw++tOV7Vr+
+BFuQIRZO14tU2dVLc+QkZ+RngEWRwmmJEyKEtmqNUOavGanmxieM0/c/Y/XnmlWG
+35Ln6bx4r8pQeLqGWza+Q/xVg/WbRw51hk0rj6S+qLvgJn5U21AYfMDSJPe7LUv9
+W/UTiB0AqKW/9RgpeYwwOGgaMDDjBdStnJMhKA8L2UXLXtPDDAZ6S7ibsKXIvIOr
+DJKeeIlidMFd+KpM38ukOeQ6HHQ0GxfVxPzbRl00S1/3336XWHnup2fFSXM++Sl5
+nn0fut9KB0zuBC5Ez85g3j8huemHEPywN7egy3H/dvpHjzJ4Q+iZrfSRaf5Wa2fq
+fPeda7ZkSCCsvyoLg1Cfyjkv+zSvcORuTah66Rcn1wmtcaZ/llGPeAKxVabl4cuZ
+CfojfluKUIz01EM0Wh68oYWaoUFwHxdta7qehQXStM2CLTurxZLzzwmSRe+xLvEk
+5l4Fb2Sc7eLwp9jCRDKlrDgtHCSkt5fbDjT39yQZymg7CdyQyPGPThyGAsHxJ763
+ppawTPNNO3FvYyiEzzpE
+=i/Y3
+-----END PGP SIGNATURE-----
+
+--cnoPqmmUwkTkq4naa3Apwcn2sU5IbeXRp--
