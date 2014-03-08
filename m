@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695AbaCHBLx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:11:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46676 "EHLO
+	id S1754676AbaCHBLw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:11:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46678 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753037AbaCHBH6 (ORCPT
+	with ESMTP id S1754386AbaCHBH6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Mar 2014 20:07:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Jianguo Wu <wujianguo@huawei.com>
-Subject: [PATCH 3.4 97/99] rtlwifi: Fix endian error in extracting packet type
-Date: Fri,  7 Mar 2014 17:08:33 -0800
-Message-Id: <20140308010614.679235829@linuxfoundation.org>
+        Lucas Stach <dev@lynxeye.de>, "David S. Miller" <davem@davemloft.net>,
+        Emil Goode <emilgoode@gmail.com>
+Subject: [PATCH 3.4 98/99] net: asix: handle packets crossing URB boundaries
+Date: Fri,  7 Mar 2014 17:08:34 -0800
+Message-Id: <20140308010614.711345119@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
 References: <20140308010611.468206150@linuxfoundation.org>
@@ -31,164 +29,218 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Lucas Stach <dev@lynxeye.de>
 
-From: Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>
+commit 8b5b6f5413e97c3e8bafcdd67553d508f4f698cd upstream.
 
-commit 0c5d63f0ab6728f05ddefa25aff55e31297f95e6 upstream.
+ASIX AX88772B started to pack data even more tightly. Packets and the ASIX packet
+header may now cross URB boundaries. To handle this we have to introduce
+some state between individual calls to asix_rx_fixup().
 
-All of the rtlwifi drivers have an error in the routine that tests if
-the data is "special". If it is, the subsequant transmission will be
-at the lowest rate to enhance reliability. The 16-bit quantity is
-big-endian, but was being extracted in native CPU mode. One of the
-effects of this bug is to inhibit association under some conditions
-as the TX rate is too high.
-
-Based on suggestions by Joe Perches, the entire routine is rewritten.
-
-One of the local headers contained duplicates of some of the ETH_P_XXX
-definitions. These are deleted.
-
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-[wujg: Backported to 3.4:
- - adjust context
- - remove rtlpriv->enter_ps = false
- - use schedule_work(&rtlpriv->works.lps_leave_work)]
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+Signed-off-by: Lucas Stach <dev@lynxeye.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[ Emil: backported to 3.4: dropped changes to drivers/net/usb/ax88172a.c ]
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/wireless/rtlwifi/base.c |   93 ++++++++++++++++--------------------
- drivers/net/wireless/rtlwifi/wifi.h |    6 --
- 2 files changed, 43 insertions(+), 56 deletions(-)
+ drivers/net/usb/asix.c |  125 ++++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 97 insertions(+), 28 deletions(-)
 
---- a/drivers/net/wireless/rtlwifi/base.c
-+++ b/drivers/net/wireless/rtlwifi/base.c
-@@ -37,6 +37,7 @@
+--- a/drivers/net/usb/asix.c
++++ b/drivers/net/usb/asix.c
+@@ -183,6 +183,17 @@ struct ax88172_int_data {
+ 	__le16 res3;
+ } __packed;
  
- #include <linux/ip.h>
- #include <linux/module.h>
-+#include <linux/udp.h>
- 
- /*
-  *NOTICE!!!: This file will be very big, we should
-@@ -957,61 +958,51 @@ u8 rtl_is_special_data(struct ieee80211_
- 	if (!ieee80211_is_data(fc))
- 		return false;
- 
-+	ip = (const struct iphdr *)(skb->data + mac_hdr_len +
-+				    SNAP_SIZE + PROTOC_TYPE_SIZE);
-+	ether_type = be16_to_cpup((__be16 *)
-+				  (skb->data + mac_hdr_len + SNAP_SIZE));
++struct asix_rx_fixup_info {
++	struct sk_buff *ax_skb;
++	u32 header;
++	u16 size;
++	bool split_head;
++};
 +
-+	switch (ether_type) {
-+	case ETH_P_IP: {
-+		struct udphdr *udp;
-+		u16 src;
-+		u16 dst;
++struct asix_common_private {
++	struct asix_rx_fixup_info rx_fixup_info;
++};
 +
-+		if (ip->protocol != IPPROTO_UDP)
-+			return false;
-+		udp = (struct udphdr *)((u8 *)ip + (ip->ihl << 2));
-+		src = be16_to_cpu(udp->source);
-+		dst = be16_to_cpu(udp->dest);
-+
-+		/* If this case involves port 68 (UDP BOOTP client) connecting
-+		 * with port 67 (UDP BOOTP server), then return true so that
-+		 * the lowest speed is used.
-+		 */
-+		if (!((src == 68 && dst == 67) || (src == 67 && dst == 68)))
-+			return false;
- 
--	ip = (struct iphdr *)((u8 *) skb->data + mac_hdr_len +
--			      SNAP_SIZE + PROTOC_TYPE_SIZE);
--	ether_type = *(u16 *) ((u8 *) skb->data + mac_hdr_len + SNAP_SIZE);
--	/*	ether_type = ntohs(ether_type); */
--
--	if (ETH_P_IP == ether_type) {
--		if (IPPROTO_UDP == ip->protocol) {
--			struct udphdr *udp = (struct udphdr *)((u8 *) ip +
--							       (ip->ihl << 2));
--			if (((((u8 *) udp)[1] == 68) &&
--			     (((u8 *) udp)[3] == 67)) ||
--			    ((((u8 *) udp)[1] == 67) &&
--			     (((u8 *) udp)[3] == 68))) {
--				/*
--				 * 68 : UDP BOOTP client
--				 * 67 : UDP BOOTP server
--				 */
--				RT_TRACE(rtlpriv, (COMP_SEND | COMP_RECV),
--					 DBG_DMESG, "dhcp %s !!\n",
--					 is_tx ? "Tx" : "Rx");
--
--				if (is_tx) {
--					schedule_work(&rtlpriv->
--						      works.lps_leave_work);
--					ppsc->last_delaylps_stamp_jiffies =
--					    jiffies;
--				}
--
--				return true;
--			}
--		}
--	} else if (ETH_P_ARP == ether_type) {
--		if (is_tx) {
--			schedule_work(&rtlpriv->works.lps_leave_work);
--			ppsc->last_delaylps_stamp_jiffies = jiffies;
--		}
--
--		return true;
--	} else if (ETH_P_PAE == ether_type) {
-+		RT_TRACE(rtlpriv, (COMP_SEND | COMP_RECV), DBG_DMESG,
-+			 "dhcp %s !!\n", is_tx ? "Tx" : "Rx");
-+		break;
-+	}
-+	case ETH_P_ARP:
-+		break;
-+	case ETH_P_PAE:
- 		RT_TRACE(rtlpriv, (COMP_SEND | COMP_RECV), DBG_DMESG,
- 			 "802.1X %s EAPOL pkt!!\n", is_tx ? "Tx" : "Rx");
--
--		if (is_tx) {
--			schedule_work(&rtlpriv->works.lps_leave_work);
--			ppsc->last_delaylps_stamp_jiffies = jiffies;
--		}
--
--		return true;
--	} else if (ETH_P_IPV6 == ether_type) {
--		/* IPv6 */
--		return true;
-+		break;
-+	case ETH_P_IPV6:
-+		/* TODO: Is this right? */
-+		return false;
-+	default:
-+		return false;
+ static int asix_read_cmd(struct usbnet *dev, u8 cmd, u16 value, u16 index,
+ 			    u16 size, void *data)
+ {
+@@ -304,49 +315,89 @@ asix_write_cmd_async(struct usbnet *dev,
  	}
--
--	return false;
-+	if (is_tx) {
-+		schedule_work(&rtlpriv->works.lps_leave_work);
-+		ppsc->last_delaylps_stamp_jiffies = jiffies;
-+	}
-+	return true;
  }
  
- /*********************************************************
---- a/drivers/net/wireless/rtlwifi/wifi.h
-+++ b/drivers/net/wireless/rtlwifi/wifi.h
-@@ -77,11 +77,7 @@
- #define RTL_SLOT_TIME_9				9
- #define RTL_SLOT_TIME_20			20
+-static int asix_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
++static int asix_rx_fixup_internal(struct usbnet *dev, struct sk_buff *skb,
++				  struct asix_rx_fixup_info *rx)
+ {
+ 	int offset = 0;
  
--/*related with tcp/ip. */
--/*if_ehther.h*/
--#define ETH_P_PAE		0x888E	/*Port Access Entity (IEEE 802.1X) */
--#define ETH_P_IP		0x0800	/*Internet Protocol packet */
--#define ETH_P_ARP		0x0806	/*Address Resolution packet */
-+/*related to tcp/ip. */
- #define SNAP_SIZE		6
- #define PROTOC_TYPE_SIZE	2
+-	while (offset + sizeof(u32) < skb->len) {
+-		struct sk_buff *ax_skb;
+-		u16 size;
+-		u32 header = get_unaligned_le32(skb->data + offset);
+-
+-		offset += sizeof(u32);
+-
+-		/* get the packet length */
+-		size = (u16) (header & 0x7ff);
+-		if (size != ((~header >> 16) & 0x07ff)) {
+-			netdev_err(dev->net, "asix_rx_fixup() Bad Header Length\n");
+-			return 0;
++	while (offset + sizeof(u16) <= skb->len) {
++		u16 remaining = 0;
++		unsigned char *data;
++
++		if (!rx->size) {
++			if ((skb->len - offset == sizeof(u16)) ||
++			    rx->split_head) {
++				if (!rx->split_head) {
++					rx->header = get_unaligned_le16(
++							skb->data + offset);
++					rx->split_head = true;
++					offset += sizeof(u16);
++					break;
++				} else {
++					rx->header |= (get_unaligned_le16(
++							skb->data + offset)
++							<< 16);
++					rx->split_head = false;
++					offset += sizeof(u16);
++				}
++			} else {
++				rx->header = get_unaligned_le32(skb->data +
++								offset);
++				offset += sizeof(u32);
++			}
++
++			/* get the packet length */
++			rx->size = (u16) (rx->header & 0x7ff);
++			if (rx->size != ((~rx->header >> 16) & 0x7ff)) {
++				netdev_err(dev->net, "asix_rx_fixup() Bad Header Length 0x%x, offset %d\n",
++					   rx->header, offset);
++				rx->size = 0;
++				return 0;
++			}
++			rx->ax_skb = netdev_alloc_skb_ip_align(dev->net,
++							       rx->size);
++			if (!rx->ax_skb)
++				return 0;
+ 		}
+ 
+-		if ((size > dev->net->mtu + ETH_HLEN + VLAN_HLEN) ||
+-		    (size + offset > skb->len)) {
++		if (rx->size > dev->net->mtu + ETH_HLEN + VLAN_HLEN) {
+ 			netdev_err(dev->net, "asix_rx_fixup() Bad RX Length %d\n",
+-				   size);
++				   rx->size);
++			kfree_skb(rx->ax_skb);
+ 			return 0;
+ 		}
+-		ax_skb = netdev_alloc_skb_ip_align(dev->net, size);
+-		if (!ax_skb)
+-			return 0;
+ 
+-		skb_put(ax_skb, size);
+-		memcpy(ax_skb->data, skb->data + offset, size);
+-		usbnet_skb_return(dev, ax_skb);
++		if (rx->size > skb->len - offset) {
++			remaining = rx->size - (skb->len - offset);
++			rx->size = skb->len - offset;
++		}
++
++		data = skb_put(rx->ax_skb, rx->size);
++		memcpy(data, skb->data + offset, rx->size);
++		if (!remaining)
++			usbnet_skb_return(dev, rx->ax_skb);
+ 
+-		offset += (size + 1) & 0xfffe;
++		offset += (rx->size + 1) & 0xfffe;
++		rx->size = remaining;
+ 	}
+ 
+ 	if (skb->len != offset) {
+-		netdev_err(dev->net, "asix_rx_fixup() Bad SKB Length %d\n",
+-			   skb->len);
++		netdev_err(dev->net, "asix_rx_fixup() Bad SKB Length %d, %d\n",
++			   skb->len, offset);
+ 		return 0;
+ 	}
++
+ 	return 1;
+ }
+ 
++static int asix_rx_fixup_common(struct usbnet *dev, struct sk_buff *skb)
++{
++	struct asix_common_private *dp = dev->driver_priv;
++	struct asix_rx_fixup_info *rx = &dp->rx_fixup_info;
++
++	return asix_rx_fixup_internal(dev, skb, rx);
++}
++
+ static struct sk_buff *asix_tx_fixup(struct usbnet *dev, struct sk_buff *skb,
+ 					gfp_t flags)
+ {
+@@ -1110,9 +1161,19 @@ static int ax88772_bind(struct usbnet *d
+ 		dev->rx_urb_size = 2048;
+ 	}
+ 
++	dev->driver_priv = kzalloc(sizeof(struct asix_common_private),
++				   GFP_KERNEL);
++	if (!dev->driver_priv)
++		return -ENOMEM;
++
+ 	return 0;
+ }
+ 
++static void ax88772_unbind(struct usbnet *dev, struct usb_interface *intf)
++{
++	kfree(dev->driver_priv);
++}
++
+ static const struct ethtool_ops ax88178_ethtool_ops = {
+ 	.get_drvinfo		= asix_get_drvinfo,
+ 	.get_link		= asix_get_link,
+@@ -1445,6 +1506,11 @@ static int ax88178_bind(struct usbnet *d
+ 		dev->rx_urb_size = 2048;
+ 	}
+ 
++	dev->driver_priv = kzalloc(sizeof(struct asix_common_private),
++				   GFP_KERNEL);
++	if (!dev->driver_priv)
++		return -ENOMEM;
++
+ 	return 0;
+ }
+ 
+@@ -1491,22 +1557,25 @@ static const struct driver_info hawking_
+ static const struct driver_info ax88772_info = {
+ 	.description = "ASIX AX88772 USB 2.0 Ethernet",
+ 	.bind = ax88772_bind,
++	.unbind = ax88772_unbind,
+ 	.status = asix_status,
+ 	.link_reset = ax88772_link_reset,
+ 	.reset = ax88772_reset,
+-	.flags = FLAG_ETHER | FLAG_FRAMING_AX | FLAG_LINK_INTR | FLAG_MULTI_PACKET,
+-	.rx_fixup = asix_rx_fixup,
++	.flags = FLAG_ETHER | FLAG_FRAMING_AX | FLAG_LINK_INTR |
++		 FLAG_MULTI_PACKET,
++	.rx_fixup = asix_rx_fixup_common,
+ 	.tx_fixup = asix_tx_fixup,
+ };
+ 
+ static const struct driver_info ax88178_info = {
+ 	.description = "ASIX AX88178 USB 2.0 Ethernet",
+ 	.bind = ax88178_bind,
++	.unbind = ax88772_unbind,
+ 	.status = asix_status,
+ 	.link_reset = ax88178_link_reset,
+ 	.reset = ax88178_reset,
+ 	.flags = FLAG_ETHER | FLAG_FRAMING_AX | FLAG_LINK_INTR,
+-	.rx_fixup = asix_rx_fixup,
++	.rx_fixup = asix_rx_fixup_common,
+ 	.tx_fixup = asix_tx_fixup,
+ };
  
 
 
