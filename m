@@ -1,155 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754579AbaCHBJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:09:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46699 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754459AbaCHBIB (ORCPT
+	id S1754594AbaCHBKL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:10:11 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:64662 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752060AbaCHBKG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:08:01 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Ben Hutchings <ben@decadent.org.uk>, Jianguo Wu <wujianguo@huawei.com>
-Subject: [PATCH 3.4 89/99] iwlwifi: fix flow handler debug code
-Date: Fri,  7 Mar 2014 17:08:25 -0800
-Message-Id: <20140308010614.427246397@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
-References: <20140308010611.468206150@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Fri, 7 Mar 2014 20:10:06 -0500
 MIME-Version: 1.0
+In-Reply-To: <1394192092-27461-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1393174719-20806-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1394192092-27461-1-git-send-email-sebastian.hesselbarth@gmail.com>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Fri, 7 Mar 2014 17:09:24 -0800
+Message-ID: <CAGVrzcaf3_AzgxJ=HPVc0SHcY-tndF+ejeMJCR6CO_RMysCsxA@mail.gmail.com>
+Subject: Re: [PATCH] net: phy: Add sysfs attribute to prevent PHY suspend
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: David Miller <davem@davemloft.net>, Rob Landley <rob@landley.net>,
+        Andrew Lunn <andrew@lunn.ch>, netdev <netdev@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+2014-03-07 3:34 GMT-08:00 Sebastian Hesselbarth
+<sebastian.hesselbarth@gmail.com>:
+> commit 1211ce53077164e0d34641d0ca5fb4d4a7574498
+>   ("net: phy: resume/suspend PHYs on attach/detach")
+> introduced a feature to suspend PHYs when entering halted state.
+>
+> Unfortunately, not all bootloaders properly power-up PHYs on reset
+> and fail to access ethernet because the PHY is still powered down.
+>
+> Therefore, this adds code and documentation for a sysfs attribute to
+> allow/deny PHYs to be suspended on a per-PHY basis. Disabling that
+> attribute prevents PHYs from being suspended when entering halted state.
+>
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> Reported-by: Andrew Lunn <andrew@lunn.ch>
 
-------------------
+Looks good to me, thanks Sebastian!
 
-From: Johannes Berg <johannes.berg@intel.com>
+Reviewed-by: Florian Fainelli <f.fainelli@gmail.com>
 
-commit 94543a8d4fb302817014981489f15cb3b92ec3c2 upstream.
+> ---
+> David,
+>
+> I know I am late, but I still consider this as a fix for v3.14, therefore
+> this is based on v3.14-rc1. If you are already done with taking fixes for
+> v3.14, I can, of course, rebase this upon net-next.
+>
+> Cc: David Miller <davem@davemloft.net>
+> Cc: Rob Landley <rob@landley.net>
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: Florian Fainelli <f.fainelli@gmail.com>
+> Cc: netdev@vger.kernel.org
+> Cc: linux-doc@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  Documentation/ABI/testing/sysfs-bus-mdio | 10 ++++++++++
+>  drivers/net/phy/mdio_bus.c               | 26 ++++++++++++++++++++++++++
+>  drivers/net/phy/phy_device.c             |  5 +++++
+>  include/linux/phy.h                      |  2 ++
+>  4 files changed, 43 insertions(+)
+>
+> diff --git a/Documentation/ABI/testing/sysfs-bus-mdio b/Documentation/ABI/testing/sysfs-bus-mdio
+> index 6349749ebc29..e85a3d350cb1 100644
+> --- a/Documentation/ABI/testing/sysfs-bus-mdio
+> +++ b/Documentation/ABI/testing/sysfs-bus-mdio
+> @@ -7,3 +7,13 @@ Description:
+>                 by the device during bus enumeration, encoded in hexadecimal.
+>                 This ID is used to match the device with the appropriate
+>                 driver.
+> +
+> +What:          /sys/bus/mdio_bus/devices/.../phy_allow_suspend
+> +Date:          March 2014
+> +KernelVersion: 3.14
+> +Contact:       netdev@vger.kernel.org
+> +Description:
+> +               This attribute contains a boolean parameter to allow (1) or
+> +               deny (0) MDIO bus attached PHYs to be suspended. Some
+> +               bootloaders fail to properly resume a suspended PHY, so this
+> +               can be used to prevent the PHY from being suspended.
+> diff --git a/drivers/net/phy/mdio_bus.c b/drivers/net/phy/mdio_bus.c
+> index 71e49000fbf3..811d35185596 100644
+> --- a/drivers/net/phy/mdio_bus.c
+> +++ b/drivers/net/phy/mdio_bus.c
+> @@ -432,8 +432,34 @@ phy_id_show(struct device *dev, struct device_attribute *attr, char *buf)
+>  }
+>  static DEVICE_ATTR_RO(phy_id);
+>
+> +static ssize_t phy_allow_suspend_show(struct device *dev,
+> +               struct device_attribute *attr, char *buf)
+> +{
+> +       struct phy_device *phydev = to_phy_device(dev);
+> +
+> +       return sprintf(buf, "%d\n", phydev->allow_suspend);
+> +}
+> +
+> +static ssize_t phy_allow_suspend_store(struct device *dev,
+> +               struct device_attribute *attr, const char *buf, size_t count)
+> +{
+> +       struct phy_device *phydev = to_phy_device(dev);
+> +       bool val;
+> +       int ret;
+> +
+> +       ret = strtobool(buf, &val);
+> +       if (ret < 0)
+> +               return ret;
+> +
+> +       phydev->allow_suspend = val;
+> +
+> +       return count;
+> +}
+> +static DEVICE_ATTR_RW(phy_allow_suspend);
+> +
+>  static struct attribute *mdio_dev_attrs[] = {
+>         &dev_attr_phy_id.attr,
+> +       &dev_attr_phy_allow_suspend.attr,
+>         NULL,
+>  };
+>  ATTRIBUTE_GROUPS(mdio_dev);
+> diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
+> index 4b03e63639b7..1c83d34d848b 100644
+> --- a/drivers/net/phy/phy_device.c
+> +++ b/drivers/net/phy/phy_device.c
+> @@ -173,6 +173,7 @@ struct phy_device *phy_device_create(struct mii_bus *bus, int addr, int phy_id,
+>         dev->phy_id = phy_id;
+>         if (c45_ids)
+>                 dev->c45_ids = *c45_ids;
+> +       dev->allow_suspend = true;
+>         dev->bus = bus;
+>         dev->dev.parent = bus->parent;
+>         dev->dev.bus = &mdio_bus_type;
+> @@ -685,6 +686,10 @@ int phy_suspend(struct phy_device *phydev)
+>         struct phy_driver *phydrv = to_phy_driver(phydev->dev.driver);
+>         struct ethtool_wolinfo wol;
+>
+> +       /* Do not suspend PHYs, if user disabled it */
+> +       if (!phydev->allow_suspend)
+> +               return -ENOSYS;
+> +
+>         /* If the device has WOL enabled, we cannot suspend the PHY */
+>         wol.cmd = ETHTOOL_GWOL;
+>         phy_ethtool_get_wol(phydev, &wol);
+> diff --git a/include/linux/phy.h b/include/linux/phy.h
+> index 565188ca328f..c472e750c023 100644
+> --- a/include/linux/phy.h
+> +++ b/include/linux/phy.h
+> @@ -272,6 +272,7 @@ struct phy_c45_device_ids {
+>   * c45_ids: 802.3-c45 Device Identifers if is_c45.
+>   * is_c45:  Set to true if this phy uses clause 45 addressing.
+>   * is_internal: Set to true if this phy is internal to a MAC.
+> + * allow_suspend: Set to false to prevent PHY suspend.
+>   * state: state of the PHY for management purposes
+>   * dev_flags: Device-specific flags used by the PHY driver.
+>   * addr: Bus address of PHY
+> @@ -308,6 +309,7 @@ struct phy_device {
+>         struct phy_c45_device_ids c45_ids;
+>         bool is_c45;
+>         bool is_internal;
+> +       bool allow_suspend;
+>
+>         enum phy_state state;
+>
+> --
+> 1.8.5.3
+>
 
-iwl_dbgfs_fh_reg_read() can cause crashes and/or
-BUG_ON in slub because the ifdefs are wrong, the
-code in iwl_dump_fh() should use DEBUGFS, not
-DEBUG to protect the buffer writing code.
-
-Also, while at it, clean up the arguments to the
-function, some code and make it generally safer.
-
-Reported-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-[bwh: Backported to 3.2: adjust filenames and context]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-[wujg: Backported to 3.4: adjust context]
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/wireless/iwlwifi/iwl-trans-pcie-int.h |    2 -
- drivers/net/wireless/iwlwifi/iwl-trans-pcie-rx.c  |    2 -
- drivers/net/wireless/iwlwifi/iwl-trans-pcie.c     |   27 +++++++++++-----------
- 3 files changed, 16 insertions(+), 15 deletions(-)
-
---- a/drivers/net/wireless/iwlwifi/iwl-trans-pcie-int.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-trans-pcie-int.h
-@@ -352,7 +352,7 @@ int iwl_queue_space(const struct iwl_que
- ******************************************************/
- int iwl_dump_nic_event_log(struct iwl_trans *trans, bool full_log,
- 			    char **buf, bool display);
--int iwl_dump_fh(struct iwl_trans *trans, char **buf, bool display);
-+int iwl_dump_fh(struct iwl_trans *trans, char **buf);
- void iwl_dump_csr(struct iwl_trans *trans);
- 
- /*****************************************************
---- a/drivers/net/wireless/iwlwifi/iwl-trans-pcie-rx.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-trans-pcie-rx.c
-@@ -695,7 +695,7 @@ static void iwl_irq_handle_error(struct
- 
- 	iwl_dump_nic_error_log(trans);
- 	iwl_dump_csr(trans);
--	iwl_dump_fh(trans, NULL, false);
-+	iwl_dump_fh(trans, NULL);
- 	iwl_dump_nic_event_log(trans, false, NULL, false);
- 
- 	iwl_op_mode_nic_error(trans->op_mode);
---- a/drivers/net/wireless/iwlwifi/iwl-trans-pcie.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-trans-pcie.c
-@@ -1768,13 +1768,9 @@ static const char *get_fh_string(int cmd
- 	}
- }
- 
--int iwl_dump_fh(struct iwl_trans *trans, char **buf, bool display)
-+int iwl_dump_fh(struct iwl_trans *trans, char **buf)
- {
- 	int i;
--#ifdef CONFIG_IWLWIFI_DEBUG
--	int pos = 0;
--	size_t bufsz = 0;
--#endif
- 	static const u32 fh_tbl[] = {
- 		FH_RSCSR_CHNL0_STTS_WPTR_REG,
- 		FH_RSCSR_CHNL0_RBDCB_BASE_REG,
-@@ -1786,29 +1782,34 @@ int iwl_dump_fh(struct iwl_trans *trans,
- 		FH_TSSR_TX_STATUS_REG,
- 		FH_TSSR_TX_ERROR_REG
- 	};
--#ifdef CONFIG_IWLWIFI_DEBUG
--	if (display) {
-+
-+#ifdef CONFIG_IWLWIFI_DEBUGFS
-+	if (buf) {
-+		int pos = 0;
-+		size_t bufsz = ARRAY_SIZE(fh_tbl) * 48 + 40;
-+
- 		bufsz = ARRAY_SIZE(fh_tbl) * 48 + 40;
- 		*buf = kmalloc(bufsz, GFP_KERNEL);
- 		if (!*buf)
- 			return -ENOMEM;
- 		pos += scnprintf(*buf + pos, bufsz - pos,
- 				"FH register values:\n");
--		for (i = 0; i < ARRAY_SIZE(fh_tbl); i++) {
-+
-+		for (i = 0; i < ARRAY_SIZE(fh_tbl); i++)
- 			pos += scnprintf(*buf + pos, bufsz - pos,
- 				"  %34s: 0X%08x\n",
- 				get_fh_string(fh_tbl[i]),
- 				iwl_read_direct32(trans, fh_tbl[i]));
--		}
-+
- 		return pos;
- 	}
- #endif
- 	IWL_ERR(trans, "FH register values:\n");
--	for (i = 0; i <  ARRAY_SIZE(fh_tbl); i++) {
-+	for (i = 0; i <  ARRAY_SIZE(fh_tbl); i++)
- 		IWL_ERR(trans, "  %34s: 0X%08x\n",
- 			get_fh_string(fh_tbl[i]),
- 			iwl_read_direct32(trans, fh_tbl[i]));
--	}
-+
- 	return 0;
- }
- 
-@@ -2152,11 +2153,11 @@ static ssize_t iwl_dbgfs_fh_reg_read(str
- 					 size_t count, loff_t *ppos)
- {
- 	struct iwl_trans *trans = file->private_data;
--	char *buf;
-+	char *buf = NULL;
- 	int pos = 0;
- 	ssize_t ret = -EFAULT;
- 
--	ret = pos = iwl_dump_fh(trans, &buf, true);
-+	ret = pos = iwl_dump_fh(trans, &buf);
- 	if (buf) {
- 		ret = simple_read_from_buffer(user_buf,
- 					      count, ppos, buf, pos);
 
 
+-- 
+Florian
