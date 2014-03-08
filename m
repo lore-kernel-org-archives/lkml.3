@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754945AbaCHBSW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:18:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46581 "EHLO
+	id S1754974AbaCHBSl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:18:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46574 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754309AbaCHBHn (ORCPT
+	with ESMTP id S1754299AbaCHBHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Mar 2014 20:07:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jeff Layton <jlayton@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Weng Meiling <wengmeiling.weng@huawei.com>
-Subject: [PATCH 3.4 77/99] sunrpc: clarify comments on rpc_make_runnable
-Date: Fri,  7 Mar 2014 17:08:13 -0800
-Message-Id: <20140308010614.065965285@linuxfoundation.org>
+        David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jan Beulich <jbeulich@suse.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Yijing Wang <wangyijing@huawei.com>
+Subject: [PATCH 3.4 76/99] xen/events: mask events when changing their VCPU binding
+Date: Fri,  7 Mar 2014 17:08:12 -0800
+Message-Id: <20140308010614.027843071@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
 References: <20140308010611.468206150@linuxfoundation.org>
@@ -31,38 +31,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: David Vrabel <david.vrabel@citrix.com>
 
-commit 506026c3ec270e18402f0c9d33fee37482c23861 upstream.
+commit 5e72fdb8d827560893642e85a251d339109a00f4 upstream.
 
-rpc_make_runnable is not generally called with the queue lock held, unless
-it's waking up a task that has been sitting on a waitqueue. This is safe
-when the task has not entered the FSM yet, but the comments don't really
-spell this out.
+commit 4704fe4f03a5ab27e3c36184af85d5000e0f8a48 upstream.
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+When a event is being bound to a VCPU there is a window between the
+EVTCHNOP_bind_vpcu call and the adjustment of the local per-cpu masks
+where an event may be lost.  The hypervisor upcalls the new VCPU but
+the kernel thinks that event is still bound to the old VCPU and
+ignores it.
+
+There is even a problem when the event is being bound to the same VCPU
+as there is a small window beween the clear_bit() and set_bit() calls
+in bind_evtchn_to_cpu().  When scanning for pending events, the kernel
+may read the bit when it is momentarily clear and ignore the event.
+
+Avoid this by masking the event during the whole bind operation.
+
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reviewed-by: Jan Beulich <jbeulich@suse.com>
+[bwh: Backported to 3.2: remove the BM() cast]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Weng Meiling <wengmeiling.weng@huawei.com>
+Cc: Yijing Wang <wangyijing@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/sched.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/xen/events.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
---- a/net/sunrpc/sched.c
-+++ b/net/sunrpc/sched.c
-@@ -302,8 +302,9 @@ EXPORT_SYMBOL_GPL(__rpc_wait_for_complet
- /*
-  * Make an RPC task runnable.
-  *
-- * Note: If the task is ASYNC, this must be called with
-- * the spinlock held to protect the wait queue operation.
-+ * Note: If the task is ASYNC, and is being made runnable after sitting on an
-+ * rpc_wait_queue, this must be called with the queue spinlock held to protect
-+ * the wait queue operation.
-  */
- static void rpc_make_runnable(struct rpc_task *task)
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -1422,8 +1422,10 @@ void rebind_evtchn_irq(int evtchn, int i
+ /* Rebind an evtchn so that it gets delivered to a specific cpu */
+ static int rebind_irq_to_cpu(unsigned irq, unsigned tcpu)
  {
++	struct shared_info *s = HYPERVISOR_shared_info;
+ 	struct evtchn_bind_vcpu bind_vcpu;
+ 	int evtchn = evtchn_from_irq(irq);
++	int masked;
+ 
+ 	if (!VALID_EVTCHN(evtchn))
+ 		return -1;
+@@ -1440,6 +1442,12 @@ static int rebind_irq_to_cpu(unsigned ir
+ 	bind_vcpu.vcpu = tcpu;
+ 
+ 	/*
++	 * Mask the event while changing the VCPU binding to prevent
++	 * it being delivered on an unexpected VCPU.
++	 */
++	masked = sync_test_and_set_bit(evtchn, s->evtchn_mask);
++
++	/*
+ 	 * If this fails, it usually just indicates that we're dealing with a
+ 	 * virq or IPI channel, which don't actually need to be rebound. Ignore
+ 	 * it, but don't do the xenlinux-level rebind in that case.
+@@ -1447,6 +1455,9 @@ static int rebind_irq_to_cpu(unsigned ir
+ 	if (HYPERVISOR_event_channel_op(EVTCHNOP_bind_vcpu, &bind_vcpu) >= 0)
+ 		bind_evtchn_to_cpu(evtchn, tcpu);
+ 
++	if (!masked)
++		unmask_evtchn(evtchn);
++
+ 	return 0;
+ }
+ 
 
 
