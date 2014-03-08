@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752825AbaCHDiJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 22:38:09 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44919 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752076AbaCHDiH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 22:38:07 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CA+55aFxpy_soEgGE3oap1N9+RucYCxOjfgvuRzhRqfC7zEm6PA@mail.gmail.com>
-References: <201403072325.s27NPvlt003528@terminus.zytor.com> <CA+55aFxpy_soEgGE3oap1N9+RucYCxOjfgvuRzhRqfC7zEm6PA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [GIT PULL] x86 fixes for v3.14-rc6
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Fri, 07 Mar 2014 19:36:57 -0800
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Borislav Petkov <bp@suse.de>, Don Zickus <dzickus@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>, Russ Anderson <rja@sgi.com>,
-        Steven Rostedt <rostedt@goodmis.org>, seiji.aguchi@hds.com,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Vince Weaver <vincent.weaver@maine.edu>
-Message-ID: <c50e6761-e1f4-4d18-8c02-64c542dd9beb@email.android.com>
+	id S1752542AbaCHDqM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 22:46:12 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:60821 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342AbaCHDqK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Mar 2014 22:46:10 -0500
+From: Choi Gi-yong <yong@gnoy.org>
+To: tj@kernel.org
+Cc: linux-kernel@vger.kernel.org, Choi Gi-yong <yong@gnoy.org>
+Subject: [PATCH] mm: Fix Coding style
+Date: Sat,  8 Mar 2014 12:46:01 +0900
+Message-Id: <1394250361-5151-1-git-send-email-yong@gnoy.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And yes, of course the change from hardcoded 2 to X86_TRAP_NMI was an afterthought.
+Signed-off-by: Choi Gi-yong <yong@gnoy.org>
+---
+ mm/percpu.c | 11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
 
-On March 7, 2014 7:03:09 PM PST, Linus Torvalds <torvalds@linux-foundation.org> wrote:
->Oww, oww, oww.
->
->DAMMIT.
->
->On Fri, Mar 7, 2014 at 3:25 PM, H. Peter Anvin <hpa@linux.intel.com>
->wrote:
->>
->> A small collection of minor fixes.  The FPU stuff is still pending, I
->> fear.  I haven't heard anything from Suresh so I suspect I'm going to
->> have to dig into the init specifics myself and fix up the patchset.
->
->I pulled this and then pushed out without test-compiling, because I'm
->not used to the x86 trees causing problems. Usually they've gone
->through a lot of build tests etc.
->
->But dammit, it's broken:
->
->  arch/x86/kernel/head_64.o: In function `early_idt_handler':
->  (.init.text+0x124): undefined reference to `X86_TRAP_NMI'
->
->because X86_TRAP_NMI is an enum, not a #define.
->
->This can not have worked in your tree either, because that thing has
->never been anything *but* an enum. So I'm pissed off. This patch was
->clearly never tested anywhere. Why was it sent to me?
->
->Grr. Consider yourself cursed at. Saatana.
->
->              Linus
-
+diff --git a/mm/percpu.c b/mm/percpu.c
+index 036cfe0..6528ffa 100644
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -72,7 +72,7 @@
+ #include <asm/cacheflush.h>
+ #include <asm/sections.h>
+ #include <asm/tlbflush.h>
+-#include <asm/io.h>
++#include <linux/io.h>
+ 
+ #define PCPU_SLOT_BASE_SHIFT		5	/* 1-31 shares the same slot */
+ #define PCPU_DFL_MAP_ALLOC		16	/* start a map with 16 ents */
+@@ -715,7 +715,7 @@ static void __percpu *pcpu_alloc(size_t size, size_t align, bool reserved)
+ 
+ 	if (unlikely(!size || size > PCPU_MIN_UNIT_SIZE || align > PAGE_SIZE)) {
+ 		WARN(true, "illegal size (%zu) or align (%zu) for "
+-		     "percpu allocation\n", size, align);
++				"percpu allocation\n", size, align);
+ 		return NULL;
+ 	}
+ 
+@@ -968,8 +968,8 @@ bool is_kernel_percpu_address(unsigned long addr)
+ 		void *start = per_cpu_ptr(base, cpu);
+ 
+ 		if ((void *)addr >= start && (void *)addr < start + static_size)
+-			return true;
+-        }
++		return true;
++       }
+ #endif
+ 	/* on UP, can't distinguish from other static vars, always false */
+ 	return false;
+@@ -1929,8 +1929,7 @@ void __init setup_per_cpu_areas(void)
+  */
+ void __init percpu_init_late(void)
+ {
+-	struct pcpu_chunk *target_chunks[] =
+-		{ pcpu_first_chunk, pcpu_reserved_chunk, NULL };
++	struct pcpu_chunk *target_chunks[] = { pcpu_first_chunk, pcpu_reserved_chunk, NULL };
+ 	struct pcpu_chunk *chunk;
+ 	unsigned long flags;
+ 	int i;
 -- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+1.8.3.2
+
