@@ -1,51 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283AbaCHBFl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Mar 2014 20:05:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46067 "EHLO
+	id S1753445AbaCHBGv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Mar 2014 20:06:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46205 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752153AbaCHBFj (ORCPT
+	with ESMTP id S1752107AbaCHBGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Mar 2014 20:05:39 -0500
-Date: Fri, 7 Mar 2014 17:07:26 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>
-Subject: Re: [GIT PULL] USB patches for v3.15
-Message-ID: <20140308010726.GA17585@kroah.com>
-References: <1394238645-26796-1-git-send-email-balbi@ti.com>
+	Fri, 7 Mar 2014 20:06:49 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [PATCH 3.4 01/99] ext4: dont try to modify s_flags if the the file system is read-only
+Date: Fri,  7 Mar 2014 17:06:57 -0800
+Message-Id: <20140308010611.612580700@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140308010611.468206150@linuxfoundation.org>
+References: <20140308010611.468206150@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394238645-26796-1-git-send-email-balbi@ti.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 07, 2014 at 06:30:45PM -0600, Felipe Balbi wrote:
-> Hi Greg,
-> 
-> Here's my pull request for v3.15 merge window.
-> 
-> This pull request contains patches which have been soaking in linux-next for
-> quite a bit of time. I also ran everything through my 150 randconfigs script
-> (which uses some seeds of my own).
-> 
-> Please, consider merging it on top of your greg/usb-next branch.
-> 
-> Note that this pull request is based off of an old commit on your usb-next
-> branch because I was out for a while on vacations and wanted to avoid
-> duplicated commits.
-> 
-> cheers
-> 
-> 
-> The following changes since commit 6d36b6f313738e99fc8b903697f8ecf06add29aa:
-> 
->   phy-core: Don't allow building phy-core as a module (2014-02-15 12:28:39 -0800)
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Pulled and pushed out, thanks.
+------------------
 
-greg k-h
+From: Theodore Ts'o <tytso@mit.edu>
+
+commit 23301410972330c0ae9a8afc379ba2005e249cc6 upstream.
+
+If an ext4 file system is created by some tool other than mke2fs
+(perhaps by someone who has a pathalogical fear of the GPL) that
+doesn't set one or the other of the EXT2_FLAGS_{UN}SIGNED_HASH flags,
+and that file system is then mounted read-only, don't try to modify
+the s_flags field.  Otherwise, if dm_verity is in use, the superblock
+will change, causing an dm_verity failure.
+
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/ext4/super.c |   20 +++++++++++++-------
+ 1 file changed, 13 insertions(+), 7 deletions(-)
+
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -3370,16 +3370,22 @@ static int ext4_fill_super(struct super_
+ 	for (i = 0; i < 4; i++)
+ 		sbi->s_hash_seed[i] = le32_to_cpu(es->s_hash_seed[i]);
+ 	sbi->s_def_hash_version = es->s_def_hash_version;
+-	i = le32_to_cpu(es->s_flags);
+-	if (i & EXT2_FLAGS_UNSIGNED_HASH)
+-		sbi->s_hash_unsigned = 3;
+-	else if ((i & EXT2_FLAGS_SIGNED_HASH) == 0) {
++	if (EXT4_HAS_COMPAT_FEATURE(sb, EXT4_FEATURE_COMPAT_DIR_INDEX)) {
++		i = le32_to_cpu(es->s_flags);
++		if (i & EXT2_FLAGS_UNSIGNED_HASH)
++			sbi->s_hash_unsigned = 3;
++		else if ((i & EXT2_FLAGS_SIGNED_HASH) == 0) {
+ #ifdef __CHAR_UNSIGNED__
+-		es->s_flags |= cpu_to_le32(EXT2_FLAGS_UNSIGNED_HASH);
+-		sbi->s_hash_unsigned = 3;
++			if (!(sb->s_flags & MS_RDONLY))
++				es->s_flags |=
++					cpu_to_le32(EXT2_FLAGS_UNSIGNED_HASH);
++			sbi->s_hash_unsigned = 3;
+ #else
+-		es->s_flags |= cpu_to_le32(EXT2_FLAGS_SIGNED_HASH);
++			if (!(sb->s_flags & MS_RDONLY))
++				es->s_flags |=
++					cpu_to_le32(EXT2_FLAGS_SIGNED_HASH);
+ #endif
++		}
+ 	}
+ 
+ 	/* Handle clustersize */
+
+
