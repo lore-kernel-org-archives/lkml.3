@@ -1,79 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752258AbaCITIb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 15:08:31 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:59585 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750949AbaCITI3 (ORCPT
+	id S1752612AbaCITJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 15:09:29 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51240 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750949AbaCITJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 15:08:29 -0400
-Date: Sun, 9 Mar 2014 19:08:07 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Olof Johansson <olof@lixom.net>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <20140309190807.GZ28112@sirena.org.uk>
-References: <20140309114134.502cdcae7e6a97db684d6b15@kernel.org>
- <CAOesGMhUVEEa6KLs2ZORxJunxitVdOQ5-wbs3KtEWBq+77t5JA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ddN45lq1N3it+fOY"
-Content-Disposition: inline
-In-Reply-To: <CAOesGMhUVEEa6KLs2ZORxJunxitVdOQ5-wbs3KtEWBq+77t5JA@mail.gmail.com>
-X-Cookie: Oh no, not again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.89.236
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: linux-next: build failure after merge of the arm-soc tree
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Sun, 9 Mar 2014 15:09:27 -0400
+Message-ID: <1394392160.15968.13.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH] net: sched: dev_deactivate_many(): use msleep(1)
+ instead of yield() to wait for outstanding qdisc_run calls
+From: Ben Hutchings <ben@decadent.org.uk>
+To: David Miller <davem@davemloft.net>
+Cc: mkl@pengutronix.de, linux-rt-users@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        kernel@pengutronix.de
+Date: Sun, 09 Mar 2014 19:09:20 +0000
+In-Reply-To: <20140306.160622.59358366688518505.davem@davemloft.net>
+References: <1393976987-23555-1-git-send-email-mkl@pengutronix.de>
+	 <20140306.160622.59358366688518505.davem@davemloft.net>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-HLK62Vvp03QgiYslYuPS"
+X-Mailer: Evolution 3.8.5-2+b3 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.245
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---ddN45lq1N3it+fOY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+--=-HLK62Vvp03QgiYslYuPS
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-On Sun, Mar 09, 2014 at 10:08:58AM -0700, Olof Johansson wrote:
-> On Sun, Mar 9, 2014 at 4:41 AM, Mark Brown <broonie@kernel.org> wrote:
+On Thu, 2014-03-06 at 16:06 -0500, David Miller wrote:
+> From: Marc Kleine-Budde <mkl@pengutronix.de>
+> Date: Wed,  5 Mar 2014 00:49:47 +0100
+>=20
+> > @@ -839,7 +839,7 @@ void dev_deactivate_many(struct list_head *head)
+> >       /* Wait for outstanding qdisc_run calls. */
+> >       list_for_each_entry(dev, head, unreg_list)
+> >               while (some_qdisc_is_busy(dev))
+> > -                     yield();
+> > +                     msleep(1)
+> >  }
+>=20
+> I don't understand this.
+>=20
+> yield() should really _mean_ yield.
+>=20
+> The intent of a yield() call, like this one here, is unambiguously
+> that the current thread cannot do anything until some other thread
+> gets onto the cpu and makes forward progress.
+>
+> Therefore it should allow lower priority threads to run, not just
+> equal or higher priority ones.
 
-> > ERROR: Input tree has errors, aborting (use -f to force output)
-> > make[2]: *** [arch/arm/boot/dts/socfpga_arria5_socdk.dtb] Error 2
+Until when?
 
-> Known issue, I unmerged the offending branch but didn't push out the
-> backed out for-next branch last night (I was unaware that you were
-> doing linux-next now, and sfr doesn't do them until Sunday night our
-> time, so I didn't think it was urgent).
+yield() is not a sensible operation in a preemptive multitasking system,
+regardless of RT.
 
-No worries, I wouldn't have done it on a Sunday either but this time
-round I've got Stephen's scripts so I've been pipe cleaning those so
-hopefully everything will actually run properly on Monday.
+Ben.
 
---ddN45lq1N3it+fOY
+--=20
+Ben Hutchings
+I say we take off; nuke the site from orbit.  It's the only way to be sure.
+
+--=-HLK62Vvp03QgiYslYuPS
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Version: GnuPG v1
 
-iQIcBAEBAgAGBQJTHLwUAAoJELSic+t+oim9H9AP/2TGw3M0IdazbHj3RqPQ7opo
-pi9q8xIt3f2FvatOLEYrfCzmQLzR+r7aY1ASByrTTrabwGHk8CQADYHRJe4+Tg11
-VRTHfnN6RC1kyBJuyduys2Dcw740/sBfzhJUKU3AwP3+4Jyw836vi/AyU11YL8nS
-irhy9+4pjs3bXi5lXZkA6OSXQ7q1DqyOV9S95kjZRL69rbyFjvoPQ0N+9OtM6cv7
-Vm8RZIU6plM+hpoWZnVoxpQtOj8hykaOQ/r64RbnZ/cl6fPMbnM8/vg2I8Y0phhq
-cRNUOdzL0CVB8301M6swbfe03HCwUcUvCvf/1ZsL4xJTfIBLAFXzP4HZKpImw7XH
-pxTxig68ab6apDYCt7FmFcxw6B3yAOtU3YdUnFRFk/IeuH/kd6b9QeYzZ6OEoJQA
-18lWxnKDDEkLpsd3zuOXaG4uRLJgSoWQB8c4nMx2O3SxVT28rXuQaqkS5aooiE3W
-MkOiCKL2M3NUmHNhxSMqYJ5cxo41/6lcZfrhM7YVMJO/ZKO2B/duKqwIDokkHhg6
-W143uXJABcRkvHWaYr89IHzV3QI4l7iK4+ViV2/HN+wTDW1v4IJsWzBWf48CiOqO
-VcE6GevBftcfXzUaNLWYvACf3rZ9yplMr+nkylp3cooaQ0WLmIzjv1ngxkqkZP8W
-3sPK1vz9c9xFM0gK9t68
-=JypB
+iQIVAwUAUxy8YOe/yOyVhhEJAQrJHw//feVCWU5pdCrAekF77WydJLMswCI4BugN
+ah3nj6js5/ajHTmmyZl7sFtWrhCmbbsqzOYSWHkcCANiPbvKFAIHexKo/7B9FXTV
+xBSIjsFvRY4iTdzJyprksEMCXuVj/kplcCFU8191bWlvzCOAPbDhF7karD2HjbLd
+QV2yjzTDOpAmMis/IhKg8uFEczq5L2gIFB/IIVyLwoLPVyn9QyexcKKo4qe5RKpB
+ER/BItPozmZzbHRPmhIXAjyr/ky/Jz8de9sM85Z8wh1HTicPGL/FHnWj2MR+NPPx
+H8BiKg1NXEXyKvQsRJEY9r2XTeXnWIhclBTUiLNhRvTAyuz/U8eLDeXNIPnvC0NS
+WiyQLH9yseJ3R2UcSMc3tROnFl+fJ6z+Im6LDyiN+GSgi1BI9mz3XSoS5fvL7o3c
+HBuaR1PJShQvvt5zDay9hT30hhghbL/BTW1Oirxv/KbDX290uUkkyLaAOeGaQajr
+uClALOSrgFGKd6SE/+MFzpG5Hh0vLnr6bPnFrLYv0Ww5T1G+byoOWELE6ZkFVcZj
+90KjkTr0iRSs1IJD8mCAh/HSEYLsTOKVe6kYxa1r2+LVIixYEcOw5bKVImAfHvgz
+UY5z8BsDBjYjz2yzNq73bEnr2M3kwCcBRCBNbLS645TkOWJnz+pDrhbRhseX9VWe
+iHvuoyHWDrU=
+=A78/
 -----END PGP SIGNATURE-----
 
---ddN45lq1N3it+fOY--
+--=-HLK62Vvp03QgiYslYuPS--
