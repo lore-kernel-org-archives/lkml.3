@@ -1,94 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752678AbaCIIWK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 04:22:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58198 "EHLO mx1.redhat.com"
+	id S1752362AbaCIIaU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 04:30:20 -0400
+Received: from sauhun.de ([89.238.76.85]:34628 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752367AbaCIIWG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 04:22:06 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-To: torvalds@linux-foundation.org
-cc: dhowells@redhat.com, tt.rantala@gmail.com, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        trinity@vger.kernel.org, Dave Jones <davej@redhat.com>
-Subject: [PATCH] KEYS: Make the keyring cycle detector ignore other keyrings of the same name
-Date: Sun, 09 Mar 2014 08:21:58 +0000
-Message-ID: <27787.1394353318@warthog.procyon.org.uk>
+	id S1751073AbaCIIaS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Mar 2014 04:30:18 -0400
+Date: Sun, 9 Mar 2014 09:30:13 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: linux-i2c@vger.kernel.org,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        xinhuix.pan@intel.com, Jingoo Han <jg1.han@samsung.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c: designware-pci: Cleanup driver power management
+Message-ID: <20140309083013.GA2579@katana>
+References: <1391517427-16204-1-git-send-email-mika.westerberg@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qMm9M+Fa2AknHoGS"
+Content-Disposition: inline
+In-Reply-To: <1391517427-16204-1-git-send-email-mika.westerberg@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-This fixes CVE-2014-0102.
+--qMm9M+Fa2AknHoGS
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The following command sequence produces an oops:
+On Tue, Feb 04, 2014 at 02:37:07PM +0200, Mika Westerberg wrote:
+> The PCI part of the DesignWare I2C driver does a lot of things that are n=
+ot
+> required anymore. For example drivers aren't supposed to handle PCI state
+> transitions themselves. This is all provided by the PCI bus core already.
+>=20
+> In addition to that there is no point scheduling RPM suspend on driver's
+> idle hook but instead we can use RPM autosuspend for this (which is enabl=
+ed
+> in the driver already).
+>=20
+> As a bonus, this patch also fixes following compile warning which is
+> emitted when the driver was compiled without CONFIG_PM_RUNTIME set:
+>=20
+> drivers/i2c/busses/i2c-designware-pcidrv.c:245:12: warning: =E2=80=98i2c_=
+dw_pci_runtime_idle=E2=80=99 defined but not used [-Wunused-function]
+>=20
+> Reported-by: xinhui.pan <xinhuix.pan@intel.com>
+> Reported-by: Jingoo Han <jg1.han@samsung.com>
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-	keyctl new_session
-	i=`keyctl newring _ses @s`
-	keyctl link @s $i
+Applied to for-next, thanks!
 
-The problem is that search_nested_keyrings() sees two keyrings that have
-matching type and description, so keyring_compare_object() returns true.
-s_n_k() then passes the key to the iterator function -
-keyring_detect_cycle_iterator() - which *should* check to see whether this is
-the keyring of interest, not just one with the same name.
 
-Because assoc_array_find() will return one and only one match, I assumed that
-the iterator function would only see an exact match or never be called - but
-the iterator isn't only called from assoc_array_find()...
+--qMm9M+Fa2AknHoGS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-The oops looks something like this:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
 
-	kernel BUG at /data/fs/linux-2.6-fscache/security/keys/keyring.c:1003!
-	invalid opcode: 0000 [#1] SMP
-	...
-	RIP: 0010:[<ffffffff811d39c3>] keyring_detect_cycle_iterator+0xe/0x1f
-	...
-	Stack:
-	...
-	Call Trace:
-	 [<ffffffff811d3706>] search_nested_keyrings+0x76/0x2aa
-	 [<ffffffff810fa7f4>] ? kmem_cache_alloc_trace+0xdd/0x159
-	 [<ffffffff81235669>] ? assoc_array_insert+0xab/0x929
-	 [<ffffffff811e226d>] ? selinux_key_permission+0x2d/0x2f
-	 [<ffffffff811dc94c>] ? security_key_permission+0x11/0x13
-	 [<ffffffff811d3e36>] __key_link_check_live_key+0x50/0x5f
-	 [<ffffffff811d39b5>] ? keyring_describe+0x7b/0x7b
-	 [<ffffffff811d3f2b>] key_link+0x4e/0x85
-	 [<ffffffff811d463a>] keyctl_keyring_link+0x60/0x81
-	 [<ffffffff811d553d>] SyS_keyctl+0x65/0xe4
-	 [<ffffffff81452edb>] tracesys+0xdd/0xe2
+iQIcBAEBAgAGBQJTHCaVAAoJEBQN5MwUoCm2QQcP/Ap6b8PlZxbuFR+DoYFsqjIN
+TUTy/UXJSsQJZzec4ix5f4rjgA6WB3pQTTaS+PlDMMKd8I4DYI/zzZzX7apArbCm
+Jgwt/wqd75EWTK1IhsMRrUTXBuLiOyZOm0gBANwH64648zlhvSw9byG1T4pHTbK9
+qBajGkqDn68PKvUPB3CgzXZBwD/+8cTneTuVD4gXqxt9qcbPVb0EDE4aTZVr3BTB
+EWjW1tKRy+JWbef8iCtywK8AY1YFVee6Nzehf2pFuKdZCsfDZMpHgJ4OY8+jpZ4I
+b+BTY7PemDpxJfhBMxyTRiW8G/FcqGbnYyUedbuJTqx+3x1uoO73Psv+Otto7YIB
+H7MuIvYYo+ccgmfeTdZ6yh3o5zvJaVkh9ULpuzgman/uyuYsNsh3tBrv5w0HmXes
+cWJk85MNhHPKiXF+oGeZGK/v/R80bvtwZeSDZwjjW9SBk6z4kTCuSi7BSkeAtwd7
+Eza9b20Dke7jnktiYp8UqNX2v04xBRbZsTVGY6tH+SiQ6+IiDmfPoSnT+92qqUCM
+GhueU6QEJBO/PVzCvVSLGUjkxpUFKHmiCfKlcmEFoEAqSd5RciCyXxgZsfvu78fh
+kJiNMTsi96RefzuWBAptIjy1H2CnWvhW6s4b5I5Xzd7c0rnEnus6hfJT5SB41106
+agg0a87OesKXxiupwZGt
+=6qdw
+-----END PGP SIGNATURE-----
 
-The fix is to make keyring_detect_cycle_iterator() check that the key it has
-is the key it was actually looking for rather than calling BUG_ON().
-
-A testcase has been included in the keyutils testsuite for this:
-
-	http://git.kernel.org/cgit/linux/kernel/git/dhowells/keyutils.git/commit/?id=891f3365d07f1996778ade0e3428f01878a1790b
-
-Reported-by: Tommi Rantala <tt.rantala@gmail.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: James Morris <james.l.morris@oracle.com>
----
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index d46cbc5e335e..2fb2576dc644 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -1000,7 +1000,11 @@ static int keyring_detect_cycle_iterator(const void *object,
- 
- 	kenter("{%d}", key->serial);
- 
--	BUG_ON(key != ctx->match_data);
-+	/* We might get a keyring with matching index-key that is nonetheless a
-+	 * different keyring. */
-+	if (key != ctx->match_data)
-+		return 0;
-+
- 	ctx->result = ERR_PTR(-EDEADLK);
- 	return 1;
- }
-
+--qMm9M+Fa2AknHoGS--
