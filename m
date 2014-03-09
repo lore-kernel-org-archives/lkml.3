@@ -1,51 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126AbaCIEcO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 23:32:14 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:51394 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751571AbaCIEcN (ORCPT
+	id S1752051AbaCIEu2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 23:50:28 -0500
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:46368 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751805AbaCIEu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 23:32:13 -0500
-From: Nick Davies <git@nicolasdavies.com.au>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Nick Davies <git@nicolasdavies.com.au>
-Subject: [PATCH] Staging: comedi: ni_tio Fixed whitespace coding style warnings
-Date: Sun,  9 Mar 2014 15:31:49 +1100
-Message-Id: <1394339509-11851-1-git-send-email-git@nicolasdavies.com.au>
-X-Mailer: git-send-email 1.9.0
+	Sat, 8 Mar 2014 23:50:27 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140306180422.4e27ae82f646e0e669f69cbb@skynet.be>
+References: <20140306180422.4e27ae82f646e0e669f69cbb@skynet.be>
+Date: Sat, 8 Mar 2014 20:50:26 -0800
+Message-ID: <CAN8TOE9NavAny9AH09X3-Rvwq_frU6-ZSe1mC5g-KBfBZ7v76g@mail.gmail.com>
+Subject: Re: [PATCH v2 linux-next] mtd: block2mtd: check device size
+From: Brian Norris <computersforpeace@gmail.com>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        "ezequiel.garcia" <ezequiel.garcia@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed coding style warnings in ni_tio.h which had an extra space
-after the function pointer name.
+On Thu, Mar 6, 2014 at 2:04 AM, Fabian Frederick <fabf@skynet.be> wrote:
+> fixme applied : check device size is a multiple of erasesize.
+>
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
 
-Signed-off-by: Nick Davies <git@nicolasdavies.com.au>
----
- drivers/staging/comedi/drivers/ni_tio.h | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Pushed to l2-mtd.git. Thanks!
 
-diff --git a/drivers/staging/comedi/drivers/ni_tio.h b/drivers/staging/comedi/drivers/ni_tio.h
-index 68378da..1056bf0 100644
---- a/drivers/staging/comedi/drivers/ni_tio.h
-+++ b/drivers/staging/comedi/drivers/ni_tio.h
-@@ -115,10 +115,10 @@ struct ni_gpct {
- 
- struct ni_gpct_device {
- 	struct comedi_device *dev;
--	void (*write_register) (struct ni_gpct *counter, unsigned bits,
--				enum ni_gpct_register reg);
--	unsigned (*read_register) (struct ni_gpct *counter,
--				   enum ni_gpct_register reg);
-+	void (*write_register)(struct ni_gpct *counter, unsigned bits,
-+			       enum ni_gpct_register reg);
-+	unsigned (*read_register)(struct ni_gpct *counter,
-+				  enum ni_gpct_register reg);
- 	enum ni_gpct_variant variant;
- 	struct ni_gpct *counters;
- 	unsigned num_counters;
--- 
-1.9.0
-
+Brian
