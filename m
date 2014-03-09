@@ -1,120 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752186AbaCIRtJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 13:49:09 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:50589 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751329AbaCIRtI (ORCPT
+	id S1752107AbaCISCn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 14:02:43 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:37565 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090AbaCISCm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 13:49:08 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bhelgaas@google.com, matthew.garrett@nebula.com,
-        rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com
-Subject: Re: [RFC PATCH 6/8] ACPI: use platform bus as the default bus for _HID enumeration
-Date: Sun, 09 Mar 2014 19:04:23 +0100
-Message-ID: <6354388.qLqPjcP6yZ@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1394380237.9269.31.camel@rzhang1-mobl4>
-References: <1393405874-3266-1-git-send-email-rui.zhang@intel.com> <1393405874-3266-7-git-send-email-rui.zhang@intel.com> <1394380237.9269.31.camel@rzhang1-mobl4>
+	Sun, 9 Mar 2014 14:02:42 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <1394376574.20149.99.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <1394320530-3508-1-git-send-email-ast@plumgrid.com>
+	<1394320530-3508-2-git-send-email-ast@plumgrid.com>
+	<1394376574.20149.99.camel@edumazet-glaptop2.roam.corp.google.com>
+Date: Sun, 9 Mar 2014 11:02:40 -0700
+Message-ID: <CAMEtUuwyCD+-aWiOSRWf2+K0iaSxuDuW-Z8Em=LdskDgbtQkWA@mail.gmail.com>
+Subject: Re: [PATCH v7 net-next 1/3] filter: add Extended BPF interpreter and converter
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Hagen Paul Pfeifer <hagen@jauu.net>,
+        Jesse Gross <jesse@nicira.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, March 09, 2014 11:50:37 PM Zhang Rui wrote:
-> On Wed, 2014-02-26 at 17:11 +0800, Zhang Rui wrote:
-> > Because of the growing demand for enumerating ACPI devices to platform bus,
-> > this patch changes the code to enumerate ACPI devices with _HID/_CID to
-> > platform bus by default, unless the device already has a scan handler attached.
-> > 
-> > Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-> > ---
-> >  drivers/acpi/acpi_platform.c |   28 ----------------------------
-> >  drivers/acpi/scan.c          |   12 ++++++------
-> >  2 files changed, 6 insertions(+), 34 deletions(-)
-> > 
-> > diff --git a/drivers/acpi/acpi_platform.c b/drivers/acpi/acpi_platform.c
-> > index dbfe49e..33376a9 100644
-> > --- a/drivers/acpi/acpi_platform.c
-> > +++ b/drivers/acpi/acpi_platform.c
-> > @@ -22,24 +22,6 @@
-> >  
-> >  ACPI_MODULE_NAME("platform");
-> >  
-> > -/*
-> > - * The following ACPI IDs are known to be suitable for representing as
-> > - * platform devices.
-> > - */
-> > -static const struct acpi_device_id acpi_platform_device_ids[] = {
-> > -
-> > -	{ "PNP0D40" },
-> > -	{ "ACPI0003" },
-> > -	{ "VPC2004" },
-> > -	{ "BCM4752" },
-> > -
-> > -	/* Intel Smart Sound Technology */
-> > -	{ "INT33C8" },
-> > -	{ "80860F28" },
-> > -
-> > -	{ }
-> > -};
-> > -
-> >  /**
-> >   * acpi_create_platform_device - Create platform device for ACPI device node
-> >   * @adev: ACPI device node to create a platform device for.
-> > @@ -125,13 +107,3 @@ int acpi_create_platform_device(struct acpi_device *adev,
-> >  	kfree(resources);
-> >  	return 1;
-> >  }
-> > -
-> > -static struct acpi_scan_handler platform_handler = {
-> > -	.ids = acpi_platform_device_ids,
-> > -	.attach = acpi_create_platform_device,
-> > -};
-> > -
-> > -void __init acpi_platform_init(void)
-> > -{
-> > -	acpi_scan_add_handler(&platform_handler);
-> > -}
-> > diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> > index 5967338..61af32e 100644
-> > --- a/drivers/acpi/scan.c
-> > +++ b/drivers/acpi/scan.c
-> > @@ -2022,14 +2022,15 @@ static int acpi_scan_attach_handler(struct acpi_device *device)
-> >  		handler = acpi_scan_match_handler(hwid->id, &devid);
-> >  		if (handler) {
-> >  			ret = handler->attach(device, devid);
-> > -			if (ret > 0) {
-> > +			if (ret > 0)
-> >  				device->handler = handler;
-> > -				break;
-> > -			} else if (ret < 0) {
-> > -				break;
-> > -			}
-> > +			if (ret)
-> > +				goto end;
-> >  		}
-> >  	}
-> > +end:
-> > +	if (!list_empty(&device->pnp.ids) && !device->handler)
-> > +		acpi_create_platform_device(device, NULL);
-> 
-> I just found a big problem in this proposal, which affects all the
-> optional scan handlers.
+On Sun, Mar 9, 2014 at 7:49 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> On Sat, 2014-03-08 at 15:15 -0800, Alexei Starovoitov wrote:
+>
+>> +                     if (BPF_SRC(fp->code) == BPF_K &&
+>> +                         (int)fp->k < 0) {
+>> +                             /* extended BPF immediates are signed,
+>> +                              * zero extend immediate into tmp register
+>> +                              * and use it in compare insn
+>> +                              */
+>> +                             insn->code = BPF_ALU | BPF_MOV | BPF_K;
+>> +                             insn->a_reg = 2;
+>> +                             insn->imm = fp->k;
+>> +                             insn++;
+>> +
+>> +                             insn->a_reg = 6;
+>> +                             insn->x_reg = 2;
+>> +                             bpf_src = BPF_X;
+>> +                     } else {
+>> +                             insn->a_reg = 6;
+>> +                             insn->x_reg = 7;
+>> +                             insn->imm = fp->k;
+>> +                             bpf_src = BPF_SRC(fp->code);
+>> +                     }
+>> +                     /* common case where 'jump_false' is next insn */
+>> +                     if (fp->jf == 0) {
+>> +                             insn->code = BPF_JMP | BPF_OP(fp->code) |
+>> +                                     bpf_src;
+>> +                             tgt = i + fp->jt + 1;
+>> +                             EMIT_JMP;
+>> +                             break;
+>> +                     }
+>> +                     /* convert JEQ into JNE when 'jump_true' is next insn */
+>> +                     if (fp->jt == 0 && BPF_OP(fp->code) == BPF_JEQ) {
+>> +                             insn->code = BPF_JMP | BPF_JNE | bpf_src;
+>> +                             tgt = i + fp->jf + 1;
+>> +                             EMIT_JMP;
+>> +                             break;
+>> +                     }
+>> +                     /* other jumps are mapped into two insns: Jxx and JA */
+>> +                     tgt = i + fp->jt + 1;
+>> +                     insn->code = BPF_JMP | BPF_OP(fp->code) | bpf_src;
+>> +                     EMIT_JMP;
+>> +
+>> +                     insn++;
+>> +                     insn->code = BPF_JMP | BPF_JA;
+>> +                     tgt = i + fp->jf + 1;
+>> +                     EMIT_JMP;
+>> +                     break;
+>> +
+>> +             /* ldxb 4*([14]&0xf) is remaped into 3 insns */
+>> +             case BPF_LDX | BPF_MSH | BPF_B:
+>> +                     insn->code = BPF_LD | BPF_ABS | BPF_B;
+>> +                     insn->a_reg = 7;
+>> +                     insn->imm = fp->k;
+>> +
+>> +                     insn++;
+>> +                     insn->code = BPF_ALU | BPF_AND | BPF_K;
+>> +                     insn->a_reg = 7;
+>> +                     insn->imm = 0xf;
+>> +
+>> +                     insn++;
+>> +                     insn->code = BPF_ALU | BPF_LSH | BPF_K;
+>> +                     insn->a_reg = 7;
+>> +                     insn->imm = 2;
+>> +                     break;
+>> +
+>> +             /* RET_K, RET_A are remaped into 2 insns */
+>> +             case BPF_RET | BPF_A:
+>> +             case BPF_RET | BPF_K:
+>> +                     insn->code = BPF_ALU | BPF_MOV |
+>> +                             (BPF_RVAL(fp->code) == BPF_K ? BPF_K : BPF_X);
+>> +                     insn->a_reg = 0;
+>> +                     insn->x_reg = 6;
+>> +                     insn->imm = fp->k;
+>> +
+>> +                     insn++;
+>> +                     insn->code = BPF_RET | BPF_K;
+>> +                     break;
+>
+>
+> What the hell is this ?
+>
+> All this magical values, like 2, 6, 7, 10.
 
-What do you mean by "optional"?  Such that can be compiled out?
+they are register numbers, since they are assigned into 'a_reg' and 'x_reg'
+which are described in uapi/filter.h:
+        __u8    a_reg:4; /* dest register */
+        __u8    x_reg:4; /* source register */
+and in Doc...filter.txt
 
-> The problem is that, if we disable a scan handler, platform device nodes
-> would be created instead by the code above, because there is no scan
-> handler attached for those ACPI nodes.
+In the V1 series I had a bunch of #define like:
+#define R1 1
+#define R2 2
+which seemed as silly as doing '#define one 1'
 
-If "we disable a scan handled" means "we compile it out", I'm not sure
-why creating platform devices for the device objects in question will
-be incorrect?
+I thought that the sk_convert_filter() code is pretty clear in terms
+of what it's doing, but I'm happy to add an extensive comment to
+describe the mechanics.
+Also it felt that most of the time you and other folks want me to remove
+comments, so I figured I'll add comments on demand.
+Here looks like it's the case.
 
-Rafael
+> I am afraid nobody will be able to read this but you.
 
+that's certainly not the intent. I've presented it at the last plumbers conf
+and would like to share more, since I think ebpf is a fundamental
+breakthrough that can be used by many kernel subsystems.
+This patch only covers old filters and seccomp.
+We can do a lot more interesting things with tracing+ebpf and so on.
+
+Regards,
+Alexei
