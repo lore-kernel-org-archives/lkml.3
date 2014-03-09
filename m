@@ -1,185 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757AbaCIDyO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 22:54:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43186 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752381AbaCIDxE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 22:53:04 -0500
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, David Herrmann <dh.herrmann@gmail.com>,
-        David Barksdale <dbarksdale@uplogix.com>, Antonio Ospite <ao2@ao2.it>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 4/4] HID: remove hid_output_raw_report transport implementations
-Date: Sat,  8 Mar 2014 22:52:43 -0500
-Message-Id: <1394337163-32478-5-git-send-email-benjamin.tissoires@redhat.com>
-In-Reply-To: <1394337163-32478-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1394337163-32478-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S1752782AbaCIDz7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 22:55:59 -0500
+Received: from nm21-vm4.bullet.mail.gq1.yahoo.com ([98.136.217.51]:20934 "EHLO
+	nm21-vm4.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752287AbaCIDz5 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Mar 2014 22:55:57 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 363846.98728.bm@omp1079.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=5kzdG1Ug1w1ml8TNqBEalBNQctYYVAJV4MQOwJZR8UIJY4cu5FLu8mXA7m6t+/+c7fX4kNC7RNPtdGjfB/OcKZJPYD5tvRRo1fbDwop3jWyVSi9gryp0rgfsBVEmKXQQ9hMI1KXCOiesZ2sCl8tRiyJT0CYKgJFW4OzrDVofEng=;
+X-YMail-OSG: TGGK7oYVM1nHkIyITcsNHl8uVp0sM4PNdv2noZ7IIwWb9cg
+ itBtbc.s9QxPjeUy2.RGc_GA7Xsa7eCXN2gPmgGV7xML6uxtA_oSZZ1YAm79
+ iJFkf7H13v_uzsncUIsS7jsJOVpm6I.JfpFAWL_hVjKe_dxhQM29Fx949Ktt
+ J8swKhYlQJ_.Gr99et8ZSkdM4tr7v3ItOZDxeDJJTyYNxbz.r3SViASZ54AI
+ SErLdPWt3fPYvJSiZJuriBR5c6WrhcCBhR3qY13_hdywkfg7hJcmNjl2P8K5
+ zM8SiV19k3XE5Qw7gMZjOrmIKTzEKFyeZxvP_9yf0jvCl_kNZcx3hLKNgQe.
+ G2.rNs8u3Kr_CTwI4z0Vdwt1yI_sW09sHBd5lvzwrKOHEMTAa0QdchtK4.9X
+ QsWRmcBfC0AQ4GRqKTuzJ2gcc0FFxnr26.Sh9COpts_K7jD7xB6rzct3RbC.
+ UEj4u7NM_VegGbMgXkvuICL0LNFgfBIQybnQwdK3BMMIMgPNB4.b0ke0RfhY
+ GWSLpcQUmmVm3ZeeevRfv4iN6ZpcjpBw-
+X-Rocket-MIMEInfo: 002.001,SGkgR3JlZywKCj5PbiBTYXR1cmRheSwgTWFyY2ggOCwgMjAxNCA5OjAwIFBNLCBHcmVnIEtIIDxncmVna2hAbGludXhmb3VuZGF0aW9uLm9yZz4gd3JvdGU6Cgo.Pk9uIEZyaSwgTWFyIDA3LCAyMDE0IGF0IDA3OjQzOjA0UE0gLTA2MDAsIENoYXNlIFNvdXRod29vZCB3cm90ZToKPj5UaGlzIHBhdGNoIGNoYW5nZXMgYSBoYW5kZnVsIG9mIHdoaWxlIGxvb3BzIHRvIHRpbWVvdXRzIHRvIHByZXZlbnQKPj5pbmZpbml0ZSBsb29waW5nIG9uIGhhcmR3YXJlIGZhaWx1cmUuIEEgY291cGxlIHN1Y2ggbG9vcHMgYXIBMAEBAQE-
+X-Mailer: YahooMailWebService/0.8.177.636
+References: <1393922628-27903-1-git-send-email-chase.southwood@yahoo.com> <1394242984-32567-1-git-send-email-chase.southwood@yahoo.com> <20140309030056.GA10867@kroah.com>
+Message-ID: <1394337357.59397.YahooMailNeo@web164002.mail.gq1.yahoo.com>
+Date: Sat, 8 Mar 2014 19:55:57 -0800 (PST)
+From: Chase Southwood <chase.southwood@yahoo.com>
+Reply-To: Chase Southwood <chase.southwood@yahoo.com>
+Subject: Re: [PATCH v3 1/2] Staging: comedi: convert while loops to timeouts in
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20140309030056.GA10867@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nobody calls hid_output_raw_report anymore, and nobody should.
-We can now remove the various implementation in the different
-transport drivers and the declarations.
+Hi Greg,
 
-Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
----
+>On Saturday, March 8, 2014 9:00 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
 
-no changes since v1 (what did you expected?)
+>>On Fri, Mar 07, 2014 at 07:43:04PM -0600, Chase Southwood wrote:
+>>This patch changes a handful of while loops to timeouts to prevent
+>>infinite looping on hardware failure. A couple such loops are in a
+>>function (s626_debi_transfer()) which is called from critical sections,
+>>so comedi_timeout() is unusable for them, and an iterative timeout is
+>>used instead. For the while loops in a context where comedi_timeout() is
+>>allowed, a new callback function, s626_send_dac_eoc(), has been defined
+>>to evaluate the conditions that the while loops are testing.  The new
+>>callback employs a switch statement based on a simple new enum so that
+>>it is usable for all of the different conditions tested in while loops
+>>in s626_send_dac().  The proper comedi_timeout() calls are then used.
+>
+>Your subject seems to be missing a word at the end of it :(
 
- drivers/hid/i2c-hid/i2c-hid.c | 14 --------------
- drivers/hid/uhid.c            |  1 -
- drivers/hid/usbhid/hid-core.c | 12 ------------
- include/linux/hid.h           | 19 -------------------
- net/bluetooth/hidp/core.c     | 14 --------------
- 5 files changed, 60 deletions(-)
+Well what a silly problem to have :( I don't know what happened there
+but I'll fix the subject and send it out again.
 
-diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-index cbd44a7..8c52a07 100644
---- a/drivers/hid/i2c-hid/i2c-hid.c
-+++ b/drivers/hid/i2c-hid/i2c-hid.c
-@@ -596,19 +596,6 @@ static int i2c_hid_output_raw_report(struct hid_device *hid, __u8 *buf,
- 	return ret;
- }
- 
--static int __i2c_hid_output_raw_report(struct hid_device *hid, __u8 *buf,
--		size_t count, unsigned char report_type)
--{
--	struct i2c_client *client = hid->driver_data;
--	struct i2c_hid *ihid = i2c_get_clientdata(client);
--	bool data = true; /* SET_REPORT */
--
--	if (report_type == HID_OUTPUT_REPORT)
--		data = le16_to_cpu(ihid->hdesc.wMaxOutputLength) == 0;
--
--	return i2c_hid_output_raw_report(hid, buf, count, report_type, data);
--}
--
- static int i2c_hid_output_report(struct hid_device *hid, __u8 *buf,
- 		size_t count)
- {
-@@ -1037,7 +1024,6 @@ static int i2c_hid_probe(struct i2c_client *client,
- 
- 	hid->driver_data = client;
- 	hid->ll_driver = &i2c_hid_ll_driver;
--	hid->hid_output_raw_report = __i2c_hid_output_raw_report;
- 	hid->dev.parent = &client->dev;
- 	ACPI_COMPANION_SET(&hid->dev, ACPI_COMPANION(&client->dev));
- 	hid->bus = BUS_I2C;
-diff --git a/drivers/hid/uhid.c b/drivers/hid/uhid.c
-index 60acee4..7ed79be 100644
---- a/drivers/hid/uhid.c
-+++ b/drivers/hid/uhid.c
-@@ -400,7 +400,6 @@ static int uhid_dev_create(struct uhid_device *uhid,
- 	hid->uniq[63] = 0;
- 
- 	hid->ll_driver = &uhid_hid_driver;
--	hid->hid_output_raw_report = uhid_hid_output_raw;
- 	hid->bus = ev->u.create.bus;
- 	hid->vendor = ev->u.create.vendor;
- 	hid->product = ev->u.create.product;
-diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
-index 3bc7cad..7b88f4c 100644
---- a/drivers/hid/usbhid/hid-core.c
-+++ b/drivers/hid/usbhid/hid-core.c
-@@ -950,17 +950,6 @@ static int usbhid_output_report(struct hid_device *hid, __u8 *buf, size_t count)
- 	return ret;
- }
- 
--static int usbhid_output_raw_report(struct hid_device *hid, __u8 *buf,
--		size_t count, unsigned char report_type)
--{
--	struct usbhid_device *usbhid = hid->driver_data;
--
--	if (usbhid->urbout && report_type != HID_FEATURE_REPORT)
--		return usbhid_output_report(hid, buf, count);
--
--	return usbhid_set_raw_report(hid, buf[0], buf, count, report_type);
--}
--
- static void usbhid_restart_queues(struct usbhid_device *usbhid)
- {
- 	if (usbhid->urbout && !test_bit(HID_OUT_RUNNING, &usbhid->iofl))
-@@ -1294,7 +1283,6 @@ static int usbhid_probe(struct usb_interface *intf, const struct usb_device_id *
- 
- 	usb_set_intfdata(intf, hid);
- 	hid->ll_driver = &usb_hid_driver;
--	hid->hid_output_raw_report = usbhid_output_raw_report;
- 	hid->ff_init = hid_pidff_init;
- #ifdef CONFIG_USB_HIDDEV
- 	hid->hiddev_connect = hiddev_connect;
-diff --git a/include/linux/hid.h b/include/linux/hid.h
-index 2cd7174..720e3a1 100644
---- a/include/linux/hid.h
-+++ b/include/linux/hid.h
-@@ -513,9 +513,6 @@ struct hid_device {							/* device report descriptor */
- 				  struct hid_usage *, __s32);
- 	void (*hiddev_report_event) (struct hid_device *, struct hid_report *);
- 
--	/* handler for raw output data, used by hidraw */
--	int (*hid_output_raw_report) (struct hid_device *, __u8 *, size_t, unsigned char);
--
- 	/* debugging support via debugfs */
- 	unsigned short debug;
- 	struct dentry *debug_dir;
-@@ -1023,22 +1020,6 @@ static inline int hid_hw_output_report(struct hid_device *hdev, __u8 *buf,
- }
- 
- /**
-- * hid_output_raw_report - send an output or a feature report to the device
-- *
-- * @hdev: hid device
-- * @buf: raw data to transfer
-- * @len: length of buf
-- * @report_type: HID_FEATURE_REPORT or HID_OUTPUT_REPORT
-- *
-- * @return: count of data transfered, negative if error
-- */
--static inline int hid_output_raw_report(struct hid_device *hdev, __u8 *buf,
--					size_t len, unsigned char report_type)
--{
--	return hdev->hid_output_raw_report(hdev, buf, len, report_type);
--}
--
--/**
-  * hid_hw_idle - send idle request to device
-  *
-  * @hdev: hid device
-diff --git a/net/bluetooth/hidp/core.c b/net/bluetooth/hidp/core.c
-index 98e4840..514ddb5 100644
---- a/net/bluetooth/hidp/core.c
-+++ b/net/bluetooth/hidp/core.c
-@@ -382,18 +382,6 @@ static int hidp_output_report(struct hid_device *hid, __u8 *data, size_t count)
- 				      data, count);
- }
- 
--static int hidp_output_raw_report(struct hid_device *hid, unsigned char *data,
--		size_t count, unsigned char report_type)
--{
--	if (report_type == HID_OUTPUT_REPORT) {
--		return hidp_output_report(hid, data, count);
--	} else if (report_type != HID_FEATURE_REPORT) {
--		return -EINVAL;
--	}
--
--	return hidp_set_raw_report(hid, data[0], data, count, report_type);
--}
--
- static int hidp_raw_request(struct hid_device *hid, unsigned char reportnum,
- 			    __u8 *buf, size_t len, unsigned char rtype,
- 			    int reqtype)
-@@ -776,8 +764,6 @@ static int hidp_setup_hid(struct hidp_session *session,
- 	hid->dev.parent = &session->conn->hcon->dev;
- 	hid->ll_driver = &hidp_hid_driver;
- 
--	hid->hid_output_raw_report = hidp_output_raw_report;
--
- 	/* True if device is blacklisted in drivers/hid/hid-core.c */
- 	if (hid_ignore(hid)) {
- 		hid_destroy_device(session->hid);
--- 
-1.8.5.3
-
+Thanks,
+Chase
