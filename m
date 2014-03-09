@@ -1,120 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752568AbaCIDXb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 22:23:31 -0500
-Received: from mail-la0-f50.google.com ([209.85.215.50]:52042 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752081AbaCIDX3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 22:23:29 -0500
+	id S1752410AbaCIDaV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 22:30:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6214 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751897AbaCIDaT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Mar 2014 22:30:19 -0500
+Date: Sat, 8 Mar 2014 22:29:46 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Hannes Reinecke <hare@suse.de>, Mike Snitzer <snitzer@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>, Jeff Moyer <jmoyer@redhat.com>,
+        Shaohua Li <shli@fusionio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: block: fix q->flush_rq NULL pointer crash on dm-mpath flush
+Message-ID: <20140309032946.GA19029@redhat.com>
+References: <x49iorp3fhm.fsf@segfault.boston.devel.redhat.com>
+ <20140308155240.GA32297@infradead.org>
+ <CAMM=eLewbtK7LiNZCXo=hm-sjVU2+MN+xTFuxb89mDA1iS3r0w@mail.gmail.com>
+ <531B74B6.4070004@suse.de>
+ <CAMM=eLfVpc=B7ZzxBDbKW4GZ_E5rOqrcbyppNBSz_brQaH4VNw@mail.gmail.com>
+ <531B8CB1.2010502@suse.de>
+ <20140308220926.GA15421@redhat.com>
+ <531BB4A9.5000305@kernel.dk>
+ <20140309005729.GA18321@redhat.com>
+ <531BDD77.5020809@kernel.dk>
 MIME-Version: 1.0
-In-Reply-To: <CANq1E4T_Xm7xCb5vGKBsb1EH-h6g4V-L9mrjZxThWa-GdtbPhQ@mail.gmail.com>
-References: <1394054334-20438-1-git-send-email-benjamin.tissoires@redhat.com>
-	<1394054334-20438-2-git-send-email-benjamin.tissoires@redhat.com>
-	<CANq1E4T_Xm7xCb5vGKBsb1EH-h6g4V-L9mrjZxThWa-GdtbPhQ@mail.gmail.com>
-Date: Sat, 8 Mar 2014 22:23:28 -0500
-Message-ID: <CAN+gG=GoF0cWOQERiWhmLHRAhvhc5e+xUNNBatm3z3jDN9nx_g@mail.gmail.com>
-Subject: Re: [PATCH v2 1/4] HID: cp2112: remove various hid_out_raw_report calls
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>,
-        David Barksdale <dbarksdale@uplogix.com>, Antonio Ospite <ao2@ao2.it>,
-        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <531BDD77.5020809@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 7, 2014 at 4:47 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
-> Hi
->
-> On Wed, Mar 5, 2014 at 10:18 PM, Benjamin Tissoires
-> <benjamin.tissoires@redhat.com> wrote:
->> hid_out_raw_report is going to be obsoleted as it is not part of the
->> unified HID low level transport documentation
->> (Documentation/hid/hid-transport.txt)
->>
->>   hid_output_raw_report(hdev, buf, sizeof(buf), HID_FEATURE_REPORT);
->> is strictly equivalent to:
->>   hid_hw_raw_request(hdev, buf[0], buf, sizeof(buf),
->>                 HID_FEATURE_REPORT, HID_REQ_SET_REPORT);
->
-> This time you might be right that feature-reports always put the
-> report-id into the first byte, but I'd still prefer if we avoid using
-> this. Besides, the code is much nicer imho if we pass the ID directly,
-> see below..
+On Sat, Mar 08 2014 at 10:18pm -0500,
+Jens Axboe <axboe@kernel.dk> wrote:
 
-Yes you are completely right.
+> On 2014-03-08 17:57, Mike Snitzer wrote:
+> >
+> >I had a look at what you queued, thing is commit 1874198 replaced code
+> >in blk_kick_flush() that did use list_add_tail().  So getting back to
+> >the way the original code  was (before 1874198) would need something
+> >like the following patch.
+> >
+> >But it isn't clear to me why we'd have the duality of front vs tail
+> >additions for flushes.  Maybe Christoph knows?
+> 
+> Not sure it'd even make a difference with the use case, but always
+> tail would be broken. But the flushing in general is a bit of a
+> nightmare, so I'd be inclined to add your full fix too, at least
+> this late in -rc.
 
-Will send a v3 ASAP.
-
-Cheers,
-Benjamin
-
->
->>
->> So use the new api.
->>
->> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
->> ---
->>
->> no changes since v1
->>
->>  drivers/hid/hid-cp2112.c | 12 ++++++------
->>  1 file changed, 6 insertions(+), 6 deletions(-)
->>
->> diff --git a/drivers/hid/hid-cp2112.c b/drivers/hid/hid-cp2112.c
->> index 1025982..860db694 100644
->> --- a/drivers/hid/hid-cp2112.c
->> +++ b/drivers/hid/hid-cp2112.c
->> @@ -185,8 +185,8 @@ static int cp2112_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
->>         buf[1] &= ~(1 << offset);
->>         buf[2] = gpio_push_pull;
->>
->> -       ret = hdev->hid_output_raw_report(hdev, buf, sizeof(buf),
->> -                                         HID_FEATURE_REPORT);
->> +       ret = hid_hw_raw_request(hdev, buf[0], buf, sizeof(buf),
->> +                                HID_FEATURE_REPORT, HID_REQ_SET_REPORT);
->
-> buf[0] => CP2112_GPIO_CONFIG
->
->>         if (ret < 0) {
->>                 hid_err(hdev, "error setting GPIO config: %d\n", ret);
->>                 return ret;
->> @@ -207,8 +207,8 @@ static void cp2112_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
->>         buf[1] = value ? 0xff : 0;
->>         buf[2] = 1 << offset;
->>
->> -       ret = hdev->hid_output_raw_report(hdev, buf, sizeof(buf),
->> -                                         HID_FEATURE_REPORT);
->> +       ret = hid_hw_raw_request(hdev, buf[0], buf, sizeof(buf),
->> +                                HID_FEATURE_REPORT, HID_REQ_SET_REPORT);
->
-> Here buf[0] seems fine as it is set explicitly just 3 lines above to
-> CP2112_GPIO_SET.
->
->>         if (ret < 0)
->>                 hid_err(hdev, "error setting GPIO values: %d\n", ret);
->>  }
->> @@ -253,8 +253,8 @@ static int cp2112_gpio_direction_output(struct gpio_chip *chip,
->>         buf[1] |= 1 << offset;
->>         buf[2] = gpio_push_pull;
->>
->> -       ret = hdev->hid_output_raw_report(hdev, buf, sizeof(buf),
->> -                                         HID_FEATURE_REPORT);
->> +       ret = hid_hw_raw_request(hdev, buf[0], buf, sizeof(buf),
->> +                                HID_FEATURE_REPORT, HID_REQ_SET_REPORT);
->
-> Here an explicit CP2112_GPIO_CONFIG seems nicer, imho.
->
-> Thanks
-> David
->
->>         if (ret < 0) {
->>                 hid_err(hdev, "error setting GPIO config: %d\n", ret);
->>                 return ret;
->> --
->> 1.8.5.3
->>
+OK, please feel free to add my Signed-off-by.
