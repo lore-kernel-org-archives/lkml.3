@@ -1,202 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752410AbaCIIAJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 04:00:09 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:42574 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752204AbaCIIAH (ORCPT
+	id S1752567AbaCIIEp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 04:04:45 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:57984 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752278AbaCIIEm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 04:00:07 -0400
+	Sun, 9 Mar 2014 04:04:42 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <531C2097.5020004@roeck-us.net>
+Date: Sun, 09 Mar 2014 00:04:39 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-X-Originating-IP: [112.161.134.227]
-In-Reply-To: <CAH4bKb02r2Co08u8nSVOw2eFVCF-5r_bA33B8RGDwW1BLtjoKA@mail.gmail.com>
-References: <1394250361-5151-1-git-send-email-yong@gnoy.org>
-	<1394250953.6972.16.camel@joe-AO722>
-	<CAH4bKb02r2Co08u8nSVOw2eFVCF-5r_bA33B8RGDwW1BLtjoKA@mail.gmail.com>
-Date: Sun, 9 Mar 2014 17:00:04 +0900
-Message-ID: <CAH4bKb0Di7cQoaE5cytcRM4mGLHkHP10oFuOu97cZu_z=gfvmw@mail.gmail.com>
-Subject: Re: [PATCH] mm: Fix Coding style
-From: =?EUC-KR?B?w9YoQ2hvaSmx4r/rKEdpLXlvbmcp?= <yong@gnoy.org>
-To: Joe Perches <joe@perches.com>
-Cc: tj@kernel.org, linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=089e0160b618f0003504f427dfc7
+To: Laszlo Papp <lpapp@kde.org>
+CC: LKML <linux-kernel@vger.kernel.org>, lm-sensors@lm-sensors.org
+Subject: Re: [lm-sensors] Tachometer speed returned rather than absolute fan
+ speed?
+References: <CAOMwXhPXPN+21N11cHBENvw0QZ1qPvo9GTbM9V2SwDmgBQZssw@mail.gmail.com>	<20140307162524.6abd34be@endymion.delvare>	<CAOMwXhOB=1HA57jwKCx3-hU8A_ypjrm0J3R9huO25xa4B_gw8w@mail.gmail.com>	<20140307163717.336873f5@endymion.delvare>	<CAOMwXhPpObWqd1vR3t+ifKd-_ZbnGTm1TNNUakmVAR3CB=pzTg@mail.gmail.com>	<20140307181718.GA1027@roeck-us.net>	<531BACD9.9050206@roeck-us.net> <CAOMwXhNcoe4oWbijJ7s3o-E6k0FtfJSXZM2g=RC3S2FzvX_VdQ@mail.gmail.com>
+In-Reply-To: <CAOMwXhNcoe4oWbijJ7s3o-E6k0FtfJSXZM2g=RC3S2FzvX_VdQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---089e0160b618f0003504f427dfc7
-Content-Type: text/plain; charset=EUC-KR
-Content-Transfer-Encoding: quoted-printable
-
->Please run your suggested patches through checkpatch.
-
-
-> @@ -715,7 +715,7 @@ static void __percpu *pcpu_alloc(size_t size, size_t =
-align, bool reserved)
->
->       if (unlikely(!size || size > PCPU_MIN_UNIT_SIZE || align > PAGE_SIZ=
-E)) {
->               WARN(true, "illegal size (%zu) or align (%zu) for "
-> -                  "percpu allocation\n", size, align);
-> +                             "percpu allocation\n", size, align);
-
->It'd be better to coalesce the format fragments
-
-
-> @@ -968,8 +968,8 @@ bool is_kernel_percpu_address(unsigned long addr)
->               void *start =3D per_cpu_ptr(base, cpu);
->
->               if ((void *)addr >=3D start && (void *)addr < start + stati=
-c_size)
-> -                     return true;
-> -        }
-> +             return true;
-> +       }
-
->Not an improvement.
->Why do you think it's better?
-
-I thought it would be better indent when return operation is fit in there.
-but it wouldn't sorry for my mistake.
-
->> @@ -1929,8 +1929,7 @@ void __init setup_per_cpu_areas(void)
->>   */
->>  void __init percpu_init_late(void)
->>  {
->> -     struct pcpu_chunk *target_chunks[] =3D
->> -             { pcpu_first_chunk, pcpu_reserved_chunk, NULL };
-> +     struct pcpu_chunk *target_chunks[] =3D { pcpu_first_chunk, pcpu_res=
-erved_chunk, NULL };
-
->This exceeds 80 columns.
-
->This would be better as:
-
->      struct pcpu_chunk *target_chunks[] =3D {
->               pcpu_first_chunk, pcpu_reserved_chunk, NULL
->      };
-
->And perhaps this should be static const
-
-I couldn't fix 717 line exceed problem.
-What can i do?
-
-Sorry for my e-mail was rejected by vger.kernel.org server.
-
-
---=20
-
-=C3=D6     =B1=E2=BF=EB
-Choi Gi-yong
-
-2014-03-09 16:55 GMT+09:00 =C3=D6(Choi)=B1=E2=BF=EB(Gi-yong) <yong@gnoy.org=
->:
-> Please run your suggested patches through checkpatch.
->
->
->> @@ -715,7 +715,7 @@ static void __percpu *pcpu_alloc(size_t size, size_t
->> align, bool reserved)
+On 03/08/2014 10:36 PM, Laszlo Papp wrote:
+> On Sat, Mar 8, 2014 at 11:50 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+>> On 03/07/2014 10:17 AM, Guenter Roeck wrote:
+>>>
+>>> On Fri, Mar 07, 2014 at 03:47:08PM +0000, Laszlo Papp wrote:
+>>>>
+>>>> On Fri, Mar 7, 2014 at 3:37 PM, Jean Delvare <jdelvare@suse.de> wrote:
+>>>>>>>
+>>>>>>> I'm quite confused. While I admit that the term "tachometer speed" is
+>>>>>>> awkward, the max6650 driver is reporting fan speeds in RPM as every
+>>>>>>> other hwmon driver. So I really have no idea what you think is wrong.
+>>>>>>> What did you think "tachometer speed" was, if not the fan speed? Does
+>>>>>>> the max6650 driver not return correct fan speeds for you?
+>>>>
+>>>>
+>>>> That is some strange behavior. If I do "echo 1 > pwm1_enable; echo 0 >
+>>>> pwm1; cat fan1_input", I still see 30 for the connected fan, whereas I
+>>>> can see it stopped. Is this an expected behavior? I would expect zero
+>>>> as a user.
+>>>>
+>>> I seem to recall that I had seen that as well, with no fan connected.
+>>> Maybe the tachometer registers always read at least '1'. I would think
+>>> it is wrong, but we'll have to understand the chip a bit better
+>>> to be able to provide a fix. Unless you already have a fix ready,
+>>> of course. I'll try to re-test tonight if I find the time.
+>>>
 >>
->>       if (unlikely(!size || size > PCPU_MIN_UNIT_SIZE || align >
->> PAGE_SIZE)) {
->>               WARN(true, "illegal size (%zu) or align (%zu) for "
->> -                  "percpu allocation\n", size, align);
->> +                             "percpu allocation\n", size, align);
->
->>It'd be better to coalesce the format fragments
->
->
->> @@ -968,8 +968,8 @@ bool is_kernel_percpu_address(unsigned long addr)
->>               void *start =3D per_cpu_ptr(base, cpu);
+>> The reason is (most likely) that your fan input does not have a pull-up
+>> resistor. Per datasheet, the fan inputs need a 10kOhm pull-up resistor.
+>> I confirmed this with my test board - with the pull-up resistor,
+>> inputs read 0, Without pull-up, the reported value is 1, which
+>> translates to 30 RPM.
 >>
->>               if ((void *)addr >=3D start && (void *)addr < start +
->> static_size)
->> -                     return true;
->> -        }
->> +             return true;
->> +       }
+>> You might also need the 10 uF capacitor on the FB pin.
 >
->>Not an improvement.
->>Why do you think it's better?
+> Hmm, interesting, but then I wonder how it works fine when getting the
+> data from userspace with ioctl (i.e .without the driver) through
+> /dev/i2c-1. There must be some trick in that case that I am not yet
+> aware of. I will double check the schematics on Monday.
 >
-> I thought it would be better indent when return operation is fit in there=
-.
-> but it wouldn't sorry for my mistake.
->
->>> @@ -1929,8 +1929,7 @@ void __init setup_per_cpu_areas(void)
->>>   */
->>>  void __init percpu_init_late(void)
->>>  {
->>> -     struct pcpu_chunk *target_chunks[] =3D
->>> -             { pcpu_first_chunk, pcpu_reserved_chunk, NULL };
->> +     struct pcpu_chunk *target_chunks[] =3D { pcpu_first_chunk,
->> pcpu_reserved_chunk, NULL };
->
->>This exceeds 80 columns.
->
->>This would be better as:
->
->>      struct pcpu_chunk *target_chunks[] =3D {
->>               pcpu_first_chunk, pcpu_reserved_chunk, NULL
->>      };
->
->>And perhaps this should be static const
->
-> I couldn't fix 717 line exceed problem.
-> What can i do?
->
->
->
-> --
->
-> =C3=D6     =B1=E2=BF=EB
-> Choi Gi-yong
 
+With i2cdump on my system I can see that the tachometer register
+holds 0 if the resistor is in place, and the sensors command reports
+a fan speed or 0 rpm. If the resistor is not in place, the register
+content is 1 and sensors reports 30 rpm.
 
+sudo i2cdump -y -f 1 0x48
+No size specified (using byte-data access)
+      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f    0123456789abcdef
+00: 00 00 0a 0a ff ff 00 00 00 00 00 00 01 01 00 00    ..??........??..
+10: 01 01 01 01 1f 1f 02 02 91 91 91 91 91 91 91 91    ????????????????
+20: 00 00 0a 0a ff ff 00 00 00 00 00 00 01 01 00 00    ..??........??..
 
---=20
+groeck@desktop:~$ sensors max6651-i2c-1-48
+max6651-i2c-1-48
+Adapter: i2c-diolan-u2c at bus 003 device 002
+fan1:          30 RPM  (div = 4)
+fan2:           0 RPM
+fan3:          30 RPM
+fan4:          30 RPM
 
-=C3=D6     =B1=E2=BF=EB
-Choi Gi-yong
+Only fan2 (TACH1 chip input) has the resistor installed.
 
---089e0160b618f0003504f427dfc7
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="0001-mm-Fixed-coding-style-and-added-static-const-keyword.patch"
-Content-Disposition: attachment; 
-	filename="0001-mm-Fixed-coding-style-and-added-static-const-keyword.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hsk16g6k1
+Guenter
 
-RnJvbSBmYThlNzRlYTY5MTk1OTQxODQxZTIwZDYwNmQ0ODBhOGFkMTNmMTViIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBDaG9pIEdpLXlvbmcgPHlvbmdAZ25veS5vcmc+CkRhdGU6IFN1
-biwgOSBNYXIgMjAxNCAxNjo1MToyOCArMDkwMApTdWJqZWN0OiBbUEFUQ0hdIG1tOiBGaXhlZCBj
-b2Rpbmcgc3R5bGUgYW5kIGFkZGVkIHN0YXRpYyBjb25zdCBrZXl3b3JkcwoKU2lnbmVkLW9mZi1i
-eTogQ2hvaSBHaS15b25nIDx5b25nQGdub3kub3JnPgotLS0KIG1tL3BlcmNwdS5jIHwgMTEgKysr
-KysrLS0tLS0KIDEgZmlsZSBjaGFuZ2VkLCA2IGluc2VydGlvbnMoKyksIDUgZGVsZXRpb25zKC0p
-CgpkaWZmIC0tZ2l0IGEvbW0vcGVyY3B1LmMgYi9tbS9wZXJjcHUuYwppbmRleCBkY2EyODRmLi5m
-ZjZjY2UyIDEwMDY0NAotLS0gYS9tbS9wZXJjcHUuYworKysgYi9tbS9wZXJjcHUuYwpAQCAtNzE0
-LDggKzcxNCw3IEBAIHN0YXRpYyB2b2lkIF9fcGVyY3B1ICpwY3B1X2FsbG9jKHNpemVfdCBzaXpl
-LCBzaXplX3QgYWxpZ24sIGJvb2wgcmVzZXJ2ZWQpCiAJdm9pZCBfX3BlcmNwdSAqcHRyOwogCiAJ
-aWYgKHVubGlrZWx5KCFzaXplIHx8IHNpemUgPiBQQ1BVX01JTl9VTklUX1NJWkUgfHwgYWxpZ24g
-PiBQQUdFX1NJWkUpKSB7Ci0JCVdBUk4odHJ1ZSwgImlsbGVnYWwgc2l6ZSAoJXp1KSBvciBhbGln
-biAoJXp1KSBmb3IgIgotCQkJCSJwZXJjcHUgYWxsb2NhdGlvblxuIiwgc2l6ZSwgYWxpZ24pOwor
-CQlXQVJOKHRydWUsICJpbGxlZ2FsIHNpemUgKCV6dSkgb3IgYWxpZ24gKCV6dSkgZm9yIHBlcmNw
-dSBhbGxvY2F0aW9uXG4iLCBzaXplLCBhbGlnbik7CiAJCXJldHVybiBOVUxMOwogCX0KIApAQCAt
-OTY4LDcgKzk2Nyw3IEBAIGJvb2wgaXNfa2VybmVsX3BlcmNwdV9hZGRyZXNzKHVuc2lnbmVkIGxv
-bmcgYWRkcikKIAkJdm9pZCAqc3RhcnQgPSBwZXJfY3B1X3B0cihiYXNlLCBjcHUpOwogCiAJCWlm
-ICgodm9pZCAqKWFkZHIgPj0gc3RhcnQgJiYgKHZvaWQgKilhZGRyIDwgc3RhcnQgKyBzdGF0aWNf
-c2l6ZSkKLQkJcmV0dXJuIHRydWU7CisJCQlyZXR1cm4gdHJ1ZTsKICAgICAgICB9CiAjZW5kaWYK
-IAkvKiBvbiBVUCwgY2FuJ3QgZGlzdGluZ3Vpc2ggZnJvbSBvdGhlciBzdGF0aWMgdmFycywgYWx3
-YXlzIGZhbHNlICovCkBAIC0xNDgzLDcgKzE0ODIsNyBAQCBzdGF0aWMgc3RydWN0IHBjcHVfYWxs
-b2NfaW5mbyAqIF9faW5pdCBwY3B1X2J1aWxkX2FsbG9jX2luZm8oCiAJLyogZ3JvdXAgY3B1cyBh
-Y2NvcmRpbmcgdG8gdGhlaXIgcHJveGltaXR5ICovCiAJZm9yX2VhY2hfcG9zc2libGVfY3B1KGNw
-dSkgewogCQlncm91cCA9IDA7Ci0JbmV4dF9ncm91cDoKK25leHRfZ3JvdXA6CiAJCWZvcl9lYWNo
-X3Bvc3NpYmxlX2NwdSh0Y3B1KSB7CiAJCQlpZiAoY3B1ID09IHRjcHUpCiAJCQkJYnJlYWs7CkBA
-IC0xOTI5LDcgKzE5MjgsOSBAQCB2b2lkIF9faW5pdCBzZXR1cF9wZXJfY3B1X2FyZWFzKHZvaWQp
-CiAgKi8KIHZvaWQgX19pbml0IHBlcmNwdV9pbml0X2xhdGUodm9pZCkKIHsKLQlzdHJ1Y3QgcGNw
-dV9jaHVuayAqdGFyZ2V0X2NodW5rc1tdID0geyBwY3B1X2ZpcnN0X2NodW5rLCBwY3B1X3Jlc2Vy
-dmVkX2NodW5rLCBOVUxMIH07CisJc3RhdGljIGNvbnN0IHN0cnVjdCBwY3B1X2NodW5rICp0YXJn
-ZXRfY2h1bmtzW10gPSB7CisJCXBjcHVfZmlyc3RfY2h1bmssIHBjcHVfcmVzZXJ2ZWRfY2h1bmss
-IE5VTEwKKwl9OwogCXN0cnVjdCBwY3B1X2NodW5rICpjaHVuazsKIAl1bnNpZ25lZCBsb25nIGZs
-YWdzOwogCWludCBpOwotLSAKMS44LjMuMgoK
---089e0160b618f0003504f427dfc7--
