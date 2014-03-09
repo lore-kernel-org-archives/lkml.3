@@ -1,65 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503AbaCJTQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 15:16:29 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:43434 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753136AbaCJTQ0 (ORCPT
+	id S1753764AbaCJTRV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 15:17:21 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:57922 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752993AbaCJTRT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 15:16:26 -0400
+	Mon, 10 Mar 2014 15:17:19 -0400
+Date: Sun, 9 Mar 2014 00:33:32 -0800
+From: Masood Mehmood <ody.guru@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, lidza.louina@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] staging: dgap: Fixed sparse error: same symbol
+ redeclared with different type
+Message-ID: <20140309083331.GA20515@localhost.localdomain>
+References: <1394349522-20458-1-git-send-email-ody.guru@gmail.com>
+ <20140310183712.GA27534@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <1469359.kil5iaOqdU@wuerfel>
-References: <1394020137-1830-1-git-send-email-Liviu.Dudau@arm.com>
-	<2115856.ZTdgp5fkma@wuerfel>
-	<20140310163343.GY6457@e106497-lin.cambridge.arm.com>
-	<1469359.kil5iaOqdU@wuerfel>
-Date: Mon, 10 Mar 2014 20:16:25 +0100
-X-Google-Sender-Auth: 4e79h_NW-G1WmKoFxDZPXl6U_4c
-Message-ID: <CAMuHMdWzm1D83zquwuQVKwbqRdXmSw7u1ui7iZyC3VGdGhn0HA@mail.gmail.com>
-Subject: Re: [PATCH v6 6/6] pci: Add support for creating a generic
- host_bridge from device tree
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Liviu Dudau <Liviu.Dudau@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140310183712.GA27534@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 7:59 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->> arch/avr32/include/asm/io.h:#define IO_SPACE_LIMIT    0xffffffff
->> arch/frv/include/asm/io.h:#define IO_SPACE_LIMIT      0xffffffff
->
-> They have no MMU, and the code relies on the port number to match
-> both the virtual and the physical address. You could be right about
-> these, but I would guess that the code also needs some other
-> changes if we want to make it work on nommu kernels. It also depends
-> on whether the I/O bus address is the same as the CPU address, or
-> if it starts at bus address 0.
+On Mon, Mar 10, 2014 at 11:37:12AM -0700, Greg KH wrote:
+> On Sat, Mar 08, 2014 at 11:18:42PM -0800, Masood Mehmood wrote:
+> >  1 file changed, 6 insertions(+), 7 deletions(-)
+> 
+> I don't see a patch 1/2 here, did you forget to send it to me?
 
->> arch/m68k/include/asm/io_no.h:#define IO_SPACE_LIMIT 0xffffffff
->
-> This looks like a mistake, it should be smaller
+Patch 1/2 has some unrelated changes. My bad, I forgot to remove it before
+sending. Should I send a new patch or it will work as it is?
 
-io_no.h is for nommu.
-
-Gr{oetje,eeting}s,
-
-                        Geert
+Thanks,
 
 --
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Masood
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
