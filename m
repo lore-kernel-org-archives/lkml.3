@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752349AbaCIUlb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 16:41:31 -0400
-Received: from sauhun.de ([89.238.76.85]:44188 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751327AbaCIUla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 16:41:30 -0400
-Date: Sun, 9 Mar 2014 21:41:25 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Chew Chiau Ee <chiau.ee.chew@intel.com>
-Cc: Jean Delvare <jdelvare@suse.de>, Chew Kean Ho <kean.ho.chew@intel.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c: i801: enable Intel BayTrail SMBUS
-Message-ID: <20140309204125.GC2835@katana>
-References: <1393603436-3494-1-git-send-email-chiau.ee.chew@intel.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gr/z0/N6AeWAPJVB"
-Content-Disposition: inline
-In-Reply-To: <1393603436-3494-1-git-send-email-chiau.ee.chew@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752475AbaCIVlt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 17:41:49 -0400
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:51969 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752140AbaCIVls (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Mar 2014 17:41:48 -0400
+Message-ID: <1394401306.9066.2.camel@x220>
+Subject: [PATCH] [TRIVIAL] ARM: spear: clean up editing mistake
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Viresh Kumar <viresh.kumar@linaro.org>,
+        linux-kernel@vger.kernel.org
+Date: Sun, 09 Mar 2014 22:41:46 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 09 Mar 2014 21:41:46.0798 (UTC) FILETIME=[5EE78CE0:01CF3BE0]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Clean up an obvious editing mistake introduced by commit 4b6effb6ff38
+("ARM: spear: merge Kconfig files").
 
---gr/z0/N6AeWAPJVB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+ arch/arm/mach-spear/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-On Sat, Mar 01, 2014 at 12:03:56AM +0800, Chew Chiau Ee wrote:
-> From: Chew, Kean ho <kean.ho.chew@intel.com>
->=20
-> Add Device ID of Intel BayTrail SMBus Controller.
->=20
-> Signed-off-by: Chew, Kean ho <kean.ho.chew@intel.com>
-> Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
+diff --git a/arch/arm/mach-spear/Kconfig b/arch/arm/mach-spear/Kconfig
+index 1595776..596e990 100644
+--- a/arch/arm/mach-spear/Kconfig
++++ b/arch/arm/mach-spear/Kconfig
+@@ -91,7 +91,7 @@ config MACH_SPEAR600
+ 	depends on ARCH_SPEAR6XX
+ 	select USE_OF
+ 	help
+-	  Supports ST SPEAr600 boards configured via the device-treesource "arch/arm/mach-spear6xx/Kconfig"
++	  Supports ST SPEAr600 boards configured via the device-tree
+ 
+ config ARCH_SPEAR_AUTO
+ 	depends on !ARCH_SPEAR13XX && !ARCH_SPEAR6XX
+-- 
+1.8.5.3
 
-Applied to for-next, thanks!
-
-
---gr/z0/N6AeWAPJVB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTHNH1AAoJEBQN5MwUoCm22owP/RDxRLvQtbpHj6jEffDSHdiy
-tpCNBqyfBoeC8uDm3POwSS3Iszq1epDk5aHGonZxxZyck1zcBrr4pnmfByC3iTpq
-w1vF+Nz/TSNGYYWufYIy/feqzzgg1gtxzENZUUWWflz/rUWitIfX7L5/aznSGOSZ
-OhB1VKHJ9O1gJtyLaGHlhjE4zTpBj5ZtMX2JCbLnJJVtqoBO+qc4xsXYM6MWuRzf
-hLpPrfh4lBM0uZuBO/qAKcW9DL7mGrYcfQL+aN5hRDPrDXRUS73f6AAFZ5BK9qw0
-iE9iIwrvR8A17/4CK50nBZZjTauhOrx0hw6j02Z1mC2je/YXU60DafONTvoggQaW
-ZLfNct8VbnxZlqHI1+/Q+Xg/s9vmW/W4egGu2IlgUoQqffVwfmEKOYjg+arWcd6n
-pC8BoSyJcqG3/KQOKfZGZRhqxVfYBm06Fvz73+JNBudg1Mx73sZnNw9KrY5gG4uq
-pgfcqrz9ELgW4sBv9feZmHMUgV9BtfA4h84v6POFkBjUho4G/TJ7JHAf7HPGqI8P
-coAiTlFmnuM8MGACqD70lhtNI/tpht21IPrmlFBwd+dJXgPOcyWVok2Vfka+fg8g
-uRy0hzZSDsnbRCExVVM5tcMQCSxSPUhGmRUDOV8cgoP+qgFkkw9u5Ywvj7nYU/4a
-ueGNdgfywfU2JrCUgqqj
-=f30Y
------END PGP SIGNATURE-----
-
---gr/z0/N6AeWAPJVB--
