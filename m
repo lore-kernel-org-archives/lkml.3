@@ -1,92 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741AbaCIIP5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 04:15:57 -0400
-Received: from mout.web.de ([212.227.15.4]:58450 "EHLO mout.web.de"
+	id S1752383AbaCIIUz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 04:20:55 -0400
+Received: from sauhun.de ([89.238.76.85]:51896 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752068AbaCIIPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 04:15:47 -0400
-Message-ID: <531C232D.40200@web.de>
-Date: Sun, 09 Mar 2014 09:15:41 +0100
-From: Jan Kiszka <jan.kiszka@web.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1751073AbaCIIUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Mar 2014 04:20:51 -0400
+Date: Sun, 9 Mar 2014 09:20:32 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Romain Baeriswyl <Romain.Baeriswyl@abilis.com>
+Cc: rmallon@gmail.com, mika.westerberg@linux.intel.com,
+        rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
+        swarren@wwwdotorg.org, ijc+devicetree@hellion.org.uk, rob@landley.net,
+        pierrick.hascoet@abilis.com, vgupta@synopsys.com,
+        christian.ruppert@abilis.com, chiau.ee.chew@intel.com,
+        khali@linux-fr.org, rafael.j.wysocki@intel.com,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        romainba@abilis.com
+Subject: Re: [PATCH v2 1/2] i2c designware make SCL and SDA falling time
+ configurable
+Message-ID: <20140309082032.GD2575@katana>
+References: <20140116194303.GC4127@katana>
+ <1390236223-22584-1-git-send-email-romainba@abilis.com>
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org
-CC: kvm@vger.kernel.org, alex.williamson@redhat.com, mtosatti@redhat.com,
-        gleb@kernel.org
-Subject: Re: [PATCH 0/7] KVM: x86: Let the guest write to multiple debug registers
- with one vmexit
-References: <1394192571-11056-1-git-send-email-pbonzini@redhat.com> <531C2238.1060202@web.de>
-In-Reply-To: <531C2238.1060202@web.de>
-X-Enigmail-Version: 1.6
 Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="SbL4WOktpGJsjJ3k7ohtvE6HcQnrVChD7"
-X-Provags-ID: V03:K0:NoM0V5UuwaXr1rmwPSFy8nQkBdggUWYalfuPAZXFb6Wrg/I078Y
- pNLKaV2g1VUqNlBiBa9vNRL50FthGb5aJpuob5knhnaGHV8k8syaiXwXhrhj3fnyyDiGJif
- O54aiDqnJN5yLD7vmsloj9tGIPLkSGY28DRVDq9hL1R0lkIogAQ75593b2g4tjJ3px8y9Jr
- bxG5ovTrStHLKJDmewgHA==
+	protocol="application/pgp-signature"; boundary="yudcn1FV7Hsu/q59"
+Content-Disposition: inline
+In-Reply-To: <1390236223-22584-1-git-send-email-romainba@abilis.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---SbL4WOktpGJsjJ3k7ohtvE6HcQnrVChD7
-Content-Type: text/plain; charset=ISO-8859-15
+
+--yudcn1FV7Hsu/q59
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On 2014-03-09 09:11, Jan Kiszka wrote:
-> On 2014-03-07 12:42, Paolo Bonzini wrote:
->> Alex Williamson reported that a Windows game does something weird that=
-
->> makes the guest save and restore debug registers on each context switc=
-h.
->> This cause several hundred thousands vmexits per second, and basically=
-
->> cuts performance in half when running under KVM.
->>
->> However, when not running in guest-debug mode, the guest controls the
->> debug registers and having to take an exit for each DR access is a was=
-te
->> of time.  We just need one vmexit to load any stale values of DR0-DR6,=
-
->> and then we can let the guest run freely.  On the next vmexit (whateve=
-r
->> the reason) we will read out whatever changes the guest made to the
->> debug registers.
->>
->> Tested with x86/debug.flat on both Intel and AMD, both direct and
->> nested virtualization.
->>
->> Changes from RFC: changed get_dr7 callback to sync_dirty_debug_regs,
->> 	new patches 5-7.
+On Mon, Jan 20, 2014 at 05:43:43PM +0100, Romain Baeriswyl wrote:
+> This patch allows to set independantly SCL and SDA falling times.
+> The tLOW period is computed by taking into account the SCL falling time.
+> The tHIGH period is computed by taking into account the SDA falling time.
 >=20
-> This looks good now to me from KVM perspective. I was just wondering ho=
-w
-> the case is handled that the host used debug registers on the thread th=
-e
-> runs a VCPU? What if I set a hw breakpoint on its userspace path e.g.?
-> What if I debug the kernel side with kgdb?
+> For instance in case the margin on tLOW is considered too small, it can
+> be increased by increasing the SCL falling time which is by default set
+> at 300ns.
+>=20
+> The same applies for tHIGH period with the help of SDA falling time.
+>=20
+> Signed-off-by: Romain Baeriswyl <romainba@abilis.com>
+> Reviewed-by: Christian Ruppert <christian.ruppert@abilis.com>
 
-Ah, this part didn't change, we still switch between host and guest
-state on vmentries/exits. All fine!
-
-Jan
-
+Applied to for-next, thanks!
 
 
---SbL4WOktpGJsjJ3k7ohtvE6HcQnrVChD7
+--yudcn1FV7Hsu/q59
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Version: GnuPG v1.4.15 (GNU/Linux)
 
-iEYEARECAAYFAlMcIy0ACgkQitSsb3rl5xQpoACaAx2oAMVCz2vgzi8BcYnXdtcW
-Nn0AoNKKfA4p5lRFuvFtqZTTZvf07Yk3
-=G1ux
+iQIcBAEBAgAGBQJTHCRQAAoJEBQN5MwUoCm2FJUP/17E0J+WUwcZkB4MWPXkGE/e
+rs4EgmrjtGNIm52Xfvu/UYXe79t4i7ySxrPW5gz1VoBzGXg937i4BG8Piva+b7Z9
+OFE59Nh4KpCEdBLyi8Wu/FfoCmDAwULK4qIk6fo1ofrAlA2KuAgSdSSXjY+y5MWL
+S2tmBGmXcsBERbIYobcY9fAapbzE6f8TNutG5zARJOliievWjB21AW8lK2mxFKla
+isoHEJQMPu/EnqvhCcDK2RfjmelrJyAZvulOkIicYeVY113vIn0QA+UBRiSQ0It0
+I2bdlhGvuIzDlPRZAfcesCFQxPs1eXN7BzbsY2dFNJgJSf+CUB7EMQ7sx/OJ6GuW
+ynU+mkwfLV8nNCOyVar5IH2VNMY4L+IBbmoE7ULKtLig4UNheFnZ8AKxEiIEYD5c
+5OnlCCfxC8F9iKRrKGM8ttgM/V2tuP4GQWhMUttrLxh5KbS0jnpF4VJnPK7mXDUa
+uF4Mcs+Bz09lj3FGl8MWAXyF/o4NdFHpZftwzL1i2yil5/jMFjILSA/UtL19JQWQ
+Ka+dLf+yhEkY5zwUZ2kQU6vVekO4Zk1YVcKFc4tfIEQWznz35MnVAgo7vmjc2Y7K
+89R2MM9b9C9waWgGNFZA+Dn3CiqHDV6ceYF6plp9DY7cD3fzKU7orE3oBqMFlyp0
+omYfG2va9Sb1GM4sL3Xi
+=iloF
 -----END PGP SIGNATURE-----
 
---SbL4WOktpGJsjJ3k7ohtvE6HcQnrVChD7--
+--yudcn1FV7Hsu/q59--
