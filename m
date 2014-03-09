@@ -1,113 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752698AbaCIQXB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 12:23:01 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:54867 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752435AbaCIQW7 (ORCPT
+	id S1752758AbaCIQYd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 12:24:33 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:60266 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752435AbaCIQYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 12:22:59 -0400
-Message-ID: <1394382175.3819.1.camel@leira.trondhjem.org>
-Subject: [GIT PULL] Please pull NFS client updates
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-To: Torvalds Linus <torvalds@linux-foundation.org>
-Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
-Date: Sun, 09 Mar 2014 12:22:55 -0400
-Organization: PrimaryData Inc
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-96HpFPN4lUghX8RLJPzl"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
+	Sun, 9 Mar 2014 12:24:31 -0400
+Message-ID: <531C95BE.1070306@infradead.org>
+Date: Sun, 09 Mar 2014 09:24:30 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Suggestion] Makefile: about allmodconfig issue.
+References: <531B1603.6080106@gmail.com> <531B3178.8000804@infradead.org> <531B8F2C.8080302@gmail.com> <531B9281.1080500@infradead.org> <531C8269.4010105@gmail.com>
+In-Reply-To: <531C8269.4010105@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/09/2014 08:02 AM, Chen Gang wrote:
+> On 03/09/2014 05:58 AM, Randy Dunlap wrote:
+>> On 03/08/2014 01:44 PM, Chen Gang wrote:
+>>> On 03/08/2014 11:04 PM, Randy Dunlap wrote:
+>>>> On 03/08/2014 05:07 AM, Chen Gang wrote:
+>>> [...]
+>>>>> Welcome any suggestions, discussions and completions.
+>>>>>
+>>>>> Thanks.
+>>>>>
+>>>>
+>>>> A patch has already been submitted and applied by the subsystem maintainer.
+>>>>
+>>>> http://marc.info/?l=linux-gpio&m=139413626320431&w=2
+>>>>
+>>>>
+>>>
+>>> OK, Thanks.  And excuse me, I can not connect to this web site in China.
+>>>
+>>> Could you please past the patch contents in the reply mail? (or just let
+>>> me know whether it is "make allmodconfig" issue, or only gpio driver's
+>>> issue)
+>>>
+>>>
+>>> Thanks.
+>>
+>> It's a gpio driver Kconfig patch -- not an allmodconfig issue.
+>>
+> 
+> Can we say that the 'select' priority is higher or equal than 'depends
+> on'?  If we really can say so, we need change our gpio driver.
 
---=-96HpFPN4lUghX8RLJPzl
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+what driver is "our gpio driver"?
 
-Hi Linus,
+Documentation/kbuild/kconfig-language.txt does not talk about priorities
+of depends or select.
 
-The following changes since commit 146d70caaa1b87f64597743429d7da4b8073d0c9=
-:
+> Else ('depends on' priority is higher than 'select')
+> 
+>  - some architectures can choose whether support IRQ_DOMAIN.
+> 
+>  - if IRQ_DOMAIN enabled, our gpio driver can be used, and then select
+>    GENERIC_IRQ_CHIP (need not consider about it selects IRQ_DOMAIN).
+> 
+>  - else (IRQ_DOMAIN_disabled), we can not use our gpio driver, and also
+>    can not select GENERIC_IRQ_CHIP (need not consider about it selects
+>    IRQ_DOMAIN, either).
+> 
+> Excuse me, I am not quite familiar with Kconfig grammar, can any members
+> give a confirmation for it (whether 'select' priority is higher or equal
+> than 'depends on').
 
-  NFS fix error return in nfs4_select_rw_stateid (2014-02-19 09:31:56 -0500=
-)
-
-are available in the git repository at:
-
-  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.14-=
-5
-
-for you to fetch changes up to 2ca310fc4160ed0420da65534a21ae77b24326a8:
-
-  SUNRPC: Fix oops when trace sunrpc_task events in nfs client (2014-03-07 =
-19:10:08 -0500)
-
-----------------------------------------------------------------
-NFS client bugfixes for Linux 3.14
-
-Highlights include:
-
-- Fix another nfs4_sequence corruptor in RELEASE_LOCKOWNER
-- Fix an Oopsable delegation callback race
-- Fix another bad stateid infinite loop
-- Fail the data server I/O is the stateid represents a lost lock
-- Fix an Oopsable sunrpc trace event
-
-----------------------------------------------------------------
-Andy Adamson (1):
-      NFSv4.1 Fail data server I/O if stateid represents a lost lock
-
-Ditang Chen (1):
-      SUNRPC: Fix oops when trace sunrpc_task events in nfs client
-
-Trond Myklebust (5):
-      NFSv4: Fix another nfs4_sequence corruptor
-      NFS: Fix a delegation callback race
-      NFSv4: nfs4_stateid_is_current should return 'true' for an invalid st=
-ateid
-      NFSv4: Fix the return value of nfs4_select_rw_stateid
-      NFSv4: Fail the truncate() if the lock/open stateid is invalid
-
- fs/nfs/delegation.c           | 11 +++++++----
- fs/nfs/nfs4filelayout.c       | 10 ++++++----
- fs/nfs/nfs4proc.c             | 24 ++++++++++++++----------
- fs/nfs/nfs4state.c            | 14 +++-----------
- include/linux/nfs_xdr.h       |  5 +++++
- include/trace/events/sunrpc.h |  4 ++--
- 6 files changed, 37 insertions(+), 31 deletions(-)
-
---=20
-Trond Myklebust
-Linux NFS client maintainer, PrimaryData
-trond.myklebust@primarydata.com
+Sorry, I don't really understand the problem that you are trying to solve.
+Maybe you could back up and explain the underlying problem... ?
 
 
---=-96HpFPN4lUghX8RLJPzl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAABAgAGBQJTHJVfAAoJEGcL54qWCgDy82oP/Akmv45Oz57LwaVUesYsTG6O
-Cli6qsZoSbTWn9xIZsuNQYzgoRgt2wUsW+6b9yv5vtzzks3RQ7BR+Jru60eG78+r
-jfZYN2tk8LSrtlnAZfd7uEz9JDa6+WAKcSksjhYrS9rYMj+UkzYDqlbln1pXEoJx
-NqGa+vkpfPfOuOyxbIZQ4IfWEBhRUMpKdqJaZk6eYaYP3jz0Lux47dozEHL/jFrd
-om1ix/jL5nCKfLAPLCQUSqvYG2To/cExLzQfgYQoMuxi3+BziMNHhPaGxelTDwnY
-T5qjcK07O3ZsN9UhhDecMRGtHQ7m9K9D2b4I3gsGa6WI/4t7crjCACevUEo8bvc7
-0742nQx8o7cO8sOa+cLbXboBr1XSS+/7QpFCghI7YkDz8JYEWHWjttfGtGMRNp9p
-dzVIkVRxv6FPKwjCYEP5Z0OLiEM1ZtTxmfRGTMrXIDBE6i0+h2S2NVaz2+KBNvlr
-qgwjs0JH0aTOYJIJRQU/g16dUOmDze5XDW9PCaBg1bwUNxCrNCIoxhM07yFSngZB
-ZMztSRooOFfrKiy6O/neXwDZAiuv/+Y7MWVdapTXle5mePQvYD8VYmLlIF0llQ+W
-O5D26xGfAmkjy+nk7ROVat88f1rbwPOnozahLBpQ5WehNbjgwyIke2o/xvCAWr75
-2n+sdEDf/GJchyT6c748
-=k1NE
------END PGP SIGNATURE-----
-
---=-96HpFPN4lUghX8RLJPzl--
-
+-- 
+~Randy
