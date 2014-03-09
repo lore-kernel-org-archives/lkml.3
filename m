@@ -1,157 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752656AbaCIRqJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 13:46:09 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:38483 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751914AbaCIRqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 13:46:07 -0400
-Message-ID: <531CA8CA.6090405@ti.com>
-Date: Sun, 9 Mar 2014 23:15:46 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1752186AbaCIRtJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 13:49:09 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:50589 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751329AbaCIRtI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Mar 2014 13:49:08 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, matthew.garrett@nebula.com,
+        rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com
+Subject: Re: [RFC PATCH 6/8] ACPI: use platform bus as the default bus for _HID enumeration
+Date: Sun, 09 Mar 2014 19:04:23 +0100
+Message-ID: <6354388.qLqPjcP6yZ@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1394380237.9269.31.camel@rzhang1-mobl4>
+References: <1393405874-3266-1-git-send-email-rui.zhang@intel.com> <1393405874-3266-7-git-send-email-rui.zhang@intel.com> <1394380237.9269.31.camel@rzhang1-mobl4>
 MIME-Version: 1.0
-To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: <KISHON@ti.com>
-Subject: [GIT PULL] PHY for 3.15
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Sunday, March 09, 2014 11:50:37 PM Zhang Rui wrote:
+> On Wed, 2014-02-26 at 17:11 +0800, Zhang Rui wrote:
+> > Because of the growing demand for enumerating ACPI devices to platform bus,
+> > this patch changes the code to enumerate ACPI devices with _HID/_CID to
+> > platform bus by default, unless the device already has a scan handler attached.
+> > 
+> > Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+> > ---
+> >  drivers/acpi/acpi_platform.c |   28 ----------------------------
+> >  drivers/acpi/scan.c          |   12 ++++++------
+> >  2 files changed, 6 insertions(+), 34 deletions(-)
+> > 
+> > diff --git a/drivers/acpi/acpi_platform.c b/drivers/acpi/acpi_platform.c
+> > index dbfe49e..33376a9 100644
+> > --- a/drivers/acpi/acpi_platform.c
+> > +++ b/drivers/acpi/acpi_platform.c
+> > @@ -22,24 +22,6 @@
+> >  
+> >  ACPI_MODULE_NAME("platform");
+> >  
+> > -/*
+> > - * The following ACPI IDs are known to be suitable for representing as
+> > - * platform devices.
+> > - */
+> > -static const struct acpi_device_id acpi_platform_device_ids[] = {
+> > -
+> > -	{ "PNP0D40" },
+> > -	{ "ACPI0003" },
+> > -	{ "VPC2004" },
+> > -	{ "BCM4752" },
+> > -
+> > -	/* Intel Smart Sound Technology */
+> > -	{ "INT33C8" },
+> > -	{ "80860F28" },
+> > -
+> > -	{ }
+> > -};
+> > -
+> >  /**
+> >   * acpi_create_platform_device - Create platform device for ACPI device node
+> >   * @adev: ACPI device node to create a platform device for.
+> > @@ -125,13 +107,3 @@ int acpi_create_platform_device(struct acpi_device *adev,
+> >  	kfree(resources);
+> >  	return 1;
+> >  }
+> > -
+> > -static struct acpi_scan_handler platform_handler = {
+> > -	.ids = acpi_platform_device_ids,
+> > -	.attach = acpi_create_platform_device,
+> > -};
+> > -
+> > -void __init acpi_platform_init(void)
+> > -{
+> > -	acpi_scan_add_handler(&platform_handler);
+> > -}
+> > diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> > index 5967338..61af32e 100644
+> > --- a/drivers/acpi/scan.c
+> > +++ b/drivers/acpi/scan.c
+> > @@ -2022,14 +2022,15 @@ static int acpi_scan_attach_handler(struct acpi_device *device)
+> >  		handler = acpi_scan_match_handler(hwid->id, &devid);
+> >  		if (handler) {
+> >  			ret = handler->attach(device, devid);
+> > -			if (ret > 0) {
+> > +			if (ret > 0)
+> >  				device->handler = handler;
+> > -				break;
+> > -			} else if (ret < 0) {
+> > -				break;
+> > -			}
+> > +			if (ret)
+> > +				goto end;
+> >  		}
+> >  	}
+> > +end:
+> > +	if (!list_empty(&device->pnp.ids) && !device->handler)
+> > +		acpi_create_platform_device(device, NULL);
+> 
+> I just found a big problem in this proposal, which affects all the
+> optional scan handlers.
 
-Pls find the updated PULL request.
+What do you mean by "optional"?  Such that can be compiled out?
 
-It contains new PHY drivers (SATA, USB) adapted to generic PHY framework 
-for a couple of platforms and a bunch of cleanups and fixes. The 
-Documentation problem with the old PULL request has been fixed in this.
+> The problem is that, if we disable a scan handler, platform device nodes
+> would be created instead by the code above, because there is no scan
+> handler attached for those ACPI nodes.
 
-Pls let me know If I have to make any other changes.
+If "we disable a scan handled" means "we compile it out", I'm not sure
+why creating platform devices for the device objects in question will
+be incorrect?
 
-Thanks
-Kishon
+Rafael
 
-The following changes since commit cfbf8d4857c26a8a307fb7cd258074c9dcd8c691:
-
-   Linux 3.14-rc4 (2014-02-23 17:40:03 -0800)
-
-are available in the git repository at:
-
-   git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git 
-tags/for_3.15
-
-for you to fetch changes up to 88e670fe9d240c751fd9735ae3ee2906ed68e63d:
-
-   PHY: add APM X-Gene SoC 15Gbps Multi-purpose PHY driver (2014-03-09 
-12:45:13 +0530)
-
-----------------------------------------------------------------
-Add new PHY drivers for SATA and USB in exynos, for USB in sunxi,
-and a multi-purpose PHY in APM, all adapted to generic PHY framework.
-Adapted USB3 PHY driver in OMAP to generic PHY driver and also used
-the same driver for SATA in OMAP. It also includes miscellaneous cleanups
-and fixes.
-
-----------------------------------------------------------------
-Austin Beam (1):
-       phy: omap-usb2: Provide workaround for USB2PHY false disconnect
-
-George Cherian (2):
-       phy: omap-usb2: Adapt phy-omap-usb2 for AM437x
-       phy: omap-usb2: Add different compatible for OMAP5
-
-Hans de Goede (1):
-       PHY: sunxi: Add driver for sunxi usb phy
-
-Kamil Debski (4):
-       phy: core: Add an exported of_phy_get function
-       phy: core: Add devm_of_phy_get to phy-core
-       phy: Add new Exynos USB 2.0 PHY driver
-       phy: Add Exynos 5250 support to the Exynos USB 2.0 PHY driver
-
-Kishon Vijay Abraham I (4):
-       drivers: phy: usb3/pipe3: Adapt pipe3 driver to Generic PHY Framework
-       usb: phy: omap-usb2: remove *set_suspend* callback from omap-usb2
-       phy: omap-usb2: move omap_usb.h from linux/usb/ to linux/phy/
-       phy: rename struct omap_control_usb to struct omap_control_phy
-
-Loc Ho (2):
-       Documentation: Add APM X-Gene SoC 15Gbps Multi-purpose PHY driver 
-binding documentation
-       PHY: add APM X-Gene SoC 15Gbps Multi-purpose PHY driver
-
-Roger Quadros (7):
-       phy: omap-control: update dra7 and am437 usb2 bindings
-       phy: ti-pipe3: cleanup clock handling
-       phy: ti-pipe3: Add SATA DPLL support
-       phy: ti-pipe3: Don't get 'wkupclk' and 'refclk' for SATA PHY
-       phy: ti-pipe3: streamline PHY operations
-       phy: ti-pipe3: Fix suspend/resume and module reload
-       phy: omap: Depend on OMAP_OCP2SCP bus driver
-
-Sachin Kamat (3):
-       usb: phy: twl4030-usb: Silence checkpatch warnings
-       usb: phy: twl4030-usb: Remove redundant semicolon
-       usb: phy: bcm-kona-usb2: Use PTR_ERR_OR_ZERO
-
-Sebastian Hesselbarth (1):
-       phy: mvebu-sata: prepare new Dove DT Kconfig variable
-
-Sylwester Nawrocki (2):
-       phy: Select PHY_EXYNOS_MIPI_VIDEO by default for ARCH_EXYNOS
-       phy: Select PHY_EXYNOS_DP_VIDEO by default for ARCH_EXYNOS
-
-Yuvaraj Kumar C D (1):
-       PHY: Exynos: Add Exynos5250 SATA PHY driver
-
-  .../devicetree/bindings/phy/apm-xgene-phy.txt      |   79 +
-  .../devicetree/bindings/phy/samsung-phy.txt        |   54 +
-  .../devicetree/bindings/phy/sun4i-usb-phy.txt      |   26 +
-  Documentation/phy/samsung-usb2.txt                 |  135 ++
-  drivers/phy/Kconfig                                |  107 +-
-  drivers/phy/Makefile                               |    9 +
-  drivers/phy/phy-bcm-kona-usb2.c                    |    4 +-
-  drivers/phy/phy-core.c                             |   76 +-
-  drivers/phy/phy-exynos4210-usb2.c                  |  261 +++
-  drivers/phy/phy-exynos4x12-usb2.c                  |  328 ++++
-  drivers/phy/phy-exynos5250-sata.c                  |  251 +++
-  drivers/phy/phy-exynos5250-usb2.c                  |  404 +++++
-  drivers/{usb => }/phy/phy-omap-control.c           |  169 +-
-  drivers/phy/phy-omap-usb2.c                        |  131 +-
-  drivers/phy/phy-samsung-usb2.c                     |  228 +++
-  drivers/phy/phy-samsung-usb2.h                     |   67 +
-  drivers/phy/phy-sun4i-usb.c                        |  331 ++++
-  drivers/phy/phy-ti-pipe3.c                         |  470 ++++++
-  drivers/phy/phy-twl4030-usb.c                      |    6 +-
-  drivers/phy/phy-xgene.c                            | 1750 
-++++++++++++++++++++
-  drivers/usb/musb/omap2430.c                        |    2 +-
-  drivers/usb/phy/Kconfig                            |   21 -
-  drivers/usb/phy/Makefile                           |    2 -
-  drivers/usb/phy/phy-omap-usb3.c                    |  361 ----
-  drivers/usb/phy/phy-twl6030-usb.c                  |    2 +-
-  .../omap_control_usb.h => phy/omap_control_phy.h}  |   36 +-
-  include/linux/{usb => phy}/omap_usb.h              |   14 +-
-  include/linux/phy/phy.h                            |   15 +
-  28 files changed, 4792 insertions(+), 547 deletions(-)
-  create mode 100644 Documentation/devicetree/bindings/phy/apm-xgene-phy.txt
-  create mode 100644 Documentation/devicetree/bindings/phy/sun4i-usb-phy.txt
-  create mode 100644 Documentation/phy/samsung-usb2.txt
-  create mode 100644 drivers/phy/phy-exynos4210-usb2.c
-  create mode 100644 drivers/phy/phy-exynos4x12-usb2.c
-  create mode 100644 drivers/phy/phy-exynos5250-sata.c
-  create mode 100644 drivers/phy/phy-exynos5250-usb2.c
-  rename drivers/{usb => }/phy/phy-omap-control.c (53%)
-  create mode 100644 drivers/phy/phy-samsung-usb2.c
-  create mode 100644 drivers/phy/phy-samsung-usb2.h
-  create mode 100644 drivers/phy/phy-sun4i-usb.c
-  create mode 100644 drivers/phy/phy-ti-pipe3.c
-  create mode 100644 drivers/phy/phy-xgene.c
-  delete mode 100644 drivers/usb/phy/phy-omap-usb3.c
-  rename include/linux/{usb/omap_control_usb.h => 
-phy/omap_control_phy.h} (68%)
-  rename include/linux/{usb => phy}/omap_usb.h (86%)
