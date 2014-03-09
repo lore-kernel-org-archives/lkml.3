@@ -1,31 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752614AbaCIIoL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 04:44:11 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55950 "EHLO
+	id S1752689AbaCIIqh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 04:46:37 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55967 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751938AbaCIIoG (ORCPT
+	with ESMTP id S1752334AbaCIIqd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 04:44:06 -0400
-Date: Sun, 9 Mar 2014 08:43:59 +0000
+	Sun, 9 Mar 2014 04:46:33 -0400
+Date: Sun, 9 Mar 2014 08:46:12 +0000
 From: Mark Brown <broonie@kernel.org>
-To: GIRISH K S <ks.giri@samsung.com>
-Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <20140309084359.GT28112@sirena.org.uk>
-References: <6F.EF.24278.6C999135@epcpsbgx4.samsung.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Balaji T K <balajitk@ti.com>, Chris Ball <chris@printf.net>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Florian Vaussard <florian.vaussard@epfl.ch>, Stefan Roese <sr@denx.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc@vger.kernel.org
+Message-ID: <20140309084612.GV28112@sirena.org.uk>
+References: <1394111433.21007.2.camel@phoenix>
+ <5319E4E9.5010207@ti.com>
+ <CAFRkauACGODncvyPs0nNC+pkr4f55Xrhgn1hmAJbKHB+GoaVWA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rK9cUJk4ANtwQkTL"
+	protocol="application/pgp-signature"; boundary="SSL0Wx1ZzjCczihW"
 Content-Disposition: inline
-In-Reply-To: <6F.EF.24278.6C999135@epcpsbgx4.samsung.com>
+In-Reply-To: <CAFRkauACGODncvyPs0nNC+pkr4f55Xrhgn1hmAJbKHB+GoaVWA@mail.gmail.com>
 X-Cookie: Oh no, not again.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 94.175.89.236
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: Re: [PATCH] spi/s3c64xx: Update DT binding documentation to
- match code
+Subject: Re: [PATCH RFT] regulator: pbias: Convert to use regmap helper
+ functions
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -33,37 +37,44 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---rK9cUJk4ANtwQkTL
+--SSL0Wx1ZzjCczihW
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Fri, Mar 07, 2014 at 10:04:54AM +0000, GIRISH K S wrote:
-> <HTML><HEAD><TITLE>Samsung Enterprise Portal mySingle</TITLE>
-> <META content="text/html; charset=windows-1252" http-equiv=Content-Type>
-> <STYLE id=mysingle_style type=text/css>P {
+On Fri, Mar 07, 2014 at 11:57:03PM +0800, Axel Lin wrote:
+> 2014-03-07 23:25 GMT+08:00 Balaji T K <balajitk@ti.com>:
 
-Please fix your mailer to send text mails, this is illegible.
+> > The intention was to set vmode to 0 for any voltage request lesser than
+> > 1.8V.
 
---rK9cUJk4ANtwQkTL
+> This statement sounds wrong to me.
+> For example, If the request voltage range is 1.0V ~ 1.5V.
+> We should return error rather than set the voltage to 1.8V (which may
+> damage the device).
+
+Yes, that's the expected behaviour - the selected voltage still needs to
+be within spec.
+
+--SSL0Wx1ZzjCczihW
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTHCnMAAoJELSic+t+oim9jIMP/3R5WNQwpZQGYt7L0eNpAfuk
-q/9aQAPfdGHy5Zya9/1ElERpUGwhaGLItsUGl6rswT3TSczjmVaBljc6Yeyt3pGL
-zB8KaV7KRBcZmkoL3n6M2oOLSqPEjFmfvzSx0TCLynhhXFqTPWMKK2RwdpXf638b
-dr1h6zoRAxyLyhD74kiG+kCrPQ6XZ8mZQrHIfgzVJARVe7DXCPa7iNEkdaasGc2x
-P8QW9a9m53sVpxaP26i9ZsKqsIOnGVMRFnj9ALpzjynKiHqVClP3SSP+eV/fw/JO
-o9TQTxpeYUQqPmGA8NB6SRPFz4kBQN3DmIBoRGOlxfdABW8h+5YjHOpZI8MBcIFz
-lLa2wdcBCCHu3u3c63PMmMGy6ysYKDhp10Xm4MSt79GzhHX82wtU+FJIQcJzG4jB
-LHHsVT/2NaknoxbSUysWn8IL2CwMb6OjPDgRtJOA4rs+NiAKwGdj7FcnSX6Zo3Zk
-gzvs78ney/PisstrgzeTV6i1iC7bLBKHXScSC6i7cVJJzKI5GCYAGJ3nnb6z3ifF
-VeVoPw9hB4/63RfiGIlxu6E07cIGAE8MTnFR/ZXADoricEmxTQRCXPyS5Qa6814F
-CNZLQB24mFFcyNgCBHl2HBrqCoClJLusYW4sq/W23YhN0bvBlhlDJhjwaSI1RpBg
-TcHWOQ1DmdLWuDXdvy/T
-=VwDU
+iQIcBAEBAgAGBQJTHCpRAAoJELSic+t+oim9Gy0P/2BT85rO87tbZzVJWZA//Z1u
+vUADvZ9F6+Ev87CMIRg8Rmp/JOFp5jgDIbvbcKYH2GO0FaVLOFixurkpyLw4mJRx
+sPHFvJa+QFRyl9IlgAm9PDoK9OwZKG5jBTcgFNYOXO0+ABCxG59ClpmKFHfDQMrf
+uDKgC9FpG4pHqzJal9E3l1fZKjDqUGnUgVnGdT7nVtQtchZV35Fa0cA5iOWOxalP
+YWcZ6koj9W5KEpyJg1kOBtlmyepkeYnBND13DEtNR5a4IqIyfP84zIPkIgHZsrZR
+yLtv+BlqSJY0n7W1PRuOwjXv0NQgd8afP52clziz/ykcjzSoZMYiwafTxXnnNsxR
+HA5VG0zMmt9mabC0pjPcMpcaLCaqUtjF6r0Ls3bMcAVa8F5JjzD3mjqA8P5fCKJd
+ajKyrWxd6k7Ab5Iji1YJl5cpsz6/I0LwWeiQ5DU0lp4jciDkaDktGFkHXwwf+4fd
+NnLpASO3ZVkfq+f5e3NaGAfJlEJor+mdKmZ3EfmV9soFIFpSZaRk0HU+HBK70O15
+ENOsxWoX4shdlIZuvX5Fpx5Uu76vPuZINQMTRT76pTx0wHEREfLKr3L2Mo2mBAnI
+vu2ftQPuN6jYsGsE2AiYTk6Z68+Q8x4xi+Y0UW9Vl4ucc/xY+WGuzq8kowAul/oI
+3nbW8eA8tUiOl4KW0q83
+=jJfK
 -----END PGP SIGNATURE-----
 
---rK9cUJk4ANtwQkTL--
+--SSL0Wx1ZzjCczihW--
