@@ -1,82 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752315AbaCILzj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 07:55:39 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38192 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752105AbaCILzh (ORCPT
+	id S1752340AbaCIMOs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 08:14:48 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:44139 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752015AbaCIMOq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 07:55:37 -0400
-Date: Sun, 9 Mar 2014 11:55:14 +0000
+	Sun, 9 Mar 2014 08:14:46 -0400
+Date: Sun, 9 Mar 2014 12:14:39 +0000
 From: Mark Brown <broonie@kernel.org>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
+To: Stephen Warren <swarren@wwwdotorg.org>, Rob Herring <robh@kernel.org>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20140309115514.GY28112@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OMSrUQY9bOlYDMmd"
-Content-Disposition: inline
-X-Cookie: Oh no, not again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <20140309121439.7da8f5ac65985cebdbf19f05@kernel.org>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Sun__9_Mar_2014_12_14_39_+0000_Xos3G7sOXw8QUuRr"
 X-SA-Exim-Connect-IP: 94.175.89.236
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: linux-next: build failure after merge of the arm-soc tree
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+X-SA-Exim-Mail-From: broonie@kernel.org
+Subject: linux-next: manual merge of the bcm2835 tree with the arm-soc tree
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---OMSrUQY9bOlYDMmd
-Content-Type: text/plain; charset=us-ascii
+--Signature=_Sun__9_Mar_2014_12_14_39_+0000_Xos3G7sOXw8QUuRr
+Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hi all,
+Hi Stephen/Rob,
 
-After merging the arm-soc tree, today's linux-next build (20140309)
-failed for arm64 defconfig like this:
+Today's linux-next merge of the bcm2835 tree got a conflict in  between com=
+mit  ddb902cc34593ecb ("ARM: centralize common multi-platform kconfig optio=
+ns") from the arm-soc tree and commit d30fe6272183f3cc8b ("ARM: bcm2835: Mo=
+ve to mach-bcm directory") from the bcm2835 tree. Commit 0676b21fffd17baeff=
+589 ("ARM: bcm2835: enable V6K instead of plain V6") also collided.
 
-/home/broonie/next/next/drivers/irqchip/irq-gic.c: In function 'gic_raise_softirq':
-/home/broonie/next/next/drivers/irqchip/irq-gic.c:666:2: error: implicit declaration of function 'dmb' [-Werror=implicit-function-declaration]
-  dmb(ishst);
-  ^
-/home/broonie/next/next/drivers/irqchip/irq-gic.c:666:6: error: 'ishst' undeclared (first use in this function)
-  dmb(ishst);
-      ^
-/home/broonie/next/next/drivers/irqchip/irq-gic.c:666:6: note: each undeclared identifier is reported only once for each function it appears
-in
-cc1: some warnings being treated as errors
-make[3]: *** [drivers/irqchip/irq-gic.o] Error 1
+I've fixed up as below and can carry:
 
-This is due to 8adbf57fc4294 (irqchip: gic: use dmb ishst instead of dsb
-when raising a softirq) and has been going on for several builds now but
-Stephen hasn't been including this build in his per-merge testing.  I've
-abandoned arm64 testing since a simple revert causes problems for arm.
+diff --cc arch/arm/mach-bcm/Kconfig
+index af4f2dfda40c,4e466e9eef44..7de3282a8613
+--- a/arch/arm/mach-bcm/Kconfig
++++ b/arch/arm/mach-bcm/Kconfig
+@@@ -27,6 -32,22 +27,18 @@@ config ARCH_BCM_MOBIL
+  	  BCM11130, BCM11140, BCM11351, BCM28145 and
+  	  BCM28155 variants.
+ =20
++ config ARCH_BCM2835
++ 	bool "Broadcom BCM2835 family" if ARCH_MULTI_V6
++ 	select ARCH_REQUIRE_GPIOLIB
++ 	select ARM_AMBA
++ 	select ARM_ERRATA_411920
++ 	select ARM_TIMER_SP804
+ -	select CLKDEV_LOOKUP
+ -	select CLKSRC_OF
+ -	select CPU_V6
+ -	select GENERIC_CLOCKEVENTS
++ 	select PINCTRL
++ 	select PINCTRL_BCM2835
++ 	help
++ 	  This enables support for the Broadcom BCM2835 SoC. This SoC is
++ 	  used in the Raspberry Pi and Roku 2 devices.
++=20
+  endmenu
+ =20
+  endif
 
---OMSrUQY9bOlYDMmd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+--Signature=_Sun__9_Mar_2014_12_14_39_+0000_Xos3G7sOXw8QUuRr
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTHFafAAoJELSic+t+oim9OXkQAIm/71GHMxm+rLJfUB6Y7TVn
-zvKv8a9bzBc6bAw1MKo59FPrdpcKNmWdisrQf646H8yaaBDS+MtjyKCa01HKUNSr
-PLdKocQW46rPjLhmCKGvBKBljYt8gG6Rd3R1DMimwzm4aW4N+M6qFaWlk04zVyU6
-YKXr5Pux8pjcAW2gKC6eZVLl0f2emCmfCQi6g9+O18eUU7Ptx9Guj6rjr3XNS2PU
-bfFJS4Atk0OK/G5KygOBpCvSHnVMYcD6g7ieNJSRC1hsTfmvaHttJfTLt2Ymla2c
-Va8Z/ElOWcaFJBlRoU0J0S5lnY3xo4DH/KrBoDMpzJ8EfHgEHZ9fZz1oDcbNRyqR
-f3gcJTwC4mYh+/NQozjcBzJYVyGwLKgSH7BPQvk5/npHHs7dGE7DhFt8Njj39D0F
-SPjERNwyUSw9WdttlWc1h63wYhu3+NSLiw2rjYUTs/5i/C3KhamVRxIeQbXWfORF
-Mpt7KVjxu5GQUM2H9DpMLZeYFPNjlOoSoBOc/GprsqMX5vQxGI2gxPyIybV5JDPT
-gb7chkultDx8fmET8imP1yKW4ThZ8yophQ5vhf+W7BzREDQF9b+qzijNfbXnnwnY
-LkRxv70l6UpvzVvrfOKriRhvCloABjMyFQxat9wbSQoyZwMoj3xML3jjUBRFCT/Z
-k7wZms+IpcxMUtPnxWUy
-=NdNk
+iQIcBAEBAgAGBQJTHFsvAAoJELSic+t+oim9OHQP/2wgqZcVqdWTG0hSMg6AFPf8
+A6qETCTup5i9qIpKvvWxldKqaSUbVRGOn/UJRwydXeno3rnQcvm16gL1vVA+vnQs
+p8YNSEHNmkKDamvUpV/9vQwQ9nZHwZyhj7bFtmgQ0hKNIc4I/R9EJdSFx8RLY0Nh
+7+GKPuKY0dpVF5yJCu3ywA8nyst347aYRO7ueel3QmH4N+YzAf8QVltXwjIkFbJ2
+tACSXlGneQy4tACZOcczWN8A66FJXLZK3sauGtUFOSAtdhYQFx8ziiiAPvb55Ukc
+6NoDXx1jq2zcjB3t8IjxmQnYMbwACeUwZa2ABbYy9qeTiRGoqNtQiosAv5nFx02X
+iIKJCWXbauPE+Cvf/m3APKLiU9RKhgr4kXVakyj+azBcyNpm1V0mfv08ohioS50e
+voWRaMyT9a4A8wwEoNebKriHWosp2NE9zajUzHZ5vxVYtJWu3aytbn3GR/AGnS8L
+KGOsusxwuhQZzY2JBEXLOPB/kvoq8dzN1jgXQoa5x9ps1RZVGazMJ5UhZPWDbxn9
+ykJJ9/19KqB9Ey1V1fmVIGkfvO4mjRUMSollEMM0H/IjxNi8Zf0c+gY8vBVNr83t
+Lc2mTmUi3qZYHP1LPdawMrPq2xoTbP3Byqy28eY/fdM18u7r7s3NHG/wWMfcTKS7
+vIA8uchqpcC93E6lNDKs
+=wIE7
 -----END PGP SIGNATURE-----
 
---OMSrUQY9bOlYDMmd--
+--Signature=_Sun__9_Mar_2014_12_14_39_+0000_Xos3G7sOXw8QUuRr--
