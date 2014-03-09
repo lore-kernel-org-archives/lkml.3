@@ -1,93 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752340AbaCIMOs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 08:14:48 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:44139 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752015AbaCIMOq (ORCPT
+	id S1752480AbaCIM35 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 08:29:57 -0400
+Received: from www62.your-server.de ([213.133.104.62]:43255 "EHLO
+	www62.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133AbaCIM3z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 08:14:46 -0400
-Date: Sun, 9 Mar 2014 12:14:39 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Stephen Warren <swarren@wwwdotorg.org>, Rob Herring <robh@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-Id: <20140309121439.7da8f5ac65985cebdbf19f05@kernel.org>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Sun__9_Mar_2014_12_14_39_+0000_Xos3G7sOXw8QUuRr"
-X-SA-Exim-Connect-IP: 94.175.89.236
-X-SA-Exim-Mail-From: broonie@kernel.org
-Subject: linux-next: manual merge of the bcm2835 tree with the arm-soc tree
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Sun, 9 Mar 2014 08:29:55 -0400
+Message-ID: <531C5EB5.2080507@iogearbox.net>
+Date: Sun, 09 Mar 2014 13:29:41 +0100
+From: Daniel Borkmann <borkmann@iogearbox.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Alexei Starovoitov <ast@plumgrid.com>
+CC: "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Hagen Paul Pfeifer <hagen@jauu.net>,
+        Jesse Gross <jesse@nicira.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v7 net-next 1/3] filter: add Extended BPF interpreter
+ and converter
+References: <1394320530-3508-1-git-send-email-ast@plumgrid.com> <1394320530-3508-2-git-send-email-ast@plumgrid.com>
+In-Reply-To: <1394320530-3508-2-git-send-email-ast@plumgrid.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: borkmann@iogearbox.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sun__9_Mar_2014_12_14_39_+0000_Xos3G7sOXw8QUuRr
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 03/09/2014 12:15 AM, Alexei Starovoitov wrote:
+> Extended BPF extends old BPF in the following ways:
+> - from 2 to 10 registers
+>    Original BPF has two registers (A and X) and hidden frame pointer.
+>    Extended BPF has ten registers and read-only frame pointer.
+> - from 32-bit registers to 64-bit registers
+>    semantics of old 32-bit ALU operations are preserved via 32-bit
+>    subregisters
+> - if (cond) jump_true; else jump_false;
+>    old BPF insns are replaced with:
+>    if (cond) jump_true; /* else fallthrough */
+> - adds signed > and >= insns
+> - 16 4-byte stack slots for register spill-fill replaced with
+>    up to 512 bytes of multi-use stack space
+> - introduces bpf_call insn and register passing convention for zero
+>    overhead calls from/to other kernel functions (not part of this patch)
+> - adds arithmetic right shift insn
+> - adds swab32/swab64 insns
+> - adds atomic_add insn
+> - old tax/txa insns are replaced with 'mov dst,src' insn
+>
+> Extended BPF is designed to be JITed with one to one mapping, which
+> allows GCC/LLVM backends to generate optimized BPF code that performs
+> almost as fast as natively compiled code
+>
+> sk_convert_filter() remaps old style insns into extended:
+> 'sock_filter' instructions are remapped on the fly to
+> 'sock_filter_ext' extended instructions when
+> sysctl net.core.bpf_ext_enable=1
+>
+> Old filter comes through sk_attach_filter() or sk_unattached_filter_create()
+>   if (bpf_ext_enable) {
+>      convert to new
+>      sk_chk_filter() - check old bpf
+>      use sk_run_filter_ext() - new interpreter
+>   } else {
+>      sk_chk_filter() - check old bpf
+>      if (bpf_jit_enable)
+>          use old jit
+>      else
+>          use sk_run_filter() - old interpreter
+>   }
+>
+> sk_run_filter_ext() interpreter is noticeably faster
+> than sk_run_filter() for two reasons:
+>
+> 1.fall-through jumps
+>    Old BPF jump instructions are forced to go either 'true' or 'false'
+>    branch which causes branch-miss penalty.
+>    Extended BPF jump instructions have one branch and fall-through,
+>    which fit CPU branch predictor logic better.
+>    'perf stat' shows drastic difference for branch-misses.
+>
+> 2.jump-threaded implementation of interpreter vs switch statement
+>    Instead of single tablejump at the top of 'switch' statement, GCC will
+>    generate multiple tablejump instructions, which helps CPU branch predictor
+>
+> Performance of two BPF filters generated by libpcap was measured
+> on x86_64, i386 and arm32.
+>
+> fprog #1 is taken from Documentation/networking/filter.txt:
+> tcpdump -i eth0 port 22 -dd
+>
+> fprog #2 is taken from 'man tcpdump':
+> tcpdump -i eth0 'tcp port 22 and (((ip[2:2] - ((ip[0]&0xf)<<2)) -
+>     ((tcp[12]&0xf0)>>2)) != 0)' -dd
+>
+> Other libpcap programs have similar performance differences.
+>
+> Raw performance data from BPF micro-benchmark:
+> SK_RUN_FILTER on same SKB (cache-hit) or 10k SKBs (cache-miss)
+> time in nsec per call, smaller is better
+> --x86_64--
+>           fprog #1  fprog #1   fprog #2  fprog #2
+>           cache-hit cache-miss cache-hit cache-miss
+> old BPF     90       101       192       202
+> ext BPF     31        71       47         97
+> old BPF jit 12        34       17         44
+> ext BPF jit TBD
+>
+> --i386--
+>           fprog #1  fprog #1   fprog #2  fprog #2
+>           cache-hit cache-miss cache-hit cache-miss
+> old BPF    107        136      227       252
+> ext BPF     40        119       69       172
+>
+> --arm32--
+>           fprog #1  fprog #1   fprog #2  fprog #2
+>           cache-hit cache-miss cache-hit cache-miss
+> old BPF    202        300      475       540
+> ext BPF    180        270      330       470
+> old BPF jit 26        182       37       202
+> new BPF jit TBD
+>
+> Tested with trinify BPF fuzzer
+>
+> Future work:
+>
+> 0. add bpf/ebpf testsuite to tools/testing/selftests/net/bpf
+>
+> 1. add extended BPF JIT for x86_64
+>
+> 2. add inband old/new demux and extended BPF verifier, so that new programs
+>     can be loaded through old sk_attach_filter() and sk_unattached_filter_create()
+>     interfaces
+>
+> 3. tracing filters systemtap-like with extended BPF
+>
+> 4. OVS with extended BPF
+>
+> 5. nftables with extended BPF
+>
+> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+> Acked-by: Hagen Paul Pfeifer <hagen@jauu.net>
+> Reviewed-by: Daniel Borkmann <dborkman@redhat.com>
 
-Hi Stephen/Rob,
+One more question or possible issue that came through my mind: When
+someone attaches a socket filter from user space, and bpf_ext_enable=1
+then the old filter will transparently be converted to the new
+representation. If then user space (e.g. through checkpoint restore)
+will issue a sk_get_filter() and thus we're calling sk_decode_filter()
+on sk->sk_filter and, therefore, try to decode what we stored in
+insns_ext[] with the assumption we still have the old code. Would that
+actually crash (or leak memory, or just return garbage), as we access
+decodes[] array with filt->code? Would be great if you could double-check.
 
-Today's linux-next merge of the bcm2835 tree got a conflict in  between com=
-mit  ddb902cc34593ecb ("ARM: centralize common multi-platform kconfig optio=
-ns") from the arm-soc tree and commit d30fe6272183f3cc8b ("ARM: bcm2835: Mo=
-ve to mach-bcm directory") from the bcm2835 tree. Commit 0676b21fffd17baeff=
-589 ("ARM: bcm2835: enable V6K instead of plain V6") also collided.
+The assumption with sk_get_filter() is that it returns the same filter
+that was previously attached, so that it can be re-attached again at
+a later point in time.
 
-I've fixed up as below and can carry:
+Cheers,
 
-diff --cc arch/arm/mach-bcm/Kconfig
-index af4f2dfda40c,4e466e9eef44..7de3282a8613
---- a/arch/arm/mach-bcm/Kconfig
-+++ b/arch/arm/mach-bcm/Kconfig
-@@@ -27,6 -32,22 +27,18 @@@ config ARCH_BCM_MOBIL
-  	  BCM11130, BCM11140, BCM11351, BCM28145 and
-  	  BCM28155 variants.
- =20
-+ config ARCH_BCM2835
-+ 	bool "Broadcom BCM2835 family" if ARCH_MULTI_V6
-+ 	select ARCH_REQUIRE_GPIOLIB
-+ 	select ARM_AMBA
-+ 	select ARM_ERRATA_411920
-+ 	select ARM_TIMER_SP804
- -	select CLKDEV_LOOKUP
- -	select CLKSRC_OF
- -	select CPU_V6
- -	select GENERIC_CLOCKEVENTS
-+ 	select PINCTRL
-+ 	select PINCTRL_BCM2835
-+ 	help
-+ 	  This enables support for the Broadcom BCM2835 SoC. This SoC is
-+ 	  used in the Raspberry Pi and Roku 2 devices.
-+=20
-  endmenu
- =20
-  endif
-
---Signature=_Sun__9_Mar_2014_12_14_39_+0000_Xos3G7sOXw8QUuRr
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTHFsvAAoJELSic+t+oim9OHQP/2wgqZcVqdWTG0hSMg6AFPf8
-A6qETCTup5i9qIpKvvWxldKqaSUbVRGOn/UJRwydXeno3rnQcvm16gL1vVA+vnQs
-p8YNSEHNmkKDamvUpV/9vQwQ9nZHwZyhj7bFtmgQ0hKNIc4I/R9EJdSFx8RLY0Nh
-7+GKPuKY0dpVF5yJCu3ywA8nyst347aYRO7ueel3QmH4N+YzAf8QVltXwjIkFbJ2
-tACSXlGneQy4tACZOcczWN8A66FJXLZK3sauGtUFOSAtdhYQFx8ziiiAPvb55Ukc
-6NoDXx1jq2zcjB3t8IjxmQnYMbwACeUwZa2ABbYy9qeTiRGoqNtQiosAv5nFx02X
-iIKJCWXbauPE+Cvf/m3APKLiU9RKhgr4kXVakyj+azBcyNpm1V0mfv08ohioS50e
-voWRaMyT9a4A8wwEoNebKriHWosp2NE9zajUzHZ5vxVYtJWu3aytbn3GR/AGnS8L
-KGOsusxwuhQZzY2JBEXLOPB/kvoq8dzN1jgXQoa5x9ps1RZVGazMJ5UhZPWDbxn9
-ykJJ9/19KqB9Ey1V1fmVIGkfvO4mjRUMSollEMM0H/IjxNi8Zf0c+gY8vBVNr83t
-Lc2mTmUi3qZYHP1LPdawMrPq2xoTbP3Byqy28eY/fdM18u7r7s3NHG/wWMfcTKS7
-vIA8uchqpcC93E6lNDKs
-=wIE7
------END PGP SIGNATURE-----
-
---Signature=_Sun__9_Mar_2014_12_14_39_+0000_Xos3G7sOXw8QUuRr--
+Daniel
