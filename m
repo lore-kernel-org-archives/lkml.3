@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752029AbaCIBPN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 20:15:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52954 "EHLO
+	id S1752154AbaCIBPv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 20:15:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52956 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818AbaCIBPM (ORCPT
+	with ESMTP id S1751818AbaCIBPu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 20:15:12 -0500
-Date: Sat, 8 Mar 2014 17:15:47 -0800
+	Sat, 8 Mar 2014 20:15:50 -0500
+Date: Sat, 8 Mar 2014 17:16:26 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-Subject: [GIT PULL] Staging driver fix for 3.14-rc6
-Message-ID: <20140309011547.GA12574@kroah.com>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: [GIT PULL] USB fixes for 3.14-rc6
+Message-ID: <20140309011626.GA12821@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,25 +28,34 @@ The following changes since commit 0414855fdc4a40da05221fc6062cccbc0c30f169:
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git/ tags/staging-3.15-rc6
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ tags/usb-3.14-rc6
 
-for you to fetch changes up to 084b6e7765b9554699afa23a50e702a3d0ae4b24:
+for you to fetch changes up to 469d417b68958a064c09e7875646c97c6e783dfc:
 
-  staging/cxt1e1/linux.c: Correct arbitrary memory write in c4_ioctl() (2014-03-04 16:20:01 -0800)
+  Revert "USBNET: ax88179_178a: enable tso if usb host supports sg dma" (2014-03-07 11:48:13 -0800)
 
 ----------------------------------------------------------------
-Staging driver tree fix for 3.14-rc6
+USB fixes for 3.14-rc6
 
-Here is a single staging driver fix for your tree.
+Here are 4 USB fixes for your current tree.
 
-It resolves an issue with arbritary writes to memory if a specific
-driver is loaded.
+Two of them are reverts to hopefully resolve the nasty XHCI regressions
+we have been having on some types of devices.  The other two are quirks
+for some Logitech video devices.
 
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ----------------------------------------------------------------
-Salva Peiró (1):
-      staging/cxt1e1/linux.c: Correct arbitrary memory write in c4_ioctl()
+Julius Werner (2):
+      usb: Add device quirk for Logitech HD Pro Webcams C920 and C930e
+      usb: Make DELAY_INIT quirk wait 100ms between Get Configuration requests
 
- drivers/staging/cxt1e1/linux.c | 2 ++
- 1 file changed, 2 insertions(+)
+Mathias Nyman (2):
+      Revert "xhci 1.0: Limit arbitrarily-aligned scatter gather."
+      Revert "USBNET: ax88179_178a: enable tso if usb host supports sg dma"
+
+ drivers/net/usb/ax88179_178a.c |  8 --------
+ drivers/usb/core/config.c      |  4 ++++
+ drivers/usb/core/quirks.c      |  4 ++++
+ drivers/usb/host/xhci.c        | 14 +++-----------
+ 4 files changed, 11 insertions(+), 19 deletions(-)
