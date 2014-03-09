@@ -1,93 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753930AbaCJSBx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 14:01:53 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53885 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753662AbaCJSBt (ORCPT
+	id S1752947AbaCJSEi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 14:04:38 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:49638 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752546AbaCJSEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 14:01:49 -0400
-Date: Mon, 10 Mar 2014 18:01:31 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Nishanth Menon <nm@ti.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org
-Message-ID: <20140310180131.GZ28112@sirena.org.uk>
-References: <1392755543-28335-1-git-send-email-nm@ti.com>
- <1392755543-28335-4-git-send-email-nm@ti.com>
- <20140224015826.GU25940@sirena.org.uk>
- <530B594F.2030500@ti.com>
- <20140303035426.GC2411@sirena.org.uk>
- <531DF250.5060100@ti.com>
- <20140310172221.GT28112@sirena.org.uk>
- <531DF931.1060108@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="I+BhFrIa1PqbPgjZ"
-Content-Disposition: inline
-In-Reply-To: <531DF931.1060108@ti.com>
-X-Cookie: Oh no, not again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC PATCH 3/6] PM / Voltagedomain: introduce voltage domain
- driver support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Mon, 10 Mar 2014 14:04:35 -0400
+From: Masood Mehmood <ody.guru@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: lidza.louina@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] staging: dgap: Fixed sparse error: same symbol redeclared with different type
+Date: Sat,  8 Mar 2014 23:18:42 -0800
+Message-Id: <1394349522-20458-1-git-send-email-ody.guru@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+sparse reported dgap_do_fep_load is redeclared with different type. while
+fixing, I noticed __user attribute is used incorrectly in declaration.
+There is no need to define __user for firware->data.
 
---I+BhFrIa1PqbPgjZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Replaced the __user with 'const uchar *' from function dgap_do_fep_load and
+did the same for function dgap_do_bios_load.
 
-On Mon, Mar 10, 2014 at 12:41:05PM -0500, Nishanth Menon wrote:
+Signed-off-by: Masood Mehmood <ody.guru@gmail.com>
+---
+ drivers/staging/dgap/dgap.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
-> The only other options are:
-> a) Abstract it at a higher level at "user drivers", since they are
-> aware of the sequencing needs - but this partially defeats the
-> purpose, unless ofcourse, we do a tricky implementation such as:
-> clk a, b, c -> prenotifiers in a, postnotifiers in c (which as you
-> mentioned is a little trickier to get right).
-> b) introduce a higher level generic dvfs function[1] which does not
-> seem very attractive either.
+diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
+index d00283a..ab81479 100644
+--- a/drivers/staging/dgap/dgap.c
++++ b/drivers/staging/dgap/dgap.c
+@@ -210,9 +210,8 @@ static uint dgap_config_get_useintr(struct board_t *bd);
+ static uint dgap_config_get_altpin(struct board_t *bd);
+ 
+ static int dgap_ms_sleep(ulong ms);
+-static void dgap_do_bios_load(struct board_t *brd, uchar __user *ubios,
+-				int len);
+-static void dgap_do_fep_load(struct board_t *brd, uchar __user *ufep, int len);
++static void dgap_do_bios_load(struct board_t *brd, const uchar *ubios, int len);
++static void dgap_do_fep_load(struct board_t *brd, const uchar *ufep, int len);
+ #ifdef DIGI_CONCENTRATORS_SUPPORTED
+ static void dgap_do_conc_load(struct board_t *brd, uchar *uaddr, int len);
+ #endif
+@@ -935,7 +934,7 @@ static int dgap_firmware_load(struct pci_dev *pdev, int card_type)
+ 				fw_info[card_type].bios_name);
+ 			return ret;
+ 		}
+-		dgap_do_bios_load(brd, (char *)fw->data, fw->size);
++		dgap_do_bios_load(brd, fw->data, fw->size);
+ 		release_firmware(fw);
+ 
+ 		/* Wait for BIOS to test board... */
+@@ -953,7 +952,7 @@ static int dgap_firmware_load(struct pci_dev *pdev, int card_type)
+ 				fw_info[card_type].fep_name);
+ 			return ret;
+ 		}
+-		dgap_do_fep_load(brd, (char *)fw->data, fw->size);
++		dgap_do_fep_load(brd, fw->data, fw->size);
+ 		release_firmware(fw);
+ 
+ 		/* Wait for FEP to load on board... */
+@@ -4349,7 +4348,7 @@ static int dgap_tty_register_ports(struct board_t *brd)
+  * Copies the BIOS code from the user to the board,
+  * and starts the BIOS running.
+  */
+-static void dgap_do_bios_load(struct board_t *brd, uchar __user *ubios, int len)
++static void dgap_do_bios_load(struct board_t *brd, const uchar *ubios, int len)
+ {
+ 	uchar *addr;
+ 	uint offset;
+@@ -4425,7 +4424,7 @@ static void dgap_do_wait_for_bios(struct board_t *brd)
+  * Copies the FEP code from the user to the board,
+  * and starts the FEP running.
+  */
+-static void dgap_do_fep_load(struct board_t *brd, uchar *ufep, int len)
++static void dgap_do_fep_load(struct board_t *brd, const uchar *ufep, int len)
+ {
+ 	uchar *addr;
+ 	uint offset;
+-- 
+1.8.3.1
 
-> Any other suggestions other than limiting the usage(and documenting it
-> so) and hoping for a future evolution to take this into consideration?
-
-Something might be doable with telling the clock API about maintianing
-ratios between clocks?  I do think we should have an idea where we'd go
-with such requirements, even if we don't currently handle it, so that we
-can hopefully avoid another round of refactoring everything but it
-doesn't seem 100% essential, just very nice to have.
-
---I+BhFrIa1PqbPgjZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTHf33AAoJELSic+t+oim9/6QP/2odPUWGIgXosNZfH2GNRbiQ
-J6ulkJwzX7zPK+Cwy3lbBYQZNsH82jpSCurGxqafuh6bjtECt8YNzo4UfPdLYKsZ
-qg+A/Atb9zc6nsoEpQKm8YSt0+4bStKRv0cPeLrs4rjQqwYFVA7mEkibruAGx+d0
-wd98I5o6RQsGW+jQzoL1SNyjhfeKBcV3YVGafbst5tgQh9ZCDwd4n38Tz+8k+gV/
-MymCEHtzwyQ7wckkFV0L745RcEhHlhE3qOz0bWrjajmpP+VFz91tdbp0y7OZRSig
-I0oR8tIYgtR1T59HkQI/N/PUziKVyluzt4GnvGxU4pNLvnbh34h560YD+QLh8cSC
-Ui9rdSz9GkU1Sg/d6KgOoSOLG6LE1uqckGjVj3oXbSOv++LxzoXt7OCLZpyPm8+e
-5DMtaOPTX4K4+edhF/YWPJEp2pVvcMJRGL/rLsTV+kOWZbzXX4B+QOEoSPTReOTI
-nX8tYfAisnrKNknFIrQEHVsE+qZs2kbcQdX3FtipB1qigyEFCZihbYYX1lSFMmZM
-QkCj9QKFBUw5izkE9oJ0xnURL5Isp4zuIvFUOwMD11qpliEl813y224Uggf+pp8s
-4xCKPHhliSub3SA7V8gHRbVYZdyRkxwXU4lqWFAsQ3tuHDXsdoj6xZ1/0ZxyUWXe
-yWkXPF7zabNpvRgqbGDp
-=kAS+
------END PGP SIGNATURE-----
-
---I+BhFrIa1PqbPgjZ--
