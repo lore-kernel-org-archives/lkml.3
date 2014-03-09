@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752230AbaCIWQA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 18:16:00 -0400
-Received: from smtprelay0177.hostedemail.com ([216.40.44.177]:38386 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752051AbaCIWP7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 18:15:59 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3350:3622:3865:3867:3868:3870:3873:4321:4823:5007:7652:8603:10004:10400:10848:11026:11232:11658:11914:12043:12517:12519:12740:13069:13161:13184:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: soap94_3400db693c21c
-X-Filterd-Recvd-Size: 1506
-Message-ID: <1394403355.30791.3.camel@joe-AO722>
-Subject: Re: [PATCH 2/2] mm: Changed pr_warning() to pr_warn()
-From: Joe Perches <joe@perches.com>
-To: Choi Gi-yong <yong@gnoy.org>
-Cc: tj@kernel.org, linux-kernel@vger.kernel.org
-Date: Sun, 09 Mar 2014 15:15:55 -0700
-In-Reply-To: <1394352900-13629-1-git-send-email-yong@gnoy.org>
-References: <1394352900-13629-1-git-send-email-yong@gnoy.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752567AbaCIWSb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 18:18:31 -0400
+Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:55289
+	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751201AbaCIWS3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Mar 2014 18:18:29 -0400
+x-originating-ip: 72.167.245.219
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: davem@davemloft.net, netdev@vger.kernel.org
+Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org
+Subject: [PATCH net-next] hyperv: Change the receive buffer size for legacy hosts
+Date: Sun,  9 Mar 2014 16:10:59 -0700
+Message-Id: <1394406659-22493-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-03-09 at 17:15 +0900, Choi Gi-yong wrote:
-> Signed-off-by: Choi Gi-yong <yong@gnoy.org>
+Due to a bug in the Hyper-V host verion 2008R2, we need to use a slightly smaller
+receive buffer size, otherwise the buffer will not be accepted by the legacy hosts.
 
-[]
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+---
+ drivers/net/hyperv/hyperv_net.h |    1 +
+ drivers/net/hyperv/netvsc.c     |    6 +++++-
+ 2 files changed, 6 insertions(+), 1 deletions(-)
 
-> diff --git a/mm/percpu.c b/mm/percpu.c
-
-> @@ -812,8 +812,8 @@ fail_unlock:
->  fail_unlock_mutex:
->  	mutex_unlock(&pcpu_alloc_mutex);
->  	if (warn_limit) {
-> -		pr_warn("PERCPU: allocation failed, size=%zu align=%zu, "
-> -			   "%s\n", size, align, err);
-> +		pr_warn("PERCPU: allocation failed, size=%zu align=%zu, %s\n",
-> +	size, align, err);
-
-The second line should use 3 tabs for indentation.
-
-		pr_warn("PERCPU: allocation failed, size=%zu align=%zu, %s\n",
-			size, align, err);
-
-If you want to become familiar with kernel style
-and patching something, please practice on some
-files in drivers/staging.
+diff --git a/drivers/net/hyperv/hyperv_net.h b/drivers/net/hyperv/hyperv_net.h
+index 39fc230..ea5f182 100644
+--- a/drivers/net/hyperv/hyperv_net.h
++++ b/drivers/net/hyperv/hyperv_net.h
+@@ -516,6 +516,7 @@ struct nvsp_message {
+ #define NETVSC_MTU 65536
+ 
+ #define NETVSC_RECEIVE_BUFFER_SIZE		(1024*1024*16)	/* 16MB */
++#define NETVSC_RECEIVE_BUFFER_SIZE_LEGACY	(1024*1024*15)  /* 15MB */
+ 
+ #define NETVSC_RECEIVE_BUFFER_ID		0xcafe
+ 
+diff --git a/drivers/net/hyperv/netvsc.c b/drivers/net/hyperv/netvsc.c
+index 1a0280d..daddea2 100644
+--- a/drivers/net/hyperv/netvsc.c
++++ b/drivers/net/hyperv/netvsc.c
+@@ -365,6 +365,11 @@ static int netvsc_connect_vsp(struct hv_device *device)
+ 		goto cleanup;
+ 
+ 	/* Post the big receive buffer to NetVSP */
++	if (net_device->nvsp_version <= NVSP_PROTOCOL_VERSION_2)
++		net_device->recv_buf_size = NETVSC_RECEIVE_BUFFER_SIZE_LEGACY;
++	else
++		net_device->recv_buf_size = NETVSC_RECEIVE_BUFFER_SIZE;
++
+ 	ret = netvsc_init_recv_buf(device);
+ 
+ cleanup:
+@@ -898,7 +903,6 @@ int netvsc_device_add(struct hv_device *device, void *additional_info)
+ 	ndev = net_device->ndev;
+ 
+ 	/* Initialize the NetVSC channel extension */
+-	net_device->recv_buf_size = NETVSC_RECEIVE_BUFFER_SIZE;
+ 	spin_lock_init(&net_device->recv_pkt_list_lock);
+ 
+ 	INIT_LIST_HEAD(&net_device->recv_pkt_list);
+-- 
+1.7.4.1
 
