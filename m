@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752864AbaCIW06 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 18:26:58 -0400
-Received: from ring0.de ([5.45.105.125]:60173 "EHLO ring0.de"
+	id S1752840AbaCIW04 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 18:26:56 -0400
+Received: from ring0.de ([5.45.105.125]:60147 "EHLO ring0.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752153AbaCIW0Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 18:26:24 -0400
+	id S1752140AbaCIW0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Mar 2014 18:26:21 -0400
 X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
 	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
 	*      [score: 0.0000]
@@ -25,9 +25,9 @@ Cc: Tony Lindgren <tony@atomide.com>, Rob Herring <robh+dt@kernel.org>,
         Joni Lapilainen <joni.lapilainen@gmail.com>,
         Aaro Koskinen <aaro.koskinen@iki.fi>,
         Sebastian Reichel <sre@debian.org>
-Subject: [PATCHv2 4/6] HSI: hsi-char: fix driver for multiport scenarios
-Date: Sun,  9 Mar 2014 23:25:54 +0100
-Message-Id: <1394403956-17297-5-git-send-email-sre@debian.org>
+Subject: [PATCHv2 3/6] HSI: method to unregister clients from an hsi port
+Date: Sun,  9 Mar 2014 23:25:53 +0100
+Message-Id: <1394403956-17297-4-git-send-email-sre@debian.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394403956-17297-1-git-send-email-sre@debian.org>
 References: <1393199401-27197-1-git-send-email-sre@debian.org>
@@ -36,27 +36,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix return code check of alloc_chrdev_region, which
-returns 0 on success.
+This exports a method to unregister all clients from
+an hsi port.
 
 Signed-off-by: Sebastian Reichel <sre@debian.org>
 ---
- drivers/hsi/clients/hsi_char.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/hsi/hsi.c       | 10 ++++++++++
+ include/linux/hsi/hsi.h |  1 +
+ 2 files changed, 11 insertions(+)
 
-diff --git a/drivers/hsi/clients/hsi_char.c b/drivers/hsi/clients/hsi_char.c
-index e61e5f9..3073320 100644
---- a/drivers/hsi/clients/hsi_char.c
-+++ b/drivers/hsi/clients/hsi_char.c
-@@ -705,7 +705,7 @@ static int hsc_probe(struct device *dev)
- 	if (!hsc_major) {
- 		ret = alloc_chrdev_region(&hsc_dev, hsc_baseminor,
- 						HSC_DEVS, devname);
--		if (ret > 0)
-+		if (ret == 0)
- 			hsc_major = MAJOR(hsc_dev);
- 	} else {
- 		hsc_dev = MKDEV(hsc_major, hsc_baseminor);
+diff --git a/drivers/hsi/hsi.c b/drivers/hsi/hsi.c
+index 6fde590..098cc3a 100644
+--- a/drivers/hsi/hsi.c
++++ b/drivers/hsi/hsi.c
+@@ -160,6 +160,16 @@ static void hsi_port_release(struct device *dev)
+ }
+ 
+ /**
++ * hsi_unregister_port - Unregister an HSI port
++ * @port: The HSI port to unregister
++ */
++void hsi_port_unregister_clients(struct hsi_port *port)
++{
++	device_for_each_child(&port->device, NULL, hsi_remove_client);
++}
++EXPORT_SYMBOL_GPL(hsi_port_unregister_clients);
++
++/**
+  * hsi_unregister_controller - Unregister an HSI controller
+  * @hsi: The HSI controller to register
+  */
+diff --git a/include/linux/hsi/hsi.h b/include/linux/hsi/hsi.h
+index fb07339..89cc6f2 100644
+--- a/include/linux/hsi/hsi.h
++++ b/include/linux/hsi/hsi.h
+@@ -284,6 +284,7 @@ int hsi_register_controller(struct hsi_controller *hsi);
+ void hsi_unregister_controller(struct hsi_controller *hsi);
+ void hsi_add_clients_from_dt(struct hsi_port *port,
+ 						struct device_node *clients);
++void hsi_port_unregister_clients(struct hsi_port *port);
+ 
+ static inline void hsi_controller_set_drvdata(struct hsi_controller *hsi,
+ 								void *data)
 -- 
 1.9.0
 
