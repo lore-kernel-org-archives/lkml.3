@@ -1,48 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752146AbaCIRAX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 13:00:23 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:63921 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751073AbaCIRAV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 13:00:21 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: =?ISO-8859-1?Q?J=F6rg?= Otte <jrg.otte@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Subject: Re: [regression] linux-3.14.0-rc5-.. kernel does not switch power off
-Date: Sun, 09 Mar 2014 18:15:38 +0100
-Message-ID: <34025658.DfioqOCCn3@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <4824481.V0Gqxh5Nec@vostro.rjw.lan>
-References: <CADDKRnCTBiGC2fkd1Utp7BY7vjORcHh4O9GgqfMP7iDfFkNKuw@mail.gmail.com> <4129487.hPye7CfaJv@vostro.rjw.lan> <4824481.V0Gqxh5Nec@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+	id S1752298AbaCIRBI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 13:01:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40167 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751307AbaCIRBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Mar 2014 13:01:07 -0400
+From: Mark Salter <msalter@redhat.com>
+To: x86@kernel.org
+Cc: Dave Young <dyoung@redhat.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        patches@linaro.org, Mark Salter <msalter@redhat.com>
+Subject: [PATCH v6 1/6] x86/mm: sparse warning fix for early_memremap
+Date: Sun,  9 Mar 2014 13:00:39 -0400
+Message-Id: <1394384444-23182-2-git-send-email-msalter@redhat.com>
+In-Reply-To: <1394384444-23182-1-git-send-email-msalter@redhat.com>
+References: <1394384444-23182-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, March 09, 2014 05:58:59 PM Rafael J. Wysocki wrote:
-> On Sunday, March 09, 2014 05:55:28 PM Rafael J. Wysocki wrote:
-> > On Sunday, March 09, 2014 05:12:56 PM Jörg Otte wrote:
-> > > On shutdown power is not switched off. The harddisk is already down.
-> > > Reboot is working.
-> > > 
-> > > Last known good kernel is: 3.14.0-rc5-00265-gb01d4e6
-> > > First known bad kernel is: 3.14.0-rc5-00287-gca62eec
-> > 
-> > Can you please tell me which commits those two kernels correspond to?
-> 
-> And please post a boot log from the failing one.
+From: Dave Young <dyoung@redhat.com>
 
-Never mind, I know what the problem is, commit 3130497f5bab (ACPI / sleep:
-pm_power_off needs more sanity checks to be installed) has to be reverted.
+There's a lot of sparse warnings for code like below:
+void *a = early_memremap(phys_addr, size);
 
-Sorry about the breakage and I'll send a revert patch shortly.
+early_memremap intend to map kernel memory with ioremap facility, the return
+pointer should be a kernel ram pointer instead of iomem one.
 
-Rafael
+For making the function clearer and supressing sparse warnings this patch
+do below two things:
+1. cast to (__force void *) for the return value of early_memremap
+2. add early_memunmap function and pass (__force void __iomem *) to iounmap
+
+>From Boris:
+> Ingo told me yesterday, it makes sense too. I'd guess we can try it.
+> FWIW, all callers of early_memremap use the memory they get remapped as
+> normal memory so we should be safe.
+
+Signed-off-by: Dave Young <dyoung@redhat.com>
+Signed-off-by: Mark Salter <msalter@redhat.com>
+Acked-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/include/asm/io.h |  3 ++-
+ arch/x86/mm/ioremap.c     | 10 +++++++---
+ 2 files changed, 9 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
+index 34f69cb..1db414f 100644
+--- a/arch/x86/include/asm/io.h
++++ b/arch/x86/include/asm/io.h
+@@ -325,9 +325,10 @@ extern void early_ioremap_init(void);
+ extern void early_ioremap_reset(void);
+ extern void __iomem *early_ioremap(resource_size_t phys_addr,
+ 				   unsigned long size);
+-extern void __iomem *early_memremap(resource_size_t phys_addr,
++extern void *early_memremap(resource_size_t phys_addr,
+ 				    unsigned long size);
+ extern void early_iounmap(void __iomem *addr, unsigned long size);
++extern void early_memunmap(void *addr, unsigned long size);
+ extern void fixup_early_ioremap(void);
+ extern bool is_early_ioremap_ptep(pte_t *ptep);
+ 
+diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
+index 799580c..bbb4504 100644
+--- a/arch/x86/mm/ioremap.c
++++ b/arch/x86/mm/ioremap.c
+@@ -562,10 +562,9 @@ early_ioremap(resource_size_t phys_addr, unsigned long size)
+ }
+ 
+ /* Remap memory */
+-void __init __iomem *
+-early_memremap(resource_size_t phys_addr, unsigned long size)
++void __init *early_memremap(resource_size_t phys_addr, unsigned long size)
+ {
+-	return __early_ioremap(phys_addr, size, PAGE_KERNEL);
++	return (__force void *)__early_ioremap(phys_addr, size, PAGE_KERNEL);
+ }
+ 
+ void __init early_iounmap(void __iomem *addr, unsigned long size)
+@@ -620,3 +619,8 @@ void __init early_iounmap(void __iomem *addr, unsigned long size)
+ 	}
+ 	prev_map[slot] = NULL;
+ }
++
++void __init early_memunmap(void *addr, unsigned long size)
++{
++	early_iounmap((__force void __iomem *)addr, size);
++}
+-- 
+1.8.5.3
 
