@@ -1,130 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752663AbaCIOti (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 10:49:38 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:60489 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752313AbaCIOtg (ORCPT
+	id S1752594AbaCIPBq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 11:01:46 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:58564 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752340AbaCIPBp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 10:49:36 -0400
-Message-ID: <1394376574.20149.99.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH v7 net-next 1/3] filter: add Extended BPF interpreter
- and converter
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Hagen Paul Pfeifer <hagen@jauu.net>,
-        Jesse Gross <jesse@nicira.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Date: Sun, 09 Mar 2014 07:49:34 -0700
-In-Reply-To: <1394320530-3508-2-git-send-email-ast@plumgrid.com>
-References: <1394320530-3508-1-git-send-email-ast@plumgrid.com>
-	 <1394320530-3508-2-git-send-email-ast@plumgrid.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Sun, 9 Mar 2014 11:01:45 -0400
+Message-ID: <531C8269.4010105@gmail.com>
+Date: Sun, 09 Mar 2014 23:02:01 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Randy Dunlap <rdunlap@infradead.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Suggestion] Makefile: about allmodconfig issue.
+References: <531B1603.6080106@gmail.com> <531B3178.8000804@infradead.org> <531B8F2C.8080302@gmail.com> <531B9281.1080500@infradead.org>
+In-Reply-To: <531B9281.1080500@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-03-08 at 15:15 -0800, Alexei Starovoitov wrote:
+On 03/09/2014 05:58 AM, Randy Dunlap wrote:
+> On 03/08/2014 01:44 PM, Chen Gang wrote:
+>> On 03/08/2014 11:04 PM, Randy Dunlap wrote:
+>>> On 03/08/2014 05:07 AM, Chen Gang wrote:
+>> [...]
+>>>> Welcome any suggestions, discussions and completions.
+>>>>
+>>>> Thanks.
+>>>>
+>>>
+>>> A patch has already been submitted and applied by the subsystem maintainer.
+>>>
+>>> http://marc.info/?l=linux-gpio&m=139413626320431&w=2
+>>>
+>>>
+>>
+>> OK, Thanks.  And excuse me, I can not connect to this web site in China.
+>>
+>> Could you please past the patch contents in the reply mail? (or just let
+>> me know whether it is "make allmodconfig" issue, or only gpio driver's
+>> issue)
+>>
+>>
+>> Thanks.
+> 
+> It's a gpio driver Kconfig patch -- not an allmodconfig issue.
+> 
 
-> +			if (BPF_SRC(fp->code) == BPF_K &&
-> +			    (int)fp->k < 0) {
-> +				/* extended BPF immediates are signed,
-> +				 * zero extend immediate into tmp register
-> +				 * and use it in compare insn
-> +				 */
-> +				insn->code = BPF_ALU | BPF_MOV | BPF_K;
-> +				insn->a_reg = 2;
-> +				insn->imm = fp->k;
-> +				insn++;
-> +
-> +				insn->a_reg = 6;
-> +				insn->x_reg = 2;
-> +				bpf_src = BPF_X;
-> +			} else {
-> +				insn->a_reg = 6;
-> +				insn->x_reg = 7;
-> +				insn->imm = fp->k;
-> +				bpf_src = BPF_SRC(fp->code);
-> +			}
-> +			/* common case where 'jump_false' is next insn */
-> +			if (fp->jf == 0) {
-> +				insn->code = BPF_JMP | BPF_OP(fp->code) |
-> +					bpf_src;
-> +				tgt = i + fp->jt + 1;
-> +				EMIT_JMP;
-> +				break;
-> +			}
-> +			/* convert JEQ into JNE when 'jump_true' is next insn */
-> +			if (fp->jt == 0 && BPF_OP(fp->code) == BPF_JEQ) {
-> +				insn->code = BPF_JMP | BPF_JNE | bpf_src;
-> +				tgt = i + fp->jf + 1;
-> +				EMIT_JMP;
-> +				break;
-> +			}
-> +			/* other jumps are mapped into two insns: Jxx and JA */
-> +			tgt = i + fp->jt + 1;
-> +			insn->code = BPF_JMP | BPF_OP(fp->code) | bpf_src;
-> +			EMIT_JMP;
-> +
-> +			insn++;
-> +			insn->code = BPF_JMP | BPF_JA;
-> +			tgt = i + fp->jf + 1;
-> +			EMIT_JMP;
-> +			break;
-> +
-> +		/* ldxb 4*([14]&0xf) is remaped into 3 insns */
-> +		case BPF_LDX | BPF_MSH | BPF_B:
-> +			insn->code = BPF_LD | BPF_ABS | BPF_B;
-> +			insn->a_reg = 7;
-> +			insn->imm = fp->k;
-> +
-> +			insn++;
-> +			insn->code = BPF_ALU | BPF_AND | BPF_K;
-> +			insn->a_reg = 7;
-> +			insn->imm = 0xf;
-> +
-> +			insn++;
-> +			insn->code = BPF_ALU | BPF_LSH | BPF_K;
-> +			insn->a_reg = 7;
-> +			insn->imm = 2;
-> +			break;
-> +
-> +		/* RET_K, RET_A are remaped into 2 insns */
-> +		case BPF_RET | BPF_A:
-> +		case BPF_RET | BPF_K:
-> +			insn->code = BPF_ALU | BPF_MOV |
-> +				(BPF_RVAL(fp->code) == BPF_K ? BPF_K : BPF_X);
-> +			insn->a_reg = 0;
-> +			insn->x_reg = 6;
-> +			insn->imm = fp->k;
-> +
-> +			insn++;
-> +			insn->code = BPF_RET | BPF_K;
-> +			break;
+Can we say that the 'select' priority is higher or equal than 'depends
+on'?  If we really can say so, we need change our gpio driver.
+
+Else ('depends on' priority is higher than 'select')
+
+ - some architectures can choose whether support IRQ_DOMAIN.
+
+ - if IRQ_DOMAIN enabled, our gpio driver can be used, and then select
+   GENERIC_IRQ_CHIP (need not consider about it selects IRQ_DOMAIN).
+
+ - else (IRQ_DOMAIN_disabled), we can not use our gpio driver, and also
+   can not select GENERIC_IRQ_CHIP (need not consider about it selects
+   IRQ_DOMAIN, either).
+
+Excuse me, I am not quite familiar with Kconfig grammar, can any members
+give a confirmation for it (whether 'select' priority is higher or equal
+than 'depends on').
 
 
-What the hell is this ?
+Thanks.
 
-All this magical values, like 2, 6, 7, 10.
+> Here is the patch:
+> 
+> From: Alan Tull <atull@altera.com>
+> 
+> fix build error with this message:
+> kernel/irq/Kconfig:41:error: recursive dependency detected!
+> kernel/irq/Kconfig:41:  symbol GENERIC_IRQ_CHIP is selected by GPIO_DWAPB
+> drivers/gpio/Kconfig:131:       symbol GPIO_DWAPB depends on IRQ_DOMAIN
+> kernel/irq/Kconfig:46:  symbol IRQ_DOMAIN is selected by GENERIC_IRQ_CHIP
+> 
+> Signed-off-by: Alan Tull <atull@altera.com>
+> ---
+>  drivers/gpio/Kconfig |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+> index 9979017..0e524d7 100644
+> --- a/drivers/gpio/Kconfig
+> +++ b/drivers/gpio/Kconfig
+> @@ -132,7 +132,7 @@ config GPIO_DWAPB
+>  	tristate "Synopsys DesignWare APB GPIO driver"
+>  	select GPIO_GENERIC
+>  	select GENERIC_IRQ_CHIP
+> -	depends on OF_GPIO && IRQ_DOMAIN
+> +	depends on OF_GPIO
+>  	help
+>  	  Say Y or M here to build support for the Synopsys DesignWare APB
+>  	  GPIO block.
+> 
 
-I am afraid nobody will be able to read this but you.
 
+-- 
+Chen Gang
 
-
+Open, share and attitude like air, water and life which God blessed
