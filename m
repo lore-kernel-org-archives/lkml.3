@@ -1,99 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752411AbaCIHca (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 03:32:30 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:37892 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752147AbaCIHc2 (ORCPT
+	id S1752542AbaCIHfy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 03:35:54 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:47792 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751201AbaCIHfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 03:32:28 -0400
-Message-ID: <1394350339.19772.5.camel@phoenix>
-Subject: [PATCH 3/3] regulator: max8998: Remove unnecessary **rdev from
- struct max8998_data
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Thomas Abraham <thomas.abraham@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org
-Date: Sun, 09 Mar 2014 15:32:19 +0800
-In-Reply-To: <1394350032.19772.1.camel@phoenix>
-References: <1394350032.19772.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	Sun, 9 Mar 2014 03:35:53 -0400
+Message-ID: <531C19C8.4080806@ti.com>
+Date: Sun, 9 Mar 2014 13:05:36 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>
+Subject: Re: [GIT PULL 00/28] PHY for 3.15
+References: <1394270969-11851-1-git-send-email-kishon@ti.com> <20140308164222.GA28789@kroah.com>
+In-Reply-To: <20140308164222.GA28789@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now we are using devm_regulator_register(), so we don't need to allocate *rdev[]
-array to store return value of devm_regulator_register. Use a *rdev variable is
-enough for checking return status.
+Hi Greg,
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/max8998.c | 20 ++++++--------------
- 1 file changed, 6 insertions(+), 14 deletions(-)
+On Saturday 08 March 2014 10:12 PM, Greg KH wrote:
+> On Sat, Mar 08, 2014 at 02:59:01PM +0530, Kishon Vijay Abraham I wrote:
+>> Hi Greg,
+>>
+>> Here's the PULL REQUEST for 3.15 merge window.
+>> More users are starting to use the generic PHY framework including USB and
+>> SATA PHY in exynos, USB in sunxi and multi-purpose PHY (currently only SATA)
+>> in APM. There is also a patch to adapt USB3 PHY driver (PIPE3) used in OMAP
+>> to generic PHY framework and use the same driver for SATA.
+>> It also includes few fixes and cleanups.
+>>
+>> Please let me know if you want me to make any changes.
+>>
+>> Cheers
+>> Kishon
+>>
+>> The following changes since commit cfbf8d4857c26a8a307fb7cd258074c9dcd8c691:
+>>
+>>    Linux 3.14-rc4 (2014-02-23 17:40:03 -0800)
+>>
+>> are available in the git repository at:
+>>
+>>    git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git tags/for_3.15
+>>
+>> for you to fetch changes up to 303fd52cda953d14dc82ac82b570761599eb9ab2:
+>>
+>>    PHY: add APM X-Gene SoC 15Gbps Multi-purpose PHY driver (2014-03-08 12:39:51 +0530)
+>
+> When merging this with my usb-next tree, I get the following merge
+> issue, which I don't know how to resolve:
+> CONFLICT (modify/delete): Documentation/devicetree/bindings/usb/usb-phy.txt deleted in HEAD and modified in a0100026249158ec7aae606b553efae7cb37f616. Version a0100026249158ec7aae606b553efae7cb37f616 of Documentation/devicetree/bindings/usb/usb-phy.txt left in tree.
+>
+> Any suggestions as to what I should do here?
 
-diff --git a/drivers/regulator/max8998.c b/drivers/regulator/max8998.c
-index ce22d4f..961091b 100644
---- a/drivers/regulator/max8998.c
-+++ b/drivers/regulator/max8998.c
-@@ -40,7 +40,6 @@ struct max8998_data {
- 	struct device		*dev;
- 	struct max8998_dev	*iodev;
- 	int			num_regulators;
--	struct regulator_dev	**rdev;
- 	u8                      buck1_vol[4]; /* voltages for selection */
- 	u8                      buck2_vol[2];
- 	unsigned int		buck1_idx; /* index to last changed voltage */
-@@ -746,10 +745,10 @@ static int max8998_pmic_probe(struct platform_device *pdev)
- 	struct max8998_dev *iodev = dev_get_drvdata(pdev->dev.parent);
- 	struct max8998_platform_data *pdata = iodev->pdata;
- 	struct regulator_config config = { };
--	struct regulator_dev **rdev;
-+	struct regulator_dev *rdev;
- 	struct max8998_data *max8998;
- 	struct i2c_client *i2c;
--	int i, ret, size;
-+	int i, ret;
- 	unsigned int v;
- 
- 	if (!pdata) {
-@@ -768,12 +767,6 @@ static int max8998_pmic_probe(struct platform_device *pdev)
- 	if (!max8998)
- 		return -ENOMEM;
- 
--	size = sizeof(struct regulator_dev *) * pdata->num_regulators;
--	max8998->rdev = devm_kzalloc(&pdev->dev, size, GFP_KERNEL);
--	if (!max8998->rdev)
--		return -ENOMEM;
--
--	rdev = max8998->rdev;
- 	max8998->dev = &pdev->dev;
- 	max8998->iodev = iodev;
- 	max8998->num_regulators = pdata->num_regulators;
-@@ -877,13 +870,12 @@ static int max8998_pmic_probe(struct platform_device *pdev)
- 		config.init_data = pdata->regulators[i].initdata;
- 		config.driver_data = max8998;
- 
--		rdev[i] = devm_regulator_register(&pdev->dev,
--						  &regulators[index], &config);
--		if (IS_ERR(rdev[i])) {
--			ret = PTR_ERR(rdev[i]);
-+		rdev = devm_regulator_register(&pdev->dev, &regulators[index],
-+					       &config);
-+		if (IS_ERR(rdev)) {
-+			ret = PTR_ERR(rdev);
- 			dev_err(max8998->dev, "regulator %s init failed (%d)\n",
- 						regulators[index].name, ret);
--			rdev[i] = NULL;
- 			return ret;
- 		}
- 	}
--- 
-1.8.1.2
+There were 3 patches that modified usb-phy.txt but the file was moved to 
+phy/ti-phy.txt in balbi's branch. I've resent the patches that modified 
+this file and have also updated tags/for_3.15.
 
+Let me know If I have to resend the PULL request.
 
+Sorry for the hassle.
 
+Thanks
+Kishon
