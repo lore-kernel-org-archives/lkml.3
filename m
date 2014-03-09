@@ -1,48 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421AbaCIRBN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 13:01:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1251 "EHLO mx1.redhat.com"
+	id S1752739AbaCIRFd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 13:05:33 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:33378 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752311AbaCIRBJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 13:01:09 -0400
-From: Mark Salter <msalter@redhat.com>
-To: Rob Landley <rob@landley.net>
-Cc: Mark Salter <msalter@redhat.com>, linux-doc@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, patches@linaro.org
-Subject: [PATCH v6 6/6] doc/kernel-parameters.txt: add early_ioremap_debug
-Date: Sun,  9 Mar 2014 13:00:44 -0400
-Message-Id: <1394384444-23182-7-git-send-email-msalter@redhat.com>
-In-Reply-To: <1394384444-23182-1-git-send-email-msalter@redhat.com>
-References: <1394384444-23182-1-git-send-email-msalter@redhat.com>
+	id S1751201AbaCIRFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Mar 2014 13:05:31 -0400
+From: Borislav Petkov <bp@alien8.de>
+To: X86 ML <x86@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: [PATCH 2/3] x86, AMD: Convert to the new MSR accessors
+Date: Sun,  9 Mar 2014 18:05:24 +0100
+Message-Id: <1394384725-10796-3-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1394384725-10796-1-git-send-email-bp@alien8.de>
+References: <1394384725-10796-1-git-send-email-bp@alien8.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add description of early_ioremap_debug kernel parameter.
+From: Borislav Petkov <bp@suse.de>
 
-Signed-off-by: Mark Salter <msalter@redhat.com>
+... and save us a bunch of code.
+
+Signed-off-by: Borislav Petkov <bp@suse.de>
 ---
- Documentation/kernel-parameters.txt | 5 +++++
- 1 file changed, 5 insertions(+)
+ arch/x86/kernel/cpu/amd.c | 48 ++++++++++++-----------------------------------
+ 1 file changed, 12 insertions(+), 36 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 7116fda..de1d10e 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -870,6 +870,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			Enable debug messages at boot time.  See
- 			Documentation/dynamic-debug-howto.txt for details.
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index c67ffa686064..b85e43a5a462 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -233,9 +233,7 @@ static void init_amd_k7(struct cpuinfo_x86 *c)
+ 	if (c->x86_model >= 6 && c->x86_model <= 10) {
+ 		if (!cpu_has(c, X86_FEATURE_XMM)) {
+ 			printk(KERN_INFO "Enabling disabled K7/SSE Support.\n");
+-			rdmsr(MSR_K7_HWCR, l, h);
+-			l &= ~0x00008000;
+-			wrmsr(MSR_K7_HWCR, l, h);
++			msr_clear_bit(MSR_K7_HWCR, 15);
+ 			set_cpu_cap(c, X86_FEATURE_XMM);
+ 		}
+ 	}
+@@ -509,14 +507,8 @@ static void early_init_amd(struct cpuinfo_x86 *c)
+ #endif
  
-+	early_ioremap_debug [KNL]
-+			Enable debug messages in early_ioremap support. This
-+			is useful for tracking down temporary early mappings
-+			which are not unmapped.
-+
- 	earlycon=	[KNL] Output early console device and options.
- 		uart[8250],io,<addr>[,options]
- 		uart[8250],mmio,<addr>[,options]
+ 	/* F16h erratum 793, CVE-2013-6885 */
+-	if (c->x86 == 0x16 && c->x86_model <= 0xf) {
+-		u64 val;
+-
+-		rdmsrl(MSR_AMD64_LS_CFG, val);
+-		if (!(val & BIT(15)))
+-			wrmsrl(MSR_AMD64_LS_CFG, val | BIT(15));
+-	}
+-
++	if (c->x86 == 0x16 && c->x86_model <= 0xf)
++		msr_set_bit(MSR_AMD64_LS_CFG, 15);
+ }
+ 
+ static const int amd_erratum_383[];
+@@ -536,11 +528,8 @@ static void init_amd(struct cpuinfo_x86 *c)
+ 	 * Errata 63 for SH-B3 steppings
+ 	 * Errata 122 for all steppings (F+ have it disabled by default)
+ 	 */
+-	if (c->x86 == 0xf) {
+-		rdmsrl(MSR_K7_HWCR, value);
+-		value |= 1 << 6;
+-		wrmsrl(MSR_K7_HWCR, value);
+-	}
++	if (c->x86 == 0xf)
++		msr_set_bit(MSR_K7_HWCR, 6);
+ #endif
+ 
+ 	early_init_amd(c);
+@@ -623,14 +612,11 @@ static void init_amd(struct cpuinfo_x86 *c)
+ 	    (c->x86_model >= 0x10) && (c->x86_model <= 0x1f) &&
+ 	    !cpu_has(c, X86_FEATURE_TOPOEXT)) {
+ 
+-		if (!rdmsrl_safe(0xc0011005, &value)) {
+-			value |= 1ULL << 54;
+-			wrmsrl_safe(0xc0011005, value);
++		if (msr_set_bit(0xc0011005, 54) > 0) {
+ 			rdmsrl(0xc0011005, value);
+-			if (value & (1ULL << 54)) {
++			if (value & BIT_64(54)) {
+ 				set_cpu_cap(c, X86_FEATURE_TOPOEXT);
+-				printk(KERN_INFO FW_INFO "CPU: Re-enabling "
+-				  "disabled Topology Extensions Support\n");
++				pr_info(FW_INFO "CPU: Re-enabling disabled Topology Extensions Support.\n");
+ 			}
+ 		}
+ 	}
+@@ -709,19 +695,12 @@ static void init_amd(struct cpuinfo_x86 *c)
+ 		 * Disable GART TLB Walk Errors on Fam10h. We do this here
+ 		 * because this is always needed when GART is enabled, even in a
+ 		 * kernel which has no MCE support built in.
+-		 * BIOS should disable GartTlbWlk Errors themself. If
+-		 * it doesn't do it here as suggested by the BKDG.
++		 * BIOS should disable GartTlbWlk Errors already. If
++		 * it doesn't, do it here as suggested by the BKDG.
+ 		 *
+ 		 * Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=33012
+ 		 */
+-		u64 mask;
+-		int err;
+-
+-		err = rdmsrl_safe(MSR_AMD64_MCx_MASK(4), &mask);
+-		if (err == 0) {
+-			mask |= (1 << 10);
+-			wrmsrl_safe(MSR_AMD64_MCx_MASK(4), mask);
+-		}
++		msr_set_bit(MSR_AMD64_MCx_MASK(4), 10);
+ 
+ 		/*
+ 		 * On family 10h BIOS may not have properly enabled WC+ support,
+@@ -733,10 +712,7 @@ static void init_amd(struct cpuinfo_x86 *c)
+ 		 * NOTE: we want to use the _safe accessors so as not to #GP kvm
+ 		 * guests on older kvm hosts.
+ 		 */
+-
+-		rdmsrl_safe(MSR_AMD64_BU_CFG2, &value);
+-		value &= ~(1ULL << 24);
+-		wrmsrl_safe(MSR_AMD64_BU_CFG2, value);
++		msr_clear_bit(MSR_AMD64_BU_CFG2, 24);
+ 
+ 		if (cpu_has_amd_erratum(c, amd_erratum_383))
+ 			set_cpu_bug(c, X86_BUG_AMD_TLB_MMATCH);
 -- 
-1.8.5.3
+1.9.0
 
