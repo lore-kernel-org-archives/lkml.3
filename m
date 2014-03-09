@@ -1,81 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752383AbaCIIUz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 04:20:55 -0400
-Received: from sauhun.de ([89.238.76.85]:51896 "EHLO pokefinder.org"
+	id S1752678AbaCIIWK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 04:22:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58198 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751073AbaCIIUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 04:20:51 -0400
-Date: Sun, 9 Mar 2014 09:20:32 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Romain Baeriswyl <Romain.Baeriswyl@abilis.com>
-Cc: rmallon@gmail.com, mika.westerberg@linux.intel.com,
-        rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
-        swarren@wwwdotorg.org, ijc+devicetree@hellion.org.uk, rob@landley.net,
-        pierrick.hascoet@abilis.com, vgupta@synopsys.com,
-        christian.ruppert@abilis.com, chiau.ee.chew@intel.com,
-        khali@linux-fr.org, rafael.j.wysocki@intel.com,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        romainba@abilis.com
-Subject: Re: [PATCH v2 1/2] i2c designware make SCL and SDA falling time
- configurable
-Message-ID: <20140309082032.GD2575@katana>
-References: <20140116194303.GC4127@katana>
- <1390236223-22584-1-git-send-email-romainba@abilis.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="yudcn1FV7Hsu/q59"
-Content-Disposition: inline
-In-Reply-To: <1390236223-22584-1-git-send-email-romainba@abilis.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752367AbaCIIWG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Mar 2014 04:22:06 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+To: torvalds@linux-foundation.org
+cc: dhowells@redhat.com, tt.rantala@gmail.com, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        trinity@vger.kernel.org, Dave Jones <davej@redhat.com>
+Subject: [PATCH] KEYS: Make the keyring cycle detector ignore other keyrings of the same name
+Date: Sun, 09 Mar 2014 08:21:58 +0000
+Message-ID: <27787.1394353318@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---yudcn1FV7Hsu/q59
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This fixes CVE-2014-0102.
 
-On Mon, Jan 20, 2014 at 05:43:43PM +0100, Romain Baeriswyl wrote:
-> This patch allows to set independantly SCL and SDA falling times.
-> The tLOW period is computed by taking into account the SCL falling time.
-> The tHIGH period is computed by taking into account the SDA falling time.
->=20
-> For instance in case the margin on tLOW is considered too small, it can
-> be increased by increasing the SCL falling time which is by default set
-> at 300ns.
->=20
-> The same applies for tHIGH period with the help of SDA falling time.
->=20
-> Signed-off-by: Romain Baeriswyl <romainba@abilis.com>
-> Reviewed-by: Christian Ruppert <christian.ruppert@abilis.com>
+The following command sequence produces an oops:
 
-Applied to for-next, thanks!
+	keyctl new_session
+	i=`keyctl newring _ses @s`
+	keyctl link @s $i
 
+The problem is that search_nested_keyrings() sees two keyrings that have
+matching type and description, so keyring_compare_object() returns true.
+s_n_k() then passes the key to the iterator function -
+keyring_detect_cycle_iterator() - which *should* check to see whether this is
+the keyring of interest, not just one with the same name.
 
---yudcn1FV7Hsu/q59
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Because assoc_array_find() will return one and only one match, I assumed that
+the iterator function would only see an exact match or never be called - but
+the iterator isn't only called from assoc_array_find()...
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
+The oops looks something like this:
 
-iQIcBAEBAgAGBQJTHCRQAAoJEBQN5MwUoCm2FJUP/17E0J+WUwcZkB4MWPXkGE/e
-rs4EgmrjtGNIm52Xfvu/UYXe79t4i7ySxrPW5gz1VoBzGXg937i4BG8Piva+b7Z9
-OFE59Nh4KpCEdBLyi8Wu/FfoCmDAwULK4qIk6fo1ofrAlA2KuAgSdSSXjY+y5MWL
-S2tmBGmXcsBERbIYobcY9fAapbzE6f8TNutG5zARJOliievWjB21AW8lK2mxFKla
-isoHEJQMPu/EnqvhCcDK2RfjmelrJyAZvulOkIicYeVY113vIn0QA+UBRiSQ0It0
-I2bdlhGvuIzDlPRZAfcesCFQxPs1eXN7BzbsY2dFNJgJSf+CUB7EMQ7sx/OJ6GuW
-ynU+mkwfLV8nNCOyVar5IH2VNMY4L+IBbmoE7ULKtLig4UNheFnZ8AKxEiIEYD5c
-5OnlCCfxC8F9iKRrKGM8ttgM/V2tuP4GQWhMUttrLxh5KbS0jnpF4VJnPK7mXDUa
-uF4Mcs+Bz09lj3FGl8MWAXyF/o4NdFHpZftwzL1i2yil5/jMFjILSA/UtL19JQWQ
-Ka+dLf+yhEkY5zwUZ2kQU6vVekO4Zk1YVcKFc4tfIEQWznz35MnVAgo7vmjc2Y7K
-89R2MM9b9C9waWgGNFZA+Dn3CiqHDV6ceYF6plp9DY7cD3fzKU7orE3oBqMFlyp0
-omYfG2va9Sb1GM4sL3Xi
-=iloF
------END PGP SIGNATURE-----
+	kernel BUG at /data/fs/linux-2.6-fscache/security/keys/keyring.c:1003!
+	invalid opcode: 0000 [#1] SMP
+	...
+	RIP: 0010:[<ffffffff811d39c3>] keyring_detect_cycle_iterator+0xe/0x1f
+	...
+	Stack:
+	...
+	Call Trace:
+	 [<ffffffff811d3706>] search_nested_keyrings+0x76/0x2aa
+	 [<ffffffff810fa7f4>] ? kmem_cache_alloc_trace+0xdd/0x159
+	 [<ffffffff81235669>] ? assoc_array_insert+0xab/0x929
+	 [<ffffffff811e226d>] ? selinux_key_permission+0x2d/0x2f
+	 [<ffffffff811dc94c>] ? security_key_permission+0x11/0x13
+	 [<ffffffff811d3e36>] __key_link_check_live_key+0x50/0x5f
+	 [<ffffffff811d39b5>] ? keyring_describe+0x7b/0x7b
+	 [<ffffffff811d3f2b>] key_link+0x4e/0x85
+	 [<ffffffff811d463a>] keyctl_keyring_link+0x60/0x81
+	 [<ffffffff811d553d>] SyS_keyctl+0x65/0xe4
+	 [<ffffffff81452edb>] tracesys+0xdd/0xe2
 
---yudcn1FV7Hsu/q59--
+The fix is to make keyring_detect_cycle_iterator() check that the key it has
+is the key it was actually looking for rather than calling BUG_ON().
+
+A testcase has been included in the keyutils testsuite for this:
+
+	http://git.kernel.org/cgit/linux/kernel/git/dhowells/keyutils.git/commit/?id=891f3365d07f1996778ade0e3428f01878a1790b
+
+Reported-by: Tommi Rantala <tt.rantala@gmail.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: James Morris <james.l.morris@oracle.com>
+---
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index d46cbc5e335e..2fb2576dc644 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -1000,7 +1000,11 @@ static int keyring_detect_cycle_iterator(const void *object,
+ 
+ 	kenter("{%d}", key->serial);
+ 
+-	BUG_ON(key != ctx->match_data);
++	/* We might get a keyring with matching index-key that is nonetheless a
++	 * different keyring. */
++	if (key != ctx->match_data)
++		return 0;
++
+ 	ctx->result = ERR_PTR(-EDEADLK);
+ 	return 1;
+ }
+
