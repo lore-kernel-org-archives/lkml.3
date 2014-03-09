@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752311AbaCIGuY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 01:50:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54658 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751398AbaCIGuX (ORCPT
+	id S1752226AbaCIHGu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 03:06:50 -0400
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:55046 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751792AbaCIHGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 01:50:23 -0500
-Date: Sat, 8 Mar 2014 22:50:59 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Valentina Manea <valentina.manea.m@gmail.com>
-Cc: devel@driverdev.osuosl.org, shuah.kh@samsung.com,
-        linux-usb@vger.kernel.org, ly80toro@cip.cs.fau.de,
-        tobias.polzer@fau.de, linux-kernel@vger.kernel.org,
-        firefly@lists.rosedu.org, dominik.paulus@fau.de, andy.grover@gmail.com,
-        ihadzic@research.bell-labs.com
-Subject: Re: [PATCH 00/18] Resend of usbip-utils migration patches and
- various other fixes
-Message-ID: <20140309065059.GA10398@kroah.com>
-References: <1394283216-1277-1-git-send-email-valentina.manea.m@gmail.com>
+	Sun, 9 Mar 2014 03:06:49 -0400
+Date: Sun, 9 Mar 2014 09:06:42 +0200
+From: Muli Ben-Yehuda <muli@cs.technion.ac.il>
+To: Jon Mason <jdmason@kudzu.us>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, WANG Chao <chaowang@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Vivek Goyal <vgoyal@redhat.com>,
+        Yinghai Lu <yinghai@kernel.org>, Baoquan He <bhe@redhat.com>,
+        kexec@lists.infradead.org, discuss@x86-64.org, x86@kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: How could we get rid of saved_max_pfn for calgary iommu?
+Message-ID: <20140309070642.GA2525@needle>
+References: <20140219061824.GA29703@dhcp-17-89.nay.redhat.com>
+ <20140305053617.GE26240@dhcp-17-89.nay.redhat.com>
+ <20140306064756.GB16859@needle.mulix.org>
+ <53181AC1.2020807@zytor.com>
+ <20140306070047.GF16859@needle.mulix.org>
+ <CAPoiz9yhAeoWDANus6=O_5AomKFEAzzR1pR4F0rN2HnDWwYAMg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1394283216-1277-1-git-send-email-valentina.manea.m@gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <CAPoiz9yhAeoWDANus6=O_5AomKFEAzzR1pR4F0rN2HnDWwYAMg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 08, 2014 at 02:53:18PM +0200, Valentina Manea wrote:
-> This is a resend of the patches sent a few days ago, including
-> the migration of USB/IP userspace side to use libudev instead
-> of libsysfs and various other fixes, all ordered in a big patch
-> series.
+On Thu, Mar 06, 2014 at 07:46:44AM -0700, Jon Mason wrote:
 
-Very nice work, thanks so much for doing all of this, it looks great.
+> > I don't know of anyone still using it, but it's not
+> > impossible. Calgary and CalIOC2 machines would now be ~5-8 years
+> > old.
+> 
+> It is getting a bit crufty in arch/x86.  Would it be better to move
+> it to drivers/iommu?
 
-Now applied to my tree, you should have gotten the emails about it
-already.
+Not sure I see the potential benefit... I think for Calgary it's
+either leave it in arch/x86 or rip it out.
 
-thanks,
-
-greg k-h
+Cheers,
+Muli
