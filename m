@@ -1,129 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757AbaCIRF5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 13:05:57 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33385 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751304AbaCIRFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 13:05:31 -0400
-From: Borislav Petkov <bp@alien8.de>
-To: X86 ML <x86@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
-Subject: [PATCH 3/3] x86, Intel: Convert to the new MSR accessors
-Date: Sun,  9 Mar 2014 18:05:25 +0100
-Message-Id: <1394384725-10796-4-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1394384725-10796-1-git-send-email-bp@alien8.de>
-References: <1394384725-10796-1-git-send-email-bp@alien8.de>
+	id S1752807AbaCIRIK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 13:08:10 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:33237 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752339AbaCIRIH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Mar 2014 13:08:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <531C5EB5.2080507@iogearbox.net>
+References: <1394320530-3508-1-git-send-email-ast@plumgrid.com>
+	<1394320530-3508-2-git-send-email-ast@plumgrid.com>
+	<531C5EB5.2080507@iogearbox.net>
+Date: Sun, 9 Mar 2014 10:08:05 -0700
+Message-ID: <CAMEtUux-Psz9NW+t7vf2-=iDE5TW7KDOag2TDbxTEvd6a=LKSw@mail.gmail.com>
+Subject: Re: [PATCH v7 net-next 1/3] filter: add Extended BPF interpreter and converter
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Daniel Borkmann <borkmann@iogearbox.net>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Hagen Paul Pfeifer <hagen@jauu.net>,
+        Jesse Gross <jesse@nicira.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+On Sun, Mar 9, 2014 at 5:29 AM, Daniel Borkmann <borkmann@iogearbox.net> wrote:
+> On 03/09/2014 12:15 AM, Alexei Starovoitov wrote:
+>>
+>> Extended BPF extends old BPF in the following ways:
+>> - from 2 to 10 registers
+>>    Original BPF has two registers (A and X) and hidden frame pointer.
+>>    Extended BPF has ten registers and read-only frame pointer.
+>> - from 32-bit registers to 64-bit registers
+>>    semantics of old 32-bit ALU operations are preserved via 32-bit
+>>    subregisters
+>> - if (cond) jump_true; else jump_false;
+>>    old BPF insns are replaced with:
+>>    if (cond) jump_true; /* else fallthrough */
+>> - adds signed > and >= insns
+>> - 16 4-byte stack slots for register spill-fill replaced with
+>>    up to 512 bytes of multi-use stack space
+>> - introduces bpf_call insn and register passing convention for zero
+>>    overhead calls from/to other kernel functions (not part of this patch)
+>> - adds arithmetic right shift insn
+>> - adds swab32/swab64 insns
+>> - adds atomic_add insn
+>> - old tax/txa insns are replaced with 'mov dst,src' insn
+>>
+>> Extended BPF is designed to be JITed with one to one mapping, which
+>> allows GCC/LLVM backends to generate optimized BPF code that performs
+>> almost as fast as natively compiled code
+>>
+>> sk_convert_filter() remaps old style insns into extended:
+>> 'sock_filter' instructions are remapped on the fly to
+>> 'sock_filter_ext' extended instructions when
+>> sysctl net.core.bpf_ext_enable=1
+>>
+>> Old filter comes through sk_attach_filter() or
+>> sk_unattached_filter_create()
+>>   if (bpf_ext_enable) {
+>>      convert to new
+>>      sk_chk_filter() - check old bpf
+>>      use sk_run_filter_ext() - new interpreter
+>>   } else {
+>>      sk_chk_filter() - check old bpf
+>>      if (bpf_jit_enable)
+>>          use old jit
+>>      else
+>>          use sk_run_filter() - old interpreter
+>>   }
+>>
+>> sk_run_filter_ext() interpreter is noticeably faster
+>> than sk_run_filter() for two reasons:
+>>
+>> 1.fall-through jumps
+>>    Old BPF jump instructions are forced to go either 'true' or 'false'
+>>    branch which causes branch-miss penalty.
+>>    Extended BPF jump instructions have one branch and fall-through,
+>>    which fit CPU branch predictor logic better.
+>>    'perf stat' shows drastic difference for branch-misses.
+>>
+>> 2.jump-threaded implementation of interpreter vs switch statement
+>>    Instead of single tablejump at the top of 'switch' statement, GCC will
+>>    generate multiple tablejump instructions, which helps CPU branch
+>> predictor
+>>
+>> Performance of two BPF filters generated by libpcap was measured
+>> on x86_64, i386 and arm32.
+>>
+>> fprog #1 is taken from Documentation/networking/filter.txt:
+>> tcpdump -i eth0 port 22 -dd
+>>
+>> fprog #2 is taken from 'man tcpdump':
+>> tcpdump -i eth0 'tcp port 22 and (((ip[2:2] - ((ip[0]&0xf)<<2)) -
+>>     ((tcp[12]&0xf0)>>2)) != 0)' -dd
+>>
+>> Other libpcap programs have similar performance differences.
+>>
+>> Raw performance data from BPF micro-benchmark:
+>> SK_RUN_FILTER on same SKB (cache-hit) or 10k SKBs (cache-miss)
+>> time in nsec per call, smaller is better
+>> --x86_64--
+>>           fprog #1  fprog #1   fprog #2  fprog #2
+>>           cache-hit cache-miss cache-hit cache-miss
+>> old BPF     90       101       192       202
+>> ext BPF     31        71       47         97
+>> old BPF jit 12        34       17         44
+>> ext BPF jit TBD
+>>
+>> --i386--
+>>           fprog #1  fprog #1   fprog #2  fprog #2
+>>           cache-hit cache-miss cache-hit cache-miss
+>> old BPF    107        136      227       252
+>> ext BPF     40        119       69       172
+>>
+>> --arm32--
+>>           fprog #1  fprog #1   fprog #2  fprog #2
+>>           cache-hit cache-miss cache-hit cache-miss
+>> old BPF    202        300      475       540
+>> ext BPF    180        270      330       470
+>> old BPF jit 26        182       37       202
+>> new BPF jit TBD
+>>
+>> Tested with trinify BPF fuzzer
+>>
+>> Future work:
+>>
+>> 0. add bpf/ebpf testsuite to tools/testing/selftests/net/bpf
+>>
+>> 1. add extended BPF JIT for x86_64
+>>
+>> 2. add inband old/new demux and extended BPF verifier, so that new
+>> programs
+>>     can be loaded through old sk_attach_filter() and
+>> sk_unattached_filter_create()
+>>     interfaces
+>>
+>> 3. tracing filters systemtap-like with extended BPF
+>>
+>> 4. OVS with extended BPF
+>>
+>> 5. nftables with extended BPF
+>>
+>> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+>> Acked-by: Hagen Paul Pfeifer <hagen@jauu.net>
+>> Reviewed-by: Daniel Borkmann <dborkman@redhat.com>
+>
+>
+> One more question or possible issue that came through my mind: When
+> someone attaches a socket filter from user space, and bpf_ext_enable=1
+> then the old filter will transparently be converted to the new
+> representation. If then user space (e.g. through checkpoint restore)
+> will issue a sk_get_filter() and thus we're calling sk_decode_filter()
+> on sk->sk_filter and, therefore, try to decode what we stored in
+> insns_ext[] with the assumption we still have the old code. Would that
+> actually crash (or leak memory, or just return garbage), as we access
+> decodes[] array with filt->code? Would be great if you could double-check.
 
-... and save some lines of code.
+ohh. yes. missed that.
+when bpf_ext_enable=1 I think it's cleaner to return ebpf filter.
+This way the user space can see how old bpf filter was converted.
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- arch/x86/include/uapi/asm/msr-index.h |  9 ++++++---
- arch/x86/kernel/cpu/intel.c           | 30 +++++++-----------------------
- 2 files changed, 13 insertions(+), 26 deletions(-)
+Of course we can allocate extra memory and keep original bpf code there
+just to return it via sk_get_filter(), but that seems overkill.
 
-diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
-index c19fc60ff062..045e6db6f58a 100644
---- a/arch/x86/include/uapi/asm/msr-index.h
-+++ b/arch/x86/include/uapi/asm/msr-index.h
-@@ -368,14 +368,16 @@
- #define THERM_LOG_THRESHOLD1           (1 << 9)
- 
- /* MISC_ENABLE bits: architectural */
--#define MSR_IA32_MISC_ENABLE_FAST_STRING	(1ULL << 0)
-+#define MSR_BIT_FAST_STRING				0
-+#define MSR_IA32_MISC_ENABLE_FAST_STRING	(1ULL << MSR_BIT_FAST_STRING)
- #define MSR_IA32_MISC_ENABLE_TCC		(1ULL << 1)
- #define MSR_IA32_MISC_ENABLE_EMON		(1ULL << 7)
- #define MSR_IA32_MISC_ENABLE_BTS_UNAVAIL	(1ULL << 11)
- #define MSR_IA32_MISC_ENABLE_PEBS_UNAVAIL	(1ULL << 12)
- #define MSR_IA32_MISC_ENABLE_ENHANCED_SPEEDSTEP	(1ULL << 16)
- #define MSR_IA32_MISC_ENABLE_MWAIT		(1ULL << 18)
--#define MSR_IA32_MISC_ENABLE_LIMIT_CPUID	(1ULL << 22)
-+#define MSR_BIT_LIMIT_CPUID				22
-+#define MSR_IA32_MISC_ENABLE_LIMIT_CPUID	(1ULL << MSR_BIT_LIMIT_CPUID);
- #define MSR_IA32_MISC_ENABLE_XTPR_DISABLE	(1ULL << 23)
- #define MSR_IA32_MISC_ENABLE_XD_DISABLE		(1ULL << 34)
- 
-@@ -385,7 +387,8 @@
- #define MSR_IA32_MISC_ENABLE_SPLIT_LOCK_DISABLE	(1ULL << 4)
- #define MSR_IA32_MISC_ENABLE_L3CACHE_DISABLE	(1ULL << 6)
- #define MSR_IA32_MISC_ENABLE_SUPPRESS_LOCK	(1ULL << 8)
--#define MSR_IA32_MISC_ENABLE_PREFETCH_DISABLE	(1ULL << 9)
-+#define MSR_BIT_PRF_DIS				9
-+#define MSR_IA32_MISC_ENABLE_PREFETCH_DISABLE	(1ULL << MSR_BIT_PRF_DIS)
- #define MSR_IA32_MISC_ENABLE_FERR		(1ULL << 10)
- #define MSR_IA32_MISC_ENABLE_FERR_MULTIPLEX	(1ULL << 10)
- #define MSR_IA32_MISC_ENABLE_TM2		(1ULL << 13)
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index 5cd9bfabd645..44ca6317af43 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -31,11 +31,7 @@ static void early_init_intel(struct cpuinfo_x86 *c)
- 
- 	/* Unmask CPUID levels if masked: */
- 	if (c->x86 > 6 || (c->x86 == 6 && c->x86_model >= 0xd)) {
--		rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
--
--		if (misc_enable & MSR_IA32_MISC_ENABLE_LIMIT_CPUID) {
--			misc_enable &= ~MSR_IA32_MISC_ENABLE_LIMIT_CPUID;
--			wrmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
-+		if (msr_clear_bit(MSR_IA32_MISC_ENABLE, MSR_BIT_LIMIT_CPUID) > 0) {
- 			c->cpuid_level = cpuid_eax(0);
- 			get_cpu_cap(c);
- 		}
-@@ -129,16 +125,9 @@ static void early_init_intel(struct cpuinfo_x86 *c)
- 	 * Ingo Molnar reported a Pentium D (model 6) and a Xeon
- 	 * (model 2) with the same problem.
- 	 */
--	if (c->x86 == 15) {
--		rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
--
--		if (misc_enable & MSR_IA32_MISC_ENABLE_FAST_STRING) {
--			printk(KERN_INFO "kmemcheck: Disabling fast string operations\n");
--
--			misc_enable &= ~MSR_IA32_MISC_ENABLE_FAST_STRING;
--			wrmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
--		}
--	}
-+	if (c->x86 == 15)
-+		if (msr_clear_bit(MSR_IA32_MISC_ENABLE, MSR_BIT_FAST_STRING) > 0)
-+			pr_info("kmemcheck: Disabling fast string operations\n");
- #endif
- 
- 	/*
-@@ -197,8 +186,6 @@ static void intel_smp_check(struct cpuinfo_x86 *c)
- 
- static void intel_workarounds(struct cpuinfo_x86 *c)
- {
--	unsigned long lo, hi;
--
- #ifdef CONFIG_X86_F00F_BUG
- 	/*
- 	 * All current models of Pentium and Pentium with MMX technology CPUs
-@@ -229,12 +216,9 @@ static void intel_workarounds(struct cpuinfo_x86 *c)
- 	 * Hardware prefetcher may cause stale data to be loaded into the cache.
- 	 */
- 	if ((c->x86 == 15) && (c->x86_model == 1) && (c->x86_mask == 1)) {
--		rdmsr(MSR_IA32_MISC_ENABLE, lo, hi);
--		if ((lo & MSR_IA32_MISC_ENABLE_PREFETCH_DISABLE) == 0) {
--			printk (KERN_INFO "CPU: C0 stepping P4 Xeon detected.\n");
--			printk (KERN_INFO "CPU: Disabling hardware prefetching (Errata 037)\n");
--			lo |= MSR_IA32_MISC_ENABLE_PREFETCH_DISABLE;
--			wrmsr(MSR_IA32_MISC_ENABLE, lo, hi);
-+		if (msr_set_bit(MSR_IA32_MISC_ENABLE, MSR_BIT_PRF_DIS) > 0) {
-+			pr_info("CPU: C0 stepping P4 Xeon detected.\n");
-+			pr_info("CPU: Disabling hardware prefetching (Errata 037)\n");
- 		}
- 	}
- 
--- 
-1.9.0
+> The assumption with sk_get_filter() is that it returns the same filter
+> that was previously attached, so that it can be re-attached again at
+> a later point in time.
 
+when bpf_ext_enable=1, load old, sk_get_filter() returns new ebpf,
+this ebpf will be re-attachable, since there will be inband demux for bpf/ebpf.
+
+Thanks
+Alexei
