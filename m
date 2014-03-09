@@ -1,420 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752779AbaCIRCD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 13:02:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39772 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752561AbaCIRBa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 13:01:30 -0400
-From: Mark Salter <msalter@redhat.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Mark Salter <msalter@redhat.com>, Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        patches@linaro.org
-Subject: [PATCH v6 5/6] arm64: add early_ioremap support
-Date: Sun,  9 Mar 2014 13:00:43 -0400
-Message-Id: <1394384444-23182-6-git-send-email-msalter@redhat.com>
-In-Reply-To: <1394384444-23182-1-git-send-email-msalter@redhat.com>
-References: <1394384444-23182-1-git-send-email-msalter@redhat.com>
+	id S1752825AbaCIRCf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 13:02:35 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:57804 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751398AbaCIRCd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Mar 2014 13:02:33 -0400
+Date: Sun, 9 Mar 2014 19:58:51 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>,
+        Jerome Marchand <jmarchan@redhat.com>
+Subject: Re: [PATCH] zram: propagate error to user
+Message-ID: <20140309165851.GA2185@swordfish.minsk.epam.com>
+References: <1394157378-7718-1-git-send-email-minchan@kernel.org>
+ <20140307092045.GA2571@swordfish.minsk.epam.com>
+ <20140307095134.GG3787@bbox>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140307095134.GG3787@bbox>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for early IO or memory mappings which are needed
-before the normal ioremap() is usable. This also adds fixmap
-support for permanent fixed mappings such as that used by the
-earlyprintk device register region.
+Hello Minchan,
 
-Signed-off-by: Mark Salter <msalter@redhat.com>
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
----
- Documentation/arm64/memory.txt   |  4 +-
- arch/arm64/Kconfig               |  1 +
- arch/arm64/include/asm/Kbuild    |  1 +
- arch/arm64/include/asm/fixmap.h  | 67 +++++++++++++++++++++++++++++++
- arch/arm64/include/asm/io.h      |  1 +
- arch/arm64/include/asm/memory.h  |  2 +-
- arch/arm64/kernel/early_printk.c |  8 +++-
- arch/arm64/kernel/head.S         |  9 ++---
- arch/arm64/kernel/setup.c        |  2 +
- arch/arm64/mm/ioremap.c          | 85 ++++++++++++++++++++++++++++++++++++++++
- arch/arm64/mm/mmu.c              | 41 -------------------
- 11 files changed, 169 insertions(+), 52 deletions(-)
- create mode 100644 arch/arm64/include/asm/fixmap.h
+On (03/07/14 18:51), Minchan Kim wrote:
+> Hello Sergey!
+> 
+> On Fri, Mar 07, 2014 at 12:20:45PM +0300, Sergey Senozhatsky wrote:
+> > On (03/07/14 10:56), Minchan Kim wrote:
+> > > When we initialized zcomp with single, we couldn't change
+> > > max_comp_streams without zram reset but current interface doesn't
+> > > show any error to user and even it changes max_comp_streams's value
+> > > without any effect so it would make user very confusing.
+> > > 
+> > > This patch prevents max_comp_streams's change when zcomp was
+> > > initialized as single zcomp and emit the error to user(ex, echo).
+> > > 
+> > > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> > > ---
+> > >  Documentation/blockdev/zram.txt |  9 +++++----
+> > >  drivers/block/zram/zcomp.c      | 10 +++++-----
+> > >  drivers/block/zram/zcomp.h      |  4 ++--
+> > >  drivers/block/zram/zram_drv.c   | 15 +++++++++++----
+> > >  4 files changed, 23 insertions(+), 15 deletions(-)
+> > > 
+> > > diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
+> > > index 2604ffed51db..0595c3f56ccf 100644
+> > > --- a/Documentation/blockdev/zram.txt
+> > > +++ b/Documentation/blockdev/zram.txt
+> > > @@ -37,10 +37,11 @@ Note:
+> > >  In order to enable compression backend's multi stream support max_comp_streams
+> > >  must be initially set to desired concurrency level before ZRAM device
+> > >  initialisation. Once the device initialised as a single stream compression
+> > > -backend (max_comp_streams equals to 0) changing the value of max_comp_streams
+> > > -will not take any effect, because single stream compression backend implemented
+> > > -as a special case and does not support dynamic max_comp_streams. Only multi
+> > > -stream backend supports dynamic max_comp_streams adjustment.
+> > > +backend (max_comp_streams equals to 1), you will see error if you try to change
+> > > +the value of max_comp_streams because single stream compression backend
+> > > +implemented as a special case by lock overhead issue and does not support
+> > > +dynamic max_comp_streams. Only multi stream backend supports dynamic
+> > > +max_comp_streams adjustment.
+> > >  
+> > >  3) Select compression algorithm
+> > >  	Using comp_algorithm device attribute one can see available and
+> > > diff --git a/drivers/block/zram/zcomp.c b/drivers/block/zram/zcomp.c
+> > > index 92a83df40a27..15fe6a27781b 100644
+> > > --- a/drivers/block/zram/zcomp.c
+> > > +++ b/drivers/block/zram/zcomp.c
+> > > @@ -152,7 +152,7 @@ static void zcomp_strm_multi_release(struct zcomp *comp, struct zcomp_strm *zstr
+> > >  }
+> > >  
+> > >  /* change max_strm limit */
+> > > -static int zcomp_strm_multi_set_max_streams(struct zcomp *comp, int num_strm)
+> > > +static bool zcomp_strm_multi_set_max_streams(struct zcomp *comp, int num_strm)
+> > >  {
+> > >  	struct zcomp_strm_multi *zs = comp->stream;
+> > >  	struct zcomp_strm *zstrm;
+> > > @@ -171,7 +171,7 @@ static int zcomp_strm_multi_set_max_streams(struct zcomp *comp, int num_strm)
+> > >  		zs->avail_strm--;
+> > >  	}
+> > >  	spin_unlock(&zs->strm_lock);
+> > > -	return 0;
+> > > +	return true;
+> > >  }
+> > >  
+> > >  static void zcomp_strm_multi_destroy(struct zcomp *comp)
+> > > @@ -231,10 +231,10 @@ static void zcomp_strm_single_release(struct zcomp *comp,
+> > >  	mutex_unlock(&zs->strm_lock);
+> > >  }
+> > >  
+> > > -static int zcomp_strm_single_set_max_streams(struct zcomp *comp, int num_strm)
+> > > +static bool zcomp_strm_single_set_max_streams(struct zcomp *comp, int num_strm)
+> > >  {
+> > >  	/* zcomp_strm_single support only max_comp_streams == 1 */
+> > > -	return -ENOTSUPP;
+> > > +	return 0;
+> > >  }
+> > 
+> > IMHO, -ENOTSUPP for unsupported operation fits better than `false'.
+> > yes, currently there are only two possible returns:
+> > 	0 -- success
+> > 	-ENOTSUPP - not supported operation
+> > 
+> > though, we can extend functions later and return additional codes, other
+> > than `false' and `true'.
+> 
+> Thing to expose to user isn't true and false but EINVAL.
+> 
 
-diff --git a/Documentation/arm64/memory.txt b/Documentation/arm64/memory.txt
-index 5e054bf..953c81e 100644
---- a/Documentation/arm64/memory.txt
-+++ b/Documentation/arm64/memory.txt
-@@ -35,7 +35,7 @@ ffffffbc00000000	ffffffbdffffffff	   8GB		vmemmap
- 
- ffffffbe00000000	ffffffbffbbfffff	  ~8GB		[guard, future vmmemap]
- 
--ffffffbffbc00000	ffffffbffbdfffff	   2MB		earlyprintk device
-+ffffffbffbc00000	ffffffbffbdfffff	   2MB		fixed mappings
- 
- ffffffbffbe00000	ffffffbffbe0ffff	  64KB		PCI I/O space
- 
-@@ -60,7 +60,7 @@ fffffdfc00000000	fffffdfdffffffff	   8GB		vmemmap
- 
- fffffdfe00000000	fffffdfffbbfffff	  ~8GB		[guard, future vmmemap]
- 
--fffffdfffbc00000	fffffdfffbdfffff	   2MB		earlyprintk device
-+fffffdfffbc00000	fffffdfffbdfffff	   2MB		fixed mappings
- 
- fffffdfffbe00000	fffffdfffbe0ffff	  64KB		PCI I/O space
- 
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 27bbcfc..da4304a 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -16,6 +16,7 @@ config ARM64
- 	select DCACHE_WORD_ACCESS
- 	select GENERIC_CLOCKEVENTS
- 	select GENERIC_CLOCKEVENTS_BROADCAST if SMP
-+	select GENERIC_EARLY_IOREMAP
- 	select GENERIC_IOMAP
- 	select GENERIC_IRQ_PROBE
- 	select GENERIC_IRQ_SHOW
-diff --git a/arch/arm64/include/asm/Kbuild b/arch/arm64/include/asm/Kbuild
-index 71c53ec..27e3c6b 100644
---- a/arch/arm64/include/asm/Kbuild
-+++ b/arch/arm64/include/asm/Kbuild
-@@ -10,6 +10,7 @@ generic-y += delay.h
- generic-y += div64.h
- generic-y += dma.h
- generic-y += emergency-restart.h
-+generic-y += early_ioremap.h
- generic-y += errno.h
- generic-y += ftrace.h
- generic-y += hw_irq.h
-diff --git a/arch/arm64/include/asm/fixmap.h b/arch/arm64/include/asm/fixmap.h
-new file mode 100644
-index 0000000..5f7bfe6
---- /dev/null
-+++ b/arch/arm64/include/asm/fixmap.h
-@@ -0,0 +1,67 @@
-+/*
-+ * fixmap.h: compile-time virtual memory allocation
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ *
-+ * Copyright (C) 1998 Ingo Molnar
-+ * Copyright (C) 2013 Mark Salter <msalter@redhat.com>
-+ *
-+ * Adapted from arch/x86_64 version.
-+ *
-+ */
-+
-+#ifndef _ASM_ARM64_FIXMAP_H
-+#define _ASM_ARM64_FIXMAP_H
-+
-+#ifndef __ASSEMBLY__
-+#include <linux/kernel.h>
-+#include <asm/page.h>
-+
-+/*
-+ * Here we define all the compile-time 'special' virtual
-+ * addresses. The point is to have a constant address at
-+ * compile time, but to set the physical address only
-+ * in the boot process.
-+ *
-+ * These 'compile-time allocated' memory buffers are
-+ * page-sized. Use set_fixmap(idx,phys) to associate
-+ * physical memory with fixmap indices.
-+ *
-+ */
-+enum fixed_addresses {
-+	FIX_EARLYCON_MEM_BASE,
-+	__end_of_permanent_fixed_addresses,
-+
-+	/*
-+	 * Temporary boot-time mappings, used by early_ioremap(),
-+	 * before ioremap() is functional.
-+	 */
-+#ifdef CONFIG_ARM64_64K_PAGES
-+#define NR_FIX_BTMAPS		4
-+#else
-+#define NR_FIX_BTMAPS		64
-+#endif
-+#define FIX_BTMAPS_SLOTS	7
-+#define TOTAL_FIX_BTMAPS	(NR_FIX_BTMAPS * FIX_BTMAPS_SLOTS)
-+
-+	FIX_BTMAP_END = __end_of_permanent_fixed_addresses,
-+	FIX_BTMAP_BEGIN = FIX_BTMAP_END + TOTAL_FIX_BTMAPS - 1,
-+	__end_of_fixed_addresses
-+};
-+
-+#define FIXADDR_SIZE	(__end_of_permanent_fixed_addresses << PAGE_SHIFT)
-+#define FIXADDR_START	(FIXADDR_TOP - FIXADDR_SIZE)
-+
-+#define FIXMAP_PAGE_IO     __pgprot(PROT_DEVICE_nGnRE)
-+
-+extern void __early_set_fixmap(enum fixed_addresses idx,
-+			       phys_addr_t phys, pgprot_t flags);
-+
-+#define __set_fixmap __early_set_fixmap
-+
-+#include <asm-generic/fixmap.h>
-+
-+#endif /* !__ASSEMBLY__ */
-+#endif /* _ASM_ARM64_FIXMAP_H */
-diff --git a/arch/arm64/include/asm/io.h b/arch/arm64/include/asm/io.h
-index 4cc813e..8fb2152 100644
---- a/arch/arm64/include/asm/io.h
-+++ b/arch/arm64/include/asm/io.h
-@@ -27,6 +27,7 @@
- #include <asm/byteorder.h>
- #include <asm/barrier.h>
- #include <asm/pgtable.h>
-+#include <asm/early_ioremap.h>
- 
- #include <xen/xen.h>
- 
-diff --git a/arch/arm64/include/asm/memory.h b/arch/arm64/include/asm/memory.h
-index 9dc5dc3..e94f945 100644
---- a/arch/arm64/include/asm/memory.h
-+++ b/arch/arm64/include/asm/memory.h
-@@ -49,7 +49,7 @@
- #define PAGE_OFFSET		(UL(0xffffffffffffffff) << (VA_BITS - 1))
- #define MODULES_END		(PAGE_OFFSET)
- #define MODULES_VADDR		(MODULES_END - SZ_64M)
--#define EARLYCON_IOBASE		(MODULES_VADDR - SZ_4M)
-+#define FIXADDR_TOP		(MODULES_VADDR - SZ_2M - PAGE_SIZE)
- #define TASK_SIZE_64		(UL(1) << VA_BITS)
- 
- #ifdef CONFIG_COMPAT
-diff --git a/arch/arm64/kernel/early_printk.c b/arch/arm64/kernel/early_printk.c
-index fbb6e18..ffbbdde 100644
---- a/arch/arm64/kernel/early_printk.c
-+++ b/arch/arm64/kernel/early_printk.c
-@@ -26,6 +26,8 @@
- #include <linux/amba/serial.h>
- #include <linux/serial_reg.h>
- 
-+#include <asm/fixmap.h>
-+
- static void __iomem *early_base;
- static void (*printch)(char ch);
- 
-@@ -141,8 +143,10 @@ static int __init setup_early_printk(char *buf)
- 	}
- 	/* no options parsing yet */
- 
--	if (paddr)
--		early_base = early_io_map(paddr, EARLYCON_IOBASE);
-+	if (paddr) {
-+		set_fixmap_io(FIX_EARLYCON_MEM_BASE, paddr);
-+		early_base = (void __iomem *)fix_to_virt(FIX_EARLYCON_MEM_BASE);
-+	}
- 
- 	printch = match->printch;
- 	early_console = &early_console_dev;
-diff --git a/arch/arm64/kernel/head.S b/arch/arm64/kernel/head.S
-index 0b281ff..c86bfdf 100644
---- a/arch/arm64/kernel/head.S
-+++ b/arch/arm64/kernel/head.S
-@@ -412,7 +412,7 @@ ENDPROC(__calc_phys_offset)
-  *   - identity mapping to enable the MMU (low address, TTBR0)
-  *   - first few MB of the kernel linear mapping to jump to once the MMU has
-  *     been enabled, including the FDT blob (TTBR1)
-- *   - UART mapping if CONFIG_EARLY_PRINTK is enabled (TTBR1)
-+ *   - pgd entry for fixed mappings (TTBR1)
-  */
- __create_page_tables:
- 	pgtbl	x25, x26, x24			// idmap_pg_dir and swapper_pg_dir addresses
-@@ -465,15 +465,12 @@ __create_page_tables:
- 	sub	x6, x6, #1			// inclusive range
- 	create_block_map x0, x7, x3, x5, x6
- 1:
--#ifdef CONFIG_EARLY_PRINTK
- 	/*
--	 * Create the pgd entry for the UART mapping. The full mapping is done
--	 * later based earlyprintk kernel parameter.
-+	 * Create the pgd entry for the fixed mappings.
- 	 */
--	ldr	x5, =EARLYCON_IOBASE		// UART virtual address
-+	ldr	x5, =FIXADDR_TOP		// Fixed mapping virtual address
- 	add	x0, x26, #2 * PAGE_SIZE		// section table address
- 	create_pgd_entry x26, x0, x5, x6, x7
--#endif
- 	ret
- ENDPROC(__create_page_tables)
- 	.ltorg
-diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
-index 1c66cfb..4d2ac74 100644
---- a/arch/arm64/kernel/setup.c
-+++ b/arch/arm64/kernel/setup.c
-@@ -42,6 +42,7 @@
- #include <linux/of_fdt.h>
- #include <linux/of_platform.h>
- 
-+#include <asm/fixmap.h>
- #include <asm/cputype.h>
- #include <asm/elf.h>
- #include <asm/cputable.h>
-@@ -328,6 +329,7 @@ void __init setup_arch(char **cmdline_p)
- 	*cmdline_p = boot_command_line;
- 
- 	init_mem_pgprot();
-+	early_ioremap_init();
- 
- 	parse_early_param();
- 
-diff --git a/arch/arm64/mm/ioremap.c b/arch/arm64/mm/ioremap.c
-index 2bb1d58..7ec3283 100644
---- a/arch/arm64/mm/ioremap.c
-+++ b/arch/arm64/mm/ioremap.c
-@@ -25,6 +25,10 @@
- #include <linux/vmalloc.h>
- #include <linux/io.h>
- 
-+#include <asm/fixmap.h>
-+#include <asm/tlbflush.h>
-+#include <asm/pgalloc.h>
-+
- static void __iomem *__ioremap_caller(phys_addr_t phys_addr, size_t size,
- 				      pgprot_t prot, void *caller)
- {
-@@ -98,3 +102,84 @@ void __iomem *ioremap_cache(phys_addr_t phys_addr, size_t size)
- 				__builtin_return_address(0));
- }
- EXPORT_SYMBOL(ioremap_cache);
-+
-+#ifndef CONFIG_ARM64_64K_PAGES
-+static pte_t bm_pte[PTRS_PER_PTE] __page_aligned_bss;
-+#endif
-+
-+static inline pmd_t * __init early_ioremap_pmd(unsigned long addr)
-+{
-+	pgd_t *pgd;
-+	pud_t *pud;
-+
-+	pgd = pgd_offset_k(addr);
-+	BUG_ON(pgd_none(*pgd) || pgd_bad(*pgd));
-+
-+	pud = pud_offset(pgd, addr);
-+	BUG_ON(pud_none(*pud) || pud_bad(*pud));
-+
-+	return pmd_offset(pud, addr);
-+}
-+
-+static inline pte_t * __init early_ioremap_pte(unsigned long addr)
-+{
-+	pmd_t *pmd = early_ioremap_pmd(addr);
-+
-+	BUG_ON(pmd_none(*pmd) || pmd_bad(*pmd));
-+
-+	return pte_offset_kernel(pmd, addr);
-+}
-+
-+void __init early_ioremap_init(void)
-+{
-+	pmd_t *pmd;
-+
-+	pmd = early_ioremap_pmd(fix_to_virt(FIX_BTMAP_BEGIN));
-+#ifndef CONFIG_ARM64_64K_PAGES
-+	/* need to populate pmd for 4k pagesize only */
-+	pmd_populate_kernel(&init_mm, pmd, bm_pte);
-+#endif
-+	/*
-+	 * The boot-ioremap range spans multiple pmds, for which
-+	 * we are not prepared:
-+	 */
-+	BUILD_BUG_ON((__fix_to_virt(FIX_BTMAP_BEGIN) >> PMD_SHIFT)
-+		     != (__fix_to_virt(FIX_BTMAP_END) >> PMD_SHIFT));
-+
-+	if (pmd != early_ioremap_pmd(fix_to_virt(FIX_BTMAP_END))) {
-+		WARN_ON(1);
-+		pr_warn("pmd %p != %p\n",
-+			pmd, early_ioremap_pmd(fix_to_virt(FIX_BTMAP_END)));
-+		pr_warn("fix_to_virt(FIX_BTMAP_BEGIN): %08lx\n",
-+			fix_to_virt(FIX_BTMAP_BEGIN));
-+		pr_warn("fix_to_virt(FIX_BTMAP_END):   %08lx\n",
-+			fix_to_virt(FIX_BTMAP_END));
-+
-+		pr_warn("FIX_BTMAP_END:       %d\n", FIX_BTMAP_END);
-+		pr_warn("FIX_BTMAP_BEGIN:     %d\n",
-+			FIX_BTMAP_BEGIN);
-+	}
-+
-+	early_ioremap_setup();
-+}
-+
-+void __init __early_set_fixmap(enum fixed_addresses idx,
-+			       phys_addr_t phys, pgprot_t flags)
-+{
-+	unsigned long addr = __fix_to_virt(idx);
-+	pte_t *pte;
-+
-+	if (idx >= __end_of_fixed_addresses) {
-+		BUG();
-+		return;
-+	}
-+
-+	pte = early_ioremap_pte(addr);
-+
-+	if (pgprot_val(flags))
-+		set_pte(pte, pfn_pte(phys >> PAGE_SHIFT, flags));
-+	else {
-+		pte_clear(&init_mm, addr, pte);
-+		flush_tlb_kernel_range(addr, addr+PAGE_SIZE);
-+	}
-+}
-diff --git a/arch/arm64/mm/mmu.c b/arch/arm64/mm/mmu.c
-index ba259a0..6b7e895 100644
---- a/arch/arm64/mm/mmu.c
-+++ b/arch/arm64/mm/mmu.c
-@@ -260,47 +260,6 @@ static void __init create_mapping(phys_addr_t phys, unsigned long virt,
- 	} while (pgd++, addr = next, addr != end);
- }
- 
--#ifdef CONFIG_EARLY_PRINTK
--/*
-- * Create an early I/O mapping using the pgd/pmd entries already populated
-- * in head.S as this function is called too early to allocated any memory. The
-- * mapping size is 2MB with 4KB pages or 64KB or 64KB pages.
-- */
--void __iomem * __init early_io_map(phys_addr_t phys, unsigned long virt)
--{
--	unsigned long size, mask;
--	bool page64k = IS_ENABLED(CONFIG_ARM64_64K_PAGES);
--	pgd_t *pgd;
--	pud_t *pud;
--	pmd_t *pmd;
--	pte_t *pte;
--
--	/*
--	 * No early pte entries with !ARM64_64K_PAGES configuration, so using
--	 * sections (pmd).
--	 */
--	size = page64k ? PAGE_SIZE : SECTION_SIZE;
--	mask = ~(size - 1);
--
--	pgd = pgd_offset_k(virt);
--	pud = pud_offset(pgd, virt);
--	if (pud_none(*pud))
--		return NULL;
--	pmd = pmd_offset(pud, virt);
--
--	if (page64k) {
--		if (pmd_none(*pmd))
--			return NULL;
--		pte = pte_offset_kernel(pmd, virt);
--		set_pte(pte, __pte((phys & mask) | PROT_DEVICE_nGnRE));
--	} else {
--		set_pmd(pmd, __pmd((phys & mask) | PROT_SECT_DEVICE_nGnRE));
--	}
--
--	return (void __iomem *)((virt & mask) + (phys & ~mask));
--}
--#endif
--
- static void __init map_mem(void)
- {
- 	struct memblock_region *reg;
--- 
-1.8.5.3
+sure. I mean we can return actual zcomp_set_max_streams() error (if any)
+back to user from max_comp_streams_store():
 
+	[..]
+	ret = zcomp_set_max_streams(...);
+	[..]
+	return ret;
+
+> > 
+> > for example, -E2BIG if user requested extremly large number of streams,
+> > like 5000 streams.
+> 
+> I'm not sure it's right example for E2BIG.
+> When I read the comment, it says "argument list too long".
+> Anyway, when I tried ENOTSUPP, echo doesn't show meaningful error to user
+> and I dont' know it's casual err number for userspace.
+> Pz, comment about that.
+> 
+
+E2BIG (introduced by POSIX.1-2001) was a quick example and, probably, not
+the perfect one. In general, I'm not against this change and I can live
+with zcomp_set_max_streams() returning bool.
+
+	-ss
+
+> > 
+> > >  
+> > >  static void zcomp_strm_single_destroy(struct zcomp *comp)
+> > > @@ -283,7 +283,7 @@ ssize_t zcomp_available_show(const char *comp, char *buf)
+> > >  	return sz;
+> > >  }
+> > >  
+> > > -int zcomp_set_max_streams(struct zcomp *comp, int num_strm)
+> > > +bool zcomp_set_max_streams(struct zcomp *comp, int num_strm)
+> > >  {
+> > >  	return comp->set_max_streams(comp, num_strm);
+> > >  }
+> > > diff --git a/drivers/block/zram/zcomp.h b/drivers/block/zram/zcomp.h
+> > > index 8b8997f8613b..c59d1fca72c0 100644
+> > > --- a/drivers/block/zram/zcomp.h
+> > > +++ b/drivers/block/zram/zcomp.h
+> > > @@ -46,7 +46,7 @@ struct zcomp {
+> > >  
+> > >  	struct zcomp_strm *(*strm_find)(struct zcomp *comp);
+> > >  	void (*strm_release)(struct zcomp *comp, struct zcomp_strm *zstrm);
+> > > -	int (*set_max_streams)(struct zcomp *comp, int num_strm);
+> > > +	bool (*set_max_streams)(struct zcomp *comp, int num_strm);
+> > >  	void (*destroy)(struct zcomp *comp);
+> > >  };
+> > >  
+> > > @@ -64,5 +64,5 @@ int zcomp_compress(struct zcomp *comp, struct zcomp_strm *zstrm,
+> > >  int zcomp_decompress(struct zcomp *comp, const unsigned char *src,
+> > >  		size_t src_len, unsigned char *dst);
+> > >  
+> > > -int zcomp_set_max_streams(struct zcomp *comp, int num_strm);
+> > > +bool zcomp_set_max_streams(struct zcomp *comp, int num_strm);
+> > >  #endif /* _ZCOMP_H_ */
+> > > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> > > index 7631ef0cbc41..eead9db9b100 100644
+> > > --- a/drivers/block/zram/zram_drv.c
+> > > +++ b/drivers/block/zram/zram_drv.c
+> > > @@ -128,17 +128,24 @@ static ssize_t max_comp_streams_store(struct device *dev,
+> > >  	struct zram *zram = dev_to_zram(dev);
+> > >  
+> > >  	if (kstrtoint(buf, 0, &num))
+> > > -		return -EINVAL;
+> > > +		goto out;
+> > >  	if (num < 1)
+> > > -		return -EINVAL;
+> > > +		goto out;
+> > > +
+> > >  	down_write(&zram->init_lock);
+> > >  	if (init_done(zram)) {
+> > > -		if (zcomp_set_max_streams(zram->comp, num))
+> > > +		if (!zcomp_set_max_streams(zram->comp, num)) {
+> > >  			pr_info("Cannot change max compression streams\n");
+> > > +			goto out_unlock;
+> > > +		}
+> > >  	}
+> > > +
+> > >  	zram->max_comp_streams = num;
+> > 
+> > agree, better to avoid this for a single stream.
+> 
+> Yeb.
+> 
+> -- 
+> Kind regards,
+> Minchan Kim
+> 
