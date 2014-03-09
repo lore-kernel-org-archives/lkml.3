@@ -1,202 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766AbaCIRe7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 13:34:59 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:55990 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752568AbaCIRe4 (ORCPT
+	id S1752546AbaCIRi7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 13:38:59 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:49603 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751792AbaCIRi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 13:34:56 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "matthew.garrett@nebula.com" <matthew.garrett@nebula.com>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>
-Subject: Re: [RFC PATCH 6/8] ACPI: use platform bus as the default bus for _HID enumeration
-Date: Sun, 09 Mar 2014 18:50:13 +0100
-Message-ID: <5180657.oM3SbsRfFK@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1394343207.10143.2.camel@rzhang1-mobl4>
-References: <1393405874-3266-1-git-send-email-rui.zhang@intel.com> <2388303.C1BkYjz7xX@vostro.rjw.lan> <1394343207.10143.2.camel@rzhang1-mobl4>
+	Sun, 9 Mar 2014 13:38:57 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <1394376353.20149.96.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <1394320530-3508-1-git-send-email-ast@plumgrid.com>
+	<1394320530-3508-2-git-send-email-ast@plumgrid.com>
+	<1394376353.20149.96.camel@edumazet-glaptop2.roam.corp.google.com>
+Date: Sun, 9 Mar 2014 10:38:55 -0700
+Message-ID: <CAMEtUuyB9ZhvwU+Lv5UypXDbgAG02BgdRomF9nOef-GqNAxjww@mail.gmail.com>
+Subject: Re: [PATCH v7 net-next 1/3] filter: add Extended BPF interpreter and converter
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Hagen Paul Pfeifer <hagen@jauu.net>,
+        Jesse Gross <jesse@nicira.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, March 09, 2014 01:33:27 PM Zhang Rui wrote:
-> On Fri, 2014-03-07 at 02:46 +0100, Rafael J. Wysocki wrote:
-> > On Tuesday, March 04, 2014 01:35:00 AM Rafael J. Wysocki wrote:
-> > > On 3/4/2014 1:27 AM, Zhang, Rui wrote:
-> > > >
-> > > >> -----Original Message-----
-> > > >> From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
-> > > >> Sent: Tuesday, March 04, 2014 7:23 AM
-> > > >> To: Zhang, Rui
-> > > >> Cc: linux-acpi@vger.kernel.org; linux-kernel@vger.kernel.org;
-> > > >> bhelgaas@google.com; matthew.garrett@nebula.com; Wysocki, Rafael J;
-> > > >> dmitry.torokhov@gmail.com
-> > > >> Subject: Re: [RFC PATCH 6/8] ACPI: use platform bus as the default bus
-> > > >> for _HID enumeration
-> > > >> Importance: High
-> > > >>
-> > > >> On Monday, March 03, 2014 10:11:48 PM Zhang Rui wrote:
-> > > >>> On Mon, 2014-03-03 at 00:51 +0100, Rafael J. Wysocki wrote:
-> > > >>>> On Wednesday, February 26, 2014 05:11:12 PM Zhang Rui wrote:
-> > > >>>>> Because of the growing demand for enumerating ACPI devices to
-> > > >>>>> platform bus, this patch changes the code to enumerate ACPI
-> > > >>>>> devices with _HID/_CID to platform bus by default, unless the
-> > > >> device already has a scan handler attached.
-> > > >>>>> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-> > > >>>>> ---
-> > > >>>>>   drivers/acpi/acpi_platform.c |   28 ----------------------------
-> > > >>>>>   drivers/acpi/scan.c          |   12 ++++++------
-> > > >>>>>   2 files changed, 6 insertions(+), 34 deletions(-)
-> > > >>>>>
-> > > >>>>> diff --git a/drivers/acpi/acpi_platform.c
-> > > >>>>> b/drivers/acpi/acpi_platform.c index dbfe49e..33376a9 100644
-> > > >>>>> --- a/drivers/acpi/acpi_platform.c
-> > > >>>>> +++ b/drivers/acpi/acpi_platform.c
-> > > >>>>> @@ -22,24 +22,6 @@
-> > > >>>>>
-> > > >>>>>   ACPI_MODULE_NAME("platform");
-> > > >>>>>
-> > > >>>>> -/*
-> > > >>>>> - * The following ACPI IDs are known to be suitable for
-> > > >>>>> representing as
-> > > >>>>> - * platform devices.
-> > > >>>>> - */
-> > > >>>>> -static const struct acpi_device_id acpi_platform_device_ids[] =
-> > > >> {
-> > > >>>>> -
-> > > >>>>> -	{ "PNP0D40" },
-> > > >>>>> -	{ "ACPI0003" },
-> > > >>>>> -	{ "VPC2004" },
-> > > >>>>> -	{ "BCM4752" },
-> > > >>>>> -
-> > > >>>>> -	/* Intel Smart Sound Technology */
-> > > >>>>> -	{ "INT33C8" },
-> > > >>>>> -	{ "80860F28" },
-> > > >>>>> -
-> > > >>>>> -	{ }
-> > > >>>>> -};
-> > > >>>>> -
-> > > >>>>>   /**
-> > > >>>>>    * acpi_create_platform_device - Create platform device for ACPI
-> > > >> device node
-> > > >>>>>    * @adev: ACPI device node to create a platform device for.
-> > > >>>>> @@ -125,13 +107,3 @@ int acpi_create_platform_device(struct
-> > > >> acpi_device *adev,
-> > > >>>>>   	kfree(resources);
-> > > >>>>>   	return 1;
-> > > >>>>>   }
-> > > >>>>> -
-> > > >>>>> -static struct acpi_scan_handler platform_handler = {
-> > > >>>>> -	.ids = acpi_platform_device_ids,
-> > > >>>>> -	.attach = acpi_create_platform_device,
-> > > >>>>> -};
-> > > >>>>> -
-> > > >>>>> -void __init acpi_platform_init(void) -{
-> > > >>>>> -	acpi_scan_add_handler(&platform_handler);
-> > > >>>>> -}
-> > > >>>>> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c index
-> > > >>>>> 5967338..61af32e 100644
-> > > >>>>> --- a/drivers/acpi/scan.c
-> > > >>>>> +++ b/drivers/acpi/scan.c
-> > > >>>>> @@ -2022,14 +2022,15 @@ static int
-> > > >> acpi_scan_attach_handler(struct acpi_device *device)
-> > > >>>>>   		handler = acpi_scan_match_handler(hwid->id, &devid);
-> > > >>>>>   		if (handler) {
-> > > >>>>>   			ret = handler->attach(device, devid);
-> > > >>>>> -			if (ret > 0) {
-> > > >>>>> +			if (ret > 0)
-> > > >>>>>   				device->handler = handler;
-> > > >>>>> -				break;
-> > > >>>>> -			} else if (ret < 0) {
-> > > >>>>> -				break;
-> > > >>>>> -			}
-> > > >>>>> +			if (ret)
-> > > >>>>> +				goto end;
-> > > >>>>>   		}
-> > > >>>>>   	}
-> > > >>>>> +end:
-> > > >>>>> +	if (!list_empty(&device->pnp.ids) && !device->handler)
-> > > >>>> I'm a bit concerned that this check will create platform devices
-> > > >> for
-> > > >>>> too many ACPI device objects.
-> > > >>> agreed. there are some devices created unexpected by this patch, e.g.
-> > > >>> on my test machine, I can see
-> > > >>>
-> > > >>> /sys/bus/platform/devices/LNXSYSTM:00 (ACPI system bus/root node)
-> > > >>> /sys/bus/platform/devices/PNP0000:00  (PIC)
-> > > >>> /sys/bus/platform/devices/PNP0100:00  (system timer?)
-> > > >>>
-> > > >>>>    Shouldn't we require that _HID or at least _CID is present for
-> > > >>>> that?
-> > > >>>>
-> > > >>> I do not think so.
-> > > >>> only devices that invoke acpi_add_ids() may have pnp.ids but no
-> > > >>> _HID/_CID, right?
-> > > >>> I did a check in the code, those devices include:
-> > > >> Well, I did that too.
-> > > >>
-> > > >>> ACPI root node
-> > > >>> ACPI video
-> > > >>> ACPI bay
-> > > >>> ACPI dock
-> > > >>> IBM SMBus
-> > > >>> ACPI Power resource
-> > > >>> ACPI processor
-> > > >>> ACPI thermal
-> > > >>> ACPI fixed power/sleep button
-> > > >>>
-> > > >>> IMO, only the ACPI root node, ACPI power resource, possibly ACPI
-> > > >>> processor are the ones that we do not want to see in platform bus.
-> > > >> No, we don't want any of them.  So pretty much as I said, only if
-> > > >> _HID/_CID is present, please?
-> > > >>
-> > > > Why? We will convert the drivers for most of those devices from ACPI bus to platform bus sooner or later.
-> > > > We need to see them in platform bus...
-> > > 
-> > > No, we don't.
-> > > 
-> > > I'm not sure about IBM SMBus to be honest, but as for the rest:
-> > > 
-> > > Why would we want one for the ACPI root?
-> > > 
-> > > And for video?  Those things are PCI usually devices anyway and we just 
-> > > add "artificial" HIDs for them.
-> > > 
-> > > ACPI docks and bays are handled by the dock driver which creates 
-> > > platform devices for them already if needed and we don't want duplicates 
-> > > there.
-> > > 
-> > > ACPI processor has its own scan handler that binds those objects to 
-> > > system devices.
-> > > 
-> > > Power resources - no need.
-> > > 
-> > > Do we need platform devices for ACPI thermal zones?
-> > > 
-> > > Yes, we will need them for fixed buttons, but that's a special case anyway.
-> > 
-> > So, why don't we add an ACPI device object flag, say hid_device, such that if
-> > set, the ACPI core will create a struct platform device for that device object.
-> > Then, we can set hid_device for buttons and other stuff we care about.
-> > 
-> agreed. I will do this in next version.
-> But anyway, the exclude list is still needed for the _HID devices that
-> we do not want to see in platform, e.g.
-> /sys/bus/platform/devices/PNP0000:00  (PIC)
-> /sys/bus/platform/devices/PNP0100:00  (system timer?)
+On Sun, Mar 9, 2014 at 7:45 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> On Sat, 2014-03-08 at 15:15 -0800, Alexei Starovoitov wrote:
+>
+>> +/**
+>> + *   sk_run_filter_ext - run an extended filter
+>> + *   @ctx: buffer to run the filter on
+>> + *   @insn: filter to apply
+>> + *
+>> + * Decode and execute extended BPF instructions.
+>> + * @ctx is the data we are operating on.
+>> + * @filter is the array of filter instructions.
+>> + */
+>> +notrace u32 sk_run_filter_ext(void *ctx, const struct sock_filter_ext *insn)
+>> +{
+>> +     u64 stack[64];
+>> +     u64 regs[16];
+>> +     void *ptr;
+>> +     u64 tmp;
+>> +     int off;
 
-I see.
+First of all, great that you finally reviewed it! Feedback is appreciated :)
 
-OK
+> Why is this 'notrace' ?
 
-Rafael
+to avoid overhead of dummy call.
+JITed filters are not adding this dummy call.
+So 'notrace' on interpreter brings it to parity with JITed filters.
 
+> 80 u64 on the stack, that is 640 bytes to run a filter ????
+
+yes. that was described in commit log and in Doc...filter.txt:
+"
+- 16 4-byte stack slots for register spill-fill replaced with
+  up to 512 bytes of multi-use stack space
+"
+
+For interpreter it is prohibitive to dynamically allocate stack space
+that's why it just grabs 64*8 to run any program.
+For JIT it's going to be close to zero for majority of filters, since
+generated program will allocate only as much as was allowed
+by sk_chk_filter_ext(). Only largest programs would need 'up to 512'.
+This much stack would be needed for programs that need to use
+large key/value pairs in their ebpf tables.
+So far I haven't seen a program that approaches this limit,
+but it seems to me that 512 is reasonable, since kernel warns on
+functions with > 1k stack.
+
+btw, current x86 jit just does 'subq  $96,%rsp',
+I think ebpf jit should use the minimum amount of stack. Only amount
+that is needed.
+May be I'm over thinking it and having 'subq $512, %rsp' for JIT is also fine.
+Let me know.
+
+Thanks
+Alexei
