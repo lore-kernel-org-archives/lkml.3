@@ -1,255 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751888AbaCIFdN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 00:33:13 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:52571 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777AbaCIFdL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 00:33:11 -0500
-Date: Sat, 8 Mar 2014 21:33:06 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        DCG_UPD_stlinux_kernel@list.st.com, dwmw2@infradead.org,
-        linux-mtd@lists.infradead.org, Angus.Clark@st.com
-Subject: Re: [PATCH 01/35] mtd: st_spi_fsm: Allocate resources and register
- with MTD framework
-Message-ID: <20140309053306.GL31517@norris-Latitude-E6410>
-References: <1392735362-1245-1-git-send-email-lee.jones@linaro.org>
- <1392735362-1245-2-git-send-email-lee.jones@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392735362-1245-2-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752060AbaCIFdd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 00:33:33 -0500
+Received: from mga09.intel.com ([134.134.136.24]:42658 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751950AbaCIFdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Mar 2014 00:33:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,616,1389772800"; 
+   d="scan'208";a="496504908"
+Message-ID: <1394343207.10143.2.camel@rzhang1-mobl4>
+Subject: Re: [RFC PATCH 6/8] ACPI: use platform bus as the default bus for
+ _HID enumeration
+From: Zhang Rui <rui.zhang@intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "matthew.garrett@nebula.com" <matthew.garrett@nebula.com>,
+        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>
+Date: Sun, 09 Mar 2014 13:33:27 +0800
+In-Reply-To: <2388303.C1BkYjz7xX@vostro.rjw.lan>
+References: <1393405874-3266-1-git-send-email-rui.zhang@intel.com>
+	 <744357E9AAD1214791ACBA4B0B909263011E907E@SHSMSX101.ccr.corp.intel.com>
+	 <53151FB4.60502@intel.com> <2388303.C1BkYjz7xX@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
-
->From my very first glance here, it looks like there are several (mostly
-minor) comments that still aren't addressed in this series. I'll point
-at the ones I notice in this patch, but can you recheck my comments from
-v2? I'll still try to take another pass at reading the next 34
-patches...
-
-On Tue, Feb 18, 2014 at 02:55:28PM +0000, Lee Jones wrote:
-> This is a new driver. It's used to communicate with a special type of
-> optimised Serial Flash Controller called the FSM. The FSM uses a subset
-
-The question was asked earlier: what does FSM stand for? Perhaps include
-the expansion in either the Kconfig or driver?
-
-> of the SPI protocol to communicate with supported NOR-Flash devices.
+On Fri, 2014-03-07 at 02:46 +0100, Rafael J. Wysocki wrote:
+> On Tuesday, March 04, 2014 01:35:00 AM Rafael J. Wysocki wrote:
+> > On 3/4/2014 1:27 AM, Zhang, Rui wrote:
+> > >
+> > >> -----Original Message-----
+> > >> From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
+> > >> Sent: Tuesday, March 04, 2014 7:23 AM
+> > >> To: Zhang, Rui
+> > >> Cc: linux-acpi@vger.kernel.org; linux-kernel@vger.kernel.org;
+> > >> bhelgaas@google.com; matthew.garrett@nebula.com; Wysocki, Rafael J;
+> > >> dmitry.torokhov@gmail.com
+> > >> Subject: Re: [RFC PATCH 6/8] ACPI: use platform bus as the default bus
+> > >> for _HID enumeration
+> > >> Importance: High
+> > >>
+> > >> On Monday, March 03, 2014 10:11:48 PM Zhang Rui wrote:
+> > >>> On Mon, 2014-03-03 at 00:51 +0100, Rafael J. Wysocki wrote:
+> > >>>> On Wednesday, February 26, 2014 05:11:12 PM Zhang Rui wrote:
+> > >>>>> Because of the growing demand for enumerating ACPI devices to
+> > >>>>> platform bus, this patch changes the code to enumerate ACPI
+> > >>>>> devices with _HID/_CID to platform bus by default, unless the
+> > >> device already has a scan handler attached.
+> > >>>>> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+> > >>>>> ---
+> > >>>>>   drivers/acpi/acpi_platform.c |   28 ----------------------------
+> > >>>>>   drivers/acpi/scan.c          |   12 ++++++------
+> > >>>>>   2 files changed, 6 insertions(+), 34 deletions(-)
+> > >>>>>
+> > >>>>> diff --git a/drivers/acpi/acpi_platform.c
+> > >>>>> b/drivers/acpi/acpi_platform.c index dbfe49e..33376a9 100644
+> > >>>>> --- a/drivers/acpi/acpi_platform.c
+> > >>>>> +++ b/drivers/acpi/acpi_platform.c
+> > >>>>> @@ -22,24 +22,6 @@
+> > >>>>>
+> > >>>>>   ACPI_MODULE_NAME("platform");
+> > >>>>>
+> > >>>>> -/*
+> > >>>>> - * The following ACPI IDs are known to be suitable for
+> > >>>>> representing as
+> > >>>>> - * platform devices.
+> > >>>>> - */
+> > >>>>> -static const struct acpi_device_id acpi_platform_device_ids[] =
+> > >> {
+> > >>>>> -
+> > >>>>> -	{ "PNP0D40" },
+> > >>>>> -	{ "ACPI0003" },
+> > >>>>> -	{ "VPC2004" },
+> > >>>>> -	{ "BCM4752" },
+> > >>>>> -
+> > >>>>> -	/* Intel Smart Sound Technology */
+> > >>>>> -	{ "INT33C8" },
+> > >>>>> -	{ "80860F28" },
+> > >>>>> -
+> > >>>>> -	{ }
+> > >>>>> -};
+> > >>>>> -
+> > >>>>>   /**
+> > >>>>>    * acpi_create_platform_device - Create platform device for ACPI
+> > >> device node
+> > >>>>>    * @adev: ACPI device node to create a platform device for.
+> > >>>>> @@ -125,13 +107,3 @@ int acpi_create_platform_device(struct
+> > >> acpi_device *adev,
+> > >>>>>   	kfree(resources);
+> > >>>>>   	return 1;
+> > >>>>>   }
+> > >>>>> -
+> > >>>>> -static struct acpi_scan_handler platform_handler = {
+> > >>>>> -	.ids = acpi_platform_device_ids,
+> > >>>>> -	.attach = acpi_create_platform_device,
+> > >>>>> -};
+> > >>>>> -
+> > >>>>> -void __init acpi_platform_init(void) -{
+> > >>>>> -	acpi_scan_add_handler(&platform_handler);
+> > >>>>> -}
+> > >>>>> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c index
+> > >>>>> 5967338..61af32e 100644
+> > >>>>> --- a/drivers/acpi/scan.c
+> > >>>>> +++ b/drivers/acpi/scan.c
+> > >>>>> @@ -2022,14 +2022,15 @@ static int
+> > >> acpi_scan_attach_handler(struct acpi_device *device)
+> > >>>>>   		handler = acpi_scan_match_handler(hwid->id, &devid);
+> > >>>>>   		if (handler) {
+> > >>>>>   			ret = handler->attach(device, devid);
+> > >>>>> -			if (ret > 0) {
+> > >>>>> +			if (ret > 0)
+> > >>>>>   				device->handler = handler;
+> > >>>>> -				break;
+> > >>>>> -			} else if (ret < 0) {
+> > >>>>> -				break;
+> > >>>>> -			}
+> > >>>>> +			if (ret)
+> > >>>>> +				goto end;
+> > >>>>>   		}
+> > >>>>>   	}
+> > >>>>> +end:
+> > >>>>> +	if (!list_empty(&device->pnp.ids) && !device->handler)
+> > >>>> I'm a bit concerned that this check will create platform devices
+> > >> for
+> > >>>> too many ACPI device objects.
+> > >>> agreed. there are some devices created unexpected by this patch, e.g.
+> > >>> on my test machine, I can see
+> > >>>
+> > >>> /sys/bus/platform/devices/LNXSYSTM:00 (ACPI system bus/root node)
+> > >>> /sys/bus/platform/devices/PNP0000:00  (PIC)
+> > >>> /sys/bus/platform/devices/PNP0100:00  (system timer?)
+> > >>>
+> > >>>>    Shouldn't we require that _HID or at least _CID is present for
+> > >>>> that?
+> > >>>>
+> > >>> I do not think so.
+> > >>> only devices that invoke acpi_add_ids() may have pnp.ids but no
+> > >>> _HID/_CID, right?
+> > >>> I did a check in the code, those devices include:
+> > >> Well, I did that too.
+> > >>
+> > >>> ACPI root node
+> > >>> ACPI video
+> > >>> ACPI bay
+> > >>> ACPI dock
+> > >>> IBM SMBus
+> > >>> ACPI Power resource
+> > >>> ACPI processor
+> > >>> ACPI thermal
+> > >>> ACPI fixed power/sleep button
+> > >>>
+> > >>> IMO, only the ACPI root node, ACPI power resource, possibly ACPI
+> > >>> processor are the ones that we do not want to see in platform bus.
+> > >> No, we don't want any of them.  So pretty much as I said, only if
+> > >> _HID/_CID is present, please?
+> > >>
+> > > Why? We will convert the drivers for most of those devices from ACPI bus to platform bus sooner or later.
+> > > We need to see them in platform bus...
+> > 
+> > No, we don't.
+> > 
+> > I'm not sure about IBM SMBus to be honest, but as for the rest:
+> > 
+> > Why would we want one for the ACPI root?
+> > 
+> > And for video?  Those things are PCI usually devices anyway and we just 
+> > add "artificial" HIDs for them.
+> > 
+> > ACPI docks and bays are handled by the dock driver which creates 
+> > platform devices for them already if needed and we don't want duplicates 
+> > there.
+> > 
+> > ACPI processor has its own scan handler that binds those objects to 
+> > system devices.
+> > 
+> > Power resources - no need.
+> > 
+> > Do we need platform devices for ACPI thermal zones?
+> > 
+> > Yes, we will need them for fixed buttons, but that's a special case anyway.
 > 
-> Acked-by Angus Clark <angus.clark@st.com>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  drivers/mtd/devices/Kconfig      |   8 ++++
->  drivers/mtd/devices/Makefile     |   1 +
->  drivers/mtd/devices/st_spi_fsm.c | 101 +++++++++++++++++++++++++++++++++++++++
->  drivers/mtd/devices/st_spi_fsm.h |  27 +++++++++++
->  4 files changed, 137 insertions(+)
->  create mode 100644 drivers/mtd/devices/st_spi_fsm.c
->  create mode 100644 drivers/mtd/devices/st_spi_fsm.h
+> So, why don't we add an ACPI device object flag, say hid_device, such that if
+> set, the ACPI core will create a struct platform device for that device object.
+> Then, we can set hid_device for buttons and other stuff we care about.
 > 
-> diff --git a/drivers/mtd/devices/Kconfig b/drivers/mtd/devices/Kconfig
-> index 74ab4b7..0cf48ac 100644
-> --- a/drivers/mtd/devices/Kconfig
-> +++ b/drivers/mtd/devices/Kconfig
-> @@ -217,6 +217,14 @@ config MTD_DOCG3
->  	  M-Systems and now Sandisk. The support is very experimental,
->  	  and doesn't give access to any write operations.
->  
-> +config MTD_ST_SPI_FSM
-> +	tristate "ST Microelectronics SPI FSM Serial Flash Controller"
-> +	depends on ARM || SH
-> +	help
-> +	  This provides an MTD device driver for the ST Microelectronics
-> +	  SPI FSM Serial Flash Controller and support for a subset of
-> +	  connected Serial Flash devices.
-> +
->  if MTD_DOCG3
->  config BCH_CONST_M
->  	default 14
-> diff --git a/drivers/mtd/devices/Makefile b/drivers/mtd/devices/Makefile
-> index d83bd73..c68868f 100644
-> --- a/drivers/mtd/devices/Makefile
-> +++ b/drivers/mtd/devices/Makefile
-> @@ -16,6 +16,7 @@ obj-$(CONFIG_MTD_NAND_OMAP_BCH)	+= elm.o
->  obj-$(CONFIG_MTD_SPEAR_SMI)	+= spear_smi.o
->  obj-$(CONFIG_MTD_SST25L)	+= sst25l.o
->  obj-$(CONFIG_MTD_BCM47XXSFLASH)	+= bcm47xxsflash.o
-> +obj-$(CONFIG_MTD_ST_SPI_FSM)    += st_spi_fsm.o
->  
->  
->  CFLAGS_docg3.o			+= -I$(src)
-> diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-> new file mode 100644
-> index 0000000..2f4ebb4
-> --- /dev/null
-> +++ b/drivers/mtd/devices/st_spi_fsm.c
-> @@ -0,0 +1,101 @@
-> +/*
-> + * st_spi_fsm.c	Support for ST Serial Flash Controller
-> + *
-> + * Author: Angus Clark <angus.clark@st.com>
-> + *
-> + * Copyright (C) 2010-2013 STicroelectronics Limited
+agreed. I will do this in next version.
+But anyway, the exclude list is still needed for the _HID devices that
+we do not want to see in platform, e.g.
+/sys/bus/platform/devices/PNP0000:00  (PIC)
+/sys/bus/platform/devices/PNP0100:00  (system timer?)
 
-I commented before:
 
-s/STicro/STMicro/
+thanks,
+rui
 
-This is in the header, too. I'm guessing that's just a typo. Maybe
-update the year too?
+> Thanks,
+> Rafael
+> 
 
-> + *
-> + * JEDEC probe based on drivers/mtd/devices/m25p80.c
-> + *
-> + * This code is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + */
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/mtd/mtd.h>
-> +#include <linux/sched.h>
-> +#include <linux/delay.h>
-> +#include <linux/io.h>
-> +#include <linux/of.h>
-> +
-> +#include "st_spi_fsm.h"
-> +
-> +static int stfsm_probe(struct platform_device *pdev)
-> +{
-> +	struct device_node *np = pdev->dev.of_node;
-> +	struct resource *res;
-> +	struct stfsm *fsm;
-> +
-> +	if (!np) {
-> +		dev_err(&pdev->dev, "No DT found\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	fsm = devm_kzalloc(&pdev->dev, sizeof(*fsm), GFP_KERNEL);
-> +	if (!fsm)
-> +		return -ENOMEM;
-> +
-> +	fsm->dev = &pdev->dev;
-> +
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	if (!res) {
-> +		dev_err(&pdev->dev, "Resource not found\n");
-> +		return -ENODEV;
-> +	}
-> +
-> +	fsm->base = devm_ioremap_resource(&pdev->dev, res);
-> +	if (IS_ERR(fsm->base)) {
-> +		dev_err(&pdev->dev,
-> +			"Failed to reserve memory region [0x%08x-0x%08x]\n",
-> +			res->start, res->end);
 
-I'll repeat my comment:
-
-Use the special %pr or %pR format specifier? See
-Documentation/printk-formats.txt
-
-> +		return PTR_ERR(fsm->base);
-> +	}
-> +
-> +	mutex_init(&fsm->lock);
-> +
-> +	platform_set_drvdata(pdev, fsm);
-> +
-> +	fsm->mtd.dev.parent	= &pdev->dev;
-> +	fsm->mtd.type		= MTD_NORFLASH;
-> +	fsm->mtd.writesize	= 4;
-> +	fsm->mtd.writebufsize	= fsm->mtd.writesize;
-> +	fsm->mtd.flags		= MTD_CAP_NORFLASH;
-> +
-> +	return mtd_device_parse_register(&fsm->mtd, NULL, NULL, NULL, 0);
-> +}
-> +
-> +static int stfsm_remove(struct platform_device *pdev)
-> +{
-> +	struct stfsm *fsm = platform_get_drvdata(pdev);
-> +	int err;
-> +
-> +	err = mtd_device_unregister(&fsm->mtd);
-> +	if (err)
-> +		return err;
-> +
-> +	return 0;
-
-I'll repeat my comment: just make this
-
-	return mtd_device_unregister(&fsm->mtd);
-
-> +}
-> +
-> +static struct of_device_id stfsm_match[] = {
-> +	{ .compatible = "st,spi-fsm", },
-> +	{},
-> +};
-> +MODULE_DEVICE_TABLE(of, stfsm_match);
-> +
-> +static struct platform_driver stfsm_driver = {
-> +	.probe		= stfsm_probe,
-> +	.remove		= stfsm_remove,
-> +	.driver		= {
-> +		.name	= "st-spi-fsm",
-> +		.owner	= THIS_MODULE,
-> +		.of_match_table = stfsm_match,
-> +	},
-> +};
-> +module_platform_driver(stfsm_driver);
-> +
-> +MODULE_AUTHOR("Angus Clark <angus.clark@st.com>");
-> +MODULE_DESCRIPTION("ST SPI FSM driver");
-> +MODULE_LICENSE("GPL");
-> diff --git a/drivers/mtd/devices/st_spi_fsm.h b/drivers/mtd/devices/st_spi_fsm.h
-> new file mode 100644
-> index 0000000..df45e1a
-> --- /dev/null
-> +++ b/drivers/mtd/devices/st_spi_fsm.h
-
-You add this header here, but (per my suggestions) you merge it back
-into st_spi_fsm.c in patch 2. Perhaps you never should have created it?
-Maybe this was a side effect of git-rebase over a few review cycles?
-
-> @@ -0,0 +1,27 @@
-> +/*
-> + * st_spi_fsm.c	Support for ST Serial Flash Controller
-> + *
-> + * Author: Angus Clark <angus.clark@st.com>
-> + *
-> + * Copyright (C) 2010-2013 STicroelectronics Limited
-> + *
-> + * JEDEC probe based on drivers/mtd/devices/m25p80.c
-> + *
-> + * This code is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + */
-> +
-> +#ifndef ST_SPI_FSM_H
-> +#define ST_SPI_FSM_H
-> +
-> +struct stfsm {
-> +	struct device		*dev;
-> +	void __iomem		*base;
-> +	struct resource		*region;
-> +	struct mtd_info		mtd;
-> +	struct mutex		lock;
-> +};
-> +
-> +#endif	/* ST_SPI_FSM_H */
-
-Thanks,
-Brian
