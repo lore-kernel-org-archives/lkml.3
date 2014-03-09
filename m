@@ -1,205 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142AbaCIWAq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 18:00:46 -0400
-Received: from www62.your-server.de ([213.133.104.62]:34421 "EHLO
-	www62.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750931AbaCIWAp (ORCPT
+	id S1751846AbaCIWFB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 18:05:01 -0400
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:50424 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751201AbaCIWFA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 18:00:45 -0400
-Message-ID: <531CE47E.40700@iogearbox.net>
-Date: Sun, 09 Mar 2014 23:00:30 +0100
-From: Daniel Borkmann <borkmann@iogearbox.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Alexei Starovoitov <ast@plumgrid.com>
-CC: "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Hagen Paul Pfeifer <hagen@jauu.net>,
-        Jesse Gross <jesse@nicira.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [PATCH v7 net-next 1/3] filter: add Extended BPF interpreter
- and converter
-References: <1394320530-3508-1-git-send-email-ast@plumgrid.com> <1394320530-3508-2-git-send-email-ast@plumgrid.com> <531C5EB5.2080507@iogearbox.net> <CAMEtUux-Psz9NW+t7vf2-=iDE5TW7KDOag2TDbxTEvd6a=LKSw@mail.gmail.com>
-In-Reply-To: <CAMEtUux-Psz9NW+t7vf2-=iDE5TW7KDOag2TDbxTEvd6a=LKSw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Sun, 9 Mar 2014 18:05:00 -0400
+Message-ID: <1394402698.9066.6.camel@x220>
+Subject: [PATCH] MN10300: Fix typo "CONFIG_GEENERIC_CLOCKEVENTS_BROADCAST"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
+Cc: linux-am33-list@redhat.com, linux-kernel@vger.kernel.org
+Date: Sun, 09 Mar 2014 23:04:58 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: borkmann@iogearbox.net
+X-OriginalArrivalTime: 09 Mar 2014 22:04:59.0582 (UTC) FILETIME=[9D1185E0:01CF3BE3]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/09/2014 06:08 PM, Alexei Starovoitov wrote:
-> On Sun, Mar 9, 2014 at 5:29 AM, Daniel Borkmann <borkmann@iogearbox.net> wrote:
->> On 03/09/2014 12:15 AM, Alexei Starovoitov wrote:
->>>
->>> Extended BPF extends old BPF in the following ways:
->>> - from 2 to 10 registers
->>>     Original BPF has two registers (A and X) and hidden frame pointer.
->>>     Extended BPF has ten registers and read-only frame pointer.
->>> - from 32-bit registers to 64-bit registers
->>>     semantics of old 32-bit ALU operations are preserved via 32-bit
->>>     subregisters
->>> - if (cond) jump_true; else jump_false;
->>>     old BPF insns are replaced with:
->>>     if (cond) jump_true; /* else fallthrough */
->>> - adds signed > and >= insns
->>> - 16 4-byte stack slots for register spill-fill replaced with
->>>     up to 512 bytes of multi-use stack space
->>> - introduces bpf_call insn and register passing convention for zero
->>>     overhead calls from/to other kernel functions (not part of this patch)
->>> - adds arithmetic right shift insn
->>> - adds swab32/swab64 insns
->>> - adds atomic_add insn
->>> - old tax/txa insns are replaced with 'mov dst,src' insn
->>>
->>> Extended BPF is designed to be JITed with one to one mapping, which
->>> allows GCC/LLVM backends to generate optimized BPF code that performs
->>> almost as fast as natively compiled code
->>>
->>> sk_convert_filter() remaps old style insns into extended:
->>> 'sock_filter' instructions are remapped on the fly to
->>> 'sock_filter_ext' extended instructions when
->>> sysctl net.core.bpf_ext_enable=1
->>>
->>> Old filter comes through sk_attach_filter() or
->>> sk_unattached_filter_create()
->>>    if (bpf_ext_enable) {
->>>       convert to new
->>>       sk_chk_filter() - check old bpf
->>>       use sk_run_filter_ext() - new interpreter
->>>    } else {
->>>       sk_chk_filter() - check old bpf
->>>       if (bpf_jit_enable)
->>>           use old jit
->>>       else
->>>           use sk_run_filter() - old interpreter
->>>    }
->>>
->>> sk_run_filter_ext() interpreter is noticeably faster
->>> than sk_run_filter() for two reasons:
->>>
->>> 1.fall-through jumps
->>>     Old BPF jump instructions are forced to go either 'true' or 'false'
->>>     branch which causes branch-miss penalty.
->>>     Extended BPF jump instructions have one branch and fall-through,
->>>     which fit CPU branch predictor logic better.
->>>     'perf stat' shows drastic difference for branch-misses.
->>>
->>> 2.jump-threaded implementation of interpreter vs switch statement
->>>     Instead of single tablejump at the top of 'switch' statement, GCC will
->>>     generate multiple tablejump instructions, which helps CPU branch
->>> predictor
->>>
->>> Performance of two BPF filters generated by libpcap was measured
->>> on x86_64, i386 and arm32.
->>>
->>> fprog #1 is taken from Documentation/networking/filter.txt:
->>> tcpdump -i eth0 port 22 -dd
->>>
->>> fprog #2 is taken from 'man tcpdump':
->>> tcpdump -i eth0 'tcp port 22 and (((ip[2:2] - ((ip[0]&0xf)<<2)) -
->>>      ((tcp[12]&0xf0)>>2)) != 0)' -dd
->>>
->>> Other libpcap programs have similar performance differences.
->>>
->>> Raw performance data from BPF micro-benchmark:
->>> SK_RUN_FILTER on same SKB (cache-hit) or 10k SKBs (cache-miss)
->>> time in nsec per call, smaller is better
->>> --x86_64--
->>>            fprog #1  fprog #1   fprog #2  fprog #2
->>>            cache-hit cache-miss cache-hit cache-miss
->>> old BPF     90       101       192       202
->>> ext BPF     31        71       47         97
->>> old BPF jit 12        34       17         44
->>> ext BPF jit TBD
->>>
->>> --i386--
->>>            fprog #1  fprog #1   fprog #2  fprog #2
->>>            cache-hit cache-miss cache-hit cache-miss
->>> old BPF    107        136      227       252
->>> ext BPF     40        119       69       172
->>>
->>> --arm32--
->>>            fprog #1  fprog #1   fprog #2  fprog #2
->>>            cache-hit cache-miss cache-hit cache-miss
->>> old BPF    202        300      475       540
->>> ext BPF    180        270      330       470
->>> old BPF jit 26        182       37       202
->>> new BPF jit TBD
->>>
->>> Tested with trinify BPF fuzzer
->>>
->>> Future work:
->>>
->>> 0. add bpf/ebpf testsuite to tools/testing/selftests/net/bpf
->>>
->>> 1. add extended BPF JIT for x86_64
->>>
->>> 2. add inband old/new demux and extended BPF verifier, so that new
->>> programs
->>>      can be loaded through old sk_attach_filter() and
->>> sk_unattached_filter_create()
->>>      interfaces
->>>
->>> 3. tracing filters systemtap-like with extended BPF
->>>
->>> 4. OVS with extended BPF
->>>
->>> 5. nftables with extended BPF
->>>
->>> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
->>> Acked-by: Hagen Paul Pfeifer <hagen@jauu.net>
->>> Reviewed-by: Daniel Borkmann <dborkman@redhat.com>
->>
->>
->> One more question or possible issue that came through my mind: When
->> someone attaches a socket filter from user space, and bpf_ext_enable=1
->> then the old filter will transparently be converted to the new
->> representation. If then user space (e.g. through checkpoint restore)
->> will issue a sk_get_filter() and thus we're calling sk_decode_filter()
->> on sk->sk_filter and, therefore, try to decode what we stored in
->> insns_ext[] with the assumption we still have the old code. Would that
->> actually crash (or leak memory, or just return garbage), as we access
->> decodes[] array with filt->code? Would be great if you could double-check.
->
-> ohh. yes. missed that.
-> when bpf_ext_enable=1 I think it's cleaner to return ebpf filter.
-> This way the user space can see how old bpf filter was converted.
->
-> Of course we can allocate extra memory and keep original bpf code there
-> just to return it via sk_get_filter(), but that seems overkill.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+This typo has been in the tree since v2.6.37. Perhaps the negative test
+for CONFIG_GENERIC_CLOCKEVENTS_BROADCAST can actually be dropped.
+Anyhow, completely untested.
 
-Cc'ing Pavel for a8fc92778080 ("sk-filter: Add ability to get socket
-filter program (v2)").
+ arch/mn10300/kernel/cevt-mn10300.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I think the issue can be that when applications could get migrated
-from one machine to another and their kernel won't support ebpf yet,
-then filter could not get loaded this way as it's expected to return
-what the user loaded. The trade-off, however, is that the original
-BPF code needs to be stored as well. :(
-
->> The assumption with sk_get_filter() is that it returns the same filter
->> that was previously attached, so that it can be re-attached again at
->> a later point in time.
->
-> when bpf_ext_enable=1, load old, sk_get_filter() returns new ebpf,
-> this ebpf will be re-attachable, since there will be inband demux for bpf/ebpf.
->
-> Thanks
-> Alexei
->
+diff --git a/arch/mn10300/kernel/cevt-mn10300.c b/arch/mn10300/kernel/cevt-mn10300.c
+index ccce35e..504ef6a 100644
+--- a/arch/mn10300/kernel/cevt-mn10300.c
++++ b/arch/mn10300/kernel/cevt-mn10300.c
+@@ -16,7 +16,7 @@
+ #include "internal.h"
+ 
+ #ifdef CONFIG_SMP
+-#if (CONFIG_NR_CPUS > 2) && !defined(CONFIG_GEENERIC_CLOCKEVENTS_BROADCAST)
++#if (CONFIG_NR_CPUS > 2) && !defined(CONFIG_GENERIC_CLOCKEVENTS_BROADCAST)
+ #error "This doesn't scale well! Need per-core local timers."
+ #endif
+ #else /* CONFIG_SMP */
+-- 
+1.8.5.3
 
