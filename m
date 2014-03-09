@@ -1,95 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752517AbaCIIyH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 04:54:07 -0400
-Received: from sauhun.de ([89.238.76.85]:54824 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751398AbaCIIyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 04:54:04 -0400
-Date: Sun, 9 Mar 2014 09:53:58 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Chew Chiau Ee <chiau.ee.chew@intel.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] i2c: designware-pci: add 10-bit addressing mode
- functionality for BYT I2C
-Message-ID: <20140309085357.GA4695@katana>
-References: <1394201571-11681-1-git-send-email-chiau.ee.chew@intel.com>
- <1394201571-11681-2-git-send-email-chiau.ee.chew@intel.com>
+	id S1752535AbaCIJAs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 05:00:48 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55973 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751398AbaCIJAp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Mar 2014 05:00:45 -0400
+Date: Sun, 9 Mar 2014 09:00:40 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Linus Torvalds <torvalds@linux0foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org
+Message-ID: <20140309090040.GW28112@sirena.org.uk>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="YiEDa0DAkWCtVeE4"
+	protocol="application/pgp-signature"; boundary="fbLRCyggVpgIMbCc"
 Content-Disposition: inline
-In-Reply-To: <1394201571-11681-2-git-send-email-chiau.ee.chew@intel.com>
+X-Cookie: Oh no, not again.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.89.236
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [GIT PULL] spi fixes for v3.14
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---YiEDa0DAkWCtVeE4
+--fbLRCyggVpgIMbCc
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Fri, Mar 07, 2014 at 10:12:50PM +0800, Chew Chiau Ee wrote:
-> From: Chew, Chiau Ee <chiau.ee.chew@intel.com>
->=20
-> All the I2C controllers on Intel BayTrail LPSS subsystem able
-> to support 10-bit addressing mode functionality.
->=20
-> Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
-> Signed-off-by: Ong, Boon Leong <boon.leong.ong@intel.com>
-> ---
->  drivers/i2c/busses/i2c-designware-pcidrv.c |   17 +++++++++++------
->  1 files changed, 11 insertions(+), 6 deletions(-)
->=20
-> diff --git a/drivers/i2c/busses/i2c-designware-pcidrv.c b/drivers/i2c/bus=
-ses/i2c-designware-pcidrv.c
-> index f1dabee..87f2fc4 100644
-> --- a/drivers/i2c/busses/i2c-designware-pcidrv.c
-> +++ b/drivers/i2c/busses/i2c-designware-pcidrv.c
-> @@ -64,12 +64,19 @@ struct dw_pci_controller {
->  	u32 tx_fifo_depth;
->  	u32 rx_fifo_depth;
->  	u32 clk_khz;
-> +	u32 functionality;
->  };
-> =20
->  #define INTEL_MID_STD_CFG  (DW_IC_CON_MASTER |			\
->  				DW_IC_CON_SLAVE_DISABLE |	\
->  				DW_IC_CON_RESTART_EN)
-> =20
-> +#define DW_DEFAULT_FUNCTIONALITY (I2C_FUNC_I2C |			\
-> +					I2C_FUNC_SMBUS_BYTE |		\
-> +					I2C_FUNC_SMBUS_BYTE_DATA |	\
-> +					I2C_FUNC_SMBUS_WORD_DATA |	\
-> +					I2C_FUNC_SMBUS_I2C_BLOCK)
+The following changes since commit 0414855fdc4a40da05221fc6062cccbc0c30f169:
 
-Can't we have I2C_FUNC_SMBUS_EMUL here? (Need checking with
-I2C_SMBUS_QUICK)
+  Linux 3.14-rc5 (2014-03-02 18:56:16 -0800)
 
+are available in the git repository at:
 
---YiEDa0DAkWCtVeE4
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/spi.git tags/spi-v3=
+=2E14-rc5
+
+for you to fetch changes up to d930acfdb021f9d61e156c4f53d42043305f5bf6:
+
+  Merge remote-tracking branches 'spi/fix/ath79', 'spi/fix/atmel', 'spi/fix=
+/coldfire', 'spi/fix/fsl-dspi', 'spi/fix/imx' and 'spi/fix/topcliff-pch' in=
+to spi-linus (2014-03-07 11:08:13 +0800)
+
+It seems there's something about your e-mail address that stops me
+typing properly...
+
+----------------------------------------------------------------
+
+spi: Fixes for v3.14
+
+A scattering of driver specific fixes here.  The fixes from Axel cover
+bitrot in apparently unmaintained drivers, the at79 bug is fixing a
+glitch on /CS during initialisation of some devices which could break
+some slaves and the remainder are fixes for recently introduced bugs
+=66rom the past release cycle or so.
+
+----------------------------------------------------------------
+Alexander Stein (2):
+      spi/topcliff-pch: Fix DMA channel
+      spi-topcliff-pch: Fix probing when DMA mode is used
+
+Axel Lin (2):
+      spi: fsl-dspi: Fix getting correct address for master
+      spi: coldfire-qspi: Fix getting correct address for *mcfqspi
+
+Gabor Juhos (1):
+      spi: spi-ath79: fix initial GPIO CS line setup
+
+Mark Brown (1):
+      Merge remote-tracking branches 'spi/fix/ath79', 'spi/fix/atmel', 'spi=
+/fix/coldfire', 'spi/fix/fsl-dspi', 'spi/fix/imx' and 'spi/fix/topcliff-pch=
+' into spi-linus
+
+Philippe De Muyter (1):
+      spi: spi-imx: spi_imx_remove: do not disable disabled clocks
+
+Wenyou Yang (1):
+      spi: atmel: add missing spi_master_{resume,suspend} calls to PM callb=
+acks
+
+ drivers/spi/spi-ath79.c         |  4 ++--
+ drivers/spi/spi-atmel.c         | 17 ++++++++++++++++-
+ drivers/spi/spi-coldfire-qspi.c |  6 ++++--
+ drivers/spi/spi-fsl-dspi.c      |  6 +++---
+ drivers/spi/spi-imx.c           |  4 ++--
+ drivers/spi/spi-topcliff-pch.c  | 15 ++++++++-------
+ 6 files changed, 35 insertions(+), 17 deletions(-)
+
+--fbLRCyggVpgIMbCc
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTHCwlAAoJEBQN5MwUoCm2B6sP/32n+bq57zW4khi/abZKdUyW
-g+cK31cudfHOdUzzNAcixOqTq2DgkfDZViIP9D2Cum/suFCqjebjpIEtnkbjdfav
-xsXtAM+8XrS2biv2Wd7wXg6iW0n1UoHyl+bz57yYr8ZiXlI6lcwSuL4hKlgZA4Lm
-fw4jvn5GNz5lXZua8Fh3XE2uT43ViVO8Gx6EPZZsD+0wgXn8zBj37NAXtA5ENRRW
-vdwsRChNT00d9XNi3yhDfujhNbvK8Xfit91vWxTejsakpwkNt68NBDB5Gl4aDfq4
-oe/iv6Qzs3z8syyNnoSca3z/DbFSVQCnFGiVUiILpLHWzTSMVD7J7anxcFgRcy8R
-eNqtpEeEHPGysKNWBtdkzRvAIJDzPF4qcFRPz0Nx7AiKQcNH+wHHvHOMWOnCqq8l
-282z3WGHaOJnC7qQ0mWOwbLi/R0QhigCbuK0VHB9h1RDzqOfr26tpjOStr9V2f9v
-rvpkRF55g4YXeJ4HEAdpDP7t0YiPX1AwE/A3Po9I0s7jIb1EZXcDbmw6NyC2DjT6
-J1dQ+IazPcRybpDHxyXVvZUXm3Fqh7ArjQ6r0R9ONjJ2vTJ6W635N7JJJHzfRpYy
-QG9h/CcqU23G2fjlA+F/vH0kckZdHXDFBj0+mtZLfrUrPmkfO+LHB9vYKQbNRb2I
-PF8FqBSIzq18NRe7V3Bq
-=v7HB
+iQIcBAEBAgAGBQJTHC21AAoJELSic+t+oim911YP/3GQGuyVlFtFCGZZ/aKfFxhN
+1QZfiLVa7heRjGXWcURSXFaEShERg067f0o5j8sZybHZ4Q5nz96oZ8w4V32jugnS
+b63S+cKlucPEM7Kh90c0kDOP3m4+yvWqck8hPsGH13NDLBRsqTjxJuHS+qYrCgJJ
+7NP7cS79rmJHowtxMN/Fr4neqOoWm3NWshqm5y3CWZI/7gNeqcl8vKwvanbQfv1d
+xz9qGI9BWQtFnzobPxixJgDR+PVFAFxXo7Z2agBuDi4Fo8xp714uTVEJgZHfGdUD
+VaffdKPOT563U8QGTRn7870plomS8J4iaWET+nraIeChIF+n8WOaWdcsgSlzNSqg
+jEhrBnfIa9zexH8MDUp6e2EWp17PASKl5PkvTATTcxnBSc/R1Fe+l5v13wRaLeOr
+kpT6BrUvzq28VrKkac5hU0Cn/EkNb4czXwvsXAW+bJaOGTvgoTiu9s3SvvNiK+9F
+nXU90pCGqJxN7nwtmMGvq92HcqJg7R0yf9CWFB66KQjD1kL8yMTbnEUXRCLSgM85
+Xpuyn2/l1WCfBU/+17Q0nNoNOge8mMvMlbbjAucMi0QhQ2Mf7lmVxbL3/ju5ddmY
+9aitUaER6iLW51grTYUS7sCjUR0uL7v0JrfmctBS+2C9l/5LAoas6j7wElrgiy2/
+6xn4saHvX7UVUX+6rMkX
+=urvR
 -----END PGP SIGNATURE-----
 
---YiEDa0DAkWCtVeE4--
+--fbLRCyggVpgIMbCc--
