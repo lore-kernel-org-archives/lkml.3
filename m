@@ -1,118 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752535AbaCIJAs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 05:00:48 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55973 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751398AbaCIJAp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 05:00:45 -0400
-Date: Sun, 9 Mar 2014 09:00:40 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Linus Torvalds <torvalds@linux0foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org
-Message-ID: <20140309090040.GW28112@sirena.org.uk>
+	id S1752666AbaCIJDp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 05:03:45 -0400
+Received: from sauhun.de ([89.238.76.85]:43455 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752068AbaCIJDn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Mar 2014 05:03:43 -0400
+Date: Sun, 9 Mar 2014 10:03:39 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Chew Chiau Ee <chiau.ee.chew@intel.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] i2c: designware-pci: set ideal HCNT, LCNT and SDA
+ hold time value
+Message-ID: <20140309090339.GB4695@katana>
+References: <1394201571-11681-1-git-send-email-chiau.ee.chew@intel.com>
+ <1394201571-11681-3-git-send-email-chiau.ee.chew@intel.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fbLRCyggVpgIMbCc"
+	protocol="application/pgp-signature"; boundary="tjCHc7DPkfUGtrlw"
 Content-Disposition: inline
-X-Cookie: Oh no, not again.
+In-Reply-To: <1394201571-11681-3-git-send-email-chiau.ee.chew@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.89.236
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [GIT PULL] spi fixes for v3.14
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---fbLRCyggVpgIMbCc
+--tjCHc7DPkfUGtrlw
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-The following changes since commit 0414855fdc4a40da05221fc6062cccbc0c30f169:
+On Fri, Mar 07, 2014 at 10:12:51PM +0800, Chew Chiau Ee wrote:
+> From: Chew, Chiau Ee <chiau.ee.chew@intel.com>
+>=20
+> On Intel BayTrail, there was case whereby the resulting fast mode
+> bus speed becomes slower (~20% slower compared to expected speed)
+> if using the HCNT/LCNT calculated in the core layer. Thus, this
+> patch is added to allow pci glue layer to pass in optimal
+> HCNT/LCNT/SDA hold time values to core layer since the core
+> layer supports cofigurable HCNT/LCNT/SDA hold time values now.
+>=20
+> Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
 
-  Linux 3.14-rc5 (2014-03-02 18:56:16 -0800)
+Can you make use of those instead?
 
-are available in the git repository at:
+        u32                     sda_falling_time;
+        u32                     scl_falling_time;
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/spi.git tags/spi-v3=
-=2E14-rc5
+This is more consistent with using sda_hold_time and lets them have a
+common (and more readable) unit.
 
-for you to fetch changes up to d930acfdb021f9d61e156c4f53d42043305f5bf6:
 
-  Merge remote-tracking branches 'spi/fix/ath79', 'spi/fix/atmel', 'spi/fix=
-/coldfire', 'spi/fix/fsl-dspi', 'spi/fix/imx' and 'spi/fix/topcliff-pch' in=
-to spi-linus (2014-03-07 11:08:13 +0800)
-
-It seems there's something about your e-mail address that stops me
-typing properly...
-
-----------------------------------------------------------------
-
-spi: Fixes for v3.14
-
-A scattering of driver specific fixes here.  The fixes from Axel cover
-bitrot in apparently unmaintained drivers, the at79 bug is fixing a
-glitch on /CS during initialisation of some devices which could break
-some slaves and the remainder are fixes for recently introduced bugs
-=66rom the past release cycle or so.
-
-----------------------------------------------------------------
-Alexander Stein (2):
-      spi/topcliff-pch: Fix DMA channel
-      spi-topcliff-pch: Fix probing when DMA mode is used
-
-Axel Lin (2):
-      spi: fsl-dspi: Fix getting correct address for master
-      spi: coldfire-qspi: Fix getting correct address for *mcfqspi
-
-Gabor Juhos (1):
-      spi: spi-ath79: fix initial GPIO CS line setup
-
-Mark Brown (1):
-      Merge remote-tracking branches 'spi/fix/ath79', 'spi/fix/atmel', 'spi=
-/fix/coldfire', 'spi/fix/fsl-dspi', 'spi/fix/imx' and 'spi/fix/topcliff-pch=
-' into spi-linus
-
-Philippe De Muyter (1):
-      spi: spi-imx: spi_imx_remove: do not disable disabled clocks
-
-Wenyou Yang (1):
-      spi: atmel: add missing spi_master_{resume,suspend} calls to PM callb=
-acks
-
- drivers/spi/spi-ath79.c         |  4 ++--
- drivers/spi/spi-atmel.c         | 17 ++++++++++++++++-
- drivers/spi/spi-coldfire-qspi.c |  6 ++++--
- drivers/spi/spi-fsl-dspi.c      |  6 +++---
- drivers/spi/spi-imx.c           |  4 ++--
- drivers/spi/spi-topcliff-pch.c  | 15 ++++++++-------
- 6 files changed, 35 insertions(+), 17 deletions(-)
-
---fbLRCyggVpgIMbCc
+--tjCHc7DPkfUGtrlw
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Version: GnuPG v1.4.15 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTHC21AAoJELSic+t+oim911YP/3GQGuyVlFtFCGZZ/aKfFxhN
-1QZfiLVa7heRjGXWcURSXFaEShERg067f0o5j8sZybHZ4Q5nz96oZ8w4V32jugnS
-b63S+cKlucPEM7Kh90c0kDOP3m4+yvWqck8hPsGH13NDLBRsqTjxJuHS+qYrCgJJ
-7NP7cS79rmJHowtxMN/Fr4neqOoWm3NWshqm5y3CWZI/7gNeqcl8vKwvanbQfv1d
-xz9qGI9BWQtFnzobPxixJgDR+PVFAFxXo7Z2agBuDi4Fo8xp714uTVEJgZHfGdUD
-VaffdKPOT563U8QGTRn7870plomS8J4iaWET+nraIeChIF+n8WOaWdcsgSlzNSqg
-jEhrBnfIa9zexH8MDUp6e2EWp17PASKl5PkvTATTcxnBSc/R1Fe+l5v13wRaLeOr
-kpT6BrUvzq28VrKkac5hU0Cn/EkNb4czXwvsXAW+bJaOGTvgoTiu9s3SvvNiK+9F
-nXU90pCGqJxN7nwtmMGvq92HcqJg7R0yf9CWFB66KQjD1kL8yMTbnEUXRCLSgM85
-Xpuyn2/l1WCfBU/+17Q0nNoNOge8mMvMlbbjAucMi0QhQ2Mf7lmVxbL3/ju5ddmY
-9aitUaER6iLW51grTYUS7sCjUR0uL7v0JrfmctBS+2C9l/5LAoas6j7wElrgiy2/
-6xn4saHvX7UVUX+6rMkX
-=urvR
+iQIcBAEBAgAGBQJTHC5rAAoJEBQN5MwUoCm2KaIP/1S/CKW9OKuq80kcEmTgzaGn
+LD8fUdOxEfkdbL75g0MRSiEwaLUWKL4tjIpp+SUvru8K9zZTrTiej3Ji+rETil/Q
+Qmwyzghr0TormD+yCrySrdx4LHp5BfG2OSSPugmMGDHAH8a9miXm6CX3IUNnGH17
+Uwpqhibb5aYQZ388y51EToTuntV1zHfCuHmSjebOJSLazHXmk6KFBnyayLlZKNQK
+aw0sAbkcPPb5WVsP6fIRYGk3sddJgxxqKbjLF1Q79mlKe2PIFDva9/NBWP/feXk7
+vWtsasBx3sauOY3BVZHTOucwhdyq/A+pKb/htQb6Wwq9xyD8mbcU0DngCGMHof9n
+nrynXXAmjpYaiDvakWFDZJm0d38NehIIDsyk7zITLEz4AA08Ui0M+O7BYVDhYM3K
+5Q+JOlVomaTuE+HgiJuOC14B7V04+Py4/9LiquF/roXYL7MSM596kpIgwuqoC97x
+gT7VA+x9kufKuvA6KYczZstt0oikGM4B1LjNrwCrn8+ZvGVdO5ImVfMCQZyzMZzU
+wnic65YEtMp/XQVC+sRkeoMbMiJFV40iGYxlaMdIuG9EDeESzvJF8VNa/te93BOl
+KVKR+85FNrSVzZhKx7NtizqWROeR+DK6PO41C+0xKm2juCGqCedKmeoWg5tz3Kh+
+eFY/BC7HCsoIeE3z+bPr
+=Dct6
 -----END PGP SIGNATURE-----
 
---fbLRCyggVpgIMbCc--
+--tjCHc7DPkfUGtrlw--
