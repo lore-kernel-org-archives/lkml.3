@@ -1,55 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752410AbaCIDaV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 22:30:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6214 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751897AbaCIDaT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 22:30:19 -0500
-Date: Sat, 8 Mar 2014 22:29:46 -0500
-From: Mike Snitzer <snitzer@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Hannes Reinecke <hare@suse.de>, Mike Snitzer <snitzer@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, Jeff Moyer <jmoyer@redhat.com>,
-        Shaohua Li <shli@fusionio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: block: fix q->flush_rq NULL pointer crash on dm-mpath flush
-Message-ID: <20140309032946.GA19029@redhat.com>
-References: <x49iorp3fhm.fsf@segfault.boston.devel.redhat.com>
- <20140308155240.GA32297@infradead.org>
- <CAMM=eLewbtK7LiNZCXo=hm-sjVU2+MN+xTFuxb89mDA1iS3r0w@mail.gmail.com>
- <531B74B6.4070004@suse.de>
- <CAMM=eLfVpc=B7ZzxBDbKW4GZ_E5rOqrcbyppNBSz_brQaH4VNw@mail.gmail.com>
- <531B8CB1.2010502@suse.de>
- <20140308220926.GA15421@redhat.com>
- <531BB4A9.5000305@kernel.dk>
- <20140309005729.GA18321@redhat.com>
- <531BDD77.5020809@kernel.dk>
+	id S1752465AbaCIDlB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 22:41:01 -0500
+Received: from mail-la0-f51.google.com ([209.85.215.51]:47182 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752116AbaCIDk7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Mar 2014 22:40:59 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <531BDD77.5020809@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CANq1E4QRc+cwAJYFJg2F8WpSOrx2xXuPeiZYF6np_2C5CoqRqA@mail.gmail.com>
+References: <1394054334-20438-1-git-send-email-benjamin.tissoires@redhat.com>
+	<CANq1E4QRc+cwAJYFJg2F8WpSOrx2xXuPeiZYF6np_2C5CoqRqA@mail.gmail.com>
+Date: Sat, 8 Mar 2014 22:40:57 -0500
+Message-ID: <CAN+gG=GUieLNqn7Gp2y958J48bRQ+BCQx2Lf-noa6eoqNGxeDA@mail.gmail.com>
+Subject: Re: [PATCH v2 0/4] HID: ll transport cleanup: final round
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        David Barksdale <dbarksdale@uplogix.com>, Antonio Ospite <ao2@ao2.it>,
+        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 08 2014 at 10:18pm -0500,
-Jens Axboe <axboe@kernel.dk> wrote:
+On Fri, Mar 7, 2014 at 4:52 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> Hi
+>
+> On Wed, Mar 5, 2014 at 10:18 PM, Benjamin Tissoires
+> <benjamin.tissoires@redhat.com> wrote:
+>> Alright, this is the re-spin of the last round of transport cleanup.
+>>
+>> Some minor but important modifications are here, but nothing very enthousiastic.
+>>
+>> Thanks for the reviews and the tests so far.
+>
+> Apart from some minor comments on #1 and #2, this is:
 
-> On 2014-03-08 17:57, Mike Snitzer wrote:
-> >
-> >I had a look at what you queued, thing is commit 1874198 replaced code
-> >in blk_kick_flush() that did use list_add_tail().  So getting back to
-> >the way the original code  was (before 1874198) would need something
-> >like the following patch.
-> >
-> >But it isn't clear to me why we'd have the duality of front vs tail
-> >additions for flushes.  Maybe Christoph knows?
-> 
-> Not sure it'd even make a difference with the use case, but always
-> tail would be broken. But the flushing in general is a bit of a
-> nightmare, so I'd be inclined to add your full fix too, at least
-> this late in -rc.
+Hmm, neither my mailboxes nor patchwork gives me your comments on #2...
 
-OK, please feel free to add my Signed-off-by.
+By looking at the code, (assuming you mean the same comment that you
+made on #1), this is not so obvious.
+What we can do is add an arg to cp2112_hid_output() with the report
+number (and pass it to hid_hw_raw_request() ). However, this function
+is also used by cp2112_xfer(), and there is chances that I introduce a
+bug if I am not careful enough.
+I'd rather split cp2112_hid_output() in two, one for output reports,
+and one for features (with the reportID as an arg). I'll send this one
+after this series because I would like to do some more tests.
+
+>
+> Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+>
+
+Thanks a lot!
+
+Cheers,
+Benjamin
+
+> Thanks
+> David
+>
+>> Cheers,
+>> Benjamin
+>>
+>> Benjamin Tissoires (4):
+>>   HID: cp2112: remove various hid_out_raw_report calls
+>>   HID: cp2112: remove the last hid_output_raw_report() call
+>>   HID: sony: do not rely on hid_output_raw_report
+>>   HID: remove hid_output_raw_report transport implementations
+>>
+>>  drivers/hid/hid-cp2112.c      | 19 +++++++++-----
+>>  drivers/hid/hid-sony.c        | 60 ++++++++++---------------------------------
+>>  drivers/hid/hidraw.c          |  3 ++-
+>>  drivers/hid/i2c-hid/i2c-hid.c | 14 ----------
+>>  drivers/hid/uhid.c            |  1 -
+>>  drivers/hid/usbhid/hid-core.c | 19 +++++---------
+>>  include/linux/hid.h           | 21 ++-------------
+>>  net/bluetooth/hidp/core.c     | 14 ----------
+>>  8 files changed, 36 insertions(+), 115 deletions(-)
+>>
+>> --
+>> 1.8.5.3
