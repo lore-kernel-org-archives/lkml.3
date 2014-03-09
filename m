@@ -1,123 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752278AbaCIR2m (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 13:28:42 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:35281 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751703AbaCIR2l (ORCPT
+	id S1752487AbaCIR2w (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 13:28:52 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:61118 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751946AbaCIR2q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 13:28:41 -0400
-Date: Sun, 9 Mar 2014 10:28:46 -0700
-From: Olof Johansson <olof@lixom.net>
-To: torvalds@linux-foundation.org
-Cc: olof@lixom.net, arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] ARM: SoC fixes for 3.14-rc
-Message-ID: <20140309172846.GA20640@quad.lixom.net>
+	Sun, 9 Mar 2014 13:28:46 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <531CA4CB.1070705@roeck-us.net>
+Date: Sun, 09 Mar 2014 10:28:43 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Manuel Krause <manuelkrause@netscape.net>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+CC: Jean Delvare <jdelvare@suse.de>, lm-sensors@lm-sensors.org,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Subject: Re: 3.13.?: Strange / dangerous fan policy...
+References: <531A1EEE.9090101@netscape.net>	<20140307205506.GA6870@roeck-us.net>	<531A426D.6080100@netscape.net>	<20140307225230.GA31135@roeck-us.net> <20140308120831.328e0179@endymion.delvare> <531B3E4C.2040105@roeck-us.net> <531BB171.1060208@netscape.net>
+In-Reply-To: <531BB171.1060208@netscape.net>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 03/08/2014 04:10 PM, Manuel Krause wrote:
+> On 2014-03-08 16:59, Guenter Roeck wrote:
+>> On 03/08/2014 03:08 AM, Jean Delvare wrote:
+>>> On Fri, 7 Mar 2014 14:52:30 -0800, Guenter Roeck wrote:
+>>>> On Fri, Mar 07, 2014 at 11:04:29PM +0100, Manuel Krause wrote:
+>>>>> Hi, and thanks for the quick response!
+>>>>> No special fancy "fan control policy". 'fancontrol' isn't up or
+>>>>> running.
+>>>>> Vanilla kernels 3.11.* and 3.12.* had been working on here
+>>>>> without
+>>>>> any extra work.
+>>>>> --
+>>>>> # sensors
+>>>>> acpitz-virtual-0
+>>>>> Adapter: Virtual device
+>>>>> temp1:        +71.0°C  (crit = +256.0°C)
+>>>>> temp2:        +69.0°C  (crit = +110.0°C)
+>>>>> temp3:        +52.0°C  (crit = +105.0°C)
+>>>>> temp4:        +25.0°C  (crit = +110.0°C)
+>>>>> temp5:        +58.0°C  (crit = +110.0°C)
+>>>>>
+>>>>> coretemp-isa-0000
+>>>>> Adapter: ISA adapter
+>>>>> Core 0:       +62.0°C  (high = +105.0°C, crit = +105.0°C)
+>>>>> Core 1:       +60.0°C  (high = +105.0°C, crit = +105.0°C)
+>>>>> --
+>>>>> My notebook (HP/Compaq 6730b) does not have a seperate fan
+>>>>> sensor.
+>>>>> This is with 3.12.13 with my normal workload.
+>>>>>
+>>>>> Please, trust my above mentionned values of 94 °C vs. 74°C as I
+>>>>> don't like to boot 3.13.6 anymore, to avoid harm to the
+>>>>> notebook's
+>>>>> casing.
+>>>>
+>>>> Understood. Unfortunately, we'll need to get information
+>>>> from the new kernel to be able to track down the problem.
+>>>
+>>> Indeed. Not only the run-time temperatures, but also the high
+>>> and crit
+>>> limits.
+>>>
+>>>>> But I'd do to test any improvement-patch.
+>>>>
+>>>> So far I have no idea what is going on. I don't see anything
+>>>> in the
+>>>> drivers providing above data that would explain the behavior,
+>>>> but I might be missing something.
+>>>
+>>> Looks like a regression in the acpi subsystem or in power
+>>> management,
+>>> not hwmon. Hwmon is merely reporting the temperatures, it's not
+>>> responsible for the actual temperatures.
+>>>
+>>
+>> I would agree. I don't think we have enough information to be sure,
+>> though. There might be some unintended interaction or interference.
+>>
+>> gpu is a good hint ... for example, look at commit b9ed919f1c8
+>> (drm/nouveau/drm/pm: remove everything except the hwmon interfaces
+>> to THERM). nouveau does export pwm and fan control information,
+>> so any change in that code may have unintended side effects.
+>> Similar, I don't know how ec39f64bba (drm/radeon/dpm: Convert to
+>> use devm_hwmon_register_with_groups) could have the observed impact,
+>> as it is purely passive, but I prefer to be rather safe than sorry.
+>>
+>> This problem has now been submitted into bugzilla as
+>> https://bugzilla.kernel.org/show_bug.cgi?id=71711.
+>>
+>> Guenter
+>>
+>
+> Sorry, for beeing late, had to search for/accumulate much info for you...
+> I hope, you like me to put it into one answer to you all CCing you.
+>
+> My GFX is a GM45 Intel (mobile), shared memory, running the opensource Mesa drivers/extensions.
+> kernel-module: i915
+>
+> According to the output of 'cpupower': I have
+> CPUidle driver: acpi_idle
+> CPUidle governor: menu
+>
+> CPUfreq:
+>    driver: acpi-cpufreq
+>    available cpufreq governors: ondemand, performance
+> -
+> And "ondemand" is running.
+> --
+>
+> # sensors
+> acpitz-virtual-0
+> Adapter: Virtual device
+> temp1:        +41.0°C  (crit = +256.0°C)
+> temp2:        +92.0°C  (crit = +110.0°C)
+> temp3:        +71.0°C  (crit = +105.0°C)
+> temp4:        +26.5°C  (crit = +110.0°C)
+> temp5:        +25.0°C  (crit = +110.0°C)
+>
+> coretemp-isa-0000
+> Adapter: ISA adapter
+> Core 0:       +86.0°C  (high = +105.0°C, crit = +105.0°C)
+> Core 1:       +84.0°C  (high = +105.0°C, crit = +105.0°C)
+>
+> FROM a critical "smelly" situation today, kernel-compilation, fan @100%.
+> --
+>
+> Additional findings:
+>
+> Identification from bootup ACPI initialisation vs. sensors:
+> temp1 = DTSZ
+> temp2 = CPUZ --> triggering Cooling in 3.12.13 if > 74°C
+> temp3 = SKNZ
+> temp4 = BATZ "Battery Zone" always calm ~ +6°C of ambient T
+> temp5 = FDTZ --- in 3.12.13 a representation of the cooling-fan (25 - 45 - 58 - max?)
+> Core 0 & Core 1 are the internal CPU T sensors.
+>
+> With the 3.13.x (.5+) kernels the first gatherered cooling settings from bootup do stay forever. Means, rebooting a hot system will get a FDTZ @45°C+ and won't make any problems, as it does cool enough (even for kernel compiling on here). If it gets 25°C @bootup the system goes into emergency cooling somewhen. Same is with a suspend/resume.
+>
+> Kernel 3.12.13 adjusts the cooling on it's own, but appropriately.
+>
 
-The following changes since commit cfbf8d4857c26a8a307fb7cd258074c9dcd8c691:
+Hi Manuel,
 
-  Linux 3.14-rc4 (2014-02-23 17:40:03 -0800)
+thanks a lot for the additional information.
 
-are available in the git repository at:
+I added this exchange to bugzilla (https://bugzilla.kernel.org/show_bug.cgi?id=71711).
+This is pretty much all I can do at this point; I have no idea what
+is going on. Some change in ACPI would be my guess, but I did not see
+anything catching my eye when looking through the ACPI code.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-for-linus
+Guenter
 
-for you to fetch changes up to 10554647b488f58f2c36c78368e9bab4b93da721:
-
-  Merge tag 'omap-for-v3.14/fixes-dt-rc4' of git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap into fixes (2014-03-08 22:56:31 -0800)
-
-----------------------------------------------------------------
-
-ARM: SoC fixes for 3.14-rc
-
-A collection of fixes for ARM platforms. A little large due to us missing to
-do one last week, but there's nothing in particular here that is in itself
-large and scary.
-
-Mostly a handful of smaller fixes all over the place. The majority is made
-up of fixes for OMAP, but there are a few for others as well. In particular,
-there was a decision to rename a binding for the Broadcom pinctrl block that
-we need to go in before the final release since we then treat it as ABI.
-
-----------------------------------------------------------------
-Arnd Bergmann (1):
-      Merge tag 'omap-for-v3.14/fixes-rc4' of git://git.kernel.org/.../tmlind/linux-omap into fixes
-
-Christian Daudt (1):
-      pinctrl: refer to updated dt binding string.
-
-Illia Smyrnov (1):
-      ARM: OMAP4: hwmod: Fix SOFTRESET logic for OMAP4
-
-Javier Martinez Canillas (1):
-      ARM: dts: omap3-igep: fix boot fail due wrong compatible match
-
-Marek Belisko (1):
-      ARM: dts: omap3-gta04: Add ti,omap36xx to compatible property to avoid problems with booting
-
-Maxime Ripard (2):
-      ARM: sun7i: dt: Fix interrupt trigger types
-      ARM: sunxi: dt: Change the touchscreen compatibles
-
-Olof Johansson (3):
-      Merge tag 'sunxi-fixes-for-3.14' of https://github.com/mripard/linux into fixes
-      Merge tag 'bcm-for-3.14-pinctrl-reduced-rename' of git://github.com/broadcom/bcm11351 into fixes
-      Merge tag 'omap-for-v3.14/fixes-dt-rc4' of git://git.kernel.org/.../tmlind/linux-omap into fixes
-
-Santosh Shilimkar (1):
-      ARM: OMAP: Kill warning in CPUIDLE code with !CONFIG_SMP
-
-Sebastian Reichel (1):
-      ARM: OMAP2+: Add support for thumb mode on DT booted N900
-
-Sherman Yin (2):
-      Update dtsi with new pinctrl compatible string
-      pinctrl: Rename Broadcom Capri pinctrl binding
-
-Stephen Warren (1):
-      ARM: tegra: add LED options back into tegra_defconfig
-
-Suman Anna (1):
-      ARM: DRA7: hwmod data: correct the sysc data for spinlock
-
-Tomi Valkeinen (1):
-      ARM: OMAP2+: clock: fix clkoutx2 with CLK_SET_RATE_PARENT
-
-Tony Lindgren (2):
-      Merge tag 'for-v3.14-rc/omap-fixes-a' of git://git.kernel.org/.../pjw/omap-pending into omap-for-v3.14/fixes
-      ARM: OMAP3: Fix pinctrl interrupts for core2
-
-Vaibhav Bedia (1):
-      ARM: OMAP5: PRM: Fix reboot handling
-
- ...capri-pinctrl.txt => brcm,bcm11351-pinctrl.txt} |  8 +-
- arch/arm/boot/dts/bcm11351.dtsi                    |  2 +-
- arch/arm/boot/dts/omap3-gta04.dts                  |  2 +-
- arch/arm/boot/dts/omap3-igep0020.dts               |  2 +-
- arch/arm/boot/dts/omap3-igep0030.dts               |  2 +-
- arch/arm/boot/dts/sun4i-a10.dtsi                   |  2 +-
- arch/arm/boot/dts/sun5i-a10s.dtsi                  |  2 +-
- arch/arm/boot/dts/sun5i-a13.dtsi                   |  2 +-
- arch/arm/boot/dts/sun7i-a20.dtsi                   | 12 +--
- arch/arm/configs/tegra_defconfig                   |  3 +
- arch/arm/mach-omap2/cclock3xxx_data.c              |  2 +
- arch/arm/mach-omap2/cpuidle44xx.c                  |  8 +-
- arch/arm/mach-omap2/dpll3xxx.c                     | 92 ++++++++++++++++++----
- arch/arm/mach-omap2/omap_hwmod.c                   | 20 ++---
- arch/arm/mach-omap2/omap_hwmod_7xx_data.c          |  9 +--
- arch/arm/mach-omap2/pdata-quirks.c                 | 21 ++++-
- arch/arm/mach-omap2/prminst44xx.c                  |  4 +-
- drivers/pinctrl/pinctrl-capri.c                    |  2 +-
- include/linux/clk/ti.h                             |  4 +
- 19 files changed, 146 insertions(+), 53 deletions(-)
- rename Documentation/devicetree/bindings/pinctrl/{brcm,capri-pinctrl.txt => brcm,bcm11351-pinctrl.txt} (98%)
