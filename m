@@ -1,73 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138AbaCIRFc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 13:05:32 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33379 "EHLO mail.skyhub.de"
+	id S1752898AbaCIRF6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 13:05:58 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:33383 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751073AbaCIRFa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 13:05:30 -0400
+	id S1751207AbaCIRFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Mar 2014 13:05:31 -0400
 From: Borislav Petkov <bp@alien8.de>
 To: X86 ML <x86@kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
-Subject: [PATCH 0/3] MSR cleanups, v2
-Date: Sun,  9 Mar 2014 18:05:22 +0100
-Message-Id: <1394384725-10796-1-git-send-email-bp@alien8.de>
+Subject: [PATCH 1/3] x86: Add another set of MSR accessor functions
+Date: Sun,  9 Mar 2014 18:05:23 +0100
+Message-Id: <1394384725-10796-2-git-send-email-bp@alien8.de>
 X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1394384725-10796-1-git-send-email-bp@alien8.de>
+References: <1394384725-10796-1-git-send-email-bp@alien8.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <bp@suse.de>
 
-Here's v2, all feedback from last time should be addressed. Patches boot
-fine on an Intel and AMD box.
+We very often need to set or clear a bit in an MSR as a result of doing
+some sort of a hardware configuration. Add generic versions of that
+repeated functionality in order to save us a bunch of duplicated code in
+the early CPU vendor detection/config code.
 
-I've also got them in a nice pullable form, if that is preferred:
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/include/asm/msr.h |  2 ++
+ arch/x86/lib/msr.c         | 89 +++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 90 insertions(+), 1 deletion(-)
 
---
-The following changes since commit b01d4e68933ec23e43b1046fa35d593cefcf37d1:
-
-  x86: fix compile error due to X86_TRAP_NMI use in asm files (2014-03-07 18:58:40 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/msrs
-
-for you to fetch changes up to b685c3e2f627f7c800aa4a34bd6f8438eaed8b3b:
-
-  x86, Intel: Convert to the new MSR accessors (2014-03-09 12:06:50 +0100)
-
-----------------------------------------------------------------
-Aggregation of MSR toggling bits functionality into common functions.
-
-----------------------------------------------------------------
-Borislav Petkov (3):
-      x86: Add another set of MSR accessor functions
-      x86, AMD: Convert to the new MSR accessors
-      x86, Intel: Convert to the new MSR accessors
-
- arch/x86/include/asm/msr.h            |  2 +
- arch/x86/include/uapi/asm/msr-index.h |  9 ++--
- arch/x86/kernel/cpu/amd.c             | 48 +++++--------------
- arch/x86/kernel/cpu/intel.c           | 30 +++---------
- arch/x86/lib/msr.c                    | 89 ++++++++++++++++++++++++++++++++++-
- 5 files changed, 115 insertions(+), 63 deletions(-)
-
-
-
-Changelog:
----------
-
-v1:
-
-Hi guys,
-
-this is just a preview of what I think we talked about. I'm sending it
-out now to gather some feedback before I go and test it more thoroughly
-(it boots in a guest though :)).
-
-Thanks.
-
+diff --git a/arch/x86/include/asm/msr.h b/arch/x86/include/asm/msr.h
+index e139b13f2a33..de36f22eb0b9 100644
+--- a/arch/x86/include/asm/msr.h
++++ b/arch/x86/include/asm/msr.h
+@@ -214,6 +214,8 @@ do {                                                            \
+ 
+ struct msr *msrs_alloc(void);
+ void msrs_free(struct msr *msrs);
++int msr_set_bit(u32 msr, u8 bit);
++int msr_clear_bit(u32 msr, u8 bit);
+ 
+ #ifdef CONFIG_SMP
+ int rdmsr_on_cpu(unsigned int cpu, u32 msr_no, u32 *l, u32 *h);
+diff --git a/arch/x86/lib/msr.c b/arch/x86/lib/msr.c
+index 8f8eebdca7d4..db9db446b71a 100644
+--- a/arch/x86/lib/msr.c
++++ b/arch/x86/lib/msr.c
+@@ -8,7 +8,7 @@ struct msr *msrs_alloc(void)
+ 
+ 	msrs = alloc_percpu(struct msr);
+ 	if (!msrs) {
+-		pr_warning("%s: error allocating msrs\n", __func__);
++		pr_warn("%s: error allocating msrs\n", __func__);
+ 		return NULL;
+ 	}
+ 
+@@ -21,3 +21,90 @@ void msrs_free(struct msr *msrs)
+ 	free_percpu(msrs);
+ }
+ EXPORT_SYMBOL(msrs_free);
++
++/**
++ * Read an MSR with error handling
++ *
++ * @msr: MSR to read
++ * @m: value to read into
++ *
++ * It returns read data only on success, otherwise it doesn't change the output
++ * argument @m.
++ *
++ */
++int msr_read(u32 msr, struct msr *m)
++{
++	int err;
++	u64 val;
++
++	err = rdmsrl_safe(msr, &val);
++	if (!err)
++		m->q = val;
++
++	return err;
++}
++
++/**
++ * Write an MSR with error handling
++ *
++ * @msr: MSR to write
++ * @m: value to write
++ */
++int msr_write(u32 msr, struct msr *m)
++{
++	return wrmsrl_safe(msr, m->q);
++}
++
++static inline int __flip_bit(u32 msr, u8 bit, bool set)
++{
++	struct msr m, m1;
++	int err = -EINVAL;
++
++	if (bit > 63)
++		return err;
++
++	err = msr_read(msr, &m);
++	if (err)
++		return err;
++
++	m1 = m;
++	if (set)
++		m1.q |=  BIT_64(bit);
++	else
++		m1.q &= ~BIT_64(bit);
++
++	if (m1.q == m.q)
++		return 0;
++
++	err = msr_write(msr, &m);
++	if (err)
++		return err;
++
++	return 1;
++}
++
++/**
++ * Set @bit in a MSR @msr.
++ *
++ * Retval:
++ * < 0: An error was encountered.
++ * = 0: Bit was already set.
++ * > 0: Hardware accepted the MSR write.
++ */
++int msr_set_bit(u32 msr, u8 bit)
++{
++	return __flip_bit(msr, bit, true);
++}
++
++/**
++ * Clear @bit in a MSR @msr.
++ *
++ * Retval:
++ * < 0: An error was encountered.
++ * = 0: Bit was already cleared.
++ * > 0: Hardware accepted the MSR write.
++ */
++int msr_clear_bit(u32 msr, u8 bit)
++{
++	return __flip_bit(msr, bit, false);
++}
 -- 
 1.9.0
 
