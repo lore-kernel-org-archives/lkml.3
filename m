@@ -1,131 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752161AbaCIXSR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 19:18:17 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51796 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751073AbaCIXSQ (ORCPT
+	id S1752392AbaCIXZg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 19:25:36 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:40287 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751073AbaCIXZe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 19:18:16 -0400
-Message-ID: <1394407072.15968.81.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH] net: sched: dev_deactivate_many(): use msleep(1)
- instead of yield() to wait for outstanding qdisc_run calls
-From: Ben Hutchings <ben@decadent.org.uk>
+	Sun, 9 Mar 2014 19:25:34 -0400
+Message-ID: <531CF864.9040406@gmail.com>
+Date: Mon, 10 Mar 2014 00:25:24 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 To: David Miller <davem@davemloft.net>
-Cc: mkl@pengutronix.de, linux-rt-users@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        kernel@pengutronix.de
-Date: Sun, 09 Mar 2014 23:17:52 +0000
-In-Reply-To: <20140309.185338.2057082497431220324.davem@davemloft.net>
-References: <1393976987-23555-1-git-send-email-mkl@pengutronix.de>
-	 <20140306.160622.59358366688518505.davem@davemloft.net>
-	 <1394392160.15968.13.camel@deadeye.wl.decadent.org.uk>
-	 <20140309.185338.2057082497431220324.davem@davemloft.net>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-2/ULzx60VvtLiA8I9fzc"
-X-Mailer: Evolution 3.8.5-2+b3 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.245
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+CC: rob@landley.net, andrew@lunn.ch, f.fainelli@gmail.com,
+        netdev@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: phy: Add sysfs attribute to prevent PHY suspend
+References: <1393174719-20806-1-git-send-email-sebastian.hesselbarth@gmail.com> <1394192092-27461-1-git-send-email-sebastian.hesselbarth@gmail.com> <20140309.191235.1047481546773873653.davem@davemloft.net>
+In-Reply-To: <20140309.191235.1047481546773873653.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/10/2014 12:12 AM, David Miller wrote:
+> From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> Date: Fri,  7 Mar 2014 12:34:52 +0100
+>
+>> commit 1211ce53077164e0d34641d0ca5fb4d4a7574498
+>>    ("net: phy: resume/suspend PHYs on attach/detach")
+>> introduced a feature to suspend PHYs when entering halted state.
+>>
+>> Unfortunately, not all bootloaders properly power-up PHYs on reset
+>> and fail to access ethernet because the PHY is still powered down.
+>>
+>> Therefore, this adds code and documentation for a sysfs attribute to
+>> allow/deny PHYs to be suspended on a per-PHY basis. Disabling that
+>> attribute prevents PHYs from being suspended when entering halted state.
+>>
+>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>> Reported-by: Andrew Lunn <andrew@lunn.ch>
+>
+> I know you won't like what I have to say, but I want to see a solution
+> without this sysfs knob.
+>
+> First of all, you obviously have a way to end up having the sysfs knob
+> get set on the appropriate systems.
+>
+> Therefore, you obviously have some way to propagate the same piece of
+> information into the kernel somehow during boot time.
+>
+> For example, via a device tree property or similar.
 
---=-2/ULzx60VvtLiA8I9fzc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+There is no way to determine if a bootloader is broken or not. The
+sysfs knob allows to provide a use case based decision. Of course, we
+can invent some freaky device tree property but that the DT maintainers
+will not like either.
 
-On Sun, 2014-03-09 at 18:53 -0400, David Miller wrote:
-> From: Ben Hutchings <ben@decadent.org.uk>
-> Date: Sun, 09 Mar 2014 19:09:20 +0000
->=20
-> > On Thu, 2014-03-06 at 16:06 -0500, David Miller wrote:
-> >> From: Marc Kleine-Budde <mkl@pengutronix.de>
-> >> Date: Wed,  5 Mar 2014 00:49:47 +0100
-> >>=20
-> >> > @@ -839,7 +839,7 @@ void dev_deactivate_many(struct list_head *head)
-> >> >       /* Wait for outstanding qdisc_run calls. */
-> >> >       list_for_each_entry(dev, head, unreg_list)
-> >> >               while (some_qdisc_is_busy(dev))
-> >> > -                     yield();
-> >> > +                     msleep(1)
-> >> >  }
-> >>=20
-> >> I don't understand this.
-> >>=20
-> >> yield() should really _mean_ yield.
-> >>=20
-> >> The intent of a yield() call, like this one here, is unambiguously
-> >> that the current thread cannot do anything until some other thread
-> >> gets onto the cpu and makes forward progress.
-> >>
-> >> Therefore it should allow lower priority threads to run, not just
-> >> equal or higher priority ones.
-> >=20
-> > Until when?
-> >=20
-> > yield() is not a sensible operation in a preemptive multitasking system=
-,
-> > regardless of RT.
->=20
-> To me it means "I've got nothing to do if other tasks want to run right
-> now"  Yes, I even see it having this meaning when an RT task executes
-> it.
->=20
-> How else can you interpret the intent above?
+This is not an issue with broken HW but SW. The PHY is fine, you can
+suspend and resume it perfectly in Linux. But the bootloader fails to
+properly initialize it on a warm boot. You could update the bootloader
+and the issue disappears.
 
-The problem is that 'I've got nothing to do ... now' is information
-about a *point* in time, which gives the scheduler no clue as to when
-this task might be ready again.  So far as task *state* goes, it never
-ceases to be ready.
+> Please pursue an avenue such as that.  This sysfs thing, it's a user
+> facing interface we'd have to live with forever.
 
-> If you change it to msleep(1), you're assigning an extra completely
-> arbitrary time limit to the yield.  The code doesn't want to sleep
-> for 1ms, that's not what it's asking for.
-[...]
+If you want me to try a devicetree property for the issue, we also
+create ABI and we will have to live with it forever.
 
-I think you want to give up a 'time slice' to any task that's available.
-But that's not a meaningful concept for all schedulers.  If your task is
-highest priority and is ready, it must run.  You could drop priority
-temporarily, but then you need it to somehow be bumped up again at some
-time in the future.  Well, sleeping effectively does that.
+I am open for suggestions, but I have a bad feeling about a "broken
+bootloader" DT property.
 
-I do understand that unconditionally sleeping also isn't ideal - the
-task that unblocks this one might already be running on another CPU and
-able to finish sooner than the sleep timeout.
-
-Maybe the answer is a yield_for(time) which sleeps for the given time or
-until there's an idle CPU, whichever is sooner.  But I don't know how
-hard that would be to implement or how widely useful it would be.
-
-Ben.
-
---=20
-Ben Hutchings
-I say we take off; nuke the site from orbit.  It's the only way to be sure.
-
---=-2/ULzx60VvtLiA8I9fzc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIVAwUAUxz2oOe/yOyVhhEJAQqEdRAAmXlGXs+/789OBmNlwKat0bSr4q2U2SN5
-Uxqe98KE18Khv6egE6yNenOyCVOMkIcEwrLQUoCFlm0mwA/oNBtQvGVCeP5mkSW4
-zmNUH7mxWP2gNMEy6g5BOTprz7fEmjuVhF7L3f3HeASglWld6y8TPllEccM3Tlvx
-9kwYlMi0A9hOxT4/0HWH/7ACRTkA8zOskaqFtBDyHpZgOj6Rrot+Gw4uStqDI7K8
-/e+nYG5g/Knk/FRy5YjWIpJxX121B77ie6PdDKNsX48/RlFizHbjuxVrKyAQTiOw
-2lGJGzgY+TythQbyavIICBGDeApFFfl1MDcEBottvUXjyHTLrgqpzR7bs/Ix3AS5
-sx+U6ojBTa/yAgOobHwnGQ+nv3zzUlFRBDTTjASDiVKjE47o4HCm3q3rFkcqRbLZ
-uOUjKQ5hV2fk2fWEVv6SX7qAeaBjlnKs3HsqW1ruSWH7fxfjIadTxFyi8xLZUIAH
-7nxO1kN47/YUSQmHK7TlvOoJGlxo7jrP6DO3oZyEolbJbca2+Y7JVQAatmeblwu8
-m1OKKfqDF0ZRN77Bn1SPQNNbajqviO5Ld0c/EKCxnvpKgwwly8qWfSRIO6Xbji1b
-Oj/0zTbGBJ1BAYXfB3kocz/a/FPtTT/SrIBozfm1i6yDIkDViKGvu9svrZ7w38BW
-teeIcMU74g8=
-=ymAx
------END PGP SIGNATURE-----
-
---=-2/ULzx60VvtLiA8I9fzc--
+Sebastian
