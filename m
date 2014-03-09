@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752739AbaCITUk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 15:20:40 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:62422 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752574AbaCITUj (ORCPT
+	id S1752834AbaCITWF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 15:22:05 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:45457 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751812AbaCITWC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 15:20:39 -0400
+	Sun, 9 Mar 2014 15:22:02 -0400
+Date: Sun, 9 Mar 2014 20:21:43 +0100
+From: Philipp Zabel <pza@pengutronix.de>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: Philipp Zabel <p.zabel@pengutronix.de>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v6 6/8] of: Implement simplified graph binding for single
+ port devices
+Message-ID: <20140309192143.GB4939@pengutronix.de>
+References: <1394011242-16783-1-git-send-email-p.zabel@pengutronix.de>
+ <1394011242-16783-7-git-send-email-p.zabel@pengutronix.de>
+ <20140307183802.B6E90C40C6F@trevor.secretlab.ca>
 MIME-Version: 1.0
-In-Reply-To: <1394392306.20149.112.camel@edumazet-glaptop2.roam.corp.google.com>
-References: <1394320530-3508-1-git-send-email-ast@plumgrid.com>
-	<1394320530-3508-2-git-send-email-ast@plumgrid.com>
-	<1394376353.20149.96.camel@edumazet-glaptop2.roam.corp.google.com>
-	<CAMEtUuyB9ZhvwU+Lv5UypXDbgAG02BgdRomF9nOef-GqNAxjww@mail.gmail.com>
-	<1394388699.20149.105.camel@edumazet-glaptop2.roam.corp.google.com>
-	<CAMEtUuwYUhA=CKRVxr-8_KdTqzoQVD1OtgayyxX3aO48CTcxZw@mail.gmail.com>
-	<1394392306.20149.112.camel@edumazet-glaptop2.roam.corp.google.com>
-Date: Sun, 9 Mar 2014 12:20:37 -0700
-Message-ID: <CAMEtUuw7nAv_AhCfsgo5+4nQ+s7dmu97fxzTf69Nz5pdDcqKHA@mail.gmail.com>
-Subject: Re: [PATCH v7 net-next 1/3] filter: add Extended BPF interpreter and converter
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Hagen Paul Pfeifer <hagen@jauu.net>,
-        Jesse Gross <jesse@nicira.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140307183802.B6E90C40C6F@trevor.secretlab.ca>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 20:13:53 up 197 days,  4:44, 39 users,  load average: 0,35, 0,24,
+ 0,18
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: pza@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 9, 2014 at 12:11 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> On Sun, 2014-03-09 at 11:57 -0700, Alexei Starovoitov wrote:
->
->> In sk_run_filter_ext() I used "u64 stack[64];", but "u64 stack[60];" is
->> safe too, but I didn't want to go into extensive explanation
->> of 'magic' 60 number in the first patch, so I just rounded it to 64.
->> Since now you understand, I can make it stack[60] now :)
->
-> My point was : You should not use 64 or 60 in the C code.
->
-> I should not have to ask you why it is safe.
->
-> It should be obvious just reading the source code. And so far it is not.
->
-> Thats why we use macros and comments at the macro definition.
+On Fri, Mar 07, 2014 at 06:38:02PM +0000, Grant Likely wrote:
+> On Wed,  5 Mar 2014 10:20:40 +0100, Philipp Zabel <p.zabel@pengutronix.de> wrote:
+> > For simple devices with only one port, it can be made implicit.
+> > The endpoint node can be a direct child of the device node.
+> > 
+> > Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> 
+> Ergh... I think this is too loosely defined. The caller really should be
+> explicit about which behaviour it needs. I'll listen to arguments
+> though if you can make a strong argument.
 
-Agree. Will fix and send V8 for these issues and sk_get_filter()
-caught by Daniel.
+I have dropped this patch and the corresponding documentation patch for
+now. This simplification is a separate issue from the move and there is
+no consensus yet.
+Basically the main issue with the port { endpoint { remote-endpoint=... } }
+binding is that it is very verbose if you just need a single link.
+Instead of removing the port node, we could also remove the endpoint node
+and have the remote-endpoint property direcly in the port node.
 
-Thanks!
+regards
+Philipp
