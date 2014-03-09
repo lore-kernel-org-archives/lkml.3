@@ -1,81 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752779AbaCIUIS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 16:08:18 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:61205 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752590AbaCIUHS (ORCPT
+	id S1752257AbaCIUHK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 16:07:10 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:57309 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750962AbaCIUHI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 16:07:18 -0400
-Message-ID: <531CC9EC.1000804@redhat.com>
-Date: Sun, 09 Mar 2014 21:07:08 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        alex.williamson@redhat.com, mtosatti@redhat.com, gleb@kernel.org,
-        jan.kiszka@siemens.com
-Subject: Re: [PATCH 3/7] KVM: x86: Allow the guest to run with dirty debug
- registers
-References: <1394192571-11056-1-git-send-email-pbonzini@redhat.com> <1394192571-11056-4-git-send-email-pbonzini@redhat.com> <20140309182825.GA11078@potion.redhat.com>
-In-Reply-To: <20140309182825.GA11078@potion.redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Sun, 9 Mar 2014 16:07:08 -0400
+From: Emil Goode <emilgoode@gmail.com>
+To: Brett Rudley <brudley@broadcom.com>, Arend van Spriel <arend@broadcom.com>,
+        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
+        Hante Meuleman <meuleman@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Hauke Mehrtens <hauke@hauke-m.de>,
+        Johannes Berg <johannes.berg@intel.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Emil Goode <emilgoode@gmail.com>
+Subject: [PATCH 1/2] brcmsmac: fix deadlock on missing firmware
+Date: Sun,  9 Mar 2014 21:06:51 +0100
+Message-Id: <1394395612-3510-1-git-send-email-emilgoode@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 09/03/2014 19:28, Radim Krčmář ha scritto:
->> >  	/*
->> > +	 * Do this here before restoring debug registers on the host.  And
->> > +	 * since we do this before handling the vmexit, a DR access vmexit
->> > +	 * can (a) read the correct value of the debug registers, (b) set
->> > +	 * KVM_DEBUGREG_WONT_EXIT again.
-> We re-enable intercepts on the next exit for the sake of simplicity?
-> (Batched accesses make perfect sense, but it seems we don't have to care
->  about DRs at all, without guest-debug.)
+When brcm80211 firmware is not installed networking hangs.
+A deadlock happens because we call ieee80211_unregister_hw()
+from the .start callback of struct ieee80211_ops. When .start
+is called we are under rtnl lock and ieee80211_unregister_hw()
+tries to take it again.
 
-It's not just for the sake of simplicity.  Synchronizing debug registers 
-on entry does have some cost, and it's required for running without 
-debug register intercepts.  You would incur this cost always, since 
-no-guest-debug is actually the common case.
+Function call stack:
 
-We're well into diminishing returns; Alex timed this patch vs. one that 
-completely ignores MOV DR exits and (to the surprise of both of us) this 
-patch completely restored performance despite still having a few tens of 
-thousands MOV DR exits/second.
+dev_change_flags()
+	__dev_change_flags()
+		__dev_open()
+			ASSERT_RTNL() <-- Assert rtnl lock
+			ops->ndo_open()
 
-In the problematic case, each context switch will do a save and restore 
-of debug registers; that's in total 13 debug register accesses (read 6 
-registers, write DR7 to disable all registers, write 6 registers 
-including DR7 which enables breakpoints), all very close in time.  It's 
-quite likely that the final DR7 write is very expensive (e.g. it might 
-have to flush the pipeline).  Also, this test case must be very heavy on 
-context switches, and each context switch already incurs a few exits 
-(for example to inject the interrupt that causes it, to read the current 
-time).
+.ndo_open = ieee80211_open,
 
-A different optimization could be to skip the LOAD_DEBUG_CONTROLS 
-vm-entry control if DR7 == host DR7 == 0x400 && MOV DR exits are 
-enabled.  Not sure it's worthwhile though, and there's also the DEBUGCTL 
-MSR to take into account.  Better do these kinds of tweaks if they 
-actually show up in the profile: Alex's testcase shows that when they 
-do, the impact is massive.
+ieee80211_open()
+	ieee80211_do_open()
+		drv_start()
+			local->ops->start()
 
->> +		kvm_x86_ops->sync_dirty_debug_regs(vcpu);
->
-> Sneaky functionality ... it would be nicer to split 'enable DR
-> intercepts' into a new kvm op.
+.start = brcms_ops_start,
 
-Why?  "Disable DR intercepts" is already folded into the handler for MOV 
-DR exits.
+brcms_ops_start()
+	brcms_remove()
+		ieee80211_unregister_hw()
+			rtnl_lock() <-- Here we deadlock
 
-> And we don't have to modify DR intercepts then, which is probably the
-> main reason why sync_dirty_debug_regs() does two things.
+Introduced by:
+commit 25b5632fb35ca61b8ae3eee235edcdc2883f7a5e
+("brcmsmac: request firmware in .start() callback")
 
-Another is that indirect calls are relatively expensive and add 
-complexity; in this case they would always be used back-to-back.
+This patch fixes the bug by removing the call to brcms_remove()
+and moves the brcms_request_fw() call to the top of the .start
+callback to not initiate anything unless firmware is installed.
 
-Paolo
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
+---
+ drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c |   14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c b/drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c
+index 925034b..93598cd 100644
+--- a/drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c
++++ b/drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c
+@@ -426,6 +426,12 @@ static int brcms_ops_start(struct ieee80211_hw *hw)
+ 	bool blocked;
+ 	int err;
+ 
++	if (!wl->ucode.bcm43xx_bomminor) {
++		err = brcms_request_fw(wl, wl->wlc->hw->d11core);
++		if (err)
++			return -ENOENT;
++	}
++
+ 	ieee80211_wake_queues(hw);
+ 	spin_lock_bh(&wl->lock);
+ 	blocked = brcms_rfkill_set_hw_state(wl);
+@@ -433,14 +439,6 @@ static int brcms_ops_start(struct ieee80211_hw *hw)
+ 	if (!blocked)
+ 		wiphy_rfkill_stop_polling(wl->pub->ieee_hw->wiphy);
+ 
+-	if (!wl->ucode.bcm43xx_bomminor) {
+-		err = brcms_request_fw(wl, wl->wlc->hw->d11core);
+-		if (err) {
+-			brcms_remove(wl->wlc->hw->d11core);
+-			return -ENOENT;
+-		}
+-	}
+-
+ 	spin_lock_bh(&wl->lock);
+ 	/* avoid acknowledging frames before a non-monitor device is added */
+ 	wl->mute_tx = true;
+-- 
+1.7.10.4
+
