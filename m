@@ -1,43 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752140AbaCIBVl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 20:21:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52964 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751897AbaCIBVk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 20:21:40 -0500
-Date: Sat, 8 Mar 2014 17:22:16 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Conrad Meyer <cemeyer@uw.edu>
-Cc: Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: Updated: [PATCH] Staging: comedi: Fix 80-char line limit style
- issue in addi_apci_1500.c
-Message-ID: <20140309012216.GA13522@kroah.com>
-References: <20140308154724.57a1d53d@m>
+	id S1752023AbaCIB0c (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Mar 2014 20:26:32 -0500
+Received: from mga02.intel.com ([134.134.136.20]:48824 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751610AbaCIB0b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Mar 2014 20:26:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,616,1389772800"; 
+   d="scan'208";a="488592775"
+Date: Sun, 9 Mar 2014 09:26:28 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Hirokazu Takata <takata@linux-m32r.org>
+Cc: linux-m32r@ml.linux-m32r.org, kbuild-all@01.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [m32r] ERROR: "memory_start" [fs/udf/udf.ko] undefined!
+Message-ID: <20140309012628.GA9095@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140308154724.57a1d53d@m>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+User-Agent: Heirloom mailx 12.5 6/20/10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 08, 2014 at 03:47:24PM -0500, Conrad Meyer wrote:
-> Rename some very long functions in addi-data/hwdrv_apci1500.c.
-> 
-> Signed-off-by: Conrad Meyer <cse.cem@gmail.com>
+Hi Hirokazu,
 
-When you update a patch, it's better to have the subject be:
-	[PATCH v2] Staging: ....
+We noticed long standing build errors for m32104ut_defconfig and the
+below bisected "first bad commit" actually fixed something to make the
+kernel build go on to disclose these hidden errors.
 
-Otherwise what are you going to do for the update to the update?  :)
+first "bad" commit: fc31c7716355a226b8ed4e16f4581e5c8fa53570 kbuild: include limits.h in sumversion.c for PATH_MAX
+date:   7 years ago
+config: make ARCH=m32r m32104ut_defconfig
 
-Don't worry about it this time, I'll take this for now.
+All error/warnings:
 
-thanks,
+>> ERROR: "memory_start" [fs/udf/udf.ko] undefined!
+>> ERROR: "memory_end" [fs/udf/udf.ko] undefined!
+>> ERROR: "memory_end" [drivers/scsi/sg.ko] undefined!
+>> ERROR: "memory_start" [drivers/scsi/sg.ko] undefined!
+   ERROR: "memory_end" [drivers/media/video/c-qcam.ko] undefined!
+   ERROR: "memory_start" [drivers/media/video/c-qcam.ko] undefined!
+   ERROR: "memory_end" [drivers/media/video/bw-qcam.ko] undefined!
+   ERROR: "memory_start" [drivers/media/video/bw-qcam.ko] undefined!
+>> ERROR: "memory_end" [drivers/i2c/i2c-dev.ko] undefined!
+>> ERROR: "memory_start" [drivers/i2c/i2c-dev.ko] undefined!
+   ERROR: "ioport_map" [drivers/i2c/busses/i2c-elektor.ko] undefined!
+   ERROR: "ioport_unmap" [drivers/i2c/busses/i2c-elektor.ko] undefined!
+   ERROR: "iowrite8" [drivers/i2c/busses/i2c-elektor.ko] undefined!
+   ERROR: "ioread8" [drivers/i2c/busses/i2c-elektor.ko] undefined!
 
-greg k-h
+---
+0-DAY kernel build testing backend              Open Source Technology Center
+http://lists.01.org/mailman/listinfo/kbuild                 Intel Corporation
