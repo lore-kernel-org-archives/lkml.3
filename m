@@ -1,32 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051AbaCIEu2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Mar 2014 23:50:28 -0500
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:46368 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751805AbaCIEu1 (ORCPT
+	id S1750966AbaCIFL2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 00:11:28 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:55868 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750761AbaCIFL1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Mar 2014 23:50:27 -0500
+	Sun, 9 Mar 2014 00:11:27 -0500
 MIME-Version: 1.0
-In-Reply-To: <20140306180422.4e27ae82f646e0e669f69cbb@skynet.be>
-References: <20140306180422.4e27ae82f646e0e669f69cbb@skynet.be>
-Date: Sat, 8 Mar 2014 20:50:26 -0800
-Message-ID: <CAN8TOE9NavAny9AH09X3-Rvwq_frU6-ZSe1mC5g-KBfBZ7v76g@mail.gmail.com>
-Subject: Re: [PATCH v2 linux-next] mtd: block2mtd: check device size
-From: Brian Norris <computersforpeace@gmail.com>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        "ezequiel.garcia" <ezequiel.garcia@free-electrons.com>
+Date: Sun, 9 Mar 2014 10:41:26 +0530
+Message-ID: <CAFB2WuW19WdFcHDe5jxtq7v8+PL41OjBEZLYfaCEH=1axWpYEA@mail.gmail.com>
+Subject: Reg: Staging Driver: lustre/lustre/lov
+From: Monam Agarwal <monamagarwal123@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>,
+        "Dilger, Andreas" <andreas.dilger@intel.com>,
+        Peng Tao <bergwolf@gmail.com>, josh@joshtriplett.org,
+        dulshani.gunawardhana89@gmail.com, joe@perches.com,
+        "Xiong, Jinshan" <jinshan.xiong@intel.com>, john.hammond@intel.com,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 6, 2014 at 2:04 AM, Fabian Frederick <fabf@skynet.be> wrote:
-> fixme applied : check device size is a multiple of erasesize.
->
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+Hi,
 
-Pushed to l2-mtd.git. Thanks!
+I was going through lov_pack.c and in the function lov_unpackmd before
+checking for lmm we are using the lmm_pattern value and doing
+allocation. In case lmm is null use of pattern =
+le32_to_cpu(lmm->lmm_pattern); will throw a null pointer exception.
 
-Brian
+I was thinking of moving the null check above but i that case what
+will be the allocation pattern?
+
+Regards,
+Monam Agarwal
