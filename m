@@ -1,132 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752739AbaCIRFd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 13:05:33 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33378 "EHLO mail.skyhub.de"
+	id S1752138AbaCIRFc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 13:05:32 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:33379 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751201AbaCIRFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 13:05:31 -0400
+	id S1751073AbaCIRFa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Mar 2014 13:05:30 -0400
 From: Borislav Petkov <bp@alien8.de>
 To: X86 ML <x86@kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
-Subject: [PATCH 2/3] x86, AMD: Convert to the new MSR accessors
-Date: Sun,  9 Mar 2014 18:05:24 +0100
-Message-Id: <1394384725-10796-3-git-send-email-bp@alien8.de>
+Subject: [PATCH 0/3] MSR cleanups, v2
+Date: Sun,  9 Mar 2014 18:05:22 +0100
+Message-Id: <1394384725-10796-1-git-send-email-bp@alien8.de>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1394384725-10796-1-git-send-email-bp@alien8.de>
-References: <1394384725-10796-1-git-send-email-bp@alien8.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <bp@suse.de>
 
-... and save us a bunch of code.
+Here's v2, all feedback from last time should be addressed. Patches boot
+fine on an Intel and AMD box.
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- arch/x86/kernel/cpu/amd.c | 48 ++++++++++++-----------------------------------
- 1 file changed, 12 insertions(+), 36 deletions(-)
+I've also got them in a nice pullable form, if that is preferred:
 
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index c67ffa686064..b85e43a5a462 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -233,9 +233,7 @@ static void init_amd_k7(struct cpuinfo_x86 *c)
- 	if (c->x86_model >= 6 && c->x86_model <= 10) {
- 		if (!cpu_has(c, X86_FEATURE_XMM)) {
- 			printk(KERN_INFO "Enabling disabled K7/SSE Support.\n");
--			rdmsr(MSR_K7_HWCR, l, h);
--			l &= ~0x00008000;
--			wrmsr(MSR_K7_HWCR, l, h);
-+			msr_clear_bit(MSR_K7_HWCR, 15);
- 			set_cpu_cap(c, X86_FEATURE_XMM);
- 		}
- 	}
-@@ -509,14 +507,8 @@ static void early_init_amd(struct cpuinfo_x86 *c)
- #endif
- 
- 	/* F16h erratum 793, CVE-2013-6885 */
--	if (c->x86 == 0x16 && c->x86_model <= 0xf) {
--		u64 val;
--
--		rdmsrl(MSR_AMD64_LS_CFG, val);
--		if (!(val & BIT(15)))
--			wrmsrl(MSR_AMD64_LS_CFG, val | BIT(15));
--	}
--
-+	if (c->x86 == 0x16 && c->x86_model <= 0xf)
-+		msr_set_bit(MSR_AMD64_LS_CFG, 15);
- }
- 
- static const int amd_erratum_383[];
-@@ -536,11 +528,8 @@ static void init_amd(struct cpuinfo_x86 *c)
- 	 * Errata 63 for SH-B3 steppings
- 	 * Errata 122 for all steppings (F+ have it disabled by default)
- 	 */
--	if (c->x86 == 0xf) {
--		rdmsrl(MSR_K7_HWCR, value);
--		value |= 1 << 6;
--		wrmsrl(MSR_K7_HWCR, value);
--	}
-+	if (c->x86 == 0xf)
-+		msr_set_bit(MSR_K7_HWCR, 6);
- #endif
- 
- 	early_init_amd(c);
-@@ -623,14 +612,11 @@ static void init_amd(struct cpuinfo_x86 *c)
- 	    (c->x86_model >= 0x10) && (c->x86_model <= 0x1f) &&
- 	    !cpu_has(c, X86_FEATURE_TOPOEXT)) {
- 
--		if (!rdmsrl_safe(0xc0011005, &value)) {
--			value |= 1ULL << 54;
--			wrmsrl_safe(0xc0011005, value);
-+		if (msr_set_bit(0xc0011005, 54) > 0) {
- 			rdmsrl(0xc0011005, value);
--			if (value & (1ULL << 54)) {
-+			if (value & BIT_64(54)) {
- 				set_cpu_cap(c, X86_FEATURE_TOPOEXT);
--				printk(KERN_INFO FW_INFO "CPU: Re-enabling "
--				  "disabled Topology Extensions Support\n");
-+				pr_info(FW_INFO "CPU: Re-enabling disabled Topology Extensions Support.\n");
- 			}
- 		}
- 	}
-@@ -709,19 +695,12 @@ static void init_amd(struct cpuinfo_x86 *c)
- 		 * Disable GART TLB Walk Errors on Fam10h. We do this here
- 		 * because this is always needed when GART is enabled, even in a
- 		 * kernel which has no MCE support built in.
--		 * BIOS should disable GartTlbWlk Errors themself. If
--		 * it doesn't do it here as suggested by the BKDG.
-+		 * BIOS should disable GartTlbWlk Errors already. If
-+		 * it doesn't, do it here as suggested by the BKDG.
- 		 *
- 		 * Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=33012
- 		 */
--		u64 mask;
--		int err;
--
--		err = rdmsrl_safe(MSR_AMD64_MCx_MASK(4), &mask);
--		if (err == 0) {
--			mask |= (1 << 10);
--			wrmsrl_safe(MSR_AMD64_MCx_MASK(4), mask);
--		}
-+		msr_set_bit(MSR_AMD64_MCx_MASK(4), 10);
- 
- 		/*
- 		 * On family 10h BIOS may not have properly enabled WC+ support,
-@@ -733,10 +712,7 @@ static void init_amd(struct cpuinfo_x86 *c)
- 		 * NOTE: we want to use the _safe accessors so as not to #GP kvm
- 		 * guests on older kvm hosts.
- 		 */
--
--		rdmsrl_safe(MSR_AMD64_BU_CFG2, &value);
--		value &= ~(1ULL << 24);
--		wrmsrl_safe(MSR_AMD64_BU_CFG2, value);
-+		msr_clear_bit(MSR_AMD64_BU_CFG2, 24);
- 
- 		if (cpu_has_amd_erratum(c, amd_erratum_383))
- 			set_cpu_bug(c, X86_BUG_AMD_TLB_MMATCH);
+--
+The following changes since commit b01d4e68933ec23e43b1046fa35d593cefcf37d1:
+
+  x86: fix compile error due to X86_TRAP_NMI use in asm files (2014-03-07 18:58:40 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/msrs
+
+for you to fetch changes up to b685c3e2f627f7c800aa4a34bd6f8438eaed8b3b:
+
+  x86, Intel: Convert to the new MSR accessors (2014-03-09 12:06:50 +0100)
+
+----------------------------------------------------------------
+Aggregation of MSR toggling bits functionality into common functions.
+
+----------------------------------------------------------------
+Borislav Petkov (3):
+      x86: Add another set of MSR accessor functions
+      x86, AMD: Convert to the new MSR accessors
+      x86, Intel: Convert to the new MSR accessors
+
+ arch/x86/include/asm/msr.h            |  2 +
+ arch/x86/include/uapi/asm/msr-index.h |  9 ++--
+ arch/x86/kernel/cpu/amd.c             | 48 +++++--------------
+ arch/x86/kernel/cpu/intel.c           | 30 +++---------
+ arch/x86/lib/msr.c                    | 89 ++++++++++++++++++++++++++++++++++-
+ 5 files changed, 115 insertions(+), 63 deletions(-)
+
+
+
+Changelog:
+---------
+
+v1:
+
+Hi guys,
+
+this is just a preview of what I think we talked about. I'm sending it
+out now to gather some feedback before I go and test it more thoroughly
+(it boots in a guest though :)).
+
+Thanks.
+
 -- 
 1.9.0
 
