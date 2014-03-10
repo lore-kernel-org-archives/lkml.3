@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754597AbaCJVf2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 17:35:28 -0400
-Received: from xes-mad.com ([216.165.139.218]:10707 "EHLO xes-mad.com"
+	id S1754723AbaCJVg7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 17:36:59 -0400
+Received: from xes-mad.com ([216.165.139.218]:21682 "EHLO xes-mad.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754406AbaCJVfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 17:35:23 -0400
+	id S1754440AbaCJVfT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 17:35:19 -0400
 From: Peter Tyser <ptyser@xes-inc.com>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Tyser <ptyser@xes-inc.com>, Guenter Roeck <linux@roeck-us.net>,
         James Ralston <james.d.ralston@intel.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
-Subject: [PATCH 4/8] mfd: lpc_ich: Add support for iTCO v3
-Date: Mon, 10 Mar 2014 16:34:54 -0500
-Message-Id: <1394487298-14459-4-git-send-email-ptyser@xes-inc.com>
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 3/8] mfd: lpc_ich: Remove lpc_ich_cfg struct use
+Date: Mon, 10 Mar 2014 16:34:53 -0500
+Message-Id: <1394487298-14459-3-git-send-email-ptyser@xes-inc.com>
 X-Mailer: git-send-email 1.7.7.GIT
 In-Reply-To: <1394487298-14459-1-git-send-email-ptyser@xes-inc.com>
 References: <1394487298-14459-1-git-send-email-ptyser@xes-inc.com>
@@ -22,22 +21,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some newer Atom CPUs, eg Avoton and Bay Trail, use slightly different
-register layouts for the iTCO than the current v1 and v2 iTCO.
-Differences from previous iTCO versions include:
-- The ACPI space is enabled in the "ACPI base address" register instead
-  of the "ACPI control register"
+Future chipsets will use different register layouts that don't map
+cleanly to the lpc_ich_cfg fields.  Remove the lpc_ich_cfg struct and
+add explicit fields to the higher level lpc_ich_priv structure.
 
-- The "no reboot" functionality is set in the "Power Management
-  Configuration" register instead of the "General Control and Status"
-  (GCS) register or PCI configuration space.
-
-- The "ACPI Control Register" is not present on v3.  The "Power
-  Management Configuration Base Address" register resides at the same
-  address is Avoton/Bay Trail.
-
-To differentiate these newer chipsets create a new v3 iTCO version and
-update the MFD driver to support them.
+This change should have no functional impact.
 
 Signed-off-by: Peter Tyser <ptyser@xes-inc.com>
 Tested-by: Rajat Jain <rajatjain@juniper.net>
@@ -45,195 +33,140 @@ Cc: Guenter Roeck <linux@roeck-us.net>
 Cc: James Ralston <james.d.ralston@intel.com>
 Cc: Samuel Ortiz <sameo@linux.intel.com>
 Cc: Lee Jones <lee.jones@linaro.org>
-Cc: Wim Van Sebroeck <wim@iguana.be>
-Cc: linux-watchdog@vger.kernel.org
 ---
- drivers/mfd/lpc_ich.c       |   81 +++++++++++++++++++++++++++++++++++-------
- include/linux/mfd/lpc_ich.h |    8 ++--
- 2 files changed, 71 insertions(+), 18 deletions(-)
+ drivers/mfd/lpc_ich.c |   63 +++++++++++++++++++++++++------------------------
+ 1 files changed, 32 insertions(+), 31 deletions(-)
 
 diff --git a/drivers/mfd/lpc_ich.c b/drivers/mfd/lpc_ich.c
-index 2cc052a..b4bfc58 100644
+index e247e7e..2cc052a 100644
 --- a/drivers/mfd/lpc_ich.c
 +++ b/drivers/mfd/lpc_ich.c
-@@ -72,9 +72,11 @@
- #define ACPIBASE_GPE_END	0x2f
- #define ACPIBASE_SMI_OFF	0x30
- #define ACPIBASE_SMI_END	0x33
-+#define ACPIBASE_PMC_OFF	0x08
-+#define ACPIBASE_PMC_END	0x0c
- #define ACPIBASE_TCO_OFF	0x60
- #define ACPIBASE_TCO_END	0x7f
--#define ACPICTRL		0x44
-+#define ACPICTRL_PMCBASE	0x44
+@@ -90,16 +90,16 @@
+ #define wdt_mem_res(i) wdt_res(ICH_RES_MEM_OFF, i)
+ #define wdt_res(b, i) (&wdt_ich_res[(b) + (i)])
  
- #define ACPIBASE_GCS_OFF	0x3410
- #define ACPIBASE_GCS_END	0x3414
-@@ -94,11 +96,12 @@ struct lpc_ich_priv {
+-struct lpc_ich_cfg {
+-	int base;
+-	int ctrl;
+-	int save;
+-};
+-
+ struct lpc_ich_priv {
  	int chipset;
- 
- 	int abase;		/* ACPI base */
--	int actrl;		/* ACPI control or PMC base */
-+	int actrl_pbase;	/* ACPI control or PMC base */
- 	int gbase;		/* GPIO base */
- 	int gctrl;		/* GPIO control */
- 
--	int actrl_save;		/* Cached ACPI control base value */
-+	int abase_save;		/* Cached ACPI base value */
-+	int actrl_pbase_save;		/* Cached ACPI control or PMC base value */
- 	int gctrl_save;		/* Cached GPIO control value */
+-	struct lpc_ich_cfg acpi;
+-	struct lpc_ich_cfg gpio;
++
++	int abase;		/* ACPI base */
++	int actrl;		/* ACPI control or PMC base */
++	int gbase;		/* GPIO base */
++	int gctrl;		/* GPIO control */
++
++	int actrl_save;		/* Cached ACPI control base value */
++	int gctrl_save;		/* Cached GPIO control value */
  };
  
-@@ -111,7 +114,7 @@ static struct resource wdt_ich_res[] = {
- 	{
- 		.flags = IORESOURCE_IO,
- 	},
--	/* GCS */
-+	/* GCS or PMC */
- 	{
- 		.flags = IORESOURCE_MEM,
- 	},
-@@ -742,9 +745,15 @@ static void lpc_ich_restore_config_space(struct pci_dev *dev)
+ static struct resource wdt_ich_res[] = {
+@@ -742,14 +742,14 @@ static void lpc_ich_restore_config_space(struct pci_dev *dev)
  {
  	struct lpc_ich_priv *priv = pci_get_drvdata(dev);
  
--	if (priv->actrl_save >= 0) {
--		pci_write_config_byte(dev, priv->actrl, priv->actrl_save);
--		priv->actrl_save = -1;
-+	if (priv->abase_save >= 0) {
-+		pci_write_config_byte(dev, priv->abase, priv->abase_save);
-+		priv->abase_save = -1;
-+	}
-+
-+	if (priv->actrl_pbase_save >= 0) {
-+		pci_write_config_byte(dev, priv->actrl_pbase,
-+			priv->actrl_pbase_save);
-+		priv->actrl_pbase_save = -1;
+-	if (priv->acpi.save >= 0) {
+-		pci_write_config_byte(dev, priv->acpi.ctrl, priv->acpi.save);
+-		priv->acpi.save = -1;
++	if (priv->actrl_save >= 0) {
++		pci_write_config_byte(dev, priv->actrl, priv->actrl_save);
++		priv->actrl_save = -1;
  	}
  
- 	if (priv->gctrl_save >= 0) {
-@@ -758,9 +767,26 @@ static void lpc_ich_enable_acpi_space(struct pci_dev *dev)
+-	if (priv->gpio.save >= 0) {
+-		pci_write_config_byte(dev, priv->gpio.ctrl, priv->gpio.save);
+-		priv->gpio.save = -1;
++	if (priv->gctrl_save >= 0) {
++		pci_write_config_byte(dev, priv->gctrl, priv->gctrl_save);
++		priv->gctrl_save = -1;
+ 	}
+ }
+ 
+@@ -758,9 +758,9 @@ static void lpc_ich_enable_acpi_space(struct pci_dev *dev)
  	struct lpc_ich_priv *priv = pci_get_drvdata(dev);
  	u8 reg_save;
  
--	pci_read_config_byte(dev, priv->actrl, &reg_save);
--	pci_write_config_byte(dev, priv->actrl, reg_save | 0x80);
--	priv->actrl_save = reg_save;
-+	switch (lpc_chipset_info[priv->chipset].iTCO_version) {
-+	case 3:
-+		/*
-+		 * Some chipsets (eg Avoton) enable the ACPI space in the
-+		 * ACPI BASE register.
-+		 */
-+		pci_read_config_byte(dev, priv->abase, &reg_save);
-+		pci_write_config_byte(dev, priv->abase, reg_save | 0x2);
-+		priv->abase_save = reg_save;
-+		break;
-+	default:
-+		/*
-+		 * Most chipsets enable the ACPI space in the ACPI control
-+		 * register.
-+		 */
-+		pci_read_config_byte(dev, priv->actrl_pbase, &reg_save);
-+		pci_write_config_byte(dev, priv->actrl_pbase, reg_save | 0x80);
-+		priv->actrl_pbase_save = reg_save;
-+		break;
-+	}
+-	pci_read_config_byte(dev, priv->acpi.ctrl, &reg_save);
+-	pci_write_config_byte(dev, priv->acpi.ctrl, reg_save | 0x80);
+-	priv->acpi.save = reg_save;
++	pci_read_config_byte(dev, priv->actrl, &reg_save);
++	pci_write_config_byte(dev, priv->actrl, reg_save | 0x80);
++	priv->actrl_save = reg_save;
  }
  
  static void lpc_ich_enable_gpio_space(struct pci_dev *dev)
-@@ -773,6 +799,17 @@ static void lpc_ich_enable_gpio_space(struct pci_dev *dev)
- 	priv->gctrl_save = reg_save;
+@@ -768,9 +768,9 @@ static void lpc_ich_enable_gpio_space(struct pci_dev *dev)
+ 	struct lpc_ich_priv *priv = pci_get_drvdata(dev);
+ 	u8 reg_save;
+ 
+-	pci_read_config_byte(dev, priv->gpio.ctrl, &reg_save);
+-	pci_write_config_byte(dev, priv->gpio.ctrl, reg_save | 0x10);
+-	priv->gpio.save = reg_save;
++	pci_read_config_byte(dev, priv->gctrl, &reg_save);
++	pci_write_config_byte(dev, priv->gctrl, reg_save | 0x10);
++	priv->gctrl_save = reg_save;
  }
  
-+static void lpc_ich_enable_pmc_space(struct pci_dev *dev)
-+{
-+	struct lpc_ich_priv *priv = pci_get_drvdata(dev);
-+	u8 reg_save;
-+
-+	pci_read_config_byte(dev, priv->actrl_pbase, &reg_save);
-+	pci_write_config_byte(dev, priv->actrl_pbase, reg_save | 0x2);
-+
-+	priv->actrl_pbase_save = reg_save;
-+}
-+
  static void lpc_ich_finalize_cell(struct pci_dev *dev, struct mfd_cell *cell)
- {
- 	struct lpc_ich_priv *priv = pci_get_drvdata(dev);
-@@ -910,14 +947,20 @@ static int lpc_ich_init_wdt(struct pci_dev *dev)
- 	lpc_ich_enable_acpi_space(dev);
+@@ -815,7 +815,7 @@ static int lpc_ich_init_gpio(struct pci_dev *dev)
+ 	struct resource *res;
  
- 	/*
-+	 * iTCO v2:
- 	 * Get the Memory-Mapped GCS register. To get access to it
- 	 * we have to read RCBA from PCI Config space 0xf0 and use
- 	 * it as base. GCS = RCBA + ICH6_GCS(0x3410).
-+	 *
-+	 * iTCO v3:
-+	 * Get the Power Management Configuration register.  To get access
-+	 * to it we have to read the PMC BASE from config space and address
-+	 * the register at offset 0x8.
- 	 */
- 	if (lpc_chipset_info[priv->chipset].iTCO_version == 1) {
- 		/* Don't register iomem for TCO ver 1 */
- 		lpc_ich_cells[LPC_WDT].num_resources--;
--	} else {
-+	} else if (lpc_chipset_info[priv->chipset].iTCO_version == 2) {
- 		pci_read_config_dword(dev, RCBABASE, &base_addr_cfg);
- 		base_addr = base_addr_cfg & 0xffffc000;
- 		if (!(base_addr_cfg & 1)) {
-@@ -926,9 +969,17 @@ static int lpc_ich_init_wdt(struct pci_dev *dev)
- 			ret = -ENODEV;
- 			goto wdt_done;
- 		}
--		res = wdt_mem_res(ICH_RES_MEM_GCS);
-+		res = wdt_mem_res(ICH_RES_MEM_GCS_PMC);
- 		res->start = base_addr + ACPIBASE_GCS_OFF;
- 		res->end = base_addr + ACPIBASE_GCS_END;
-+	} else if (lpc_chipset_info[priv->chipset].iTCO_version == 3) {
-+		lpc_ich_enable_pmc_space(dev);
-+		pci_read_config_dword(dev, ACPICTRL_PMCBASE, &base_addr_cfg);
-+		base_addr = base_addr_cfg & 0xfffffe00;
-+
-+		res = wdt_mem_res(ICH_RES_MEM_GCS_PMC);
-+		res->start = base_addr + ACPIBASE_PMC_OFF;
-+		res->end = base_addr + ACPIBASE_PMC_END;
- 	}
+ 	/* Setup power management base register */
+-	pci_read_config_dword(dev, priv->acpi.base, &base_addr_cfg);
++	pci_read_config_dword(dev, priv->abase, &base_addr_cfg);
+ 	base_addr = base_addr_cfg & 0x0000ff80;
+ 	if (!base_addr) {
+ 		dev_notice(&dev->dev, "I/O space for ACPI uninitialized\n");
+@@ -841,7 +841,7 @@ static int lpc_ich_init_gpio(struct pci_dev *dev)
  
- 	lpc_ich_finalize_cell(dev, &lpc_ich_cells[LPC_WDT]);
-@@ -953,9 +1004,11 @@ static int lpc_ich_probe(struct pci_dev *dev,
+ gpe0_done:
+ 	/* Setup GPIO base register */
+-	pci_read_config_dword(dev, priv->gpio.base, &base_addr_cfg);
++	pci_read_config_dword(dev, priv->gbase, &base_addr_cfg);
+ 	base_addr = base_addr_cfg & 0x0000ff80;
+ 	if (!base_addr) {
+ 		dev_notice(&dev->dev, "I/O space for GPIO uninitialized\n");
+@@ -891,7 +891,7 @@ static int lpc_ich_init_wdt(struct pci_dev *dev)
+ 	struct resource *res;
+ 
+ 	/* Setup power management base register */
+-	pci_read_config_dword(dev, priv->acpi.base, &base_addr_cfg);
++	pci_read_config_dword(dev, priv->abase, &base_addr_cfg);
+ 	base_addr = base_addr_cfg & 0x0000ff80;
+ 	if (!base_addr) {
+ 		dev_notice(&dev->dev, "I/O space for ACPI uninitialized\n");
+@@ -952,17 +952,18 @@ static int lpc_ich_probe(struct pci_dev *dev,
+ 		return -ENOMEM;
  
  	priv->chipset = id->driver_data;
+-	priv->acpi.save = -1;
+-	priv->acpi.base = ACPIBASE;
+-	priv->acpi.ctrl = ACPICTRL;
  
--	priv->actrl_save = -1;
-+	priv->actrl_pbase_save = -1;
-+	priv->abase_save = -1;
+-	priv->gpio.save = -1;
++	priv->actrl_save = -1;
++	priv->abase = ACPIBASE;
++	priv->actrl = ACPICTRL;
 +
- 	priv->abase = ACPIBASE;
--	priv->actrl = ACPICTRL;
-+	priv->actrl_pbase = ACPICTRL_PMCBASE;
- 
- 	priv->gctrl_save = -1;
++	priv->gctrl_save = -1;
  	if (priv->chipset <= LPC_ICH5) {
-diff --git a/include/linux/mfd/lpc_ich.h b/include/linux/mfd/lpc_ich.h
-index 3e1df64..9b29d65 100644
---- a/include/linux/mfd/lpc_ich.h
-+++ b/include/linux/mfd/lpc_ich.h
-@@ -21,10 +21,10 @@
- #define LPC_ICH_H
+-		priv->gpio.base = GPIOBASE_ICH0;
+-		priv->gpio.ctrl = GPIOCTRL_ICH0;
++		priv->gbase = GPIOBASE_ICH0;
++		priv->gctrl = GPIOCTRL_ICH0;
+ 	} else {
+-		priv->gpio.base = GPIOBASE_ICH6;
+-		priv->gpio.ctrl = GPIOCTRL_ICH6;
++		priv->gbase = GPIOBASE_ICH6;
++		priv->gctrl = GPIOCTRL_ICH6;
+ 	}
  
- /* Watchdog resources */
--#define ICH_RES_IO_TCO	0
--#define ICH_RES_IO_SMI	1
--#define ICH_RES_MEM_OFF	2
--#define ICH_RES_MEM_GCS	0
-+#define ICH_RES_IO_TCO		0
-+#define ICH_RES_IO_SMI		1
-+#define ICH_RES_MEM_OFF		2
-+#define ICH_RES_MEM_GCS_PMC	0
- 
- /* GPIO resources */
- #define ICH_RES_GPIO	0
+ 	pci_set_drvdata(dev, priv);
 -- 
 1.7.7.GIT
 
