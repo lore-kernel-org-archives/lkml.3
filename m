@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752765AbaCJKeW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 06:34:22 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:32952 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752105AbaCJKeU (ORCPT
+	id S1752589AbaCJKiT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 06:38:19 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:44970 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751953AbaCJKiR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 06:34:20 -0400
-Date: Mon, 10 Mar 2014 10:34:14 +0000
+	Mon, 10 Mar 2014 06:38:17 -0400
+Date: Mon, 10 Mar 2014 10:38:12 +0000
 From: Lee Jones <lee.jones@linaro.org>
-To: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
-        kernel@stlinux.com
-Subject: Re: [PATCH 5/5] ARM: multi_v7_defconfig: add st-keyscan driver
-Message-ID: <20140310103414.GH14976@lee--X1>
-References: <1393990772-9567-1-git-send-email-gabriel.fernandez@st.com>
- <1393990772-9567-6-git-send-email-gabriel.fernandez@st.com>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 Resend 2/3] regulator: Add support for S2MPA01
+ regulator
+Message-ID: <20140310103812.GJ14976@lee--X1>
+References: <1394100057-32677-1-git-send-email-sachin.kamat@linaro.org>
+ <1394100057-32677-2-git-send-email-sachin.kamat@linaro.org>
+ <1394102406.25853.4.camel@AMDC1943>
+ <CAK9yfHyv+PhLCfy131KCS4GWaAEgQ9qmS5X27bTYHWYUspkYjA@mail.gmail.com>
+ <20140310093551.GE14976@lee--X1>
+ <CAK9yfHy9iwCa7JPHTtJNw0pYhehUCd-GLPSW3Gw0G36ELBqsrA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1393990772-9567-6-git-send-email-gabriel.fernandez@st.com>
+In-Reply-To: <CAK9yfHy9iwCa7JPHTtJNw0pYhehUCd-GLPSW3Gw0G36ELBqsrA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This patch adds KEYBOARD_ST_KEYSCAN config
+> >> >> Add support for S2MPA01 voltage and current regulator.
+> >>
+> >> >> +
+> >> >> +struct s2mpa01_info {
+> >> >> +     struct regulator_dev *rdev[S2MPA01_REGULATOR_MAX];
+> >> >
+> >> > Hi,
+> >> >
+> >> > It seems that s2mpa01_info->rdev is not used anywhere, except as return
+> >> > value of devm_regulator_register. I think you can remove it completely.
+> >>
+> >> Yes. I will send a follow up patch for this.
+> >
+> > Let's not break things and fix them up later. Fix it in this patch.
 > 
-> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@st.com>
-> ---
->  arch/arm/configs/multi_v7_defconfig | 1 +
->  1 file changed, 1 insertion(+)
+> Nothing is broken in this patch. What is suggested is just a code cleanup.
+> I did not want to disturb the existing patch set as it is already reviewed
+> and ready for merging. Anyway I can re-spin with this suggested change.
+> 
+> >
+> >> > Beside that, can this driver be merged into existing s2mps11 regulator
+> >> > driver?
+> >>
+> >> Haven't analyzed this yet. Will look into the possibility of consolidation
+> >> later.
+> >
+> > As above. If consolidation is possible it should be take care of in
+> > the first instance.
+> 
+> I need to analyze and see if this is really possible and the extent of
+> re-usability.
+> If possible, this might take a while for me before I start
+> implementing it. Considering
+> that this patch set is now over 2 months old and consolidations do
+> happen subsequently
+> I request you to queue this patch set in its current form (with the
+> above change if you
+> deem it necessary to be part of current patch set).
 
-You should capitalise ST Keyscan in the $SUBJECT line, but other than that:
-  Acked-by: Lee Jones <lee.jones@linaro.org>
+I think the suggestion above should be fixed-up.
 
-> diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
-> index ee69829..5e926981 100644
-> --- a/arch/arm/configs/multi_v7_defconfig
-> +++ b/arch/arm/configs/multi_v7_defconfig
-> @@ -131,6 +131,7 @@ CONFIG_INPUT_EVDEV=y
->  CONFIG_KEYBOARD_GPIO=y
->  CONFIG_KEYBOARD_TEGRA=y
->  CONFIG_KEYBOARD_SPEAR=y
-> +CONFIG_KEYBOARD_ST_KEYSCAN=y
->  CONFIG_KEYBOARD_CROS_EC=y
->  CONFIG_MOUSE_PS2_ELANTECH=y
->  CONFIG_INPUT_MISC=y
+Whether to consider consolidation or not is Mark's decision.
 
 -- 
 Lee Jones
