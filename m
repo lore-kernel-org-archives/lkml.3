@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754017AbaCJPaz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 11:30:55 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:54200 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753157AbaCJPax (ORCPT
+	id S1754218AbaCJPbw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 11:31:52 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:42374 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753830AbaCJPbs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 11:30:53 -0400
+	Mon, 10 Mar 2014 11:31:48 -0400
+Date: Mon, 10 Mar 2014 15:31:42 +0000
 From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: sameo@linux.intel.com, Lee Jones <lee.jones@linaro.org>,
-        Mark Brown <broonie@kernel.org>
-Subject: [PATCH] mfd: tps65218: Fix reported randconfig error
-Date: Mon, 10 Mar 2014 15:30:41 +0000
-Message-Id: <1394465441-15040-1-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, J Keerthy <j-keerthy@ti.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: linux-next: Tree for Mar 6 (mfd/tps65218)
+Message-ID: <20140310153142.GD13661@lee--X1>
+References: <20140306194821.3715d0b6212cc10415374a68@canb.auug.org.au>
+ <5318B2B5.4030609@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5318B2B5.4030609@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reported error was:
+> > Hi all,
+> > 
+> > There may be build failures in this tree due to the percpu changes in the
+> > akpm tree.
+> > 
+> > This tree fails (more than usual) the powerpc allyesconfig build.
+> > 
+> > Changes since 20140305:
+> > 
+> 
+> In linux-next-20140305 and -20140306:
+> 
+> ERROR: "regmap_del_irq_chip" [drivers/mfd/tps65218.ko] undefined!
+> 
+> when CONFIG_REGMAP_IRQ is not enabled.
+> 
+> Driver's kconfig needs to select REGMAP_IRQ ?
 
-  ERROR: "regmap_del_irq_chip" [drivers/mfd/tps65218.ko] undefined!
-    when CONFIG_REGMAP_IRQ is not enabled.
+Fix submitted with your Reported-by. Thanks for letting us know.
 
-Cc: Mark Brown <broonie@kernel.org>
-Reported-by: Randy Dunlap <rdunlap@infradead.org>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mfd/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 7c443f2..456a7e7 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -864,6 +864,7 @@ config MFD_TPS65218
- 	depends on I2C
- 	select MFD_CORE
- 	select REGMAP_I2C
-+	select REGMAP_IRQ
- 	help
- 	  If you say yes here you get support for the TPS65218 series of
- 	  Power Management chips.
 -- 
-1.8.3.2
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
