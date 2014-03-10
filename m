@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753353AbaCJLuc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 07:50:32 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:47235 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753276AbaCJLu3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753264AbaCJLu3 (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 10 Mar 2014 07:50:29 -0400
-Date: Mon, 10 Mar 2014 07:50:12 -0400 (EDT)
-From: Jon Ringle <jon@ringle.org>
-X-X-Sender: jringle@jringle-ubuntu
-To: Alexander Shiyan <shc_work@mail.ru>
-cc: jon@ringle.org, gregkh@linuxfoundation.org, jslaby@suse.cz,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        Jon Ringle <jringle@gridpoint.com>
-Subject: Re: [PATCH] RFC: WIP: sc16is7xx [v0.4]
-In-Reply-To: <1394434945.519725450@f256.i.mail.ru>
-Message-ID: <alpine.DEB.2.02.1403100744230.23103@jringle-ubuntu>
-References: <1394432777-13005-1-git-send-email-jon@ringle.org> <1394434945.519725450@f256.i.mail.ru>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:63043 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752651AbaCJLu1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 07:50:27 -0400
+Date: Mon, 10 Mar 2014 11:50:21 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
+        kernel@stlinux.com, Giuseppe CONDORELLI <giuseppe.condorelli@st.com>
+Subject: Re: [PATCH 2/5] ARM: STi: DT: add keyscan for stih415
+Message-ID: <20140310115021.GP14976@lee--X1>
+References: <1393990772-9567-1-git-send-email-gabriel.fernandez@st.com>
+ <1393990772-9567-3-git-send-email-gabriel.fernandez@st.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-1889733774-1394452227=:23103"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1393990772-9567-3-git-send-email-gabriel.fernandez@st.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---8323329-1889733774-1394452227=:23103
-Content-Type: TEXT/PLAIN; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-
-
-On Mon, 10 Mar 2014, Alexander Shiyan wrote:
-
-> Понедельник, 10 марта 2014, 2:26 -04:00 от jon@ringle.org:
-> > From: Jon Ringle <jringle@gridpoint.com>
-> ...
-> > +config SERIAL_SC16IS7XX
-> > +	tristate "SC16IS7xx RS485 serial support"
-> > +	  select SERIAL_CORE
-> > +	  default n
-> > +	  help
-> > +	  This selects support for SC16IS7xx for use as a RS485 serial port
+> From: Giuseppe CONDORELLI <giuseppe.condorelli@st.com>
 > 
-> Documentation says:
-> The SC16IS740/750/760 is a slave I²C-bus/SPI interface to a single-channel
-> high performance UART.
-> ...
-> The SC16IS740/750/760 also provides additional advanced features such
-> as auto hardware and software flow control, automatic RS-485 support...
+> Add keyscan support for stih415.
+> It is put disabled by default because it is not enabled on all boards
+> Also there are PIOs conflict with already claimed lines.
 > 
-> So why do you position this chip as RS485 only? Automatic direction for
-> RS485 is just a feature as an addition for standart UART.
+> Signed-off-by: Giuseppe Condorelli <giuseppe.condorelli@st.com>
+> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@st.com>
+> ---
+>  arch/arm/boot/dts/stih415-pinctrl.dtsi | 16 ++++++++++++++++
+>  arch/arm/boot/dts/stih415.dtsi         | 10 ++++++++++
+>  2 files changed, 26 insertions(+)
 
-You're right. This is just how we are using the chip in our board. Would a 
-configuration flag in platform_data make sense to use the auto rs485 
-direction?
+<snip>
 
-Any thoughts as to the latency issue I report?
+> +		keyscan: keyscan@fe4b0000 {
+> +			compatible = "st,keypad";
+> +			status = "disabled";
+> +			reg = <0xfe4b0000 0x2000>;
+> +			interrupts = <GIC_SPI 212 IRQ_TYPE_NONE>;
+> +			clocks	= <&CLK_SYSIN>;
+> +			pinctrl-names	= "default";
 
-Thanks.
+Small nit here, but otherwise:
+  Acked-by: Lee Jones <lee.jones@linaro.org>
 
-Regards,
-Jon
---8323329-1889733774-1394452227=:23103--
+> +			pinctrl-0 = <&pinctrl_keyscan>;
+> +		};
+>  	};
+>  };
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
