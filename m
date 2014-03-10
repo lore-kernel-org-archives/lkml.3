@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906AbaCJTRi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 15:17:38 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:51168 "EHLO
+	id S1754056AbaCJTRq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 15:17:46 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:51194 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752889AbaCJTRg (ORCPT
+	with ESMTP id S1753956AbaCJTRn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 15:17:36 -0400
+	Mon, 10 Mar 2014 15:17:43 -0400
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -15,55 +15,77 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Maxime Ripard <maxime.ripard@free-electrons.com>,
         Gregory Clement <gregory.clement@free-electrons.com>,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv3 0/8] at91_adc: documentation and device tree cleanups
-Date: Mon, 10 Mar 2014 20:17:17 +0100
-Message-Id: <1394479045-31852-1-git-send-email-alexandre.belloni@free-electrons.com>
+Subject: [PATCHv3 5/8] ARM: at91/dt: at91sam9g45: remove useless adc properties
+Date: Mon, 10 Mar 2014 20:17:22 +0100
+Message-Id: <1394479045-31852-6-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1394479045-31852-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1394479045-31852-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The first patch synchronise the documentation with the actual code and correct
-the example.
+Remove the properties that are not used anymore by the at91_adc driver.
 
-The second patch move the documentation to the correct location (under iio/adc)
+Also, add #address-cells, #size-cells and a reg for each trigger to comply to
+the ePAPR.
 
-The remaining patches correct the device trees that are using the adc, mainly
-removing unused properties and making the binding compliant with the ePAPR.
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ arch/arm/boot/dts/at91sam9g45.dtsi | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-Changes in v3:
- - also remove the useless atmel,adc-clock-rate
-
-Changes in v2:
- - add #address-cells, #size-cells and a reg for each trigger to comply to the
-   ePAPR instead of removing the unit-address.
- - also correct the atmel,adc-use-external-triggers property name in the
-   documentation and in the device tree that got it wrong.
-
-Alexandre Belloni (8):
-  Documentation: dt: iio: improve atmel-adc documentation
-  Documentation: dt: iio: move arm/atmel-adc.txt to iio/adc/at91_adc.txt
-  ARM: at91/dt: at91-ariag25: remove useless adc properties
-  ARM: at91/dt: at91sam9260: remove useless adc properties
-  ARM: at91/dt: at91sam9g45: remove useless adc properties
-  ARM: at91/dt: at91sam9x5: remove useless adc properties
-  ARM: at91/dt: sama5d3: remove useless adc properties
-  ARM: at91/dt: at91-cosino: remove useless adc properties
-
- .../devicetree/bindings/arm/atmel-adc.txt          | 81 ---------------------
- .../devicetree/bindings/iio/adc/at91_adc.txt       | 82 ++++++++++++++++++++++
- arch/arm/boot/dts/at91-ariag25.dts                 |  1 -
- arch/arm/boot/dts/at91-cosino.dtsi                 |  1 -
- arch/arm/boot/dts/at91-cosino_mega2560.dts         |  1 -
- arch/arm/boot/dts/at91sam9260.dtsi                 | 11 +--
- arch/arm/boot/dts/at91sam9g45.dtsi                 | 11 +--
- arch/arm/boot/dts/at91sam9x5.dtsi                  | 13 ++--
- arch/arm/boot/dts/sama5d3.dtsi                     | 13 ++--
- arch/arm/boot/dts/sama5d3xdm.dtsi                  |  1 -
- 10 files changed, 108 insertions(+), 107 deletions(-)
- delete mode 100644 Documentation/devicetree/bindings/arm/atmel-adc.txt
- create mode 100644 Documentation/devicetree/bindings/iio/adc/at91_adc.txt
-
+diff --git a/arch/arm/boot/dts/at91sam9g45.dtsi b/arch/arm/boot/dts/at91sam9g45.dtsi
+index cbcc058b26b4..dc4fb7d99902 100644
+--- a/arch/arm/boot/dts/at91sam9g45.dtsi
++++ b/arch/arm/boot/dts/at91sam9g45.dtsi
+@@ -632,40 +632,41 @@
+ 			};
+ 
+ 			adc0: adc@fffb0000 {
++				#address-cells = <1>;
++				#size-cells = <0>;
+ 				compatible = "atmel,at91sam9260-adc";
+ 				reg = <0xfffb0000 0x100>;
+ 				interrupts = <20 IRQ_TYPE_LEVEL_HIGH 0>;
+ 				atmel,adc-use-external-triggers;
+ 				atmel,adc-channels-used = <0xff>;
+ 				atmel,adc-vref = <3300>;
+-				atmel,adc-num-channels = <8>;
+ 				atmel,adc-startup-time = <40>;
+-				atmel,adc-channel-base = <0x30>;
+-				atmel,adc-drdy-mask = <0x10000>;
+-				atmel,adc-status-register = <0x1c>;
+-				atmel,adc-trigger-register = <0x08>;
+ 				atmel,adc-res = <8 10>;
+ 				atmel,adc-res-names = "lowres", "highres";
+ 				atmel,adc-use-res = "highres";
+ 
+ 				trigger@0 {
++					reg = <0>;
+ 					trigger-name = "external-rising";
+ 					trigger-value = <0x1>;
+ 					trigger-external;
+ 				};
+ 				trigger@1 {
++					reg = <1>;
+ 					trigger-name = "external-falling";
+ 					trigger-value = <0x2>;
+ 					trigger-external;
+ 				};
+ 
+ 				trigger@2 {
++					reg = <2>;
+ 					trigger-name = "external-any";
+ 					trigger-value = <0x3>;
+ 					trigger-external;
+ 				};
+ 
+ 				trigger@3 {
++					reg = <3>;
+ 					trigger-name = "continuous";
+ 					trigger-value = <0x6>;
+ 				};
 -- 
 1.8.3.2
 
