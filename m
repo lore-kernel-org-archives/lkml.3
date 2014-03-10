@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140AbaCJBDS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 21:03:18 -0400
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:51081 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752179AbaCJBDQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 21:03:16 -0400
-X-Originating-IP: 50.43.32.211
-Date: Sun, 9 Mar 2014 18:03:10 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3 5/5] x86: Always define BUG() and HAVE_ARCH_BUG, even with
- !CONFIG_BUG
-Message-ID: <0c48ec31fe236361884f49d559f895b3883846c2.1394412745.git.josh@joshtriplett.org>
-References: <17c859aa7dcccec43df0a0c8908911b982764c76.1394412745.git.josh@joshtriplett.org>
+	id S1752475AbaCJBUQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 21:20:16 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:56805 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751802AbaCJBUO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Mar 2014 21:20:14 -0400
+X-IronPort-AV: E=Sophos;i="4.97,620,1389715200"; 
+   d="scan'208";a="9668681"
+Message-ID: <531D113C.80709@cn.fujitsu.com>
+Date: Mon, 10 Mar 2014 09:11:24 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <17c859aa7dcccec43df0a0c8908911b982764c76.1394412745.git.josh@joshtriplett.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: David Miller <davem@davemloft.net>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] netlink: switch net_ns only if net is not init_net
+References: <5319A3C2.8080001@cn.fujitsu.com> <20140309.190941.472588800498066811.davem@davemloft.net>
+In-Reply-To: <20140309.190941.472588800498066811.davem@davemloft.net>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/10 09:17:27,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/10 09:17:31,
+	Serialize complete at 2014/03/10 09:17:31
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This ensures that BUG() always has a definition that causes a trap (via
-an undefined instruction), and that the compiler still recognizes the
-code following BUG() as unreachable, avoiding warnings that would
-otherwise appear (such as on non-void functions that don't return a
-value after BUG()).
+On 03/10/2014 07:09 AM, David Miller wrote:
 
-In addition to saving a few bytes over the generic infinite-loop
-implementation, this implementation traps rather than looping, which
-potentially allows for better error-recovery behavior (such as by
-rebooting).
+> From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+> Date: Fri, 07 Mar 2014 18:47:30 +0800
+> 
+>> Many netlink users create netlink sock in the init_net, and the
+>> switching nes_ns(init_net-->net) is needless in this case. So here
+>> we add a pre-check to avoid this.
+>>
+>> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+> 
+> This check is more appropriately placed into sk_change_net() itself.
 
-Reported-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
----
-v3: New patch for x86-optimized implementation of a simple bug for
-!CONFIG_BUG, based on Arnd Bergmann's proposal.
+Agree. I'll update it soon.
 
- arch/x86/include/asm/bug.h | 3 ---
- 1 file changed, 3 deletions(-)
+Regards,
+Gu
 
-diff --git a/arch/x86/include/asm/bug.h b/arch/x86/include/asm/bug.h
-index 2f03ff0..ba38ebb 100644
---- a/arch/x86/include/asm/bug.h
-+++ b/arch/x86/include/asm/bug.h
-@@ -1,7 +1,6 @@
- #ifndef _ASM_X86_BUG_H
- #define _ASM_X86_BUG_H
- 
--#ifdef CONFIG_BUG
- #define HAVE_ARCH_BUG
- 
- #ifdef CONFIG_DEBUG_BUGVERBOSE
-@@ -33,8 +32,6 @@ do {								\
- } while (0)
- #endif
- 
--#endif /* !CONFIG_BUG */
--
- #include <asm-generic/bug.h>
- 
- #endif /* _ASM_X86_BUG_H */
--- 
-1.9.0
+> 
+
 
