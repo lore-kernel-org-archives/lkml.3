@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753163AbaCJJzi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 05:55:38 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:45336 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752411AbaCJJzg (ORCPT
+	id S1753327AbaCJJzn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 05:55:43 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:37402 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752411AbaCJJzk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 05:55:36 -0400
-X-AuditID: cbfee68e-b7f566d000002344-d3-531d8c174769
-Date: Mon, 10 Mar 2014 09:55:35 +0000 (GMT)
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH 3/3] regulator: max8998: Remove unnecessary **rdev from
- struct max8998_data
-To: Axel Lin <axel.lin@ingics.com>, Mark Brown <broonie@kernel.org>
-Cc: Thomas Abraham <thomas.abraham@linaro.org>,
-        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
-        Liam Girdwood <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20140310095427335@myungjoo.ham
-Msgkey: 20140310095427335@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20140310095427335@myungjoo.ham
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <3908098.448981394445332812.JavaMail.weblogic@epv6ml07>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42JZI2JSrCveIxts0HWHy+LyrjlsDowenzfJ
-	BTBGcdmkpOZklqUW6dslcGUcWv+IqWALc8Xn08fYGhiXMHcxcnIICahLLFpykq2LkYNDQsBE
-	4mUHC0hYQkBM4sK99WwQJUsZJdY8doWIm0gcX9gP1MoFFJ/PKLGk8QcjSIJFQFVi+63P7CBz
-	2AT0JGZ+TgYJCwvES/Qtvge2SkTAU6Lh+AlGkF5mgUuMEh83/IBaoCSxZt8rsMW8AoISJ2c+
-	gTpCVWJ+/wo2iLiaxJq5f9kg4hISs6ZfYIWweSVmtD+FqpeTmPZ1DTOELS1xftYGRphnFn9/
-	DBXnlzh2ewcTxL+8Ek/uB8OM2b35C9R4AYmpZw5CtWpJ7G0+DbWKT2LNwrcsMGN2nVrODNN7
-	f8tcJhCbWUBRYkr3Q3YIW0viy499bOje4hVwlph1dz3rBEblWUhSs5C0z0LSjqxmASPLKkbR
-	1ILkguKk9CIjveLE3OLSvHS95PzcTYzApHD637O+HYw3D1gfYkwGRslEZinR5HxgUskriTc0
-	NjOyMDUxNTYytzQjTVhJnHfRw6QgIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYwRLJ9kQ3c+
-	i7nkFx/EJ6IgHDjhvUWSd9K7hw6MAnOd5k+5FrWh+EW1wZ8rnwUOyvTM9p8XUCCl2TZxQcyL
-	1TX6l9UM3uWEPy9mfPJ194vHMz5viVA4w3jrxIKpEue2XzzAtetx/cytV16/yb1xWO3zn8vX
-	l/fsKNH5wd/rkFrQNO3dsiXXZ2kvVGIpzkg01GIuKk4EACJDALsgAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgk+LIzCtJLcpLzFFi42I5/e/2dF3xHtlggynrWCwu75rD5sDo8XmT
-	XABjVJpNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBQ
-	JYWyxJxSoFBAYnGxkr6dTVF+aUmqQkZ+cYmtUrShuZGekYGeqZGeoXGslaGBgZEpUE1CWsah
-	9Y+YCrYwV3w+fYytgXEJcxcjJ4eQgLrEoiUn2UBsCQETieML+5khbDGJC/fWA8W5gGrmM0os
-	afzBCJJgEVCV2H7rM3sXIwcHm4CexMzPySBhYYF4ib7F98B6RQQ8JRqOn2AE6WUWuMQo8XHD
-	DzaIZUoSa/a9YgGxeQUEJU7OfMICsUxVYn7/CjaIuJrEmrl/oQ6SkJg1/QIrhM0rMaP9KVS9
-	nMS0r2ugDpWWOD9rAyPM0Yu/P4aK80scu72DCeROkN4n94Nhxuze/AVqvIDE1DMHoVq1JPY2
-	n4ZaxSexZuFbFpgxu04tZ4bpvb9lLhOIzSygKDGl+yE7hK0l8eXHPjZ0b/EKOEvMuruedQKj
-	3CwkqVlI2mchaUdWs4CRZRWjaGpBckFxUnqFoV5xYm5xaV66XnJ+7iZGcHp6tnAH45fz1ocY
-	BTgYlXh4F6bLBguxJpYVV+YeYpTgYFYS4X3YChTiTUmsrEotyo8vKs1JLT7EmAyMwInMUqLJ
-	+cDUmVcSb2hsbGJmYmppYmFgak6asJI4792bSUFCAumJJanZqakFqUUwW5g4OKUaGNnUZuqG
-	xu7ynWzGKHXhUbNrVWDl3KezDCfeKKxhmJFff89mV0bQ/4R1LduVcxhP7vE12Hmxfmbz7qOH
-	pW9miW19w/DLqf+Q//UNykHKnZVfw/iMbBquFbz9XrHmF+/8bKZcvnenryzjs+F2FJnsU7/f
-	7bTPt1W7fr0+Fxwz2es/n36dcfGNXCWW4oxEQy3mouJEANNtkfyTAwAA
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+	Mon, 10 Mar 2014 05:55:40 -0400
+MIME-Version: 1.0
+X-Originating-IP: [84.73.67.144]
+In-Reply-To: <20140310092919.GG20302@nuc-i3427.alporthouse.com>
+References: <20140224160628.GU3852@intel.com>
+	<1394304546-19433-1-git-send-email-sagar.a.kamble@intel.com>
+	<CADnq5_P_j66y2j3v8r9jHOffhfz3L3_fQpnP-OFdfOeLEWqs8A@mail.gmail.com>
+	<1394305472.18918.1.camel@sagar-desktop>
+	<1394305669.18918.3.camel@sagar-desktop>
+	<20140310092919.GG20302@nuc-i3427.alporthouse.com>
+Date: Mon, 10 Mar 2014 10:55:40 +0100
+Message-ID: <CAKMK7uEFpkRs5euH_un=3MEstwO2PMwk0RAOhP-2+cgfMK1sgA@mail.gmail.com>
+Subject: Re: [Intel-gfx] [PATCH v3 1/1] drm/i915: Enabling 128x128 and 256x256
+ ARGB Cursor Support
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Chris Wilson <chris@chris-wilson.co.uk>,
+        Sagar Arun Kamble <sagar.a.kamble@intel.com>,
+        Alex Deucher <alexdeucher@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Maling list - DRI developers 
+	<dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2A9tg84015759
 
-> Now we are using devm_regulator_register(), so we don't need to allocate *rdev[]
-> array to store return value of devm_regulator_register. Use a *rdev variable is
-> enough for checking return status.
-> 
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+On Mon, Mar 10, 2014 at 10:29 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+>> Realized after sending mail that we just get to know current cursor
+>> width and height. Can we have capability that exposes all supported
+>> cursor sizes?
+>
+> The cap exposes the max cursor size. Knowing our hardware we can infer
+> that pot sizes from 64 to max are supported, but it would be better if
+> we did expose that information through the cap as well.
 
-Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+I think the right approach here is to expose this through the
+cursor-as-real-plane interface, which kinda has this already. On top
+of that we can then add a few fourcc enumerations of the fixed rgba
+cursor layouts like 64x64, 128x128, ... This helps if the plane is a
+general one with very high limits, but also with special support for
+cursor formats.
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+If anyone wants to go crazy we could then also add new fourccs for all
+the other cursor layouts - atm only rgba with fixed dimensions can be
+support with the current cursor ioctl.
+
+So reviewing the overall situation I actually _don't_ want a new
+cap/ioctl/prop here just for now. As long as we need to go with intel
+specific hacks userspace might as well probe things manually and act
+upon the -EINVAL.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
