@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755063AbaCJUje (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 16:39:34 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:49444 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755042AbaCJUjb (ORCPT
+	id S1755083AbaCJUjm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 16:39:42 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:42264 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754390AbaCJUjh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 16:39:31 -0400
+	Mon, 10 Mar 2014 16:39:37 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v3 31/52] arm64,
- debug-monitors: Fix CPU hotplug callback registration
+Subject: [PATCH v3 28/52] x86, oprofile,
+ nmi: Fix CPU hotplug callback registration
 To: paulus@samba.org, oleg@redhat.com, mingo@kernel.org, rjw@rjwysocki.net,
         rusty@rustcorp.com.au, peterz@infradead.org, tglx@linutronix.de,
         akpm@linux-foundation.org
@@ -17,14 +17,12 @@ Cc: paulmck@linux.vnet.ibm.com, tj@kernel.org, walken@google.com,
         ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
         linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         linux-pm@vger.kernel.org, linuxppc-dev@ozlabs.org,
-        srivatsa.bhat@linux.vnet.ibm.com,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Ingo Molnar <mingo@kernel.org>, linux-arm-kernel@lists.infradead.org,
-        Will Deacon <will.deacon@arm.com>,
+        srivatsa.bhat@linux.vnet.ibm.com, Robert Richter <rric@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Tue, 11 Mar 2014 02:09:20 +0530
-Message-ID: <20140310203919.10746.1234.stgit@srivatsabhat.in.ibm.com>
+Date: Tue, 11 Mar 2014 02:08:49 +0530
+Message-ID: <20140310203849.10746.36718.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20140310203312.10746.310.stgit@srivatsabhat.in.ibm.com>
 References: <20140310203312.10746.310.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -33,7 +31,7 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14031020-2000-0000-0000-0000101B3A23
+x-cbid: 14031020-5490-0000-0000-00000522260A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -69,40 +67,71 @@ registration is:
 	cpu_notifier_register_done();
 
 
-Fix the debug-monitors code in arm64 by using this latter form of callback
-registration.
+Fix the oprofile code in x86 by using this latter form of callback
+registration. But retain the calls to get/put_online_cpus(), since they are
+used in other places as well, to protect the variables 'nmi_enabled' and
+'ctr_running'. Strictly speaking, this is not necessary since
+cpu_notifier_register_begin/done() provide a stronger synchronization
+with CPU hotplug than get/put_online_cpus(). However, let's retain the
+calls to get/put_online_cpus() to be consistent with the other call-sites.
 
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+By nesting get/put_online_cpus() *inside* cpu_notifier_register_begin/done(),
+we avoid the ABBA deadlock possibility mentioned above.
+
+Cc: Robert Richter <rric@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: linux-arm-kernel@lists.infradead.org
-Acked-by: Will Deacon <will.deacon@arm.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- arch/arm64/kernel/debug-monitors.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ arch/x86/oprofile/nmi_int.c |   15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm64/kernel/debug-monitors.c b/arch/arm64/kernel/debug-monitors.c
-index 636ba8b..c985531 100644
---- a/arch/arm64/kernel/debug-monitors.c
-+++ b/arch/arm64/kernel/debug-monitors.c
-@@ -155,12 +155,16 @@ static struct notifier_block os_lock_nb = {
+diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
+index 6890d84..379e8bd 100644
+--- a/arch/x86/oprofile/nmi_int.c
++++ b/arch/x86/oprofile/nmi_int.c
+@@ -494,14 +494,19 @@ static int nmi_setup(void)
+ 	if (err)
+ 		goto fail;
  
- static int debug_monitors_init(void)
- {
 +	cpu_notifier_register_begin();
 +
- 	/* Clear the OS lock. */
- 	smp_call_function(clear_os_lock, NULL, 1);
- 	clear_os_lock(NULL);
++	/* Use get/put_online_cpus() to protect 'nmi_enabled' */
+ 	get_online_cpus();
+-	register_cpu_notifier(&oprofile_cpu_nb);
+ 	nmi_enabled = 1;
+ 	/* make nmi_enabled visible to the nmi handler: */
+ 	smp_mb();
+ 	on_each_cpu(nmi_cpu_setup, NULL, 1);
++	__register_cpu_notifier(&oprofile_cpu_nb);
+ 	put_online_cpus();
  
- 	/* Register hotplug handler. */
--	register_cpu_notifier(&os_lock_nb);
-+	__register_cpu_notifier(&os_lock_nb);
++	cpu_notifier_register_done();
++
+ 	return 0;
+ fail:
+ 	free_msrs();
+@@ -512,12 +517,18 @@ static void nmi_shutdown(void)
+ {
+ 	struct op_msrs *msrs;
+ 
++	cpu_notifier_register_begin();
++
++	/* Use get/put_online_cpus() to protect 'nmi_enabled' & 'ctr_running' */
+ 	get_online_cpus();
+-	unregister_cpu_notifier(&oprofile_cpu_nb);
+ 	on_each_cpu(nmi_cpu_shutdown, NULL, 1);
+ 	nmi_enabled = 0;
+ 	ctr_running = 0;
++	__unregister_cpu_notifier(&oprofile_cpu_nb);
+ 	put_online_cpus();
 +
 +	cpu_notifier_register_done();
- 	return 0;
- }
- postcore_initcall(debug_monitors_init);
++
+ 	/* make variables visible to the nmi handler: */
+ 	smp_mb();
+ 	unregister_nmi_handler(NMI_LOCAL, "oprofile");
 
