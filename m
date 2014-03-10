@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708AbaCJOiw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 10:38:52 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:64030 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752467AbaCJOiv (ORCPT
+	id S1753802AbaCJOlJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 10:41:09 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:33211 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752651AbaCJOlH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 10:38:51 -0400
-MIME-Version: 1.0
-X-Originating-IP: [84.73.67.144]
-In-Reply-To: <alpine.LNX.2.00.1403101525220.3690@pobox.suse.cz>
-References: <alpine.LNX.2.00.1402271153480.21399@pobox.suse.cz>
-	<alpine.LNX.2.00.1403031519500.7030@pobox.suse.cz>
-	<alpine.LNX.2.00.1403101525220.3690@pobox.suse.cz>
-Date: Mon, 10 Mar 2014 15:38:50 +0100
-Message-ID: <CAKMK7uG1PG=h8uiofNXt_-GOGgL354skaQeqA5OxK4VbYk2Vkg@mail.gmail.com>
-Subject: Re: i915 resume-from-hibernation problems on resume with current
- Linus' tree
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Jani Nikula <jani.nikula@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 10 Mar 2014 10:41:07 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [RFC PATCH] [media]: of: move graph helpers from drivers/media/v4l2-core to drivers/of
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>, Rob Herring <robherring2@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Philipp Zabel <philipp.zabel@gmail.com>
+In-Reply-To: <531D916C.2010903@ti.com>
+References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de> < CAL_Jsq+U9zU1i+STLHMBjY5BeEP6djYnJVE5X1ix-D2q_zWztQ@mail.gmail.com> < 20140217181451.7EB7FC4044D@trevor.secretlab.ca> <20140218070624.GP17250@ pengutronix.de> <20140218162627.32BA4C40517@trevor.secretlab.ca> < 1393263389.3091.82.camel@pizza.hi.pengutronix.de> <20140226110114. CF2C7C40A89@trevor.secretlab.ca> <1393426129.3248.64.camel@paszta.hi. pengutronix.de> <20140307170550.1DFB2C40A0D@trevor.secretlab.ca> <531AF1E8. 50606@ti.com> <20140308114115.BB08EC40612@trevor.secretlab.ca> <531D916C. 2010903@ti.com>
+Date: Mon, 10 Mar 2014 14:41:02 +0000
+Message-Id: <20140310144102.58C13C405FA@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 3:25 PM, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Mon, 3 Mar 2014, Jiri Kosina wrote:
->> > first things first: this is hard to bisect, because it doesn't happen
->> > reliably and I don't really know what is the first good version, as I had
->> > a delay in following Linus' tree.
->> >
->> > What happens is that after resumption from S4 (disk), Xorg session is in
->> > complete havoc -- the windows don't redraw properly, sometimes the mouse
->> > pointer is "jailed" on a small rectangle in the middle of the screen, etc.
->> >
->> > I have captured 'drm.debug=14' output of the failing resume ... I guess
->> > this is realted to the
->> >
->> > *ERROR* render ring initialization failed ctl 0001f001 head 00003004 tail 00000000 start 00003000
->> >
->> > as it doesn't seem to be there in case of resumption that works properly.
->> >
->> > Please see the dmesg from the broken case below.
->>
->> I encountered this again with -rc5.
->>
->> If there is anything I can do to help debug this, please let me know.
->
-> I hate to be doing this, but ... ping? :)
+On Mon, 10 Mar 2014 12:18:20 +0200, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
+> On 08/03/14 13:41, Grant Likely wrote:
+> 
+> >> Ok. If we go for single directional link, the question is then: which
+> >> way? And is the direction different for display and camera, which are
+> >> kind of reflections of each other?
+> > 
+> > In general I would recommend choosing whichever device you would
+> > sensibly think of as a master. In the camera case I would choose the
+> > camera controller node instead of the camera itself, and in the display
+> > case I would choose the display controller instead of the panel. The
+> > binding author needs to choose what she things makes the most sense, but
+> > drivers can still use if it it turns out to be 'backwards'
+> 
+> I would perhaps choose the same approach, but at the same time I think
+> it's all but clear. The display controller doesn't control the panel any
+> more than a DMA controller controls, say, the display controller.
 
-gm45 and rendering ring init failures. We've seen this occasionally
-crop up due to rather unrelated changes. Some even hit stable
-backports and had to be backed out again. We essentially have no clue
-what's amiss, but it seems to /mostly/ work. Thus far I've only hear
-reports of this for gm45 and not yet really for upstream. Until
-someone digs up more evidence I think we need to classify this as a
-rare heisenbug and not really a regression :(
+In a sense it doesn't actually matter. You sensibly want to choose the
+most likely direction that drivers would go looking for a device it
+depends on, but it can be matched up at runtime regardless of the
+direction chosen by the binding.
 
-One thing we could try is to simply repeat the ring init setup, maybe
-after a gpu reset or something like that.
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+g.
