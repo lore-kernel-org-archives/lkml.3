@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910AbaCJT3J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 15:29:09 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:64860 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752099AbaCJT3H (ORCPT
+	id S1754192AbaCJTaH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 15:30:07 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:46519 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753204AbaCJTaE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 15:29:07 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>, Tanmay Inamdar <tinamdar@apm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH v6 6/6] pci: Add support for creating a generic host_bridge from device tree
-Date: Mon, 10 Mar 2014 20:28:32 +0100
-Message-ID: <2669340.5Jm6AjVlSo@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAMuHMdWzm1D83zquwuQVKwbqRdXmSw7u1ui7iZyC3VGdGhn0HA@mail.gmail.com>
-References: <1394020137-1830-1-git-send-email-Liviu.Dudau@arm.com> <1469359.kil5iaOqdU@wuerfel> <CAMuHMdWzm1D83zquwuQVKwbqRdXmSw7u1ui7iZyC3VGdGhn0HA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:EX3a5AruirvFxuKpkbS6wz6QWQdqKUhs3PT2oA3qE5M
- CDZ3v4d7dLL0dX7xgJFralU9YMAhzd24QzyOxsTyeylEkRBPKK
- 3Q/CsJHiIZiLihtP9SDEeAE2a7ttxi+m1fcTCYSl+RxAotF42a
- HCro8inavHI3JJJxNPG1b0e3uzhff1gF15RaAINeKkGaFYUz5S
- pYui1PRzoVLTAwDdHauBfQ2ZZu200XtJ39dWzeha8bZLBDimuK
- GdjlQaF4EJLDNE9XYV4qbtG93es/x6x1qP+m76HedP0GNTZddR
- 3MSdoILknCTZbKP3sllwEEmAXQ5/flehAmfXBDag55aBPXS7qY
- qw5v1A1LF0obElv4Krf4=
+	Mon, 10 Mar 2014 15:30:04 -0400
+Date: Mon, 10 Mar 2014 15:30:01 -0400 (EDT)
+Message-Id: <20140310.153001.1202621819107314058.davem@davemloft.net>
+To: eparis@redhat.com
+Cc: ebiederm@xmission.com, sgrubb@redhat.com, rgb@redhat.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-audit@redhat.com, akpm@linux-foundation.org
+Subject: Re: [RFC][PATCH] audit: Simplify by assuming the callers socket
+ buffer is large enough
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1394232722.17779.57.camel@flatline.rdu.redhat.com>
+References: <7457128.6VP2v68V93@x2>
+	<87wqg8zfj4.fsf@xmission.com>
+	<1394232722.17779.57.camel@flatline.rdu.redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 10 Mar 2014 12:30:04 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 10 March 2014 20:16:25 Geert Uytterhoeven wrote:
-> On Mon, Mar 10, 2014 at 7:59 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> >> arch/avr32/include/asm/io.h:#define IO_SPACE_LIMIT    0xffffffff
-> >> arch/frv/include/asm/io.h:#define IO_SPACE_LIMIT      0xffffffff
-> >
-> > They have no MMU, and the code relies on the port number to match
-> > both the virtual and the physical address. You could be right about
-> > these, but I would guess that the code also needs some other
-> > changes if we want to make it work on nommu kernels. It also depends
-> > on whether the I/O bus address is the same as the CPU address, or
-> > if it starts at bus address 0.
-> 
-> >> arch/m68k/include/asm/io_no.h:#define IO_SPACE_LIMIT 0xffffffff
-> >
-> > This looks like a mistake, it should be smaller
-> 
-> io_no.h is for nommu.
+From: Eric Paris <eparis@redhat.com>
+Date: Fri, 07 Mar 2014 17:52:02 -0500
 
-Ah, I missed that. In that case I assume it doesn't matter because
-the only m68k with PCI is M54xx and that always has an MMU.
+> The second user Eric patched, audit_send_list(), can grow without bound.
+> The number of skb's is going to be the size of the number of audit rules
+> that root loaded.  We run the list of rules, generate an skb per rule,
+> and add all of them to an skb_buff_head.  We then pass the skb_buff_head
+> to a kthread so that current will be able to read/drain the socket.
+> There really is no limit to how big the skb_buff_head could possibly
+> grow.  This doesn't necessarily absolutely have to be lossless but it
+> can actually quite reasonably be a whole lot of data that needs to get
+> sent.  I know of no way to deliver unbounded lengths of data to the
+> current task via netlink without blocking on more space in the socket.
+> Even if the socket rmem was MAX_INT, how can we deliver more?  The rule
+> size is unbounded.  How do I get an unbounded amount of data onto this
+> side of the socket when I have to generate it all during the request...
 
-	Arnd
+This is what netlink dumps  are for.  It is how we are able to dump
+routing tables with millions of routes to userspace.
+
+By using normal netlink requests and netlink_unicast() for this, you
+are ignoring an entire mechanism in netlink designed specifically to
+handle this kind of situation.
+
+Netlink dumps track state and build one or more SKBs (as necessary),
+one by one, to form the reply.  It implements flow control, state
+tracking for iteration, optimized SKB sizing and allocation, etc.
+
