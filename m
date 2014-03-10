@@ -1,87 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753186AbaCJLAk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 07:00:40 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:48131 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753111AbaCJLAi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 07:00:38 -0400
-Date: Mon, 10 Mar 2014 11:58:08 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com
-Subject: Re: [PATCH] i2c: mv64xxx: Fix compilation breakage
-Message-ID: <20140310105808.GE2815@lukather>
-References: <1394204370-22979-1-git-send-email-maxime.ripard@free-electrons.com>
- <20140307160836.GM21483@n2100.arm.linux.org.uk>
+	id S1752736AbaCJLFq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 07:05:46 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:42993 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752190AbaCJLFo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 07:05:44 -0400
+Message-ID: <531D9C64.50809@ti.com>
+Date: Mon, 10 Mar 2014 13:05:08 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lkTb+7nhmha7W+c3"
-Content-Disposition: inline
-In-Reply-To: <20140307160836.GM21483@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tero Kristo <t-kristo@ti.com>, <balbi@ti.com>, <tony@atomide.com>
+CC: <kishon@ti.com>, <george.cherian@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 2/8] ARM: dts: dra7-clock: Add "l3init_960m_gfclk" clock
+ gate
+References: <1394197751-28984-1-git-send-email-rogerq@ti.com> <1394197751-28984-3-git-send-email-rogerq@ti.com> <5319D0B5.6060300@ti.com>
+In-Reply-To: <5319D0B5.6060300@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/07/2014 03:59 PM, Tero Kristo wrote:
+> On 03/07/2014 03:09 PM, Roger Quadros wrote:
+>> This clock gate description was missing in older Reference manuals.
+>> It is present on the SoC to provide 960MHz reference clock to the
+>> internal USB PHYs.
+> 
+> Can you provide a document reference here?
+> 
 
---lkTb+7nhmha7W+c3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Unfortunately it hasn't yet been included in the TRM.
+I have the internal defect ID but I don't think it makes any sense here.
 
-On Fri, Mar 07, 2014 at 04:08:36PM +0000, Russell King - ARM Linux wrote:
-> On Fri, Mar 07, 2014 at 03:59:30PM +0100, Maxime Ripard wrote:
-> > @@ -900,7 +902,8 @@ mv64xxx_i2c_probe(struct platform_device *pd)
-> >  exit_free_irq:
-> >  	free_irq(drv_data->irq, drv_data);
-> >  exit_reset:
-> > -	if (pd->dev.of_node && !IS_ERR(drv_data->rstc))
-> > +	if (pd->dev.of_node && IS_ENABLED(CONFIG_RESET_CONTROLLER) &&
-> > +	    !IS_ERR(drv_data->rstc))
-> >  		reset_control_assert(drv_data->rstc);
->=20
-> Another question is... why do we need to check pd->dev.of_node here?
-> If CONFIG_RESET_CONTROLLER is set, we always try to get the reset
-> controller node, so drv_data->rstc is either going to be a valid
-> pointer, or it's going to be an error pointer - neither
-> reset_control_get() nor devm_reset_control_get return NULL.
+DRA7xx-TRMINC00203
 
-Following back on this as I was doing the patch, actually,
-drv_data->rstc will be NULL if we're not probed by DT, and hence never
-call reset_control_get, that would set an error pointer.
+cheers,
+-roger
 
-But then, we can use IS_ERR_OR_NULL on drv_data->rstc.
+> 
+>>
+>> Use l3init_960m_gfclk as parent of usb_otg_ss1_refclk960m and
+>> usb_otg_ss2_refclk960m.
+>>
+>> CC: Tero Kristo <t-kristo@ti.com>
+>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>> ---
+>>   arch/arm/boot/dts/dra7xx-clocks.dtsi | 12 ++++++++++--
+>>   1 file changed, 10 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/arch/arm/boot/dts/dra7xx-clocks.dtsi b/arch/arm/boot/dts/dra7xx-clocks.dtsi
+>> index e96da9a..b8d3a9d 100644
+>> --- a/arch/arm/boot/dts/dra7xx-clocks.dtsi
+>> +++ b/arch/arm/boot/dts/dra7xx-clocks.dtsi
+>> @@ -1386,6 +1386,14 @@
+>>           ti,dividers = <1>, <8>;
+>>       };
+>>
+>> +    l3init_960m_gfclk: l3init_960m_gfclk {
+>> +        #clock-cells = <0>;
+>> +        compatible = "ti,gate-clock";
+>> +        clocks = <&dpll_usb_clkdcoldo>;
+>> +        ti,bit-shift = <8>;
+>> +        reg = <0x06c0>;
+>> +    };
+>> +
+>>       dss_32khz_clk: dss_32khz_clk {
+>>           #clock-cells = <0>;
+>>           compatible = "ti,gate-clock";
+>> @@ -1533,7 +1541,7 @@
+>>       usb_otg_ss1_refclk960m: usb_otg_ss1_refclk960m {
+>>           #clock-cells = <0>;
+>>           compatible = "ti,gate-clock";
+>> -        clocks = <&dpll_usb_clkdcoldo>;
+>> +        clocks = <&l3init_960m_gfclk>;
+>>           ti,bit-shift = <8>;
+>>           reg = <0x13f0>;
+>>       };
+>> @@ -1541,7 +1549,7 @@
+>>       usb_otg_ss2_refclk960m: usb_otg_ss2_refclk960m {
+>>           #clock-cells = <0>;
+>>           compatible = "ti,gate-clock";
+>> -        clocks = <&dpll_usb_clkdcoldo>;
+>> +        clocks = <&l3init_960m_gfclk>;
+>>           ti,bit-shift = <8>;
+>>           reg = <0x1340>;
+>>       };
+>>
+> 
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---lkTb+7nhmha7W+c3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTHZrAAAoJEBx+YmzsjxAgtKoP+gPIHQvDYHj7s6kLT/4VfQeu
-j6EcPSnKVm6erU1QBKt0scd4gEbxREuUIgt5NFnA20pxZj1u77+XGB6T9MQ+WIqT
-AVAfgkcKBtg3CFSXyVl5JGjDo+VWNysqK7D4ZHR8l3WjivDGE86YHQl+kLGZ6rBg
-x4Ns7DMD2DmzzfjleSnEyAH4ZdUjcrFgcydGYHUfafS3ovRB7HWCez0szSXfWf8R
-mtd6GBM7rte0zMEYbv03k+anGE6NnJug4sDmqgj34ciLA3dMkkyVrfdO6IFVBj0t
-np3vClEEKnlQwPXjcCgbb2IZTWLqIYAC9L9diefKXoBaSl8Aqfv2rgtEYE+GLf9T
-8IE4zByiG8LYriyU3fF6JMX0nYn/QVYKQiV4UOzVBN//mrLVHeEQxNwZZ6VpbCz3
-RzFmAiBn7xD660+Keo/QvEAv8K44M/zZNkMdia5xXWOFGltXr22P/OkPU0HDVgF4
-PEZyrm/SC/a+OcwGeATYGvYvQ9R3oe1r3gCEPuBrtaAj4Mt3brMJF6Ow7ms4y5Pp
-UAxFNSH275YPl1auwq8BWMJK0efIxTVfT15JtJuYpZfMuFo46QVGOXz1IvJdAtSi
-o7HY3Y7+P+3ykVMlz6YpUUX8sbtJi01Jx7I6RC60Jht3eBLrfvts8WzCNjQdp2v/
-qQOycr5FOfnrpTNUQGdX
-=Ovt0
------END PGP SIGNATURE-----
-
---lkTb+7nhmha7W+c3--
