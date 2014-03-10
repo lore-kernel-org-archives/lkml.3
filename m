@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755629AbaCJUvT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 16:51:19 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:35404 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755340AbaCJUvL (ORCPT
+	id S1755613AbaCJUvR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 16:51:17 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:48349 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755563AbaCJUvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 16:51:11 -0400
+	Mon, 10 Mar 2014 16:51:12 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: David Miller <davem@davemloft.net>,
         Florian Fainelli <f.fainelli@gmail.com>, netdev@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 3/3] net: cpsw: simplify phy_ethtool_get_wol call
-Date: Mon, 10 Mar 2014 21:51:01 +0100
-Message-Id: <1394484661-4554-4-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH v2 2/3] net: mv643xx_eth: simplify phy_ethtool_get_wol call
+Date: Mon, 10 Mar 2014 21:51:00 +0100
+Message-Id: <1394484661-4554-3-git-send-email-sebastian.hesselbarth@gmail.com>
 In-Reply-To: <1394484661-4554-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1394413270-7169-1-git-send-email-sebastian.hesselbarth@gmail.com>
  <1394484661-4554-1-git-send-email-sebastian.hesselbarth@gmail.com>
@@ -37,27 +37,25 @@ Cc: netdev@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/net/ethernet/ti/cpsw.c | 7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+ drivers/net/ethernet/marvell/mv643xx_eth.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
-index bde63e3af96f..06950c75cb2f 100644
---- a/drivers/net/ethernet/ti/cpsw.c
-+++ b/drivers/net/ethernet/ti/cpsw.c
-@@ -1726,12 +1726,7 @@ static void cpsw_get_wol(struct net_device *ndev, struct ethtool_wolinfo *wol)
+diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c b/drivers/net/ethernet/marvell/mv643xx_eth.c
+index a2565ce22b7c..729464ecce2a 100644
+--- a/drivers/net/ethernet/marvell/mv643xx_eth.c
++++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
+@@ -1336,10 +1336,7 @@ static void
+ mv643xx_eth_get_wol(struct net_device *dev, struct ethtool_wolinfo *wol)
  {
- 	struct cpsw_priv *priv = netdev_priv(ndev);
- 	int slave_no = cpsw_slave_index(priv);
--
+ 	struct mv643xx_eth_private *mp = netdev_priv(dev);
 -	wol->supported = 0;
 -	wol->wolopts = 0;
--
--	if (priv->slaves[slave_no].phy)
--		phy_ethtool_get_wol(priv->slaves[slave_no].phy, wol);
-+	phy_ethtool_get_wol(priv->slaves[slave_no].phy, wol);
+-	if (mp->phy)
+-		phy_ethtool_get_wol(mp->phy, wol);
++	phy_ethtool_get_wol(mp->phy, wol);
  }
  
- static int cpsw_set_wol(struct net_device *ndev, struct ethtool_wolinfo *wol)
+ static int
 -- 
 1.8.5.3
 
