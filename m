@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752562AbaCJUer (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 16:34:47 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:48534 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754495AbaCJUeo (ORCPT
+	id S1754545AbaCJUe4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 16:34:56 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:41389 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753218AbaCJUew (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 16:34:44 -0400
+	Mon, 10 Mar 2014 16:34:52 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v3 03/52] Doc/cpu-hotplug: Specify race-free way to register
- CPU hotplug callbacks
+Subject: [PATCH v3 04/52] CPU hotplug,
+ perf: Fix CPU hotplug callback registration
 To: paulus@samba.org, oleg@redhat.com, mingo@kernel.org, rjw@rjwysocki.net,
         rusty@rustcorp.com.au, peterz@infradead.org, tglx@linutronix.de,
         akpm@linux-foundation.org
@@ -17,11 +17,13 @@ Cc: paulmck@linux.vnet.ibm.com, tj@kernel.org, walken@google.com,
         ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
         linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         linux-pm@vger.kernel.org, linuxppc-dev@ozlabs.org,
-        srivatsa.bhat@linux.vnet.ibm.com, Rob Landley <rob@landley.net>,
-        Ingo Molnar <mingo@kernel.org>, linux-doc@vger.kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Tue, 11 Mar 2014 02:04:32 +0530
-Message-ID: <20140310203432.10746.96084.stgit@srivatsabhat.in.ibm.com>
+Date: Tue, 11 Mar 2014 02:04:39 +0530
+Message-ID: <20140310203438.10746.24505.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20140310203312.10746.310.stgit@srivatsabhat.in.ibm.com>
 References: <20140310203312.10746.310.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -30,86 +32,94 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14031020-2000-0000-0000-0000101B37C8
+x-cbid: 14031020-8878-0000-0000-00000B4132B9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recommend the usage of the new CPU hotplug callback registration APIs
-(__register_cpu_notifier() etc), when subsystems need to also perform
-initialization for already online CPUs. Provide examples of correct
-and race-free ways of achieving this, and point out the kinds of code
-that are error-prone.
+Subsystems that want to register CPU hotplug callbacks, as well as perform
+initialization for the CPUs that are already online, often do it as shown
+below:
 
-Cc: Rob Landley <rob@landley.net>
+	get_online_cpus();
+
+	for_each_online_cpu(cpu)
+		init_cpu(cpu);
+
+	register_cpu_notifier(&foobar_cpu_notifier);
+
+	put_online_cpus();
+
+This is wrong, since it is prone to ABBA deadlocks involving the
+cpu_add_remove_lock and the cpu_hotplug.lock (when running concurrently
+with CPU hotplug operations).
+
+Instead, the correct and race-free way of performing the callback
+registration is:
+
+	cpu_notifier_register_begin();
+
+	for_each_online_cpu(cpu)
+		init_cpu(cpu);
+
+	/* Note the use of the double underscored version of the API */
+	__register_cpu_notifier(&foobar_cpu_notifier);
+
+	cpu_notifier_register_done();
+
+
+Fix the perf subsystem's hotplug notifier by using this latter form of
+callback registration.
+
+Also provide a bare-bones version of perf_cpu_notifier() that doesn't
+invoke the notifiers for the already online CPUs. This would be useful
+for subsystems that need to perform a different set of initialization
+for the already online CPUs, or don't need the initialization altogether.
+
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Paul Mackerras <paulus@samba.org>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: linux-doc@vger.kernel.org
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- Documentation/cpu-hotplug.txt |   45 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 45 insertions(+)
+ include/linux/perf_event.h |   16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/cpu-hotplug.txt b/Documentation/cpu-hotplug.txt
-index be675d2..a0b005d 100644
---- a/Documentation/cpu-hotplug.txt
-+++ b/Documentation/cpu-hotplug.txt
-@@ -312,12 +312,57 @@ things will happen if a notifier in path sent a BAD notify code.
- Q: I don't see my action being called for all CPUs already up and running?
- A: Yes, CPU notifiers are called only when new CPUs are on-lined or offlined.
-    If you need to perform some action for each cpu already in the system, then
-+   do this:
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index e56b07f..3356abc 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -835,6 +835,8 @@ do {									\
+ 		{ .notifier_call = fn, .priority = CPU_PRI_PERF };	\
+ 	unsigned long cpu = smp_processor_id();				\
+ 	unsigned long flags;						\
++									\
++	cpu_notifier_register_begin();					\
+ 	fn(&fn##_nb, (unsigned long)CPU_UP_PREPARE,			\
+ 		(void *)(unsigned long)cpu);				\
+ 	local_irq_save(flags);						\
+@@ -843,9 +845,21 @@ do {									\
+ 	local_irq_restore(flags);					\
+ 	fn(&fn##_nb, (unsigned long)CPU_ONLINE,				\
+ 		(void *)(unsigned long)cpu);				\
+-	register_cpu_notifier(&fn##_nb);				\
++	__register_cpu_notifier(&fn##_nb);				\
++	cpu_notifier_register_done();					\
+ } while (0)
  
- 	for_each_online_cpu(i) {
- 		foobar_cpu_callback(&foobar_cpu_notifier, CPU_UP_PREPARE, i);
- 		foobar_cpu_callback(&foobar_cpu_notifier, CPU_ONLINE, i);
- 	}
++/*
++ * Bare-bones version of perf_cpu_notifier(), which doesn't invoke the
++ * callback for already online CPUs.
++ */
++#define __perf_cpu_notifier(fn)						\
++do {									\
++	static struct notifier_block fn##_nb =				\
++		{ .notifier_call = fn, .priority = CPU_PRI_PERF };	\
++									\
++	__register_cpu_notifier(&fn##_nb);				\
++} while (0)
  
-+   However, if you want to register a hotplug callback, as well as perform
-+   some initialization for CPUs that are already online, then do this:
-+
-+   Version 1: (Correct)
-+   ---------
-+
-+   	cpu_notifier_register_begin();
-+
-+		for_each_online_cpu(i) {
-+			foobar_cpu_callback(&foobar_cpu_notifier,
-+					    CPU_UP_PREPARE, i);
-+			foobar_cpu_callback(&foobar_cpu_notifier,
-+					    CPU_ONLINE, i);
-+		}
-+
-+	/* Note the use of the double underscored version of the API */
-+	__register_cpu_notifier(&foobar_cpu_notifier);
-+
-+	cpu_notifier_register_done();
-+
-+   Note that the following code is *NOT* the right way to achieve this,
-+   because it is prone to an ABBA deadlock between the cpu_add_remove_lock
-+   and the cpu_hotplug.lock.
-+
-+   Version 2: (Wrong!)
-+   ---------
-+
-+	get_online_cpus();
-+
-+		for_each_online_cpu(i) {
-+			foobar_cpu_callback(&foobar_cpu_notifier,
-+					    CPU_UP_PREPARE, i);
-+			foobar_cpu_callback(&foobar_cpu_notifier,
-+					    CPU_ONLINE, i);
-+		}
-+
-+	register_cpu_notifier(&foobar_cpu_notifier);
-+
-+	put_online_cpus();
-+
-+    So always use the first version shown above when you want to register
-+    callbacks as well as initialize the already online CPUs.
-+
-+
- Q: If i would like to develop cpu hotplug support for a new architecture,
-    what do i need at a minimum?
- A: The following are what is required for CPU hotplug infrastructure to work
+ struct perf_pmu_events_attr {
+ 	struct device_attribute attr;
 
