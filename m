@@ -1,442 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753632AbaCJN4c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 09:56:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11917 "EHLO mx1.redhat.com"
+	id S1753844AbaCJN4u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 09:56:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34817 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753219AbaCJN4a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 09:56:30 -0400
-Date: Mon, 10 Mar 2014 10:56:21 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: Stephan Mueller <smueller@chronox.de>
-Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        jeremy.wayne.powell@gmail.com
-Subject: Re: [PATCH 2/6] header file for DRBG
-Message-ID: <20140310135619.GA9428@localhost.localdomain>
-References: <2396177.vxvG2ljJL8@myon.chronox.de>
- <5770301.bQ9lKffXf3@myon.chronox.de>
- <2077366.gxQRUloqnc@myon.chronox.de>
+	id S1753715AbaCJN4s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 09:56:48 -0400
+Date: Mon, 10 Mar 2014 09:52:56 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Shaohua Li <shli@kernel.org>
+Cc: linux-kernel@vger.kernel.org, dm-devel@redhat.com, axboe@kernel.dk,
+        agk@redhat.com
+Subject: Re: [patch v3]DM: dm-insitu-comp: a compressed DM target for SSD
+Message-ID: <20140310135256.GA28665@redhat.com>
+References: <20140218101304.GA24889@kernel.org>
+ <20140307075733.GB21790@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <2077366.gxQRUloqnc@myon.chronox.de>
-X-PGP-Key: http://people.redhat.com/~raquini/gpg-pubkey.asc
+In-Reply-To: <20140307075733.GB21790@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 09, 2014 at 12:46:42AM +0100, Stephan Mueller wrote:
-> The header file includes the definition of:
-> 
-> * DRBG data structures with
-> 	- struct drbg_state as main structure
-> 	- struct drbg_core referencing the backend ciphers
-> 	- struct drbg_state_ops callbach handlers for specific code
-> 	  supporting the Hash, HMAC, CTR DRBG implementations
-> 	- struct drbg_conc defining a linked list for input data
-> 	- struct drbg_test_data holding the test "entropy" data for CAVS
-> 	  testing and testmgr.c
-> 	- struct drbg_gen allowing test data, additional information
-> 	  string and personalization string data to be funneled through
-> 	  the kernel crypto API -- the DRBG requires additional
-> 	  parameters when invoking the reset and random number
-> 	  generation requests than intended by the kernel crypto API
-> 
-> * wrapper function to the kernel crypto API functions using struct
->   drbg_gen to pass through all data needed for DRBG
-> 
-> * wrapper functions to kernel crypto API functions usable for testing
->   code to inject test_data into the DRBG as needed by CAVS testing and
->   testmgr.c.
-> 
-> * DRBG flags required for the operation of the DRBG and for selecting
->   the particular DRBG type and backend cipher
-> 
-> * getter functions for data from struct drbg_core
-> 
-> Signed-off-by: Stephan Mueller <smueller@chronox.de>
-> 
->  create mode 100644 include/crypto/drbg.h
-> 
-> diff --git a/include/crypto/drbg.h b/include/crypto/drbg.h
-> new file mode 100644
-> index 0000000..16515f9
-> --- /dev/null
-> +++ b/include/crypto/drbg.h
-> @@ -0,0 +1,340 @@
-> +/*
-> + * DRBG based on NIST SP800-90A
-> + *
-> + * Copyright Stephan Mueller <smueller@chronox.de>, 2014
-> + *
-> + * Redistribution and use in source and binary forms, with or without
-> + * modification, are permitted provided that the following conditions
-> + * are met:
-> + * 1. Redistributions of source code must retain the above copyright
-> + *    notice, and the entire permission notice in its entirety,
-> + *    including the disclaimer of warranties.
-> + * 2. Redistributions in binary form must reproduce the above copyright
-> + *    notice, this list of conditions and the following disclaimer in the
-> + *    documentation and/or other materials provided with the distribution.
-> + * 3. The name of the author may not be used to endorse or promote
-> + *    products derived from this software without specific prior
-> + *    written permission.
-> + *
-> + * ALTERNATIVELY, this product may be distributed under the terms of
-> + * the GNU General Public License, in which case the provisions of the GPL are
-> + * required INSTEAD OF the above restrictions.  (This clause is
-> + * necessary due to a potential bad interaction between the GPL and
-> + * the restrictions contained in a BSD-style copyright.)
-> + *
-> + * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED
-> + * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
-> + * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE, ALL OF
-> + * WHICH ARE HEREBY DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE
-> + * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-> + * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
-> + * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
-> + * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-> + * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-> + * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
-> + * USE OF THIS SOFTWARE, EVEN IF NOT ADVISED OF THE POSSIBILITY OF SUCH
-> + * DAMAGE.
-> + */
-> +
-> +#ifndef _DRBG_H
-> +#define _DRBG_H
-> +
-> +
-> +#include <linux/random.h>
-> +#include <linux/scatterlist.h>
-> +#include <crypto/hash.h>
-> +#include <linux/module.h>
-> +#include <linux/crypto.h>
-> +#include <linux/slab.h> /* needed for kzalloc */
-> +#include <crypto/internal/rng.h>
-> +#include <crypto/rng.h>
-> +#include <linux/fips.h>
-> +#include <linux/spinlock.h>
-> +
-> +/*
-> + * Concatenation Helper
-> + *
-> + * SP800-90A requires the concatenation of different data. To avoid copying
-> + * buffers around or allocate additional memory, the following data structure
-> + * is used to point to the original memory with its size. In addition, it
-> + * is used to build a linked list. The linked list defines the concatenation
-> + * of individual buffers. The order of memory block referenced in that
-> + * linked list determines the order of concatenation.
-> + */
-> +
-> +struct drbg_conc
-> +{
-> +	unsigned char *in;
-> +	size_t len;
-> +	struct drbg_conc *next;
-> +};
-> +
-> +#define DRBG_CLEAR_CONC(x)	\
-> +	x.in = NULL;		\
-> +	x.len = 0;		\
-> +	x.next = NULL;
-> +
+On Fri, Mar 07 2014 at  2:57am -0500,
+Shaohua Li <shli@kernel.org> wrote:
 
-Please, consider getting rid of these ugly preprocessor macros and use static
-inline functions instead. It not only is much better for maintainability, 
-but also helps a lot on strong typechecking and can avoid nasty bugs in the future.
+> ping!
 
+Hi,
 
-> +struct drbg_state;
-> +typedef uint32_t drbg_flag_t;
-> +
-> +struct drbg_core 
-> +{
-> +	drbg_flag_t flags;	/* flags for the cipher */
-> +	__u8 statelen;		/* maximum state length */
-> +	__u8 max_addtllen;	/* maximum length of personalization string or
-> +				   additional input string -- exponent for base
-> +				   2 */
-> +	__u8 max_bits;		/* maximum bits per RNG request -- exponent for
-> +				   base 2*/
-> +	__u8 max_req;		/* maximum number of requests -- exponent for
-> +				   base 2 */
-> +	__u8 blocklen_bytes;	/* block size of output in bytes */
-> +	char cra_name[CRYPTO_MAX_ALG_NAME]; /* mapping to kernel crypto API */
-> +	char cra_driver_name[CRYPTO_MAX_ALG_NAME]; /* mapping to kernel crypto
-> +						    * API */
-> +	char backend_cra_name[CRYPTO_MAX_ALG_NAME]; /* kernel crypto API
-> +						     * backend cipher name */
-> +	int (*cipher_fn) (struct drbg_state *drbg, unsigned char *key,
-> +			  unsigned char *outval, struct drbg_conc *in);
-> +	int (*init_lib) (struct drbg_state *drbg);
-> +	int (*fini_lib)	(struct drbg_state *drbg);
-> +
-> +};
-> +
-> +struct drbg_state_ops
-> +{
-> +	int (*process_addtl) (struct drbg_state *drbg,
-> +			      unsigned char *addtl_input, size_t addtllen);
-> +	int (*preprocess_extract) (struct drbg_state *drbg,
-> +				   unsigned char **src,
-> +				   unsigned char **dst, short *length);
-> +	void (*postprocess_extract) (struct drbg_state *drbg,
-> +				     unsigned char *src,
-> +				     unsigned char *dst, int notlast);
-> +	void (*cleanup_extract) (struct drbg_state *drbg,
-> +				 unsigned char **src,
-> +				 unsigned char **dst);
-> +	int (*newstate_postgen) (struct drbg_state *drbg,
-> +				 unsigned char *addtl_input,
-> +				 size_t addtllen);
-> +	int (*update_state) (struct drbg_state *drbg, struct drbg_conc *seed,
-> +			     int reseed);
-> +};
-> +
-> +struct drbg_test_data
-> +{
-> +	unsigned char *testentropy; /* TEST PARAMETER: test entropy */
-> +	size_t testentropylen;	/* TEST PARAMETER: length of test entropy */
-> +};
-> +
-> +/* use stack for variables instead of heap */
-I would strongly discourage you to keep carving up that much of kernel stack
-space for each block descriptor you use, specially if you're planning to
-stick with that split across several callbacks implementation you have.
-> +#define DRBG_CTR_BLK 48
-> +#define DRBG_HASH_BLK 111
-> +#define DRBG_HMAC_BLK 64
+I intend to get dm-insitu-comp reviewed for 3.15.  Sorry I haven't
+gotten back with you before now, been busy tending to 3.14-rc issues.
 
+I took a quick first pass over your code a couple weeks ago.  Looks to
+be in great shape relative to coding conventions and the more DM
+specific conventions.  Clearly demonstrates you have a good command of
+DM concepts and quirks.
 
-> +#define DRBG_CLEAR_CTR_BLK(x)	memset(x, 0, DRBG_CTR_BLK);
-> +#define DRBG_CLEAR_HASH_BLK(x)	memset(x, 0, DRBG_HASH_BLK);
-> +#define DRBG_CLEAR_HMAC_BLK(x)	memset(x, 0, DRBG_HMAC_BLK);
-ditto (get rid of these macros, please)
+But one thing that would really help get dm-insitu-comp into 3.15 is to
+show that the code is working as you'd expect.  To that end, it'd be
+great if you'd be willing to add dm-insitu-comp support to the
+device-mapper-test-suite, see:
+https://github.com/jthornber/device-mapper-test-suite
 
-> +
-> +#define CLEAR_CRA_NAME(x) memset(x, 0, CRYPTO_MAX_ALG_NAME)
-> +
-> +struct drbg_state
-> +{
-> +	drbg_flag_t flags;	/* Security strength */
-> +	spinlock_t drbg_lock;	/* lock around DRBG */
-> +	unsigned char *V;	/* internal state 10.1.1.1 1a) */
-> +	unsigned char *C;	/* hash: static value 10.1.1.1 1b)
-> +				 * hmac: key */
-> +	size_t reseed_ctr;	/* Number of RNG requests since last reseed --
-> +				 * 10.1.1.1 1c) */
-> +	unsigned char *scratchpad; /* some memory the DRBG can use for its
-> +				    * operation -- allocated during init */
-> +	void *priv_data;	/* Data needed for specific cipher
-> +				 * implementation */
-> +#ifdef CONFIG_CRYPTO_FIPS
-> +	unsigned char *prev;	/* previous output value of DRBG_BLOCKLEN for
-> +				 * FIPS 140-2 continuous test */
-> +#endif
-> +	struct drbg_state_ops *d_ops;
-> +	const struct drbg_core *core;
-> +	struct drbg_test_data *test_data;
-> +};
-> +
-> +/* kernel crypto API input data structure for DRBG generate in case dlen
-> + * is set to 0 */
-> +struct drbg_gen
-> +{
-> +	unsigned char *outbuf;	/* output buffer for random numbers */
-> +	unsigned int outlen;	/* size of output buffer */
-> +	unsigned char *addtl_input;	/* input buffer for
-> +					 * additional information string */
-> +	unsigned int addtllen;	/* length of addtl_input */
-> +	struct drbg_test_data *test_data;	/* test data */
-> +};
-> +
-> +/*
-> + * This is a wrapper to the kernel crypto API function of
-> + * crypto_rng_get_bytes() to allow the caller to provide additional data
-> + *
-> + * @drng DRBG handle -- see crypto_rng_get_bytes
-> + * @outbuf output buffer -- see crypto_rng_get_bytes
-> + * @outlen length of output buffer -- see crypto_rng_get_bytes
-> + * @addtl_input additional information string input buffer
-> + * @addtllen length of additional information string buffer
-> + *
-> + * return
-> + * 	see crypto_rng_get_bytes
-> + */
-> +static inline int crypto_drbg_get_bytes_addtl(struct crypto_rng *drng,
-> +			unsigned char *outbuf, unsigned int outlen,
-> +			unsigned char *addtl_input, size_t addtllen)
-> +{
-> +	int ret;
-> +	struct drbg_gen genbuf;
-> +	genbuf.outbuf = outbuf;
-> +	genbuf.outlen = outlen;
-> +	genbuf.addtl_input = addtl_input;
-> +	genbuf.addtllen = addtllen;
-> +	genbuf.test_data = NULL;
-> +	ret = crypto_rng_get_bytes(drng, (u8 *)&genbuf, 0);
-> +	return ret;
-> +}
-> +
-> +/*
-> + * TEST code
-> + *
-> + * This is a wrapper to the kernel crypto API function of
-> + * crypto_rng_get_bytes() to allow the caller to provide additional data and
-> + * allow furnishing of test_data
-> + *
-> + * @drng DRBG handle -- see crypto_rng_get_bytes
-> + * @outbuf output buffer -- see crypto_rng_get_bytes
-> + * @outlen length of output buffer -- see crypto_rng_get_bytes
-> + * @addtl_input additional information string input buffer
-> + * @addtllen length of additional information string buffer
-> + * @test_data filled test data
-> + *
-> + * return
-> + * 	see crypto_rng_get_bytes
-> + */
-> +static inline int crypto_drbg_get_bytes_addtl_test(struct crypto_rng *drng,
-> +			unsigned char *outbuf, unsigned int outlen,
-> +			unsigned char *addtl_input, size_t addtllen,
-> +			struct drbg_test_data *test_data)
-> +{
-> +	int ret;
-> +	struct drbg_gen genbuf;
-> +	genbuf.outbuf = outbuf;
-> +	genbuf.outlen = outlen;
-> +	genbuf.addtl_input = addtl_input;
-> +	genbuf.addtllen = addtllen;
-> +	genbuf.test_data = test_data;
-> +	ret = crypto_rng_get_bytes(drng, (u8 *)&genbuf, 0);
-> +	return ret;
-> +}
-> +
-> +/*
-> + * TEST code
-> + *
-> + * This is a wrapper to the kernel crypto API function of
-> + * crypto_rng_reset() to allow the caller to provide test_data
-> + *
-> + * @drng DRBG handle -- see crypto_rng_reset
-> + * @pers personalization string input buffer
-> + * @perslen length of additional information string buffer
-> + * @test_data filled test data
-> + *
-> + * return
-> + * 	see crypto_rng_reset
-> + */
-> +static inline int crypto_drbg_reset_test(struct crypto_rng *drng,
-> +			unsigned char *pers, unsigned int perslen,
-> +			struct drbg_test_data *test_data)
-> +{
-> +	int ret;
-> +	struct drbg_gen genbuf;
-> +	genbuf.outbuf = NULL;
-> +	genbuf.outlen = 0;
-> +	genbuf.addtl_input = pers;
-> +	genbuf.addtllen = perslen;
-> +	genbuf.test_data = test_data;
-> +	ret = crypto_rng_reset(drng, (u8 *)&genbuf, 0);
-> +	return ret;
-> +}
-> +
-> +
+I recently added barebones/simple dm-crypt support, see:
+https://github.com/jthornber/device-mapper-test-suite/commit/c865bcd4e48228e18626d94327fb2485cf9ec9a1
 
-> +#define DRBG_STATELEN(a)	((a)->core->statelen)
-> +#define DRBG_BLOCKLEN(a)	((a)->core->blocklen_bytes)
-> +/* only needed for CTR mode -- implicit key len with seedlen - blocklen
-> + * according to table 3 */
-> +#define DRBG_KEYLEN(drbg) (DRBG_STATELEN(drbg) - DRBG_BLOCKLEN(drbg))
-ditto (get rid of these macros, please)
+But It may be that activation/test code for the other targets (e.g. thin
+or cache) are more useful examples to follow for implemnting
+dm-insitu-comp stack activation, see:
+https://github.com/jthornber/device-mapper-test-suite/blob/master/lib/dmtest/pool-stack.rb
+https://github.com/jthornber/device-mapper-test-suite/blob/master/lib/dmtest/cache_stack.rb
 
+All said, implementing dm-insitu-comp support for dmts (including some
+tests that establish it is working as intended) isn't a hard requirement
+for getting the target upstream but it would _really_ help.
 
-> +
-> +/*
-> + * DRBG flags bitmasks
-> + *
-> + * 31  (B)  27    19         (A)           0
-> + *  +-+-+-+-+------+---+---+---------------+
-> + *  |~|~|u|p|~~~~~~| 3 | 2 |       1       |
-> + *  +-+-+-+-+------+- -+---+---------------+
-> + * ctl flags|      |drbg use selection flags
-> + *
-> + */
-> +
-> +/* internal state control flags (B) */
-> +#define DRBG_UNSEEDED		((drbg_flag_t)1<<27)
-> +#define DRBG_PREDICTION_RESIST	((drbg_flag_t)1<<28)
-> +
-> +/* CTR type modifiers (A.1)*/
-> +#define DRBG_CTRAES128		((drbg_flag_t)1<<0)
-> +#define DRBG_CTRAES192		((drbg_flag_t)1<<1)
-> +#define DRBG_CTRAES256		((drbg_flag_t)1<<2)
-> +#define DRBG_CTRSERPENT128	((drbg_flag_t)1<<3)
-> +#define DRBG_CTRSERPENT192	((drbg_flag_t)1<<4)
-> +#define DRBG_CTRSERPENT256	((drbg_flag_t)1<<5)
-> +#define DRBG_CTRTWOFISH128	((drbg_flag_t)1<<6)
-> +#define DRBG_CTRTWOFISH192	((drbg_flag_t)1<<7)
-> +#define DRBG_CTRTWOFISH256	((drbg_flag_t)1<<8)
-> +#define DRBG_CTR_MASK	(DRBG_CTRAES128 | DRBG_CTRAES192 | DRBG_CTRAES256| \
-> +			 DRBG_CTRSERPENT128 | DRBG_CTRSERPENT192 | \
-> +			 DRBG_CTRSERPENT256 | DRBG_CTRTWOFISH128 | \
-> +			 DRBG_CTRTWOFISH192 | DRBG_CTRTWOFISH256)
-> +
-> +/* HASH type modifiers (A.2)*/
-> +#define DRBG_HASHSHA1		((drbg_flag_t)1<<9)
-> +#define DRBG_HASHSHA224		((drbg_flag_t)1<<10)
-> +#define DRBG_HASHSHA256		((drbg_flag_t)1<<11)
-> +#define DRBG_HASHSHA384		((drbg_flag_t)1<<12)
-> +#define DRBG_HASHSHA512		((drbg_flag_t)1<<13)
-> +#define DRBG_HASH_MASK		(DRBG_HASHSHA1 | DRBG_HASHSHA224 | \
-> +				 DRBG_HASHSHA256 | DRBG_HASHSHA384 | \
-> +				 DRBG_HASHSHA512)
-> +
-> +/* HMAC type modifiers (A.2)*/
-> +#define DRBG_HMACSHA1		((drbg_flag_t)1<<14)
-> +#define DRBG_HMACSHA224		((drbg_flag_t)1<<15)
-> +#define DRBG_HMACSHA256		((drbg_flag_t)1<<16)
-> +#define DRBG_HMACSHA384		((drbg_flag_t)1<<17)
-> +#define DRBG_HMACSHA512		((drbg_flag_t)1<<18)
-> +#define DRBG_HMAC_MASK		(DRBG_HMACSHA1 | DRBG_HMACSHA224 | \
-> +				 DRBG_HMACSHA256 | DRBG_HMACSHA384 | \
-> +				 DRBG_HMACSHA512)
-> +
-> +#define DRBG_CIPHER_MASK (DRBG_CTR_MASK | DRBG_HASH_MASK | DRBG_HMAC_MASK)
-> +
-
-Seems to me this flagging scheme could be improved to not waste bits
-with redundant information. For instance: repeating the strenght for
-each one DRBG, as well as repeating the crypt alg for each one HASH and
-HMAC DRBG. Also, you could use to defive a fixed set of flags that
-describe an unique drbg instance, so users can get it by using that static set,
-instead of creating dynamic ones on their own (makes the implementation
-stronger and fool-proof, IMO).
-
-
-Regards,
--- Rafael
-
-
-> +/* helper functions */
-> +static inline size_t drbg_max_request_bytes(struct drbg_state *drbg)
-> +{
-> +	/* max_bits is in bits, but buflen is in bytes */
-> +	return (1 << (drbg->core->max_bits - 3));
-> +}
-> +
-> +static inline size_t drbg_max_addtl(struct drbg_state *drbg)
-> +{
-> +	return (1UL<<(drbg->core->max_addtllen));
-> +}
-> +
-> +static inline size_t drbg_max_requests(struct drbg_state *drbg)
-> +{
-> +	return (1UL<<(drbg->core->max_req));
-> +}
-> +
-> +#endif /* _DRBG_H */
-> -- 
-> 1.8.5.3
-> 
-> 
+Mike
