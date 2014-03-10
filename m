@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217AbaCJDwQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 23:52:16 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:63628 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753059AbaCJDwP (ORCPT
+	id S1753250AbaCJDxz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 23:53:55 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:51557 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753098AbaCJDxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 23:52:15 -0400
+	Sun, 9 Mar 2014 23:53:54 -0400
 MIME-Version: 1.0
-In-Reply-To: <1394401306.9066.2.camel@x220>
-References: <1394401306.9066.2.camel@x220>
-Date: Mon, 10 Mar 2014 11:52:14 +0800
-Message-ID: <CAKohpokaF6xbi0Da=OpDZQiJL6tF_kvfKXiWq7FHeTY59y-Yfw@mail.gmail.com>
-Subject: Re: [PATCH] [TRIVIAL] ARM: spear: clean up editing mistake
+In-Reply-To: <1394127279-29871-1-git-send-email-soren.brinkmann@xilinx.com>
+References: <1394127279-29871-1-git-send-email-soren.brinkmann@xilinx.com>
+Date: Mon, 10 Mar 2014 11:53:53 +0800
+Message-ID: <CAKohpo=E2PAD7XNm4y3tXv6-ArPCj+8RG-WsJLOfvJoZ7EkstQ@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: Reformat printk() statement
 From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Jiri Kosina <trivial@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 March 2014 05:41, Paul Bolle <pebolle@tiscali.nl> wrote:
-> Clean up an obvious editing mistake introduced by commit 4b6effb6ff38
-> ("ARM: spear: merge Kconfig files").
+On 7 March 2014 01:34, Soren Brinkmann <soren.brinkmann@xilinx.com> wrote:
+> Reformat a printk statement to:
+>  - use pr_warn
+>  - bring the whole string into a single line in favor of being able to
+>    grep for the message (ignoring the 80 char limit)
 >
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 > ---
->  arch/arm/mach-spear/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>  drivers/cpufreq/cpufreq.c | 7 ++-----
+>  1 file changed, 2 insertions(+), 5 deletions(-)
 >
-> diff --git a/arch/arm/mach-spear/Kconfig b/arch/arm/mach-spear/Kconfig
-> index 1595776..596e990 100644
-> --- a/arch/arm/mach-spear/Kconfig
-> +++ b/arch/arm/mach-spear/Kconfig
-> @@ -91,7 +91,7 @@ config MACH_SPEAR600
->         depends on ARCH_SPEAR6XX
->         select USE_OF
->         help
-> -         Supports ST SPEAr600 boards configured via the device-treesource "arch/arm/mach-spear6xx/Kconfig"
-> +         Supports ST SPEAr600 boards configured via the device-tree
->
->  config ARCH_SPEAR_AUTO
->         depends on !ARCH_SPEAR13XX && !ARCH_SPEAR6XX
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index cb003a6b72c8..534c2df608ed 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -1874,11 +1874,8 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+>                 if (!gov)
+>                         return -EINVAL;
+>                 else {
+> -                       printk(KERN_WARNING "%s governor failed, too long"
+> -                              " transition latency of HW, fallback"
+> -                              " to %s governor\n",
+> -                              policy->governor->name,
+> -                              gov->name);
+> +                       pr_warn("%s governor failed, too long transition latency of HW, fallback to %s governor\n",
+> +                                       policy->governor->name, gov->name);
+>                         policy->governor = gov;
+>                 }
+>         }
 
 Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
