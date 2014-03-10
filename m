@@ -1,125 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926AbaCJSAW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 14:00:22 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:33931 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751812AbaCJSAU (ORCPT
+	id S1753082AbaCJSA4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 14:00:56 -0400
+Received: from mail1.bemta5.messagelabs.com ([195.245.231.139]:20805 "EHLO
+	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752525AbaCJSAy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 14:00:20 -0400
+	Mon, 10 Mar 2014 14:00:54 -0400
+X-Env-Sender: stwiss.opensource@diasemi.com
+X-Msg-Ref: server-3.tower-179.messagelabs.com!1394474451!31164166!1
+X-Originating-IP: [82.210.246.133]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.16; banners=-,-,-
+X-VirusChecked: Checked
+Message-ID: <201403101800.s2AI0nId021436@swsrvapps-01.diasemi.com>
+From: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
+Date: Mon, 10 Mar 2014 17:51:45 +0000
+Subject: [PATCH V1] MAINTAINERS: Addition of Dialog Semiconductor files
+To: Joe Perches <joe@perches.com>
+CC: David Dajun Chen <david.chen@diasemi.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Samuel Ortiz <sameo@linux.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20140310151146.GA26903@roeck-us.net>
-References: <CAOMwXhOB=1HA57jwKCx3-hU8A_ypjrm0J3R9huO25xa4B_gw8w@mail.gmail.com>
-	<20140307163717.336873f5@endymion.delvare>
-	<CAOMwXhPpObWqd1vR3t+ifKd-_ZbnGTm1TNNUakmVAR3CB=pzTg@mail.gmail.com>
-	<20140307181718.GA1027@roeck-us.net>
-	<531BACD9.9050206@roeck-us.net>
-	<CAOMwXhNcoe4oWbijJ7s3o-E6k0FtfJSXZM2g=RC3S2FzvX_VdQ@mail.gmail.com>
-	<531C2097.5020004@roeck-us.net>
-	<CAOMwXhPMnvc29VB0ViDc494CunKfmkKV+fvdBGNXoaAW+D+C9A@mail.gmail.com>
-	<531DBD74.2090205@roeck-us.net>
-	<CAOMwXhMRtNaxtA7=cc7ur_Qf3iwZAHi=sk-Ujp=hggGA1O5u+Q@mail.gmail.com>
-	<20140310151146.GA26903@roeck-us.net>
-Date: Mon, 10 Mar 2014 18:00:17 +0000
-X-Google-Sender-Auth: gcpKlcBCWzMEF24e-6GKpG0oWKw
-Message-ID: <CAOMwXhMNC8wC54mepA-J=5X6kmUW1yo=pgDEASiAeLOiowEb-w@mail.gmail.com>
-Subject: Re: [lm-sensors] Tachometer speed returned rather than absolute fan speed?
-From: Laszlo Papp <lpapp@kde.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: LKML <linux-kernel@vger.kernel.org>, lm-sensors@lm-sensors.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 3:11 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> On Mon, Mar 10, 2014 at 01:50:01PM +0000, Laszlo Papp wrote:
->> On Mon, Mar 10, 2014 at 1:26 PM, Guenter Roeck <linux@roeck-us.net> wrote:
->> > On 03/10/2014 02:59 AM, Laszlo Papp wrote:
->> >>>
->> >>> The reason is (most likely) that your fan input does not have a pull-up
->> >>> resistor. Per datasheet, the fan inputs need a 10kOhm pull-up resistor. I
->> >>> confirmed this with my test board - with the pull-up resistor, inputs read
->> >>> 0, Without pull-up, the reported value is 1, which translates to 30 RPM. You
->> >>> might also need the 10 uF capacitor on the FB pin.
->> >>
->> >>
->> >> We have both of them in place as per requirement for the chip as far
->> >> as I understand the datasheet. The circuit would not work properly
->> >> without it.
->> >>>
->> >>> sudo i2cdump -y -f 1 0x48
->> >>> No size specified (using byte-data access)
->> >>>       0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f    0123456789abcdef
->> >>> 00: 00 00 0a 0a ff ff 00 00 00 00 00 00 01 01 00 00    ..??........??..
->> >>> 10: 01 01 01 01 1f 1f 02 02 91 91 91 91 91 91 91 91    ????????????????
->> >>> 20: 00 00 0a 0a ff ff 00 00 00 00 00 00 01 01 00 00    ..??........??..
->> >>
->> >>
->> >> /usr/sbin/i2cdump -y -f 1 0x48
->> >> No size specified (using byte-data access)
->> >>       0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f    0123456789abcdef
->> >> 00: 00 00 3a 3a fc fc b4 b4 00 00 00 00 01 01 01 01    ..::????....????
->> >> 10: 09 09 01 01 1c 1c 02 02 91 91 91 91 91 91 91 91    ????????????????
->> >> 20: 00 00 3a 3a fc fc b4 b4 00 00 00 00 01 01 01 01    ..::????....????
->> >> 30: 09 09 01 01 1c 1c 02 02 91 91 91 91 91 91 91 91    ????????????????
->> >> 40: 00 00 3a 3a fc fc b4 b4 00 00 00 00 01 01 01 01    ..::????....????
->> >> 50: 08 08 01 01 1c 1c 02 02 91 91 91 91 91 91 91 91    ????????????????
->> >> 60: 00 00 3a 3a fc fc b4 b4 00 00 00 00 01 01 01 01    ..::????....????
->> >> 70: 08 08 01 01 1c 1c 02 02 91 91 91 91 91 91 91 91    ????????????????
->> >> 80: 00 00 3a 3a fc fc b4 b4 00 00 00 00 01 01 01 01    ..::????....????
->> >> 90: 08 08 01 01 1c 1c 02 02 91 91 91 91 91 91 91 91    ????????????????
->> >> a0: 00 00 3a 3a fc fc b4 b4 00 00 00 00 01 01 01 01    ..::????....????
->> >> b0: 08 08 01 01 1c 1c 02 02 91 91 91 91 91 91 91 91    ????????????????
->> >> c0: 00 00 3a 3a fc fc b4 b4 00 00 00 00 01 01 01 01    ..::????....????
->> >> d0: 08 08 01 01 1c 1c 02 02 91 91 91 91 91 91 91 91    ????????????????
->> >> e0: 00 00 3a 3a fc fc b4 b4 00 00 00 00 01 01 01 01    ..::????....????
->> >> f0: 08 08 01 01 1c 1c 02 02 91 91 91 91 91 91 91 91    ????????????????
->> >>
->> >>> groeck@desktop:~$ sensors max6651-i2c-1-48
->> >>> max6651-i2c-1-48
->> >>> Adapter: i2c-diolan-u2c at bus 003 device 002
->> >>> fan1:          30 RPM  (div = 4)
->> >>> fan2:           0 RPM
->> >>> fan3:          30 RPM
->> >>> fan4:          30 RPM
->> >>
->> >>
->> >> sensors max6651-i2c-1-48
->> >> max6651-i2c-1-48
->> >> Adapter: DaVinci I2C adapter
->> >> fan1:          30 RPM  (div = 4)
->> >> fan2:          30 RPM
->> >> fan3:         420 RPM
->> >> fan4:          30 RPM
->> >>
->> >>> Only fan2 (TACH1 chip input) has the resistor installed.
->> >>
->> >>
->> >> We have it both on fan1 and fan4.
->> >>
->> >> If I use our scope for checking the tachometer, I see level zero on
->> >> the scope, but 1 when checking the open collector level, since that is
->> >> the purpose of the pull-up resistor.
->> >>
->> > With the pull-up installed, you should always see a high voltage on the
->> > scope or with a volt meter. The scope would not see or be able to know
->> > that the pin is OC if the pull-up resistor is there.
->> >
->> > If it is truly OC, it would be floating and might show low. If you can,
->> > I would suggest to manually add a 10k resistor against VCC to the open
->> > connector and see what happens.
->> >
->> > Another way to find out for sure might be to disconnect power and
->> > measure resistance between the tachometer pin and VCC.
->>
->> Perhaps I was not clear. So, we do have both the resistors and
->> capacitor as required. I double checked the schematics as well as the
->> pins coming from the fan and that was zero. The tacho0 input, however,
->> was 1.
->>
->
-> How can the pin coming from the fan be zero, and the tach0 input be 1
-> at the same time ? Those should be the same ?
+From: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
 
-Nope, that is what the pull-up resistor is for. It will pull the level up to 1.
+Addition of support e-mail address for Dialog Semiconductor Ltd
+
+Signed-off-by: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
+Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
+---
+Checks performed with linux-next/next-20140307/scripts/checkpatch.pl
+ MAINTAINERS               total: 0 errors, 0 warnings, 9942 lines checked
+This patch applies against linux-next and next-20140307
+
+Dialog Semiconductor would like to add a new section called DIALOG
+SEMICONDUCTOR DRIVERS which contains the new e-mail address which
+can cover Dialog supported drivers: support.opensource@diasemi.com.
+
+Change History:
+- An alteration to the previous patch has been made according to
+  the comments provided by Joe Perches in the previous RFC V1 e-mail
+  thread, see here: https://lkml.org/lkml/2014/3/7/216
+  - Changing the L: (mailing-list) to M: (mail patches to) for the
+    support.opensource address.
+
+Regards,
+Steve Twiss, Dialog Semiconductor Ltd.
+
+
+
+ MAINTAINERS |   28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index ab32ad5..d019702 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -2737,6 +2737,34 @@ F:	include/linux/device-mapper.h
+ F:	include/linux/dm-*.h
+ F:	include/uapi/linux/dm-*.h
+ 
++DIALOG SEMICONDUCTOR DRIVERS
++M:	Support Opensource <support.opensource@diasemi.com>
++W:	http://www.dialog-semiconductor.com/products
++S:	Supported
++F:	Documentation/hwmon/da90??
++F:	drivers/gpio/gpio-da90??.c
++F:	drivers/hwmon/da90??-hwmon.c
++F:	drivers/input/misc/da90??_onkey.c
++F:	drivers/input/touchscreen/da9052_tsi.c
++F:	drivers/leds/leds-da90??.c
++F:	drivers/mfd/da903x.c
++F:	drivers/mfd/da90??-*.c
++F:	drivers/power/da9052-battery.c
++F:	drivers/regulator/da903x.c
++F:	drivers/regulator/da9???-regulator.[ch]
++F:	drivers/rtc/rtc-da90??.c
++F:	drivers/video/backlight/da90??_bl.c
++F:	drivers/watchdog/da90??_wdt.c
++F:	include/linux/mfd/da903x.h
++F:	include/linux/mfd/da9052/
++F:	include/linux/mfd/da9055/
++F:	include/linux/mfd/da9063/
++F:	include/sound/da7213.h
++F:	include/sound/da9055.h
++F:	sound/soc/codecs/da7???.[ch]
++F:	sound/soc/codecs/da732x_reg.h
++F:	sound/soc/codecs/da9055.c
++
+ DIGI NEO AND CLASSIC PCI PRODUCTS
+ M:	Lidza Louina <lidza.louina@gmail.com>
+ L:	driverdev-devel@linuxdriverproject.org
+-- 
+end-of-patch for PATCH V1
+
