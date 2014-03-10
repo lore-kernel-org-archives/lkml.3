@@ -1,127 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753264AbaCJIet (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 04:34:49 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:17382 "EHLO
+	id S1752694AbaCJIdA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 04:33:00 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:17379 "EHLO
 	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752421AbaCJIdC (ORCPT
+	with ESMTP id S1752411AbaCJIc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 04:33:02 -0400
-X-AuditID: cbfec7f5-b7fc96d000004885-c2-531d78bdc5b0
+	Mon, 10 Mar 2014 04:32:59 -0400
+X-AuditID: cbfec7f5-b7fc96d000004885-a8-531d78b95973
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
         linux-kernel@vger.kernel.org
 Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 7/8] regulator: max8952: Use managed regulator registration
-Date: Mon, 10 Mar 2014 09:32:50 +0100
-Message-id: <1394440371-29588-7-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH 1/8] regulator: max1586: Remove regulator_dev pointer from
+ state container
+Date: Mon, 10 Mar 2014 09:32:44 +0100
+Message-id: <1394440371-29588-1-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1394440371-29588-1-git-send-email-k.kozlowski@samsung.com>
-References: <1394440371-29588-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHJMWRmVeSWpSXmKPExsVy+t/xK7p7K2SDDY61i1tMffiEzeL1C0OL
-	b1c6mCwu75rD5sDisXPWXXaPTas62Tz6tqxi9Pi8SS6AJYrLJiU1J7MstUjfLoEr49qbycwF
-	byQq1jTNYGlg3CnSxcjJISFgIjF7SjsThC0mceHeejYQW0hgKaNE+5nkLkYuILuPSWL+4vnM
-	IAk2AWOJzcuXgBWJCGRIbJ43lRXEZhYwlPj57g87iC0s4C3xceddsHoWAVWJ7mlbgeIcHLwC
-	7hIf1muCmBICChJzJtmAVHAKeEgs2nOLHWKtu8Tuzh0sExh5FzAyrGIUTS1NLihOSs810itO
-	zC0uzUvXS87P3cQICZOvOxiXHrM6xCjAwajEw3vgrUywEGtiWXFl7iFGCQ5mJRHejDjZYCHe
-	lMTKqtSi/Pii0pzU4kOMTBycUg2Mgi8Cj0UK+y1PKEzqeX97/8qZDnI/NWrDBKSyF+0/uPmV
-	XeaCXy7K74qOPDq96QTPVM/r4qUP1Q1ChRa/Pex4L1/0z5Se86pTNQsfXtGTmf6nwYtF4suE
-	DW0ezv7cJd4la/nKnEufSbJcPzQt5w5HZ5WMiezi3cnvOZa8YAw8cXvzBdbtSb/uKbEUZyQa
-	ajEXFScCAF1ys8LxAQAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOJMWRmVeSWpSXmKPExsVy+t/xK7o7K2SDDbZM1raY+vAJm8XrF4YW
+	3650MFlc3jWHzYHFY+esu+wem1Z1snn0bVnF6PF5k1wASxSXTUpqTmZZapG+XQJXxsMvkxgL
+	/vNV/Fm2m7GBcQFPFyMnh4SAiURv404WCFtM4sK99WxdjFwcQgJLGSUOzDnLAuH0MUnM/LCE
+	EaSKTcBYYvPyJWwgtohAhsTmeVNZQWxmAUOJn+/+sIPYwgIxErMndTCD2CwCqhITTq0HinNw
+	8Aq4S/xtNAAxJQQUJOZMspnAyL2AkWEVo2hqaXJBcVJ6rpFecWJucWleul5yfu4mRojnv+5g
+	XHrM6hCjAAejEg/vgbcywUKsiWXFlbmHGCU4mJVEeDPiZIOFeFMSK6tSi/Lji0pzUosPMTJx
+	cEo1MHpc4lSUffaV7djEquJi8zXH5fZ7by269d5+9v6XLAsWZtrMrfw0RfrStMtz2haVic24
+	cuPyNp7mhMVFU2UYz/JUaEnyRAoZun3mPhzZPiUl/eH02l+O+VMyG9777NFL1Xmx1rYxjKkq
+	mXW6W8nqad+ff986+0G71euWV4/auVZods7efEzzkYYSS3FGoqEWc1FxIgCwCJR02gEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use managed devm_regulator_register to simplify the driver probe and
-driver remove functions. This allows removing from state container the
-pointer to regulator_dev returned on registering the regulator.
-
-Patch also removes from state container pointer to 'struct device' as it
-is not used anywhere outside of max8952_pmic_probe() function.
+Don't store pointer to regulator_dev returned by
+devm_regulator_register() in state container. It isn't used anywhere
+outside of max1586_pmic_probe() function.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- drivers/regulator/max8952.c |   21 ++++++++-------------
- 1 file changed, 8 insertions(+), 13 deletions(-)
+ drivers/regulator/max1586.c |   12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/regulator/max8952.c b/drivers/regulator/max8952.c
-index 788e5ae2af1b..465f21f9d6ee 100644
---- a/drivers/regulator/max8952.c
-+++ b/drivers/regulator/max8952.c
-@@ -48,9 +48,7 @@ enum {
+diff --git a/drivers/regulator/max1586.c b/drivers/regulator/max1586.c
+index e242dd316d36..c2a40a1a9e3e 100644
+--- a/drivers/regulator/max1586.c
++++ b/drivers/regulator/max1586.c
+@@ -46,8 +46,6 @@ struct max1586_data {
  
- struct max8952_data {
- 	struct i2c_client	*client;
--	struct device		*dev;
- 	struct max8952_platform_data *pdata;
--	struct regulator_dev	*rdev;
+ 	unsigned int v3_curr_sel;
+ 	unsigned int v6_curr_sel;
+-
+-	struct regulator_dev *rdev[0];
+ };
  
- 	bool vid0;
- 	bool vid1;
-@@ -199,6 +197,7 @@ static int max8952_pmic_probe(struct i2c_client *client,
- 	struct max8952_platform_data *pdata = dev_get_platdata(&client->dev);
+ /*
+@@ -162,7 +160,6 @@ static struct regulator_desc max1586_reg[] = {
+ static int max1586_pmic_probe(struct i2c_client *client,
+ 					const struct i2c_device_id *i2c_id)
+ {
+-	struct regulator_dev **rdev;
+ 	struct max1586_platform_data *pdata = dev_get_platdata(&client->dev);
  	struct regulator_config config = { };
- 	struct max8952_data *max8952;
-+	struct regulator_dev *rdev;
+ 	struct max1586_data *max1586;
+@@ -186,8 +183,9 @@ static int max1586_pmic_probe(struct i2c_client *client,
+ 	max1586->v3_curr_sel = 24; /* 1.3V */
+ 	max1586->v6_curr_sel = 0;
  
- 	int ret = 0, err = 0;
+-	rdev = max1586->rdev;
+ 	for (i = 0; i < pdata->num_subdevs && i <= MAX1586_V6; i++) {
++		struct regulator_dev *rdev;
++
+ 		id = pdata->subdevs[i].id;
+ 		if (!pdata->subdevs[i].platform_data)
+ 			continue;
+@@ -207,12 +205,12 @@ static int max1586_pmic_probe(struct i2c_client *client,
+ 		config.init_data = pdata->subdevs[i].platform_data;
+ 		config.driver_data = max1586;
  
-@@ -219,10 +218,9 @@ static int max8952_pmic_probe(struct i2c_client *client,
- 		return -ENOMEM;
- 
- 	max8952->client = client;
--	max8952->dev = &client->dev;
- 	max8952->pdata = pdata;
- 
--	config.dev = max8952->dev;
-+	config.dev = &client->dev;
- 	config.init_data = pdata->reg_data;
- 	config.driver_data = max8952;
- 	config.of_node = client->dev.of_node;
-@@ -231,11 +229,11 @@ static int max8952_pmic_probe(struct i2c_client *client,
- 	if (pdata->reg_data->constraints.boot_on)
- 		config.ena_gpio_flags |= GPIOF_OUT_INIT_HIGH;
- 
--	max8952->rdev = regulator_register(&regulator, &config);
-+	rdev = devm_regulator_register(&client->dev, &regulator, &config);
- 
--	if (IS_ERR(max8952->rdev)) {
--		ret = PTR_ERR(max8952->rdev);
--		dev_err(max8952->dev, "regulator init failed (%d)\n", ret);
-+	if (IS_ERR(rdev)) {
-+		ret = PTR_ERR(rdev);
-+		dev_err(&client->dev, "regulator init failed (%d)\n", ret);
- 		return ret;
+-		rdev[i] = devm_regulator_register(&client->dev,
++		rdev = devm_regulator_register(&client->dev,
+ 						  &max1586_reg[id], &config);
+-		if (IS_ERR(rdev[i])) {
++		if (IS_ERR(rdev)) {
+ 			dev_err(&client->dev, "failed to register %s\n",
+ 				max1586_reg[id].name);
+-			return PTR_ERR(rdev[i]);
++			return PTR_ERR(rdev);
+ 		}
  	}
  
-@@ -263,7 +261,7 @@ static int max8952_pmic_probe(struct i2c_client *client,
- 		err = 3;
- 
- 	if (err) {
--		dev_warn(max8952->dev, "VID0/1 gpio invalid: "
-+		dev_warn(&client->dev, "VID0/1 gpio invalid: "
- 				"DVS not available.\n");
- 		max8952->vid0 = 0;
- 		max8952->vid1 = 0;
-@@ -274,7 +272,7 @@ static int max8952_pmic_probe(struct i2c_client *client,
- 		/* Disable Pulldown of EN only */
- 		max8952_write_reg(max8952, MAX8952_REG_CONTROL, 0x60);
- 
--		dev_err(max8952->dev, "DVS modes disabled because VID0 and VID1"
-+		dev_err(&client->dev, "DVS modes disabled because VID0 and VID1"
- 				" do not have proper controls.\n");
- 	} else {
- 		/*
-@@ -321,9 +319,6 @@ static int max8952_pmic_remove(struct i2c_client *client)
- {
- 	struct max8952_data *max8952 = i2c_get_clientdata(client);
- 	struct max8952_platform_data *pdata = max8952->pdata;
--	struct regulator_dev *rdev = max8952->rdev;
--
--	regulator_unregister(rdev);
- 
- 	gpio_free(pdata->gpio_vid0);
- 	gpio_free(pdata->gpio_vid1);
 -- 
 1.7.9.5
 
