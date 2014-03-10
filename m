@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753762AbaCJNcn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 09:32:43 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:50507 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753494AbaCJNcl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 09:32:41 -0400
-Message-ID: <531DBEDD.9050400@ti.com>
-Date: Mon, 10 Mar 2014 15:32:13 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753424AbaCJNgX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 09:36:23 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:35919 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752616AbaCJNgV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 09:36:21 -0400
 MIME-Version: 1.0
-To: Tero Kristo <t-kristo@ti.com>, <tony@atomide.com>
-CC: <balbi@ti.com>, <kishon@ti.com>, <george.cherian@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Mike Turquette <mturquette@linaro.org>
-Subject: Re: [PATCH v2 1/8] ARM: dts: dra7: Initialize USB_DPLL
-References: <1394197751-28984-2-git-send-email-rogerq@ti.com> <1394455761-19226-1-git-send-email-rogerq@ti.com> <531DBE03.2070603@ti.com>
-In-Reply-To: <531DBE03.2070603@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140221153905.GE31902@saruman.home>
+References: <774153d4-d33f-4bb4-813b-582762bc3af9@TX2EHSMHS021.ehs.local>
+	<20140220182257.GF23217@saruman.home>
+	<a39ce44a-2f92-4067-be6d-7311a78bb195@VA3EHSMHS013.ehs.local>
+	<20140221153905.GE31902@saruman.home>
+Date: Mon, 10 Mar 2014 19:06:19 +0530
+Message-ID: <CALHRZuouwUh398PkmatQMyZNzrEreH-kGwJTTC7CsY_gdq8dbQ@mail.gmail.com>
+Subject: Re: [PATCH RFC] usb: gadget: Add xilinx axi usb2 device support
+From: sundeep subbaraya <sundeep.lkml@gmail.com>
+To: balbi@ti.com
+Cc: Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michal Simek <michals@xilinx.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/2014 03:28 PM, Tero Kristo wrote:
-> On 03/10/2014 02:49 PM, Roger Quadros wrote:
->> USB_DPLL must be initialized and locked at boot so that
->> USB modules can work.
->>
->> Program USB_DLL_M2 output to half rate as well.
->>
->> Patch depends on
->> https://www.mail-archive.com/linux-omap@vger.kernel.org/msg101300.html
->>
->> CC: Mike Turquette <mturquette@linaro.org>
->> CC: Tero Kristo <t-kristo@ti.com>
->> Signed-off-by: Roger Quadros <rogerq@ti.com>
->> ---
->>   arch/arm/boot/dts/dra7.dtsi | 8 ++++++++
->>   1 file changed, 8 insertions(+)
->>
->> diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
->> index 597979b..f376923 100644
->> --- a/arch/arm/boot/dts/dra7.dtsi
->> +++ b/arch/arm/boot/dts/dra7.dtsi
->> @@ -815,3 +815,11 @@
->>   };
->>
->>   /include/ "dra7xx-clocks.dtsi"
->> +
->> +&dpll_usb_ck {
->> +        default-rate = <960000000>;
->> +};
->> +
->> +&dpll_usb_m2_ck {
->> +    default-rate = <480000000>;
->> +};
->>
-> 
-> You can add these directly under the dra7xx-clocks.dtsi file as well, as I don't think anybody needs to modify these. And the properties can be added directly under the nodes themselves.
-> 
-> However, this patch can't be acked yet as we have no feedback from Mike for the default-rate proposal.
+On Fri, Feb 21, 2014 at 9:09 PM, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
+>
+> On Fri, Feb 21, 2014 at 11:27:07AM +0000, Subbaraya Sundeep Bhatta wrote:
+>> > From the looks of it, I doubt this was actually tested, you need a lot
+>> > of work on this driver.
+>> Tested on both ARM and Microblaze architectures with Mass storage gadget.
+>> Will send a v2 after addressing all your comments.
+>
+> clearly you didn't try to remove and reinsert the module or you would
+> see a whole bunch of errors.
+>
 
-OK. I'll wait for the "default-rate" patch to be approved first and then revise this patch based on your
-suggestion. Thanks for the review.
+Yes you are correct. My console hung up as soon as i rmmod my driver.
+Could you please point me where am wrong.
 
-cheers,
--roger
+>> This email and any attachments are intended for the sole use of the
+>> named recipient(s) and contain(s) confidential information that may be
+>> proprietary, privileged or copyrighted under applicable law. If you
+>> are not the intended recipient, do not read, copy, or forward this
+>> email message or any attachments. Delete this email message and any
+>> attachments immediately.
+>
+> remove this footer message, btw, when sending emails to public mailing
+> lists.
+>
+Sure
+> --
+> balbi
