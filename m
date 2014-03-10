@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854AbaCJR4r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 13:56:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4851 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752020AbaCJR4q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 13:56:46 -0400
-Date: Mon, 10 Mar 2014 19:56:06 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, jbenc@redhat.com, edumazet@google.com,
-        dborkman@redhat.com, horms@verge.net.au, Paul.Durrant@citrix.com,
-        tgraf@suug.ch, herbert@gondor.apana.org.au, mszeredi@suse.cz,
-        panweiping3@gmail.com, netdev@vger.kernel.org
-Subject: Re: [PATCH 4/5] skbuff: skb_segment: s/fskb/list_skb/
-Message-ID: <20140310175606.GA13907@redhat.com>
-References: <1394468807-25980-1-git-send-email-mst@redhat.com>
- <1394468807-25980-5-git-send-email-mst@redhat.com>
- <20140310.134054.2195508036199798660.davem@davemloft.net>
- <20140310.134359.1940025401945824360.davem@davemloft.net>
+	id S1752753AbaCJR5s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 13:57:48 -0400
+Received: from moutng.kundenserver.de ([212.227.17.13]:58175 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752357AbaCJR5q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 13:57:46 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Emilio Lopez <emilio@elopez.com.ar>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-sunxi@googlegroups.com, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        zhuzhenhua@allwinnertech.com, andriy.shevchenko@intel.com
+Subject: Re: [PATCH v4 6/7] DMA: sun6i: Add driver for the Allwinner A31 DMA controller
+Date: Mon, 10 Mar 2014 18:57 +0100
+Message-ID: <5055473.2ZTHMWo41J@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140310165156.GI2815@lukather>
+References: <1394462512-11620-1-git-send-email-maxime.ripard@free-electrons.com> <2475487.axlvKsBQ0c@wuerfel> <20140310165156.GI2815@lukather>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140310.134359.1940025401945824360.davem@davemloft.net>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:7L0nkbPbwXhDvnu18ReowaL6aX0ab2XOX3RtMdkyk3U
+ 28OGb7sght9V8+LjedAKu6q+RxeNTgbekDSax4rhpOARdshzfg
+ AxvfM23jBaSyhZtitPqXUIWWJwamv36lFVlI7ddcWnsTBd7s5T
+ 1A6J0vbnoauFJ9HpyUAZq6W5R+J/IgYNtUntxqlscciW7ZI26n
+ NOxfUf5OyLftQsqMnHYBk/Ddq8NSO26EOvhbm6l3ahlA1VyH0+
+ /TXN2/ZetJt+y/JaEzzsCryj5X/iFwXOxmTdT2zF1ZeRsXL1/1
+ jWP4KPmKURPwFzXhQewqyeSEGrfJXBE4+aRWPSPzu9qwFa6njn
+ CDLrjvTmjdCntQJ9v3qg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 01:43:59PM -0400, David Miller wrote:
-> From: David Miller <davem@davemloft.net>
-> Date: Mon, 10 Mar 2014 13:40:54 -0400 (EDT)
-> 
+On Monday 10 March 2014 17:51:56 Maxime Ripard wrote:
 > > 
-> > As a netdev reader, I don't see patches 1-3, did you post them somewhere else
-> > and not CC: netdev?
-> > 
-> > If so, please don't do that without at least making a mention of what's going
-> > on in the 0/N posting.
+> > Neither "pll6" nor "ahb1_mux" are listed in the DT binding. Also, why
+> > is it the driver's business to set the parent?
 > 
-> Nevermind, I see them as older postings in my queue.
-> 
-> Are you using the commit date as the date for your outgoing emails?
+> Those are global clocks, so it's not really part pof the driver
+> binding itself. But I can add them.
 
-I don't really know, I just used git send-email to prepare them.
+No better don't then. Can you change the clk_get() call to pass
+NULL as the device pointer to clarify this in the source though?
 
-I saw a large delay after I sent them all until patches 4/5
-appeared on list. Could just be some hiccup in the smtp server
-(using ssmtp).
+> About the reparenting itself, other devices are actually fine having
+> any parent they want, only the DMA is picky about it (at least, from
+> what we know), so it made sense to me to put it into the driver
+> itself. Where would you put it?
 
-> Don't do that, it causes a patch series get chopped up and intertwined
-> with other ones in patchwork and therefore makes more work for me.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Maybe Mike Turquette has an idea. We have in the past discussed
+about cases where you want the default clock setting to be part
+of the clock provider in some property. Could that work here?
+
+	Arnd
