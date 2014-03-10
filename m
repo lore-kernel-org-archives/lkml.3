@@ -1,80 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846AbaCJLii (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 07:38:38 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33807 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752365AbaCJLih (ORCPT
+	id S1753228AbaCJLje (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 07:39:34 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:48646 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752229AbaCJLjd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 07:38:37 -0400
-Message-ID: <1394451471.6627.10.camel@weser.hi.pengutronix.de>
-Subject: Re: [linux-sunxi] Re: [RFC PATCH v2 08/14] mtd: nand: add sunxi
- NAND flash controller support
-From: Lucas Stach <l.stach@pengutronix.de>
-To: Boris BREZILLON <b.brezillon.dev@gmail.com>
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        devicetree@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Rob Landley <rob@landley.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-doc@vger.kernel.org, dev@linux-sunxi.org,
-        linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
-        linux-mtd@lists.infradead.org,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        linux-arm-kernel@lists.infradead.org
-Date: Mon, 10 Mar 2014 12:37:51 +0100
-In-Reply-To: <531D9F4B.6040505@gmail.com>
-References: <1391006064-28890-1-git-send-email-b.brezillon.dev@gmail.com>
-	 <1391006064-28890-9-git-send-email-b.brezillon.dev@gmail.com>
-	 <20140129175641.GF1427@obsidianresearch.com>
-	 <20140129184619.GC27143@localhost>
-	 <20140129191005.GG1427@obsidianresearch.com> <531D9F4B.6040505@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:fa0f:41ff:fe58:4010
-X-SA-Exim-Mail-From: l.stach@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 10 Mar 2014 07:39:33 -0400
+Date: Mon, 10 Mar 2014 11:39:28 +0000
+From: Glyn Normington <gnormington@gopivotal.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, gnormington@gopivotal.com
+Subject: [PATCH] control groups: documentation improvements
+Message-ID: <20140310113928.GC18700@gnimac.gopivotal.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, den 10.03.2014, 12:17 +0100 schrieb Boris BREZILLON:
-> Hello Jason,
-> 
-> Le 29/01/2014 20:10, Jason Gunthorpe a écrit :
-> > On Wed, Jan 29, 2014 at 03:46:20PM -0300, Ezequiel Garcia wrote:
-> >
-> >> After CE# has been pulled high and then transitioned low again, the host
-> >> should issue a Set Features to select the appropriate asynchronous timing mode.
-> >> """
-> > Oh, I had forgot you should do a set feature too
-> >
-> > Boris, I think the core core should handle this dance and the driver
-> > should just implement a call back to change the timing mode on the
-> > interface..
-> >
-> > If I ever get a moment I can work on support for timing setting in the
-> > mvebu driver, I have boards here with ONFI NAND..
-> 
-> Any progress on this ?
-> I'm about to post the 3rd version of this series and if you already have
-> something working I could base my work on your proposal.
-> 
+From: Glyn Normington <gnormington@gopivotal.com>
 
-I'm also interested in seeing this moving forward. I'm currently porting
-the Tegra NAND drive to mainline and at least the OF ONFI mode and ONFI
-mode to timing converter parts of this series are really helpful.
+Various clarifications to make the control groups documentation
+easier to understand, especially for newcomers.
 
-Regards,
-Lucas
--- 
-Pengutronix e.K.                           | Lucas Stach                 |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-5076 |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Delete the phrase "set of parameters" which obfuscates the
+definition of cgroup.
+
+Crisp up the definition of subsystem.
+
+Explain the term "partition".
+
+Clarify that each hierarchy must be associated with at least one
+subsystem.
+
+Describe the representation of the cgroup virtual filesystem,
+since this is not specifically described later in the document.
+
+Clarify that subsystems may be attached to multiple hierarchies,
+although this isn't very useful, and explain what happens.
+
+Use the term "task" in preference to "process" everywhere,
+for consistency.
+
+The following formal model of control groups helped in producing
+the above clarifications:
+
+https://github.com/Zteve/container-specs/raw/master/cgroups/cgroups.pdf
+
+Related LKML thread:
+
+http://lkml.iu.edu//hypermail/linux/kernel/1402.0/02419.html
+
+Signed-off-by: Glyn Normington <gnormington@gopivotal.com>
+---
+Kernel version: Linux 3.14-rc5.
+
+diff --git a/Documentation/cgroups/cgroups.txt b/Documentation/cgroups/cgroups.txt
+index 821de56..003330a 100644
+--- a/Documentation/cgroups/cgroups.txt
++++ b/Documentation/cgroups/cgroups.txt
+@@ -43,24 +43,29 @@ specialized behaviour.
+ 
+ Definitions:
+ 
+-A *cgroup* associates a set of tasks with a set of parameters for one
+-or more subsystems.
++A *cgroup* associates a set of tasks with one or more subsystems.
+ 
+-A *subsystem* is a module that makes use of the task grouping
+-facilities provided by cgroups to treat groups of tasks in
+-particular ways. A subsystem is typically a "resource controller" that
++A *subsystem* is a module that treats the tasks of each cgroup in a
++particular way. A subsystem is typically a "resource controller" that
+ schedules a resource or applies per-cgroup limits, but it may be
+-anything that wants to act on a group of processes, e.g. a
+-virtualization subsystem.
++anything that wants to act on a group of tasks, e.g. a virtualization
++subsystem.
+ 
+-A *hierarchy* is a set of cgroups arranged in a tree, such that
+-every task in the system is in exactly one of the cgroups in the
+-hierarchy, and a set of subsystems; each subsystem has system-specific
+-state attached to each cgroup in the hierarchy.  Each hierarchy has
+-an instance of the cgroup virtual filesystem associated with it.
++A *hierarchy* is a non-empty set of cgroups arranged in a tree and a
++non-empty set of subsystems such that the cgroups in the hierarchy
++partition all the tasks in the system (in other words, every task in the
++system is in exactly one of the cgroups in the hierarchy) and each
++subsystem attaches its own state to each cgroup in the hierarchy.
+ 
+-At any one time there may be multiple active hierarchies of task
+-cgroups. Each hierarchy is a partition of all tasks in the system.
++There may be zero or more active hierarchies. Each hierarchy has an
++instance of the cgroup virtual filesystem associated with it. The tree
++of cgroups is represented by the directory tree in the cgroup virtual
++filesystem.
++
++The sets of subsystems participating in distinct hierarchies are either
++identical or disjoint. If the sets are identical, the virtual filesystems
++associated with the hierarchies have identical content and a change in
++one is automatically reflected in all the others.
+ 
+ User-level code may create and destroy cgroups by name in an
+ instance of the cgroup virtual file system, specify and query to
+@@ -69,9 +74,9 @@ a cgroup. Those creations and assignments only affect the hierarchy
+ associated with that instance of the cgroup file system.
+ 
+ On their own, the only use for cgroups is for simple job
+-tracking. The intention is that other subsystems hook into the generic
++tracking. The intention is that subsystems hook into the generic
+ cgroup support to provide new attributes for cgroups, such as
+-accounting/limiting the resources which processes in a cgroup can
++accounting/limiting the resources which tasks in a cgroup can
+ access. For example, cpusets (see Documentation/cgroups/cpusets.txt) allow
+ you to associate a set of CPUs and a set of memory nodes with the
+ tasks in each cgroup.
+@@ -79,12 +84,12 @@ tasks in each cgroup.
+ 1.2 Why are cgroups needed ?
+ ----------------------------
+ 
+-There are multiple efforts to provide process aggregations in the
++There are multiple efforts to provide task aggregations in the
+ Linux kernel, mainly for resource-tracking purposes. Such efforts
+ include cpusets, CKRM/ResGroups, UserBeanCounters, and virtual server
+ namespaces. These all require the basic notion of a
+-grouping/partitioning of processes, with newly forked processes ending
+-up in the same group (cgroup) as their parent process.
++grouping/partitioning of tasks, with newly forked tasks ending
++up in the same group (cgroup) as their parent task.
+ 
+ The kernel cgroup patch provides the minimum essential kernel
+ mechanisms required to efficiently implement such groups. It has
+@@ -418,11 +423,11 @@ To remove a cgroup, just use rmdir:
+ # rmdir my_sub_cs
+ 
+ This will fail if the cgroup is in use (has cgroups inside, or
+-has processes attached, or is held alive by other subsystem-specific
++has tasks attached, or is held alive by other subsystem-specific
+ reference).
+ 
+-2.2 Attaching processes
+------------------------
++2.2 Attaching tasks
++-------------------
+ 
+ # /bin/echo PID > tasks
+ 
+@@ -450,7 +455,7 @@ move it into a new cgroup (possibly the root cgroup) by writing to the
+ new cgroup's tasks file.
+ 
+ Note: Due to some restrictions enforced by some cgroup subsystems, moving
+-a process to another cgroup can fail.
++a task to another cgroup can fail.
+ 
+ 2.3 Mounting hierarchies by name
+ --------------------------------
+@@ -658,7 +663,7 @@ A: bash's builtin 'echo' command does not check calls to write() against
+    errors. If you use it in the cgroup file system, you won't be
+    able to tell whether a command succeeded or failed.
+ 
+-Q: When I attach processes, only the first of the line gets really attached !
++Q: When I attach tasks, only the first of the line gets really attached !
+ A: We can only return one error code per call to write(). So you should also
+    put only ONE PID.
+ 
 
