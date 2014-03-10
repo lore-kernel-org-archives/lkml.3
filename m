@@ -1,79 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754589AbaCJRZn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 13:25:43 -0400
-Received: from ring0.de ([5.45.105.125]:40386 "EHLO ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754522AbaCJRZj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 13:25:39 -0400
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-From: Sebastian Reichel <sre@debian.org>
-To: Sebastian Reichel <sre@ring0.de>, Marek Belisko <marek@goldelico.com>,
-        Jonathan Cameron <jic23@kernel.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-iio@vger.kernel.org,
-        Sebastian Reichel <sre@debian.org>
-Subject: [PATCHv3 0/9] Convert twl4030-madc to IIO API and add DT support
-Date: Mon, 10 Mar 2014 18:25:20 +0100
-Message-Id: <1394472329-15485-1-git-send-email-sre@debian.org>
-X-Mailer: git-send-email 1.9.0
+	id S1754350AbaCJRbl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 13:31:41 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:48954 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753723AbaCJRbg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 13:31:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <531DF549.2090403@linux.intel.com>
+References: <20140307013833.GD8427@localhost> <1394176888.1018.3.camel@wall-e.seibold.net>
+ <CALCETrVCwZWvd78urw+O4zD3PoNZTQxg8FMzTrUi4+5w9rC5=A@mail.gmail.com>
+ <1394229220.20013.13.camel@wall-e.seibold.net> <CALCETrXB0G3aA1Usp4U-9-eN0z22YC4Sn+3z42mrU2ab0gE9gQ@mail.gmail.com>
+ <1394354848.1002.37.camel@wall-e.seibold.net> <531D044C.2090303@linux.intel.com>
+ <CALCETrXJobOnVB-ne9s57o3Z1KwK4fRtaYi8W=L4+UT065fKJw@mail.gmail.com>
+ <CALCETrUyJWQnQsX22+wrvPbXkj67nhZ0SMP1_hCo2yZ+Z5tMyA@mail.gmail.com>
+ <531DD35A.5060202@linux.intel.com> <CA+55aFwKpBybz9S9A=+tcr1BbdzAbagL30Br2cak2GrdPH=hhA@mail.gmail.com>
+ <CALCETrW6CT2ceHiHzMaZUGkwEBFWQEemFS5Fj=V7Wg-cNArMLg@mail.gmail.com> <531DF549.2090403@linux.intel.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 10 Mar 2014 10:31:14 -0700
+Message-ID: <CALCETrV+3yCfOCJzRKN-woOyp2RF_=dW1V=9CwpYTUNGAiLoNQ@mail.gmail.com>
+Subject: Re: [x86, vdso] BUG: unable to handle kernel paging request at d34bd000
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Stefani Seibold <stefani@seibold.net>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Mar 10, 2014 at 10:24 AM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+> On 03/10/2014 10:12 AM, Andy Lutomirski wrote:
+>> On Mon, Mar 10, 2014 at 8:11 AM, Linus Torvalds
+>> <torvalds@linux-foundation.org> wrote:
+>>>
+>>> On Mar 10, 2014 8:01 AM, "H. Peter Anvin" <hpa@linux.intel.com> wrote:
+>>>>
+>>>> I have mentioned in the past wanting to move the fixmap to the low part
+>>>> of the kernel space, because the top isn't really fixed...
+>>>
+>>> How about the high part of the user address space, just above the stack?
+>>> Leave a unmapped page in between, or something. The stack is already
+>>> randomized, isn't it?
+>>
+>> For the !compat_vdso case, I don't like it -- this will put the vdso
+>> (which is executable) at a constant offset from the stack, which will
+>> make it much easier to use the vdso to defeat ASLR.
+>>
+>> For the compat_vdso case, this only works if the address is *not*
+>> random, unless we're going to start giving each process its very own
+>> relocated vdso.
+>>
+>
+> I presumed we were talking about compat_vdso, which thus simply turns
+> into a "don't randomize the vdso flag."  A significant side benefit is
+> that this should make the code more similar.
 
-This is PATCHv3 for converting twl4030-madc to the IIO API and
-adding DT support. The plan is to remove the private twl4030-madc
-API once all users have been removed or converted to the IIO API.
-The patchset compiles and has been tested on my Nokia N900.
+Fair enough.  I still don't like having (top of stack - vdso) being
+constant, but maybe that's avoidable.
 
-Changes since PATCHv2 [0]:
- * Added Tested-by: Marek Belisko to all patches, which modify
-   code used by twl4030-madc-battery driver
- * Update madc->use_second_irq as suggested by Lee Jones
- * Use dev_err instead of dev_dbg for error messages in probe function
- * Add a space between "{" and ".compatible"
- * Decrease indention of closing "}" in twl4030_madc_driver.driver
+>
+>> For 64-bit, this is an entirely different story.  The vsyscall page is
+>> stuck in the fixmap forever, although I want to add a way for
+>> userspace to opt out.  The vvar page, hpet, etc could move into vmas,
+>> though.  I kind of want to do that anyway to allow processes to turn
+>> off the ability to read the clock.
+>
+> Wait... you want to do what?!
 
-[0] https://lkml.org/lkml/2014/3/4/815
+This isn't even my idea:
 
--- Sebastian
+commit 8fb402bccf203ecca8f9e0202b8fd3c937dece6f
+Author: Erik Bosman <ebn310@few.vu.nl>
+Date:   Fri Apr 11 18:54:17 2008 +0200
 
-Sebastian Reichel (9):
-  mfd: twl4030-madc: Use managed resources
-  mfd: twl4030-madc: Add DT support and convert to IIO framework
-  mfd: twl4030-madc: Cleanup driver
-  mfd: twl-core: Add twl_i2c_read/write_u16
-  mfd: twl4030-madc: Use twl_i2c_read/write_u16 for 16 bit registers
-  Documentation: DT: Document twl4030-madc binding
-  mfd: twl4030-madc: Move driver to drivers/iio/adc
-  iio: documentation: Add ABI documentation for *_mean_raw
-  iio: inkern: add iio_read_channel_average_raw
+    generic, x86: add prctl commands PR_GET_TSC and PR_SET_TSC
 
- Documentation/ABI/testing/sysfs-bus-iio            |   8 +
- .../devicetree/bindings/iio/adc/twl4030-madc.txt   |  24 ++
- drivers/iio/adc/Kconfig                            |  10 +
- drivers/iio/adc/Makefile                           |   1 +
- drivers/{mfd => iio/adc}/twl4030-madc.c            | 302 +++++++++++++--------
- drivers/iio/inkern.c                               |  18 ++
- drivers/mfd/Kconfig                                |  10 -
- drivers/mfd/Makefile                               |   1 -
- include/linux/i2c/twl.h                            |  12 +
- include/linux/i2c/twl4030-madc.h                   |   2 +-
- include/linux/iio/consumer.h                       |  13 +
- 11 files changed, 275 insertions(+), 126 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/iio/adc/twl4030-madc.txt
- rename drivers/{mfd => iio/adc}/twl4030-madc.c (75%)
+    This patch adds prctl commands that make it possible
+    to deny the execution of timestamp counters in userspace.
+    If this is not implemented on a specific architecture,
+    prctl will return -EINVAL.
 
--- 
-1.9.0
+Currently anything that tries to use the vdso will just crash if you
+do that, and it fails to turn off direct HPET access.  Fixing this
+might be nice, but the current vvar implementation makes it
+impossible.  If you want to stick something in a seccomp sandbox and
+make it very difficult for it to exploit timing side channels, then
+this is important :)
 
+--Andy
