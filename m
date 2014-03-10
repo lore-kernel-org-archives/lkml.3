@@ -1,65 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753581AbaCJUPv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 16:15:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3210 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752954AbaCJUPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 16:15:49 -0400
-Date: Mon, 10 Mar 2014 16:15:08 -0400
-From: Dave Jones <davej@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: Re: deadlock in lru_add_drain ? (3.14rc5)
-Message-ID: <20140310201508.GA16200@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, Tejun Heo <tj@kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Chris Metcalf <cmetcalf@tilera.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	linux-mm <linux-mm@kvack.org>, Lai Jiangshan <laijs@cn.fujitsu.com>
-References: <20140308220024.GA814@redhat.com>
- <CA+55aFzLxY8Xsn90v1OAsmVBWYPZTiJ74YE=HaCPYR2hvRfk+g@mail.gmail.com>
- <20140310150106.GD25290@htj.dyndns.org>
- <20140310155053.GA26188@redhat.com>
- <20140310200957.GF25290@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140310200957.GF25290@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753735AbaCJUQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 16:16:58 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:47071 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752568AbaCJUQ4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 16:16:56 -0400
+Date: Mon, 10 Mar 2014 16:16:53 -0400 (EDT)
+Message-Id: <20140310.161653.166084311676254585.davem@davemloft.net>
+To: haiyangz@microsoft.com
+Cc: netdev@vger.kernel.org, kys@microsoft.com, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org
+Subject: Re: [PATCH net-next] hyperv: Change the receive buffer size for
+ legacy hosts
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1394406659-22493-1-git-send-email-haiyangz@microsoft.com>
+References: <1394406659-22493-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 10 Mar 2014 13:16:56 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 04:09:57PM -0400, Tejun Heo wrote:
+From: Haiyang Zhang <haiyangz@microsoft.com>
+Date: Sun,  9 Mar 2014 16:10:59 -0700
 
- > Hmmm... this is puzzling.  At least according to the slightly
- > truncated (pids < 13) sysrq-t output, there's no kworker running
- > lru_add_drain_per_cpu() and nothing blocked on lru_add_drain_all::lock
- > can introduce any complex dependency.  Also, at least from glancing
- > over, I don't see anything behind lru_add_rain_per_cpu() which can get
- > involved in a complex dependency chain.
- > 
- > Assuming that the handful lost traces didn't reveal serious ah-has, it
- > almost looks like workqueue either failed to initiate execution of a
- > queued work item or flush_work() somehow got confused on a work item
- > which already finished, both of which are quite unlikely given that we
- > haven't had any simliar report on any other work items.
- > 
- > I think it'd be wise to extend sysrq-t output to include the states of
- > workqueue if for nothing else to easily rule out doubts about basic wq
- > functions.  Dave, is this as much information we're gonna get from the
- > trinity instance?  I assume trying to reproduce the case isn't likely
- > to work?
- 
-I tried enabling the function tracer, and ended up locking up the box entirely,
-so had to reboot.  Rerunning it now on rc6, will let you know if it reproduces
-(though it took like a day or so last time).
+> Due to a bug in the Hyper-V host verion 2008R2, we need to use a slightly smaller
+> receive buffer size, otherwise the buffer will not be accepted by the legacy hosts.
+> 
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 
-	Dave
-
+Applied.
