@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753766AbaCJOev (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 10:34:51 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:65125 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753515AbaCJOet (ORCPT
+	id S1753584AbaCJOhW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 10:37:22 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:51086 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752193AbaCJOhV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 10:34:49 -0400
-Date: Mon, 10 Mar 2014 14:34:43 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Roger Quadros <rogerq@ti.com>
-Cc: tony@atomide.com, bcousson@baylibre.com, balbi@ti.com,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-usb@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH v9 4/9] mfd: omap-usb-host: Use clock names as per
- function for reference clocks
-Message-ID: <20140310143443.GE15558@lee--X1>
-References: <1393510711-4697-1-git-send-email-rogerq@ti.com>
- <1393510711-4697-5-git-send-email-rogerq@ti.com>
+	Mon, 10 Mar 2014 10:37:21 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: <linux-arm-kernel@lists.infradead.org>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, ARM Maintainers <arm@kernel.org>
+CC: <linux-kernel@vger.kernel.org>, Boris BREZILLON <b.brezillon@overkiz.com>,
+        Boris BREZILLON <b.brezillon.dev@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH for 3.14] ARM: at91: fix network interface ordering for sama5d36
+Date: Mon, 10 Mar 2014 15:37:18 +0100
+Message-ID: <1394462238-22313-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1393510711-4697-5-git-send-email-rogerq@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Use a meaningful name for the reference clocks so that it indicates the function.
-> 
-> Update the OMAP4+ USB Host node as well to be in sync with the changes.
-> 
-> CC: Benoît Cousson <bcousson@baylibre.com>
-> CC: Lee Jones <lee.jones@linaro.org>
-> CC: Samuel Ortiz <sameo@linux.intel.com>
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> ---
->  arch/arm/boot/dts/omap4.dtsi |  6 ++++++
->  arch/arm/boot/dts/omap5.dtsi |  6 ++++++
->  drivers/mfd/omap-usb-host.c  | 12 ++++++------
->  3 files changed, 18 insertions(+), 6 deletions(-)
+From: Boris BREZILLON <b.brezillon.dev@gmail.com>
 
-The code looks fine and I queried the name change semantics before and
-was satisfied with your answer, so as long as this patch has been
-tested and nothing is broken:
-  Acked-by: Lee Jones <lee.jones@linaro.org>
+On the newly introduced sama5d36, Gigabit and 10/100 Ethernet network
+interfaces are probed in a different order than for the sama5d35.
+Moreover, users are accustomed to this order in bootloaders and backports
+for older kernel revisions.
+So this patch switches DT node order as it is done for the other dual-Ethernet
+sama5d3 SoC.
+Better interface numbering which does not depend on DT node order is being
+developed for stronger interface identification.
 
+Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+Olof, Arnd and Kevin,
+
+I would like to include this fix in 3.14-final.
+I do not have anymore patch for an at91-3.14-fixes branch so I only send this
+single patch to you. Can you still take it?
+
+Thanks, best regards,
+
+ arch/arm/boot/dts/sama5d36.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/sama5d36.dtsi b/arch/arm/boot/dts/sama5d36.dtsi
+index 6c31c26e6cc0..db58cad6acd3 100644
+--- a/arch/arm/boot/dts/sama5d36.dtsi
++++ b/arch/arm/boot/dts/sama5d36.dtsi
+@@ -8,8 +8,8 @@
+  */
+ #include "sama5d3.dtsi"
+ #include "sama5d3_can.dtsi"
+-#include "sama5d3_emac.dtsi"
+ #include "sama5d3_gmac.dtsi"
++#include "sama5d3_emac.dtsi"
+ #include "sama5d3_lcd.dtsi"
+ #include "sama5d3_mci2.dtsi"
+ #include "sama5d3_tcb1.dtsi"
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.2.2
+
