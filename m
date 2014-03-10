@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754032AbaCJPPT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 11:15:19 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:33127 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753830AbaCJPPQ (ORCPT
+	id S1754110AbaCJPQb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 11:16:31 -0400
+Received: from moutng.kundenserver.de ([212.227.17.13]:51791 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752880AbaCJPQ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 11:15:16 -0400
-Date: Mon, 10 Mar 2014 11:08:58 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Sander Eikelenboom <linux@eikelenboom.it>
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "bluez mailin list (linux-bluetooth@vger.kernel.org)" 
-	<linux-bluetooth@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [RC6 Bell Chime] Re: [PATCH 00/24] rfcomm fixes
-Message-ID: <20140310150858.GA25703@tuxdriver.com>
-References: <1391997564-1805-1-git-send-email-peter@hurleysoftware.com>
- <3E0F3723-029F-4B12-8D77-9790FDBD3227@holtmann.org>
- <1259174563.20140212120644@eikelenboom.it>
- <1335661753.20140303203853@eikelenboom.it>
- <1295963563.20140310093843@eikelenboom.it>
+	Mon, 10 Mar 2014 11:16:29 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>, monstr@monstr.eu,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, michal.simek@xilinx.com,
+        linux-can@vger.kernel.org, robh+dt@kernel.org,
+        Kedareswara rao Appana <appana.durga.rao@xilinx.com>,
+        grant.likely@linaro.org, Kedareswara rao Appana <appanad@xilinx.com>,
+        wg@grandegger.com
+Subject: Re: [PATCH v5] can: xilinx CAN controller support.
+Date: Mon, 10 Mar 2014 16:15:42 +0100
+Message-ID: <3245971.RIuVmbVL0Z@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <531DD5E7.7090406@pengutronix.de>
+References: <5254bfec-c6fd-4681-a34d-706d51e60fbb@VA3EHSMHS004.ehs.local> <531DD493.3030306@monstr.eu> <531DD5E7.7090406@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1295963563.20140310093843@eikelenboom.it>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:sfT3TcSZPPbOV+G53XmBQtO5tQ4iHEX+9EZSCCalw/X
+ nfKCuRSVgEyph3BaLdTF9IUFwHPw7HnobZ4A9NTW8+uNMYLYFV
+ LgPuFy6JZGB2WCXelYCPipzpZcnSl/BouaYApPnzuatd4XQUxy
+ 6ZlcbPwcu1ZTyPcDJAEnLF4ZoZE1IyETNDvJCYyjYkUFLLX+Vr
+ 9F23mNgMScGAsw9A1pCEx4btgxgQNfWLPm0nWKdgw24OMnWjTB
+ zGASaM4ruW1xhkt+lRVTnSAbldYvRlRogWeEubTgSsoVg3iXzY
+ vm2uMR0FnwpPgdkIj2JEj47fFCwHHzvz5o0Rt36mYmgobQ0dUY
+ l1WxxjMZnP6HvDUUr6NE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 09:38:43AM +0100, Sander Eikelenboom wrote:
-> Hi all,
+On Monday 10 March 2014 16:10:31 Marc Kleine-Budde wrote:
+> >>> +config CAN_XILINXCAN
+> >>> +   tristate "Xilinx CAN"
+> >>> +   depends on ARCH_ZYNQ || MICROBLAZE
+> >>
+> >> Is Zynq multiarch already?
+> > 
+> > let me just answer this. Zynq is device with hardcoded dual arm cortex-a9 + some IPs
+> > and programmable logic.
+> > It means if you add Microblaze to PL or another CPU then you get multi architecture setup.
 > 
-> Since:
-> - 3.14-RC6 has been cut
-> - this regression is known and reported since the merge window
-> - the fix (revert of 3 patches) is known for over a month now
-> - but it's still not in mainline
-> - my polite ping request from last week seems to have provoked exactly 0 (zero) response.
-> 
-> IT'S TIME TO CHIME SOME BELLS :-)
-> 
-> Hope that WILL be heard somewhere ...
-> 
-> --
-> Sander
-> 
-> PS. on the informative side the 3 commits to be reverted are:
-> 
-> f86772af6a0f643d3e13eb3f4f9213ae0c333ee4 Bluetooth: Remove rfcomm_carrier_raised()
-> 4a2fb3ecc7467c775b154813861f25a0ddc11aa0 Bluetooth: Always wait for a connection on RFCOMM open()
-> e228b63390536f5b737056059a9a04ea016b1abf Bluetooth: Move rfcomm_get_device() before rfcomm_dev_activate()
+> Sorry for the confusion, I'm not talking about
+> more-than-one-architecture-in-a-FPGA, but the feature of the ARM-Linux
+> Kernel to run on different ARM architecture. For example, it's possible
+> to start the same kernel on a freescale imx6 and a the new marvel ebu
+> platform. If the Zynq Kernel supports this feature, too, we should not
+> limit to ARCH_ZYNQ, but use ARM instead.
 
-Gustavo, should I be expecting a pull request?
+Zynq has been multiplatform capable from the start. Ideally we'd let
+users build the driver for any architecture and specify the exact
+dependencies, it doesn't even have to be limited to ARM.
 
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+You probably want something like
+
+	config CAN_XILINX
+	tristate "Xilinx CAN"
+	depends on ARCH_ZYNQ || MICROBLAZE || COMPILE_TEST
+	depends on COMMON_CLK && HAS_MMIO  # whatever you need for other architectures
+
+	Arnd
