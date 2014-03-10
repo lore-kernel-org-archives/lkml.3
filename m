@@ -1,96 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754314AbaCJT4U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 15:56:20 -0400
-Received: from g6t1524.atlanta.hp.com ([15.193.200.67]:57343 "EHLO
-	g6t1524.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754209AbaCJT4T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754245AbaCJT4T (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 10 Mar 2014 15:56:19 -0400
-Message-ID: <1394481375.3867.1.camel@buesod1.americas.hpqcorp.net>
-Subject: [PATCH -next] mm,vmacache: also flush cache for VM_CLONE
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Davidlohr Bueso <davi@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 10 Mar 2014 12:56:15 -0700
-In-Reply-To: <CA+55aFxEGj9poWNLAncvrrOTzjDtrwMnOM_d3ACqRkcvY86qHA@mail.gmail.com>
-References: <1393537704.2899.3.camel@buesod1.americas.hpqcorp.net>
-	 <20140308184040.GA29602@redhat.com>
-	 <CA+55aFw88xiY+o5FE6VtHNkpUZDK3FPt31oCpNsgn1BH7wAPZw@mail.gmail.com>
-	 <20140308194405.GA32403@redhat.com>
-	 <CA+55aFzk=XtRFPQM4rGgTXj8AD2RLrm5pfAsKwGOZPHLgb+Ziw@mail.gmail.com>
-	 <20140309125710.GA1829@redhat.com>
-	 <CA+55aFxyGJFEz5NnHtK1wn8oDLy9n-CttttKL_0AM69gN8JzxQ@mail.gmail.com>
-	 <20140309170909.GA13335@redhat.com>
-	 <CA+55aFxEGj9poWNLAncvrrOTzjDtrwMnOM_d3ACqRkcvY86qHA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Received: from out01.mta.xmission.com ([166.70.13.231]:34771 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753908AbaCJT4O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 15:56:14 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Eric Paris <eparis@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        David Miller <davem@davemloft.net>, rgb@redhat.com,
+        linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+References: <874n3ir0uw.fsf_-_@xmission.com> <87mwhaplo4.fsf_-_@xmission.com>
+	<20140304133004.b565820f60f595a48e621e58@linux-foundation.org>
+	<20140304.165122.445822929490466603.davem@davemloft.net>
+	<87mwh5d1tf.fsf@xmission.com>
+	<20140304145037.d46ee775d293dd1ad60aa8e3@linux-foundation.org>
+	<87bnxesqf0.fsf_-_@xmission.com> <1394459944.17193.12.camel@localhost>
+Date: Mon, 10 Mar 2014 12:56:06 -0700
+In-Reply-To: <1394459944.17193.12.camel@localhost> (Eric Paris's message of
+	"Mon, 10 Mar 2014 09:59:04 -0400")
+Message-ID: <87r469rfop.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19ytgJxi3he+/qGDyJZrFQC+x7SLy51rg4=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
+	*      [score: 0.2512]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  1.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
+	*  1.0 XMSubMetaSx_00 1+ Sexy Words
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;Eric Paris <eparis@redhat.com>
+X-Spam-Relay-Country: 
+Subject: Re: [GIT PULL] namespaces fixes for 3.14-rcX
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg found that there is a potential race if we don't flush the task
-for threads (VM_CLONE):
+Eric Paris <eparis@redhat.com> writes:
 
-"Suppose we have a task T1 which has the valid vmacache,
-T1->vmacache_seqnum == T1->mm->vmacache_seqnum == 0. Suppose it sleeps a lot.
+> On Sun, 2014-03-09 at 20:06 -0700, Eric W. Biederman wrote:
+>> My efforts to get these fixes noticed by people who care about audit
+>> seem to have landed on deaf ears, so since these are namespace related I
+>> have put them in my tree.
+>
+> This commentary sounds like a pile of crap seeing as how there was a
+> whole discussion around how to handle this stuff, which you were a part
+> of.  And that the audit tree already picked up these 2 patches.
 
-Suppose that its subthread T2 does a lot munmap's, finally mm->vmacache_seqnum
-becomes zero again and T2 calls vmacache_flush_all().
+My apologies for offending.  Last night when I looked the audit tree had
+not been updated in 7 weeks, and Andrew Morton wasn't ready to push
+these fixes to Linus and was looking for someone who would.  Keeping
+important bug fixes in my retransmit queue leaves me very grumpy.
 
-T1 wakes up and does clone(CLONE_VM). The new thread T3 gets the copy
-of T2's ->vmacache_seqnum and ->vmacache[].
+> In any case, since I haven't sent them to Linus and I'm glad that is
+> done, so feel free to consider this me Acking the pull request.
 
-T2 continues, vmacache_flush_all() finds T1 and does vmacache_flush(T1).
-
-But the new thread T3 is not on the list yet, vmacache_flush_all() can't
-find it.
-
-So T3 will run with vmacache_valid() == T (till the next invalidate(mm)
-of course) but its ->vmacache[] points to nowhere."
-
-Address this by moving the flush call into copy_mm(), instead of only
-having it in dup_mm().
-
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
----
- kernel/fork.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 3e02737..45b6241 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -841,9 +841,6 @@ static struct mm_struct *dup_mm(struct task_struct *tsk)
- 	if (mm->binfmt && !try_module_get(mm->binfmt->module))
- 		goto free_pt;
- 
--	/* initialize the new vmacache entries */
--	vmacache_flush(tsk);
--
- 	return mm;
- 
- free_pt:
-@@ -887,6 +884,9 @@ static int copy_mm(unsigned long clone_flags, struct task_struct *tsk)
- 	if (!oldmm)
- 		return 0;
- 
-+	/* initialize the new vmacache entries */
-+	vmacache_flush(tsk);
-+
- 	if (clone_flags & CLONE_VM) {
- 		atomic_inc(&oldmm->mm_users);
- 		mm = oldmm;
--- 
-1.8.1.4
-
-
-
+Eric
