@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755280AbaCJUlD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 16:41:03 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:39358 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754328AbaCJUk7 (ORCPT
+	id S1755298AbaCJUlT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 16:41:19 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:34979 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754603AbaCJUlQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 16:40:59 -0400
+	Mon, 10 Mar 2014 16:41:16 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v3 42/52] octeon,
- watchdog: Fix CPU hotplug callback registration
+Subject: [PATCH v3 43/52] thermal,
+ x86-pkg-temp: Fix CPU hotplug callback registration
 To: paulus@samba.org, oleg@redhat.com, mingo@kernel.org, rjw@rjwysocki.net,
         rusty@rustcorp.com.au, peterz@infradead.org, tglx@linutronix.de,
         akpm@linux-foundation.org
@@ -17,11 +17,12 @@ Cc: paulmck@linux.vnet.ibm.com, tj@kernel.org, walken@google.com,
         ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
         linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         linux-pm@vger.kernel.org, linuxppc-dev@ozlabs.org,
-        srivatsa.bhat@linux.vnet.ibm.com, Wim Van Sebroeck <wim@iguana.be>,
-        Ingo Molnar <mingo@kernel.org>, linux-watchdog@vger.kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-pm@vger.kernel.org,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Tue, 11 Mar 2014 02:10:43 +0530
-Message-ID: <20140310204042.10746.60098.stgit@srivatsabhat.in.ibm.com>
+Date: Tue, 11 Mar 2014 02:10:54 +0530
+Message-ID: <20140310204054.10746.57627.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20140310203312.10746.310.stgit@srivatsabhat.in.ibm.com>
 References: <20140310203312.10746.310.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -30,7 +31,7 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14031020-0260-0000-0000-000004832C25
+x-cbid: 14031020-5140-0000-0000-000004B214E1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -66,55 +67,66 @@ registration is:
 	cpu_notifier_register_done();
 
 
-Fix the watchdog code in octeon by using this latter form of callback
+Fix the thermal x86-pkg-temp code by using this latter form of callback
 registration.
 
-Cc: Wim Van Sebroeck <wim@iguana.be>
+Cc: Zhang Rui <rui.zhang@intel.com>
+Cc: Eduardo Valentin <eduardo.valentin@ti.com>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: linux-watchdog@vger.kernel.org
+Cc: linux-pm@vger.kernel.org
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- drivers/watchdog/octeon-wdt-main.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ drivers/thermal/x86_pkg_temp_thermal.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/watchdog/octeon-wdt-main.c b/drivers/watchdog/octeon-wdt-main.c
-index 4612088..4baf2d7 100644
---- a/drivers/watchdog/octeon-wdt-main.c
-+++ b/drivers/watchdog/octeon-wdt-main.c
-@@ -708,10 +708,13 @@ static int __init octeon_wdt_init(void)
+diff --git a/drivers/thermal/x86_pkg_temp_thermal.c b/drivers/thermal/x86_pkg_temp_thermal.c
+index 081fd7e..9ea3d9d 100644
+--- a/drivers/thermal/x86_pkg_temp_thermal.c
++++ b/drivers/thermal/x86_pkg_temp_thermal.c
+@@ -590,12 +590,12 @@ static int __init pkg_temp_thermal_init(void)
+ 	platform_thermal_package_rate_control =
+ 			pkg_temp_thermal_platform_thermal_rate_control;
  
- 	cpumask_clear(&irq_enabled_cpus);
- 
+-	get_online_cpus();
 +	cpu_notifier_register_begin();
- 	for_each_online_cpu(cpu)
- 		octeon_wdt_setup_interrupt(cpu);
- 
--	register_hotcpu_notifier(&octeon_wdt_cpu_notifier);
-+	__register_hotcpu_notifier(&octeon_wdt_cpu_notifier);
+ 	for_each_online_cpu(i)
+ 		if (get_core_online(i))
+ 			goto err_ret;
+-	register_hotcpu_notifier(&pkg_temp_thermal_notifier);
+-	put_online_cpus();
++	__register_hotcpu_notifier(&pkg_temp_thermal_notifier);
 +	cpu_notifier_register_done();
-+
- out:
- 	return ret;
- }
-@@ -725,7 +728,8 @@ static void __exit octeon_wdt_cleanup(void)
  
- 	misc_deregister(&octeon_wdt_miscdev);
+ 	pkg_temp_debugfs_init(); /* Don't care if fails */
  
--	unregister_hotcpu_notifier(&octeon_wdt_cpu_notifier);
+@@ -604,7 +604,7 @@ static int __init pkg_temp_thermal_init(void)
+ err_ret:
+ 	for_each_online_cpu(i)
+ 		put_core_offline(i);
+-	put_online_cpus();
++	cpu_notifier_register_done();
+ 	kfree(pkg_work_scheduled);
+ 	platform_thermal_package_notify = NULL;
+ 	platform_thermal_package_rate_control = NULL;
+@@ -617,8 +617,8 @@ static void __exit pkg_temp_thermal_exit(void)
+ 	struct phy_dev_entry *phdev, *n;
+ 	int i;
+ 
+-	get_online_cpus();
+-	unregister_hotcpu_notifier(&pkg_temp_thermal_notifier);
 +	cpu_notifier_register_begin();
-+	__unregister_hotcpu_notifier(&octeon_wdt_cpu_notifier);
- 
- 	for_each_online_cpu(cpu) {
- 		int core = cpu2core(cpu);
-@@ -734,6 +738,9 @@ static void __exit octeon_wdt_cleanup(void)
- 		/* Free the interrupt handler */
- 		free_irq(OCTEON_IRQ_WDOG0 + core, octeon_wdt_poke_irq);
- 	}
-+
++	__unregister_hotcpu_notifier(&pkg_temp_thermal_notifier);
+ 	mutex_lock(&phy_dev_list_mutex);
+ 	list_for_each_entry_safe(phdev, n, &phy_dev_list, list) {
+ 		/* Retore old MSR value for package thermal interrupt */
+@@ -636,7 +636,7 @@ static void __exit pkg_temp_thermal_exit(void)
+ 	for_each_online_cpu(i)
+ 		cancel_delayed_work_sync(
+ 			&per_cpu(pkg_temp_thermal_threshold_work, i));
+-	put_online_cpus();
 +	cpu_notifier_register_done();
-+
- 	/*
- 	 * Disable the boot-bus memory, the code it points to is soon
- 	 * to go missing.
+ 
+ 	kfree(pkg_work_scheduled);
+ 
 
