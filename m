@@ -1,170 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753228AbaCJLje (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 07:39:34 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:48646 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752229AbaCJLjd (ORCPT
+	id S1753332AbaCJLke (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 07:40:34 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:44938 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752193AbaCJLkc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 07:39:33 -0400
-Date: Mon, 10 Mar 2014 11:39:28 +0000
-From: Glyn Normington <gnormington@gopivotal.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, gnormington@gopivotal.com
-Subject: [PATCH] control groups: documentation improvements
-Message-ID: <20140310113928.GC18700@gnimac.gopivotal.com>
+	Mon, 10 Mar 2014 07:40:32 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Andrzej Hajda <a.hajda@samsung.com>
+Cc: Philipp Zabel <philipp.zabel@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Subject: Re: [PATCH v4 1/3] [media] of: move graph helpers from drivers/media/v4l2-core to drivers/of
+Date: Mon, 10 Mar 2014 12:42:04 +0100
+Message-ID: <1401949.AJnxRNDZ0C@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <531D7E9F.3090708@samsung.com>
+References: <1393340304-19005-1-git-send-email-p.zabel@pengutronix.de> <1536567.OYzyi25bjL@avalon> <531D7E9F.3090708@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Glyn Normington <gnormington@gopivotal.com>
+Hi Andrzej,
 
-Various clarifications to make the control groups documentation
-easier to understand, especially for newcomers.
+On Monday 10 March 2014 09:58:07 Andrzej Hajda wrote:
+> On 03/08/2014 04:54 PM, Laurent Pinchart wrote:
+> > On Saturday 08 March 2014 13:07:23 Philipp Zabel wrote:
+> >> On Fri, Mar 7, 2014 at 6:18 PM, Grant Likely wrote:
+> >>> On Wed, 26 Feb 2014 16:24:57 +0100, Philipp Zabel wrote:
+> >>>> The 'ports' node is optional. It is only needed if the parent node has
+> >>>> its own #address-cells and #size-cells properties. If the ports are
+> >>>> direct children of the device node, there might be other nodes than
+> >>>> 
+> >>>> ports:
+> >>>>       device {
+> >>>>               #address-cells = <1>;
+> >>>>               #size-cells = <0>;
+> >>>>               
+> >>>>               port@0 {
+> >>>>                       endpoint { ... };
+> >>>>               };
+> >>>>               port@1 {
+> >>>>                       endpoint { ... };
+> >>>>               };
+> >>>>               
+> >>>>               some-other-child { ... };
+> >>>>       };
+> >>>>       
+> >>>>       device {
+> >>>>               #address-cells = <x>;
+> >>>>               #size-cells = <y>;
+> >>>>               
+> >>>>               ports {
+> >>>>                       #address-cells = <1>;
+> >>>>                       #size-cells = <0>;
+> >>>>                       
+> >>>>                       port@0 {
+> >>>>                               endpoint { ... };
+> >>>>                       };
+> >>>>                       port@1 {
+> >>>>                               endpoint { ... };
+> >>>>                       };
+> >>>>               };
+> >>>>               
+> >>>>               some-other-child { ... };
+> >>>>       };
+> >>> 
+> >>> From a pattern perspective I have no problem with that.... From an
+> >>> individual driver binding perspective that is just dumb! It's fine for
+> >>> the ports node to be optional, but an individual driver using the
+> >>> binding should be explicit about which it will accept. Please use either
+> >>> a flag or a separate wrapper so that the driver can select the
+> >>> behaviour.
+> >> 
+> >> If the generic binding exists in both forms, most drivers should be
+> >> able to cope with both. Maybe it should be mentioned in the bindings
+> >> that the short form without ports node should be used where possible
+> >> (i.e. for devices that don't already have #address,size-cells != 1,0).
+> >> 
+> >> Having a separate wrapper to enforce the ports node for devices that
+> >> need it might be useful.
+> >> 
+> >>>> The helper should find the two endpoints in both cases.
+> >>>> 
+> >>>> Tomi suggests an even more compact form for devices with just one port:
+> >>>>
+> >>>>       device {
+> >>>>               endpoint { ... };
+> >>>>               
+> >>>>               some-other-child { ... };
+> >>>>       };
+> >>> 
+> >>> That's fine. In that case the driver would specifically require the
+> >>> endpoint to be that one node.... although the above looks a little weird
+> >>> to me. I would recommend that if there are other non-port child nodes
+> >>> then the ports should still be encapsulated by a ports node.  The device
+> >>> binding should not be ambiguous about which nodes are ports.
+> >> 
+> >> Sylwester suggested as an alternative, if I understood correctly, to
+> >> drop the endpoint node and instead keep the port:
+> >> 
+> >>     device-a {
+> >>         implicit_output_ep: port {
+> >>             remote-endpoint = <&explicit_input_ep>;
+> >>         };
+> >>     };
+> >>     
+> >>     device-b {
+> >>         port {
+> >>             explicit_input_ep: endpoint {
+> >>                 remote-endpoint = <&implicit_output_ep>;
+> >>             };
+> >>         };
+> >>     };
+> >> 
+> >> This would have the advantage to reduce verbosity for devices with
+> >> multiple ports that are only connected via one endport each, and you'd
+> >> always have the connected ports in the device tree as 'port' nodes.
+> > 
+> > I like that idea. I would prefer making the 'port' nodes mandatory and the
+> > 'ports' and 'endpoint' nodes optional. Leaving the 'port' node out
+> > slightly decreases readability in my opinion, but making the 'endpoint'
+> > node optional increases it. That's just my point of view though.
+> 
+> I want to propose another solution to simplify bindings, in fact I have
+> few ideas to consider:
+> 
+> 1. Use named ports instead of address-cells/regs. Ie instead of
+> port@number schema, use port-function. This will allow to avoid ports
+> node and #address-cells, #size-cells, reg properties.
+> Additionally it should increase readability of the bindings.
+> 
+> device {
+> 	port-dsi {
+> 		endpoint { ... };
+> 	};
+> 	port-rgb {
+> 		endpoint { ... };
+> 	};
+> };
+> 
+> It is little bit like with gpios vs reset-gpios properties.
+> Another advantage I see we do not need do mappings of port numbers
+> to functions between dts, drivers and documentation.
 
-Delete the phrase "set of parameters" which obfuscates the
-definition of cgroup.
+The problem with this approach is that ports are identified by a number inside 
+the kernel, so we would still need to define name to number mappings, or 
+switch to port names internally first.
 
-Crisp up the definition of subsystem.
+> 2. Similar approach can be taken to endpoint nodes, in fact
+> as endpoints are children of port node and as I understand port node
+> have no other children we can use any name instead of endpoint@number,
+> of course some convention can be helpful.
+> 
+> device {
+> 	port-dsi {
+> 		ep-soc1 { ... };
+> 		ep-soc2 { ... };
+> 	};
+> 	port-rgb {
+> 		ep-panel { ... };
+> 	};
+> };
 
-Explain the term "partition".
+I see less issues here, as we don't need to number endpoints if I'm not 
+mistaken.
 
-Clarify that each hierarchy must be associated with at least one
-subsystem.
+> I would like to add that those ideas would work nicely with Sylwester's
+> proposition of skipping endpoints nodes in case there is only one
+> endpoint - the most common cases are devices with one or two ports, each
+> port having only one remote endpoint.
+> The complete graph for DSI/LVDS bridge I work recently will look like:
+> 
+> dsim {
+> 	dsim_ep: port-dsi {
+> 		remote-endpoint = <&bridge_dsi_ep>;
+> 	};
+> };
+> 
+> bridge {
+> 	bridge_dsi_ep: port-dsi {
+> 		remote-endpoint = <&dsim_ep>;
+> 	};
+> 	bridge_lvds_ep: port-lvds {
+> 		remote-endpoint = <&panel_ep>;
+> 	};
+> };
+> 
+> panel {
+> 	port-lvds {
+> 		remote-endpoint <&bridge_lvds_ep>;
+> 	};
+> };
 
-Describe the representation of the cgroup virtual filesystem,
-since this is not specifically described later in the document.
+-- 
+Regards,
 
-Clarify that subsystems may be attached to multiple hierarchies,
-although this isn't very useful, and explain what happens.
-
-Use the term "task" in preference to "process" everywhere,
-for consistency.
-
-The following formal model of control groups helped in producing
-the above clarifications:
-
-https://github.com/Zteve/container-specs/raw/master/cgroups/cgroups.pdf
-
-Related LKML thread:
-
-http://lkml.iu.edu//hypermail/linux/kernel/1402.0/02419.html
-
-Signed-off-by: Glyn Normington <gnormington@gopivotal.com>
----
-Kernel version: Linux 3.14-rc5.
-
-diff --git a/Documentation/cgroups/cgroups.txt b/Documentation/cgroups/cgroups.txt
-index 821de56..003330a 100644
---- a/Documentation/cgroups/cgroups.txt
-+++ b/Documentation/cgroups/cgroups.txt
-@@ -43,24 +43,29 @@ specialized behaviour.
- 
- Definitions:
- 
--A *cgroup* associates a set of tasks with a set of parameters for one
--or more subsystems.
-+A *cgroup* associates a set of tasks with one or more subsystems.
- 
--A *subsystem* is a module that makes use of the task grouping
--facilities provided by cgroups to treat groups of tasks in
--particular ways. A subsystem is typically a "resource controller" that
-+A *subsystem* is a module that treats the tasks of each cgroup in a
-+particular way. A subsystem is typically a "resource controller" that
- schedules a resource or applies per-cgroup limits, but it may be
--anything that wants to act on a group of processes, e.g. a
--virtualization subsystem.
-+anything that wants to act on a group of tasks, e.g. a virtualization
-+subsystem.
- 
--A *hierarchy* is a set of cgroups arranged in a tree, such that
--every task in the system is in exactly one of the cgroups in the
--hierarchy, and a set of subsystems; each subsystem has system-specific
--state attached to each cgroup in the hierarchy.  Each hierarchy has
--an instance of the cgroup virtual filesystem associated with it.
-+A *hierarchy* is a non-empty set of cgroups arranged in a tree and a
-+non-empty set of subsystems such that the cgroups in the hierarchy
-+partition all the tasks in the system (in other words, every task in the
-+system is in exactly one of the cgroups in the hierarchy) and each
-+subsystem attaches its own state to each cgroup in the hierarchy.
- 
--At any one time there may be multiple active hierarchies of task
--cgroups. Each hierarchy is a partition of all tasks in the system.
-+There may be zero or more active hierarchies. Each hierarchy has an
-+instance of the cgroup virtual filesystem associated with it. The tree
-+of cgroups is represented by the directory tree in the cgroup virtual
-+filesystem.
-+
-+The sets of subsystems participating in distinct hierarchies are either
-+identical or disjoint. If the sets are identical, the virtual filesystems
-+associated with the hierarchies have identical content and a change in
-+one is automatically reflected in all the others.
- 
- User-level code may create and destroy cgroups by name in an
- instance of the cgroup virtual file system, specify and query to
-@@ -69,9 +74,9 @@ a cgroup. Those creations and assignments only affect the hierarchy
- associated with that instance of the cgroup file system.
- 
- On their own, the only use for cgroups is for simple job
--tracking. The intention is that other subsystems hook into the generic
-+tracking. The intention is that subsystems hook into the generic
- cgroup support to provide new attributes for cgroups, such as
--accounting/limiting the resources which processes in a cgroup can
-+accounting/limiting the resources which tasks in a cgroup can
- access. For example, cpusets (see Documentation/cgroups/cpusets.txt) allow
- you to associate a set of CPUs and a set of memory nodes with the
- tasks in each cgroup.
-@@ -79,12 +84,12 @@ tasks in each cgroup.
- 1.2 Why are cgroups needed ?
- ----------------------------
- 
--There are multiple efforts to provide process aggregations in the
-+There are multiple efforts to provide task aggregations in the
- Linux kernel, mainly for resource-tracking purposes. Such efforts
- include cpusets, CKRM/ResGroups, UserBeanCounters, and virtual server
- namespaces. These all require the basic notion of a
--grouping/partitioning of processes, with newly forked processes ending
--up in the same group (cgroup) as their parent process.
-+grouping/partitioning of tasks, with newly forked tasks ending
-+up in the same group (cgroup) as their parent task.
- 
- The kernel cgroup patch provides the minimum essential kernel
- mechanisms required to efficiently implement such groups. It has
-@@ -418,11 +423,11 @@ To remove a cgroup, just use rmdir:
- # rmdir my_sub_cs
- 
- This will fail if the cgroup is in use (has cgroups inside, or
--has processes attached, or is held alive by other subsystem-specific
-+has tasks attached, or is held alive by other subsystem-specific
- reference).
- 
--2.2 Attaching processes
-------------------------
-+2.2 Attaching tasks
-+-------------------
- 
- # /bin/echo PID > tasks
- 
-@@ -450,7 +455,7 @@ move it into a new cgroup (possibly the root cgroup) by writing to the
- new cgroup's tasks file.
- 
- Note: Due to some restrictions enforced by some cgroup subsystems, moving
--a process to another cgroup can fail.
-+a task to another cgroup can fail.
- 
- 2.3 Mounting hierarchies by name
- --------------------------------
-@@ -658,7 +663,7 @@ A: bash's builtin 'echo' command does not check calls to write() against
-    errors. If you use it in the cgroup file system, you won't be
-    able to tell whether a command succeeded or failed.
- 
--Q: When I attach processes, only the first of the line gets really attached !
-+Q: When I attach tasks, only the first of the line gets really attached !
- A: We can only return one error code per call to write(). So you should also
-    put only ONE PID.
- 
+Laurent Pinchart
 
