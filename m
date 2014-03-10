@@ -1,76 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754208AbaCJP3R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 11:29:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35690 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752471AbaCJP3M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 11:29:12 -0400
-Message-ID: <531DDA46.5050803@suse.cz>
-Date: Mon, 10 Mar 2014 16:29:10 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch] mm, compaction: determine isolation mode only once
-References: <alpine.DEB.2.02.1403070358120.13046@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1403070358120.13046@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754219AbaCJP3X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 11:29:23 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:49378 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754195AbaCJP3Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 11:29:16 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: linus.walleij@linaro.org, Lee Jones <lee.jones@linaro.org>,
+        Mark Brown <broonie@kernel.org>
+Subject: [PATCH] mfd: tps65218: Fix reported randconfig error
+Date: Mon, 10 Mar 2014 15:29:11 +0000
+Message-Id: <1394465351-14764-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/2014 01:01 PM, David Rientjes wrote:
-> The conditions that control the isolation mode in
-> isolate_migratepages_range() do not change during the iteration, so
-> extract them out and only define the value once.
->
-> This actually does have an effect, gcc doesn't optimize it itself because
-> of cc->sync.
->
-> Signed-off-by: David Rientjes <rientjes@google.com>
+Reported error was:
 
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
+  ERROR: "regmap_del_irq_chip" [drivers/mfd/tps65218.ko] undefined!
+    when CONFIG_REGMAP_IRQ is not enabled.
 
-> ---
->   mm/compaction.c | 9 ++-------
->   1 file changed, 2 insertions(+), 7 deletions(-)
->
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -454,12 +454,13 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->   	unsigned long last_pageblock_nr = 0, pageblock_nr;
->   	unsigned long nr_scanned = 0, nr_isolated = 0;
->   	struct list_head *migratelist = &cc->migratepages;
-> -	isolate_mode_t mode = 0;
->   	struct lruvec *lruvec;
->   	unsigned long flags;
->   	bool locked = false;
->   	struct page *page = NULL, *valid_page = NULL;
->   	bool skipped_async_unsuitable = false;
-> +	const isolate_mode_t mode = (!cc->sync ? ISOLATE_ASYNC_MIGRATE : 0) |
-> +				    (unevictable ? ISOLATE_UNEVICTABLE : 0);
->
->   	/*
->   	 * Ensure that there are not too many pages isolated from the LRU
-> @@ -592,12 +593,6 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->   			continue;
->   		}
->
-> -		if (!cc->sync)
-> -			mode |= ISOLATE_ASYNC_MIGRATE;
-> -
-> -		if (unevictable)
-> -			mode |= ISOLATE_UNEVICTABLE;
-> -
->   		lruvec = mem_cgroup_page_lruvec(page, zone);
->
->   		/* Try isolate the page */
->
+Cc: Mark Brown <broonie@kernel.org>
+Reported-by: Randy Dunlap <rdunlap@infradead.org>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/mfd/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 7c443f2..456a7e7 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -864,6 +864,7 @@ config MFD_TPS65218
+ 	depends on I2C
+ 	select MFD_CORE
+ 	select REGMAP_I2C
++	select REGMAP_IRQ
+ 	help
+ 	  If you say yes here you get support for the TPS65218 series of
+ 	  Power Management chips.
+-- 
+1.8.3.2
 
