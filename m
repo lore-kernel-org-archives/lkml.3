@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753AbaCJR5s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 13:57:48 -0400
-Received: from moutng.kundenserver.de ([212.227.17.13]:58175 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752357AbaCJR5q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 13:57:46 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Emilio Lopez <emilio@elopez.com.ar>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-sunxi@googlegroups.com, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        zhuzhenhua@allwinnertech.com, andriy.shevchenko@intel.com
-Subject: Re: [PATCH v4 6/7] DMA: sun6i: Add driver for the Allwinner A31 DMA controller
-Date: Mon, 10 Mar 2014 18:57 +0100
-Message-ID: <5055473.2ZTHMWo41J@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140310165156.GI2815@lukather>
-References: <1394462512-11620-1-git-send-email-maxime.ripard@free-electrons.com> <2475487.axlvKsBQ0c@wuerfel> <20140310165156.GI2815@lukather>
+	id S1753073AbaCJR6s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 13:58:48 -0400
+Received: from mga02.intel.com ([134.134.136.20]:10417 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752371AbaCJR6s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 13:58:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,625,1389772800"; 
+   d="scan'208";a="469712318"
+Message-ID: <531DFD55.1070000@linux.intel.com>
+Date: Mon, 10 Mar 2014 10:58:45 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:7L0nkbPbwXhDvnu18ReowaL6aX0ab2XOX3RtMdkyk3U
- 28OGb7sght9V8+LjedAKu6q+RxeNTgbekDSax4rhpOARdshzfg
- AxvfM23jBaSyhZtitPqXUIWWJwamv36lFVlI7ddcWnsTBd7s5T
- 1A6J0vbnoauFJ9HpyUAZq6W5R+J/IgYNtUntxqlscciW7ZI26n
- NOxfUf5OyLftQsqMnHYBk/Ddq8NSO26EOvhbm6l3ahlA1VyH0+
- /TXN2/ZetJt+y/JaEzzsCryj5X/iFwXOxmTdT2zF1ZeRsXL1/1
- jWP4KPmKURPwFzXhQewqyeSEGrfJXBE4+aRWPSPzu9qwFa6njn
- CDLrjvTmjdCntQJ9v3qg=
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Stefani Seibold <stefani@seibold.net>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>
+Subject: Re: [x86, vdso] BUG: unable to handle kernel paging request at d34bd000
+References: <20140307013833.GD8427@localhost> <1394176888.1018.3.camel@wall-e.seibold.net> <CALCETrVCwZWvd78urw+O4zD3PoNZTQxg8FMzTrUi4+5w9rC5=A@mail.gmail.com> <1394229220.20013.13.camel@wall-e.seibold.net> <CALCETrXB0G3aA1Usp4U-9-eN0z22YC4Sn+3z42mrU2ab0gE9gQ@mail.gmail.com> <1394354848.1002.37.camel@wall-e.seibold.net> <531D044C.2090303@linux.intel.com> <CALCETrXJobOnVB-ne9s57o3Z1KwK4fRtaYi8W=L4+UT065fKJw@mail.gmail.com> <CALCETrUyJWQnQsX22+wrvPbXkj67nhZ0SMP1_hCo2yZ+Z5tMyA@mail.gmail.com> <531DD35A.5060202@linux.intel.com> <CA+55aFwKpBybz9S9A=+tcr1BbdzAbagL30Br2cak2GrdPH=hhA@mail.gmail.com> <CALCETrW6CT2ceHiHzMaZUGkwEBFWQEemFS5Fj=V7Wg-cNArMLg@mail.gmail.com> <531DF549.2090403@linux.intel.com> <CALCETrV+3yCfOCJzRKN-woOyp2RF_=dW1V=9CwpYTUNGAiLoNQ@mail.gmail.com> <531DF896.8010305@linux.intel.com> <CALCETrVKfBpVHZcyccWRYM4rdOAETSQsxjiQuxn+0AeX78XiEw@mail.gmail.com> <531DFAF0.9070806@linux.intel.com> <CALCETrVkTtt5H9-0_mODcGyaLTusBfANkoANo+wKB4JAwjxU2g@mail.gmail.com>
+In-Reply-To: <CALCETrVkTtt5H9-0_mODcGyaLTusBfANkoANo+wKB4JAwjxU2g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 10 March 2014 17:51:56 Maxime Ripard wrote:
-> > 
-> > Neither "pll6" nor "ahb1_mux" are listed in the DT binding. Also, why
-> > is it the driver's business to set the parent?
+On 03/10/2014 10:52 AM, Andy Lutomirski wrote:
+>>
+>> Hint: where is your RIP?  Where is the RIP of other processes?
+>>
 > 
-> Those are global clocks, so it's not really part pof the driver
-> binding itself. But I can add them.
+> Whoa there, I'm not suggesting anything nearly that crazy :)
+> 
+> I'm suggesting changing out the vvar page *for that process*, which is
+> not executable.  The actual vdso code already supports this -- from
+> userspace's point of view it's the same thing as 'echo acpi_pm >
+> /sys/devices/system/clocksource/clocksource0/current_clocksource',
+> except that if the actual clocksource is HPET, the hpet page will be
+> switched out (presumably with a zero page) while being read.
+> 
+> Other processes are totally irrelevant, unless they share the same
+> struct mm.  (This is why the vvar page can't be in the fixmap for this
+> to work.)
+> 
 
-No better don't then. Can you change the clk_get() call to pass
-NULL as the device pointer to clarify this in the source though?
+I meant "threads" not "processes"...
 
-> About the reparenting itself, other devices are actually fine having
-> any parent they want, only the DMA is picky about it (at least, from
-> what we know), so it made sense to me to put it into the driver
-> itself. Where would you put it?
+	-hpa
 
-Maybe Mike Turquette has an idea. We have in the past discussed
-about cases where you want the default clock setting to be part
-of the clock provider in some property. Could that work here?
 
-	Arnd
