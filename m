@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754205AbaCJRYe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 13:24:34 -0400
-Received: from mga09.intel.com ([134.134.136.24]:3987 "EHLO mga09.intel.com"
+	id S1754440AbaCJRYo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 13:24:44 -0400
+Received: from mga09.intel.com ([134.134.136.24]:4013 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753475AbaCJRYc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 13:24:32 -0400
+	id S1754335AbaCJRYl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 13:24:41 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,625,1389772800"; 
-   d="scan'208";a="469695333"
-Message-ID: <531DF549.2090403@linux.intel.com>
-Date: Mon, 10 Mar 2014 10:24:25 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+   d="scan'208";a="469695446"
+Date: Mon, 10 Mar 2014 10:24:40 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Dave Hansen <dave.hansen@intel.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH v1 03/11] perf: Allow for multiple ring buffers per event
+Message-ID: <20140310172440.GG13302@tassilo.jf.intel.com>
+References: <1391683834-29868-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <1391683834-29868-4-git-send-email-alexander.shishkin@linux.intel.com>
+ <20140217143340.GR27965@twins.programming.kicks-ass.net>
+ <530529FC.6080704@intel.com>
+ <87siqqtlv6.fsf@ashishki-desk.ger.corp.intel.com>
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Stefani Seibold <stefani@seibold.net>,
-        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
-        Martin Runge <Martin.Runge@rohde-schwarz.com>
-Subject: Re: [x86, vdso] BUG: unable to handle kernel paging request at d34bd000
-References: <20140307013833.GD8427@localhost> <1394176888.1018.3.camel@wall-e.seibold.net> <CALCETrVCwZWvd78urw+O4zD3PoNZTQxg8FMzTrUi4+5w9rC5=A@mail.gmail.com> <1394229220.20013.13.camel@wall-e.seibold.net> <CALCETrXB0G3aA1Usp4U-9-eN0z22YC4Sn+3z42mrU2ab0gE9gQ@mail.gmail.com> <1394354848.1002.37.camel@wall-e.seibold.net> <531D044C.2090303@linux.intel.com> <CALCETrXJobOnVB-ne9s57o3Z1KwK4fRtaYi8W=L4+UT065fKJw@mail.gmail.com> <CALCETrUyJWQnQsX22+wrvPbXkj67nhZ0SMP1_hCo2yZ+Z5tMyA@mail.gmail.com> <531DD35A.5060202@linux.intel.com> <CA+55aFwKpBybz9S9A=+tcr1BbdzAbagL30Br2cak2GrdPH=hhA@mail.gmail.com> <CALCETrW6CT2ceHiHzMaZUGkwEBFWQEemFS5Fj=V7Wg-cNArMLg@mail.gmail.com>
-In-Reply-To: <CALCETrW6CT2ceHiHzMaZUGkwEBFWQEemFS5Fj=V7Wg-cNArMLg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87siqqtlv6.fsf@ashishki-desk.ger.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/2014 10:12 AM, Andy Lutomirski wrote:
-> On Mon, Mar 10, 2014 at 8:11 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->>
->> On Mar 10, 2014 8:01 AM, "H. Peter Anvin" <hpa@linux.intel.com> wrote:
->>>
->>> I have mentioned in the past wanting to move the fixmap to the low part
->>> of the kernel space, because the top isn't really fixed...
->>
->> How about the high part of the user address space, just above the stack?
->> Leave a unmapped page in between, or something. The stack is already
->> randomized, isn't it?
+> > Wouldn't we have to teach a ton of code how to be IRQ safe for this to
+> > work?  Just step one: how do we go modifying page tables safely from an
+> > interrupt?  mm->page_table_lock is a plain non-irq spinlock.
 > 
-> For the !compat_vdso case, I don't like it -- this will put the vdso
-> (which is executable) at a constant offset from the stack, which will
-> make it much easier to use the vdso to defeat ASLR.
-> 
-> For the compat_vdso case, this only works if the address is *not*
-> random, unless we're going to start giving each process its very own
-> relocated vdso.
-> 
+> Yes, this does look more than just tricky even if we move the bulk of
+> interrupt code to an irq_work. Peter, are you quite sure this is what we
+> want to do just for exporting trace buffers to userspace?
 
-I presumed we were talking about compat_vdso, which thus simply turns
-into a "don't randomize the vdso flag."  A significant side benefit is
-that this should make the code more similar.
+The other big problem is scalability. Even if it was somehow possible
+to make this scheme work the IPIs for flushing would kill performance 
+on any multi threaded client.  Given perf is not multi-threaded today, but
+it doesn't seem a good idea to design the interface assuming no client ever
+will be.
 
-> For 64-bit, this is an entirely different story.  The vsyscall page is
-> stuck in the fixmap forever, although I want to add a way for
-> userspace to opt out.  The vvar page, hpet, etc could move into vmas,
-> though.  I kind of want to do that anyway to allow processes to turn
-> off the ability to read the clock.
-
-Wait... you want to do what?!
-
-	-hpa
-
+-Andi
