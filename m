@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804AbaCJJXT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 05:23:19 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48511 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751986AbaCJJXS (ORCPT
+	id S1752888AbaCJJXc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 05:23:32 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:52379 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751986AbaCJJXa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 05:23:18 -0400
-Date: Mon, 10 Mar 2014 09:23:11 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Message-ID: <20140310092311.GF28112@sirena.org.uk>
-References: <1394440371-29588-1-git-send-email-k.kozlowski@samsung.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="TB8SBNQBCzhQE3ms"
-Content-Disposition: inline
-In-Reply-To: <1394440371-29588-1-git-send-email-k.kozlowski@samsung.com>
-X-Cookie: Oh no, not again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/8] regulator: max1586: Remove regulator_dev pointer
- from state container
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Mon, 10 Mar 2014 05:23:30 -0400
+From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Lee, Chun-Yi" <jlee@suse.com>
+Subject: [PATCH] crypto: avoid module request when lookup crypto larval of template
+Date: Mon, 10 Mar 2014 17:22:51 +0800
+Message-Id: <1394443371-12181-1-git-send-email-jlee@suse.com>
+X-Mailer: git-send-email 1.6.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When allocate crypto algorithms, e.g. crypto_alloc_shash(), using
+template model will run into the path that call module_request().
+But there have no any module alias that match with the template name.
 
---TB8SBNQBCzhQE3ms
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+e.g.
+Enable the module_request tracing event then run "modprobe tcrypt
+mode=10" to test, it produces module_request event:
+[...]
+        modprobe-4965  [000] ....   123.504690: module_request: ecb(aes)
+wait=1 call_site=crypto_larval_lookup
+        modprobe-4965  [002] ....   123.506826: module_request:
+ecb(aes)-all wait=1 call_site=crypto_larval_lookup
+ cryptomgr_probe-4970  [003] ....   123.509007: module_request: ecb
+wait=1 call_site=crypto_lookup_template
 
-On Mon, Mar 10, 2014 at 09:32:44AM +0100, Krzysztof Kozlowski wrote:
-> Don't store pointer to regulator_dev returned by
-> devm_regulator_register() in state container. It isn't used anywhere
-> outside of max1586_pmic_probe() function.
+Here should not call module_request() for ecb(aes) because the template
+name doesn't match with any driver's alias.
 
-Applied, thanks.
+This patch add the name checking in crypto_larval_lookup() to
+filter out the template before request kernel module.
 
---TB8SBNQBCzhQE3ms
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
+---
+ crypto/api.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+diff --git a/crypto/api.c b/crypto/api.c
+index a2b39c5..9aac892 100644
+--- a/crypto/api.c
++++ b/crypto/api.c
+@@ -215,7 +215,7 @@ struct crypto_alg *crypto_larval_lookup(const char *name, u32 type, u32 mask)
+ 	type &= mask;
+ 
+ 	alg = crypto_alg_lookup(name, type, mask);
+-	if (!alg) {
++	if (!alg && !strchr(name, '(')) {
+ 		request_module("%s", name);
+ 
+ 		if (!((type ^ CRYPTO_ALG_NEED_FALLBACK) & mask &
+-- 
+1.6.4.2
 
-iQIcBAEBAgAGBQJTHYR8AAoJELSic+t+oim9swgP/1EAkNDEzx2imkObNlEUYMsc
-6UcX1jkBibjsr2t2+zWkx1tUhbyt5GACob0tvB1RYZTnVJyVR9oUgACgIcN/VMcM
-Fu4IM+DBJ1231q4YiB/Cm0e89/2O237zJQhYOvM/4NSVSDSLMyldd683HHVc3goW
-dRneY2wyHRsYF0Mm1aGYXnjT4YEfnjiD//P+phpeyh11PhWePvu1gX0PzzTh7bSO
-Gg84kkMBD769jSebskoid2u9OiPyFAkKtGexOLscOYORBQo9arZl4g2KaQ8gGzYF
-5FJwuqRTJ9s+YfZD2EWOefy6FIP22DeUZpyivhRe9y0zHa1R5uvLtccGuVrMfSpu
-r6gSiVee+/yZj7yo3f+VGyiQsBK59dmaD45nyoN+jCaRmaQz+NHa3+JYfNuDD+s5
-WmUpa9RdIU8bhgQcjSVyQqiF78eutnR2Xks5fdwb/yCw9N+JCrGpzCg22uNJNYJS
-vPEIhTrt6AyOJnj+CfR6PuJw4rRxOfsNLozI7yLZ0WCzLdu9Pp2WNph3omM1m9u3
-RERSSE027GLfTPXXCjuFozb+gTdb0CHrxKqhAFaXO2ECP+TdRw/9G4lIVmOSSHwy
-IghZJ0FAlzyXakOyiEaJsVp7tXdz6FqgbDVQRipvUmuKMnZbTSlPqCgztE+dbEU6
-EZSnuKtUkjC3SPWldN/h
-=A7eV
------END PGP SIGNATURE-----
-
---TB8SBNQBCzhQE3ms--
