@@ -1,56 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753615AbaCJOcO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 10:32:14 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:49918 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752594AbaCJOcM (ORCPT
+	id S1753713AbaCJOdT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 10:33:19 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:45238 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752105AbaCJOdS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 10:32:12 -0400
-Date: Mon, 10 Mar 2014 14:32:07 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Roger Quadros <rogerq@ti.com>
-Cc: tony@atomide.com, bcousson@baylibre.com, balbi@ti.com,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-usb@vger.kernel.org, Paul Walmsley <paul@pwsan.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH v9 3/9] mfd: omap-usb-host: Use proper clock name instead
- of alias
-Message-ID: <20140310143207.GD15558@lee--X1>
-References: <1393510711-4697-1-git-send-email-rogerq@ti.com>
- <1393510711-4697-4-git-send-email-rogerq@ti.com>
+	Mon, 10 Mar 2014 10:33:18 -0400
+Date: Mon, 10 Mar 2014 14:32:47 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: "mika.westerberg@linux.intel.com" <mika.westerberg@linux.intel.com>,
+        "Koul, Vinod" <vinod.koul@intel.com>,
+        "Krogerus, Heikki" <heikki.krogerus@intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Viresh Kumar <viresh.kumar@st.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Linus Walleij <linus.walleij@stericsson.com>, yuanyabin1978@sina.com,
+        linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
+        Peter Pearse <peter.pearse@arm.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Alessandro Rubini <rubini@unipv.it>
+Subject: Re: [PATCH 06/13] DMAENGINE: driver for the ARM PL080/PL081
+	PrimeCells
+Message-ID: <20140310143247.GZ21483@n2100.arm.linux.org.uk>
+References: <1276270031-1607-1-git-send-email-linus.walleij@stericsson.com> <20101221182037.GA4783@n2100.arm.linux.org.uk> <20101222122904.GC14693@n2100.arm.linux.org.uk> <AANLkTikpyAggDCPef1pS=_QHnu9-FyLcpddGyVHnGwWx@mail.gmail.com> <20110101151545.GC25924@n2100.arm.linux.org.uk> <1394459790.2270.39.camel@shinybook.infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1393510711-4697-4-git-send-email-rogerq@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1394459790.2270.39.camel@shinybook.infradead.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Use the proper clock name 'usbhost_120m_fck' instead of the
-> alias 'ehci_logic_fck'
+On Mon, Mar 10, 2014 at 06:56:30AM -0700, David Woodhouse wrote:
+> On Sat, 2011-01-01 at 15:15 +0000, Russell King - ARM Linux wrote:
+> > On Wed, Dec 22, 2010 at 03:45:39PM -0800, Dan Williams wrote:
+> > > Support for the DMA_COMPL flags are necessary if the DMA_MEMCPY
+> > > capability is advertised, yes this driver got this wrong.  I'll update
+> > > the documentation to make this requirement clear, and audit the other
+> > > drivers.  With slave-only drivers the only usage model is one where
+> > > the client driver owns dma-mapping.  In the non-slave (opportunistic
+> > > memcpy offload) case the client is unaware of the engine so the driver
+> > > owns unmapping.  The minimal fix is to disable memcpy offload.
+> > 
+> > As a side note, the DMA mapping for slaves should be done using the
+> > DMA struct device, not the struct device of the peripheral making use
+> > of the DMA engine.
+> > 
+> > Why?  The slave device has no knowledge of how the DMA engine is
+> > connected into the system, or the DMA parameters associated with the
+> > device performing the DMA, such as the DMA mask and boundaries.  (If
+> > there are several generic DMA agents in the system, it can't know
+> > which is the correct one to use until a channel has been allocated.)
+> > The only struct device which has this information is the one for the
+> > DMA engine itself.
+> > 
+> > Therefore, the struct device which is passed into the DMA mapping APIs
+> > to prepare memory for DMA must always be the DMA engine struct device
+> > (chan->device->dev) and never the slave struct device.
 > 
-> Get rid of the 'ehci_logic_fck' alias from the OMAP3 hwmod data
-> as well.
+> That all seems eminently sensible. However, I wonder if it always has to
+> be true.
 > 
-> CC: Paul Walmsley <paul@pwsan.com>
-> CC: Lee Jones <lee.jones@linaro.org>
-> CC: Samuel Ortiz <sameo@linux.intel.com>
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> ---
->  arch/arm/mach-omap2/omap_hwmod_3xxx_data.c | 6 ------
->  drivers/mfd/omap-usb-host.c                | 5 +++--
->  2 files changed, 3 insertions(+), 8 deletions(-)
+> It is not impossible for the DMA controller to "delegate" transactions
+> so that (to the IOMMU) they appear to come from the individual slave
+> device rather than from itself.
+> 
+> The Intel IOMMU has now gained support for DMA mapping for devices
+> enumerated by ACPI — essentially the ACPI "DMAR" table just has a lookup
+> table of ACPI device paths, and tells us the PCI bus/devfn that their
+> DMA transactions will *appear* to be from.
+> 
+> What we've seen is that it is the individual slave devices that are
+> listed in these tables, *not* the DMA controller itself. It looks like
+> we are actually expected to set up the IOMMU mapping for the *slave*,
+> not the DMA controller. The system doesn't even *tell* me how to set up
+> DMA mappings for the DMA controller device; only the slaves.
 
-So long as the platform guys are okay with the semantic change, the
-MFD diff looks okay to me. For the MFD changes:
-  Acked-by: Lee Jones <lee.jones@linaro.org>
+Okay, so how do you get the DMA address which is to be programmed into
+the DMA controller - bearing in mind that different devices in the
+system may have different bus:physical offsets?
+
+ACPI may allow you to work this out for each slave device, but now
+try thinking about this same problem without ACPI.
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
