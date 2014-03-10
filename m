@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753933AbaCJM4e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 08:56:34 -0400
-Received: from mga11.intel.com ([192.55.52.93]:61169 "EHLO mga11.intel.com"
+	id S1753949AbaCJM4w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 08:56:52 -0400
+Received: from mga02.intel.com ([134.134.136.20]:9642 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753530AbaCJMzA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 08:55:00 -0400
+	id S1753527AbaCJMy7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 08:54:59 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,623,1389772800"; 
-   d="scan'208";a="495438833"
+   d="scan'208";a="497011160"
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
 To: Linus Walleij <linus.walleij@linaro.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>
@@ -17,9 +17,9 @@ Cc: Alexandre Courbot <gnurou@gmail.com>, Lan Tianyu <tianyu.lan@intel.com>,
         Mathias Nyman <mathias.nyman@linux.intel.com>,
         linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
         Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH v2 1/5] gpiolib: Allow GPIO chips to request their own GPIOs
-Date: Mon, 10 Mar 2014 14:54:50 +0200
-Message-Id: <1394456094-21671-2-git-send-email-mika.westerberg@linux.intel.com>
+Subject: [PATCH v2 4/5] gpio / ACPI: Rework ACPI GPIO event handling
+Date: Mon, 10 Mar 2014 14:54:53 +0200
+Message-Id: <1394456094-21671-5-git-send-email-mika.westerberg@linux.intel.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394456094-21671-1-git-send-email-mika.westerberg@linux.intel.com>
 References: <1394456094-21671-1-git-send-email-mika.westerberg@linux.intel.com>
@@ -27,212 +27,316 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sometimes it is useful to allow GPIO chips themselves to request GPIOs they
-own through gpiolib API. One use case is ACPI ASL code that should be able
-to toggle GPIOs through GPIO operation regions.
+The current ACPI GPIO event handling code was never tested against real
+hardware with functioning GPIO triggered events (at the time such hardware
+wasn't available). Thus it misses certain things like requesting the GPIOs
+properly, passing correct flags to the interrupt handler and so on.
 
-We can't use gpio_request() because it will pin the module to the kernel
-forever (it calls try_module_get()). To solve this we move module refcount
-manipulation to gpiod_request() and let __gpiod_request() handle the actual
-request. This changes the sequence a bit as now try_module_get() is called
-outside of gpio_lock (I think this is safe, try_module_get() handles
-serialization it needs already).
+This patch reworks ACPI GPIO event handling so that we:
 
-Then we provide gpiolib internal functions gpiochip_request/free_own_desc()
-that do the same as gpio_request() but don't manipulate module refrence
-count. This allows the GPIO chip driver to request and free descriptors it
-owns without being pinned to the kernel forever.
+ 1) Use struct acpi_gpio_event for all GPIO signaled events.
+ 2) Switch to use GPIO descriptor API and request GPIOs by calling
+    gpiochip_request_own_desc() that we added in a previous patch.
+ 3) Pass proper flags from ACPI GPIO resource to request_threaded_irq().
+
+Also instead of open-coding the _AEI iteration loop we can use
+acpi_walk_resources(). This simplifies the code a bit and fixes memory leak
+that was caused by missing kfree() for buffer returned by
+acpi_get_event_resources().
+
+Since the remove path now calls gpiochip_free_own_desc() which takes GPIO
+spinlock we need to call acpi_gpiochip_remove() outside of that lock
+(analogous to acpi_gpiochip_add() path where the lock is released before
+those funtions are called).
 
 Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Reviewed-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/gpio/gpiolib.c | 100 ++++++++++++++++++++++++++++++++++++-------------
- drivers/gpio/gpiolib.h |   3 ++
- 2 files changed, 76 insertions(+), 27 deletions(-)
+ drivers/gpio/gpiolib-acpi.c | 214 ++++++++++++++++++++++++++------------------
+ drivers/gpio/gpiolib.c      |   3 +-
+ 2 files changed, 131 insertions(+), 86 deletions(-)
 
+diff --git a/drivers/gpio/gpiolib-acpi.c b/drivers/gpio/gpiolib-acpi.c
+index be09e7526890..092ea4e5c9a8 100644
+--- a/drivers/gpio/gpiolib-acpi.c
++++ b/drivers/gpio/gpiolib-acpi.c
+@@ -70,9 +70,9 @@ static struct gpio_desc *acpi_get_gpiod(char *path, int pin)
+ 
+ static irqreturn_t acpi_gpio_irq_handler(int irq, void *data)
+ {
+-	acpi_handle handle = data;
++	struct acpi_gpio_event *event = data;
+ 
+-	acpi_evaluate_object(handle, NULL, NULL, NULL);
++	acpi_evaluate_object(event->handle, NULL, NULL, NULL);
+ 
+ 	return IRQ_HANDLED;
+ }
+@@ -91,111 +91,148 @@ static void acpi_gpio_chip_dh(acpi_handle handle, void *data)
+ 	/* The address of this function is used as a key. */
+ }
+ 
+-/**
+- * acpi_gpiochip_request_interrupts() - Register isr for gpio chip ACPI events
+- * @acpi_gpio:      ACPI GPIO chip
+- *
+- * ACPI5 platforms can use GPIO signaled ACPI events. These GPIO interrupts are
+- * handled by ACPI event methods which need to be called from the GPIO
+- * chip's interrupt handler. acpi_gpiochip_request_interrupts finds out which
+- * gpio pins have acpi event methods and assigns interrupt handlers that calls
+- * the acpi event methods for those pins.
+- */
+-static void acpi_gpiochip_request_interrupts(struct acpi_gpio_chip *acpi_gpio)
++static acpi_status acpi_gpiochip_request_interrupt(struct acpi_resource *ares,
++						   void *context)
+ {
+-	struct acpi_buffer buf = {ACPI_ALLOCATE_BUFFER, NULL};
++	struct acpi_gpio_chip *acpi_gpio = context;
+ 	struct gpio_chip *chip = acpi_gpio->chip;
+-	struct acpi_resource *res;
++	struct acpi_resource_gpio *agpio;
+ 	acpi_handle handle, evt_handle;
+-	acpi_status status;
+-	unsigned int pin;
+-	int irq, ret;
+-	char ev_name[5];
++	struct acpi_gpio_event *event;
++	irq_handler_t handler = NULL;
++	struct gpio_desc *desc;
++	unsigned long irqflags;
++	int ret, pin, irq;
+ 
+-	if (!chip->dev || !chip->to_irq)
+-		return;
++	if (ares->type != ACPI_RESOURCE_TYPE_GPIO)
++		return AE_OK;
++
++	agpio = &ares->data.gpio;
++	if (agpio->connection_type != ACPI_RESOURCE_GPIO_TYPE_INT)
++		return AE_OK;
+ 
+ 	handle = ACPI_HANDLE(chip->dev);
+-	if (!handle)
+-		return;
++	pin = agpio->pin_table[0];
++
++	if (pin <= 255) {
++		char ev_name[5];
++		sprintf(ev_name, "_%c%02X",
++			agpio->triggering == ACPI_EDGE_SENSITIVE ? 'E' : 'L',
++			pin);
++		if (ACPI_SUCCESS(acpi_get_handle(handle, ev_name, &evt_handle)))
++			handler = acpi_gpio_irq_handler;
++	}
++	if (!handler) {
++		if (ACPI_SUCCESS(acpi_get_handle(handle, "_EVT", &evt_handle)))
++			handler = acpi_gpio_irq_handler_evt;
++	}
++	if (!handler)
++		return AE_BAD_PARAMETER;
+ 
+-	INIT_LIST_HEAD(&acpi_gpio->events);
++	desc = gpiochip_get_desc(chip, pin);
++	if (IS_ERR(desc)) {
++		dev_err(chip->dev, "Failed to get GPIO descriptor\n");
++		return AE_ERROR;
++	}
+ 
+-	/*
+-	 * If a GPIO interrupt has an ACPI event handler method, or _EVT is
+-	 * present, set up an interrupt handler that calls the ACPI event
+-	 * handler.
+-	 */
+-	for (res = buf.pointer;
+-	     res && (res->type != ACPI_RESOURCE_TYPE_END_TAG);
+-	     res = ACPI_NEXT_RESOURCE(res)) {
+-		irq_handler_t handler = NULL;
+-		void *data;
+-
+-		if (res->type != ACPI_RESOURCE_TYPE_GPIO ||
+-		    res->data.gpio.connection_type !=
+-		    ACPI_RESOURCE_GPIO_TYPE_INT)
+-			continue;
++	ret = gpiochip_request_own_desc(desc, "ACPI:Event");
++	if (ret) {
++		dev_err(chip->dev, "Failed to request GPIO\n");
++		return AE_ERROR;
++	}
+ 
+-		pin = res->data.gpio.pin_table[0];
+-		if (pin > chip->ngpio)
+-			continue;
++	gpiod_direction_input(desc);
+ 
+-		irq = chip->to_irq(chip, pin);
+-		if (irq < 0)
+-			continue;
++	ret = gpiod_lock_as_irq(desc);
++	if (ret) {
++		dev_err(chip->dev, "Failed to lock GPIO as interrupt\n");
++		goto fail_free_desc;
++	}
+ 
+-		if (pin <= 255) {
+-			acpi_handle ev_handle;
++	irq = gpiod_to_irq(desc);
++	if (irq < 0) {
++		dev_err(chip->dev, "Failed to translate GPIO to IRQ\n");
++		goto fail_unlock_irq;
++	}
+ 
+-			sprintf(ev_name, "_%c%02X",
+-				res->data.gpio.triggering ? 'E' : 'L', pin);
+-			status = acpi_get_handle(handle, ev_name, &ev_handle);
+-			if (ACPI_SUCCESS(status)) {
+-				handler = acpi_gpio_irq_handler;
+-				data = ev_handle;
+-			}
++	irqflags = IRQF_ONESHOT;
++	if (agpio->triggering == ACPI_LEVEL_SENSITIVE) {
++		if (agpio->polarity == ACPI_ACTIVE_HIGH)
++			irqflags |= IRQF_TRIGGER_HIGH;
++		else
++			irqflags |= IRQF_TRIGGER_LOW;
++	} else {
++		switch (agpio->polarity) {
++		case ACPI_ACTIVE_HIGH:
++			irqflags |= IRQF_TRIGGER_RISING;
++			break;
++		case ACPI_ACTIVE_LOW:
++			irqflags |= IRQF_TRIGGER_FALLING;
++			break;
++		default:
++			irqflags |= IRQF_TRIGGER_RISING |
++				    IRQF_TRIGGER_FALLING;
++			break;
+ 		}
+-		if (!handler) {
+-			struct acpi_gpio_event *event;
+-
+-			status = acpi_get_handle(handle, "_EVT", &evt_handle);
+-			if (ACPI_FAILURE(status))
+-				continue
++	}
+ 
+-			event = kzalloc(sizeof(*event), GFP_KERNEL);
+-			if (!event)
+-				continue;
++	event = kzalloc(sizeof(*event), GFP_KERNEL);
++	if (!event)
++		goto fail_unlock_irq;
+ 
+-			list_add_tail(&event->node, &acpi_gpio->events);
+-			event->handle = evt_handle;
+-			event->pin = pin;
+-			event->irq = irq;
+-			handler = acpi_gpio_irq_handler_evt;
+-			data = event;
+-		}
+-		if (!handler)
+-			continue;
++	event->handle = evt_handle;
++	event->irq = irq;
++	event->pin = pin;
+ 
+-		/* Assume BIOS sets the triggering, so no flags */
+-		ret = devm_request_threaded_irq(chip->dev, irq, NULL, handler,
+-						0, "GPIO-signaled-ACPI-event",
+-						data);
+-		if (ret)
+-			dev_err(chip->dev,
+-				"Failed to request IRQ %d ACPI event handler\n",
+-				irq);
++	ret = request_threaded_irq(event->irq, NULL, handler, irqflags,
++				   "ACPI:Event", event);
++	if (ret) {
++		dev_err(chip->dev, "Failed to setup interrupt handler for %d\n",
++			event->irq);
++		goto fail_free_event;
+ 	}
++
++	list_add_tail(&event->node, &acpi_gpio->events);
++	return AE_OK;
++
++fail_free_event:
++	kfree(event);
++fail_unlock_irq:
++	gpiod_unlock_as_irq(desc);
++fail_free_desc:
++	gpiochip_free_own_desc(desc);
++
++	return AE_ERROR;
+ }
+ 
+ /**
+- * acpi_gpiochip_free_interrupts() - Free GPIO _EVT ACPI event interrupts.
++ * acpi_gpiochip_request_interrupts() - Register isr for gpio chip ACPI events
+  * @acpi_gpio:      ACPI GPIO chip
+  *
+- * Free interrupts associated with the _EVT method for the given GPIO chip.
++ * ACPI5 platforms can use GPIO signaled ACPI events. These GPIO interrupts are
++ * handled by ACPI event methods which need to be called from the GPIO
++ * chip's interrupt handler. acpi_gpiochip_request_interrupts finds out which
++ * gpio pins have acpi event methods and assigns interrupt handlers that calls
++ * the acpi event methods for those pins.
++ */
++static void acpi_gpiochip_request_interrupts(struct acpi_gpio_chip *acpi_gpio)
++{
++	struct gpio_chip *chip = acpi_gpio->chip;
++
++	if (!chip->dev || !chip->to_irq)
++		return;
++
++	INIT_LIST_HEAD(&acpi_gpio->events);
++	acpi_walk_resources(ACPI_HANDLE(chip->dev), "_AEI",
++			    acpi_gpiochip_request_interrupt, acpi_gpio);
++}
++
++/**
++ * acpi_gpiochip_free_interrupts() - Free GPIO ACPI event interrupts.
++ * @acpi_gpio:      ACPI GPIO chip
+  *
+- * The remaining ACPI event interrupts associated with the chip are freed
+- * automatically.
++ * Free interrupts associated with GPIO ACPI event method for the given
++ * GPIO chip.
+  */
+ static void acpi_gpiochip_free_interrupts(struct acpi_gpio_chip *acpi_gpio)
+ {
+@@ -206,7 +243,14 @@ static void acpi_gpiochip_free_interrupts(struct acpi_gpio_chip *acpi_gpio)
+ 		return;
+ 
+ 	list_for_each_entry_safe_reverse(event, ep, &acpi_gpio->events, node) {
+-		devm_free_irq(chip->dev, event->irq, event);
++		struct gpio_desc *desc;
++
++		free_irq(event->irq, event);
++		desc = gpiochip_get_desc(chip, event->pin);
++		if (WARN_ON(IS_ERR(desc)))
++			continue;
++		gpiod_unlock_as_irq(desc);
++		gpiochip_free_own_desc(desc);
+ 		list_del(&event->node);
+ 		kfree(event);
+ 	}
 diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index f60d74bc2fce..61de1efe85fd 100644
+index 61de1efe85fd..34975fb97bd7 100644
 --- a/drivers/gpio/gpiolib.c
 +++ b/drivers/gpio/gpiolib.c
-@@ -1458,26 +1458,14 @@ EXPORT_SYMBOL_GPL(gpiochip_remove_pin_ranges);
-  * on each other, and help provide better diagnostics in debugfs.
-  * They're called even less than the "set direction" calls.
-  */
--static int gpiod_request(struct gpio_desc *desc, const char *label)
-+static int __gpiod_request(struct gpio_desc *desc, const char *label)
- {
--	struct gpio_chip	*chip;
--	int			status = -EPROBE_DEFER;
-+	struct gpio_chip	*chip = desc->chip;
-+	int			status;
- 	unsigned long		flags;
+@@ -1266,11 +1266,12 @@ int gpiochip_remove(struct gpio_chip *chip)
+ 	int		status = 0;
+ 	unsigned	id;
  
--	if (!desc) {
--		pr_warn("%s: invalid GPIO\n", __func__);
--		return -EINVAL;
--	}
--
++	acpi_gpiochip_remove(chip);
++
  	spin_lock_irqsave(&gpio_lock, flags);
  
--	chip = desc->chip;
--	if (chip == NULL)
--		goto done;
--
--	if (!try_module_get(chip->owner))
--		goto done;
--
- 	/* NOTE:  gpio_request() can be called in early boot,
- 	 * before IRQs are enabled, for non-sleeping (SOC) GPIOs.
- 	 */
-@@ -1487,7 +1475,6 @@ static int gpiod_request(struct gpio_desc *desc, const char *label)
- 		status = 0;
- 	} else {
- 		status = -EBUSY;
--		module_put(chip->owner);
- 		goto done;
- 	}
+ 	gpiochip_remove_pin_ranges(chip);
+ 	of_gpiochip_remove(chip);
+-	acpi_gpiochip_remove(chip);
  
-@@ -1499,7 +1486,6 @@ static int gpiod_request(struct gpio_desc *desc, const char *label)
- 
- 		if (status < 0) {
- 			desc_set_label(desc, NULL);
--			module_put(chip->owner);
- 			clear_bit(FLAG_REQUESTED, &desc->flags);
- 			goto done;
- 		}
-@@ -1511,9 +1497,34 @@ static int gpiod_request(struct gpio_desc *desc, const char *label)
- 		spin_lock_irqsave(&gpio_lock, flags);
- 	}
- done:
-+	spin_unlock_irqrestore(&gpio_lock, flags);
-+	return status;
-+}
-+
-+static int gpiod_request(struct gpio_desc *desc, const char *label)
-+{
-+	int status = -EPROBE_DEFER;
-+	struct gpio_chip *chip;
-+
-+	if (!desc) {
-+		pr_warn("%s: invalid GPIO\n", __func__);
-+		return -EINVAL;
-+	}
-+
-+	chip = desc->chip;
-+	if (!chip)
-+		goto done;
-+
-+	if (try_module_get(chip->owner)) {
-+		status = __gpiod_request(desc, label);
-+		if (status < 0)
-+			module_put(chip->owner);
-+	}
-+
-+done:
- 	if (status)
- 		gpiod_dbg(desc, "%s: status %d\n", __func__, status);
--	spin_unlock_irqrestore(&gpio_lock, flags);
-+
- 	return status;
- }
- 
-@@ -1523,18 +1534,14 @@ int gpio_request(unsigned gpio, const char *label)
- }
- EXPORT_SYMBOL_GPL(gpio_request);
- 
--static void gpiod_free(struct gpio_desc *desc)
-+static bool __gpiod_free(struct gpio_desc *desc)
- {
-+	bool			ret = false;
- 	unsigned long		flags;
- 	struct gpio_chip	*chip;
- 
- 	might_sleep();
- 
--	if (!desc) {
--		WARN_ON(extra_checks);
--		return;
--	}
--
- 	gpiod_unexport(desc);
- 
- 	spin_lock_irqsave(&gpio_lock, flags);
-@@ -1548,15 +1555,23 @@ static void gpiod_free(struct gpio_desc *desc)
- 			spin_lock_irqsave(&gpio_lock, flags);
- 		}
- 		desc_set_label(desc, NULL);
--		module_put(desc->chip->owner);
- 		clear_bit(FLAG_ACTIVE_LOW, &desc->flags);
- 		clear_bit(FLAG_REQUESTED, &desc->flags);
- 		clear_bit(FLAG_OPEN_DRAIN, &desc->flags);
- 		clear_bit(FLAG_OPEN_SOURCE, &desc->flags);
--	} else
--		WARN_ON(extra_checks);
-+		ret = true;
-+	}
- 
- 	spin_unlock_irqrestore(&gpio_lock, flags);
-+	return ret;
-+}
-+
-+static void gpiod_free(struct gpio_desc *desc)
-+{
-+	if (desc && __gpiod_free(desc))
-+		module_put(desc->chip->owner);
-+	else
-+		WARN_ON(extra_checks);
- }
- 
- void gpio_free(unsigned gpio)
-@@ -1678,6 +1693,37 @@ const char *gpiochip_is_requested(struct gpio_chip *chip, unsigned offset)
- }
- EXPORT_SYMBOL_GPL(gpiochip_is_requested);
- 
-+/**
-+ * gpiochip_request_own_desc - Allow GPIO chip to request its own descriptor
-+ * @desc: GPIO descriptor to request
-+ * @label: label for the GPIO
-+ *
-+ * Function allows GPIO chip drivers to request and use their own GPIO
-+ * descriptors via gpiolib API. Difference to gpiod_request() is that this
-+ * function will not increase reference count of the GPIO chip module. This
-+ * allows the GPIO chip module to be unloaded as needed (we assume that the
-+ * GPIO chip driver handles freeing the GPIOs it has requested).
-+ */
-+int gpiochip_request_own_desc(struct gpio_desc *desc, const char *label)
-+{
-+	if (!desc || !desc->chip)
-+		return -EINVAL;
-+
-+	return __gpiod_request(desc, label);
-+}
-+
-+/**
-+ * gpiochip_free_own_desc - Free GPIO requested by the chip driver
-+ * @desc: GPIO descriptor to free
-+ *
-+ * Function frees the given GPIO requested previously with
-+ * gpiochip_request_own_desc().
-+ */
-+void gpiochip_free_own_desc(struct gpio_desc *desc)
-+{
-+	if (desc)
-+		__gpiod_free(desc);
-+}
- 
- /* Drivers MUST set GPIO direction before making get/set calls.  In
-  * some cases this is done in early boot, before IRQs are enabled.
-diff --git a/drivers/gpio/gpiolib.h b/drivers/gpio/gpiolib.h
-index 82be586c1f90..cf092941a9fd 100644
---- a/drivers/gpio/gpiolib.h
-+++ b/drivers/gpio/gpiolib.h
-@@ -43,4 +43,7 @@ acpi_get_gpiod_by_index(struct device *dev, int index,
- }
- #endif
- 
-+int gpiochip_request_own_desc(struct gpio_desc *desc, const char *label);
-+void gpiochip_free_own_desc(struct gpio_desc *desc);
-+
- #endif /* GPIOLIB_H */
+ 	for (id = 0; id < chip->ngpio; id++) {
+ 		if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags)) {
 -- 
 1.9.0
 
