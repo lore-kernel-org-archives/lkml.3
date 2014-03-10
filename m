@@ -1,136 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753261AbaCJXkj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 19:40:39 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:50363 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752961AbaCJXkh convert rfc822-to-8bit (ORCPT
+	id S1753249AbaCJXpY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 19:45:24 -0400
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:54029 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752261AbaCJXpX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 19:40:37 -0400
-X-AuditID: cbfee68d-b7fcd6d00000315b-3c-531e4d722888
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Michael Opdenacker'" <michael.opdenacker@free-electrons.com>
-Cc: "'Jean Delvare'" <jdelvare@suse.de>, akpm@linux-foundation.org,
-        chris.cheney@gmail.com, konrad.wilk@oracle.com, geert@linux-m68k.org,
-        joe@perches.com, gregkh@linuxfoundation.org, davem@davemloft.net,
-        m.chehab@samsung.com, swarren@nvidia.com, linux-kernel@vger.kernel.org,
-        dhjeffery@gmail.com, "'Jingoo Han'" <jg1.han@samsung.com>
-References: <531DB414.5020301@free-electrons.com>
- <1394455805-12267-1-git-send-email-michael.opdenacker@free-electrons.com>
- <20140310154831.05522ad6@endymion.delvare>
-In-reply-to: <20140310154831.05522ad6@endymion.delvare>
-Subject: Re: [PATCH v3] MAINTAINERS: update IBM ServeRAID RAID info
-Date: Tue, 11 Mar 2014 08:40:34 +0900
-Message-id: <002e01cf3cba$21bf4300$653dc900$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac88b9IKzswJdwa8QZunjO+/5dNb7AASiJEQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGKsWRmVeSWpSXmKPExsVy+t8zQ90iX7lgg+VTtS3mrF/DZnF33XQ2
-	iznnW1gsps1/zW7x7NZeJovmxevZLJbe/cRmcXnhJVaL2fcfs1gsW/yU0eLyrjlsFhfXyVs8
-	mLCKzeLG9BZWBz6PLStvMnk82XSR0WPnrLvsHidm/GbxOHS4g9Fj/9w17B69ze/YPD4+vcXi
-	8WXVNWaPvi2rGD02n672+LxJLoAnissmJTUnsyy1SN8ugStj5o2PrAVNAhV/7n9lamDcz9PF
-	yMkhIWAisXn3OSYIW0ziwr31bCC2kMAyRonXK5lgar5fX8HcxcgFFJ/OKPFv+gpGCOc3o8T1
-	Z3NZQarYBNQkvnw5zN7FyMEhIuAg8f+DCUgNs8BFJonZP2exQjSsYpTouDufHaSBU8BcYsnl
-	oywgtrCAs8Sy5YfAVrMIqErcWjYNbDWvgK3Ej1WHWSFsQYkfk++B1TML6Ejsb53GBmFrSzx5
-	d4EVZLGEgLrEo7+6IGERASOJ+6dOQ5WLSOx78Q7saAmBGxwSb9r/sEDsEpD4NvkQC0SvrMSm
-	A8wQH0tKHFxxg2UCo8QsJJtnIdk8C8nmWUhWLGBkWcUomlqQXFCclF5kqFecmFtcmpeul5yf
-	u4kRkkZ6dzDePmB9iDEZaP1EZinR5HxgGsoriTc0NjOyMDUxNTYytzQjTVhJnDfpYVKQkEB6
-	YklqdmpqQWpRfFFpTmrxIUYmDk6pBkYGw6r1e002/Pf8NfO/0qEm/okTFh/dVPWe56xx3e11
-	P35ULbk3KVpPb+0dswlrb5xxn9hwPFxM6mLN5ku/hA+culby65SjrF6f5f2D3qLr5iW8l2Rd
-	ZnbK57PKttk75bbaVcQVROcpf/vavmmnwiLeaclOs+ZFqR6q2nbgj4eJPnfh6dnfrR9NVmIp
-	zkg01GIuKk4EAN6imKc5AwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphk+LIzCtJLcpLzFFi42I5/e+xoG6Rr1ywwcdrqhZz1q9hs7i7bjqb
-	xZzzLSwW0+a/Zrd4dmsvk0Xz4vVsFkvvfmKzuLzwEqvF7PuPWSyWLX7KaHF51xw2i4vr5C0e
-	TFjFZnFjegurA5/HlpU3mTyebLrI6LFz1l12jxMzfrN4HDrcweixf+4ado/e5ndsHh+f3mLx
-	+LLqGrNH35ZVjB6bT1d7fN4kF8AT1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hp
-	Ya6kkJeYm2qr5OIToOuWmQP0i5JCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQ
-	sI4xY+aNj6wFTQIVf+5/ZWpg3M/TxcjJISFgIvH9+gpmCFtM4sK99WxdjFwcQgLTGSX+TV/B
-	COH8ZpS4/mwuK0gVm4CaxJcvh9m7GDk4RAQcJP5/MAGpYRa4yCQx++csVoiGVYwSHXfns4M0
-	cAqYSyy5fJQFxBYWcJZYtvwQG4jNIqAqcWvZNCYQm1fAVuLHqsOsELagxI/J98DqmQV0JPa3
-	TmODsLUlnry7wAqyWEJAXeLRX12QsIiAkcT9U6ehykUk9r14xziBUWgWkkmzkEyahWTSLCQt
-	CxhZVjGKphYkFxQnpeca6hUn5haX5qXrJefnbmIEp6lnUjsYVzZYHGIU4GBU4uHNeC0TLMSa
-	WFZcmXuIUYKDWUmE97SFXLAQb0piZVVqUX58UWlOavEhxmSgRycyS4km5wNTaF5JvKGxiZmR
-	pZGZhZGJuTlpwkrivAdarQOFBNITS1KzU1MLUotgtjBxcEo1MJZ/M7xeVsUb1yaX45Hws++D
-	m9WynbtW18vV3mSPvJQi8kuy/s+eTdOOz51iefvW0bZJwjbLBUt+/EnPej0lUfrkjzc16dXe
-	Cdk1iulSEbtaxO8prm7zPv3X6oOozaz50RqlwmzV682sE+McFHg7Pl6XXcZVueKLTo+y7qpe
-	rQ+MPy10Zc52KLEUZyQaajEXFScCAD7eL8SXAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 10 Mar 2014 19:45:23 -0400
+Message-ID: <1394495121.1975.6.camel@x41>
+Subject: Re: [Intel-gfx] agp/intel: can't ioremap flush page - no chipset
+ flushing
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Steven Newbury <steve@snewbury.org.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, linux-pci@vger.kernel.org
+Date: Tue, 11 Mar 2014 00:45:21 +0100
+In-Reply-To: <20140310182431.GA11424@google.com>
+References: <CAKMK7uFx2kksGgnuy9e0xiQRKpt=_+44O1V4wbX5yNBocvjBkg@mail.gmail.com>
+	 <1391951759.6036.7.camel@artifact> <1391952344.25424.4.camel@x220>
+	 <CAErSpo6uj_Kuk0_F97nRsnM1Pss4C7=HeEaVu6D-NwFFK=1cvA@mail.gmail.com>
+	 <1394185698.5608.5.camel@x41>
+	 <CAErSpo4jiq38P3TNuGLGS--nbV9NtUAmiuK=cwWyFAneY-=eOA@mail.gmail.com>
+	 <1394212609.1987.6.camel@x41> <20140307204021.GA9822@google.com>
+	 <CAErSpo7Np8oju1ENQA5EgEpN4=Vv7f3s4E823ecbyp6FCWPL_Q@mail.gmail.com>
+	 <1394289877.31006.2.camel@x41> <20140310182431.GA11424@google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 10 Mar 2014 23:45:21.0736 (UTC) FILETIME=[CCF70C80:01CF3CBA]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, March 10, 2014 11:49 PM, Jean Delvare wrote:
-> On Mon, 10 Mar 2014 13:50:05 +0100, Michael Opdenacker wrote:
-> > - Invalid maintainer e-mail address:
-> >   Mail server reply:
-> >   Recipient address rejected: User unknown in virtual alias table
-> > - Remove no longer working webpage URL
-> > - Remove obsolete "Person" field
-> > - Move status to "Orphan"
-> > - Add Dave Jeffery and Jack Hammer to the CREDITS file
-> >
-> > Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-> > ---
-> >  CREDITS     | 7 +++++++
-> >  MAINTAINERS | 5 +----
-> >  2 files changed, 8 insertions(+), 4 deletions(-)
-> >
-> > diff --git a/CREDITS b/CREDITS
-> > index e371c5504a50..0ffb4f68bb33 100644
-> > --- a/CREDITS
-> > +++ b/CREDITS
-> > @@ -1370,6 +1370,9 @@ S: 17 rue Danton
-> >  S: F - 94270 Le Kremlin-Bicêtre
-> >  S: France
-> >
-> > +N: Jack Hammer
-> > +D: IBM ServeRAID RAID (ips) driver maintenance
-> > +
-> >  N: Greg Hankins
-> >  E: gregh@cc.gatech.edu
-> >  D: fixed keyboard driver to separate LED and locking status
-> > @@ -1680,6 +1683,10 @@ S: Reading
-> >  S: RG6 2NU
-> >  S: United Kingdom
-> >
-> > +N: Dave Jeffery
-> > +E: dhjeffery@gmail.com
-> > +D: SCSI hacks and IBM ServeRAID RAID driver maintenance
-> > +
-> >  N: Jakub Jelinek
-> >  E: jakub@redhat.com
-> >  W: http://sunsite.mff.cuni.cz/~jj
-> > diff --git a/MAINTAINERS b/MAINTAINERS
-> > index b7befe758429..dbf4ca466efa 100644
-> > --- a/MAINTAINERS
-> > +++ b/MAINTAINERS
-> > @@ -4296,10 +4296,7 @@ F:	drivers/scsi/ibmvscsi/
-> >  X:	drivers/scsi/ibmvscsi/ibmvstgt.c
-> >
-> >  IBM ServeRAID RAID DRIVER
-> > -P:	Jack Hammer
-> > -M:	Dave Jeffery <ipslinux@adaptec.com>
-> > -W:	http://www.developer.ibm.com/welcome/netfinity/serveraid.html
-> > -S:	Supported
-> > +S:	Orphan
-> >  F:	drivers/scsi/ips.*
-> >
-> >  ICH LPC AND GPIO DRIVER
+Bjorn Helgaas schreef op ma 10-03-2014 om 12:24 [-0600]:
+> Thanks.  Can you try the patch below?  I think it should fix the problem.
 > 
-> Reviewed-by: Jean Delvare <jdelvare@suse.de>
-
-Reviewed-by: Jingoo Han <jg1.han@samsung.com>
-
-Best regards,
-Jingoo Han
-
 > 
-> --
-> Jean Delvare
-> SUSE L3 Support
+> PCI: Don't check resource_size() in pci_bus_alloc_resource()
+> 
+> From: Bjorn Helgaas <bhelgaas@google.com>
+> 
+> When resource_size_t is 32 bits wide, e.g., when CONFIG_PHYS_ADDR_T_64BIT
+> is not defined, resource_size() on [mem 0x00000000-0xffffffff] returns 0
+> because (r->end - r->start + 1) overflows.
+> 
+> Therefore, we can't use "resource_size() == 0" to decide that allocation
+> from this resource will fail.  allocate_resource() should fail anyway if it
+> can't satisfy the address constraints, so we should just depend on that.
+> 
+> A [mem 0x00000000-0xffffffff] bus resource is obviously not really valid,
+> but we do fall back to it as a default when we don't have information about
+> host bridge apertures.
+> 
+> Link: https://bugzilla.kernel.org/show_bug.cgi?id=71611
+> Fixes: f75b99d5a77d PCI: Enforce bus address limits in resource allocation
+> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> ---
+>  drivers/pci/bus.c |    2 --
+>  1 file changed, 2 deletions(-)
+> 
+> diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+> index 00660cc502c5..38901665c770 100644
+> --- a/drivers/pci/bus.c
+> +++ b/drivers/pci/bus.c
+> @@ -162,8 +162,6 @@ static int pci_bus_alloc_from_region(struct pci_bus *bus, struct resource *res,
+>  
+>  		avail = *r;
+>  		pci_clip_resource_to_region(bus, &avail, region);
+> -		if (!resource_size(&avail))
+> -			continue;
+>  
+>  		/*
+>  		 * "min" is typically PCIBIOS_MIN_IO or PCIBIOS_MIN_MEM to
+
+I've applied your patch on top of v3.14-rc6. The boot warning is gone.
+And /proc/iomem once again has the lines:
+    [...]
+    80000000-801fffff : PCI Bus 0000:02
+    80200000-8027ffff : 0000:00:02.1
+    80280000-80280fff : Intel Flush Page
+    [...]
+
+Which is what we want, don't we?
+
+A bit of doubt is caused by two new boot time messages:
+    pnp 00:00: unknown resource type 10 in _CRS
+    pnp 00:00: can't evaluate _CRS: 1
+
+But I haven't yet tried v3.14-rc6 without your patch, so these might be
+unrelated. They're unclear to me, anyway.
+
+Thanks,
+
+
+Paul Bolle
 
