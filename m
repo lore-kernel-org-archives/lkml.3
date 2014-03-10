@@ -1,85 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754024AbaCJPWz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 11:22:55 -0400
-Received: from gwu.lbox.cz ([62.245.111.132]:50380 "EHLO gwu.lbox.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752880AbaCJPWy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 11:22:54 -0400
-X-Greylist: delayed 1642 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Mar 2014 11:22:54 EDT
-Date: Mon, 10 Mar 2014 15:55:30 +0100
-From: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
-To: linux-kernel@vger.kernel.org
-Subject: 3.0 -> 3.10 regression? poweroff instead of reboot?
-Message-ID: <20140310145530.GA27230@pcnci.linuxbox.cz>
+	id S1754099AbaCJPXH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 11:23:07 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:16319
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754029AbaCJPXB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 11:23:01 -0400
+X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VPS1(zzbb2dI98dI9371I1432I4015Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hz8dhz1de098h8275bh8275dh1de097hz2fh95h839h947hc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19b5h19c3h1b0ah1be0h224fh1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24d7h2516h2545h255eh25f6h2605h19b6n1155h)
+Date: Mon, 10 Mar 2014 16:22:43 +0100
+From: Michal Simek <michal.simek@xilinx.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WIyZ46R2i8wDzkSu"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-Antivirus: on proxybox by F-Secure antivirus, database version 2014-03-10_01
-X-Milter-Copy-Status: I
-X-Milter-Copy-Status: I
-X-Spam-Score: N/A (imported whitelist)
+To: Rob Herring <robherring2@gmail.com>
+CC: Kedareswara rao Appana <appana.durga.rao@xilinx.com>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, <linux-can@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Kedareswara rao Appana <appanad@xilinx.com>
+Subject: Re: [PATCH v5] can: xilinx CAN controller support.
+References: <5254bfec-c6fd-4681-a34d-706d51e60fbb@VA3EHSMHS004.ehs.local> <CAL_JsqL3V7Gmkx5MoAhzwbM8Po6QURUY+g3ytxs+H_u-FLR6SQ@mail.gmail.com>
+In-Reply-To: <CAL_JsqL3V7Gmkx5MoAhzwbM8Po6QURUY+g3ytxs+H_u-FLR6SQ@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-RCIS-Action: ALLOW
+Message-ID: <1e9389a5-744d-4e6c-8428-f95ea0860239@VA3EHSMHS015.ehs.local>
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/10/2014 04:15 PM, Rob Herring wrote:
+> On Tue, Mar 4, 2014 at 7:20 AM, Kedareswara rao Appana
+> <appana.durga.rao@xilinx.com> wrote:
+>> This patch adds xilinx CAN controller support.
+>> This driver supports both ZYNQ CANPS and Soft IP
+>> AXI CAN controller.
+>>
+>> Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
+>> ---
+>> This patch is rebased on the 3.14 rc5 kernel.
+>> Changes for v5:
+>> - Updated the driver with the review comments.
+>> - Remove the check for the tx fifo full interrupt condition
+>>   form Tx interrupt routine as we are checking it in the _xmit
+>>   routine.
+>> - Clearing the txok interrupt in the tx interrupt routine for
+>>   every Tx can frame.
+>> Changes for v4:
+>> - Added check for the tx fifo full interrupt condition in
+>>   Tx interrupt routine.
+>> - Added be iohelper functions.
+>> - Moved the clock enable/disable to probe/remove because of
+>>   Added big endian support for AXI CAN controller case(reading
+>>   a register during probe for that we need to enable clock).
+>> Changes for v3:
+>> - Updated the driver with the review comments.
+>> - Modified the tranmit logic as per Marc suggestion.
+>> - Enabling the clock when the interface is up to reduce the
+>>   Power consumption.
+>> Changes for v2:
+>> - Updated with the review comments.
+>> - Removed the unnecessary debug prints.
+>> - include tx,rx fifo depths in ZYNQ CANPS case also.
+>> ---
+>>  .../devicetree/bindings/net/can/xilinx_can.txt     |   45 +
+>>  drivers/net/can/Kconfig                            |    7 +
+>>  drivers/net/can/Makefile                           |    1 +
+>>  drivers/net/can/xilinx_can.c                       | 1195 ++++++++++++++++++++
+>>  4 files changed, 1248 insertions(+), 0 deletions(-)
+>>  create mode 100644 Documentation/devicetree/bindings/net/can/xilinx_can.txt
+>>  create mode 100644 drivers/net/can/xilinx_can.c
+>>
+>> diff --git a/Documentation/devicetree/bindings/net/can/xilinx_can.txt b/Documentation/devicetree/bindings/net/can/xilinx_can.txt
+>> new file mode 100644
+>> index 0000000..0e57103
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/net/can/xilinx_can.txt
+>> @@ -0,0 +1,45 @@
+>> +Xilinx Axi CAN/Zynq CANPS controller Device Tree Bindings
+>> +---------------------------------------------------------
+>> +
+>> +Required properties:
+>> +- compatible           : Should be "xlnx,zynq-can-1.00.a" for Zynq CAN
+>> +                         controllers and "xlnx,axi-can-1.00.a" for Axi CAN
+>> +                         controllers.
+>> +- reg                  : Physical base address and size of the Axi CAN/Zynq
+>> +                         CANPS registers map.
+>> +- interrupts           : Property with a value describing the interrupt
+>> +                         number.
+>> +- interrupt-parent     : Must be core interrupt controller
+>> +- clock-names          : List of input clock names - "ref_clk", "aper_clk"
+>> +                         (See clock bindings for details. Two clocks are
+>> +                          required for Zynq CAN. For Axi CAN
+>> +                          case it is one(ref_clk)).
+>> +- clocks               : Clock phandles (see clock bindings for details).
+>> +- tx-fifo-depth                : Can Tx fifo depth.
+>> +- rx-fifo-depth                : Can Rx fifo depth.
+>> +
+>> +
+>> +Example:
+>> +
+>> +For Zynq CANPS Dts file:
+>> +       zynq_can_0: zynq-can@e0008000 {
+> 
+> The preferred node name convention is to use the type of device. There
+> is no standard in this case, but I would use just "can@...".
+> 
+> Otherwise, for the binding:
+> 
+> Acked-by: Rob Herring <robh@kernel.org>
 
---WIyZ46R2i8wDzkSu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks Rob for your ACK.
 
-Hi,
+Kedar: You have got more things to change from Marc that's why please change this too.
 
-after installing new server, we've noticed weird behaviour: when box is
-about to reboot, it powers off instead. This was with 3.10.33, downgrading
-to 3.0.101 seems to fix this problem. I didn't have time to play with it to=
-day
-and box had to be shipped today, so it'll take few days before I'll have ch=
-ance
-for further research, but I wanted to ask whether somebody has met similar
-problem and what I should check first?
-
-The system is x86_64 centos 6, HW is supermicro x9sci-ln4f.
-
-Any help appreciated
-
-When I have chance to put my hands on this box again, I'll try
-latest kernel and I can also do bisect, if needed.
-
-BR
-
-nik
+Thanks,
+Michal
 
 
-
-
---=20
--------------------------------------
-Ing. Nikola CIPRICH
-LinuxBox.cz, s.r.o.
-28.rijna 168, 709 00 Ostrava
-
-tel.:   +420 591 166 214
-fax:    +420 596 621 273
-mobil:  +420 777 093 799
-www.linuxbox.cz
-
-mobil servis: +420 737 238 656
-email servis: servis@linuxbox.cz
--------------------------------------
-
---WIyZ46R2i8wDzkSu
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.14 (GNU/Linux)
-
-iEYEARECAAYFAlMd0mIACgkQ3xdJJrLygV5C5QCgiSwKV2z5PQYYDh7MqCjZxXAk
-UOwAoNqFYbA+2NbT+MyBa5s7XKH8ZGf6
-=aX0r
------END PGP SIGNATURE-----
-
---WIyZ46R2i8wDzkSu--
