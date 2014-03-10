@@ -1,80 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752802AbaCJKZA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 06:25:00 -0400
-Received: from smtp102.mer-nm.internl.net ([217.149.192.138]:56561 "EHLO
-	smtp102.mer-nm.internl.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752439AbaCJKY5 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 06:24:57 -0400
-X-Spam-scanned: scanned by InterNLnet Mail Scan System
-X-Spam-Flag: NO
-X-Spam-Score: -4.4
-X-Spam-Languages: en
-Message-ID: <531D92F7.7080509@topic.nl>
-Date: Mon, 10 Mar 2014 11:24:55 +0100
-From: Mike Looijmans <mike.looijmans@topic.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752936AbaCJKZv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 06:25:51 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:45351 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751057AbaCJKZu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 06:25:50 -0400
+Date: Mon, 10 Mar 2014 11:25:46 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Chris Bainbridge <chris.bainbridge@gmail.com>
+Cc: x86@kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Andreas Mohr <andi@lisas.de>, Dennis Mungai <dmngaie@gmail.com>,
+        Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
+        devzero@web.de
+Subject: Re: [PATCH] x86: Add forcepae parameter for booting PAE kernels on
+ PAE-disabled Pentium M
+Message-ID: <20140310102546.GB14808@pd.tnic>
+References: <20140228140043.GA12157@debian.local>
+ <20140302205619.GA8676@rhlx01.hs-esslingen.de>
+ <20140303080432.GA25489@localhost>
+ <20140303192939.GD31265@pd.tnic>
+ <20140304050122.GA3740@localhost>
+ <5e866e2a-ea92-43f8-ae67-23f6052c91c8@email.android.com>
+ <20140304060559.GA547@localhost>
+ <20140304104447.GA4891@pd.tnic>
+ <20140307114040.GA4997@localhost>
 MIME-Version: 1.0
-To: Wolfram Sang <wsa@the-dreams.de>
-CC: <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <nsekhar@ti.com>, <khilman@deeprootsystems.com>,
-        <davinci-linux-open-source@linux.davincidsp.com>
-Subject: Re: [PATCH] i2c-davinci: Handle signals gracefully
-References: <1389265885-26777-1-git-send-email-mike.looijmans@topic.nl> <20140309202107.GA2835@katana>
-In-Reply-To: <20140309202107.GA2835@katana>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [192.168.80.45]
-X-EXCLAIMER-MD-CONFIG: 9833cda7-5b21-4d34-9a38-8d025ddc3664
-X-EXCLAIMER-MD-BIFURCATION-INSTANCE: 0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140307114040.GA4997@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-﻿On 03/09/2014 09:21 PM, Wolfram Sang wrote:
-> On Thu, Jan 09, 2014 at 12:11:25PM +0100, Mike Looijmans wrote:
->> When a signal is caught while the i2c-davinci bus driver is transferring,
->> the drive just "abandons" the transfer and leaves the controller to fend
->> for itself. The next I2C transaction will find the controller in an
->> undefined state and often results in a stream of "initiating i2c bus recovery"
->> messages until the controller arrives in a defined state. This behaviour
->> also sends out "half" or possibly even mixed messages to I2C client
->> devices which may put them in an undesired state as well.
->>
->> This patch fixes this issue by always attempting to finish the current
->> transaction, and then check on a pending signal. It either reports
->> success if all data has been transferred, or it returns failure when
->> the transaction was aborted. This keeps the controller in a defined
->> state, and is also much friendlier towards client devices, because
->> it will only send complete messages.
->
-> Even more, you should complete the whole transfer. There are devices
-> where things can really go wrong if you send a half-complete command and
-> then start with the next one. So, not checking signals at all is the way
-> to go for I2C drivers. There is some cruft left, so I am happy about
-> patches fixing that, with testing on real HW. Like yours here.
+On Fri, Mar 07, 2014 at 06:40:42PM +0700, Chris Bainbridge wrote:
+> From: Chris Bainbridge <chris.bainbridge@gmail.com>
+> 
+> Many Pentium M systems disable PAE but may have a functionally usable PAE 
+> implementation. This adds the "forcepae" parameter which bypasses the boot 
+> check for PAE, and sets the CPU as being PAE capable. Using this parameter 
+> will taint the kernel with TAINT_CPU_OUT_OF_SPEC.
+> 
+> Signed-off-by: Chris Bainbridge <chris.bainbridge@gmail.com>
 
-I agree.
+Looks ok to me.
 
-I know the Zynq (using a cadence controller) also lets signals interrupt I2C 
-transfers, so I'll propose a patch to Xilinx and CC to you and linux-i2c to 
-completely remove signal handling from that driver as well.
+Acked-by: Borislav Petkov <bp@suse.de>
 
-Mike
+-- 
+Regards/Gruss,
+    Boris.
 
-
-Met vriendelijke groet / kind regards,
-
-Mike Looijmans
-
-TOPIC Embedded Systems
-Eindhovenseweg 32-C, NL-5683 KH Best
-Postbus 440, NL-5680 AK Best
-Telefoon: (+31) (0) 499 33 69 79
-Telefax:  (+31) (0) 499 33 69 70
-E-mail: mike.looijmans@topic.nl
-Website: www.topic.nl
-
-Please consider the environment before printing this e-mail
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
