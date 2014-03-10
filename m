@@ -1,202 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753092AbaCJWBh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 18:01:37 -0400
-Received: from dliviu.plus.com ([80.229.23.120]:58425 "EHLO smtp.dudau.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752678AbaCJWBf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 18:01:35 -0400
-Date: Mon, 10 Mar 2014 21:56:00 +0000
-From: Liviu Dudau <liviu@dudau.co.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Liviu Dudau <Liviu.Dudau@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH v6 6/6] pci: Add support for creating a generic
- host_bridge from device tree
-Message-ID: <20140310215600.GA14968@bart.dudau.co.uk>
-Mail-Followup-To: Arnd Bergmann <arnd@arndb.de>,
-	Liviu Dudau <Liviu.Dudau@arm.com>,
-	"linux-arm-kernel@lists.infradead.org" <linux-arm-kernel@lists.infradead.org>,
-	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-	linaro-kernel <linaro-kernel@lists.linaro.org>,
-	Catalin Marinas <Catalin.Marinas@arm.com>,
-	linux-pci <linux-pci@vger.kernel.org>,
-	Will Deacon <Will.Deacon@arm.com>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Tanmay Inamdar <tinamdar@apm.com>,
-	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-	Bjorn Helgaas <bhelgaas@google.com>
-References: <1394020137-1830-1-git-send-email-Liviu.Dudau@arm.com>
- <2115856.ZTdgp5fkma@wuerfel>
- <20140310163343.GY6457@e106497-lin.cambridge.arm.com>
- <1469359.kil5iaOqdU@wuerfel>
+	id S1753490AbaCJWDf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 18:03:35 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:47491 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751688AbaCJWDd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 18:03:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1469359.kil5iaOqdU@wuerfel>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Mon Mar 10 22:01:33 2014
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 531e363d3198865457261
+In-Reply-To: <20140310225342.Horde.61HLMn9MRz49_0n_vS9HYQ1@webmail.your-server.de>
+References: <20140307013833.GD8427@localhost> <1394176888.1018.3.camel@wall-e.seibold.net>
+ <CALCETrVCwZWvd78urw+O4zD3PoNZTQxg8FMzTrUi4+5w9rC5=A@mail.gmail.com>
+ <1394229220.20013.13.camel@wall-e.seibold.net> <CALCETrXB0G3aA1Usp4U-9-eN0z22YC4Sn+3z42mrU2ab0gE9gQ@mail.gmail.com>
+ <1394354848.1002.37.camel@wall-e.seibold.net> <531D044C.2090303@linux.intel.com>
+ <CALCETrXJobOnVB-ne9s57o3Z1KwK4fRtaYi8W=L4+UT065fKJw@mail.gmail.com>
+ <CALCETrUyJWQnQsX22+wrvPbXkj67nhZ0SMP1_hCo2yZ+Z5tMyA@mail.gmail.com>
+ <531DD35A.5060202@linux.intel.com> <CA+55aFwKpBybz9S9A=+tcr1BbdzAbagL30Br2cak2GrdPH=hhA@mail.gmail.com>
+ <CALCETrW6CT2ceHiHzMaZUGkwEBFWQEemFS5Fj=V7Wg-cNArMLg@mail.gmail.com>
+ <1394481804.980.9.camel@wall-e.seibold.net> <531E1B53.5090205@linux.intel.com>
+ <CA+55aFyxbuhPKgB=U8R5C5T_iKVvju-oQDS4kHz6McW45B+1bA@mail.gmail.com>
+ <20140310222528.Horde.tMG70UcHgBuz9DV3W9_aaA1@webmail.your-server.de>
+ <CA+55aFygdFWCVzsSNT6v-8Mnsq8rrFwz0d1ydOLRthv4JsBaBQ@mail.gmail.com> <20140310225342.Horde.61HLMn9MRz49_0n_vS9HYQ1@webmail.your-server.de>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 10 Mar 2014 15:03:12 -0700
+Message-ID: <CALCETrUpVYrUfn=cDGtrxg3pDBonVmiK59iAZL1nQxCV0v3wmA@mail.gmail.com>
+Subject: Re: [x86, vdso] BUG: unable to handle kernel paging request at d34bd000
+To: Stefani Seibold <stefani@seibold.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 07:59:59PM +0100, Arnd Bergmann wrote:
-> On Monday 10 March 2014 16:33:44 Liviu Dudau wrote:
-> > On Mon, Mar 10, 2014 at 03:21:01PM +0000, Arnd Bergmann wrote:
-> > > On Monday 10 March 2014 14:44:14 Liviu Dudau wrote:
-> > > > I will try to improve the error handling in the next patchset version.
-> > > > However I am still confused about the earlier discussion on
-> > > > pci_register_io_range(). Your suggestion initially was to return an
-> > > > error in the default weak implementation, but in your last email you
-> > > > are talking about returning 'port'.
-> > > 
-> > > You can do either one: 'port' should be positive or zero, while the
-> > > error would always be negative. We do the same thing in many interfaces
-> > > in the kernel.
-> > > 
-> > > > My idea when I've introduced the
-> > > > helper function was that it would return an error if it fails to
-> > > > register the IO range and zero otherwise. I agree that we can treat
-> > > > the default 'do nothing with the IO range' case as an error, with
-> > > > the caveat that will force architectures that use this code to
-> > > > provide their own implementation of pci_register_io_range() in order
-> > > > to avoid failure, even for the cases where the architecture has a 1:1
-> > > > mapping between IO and CPU addresses.
-> > > 
-> > > Which architectures are you thinking of? The only one I know that
-> > > does this is ia64, and we won't ever have to support this helper
-> > > on that architecture.
-> > 
-> > I was thinking about architectures that have IO_SPACE_LIMIT >= 0xffffffff.
-> > While not an absolute indicator, with the default pci_address_to_pio()
-> > that means that they can use the CPU MMIO address as IO address directly.
-> 
-> Not really, that would only work if they also have instructions to do
-> raw accesses to physical memory addresses rather than virtual memory
-> pointers that most architectures do.
-> 
-> > $ git grep IO_SPACE_LIMIT | grep -i ffffffff
-> > arch/arm/include/asm/io.h:#define IO_SPACE_LIMIT ((resource_size_t)0xffffffff)
-> > arch/arm/mach-at91/include/mach/io.h:#define IO_SPACE_LIMIT		0xFFFFFFFF
-> > arch/arm/mach-omap1/include/mach/io.h:#define IO_SPACE_LIMIT 0xffffffff
-> > arch/arm/mach-pxa/include/mach/io.h:#define IO_SPACE_LIMIT 0xffffffff
-> > arch/arm/mach-s3c24xx/include/mach/io.h:#define IO_SPACE_LIMIT 0xffffffff
-> 
-> These use a special trick where an __iomem pointer is the same as
-> the port number. This works most of the time, but breaks anything
-> that assumes that port numbers are low, such as /dev/port or
-> broken devices. Moreover, it means your code won't work because
-> it depends on passing the virtual start address of the PIO mapping
-> window as io_offset.
-> 
-> > arch/avr32/include/asm/io.h:#define IO_SPACE_LIMIT	0xffffffff
-> > arch/frv/include/asm/io.h:#define IO_SPACE_LIMIT	0xffffffff
-> 
-> They have no MMU, and the code relies on the port number to match
-> both the virtual and the physical address. You could be right about
-> these, but I would guess that the code also needs some other
-> changes if we want to make it work on nommu kernels. It also depends
-> on whether the I/O bus address is the same as the CPU address, or
-> if it starts at bus address 0.
-> 
-> > arch/ia64/include/asm/io.h:#define IO_SPACE_LIMIT		0xffffffffffffffffUL
-> 
-> Here, the definition is special, the token is just used to encode
-> a space number and an offset within the I/O space.
-> 
-> > arch/m32r/include/asm/io.h:#define IO_SPACE_LIMIT  0xFFFFFFFF
-> 
-> no PCI here.
-> 
-> > arch/m68k/include/asm/io_no.h:#define IO_SPACE_LIMIT 0xffffffff
-> 
-> This looks like a mistake, it should be smaller
-> 
-> > arch/microblaze/include/asm/io.h:#define IO_SPACE_LIMIT (0xFFFFFFFF)
-> 
-> I suspect it doesn't actually work. microblaze copied large parts
-> of this from PowerPC, but the parts that differ apparently get
-> it wrong for the I/O space. 
-> 
-> > arch/mn10300/include/asm/io.h:#define IO_SPACE_LIMIT 0xffffffff
-> 
-> Same category as frv. We should ask David Howells whether he
-> thinks I/O space actually works on these.
-> 
-> > arch/sh/include/asm/io.h:#define IO_SPACE_LIMIT 0xffffffff
-> 
-> I think this should just be 0xffff.
-> 
-> > arch/sparc/include/asm/io_32.h:#define IO_SPACE_LIMIT 0xffffffff
-> > arch/sparc/include/asm/io_64.h:#define IO_SPACE_LIMIT 0xffffffffffffffffUL
-> 
-> Sparc actually accesses the physical addresses, so in theory
-> it could always work. In the 64-bit case it would however have
-> to check that the port number is smaller than 0xffffffff, otherwise
-> you couldn't set the BAR. This means you still need a custom
-> function.
-> 
-> > arch/tile/include/asm/io.h:#define IO_SPACE_LIMIT 0xffffffff
-> 
-> tile seems to support only ioport_map() but not inb/outb, if I'm
-> reading this right.
-> 
-> > > I did not ask to treat 'do nothing with the IO range' as an error,
-> > > what I meant is that we should treat 'architecture cannot translate
-> > > from I/O space to memory space but DT lists a translation anyway'
-> > > as an error. On x86, you should never see an entry for the I/O space
-> > > in "ranges", so we will not call this function unless there is a
-> > > bug in DT.
-> > 
-> > Ok, it's just that there is no "architecture cannot translate from I/O
-> > space to memory space" indicator anywhere and I don't want to make x86
-> > a special case.
-> 
-> Right.
-> 
-> > So, my proposal is this: default weak implementation of pci_register_io_range()
-> > returns an error (meaning I have no idea how to translate IO addresses
-> > to memory space) and anyone that wants this function to return success will
-> > have to provide their implementation.
-> 
-> Another idea: make this conditional on the definition of PCI_IOBASE: If this
-> is defined, we can use the arm64 version that uses this number. Otherwise
-> we fall back to returning an error, which means that either on the
-> architecture we shouldn't be calling that function, or we need a custom
-> implementation.
+On Mon, Mar 10, 2014 at 2:53 PM,  <stefani@seibold.net> wrote:
+> Zitat von Linus Torvalds <torvalds@linux-foundation.org>:
+>
+>> On Mon, Mar 10, 2014 at 2:25 PM,  <stefani@seibold.net> wrote:
+>>>
+>>>
+>>> This was discovered by me.
+>>
+>>
+>> Sorry for the misattribution.
+>>
+>>> But this is not a real solution, at least when vcpu function support
+>>> will be added, then the code size will exceed the page size. Reserving
+>>> two pages for the VDSO is a good option.
+>>
+>>
+>> Quite frankly, there is no way in hell I will take a patch like that
+>> for 3.14 any more, and I would argue against it for stable.
+>>
+>> Now, if this problem never happens with current kernels (because it's
+>> purely due to the patch in -tip), then I don't much care.
+>>
+>> That said, I don't understand why we are even adding new features like
+>> this to 32-bit mode in the first place, so if that patch is the sole
+>> source of all this headache, then why not just throw the patch away?
+>>
+>
+> The patch is working. And for this current issue there is a solution i
+> already
+> announced.
+>
+> A dual VDSO: a one page sized VDSO for the compat mode which has only the
+> syscall
+> code and on multi page sized VDSO which is mapped into user space for the
+> non compat
+> mode.
+>
+> This will work and has no side effects.
 
-PCI_IOBASE is always defined. See the discussion with Russell on this subject.
+IMO this is dumb.  I can think of two sensible solutions:
 
-include/asm-generic/io.h has at line 118:
+1. Get rid of compat vdso and replace it with no vdso at all.  This is
+compatible with everything and requires almost no code :)
 
-#ifndef PCI_IOBASE
-#define PCI_IOBASE ((void __iomem *) 0)
-#endif
+2. Fix compat vdso.  Give it as much space as needed, make the address
+dynamic, and relocate it to the right place.
 
-I will go with my idea tomorrow. arm64 overwrite the implementation anyway, I
-find it cleaner rather than having to do #ifdefs and/or ifs.
+I see no legitimate reason to further increase the number of 32-bit
+vdso images.  Three is already ridiculous, and adding more is IMO
+hideous.
 
-Best regards,
-Liviu
+#1 is actually a serious proposal.  To do it right, I think we should
+rename the config option to CONFIG_BROKEN_GLIBC_VDSO, default it to n,
+and make the help text clarify that this only affects certain
+non-released glibc versions and that anyone building a new kernel is
+highly unlikely to be affected.  Then make vdso=2 act just like
+vdso=0.  CONFIG_BROKEN_GLIBC_VDSO just changes the default from vdso=1
+to vdso=0.
 
-> 
-> 	Arnd
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Damn it, the number of users who (a) have a buggy copy of glibc, (b)
+are using new kernels, and (c) are using CONFIG_COMPAT_VDSO as opposed
+to, say, vdso=2 is probably very close to zero.  (These users will
+have issues until they fix their config.)
 
+The number of users who (a) have a buggy copy of glibc, (b) are using
+new kernels, and (c) have cpus that derive significant benefit from
+using a vdso instead of int 80 and care at all is probably also very
+close to zero.
+
+The maintenance burden of this piece of shite is empirically quite far
+from zero.
+
+--Andy
