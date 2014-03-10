@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753743AbaCJUG4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 16:06:56 -0400
-Received: from mga02.intel.com ([134.134.136.20]:13399 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752435AbaCJUGz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 16:06:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,625,1389772800"; 
-   d="scan'208";a="469768442"
-Message-ID: <531E1B53.5090205@linux.intel.com>
-Date: Mon, 10 Mar 2014 13:06:43 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Stefani Seibold <stefani@seibold.net>,
-        Andy Lutomirski <luto@amacapital.net>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
+	id S1754358AbaCJUKE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 16:10:04 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:63133 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753077AbaCJUKC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 16:10:02 -0400
+Date: Mon, 10 Mar 2014 16:09:57 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
-        Martin Runge <Martin.Runge@rohde-schwarz.com>
-Subject: Re: [x86, vdso] BUG: unable to handle kernel paging request at d34bd000
-References: <20140307013833.GD8427@localhost>	 <1394176888.1018.3.camel@wall-e.seibold.net>	 <CALCETrVCwZWvd78urw+O4zD3PoNZTQxg8FMzTrUi4+5w9rC5=A@mail.gmail.com>	 <1394229220.20013.13.camel@wall-e.seibold.net>	 <CALCETrXB0G3aA1Usp4U-9-eN0z22YC4Sn+3z42mrU2ab0gE9gQ@mail.gmail.com>	 <1394354848.1002.37.camel@wall-e.seibold.net>	 <531D044C.2090303@linux.intel.com>	 <CALCETrXJobOnVB-ne9s57o3Z1KwK4fRtaYi8W=L4+UT065fKJw@mail.gmail.com>	 <CALCETrUyJWQnQsX22+wrvPbXkj67nhZ0SMP1_hCo2yZ+Z5tMyA@mail.gmail.com>	 <531DD35A.5060202@linux.intel.com>	 <CA+55aFwKpBybz9S9A=+tcr1BbdzAbagL30Br2cak2GrdPH=hhA@mail.gmail.com>	 <CALCETrW6CT2ceHiHzMaZUGkwEBFWQEemFS5Fj=V7Wg-cNArMLg@mail.gmail.com> <1394481804.980.9.camel@wall-e.seibold.net>
-In-Reply-To: <1394481804.980.9.camel@wall-e.seibold.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        linux-mm <linux-mm@kvack.org>, Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: deadlock in lru_add_drain ? (3.14rc5)
+Message-ID: <20140310200957.GF25290@htj.dyndns.org>
+References: <20140308220024.GA814@redhat.com>
+ <CA+55aFzLxY8Xsn90v1OAsmVBWYPZTiJ74YE=HaCPYR2hvRfk+g@mail.gmail.com>
+ <20140310150106.GD25290@htj.dyndns.org>
+ <20140310155053.GA26188@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140310155053.GA26188@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/2014 01:03 PM, Stefani Seibold wrote:
+Hello,
+
+On Mon, Mar 10, 2014 at 11:50:53AM -0400, Dave Jones wrote:
+> On Mon, Mar 10, 2014 at 11:01:06AM -0400, Tejun Heo wrote:
 > 
-> What is now the next step? Kick out the compat VDSO? Or should i
-> implement the dual VDSO. And what is now the preferred way to map the
-> VDSO into the user space? Using install_special_mapping() or map it
-> beyond the user stack?
+>  > > On Sat, Mar 8, 2014 at 2:00 PM, Dave Jones <davej@redhat.com> wrote:
+>  > > > I left my fuzzing box running for the weekend, and checked in on it this evening,
+>  > > > to find that none of the child processes were making any progress.
+>  > > > cat'ing /proc/n/stack shows them all stuck in the same place..
+>  > > > Some examples:
+>  > 
+>  > Dave, any chance you can post full sysrq-t dump?
 > 
-> The is easiest and fastest way to get a working result is to do the non
-> compat VDSO only mapping using install_special_mapping(). The dual VDSO
-> would take a little bit more time.
-> 
-> It would be great to have first a consensus about the design before i
-> start to implement ;-)
-> 
+> It's too big to fit in the ring-buffer, so some of it gets lost before
+> it hits syslog, but hopefully what made it to disk is enough.
+> http://codemonkey.org.uk/junk/sysrq-t
 
-The quick way to get something working is simply to reserve more than
-one page (two should presumably be enough) in the fixmap and adjust the
-link address of the VDSO accordingly.  This is not where we want to go
-in the long term, but it doesn't seem to make sense to try to do
-everything all at once -- we are already starting to push way too close
-to the 3.15 merge window.
+Hmmm... this is puzzling.  At least according to the slightly
+truncated (pids < 13) sysrq-t output, there's no kworker running
+lru_add_drain_per_cpu() and nothing blocked on lru_add_drain_all::lock
+can introduce any complex dependency.  Also, at least from glancing
+over, I don't see anything behind lru_add_rain_per_cpu() which can get
+involved in a complex dependency chain.
 
-And special thanks to Andy for doing the archaeology...
+Assuming that the handful lost traces didn't reveal serious ah-has, it
+almost looks like workqueue either failed to initiate execution of a
+queued work item or flush_work() somehow got confused on a work item
+which already finished, both of which are quite unlikely given that we
+haven't had any simliar report on any other work items.
 
-	-hpa
+I think it'd be wise to extend sysrq-t output to include the states of
+workqueue if for nothing else to easily rule out doubts about basic wq
+functions.  Dave, is this as much information we're gonna get from the
+trinity instance?  I assume trying to reproduce the case isn't likely
+to work?
 
+Thanks.
 
+-- 
+tejun
