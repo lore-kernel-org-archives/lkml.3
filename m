@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754620AbaCJUfc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 16:35:32 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:47998 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754603AbaCJUf0 (ORCPT
+	id S1754629AbaCJUft (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 16:35:49 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:50764 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753502AbaCJUfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 16:35:26 -0400
+	Mon, 10 Mar 2014 16:35:44 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v3 08/52] ia64,
- err-inject: Fix CPU hotplug callback registration
+Subject: [PATCH v3 09/52] arm,
+ hw-breakpoint: Fix CPU hotplug callback registration
 To: paulus@samba.org, oleg@redhat.com, mingo@kernel.org, rjw@rjwysocki.net,
         rusty@rustcorp.com.au, peterz@infradead.org, tglx@linutronix.de,
         akpm@linux-foundation.org
@@ -17,12 +17,13 @@ Cc: paulmck@linux.vnet.ibm.com, tj@kernel.org, walken@google.com,
         ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
         linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         linux-pm@vger.kernel.org, linuxppc-dev@ozlabs.org,
-        srivatsa.bhat@linux.vnet.ibm.com, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@kernel.org>,
-        linux-ia64@vger.kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com,
+        Russell King <linux@arm.linux.org.uk>, Ingo Molnar <mingo@kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Will Deacon <will.deacon@arm.com>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Tue, 11 Mar 2014 02:05:10 +0530
-Message-ID: <20140310203510.10746.62381.stgit@srivatsabhat.in.ibm.com>
+Date: Tue, 11 Mar 2014 02:05:21 +0530
+Message-ID: <20140310203521.10746.47464.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20140310203312.10746.310.stgit@srivatsabhat.in.ibm.com>
 References: <20140310203312.10746.310.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -31,7 +32,7 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14031020-9264-0000-0000-0000059CA413
+x-cbid: 14031020-3568-0000-0000-000005133D7B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -67,59 +68,50 @@ registration is:
 	cpu_notifier_register_done();
 
 
-Fix the error injection code in ia64 by using this latter form of callback
+Fix the hw-breakpoint code in arm by using this latter form of callback
 registration.
 
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Russell King <linux@arm.linux.org.uk>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: linux-ia64@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Acked-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- arch/ia64/kernel/err_inject.c |   15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+ arch/arm/kernel/hw_breakpoint.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/arch/ia64/kernel/err_inject.c b/arch/ia64/kernel/err_inject.c
-index f59c0b8..0c161ed 100644
---- a/arch/ia64/kernel/err_inject.c
-+++ b/arch/ia64/kernel/err_inject.c
-@@ -269,12 +269,17 @@ err_inject_init(void)
- #ifdef ERR_INJ_DEBUG
- 	printk(KERN_INFO "Enter error injection driver.\n");
- #endif
-+
+diff --git a/arch/arm/kernel/hw_breakpoint.c b/arch/arm/kernel/hw_breakpoint.c
+index 3d44660..3702de8 100644
+--- a/arch/arm/kernel/hw_breakpoint.c
++++ b/arch/arm/kernel/hw_breakpoint.c
+@@ -1072,6 +1072,8 @@ static int __init arch_hw_breakpoint_init(void)
+ 	core_num_brps = get_num_brps();
+ 	core_num_wrps = get_num_wrps();
+ 
 +	cpu_notifier_register_begin();
 +
- 	for_each_online_cpu(i) {
- 		err_inject_cpu_callback(&err_inject_cpu_notifier, CPU_ONLINE,
- 				(void *)(long)i);
+ 	/*
+ 	 * We need to tread carefully here because DBGSWENABLE may be
+ 	 * driven low on this core and there isn't an architected way to
+@@ -1088,6 +1090,7 @@ static int __init arch_hw_breakpoint_init(void)
+ 	if (!cpumask_empty(&debug_err_mask)) {
+ 		core_num_brps = 0;
+ 		core_num_wrps = 0;
++		cpu_notifier_register_done();
+ 		return 0;
  	}
  
--	register_hotcpu_notifier(&err_inject_cpu_notifier);
-+	__register_hotcpu_notifier(&err_inject_cpu_notifier);
+@@ -1107,7 +1110,10 @@ static int __init arch_hw_breakpoint_init(void)
+ 			TRAP_HWBKPT, "breakpoint debug exception");
+ 
+ 	/* Register hotplug and PM notifiers. */
+-	register_cpu_notifier(&dbg_reset_nb);
++	__register_cpu_notifier(&dbg_reset_nb);
 +
 +	cpu_notifier_register_done();
- 
++
+ 	pm_init();
  	return 0;
  }
-@@ -288,11 +293,17 @@ err_inject_exit(void)
- #ifdef ERR_INJ_DEBUG
- 	printk(KERN_INFO "Exit error injection driver.\n");
- #endif
-+
-+	cpu_notifier_register_begin();
-+
- 	for_each_online_cpu(i) {
- 		sys_dev = get_cpu_device(i);
- 		sysfs_remove_group(&sys_dev->kobj, &err_inject_attr_group);
- 	}
--	unregister_hotcpu_notifier(&err_inject_cpu_notifier);
-+
-+	__unregister_hotcpu_notifier(&err_inject_cpu_notifier);
-+
-+	cpu_notifier_register_done();
- }
- 
- module_init(err_inject_init);
 
