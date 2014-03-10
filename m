@@ -1,80 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755548AbaCJUuW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 16:50:22 -0400
-Received: from www.linutronix.de ([62.245.132.108]:53639 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754404AbaCJUuT (ORCPT
+	id S1755646AbaCJUvU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 16:51:20 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:49530 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755003AbaCJUvL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 16:50:19 -0400
-Date: Mon, 10 Mar 2014 21:50:24 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Paul Bolle <pebolle@tiscali.nl>
-cc: Jerome Oufella <jerome.oufella@savoirfairelinux.com>,
-        Julian Wollrath <jwollrath@web.de>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RESEND] Fast TSC calibration fails with v3.14-rc1 and later
-In-Reply-To: <1394479176.18058.10.camel@x41>
-Message-ID: <alpine.DEB.2.02.1403102122310.18573@ionos.tec.linutronix.de>
-References: <20140310110410.5b2218f6@ilfaris>  <1394447253.2979.12.camel@x220>  <alpine.DEB.2.02.1403101504590.18573@ionos.tec.linutronix.de>  <1394465314.12752.18.camel@x220>  <alpine.DEB.2.02.1403101757320.18573@ionos.tec.linutronix.de>  <1394476346.12752.43.camel@x220>
-  <alpine.DEB.2.02.1403101956250.18573@ionos.tec.linutronix.de> <1394479176.18058.10.camel@x41>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Mon, 10 Mar 2014 16:51:11 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: David Miller <davem@davemloft.net>,
+        Florian Fainelli <f.fainelli@gmail.com>, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/3] net: phy: fix uninitalized WOL parameters in phy_ethtool_get_wol
+Date: Mon, 10 Mar 2014 21:50:59 +0100
+Message-Id: <1394484661-4554-2-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1394484661-4554-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1394413270-7169-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1394484661-4554-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Mar 2014, Paul Bolle wrote:
-> Thomas Gleixner schreef op ma 10-03-2014 om 19:57 [+0100]:
-> > On Mon, 10 Mar 2014, Paul Bolle wrote:
-> > > 
-> > > Or is there a way to handle the "SMI nonsense" (whatever that may be)?
-> > 
-> > No, there is none. That's "value add" from the BIOS/board manufacturer
-> > which utilizes the System Management Interrupt and steals CPU time
-> > from the OS.
-> 
-> So could you please consider downgrading this message?
->
-> Yes, this will make regressions less visible, although I'm unsure we're
-> actually seeing a regression here. But I think that this is better than
-> scaring people about a situation they can't easily do something about,
-> if at all. Especially since fast TSC calibration failures, apparently,
-> can be worked around.
+phy_ethtool_get_wol is a helper to get current WOL settings from
+a phy device. When using this helper on a PHY without .get_wol
+callback, struct ethtool_wolinfo is never set-up correctly and
+may contain misleading information about WOL status.
 
-If something works fine from version X up to v3.13 and then suddenly
-fails, then we can safely ignore it because there is a work around or
-fallback? And just shrug and say: Oh, it's not a regression.
+To fix this, always zero struct ethtool_wolinfo regardless of
+.get_wol callback availability.
 
-Dammit no. We want to know WHY!
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Changelog:
+v1->v2:
+- clear whole struct ethtool_wolinfo
+- check for non-NULL phy_device
 
-I'm not going to downgrade that message for a simple reason.
+Cc: David Miller <davem@davemloft.net>
+Cc: Florian Fainelli <f.fainelli@gmail.com>
+Cc: netdev@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/net/phy/phy.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-A lot of people including me spent quite some precious time to work
-around the brainwreckage of
+diff --git a/drivers/net/phy/phy.c b/drivers/net/phy/phy.c
+index 19c9eca0ef26..dae1fa8aa23d 100644
+--- a/drivers/net/phy/phy.c
++++ b/drivers/net/phy/phy.c
+@@ -1092,7 +1092,9 @@ EXPORT_SYMBOL(phy_ethtool_set_wol);
+ 
+ void phy_ethtool_get_wol(struct phy_device *phydev, struct ethtool_wolinfo *wol)
+ {
+-	if (phydev->drv->get_wol)
++	memset(wol, 0, sizeof(*wol));
++
++	if (phydev && phydev->drv->get_wol)
+ 		phydev->drv->get_wol(phydev, wol);
+ }
+ EXPORT_SYMBOL(phy_ethtool_get_wol);
+-- 
+1.8.5.3
 
- - those who invented the concept of unreliable hardware (TSC) in the
-   first place
-
- - the BIOS/board manufacturers who add crap to their BIOSes which
-   renders it even more unusable. Yes, even the slow calibration fails
-   due to that.
-
-And now you whine because we tell loudly, that the hardware/BIOS is
-crap?
-
-You're barking up the wrong tree:
-
-       Go and tell your hardware supplier!
-
-But sure, it's simpler to submit a patch which makes that issue less
-visible just because you don't like the verbosity of those who made it
-work for YOU in the first place.
-
-Thanks,
-
-	tglx
