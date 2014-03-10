@@ -1,88 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752947AbaCJSEi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 14:04:38 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:49638 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752546AbaCJSEf (ORCPT
+	id S1752771AbaCJSLD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 14:11:03 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54988 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752302AbaCJSLB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 14:04:35 -0400
-From: Masood Mehmood <ody.guru@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: lidza.louina@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] staging: dgap: Fixed sparse error: same symbol redeclared with different type
-Date: Sat,  8 Mar 2014 23:18:42 -0800
-Message-Id: <1394349522-20458-1-git-send-email-ody.guru@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
+	Mon, 10 Mar 2014 14:11:01 -0400
+Date: Mon, 10 Mar 2014 18:10:49 +0000
+From: Mark Brown <broonie@kernel.org>
+To: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
+Cc: Joe Perches <joe@perches.com>, David Dajun Chen <david.chen@diasemi.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Message-ID: <20140310181049.GB28112@sirena.org.uk>
+References: <201403101800.s2AI0nId021436@swsrvapps-01.diasemi.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="CHinM5Q0kcjzwKJq"
+Content-Disposition: inline
+In-Reply-To: <201403101800.s2AI0nId021436@swsrvapps-01.diasemi.com>
+X-Cookie: Oh no, not again.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH V1] MAINTAINERS: Addition of Dialog Semiconductor files
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sparse reported dgap_do_fep_load is redeclared with different type. while
-fixing, I noticed __user attribute is used incorrectly in declaration.
-There is no need to define __user for firware->data.
 
-Replaced the __user with 'const uchar *' from function dgap_do_fep_load and
-did the same for function dgap_do_bios_load.
+--CHinM5Q0kcjzwKJq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Masood Mehmood <ody.guru@gmail.com>
----
- drivers/staging/dgap/dgap.c | 13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+On Mon, Mar 10, 2014 at 05:51:45PM +0000, Opensource [Steve Twiss] wrote:
+> From: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
+>=20
+> Addition of support e-mail address for Dialog Semiconductor Ltd
 
-diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
-index d00283a..ab81479 100644
---- a/drivers/staging/dgap/dgap.c
-+++ b/drivers/staging/dgap/dgap.c
-@@ -210,9 +210,8 @@ static uint dgap_config_get_useintr(struct board_t *bd);
- static uint dgap_config_get_altpin(struct board_t *bd);
- 
- static int dgap_ms_sleep(ulong ms);
--static void dgap_do_bios_load(struct board_t *brd, uchar __user *ubios,
--				int len);
--static void dgap_do_fep_load(struct board_t *brd, uchar __user *ufep, int len);
-+static void dgap_do_bios_load(struct board_t *brd, const uchar *ubios, int len);
-+static void dgap_do_fep_load(struct board_t *brd, const uchar *ufep, int len);
- #ifdef DIGI_CONCENTRATORS_SUPPORTED
- static void dgap_do_conc_load(struct board_t *brd, uchar *uaddr, int len);
- #endif
-@@ -935,7 +934,7 @@ static int dgap_firmware_load(struct pci_dev *pdev, int card_type)
- 				fw_info[card_type].bios_name);
- 			return ret;
- 		}
--		dgap_do_bios_load(brd, (char *)fw->data, fw->size);
-+		dgap_do_bios_load(brd, fw->data, fw->size);
- 		release_firmware(fw);
- 
- 		/* Wait for BIOS to test board... */
-@@ -953,7 +952,7 @@ static int dgap_firmware_load(struct pci_dev *pdev, int card_type)
- 				fw_info[card_type].fep_name);
- 			return ret;
- 		}
--		dgap_do_fep_load(brd, (char *)fw->data, fw->size);
-+		dgap_do_fep_load(brd, fw->data, fw->size);
- 		release_firmware(fw);
- 
- 		/* Wait for FEP to load on board... */
-@@ -4349,7 +4348,7 @@ static int dgap_tty_register_ports(struct board_t *brd)
-  * Copies the BIOS code from the user to the board,
-  * and starts the BIOS running.
-  */
--static void dgap_do_bios_load(struct board_t *brd, uchar __user *ubios, int len)
-+static void dgap_do_bios_load(struct board_t *brd, const uchar *ubios, int len)
- {
- 	uchar *addr;
- 	uint offset;
-@@ -4425,7 +4424,7 @@ static void dgap_do_wait_for_bios(struct board_t *brd)
-  * Copies the FEP code from the user to the board,
-  * and starts the FEP running.
-  */
--static void dgap_do_fep_load(struct board_t *brd, uchar *ufep, int len)
-+static void dgap_do_fep_load(struct board_t *brd, const uchar *ufep, int len)
- {
- 	uchar *addr;
- 	uint offset;
--- 
-1.8.3.1
+Acked-by: Mark Brown <broonie@linaro.org>
 
+> +F:	include/sound/da7213.h
+> +F:	include/sound/da9055.h
+> +F:	sound/soc/codecs/da7???.[ch]
+> +F:	sound/soc/codecs/da732x_reg.h
+> +F:	sound/soc/codecs/da9055.c
+
+Perhaps just da*.[ch]?
+
+--CHinM5Q0kcjzwKJq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTHgAmAAoJELSic+t+oim90BsP/RzYKDukv7nLDA7gWd992/uU
+LJErZdcxra61FkXppjUkVCO1EzsFMRB6s0uZmj8lO3u4evNJxq01ZDXKmUdwLXIe
+I9LqYCzau2zbHkvhdqfOlBs9oty34AcqZn/CuepTYwc93Bh81/JNk9DxDm2B9Hq4
+zJeZ+wzc+vHkGZQPnMN7reAPZgE84gP2YfP5z3RIjhF0oToWQIEt+9CZO41L+nLY
+YEv/EWidyRVQ/R/EQAVROUKLuUul49hY+AhGqv9PHCueG21AY941Rb+PAeHlzYRb
+51h52dDeVFscAmaWm8yYAzv/cTDa2RxfgHHGCeKJ2D3kdLrECAxnu9LwlvQIyEnJ
+wlq8ZoFaSj2qp+gTeJLqvrWoqiNC3gzNDR2ACcxHMHC+yxND+hJLLf/R4zg2aIHR
+mzrYCGoutbKmK1FBRpmjVM1ELoxu5eFrT0GVB2geA/W0DOQeycKzadvI4eVsY7md
+aXBxgk038ey+CVJi7SroBOfQr1LVkgCXcVW+XOFLIRRruCXWzOUhW5kT39rUAS6u
+NtSpRUg+WYFDX4fVWJj7holraPtRCuTxc98/NqI27cyFZjc1lDVyLl/vqVhoSoRS
+k52YxDuwIBZQBokstTm11NzRjzCZLRH4YbJPqhJBv8jaZzqvfgR6h7nLP2PbQud/
+3hlwNAgH94Vy+D7duZVA
+=RAIz
+-----END PGP SIGNATURE-----
+
+--CHinM5Q0kcjzwKJq--
