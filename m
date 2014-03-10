@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752612AbaCJG5F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 02:57:05 -0400
-Received: from smtp-out-220.synserver.de ([212.40.185.220]:1052 "EHLO
-	smtp-out-129.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751583AbaCJG5D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 02:57:03 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 30123
-Message-ID: <531D6262.3070201@metafoo.de>
-Date: Mon, 10 Mar 2014 07:57:38 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
-MIME-Version: 1.0
-To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-CC: Mark Brown <broonie@kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [alsa-devel] [PATCHv3 1/3] ASoC: codec: Simplify ASoC probe code.
-References: <1393814545-15002-1-git-send-email-Li.Xiubo@freescale.com> <1393814545-15002-2-git-send-email-Li.Xiubo@freescale.com> <20140303045952.GO2411@sirena.org.uk> <5bc570ec866541a68df5813ffbe3168e@BY2PR03MB505.namprd03.prod.outlook.com> <20140304043603.GI2411@sirena.org.uk> <0dbba1debfd149a6a5e3985349a95793@BY2PR03MB505.namprd03.prod.outlook.com>
-In-Reply-To: <0dbba1debfd149a6a5e3985349a95793@BY2PR03MB505.namprd03.prod.outlook.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752158AbaCJHCb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 03:02:31 -0400
+Received: from f256.i.mail.ru ([94.100.178.221]:46949 "EHLO f256.i.mail.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751560AbaCJHC3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 03:02:29 -0400
+From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+To: jon@ringle.org
+Cc: gregkh@linuxfoundation.org, jslaby@suse.cz, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org,
+        =?UTF-8?B?Sm9uIFJpbmdsZQ==?= <jringle@gridpoint.com>
+Subject: =?UTF-8?B?UmU6IFtQQVRDSF0gUkZDOiBXSVA6IHNjMTZpczd4eCBbdjAuNF0=?=
+Mime-Version: 1.0
+X-Mailer: Mail.Ru Mailer 1.0
+X-Originating-IP: [188.134.40.128]
+Date: Mon, 10 Mar 2014 11:02:25 +0400
+Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+X-Priority: 3 (Normal)
+Message-ID: <1394434945.519725450@f256.i.mail.ru>
+Content-Type: text/plain; charset=utf-8
+X-Mras: Ok
+X-Spam: undefined
+In-Reply-To: <1394432777-13005-1-git-send-email-jon@ringle.org>
+References: <1394432777-13005-1-git-send-email-jon@ringle.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2A72bTi014943
 
-On 03/10/2014 04:51 AM, Li.Xiubo@freescale.com wrote:
->> Subject: Re: [PATCHv3 1/3] ASoC: codec: Simplify ASoC probe code.
->>
->> On Mon, Mar 03, 2014 at 07:24:36AM +0000, Li.Xiubo@freescale.com wrote:
->>
->>>>>   	/* Default to using ALC auto offset calibration mode. */
->>>>>   	snd_soc_update_bits(codec, DA7213_ALC_CTRL1,
->>>>>   			    DA7213_ALC_CALIB_MODE_MAN, 0);
->>
->>>> This one will fail.
->>
->>> Sorry, I'm not very understand why will this fail ? Before the ASoC probe,
->>> the ASoC core will set the I/O.
->>> :)
->>
->> OK, that's now been refactored.
->
-> @Mark, @Lars,
->
-> Has there any other problems about this patch series? And this I had tested on
-> our Vybrid-Twr board based on SGTL5000 codec and SAI drivers. If not, I can
-> continue with my second patches series about " Remove set_cache_io entirely from
-> ASoC probe".
->
-> Thanks very much.
->
+ĞŸĞ¾Ğ½ĞµĞ´ĞµĞ»ÑŒĞ½Ğ¸Ğº, 10 Ğ¼Ğ°Ñ€Ñ‚Ğ° 2014, 2:26 -04:00 Ğ¾Ñ‚ jon@ringle.org:
+> From: Jon Ringle <jringle@gridpoint.com>
+...
+> +config SERIAL_SC16IS7XX
+> +	tristate "SC16IS7xx RS485 serial support"
+> +	  select SERIAL_CORE
+> +	  default n
+> +	  help
+> +	  This selects support for SC16IS7xx for use as a RS485 serial port
 
+Documentation says:
+The SC16IS740/750/760 is a slave IÂ²C-bus/SPI interface to a single-channel
+high performance UART.
+...
+The SC16IS740/750/760 also provides additional advanced features such
+as auto hardware and software flow control, automatic RS-485 support...
 
-It looks good to me.
+So why do you position this chip as RS485 only? Automatic direction for
+RS485 is just a feature as an addition for standart UART.
 
+---
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
