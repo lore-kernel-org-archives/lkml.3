@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753383AbaCJScb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 14:32:31 -0400
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:59690 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753284AbaCJSc2 (ORCPT
+	id S1753446AbaCJScj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 14:32:39 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:40952 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753284AbaCJScg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 14:32:28 -0400
-Message-ID: <1394476346.12752.43.camel@x220>
-Subject: Re: [RESEND] Fast TSC calibration fails with v3.14-rc1 and later
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Jerome Oufella <jerome.oufella@savoirfairelinux.com>,
-        Julian Wollrath <jwollrath@web.de>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 10 Mar 2014 19:32:26 +0100
-In-Reply-To: <alpine.DEB.2.02.1403101757320.18573@ionos.tec.linutronix.de>
-References: <20140310110410.5b2218f6@ilfaris>
-	 <1394447253.2979.12.camel@x220>
-	 <alpine.DEB.2.02.1403101504590.18573@ionos.tec.linutronix.de>
-	 <1394465314.12752.18.camel@x220>
-	 <alpine.DEB.2.02.1403101757320.18573@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
+	Mon, 10 Mar 2014 14:32:36 -0400
+Message-ID: <531E0542.7020701@linaro.org>
+Date: Mon, 10 Mar 2014 11:32:34 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Greg Hackmann <ghackmann@google.com>,
+        Rashika Kheria <rashika.kheria@gmail.com>
+Subject: [GIT PULL] Timekeeping changes for 3.15
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 10 Mar 2014 18:32:27.0356 (UTC) FILETIME=[169001C0:01CF3C8F]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Added Jerome, who submitted a patch similar to mine.]
+Hey Thomas, Ingo,
 
-On Mon, 2014-03-10 at 18:04 +0100, Thomas Gleixner wrote:
-> On Mon, 10 Mar 2014, Paul Bolle wrote:
-> > https://lkml.org/lkml/2012/9/24/221 . Is that analysis incorrect?
-> 
-> Kinda. But there is no reason for the fast calibration to fail except
-> BIOS induced SMI nonsense.
+ My queue is pretty short (and small) for 3.15, but I wanted to send it
+along for tip/timers/core.
 
-What made me submit my patch, in 2012, is that this error is printed
-very early, before boot animation kicks in. Ie, it looks rather scary.
-And when I dug through the code I noticed that this condition seems
-actually to be handled already: the kernel just tries an alternative
-calibration method.
+Let me know if you have any feedback or objections.
 
-So I think this should be printed at (say) KERN_INFO level (so it will
-be suppressed during boot). More so if the solution would be "upgrade
-the BIOS". Upgrading the BIOS on a ThinkPad, for instance, can require
-fiddling with quite a bit of low level programs. And how do we know an
-upgraded BIOS actually helps?
-
-Or is there a way to handle the "SMI nonsense" (whatever that may be)?
+thanks
+-john
 
 
-Paul Bolle
+The following changes since commit 03d11a0e458d7008192585124e4c3313c2829046:
+
+  Merge tag 'for-v3.14' of git://git.infradead.org/battery-2.6
+(2014-01-21 11:36:20 -0800)
+
+are available in the git repository at:
+
+
+  git://git.linaro.org/people/john.stultz/linux.git fortglx/3.15/time
+
+for you to fetch changes up to 64e8d20bd39b81994d9cd60e7b42f8ec8652f5af:
+
+  kernel: Include appropriate header file in time/timekeeping_debug.c
+(2014-03-02 20:52:58 -0800)
+
+----------------------------------------------------------------
+Greg Hackmann (1):
+      timerfd: support CLOCK_BOOTTIME clock
+
+Rashika Kheria (1):
+      kernel: Include appropriate header file in time/timekeeping_debug.c
+
+ fs/timerfd.c                    | 1 +
+ kernel/time/timekeeping_debug.c | 2 ++
+ 2 files changed, 3 insertions(+)
 
