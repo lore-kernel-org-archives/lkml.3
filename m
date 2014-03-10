@@ -1,221 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754480AbaCJVUE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 17:20:04 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:45129 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753468AbaCJVUB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 17:20:01 -0400
-Message-ID: <531E2C55.70702@ti.com>
-Date: Tue, 11 Mar 2014 05:19:17 +0800
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1754513AbaCJVUh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 17:20:37 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:43737 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754397AbaCJVUf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 17:20:35 -0400
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Sandeep Nair <sandeep_n@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kumar Gala <galak@codeaurora.org>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>
-Subject: Re: [PATCH 2/3] soc: keystone: add QMSS driver
-References: <1393629520-12713-1-git-send-email-santosh.shilimkar@ti.com>	<1393629520-12713-3-git-send-email-santosh.shilimkar@ti.com> <CAL_Jsq+O660oV9FtthG3gTkVOhL0ku-UHSrkt-ROauu1iNpbaA@mail.gmail.com>
-In-Reply-To: <CAL_Jsq+O660oV9FtthG3gTkVOhL0ku-UHSrkt-ROauu1iNpbaA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CA+55aFyxbuhPKgB=U8R5C5T_iKVvju-oQDS4kHz6McW45B+1bA@mail.gmail.com>
+References: <20140307013833.GD8427@localhost>
+	<1394176888.1018.3.camel@wall-e.seibold.net>
+	<CALCETrVCwZWvd78urw+O4zD3PoNZTQxg8FMzTrUi4+5w9rC5=A@mail.gmail.com>
+	<1394229220.20013.13.camel@wall-e.seibold.net>
+	<CALCETrXB0G3aA1Usp4U-9-eN0z22YC4Sn+3z42mrU2ab0gE9gQ@mail.gmail.com>
+	<1394354848.1002.37.camel@wall-e.seibold.net>
+	<531D044C.2090303@linux.intel.com>
+	<CALCETrXJobOnVB-ne9s57o3Z1KwK4fRtaYi8W=L4+UT065fKJw@mail.gmail.com>
+	<CALCETrUyJWQnQsX22+wrvPbXkj67nhZ0SMP1_hCo2yZ+Z5tMyA@mail.gmail.com>
+	<531DD35A.5060202@linux.intel.com>
+	<CA+55aFwKpBybz9S9A=+tcr1BbdzAbagL30Br2cak2GrdPH=hhA@mail.gmail.com>
+	<CALCETrW6CT2ceHiHzMaZUGkwEBFWQEemFS5Fj=V7Wg-cNArMLg@mail.gmail.com>
+	<1394481804.980.9.camel@wall-e.seibold.net>
+	<531E1B53.5090205@linux.intel.com>
+	<CA+55aFyxbuhPKgB=U8R5C5T_iKVvju-oQDS4kHz6McW45B+1bA@mail.gmail.com>
+Date: Mon, 10 Mar 2014 14:20:34 -0700
+X-Google-Sender-Auth: nP5gsoPhHSztLnxyUfgAVwysFOU
+Message-ID: <CA+55aFwuVYds=ssv755WKBvux1ru6fcDLGi+ORSFyU8xYP7+=w@mail.gmail.com>
+Subject: Re: [x86, vdso] BUG: unable to handle kernel paging request at d34bd000
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Stefani Seibold <stefani@seibold.net>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 11 March 2014 01:02 AM, Rob Herring wrote:
-> On Fri, Feb 28, 2014 at 5:18 PM, Santosh Shilimkar
-> <santosh.shilimkar@ti.com> wrote:
->> From: Sandeep Nair <sandeep_n@ti.com>
->>
->> The QMSS (Queue Manager Sub System) found on Keystone SOCs is one of
->> the main hardware sub system which forms the backbone of the Keystone
->> Multi-core Navigator. QMSS consist of queue managers, packed-data structure
->> processors(PDSP), linking RAM, descriptor pools and infrastructure
->> Packet DMA.
->>
->> The Queue Manager is a hardware module that is responsible for accelerating
->> management of the packet queues. Packets are queued/de-queued by writing or
->> reading descriptor address to a particular memory mapped location. The PDSPs
->> perform QMSS related functions like accumulation, QoS, or event management.
->> Linking RAM registers are used to link the descriptors which are stored in
->> descriptor RAM. Descriptor RAM is configurable as internal or external memory.
->>
->> The QMSS driver manages the PDSP setups, linking RAM regions,
->> queue pool management (allocation, push, pop and notify) and descriptor
->> pool management. The specifics on the device tree bindings for
->> QMSS can be found in:
->>         Documentation/devicetree/bindings/soc/keystone-qmss.txt
-> 
-> You are telling me where I can find a file that is added in this commit?
-> 
-> All this description of what the h/w block does should go into the binding doc.
-> 
-Sure. Will do.
-
->>
->> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> Cc: Kumar Gala <galak@codeaurora.org>
->> Cc: Olof Johansson <olof@lixom.net>
->> Cc: Arnd Bergmann <arnd@arndb.de>
->> Cc: Grant Likely <grant.likely@linaro.org>
->> Cc: Rob Herring <robh+dt@kernel.org>
->> Cc: Mark Rutland <mark.rutland@arm.com>
->> Signed-off-by: Sandeep Nair <sandeep_n@ti.com>
->> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->> ---
->>  .../devicetree/bindings/soc/keystone-qmss.txt      |  209 +++
->>  drivers/Kconfig                                    |    2 +
->>  drivers/Makefile                                   |    3 +
->>  drivers/soc/Kconfig                                |    2 +
->>  drivers/soc/Makefile                               |    5 +
->>  drivers/soc/keystone/Kconfig                       |   15 +
->>  drivers/soc/keystone/Makefile                      |    5 +
->>  drivers/soc/keystone/qmss_acc.c                    |  591 ++++++++
->>  drivers/soc/keystone/qmss_queue.c                  | 1533 ++++++++++++++++++++
->>  drivers/soc/keystone/qmss_queue.h                  |  236 +++
->>  include/linux/soc/keystone_qmss.h                  |  390 +++++
->>  11 files changed, 2991 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/soc/keystone-qmss.txt
->>  create mode 100644 drivers/soc/Makefile
->>  create mode 100644 drivers/soc/keystone/Kconfig
->>  create mode 100644 drivers/soc/keystone/Makefile
->>  create mode 100644 drivers/soc/keystone/qmss_acc.c
->>  create mode 100644 drivers/soc/keystone/qmss_queue.c
->>  create mode 100644 drivers/soc/keystone/qmss_queue.h
->>  create mode 100644 include/linux/soc/keystone_qmss.h
->>
->> diff --git a/Documentation/devicetree/bindings/soc/keystone-qmss.txt b/Documentation/devicetree/bindings/soc/keystone-qmss.txt
->> new file mode 100644
->> index 0000000..f975207
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/soc/keystone-qmss.txt
->> @@ -0,0 +1,209 @@
->> +* Texas Instruments Keystone QMSS driver
->> +
->> +Required properties:
->> +- compatible   : Must be "ti,keystone-qmss";
->> +- clocks       : phandle to the reference clock for this device.
->> +- queue-range  : <start number> total range of queue numbers for the device.
->> +- linkram0     : <address size> for internal link ram, where size is the total
->> +                 link ram entries.
->> +- linkram1     : <address size> for external link ram, where size is the total
->> +                 external link ram entries. If the address is specified as "0"
->> +                 driver will allocate memory.
->> +- qmgrs         : the number of individual queue managers in the device. On
->> +                  keystone 1 range of devices there should be only one node.
->> +                 On keystone 2 devices there can be more than 1 node.
->> +  -- managed-queues    : the actual queues managed by each queue manager
->> +                         instance, specified as <"base queue #" "# of queues">.
->> +  -- reg               : Address and length of the register set for the device
->> +                         for peek, status, config, region, push, pop regions.
->> +  -- reg-names         : Names for the above register regions. The name to be
->> +                         used is as follows:
->> +                         - "config" : Queue configuration region.
->> +                         - "status" : Queue status RAM.
->> +                         - "region" : Descriptor memory setup region.
->> +                         - "push"   : Queue Management/Queue Proxy region.
->> +                         - "pop"    : Queue Management/Queue Proxy region.
->> +                         - "peek"   : Queue Peek region.
-> 
-> reg-names should be optional. Also you have the order different from
-> reg. Be consistent as to what is the correct order.
-> 
-We thought of using reg-names to remove the ordering to index
-the regs. So if we make the reg-names optional, then indexing
-by order will be used. We can do that.
-
->> +- queue-pools  : Queue ranges are grouped into 3 type of pools:
->> +                 - qpend           : pool of qpend(interruptible) queues
->> +                 - general-purpose : pool of general queues, primarly used
->> +                                     as free descriptor queues or the
->> +                                     transmit DMA queues.
->> +                 - accumulator     : pool of queues on accumulator channel
->> +                 Each range can have the following properties:
->> +  -- values            : number of queues to use per queue range, specified as
->> +                         <"base queue #" "# of queues">.
-> 
-> values of what? This needs a better name.
-ok. Will use 'qrange-values'
-> 
->> +  -- interrupts                : Optional property to specify the interrupt mapping
->> +                         for interruptible queues. The driver additionaly sets
->> +                         the interrupt affinity based on the cpu mask.
->> +  -- reserved          : Optional property used to reserve the range. Queues
->> +                         in a reserved range can only be allocated by id.
-> 
-> reserved what? This needs a better name and description.
+On Mon, Mar 10, 2014 at 1:19 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 >
-'qrange-reserved'. Will update the description.
- 
->> +  -- accumulator       : Accumulator channel property specified as:
->> +                         <pdsp-id, channel, entries, pacing mode, latency>
->> +                         pdsp-id     : QMSS PDSP running accumulator firmware
->> +                                       on which the channel has to be
->> +                                       configured
->> +                         channel     : Accumulator channel number
->> +                         entries     : Size of the accumulator descriptor list
->> +                         pacing mode : Interrupt pacing mode
->> +                                       0 : None, i.e interrupt on list full
->> +                                       1 : Time delay since last interrupt
->> +                                       2 : Time delay since first new packet
->> +                                       3 : Time delay since last new packet
->> +                         latency     : time to delay the interrupt, specified
->> +                                       in microseconds.
->> +  -- multi-queue       : Optional property to specify that the channel has to
->> +                         monitor upto 32 queues starting at the base queue #.
-> 
-> What does the property contain? What's a channel in this context?
+> If the only immediate problem is the code generation size, then Andy
+> already had a (simpler) hack-around:
 >
-Its accumulator channel who can monitor multiple queues. Its a hardware
-off-load feature to monitor and accumulate the traffic on multiple queues.
- 
->> +- descriptor-regions   : Descriptor memory region specification.
-> 
-> huh?
-Ok. We will make the description bit more verbose to make it clear.
-
-> 
->> +  -- id                                : region number.
->> +  -- values                    : number of descriptors in the region,
->> +                                 specified as
->> +                                 <"# of descriptors" "descriptor size">.
->> +  -- link-index                        : start index, i.e. index of the first
->> +                                 descriptor in the region.
->> +
->> +Optional properties:
->> +- dma-coherent : Present if DMA operations are coherent.
->> +- pdsps                : PDSP configuration, if any.
-> 
-> This is a child node? Make that clear and separate the description for
-> each node.
+>   #undef CONFIG_OPTIMIZE_INLINING
+>   #undef CONFIG_X86_PPRO_FENCE
 >
-Sure.
- 
->> +  -- firmware          : firmware to be loaded on the PDSP.
->> +  -- id                        : the qmss pdsp that will run the firmware.
->> +  -- reg               : Address and length of the register set of the PDSP
->> +                         for iram, intd, region, command regions.
->> +  -- reg-names         : Names for the above register regions. The name to be
->> +                         used is as follows:
->> +                         - "iram"   : PDSP internal RAM region.
->> +                         - "reg"    : PDSP control/status region registers.
->> +                         - "intd"   : QMSS interrupt distributor registers.
->> +                         - "cmd"    : PDSP command interface region.
->> +
->> +Example:
-> 
-> I probably have other comments, but address the above first.
-> 
-Thanks for the comments. We will address these in next version.
+> in vclock_gettime.c
 
-Regards,
-Santosh
+Btw, we should seriously consider getting rid of CONFIG_X86_PPRO_FENCE.
 
+It was of questionable value to begin with, and I think that the
+actual PPro bug is about one of
+
+ - Errata 66, "Delayed line invalidation".
+ - Errata 92, "Potential loss of data coherency"
+
+both of which affect all PPro versions afaik (there is also a UP
+errata 51 wrt ordering of cached and uncached accesses that was fixed
+in the sB1 stepping).
+
+And as far as I know, we have never actually seen the bug in real
+life, EVEN WHEN PPRO WAS COMMON. The workaround was always based on
+knowledge of the errata afaik.
+
+So I do think we might want to consider retiring that config option
+entirely as a "historical oddity".
+
+And very much so for the vdso case. Do we even do the asm alternative
+fixups for the vdso?
+
+I also suspect we should get rid of CONFIG_X86_OOSTORE, or at least
+limit it to !SMP - I don't think anybody ever made SMP systems with
+those IDT/Centaur Winchip chips in them.
+
+                Linus
