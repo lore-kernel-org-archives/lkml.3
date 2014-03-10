@@ -1,121 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755418AbaCJUnM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 16:43:12 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:42887 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754760AbaCJUnE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 16:43:04 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v3 51/52] net/core/flow.c: Fix CPU hotplug callback
- registration
-To: paulus@samba.org, oleg@redhat.com, mingo@kernel.org, rjw@rjwysocki.net,
-        rusty@rustcorp.com.au, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org
-Cc: paulmck@linux.vnet.ibm.com, tj@kernel.org, walken@google.com,
-        ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-pm@vger.kernel.org, linuxppc-dev@ozlabs.org,
-        srivatsa.bhat@linux.vnet.ibm.com, Li RongQing <roy.qing.li@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
+	id S1755445AbaCJUnX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 16:43:23 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:46296 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754760AbaCJUnT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 16:43:19 -0400
+Date: Mon, 10 Mar 2014 13:42:48 -0700
+From: Kees Cook <keescook@chromium.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Andy Honig <ahonig@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Ingo Molnar <mingo@kernel.org>,
-        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Tue, 11 Mar 2014 02:12:51 +0530
-Message-ID: <20140310204250.10746.61946.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20140310203312.10746.310.stgit@srivatsabhat.in.ibm.com>
-References: <20140310203312.10746.310.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+        Jianguo Wu <wujianguo@huawei.com>,
+        David Rientjes <rientjes@google.com>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: [PATCH] x86, kaslr: fix module lock ordering problem
+Message-ID: <20140310204248.GA1958@www.outflux.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14031020-9574-0000-0000-00000C5C974C
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subsystems that want to register CPU hotplug callbacks, as well as perform
-initialization for the CPUs that are already online, often do it as shown
-below:
+There was a potential lock ordering problem with the module kASLR patch
+("x86, kaslr: randomize module base load address"). This patch removes
+the usage of the module_mutex and creates a new mutex to protect the
+module base address offset value.
 
-	get_online_cpus();
+Chain exists of:
+  text_mutex --> kprobe_insn_slots.mutex --> module_mutex
 
-	for_each_online_cpu(cpu)
-		init_cpu(cpu);
+[    0.515561]  Possible unsafe locking scenario:
+[    0.515561]
+[    0.515561]        CPU0                    CPU1
+[    0.515561]        ----                    ----
+[    0.515561]   lock(module_mutex);
+[    0.515561]                                lock(kprobe_insn_slots.mutex);
+[    0.515561]                                lock(module_mutex);
+[    0.515561]   lock(text_mutex);
+[    0.515561]
+[    0.515561]  *** DEADLOCK ***
 
-	register_cpu_notifier(&foobar_cpu_notifier);
-
-	put_online_cpus();
-
-This is wrong, since it is prone to ABBA deadlocks involving the
-cpu_add_remove_lock and the cpu_hotplug.lock (when running concurrently
-with CPU hotplug operations).
-
-Instead, the correct and race-free way of performing the callback
-registration is:
-
-	cpu_notifier_register_begin();
-
-	for_each_online_cpu(cpu)
-		init_cpu(cpu);
-
-	/* Note the use of the double underscored version of the API */
-	__register_cpu_notifier(&foobar_cpu_notifier);
-
-	cpu_notifier_register_done();
-
-
-Fix the code in net/core/flow.c by using this latter form of callback
-registration.
-
-Cc: Li RongQing <roy.qing.li@gmail.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: netdev@vger.kernel.org
-Acked-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Andy Honig <ahonig@google.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
+ arch/x86/kernel/module.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
- net/core/flow.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
-
-diff --git a/net/core/flow.c b/net/core/flow.c
-index dfa602c..9a2151f 100644
---- a/net/core/flow.c
-+++ b/net/core/flow.c
-@@ -456,6 +456,8 @@ static int __init flow_cache_init(struct flow_cache *fc)
- 	if (!fc->percpu)
- 		return -ENOMEM;
+diff --git a/arch/x86/kernel/module.c b/arch/x86/kernel/module.c
+index 49483137371f..e69f9882bf95 100644
+--- a/arch/x86/kernel/module.c
++++ b/arch/x86/kernel/module.c
+@@ -48,6 +48,9 @@ do {							\
+ static unsigned long module_load_offset;
+ static int randomize_modules = 1;
  
-+	cpu_notifier_register_begin();
++/* Mutex protects the module_load_offset. */
++static DEFINE_MUTEX(module_kaslr_mutex);
 +
- 	for_each_online_cpu(i) {
- 		if (flow_cache_cpu_prepare(fc, i))
- 			goto err;
-@@ -463,7 +465,9 @@ static int __init flow_cache_init(struct flow_cache *fc)
- 	fc->hotcpu_notifier = (struct notifier_block){
- 		.notifier_call = flow_cache_cpu,
- 	};
--	register_hotcpu_notifier(&fc->hotcpu_notifier);
-+	__register_hotcpu_notifier(&fc->hotcpu_notifier);
-+
-+	cpu_notifier_register_done();
- 
- 	setup_timer(&fc->rnd_timer, flow_cache_new_hashrnd,
- 		    (unsigned long) fc);
-@@ -479,6 +483,8 @@ err:
- 		fcp->hash_table = NULL;
+ static int __init parse_nokaslr(char *p)
+ {
+ 	randomize_modules = 0;
+@@ -58,7 +61,7 @@ early_param("nokaslr", parse_nokaslr);
+ static unsigned long int get_module_load_offset(void)
+ {
+ 	if (randomize_modules) {
+-		mutex_lock(&module_mutex);
++		mutex_lock(&module_kaslr_mutex);
+ 		/*
+ 		 * Calculate the module_load_offset the first time this
+ 		 * code is called. Once calculated it stays the same until
+@@ -67,7 +70,7 @@ static unsigned long int get_module_load_offset(void)
+ 		if (module_load_offset == 0)
+ 			module_load_offset =
+ 				(get_random_int() % 1024 + 1) * PAGE_SIZE;
+-		mutex_unlock(&module_mutex);
++		mutex_unlock(&module_kaslr_mutex);
  	}
- 
-+	cpu_notifier_register_done();
-+
- 	free_percpu(fc->percpu);
- 	fc->percpu = NULL;
- 
+ 	return module_load_offset;
+ }
+-- 
+1.7.9.5
 
+
+-- 
+Kees Cook
+Chrome OS Security
