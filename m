@@ -1,99 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752969AbaCJIiz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 04:38:55 -0400
-Received: from vserver.eikelenboom.it ([84.200.39.61]:40637 "EHLO
-	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752762AbaCJIiy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 04:38:54 -0400
-Date: Mon, 10 Mar 2014 09:38:43 +0100
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <1295963563.20140310093843@eikelenboom.it>
-To: Sander Eikelenboom <linux@eikelenboom.it>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-CC: "bluez mailin list (linux-bluetooth@vger.kernel.org)" 
-	<linux-bluetooth@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [RC6 Bell Chime] Re: [PATCH 00/24] rfcomm fixes
-In-Reply-To: <1335661753.20140303203853@eikelenboom.it>
-References: <1391997564-1805-1-git-send-email-peter@hurleysoftware.com> <3E0F3723-029F-4B12-8D77-9790FDBD3227@holtmann.org> <1259174563.20140212120644@eikelenboom.it> <1335661753.20140303203853@eikelenboom.it>
+	id S1753162AbaCJIjN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 04:39:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35032 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753075AbaCJIjJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 04:39:09 -0400
+Date: Mon, 10 Mar 2014 16:38:34 +0800
+From: WANG Chao <chaowang@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Muli Ben-Yehuda <muli@cs.technion.ac.il>,
+        "Jon D. Mason" <jdmason@kudzu.us>, "H. Peter Anvin" <hpa@zytor.com>,
+        Baoquan He <bhe@redhat.com>, kexec@lists.infradead.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86, calgary: use 8M TCE table size by default
+Message-ID: <20140310083834.GA32547@dhcp-17-89.nay.redhat.com>
+References: <1394179816-15435-1-git-send-email-chaowang@redhat.com>
+ <20140307141413.GF1326@redhat.com>
+ <20140307155204.GC30641@dhcp-17-89.nay.redhat.com>
+ <20140307160906.GH1326@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <20140307160906.GH1326@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On 03/07/14 at 11:09am, Vivek Goyal wrote:
+> On Fri, Mar 07, 2014 at 11:52:04PM +0800, WANG Chao wrote:
+> > Hi, Vivek
+> > 
+> > On 03/07/14 at 09:14am, Vivek Goyal wrote:
+> > > On Fri, Mar 07, 2014 at 04:10:16PM +0800, WANG Chao wrote:
+> > > 
+> > > [..]
+> > > >  	}
+> > > >  
+> > > > -	specified_table_size = determine_tce_table_size((is_kdump_kernel() ?
+> > > > -					saved_max_pfn : max_pfn) * PAGE_SIZE);
+> > > > +	specified_table_size = determine_tce_table_size();
+> > > 
+> > > I don't think you can get rid of saved_max_pfn right away. What if
+> > > somebody is using old first kernel and new second kernel. Then old kernel
+> > > will still be using a table size which is smaller than 8M.
+> > 
+> > If TCE table size is hard coded to 8M, the new 1st kernel can never be
+> > compatible with the old 2nd kernel.
+> 
+> I gave example of old first kernel and new second kernel, and not
+> vice-versa.
+> 
+> So we have two scenarios.
+> 
+> - Old first kernel and new second kernel.
+> - New first kernel and old second kernel.
+> 
+> If we want to make these two scenarios work with calgary, we need to
+> use kexec-tools with --pass-memmap option. And also in new kernel we
+> need to retain saved_max_pfn. Only difference will be, that we will
+> set saved_max_pfn only if it is kdump kernel and if user passed a 
+> memory map on kernel command line.
 
-Since:
-- 3.14-RC6 has been cut
-- this regression is known and reported since the merge window
-- the fix (revert of 3 patches) is known for over a month now
-- but it's still not in mainline
-- my polite ping request from last week seems to have provoked exactly 0 (zero) response.
+Old first kernel and new second kernel is easy to handle. Like you said,
+we can use exactmap and set saved_max_pfn in kdump kernel, just as the
+old way.
 
-IT'S TIME TO CHIME SOME BELLS :-)
+But it's still not clear to me how we can handle the case of new first
+kernel and old second kernel.
 
-Hope that WILL be heard somewhere ...
+Let's say, a calgary system has 2G memory. The new first kernel TCE
+table size are hard coded to 8M. When the old kdump kernel is booting,
+memmap=exactmap is parsed and saved_max_pfn is set to 2G/PAGE_SIZE. TCE
+table size is determined by 2G ram size. So the size is 4M. We run into
+the situation that TCE table is 8M in first kernel and 4M in second
+kernel. This inconsistency of TCE table size would cause kdump kernel
+fails somehow, that's why we brought in saved_max_pfn in the first place
+as you know.
 
---
-Sander
+The problem is how to keep TCE table size being consistent between new
+first kernel and old second kernel.
 
-PS. on the informative side the 3 commits to be reverted are:
+I can only think of exporting this value to user space but once we does
+that, this knob file could introduce another layer of backward
+compatible issue in the future.
 
-f86772af6a0f643d3e13eb3f4f9213ae0c333ee4 Bluetooth: Remove rfcomm_carrier_raised()
-4a2fb3ecc7467c775b154813861f25a0ddc11aa0 Bluetooth: Always wait for a connection on RFCOMM open()
-e228b63390536f5b737056059a9a04ea016b1abf Bluetooth: Move rfcomm_get_device() before rfcomm_dev_activate()
+> 
+> So it is doable if it want to do it.
+> 
+> Now the real question is, is it worth introducing all this complication
+> and confusion given the fact most of the people use same first and second
+> kernel and given the fact that calgary is old hardware. What are the
+> chances somebody will run into it.
 
+I understand. I'd definitely try to keep things compatible between
+the new and old if that's doable. But chances that people would run into
+an issue may be lower than both of us think.
 
-Monday, March 3, 2014, 8:38:53 PM, you wrote:
+> 
+> I would say it is not very complicated to maintain backward compatibility
+> in this case. So let us keep saved_max_pfn for some time and make
+> kexec-tools changes. Some time down the line, one can get rid of
+> saved_max_pfn completely.
 
+I'm just not convinced that we can properly handle the case of new first
+kernel and old second kernel.
 
-> Wednesday, February 12, 2014, 12:06:44 PM, you wrote:
+Could you be more specific about how that could be solved please?
 
->> Monday, February 10, 2014, 11:09:38 PM, you wrote:
-
->>> Hi Peter,
-
->>>> This patch series addresses a number of previously unknown issues
->>>> with the RFCOMM tty device implementation, in addition to
->>>> addressing the locking regression recently reported [1].
->>>> 
->>>> As Gianluca suggested and I agree, this series first reverts
->>>> 3 of the 4 patches of 3.14-rc1 for bluetooth/rfcomm/tty.c.
-
->>> so for 3.14 we should revert 3 patches. And then the other 21 are intended for 3.15 merge window.
-
->>> I realize that we still have to deal with some breakage, but we do not want regressions and I clearly not going to take 24 patches for 3.14 at this point in time.
-
->>> What I can do is take all 24 patches into bluetooth-next and let them sit for 1 week and have people test them. And then we go ahead with reverting 3 patches from 3.14. Does that make sense?
-
->> Reverting those 3 patches works for me.
-
->> --
->> Sander
-
->>> Regards
-
->>> Marcel
-
-> Hi Marcel,
-
-> Ping... it seems these 3 reverts are still not in 3.14-rc5 to fix the regressions ?
-
-> --
-> Sander
-
-
-
--- 
-Best regards,
- Sander                            mailto:linux@eikelenboom.it
-
+Thanks
+WANG Chao
