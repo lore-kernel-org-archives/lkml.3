@@ -1,51 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754018AbaCJQ3v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 12:29:51 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:42836 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753858AbaCJQ3q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 12:29:46 -0400
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        linaro-kernel@lists.linaro.org, Mark Brown <broonie@linaro.org>
-Date: Mon, 10 Mar 2014 16:29:37 +0000
-Message-Id: <1394468977-23149-1-git-send-email-broonie@kernel.org>
-X-Mailer: git-send-email 1.9.0
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [PATCH] mfd: wm5102: Mark register 0x19 readable
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	id S1754061AbaCJQaA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 12:30:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51866 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754025AbaCJQ35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 12:29:57 -0400
+Date: Mon, 10 Mar 2014 18:29:19 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: jbenc@redhat.com, David Miller <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Simon Horman <horms@verge.net.au>,
+        Paul Durrant <Paul.Durrant@citrix.com>, Thomas Graf <tgraf@suug.ch>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        =?us-ascii?B?PT9VVEYtOD9xP1BldGVyPTIwUGFuPTI4PUU2PUJEPTk4PUU1PThEPUFC?=
+	 =?us-ascii?B?PUU1PUI5PUIzPTI5Pz0=?= <panweiping3@gmail.com>,
+        netdev@vger.kernel.org
+Subject: [PATCH 3/5] skbuff: skb_segment: s/skb/head_skb/
+Message-ID: <1394468807-25980-4-git-send-email-mst@redhat.com>
+References: <1394468807-25980-1-git-send-email-mst@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394468807-25980-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Brown <broonie@linaro.org>
+rename local variable to make it easier to tell at a glance that we are
+dealing with a head skb.
 
-During init the core checks if the wm5102 has finished starting by reading
-register 0x19 and looking at the value. This read always fails since this
-is not a readable register, mark it as being one.
-
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/mfd/wm5102-tables.c | 1 +
- 1 file changed, 1 insertion(+)
+ net/core/skbuff.c | 46 ++++++++++++++++++++++++----------------------
+ 1 file changed, 24 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/mfd/wm5102-tables.c b/drivers/mfd/wm5102-tables.c
-index f4668d39e542..07f024fd4ded 100644
---- a/drivers/mfd/wm5102-tables.c
-+++ b/drivers/mfd/wm5102-tables.c
-@@ -1016,6 +1016,7 @@ static bool wm5102_readable_register(struct device *dev, unsigned int reg)
- 	case ARIZONA_WRITE_SEQUENCER_CTRL_0:
- 	case ARIZONA_WRITE_SEQUENCER_CTRL_1:
- 	case ARIZONA_WRITE_SEQUENCER_CTRL_2:
-+	case 0x19:
- 	case ARIZONA_WRITE_SEQUENCER_PROM:
- 	case ARIZONA_TONE_GENERATOR_1:
- 	case ARIZONA_TONE_GENERATOR_2:
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 917cb60..af386e1 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -2841,41 +2841,42 @@ EXPORT_SYMBOL_GPL(skb_pull_rcsum);
+ 
+ /**
+  *	skb_segment - Perform protocol segmentation on skb.
+- *	@skb: buffer to segment
++ *	@head_skb: buffer to segment
+  *	@features: features for the output path (see dev->features)
+  *
+  *	This function performs segmentation on the given skb.  It returns
+  *	a pointer to the first in a list of new skbs for the segments.
+  *	In case of error it returns ERR_PTR(err).
+  */
+-struct sk_buff *skb_segment(struct sk_buff *skb, netdev_features_t features)
++struct sk_buff *skb_segment(struct sk_buff *head_skb,
++			    netdev_features_t features)
+ {
+ 	struct sk_buff *segs = NULL;
+ 	struct sk_buff *tail = NULL;
+-	struct sk_buff *fskb = skb_shinfo(skb)->frag_list;
+-	skb_frag_t *frag = skb_shinfo(skb)->frags;
+-	unsigned int mss = skb_shinfo(skb)->gso_size;
+-	unsigned int doffset = skb->data - skb_mac_header(skb);
++	struct sk_buff *fskb = skb_shinfo(head_skb)->frag_list;
++	skb_frag_t *frag = skb_shinfo(head_skb)->frags;
++	unsigned int mss = skb_shinfo(head_skb)->gso_size;
++	unsigned int doffset = head_skb->data - skb_mac_header(head_skb);
+ 	unsigned int offset = doffset;
+-	unsigned int tnl_hlen = skb_tnl_header_len(skb);
++	unsigned int tnl_hlen = skb_tnl_header_len(head_skb);
+ 	unsigned int headroom;
+ 	unsigned int len;
+ 	__be16 proto;
+ 	bool csum;
+ 	int sg = !!(features & NETIF_F_SG);
+-	int nfrags = skb_shinfo(skb)->nr_frags;
++	int nfrags = skb_shinfo(head_skb)->nr_frags;
+ 	int err = -ENOMEM;
+ 	int i = 0;
+ 	int pos;
+ 
+-	proto = skb_network_protocol(skb);
++	proto = skb_network_protocol(head_skb);
+ 	if (unlikely(!proto))
+ 		return ERR_PTR(-EINVAL);
+ 
+ 	csum = !!can_checksum_protocol(features, proto);
+-	__skb_push(skb, doffset);
+-	headroom = skb_headroom(skb);
+-	pos = skb_headlen(skb);
++	__skb_push(head_skb, doffset);
++	headroom = skb_headroom(head_skb);
++	pos = skb_headlen(head_skb);
+ 
+ 	do {
+ 		struct sk_buff *nskb;
+@@ -2883,11 +2884,11 @@ struct sk_buff *skb_segment(struct sk_buff *skb, netdev_features_t features)
+ 		int hsize;
+ 		int size;
+ 
+-		len = skb->len - offset;
++		len = head_skb->len - offset;
+ 		if (len > mss)
+ 			len = mss;
+ 
+-		hsize = skb_headlen(skb) - offset;
++		hsize = skb_headlen(head_skb) - offset;
+ 		if (hsize < 0)
+ 			hsize = 0;
+ 		if (hsize > len || !sg)
+@@ -2936,7 +2937,7 @@ struct sk_buff *skb_segment(struct sk_buff *skb, netdev_features_t features)
+ 			__skb_push(nskb, doffset);
+ 		} else {
+ 			nskb = __alloc_skb(hsize + doffset + headroom,
+-					   GFP_ATOMIC, skb_alloc_rx_flag(skb),
++					   GFP_ATOMIC, skb_alloc_rx_flag(head_skb),
+ 					   NUMA_NO_NODE);
+ 
+ 			if (unlikely(!nskb))
+@@ -2952,12 +2953,12 @@ struct sk_buff *skb_segment(struct sk_buff *skb, netdev_features_t features)
+ 			segs = nskb;
+ 		tail = nskb;
+ 
+-		__copy_skb_header(nskb, skb);
+-		nskb->mac_len = skb->mac_len;
++		__copy_skb_header(nskb, head_skb);
++		nskb->mac_len = head_skb->mac_len;
+ 
+ 		skb_headers_offset_update(nskb, skb_headroom(nskb) - headroom);
+ 
+-		skb_copy_from_linear_data_offset(skb, -tnl_hlen,
++		skb_copy_from_linear_data_offset(head_skb, -tnl_hlen,
+ 						 nskb->data - tnl_hlen,
+ 						 doffset + tnl_hlen);
+ 
+@@ -2966,7 +2967,7 @@ struct sk_buff *skb_segment(struct sk_buff *skb, netdev_features_t features)
+ 
+ 		if (!sg) {
+ 			nskb->ip_summed = CHECKSUM_NONE;
+-			nskb->csum = skb_copy_and_csum_bits(skb, offset,
++			nskb->csum = skb_copy_and_csum_bits(head_skb, offset,
+ 							    skb_put(nskb, len),
+ 							    len, 0);
+ 			continue;
+@@ -2974,10 +2975,11 @@ struct sk_buff *skb_segment(struct sk_buff *skb, netdev_features_t features)
+ 
+ 		nskb_frag = skb_shinfo(nskb)->frags;
+ 
+-		skb_copy_from_linear_data_offset(skb, offset,
++		skb_copy_from_linear_data_offset(head_skb, offset,
+ 						 skb_put(nskb, hsize), hsize);
+ 
+-		skb_shinfo(nskb)->tx_flags = skb_shinfo(skb)->tx_flags & SKBTX_SHARED_FRAG;
++		skb_shinfo(nskb)->tx_flags = skb_shinfo(head_skb)->tx_flags &
++			SKBTX_SHARED_FRAG;
+ 
+ 		while (pos < offset + len) {
+ 			if (i >= nfrags) {
+@@ -3034,7 +3036,7 @@ perform_csum_check:
+ 						  nskb->len - doffset, 0);
+ 			nskb->ip_summed = CHECKSUM_NONE;
+ 		}
+-	} while ((offset += len) < skb->len);
++	} while ((offset += len) < head_skb->len);
+ 
+ 	return segs;
+ 
 -- 
-1.9.0
+MST
 
