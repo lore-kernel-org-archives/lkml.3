@@ -1,121 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753444AbaCJL7L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 07:59:11 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:53794 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752277AbaCJL7H (ORCPT
+	id S1752888AbaCJMKG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 08:10:06 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:48618 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752090AbaCJMKD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 07:59:07 -0400
-Message-ID: <531DA900.5060202@monstr.eu>
-Date: Mon, 10 Mar 2014 12:58:56 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>,
-        "dougthompson@xmission.com" <dougthompson@xmission.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+	Mon, 10 Mar 2014 08:10:03 -0400
+Date: Mon, 10 Mar 2014 13:05:58 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
+Cc: Emilio Lopez <emilio@elopez.com.ar>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        "Koul, Vinod" <vinod.koul@intel.com>,
+        Mike Turquette <mturquette@linaro.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "michal.simek@xilinx.com" <michal.simek@xilinx.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "kpc528@gmail.com" <kpc528@gmail.com>,
-        "kalluripunnaiahchoudary@gmail.com" 
-	<kalluripunnaiahchoudary@gmail.com>,
-        "punnaia@xilinx.com" <punnaia@xilinx.com>
-Subject: Re: [RFC PATCH] edac: zynq: Added EDAC support for zynq ddr ecc controller
-References: <4adb2b4b-2ad6-42b9-929e-cc062f817245@TX2EHSMHS021.ehs.local> <20140310105655.GH14999@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20140310105655.GH14999@e106331-lin.cambridge.arm.com>
-X-Enigmail-Version: 1.6
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-sunxi@googlegroups.com" <linux-sunxi@googlegroups.com>,
+        "kevin.z.m.zh@gmail.com" <kevin.z.m.zh@gmail.com>,
+        "sunny@allwinnertech.com" <sunny@allwinnertech.com>,
+        "shuge@allwinnertech.com" <shuge@allwinnertech.com>,
+        "zhuzhenhua@allwinnertech.com" <zhuzhenhua@allwinnertech.com>
+Subject: Re: [PATCH v3 6/7] DMA: sun6i: Add driver for the Allwinner A31 DMA
+ controller
+Message-ID: <20140310120558.GF2815@lukather>
+References: <1393949884-892-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1393949884-892-7-git-send-email-maxime.ripard@free-electrons.com>
+ <1394028474.28803.172.camel@smile.fi.intel.com>
+MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="oDbPVhl1X1dX8MJdBfDsuSDlbxsSGQFq8"
+	protocol="application/pgp-signature"; boundary="JcvBIhDvR6w3jUPA"
+Content-Disposition: inline
+In-Reply-To: <1394028474.28803.172.camel@smile.fi.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---oDbPVhl1X1dX8MJdBfDsuSDlbxsSGQFq8
-Content-Type: text/plain; charset=ISO-8859-1
+
+--JcvBIhDvR6w3jUPA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On 03/10/2014 11:56 AM, Mark Rutland wrote:
-> On Sun, Mar 09, 2014 at 02:57:16AM +0000, Punnaiah Choudary Kalluri wro=
-te:
->> Added EDAC support for reporting the ecc errors of zynq ddr controller=
-=2E
->> The ddr ecc controller corrects single bit errors and detects double b=
-it
->> errors
->>
->> Signed-off-by: Punnaiah Choudary Kalluri <punnaia@xilinx.com>
->> ---
->>  .../devicetree/bindings/edac/zynq_edac.txt         |   18 +
->>  drivers/edac/Kconfig                               |    7 +
->>  drivers/edac/Makefile                              |    1 +
->>  drivers/edac/zynq_edac.c                           |  613 +++++++++++=
-+++++++++
->>  4 files changed, 639 insertions(+), 0 deletions(-)
->>  create mode 100644 Documentation/devicetree/bindings/edac/zynq_edac.t=
-xt
->>  create mode 100644 drivers/edac/zynq_edac.c
->>
->> diff --git a/Documentation/devicetree/bindings/edac/zynq_edac.txt b/Do=
-cumentation/devicetree/bindings/edac/zynq_edac.txt
->> new file mode 100644
->> index 0000000..c21ff83
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/edac/zynq_edac.txt
->> @@ -0,0 +1,18 @@
->> +Zynq EDAC driver, it does reports the DDR ECC single bit errors that =
-are
->> +corrected and double bit ecc errors that are detected by the DDR ECC =
-controller.
->> +ECC support for DDR is available in half-bus width(16 bit) configurat=
-ion only.
->> +
->> +Required properties:
->> +- compatible: Should be "xlnx,ps7-ddrc" or "xlnx,ps7-ddrc-1.00.a"
+Hi Andriy,
+
+On Wed, Mar 05, 2014 at 02:07:55PM +0000, Shevchenko, Andriy wrote:
+> > +		return PTR_ERR(pll6);
+> > +	}
+> > +
+> > +	ret =3D clk_set_parent(mux, pll6);
+> > +	if (ret) {
+> > +		dev_err(&pdev->dev, "Couldn't reparent AHB1 on PLL6\n");
+> > +		return ret;
+> > +	}
+> > +
+> > +	devm_clk_put(&pdev->dev, mux);
+> > +	devm_clk_put(&pdev->dev, pll6);
 >=20
-> Is this an or or a xor?
+> Since you put those here, would it be better to use plain
+> clk_get/clk_put ?
 
-Compatible string should be just xlnx,zynq-ddrc-1.00.a.
-Nothing with ps7.
+Actually, this allows to have no exit path for the case where one of
+the calls between the first clk_get, and here. devm_clk_* makes error
+handling much easier here, that's just all
 
-Thanks,
-Michal
+I'll fix the other comments you had, and send a new version.
 
+Thanks!
+Maxime
 
 --=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-
-
---oDbPVhl1X1dX8MJdBfDsuSDlbxsSGQFq8
+--JcvBIhDvR6w3jUPA
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Version: GnuPG v1.4.14 (GNU/Linux)
 
-iEYEARECAAYFAlMdqQAACgkQykllyylKDCG/5gCfS7ef2Z11eN5l+5C5L1LZERTk
-N8EAoJqsvEm9i4ZuhRxjBCZDZraaJCze
-=GHMX
+iQIcBAEBAgAGBQJTHaqlAAoJEBx+YmzsjxAgUrsP/R3AjphaZbpaJGAQua0RghUQ
+U2khP8K6Z6dHvkUumqAh43mnrDydDxbVzLqSdCkg9FGoq1jjp5rLPORutCtC/Ybz
+l8eHUi2aiaL5shT48XlJ/hKLaicrl6ZSPG0uOEsHqZtaaSFc3bK6RWSRozLmhiWz
+DyToIg0xh4xetWGWaw2pZKeGZdnuUSurfMh4Bk9ZoQunxtZn7o61vs6RZ0kpaoH2
+QIPmufn+TMuuVzTQY7yyx0nwp1vGH9am6AZRr52SDqvHVfzcnXiJF6W1N+6rh7OP
+3Ag+YnxYZKXe+2LLEzbaPh6JzqgmYfuChYJ9zuIgcJZyuoKw0YvG2XgDO/KTjguG
+Q/ZPX+mOAHlfc5+eT4BaiJ1457wXZ95jpcN3mhnrAswIkzMKwcNKdBrHtAuCaEFv
+AwPR1bNZP1KYCFxW6O3mQl9/UmQJhXITzvBwGmlZN31CebF4eZ9MmgpuNGS0GYeA
++aqAFhm224Wp35+phn5H+Tj42p37jEiN1nCkvXu2tlTjhWq6AnxF1xpyysnWRpAi
+MofIDPnaEWsDFZ5fKOiBf5MURz1hjY9uIRpbSiDYIqHuR2T+ukGkLlBrSKkX0Df6
+hVCfykbjtiX+vJ3AysnTCewla0H1MIDGS7o7sTaa1kYMINoVEwIFAOPWPZ5m+Jch
+AZK/yREPcCqyDr6GVJ4v
+=xrpl
 -----END PGP SIGNATURE-----
 
---oDbPVhl1X1dX8MJdBfDsuSDlbxsSGQFq8--
+--JcvBIhDvR6w3jUPA--
