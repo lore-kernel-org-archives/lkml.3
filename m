@@ -1,145 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753280AbaCJFri (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 01:47:38 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:53000 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753186AbaCJFre (ORCPT
+	id S1753309AbaCJFry (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 01:47:54 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:14979 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753286AbaCJFrw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 01:47:34 -0400
-X-AuditID: 9c93017d-b7c89ae000006ae1-08-531d51f47e70
-Date: Mon, 10 Mar 2014 14:47:43 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Gioh Kim <gioh.kim@lge.com>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Joonsoo Kim'" <iamjoonsoo.kim@lge.com>,
-        "'Zhang Yanfei'" <zhangyanfei@cn.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        =?utf-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>, chanho.min@lge.com,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH][RFC] mm: warning message for vm_map_ram about vm size
-Message-ID: <20140310054743.GH14370@bbox>
-References: <001a01cf3c1d$310716a0$931543e0$@lge.com>
+	Mon, 10 Mar 2014 01:47:52 -0400
+X-IronPort-AV: E=Sophos;i="4.97,622,1389715200"; 
+   d="scan'208";a="9670041"
+Message-ID: <531D4FE6.7000503@cn.fujitsu.com>
+Date: Mon, 10 Mar 2014 13:38:46 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <001a01cf3c1d$310716a0$931543e0$@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: jaegeuk.kim@samsung.com
+CC: f2fs <linux-f2fs-devel@lists.sourceforge.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/5] f2fs: optimize restore_node_summary slightly
+References: <5319A2D8.70409@cn.fujitsu.com> <1394426742.3870.89.camel@kjgkr>
+In-Reply-To: <1394426742.3870.89.camel@kjgkr>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/10 13:44:48,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/10 13:44:50
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Giho,
+Hi Kim,
+On 03/10/2014 12:45 PM, Jaegeuk Kim wrote:
 
-On Mon, Mar 10, 2014 at 01:57:07PM +0900, Gioh Kim wrote:
-> Hi,
+> Hi Gu,
 > 
-> I have a failure of allocation of virtual memory on ARMv7 based platform.
+> 2014-03-07 (금), 18:43 +0800, Gu Zheng:
+>> Previously, we ra_sum_pages to pre-read contiguous pages as more
+>> as possible, and if we fail to alloc more pages, an ENOMEM error
+>> will be reported upstream, even though we have alloced some pages
+>> yet. In fact, we can use the available pages to do the job partly,
+>> and continue the rest in the following circle. Only reporting ENOMEM
+>> upstream if we really can not alloc any available page.
+>>
+>> And another fix is ignoring dealing with the following pages if an
+>> EIO occurs when reading page from page_list.
+>>
+>> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+>> ---
+>>  fs/f2fs/node.c    |   44 ++++++++++++++++++++------------------------
+>>  fs/f2fs/segment.c |    7 +++++--
+>>  2 files changed, 25 insertions(+), 26 deletions(-)
+>>
+>> diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+>> index 8787469..4b7861d 100644
+>> --- a/fs/f2fs/node.c
+>> +++ b/fs/f2fs/node.c
+>> @@ -1588,15 +1588,8 @@ static int ra_sum_pages(struct f2fs_sb_info *sbi, struct list_head *pages,
+>>  	for (; page_idx < start + nrpages; page_idx++) {
+>>  		/* alloc temporal page for read node summary info*/
+>>  		page = alloc_page(GFP_F2FS_ZERO);
+>> -		if (!page) {
+>> -			struct page *tmp;
+>> -			list_for_each_entry_safe(page, tmp, pages, lru) {
+>> -				list_del(&page->lru);
+>> -				unlock_page(page);
+>> -				__free_pages(page, 0);
+>> -			}
+>> -			return -ENOMEM;
+>> -		}
+>> +		if (!page)
+>> +			break;
+>>  
+>>  		lock_page(page);
+>>  		page->index = page_idx;
+>> @@ -1607,7 +1600,8 @@ static int ra_sum_pages(struct f2fs_sb_info *sbi, struct list_head *pages,
+>>  		f2fs_submit_page_mbio(sbi, page, page->index, &fio);
+>>  
+>>  	f2fs_submit_merged_bio(sbi, META, READ);
+>> -	return 0;
+>> +
+>> +	return page_idx - start;
+>>  }
+>>  
+>>  int restore_node_summary(struct f2fs_sb_info *sbi,
+>> @@ -1630,28 +1624,30 @@ int restore_node_summary(struct f2fs_sb_info *sbi,
+>>  		nrpages = min(last_offset - i, bio_blocks);
+>>  
+>>  		/* read ahead node pages */
+>> -		err = ra_sum_pages(sbi, &page_list, addr, nrpages);
+>> -		if (err)
+>> -			return err;
+>> +		nrpages = ra_sum_pages(sbi, &page_list, addr, nrpages);
+>> +		if (!nrpages)
+>> +			return -ENOMEM;
+>>  
+>>  		list_for_each_entry_safe(page, tmp, &page_list, lru) {
+>> -
 > 
-> I called alloc_page()/vm_map_ram() for allocation/mapping pages.
-> Virtual memory space exhausting problem occurred.
-> I checked virtual memory space and found that there are too many 4MB chunks.
+> Here we can just add:
+> 			if (err)
+> 				goto skip;
+> 			lock_page();
+> 			...
+> 			unlock_page();
+> 		skip:
+> 			list_del();
+> 			__free_pages();
 > 
-> I thought that if just one page in the 4MB chunk lives long, 
-> the entire chunk cannot be freed. Therefore new chunk is created again and again.
-> 
-> In my opinion, the vm_map_ram() function should be used for temporary mapping
-> and/or short term memory mapping. Otherwise virtual memory is wasted.
-> 
-> I am not sure if my opinion is correct. If it is, please add some warning message
-> about the vm_map_ram().
-> 
-> 
-> 
-> ---8<---
-> 
-> Subject: [PATCH] mm: warning comment for vm_map_ram
-> 
-> vm_map_ram can occur locking of virtual memory space
-> because if only one page lives long in one vmap_block,
-> it takes 4MB (1024-times more than one page) space.
+> IMO, it's more neat, so if you have any objection, let me know.
+> Otherwise, I'll handle this by myself. :)
 
-For clarification, vm_map_ram has fragment problem because it
-couldn't purge a chunk(ie, 4M address space) if there is a pinning
-object in that addresss space so it could consume all VMALLOC
-address space easily.
+Thanks very much.
 
-We can fix the fragementaion problem with using vmap instead of
-vm_map_ram but it wouldn't a good solution because vmap is much
-slower than vm_map_ram for VMAP_MAX_ALLOC below. In my x86 machine,
-vm_map_ram is 5 times faster than vmap.
+Regards,
+Gu
 
-AFAICR, some proprietary GPU driver uses that function heavily so
-performance would be really important so I want to stick to use
-vm_map_ram.
-
-Another option is that caller should separate long-life and short-life
-object and use vmap for long-life but vm_map_ram for short-life.
-But it's not a good solution because it's hard for allocator layer
-to detect it that how customer lives with the object.
-
-So I thought to fix that problem with revert [1] and adding more
-logic to solve fragmentation problem and make bitmap search
-operation more efficient by caching the hole. It might handle
-fragmentation at the moment but it would make more IPI storm for
-TLB flushing as time goes by so that it would mitigate API itself
-so using for only temporal object is too limited but it's best at the
-moment. I am supporting your opinion.
-
-Let's add some notice message to user.
-
-[1] [3fcd76e8028, mm/vmalloc.c: remove dead code in vb_alloc]
-
+> Thanks,
 > 
-> Change-Id: I6f5919848cf03788b5846b7d850d66e4d93ac39a
-> Signed-off-by: Gioh Kim <gioh.kim@lge.com>
-> ---
->  mm/vmalloc.c |    4 ++++
->  1 file changed, 4 insertions(+)
+>> -			lock_page(page);
+>> -			if (unlikely(!PageUptodate(page))) {
+>> -				err = -EIO;
+>> -			} else {
+>> -				rn = F2FS_NODE(page);
+>> -				sum_entry->nid = rn->footer.nid;
+>> -				sum_entry->version = 0;
+>> -				sum_entry->ofs_in_node = 0;
+>> -				sum_entry++;
+>> +			if (!err) {
+>> +				lock_page(page);
+>> +				if (unlikely(!PageUptodate(page))) {
+>> +					err = -EIO;
+>> +				} else {
+>> +					rn = F2FS_NODE(page);
+>> +					sum_entry->nid = rn->footer.nid;
+>> +					sum_entry->version = 0;
+>> +					sum_entry->ofs_in_node = 0;
+>> +					sum_entry++;
+>> +				}
+>> +				unlock_page(page);
+>>  			}
+>>  
+>>  			list_del(&page->lru);
+>> -			unlock_page(page);
+>>  			__free_pages(page, 0);
+>>  		}
+>>  	}
+>> +
+>>  	return err;
+>>  }
+>>  
+>> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+>> index 199c964..b3f8431 100644
+>> --- a/fs/f2fs/segment.c
+>> +++ b/fs/f2fs/segment.c
+>> @@ -1160,9 +1160,12 @@ static int read_normal_summaries(struct f2fs_sb_info *sbi, int type)
+>>  				ns->ofs_in_node = 0;
+>>  			}
+>>  		} else {
+>> -			if (restore_node_summary(sbi, segno, sum)) {
+>> +			int err;
+>> +
+>> +			err = restore_node_summary(sbi, segno, sum);
+>> +			if (err) {
+>>  				f2fs_put_page(new, 1);
+>> -				return -EINVAL;
+>> +				return err;
+>>  			}
+>>  		}
+>>  	}
 > 
-> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-> index 0fdf968..2de1d1b 100644
-> --- a/mm/vmalloc.c
-> +++ b/mm/vmalloc.c
-> @@ -1083,6 +1083,10 @@ EXPORT_SYMBOL(vm_unmap_ram);
->   * @node: prefer to allocate data structures on this node
->   * @prot: memory protection to use. PAGE_KERNEL for regular RAM
->   *
-> + * This function should be used for TEMPORARY mapping. If just one page lives i
-> + * long, it would occupy 4MB vm size permamently. 100 pages (just 400KB) could
-> + * takes 400MB with bad luck.
-> + *
 
-    If you use this function for below VMAP_MAX_ALLOC pages, it could be faster
-    than vmap so it's good but if you mix long-life and short-life object
-    with vm_map_ram, it could consume lots of address space by fragmentation(
-    expecially, 32bit machine) so you could see failure in the end.
-    So, please use this function for short-life object.
 
->   * Returns: a pointer to the address that has been mapped, or %NULL on failure
->   */
->  void *vm_map_ram(struct page **pages, unsigned int count, int node, pgprot_t prot)
-> --
-> 1.7.9.5
-> 
-> Gioh Kim / 김 기 오
-> Research Engineer
-> Advanced OS Technology Team
-> Software Platform R&D Lab.
-> Mobile: 82-10-7322-5548  
-> E-mail: gioh.kim@lge.com 
-> 19, Yangjae-daero 11gil
-> Seocho-gu, Seoul 137-130, Korea
-> 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
