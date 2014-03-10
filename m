@@ -1,69 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752595AbaCJA2N (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 20:28:13 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:45249 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864AbaCJA2M (ORCPT
+	id S1752766AbaCJAaF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 20:30:05 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:37270 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752615AbaCJAaD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 20:28:12 -0400
-Message-ID: <531D0718.8000305@gmail.com>
-Date: Mon, 10 Mar 2014 01:28:08 +0100
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Pankaj Dubey <pankaj.dubey@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-CC: Mike Turquette <mturquette@linaro.org>
-Subject: Re: [PATCH 1/3] drivers: clk: add samsung common clock config option
-References: <1393392247-6247-1-git-send-email-pankaj.dubey@samsung.com> <1393392247-6247-2-git-send-email-pankaj.dubey@samsung.com>
-In-Reply-To: <1393392247-6247-2-git-send-email-pankaj.dubey@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Sun, 9 Mar 2014 20:30:03 -0400
+Date: Sun, 09 Mar 2014 20:30:01 -0400 (EDT)
+Message-Id: <20140309.203001.1318893833441564547.davem@davemloft.net>
+To: sebastian.hesselbarth@gmail.com
+Cc: rob@landley.net, andrew@lunn.ch, f.fainelli@gmail.com,
+        netdev@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: phy: Add sysfs attribute to prevent PHY suspend
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <531CF864.9040406@gmail.com>
+References: <1394192092-27461-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<20140309.191235.1047481546773873653.davem@davemloft.net>
+	<531CF864.9040406@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sun, 09 Mar 2014 17:30:02 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pankaj,
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Date: Mon, 10 Mar 2014 00:25:24 +0100
 
-On 26.02.2014 06:24, Pankaj Dubey wrote:
-> add samsung common clock config option and let ARCH_EXYNOS or ARCH_S3CXXXX
-> select this if they want to use samsung common clock infrastructure.
->
-> CC: Mike Turquette <mturquette@linaro.org>
-> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-> ---
->   drivers/clk/Kconfig  |   10 ++++++++++
->   drivers/clk/Makefile |    2 +-
->   2 files changed, 11 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-> index 7641965..d93a325 100644
-> --- a/drivers/clk/Kconfig
-> +++ b/drivers/clk/Kconfig
-> @@ -23,6 +23,16 @@ config COMMON_CLK
->   menu "Common Clock Framework"
->   	depends on COMMON_CLK
->
-> +config COMMON_CLK_SAMSUNG
-> +	bool "Clock driver for Samsung SoCs"
-> +	depends on ARCH_S3C64XX || ARCH_S3C24XX || ARCH_EXYNOS || ARM64
-> +	---help---
-> +          Supports clocking on Exynos SoCs:
-> +	  - Exynos5250, Exynos5420 board.
-> +	  - Exynos4 boards.
-> +	  - S3C2412, S3C2416, S3C2466 boards.
-> +	  - S3C64XX boards.
+> There is no way to determine if a bootloader is broken or not. The
+> sysfs knob allows to provide a use case based decision. Of course,
+> we can invent some freaky device tree property but that the DT
+> maintainers will not like either.
 
-I don't think listing the platforms here explicitly is a good idea, as 
-this option shouldn't generally be user-visible (related platforms would 
-not work without this option enabled) and adding support for every new 
-SoC would require changing the help string.
-
-I wonder if we really need this to be user-visible. What about moving it 
-out of this menu, making the symbol select COMMON_CLK and let the 
-platforms just select COMMON_CLK_SAMSUNG alone?
-
-Best regards,
-Tomasz
+My point is that whatever mechanism is used to "decide" that the sysfs
+knob gets set, can also be used to "decide" that a DT property is
+instantiated in the device tree.
