@@ -1,69 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754254AbaCJP6g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 11:58:36 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:56978 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753905AbaCJP6c (ORCPT
+	id S1753906AbaCJQAO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 12:00:14 -0400
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:56320 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751744AbaCJQAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 11:58:32 -0400
-Date: Mon, 10 Mar 2014 08:58:24 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
-        kernel@stlinux.com, Giuseppe Condorelli <giuseppe.condorelli@st.com>
-Subject: Re: [PATCH 1/5] drivers: input: keyboard: st-keyscan: add keyscan
- driver
-Message-ID: <20140310155824.GB29054@core.coreip.homeip.net>
-References: <1393990772-9567-1-git-send-email-gabriel.fernandez@st.com>
- <1393990772-9567-2-git-send-email-gabriel.fernandez@st.com>
- <20140310114819.GO14976@lee--X1>
- <20140310152859.GA29054@core.coreip.homeip.net>
- <20140310153815.GE13661@lee--X1>
+	Mon, 10 Mar 2014 12:00:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140310153815.GE13661@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1394104717-3100-3-git-send-email-sthokal@xilinx.com>
+References: <1394104717-3100-1-git-send-email-sthokal@xilinx.com>
+	<1394104717-3100-3-git-send-email-sthokal@xilinx.com>
+Date: Tue, 11 Mar 2014 00:00:12 +0800
+Message-ID: <CABb+yY1y1sOozVU=iAsotWG-q3N=SogjHjZ=iF04CiXF89eeOg@mail.gmail.com>
+Subject: Re: [PATCH v4 2/2] dma: Add Xilinx AXI Video Direct Memory Access
+ Engine driver support
+From: Jassi Brar <jassisinghbrar@gmail.com>
+To: Srikanth Thokala <sthokal@xilinx.com>
+Cc: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>,
+        michal.simek@xilinx.com, grant.likely@linaro.org, robh+dt@kernel.org,
+        levex@linux.com, Lars-Peter Clausen <lars@metafoo.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jaswinder Singh <jaswinder.singh@linaro.org>,
+        dmaengine@vger.kernel.org, andriy.shevchenko@linux.intel.com,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 03:38:15PM +0000, Lee Jones wrote:
-> > > > This patch adds ST Keyscan driver to use the keypad hw a subset
-> > > > of ST boards provide. Specific board setup will be put in the
-> > > > given dt.
-> > > > 
-> > > > Signed-off-by: Giuseppe Condorelli <giuseppe.condorelli@st.com>
-> > > > Signed-off-by: Gabriel Fernandez <gabriel.fernandez@st.com>
-> > > 
-> > > Are you sure these are in the correct order?
-> > > 
-> > > What is the history of this commit?
-> > > 
-> > > > ---
-> > > >  .../devicetree/bindings/input/st-keypad.txt        |  50 ++++
-> > > 
-> > > This should be submitted as a seperate patch.
-> > 
-> > Why do we have such requirement? To me it would make more sense to add
-> > binding documentation in the same commit as the code that uses these
-> > bindings.
-> 
-> I'm inclined to agree with you and that's actually how we used to do
-> it, but a decision was made by the DT guys at one of the Kernel
-> Summits to submit Documentation as a separate patch.
+On Thu, Mar 6, 2014 at 7:18 PM, Srikanth Thokala <sthokal@xilinx.com> wrote:
 
-Do you have background for this decision? To me it is akin splitting
-header file into a separate patch.
-
--- 
-Dmitry
+> +static struct dma_async_tx_descriptor *
+> +xilinx_vdma_dma_prep_interleaved(struct dma_chan *dchan,
+> +                                struct dma_interleaved_template *xt,
+> +                                unsigned long flags)
+> +{
+> +       struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
+> +       struct xilinx_vdma_tx_descriptor *desc;
+> +       struct xilinx_vdma_tx_segment *segment;
+> +       struct xilinx_vdma_tx_segment *prev = NULL;
+> +       int i;
+> +
+> +       if ((xt->dir != DMA_MEM_TO_DEV) && (xt->dir != DMA_DEV_TO_MEM))
+> +               return NULL;
+> +
+> +       if (!xt->numf || !xt->sgl[0].size)
+> +               return NULL;
+> +
+> +       /* Allocate a transaction descriptor. */
+> +       desc = xilinx_vdma_alloc_tx_descriptor(chan);
+> +       if (!desc)
+> +               return NULL;
+> +
+> +       dma_async_tx_descriptor_init(&desc->async_tx, &chan->common);
+> +       desc->async_tx.tx_submit = xilinx_vdma_tx_submit;
+> +       desc->async_tx.cookie = 0;
+> +       async_tx_ack(&desc->async_tx);
+> +
+> +       /* Build the list of transaction segments. */
+> +       for (i = 0; i < xt->frame_size; i++) {
+> +               struct xilinx_vdma_desc_hw *hw;
+> +
+> +               /* Allocate the link descriptor from DMA pool */
+> +               segment = xilinx_vdma_alloc_tx_segment(chan);
+> +               if (!segment)
+> +                       goto error;
+> +
+> +               /* Fill in the hardware descriptor */
+> +               hw = &segment->hw;
+> +               hw->vsize = xt->numf;
+> +               hw->hsize = xt->sgl[0].size;
+> +               hw->stride = xt->sgl[0].icg <<
+> +                               XILINX_VDMA_FRMDLY_STRIDE_STRIDE_SHIFT;
+>
+It seems the xt->frame_size is (should be?) always going to be 1?
+If yes, the for-loop isn't needed.
+If no, you should probably use 'i' as the index to sgl[], and not always 0.
