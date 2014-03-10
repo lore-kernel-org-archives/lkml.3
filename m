@@ -1,762 +1,499 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855AbaCJJLD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 05:11:03 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:33108 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752191AbaCJJLA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 05:11:00 -0400
-X-AuditID: cbfee68f-b7f156d00000276c-1c-531d819f35bb
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Daniel Jeong'" <gshark.jeong@gmail.com>
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Jean-Christophe Plagniol-Villard'" <plagnioj@jcrosoft.com>,
-        "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>,
-        "'Bryan Wu'" <cooloney@gmail.com>,
-        "'Lee Jones'" <lee.jones@linaro.org>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1393838076-4559-1-git-send-email-gshark.jeong@gmail.com>
-In-reply-to: <1393838076-4559-1-git-send-email-gshark.jeong@gmail.com>
-Subject: Re: [PATCH] backlight: add new LP8860 backlight driver
-Date: Mon, 10 Mar 2014 18:10:55 +0900
-Message-id: <001b01cf3c40$a4b347e0$ee19d7a0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac82wRegFGlWrUXBQCmZN3sO+qBY1gFe/2+g
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDIsWRmVeSWpSXmKPExsVy+t8zI935jbLBBu2PjSyO7pzIZDF5dxer
-	xeWFl1gt7n89ymhxou8DkLtrDpvFuocvmCzWz7/F5sDhsXPWXXaPVxfusHjcubaHzaNvyypG
-	j+M3tjN5fN4kF8AWxWWTkpqTWZZapG+XwJVx+/MRpoIfixgr9rzTamBc2cjYxcjJISFgItF5
-	+xgzhC0mceHeerYuRi4OIYFljBKr1n5hgSma9+0OVGIRo8SLX72MEM5vRok/ay6zg1SxCahJ
-	fPlyGMwWEdCWWNbfww5SxCwwiUni+IWTrCAJIQFXiebLq4ESHBycAm4SP7cngoSFBewl3nx+
-	B9bLIqAqMfPfDbDNvAK2Epu2zGOFsAUlfky+BxZnFtCSWL/zOBOELS+xec1bZpCREgLqEo/+
-	6oKYIgJGErfv5UFUiEjse/EO7GQJgUYOiZ0H+xghVglIfJt8iAWiVVZi0wFoQEhKHFxxg2UC
-	o8QsJItnIVk8C8niWUhWLGBkWcUomlqQXFCclF5krFecmFtcmpeul5yfu4kREtP9OxjvHrA+
-	xJgMtH4is5Rocj4wJeSVxBsamxlZmJqYGhuZW5qRJqwkznv/YVKQkEB6YklqdmpqQWpRfFFp
-	TmrxIUYmDk6pBsb9gVdTNSM2Jrvu4k1aNOWQEcv1bcyfWecEhzHZbJKtt6udfNUmR8PLRiXq
-	xaL1bZF1tw9yR547I8ngKTsjvXLRNrdUa7+Uwmcmr5eH7rt39O7VlaZ/N39K/faG5c/zDg3p
-	NQsYzFvvurj0PrSasudxVtXtL12vc4QM3fT1xSWn5V58+ut45SQlluKMREMt5qLiRAAPXSiu
-	/wIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJKsWRmVeSWpSXmKPExsVy+t9jAd35jbLBBo3HtC2O7pzIZDF5dxer
-	xeWFl1gt7n89ymhxou8DkLtrDpvFuocvmCzWz7/F5sDhsXPWXXaPVxfusHjcubaHzaNvyypG
-	j+M3tjN5fN4kF8AW1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr
-	5OIToOuWmQN0kZJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsI4x4/bnI0wF
-	PxYxVux5p9XAuLKRsYuRk0NCwERi3rc7bBC2mMSFe+uBbC4OIYFFjBIvfvUyQji/GSX+rLnM
-	DlLFJqAm8eXLYTBbREBbYll/DztIEbPAJCaJ4xdOsoIkhARcJZovrwZKcHBwCrhJ/NyeCBIW
-	FrCXePP5HVgvi4CqxMx/N1hAbF4BW4lNW+axQtiCEj8m3wOLMwtoSazfeZwJwpaX2LzmLTPI
-	SAkBdYlHf3VBTBEBI4nb9/IgKkQk9r14xziBUWgWkkGzkAyahWTQLCQtCxhZVjGKphYkFxQn
-	peca6RUn5haX5qXrJefnbmIEJ4xn0jsYVzVYHGIU4GBU4uE98FYmWIg1say4MvcQowQHs5II
-	b0acbLAQb0piZVVqUX58UWlOavEhxmSgPycyS4km5wOTWV5JvKGxiZmRpZGZhZGJuTlpwkri
-	vAdbrQOFBNITS1KzU1MLUotgtjBxcEo1MBp5ZM0UPblgY9KR2zH/NXX+GdecuiHovrtM078j
-	Rl3lANevnJ3y97q5EmcZr2TdqXz71Lm5D3x+C2pfFrFmV+uRW70jYcar9dqt3k3vp/MJuCkp
-	Lt62fE6i7lPVBduk/2w99Y+f/Z7Zwo1fXTreX0tYo37e+XvjtttNVx5HxHNHftXdZaxzmkeJ
-	pTgj0VCLuag4EQAKzCG2XAMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1752520AbaCJJNS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 05:13:18 -0400
+Received: from mga09.intel.com ([134.134.136.24]:41862 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751812AbaCJJNQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 05:13:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,622,1389772800"; 
+   d="scan'208";a="496930359"
+From: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
+To: Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>
+CC: "Koul, Vinod" <vinod.koul@intel.com>,
+        Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Linux-SH <linux-sh@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Geert Uytterhoeven" <geert@linux-m68k.org>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>
+Subject: Re: [PATCH v2][RESENT] dma: add R-Car Audio DMAC peri peri driver
+Thread-Topic: [PATCH v2][RESENT] dma: add R-Car Audio DMAC peri peri driver
+Thread-Index: AQHPPEDwWrF67CTkDES1KSAsjlTCMA==
+Date: Mon, 10 Mar 2014 09:13:02 +0000
+Message-ID: <1394442781.28803.206.camel@smile.fi.intel.com>
+References: <878uu6gle8.wl%kuninori.morimoto.gx@gmail.com>
+	 <874n36supd.wl%kuninori.morimoto.gx@gmail.com>
+In-Reply-To: <874n36supd.wl%kuninori.morimoto.gx@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.237.72.73]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <A60FAD1B40E9354E91B8EDFE884BAE12@intel.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2A9DTiC015473
 
-On Monday, March 03, 2014 6:15 PM, Daniel Jeong wrote:
+On Sun, 2014-03-09 at 18:34 -0700, Kuninori Morimoto wrote:
+> From: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
 > 
+> Add support Audio DMAC peri peri driver
+> for Renesas R-Car Gen2 SoC, using 'shdma-base'
+> DMA driver framework.
 
-(+CC Bryan Wu, Lee Jones)
+Few comments below.
 
-Please add Bryan Wu, Lee Jones to CC list, when you send
-patches for backlight.
-
->  This patch adds LP8860 backlight device driver.
-> LP8860 is a low EMI and High performance 4 channel LED Driver of TI.
-> This device driver provide the way to control brightness and currnet
-
-(+CC Bryan Wu, Lee Jones)
-
-s/provide/provides
-s/currnet/current
-
-> of each channel and provide the way to write eeprom.
-
-s/provide/provides
-
-> To support dt structure, another patch file will be sent.
 > 
-> Signed-off-by: Daniel Jeong <gshark.jeong@gmail.com>
+> Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
 > ---
-
-'To support dt structure, another patch file will be sent.' is
-NOT appropriate for the commit message. So, please move it as below.
-Then, this message will not be included to the commit message, when
-this patch will be merged to maintainer's tree.
-
-Signed-off-by: Daniel Jeong <gshark.jeong@gmail.com>
----
-To support dt structure, another patch file will be sent.
-
-
->  drivers/video/backlight/Kconfig         |    7 +
->  drivers/video/backlight/Makefile        |    1 +
->  drivers/video/backlight/lp8860_bl.c     |  528 +++++++++++++++++++++++++++++++
->  include/linux/platform_data/lp8860_bl.h |   54 ++++
->  4 files changed, 590 insertions(+)
->  create mode 100644 drivers/video/backlight/lp8860_bl.c
->  create mode 100644 include/linux/platform_data/lp8860_bl.h
+> resent
 > 
-> diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
-> index 5a3eb2e..908048f 100644
-> --- a/drivers/video/backlight/Kconfig
-> +++ b/drivers/video/backlight/Kconfig
-> @@ -397,6 +397,13 @@ config BACKLIGHT_LP8788
+>  - add missing "dmaengine@vger.kernel.org"
+> 
+> v1 -> v2
+> 
+>  - run scripts/checkpatch.pl
+>  - ecchange length settings on audmapp_desc_setup()
+>  - exchange slave_id check on audmapp_find_slave()
+> 
+>  drivers/dma/sh/Kconfig                         |    6 +
+>  drivers/dma/sh/Makefile                        |    1 +
+>  drivers/dma/sh/rcar-audmapp.c                  |  325 ++++++++++++++++++++++++
+>  include/linux/platform_data/dma-rcar-audmapp.h |   34 +++
+>  4 files changed, 366 insertions(+)
+>  create mode 100644 drivers/dma/sh/rcar-audmapp.c
+>  create mode 100644 include/linux/platform_data/dma-rcar-audmapp.h
+> 
+> diff --git a/drivers/dma/sh/Kconfig b/drivers/dma/sh/Kconfig
+> index dadd9e01..b4c8138 100644
+> --- a/drivers/dma/sh/Kconfig
+> +++ b/drivers/dma/sh/Kconfig
+> @@ -29,6 +29,12 @@ config RCAR_HPB_DMAE
 >  	help
->  	  This supports TI LP8788 backlight driver.
-> 
-> +config BACKLIGHT_LP8860
-> +	tristate "Backlight Driver for LP8860"
-> +	depends on BACKLIGHT_CLASS_DEVICE && I2C
-> +	select REGMAP_I2C
+>  	  Enable support for the Renesas R-Car series DMA controllers.
+>  
+> +config RCAR_AUDMAC_PP
+> +	tristate "Renesas R-Car Audio DMAC Peripheral Peripheral support"
+> +	depends on SH_DMAE_BASE
 > +	help
-> +	  This supports TI LP8860 Backlight Driver
+> +	  Enable support for the Renesas R-Car Audio DMAC Peripheral Peripheral controllers.
 > +
->  config BACKLIGHT_OT200
->  	tristate "Backlight driver for ot200 visualisation device"
->  	depends on BACKLIGHT_CLASS_DEVICE && CS5535_MFGPT && GPIO_CS5535
-> diff --git a/drivers/video/backlight/Makefile b/drivers/video/backlight/Makefile
-> index bb82002..cbc5ac3 100644
-> --- a/drivers/video/backlight/Makefile
-> +++ b/drivers/video/backlight/Makefile
-> @@ -42,6 +42,7 @@ obj-$(CONFIG_BACKLIGHT_LM3639)		+= lm3639_bl.o
->  obj-$(CONFIG_BACKLIGHT_LOCOMO)		+= locomolcd.o
->  obj-$(CONFIG_BACKLIGHT_LP855X)		+= lp855x_bl.o
->  obj-$(CONFIG_BACKLIGHT_LP8788)		+= lp8788_bl.o
-> +obj-$(CONFIG_BACKLIGHT_LP8860)		+= lp8860_bl.o
->  obj-$(CONFIG_BACKLIGHT_LV5207LP)	+= lv5207lp.o
->  obj-$(CONFIG_BACKLIGHT_MAX8925)		+= max8925_bl.o
->  obj-$(CONFIG_BACKLIGHT_OMAP1)		+= omap1_bl.o
-> diff --git a/drivers/video/backlight/lp8860_bl.c b/drivers/video/backlight/lp8860_bl.c
+>  config SHDMA_R8A73A4
+>  	def_bool y
+>  	depends on ARCH_R8A73A4 && SH_DMAE != n
+> diff --git a/drivers/dma/sh/Makefile b/drivers/dma/sh/Makefile
+> index e856af2..1ce88b2 100644
+> --- a/drivers/dma/sh/Makefile
+> +++ b/drivers/dma/sh/Makefile
+> @@ -7,3 +7,4 @@ endif
+>  shdma-objs := $(shdma-y)
+>  obj-$(CONFIG_SUDMAC) += sudmac.o
+>  obj-$(CONFIG_RCAR_HPB_DMAE) += rcar-hpbdma.o
+> +obj-$(CONFIG_RCAR_AUDMAC_PP) += rcar-audmapp.o
+> diff --git a/drivers/dma/sh/rcar-audmapp.c b/drivers/dma/sh/rcar-audmapp.c
 > new file mode 100644
-> index 0000000..4712e84
+> index 0000000..cd3c237
 > --- /dev/null
-> +++ b/drivers/video/backlight/lp8860_bl.c
-> @@ -0,0 +1,528 @@
+> +++ b/drivers/dma/sh/rcar-audmapp.c
+> @@ -0,0 +1,325 @@
 > +/*
-> +* Simple driver for Texas Instruments lp8860 Backlight driver chip
-> +*
-> +* Copyright (C) 2014 Texas Instruments
-> +* Author: Daniel Jeong  <gshark.jeong@gmail.com>
-> +*		  Ldd Mlp <ldd-mlp@list.ti.com>
-> +*
-> +* This program is free software; you can redistribute it and/or modify
-> +* it under the terms of the GNU General Public License version 2 as
-> +* published by the Free Software Foundation.
-> +*
-> +*/
-> +#include <linux/module.h>
+> + * drivers/dma/sh/rcar-audmapp.c
+> + *
+> + * Copyright (C) 2013 Renesas Electronics Corporation
+> + * Copyright (C) 2013 Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
 
-Please move this header in alphabetical order.
+2014?
 
-> +#include <linux/backlight.h>
+> + *
+> + * based on the drivers/dma/sh/shdma.c
+> + *
+> + * Copyright (C) 2011-2012 Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> + * Copyright (C) 2009 Nobuhiro Iwamatsu <iwamatsu.nobuhiro@renesas.com>
+> + * Copyright (C) 2009 Renesas Solutions, Inc. All rights reserved.
+> + * Copyright (C) 2007 Freescale Semiconductor, Inc. All rights reserved.
+> + *
+> + * This is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + */
 > +#include <linux/delay.h>
-> +#include <linux/err.h>
-> +#include <linux/i2c.h>
-> +#include <linux/platform_data/lp8860_bl.h>
-> +#include <linux/regmap.h>
+> +#include <linux/init.h>
+> +#include <linux/module.h>
 > +#include <linux/slab.h>
-> +#include <linux/uaccess.h>
+> +#include <linux/dmaengine.h>
+> +#include <linux/platform_data/dma-rcar-audmapp.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/shdma-base.h>
 > +
-> +#define REG_CL0_BRT_H	0x00
-> +#define REG_CL0_BRT_L	0x01
-> +#define REG_CL0_I_H		0x02
-> +#define REG_CL0_I_L		0x03
+> +/*
+> + * DMA register
+> + */
+> +#define PDMASAR		0x00
+> +#define PDMADAR		0x04
+> +#define PDMACHCR	0x0c
 > +
-> +#define REG_CL1_BRT_H	0x04
-> +#define REG_CL1_BRT_L	0x05
-> +#define REG_CL1_I		0x06
+> +/* PDMACHCR */
+> +#define PDMACHCR_DE		(1 << 0)
 > +
-> +#define REG_CL2_BRT_H	0x07
-> +#define REG_CL2_BRT_L	0x08
-> +#define REG_CL2_I		0x09
+> +#define AUDMAPP_MAX_CHANNELS	29
 > +
-> +#define REG_CL3_BRT_H	0x0a
-> +#define REG_CL3_BRT_L	0x0b
-> +#define REG_CL3_I		0x0c
+> +/* Default MEMCPY transfer size = 2^2 = 4 bytes */
+> +#define LOG2_DEFAULT_XFER_SIZE	2
+> +#define AUDMAPP_SLAVE_NUMBER	256
+> +#define AUDMAPP_LEN_MAX		(16 * 1024 * 1024)
 > +
-> +#define REG_CONF	0x0d
-> +#define REG_STATUS	0x0e
-> +#define REG_ID		0x12
-> +
-> +#define REG_ROM_CTRL	0x19
-> +#define REG_ROM_UNLOCK	0x1a
-> +#define REG_ROM_START	0x60
-> +#define REG_ROM_END		0x78
-> +
-> +#define REG_EEPROM_START	0x60
-> +#define REG_EEPROM_END		0x78
-> +#define REG_MAX	0xFF
-> +
-> +struct lp8860_chip {
-> +	struct device *dev;
-> +	struct lp8860_platform_data *pdata;
-> +	struct backlight_device *bled[LP8860_LED_MAX];
-> +	struct regmap *regmap;
+> +struct audmapp_chan {
+> +	struct shdma_chan shdma_chan;
+> +	struct audmapp_slave_config *config;
+> +	void __iomem *base;
 > +};
 > +
-> +/* brightness control */
-> +static int lp8860_bled_update_status(struct backlight_device *bl,
-> +				     enum lp8860_leds nsr)
-> +{
-> +	int ret = -EINVAL;
-> +	struct lp8860_chip *pchip = bl_get_data(bl);
+> +struct audmapp_device {
+> +	struct shdma_dev shdma_dev;
+> +	struct audmapp_pdata *pdata;
+> +	struct device *dev;
+> +	void __iomem *chan_reg;
+> +};
 > +
-> +	if (pchip->pdata->mode)
+> +#define to_chan(chan) container_of(chan, struct audmapp_chan, shdma_chan)
+> +#define to_dev(chan) container_of(chan->shdma_chan.dma_chan.device,	\
+> +				  struct audmapp_device, shdma_dev.dma_dev)
+> +
+> +static void audmapp_write(struct audmapp_chan *auchan, u32 data, u32 reg)
+> +{
+> +	struct audmapp_device *audev = to_dev(auchan);
+> +	struct device *dev = audev->dev;
+> +
+> +	dev_dbg(dev, "w %p : %08x\n", auchan->base + reg, data);
+> +
+> +	iowrite32(data, auchan->base + reg);
+> +}
+> +
+> +static u32 audmapp_read(struct audmapp_chan *auchan, u32 reg)
+> +{
+> +	return ioread32(auchan->base + reg);
+> +}
+> +
+> +static void audmapp_halt(struct shdma_chan *schan)
+> +{
+> +	struct audmapp_chan *auchan = to_chan(schan);
+> +	int i;
+> +
+> +	audmapp_write(auchan, 0, PDMACHCR);
+> +
+> +	for (i = 0; i < 1024; i++) {
+> +		if (0 == audmapp_read(auchan, PDMACHCR))
+> +			return;
+> +		udelay(1);
+> +	}
+> +}
+> +
+> +static void audmapp_start_xfer(struct shdma_chan *schan,
+> +			       struct shdma_desc *sdecs)
+> +{
+> +	struct audmapp_chan *auchan = to_chan(schan);
+> +	struct audmapp_device *audev = to_dev(auchan);
+> +	struct audmapp_slave_config *cfg = auchan->config;
+> +	struct device *dev = audev->dev;
+> +	u32 chcr = cfg->chcr | PDMACHCR_DE;
+> +
+> +	dev_dbg(dev, "src/dst/chcr = %x/%x/%x\n",
+
+%pad for src/dst.
+
+> +		cfg->src, cfg->dst, cfg->chcr);
+> +
+> +	audmapp_write(auchan, cfg->src,	PDMASAR);
+> +	audmapp_write(auchan, cfg->dst,	PDMADAR);
+> +	audmapp_write(auchan, chcr,	PDMACHCR);
+> +}
+> +
+> +static struct audmapp_slave_config *
+> +audmapp_find_slave(struct audmapp_chan *auchan, int slave_id)
+> +{
+> +	struct audmapp_device *audev = to_dev(auchan);
+> +	struct audmapp_pdata *pdata = audev->pdata;
+> +	struct audmapp_slave_config *cfg;
+> +	int i;
+> +
+> +	if (slave_id < 0 || slave_id >= AUDMAPP_SLAVE_NUMBER)
+> +		return NULL;
+> +
+> +	for (i = 0, cfg = pdata->slave; i < pdata->slave_num; i++, cfg++)
+> +		if (cfg->slave_id == slave_id)
+> +			return cfg;
+> +
+> +	return NULL;
+> +}
+> +
+> +static int audmapp_set_slave(struct shdma_chan *schan, int slave_id,
+> +			     dma_addr_t slave_addr, bool try)
+> +{
+> +	struct audmapp_chan *auchan = to_chan(schan);
+> +	struct audmapp_slave_config *cfg =
+> +		audmapp_find_slave(auchan, slave_id);
+> +
+> +	if (!cfg)
+> +		return -ENODEV;
+> +	if (try)
 > +		return 0;
 > +
-> +	if (bl->props.state & (BL_CORE_SUSPENDED | BL_CORE_FBBLANK))
-> +		bl->props.brightness = 0;
+> +	auchan->config	= cfg;
 > +
-> +	switch (nsr) {
-> +	case LP8860_LED0:
-> +		ret = regmap_write(pchip->regmap,
-> +				   REG_CL0_BRT_H, bl->props.brightness >> 8);
-> +		ret |= regmap_write(pchip->regmap,
-> +				    REG_CL0_BRT_L, bl->props.brightness & 0xff);
-> +		break;
-> +	case LP8860_LED1:
-> +		ret = regmap_write(pchip->regmap,
-> +				   REG_CL1_BRT_H,
-> +				   (bl->props.brightness >> 8) & 0x1f);
-> +		ret |=
-> +		    regmap_write(pchip->regmap, REG_CL1_BRT_L,
-> +				 bl->props.brightness & 0xff);
-> +		break;
-> +	case LP8860_LED2:
-> +		ret = regmap_write(pchip->regmap,
-> +				   REG_CL2_BRT_H,
-> +				   (bl->props.brightness >> 8) & 0x1f);
-> +		ret |=
-> +		    regmap_write(pchip->regmap, REG_CL2_BRT_L,
-> +				 bl->props.brightness & 0xff);
-> +		break;
-> +	case LP8860_LED3:
-> +		ret = regmap_write(pchip->regmap,
-> +				   REG_CL3_BRT_H,
-> +				   (bl->props.brightness >> 8) & 0x1f);
-> +		ret |=
-> +		    regmap_write(pchip->regmap, REG_CL3_BRT_L,
-> +				 bl->props.brightness & 0xff);
-> +		break;
-> +	default:
-> +		BUG();
-> +	}
-> +	if (ret < 0)
-> +		dev_err(pchip->dev, "fail : i2c access to register.\n");
-> +	else
-> +		ret = bl->props.brightness;
-> +
-> +	return ret;
-> +}
-> +
-> +static int lp8860_bled_get_brightness(struct backlight_device *bl,
-> +				      enum lp8860_leds nsr)
-> +{
-> +	struct lp8860_chip *pchip = bl_get_data(bl);
-> +	unsigned int rval_h, rval_l;
-> +	int ret = -EINVAL;
-> +
-> +	switch (nsr) {
-> +	case LP8860_LED0:
-> +		ret = regmap_read(pchip->regmap, REG_CL0_BRT_H, &rval_h);
-> +		ret |= regmap_read(pchip->regmap, REG_CL0_BRT_L, &rval_l);
-> +		break;
-> +	case LP8860_LED1:
-> +		ret = regmap_read(pchip->regmap, REG_CL1_BRT_H, &rval_h);
-> +		ret |= regmap_read(pchip->regmap, REG_CL1_BRT_L, &rval_l);
-> +		break;
-> +	case LP8860_LED2:
-> +		ret = regmap_read(pchip->regmap, REG_CL2_BRT_H, &rval_h);
-> +		ret |= regmap_read(pchip->regmap, REG_CL2_BRT_L, &rval_l);
-> +		break;
-> +	case LP8860_LED3:
-> +		ret = regmap_read(pchip->regmap, REG_CL3_BRT_H, &rval_h);
-> +		ret |= regmap_read(pchip->regmap, REG_CL3_BRT_L, &rval_l);
-> +		break;
-> +	default:
-> +		BUG();
-> +	}
-> +	if (ret < 0) {
-> +		dev_err(pchip->dev, "fail : i2c access to register.\n");
-> +		return ret;
-> +	}
-> +	bl->props.brightness = (rval_h << 8) | rval_l;
-> +	return bl->props.brightness;
-> +}
-> +
-> +static int lp8860_update_status_bled0(struct backlight_device *bl)
-> +{
-> +	return lp8860_bled_update_status(bl, LP8860_LED0);
-> +}
-> +
-> +static int lp8860_get_brightness_bled0(struct backlight_device *bl)
-> +{
-> +	return lp8860_bled_get_brightness(bl, LP8860_LED0);
-> +}
-> +
-> +static int lp8860_update_status_bled1(struct backlight_device *bl)
-> +{
-> +	return lp8860_bled_update_status(bl, LP8860_LED1);
-> +}
-> +
-> +static int lp8860_get_brightness_bled1(struct backlight_device *bl)
-> +{
-> +	return lp8860_bled_get_brightness(bl, LP8860_LED1);
-> +}
-> +
-> +static int lp8860_update_status_bled2(struct backlight_device *bl)
-> +{
-> +	return lp8860_bled_update_status(bl, LP8860_LED2);
-> +}
-> +
-> +static int lp8860_get_brightness_bled2(struct backlight_device *bl)
-> +{
-> +	return lp8860_bled_get_brightness(bl, LP8860_LED2);
-> +}
-> +
-> +static int lp8860_update_status_bled3(struct backlight_device *bl)
-> +{
-> +	return lp8860_bled_update_status(bl, LP8860_LED3);
-> +}
-> +
-> +static int lp8860_get_brightness_bled3(struct backlight_device *bl)
-> +{
-> +	return lp8860_bled_get_brightness(bl, LP8860_LED3);
-> +}
-> +
-> +#define lp8860_bled_ops(_id)\
-> +{\
-> +	.options = BL_CORE_SUSPENDRESUME,\
-> +	.update_status = lp8860_update_status_bled##_id,\
-> +	.get_brightness = lp8860_get_brightness_bled##_id,\
-> +}
-> +
-> +static const struct backlight_ops lp8860_bled_ops[LP8860_LED_MAX] = {
-> +	[LP8860_LED0] = lp8860_bled_ops(0),
-> +	[LP8860_LED1] = lp8860_bled_ops(1),
-> +	[LP8860_LED2] = lp8860_bled_ops(2),
-> +	[LP8860_LED3] = lp8860_bled_ops(3),
-> +};
-> +
-> +/* current control */
-> +static int lp8860_set_current(struct device *dev,
-> +			      const char *buf, enum lp8860_leds nsr)
-> +{
-> +	struct lp8860_chip *pchip = dev_get_drvdata(dev);
-> +	unsigned int ival;
-> +	ssize_t ret;
-> +
-> +	ret = kstrtouint(buf, 10, &ival);
-> +	if (ret)
-> +		return ret;
-> +
-> +	switch (nsr) {
-> +	case LP8860_LED0:
-> +		ival = min_t(unsigned int, ival, LP8860_LED0_BR_MAX);
-> +		ret = regmap_write(pchip->regmap, REG_CL0_I_H, ival >> 8);
-> +		ret |= regmap_write(pchip->regmap, REG_CL0_I_L, ival & 0xff);
-> +		break;
-> +	case LP8860_LED1:
-> +		ival = min_t(unsigned int, ival, LP8860_LED1_BR_MAX);
-> +		ret = regmap_write(pchip->regmap, REG_CL1_I, ival & 0xff);
-> +		break;
-> +	case LP8860_LED2:
-> +		ival = min_t(unsigned int, ival, LP8860_LED2_BR_MAX);
-> +		ret = regmap_write(pchip->regmap, REG_CL2_I, ival & 0xff);
-> +		break;
-> +	case LP8860_LED3:
-> +		ival = min_t(unsigned int, ival, LP8860_LED3_BR_MAX);
-> +		ret = regmap_write(pchip->regmap, REG_CL3_I, ival & 0xff);
-> +		break;
-> +	default:
-> +		BUG();
-> +	}
-> +	if (ret < 0)
-> +		dev_err(pchip->dev, "fail : i2c access error.\n");
-> +
-> +	return ret;
-> +}
-> +
-> +static ssize_t lp8860_current_store_bled0(struct device *dev,
-> +					  struct device_attribute *devAttr,
-> +					  const char *buf, size_t size)
-> +{
-> +	int ret;
-> +
-> +	ret = lp8860_set_current(dev, buf, LP8860_LED0);
-> +	if (ret < 0)
-> +		return ret;
-> +	return size;
-> +}
-> +
-> +static ssize_t lp8860_current_store_bled1(struct device *dev,
-> +					  struct device_attribute *devAttr,
-> +					  const char *buf, size_t size)
-> +{
-> +	int ret;
-> +
-> +	ret = lp8860_set_current(dev, buf, LP8860_LED1);
-> +	if (ret < 0)
-> +		return ret;
-> +	return size;
-> +}
-> +
-> +static ssize_t lp8860_current_store_bled2(struct device *dev,
-> +					  struct device_attribute *devAttr,
-> +					  const char *buf, size_t size)
-> +{
-> +	int ret;
-> +
-> +	ret = lp8860_set_current(dev, buf, LP8860_LED2);
-> +	if (ret < 0)
-> +		return ret;
-> +	return size;
-> +}
-> +
-> +static ssize_t lp8860_current_store_bled3(struct device *dev,
-> +					  struct device_attribute *devAttr,
-> +					  const char *buf, size_t size)
-> +{
-> +	int ret;
-> +
-> +	ret = lp8860_set_current(dev, buf, LP8860_LED3);
-> +	if (ret < 0)
-> +		return ret;
-> +	return size;
-> +}
-> +
-> +#define lp8860_attr(_name, _show, _store)\
-> +{\
-> +	.attr = {\
-> +		.name = _name,\
-> +		.mode = S_IWUSR,\
-> +	},\
-> +	.show = _show,\
-> +	.store = _store,\
-> +}
-> +
-> +static struct device_attribute lp8860_dev_attr[LP8860_LED_MAX] = {
-> +	[LP8860_LED0] = lp8860_attr("current", NULL,
-> +				    lp8860_current_store_bled0),
-> +	[LP8860_LED1] = lp8860_attr("current", NULL,
-> +				    lp8860_current_store_bled1),
-> +	[LP8860_LED2] = lp8860_attr("current", NULL,
-> +				    lp8860_current_store_bled2),
-> +	[LP8860_LED3] = lp8860_attr("current", NULL,
-> +				    lp8860_current_store_bled3),
-> +};
-> +
-> +/*
-> + * eeprom write and readback to check.
-> + * eeprom register range is from 60h to 78h
-> + * buffer value to write data [reg] [data]
-> + * e.g) to change the register 0x60 value to 0xff
-> + *      buffer value should be 60 ff
-> + */
-> +static ssize_t lp8860_eeprom_store(struct device *dev,
-> +				   struct device_attribute *devAttr,
-> +				   const char *buf, size_t size)
-> +{
-> +	struct lp8860_chip *pchip = dev_get_drvdata(dev);
-> +	unsigned int reg, data, rval;
-> +	char *tok;
-> +	int ret;
-> +
-> +	/* register no. */
-> +	tok = strsep((char **)&buf, " ,\n");
-> +	if (tok == NULL)
-> +		goto err_input;
-> +	ret = kstrtouint(tok, 16, &reg);
-> +	if (ret)
-> +		goto err_input;
-> +
-> +	/* register value */
-> +	tok = strsep((char **)&buf, " ,\n");
-> +	if (tok == NULL)
-> +		goto err_input;
-> +	ret = kstrtouint(tok, 16, &data);
-> +	if (ret)
-> +		goto err_input;
-> +	/*
-> +	 * EEPROM Programming sequence
-> +	 *    (program data permanently from registers to NVM)
-> +	 * 1. Unlock EEPROM by writing
-> +	 *    the unlock codes to register 1Ah(08, BA, EF)
-> +	 * 2. Write data to EEPROM registers (address 60h...78h)
-> +	 * 3. Write EE_PROG to 1 in address 19h. (02h to address 19h)
-> +	 * 4. Wait 100ms
-
-If possible, please add the reason why 100ms is necessary.
-100ms is very huge delay.
-
-> +	 * 5. Write EE_PROG to 0 in address 19h. (00h to address 19h)
-> +	 */
-> +	if (reg < REG_EEPROM_START || reg > REG_EEPROM_END || data > 0xff)
-> +		goto err_input;
-> +	ret = regmap_write(pchip->regmap, REG_ROM_UNLOCK, 0x08);
-> +	ret |= regmap_write(pchip->regmap, REG_ROM_UNLOCK, 0xba);
-> +	ret |= regmap_write(pchip->regmap, REG_ROM_UNLOCK, 0xef);
-> +	ret |= regmap_write(pchip->regmap, reg, data);
-> +	ret |= regmap_write(pchip->regmap, REG_ROM_CTRL, 0x02);
-> +	msleep(100);
-> +	ret |= regmap_write(pchip->regmap, REG_ROM_CTRL, 0x00);
-> +	if (ret < 0)
-> +		goto err_i2c;
-> +
-> +	/* read back */
-> +	ret = regmap_write(pchip->regmap, REG_ROM_UNLOCK, 0x08);
-> +	ret |= regmap_write(pchip->regmap, REG_ROM_UNLOCK, 0xba);
-> +	ret |= regmap_write(pchip->regmap, REG_ROM_UNLOCK, 0xef);
-> +	ret |= regmap_write(pchip->regmap, REG_ROM_CTRL, 0x01);
-> +	msleep(100);
-> +	ret |= regmap_write(pchip->regmap, REG_ROM_CTRL, 0x00);
-> +	ret |= regmap_read(pchip->regmap, reg, &rval);
-> +	if (ret < 0)
-> +		goto err_i2c;
-> +	if (rval != data)
-> +		dev_err(pchip->dev, "fail : eeprom did not change.\n");
-> +
-> +	return size;
-> +
-> +err_i2c:
-> +	dev_err(pchip->dev, "fail : i2c access error.\n");
-> +	return ret;
-> +
-> +err_input:
-> +	dev_err(pchip->dev, "fail : input fail.\n");
-> +	return -EINVAL;
-> +}
-> +
-> +static DEVICE_ATTR(eeprom, S_IWUSR, NULL, lp8860_eeprom_store);
-> +
-> +/* backlight register and remove */
-> +static char *lp8860_bled_name[LP8860_LED_MAX] = {
-> +	[LP8860_LED0] = "bled0",
-> +	[LP8860_LED1] = "bled1",
-> +	[LP8860_LED2] = "bled2",
-> +	[LP8860_LED3] = "bled3",
-> +};
-> +
-> +static int lp8860_backlight_remove(struct lp8860_chip *pchip)
-> +{
-> +	int icnt;
-> +
-> +	device_remove_file(&(pchip->bled[0]->dev), &dev_attr_eeprom);
-> +	for (icnt = LP8860_LED0; icnt < LP8860_LED_MAX; icnt++) {
-> +		if (pchip->bled[icnt]) {
-> +			backlight_device_unregister(pchip->bled[icnt]);
-> +			device_remove_file(&(pchip->bled[icnt]->dev),
-> +					   &lp8860_dev_attr[icnt]);
-> +		}
-> +	}
 > +	return 0;
 > +}
 > +
-> +static int lp8860_backlight_registers(struct lp8860_chip *pchip)
+> +static int audmapp_desc_setup(struct shdma_chan *schan,
+> +			      struct shdma_desc *sdecs,
+> +			      dma_addr_t src, dma_addr_t dst, size_t *len)
 > +{
-> +	struct backlight_properties props;
-> +	struct lp8860_platform_data *pdata = pchip->pdata;
-> +	int icnt, ret;
+> +	struct audmapp_chan *auchan = to_chan(schan);
+> +	struct audmapp_slave_config *cfg = auchan->config;
 > +
-> +	props.type = BACKLIGHT_RAW;
-> +	for (icnt = LP8860_LED0; icnt < LP8860_LED_MAX; icnt++) {
-> +		props.max_brightness = pdata->max_brt[icnt];
-> +		pchip->bled[icnt] =
-> +		    backlight_device_register(lp8860_bled_name[icnt],
-
-devm_* functions will make the code simpler.
-Thus, please use devm_backlight_device_register(), instead of
-backlight_device_register().
-
-> +					      pchip->dev, pchip,
-> +					      &lp8860_bled_ops[icnt], &props);
-> +		if (IS_ERR(pchip->bled[icnt])) {
-> +			dev_err(pchip->dev, "fail : backlight register.\n");
-> +			ret = PTR_ERR(pchip->bled[icnt]);
-> +			goto err_out;
-> +		}
+> +	if (!cfg)
+> +		return -ENODEV;
 > +
-> +		ret = device_create_file(&(pchip->bled[icnt]->dev),
-> +					 &lp8860_dev_attr[icnt]);
-> +		if (ret < 0) {
-> +			dev_err(pchip->dev, "fail : to add sysfs entries.\n");
-> +			goto err_out;
-> +		}
-> +	}
-> +	/* access eeprom */
-> +	ret = device_create_file(&(pchip->bled[LP8860_LED0]->dev),
-> +				 &dev_attr_eeprom);
-> +	if (ret < 0) {
-> +		dev_err(pchip->dev, "fail : to add sysfs entries.\n");
-> +		goto err_out;
-> +	}
+> +	if (*len > schan->max_xfer_len)
+> +		*len = schan->max_xfer_len;
+> +
 > +	return 0;
-> +
-> +err_out:
-> +	lp8860_backlight_remove(pchip);
-> +	return ret;
 > +}
 > +
-> +static const struct regmap_config lp8860_regmap = {
-> +	.reg_bits = 8,
-> +	.val_bits = 8,
-> +	.max_register = REG_MAX,
+> +static void audmapp_setup_xfer(struct shdma_chan *schan,
+> +			       int slave_id)
+> +{
+> +}
+> +
+> +static dma_addr_t audmapp_slave_addr(struct shdma_chan *schan)
+> +{
+> +	return 0; /* always fixed address */
+> +}
+> +
+> +static bool audmapp_channel_busy(struct shdma_chan *schan)
+> +{
+> +	struct audmapp_chan *auchan = to_chan(schan);
+> +	u32 chcr = audmapp_read(auchan, PDMACHCR);
+> +
+> +	return chcr & ~PDMACHCR_DE;
+> +}
+> +
+> +static bool audmapp_desc_completed(struct shdma_chan *schan,
+> +				   struct shdma_desc *sdesc)
+> +{
+> +	return true;
+> +}
+> +
+> +static struct shdma_desc *audmapp_embedded_desc(void *buf, int i)
+> +{
+> +	return &((struct shdma_desc *)buf)[i];
+> +}
+> +
+> +static const struct shdma_ops audmapp_shdma_ops = {
+> +	.halt_channel	= audmapp_halt,
+> +	.desc_setup	= audmapp_desc_setup,
+> +	.set_slave	= audmapp_set_slave,
+> +	.start_xfer	= audmapp_start_xfer,
+> +	.embedded_desc	= audmapp_embedded_desc,
+> +	.setup_xfer	= audmapp_setup_xfer,
+> +	.slave_addr	= audmapp_slave_addr,
+> +	.channel_busy	= audmapp_channel_busy,
+> +	.desc_completed	= audmapp_desc_completed,
 > +};
 > +
-> +static int lp8860_probe(struct i2c_client *client,
-> +			const struct i2c_device_id *id)
+> +static int audmapp_chan_probe(struct platform_device *pdev,
+> +			      struct audmapp_device *audev, int id)
 > +{
-> +	struct lp8860_chip *pchip;
-> +	struct lp8860_platform_data *pdata = dev_get_platdata(&client->dev);
-> +	int ret, icnt;
+> +	struct shdma_dev *sdev = &audev->shdma_dev;
+> +	struct audmapp_chan *auchan;
+> +	struct shdma_chan *schan;
+> +	struct device *dev = audev->dev;
 > +
-> +	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
-> +		dev_err(&client->dev, "fail : i2c functionality check.\n");
-> +		return -EOPNOTSUPP;
-> +	}
-> +
-> +	pchip = devm_kzalloc(&client->dev,
-> +			     sizeof(struct lp8860_chip), GFP_KERNEL);
-> +	if (!pchip)
+> +	auchan = devm_kzalloc(dev, sizeof(struct audmapp_chan), GFP_KERNEL);
+
+sizeof(*auchan)
+
+> +	if (!auchan) {
+> +		dev_err(dev, "No free memory for allocating dma channels!\n");
 > +		return -ENOMEM;
-> +	pchip->dev = &client->dev;
-> +
-> +	pchip->regmap = devm_regmap_init_i2c(client, &lp8860_regmap);
-> +	if (IS_ERR(pchip->regmap)) {
-> +		ret = PTR_ERR(pchip->regmap);
-> +		dev_err(pchip->dev, "fail : allocate i2c register map.\n");
-> +		return ret;
 > +	}
 > +
-> +	if (pdata == NULL) {
-> +		pdata = devm_kzalloc(pchip->dev,
-> +				     sizeof(struct lp8860_platform_data),
-> +				     GFP_KERNEL);
-> +		if (pdata == NULL)
-> +			return -ENOMEM;
-> +		pdata->max_brt[LP8860_LED0] = 65535;
-> +		for (icnt = LP8860_LED1; icnt < LP8860_LED_MAX; icnt++)
-> +			pdata->max_brt[icnt] = 8191;
-> +		pchip->pdata = pdata;
-> +	} else {
-> +		pchip->pdata = pdata;
-> +	}
-> +	i2c_set_clientdata(client, pchip);
-> +	ret = lp8860_backlight_registers(pchip);
-> +	return ret;
+> +	schan = &auchan->shdma_chan;
+> +	schan->max_xfer_len = AUDMAPP_LEN_MAX;
+> +
+> +	shdma_chan_probe(sdev, schan, id);
+> +
+> +	auchan->base = audev->chan_reg + 0x20 + (0x10 * id);
+> +	dev_dbg(dev, "%02d : %p / %p", id, auchan->base, audev->chan_reg);
+> +
+> +	return 0;
 > +}
 > +
-> +static int lp8860_remove(struct i2c_client *client)
+> +static void audmapp_chan_remove(struct audmapp_device *audev)
 > +{
-> +	return lp8860_backlight_remove(i2c_get_clientdata(client));
+> +	struct dma_device *dma_dev = &audev->shdma_dev.dma_dev;
+> +	struct shdma_chan *schan;
+> +	int i;
+> +
+> +	shdma_for_each_chan(schan, &audev->shdma_dev, i) {
+> +		BUG_ON(!schan);
+> +		shdma_chan_remove(schan);
+> +	}
+> +	dma_dev->chancnt = 0;
 > +}
 > +
-> +static const struct i2c_device_id lp8860_id[] = {
-> +	{LP8860_NAME, 0},
-> +	{}
+> +static int audmapp_probe(struct platform_device *pdev)
+> +{
+> +	struct audmapp_pdata *pdata = pdev->dev.platform_data;
+> +	struct audmapp_device *audev;
+> +	struct shdma_dev *sdev;
+> +	struct dma_device *dma_dev;
+> +	struct resource *res;
+> +	int err, i;
+> +
+> +	if (!pdata)
+> +		return -ENODEV;
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +
+> +	audev = devm_kzalloc(&pdev->dev, sizeof(struct audmapp_device),
+> +			     GFP_KERNEL);
+
+sizeof(*audev)
+
+> +	if (!audev) {
+> +		dev_err(&pdev->dev, "Not enough memory\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	audev->dev	= &pdev->dev;
+> +	audev->pdata	= pdata;
+> +	audev->chan_reg	= devm_ioremap_resource(&pdev->dev, res);
+> +	if (IS_ERR(audev->chan_reg))
+> +		return PTR_ERR(audev->chan_reg);
+> +
+> +	sdev		= &audev->shdma_dev;
+> +	sdev->ops	= &audmapp_shdma_ops;
+> +	sdev->desc_size	= sizeof(struct shdma_desc);
+> +
+> +	dma_dev			= &sdev->dma_dev;
+> +	dma_dev->copy_align	= LOG2_DEFAULT_XFER_SIZE;
+> +	dma_cap_set(DMA_SLAVE, dma_dev->cap_mask);
+> +
+> +	err = shdma_init(&pdev->dev, sdev, AUDMAPP_MAX_CHANNELS);
+> +	if (err < 0)
+> +		return err;
+> +
+> +	platform_set_drvdata(pdev, audev);
+> +
+> +	/* Create DMA Channel */
+> +	for (i = 0; i < AUDMAPP_MAX_CHANNELS; i++) {
+> +		err = audmapp_chan_probe(pdev, audev, i);
+> +		if (err)
+> +			goto chan_probe_err;
+> +	}
+> +
+> +	err = dma_async_device_register(dma_dev);
+> +	if (err < 0)
+> +		goto chan_probe_err;
+> +
+> +	return err;
+> +
+> +chan_probe_err:
+> +	audmapp_chan_remove(audev);
+> +	shdma_cleanup(sdev);
+> +
+> +	return err;
+> +}
+> +
+> +static int audmapp_remove(struct platform_device *pdev)
+> +{
+> +	struct audmapp_device *audev = platform_get_drvdata(pdev);
+> +	struct dma_device *dma_dev = &audev->shdma_dev.dma_dev;
+> +
+> +	dma_async_device_unregister(dma_dev);
+> +
+> +	audmapp_chan_remove(audev);
+> +	shdma_cleanup(&audev->shdma_dev);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver audmapp_driver = {
+> +	.probe		= audmapp_probe,
+> +	.remove		= audmapp_remove,
+> +	.driver		= {
+> +		.owner	= THIS_MODULE,
+> +		.name	= "rcar-audmapp-engine",
+> +	},
 > +};
+> +module_platform_driver(audmapp_driver);
 > +
-> +MODULE_DEVICE_TABLE(i2c, lp8860_id);
-> +static struct i2c_driver lp8860_i2c_driver = {
-> +	.driver = {
-> +		   .name = LP8860_NAME,
-> +		   },
-
-Fix the indent style as below.
-
- +	   },
-
-> +	.probe = lp8860_probe,
-> +	.remove = lp8860_remove,
-> +	.id_table = lp8860_id,
-> +};
-> +
-> +module_i2c_driver(lp8860_i2c_driver);
-> +
-> +MODULE_DESCRIPTION("Texas Instruments LP8860 Backlight Driver");
-> +MODULE_AUTHOR("Daniel Jeong <gshark.jeong@gmail.com>");
-> +MODULE_AUTHOR("Ldd Mlp <ldd-mlp@list.ti.com>");
-> +MODULE_LICENSE("GPL v2");
-> diff --git a/include/linux/platform_data/lp8860_bl.h b/include/linux/platform_data/lp8860_bl.h
+> +MODULE_AUTHOR("Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>");
+> +MODULE_DESCRIPTION("Renesas R-Car Audio DMAC peri-peri driver");
+> +MODULE_LICENSE("GPL");
+> diff --git a/include/linux/platform_data/dma-rcar-audmapp.h b/include/linux/platform_data/dma-rcar-audmapp.h
 > new file mode 100644
-> index 0000000..61bd0f5
+> index 0000000..346df66
 > --- /dev/null
-> +++ b/include/linux/platform_data/lp8860_bl.h
-> @@ -0,0 +1,54 @@
+> +++ b/include/linux/platform_data/dma-rcar-audmapp.h
+> @@ -0,0 +1,34 @@
 > +/*
-> + * Simple driver for Texas Instruments LM3642 LED Flash driver chip
-> + * Copyright (C) 2014 Texas Instruments
+> + * include/linux/sh_audma-pp.h
+> + *     This file is header file for Audio-DMAC-pp peripheral.
+> + *
+> + * Copyright (C) 2013 Renesas Electronics Corporation
+
+2014?
+
+> + *
+> + * This file is based on the include/linux/sh_dma.h
+> + *
+> + * Header for the new SH dmaengine driver
+> + *
+> + * Copyright (C) 2010 Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 > + *
 > + * This program is free software; you can redistribute it and/or modify
 > + * it under the terms of the GNU General Public License version 2 as
 > + * published by the Free Software Foundation.
-> + *
 > + */
+> +#ifndef SH_AUDMAPP_H
+> +#define SH_AUDMAPP_H
 > +
-> +#ifndef __LINUX_LP8860_H
-> +#define __LINUX_LP8860_H
-
-Prefix 'LINUX' looks redundant.
-Please replace '__LINUX_LP8860_H' with '__LP8860_H'.
-
-If the datasheet of 'lp8860' is not closed, please let us
-know where the datasheet is. It would be helpful for reviewing
-your patch.
-
-Best regards,
-Jingoo Han
-
+> +#include <linux/dmaengine.h>
 > +
-> +#define LP8860_NAME "lp8860"
-> +#define LP8860_ADDR 0x2d
-> +
-> +#define LP8860_LED0_BR_MAX 65535
-> +#define LP8860_LED1_BR_MAX 8191
-> +#define LP8860_LED2_BR_MAX 8191
-> +#define LP8860_LED3_BR_MAX 8191
-> +
-> +#define LP8860_LED0_I_MAX 4095
-> +#define LP8860_LED1_I_MAX 255
-> +#define LP8860_LED2_I_MAX 255
-> +#define LP8860_LED3_I_MAX 255
-> +
-> +enum lp8860_leds {
-> +	LP8860_LED0 = 0,
-> +	LP8860_LED1,
-> +	LP8860_LED2,
-> +	LP8860_LED3,
-> +	LP8860_LED_MAX
+> +struct audmapp_slave_config {
+> +	int		slave_id;
+> +	dma_addr_t	src;
+> +	dma_addr_t	dst;
+> +	u32		chcr;
 > +};
 > +
-> +enum lp8860_ctrl_mode {
-> +	LP8860_CTRL_I2C = 0,
-> +	LP8860_CTRL_I2C_PWM,
+> +struct audmapp_pdata {
+> +	struct audmapp_slave_config *slave;
+> +	int slave_num;
 > +};
 > +
-> +/* struct lp8860 platform data
-> + * @mode : control mode
-> + * @max_brt : maximum brightness.
-> + *		LED0 0 ~ 65535
-> + *		LED1 0 ~ 8191
-> + *		LED2 0 ~ 8191
-> + *		LED3 0 ~ 8191
-> + */
-> +struct lp8860_platform_data {
-> +
-> +	enum lp8860_ctrl_mode mode;
-> +	int max_brt[LP8860_LED_MAX];
-> +};
-> +
-> +#endif /* __LINUX_LP8860_H */
-> --
-> 1.7.9.5
+> +#endif /* SH_AUDMAPP_H */
 
+
+-- 
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
+---------------------------------------------------------------------
+Intel Finland Oy
+Registered Address: PL 281, 00181 Helsinki 
+Business Identity Code: 0357606 - 4 
+Domiciled in Helsinki 
+
+This e-mail and any attachments may contain confidential material for
+the sole use of the intended recipient(s). Any review or distribution
+by others is strictly prohibited. If you are not the intended
+recipient, please contact the sender and delete all copies.
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
