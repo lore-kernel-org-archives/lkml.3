@@ -1,68 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753224AbaCJJhE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 05:37:04 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50170 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752022AbaCJJhD (ORCPT
+	id S1753254AbaCJJhe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 05:37:34 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:21269 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752204AbaCJJhb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 05:37:03 -0400
-Date: Mon, 10 Mar 2014 09:36:57 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Message-ID: <20140310093657.GL28112@sirena.org.uk>
-References: <1394440371-29588-1-git-send-email-k.kozlowski@samsung.com>
- <1394440371-29588-8-git-send-email-k.kozlowski@samsung.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="JBmVoN0GeLJFe550"
-Content-Disposition: inline
-In-Reply-To: <1394440371-29588-8-git-send-email-k.kozlowski@samsung.com>
-X-Cookie: Oh no, not again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 8/8] regulator: max8973: Remove unused field from 'struct
- max8973_chip'
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Mon, 10 Mar 2014 05:37:31 -0400
+X-AuditID: cbfec7f5-b7fc96d000004885-ee-531d87d8008d
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH] regulator: max8660: Remove regulator_dev pointer from state
+ container
+Date: Mon, 10 Mar 2014 10:37:19 +0100
+Message-id: <1394444239-6425-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKJMWRmVeSWpSXmKPExsVy+t/xK7o32mWDDZonaFtMffiEzeL1C0OL
+	b1c6mCwu75rD5sDisXPWXXaPTas62Tz6tqxi9Pi8SS6AJYrLJiU1J7MstUjfLoErY+PqV4wF
+	R4Qqpj+7yNLA+Juvi5GTQ0LAROLT2a+sELaYxIV769lAbCGBpYwSE5+yQNh9TBILvpWC2GwC
+	xhKbly8BqxERyJDYPG8qWC+zgKHEz3d/2LsYOTiEBSIkLndzgIRZBFQljp66wAxi8wq4SRxb
+	v4UZpERCQEFiziSbCYzcCxgZVjGKppYmFxQnpeca6RUn5haX5qXrJefnbmKEeP3rDsalx6wO
+	MQpwMCrx8B54KxMsxJpYVlyZe4hRgoNZSYT3YatssBBvSmJlVWpRfnxRaU5q8SFGJg5OqQbG
+	Gc8Y3s84+m+7qL97hMndLttGk6iFP862B9+6frHNtSf7yHKuafwcTstKXvrcOPVd8L4o83zV
+	+nfPTk1RVmtQv5dS9ae/QKCLucl1q6buVcNPrVwX75wtzKgvmuuVOfX2S+5rj/ROPTvaobBg
+	veMFZaHwsxyWVnIBm2Mb13NryVxbNCl00S1RJZbijERDLeai4kQATbZzwNgBAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Don't store pointer to regulator_dev returned by
+devm_regulator_register() in state container. It isn't used anywhere
+outside of max8660_probe() function.
 
---JBmVoN0GeLJFe550
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ drivers/regulator/max8660.c |   16 ++++++----------
+ 1 file changed, 6 insertions(+), 10 deletions(-)
 
-On Mon, Mar 10, 2014 at 09:32:51AM +0100, Krzysztof Kozlowski wrote:
+diff --git a/drivers/regulator/max8660.c b/drivers/regulator/max8660.c
+index 8d94d3d7f97f..36fb1060cd7b 100644
+--- a/drivers/regulator/max8660.c
++++ b/drivers/regulator/max8660.c
+@@ -81,7 +81,6 @@ enum {
+ struct max8660 {
+ 	struct i2c_client *client;
+ 	u8 shadow_regs[MAX8660_N_REGS];		/* as chip is write only */
+-	struct regulator_dev *rdev[];
+ };
+ 
+ static int max8660_write(struct max8660 *max8660, u8 reg, u8 mask, u8 val)
+@@ -373,7 +372,6 @@ static inline int max8660_pdata_from_dt(struct device *dev,
+ static int max8660_probe(struct i2c_client *client,
+ 				   const struct i2c_device_id *i2c_id)
+ {
+-	struct regulator_dev **rdev;
+ 	struct device *dev = &client->dev;
+ 	struct max8660_platform_data *pdata = dev_get_platdata(dev);
+ 	struct regulator_config config = { };
+@@ -406,14 +404,11 @@ static int max8660_probe(struct i2c_client *client,
+ 		return -EINVAL;
+ 	}
+ 
+-	max8660 = devm_kzalloc(dev, sizeof(struct max8660) +
+-			sizeof(struct regulator_dev *) * MAX8660_V_END,
+-			GFP_KERNEL);
++	max8660 = devm_kzalloc(dev, sizeof(struct max8660), GFP_KERNEL);
+ 	if (!max8660)
+ 		return -ENOMEM;
+ 
+ 	max8660->client = client;
+-	rdev = max8660->rdev;
+ 
+ 	if (pdata->en34_is_high) {
+ 		/* Simulate always on */
+@@ -481,6 +476,7 @@ static int max8660_probe(struct i2c_client *client,
+ 
+ 	/* Finally register devices */
+ 	for (i = 0; i < pdata->num_subdevs; i++) {
++		struct regulator_dev *rdev;
+ 
+ 		id = pdata->subdevs[i].id;
+ 
+@@ -489,13 +485,13 @@ static int max8660_probe(struct i2c_client *client,
+ 		config.of_node = of_node[i];
+ 		config.driver_data = max8660;
+ 
+-		rdev[i] = devm_regulator_register(&client->dev,
++		rdev = devm_regulator_register(&client->dev,
+ 						  &max8660_reg[id], &config);
+-		if (IS_ERR(rdev[i])) {
+-			ret = PTR_ERR(rdev[i]);
++		if (IS_ERR(rdev)) {
++			ret = PTR_ERR(rdev);
+ 			dev_err(&client->dev, "failed to register %s\n",
+ 				max8660_reg[id].name);
+-			return PTR_ERR(rdev[i]);
++			return PTR_ERR(rdev);
+ 		}
+ 	}
+ 
+-- 
+1.7.9.5
 
-> The 'struct regulator_dev *rdev' of 'struct max8973_chip' isn't used
-> anywhere in the driver so it can be removed safely.
-
-Applied, thanks.
-
---JBmVoN0GeLJFe550
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTHYe1AAoJELSic+t+oim91v0QAJrqiEUcpM84PXDB5kRHqGKr
-ykX07cF/XYuVxi5nimfSHaE38OQp+TwHpmjmmyvFjQfwUQa217IhB6rzeWQWNJM7
-5YeAHfVu1FexyYlHD4vM7UjSel8jfKyuRfqpiav2cJOqtdrLvYb17nbXtx2uwSki
-f2ijexxkLFovkOeGejws89h3k3U6+4lIIR1z38LsF0rTIRsUtf2UhoM3RZoYO4IR
-bWSQCZLdQOpLRvSobuXz3qYpJ++FyQJ1POhbJd3I9GAsfjkWhIaDaopg/oGUOKnE
-/MqYHnjHLYlKitfMopqFJHo/+cdQmdoRzRLpXfS1GxCeF5/kkrSsBHn4NH7sR+Yf
-vx8pSIC7D9HsMXMmCRvX717XqmuCm8uA6ZHQHAT1OUDmKwuvDQeWSE0PHPG45/ef
-EBFSrEdpu4eXh1xO2KftH5fV8pDM2DKOTNybGqE6eoTbmtxATe8f/+5V/5cK1w9X
-bIXimHu5AlZBNEzE8ytwhJXV8SAZrBhUJhOEEx5C2Ll5vHQVDkJSvSfeiQXbTxAV
-Lw/EMpDHthCeRt5Y9RnHbZsvskbhjEmO5RxjW8O5KIqqQVH/oPBoQUodf4yNgout
-P3QEKTTsm2966nEblQtOr07wip8f6wRbwJlr02ZOPISjAZEeEK6DavPscBckcQeM
-SqCea5G3/S4IhTIe+1jT
-=nODh
------END PGP SIGNATURE-----
-
---JBmVoN0GeLJFe550--
