@@ -1,41 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754315AbaCJTjT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 15:39:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40531 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753679AbaCJTjO (ORCPT
+	id S1754430AbaCJTjb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 15:39:31 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54690 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754360AbaCJTj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 15:39:14 -0400
-Date: Mon, 10 Mar 2014 12:39:12 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, davej <davej@redhat.com>
-Subject: Re: [PATCH v2] affs: mount option to avoid name truncates
-Message-Id: <20140310123912.013ca2583a13c0270d866213@linux-foundation.org>
-In-Reply-To: <20140309195210.b48f05296677f2d5c6e46992@skynet.be>
-References: <20140309195210.b48f05296677f2d5c6e46992@skynet.be>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Mon, 10 Mar 2014 15:39:29 -0400
+Message-ID: <1394480354.23624.7.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: perf: Add support for full Intel event lists
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: acme@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, eranian@google.com, namhyung@kernel.org,
+        jolsa@redhat.com
+Date: Mon, 10 Mar 2014 19:39:14 +0000
+In-Reply-To: <1394048978-15909-1-git-send-email-andi@firstfloor.org>
+References: <1394048978-15909-1-git-send-email-andi@firstfloor.org>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-60GZ2KD/5FkmIB5peU6F"
+X-Mailer: Evolution 3.8.5-2+b3 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 192.168.4.245
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 9 Mar 2014 19:52:10 +0100 Fabian Frederick <fabf@skynet.be> wrote:
 
-> Filename truncate process is defined in affs.h
-> 
-> This patch adds 'nofilenametruncate' mount option and
-> removes AFFS_MAX_PREALLOC which is never used.
-> 
+--=-60GZ2KD/5FkmIB5peU6F
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-The changelog provides not a hint about why we should add this.  What
-is it for?  What value does it have to users?
+On Wed, 2014-03-05 at 11:49 -0800, Andi Kleen wrote:
+[...]
+> I implemented an automatic downloader to get the event file for the
+> current CPU.  The events are stored in ~/.events.
+[...]
 
-Also, the new mount option should be documented in
-Documentation/filesystems/affs.txt.
+This directory should be placed under $XDG_CACHE_DIR (default:
+~/.cache), and should have a more specific name like 'perf-events'.
 
-Please fix these things then resend?
+It might be useful to also support a system directory for these,
+under /var/cache.
 
+Ben.
+
+--=20
+Ben Hutchings
+Computers are not intelligent.	They only think they are.
+
+--=-60GZ2KD/5FkmIB5peU6F
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIVAwUAUx4U4ue/yOyVhhEJAQr5rRAAlkcHDHt1bAo4RbFbEPCjuPy88nMmFF79
+EWvu1wpHdwiGzgHQNwKGW9R3QuFbxjFmwrrR5IHKTKHnBT96wq5PODGuD2LMPom6
+N+I5tcNHKqpUF7Bi46pnaOJ3GQJh+UOWt3Ip5b38aHBELNyZsQor3Tu+HZ88/0qt
+HbfC8WOcxHSX5FjE009Q3YsUsDgTA0eTFRSu0eGQqrUyAoPgK2hGBbi+TD30DyHE
+yHKL0kOeOpLPOaiWUNJJCfw/rs5F7sQZYhO/xB/CCsFXDiyTTZcr/L05MMAAnimk
+OO0+Skc1rcQgzKoLl+x9f0K5fdpuCfhSkezQUlvB+SkHEpLIjAwjfp7LLmaaJB4n
+N4k5Og00dtp+pP9q66XB+mITXZwYyIIJuHYTv41WdQiJTHX16m26CBTEjSsKF61q
+8MHsjYn1ym+trQXDj3d13MyVmncKMPr/96uqlsJGY52DhPKIQEguRW5F899mA70y
+q6qQRa3hS6qATkcamXO8XlWPW20b83ZuTKbqiBS87w1Pu/cApDT1WFttHEEEsdZr
+oLLB9ojw74+Q+3hEGegEDoW84NINVLjmwl59q8SGhHuFEKqQcyya1mHPMIud8Nx9
+UDfxwuxtC1CpFiyNHrfHUXRuZpvB9YOCVXEt2ziDuLjMsGx+82B920rKE06NOOxG
+tH13cYaYLsI=
+=n1O+
+-----END PGP SIGNATURE-----
+
+--=-60GZ2KD/5FkmIB5peU6F--
