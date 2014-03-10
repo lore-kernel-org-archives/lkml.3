@@ -1,86 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752213AbaCJGyO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 02:54:14 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:53478 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751768AbaCJGyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 02:54:12 -0400
-Message-ID: <531D6178.3070906@ti.com>
-Date: Mon, 10 Mar 2014 08:53:44 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752419AbaCJGyc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 02:54:32 -0400
+Received: from smtp102.mer-nm.internl.net ([217.149.192.138]:35440 "EHLO
+	smtp102.mer-nm.internl.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752032AbaCJGya convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 02:54:30 -0400
+X-Spam-scanned: scanned by InterNLnet Mail Scan System
+X-Spam-Flag: NO
+X-Spam-Score: -4.4
+X-Spam-Languages: en
+Message-ID: <531D619F.5000803@topic.nl>
+Date: Mon, 10 Mar 2014 07:54:23 +0100
+From: Mike Looijmans <mike.looijmans@topic.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@linaro.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>,
-        <devicetree@vger.kernel.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Subject: Re: [PATCH v4 3/3] Documentation: of: Document graph bindings
-References: <1393340304-19005-1-git-send-email-p.zabel@pengutronix.de>	 < 1393340304-19005-4-git-send-email-p.zabel@pengutronix.de>	 <530DE8A9. 9050809@ti.com> <1393426623.3248.70.camel@paszta.hi.pengutronix.de> < 530DFF4C.8080807@ti.com> <20140307181132.B2D71C40A88@trevor.secretlab.ca> < 531AE46A.2060808@ti.com> <20140308122532.1AED9C40612@trevor.secretlab.ca>
-In-Reply-To: <20140308122532.1AED9C40612@trevor.secretlab.ca>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="WP4PXb977ufAdKbrgTALpgqOPLJ35eEu3"
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: <nsekhar@ti.com>, <khilman@deeprootsystems.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Mike Looijmans <milo-software@users.sourceforge.net>
+Subject: Re: [PATCH] i2c-davinci: Implement a bus recovery that actually works
+References: <1393583525-9555-1-git-send-email-mike.looijmans@topic.nl> <20140309202841.GB2835@katana>
+In-Reply-To: <20140309202841.GB2835@katana>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [192.168.80.45]
+X-EXCLAIMER-MD-CONFIG: 9833cda7-5b21-4d34-9a38-8d025ddc3664
+X-EXCLAIMER-MD-BIFURCATION-INSTANCE: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---WP4PXb977ufAdKbrgTALpgqOPLJ35eEu3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+﻿On 03/09/2014 09:28 PM, Wolfram Sang wrote:
+> On Fri, Feb 28, 2014 at 11:32:05AM +0100, mike.looijmans@topic.nl wrote:
+>> From: Mike Looijmans <milo-software@users.sourceforge.net>
+>>
+>> Having a board where the I2C bus locks up occasionally made it clear
+>> that the bus recovery in the i2c-davinci driver will only work on
+>> some boards, because on regular boards, this will only toggle GPIO
+>> lines that aren't muxed to the actual pins.
+>>
+>> The I2C controller has the built-in capability to bit-bang its lines.
+>> Use this to implement a generic recovery routine that puts the
+>> controller in GPIO mode and pulse the clk lines until both SDA and
+>> SCL return to a high state.
+>>
+>> Because the controller must be held in reset while doing so, the
+>> recovery routine must re-init the controller. Since this was already
+>> being done after each call to i2c_recover_bus, move that call into
+>> the recovery routine as well.
+>>
+>> Tested on a custom board with OMAP-L138, and after this change, the
+>> board can recover from chips keeping SDA low.
+>>
+>> Note: This is an adapted port from 2.6.37 code, and was only tested
+>> with that kernel.
+>
+> What about using struct i2c_bus_recovery_info, so the actual recovery
+> logic is taken from the core?
 
-On 08/03/14 14:25, Grant Likely wrote:
+I never knew such a thing existed, but it sounds like a sensible thing to do.
 
-> Sure. If endpoints are logical, then only create the ones actually
-> hooked up. No problem there. But nor do I see any issue with having
-> empty connections if the board author things it makes sense to have the=
-m
-> in the dtsi.
+In addition, one could also remove the "sda_pin" and "scl_pin" members from 
+the platform data struct, as they no longer serve any purpose after this patch.
 
-I don't think they are usually logical, although they probably might be
-in some cases.
+I won't be doing those changes though. My sponsor's budget is limited, so I'm 
+just having to do the minimum I can get away with. Maybe someone from TI can 
+take it further?
 
-As I see it, a "port" is a group of pins in a hardware component, and
-two endpoints define a connection between two ports, which on the HW
-level are the wires between the ports.
-
-So a port with two endpoints is a group of pins, with wires that go from
-the same pins to two different components.
-
- Tomi
+Mike.
 
 
+Met vriendelijke groet / kind regards,
 
---WP4PXb977ufAdKbrgTALpgqOPLJ35eEu3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Mike Looijmans
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+TOPIC Embedded Systems
+Eindhovenseweg 32-C, NL-5683 KH Best
+Postbus 440, NL-5680 AK Best
+Telefoon: (+31) (0) 499 33 69 79
+Telefax:  (+31) (0) 499 33 69 70
+E-mail: mike.looijmans@topic.nl
+Website: www.topic.nl
 
-iQIcBAEBAgAGBQJTHWF4AAoJEPo9qoy8lh71aRgQAKa7NU6vFHKIcaTLCOscqUQI
-6XDQQ/gFmiCqwNPAeWp6UBoQVUi/Q6xSWnbowVHuNExBXV+uyWg44am/4KuUWFaG
-5WrZeEmOd44tF/eHnmPLK5PhRtoN47xqg7H1Gj27QL1AUUfN7ZXnLOzFKaK/oEGL
-VpgllJv5QfEiyUUqcBqNE7xaGm3iU+c/FyjNJN10UOcJdGA2iGosKIe3XDJ2o/CG
-BNHw+xJpO0XrrF7AQ/cGWh0c0rafV+CuDNqJ+CsxH9XgvSbj53E18OnPMl56v3dU
-3rR8km3NOAWTM/GSIkZ1Rix/WzLHPwAH/0Yk6l6vKNSsMSQSe2nm6uN1Kpjqruf8
-uWIgEhXIxImpyV1jDhfVhFJl5xxtRgZ1uxIOCtTxfYjr54TFuFJucLN5HeJW/JG9
-j2UjOUNUIuq084vZfBm4fQ9BHj0hihAx+dhxNTSq0x7wix03xuH1p0nTYKLjIVt4
-rqw53MjaLLTs7xYgTW463b3deeqYxHVVo9HQ6XFo/ia8i9WOqZ9zvEKQtoh5Xdjo
-9avt1l3POVbBssa+9Ue76nbvf/1zAqBFEMrxuwIy0uIbrsCZZQlEhZe2WKsYnsQ0
-OtrCKIqKis7jyjhofRvT7WTgAy5I54NdK46wMHW3boTHAWHOExg1FjgL5fetkKK1
-PoZSm/JWdBVpl2n+gqju
-=8ACb
------END PGP SIGNATURE-----
+Please consider the environment before printing this e-mail
 
---WP4PXb977ufAdKbrgTALpgqOPLJ35eEu3--
