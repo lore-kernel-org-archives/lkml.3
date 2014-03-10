@@ -1,190 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753788AbaCJPKt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 11:10:49 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:35946 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753045AbaCJPKr (ORCPT
+	id S1753953AbaCJPL5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 11:11:57 -0400
+Received: from mail-pb0-f66.google.com ([209.85.160.66]:60486 "EHLO
+	mail-pb0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753530AbaCJPL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 11:10:47 -0400
-Message-ID: <531DD5E7.7090406@pengutronix.de>
-Date: Mon, 10 Mar 2014 16:10:31 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.3.0
+	Mon, 10 Mar 2014 11:11:56 -0400
+Date: Mon, 10 Mar 2014 08:11:46 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Laszlo Papp <lpapp@kde.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, lm-sensors@lm-sensors.org
+Subject: Re: [lm-sensors] Tachometer speed returned rather than absolute fan
+ speed?
+Message-ID: <20140310151146.GA26903@roeck-us.net>
+References: <CAOMwXhOB=1HA57jwKCx3-hU8A_ypjrm0J3R9huO25xa4B_gw8w@mail.gmail.com>
+ <20140307163717.336873f5@endymion.delvare>
+ <CAOMwXhPpObWqd1vR3t+ifKd-_ZbnGTm1TNNUakmVAR3CB=pzTg@mail.gmail.com>
+ <20140307181718.GA1027@roeck-us.net>
+ <531BACD9.9050206@roeck-us.net>
+ <CAOMwXhNcoe4oWbijJ7s3o-E6k0FtfJSXZM2g=RC3S2FzvX_VdQ@mail.gmail.com>
+ <531C2097.5020004@roeck-us.net>
+ <CAOMwXhPMnvc29VB0ViDc494CunKfmkKV+fvdBGNXoaAW+D+C9A@mail.gmail.com>
+ <531DBD74.2090205@roeck-us.net>
+ <CAOMwXhMRtNaxtA7=cc7ur_Qf3iwZAHi=sk-Ujp=hggGA1O5u+Q@mail.gmail.com>
 MIME-Version: 1.0
-To: monstr@monstr.eu
-CC: Kedareswara rao Appana <appana.durga.rao@xilinx.com>, wg@grandegger.com,
-        michal.simek@xilinx.com, grant.likely@linaro.org, robh+dt@kernel.org,
-        linux-can@vger.kernel.org, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Kedareswara rao Appana <appanad@xilinx.com>
-Subject: Re: [PATCH v5] can: xilinx CAN controller support.
-References: <5254bfec-c6fd-4681-a34d-706d51e60fbb@VA3EHSMHS004.ehs.local> <531DD2C4.5060109@pengutronix.de> <531DD493.3030306@monstr.eu>
-In-Reply-To: <531DD493.3030306@monstr.eu>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="I0dGbq4MNmO0gUmux6gnb3sr1ivw7vD1r"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOMwXhMRtNaxtA7=cc7ur_Qf3iwZAHi=sk-Ujp=hggGA1O5u+Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---I0dGbq4MNmO0gUmux6gnb3sr1ivw7vD1r
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Mon, Mar 10, 2014 at 01:50:01PM +0000, Laszlo Papp wrote:
+> On Mon, Mar 10, 2014 at 1:26 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> > On 03/10/2014 02:59 AM, Laszlo Papp wrote:
+> >>>
+> >>> The reason is (most likely) that your fan input does not have a pull-up
+> >>> resistor. Per datasheet, the fan inputs need a 10kOhm pull-up resistor. I
+> >>> confirmed this with my test board - with the pull-up resistor, inputs read
+> >>> 0, Without pull-up, the reported value is 1, which translates to 30 RPM. You
+> >>> might also need the 10 uF capacitor on the FB pin.
+> >>
+> >>
+> >> We have both of them in place as per requirement for the chip as far
+> >> as I understand the datasheet. The circuit would not work properly
+> >> without it.
+> >>>
+> >>> sudo i2cdump -y -f 1 0x48
+> >>> No size specified (using byte-data access)
+> >>>       0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f    0123456789abcdef
+> >>> 00: 00 00 0a 0a ff ff 00 00 00 00 00 00 01 01 00 00    ..??........??..
+> >>> 10: 01 01 01 01 1f 1f 02 02 91 91 91 91 91 91 91 91    ????????????????
+> >>> 20: 00 00 0a 0a ff ff 00 00 00 00 00 00 01 01 00 00    ..??........??..
+> >>
+> >>
+> >> /usr/sbin/i2cdump -y -f 1 0x48
+> >> No size specified (using byte-data access)
+> >>       0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f    0123456789abcdef
+> >> 00: 00 00 3a 3a fc fc b4 b4 00 00 00 00 01 01 01 01    ..::????....????
+> >> 10: 09 09 01 01 1c 1c 02 02 91 91 91 91 91 91 91 91    ????????????????
+> >> 20: 00 00 3a 3a fc fc b4 b4 00 00 00 00 01 01 01 01    ..::????....????
+> >> 30: 09 09 01 01 1c 1c 02 02 91 91 91 91 91 91 91 91    ????????????????
+> >> 40: 00 00 3a 3a fc fc b4 b4 00 00 00 00 01 01 01 01    ..::????....????
+> >> 50: 08 08 01 01 1c 1c 02 02 91 91 91 91 91 91 91 91    ????????????????
+> >> 60: 00 00 3a 3a fc fc b4 b4 00 00 00 00 01 01 01 01    ..::????....????
+> >> 70: 08 08 01 01 1c 1c 02 02 91 91 91 91 91 91 91 91    ????????????????
+> >> 80: 00 00 3a 3a fc fc b4 b4 00 00 00 00 01 01 01 01    ..::????....????
+> >> 90: 08 08 01 01 1c 1c 02 02 91 91 91 91 91 91 91 91    ????????????????
+> >> a0: 00 00 3a 3a fc fc b4 b4 00 00 00 00 01 01 01 01    ..::????....????
+> >> b0: 08 08 01 01 1c 1c 02 02 91 91 91 91 91 91 91 91    ????????????????
+> >> c0: 00 00 3a 3a fc fc b4 b4 00 00 00 00 01 01 01 01    ..::????....????
+> >> d0: 08 08 01 01 1c 1c 02 02 91 91 91 91 91 91 91 91    ????????????????
+> >> e0: 00 00 3a 3a fc fc b4 b4 00 00 00 00 01 01 01 01    ..::????....????
+> >> f0: 08 08 01 01 1c 1c 02 02 91 91 91 91 91 91 91 91    ????????????????
+> >>
+> >>> groeck@desktop:~$ sensors max6651-i2c-1-48
+> >>> max6651-i2c-1-48
+> >>> Adapter: i2c-diolan-u2c at bus 003 device 002
+> >>> fan1:          30 RPM  (div = 4)
+> >>> fan2:           0 RPM
+> >>> fan3:          30 RPM
+> >>> fan4:          30 RPM
+> >>
+> >>
+> >> sensors max6651-i2c-1-48
+> >> max6651-i2c-1-48
+> >> Adapter: DaVinci I2C adapter
+> >> fan1:          30 RPM  (div = 4)
+> >> fan2:          30 RPM
+> >> fan3:         420 RPM
+> >> fan4:          30 RPM
+> >>
+> >>> Only fan2 (TACH1 chip input) has the resistor installed.
+> >>
+> >>
+> >> We have it both on fan1 and fan4.
+> >>
+> >> If I use our scope for checking the tachometer, I see level zero on
+> >> the scope, but 1 when checking the open collector level, since that is
+> >> the purpose of the pull-up resistor.
+> >>
+> > With the pull-up installed, you should always see a high voltage on the
+> > scope or with a volt meter. The scope would not see or be able to know
+> > that the pin is OC if the pull-up resistor is there.
+> >
+> > If it is truly OC, it would be floating and might show low. If you can,
+> > I would suggest to manually add a 10k resistor against VCC to the open
+> > connector and see what happens.
+> >
+> > Another way to find out for sure might be to disconnect power and
+> > measure resistance between the tachometer pin and VCC.
+> 
+> Perhaps I was not clear. So, we do have both the resistors and
+> capacitor as required. I double checked the schematics as well as the
+> pins coming from the fan and that was zero. The tacho0 input, however,
+> was 1.
+> 
 
-On 03/10/2014 04:04 PM, Michal Simek wrote:
-> Hi Marc,
->=20
-> On 03/10/2014 03:57 PM, Marc Kleine-Budde wrote:
->> On 03/04/2014 02:20 PM, Kedareswara rao Appana wrote:
->>> This patch adds xilinx CAN controller support.
->>> This driver supports both ZYNQ CANPS and Soft IP
->>> AXI CAN controller.
->>>
->>> Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
->>> ---
->>> This patch is rebased on the 3.14 rc5 kernel.
->>> Changes for v5:
->>> - Updated the driver with the review comments.
->>> - Remove the check for the tx fifo full interrupt condition
->>>   form Tx interrupt routine as we are checking it in the _xmit
->>>   routine.
->>> - Clearing the txok interrupt in the tx interrupt routine for
->>>   every Tx can frame.
->>> Changes for v4:
->>> - Added check for the tx fifo full interrupt condition in
->>>   Tx interrupt routine.
->>> - Added be iohelper functions.
->>> - Moved the clock enable/disable to probe/remove because of
->>>   Added big endian support for AXI CAN controller case(reading
->>>   a register during probe for that we need to enable clock).
->>> Changes for v3:
->>> - Updated the driver with the review comments.
->>> - Modified the tranmit logic as per Marc suggestion.
->>> - Enabling the clock when the interface is up to reduce the
->>>   Power consumption.
->>> Changes for v2:
->>> - Updated with the review comments.
->>> - Removed the unnecessary debug prints.
->>> - include tx,rx fifo depths in ZYNQ CANPS case also.
->>> ---
->>>  .../devicetree/bindings/net/can/xilinx_can.txt     |   45 +
->>>  drivers/net/can/Kconfig                            |    7 +
->>>  drivers/net/can/Makefile                           |    1 +
->>>  drivers/net/can/xilinx_can.c                       | 1195 ++++++++++=
-++++++++++
->>>  4 files changed, 1248 insertions(+), 0 deletions(-)
->>>  create mode 100644 Documentation/devicetree/bindings/net/can/xilinx_=
-can.txt
->>>  create mode 100644 drivers/net/can/xilinx_can.c
->>>
->>> diff --git a/Documentation/devicetree/bindings/net/can/xilinx_can.txt=
- b/Documentation/devicetree/bindings/net/can/xilinx_can.txt
->>> new file mode 100644
->>> index 0000000..0e57103
->>> --- /dev/null
->>> +++ b/Documentation/devicetree/bindings/net/can/xilinx_can.txt
->>> @@ -0,0 +1,45 @@
->>> +Xilinx Axi CAN/Zynq CANPS controller Device Tree Bindings
->>> +---------------------------------------------------------
->>> +
->>> +Required properties:
->>> +- compatible		: Should be "xlnx,zynq-can-1.00.a" for Zynq CAN
->>> +			  controllers and "xlnx,axi-can-1.00.a" for Axi CAN
->>> +			  controllers.
->>> +- reg			: Physical base address and size of the Axi CAN/Zynq
->>> +			  CANPS registers map.
->>> +- interrupts		: Property with a value describing the interrupt
->>> +			  number.
->>> +- interrupt-parent	: Must be core interrupt controller
->>> +- clock-names		: List of input clock names - "ref_clk", "aper_clk"
->>> +			  (See clock bindings for details. Two clocks are
->>> +			   required for Zynq CAN. For Axi CAN
->>> +			   case it is one(ref_clk)).
->>> +- clocks		: Clock phandles (see clock bindings for details).
->>> +- tx-fifo-depth		: Can Tx fifo depth.
->>> +- rx-fifo-depth		: Can Rx fifo depth.
->>> +
->>> +
->>> +Example:
->>> +
->>> +For Zynq CANPS Dts file:
->>> +	zynq_can_0: zynq-can@e0008000 {
->>> +			compatible =3D "xlnx,zynq-can-1.00.a";
->>> +			clocks =3D <&clkc 19>, <&clkc 36>;
->>> +			clock-names =3D "ref_clk", "aper_clk";
->>> +			reg =3D <0xe0008000 0x1000>;
->>> +			interrupts =3D <0 28 4>;
->>> +			interrupt-parent =3D <&intc>;
->>> +			tx-fifo-depth =3D <0x40>;
->>> +			rx-fifo-depth =3D <0x40>;
->>> +		};
->>> +For Axi CAN Dts file:
->>> +	axi_can_0: axi-can@40000000 {
->>> +			compatible =3D "xlnx,axi-can-1.00.a";
->>> +			clocks =3D <&clkc 0>;
->>> +			clock-names =3D "ref_clk" ;
->>> +			reg =3D <0x40000000 0x10000>;
->>> +			interrupt-parent =3D <&intc>;
->>> +			interrupts =3D <0 59 1>;
->>> +			tx-fifo-depth =3D <0x40>;
->>> +			rx-fifo-depth =3D <0x40>;
->>> +		};
->>> diff --git a/drivers/net/can/Kconfig b/drivers/net/can/Kconfig
->>> index 9e7d95d..b180239 100644
->>> --- a/drivers/net/can/Kconfig
->>> +++ b/drivers/net/can/Kconfig
->>> @@ -125,6 +125,13 @@ config CAN_GRCAN
->>>  	  endian syntheses of the cores would need some modifications on
->>>  	  the hardware level to work.
->>> =20
->>> +config CAN_XILINXCAN
->>> +	tristate "Xilinx CAN"
->>> +	depends on ARCH_ZYNQ || MICROBLAZE
->>
->> Is Zynq multiarch already?
->=20
-> let me just answer this. Zynq is device with hardcoded dual arm cortex-=
-a9 + some IPs
-> and programmable logic.
-> It means if you add Microblaze to PL or another CPU then you get multi =
-architecture setup.
+How can the pin coming from the fan be zero, and the tach0 input be 1
+at the same time ? Those should be the same ?
 
-Sorry for the confusion, I'm not talking about
-more-than-one-architecture-in-a-FPGA, but the feature of the ARM-Linux
-Kernel to run on different ARM architecture. For example, it's possible
-to start the same kernel on a freescale imx6 and a the new marvel ebu
-platform. If the Zynq Kernel supports this feature, too, we should not
-limit to ARCH_ZYNQ, but use ARM instead.
+Anyway, I don't think I can help you further. All I can say is that
+the chip operates as expected on my test board.
 
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---I0dGbq4MNmO0gUmux6gnb3sr1ivw7vD1r
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
-
-iEYEARECAAYFAlMd1ecACgkQjTAFq1RaXHMNCACfW7FCKpUSVZaiC5REAApauvo9
-z9sAn0DFDt3u6dZ9+X4jr9xny/7Vxxgb
-=51Pn
------END PGP SIGNATURE-----
-
---I0dGbq4MNmO0gUmux6gnb3sr1ivw7vD1r--
+Guenter
