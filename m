@@ -1,218 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754381AbaCJPk7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 11:40:59 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:42704 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754362AbaCJPk4 (ORCPT
+	id S1754207AbaCJPmY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 11:42:24 -0400
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:41448 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752718AbaCJPmW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 11:40:56 -0400
-Message-ID: <1394466030.7380.39.camel@paszta.hi.pengutronix.de>
-Subject: Re: [RFC PATCH] [media]: of: move graph helpers from
- drivers/media/v4l2-core to drivers/of
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Rob Herring <robherring2@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Philipp Zabel <philipp.zabel@gmail.com>
-Date: Mon, 10 Mar 2014 16:40:30 +0100
-In-Reply-To: <4339286.FzhQ2m6hoA@avalon>
-References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de>
-	 <5427810.BUKJ3iUXnO@avalon>
-	 <20140310145815.17595C405FA@trevor.secretlab.ca>
-	 <4339286.FzhQ2m6hoA@avalon>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 10 Mar 2014 11:42:22 -0400
+Date: Mon, 10 Mar 2014 11:44:40 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: linux-kernel@vger.kernel.org
+cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>
+Subject: another perf_fuzzer hard lockup
+Message-ID: <alpine.DEB.2.10.1403101137050.30293@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, den 10.03.2014, 16:15 +0100 schrieb Laurent Pinchart:
-> Hi Grant,
-> 
-> On Monday 10 March 2014 14:58:15 Grant Likely wrote:
-> > On Mon, 10 Mar 2014 14:52:53 +0100, Laurent Pinchart wrote:
-> > > On Monday 10 March 2014 12:18:20 Tomi Valkeinen wrote:
-> > > > On 08/03/14 13:41, Grant Likely wrote:
-> > > > >> Ok. If we go for single directional link, the question is then: which
-> > > > >> way? And is the direction different for display and camera, which are
-> > > > >> kind of reflections of each other?
-> > > > > 
-> > > > > In general I would recommend choosing whichever device you would
-> > > > > sensibly think of as a master. In the camera case I would choose the
-> > > > > camera controller node instead of the camera itself, and in the
-> > > > > display case I would choose the display controller instead of the
-> > > > > panel. The binding author needs to choose what she things makes the
-> > > > > most sense, but drivers can still use if it it turns out to be
-> > > > > 'backwards'
-> > > > 
-> > > > I would perhaps choose the same approach, but at the same time I think
-> > > > it's all but clear. The display controller doesn't control the panel any
-> > > > more than a DMA controller controls, say, the display controller.
-> > > > 
-> > > > In fact, in earlier versions of OMAP DSS DT support I had a simpler port
-> > > > description, and in that I had the panel as the master (i.e. link from
-> > > > panel to dispc) because the panel driver uses the display controller's
-> > > > features to provide the panel device a data stream.
-> > > > 
-> > > > And even with the current OMAP DSS DT version, which uses the v4l2 style
-> > > > ports/endpoints, the driver model is still the same, and only links
-> > > > towards upstream are used.
-> > > > 
-> > > > So one reason I'm happy with the dual-linking is that I can easily
-> > > > follow the links from the downstream entities to upstream entities, and
-> > > > other people, who have different driver model, can easily do the
-> > > > opposite.
-> > > > 
-> > > > But I agree that single-linking is enough and this can be handled at
-> > > > runtime, even if it makes the code more complex. And perhaps requires
-> > > > extra data in the dts, to give the start points for the graph.
-> > > 
-> > > In theory unidirectional links in DT are indeed enough. However, let's not
-> > > forget the following.
-> > > 
-> > > - There's no such thing as single start points for graphs. Sure, in some
-> > > simple cases the graph will have a single start point, but that's not a
-> > > generic rule. For instance the camera graphs
-> > > http://ideasonboard.org/media/omap3isp.ps and
-> > > http://ideasonboard.org/media/eyecam.ps have two camera sensors, and thus
-> > > two starting points from a data flow point of view. And if you want a
-> > > better understanding of how complex media graphs can become, have a look
-> > > at http://ideasonboard.org/media/vsp1.0.pdf (that's a real world example,
-> > > albeit all connections are internal to the SoC in that particular case,
-> > > and don't need to be described in DT).
-> > > 
-> > > - There's also no such thing as a master device that can just point to
-> > > slave devices. Once again simple cases exist where that model could work,
-> > > but real world examples exist of complex pipelines with dozens of
-> > > elements all implemented by a separate IP core and handled by separate
-> > > drivers, forming a graph with long chains and branches. We thus need real
-> > > graph bindings.
-> > > 
-> > > - Finally, having no backlinks in DT would make the software
-> > > implementation very complex. We need to be able to walk the graph in a
-> > > generic way without having any of the IP core drivers loaded, and without
-> > > any specific starting point. We would thus need to parse the complete DT
-> > > tree, looking at all nodes and trying to find out whether they're part of
-> > > the graph we're trying to walk. The complexity of the operation would be
-> > > at best quadratic to the number of nodes in the whole DT and to the number
-> > > of nodes in the graph.
-> > 
-> > Not really. To being with, you cannot determine any meaning of a node
-> > across the tree (aside from it being an endpoint)
-> 
-> That's the important part. I can assume the target node of the remote-endpoint 
-> phandle to be an endpoint, and can thus assume that it implements the of-graph 
-> bindings. That's all I need to be able to walk the graph in a generic way.
-> 
-> > without also understanding the binding that the node is a part of. That
-> > means you need to have something matching against the compatible string on
-> > both ends of the linkage. For instance:
-> > 
-> > panel {
-> > 	compatible = "acme,lvds-panel";
-> > 	lvds-port: port {
-> > 	};
-> > };
-> > 
-> > display-controller {
-> > 	compatible = "encom,video";
-> > 	port {
-> > 		remote-endpoint = <&lvds-port>;
-> > 	};
-> > };
-> > 
-> > In the above example, the encom,video driver has absolutely zero
-> > information about what the acme,lvds-panel binding actually implements.
-> > There needs to be both a driver for the "acme,lvds-panel" binding and
-> > one for the "encom,video" binding (even if the acme,lvds-panel binding
-> > is very thin and defers the functionality to the video controller).
-> 
-> I absolutely agree with that. We need a driver for each device (in this case 
-> the acme panel and the encom display controller), and we need those drivers to 
-> register entities (in the generic sense of the term) for them to be able to 
-> communicate with each other. The display controller driver must not try to 
-> parse panel-specific properties from the panel node. However, as described 
-> above, I believe it can parse ports and endpoints to walk the graph.
-> 
-> > What you want here is the drivers to register each side of the
-> > connection. That could be modeled with something like the following
-> > (pseudocode):
-> > 
-> > struct of_endpoint {
-> > 	struct list_head list;
-> > 	struct device_node *ep_node;
-> > 	void *context;
-> > 	void (*cb)(struct of_endpoint *ep, void *data);
-> > }
-> > 
-> > int of_register_port(struct device *node, void (*cb)(struct of_endpoint *ep,
-> > void *data), void *data) {
-> > 	struct of_endpoint *ep = kzalloc(sizeof(*ep), GFP_KERNEL);
-> > 
-> > 	ep->ep_node = node;
-> > 	ep->data = data;
-> > 	ep->callback = cb;
-> > 
-> > 	/* store the endpoint to a list */
-> > 	/* check if the endpoint has a remote-endpoint link */
-> > 		/* If so, then link the two together and call the
-> > 		 * callbacks */
-> > }
-> > 
-> > That's neither expensive or complicated.
-> > 
-> > Originally I suggested walking the whole tree multiple times, but as
-> > mentioned that doesn't scale, and as I thought about the above it isn't
-> > even a valid thing to do. Everything has to be driven by drivers, so
-> > even if the backlinks are there, nothing can be done with the link until
-> > the other side goes through enumeration independently.
-> 
-> For such composite devices, what we need from a drivers point of view is a 
-> mechanism to wait for all components to be in place before proceeding. This 
-> isn't DT-related as such, but the graph is obviously described in DT for DT-
-> based platforms.
-> 
-> There are at least two mainline implementation of such a mechanism. One of 
-> them can be found in drivers/media/v4l2-core/v4l2-async.c, another more recent 
-> one in drivers/base/component.c. Neither of them is DT-specific, and they 
-> don't try to parse DT content.
-> 
-> The main problem, from a DT point of view, is that we need to pick a master 
-> driver that will initiate the process of waiting for all components to be in 
-> place. This is usually the driver of the main component inside the SoC. For a 
-> camera capture pipeline the master is the SoC camera device driver that will 
-> create the V4L2 device node(s). For a display pipeline the master is the SoC 
-> display driver that will create the DRM/KMS devices.
-> 
-> The master device driver needs to create a list of all components it needs, 
-> and wait until all those components have been probed by their respective 
-> driver. Creating such a list requires walking the graph, starting at the 
-> master device (using a CPU-centric view as described by Russell). This is why 
-> we need the backlinks, as the master device can have inbound links.
 
-We could scan the whole tree for entities, ports and endpoints once, in
-the base oftree code, and put that into a graph structure, adding the
-backlinks.
-The of_graph_* helpers could then use that graph instead of the device
-tree.
+Triggered by the perf_fuzzer on a core2 machine, 3.14-rc6.
 
-regards
-Philipp
+Hopefully the trace_do_page_fault in the stack trace is incidental and not
+showing that something was missed with the recent page fault tracing
+fixes.
+
+Vince
+
+[ 7321.924284] BUG: unable to handle kernel NULL pointer dereference at           (null)
+[ 7321.928004] IP: [<ffffffff81534f7b>] _raw_spin_lock_irqsave+0x11/0x2d
+[ 7321.928004] PGD 118d2b067 PUD 11952d067 PMD 0
+[ 7321.928004] Oops: 0002 [#1] SMP
+[ 7321.928004] Modules linked in: cpufreq_userspace cpufreq_stats cpufreq_powersave cpufreq_conservative f71882fg mcs7830 usbnet evdev ohci_pci psmouse serio_raw coretemp pcspkr ohci_hcd video wmi i2c_nforce2 acpi_cpufreq button processor thermal_sys sg ehci_pci ehci_hcd sd_mod usbcore usb_common
+[ 7321.928004] CPU: 0 PID: 983 Comm: perf_fuzzer Not tainted 3.14.0-rc6 #36
+[ 7321.928004] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BIOS 080015  10/19/2012
+[ 7321.928004] task: ffff8801190b47e0 ti: ffff8800c7b28000 task.ti: ffff8800c7b28000
+[ 7321.928004] RIP: 0010:[<ffffffff81534f7b>]  [<ffffffff81534f7b>] _raw_spin_lock_irqsave+0x11/0x2d                                                            
+[ 7321.928004] RSP: 0018:ffff8800c7b29a08  EFLAGS: 00010046
+[ 7321.928004] RAX: 0000000000000046 RBX: ffff88011a592c00 RCX: 0000000000000000
+[ 7321.928004] RDX: 0000000000010000 RSI: ffff88011a592c00 RDI: 0000000000000000
+[ 7321.928004] RBP: ffff8800c7b29a08 R08: ffff88011a592c00 R09: 0000000000000000
+[ 7321.928004] R10: 0000000000000000 R11: ffff88011b280000 R12: ffff88011fc0b940
+[ 7321.928004] R13: 0000000000000000 R14: ffff88011a592d58 R15: 0000000000000000
+[ 7321.928004] FS:  0000000002195840(0063) GS:ffff88011fc00000(0000) knlGS:0000000000000000                                                                     
+[ 7321.928004] CS:  0010 DS: 002b ES: 002b CR0: 000000008005003b
+[ 7321.928004] CR2: 0000000000000000 CR3: 0000000118dad000 CR4: 00000000000407f0
+[ 7321.928004] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[ 7321.928004] DR3: 0000000002197000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+[ 7321.928004] Stack:
+[ 7321.928004]  ffff8800c7b29a58 ffffffff810198cc 0000000000000000 0000000000000000                                                                             
+[ 7321.928004]  ffff88011fff8d68 0000000000000000 ffff88011a592c00 ffff88011fc0b940                                                                             
+[ 7321.928004]  0000000000000040 0000000000000000 ffff8800c7b29a88 ffffffff81019a8f                                                                             
+[ 7321.928004] Call Trace:                                                      
+[ 7321.928004]  [<ffffffff810198cc>] __intel_shared_reg_get_constraints+0x5e/0x19c                                                                              
+[ 7321.928004]  [<ffffffff81019a8f>] intel_get_event_constraints+0x85/0x154     
+[ 7321.928004]  [<ffffffff8101434d>] x86_schedule_events+0x54/0x185             
+[ 7321.928004]  [<ffffffff81012de6>] x86_pmu_commit_txn+0x51/0x9a               
+[ 7321.928004]  [<ffffffff810dbb46>] ? __alloc_pages_nodemask+0x174/0x737       
+[ 7321.928004]  [<ffffffff810f3d50>] ? unmap_single_vma+0x605/0x669             
+[ 7321.928004]  [<ffffffff810cd121>] ? event_sched_in+0x11d/0x12d               
+[ 7321.928004]  [<ffffffff810cd1c9>] group_sched_in+0x98/0x147                  
+[ 7321.928004]  [<ffffffff810cd3d6>] ctx_sched_in+0x15e/0x185                   
+[ 7321.928004]  [<ffffffff810cd466>] perf_event_sched_in+0x69/0x72              
+[ 7321.928004]  [<ffffffff810cd537>] __perf_install_in_context+0xc8/0xf1        
+[ 7321.928004]  [<ffffffff810cdd6a>] ? perf_event_task_output+0x13d/0x13d       
+[ 7321.928004]  [<ffffffff810cdda6>] remote_function+0x3c/0x43                  
+[ 7321.928004]  [<ffffffff810954a3>] smp_call_function_single+0x8a/0x101        
+[ 7321.928004]  [<ffffffff810cddf1>] task_function_call+0x44/0x4e               
+[ 7321.928004]  [<ffffffff810cd46f>] ? perf_event_sched_in+0x72/0x72            
+[ 7321.928004]  [<ffffffff810cdf26>] perf_install_in_context+0x81/0xbc          
+[ 7321.928004]  [<ffffffff8153330b>] ? mutex_lock+0x16/0x37                     
+[ 7321.928004]  [<ffffffff810d21f5>] SYSC_perf_event_open+0x647/0x7f5           
+[ 7321.928004]  [<ffffffff810d23ac>] SyS_perf_event_open+0x9/0xb                
+[ 7321.928004]  [<ffffffff8153bf26>] system_call_fastpath+0x1a/0x1f             
+[ 7321.928004] Code: c1 07 89 c2 c1 ea 10 66 39 c2 74 0c 66 8b 07 66 39 d0 74 04 f3 90 eb f4 c9 c3 55 48 89 e5 66 66 66 66 90 9c 58 fa ba 00 00 01 00 <f0> 0f c1 17 89 d1 c1 e9 10 66 39 d1 74 0c 66 8b 17 66 39 ca 74                          
+[ 7321.928004] RIP  [<ffffffff81534f7b>] _raw_spin_lock_irqsave+0x11/0x2d       
+[ 7321.928004]  RSP <ffff8800c7b29a08>                                          
+[ 7321.928004] CR2: 0000000000000000                                            
+[ 7321.928004] ---[ end trace d36f8f2ae570dc66 ]---                             
+[ 7381.931999] INFO: rcu_sched detected stalls on CPUs/tasks: { 0} (detected by 1, t=15002 jiffies, g=55073, c=55072, q=25)                                     
+[ 7381.932000] sending NMI to all CPUs:                                         
+[ 7381.932000] NMI backtrace for cpu 1                                          
+[ 7381.932000] CPU: 1 PID: 1702 Comm: perf_fuzzer Tainted: G      D      3.14.0-rc6 #36                                                                         
+[ 7381.932000] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BIOS 080015  10/19/2012                                                            
+[ 7381.932000] task: ffff880119785010 ti: ffff880119306000 task.ti: ffff880119306000                                                                            
+[ 7381.932000] RIP: 0010:[<ffffffff812a7277>]  [<ffffffff812a7277>] __const_udelay+0x1b/0x27                                                                    
+[ 7381.932000] RSP: 0000:ffff88011fc83d98  EFLAGS: 00000803                     
+[ 7381.932000] RAX: 0000000039558400 RBX: 0000000000000001 RCX: 0000000000000003
+[ 7381.932000] RDX: 00000000002658dc RSI: 0000000000000200 RDI: 0000000000418958
+[ 7381.932000] RBP: ffff88011fc83d98 R08: 0000000000000000 R09: 0000000000000008
+[ 7381.932000] R10: 0000000000000000 R11: 0000000000000005 R12: ffff88011fc8d510
+[ 7381.932000] R13: 0000000000000001 R14: ffffffff81a37300 R15: 0000000000000001
+[ 7381.932000] FS:  0000000002195840(0063) GS:ffff88011fc80000(0000) knlGS:0000000000000000                                                                     
+[ 7381.932000] CS:  0010 DS: 002b ES: 002b CR0: 000000008005003b                
+[ 7381.932000] CR2: 000000000040b040 CR3: 00000001196d2000 CR4: 00000000000407e0
+[ 7381.932000] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000002197000
+[ 7381.932000] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+[ 7381.932000] Stack:                                                           
+[ 7381.932000]  ffff88011fc83db8 ffffffff8102c1ed 000000000000d720 ffffffff81a37300                                                                             
+[ 7381.932000]  ffff88011fc83e18 ffffffff81087ee3 0000000000000000 0000000000000019                                                                             
+[ 7381.932000]  ffffffff81a9eb60 0000000000000083 ffff88011fc83e08 ffff880119785010                                                                             
+[ 7381.932000] Call Trace:                                                      
+[ 7381.932000]  <IRQ>                                                           
+[ 7381.932000]  [<ffffffff8102c1ed>] arch_trigger_all_cpu_backtrace+0x79/0x8d   
+[ 7381.932000]  [<ffffffff81087ee3>] rcu_check_callbacks+0x462/0x5dd            
+[ 7381.932000]  [<ffffffff8104a14c>] update_process_times+0x41/0x6a             
+[ 7381.932000]  [<ffffffff81090ebd>] tick_sched_handle+0x4a/0x59                
+[ 7381.932000]  [<ffffffff8109108e>] tick_sched_timer+0x5d/0x7c                 
+[ 7381.932000]  [<ffffffff8105e5e4>] __run_hrtimer+0xba/0x145                   
+[ 7381.932000]  [<ffffffff81091031>] ? tick_nohz_handler+0xb0/0xb0              
+[ 7381.932000]  [<ffffffff8105e8b9>] hrtimer_interrupt+0xd5/0x1c3               
+[ 7381.932000]  [<ffffffff8102b2a3>] local_apic_timer_interrupt+0x58/0x5d       
+[ 7381.932000]  [<ffffffff8102bc5f>] smp_trace_apic_timer_interrupt+0x53/0x91   
+[ 7381.932000]  [<ffffffff8153cc3a>] trace_apic_timer_interrupt+0x6a/0x70       
+[ 7381.932000]  <EOI>                                                           
+[ 7381.932000] Code: 48 89 e5 66 66 66 66 90 ff 15 ee 8f 7b 00 c9 c3 55 48 8d 04 bd 00 00 00 00 65 48 8b 14 25 e0 22 01 00 48 89 e5 48 6b d2 3e f7 e2 <48> 8d 7a 01 ff 15 c7 8f 7b 00 c9 c3 55 48 89 e5 66 66 66 66 90                          
+[ 7322.969219] NMI backtrace for cpu 0                                          
+[ 7381.932000] INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run: 692.154 msecs                                                   
+[ 7322.969219] CPU: 0 PID: 983 Comm: perf_fuzzer Tainted: G      D      3.14.0-rc6 #36                                                                          
+[ 7322.969219] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BIOS 080015  10/19/2012                                                            
+[ 7322.969219] task: ffff8801190b47e0 ti: ffff8800c7b28000 task.ti: ffff8800c7b28000                                                                            
+[ 7322.969219] RIP: 0010:[<ffffffff81534ff3>]  [<ffffffff81534ff3>] _raw_spin_lock+0x26/0x2a                                                                    
+[ 7322.969219] RSP: 0018:ffff88011fc03e48  EFLAGS: 00000097                     
+[ 7322.969219] RAX: 000000006f8f6f8e RBX: ffff88011a2a92c0 RCX: ffff88011fc03e98
+[ 7322.969219] RDX: 0000000000006f8f RSI: ffff88011a2a92c0 RDI: ffff88011fc15b2c
+[ 7322.969219] RBP: ffff88011fc03e48 R08: ffff88011fc0d010 R09: 0000000000000104
+[ 7322.969219] R10: ffff88011fc12ae0 R11: ffff88011fc0d010 R12: ffff88011a2a92c0
+[ 7322.969219] R13: ffff88011fc15c08 R14: 0000000000000000 R15: ffff88011fc0d0c8
+[ 7322.969219] FS:  0000000002195840(0063) GS:ffff88011fc00000(0000) knlGS:0000000000000000                                                                     
+[ 7322.969219] CS:  0010 DS: 002b ES: 002b CR0: 000000008005003b                
+[ 7322.969219] CR2: 0000000000000000 CR3: 0000000118dad000 CR4: 00000000000407f0
+[ 7322.969219] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[ 7322.969219] DR3: 0000000002197000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+[ 7322.969219] Stack:                                                           
+[ 7322.969219]  ffff88011fc03e68 ffffffff810cb8df ffff88011fc03e98 ffff88011fc15b20                                                                             
+[ 7322.969219]  ffff88011fc03e98 ffffffff810cd5da ffff88011fc15c08 ffff88011fc0d010                                                                             
+[ 7322.969219]  ffff88011fc0d050 ffff88011fc03f28 ffff88011fc03ee8 ffffffff8105e5e4                                                                             
+[ 7322.969219] Call Trace:                                                      
+[ 7322.969219]  <IRQ>                                                           
+[ 7322.969219]  [<ffffffff810cb8df>] perf_ctx_lock+0x15/0x27                    
+[ 7322.969219]  [<ffffffff810cd5da>] perf_cpu_hrtimer_handler+0x7a/0x1b0        
+[ 7322.969219]  [<ffffffff8105e5e4>] __run_hrtimer+0xba/0x145                   
+[ 7322.969219]  [<ffffffff810cd560>] ? __perf_install_in_context+0xf1/0xf1      
+[ 7322.969219]  [<ffffffff8105e8b9>] hrtimer_interrupt+0xd5/0x1c3               
+[ 7322.969219]  [<ffffffff8102b2a3>] local_apic_timer_interrupt+0x58/0x5d       
+[ 7322.969219]  [<ffffffff8102bc5f>] smp_trace_apic_timer_interrupt+0x53/0x91   
+[ 7322.969219]  [<ffffffff8153cc3a>] trace_apic_timer_interrupt+0x6a/0x70       
+[ 7322.969219]  <EOI>                                                           
+[ 7322.969219]  [<ffffffff8105f36d>] ? blocking_notifier_call_chain+0x14/0x16   
+[ 7322.969219]  [<ffffffff8109be4f>] ? acct_collect+0x175/0x17d                 
+[ 7322.969219]  [<ffffffff81041a14>] do_exit+0x22f/0x947                        
+[ 7322.969219]  [<ffffffff81535fd2>] oops_end+0xb5/0xbd                         
+[ 7322.969219]  [<ffffffff81034a30>] no_context+0x26d/0x27c                     
+[ 7322.969219]  [<ffffffff81034bfc>] __bad_area_nosemaphore+0x1bd/0x1dd         
+[ 7322.969219]  [<ffffffff81034c78>] bad_area+0x47/0x4e                         
+[ 7322.969219]  [<ffffffff8153831d>] __do_page_fault+0x25b/0x3ed                
+[ 7322.969219]  [<ffffffff810cd3d6>] ? ctx_sched_in+0x15e/0x185                 
+[ 7322.969219]  [<ffffffff810cd466>] ? perf_event_sched_in+0x69/0x72            
+[ 7322.969219]  [<ffffffff81538539>] trace_do_page_fault+0x8a/0x93              
+[ 7322.969219]  [<ffffffff81535572>] trace_page_fault+0x22/0x30                 
+[ 7322.969219]  [<ffffffff81534f7b>] ? _raw_spin_lock_irqsave+0x11/0x2d         
+[ 7322.969219]  [<ffffffff810198cc>] __intel_shared_reg_get_constraints+0x5e/0x19c                                                                              
+[ 7322.969219]  [<ffffffff81019a8f>] intel_get_event_constraints+0x85/0x154     
+[ 7322.969219]  [<ffffffff8101434d>] x86_schedule_events+0x54/0x185             
+[ 7322.969219]  [<ffffffff81012de6>] x86_pmu_commit_txn+0x51/0x9a               
+[ 7322.969219]  [<ffffffff810dbb46>] ? __alloc_pages_nodemask+0x174/0x737       
+[ 7322.969219]  [<ffffffff810f3d50>] ? unmap_single_vma+0x605/0x669             
+[ 7322.969219]  [<ffffffff810cd121>] ? event_sched_in+0x11d/0x12d               
+[ 7322.969219]  [<ffffffff810cd1c9>] group_sched_in+0x98/0x147                  
+[ 7322.969219]  [<ffffffff810cd3d6>] ctx_sched_in+0x15e/0x185                   
+[ 7322.969219]  [<ffffffff810cd466>] perf_event_sched_in+0x69/0x72              
+[ 7322.969219]  [<ffffffff810cd537>] __perf_install_in_context+0xc8/0xf1        
+[ 7322.969219]  [<ffffffff810cdd6a>] ? perf_event_task_output+0x13d/0x13d       
+[ 7322.969219]  [<ffffffff810cdda6>] remote_function+0x3c/0x43                  
+[ 7322.969219]  [<ffffffff810954a3>] smp_call_function_single+0x8a/0x101        
+[ 7322.969219]  [<ffffffff810cddf1>] task_function_call+0x44/0x4e               
+[ 7322.969219]  [<ffffffff810cd46f>] ? perf_event_sched_in+0x72/0x72            
+[ 7322.969219]  [<ffffffff810cdf26>] perf_install_in_context+0x81/0xbc          
+[ 7322.969219]  [<ffffffff8153330b>] ? mutex_lock+0x16/0x37                     
+[ 7322.969219]  [<ffffffff810d21f5>] SYSC_perf_event_open+0x647/0x7f5           
+[ 7322.969219]  [<ffffffff810d23ac>] SyS_perf_event_open+0x9/0xb                
+[ 7322.969219]  [<ffffffff8153bf26>] system_call_fastpath+0x1a/0x1f             
+[ 7322.969219] Code: 90 eb f4 c9 c3 55 48 89 e5 66 66 66 66 90 b8 00 00 01 00 f0 0f c1 07 89 c2 c1 ea 10 66 39 c2 74 0c 66 8b 07 66 39 d0 74 04 f3 90 <eb> f4 c9 c3 55 48 89 e5 41 56 41 55 41 54 53 66 66 66 66 90 48                          
+[ 7322.969219] INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run: 1971.954 msecs                                                  
+
 
