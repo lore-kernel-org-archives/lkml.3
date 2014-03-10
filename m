@@ -1,342 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949AbaCJM4w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 08:56:52 -0400
-Received: from mga02.intel.com ([134.134.136.20]:9642 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753527AbaCJMy7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 08:54:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,623,1389772800"; 
-   d="scan'208";a="497011160"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Alexandre Courbot <gnurou@gmail.com>, Lan Tianyu <tianyu.lan@intel.com>,
-        Lv Zheng <lv.zheng@intel.com>, Alan Cox <alan.cox@intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH v2 4/5] gpio / ACPI: Rework ACPI GPIO event handling
-Date: Mon, 10 Mar 2014 14:54:53 +0200
-Message-Id: <1394456094-21671-5-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1394456094-21671-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1394456094-21671-1-git-send-email-mika.westerberg@linux.intel.com>
+	id S1753536AbaCJNEs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 09:04:48 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:50706 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753247AbaCJNEq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 09:04:46 -0400
+Message-ID: <1394456660.2270.3.camel@shinybook.infradead.org>
+Subject: Re: [Patch Part2 V2 15/17] iommu/vt-d, PCI: update DRHD/RMRR/ATSR
+ device scope caches when PCI hotplug happens
+From: David Woodhouse <dwmw2@infradead.org>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Joerg Roedel <joro@8bytes.org>, Yinghai Lu <yinghai@kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Tony Luck <tony.luck@intel.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org,
+        iommu@lists.linux-foundation.org
+Date: Mon, 10 Mar 2014 06:04:20 -0700
+In-Reply-To: <531D7BE8.7060103@linux.intel.com>
+References: <1392790057-32434-1-git-send-email-jiang.liu@linux.intel.com>
+		 <1392790057-32434-16-git-send-email-jiang.liu@linux.intel.com>
+	 <1394130319.9994.28.camel@i7.infradead.org>
+	 <531D7BE8.7060103@linux.intel.com>
+Content-Type: multipart/signed; micalg="sha-1"; protocol="application/x-pkcs7-signature";
+	boundary="=-+tWP9Ncx+FmSUMlXF+N5"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current ACPI GPIO event handling code was never tested against real
-hardware with functioning GPIO triggered events (at the time such hardware
-wasn't available). Thus it misses certain things like requesting the GPIOs
-properly, passing correct flags to the interrupt handler and so on.
 
-This patch reworks ACPI GPIO event handling so that we:
+--=-+tWP9Ncx+FmSUMlXF+N5
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
- 1) Use struct acpi_gpio_event for all GPIO signaled events.
- 2) Switch to use GPIO descriptor API and request GPIOs by calling
-    gpiochip_request_own_desc() that we added in a previous patch.
- 3) Pass proper flags from ACPI GPIO resource to request_threaded_irq().
+On Mon, 2014-03-10 at 16:46 +0800, Jiang Liu wrote:
+> Hi David,
+>         Good suggestion! It should make hotplug logic simpler too.
+> Will try to work out some patches for it.
 
-Also instead of open-coding the _AEI iteration loop we can use
-acpi_walk_resources(). This simplifies the code a bit and fixes memory leak
-that was caused by missing kfree() for buffer returned by
-acpi_get_event_resources().
+Before doing so, please be aware of the WIP at
+http://git.infradead.org/users/dwmw2/linux-andd.git
 
-Since the remove path now calls gpiochip_free_own_desc() which takes GPIO
-spinlock we need to call acpi_gpiochip_remove() outside of that lock
-(analogous to acpi_gpiochip_add() path where the lock is released before
-those funtions are called).
+This is the support for DMA mapping for ACPI devices. Largely thrown
+together on a plane above the Atlantic over the last day, so mostly
+untested, but a lot of it is fairly simply switching to using 'struct
+device' instead of assuming 'struct pci_dev' everywhere.
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Reviewed-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/gpio/gpiolib-acpi.c | 214 ++++++++++++++++++++++++++------------------
- drivers/gpio/gpiolib.c      |   3 +-
- 2 files changed, 131 insertions(+), 86 deletions(-)
+For now I've taken the simple approach of using the ->devices array, and
+*expanding* it to contain the bus+devfn to use for ACPI devices too.
 
-diff --git a/drivers/gpio/gpiolib-acpi.c b/drivers/gpio/gpiolib-acpi.c
-index be09e7526890..092ea4e5c9a8 100644
---- a/drivers/gpio/gpiolib-acpi.c
-+++ b/drivers/gpio/gpiolib-acpi.c
-@@ -70,9 +70,9 @@ static struct gpio_desc *acpi_get_gpiod(char *path, int pin)
- 
- static irqreturn_t acpi_gpio_irq_handler(int irq, void *data)
- {
--	acpi_handle handle = data;
-+	struct acpi_gpio_event *event = data;
- 
--	acpi_evaluate_object(handle, NULL, NULL, NULL);
-+	acpi_evaluate_object(event->handle, NULL, NULL, NULL);
- 
- 	return IRQ_HANDLED;
- }
-@@ -91,111 +91,148 @@ static void acpi_gpio_chip_dh(acpi_handle handle, void *data)
- 	/* The address of this function is used as a key. */
- }
- 
--/**
-- * acpi_gpiochip_request_interrupts() - Register isr for gpio chip ACPI events
-- * @acpi_gpio:      ACPI GPIO chip
-- *
-- * ACPI5 platforms can use GPIO signaled ACPI events. These GPIO interrupts are
-- * handled by ACPI event methods which need to be called from the GPIO
-- * chip's interrupt handler. acpi_gpiochip_request_interrupts finds out which
-- * gpio pins have acpi event methods and assigns interrupt handlers that calls
-- * the acpi event methods for those pins.
-- */
--static void acpi_gpiochip_request_interrupts(struct acpi_gpio_chip *acpi_gpio)
-+static acpi_status acpi_gpiochip_request_interrupt(struct acpi_resource *ares,
-+						   void *context)
- {
--	struct acpi_buffer buf = {ACPI_ALLOCATE_BUFFER, NULL};
-+	struct acpi_gpio_chip *acpi_gpio = context;
- 	struct gpio_chip *chip = acpi_gpio->chip;
--	struct acpi_resource *res;
-+	struct acpi_resource_gpio *agpio;
- 	acpi_handle handle, evt_handle;
--	acpi_status status;
--	unsigned int pin;
--	int irq, ret;
--	char ev_name[5];
-+	struct acpi_gpio_event *event;
-+	irq_handler_t handler = NULL;
-+	struct gpio_desc *desc;
-+	unsigned long irqflags;
-+	int ret, pin, irq;
- 
--	if (!chip->dev || !chip->to_irq)
--		return;
-+	if (ares->type != ACPI_RESOURCE_TYPE_GPIO)
-+		return AE_OK;
-+
-+	agpio = &ares->data.gpio;
-+	if (agpio->connection_type != ACPI_RESOURCE_GPIO_TYPE_INT)
-+		return AE_OK;
- 
- 	handle = ACPI_HANDLE(chip->dev);
--	if (!handle)
--		return;
-+	pin = agpio->pin_table[0];
-+
-+	if (pin <= 255) {
-+		char ev_name[5];
-+		sprintf(ev_name, "_%c%02X",
-+			agpio->triggering == ACPI_EDGE_SENSITIVE ? 'E' : 'L',
-+			pin);
-+		if (ACPI_SUCCESS(acpi_get_handle(handle, ev_name, &evt_handle)))
-+			handler = acpi_gpio_irq_handler;
-+	}
-+	if (!handler) {
-+		if (ACPI_SUCCESS(acpi_get_handle(handle, "_EVT", &evt_handle)))
-+			handler = acpi_gpio_irq_handler_evt;
-+	}
-+	if (!handler)
-+		return AE_BAD_PARAMETER;
- 
--	INIT_LIST_HEAD(&acpi_gpio->events);
-+	desc = gpiochip_get_desc(chip, pin);
-+	if (IS_ERR(desc)) {
-+		dev_err(chip->dev, "Failed to get GPIO descriptor\n");
-+		return AE_ERROR;
-+	}
- 
--	/*
--	 * If a GPIO interrupt has an ACPI event handler method, or _EVT is
--	 * present, set up an interrupt handler that calls the ACPI event
--	 * handler.
--	 */
--	for (res = buf.pointer;
--	     res && (res->type != ACPI_RESOURCE_TYPE_END_TAG);
--	     res = ACPI_NEXT_RESOURCE(res)) {
--		irq_handler_t handler = NULL;
--		void *data;
--
--		if (res->type != ACPI_RESOURCE_TYPE_GPIO ||
--		    res->data.gpio.connection_type !=
--		    ACPI_RESOURCE_GPIO_TYPE_INT)
--			continue;
-+	ret = gpiochip_request_own_desc(desc, "ACPI:Event");
-+	if (ret) {
-+		dev_err(chip->dev, "Failed to request GPIO\n");
-+		return AE_ERROR;
-+	}
- 
--		pin = res->data.gpio.pin_table[0];
--		if (pin > chip->ngpio)
--			continue;
-+	gpiod_direction_input(desc);
- 
--		irq = chip->to_irq(chip, pin);
--		if (irq < 0)
--			continue;
-+	ret = gpiod_lock_as_irq(desc);
-+	if (ret) {
-+		dev_err(chip->dev, "Failed to lock GPIO as interrupt\n");
-+		goto fail_free_desc;
-+	}
- 
--		if (pin <= 255) {
--			acpi_handle ev_handle;
-+	irq = gpiod_to_irq(desc);
-+	if (irq < 0) {
-+		dev_err(chip->dev, "Failed to translate GPIO to IRQ\n");
-+		goto fail_unlock_irq;
-+	}
- 
--			sprintf(ev_name, "_%c%02X",
--				res->data.gpio.triggering ? 'E' : 'L', pin);
--			status = acpi_get_handle(handle, ev_name, &ev_handle);
--			if (ACPI_SUCCESS(status)) {
--				handler = acpi_gpio_irq_handler;
--				data = ev_handle;
--			}
-+	irqflags = IRQF_ONESHOT;
-+	if (agpio->triggering == ACPI_LEVEL_SENSITIVE) {
-+		if (agpio->polarity == ACPI_ACTIVE_HIGH)
-+			irqflags |= IRQF_TRIGGER_HIGH;
-+		else
-+			irqflags |= IRQF_TRIGGER_LOW;
-+	} else {
-+		switch (agpio->polarity) {
-+		case ACPI_ACTIVE_HIGH:
-+			irqflags |= IRQF_TRIGGER_RISING;
-+			break;
-+		case ACPI_ACTIVE_LOW:
-+			irqflags |= IRQF_TRIGGER_FALLING;
-+			break;
-+		default:
-+			irqflags |= IRQF_TRIGGER_RISING |
-+				    IRQF_TRIGGER_FALLING;
-+			break;
- 		}
--		if (!handler) {
--			struct acpi_gpio_event *event;
--
--			status = acpi_get_handle(handle, "_EVT", &evt_handle);
--			if (ACPI_FAILURE(status))
--				continue
-+	}
- 
--			event = kzalloc(sizeof(*event), GFP_KERNEL);
--			if (!event)
--				continue;
-+	event = kzalloc(sizeof(*event), GFP_KERNEL);
-+	if (!event)
-+		goto fail_unlock_irq;
- 
--			list_add_tail(&event->node, &acpi_gpio->events);
--			event->handle = evt_handle;
--			event->pin = pin;
--			event->irq = irq;
--			handler = acpi_gpio_irq_handler_evt;
--			data = event;
--		}
--		if (!handler)
--			continue;
-+	event->handle = evt_handle;
-+	event->irq = irq;
-+	event->pin = pin;
- 
--		/* Assume BIOS sets the triggering, so no flags */
--		ret = devm_request_threaded_irq(chip->dev, irq, NULL, handler,
--						0, "GPIO-signaled-ACPI-event",
--						data);
--		if (ret)
--			dev_err(chip->dev,
--				"Failed to request IRQ %d ACPI event handler\n",
--				irq);
-+	ret = request_threaded_irq(event->irq, NULL, handler, irqflags,
-+				   "ACPI:Event", event);
-+	if (ret) {
-+		dev_err(chip->dev, "Failed to setup interrupt handler for %d\n",
-+			event->irq);
-+		goto fail_free_event;
- 	}
-+
-+	list_add_tail(&event->node, &acpi_gpio->events);
-+	return AE_OK;
-+
-+fail_free_event:
-+	kfree(event);
-+fail_unlock_irq:
-+	gpiod_unlock_as_irq(desc);
-+fail_free_desc:
-+	gpiochip_free_own_desc(desc);
-+
-+	return AE_ERROR;
- }
- 
- /**
-- * acpi_gpiochip_free_interrupts() - Free GPIO _EVT ACPI event interrupts.
-+ * acpi_gpiochip_request_interrupts() - Register isr for gpio chip ACPI events
-  * @acpi_gpio:      ACPI GPIO chip
-  *
-- * Free interrupts associated with the _EVT method for the given GPIO chip.
-+ * ACPI5 platforms can use GPIO signaled ACPI events. These GPIO interrupts are
-+ * handled by ACPI event methods which need to be called from the GPIO
-+ * chip's interrupt handler. acpi_gpiochip_request_interrupts finds out which
-+ * gpio pins have acpi event methods and assigns interrupt handlers that calls
-+ * the acpi event methods for those pins.
-+ */
-+static void acpi_gpiochip_request_interrupts(struct acpi_gpio_chip *acpi_gpio)
-+{
-+	struct gpio_chip *chip = acpi_gpio->chip;
-+
-+	if (!chip->dev || !chip->to_irq)
-+		return;
-+
-+	INIT_LIST_HEAD(&acpi_gpio->events);
-+	acpi_walk_resources(ACPI_HANDLE(chip->dev), "_AEI",
-+			    acpi_gpiochip_request_interrupt, acpi_gpio);
-+}
-+
-+/**
-+ * acpi_gpiochip_free_interrupts() - Free GPIO ACPI event interrupts.
-+ * @acpi_gpio:      ACPI GPIO chip
-  *
-- * The remaining ACPI event interrupts associated with the chip are freed
-- * automatically.
-+ * Free interrupts associated with GPIO ACPI event method for the given
-+ * GPIO chip.
-  */
- static void acpi_gpiochip_free_interrupts(struct acpi_gpio_chip *acpi_gpio)
- {
-@@ -206,7 +243,14 @@ static void acpi_gpiochip_free_interrupts(struct acpi_gpio_chip *acpi_gpio)
- 		return;
- 
- 	list_for_each_entry_safe_reverse(event, ep, &acpi_gpio->events, node) {
--		devm_free_irq(chip->dev, event->irq, event);
-+		struct gpio_desc *desc;
-+
-+		free_irq(event->irq, event);
-+		desc = gpiochip_get_desc(chip, event->pin);
-+		if (WARN_ON(IS_ERR(desc)))
-+			continue;
-+		gpiod_unlock_as_irq(desc);
-+		gpiochip_free_own_desc(desc);
- 		list_del(&event->node);
- 		kfree(event);
- 	}
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index 61de1efe85fd..34975fb97bd7 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -1266,11 +1266,12 @@ int gpiochip_remove(struct gpio_chip *chip)
- 	int		status = 0;
- 	unsigned	id;
- 
-+	acpi_gpiochip_remove(chip);
-+
- 	spin_lock_irqsave(&gpio_lock, flags);
- 
- 	gpiochip_remove_pin_ranges(chip);
- 	of_gpiochip_remove(chip);
--	acpi_gpiochip_remove(chip);
- 
- 	for (id = 0; id < chip->ngpio; id++) {
- 		if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags)) {
--- 
-1.9.0
+--=20
+dwmw2
+
+
+--=-+tWP9Ncx+FmSUMlXF+N5
+Content-Type: application/x-pkcs7-signature; name="smime.p7s"
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Transfer-Encoding: base64
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIISxDCCBjQw
+ggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
+Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxKTAn
+BgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3MTAyNDIxMDE1NVoX
+DTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSsw
+KQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFy
+dENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTCCASIwDQYJKoZIhvcN
+AQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOrlr6KMoOMpohBllVHrdRvEg/q6r8jR+EK
+75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSMzR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC
++y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxD
+z2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSDkOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr
+/+N2JLKutIxMYqQOJebr/f/h5t95m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0w
+ggGpMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFc
+fH6WNU7y1LhRgjAfBgNVHSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRa
+MFgwJwYIKwYBBQUHMAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYh
+aHR0cDovL3d3dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6
+Ly93d3cuc3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5j
+b20vc2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
+dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
+c3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqDCH14qywG
+XLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy6QMVQjbbMXlt
+UfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPIzKKR9tQW8gGK+2+R
+HxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKfKSETEPrHh7p5shuuNktv
+sv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HORz9v3vQwR4e3ksLc2JZOAFK+s
+sS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9sIPP7ON0fz095HdThKjiVJe6vofq
++n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCieuoBJ9OlqmsVWQvifIYf40dJPZkk9YgGT
+zWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7tw1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGq
+Up/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQG2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb1
+9mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIGQjCCBSqg
+AwIBAgIDBoXOMA0GCSqGSIb3DQEBBQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
+b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYG
+A1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcN
+MTMwNTAyMDYyMDQ2WhcNMTQwNTAzMTIxNDAyWjBdMRkwFwYDVQQNExBNd0k3ODIxNTRpV21lZVkw
+MRwwGgYDVQQDDBNkd213MkBpbmZyYWRlYWQub3JnMSIwIAYJKoZIhvcNAQkBFhNkd213MkBpbmZy
+YWRlYWQub3JnMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvWGuRDHiXVpOgaFkBaz8
+c3jQTfiEw7j0iKZnktCQi0xjY29QJ7GwL+fgQlbofXgYTm8E9fWERvw2tAy2BxHzAPguBzziS7JN
+hsGP9lf3L8hFJBvmdyyyj8b9A6Oi7s3JLtMRWIvyvE+DbuTkP+htuT4+XuTJr8Y5yIqd1WXr2gJk
+ANr77vTyjeNxceevP58Tqr0f+4v5g6+vNARO3bk3SaVQPDUTwGrpoPtLh3d+mQzZ4iiW3MwQS7Wr
+UVT3l2aTVHCpgtAaBs3zHWarvmIqhbWj8zdcnELNzwqTrOjaoWxuWY4k05GGfzmdjOBUiL7FDNvI
+ZwweJEPwJAQI72YhUwIDAQABo4IC2TCCAtUwCQYDVR0TBAIwADALBgNVHQ8EBAMCBLAwHQYDVR0l
+BBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMB0GA1UdDgQWBBSs0hZhUgQwqGVXzLuH6pJH0hMZwTAf
+BgNVHSMEGDAWgBRTcu2SnODaywFcfH6WNU7y1LhRgjAeBgNVHREEFzAVgRNkd213MkBpbmZyYWRl
+YWQub3JnMIIBTAYDVR0gBIIBQzCCAT8wggE7BgsrBgEEAYG1NwECAzCCASowLgYIKwYBBQUHAgEW
+Imh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwgfcGCCsGAQUFBwICMIHqMCcWIFN0
+YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5UaGlzIGNlcnRpZmljYXRlIHdh
+cyBpc3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAxIFZhbGlkYXRpb24gcmVxdWlyZW1lbnRz
+IG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlhbmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRl
+ZCBwdXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhlIHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMu
+MDYGA1UdHwQvMC0wK6ApoCeGJWh0dHA6Ly9jcmwuc3RhcnRzc2wuY29tL2NydHUxLWNybC5jcmww
+gY4GCCsGAQUFBwEBBIGBMH8wOQYIKwYBBQUHMAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9z
+dWIvY2xhc3MxL2NsaWVudC9jYTBCBggrBgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20v
+Y2VydHMvc3ViLmNsYXNzMS5jbGllbnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3Rh
+cnRzc2wuY29tLzANBgkqhkiG9w0BAQUFAAOCAQEACFLDQnyO8+XA/TiTltjJ/ZAvM+qmBEKN43Vd
++Wio2lM/Wq/scJpkupXGHrl9CueobkDxMAogXbMxqLZYO13PvgjMh+PHxDPnQv8EGxOig+k/Hqvc
+qEdTlm9YEHcbXbWS6XB+zRO7VVIpGMYQ1f1qCOcukxmwIm6iMSHXbOr/7paQm4bO0ULptjBotfiO
+Zo6q8No6SroQlOSyc6v8FYSxTNIAXMaM2FYkjqrxgdnJmSIAfr11gROuF69WuOICxP0zTEjJle+7
+aO9lUWNaWMWPMyFSNCxF6kkRuvUCami7vlhLOTRC1kb+OMhx7keN9At3tdTI3rtuFeSB1Pa3VXVs
+0DCCBkIwggUqoAMCAQICAwaFzjANBgkqhkiG9w0BAQUFADCBjDELMAkGA1UEBhMCSUwxFjAUBgNV
+BAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
+Z25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xp
+ZW50IENBMB4XDTEzMDUwMjA2MjA0NloXDTE0MDUwMzEyMTQwMlowXTEZMBcGA1UEDRMQTXdJNzgy
+MTU0aVdtZWVZMDEcMBoGA1UEAwwTZHdtdzJAaW5mcmFkZWFkLm9yZzEiMCAGCSqGSIb3DQEJARYT
+ZHdtdzJAaW5mcmFkZWFkLm9yZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAL1hrkQx
+4l1aToGhZAWs/HN40E34hMO49IimZ5LQkItMY2NvUCexsC/n4EJW6H14GE5vBPX1hEb8NrQMtgcR
+8wD4Lgc84kuyTYbBj/ZX9y/IRSQb5ncsso/G/QOjou7NyS7TEViL8rxPg27k5D/obbk+Pl7kya/G
+OciKndVl69oCZADa++708o3jcXHnrz+fE6q9H/uL+YOvrzQETt25N0mlUDw1E8Bq6aD7S4d3fpkM
+2eIoltzMEEu1q1FU95dmk1RwqYLQGgbN8x1mq75iKoW1o/M3XJxCzc8Kk6zo2qFsblmOJNORhn85
+nYzgVIi+xQzbyGcMHiRD8CQECO9mIVMCAwEAAaOCAtkwggLVMAkGA1UdEwQCMAAwCwYDVR0PBAQD
+AgSwMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQUrNIWYVIEMKhlV8y7
+h+qSR9ITGcEwHwYDVR0jBBgwFoAUU3Ltkpzg2ssBXHx+ljVO8tS4UYIwHgYDVR0RBBcwFYETZHdt
+dzJAaW5mcmFkZWFkLm9yZzCCAUwGA1UdIASCAUMwggE/MIIBOwYLKwYBBAGBtTcBAgMwggEqMC4G
+CCsGAQUFBwIBFiJodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMIH3BggrBgEFBQcC
+AjCB6jAnFiBTdGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgEBGoG+VGhpcyBjZXJ0
+aWZpY2F0ZSB3YXMgaXNzdWVkIGFjY29yZGluZyB0byB0aGUgQ2xhc3MgMSBWYWxpZGF0aW9uIHJl
+cXVpcmVtZW50cyBvZiB0aGUgU3RhcnRDb20gQ0EgcG9saWN5LCByZWxpYW5jZSBvbmx5IGZvciB0
+aGUgaW50ZW5kZWQgcHVycG9zZSBpbiBjb21wbGlhbmNlIG9mIHRoZSByZWx5aW5nIHBhcnR5IG9i
+bGlnYXRpb25zLjA2BgNVHR8ELzAtMCugKaAnhiVodHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9jcnR1
+MS1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkGCCsGAQUFBzABhi1odHRwOi8vb2NzcC5zdGFy
+dHNzbC5jb20vc3ViL2NsYXNzMS9jbGllbnQvY2EwQgYIKwYBBQUHMAKGNmh0dHA6Ly9haWEuc3Rh
+cnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczEuY2xpZW50LmNhLmNydDAjBgNVHRIEHDAahhhodHRw
+Oi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcNAQEFBQADggEBAAhSw0J8jvPlwP04k5bYyf2Q
+LzPqpgRCjeN1XfloqNpTP1qv7HCaZLqVxh65fQrnqG5A8TAKIF2zMai2WDtdz74IzIfjx8Qz50L/
+BBsTooPpPx6r3KhHU5ZvWBB3G121kulwfs0Tu1VSKRjGENX9agjnLpMZsCJuojEh12zq/+6WkJuG
+ztFC6bYwaLX4jmaOqvDaOkq6EJTksnOr/BWEsUzSAFzGjNhWJI6q8YHZyZkiAH69dYETrhevVrji
+AsT9M0xIyZXvu2jvZVFjWljFjzMhUjQsRepJEbr1Ampou75YSzk0QtZG/jjIce5HjfQLd7XUyN67
+bhXkgdT2t1V1bNAxggNvMIIDawIBATCBlDCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
+Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2
+BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMG
+hc4wCQYFKw4DAhoFAKCCAa8wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
+DxcNMTQwMzEwMTMwNDIwWjAjBgkqhkiG9w0BCQQxFgQUGdFYfdcPmcDvRxpajsQqZ5hCZj4wgaUG
+CSsGAQQBgjcQBDGBlzCBlDCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4x
+KzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0
+YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMGhc4wgacGCyqG
+SIb3DQEJEAILMYGXoIGUMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjEr
+MCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3Rh
+cnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAwaFzjANBgkqhkiG
+9w0BAQEFAASCAQCNhEYppDH4T2HurOHCPkyvQaypTyNTwgHT7aGpXXkLdYWKHP4MRMR4Tiizq9E6
+XMhKxAYRCPgSKlUKH1fwWV8vbRCTW1qrTpwhtJjN31U64VIFhR6pr6cCfkaidsirSdJMEhTBGiR7
+3rpAFk8UgTmAk+QwEIAMzMvvffV8Lf5Fc/ifeimnRQvljEIN3TAzarJ0h6rv2zwwcXYxcEfm0U6K
+kXJyjRFmQrm/qq5J8am5IGrOgS46gWg+ZIXVaCOFwOhdjR67z+HzmvAUH54dk5pv/XEqIlSlYD0O
+vVh2ng4du7/0Q5JJH7o2/ktsP/UOQbJEqOD3+bDNjfR4EicRe/D4AAAAAAAA
+
+
+--=-+tWP9Ncx+FmSUMlXF+N5--
 
