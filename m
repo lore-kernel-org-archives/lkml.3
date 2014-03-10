@@ -1,93 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752976AbaCJJ7U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 05:59:20 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:55056 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752020AbaCJJ7T convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 05:59:19 -0400
+	id S1753189AbaCJJ7y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 05:59:54 -0400
+Received: from mga01.intel.com ([192.55.52.88]:45986 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752238AbaCJJ7w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 05:59:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,622,1389772800"; 
+   d="scan'208";a="495364963"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Dave Hansen <dave.hansen@intel.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH v1 03/11] perf: Allow for multiple ring buffers per event
+In-Reply-To: <530529FC.6080704@intel.com>
+References: <1391683834-29868-1-git-send-email-alexander.shishkin@linux.intel.com> <1391683834-29868-4-git-send-email-alexander.shishkin@linux.intel.com> <20140217143340.GR27965@twins.programming.kicks-ass.net> <530529FC.6080704@intel.com>
+User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
+Date: Mon, 10 Mar 2014 11:59:41 +0200
+Message-ID: <87siqqtlv6.fsf@ashishki-desk.ger.corp.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <531C2097.5020004@roeck-us.net>
-References: <CAOMwXhPXPN+21N11cHBENvw0QZ1qPvo9GTbM9V2SwDmgBQZssw@mail.gmail.com>
-	<20140307162524.6abd34be@endymion.delvare>
-	<CAOMwXhOB=1HA57jwKCx3-hU8A_ypjrm0J3R9huO25xa4B_gw8w@mail.gmail.com>
-	<20140307163717.336873f5@endymion.delvare>
-	<CAOMwXhPpObWqd1vR3t+ifKd-_ZbnGTm1TNNUakmVAR3CB=pzTg@mail.gmail.com>
-	<20140307181718.GA1027@roeck-us.net>
-	<531BACD9.9050206@roeck-us.net>
-	<CAOMwXhNcoe4oWbijJ7s3o-E6k0FtfJSXZM2g=RC3S2FzvX_VdQ@mail.gmail.com>
-	<531C2097.5020004@roeck-us.net>
-Date: Mon, 10 Mar 2014 09:59:18 +0000
-X-Google-Sender-Auth: MHATGuneG6QyKZj9wAfbsz65JCM
-Message-ID: <CAOMwXhPMnvc29VB0ViDc494CunKfmkKV+fvdBGNXoaAW+D+C9A@mail.gmail.com>
-Subject: Re: [lm-sensors] Tachometer speed returned rather than absolute fan speed?
-From: Laszlo Papp <lpapp@kde.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: LKML <linux-kernel@vger.kernel.org>, lm-sensors@lm-sensors.org
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The reason is (most likely) that your fan input does not have a pull-up resistor. Per datasheet, the fan inputs need a 10kOhm pull-up resistor. I confirmed this with my test board - with the pull-up resistor, inputs read 0, Without pull-up, the reported value is 1, which translates to 30 RPM. You might also need the 10 uF capacitor on the FB pin.
+Dave Hansen <dave.hansen@intel.com> writes:
 
-We have both of them in place as per requirement for the chip as far
-as I understand the datasheet. The circuit would not work properly
-without it.
-> sudo i2cdump -y -f 1 0x48
-> No size specified (using byte-data access)
->      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f    0123456789abcdef
-> 00: 00 00 0a 0a ff ff 00 00 00 00 00 00 01 01 00 00    ..??........??..
-> 10: 01 01 01 01 1f 1f 02 02 91 91 91 91 91 91 91 91    ????????????????
-> 20: 00 00 0a 0a ff ff 00 00 00 00 00 00 01 01 00 00    ..??........??..
+> On 02/17/2014 06:33 AM, Peter Zijlstra wrote:
+>> Then write the PERF_RECORD_DATA structure into the normal ring-buffer
+>> location; set data_offset to point to the first page boundary, data_size
+>> to 1mb.
+>> 
+>> Then frob things such that perf_mmap_to_page() for the next 1mb of pages
+>> points to your buffer pages and wipe the page-table entries.
+>
+> Wouldn't we have to teach a ton of code how to be IRQ safe for this to
+> work?  Just step one: how do we go modifying page tables safely from an
+> interrupt?  mm->page_table_lock is a plain non-irq spinlock.
 
-/usr/sbin/i2cdump -y -f 1 0x48
-No size specified (using byte-data access)
-     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f    0123456789abcdef
-00: 00 00 3a 3a fc fc b4 b4 00 00 00 00 01 01 01 01    ..::????....????
-10: 09 09 01 01 1c 1c 02 02 91 91 91 91 91 91 91 91    ????????????????
-20: 00 00 3a 3a fc fc b4 b4 00 00 00 00 01 01 01 01    ..::????....????
-30: 09 09 01 01 1c 1c 02 02 91 91 91 91 91 91 91 91    ????????????????
-40: 00 00 3a 3a fc fc b4 b4 00 00 00 00 01 01 01 01    ..::????....????
-50: 08 08 01 01 1c 1c 02 02 91 91 91 91 91 91 91 91    ????????????????
-60: 00 00 3a 3a fc fc b4 b4 00 00 00 00 01 01 01 01    ..::????....????
-70: 08 08 01 01 1c 1c 02 02 91 91 91 91 91 91 91 91    ????????????????
-80: 00 00 3a 3a fc fc b4 b4 00 00 00 00 01 01 01 01    ..::????....????
-90: 08 08 01 01 1c 1c 02 02 91 91 91 91 91 91 91 91    ????????????????
-a0: 00 00 3a 3a fc fc b4 b4 00 00 00 00 01 01 01 01    ..::????....????
-b0: 08 08 01 01 1c 1c 02 02 91 91 91 91 91 91 91 91    ????????????????
-c0: 00 00 3a 3a fc fc b4 b4 00 00 00 00 01 01 01 01    ..::????....????
-d0: 08 08 01 01 1c 1c 02 02 91 91 91 91 91 91 91 91    ????????????????
-e0: 00 00 3a 3a fc fc b4 b4 00 00 00 00 01 01 01 01    ..::????....????
-f0: 08 08 01 01 1c 1c 02 02 91 91 91 91 91 91 91 91    ????????????????
+Yes, this does look more than just tricky even if we move the bulk of
+interrupt code to an irq_work. Peter, are you quite sure this is what we
+want to do just for exporting trace buffers to userspace?
 
-> groeck@desktop:~$ sensors max6651-i2c-1-48
-> max6651-i2c-1-48
-> Adapter: i2c-diolan-u2c at bus 003 device 002
-> fan1:          30 RPM  (div = 4)
-> fan2:           0 RPM
-> fan3:          30 RPM
-> fan4:          30 RPM
-
-sensors max6651-i2c-1-48
-max6651-i2c-1-48
-Adapter: DaVinci I2C adapter
-fan1:          30 RPM  (div = 4)
-fan2:          30 RPM
-fan3:         420 RPM
-fan4:          30 RPM
-
-> Only fan2 (TACH1 chip input) has the resistor installed.
-
-We have it both on fan1 and fan4.
-
-If I use our scope for checking the tachometer, I see level zero on
-the scope, but 1 when checking the open collector level, since that is
-the purpose of the pull-up resistor.
-
-I am currently clueless. Fwiw, I am now using linux kernel 3.2.1 for
-the moment. I cannot see any bugfixes in the log with regards to that,
-though. I am still not sure what is going on, so I cannot claim that
-it is a bug, nor can I exclude it. Any help would be appreciated.
+Regards,
+--
+Alex
