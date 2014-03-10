@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454AbaCJNcW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 09:32:22 -0400
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:61612 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752258AbaCJNcU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 09:32:20 -0400
-Date: Mon, 10 Mar 2014 14:32:15 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: =?iso-8859-1?B?U/hyZW5zZW4s?= Stefan 
-	<Stefan.Sorensen@spectralink.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bhutchings@solarflare.com" <bhutchings@solarflare.com>,
-        "christian.riesch@omicron.at" <christian.riesch@omicron.at>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Subject: Re: [PATCH RFC net-next v1 1/9] ptp: introduce programmable pins.
-Message-ID: <20140310133215.GA19781@netboy>
-References: <cover.1394307303.git.richardcochran@gmail.com>
- <d9cb37a7d6e57d7f103dab78f98044697d3c4433.1394307304.git.richardcochran@gmail.com>
- <1394455989.2296.23.camel@e37108.spectralink.com>
+	id S1753762AbaCJNcn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 09:32:43 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:50507 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753494AbaCJNcl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 09:32:41 -0400
+Message-ID: <531DBEDD.9050400@ti.com>
+Date: Mon, 10 Mar 2014 15:32:13 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1394455989.2296.23.camel@e37108.spectralink.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tero Kristo <t-kristo@ti.com>, <tony@atomide.com>
+CC: <balbi@ti.com>, <kishon@ti.com>, <george.cherian@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Mike Turquette <mturquette@linaro.org>
+Subject: Re: [PATCH v2 1/8] ARM: dts: dra7: Initialize USB_DPLL
+References: <1394197751-28984-2-git-send-email-rogerq@ti.com> <1394455761-19226-1-git-send-email-rogerq@ti.com> <531DBE03.2070603@ti.com>
+In-Reply-To: <531DBE03.2070603@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 12:53:09PM +0000, Sørensen, Stefan wrote:
-> On Sat, 2014-03-08 at 20:42 +0100, Richard Cochran wrote:
-
-> > +int ptp_find_pin(struct ptp_clock *ptp,
-> > +		 enum ptp_pin_function func, unsigned int chan)
-> > +{
-> > +	struct ptp_pin_desc *pin = NULL;
-> > +	int i;
-> > +
-> > +	mutex_lock(&ptp->pincfg_mux);
-> > +	for (i = 0; i < ptp->info->n_pins; i++) {
-> > +		if (ptp->info->pin_config[i].func == func &&
-> > +		    ptp->info->pin_config[i].chan == chan) {
-> > +			pin = &ptp->info->pin_config[i];
-> > +			break;
-> > +		}
-> > +	}
-> > +	mutex_unlock(&ptp->pincfg_mux);
-> > +
-> > +	return pin ? pin - ptp->info->pin_config : -1;
-> > +}
+On 03/10/2014 03:28 PM, Tero Kristo wrote:
+> On 03/10/2014 02:49 PM, Roger Quadros wrote:
+>> USB_DPLL must be initialized and locked at boot so that
+>> USB modules can work.
+>>
+>> Program USB_DLL_M2 output to half rate as well.
+>>
+>> Patch depends on
+>> https://www.mail-archive.com/linux-omap@vger.kernel.org/msg101300.html
+>>
+>> CC: Mike Turquette <mturquette@linaro.org>
+>> CC: Tero Kristo <t-kristo@ti.com>
+>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>> ---
+>>   arch/arm/boot/dts/dra7.dtsi | 8 ++++++++
+>>   1 file changed, 8 insertions(+)
+>>
+>> diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+>> index 597979b..f376923 100644
+>> --- a/arch/arm/boot/dts/dra7.dtsi
+>> +++ b/arch/arm/boot/dts/dra7.dtsi
+>> @@ -815,3 +815,11 @@
+>>   };
+>>
+>>   /include/ "dra7xx-clocks.dtsi"
+>> +
+>> +&dpll_usb_ck {
+>> +        default-rate = <960000000>;
+>> +};
+>> +
+>> +&dpll_usb_m2_ck {
+>> +    default-rate = <480000000>;
+>> +};
+>>
 > 
-> Maybe replace 'pin - ptp->info->pin_config' with 'i'?
+> You can add these directly under the dra7xx-clocks.dtsi file as well, as I don't think anybody needs to modify these. And the properties can be added directly under the nodes themselves.
+> 
+> However, this patch can't be acked yet as we have no feedback from Mike for the default-rate proposal.
 
-Yes, of course.
+OK. I'll wait for the "default-rate" patch to be approved first and then revise this patch based on your
+suggestion. Thanks for the review.
 
-Thanks,
-Richard
+cheers,
+-roger
